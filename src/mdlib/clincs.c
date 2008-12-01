@@ -632,25 +632,35 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
     li->matlam = lambda;
 }
 
-static int count_triangle_constraints(int ncon,t_iatom *ia,t_blocka *at2con)
+static int count_triangle_constraints(t_ilist *ilist,t_blocka *at2con)
 {
+    int  ncon1,ncon_tot;
     int  c0,a00,a01,n1,c1,a10,a11,ac1,n2,c2,a20,a21;
     int  ncon_triangle;
     bool bTriangle;
+    t_iatom *ia1,*ia2,*iap;
+    
+    ncon1    = ilist[F_CONSTR].nr/3;
+    ncon_tot = ncon1 + ilist[F_CONSTRNC].nr/3;
+
+    ia1 = ilist[F_CONSTR].iatoms;
+    ia2 = ilist[F_CONSTRNC].iatoms;
     
     ncon_triangle = 0;
-    for(c0=0; c0<ncon; c0++)
+    for(c0=0; c0<ncon_tot; c0++)
     {
         bTriangle = FALSE;
-        a00 = ia[c0*3+1];
-        a01 = ia[c0*3+2];
+        iap = constr_iatomptr(ncon1,ia1,ia2,c0);
+        a00 = iap[1];
+        a01 = iap[2];
         for(n1=at2con->index[a01]; n1<at2con->index[a01+1]; n1++)
         {
             c1 = at2con->a[n1];
             if (c1 != c0)
             {
-                a10 = ia[c1*3+1];
-                a11 = ia[c1*3+2];
+                iap = constr_iatomptr(ncon1,ia1,ia2,c1);
+                a10 = iap[1];
+                a11 = iap[2];
                 if (a10 == a01)
                 {
                     ac1 = a11;
@@ -664,8 +674,9 @@ static int count_triangle_constraints(int ncon,t_iatom *ia,t_blocka *at2con)
                     c2 = at2con->a[n2];
                     if (c2 != c0 && c2 != c1)
                     {
-                        a20 = ia[c2*3+1];
-                        a21 = ia[c2*3+2];
+                        iap = constr_iatomptr(ncon1,ia1,ia2,c2);
+                        a20 = iap[1];
+                        a21 = iap[2];
                         if (a20 == a00 || a21 == a00)
                         {
                             bTriangle = TRUE;
@@ -704,7 +715,9 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
     
     snew(li,1);
     
-    li->ncg      = gmx_mtop_ftype_count(mtop,F_CONSTR);
+    li->ncg      =
+        gmx_mtop_ftype_count(mtop,F_CONSTR) +
+        gmx_mtop_ftype_count(mtop,F_CONSTRNC);
     li->ncg_flex = nflexcon_global;
     
     li->ncg_triangle = 0;
@@ -713,8 +726,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
         molt = &mtop->moltype[mtop->molblock[mb].type];
         li->ncg_triangle +=
             mtop->molblock[mb].nmol*
-            count_triangle_constraints(molt->ilist[F_CONSTR].nr/3,
-                                       molt->ilist[F_CONSTR].iatoms,
+            count_triangle_constraints(molt->ilist,
                                        &at2con[mtop->molblock[mb].type]);
     }
     
@@ -766,6 +778,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     li->nc = 0;
     li->ncc = 0;
     
+    /* This is the local topology, so there are only F_CONSTR constraints */
     if (idef->il[F_CONSTR].nr == 0)
     {
         /* There are no constraints,
@@ -796,8 +809,8 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
         start  = md->start;
         natoms = md->homenr;
     }
-    at2con = make_at2con(start,natoms,&idef->il[F_CONSTR],idef->iparams,
-                         bDynamics,&nflexcon);
+    at2con = make_at2con(start,natoms,idef->il,idef->iparams,bDynamics,
+                         &nflexcon);
 
     if (idef->il[F_CONSTR].nr/3 > li->nc_alloc || li->nc_alloc == 0)
     {
@@ -815,7 +828,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
         srenew(li->lambda,li->nc_alloc);
         if (li->ncg_triangle > 0)
         {
-            /* This is allocating too much, but it is difficult too improve */
+            /* This is allocating too much, but it is difficult to improve */
             srenew(li->triangle,li->nc_alloc);
             srenew(li->tri_bits,li->nc_alloc);
         }

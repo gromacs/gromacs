@@ -159,6 +159,12 @@ extern void set_constraints(gmx_constr_t constr,
 			    gmx_domdec_t *dd);
 /* Set up all the local constraints for the node */
 
+/* The at2con t_blocka struct returned by the routines below
+ * contains a list of constraints per atom.
+ * The F_CONSTRNC constraints in this structure number consecutively
+ * after the F_CONSTR constraints.
+ */
+
 extern t_blocka make_at2con(int start,int natoms,
 			    t_ilist *ilist,t_iparams *iparams,
 			    bool bDynamics,int *nflexiblecons);
@@ -166,6 +172,12 @@ extern t_blocka make_at2con(int start,int natoms,
 
 extern t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 /* Returns the an arry of atom to constraints lists for the moltypes */
+
+#define constr_iatomptr(nconstr,iatom_constr,iatom_constrnc,con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
+/* Macro for getting the constraint iatoms for a constraint number con
+ * which comes from a list where F_CONSTR and F_CONSTRNC constraints
+ * are concatenated.
+ */
 
 extern bool inter_charge_group_constraints(gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */

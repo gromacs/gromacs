@@ -211,12 +211,4 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
       }
     }
   }
-  
-  /* Add all non-connecting shakes to the shake list and throw away
-     the shakenc list */
-  for (i=0; i<plist[F_CONSTRNC].nr; i++)
-    add_param_to_list(&(plist[F_CONSTR]), &(plist[F_CONSTRNC].param[i]));
-  plist[F_CONSTRNC].nr=0;
-  sfree(plist[F_CONSTRNC].param);
-  plist[F_CONSTRNC].param=NULL;
 }

@@ -86,7 +86,7 @@ static bool dd_check_ftype(int ftype,bool bBCheck,bool bConstr)
              !(interaction_function[ftype].flags & IF_VSITE) &&
              (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO))) ||
             ftype == F_SETTLE ||
-            (bConstr && ftype == F_CONSTR));
+            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)));
 }
 
 static void print_error_header(FILE *fplog,char *moltypename,int nprint)
@@ -296,6 +296,10 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
         rest_local  = local_count;
         for(ftype=0; ftype<F_NRE; ftype++)
         {
+            /* In the reverse and local top all constraints are merged
+             * into F_CONSTR. So in the if statement we skip F_CONSTRNC
+             * and add these constraints when doing F_CONSTR.
+             */
             if (((interaction_function[ftype].flags & IF_BOND) &&
                  (dd->reverse_top->bBCheck 
                   || !(interaction_function[ftype].flags & IF_LIMZERO)))
@@ -304,6 +308,10 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
             {
                 nral = NRAL(ftype);
                 n = gmx_mtop_ftype_count(err_top_global,ftype);
+                if (ftype == F_CONSTR)
+                {
+                    n += gmx_mtop_ftype_count(err_top_global,F_CONSTRNC);
+                }
                 ndiff = cl[ftype] - n;
                 if (ndiff != 0)
                 {
@@ -407,8 +415,9 @@ static int low_make_reverse_ilist(t_ilist *il_mt,t_atom *atom,
     nint = 0;
     for(ftype=0; ftype<F_NRE; ftype++)
     {
-        if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
-            || ftype == F_SETTLE || (bConstr && ftype == F_CONSTR)) {
+        if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE)) ||
+            ftype == F_SETTLE ||
+            (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC))) {
             bVSite = (interaction_function[ftype].flags & IF_VSITE);
             nral = NRAL(ftype);
             il = &il_mt[ftype];
@@ -438,7 +447,8 @@ static int low_make_reverse_ilist(t_ilist *il_mt,t_atom *atom,
                     a = ia[1+link];
                     if (bAssign)
                     {
-                        r_il[r_index[a]+count[a]] = ftype;
+                        r_il[r_index[a]+count[a]] =
+                            (ftype == F_CONSTRNC ? F_CONSTR : ftype);
                         r_il[r_index[a]+count[a]+1] = ia[0];
                         for(j=1; j<1+nral; j++)
                         {

@@ -408,6 +408,9 @@ static void make_shake_sblock_pd(struct gmx_constr *constr,
   t_iatom     *iatom;
   atom_id     *inv_sblock;
 
+  /* Since we are processing the local topology,
+   * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.
+   */
   ncons = idef->il[F_CONSTR].nr/3;
 
   init_blocka(&sblocks);
@@ -522,27 +525,29 @@ t_blocka make_at2con(int start,int natoms,
 		     t_ilist *ilist,t_iparams *iparams,
 		     bool bDynamics,int *nflexiblecons)
 {
-  int *count,ncon,con,nflexcon,i,a;
+  int *count,ncon,con,con_tot,nflexcon,ftype,i,a;
   t_iatom  *ia;
   t_blocka at2con;
   bool bFlexCon;
   
   snew(count,natoms);
-  ncon = ilist->nr/3;
-  ia   = ilist->iatoms;
   nflexcon = 0;
-  for(con=0; con<ncon; con++) {
-    bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
-		iparams[ia[0]].constr.dB == 0);
-    if (bFlexCon)
-      nflexcon++;
-    if (bDynamics || !bFlexCon) {
-      for(i=1; i<3; i++) {
-	a = ia[i] - start;
-	count[a]++;
+  for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++) {
+    ncon = ilist[ftype].nr/3;
+    ia   = ilist[ftype].iatoms;
+    for(con=0; con<ncon; con++) {
+      bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
+		  iparams[ia[0]].constr.dB == 0);
+      if (bFlexCon)
+	nflexcon++;
+      if (bDynamics || !bFlexCon) {
+	for(i=1; i<3; i++) {
+	  a = ia[i] - start;
+	  count[a]++;
+	}
       }
+      ia += 3;
     }
-    ia += 3;
   }
   *nflexiblecons = nflexcon;
 
@@ -558,17 +563,25 @@ t_blocka make_at2con(int start,int natoms,
   at2con.nalloc_a = at2con.nra;
   snew(at2con.a,at2con.nalloc_a);
 
-  ia   = ilist->iatoms;
-  for(con=0; con<ncon; con++) {
-    bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
-		iparams[ia[0]].constr.dB == 0);
-    if (bDynamics || !bFlexCon) {
-      for(i=1; i<3; i++) {
-	a = ia[i] - start;
-	at2con.a[at2con.index[a]+count[a]++] = con;
+  /* The F_CONSTRNC constraints have constraint numbers
+   * that continue after the last F_CONSTR constraint.
+   */
+  con_tot = 0;
+  for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++) {
+    ncon = ilist[ftype].nr/3;
+    ia   = ilist[ftype].iatoms;
+    for(con=0; con<ncon; con++) {
+      bFlexCon = (iparams[ia[0]].constr.dA == 0 &&
+		  iparams[ia[0]].constr.dB == 0);
+      if (bDynamics || !bFlexCon) {
+	for(i=1; i<3; i++) {
+	  a = ia[i] - start;
+	  at2con.a[at2con.index[a]+count[a]++] = con_tot;
+	}
       }
+      con_tot++;
+      ia += 3;
     }
-    ia += 3;
   }
   
   sfree(count);
@@ -586,6 +599,8 @@ void set_constraints(struct gmx_constr *constr,
   if (constr->ncon_tot > 0) {
     idef = &top->idef;
     
+    /* We are using the local topology, so there are only F_CONSTR constraints.
+     */
     ncons = idef->il[F_CONSTR].nr/3;
     
     /* With DD we might also need to call LINCS with ncons=0 for communicating
@@ -618,10 +633,16 @@ static void constr_recur(t_blocka *at2con,
 			 int at,int depth,int nc,int *path,
 			 real r0,real r1,real *r2max)
 {
+  int  ncon1;
+  t_iatom *ia1,*ia2;
   int  c,con,a1;
   bool bUse;
   t_iatom *ia;
   real len,rn0,rn1;
+
+  ncon1 = ilist[F_CONSTR].nr/3;
+  ia1   = ilist[F_CONSTR].iatoms;
+  ia2   = ilist[F_CONSTRNC].iatoms;
 
   /* Loop over all constraints connected to this atom */
   for(c=at2con->index[at]; c<at2con->index[at+1]; c++) {
@@ -633,7 +654,7 @@ static void constr_recur(t_blocka *at2con,
 	bUse = FALSE;
     }
     if (bUse) {
-      ia = &ilist->iatoms[con*3];
+      ia = constr_iatomptr(ncon1,ia1,ia2,con);
       /* Flexible constraints currently have length 0, which is incorrect */
       if (!bTopB)
 	len = iparams[ia[0]].constr.dA;
@@ -653,7 +674,9 @@ static void constr_recur(t_blocka *at2con,
 	if (debug) {
 	  fprintf(debug,"Found longer constraint distance: r0 %5.3f r1 %5.3f rmax %5.3f\n", rn0,rn1,sqrt(*r2max));
 	  for(a1=0; a1<depth; a1++)
-	    fprintf(debug," %d %5.3f",path[a1],iparams[ilist->iatoms[path[a1]*3]].constr.dA);
+	    fprintf(debug," %d %5.3f",
+		    path[a1],
+		    iparams[constr_iatomptr(ncon1,ia1,ia2,con)[0]].constr.dA);
 	  fprintf(debug," %d %5.3f\n",con,len);
 	}
       }
@@ -676,19 +699,18 @@ static real constr_r_max_moltype(FILE *fplog,
 				 gmx_moltype_t *molt,t_iparams *iparams,
 				 t_inputrec *ir)
 {
-  t_ilist *ilist;
   int natoms,nflexcon,*path,at;
   t_blocka at2con;
   real r0,r1,r2maxA,r2maxB,rmax,lam0,lam1;
 
-  ilist = &molt->ilist[F_CONSTR];
-  if (ilist->nr == 0) {
+  if (molt->ilist[F_CONSTR].nr   == 0 &&
+      molt->ilist[F_CONSTRNC].nr == 0) {
     return 0;
   }
   
   natoms = molt->atoms.nr;
 
-  at2con = make_at2con(0,natoms,ilist,iparams,
+  at2con = make_at2con(0,natoms,molt->ilist,iparams,
 		       EI_DYNAMICS(ir->eI),&nflexcon);
   snew(path,1+ir->nProjOrder);
   for(at=0; at<1+ir->nProjOrder; at++)
@@ -698,7 +720,7 @@ static real constr_r_max_moltype(FILE *fplog,
   for(at=0; at<natoms; at++) {
     r0 = 0;
     r1 = 0;
-    constr_recur(&at2con,ilist,iparams,
+    constr_recur(&at2con,molt->ilist,iparams,
 		 FALSE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxA);
   }
   if (ir->efep == efepNO) {
@@ -708,7 +730,7 @@ static real constr_r_max_moltype(FILE *fplog,
     for(at=0; at<natoms; at++) {
       r0 = 0;
       r1 = 0;
-      constr_recur(&at2con,ilist,iparams,
+      constr_recur(&at2con,molt->ilist,iparams,
 		   TRUE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxB);
     }
     lam0 = ir->init_lambda;
@@ -756,7 +778,9 @@ gmx_constr_t init_constraints(FILE *fplog,
   t_ilist *ilist;
   gmx_mtop_ilistloop_t iloop;
   
-  ncon = gmx_mtop_ftype_count(mtop,F_CONSTR);
+  ncon =
+    gmx_mtop_ftype_count(mtop,F_CONSTR) +
+    gmx_mtop_ftype_count(mtop,F_CONSTRNC);
   nset = gmx_mtop_ftype_count(mtop,F_SETTLE);
 
   if (ncon+nset == 0 && ir->ePull != epullCONSTRAINT && ed == NULL) {
@@ -771,9 +795,9 @@ gmx_constr_t init_constraints(FILE *fplog,
     constr->n_at2con_mt = mtop->nmoltype;
     snew(constr->at2con_mt,constr->n_at2con_mt);
     for(mt=0; mt<mtop->nmoltype; mt++) {
-      ilist = &mtop->moltype[mt].ilist[F_CONSTR];
       constr->at2con_mt[mt] = make_at2con(0,mtop->moltype[mt].atoms.nr,
-					  ilist,mtop->ffparams.iparams,
+					  mtop->moltype[mt].ilist,
+					  mtop->ffparams.iparams,
 					  EI_DYNAMICS(ir->eI),&nflexcon);
       for(i=0; i<mtop->nmolblock; i++) {
 	if (mtop->molblock[i].type == mt) {
@@ -881,14 +905,15 @@ bool inter_charge_group_constraints(gmx_mtop_t *mtop)
   const t_block *cgs;
   const t_ilist *il;
   int  mb;
-  int  nat,*at2cg,cg,a,i;
+  int  nat,*at2cg,cg,a,ftype,i;
   bool bInterCG;
 
   bInterCG = FALSE;
   for(mb=0; mb<mtop->nmolblock && !bInterCG; mb++) {
     molt = &mtop->moltype[mtop->molblock[mb].type];
 
-    if (molt->ilist[F_CONSTR].nr > 0) {
+    if (molt->ilist[F_CONSTR].nr   > 0 ||
+	molt->ilist[F_CONSTRNC].nr > 0) {
       cgs  = &molt->cgs;
       snew(at2cg,molt->atoms.nr);
       for(cg=0; cg<cgs->nr; cg++) {
@@ -896,10 +921,12 @@ bool inter_charge_group_constraints(gmx_mtop_t *mtop)
 	  at2cg[a] = cg;
       }
       
-      il = &molt->ilist[F_CONSTR];
-      for(i=0; i<il->nr && !bInterCG; i+=3) {
-	if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
-	  bInterCG = TRUE;
+      for(ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++) {
+	il = &molt->ilist[ftype];
+	for(i=0; i<il->nr && !bInterCG; i+=3) {
+	  if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
+	    bInterCG = TRUE;
+	}
       }
       sfree(at2cg);
     }

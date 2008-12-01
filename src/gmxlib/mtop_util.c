@@ -663,10 +663,10 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
     }
 }
 
-static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,
+static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,bool bMergeConstr,
                           gmx_localtop_t *top)
 {
-    int mb,srcnr,destnr,ftype,mt,natoms,nposre_old;
+    int mb,srcnr,destnr,ftype,ftype_dest,mt,natoms,mol,nposre_old;
     gmx_molblock_t *molb;
     gmx_moltype_t *molt;
     gmx_ffparams_t *ffp;
@@ -711,8 +711,24 @@ static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,
         nposre_old = idef->il[F_POSRES].nr;
         for(ftype=0; ftype<F_NRE; ftype++)
         {
-            ilistcat(ftype,&idef->il[ftype],&molt->ilist[ftype],molb->nmol,
-                     destnr,srcnr);
+            if (bMergeConstr &&
+                ftype == F_CONSTR && molt->ilist[F_CONSTRNC].nr > 0)
+            {
+                /* Merge all constrains into one ilist.
+                 * This simplifies the constraint code.
+                 */
+                for(mol=0; mol<molb->nmol; mol++) {
+                    ilistcat(ftype,&idef->il[F_CONSTR],&molt->ilist[F_CONSTR],
+                             1,destnr+mol*srcnr,srcnr);
+                    ilistcat(ftype,&idef->il[F_CONSTR],&molt->ilist[F_CONSTRNC],
+                             1,destnr+mol*srcnr,srcnr);
+                }
+            }
+            else if (!(bMergeConstr && ftype == F_CONSTRNC))
+            {
+                ilistcat(ftype,&idef->il[ftype],&molt->ilist[ftype],
+                         molb->nmol,destnr,srcnr);
+            }
         }
         if (idef->il[F_POSRES].nr > nposre_old)
         {
@@ -745,7 +761,7 @@ gmx_localtop_t *gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir)
 
     snew(top,1);
 
-    gen_local_top(mtop,ir,top);
+    gen_local_top(mtop,ir,TRUE,top);
 
     return top;
 }
@@ -756,7 +772,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     gmx_localtop_t ltop;
     t_topology top;
 
-    gen_local_top(mtop,NULL,&ltop);
+    gen_local_top(mtop,NULL,FALSE,&ltop);
 
     open_symtab(&top.symtab);
 

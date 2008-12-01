@@ -1105,7 +1105,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   double  *nrdf_vcm,nrdf_uc,n_sub=0;
   gmx_mtop_atomloop_all_t aloop;
   t_atom  *atom;
-  int     mb,mol,as;
+  int     mb,mol,ftype,as;
   gmx_molblock_t *molb;
   gmx_moltype_t *molt;
 
@@ -1153,40 +1153,42 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
     molt = &mtop->moltype[molb->type];
     atom = molt->atoms.atom;
     for(mol=0; mol<molb->nmol; mol++) {
-      ia = molt->ilist[F_CONSTR].iatoms;
-      for(i=0; i<molt->ilist[F_CONSTR].nr; ) {
-	/* Subtract degrees of freedom for the constraints,
-	 * if the particles still have degrees of freedom left.
-	 * If one of the particles is a vsite or a shell, then all
-	 * constraint motion will go there, but since they do not
-	 * contribute to the constraints the degrees of freedom do not
-	 * change.
-	 */
-	ai = as + ia[1];
-	aj = as + ia[2];
-	if (((atom[ia[1]].ptype == eptNucleus) ||
-	     (atom[ia[1]].ptype == eptAtom)) &&
-	    ((atom[ia[2]].ptype == eptNucleus) ||
-	     (atom[ia[2]].ptype == eptAtom))) {
-	  if (nrdf[ai] > 0) 
-	    jmin = 1;
-	  else
-	    jmin = 2;
-	  if (nrdf[aj] > 0)
-	    imin = 1;
-	  else
-	    imin = 2;
-	  imin = min(imin,nrdf[ai]);
-	  jmin = min(jmin,nrdf[aj]);
-	  nrdf[ai] -= imin;
-	  nrdf[aj] -= jmin;
-	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5*imin;
-	  opts->nrdf[ggrpnr(groups,egcTC,aj)] -= 0.5*jmin;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5*imin;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,aj)]  -= 0.5*jmin;
+      for (ftype=F_CONSTR; ftype<=F_CONSTRNC; ftype++) {
+	ia = molt->ilist[ftype].iatoms;
+	for(i=0; i<molt->ilist[ftype].nr; ) {
+	  /* Subtract degrees of freedom for the constraints,
+	   * if the particles still have degrees of freedom left.
+	   * If one of the particles is a vsite or a shell, then all
+	   * constraint motion will go there, but since they do not
+	   * contribute to the constraints the degrees of freedom do not
+	   * change.
+	   */
+	  ai = as + ia[1];
+	  aj = as + ia[2];
+	  if (((atom[ia[1]].ptype == eptNucleus) ||
+	       (atom[ia[1]].ptype == eptAtom)) &&
+	      ((atom[ia[2]].ptype == eptNucleus) ||
+	       (atom[ia[2]].ptype == eptAtom))) {
+	    if (nrdf[ai] > 0) 
+	      jmin = 1;
+	    else
+	      jmin = 2;
+	    if (nrdf[aj] > 0)
+	      imin = 1;
+	    else
+	      imin = 2;
+	    imin = min(imin,nrdf[ai]);
+	    jmin = min(jmin,nrdf[aj]);
+	    nrdf[ai] -= imin;
+	    nrdf[aj] -= jmin;
+	    opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5*imin;
+	    opts->nrdf[ggrpnr(groups,egcTC,aj)] -= 0.5*jmin;
+	    nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5*imin;
+	    nrdf_vcm[ggrpnr(groups,egcVCM,aj)]  -= 0.5*jmin;
+	  }
+	  ia += interaction_function[ftype].nratoms+1;
+	  i  += interaction_function[ftype].nratoms+1;
 	}
-	ia += interaction_function[F_CONSTR].nratoms+1;
-	i  += interaction_function[F_CONSTR].nratoms+1;
       }
       ia = molt->ilist[F_SETTLE].iatoms;
       for(i=0; i<molt->ilist[F_SETTLE].nr; ) {

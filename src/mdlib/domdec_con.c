@@ -73,6 +73,7 @@ typedef struct gmx_domdec_constraints {
     int  *ga2la;
 } gmx_domdec_constraints_t;
 
+
 static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                              rvec *f,rvec *fshift)
 {
@@ -695,13 +696,15 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 }
 
 static void walk_out(int con,int con_offset,int a,int offset,int nrec,
-                     const t_iatom *ia,const t_blocka *at2con,
+                     int ncon1,const t_iatom *ia1,const t_iatom *ia2,
+                     const t_blocka *at2con,
                      const gmx_ga2la_t *ga2la,bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
                      t_ilist *il_local)
 {
     int a1_gl,a2_gl,i,coni,b;
+    const t_iatom *iap;
   
     if (dc->gc_req[con_offset+con] == 0)
     {
@@ -720,9 +723,10 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
             il_local->nalloc = over_alloc_dd(il_local->nr+3);
             srenew(il_local->iatoms,il_local->nalloc);
         }
-        il_local->iatoms[il_local->nr++] = ia[con*3];
-        a1_gl = offset + ia[con*3+1];
-        a2_gl = offset + ia[con*3+2];
+        iap = constr_iatomptr(ncon1,ia1,ia2,con);
+        il_local->iatoms[il_local->nr++] = iap[0];
+        a1_gl = offset + iap[1];
+        a2_gl = offset + iap[2];
         /* The following indexing code can probably be optizimed */
         if (ga2la[a1_gl].cell == 0)
         {
@@ -766,17 +770,19 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
             if (coni != con)
             {
                 /* Walk further */
-                if (a == ia[coni*3+1])
+                iap = constr_iatomptr(ncon1,ia1,ia2,coni);
+                if (a == iap[1])
                 {
-                    b = ia[coni*3+2];
+                    b = iap[2];
                 }
                 else
                 {
-                    b = ia[coni*3+1];
+                    b = iap[1];
                 }
                 if (ga2la[offset+b].cell != 0)
                 {
-                    walk_out(coni,con_offset,b,offset,nrec-1,ia,at2con,
+                    walk_out(coni,con_offset,b,offset,nrec-1,
+                             ncon1,ia1,ia2,at2con,
                              ga2la,FALSE,dc,dcc,il_local);
                 }
             }
@@ -791,8 +797,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
 {
     t_blocka *at2con_mt,*at2con;
     gmx_ga2la_t *ga2la;
+    int ncon1,ncon2;
     gmx_molblock_t *molb;
-    t_iatom *ia,*iap;
+    t_iatom *ia1,*ia2,*iap;
     int nhome,a,a_gl,a_mol,b_lo,offset,mb,molnr,b_mol,i,con,con_offset;
     gmx_domdec_constraints_t *dc;
     int at_end,*ga2la_specat,j;
@@ -816,22 +823,26 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         gmx_mtop_atomnr_to_molblock_ind(mtop,a_gl,&mb,&molnr,&a_mol);
         molb = &mtop->molblock[mb];
         
-        if (mtop->moltype[molb->type].ilist[F_CONSTR].nr > 0)
+        ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/3;
+        ncon2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].nr/3;
+        if (ncon1 > 0 || ncon2 > 0)
         {
+            ia1 = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
+            ia2 = mtop->moltype[molb->type].ilist[F_CONSTRNC].iatoms;
+
             /* Calculate the global constraint number offset for the molecule.
              * This is only required for the global index to make sure
              * that we use each constraint only once.
              */
             con_offset = dc->molb_con_offset[mb] + molnr*dc->molb_ncon_mol[mb];
             
-            ia = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
             /* The global atom number offset for this molecule */
             offset = a_gl - a_mol;
             at2con = &at2con_mt[molb->type];
             for(i=at2con->index[a_mol]; i<at2con->index[a_mol+1]; i++)
             {
                 con = at2con->a[i];
-                iap = ia + con*3;
+                iap = constr_iatomptr(ncon1,ia1,ia2,con);
                 if (a_mol == iap[1])
                 {
                     b_mol = iap[2];
@@ -874,7 +885,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                      * Therefore we call walk_out with nrec recursions to go
                      * after this first call.
                      */
-                    walk_out(con,con_offset,b_mol,offset,nrec,ia,at2con,
+                    walk_out(con,con_offset,b_mol,offset,nrec,
+                             ncon1,ia1,ia2,at2con,
                              dd->ga2la,TRUE,dc,dd->constraint_comm,il_local);
                 }
             }
@@ -1022,7 +1034,9 @@ void init_domdec_constraints(gmx_domdec_t *dd,
     {
         molb = &mtop->molblock[mb];
         dc->molb_con_offset[mb] = ncon;
-        dc->molb_ncon_mol[mb] = mtop->moltype[molb->type].ilist[F_CONSTR].nr/3;
+        dc->molb_ncon_mol[mb] =
+            mtop->moltype[molb->type].ilist[F_CONSTR].nr/3 +
+            mtop->moltype[molb->type].ilist[F_CONSTRNC].nr/3;
         ncon += molb->nmol*dc->molb_ncon_mol[mb];
     }
     

@@ -177,7 +177,7 @@ t_mdebin *init_mdebin(int fp_ene,
     else if (i == F_DGDL_CON)
       bEner[i] = (ir->efep != efepNO && bConstr);
     else if ((interaction_function[i].flags & IF_VSITE) ||
-	     (i == F_CONSTR) || (i == F_SETTLE))
+	     (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
       bEner[i] = FALSE;
     else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
       bEner[i] = TRUE;
