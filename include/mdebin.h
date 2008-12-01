@@ -63,7 +63,7 @@ extern t_mdebin
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       bool bSum,
-		       real tmass,int step,real time,
+		       real tmass,int step,double time,
 		       gmx_enerdata_t *enerd,
 		       t_state *state,
 		       matrix  lastbox,
@@ -75,10 +75,10 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       rvec mu_tot,
 		       gmx_constr_t constr);
      
-extern void print_ebin_header(FILE *log,int steps,real time,real lamb);
+extern void print_ebin_header(FILE *log,int steps,double time,real lamb);
 
 extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
-		       FILE *log,int step,int nsteps,real time,
+		       FILE *log,int step,int nsteps,double time,
 		       int mode,bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);

@@ -756,7 +756,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			gmx_groups_t *groups,
 			struct gmx_shellfc *shfc,
 			t_forcerec *fr,
-			real t,rvec mu_tot,
+			double t,rvec mu_tot,
 			int natoms,bool *bConverged,
 			gmx_vsite_t *vsite,
 			FILE *fp_field)

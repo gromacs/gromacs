@@ -255,8 +255,9 @@ extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 /* Driver routine, that calls the different methods */
 
 extern void init_md(FILE *fplog,
-		    t_commrec *cr,t_inputrec *ir,real *t,real *t0,
-		    real *lambda,real *lam0,
+		    t_commrec *cr,t_inputrec *ir,
+		    double *t,double *t0,
+		    real *lambda,double *lam0,
 		    t_nrnb *nrnb,gmx_mtop_t *mtop,
 		    gmx_stochd_t *stochd,
 		    int nfile,t_filenm fnm[],

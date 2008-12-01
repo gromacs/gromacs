@@ -150,8 +150,8 @@ typedef struct {
   int nstfout;		/* id. for F					*/
   int nstenergy;	/* number of steps after which energies printed */
   int nstxtcout;	/* id. for compressed trj (.xtc)		*/
-  real init_t;		/* initial time (ps) 				*/
-  real delta_t;		/* time step (ps)				*/
+  double init_t;	/* initial time (ps) 				*/
+  double delta_t;	/* time step (ps)				*/
   real xtcprec;         /* precision of xtc file                        */
   int  nkx,nky,nkz;     /* number of k vectors in each spatial dimension*/
                         /* for fourier methods for long range electrost.*/
@@ -199,8 +199,8 @@ typedef struct {
 		 	             * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
   int  efep;   		/* free energy interpolation no/yes		*/
-  real init_lambda;	/* initial value for perturbation variable	*/
-  real delta_lambda;	/* change of lambda per time step (1/dt)	*/
+  double init_lambda;	/* initial value for perturbation variable	*/
+  double delta_lambda;	/* change of lambda per time step (1/dt)	*/
   real sc_alpha;        /* free energy soft-core parameter              */
   int  sc_power;        /* lambda power for soft-core interactions      */
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */

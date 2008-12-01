@@ -169,7 +169,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
 		     real lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-		     real t,FILE *field,gmx_edsam_t ed,
+		     double t,FILE *field,gmx_edsam_t ed,
 		     int flags);
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).

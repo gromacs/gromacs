@@ -63,7 +63,7 @@ extern real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
  * and also constrain v when v!=NULL.
  */
 extern void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-			    t_commrec *cr, real dt, double t,
+			    t_commrec *cr, double dt, double t,
 			    rvec *x, rvec *xp, rvec *v, tensor vir);
 
 /* Make a selection of the home atoms for all pull groups.
@@ -87,7 +87,7 @@ extern void init_pull(FILE *fplog,
 extern void finish_pull(FILE *fplog,t_pull *pull);
 
 /* Print the pull output (x and/or f) */
-extern void pull_print_output(t_pull *pull, int step, real time);
+extern void pull_print_output(t_pull *pull, int step, double time);
 
 /* In pullutil.c */
 

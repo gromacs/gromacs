@@ -54,7 +54,7 @@ enum { eitemHEADER, eitemIR, eitemBOX,
        eitemTOP, eitemX, eitemV, eitemF, eitemNR };
        
 /* Enumerated for data types in files */
-enum { eioREAL, eioINT,   eioNUCHAR, eioUSHORT, 
+enum { eioREAL, eioDOUBLE, eioINT,   eioNUCHAR, eioUSHORT, 
        eioRVEC, eioNRVEC, eioIVEC,  eioSTRING, eioNR };
 
 /* Functions for reading and writing data */
@@ -202,7 +202,11 @@ extern void unset_comment(void);
 #define do_real(item)         (bRead ?\
   do_read ((void *)&(item),1,eioREAL,(#item),__FILE__,__LINE__) : \
   do_write((void *)&(item),1,eioREAL,(#item),__FILE__,__LINE__))
-  
+
+#define do_double(item)         (bRead ?				  \
+  do_read ((void *)&(item),1,eioDOUBLE,(#item),__FILE__,__LINE__) : \
+  do_write((void *)&(item),1,eioDOUBLE,(#item),__FILE__,__LINE__))
+ 
 #define do_int(item)          (bRead ?\
   do_read ((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__) :\
   do_write((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__))

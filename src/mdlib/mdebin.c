@@ -82,8 +82,8 @@ static bool bConstr,bConstrVir,bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
 
 t_mdebin *init_mdebin(int fp_ene,
-		      const gmx_mtop_t *mtop,
-		      const t_inputrec *ir)
+                      const gmx_mtop_t *mtop,
+                      const t_inputrec *ir)
 {
   char *ener_nm[F_NRE];
   static char *vir_nm[] = {
@@ -354,18 +354,18 @@ static void copy_energy(real e[],real ecpy[])
 }
 
 void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
-		bool bSum,
-		real tmass,int step,real time,
-		gmx_enerdata_t *enerd,
-		t_state *state,
-		matrix  box,
-		tensor svir,
-		tensor fvir,
-		tensor vir,
-		tensor pres,
-		gmx_ekindata_t *ekind,
-		rvec mu_tot,
-		gmx_constr_t constr)
+                bool bSum,
+                real tmass,int step,double time,
+                gmx_enerdata_t *enerd,
+                t_state *state,
+                matrix  box,
+                tensor svir,
+                tensor fvir,
+                tensor vir,
+                tensor pres,
+                gmx_ekindata_t *ekind,
+                rvec mu_tot,
+                gmx_constr_t constr)
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
@@ -515,17 +515,18 @@ static void pprint(FILE *log,char *s)
   fprintf(log,"  ======>\n\n");
 }
 
-void print_ebin_header(FILE *log,int steps,real time,real lamb)
+void print_ebin_header(FILE *log,int steps,double time,real lamb)
 {
-  fprintf(log,"   %12s   %12s   %12s\n"
-	  "   %12d   %12.5f   %12.5f\n\n",
-	  "Step","Time","Lambda",steps,time,lamb);
+    fprintf(log,"   %12s   %12s   %12s\n"
+            "   %12d   %12.5f   %12.5f\n\n",
+            "Step","Time","Lambda",steps,time,lamb);
 }
 
 void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
-		FILE *log,int step,int nsteps,real time,int mode,bool bCompact,
-		t_mdebin *md,t_fcdata *fcd,
-		gmx_groups_t *groups,t_grpopts *opts)
+                FILE *log,
+                int step,int nsteps,double time,int mode,bool bCompact,
+                t_mdebin *md,t_fcdata *fcd,
+                gmx_groups_t *groups,t_grpopts *opts)
 {
   static char **grpnms=NULL;
   static char *kjm="(kJ/mol)";

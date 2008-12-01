@@ -227,7 +227,8 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
 		   matrix box,rvec **x)
 {
   gmx_localtop_t *ltop;
-  real     t,t0,lam,lam0;
+  double   t,t0,lam0;
+  real     lam;
   bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
   t_state  *state;

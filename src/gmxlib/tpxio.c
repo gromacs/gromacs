@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 58;
+static const int tpx_version = 59;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -325,8 +325,15 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     do_int(ir->nstfout); 
     do_int(ir->nstenergy); 
     do_int(ir->nstxtcout); 
-    do_real(ir->init_t); 
-    do_real(ir->delta_t); 
+    if (file_version >= 59) {
+      do_double(ir->init_t);
+      do_double(ir->delta_t);
+    } else {
+      do_real(rdum);
+      ir->init_t = rdum;
+      do_real(rdum);
+      ir->delta_t = rdum;
+    }
     do_real(ir->xtcprec); 
     if (file_version < 19) {
       do_int(idum); 
@@ -491,8 +498,15 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     do_int(ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
       ir->efep = efepYES;
-    do_real(ir->init_lambda); 
-    do_real(ir->delta_lambda);
+    if (file_version >= 59) {
+      do_double(ir->init_lambda); 
+      do_double(ir->delta_lambda);
+    } else {
+      do_real(rdum);
+      ir->init_lambda = rdum;
+      do_real(rdum);
+      ir->delta_lambda = rdum;
+    }
     if (file_version >= 13)
       do_real(ir->sc_alpha);
     else

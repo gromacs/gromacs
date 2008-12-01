@@ -114,6 +114,11 @@ static bool equal_real(real i1,real i2,real ftol)
   return 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol;
 }
 
+static bool equal_double(double i1,double i2,real ftol)
+{
+  return 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol;
+}
+
 static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
 {
   if (!equal_real(i1,i2,ftol)) {
@@ -121,6 +126,16 @@ static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
       fprintf(fp,"%s[%d] (%e - %e)\n",s,index,i1,i2);
     else
       fprintf(fp,"%s (%e - %e)\n",s,i1,i2);
+  }
+}
+
+static void cmp_double(FILE *fp,char *s,int index,double i1,double i2,real ftol)
+{
+  if (!equal_double(i1,i2,ftol)) {
+    if (index != -1)
+      fprintf(fp,"%s[%d] (%16.9e - %16.9e)\n",s,index,i1,i2);
+    else
+      fprintf(fp,"%s (%16.9e - %16.9e)\n",s,i1,i2);
   }
 }
 
@@ -410,8 +425,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->nstfout",-1,ir1->nstfout,ir2->nstfout);
   cmp_int(fp,"inputrec->nstenergy",-1,ir1->nstenergy,ir2->nstenergy);
   cmp_int(fp,"inputrec->nstxtcout",-1,ir1->nstxtcout,ir2->nstxtcout);
-  cmp_real(fp,"inputrec->init_t",-1,ir1->init_t,ir2->init_t,ftol);
-  cmp_real(fp,"inputrec->delta_t",-1,ir1->delta_t,ir2->delta_t,ftol);
+  cmp_double(fp,"inputrec->init_t",-1,ir1->init_t,ir2->init_t,ftol);
+  cmp_double(fp,"inputrec->delta_t",-1,ir1->delta_t,ir2->delta_t,ftol);
   cmp_real(fp,"inputrec->xtcprec",-1,ir1->xtcprec,ir2->xtcprec,ftol);
   cmp_int(fp,"inputrec->nkx",-1,ir1->nkx,ir2->nkx);
   cmp_int(fp,"inputrec->nky",-1,ir1->nky,ir2->nky);
@@ -463,8 +478,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->eDispCorr",-1,ir1->eDispCorr,ir2->eDispCorr);
   cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol);
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
-  cmp_real(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
-  cmp_real(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);
+  cmp_double(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
+  cmp_double(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);
   cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol);
   cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol);

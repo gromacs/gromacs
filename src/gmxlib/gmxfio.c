@@ -220,6 +220,7 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   check_nitem();
   switch (eio) {
   case eioREAL:
+  case eioDOUBLE:
     res = fprintf(curfio->fp,"%18.10e%s\n",*((real *)item),dbgstr(desc));
     break;
   case eioINT:
@@ -342,6 +343,7 @@ static bool do_ascread(void *item,int nitem,int eio,
   check_nitem();  
   switch (eio) {
   case eioREAL:
+  case eioDOUBLE:
     res = sscanf(next_item(fp),"%lf",&d);
     if (item) *((real *)item) = d;
     break;
@@ -412,6 +414,9 @@ static bool do_binwrite(void *item,int nitem,int eio,
   case eioREAL:
     size = sizeof(real);
     break;
+  case eioDOUBLE:
+    size = sizeof(double);
+    break;
   case eioINT:
     size = sizeof(int);
     break;
@@ -461,6 +466,9 @@ static bool do_binread(void *item,int nitem,int eio,
       size = sizeof(double);
     else
       size = sizeof(float);
+    break;
+  case eioDOUBLE:
+    size = sizeof(double);
     break;
   case eioINT:
     size = sizeof(int);
@@ -533,6 +541,11 @@ static bool do_xdr(void *item,int nitem,int eio,
       res = xdr_float(curfio->xdr,&f);
       if (item) *((real *)item) = f;
     }
+    break;
+  case eioDOUBLE:
+    if (item && !curfio->bRead) d = *((double *)item);
+    res = xdr_double(curfio->xdr,&d);
+    if (item) *((double *)item) = d;
     break;
   case eioINT:
     if (item && !curfio->bRead) idum = *(int *)item;

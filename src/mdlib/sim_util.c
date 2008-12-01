@@ -207,7 +207,7 @@ static void reset_energies(t_grpopts *opts,
  */
 static void calc_f_el(FILE *fp,int  start,int homenr,
 		      real charge[],rvec x[],rvec f[],
-		      t_cosines Ex[],t_cosines Et[],real t)
+		      t_cosines Ex[],t_cosines Et[],double t)
 {
   rvec Ext;
   real t0;
@@ -336,7 +336,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      gmx_enerdata_t *enerd,t_fcdata *fcd,
 	      real lambda,t_graph *graph,
 	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-	      real t,FILE *field,gmx_edsam_t ed,
+	      double t,FILE *field,gmx_edsam_t ed,
 	      int flags)
 {
   static rvec box_size;
@@ -1219,16 +1219,17 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 }
 
 void init_md(FILE *fplog,
-			 t_commrec *cr,t_inputrec *ir,real *t,real *t0,
-			 real *lambda,real *lam0,
-			 t_nrnb *nrnb,gmx_mtop_t *mtop,
-			 gmx_stochd_t *sd,
-			 int nfile,t_filenm fnm[],
-			 int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
-			 FILE **fp_dgdl,FILE **fp_field,
-			 t_mdebin **mdebin,
-			 tensor force_vir,tensor shake_vir,rvec mu_tot,
-			 bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
+	     t_commrec *cr,t_inputrec *ir,
+	     double *t,double *t0,
+	     real *lambda,double *lam0,
+	     t_nrnb *nrnb,gmx_mtop_t *mtop,
+	     gmx_stochd_t *sd,
+	     int nfile,t_filenm fnm[],
+	     int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
+	     FILE **fp_dgdl,FILE **fp_field,
+	     t_mdebin **mdebin,
+	     tensor force_vir,tensor shake_vir,rvec mu_tot,
+	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
 {
   int  i,j,n;
   real tmpt,mod;

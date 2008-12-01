@@ -483,7 +483,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   double     run_time;
-  real       t,t0,lam0;
+  double     t,t0,lam0;
   bool       bGStatEveryStep,bGStat,bCalcPres;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep;

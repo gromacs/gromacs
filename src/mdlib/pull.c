@@ -59,7 +59,7 @@
 #include "mtop_util.h"
 #include "mdrun.h"
 
-static void pull_print_x(FILE *out,t_pull *pull, real t) 
+static void pull_print_x(FILE *out,t_pull *pull,double t) 
 {
   int g,m;
   
@@ -77,7 +77,7 @@ static void pull_print_x(FILE *out,t_pull *pull, real t)
   fprintf(out,"\n");
 }
 
-static void pull_print_f(FILE *out,t_pull *pull, real t) 
+static void pull_print_f(FILE *out,t_pull *pull,double t) 
 {
   int g,d;
 
@@ -95,7 +95,7 @@ static void pull_print_f(FILE *out,t_pull *pull, real t)
   fprintf(out,"\n");
 }
 
-void pull_print_output(t_pull *pull, int step, real time)
+void pull_print_output(t_pull *pull, int step, double time)
 {
   if ((pull->nstxout != 0) && (step % pull->nstxout == 0))
     pull_print_x(pull->out_x,pull,time);
@@ -270,7 +270,7 @@ void clear_pull_forces(t_pull *pull)
 static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 			  rvec *x, rvec *v,
 			  bool bMaster, tensor vir,
-                          real dt, double t) 
+                          double dt, double t) 
 {
 
   dvec *r_ij;  /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
@@ -702,7 +702,7 @@ real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 }
 
 void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-		     t_commrec *cr, real dt, double t,
+		     t_commrec *cr, double dt, double t,
 		     rvec *x, rvec *xp, rvec *v, tensor vir)
 {
   pull_calc_coms(cr,pull,md,pbc,x,xp);

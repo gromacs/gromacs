@@ -61,7 +61,7 @@ extern void replace_inp_entry(int ninp,t_inpfile *inp,
 
 extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def);
 
-extern real get_ereal(int *ninp,t_inpfile **inp,const char *name,real def);
+extern double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def);
 
 extern char *get_estr(int *ninp,t_inpfile **inp,const char *name,char *def);
 

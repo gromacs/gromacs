@@ -240,11 +240,11 @@ int get_eint(int *ninp,t_inpfile **inp,const char *name,int def)
   }
 }
 
-real get_ereal(int *ninp,t_inpfile **inp,const char *name,real def)
+double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def)
 {
   char buf[32],*ptr;
   int  ii;
-  real ret;
+  double ret;
   
   ii=get_einp(ninp,inp,name);
   
