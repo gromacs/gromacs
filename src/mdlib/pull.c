@@ -63,13 +63,13 @@ static void pull_print_x(FILE *out,t_pull *pull, real t)
 {
   int g,m;
   
-  fprintf(out, "%f", t);
+  fprintf(out, "%.4f", t);
 
   for (g=0; g<1+pull->ngrp; g++) {
     if (pull->grp[g].nat > 0) {
       for(m=0; m<DIM; m++) {
 	if (pull->dim[m]) {
-	  fprintf(out,"\t%f",g == 0 ? pull->grp[g].x[m] : pull->grp[g].dr[m]);
+	  fprintf(out,"\t%g",g == 0 ? pull->grp[g].x[m] : pull->grp[g].dr[m]);
 	}
       }
     }
@@ -81,15 +81,15 @@ static void pull_print_f(FILE *out,t_pull *pull, real t)
 {
   int g,d;
 
-  fprintf(out, "%f\t", t);
+  fprintf(out, "%.4f", t);
 
   for(g=1; g<1+pull->ngrp; g++) {
     if (pull->eGeom == epullgPOS) {
       for(d=0; d<DIM; d++)
 	if (pull->dim[d])
-	  fprintf(out,"\t%f",pull->grp[g].f[d]);
+	  fprintf(out,"\t%g",pull->grp[g].f[d]);
     } else {
-      fprintf(out,"\t%f",pull->grp[g].f_scal);
+      fprintf(out,"\t%g",pull->grp[g].f_scal);
     }
   }
   fprintf(out,"\n");
