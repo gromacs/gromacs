@@ -65,8 +65,9 @@ extern void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
  * When out!=NULL also prints the full count table.
  */
 
-extern void print_perf(FILE *out,double nodetime,double realtime,real runtime,
-		       int nprocs,double nbfs,double mflop);
+extern void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
+		       int nsteps,real delta_t,
+		       double nbfs,double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
 extern void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);

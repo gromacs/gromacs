@@ -92,7 +92,8 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
-				unsigned long Flags);
+				unsigned long Flags,
+				int *nsteps_done);
 
 /* ROUTINES from md.c */
 
