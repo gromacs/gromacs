@@ -171,7 +171,7 @@ static void check_cg_sizes(char *topfn,t_block *cgs)
 	    "The largest charge group contains %d atoms.\n"
 	    "Since atoms only see each other when the centers of geometry of the charge groups they belong to are within the cut-off distance, too large charge groups can lead to serious cut-off artifacts.\n"
 	    "For efficiency and accuracy, charge group should consist of a few atoms.\n"
-	    "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.\n",
+	    "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.",
 	    maxsize);
     warning_note(warn_buf);
   }
@@ -327,18 +327,27 @@ new_status(char *topfile,char *topppfile,char *confin,
 
   if (ir->eDisre == edrNone) {
     i = rm_interactions(F_DISRES,nrmols,molinfo);
-    if (bVerbose && i)
-      fprintf(stderr,"removed %d distance restraints\n",i);
+    if (i > 0) {
+      set_warning_line("unknown",-1);
+      sprintf(warn_buf,"disre = no, removed %d distance restraints",i);
+      warning_note(NULL);
+    }
   }
   if (opts->bOrire == FALSE) {
     i = rm_interactions(F_ORIRES,nrmols,molinfo);
-    if (bVerbose && i)
-      fprintf(stderr,"removed %d orientation restraints\n",i);
+    if (i > 0) {
+      set_warning_line("unknown",-1);
+      sprintf(warn_buf,"orire = no, removed %d orientation restraints",i);
+      warning_note(NULL);
+    }
   }
   if (opts->bDihre == FALSE) {
     i = rm_interactions(F_DIHRES,nrmols,molinfo);
-    if (bVerbose && i)
-      fprintf(stderr,"removed %d dihedral restraints\n",i);
+    if (i > 0) {
+      set_warning_line("unknown",-1);
+      sprintf(warn_buf,"dihre = no, removed %d dihedral restraints",i);
+      warning_note(NULL);
+    }
   }
   
   /* Copy structures from msys to sys */
@@ -999,7 +1008,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
     if (ratio > 0.5)
       warning_note("The optimal PME mesh load is usually between 0.25 and 0.33,\n"
-		   "you should probably increase the cut-off and the PME grid spacing\n");
+		   "you should probably increase the cut-off and the PME grid spacing");
   }
 
   {
