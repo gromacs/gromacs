@@ -37,23 +37,34 @@
 #include <config.h>
 #endif
 
+/* Neighborlist type */
+enum {
+  enlistATOM_ATOM,
+  enlistSPC_ATOM,   enlistSPC_SPC,
+  enlistTIP4P_ATOM, enlistTIP4P_TIP4P,
+  enlistCG_CG,
+  enlistNR
+};
+
 typedef struct 
 {
+  int             enlist;      /* The type of nblist, enum, see above    */
   int             il_code;      /* Innerloop index from nrnb.h, used     */
                                 /* for flop accounting.                  */
   int             icoul;        /* Coulomb loop type index for kernels   */
   int             ivdw;         /* VdW loop type index for kernels       */
   int             free_energy;  /* Free energy setting for this list     */
-  int             nltype;       /* Atom, water, or water-water list      */
 
   int             nri,maxnri;   /* Current/max number of i particles	 */
   int             nrj,maxnrj;   /* Current/max number of j particles	 */
   int             maxlen;       /* maxnr of j atoms for a single i atom  */
   int *           iinr;	        /* The i-elements	   	         */
+  int *           iinr_end;     /* The end atom, only with enlistCG      */
   int *           gid;          /* Index in energy arrays                */
   int *           shift;        /* Shift vector index                    */
   int *           jindex;       /* Index in jjnr                         */
   int *           jjnr;	        /* The j-atom list                       */
+  int *           jjnr_end;     /* The end atom, only with enltypeCG     */
   int             count;        /* counter to multithread the innerloops */
   void *          mtx;          /* mutex to lock the counter             */
 } t_nblist;
@@ -62,19 +73,15 @@ typedef struct
 /* For atom I =  nblist->iinr[N] (0 <= N < nblist->nri) there can be
  * several neighborlists (N's), for different energy groups (gid) and
  * different shifts (shift).
- * For corresponding J atoms for each list are are:
+ * For corresponding J atoms for each list start at:
  * nblist->jjnr[JI]
  * with nblist->jindex[N] <= JI < nblist->jindex[N+1]
  *
+ * enlist is of the form enlistUNIT1_UNIT2:
+ * UNIT ATOM:  there is one atom: iinr[N] or jjnr[JI]
+ * UNIT SPC:   there are 3 atoms: iinr[N],iinr[N]+1,iinr[N]+2, jjnr analog.
+ * UNIT TIP4P: there are 4 atoms: iinr[N],...,iinr[N]+3, jjnr analog.
+ * UNIT CG:    there are N atoms: iinr[N],...,iinr_end[N]-1, jjnr analog.
+ *
  * Clear?
  */
-
-
-
-
-
-
-
-
-
-

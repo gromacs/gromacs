@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -65,6 +66,7 @@
 #include "nb_kernel/nb_kernel330.h"
 #include "nb_free_energy.h"
 #include "nb_generic.h"
+#include "nb_generic_cg.h"
 
 
 #ifdef GMX_PPC_ALTIVEC   
@@ -197,23 +199,29 @@ gmx_setup_kernels(FILE *fplog)
      * version should be at the end. For instance, we call SSE after 3DNow.
      */
     
-    for(i=0;i<eNR_NBKERNEL_NR;i++)
+    for(i=0; i<eNR_NBKERNEL_NR; i++)
+    {
         nb_kernel_list[i] = NULL;
-
-	if(getenv("GMX_NB_GENERIC") != NULL)
+    }
+    
+    if(getenv("GMX_NB_GENERIC") != NULL)
     {
         if(fplog)
+        {
             fprintf(fplog,
                     "Found environment variable GMX_NB_GENERIC.\n"
                     "Disabling all interaction-specific nonbonded kernels.\n\n");
+        }
         return;
     }
 	
 	if(fplog)
+    {
 	    fprintf(fplog,"Configuring nonbonded kernels...\n");
+    }
 	
     nb_kernel_setup(fplog,nb_kernel_list);
-
+    
     if(getenv("NOASSEMBLYLOOPS") != NULL)
     {
         if(fplog)
@@ -224,7 +232,7 @@ gmx_setup_kernels(FILE *fplog)
     }
     
 #ifdef GMX_DOUBLE
-
+    
     /* Double precision */    
 
 #ifdef GMX_IA32_SSE2    
@@ -262,7 +270,9 @@ gmx_setup_kernels(FILE *fplog)
 #endif
 
 	if(fplog)
+    {
 	    fprintf(fplog,"\n\n");
+    }
 }
 
 
@@ -279,24 +289,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	bool            bWater;
 	nb_kernel_t *   kernelptr;
 	FILE *          fp;
-	int             wateratoms;
+	int             fac=0;
 	int             nthreads = 1;
 	int             tabletype;
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
-	
-	if(fr->solvent_opt == esolSPC)
-    {
-		wateratoms = 3;
-    }
-	else if(fr->solvent_opt == esolTIP4P)
-    {
-		wateratoms = 4;
-    }
-	else
-    {
-		wateratoms = 1;
-    }
 	
     if (eNL >= 0) 
     {
@@ -429,99 +426,118 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  fr->sc_sigma6,
 											  &outeriter,
 											  &inneriter);
-				}
-				else
-				{
-					/* Not free energy - call nonbonded kernel from function pointer */
-					kernelptr = nb_kernel_list[nrnb_ind];
-					
-					if(kernelptr == NULL)
-					{
-						/* Call a generic nonbonded kernel */
-						
-						/* If you want to hack/test your own interactions, do it in this routine,
-						 * and make sure it is called by setting the environment variable GMX_NB_GENERIC.
-						 */
-						gmx_nb_generic_kernel(nlist,
-											  fr,
-											  mdatoms,
-											  x[0],
-											  f[0],
-											  fshift,
-											  egcoul,
-											  egnb,
-											  nblists->tab.scale,
-											  tabledata,
-											  &outeriter,
-											  &inneriter);
-					}
-					
-					/* Call the appropriate nonbonded kernel function */
-					(*kernelptr)( &(nlist->nri),
-								 nlist->iinr,
-								 nlist->jindex,
-								 nlist->jjnr,
-								 nlist->shift,
-								 fr->shift_vec[0],
-								 fshift,
-								 nlist->gid,
-								 x[0],
-								 f[0],
-								 mdatoms->chargeA,
-								 &(fr->epsfac),
-								 &(fr->k_rf),
-								 &(fr->c_rf),
-								 egcoul,
-								 mdatoms->typeA,
-								 &(fr->ntype),
-								 fr->nbfp,
-								 egnb,
-								 &(nblists->tab.scale),
-								 tabledata,
-								 NULL,
-								 NULL,
-								 NULL,
-								 NULL,
-								 &nthreads,
-								 &(nlist->count),
-								 nlist->mtx,
-								 &outeriter,
-								 &inneriter,
-								 NULL);
-				}
-				
-				/* Update flop accounting */
+                }
+                else if (nlist->enlist == enlistCG_CG)
+                {
+                    /* Call the charge group based inner loop */
+                    gmx_nb_generic_cg_kernel(nlist,
+                                             fr,
+                                             mdatoms,
+                                             x[0],
+                                             f[0],
+                                             fshift,
+                                             egcoul,
+                                                 egnb,
+                                             nblists->tab.scale,
+                                             tabledata,
+                                             &outeriter,
+                                             &inneriter);
+                }
+                else
+                {
+                    /* Not free energy */
+
+                    kernelptr = nb_kernel_list[nrnb_ind];
+                    
+                    if (kernelptr == NULL)
+                    {
+                        /* Call a generic nonbonded kernel */
+                        
+                        /* If you want to hack/test your own interactions,
+                         * do it in this routine and make sure it is called
+                         * by setting the environment variable GMX_NB_GENERIC.
+                         */
+                        gmx_nb_generic_kernel(nlist,
+                                              fr,
+                                              mdatoms,
+                                              x[0],
+                                              f[0],
+                                              fshift,
+                                              egcoul,
+                                              egnb,
+                                              nblists->tab.scale,
+                                              tabledata,
+                                              &outeriter,
+                                              &inneriter);
+                    }
+                    else
+                    {
+                        /* Call nonbonded kernel from function pointer */
+                        
+                        (*kernelptr)( &(nlist->nri),
+                                      nlist->iinr,
+                                      nlist->jindex,
+                                      nlist->jjnr,
+                                      nlist->shift,
+                                      fr->shift_vec[0],
+                                      fshift,
+                                      nlist->gid,
+                                      x[0],
+                                      f[0],
+                                      mdatoms->chargeA,
+                                      &(fr->epsfac),
+                                      &(fr->k_rf),
+                                      &(fr->c_rf),
+                                      egcoul,
+                                      mdatoms->typeA,
+                                      &(fr->ntype),
+                                      fr->nbfp,
+                                      egnb,
+                                      &(nblists->tab.scale),
+                                      tabledata,
+                                      NULL,
+                                      NULL,
+                                      NULL,
+                                      NULL,
+                                      &nthreads,
+                                      &(nlist->count),
+                                      nlist->mtx,
+                                      &outeriter,
+                                      &inneriter,
+                                      NULL);
+                    }
+                }
+                
+                /* Update flop accounting */
 				
 				/* Outer loop in kernel */
-				if (nlist->nltype==enlistWATER)
-				{
-					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
-				}
-				else if (nlist->nltype==enlistWATERWATER)
-				{
-					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
-				}
-				else
-				{
-					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
-				}
-				/* inner loop in kernel */
-				inc_nrnb(nrnb,nrnb_ind,inneriter);
-			}
-		}
-	}
+                switch (nlist->enlist) {
+                case enlistATOM_ATOM:   fac =  1; break;
+                case enlistSPC_ATOM:    fac =  3; break;
+                case enlistSPC_SPC:     fac =  9; break;
+                case enlistTIP4P_ATOM:  fac =  4; break;
+                case enlistTIP4P_TIP4P: fac = 16; break;
+                case enlistCG_CG:       fac =  1; break;
+                }
+                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,fac*outeriter);
+
+                /* inner loop in kernel */
+                inc_nrnb(nrnb,nrnb_ind,inneriter);
+            }
+        }
+    }
 }
 
 
 real 
 do_listed_vdw_q(int ftype,int nbonds,
-		const t_iatom iatoms[],const t_iparams iparams[],
-		const rvec x[],rvec f[],rvec fshift[],
-		const t_pbc *pbc,const t_graph *g,
-		real lambda,real *dvdlambda,
-		const t_mdatoms *md,
-		const t_forcerec *fr,gmx_grppairener_t *grppener,
-		int *global_atom_index)
+                const t_iatom iatoms[],const t_iparams iparams[],
+                const rvec x[],rvec f[],rvec fshift[],
+                const t_pbc *pbc,const t_graph *g,
+                real lambda,real *dvdlambda,
+                const t_mdatoms *md,
+                const t_forcerec *fr,gmx_grppairener_t *grppener,
+                int *global_atom_index)
 {
     static    bool bWarn=FALSE;
     real      eps,r2,*tab,rtab2=0;
@@ -560,20 +576,20 @@ do_listed_vdw_q(int ftype,int nbonds,
     switch (ftype) {
     case F_LJ14:
     case F_LJC14_Q:
-      eps = fr->epsfac*fr->fudgeQQ;
-      ntype  = 1;
-      egnb   = grppener->ener[egLJ14];
-      egcoul = grppener->ener[egCOUL14];
-      break;
+        eps = fr->epsfac*fr->fudgeQQ;
+        ntype  = 1;
+        egnb   = grppener->ener[egLJ14];
+        egcoul = grppener->ener[egCOUL14];
+        break;
     case F_LJC_PAIRS_NB:
-      eps = fr->epsfac;
-      ntype  = 1;
-      egnb   = grppener->ener[egLJSR];
-      egcoul = grppener->ener[egCOULSR];
-      break;
+        eps = fr->epsfac;
+        ntype  = 1;
+        egnb   = grppener->ener[egLJSR];
+        egcoul = grppener->ener[egCOULSR];
+        break;
     default:
-      gmx_fatal(FARGS,"Unknown function type %d in do_nonbonded14",
-		ftype);
+        gmx_fatal(FARGS,"Unknown function type %d in do_nonbonded14",
+                  ftype);
     }
     tab = fr->tab14.tab;
     rtab2 = sqr(fr->tab14.r);
@@ -584,7 +600,7 @@ do_listed_vdw_q(int ftype,int nbonds,
 
     /* Determine the values for icoul/ivdw. */
     if (fr->bEwald) {
-      icoul = 1;
+        icoul = 1;
     } 
     else if(fr->bcoultab)
     {
@@ -623,32 +639,32 @@ do_listed_vdw_q(int ftype,int nbonds,
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-	gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
-	
-	switch (ftype) {
-	case F_LJ14:
-	  bFreeEnergy =
-	    (fr->efep != efepNO &&
-	     ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
-	      iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
-	      iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
-	  chargeA[0] = md->chargeA[ai];
-	  chargeA[1] = md->chargeA[aj];
-	  nbfp = (real *)&(iparams[itype].lj14.c6A);
-	  break;
-	case F_LJC14_Q:
-	  eps = fr->epsfac*iparams[itype].ljc14.fqq;
-	  chargeA[0] = iparams[itype].ljc14.qi;
-	  chargeA[1] = iparams[itype].ljc14.qj;
-	  nbfp = (real *)&(iparams[itype].ljc14.c6);
-	  break;
-	case F_LJC_PAIRS_NB:
-	  chargeA[0] = iparams[itype].ljcnb.qi;
-	  chargeA[1] = iparams[itype].ljcnb.qj;
- 	  nbfp = (real *)&(iparams[itype].ljcnb.c6);
-	  break;
-	}
-
+        gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
+        
+        switch (ftype) {
+        case F_LJ14:
+            bFreeEnergy =
+                (fr->efep != efepNO &&
+                 ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
+                  iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
+                  iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
+            chargeA[0] = md->chargeA[ai];
+            chargeA[1] = md->chargeA[aj];
+            nbfp = (real *)&(iparams[itype].lj14.c6A);
+            break;
+        case F_LJC14_Q:
+            eps = fr->epsfac*iparams[itype].ljc14.fqq;
+            chargeA[0] = iparams[itype].ljc14.qi;
+            chargeA[1] = iparams[itype].ljc14.qj;
+            nbfp = (real *)&(iparams[itype].ljc14.c6);
+            break;
+        case F_LJC_PAIRS_NB:
+            chargeA[0] = iparams[itype].ljcnb.qi;
+            chargeA[1] = iparams[itype].ljcnb.qj;
+            nbfp = (real *)&(iparams[itype].ljcnb.c6);
+            break;
+        }
+        
         if (!bMolPBC) 
         {
             /* This is a bonded interaction, atoms are in the same box */
@@ -668,22 +684,22 @@ do_listed_vdw_q(int ftype,int nbonds,
             {
                 fprintf(stderr,"Warning: 1-4 interaction between %d and %d "
                         "at distance %.3f which is larger than the 1-4 table size %.3f nm\n", 
-			glatnr(global_atom_index,ai)+1,
-			glatnr(global_atom_index,aj)+1,
-			sqrt(r2), sqrt(rtab2));
+                        glatnr(global_atom_index,ai)+1,
+                        glatnr(global_atom_index,aj)+1,
+                        sqrt(r2), sqrt(rtab2));
                 fprintf(stderr,"These are ignored for the rest of the simulation\n");
-		fprintf(stderr,"This usually means your system is exploding,\n"
-			"if not, you should increase table-extension in your mdp file\n"
-			"or with user tables increase the table size\n");
+                fprintf(stderr,"This usually means your system is exploding,\n"
+                        "if not, you should increase table-extension in your mdp file\n"
+                        "or with user tables increase the table size\n");
                 bWarn = TRUE;
             }
             if (debug) 
-	      fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
-		      x[ai][XX],x[ai][YY],x[ai][ZZ],
-		      x[aj][XX],x[aj][YY],x[aj][ZZ],
-		      glatnr(global_atom_index,ai)+1,
-		      glatnr(global_atom_index,aj)+1,
-		      sqrt(r2));
+                fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
+                        x[ai][XX],x[ai][YY],x[ai][ZZ],
+                        x[aj][XX],x[aj][YY],x[aj][ZZ],
+                        glatnr(global_atom_index,ai)+1,
+                        glatnr(global_atom_index,aj)+1,
+                        sqrt(r2));
         }
         else 
         {
@@ -698,105 +714,105 @@ do_listed_vdw_q(int ftype,int nbonds,
             
 	    outeriter = inneriter = count = 0;
 	    if (bFreeEnergy)
-	      {
-                chargeB[0] = md->chargeB[ai];
-                chargeB[1] = md->chargeB[aj];
-                /* We pass &(iparams[itype].lj14.c6A) as LJ parameter matrix
-                 * to the innerloops.
-                 * Here we use that the LJ-14 parameters are stored in iparams
-                 * as c6A,c12A,c6B,c12B, which are referenced correctly
-                 * in the innerloops if we assign type combinations 0-0 and 0-1
-                 * to atom pair ai-aj in topologies A and B respectively.
-                 */
-                if(ivdw==2)
-                {
-                    gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
-                }
-                count = 0;
-                gmx_nb_free_energy_kernel(icoul,
-                                          ivdw,
-                                          i1,
-                                          &i0,
-                                          j_index,
-                                          &i1,
-                                          &shift_f,
-                                          fr->shift_vec[0],
-                                          fshift[0],
-                                          &gid,
-                                          x14[0],
-                                          f14[0],
-                                          chargeA,
-                                          chargeB,
-                                          eps,
-                                          krf,
-                                          crf,
-					  fr->ewaldcoeff,
-                                          egcoul,
-                                          typeA,
-                                          typeB,
-                                          ntype,
-                                          nbfp,
-                                          egnb,
-                                          tabscale,
-                                          tab,
-                                          lambda,
-                                          dvdlambda,
-                                          fr->sc_alpha,
-					  fr->sc_power,
-                                          fr->sc_sigma6,
-                                          &outeriter,
-                                          &inneriter);
-            }
-            else 
-            { 
-                /* Not perturbed - call kernel 330 */
-                F77_OR_C_FUNC_(nb_kernel330,NB_KERNEL330)
-                    ( &i1,
-                      &i0,
-                      j_index,
-                      &i1,
-                      &shift_f,
-                      fr->shift_vec[0],
-                      fshift[0],
-                      &gid,
-                      x14[0],
-                      f14[0],
-                      chargeA,
-                      &eps,
-                      &krf,
-                      &crf,
-                      egcoul,
-                      typeA,
-                      &ntype,
-                      nbfp,
-                      egnb,
-                      &tabscale,
-                      tab,
-                      NULL,
-                      NULL,
-                      NULL,
-                      NULL,
-                      &nthreads,
-                      &count,
-                      (void *)&mtx,
-                      &outeriter,
-                      &inneriter,
-                      NULL);                
-            }
-            
-            /* Add the forces */
-            rvec_inc(f[ai],f14[0]);
-            rvec_dec(f[aj],f14[0]);
-            
-            if (g) 
+        {
+            chargeB[0] = md->chargeB[ai];
+            chargeB[1] = md->chargeB[aj];
+            /* We pass &(iparams[itype].lj14.c6A) as LJ parameter matrix
+             * to the innerloops.
+             * Here we use that the LJ-14 parameters are stored in iparams
+             * as c6A,c12A,c6B,c12B, which are referenced correctly
+             * in the innerloops if we assign type combinations 0-0 and 0-1
+             * to atom pair ai-aj in topologies A and B respectively.
+             */
+            if(ivdw==2)
             {
-                /* Correct the shift forces using the graph */
-                ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
-                shift_vir = IVEC2IS(dt);
-                rvec_inc(fshift[shift_vir],f14[0]);
-                rvec_dec(fshift[CENTRAL],f14[0]);
+                gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
             }
-
+            count = 0;
+            gmx_nb_free_energy_kernel(icoul,
+                                      ivdw,
+                                      i1,
+                                      &i0,
+                                      j_index,
+                                      &i1,
+                                      &shift_f,
+                                      fr->shift_vec[0],
+                                      fshift[0],
+                                      &gid,
+                                      x14[0],
+                                      f14[0],
+                                      chargeA,
+                                      chargeB,
+                                      eps,
+                                      krf,
+                                      crf,
+                                      fr->ewaldcoeff,
+                                      egcoul,
+                                      typeA,
+                                      typeB,
+                                      ntype,
+                                      nbfp,
+                                      egnb,
+                                      tabscale,
+                                      tab,
+                                      lambda,
+                                      dvdlambda,
+                                      fr->sc_alpha,
+                                      fr->sc_power,
+                                      fr->sc_sigma6,
+                                      &outeriter,
+                                      &inneriter);
+        }
+        else 
+        { 
+            /* Not perturbed - call kernel 330 */
+            F77_OR_C_FUNC_(nb_kernel330,NB_KERNEL330)
+                ( &i1,
+                  &i0,
+                  j_index,
+                  &i1,
+                  &shift_f,
+                  fr->shift_vec[0],
+                  fshift[0],
+                  &gid,
+                  x14[0],
+                  f14[0],
+                  chargeA,
+                  &eps,
+                  &krf,
+                  &crf,
+                  egcoul,
+                  typeA,
+                  &ntype,
+                  nbfp,
+                  egnb,
+                  &tabscale,
+                  tab,
+                  NULL,
+                  NULL,
+                  NULL,
+                  NULL,
+                  &nthreads,
+                  &count,
+                  (void *)&mtx,
+                  &outeriter,
+                  &inneriter,
+                  NULL);                
+        }
+        
+        /* Add the forces */
+        rvec_inc(f[ai],f14[0]);
+        rvec_dec(f[aj],f14[0]);
+        
+        if (g) 
+        {
+            /* Correct the shift forces using the graph */
+            ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
+            shift_vir = IVEC2IS(dt);
+            rvec_inc(fshift[shift_vir],f14[0]);
+            rvec_dec(fshift[CENTRAL],f14[0]);
+        }
+        
 	    /* flops: eNR_KERNEL_OUTER + eNR_KERNEL330 + 12 */
         }
     }

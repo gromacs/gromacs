@@ -137,11 +137,6 @@ enum {
   esolNO, esolSPC, esolTIP4P, esolNR
 };
 
-/* Neighborlist type */
-enum {
-  enlistATOM, enlistWATER, enlistWATERWATER, enlistNR
-};
-
 /* Dispersion correction */
 enum {
   edispcNO, edispcEnerPres, edispcEner, edispcAllEnerPres, edispcAllEner, edispcNR

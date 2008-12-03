@@ -142,7 +142,7 @@ const char *esol_names[esolNR+1] = {
 };
 
 const char *enlist_names[enlistNR+1] = {
-  "Atom", "Water", "Water-Water", NULL
+  "Atom-Atom", "SPC-Atom", "SPC-SPC", "TIP4p-Atom", "TIP4p-TIP4p", "CG-CG", NULL
 };
 
 const char *edispc_names[edispcNR+1] = {

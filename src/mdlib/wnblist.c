@@ -62,7 +62,7 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
   if (nblist->nri > 0) {  
     fprintf(out,"il_name: %s  Solvent opt: %s\n",
             nrnb_str(nblist->il_code),
-            enlist_names[nblist->nltype]);
+            enlist_names[nblist->enlist]);
     fprintf(out,"nri: %d  npair: %d\n",nblist->nri,nblist->nrj);
     if (dd) {
       for(ci=0; ci<dd->ncell; ci++)
@@ -92,7 +92,7 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
     if (nDNL >= 2) {
       for(i=0; i<nblist->nri; i++) {
 	nii = 1;
-	if (nDNL >= 3 && nblist->nltype != enlistATOM)
+	if (nDNL >= 3 && nblist->enlist != enlistATOM_ATOM)
 	  nii = 3;
 	nj = nblist->jindex[i+1] - nblist->jindex[i];
 	fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
@@ -161,7 +161,7 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
         }
       }
       else
-	isolv = enlistATOM;
+	isolv = enlistATOM_ATOM;
       
       /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
       if ((nargs = sscanf(buf,"%*s%d%*s%d",&nri,&nrj)) != 2)
@@ -179,19 +179,26 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
 	    gmx_fatal(FARGS,"Can not read j");
 	  range_check(j,0,natoms);
 	  switch (isolv) {
-	  case enlistATOM:
+	  case enlistATOM_ATOM:
 	    set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
 	    njtot++;
 	    break;
-	  case enlistWATER:
+	  case enlistSPC_ATOM:
 	    set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
 	    njtot+=3;
 	    break;
-	  case enlistWATERWATER:
+	  case enlistSPC_SPC:
 	    set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
 	    njtot+=9;
 	    break;
-	  default:
+	  case enlistTIP4P_ATOM:
+	    set_mat(fp,mat,iatom,4,j,1,bSymm,shift);
+	    njtot+=4;
+	    break;
+	  case enlistTIP4P_TIP4P:
+	    set_mat(fp,mat,iatom,4,j,4,bSymm,shift);
+	    njtot+=16;
+	    break;
 	    gmx_incons("non-existing solvent type");
 	  }
 	}
