@@ -1097,6 +1097,9 @@ void init_forcerec(FILE *fp,
          */
         cgs = &mtop->moltype[mtop->molblock[mtop->nmolblock-1].type].cgs;
         fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
+        if (fr->n_tpi != mtop->mols.index[mtop->mols.nr] - mtop->mols.index[mtop->mols.nr-1]) {
+            gmx_fatal(FARGS,"The molecule to insert can not consist of multiple charge groups.\nMake it a single charge group.");
+        }
     } else {
         fr->n_tpi = 0;
     }
