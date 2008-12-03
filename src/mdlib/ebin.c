@@ -148,11 +148,11 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
 		}
 		for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++) {
 			if (prmode == eprNORMAL)
-				ee=eb->e[i].e;
+			  ee = eb->e[i].e;
 			else if (prmode == eprRMS)
-				ee=rms_ener(&(eb->e[i]),tsteps);
+			  ee = rms_ener(&(eb->e[i]),(tsteps+1));
 			else if (prmode == eprAVER)
-				ee=eb->e[i].esum/tsteps;
+			  ee = eb->e[i].esum/(tsteps+1);
 			else
 				gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
 			
