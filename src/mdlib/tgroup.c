@@ -106,17 +106,6 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
   init_grpstat(log,mtop,opts->ngacc,ekind->grpstat);
 }
 
-real rms_ener(t_energy *e,int nsteps)
-{
-  real erms2;
-
-  erms2=e->e2sum*nsteps-e->esum*e->esum;
-  if (erms2 <= 0)
-    return 0.0;
-  else
-    return sqrt(erms2)/nsteps;
-}
-
 void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
 {
   /* This routine will only be called when it's necessary */
