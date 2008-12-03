@@ -521,7 +521,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta=0,expE,expEtot,*fee=NULL;
   int  nsteps,nexact,nnotexact,iset;
-  real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,VarT=-1;
+  double x1m,x1mk;
+  real Temp=-1,Pres=-1,VarV=-1,VarT=-1;
   int  i,j,m,k,kkk;
   bool bIsEner;
   char buf[256];
@@ -597,7 +598,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	fstep  = ((real) m) * ((real) (m+k))/((real) k);
 	x1m    = (m > 0) ? oldee[iset].esum/m : 0.0;
 	x1mk   = ee[iset].esum/(m+k); 
-	xxx    = sqr(x1m - x1mk);
+	xxx    = dsqr(x1m - x1mk);
 	sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
 	if((sigma/k)<GMX_REAL_EPS)
 	  sigma=0;
@@ -1225,7 +1226,7 @@ int gmx_energy(int argc,char *argv[])
 	    for(i=0; i<fr->nre; i++) {
 	      oldee[i].esum = fr->ener[i].esum - fr->ener[i].e;
 	      oldee[i].eav  = fr->ener[i].eav  - 
-		(sqr(oldee[i].esum - (oldstep-firststep)*fr->ener[i].e)/
+		(dsqr(oldee[i].esum - (oldstep-firststep)*fr->ener[i].e)/
 		 ((oldstep-firststep)*(fr->step+1-firststep)));
 	    }
 	  }

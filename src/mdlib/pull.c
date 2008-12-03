@@ -369,7 +369,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 	
 	a = diprod(r_ij[g],r_ij[g]); 
 	b = diprod(unc_ij,r_ij[g])*2;
-	c = diprod(unc_ij,unc_ij) - sqr(ref[0]);
+	c = diprod(unc_ij,unc_ij) - dsqr(ref[0]);
 
 	if (b < 0) {
 	  q = -0.5*(b - sqrt(b*b - 4*a*c));
@@ -629,8 +629,8 @@ static void do_pull_pot(int ePull,
       invdr = 1/ndr;
       if (ePull == epullUMBRELLA) {
 	pgrp->f_scal  =       -k*dev[0];
-	*V           += 0.5*   k*sqr(dev[0]);
-	*dVdl        += 0.5*dkdl*sqr(dev[0]);
+	*V           += 0.5*   k*dsqr(dev[0]);
+	*dVdl        += 0.5*dkdl*dsqr(dev[0]);
       } else {
 	pgrp->f_scal  =   -k;
 	*V           +=    k*ndr;
@@ -643,8 +643,8 @@ static void do_pull_pot(int ePull,
     case epullgCYL:
       if (ePull == epullUMBRELLA) {
 	pgrp->f_scal  =       -k*dev[0];
-	*V           += 0.5*   k*sqr(dev[0]);
-	*dVdl        += 0.5*dkdl*sqr(dev[0]);
+	*V           += 0.5*   k*dsqr(dev[0]);
+	*dVdl        += 0.5*dkdl*dsqr(dev[0]);
       } else {
 	ndr = 0;
 	for(m=0; m<DIM; m++) {
@@ -661,8 +661,8 @@ static void do_pull_pot(int ePull,
       for(m=0; m<DIM; m++) {
 	if (ePull == epullUMBRELLA) {
 	  pgrp->f[m]  =       -k*dev[m];
-	  *V         += 0.5*   k*sqr(dev[m]);
-	  *dVdl      += 0.5*dkdl*sqr(dev[m]);
+	  *V         += 0.5*   k*dsqr(dev[m]);
+	  *dVdl      += 0.5*dkdl*dsqr(dev[m]);
 	} else {
       	  pgrp->f[m]  =   -k*pull->dim[m];
 	  *V         +=    k*pgrp->dr[m]*pull->dim[m];

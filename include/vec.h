@@ -57,6 +57,7 @@
   void vecinvsqrt(real in[],real out[],int n)
   void vecrecip(real in[],real out[],int n)
   real sqr(real x)
+  double dsqr(double x)
   
   vector operations:
   void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
@@ -221,6 +222,11 @@ static inline real invsqrt(real x)
 
 
 static inline real sqr(real x)
+{
+  return (x*x);
+}
+
+static inline double dsqr(double x)
 {
   return (x*x);
 }
