@@ -452,7 +452,17 @@ void please_cite(FILE *fp,char *key)
       "G. Bussi, D. Donadio and M. Parrinello",
       "Canonical sampling through velocity rescaling",
       "J. Chem. Phys.",
-      126, 2007, "014101" }
+      126, 2007, "014101" },
+    { "Hub2006",
+      "J. S. Hub and B. L. de Groot",
+      "Does CO2 permeate through Aquaporin-1?",
+      "Biophys. J.",
+      91, 2006, "842-848" },
+    { "Hub2008",
+      "J. S. Hub and B. L. de Groot",
+      "Mechanism of selectivity in aquaporins and aquaglyceroporins",
+      "PNAS",
+      105, 2008, "1198-1203" }
   };
 #define NSTR (int)asize(citedb)
   
