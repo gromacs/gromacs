@@ -61,12 +61,17 @@ static int factorize(int n,int **fac,int **mfac)
 	return ndiv;
 }
 
+static bool fits_pme_ratio(int nnodes,int npme,float ratio)
+{
+    return ((double)npme/(double)nnodes > 0.95*ratio); 
+}
+
 static bool fits_pme_perf(FILE *fplog,
 						  t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
 						  int nnodes,int npme,float ratio)
 {
     /* Does this division gives a reasonable PME load? */
-    return ((double)npme/(double)nnodes > 0.95*ratio &&
+    return (fits_pme_ratio(nnodes,npme,ratio) &&
 			pme_inconvenient_nnodes(ir->nkx,ir->nky,npme) <= 1);
 }
 
@@ -89,6 +94,16 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 	 * but (hopefully) this will balance out between PP and PME.
 	 */
 	
+    if (!fits_pme_ratio(nnodes,nnodes/2,ratio))
+    {
+        /* We would need more than nnodes/2 PME only nodes,
+         * which is not possible. Since the PME load is very high,
+         * we will not loose much performance when all nodes do PME.
+         */
+
+        return 0;
+    }
+
     /* First try to find npme as a factor of nnodes up to nnodes/3 */
 	npme = 1;
     while (npme <= nnodes/3) {
