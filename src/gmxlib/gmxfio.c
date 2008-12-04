@@ -834,7 +834,8 @@ gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nf
 	int                      pos_hi,pos_lo;
 	long                     pos;	
 	gmx_file_position_t *    outputfiles;
-	
+	char                     buf[STRLEN];
+
 	nfiles = 0;
 	
 	nalloc = 100;
@@ -853,6 +854,14 @@ gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nf
 			}
 			
 			strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
+			
+			/* Flush the file, so we are sure it is written */
+			if (gmx_fio_flush(i) != 0)
+			{
+			    sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
+			    gmx_file(buf);
+			}
+
 			/* We cannot count on XDR being able to write 64-bit integers, so separate into high/low 32-bit values.
 			 * In case the filesystem has 128-bit offsets we only care about the first 64 bits - we'll have to fix
 			 * this when exabyte-size output files are common...
