@@ -741,9 +741,9 @@ int gmx_fio_open(const char *fn,char *mode)
 			if (xdrid == 0)
 			{
 				if(newmode[0]=='r') 
-					gmx_fatal(FARGS,"Cannot open file %s for reading - check permissions if it exists."); 
+				  gmx_fatal(FARGS,"Cannot open file %s for reading\nCheck permissions if it exists.",fn); 
 				else
-					gmx_fatal(FARGS,"Cannot open file %s for writing - check your quota and permissions.");
+				  gmx_fatal(FARGS,"Cannot open file %s for writing.\nCheck your permissions, disk space and/or quota.",fn);
 			}
 			fio->fp = xdr_get_fp(xdrid);
 		}
