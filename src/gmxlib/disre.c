@@ -58,12 +58,13 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
                  t_inputrec *ir,const t_commrec *cr,bool bPartDecomp,
                  t_fcdata *fcd,t_state *state)
 {
-    int          fa,nmol;
+    int          fa,nmol,i;
     t_iparams    *ip;
     t_disresdata *dd;
     history_t    *hist;
     gmx_mtop_ilistloop_t iloop;
     t_ilist      *il;
+    char         *ptr;
     
     dd = &(fcd->disres);
 
@@ -173,10 +174,54 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
     if (cr->ms)
     {
+        ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+#ifdef GMX_MPI
+        if (ptr == NULL)
+        {
+            dd->nsystems          = cr->ms->nsim;
+            dd->mpi_comm_ensemble = cr->ms->mpi_comm_masters;
+            if (fplog)
+            {
+                fprintf(fplog,"Will apply ensemble averaging over %d systems\n",
+                        dd->nsystems);
+            }
+        }
+        else
+        {
+            dd->nsystems = 0;
+            sscanf(ptr,"%d",&dd->nsystems);
+            if (fplog)
+            {
+                fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
+            }
+            check_multi_int(fplog,cr->ms,dd->nsystems,
+                            "the number of systems per ensemble");
+            if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
+            {
+                gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
+            }
+            /* Split the inter-master communicator into different ensembles */
+            MPI_Comm_split(cr->ms->mpi_comm_masters,
+                           cr->ms->sim/dd->nsystems,
+                           cr->ms->sim,
+                           &dd->mpi_comm_ensemble);
+            if (fplog)
+            {
+                fprintf(fplog,"Our ensemble consists of systems:");
+                for(i=0; i<dd->nsystems; i++)
+                {
+                    fprintf(fplog," %d",
+                            (cr->ms->sim/dd->nsystems)*dd->nsystems+i);
+                }
+                fprintf(fplog,"\n");
+            }
+        }
         snew(dd->Rtl_6,dd->nres);
+#endif
     }
     else
     {
+        dd->nsystems = 1;
         dd->Rtl_6 = dd->Rt_6;
     }
     
@@ -231,9 +276,9 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
         cf2 = 1.0/(1.0 - dd->exp_min_t_tau);
     }
     
-    if (ms)
+    if (dd->nsystems > 1)
     {
-        invn = 1.0/ms->nsim;
+        invn = 1.0/dd->nsystems;
     }
     
     /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
@@ -288,7 +333,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 
             fa += 3;
         }
-        if (ms)
+        if (dd->nsystems > 1)
         {
             Rtl_6[res]   = Rt_6[res];
             Rt_6[res]   *= invn;
@@ -298,10 +343,12 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
         res++;
     }
     
-    if (ms)
+#ifdef GMX_MPI
+    if (dd->nsystems > 1)
     {
-        gmx_sum_sim(2*dd->nres,Rt_6,ms);
+        gmx_sum_comm(2*dd->nres,Rt_6,dd->mpi_comm_ensemble);
     }
+#endif
 }
 
 real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],

@@ -59,6 +59,10 @@ typedef struct {
   real *Rtl_6;        /* The calculated instantaneous r^-6 (nr)           */
   real *Rt_6;         /* The calculated inst. ens. averaged r^-6 (nr)     */
   real *Rtav_6;       /* The calculated time and ens. averaged r^-6 (nr)  */
+  int  nsystems;      /* The number of systems for ensemble averaging     */
+#ifdef GMX_MPI
+  MPI_Comm mpi_comm_ensemble; /* For ensemble averaging                   */
+#endif
 } t_disresdata;
 
 /* Orientation restraining stuff */
