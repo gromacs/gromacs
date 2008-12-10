@@ -47,6 +47,9 @@
  */
 
 #include <stdio.h>
+#ifdef GMX_MPI
+#include <mpi.h>
+#endif
 #include "typedefs.h"
 #include "main.h"
 #include "gmx_fatal.h"
@@ -87,6 +90,14 @@ extern void gmx_sumf(int nr,float r[],const t_commrec *cr);
 extern void gmx_sumd(int nr,double r[],const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
+#ifdef GMX_MPI
+extern void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm);
+/* Calculate the global sum of an array of floats */
+
+extern void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm);
+/* Calculate the global sum of an array of doubles */
+#endif
+
 extern void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of ints */
 
@@ -103,11 +114,13 @@ extern void gmx_finalize(const t_commrec *cr);
 /* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE
-#define gmx_sum     gmx_sumd
-#define gmx_sum_sim gmx_sumd_sim
+#define gmx_sum_comm  gmx_sumd_comm
+#define gmx_sum       gmx_sumd
+#define gmx_sum_sim   gmx_sumd_sim
 #else
-#define gmx_sum     gmx_sumf
-#define gmx_sum_sim gmx_sumf_sim
+#define gmx_sum_comm  gmx_sumf_comm
+#define gmx_sum       gmx_sumf
+#define gmx_sum_sim   gmx_sumf_sim
 #endif
 
 #ifdef DEBUG_GMX

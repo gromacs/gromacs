@@ -447,11 +447,9 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #endif
 }
 
-void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms)
+#ifdef GMX_MPI
+void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 {
-#ifndef GMX_MPI
-  gmx_call("gmx_sumd");
-#else
   static double *buf=NULL;
   static int nalloc=0;
   int i;
@@ -460,17 +458,15 @@ void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms)
     nalloc = nr;
     srenew(buf,nalloc);
   }
-  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,ms->mpi_comm_masters);
+  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
   for(i=0; i<nr; i++)
     r[i] = buf[i];
-#endif
 }
+#endif
 
-void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms)
+#ifdef GMX_MPI
+void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
 {
-#ifndef GMX_MPI
-  gmx_call("gmx_sumd");
-#else
   static float *buf=NULL;
   static int nalloc=0;
   int i;
@@ -479,9 +475,27 @@ void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms)
     nalloc = nr;
     srenew(buf,nalloc);
   }
-  MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,ms->mpi_comm_masters);
+  MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
   for(i=0; i<nr; i++)
     r[i] = buf[i];
+}
+#endif
+
+void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_sumd");
+#else
+  gmx_sumd_comm(nr,r,ms->mpi_comm_masters);
+#endif
+}
+
+void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_sumf");
+#else
+  gmx_sumf_comm(nr,r,ms->mpi_comm_masters);
 #endif
 }
 
