@@ -183,9 +183,10 @@ int gmx_nmtraj(int argc,char *argv[])
     
   snew(phases,nmodes);
   p=phasevec;
+
   for(i=0;i<nphases;i++)
   {
-      phases[i]=strtod(p,&pe);
+      phases[i]=strtod(p,&p);
   }
 
   if(nmodes>nphases)
@@ -243,7 +244,8 @@ int gmx_nmtraj(int argc,char *argv[])
   snew(xout,natoms);
   snew(amplitude,nmodes);
 
-  	
+  	printf("mode phases: %g %g\n",phases[0],phases[1]);
+	
   for(i=0;i<nmodes;i++)
   {
       kmode = out_eigidx[i];
