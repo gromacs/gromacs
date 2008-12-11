@@ -63,8 +63,8 @@
 
 static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
 {
-  int     i,j,k;
-  atom_id inda0,inda1,indb,indc;
+  int     i;
+  atom_id inda0,inda1;
   bool    bFound;
 
   inda0 = a0 - g->start;
@@ -73,17 +73,8 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
   /* Search for a direct edge between a0 and a1.
    * All egdes are bidirectional, so we only need to search one way.
    */
-  for(i=0; (i<g->nedge[inda0] && !bFound); i++)
-    bFound = (g->edge[inda0][i] == a1);
-  /* Search for connections via two or three edges. */
   for(i=0; (i<g->nedge[inda0] && !bFound); i++) {
-    indb = g->edge[inda0][i] - g->start;
-    for(j=0; (j<g->nedge[indb] && !bFound); j++) {
-      bFound = (g->edge[indb][j] == a1);
-      indc =  g->edge[indb][j] - g->start;
-      for(k=0; (k<g->nedge[indc] && !bFound); k++)
-	bFound = (g->edge[indc][k] == a1);
-    }
+    bFound = (g->edge[inda0][i] == a1);
   }
 
   if (!bFound) {
@@ -93,7 +84,8 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
 }
 
 static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
-		      int at_start,int at_end)
+		      int at_start,int at_end,
+		      int *part)
 {
   t_iatom *ia;
   int     i,j,np;
@@ -119,9 +111,18 @@ static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
 	/* Bond all the atoms in the settle */
 	add_gbond(g,ia[1],ia[1]+1);
 	add_gbond(g,ia[1],ia[1]+2);
-      } else {
-	for(j=1; j<np; j++)
+      } else if (part == NULL) {
+	/* Simply add this bond */
+	for(j=1; j<np; j++) {
 	  add_gbond(g,ia[j],ia[j+1]);
+	}
+      } else {
+	/* Add this bond when it connects two unlinked parts of the graph */
+	for(j=1; j<np; j++) {
+	  if (part[ia[j]] != part[ia[j+1]]) {
+	    add_gbond(g,ia[j],ia[j+1]);
+	  }
+	}
       }
     }
     ia+=np+1;
@@ -255,6 +256,48 @@ static void compact_graph(FILE *fplog,t_graph *g)
   }
 }
 
+static bool determine_graph_parts(t_graph *g,int *part)
+{
+  int  i,e;
+  int  nchanged;
+  atom_id at_i,*at_i2;
+  bool bMultiPart;
+
+  /* Initialize the part array with all entries different */
+  for(at_i=g->start; at_i<g->end; at_i++) {
+    part[at_i] = at_i;
+  }
+
+  /* Loop over the graph until the part array is fixed */
+  do {
+    bMultiPart = FALSE;
+    nchanged = 0;
+    for(i=0; (i<g->nnodes); i++) {
+      at_i  = g->start + i;
+      at_i2 = g->edge[i];
+      for(e=0; e<g->nedge[i]; e++) {
+	/* Set part for both nodes to the minimum */
+	if (part[at_i2[e]] > part[at_i]) {
+	  part[at_i2[e]] = part[at_i];
+	  nchanged++;
+	} else if (part[at_i2[e]] < part[at_i]) {
+	  part[at_i] = part[at_i2[e]];
+	  nchanged++;
+	}
+      }
+      if (part[at_i] != part[g->start]) {
+	bMultiPart = TRUE;
+      }
+    }
+    if (debug) {
+      fprintf(debug,"graph part[] nchanged=%d, bMultiPart=%d\n",
+	      nchanged,bMultiPart);
+    }
+  } while (nchanged > 0);
+
+  return bMultiPart;
+}
+
 void mk_graph_ilist(FILE *fplog,
 		    t_ilist *ilist,int at_start,int at_end,
 		    bool bShakeOnly,bool bSettle,
@@ -262,6 +305,7 @@ void mk_graph_ilist(FILE *fplog,
 {
   int     *nbond;
   int     i,nbtot;
+  bool    bMultiPart;
 
   snew(nbond,at_end);
   nbtot = calc_start_end(fplog,g,ilist,at_start,at_end,nbond);
@@ -284,13 +328,22 @@ void mk_graph_ilist(FILE *fplog,
        */
       for(i=0; (i<F_NRE); i++)
 	if (interaction_function[i].flags & IF_CHEMBOND)
-	  mk_igraph(g,i,&(ilist[i]),at_start,at_end);
-      /* Then add all the other interactions in fixed lists, but first
-       * check to see what's there already.
+	  mk_igraph(g,i,&(ilist[i]),at_start,at_end,NULL);
+
+      /* Determine of which separated parts the IF_CHEMBOND graph consists.
+       * Store the parts in the nbond array.
        */
-      for(i=0; (i<F_NRE); i++) {
-	if (!(interaction_function[i].flags & IF_CHEMBOND)) {
-	  mk_igraph(g,i,&(ilist[i]),at_start,at_end);
+      bMultiPart = determine_graph_parts(g,nbond);
+
+      if (bMultiPart) {
+	/* Then add all the other interactions in fixed lists,
+	 * but only when they connect parts of the graph
+	 * that are not connected through IF_CHEMBOND interactions.
+	 */	 
+	for(i=0; (i<F_NRE); i++) {
+	  if (!(interaction_function[i].flags & IF_CHEMBOND)) {
+	    mk_igraph(g,i,&(ilist[i]),at_start,at_end,nbond);
+	  }
 	}
       }
       
@@ -299,9 +352,9 @@ void mk_graph_ilist(FILE *fplog,
     }
     else {
       /* This is a special thing used in splitter.c to generate shake-blocks */
-      mk_igraph(g,F_CONSTR,&(ilist[F_CONSTR]),at_start,at_end);
+      mk_igraph(g,F_CONSTR,&(ilist[F_CONSTR]),at_start,at_end,NULL);
       if (bSettle)
-	mk_igraph(g,F_SETTLE,&(ilist[F_SETTLE]),at_start,at_end);
+	mk_igraph(g,F_SETTLE,&(ilist[F_SETTLE]),at_start,at_end,NULL);
     }
     g->nbound = 0;
     for(i=0; (i<g->nnodes); i++)
@@ -597,11 +650,20 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
   }
   if (nerror > 0) {
     nerror_tot++;
-    if (nerror_tot <= 100)
-      fprintf(log,"There were %d inconsistent shifts. Check your topology\n",
+    if (nerror_tot <= 100) {
+      fprintf(stderr,"There were %d inconsistent shifts. Check your topology\n",
 	      nerror);
-    if (nerror_tot == 100)
-      fprintf(log,"Will stop reporting inconsistent shifts\n");
+      if (log) {
+	fprintf(log,"There were %d inconsistent shifts. Check your topology\n",
+		nerror);
+      }
+    }
+    if (nerror_tot == 100) {
+      fprintf(stderr,"Will stop reporting inconsistent shifts\n");
+      if (log) {
+	fprintf(log,"Will stop reporting inconsistent shifts\n");
+      }
+    }
   }
 }
 
