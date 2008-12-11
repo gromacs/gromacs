@@ -242,7 +242,8 @@ int gmx_nmtraj(int argc,char *argv[])
 
   snew(xout,natoms);
   snew(amplitude,nmodes);
-	
+
+  	
   for(i=0;i<nmodes;i++)
   {
       kmode = out_eigidx[i];
@@ -293,7 +294,7 @@ int gmx_nmtraj(int argc,char *argv[])
 		  amplitude[i] = refamplitude;
 	  }
   }
-    	
+	
   out=open_trx(ftp2fn(efTRO,NFILE,fnm),"w");
 	
     /* Write a sine oscillation around the average structure, 
@@ -303,6 +304,11 @@ int gmx_nmtraj(int argc,char *argv[])
     for(i=0;i<nframes;i++)
     {
         fraction = (real)i/(real)nframes;
+		for(j=0;j<natoms;j++)
+		{
+			copy_rvec(xav[j],xout[j]);
+		}
+		
         for(k=0;k<nmodes;k++)
         {
             kmode=out_eigidx[k];
@@ -312,7 +318,7 @@ int gmx_nmtraj(int argc,char *argv[])
             {
                 for(d=0;d<DIM;d++)
                 {
-					xout[j][d] = xav[j][d] + amplitude[k]*sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
+					xout[j][d] += amplitude[k]*sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
                 }
             }
         }
