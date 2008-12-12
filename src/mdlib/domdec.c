@@ -5418,13 +5418,15 @@ static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
         /* No restrictions */
         break;
     case epbcNONE:
-        gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
+        gmx_fatal(FARGS,
+                  "pbc type %s is not supported with domain decomposition,\n"
+                  "use particle decomposition: mdrun -pd",
                   epbc_names[ir->ePBC]);
         break;
     case epbcXY:
         if (ir->nwall<2 && dd->nc[ZZ]>1)
         {
-            gmx_fatal(FARGS,"Can not do domain decomposition in the z-direction with pbc=%s,",epbc_names[ir->ePBC]);
+            gmx_fatal(FARGS,"Can not do domain decomposition in the z-direction with pbc=%s",epbc_names[ir->ePBC]);
         }
         break;
     case epbcSCREW:
@@ -5439,8 +5441,18 @@ static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
     
     if (ir->ns_type == ensSIMPLE)
     {
-        gmx_fatal(FARGS,"ns type %s is not supported with domain decomposition",
+        gmx_fatal(FARGS,
+                  "ns type %s is not supported with domain decomposition,\n"
+                  "use particle decomposition: mdrun -pd",
                   ens_names[ir->ns_type]);
+    }
+
+    if (ir->comm_mode == ecmANGULAR)
+    {
+        gmx_fatal(FARGS,
+                  "comm-mode %s is not supported with domain decomposition,\n"
+                  "use particle decomposition: mdrun -pd",
+                  ecm_names[ecmANGULAR]);
     }
 }
 
