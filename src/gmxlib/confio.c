@@ -1150,6 +1150,20 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   }
 }
 
+static void write_xyz_conf(char *outfile,char *title,t_atoms *atoms,rvec *x)
+{
+  FILE *fp;
+  int i;
+  
+  fp = gmx_fio_fopen(outfile,"w");
+  fprintf(fp,"%3d\n",atoms->nr);
+  fprintf(fp,"%s\n",title);
+  for(i=0; (i<atoms->nr); i++)
+    fprintf(fp,"%3s%10.5f%10.5f%10.5f\n",*atoms->atomname[i],
+	    x[i][XX],x[i][YY],x[i][ZZ]);
+  gmx_fio_fclose(fp);
+}
+
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec *v,int ePBC,matrix box)
 {
@@ -1180,6 +1194,9 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
     out=gmx_fio_fopen(outfile,"w");
     write_g96_conf(out, &fr, -1, NULL);
     gmx_fio_fclose(out);
+    break;
+  case efXYZ:
+    write_xyz_conf(outfile,(strlen(title) > 0) ? title : outfile,atoms,x);
     break;
   case efPDB:
   case efBRK:
@@ -1230,6 +1247,46 @@ void write_sto_conf_mtop(char *outfile, char *title,gmx_mtop_t *mtop,
   }
 }
 
+static int get_xyz_coordnum(char *infile)
+{
+  FILE *fp;
+  int n;
+  
+  fp = gmx_fio_fopen(infile,"r");
+  if (fscanf(fp,"%d",&n) != 1)
+    gmx_fatal(FARGS,"Can not read number of atoms from %s",infile);
+  gmx_fio_fclose(fp);
+  
+  return n;
+}
+
+static void read_xyz_conf(char *infile,char *title,t_atoms *atoms,rvec *x)
+{
+  FILE   *fp;
+  int    i,n;
+  double xx,yy,zz;
+  t_symtab *tab;
+  char atomnm[32],buf[STRLEN];
+  
+  snew(tab,1);
+  fp = gmx_fio_fopen(infile,"r");
+  fgets2(buf,STRLEN-1,fp);
+  if (sscanf(buf,"%d",&n) != 1)
+    gmx_fatal(FARGS,"Can not read number of atoms from %s",infile);
+  fgets2(buf,STRLEN-1,fp);
+  strcpy(title,buf);
+  for(i=0; (i<n); i++) {
+    fgets2(buf,STRLEN-1,fp);
+    if (sscanf(buf,"%s%lf%lf%lf",atomnm,&xx,&yy,&zz) != 4)
+      gmx_fatal(FARGS,"Can not read coordinates from %s",infile);
+    atoms->atomname[i] = put_symtab(tab,atomnm);
+    x[i][XX] = xx;
+    x[i][YY] = yy;
+    x[i][ZZ] = zz;
+  }
+  gmx_fio_fclose(fp);
+}
+
 void get_stx_coordnum(char *infile,int *natoms)
 {
   FILE *in;
@@ -1252,6 +1309,9 @@ void get_stx_coordnum(char *infile,int *natoms)
     fr.f = NULL;
     *natoms=read_g96_conf(in,infile,&fr);
     gmx_fio_fclose(in);
+    break;
+  case efXYZ:
+    *natoms = get_xyz_coordnum(infile);
     break;
   case efPDB:
   case efBRK:
@@ -1302,6 +1362,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efGRO:
     read_whole_conf(infile, title, atoms, x, v, box);
     break;
+  case efXYZ:
+    read_xyz_conf(infile,title,atoms,x);
+    break;
   case efG96:
     fr.title = title;
     fr.natoms = atoms->nr;
@@ -1347,3 +1410,4 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     gmx_incons("Not supported in read_stx_conf");
   }
 }
+

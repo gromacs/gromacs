@@ -88,10 +88,10 @@ static const int trns[]={
 #define NTRNS asize(trns)
 
 static const int stos[]={ efGRO, efG96, efPDB, efBRK, 
-  efENT, efESP};
+			  efENT, efESP, efXYZ};
 #define NSTOS asize(stos)
 
-static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT, efESP,
+static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT, efESP, efXYZ,
 #ifdef USE_XDR 
 		       efTPR, 
 #endif 
@@ -144,8 +144,8 @@ static t_deffile deffile[efNR] = {
   { eftGEN, ".???", "ener",   NULL, "Energy file: edr ene",                     NENXS, enxs },
   { eftXDR, ".edr", "ener",   NULL, "Energy file in portable xdr format"     },
   { eftBIN, ".ene", "ener",   NULL, "Energy file: ene"                       },
-  { eftGEN, ".???", "conf",   "-c", "Structure file: gro g96 pdb tpr tpb tpa",  NSTXS, stxs },
-  { eftGEN, ".???", "out",    "-o", "Structure file: gro g96 pdb",              NSTOS, stos },
+  { eftGEN, ".???", "conf",   "-c", "Structure file: gro g96 pdb tpr etc.",  NSTXS, stxs },
+  { eftGEN, ".???", "out",    "-o", "Structure file: gro g96 pdb etc.",         NSTOS, stos },
   { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
   { eftASC, ".g96", "conf",   "-c", "Coordinate file in Gromos-96 format"    },
   { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
@@ -153,7 +153,8 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".ent", "eiwit",  "-f", "Entry in the protein date bank"         },
   { eftASC, ".esp", "conf",   "-f", "Coordinate file in Espresso format"     },
   { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"               },
-  { eftXDR, ".cpt", "state",  "-cp","Checkpoint file"                      },
+  { eftASC, ".xyz", "conf",   "-o", "Coordinate file for some other programs"},
+  { eftXDR, ".cpt", "state",  "-cp","Checkpoint file"                        },
   { eftASC, ".log", "run",    "-l", "Log file"                               },
   { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"                         },
   { eftASC, ".out", "hello",  "-o", "Generic output file"                    },
