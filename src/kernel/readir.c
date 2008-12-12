@@ -1463,7 +1463,8 @@ void do_index(char* mdparin, char *ndx,
       /* Factor 22 seemed rather arbitrary, and if we warn about an
        * order-of-magnitude we should check for that too :-)
        */
-      if (ir->etc && ir->opts.tau_t[i] < 10*ir->delta_t) {
+      if (ir->etc &&
+	  ir->opts.tau_t[i] != 0 && ir->opts.tau_t[i] < 10*ir->delta_t) {
 	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than delta_t (%g)",
 		ir->opts.tau_t[i],ir->delta_t);
 	warning(NULL);
