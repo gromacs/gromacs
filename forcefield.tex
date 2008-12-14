@@ -94,8 +94,8 @@ V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
 \eeq
 
 In constructing the parameter matrix for the non-bonded LJ-parameters,
-two types of \normindex{combination rule}s can be used within {\gromacs}:
-only geometric averages
+two types of \normindex{combination rule}s can be used within {\gromacs},
+only geometric averages (type 1 in the input section of the force field file):
 \beq
 \begin{array}{rcl}
 C_{ij}^{(6)}    &=& \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}    \\
@@ -103,13 +103,22 @@ C_{ij}^{(12)}   &=& \left({C_{ii}^{(12)} \, C_{jj}^{(12)}}\right)^{1/2}
 \label{eqn:comb}
 \end{array}
 \eeq
-or, alternatively the Lorentz-Bertelot rules can be used. An arithmetic average is used for the sigma's, while a geometric average is used for the epsilon's,
+or, alternatively the Lorentz-Bertelot rules can be used. An arithmetic average is used for the sigma's, while a geometric average is used for the epsilon's (type 2):
 \beq
 \begin{array}{rcl}
  \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii} + \sigma_{jj})        \\
  \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
 \end{array}
 \eeq
+finally an geometric average for both the sigma's and epsilon's can be used (type 3):
+\beq
+\begin{array}{rcl}
+ \sigma_{ij}   &=& \left({\sigma_{ii} \, \sigma_{jj}}\right)^{1/2}        \\
+ \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
+\end{array}
+\eeq
+this last rule is used by the OPLS force field.
+
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Buckingham potential}
