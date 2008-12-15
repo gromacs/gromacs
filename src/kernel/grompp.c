@@ -1007,8 +1007,9 @@ int main (int argc, char *argv[])
     float ratio = pme_load_estimate(sys,ir,state.box);
     fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
     if (ratio > 0.5)
-      warning_note("The optimal PME mesh load is usually between 0.25 and 0.33,\n"
-		   "you should probably increase the cut-off and the PME grid spacing");
+      warning_note("The optimal PME mesh load for parallel simulations is below 0.5\n"
+		   "and for highly parallel simulations between 0.25 and 0.33,\n"
+		   "for higher performance, increase the cut-off and the PME grid spacing");
   }
 
   {
