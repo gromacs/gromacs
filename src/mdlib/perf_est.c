@@ -166,11 +166,14 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 
   cost_bond = fbond*n_bonded_dx(mtop,TRUE);
 
+  /* For the PP non-bonded cost it is (unrealistically) assumed
+   * that all atoms are distributed homogeneously in space.
+   */
   cost_pp = 0.5*(fqljw*nw*nqlj +
 		 fqw  *nw*(3*nw + nq) +
 		 fqlj *nqlj*nqlj +
-		 fq   *nq*(3*nw + nq) +
-		 flj  *nlj*(nw + nlj))
+		 fq   *nq*(3*nw + nqlj + nq) +
+		 flj  *nlj*(nw + nqlj + nlj))
     *4/3*M_PI*ir->rlist*ir->rlist*ir->rlist/det(box);
   
   cost_spread = fqspread*(3*nw + nqlj + nq);
