@@ -134,9 +134,12 @@ static bool do_eheader(int fp,t_enxframe *fr,bool *bOK)
   int  tempfix_nr=0;
 
   *bOK=TRUE;
-  if (!do_real(fr->t)       ||
-      !do_int (fr->step)    ||
-	  !do_int (fr->nre)     ||
+  if (!do_real(fr->t))
+  {
+      return FALSE;
+  }
+  if (!do_int (fr->step)    ||
+      !do_int (fr->nre)     ||
       !do_int (fr->ndisre)  || 
       !do_int (fr->nblock))
   {
