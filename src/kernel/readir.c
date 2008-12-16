@@ -119,8 +119,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->ns_type != ensGRID);
     sprintf(err_buf,"with TPI nstlist should be larger than zero");
     CHECK(ir->nstlist <= 0);
-    sprintf(err_buf,"TPI does not work with full electrostatics");
-    CHECK(EEL_FULL(ir->coulombtype));
+    sprintf(err_buf,"TPI does not work with full electrostatics other than PME");
+    CHECK(EEL_FULL(ir->coulombtype) && !EEL_PME(ir->coulombtype));
   }
 
   /* SHAKE / LINCS */
@@ -1831,7 +1831,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, this will often produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
-	      EI_TPI(ir->eI) ? EELTYPE(eelRF) : EELTYPE(eelPME));
+	      EELTYPE(eelPME));
       warning_note(err_buf);
     }
   }

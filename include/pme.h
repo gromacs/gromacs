@@ -67,6 +67,11 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
  * Return value 0 indicates all well, non zero is an error code.
  */
 
+#define GMX_PME_SPREAD_Q      (1<<0)
+#define GMX_PME_SOLVE         (1<<1)
+#define GMX_PME_CALC_F        (1<<2)
+#define GMX_PME_DO_ALL  (GMX_PME_SPREAD_Q | GMX_PME_SOLVE | GMX_PME_CALC_F)
+
 extern int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
 		      rvec x[],        rvec f[],
@@ -75,11 +80,9 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      int  maxshift,   t_nrnb *nrnb,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
-		      real *dvdlambda, bool bGatherOnly);
+		      real *dvdlambda, int flags);
 /* Do a PME calculation for the long range electrostatics. 
- * If bGatherOnly is set, the energy from the last computation will be used, 
- * and the forces will be interpolated at the new positions. No new solving 
- * is done then.
+ * flags, defined above, determine which parts of the calculation are performed.
  * Return value 0 indicates all well, non zero is an error code.
  */
 
@@ -93,6 +96,13 @@ extern int gmx_pmeonly(gmx_pme_t pme,
 extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
 			  int direction);
 
+extern void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V);
+/* Calculate the PME grid energy V for n charges with a potential
+ * in the pme struct determined before with a call to gmx_pme_do
+ * with at least GMX_PME_SPREAD_Q and GMX_PME_SOLVE specified.
+ * Note that the charges are not spread on the grid in the pme struct.
+ * Currently does not work in parallel or with free energy.
+ */
 
 /* The following three routines are for PME/PP node splitting in pme_pp.c */
 

@@ -172,6 +172,8 @@ typedef struct gmx_pme {
     splinevec bsp_mod;
     
     pme_overlap_t overlap[2];
+
+    pme_atomcomm_t atc_energy; /* Only for gmx_pme_calc_energy */
     
     rvec *bufv;             /* Communication buffer */
     real *bufr;             /* Communication buffer */
@@ -236,9 +238,8 @@ static void calc_recipbox(matrix box,matrix recipbox)
   recipbox[ZZ][ZZ]=box[XX][XX]*box[YY][YY]*tmp;
 }
 
-static void calc_idx(gmx_pme_t pme,rvec x[])
+static void calc_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
 {
-    pme_atomcomm_t *atc;
     int  i;
     int  *idxptr,tix,tiy,tiz;
     real *xptr,*fptr,tx,ty,tz;
@@ -255,8 +256,6 @@ static void calc_idx(gmx_pme_t pme,rvec x[])
 #define x86trunc(a,b) asm("fld %1\nfistpl %0\n" : "=m" (*&b) : "f" (a));
 #endif
  
-    atc = &pme->atc[0];
-
     /* Unpack structure */
     unpack_fftgrid(pme->gridA,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     
@@ -268,7 +267,7 @@ static void calc_idx(gmx_pme_t pme,rvec x[])
     rzz = pme->recipbox[ZZ][ZZ];
     
     for(i=0; (i<atc->n); i++) {
-        xptr   = x[i];
+        xptr   = atc->x[i];
         idxptr = atc->idx[i];
         fptr   = atc->fractx[i];
         
@@ -1219,9 +1218,73 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
      * in parallel. Don't know how important it is?  EL 990726
      */
 }
+
+static real gather_energy_bsplines(gmx_pme_t pme,t_fftgrid *grid,
+                                   pme_atomcomm_t *atc)
+{
+    int     n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
+    int     nx,ny,nz,nx2,ny2,nz2,la2,la12,index_x,index_xy;
+    real *  ptr;
+    real    energy,pot,tx,ty,qn,gval;
+    real    *thx,*thy,*thz;
+    int     norder,*idxptr;
+    int     order;
+    
+    unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
+    order = pme->pme_order;
+    thx   = atc->theta[XX];
+    thy   = atc->theta[YY];
+    thz   = atc->theta[ZZ];
+    ii0   = pme->nnx + nx2 + 1 - order/2;
+    jj0   = pme->nny + ny2 + 1 - order/2;
+    kk0   = pme->nnz + nz2 + 1 - order/2;
+    
+    energy = 0;
+    for(n=0; (n<atc->n); n++) {
+        qn      = atc->q[n];
+        
+        if (qn != 0) {
+            idxptr = atc->idx[n];
+            norder = n*order;
+            
+            /* Pointer arithmetic alert, next nine statements */
+            i0   = ii0 + idxptr[XX]; 
+            j0   = jj0 + idxptr[YY];
+            k0   = kk0 + idxptr[ZZ];
+            thx  = atc->theta[XX] + norder;
+            thy  = atc->theta[YY] + norder;
+            thz  = atc->theta[ZZ] + norder;
+
+            pot = 0;
+            for(ithx=0; (ithx<order); ithx++)
+            {
+                index_x = la12*i0[ithx];
+                tx      = thx[ithx];
+
+                for(ithy=0; (ithy<order); ithy++)
+                {
+                    index_xy = index_x+la2*j0[ithy];
+                    ty       = thy[ithy];
+
+                    for(ithz=0; (ithz<order); ithz++)
+                    {
+                        gval  = ptr[index_xy+k0[ithz]];
+                        pot  += tx*ty*thz[ithz]*gval;
+                    }
+
+                }
+            }
+
+            energy += pot*qn;
+        }
+    }
+
+    return energy;
+}
+
 void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
-		   int nz,rvec fractx[],int nr,real charge[],
-		   bool bFreeEnergy)
+                   int nz,rvec fractx[],int nr,real charge[],
+                   bool bFreeEnergy)
 {
     /* construct splines for local atoms */
     int  i,j,k,l;
@@ -1669,38 +1732,65 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     return 0;
 }
 
-static void spread_on_grid(gmx_pme_t pme, pme_atomcomm_t *atc,
-                           t_fftgrid *grid, t_commrec *cr,    
-                           matrix box,
-                           bool bGatherOnly, bool bHaveSplines)
+static void spread_on_grid(gmx_pme_t pme,
+                           pme_atomcomm_t *atc,t_fftgrid *grid,
+                           bool bCalcSplines,bool bSpread)
 { 
     int nx,ny,nz,nx2,ny2,nz2,la2,la12;
     real *ptr;
     
-    /* Unpack structure */
-    unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
+    if (bCalcSplines)
+    {
+        /* Unpack structure */
+        unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     
-    if (!bHaveSplines) {
-        /* Inverse box */
-        calc_recipbox(box,pme->recipbox); 
-    }
-  
-    if (!bGatherOnly) {
-        if (!bHaveSplines) {
-            /* Compute fftgrid index for all atoms,
-             * with help of some extra variables.
-             */
-            calc_idx(pme,atc->x);
-            
-            /* make local bsplines  */
-            make_bsplines(atc->theta,atc->dtheta,pme->pme_order,nx,ny,nz,
-                          atc->fractx,atc->n,atc->q,pme->bFEP);
-        }    
+        /* Compute fftgrid index for all atoms,
+         * with help of some extra variables.
+         */
+        calc_idx(pme,atc);
         
+        /* make local bsplines  */
+        make_bsplines(atc->theta,atc->dtheta,pme->pme_order,nx,ny,nz,
+                      atc->fractx,atc->n,atc->q,pme->bFEP);
+    }    
+    
+    if (bSpread)
+    {
         /* put local atoms on grid. */
         spread_q_bsplines(pme,atc,grid);
         /*    pr_grid_dist(logfile,"spread",grid); */
     }
+}
+
+void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
+{
+    pme_atomcomm_t *atc;
+    t_fftgrid *grid;
+
+    if (pme->nnodes > 1)
+    {
+        gmx_incons("gmx_pme_calc_energy called in parallel");
+    }
+    if (pme->bFEP > 1)
+    {
+        gmx_incons("gmx_pme_calc_energy with free energy");
+    }
+
+    atc = &pme->atc_energy;
+    atc->nslab     = 1;
+    atc->bSpread   = TRUE;
+    atc->pme_order = pme->pme_order;
+    atc->n         = n;
+    pme_realloc_atomcomm_things(atc);
+    atc->x         = x;
+    atc->q         = q;
+    
+    /* We only use the A-charges grid */
+    grid = pme->gridA;
+
+    spread_on_grid(pme,atc,grid,TRUE,FALSE);
+
+    *V = gather_energy_bsplines(pme,grid,atc);
 }
 
 int gmx_pmeonly(gmx_pme_t pme,
@@ -1747,7 +1837,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
                    cr,maxshift,nrnb,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
-                   bGatherOnly);
+                   GMX_PME_DO_ALL);
         
         cycles = wallcycle_stop(wcycle,ewcPMEMESH_SEP);
         
@@ -1772,7 +1862,7 @@ int gmx_pme_do(gmx_pme_t pme,
                int  maxshift,   t_nrnb *nrnb,    
                matrix vir,      real ewaldcoeff,
                real *energy,    real lambda, 
-               real *dvdlambda, bool bGatherOnly)
+               real *dvdlambda, int flags)
 {
     int     q,i,j,ntot,npme;
     int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
@@ -1849,22 +1939,25 @@ int gmx_pme_do(gmx_pme_t pme,
         if (debug)
             fprintf(debug,"Node= %6d, pme local particles=%6d\n",
                     cr->nodeid,atc->n);
-        
-        /* Spread the charges on a grid */
-        GMX_MPE_LOG(ev_spread_on_grid_start);
-        
-        /* Spread the charges on a grid */
-        spread_on_grid(pme,&pme->atc[0],grid,cr,box,bGatherOnly,
-                       q==0 ? FALSE : TRUE);
-        GMX_MPE_LOG(ev_spread_on_grid_finish);
-        
-        if (!bGatherOnly) {
-            if (q == 0) {
+
+        calc_recipbox(box,pme->recipbox); 
+
+        if (flags & GMX_PME_SPREAD_Q)
+        {
+            /* Spread the charges on a grid */
+            GMX_MPE_LOG(ev_spread_on_grid_start);
+            
+            /* Spread the charges on a grid */
+            spread_on_grid(pme,&pme->atc[0],grid,q==0,TRUE);
+            GMX_MPE_LOG(ev_spread_on_grid_finish);
+
+            if (q == 0)
+            {
                 inc_nrnb(nrnb,eNR_WEIGHTS,DIM*atc->n);
             }
             inc_nrnb(nrnb,eNR_SPREADQBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
-            
+
             /* sum contributions to local grid from other nodes */
             if (pme->nnodes > 1) {
 #ifdef DEBUG
@@ -1880,7 +1973,10 @@ int gmx_pme_do(gmx_pme_t pme,
                 pr_fftgrid(debug,"qgrid",grid);
 #endif
             where();
-            
+        }
+         
+        if (flags & GMX_PME_SOLVE)
+        {
             /* do 3d-fft */ 
             GMX_BARRIER(cr->mpi_comm_mysim);
             GMX_MPE_LOG(ev_gmxfft3d_start);
@@ -1924,27 +2020,32 @@ int gmx_pme_do(gmx_pme_t pme,
             inc_nrnb(nrnb,eNR_FFT,2*npme);
             where();
         }
-        /* interpolate forces for our local atoms */
-        GMX_BARRIER(cr->mpi_comm_mysim);
-        GMX_MPE_LOG(ev_gather_f_bsplines_start);
-        
-        where();
-        /* If we are running without parallelization,
-         * atc->f is the actual force array, not a buffer,
-         * therefore we should not clear it.
-         */
-        bClearF = (q == 0 && PAR(cr));
-        gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
-                          pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
-        where();
-        
-        GMX_MPE_LOG(ev_gather_f_bsplines_finish);
-        
-        inc_nrnb(nrnb,eNR_GATHERFBSP,
-                 pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+
+        if (flags & GMX_PME_CALC_F)
+        {
+            /* interpolate forces for our local atoms */
+            GMX_BARRIER(cr->mpi_comm_mysim);
+            GMX_MPE_LOG(ev_gather_f_bsplines_start);
+            
+            where();
+            
+            /* If we are running without parallelization,
+             * atc->f is the actual force array, not a buffer,
+             * therefore we should not clear it.
+             */
+            bClearF = (q == 0 && PAR(cr));
+            gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
+                              pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
+            where();
+            
+            GMX_MPE_LOG(ev_gather_f_bsplines_finish);
+            
+            inc_nrnb(nrnb,eNR_GATHERFBSP,
+                     pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
+        }
     } /* of q-loop */
     
-    if (pme->nnodes > 1) {
+    if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
         GMX_BARRIER(cr->mpi_comm_mysim);
         if (DOMAINDECOMP(cr)) {
             dd_pmeredist_f(pme,&pme->atc[0],maxshift,homenr,f,pme->bPPnode);

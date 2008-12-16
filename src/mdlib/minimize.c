@@ -2581,6 +2581,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
     nener += ngid;
     if (bRFExcl)
       nener += 1;
+    if (EEL_FULL(fr->eeltype))
+      nener += 1;
   }
   snew(sum_UgembU,nener);
 
@@ -2621,6 +2623,10 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
       }
       if (bRFExcl) {
 	sprintf(str,"f. <U\\sRF excl\\Ne\\S-\\8b\\4U\\N>");
+	leg[e++] = strdup(str);
+      }
+      if (EEL_FULL(fr->eeltype)) {
+	sprintf(str,"f. <U\\sCoul recip\\Ne\\S-\\8b\\4U\\N>");
 	leg[e++] = strdup(str);
       }
     }
@@ -2826,6 +2832,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 		 enerd->grpp.ener[egCOULLR][GID(i,gid_tp,ngid)])*embU;
 	    if (bRFExcl)
 	      sum_UgembU[e++] += enerd->term[F_RF_EXCL]*embU;
+	    if (EEL_FULL(fr->eeltype))
+	      sum_UgembU[e++] += enerd->term[F_COUL_RECIP]*embU;
 	  }
 	}
 	

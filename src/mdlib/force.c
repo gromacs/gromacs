@@ -1554,8 +1554,9 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                        int        flags,
                        float      *cycles_force)
 {
-    int     i,nit,status;
+    int     i,status;
     bool    bDoEpot,bSepDVDL,bSB;
+    int     pme_flags;
     matrix  boxs;
     rvec    box_size;
     real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
@@ -1711,18 +1712,34 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         
         clear_mat(fr->vir_el_recip);	
         
-        if(fr->bEwald)
+        if (fr->bEwald)
         {
-            dvdlambda = 0;
-            Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,
-                                       cr,fr,
-                                       md->chargeA,
-                                       md->nChargePerturbed ? md->chargeB : NULL,
-                                       excl,x,bSB ? boxs : box,mu_tot,
-                                       ir->ewald_geometry,ir->epsilon_surface,
-                                       lambda,&dvdlambda,&vdip,&vcharge);
-            PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
-            enerd->term[F_DVDL] += dvdlambda;
+            if (fr->n_tpi == 0)
+            {
+                dvdlambda = 0;
+                Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,
+                                           cr,fr,
+                                           md->chargeA,
+                                           md->nChargePerturbed ? md->chargeB : NULL,
+                                           excl,x,bSB ? boxs : box,mu_tot,
+                                           ir->ewald_geometry,
+                                           ir->epsilon_surface,
+                                           lambda,&dvdlambda,&vdip,&vcharge);
+                PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
+                enerd->term[F_DVDL] += dvdlambda;
+            }
+            else
+            {
+                if (ir->ewald_geometry != eewg3D || ir->epsilon_surface != 0)
+                {
+                    gmx_fatal(FARGS,"TPI with PME currently only works in a 3D geometry with tin-foil boundary conditions");
+                }
+                /* The TPI molecule does not have exclusions with the rest
+                 * of the system and no intra-molecular PME grid contributions
+                 * will be calculated in gmx_pme_calc_energy.
+                 */
+                Vcorr = 0;
+            }
         }
         else
         {
@@ -1749,18 +1766,37 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         case eelPMEUSER:
             if (cr->duty & DUTY_PME)
             {
-                wallcycle_start(wcycle,ewcPMEMESH);
-                status = gmx_pme_do(fr->pmedata,
-                                    md->start,md->homenr,
-                                    x,fr->f_novirsum,
-                                    md->chargeA,md->chargeB,
-                                    bSB ? boxs : box,cr,
-                                    DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
-                                    nrnb,
-                                    fr->vir_el_recip,fr->ewaldcoeff,
-                                    &Vlr,lambda,&dvdlambda,FALSE);
+                if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
+                {
+                    pme_flags = GMX_PME_SPREAD_Q | GMX_PME_SOLVE;
+                    if (flags & GMX_FORCE_FORCES)
+                    {
+                        pme_flags |= GMX_PME_CALC_F;
+                    }
+                    wallcycle_start(wcycle,ewcPMEMESH);
+                    status = gmx_pme_do(fr->pmedata,
+                                        md->start,md->homenr - fr->n_tpi,
+                                        x,fr->f_novirsum,
+                                        md->chargeA,md->chargeB,
+                                        bSB ? boxs : box,cr,
+                                        DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
+                                        nrnb,
+                                        fr->vir_el_recip,fr->ewaldcoeff,
+                                        &Vlr,lambda,&dvdlambda,
+                                        pme_flags);
+                    wallcycle_stop(wcycle,ewcPMEMESH);
+                }
+                if (fr->n_tpi > 0)
+                {
+                    /* Determine the PME grid energy of the test molecule
+                     * with the PME grid potential of the other charges.
+                     */
+                    gmx_pme_calc_energy(fr->pmedata,fr->n_tpi,
+                                        x + md->homenr - fr->n_tpi,
+                                        md->chargeA + md->homenr - fr->n_tpi,
+                                        &Vlr);
+                }
                 PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
-                wallcycle_stop(wcycle,ewcPMEMESH);
             } 
             else
             {
