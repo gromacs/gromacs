@@ -1957,15 +1957,23 @@ void dd_bonded_cg_distance(FILE *fplog,
     
     sfree(vsite);
 
-    if (fplog)
+    if (fplog && (ft2b >= 0 || ftmb >= 0))
     {
         fprintf(fplog,
                 "Initial maximum inter charge-group distances:\n");
-        fprintf(fplog,
-                "    two-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
-                *r_2b,interaction_function[ft2b].longname,a_2b_1+1,a_2b_2+1);
-        fprintf(fplog,
-                "  multi-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
-                *r_mb,interaction_function[ftmb].longname,a_mb_1+1,a_mb_2+1);
+        if (ft2b >= 0)
+        {
+            fprintf(fplog,
+                    "    two-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
+                    *r_2b,interaction_function[ft2b].longname,
+                    a_2b_1+1,a_2b_2+1);
+        }
+        if (ftmb >= 0)
+        {
+            fprintf(fplog,
+                    "  multi-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
+                    *r_mb,interaction_function[ftmb].longname,
+                    a_mb_1+1,a_mb_2+1);
+        }
     }
 }
