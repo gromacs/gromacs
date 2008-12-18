@@ -1032,7 +1032,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
     do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
 
-    if (bNS && !(bFirstStep && ir->bContinuation)) {
+    if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD)) {
       if (bRerunMD) {
 	bMasterState = TRUE;
       } else {
