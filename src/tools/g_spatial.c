@@ -47,7 +47,7 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_cluster(argc,argv);
+  gmx_spatial(argc,argv);
   return 0;
 }
 
