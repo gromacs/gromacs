@@ -113,6 +113,10 @@ static void edr_nms(int fp,int *nre,char ***nms)
     *nre=0;
     return;
   }
+  if (*nre == -55555) {
+    /* In the 4.1 edr format the first entry is the magic number */
+    gmx_fatal(FARGS,"You are trying to read an edr file of GROMACS version 4.1 or later with GROMACS version 4.0");
+  }
   if (NM == NULL) {
     snew(NM,*nre);
   }
