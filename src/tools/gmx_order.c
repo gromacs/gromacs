@@ -168,8 +168,8 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 	cost = iprod(urk,urj) + onethird;
 	cost2 = cost * cost;
 
-	/* sgmol[i] += 3*cost2/32; 
-	   sgmol[i] += cost2; */
+	/* sgmol[i] += 3*cost2/32;  */
+	   sgmol[i] += cost2; 
 
 	/* determine distribution */
 	ibin = nsgbin * cost2;
@@ -567,8 +567,8 @@ int gmx_order(int argc,char *argv[])
     { efXVG,"-o","order", ffWRITE }, 	    /* xvgr output file 	  */
     { efXVG,"-od","deuter", ffWRITE },      /* xvgr output file           */
     { efXVG,"-os","sliced", ffWRITE },      /* xvgr output file           */
-    { efXVG,"-Sg","sg-ang", ffWRITE },      /* xvgr output file           */
-    { efXVG,"-Sk","sk-dist", ffWRITE },     /* xvgr output file           */
+    { efXVG,"-Sg","sg-ang", ffOPTWR },      /* xvgr output file           */
+    { efXVG,"-Sk","sk-dist", ffOPTWR },     /* xvgr output file           */
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
@@ -587,6 +587,7 @@ int gmx_order(int argc,char *argv[])
   
   /* tetraheder order parameter */
   if (skfnm || sgfnm) {
+    /* If either of theoptions is set we compute both */
     calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm);
     /* view xvgr files */
     do_view(opt2fn("-Sg",NFILE,fnm), NULL);
