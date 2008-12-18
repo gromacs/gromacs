@@ -622,20 +622,32 @@ static void set_wall_atomtype(t_atomtype at,t_gromppopts *opts,
 
 static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
 {
-  int count,i,mb;
+  int count,count_mol,i,mb;
   gmx_molblock_t *molb;
   t_params *plist;
+  char buf[STRLEN];
 
   count = 0;
   for(mb=0; mb<mtop->nmolblock; mb++) {
+    count_mol = 0;
     molb  = &mtop->molblock[mb];
     plist = mi[molb->type].plist;
     for(i=0; i<F_NRE; i++) {
       if (i == F_SETTLE)
-	count += molb->nmol*3*plist[i].nr;
+	count_mol += 3*plist[i].nr;
       else if (interaction_function[i].flags & IF_CONSTRAINT)
-	count += molb->nmol*plist[i].nr;
+	count_mol += plist[i].nr;
     }
+    printf("nat %d count_mol %d\n",mi[molb->type].atoms.nr,count_mol);
+    if (count_mol > mi[molb->type].atoms.nr*3 - 6) {
+      sprintf(buf,
+	      "Molecule type '%s' has %d constraints.\n"
+	      "For stability and efficiency there should not be more constraints than internal number of degrees of freedom: %d*3 - 6 = %d.\n",
+	      *mi[molb->type].name,count_mol,
+	      mi[molb->type].atoms.nr,mi[molb->type].atoms.nr*3-6);
+      warning(buf);
+    }
+    count += molb->nmol*count_mol;
   }
 
   return count;
