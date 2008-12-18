@@ -264,9 +264,9 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec,
   /* write list of eigenvector indicess */
   for(n=0;eig_list[n];n++) {
     if (steps)
-      fprintf(fp,"%8d   %f\n",eig_list[n],steps[n]); 
+      fprintf(fp,"%8d   %g\n",eig_list[n],steps[n]); 
     else 
-      fprintf(fp,"%8d   %f\n",eig_list[n],1.0);
+      fprintf(fp,"%8d   %g\n",eig_list[n],1.0);
   }
   n=0;
     
@@ -543,9 +543,6 @@ int main(int argc,char *argv[])
     */
     static t_edipar edi_params;     
     
-    static int  first=1,last=8,skip=1,nextr=2;
-    static real max=0.0;
-    static bool bSplit=FALSE;
     enum  { evSTEPEND = evRADFIX + 1}; 
     static char* evSelections[evEND]= {NULL,NULL,NULL,NULL,NULL,NULL};
     static char* evOptions[evEND] = {"-linfix","-linacc","-flood","-radfix","-radacc","-radcon","-mon"};
@@ -616,10 +613,8 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
     
     rvec       *xref1;
-    bool       bDMA1;
     int        nvec1,*eignr1=NULL;
     rvec       *xav1,**eigvec1=NULL;
-    rvec       *xtar,*xori;
     t_atoms    *atoms=NULL;
     int natoms;
     char       *grpname,*indexfile;
@@ -639,12 +634,10 @@ int main(int argc,char *argv[])
     /*to read topology file*/
     t_topology top;
     int        ePBC;
-    t_topology tartop,oritop;
-    matrix     tarbox,oribox;
     char       title[STRLEN];
     matrix     topbox;
     rvec       *xtop;
-    bool bTop, bM, bFit1;
+    bool bTop, bFit1;
     
     t_filenm fnm[] = {
     { efTRN, "-f",    "eigenvec",    ffREAD  },
