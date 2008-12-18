@@ -669,6 +669,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (shellfc) {
       make_local_shells(cr,mdatoms,shellfc);
     }
+
+    if (ir->pull) {
+      dd_make_local_pull_groups(NULL,ir->pull,mdatoms);
+    }
   }
 
   if (DOMAINDECOMP(cr)) {
@@ -849,9 +853,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
 				     &rerun_fr,TRX_NEED_X | TRX_READ_V);
-    if (rerun_fr.natoms != mdatoms->nr)
+    if (rerun_fr.natoms != top_global->natoms)
       gmx_fatal(FARGS,"Number of atoms in trajectory (%d) does not match the "
-		  "run input file (%d)\n",rerun_fr.natoms,mdatoms->nr);
+		"run input file (%d)\n",rerun_fr.natoms,top_global->natoms);
     if (ir->ePBC != epbcNONE) {
       if (!rerun_fr.bBox)
 	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
@@ -1027,15 +1031,19 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
     do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
 
-    if (bNS && !(bFirstStep && ir->bContinuation)) {
-      bMasterState = FALSE;
-      /* Correct the new box if it is too skewed */
-      if (DYNAMIC_BOX(*ir) && !bRerunMD) {
-	if (correct_box(fplog,step,state->box,graph))
-	  bMasterState = TRUE;
+    if (bNS && !(bFirstStep && ir->bContinuation && !bRerunMD)) {
+      if (bRerunMD) {
+	bMasterState = TRUE;
+      } else {
+	bMasterState = FALSE;
+	/* Correct the new box if it is too skewed */
+	if (DYNAMIC_BOX(*ir)) {
+	  if (correct_box(fplog,step,state->box,graph))
+	    bMasterState = TRUE;
+	}
+	if (DOMAINDECOMP(cr) && bMasterState)
+	  dd_collect_state(cr->dd,state,state_global);
       }
-      if (DOMAINDECOMP(cr) && bMasterState)
-	dd_collect_state(cr->dd,state,state_global);
       
       if (DOMAINDECOMP(cr)) {
 	/* Repartition the domain decomposition */
