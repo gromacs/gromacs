@@ -710,44 +710,53 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
   do_constraint(pull,md,pbc,xp,v,MASTER(cr),vir,dt,t);
 }
 
-static void dd_make_local_pull_group(gmx_domdec_t *dd,
-				     t_pullgrp *pg,t_mdatoms *md)
+static void make_local_pull_group(gmx_ga2la_t *ga2la,
+				  t_pullgrp *pg,int start,int end)
 {
   int i,ii;
-  gmx_ga2la_t *ga2la=NULL;
 
-  ga2la = dd->ga2la;
   pg->nat_loc = 0;
   for(i=0; i<pg->nat; i++) {
-    if (ga2la[pg->ind[i]].cell == 0) {
-      ii = ga2la[pg->ind[i]].a;
-      if (ii < md->start+md->homenr) {
-	/* This is a home atom, add it to the local pull group */
-	if (pg->nat_loc >= pg->nalloc_loc) {
-	  pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
-	  srenew(pg->ind_loc,pg->nalloc_loc);
-	  if (pg->epgrppbc == epgrppbcCOS || pg->weight) {
-	    srenew(pg->weight_loc,pg->nalloc_loc);
-	  }
+    ii = pg->ind[i];
+    if (ga2la) {
+      if (ga2la[ii].cell == 0)
+	ii = ga2la[ii].a;
+      else
+	ii = -1;
+    }
+    if (ii >= start && ii < end) {
+      /* This is a home atom, add it to the local pull group */
+      if (pg->nat_loc >= pg->nalloc_loc) {
+	pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
+	srenew(pg->ind_loc,pg->nalloc_loc);
+	if (pg->epgrppbc == epgrppbcCOS || pg->weight) {
+	  srenew(pg->weight_loc,pg->nalloc_loc);
 	}
-	pg->ind_loc[pg->nat_loc] = ii;
-	if (pg->weight) {
-	  pg->weight_loc[pg->nat_loc] = pg->weight[i];
-	}
-	pg->nat_loc++;
       }
+      pg->ind_loc[pg->nat_loc] = ii;
+      if (pg->weight) {
+	  pg->weight_loc[pg->nat_loc] = pg->weight[i];
+      }
+      pg->nat_loc++;
     }
   }
 }
 
 void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 {
+  gmx_ga2la_t *ga2la;
   int g;
+  
+  if (dd) {
+    ga2la = dd->ga2la;
+  } else {
+    ga2la = NULL;
+  }
 
   if (pull->grp[0].nat > 0)
-    dd_make_local_pull_group(dd,&pull->grp[0],md);
+    make_local_pull_group(ga2la,&pull->grp[0],md->start,md->start+md->homenr);
   for(g=1; g<1+pull->ngrp; g++)
-    dd_make_local_pull_group(dd,&pull->grp[g],md);
+    make_local_pull_group(ga2la,&pull->grp[g],md->start,md->start+md->homenr);
 }
 
 static void init_pull_group_index(FILE *fplog,t_commrec *cr,
