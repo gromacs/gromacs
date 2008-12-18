@@ -631,7 +631,8 @@ void set_constraints(struct gmx_constr *constr,
 static void constr_recur(t_blocka *at2con,
 			 t_ilist *ilist,t_iparams *iparams,bool bTopB,
 			 int at,int depth,int nc,int *path,
-			 real r0,real r1,real *r2max)
+			 real r0,real r1,real *r2max,
+			 int *count)
 {
   int  ncon1;
   t_iatom *ia1,*ia2;
@@ -639,6 +640,8 @@ static void constr_recur(t_blocka *at2con,
   bool bUse;
   t_iatom *ia;
   real len,rn0,rn1;
+
+  (*count)++;
 
   ncon1 = ilist[F_CONSTR].nr/3;
   ia1   = ilist[F_CONSTR].iatoms;
@@ -680,7 +683,11 @@ static void constr_recur(t_blocka *at2con,
 	  fprintf(debug," %d %5.3f\n",con,len);
 	}
       }
-      if (depth + 1 < nc) {
+      /* Limit the number of recursions to 1000*nc,
+       * so a call does not take more than a second,
+       * even for highly connected systems.
+       */
+      if (depth + 1 < nc && *count < 1000*nc) {
 	if (ia[1] == at)
 	  a1 = ia[2];
 	else
@@ -688,7 +695,7 @@ static void constr_recur(t_blocka *at2con,
 	/* Recursion */
 	path[depth] = con;
 	constr_recur(at2con,ilist,iparams,
-		     bTopB,a1,depth+1,nc,path,rn0,rn1,r2max);
+		     bTopB,a1,depth+1,nc,path,rn0,rn1,r2max,count);
 	path[depth] = -1;
       }
     }
@@ -699,7 +706,7 @@ static real constr_r_max_moltype(FILE *fplog,
 				 gmx_moltype_t *molt,t_iparams *iparams,
 				 t_inputrec *ir)
 {
-  int natoms,nflexcon,*path,at;
+  int natoms,nflexcon,*path,at,count;
   t_blocka at2con;
   real r0,r1,r2maxA,r2maxB,rmax,lam0,lam1;
 
@@ -720,8 +727,9 @@ static real constr_r_max_moltype(FILE *fplog,
   for(at=0; at<natoms; at++) {
     r0 = 0;
     r1 = 0;
+    count = 0;
     constr_recur(&at2con,molt->ilist,iparams,
-		 FALSE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxA);
+		 FALSE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxA,&count);
   }
   if (ir->efep == efepNO) {
     rmax = sqrt(r2maxA);
@@ -730,8 +738,9 @@ static real constr_r_max_moltype(FILE *fplog,
     for(at=0; at<natoms; at++) {
       r0 = 0;
       r1 = 0;
+      count = 0;
       constr_recur(&at2con,molt->ilist,iparams,
-		   TRUE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxB);
+		   TRUE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxB,&count);
     }
     lam0 = ir->init_lambda;
     if (EI_DYNAMICS(ir->eI))
