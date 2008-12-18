@@ -198,7 +198,13 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   
   if (DEFORM(*inputrec)) {
     /* Store the deform reference box before reading the checkpoint */
-    set_deform_reference_box(inputrec->init_step,state->box);
+    if (SIMMASTER(cr)) {
+      copy_mat(state->box,box);
+    }
+    if (PAR(cr)) {
+      gmx_bcast(sizeof(box),box,cr);
+    }
+    set_deform_reference_box(inputrec->init_step,box);
   }
 
   if (opt2bSet("-cpi",nfile,fnm)) 
