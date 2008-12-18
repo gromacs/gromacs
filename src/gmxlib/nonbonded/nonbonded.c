@@ -684,9 +684,9 @@ do_listed_vdw_q(int ftype,int nbonds,
             {
                 fprintf(stderr,"Warning: 1-4 interaction between %d and %d "
                         "at distance %.3f which is larger than the 1-4 table size %.3f nm\n", 
-                        glatnr(global_atom_index,ai)+1,
-                        glatnr(global_atom_index,aj)+1,
-                        sqrt(r2), sqrt(rtab2));
+			glatnr(global_atom_index,ai),
+			glatnr(global_atom_index,aj),
+			sqrt(r2), sqrt(rtab2));
                 fprintf(stderr,"These are ignored for the rest of the simulation\n");
                 fprintf(stderr,"This usually means your system is exploding,\n"
                         "if not, you should increase table-extension in your mdp file\n"
@@ -694,12 +694,12 @@ do_listed_vdw_q(int ftype,int nbonds,
                 bWarn = TRUE;
             }
             if (debug) 
-                fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
-                        x[ai][XX],x[ai][YY],x[ai][ZZ],
-                        x[aj][XX],x[aj][YY],x[aj][ZZ],
-                        glatnr(global_atom_index,ai)+1,
-                        glatnr(global_atom_index,aj)+1,
-                        sqrt(r2));
+	      fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored\n",
+		      x[ai][XX],x[ai][YY],x[ai][ZZ],
+		      x[aj][XX],x[aj][YY],x[aj][ZZ],
+		      glatnr(global_atom_index,ai),
+		      glatnr(global_atom_index,aj),
+		      sqrt(r2));
         }
         else 
         {
