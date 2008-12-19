@@ -71,7 +71,9 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 				    int natoms, matrix box,
 				    rvec x[],int maxidx,atom_id index[], 
 				    real time,
-				    real *sgmean, real *skmean)
+				    real *sgmean, real *skmean,
+				    int nslice,int slice_dim,
+				    real sgslice[],real skslice[])
 {
   FILE    *fpoutdist;
   char    fnsgdist[32];
@@ -82,14 +84,14 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
   t_pbc   pbc;
   t_mat   *dmat;
   t_dist  *d;
-  int     m1,mm;
-  int    **nnb;
+  int     m1,mm,sl_index;
+  int    **nnb,*sl_count;
   real   onethird=1.0/3.0;
   
   /*  dmat = init_mat(maxidx, FALSE); */
 
   box2 = box[XX][XX] * box[XX][XX];
-  
+  snew(sl_count,nslice);
   for (i=0; (i<4); i++) {
     snew(r_nn[i],natoms);
     snew(nn[i],natoms);
@@ -195,11 +197,24 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
     }
     
     *skmean += skmol[i];
+    
+    /* Compute sliced stuff */
+    sl_index = gmx_nint((1+x[i][slice_dim]/box[slice_dim][slice_dim])*nslice) % nslice;
+    sgslice[sl_index] += sgmol[i];
+    skslice[sl_index] += skmol[i];
+    sl_count[sl_index]++;
   } /* loop over entries in index file */
   
   *sgmean /= maxidx;
   *skmean /= maxidx;
-
+  
+  for(i=0; (i<nslice); i++) {
+    if (sl_count[i] > 0) {
+      sgslice[i] /= sl_count[i];
+      skslice[i] /= sl_count[i];
+    }
+  }
+  sfree(sl_count);
   sfree(sgbin);
   sfree(sgmol);
   sfree(skmol);
@@ -211,7 +226,9 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 
 
 static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
-			    char *sgfn,char *skfn)
+				  char *sgfn,char *skfn,
+				  int nslice,int slice_dim,
+				  char *sgslfn,char *skslfn)
 {
   FILE       *fpsg=NULL,*fpsk=NULL;
   t_topology top;
@@ -226,9 +243,14 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   atom_id    **index;
   char       **grpname;
   int        i,*isize,ng,nframes;
+  real       *sg_slice,*sg_slice_tot,*sk_slice,*sk_slice_tot;
   
   read_tps_conf(fnTPS,title,&top,&ePBC,&xtop,NULL,box,FALSE);
 
+  snew(sg_slice,nslice);
+  snew(sk_slice,nslice);
+  snew(sg_slice_tot,nslice);
+  snew(sk_slice_tot,nslice);
   ng = 1;
   /* get index groups */
   printf("Select the group that contains the atoms you want to use for the tetrahedrality order parameter calculation:\n");
@@ -251,7 +273,11 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   nframes = 0;
   do {
     find_nearest_neighbours(top,ePBC,natoms,box,x,isize[0],index[0],t,
-			    &sg,&sk);
+			    &sg,&sk,nslice,slice_dim,sg_slice,sk_slice);
+    for(i=0; (i<nslice); i++) {
+      sg_slice_tot[i] += sg_slice[i];
+      sk_slice_tot[i] += sk_slice[i];
+    }
     fprintf(fpsg,"%f %f\n", t, sg);
     fprintf(fpsk,"%f %f\n", t, sk);
     nframes++;
@@ -262,6 +288,15 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   sfree(index);
   sfree(isize);
 
+  fclose(fpsg);
+  fclose(fpsk);
+  
+  fpsg = xvgropen(sgslfn,"S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N");
+  fpsk = xvgropen(skslfn,"S\\sk\\N Distance Order Parameter / Slab","(nm)","S\\sk\\N");
+  for(i=0; (i<nslice); i++) {
+    fprintf(fpsg,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,sg_slice_tot[i]/nframes);
+    fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,sk_slice_tot[i]/nframes);
+  }
   fclose(fpsg);
   fclose(fpsk);
 }
@@ -569,6 +604,8 @@ int gmx_order(int argc,char *argv[])
     { efXVG,"-os","sliced", ffWRITE },      /* xvgr output file           */
     { efXVG,"-Sg","sg-ang", ffOPTWR },      /* xvgr output file           */
     { efXVG,"-Sk","sk-dist", ffOPTWR },     /* xvgr output file           */
+    { efXVG,"-Sgsl","sg-ang-slice", ffOPTWR },      /* xvgr output file           */
+    { efXVG,"-Sksl","sk-dist-slice", ffOPTWR },     /* xvgr output file           */
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
@@ -578,40 +615,49 @@ int gmx_order(int argc,char *argv[])
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
-
+  if (nslices < 1)
+    gmx_fatal(FARGS,"Can not have nslices < 1");
   sgfnm = opt2fn_null("-Sg",NFILE,fnm);
   skfnm = opt2fn_null("-Sk",NFILE,fnm);
   ndxfnm = ftp2fn(efNDX,NFILE,fnm);
   tpsfnm = ftp2fn(efTPX,NFILE,fnm);
   trxfnm = ftp2fn(efTRX,NFILE,fnm);
   
+  /* Calculate axis */
+  if (strcmp(normal_axis[0],"x") == 0) axis = XX;
+  else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
+  else if (strcmp(normal_axis[0],"z") == 0) axis = ZZ;
+  else gmx_fatal(FARGS,"Invalid axis, use x, y or z");
+  
+  switch (axis) {
+  case 0:
+    fprintf(stderr,"Taking x axis as normal to the membrane\n");
+    break;
+  case 1:
+    fprintf(stderr,"Taking y axis as normal to the membrane\n");
+    break;
+  case 2:
+    fprintf(stderr,"Taking z axis as normal to the membrane\n");
+    break;
+  }
+  
   /* tetraheder order parameter */
   if (skfnm || sgfnm) {
     /* If either of theoptions is set we compute both */
-    calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm);
+    sgfnm = opt2fn("-Sg",NFILE,fnm);
+    skfnm = opt2fn("-Sk",NFILE,fnm);
+    calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm,nslices,axis,
+			  opt2fn("-Sgsl",NFILE,fnm),opt2fn("-Sksl",NFILE,fnm));
     /* view xvgr files */
     do_view(opt2fn("-Sg",NFILE,fnm), NULL);
     do_view(opt2fn("-Sk",NFILE,fnm), NULL);
+    if (nslices > 1) {
+      do_view(opt2fn("-Sgsl",NFILE,fnm), NULL);
+      do_view(opt2fn("-Sksl",NFILE,fnm), NULL);
+    }
   } 
   else {  
     /* tail order parameter */
-    /* Calculate axis */
-    if (strcmp(normal_axis[0],"x") == 0) axis = XX;
-    else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
-    else if (strcmp(normal_axis[0],"z") == 0) axis = ZZ;
-    else gmx_fatal(FARGS,"Invalid axis, use x, y or z");
-    
-    switch (axis) {
-    case 0:
-      fprintf(stderr,"Taking x axis as normal to the membrane\n");
-      break;
-    case 1:
-      fprintf(stderr,"Taking y axis as normal to the membrane\n");
-      break;
-    case 2:
-      fprintf(stderr,"Taking z axis as normal to the membrane\n");
-      break;
-    }
     
     if (nslices > 1) {
       bSliced = TRUE;
