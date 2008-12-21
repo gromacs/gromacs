@@ -80,13 +80,16 @@ void pr_alloc (int extra, t_params *pr)
 	    (unsigned long)pr->param);
     pr->param = NULL;
   }
-  srenew(pr->param,pr->nr+extra);
-  for(i=pr->nr; (i<pr->nr+extra); i++) {
-    for(j=0; (j<MAXATOMLIST); j++)
-      pr->param[i].a[j]=0;
-    for(j=0; (j<MAXFORCEPARAM); j++)
-      pr->param[i].c[j]=0;
-    set_p_string(&(pr->param[i]),"");
+  if (pr->nr+extra > pr->maxnr) {
+    pr->maxnr = max(1.2*pr->maxnr,pr->maxnr + extra);
+    srenew(pr->param,pr->maxnr);
+    for(i=pr->nr; (i<pr->maxnr); i++) {
+      for(j=0; (j<MAXATOMLIST); j++)
+	pr->param[i].a[j]=0;
+      for(j=0; (j<MAXFORCEPARAM); j++)
+	pr->param[i].c[j]=0;
+      set_p_string(&(pr->param[i]),"");
+    }
   }
 }
 
@@ -96,6 +99,7 @@ void init_plist(t_params plist[])
   
   for(i=0; (i<F_NRE); i++) {
     plist[i].nr    = 0;
+    plist[i].maxnr = 0;
     plist[i].param = NULL;
   }
 }
