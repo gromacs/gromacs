@@ -1153,15 +1153,28 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
 static void write_xyz_conf(char *outfile,char *title,t_atoms *atoms,rvec *x)
 {
   FILE *fp;
-  int i;
+  int i,anr;
+  real value;
+  char *ptr,*name;
+  gmx_atomprop_t aps=gmx_atomprop_init();
   
   fp = gmx_fio_fopen(outfile,"w");
   fprintf(fp,"%3d\n",atoms->nr);
   fprintf(fp,"%s\n",title);
-  for(i=0; (i<atoms->nr); i++)
-    fprintf(fp,"%3s%10.5f%10.5f%10.5f\n",*atoms->atomname[i],
-	    x[i][XX],x[i][YY],x[i][ZZ]);
+  for(i=0; (i<atoms->nr); i++) {
+    anr  = atoms->atom[i].atomnumber;
+    name = *atoms->atomname[i];
+    if (anr == NOTSET) {
+      if (gmx_atomprop_query(aps,epropElement,"???",name,&value))
+	anr = gmx_nint(value);
+    }
+    if ((ptr = gmx_atomprop_element(aps,anr)) == NULL)
+      ptr = name;
+    fprintf(fp,"%3s%10.5f%10.5f%10.5f\n",ptr,
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
+  }
   gmx_fio_fclose(fp);
+  gmx_atomprop_destroy(aps);
 }
 
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
@@ -1170,7 +1183,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   FILE       *out;
   int        ftp;
   t_trxframe fr;
-
+  
   ftp=fn2ftp(outfile);
   switch (ftp) {
   case efGRO:
@@ -1280,9 +1293,9 @@ static void read_xyz_conf(char *infile,char *title,t_atoms *atoms,rvec *x)
     if (sscanf(buf,"%s%lf%lf%lf",atomnm,&xx,&yy,&zz) != 4)
       gmx_fatal(FARGS,"Can not read coordinates from %s",infile);
     atoms->atomname[i] = put_symtab(tab,atomnm);
-    x[i][XX] = xx;
-    x[i][YY] = yy;
-    x[i][ZZ] = zz;
+    x[i][XX] = xx*0.1;
+    x[i][YY] = yy*0.1;
+    x[i][ZZ] = zz*0.1;
   }
   gmx_fio_fclose(fp);
 }
