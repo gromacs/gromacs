@@ -65,6 +65,7 @@ typedef struct {
 
 typedef struct {
   int		nr;		/* The number of bonds in this record 	*/
+  int           maxnr;          /* The amount of elements in the array  */
   t_param 	*param;		/* Array of parameters (dim: nr)	*/
 } t_params;
 
