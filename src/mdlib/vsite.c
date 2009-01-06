@@ -473,7 +473,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      int ePBC,bool bMolPBC,t_graph *graph,
 		      t_commrec *cr,matrix box)
 {
-  rvec      xv,vv,dx;
+  rvec      xpbc,xv,vv,dx;
   real      a1,b1,c1,inv_dt;
   int       i,inc,ii,nra,nr,tp,ftype;
   t_iatom   avsite,ai,aj,ak,al,pbc_atom;
@@ -550,10 +550,17 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	/* Check what kind of pbc we need to use */
 	if (vsite_pbc) {
 	  pbc_atom = vsite_pbc[i/(1+nra)];
-	  if (pbc_atom > -2)
+	  if (pbc_atom > -2) {
+	    if (pbc_atom >= 0) {
+	      /* We need to copy the coordinates here,
+	       * single for single atom cg's pbc_atom is the vsite itself.
+	       */
+	      copy_rvec(x[pbc_atom],xpbc);
+	    }
 	    pbc_null2 = pbc_null;
-	  else
+	  } else {
 	    pbc_null2 = NULL;
+	  }
 	} else {
 	  pbc_atom = -2;
 	}
@@ -613,9 +620,9 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	}
 	if (pbc_atom >= 0) {
 	  /* Match the pbc of this vsite to the rest of its charge group */
-	  ishift = pbc_dx_aiuc(pbc_null,x[avsite],x[pbc_atom],dx);
+	  ishift = pbc_dx_aiuc(pbc_null,x[avsite],xpbc,dx);
 	  if (ishift != CENTRAL)
-	    rvec_add(x[pbc_atom],dx,x[avsite]);
+	    rvec_add(xpbc,dx,x[avsite]);
 	}
 	if (v) {
 	  /* Calculate velocity of vsite... */
@@ -1489,8 +1496,13 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	  }
 	}
 	if (vsite_pbc_f[vsi] == -1) {
-	  if (cg_v != a2cg[ia[1+i+1]] &&
-	      cgs->index[cg_v]+1 < cgs->index[cg_v+1]) {
+	  if (cgs->index[cg_v+1] == cgs->index[cg_v]+1) {
+	  /* Single charge group cg.
+	   * The pbc of the input coordinates to construct_vsites
+	   * should be preserved.
+	   */
+	    vsite_pbc_f[vsi] = vsite;
+	  } else if (cg_v != a2cg[ia[1+i+1]]) {
 	    /* This vsite has a different charge group index
 	     * than it's first constructing atom
 	     * and the charge group has more than one atom,
