@@ -389,7 +389,8 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		 * will become the shortest due to shift try.
 		 */
 		if (d == pbc->dim) {
-		  try[d] == 0;
+		  try[d] = 0;
+		  pos[d] = 0;
 		} else {
 		  if (try[d] < 0)
 		    pos[d] = min( pbc->hbox_diag[d],-try[d]);
