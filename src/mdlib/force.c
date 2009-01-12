@@ -1026,11 +1026,13 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
 }
 
 void forcerec_set_ranges(t_forcerec *fr,
-                         int ncg_home,int natoms_force,int natoms_f_novirsum)
+                         int ncg_home,int ncg_force,
+                         int natoms_force,int natoms_f_novirsum)
 {
     fr->cg0 = 0;
     fr->hcg = ncg_home;
 
+    fr->ncg_force    = ncg_force;
     fr->natoms_force = natoms_force;
 
     if (fr->natoms_force > fr->nalloc_force)
@@ -1442,7 +1444,8 @@ void init_forcerec(FILE *fp,
     if (!DOMAINDECOMP(cr))
     {
         /* This is corrected later for particle decomposition */
-        forcerec_set_ranges(fr,ncg_mtop(mtop),mtop->natoms,mtop->natoms);
+        forcerec_set_ranges(fr,ncg_mtop(mtop),ncg_mtop(mtop),
+                            mtop->natoms,mtop->natoms);
     }
     
     fr->print_force = print_force;

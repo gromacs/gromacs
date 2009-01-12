@@ -7861,7 +7861,7 @@ void dd_partition_system(FILE            *fplog,
     }
 
     /* Set the number of atoms required for the force calculation */
-    forcerec_set_ranges(fr,dd->ncg_home,dd->nat_tot,nat_f_novirsum);
+    forcerec_set_ranges(fr,dd->ncg_home,dd->ncg_tot,dd->nat_tot,nat_f_novirsum);
 
     /* We make the all mdatoms up to nat_tot_con.
      * We could save some work by only setting invmass

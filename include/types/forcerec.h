@@ -188,6 +188,8 @@ typedef struct {
    */
   /* bool *bMask; */
 
+  /* The number of charge groups participating in do_force_lowlevel */
+  int ncg_force;
   /* The number of atoms participating in do_force_lowlevel */
   int natoms_force;
   /* The allocation size of vectors of size natoms_force */
