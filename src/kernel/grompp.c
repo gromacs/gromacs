@@ -632,14 +632,22 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
     count_mol = 0;
     molb  = &mtop->molblock[mb];
     plist = mi[molb->type].plist;
+      
     for(i=0; i<F_NRE; i++) {
       if (i == F_SETTLE)
 	count_mol += 3*plist[i].nr;
       else if (interaction_function[i].flags & IF_CONSTRAINT)
 	count_mol += plist[i].nr;
     }
-    printf("nat %d count_mol %d\n",mi[molb->type].atoms.nr,count_mol);
-    if (count_mol > mi[molb->type].atoms.nr*3 - 6) {
+      
+      /* printf("nat %d count_mol %d\n",mi[molb->type].atoms.nr,count_mol); */
+
+      /* Only issue warnings if we have at least four atoms in this mol, otherwise
+       * we might issue warnings for molecules with single atoms (ions), or
+       * linear/planar geometries.
+       */
+      
+      if ( (mi[molb->type].atoms.nr > 3) && (count_mol > mi[molb->type].atoms.nr*3 - 6) ) {
       sprintf(buf,
 	      "Molecule type '%s' has %d constraints.\n"
 	      "For stability and efficiency there should not be more constraints than internal number of degrees of freedom: %d*3 - 6 = %d.\n",
