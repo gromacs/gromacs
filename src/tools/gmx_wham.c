@@ -293,7 +293,9 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
     char  *tmpbuf,fmt[256],fmtign[256];
     int    len=STRLEN,dstep=1;
 
-
+	minfound=1e20;
+	maxfound=-1e20;
+	
     if (!bGetMinMax)
     {
         bins=opt->bins;
@@ -1348,6 +1350,8 @@ void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
     bool dt_ok,timeok,bHaveForce;
     char *quantity;
 
+	minfound=1e20;
+	maxfound=-1e20;
 
     /*
      in force    output pullf.xvg: No   reference, one  column  per pull group
