@@ -536,7 +536,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0; m<DIM; m++)
-	  vir[j][m] += 0.5*f[j]*r_ij[g][m];
+	  vir[j][m] -= 0.5*f[j]*r_ij[g][m];
     }
 
     /* update the atom positions */
@@ -676,7 +676,7 @@ static void do_pull_pot(int ePull,
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0;m<DIM;m++)
-	  vir[j][m] += 0.5*pgrp->f[j]*pgrp->dr[m];
+	  vir[j][m] -= 0.5*pgrp->f[j]*pgrp->dr[m];
     }
   }
 }
