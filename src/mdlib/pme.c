@@ -897,7 +897,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 					thy = atc->theta[YY] + norder;
 					thz = atc->theta[ZZ] + norder;
 					
-#if (defined __IBMC__ || defined __IBMCPP__) 
+#if ((defined __IBMC__ || defined __IBMCPP__) && defined _IBMSMP)
 					/* Magic optimization pragma proposed by Mathias Puetz */
 #pragma ibm independent_loop
 #endif
@@ -925,7 +925,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
 					thy = atc->theta[YY] + norder;
 					thz = atc->theta[ZZ] + norder;
 			
-#if (defined __IBMC__ || defined __IBMCPP__) 
+#if ((defined __IBMC__ || defined __IBMCPP__) && defined _IBMSMP)
 					/* Magic optimization pragma proposed by Mathias Puetz */
 #pragma ibm independent_loop
 #endif
