@@ -1217,7 +1217,7 @@ int gmx_chi(int argc,char *argv[])
     strcat(grpname, "Omega "); 
   if(bChi){ 
     strcat(grpname, "Chi 1-") ; 
-    sprintf(grpname, "%s%i", grpname,maxchi); 
+    sprintf(grpname + strlen(grpname), "%i", maxchi); 
   }
 
 
