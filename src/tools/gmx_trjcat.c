@@ -248,14 +248,14 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
     readtime[nfiles]=FLT_MAX;
 }
 
-static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
+static void do_demux(int nset,char *fnms[],char *fnms_out[],
 		     int nval,real **value,real *time,real dt_remd,
-		     int isize,atom_id index[])
+		     int isize,atom_id index[],real dt)
 {
   int        i,j,k,natoms,nnn;
   int        *fp_in,*fp_out;
   bool       bCont,*bSet;
-  real       t;
+  real       t,first_time=0;
   t_trxframe *trx;
   
   snew(fp_in,nset);
@@ -265,8 +265,10 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
   t = -1;
   for(i=0; (i<nset); i++) {
     nnn = read_first_frame(&(fp_in[i]),fnms[i],&(trx[i]),TRX_NEED_X);
-    if (natoms == -1)
+    if (natoms == -1) {
       natoms = nnn;
+      first_time = trx[i].time;
+    }
     else if (natoms != nnn) 
       gmx_fatal(FARGS,"Trajectory file %s has %d atoms while previous trajs had %d atoms",fnms[i],nnn,natoms);
     if (t == -1)
@@ -275,8 +277,8 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
       gmx_fatal(FARGS,"Trajectory file %s has time %f while previous trajs had time %f",fnms[i],trx[i].time,t);
   }
    
-  snew(fp_out,nfile_out);
-  for(i=0; (i<nfile_out); i++)
+  snew(fp_out,nset);
+  for(i=0; (i<nset); i++)
     fp_out[i] = open_trx(fnms_out[i],"w");
   k = 0;
   if (gmx_nint(time[k] - t) != 0) 
@@ -287,19 +289,22 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
       k++;
     if (debug)
       fprintf(debug,"trx[0].time = %g, time[k] = %g\n",trx[0].time,time[k]);
-    for(i=0; (i<nfile_out); i++) 
+    for(i=0; (i<nset); i++) 
       bSet[i] = FALSE;
-    for(i=0; (i<nfile_out); i++) {
+    for(i=0; (i<nset); i++) {
       j = gmx_nint(value[i][k]);
       range_check(j,0,nset);
       if (bSet[j])
 	gmx_fatal(FARGS,"Demuxing the same replica %d twice at time %f",
 		  j,trx[0].time);
       bSet[j] = TRUE;
-      if (index)
-	write_trxframe_indexed(fp_out[j],&trx[i],isize,index);
-      else
-	write_trxframe(fp_out[j],&trx[i]);
+      
+      if (dt==0 || bRmod(trx[i].time,first_time,dt)) {
+	if (index)
+	  write_trxframe_indexed(fp_out[j],&trx[i],isize,index);
+	else
+	  write_trxframe(fp_out[j],&trx[i]);
+      }
     }
     
     bCont = (k < nval);
@@ -307,10 +312,10 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
       bCont = bCont && read_next_frame(fp_in[i],&trx[i]);
   } while (bCont);
   
-  for(i=0; (i<nset); i++) 
+  for(i=0; (i<nset); i++) {
     close_trx(fp_in[i]);
-  for(i=0; (i<nfile_out); i++) 
     close_trx(fp_out[i]);
+  }
 }
 
 int gmx_trjcat(int argc,char *argv[])
@@ -383,7 +388,7 @@ int gmx_trjcat(int argc,char *argv[])
   int         earliersteps,nfile_in,nfile_out,*cont_type,last_ok_step;
   real        *readtime,*timest,*settime;
   real        first_time=0,lasttime=NOTSET,last_ok_t=-1,timestep;
-  int         isize;
+  int         isize,j;
   atom_id     *index=NULL,imax;
   char        *grpname;
   real        **val=NULL,*t=NULL,dt_remd;
@@ -423,6 +428,16 @@ int gmx_trjcat(int argc,char *argv[])
 		      opt2parg_bSet("-e",npargs,pa),end,
 		      1,&nset,&n,&dt_remd,&t);
     printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt_remd);
+    if (debug) {
+      fprintf(debug,"Dump of replica_index.xvg\n");
+      for(i=0; (i<n); i++) {
+	fprintf(debug,"%10 g",t[i]);
+	for(j=0; (j<nset); j++) {
+	  fprintf(debug,"  %3d",gmx_nint(val[j][i]));
+	}
+	fprintf(debug,"\n");
+      }
+    }
   }
   /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
   xtcpr=1;
@@ -444,8 +459,17 @@ int gmx_trjcat(int argc,char *argv[])
   else if (bDeMux && (nfile_out != nset) && (nfile_out != 1))
     gmx_fatal(FARGS,"Number of output files should be 1 or %d (#input files), not %d",nset,nfile_out);
 
-  if (bDeMux) 
-    do_demux(nfile_in,fnms,nfile_out,fnms_out,n,val,t,dt_remd,isize,index);
+  if (bDeMux) {
+    if (nfile_out != nset) {
+      char *buf = strdup(fnms_out[0]);
+      snew(fnms_out,nset);
+      for(i=0; (i<nset); i++) {
+	snew(fnms_out[i],strlen(buf)+32);
+	sprintf(fnms_out[i],"%d_%s",i,buf);
+      }
+    }
+    do_demux(nfile_in,fnms,fnms_out,n,val,t,dt_remd,isize,index,dt);
+  }
   else {
     snew(readtime,nfile_in+1);
     snew(timest,nfile_in+1);
