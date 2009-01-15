@@ -80,7 +80,7 @@ atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[],
     }
     
     for(i=start; (i<natoms) && (bNext || (at[i].resnr == resnr)); i++) {
-      if (strcasecmp(type,*(anm[i]))==0)
+      if (anm[i] && strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     }
     if (!(bNext && at[start].resnr==at[natoms-1].resnr))

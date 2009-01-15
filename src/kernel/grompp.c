@@ -620,6 +620,29 @@ static void set_wall_atomtype(t_atomtype at,t_gromppopts *opts,
     ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i],at);
 }
 
+static int nrdf_internal(t_atoms *atoms)
+{
+  int i,nmass,nrdf;
+
+  nmass = 0;
+  for(i=0; i<atoms->nr; i++) {
+    /* Vsite ptype might not be set here yet, so also check the mass */
+    if ((atoms->atom[i].ptype == eptAtom ||
+	 atoms->atom[i].ptype == eptNucleus)
+	&& atoms->atom[i].m > 0) {
+      nmass++;
+    }
+  }
+  switch (nmass) {
+  case 0:  nrdf = 0; break;
+  case 1:  nrdf = 0; break;
+  case 2:  nrdf = 1; break;
+  default: nrdf = nmass*3 - 6; break;
+  }
+  
+  return nrdf;
+}
+
 static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
 {
   int count,count_mol,i,mb;
@@ -632,19 +655,20 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
     count_mol = 0;
     molb  = &mtop->molblock[mb];
     plist = mi[molb->type].plist;
+      
     for(i=0; i<F_NRE; i++) {
       if (i == F_SETTLE)
 	count_mol += 3*plist[i].nr;
       else if (interaction_function[i].flags & IF_CONSTRAINT)
 	count_mol += plist[i].nr;
     }
-    printf("nat %d count_mol %d\n",mi[molb->type].atoms.nr,count_mol);
-    if (count_mol > mi[molb->type].atoms.nr*3 - 6) {
+      
+    if (count_mol > nrdf_internal(&mi[molb->type].atoms)) {
       sprintf(buf,
 	      "Molecule type '%s' has %d constraints.\n"
-	      "For stability and efficiency there should not be more constraints than internal number of degrees of freedom: %d*3 - 6 = %d.\n",
+	      "For stability and efficiency there should not be more constraints than internal number of degrees of freedom: %d.\n",
 	      *mi[molb->type].name,count_mol,
-	      mi[molb->type].atoms.nr,mi[molb->type].atoms.nr*3-6);
+	      nrdf_internal(&mi[molb->type].atoms));
       warning(buf);
     }
     count += molb->nmol*count_mol;
