@@ -189,7 +189,9 @@ int write_xtc(int fp,
   xd = gmx_fio_getxdr(fp);
   /* write magic number and xtc identidier */
   if (xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum) == 0)
-    return 0;
+  {
+	  return 0;
+  }
     
   /* write data */
   bOK = xtc_coord(xd,&natoms,box,x,&prec,FALSE); /* bOK will be 1 if writing went well */
