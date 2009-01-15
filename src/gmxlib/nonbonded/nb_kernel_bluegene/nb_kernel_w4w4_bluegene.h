@@ -1,5 +1,4 @@
 #include "types/simple.h"
-#include <stdio.h>
 
 #undef FULL_INTERACTION
 #undef FULL_INTERACTION_
@@ -95,8 +94,6 @@ void NB_KERNEL (
 
     _qH              = charge[ii+1];   
     _qM              = charge[ii+3];
-
-    printf("_qH = %f   _qM = %f\n",_qH,_qM);
 
     _qqMM            = _facel*_qM*_qM;    
     _qqMH            = _facel*_qM*_qH;

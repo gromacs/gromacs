@@ -266,7 +266,7 @@ void NB_KERNEL (
 	    double _Complex fjx,fjy,fjz;
 	    double _Complex rsq23,rinv23;
 	    double _Complex rinvsq,krsq,fscal;
-	    double _Complex rt,rti,r,eps,Y,F,G,H,GHeps,VV,FF,fijC,dijD,n0,qq;
+	    double _Complex rt,rti,r,eps,Y,F,G,H,GHeps,VV,FF,fijC,fijD,n0,qq;
 	    
 	    real _dx11,_dy11,_dz11,_rsq11,_rinv11;
 	    real _rinvsq,_krsq,_fscal;
