@@ -1366,23 +1366,28 @@ static void setup_coordinate_communication(pme_atomcomm_t *atc)
 
 int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
 {
-  fprintf(log,"Destroying PME data structures.\n");
-  sfree((*pmedata)->nnx);
-  sfree((*pmedata)->nny);
-  sfree((*pmedata)->nnz);
-	
-  done_fftgrid((*pmedata)->gridA);
-  if((*pmedata)->gridB)
-    done_fftgrid((*pmedata)->gridB);
+    if(NULL != log)
+    {
+        fprintf(log,"Destroying PME data structures.\n");
+    }
 
-  sfree((*pmedata)->work_mhz);
-  sfree((*pmedata)->work_m2);
-  sfree((*pmedata)->work_denom);
-  sfree((*pmedata)->work_tmp1);
-  sfree((*pmedata)->work_m2inv);
+    sfree((*pmedata)->nnx);
+    sfree((*pmedata)->nny);
+    sfree((*pmedata)->nnz);
 	
-  sfree(*pmedata);
-  *pmedata = NULL;
+    done_fftgrid((*pmedata)->gridA);
+    if((*pmedata)->gridB)
+    {
+        done_fftgrid((*pmedata)->gridB);
+    }
+    sfree((*pmedata)->work_mhz);
+    sfree((*pmedata)->work_m2);
+    sfree((*pmedata)->work_denom);
+    sfree((*pmedata)->work_tmp1);
+    sfree((*pmedata)->work_m2inv);
+	
+    sfree(*pmedata);
+    *pmedata = NULL;
   
   return 0;
 }
