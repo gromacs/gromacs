@@ -1353,7 +1353,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     }
 
-    if (MASTER(cr) && (cpt_period >= 0 &&
+    /* In parallel we only have to check for checkpointing in steps
+     * where we do global communication, otherwise the other nodes don't know.
+     */
+    if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
+		       cpt_period >= 0 &&
 		       (cpt_period == 0 || 
 			run_time >= nchkpt*cpt_period*60.0))) {
       if (chkpt == 0) {
