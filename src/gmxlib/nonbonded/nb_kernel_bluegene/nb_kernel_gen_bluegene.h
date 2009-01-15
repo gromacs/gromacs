@@ -210,8 +210,8 @@ void NB_KERNEL (
 	    qq    = __fxpmul(__cmplx(charge[jnr12],charge[jnr22]),_iq);
 
 #if COULOMB == GENERALIZED_BORN
-	    dvda[jnr11] == __creal(dvdaj);
-	    dvda[jnr21] == __creal(dvdaj);
+	    dvda[jnr11] -= __creal(dvdaj);
+	    dvda[jnr21] -= __creal(dvdaj);
 
 	    dvdaj = __cmplx(dvda[jnr12],dvda[jnr22]);
 #endif
@@ -231,13 +231,17 @@ void NB_KERNEL (
 
 	    FULL_INTERACTION(qq,rinv2,rsq2,conv2,jnr12,jnr22);
 
+#if COULOMB != COULOMB_NONE
+		qq    = __fxpmul(__cmplx(charge[jnr13],charge[jnr23]),_iq);
+			 
 #if COULOMB == GENERALIZED_BORN
-	    dvda[jnr12] == __creal(dvdaj);
-	    dvda[jnr22] == __creal(dvdaj);
+	    dvda[jnr12] -= __creal(dvdaj);
+	    dvda[jnr22] -= __creal(dvdaj);
 
 	    dvdaj = __cmplx(dvda[jnr13],dvda[jnr23]);
 #endif
-
+#endif
+			
 #ifndef NO_FORCE
 	    split_and_store6(faction,j11,j21,fjx1,fjy1,fjz1);
 
@@ -255,8 +259,8 @@ void NB_KERNEL (
 	    FULL_INTERACTION(qq,rinv3,rsq3,conv3,jnr13,jnr23);
 
 #if COULOMB == GENERALIZED_BORN
-	    dvda[jnr13] == __creal(dvdaj);
-	    dvda[jnr23] == __creal(dvdaj);
+	    dvda[jnr13] -= __creal(dvdaj);
+	    dvda[jnr23] -= __creal(dvdaj);
 #endif
 
 #ifndef NO_FORCE
