@@ -173,7 +173,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)) {
     cr->npmenodes = 0;
   }
-  inputrec->nstlog = 1;
   
   /* NMR restraints must be initialized before load_checkpoint,
    * since with time averaging the history is added to t_state.
