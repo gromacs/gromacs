@@ -955,7 +955,7 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
     real    rxx,ryx,ryy,rzx,rzy,rzz;
 	real    *mhz,*m2,*denom,*tmp1,*m2inv;
 
-#if (defined __IBMC__ || defined __IBMCPP__) 
+#if ((defined __IBMC__ || defined __IBMCPP__) && defined _IBMSMP)
 	/* xlc optimization proposed by Mathias Puetz */
 #pragma disjoint(*mhz,*m2,*denom,*tmp1,*m2inv,*p0)
 #endif
