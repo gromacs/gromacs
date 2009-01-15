@@ -173,6 +173,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)) {
     cr->npmenodes = 0;
   }
+  inputrec->nstlog = 1;
   
   /* NMR restraints must be initialized before load_checkpoint,
    * since with time averaging the history is added to t_state.
@@ -1240,7 +1241,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,state->v,
 		       top->idef.iparams,top->idef.il,
 		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
-      
+     
       if (graph)
 	unshift_self(graph,state->box,state->x);
       wallcycle_stop(wcycle,ewcVSITECONSTR);
@@ -1332,7 +1333,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     }
 
-    if (MASTER(cr) && (cpt_period >= 0 &&
+    /* In parallel we only have to check for checkpointing in steps
+     * where we do global communication, otherwise the other nodes don't know.
+     */
+    if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
+		       cpt_period >= 0 &&
 		       (cpt_period == 0 || 
 			run_time >= nchkpt*cpt_period*60.0))) {
       if (chkpt == 0) {
