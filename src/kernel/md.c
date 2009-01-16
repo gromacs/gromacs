@@ -729,9 +729,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
 
-  if (repl_ex_nst > 0 && MASTER(cr))
+  if (repl_ex_nst > 0 && MASTER(cr)) {
     repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
 				    repl_ex_nst,repl_ex_seed);
+
+    if (max_hours > 0 && MASTERSIM(cr->ms)) {
+      fprintf(stderr,"\nWARNING: Using -maxh with REMD can cause the simulation to hang after maxh hours\n\n");
+    }
+  }
 
   if (!ir->bContinuation && !bRerunMD) {
     if (mdatoms->cFREEZE && (state->flags & (1<<estV))) {
