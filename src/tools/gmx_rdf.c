@@ -1004,7 +1004,7 @@ int gmx_rdf(int argc,char *argv[])
     { "-rdf",   FALSE, etENUM, {rdft}, 
       "RDF type" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the larges box edge." },
+      "Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the largest box edge." },
     { "-norm",     FALSE, etBOOL, {&bNormalize},
       "Normalize for volume and density" },
     { "-xy",       FALSE, etBOOL, {&bXY},
