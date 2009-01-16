@@ -431,7 +431,7 @@ int gmx_trjcat(int argc,char *argv[])
     if (debug) {
       fprintf(debug,"Dump of replica_index.xvg\n");
       for(i=0; (i<n); i++) {
-	fprintf(debug,"%10 g",t[i]);
+	fprintf(debug,"%10g",t[i]);
 	for(j=0; (j<nset); j++) {
 	  fprintf(debug,"  %3d",gmx_nint(val[j][i]));
 	}
