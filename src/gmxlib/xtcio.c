@@ -243,12 +243,14 @@ int read_next_xtc(int fp,
   /* read header */
   if (!xtc_header(xd,&magic,&n,step,time,TRUE,bOK))
     return 0;
-  if (n>natoms)
-    gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", 
-		n, natoms);
-    
+
   /* Check magic number */
   check_xtc_magic(magic);
+
+  if (n > natoms) {
+    gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", 
+	      n, natoms);
+  }
 
   *bOK=xtc_coord(xd,&natoms,box,x,prec,TRUE);
 
