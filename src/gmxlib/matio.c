@@ -714,7 +714,7 @@ void write_xpm_data(FILE *out, int n_x, int n_y, real **matrix,
       fprintf(stderr,"%3d%%\b\b\b\b",(100*(n_y-j))/n_y);
     fprintf(out,"\"");
     for(i=0; (i<n_x); i++) {
-      c=round((matrix[i][j]-lo)*invlevel);
+      c=gmx_nint((matrix[i][j]-lo)*invlevel);
       if (c<0) c=0;
       if (c>=nlevels) c=nlevels-1;
       if (nlevels <= NMAP)
@@ -744,10 +744,12 @@ void write_xpm_data3(FILE *out,int n_x,int n_y,real **matrix,
       fprintf(stderr,"%3d%%\b\b\b\b",(100*(n_y-j))/n_y);
     fprintf(out,"\"");
     for(i=0; (i<n_x); i++) {
-      if (c >= mid)
-	c=nmid+round((matrix[i][j]-mid)*invlev_hi);
-      else if (c >= lo)
-	c=round((matrix[i][j]-lo)*invlev_lo);
+      if (matrix[i][j] >= mid)
+	c=nmid+gmx_nint((matrix[i][j]-mid)*invlev_hi);
+      else if (matrix[i][j] >= lo)
+	c=gmx_nint((matrix[i][j]-lo)*invlev_lo);
+      else
+	c = 0;
 	
       if (c<0) 
 	c=0;
