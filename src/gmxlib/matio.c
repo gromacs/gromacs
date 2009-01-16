@@ -47,6 +47,7 @@
 #include "matio.h"
 #include "statutil.h"
 #include "gmxfio.h"
+#include "maths.h"
 
 #define round(a) (int)(a+0.5)
 
