@@ -66,19 +66,22 @@ static void rand_rot(int natoms,rvec x[],rvec v[],vec4 xrot[],vec4 vrot[],
     for(m=0; (m<DIM); m++) {
       xcm[m]+=x[i][m]/natoms;   /* get center of mass of one molecule  */
     }
-  fprintf(stderr,"center of mass: %f, %f, %f\n",xcm[0],xcm[1],xcm[2]);
+  fprintf(stderr,"center of geometry: %f, %f, %f\n",xcm[0],xcm[1],xcm[2]);
   
   translate(-xcm[XX],-xcm[YY],-xcm[ZZ],mt1);  /* move c.o.ma to origin */
   for(m=0; (m<DIM); m++) {
-    phi=M_PI*max_rot[m]*rando(seed)/180;
+    phi=M_PI*max_rot[m]*(2*rando(seed) - 1)/180;
     rotate(m,phi,mr[m]);
   }
   translate(xcm[XX],xcm[YY],xcm[ZZ],mt2);
 
-  mult_matrix(mtemp1,mt2,mr[XX]);
+  /* For mult_matrix we need to multiply in the opposite order
+   * compared to normal mathematical notation.
+   */
+  mult_matrix(mtemp1,mt1,mr[XX]);
   mult_matrix(mtemp2,mr[YY],mr[ZZ]);
   mult_matrix(mtemp3,mtemp1,mtemp2);
-  mult_matrix(mxtot,mtemp3,mt1);
+  mult_matrix(mxtot,mtemp3,mt2);
   mult_matrix(mvtot,mr[XX],mtemp2);
   
   for(i=0; (i<natoms); i++) {
@@ -152,7 +155,7 @@ int gmx_genconf(int argc, char *argv[])
   static bool bRandom  = FALSE;      /* False: no random rotations */
   static bool bRenum   = TRUE;       /* renumber residues */
   static rvec dist     = {0,0,0};    /* space added between molecules ? */
-  static rvec max_rot  = {90,90,90}; /* maximum rotation */
+  static rvec max_rot  = {180,180,180}; /* maximum rotation */
   t_pargs pa[] = {
     { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
     { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
@@ -209,6 +212,11 @@ int gmx_genconf(int argc, char *argv[])
   if (bTRX) {
     if (!read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,boxx))
       gmx_fatal(FARGS,"No atoms in trajectory %s",ftp2fn(efTRX,NFILE,fnm));
+  } else {
+    snew(xx,natoms);
+    for(i=0; i<natoms; i++) {
+      copy_rvec(x[i],xx[i]);
+    }
   }
   
   
@@ -224,44 +232,41 @@ int gmx_genconf(int argc, char *argv[])
 	ndx=(i*ny*nz+j*nz+k)*natoms;
 	nrdx=(i*ny*nz+j*nz+k)*nres;
 	
-	if ((ndx >= 0) || (bTRX)) {
-
-	  /* Random rotation on input coords */
-	  if (bRandom)
-	    rand_rot(natoms,bTRX ? xx : x,v,xrot,vrot,&seed,max_rot);
-	  
-	  for(l=0; (l<natoms); l++) {
-	    for(m=0; (m<DIM); m++) {
-	      if (bRandom) {
-		x[ndx+l][m] = xrot[l][m];
-		v[ndx+l][m] = vrot[l][m];
-	      }
-	      else {
-		x[ndx+l][m] = (bTRX ? xx[l][m] : x[l][m]);
-		v[ndx+l][m] = v[l][m];
-	      }
+	/* Random rotation on input coords */
+	if (bRandom)
+	  rand_rot(natoms,xx,v,xrot,vrot,&seed,max_rot);
+	
+	for(l=0; (l<natoms); l++) {
+	  for(m=0; (m<DIM); m++) {
+	    if (bRandom) {
+	      x[ndx+l][m] = xrot[l][m];
+	      v[ndx+l][m] = vrot[l][m];
 	    }
-	    if (ePBC == epbcSCREW && i % 2 == 1) {
-	      /* Rotate around x axis */
-	      for(m=YY; m<=ZZ; m++) {
-		x[ndx+l][m] = box[YY][m] + box[ZZ][m] - x[ndx+l][m];
-		v[ndx+l][m] = -v[ndx+l][m];
-	      }
+	    else {
+	      x[ndx+l][m] = xx[l][m];
+	      v[ndx+l][m] = v[l][m];
 	    }
-	    for(m=0; (m<DIM); m++) {
-	      x[ndx+l][m] += shift[m];
-	    }
-	    atoms->atom[ndx+l].resnr=(bRenum ? nrdx:0) + atoms->atom[l].resnr;
-	    atoms->atomname[ndx+l]=atoms->atomname[l];
 	  }
-
-	  for(l=0; (l<nres); l++)
-	    atoms->resname[nrdx+l]=atoms->resname[l];
-	  if (bTRX)
-	    if (!read_next_x(status,&t,natoms,xx,boxx) && 
-		((i+1)*(j+1)*(k+1) < vol))
-	      gmx_fatal(FARGS,"Not enough frames in trajectory");
+	  if (ePBC == epbcSCREW && i % 2 == 1) {
+	    /* Rotate around x axis */
+	    for(m=YY; m<=ZZ; m++) {
+	      x[ndx+l][m] = box[YY][m] + box[ZZ][m] - x[ndx+l][m];
+	      v[ndx+l][m] = -v[ndx+l][m];
+	    }
+	  }
+	  for(m=0; (m<DIM); m++) {
+	    x[ndx+l][m] += shift[m];
+	  }
+	  atoms->atom[ndx+l].resnr=(bRenum ? nrdx:0) + atoms->atom[l].resnr;
+	  atoms->atomname[ndx+l]=atoms->atomname[l];
 	}
+
+	for(l=0; (l<nres); l++)
+	  atoms->resname[nrdx+l]=atoms->resname[l];
+	if (bTRX)
+	  if (!read_next_x(status,&t,natoms,xx,boxx) && 
+	      ((i+1)*(j+1)*(k+1) < vol))
+	    gmx_fatal(FARGS,"Not enough frames in trajectory");
       }
     }
   }
