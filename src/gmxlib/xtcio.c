@@ -184,16 +184,26 @@ int write_xtc(int fp,
   int magic_number = XTC_MAGIC;
   XDR *xd;
   bool bDum;
-
+  int bOK;
+	
   xd = gmx_fio_getxdr(fp);
   /* write magic number and xtc identidier */
-  if (!xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum))
-    return 0;
+  if (xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum) == 0)
+  {
+	  return 0;
+  }
     
   /* write data */
-  return xtc_coord(xd,&natoms,box,x,&prec,FALSE);
+  bOK = xtc_coord(xd,&natoms,box,x,&prec,FALSE); /* bOK will be 1 if writing went well */
 
-  gmx_fio_flush(fp);
+  if(bOK)
+  {
+	  if(gmx_fio_flush(fp) !=0)
+	  {
+		  bOK = 0;
+	  }
+  }
+  return bOK;  /* 0 if bad, 1 if writing went well */
 }
 
 int read_first_xtc(int fp,int *natoms,int *step,real *time,
@@ -233,12 +243,14 @@ int read_next_xtc(int fp,
   /* read header */
   if (!xtc_header(xd,&magic,&n,step,time,TRUE,bOK))
     return 0;
-  if (n>natoms)
-    gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", 
-		n, natoms);
-    
+
   /* Check magic number */
   check_xtc_magic(magic);
+
+  if (n > natoms) {
+    gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", 
+	      n, natoms);
+  }
 
   *bOK=xtc_coord(xd,&natoms,box,x,prec,TRUE);
 
