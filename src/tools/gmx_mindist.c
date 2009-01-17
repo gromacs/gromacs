@@ -129,7 +129,9 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   
   bFirst=TRUE;  
   do {
-    rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
+    if (top) {
+      rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
+    }
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
       rmint = rmin;
@@ -465,6 +467,7 @@ int gmx_mindist(int argc,char *argv[])
   real       t;
   rvec       *x;
   matrix     box;
+  bool       bTop=FALSE;
   
   FILE      *atm;
   int       i,j,nres=0;
@@ -490,18 +493,21 @@ int gmx_mindist(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   trxfnm = ftp2fn(efTRX,NFILE,fnm);
-  tpsfnm = ftp2fn_null(efTPS,NFILE,fnm);
   ndxfnm = ftp2fn_null(efNDX,NFILE,fnm);
   distfnm= opt2fn("-od",NFILE,fnm);
   numfnm = opt2fn_null("-on",NFILE,fnm);
   atmfnm = ftp2fn_null(efOUT,NFILE,fnm);
   oxfnm  = opt2fn_null("-ox",NFILE,fnm);
   resfnm = opt2fn_null("-or",NFILE,fnm);
+  if (bPI || resfnm != NULL) {
+    /* We need a tps file */
+    tpsfnm = ftp2fn(efTPS,NFILE,fnm);
+  } else {
+    tpsfnm = ftp2fn_null(efTPS,NFILE,fnm);
+  }
   
   if (!tpsfnm && !ndxfnm)
     gmx_fatal(FARGS,"You have to specify either the index file or a tpr file");
-  if ((resfnm || !ndxfnm) && !tpsfnm)
-    gmx_fatal(FARGS,"I need a tpr file to analyze all this.");
   
   if (bPI) {
     ng = 1;
@@ -516,7 +522,9 @@ int gmx_mindist(int argc,char *argv[])
 
   if (tpsfnm || resfnm || !ndxfnm) {
     snew(top,1);
-    read_tps_conf(tpsfnm,title,top,&ePBC,&x,NULL,box,FALSE);
+    bTop = read_tps_conf(tpsfnm,title,top,&ePBC,&x,NULL,box,FALSE);
+    if (bPI && !bTop)
+      printf("\nWARNING: Without a run input file a trajectory with broken molecules will not give the correct periodic image distance\n\n");
   }
   get_index(top ? &(top->atoms) : NULL,ndxfnm,ng,gnx,index,grpname);
 
