@@ -524,5 +524,12 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup)
     return 0;
 }
 
+#else
+/* Dummy function to avoid warnings without MPI enabled */
+void
+gmx_parallel_3dfft_dummy()
+{
+}
+
 #endif /* GMX_MPI */
 
