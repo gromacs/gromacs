@@ -96,7 +96,10 @@ static void shell_comm(char *title,char *script,int nsleep)
   printf("Warning-- No calls to system(3) supported on this platform.");
   printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
 #else
-  system(command);
+  if(0 != system(command))
+  {
+      gmx_fatal(FARGS,"Failed to execute command: %s",command);
+  }
 #endif
 
 #ifdef DEBUG
