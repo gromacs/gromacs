@@ -348,7 +348,7 @@ char *fileopt(unsigned long flag,char buf[],int maxsize)
   if (FLAG_SET(flag, ffMULT))
     strcat(tmp,", Mult.");
 
-  snprintf(buf,maxsize-1,tmp);
+  snprintf(buf,maxsize-1,"%s",tmp);
   
   return buf;
 }

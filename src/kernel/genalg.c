@@ -134,12 +134,15 @@ t_genalg *init_ga(FILE *fplog,char *infile,int D,t_range range[])
   snew(ga,1);
   /*-----Read input data------------------------------------------------*/
   fpin_ptr   = gmx_fio_fopen(infile,"r");
-  fscanf(fpin_ptr,"%d",&ga->NP);             /*---choice of strategy---*/
-  fscanf(fpin_ptr,"%d",&ga->strategy);       /*---choice of strategy---*/
-  fscanf(fpin_ptr,"%lf",&ff);            /*---weight factor------------*/
-  fscanf(fpin_ptr,"%lf",&cr);            /*---crossing over factor-----*/
-  fscanf(fpin_ptr,"%d",&ga->seed);           /*---random seed----------*/
-  gmx_fio_fclose(fpin_ptr);
+  if ( fscanf(fpin_ptr,"%d",&ga->NP) != 1         ||         /*---choice of strategy---*/
+       fscanf(fpin_ptr,"%d",&ga->strategy) != 1   ||         /*---choice of strategy---*/
+       fscanf(fpin_ptr,"%lf",&ff) != 1            ||         /*---weight factor------------*/
+       fscanf(fpin_ptr,"%lf",&cr) != 1            ||         /*---crossing over factor-----*/
+       fscanf(fpin_ptr,"%d",&ga->seed) != 1       ||         /*---random seed----------*/
+       gmx_fio_fclose(fpin_ptr) != 1)
+  {
+      gmx_fatal(FARGS,"Error reading from file %s",infile);
+  }
   
   ga->FF   = ff;
   ga->CR   = cr;

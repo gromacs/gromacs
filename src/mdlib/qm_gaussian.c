@@ -624,7 +624,11 @@ real read_gaussian_output(rvec QMgrad[],rvec MMgrad[],int step,
    */
   if(qm->bTS||qm->bOPT){
     for(i=0;i<qm->nrQMatoms;i++){
-      fgets(buf,300,in);
+      if( NULL == fgets(buf,300,in))
+      {
+	  gmx_fatal(FARGS,"Error reading Gaussian output - not enough atom lines?");
+      }
+
 #ifdef GMX_DOUBLE
       sscanf(buf,"%d %lf %lf %lf\n",
 	     &atnum,
@@ -646,7 +650,11 @@ real read_gaussian_output(rvec QMgrad[],rvec MMgrad[],int step,
   /* the next line is the energy and in the case of CAS, the energy
    * difference between the two states.
    */
-  fgets(buf,300,in);
+  if(NULL == fgets(buf,300,in))
+  {
+      gmx_fatal(FARGS,"Error reading Gaussian output");
+  }
+
 #ifdef GMX_DOUBLE
   sscanf(buf,"%lf\n",&QMener);
 #else
@@ -654,7 +662,10 @@ real read_gaussian_output(rvec QMgrad[],rvec MMgrad[],int step,
 #endif
   /* next lines contain the gradients of the QM atoms */
   for(i=0;i<qm->nrQMatoms;i++){
-    fgets(buf,300,in);
+    if(NULL == fgets(buf,300,in))
+    {
+	gmx_fatal(FARGS,"Error reading Gaussian output");
+    }
 #ifdef GMX_DOUBLE
     sscanf(buf,"%lf %lf %lf\n",
 	   &QMgrad[i][XX],
@@ -670,7 +681,10 @@ real read_gaussian_output(rvec QMgrad[],rvec MMgrad[],int step,
   /* the next lines are the gradients of the MM atoms */
   if(qm->QMmethod>=eQMmethodRHF){  
     for(i=0;i<mm->nrMMatoms;i++){
-      fgets(buf,300,in);
+      if(NULL==fgets(buf,300,in))
+      {
+          gmx_fatal(FARGS,"Error reading Gaussian output");
+      }
 #ifdef GMX_DOUBLE
       sscanf(buf,"%lf %lf %lf\n",
 	     &MMgrad[i][XX],
@@ -704,7 +718,11 @@ real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
   /* first line is the energy and in the case of CAS, the energy
    * difference between the two states.
    */
-  fgets(buf,300,in);
+  if(NULL == fgets(buf,300,in))
+  {
+      gmx_fatal(FARGS,"Error reading Gaussian output");
+  }
+
 #ifdef GMX_DOUBLE
   sscanf(buf,"%lf %lf\n",&QMener,&DeltaE);
 #else
@@ -728,7 +746,11 @@ real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
   fprintf(stderr,"Gap = %5f,SA = %3d\n",DeltaE,(qm->SAstep>0));
   /* next lines contain the gradients of the QM atoms */
   for(i=0;i<qm->nrQMatoms;i++){
-    fgets(buf,300,in);
+    if(NULL==fgets(buf,300,in))
+    {
+	gmx_fatal(FARGS,"Error reading Gaussian output");
+    }
+
 #ifdef GMX_DOUBLE
     sscanf(buf,"%lf %lf %lf\n",
 	   &QMgrad[i][XX],
@@ -744,7 +766,10 @@ real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
   /* the next lines, are the gradients of the MM atoms */
   
   for(i=0;i<mm->nrMMatoms;i++){
-    fgets(buf,300,in);
+    if(NULL==fgets(buf,300,in))
+    {
+	gmx_fatal(FARGS,"Error reading Gaussian output");
+    }
 #ifdef GMX_DOUBLE
     sscanf(buf,"%lf %lf %lf\n",
 	   &MMgrad[i][XX],
@@ -759,7 +784,10 @@ real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
   }
   
   /* the next line contains the two CI eigenvector elements */
-  fgets(buf,300,in);
+  if(NULL==fgets(buf,300,in))
+  {
+      gmx_fatal(FARGS,"Error reading Gaussian output");
+  }
   if(!step){
     sscanf(buf,"%d",&qm->CIdim);
     snew(qm->CIvec1,qm->CIdim);
@@ -777,7 +805,10 @@ real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
   }
   /* first vector */
   for(i=0;i<qm->CIdim;i++){
-    fgets(buf,300,in);
+    if(NULL==fgets(buf,300,in))
+    {
+	gmx_fatal(FARGS,"Error reading Gaussian output");
+    }
 #ifdef GMX_DOUBLE
     sscanf(buf,"%lf\n",&qm->CIvec1[i]);
 #else
@@ -786,7 +817,10 @@ real read_gaussian_SH_output(rvec QMgrad[],rvec MMgrad[],int step,
   }
   /* second vector */
   for(i=0;i<qm->CIdim;i++){
-    fgets(buf,300,in);
+    if(NULL==fgets(buf,300,in))
+    {
+	gmx_fatal(FARGS,"Error reading Gaussian output");
+    }
 #ifdef GMX_DOUBLE
     sscanf(buf,"%lf\n",&qm->CIvec2[i]);
 #else

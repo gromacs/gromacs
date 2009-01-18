@@ -268,7 +268,7 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
       fprintf(fp," + ");
     for(f=0; f<mat->nmap; f++)
       if (ss_string[s]==map[f].code.c1)
-	fprintf(fp,map[f].desc);
+	fprintf(fp,"%s",map[f].desc);
   }
   fprintf(fp,"\"\n");
   xvgr_legend(fp,mat->nmap+1,leg);
@@ -466,7 +466,10 @@ int main(int argc,char *argv[])
     printf("Warning-- Skipping execution of 'system(\"%s\")'.", dssp);
     exit(1);
 #else
-    system(dssp);
+    if(0 != system(dssp))
+    {
+	gmx_fatal(FARGS,"Failed to execute command: %s",dssp);
+    }
 #endif
 
     strip_dssp(tmpfile,nres,bPhbres,t,

@@ -501,7 +501,7 @@ bool is_hydro(t_atoms *atoms,int ai)
   return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
-static void get_atomnames_min(int n,char anm[4][12],
+static void get_atomnames_min(int n,char **anm,
 			      int res,t_atoms *atoms,atom_id *a)
 {
   int m;
@@ -640,7 +640,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 {
   t_param *ang,*dih,*pai,*idih;
   t_rbondeds *hbang, *hbdih;
-  char    anm[4][12];
+  char    **anm;
   int     res,minres,maxres;
   int     i,j,j1,k,k1,l,l1,m,n,i1,i2;
   int     ninc,maxang,maxdih,maxpai;
@@ -648,6 +648,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   int     nFound;
   bool    bFound,bExcl;
   
+
   /* These are the angles, dihedrals and pairs that we generate
    * from the bonds. The ones that are already there from the rtp file
    * will be retained.
@@ -660,6 +661,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   snew(ang, maxang);
   snew(dih, maxdih);
   snew(pai, maxpai);
+
+  snew(anm,4);
+  for(i=0;i<4;i++)
+    snew(anm[i],12);
 
   if (hb)
     gen_excls(atoms,excls,hb,bMissing);

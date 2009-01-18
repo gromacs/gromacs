@@ -97,7 +97,10 @@ static int *select_it(int nre,char *nm[],int *nset)
 
   snew(bE,nre);
   do {
-    scanf("%d",&n);
+    if(1 != scanf("%d",&n))
+    {
+      gmx_fatal(FARGS,"Error reading user input");
+    }
     if ((n>0) && (n<=nre))
       bE[n-1]=TRUE;
   } while (n != 0);
@@ -1047,7 +1050,10 @@ int gmx_energy(int argc,char *argv[])
         if (i == nre) {
 	  if (strcasecmp(setnm[j],"Volume")==0) {
 	    printf("Enter the box volume (nm^3): ");
-	    scanf("%lf",&dbl);
+	    if(1 != scanf("%lf",&dbl))
+	    {
+	      gmx_fatal(FARGS,"Error reading user input");
+            }
 	    Vaver = dbl;
 	  } else
 	    gmx_fatal(FARGS,"Could not find term %s for viscosity calculation",
@@ -1097,7 +1103,10 @@ int gmx_energy(int argc,char *argv[])
 	do {
 	  j++;
 	  srenew(orsel,j+1);
-	  scanf("%d",&(orsel[j]));
+	  if(1 != scanf("%d",&(orsel[j])))
+	  {
+	    gmx_fatal(FARGS,"Error reading user input");
+	  }
 	} while (orsel[j] > 0);
 	if (orsel[0] == -1) {
 	  fprintf(stderr,"Selecting all %d orientation restraints\n",nor);

@@ -909,11 +909,11 @@ int main (int argc, char *argv[])
     gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
   }
   if (opt2bSet("-r",NFILE,fnm))
-    sprintf(fn,opt2fn("-r",NFILE,fnm));
+    sprintf(fn,"%s",opt2fn("-r",NFILE,fnm));
   else
-    sprintf(fn,opt2fn("-c",NFILE,fnm));
+    sprintf(fn,"%s",opt2fn("-c",NFILE,fnm));
   if (opt2bSet("-rb",NFILE,fnm))
-    sprintf(fnB,opt2fn("-rb",NFILE,fnm));
+    sprintf(fnB,"%s",opt2fn("-rb",NFILE,fnm));
   else
     strcpy(fnB,fn);
 

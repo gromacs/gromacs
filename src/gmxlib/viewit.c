@@ -100,7 +100,10 @@ void do_view(char *fn, char *opts)
         printf("Warning-- No calls to system(3) supported on this platform.");
         printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
 #else
-	system(buf);
+	if( 0 != system(buf) )
+	{
+	  gmx_fatal(FARGS,"Failed executing command: %s",buf);
+	}
 #endif
       }
     }

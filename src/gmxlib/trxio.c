@@ -404,6 +404,7 @@ static bool gmx_next_frame(int status,t_trxframe *fr)
 static void choose_ff(FILE *status)
 {
   int i,m,c;
+  int rc;
 
   printf("\n\n");
   printf("   Select File Format\n");
@@ -416,7 +417,11 @@ static void choose_ff(FILE *status)
   do {
     printf("\nChoice: ");
     fflush(stdout);
-    scanf("%d",&i);
+    do
+    {
+      rc = scanf("%d",&i);
+    }
+    while (rc!=1);
     i--;
   } while ((i < 0) || (i >= effNR));
   printf("\n");
@@ -430,23 +435,35 @@ static void choose_ff(FILE *status)
   switch (eFF) {
   case effXYZ:
   case effXYZBox:
-    fscanf(status,"%d%lf%lf%lf%lf",&NATOMS,&BOX[XX],&BOX[YY],&BOX[ZZ],&DT);
+    if( 5 != fscanf(status,"%d%lf%lf%lf%lf",&NATOMS,&BOX[XX],&BOX[YY],&BOX[ZZ],&DT)) 
+    {
+      gmx_fatal(FARGS,"Error reading natoms/box in file");
+    }
     break;
   case effG87:
   case effG87Box:
     printf("GROMOS! OH DEAR...\n\n");
     printf("Number of atoms ? ");
     fflush(stdout);
-    scanf("%d",&NATOMS);
+    if (1 != scanf("%d",&NATOMS))
+    {
+	gmx_fatal(FARGS,"Error reading natoms in file");
+    }
 
     printf("Time between timeframes ? ");
     fflush(stdout);
-    scanf("%lf",&DT);
+    if( 1 != scanf("%lf",&DT))
+    {
+	gmx_fatal(FARGS,"Error reading dt from file");
+    }
 
     if (eFF == effG87) {
       printf("Box X Y Z ? ");
       fflush(stdout);
-      scanf("%lf%lf%lf",&BOX[XX],&BOX[YY],&BOX[ZZ]);
+      if(3 != scanf("%lf%lf%lf",&BOX[XX],&BOX[YY],&BOX[ZZ]))
+      { 
+	  gmx_fatal(FARGS,"Error reading box in file");
+      }
     }
     do {
       c=fgetc(status);

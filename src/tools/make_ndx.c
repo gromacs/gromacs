@@ -831,7 +831,10 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char 
     }
     printf("\n");
     printf("> ");
-    fgets(inp_string,STRLEN,stdin);
+    if(NULL==fgets(inp_string,STRLEN,stdin))
+    {
+	gmx_fatal(FARGS,"Error reading user input");
+    }
     inp_string[strlen(inp_string)-1]=0;
     printf("\n");
     string=inp_string;

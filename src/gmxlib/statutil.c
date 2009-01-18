@@ -658,7 +658,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   /* Set the nice level */
 #ifdef __sgi
   if (npri != 0 && !bExit) {
-    (void) schedctl(MPTS_RTPRI,0,npri);
+    schedctl(MPTS_RTPRI,0,npri);
   }
 #endif 
 
@@ -667,7 +667,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifndef GMX_NO_NICE
   /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
   if (nicelevel != 0 && !bExit)
-    nice(nicelevel);
+    i=nice(nicelevel); /* assign ret value to avoid warnings */
 #endif
 
 #endif

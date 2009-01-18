@@ -217,10 +217,11 @@ static bool empty_file(char *fn)
 {
   FILE *fp;
   char dum;
+  int  ret;
   bool bEmpty;
   
   fp = gmx_fio_fopen(fn,"r");
-  fread(&dum,sizeof(dum),1,fp);
+  ret = fread(&dum,sizeof(dum),1,fp);
   bEmpty = feof(fp);
   gmx_fio_fclose(fp);
 

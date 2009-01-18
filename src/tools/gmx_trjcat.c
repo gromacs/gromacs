@@ -173,7 +173,11 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 		      fnms[i],convert_time(readtime[i]), time_unit());
 	      ok=FALSE;
 	      do {
-		  fgets(inputstring,STRLEN-1,stdin);
+		  if(NULL==fgets(inputstring,STRLEN-1,stdin))
+		  {
+		      gmx_fatal(FARGS,"Error reading user input");
+	          }
+ 
 		  inputstring[strlen(inputstring)-1]=0;
 
 		  if(inputstring[0]=='c' || inputstring[0]=='C') {

@@ -157,7 +157,10 @@ int read_h_db(char *fn,t_hackblock **ah)
 	  gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
 		      "while reading Hydrogen Database %s residue %s",
 		      nab, i-1, aah[nah].name, hfn);
-	fgets(buf, STRLEN, in);
+	if(NULL==fgets(buf, STRLEN, in))
+        {
+	  gmx_fatal(FARGS,"Error reading from file %s",fn);
+	}
 	read_ab(buf,hfn,&(aah[nah].hack[i]));
       }
     }

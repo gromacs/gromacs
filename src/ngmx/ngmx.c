@@ -65,14 +65,15 @@ int EventSignaller(t_manager *man);
 static void dump_xw(char *dispname,Window w,char *fn)
 {
   char comm[256];
-  
+  int  rc;
+
   sprintf(comm,"xwd -id %d -display %s > %s",(int)w,dispname,fn);
 
 #ifdef GMX_NO_SYSTEM
   printf("Warning-- No calls to system(3) supported on this platform.");
   printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
 #else
-  system(comm);
+  rc=system(comm);
 #endif
 }
 

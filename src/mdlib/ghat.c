@@ -227,11 +227,24 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   int    ix,iy,iz,ixmax,iymax,izmax;
   
   in=gmx_fio_fopen(fn,"r");
-  fscanf(in,"%d%d%d%lf%lf%lf",&ix,&iy,&iz,&gx,&gy,&gz);
+  if(6 != fscanf(in,"%d%d%d%lf%lf%lf",&ix,&iy,&iz,&gx,&gy,&gz))
+  {
+      gmx_fatal(FARGS,"Error reading from file %s",fn);
+  }
+
+
   igrid[XX]=ix, igrid[YY]=iy, igrid[ZZ]=iz;
   gridspace[XX]=gx,  gridspace[YY]=gy,  gridspace[ZZ]=gz;
-  fscanf(in,"%d%d%d%d%lf%lf%lf",&nalias,porder,&niter,&bSym,&alX,&alY,&alZ);
-  fscanf(in,"%lf%lf%lf%lf%lf%lf",&acut,&r11,&pval,&zval,&eref,&qopt);
+  if(7 != fscanf(in,"%d%d%d%d%lf%lf%lf",&nalias,porder,&niter,&bSym,&alX,&alY,&alZ))
+  {
+      gmx_fatal(FARGS,"Error reading from file %s",fn);
+  }
+
+  if(6 != fscanf(in,"%lf%lf%lf%lf%lf%lf",&acut,&r11,&pval,&zval,&eref,&qopt))
+  {
+    gmx_fatal(FARGS,"Error reading from file %s",fn);
+  }
+
   *r1 = r11;
   *rc = acut;
   
@@ -264,7 +277,11 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   for(ix=0; (ix<ixmax); ix++)
     for(iy=0; (iy<iymax); iy++)
       for(iz=0; (iz<izmax); iz++) {
-	fscanf(in,"%lf",&ddd);
+	if( 1 != fscanf(in,"%lf",&ddd))
+        {
+	    gmx_fatal(FARGS,"Error reading from file %s",fn);
+	}
+
 	gh[ix][iy][iz] = ddd;
       }
   gmx_fio_fclose(in);

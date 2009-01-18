@@ -933,10 +933,10 @@ static void lincs_warning(FILE *fplog,
     sprintf(buf,"bonds that rotated more than %g degrees:\n"
             " atom 1 atom 2  angle  previous, current, constraint length\n",
             wangle);
-    fprintf(stderr,buf);
+    fprintf(stderr,"%s",buf);
     if (fplog)
     {
-        fprintf(fplog,buf);
+        fprintf(fplog,"%s",buf);
     }
     
     for(b=0;b<ncons;b++)
@@ -961,10 +961,10 @@ static void lincs_warning(FILE *fplog,
             sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
                     ddglatnr(dd,i),ddglatnr(dd,j),
                     RAD2DEG*acos(cosine),d0,d1,bllen[b]);
-            fprintf(stderr,buf);
+            fprintf(stderr,"%s",buf);
             if (fplog)
             {
-                fprintf(fplog,buf);
+                fprintf(fplog,"%s",buf);
             }
             (*warncount)++;
         }

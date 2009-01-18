@@ -98,7 +98,9 @@ void ReadDlgError(char *infile,eDLGERR err,char *s,char *file,int line)
 
 static void GetBuf(FILE *in, char *buf)
 {
-  fscanf(in,"%s",buf);
+  int rc;
+
+  rc=fscanf(in,"%s",buf);
 }
 
 static void ReadAccOpen(char *infile, FILE *in)

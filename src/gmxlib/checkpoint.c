@@ -1233,7 +1233,10 @@ read_checkpoint(char *fn,FILE *fplog,
 	{
 		for(i=0;i<nfiles;i++)
 		{
-			truncate(outputfiles[i].filename,outputfiles[i].offset);
+			if(0 != truncate(outputfiles[i].filename,outputfiles[i].offset) )
+            {
+                gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+            }
 		}
 	}
 	

@@ -529,7 +529,7 @@ t_blocka *init_index(char *gfile, char ***grpname)
   FILE     *in;
   t_blocka  *b;
   int      a,maxentries;
-  int      i,j,ng;
+  int      i,j,ng,nread;
   char     line[STRLEN],*pt,str[STRLEN];
 
   in=gmx_fio_fopen(gfile,"r");
@@ -576,13 +576,13 @@ t_blocka *init_index(char *gfile, char ***grpname)
     b->index[0]=0;
     snew(b->a,b->nra);
     for (i=0; (i<b->nr); i++) {
-      fscanf(in,"%s%d",str,&ng);
+      nread=fscanf(in,"%s%d",str,&ng);
       (*grpname)[i]=strdup(str);
       b->index[i+1]=b->index[i]+ng;
       if (b->index[i+1] > b->nra)
 	gmx_fatal(FARGS,"Something wrong in your indexfile at group %s",str);
       for(j=0; (j<ng); j++) {
-	fscanf(in,"%d",&a);
+	nread=fscanf(in,"%d",&a);
 	b->a[b->index[i]+j]=a;
       }
     }

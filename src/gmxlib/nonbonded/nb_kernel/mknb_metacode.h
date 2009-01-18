@@ -333,7 +333,7 @@ mknb_declare_other          (char *     type_name,
  */   
 char *
 mknb_array                   (char *    vector,
-							  char *    idx);
+			      char *    idx);
 
 
 

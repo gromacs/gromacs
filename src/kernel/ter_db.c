@@ -360,14 +360,14 @@ t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret)
 
 t_hackblock *choose_ter(int nb,t_hackblock **tb,char *title)
 {
-  int i,sel;
+  int i,sel,ret;
   
   printf("%s\n",title);
   for(i=0; (i<nb); i++) 
     printf("%2d: %s\n",i,(*tb[i]).name);
   do {
-    fscanf(stdin,"%d",&sel);
-  } while ((sel < 0) || (sel >= nb));
+    ret=fscanf(stdin,"%d",&sel);
+  } while ((ret != 1) || (sel < 0) || (sel >= nb));
   
   return tb[sel];
 }

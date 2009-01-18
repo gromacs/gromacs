@@ -393,7 +393,7 @@ bool get_libdir(char *libdir)
   char full_path[512];
   char test_file[512];
   char system_path[512];
-  char *dir,*ptr,*s;
+  char *dir,*ptr,*s,*pdum;
   bool found=FALSE;
   int i;
 
@@ -409,14 +409,14 @@ bool get_libdir(char *libdir)
 #endif
 
   /* Only do the smart search part if we got a real name */
-  if (bin_name && strcmp(bin_name,"GROMACS")) {
+  if (NULL!=bin_name && strcmp(bin_name,"GROMACS")) {
   
     if (!strchr(bin_name,DIR_SEPARATOR)) {
       /* No slash or backslash in name means it must be in the path - search it! */
       s=getenv("PATH");
 
       /* Add the local dir since it is not in the path on windows */
-      getcwd(system_path,sizeof(system_path)-1);
+      pdum=getcwd(system_path,sizeof(system_path)-1);
       strcat(system_path,PATH_SEPARATOR);
       if (s != NULL)
 	strcat(system_path,s);
@@ -434,7 +434,7 @@ bool get_libdir(char *libdir)
        * it does not start at the root, i.e.
        * name is relative to the current dir 
        */
-      getcwd(buf,sizeof(buf)-1);
+      pdum=getcwd(buf,sizeof(buf)-1);
       strcpy(full_path,buf);
       strcat(full_path,"/");
       strcat(full_path,bin_name);

@@ -452,7 +452,11 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Covariance analysis log, written %s\n",
 	  ctime(&now));
   fprintf(out,"Program: %s\n",argv[0]);
-  getcwd(str,STRLEN);
+  if(NULL==getcwd(str,STRLEN))
+  {
+      gmx_fatal(FARGS,"Current working directory is undefined");
+  }
+
   fprintf(out,"Working directory: %s\n\n",str);
 
   fprintf(out,"Read %d frames from %s (time %g to %g %s)\n",nframes,trxfile,
