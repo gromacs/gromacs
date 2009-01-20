@@ -63,6 +63,7 @@
 #include "index.h"
 #include "gen_vsite.h"
 #include "add_par.h"
+#include "toputil.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
@@ -118,7 +119,8 @@ choose_ff(char *forcefield, int maxlen)
   t_fff   *fff;
   int     i,nff,sel;
   char    *c,buf[STRLEN],fn[32];
-  
+  char    *pret;
+
   in=libopen("FF.dat");
   fgets2(buf,255,in);
   sscanf(buf,"%d",&nff);
@@ -139,9 +141,11 @@ choose_ff(char *forcefield, int maxlen)
     for(i=0; (i<nff); i++)
       printf("%2d: %s\n",i,fff[i].desc);
     do {
-      fgets(buf,STRLEN,stdin);
-      sscanf(buf,"%d",&sel);
-    } while ((sel < 0) || (sel >= nff));
+      pret = fgets(buf,STRLEN,stdin);
+
+      if(pret != NULL)
+	sscanf(buf,"%d",&sel);
+    } while ( pret==NULL || (sel < 0) || (sel >= nff));
   }
   else
     sel=0;

@@ -41,10 +41,11 @@ ppc_invsqrt(char *rsq, char *rinv)
 			mknb_assign (rinv,"__frsqrte(%s)",rsq);
 		}
 	} else {
+		/* note that frsqrtes is only supported on Power5 and higher! */
 		if (mknb_fortran) {
-			mknb_assign (rinv,"frsqrte(dble(%s))",rsq);
+			mknb_assign (rinv,"frsqrtes(dble(%s))",rsq);
 		} else {
-			mknb_assign (rinv,"__frsqrte(double(%s))",rsq);
+			mknb_assign (rinv,"__frsqrtes(%s)",rsq);
 		}
 	}
 
@@ -457,21 +458,21 @@ void mknb_innerloop()
 					(mknb_func.water==MKNB_WATER_TIP4P_PAIR && (i==1 || i==4));
         
 				sprintf(tmp,"j3+%d",3*(j-1));
-				sprintf(mem,mknb_array("faction",tmp));
+				sprintf(mem,"%s",mknb_array("faction",tmp));
 				sprintf(var,"fjx%d",j);
 
 				mknb_assign( write_to_mem ? mem : var, "%s - tx",
 							 read_from_mem ? mem : var);
 
 				sprintf(tmp,"j3+%d",3*(j-1)+1);
-				sprintf(mem,mknb_array("faction",tmp));
+				sprintf(mem,"%s",mknb_array("faction",tmp));
 				sprintf(var,"fjy%d",j);
 
 				mknb_assign( write_to_mem ? mem : var, "%s - ty",
 							 read_from_mem ? mem : var);
 
 				sprintf(tmp,"j3+%d",3*(j-1)+2);
-				sprintf(mem,mknb_array("faction",tmp));
+				sprintf(mem,"%s",mknb_array("faction",tmp));
 				sprintf(var,"fjz%d",j);
 
 				mknb_assign( write_to_mem ? mem : var, "%s - tz",

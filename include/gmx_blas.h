@@ -33,7 +33,6 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-
 #ifndef _GMX_BLAS_H_
 #define _GMX_BLAS_H_
 

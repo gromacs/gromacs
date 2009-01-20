@@ -88,7 +88,11 @@ int get_electrons(t_electron **eltab, char *fn)
   if ( !(in = fopen(fn,"r")))
     gmx_fatal(FARGS,"Couldn't open %s. Exiting.\n",fn);
 
-  fgets(buffer, 255, in);
+  if(NULL==fgets(buffer, 255, in))
+  {
+      gmx_fatal(FARGS,"Error reading from file %s",fn);
+  }
+ 
   if (sscanf(buffer, "%d", &nr) != 1)
     gmx_fatal(FARGS,"Invalid number of atomtypes in datafile\n");
 

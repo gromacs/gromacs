@@ -71,6 +71,10 @@ libnb_kernel_bluegene_la_SOURCES = \
         nb_kernel410_bluegene.c         nb_kernel410_bluegene.h \
         nb_kernel420_bluegene.c         nb_kernel420_bluegene.h \
         nb_kernel430_bluegene.c         nb_kernel430_bluegene.h \
-        nb_kernel_bluegene.c		nb_kernel_bluegene.h	
+        nb_kernel_bluegene.c		nb_kernel_bluegene.h	\
+	nb_kernel_w3_bluegene.h		nb_kernel_w3w3_bluegene.h \
+	nb_kernel_w4_bluegene.h		nb_kernel_w4w4_bluegene.h \
+	nb_kernel_gen_bluegene.h	interaction.h 
+
 
 

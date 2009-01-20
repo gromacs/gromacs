@@ -25,6 +25,8 @@
 #include <config.h>
 #endif
 
+#include <types/simple.h>
+
 /*! \file  nb_kernel312.h
  *  \brief Nonbonded kernel 312 (Tab Coul + LJ, SPC-SPC)
  *
@@ -39,10 +41,6 @@ extern "C"
 }
 #endif
 
-#ifndef _TYPE_REAL
-#define _TYPE_REAL
-typedef float real;
-#endif
 
 /*! \brief Nonbonded kernel 312 with forces.
  *

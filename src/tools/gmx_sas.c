@@ -274,7 +274,6 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	    "Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
 	    "will certainly crash the analysis.\n\n");
   }
-
   snew(nx,2);
   snew(index,2);
   snew(grpname,2);

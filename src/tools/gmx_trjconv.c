@@ -454,11 +454,17 @@ void do_trunc(char *fn, real t0)
       fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
 	      "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
 	      fn,j,t,(long int)fpos);
-      scanf("%s",yesno);
+      if(1 != scanf("%s",yesno))
+      { 
+	gmx_fatal(FARGS,"Error reading user input");
+      }
       if (strcmp(yesno,"YES") == 0) {
 	fprintf(stderr,"Once again, I'm gonna DO this...\n");
 	close_trn(in);
-	truncate(fn,fpos);
+	if(0 != truncate(fn,fpos))
+	{
+	  gmx_fatal(FARGS,"Error truncating file %s",fn);
+	}
       }
       else {
 	fprintf(stderr,"Ok, I'll forget about it\n");
@@ -1375,7 +1381,10 @@ int gmx_trjconv(int argc,char *argv[])
               printf("Warning-- No calls to system(3) supported on this platform.");
               printf("Warning-- Skipping execution of 'system(\"%s\")'.", c);
 #else
-	      system(c);
+	      if(0 != system(c))
+	      {
+		gmx_fatal(FARGS,"Error executing command: %s",c);
+	      }
 #endif
 	    }
 	    outframe++;

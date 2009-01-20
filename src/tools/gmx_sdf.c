@@ -50,13 +50,19 @@ static char *SRCID_template_c = "$Id$";
 
 static void i_write(FILE *output, int value)
 {
-  fwrite(&value,sizeof(int),1L,output);
+  if(fwrite(&value,sizeof(int),1,output) != 1)
+  {
+    gmx_fatal(FARGS,"Error writing to output file");
+  }
 }
 
 
 static void f_write(FILE *output,float value)
 {
-  fwrite(&value,sizeof(float),1L,output);
+  if(fwrite(&value,sizeof(float),1,output) != 1)
+  {
+    gmx_fatal(FARGS,"Error writing to output file");
+  }
 }
 
 

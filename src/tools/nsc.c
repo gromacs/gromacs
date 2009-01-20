@@ -544,10 +544,10 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   real dotarea, area, vol=0.;
   real *xus, *dots=NULL, *atom_area=NULL;
   int  nxbox, nybox, nzbox, nxy, nxyz;
-  real xmin, ymin, zmin, xmax, ymax, zmax, ra2max, d, *pco;
+  real xmin=0, ymin=0, zmin=0, xmax, ymax, zmax, ra2max, d, *pco;
   /* Added DvdS 2006-07-19 */
   t_pbc pbc;
-  rvec  ddx;
+  rvec  ddx,*x=NULL;
   int   iat_xx,jat_xx;
   
   distribution = unsp_type(densit);
@@ -580,65 +580,106 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   if (mode & FLAG_ATOM_AREA) 
     snew(atom_area,nat);
 
-  /* Added DvdS 2006-07-19 */
-  if (box)
-    set_pbc(&pbc,ePBC,box);
-  /* end */
-    
-  /* dimensions of atomic set, cell edge is 2*ra_max */
-  iat  = index[0];
-  xmin = coords[iat][XX]; xmax = xmin; xs=xmin;
-  ymin = coords[iat][YY]; ymax = ymin; ys=ymin;
-  zmin = coords[iat][ZZ]; zmax = zmin; zs=zmin;
-  ra2max = radius[iat];
-
+  /* Compute minimum size for grid cells */
+  ra2max = radius[index[0]];
   for (iat_xx=1; (iat_xx<nat); iat_xx++) {
     iat = index[iat_xx];
-    pco = coords[iat];
-    xmin = min(xmin, *pco);     xmax = max(xmax, *pco);
-    ymin = min(ymin, *(pco+1)); ymax = max(ymax, *(pco+1));
-    zmin = min(zmin, *(pco+2)); zmax = max(zmax, *(pco+2));
-    xs= xs+ *pco; ys = ys+ *(pco+1); zs= zs+ *(pco+2);
     ra2max = max(ra2max, radius[iat]);
   }
-  xs = xs/ (real) nat;
-  ys = ys/ (real) nat;
-  zs = zs/ (real) nat;
-  ra2max = 2.*ra2max;
-  if (debug)
-    fprintf(debug,"nsc_dclm: n_dot=%5d ra2max=%9.3f %9.3f\n", n_dot, ra2max, dotarea);
+  ra2max = 2*ra2max;
   
-  d = xmax-xmin; nxbox = (int) max(ceil(d/ra2max), 1.);
-  d = (((real)nxbox)*ra2max-d)/2.;
-  xmin = xmin-d; xmax = xmax+d;
-  d = ymax-ymin; nybox = (int) max(ceil(d/ra2max), 1.);
-  d = (((real)nybox)*ra2max-d)/2.;
-  ymin = ymin-d; ymax = ymax+d;
-  d = zmax-zmin; nzbox = (int) max(ceil(d/ra2max), 1.);
-  d = (((real)nzbox)*ra2max-d)/2.;
-  zmin = zmin-d; zmax = zmax+d;
+  /* Added DvdS 2006-07-19 */
+  /* Updated 2008-10-09 */
+  if (box) {
+    set_pbc(&pbc,ePBC,box);
+    snew(x,nat);
+    for(i=0; (i<nat); i++) {
+      iat  = index[0];
+      copy_rvec(coords[iat],x[i]);
+    }
+    put_atoms_in_triclinic_unitcell(ecenterTRIC,box,nat,x);  
+    nxbox = max(1,floor(norm(box[XX])/ra2max));
+    nybox = max(1,floor(norm(box[YY])/ra2max));
+    nzbox = max(1,floor(norm(box[ZZ])/ra2max));
+    if (debug)
+      fprintf(debug,"nbox = %d, %d, %d\n",nxbox,nybox,nzbox);
+  }
+  else {
+    /* dimensions of atomic set, cell edge is 2*ra_max */
+    iat  = index[0];
+    xmin = coords[iat][XX]; xmax = xmin; xs=xmin;
+    ymin = coords[iat][YY]; ymax = ymin; ys=ymin;
+    zmin = coords[iat][ZZ]; zmax = zmin; zs=zmin;
+    ra2max = radius[iat];
+    
+    for (iat_xx=1; (iat_xx<nat); iat_xx++) {
+      iat = index[iat_xx];
+      pco = coords[iat];
+      xmin = min(xmin, *pco);     xmax = max(xmax, *pco);
+      ymin = min(ymin, *(pco+1)); ymax = max(ymax, *(pco+1));
+      zmin = min(zmin, *(pco+2)); zmax = max(zmax, *(pco+2));
+      xs= xs+ *pco; ys = ys+ *(pco+1); zs= zs+ *(pco+2);
+    }
+    xs = xs/ (real) nat;
+    ys = ys/ (real) nat;
+    zs = zs/ (real) nat;
+    if (debug)
+      fprintf(debug,"nsc_dclm: n_dot=%5d ra2max=%9.3f %9.3f\n", n_dot, ra2max, dotarea);
+    
+    d = xmax-xmin; nxbox = (int) max(ceil(d/ra2max), 1.);
+    d = (((real)nxbox)*ra2max-d)/2.;
+    xmin = xmin-d; xmax = xmax+d;
+    d = ymax-ymin; nybox = (int) max(ceil(d/ra2max), 1.);
+    d = (((real)nybox)*ra2max-d)/2.;
+    ymin = ymin-d; ymax = ymax+d;
+    d = zmax-zmin; nzbox = (int) max(ceil(d/ra2max), 1.);
+    d = (((real)nzbox)*ra2max-d)/2.;
+    zmin = zmin-d; zmax = zmax+d;
+  }
+  /* Help variables */
   nxy = nxbox*nybox;
   nxyz = nxy*nzbox;
-
+  
   /* box number of atoms */
   snew(wkatm,nat);
   snew(wkat1,nat);
   snew(wkdot,n_dot);
   snew(wkbox,nxyz+1);
 
-  /* Put the atoms in their boxes */
-  for (iat_xx=0; (iat_xx<nat); iat_xx++) {
-    iat = index[iat_xx];
-    pco = coords[iat];
-    i = (int) max(floor((pco[XX]-xmin)/ra2max), 0); 
-    i = min(i,nxbox-1);
-    j = (int) max(floor((pco[YY]-ymin)/ra2max), 0); 
-    j = min(j,nybox-1);
-    l = (int) max(floor((pco[ZZ]-zmin)/ra2max), 0); 
-    l = min(l,nzbox-1);
-    i = i+j*nxbox+l*nxy;
-    wkat1[iat_xx] = i; 
-    wkbox[i]++;
+  if (box) {
+    matrix box_1;
+    rvec   x_1;
+    int    ix,iy,iz,m;
+    m_inv(box,box_1);
+    for(i=0; (i<nat); i++) {
+      mvmul(box_1,x[i],x_1);
+      ix = ((int)floor(x_1[XX]*nxbox) + nxbox) % nxbox;
+      iy = ((int)floor(x_1[YY]*nybox) + nybox) % nybox;
+      iz = ((int)floor(x_1[ZZ]*nzbox) + nzbox) % nzbox;
+      j =  ix + iy*nxbox + iz*nxbox*nybox;
+      if (debug)
+	fprintf(debug,"Atom %d cell index %d. x = (%8.3f,%8.3f,%8.3f) fc = (%8.3f,%8.3f,%8.3f)\n",
+		i,j,x[i][XX],x[i][YY],x[i][ZZ],x_1[XX],x_1[YY],x_1[ZZ]);
+      range_check(j,0,nxyz);
+      wkat1[i] = j;
+      wkbox[j]++;
+    }
+  } 
+  else {
+    /* Put the atoms in their boxes */
+    for (iat_xx=0; (iat_xx<nat); iat_xx++) {
+      iat = index[iat_xx];
+      pco = coords[iat];
+      i = (int) max(floor((pco[XX]-xmin)/ra2max), 0); 
+      i = min(i,nxbox-1);
+      j = (int) max(floor((pco[YY]-ymin)/ra2max), 0); 
+      j = min(j,nybox-1);
+      l = (int) max(floor((pco[ZZ]-zmin)/ra2max), 0); 
+      l = min(l,nzbox-1);
+      i = i+j*nxbox+l*nxy;
+      wkat1[iat_xx] = i; 
+      wkbox[i]++;
+    }
   }
 
   /* sorting of atoms in accordance with box numbers */
@@ -653,6 +694,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   snew(wknb,maxnei);
   for (iat_xx=0; iat_xx<nat; iat_xx++) {
     iat = index[iat_xx];
+    range_check(wkat1[iat_xx],0,nxyz);
     wkatm[--wkbox[wkat1[iat_xx]]] = iat_xx;
     if (debug) 
       fprintf(debug,"atom %5d on place %5d\n", iat, wkbox[wkat1[iat_xx]]);
@@ -745,11 +787,13 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 
 	    /* Added DvdS 2006-07-19 */
 	    if (box) {
-	      rvec xxi;
+	      /*rvec xxi;
+	      
 	      xxi[XX] = xi;
 	      xxi[YY] = yi;
 	      xxi[ZZ] = zi;
-	      pbc_dx(&pbc,pco,xxi,ddx);
+	      pbc_dx(&pbc,pco,xxi,ddx);*/
+	      pbc_dx(&pbc,coords[i_at],coords[j_at],ddx);
 	      dx = ddx[XX];
 	      dy = ddx[YY];
 	      dz = ddx[ZZ];
@@ -844,7 +888,9 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   sfree(wkdot); 
   sfree(wkbox); 
   sfree(wknb);
-
+  if (box)
+    sfree(x);
+    
   if (mode & FLAG_VOLUME) {
     vol = vol*FOURPI/(3.* (real) n_dot);
     *value_of_vol = vol;

@@ -707,6 +707,7 @@ static real constr_r_max_moltype(FILE *fplog,
 				 t_inputrec *ir)
 {
   int natoms,nflexcon,*path,at,count;
+
   t_blocka at2con;
   real r0,r1,r2maxA,r2maxB,rmax,lam0,lam1;
 
@@ -727,6 +728,7 @@ static real constr_r_max_moltype(FILE *fplog,
   for(at=0; at<natoms; at++) {
     r0 = 0;
     r1 = 0;
+
     count = 0;
     constr_recur(&at2con,molt->ilist,iparams,
 		 FALSE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxA,&count);

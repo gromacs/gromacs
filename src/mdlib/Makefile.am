@@ -4,8 +4,8 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@	
-libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@	
+libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@ ../gmxlib/libgmx@LIBSUFFIX@.la	
+libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@ ../gmxlib/libgmx@LIBSUFFIX@.la	
 libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
@@ -36,7 +36,6 @@ EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
 	gmx_fft_mkl.c
-
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 

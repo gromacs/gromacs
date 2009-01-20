@@ -217,12 +217,12 @@ mknb_update_outer_potential()
 				(mknb_fortran) ? "+1" : "");
 
 	if(mknb_func.coul) {
-		sprintf(tmp,mknb_array("Vc","ggid"));
+		sprintf(tmp,"%s",mknb_array("Vc","ggid"));
 		mknb_assign(tmp,"%s + vctot",tmp);
 		nflops++;
 	}
 	if(mknb_func.vdw) {
-		sprintf(tmp,mknb_array("Vvdw","ggid"));
+		sprintf(tmp,"%s",mknb_array("Vvdw","ggid"));
 		mknb_assign(tmp,"%s + Vvdwtot",tmp);
 		nflops++;
 	}

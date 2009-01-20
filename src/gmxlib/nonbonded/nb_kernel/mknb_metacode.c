@@ -234,12 +234,12 @@ mknb_fortran_splitline(char *line)
   strncpy(tmpbuf,line+i,j-i+1);
   tmpbuf[j-i]=0;
 
-  fprintf(mknb_output,tmpbuf);
+  fprintf(mknb_output,"%s",tmpbuf);
   fprintf(mknb_output,"\n");
   fprintf(mknb_output,"     &  ");
   i=j;
   }
-  fprintf(mknb_output,line+i);
+  fprintf(mknb_output,"%s",line+i);
 }
 
 
@@ -279,7 +279,7 @@ mknb_code(char *format, ...)
         break;
       case 's': /* read a string */
         s = va_arg(ap, char *);
-        sprintf(tmp,s);
+        sprintf(tmp,"%s",s);
         break;
       default:
         fprintf(stderr,
@@ -297,7 +297,7 @@ mknb_code(char *format, ...)
   if(mknb_fortran)
     mknb_fortran_splitline(outbuf);
   else
-    fprintf(mknb_output,outbuf);
+    fprintf(mknb_output,"%s",outbuf);
 
   fprintf(mknb_output,"\n");
 }
@@ -359,7 +359,7 @@ mknb_assign(char *left, char *right, ...)
             break;
           case 's': /* read a string */
             s = va_arg(ap, char *);
-            sprintf(tmp,s);
+            sprintf(tmp,"%s",s);
             break;
           default:
             fprintf(stderr,
@@ -385,7 +385,7 @@ mknb_assign(char *left, char *right, ...)
   if(mknb_fortran)
     mknb_fortran_splitline(outbuf);
   else
-    fprintf(mknb_output,outbuf);
+    fprintf(mknb_output,"%s",outbuf);
   
   fprintf(mknb_output,"\n");
 }

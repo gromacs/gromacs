@@ -1,0 +1,131 @@
+H	1.00800 ;	polar H 
+HC	1.00800 ;	N-ter H 
+HA	1.00800 ;	nonpolar H 
+HT	1.00800 ;	TIPS3P WATER HYDROGEN 
+HP	1.00800 ;	aromatic H 
+HB	1.00800 ;	backbone H 
+HR1	1.00800 ;	his he1, (+) his HG,HD2 
+HR2	1.00800 ;	(+) his HE1 
+HR3	1.00800 ;	neutral his HG, HD2 
+HS	1.00800 ;	thiol hydrogen 
+HE1	1.00800 ;	for alkene; RHC=CR 
+HE2	1.00800 ;	for alkene; H2C=CR 
+HA1	1.00800 ;	alkane, CH, new LJ params (see toppar_all22_prot_aliphatic_c27.str) 
+HA2	1.00800 ;	alkane, CH2, new LJ params (see toppar_all22_prot_aliphatic_c27.str) 
+HA3	1.00800 ;	alkane, CH3, new LJ params (see toppar_all22_prot_aliphatic_c27.str) 
+HF1	1.00800 ;	Aliphatic H on fluorinated C (see toppar_all22_prot_fluoro_alkanes.str) 
+HF2	1.00800 ;	Aliphatic H on fluorinated C (see toppar_all22_prot_fluoro_alkanes.str) 
+C	12.01100 ;	carbonyl C, peptide backbone 
+CA	12.01100 ;	aromatic C 
+CT1	12.01100 ;	aliphatic sp3 C for CH 
+CT2	12.01100 ;	aliphatic sp3 C for CH2 
+CT3	12.01100 ;	aliphatic sp3 C for CH3 
+CPH1	12.01100 ;	his CG and CD2 carbons 
+CPH2	12.01100 ;	his CE1 carbon 
+CPT	12.01100 ;	trp C between rings 
+CY	12.01100 ;	TRP C in pyrrole ring 
+CP1	12.01100 ;	tetrahedral C (proline CA) 
+CP2	12.01100 ;	tetrahedral C (proline CB/CG) 
+CP3	12.01100 ;	tetrahedral C (proline CD) 
+CC	12.01100 ;	carbonyl C, asn,asp,gln,glu,cter,ct2 
+CD	12.01100 ;	carbonyl C, pres aspp,glup,ct1 
+CPA	12.01100 ;	heme alpha-C 
+CPB	12.01100 ;	heme beta-C 
+CPM	12.01100 ;	heme meso-C 
+CM	12.01100 ;	heme CO carbon 
+CS	12.01100 ;	thiolate carbon 
+CE1	12.01100 ;	for alkene; RHC=CR 
+CE2	12.01100 ;	for alkene; H2C=CR 
+CST	12.01100 ;	CO2 carbon 
+CT	12.01100 ;	aliphatic sp3 C, new LJ params, no hydrogens (see toppar_all22_prot_aliphatic_c27.str) 
+CT1x	12.01100 ;	aliphatic sp3 C for CH, new LJ params (see toppar_all22_prot_aliphatic_c27.str) 
+CT2x	12.01100 ;	aliphatic sp3 C for CH2, new LJ params (see toppar_all22_prot_aliphatic_c27.str) 
+CT3x	12.01100 ;	aliphatic sp3 C for CH3, new LJ params (see toppar_all22_prot_aliphatic_c27.str) 
+CN	12.01100 ;	C for cyano group (see toppar_all22_prot_pyridines.str) 
+CAP	12.01100 ;	aromatic C for pyrimidines (see toppar_all22_prot_pyridines.str) 
+COA	12.01100 ;	carbonyl C for pyrimidines (see toppar_all22_prot_pyridines.str) 
+C3	12.01100 ;	cyclopropyl carbon 
+N	14.00700 ;	proline N 
+NR1	14.00700 ;	neutral his protonated ring nitrogen 
+NR2	14.00700 ;	neutral his unprotonated ring nitrogen 
+NR3	14.00700 ;	charged his ring nitrogen 
+NH1	14.00700 ;	peptide nitrogen 
+NH2	14.00700 ;	amide nitrogen 
+NH3	14.00700 ;	ammonium nitrogen 
+NC2	14.00700 ;	guanidinium nitroogen 
+NY	14.00700 ;	TRP N in pyrrole ring 
+NP	14.00700 ;	Proline ring NH2+ (N-terminal) 
+NPH	14.00700 ;	heme pyrrole N 
+NC	14.00700 ;	N for cyano group (see toppar_all22_prot_pyridines.str) 
+O	15.99900 ;	carbonyl oxygen 
+OB	15.99900 ;	carbonyl oxygen in acetic acid 
+OC	15.99900 ;	carboxylate oxygen 
+OH1	15.99900 ;	hydroxyl oxygen 
+OS	15.99940 ;	ester oxygen 
+OT	15.99940 ;	TIPS3P WATER OXYGEN 
+OM	15.99900 ;	heme CO/O2 oxygen 
+OST	15.99900 ;	CO2 oxygen 
+OCA	15.99900 ;	carbonyl O for pyrimidines (see toppar_all22_prot_pyridines.str) 
+S	32.06000 ;	sulphur 
+SM	32.06000 ;	sulfur C-S-S-C type 
+SS	32.06000 ;	thiolate sulfur 
+HE	4.00260 ;	helium 
+NE	20.17970 ;	neon 
+CF1	12.01100 ;	monofluoromethyl (see toppar_all22_prot_fluoro_alkanes.str) 
+CF2	12.01100 ;	difluoromethyl (see toppar_all22_prot_fluoro_alkanes.str) 
+CF3	12.01100 ;	trifluoromethyl (see toppar_all22_prot_fluoro_alkanes.str) 
+FE	55.84700 ;	heme iron 56 
+CLAL	35.45300 ;	Chlorine Atom (see toppar_all22_prot_aldehydes.str) 
+FA	18.99800 ;	aromatic flourine (see toppar_all22_prot_pyridines.str) 
+F1	18.99800 ;	Fluorine, monofluoro (see toppar_all22_prot_fluoro_alkanes.str) 
+F2	18.99800 ;	Fluorine, difluoro (see toppar_all22_prot_fluoro_alkanes.str) 
+F3	18.99800 ;	Fluorine, trifluoro (see toppar_all22_prot_fluoro_alkanes.str) 
+DUM	0.00000 ;	dummy atom 
+HL	1.008000 ;	polar H (equivalent to protein H) 
+HCL	1.008000 ;	charged H for PE (equivalent to protein HC) 
+HOL	1.008000 ;	Nucleic acid phosphate hydroxyl proton 
+HAL1	1.008000 ;	alphatic proton 
+HAL2	1.008000 ;	alphatic proton 
+HAL3	1.008000 ;	alphatic proton 
+HEL1	1.008000 ;	for alkene; RHC=CR 
+HEL2	1.008000 ;	for alkene; H2C=CR 
+CL	12.011000 ;	carbonyl C (acetic acid/methyl acetate) 
+CTL1	12.011000 ;	sp3 carbon with 1 H (-CH1-) 
+CTL2	12.011000 ;	carbon of methylene group (-CH2-) 
+CTL3	12.011000 ;	carbon of methyl group (-CH3) 
+CTL5	12.011000 ;	carbon of methyl group (-CH3) for tetramethylammonium 
+CEL1	12.011000 ;	for alkene; RHC=CR 
+CEL2	12.011000 ;	for alkene; H2C=CR 
+NTL	14.007000 ;	ammonium nitrogen 
+NH3L	14.007000 ;	nitrogen phosphatidylethanolamine 
+OBL	15.999400 ;	acetic acid carboxyl oxygen (e. to protein OB) 
+OCL	15.999400 ;	acetate oxygen 
+OSL	15.999400 ;	Nucleic acid phosphate ester oxygen 
+O2L	15.999400 ;	Nucleic acid =O in phosphate or sulfate 
+OHL	15.999400 ;	Nucleic acid phosphate hydroxyl oxygen 
+PL	30.974000 ;	phosphorus 
+SL	32.060000 ;	Sulfate sulfur 
+SOD	22.989770 ;	Sodium Ion 
+MG	24.305000 ;	Magnesium Ion 
+POT	39.102000 ;	Potassium Ion! check masses 
+CES	132.900000 ;	Cesium Ion 
+CAL	40.080000 ;	Calcium Ion 
+CLA	35.450000 ;	Chloride Ion 
+ZN	65.370000 ;	zinc (II) cation 
+CC1A	12.01100 ;	alkene conjugation 
+CC1B	12.01100 ;	alkene conjugation 
+CC2	12.01100 ;	alkene conjugation 
+NS1	14.00700 ;	N for deprotonated Schiff's base 
+NS2	14.00700 ;	N for protonated Schiff's base 
+; extra atomtypes not part of the CHARMM distribution
+OWT4    15.9994 ; TIP4P O
+HWT4     1.0080 ; TIP4P H
+MWT4     0.0000 ; TIP4P vsite
+OW      15.9994 ; SPC O
+HW       1.0080 ; SPC H
+MNH3     0.0000 ; vsite
+MNH2     0.0000 ; vsite
+MCH3     0.0000 ; vsite
+Cu2+    63.5460 ; Copper
+Ar      39.9480 ; Argon
+SI      28.0800 ; Silicon, copied from GROMACS

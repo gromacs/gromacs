@@ -80,7 +80,10 @@ static int *select_it(int nre,char *nm[],int *nset)
 
   snew(bE,nre);
   do {
-    scanf("%d",&n);
+    if(1 != scanf("%d",&n))
+    {
+      gmx_fatal(FARGS,"Cannot read energy term");
+    }
     if ((n>0) && (n<=nre))
       bE[n-1]=TRUE;
   } while (n != 0);
@@ -173,7 +176,10 @@ static int scan_ene_files(char **fnms, int nfiles,
 	fprintf(stderr,
 		"\nContinue conversion using only the first %d terms (n/y)?\n"
 		"(you should be sure that the energy terms match)\n",nremin);
-	fgets(inputstring,STRLEN-1,stdin);
+	if(NULL==fgets(inputstring,STRLEN-1,stdin))
+        { 
+	      gmx_fatal(FARGS,"Error reading user input");
+	}
 	if (inputstring[0]!='y' && inputstring[0]!='Y') {
 	  fprintf(stderr,"Will not convert\n");
 	  exit(0);
@@ -226,7 +232,10 @@ static void edit_files(char **fnms,int nfiles,real *readtime,
       fprintf(stderr,"%25s   %10.3f             ",fnms[i],readtime[i]);
       ok=FALSE;
       do {
-	fgets(inputstring,STRLEN-1,stdin);
+	if(NULL==fgets(inputstring,STRLEN-1,stdin))
+	{
+	    gmx_fatal(FARGS,"Error reading user input");
+	}
 	inputstring[strlen(inputstring)-1]=0;
 	
 	if(inputstring[0]=='c' || inputstring[0]=='C') {

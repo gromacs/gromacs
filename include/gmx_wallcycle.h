@@ -33,6 +33,7 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+
 #ifndef _gmx_wallcycle_h
 #define _gmx_wallcycle_h
 

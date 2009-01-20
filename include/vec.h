@@ -192,7 +192,7 @@ static inline real invsqrt(real x)
   real        y2;
 #endif
 
-  lu = __frsqrte(double(x));
+  lu = __frsqrte((double)x);
 
   y=(half*lu*(three-((x*lu)*lu)));
 

@@ -457,7 +457,7 @@ static void dump_nnb (FILE *fp, char *title, int n1, t_nnb *nnb)
   int i,j;
   
   /* dump neighbor list */
-  fprintf(fp,title);
+  fprintf(fp,"%s",title);
   for(i=0; (i<n1); i++) {
     fprintf(fp,"i:%5d #:%5d nbs:",i,nnb[i].nr);
     for(j=0; j<nnb[i].nr; j++)

@@ -51,6 +51,8 @@ struct gmx_parallel_3dfft
     int             nnodes;
     gmx_fft_t       fft_yz;
     gmx_fft_t       fft_x;
+	void *          work_rawptr;
+	void *          work2_rawptr;
     t_complex *     work;
     t_complex *     work2;
     int             *node2slab;
@@ -157,18 +159,21 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     nxy_n = p->nnodes*((p->nx + p->nnodes - 1)/p->nnodes)*
                       ((p->ny + p->nnodes - 1)/p->nnodes);
 
-    p0 = malloc(sizeof(real)*2*(p->nzc)*nxy_n + 32);
-    p->work  = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
+    
+    p0               = malloc(sizeof(real)*2*(p->nzc)*nxy_n + 32);
+    p->work_rawptr   = p0;
+    p->work          = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
 
-    p0 = malloc(sizeof(real)*2*(p->nzc)*nxy_n);
-    p->work2 = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
+    p0               = malloc(sizeof(real)*2*(p->nzc)*nxy_n);
+    p->work2_rawptr  = p0;
+    p->work2         = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
     
     if(p->work == NULL || p->work2 == NULL)
     {
-        if(p->work != NULL)
-            free(p->work);
-        if(p->work2 != NULL)
-            free(p->work2);
+        if(p->work_rawptr != NULL)
+            free(p->work_rawptr);
+        if(p->work2_rawptr != NULL)
+            free(p->work2_rawptr);
         free(p);
         return ENOMEM;
     }
@@ -513,9 +518,17 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup)
         free(pfft_setup->aav->rcounts);
         free(pfft_setup->aav);
     }
-    free(pfft_setup->work);
-    
+    free(pfft_setup->work_rawptr);
+    free(pfft_setup->work2_rawptr);
+
     return 0;
+}
+
+#else
+/* Dummy function to avoid warnings without MPI enabled */
+void
+gmx_parallel_3dfft_dummy()
+{
 }
 
 #endif /* GMX_MPI */

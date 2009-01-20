@@ -313,7 +313,7 @@
 */
 
 
-#ifdef XLC_IS_OK
+#if (defined __IBMC__ || defined __IBMCPP__)
 
 #define convert2ints(x,xi,conv,i1,i2)                      \
     xi      = __fpctiwz(x);                                \

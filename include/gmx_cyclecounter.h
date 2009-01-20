@@ -375,7 +375,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 { 
     /* HP PA-RISC, inline asm with gcc */
-    gmx_time_cycle ret;
+    gmx_cycles_t ret;
     __asm__ __volatile__("mfctl 16, %0": "=r" (ret));
     /* no input, nothing else clobbered */
     return ret;

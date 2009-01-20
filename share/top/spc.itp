@@ -5,25 +5,30 @@ SOL		2
 [ atoms ]
 ;   nr   type  resnr residue  atom   cgnr     charge       mass
 #ifdef _FF_GROMACS 
-     1	   OW	   1	SOL     OW      1      -0.82
-     2	   HW	   1	SOL    HW1      1       0.41
-     3	   HW	   1	SOL    HW2	1       0.41
+     1     OW      1    SOL     OW      1      -0.82
+     2     HW      1    SOL    HW1      1       0.41
+     3     HW      1    SOL    HW2      1       0.41
 #endif
 #ifdef _FF_GROMOS96  
 #ifdef HEAVY_H
-     1	   OW	   1	SOL     OW      1      -0.82    9.95140
-     2	    H 	   1	SOL    HW1      1       0.41    4.03200
-     3	    H 	   1	SOL    HW2	1       0.41    4.03200
+     1     OW      1    SOL     OW      1      -0.82    9.95140
+     2      H      1    SOL    HW1      1       0.41    4.03200
+     3      H      1    SOL    HW2      1       0.41    4.03200
 #else
-     1	   OW	   1	SOL     OW      1      -0.82   15.99940
-     2	    H 	   1	SOL    HW1      1       0.41    1.00800
-     3	    H 	   1	SOL    HW2	1       0.41    1.00800
+     1     OW      1    SOL     OW      1      -0.82   15.99940
+     2      H      1    SOL    HW1      1       0.41    1.00800
+     3      H      1    SOL    HW2      1       0.41    1.00800
 #endif
 #endif
 #ifdef _FF_OPLS  
-     1	opls_116   1	SOL     OW      1      -0.82 
-     2	opls_117   1	SOL    HW1      1       0.41   
-     3	opls_117   1	SOL    HW2	1       0.41  
+     1  opls_116   1    SOL     OW      1      -0.82 
+     2  opls_117   1    SOL    HW1      1       0.41   
+     3  opls_117   1    SOL    HW2      1       0.41  
+#endif
+#ifdef _FF_CHARMM
+     1     OW      1    SOL     OW      1      -0.82
+     2     HW      1    SOL    HW1      1       0.41
+     3     HW      1    SOL    HW2      1       0.41
 #endif
 
 #ifdef FLEXIBLE

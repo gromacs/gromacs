@@ -25,12 +25,8 @@
 #include <config.h>
 #endif
 
-//#include <types/simple.h>
+#include <types/simple.h>
 
-#ifndef _TYPE_REAL
-#define _TYPE_REAL
-typedef float real;
-#endif
 
 /*! \file  nb_kernel300.h
  *  \brief Nonbonded kernel 300 (Tab Coul)

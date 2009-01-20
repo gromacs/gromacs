@@ -1084,7 +1084,10 @@ int gmx_anaeig(int argc,char *argv[])
     do {
       nout++;
       srenew(iout,nout+1);
-      scanf("%d",&iout[nout]);
+      if(1 != scanf("%d",&iout[nout]))
+      {
+	  gmx_fatal(FARGS,"Error reading user input");
+      }
       iout[nout]--;
     }
     while (iout[nout]>=0);

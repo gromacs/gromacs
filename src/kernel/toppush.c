@@ -461,62 +461,92 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
   sfree(param);
 }
 
-static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
-			  char *line)
+static void push_bondtype(t_params *       bt,
+                          t_param *        b,
+                          int              nral,
+                          int              ftype,
+                          bool             bAllowRepeat,
+                          char *           line)
 {
-  int  i,j;
-  bool bTest,bFound,bId;
-  int  nr   = bt->nr;
-  int  nrfp = NRFP(ftype);
-  char  errbuf[256];
-
-  /* Check if this entry overwrites another */
-  bFound=FALSE;
-  for (i=0; (i < nr); i++) {
-    bTest = TRUE;
-    for (j=0; (j < nral); j++)
-      bTest=(bTest && (b->a[j] == bt->param[i].a[j]));
-    if (!bTest) {
-      bTest=TRUE;
-      for(j=0; (j<nral); j++)
-	bTest=(bTest && (b->a[nral-1-j] == bt->param[i].a[j]));
-    }
-    if (bTest) {
-      if (!bFound) {
-	bId = TRUE;
-	for (j=0; (j < nrfp); j++)
-	  bId = bId && (bt->param[i].c[j] == b->c[j]);
-	if (!bId) {
-	  sprintf(errbuf,"Overriding %s parameters,",
-		  interaction_function[ftype].longname);
-	  warning(errbuf);
-	  fprintf(stderr,"  old:");
-	  for (j=0; (j < nrfp); j++)
-	    fprintf(stderr," %g",bt->param[i].c[j]);
-	  fprintf(stderr," \n  new: %s\n\n",line);
-	}
-      }
-      /* Overwrite it! */
-      for (j=0; (j < nrfp); j++)
-	bt->param[i].c[j] = b->c[j];
-      bFound=TRUE;
-    }
-  }
-  if (!bFound) {
-    /* alloc */
-    pr_alloc (2,bt);
+	int  i,j;
+	bool bTest,bFound,bCont,bId;
+	int  nr   = bt->nr;
+	int  nrfp = NRFP(ftype);
+	char  errbuf[256];
+	
+    /* If bAllowRepeat is TRUE, we allow multiple entries as long as they
+	 are on directly _adjacent_ lines.
+     */
     
-    /* fill the arrays up and down */
-    for (j=0; (j < nrfp); j++) {
-      bt->param[bt->nr].c[j]   = b->c[j];
-      bt->param[bt->nr+1].c[j] = b->c[j];
+    /* First check if our atomtypes are _identical_ (not reversed) to the previous
+	 entry. If they are not identical we search for earlier duplicates. If they are
+	 we can skip it, since we already searched for the first line
+	 in this group.
+     */
+    
+    bFound=FALSE;
+    bCont =FALSE;
+    
+    if(bAllowRepeat && nr>1)
+    {
+        for (j=0,bCont=TRUE; (j < nral); j++)
+        {
+            bCont=bCont && (b->a[j] == bt->param[nr-2].a[j]);
+        }
     }
-    for (j=0; (j<nral); j++) {
-      bt->param[bt->nr].a[j]   = b->a[j];
-      bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
+    
+    /* Search for earlier duplicates if this entry was not a continuation
+	 from the previous line.
+	 */
+    if(!bCont)
+    {
+        bFound=FALSE;
+        for (i=0; (i < nr); i++) {
+            bTest = TRUE;
+            for (j=0; (j < nral); j++)
+                bTest=(bTest && (b->a[j] == bt->param[i].a[j]));
+            if (!bTest) {
+                bTest=TRUE;
+                for(j=0; (j<nral); j++)
+                    bTest=(bTest && (b->a[nral-1-j] == bt->param[i].a[j]));
+            }
+            if (bTest) {
+                if (!bFound) {
+                    bId = TRUE;
+                    for (j=0; (j < nrfp); j++)
+                        bId = bId && (bt->param[i].c[j] == b->c[j]);
+                    if (!bId) {
+                        sprintf(errbuf,"Overriding %s parameters.%s",
+                                interaction_function[ftype].longname,
+                                (ftype==F_PDIHS) ? "\nUse dihedraltype 4 to allow several multiplicity terms." : "");
+                        warning(errbuf);
+                        fprintf(stderr,"  old:");
+                        for (j=0; (j < nrfp); j++)
+                            fprintf(stderr," %g",bt->param[i].c[j]);
+                        fprintf(stderr," \n  new: %s\n\n",line);
+                    }
+                }
+                /* Overwrite it! */
+                for (j=0; (j < nrfp); j++)
+                    bt->param[i].c[j] = b->c[j];
+                bFound=TRUE;
+            }
+        }
+        if (!bFound) {
+            /* alloc */
+            pr_alloc (2,bt);
+            
+            /* fill the arrays up and down */
+            memcpy(bt->param[bt->nr].c,  b->c,sizeof(b->c));
+            memcpy(bt->param[bt->nr].a,  b->a,sizeof(b->a));
+            memcpy(bt->param[bt->nr+1].c,b->c,sizeof(b->c));
+            
+            for (j=0; (j < nral); j++) 
+                bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
+            
+            bt->nr += 2;
+        }
     }
-    bt->nr += 2;
-  }
 }
 
 void push_bt(directive d,t_params bt[],int nral,
@@ -591,7 +621,7 @@ void push_bt(directive d,t_params bt[],int nral,
   }
   for(i=0; (i<nrfp); i++)
     p.c[i]=c[i];
-  push_bondtype (&(bt[ftype]),&p,nral,ftype,line);
+  push_bondtype (&(bt[ftype]),&p,nral,ftype,FALSE,line);
 }
 
 
@@ -633,6 +663,7 @@ void push_dihedraltype(directive d,t_params bt[],
   char     alc[MAXATOMLIST+1][20];
   double   c[MAXFORCEPARAM];
   t_param  p;
+  bool     bAllowRepeat;
   char  errbuf[256];
 
   /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
@@ -670,6 +701,25 @@ void push_dihedraltype(directive d,t_params bt[],
     warning_error(errbuf);
     return;
   }
+	
+	if(ft == 9)
+	{
+		/* Previously, we have always overwritten parameters if e.g. a torsion
+		 with the same atomtypes occurs on multiple lines. However, CHARMM and
+		 some other force fields specify multiple dihedrals over some bonds, 
+		 including cosines with multiplicity 6 and somethimes even higher.
+		 Thus, they cannot be represented with Ryckaert-Bellemans terms.
+		 To add support for these force fields, Dihedral type 4 is identical to
+		 normal proper dihedrals, but repeated entries are allowed. 
+		 */
+		bAllowRepeat = TRUE;
+		ft = 1;
+	}
+	else
+	{
+		bAllowRepeat = FALSE;
+	}  
+	
   
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
@@ -711,7 +761,7 @@ void push_dihedraltype(directive d,t_params bt[],
   /* Always use 4 atoms here, since we created two wildcard atoms
    * if there wasn't of them 4 already.
    */
-  push_bondtype (&(bt[ftype]),&p,4,ftype,line);
+  push_bondtype (&(bt[ftype]),&p,4,ftype,bAllowRepeat,line);
 }
 
 

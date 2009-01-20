@@ -1829,9 +1829,9 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     if (bCharge) {
       set_warning_line(mdparin,-1);
       sprintf(err_buf,
-	      "You are using a plain Coulomb cut-off, this will often produce artifacts.\n"
+	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
-	      EELTYPE(eelPME));
+	      EI_TPI(ir->eI) ? EELTYPE(eelRF) : EELTYPE(eelPME));
       warning_note(err_buf);
     }
   }

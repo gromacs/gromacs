@@ -33,7 +33,6 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-
 /* define USE_MPE if you want MPE logging 
  *
  * you then need to link with the appropriate libraries

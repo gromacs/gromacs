@@ -1,3 +1,4 @@
+
 /*
  * $Id$
  * 
@@ -32,6 +33,7 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+
 
 typedef struct gmx_cpp *gmx_cpp_t; 
 	

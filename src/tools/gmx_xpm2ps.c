@@ -583,9 +583,9 @@ void xpm_mat(char *outf,
       mat[i].nmap=nmap;
       mat[i].map=map;
       if (mat2 && (strcmp(mat[i].title,mat2[i].title) != 0))
-	sprintf(mat[i].title,"%s / %s",mat[i].title,mat2[i].title);
+		  sprintf(mat[i].title+strlen(mat[i].title)," / %s",mat2[i].title);
       if (mat2 && (strcmp(mat[i].legend,mat2[i].legend) != 0))
-	sprintf(mat[i].legend,"%s / %s",mat[i].legend,mat2[i].legend); 
+		  sprintf(mat[i].legend+strlen(mat[i].legend)," / %s",mat2[i].legend); 
       write_xpm_m(out,mat[i]);
     }
   }

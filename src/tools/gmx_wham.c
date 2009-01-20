@@ -193,7 +193,10 @@ void read_pdo_header(FILE * file,t_UmbrellaHeader * header, t_UmbrellaOptions *o
 
 
     /*  line 1 */
-    fscanf(file,"%s%s%s",Buffer0,Buffer1,Buffer2);
+    if(3 != fscanf(file,"%s%s%s",Buffer0,Buffer1,Buffer2))
+    {
+	gmx_fatal(FARGS,"Error reading header from pdo file");
+    }
     if(strcmp(Buffer1,"UMBRELLA"))
         gmx_fatal(FARGS,"This does not appear to be a valid pdo file. Found %s, expected %s",
                 Buffer1, "UMBRELLA");
@@ -201,8 +204,11 @@ void read_pdo_header(FILE * file,t_UmbrellaHeader * header, t_UmbrellaOptions *o
         gmx_fatal(FARGS,"This does not appear to be a version 3.0 pdo file");
 
     /*  line 2 */
-    fscanf(file,"%s%s%s%d%d%d",Buffer0,Buffer1,Buffer2,
-            &(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2]));
+    if(6 != fscanf(file,"%s%s%s%d%d%d",Buffer0,Buffer1,Buffer2,
+		   &(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2])))
+    { 
+	gmx_fatal(FARGS,"Error reading dimensions in header from pdo file");
+    }
 
     /* printf("%d %d %d\n", header->Dims[0],header->Dims[1],header->Dims[2]); */
 
@@ -211,13 +217,22 @@ void read_pdo_header(FILE * file,t_UmbrellaHeader * header, t_UmbrellaOptions *o
         gmx_fatal(FARGS,"Currently only supports one dimension");
 
     /* line3 */
-    fscanf(file,"%s%s%d",Buffer0,Buffer1,&(header->nSkip));
+    if(3 != fscanf(file,"%s%s%d",Buffer0,Buffer1,&(header->nSkip)))
+    { 
+	gmx_fatal(FARGS,"Error reading header from pdo file");
+    }
 
     /* line 4 */
-    fscanf(file,"%s%s%s%s",Buffer0,Buffer1,Buffer2,header->Reference);
+    if(4 != fscanf(file,"%s%s%s%s",Buffer0,Buffer1,Buffer2,header->Reference))
+    { 
+	gmx_fatal(FARGS,"Error reading header from pdo file");
+    }
 
     /* line 5 */
-    fscanf(file,"%s%s%s%s%s%d",Buffer0,Buffer1,Buffer2,Buffer3,Buffer4,&(header->nPull));
+    if(6 != fscanf(file,"%s%s%s%s%s%d",Buffer0,Buffer1,Buffer2,Buffer3,Buffer4,&(header->nPull)))
+    { 
+	gmx_fatal(FARGS,"Error reading header from pdo file");
+    }
 
     if (opt->verbose)
         printf("Found nPull=%d , nSkip=%d, ref=%s\n",header->nPull,header->nSkip,
@@ -225,13 +240,19 @@ void read_pdo_header(FILE * file,t_UmbrellaHeader * header, t_UmbrellaOptions *o
 
     for(i=0;i<header->nPull;++i)
     {
-        fscanf(file,"%s%s%s%s",Buffer0,Buffer1,Buffer2,header->PullName[i]);
+      if(4 != fscanf(file,"%s%s%s%s",Buffer0,Buffer1,Buffer2,header->PullName[i]))
+      { 
+	  gmx_fatal(FARGS,"Error reading header from pdo file");
+      }
         if (opt->verbose)
             printf("pullgroup %d, pullname = %s\n",i,header->PullName[i]);
         for(j=0;j<header->nDim;++j)
         {
-            fscanf(file,"%s%s%lf%s%s%lf",Buffer0,Buffer1,&(header->UmbPos[i][j]),
-                    Buffer2,Buffer3,&(header->UmbCons[i][j]));
+	  if(6 != fscanf(file,"%s%s%lf%s%s%lf",Buffer0,Buffer1,&(header->UmbPos[i][j]),
+			 Buffer2,Buffer3,&(header->UmbCons[i][j])))
+          { 
+	      gmx_fatal(FARGS,"Error reading header from pdo file");
+	  }
 
             if (opt->bFlipProf)
             {
@@ -247,7 +268,11 @@ void read_pdo_header(FILE * file,t_UmbrellaHeader * header, t_UmbrellaOptions *o
         }
     }
 
-    fscanf(file,"%s",Buffer3);
+    if(1 != fscanf(file,"%s",Buffer3))
+    { 
+	gmx_fatal(FARGS,"Error reading header from pdo file");
+    }
+
     if (strcmp(Buffer3,"#####") != 0)
         gmx_fatal(FARGS,"Expected '#####', found %s. Hick.\n",Buffer3);
 }
@@ -293,7 +318,9 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
     char  *tmpbuf,fmt[256],fmtign[256];
     int    len=STRLEN,dstep=1;
 
-
+	minfound=1e20;
+	maxfound=-1e20;
+	
     if (!bGetMinMax)
     {
         bins=opt->bins;
@@ -1348,6 +1375,8 @@ void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
     bool dt_ok,timeok,bHaveForce;
     char *quantity;
 
+	minfound=1e20;
+	maxfound=-1e20;
 
     /*
      in force    output pullf.xvg: No   reference, one  column  per pull group

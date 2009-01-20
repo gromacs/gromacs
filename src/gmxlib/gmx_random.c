@@ -143,11 +143,11 @@ gmx_rng_make_seed(void)
 {
   FILE *fp;
   unsigned int data;
-
+  int ret;
 
   fp=fopen("/dev/random","rb"); /* will return NULL if it is not present */
   if(fp) {
-    fread(&data,sizeof(unsigned int),1,fp);
+    ret=fread(&data,sizeof(unsigned int),1,fp);
     fclose(fp);
   } else {
     /* No random device available, use time-of-day and process id */

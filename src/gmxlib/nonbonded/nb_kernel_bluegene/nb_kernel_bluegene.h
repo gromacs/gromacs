@@ -16,10 +16,10 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _NB_KERNEL_X86_64_SSE_H_
-#define _NB_KERNEL_X86_64_SSE_H_
+#ifndef _NB_KERNEL_BLUEGENE_H_
+#define _NB_KERNEL_BLUEGENE_H_
 
-/*! \file  nb_kernel_x86_64_sse.h
+/*! \file  nb_kernel_bluegene.h
  *  \brief x86_64 SSE-optimized level2 nonbonded kernels.
  *
  *  \internal
@@ -32,7 +32,6 @@
 #include "../nb_kerneltype.h"
 
 void
-nb_kernel_setup_x86_64_sse(FILE *log,nb_kernel_t **list);
+nb_kernel_setup_bluegene(FILE *log,nb_kernel_t **list);
 
-
-#endif /* _NB_KERNEL_X86_64_SSE_H_ */
+#endif /* _NB_KERNEL_BLUEGENE_H_ */

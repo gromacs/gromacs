@@ -147,7 +147,11 @@ static t_shiftdata *read_shifts(char *fn)
   
   snew(sd,1);
   fp=libopen(fn);
-  fscanf(fp,"%d%d",&nx,&ny);
+  if(2 != fscanf(fp,"%d%d",&nx,&ny))
+  {
+    gmx_fatal(FARGS,"Error reading from file %s",fn);
+  }
+ 
   sd->nx = nx;
   sd->ny = ny;
   sd->dx = nx/(2*M_PI);
@@ -159,7 +163,10 @@ static t_shiftdata *read_shifts(char *fn)
       if (i == nx)
 	sd->data[i][j] = sd->data[0][j];
       else {
-	fscanf(fp,"%lf",&xx);
+	if(1 != fscanf(fp,"%lf",&xx))
+        {
+	    gmx_fatal(FARGS,"Error reading from file %s",fn);
+	}
 	sd->data[i][j] = xx;
       }
     }

@@ -423,9 +423,17 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   
   if (bSSHisto) {
     fp = ffopen(ssdump,"r");
-    fscanf(fp,"%d",&nres);
+    if(1 != fscanf(fp,"%d",&nres))
+    {
+      gmx_fatal(FARGS,"Error reading from file %s",ssdump);
+    }
+
     snew(ss_str,nres+1);
-    fscanf(fp,"%s",ss_str);
+    if( 1 != fscanf(fp,"%s",ss_str))
+    {
+      gmx_fatal(FARGS,"Error reading from file %s",ssdump);
+    }
+
     ffclose(fp);
     /* Four dimensional array... Very cool */
     snew(his_aa_ss,3);
@@ -1217,7 +1225,7 @@ int gmx_chi(int argc,char *argv[])
     strcat(grpname, "Omega "); 
   if(bChi){ 
     strcat(grpname, "Chi 1-") ; 
-    sprintf(grpname, "%s%i", grpname,maxchi); 
+    sprintf(grpname + strlen(grpname), "%i", maxchi); 
   }
 
 

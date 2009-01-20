@@ -70,11 +70,11 @@ t_atomtype read_atype(char *adb,t_symtab *tab)
     /* Skip blank or comment-only lines */
     do {
       fgets2(buf,STRLEN,in);
-      if (buf) {
+      if (NULL!=buf) {
 	strip_comment(buf);
 	trim(buf);
       }
-    } while (buf && strlen(buf)==0);
+    } while (NULL!=buf && strlen(buf)==0);
     
     if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2)) {
       a->m = m;

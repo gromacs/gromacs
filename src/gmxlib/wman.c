@@ -107,19 +107,20 @@ const t_sandr sandrWiki[] = {
 #define NSRWIKI asize(sandrWiki)
 
 const t_sandr sandrNROFF[] = {
-  { "[TT]", "\n.B " },
-  { "[tt]", "\n" },
-  { "[BB]", "\n.B " },
-  { "[bb]", "\n" },
-  { "[IT]", "\n.I " },
-  { "[it]", "\n" },
+  { "[TT]", "\\fB " },
+  { "[tt]", "\\fR" },
+  { "[BB]", "\\fB " },
+  { "[bb]", "\\fR" },
+  { "[IT]", "\\fI " },
+  { "[it]", "\\fR" },
   { "[PAR]","\n\n" },
   { "\n ",    "\n" },
   { "<",    "" },
   { ">",    "" },
   { "^",    "" },
   { "#",    "" },
-  { "[BR]", "\n"}
+  { "[BR]", "\n"},
+  { "-",    "\\-"}
 };
 #define NSRNROFF asize(sandrNROFF)
 
@@ -347,7 +348,7 @@ char *fileopt(unsigned long flag,char buf[],int maxsize)
   if (FLAG_SET(flag, ffMULT))
     strcat(tmp,", Mult.");
 
-  snprintf(buf,maxsize-1,tmp);
+  snprintf(buf,maxsize-1,"%s",tmp);
   
   return buf;
 }
@@ -426,7 +427,7 @@ static void write_nroffman(FILE *out,
   char tmp[256];
   
   
-  fprintf(out,".TH %s 1 \"%s\"\n",program,mydate(tmp,255,FALSE));
+  fprintf(out,".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n",program,mydate(tmp,255,FALSE),GromacsVersion());
   fprintf(out,".SH NAME\n");
   fprintf(out,"%s\n",program);
   fprintf(out,".B %s\n",GromacsVersion());
@@ -437,23 +438,23 @@ static void write_nroffman(FILE *out,
   /* command line arguments */
   if (nfile > 0) {
     for(i=0; (i<nfile); i++)
-      fprintf(out,".BI \"%s\" \" %s \"\n",fnm[i].opt,
-	      fnm[i].fns[0]);
+      fprintf(out,".BI \"%s\" \" %s \"\n",check_nroff(fnm[i].opt),
+	      check_nroff(fnm[i].fns[0]));
   }
   if (npargs > 0) {
     for(i=0; (i<npargs); i++)
       if (pa[i].type == etBOOL)
-	fprintf(out,".BI \"-[no]%s\" \"\"\n",pa[i].option+1);
+	fprintf(out,".BI \"\\-[no]%s\" \"\"\n",check_nroff(pa[i].option+1));
       else
-	fprintf(out,".BI \"%s\" \" %s \"\n",pa[i].option,
-		argtp[pa[i].type]);
+	fprintf(out,".BI \"%s\" \" %s \"\n",check_nroff(pa[i].option),
+		check_nroff(argtp[pa[i].type]));
   }
   
   /* description */
   if (nldesc > 0) {
     fprintf(out,".SH DESCRIPTION\n");
     for(i=0; (i<nldesc); i++) 
-      fprintf(out,"%s\n",check_nroff(desc[i]));
+      fprintf(out,"\\&%s\n",check_nroff(desc[i]));
   }
 
   /* FILES */
@@ -461,7 +462,9 @@ static void write_nroffman(FILE *out,
     fprintf(out,".SH FILES\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
-	      fnm[i].opt,fnm[i].fns[0],fileopt(fnm[i].flag,tmp,255),
+	      check_nroff(fnm[i].opt),
+              check_nroff(fnm[i].fns[0]),
+              check_nroff(fileopt(fnm[i].flag,tmp,255)),
 	      check_nroff(ftp2desc(fnm[i].ftp)));
   }
   
@@ -470,13 +473,16 @@ static void write_nroffman(FILE *out,
   if ( npargs > 0 ) {
     for(i=0; (i<npargs); i++) {
       if (pa[i].type == etBOOL)
-	fprintf(out,".BI \"-[no]%s\"  \"%s\"\n %s\n\n",
+	fprintf(out,".BI \"\\-[no]%s\"  \"%s\"\n %s\n\n",
 		check_nroff(pa[i].option+1),
-		pa_val(&(pa[i]),tmp,255),check_nroff(pa[i].desc));
+		check_nroff(pa_val(&(pa[i]),tmp,255)),
+                check_nroff(pa[i].desc));
       else
 	fprintf(out,".BI \"%s\"  \" %s\" \" %s\" \n %s\n\n",
-		check_nroff(pa[i].option),argtp[pa[i].type],
-		pa_val(&(pa[i]),tmp,255),check_nroff(pa[i].desc));
+		check_nroff(pa[i].option),
+                check_nroff(argtp[pa[i].type]),
+		check_nroff(pa_val(&(pa[i]),tmp,255)),
+                check_nroff(pa[i].desc));
     }
   }
 
@@ -485,6 +491,9 @@ static void write_nroffman(FILE *out,
     for(i=0; (i<nbug); i++)
       fprintf(out,"\\- %s\n\n",check_nroff(bugs[i]));
   }
+
+  fprintf(out,".SH SEE ALSO\n.BR gromacs(7)\n\n");
+  fprintf(out,"More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.\n");
 
 }
 

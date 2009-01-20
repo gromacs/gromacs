@@ -117,7 +117,10 @@ int get_strings(char *db,char ***strings)
   }
   snew(ptr,nstr);
   for(i=0; (i<nstr); i++) {
-    fscanf(in,"%s",buf);
+    if(1 != fscanf(in,"%s",buf))
+    { 
+      gmx_fatal(FARGS,"Cannot read string from buffer");
+    }
 #ifdef DEBUG
     fprintf(stderr,"Have read: %s\n",buf);
 #endif
@@ -147,9 +150,11 @@ int fget_lines(FILE *in,char ***strings)
   char **ptr;
   char buf[256];
   int  i,nstr;
-  
-  fgets(buf,255,in);  
-  if (sscanf(buf,"%d",&nstr) != 1) {
+  char *pret;
+
+  pret = fgets(buf,255,in);  
+  if ( pret==NULL  || sscanf(buf,"%d",&nstr) != 1) 
+  {
     sprintf(warn_buf,"File is empty");
     warning(NULL);
     fclose(in);

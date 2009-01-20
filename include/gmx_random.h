@@ -33,7 +33,6 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-
 #ifndef _GMX_RANDOM_H_
 #define _GMX_RANDOM_H_
 

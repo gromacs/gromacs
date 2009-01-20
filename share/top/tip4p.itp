@@ -8,22 +8,28 @@ SOL		2
 [ atoms ]
 ; id	at type	res nr 	residu name	at name	cg nr	charge
 #ifdef _FF_OPLS
-1	opls_113	1	SOL	 OW	1       0.0
-2	opls_114	1	SOL	HW1	1	0.52
-3	opls_114	1	SOL	HW2	1	0.52
-4	opls_115	1	SOL	 MW	1      -1.04
-#else
-#ifdef _FF_GROMOS96
-1	OWT4		1	SOL	 OW	1       0.0    15.9994
-2	H		1	SOL	HW1	1	0.52 	1.008	
-3	H		1	SOL	HW2	1	0.52 	1.008
-4	IW		1	SOL	 MW	1      -1.04    0.0
-#else
-1	OWT4		1	SOL	 OW	1       0.0
-2	HW		1	SOL	HW1	1	0.52
-3	HW		1	SOL	HW2	1	0.52
-4	IW		1	SOL	 MW	1      -1.04
+1       opls_113        1       SOL      OW     1       0.0
+2       opls_114        1       SOL     HW1     1       0.52
+3       opls_114        1       SOL     HW2     1       0.52
+4       opls_115        1       SOL      MW     1      -1.04
 #endif
+#ifdef _FF_GROMACS
+1       OWT4            1       SOL      OW     1       0.0
+2       HW              1       SOL     HW1     1       0.52
+3       HW              1       SOL     HW2     1       0.52
+4       IW              1       SOL      MW     1      -1.04
+#endif
+#ifdef _FF_GROMOS96
+1       OWT4            1       SOL      OW     1       0.0    15.9994
+2       H               1       SOL     HW1     1       0.52    1.008
+3       H               1       SOL     HW2     1       0.52    1.008
+4       IW              1       SOL      MW     1      -1.04    0.0
+#endif
+#ifdef _FF_CHARMM
+1       OWT4            1       SOL      OW     1       0.0
+2       HWT4            1       SOL     HW1     1       0.52
+3       HWT4            1       SOL     HW2     1       0.52
+4       MWT4            1       SOL      MW     1      -1.04
 #endif
 
 #ifdef FLEXIBLE

@@ -865,7 +865,10 @@ int main(int argc, char *argv[])
       if (bMerge && i>0 && !bWat) {
 	printf("Merge chain '%c' and '%c'? (n/y) ",
 	       pchain,pdba_all.atom[i].chain);
-	fgets(select,STRLEN-1,stdin);
+	if(NULL==fgets(select,STRLEN-1,stdin))
+        {
+	    gmx_fatal(FARGS,"Error reading from stdin");
+	}
       } 
       else
 	select[0] = 'n';
