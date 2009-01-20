@@ -308,7 +308,7 @@ static void spline_forces(int nx,double h,double v[],bool bS3,bool bE3,
   beta = (bE3 ? 1 : 4) - gamma[end-1];
   f[end-1] = (b_e - f[end-2])/beta;
 
-  for(i=end-1; i>=start; i--)
+  for(i=end-2; i>=start; i--)
     f[i] -= gamma[i+1]*f[i+1];
   sfree(gamma);
 
@@ -930,8 +930,8 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
       else
 	fp=xvgropen(fns[k],fns[k],"r","V");
       /* plot the output 5 times denser than the table data */
-      for(i=5*nx0;i<5*table.n;i++) {
-	x0=i*table.r/(5*table.n);
+      for(i=5*((nx0+1)/2); i<5*table.n; i++) {
+	x0 = i*table.r/(5*(table.n-1));
 	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }
