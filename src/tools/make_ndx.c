@@ -317,7 +317,7 @@ static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
   
   j0=block->index[group];
   j1=block->index[group+1];
-  nres = atoms->atom[atoms->nr-1].resnr;
+  nres = atoms->nres;
   for(j=j0; j<j1; j++)
     if (block->a[j]>=nres) {
       printf("Index %s contains number>nres (%d>%d)\n",
