@@ -1086,11 +1086,13 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
 static bool default_params(int ftype,t_params bt[],
 			   t_atoms *at,t_atomtype atype,
 			   t_param *p,bool bB,
-			   t_param **param_def)
+			   t_param **param_def,
+               int *nparam_def)
 {
-  int      i,j;
-  bool     bFound;
+  int      i,j,nparam_found;
+  bool     bFound,bSame;
   t_param  *pi=NULL;
+  t_param  *pj=NULL;
   int      nr   = bt[ftype].nr;
   int      nral = NRAL(ftype);
   int      nrfpA= interaction_function[ftype].nrfpA;
@@ -1099,62 +1101,84 @@ static bool default_params(int ftype,t_params bt[],
   if ((!bB && nrfpA == 0) || (bB && nrfpB == 0))
     return TRUE;
 
-
+  	
   /* We allow wildcards now. The first type (with or without wildcards) that
    * fits is used, so you should probably put the wildcarded bondtypes
    * at the end of each section.
    */
   bFound=FALSE;
+  nparam_found=0;
   /* OPLS uses 1000s of dihedraltypes, so in order to speed up the scanning we have a 
    * special case for this. Check for B state outside loop to speed it up.
    */
-  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS) {
-    if (bB) {
-      for (i=0; ((i < nr) && !bFound); i++) {
-	pi=&(bt[ftype].param[i]);
-	bFound=
-	  (((pi->AI==-1) || 
-	    (get_atomtype_batype(at->atom[p->AI].typeB,atype)==pi->AI)) &&
-	   ((pi->AJ==-1) || 
-	    (get_atomtype_batype(at->atom[p->AJ].typeB,atype)==pi->AJ)) &&
-	   ((pi->AK==-1) || 
-	    (get_atomtype_batype(at->atom[p->AK].typeB,atype)==pi->AK)) &&
-	   ((pi->AL==-1) || 
-	    (get_atomtype_batype(at->atom[p->AL].typeB,atype)==pi->AL))
-	   );
-      }
-    } else {
-      for (i=0; ((i < nr) && !bFound); i++) {
-	pi=&(bt[ftype].param[i]);
-	bFound=
-	  (((pi->AI==-1) || 
-	    (get_atomtype_batype(at->atom[p->AI].typeB,atype)==pi->AI)) &&	  
-	   ((pi->AJ==-1) || 
-	    (get_atomtype_batype(at->atom[p->AJ].typeB,atype)==pi->AJ)) &&
-	   ((pi->AK==-1) || 
-	    (get_atomtype_batype(at->atom[p->AK].typeB,atype)==pi->AK)) &&
-	   ((pi->AL==-1) || 
-	    (get_atomtype_batype(at->atom[p->AL].typeB,atype)==pi->AL))
-	   );
-      }
-    }
+  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS) 
+  {
+	  if (bB) 
+	  {
+		  for (i=0; ((i < nr) && !bFound); i++) 
+		  {
+			  pi=&(bt[ftype].param[i]);
+			  bFound=
+			  (
+			   ((pi->AI==-1) || (get_atomtype_batype(at->atom[p->AI].typeB,atype)==pi->AI)) &&
+			   ((pi->AJ==-1) || (get_atomtype_batype(at->atom[p->AJ].typeB,atype)==pi->AJ)) &&
+			   ((pi->AK==-1) || (get_atomtype_batype(at->atom[p->AK].typeB,atype)==pi->AK)) &&
+			   ((pi->AL==-1) || (get_atomtype_batype(at->atom[p->AL].typeB,atype)==pi->AL))
+			   );
+		  }
+	  } 
+	  else 
+	  {
+		  /* State A */
+		  for (i=0; ((i < nr) && !bFound); i++) 
+		  {
+			  pi=&(bt[ftype].param[i]);
+			  bFound=
+			  (
+			   ((pi->AI==-1) || (get_atomtype_batype(at->atom[p->AI].type,atype)==pi->AI)) &&	  
+			   ((pi->AJ==-1) || (get_atomtype_batype(at->atom[p->AJ].type,atype)==pi->AJ)) &&
+			   ((pi->AK==-1) || (get_atomtype_batype(at->atom[p->AK].type,atype)==pi->AK)) &&
+			   ((pi->AL==-1) || (get_atomtype_batype(at->atom[p->AL].type,atype)==pi->AL))
+			   );
+		  }
+	  }
+	  /* Find additional matches for this dihedral - necessary for ftype==9 which is used e.g. for charmm.
+	   * The rules in that case is that additional matches HAVE to be on adjacent lines!
+	   */
+	  if(bFound==TRUE)
+	  {
+		  nparam_found++;
+		  bSame = TRUE;
+		  /* Continue from current i value */
+		  for(j=i ; j<nr && bSame ; j++)
+		  {
+			  pj=&(bt[ftype].param[j]);
+			  bSame = (pi->AI == pj->AI && pi->AJ == pj->AJ && pi->AK == pj->AK && pi->AL == pj->AL);
+			  if(bSame)
+				  nparam_found++;
+			  /* nparam_found will be increased as long as the numbers match */
+		  }
+	  }
   } else { /* Not a dihedral */
-    for (i=0; ((i < nr) && !bFound); i++) {
-      pi=&(bt[ftype].param[i]);
-      if (bB)
-	for (j=0; ((j < nral) && 
-		   (get_atomtype_batype(at->atom[p->a[j]].typeB,atype)==pi->a[j])); j++)
-	  ;
-      else
-	for (j=0; ((j < nral) && 
-		   (get_atomtype_batype(at->atom[p->a[j]].type,atype)==pi->a[j])); j++)
-	  ;
-      bFound=(j==nral);
-    }
+	  for (i=0; ((i < nr) && !bFound); i++) {
+		  pi=&(bt[ftype].param[i]);
+		  if (bB)
+			  for (j=0; ((j < nral) && 
+						 (get_atomtype_batype(at->atom[p->a[j]].typeB,atype)==pi->a[j])); j++)
+				  ;
+		  else
+			  for (j=0; ((j < nral) && 
+						 (get_atomtype_batype(at->atom[p->a[j]].type,atype)==pi->a[j])); j++)
+				  ;
+		  bFound=(j==nral);
+	  }
+	  if(bFound)
+		  nparam_found=1;
   }
 
   *param_def = pi;
-
+  *nparam_def = nparam_found;
+	  
   return bFound;
 }
 
@@ -1205,10 +1229,13 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* One force parameter more, so we can check if we read too many */
   double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
-  t_param  param,paramB,*param_def;
+  t_param  param,paramB,*param_defA,*param_defB;
   bool     bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE;
+  int      nparam_defA,nparam_defB;
   char  errbuf[256];
 
+  nparam_defA=nparam_defB=0;
+	
   ftype = ifunc_index(d,1);
   nral  = NRAL(ftype);
   for(j=0; j<MAXATOMLIST; j++)
@@ -1275,17 +1302,17 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
    * studies, as determined by types!
    */
   if (bBonded) {
-    bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE,&param_def);
+    bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE,&param_defA,&nparam_defA);
     if (bFoundA) {
       /* Copy the A-state and B-state default parameters */
       for(j=0; (j<NRFPA(ftype)+NRFPB(ftype)); j++)
-	param.c[j] = param_def->c[j];
+	param.c[j] = param_defA->c[j];
     }
-    bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE,&param_def);
+    bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE,&param_defB,&nparam_defB);
     if (bFoundB) {
       /* Copy only the B-state default parameters */
       for(j=NRFPA(ftype); (j<NRFP(ftype)); j++)
-	param.c[j] = param_def->c[j];
+	param.c[j] = param_defB->c[j];
     }
   } else if (ftype == F_LJ14) {
     bFoundA = default_nb_params(ftype, bondtype,at,&param,0,FALSE,bGenPairs);
@@ -1305,8 +1332,10 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   } else {
     gmx_incons("Unknown function type in push_bond");
   }
-  
+  	
   if (nread > nral) {  
+	  /* Manually specified parameters - in this case we discard multiple torsion info! */
+	  
     strcpy(format,asformat[nral-1]);
     strcat(format,ccformat);
     
@@ -1361,91 +1390,142 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   {
     nread = 0;
   }
-   	
   /* nread now holds the number of force parameters read! */
-  
-  if (bDef) {
-    /* Use defaults */
-
-    if (nread > 0 && nread < NRFPA(ftype)) {
-      /* Issue an error, do not use defaults */
-      sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",NRFPA(ftype));
-      warning_error(errbuf);
-    } else {
-      if (nread == 0 || nread == EOF) {
-	if (!bFoundA) {
-	  if (interaction_function[ftype].flags & IF_VSITE) {
-	    /* set them to NOTSET, will be calculated later */
-	    for(j=0; (j<MAXFORCEPARAM); j++)
-	      param.c[j] = NOTSET;
-	    if (bSwapParity)
-	      param.C1 = -1; /* flag to swap parity of vsite construction */
-	  } else {
-	    if (bZero) {
-	      fprintf(stderr,"NOTE: No default %s types, using zeroes\n",
-		      interaction_function[ftype].longname);
-	    } else {
-	      sprintf(errbuf,"No default %s types",
-		      interaction_function[ftype].longname);
-	      warning_error(errbuf);
-	    }
-	  }
-	} else
-	  if (bSwapParity)
-	    switch(ftype) {
-	    case F_VSITE3FAD:
-	      param.C0 = 360 - param.C0;
-	      break;
-	    case F_VSITE3OUT:
-	      param.C2 = -param.C2;
-	      break;
-	    }
-      }
-      if (!bFoundB) {
-	/* We only have to issue a warning if these atoms are perturbed! */
-	bPert = FALSE;
-	for(j=0; (j<nral); j++)
-	  bPert = bPert || PERTURBED(at->atom[param.a[j]]);
+ 
 	
-	if (bPert) {
-	  sprintf(errbuf,"No default %s types for perturbed atoms, "
-		  "using normal values",interaction_function[ftype].longname);
-	  warning(errbuf);
-	}
-      }
-    }
+	
+	
+	if (bDef) 
+	{
+	  /* Use defaults */
+		/* When we have multiple terms it would be very dangerous to allow perturbations to a different atom type! */
+		if(ftype==F_PDIHS)
+		{
+			if ((nparam_defA != nparam_defB) || ((nparam_defA>1 || nparam_defB>1) && (param_defA!=param_defB)))
+			{
+				sprintf(errbuf,
+						"Cannot automatically perturb a torsion with multiple terms to different form.\n"
+						"Please specify perturbed parameters manually for this torsion in your topology!");
+				warning_error(errbuf);
+			}
+		}
+		
+	  if (nread > 0 && nread < NRFPA(ftype)) 
+	  {
+		  /* Issue an error, do not use defaults */
+		  sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",NRFPA(ftype));
+		  warning_error(errbuf);
+	  } 
+		  
+      if (nread == 0 || nread == EOF) 
+	  {
+		  if (!bFoundA) 
+		  {
+			  if (interaction_function[ftype].flags & IF_VSITE) 
+			  {
+				  /* set them to NOTSET, will be calculated later */
+				  for(j=0; (j<MAXFORCEPARAM); j++)
+					  param.c[j] = NOTSET;
+				  
+				  if (bSwapParity)
+					  param.C1 = -1; /* flag to swap parity of vsite construction */
+			  } 
+			  else 
+			  {
+				  if (bZero) 
+				  {
+					  fprintf(stderr,"NOTE: No default %s types, using zeroes\n",
+							  interaction_function[ftype].longname);
+				  }
+				  else 
+				  {
+					  sprintf(errbuf,"No default %s types",interaction_function[ftype].longname);
+					  warning_error(errbuf);
+				  }
+			  }
+		  }
+		  else
+		  {
+			  if (bSwapParity)
+			  {
+				  switch(ftype) 
+				  {
+					  case F_VSITE3FAD:
+						  param.C0 = 360 - param.C0;
+						  break;
+					  case F_VSITE3OUT:
+						  param.C2 = -param.C2;
+						  break;
+				  }
+			  }
+		  }
+		  if (!bFoundB) 
+		  {
+			  /* We only have to issue a warning if these atoms are perturbed! */
+			  bPert = FALSE;
+			  for(j=0; (j<nral); j++)
+				  bPert = bPert || PERTURBED(at->atom[param.a[j]]);
+			  
+			  if (bPert)
+			  {
+				  sprintf(errbuf,"No default %s types for perturbed atoms, "
+						  "using normal values",interaction_function[ftype].longname);
+				  warning(errbuf);
+			  }
+		  }
+	  }
   }
   
-  if ((ftype==F_PDIHS || ftype==F_ANGRES || ftype==F_ANGRESZ)
-      && param.c[5]!=param.c[2])
-    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-		"             %s multiplicity can not be perturbed %f!=%f",
-		get_warning_file(),get_warning_line(),
-		interaction_function[ftype].longname,
-		param.c[2],param.c[5]);
+	if ((ftype==F_PDIHS || ftype==F_ANGRES || ftype==F_ANGRESZ)
+		&& param.c[5]!=param.c[2])
+		gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+				  "             %s multiplicity can not be perturbed %f!=%f",
+				  get_warning_file(),get_warning_line(),
+				  interaction_function[ftype].longname,
+				  param.c[2],param.c[5]);
+	
+	if (IS_TABULATED(ftype) && param.c[2]!=param.c[0])
+		gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+				  "             %s table number can not be perturbed %d!=%d",
+				  get_warning_file(),get_warning_line(),
+				  interaction_function[ftype].longname,
+				  (int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
+	
+	/* Dont add R-B dihedrals where all parameters are zero (no interaction) */
+	if (ftype==F_RBDIHS) {
+		nr=0;
+		for(i=0;i<NRFP(ftype);i++) {
+			if(param.c[i]!=0)
+				nr++;
+		}
+		if(nr==0)
+			return;
+	}
+	
+	/* Put the values in the appropriate arrays */
+	push_bondnow (&bond[ftype],&param);
 
-  if (IS_TABULATED(ftype) && param.c[2]!=param.c[0])
-    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-		"             %s table number can not be perturbed %d!=%d",
-		get_warning_file(),get_warning_line(),
-		interaction_function[ftype].longname,
-		(int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
-
-  /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
-  if (ftype==F_RBDIHS) {
-    nr=0;
-    for(i=0;i<NRFP(ftype);i++) {
-      if(param.c[i]!=0)
-	nr++;
-    }
-    if(nr==0)
-      return;
-  }
-
-  /* Put the values in the appropriate arrays */
-  push_bondnow (&bond[ftype],&param);
+	/* Push additional torsions from FF for ftype==9 if we have them.
+	 * We have already checked that the A/B states do not differ in this case,
+	 * so we do not have to double-check that again, or the vsite stuff.
+	 * In addition, those torsions cannot be automatically perturbed.
+	 */
+	if(bDef && ftype==F_PDIHS)
+	{
+		for(i=1;i<nparam_defA;i++)
+		{
+			/* Advance pointer! */
+			param_defA++; 
+			for(j=0; (j<NRFPA(ftype)+NRFPB(ftype)); j++)
+				param.c[j] = param_defA->c[j];
+			/* And push the next term for this torsion */
+			push_bondnow (&bond[ftype],&param);		
+		}
+	}
 }
 
+	
+	
 void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 		  t_atoms *at,t_atomtype atype,char *line)
 {
