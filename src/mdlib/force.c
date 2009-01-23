@@ -155,14 +155,14 @@ check_solvent_cg(const gmx_moltype_t   *molt,
                  const t_grps          *qm_grps,
                  t_forcerec *          fr,
                  int                   *n_solvent_parameters,
-                 solvent_parameters_t  *solvent_parameters,
-                 int                   *cginfo)
+                 solvent_parameters_t  **solvent_parameters_p,
+                 int                   cginfo,
+                 int                   *cg_sp)
 {
     const t_blocka *  excl;
     t_atom            *atom;
     int               j,k;
     int               j0,j1,nj;
-    int               aj,ak;
     bool              perturbed;
     bool              has_vdw[4];
     bool              match;
@@ -170,6 +170,7 @@ check_solvent_cg(const gmx_moltype_t   *molt,
     int               tmp_vdwtype[4];
     int               tjA;
     bool              qm;
+    solvent_parameters_t *solvent_parameters;
 
     /* We use a list with parameters for each solvent type. 
      * Every time we discover a new molecule that fulfills the basic 
@@ -183,15 +184,17 @@ check_solvent_cg(const gmx_moltype_t   *molt,
      * clear the flag on all others.
      */   
 
+    solvent_parameters = *solvent_parameters_p;
+
     /* Mark the cg first as non optimized */
-    SET_CGINFO_SOLOPT(*cginfo,esolNR);
+    *cg_sp = -1;
     
     /* Check if this cg has no exclusions with atoms in other charge groups
      * and all atoms inside the charge group excluded.
      * We only have 3 or 4 atom solvent loops.
      */
-    if (GET_CGINFO_EXCL_INTER(*cginfo) ||
-        !GET_CGINFO_EXCL_INTRA(*cginfo))
+    if (GET_CGINFO_EXCL_INTER(cginfo) ||
+        !GET_CGINFO_EXCL_INTRA(cginfo))
     {
         return;
     }
@@ -256,17 +259,14 @@ check_solvent_cg(const gmx_moltype_t   *molt,
      * identical to a possible previous solvent type.
      * First we assign the current types and charges.    
      */
-    for( j=0; j<nj ; j++)
+    for(j=0; j<nj; j++)
     {
-        aj = j0 + j;
-        tmp_vdwtype[j] = atom[aj].type;
-        tmp_charge[j]  = atom[aj].q;
+        tmp_vdwtype[j] = atom[j0+j].type;
+        tmp_charge[j]  = atom[j0+j].q;
     } 
     
     /* Does it match any previous solvent type? */
-    match = FALSE;
-    
-    for(k=0 ; k<*n_solvent_parameters && !match; k++)
+    for(k=0 ; k<*n_solvent_parameters; k++)
     {
         match = TRUE;
         
@@ -293,16 +293,12 @@ check_solvent_cg(const gmx_moltype_t   *molt,
             /* Congratulations! We have a matched solvent.
              * Flag it with this type for later processing.
              */
-            aj = j0;
-            SET_CGINFO_SOLOPT(*cginfo,k);
+            *cg_sp = k;
             (solvent_parameters[k].count)++;
+
+            /* We are done with this charge group */
+            return;
         }
-    }
-    
-    if (match == TRUE)
-    {
-        /* Continue to next molecule if we already identified this */
-        return;
     }
     
     /* If we get here, we have a tentative new solvent type.
@@ -355,6 +351,7 @@ check_solvent_cg(const gmx_moltype_t   *molt,
             tmp_charge[1]  != 0 &&
             tmp_charge[2]  == tmp_charge[1])
         {
+            srenew(solvent_parameters,*n_solvent_parameters+1);
             solvent_parameters[*n_solvent_parameters].model = esolSPC;
             solvent_parameters[*n_solvent_parameters].count = 1;
             for(k=0;k<3;k++)
@@ -362,11 +359,10 @@ check_solvent_cg(const gmx_moltype_t   *molt,
                 solvent_parameters[*n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
                 solvent_parameters[*n_solvent_parameters].charge[k]  = tmp_charge[k];
             }
+
+            *cg_sp = *n_solvent_parameters;
+            (*n_solvent_parameters)++;
         }
-        aj = j0;
-        
-        SET_CGINFO_SOLOPT(*cginfo,*n_solvent_parameters);
-        (*n_solvent_parameters)++;
     }
     else if (nj==4)
     {
@@ -383,6 +379,7 @@ check_solvent_cg(const gmx_moltype_t   *molt,
            tmp_charge[2]  == tmp_charge[1] &&
            tmp_charge[3]  != 0)
         {
+            srenew(solvent_parameters,*n_solvent_parameters+1);
             solvent_parameters[*n_solvent_parameters].model=esolTIP4P;
             solvent_parameters[*n_solvent_parameters].count=1;
             for(k=0;k<4;k++)
@@ -390,10 +387,13 @@ check_solvent_cg(const gmx_moltype_t   *molt,
                 solvent_parameters[*n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
                 solvent_parameters[*n_solvent_parameters].charge[k]  = tmp_charge[k];
             }
+            
+            *cg_sp = *n_solvent_parameters;
+            (*n_solvent_parameters)++;
         }
-        SET_CGINFO_SOLOPT(*cginfo,*n_solvent_parameters);
-        (*n_solvent_parameters)++;
     }
+
+    *solvent_parameters_p = solvent_parameters;
 }
 
 static void
@@ -408,6 +408,7 @@ check_solvent(FILE *                fp,
     int               mb,mol,cg_mol,cg_offset,at_offset,ncg,i;
     int               n_solvent_parameters;
     solvent_parameters_t *solvent_parameters;
+    int               *cg_sp;
     int               bestsp,bestsol;
 
     if (debug)
@@ -417,12 +418,11 @@ check_solvent(FILE *                fp,
 
     mols = &mtop->mols;
 
-    /* Overkill to allocate a separate set of parameters for each molecule, 
-	 * but it is not a lot of memory, will be released soon, and it is better
-     * than calling realloc lots of times.
-     */   	 
-    snew(solvent_parameters,mols->nr);
     n_solvent_parameters = 0;
+    solvent_parameters = NULL;
+    /* Allocate temporary array for solvent type */
+    ncg = ncg_mtop(mtop);
+    snew(cg_sp,ncg);
 
     cg_offset = 0;
     at_offset = 0;
@@ -441,8 +441,9 @@ check_solvent(FILE *                fp,
                                  mtop->groups.grpnr[egcQMMM]+at_offset : 0,
                                  &mtop->groups.grps[egcQMMM],
                                  fr,
-                                 &n_solvent_parameters,solvent_parameters,
-                                 &cginfo[cg_offset+cg_mol]); 
+                                 &n_solvent_parameters,&solvent_parameters,
+                                 cginfo[cg_offset+cg_mol],
+                                 &cg_sp[cg_offset+cg_mol]);
             }
             cg_offset += cgs->nr;
             at_offset += cgs->index[cgs->nr];
@@ -477,11 +478,10 @@ check_solvent(FILE *                fp,
 	bestsol = esolNO;
 #endif
 
-	fr->nWatMol = 0;
-    ncg = ncg_mtop(mtop);
+    fr->nWatMol = 0;
     for(i=0; i<ncg; i++)
     {
-        if (GET_CGINFO_SOLOPT(cginfo[i]) == bestsp)
+        if (cg_sp[i] == bestsp)
         {
             SET_CGINFO_SOLOPT(cginfo[i],bestsol);
             fr->nWatMol++;
@@ -499,6 +499,7 @@ check_solvent(FILE *                fp,
                 solvent_parameters[bestsp].count);
     }
 
+    sfree(cg_sp);
     sfree(solvent_parameters);
     fr->solvent_opt = bestsol;
 }
