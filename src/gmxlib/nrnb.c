@@ -300,10 +300,14 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
   
   *nbfs = 0.0;
   for(i=0; (i<eNR_NBKERNEL_NR); i++) {
-    if (strstr(nbdata[i].name,"(WW)") != NULL)
+    if (strstr(nbdata[i].name,"W3-W3") != NULL)
       *nbfs += 9e-6*nrnb->n[i];
-    else if (strstr(nbdata[i].name,"(W)") != NULL)
+    else if (strstr(nbdata[i].name,"W3") != NULL)
       *nbfs += 3e-6*nrnb->n[i];
+    else if (strstr(nbdata[i].name,"W4-W4") != NULL)
+      *nbfs += 10e-6*nrnb->n[i];
+    else if (strstr(nbdata[i].name,"W4") != NULL)
+      *nbfs += 4e-6*nrnb->n[i];
     else
       *nbfs += 1e-6*nrnb->n[i];
   }
