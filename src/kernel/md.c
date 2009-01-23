@@ -676,7 +676,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       make_local_shells(cr,mdatoms,shellfc);
     }
 
-    if (ir->pull) {
+    if (ir->pull && PAR(cr)) {
       dd_make_local_pull_groups(NULL,ir->pull,mdatoms);
     }
   }
