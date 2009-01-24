@@ -1483,28 +1483,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	}
 	
 	/* Put the values in the appropriate arrays */
-	push_bondnow (&bond[ftype],&param);
-
-  if (IS_TABULATED(ftype) && param.c[2]!=param.c[0])
-    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-		"             %s table number can not be perturbed %d!=%d",
-		get_warning_file(),get_warning_line(),
-		interaction_function[ftype].longname,
-		(int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
-
-  /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
-  if (ftype==F_RBDIHS) {
-    nr=0;
-    for(i=0;i<NRFP(ftype);i++) {
-      if(param.c[i]!=0)
-	nr++;
-    }
-    if(nr==0)
-      return;
-  }
-
-  /* Put the values in the appropriate arrays */
-  add_param_to_list (&bond[ftype],&param);
+	add_param_to_list (&bond[ftype],&param);
 
   /* Push additional torsions from FF for ftype==9 if we have them.
    * We have already checked that the A/B states do not differ in this case,
@@ -1520,7 +1499,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       for(j=0; (j<NRFPA(ftype)+NRFPB(ftype)); j++)
 	param.c[j] = param_defA->c[j];
       /* And push the next term for this torsion */
-      push_bondnow (&bond[ftype],&param);		
+      add_param_to_list (&bond[ftype],&param);		
     }
   }
 }
