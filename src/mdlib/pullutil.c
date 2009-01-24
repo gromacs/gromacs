@@ -147,17 +147,18 @@ static real get_weight(real x, real r1, real r0)
 }
 
 static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
-			     t_pbc *pbc,rvec *x) 
+			     t_pbc *pbc,rvec *x,rvec *xp) 
 {
-  static dvec *dbuf=NULL;
+  static double *dbuf=NULL;
   int g,i,ii,m,start,end;
   rvec g_x,dx;
-  double sum_z,dr,mass,weight,wmass,wwmass;
+  double r0_2,sum_z,sum_zp,dr2,mass,weight,wmass,wwmass;
   t_pullgrp *pref,*pdyna;
   gmx_ga2la_t *ga2la=NULL;
 
-  if (dbuf == NULL)
-    snew(dbuf,pull->ngrp);
+  if (dbuf == NULL) {
+    snew(dbuf,pull->ngrp*4);
+  }
 
   if (cr && DOMAINDECOMP(cr))
     ga2la = cr->dd->ga2la;
@@ -165,11 +166,14 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   start = md->start;
   end   = md->homenr + start;
 
+  r0_2 = dsqr(pull->cyl_r0);
+
   /* loop over all groups to make a reference group for each*/
   pref = &pull->grp[0];
-  for(g=1; g<1+pull->ngrp+1; g++) {
+  for(g=1; g<1+pull->ngrp; g++) {
     pdyna = &pull->dyna[g];
     sum_z = 0;
+    sum_zp = 0;
     wmass = 0;
     wwmass = 0;
     pdyna->nat_loc = 0;
@@ -189,49 +193,62 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
       if (ii >= start && ii < end) {
 	/* get_distance takes pbc into account */
 	pbc_dx_aiuc(pbc,x[ii],g_x,dx);
-	dr = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	dr2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
 
-	if (dr < pull->cyl_r0) {
+	if (dr2 < r0_2) {
 	  /* add to index, to sum of COM, to weight array */
+	  if (pdyna->nat_loc >= pdyna->nalloc_loc) {
+	    pdyna->nalloc_loc = over_alloc_large(pdyna->nat_loc+1);
+	    srenew(pdyna->ind_loc,pdyna->nalloc_loc);
+	    srenew(pdyna->weight_loc,pdyna->nalloc_loc);
+	  }
 	  pdyna->ind_loc[pdyna->nat_loc] = ii;
 	  mass = md->massT[ii];
-	  weight = get_weight(dr,pull->cyl_r1,pull->cyl_r0);
+	  weight = get_weight(sqrt(dr2),pull->cyl_r1,pull->cyl_r0);
 	  pdyna->weight_loc[pdyna->nat_loc] = weight;
 	  sum_z += mass*weight*x[ii][ZZ];
+	  if (xp) {
+	    sum_zp += mass*weight*xp[ii][ZZ];
+	  }
 	  wmass += mass*weight;
 	  wwmass += mass*sqr(weight);
 	  pdyna->nat_loc++;
 	}
       }
     }
-    dbuf[g-1][0] = wmass;
-    dbuf[g-1][1] = wwmass;
-    dbuf[g-1][2] = sum_z;
+    dbuf[(g-1)*4+0] = wmass;
+    dbuf[(g-1)*4+1] = wwmass;
+    dbuf[(g-1)*4+2] = sum_z;
+    dbuf[(g-1)*4+3] = sum_zp;
   }
 
   if (cr && PAR(cr)) {
     /* Sum the contributions over the nodes */
-    gmx_sumd(pull->ngrp*DIM,dbuf[0],cr);
+    gmx_sumd(pull->ngrp*4,dbuf,cr);
   }
 
-  for(g=1; g<1+pull->ngrp+1; g++) {
+  for(g=1; g<1+pull->ngrp; g++) {
     pdyna = &pull->dyna[g];
 
-    wmass        = dbuf[g-1][0];
-    wwmass       = dbuf[g-1][1];
-    pdyna->x[XX] = 0;
-    pdyna->x[YY] = 0;
-    pdyna->x[ZZ] = dbuf[g-1][2];
-
+    wmass        = dbuf[(g-1)*4+0];
+    wwmass       = dbuf[(g-1)*4+1];
     pdyna->wscale = wmass/wwmass;
     pdyna->invtm = 1.0/(pdyna->wscale*wmass);
 
-    /* normalize the new 'x_unc' */
-    dsvmul(1/wmass,pdyna->x,pdyna->x);
-    if (debug)
+    pdyna->x[XX] = 0;
+    pdyna->x[YY] = 0;
+    pdyna->x[ZZ] = dbuf[(g-1)*4+2]/wmass;
+    if (xp) {
+      pdyna->xp[XX] = 0;
+      pdyna->xp[YY] = 0;
+      pdyna->xp[ZZ] = dbuf[(g-1)*4+3]/wmass;
+    }
+
+    if (debug) {
       fprintf(debug,"Pull cylinder group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
               g,pdyna->x[0],pdyna->x[1],
               pdyna->x[2],1.0/pdyna->invtm);
+    }
   }
 }
 
@@ -380,7 +397,7 @@ void pull_calc_coms(t_commrec *cr,
   
   for (g=0; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
-    if (pgrp->nat > 0) {
+    if (pgrp->nat > 0 && !(g==0 && PULL_CYL(pull))) {
       if (pgrp->epgrppbc != epgrppbcCOS) {
 	/* Determine the inverse mass */
 	wmass  = dbuf[g*3+2][0];
@@ -428,11 +445,15 @@ void pull_calc_coms(t_commrec *cr,
 	  pgrp->xp[pull->cosdim] = atan2_0_2pi(snw,csw)/twopi_box;
 	}
       }
+      if (debug) {
+	fprintf(debug,"Pull group %d wmass %f wwmass %f invtm %f\n",
+		g,wmass,wwmass,pgrp->invtm);
+      }
     }
   }
   
   if (PULL_CYL(pull)) {
     /* Calculate the COMs for the cyclinder reference groups */
-    make_cyl_refgrps(cr,pull,md,pbc,x);
+    make_cyl_refgrps(cr,pull,md,pbc,x,xp);
   }  
 }
