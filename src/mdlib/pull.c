@@ -320,6 +320,11 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     pbc_dx_d(pbc,pull->grp[g].x,pref->x,r_ij[g]);
     /* Store the difference vector at time t for printing */
     copy_dvec(r_ij[g],pull->grp[g].dr);
+    if (debug) {
+      fprintf(debug,"Pull group %d dr %f %f %f\n",
+	      g,r_ij[g][XX],r_ij[g][YY],r_ij[g][ZZ]);
+    }
+
 
     if (pull->eGeom == epullgDIR) {
       /* Select the component along vec */
@@ -355,6 +360,9 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 	  ref[m] = pgrp->init[m] + pgrp->rate*t*pgrp->vec[m];
       } else {
 	ref[0] = pgrp->init[0] + pgrp->rate*t;
+	/* Keep the compiler happy */
+	ref[1] = 0;
+	ref[2] = 0;
       }
 
       if (debug)
@@ -960,13 +968,8 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   /* if we use dynamic reference groups, do some initialising for them */
   if (PULL_CYL(pull)) {
     if (pull->grp[0].nat == 0)
-      gmx_fatal(FARGS, "Dynamic reference groups are not support when using absolute reference!\n");
-    
+      gmx_fatal(FARGS, "Dynamic reference groups are not supported when using absolute reference!\n");
     snew(pull->dyna,pull->ngrp+1);
-    for(g=1; g<1+pull->ngrp; g++) {
-      snew(pull->dyna[g].ind,pull->grp[0].nat);
-      snew(pull->dyna[g].weight_loc,pull->grp[0].nat);
-    }
   }
   
   /* Only do I/O when we are doing dynamics and if we are the MASTER */
