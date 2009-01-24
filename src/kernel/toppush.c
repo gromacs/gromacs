@@ -532,20 +532,20 @@ static void push_bondtype(t_params *       bt,
                 bFound=TRUE;
             }
         }
-        if (!bFound) {
-            /* alloc */
-            pr_alloc (2,bt);
-            
-            /* fill the arrays up and down */
-            memcpy(bt->param[bt->nr].c,  b->c,sizeof(b->c));
-            memcpy(bt->param[bt->nr].a,  b->a,sizeof(b->a));
-            memcpy(bt->param[bt->nr+1].c,b->c,sizeof(b->c));
-            
-            for (j=0; (j < nral); j++) 
-                bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
-            
-            bt->nr += 2;
-        }
+    }
+    if (!bFound) {
+        /* alloc */
+        pr_alloc (2,bt);
+        
+        /* fill the arrays up and down */
+        memcpy(bt->param[bt->nr].c,  b->c,sizeof(b->c));
+        memcpy(bt->param[bt->nr].a,  b->a,sizeof(b->a));
+        memcpy(bt->param[bt->nr+1].c,b->c,sizeof(b->c));
+        
+        for (j=0; (j < nral); j++) 
+            bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
+        
+        bt->nr += 2;
     }
 }
 
@@ -1150,7 +1150,7 @@ static bool default_params(int ftype,t_params bt[],
 		  nparam_found++;
 		  bSame = TRUE;
 		  /* Continue from current i value */
-		  for(j=i ; j<nr && bSame ; j++)
+		  for(j=i+1 ; j<nr && bSame ; j+=2)
 		  {
 			  pj=&(bt[ftype].param[j]);
 			  bSame = (pi->AI == pj->AI && pi->AJ == pj->AJ && pi->AK == pj->AK && pi->AL == pj->AL);
@@ -1515,7 +1515,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		for(i=1;i<nparam_defA;i++)
 		{
 			/* Advance pointer! */
-			param_defA++; 
+			param_defA+=2; 
 			for(j=0; (j<NRFPA(ftype)+NRFPB(ftype)); j++)
 				param.c[j] = param_defA->c[j];
 			/* And push the next term for this torsion */
