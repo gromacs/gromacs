@@ -98,7 +98,7 @@ static void log_action(int bMal,char *what,char *file,int line,
 }
 #endif
 
-void *save_malloc(char *name,char *file,int line,unsigned size)
+void *save_malloc(char *name,char *file,int line,size_t size)
 {
   void *p;
   
@@ -120,7 +120,7 @@ void *save_malloc(char *name,char *file,int line,unsigned size)
 }
 
 void *save_calloc(char *name,char *file,int line,
-                  unsigned nelem,unsigned elsize)
+                  unsigned nelem,size_t elsize)
 {
   void *p;
   
@@ -155,10 +155,10 @@ void *save_calloc(char *name,char *file,int line,
 }
 
 void *save_realloc(char *name,char *file,int line,void *ptr,
-		   unsigned nelem,unsigned elsize)
+		   unsigned nelem,size_t elsize)
 {
   void *p;
-  unsigned long size = nelem*elsize;
+  size_t size = nelem*elsize;
   
   p=NULL;
   if (size==0)
@@ -195,10 +195,10 @@ void save_free(char *name,char *file,int line, void *ptr)
     free(ptr);
 }
 
-unsigned maxavail(void)
+size_t maxavail(void)
 {
   char *ptr;
-  unsigned low,high,size;
+  size_t low,high,size;
   
   low=0;
   high=256e6;
@@ -214,10 +214,10 @@ unsigned maxavail(void)
   return low;
 }
 
-unsigned memavail(void)
+size_t memavail(void)
 {
   char *ptr;
-  unsigned size;
+  size_t size;
   
   size = maxavail(); 
   if (size != 0) { 

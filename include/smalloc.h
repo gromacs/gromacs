@@ -41,6 +41,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 /*
  * Memory allocation routines in gromacs:
  *
@@ -79,12 +81,12 @@
  *    and line to generate an error message when allocation failed.
  *
  * extern void *save_calloc(char *name,char *file,int line, 
- *                          unsigned nelem,unsigned elsize);
+ *                          unsigned nelem,size_t elsize);
  *    Like calloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
  *
  * extern void *save_realloc(char *name,char *file,int line,
- *                           void *ptr,unsigned size);
+ *                           void *ptr,size_t size);
  *    Like realloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
  *    If ptr equals NULL, malloc is called in stead of realloc, in this way
@@ -94,13 +96,13 @@
  *    Like free, uses name, file and line to generate an error message when 
  *    the free failed.
  *
- * extern unsigned maxavail();
+ * extern size_t maxavail();
  *    Returns the maximum available allocation unit, by applying a binary
  *    search on the largest block of memory available. After allocation
  *    it invokes free to restore the original state. So it is important
  *    that free can undo the effect of a malloc.
  * 
- * extern unsigned memavail();
+ * extern size_t memavail();
  *    Returns the total of available allocation unit, by applying maxavail
  *    until no space is left, it then frees all allocated space and returns
  *    the sum of the previously allocated space. As mentioned with maxavail,
@@ -123,14 +125,14 @@
 extern "C" { 
 #endif
 
-void *save_malloc(char *name,char *file,int line,unsigned size); 
+void *save_malloc(char *name,char *file,int line,size_t size); 
 void *save_calloc(char *name,char *file,int line,
-		  unsigned nelem,unsigned elsize); 
+		  unsigned nelem,size_t elsize); 
 void *save_realloc(char *name,char *file,int line,
-		   void *ptr,unsigned nelem,unsigned elsize);
+		   void *ptr,unsigned nelem,size_t elsize);
 void save_free(char *name,char *file,int line, void *ptr);
-unsigned maxavail(void);
-unsigned memavail(void);
+size_t maxavail(void);
+size_t memavail(void);
 
 #ifdef CPLUSPLUS
 }
