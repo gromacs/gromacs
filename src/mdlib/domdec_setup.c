@@ -200,7 +200,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     float pbcdx_tric_fac = 0.2;
     
     /* Check the DD algorithm restrictions */
-    if ((ir->ePBC == epbcXY && nc[ZZ] > 1) ||
+    if ((ir->ePBC == epbcXY && ir->nwall < 2 && nc[ZZ] > 1) ||
         (ir->ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
     {
         return -1;
