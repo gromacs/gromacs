@@ -197,10 +197,12 @@ gmx_setup_kernels(FILE *fplog)
      * version should be at the end. For instance, we call SSE after 3DNow.
      */
     
-    for(i=0;i<eNR_NBKERNEL_NR;i++)
+    for(i=0; i<eNR_NBKERNEL_NR; i++)
+    {
         nb_kernel_list[i] = NULL;
-
-	if(getenv("GMX_NB_GENERIC") != NULL)
+    }
+    
+    if(getenv("GMX_NB_GENERIC") != NULL)
     {
         if(fplog)
             fprintf(fplog,
@@ -455,9 +457,10 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  &outeriter,
 											  &inneriter);
 					}
-					
-					/* Call the appropriate nonbonded kernel function */
-					(*kernelptr)( &(nlist->nri),
+					else
+					{
+					    /* Call the appropriate nonbonded kernel function */
+					    (*kernelptr)( &(nlist->nri),
 								 nlist->iinr,
 								 nlist->jindex,
 								 nlist->jjnr,
@@ -488,6 +491,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 								 &outeriter,
 								 &inneriter,
 								 NULL);
+					}
 				}
 				
 				/* Update flop accounting */
