@@ -190,103 +190,97 @@ static t_forcerec *fr=NULL;
 void do_nsgrid(FILE *fp,bool bVerbose,
 	       matrix box,rvec x[],t_atoms *atoms,real rlong)
 {
-  static bool bFirst = TRUE;
-  static gmx_mtop_t *mtop;
-  static gmx_localtop_t *top;
-  static t_mdatoms  *md;
-  static t_block    *cgs;
-  static t_inputrec *ir;
-  static t_nrnb     nrnb;
-  static t_commrec  *cr;
-  static int        *cg_index;
-
+  gmx_mtop_t *mtop;
+  gmx_localtop_t *top;
+  t_mdatoms  *md;
+  t_block    *cgs;
+  t_inputrec *ir;
+  t_nrnb     nrnb;
+  t_commrec  *cr;
+  int        *cg_index;
   gmx_moltype_t *molt;
   gmx_ffparams_t *ffp;
-  int        i,m,natoms;
   ivec       *nFreeze;
+  int        i,m,natoms;
   rvec       box_size;
   real       lambda=0,dvdlambda=0;
 
   natoms = atoms->nr;
     
-  if (bFirst) {
-    /* Charge group index */  
-    snew(cg_index,natoms);
-    for(i=0; (i<natoms); i++)
-      cg_index[i]=i;
-    
-    /* Topology needs charge groups and exclusions */
-    snew(mtop,1);
-    init_mtop(mtop);
-    mtop->natoms = natoms;
-    /* Make one moltype that contains the whol system */
-    mtop->nmoltype = 1;
-    snew(mtop->moltype,mtop->nmoltype);
-    molt = &mtop->moltype[0];
-    molt->name  = mtop->name;
-    molt->atoms = *atoms;
-    stupid_fill_block(&molt->cgs,mtop->natoms,FALSE);
-    stupid_fill_blocka(&molt->excls,natoms);
-    /* Make one molblock for the whole system */
-    mtop->nmolblock = 1;
-    snew(mtop->molblock,mtop->nmolblock);
-    mtop->molblock[0].type = 0;
-    mtop->molblock[0].nmol = 1;
-    mtop->molblock[0].natoms_mol = natoms;
-    /* Initialize a single energy group */
-    mtop->groups.grps[egcENER].nr = 1;
-    mtop->groups.ngrpnr[egcENER]  = 0;
-    mtop->groups.grpnr[egcENER]   = NULL;
-
-    ffp = &mtop->ffparams;
+  /* Charge group index */  
+  snew(cg_index,natoms);
+  for(i=0; (i<natoms); i++)
+    cg_index[i]=i;
   
-    ffp->ntypes = 1;
-    ffp->atnr   = 1;
-    snew(ffp->functype,1);
-    snew(ffp->iparams,1);
-    ffp->iparams[0].lj.c6  = 1;
-    ffp->iparams[0].lj.c12 = 1;
-
-    top = gmx_mtop_generate_local_top(mtop,ir);
-
-    /* Some nasty shortcuts */
-    cgs  = &(top->cgs);
-
-    /* inputrec structure */
-    snew(ir,1);
-    ir->coulombtype = eelCUT;
-    ir->vdwtype     = evdwCUT;
-    ir->ndelta      = 2;
-    ir->ns_type     = ensGRID;
-    snew(ir->opts.egp_flags,1);
-    
+  /* Topology needs charge groups and exclusions */
+  snew(mtop,1);
+  init_mtop(mtop);
+  mtop->natoms = natoms;
+  /* Make one moltype that contains the whol system */
+  mtop->nmoltype = 1;
+  snew(mtop->moltype,mtop->nmoltype);
+  molt = &mtop->moltype[0];
+  molt->name  = mtop->name;
+  molt->atoms = *atoms;
+  stupid_fill_block(&molt->cgs,mtop->natoms,FALSE);
+  stupid_fill_blocka(&molt->excls,natoms);
+  /* Make one molblock for the whole system */
+  mtop->nmolblock = 1;
+  snew(mtop->molblock,mtop->nmolblock);
+  mtop->molblock[0].type = 0;
+  mtop->molblock[0].nmol = 1;
+  mtop->molblock[0].natoms_mol = natoms;
+  /* Initialize a single energy group */
+  mtop->groups.grps[egcENER].nr = 1;
+  mtop->groups.ngrpnr[egcENER]  = 0;
+  mtop->groups.grpnr[egcENER]   = NULL;
+  
+  ffp = &mtop->ffparams;
+  
+  ffp->ntypes = 1;
+  ffp->atnr   = 1;
+  snew(ffp->functype,1);
+  snew(ffp->iparams,1);
+  ffp->iparams[0].lj.c6  = 1;
+  ffp->iparams[0].lj.c12 = 1;
+  
+  top = gmx_mtop_generate_local_top(mtop,ir);
+  
+  /* Some nasty shortcuts */
+  cgs  = &(top->cgs);
+  
+  /* inputrec structure */
+  snew(ir,1);
+  ir->coulombtype = eelCUT;
+  ir->vdwtype     = evdwCUT;
+  ir->ndelta      = 2;
+  ir->ns_type     = ensGRID;
+  snew(ir->opts.egp_flags,1);
+  
     /* mdatoms structure */
-    snew(nFreeze,2);
-    snew(md,1);
-    md = init_mdatoms(fp,mtop,FALSE);
-    atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
-    sfree(nFreeze);
-
-    /* forcerec structure */
-    if (fr == NULL)
-      fr = mk_forcerec();
-    snew(cr,1);
-    cr->nnodes   = 1;
-    cr->nthreads = 1;
-    
-    /*    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
-    printf("Neighborsearching with a cut-off of %g\n",rlong);
-    init_forcerec(stdout,fr,ir,top,cr,md,box,FALSE,NULL,NULL,TRUE);*/
-    fr->cg0 = 0;
-    fr->hcg = top->cgs.nr;
-    fr->nWatMol = 0;
-    
-    /* Prepare for neighboursearching */
-    init_nrnb(&nrnb);
-    
-    bFirst = FALSE;
-  }
-
+  snew(nFreeze,2);
+  snew(md,1);
+  md = init_mdatoms(fp,mtop,FALSE);
+  atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
+  sfree(nFreeze);
+  
+  /* forcerec structure */
+  if (fr == NULL)
+    fr = mk_forcerec();
+  snew(cr,1);
+  cr->nnodes   = 1;
+  cr->nthreads = 1;
+  
+  /*    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
+	printf("Neighborsearching with a cut-off of %g\n",rlong);
+	init_forcerec(stdout,fr,ir,top,cr,md,box,FALSE,NULL,NULL,TRUE);*/
+  fr->cg0 = 0;
+  fr->hcg = top->cgs.nr;
+  fr->nWatMol = 0;
+  
+  /* Prepare for neighboursearching */
+  init_nrnb(&nrnb);
+  
   /* Init things dependent on parameters */  
   ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
