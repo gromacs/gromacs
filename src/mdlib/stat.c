@@ -266,37 +266,48 @@ void write_traj(FILE *fplog,t_commrec *cr,
     if (bF) {
       dd_collect_vec(cr->dd,state_local,f_local,f_global);
     }
-  } else if (cr->nnodes > 1) {
-    /* Particle decomposition */
+  } else {
     if (bCPT) {
-      if (state_local->flags & (1<<estX))   MX(state_global->x);
-      if (state_local->flags & (1<<estV))   MX(state_global->v);
-      if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
-      if (state_global->nrngi > 1) {
-	if (state_local->flags & (1<<estLD_RNG)) {
-#ifdef GMX_MPI
-	  MPI_Gather(state_local->ld_rng ,
-		     state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
-		     state_global->ld_rng,
-		     state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
-		     MASTERRANK(cr),cr->mpi_comm_mygroup);
-#endif
-	}
-	if (state_local->flags & (1<<estLD_RNGI)) {
-#ifdef GMX_MPI
-	  MPI_Gather(state_local->ld_rngi,
-		     sizeof(state_local->ld_rngi[0]),MPI_BYTE,
-		     state_global->ld_rngi,
-		     sizeof(state_local->ld_rngi[0]),MPI_BYTE,
-		     MASTERRANK(cr),cr->mpi_comm_mygroup);
-#endif
-	}
-      }
-    } else {
-      if (bX || bXTC) MX(state_global->x);
-      if (bV)         MX(state_global->v);
+      /* All pointers in state_local are equal to state_global,
+       * but we need to copy the non-pointer entries.
+       */
+      state_global->lambda = state_local->lambda;
+      copy_mat(state_local->box,state_global->box);
+      copy_mat(state_local->boxv,state_global->boxv);
+      copy_mat(state_local->pres_prev,state_global->pres_prev);
     }
-    if (bF)         MX(f_global);
+    if (cr->nnodes > 1) {
+      /* Particle decomposition, collect the data on the master node */
+      if (bCPT) {
+	if (state_local->flags & (1<<estX))   MX(state_global->x);
+	if (state_local->flags & (1<<estV))   MX(state_global->v);
+	if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
+	if (state_global->nrngi > 1) {
+	  if (state_local->flags & (1<<estLD_RNG)) {
+#ifdef GMX_MPI
+	    MPI_Gather(state_local->ld_rng ,
+		       state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+		       state_global->ld_rng,
+		       state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+		       MASTERRANK(cr),cr->mpi_comm_mygroup);
+#endif
+	  }
+	  if (state_local->flags & (1<<estLD_RNGI)) {
+#ifdef GMX_MPI
+	    MPI_Gather(state_local->ld_rngi,
+		       sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+		       state_global->ld_rngi,
+		       sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+		       MASTERRANK(cr),cr->mpi_comm_mygroup);
+#endif
+	  }
+	}
+      } else {
+	if (bX || bXTC) MX(state_global->x);
+	if (bV)         MX(state_global->v);
+      }
+      if (bF)         MX(f_global);
+    }
   }
 
   if (MASTER(cr)) {
