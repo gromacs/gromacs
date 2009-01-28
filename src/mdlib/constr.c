@@ -864,8 +864,8 @@ gmx_constr_t init_constraints(FILE *fplog,
 	if (settle_type == -1) {
 	  settle_type = ilist[F_SETTLE].iatoms[i];
 	} else if (ilist[F_SETTLE].iatoms[i] != settle_type) {
-	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
-		    settle_type,ilist->iatoms[i]);
+	  gmx_fatal(FARGS,"More than one settle type.\n"
+		    "Suggestion: change the least use settle constraints into 3 normal constraints.");
 	}
       }
     }
