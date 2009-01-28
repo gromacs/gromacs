@@ -95,7 +95,7 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
 static void _low_check(bool b,char *s,int *n)
 {
   if (b) {
-    fprintf(stderr,"ERROR: %s\n",s);
+    fprintf(stderr,"\nERROR: %s\n\n",s);
     (*n)++;
   }
 }
@@ -379,7 +379,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   if (ir->nstlist == -1) {
     sprintf(err_buf,
-	    "nstlist=-1 only works with switched or shifted potentials");
+	    "nstlist=-1 only works with switched or shifted potentials,\n"
+	    "suggestion: use vdw-type=%s and coulomb-type=%s",
+	    evdw_names[evdwSHIFT],eel_names[eelPMESWITCH]);
     CHECK(!(EEL_ZERO_AT_CUTOFF(ir->coulombtype) &&
 	    EVDW_ZERO_AT_CUTOFF(ir->vdwtype)));
   }
@@ -1816,7 +1818,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
   gmx_mtop_atomloop_all_t aloop;
   t_atom *atom;
 
-  if (ir->coulombtype == eelCUT) {
+  if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
     bCharge = FALSE;
     aloopb = gmx_mtop_atomloop_block_init(sys);
     while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
@@ -1827,7 +1829,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     if (bCharge) {
       set_warning_line(mdparin,-1);
       sprintf(err_buf,
-	      "You are using a plain Coulomb cut-off, this will often produce artifacts.\n"
+	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
 	      EI_TPI(ir->eI) ? EELTYPE(eelRF) : EELTYPE(eelPME));
       warning_note(err_buf);
