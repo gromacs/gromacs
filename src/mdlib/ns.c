@@ -541,7 +541,7 @@ put_in_list(bool              bHaveVdW[],
     real      *charge,*chargeB;
     real      qi,qiB,qq,rlj;
     bool      bFreeEnergy,bFree,bFreeJ,bNotEx,*bPert;
-    bool      bDoVdW_i,bDoCoul_i;
+    bool      bDoVdW_i,bDoCoul_i,bDoCoul_i_sol;
     int       iwater,jwater;
     t_nblist  *nlist;
     
@@ -954,8 +954,23 @@ put_in_list(bool              bHaveVdW[],
             bDoVdW_i  = (bDoVdW  &&
                          (bHaveVdW[type[i_atom]] || bHaveVdW[typeB[i_atom]]));
             bDoCoul_i = (bDoCoul && (qi!=0 || qiB!=0));
+            /* For TIP4P the first atom does not have a charge,
+             * but the last three do. So we should still put an atom
+             * without LJ but with charge in the water-atom neighborlist
+             * for a TIP4p i charge group.
+             * For SPC type water the first atom has LJ and charge,
+             * so there is no such problem.
+             */
+            if (iwater == esolNO)
+            {
+                bDoCoul_i_sol = bDoCoul_i;
+            }
+            else
+            {
+                bDoCoul_i_sol = bDoCoul;
+            }
             
-            if (bDoVdW_i || bDoCoul_i) 
+            if (bDoVdW_i || bDoCoul_i_sol) 
             {
                 /* Loop over the j charge groups */
                 for(j=0; (j<nj); j++)
@@ -1028,7 +1043,7 @@ put_in_list(bool              bHaveVdW[],
                                         add_j_to_nblist(coul,jj,bLR);
                                     }
                                 }
-                                else if (!bDoCoul_i) 
+                                else if (!bDoCoul_i_sol) 
                                 { 
                                     if (bHaveVdW[type[jj]])
                                     {
