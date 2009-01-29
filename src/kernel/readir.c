@@ -384,6 +384,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    evdw_names[evdwSHIFT],eel_names[eelPMESWITCH]);
     CHECK(!(EEL_ZERO_AT_CUTOFF(ir->coulombtype) &&
 	    EVDW_ZERO_AT_CUTOFF(ir->vdwtype)));
+
+    sprintf(err_buf,"With nstlist=-1 rvdw and rcoulomb should be smaller than rlist to account for diffusion and possibly charge-group radii");
+    CHECK(ir->rvdw >= ir->rlist || ir->rcoulomb >= ir->rlist);
   }
   sprintf(err_buf,"nstlist can not be smaller than -1");
   CHECK(ir->nstlist < -1);
