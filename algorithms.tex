@@ -202,24 +202,24 @@ distance.  The height of the box ($c_z$) should be changed to obtain
 an optimal spacing.  This box shape not only saves CPU-time, it
 also results in a more uniform arrangement of the proteins.
 
-\subsection{Cutoff restrictions}
-The minimum image convention implies that the cutoff radius used to
+\subsection{Cut-off restrictions}
+The minimum image convention implies that the cut-off radius used to
 truncate non-bonded interactions must not exceed half the shortest box
 vector:
 \beq
 \label{eqn:physicalrc}
   R_c < \half \min(\|{\bf a}\|,\|{\bf b}\|,\|{\bf c}\|),
 \eeq
-otherwise more than one image would be within the cutoff distance of
+otherwise more than one image would be within the cut-off distance of
 the force. When a macromolecule, such as a protein, is studied in
 solution,  this restriction does not suffice. In principle a single
 solvent  molecule should not be able
 to `see' both sides of the macromolecule. This means that the length of
 each box vector must exceed the length of the macromolecule in the
-direction of that edge {\em plus} two times the cutoff radius $R_c$.
+direction of that edge {\em plus} two times the cut-off radius $R_c$.
 It is common to compromise in this respect, and make the solvent layer
 somewhat smaller in order to reduce the computational cost.
-For efficiency reasons the cutoff with triclinic boxes is more restricted.
+For efficiency reasons the cut-off with triclinic boxes is more restricted.
 For grid search the extra restriction is weak:
 \beq
 \label{eqn:gridrc}
@@ -445,7 +445,7 @@ a linear combination which does not involve multiples of box vectors.
 The non-bonded pair forces need to be calculated only for those pairs
 $i,j$  for which the distance $r_{ij}$ between $i$ and the 
 \swapindex{nearest}{image} 
-of $j$ is less than a given cutoff radius $R_c$. Some of the particle
+of $j$ is less than a given cut-off radius $R_c$. Some of the particle
 pairs that fulfill this criterion are excluded, when their interaction
 is already fully accounted for by bonded interactions.  {\gromacs}
 employs a {\em pair list} that contains those particle pairs for which
@@ -455,12 +455,12 @@ are within \verb'rshort' of this particular image of atom $i$.  The
 list is updated every \verb'nstlist' steps, where \verb'nstlist' is
 typically 10. There is an option to calculate the total non-bonded
 force on each particle due to all particle in a shell around the
-list-cutoff, {\ie} at a distance between \verb'rshort' and
+list cut-off, {\ie} at a distance between \verb'rshort' and
 \verb'rlong'.  This force is calculated during the pair list update
 and  retained during \verb'nstlist' steps.
 
 To make the \normindex{neighbor list} all particles that are close
-({\ie} within the neighbor list cutoff) to a given particle must be found.
+({\ie} within the neighbor list cut-off) to a given particle must be found.
 This searching, usually called neighbor searching (NS),
 involves periodic boundary conditions and determining the {\em image}
 (see \secref{pbc}). Without periodic boundary conditions a simple
@@ -489,7 +489,7 @@ while 99.99\% of the particles are fine.
 
 \subsubsection{\swapindex{Simple}{search}}
 Due to \eqnsref{box_rot}{simplerc}, the vector $\rvij$
-connecting images within the cutoff $R_c$ can be found by constructing:
+connecting images within the cut-off $R_c$ can be found by constructing:
 \begin{eqnarray}
 \ve{r}'''   & = & \ve{r}_j-\ve{r}_i \\
 \ve{r}''    & = & \ve{r}''' - {\bf c}*\verb'round'(r'''_z/c_z)) \\
@@ -540,13 +540,13 @@ Where applicable, neighbor searching is carried out on the basis of
 nearby atoms with an integer net charge. Charge groups are defined in
 the molecular topology. If the nearest image distance between the {\em
 geometrical centers} of the atoms of two charge groups is less than
-the cutoff radius, all atom pairs between the charge groups are
+the cut-off radius, all atom pairs between the charge groups are
 included in the pair list. This procedure avoids the creation of
-charges due to the use of a cutoff (when one charge of a dipole is
+charges due to the use of a cut-off (when one charge of a dipole is
 within range and the other not), which can have disastrous
 consequences for the behavior of the Coulomb interaction function at
-distances near the cutoff radius. If molecular groups have full
-charges (ions), charge groups do not avoid adverse cutoff effects,
+distances near the cut-off radius. If molecular groups have full
+charges (ions), charge groups do not avoid adverse cut-off effects,
 and you should consider using one of the lattice sum methods supplied
 by {\gromacs}~\cite{Berendsen93a}.
 
@@ -832,9 +832,9 @@ mileage may vary.
 In {\gromacs} temperature coupling can be performed on groups of
 atoms, typically a protein and solvent. The reason such algorithmes
 were introduced is that energy exchange between different components
-is not perfect, due to different effects including cutoffs etc. If
+is not perfect, due to different effects including cut-offs etc. If
 now the whole system is coupled to one heat bath, water (which
-experiences the largest cutoff noise) will tend to heat up and the
+experiences the largest cut-off noise) will tend to heat up and the
 protein will cool down. Typically 100 K differences can be obtained.
 With the use of proper electrostatic methods (PME) these difference
 are much smaller but still not negligable. The parameters for
@@ -1612,7 +1612,7 @@ analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 Free energy calculations can be performed
 in {\gromacs} using slow-growth methods. An example problem might be:
 calculate the difference in free energy of binding of an inhibitor {\bf I}
-to an enzyme {\bf E} and to a mutated enzyme {\bf E$\prime$}.
+to an enzyme {\bf E} and to a mutated enzyme {\bf E'}.%$\prime$}.
 It is not feasible with computer simulations to perform a docking
 calculation for such a large complex, or even releasing the inhibitor from
 the enzyme in a reasonable amount of computer time with reasonable accuracy.
@@ -1629,14 +1629,14 @@ the right-hand term.
 \caption[Free energy cycles.]{Free energy cycles. {\bf A:} to
 calculate $\Delta G_{12}$, the free energy difference between the
 binding of inhibitor {\bf I} to enzymes {\bf E} respectively {\bf
-E$\prime$}. {\bf B:} to calculate $\Delta G_{12}$, the free energy
-difference for binding of inhibitors {\bf I} respectively {\bf I$\prime$} to
+E'}. {\bf B:} to calculate $\Delta G_{12}$, the free energy
+difference for binding of inhibitors {\bf I} respectively {\bf I'} to
 enzyme {\bf E}.}
 \label{fig:free}
 \end{figure}
 
 If we want to compute the difference in free energy of binding of two
-inhibitors {\bf I} and {\bf I$\prime$} to an enzyme {\bf E} (\figref{free}B)
+inhibitors {\bf I} and {\bf I'} to an enzyme {\bf E} (\figref{free}B)
 we can again use \eqnref{ddg} to compute the desired property.
 
 \newcommand{\sA}{^{\mathrm{A}}}
@@ -1709,7 +1709,7 @@ the natural choice is a constant-pressure simulation. However, this
 quantity can also be obtained from a slow-growth simulation at
 constant volume, starting with system A at pressure $p$ and volume $V$
 and ending with system B at pressure $p_B$, by applying the following
-small correction: 
+small (but, in principle, exact) correction: 
 \beq
   G\sB(p)-G\sA(p) =
 A\sB(V)-A\sA(V) - \int_p^{p\sB}[V\sB(p')-V]\,dp'
@@ -1718,24 +1718,24 @@ Here we omitted the constant $T$ from the notation. This correction is
 roughly equal to $-\frac{1}{2} (p\sB-p)\Delta V=(\Delta V)^2/(2
 \kappa V)$, where $\Delta V$ is the volume change at $p$ and $\kappa$
 is the isothermal compressibility. This is usually
-negligible. For example, the growth of a water molecule from nothing
+small; for example, the growth of a water molecule from nothing
 in a bath of 1000 water molecules at constant volume would produce an
-additional pressure of 22 bar and a correction to the Helmholtz free
-energy of -20 J/mol.
+additional pressure of as much as 22 bar, but a correction to the 
+Helmholtz free energy of just -1 kJ/mol. %-20 J/mol.
 
-In cartesian coordinates, the kinetic energy term in the Hamiltonian
+In Cartesian coordinates, the kinetic energy term in the Hamiltonian
 depends only on the momenta, and can be separately integrated and in
 fact removed from the equations. When masses do not change, there is
 no contribution from the kinetic energy at all; otherwise the
 integrated contribution to the free energy is $-\frac{3}{2} k_BT \ln
-(m\sB/m\sA)$. This is no longer true in the presence of constraints.
+(m\sB/m\sA)$. Note that this is only true in the absence of constraints.
   
 {\gromacs} offers the possibility to integrate eq.~\ref{eq:delA} or
 eq. \ref{eq:delG} in one simulation over the full range from A to
-B. However, if the change is large and sampling insufficiency can be
+B. However, if the change is large and insufficient sampling can be
 expected, the user may prefer to determine the value of $\langle
 dG/d\lambda \rangle$ accurately at a number of well-chosen
-intermediate values of $\lambda$. This can be easily done by setting
+intermediate values of $\lambda$. This can easily be done by setting
 the stepsize \textbf{delta\_lambda} to zero. Each simulation can be
 equilibrated first, and a proper error estimate can be made for each
 value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
@@ -1743,7 +1743,7 @@ value of $dG/d\lambda$ from the fluctuation of $\partial H/\partial
 by an appropriate numerical integration procedure.
 
 The $\lambda$-dependence for the force-field contributions is
-described in section \secref{feia}.
+described in detail in section \secref{feia}.
 } % Brace matches ifthenelse test for gmxlite
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
