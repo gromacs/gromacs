@@ -316,7 +316,7 @@ dimension.  The algorithm for neighbor searching then becomes:
         described in \secref{nsgrid}.
 \item   Communicate the {\nsgrid} to neighboring processors (not necessarily to all
         processors). The amount of neighboring {\nsgrid} cells (N$_{gx}$) to 
-        communicate is determined by the cutoff length $r_c$ according to
+        communicate is determined by the cut-off length $r_c$ according to
         \beq
         N_{gx}  ~=~     \frac{r_c \nproc}{l_x}   
         \eeq
@@ -482,6 +482,6 @@ At subsequent steps of the simulation:
 \end{enumerate}
 
 %\section{A Worked Example}
-%Suppose our box size is 4.0 nm and the cutoff is 0.8 nm. For neighborsearching 
+%Suppose our box size is 4.0 nm and the cut-off is 0.8 nm. For neighborsearching 
 %we use {\dgrid} = 2, such that there 10 {\nsgrid} cells.
 

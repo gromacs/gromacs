@@ -270,15 +270,15 @@ interaction between (partial) charges. Thus the simulations will
 exaggerate the long-range Coulomb terms. Luckily, the next item
 compensates this effect a bit.
 
-\item[{\bf Long-range interactions are cutoff}]\mbox{}\\
-In this version {\gromacs} always uses a cutoff radius for the
+\item[{\bf Long-range interactions are cut off}]\mbox{}\\
+In this version {\gromacs} always uses a cut-off radius for the
 Lennard-Jones interactions and sometimes for the Coulomb interactions
 as well.  Due to the minimum-image convention (only one image of each
 particle in the periodic boundary conditions is considered for a pair
-interaction), the cutoff range can not exceed half the box size. That
+interaction), the cut-off range can not exceed half the box size. That
 is still pretty big for large systems, and trouble is only expected
 for systems containing charged particles. But then truly bad things can
-happen, like accumulation of charges at the cutoff boundary or very
+happen, like accumulation of charges at the cut-off boundary or very
 wrong energies! For such systems you should consider using one of the
 implemented long-range electrostatic algorithms, such as 
 particle-mesh Ewald~\cite{Darden93,Essmann95}.

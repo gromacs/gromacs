@@ -188,7 +188,7 @@ may be set in the in the input for {\tt grompp}.
 \subsection{Coulomb interaction with \normindex{reaction field}}
 \label{sec:coulrf}
 The coulomb interaction can be modified for homogeneous systems, by
-assuming a constant dielectric environment beyond the cutoff $r_c$
+assuming a constant dielectric environment beyond the cut-off $r_c$
 with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
 V_{crf} ~=~
@@ -198,7 +198,7 @@ V_{crf} ~=~
 \label{eqn:vcrf}
 \eeq
 in which the constant expression on the right makes the potential
-zero at the cutoff $r_c$. For charged cut-off spheres this corresponds
+zero at the cut-off $r_c$. For charged cut-off spheres this corresponds
 to neutralization with a homogeneous background charge.
 We can rewrite \eqnref{vcrf} for simplicity as
 \beq
@@ -214,7 +214,7 @@ For large $\epsrf$ the $k_{rf}$ goes to $r_c^{-3}/2$,
 while for $\epsrf$ = $\epsr$ the correction vanishes.
 In \figref{coul}
 the modified interaction is plotted, and it is clear that the derivative 
-with respect to $\rij$ (= -force) goes to zero at the cutoff distance.
+with respect to $\rij$ (= -force) goes to zero at the cut-off distance.
 The force derived from this potential reads:
 \beq
 \ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr}\left[\frac{1}{\rij^2} - 2 k_{rf}\rij\right]\rnorm
@@ -225,7 +225,7 @@ atoms pairs, including self pairs, in which case the normal Coulomb
 term in \eqnsref{vcrf}{fcrf} is absent.
 
 Tironi {\etal} have introduced a generalized reaction field in which
-the dielectric continuum beyond the cutoff $r_c$ also has an ionic strength
+the dielectric continuum beyond the cut-off $r_c$ also has an ionic strength
 $I$~\cite{Tironi95}. In this case we can rewrite the constants $k_{rf}$ and 
 $c_{rf}$ using the inverse Debye screening length $\kappa$:
 \bea
@@ -253,7 +253,7 @@ respectively.
 In the {\gromacs} force field the non-bonded potentials can be
 modified by a shift function. The purpose of this is to replace the
 truncated forces by forces that are continuous and have continuous
-derivatives at the \normindex{cutoff} radius. With such forces the
+derivatives at the \normindex{cut-off} radius. With such forces the
 time-step integration produces much smaller errors and there are no
 such complications as creating charges from dipoles by the truncation
 procedure. In fact, by using shifted forces there is no need for
@@ -263,7 +263,7 @@ potential. Unless the 'missing' long-range potential is properly
 calculated and added (through the use of PPPM, Ewald, or PME), the
 effect of such modifications must be carefully evaluated.  The
 modification of the Lennard-Jones dispersion and repulsion is only
-minor, but it does remove the noise caused by cutoff effects.
+minor, but it does remove the noise caused by cut-off effects.
  
 There is {\em no} fundamental difference between a switch function
 (which multiplies the potential with a function) and a shift function
@@ -1516,12 +1516,13 @@ The example given here is for the bond potential, which is harmonic
 in {\gromacs}. However,  these equations apply to the angle potential
 and the improper dihedral potential as well.
 \bea
-V_b     &=&\half(\LL k_b^A + 
-                \LAM k_b^B) (b - \LL b_0^A - \LAM b_0^B)^2      \\
+V_b     &=&\half\left[\LL k_b^A + 
+                \LAM k_b^B\right] \left[b - \LL b_0^A - \LAM b_0^B\right]^2  \\
 \dvdl{V_b}&=&\half(k_b^B-k_b^A)
-                \left[b - \LL b_0^A + \LAM b_0^B)^2 + 
-                      (b_0^A-b_0^B) (b - \LL b_0^A -\LAM b_0^B)\right]
-                \nonumber\\
+                \left[b - \LL b_0^A + \LAM b_0^B\right]^2 + 
+		\nonumber\\
+        & & \phantom{\half}(b_0^A-b_0^B) \left[b - \LL b_0^A -\LAM b_0^B\right]
+		\left[\LL k_b^A + \LAM k_b^B \right]
 \eea
 
 \subsubsection{\gromosv{96} bonds and angles}
@@ -1532,12 +1533,19 @@ and the equilibrium position. Formulas are not given here.
 \subsubsection{Proper dihedrals}
 For the proper dihedrals, the equations are somewhat more complicated:
 \bea
-V_d     &=&(\LL k_d^A + \LAM k_d^B) 
-        ( 1+ \cos(n_{\phi} \phi - (\LL \phi_s^A + \LAM \phi_s^B)) \\
+V_d     &=&\left[\LL k_d^A + \LAM k_d^B \right]
+        \left( 1+ \cos\left[n_{\phi} \phi - 
+		    \LL \phi_s^A - \LAM \phi_s^B
+		    \right]\right)\\
 \dvdl{V_d}&=&(k_d^B-k_d^A) 
-                \biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_s^A + \LAM \phi_s^B])-\nonumber\\
-        &&(\LL k_d^A + \LAM k_d^B) (\phi_s^A - \phi_s^B) 
-        \sin(n_{\phi}\phi - [\LL \phi_s^A + \LAM \phi_s^B]\biggr]
+         \left( 1+ \cos
+		 \left[
+		    n_{\phi} \phi- \LL \phi_s^A - \LAM \phi_s^B
+		 \right]
+	 \right) +
+	 \nonumber\\
+        &&(\phi_s^B - \phi_s^A) \left[\LL k_d^A - \LAM k_d^B\right] 
+        \sin\left[  n_{\phi}\phi - \LL \phi_s^A - \LAM \phi_s^B \right]
 \eea
 {\bf Note:} that the multiplicity $n_{\phi}$ can not be parameterized
 because the function should remain periodic on the interval $[0,2\pi]$.
@@ -1566,6 +1574,7 @@ V_c     &=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
              \left[\LL q_i^A q_j^A + \LAM\, q_i^B q_j^B\right] \\
 \dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
                \left[- q_i^A q_j^A + q_i^B q_j^B\right]
+	       \label{eq:dVcoulombdlambda}
 \eea
 {\bf Note} that the constants $k_{rf}$ and $c_{rf}$ are 
 defined using the dielectric 
@@ -1575,10 +1584,11 @@ constant $\epsrf$ of the medium (see \secref{coulrf}).
 For the \normindex{Lennard-Jones} interaction between two particles 
 of which the {\em atom type} varies with $\LAM$ we can write:
 \bea
-V_{LJ}  &=&     \frac{(\LL C_{12}^A + \LAM\, C_{12}^B)}{\rij^{12}} -
+V_{LJ}  &=&     \frac{\LL C_{12}^A + \LAM\, C_{12}^B}{\rij^{12}} -
                 \frac{\LL C_6^A + \LAM\, C_6^B}{\rij^6}   \\
 \dvdl{V_{LJ}}&=&\frac{C_{12}^B - C_{12}^A}{\rij^{12}} -
                 \frac{C_6^B - C_6^A}{\rij^6}
+		\label{eq:dVljdlambda}
 \eea
 It should be noted that it is also possible to express a pathway from
 state A to state B using $\sigma$ and $\epsilon$ (see \eqnref{sigeps}).
@@ -1635,30 +1645,40 @@ to the Hamiltonian using Lagrange multipliers $\lambda$:
 $C_6^A=C_{12}^A=C_6^B=C_{12}^B=1$.}
 \label{fig:softcore}
 \end{figure}
-The linear interpolation of the Lennard-Jones and Coulomb potentials gives
-problems when growing particles out of nothing or when making particles
-disappear ($\LAM$ close to 0 or 1). To circumvent these problems, the
-singularities in the potentials need to be removed. This is done with
-soft-core potentials. In {\gromacs} the soft-core potential $V_{sc}$ is:
-\beq
-V_{sc}(r) = \LL V^A(r_A) + \LAM V^B(r_B)
-\eeq
-\beq
-r_A = \left(\alpha \sigma_A^6 \LAM^p + r^6 \right)^\frac{1}{6}
-\eeq
-\beq
-r_B = \left(\alpha \sigma_B^6 \LL^p + r^6 \right)^\frac{1}{6}
-\eeq
-where $V^A$ and $V^B$ are the normal ``hard core'' Van der Waals or
+In a free-energy calculation where particles grow out of nothing, or 
+particles disappear, using the the simple linear interpolation of the 
+Lennard-Jones and Coulomb potentials as described in Eqs.~\ref{eq:dVljdlambda}
+and \ref{eq:dVcoulombdlambda} may lead to poor convergence: when the particles have nearly disappeared, or are close to appearing (at $\LAM$ close to 0 or 1), the interaction energy will be weak enough for particles to get very 
+close to each other, leading to large fluctuations in the measured values of 
+$\partial V/\partial \LAM$ (which, because of the simple linear 
+interpolation, depends on the potentials at both the endpoints of $\LAM$).
+
+To circumvent these problems, the singularities in the potentials need to be removed. This can be done by modifying the regular Lennard-Jones and Coulomb potentials with `soft-core' potentials that limit the energies and forces 
+involved at $\LAM$ values between 0 and 1, but not \emph{at} $\LAM=0$ 
+or 1.
+
+In {\gromacs} the soft-core potentials $V_{sc}$ are shifted versions of the
+regular potentials, so that the singularity in the potential and its
+derivatives at $r=0$ is never reached:
+\bea
+V_{sc}(r) &=& \LL V^A(r_A) + \LAM V^B(r_B)
+    \\
+r_A &=& \left(\alpha \sigma_A^6 \LAM^p + r^6 \right)^\frac{1}{6}
+    \\
+r_B &=& \left(\alpha \sigma_B^6 \LL^p + r^6 \right)^\frac{1}{6}
+\eea
+where $V^A$ and $V^B$ are the normal `hard core' Van der Waals or
 electrostatic potentials in state A ($\LAM=0$) and state B ($\LAM=1$)
-respectively, $\alpha$ is the soft-core parameter, $p$ is the soft-core
-$\LAM$ power, $\sigma$ is the radius of the interaction,
-which is $(C_{12}/C_6)^{1/6}$ or a predefined value when
-$C_6$ or $C_{12}$ is zero.
+respectively, $\alpha$ is the soft-core parameter (set with {\tt sc\_alpha} 
+in the {\tt .mdp} file), $p$ is the soft-core $\LAM$ power (set with 
+{\tt sc\_power}), $\sigma$ is the radius of the interaction, which is 
+$(C_{12}/C_6)^{1/6}$ or an input parameter ({\tt sc\_sigma}) when $C_6$ 
+or $C_{12}$ is zero.
+
+
 For intermediate $\LAM$, $r_A$ and $r_B$ alter the interactions very little
-when $r > \alpha^{1/6} \sigma$ and they quickly switch the soft-core
-interaction to an almost constant value when $r$ becomes smaller
-(\figref{softcore}). 
+for $r > \alpha^{1/6} \sigma$ and quickly switch the soft-core
+interaction to an almost constant value for smaller $r$ (\figref{softcore}). 
 The force is:
 \beq
 F_{sc}(r) = -\frac{\partial V_{sc}(r)}{\partial r} =
@@ -1669,23 +1689,32 @@ where $F^A$ and $F^B$ are the 'hard core' forces.
 The contribution to the derivative of the free energy is:
 \bea
 \dvdl{V_{sc}(r)} & = &
--V^A(r_A) + V^B(r_B) + \nonumber \\
+ V^B(r_B) -V^A(r_A)  + 
+	\LL \frac{\partial V^A(r_A)}{\partial r_A}
+		   \frac{\partial r_A}{\partial \LAM} + 
+	\LAM\frac{\partial V^B(r_B)}{\partial r_B}
+		   \frac{\partial r_B}{\partial \LAM}
+\nonumber\\
+&=&
+ V^B(r_B) -V^A(r_A)  + \nonumber \\
  & &
-\alpha \frac{p}{6} \left( - \LL \LAM^{p-1} F^A(r_A) \sigma_A^6 r_A^{-5} 
-                          + \LAM \LL^{p-1} F^B(r_B) \sigma_B^6 r_B^{-5} \right)
+ \frac{p \alpha}{6}
+       \left[ \LAM F^B(r_B) r^{-5}_B \sigma_B^6 \LL^{p-1} -
+	       \LL F^A(r_A) r^{-5}_A \sigma_A^6 \LAM^{p-1} \right]
 \eea
 
 The original Gromos Lennard-Jones soft-core function~\cite{Beutler94}
-uses $p$=2, but $p$=1 gives a smoother $\partial H/\partial\LAM$ curve.
+uses $p=2$, but $p=1$ gives a smoother $\partial H/\partial\LAM$ curve.
 When the changes between the two states involve both the disappearing
 and appearing of atoms, it is important that the overlapping of atoms
-happens around $\LAM$=0.5. This can usually be achieved with
-$\alpha$$\approx$0.7 for $p$=1 and $\alpha$$\approx$1.5 for $p$=2.
+happens around $\LAM=0.5$. This can usually be achieved with
+$\alpha$$\approx0.7$ for $p=1$ and $\alpha$$\approx1.5$ for $p=2$.
+
 Another issue which should be considered is the soft-core effect of hydrogens
 without Lennard-Jones interaction. Their soft-core $\sigma$ is
-set with {\tt sc-sigma} in the {\tt .mdp} file. These hydrogens
-produce peaks in $\partial H/\partial\LAM$ at $\LAM$ is 0 and/or 1 for $p$=1
-and close to 0 and/or 1 with $p$=2. Lowering {\tt sc-sigma} will decrease
+set with {\tt sc\_sigma} in the {\tt .mdp} file. These hydrogens
+produce peaks in $\partial H/\partial\LAM$ at $\LAM$ is 0 and/or 1 for $p=1$
+and close to 0 and/or 1 with $p=2$. Lowering {\tt sc\_sigma} will decrease
 this effect, but it will also increase the interactions with hydrogens
 relative to the other interactions in the soft-core state.
 } % Brace matches ifthenelse test for gmxlite
@@ -1731,29 +1760,29 @@ and the coulomb interaction are scaled.
 \subsection{\normindex{Charge Group}s.}
 \label{sec:cg}
 In principle the force calculation in MD is an $O(N^2)$ problem.
-Therefore we apply a \normindex{cutoff} for non-bonded force (NBF)
+Therefore we apply a \normindex{cut-off} for non-bonded force (NBF)
 calculations: only the particles within a certain distance of each
 other are interacting. This reduces the cost to $O(N)$ (typically
 $100N$ to $200N$) of the NBF. It also introduces an error, which is,
-in most cases, acceptable, except when applying the cutoff implies
+in most cases, acceptable, except when applying the cut-off implies
 the creation of charges, in which case you should consider using the
 lattice sum methods provided by {\gromacs}.
 
 Consider a water molecule interacting with another atom. When we would apply
-the cutoff on an atom-atom basis we might include the atom-Oxygen
+the cut-off on an atom-atom basis we might include the atom-Oxygen
 interaction (with a charge of -0.82) without the compensating charge
 of the protons and so induce a large dipole moment over the system.
 Therefore we have to keep groups of atoms with total charge
 0 together. These groups are called {\em charge groups}.
 
-\subsection{Treatment of Cutoffs}
+\subsection{Treatment of Cut-offs}
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
-{\gromacs} is quite flexible in treating cutoffs, which implies
+{\gromacs} is quite flexible in treating cut-offs, which implies
 there can be quite a number of parameters to set. These parameters are
 set in the input file for grompp. There are two sort of parameters
-that affect the cutoff interactions; you can select which type
-of interaction to use in each case, and which cutoffs should be
+that affect the cut-off interactions; you can select which type
+of interaction to use in each case, and which cut-offs should be
 used in the neighborsearching.
 
 For both Coulomb and van der Waals interactions there are interaction
@@ -1783,7 +1812,7 @@ off-diagonal elements are about as large as each element in the sum.
 In most cases this is not really a problem, since the fluctuations in de
 virial can be 2 orders of magnitude larger than the average.
 
-Except for the plain cutoff,
+Except for the plain cut-off,
 all of the interaction functions in \tabref{funcparm}
 require that neighbor searching is done with a larger radius than the $r_c$
 specified for the functional form, because of the use of charge groups.
@@ -1795,7 +1824,7 @@ charge group can diffuse within neighbor list updates).
 %groups, by setting the option 
 %{\tt bAtomList = yes} in your {\tt grompp.mdp} file.
 %In this case only a small extra radius to account for diffusion needs to be 
-%added (0.1 nm). Do not however use this together with the plain cutoff
+%added (0.1 nm). Do not however use this together with the plain cut-off
 %method, as it will generate large artifacts (\secref{cg}).
 %In summary, there are four parameters that describe NS behavior:
 %{\tt nstlist} (update frequency in number of time steps),
@@ -1809,12 +1838,12 @@ charge group can diffuse within neighbor list updates).
 \dline
 \multicolumn{2}{|c|}{Type}              & Parameters            \\
 \hline
-Coulomb&Plain cutoff   & $r_c$, $\epsr$        \\
+Coulomb&Plain cut-off   & $r_c$, $\epsr$        \\
 &Reaction field         & $r_c$, $\epsrf$       \\
 &Shift function         & $r_1$, $r_c$, $\epsr$         \\
 &Switch function        & $r_1$, $r_c$, $\epsr$         \\
 \hline
-VdW&Plain cutoff       & $r_c$         \\
+VdW&Plain cut-off       & $r_c$         \\
 &Shift function         & $r_1$, $r_c$          \\
 &Switch function        & $r_1$, $r_c$          \\
 \dline
@@ -2251,8 +2280,8 @@ V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,
 \end{eqnarray}
 where $\beta$ is a parameter that determines the relative weight of the
 direct and reciprocal sums and ${\bf m}=(m_x,m_y,m_z)$.
-In this way we can use a short cutoff (of the order of $1$~nm) in the direct space sum and a
-short cutoff in the reciprocal space sum ({\eg} 10 wave vectors in each 
+In this way we can use a short cut-off (of the order of $1$~nm) in the direct space sum and a
+short cut-off in the reciprocal space sum ({\eg} 10 wave vectors in each 
 direction). Unfortunately, the computational cost of the reciprocal
 part of the sum increases as $N^2$
 (or $N^{3/2}$ with a slightly better algorithm) and it is therefore not 
@@ -2278,7 +2307,7 @@ the highest magnitude of wave vectors $m_x,m_y,m_z$ to use in each
 direction. With a 3~nm cubic box this example would use $11$ wave vectors
 (from $-5$ to $5$) in each direction.  The {\tt ewald\_rtol} parameter
 is the relative strength of the electrostatic interaction at the
-cutoff. Decreasing this gives you a more accurate direct sum, but a
+cut-off. Decreasing this gives you a more accurate direct sum, but a
 less accurate reciprocal sum.
  
 \subsection{\normindex{PME}}
@@ -2527,9 +2556,9 @@ but the difference with searching with centers of charge groups is very small
 \item the virial in \gromosv{96} is molecule-based. This is not implemented in
 {\gromacs}, which uses atomic virials
 \end{itemize}
-The \gromosv{96} force field was parameterized with a Lennard-Jones cutoff
-of 1.4 nm, so be sure to use a Lennard-Jones cutoff of at least 1.4.
-A larger cutoff is possible, because the Lennard-Jones potential and forces
+The \gromosv{96} force field was parameterized with a Lennard-Jones cut-off
+of 1.4 nm, so be sure to use a Lennard-Jones cut-off of at least 1.4.
+A larger cut-off is possible, because the Lennard-Jones potential and forces
 are almost zero beyond 1.4 nm.
 
 \subsubsection{\gromosv{96} files}\index{gromos-96 files}\index{files,
