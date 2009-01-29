@@ -350,5 +350,27 @@ char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
   return b2;
 }
 
-
-
+char **split(char sep,char *str)
+{
+  char **ptr = NULL,*p;
+  int  nptr = 0;
+  
+  if (str == NULL)
+    return NULL;
+  while (*str != '\0') {
+    while ((*str != '\0') && (*str == sep))
+      str++;
+    srenew(ptr,++nptr);
+    snew(ptr[nptr-1],strlen(str));
+    p = ptr[nptr-1];
+    while ((*str != '\0') && (*str != sep)) {
+      *p = *str;
+      str++;
+      p++;
+    }
+  }
+  srenew(ptr,++nptr);
+  ptr[nptr-1] = NULL;
+  
+  return ptr;
+}

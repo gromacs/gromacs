@@ -108,6 +108,10 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
  * the lines that are created due to wapping.
  */
 
+ 
+  extern char **split(char sep,char *str);
+  /* Implementation of the well-known Perl function split */
+   
 #ifdef CPLUSPLUS
 }
 #endif
