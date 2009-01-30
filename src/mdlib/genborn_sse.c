@@ -632,8 +632,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 					dccf      = _mm_mul_ps(dccf,pip5); /*2*term*sinq*pip5 */
 					dccf      = _mm_mul_ps(dccf,ratio); /*dccf = 2*term*sinq*PIP5*ratio*/
 			
-					ccf	      = (mask_cmp & one)  | _mm_andnot_ps(mask_cmp,ccf); /*conditional as a mask*/
-					dccf      = (mask_cmp & zero) | _mm_andnot_ps(mask_cmp,dccf);
+					ccf	      = _mm_or_ps(_mm_and_ps(mask_cmp,one)  ,_mm_andnot_ps(mask_cmp,ccf)); /*conditional as a mask*/
+					dccf      = _mm_or_ps(_mm_and_ps(mask_cmp,zero) ,_mm_andnot_ps(mask_cmp,dccf));
 					
 			}
 			
@@ -784,8 +784,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 					dccf      = _mm_mul_ps(dccf,pip5);
 					dccf      = _mm_mul_ps(dccf,theta); 
 			
-					ccf	      = (mask_cmp & one)  | _mm_andnot_ps(mask_cmp,ccf); /*conditional as a mask*/
-					dccf      = (mask_cmp & zero) | _mm_andnot_ps(mask_cmp,dccf);
+					ccf	      = _mm_or_ps(_mm_and_ps(mask_cmp,one)  ,_mm_andnot_ps(mask_cmp,ccf)); /*conditional as a mask*/
+					dccf      = _mm_or_ps(_mm_and_ps(mask_cmp,zero) ,_mm_andnot_ps(mask_cmp,dccf));
 			}
 		
 			prod      = _mm_mul_ps(p4,vaj);	
@@ -1014,9 +1014,10 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			xmm5      = zero; 
 							
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij     = (mask_cmp2 & xmm4)  | _mm_andnot_ps(mask_cmp2, xmm3);
-			dlij    = (mask_cmp2 & xmm5)  | _mm_andnot_ps(mask_cmp2, one);
-			
+
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+
 			uij		= _mm_rcp_ps(xmm1); /* better approximation than just _mm_rcp_ps, which is just 12 bits*/
 			t1      = _mm_mul_ps(uij,xmm1);
 			t1      = _mm_sub_ps(two,t1);
@@ -1064,12 +1065,13 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			xmm4    = _mm_mul_ps(two,xmm4);
 			xmm4    = _mm_add_ps(tmp,xmm4);
 					
-			tmp   = (mask_cmp3 & xmm4) | _mm_andnot_ps(mask_cmp3,tmp); /* xmm1 will now contain four tmp values */
+			tmp	    = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp)); /*conditional as a mask*/
 					
 			/* the tmp will now contain four partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp     = _mm_mul_ps(half,tmp); /* 0.5*tmp */
-			tmp     = (mask_cmp & tmp) | _mm_andnot_ps(mask_cmp, zero);
+
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
 			tmp_sum = _mm_add_ps(tmp_sum,tmp);
 		
 			duij   = one;
@@ -1247,9 +1249,9 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			xmm5      = zero; 
 							
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij     = (mask_cmp2 & xmm4)  | _mm_andnot_ps(mask_cmp2, xmm3);
-			dlij    = (mask_cmp2 & xmm5)  | _mm_andnot_ps(mask_cmp2, one);
-	
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+
 			uij		= _mm_rcp_ps(xmm1);
 			t1      = _mm_mul_ps(uij,xmm1);
 			t1      = _mm_sub_ps(two,t1);
@@ -1296,12 +1298,12 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			xmm4    = _mm_mul_ps(two,xmm4);
 			xmm4    = _mm_add_ps(xmm1,xmm4);
 					
-			tmp    = (mask_cmp3 & xmm4) | _mm_andnot_ps(mask_cmp3,tmp); /* xmm1 will now contain four tmp values*/
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp)); /*conditional as a mask*/
 				
 			/* tmp will now contain four partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask.*/ 
 			tmp     = _mm_mul_ps(half,tmp); /*0.5*tmp*/
-			tmp     = (mask_cmp & tmp) | _mm_andnot_ps(mask_cmp, zero);
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
 			tmp_sum = _mm_add_ps(tmp_sum,tmp);
 			
 			duij   = one;
@@ -1624,9 +1626,9 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			xmm5      = zero; 
 							
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij     = (mask_cmp2 & xmm4)  | _mm_andnot_ps(mask_cmp2, xmm3);
-			dlij    = (mask_cmp2 & xmm5)  | _mm_andnot_ps(mask_cmp2, one);
-			
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+
 			uij		= _mm_rcp_ps(xmm1); 
 			t1      = _mm_mul_ps(uij,xmm1);
 			t1      = _mm_sub_ps(two,t1);
@@ -1675,13 +1677,13 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			xmm4    = _mm_mul_ps(two,xmm4);
 			xmm4    = _mm_add_ps(tmp,xmm4);
 					
-			tmp   = (mask_cmp3 & xmm4) | _mm_andnot_ps(mask_cmp3,tmp); /* xmm1 will now contain four tmp values */
-					
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp)); /*conditional as a mask*/
+						
 			/* the tmp will now contain four partial values, that not all are to be used. Which
 			* ones are governed by the mask_cmp mask. 
 			*/
 			tmp     = _mm_mul_ps(half,tmp); /*0.5*tmp*/
-			tmp     = (mask_cmp & tmp) | _mm_andnot_ps(mask_cmp, zero);
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
 			tmp_sum = _mm_add_ps(tmp_sum,tmp);
 		
 			duij   = one;
@@ -1863,9 +1865,9 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			xmm5      = zero; 
 							
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij     = (mask_cmp2 & xmm4)  | _mm_andnot_ps(mask_cmp2, xmm3);
-			dlij    = (mask_cmp2 & xmm5)  | _mm_andnot_ps(mask_cmp2, one);
-	
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+
 			uij		= _mm_rcp_ps(xmm1);
 			t1      = _mm_mul_ps(uij,xmm1);
 			t1      = _mm_sub_ps(two,t1);
@@ -1912,13 +1914,13 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			xmm4    = _mm_mul_ps(two,xmm4);
 			xmm4    = _mm_add_ps(xmm1,xmm4);
 					
-			tmp    = (mask_cmp3 & xmm4) | _mm_andnot_ps(mask_cmp3,tmp); /* xmm1 will now contain four tmp values */
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp)); /*conditional as a mask*/
 				
 			/* tmp will now contain four partial values, that not all are to be used. Which
 			* ones are governed by the mask_cmp mask. 
 			*/
 			tmp     = _mm_mul_ps(half,tmp); 
-			tmp     = (mask_cmp & tmp) | _mm_andnot_ps(mask_cmp, zero);
+			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
 			tmp_sum = _mm_add_ps(tmp_sum,tmp);
 			
 			duij   = one;
