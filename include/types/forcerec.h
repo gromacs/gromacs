@@ -271,7 +271,8 @@ typedef struct {
   real *dvda;
   /* Derivatives of the Born radii with respect to coordinates */
   real *dadx;
-
+  int   nalloc_dadx; /* Allocated size of dadx */
+	
   /* If > 0 signals Test Particle Insertion,
    * the value is the number of atoms of the molecule to insert
    * Only the energy difference due to the addition of the last molecule
