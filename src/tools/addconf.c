@@ -244,11 +244,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   ffp->iparams[0].lj.c6  = 1;
   ffp->iparams[0].lj.c12 = 1;
   
-  top = gmx_mtop_generate_local_top(mtop,ir);
-  
-  /* Some nasty shortcuts */
-  cgs  = &(top->cgs);
-  
   /* inputrec structure */
   snew(ir,1);
   ir->coulombtype = eelCUT;
@@ -257,6 +252,11 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   ir->ns_type     = ensGRID;
   snew(ir->opts.egp_flags,1);
   
+  top = gmx_mtop_generate_local_top(mtop,ir);
+	
+  /* Some nasty shortcuts */
+  cgs  = &(top->cgs);	
+	
     /* mdatoms structure */
   snew(nFreeze,2);
   snew(md,1);
