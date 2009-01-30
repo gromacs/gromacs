@@ -80,36 +80,36 @@ be simulated are put into a space-filling box, which is surrounded by
 translated copies of itself (\figref{pbc}).  Thus there are no
 boundaries of the system; the artifact caused by unwanted boundaries
 in an isolated cluster is now replaced by the artifact of periodic
-conditions. If a crystal is simulated, such boundary conditions are
+conditions. If the system is crystalline, such boundary conditions are
 desired (although motions are naturally restricted to periodic motions
 with wavelengths fitting into the box). If one wishes to simulate
-non-periodic systems, as liquids or solutions, the periodicity by
+non-periodic systems, such as liquids or solutions, the periodicity by
 itself causes errors. The errors can be evaluated by comparing various
 system sizes; they are expected to be less severe than the errors
 resulting from an unnatural boundary with vacuum.
 
 There are several possible shapes for space-filling unit cells. Some,
-as the {\em rhombic dodecahedron} and the 
-{\em truncated octahedron}~\cite{Adams79} are closer to a sphere
-than a cube is and are therefore more economical for
-studying an (approximately spherical) macromolecule in solution, since
+like the {\em rhombic dodecahedron} and the 
+{\em truncated octahedron}~\cite{Adams79} are closer to being a sphere
+than a cube is, and are therefore better suited to the 
+study of an approximately spherical macromolecule in solution, since
 fewer solvent molecules are required to fill the box given a minimum
-distance between macromolecular images. However, a periodic system
-based on the rhombic dodecahedron or truncated octahedron is equivalent
-to a periodic system based on a {\em triclinic} unit cell.
-The latter shape is the most general space-filling unit cell;
-it comprises all possible space-filling shapes~\cite{Bekker95}.
-Therefore {\gromacs} is based on the triclinic unit cell.
+distance between macromolecular images. At the same time, rhombic 
+dodecahedra and truncated octahedra are special cases of {\em triclinic} 
+unit cells; the most general space-filling unit cells
+that comprise all possible space-filling shapes~\cite{Bekker95}.
+For this reason, {\gromacs} is based on the triclinic unit cell.
   
 {\gromacs} uses periodic boundary conditions, combined with the {\em
-minimum image convention:} only one - the nearest - image of each
+minimum image convention:} only one -- the nearest -- image of each
 particle is considered for short-range non-bonded interaction terms.
 For long-range electrostatic interactions this is not always accurate
 enough, and {\gromacs} therefore also incorporates lattice sum methods
-like Ewald Sum, PME and PPPM.
+such as Ewald Sum, PME and PPPM.
 
 Gromacs supports triclinic boxes of any shape.
-The box is defined by the 3 box vectors ${\bf a}$,${\bf b}$ and ${\bf c}$.
+The simulation box (unit cell) is defined by the 3 box vectors 
+${\bf a}$,${\bf b}$ and ${\bf c}$.
 The box vectors must satisfy the following conditions:
 \beq
 \label{eqn:box_rot}
@@ -129,15 +129,15 @@ Equations \ref{eqn:box_rot} can always be statisfied by rotating the box.
 Inequalities (\ref{eqn:box_shift1}) and (\ref{eqn:box_shift2}) can always be
 statisfied by adding and subtracting box vectors.
 
-Even when simulating using a triclinic box, {\gromacs} always puts the
-particles in a brick shaped volume, for efficiency reasons.
-This is illustrated in \figref{pbc} for a 2-dimensional system.
-So from the output trajectory it might seem like the simulation was done in
-a rectangular box. The program {\tt trjconv} can be used to convert the
-trajectory to a different unit-cell representation.
+Even when simulating using a triclinic box, {\gromacs} always keeps the
+particles in a brick-shaped volume, for efficiency reasons,
+as illustrated in \figref{pbc} for a 2-dimensional system.
+From the output trajectory it might therefore seem as if the simulation was 
+done in a rectangular box. The program {\tt trjconv} can be used to convert 
+the trajectory to a different unit-cell representation.
 
 It is also possible to simulate without periodic boundary conditions,
-but it is more efficient to simulate an isolated cluster of molecules
+but it is usually more efficient to simulate an isolated cluster of molecules
 in a large periodic box, since fast grid searching can only be used 
 in a periodic system.
 
@@ -204,21 +204,21 @@ also results in a more uniform arrangement of the proteins.
 
 \subsection{Cut-off restrictions}
 The minimum image convention implies that the cut-off radius used to
-truncate non-bonded interactions must not exceed half the shortest box
+truncate non-bonded interactions may not exceed half the shortest box
 vector:
 \beq
 \label{eqn:physicalrc}
   R_c < \half \min(\|{\bf a}\|,\|{\bf b}\|,\|{\bf c}\|),
 \eeq
-otherwise more than one image would be within the cut-off distance of
-the force. When a macromolecule, such as a protein, is studied in
-solution,  this restriction does not suffice. In principle a single
-solvent  molecule should not be able
+because otherwise more than one image would be within the cut-off distance 
+of the force. When a macromolecule, such as a protein, is studied in
+solution, this restriction alone is not sufficient: in principle, a single
+solvent molecule should not be able
 to `see' both sides of the macromolecule. This means that the length of
 each box vector must exceed the length of the macromolecule in the
 direction of that edge {\em plus} two times the cut-off radius $R_c$.
-It is common to compromise in this respect, and make the solvent layer
-somewhat smaller in order to reduce the computational cost.
+It is, however, common to compromise in this respect, and make the solvent 
+layer somewhat smaller in order to reduce the computational cost.
 For efficiency reasons the cut-off with triclinic boxes is more restricted.
 For grid search the extra restriction is weak:
 \beq
@@ -232,8 +232,8 @@ R_c < \half \min(a_x,b_y,c_z)
 \eeq
 
 Each unit cell (cubic, rectangular or triclinic)
-is surrounded by 26 translated images. Thus a
-particular image can always be identified by an index pointing to one
+is surrounded by 26 translated images. A
+particular image can therefore always be identified by an index pointing to one
 of 27 {\em translation vectors} and constructed by applying a
 translation with the indexed vector (see \ssecref{forces}).
 Restriction (\ref{eqn:gridrc}) ensures that only 26 images need to be
@@ -242,7 +242,7 @@ considered.
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{The group concept}
 \label{sec:group}
-In the {\gromacs} MD and analysis programs one uses {\em groups} of
+The {\gromacs} MD and analysis programs use user-defined {\em groups} of
 atoms to perform certain actions on. The maximum number of groups is
 256, but each atom can only belong to six different groups, one 
 each of the following:
@@ -361,42 +361,44 @@ write positions, velocities, energies, temperature, pressure, etc. \\
 \end{center}
 \end{figure}
 A global flow scheme for MD is given in \figref{global}. Each
-MD or  EM run requires as input a set of initial coordinates and -
-optionally - initial velocities of all particles involved. This
+MD or  EM run requires as input a set of initial coordinates and --
+optionally -- initial velocities of all particles involved. This
 chapter does not describe how these are obtained; for the setup of an
 actual MD run check the online manual at {\wwwpage}.
 
 \subsection{Initial conditions}
 \subsubsection{Topology and force field}
 The system topology, including a description of the force field, must
-be loaded. These items are described in \chref{ff}.
-All this information is static; it is never modified during the run.
+be read in. Force fields and topologies are described in \chref{ff} 
+and \ref{ch:top}, respectively. All this information is static; it is 
+never modified during the run.
 
 \subsubsection{Coordinates and velocities}
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/maxwell}}
-\caption{A Maxwellian velocity distribution, generated from random numbers.}
+\caption{A Maxwell-Boltzmann velocity distribution, generated from 
+    random numbers.}
 \label{fig:maxwell}
 \end{figure}
 
 Then, before a run starts, the box size and the coordinates and
-velocities of  all particles are required. The box size is determined
-by three vectors (nine numbers) $\ve{b}_1, \ve{b}_2, \ve{b}_3$, which
-represent the three basis vectors of the periodic box. While in the
-present version of {\gromacs} only rectangular boxes are allowed, three
-numbers  suffice, but the use of three vectors already
-prepares for arbitrary triclinic boxes to be implemented in a later
-version. 
+velocities of  all particles are required. The box size and shape is 
+determined by three vectors (nine numbers) $\ve{b}_1, \ve{b}_2, \ve{b}_3$, 
+which represent the three basis vectors of the periodic box. %While in the
+%present version of {\gromacs} only rectangular boxes are allowed, three
+%numbers  suffice, but the use of three vectors already
+%prepares for arbitrary triclinic boxes to be implemented in a later
+%version. 
 
 If the run starts at $t=t_0$, the coordinates at $t=t_0$ must be
-known. The {\em leap-frog algorithm,} used to update the time step
-with $\Dt$ (see \ssecref{update}), requires that the velocities at
+known. The {\em leap-frog algorithm}, used to update the time step
+with $\Dt$ (see \ssecref{update}), also requires that the velocities at
 $t=t_0 - \hDt$ are known. If velocities are not available, the program
 can generate initial atomic velocities $v_i, i=1\ldots 3N$ with a
-\swapindex{Maxwellian}{distribution} (\figref{maxwell}) at a given
+\swapindex{Maxwell-Boltzmann}{distribution} (\figref{maxwell}) at a given
 absolute temperature $T$:
 \beq 
-p(v_i) = \sqrt{\frac{m_i}{2 \pi kT}}\exp(-\frac{m_i v_i^2}{2kT})
+p(v_i) = \sqrt{\frac{m_i}{2 \pi kT}}\exp\left(-\frac{m_i v_i^2}{2kT}\right)
 \eeq
 where $k$ is Boltzmann's constant (see \chref{defunits}).
 To accomplish this, normally distributed random numbers are generated
@@ -406,28 +408,29 @@ standard deviation of the velocity distribution $\sqrt{kT/m_i}$. Since
 the resulting total energy will not correspond exactly to the required
 temperature $T$, a correction is made: first the center-of-mass motion
 is removed and then all velocities are scaled so that the total
-energy corresponds exactly to $T$ (see \eqnref{E-T}).
+energy corresponds exactly to $T$ (see \eqnref{E-T}). 
+% Why so complicated? What's wrong with Box-Mueller transforms?
 
 \subsubsection{Center-of-mass motion}
 The \swapindex{center-of-mass}{velocity} is normally set to zero at
-every step.  Normally there is no net external force acting on the
+every step; there is (usually) no net external force acting on the
 system and the center-of-mass velocity should remain constant. In
-practice, however, the update algorithm develops a very slow change in
-the center-of-mass velocity, and thus in the total kinetic energy of
-the system, specially when temperature coupling is used. If such
+practice, however, the update algorithm introduces a very slow change in
+the center-of-mass velocity, and therefore in the total kinetic energy of
+the system -- especially when temperature coupling is used. If such
 changes are not quenched, an appreciable center-of-mass motion
-develops eventually in long runs, and the temperature will be
-significantly misinterpreted. The same may happen due to overall
+can develop in long runs, and the temperature will be
+significantly misinterpreted. Something similar may happen due to overall
 rotational motion, but only when an isolated cluster is simulated. In
 periodic systems with filled boxes, the overall rotational motion is
-coupled to other degrees of freedom and does not give any problems.
+coupled to other degrees of freedom and does cause give such problems.
 
 
 \subsection{\swapindex{Neighbor}{searching}}
 \label{subsec:ns}
 As mentioned in \chref{ff}, internal forces are
-either generated from fixed (static) lists, or from dynamics lists.
-The latter concern non-bonded interactions between any pair of particles.
+either generated from fixed (static) lists, or from dynamic lists.
+The latter consist of non-bonded interactions between any pair of particles.
 When calculating the non-bonded forces, it is convenient to have all
 particles in a rectangular box.
 As shown in \figref{pbc}, it is possible to transform a
