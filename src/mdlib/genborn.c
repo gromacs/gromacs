@@ -463,7 +463,9 @@ int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir
 
 	snew(fr->invsqrta,natoms);
 	snew(fr->dvda,natoms);
-	snew(fr->dadx,natoms*natoms);
+	
+	fr->dadx = NULL;
+	fr->nalloc_dadx = 0;
 
 	snew(born->gpol,natoms);
 	snew(born->vsolv,natoms);
@@ -1216,6 +1218,14 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,int natoms, int nrfa, gmx_mtop_t *mtop,
 				const t_atomtypes *atype, rvec x[], rvec f[],t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {
+	
+	/* First check that the allocated size of the dadx array is sufficient */
+	if(nl->nrj > fr->nalloc_dadx)
+	{
+		fr->nalloc_dadx = 1.1*nl->nrj;
+		srenew(fr->dadx,fr->nalloc_dadx);
+	}
+	
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) )
 	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	switch(ir->gb_algorithm)
