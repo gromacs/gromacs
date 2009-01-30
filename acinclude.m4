@@ -997,10 +997,11 @@ if test "$GCC" = "yes"; then
   	  ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS="-mcpu=powerpc")
         fi	
       ;;
-   *)
-        ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
+   x86_64 | i?86)
+        ACX_CHECK_CC_FLAGS(-msse2,msse2,xCFLAGS="$xCFLAGS -msse2")
       ;;
    esac
+   ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
 fi
 
 if test -n "$CPU_FLAGS"; then
