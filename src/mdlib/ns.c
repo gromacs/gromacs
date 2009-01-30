@@ -278,7 +278,12 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    }  
 
    /* Determine the values for icoul/ivdw. */
-   if (fr->bcoultab)
+   /* Start with GB */
+   if(fr->bGB)
+   {
+       icoul=4;
+   }
+   else if (fr->bcoultab)
    {
        icoul = 3;
    }
@@ -355,7 +360,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        init_nblist(&fr->QMMMlist_sr,&fr->QMMMlist_lr,
                    maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
    }
-   
+
 }
 
  static void reset_nblist(t_nblist *nl)
@@ -2358,6 +2363,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     }
 }
 
+			 
 int search_neighbours(FILE *log,t_forcerec *fr,
                       rvec x[],matrix box,
                       gmx_localtop_t *top,
@@ -2379,7 +2385,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     int      cg_start,cg_end,start,end;
     gmx_ns_t *ns;
     t_grid   *grid;
-    
+	
     ns = &fr->ns;
 
     /* Set some local variables */
@@ -2416,6 +2422,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     
     if (bGrid && bFillGrid)
     {
+		
         grid = ns->grid;
         bFilledHome = (DOMAINDECOMP(cr) && dd_filled_nsgrid_home(cr->dd));
         if (!bFilledHome)

@@ -55,6 +55,7 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
+#include "genborn.h"
 
 #define MD_GLAS         (1<<1)
 #define MD_POLARISE     (1<<2)
@@ -90,6 +91,7 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
+				gmx_genborn_t *born,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
 				unsigned long Flags,

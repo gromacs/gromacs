@@ -1982,6 +1982,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		real lambda,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
+		t_atomtypes *atype, gmx_genborn_t *born,
 		bool bPrintSepPot,int step)
 {
   int    ftype,nbonds,ind,nat;

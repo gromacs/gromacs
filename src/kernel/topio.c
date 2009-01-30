@@ -299,6 +299,7 @@ static char **read_topol(char *infile,char *outfile,
 			 int         *nmolblock,
 			 gmx_molblock_t **molblock,
 			 bool        bFEP,
+			 bool        bGB,
 			 bool        bZero,
 			 bool        bVerbose)
 {
@@ -493,6 +494,15 @@ static char **read_topol(char *infile,char *outfile,
 	      push_molt(symtab,bi0,pline);
 	      break;
 	    */
+
+	  case d_implicit_genborn_params:
+	    push_gb_params(atype,pline);
+	    break;
+
+	  case d_implicit_surface_params:
+	    gmx_fatal(FARGS,"Implicit surface directive not supported yet.");
+	    break;
+
 	  case d_moleculetype: {
 	    if (!bReadMolType) {
 	      int ntype;
@@ -515,7 +525,7 @@ static char **read_topol(char *infile,char *outfile,
 		fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
 		free_nbparam(pair,ntype);
 	      }
-	      /* Copy GBSA parameters to atomtype array */
+	      /* Copy GBSA parameters to atomtype array? */
 	      
 	      bReadMolType = TRUE;
 	    }
@@ -677,7 +687,8 @@ char **do_top(bool         bVerbose,
 	      t_molinfo    **molinfo,
 	      t_inputrec   *ir,
 	      int          *nmolblock,
-	      gmx_molblock_t **molblock)
+	      gmx_molblock_t **molblock,
+	      bool          bGB)
 {
   /* Tmpfile might contain a long path */
   char *tmpfile;
@@ -693,7 +704,7 @@ char **do_top(bool         bVerbose,
 		   symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
 		   opts,fudgeQQ,nmolblock,molblock,
-		   ir->efep!=efepNO,bZero,bVerbose);
+		   ir->efep!=efepNO,bGB,bZero,bVerbose);
   if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
     warning("Using sigma/epsilon based combination rules with"

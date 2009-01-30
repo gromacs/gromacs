@@ -64,6 +64,8 @@ extern real get_atomtype_qB(int nt,t_atomtype at);
 extern real get_atomtype_radius(int nt,t_atomtype at);
 extern real get_atomtype_vol(int nt,t_atomtype at);
 extern real get_atomtype_surftens(int nt,t_atomtype at);
+extern real get_atomtype_gb_radius(int nt,t_atomtype at);
+extern real get_atomtype_S_hct(int nt,t_atomtype at);
 extern int get_atomtype_ptype(int nt,t_atomtype at);
 extern int get_atomtype_batype(int nt,t_atomtype at);
 extern int get_atomtype_atomnumber(int nt,t_atomtype at);
@@ -82,14 +84,21 @@ extern void done_atomtype(t_atomtype *at);
 extern int set_atomtype(int nt,t_atomtype at,t_symtab *tab,
 			t_atom *a,char *name,t_param *nb,
 			int bondatomtype,
-			real radius,real vol,real surftens,int atomnumber);
+			real radius,real vol,real surftens,int atomnumber,
+			real gb_radius, real S_hct);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */	
+
+int
+set_atomtype_gbparam(t_atomtype at, int i,
+		     real radius,real vol,real surftens,
+		     real gb_radius, real S_hct);
 
 extern int add_atomtype(t_atomtype at,t_symtab *tab,
 			t_atom *a,char *name,t_param *nb,
 			int bondatomtype,
-			real radius,real vol,real surftens,real atomnumber);
+			real radius,real vol,real surftens,real atomnumber,
+			real gb_radius, real S_hct);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 

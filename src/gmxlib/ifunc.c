@@ -44,6 +44,8 @@
 #include "disre.h"
 #include "dihre.h"
 #include "orires.h"
+#include "genborn.h"
+
 
 #define  def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
@@ -109,6 +111,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER,idihs        ),
   def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
   def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2,  eNR_TABDIHS, tab_dihs     ),
+  def_bonded  ("GB",  "Generalized Born",     2, 2, 2,  eNR_GB,     unimplemented ),
   def_bondedz ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc    ("COUL14",   "Coulomb-14"                                           ),
   def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0,  eNR_NB14,   unimplemented ),

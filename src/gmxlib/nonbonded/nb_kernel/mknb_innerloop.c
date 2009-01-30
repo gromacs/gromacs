@@ -210,8 +210,16 @@ mknb_load_inner_parameters(int i,int j)
 				/* Generalized born: load 1/sqrt(a) */
 				mknb_assign("isaj",mknb_array("invsqrta","jnr"));
 				mknb_assign("isaprod","isai*isaj");
+				
+				/* GB-PL */
+				mknb_assign("qq","iq*%s",mknb_array("charge","jnr"));
+				mknb_assign("vcoul","qq*rinv%d%d",i,j);
+				
+				if(mknb_func.do_force)
+					mknb_assign("fscal","vcoul*rinv%d%d",i,j);
+				
 				/* Save a flop by multiplying qq with isa1*isa2 already here */
-				mknb_assign("qq","isaprod*iq*%s",mknb_array("charge","jnr"));
+				mknb_assign("qq","isaprod*(-qq)");
 				mknb_assign("gbscale","isaprod*gbtabscale");
 				nflops+=4;
 			} else {

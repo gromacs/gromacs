@@ -535,7 +535,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    gmx_vsite_t *vsite,gmx_constr_t constr,
 			    t_fcdata *fcd,
 			    t_graph *graph,t_mdatoms *mdatoms,
-			    t_forcerec *fr, rvec mu_tot,
+			    t_forcerec *fr, gmx_genborn_t *born,rvec mu_tot,
 			    gmx_enerdata_t *enerd,tensor vir,tensor pres,
 			    int count,bool bFirst)
 {
@@ -585,10 +585,10 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(fplog,cr,inputrec,
-	   count,nrnb,wcycle,top,&top_global->groups,
+	   count,nrnb,wcycle,top,top_global,&top_global->groups,
 	   ems->s.box,ems->s.x,&ems->s.hist,
 	   ems->f,*buf,force_vir,mdatoms,enerd,fcd,
-	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,
+	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,born,FALSE,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
 	   (bNS ? GMX_FORCE_NS : 0));
 
@@ -757,7 +757,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     gmx_edsam_t ed,
-	     t_forcerec *fr,
+	     t_forcerec *fr,gmx_genborn_t *born,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags,
@@ -820,7 +820,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   evaluate_energy(fplog,bVerbose,cr,
 		  state_global,top_global,s_min,&buf,top,
 		  inputrec,nrnb,wcycle,
-		  vsite,constr,fcd,graph,mdatoms,fr,
+		  vsite,constr,fcd,graph,mdatoms,fr,born,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
 
@@ -973,7 +973,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_c,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,
+		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,-1,FALSE);
     
     /* Calc derivative along line */
@@ -1060,7 +1060,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	evaluate_energy(fplog,bVerbose,cr,
 			state_global,top_global,s_b,&buf,top,
 			inputrec,nrnb,wcycle,
-			vsite,constr,fcd,graph,mdatoms,fr,
+			vsite,constr,fcd,graph,mdatoms,fr,born,
 			mu_tot,enerd,vir,pres,-1,FALSE);
 	
 	/* p does not change within a step, but since the domain decomposition
@@ -1283,7 +1283,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		rvec buf[],t_mdatoms *mdatoms,
 		t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		gmx_edsam_t ed,
-		t_forcerec *fr,
+		t_forcerec *fr,gmx_genborn_t *born,
 		int repl_ex_nst,int repl_ex_seed,
 		real cpt_period,real max_hours,
 		unsigned long Flags,
@@ -1408,7 +1408,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   evaluate_energy(fplog,bVerbose,cr,
 		  state,top_global,&ems,&buf,top,
 		  inputrec,nrnb,wcycle,
-		  vsite,constr,fcd,graph,mdatoms,fr,
+		  vsite,constr,fcd,graph,mdatoms,fr,born,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
 	
@@ -1562,7 +1562,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state,top_global,&ems,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,
+		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,step,FALSE);
     EpotC = ems.epot;
     
@@ -1640,7 +1640,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	evaluate_energy(fplog,bVerbose,cr,
 			state,top_global,&ems,&buf,top,
 			inputrec,nrnb,wcycle,
-			vsite,constr,fcd,graph,mdatoms,fr,
+			vsite,constr,fcd,graph,mdatoms,fr,born,
 			mu_tot,enerd,vir,pres,step,FALSE);
 	EpotB = ems.epot;
 	
@@ -1919,7 +1919,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		rvec buf[],t_mdatoms *mdatoms,
 		t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		gmx_edsam_t ed,
-		t_forcerec *fr,
+		t_forcerec *fr,gmx_genborn_t *born,
 		int repl_ex_nst,int repl_ex_seed,
 		real cpt_period,real max_hours,
 		unsigned long Flags,
@@ -1994,7 +1994,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_try,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,
+		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
     
     if (MASTER(cr))
@@ -2131,7 +2131,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     gmx_edsam_t ed,
-	     t_forcerec *fr,
+	     t_forcerec *fr,gmx_genborn_t *born,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags,
@@ -2242,7 +2242,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,state_work,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,
+		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
     count++;
 
@@ -2283,7 +2283,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	  evaluate_energy(fplog,bVerbose,cr,
 			  state_global,top_global,state_work,&buf,top,
 			  inputrec,nrnb,wcycle,
-			  vsite,constr,fcd,graph,mdatoms,fr,
+			  vsite,constr,fcd,graph,mdatoms,fr,born,
 			  mu_tot,enerd,vir,pres,count,count==0);
 	  count++;
 			
@@ -2297,7 +2297,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	  evaluate_energy(fplog,bVerbose,cr,
 			  state_global,top_global,state_work,&buf,top,
 			  inputrec,nrnb,wcycle,
-			  vsite,constr,fcd,graph,mdatoms,fr,
+			  vsite,constr,fcd,graph,mdatoms,fr,born,
 			  mu_tot,enerd,vir,pres,count,count==0);
 	  count++;
 	  
@@ -2395,7 +2395,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      rvec buf[],t_mdatoms *mdatoms,
 	      t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      gmx_edsam_t ed,
-	      t_forcerec *fr,
+	      t_forcerec *fr,gmx_genborn_t *born,
 	      int repl_ex_nst,int repl_ex_seed,
 	      real cpt_period,real max_hours,
 	      unsigned long Flags,
@@ -2782,10 +2782,10 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	/* Make do_force do a single node fore calculation */
 	cr->nnodes = 1;
 	do_force(fplog,cr,inputrec,
-		 step,nrnb,wcycle,top,&top_global->groups,
+		 step,nrnb,wcycle,top,top_global,&top_global->groups,
 		 rerun_fr.box,state->x,&state->hist,
 		 f,buf,force_vir,mdatoms,enerd,fcd,
-		 lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,
+		 lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,born,FALSE,
 		 GMX_FORCE_NONBONDED |
 		 (bNS ? GMX_FORCE_NS : 0) |
 		 (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 

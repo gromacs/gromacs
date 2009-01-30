@@ -7582,7 +7582,7 @@ void dd_partition_system(FILE            *fplog,
     int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
     bool bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG;
     ivec ncells_old,np;
-    
+	
     dd = cr->dd;
     comm = dd->comm;
 
@@ -7730,8 +7730,7 @@ void dd_partition_system(FILE            *fplog,
     {
         /* Initialize the ns grid */
         copy_ivec(fr->ns.grid->n,ncells_old);
-        grid_first(fplog,fr->ns.grid,dd,fr->ePBC,state_local->box,fr->rlistlong,
-                   dd->ncg_home);
+        grid_first(fplog,fr->ns.grid,dd,fr->ePBC,state_local->box,fr->rlistlong,dd->ncg_home);
         if (!bMasterState &&
             fr->ns.grid->n[XX] == ncells_old[XX] &&
             fr->ns.grid->n[YY] == ncells_old[YY] &&

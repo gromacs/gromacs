@@ -78,6 +78,7 @@
 #include "gpp_atomtype.h"
 #include "gpp_tomorse.h"
 #include "mtop_util.h"
+#include "genborn.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -286,14 +287,19 @@ new_status(char *topfile,char *topppfile,char *confin,
   t_atoms     *confat;
   int         mb,mbs,i,nrmols,nmismatch;
   char        buf[STRLEN];
+  bool        bGB=FALSE;
 
   init_mtop(sys);
+
+  /* Set boolean for GB */
+  if(ir->implicit_solvent)
+    bGB=TRUE;
   
   /* TOPOLOGY processing */
   sys->name = do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
 		     plist,comb,reppow,fudgeQQ,
 		     atype,&nrmols,&molinfo,ir,
-		     &nmolblock,&molblock);
+		     &nmolblock,&molblock,bGB);
   
   sys->nmolblock = 0;
   snew(sys->molblock,nmolblock);
@@ -774,9 +780,11 @@ int main (int argc, char *argv[])
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;
-  bool         have_radius,have_vol,have_surftens;
+  bool         have_radius,have_vol,have_surftens,have_gb_radius,have_S_hct;
   bool         have_atomnumber;
-  
+  t_params     *gb_plist = NULL;
+  gmx_genborn_t *born = NULL;
+
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
     { efMDP, "-po", "mdout",     ffWRITE },
@@ -877,18 +885,35 @@ int main (int argc, char *argv[])
     }
   }
 
-  /* If we are doing GBSA, check that we got the parameters we need */
-  have_radius=have_vol=have_surftens=TRUE;
-  ntype = get_atomtype_ntypes(atype);
-  for(i=0; (i<ntype); i++) {
-    have_radius   = have_radius && (get_atomtype_radius(i,atype) > 0);
-    have_vol      = have_vol && (get_atomtype_vol(i,atype) > 0);
-    have_surftens = have_surftens && (get_atomtype_surftens(i,atype) >= 0);
+  /* If we are doing GBSA, check that we got the parameters we need                                                            
+   * This checking is to see if there are GBSA paratmeters for all                                                             
+   * atoms in the force field. To go around this for testing purposes                                                          
+   * comment out the nerror++ counter temporarliy                                                                              
+   */
+  have_radius=have_vol=have_surftens=have_gb_radius=have_S_hct=TRUE;
+  for(i=0;i<get_atomtype_ntypes(atype);i++) {
+    have_radius=have_radius       && (get_atomtype_radius(i,atype) > 0);
+    have_vol=have_vol             && (get_atomtype_vol(i,atype) > 0);
+    have_surftens=have_surftens   && (get_atomtype_surftens(i,atype) > 0);
+    have_gb_radius=have_gb_radius && (get_atomtype_gb_radius(i,atype) > 0);
+    have_S_hct=have_S_hct         && (get_atomtype_S_hct(i,atype) > 0);
   }
+  if(!have_radius && ir->implicit_solvent==eisGBSA) {
+    fprintf(stderr,"Can't do GB electrostatics; the forcefield is missing values for\n"
+	    "atomtype radii, or they might be zero\n.");
+    /* nerror++; */
+  }
+  /*
+  if(!have_surftens && ir->implicit_solvent!=eisNO) {
+    fprintf(stderr,"Can't do implicit solvent; the forcefield is missing values\n"
+	    " for atomtype surface tension\n.");
+    nerror++;                                                                                                                
+  }
+  */
   
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;
-  for (i=0; i<ntype; i++) {
+  for (i=0; i<get_atomtype_ntypes(atype); i++) {
     have_atomnumber = have_atomnumber && (get_atomtype_atomnumber(i,atype) >= 0);
   }
   if (!have_atomnumber && ir->bQMMM)
@@ -930,6 +955,16 @@ int main (int argc, char *argv[])
 	       ir->refcoord_scaling,ir->ePBC,
 	       ir->posres_com,ir->posres_comB);
   }
+
+  if(ir->implicit_solvent)
+  {
+      printf("Constructing Generalized Born topology...\n");
+      snew(gb_plist,1);
+      init_gb_plist(gb_plist);
+      snew(born,1);
+      generate_gb_topology(sys,plist,gb_plist,born);
+  }
+
   
   nvsite = 0;
   /* set parameters for virtual site construction (not for vsiten) */
@@ -959,11 +994,22 @@ int main (int argc, char *argv[])
 
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
+	
+  ntype = get_atomtype_ntypes(atype);
   convert_params(ntype, plist, mi, comb, reppow, fudgeQQ, sys);
   
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
 
+  /* Convert GB parameters to idef */
+  if(ir->implicit_solvent)
+  {
+	  gmx_localtop_t *localtop;
+	  localtop = gmx_mtop_generate_local_top(sys,ir);
+	  
+	  convert_gb_params(&localtop->idef, F_GB, localtop->idef.ntypes, gb_plist,born);
+  }
+	
   /* set ptype to VSite for virtual sites */
   for(mt=0; mt<sys->nmoltype; mt++) {
     set_vsites_ptype(FALSE,&sys->moltype[mt]);

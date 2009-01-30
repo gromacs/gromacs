@@ -7,12 +7,11 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -31,39 +30,40 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _nonbonded_h
-#define _nonbonded_h
+
+#ifndef _genborn_sse_h
+#define _genborn_sse_h
 
 #include "typedefs.h"
-#include "pbc.h"
-#include "network.h"
-#include "tgroup.h"
-#include "genborn.h"
+#include "grompp.h"
 
-void
-gmx_setup_kernels(FILE *fplog);
 
-void
-do_nonbonded(t_commrec *cr,t_forcerec *fr,
-             rvec x[],rvec f[],t_mdatoms *md,
-             real egnb[],real egcoul[],rvec box_size,
-             t_nrnb *nrnb,real lambda,real *dvdlambda,
-             bool bLR,int nls,int eNL,bool bDoForces);
-
-/* Calculate VdW/charge pair interactions (usually 1-4 interactions).
- * global_atom_index is only passed for printing error messages.
- */
-real
-do_listed_vdw_q(int ftype,int nbonds,
-		const t_iatom iatoms[],const t_iparams iparams[],
-		const rvec x[],rvec f[],rvec fshift[],
-		const t_pbc *pbc,const t_graph *g,
-		real lambda,real *dvdlambda,
-		const t_mdatoms *md,
-		const t_forcerec *fr,gmx_grppairener_t *grppener,
-		int *global_atom_index);
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+
+real 
+calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, real *xd, real *f, int gb_algorithm, gmx_genborn_t *born);						
+
+
+int 
+calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop,
+					  const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
+
+int 
+calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop, const t_atomtypes *atype, real *x,
+					t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
+
+int 
+calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop,
+					const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
+
+
+
+
+
+#endif /* _genborn_sse_h */

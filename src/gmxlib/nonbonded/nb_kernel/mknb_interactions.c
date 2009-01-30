@@ -198,19 +198,20 @@ mknb_coul_gb(char *rsq, char *rinv)
   nflops += mknb_calc_gbtable_index("r");
  
   nflops += mknb_read_table("GBtab");
-  mknb_assign("vcoul","qq*VV");
+  mknb_assign("vgb","qq*VV");
   nflops++;
   if(mknb_func.do_force) {
     mknb_assign("fijC","qq*FF*gbscale");
-    mknb_assign("dvdatmp","vcoul+fijC*r");
-    mknb_assign("dvdasum","dvdasum - dvdatmp");
-    nflops+=5;
+    mknb_assign("dvdatmp","-0.5*(vgb+fijC*r)");
+    mknb_assign("dvdasum","dvdasum + dvdatmp");
+    nflops+=6;
     /* fs_minusrinv is empty */
-    sprintf(fs_minus_rinv,"fijC");
+    sprintf(fs_minus_rinv,"fijC-fscal");
     /* Update j atom dvda */
-    mknb_assign(mknb_array("dvda","jnr"),"dvdaj-dvdatmp");
+    mknb_assign(mknb_array("dvda","jnr"),"dvdaj+dvdatmp*isaj*isaj");
   }
-  mknb_assign("vctot","vctot + vcoul");
+  /* This will only give thw Coulomb part back to the total potential */
+  mknb_assign("vctot","vctot + vcoul"); 
   nflops++;
   
   return nflops;
@@ -445,17 +446,18 @@ mknb_calculate_interaction(char *rsq, char *rinv)
     }
     strcpy(fs_minus_rinv,tmp);
   }
-  if(strlen(fs_rinvsq)>0 && strlen(fs_minus_rinv)>0) {
-    mknb_assign("fscal","(%s)*rinvsq-(%s)*%s",fs_rinvsq,fs_minus_rinv,rinv);
-    nflops += 3;
-  } else if(strlen(fs_rinvsq)>0) {
-    mknb_assign("fscal","(%s)*rinvsq",fs_rinvsq);
-    nflops++;
-  } else if(strlen(fs_minus_rinv)>0) {
-    mknb_assign("fscal","-(%s)*%s",fs_minus_rinv,rinv);
-    nflops += 2;
-  }
   
+  if(strlen(fs_rinvsq)>0 && strlen(fs_minus_rinv)>0) {
+	  mknb_assign("fscal","(%s)*rinvsq-(%s)*%s",fs_rinvsq,fs_minus_rinv,rinv);
+	  nflops += 3;
+  } else if(strlen(fs_rinvsq)>0) {
+	  mknb_assign("fscal","(%s)*rinvsq",fs_rinvsq);
+	  nflops++;
+  } else if(strlen(fs_minus_rinv)>0) {
+	  mknb_assign("fscal","-(%s)*%s",fs_minus_rinv,rinv);
+	  nflops += 2;
+  }
+	
   return nflops;
 }
 

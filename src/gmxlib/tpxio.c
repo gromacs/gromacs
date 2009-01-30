@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 59;
+static const int tpx_version = 60;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -73,7 +73,7 @@ static const int tpx_version = 59;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 17;
+static const int tpx_generation = 18;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -131,6 +131,7 @@ static const t_ftupd ftupd[] = {
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
   { 43, F_TABDIHS           },
+  { 60, F_GB                },	
   { 41, F_LJC14_Q           },
   { 41, F_LJC_PAIRS_NB      },
   { 32, F_BHAM_LR           },
@@ -386,6 +387,16 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
 		do_real(ir->gb_obc_alpha);
 		do_real(ir->gb_obc_beta);
 		do_real(ir->gb_obc_gamma);
+		if(file_version>=60)
+		{
+			do_real(ir->gb_dielectric_offset);
+			do_int(ir->sa_algorithm);
+		}
+		else
+		{
+			ir->gb_dielectric_offset = 0.09;
+			ir->sa_algorithm = esaAPPROX;
+		}
 		do_real(ir->sa_surface_tension);
 	}
 	else
@@ -987,6 +998,17 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_int (iparams->vsiten.n);
     do_real(iparams->vsiten.a);
     break;
+  case F_GB:
+    do_real(iparams->gb.c6A);	
+	do_real(iparams->gb.c12A);	
+	do_real(iparams->gb.c6B);	
+	do_real(iparams->gb.c12B);	
+	do_real(iparams->gb.sar);	
+	do_real(iparams->gb.st);
+	do_real(iparams->gb.pi);
+	do_real(iparams->gb.gbr);
+	do_real(iparams->gb.bmlt);
+	break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
 		
@@ -1326,6 +1348,8 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
       snew(atomtypes->vol,j);
       snew(atomtypes->surftens,j);
       snew(atomtypes->atomnumber,j);
+      snew(atomtypes->gb_radius,j);
+      snew(atomtypes->S_hct,j);
     }
     ndo_real(atomtypes->radius,j,bDum);
     ndo_real(atomtypes->vol,j,bDum);
@@ -1334,6 +1358,11 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
     {
         ndo_int(atomtypes->atomnumber,j,bDum);
     }
+	if(file_version >= 60)
+	{
+		ndo_real(atomtypes->gb_radius,j,bDum);
+		ndo_real(atomtypes->S_hct,j,bDum);
+	}
   } else {
     /* File versions prior to 26 cannot do GBSA, 
      * so they dont use this structure 
@@ -1343,6 +1372,8 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
     atomtypes->vol = NULL;
     atomtypes->surftens = NULL;
     atomtypes->atomnumber = NULL;
+    atomtypes->gb_radius = NULL;
+    atomtypes->S_hct = NULL;
   }  
 }
 

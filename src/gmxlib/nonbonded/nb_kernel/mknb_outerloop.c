@@ -233,7 +233,7 @@ mknb_update_outer_potential()
 	 */
 	if(mknb_func.coul==MKNB_COUL_GB && mknb_func.do_force) {
 		mknb_assign(mknb_array("dvda","ii"),
-					"%s + dvdasum",
+					"%s + dvdasum*isai*isai",
 					mknb_array("dvda","ii"));
 		nflops++;
 	}

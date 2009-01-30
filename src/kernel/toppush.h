@@ -66,6 +66,10 @@ extern void push_dihedraltype(directive d,t_params bt[],
 extern void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
 		     char *plines,int nb_funct);
 
+void
+push_gb_params(t_atomtype atype,
+	       char       *line);
+
 extern void push_atom(t_symtab   *symtab, 
 		      t_block    *cgs,
 		      t_atoms    *at,

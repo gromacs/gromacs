@@ -746,7 +746,9 @@ static void init_adir(FILE *log,
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,
 			bool bDoNS,bool bStopCM,
-			gmx_localtop_t *top,gmx_constr_t constr,
+			gmx_localtop_t *top,
+			gmx_mtop_t* mtop,
+			gmx_constr_t constr,
 			gmx_enerdata_t *enerd,t_fcdata *fcd,
 			t_state *state,rvec f[],
 			rvec buf[],tensor force_vir,
@@ -756,6 +758,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			gmx_groups_t *groups,
 			struct gmx_shellfc *shfc,
 			t_forcerec *fr,
+			gmx_genborn_t *born, bool bBornRadii,
 			double t,rvec mu_tot,
 			int natoms,bool *bConverged,
 			gmx_vsite_t *vsite,
@@ -863,11 +866,11 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   if (gmx_debug_at) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,groups,
+  do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,mtop,groups,
 	   state->box,state->x,&state->hist,
 	   force[Min],buf,force_vir,md,enerd,fcd,
 	   state->lambda,graph,
-	   fr,vsite,mu_tot,t,fp_field,NULL,
+	   fr,vsite,mu_tot,t,fp_field,NULL,born,bBornRadii,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
 	   (bDoNS ? GMX_FORCE_NS : 0) | GMX_FORCE_VIRIAL);
 
@@ -948,10 +951,10 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     /* Try the new positions */
     do_force(fplog,cr,inputrec,1,nrnb,wcycle,
-	     top,groups,state->box,pos[Try],&state->hist,
+	     top,mtop,groups,state->box,pos[Try],&state->hist,
 	     force[Try],buf,force_vir,
 	     md,enerd,fcd,state->lambda,graph,
-	     fr,vsite,mu_tot,t,fp_field,NULL,
+	     fr,vsite,mu_tot,t,fp_field,NULL,born,bBornRadii,
 	     GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL);
     
     if (gmx_debug_at) {

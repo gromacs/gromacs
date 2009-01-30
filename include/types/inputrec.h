@@ -190,13 +190,15 @@ typedef struct {
   real gb_obc_alpha;    /* 1st scaling factor for Bashford-Case GB      */
   real gb_obc_beta;     /* 2nd scaling factor for Bashford-Case GB      */
   real gb_obc_gamma;    /* 3rd scaling factor for Bashford-Case GB      */
-  real sa_surface_tension; /* Energy factor for SA part of GBSA */
+  real gb_dielectric_offset; /* Dielectric offset for Still/HCT/OBC     */
+  real sa_algorithm;    /* Algorithm for SA part of GBSA                */
+  int  sa_surface_tension; /* Energy factor for SA part of GBSA */
   int  vdwtype;         /* Type of Van der Waals treatment              */
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
-  real rvdw;		    /* Van der Waals cutoff (nm)		        */
+  real rvdw;		    /* Van der Waals cutoff (nm)	        */
   int  eDispCorr;       /* Perform Long range dispersion corrections    */
   real tabext;          /* Extension of the table beyond the cut-off,   *
-		 	             * as well as the table length for 1-4 interac. */
+		 	 * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
   int  efep;   		/* free energy interpolation no/yes		*/
   double init_lambda;	/* initial value for perturbation variable	*/

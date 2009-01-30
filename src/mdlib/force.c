@@ -1287,13 +1287,18 @@ void init_forcerec(FILE *fp,
     {
         set_bham_b_max(fp,fr,mtop);
     }
-    
+
+    fr->bGB = (ir->implicit_solvent == eisGBSA);
+
     /* Copy the GBSA data (radius, volume and surftens for each
      * atomtype) from the topology atomtype section to forcerec.
      */
     snew(fr->atype_radius,fr->ntype);
     snew(fr->atype_vol,fr->ntype);
     snew(fr->atype_surftens,fr->ntype);
+    snew(fr->atype_gb_radius,fr->ntype);
+    snew(fr->atype_S_hct,fr->ntype);
+
     if (mtop->atomtypes.nr > 0)
     {
         for(i=0;i<fr->ntype;i++)
@@ -1302,8 +1307,12 @@ void init_forcerec(FILE *fp,
             fr->atype_vol[i] = mtop->atomtypes.vol[i];
         for(i=0;i<fr->ntype;i++)
             fr->atype_surftens[i] = mtop->atomtypes.surftens[i];
+        for(i=0;i<fr->ntype;i++)
+            fr->atype_gb_radius[i] = mtop->atomtypes.gb_radius[i];
+        for(i=0;i<fr->ntype;i++)
+            fr->atype_S_hct[i] = mtop->atomtypes.S_hct[i];
     }    
-    
+
     /* Set the charge scaling */
     if (fr->epsilon_r != 0)
         fr->epsfac = ONE_4PI_EPS0/fr->epsilon_r;
@@ -1551,8 +1560,13 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                        rvec       f[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
+                       gmx_mtop_t *mtop,
+                       gmx_genborn_t *born,
+                       t_atomtypes *atype,
+                       bool       bBornRadii,
                        matrix     box,
-                       real       lambda,   t_graph    *graph,
+                       real       lambda,  
+                       t_graph    *graph,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
                        int        flags,
@@ -1565,6 +1579,8 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     rvec    box_size;
     real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
     t_pbc   pbc;
+    real    dvdgb;
+
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
@@ -1619,6 +1635,11 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         enerd->term[F_DVDL] += dvdlambda;
     }
     
+	/* Calculate the Born radii */
+	if (ir->implicit_solvent && bBornRadii) 
+ 		calc_gb_rad(cr,fr,ir,md->nr, idef->il[F_GB].nr,
+					mtop,atype,x,f,&(fr->gblist),born,md);
+		
     where();
     do_nonbonded(cr,fr,x,f,md,
                  fr->bBHAM ?
@@ -1629,6 +1650,13 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                  flags & GMX_FORCE_FORCES);
     where();
     
+	/* If we are doing GB, calculate bonded forces and apply corrections 
+	 * to the solvation derivatives */
+	if (ir->implicit_solvent)  {
+		dvdgb = calc_gb_forces(cr,md,born,mtop,atype,idef->il[F_GB].nr,x,f,fr,idef->il[F_GB].iatoms,ir->gb_algorithm, bBornRadii);
+		enerd->term[F_GB]+=dvdgb;	
+	}
+		
 #ifdef GMX_MPI
     if (TAKETIME)
     {
@@ -1697,7 +1725,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         GMX_MPE_LOG(ev_calc_bonds_start);
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);

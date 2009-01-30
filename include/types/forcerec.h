@@ -237,13 +237,40 @@ typedef struct {
   /* xmdrun flexible constraints */
   real fc_stepsize;
 
+  /* Generalized born implicit solvent */
+  bool bGB;
   /* Generalized born stuff */
+  /* Table data for GB */
+  t_forcetable gbtab;
   /* VdW radius for each atomtype (dim is thus ntype) */
   real *atype_radius;
   /* Effective radius (derived from effective volume) for each type */
   real *atype_vol;
   /* Implicit solvent - surface tension for each atomtype */
   real *atype_surftens;
+  /* Implicit solvent - radius for GB calculation */
+  real *atype_gb_radius;
+  /* Implicit solvent - overlap for HCT model */
+  real *atype_S_hct;
+
+  /* Table scale for GB */
+  real gbtabscale;
+  /* Table range for GB */
+  real gbtabr;
+  /* GB neighborlists (the sr list will contain for each atom all other atoms                                            
+   * (for use in the SA calculation) and the lr list will contain                                                  
+   * for each atom all atoms 1-4 or greater (for use in the GB calculation)                                        
+   */
+  t_nblist gblist_sr;
+  t_nblist gblist_lr;
+  t_nblist gblist;
+
+  /* Inverse square root of the Born radii for implicit solvent */
+  real *invsqrta;
+  /* Derivatives of the potential with respect to the Born radii */
+  real *dvda;
+  /* Derivatives of the Born radii with respect to coordinates */
+  real *dadx;
 
   /* If > 0 signals Test Particle Insertion,
    * the value is the number of atoms of the molecule to insert

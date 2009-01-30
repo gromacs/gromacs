@@ -60,9 +60,14 @@ enum {
   erscNO, erscALL, erscCOM, erscNR
 };
 
+/*
+ * eelNOTUSED1 used to be GB, but to enable generalized born with different
+ * forms of electrostatics (RF, switch, etc.) in the future it is now selected
+ * separately (through the implicit_solvent option).
+ */
 enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
-  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_NEC, eelENCADSHIFT, 
+  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT, 
   eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
 };
 
@@ -164,7 +169,11 @@ enum {
 
 /* Algorithms for calculating GB radii */
 enum { 
-  egbSTILL, egbOBC, egbNR 
+  egbSTILL, egbHCT, egbOBC, egbNR 
+};
+
+enum {
+  esaNO, esaAPPROX, esaSTILL, esaNR
 };
 
 /* Wall types */

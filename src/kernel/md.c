@@ -82,6 +82,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "genborn.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -142,7 +143,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bool       bReadRNG,bReadEkin;
   int        list;
   int        nsteps_done;
-	
+  gmx_genborn_t *born;
+
   snew(inputrec,1);
   snew(mtop,1);
   	
@@ -307,6 +309,10 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		  opt2fn("-tableb",nfile,fnm),FALSE,pforce);
     fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
     
+    /* Initialise GB-stuff */
+    if(fr->bGB)
+      init_gb(&born,cr,fr,inputrec,mtop,state->x,inputrec->rgbradii,inputrec->gb_algorithm);
+
     /* Initialize QM-MM */
     if(fr->bQMMM)
       init_QMMMrec(cr,box,mtop,inputrec,fr);
@@ -385,6 +391,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
     }
   }
+
   
   if (integrator[inputrec->eI].func == do_md) {
     /* Turn on signal handling on all nodes */
@@ -429,6 +436,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 					    nstepout,inputrec,mtop,
 					    fcd,state,f,buf,
 					    mdatoms,nrnb,wcycle,ed,fr,
+					    born,
 					    repl_ex_nst,repl_ex_seed,
 					    cpt_period,max_hours,
 					    Flags,
@@ -478,7 +486,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_state *state_global,rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	     gmx_edsam_t ed,t_forcerec *fr,
+	     gmx_edsam_t ed,t_forcerec *fr, gmx_genborn_t *born,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags,
@@ -492,7 +500,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double     t,t0,lam0;
   bool       bGStatEveryStep,bGStat,bCalcPres;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-             bFirstStep,bStateFromTPX,bLastStep;
+             bFirstStep,bStateFromTPX,bLastStep,bBornRadii;
   bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	         bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
   bool       bMasterState;
@@ -1034,6 +1042,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bLastStep = TRUE;
     }
 
+    /* Determine whether or not to update the Born radii if doing GB */
+    bBornRadii=bFirstStep;
+    if(ir->implicit_solvent && (step % ir->nstgbradii==0))
+    {
+	bBornRadii=TRUE;
+    }
+
     do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
     do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
 
@@ -1129,10 +1144,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (shellfc) {
       /* Now is the time to relax the shells */
       count=relax_shell_flexcon(fplog,cr,bVerbose,bFFscan ? step+1 : step,
-				ir,bNS,bStopCM,top,constr,enerd,fcd,
+				ir,bNS,bStopCM,top,top_global,constr,enerd,fcd,
 				state,f,buf,force_vir,mdatoms,
 				nrnb,wcycle,graph,groups,
-				shellfc,fr,t,mu_tot,
+				shellfc,fr,born,bBornRadii,t,mu_tot,
 				state->natoms,&bConverged,vsite,
 				fp_field);
       tcount+=count;
@@ -1145,11 +1160,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(fplog,cr,ir,step,nrnb,wcycle,top,groups,
+      do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
 	       state->box,state->x,&state->hist,
 	       f,buf,force_vir,mdatoms,enerd,fcd,
 	       state->lambda,graph,
-	       fr,vsite,mu_tot,t,fp_field,ed,
+	       fr,vsite,mu_tot,t,fp_field,ed,born,bBornRadii,
 	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
 	       GMX_FORCE_ALLFORCES | (bCalcPres ? GMX_FORCE_VIRIAL : 0));
     }

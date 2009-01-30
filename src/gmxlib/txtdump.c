@@ -587,6 +587,8 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("gb_obc_alpha",ir->gb_obc_alpha);
     PR("gb_obc_beta",ir->gb_obc_beta);
     PR("gb_obc_gamma",ir->gb_obc_gamma);
+    PR("gb_dielectric_offset",ir->gb_dielectric_offset);
+    PS("sa_algorithm",ESAALGORITHM(ir->gb_algorithm));
     PR("sa_surface_tension",ir->sa_surface_tension);
 	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
@@ -856,6 +858,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_VSITEN:
     fprintf(fp,"n=%2d, a=%15.8e\n",iparams->vsiten.n,iparams->vsiten.a);
     break;
+  case F_GB:
+    fprintf(fp, "c6A=%15.8e, c12A=%15.8e, c6B=%15.8e, c12B=%15.8e, sar=%15.8e, st=%15.8e, pi=%15.8e, gbr=%15.8e, bmlt=%15.8e\n",iparams->gb.c6A,iparams->gb.c12A,iparams->gb.c6B,iparams->gb.c12B,iparams->gb.sar,iparams->gb.st,iparams->gb.pi,iparams->gb.gbr,iparams->gb.bmlt);
+    break;		  
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
 	      ftype,interaction_function[ftype].name,__FILE__,__LINE__);
@@ -1220,10 +1225,11 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes,
     indent=pr_title(fp,indent,title);
     for(i=0;i<atomtypes->nr;i++) {
       pr_indent(fp,indent);
-	  fprintf(fp,
-              "atomtype[%3d]={radius=%12.5e, volume=%12.5e, surftens=%12.5e, atomnumber=%4d)}\n",
-              bShowNumbers?i:-1,atomtypes->radius[i],atomtypes->vol[i],
-              atomtypes->surftens[i],atomtypes->atomnumber[i]);
+		fprintf(fp,
+				"atomtype[%3d]={radius=%12.5e, volume=%12.5e, gb_radius=%12.5e, surftens=%12.5e, atomnumber=%4d, S_hct=%12.5e)}\n",
+				bShowNumbers?i:-1,atomtypes->radius[i],atomtypes->vol[i],
+				atomtypes->gb_radius[i],
+				atomtypes->surftens[i],atomtypes->atomnumber[i],atomtypes->S_hct[i]);
     }
   }
 }

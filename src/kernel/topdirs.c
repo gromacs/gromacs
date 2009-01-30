@@ -255,6 +255,8 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_angletypes]),d_atomtypes,d_none);
     set_nec(&(necessary[d_dihedraltypes]),d_atomtypes,d_none);
     set_nec(&(necessary[d_nonbond_params]),d_atomtypes,d_none);
+    set_nec(&(necessary[d_implicit_genborn_params]),d_atomtypes,d_none);
+    set_nec(&(necessary[d_implicit_surface_params]),d_atomtypes,d_none);
     set_nec(&(necessary[d_moleculetype]),d_atomtypes,d_none);
     set_nec(&(necessary[d_atoms]),d_moleculetype,d_none);
     set_nec(&(necessary[d_vsites2]),d_atoms,d_none);

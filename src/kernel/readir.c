@@ -406,6 +406,21 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    ir->sc_power);
     CHECK(ir->sc_alpha!=0 && ir->sc_power!=1 && ir->sc_power!=2);
   }
+
+  if(ir->coulombtype==eelGB_NOTUSED)
+  {
+    ir->coulombtype==eelCUT;
+    ir->implicit_solvent=eisGBSA;
+    fprintf(stderr,"Note: Old option for generalized born electrostatics given:\n"
+	    "Changing coulombtype from \"generalized-born\" to \"cut-off\" and instead\n"
+	    "setting implicit_solvent value to \"GBSA\" in input section.\n");
+  }
+
+  if(ir->implicit_solvent==eisGBSA)
+  {
+      sprintf(err_buf,"With GBSA implicit solvent, rgbradii must be equal to rlist.");
+      CHECK(ir->rgbradii != ir->rlist);
+  }
 }
 
 static int str_nelem(char *str,int maxptr,char *ptr[])
@@ -648,6 +663,8 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("gb_obc_alpha", ir->gb_obc_alpha, 1.0);
   RTYPE ("gb_obc_beta", ir->gb_obc_beta, 0.8);
   RTYPE ("gb_obc_gamma", ir->gb_obc_gamma, 4.85);	
+  RTYPE ("gb_dielectric_offset", ir->gb_dielectric_offset, 0.09);
+  EETYPE("sa_algorithm", ir->sa_algorithm, esa_names, nerror, TRUE);
   CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
   CTYPE ("The default value (2.092) corresponds to 0.005 kcal/mol/Angstrom^2.");
   RTYPE ("sa_surface_tension", ir->sa_surface_tension, 2.092);
@@ -1836,7 +1853,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
 	      "You might want to consider using %s electrostatics.\n",
-	      EI_TPI(ir->eI) ? EELTYPE(eelRF) : EELTYPE(eelPME));
+	      EELTYPE(eelPME));
       warning_note(err_buf);
     }
   }

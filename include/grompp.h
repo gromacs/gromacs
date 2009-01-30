@@ -122,6 +122,8 @@ typedef enum {
   d_angletypes,
   d_dihedraltypes,
   d_nonbond_params,
+  d_implicit_genborn_params,
+  d_implicit_surface_params,
   d_moleculetype,
   d_atoms,
   d_vsites2,
@@ -161,6 +163,8 @@ static char *ds[d_maxdir+1] = {
   "angletypes",
   "dihedraltypes",
   "nonbond_params",
+  "implicit_genborn_params",
+  "implicit_surface_params",
   /* All the directives above can not appear after moleculetype */
   "moleculetype",
   "atoms",

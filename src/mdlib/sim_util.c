@@ -81,6 +81,7 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "gmx_wallcycle.h"
+#include "genborn.h"
 
 #ifdef GMX_MPI
 #include "mpi.h"
@@ -328,6 +329,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      gmx_localtop_t *top,
+	      gmx_mtop_t *mtop,
 	      gmx_groups_t *groups,
 	      matrix box,rvec x[],history_t *hist,
 	      rvec f[],rvec buf[],
@@ -337,6 +339,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      real lambda,t_graph *graph,
 	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 	      double t,FILE *field,gmx_edsam_t ed,
+	      gmx_genborn_t *born, bool bBornRadii,
 	      int flags)
 {
   static rvec box_size;
@@ -489,6 +492,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     wallcycle_stop(wcycle,ewcNS);
   }
   
+  if(inputrec->implicit_solvent && bNS) 
+	  gb_nblist_siev(cr,mdatoms->nr,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef.il[F_GB], (born->n12+born->n13)*3);
+
   if (DOMAINDECOMP(cr)) {
     if (!(cr->duty & DUTY_PME)) {
       wallcycle_start(wcycle,ewcPPDURINGPME);
@@ -564,7 +570,9 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Compute the bonded and non-bonded forces */    
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
 		    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
-		    x,hist,f,enerd,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
+		    x,hist,f,enerd,fcd,mtop,born,
+		    &(top->atomtypes),bBornRadii,box,
+		    lambda,graph,&(top->excls),mu_tot_AB,
 		    flags,&cycles_force);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 

@@ -191,7 +191,7 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
   char   type[STRLEN],btype[STRLEN],ptype[STRLEN];
   double m,q;
   double c[MAXFORCEPARAM];
-  double radius,vol,surftens;
+  double radius,vol,surftens,gb_radius,S_hct;
   char   tmpfield[12][100]; /* Max 12 fields of width 100 */
   char   errbuf[256];
   t_atom  *atom;
@@ -261,11 +261,13 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
   }
   
   /* optional fields */
-  surftens = -1;
-  vol      =  0;
-  radius   =  0;
-  atomnr   = -1;
-  
+  surftens  = -1;
+  vol       =  0;
+  radius    =  0;
+  gb_radius =  0;
+  atomnr    = -1;
+  S_hct     =  0;
+	
   switch (nb_funct) {
       
   case F_LJ:
@@ -275,9 +277,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
     {
         if ( have_bonded_type )
         {
-            nread = sscanf(line,"%s%s%d%lf%lf%s%lf%lf%lf%lf%lf",
+            nread = sscanf(line,"%s%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf",
                            type,btype,&atomnr,&m,&q,ptype,&c[0],&c[1],
-                           &radius,&vol,&surftens);
+                           &radius,&vol,&surftens,&gb_radius);
             if(nread < 8)
             {
                 too_few();
@@ -287,9 +289,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
         else
         {
             /* have_atomic_number && !have_bonded_type */
-            nread = sscanf(line,"%s%d%lf%lf%s%lf%lf%lf%lf%lf",
+            nread = sscanf(line,"%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf",
                            type,&atomnr,&m,&q,ptype,&c[0],&c[1],
-                           &radius,&vol,&surftens);
+                           &radius,&vol,&surftens,&gb_radius);
             if(nread < 7)
             {
                 too_few();
@@ -302,9 +304,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
         if ( have_bonded_type )
         {
             /* !have_atomic_number && have_bonded_type */
-            nread = sscanf(line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf",
+            nread = sscanf(line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
                            type,btype,&m,&q,ptype,&c[0],&c[1],
-                           &radius,&vol,&surftens);
+                           &radius,&vol,&surftens,&gb_radius);
             if(nread < 7)
             {
                 too_few();
@@ -314,9 +316,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
         else
         {
             /* !have_atomic_number && !have_bonded_type */
-            nread = sscanf(line,"%s%lf%lf%s%lf%lf%lf%lf%lf",
+            nread = sscanf(line,"%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
                            type,&m,&q,ptype,&c[0],&c[1],
-                           &radius,&vol,&surftens);
+                           &radius,&vol,&surftens,&gb_radius);
             if(nread < 6)
             {
                 too_few();
@@ -344,9 +346,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
       {
           if ( have_bonded_type )
           {
-              nread = sscanf(line,"%s%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf",
+              nread = sscanf(line,"%s%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf%lf",
                              type,btype,&atomnr,&m,&q,ptype,&c[0],&c[1],&c[2],
-                             &radius,&vol,&surftens);
+                             &radius,&vol,&surftens,&gb_radius);
               if(nread < 9)
               {
                   too_few();
@@ -356,9 +358,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
           else
           {
               /* have_atomic_number && !have_bonded_type */
-              nread = sscanf(line,"%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf",
+              nread = sscanf(line,"%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf%lf",
                              type,&atomnr,&m,&q,ptype,&c[0],&c[1],&c[2],
-                             &radius,&vol,&surftens);
+                             &radius,&vol,&surftens,&gb_radius);
               if(nread < 8)
               {
                   too_few();
@@ -371,9 +373,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
           if ( have_bonded_type )
           {
               /* !have_atomic_number && have_bonded_type */
-              nread = sscanf(line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
+              nread = sscanf(line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf%lf%lf",
                              type,btype,&m,&q,ptype,&c[0],&c[1],&c[2],
-                             &radius,&vol,&surftens);
+                             &radius,&vol,&surftens,&gb_radius);
               if(nread < 8)
               {
                   too_few();
@@ -383,9 +385,9 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
           else
           {
               /* !have_atomic_number && !have_bonded_type */
-              nread = sscanf(line,"%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
+              nread = sscanf(line,"%s%lf%lf%s%lf%lf%lf%lf%lf%lf%lf",
                              type,&m,&q,ptype,&c[0],&c[1],&c[2],
-                             &radius,&vol,&surftens);
+                             &radius,&vol,&surftens,&gb_radius);
               if(nread < 7)
               {
                   too_few();
@@ -446,12 +448,12 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
     sprintf(errbuf,"Overriding atomtype %s",type);
     warning(errbuf);
     if ((nr = set_atomtype(nr,at,symtab,atom,type,param,batype_nr,
-			   radius,vol,surftens,atomnr)) == NOTSET)
+			   radius,vol,surftens,atomnr,gb_radius,S_hct)) == NOTSET)
       gmx_fatal(FARGS,"Replacing atomtype %s failed",type);
   }
   else if ((nr = add_atomtype(at,symtab,atom,type,param,
 			      batype_nr,radius,vol,
-			      surftens,atomnr)) == NOTSET)
+			      surftens,atomnr,gb_radius,S_hct)) == NOTSET)
     gmx_fatal(FARGS,"Adding atomtype %s failed",type);
   else {  
     /* Add space in the non-bonded parameters matrix */
@@ -859,6 +861,45 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
   nbp->bSet = TRUE;
   for (i=0; i<nrfp; i++)
     nbp->c[i] = cr[i];
+}
+
+void 
+push_gb_params (t_atomtype at, char *line)
+{
+	int nfield;
+	int i,n,k,found,gfound;
+	double radius,vol,surftens,gb_radius,S_hct;
+	char atypename[STRLEN];
+	char errbuf[STRLEN];
+	
+	if( (nfield = sscanf(line,"%s%lf%lf%lf%lf%lf",atypename,&radius,&vol,&surftens,&gb_radius,&S_hct)) != 6)
+    {
+		sprintf(errbuf,"Too few gb parameters for type %s\n",atypename);
+		warning(errbuf);
+    }
+	
+	/* Search for atomtype */
+	//printf("gb params for atomtype '%s'\n",atypename);
+	found = 0;
+	gfound = -1;
+	for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
+        {
+	  if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
+		{
+			//printf("Found matching atomtype in topology: %s\n",get_atomtype_name(i,at));
+			found = i;
+			gfound = i;
+			//printf("found=%d\n",found);
+		}
+    }
+	
+	if(gfound==-1)
+    {
+		printf("Couldn't find topology match for atomtype %s\n",atypename);
+		abort();
+    }
+
+	set_atomtype_gbparam(at,found,radius,vol,surftens,gb_radius,S_hct);
 }
 
 static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
@@ -1773,7 +1814,7 @@ int add_atomtype_decoupled(t_symtab *symtab,t_atomtype at,
   for (i=0; (i<MAXFORCEPARAM); i++)
     param.c[i] = 0.0;
 
-  nr = add_atomtype(at,symtab,&atom,"decoupled",&param,-1,0.0,0.0,0.0,0);
+  nr = add_atomtype(at,symtab,&atom,"decoupled",&param,-1,0.0,0.0,0.0,0,0,0);
 
   /* Add space in the non-bonded parameters matrix */
   realloc_nb_params(at,nbparam,pair);

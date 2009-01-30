@@ -51,9 +51,9 @@ libnb_kernel_x86_64_sse_la_SOURCES = \
 	nb_kernel332_x86_64_sse.s	nb_kernel332_x86_64_sse.h	\
 	nb_kernel333_x86_64_sse.s	nb_kernel333_x86_64_sse.h	\
 	nb_kernel334_x86_64_sse.s	nb_kernel334_x86_64_sse.h	\
-	nb_kernel400_x86_64_sse.s	nb_kernel400_x86_64_sse.h	\
-	nb_kernel410_x86_64_sse.s	nb_kernel410_x86_64_sse.h	\
-	nb_kernel430_x86_64_sse.s	nb_kernel430_x86_64_sse.h	\
+	nb_kernel400_x86_64_sse.c	nb_kernel400_x86_64_sse.h	\
+	nb_kernel410_x86_64_sse.c	nb_kernel410_x86_64_sse.h	\
+	nb_kernel430_x86_64_sse.c	nb_kernel430_x86_64_sse.h	\
 	nb_kernel_x86_64_sse_test_asm.s	nb_kernel_x86_64_sse_test_asm.h	\
 	nb_kernel_x86_64_sse.c		nb_kernel_x86_64_sse.h	
 

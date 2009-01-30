@@ -228,9 +228,9 @@ mknb_declare_variables()
 	if(mknb_func.coul==MKNB_COUL_RF)
 		mknb_declare_real("krsq");
 	if(mknb_func.coul==MKNB_COUL_GB) {
-		mknb_declare_real("isai,isaj,isaprod,gbscale");
+		mknb_declare_real("isai,isaj,isaprod,gbscale,vgb");
 		if(mknb_func.do_force) 
-			mknb_declare_real("dvdasum,dvdatmp,dvdaj");
+			mknb_declare_real("dvdasum,dvdatmp,dvdaj,fgb");
 	}
     
 	if(mknb_func.vdw==MKNB_VDW_BHAM) 

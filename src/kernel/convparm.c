@@ -321,6 +321,12 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->vsiten.n = round_check(old[0],1,ftype,"number of atoms");
     new->vsiten.a = old[1];
     break;
+    /* 
+    case F_GB:
+      new->gb.st=old[0];
+      printf("new->gb.st=%g\n",new->gb.st);
+    break;
+    */
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
 		ftype,__FILE__,__LINE__);

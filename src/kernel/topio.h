@@ -60,7 +60,8 @@ extern char **do_top(bool         bVerbose,
 		     t_molinfo    **molinfo,
 		     t_inputrec   *ir,
 		     int          *nmolblock,
-		     gmx_molblock_t **molblock);
+		     gmx_molblock_t **molblock,
+		     bool          bGB);
 
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */

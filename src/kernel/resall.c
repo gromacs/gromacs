@@ -78,7 +78,7 @@ t_atomtype read_atype(char *adb,t_symtab *tab)
     
     if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2)) {
       a->m = m;
-      add_atomtype(at,tab,a,name,nb,0,0,0,0,0);
+      add_atomtype(at,tab,a,name,nb, 0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 );
       fprintf(stderr,"\rAtomtype %d",nratt+1);
     }
   }

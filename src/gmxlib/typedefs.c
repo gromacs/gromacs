@@ -102,6 +102,8 @@ void init_atomtypes(t_atomtypes *at)
   at->radius = NULL;
   at->vol = NULL;
   at->atomnumber = NULL;
+  at->gb_radius = NULL;
+  at->S_hct = NULL;
 }
 
 void init_groups(gmx_groups_t *groups)
@@ -231,6 +233,16 @@ void done_atom (t_atoms *at)
   sfree(at->atomname);
 }
 
+void done_atomtypes(t_atomtypes *atype)
+{
+  atype->nr = 0;
+  sfree(atype->radius);
+  sfree(atype->vol);
+  sfree(atype->surftens);
+  sfree(atype->gb_radius);
+  sfree(atype->S_hct);
+}
+
 void done_moltype(gmx_moltype_t *molt)
 {
   int f;
@@ -284,6 +296,10 @@ void done_top(t_topology *top)
   int i;
   
   done_atom (&(top->atoms));
+
+  /* For GB */
+  done_atomtypes(&(top->atomtypes));
+
   done_symtab(&(top->symtab));
   done_block(&(top->cgs));
   done_block(&(top->mols));

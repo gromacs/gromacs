@@ -194,6 +194,9 @@ The distribution of insertion energies is written to the file specified with
 the <tt>-tpid</tt> option of <tt>mdrun</tt>.
 No trajectory or energy file is written.
 Parallel tpi gives identical results to single node tpi.
+For charged molecules, using PME with a fine grid is most accurate
+and also efficient, since the potential in the system only needs
+to be calculated once per frame.
 </dd>
 <dt><b>tpic</b></dt>
 <dd> Test particle insertion into a predefined cavity location.

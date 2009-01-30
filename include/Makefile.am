@@ -31,6 +31,7 @@ fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
+genborn.h \
 gbutil.h \
 gmx_fatal.h \
 gmx_ana.h \

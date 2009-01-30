@@ -51,9 +51,9 @@ libnb_kernel_ia32_sse_la_SOURCES = \
 	nb_kernel332_ia32_sse.s		nb_kernel332_ia32_sse.h		\
 	nb_kernel333_ia32_sse.s		nb_kernel333_ia32_sse.h		\
 	nb_kernel334_ia32_sse.s		nb_kernel334_ia32_sse.h		\
-	nb_kernel400_ia32_sse.s		nb_kernel400_ia32_sse.h		\
-	nb_kernel410_ia32_sse.s		nb_kernel410_ia32_sse.h		\
-	nb_kernel430_ia32_sse.s 	nb_kernel430_ia32_sse.h		\
+	nb_kernel400_ia32_sse.c		nb_kernel400_ia32_sse.h		\
+	nb_kernel410_ia32_sse.c		nb_kernel410_ia32_sse.h		\
+	nb_kernel430_ia32_sse.c 	nb_kernel430_ia32_sse.h		\
 	nb_kernel_ia32_sse_test_asm.s	nb_kernel_ia32_sse_test_asm.h 	\
 	nb_kernel_ia32_sse.c		nb_kernel_ia32_sse.h 	
 
