@@ -165,9 +165,9 @@ static void reset_energies(t_grpopts *opts,
    * on the master at non neighbor search steps, since the long range
    * terms have already been summed at the last neighbor search step.
    */
-  bKeepLR = (fr->bTwinRange && !bNS && bMaster);
+  bKeepLR = (fr->bTwinRange && !bNS);
   for(i=0; (i<egNR); i++) {
-    if (!(bKeepLR && (i == egCOULLR || i == egLJLR))) {
+    if (!(bKeepLR && bMaster && (i == egCOULLR || i == egLJLR))) {
       for(j=0; (j<enerd->grpp.nener); j++)
 	enerd->grpp.ener[i][j] = 0.0;
     }
