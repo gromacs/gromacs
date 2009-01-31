@@ -172,12 +172,16 @@ static void reset_energies(t_grpopts *opts,
 	enerd->grpp.ener[i][j] = 0.0;
     }
   }
-  
+  if (!bKeepLR) {
+    enerd->dvdl_lr = 0.0;
+  }
+
   /* Normal potential energy components */
   for(i=0; (i<=F_EPOT); i++) {
     enerd->term[i] = 0.0;
   }
-  enerd->term[F_DVDL]     = 0.0;
+  /* Initialize the dVdlambda term with the long range contribution */
+  enerd->term[F_DVDL]     = enerd->dvdl_lr;
   enerd->term[F_DKDL]     = 0.0;
   enerd->term[F_DGDL_CON] = 0.0;
 }
@@ -484,6 +488,7 @@ void do_force(FILE *fplog,t_commrec *cr,
        cr,nrnb,step,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
+    enerd->dvdl_lr       = dvdl;
     enerd->term[F_DVDL] += dvdl;
 
     wallcycle_stop(wcycle,ewcNS);

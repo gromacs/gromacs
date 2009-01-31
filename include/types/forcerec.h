@@ -89,6 +89,7 @@ typedef struct {
 typedef struct {
   real term[F_NRE];    /* The energies for all different interaction types */
   gmx_grppairener_t grpp;
+  real dvdl_lr;
 } gmx_enerdata_t;
 
 typedef struct {
