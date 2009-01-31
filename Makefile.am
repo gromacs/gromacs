@@ -42,6 +42,11 @@ install-mdrun:
 	(cd $(top_builddir)/src/mdlib && $(MAKE) install ; exit 0)
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun ; exit 0)
 
+fahcore:
+	(cd $(top_builddir)/src/gmxlib && $(MAKE) ; exit 0)
+	(cd $(top_builddir)/src/mdlib && $(MAKE) ; exit 0)
+	(cd $(top_builddir)/src/kernel && $(MAKE) fahcore ; exit 0)
+
 links:
 	cd $(bindir) && programs=`ls` && cd /usr/local/bin && \
 	for i in $$programs; do \

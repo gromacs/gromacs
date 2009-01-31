@@ -69,6 +69,14 @@ mdrun_SOURCES = \
 	xutils.c	md.c		mdrun.c		\
 	genalg.c	genalg.h
 
+if GMX_FAHCORE
+  noinst_LTLIBRARIES = libfahcore.la
+  libfahcore_la_SOURCES = $(mdrun_SOURCES)
+  libfahcore_la_CFLAGS = $(AM_CFLAGS)
+endif
+
+fahcore: libfahcore.la
+
 # shortcut to install only mdrun
 
 install-mdrun: mdrun$(EXEEXT)

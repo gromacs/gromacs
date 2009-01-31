@@ -209,6 +209,11 @@ AM_CONDITIONAL([GMX_SOFTWARE_SQRT],[test "$enable_software_sqrt" = "yes"])
 
 
 
+AC_ARG_ENABLE(fahcore,
+              [AC_HELP_STRING([--enable-fahcore],
+                              [Create a library with mdrun functionality])],, enable_fahcore=no)
+
+
 
 # The four options below used to improve code scheduling, but the newest CPUs can usually rearrange
 # instructions dynamically at runtime, so they might not make much difference now:
@@ -958,6 +963,14 @@ fi
 # overridden with make RPM=rpm3 rpm
 RPM=rpm
 AC_SUBST(RPM)
+
+if test "$enable_fahcore" = "yes"; then  
+  CPPFLAGS="$CPPFLAGS -I\$(top_srcdir)/../corewrap -include swindirect.h -DFULLINDIRECT -DUSE_FAH_XDR"  
+  if test "$enable_mpi" = "yes"; then 
+    CFLAGS="$CFLAGS -DMPI"  
+  fi
+fi
+AM_CONDITIONAL([GMX_FAHCORE],[test "$enable_fahcore" = "yes"])
 
 
 if test "$enable_all_static" = "yes"; then
