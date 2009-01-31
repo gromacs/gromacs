@@ -75,8 +75,13 @@ void push_ps(FILE *fp)
   pstack   = ps;
 }
 
+#ifdef FAHCORE
+/*if FAHCORE, redefine fclose */
+#define fclose fah_fclose
+#else
 #ifdef fclose
 #undef fclose
+#endif
 #endif
 
 void ffclose(FILE *fp)
@@ -266,6 +271,10 @@ bool make_backup(const char * name)
 {
     char * backup;
 
+#ifdef FAHCORE
+    return FALSE; /* skip making backups */
+#else
+
     if(fexist(name)) {
       backup = backup_fn(name);
       if(rename(name, backup) == 0) {
@@ -277,6 +286,7 @@ bool make_backup(const char * name)
       }
     }
     return TRUE;
+#endif
 }
 
 FILE *ffopen(const char *file,char *mode)

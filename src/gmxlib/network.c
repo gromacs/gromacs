@@ -77,7 +77,11 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
   /* Call the MPI routines */
+#ifdef FAHCORE
+  (void) fah_MPI_Init(argc,&argv);
+#else
   (void) MPI_Init(argc,&argv);
+#endif
   (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
   (void) MPI_Get_processor_name( mpi_hostname, &resultlen );

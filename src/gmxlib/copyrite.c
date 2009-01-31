@@ -208,7 +208,11 @@ void CopyRight(FILE *out,char *szProgram)
    * name of a file. Otherwise, we won't be able to find the library dir.
    */
 #define NCR (int)asize(CopyrightText)
+#ifdef FAHCORE
+#define NGPL 0 /*FAH has an exception permission from GPL to allow encryption in Gromacs*/
+#else
 #define NGPL (int)asize(GPLText)
+#endif
 
   char buf[256],tmpstr[1024];
   int i;

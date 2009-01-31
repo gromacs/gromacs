@@ -728,6 +728,8 @@ int gmx_fio_open(const char *fn,char *mode)
 			 */
 			if (newmode[0]=='w') 
 			{
+			#ifndef FAHCORE
+			/*if FAHCORE is defined, skip making backups */
 				if (fexist(fn)) 
 				{
 					bf=(char *)backup_fn(fn);
@@ -740,6 +742,7 @@ int gmx_fio_open(const char *fn,char *mode)
 						fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
 					}
 				}
+			#endif
 			}
 			else 
 			{
