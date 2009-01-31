@@ -88,6 +88,10 @@
 #include <mpi.h>
 #endif
 
+#ifdef FAHCORE
+#include "corewrap.h"
+#endif
+
 /* The following two variables and the signal_handler function
  * is used from pme.c as well 
  */
@@ -112,7 +116,7 @@ typedef struct {
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md} };
 
-void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
+int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 	      char *dddlb_opt,real dlb_scale,
@@ -143,6 +147,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bool       bReadRNG,bReadEkin;
   int        list;
   int        nsteps_done;
+  int        rc;
   gmx_genborn_t *born;
 
   snew(inputrec,1);
@@ -475,6 +480,22 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	{
 		gmx_log_close(fplog);
 	}	
+
+  if(bGotTermSignal)
+  {
+    rc = 1;
+  }
+  else if(bGotUsr1Signal)
+  {
+    rc = 2;
+  }
+  else
+  {
+    rc = 0;
+  }
+	
+  return rc;
+
 }
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],

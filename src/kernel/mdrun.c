@@ -380,7 +380,8 @@ int main(int argc,char *argv[])
   FILE     *fplog,*fptest;
   int      sim_part;
   char     suffix[STRLEN];
-	
+  int      rc;
+
   cr = init_par(&argc,&argv);
 
   if (MASTER(cr))
@@ -485,11 +486,11 @@ int main(int argc,char *argv[])
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
-  mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
-	   ddxyz,dd_node_order,rdd,rconstr,
-	   dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-	   nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
-	   cpt_period,max_hours,Flags);
+  rc = mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
+		ddxyz,dd_node_order,rdd,rconstr,
+		dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+		nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
+		cpt_period,max_hours,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize(cr);
@@ -504,6 +505,7 @@ int main(int argc,char *argv[])
 		gmx_log_close(fplog);
 	}
 	
-  return 0;
+
+  return rc;
 }
 
