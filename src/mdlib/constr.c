@@ -194,6 +194,10 @@ static void dump_confs(FILE *fplog,int step,gmx_mtop_t *mtop,
 		       rvec x[],rvec xprime[],matrix box)
 {
   char buf[256];
+ 
+  char *env=getenv("GMX_SUPPRESS_DUMP");
+  if (env)
+    return; 
   
   sprintf(buf,"step%db",step);
   write_constr_pdb(buf,"initial coordinates",
