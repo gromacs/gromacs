@@ -564,6 +564,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   double      cycles;
+#ifdef FAHCORE
+  /* Temporary addition for FAHCORE checkpointing */
+  int chkpt_ret;
+#endif
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN);
@@ -1059,6 +1063,56 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     } 
 
+    #ifdef FAHCORE
+    /*temporary code for alternate checkpointing scheme.  to do: make more compact */
+    if ((step !=0) && bNS) {
+        if DOMAINDECOMP(cr)
+       {
+       /*if domain decomposition, use global vars for checkpoint */
+         {
+           dd_collect_state(cr->dd,state,state_global);
+          }
+         chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
+             &step, sizeof(step),
+             &step_rel, sizeof(step_rel),
+             state_global->x,  sizeof(rvec)*mdatoms->nr,
+             state_global->v,  sizeof(rvec)*mdatoms->nr,
+             f_global,     sizeof(rvec)*mdatoms->nr,
+             buf, sizeof(rvec)*mdatoms->nr,
+             &state_global->lambda,   sizeof(float),
+             state_global->box, sizeof(rvec)*3,
+             state_global->boxv, sizeof(rvec)*3,
+             &state->nosehoover_xi, sizeof(float),
+             state_global->sd_X, sizeof(rvec)*state->nalloc,
+             NULL
+             );
+       }
+       else
+         chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
+             &step, sizeof(step),
+             &step_rel, sizeof(step_rel),
+             state->x,  sizeof(rvec)*mdatoms->nr,
+             state->v,  sizeof(rvec)*mdatoms->nr,
+             f,     sizeof(rvec)*mdatoms->nr,
+             buf, sizeof(rvec)*mdatoms->nr,
+             &state->lambda,   sizeof(float),
+             state->box, sizeof(rvec)*3,
+             state->boxv, sizeof(rvec)*3,
+             &state->nosehoover_xi, sizeof(float),
+             state->sd_X, sizeof(rvec)*state->nalloc,
+             NULL
+             );
+
+      if ( chkpt_ret == 0 ) {
+        gmx_fatal( FARGS, "Checkpoint error on step %d\n", step );
+      }
+
+    if (MASTER(cr))
+      fcReportProgress( ir->nsteps, step_rel );
+    }  
+    #endif /* end FAHCORE block */
+
+
     if (terminate_now > 0 || (terminate_now < 0 && bNS)) {
       bLastStep = TRUE;
     }
@@ -1217,6 +1271,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bV   = do_per_step(step,ir->nstvout);
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
+
+    #ifdef FAHCORE
+      bX = bX || bLastStep; /*enforce writing positions and velocities at end of run */
+      bV = bV || bLastStep;
+    #endif
 
     if (bX || bV || bF || bXTC || bCPT) {
       wallcycle_start(wcycle,ewcTRAJ);
