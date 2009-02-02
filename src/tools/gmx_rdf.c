@@ -152,16 +152,73 @@ static void calc_comg(int is,int *coi,int *index,bool bMass,t_atom *atom,
   }
 }
 
+static void split_group(int isize,int *index,char *grpname,
+			t_topology *top,char type,
+			int *is_out,int **coi_out)
+{
+  t_block *mols=NULL;
+  t_atom  *atom=NULL;
+  int     is,*coi;
+  int     cur,mol,res,i,a,i1;
+
+  /* Split up the group in molecules or residues */
+  switch (type) {
+  case 'm':
+    mols = &top->mols;
+    break;
+  case 'r':
+    atom = top->atoms.atom;
+    break;
+  default:
+    gmx_fatal(FARGS,"Unknown rdf option '%s'",type);
+  }
+  snew(coi,isize+1);
+  is = 0;
+  cur = -1;
+  mol = 0;
+  for(i=0; i<isize; i++) {
+    a = index[i];
+    if (type == 'm') {
+      /* Check if the molecule number has changed */
+      i1 = mols->index[mol+1];
+      while(a >= i1) {
+	mol++;
+	i1 = mols->index[mol+1];
+      }
+      if (mol != cur) {
+	coi[is++] = i;
+	cur = mol;
+      }
+    } else if (type == 'r') {
+      /* Check if the residue number has changed */
+      res = atom[a].resnr;
+      if (res != cur) {
+	coi[is++] = i;
+	cur = res;
+      }
+    }
+  }
+  coi[is] = i;
+  srenew(coi,is+1);
+  printf("Group '%s' of %d atoms consists of %d %s\n",
+	 grpname,isize,is,
+	 (type=='m' ? "molecules" : "residues"));
+  
+  *is_out  = is;
+  *coi_out = coi;
+}
+
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,char **rdft,bool bXY,bool bPBC,bool bNormalize,
+		   bool bCM,char *close,
+		   char **rdft,bool bXY,bool bPBC,bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng)
 {
   FILE       *fp;
   int        status;
   char       outf1[STRLEN],outf2[STRLEN];
-  char       title[STRLEN],gtitle[STRLEN];
-  int        g,natoms,i,j,k,nbin,j0,j1,n,nframes;
+  char       title[STRLEN],gtitle[STRLEN],refgt[30];
+  int        g,natoms,i,ii,j,k,nbin,j0,j1,n,nframes;
   int        **count;
   char       **grpname;
   int        *isize,isize_cm=0,nrdf=0,max_i,isize0,isize_g;
@@ -171,11 +228,11 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 #else
   double     *sum;
 #endif
-  real       t,rmax2,cut2,r,r2,invhbinw,normfac;
+  real       t,rmax2,cut2,r,r2,r2ii,invhbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,dx,*x0=NULL,*x_i1,xi;
   real       *inv_segvol,invvol,invvol_sum,rho;
-  bool       *bExcl,bTop,bNonSelfExcl;
+  bool       bClose,*bExcl,bTop,bNonSelfExcl;
   matrix     box,box_pbc;
   int        **npairs;
   atom_id    ix,jx,***pairs;
@@ -190,10 +247,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 
   excl=NULL;
   
+  bClose = (close[0] != 'n');
+
   if (fnTPS) {
     snew(top,1);
     bTop=read_tps_conf(fnTPS,title,top,&ePBC,&x,NULL,box,TRUE);
-    if (bTop && !bCM)
+    if (bTop && !(bCM || bClose))
       /* get exclusions from topology */
       excl = &(top->excls);
   }
@@ -209,58 +268,22 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     rd_index(fnNDX,ng+1,isize,index,grpname);
   }
 
-  if (rdft[0][0] != 'a') {
-    /* Split up all the groups in molecules or residues */
-    switch (rdft[0][0]) {
-    case 'm':
-      mols = &top->mols;
-      break;
-    case 'r':
-      atom = top->atoms.atom;
-      break;
-    default:
-      gmx_fatal(FARGS,"Unknown rdf option '%s'",rdft[0]);
-    }
-    snew(is,ng+1);
-    snew(coi,ng+1);
-    for(g=(bCM ? 1 : 0); g<ng+1; g++) {
-      snew(coi[g],isize[g]+1);
-      is[g] = 0;
-      cur = -1;
-      mol = 0;
-      for(i=0; i<isize[g]; i++) {
-	a = index[g][i];
-	if (rdft[0][0] == 'm') {
-	  /* Check if the molecule number has changed */
-	  i1 = mols->index[mol+1];
-	  while(a >= i1) {
-	    mol++;
-	    i1 = mols->index[mol+1];
-	  }
-	  if (mol != cur) {
-	    coi[g][is[g]++] = i;
-	    cur = mol;
-	  }
-	} else if (rdft[0][0] == 'r') {
-	  /* Check if the residue number has changed */
-	  res = atom[a].resnr;
-	  if (res != cur) {
-	    coi[g][is[g]++] = i;
-	    cur = res;
-	  }
-	}
-      }
-      coi[g][is[g]] = i;
-      srenew(coi[g],is[g]+1);
-      printf("Group '%s' of %d atoms consists of %d %s\n",
-	     grpname[g],isize[g],is[g],
-	     (rdft[0][0]=='m' ? "molecules" : "residues"));
-    }
-  } else if (bCM) {
+  if (bCM || bClose) {
     snew(is,1);
     snew(coi,1);
+    if (bClose) {
+      split_group(isize[0],index[0],grpname[0],top,close[0],&is[0],&coi[0]);
+    }
   }
-  
+  if (rdft[0][0] != 'a') {
+    /* Split up all the groups in molecules or residues */
+    srenew(is,ng+1);
+    srenew(coi,ng+1);
+    for(g=((bCM || bClose) ? 1 : 0); g<ng+1; g++) {
+      split_group(isize[g],index[g],grpname[g],top,rdft[0][0],&is[g],&coi[g]);
+    }
+  }
+
   if (bCM) {
     is[0] = 1;
     snew(coi[0],is[0]+1);
@@ -268,7 +291,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     coi[0][1] = isize[0];
     isize0 = is[0];
     snew(x0,isize0);
-  } else if (rdft[0][0] != 'a') {
+  } else if (bClose || rdft[0][0] != 'a') {
     isize0 = is[0];
     snew(x0,isize0);
   } else {
@@ -330,7 +353,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     snew(npairs[g],isize[0]);
     for(i=0; i<isize[0]; i++) {
       /* We can only have exclusions with atomic rdfs */
-      if (!(bCM || rdft[0][0] != 'a')) {
+      if (!(bCM || bClose || rdft[0][0] != 'a')) {
 	ix = index[0][i];
 	for(j=0; j < natoms; j++)
 	  bExcl[j] = FALSE;
@@ -389,7 +412,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     if (bCM) {
       /* Calculate center of mass of the whole group */
       calc_comg(is[0],coi[0],index[0],TRUE           ,atom,x,x0);
-    } else if (rdft[0][0] != 'a') {
+    } else if (!bClose && rdft[0][0] != 'a') {
       calc_comg(is[0],coi[0],index[0],rdft[0][6]=='m',atom,x,x0);
     }
 
@@ -404,44 +427,73 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       }
     
       for(i=0; i<isize0; i++) {
-	if (bCM || rdft[0][0] != 'a') {
-	  copy_rvec(x0[i],xi);
-	} else {
-	  copy_rvec(x[index[0][i]],xi);
-	}
-	if (rdft[0][0] == 'a' && npairs[g][i] >= 0) {
-	  /* Expensive loop, because of indexing */
-	  for(j=0; j<npairs[g][i]; j++) {
-	    jx=pairs[g][i][j];
-	    if (bPBC)
-	      pbc_dx(&pbc,xi,x[jx],dx);
-	    else
-	      rvec_sub(xi,x[jx],dx);
-	      
-	    if (bXY)
-	      r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
-	    else 
-	      r2=iprod(dx,dx);
-	    if (r2>cut2 && r2<=rmax2)
-	      count[g][(int)(sqrt(r2)*invhbinw)]++;
-	  }
-	} else {
-	  /* Cheaper loop, no exclusions */
+	if (bClose) {
+	  /* Special loop, since we need to determine the minimum distance
+	   * over all selected atoms in the reference molecule/residue.
+	   */
 	  if (rdft[0][0] == 'a')
 	    isize_g = isize[g+1];
 	  else
 	    isize_g = is[g+1];
 	  for(j=0; j<isize_g; j++) {
-	    if (bPBC)
-	      pbc_dx(&pbc,xi,x_i1[j],dx);
-	    else
-	      rvec_sub(xi,x_i1[j],dx);
-	    if (bXY)
-	      r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
-	    else 
-	      r2=iprod(dx,dx);
+	    r2 = 1e30;
+	    /* Loop over the selected atoms in the reference molecule */
+	    for(ii=coi[0][i]; ii<coi[0][i+1]; ii++) {
+	      if (bPBC)
+		pbc_dx(&pbc,x[index[0][ii]],x_i1[j],dx);
+	      else
+		rvec_sub(x[index[0][ii]],x_i1[j],dx);
+	      if (bXY)
+		r2ii = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	      else 
+		r2ii = iprod(dx,dx);
+	      if (r2ii < r2)
+		r2 = r2ii;
+	    }
 	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invhbinw)]++;
+	  }
+	} else {
+	  /* Real rdf between points in space */
+	  if (bCM || rdft[0][0] != 'a') {
+	    copy_rvec(x0[i],xi);
+	  } else {
+	    copy_rvec(x[index[0][i]],xi);
+	  }
+	  if (rdft[0][0] == 'a' && npairs[g][i] >= 0) {
+	    /* Expensive loop, because of indexing */
+	    for(j=0; j<npairs[g][i]; j++) {
+	      jx=pairs[g][i][j];
+	      if (bPBC)
+		pbc_dx(&pbc,xi,x[jx],dx);
+	      else
+		rvec_sub(xi,x[jx],dx);
+	      
+	      if (bXY)
+		r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	      else 
+		r2=iprod(dx,dx);
+	      if (r2>cut2 && r2<=rmax2)
+		count[g][(int)(sqrt(r2)*invhbinw)]++;
+	    }
+	  } else {
+	    /* Cheaper loop, no exclusions */
+	    if (rdft[0][0] == 'a')
+	      isize_g = isize[g+1];
+	    else
+	      isize_g = is[g+1];
+	    for(j=0; j<isize_g; j++) {
+	      if (bPBC)
+		pbc_dx(&pbc,xi,x_i1[j],dx);
+	      else
+		rvec_sub(xi,x_i1[j],dx);
+	      if (bXY)
+		r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	      else 
+		r2=iprod(dx,dx);
+	      if (r2>cut2 && r2<=rmax2)
+		count[g][(int)(sqrt(r2)*invhbinw)]++;
+	    }
 	  }
 	}
       }
@@ -510,15 +562,20 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	    rdft[0][6]=='m' ? "COM" : "COG");
   }
   fp=xvgropen(fnRDF,gtitle,"r","");
+  if (bCM) {
+    sprintf(refgt," %s","COM");
+  } else if (bClose) {
+    sprintf(refgt," closest atom in %s.",close);
+  } else {
+    sprintf(refgt,"%s","");
+  }
   if (ng==1) {
     if (bPrintXvgrCodes())
-      fprintf(fp,"@ subtitle \"%s%s - %s\"\n",
-	      grpname[0],bCM ? " COM" : "",grpname[1]);
+      fprintf(fp,"@ subtitle \"%s%s - %s\"\n",grpname[0],refgt,grpname[1]);
   }
   else {
     if (bPrintXvgrCodes())
-      fprintf(fp,"@ subtitle \"reference %s%s\"\n",
-	      grpname[0],bCM ? " COM" : "");
+      fprintf(fp,"@ subtitle \"reference %s%s\"\n",grpname[0],refgt);
     xvgr_legend(fp,ng,grpname+1);
   }
   for(i=0; (i<nrdf); i++) {
@@ -960,10 +1017,12 @@ int gmx_rdf(int argc,char *argv[])
     "radial distribution function. However, this is not easy to obtain from",
     "a scattering experiment.[PAR]",
     "g_rdf calculates radial distribution functions in different ways.",
-    "The normal method is around a (set of) particle(s), the other method",
-    "is around the center of mass of a set of particles.",
-    "With both methods rdf's can also be calculated around axes parallel",
-    "to the z-axis with option [TT]-xy[tt].[PAR]",
+    "The normal method is around a (set of) particle(s), the other methods",
+    "are around the center of mass of a set of particles ([TT]-com[tt])",
+    "or to the closest particle in a set ([TT]-surf[tt]).",
+    "With all methods rdf's can also be calculated around axes parallel",
+    "to the z-axis with option [TT]-xy[tt].",
+    "With option [TT]-surf[tt] normalization can not be used.[PAR]"
     "The option [TT]-rdf[tt] sets the type of rdf to be computed.",
     "Default is for atoms or particles, but one can also select center",
     "of mass or geometry of molecules or residues. In all cases only",
@@ -972,7 +1031,8 @@ int gmx_rdf(int argc,char *argv[])
     "is required.",
     "Other weighting than COM or COG can currently only be achieved",
     "by providing a run input file with different masses.",
-    "Option [TT]-com[tt] also works in conjunction with [TT]-rdf[tt].[PAR]"
+    "Options [TT]-com[tt] and [TT]-surf[tt] also work in conjunction",
+    "with [TT]-rdf[tt].[PAR]",
     "If a run input file is supplied ([TT]-s[tt]) and [TT]-rdf[tt] is set",
     "to [TT]atom[tt], exclusions defined",
     "in that file are taken into account when calculating the rdf.",
@@ -994,6 +1054,7 @@ int gmx_rdf(int argc,char *argv[])
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
 
+  static char *closet[]= { NULL, "no", "mol", "res", NULL };
   static char *rdft[]={ NULL, "atom", "mol_com", "mol_cog", "res_com", "res_cog", NULL };
 
   t_pargs pa[] = {
@@ -1001,6 +1062,8 @@ int gmx_rdf(int argc,char *argv[])
       "Binwidth (nm)" },
     { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
+    { "-surf",     FALSE, etENUM, {closet},
+      "RDF with respect to the surface of the first group" },
     { "-rdf",   FALSE, etENUM, {rdft}, 
       "RDF type" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
@@ -1055,12 +1118,22 @@ int gmx_rdf(int argc,char *argv[])
 
   bSQ   = opt2bSet("-sq",NFILE,fnm);
   bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
-  if (bSQ || bCM || rdft[0][0]=='m' || rdft[0][6]=='m') {
+  if (bSQ || bCM || closet[0][0]!='n' || rdft[0][0]=='m' || rdft[0][6]=='m') {
     fnTPS = ftp2fn(efTPS,NFILE,fnm);
   } else {
     fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
   }
   fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
+
+  if (closet[0][0] != 'n') {
+    if (bCM) {
+      gmx_fatal(FARGS,"Can not have both -com and -surf");
+    }
+    if (bNormalize) {
+      fprintf(stderr,"Turning of normalization because of option -surf\n");
+      bNormalize = FALSE;
+    }
+  }
 
   if (!bSQ && (!fnTPS && !fnNDX))
     gmx_fatal(FARGS,"Neither index file nor topology file specified\n"
@@ -1074,7 +1147,7 @@ int gmx_rdf(int argc,char *argv[])
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
 	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,rdft,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups);
+	   bCM,closet[0],rdft,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups);
 
   thanx(stderr);
   
