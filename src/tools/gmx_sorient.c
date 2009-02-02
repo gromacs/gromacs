@@ -370,10 +370,9 @@ int gmx_sorient(int argc,char *argv[])
   fp=xvgropen(opt2fn("-rc",NFILE,fnm),str,"r (nm)","molecules/nm");
   if (bPrintXvgrCodes())
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
-  xvgr_legend(fp,2,legc);
   normfac = 1.0/(rbinw*nf);
   for(i=0; i<nrbin; i++) {
-    fprintf(fp,"%g %g\n",(i+0.5)*rbinw,histn[i]/normfac);
+    fprintf(fp,"%g %g\n",(i+0.5)*rbinw,histn[i]*normfac);
   }
   fclose(fp);
 
