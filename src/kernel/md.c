@@ -1519,15 +1519,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     
       /* Do center of mass motion removal */
       if (bStopCM && !bFFscan && !bRerunMD) {
-	check_cm_grp(fplog,vcm,1);
+	check_cm_grp(fplog,vcm,ir,1);
 	do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
 		      state->x,state->v,vcm);
 	inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
 	/*
 	  calc_vcm_grp(fplog,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
-	  check_cm_grp(fplog,vcm);
+	  check_cm_grp(fplog,vcm,ir);
 	  do_stopcm_grp(fplog,START(nsb),HOMENR(nsb),x,v,vcm);
-	  check_cm_grp(fplog,vcm);
+	  check_cm_grp(fplog,vcm,ir);
 	*/
       }
       

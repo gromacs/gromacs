@@ -69,6 +69,6 @@ extern void do_stopcm_grp(FILE *fp,int start,int homenr,
 			  unsigned short *group_id,
 			  rvec x[],rvec v[],t_vcm *vcm);
 
-extern void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max);
+extern void check_cm_grp(FILE *fp,t_vcm *vcm,t_inputrec *ir,real Temp_Max);
 			 
 #endif /* _vcm_h */

@@ -242,7 +242,7 @@ static void get_minv(tensor A,tensor B)
       B[m][n] *= fac;
 }
 
-void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
+void check_cm_grp(FILE *fp,t_vcm *vcm,t_inputrec *ir,real Temp_Max)
 {
   int    m,g;
   real   ekcm,ekrot,tm,tm_1,Temp_cm;
@@ -311,7 +311,8 @@ void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
       
       if (vcm->mode == ecmANGULAR) {
 	ekrot = 0.5*iprod(vcm->group_j[g],vcm->group_w[g]);
-	if ((ekrot > 1) && fp) {
+	if ((ekrot > 1) && fp && !EI_RANDOM(ir->eI)) {
+          /* if we have an integrator that may not conserve momenta, skip */
 	  tm    = vcm->group_mass[g];
 	  fprintf(fp,"Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
 		  vcm->group_name[g],tm,ekrot,det(vcm->group_i[g]));
