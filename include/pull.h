@@ -87,7 +87,7 @@ extern void init_pull(FILE *fplog,
 extern void finish_pull(FILE *fplog,t_pull *pull);
 
 /* Print the pull output (x and/or f) */
-extern void pull_print_output(t_pull *pull, int step, double time);
+extern void pull_print_output(t_pull *pull, gmx_step_t step, double time);
 
 /* In pullutil.c */
 

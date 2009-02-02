@@ -1359,8 +1359,8 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   gmx_mtop_t *mtop;
   t_topology top;
   t_trxframe fr;
-  int        i,ftp,natoms,i1;
-  real       d,r1,r2;
+  int        i,ftp,natoms;
+  real       d;
 
   if (atoms->nr == 0)
     fprintf(stderr,"Warning: Number of atoms in %s is 0\n",infile);
@@ -1402,7 +1402,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efTPB:
   case efTPA: 
     snew(mtop,1);
-    i = read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,mtop);
+    i = read_tpx(infile,NULL,box,&natoms,x,v,NULL,mtop);
     if (ePBC)
       *ePBC = i;
     

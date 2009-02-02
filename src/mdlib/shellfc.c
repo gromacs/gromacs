@@ -608,11 +608,13 @@ static void decrease_step_size(int nshell,t_shell s[])
     svmul(0.8,s[i].step,s[i].step);
 }
 
-static void print_epot(FILE *fp,int mdstep,int count,real epot,real df,
+static void print_epot(FILE *fp,gmx_step_t mdstep,int count,real epot,real df,
 		       int ndir,real sf_dir)
 {
-  fprintf(fp,"MDStep=%5d/%2d EPot: %12.8e, rmsF: %6.2e",
-	  mdstep,count,epot,df);
+  char buf[22];
+
+  fprintf(fp,"MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e",
+	  gmx_step_str(mdstep,buf),count,epot,df);
   if (ndir)
     fprintf(fp,", dir. rmsF: %6.2e\n",sqrt(sf_dir/ndir));
   else
@@ -679,7 +681,7 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
 static void init_adir(FILE *log,
 		      gmx_constr_t constr,t_idef *idef,t_inputrec *ir,
 		      t_commrec *cr,int dd_ac1,
-		      int step,t_mdatoms *md,int start,int end,
+		      gmx_step_t step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
 		      rvec *f,rvec *acc_dir,matrix box,
 		      real lambda,real *dvdlambda,t_nrnb *nrnb)
@@ -744,7 +746,7 @@ static void init_adir(FILE *log,
 }
 
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
-			int mdstep,t_inputrec *inputrec,
+			gmx_step_t mdstep,t_inputrec *inputrec,
 			bool bDoNS,bool bStopCM,
 			gmx_localtop_t *top,
 			gmx_mtop_t* mtop,
@@ -772,7 +774,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   rvec   dx;
   real   sf_dir,invdt;
   real   ftol,xiH,xiS,dum=0;
-  char   cbuf[56];
+  char   sbuf[22];
   bool   bCont,bInit;
   int    nat,dd_ac0,dd_ac1=0,i;
   int    start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
@@ -915,7 +917,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	    interaction_function[F_EPOT].longname,enerd->term[F_EPOT]);
     fprintf(debug,"%17s: %14.10e\n",
 	    interaction_function[F_ETOT].longname,enerd->term[F_ETOT]);
-    fprintf(debug,"SHELLSTEP %d\n",mdstep);
+    fprintf(debug,"SHELLSTEP %s\n",gmx_step_str(mdstep,sbuf));
   }
   
   /* First check whether we should do shells, or whether the force is 
@@ -1012,11 +1014,11 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     /* Note that the energies and virial are incorrect when not converged */
     if (fplog)
       fprintf(fplog,
-	      "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
-	      mdstep,number_steps,df[Min]);
+	      "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
+	      gmx_step_str(mdstep,sbuf),number_steps,df[Min]);
     fprintf(stderr,
-	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
-	    mdstep,number_steps,df[Min]);
+	    "step %s: EM did not converge in %d iterations, RMS force %.3f\n",
+	    gmx_step_str(mdstep,sbuf),number_steps,df[Min]);
   }
 
   /* Copy back the coordinates and the forces */

@@ -126,8 +126,8 @@ int gmx_spol(int argc,char *argv[])
   t_atom     *atom;
   char     title[STRLEN];
   int      status;
-  int      nrefat,natoms,step,nf,ntot;
-  real     t,lambda;
+  int      nrefat,natoms,nf,ntot;
+  real     t;
   rvec     *xtop,*x,xref,try,dx,dip,dir;
   matrix   box;
   
@@ -188,8 +188,8 @@ int gmx_spol(int argc,char *argv[])
   
   snew(top,1);
   snew(ir,1);
-  read_tpx_top(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,ir,box,
-	       &natoms,NULL,NULL,NULL,top);
+  read_tpx_top(ftp2fn(efTPX,NFILE,fnm),
+	       ir,box,&natoms,NULL,NULL,NULL,top);
   
   /* get index groups */
   printf("Select a group of reference particles and a solvent group:\n"); 

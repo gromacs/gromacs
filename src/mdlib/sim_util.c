@@ -91,7 +91,7 @@
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
-void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
+void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir)
 {
   static real time_per_step;
   static time_t end;
@@ -101,7 +101,7 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
 
   if (!gmx_parallel_env)
     fprintf(out,"\r");
-  fprintf(out,"step %d",step);
+  fprintf(out,"step %s",gmx_step_str(step,buf));
   if ((step >= ir->nstlist)) {
     if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
       /* We have done a full cycle let's update time_per_step */
@@ -310,24 +310,26 @@ static void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
 }
 
 static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
-			       int step,real pforce,rvec *x,rvec *f)
+			       gmx_step_t step,real pforce,rvec *x,rvec *f)
 {
   int  i;
   real pf2,fn2;
+  char buf[22];
 
   pf2 = sqr(pforce);
   for(i=md->start; i<md->start+md->homenr; i++) {
     fn2 = norm2(f[i]);
     if (fn2 >= pf2) {
-      fprintf(fp,"step %d  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
-	      step,ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
+      fprintf(fp,"step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
+	      gmx_step_str(step,buf),
+	      ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
     }
   }
 }
 
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
-	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+	      gmx_step_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      gmx_localtop_t *top,
 	      gmx_mtop_t *mtop,
 	      gmx_groups_t *groups,
@@ -484,7 +486,7 @@ void do_force(FILE *fplog,t_commrec *cr,
      */
     dvdl = 0; 
     ns(fplog,fr,x,f,box,groups,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,step,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
+       cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
     enerd->term[F_DVDL] += dvdl;
@@ -967,8 +969,8 @@ static void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
   }
 }
 
-void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
-		   int natoms,matrix box,real lambda,
+void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
+		   gmx_step_t step,int natoms,matrix box,real lambda,
 		   tensor pres,tensor virial,real ener[])
 {
   static bool bFirst=TRUE;
@@ -1140,7 +1142,7 @@ void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 		t_inputrec *inputrec,
 		t_nrnb nrnb[],gmx_wallcycle_t wcycle,
-		double nodetime,double realtime,int nsteps_done,
+		double nodetime,double realtime,gmx_step_t nsteps_done,
 		bool bWriteStat)
 {
   int    i,j;

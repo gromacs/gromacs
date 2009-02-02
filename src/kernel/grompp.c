@@ -1098,7 +1098,7 @@ int main (int argc, char *argv[])
 
   print_warn_num(TRUE);
   state.lambda = ir->init_lambda;
-  write_tpx_state(ftp2fn(efTPX,NFILE,fnm),0,ir->init_t,ir,&state,sys);
+  write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   
   thanx(stderr);
   

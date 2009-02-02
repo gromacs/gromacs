@@ -59,6 +59,29 @@ int over_alloc_dd(int n)
     return n;
 }
 
+int gmx_step_t_to_int(gmx_step_t step,char *warn)
+{
+  int i;
+
+  i = (int)step;
+
+  if (warn != NULL && (step < INT_MIN || step > INT_MAX)) {
+    fprintf(stderr,"\nWARNING during %s:\n",warn);
+    fprintf(stderr,"step value ");
+    fprintf(stderr,gmx_step_pfmt,step);
+    fprintf(stderr,"does not fit in int, converted to %d\n\n",i);
+  }
+
+  return i;
+}
+
+char *gmx_step_str(gmx_step_t i,char *buf)
+{
+  sprintf(buf,gmx_step_pfmt,i);
+
+  return buf;
+}
+
 void init_block(t_block *block)
 {
   int i;

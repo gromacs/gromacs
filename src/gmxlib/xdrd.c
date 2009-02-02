@@ -87,9 +87,45 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
+int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,char *warn)
+{
+  /* This routine stores values compatible with xdr_int64_t */
 
+  static const unsigned int two_p32_m1 = 4294967295U;
+  int ia,ib;
+  int ret;
 
+#if SIZEOF_GMX_STEP_T == 8
+  gmx_step_t ia64,ib64;
 
+  ia64 = ((*i)>>32) & two_p32_m1;
+  ib64 = (*i) & two_p32_m1;
+  ia = (int)ia64;
+  ib = (int)ib64;
+#else
+  /* Our code is 4 bits, but we should make sure that this value
+   * will be correctly read by 8 bits code.
+   */
+  if (*i >= 0) {
+    ia = 0;
+  } else {
+    ia = -1;
+  }
+  ib = *i;
+#endif
+  ret = xdr_int(xdrs,&ia);
+  ret = xdr_int(xdrs,&ib);
 
+#if SIZEOF_GMX_STEP_T == 8
+  *i = (((int64_t)ia << 32) | ((int64_t)ib & two_p32_m1));
+#else
+  *i = ib;
+  
+  if (warn != NULL && (ia < -1 || ia > 0)) {
+    fprintf(stderr,"\nWARNING during %s:\n",warn);
+    fprintf(stderr,"a step value written by code supporting 64bit integers is read by code that only supports 32bit integers, out of range step value has been converted to %d\n\n",*i);
+  }
+#endif
 
-
+  return ret;
+}

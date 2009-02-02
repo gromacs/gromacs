@@ -1281,14 +1281,13 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 void read_tpr_header(char *fn,t_UmbrellaHeader* header,t_UmbrellaOptions *opt)
 {
     t_inputrec  ir;
-    int step,i,ngrp,d;
-    real t;
+    int         i,ngrp,d;
     t_state     state;
     static int first=1;
 
 
     /* printf("Reading %s \n",fn); */
-    read_tpx_state(fn,&step,&t,&ir,&state,NULL,NULL);
+    read_tpx_state(fn,&ir,&state,NULL,NULL);
 
     if (ir.ePull != epullUMBRELLA)
         gmx_fatal(FARGS,"This is not a tpr of an umbrella simulation. Found ir.ePull = %s\n",

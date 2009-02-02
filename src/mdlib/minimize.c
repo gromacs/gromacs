@@ -123,16 +123,22 @@ static void warn_step(FILE *fp,real ftol,bool bConstrain)
 
 
 
-static void print_converged(FILE *fp,const char *alg,real ftol,int count,bool bDone,
-			    int nsteps,real epot,real fmax, int nfmax, real fnorm)
+static void print_converged(FILE *fp,const char *alg,real ftol,
+			    gmx_step_t count,bool bDone,gmx_step_t nsteps,
+			    real epot,real fmax, int nfmax, real fnorm)
 {
+  char buf[22];
+
   if (bDone)
-    fprintf(fp,"\n%s converged to Fmax < %g in %d steps\n",alg,ftol,count); 
+    fprintf(fp,"\n%s converged to Fmax < %g in %s steps\n",
+	    alg,ftol,gmx_step_str(count,buf)); 
   else if(count<nsteps)
-    fprintf(fp,"\n%s converged to machine precision in %d steps,\n"
-               "but did not reach the requested Fmax < %g.\n",alg,count,ftol);
+    fprintf(fp,"\n%s converged to machine precision in %s steps,\n"
+               "but did not reach the requested Fmax < %g.\n",
+	    alg,gmx_step_str(count,buf),ftol);
   else 
-    fprintf(fp,"\n%s did not converge to Fmax < %g in %d steps.\n",alg,ftol,count);
+    fprintf(fp,"\n%s did not converge to Fmax < %g in %s steps.\n",
+	    alg,ftol,gmx_step_str(count,buf));
 
 #ifdef GMX_DOUBLE
   fprintf(fp,"Potential Energy  = %21.14e\n",epot); 
@@ -389,7 +395,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
 		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
 		       gmx_constr_t constr,gmx_localtop_t *top,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       int count)
+		       gmx_step_t count)
 
 {
   t_state *s1,*s2;
@@ -537,7 +543,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    t_graph *graph,t_mdatoms *mdatoms,
 			    t_forcerec *fr, gmx_genborn_t *born,rvec mu_tot,
 			    gmx_enerdata_t *enerd,tensor vir,tensor pres,
-			    int count,bool bFirst)
+			    gmx_step_t count,bool bFirst)
 {
   real t;
   bool bNS;
@@ -761,7 +767,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags,
-	     int *nsteps_done)
+	     gmx_step_t *nsteps_done)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
 
@@ -1287,7 +1293,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		int repl_ex_nst,int repl_ex_seed,
 		real cpt_period,real max_hours,
 		unsigned long Flags,
-		int *nsteps_done)
+		gmx_step_t *nsteps_done)
 {
   static char *LBFGS="Low-Memory BFGS Minimizer";
   em_state_t ems;
@@ -1923,7 +1929,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		int repl_ex_nst,int repl_ex_seed,
 		real cpt_period,real max_hours,
 		unsigned long Flags,
-		int *nsteps_done)
+		gmx_step_t *nsteps_done)
 { 
   const char *SD="Steepest Descents";
   em_state_t *s_min,*s_try;
@@ -2135,7 +2141,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags,
-	     int *nsteps_done)
+	     gmx_step_t *nsteps_done)
 {
     t_mdebin   *mdebin;
 	const char *NM = "Normal Mode Analysis";
@@ -2399,7 +2405,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      int repl_ex_nst,int repl_ex_seed,
 	      real cpt_period,real max_hours,
 	      unsigned long Flags,
-	      int *nsteps_done)
+	      gmx_step_t *nsteps_done)
 {
   const char *TPI="Test Particle Insertion"; 
   gmx_localtop_t *top;

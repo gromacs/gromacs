@@ -587,8 +587,8 @@ int gmx_disre(int argc,char *argv[])
   t_nrnb      nrnb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,ntopatoms,natoms,i,j,step,kkk;
-  real        t,lambda;
+  int         status,ntopatoms,natoms,i,j,kkk;
+  real        t;
   rvec        *x,*f,*xav=NULL;
   matrix      box;
   bool        bPDB;
@@ -632,8 +632,7 @@ int gmx_disre(int argc,char *argv[])
   
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header,FALSE,NULL,NULL);
   snew(xtop,header.natoms);
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
-	   box,&ntopatoms,xtop,NULL,NULL,&mtop);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&ir,box,&ntopatoms,xtop,NULL,NULL,&mtop);
   bPDB = opt2bSet("-q",NFILE,fnm);
   if (bPDB) {
     snew(xav,ntopatoms);
@@ -705,7 +704,7 @@ int gmx_disre(int argc,char *argv[])
 
   mdatoms = init_mdatoms(fplog,&mtop,ir.efep!=efepNO);
   atoms2md(&mtop,&ir,0,NULL,0,mtop.natoms,mdatoms);
-  update_mdatoms(mdatoms,lambda);
+  update_mdatoms(mdatoms,ir.init_lambda);
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
   init_forcerec(fplog,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,FALSE,-1);

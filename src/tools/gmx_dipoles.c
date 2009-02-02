@@ -1292,8 +1292,7 @@ int gmx_dipoles(int argc,char *argv[])
   t_pargs *ppa;
   t_topology *top;
   int     ePBC;
-  int     k,step,natoms;
-  real    t,lambda;
+  int     k,natoms;
   matrix  box;
   
   CopyRight(stderr,argv[0]);
@@ -1334,7 +1333,7 @@ int gmx_dipoles(int argc,char *argv[])
   }
 
   snew(top,1);
-  ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
+  ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),NULL,box,
 		      &natoms,NULL,NULL,NULL,top);
   
   snew(gnx,ncos);

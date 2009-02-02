@@ -120,8 +120,7 @@ int gmx_polystat(int argc,char *argv[])
 
   t_topology *top;
   int    ePBC;
-  real   lambda;
-  int    step,isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
+  int    isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
   int    status;
   real   t;
@@ -147,8 +146,8 @@ int gmx_polystat(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 		    
   snew(top,1);
-  ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
-		      &natoms,NULL,NULL,NULL,top);
+  ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),
+		      NULL,box,&natoms,NULL,NULL,NULL,top);
   
   fprintf(stderr,"Select a group of polymer mainchain atoms:\n");
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),

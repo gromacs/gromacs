@@ -1083,7 +1083,8 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 
 bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                      t_inputrec *ir,
-                     int step,struct gmx_lincsdata *lincsd,t_mdatoms *md,
+                     gmx_step_t step,
+                     struct gmx_lincsdata *lincsd,t_mdatoms *md,
                      gmx_domdec_t *dd,
                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                      real lambda,real *dvdlambda,
@@ -1093,7 +1094,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                      t_nrnb *nrnb,
                      int maxwarn,int *warncount)
 {
-    char  buf[STRLEN];
+    char  buf[STRLEN],buf2[22];
     int   i,warn,p_imax,error;
     real  ncons_loc,p_ssd,p_max;
     t_pbc pbc,*pbc_null;
@@ -1246,10 +1247,10 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
             {
                 cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                         &ncons_loc,&p_ssd,&p_max,&p_imax);
-                sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
+                sprintf(buf,"\nStep %s, time %g (ps)  LINCS WARNING\n"
                         "relative constraint deviation after LINCS:\n"
                         "rms %.6f, max %.6f (between atoms %d and %d)\n",
-                        step,ir->init_t+step*ir->delta_t,
+                        gmx_step_str(step,buf2),ir->init_t+step*ir->delta_t,
                         sqrt(p_ssd/ncons_loc),p_max,
                         ddglatnr(dd,lincsd->bla[2*p_imax]),
                         ddglatnr(dd,lincsd->bla[2*p_imax+1]));

@@ -1983,11 +1983,12 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		t_atomtypes *atype, gmx_genborn_t *born,
-		bool bPrintSepPot,int step)
+		bool bPrintSepPot,gmx_step_t step)
 {
   int    ftype,nbonds,ind,nat;
   real   *epot,v,dvdl;
   const  t_pbc *pbc_null;
+  char   buf[22];
 
   if (fr->bMolPBC)
     pbc_null = pbc;
@@ -1995,7 +1996,8 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     pbc_null = NULL;
 
   if (bPrintSepPot)
-    fprintf(fplog,"Step %d: bonded V and dVdl for this node\n",step);
+    fprintf(fplog,"Step %s: bonded V and dVdl for this node\n",
+	    gmx_step_str(step,buf));
 
 #ifdef DEBUG
   if (g && debug)

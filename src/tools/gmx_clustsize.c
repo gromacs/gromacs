@@ -86,8 +86,8 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   int     ePBC=-1;
   t_block *mols=NULL;
   t_atom  *atom;
-  int     version,generation,sss,ii,jj,nsame;
-  real    ttt,lll,temp,tfac;
+  int     version,generation,ii,jj,nsame;
+  real    temp,tfac;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
   real    tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav,ekin;
@@ -115,7 +115,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     if (tpxh.natoms != natoms) 
       gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
 		tpxh.natoms,natoms);
-    ePBC = read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,mtop);
+    ePBC = read_tpx(tpr,NULL,NULL,&natoms,NULL,NULL,NULL,mtop);
   }
   if (ndf <= -1)
     tfac = 1;

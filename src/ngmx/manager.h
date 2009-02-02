@@ -97,7 +97,6 @@ typedef struct {
   int       natom;		/* The number of atoms			*/
   t_topology top;               /* topology                             */
   rvec      box_size;
-  int       step;               /* The actual step number               */
   real      time;               /* The actual time                      */
   rvec      *x;			/* The coordinates			*/
   iv2       *ix;		/* The coordinates after projection	*/

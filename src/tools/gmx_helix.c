@@ -210,14 +210,14 @@ int gmx_helix(int argc,char *argv[])
   FILE       *otrj;
   char       buf[54],prop[256];
   int        status;
-  int        natoms,nre,nres,step;
+  int        natoms,nre,nres;
   t_bb       *bb;
   int        i,j,ai,m,nall,nbb,nca,teller,nSel=0;
   atom_id    *bbindex,*caindex,*allindex;
   t_topology *top;
   int        ePBC;
   rvec       *x,*xref,*xav;
-  real       t,lambda;
+  real       t;
   real       rms,fac;
   matrix     box;
   bool       bRange;
@@ -277,8 +277,7 @@ int gmx_helix(int argc,char *argv[])
   /* Read reference frame from tpx file to compute helix length */
   snew(xref,top->atoms.nr);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),
-	   &step,&t,&lambda,NULL,NULL,
-	   &natoms,xref,NULL,NULL,NULL);
+	   NULL,NULL,&natoms,xref,NULL,NULL,NULL);
   calc_hxprops(nres,bb,xref,box);
   do_start_end(nres,bb,xref,&nbb,bbindex,&nca,caindex,bRange,rStart,rEnd);
   sfree(xref);

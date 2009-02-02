@@ -136,10 +136,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
 		 char *tpxfile,gmx_mtop_t *mtop, 
                  t_state *state)
 {
-  int         step;
-  real        t;
-  
-  read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,mtop);
+  read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
   set_state_entries(state,inputrec,1);
 
   if (fplog)
@@ -151,13 +148,11 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
 		   t_state *state,
 		   int list)
 {
-  int  step;
-  real t;
   char buf[256];
   
   if (MASTER(cr)) {
     init_inputrec(inputrec);
-    read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,mtop);
+    read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
     /* When we will be doing domain decomposition with separate PME nodes
      * the rng entries will be too large, we correct for this later.
      */

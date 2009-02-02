@@ -1514,7 +1514,6 @@ void ns(FILE *fp,
         t_mdatoms  *md,
         t_commrec  *cr,
         t_nrnb     *nrnb,
-        int        step,
         real       lambda,
         real       *dvdlambda,
         gmx_grppairener_t *grppener,
@@ -1563,7 +1562,7 @@ void ns(FILE *fp,
   GMX_MPE_LOG(ev_ns_finish);
 }
 
-void do_force_lowlevel(FILE       *fplog,   int        step,
+void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
@@ -1593,6 +1592,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
     t_pbc   pbc;
     real    dvdgb;
+    char    buf[22];
 
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
@@ -1621,8 +1621,8 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     
     if (bSepDVDL)
     {
-        fprintf(fplog,"Step %d: non-bonded V and dVdl for node %d:\n",
-                step,cr->nodeid);
+        fprintf(fplog,"Step %s: non-bonded V and dVdl for node %d:\n",
+                gmx_step_str(step,buf),cr->nodeid);
     }
     
     /* Call the short range functions all in one go. */
@@ -1928,8 +1928,9 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         t_wait += t3-t2;
         if (timesteps == 11)
         {
-            fprintf(stderr,"* PP load balancing info: node %d, step %d, rel wait time=%3.0f%% , load string value: %7.2f\n", 
-                    cr->nodeid, timesteps, 100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
+            fprintf(stderr,"* PP load balancing info: node %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n", 
+                    cr->nodeid, gmx_step_str(timesteps,buf), 
+                    100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
         }	  
         timesteps++;
     }

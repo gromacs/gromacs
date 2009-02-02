@@ -66,7 +66,7 @@ extern void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
  */
 
 extern void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
-		       int nsteps,real delta_t,
+		       gmx_step_t nsteps,real delta_t,
 		       double nbfs,double mflop);
 /* Prints the performance, nbfs and mflop come from print_flop */
 

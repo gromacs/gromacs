@@ -142,7 +142,7 @@ extern void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[]);
  */
 
 extern void dd_partition_system(FILE            *fplog,
-                                int             step,
+                                gmx_step_t      step,
                                 t_commrec       *cr,
                                 bool            bMasterState,
                                 t_state         *state_global,

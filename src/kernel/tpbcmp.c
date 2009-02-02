@@ -64,6 +64,17 @@ static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
   }
 }
 
+static void cmp_gmx_step_t(FILE *fp,char *s,gmx_step_t i1,gmx_step_t i2)
+{
+  if (i1 != i2) {
+    fprintf(fp,"%s (",s);
+    fprintf(fp,gmx_step_pfmt,i1);
+    fprintf(fp," - ");
+    fprintf(fp,gmx_step_pfmt,i2);
+    fprintf(fp,")\n");
+  }
+}
+
 static void cmp_us(FILE *fp,char *s,int index,unsigned short i1,unsigned short i2)
 {
   if (i1 != i2) {
@@ -409,8 +420,9 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
    * #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s,ftol)
    */
   cmp_int(fp,"inputrec->eI",-1,ir1->eI,ir2->eI);
-  cmp_int(fp,"inputrec->nsteps",-1,ir1->nsteps,ir2->nsteps);
-  cmp_int(fp,"inputrec->init_step",-1,ir1->init_step,ir2->init_step);
+  cmp_gmx_step_t(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
+  cmp_gmx_step_t(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
+  cmp_int(fp,"inputrec->simulation_part",-1,ir1->simulation_part,ir2->simulation_part);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
@@ -585,13 +597,12 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
   t_state     state[2];
   gmx_mtop_t  mtop[2];
   t_topology  top[2];
-  int         i,step;
-  real        t;
+  int         i;
 
   ff[0]=fn1;
   ff[1]=fn2;
   for(i=0; i<(fn2 ? 2 : 1); i++) {
-    read_tpx_state(ff[i],&step,&t,&(ir[i]),&state[i],NULL,&(mtop[i]));
+    read_tpx_state(ff[i],&(ir[i]),&state[i],NULL,&(mtop[i]));
   }
   if (fn2) {
     cmp_inputrec(stdout,&ir[0],&ir[1],ftol);

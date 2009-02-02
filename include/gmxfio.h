@@ -54,8 +54,8 @@ enum { eitemHEADER, eitemIR, eitemBOX,
        eitemTOP, eitemX, eitemV, eitemF, eitemNR };
        
 /* Enumerated for data types in files */
-enum { eioREAL, eioDOUBLE, eioINT,   eioNUCHAR, eioUSHORT, 
-       eioRVEC, eioNRVEC, eioIVEC,  eioSTRING, eioNR };
+enum { eioREAL, eioDOUBLE, eioINT, eioGMX_STEP_T, eioNUCHAR, eioUSHORT,
+       eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR };
 
 /* Functions for reading and writing data */
 typedef bool do_func(void *item,int nitem,int eio,
@@ -210,7 +210,11 @@ extern void unset_comment(void);
 #define do_int(item)          (bRead ?\
   do_read ((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__) :\
   do_write((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__))
-  
+
+#define do_gmx_step_t(item)          (bRead ?			\
+  do_read ((void *)&(item),1,eioGMX_STEP_T,(#item),__FILE__,__LINE__) :\
+  do_write((void *)&(item),1,eioGMX_STEP_T,(#item),__FILE__,__LINE__))
+ 
 #define do_nuchar(item,n)     (bRead ?\
   do_read ((void *)(item),n,eioNUCHAR,(#item),__FILE__,__LINE__) :\
   do_write((void *)(item),n,eioNUCHAR,(#item),__FILE__,__LINE__))

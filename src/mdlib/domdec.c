@@ -1690,10 +1690,11 @@ static char dim2char(int dim)
     return c;
 }
 
-static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
+static void write_dd_grid_pdb(char *fn,gmx_step_t step,
+                              gmx_domdec_t *dd,matrix box)
 {
     rvec grid_s[2],*grid_r=NULL,cx,r;
-    char fname[STRLEN],format[STRLEN];
+    char fname[STRLEN],format[STRLEN],buf[22];
     FILE *out;
     int  a,i,d,z,y,x;
     matrix tric;
@@ -1732,7 +1733,7 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
                 }
             }
         }
-        sprintf(fname,"%s_%d.pdb",fn,step);
+        sprintf(fname,"%s_%s.pdb",fn,gmx_step_str(step,buf));
         sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
         out = gmx_fio_fopen(fname,"w");
         gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
@@ -1778,12 +1779,12 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
     }
 }
 
-static void write_dd_pdb(char *fn,int step,char *title,
+static void write_dd_pdb(char *fn,gmx_step_t step,char *title,
                          gmx_mtop_t *mtop,
                          t_commrec *cr,int natoms,
                          rvec x[],matrix box)
 {
-    char fname[STRLEN],format[STRLEN],format4[STRLEN];
+    char fname[STRLEN],format[STRLEN],format4[STRLEN],buf[22];
     FILE *out;
     int  i,ii,resnr,c;
     char *atomname,*resname;
@@ -1792,7 +1793,7 @@ static void write_dd_pdb(char *fn,int step,char *title,
     
     dd = cr->dd;
     
-    sprintf(fname,"%s_%d_n%d.pdb",fn,step,cr->sim_nodeid);
+    sprintf(fname,"%s_%s_n%d.pdb",fn,gmx_step_str(step,buf),cr->sim_nodeid);
     
     sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
     sprintf(format4,"%s%s\n",pdbformat4,"%6.2f%6.2f");
@@ -2435,7 +2436,7 @@ static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
     return max(comm->cellsize_limit,comm->cutoff/comm->cd[dim_ind].np);
 }
 
-static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
+static void check_grid_jump(gmx_step_t step,gmx_domdec_t *dd,matrix box)
 {
     gmx_domdec_comm_t *comm;
     int  d,dim;
@@ -2455,8 +2456,10 @@ static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
         if ((comm->cell_f1[d] - comm->cell_f_max0[d])*bfac <  limit ||
             (comm->cell_f0[d] - comm->cell_f_min1[d])*bfac > -limit)
         {
-            gmx_fatal(FARGS,"Step %d: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d\n",
-                      step,dim2char(dim),dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+            char buf[22];
+            gmx_fatal(FARGS,"Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d\n",
+                      gmx_step_str(step,buf),
+                      dim2char(dim),dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
         }
     }
 }
@@ -2828,7 +2831,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                                        int d,int dim,gmx_domdec_root_t *root,
                                        matrix box,bool bDynamicBox,
-                                       bool bUniform,int step)
+                                       bool bUniform,gmx_step_t step)
 {
     gmx_domdec_comm_t *comm;
     int  ncd,d1,i,j,pos,nmin,nmin_old;
@@ -2960,8 +2963,10 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
      */
     if (root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
     {
-        gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
-                  step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
+        char buf[22];
+        gmx_fatal(FARGS,"Step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
+                  gmx_step_str(step,buf),
+                  dim2char(dim),box[dim][dim],dd->skew_fac[dim],
                   ncd,comm->cellsize_min[dim]);
     }
     
@@ -3049,9 +3054,10 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         if (root->cell_f[i+1] - root->cell_f[i] <
             cellsize_limit_f/DD_CELL_MARGIN)
         {
+            char buf[22];
             fprintf(stderr,
-                    "\nWARNING step %d: direction %c, cell %d too small: %f\n",
-                    step,dim2char(dim),i,
+                    "\nWARNING step %s: direction %c, cell %d too small: %f\n",
+                    gmx_step_str(step,buf),dim2char(dim),i,
                     (root->cell_f[i+1] - root->cell_f[i])
                     *box[dim][dim]*dd->skew_fac[dim]);
         }
@@ -3123,7 +3129,7 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 }
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
-                                  bool bUniform,int step)
+                                  bool bUniform,gmx_step_t step)
 {
     gmx_domdec_comm_t *comm;
     int d,dim,d1;
@@ -3207,7 +3213,7 @@ static void realloc_comm_ind(gmx_domdec_t *dd,ivec npulse)
 
 
 static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
-                              bool bUniform,int step)
+                              bool bUniform,gmx_step_t step)
 {
     int  d;
     ivec npulse;
@@ -3242,7 +3248,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
     }
 }
 
-static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
+static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,gmx_step_t step)
 {
     int dim_ind,dim;
     
@@ -3254,8 +3260,9 @@ static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
             (dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
             dd->comm->cellsize_min[dim])
         {
-            gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d",
-                      step,dim2char(dim),
+            char buf[22];
+            gmx_fatal(FARGS,"Step %s: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d",
+                      gmx_step_str(step,buf),dim2char(dim),
                       dd->cell_x1[dim] - dd->cell_x0[dim],dd->skew_fac[dim],
                       dd->comm->cellsize_min[dim],
                       dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
@@ -3305,7 +3312,7 @@ static void check_screw_box(matrix box)
     }
 }
 
-static void distribute_cg(FILE *fplog,int step,
+static void distribute_cg(FILE *fplog,gmx_step_t step,
                           matrix box,t_block *cgs,rvec pos[],
                           gmx_domdec_t *dd)
 {
@@ -3463,7 +3470,9 @@ static void distribute_cg(FILE *fplog,int step,
     
     if (fplog)
     {
-        fprintf(fplog,"Charge group distribution at step %d:",step);
+        char buf[22];
+        fprintf(fplog,"Charge group distribution at step %s:",
+                gmx_step_str(step,buf));
         for(i=0; i<dd->nnodes; i++)
         {
             fprintf(fplog," %d",ma->ncg[i]);
@@ -3472,7 +3481,7 @@ static void distribute_cg(FILE *fplog,int step,
     }
 }
 
-static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
+static void get_cg_distribution(FILE *fplog,gmx_step_t step,gmx_domdec_t *dd,
                                 t_block *cgs,matrix box,rvec pos[])
 {
     gmx_domdec_master_t *ma=NULL;
@@ -3730,11 +3739,14 @@ static void clear_and_mark_ind(int ncg,int *move,
 }
 
 static void print_cg_move(FILE *fplog,
-                          gmx_domdec_t *dd,int step,int cg,int dim,int dir,
+                          gmx_domdec_t *dd,
+                          gmx_step_t step,int cg,int dim,int dir,
                           real limitd,
                           rvec cm_old,rvec cm_new,real pos_d)
 {
-    fprintf(fplog,"\nStep %d:\n",step);
+    char buf[22];
+
+    fprintf(fplog,"\nStep %s:\n",gmx_step_str(step,buf));
     fprintf(fplog,"The charge group starting at atom %d moved than the distance allowed by the domain decomposition (%f) in direction %c\n",
             ddglatnr(dd,dd->cgindex[cg]),limitd,dim2char(dim));
     fprintf(fplog,"distance out of cell %f\n",
@@ -3752,7 +3764,8 @@ static void print_cg_move(FILE *fplog,
 }
 
 static void cg_move_error(FILE *fplog,
-                          gmx_domdec_t *dd,int step,int cg,int dim,int dir,
+                          gmx_domdec_t *dd,
+                          gmx_step_t step,int cg,int dim,int dir,
                           real limitd,
                           rvec cm_old,rvec cm_new,real pos_d)
 {
@@ -3804,7 +3817,7 @@ static void rotate_state_atom(t_state *state,int a)
     }
 }
 
-static int dd_redistribute_cg(FILE *fplog,int step,
+static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
                               gmx_domdec_t *dd,t_block *gcgs,
                               t_state *state,rvec **f,rvec **buf,
                               t_forcerec *fr,t_mdatoms *md,
@@ -4726,9 +4739,10 @@ static float dd_pme_f_ratio(gmx_domdec_t *dd)
     return dd->comm->load[0].pme/dd->comm->load[0].mdf;
 }
 
-static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,int step)
+static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,gmx_step_t step)
 {
     int flags,d;
+    char buf[22];
     
     flags = dd_load_flags(dd);
     if (flags)
@@ -4744,7 +4758,7 @@ static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,int step)
         }
         fprintf(fplog,"\n");
     }
-    fprintf(fplog,"DD  step %d",step);
+    fprintf(fplog,"DD  step %s",gmx_step_str(step,buf));
     if (dd->comm->bDynLoadBal)
     {
         fprintf(fplog,"  vol min/aver %5.3f%c",
@@ -6101,7 +6115,7 @@ static void set_dlb_limits(gmx_domdec_t *dd)
 }
 
 
-static void turn_on_dlb(FILE *fplog,t_commrec *cr,int step)
+static void turn_on_dlb(FILE *fplog,t_commrec *cr,gmx_step_t step)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6114,7 +6128,7 @@ static void turn_on_dlb(FILE *fplog,t_commrec *cr,int step)
     
     if (fplog)
     {
-        fprintf(fplog,"At step %d the performance loss due to force load imbalance is %.1f %%\n",step,dd_force_imb_perf_loss(dd)*100);
+        fprintf(fplog,"At step %s the performance loss due to force load imbalance is %.1f %%\n",gmx_step_str(step,buf),dd_force_imb_perf_loss(dd)*100);
     }
 
     cellsize_min = comm->cellsize_min[dd->dim[0]];
@@ -6573,8 +6587,7 @@ static bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
     return bMiss;
 }
 
-static void setup_dd_communication(FILE *fplog,int step,
-                                   gmx_domdec_t *dd,int *gcgs_index,
+static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                                    matrix box,t_forcerec *fr)
 {
     int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot,ncell,cell,celli,cg0,cg1;
@@ -7557,7 +7570,7 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
 }
 
 void dd_partition_system(FILE            *fplog,
-                         int             step,
+                         gmx_step_t      step,
                          t_commrec       *cr,
                          bool            bMasterState,
                          t_state         *state_global,
@@ -7582,6 +7595,7 @@ void dd_partition_system(FILE            *fplog,
     int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
     bool bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG;
     ivec ncells_old,np;
+    char sbuf[22];
 	
     dd = cr->dd;
     comm = dd->comm;
@@ -7627,8 +7641,9 @@ void dd_partition_system(FILE            *fplog,
                         (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS);
                     if (debug)
                     {
-                        fprintf(debug,"step %d, imb loss %f\n",
-                                step,dd_force_imb_perf_loss(dd));
+                        fprintf(debug,"step %s, imb loss %f\n",
+                                gmx_step_str(step,sbuf),
+                                dd_force_imb_perf_loss(dd));
                     }
                 }
                 dd_bcast(dd,sizeof(bTurnOnDLB),&bTurnOnDLB);
@@ -7775,8 +7790,8 @@ void dd_partition_system(FILE            *fplog,
         
         if (debug)
         {
-            fprintf(debug,"Step %d, sorting the %d home charge groups\n",
-                    step,dd->ncg_home);
+            fprintf(debug,"Step %s, sorting the %d home charge groups\n",
+                    gmx_step_str(step,sbuf),dd->ncg_home);
         }
         dd_sort_state(dd,ir->ePBC,fr->cg_cm,fr,state_local,ncg_home_old);
         /* Rebuild all the indices */
@@ -7784,8 +7799,7 @@ void dd_partition_system(FILE            *fplog,
     }
     
     /* Setup up the communication and communicate the coordinates */
-    setup_dd_communication(fplog,step,dd,cgs_gl->index,
-                           state_local->box,fr);
+    setup_dd_communication(dd,cgs_gl->index,state_local->box,fr);
     
     /* Set the indices */
     make_dd_indices(dd,cgs_gl->index,cg0);

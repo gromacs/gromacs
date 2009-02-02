@@ -94,8 +94,7 @@ static void dump_top(FILE *fp,t_topology *top,char *tpr)
 static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,bool bSysTop)
 {
   FILE *gp;
-  int         step,fp,indent,i,j,**gcount,atot;
-  real        t;
+  int         fp,indent,i,j,**gcount,atot;
   t_state     state;
   rvec        *f=NULL;
   t_inputrec  ir;
@@ -106,7 +105,7 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,bool bSysTop)
 
   read_tpxheader(fn,&tpx,TRUE,NULL,NULL);
 
-  read_tpx_state(fn,&step,&t,
+  read_tpx_state(fn,
 		 tpx.bIr  ? &ir : NULL,
 		 &state,tpx.bF ? f : NULL,
 		 tpx.bTop ? &mtop: NULL);

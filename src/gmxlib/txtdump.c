@@ -322,6 +322,14 @@ static void pr_int(FILE *fp,int indent,const char *title,int i)
   fprintf(fp,"%-20s = %d\n",title,i);
 }
 
+static void pr_gmx_step_t(FILE *fp,int indent,const char *title,gmx_step_t i)
+{
+  char buf[22];
+
+  pr_indent(fp,indent);
+  fprintf(fp,"%-20s = %s\n",title,gmx_step_str(i,buf));
+}
+
 static void pr_real(FILE *fp,int indent,const char *title,real r)
 {
   pr_indent(fp,indent);
@@ -472,6 +480,7 @@ static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos,
 
 #define PS(t,s) pr_str(fp,indent,t,s)
 #define PI(t,s) pr_int(fp,indent,t,s)
+#define PSTEP(t,s) pr_gmx_step_t(fp,indent,t,s)
 #define PR(t,s) pr_real(fp,indent,t,s)
 
 static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
@@ -515,8 +524,8 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     if (!bMDPformat)
       indent=pr_title(fp,indent,title);
     PS("integrator",EI(ir->eI));
-    PI("nsteps",ir->nsteps);
-    PI("init_step",ir->init_step);
+    PSTEP("nsteps",ir->nsteps);
+    PSTEP("init_step",ir->init_step);
     PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
@@ -1317,6 +1326,8 @@ void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNum
 
 void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
 {
+  char buf[22];
+    
   if (available(fp,sh,indent,title))
     {
       indent=pr_title(fp,indent,title);
@@ -1335,10 +1346,6 @@ void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
       
       pr_indent(fp,indent);
       fprintf(fp,"natoms = %d\n",sh->natoms);
-      pr_indent(fp,indent);
-      fprintf(fp,"step   = %d\n",sh->step);
-      pr_indent(fp,indent);
-      fprintf(fp,"t      = %e\n",sh->t);
       pr_indent(fp,indent);
       fprintf(fp,"lambda = %e\n",sh->lambda);
     }

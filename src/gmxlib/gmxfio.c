@@ -226,6 +226,10 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   case eioINT:
     res = fprintf(curfio->fp,"%18d%s\n",*((int *)item),dbgstr(desc));
     break;
+  case eioGMX_STEP_T:
+    sprintf(strbuf,"%s%s%s","%",gmx_step_fmt,"\n");
+    res = fprintf(curfio->fp,strbuf,*((gmx_step_t *)item),dbgstr(desc));
+    break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
     for(i=0; (i<nitem); i++)
@@ -335,6 +339,7 @@ static bool do_ascread(void *item,int nitem,int eio,
 {
   FILE   *fp = curfio->fp;
   int    i,m,res=0,*iptr,ix;
+  gmx_step_t s;
   double d,x;
   real   *ptr;
   unsigned char *ucptr;
@@ -350,6 +355,10 @@ static bool do_ascread(void *item,int nitem,int eio,
   case eioINT:
     res = sscanf(next_item(fp),"%d",&i);
     if (item) *((int *)item) = i;
+    break;
+  case eioGMX_STEP_T:
+    res = sscanf(next_item(fp),gmx_step_pfmt,&s);
+    if (item) *((int *)item) = s;
     break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
@@ -420,6 +429,9 @@ static bool do_binwrite(void *item,int nitem,int eio,
   case eioINT:
     size = sizeof(int);
     break;
+  case eioGMX_STEP_T:
+    size = sizeof(gmx_step_t);
+    break;
   case eioNUCHAR:
     size = sizeof(unsigned char);
     break;
@@ -473,6 +485,9 @@ static bool do_binread(void *item,int nitem,int eio,
   case eioINT:
     size = sizeof(int);
     break;
+  case eioGMX_STEP_T:
+    size = sizeof(gmx_step_t);
+    break;
   case eioNUCHAR:
     size = sizeof(unsigned char);
     break;
@@ -523,6 +538,7 @@ static bool do_xdr(void *item,int nitem,int eio,
   float  fvec[DIM];
   double dvec[DIM];
   int    j,m,*iptr,idum;
+  gmx_step_t sdum;
   real   *ptr;
   unsigned short us;
   double d=0;
@@ -551,6 +567,14 @@ static bool do_xdr(void *item,int nitem,int eio,
     if (item && !curfio->bRead) idum = *(int *)item;
     res = xdr_int(curfio->xdr,&idum);
     if (item) *(int *)item = idum;
+    break;
+  case eioGMX_STEP_T:
+    /* do_xdr will not generate a warning when a 64bit gmx_step_t
+     * value that is out of 32bit range is read into a 32bit gmx_step_t.
+     */
+    if (item && !curfio->bRead) sdum = *(gmx_step_t *)item;
+    res = xdr_gmx_step_t(curfio->xdr,&sdum,NULL);
+    if (item) *(gmx_step_t *)item = sdum;
     break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;

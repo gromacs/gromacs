@@ -134,9 +134,9 @@ typedef struct {
 
 typedef struct {
   int  eI;              /* Integration method 				*/
-  int  nsteps;		/* number of steps to be taken			*/
+  gmx_step_t nsteps;	/* number of steps to be taken			*/
   int  simulation_part; /* Used in checkpointing to separate chunks */
-  int  init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
+  gmx_step_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/

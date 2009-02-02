@@ -281,11 +281,10 @@ static void get_orires_parms(char *topnm,
   t_iparams  *ip;
   int        natoms,i;
   t_iatom    *iatom;
-  real       t;
   int        nb;
   matrix     box;
 
-  read_tpx(topnm,&i,&t,&t,&ir,box,&natoms,NULL,NULL,NULL,&mtop);
+  read_tpx(topnm,&ir,box,&natoms,NULL,NULL,NULL,&mtop);
   top = gmx_mtop_generate_local_top(&mtop,&ir);
 
   ip       = top->idef.iparams;
@@ -320,12 +319,12 @@ static int get_bounds(char *topnm,
   int        natoms,i,j,k,type,ftype,natom;
   t_ilist    *disres;
   t_iatom    *iatom;
-  real       *b,t;
+  real       *b;
   int        *ind,*pair;
   int        nb,label1;
   matrix     box;
 
-  read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,mtop);
+  read_tpx(topnm,ir,box,&natoms,NULL,NULL,NULL,mtop);
   snew(*ltop,1);
   top = gmx_mtop_generate_local_top(mtop,ir);
   *ltop = top;

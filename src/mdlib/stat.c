@@ -218,7 +218,7 @@ void global_stat(FILE *fplog,
   enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
 }
 
-int do_per_step(int step,int nstep)
+int do_per_step(gmx_step_t step,gmx_step_t nstep)
 {
   if (nstep != 0) 
     return ((step % nstep)==0); 
@@ -237,13 +237,13 @@ static void moveit(t_commrec *cr,
 }
 
 void write_traj(FILE *fplog,t_commrec *cr,
-				int fp_trn,bool bX,bool bV,bool bF,
-				int fp_xtc,bool bXTC,int xtc_prec,
-				char *fn_cpt,bool bCPT,
-				gmx_mtop_t *top_global,
-				int eIntegrator,int simulation_part,int step,double t,
-				t_state *state_local,t_state *state_global,
-				rvec *f_local,rvec *f_global)
+		int fp_trn,bool bX,bool bV,bool bF,
+		int fp_xtc,bool bXTC,int xtc_prec,
+		char *fn_cpt,bool bCPT,
+		gmx_mtop_t *top_global,
+		int eIntegrator,int simulation_part,gmx_step_t step,double t,
+		t_state *state_local,t_state *state_global,
+		rvec *f_local,rvec *f_global)
 {
   static int  nxtc=-1;
   static rvec *xxtc=NULL;

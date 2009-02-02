@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 61;
+static const int tpx_version = 62;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -261,11 +261,22 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
   if (file_version >= 1) {  
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
-    do_int(ir->nsteps); 
-    if(file_version > 25)
-      do_int(ir->init_step);
-    else
+    if (file_version >= 62) {
+      do_gmx_step_t(ir->nsteps);
+    } else {
+      do_int(idum);
+      ir->nsteps = idum;
+    }
+    if(file_version > 25) {
+      if (file_version >= 62) {
+	do_gmx_step_t(ir->init_step);
+      } else {
+	do_int(idum);
+	ir->init_step = idum;
+      }
+    }  else {
       ir->init_step=0;
+    }
 
 	if(file_version >= 58)
 	  do_int(ir->simulation_part);
@@ -1681,6 +1692,8 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   bool  bDouble;
   int   precision;
   int   fver,fgen;
+  int   idum=0;
+  real  rdum=0;
   gmx_fio_select(fp);
   gmx_fio_setdebug(fp,bDebugMode());
   
@@ -1738,8 +1751,10 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
     do_int(tpx->ngtc);
   else
     tpx->ngtc = 0;
-  do_int (tpx->step);
-  do_real(tpx->t);
+  if (fver < 62) {
+    do_int (idum);
+    do_real(rdum);
+  }
   do_real(tpx->lambda);
   do_int (tpx->bIr);
   do_int (tpx->bTop);
@@ -1754,7 +1769,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   }
 }
 
-static int do_tpx(int fp,bool bRead,int *step,real *t,
+static int do_tpx(int fp,bool bRead,
 		  t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop,
 		  bool bXVallocated)
 {
@@ -1771,8 +1786,6 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
   if (!bRead) {
     tpx.natoms = state->natoms;
     tpx.ngtc   = state->ngtc;
-    tpx.step   = *step;
-    tpx.t      = *t;
     tpx.lambda = state->lambda;
     tpx.bIr  = (ir       != NULL);
     tpx.bTop = (mtop     != NULL);
@@ -1787,8 +1800,6 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
   do_tpxheader(fp,bRead,&tpx,TopOnlyOK,&file_version,&file_generation);
 
   if (bRead) {
-    *step         = tpx.step;
-    *t            = tpx.t;
     state->flags  = 0;
     state->lambda = tpx.lambda;
     /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
@@ -1979,27 +1990,27 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
   close_tpx(fp);
 }
 
-void write_tpx_state(char *fn,int step,real t,
+void write_tpx_state(char *fn,
 		     t_inputrec *ir,t_state *state,gmx_mtop_t *mtop)
 {
   int fp;
 
   fp = open_tpx(fn,"w");
-  do_tpx(fp,FALSE,&step,&t,ir,state,NULL,mtop,FALSE);
+  do_tpx(fp,FALSE,ir,state,NULL,mtop,FALSE);
   close_tpx(fp);
 }
 
-void read_tpx_state(char *fn,int *step,real *t,
+void read_tpx_state(char *fn,
 		    t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop)
 {
   int fp;
 	
   fp = open_tpx(fn,"r");
-  do_tpx(fp,TRUE,step,t,ir,state,f,mtop,FALSE);
+  do_tpx(fp,TRUE,ir,state,f,mtop,FALSE);
   close_tpx(fp);
 }
 
-int read_tpx(char *fn,int *step,real *t,real *lambda,
+int read_tpx(char *fn,
 	     t_inputrec *ir, matrix box,int *natoms,
 	     rvec *x,rvec *v,rvec *f,gmx_mtop_t *mtop)
 {
@@ -2010,11 +2021,9 @@ int read_tpx(char *fn,int *step,real *t,real *lambda,
   state.x = x;
   state.v = v;
   fp = open_tpx(fn,"r");
-  ePBC = do_tpx(fp,TRUE,step,t,ir,&state,f,mtop,TRUE);
+  ePBC = do_tpx(fp,TRUE,ir,&state,f,mtop,TRUE);
   close_tpx(fp);
   *natoms = state.natoms;
-  if (lambda) 
-    *lambda = state.lambda;
   if (box) 
     copy_mat(state.box,box);
   state.x = NULL;
@@ -2024,7 +2033,7 @@ int read_tpx(char *fn,int *step,real *t,real *lambda,
   return ePBC;
 }
 
-int read_tpx_top(char *fn,int *step,real *t,real *lambda,
+int read_tpx_top(char *fn,
 		 t_inputrec *ir, matrix box,int *natoms,
 		 rvec *x,rvec *v,rvec *f,t_topology *top)
 {
@@ -2032,7 +2041,7 @@ int read_tpx_top(char *fn,int *step,real *t,real *lambda,
   t_topology *ltop;
   int ePBC;
 
-  ePBC = read_tpx(fn,step,t,lambda,ir,box,natoms,x,v,f,&mtop);
+  ePBC = read_tpx(fn,ir,box,natoms,x,v,f,&mtop);
   
   *top = gmx_mtop_t_to_t_topology(&mtop);
 
@@ -2055,8 +2064,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
 		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;
-  real         t,lambda;
-  int          natoms,step,i,version,generation;
+  int          natoms,i,version,generation;
   bool         bTop,bXNULL;
   gmx_mtop_t   *mtop;
   t_topology   *topconv;
@@ -2071,7 +2079,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
     if (v)
       snew(*v,header.natoms);
     snew(mtop,1);
-    *ePBC = read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
+    *ePBC = read_tpx(infile,NULL,box,&natoms,
 		     (x==NULL) ? NULL : *x,(v==NULL) ? NULL : *v,NULL,mtop);
     *top = gmx_mtop_t_to_t_topology(mtop);
     sfree(mtop);

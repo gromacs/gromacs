@@ -137,10 +137,8 @@ static void tpx2methods(char *tpx,char *tex)
   t_inputrec  ir;
   t_state     state;
   gmx_mtop_t  mtop;
-  int         i,step;
-  real        t;
 
-  read_tpx_state(tpx,&step,&t,&ir,&state,NULL,&mtop);
+  read_tpx_state(tpx,&ir,&state,NULL,&mtop);
   fp=gmx_fio_fopen(tex,"w");
   fprintf(fp,"\\section{Methods}\n");
   tpx2system(fp,&mtop);
@@ -248,25 +246,23 @@ void chk_trj(char *fn,char *tpr,real tol)
   t_fr_time    first,last;
   int          j=-1,new_natoms,natoms;
   off_t        fpos;
-  real         rdum,t,tt,old_t1,old_t2,prec;
+  real         rdum,tt,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
-  int          status,step;
+  int          status;
   gmx_mtop_t   mtop;
   gmx_localtop_t *top;
   t_state      state;
   t_inputrec   ir;
   
   if (tpr) {
-    read_tpx_state(tpr,&step,&t,&ir,&state,NULL,&mtop);
+    read_tpx_state(tpr,&ir,&state,NULL,&mtop);
   }
   new_natoms = -1;
   natoms = -1;  
-  t      = 0;
   
   printf("Checking file %s\n",fn);
   
   j      =  0;
-  t      = -1;
   old_t2 = -2.0;
   old_t1 = -1.0;
   fpos   = 0;
@@ -334,7 +330,6 @@ void chk_trj(char *fn,char *tpr,real tol)
     /*if (fpos && ((j<10 || j%10==0)))
       fprintf(stderr," byte: %10lu",(unsigned long)fpos);*/
     j++;
-    t=fr.time;
     new_natoms=fr.natoms;
 #define INC(s,n,f,l,item) if (s.item != 0) { if (n.item==0) { first.item = fr.time; } last.item = fr.time; n.item++; }
     INC(fr,count,first,last,bStep);

@@ -351,8 +351,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   t_gmx                *gmx;
   XSizeHints           hints;
   int                  w0,h0;
-  int                  step,natom,nre,natom_trx;
-  real                 t,lambda;
+  int                  natom,nre,natom_trx;
   t_topology           top;
   int                  ePBC;
   matrix               box;
@@ -363,8 +362,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   snew(gmx,1);
   snew(gmx->wd,1);
 
-  ePBC = read_tpx_top(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
-		      &natom,NULL,NULL,NULL,&top);
+  ePBC = read_tpx_top(ftp2fn(efTPX,nfile,fnm),
+		      NULL,box,&natom,NULL,NULL,NULL,&top);
 
   read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_DONT_SKIP);
   close_trx(status);

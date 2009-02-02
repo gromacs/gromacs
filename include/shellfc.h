@@ -53,7 +53,7 @@ extern void make_local_shells(t_commrec *cr,t_mdatoms *md,
 
 /* Optimize shell positions */
 extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
-			       int mdstep,t_inputrec *inputrec,
+			       gmx_step_t mdstep,t_inputrec *inputrec,
 			       bool bDoNS,bool bStopCM,
 			       gmx_localtop_t *top,
 			       gmx_mtop_t *mtop,

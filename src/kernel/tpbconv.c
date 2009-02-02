@@ -314,8 +314,9 @@ int main (int argc, char *argv[])
   char         *top_fn,*frame_fn;
   int          fp,fp_ener=-1;
   t_trnheader head;
-  int          i,frame,run_step,nsteps_org;
-  real         run_t,state_t;
+  int          i;
+  gmx_step_t   nsteps_req,run_step,frame;
+  double       run_t,state_t;
   bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
   bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
@@ -331,6 +332,7 @@ int main (int argc, char *argv[])
   int          nre;
   char         **enm=NULL;
   t_enxframe   *fr_ener=NULL;
+  char         buf[200],buf2[200];
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
     { efTRN, "-f",  NULL,    ffOPTRD },
@@ -341,12 +343,12 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static int  nsteps_req = -1;
+  static int  nsteps_req_int = -1;
   static real runtime_req = -1;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
   static bool bContinuation = TRUE,bZeroQ = FALSE;
   static t_pargs pa[] = {
-    { "-nsteps",        FALSE, etINT,  {&nsteps_req},
+    { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
       "Change the number of steps" },
     { "-runtime",       FALSE, etREAL, {&runtime_req},
       "Set the run time (ps)" },
@@ -369,6 +371,8 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
+  /* Convert int to gmx_step_t */
+  nsteps_req = nsteps_req_int;
   bNsteps = (nsteps_req >= 0 || runtime_req >= 0);
   bExtend = opt2parg_bSet("-extend",asize(pa),pa);
   bUntil  = opt2parg_bSet("-until",asize(pa),pa);
@@ -379,7 +383,9 @@ int main (int argc, char *argv[])
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
   snew(ir,1);
-  read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&mtop);
+  read_tpx_state(top_fn,ir,&state,NULL,&mtop);
+  run_step = ir->init_step;
+  run_t    = ir->init_step*ir->delta_t + ir->init_t;
 
   if (bTraj) {
     if (ir->bContinuation != bContinuation)
@@ -455,7 +461,9 @@ int main (int argc, char *argv[])
 	}
       }
       if (bFrame || !bOK) {
-	fprintf(stderr,"\r%s %s frame %6d: step %6d time %8.3f",
+	sprintf(buf,"\r%s %s frame %s%s: step %s%s time %s",
+		"%s","%s","%6",gmx_step_fmt,"%6",gmx_step_fmt," %8.3f");
+	fprintf(stderr,buf,
 		bUse ? "Read   " : "Skipped",ftp2ext(fn2ftp(frame_fn)),
 		frame,head.step,head.t);
 	frame++;
@@ -474,9 +482,11 @@ int main (int argc, char *argv[])
     fprintf(stderr,"\n");
 
     if (!bOK)
-      fprintf(stderr,"%s frame %d (step %d, time %g) is incomplete\n",
-	      ftp2ext(fn2ftp(frame_fn)),frame-1,head.step,head.t);
-    fprintf(stderr,"\nUsing frame of step %d time %g\n",run_step,run_t);
+      fprintf(stderr,"%s frame %s (step %s, time %g) is incomplete\n",
+	      ftp2ext(fn2ftp(frame_fn)),gmx_step_str(frame-1,buf2),
+	      gmx_step_str(head.step,buf),head.t);
+    fprintf(stderr,"\nUsing frame of step %s time %g\n",
+	    gmx_step_str(run_step,buf),run_t);
 
     if (bNeedEner) {
       if (bReadEner) {
@@ -498,27 +508,29 @@ int main (int argc, char *argv[])
       }
       nsteps_req = (int)(runtime_req/ir->delta_t + 0.5);
     }
-    fprintf(stderr,"Setting nsteps to %d\n",nsteps_req);
+    fprintf(stderr,"Setting nsteps to %s\n",gmx_step_str(nsteps_req,buf));
     ir->nsteps = nsteps_req;
   } else {
     /* Determine total number of steps remaining */
     if (bExtend) {
       ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
-      printf("Extending remaining runtime of by %g ps (now %d steps)\n",
-	     extend_t,ir->nsteps);
+      printf("Extending remaining runtime of by %g ps (now %s steps)\n",
+	     extend_t,gmx_step_str(ir->nsteps,buf));
     }
     else if (bUntil) {
-      printf("nsteps = %d, run_step = %d, current_t = %g, until = %g\n",
-	     ir->nsteps,run_step,run_t,until_t);
-      ir->nsteps = (int)((until_t - run_t)/ir->delta_t + 0.5);
-      printf("Extending remaining runtime until %g ps (now %d steps)\n",
-	     until_t,ir->nsteps);
+      printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
+	     gmx_step_str(ir->nsteps,buf),
+	     gmx_step_str(run_step,buf2),
+	     run_t,until_t);
+      ir->nsteps = (gmx_step_t)((until_t - run_t)/ir->delta_t + 0.5);
+      printf("Extending remaining runtime until %g ps (now %s steps)\n",
+	     until_t,gmx_step_str(ir->nsteps,buf));
     }
     else {
       ir->nsteps -= run_step - ir->init_step; 
       /* Print message */
-      printf("%d steps (%g ps) remaining from first run.\n",
-	   ir->nsteps,ir->nsteps*ir->delta_t);
+      printf("%s steps (%g ps) remaining from first run.\n",
+	     gmx_step_str(ir->nsteps,buf),ir->nsteps*ir->delta_t);
 	  
     }
   }
@@ -553,11 +565,11 @@ int main (int argc, char *argv[])
     }    
 
     state_t = ir->init_t + ir->init_step*ir->delta_t;
-    fprintf(stderr,"Writing statusfile with starting step %10d and length %10d steps...\n",
-	    ir->init_step,ir->nsteps);
+    sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n","%10",gmx_step_fmt,"%10",gmx_step_fmt);
+    fprintf(stderr,buf,ir->init_step,ir->nsteps);
     fprintf(stderr,"                                 time %10.3f and length %10.3f ps\n",
 	    state_t,ir->nsteps*ir->delta_t);
-    write_tpx_state(opt2fn("-o",NFILE,fnm),0,state_t,ir,&state,&mtop);
+    write_tpx_state(opt2fn("-o",NFILE,fnm),ir,&state,&mtop);
   }
   else
     printf("You've simulated long enough. Not writing tpr file\n");

@@ -283,13 +283,11 @@ static void set_default_time_unit(char *select)
 
 t_topology *read_top(char *fn,int *ePBC)
 {
-  int        epbc,step,natoms;
-  real       t,lambda;
+  int        epbc,natoms;
   t_topology *top;
 
   snew(top,1);
-  epbc = read_tpx_top(fn,&step,&t,&lambda,NULL,NULL,
-		      &natoms,NULL,NULL,NULL,top);
+  epbc = read_tpx_top(fn,NULL,NULL,&natoms,NULL,NULL,NULL,top);
   if (ePBC)
     *ePBC = epbc;
 

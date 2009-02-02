@@ -180,7 +180,6 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   t_atoms      *at;
   bool         *bB;
   int          i,idum;
-  real         rdum;
 
   read_tpxheader(status,&sh,TRUE,NULL,NULL);
   snew(man->ix,sh.natoms);
@@ -198,8 +197,7 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   snew(man->szLab,sh.natoms);
   snew(man->bHydro,sh.natoms);
   snew(bB,sh.natoms);
-  read_tpx_top(status,&(man->step),&(man->time),&rdum,NULL,man->box,
-	       &man->natom,NULL,NULL,NULL,&man->top);
+  read_tpx_top(status,NULL,man->box,&man->natom,NULL,NULL,NULL,&man->top);
   
   man->natom=
     read_first_x(&man->status,trajectory,&(man->time),&(man->x),man->box);
@@ -308,7 +306,6 @@ static bool step_man(t_manager *man,int *nat)
   static int  ncount=0;
   static bool bWarn = FALSE;
   bool        bEof;
-  real        rdum;
   int         dum;
   char        *warn;
 

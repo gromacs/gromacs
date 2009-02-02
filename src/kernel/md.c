@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -146,7 +147,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   gmx_wallcycle_t wcycle;
   bool       bReadRNG,bReadEkin;
   int        list;
-  int        nsteps_done;
+  gmx_step_t nsteps_done;
   int        rc;
   gmx_genborn_t *born;
 
@@ -511,9 +512,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags,
-	     int *nsteps_done)
+	     gmx_step_t *nsteps_done)
 {
-  int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel,step_ene;
+  int        fp_ene=0,fp_trn=0,fp_xtc=0,step_ene;
+  gmx_step_t step,step_rel;
   char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
@@ -529,7 +531,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int        i,m,status;
   rvec       mu_tot;
   t_vcm      *vcm;
-  int        step_ns=0,step_nscheck=0,nns=0,nabnsb=0,ns_lt;
+  gmx_step_t step_ns=0,step_nscheck=0,nns=0,ns_lt;
+  int        nabnsb=0;
   double     ns_s1=0,ns_s2=0,ns_ab=0,ns_lt_runav=0,ns_lt_runav2=0;
   matrix     *scale_tot;
   t_trxframe rerun_fr;
@@ -564,6 +567,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   double      cycles;
+  char        sbuf[22],sbuf2[22];
 #ifdef FAHCORE
   /* Temporary addition for FAHCORE checkpointing */
   int chkpt_ret;
@@ -834,35 +838,47 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     copy_mat(state->box,boxcopy);
   } 
 
-  if (MASTER(cr)) {
-    if (constr && !ir->bContinuation && ir->eConstrAlg == econtLINCS)
-      fprintf(fplog,
-	      "RMS relative constraint deviation after constraining: %.2e\n",
-	      constr_rmsd(constr,FALSE));
-    fprintf(fplog,"Initial temperature: %g K\n",temp0);
-    if (bRerunMD) {
-      fprintf(stderr,"starting md rerun '%s', reading coordinates from"
-	      " input trajectory '%s'\n\n",
-	      *(top_global->name),opt2fn("-rerun",nfile,fnm));
-      if (bVerbose)
-	fprintf(stderr,"Calculated time to finish depends on nsteps from "
-		"run input file,\nwhich may not correspond to the time "
-		"needed to process input trajectory.\n\n");
-    } else {
-		if(ir->init_step>0)
-		{
-			fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps (continuing from step %d, %8.1f ps).\n",
-					*(top_global->name),ir->nsteps+ir->init_step,(ir->nsteps+ir->init_step)*ir->delta_t,
-					ir->init_step,ir->init_step*ir->delta_t);
-		}
-		else
-		{
-			fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n",
-					*(top_global->name),ir->nsteps,ir->nsteps*ir->delta_t);
-		}
+    if (MASTER(cr))
+    {
+        if (constr && !ir->bContinuation && ir->eConstrAlg == econtLINCS)
+        {
+            fprintf(fplog,
+                    "RMS relative constraint deviation after constraining: %.2e\n",
+                    constr_rmsd(constr,FALSE));
+        }
+        fprintf(fplog,"Initial temperature: %g K\n",temp0);
+        if (bRerunMD)
+        {
+            fprintf(stderr,"starting md rerun '%s', reading coordinates from"
+                    " input trajectory '%s'\n\n",
+                    *(top_global->name),opt2fn("-rerun",nfile,fnm));
+            if (bVerbose)
+            {
+                fprintf(stderr,"Calculated time to finish depends on nsteps from "
+                        "run input file,\nwhich may not correspond to the time "
+                        "needed to process input trajectory.\n\n");
+            }
+        }
+        else
+        {
+            fprintf(stderr,"starting mdrun '%s'\n",
+                    *(top_global->name));
+            if (ir->init_step > 0)
+            {
+                fprintf(stderr,"%s steps, %8.1f ps (continuing from step %s, %8.1f ps).\n",
+                        gmx_step_str(ir->init_step+ir->nsteps,sbuf),
+                        (ir->init_step+ir->nsteps)*ir->delta_t,
+                        gmx_step_str(ir->init_step,sbuf2),
+                        ir->init_step*ir->delta_t);
+            }
+            else
+            {
+                fprintf(stderr,"%s steps, %8.1f ps.\n",
+                        gmx_step_str(ir->nsteps,sbuf),ir->nsteps*ir->delta_t);
+            }
+        }
+        fprintf(fplog,"\n");
     }
-    fprintf(fplog,"\n");
-  }
 
   if (ir->nstlist == -1) {
     snew(scale_tot,1);
@@ -1019,7 +1035,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	    /* Determine the neighbor list life time */
 	    ns_lt = step - step_ns;
 	    if (debug) {
-	      fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %d steps\n",nabnsb,ns_lt);
+            fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %s steps\n",nabnsb,gmx_step_str(ns_lt,sbuf));
 	    }
 	    nns++;
 	    ns_s1 += ns_lt;
@@ -1045,13 +1061,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	       * exact integration over performance.
 	       */
 	      step_nscheck = step
-		+ (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)) - 1;
+              + (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)) - 1;
 	    }
 	    if (debug) {
-	      fprintf(debug,"nlist life time %d run av. %4.1f sig %3.1f check %d check with -nosum %d\n",
-		      ns_lt,ns_lt_runav,sqrt(ns_lt_runav2),
-		      step_nscheck-step+1,
-		      (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)));
+	      fprintf(debug,"nlist life time %s run av. %4.1f sig %3.1f check %s check with -nosum %d\n",
+                  gmx_step_str(ns_lt,sbuf),ns_lt_runav,sqrt(ns_lt_runav2),
+                  gmx_step_str(step_nscheck-step+1,sbuf2),
+                  (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)));
 	    }
 	  }
 	  step_ns = step;
@@ -1422,11 +1438,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	       terminate == 0) {
       /* Signal to terminate the run */
       terminate = (ir->nstlist == 0 ? 1 : -1);
-      if (!PAR(cr))
-	terminate_now = terminate;
-     if (fplog)
-	fprintf(fplog,"\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
-      fprintf(stderr, "\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
+      if (!PAR(cr)) {
+          terminate_now = terminate;
+      }
+      if (fplog) {
+          fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+      }
+      fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
     }
 
     if (ir->nstlist == -1 && !bRerunMD) {
@@ -1479,8 +1497,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	 * This includes communication 
 	 */
 	global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
-		    ir,ekind,bSumEkinhOld,constr,vcm,
-		    ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
+                ir,ekind,bSumEkinhOld,constr,vcm,
+                ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
 	if (terminate != 0) {
 	  terminate_now = terminate;
 	  terminate = 0;

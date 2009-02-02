@@ -95,7 +95,7 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
 				unsigned long Flags,
-				int *nsteps_done);
+				gmx_step_t *nsteps_done);
 
 /* ROUTINES from md.c */
 
@@ -145,21 +145,21 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_xtc,bool bXTC,int xtc_prec,
 		char *fn_cpt,bool bCPT,
 		gmx_mtop_t *top_global,
-		int eIntegrator,int simulation_part,int step,double t,
+		int eIntegrator,int simulation_part,gmx_step_t step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
  * Data is collected to the master node only when necessary.
  */
 
-extern int do_per_step(int step,int nstep);
+extern int do_per_step(gmx_step_t step,gmx_step_t nstep);
 /* Return TRUE if io should be done */
 
 extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
  
-extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
+extern void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir);
 
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
@@ -169,11 +169,11 @@ extern void nstop_cm(FILE *log,t_commrec *cr,
 extern void finish_run(FILE *log,t_commrec *cr,char *confout,
 		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
-		       double nodetime,double realtime,int step,
+		       double nodetime,double realtime,gmx_step_t step,
 		       bool bWriteStat);
 
-extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
-			  int natoms,matrix box,real lambda,
+extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
+			  gmx_step_t step,int natoms,matrix box,real lambda,
 			  tensor pres,tensor virial,real ener[]);
      
 

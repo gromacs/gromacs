@@ -46,7 +46,8 @@
 
 /* Write a checkpoint to fn */
 extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
-			     int eIntegrator,int simulation_part,int step,double t,
+			     int eIntegrator,int simulation_part,
+			     gmx_step_t step,double t,
 			     t_state *state);
 
 /* Loads a checkpoint from fn for run continuation.
@@ -66,7 +67,8 @@ extern void load_checkpoint(char *fn,FILE *fplog,
  * If bReadRNG=TRUE a RNG state compatible with the current
  * number of nodes was read.
  */
-extern void read_checkpoint_state(char *fn,int *simulation_part,int *step,double *t,t_state *state);
+extern void read_checkpoint_state(char *fn,int *simulation_part,
+				  gmx_step_t *step,double *t,t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 extern void read_checkpoint_trxframe(int fp,t_trxframe *fr);

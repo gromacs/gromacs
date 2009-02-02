@@ -682,17 +682,17 @@ restore_ekinstate_from_state(t_commrec *cr,
 }
 
 /* Static variables for the deform algorithm */
-static int    deformref_step;
-static matrix deformref_box;
+static gmx_step_t deformref_step;
+static matrix     deformref_box;
 
-void set_deform_reference_box(int step,matrix box)
+void set_deform_reference_box(gmx_step_t step,matrix box)
 {
   deformref_step = step;
   copy_mat(box,deformref_box);
 }
 
 static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
-		   const t_inputrec *ir,int step)
+		   const t_inputrec *ir,gmx_step_t step)
 {
   matrix new,invbox,mu;
   real   elapsed_time;
@@ -739,7 +739,7 @@ static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
 }
 
 void update(FILE         *fplog,
-	    int          step,
+	    gmx_step_t   step,
             real         *dvdlambda,    /* FEP stuff */
             t_inputrec   *inputrec,      /* input record and box stuff	*/
             t_mdatoms    *md,

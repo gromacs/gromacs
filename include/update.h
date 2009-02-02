@@ -64,10 +64,10 @@ extern void set_stochd_state(gmx_stochd_t sd,t_state *state);
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
  */
-extern void set_deform_reference_box(int step,matrix box);
+extern void set_deform_reference_box(gmx_step_t step,matrix box);
 
 extern void update(FILE         *fplog,
-		   int          step,
+		   gmx_step_t   step,
 		   real         *dvdlambda, /* FEP stuff */
 		   t_inputrec   *inputrec,  /* input record and box stuff */
 		   t_mdatoms    *md,
@@ -129,8 +129,6 @@ extern void
 restore_ekinstate_from_state(t_commrec *cr,
 			     gmx_ekindata_t *ekind,ekinstate_t *ekinstate);
 
-extern real run_aver(real old,real cur,int step,int nmem);
-
 extern void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt);
 
 extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
@@ -162,13 +160,13 @@ extern real calc_pres(int ePBC,int nwall,matrix box,
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
 
-extern void parrinellorahman_pcoupl(FILE *fplog,int step,
+extern void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
 				    t_inputrec *ir,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
 				    tensor M,matrix mu,
 				    bool bFirstStep);
   
-extern void berendsen_pcoupl(FILE *fplog,int step,
+extern void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
 			     t_inputrec *ir,tensor pres,matrix box,
 			     matrix mu);
 

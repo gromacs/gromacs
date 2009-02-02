@@ -189,20 +189,20 @@ static void write_constr_pdb(char *fn,char *title,gmx_mtop_t *mtop,
   gmx_fio_fclose(out);
 }
 			     
-static void dump_confs(FILE *fplog,int step,gmx_mtop_t *mtop,
+static void dump_confs(FILE *fplog,gmx_step_t step,gmx_mtop_t *mtop,
 		       int start,int homenr,t_commrec *cr,
 		       rvec x[],rvec xprime[],matrix box)
 {
-  char buf[256];
+  char buf[256],buf2[22];
  
   char *env=getenv("GMX_SUPPRESS_DUMP");
   if (env)
     return; 
   
-  sprintf(buf,"step%db",step);
+  sprintf(buf,"step%sb",gmx_step_str(step,buf2));
   write_constr_pdb(buf,"initial coordinates",
 		   mtop,start,homenr,cr,x,box);
-  sprintf(buf,"step%dc",step);
+  sprintf(buf,"step%sc",gmx_step_str(step,buf2));
   write_constr_pdb(buf,"coordinates after constraining",
 		   mtop,start,homenr,cr,xprime,box);
   if (fplog)
@@ -225,7 +225,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       struct gmx_constr *constr,
 	       t_idef *idef,t_inputrec *ir,
 	       t_commrec *cr,
-	       int step,int delta_step,
+	       gmx_step_t step,int delta_step,
 	       t_mdatoms *md,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,
@@ -242,6 +242,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   int     nsettle;
   real    mO,mH,dOH,dHH;
   t_pbc   pbc;
+  char    buf[22];
 
   if (econq == econqForce && !EI_ENERGY_MINIMIZATION(ir->eI))
     gmx_incons("constrain called for forces while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
@@ -273,8 +274,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 			  econq,nrnb,
 			  constr->maxwarn,&constr->warncount_lincs);
     if (!bOK && constr->maxwarn >= 0 && fplog)
-      fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
-	      econstr_names[econtLINCS],step);
+      fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+	      econstr_names[econtLINCS],gmx_step_str(step,buf));
   }
   
   if (constr->nblocks > 0) {
@@ -286,8 +287,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 		  constr->lagr,lambda,dvdlambda,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
     if (!bOK && constr->maxwarn >= 0 && fplog)
-      fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
-	      econstr_names[econtSHAKE],step);
+      fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+	      econstr_names[econtSHAKE],gmx_step_str(step,buf));
   }
   
   settle  = &idef->il[F_SETTLE];
