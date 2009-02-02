@@ -661,7 +661,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   t_gkrbin   *gkrbin = NULL;
   t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0,ncolour=0;
-  int        i,j,k,n,m,natom=0,nmol,status,teller,tel3;
+  int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
   char       **enm=NULL,buf[STRLEN];
@@ -679,6 +679,11 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   rvec       *slab_dipoles=NULL;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
+
+  gnx_tot = gnx[0];
+  if (ncos > 1) {
+    gnx_tot += gnx[1];
+  }
 
   vol_aver = 0.0;
       
@@ -726,7 +731,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
    * dipole moment.
    */
   if (!bMU)
-    snew(dipole,gnx[0]+gnx[1]);
+    snew(dipole,gnx_tot);
 
   /* Statistics */
   snew(Qlsq,DIM);
@@ -770,7 +775,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   }
     
   if (fndip3d) {
-    snew(dipsp,gnx[0]+gnx[1]);
+    snew(dipsp,gnx_tot);
   
     /* we need a dummy file for gnuplot */
     dip3d = (FILE *)ffopen("dummy.dat","w");
@@ -841,7 +846,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	srenew(muall[0],nframes*DIM);
       }
       else {
-	for(i=0; (i<gnx[0]+gnx[1]); i++)
+	for(i=0; (i<gnx_tot); i++)
 	  srenew(muall[i],nframes*DIM);
       }
     }
@@ -956,7 +961,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       M_av2[m] = M_av[m]*M_av[m];
     
     if (cosaver) {
-      compute_avercos(gnx[0]+gnx[1],dipole,&dd,dipaxis,bPairs);
+      compute_avercos(gnx_tot,dipole,&dd,dipaxis,bPairs);
       rms_cos = sqrt(sqr(dipaxis[XX]-0.5)+
 		     sqr(dipaxis[YY]-0.5)+
 		     sqr(dipaxis[ZZ]-0.5));
@@ -1011,7 +1016,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
     /* Calculate running average for dipole */
     if (mu_ave != 0) 
-      mu_aver = (mu_ave/(gnx[0]+gnx[1]))*invtel;
+      mu_aver = (mu_ave/gnx_tot)*invtel;
     
     if ((skip == 0) || ((teller % skip) == 0)) {
       /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
@@ -1029,7 +1034,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       */      
       if (!bMU || (mu_aver != -1)) {
 	/* Finite system Kirkwood G-factor */
-	Gk = M_diff/((gnx[0]+gnx[1])*mu_aver*mu_aver);
+	Gk = M_diff/(gnx_tot*mu_aver*mu_aver);
 	/* Infinite system Kirkwood G-factor */
 	if (epsilonRF == 0.0) 
 	  g_k = ((2*epsilon+1)*Gk/(3*epsilon));
@@ -1099,7 +1104,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		    teller,1,muall,dt,mode,TRUE);
       else
 	do_autocorr(corf,"Dipole Autocorrelation Function",
-		    teller,gnx[0]+gnx[1],muall,dt,
+		    teller,gnx_tot,muall,dt,
 		    mode,strcmp(corrtype,"molsep"));
     }
   }
