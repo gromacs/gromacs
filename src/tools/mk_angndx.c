@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "copyrite.h"
@@ -119,7 +120,7 @@ static void fill_ft_ind(int nft,int *ft,t_idef *idef,
 
 static void fill_ang(int nft,int *ft,int fac,
 		     int nr[],int *index[],int ft_ind[],t_topology *top,
-		     bool bNoH)
+		     bool bNoH,real hq)
 {
   int     f,ftype,i,j,indg,nr_fac;
   bool    bUse;
@@ -142,6 +143,12 @@ static void fill_ang(int nft,int *ft,int fac,
       if (bNoH) {
 	for(j=0; j<fac; j++) {
 	  if (atom[ia[1+j]].m < 1.5)
+	    bUse = FALSE;
+	}
+      }
+      if (hq) {
+	for(j=0; j<fac; j++) {
+	  if (atom[ia[1+j]].m < 1.5 && fabs(atom[ia[1+j]].q) < hq)
 	    bUse = FALSE;
 	}
       }
@@ -205,11 +212,14 @@ int main(int argc,char *argv[])
   };
   static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static bool bH=TRUE;
+  static real hq=-1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},
       "Type of angle" },
     { "-hyd", FALSE, etBOOL, {&bH},
-      "Include angles with atoms with mass < 1.5" }
+      "Include angles with atoms with mass < 1.5" },
+    { "-hq", FALSE, etREAL, {&hq},
+      "Ignore angles with atoms with mass < 1.5 and |q| < hq" }
   };
   
   FILE       *out;
@@ -242,7 +252,7 @@ int main(int argc,char *argv[])
   
   snew(nr,ntype);
   snew(index,ntype);
-  fill_ang(nft,ft,mult,nr,index,ft_ind,top,!bH);
+  fill_ang(nft,ft,mult,nr,index,ft_ind,top,!bH,hq);
   
   out=ftp2FILE(efNDX,NFILE,fnm,"w");
   for(i=0; (i<ntype); i++) {
