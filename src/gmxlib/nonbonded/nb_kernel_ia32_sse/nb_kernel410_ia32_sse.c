@@ -186,10 +186,6 @@ void nb_kernel410_ia32_sse(int *           p_nri,
             faction[j3+1]    = faction[j3+1] - ty;
             faction[j3+2]    = faction[j3+2] - tz;
 			
-			if(ii==213 && jnr==260)
-			{
-				printf("ii=%d, tj=%d, jnr=%d, c6=%g, c12=%g\n",ii,tj,jnr,c6,c12);
-			}  
 		}
         
         faction[ii3+0]   = faction[ii3+0] + fix1;
