@@ -654,7 +654,7 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstgbradii", ir->nstgbradii, 1);
   CTYPE ("Cutoff for Born radii calculation; the contribution from atoms");
   CTYPE ("between rlist and rgbradii is updated every nstlist steps");
-  RTYPE ("rgbradii",  ir->rgbradii, 2.0);
+  RTYPE ("rgbradii",  ir->rgbradii, 1.0);
   CTYPE ("Dielectric coefficient of the implicit solvent");
   RTYPE ("gb_epsilon_solvent",ir->gb_epsilon_solvent, 80.0);	
   CTYPE ("Salt concentration in M for Generalized Born models");
@@ -663,7 +663,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("gb_obc_alpha", ir->gb_obc_alpha, 1.0);
   RTYPE ("gb_obc_beta", ir->gb_obc_beta, 0.8);
   RTYPE ("gb_obc_gamma", ir->gb_obc_gamma, 4.85);	
-  RTYPE ("gb_dielectric_offset", ir->gb_dielectric_offset, 0.09);
+  RTYPE ("gb_dielectric_offset", ir->gb_dielectric_offset, 0.009);
   EETYPE("sa_algorithm", ir->sa_algorithm, esa_names, nerror, TRUE);
   CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
   CTYPE ("The default value (2.092) corresponds to 0.005 kcal/mol/Angstrom^2.");
@@ -1423,8 +1423,7 @@ void do_index(char* mdparin, char *ndx,
   real    SAtime;
   bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
-    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
-
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;	
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -1439,6 +1438,7 @@ void do_index(char* mdparin, char *ndx,
   } else {
     grps = init_index(ndx,&gnames);
   }
+  
   
   groups = &mtop->groups;
   natoms = mtop->natoms;

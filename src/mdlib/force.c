@@ -1311,7 +1311,20 @@ void init_forcerec(FILE *fp,
             fr->atype_gb_radius[i] = mtop->atomtypes.gb_radius[i];
         for(i=0;i<fr->ntype;i++)
             fr->atype_S_hct[i] = mtop->atomtypes.S_hct[i];
-    }    
+    }  
+	
+	/* Generate the GB table if needed */
+	if(fr->bGB)
+	{
+#ifdef GMX_DOUBLE
+		fr->gbtabscale=200;
+#else
+		fr->gbtabscale=50;
+#endif
+		
+		fr->gbtabr=50;
+		fr->gbtab=make_gb_table(fp,fr,tabpfn,fr->gbtabscale);
+    }
 
     /* Set the charge scaling */
     if (fr->epsilon_r != 0)
@@ -1634,14 +1647,24 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         PRINT_SEPDVDL("Walls",0.0,dvdlambda);
         enerd->term[F_DVDL] += dvdlambda;
     }
-    
-	/* Calculate the Born radii */
-	if (ir->implicit_solvent && bBornRadii) 
- 		calc_gb_rad(cr,fr,ir,md->nr, idef->il[F_GB].nr,
-					mtop,atype,x,f,&(fr->gblist),born,md);
+	
+	/* If doing GB,  calculate the Born radii and reset dvda */
+	if (ir->implicit_solvent)
+	{
+		for(i=0;i<md->nr;i++)
+		{
+			fr->dvda[i]=0;
+		}
 		
+		if(bBornRadii)
+		{
+			calc_gb_rad(cr,fr,ir,mtop,atype,x,f,&(fr->gblist),born,md);
+		}
+	}
+	 
+	 
     where();
-    do_nonbonded(cr,fr,x,f,md,
+	do_nonbonded(cr,fr,x,f,md,
                  fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR] :
                  enerd->grpp.ener[egLJSR],
@@ -1649,14 +1672,15 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                  lambda,&dvdlambda,FALSE,-1,-1,
                  flags & GMX_FORCE_FORCES);
     where();
-    
+	
+	
 	/* If we are doing GB, calculate bonded forces and apply corrections 
-	 * to the solvation derivatives */
+	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,mtop,atype,idef->il[F_GB].nr,x,f,fr,idef->il[F_GB].iatoms,ir->gb_algorithm, bBornRadii);
-		enerd->term[F_GB]+=dvdgb;	
+		dvdgb = calc_gb_forces(cr,md,born,mtop,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
+		enerd->term[F_GB12]+=dvdgb;	
 	}
-		
+
 #ifdef GMX_MPI
     if (TAKETIME)
     {
@@ -1730,7 +1754,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);
     }
-    
+	 
     where();
     if (EEL_FULL(fr->eeltype))
     {

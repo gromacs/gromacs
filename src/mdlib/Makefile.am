@@ -20,7 +20,10 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	mdatom.c	mdebin.c	minimize.c	\
 	mvxvf.c		ns.c		nsgrid.c	\
 	perf_est.c	genborn.c			\
-	genborn_sse.c	genborn_sse.h			\
+	genborn_sse2_single.c				\
+	genborn_sse2_single.h				\
+	genborn_sse2_double.c				\
+	genborn_sse2_double.h				\
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\

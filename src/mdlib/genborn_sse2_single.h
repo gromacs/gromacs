@@ -62,8 +62,4 @@ int
 calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop,
 					const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
 
-
-
-
-
 #endif /* _genborn_sse_h */

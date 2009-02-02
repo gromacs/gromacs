@@ -2020,6 +2020,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
   
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {
+	  if(ftype<F_GB12 || ftype>F_GB14) {
     if (interaction_function[ftype].flags & IF_BOND &&
 	!(ftype == F_CONNBONDS || ftype == F_POSRES)) {
       nbonds=idef->il[ftype].nr;
@@ -2057,6 +2058,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	epot[F_DVDL] += dvdl;
       }
     }
+  }
   }
   /* Copy the sum of violations for the distance restraints from fcd */
   if (fcd)

@@ -107,7 +107,6 @@ static const ALIGN16_BEG int _pi32_##Name[4] ALIGN16_END = { Val, Val, Val, Val 
 #define _PS_CONST_TYPE(Name, Type, Val)                                 \
 static const ALIGN16_BEG Type _ps_##Name[4] ALIGN16_END = { Val, Val, Val, Val }
 
-
 /* Still parameters - make sure to edit in genborn.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
 #define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
@@ -192,13 +191,10 @@ union
 	float  f[4];
 } my_sse_t;
 
-
-
 typedef union xmm_mm_union {
 	__m128 xmm;
 	__m64 mm[2];
 } xmm_mm_union;
-
 
 void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	__m128 xmm1, xmm2, xmm3 = _mm_setzero_ps(), sign_bit_sin, y;
@@ -259,7 +255,6 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	
 	
 	/* get the sign flag for the cosine */
-	
 	mm4 = _mm_sub_pi32(mm4, *(__m64*)_pi32_2);
 	mm5 = _mm_sub_pi32(mm5, *(__m64*)_pi32_2);
 	mm4 = _mm_andnot_si64(mm4, *(__m64*)_pi32_4);
@@ -287,7 +282,6 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	y = _mm_add_ps(y, *(__m128*)_ps_1);
 	
 	/* Evaluate the second polynom  (Pi/4 <= x <= 0) */
-	
 	__m128 y2 = *(__m128*)_ps_sincof_p0;
 	y2 = _mm_mul_ps(y2, z);
 	y2 = _mm_add_ps(y2, *(__m128*)_ps_sincof_p1);
@@ -457,11 +451,64 @@ __m128 exp_ps(__m128 x) {
 }
 
 
+__m128 log2_ps(__m128 x)
+{
+	__m128i exp   = _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000);
+	__m128i one   = _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000); 
+	__m128i off   = _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000); 
+	__m128i mant  = _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF);
+	__m128i sign  = _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
+	__m128i base  = _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000);
+	__m128i loge  = _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218);
+	
+	__m128i D5     = _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5);
+	__m128i D4     = _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD); 
+	__m128i D3     = _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9);
+	__m128i D2     = _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B);
+	__m128i D1     = _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD); 
+	__m128i D0     = _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A);
+	
+	__m128  xmm0,xmm1,xmm2;
+	__m128i xmm1i;
+	
+	xmm0  = x;
+	xmm1  = xmm0;
+	xmm1  = _mm_and_ps(xmm1, (__m128) exp);
+	xmm1 = (__m128) _mm_srli_epi32( (__m128i) xmm1,8); 
+	
+	xmm1  = _mm_or_ps(xmm1,(__m128) one);
+	xmm1  = _mm_sub_ps(xmm1,(__m128) off);
+	
+	xmm1  = _mm_mul_ps(xmm1,(__m128) base);
+	xmm0  = _mm_and_ps(xmm0,(__m128) mant);
+	xmm0  = _mm_or_ps(xmm0,(__m128) one);
+	
+	xmm2  = _mm_mul_ps(xmm0, (__m128) D5);
+	xmm2  = _mm_add_ps(xmm2, (__m128) D4);
+	xmm2  = _mm_mul_ps(xmm2,xmm0);
+	xmm2  = _mm_add_ps(xmm2, (__m128) D3);
+	xmm2  = _mm_mul_ps(xmm2,xmm0);
+	xmm2  = _mm_add_ps(xmm2, (__m128) D2);
+	xmm2  = _mm_mul_ps(xmm2,xmm0);
+	xmm2  = _mm_add_ps(xmm2, (__m128) D1);
+	xmm2  = _mm_mul_ps(xmm2,xmm0);
+	xmm2  = _mm_add_ps(xmm2, (__m128) D0);
+	xmm0  = _mm_sub_ps(xmm0, (__m128) one);
+	xmm0  = _mm_mul_ps(xmm0,xmm2);
+	xmm1  = _mm_add_ps(xmm1,xmm0);
+	
+	
+	x     = xmm1;
+	x  = _mm_mul_ps(x,(__m128)loge);
+	
+    return x;
+}
+
+
 int 
 calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop,
 					  const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
-
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,offset;
 	int aj13,aj23,aj33,aj43;
 	int at0,at1;
@@ -481,12 +528,12 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 	
 	__m128i mask, maski;
 	
-	const __m128 half  = {0.5f , 0.5f , 0.5f , 0.5f };
-	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
-	const __m128 one   = {1.0f,  1.0f , 1.0f , 1.0f };
-	const __m128 two   = {2.0f , 2.0f , 2.0f,  2.0f };
-	const __m128 zero  = {0.0f , 0.0f , 0.0f , 0.0f };
-	const __m128 four  = {4.0f , 4.0f , 4.0f , 4.0f };
+	const __m128 half   = {0.5f , 0.5f , 0.5f , 0.5f };
+	const __m128 three  = {3.0f , 3.0f , 3.0f , 3.0f };
+	const __m128 one    = {1.0f,  1.0f , 1.0f , 1.0f };
+	const __m128 two    = {2.0f , 2.0f , 2.0f,  2.0f };
+	const __m128 zero   = {0.0f , 0.0f , 0.0f , 0.0f };
+	const __m128 four   = {4.0f , 4.0f , 4.0f , 4.0f };
 	
 	const __m128 p5inv  = {STILL_P5INV, STILL_P5INV, STILL_P5INV, STILL_P5INV};
 	const __m128 pip5   = {STILL_PIP5,  STILL_PIP5,  STILL_PIP5,  STILL_PIP5};
@@ -506,20 +553,21 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 	factor = 0.5 * ONE_4PI_EPS0;
 	
 	/* keep the compiler happy */
-	t1 = _mm_setzero_ps();
-	t2 = _mm_setzero_ps();
-	t3 = _mm_setzero_ps();
+	t1   = _mm_setzero_ps();
+	t2   = _mm_setzero_ps();
+	t3   = _mm_setzero_ps();
+	xmm1 = _mm_setzero_ps();
+	xmm2 = _mm_setzero_ps();
+	xmm3 = _mm_setzero_ps();
+	xmm4 = _mm_setzero_ps();
 	
 	aj1  = aj2  = aj3  = aj4  = 0;
 	aj13 = aj23 = aj33 = aj43 = 0;
 	n = 0;
 	
-	for(i=0;i<natoms;i++)
-		born->bRad[i]=fr->invsqrta[i]=1;
-	
 	for(i=0;i<nl->nri;i++)
 	{
-		ai     = i;
+		ai     = nl->iinr[i];
 		ai3	   = ai*3;
 		
 		nj0    = nl->jindex[ai];
@@ -529,7 +577,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 		
 		/* Polarization energy for atom ai */
 		gpi_ai = born->gpol[ai];
-		gpi    = _mm_set1_ps(0.0);
+		gpi    = _mm_setzero_ps();
 		
 		/* Load particle ai coordinates */
 		ix     = _mm_set1_ps(x[ai3]);
@@ -555,20 +603,24 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			aj43 = aj4 * 3;
 			
 			/* Load particle aj1-4 and transpose */
-			xmm1 = _mm_loadu_ps(x+aj13);
-			xmm2 = _mm_loadu_ps(x+aj23);
-			xmm3 = _mm_loadu_ps(x+aj33);
-			xmm4 = _mm_loadu_ps(x+aj43);
+			xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+aj13));
+			xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+aj23));
+			xmm3 = _mm_loadh_pi(xmm3,(__m64 *) (x+aj33));
+			xmm4 = _mm_loadh_pi(xmm4,(__m64 *) (x+aj43));
 			
-			xmm5 = _mm_unpacklo_ps(xmm1, xmm2); 
-			xmm6 = _mm_unpacklo_ps(xmm3, xmm4);
-			xmm7 = _mm_unpackhi_ps(xmm1, xmm2);
-			xmm8 = _mm_unpackhi_ps(xmm3, xmm4);
+			xmm5    = _mm_load1_ps(x+aj13+2);  
+			xmm6    = _mm_load1_ps(x+aj23+2); 
+			xmm7    = _mm_load1_ps(x+aj33+2); 
+			xmm8    = _mm_load1_ps(x+aj43+2);
 			
-			jx = _mm_movelh_ps(xmm5, xmm6);
-			jy = _mm_unpackhi_ps(xmm5, xmm6);
-			jy = _mm_shuffle_ps(jy,jy,_MM_SHUFFLE(3,1,2,0));
-			jz = _mm_movelh_ps(xmm7, xmm8);
+			xmm5    = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(0,0,0,0));
+			xmm6    = _mm_shuffle_ps(xmm7,xmm8,_MM_SHUFFLE(0,0,0,0));
+			jz      = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(2,0,2,0));
+			
+			xmm1    = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2));
+			xmm2    = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(3,2,3,2));
+			jx      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(2,0,2,0));
+			jy      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,1,3,1));
 			
 			dx    = _mm_sub_ps(ix, jx);
 			dy    = _mm_sub_ps(iy, jy);
@@ -663,11 +715,11 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 				aj1 = nl->jjnr[k];	 /*jnr1-4*/
 				aj13 = aj1 * 3; /*Replace jnr with j3*/
 				
-				xmm1 = _mm_loadu_ps(x+aj13);
+				xmm1  = _mm_loadl_pi(xmm1,(__m64 *) (x+aj13));
+				xmm5  = _mm_load1_ps(x+aj13+2);
 				
-				xmm6 = xmm1; /* x1 - - - */
-				xmm4 = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(2,3,0,1)); /* y1 - - - */
-				xmm5 = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(3,0,1,2)); /* z1 - - - */
+				xmm6  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,0,0,0));
+				xmm4  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(1,1,1,1));
 				
 				raj       = _mm_set_ps(0.0f, 0.0f, 0.0f, mtop->atomtypes.gb_radius[md->typeA[aj1]]); 
 				vaj       = _mm_set_ps(0.0f, 0.0f, 0.0f, born->vsolv[aj1]);				   
@@ -804,8 +856,6 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			_mm_storeu_ps(fr->dadx+n, xmm1); 
 		
 			n = n + offset;
-			
-
 		} 
 		
 		/* gpi now contains four partial terms that need to be added to particle ai gpi*/
@@ -866,7 +916,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 	real ri,rr,sum,sum_tmp,sum_ai,min_rad,rad;
 	real doffset;
 	real *sum_mpi;
-
+	
 	__m128 ix,iy,iz,jx,jy,jz;
 	__m128 dx,dy,dz,t1,t2,t3;
 	__m128 rsq11,rinv,r,rai;
@@ -897,11 +947,20 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		at1=natoms;
 	}
 	
+	
+	/* Keep the compiler happy */
+	tmp  = _mm_setzero_ps();
+	xmm1 = _mm_setzero_ps();
+	xmm2 = _mm_setzero_ps();
+	xmm3 = _mm_setzero_ps();
+	xmm4 = _mm_setzero_ps();
+
 	doffset = born->gb_doffset;
 	sum_mpi = born->work;
-	
-	for(i=0;i<natoms;i++)
-		born->bRad[i]=fr->invsqrta[i]=1;
+
+	aj1=aj2=aj3=aj4=0;
+	aj13=aj23=aj33=aj43=0;
+	n=0;
 	
 	for(i=0;i<nl->nri;i++)
 	{
@@ -912,15 +971,16 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		nj1 = nl->jindex[ai+1];
 		
 		offset = (nj1-nj0)%4;
-		
+	
 		/* Load rai*/
 		rr  = mtop->atomtypes.gb_radius[md->typeA[ai]]-doffset;
 		rai = _mm_load1_ps(&rr);
 		
-		/* Load cumulative sum*/
+		/* Load cumulative sums for born radii calculation */
 		sum = 1.0/rr;
 		rai_inv = _mm_load1_ps(&sum);
-
+		tmp_sum = zero;
+		
 		/* Load ai coordinates*/
 		ix = _mm_load1_ps(x+ai3);
 		iy = _mm_load1_ps(x+ai3+1);
@@ -930,7 +990,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		{
 			/* Only have the master node do this, since we only want one value at one time */
 			if(MASTER(cr))
-				sum_mpi[ai]=sum_ai;
+				sum_mpi[ai]=sum;
 			else
 				sum_mpi[ai]=0;
 		}
@@ -998,11 +1058,11 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j4 j4*/
 			sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 			
-			/* conditional mask for rai<dr+sk*/
+			/* conditional mask for rai<dr+sk */
 			xmm1      = _mm_add_ps(r,sk); 
 			mask_cmp  = _mm_cmplt_ps(rai,xmm1);
 			
-			/* conditional for rai>dr-sk, ends with mask_cmp2*/
+			/* conditional for rai>dr-sk, ends with mask_cmp2 */
 			xmm2      = _mm_sub_ps(r,sk); /*xmm2 = dr-sk*/
 			
 			xmm3      = _mm_rcp_ps(xmm2); /*1.0/(dr-sk), 12 bits accuracy*/
@@ -1010,15 +1070,12 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			t1        = _mm_sub_ps(two,t1);
 			xmm3      = _mm_mul_ps(t1,xmm3);
 			
-			xmm4      = rai_inv;
-			xmm5      = zero; 
-							
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
 
-			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
-			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,rai_inv)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,zero) ,_mm_andnot_ps(mask_cmp2,one));
 
-			uij		= _mm_rcp_ps(xmm1); /* better approximation than just _mm_rcp_ps, which is just 12 bits*/
+			uij		= _mm_rcp_ps(xmm1); /* better approximation than just _mm_rcp_ps, which is just 8 bits*/
 			t1      = _mm_mul_ps(uij,xmm1);
 			t1      = _mm_sub_ps(two,t1);
 			uij     = _mm_mul_ps(t1,uij);
@@ -1044,7 +1101,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			prod    = _mm_mul_ps(qrtr,sk2_inv);
 				
 			log_term = _mm_mul_ps(uij,lij_inv);
-			log_term = log_ps(log_term);
+			log_term = log2_ps(log_term);
 			
 			xmm1    = _mm_sub_ps(lij,uij);
 			xmm2    = _mm_mul_ps(qrtr,r); /* 0.25*dr */
@@ -1070,12 +1127,10 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			/* the tmp will now contain four partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp     = _mm_mul_ps(half,tmp); /* 0.5*tmp */
-
 			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
-			tmp_sum = _mm_add_ps(tmp_sum,tmp);
+			tmp_sum = _mm_sub_ps(tmp_sum,tmp);
 		
-			duij   = one;
-					
+			/* duij   = one; */
 			xmm2   = _mm_mul_ps(half,lij2); 
 			xmm3   = _mm_mul_ps(prod,lij3); 
 			xmm2   = _mm_add_ps(xmm2,xmm3); 
@@ -1107,11 +1162,11 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			
 			/* chain rule terms */
 			xmm2   = _mm_mul_ps(dlij,t1); /*dlij*t1 */
-			xmm3   = _mm_mul_ps(duij,t2); /*duij*t2 */
-			xmm2   = _mm_add_ps(xmm2,xmm3);/*dlij*t1+duij*t2 */
+			/* xmm3   = _mm_mul_ps(duij,t2); */ /*duij*t2 */
+			xmm2   = _mm_add_ps(xmm2,t2);/*dlij*t1+duij*t2 */
 			xmm2   = _mm_add_ps(xmm2,t3); 
 			xmm2   = _mm_mul_ps(xmm2,rinv);
-					
+			
 			_mm_storeu_ps(fr->dadx+n,xmm2);
 			
 			n      =  n + 4;
@@ -1209,7 +1264,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			jz = _mm_and_ps( (__m128) maski, xmm5);
 			
 			sk = _mm_and_ps ( (__m128) maski, sk);
-			
+						
 			dx    = _mm_sub_ps(ix, jx);
 			dy    = _mm_sub_ps(iy, jy);
 			dz    = _mm_sub_ps(iz, jz);
@@ -1244,13 +1299,10 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			t1        = _mm_mul_ps(xmm3,xmm2);
 			t1        = _mm_sub_ps(two,t1);
 			xmm3      = _mm_mul_ps(t1,xmm3);
-						
-			xmm4      = rai_inv;
-			xmm5      = zero; 
-							
+									
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
-			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,rai_inv)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,zero) ,_mm_andnot_ps(mask_cmp2,one));
 
 			uij		= _mm_rcp_ps(xmm1);
 			t1      = _mm_mul_ps(uij,xmm1);
@@ -1277,7 +1329,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			prod    = _mm_mul_ps(qrtr,sk2_inv);
 				
 			log_term = _mm_mul_ps(uij,lij_inv);
-			log_term = log_ps(log_term);
+			log_term = log2_ps(log_term);
 							
 			xmm1    = _mm_sub_ps(lij,uij);
 			xmm2    = _mm_mul_ps(qrtr,r); /* 0.25*dr */
@@ -1304,9 +1356,9 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			/* ones are governed by the mask_cmp mask.*/ 
 			tmp     = _mm_mul_ps(half,tmp); /*0.5*tmp*/
 			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
-			tmp_sum = _mm_add_ps(tmp_sum,tmp);
-			
-			duij   = one;
+			tmp_sum = _mm_sub_ps(tmp_sum,tmp);
+						
+			/* duij   = one; */
 					
 			/* start t1 */
 			xmm2   = _mm_mul_ps(half,lij2); /*0.5*lij2 */
@@ -1342,12 +1394,12 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 						 
 			/* chain rule terms */
 			xmm2   = _mm_mul_ps(dlij,t1); /*dlij*t1 */
-			xmm3   = _mm_mul_ps(duij,t2); /*duij*t2 */
-			xmm2   = _mm_add_ps(xmm2,xmm3);/*dlij*t1+duij*t2 */
+			/* xmm3   = _mm_mul_ps(duij,t2); */ /*duij*t2 */
+			xmm2   = _mm_add_ps(xmm2,t2);/*dlij*t1+duij*t2 */
 			xmm2   = _mm_add_ps(xmm2,t3); /*everyhting * t3 */
 			xmm2   = _mm_mul_ps(xmm2,rinv); /*everything * t3 *rinv */
-			
 			xmm2   = _mm_and_ps( (__m128) maski,xmm2);
+					
 			_mm_storeu_ps(fr->dadx+n,xmm2); /* store excess elements, but since we are only advancing n by
 											 * offset, this will be corrected by the "main" loop */
 			
@@ -1355,21 +1407,24 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			
 		} /* end offset */
 
-		/* the tmp array will contain partial values that need to be added together */
+		/* the tmp array will contain partial values that need to be added together 
+		 * Note that in the sse version of HCT we subtract all partial sum_ai's 
+		 * and then add the final(it will be negative) to the initial value, compared 
+		 * with normal c when we subtract each term from the initial value in each iteration */
 		tmp     = _mm_movehl_ps(tmp,tmp_sum);
-		tmp_sum = _mm_sub_ps(tmp_sum,tmp);
+		tmp_sum = _mm_add_ps(tmp_sum,tmp);
 		tmp     = _mm_shuffle_ps(tmp_sum,tmp_sum,_MM_SHUFFLE(1,1,1,1));
-		tmp_sum = _mm_sub_ss(tmp_sum,tmp);
+		tmp_sum = _mm_add_ss(tmp_sum,tmp);
 		
 		_mm_store_ss(&sum_tmp,tmp_sum);
 
 		if(PAR(cr))
 		{
-			sum_mpi[ai]=sum_tmp;
+			sum_mpi[ai]=sum+sum_tmp;
 		}
 		else
 		{
-			sum_ai=sum_tmp;
+			sum_ai=sum+sum_tmp; /* This is where we add a negative value to the initial sum, see comment above */
 		
 			min_rad = rr + doffset;
 			rad=1.0/sum_ai; 
@@ -1401,85 +1456,18 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 	return 0;
 }
 
-
-__m128 log2_ps(__m128 x)
-{
-	__m128i exp    = _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000);
-	__m128i one    = _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000); 
-	__m128i off    = _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000); 
-	__m128i mant   = _mm_set_epi32(0x00F7FFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF);
-	__m128i sign   = _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
-	__m128i base   = _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000);
-	__m128i loge   = _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218);
-	
-	__m128i D5     = _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5);
-	__m128i D4     = _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD); 
-	__m128i D3     = _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9);
-	__m128i D2     = _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B);
-	__m128i D1     = _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD); 
-	__m128i D0     = _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A);
-	
-  	__m128  xmm0,xmm1,xmm2;
-	
-	xmm0  = x;
-	xmm1  = xmm0;
-	
-	xmm1  = _mm_and_ps(xmm1, (__m128)exp);
-	xmm1  =  (__m128 ) _mm_srli_epi32( (__m128i) xmm1,8);
-	
-	xmm1  = _mm_or_ps(xmm1, (__m128) one);
-	xmm1  = _mm_sub_ps(xmm1, (__m128) off);
-	xmm1  = _mm_mul_ps(xmm1, (__m128) base);	
-	xmm0  = _mm_and_ps(xmm0, (__m128) mant);
-	xmm0  = _mm_or_ps(xmm0, (__m128) one);
-	
-	xmm2  = _mm_mul_ps(xmm0, (__m128) D5);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D4);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D3);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D2);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D1);
-	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D0);
-	xmm0  = _mm_sub_ps(xmm0, (__m128) one);
-	xmm0  = _mm_mul_ps(xmm0,xmm2);
-	xmm1  = _mm_add_ps(xmm1,xmm0);
-	
-	x     = xmm1;
-	x     = _mm_mul_ps(x,(__m128) loge);
-	
-    return x;
-}
-
-
 int 
 calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop,
 					const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,at0,at1;
-	int aj13,aj23,aj33,aj43;
-	int offset;
+	int aj13,aj23,aj33,aj43,offset;
 	real ri;
 	real doffset;
 	real rr,rr_inv,sum_tmp,sum_ai,gbr;
 	real sum_ai2, sum_ai3,tsum,tchain;
 	real z = 0;
 	real *sum_mpi;
-
-	if(PAR(cr))
-	{
-		pd_at_range(cr,&at0,&at1);
-	}
-	else
-	{
-		at0=0;
-		at1=natoms;
-	}
-	
-	doffset = born->gb_doffset;
-	sum_mpi = born->work;
 	
 	__m128 ix,iy,iz,jx,jy,jz;
 	__m128 dx,dy,dz,t1,t2,t3;
@@ -1501,17 +1489,28 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 	const __m128 two   = {2.0f , 2.0f , 2.0f , 2.0f };
 	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
 	
-	float apa[4];	
-
-	for(i=0;i<natoms;i++) {
-		born->bRad[i]=fr->invsqrta[i]=1;
-		born->drobc[i]=0;
+	/* keep the compiler happy */
+	t1   = _mm_setzero_ps();
+	t2   = _mm_setzero_ps();
+	t3   = _mm_setzero_ps();
+	xmm1 = _mm_setzero_ps();
+	xmm2 = _mm_setzero_ps();
+	xmm3 = _mm_setzero_ps();
+	xmm4 = _mm_setzero_ps();
+	tmp  = _mm_setzero_ps();
+	
+	if(PAR(cr))
+	{
+		pd_at_range(cr,&at0,&at1);
+	}
+	else
+	{
+		at0=0;
+		at1=natoms;
 	}
 	
-	/* keep the compiler happy */
-	t1 = _mm_setzero_ps();
-	t2 = _mm_setzero_ps();
-	t3 = _mm_setzero_ps();
+	doffset = born->gb_doffset;
+	sum_mpi = born->work;
 	
 	aj1=aj2=aj3=aj4=0;
 	aj13=aj23=aj33=aj43=0;
@@ -1607,7 +1606,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			
 			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); /*j1 j1 j2 j2*/
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j4 j4*/
-			sk = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
+			sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 						   
 			xmm1      = _mm_add_ps(r,sk); /*dr+sk*/					   
 			
@@ -1621,13 +1620,10 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			t1        = _mm_mul_ps(xmm3,xmm2);
 			t1        = _mm_sub_ps(two,t1);
 			xmm3      = _mm_mul_ps(t1,xmm3);
-			
-			xmm4      = rai_inv;
-			xmm5      = zero; 
-							
+										
 			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
-			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,rai_inv)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,zero) ,_mm_andnot_ps(mask_cmp2,one));
 
 			uij		= _mm_rcp_ps(xmm1); 
 			t1      = _mm_mul_ps(uij,xmm1);
@@ -1672,13 +1668,12 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			xmm3    = _mm_sub_ps(sk,r);
 			mask_cmp3 = _mm_cmplt_ps(rai,xmm3); /*rai<sk-dr*/
 			
-			
 			xmm4    = _mm_sub_ps(rai_inv,lij);
 			xmm4    = _mm_mul_ps(two,xmm4);
 			xmm4    = _mm_add_ps(tmp,xmm4);
 					
 			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp)); /*conditional as a mask*/
-						
+			
 			/* the tmp will now contain four partial values, that not all are to be used. Which
 			* ones are governed by the mask_cmp mask. 
 			*/
@@ -1686,7 +1681,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
 			tmp_sum = _mm_add_ps(tmp_sum,tmp);
 		
-			duij   = one;
+			/* duij   = one; */
 					
 			/* start t1 */
 			xmm2   = _mm_mul_ps(half,lij2); /*0.5*lij2 */
@@ -1722,8 +1717,8 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			
 			/* chain rule terms  */
 			xmm2   = _mm_mul_ps(dlij,t1); /*dlij*t1*/
-			xmm3   = _mm_mul_ps(duij,t2); /*duij*t2 */
-			xmm2   = _mm_add_ps(xmm2,xmm3);/*dlij*t1+duij*t2 */
+			/*xmm3   = _mm_mul_ps(duij,t2); */ /*duij*t2 */
+			xmm2   = _mm_add_ps(xmm2,t2);/*dlij*t1+duij*t2 */
 			xmm2   = _mm_add_ps(xmm2,t3); 
 			xmm2   = _mm_mul_ps(xmm2,rinv);
 					
@@ -1860,13 +1855,10 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			t1        = _mm_mul_ps(xmm3,xmm2);
 			t1        = _mm_sub_ps(two,t1);
 			xmm3      = _mm_mul_ps(t1,xmm3);
-						
-			xmm4      = rai_inv;
-			xmm5      = zero; 
-							
-			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /*rai>dr-sk */
-			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm4)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /*conditional as a mask*/
-			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,xmm5) ,_mm_andnot_ps(mask_cmp2,one));
+										
+			mask_cmp2 = _mm_cmpgt_ps(rai,xmm2); /* rai>dr-sk */
+			lij	      = _mm_or_ps(_mm_and_ps(mask_cmp2,rai_inv)  ,_mm_andnot_ps(mask_cmp2,xmm3)); /* conditional as a mask */
+			dlij      = _mm_or_ps(_mm_and_ps(mask_cmp2,zero) ,_mm_andnot_ps(mask_cmp2,one));
 
 			uij		= _mm_rcp_ps(xmm1);
 			t1      = _mm_mul_ps(uij,xmm1);
@@ -1923,7 +1915,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
 			tmp_sum = _mm_add_ps(tmp_sum,tmp);
 			
-			duij   = one;
+			/* duij   = one; */
 					
 			/* start t1 */
 			xmm2   = _mm_mul_ps(half,lij2);
@@ -1959,15 +1951,15 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 						 
 			/* chain rule terms */
 			xmm2   = _mm_mul_ps(dlij,t1); 
-			xmm3   = _mm_mul_ps(duij,t2); 
-			xmm2   = _mm_add_ps(xmm2,xmm3);
+			/* xmm3   = _mm_mul_ps(duij,t2); */
+			xmm2   = _mm_add_ps(xmm2,t2);
 			xmm2   = _mm_add_ps(xmm2,t3); 
 			xmm2   = _mm_mul_ps(xmm2,rinv);
 			
 			xmm2   = _mm_and_ps( (__m128) maski,xmm2);
 			_mm_storeu_ps(fr->dadx+n,xmm2); /* store excess elements, but since we are only advancing n by
 											* offset, this will be corrected by the "main" loop
-												*/
+											*/
 			
 			n      =  n + offset;
 			
@@ -2046,7 +2038,7 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 	int	   aj1,aj2,aj3,aj4; 
 	
 	real   rbi;
-	real   rb[natoms+4];
+	real   rb[natoms+4]; /* FIXME */
 	
 	__m128 ix,iy,iz;
 	__m128 jx,jy,jz;
@@ -2119,7 +2111,6 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 			xmm1 = _mm_mul_ps(xmm1, xmm1); /* rbi*rbi */
 			 
 			xmm2 = _mm_loadu_ps(dvda+i);
-			
 			xmm1 = _mm_mul_ps(xmm1,xmm2); /* rbi*rbi*dvda[i] */
 			
 			_mm_storeu_ps(rb+i, xmm1); 
@@ -2169,9 +2160,13 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 	}
 		
 	/* Keep the compiler happy */
-	t1 = _mm_setzero_ps();
-	t2 = _mm_setzero_ps();
-	t3 = _mm_setzero_ps();
+	t1   = _mm_setzero_ps();
+	t2   = _mm_setzero_ps();
+	t3   = _mm_setzero_ps();
+	xmm1 = _mm_setzero_ps();
+	xmm2 = _mm_setzero_ps();
+	xmm3 = _mm_setzero_ps();
+	xmm4 = _mm_setzero_ps();
 		
 	aj1 = aj2 = aj3 = aj4 = 0;
 	n=0;
@@ -2503,8 +2498,8 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 		t3 = _mm_shuffle_ps( fiz, fiz, _MM_SHUFFLE(1,1,1,1) );
 		
 		fix = _mm_add_ss(fix,t1); /*fx - - - */
-		fiy = _mm_add_ss(fiy,t2); /*fy - - -  */
-		fiz = _mm_add_ss(fiz,t3); /*fz - - -  */
+		fiy = _mm_add_ss(fiy,t2); /*fy - - - */
+		fiz = _mm_add_ss(fiz,t3); /*fz - - - */
 		
 		xmm2 = _mm_unpacklo_ps(fix,fiy); /*fx, fy, - - */
 		xmm2 = _mm_movelh_ps(xmm2,fiz);
@@ -2520,7 +2515,7 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 		
 		/* store i force to memory */
 		_mm_storel_pi( (__m64 *) (f+ai3),xmm4); /* fx fy - - */
-		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2)); /* only the third term is correct for fz */
+		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2)); /* only the third term will be correct for fz */
 		_mm_store_ss(f+ai3+2,xmm4); /*fz*/
 	}	
 

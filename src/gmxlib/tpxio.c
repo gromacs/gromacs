@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 60;
+static const int tpx_version = 61;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -131,7 +131,9 @@ static const t_ftupd ftupd[] = {
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
   { 43, F_TABDIHS           },
-  { 60, F_GB                },	
+  { 60, F_GB12              },
+  { 61, F_GB13              },
+  { 61, F_GB14              },	
   { 41, F_LJC14_Q           },
   { 41, F_LJC_PAIRS_NB      },
   { 32, F_BHAM_LR           },
@@ -998,7 +1000,9 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_int (iparams->vsiten.n);
     do_real(iparams->vsiten.a);
     break;
-  case F_GB:
+  case F_GB12:
+  case F_GB13:
+  case F_GB14:
     do_real(iparams->gb.c6A);	
 	do_real(iparams->gb.c12A);	
 	do_real(iparams->gb.c6B);	
@@ -1989,7 +1993,7 @@ void read_tpx_state(char *fn,int *step,real *t,
 		    t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop)
 {
   int fp;
-
+	
   fp = open_tpx(fn,"r");
   do_tpx(fp,TRUE,step,t,ir,state,f,mtop,FALSE);
   close_tpx(fp);

@@ -106,6 +106,11 @@ extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle);
  * angle should be: bonds 0, angles 1, dihedrals 2
  */
 
+/* Return a table for GB calculations */
+extern t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
+								  const char *fn,
+								  real rtab);
+
 extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
 extern void

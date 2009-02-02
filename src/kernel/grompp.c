@@ -782,6 +782,7 @@ int main (int argc, char *argv[])
   bool         bNeedVel,bGenVel;
   bool         have_radius,have_vol,have_surftens,have_gb_radius,have_S_hct;
   bool         have_atomnumber;
+  int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
 
@@ -955,17 +956,7 @@ int main (int argc, char *argv[])
 	       ir->refcoord_scaling,ir->ePBC,
 	       ir->posres_com,ir->posres_comB);
   }
-
-  if(ir->implicit_solvent)
-  {
-      printf("Constructing Generalized Born topology...\n");
-      snew(gb_plist,1);
-      init_gb_plist(gb_plist);
-      snew(born,1);
-      generate_gb_topology(sys,plist,gb_plist,born);
-  }
-
-  
+		
   nvsite = 0;
   /* set parameters for virtual site construction (not for vsiten) */
   for(mt=0; mt<sys->nmoltype; mt++) {
@@ -986,10 +977,10 @@ int main (int argc, char *argv[])
     ntype = get_atomtype_ntypes(atype);
   }
   
-  /* Copy the atomtype data to the topology atomtype list */
-  copy_atomtype_atomtypes(atype,&(sys->atomtypes));
+	/* PELA: Copy the atomtype data to the topology atomtype list */
+	copy_atomtype_atomtypes(atype,&(sys->atomtypes));
 
-  if (debug)
+	if (debug)
     pr_symtab(debug,0,"After renum_atype",&sys->symtab);
 
   if (bVerbose) 
@@ -997,19 +988,16 @@ int main (int argc, char *argv[])
 	
   ntype = get_atomtype_ntypes(atype);
   convert_params(ntype, plist, mi, comb, reppow, fudgeQQ, sys);
-  
+  	
+	if(ir->implicit_solvent)
+	{
+		printf("Constructing Generalized Born topology...\n");
+		generate_gb_topology(sys,mi);
+	}
+	
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
 
-  /* Convert GB parameters to idef */
-  if(ir->implicit_solvent)
-  {
-	  gmx_localtop_t *localtop;
-	  localtop = gmx_mtop_generate_local_top(sys,ir);
-	  
-	  convert_gb_params(&localtop->idef, F_GB, localtop->idef.ntypes, gb_plist,born);
-  }
-	
   /* set ptype to VSite for virtual sites */
   for(mt=0; mt<sys->nmoltype; mt++) {
     set_vsites_ptype(FALSE,&sys->moltype[mt]);
@@ -1030,13 +1018,13 @@ int main (int argc, char *argv[])
   }
 
   check_warning_error(FARGS);
-
+	
   if (bVerbose) 
     fprintf(stderr,"initialising group options...\n");
   do_index(mdparin,ftp2fn_null(efNDX,NFILE,fnm),
 	   sys,bVerbose,ir,
 	   bGenVel ? state.v : NULL);
-
+	
   /* Init the temperature coupling state */
   init_gtc_state(&state,ir->opts.ngtc);
 
@@ -1104,7 +1092,7 @@ int main (int argc, char *argv[])
       printf("%s\n",warn_buf);
     }
   }
-    
+	
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
