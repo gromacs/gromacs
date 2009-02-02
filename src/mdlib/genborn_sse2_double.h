@@ -8,7 +8,7 @@
 #include <config.h>
 #endif
 
-real 
+int
 calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, real *dadx, real *dvda, real *xd, real *f, int gb_algorithm, 
 							  gmx_genborn_t *born);	
 

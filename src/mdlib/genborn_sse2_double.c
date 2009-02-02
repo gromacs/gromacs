@@ -26,7 +26,7 @@
 #endif
 
 /* Only compile this file if SSE2 intrinsics are available */
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SS2E) )
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) )
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
@@ -1327,6 +1327,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop
 
 }
 
+int
 calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, real *dadx, real *dvda, real *xd, real *f, int gb_algorithm, gmx_genborn_t *born)
 {
 	int i,k,n,ai,aj,ai3,aj1,aj2,aj13,aj23,aj4,nj0,nj1,offset;

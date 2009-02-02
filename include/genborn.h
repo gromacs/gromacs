@@ -48,15 +48,11 @@
 
 typedef struct
 {
-  int nbonds;
-  int bond[10];
-} bonds_t;
+	int nbonds;
+	int bond[10];
+	real length[10];
+} genborn_bonds_t;
 
-typedef struct
-{
-  real length[20000];
-  real angle[20000];
-} bl_t;
 
 /* Struct to hold all the information for GB 
  * All these things are currently allocated in md.c
@@ -76,9 +72,9 @@ typedef struct
 	real *asurf;             /* Atomic surface area */
 	rvec *dasurf;            /* Surface area derivatives */
 	real as;                 /* Total surface area */
-	real *S_hct;             /* Overlap factors for HCT method */
+	real *S_hct;             /* Overlap factors for HCT/OBC method */
 	real *drobc;             /* Parameters for OBC chain rule calculation */
-	real *param;             /* Precomputed factor raj*atype->S_hct for HCT/OBC */
+	real *param;             /* Precomputed factor rai*atype->S_hct for HCT/OBC */
 	real *log_table;         /* Table for logarithm lookup */
 	
 	real obc_alpha;          /* OBC parameters */
@@ -97,14 +93,14 @@ int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,int natoms, int nrfa, gmx_mtop_t *mtop,
+int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_mtop_t *mtop,
 				const t_atomtypes *atype, rvec x[], rvec f[],t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
 
 
 
 /* Bonded GB interactions */								
-real gb_bonds_tab(int nbonds, real *x, real *f, real *charge, real *p_gbtabscale,
-				  real *invsqrta, real *dvda, real *GBtab, const t_iatom forceatoms[],
+real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
+				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
 				  real epsilon_r, real facel);
 
 
@@ -112,27 +108,27 @@ real gb_bonds_tab(int nbonds, real *x, real *f, real *charge, real *p_gbtabscale
 void gb_pd_send(t_commrec *cr, real *send_data, int nr);
 
 
-/* Functions for setting up the F_GB list in grompp */
+/* Functions for setting up the F_GB12,13,14 lists in grompp */
 int 
 init_gb_plist(t_params *p_list);
 
 int 
-convert_gb_params(t_idef *idef, t_functype ftype, int start, t_params *gb_plist, gmx_genborn_t *born);
+convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist, t_ilist *il);
 
 int 
-generate_gb_topology(gmx_mtop_t *mtop, t_params *plist, t_params *gb_plist, gmx_genborn_t *born);
+generate_gb_topology(gmx_mtop_t *mtop, t_molinfo *mi);
 						 
 
 
 
 /* Functions for calculating adjustments due to ie chain rule terms */
 real 
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_mtop_t *mtop, const t_atomtypes *atype, int nr, 
-			   rvec x[], rvec f[], t_forcerec *fr,const t_iatom forceatoms[],int gb_algorithm, bool bRad);
+calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_mtop_t *mtop, const t_atomtypes *atype,
+			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, bool bRad);
 
 
 int
-gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], t_forcerec *fr, t_ilist *il, int n14);
+gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], t_forcerec *fr, t_idef *idef);
 
 
 #endif /* _genborn_h */
