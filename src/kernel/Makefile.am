@@ -4,7 +4,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
+lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
@@ -71,11 +71,13 @@ mdrun_SOURCES = \
 
 if GMX_FAHCORE
   noinst_LTLIBRARIES = libfahcore.la
-  libfahcore_la_SOURCES = $(mdrun_SOURCES)
+  libfahcore_la_SOURCES = $(mdrun_SOURCES) 
   libfahcore_la_CFLAGS = $(AM_CFLAGS)
+  libfahcore_la_LDFLAGS = -all-static $(AM_LDFLAGS)
+  libfahcore_la_LIBADD = libgmxpreprocess.la
 endif
 
-fahcore: libfahcore.la
+fahcore: libfahcore.la 
 
 # shortcut to install only mdrun
 
