@@ -126,7 +126,7 @@ static int and_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
 
 static bool isalnum_star(char c)
 {
-  return (isalnum(c) || (c=='_') || (c=='*'));
+  return (isalnum(c) || (c=='_') || (c=='*') || (c=='?'));
 }
 
 static int parse_names(char **string,int *n_names,char **names)
@@ -340,14 +340,31 @@ static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
 
 static bool comp_name(char *name,char *search)
 {
-  int n;
+  while (name[0] != '\0' && search[0] != '\0') {
+    switch (search[0]) {
+    case '?':
+      /* Always matches */
+      break;
+    case '*':
+      if (search[1] != '\0') {
+	printf("WARNING: Currently '*' is only supported at the end of an expression\n");
+	return FALSE;
+      } else {
+	return TRUE;
+      }
+      break;
+    default:
+      /* Compare a single character */
+      if (( bCase && strncmp(name,search,1)) ||
+	  (!bCase && strncasecmp(name,search,1))) {
+	return FALSE;
+      }
+    }
+    name++;
+    search++;
+  }
 
-  n=strlen(search)-1;
-
-  return (((search[n]!='*') && 
-	   (bCase ? strcmp(name,search) : strcasecmp(name,search))) ||
-	  ((search[n]=='*') && 
-	   (bCase ? strncmp(name,search,n) : strncasecmp(name,search,n))));
+  return (name[0] == '\0' && (search[0] == '\0' || search[0] == '*'));
 }
 
 static int select_chainnames(t_atoms *atoms,int n_names,char **names,
@@ -362,7 +379,7 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
   for(i=0; i<atoms->nr; i++) {
     name[0]=atoms->atom[i].chain;
     j=0; 
-    while (j<n_names && comp_name(name,names[j])) 
+    while (j<n_names && !comp_name(name,names[j])) 
       j++;
     if (j<n_names) {
       index[*nr]=i;
@@ -392,7 +409,7 @@ static int select_atomnames(t_atoms *atoms,int n_names,char **names,
     else
       name=*(atoms->atomname[i]);
     j=0; 
-    while (j<n_names && comp_name(name,names[j])) 
+    while (j<n_names && !comp_name(name,names[j])) 
       j++;
     if (j<n_names) {
       index[*nr]=i;
@@ -419,7 +436,7 @@ static int select_residuenames(t_atoms *atoms,int n_names,char **names,
   for(i=0; i<atoms->nr; i++) {
     name=*(atoms->resname[atoms->atom[i].resnr]);
     j=0; 
-    while (j<n_names && comp_name(name,names[j])) 
+    while (j<n_names && !comp_name(name,names[j])) 
       j++;
     if (j<n_names) {
       index[*nr]=i;
