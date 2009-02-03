@@ -84,19 +84,15 @@ sed \
 temp3 >! temp4
 
 echo -n "."
-awk '{\
+awk 'BEGIN { printf("\\label{sec:mdpopt}\n"); }\
+{\
   if ( index($0,"subsection") ) {\
     if ( index($0,"General") ) {\
-      label=1;\
       output=1;\
     } else if ( index($0,"Index") )\
       output=0;\
   }\
   if (output) print;\
-  if (label) {\
-    printf("\\label{sec:mdpopt}\n");\
-    label = 0;\
-  }\
 }' temp4 >! $TEXMDPOPT
 
 echo "."
