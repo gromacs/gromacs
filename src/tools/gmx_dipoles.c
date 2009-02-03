@@ -350,10 +350,12 @@ bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,real *t,
 {
   int      i;
   bool     bCont;
+  char     buf[22];
 
   bCont = do_enx(fmu,fr);
   if (fr->nre != nre) 
-    fprintf(stderr,"Something strange: expected %d entries in energy file at step %d\n(time %g) but found %d entries\n",nre,fr->step,fr->t,fr->nre);
+    fprintf(stderr,"Something strange: expected %d entries in energy file at step %s\n(time %g) but found %d entries\n",
+	    nre,gmx_step_str(fr->step,buf),fr->t,fr->nre);
   
   if (bCont) {
     if (Vol != -1)          /* we've got Volume in the energy file */
