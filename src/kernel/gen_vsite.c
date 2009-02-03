@@ -1342,8 +1342,8 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
   t_params *params;
   char ***newatomname;
   char *resnm=NULL;
-  int nvsiteconf,nvsitetop;
-  bool isN,planarN;
+  int nvsiteconf,nvsitetop,cmplength;
+  bool isN,planarN,bFound;
   t_aa_names *aan;
   t_vsiteconf *vsiteconflist; 
   /* pointer to a list of CH3/NH3/NH2 configuration entries.
@@ -1364,7 +1364,10 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
      PHE, TRP, TYR and HIS to a construction of virtual sites */
   enum                    { resPHE, resTRP, resTYR, resHIS, resNR };
   char *resnms[resNR]   = {   "PHE",  "TRP",  "TYR",  "HIS" };
-  /* HIS can be known as HISH, HIS1, HISA, etc. too */
+	/* Amber03 alternative names for termini */
+  char *resnmsN[resNR]  = {  "NPHE", "NTRP", "NTYR", "NHIS" };
+  char *resnmsC[resNR]  = {  "CPHE", "CTRP", "CTYR", "CHIS" };
+  /* HIS can be known as HISH, HIS1, HISA, HID, HIE, HIP, etc. too */
   bool bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
   /* the atnms for every residue MUST correspond to the enums in the 
      gen_vsites_* (one for each residue) routines! */
@@ -1437,11 +1440,15 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
       /* find out if this residue needs converting */
       whatres=NOTSET;
       for(j=0; j<resNR && whatres==NOTSET; j++) {
-	if ( ( !bPartial[j] &&
-	       (strcasecmp(resnm,resnms[j])==0) ) ||
-	     ( bPartial[j] && 
-	       (strncasecmp(resnm,resnms[j],strlen(resnms[j]))==0) ) ) {
-	  whatres=j;
+		  
+		  cmplength = bPartial ? strlen(resnm)-1 : strlen(resnm);
+		  
+		  bFound = ((strncasecmp(resnm,resnms[j], cmplength)==0) ||
+					(strncasecmp(resnm,resnmsN[j],cmplength)==0) ||
+					(strncasecmp(resnm,resnmsC[j],cmplength)==0));
+		
+		  if ( bFound ) {
+			  whatres=j;
 	  /* get atoms we will be needing for the conversion */
 	  nrfound=0;
 	  for (k=0; atnms[j][k]; k++) {
