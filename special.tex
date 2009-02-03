@@ -647,10 +647,12 @@ rcoulomb        = 1.0\\
 vdwtype         = User\\
 rvdw            = 1.0\\
 \end{tt}
-the MD program will read a single file (the name can be changed with
-option {\tt -table}) with seven columns of table lookup data in the
+the MD program will read a single non-bonded table file,
+or multiple when {\tt energygrp\_table} is set (see below).
+The name of the file(s) can be set with the mdrun option {\tt -table}.
+The table file should contain seven columns of table lookup data in the
 order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
- The $x$ should run from 0 to $r_c+1$ (the value table extension can be
+The $x$ should run from 0 to $r_c+1$ (the value table extension can be
 changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
 uses a spacing of 0.002 and 0.0005 nm when you run in single
@@ -668,6 +670,17 @@ always contain the 7 columns however, and meaningful data (i.e. not
 zeroes) must be entered in all columns.  A number of pre-built table
 files can be found in the GMXLIB directory, for 6-8, 6-9, 6-10, 6-11, 6-12
 Lennard Jones potentials combined with a normal Coulomb.
+
+If you want to have different functional forms between different
+groups of atoms, this can be set through energy groups.
+Different tables can be used for non-bonded interactions between
+different energy groups pairs through the mdp option {\tt energygrp\_table}
+(see \secref{mdpopt}).
+Atoms that should interact with a different potential should
+be put into different energy groups.
+Between group pairs which are not listed in {\tt energygrp\_table},
+the normal user tables will be used. This makes it easy to use
+a different functional form between a few types of atoms.
 
 \section{Mixed Quantum-Classical simulation techniques}
 
