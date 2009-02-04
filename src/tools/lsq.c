@@ -101,3 +101,11 @@ real error_lsq(t_lsq *lsq)
   return sigma_lsq(lsq)/sqrt(lsq->np);
 }
 
+real corr_coeff_lsq(t_lsq *lsq)
+{
+  real R = sqr(lsq->yx)/(lsq->xx*lsq->yy);
+  
+  return R;
+}
+
+

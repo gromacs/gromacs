@@ -389,6 +389,7 @@ extern void init_lsq(t_lsq *lsq);
 extern void done_lsq(t_lsq *lsq);
 extern void add_lsq(t_lsq *lsq,real x,real y);
 extern void get_lsq_ab(t_lsq *lsq,real *a,real *b);
+extern real corr_coeff_lsq(t_lsq *lsq);
 extern int  npoints_lsq(t_lsq *lsq);
 extern real aver_lsq(t_lsq *lsq);
 extern real sigma_lsq(t_lsq *lsq);
