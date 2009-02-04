@@ -41,7 +41,7 @@
 enum {
   efMDP, efGCT,
   efTRX, efTRO, efTRN, efTRR, efTRJ, efXTC, efG87, 
-  efENX, efEDR, efENE,
+  efEDR,
   efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR, efXYZ,
   efCPT,
   efLOG, efXVG, efOUT,

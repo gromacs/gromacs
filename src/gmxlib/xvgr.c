@@ -179,31 +179,54 @@ void lsq_y_ax(int n, real x[], real y[], real *a)
   *a=yx/xx;
 }
 
-real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r)
+static real low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
+			   real *a, real *b,real *r)
 {
   int    i;
-  double yx,xx,yy,sx,sy,chi2;
+  double x,y,yx,xx,yy,sx,sy,chi2;
 
   yx=xx=yy=sx=sy=0.0;
   for (i=0; i<n; i++) {
-    yx+=y[i]*x[i];
-    xx+=x[i]*x[i];
-    yy+=y[i]*y[i];
-    sx+=x[i];
-    sy+=y[i];
+    if (xd != NULL) {
+      x = xd[i];
+    } else {
+      x = xr[i];
+    }
+    y =   yr[i];
+
+    yx += y*x;
+    xx += x*x;
+    yy += y*y;
+    sx += x;
+    sy += y;
   }
-  *a=(n*yx-sy*sx)/(n*xx-sx*sx);
-  *b=(sy-(*a)*sx)/n;
-  *r=sqrt((xx-sx*sx)/(yy-sy*sy));
+  *a = (n*yx-sy*sx)/(n*xx-sx*sx);
+  *b = (sy-(*a)*sx)/n;
+  *r = sqrt((xx-sx*sx)/(yy-sy*sy));
   
-  chi2=0;
-  for(i=0; i<n; i++)
-    chi2+=sqr(y[i]-((*a)*x[i]+(*b)));
+  chi2 = 0;
+  if (xd != NULL) {
+    for(i=0; i<n; i++)
+      chi2 += sqr(yr[i] - ((*a)*xd[i] + (*b)));
+  } else {
+    for(i=0; i<n; i++)
+      chi2 += sqr(yr[i] - ((*a)*xr[i] + (*b)));
+  }
   
   if (n > 2)
     return sqrt(chi2/(n-2));
   else
     return 0;
+}
+
+real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r)
+{
+  return low_lsq_y_ax_b(n,x,NULL,y,a,b,r);
+}
+
+real lsq_y_ax_b_xdouble(int n, double x[], real y[], real *a, real *b,real *r)
+{
+  return low_lsq_y_ax_b(n,NULL,x,y,a,b,r);
 }
 
 real lsq_y_ax_b_error(int n, real x[], real y[], real dy[],

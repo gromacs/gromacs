@@ -543,10 +543,11 @@ void chk_ndx(char *fn)
 void chk_enx(char *fn)
 {
   int        in,nre,fnr,ndr;
-  char       **enm=NULL;
+  gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   bool       bShowTStep;
   real       t0,old_t1,old_t2;
+  char       buf[22];
   
   fprintf(stderr,"Checking energy file %s\n\n",fn);
 
@@ -573,8 +574,8 @@ void chk_enx(char *fn)
     old_t1=fr->t;
     if (t0 == NOTSET) t0=fr->t;
     if (fnr == 0)
-      fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f\n",
-	      fr->step,fnr,fr->t);
+      fprintf(stderr,"\rframe: %6s (index %6d), t: %10.3f\n",
+	      gmx_step_str(fr->step,buf),fnr,fr->t);
     fnr++;
   }
   fprintf(stderr,"\n\nFound %d frames",fnr);
@@ -583,6 +584,7 @@ void chk_enx(char *fn)
   fprintf(stderr,".\n");
 
   free_enxframe(fr);
+  free_enxnms(nre,enm);
   sfree(fr);
 }
 
@@ -622,8 +624,8 @@ int main(int argc,char *argv[])
     { efTPX, "-s1", "top1", ffOPTRD },
     { efTPX, "-s2", "top2", ffOPTRD },
     { efTPS, "-c",  NULL, ffOPTRD },
-    { efENX, "-e",  NULL, ffOPTRD },
-    { efENX, "-e2", "ener2", ffOPTRD },
+    { efEDR, "-e",  NULL, ffOPTRD },
+    { efEDR, "-e2", "ener2", ffOPTRD },
     { efNDX, "-n",  NULL, ffOPTRD },
     { efTEX, "-m",  NULL, ffOPTWR }
   };
@@ -686,7 +688,7 @@ int main(int argc,char *argv[])
   if (fn1 && fn2)
     comp_enx(fn1,fn2,ftol,lastener);
   else if (fn1)
-    chk_enx(ftp2fn(efENX,NFILE,fnm));
+    chk_enx(ftp2fn(efEDR,NFILE,fnm));
   else if (fn2)
     fprintf(stderr,"Please give me TWO energy (.edr/.ene) files!\n");
   

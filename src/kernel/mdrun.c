@@ -254,7 +254,7 @@ int main(int argc,char *argv[])
     { efCPT, "-cpi",    NULL,       ffOPTRD },
     { efCPT, "-cpo",    NULL,       ffOPTWR },
     { efSTO, "-c",      "confout",  ffWRITE },
-    { efENX, "-e",      "ener",     ffWRITE },
+    { efEDR, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
     { efXVG, "-dgdl",   "dgdl",     ffOPTWR },
     { efXVG, "-field",  "field",    ffOPTWR },

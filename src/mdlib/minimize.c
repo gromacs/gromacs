@@ -345,7 +345,7 @@ void init_em(FILE *fplog,const char *title,
     if (fp_trn)
       *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm),"w");
     if (fp_ene)
-      *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+      *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm),"w");
   } else {
     if (fp_trn)
       *fp_trn = -1;
@@ -832,12 +832,12 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-	       enerd,&s_min->s,s_min->s.box,
+    upd_mdebin(mdebin,NULL,TRUE,(double)step,
+	       mdatoms->tmass,enerd,&s_min->s,s_min->s.box,
 	       NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,s_min->s.lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
   }
   where();
@@ -1184,15 +1184,15 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 		step,s_min->epot,s_min->fnorm/sqrt(state_global->natoms),
 		s_min->fmax,s_min->a_fmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-		 enerd,&s_min->s,s_min->s.box,
+      upd_mdebin(mdebin,NULL,TRUE,(double)step,
+		 mdatoms->tmass,enerd,&s_min->s,s_min->s.box,
 		 NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
 	print_ebin_header(fplog,step,step,s_min->s.lambda);
       print_ebin(fp_ene,do_ene,FALSE,FALSE,
-		 do_log ? fplog : NULL,step,step,step,eprNORMAL,
+		 do_log ? fplog : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
     
@@ -1225,7 +1225,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     if (!do_ene || !do_log) {
       /* Write final energy file entries */
       print_ebin(fp_ene,!do_ene,FALSE,FALSE,
-		 !do_log ? fplog : NULL,step,step,step,eprNORMAL,
+		 !do_log ? fplog : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
   }
@@ -1420,12 +1420,12 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-	       enerd,state,state->box,
+    upd_mdebin(mdebin,NULL,TRUE,(double)step,
+	       mdatoms->tmass,enerd,state,state->box,
 	       NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,state->lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
   }
   where();
@@ -1833,15 +1833,15 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
 		step,Epot,fnorm/sqrt(state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-		 enerd,state,state->box,
+      upd_mdebin(mdebin,NULL,TRUE,(double)step,
+		 mdatoms->tmass,enerd,state,state->box,
 		 NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
 	print_ebin_header(fplog,step,step,state->lambda);
       print_ebin(fp_ene,do_ene,FALSE,FALSE,
-		 do_log ? fplog : NULL,step,step,step,eprNORMAL,
+		 do_log ? fplog : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
     
@@ -1871,7 +1871,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     print_ebin_header(fplog,step,step,state->lambda);
   if(!do_ene || !do_log) /* Write final energy file entries */
     print_ebin(fp_ene,!do_ene,FALSE,FALSE,
-	       !do_log ? fplog : NULL,step,step,step,eprNORMAL,
+	       !do_log ? fplog : NULL,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
   
   /* Print some stuff... */
@@ -2019,13 +2019,13 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       
       if (s_try->epot < s_min->epot) {
 	/* Store the new (lower) energies  */
-	upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,count,(real)count,
-		   enerd,&s_try->s,s_try->s.box,
+	upd_mdebin(mdebin,NULL,TRUE,(double)count,
+		   mdatoms->tmass,enerd,&s_try->s,s_try->s.box,
 		   NULL,NULL,vir,pres,NULL,mu_tot,constr);
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),
 		   do_per_step(steps_accepted,inputrec->nstorireout),
-		   fplog,count,count,count,eprNORMAL,TRUE,
+		   fplog,count,count,eprNORMAL,TRUE,
 		   mdebin,fcd,&(top_global->groups),&(inputrec->opts));
 	fflush(fplog);
       }
@@ -2350,9 +2350,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr)) 
     {
-        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,step,t,eprAVER,
-                   FALSE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
-        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,step,t,eprRMS,
+        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,t,eprAVER,
                    FALSE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
       

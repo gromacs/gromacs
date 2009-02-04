@@ -65,7 +65,7 @@ typedef struct {
 /* These simple lists define the I/O type for these files */
 static const int ftpXDR[] = { efTPR, efTRR, efEDR, efXTC, efMTX, efCPT };
 static const int ftpASC[] = { efTPA, efGRO, efPDB };
-static const int ftpBIN[] = { efTPB, efTRJ, efENE };
+static const int ftpBIN[] = { efTPB, efTRJ };
 #ifdef HAVE_XML
 static const int ftpXML[] = { efXML };
 #endif

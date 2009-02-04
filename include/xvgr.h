@@ -129,10 +129,15 @@ extern void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg);
 extern void lsq_y_ax(int n, real x[], real y[], real *a);
 /* Fit a straight line y=ax thru the n data points x,y. */
 
-  extern real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r);
+extern real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r);
 /* Fit a straight line y=ax+b thru the n data points x,y.
  * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
  * The correlation coefficient is return in r.
+ */
+
+extern real lsq_y_ax_b_xdouble(int n, double x[], real y[],
+			       real *a, real *b,real *r);
+/* As lsq_y_ax_b, but with x in double precision.
  */
 
 extern real lsq_y_ax_b_error(int n, real x[], real y[], real dy[],

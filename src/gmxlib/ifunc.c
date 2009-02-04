@@ -158,7 +158,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("ETOT",     "Total Energy"     ),
   def_nofc    ("ECONS",    "Conserved En."    ),
   def_nofc    ("TEMP",     "Temperature"      ),
-  def_nofc    ("PRES",     "Pressure (bar)"   ),
+  def_nofc    ("PRES",     "Pressure"         ),
   def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
   def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
   def_nofc    ("DG/DL_CON","dG/dl constr."    )

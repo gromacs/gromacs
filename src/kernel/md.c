@@ -514,7 +514,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     unsigned long Flags,
 	     gmx_step_t *nsteps_done)
 {
-  int        fp_ene=0,fp_trn=0,fp_xtc=0,step_ene;
+  int        fp_ene=0,fp_trn=0,fp_xtc=0;
   gmx_step_t step,step_rel;
   char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
@@ -927,43 +927,37 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bSumEkinhOld = FALSE,
   bExchanged = FALSE;
 
-  step = ir->init_step;
-  step_rel = 0;
-  step_ene = 0;
+    step = ir->init_step;
+    step_rel = 0;
+    
+    bLastStep = (bRerunMD || step_rel > ir->nsteps);
+    while (!bLastStep || (bRerunMD && bNotLastFrame)) {
+        
+        wallcycle_start(wcycle,ewcSTEP);
+        
+        GMX_MPE_LOG(ev_timestep1);
+        
+        if (bRerunMD) {
+            if (rerun_fr.bStep) {
+                step = rerun_fr.step;
+                step_rel = step - ir->init_step;
+            }
+            if (rerun_fr.bTime)
+                t = rerun_fr.time;
+            else
+                t = step;
+        } else {
+            bLastStep = (step_rel == ir->nsteps);
+            
+            t = t0 + step*ir->delta_t;
+        }
 
-  bLastStep = (bRerunMD || step_rel > ir->nsteps);
-  while (!bLastStep || (bRerunMD && bNotLastFrame)) {
-
-    wallcycle_start(wcycle,ewcSTEP);
-
-    GMX_MPE_LOG(ev_timestep1);
-
-    if (bRerunMD) {
-      if (rerun_fr.bStep) {
-	step = rerun_fr.step;
-	step_rel = step - ir->init_step;
-      }
-      if (rerun_fr.bTime)
-	t = rerun_fr.time;
-      else
-	t = step;
-    } else {
-      bLastStep = (step_rel == ir->nsteps);
-
-      t = t0 + step*ir->delta_t;
-    }
-    if (Flags & MD_APPENDFILES) {
-      step_ene = step;
-    } else {
-      step_ene = step_rel;
-    }
-
-    if (ir->efep != efepNO) {
-      if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
-	state->lambda = rerun_fr.lambda;
-      else
-	state->lambda = lam0 + step*ir->delta_lambda;
-    }
+        if (ir->efep != efepNO) {
+            if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
+                state->lambda = rerun_fr.lambda;
+            else
+                state->lambda = lam0 + step*ir->delta_lambda;
+        }
     
     if (bSimAnn) 
       update_annealing_target_temp(&(ir->opts),t);
@@ -1195,10 +1189,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     GMX_MPE_LOG(ev_timestep2);
     
     if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
-      bCPT = ((chkpt < 0 && do_per_step(step,ir->nstenergy)) || chkpt > 0 ||
-	       bLastStep);
+      bCPT = (chkpt > 0 || bLastStep);
       if (bCPT) {
-	chkpt = 0;
+        chkpt = 0;
       }
     } else {
       bCPT = FALSE;
@@ -1215,17 +1208,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bGStat = (bGStatEveryStep || bStopCM || bNS ||
 	      (ir->nstlist == -1 && !bRerunMD && step >= step_nscheck));
 
-    /* With exact energy averages (bGStatEveryStep=TRUE)
-     * we should also write energy at first, last and continuation steps
-     * such that we can get exact averages over a series of runs.
-     * We therefore try to checkpoint at energy output frames.
-     *
-     * This is not necessary when we use the append-file-feature, so we avoid
-     * the extra first frame in that case.
-     */
-    do_ene = (do_per_step(step,ir->nstenergy) ||
-	      (bGStatEveryStep && ((bFirstStep && !bAppend) ||
-				   bLastStep || bCPT)));
+    do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
 
     if (do_ene || do_log) {
       bCalcPres = TRUE;
@@ -1470,21 +1453,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      * where we do global communication, otherwise the other nodes don't know.
      */
     if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-		       cpt_period >= 0 &&
-		       (cpt_period == 0 || 
-			run_time >= nchkpt*cpt_period*60.0))) {
-      if (chkpt == 0) {
-	nchkpt++;
-      }
-      /* Write checkpoint at the next energy output step (if there is one),
-       * or after 0.2*cpt_period at any step.
-       */
-      if (!bGStatEveryStep || ir->nstenergy == 0 || cpt_period == 0 ||
-	  run_time >= (nchkpt + 0.2)*cpt_period*60.0) {
-	chkpt = 1;
-      } else {
-	chkpt = -1;
-      }
+                       cpt_period >= 0 &&
+                       (cpt_period == 0 || 
+                        run_time >= nchkpt*cpt_period*60.0))) {
+        if (chkpt == 0) {
+            nchkpt++;
+        }
+        chkpt = 1;
     }
 
     if (!bGStat) {
@@ -1644,15 +1619,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bool do_dr,do_or;
       
       upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep,
-		 mdatoms->tmass,step_ene,t,enerd,state,lastbox,
-		 shake_vir,force_vir,total_vir,pres,
-		 ekind,mu_tot,constr);
+                 mdatoms->tmass,t,enerd,state,lastbox,
+                 shake_vir,force_vir,total_vir,pres,
+                 ekind,mu_tot,constr);
       
       do_dr  = do_per_step(step,ir->nstdisreout);
       do_or  = do_per_step(step,ir->nstorireout);
       
-      print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,step_ene,t,
-		 eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
+      print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,t,
+                 eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
       
       if (ir->ePull != epullNO)
 	{
@@ -1722,10 +1697,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  
   if (MASTER(cr)) {
     if (bGStatEveryStep) {
-      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_ene,t,
-		 eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
-      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_ene,t,
-		 eprRMS,FALSE,mdebin,fcd,groups,&(ir->opts));
+      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
+                 eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
     }
     close_enx(fp_ene);
     if (ir->nstxtcout)

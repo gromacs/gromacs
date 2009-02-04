@@ -310,10 +310,11 @@ void list_ene(char *fn)
 {
   int        in,ndr;
   bool       bCont;
+  gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   int        i,nre,b;
   real       rav,minthird;
-  char       **enm=NULL;
+  char       buf[22];
 
   printf("gmxdump: %s\n",fn);
   in = open_enx(fn,"r");
@@ -321,7 +322,7 @@ void list_ene(char *fn)
   
   printf("energy components:\n");
   for(i=0; (i<nre); i++) 
-    printf("%5d  %s\n",i,enm[i]);
+    printf("%5d  %-24s (%s)\n",i,enm[i].name,enm[i].unit);
     
   minthird=-1.0/3.0;
   snew(fr,1);
@@ -329,14 +330,22 @@ void list_ene(char *fn)
     bCont=do_enx(in,fr);
     
     if (bCont) {
-      printf("\n%24s  %12.5e  %12s  %12d\n","time:",
-	     fr->t,"step:",fr->step);
+      printf("\n%24s  %12.5e  %12s  %12s\n","time:",
+	     fr->t,"step:",gmx_step_str(fr->step,buf));
+      printf("%24s  %12s  %12s  %12s\n",
+	     "","","sum steps:",gmx_step_str(fr->nsum,buf));
       if (fr->nre == nre) {
 	printf("%24s  %12s  %12s  %12s\n",
 	       "Component","Energy","Av. Energy","Sum Energy");
-	for(i=0; (i<nre); i++) 
-	  printf("%24s  %12.5e  %12.5e  %12.5e\n",
-		 enm[i],fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
+	if (fr->nsum > 0) {
+	  for(i=0; (i<nre); i++) 
+	    printf("%24s  %12.5e  %12.5e  %12.5e\n",
+		   enm[i].name,fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
+	} else {
+	  for(i=0; (i<nre); i++) 
+	    printf("%24s  %12.5e\n",
+		   enm[i].name,fr->ener[i].e);
+	}
       }
       if (fr->ndisre > 0) {
 	printf("Distance restraint %8s  %8s\n","r(t)","<r^-3>^-3");
@@ -376,7 +385,7 @@ int main(int argc,char *argv[])
   t_filenm fnm[] = {
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
-    { efENX, "-e", NULL, ffOPTRD },
+    { efEDR, "-e", NULL, ffOPTRD },
     { efCPT, NULL, NULL, ffOPTRD },
     { efMDP, "-om", NULL, ffOPTWR }
   };
@@ -402,8 +411,8 @@ int main(int argc,char *argv[])
 	     ftp2fn_null(efMDP,NFILE,fnm),bSysTop);
   else if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
-  else if (ftp2bSet(efENX,NFILE,fnm))
-    list_ene(ftp2fn(efENX,NFILE,fnm));
+  else if (ftp2bSet(efEDR,NFILE,fnm))
+    list_ene(ftp2fn(efEDR,NFILE,fnm));
   else if (ftp2bSet(efCPT,NFILE,fnm))
     list_checkpoint(ftp2fn(efCPT,NFILE,fnm),stdout);
     

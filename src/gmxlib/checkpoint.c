@@ -45,7 +45,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 5;
+static const int cpt_version = 6;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -68,11 +68,13 @@ const char *eeks_names[eeksNR]=
     "Ekinh_n", "Ekinh", "dEkindlambda", "mv_cos"
 };
 
-enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhNR };
+enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
+       eenhENERGY_SUM_SIM, eenhENERGY_NSUM_SIM, eenhNR };
 
 const char *eenh_names[eenhNR]=
 {
-    "energy_n", "energy_aver", "energy_sum"
+    "energy_n", "energy_aver", "energy_sum", "energy_nsum",
+    "energy_sum_sim", "energy_nsum_sim"
 };
 
 static const char *st_names(int cptp,int ecpt)
@@ -142,7 +144,7 @@ static void do_cpt_int_err(XDR *xd,char *desc,int *i,FILE *list)
     }
 }
 
-static void do_cpt_step_err(XDR *xd,char *desc,gmx_step_t *i,FILE *list)
+static void do_cpt_step_err(XDR *xd,const char *desc,gmx_step_t *i,FILE *list)
 {
     bool_t res=0;
     char   buf[22];
@@ -740,6 +742,12 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
 
     ret = 0;
 
+    if (bRead)
+    {
+        enerhist->nsum     = 0;
+        enerhist->nsum_sim = 0;
+    }
+
     for(i=0; (i<eenhNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
@@ -748,14 +756,28 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
             {
 			case eenhENERGY_N:     ret = do_cpte_int(xd,2,i,fflags,&enerhist->nener,list); break;
 			case eenhENERGY_AVER:  ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_ave,list); break;
- 			case eenhENERGY_SUM:   ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum,list); break;				
+ 			case eenhENERGY_SUM:   ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum,list); break;
+            case eenhENERGY_NSUM:  do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum,list); break;
+            case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd,2,i,fflags,enerhist->nener,&enerhist->ener_sum_sim,list); break;
+            case eenhENERGY_NSUM_SIM: do_cpt_step_err(xd,eenh_names[i],&enerhist->nsum_sim,list); break;
             default:
                 gmx_fatal(FARGS,"Unknown energy history entry %d\n"
                           "You are probably reading a new checkpoint file with old code",i);
             }
         }
     }
-    
+
+    if ((fflags & (1<<eenhENERGY_SUM)) && !(fflags & (1<<eenhENERGY_SUM_SIM)))
+    {
+        /* Assume we have an old file format and copy sum to sum_sim */
+        srenew(enerhist->ener_sum_sim,enerhist->nener);
+        for(i=0; i<enerhist->nener; i++)
+        {
+            enerhist->ener_sum_sim[i] = enerhist->ener_sum[i];
+        }
+        fflags |= (1<<eenhENERGY_SUM_SIM);
+    }
+
     return ret;
 }
 
@@ -906,8 +928,21 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     flags_eks =
         ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksDEKINDL) |
          (1<<eeksMVCOS));
-    flags_enh =
-        ((1<<eenhENERGY_N) | (1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM));
+
+    flags_enh = 0;
+    if (state->enerhist.nsum > 0 || state->enerhist.nsum_sim > 0)
+    {
+        flags_enh |= (1<<eenhENERGY_N);
+        if (state->enerhist.nsum > 0)
+        {
+            flags_enh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
+                          (1<<eenhENERGY_NSUM));
+        }
+        if (state->enerhist.nsum_sim > 0)
+        {
+            flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
+        }
+    }
 
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
@@ -923,7 +958,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
 	}
-	
+
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
 
     if( gmx_fio_close(fp) != 0)
@@ -1225,6 +1260,17 @@ read_checkpoint(char *fn,FILE *fplog,
     if (ret)
     {
         cp_error();
+    }
+
+    if (file_version < 6)
+    {
+        fprintf(stderr,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+        if (fplog)
+        {
+            fprintf(fplog,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+        }
+        state->enerhist.nsum     = *step;
+        state->enerhist.nsum_sim = *step;
     }
 
 	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);

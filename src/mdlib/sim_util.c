@@ -1301,7 +1301,7 @@ void init_md(FILE *fplog,
 		  {
 			  *fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
 		  }
-		  *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm), filemode);
+		  *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
 		  *fn_cpt = opt2fn("-cpo",nfile,fnm);
 		  
 		  if ((fp_dgdl != NULL) && ir->efep!=efepNO)

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -49,6 +50,7 @@
 #include "main.h"
 #include "maths.h"
 #include "vec.h"
+#include "physics.h"
 
 static real rms_ener(t_energy *e,int nsteps)
 {
@@ -64,104 +66,191 @@ t_ebin *mk_ebin(void)
   return eb;
 }
 
-int get_ebin_space(t_ebin *eb,int nener,char *enm[])
+int get_ebin_space(t_ebin *eb,int nener,char *enm[],char *unit)
 {
-  int index;
-  int i;
-  
-  index=eb->nener;
-  eb->nener+=nener;
-  srenew(eb->e,eb->nener);
-  srenew(eb->enm,eb->nener);
-  for(i=index; (i<eb->nener); i++) {
-    eb->e[i].e=0;
-    eb->e[i].eav=0;
-    eb->e[i].esum=0;
-    eb->e[i].e2sum=0;
-    eb->enm[i]=strdup(enm[i-index]);
-  }
-  return index;
+    int  index;
+    int  i,f;
+    char *u;
+
+    index = eb->nener;
+    eb->nener += nener;
+    srenew(eb->e,eb->nener);
+    srenew(eb->e_sim,eb->nener);
+    srenew(eb->enm,eb->nener);
+    for(i=index; (i<eb->nener); i++)
+    {
+        eb->e[i].e        = 0;
+        eb->e[i].eav      = 0;
+        eb->e[i].esum     = 0;
+        eb->e_sim[i].e    = 0;
+        eb->e_sim[i].eav  = 0;
+        eb->e_sim[i].esum = 0;
+        eb->enm[i].name = strdup(enm[i-index]);
+        if (unit != NULL)
+        {
+            eb->enm[i].unit = strdup(unit);
+        }
+        else
+        {
+            /* Determine the unit from the longname.
+             * These units should have been defined in ifunc.c
+             * But even better would be if all interactions functions
+             * return energies and all non-interaction function
+             * entries would be removed from the ifunc array.
+             */
+            u = unit_energy;
+            for(f=0; f<F_NRE; f++)
+            {
+                if (strcmp(eb->enm[i].name,
+                           interaction_function[f].longname) == 0)
+                {
+                    /* Only the terms in this list are not energies */
+                    switch (f) {
+                    case F_DISRESVIOL: u = unit_length;   break;
+                    case F_ORIRESDEV:  u = "obs";         break;
+                    case F_TEMP:       u = unit_temp_K;   break;
+                    case F_PRES:       u = unit_pres_bar; break;
+                    }
+                }
+            }
+            eb->enm[i].unit = strdup(u);
+        }
+    }
+    
+    return index;
 }
 
-void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum,int step)
+void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum)
 {
-  int      i,m;
-  double   e,sum,sigma,invmm,diff;
-  t_energy *eg;
-  
-  if ((index+nener > eb->nener) || (index < 0))
-    gmx_fatal(FARGS,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
-		__FILE__,__LINE__,index,nener,eb->nener);
+    int      i,m;
+    double   e,sum,sigma,invmm,diff;
+    t_energy *eg,*egs;
     
-  eg=&(eb->e[index]);
+    if ((index+nener > eb->nener) || (index < 0))
+    {
+        gmx_fatal(FARGS,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
+                  __FILE__,__LINE__,index,nener,eb->nener);
+    }
+    
+    eg = &(eb->e[index]);
+    
+    for(i=0; (i<nener); i++)
+    {
+        eg[i].e      = ener[i];
+    }
+    
+    if (bSum)
+    {
+        egs = &(eb->e_sim[index]);
+        
+        m = eb->nsum;
+        
+        if (m == 0)
+        {
+            for(i=0; (i<nener); i++)
+            {
+                eg[i].eav    = 0;
+                eg[i].esum   = ener[i];
+                egs[i].esum += ener[i];
+            }
+        }
+        else
+        {
+            invmm = (1.0/(double)m)/((double)m+1.0);
+            
+            for(i=0; (i<nener); i++)
+            {
+                /* Value for this component */
+                e = ener[i];
+                
+                /* first update sigma, then sum */
+                diff         = eg[i].esum - m*e;
+                eg[i].eav   += diff*diff*invmm;
+                eg[i].esum  += e;
+                egs[i].esum += e;
+            }
+        }
+    }
+}
 
-  if (bSum) {
-    m      = step;
-    if (m > 0) 
-      invmm = (1.0/(double)m)/((double)m+1.0);
-    else
-      invmm = 0.0;
-    
-    for(i=0; (i<nener); i++) {
-      /* Value for this component */
-      e      = ener[i];
-      
-      /* first update sigma, then sum */
-      eg[i].e    = e;
-      diff       = eg[i].esum - m*e;
-      eg[i].eav  += diff*diff*invmm;
-      eg[i].esum += e;
+void ebin_increase_count(t_ebin *eb,bool bSum)
+{
+    if (bSum)
+    {
+        eb->nsum++;
+        eb->nsum_sim++;
     }
-  } else {
-    for(i=0; (i<nener); i++) {
-      /* Value for this component */
-      eg[i].e = ener[i];
-    }
-  }
+}
+
+void reset_ebin_sums(t_ebin *eb)
+{
+    eb->nsum = 0;
+    /* The actual sums are cleared when the next frame is stored */
 }
 
 void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
-	     int prmode,int tsteps,bool bPrHead)
+             int prmode,bool bPrHead)
 {
-  int  i,j,i0;
-  real ee=0;
-  int  rc;
+    int  i,j,i0;
+    real ee=0;
+    int  rc;
+    char buf[30];
+
+    rc = 0;
 	
-  rc = 0;
-	
-  if (index < 0)
-    gmx_fatal(FARGS,"Invalid index in pr_ebin: %d",index);
-  if (nener == -1)
-    nener=eb->nener;
-  else
-    nener=index+nener;
+    if (index < 0)
+    {
+        gmx_fatal(FARGS,"Invalid index in pr_ebin: %d",index);
+    }
+    if (nener == -1)
+    {
+        nener = eb->nener;
+    }
+    else
+    {
+        nener = index + nener;
+    }
 	for(i=index; (i<nener) && rc>=0; ) {
-		if (bPrHead) {
+		if (bPrHead)
+        {
 			i0=i;
 			for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
-				rc = fprintf(fp,"%15s",eb->enm[i]);
+            {
+                if (strncmp(eb->enm[i].name,"Pres",4) == 0)
+                {
+                    /* Print the pressure unit to avoid confusion */
+                    sprintf(buf,"%s (%s)",eb->enm[i].name,unit_pres_bar);
+                    rc = fprintf(fp,"%15s",buf);
+                }
+                else
+                {
+                    rc = fprintf(fp,"%15s",eb->enm[i].name);
+                }
+            }
 			
-			if(rc>=0)
+			if (rc >= 0)
+            {
 				rc = fprintf(fp,"\n");
-
+            }
+            
 			i=i0;
 		}
-		for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++) {
-			if (prmode == eprNORMAL)
-			  ee = eb->e[i].e;
-			else if (prmode == eprRMS)
-			  ee = rms_ener(&(eb->e[i]),(tsteps+1));
-			else if (prmode == eprAVER)
-			  ee = eb->e[i].esum/(tsteps+1);
-			else
-				gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
+		for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
+        {
+            switch (prmode) {
+            case eprNORMAL: ee = eb->e[i].e; break;
+            case eprAVER:   ee = eb->e_sim[i].esum/eb->nsum_sim; break;
+            default: gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
+            }
 			
 			rc = fprintf(fp,"   %12.5e",ee);
 		}
-		if(rc>=0)
+		if (rc >= 0)
+        {
 			rc = fprintf(fp,"\n");
+        }
 	}
-	if(rc<0)
+	if (rc < 0)
 	{ 
 		gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of quota?");
 	}
@@ -211,8 +300,5 @@ int main(int argc,char *argv[])
   pr_ebin(stdout,eb,ie,NE,5,eprAVER,1);
   pr_ebin(stdout,eb,is,NS,3,eprAVER,1);
   pr_ebin(stdout,eb,it,NT,4,eprAVER,1);
-
-  printf("RMS:\n");
-  pr_ebin(stdout,eb,0,-1,5,eprRMS,1);
 }
 #endif

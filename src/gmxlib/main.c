@@ -85,7 +85,7 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
   strcat(buf,".");
   
   /* Add extension again */
-  strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
+  strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
 }
 
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,char *name)

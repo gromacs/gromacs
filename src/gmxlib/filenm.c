@@ -98,13 +98,6 @@ static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT, efESP, efXYZ,
 		       efTPB, efTPA };
 #define NSTXS asize(stxs)
 
-static const int enxs[]={ 
-#ifdef USE_XDR
-  efEDR, 
-#endif
-  efENE };
-#define NENXS asize(enxs)
-
 static const int tpxs[]={ 
 #ifdef USE_XDR
   efTPR, 
@@ -141,9 +134,7 @@ static t_deffile deffile[efNR] = {
   { eftBIN, ".trj", "traj",   NULL, "Trajectory file (architecture specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
   { eftASC, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"      },
-  { eftGEN, ".???", "ener",   NULL, "Energy file: edr ene",                     NENXS, enxs },
-  { eftXDR, ".edr", "ener",   NULL, "Energy file in portable xdr format"     },
-  { eftBIN, ".ene", "ener",   NULL, "Energy file: ene"                       },
+  { eftXDR, ".edr", "ener",   NULL, "Energy file"                            },
   { eftGEN, ".???", "conf",   "-c", "Structure file: gro g96 pdb tpr etc.",  NSTXS, stxs },
   { eftGEN, ".???", "out",    "-o", "Structure file: gro g96 pdb etc.",         NSTOS, stos },
   { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
@@ -210,8 +201,6 @@ const char *ftp2ext_generic(int ftp)
 {
   if ((0 <= ftp) && (ftp < efNR)) {
     switch (ftp) {
-    case efENX:
-      return "enx";
     case efTRX:
       return "trx";
     case efTRN:
@@ -764,9 +753,6 @@ char *ftp2filter(int ftp)
   filter[0] = '\0';  
   n         = 0;
   switch (ftp) {
-  case efENX:
-    add_filters(filter,&n,NENXS,enxs);
-    break;
   case efTRX:
     add_filters(filter,&n,NTRXS,trxs);
     break;

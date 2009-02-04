@@ -661,12 +661,13 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   FILE       *dip3d=NULL,*adip=NULL;
   rvec       *x,*dipole=NULL,mu_t,quad,*dipsp=NULL;
   t_gkrbin   *gkrbin = NULL;
+  gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0,ncolour=0;
   int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
-  char       **enm=NULL,buf[STRLEN];
+  char       buf[STRLEN];
   real       rcut=0,t,t0,t1,dt,lambda,dd,rms_cos;
   rvec       dipaxis;
   matrix     box;
@@ -696,13 +697,13 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 
     /* Determine the indexes of the energy grps we need */
     for (i=0; (i<nre); i++) {
-      if (strstr(enm[i],"Volume"))
+      if (strstr(enm[i].name,"Volume"))
 	iVol=i;
-      else if (strstr(enm[i],"Mu-X"))
+      else if (strstr(enm[i].name,"Mu-X"))
 	iMu[XX]=i;
-      else if (strstr(enm[i],"Mu-Y"))
+      else if (strstr(enm[i].name,"Mu-Y"))
 	iMu[YY]=i;
-      else if (strstr(enm[i],"Mu-Z"))
+      else if (strstr(enm[i].name,"Mu-Z"))
 	iMu[ZZ]=i;
     }
   }
@@ -1272,7 +1273,7 @@ int gmx_dipoles(int argc,char *argv[])
   char         **grpname=NULL;
   bool         bCorr,bQuad,bGkr,bMU,bSlab;  
   t_filenm fnm[] = {
-    { efENX, "-enx", NULL,         ffOPTRD },
+    { efEDR, "-en", NULL,         ffOPTRD },
     { efTRX, "-f", NULL,           ffREAD },
     { efTPX, NULL, NULL,           ffREAD },
     { efNDX, NULL, NULL,           ffOPTRD },
@@ -1308,7 +1309,7 @@ int gmx_dipoles(int argc,char *argv[])
   if (epsilonRF == 0.0)
     printf("WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
 
-  bMU   = opt2bSet("-enx",NFILE,fnm);
+  bMU   = opt2bSet("-en",NFILE,fnm);
   bQuad = opt2bSet("-q",NFILE,fnm);
   bGkr  = opt2bSet("-g",NFILE,fnm);
   if (opt2parg_bSet("-ncos",asize(pa),pa)) {
@@ -1361,7 +1362,7 @@ int gmx_dipoles(int argc,char *argv[])
 	 ncos,
 	 opt2fn("-cmap",NFILE,fnm),rcmax,
 	 bQuad,   opt2fn("-q",NFILE,fnm),
-	 bMU,     opt2fn("-enx",NFILE,fnm),
+	 bMU,     opt2fn("-en",NFILE,fnm),
 	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFF,skip,
 	 bSlab,nslices,axtitle,opt2fn("-slab",NFILE,fnm));
   

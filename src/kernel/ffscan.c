@@ -76,7 +76,7 @@ int main(int argc,char *argv[])
     { efDAT, "-parm",   "params",   ffREAD  },
     { efDAT, "-ga",     "genalg",   ffOPTRD },
     { efGRO, "-c",      "junk",     ffWRITE },
-    { efENX, "-e",      "junk",     ffWRITE },
+    { efEDR, "-e",      "junk",     ffWRITE },
     { efTRN, "-o",      "junk",     ffWRITE }
   };
 #define NFILE asize(fnm)

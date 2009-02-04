@@ -302,20 +302,6 @@ void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n)
   }
 }
 
-void pr_energies(FILE *fp,int indent,const char *title,t_energy *e,int n)
-{
-  int i;
-
-  if (available(fp,e,indent,title)) {
-    indent=pr_title_n(fp,indent,title,n);
-    for (i=0; i<n; i++) {
-      (void) pr_indent(fp,indent);
-      fprintf(fp,"%s[%2d]={e=%10.3e, eav=%10.3e, esum=%10.3e, e2sum=%10.3e}\n",
-	      title,i,e[i].e,e[i].eav,e[i].esum,e[i].e2sum);
-    }
-  }
-}
-
 static void pr_int(FILE *fp,int indent,const char *title,int i)
 {
   pr_indent(fp,indent);

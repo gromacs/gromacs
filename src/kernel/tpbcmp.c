@@ -695,7 +695,8 @@ void comp_trx(char *fn1, char *fn2, real ftol)
 
 static void cmp_energies(FILE *fp,int step1,int step2,int nre,
 			 t_energy e1[],t_energy e2[],
-			 char *enm1[],char *enm2[],real ftol,
+			 gmx_enxnm_t *enm1,gmx_enxnm_t *enm2,
+			 real ftol,
 			 int maxener)
 {
   int  i;
@@ -703,20 +704,21 @@ static void cmp_energies(FILE *fp,int step1,int step2,int nre,
   for(i=0; (i<maxener); i++) {
     if (!equal_real(e1[i].e,e2[i].e,ftol))
       fprintf(fp,"%-15s  step %3d:  %12g, %s step %3d: %12g\n",
-	      enm1[i],step1,e1[i].e,
-	      strcmp(enm1[i],enm2[i])!=0 ? enm2[i]:"",step2,e2[i].e);
+	      enm1[i].name,step1,e1[i].e,
+	      strcmp(enm1[i].name,enm2[i].name)!=0 ? enm2[i].name:"",
+	      step2,e2[i].e);
   }
 }
 
 static void cmp_disres(t_enxframe *fr1,t_enxframe *fr2,real ftol)
 {
   int i;
-  char bav[64],bt[64];
+  char bav[64],bt[64],bs[22];
     
   cmp_int(stdout,"ndisre",-1,fr1->ndisre,fr2->ndisre);
   if ((fr1->ndisre == fr2->ndisre) && (fr1->ndisre > 0)) {
-    sprintf(bav,"step %d: disre rav",fr1->step);
-    sprintf(bt, "step %d: disre  rt",fr1->step);
+    sprintf(bav,"step %s: disre rav",gmx_step_str(fr1->step,bs));
+    sprintf(bt, "step %s: disre  rt",gmx_step_str(fr1->step,bs));
     for(i=0; (i<fr1->ndisre); i++) {
       cmp_real(stdout,bav,i,fr1->disre_rm3tav[i],fr2->disre_rm3tav[i],ftol);
       cmp_real(stdout,bt ,i,fr1->disre_rt[i]    ,fr2->disre_rt[i]    ,ftol);
@@ -727,12 +729,12 @@ static void cmp_disres(t_enxframe *fr1,t_enxframe *fr2,real ftol)
 static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol)
 {
   int i,j;
-  char buf[64];
+  char buf[64],bs[22];
     
   cmp_int(stdout,"nblock",-1,fr1->nblock,fr2->nblock);  
   if ((fr1->nblock == fr2->nblock) && (fr1->nblock > 0)) {
     for(j=0; (j<fr1->nblock); j++) {
-      sprintf(buf,"step %d: block[%d]",fr1->step,j);
+      sprintf(buf,"step %s: block[%d]",gmx_step_str(fr1->step,bs),j);
       cmp_int(stdout,buf,-1,fr1->nr[j],fr2->nr[j]);
       if ((fr1->nr[j] == fr2->nr[j]) && (fr1->nr[j] > 0)) {
 	for(i=0; (i<fr1->nr[j]); i++) {
@@ -747,7 +749,8 @@ void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
 {
   int        in1,in2,nre,nre1,nre2,block;
   int        i,maxener;
-  char       **enm1=NULL,**enm2=NULL,buf[256];
+  char       buf[256];
+  gmx_enxnm_t *enm1=NULL,*enm2=NULL;
   t_enxframe *fr1,*fr2;
   bool       b1,b2;
   
@@ -766,8 +769,9 @@ void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
   
   maxener = nre;
   for(i=0; (i<nre); i++) {
-    cmp_str(stdout,"enm",i,enm1[i],enm2[i]);
-    if ((lastener != NULL) && (strstr(enm1[i],lastener) != NULL)) {
+    cmp_str(stdout,"enm",i,enm1[i].name,enm2[i].name);
+    cmp_str(stdout,"unit",i,enm1[i].unit,enm2[i].unit);
+    if ((lastener != NULL) && (strstr(enm1[i].name,lastener) != NULL)) {
       maxener=i+1;
       break;
     }

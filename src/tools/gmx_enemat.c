@@ -141,6 +141,7 @@ int gmx_enemat(int argc,char *argv[])
   int        in;
   FILE       *out;
   int        timecheck=0;
+  gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   int        teller=0;
   real       sum;
@@ -148,7 +149,6 @@ int gmx_enemat(int argc,char *argv[])
   bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
   int        *set,i,j,k,prevk,m=0,n,nre,nset,nenergy;
-  char       **enm = NULL;
   char       **groups = NULL;
   char       groupname[255],fn[255];
   int        ngroups;
@@ -162,7 +162,7 @@ int gmx_enemat(int argc,char *argv[])
   int        neref=0;
 
   t_filenm   fnm[] = {
-    { efENX, "-f", NULL, ffOPTRD },
+    { efEDR, "-f", NULL, ffOPTRD },
     { efDAT, "-groups", "groups.dat", ffREAD },
     { efDAT, "-eref",   "eref.dat", ffOPTRD },
     { efXPM, "-emat",   "emat", ffWRITE },
@@ -185,7 +185,7 @@ int gmx_enemat(int argc,char *argv[])
   egrp_use[egTotal]=TRUE;
   
   bRef=opt2bSet("-eref",NFILE,fnm);
-  in=open_enx(ftp2fn(efENX,NFILE,fnm),"r");
+  in=open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
   do_enxnms(in,&nre,&enm);
   
   if (nre == 0)
@@ -215,7 +215,7 @@ int gmx_enemat(int argc,char *argv[])
 	  fprintf(stderr,"\r%-15s %5d",groupname,n);
 #endif
 	  for(k=prevk; (k<prevk+nre); k++)
-	    if (strcmp(enm[k%nre],groupname) == 0) {
+	    if (strcmp(enm[k%nre].name,groupname) == 0) {
 	      set[n++] = k;
 	      break;
 	    }

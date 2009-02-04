@@ -797,7 +797,7 @@ int main (int argc, char *argv[])
     { efTOP, "-pp", "processed", ffOPTWR },
     { efTPX, "-o",  NULL,        ffWRITE },
     { efTRN, "-t",  NULL,        ffOPTRD },
-    { efENX, "-e",  NULL,        ffOPTRD }
+    { efEDR, "-e",  NULL,        ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -1047,7 +1047,7 @@ int main (int argc, char *argv[])
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efENX,NFILE,fnm),
+    cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efEDR,NFILE,fnm),
 		bNeedVel,bGenVel,fr_time,ir,&state,sys);
   }
 

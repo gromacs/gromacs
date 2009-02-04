@@ -75,9 +75,9 @@ void do_sim(char *enx,
 void get_results(char *enx,real P[],real *epot,int pindex,int eindex)
 {
   int      fp_ene;
-  char     **nms=NULL;
   int      nre,step,ndr,i;
   real     t;
+  gmx_enxnm_t *nms=NULL;
   t_enxframe fr;
   
   fp_ene = open_enx(enx,"r");
@@ -146,7 +146,7 @@ int main(int argc,char *argv[])
   };
   t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
-    { efENX, "-e",      NULL,       ffRW },
+    { efEDR, "-e",      NULL,       ffRW },
     { efLOG, "-g",      NULL,       ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -233,9 +233,9 @@ int main(int argc,char *argv[])
       rand_step(fp,atnr2,ip[next],&seed,frac);
       copy_iparams(atnr2,top.idef.iparams,ip[next]);
     }
-    do_sim(ftp2fn(efENX,NFILE,fnm),&top,xx,vv,&ir,box);
+    do_sim(ftp2fn(efEDR,NFILE,fnm),&top,xx,vv,&ir,box);
 
-    get_results(ftp2fn(efENX,NFILE,fnm),P[0],&epot,pindex,eindex);
+    get_results(ftp2fn(efEDR,NFILE,fnm),P[0],&epot,pindex,eindex);
 
     /* Calculate penalty */
     eFF[(nit > 0) ? next : cur]  = ener(P,epot,epot0,nmol,kp,ke,bPScal);

@@ -49,7 +49,8 @@
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,iconrmsd,ib,isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu;
+  int    ie,iconrmsd,ib,ivol,idens,ipv;
+  int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu;
   int    ivcos,ivisc;
   int    nE,nEg,nEc,nTC,nU;
   int    *igrp;
@@ -63,7 +64,8 @@ extern t_mdebin
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       bool bSum,
-		       real tmass,int step,double time,
+		       double time,
+		       real tmass,
 		       gmx_enerdata_t *enerd,
 		       t_state *state,
 		       matrix  lastbox,
@@ -75,10 +77,11 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       rvec mu_tot,
 		       gmx_constr_t constr);
      
-extern void print_ebin_header(FILE *log,int steps,double time,real lamb);
+extern void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb);
 
 extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
-		       FILE *log,int step,int nsteps,double time,
+		       FILE *log,
+		       gmx_step_t step,double time,
 		       int mode,bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);

@@ -63,7 +63,7 @@ typedef struct {
   int *qq;
 } t_liedata;
 
-static t_liedata *analyze_names(int nre,char *names[],char *ligand)
+static t_liedata *analyze_names(int nre,gmx_enxnm_t *names,char *ligand)
 {
   int       i;
   t_liedata *ld;
@@ -71,21 +71,21 @@ static t_liedata *analyze_names(int nre,char *names[],char *ligand)
   
   /* Skip until we come to pressure */
   for(i=0; (i<F_NRE); i++)
-    if (strcmp(names[i],interaction_function[F_PRES].longname) == 0)
+    if (strcmp(names[i].name,interaction_function[F_PRES].longname) == 0)
       break;
       
   /* Now real analysis: find components of energies */
   sprintf(self,"%s-%s",ligand,ligand);
   snew(ld,1);
   for( ; (i<nre); i++) {
-    if ((strstr(names[i],ligand) != NULL) && 
-	(strstr(names[i],self) == NULL)) {
-      if (strstr(names[i],"LJ") != NULL) {
+    if ((strstr(names[i].name,ligand) != NULL) && 
+	(strstr(names[i].name,self) == NULL)) {
+      if (strstr(names[i].name,"LJ") != NULL) {
 	ld->nlj++;
 	srenew(ld->lj,ld->nlj);
 	ld->lj[ld->nlj-1] = i;
       }
-      else if (strstr(names[i],"Coul") != NULL) {
+      else if (strstr(names[i].name,"Coul") != NULL) {
 	ld->nqq++;
 	srenew(ld->qq,ld->nqq);
 	ld->qq[ld->nqq-1] = i;
@@ -95,10 +95,10 @@ static t_liedata *analyze_names(int nre,char *names[],char *ligand)
   printf("Using the following energy terms:\n");
   printf("LJ:  ");
   for(i=0; (i<ld->nlj); i++)
-    printf("  %12s",names[ld->lj[i]]);
+    printf("  %12s",names[ld->lj[i]].name);
   printf("\nCoul:");
   for(i=0; (i<ld->nqq); i++)
-    printf("  %12s",names[ld->qq[i]]);
+    printf("  %12s",names[ld->qq[i]].name);
   printf("\n");
   
   return ld;
@@ -146,15 +146,15 @@ int gmx_lie(int argc,char *argv[])
 
   FILE      *out;
   int       fp,nre,nframes=0,ct=0;
-  char      **enm=NULL;
   bool      bCont;
   t_liedata *ld;
+  gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   real      lie;
   double    lieaver=0,lieav2=0;
     
   t_filenm fnm[] = { 
-    { efENX, "-f",    "ener",     ffREAD   },
+    { efEDR, "-f",    "ener",     ffREAD   },
     { efXVG, "-o",    "lie",      ffWRITE  }
   }; 
 #define NFILE asize(fnm) 
@@ -163,7 +163,7 @@ int gmx_lie(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
     
-  fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
+  fp = open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
   
   ld = analyze_names(nre,enm,ligand);

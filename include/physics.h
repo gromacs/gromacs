@@ -100,6 +100,41 @@
 #define BORH2NM           0.0529177249
 #define HARTREE_BOHR2MD   (HARTREE2KJ*AVOGADRO/BORH2NM)
 
+
+/* The four basic units */
+#define unit_length   "nm"
+#define unit_time     "ps"
+#define unit_mass     "u"
+#define unit_energy   "kJ/mol"
+
+/* Temperature unit, T in this unit times BOLTZ give energy in unit_energy */
+#define unit_temp_K   "K"
+
+/* Charge unit, electron charge, involves ONE_4PI_EPS0 */
+#define unit_charge_e "e"
+
+/* Pressure unit, pressure in basic units times PRESFAC gives this unit */
+#define unit_pres_bar "bar"
+
+/* Dipole unit, debye, conversion from the unit_charge_e involves ENM2DEBYE */
+#define unit_dipole_D "D"
+
+/* Derived units from basic units only */
+#define unit_vel      unit_length "/" unit_time
+#define unit_volume   unit_length "^3"
+#define unit_invtime  "1/" unit_time
+
+/* Other derived units */
+#define unit_surft_bar unit_pres_bar " " unit_length
+
+/* SI units, conversion from basic units involves NANO, PICO and AMU */
+#define unit_length_SI  "m"
+#define unit_time_SI    "s"
+#define unit_mass_SI    "kg"
+
+#define unit_density_SI unit_mass_SI "/" unit_length_SI "^3"
+#define unit_invvisc_SI unit_length_SI " " unit_time_SI "/" unit_mass_SI
+
 #endif	/* _physics_h */
 
 

@@ -330,13 +330,13 @@ int main (int argc, char *argv[])
   char         *grpname;
   atom_id      *index=NULL;
   int          nre;
-  char         **enm=NULL;
+  gmx_enxnm_t  *enm=NULL;
   t_enxframe   *fr_ener=NULL;
   char         buf[200],buf2[200];
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
     { efTRN, "-f",  NULL,    ffOPTRD },
-    { efENX, "-e",  NULL,    ffOPTRD },
+    { efEDR, "-e",  NULL,    ffOPTRD },
     { efNDX, NULL,  NULL,    ffOPTRD },
     { efTPX, "-o",  "tpxout",ffWRITE }
   };
@@ -395,7 +395,7 @@ int main (int argc, char *argv[])
     
 
     bNeedEner = (ir->epc == epcPARRINELLORAHMAN || ir->etc == etcNOSEHOOVER);
-    bReadEner = (bNeedEner && ftp2bSet(efENX,NFILE,fnm));
+    bReadEner = (bNeedEner && ftp2bSet(efEDR,NFILE,fnm));
     bScanEner = (bReadEner && !bTime);
     
     if (ir->epc != epcNO || EI_SD(ir->eI) || ir->eI == eiBD) {
@@ -411,7 +411,7 @@ int main (int argc, char *argv[])
     
     fp = open_trn(frame_fn,"r");
     if (bScanEner) {
-      fp_ener = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
+      fp_ener = open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
       do_enxnms(fp_ener,&nre,&enm);
       snew(fr_ener,1);
       fr_ener->t = -1e-12;
@@ -474,9 +474,7 @@ int main (int argc, char *argv[])
     if (bScanEner) {
       close_enx(fp_ener);
       free_enxframe(fr_ener);
-      for(i=0; i<nre; i++)
-	sfree(enm[i]);
-      sfree(enm);
+      free_enxnms(nre,enm);
     }
     close_trn(fp);
     fprintf(stderr,"\n");
@@ -490,7 +488,7 @@ int main (int argc, char *argv[])
 
     if (bNeedEner) {
       if (bReadEner) {
-	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&mtop.groups,ir,&state);
+	get_enx_state(ftp2fn(efEDR,NFILE,fnm),run_t,&mtop.groups,ir,&state);
       } else {
 	fprintf(stderr,"\nWARNING: The simulation uses %s temperature and/or %s pressure coupling,\n"
 		"         the continuation will only be exact when an energy file is supplied\n\n",
