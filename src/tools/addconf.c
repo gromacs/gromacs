@@ -244,7 +244,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   ffp->iparams[0].lj.c6  = 1;
   ffp->iparams[0].lj.c12 = 1;
   
-  top = gmx_mtop_generate_local_top(mtop,ir);
+  top = gmx_mtop_generate_local_top(mtop,NULL);
   
   /* Some nasty shortcuts */
   cgs  = &(top->cgs);
