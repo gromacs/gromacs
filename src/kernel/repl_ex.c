@@ -567,7 +567,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
   if (PAR(cr)) {
 #ifdef GMX_MPI
     MPI_Bcast(&bExchanged,sizeof(bool),MPI_BYTE,MASTERRANK(cr),
-	      cr->mpi_comm_mysim);
+	      cr->mpi_comm_mygroup);
 #endif
   }
   
