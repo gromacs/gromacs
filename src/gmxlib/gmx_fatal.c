@@ -365,6 +365,8 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 	break;
       case 's':
 	sval=va_arg(ap,char *);
+	if (sval == NULL)
+	  sval = strdup("(null)");
 	bputs(msg,&len,sval,fld);
 	break;
       case '%':
