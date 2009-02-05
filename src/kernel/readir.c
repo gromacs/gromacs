@@ -111,6 +111,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   char err_buf[256];
   int  ns_type=0;
 
+  /* LD STUFF */
+  if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
+      ir->bContinuation && ir->ld_seed != -1) {
+    warning_note("You are doing a continuation with SD or BD, make sure that ld_seed is different from the previous run (using ld_seed=-1 will ensure this)");
+  }
+
   /* TPI STUFF */
   if (EI_TPI(ir->eI)) {
     sprintf(err_buf,"TPI only works with pbc = %s",epbc_names[epbcXYZ]);
