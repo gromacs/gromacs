@@ -404,6 +404,12 @@ int main (int argc, char *argv[])
 	      "If you want that, supply a checkpoint file to mdrun\n\n");
     }
 
+    if (EI_SD(ir->eI) || ir->eI == eiBD) {
+      fprintf(stderr,"\nChanging ld-seed from %d ",ir->ld_seed);
+      ir->ld_seed = make_seed();
+      fprintf(stderr,"to %d\n\n",ir->ld_seed);
+    }
+
     frame_fn = ftp2fn(efTRN,NFILE,fnm);
     fprintf(stderr,
 	    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
