@@ -25,7 +25,7 @@
 #define _mm_extract_epi32(x, imm) \
     _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-void nb_kernel400_x86_64_sse(int *           p_nri,
+void nb_kernel400_ia32_sse(int *           p_nri,
                     int *           iinr,
                     int *           jindex,
                     int *           jjnr,
@@ -74,6 +74,14 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
     float         ix1,iy1,iz1,fix1,fiy1,fiz1;
     float         jx1,jy1,jz1;
     float         dx11,dy11,dz11,rsq11,rinv11;
+    const int     fractshift = 12;
+    const int     fractmask = 8388607;
+    const int     expshift = 23;
+    const int     expmask = 2139095040;
+    const int     explsb = 8388608;
+    float         lu;
+    int           iexp,addr;
+    union { unsigned int bval; float fval; } bitpattern,result;
 	
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -117,7 +125,12 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
             dy11             = iy1 - jy1;      
             dz11             = iz1 - jz1;      
             rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv11           = invsqrt(rsq11);
+            bitpattern.fval  = rsq11;          
+            iexp             = (((bitpattern.bval)&expmask)>>expshift);
+            addr             = (((bitpattern.bval)&(fractmask|explsb))>>fractshift);
+            result.bval      = gmx_invsqrt_exptab[iexp] | gmx_invsqrt_fracttab[addr];
+            lu               = result.fval;    
+            rinv11           = (0.5*lu*(3.0-((rsq11*lu)*lu)));
             isaj             = invsqrta[jnr];  
             isaprod          = isai*isaj;      
             qq               = iq*charge[jnr]; 
@@ -180,7 +193,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
  * water optimization:      No
  * Calculate forces:        no
  */
-void nb_kernel400nf_x86_64_sse(
+void nb_kernel400nf_ia32_sse(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,
@@ -226,6 +239,14 @@ void nb_kernel400nf_x86_64_sse(
     float         ix1,iy1,iz1;
     float         jx1,jy1,jz1;
     float         dx11,dy11,dz11,rsq11,rinv11;
+    const int     fractshift = 12;
+    const int     fractmask = 8388607;
+    const int     expshift = 23;
+    const int     expmask = 2139095040;
+    const int     explsb = 8388608;
+    float         lu;
+    int           iexp,addr;
+    union { unsigned int bval; float fval; } bitpattern,result;
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
@@ -265,7 +286,12 @@ void nb_kernel400nf_x86_64_sse(
             dy11             = iy1 - jy1;      
             dz11             = iz1 - jz1;      
             rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
-            rinv11           = invsqrt(rsq11);
+            bitpattern.fval  = rsq11;          
+            iexp             = (((bitpattern.bval)&expmask)>>expshift);
+            addr             = (((bitpattern.bval)&(fractmask|explsb))>>fractshift);
+            result.bval      = gmx_invsqrt_exptab[iexp] | gmx_invsqrt_fracttab[addr];
+            lu               = result.fval;    
+            rinv11           = (0.5*lu*(3.0-((rsq11*lu)*lu)));
             isaj             = invsqrta[jnr];  
             isaprod          = isai*isaj;      
             qq               = iq*charge[jnr]; 
