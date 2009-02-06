@@ -66,18 +66,27 @@
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
-
+/* 1,4 interactions uses kernel 330 directly */
+#include "nb_kernel_c/nb_kernel330.h" 
 
 #ifdef GMX_PPC_ALTIVEC   
 #include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
 #endif
 
-#if defined(GMX_IA32_SSE2)
-#include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
+#if defined(GMX_IA32_SSE)
+#include "nb_kernel_ia32_sse/nb_kernel_ia32_sse.h"
 #endif
 
-#if defined(GMX_SSE3) && defined(GMX_DOUBLE)   
-#include "nb_kernel_sse3_double/nb_kernel_sse3_double.h"
+#if defined(GMX_IA32_SSE2)
+#include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
+#endif
+
+#if defined(GMX_X86_64_SSE)
+#include "nb_kernel_x86_64_sse/nb_kernel_x86_64_sse.h"
+#endif
+
+#if defined(GMX_X86_64_SSE2)
+#include "nb_kernel_x86_64_sse2/nb_kernel_x86_64_sse2.h"
 #endif
 
 #if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
@@ -772,7 +781,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         else 
         { 
             /* Not perturbed - call kernel 330 */
-            F77_OR_C_FUNC_(nb_kernel330,NB_KERNEL330)
+            nb_kernel330
                 ( &i1,
                   &i0,
                   j_index,
