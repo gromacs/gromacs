@@ -1114,7 +1114,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              );
 
       if ( chkpt_ret == 0 ) {
-        gmx_fatal( FARGS, "Checkpoint error on step %d\n", step );
+        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
       }
 
     if (MASTER(cr))
