@@ -250,7 +250,7 @@ gmx_setup_kernels(FILE *fplog)
     nb_kernel_setup_ia32_sse2(fplog,nb_kernel_list);
 #endif
 	
-#if defined(GMX_x86_64_SSE)
+#if defined(GMX_X86_64_SSE)
     nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
 #endif
 	
