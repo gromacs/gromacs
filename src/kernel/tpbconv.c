@@ -55,6 +55,7 @@
 #include "futil.h"
 #include "vec.h"
 #include "mtop_util.h"
+#include "random.h"
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
