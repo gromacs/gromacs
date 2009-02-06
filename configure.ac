@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99_development_20090122, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.99_development_20090131, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -46,17 +46,18 @@ AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 ### Fortran or not
 AC_ARG_ENABLE(fortran,
              [AC_HELP_STRING([--enable-fortran],
-	                     [Use Fortran kernels (default on sgi,ibm,sun,axp)])],, 
+	                     [Use Fortran kernels])],, 
 [case "${host_cpu}-${host_os}" in
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
-AM_CONDITIONAL([GMX_FORTRAN],[test "$enable_fortran" = "yes"])
-if test "$enable_fortran" = "yes"; then
-  AC_DEFINE(GMX_FORTRAN,,[Use Fortran kernels])
-fi
+# Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
+
+
+
+
 
 ### MPI or not
 AC_ARG_ENABLE(mpi,
@@ -82,30 +83,16 @@ AC_ARG_ENABLE(apple_64bit,
 
 
 ### IA32 assembly code
-AC_ARG_ENABLE(ia32_3dnow,    
-              [AC_HELP_STRING([--disable-ia32-3dnow],
-                              [Don't build 3DNow! assembly loops on ia32])],,enable_ia32_3dnow=yes)
-case "${host_cpu}" in
-   i?86) 
-     if test "$enable_apple_64bit" = "yes"; then
-       enable_ia32_3dnow=no;
-     fi
-   ;;
-   *) enable_ia32_3dnow=no ;;
-esac
-
-
-### IA32 assembly code
-AC_ARG_ENABLE(ia32_sse,    
+AC_ARG_ENABLE(ia32_sse,
               [AC_HELP_STRING([--disable-ia32-sse],
                               [Don't build SSE/SSE2 assembly loops on ia32])],,enable_ia32_sse=yes)
 case "${host_cpu}-${host_vendor}" in
-   i?86-apple) 
+   i?86-apple)
       if test "$enable_apple_64bit" = "yes"; then
         enable_ia32_sse=no;
       fi
    ;;
-   i?86-*) ;;     
+   i?86-*) ;;
    *) enable_ia32_sse=no ;;
 esac
 
@@ -115,7 +102,7 @@ AC_ARG_ENABLE(x86_64_sse,
                               [Don't build SSE assembly loops on X86_64])],,enable_x86_64_sse=yes)
 case "${host_cpu}-${host_vendor}" in
    x86_64-* | amd64-*) ;;
-   i?86-apple) 
+   i?86-apple)
       if test "$enable_apple_64bit" != "yes"; then
         enable_x86_64_sse=no;
       fi
@@ -148,19 +135,21 @@ case "${host_cpu}" in
    ia64) ;;
    *) enable_ia64_asm=no ;;
 esac
-if test "$enable_ia64_asm" = "yes"; then
-  AC_DEFINE(GMX_IA64_ASM,,[Use ia64 assembly tuned for Itanium2])
-  AC_DEFINE(DISABLE_WATER_NLIST,,[Turn off all water neighborlist optimization])
-  AC_DEFINE(DISABLE_WATERWATER_NLIST,,[Turn off water-water neighborlist optimization only])
-fi
 
+
+# IBM Power6-specific optimization
+AC_ARG_ENABLE(power6,
+             [AC_HELP_STRING([--enable-power6],
+                             [Use IBM Pwr6/PPC440/PPC450-specific F77 kernels])],,enable_power6=no)
+# Turn off generic fortran loops if we are using power6-specific optimization
+if test "$enable_power6" = "yes"; then
+  enable_fortran=no;
+fi
 
 AC_ARG_ENABLE(bluegene,
               [AC_HELP_STRING([--enable-bluegene],
                               [Build assembly intrinsics kernels on bluegene])],,enable_bluegene=no)
-if test "$enable_bluegene" = "yes"; then
-  AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
-fi
+
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
@@ -169,45 +158,17 @@ AC_ARG_ENABLE(cpu-optimization,
 
 
 ### Do software 1/sqrt(x)                                                                                                            
-AC_ARG_ENABLE(software-sqrt,
-              [AC_HELP_STRING([--disable-software-sqrt],
+AC_ARG_ENABLE(software-invsqrt,
+              [AC_HELP_STRING([--disable-software-invsqrt],
                               [No software 1/sqrt (disabled on sgi,ibm,ia64)])],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_sqrt=no ;;
-  *) enable_software_sqrt=yes ;;
+  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_invsqrt=no ;;
+  *) enable_software_invsqrt=yes ;;
 esac])
-# We might turn off software sqrt on PowerPC, so the
-# define and makefile conditional is set below that check.
-
-### Do PowerPC 1/sqrt(x)
-AC_ARG_ENABLE(ppc-sqrt,     
-             [AC_HELP_STRING([--enable-ppc-sqrt],
-                             [PowerPC 1/sqrt table lookup. Single precision]
-                             [requires Power5 or later. By default we]
-                             [use 2 iterations, but if you only run on]
-			     [Power6,PPC440,PPC450 or later CPUs you can]
-			     [set --enable-ppc-sqrt=1 for better speed.])],,
-			     enable_ppc_sqrt=no)
-if test "$enable_ppc_sqrt" != "no"; then
-   if test "$enable_ppc_sqrt" == "1"; then
-     ppc_sqrt_niter=1;
-   else 
-     ppc_sqrt_niter=2;
-   fi
-AC_DEFINE_UNQUOTED(GMX_POWERPC_SQRT,$ppc_sqrt_niter,[Use PowerPC 1/sqrt(x) table lookup (number of iterations)])
-# Turn off generic software sqrt
-   enable_software_sqrt="no";
+if test "$enable_software_invsqrt" = "yes"; then
+  AC_DEFINE(GMX_SOFTWARE_INVSQRT,,[Use the GROMACS software 1/sqrt(x)])
 fi
-AM_CONDITIONAL([GMX_POWERPC_SQRT],[test "$enable_ppc_sqrt" != "no"])
-AM_CONDITIONAL([GMX_POWERPC_SQRT_SINGLE_ITERATION],[test "$ppc_sqrt_niter" == "1"])
-
-
-if test "$enable_software_sqrt" = "yes"; then
-  AC_DEFINE(GMX_SOFTWARE_SQRT,,[Use the GROMACS software 1/sqrt(x)])
-fi
-AM_CONDITIONAL([GMX_SOFTWARE_SQRT],[test "$enable_software_sqrt" = "yes"])
-
-
+AM_CONDITIONAL([GMX_SOFTWARE_INVSQRT],[test "$enable_software_invsqrt" = "yes"])
 
 AC_ARG_ENABLE(fahcore,
               [AC_HELP_STRING([--enable-fahcore],
@@ -217,15 +178,6 @@ AC_ARG_ENABLE(fahcore,
 
 # The four options below used to improve code scheduling, but the newest CPUs can usually rearrange
 # instructions dynamically at runtime, so they might not make much difference now:
-
-### Force prefetching
-AC_ARG_ENABLE(prefetch,     
-              [AC_HELP_STRING([--enable-prefetch-forces],
-                              [Prefetch forces in innerloops])],, enable_prefetch=no)
-# processing of prefetch choices is done just before the final output stage!
-AM_CONDITIONAL([GMX_PREFETCH_FORCES],[test "$enable_prefetch" = "yes"])
-
-
 
 
 AC_ARG_ENABLE(all-static,
@@ -702,10 +654,8 @@ AC_TYPE_UID_T
 AC_C_INLINE
     
 
-
-
 # Test stuff for ia32 and x86_64 assembly, and add objects/libraries.
-if test "$enable_ia32_sse" = "yes" -o "$enable_ia32_3dnow" = "yes" -o "$enable_x86_64_sse" = "yes"; then
+if test "$enable_ia32_sse" = "yes" -o "$enable_x86_64_sse" = "yes"; then
   AC_MSG_CHECKING([whether your compiler can handle assembly files (*.s)])
 #
 # Use 64-bit registers (rsp/rbp) on x86_64
@@ -752,7 +702,7 @@ EOF
       if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
-        AC_MSG_RESULT([no]) 
+        AC_MSG_RESULT([no])
         AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
       fi
       AC_DEFINE([GMX_IA32_SSE2],,[Double-precision SSE2 instructions on ia32])
@@ -763,33 +713,33 @@ EOF
 cat > conftest.s << EOF
 checkasm:
         emms
-	movapd 32(%rsi,%rdx,8),%xmm4
+        movapd 32(%rsi,%rdx,8),%xmm4
         emms
         ret
 EOF
       if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
-        AC_MSG_RESULT([no]) 
+        AC_MSG_RESULT([no])
         AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
       fi
       AC_DEFINE([GMX_X86_64_SSE2],,[Double-precision SSE2 instructions on X86_64])
     fi
-  else 
+  else
 # end of double precision testing, now do single.
     if test "$enable_ia32_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 SSE])
 cat > conftest.s << EOF
 checkasm:
         emms
-	movaps 32(%esi,%edx,8),%xmm4
+        movaps 32(%esi,%edx,8),%xmm4
         emms
         ret
 EOF
       if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
-        AC_MSG_RESULT([no]) 
+        AC_MSG_RESULT([no])
         AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
       fi
       AC_DEFINE([GMX_IA32_SSE],,[Single-precision SSE instructions on ia32])
@@ -807,31 +757,14 @@ EOF
       if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
-        AC_MSG_RESULT([no]) 
+        AC_MSG_RESULT([no])
         AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
       fi
       AC_DEFINE([GMX_X86_64_SSE],,[Single-precision SSE instructions on X86_64])
     fi
-    if test "$enable_ia32_3dnow" = "yes"; then
-      AC_MSG_CHECKING([whether as fully supports ia32 3DNow! instructions])
-cat > conftest.s << EOF
-checkasm:
-        emms
-        pswapd %mm0, %mm0
-        emms
-        ret
-EOF
-      if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
-        AC_MSG_RESULT([yes])
-      else
-        AC_MSG_RESULT([no]) 
-        AC_MSG_ERROR([Upgrade to a more recent binutils (or disable assembly loops).])
-      fi
-      AC_DEFINE([GMX_IA32_3DNOW],,[Single-precision 3DNow! instructions on ia32])
-    fi
-  fi  
+  fi
 fi
-        
+
 
 # Test stuff for ia64 assembly
 #
@@ -875,7 +808,15 @@ choke_me
   fi  
 fi
 
+if test "$enable_ia64_asm" = "yes"; then
+  AC_DEFINE(GMX_IA64_ASM,,[Use ia64 assembly tuned for Itanium2])
+  AC_DEFINE(DISABLE_WATER_NLIST,,[Turn off all water neighborlist optimization])
+  AC_DEFINE(DISABLE_WATERWATER_NLIST,,[Turn off water-water neighborlist optimization only])
+fi
 
+if test "$enable_bluegene" = "yes"; then
+  AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
+fi
 
 ##
 # Add the appropriate assembly loops 
@@ -884,11 +825,11 @@ AM_CONDITIONAL([GMX_IA32_SSE],[test "$enable_ia32_sse" = "yes" -a "$enable_float
 AM_CONDITIONAL([GMX_IA32_SSE2],[test "$enable_ia32_sse" = "yes" -a "$enable_float" = "no"])
 AM_CONDITIONAL([GMX_X86_64_SSE],[test "$enable_x86_64_sse" = "yes" -a "$enable_float" = "yes"])
 AM_CONDITIONAL([GMX_X86_64_SSE2],[test "$enable_x86_64_sse" = "yes" -a "$enable_float" = "no"])
-AM_CONDITIONAL([GMX_IA32_3DNOW],[test "$enable_ia32_3dnow" = "yes" -a "$enable_float" = "yes"])
+AM_CONDITIONAL([GMX_FORTRAN],[test "$enable_fortran" = "yes"])
 AM_CONDITIONAL([GMX_PPC_ALTIVEC],[test "$enable_ppc_altivec" = "yes" -a "$enable_float" = "yes"])
-AM_CONDITIONAL([GMX_IA64_ASM_SINGLE],[test "$enable_ia64_asm" = "yes" -a "$enable_float" = "yes"])
-AM_CONDITIONAL([GMX_IA64_ASM_DOUBLE],[test "$enable_ia64_asm" = "yes" -a "$enable_float" = "no"])
+AM_CONDITIONAL([GMX_IA64_ASM],[test "$enable_ia64_asm" = "yes"])
 AM_CONDITIONAL([GMX_BLUEGENE],[test "$enable_bluegene" = "yes"])
+AM_CONDITIONAL([GMX_POWER6],[test "$enable_power6" = "yes"])
 
 
 #############
@@ -990,8 +931,7 @@ AC_CONFIG_FILES([ src/gmxlib/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_blas/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
-AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel/Makefile ])
-AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_3dnow/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse2/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_x86_64_sse/Makefile ])
@@ -1000,6 +940,9 @@ AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ppc_altivec/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia64_single/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia64_double/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_bluegene/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_power6/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_f77_single/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_f77_double/Makefile ])
 AC_CONFIG_FILES([ include/Makefile ])
 AC_CONFIG_FILES([ include/types/Makefile ])
 AC_CONFIG_FILES([ src/mdlib/Makefile ])
