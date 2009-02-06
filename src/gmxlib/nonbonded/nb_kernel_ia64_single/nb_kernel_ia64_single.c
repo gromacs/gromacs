@@ -190,7 +190,7 @@ nb_kernel_setup_ia64_single(FILE *log,nb_kernel_t **list)
 
     if(NULL != log)
 	{
-		fprintf(log,"Using single precision ia64 assembly kernels.");
+		fprintf(log,"Configuring single precision ia64 assembly kernels...\n");
 	}
 	
     for(i=0;i<eNR_NBKERNEL_NR;i++)

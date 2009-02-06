@@ -62,8 +62,7 @@
 #include "nrnb.h"
 #include "smalloc.h"
 
-#include "nb_kernel/nb_kernel.h"
-#include "nb_kernel/nb_kernel330.h"
+#include "nb_kernel_c/nb_kernel_c.h"
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
@@ -73,24 +72,16 @@
 #include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
 #endif
 
-#ifdef GMX_IA32_3DNOW  
-#include "nb_kernel_ia32_3dnow/nb_kernel_ia32_3dnow.h"
+#if defined(GMX_IA32_SSE2)
+#include "nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #endif
 
-#ifdef GMX_IA32_SSE   
-#include "nb_kernel_ia32_sse/nb_kernel_ia32_sse.h"
+#if defined(GMX_SSE3) && defined(GMX_DOUBLE)   
+#include "nb_kernel_sse3_double/nb_kernel_sse3_double.h"
 #endif
 
-#ifdef GMX_IA32_SSE2    
-#include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
-#endif
-
-#ifdef GMX_X86_64_SSE    
-#include "nb_kernel_x86_64_sse/nb_kernel_x86_64_sse.h"
-#endif
-
-#ifdef GMX_X86_64_SSE2    
-#include "nb_kernel_x86_64_sse2/nb_kernel_x86_64_sse2.h"
+#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
+#include "nb_kernel_f77_double/nb_kernel_f77_double.h"
 #endif
 
 #if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
@@ -103,6 +94,10 @@
 
 #ifdef GMX_BLUEGENE
 #include "nb_kernel_bluegene/nb_kernel_bluegene.h"
+#endif
+
+#ifdef GMX_POWER6
+#include "nb_kernel_power6/nb_kernel_power6.h"
 #endif
 
 
@@ -222,53 +217,64 @@ gmx_setup_kernels(FILE *fplog)
 	
     nb_kernel_setup(fplog,nb_kernel_list);
     
-    if(getenv("NOASSEMBLYLOOPS") != NULL)
+    if(getenv("GMX_NOOPTIMIZEDKERNELS") != NULL)
     {
         if(fplog)
             fprintf(fplog,
-                    "Found environment variable NOASSEMBLYLOOPS.\n"
-                    "Disabling all SSE/SSE2/3DNow/Altivec/ia64 asm support.\n\n");
+                    "Found environment variable GMX_NOOPTIMIZEDKERNELS.\n"
+                    "Disabling all SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
         return;
     }
     
-#ifdef GMX_DOUBLE
-    
-    /* Double precision */    
-
-#ifdef GMX_IA32_SSE2    
+	/* Setup kernels. The last called setup routine will overwrite earlier assignments,
+	 * so we should e.g. test SSE3 support _after_ SSE2 support.
+	 */
+#ifdef GMX_PPC_ALTIVEC   
+    nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
+#endif
+	
+#if defined(GMX_IA32_SSE)
+    nb_kernel_setup_ia32_sse(fplog,nb_kernel_list);
+#endif
+	
+#if defined(GMX_IA32_SSE2)
     nb_kernel_setup_ia32_sse2(fplog,nb_kernel_list);
-#elif defined GMX_X86_64_SSE2 
+#endif
+	
+#if defined(GMX_x86_64_SSE)
+    nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
+#endif
+	
+#if defined(GMX_X86_64_SSE2)
     nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
-#elif defined GMX_IA64_ASM
+#endif
+	
+#if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
+    nb_kernel_setup_f77_double(fplog,nb_kernel_list);
+#endif
+	
+#if defined(GMX_FORTRAN) && !defined(GMX_DOUBLE)   
+    nb_kernel_setup_f77_single(fplog,nb_kernel_list);
+#endif
+	
+#if (defined GMX_IA64_ASM && defined GMX_DOUBLE) 
     nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
 #endif
-    
-#else
-    /* Single */
-
-    /* Older Athlons only support 3DNow, so check that first, and 
-     * then newer AthlonXP/Opteron CPUs with SSE support will override
-     * it in the SSE check.
-     */   
-#ifdef GMX_IA32_3DNOW
-    nb_kernel_setup_ia32_3dnow(fplog,nb_kernel_list);
-#endif
-#ifdef GMX_IA32_SSE    
-    nb_kernel_setup_ia32_sse(fplog,nb_kernel_list);
-#elif defined GMX_X86_64_SSE   
-    nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
-#elif defined GMX_PPC_ALTIVEC
-    nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
-#elif defined GMX_IA64_ASM
+	
+#if (defined GMX_IA64_ASM && !defined GMX_DOUBLE)
     nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
 #endif
-    
-#endif /* precision */
-
+	
 #ifdef GMX_BLUEGENE
     nb_kernel_setup_bluegene(fplog,nb_kernel_list);
 #endif
-
+	
+#ifdef GMX_POWER6
+    nb_kernel_setup_power6(fplog,nb_kernel_list);
+#endif
+	
+	
+	
 	if(fplog)
     {
 	    fprintf(fplog,"\n\n");

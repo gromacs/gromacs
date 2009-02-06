@@ -221,6 +221,9 @@ nb_kernel_setup_ppc_altivec(FILE *log,nb_kernel_t **list)
     if(nb_kernel_ppc_altivec_test(log) != 0)
         return;
     
+	if(log)
+		fprintf(log,"Configuring PPC/Altivec nonbonded kernels...\n");
+
     for(i=0;i<eNR_NBKERNEL_NR;i++)
     {
         p = kernellist_ppc_altivec[i];
