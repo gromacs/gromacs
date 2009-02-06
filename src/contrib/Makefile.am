@@ -15,8 +15,13 @@ EXTRA_DIST              = README
 
 EXTRA_PROGRAMS 	=  	copyrgt 	\
 			options 	hrefify 	\
-			addquote 	\
+			addquote 	compnl	\
 			gen_table
+
+compnl_SOURCES = compnl.c
+compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
+
+
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 

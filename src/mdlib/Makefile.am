@@ -4,8 +4,8 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@ ../gmxlib/libgmx@LIBSUFFIX@.la	
-libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@ ../gmxlib/libgmx@LIBSUFFIX@.la	
+libmd@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	
+libmd@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	
 libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
@@ -33,10 +33,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	wall.c		wnblist.c	\
 	csettle.c       clincs.c	\
 	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c	\
-	gmx_wallcycle.c
-
-
-EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
+	gmx_wallcycle.c \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
 	gmx_fft_mkl.c
@@ -47,16 +44,6 @@ EXTRA_PROGRAMS = compnl
 compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
-
-# link the mpi library to non-mpi names if the latter are not present
-install-exec-hook:
-#	libname="libmd@LIBSUFFIX@"; \
-#	nompi="`echo $$libname | sed -e 's,_mpi,,'`"; \
-#	libdir="$(libdir)"; \
-#	if echo $$libname | grep mpi >/dev/null ; then \
-#	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
-#	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
-#	fi; 
 
 
 # clean all libtool libraries, since the target names might have changed

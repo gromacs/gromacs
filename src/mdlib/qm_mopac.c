@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_QMMM_MOPAC
+
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -224,3 +226,7 @@ real call_mopac_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
   return (QMener);
 } /* call_mopac_SH */
 
+#else
+int
+gmx_qmmm_mopac_empty;
+#endif

@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99_development_20090131, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.99_development_20090205, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -238,7 +238,6 @@ AC_ARG_WITH(qmmm_gaussian,
                               [Use modified Gaussian0x for QM-MM (see website)])],,with_qmmm_gaussian=yes)
 if test "$with_qmmm_gaussian" = "yes"; then
   AC_DEFINE(GMX_QMMM_GAUSSIAN,,[Use (modified) Gaussian0x for QM-MM calculations])
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gaussian.lo"
 fi
 
 
@@ -247,7 +246,6 @@ AC_ARG_WITH(qmmm_gamess,
                               [Use modified Gamess-UK for QM-MM (see website)])],,with_qmmm_gamess=no)
 if test "$with_qmmm_gamess" = "yes"; then
   AC_DEFINE(GMX_QMMM_GAMESS,,[Use (modified) Gamess-UK for QM-MM calculations])
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gamess.lo"
 fi
 
 
@@ -256,7 +254,6 @@ AC_ARG_WITH(qmmm_mopac,
                               [Use modified Mopac 7 for QM-MM (see website)])],,with_qmmm_mopac=no)
 if test "$with_qmmm_mopac" = "yes"; then
   AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_mopac.lo"
 fi
    
 
@@ -458,7 +455,7 @@ fftw2)
    *) AC_DEFINE(FFTW2_NAME_FFTW,,[Dont use any prefix on fftw2 includes]) ;;
   esac
 
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftw2.lo"
+  AC_DEFINE(GMX_FFT_FFTW2,,[Use FFTW2 FFT library])
 
   ;; #  end of fftw2 check
 
@@ -474,7 +471,7 @@ if test "$enable_float" = "yes"; then
 else
   AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
 fi
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftw3.lo"
+  AC_DEFINE(GMX_FFT_FFTW3,,[Use FFTW3 FFT library])
 ],[
 # not ok, echo a warning
 AC_MSG_ERROR(
@@ -504,13 +501,13 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
   AC_CHECK_LIB([mkl],DftiComputeForward,,
     AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
 
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_mkl.lo"
+  AC_DEFINE(GMX_FFT_MKL,,[Use Intel MKL FFT library])
   ;;
 
 fftpack | no)
   AC_MSG_WARN([The built-in FFTPACK routines are slow.
 Are you sure you don't want to use FFTW? It is free and much faster...])
-  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftpack.lo"
+  AC_DEFINE(GMX_FFT_FFTPACK,,[Use Built-in FFTPACK FFT library])
   ;;
 *)
   AC_MSG_ERROR([Unknown FFT library])
@@ -526,7 +523,6 @@ fi
 # check for xtc headers
 case "${host_os}" in
 cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
-  GMXLIB_LIBOBJS="$GMXLIB_LIBOBJS gmx_system_xdr.lo"
   ;;
 *)
   AC_CHECK_HEADERS([rpc/rpc.h])
@@ -551,7 +547,6 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
 
   if test "$have_xdr" != "yes"; then
     AC_DEFINE(GMX_INTERNAL_XDR,,[Use our own instead of system XDR libraries])	
-      GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} gmx_system_xdr.lo"
     AC_MSG_WARN([Couldn't find XDR headers and/or libraries - using our own])
   fi
   ;;
@@ -797,7 +792,6 @@ choke_me
 #endif
 ],[
     AC_MSG_RESULT([yes])
-###    GMX_LIBOBJS="${GMX_LIBOBJS} inner_altivec.lo"
     AC_DEFINE([GMX_PPC_ALTIVEC],,[Use PowerPC Altivec inner loops])],[
       AC_MSG_RESULT([no])
       AC_MSG_WARN([no altivec support found - On recent PowerPC CPUs]
@@ -867,9 +861,6 @@ AS="$CC"
 AC_SUBST(ASFLAGS)
 AC_SUBST(AS)
 AC_SUBST(INCLUDES)          # should be automatic, but doesnt seem to be?
-AC_SUBST(GMXLIB_LIBOBJS)
-AC_SUBST(MDLIB_LIBOBJS)
-AC_SUBST(GMXANA_LIBOBJS)
 
 # To tell libraries apart, we use four versions of the name. For instance, libgmx:
 # libgmx		single prec, no mpi.

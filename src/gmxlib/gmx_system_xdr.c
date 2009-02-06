@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_INTERNAL_XDR
+
 
 #include <stdlib.h>
 #include <limits.h>
@@ -761,4 +763,7 @@ xdrstdio_putuint32 (XDR *xdrs, xdr_uint32_t *ip)
 	return TRUE;
 }
 
-
+#else
+int
+gmx_system_xdr_empty;
+#endif /* GMX_SYSTEM_XDR */

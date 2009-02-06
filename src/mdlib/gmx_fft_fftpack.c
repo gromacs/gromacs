@@ -20,6 +20,8 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_FFT_FFTPACK
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2683,3 +2685,7 @@ gmx_fft_destroy(gmx_fft_t      fft)
         free(fft);
     }
 }
+#else
+int
+gmx_fft_fftpack_empty;
+#endif /* GMX_FFT_FFTPACK */

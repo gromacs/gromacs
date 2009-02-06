@@ -20,6 +20,8 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_FFT_FFTW2
+
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
@@ -729,3 +731,9 @@ gmx_fft_destroy(gmx_fft_t    fft)
         free(fft);
     }
 }
+
+
+#else
+int
+gmx_fft_fftw2_empty;
+#endif /* GMX_FFT_FFTW2 */

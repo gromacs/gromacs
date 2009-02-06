@@ -20,6 +20,8 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_FFT_MKL 
+
 #include <errno.h>
 #include <stdlib.h>
 
@@ -1178,3 +1180,8 @@ gmx_fft_destroy(gmx_fft_t    fft)
         free(fft);
     }
 }
+
+#else
+int
+gmx_fft_mkl_empty;
+#endif /* GMX_FFT_MKL */

@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_QMMM_GAMESS
 
 #include <math.h>
 #include "sysstuff.h"
@@ -281,4 +282,9 @@ real call_gamess(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
   QMener=energy*HARTREE2KJ*AVOGADRO;
   return(QMener);
 }
+
+#else
+int
+gmx_qmmm_gamess_empty;
+#endif
 

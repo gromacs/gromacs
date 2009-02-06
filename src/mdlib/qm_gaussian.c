@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_QMMM_GAUSSIAN
+
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -1045,3 +1047,9 @@ real call_gaussian_SH(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
 } /* call_gaussian_SH */
     
 /* end of gaussian sub routines */
+
+#else
+int
+gmx_qmmm_gaussian_empty;
+#endif
+
