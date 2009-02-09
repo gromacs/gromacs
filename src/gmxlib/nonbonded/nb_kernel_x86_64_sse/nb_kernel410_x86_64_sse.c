@@ -25,7 +25,7 @@
 #define _mm_extract_epi32(x, imm) \
     _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-void nb_kernel410_ia32_sse(int *           p_nri,
+void nb_kernel410_x86_64_sse(int *           p_nri,
                     int *           iinr,
                     int *           jindex,
                     int *           jjnr,
@@ -213,7 +213,7 @@ void nb_kernel410_ia32_sse(int *           p_nri,
  * water optimization:      No
  * Calculate forces:        no
  */
-void nb_kernel410nf_ia32_sse(
+void nb_kernel410nf_x86_64_sse(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,
