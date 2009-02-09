@@ -452,8 +452,8 @@ void init_QMMMrec(t_commrec *cr,
   int       a_offset;
   t_ilist   *ilist_mol;
 
-  c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
-  c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
+  c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,6)); 
+  c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,12)); 
   fprintf(stderr,"there we go!\n");
 
   /* Make a local copy of the QMMMrec */
@@ -734,8 +734,8 @@ void update_QMMMrec(t_commrec *cr,
   real
     c12au,c6au;
 
-  c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
-  c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
+  c6au  = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,6)); 
+  c12au = (HARTREE2KJ*AVOGADRO*pow(BOHR2NM,12)); 
 
   /* every cpu has this array. On every processor we fill this array
    * with 1's and 0's. 1's indicate the atoms is a QM atom on the

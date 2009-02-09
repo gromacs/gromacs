@@ -248,12 +248,12 @@ real call_gamess(t_commrec *cr, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
    */
   for(i=0;i<qm->nrQMatoms;i++){
     for (j=0;j<DIM;j++){
-      qmcrd[DIM*i+j] = 1/BORH2NM*qm->xQM[i][j];
+      qmcrd[DIM*i+j] = 1/BOHR2NM*qm->xQM[i][j];
     }
   }
   for(i=0;i<mm->nrMMatoms;i++){
     for (j=0;j<DIM;j++){
-      mmcrd[DIM*i+j] = 1/BORH2NM*mm->xMM[i][j];
+      mmcrd[DIM*i+j] = 1/BOHR2NM*mm->xMM[i][j];
     }
   }
   for (i=0;i<3*qm->nrQMatoms;i+=3){

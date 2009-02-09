@@ -209,7 +209,7 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
     /*  if(fr->bRF){*/
     /* reactionfield, file is needed using gaussian */
     /*    rffile=fopen("rf.dat","w");*/
-    /*   fprintf(rffile,"%f %f\n",fr->epsilon_r,fr->rcoulomb/BORH2NM);*/
+    /*   fprintf(rffile,"%f %f\n",fr->epsilon_r,fr->rcoulomb/BOHR2NM);*/
     /* fclose(rffile);*/
     /*  }*/
   }
@@ -367,15 +367,15 @@ void write_gaussian_SH_input(int step,bool swap,
 #ifdef GMX_DOUBLE
     fprintf(out,"%3d %10.7lf  %10.7lf  %10.7lf\n",
 	    qm->atomicnumberQM[i],
-	    qm->xQM[i][XX]/BORH2NM,
-	    qm->xQM[i][YY]/BORH2NM,
-	    qm->xQM[i][ZZ]/BORH2NM);
+	    qm->xQM[i][XX]/BOHR2NM,
+	    qm->xQM[i][YY]/BOHR2NM,
+	    qm->xQM[i][ZZ]/BOHR2NM);
 #else
     fprintf(out,"%3d %10.7f  %10.7f  %10.7f\n",
 	    qm->atomicnumberQM[i],
-	    qm->xQM[i][XX]/BORH2NM,
-	    qm->xQM[i][YY]/BORH2NM,
-	    qm->xQM[i][ZZ]/BORH2NM);
+	    qm->xQM[i][XX]/BOHR2NM,
+	    qm->xQM[i][YY]/BOHR2NM,
+	    qm->xQM[i][ZZ]/BOHR2NM);
 #endif
   }
   /* MM point charge data */
@@ -384,15 +384,15 @@ void write_gaussian_SH_input(int step,bool swap,
     for(i=0;i<mm->nrMMatoms;i++){
 #ifdef GMX_DOUBLE
       fprintf(out,"%10.7lf  %10.7lf  %10.7lf %8.4lf\n",
-	      mm->xMM[i][XX]/BORH2NM,
-	      mm->xMM[i][YY]/BORH2NM,
-	      mm->xMM[i][ZZ]/BORH2NM,
+	      mm->xMM[i][XX]/BOHR2NM,
+	      mm->xMM[i][YY]/BOHR2NM,
+	      mm->xMM[i][ZZ]/BOHR2NM,
 	      mm->MMcharges[i]);
 #else
       fprintf(out,"%10.7f  %10.7f  %10.7f %8.4f\n",
-	      mm->xMM[i][XX]/BORH2NM,
-	      mm->xMM[i][YY]/BORH2NM,
-	      mm->xMM[i][ZZ]/BORH2NM,
+	      mm->xMM[i][XX]/BOHR2NM,
+	      mm->xMM[i][YY]/BOHR2NM,
+	      mm->xMM[i][ZZ]/BOHR2NM,
 	      mm->MMcharges[i]);
 #endif
     }
@@ -504,15 +504,15 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 #ifdef GMX_DOUBLE
     fprintf(out,"%3d %10.7lf  %10.7lf  %10.7lf\n",
 	    qm->atomicnumberQM[i],
-	    qm->xQM[i][XX]/BORH2NM,
-	    qm->xQM[i][YY]/BORH2NM,
-	    qm->xQM[i][ZZ]/BORH2NM);
+	    qm->xQM[i][XX]/BOHR2NM,
+	    qm->xQM[i][YY]/BOHR2NM,
+	    qm->xQM[i][ZZ]/BOHR2NM);
 #else
     fprintf(out,"%3d %10.7f  %10.7f  %10.7f\n",
 	    qm->atomicnumberQM[i],
-	    qm->xQM[i][XX]/BORH2NM,
-	    qm->xQM[i][YY]/BORH2NM,
-	    qm->xQM[i][ZZ]/BORH2NM);
+	    qm->xQM[i][XX]/BOHR2NM,
+	    qm->xQM[i][YY]/BOHR2NM,
+	    qm->xQM[i][ZZ]/BOHR2NM);
 #endif
   }
 
@@ -563,16 +563,16 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
       for(i=0;i<mm->nrMMatoms;i++){
 #ifdef GMX_DOUBLE
 	fprintf(out,"%10.7lf  %10.7lf  %10.7lf %8.4lf 0.0 %10.7lf %10.7lf\n",
-		mm->xMM[i][XX]/BORH2NM,
-		mm->xMM[i][YY]/BORH2NM,
-		mm->xMM[i][ZZ]/BORH2NM,
+		mm->xMM[i][XX]/BOHR2NM,
+		mm->xMM[i][YY]/BOHR2NM,
+		mm->xMM[i][ZZ]/BOHR2NM,
 		mm->MMcharges[i],
 		mm->c6[i],mm->c12[i]);
 #else
 	fprintf(out,"%10.7f  %10.7f  %10.7f %8.4f 0.0 %10.7f %10.7f\n",
-		mm->xMM[i][XX]/BORH2NM,
-		mm->xMM[i][YY]/BORH2NM,
-		mm->xMM[i][ZZ]/BORH2NM,
+		mm->xMM[i][XX]/BOHR2NM,
+		mm->xMM[i][YY]/BOHR2NM,
+		mm->xMM[i][ZZ]/BOHR2NM,
 		mm->MMcharges[i],
 		mm->c6[i],mm->c12[i]);
 #endif
@@ -583,15 +583,15 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
       for(i=0;i<mm->nrMMatoms;i++){
 #ifdef GMX_DOUBLE
 	fprintf(out,"%10.7lf  %10.7lf  %10.7lf %8.4lf\n",
-		mm->xMM[i][XX]/BORH2NM,
-		mm->xMM[i][YY]/BORH2NM,
-		mm->xMM[i][ZZ]/BORH2NM,
+		mm->xMM[i][XX]/BOHR2NM,
+		mm->xMM[i][YY]/BOHR2NM,
+		mm->xMM[i][ZZ]/BOHR2NM,
 		mm->MMcharges[i]);
 #else
 	fprintf(out,"%10.7f  %10.7f  %10.7f %8.4f\n",
-		mm->xMM[i][XX]/BORH2NM,
-		mm->xMM[i][YY]/BORH2NM,
-		mm->xMM[i][ZZ]/BORH2NM,
+		mm->xMM[i][XX]/BOHR2NM,
+		mm->xMM[i][YY]/BOHR2NM,
+		mm->xMM[i][ZZ]/BOHR2NM,
 		mm->MMcharges[i]);
 #endif
       }
@@ -645,7 +645,7 @@ real read_gaussian_output(rvec QMgrad[],rvec MMgrad[],int step,
 	     &qm->xQM[i][ZZ]);
 #endif     
       for(j=0;j<DIM;j++){
-	qm->xQM[i][j]*=BORH2NM;
+	qm->xQM[i][j]*=BOHR2NM;
       }
     }
   }
