@@ -97,7 +97,7 @@
 
 /* to convert AU to MD units: */
 #define HARTREE2KJ        4.3597482e-21
-#define BORH2NM           0.0529177249
+#define BOHR2NM           0.0529177249
 #define HARTREE_BOHR2MD   (HARTREE2KJ*AVOGADRO/BORH2NM)
 
 
