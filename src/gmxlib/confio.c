@@ -668,7 +668,9 @@ static void get_coordnum_fp (FILE *in,char *title, int *natoms)
 
   fgets2 (title,STRLEN,in);
   fgets2 (line,STRLEN,in);
-  sscanf (line,"%d",natoms);
+  if (sscanf (line,"%d",natoms) != 1) {
+    gmx_fatal(FARGS,"gro file does not have the number of atoms on the second line");
+  }
 }
 
 static void get_coordnum (char *infile,int *natoms)
@@ -692,7 +694,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
   rvec   xmin,xmax;
   int    natoms,i,m,resnr,newres,oldres,ddist,c;
   bool   bFirst,bVel;
-  char   *p1,*p2;
+  char   *p1,*p2,*p3;
   
   newres  = 0;
   oldres  = NOTSET; /* Unlikely number for the first residue! */
@@ -702,11 +704,10 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
     snew(symtab,1);
     open_symtab(symtab);
   }
-  fgets2(title,STRLEN,in);
 
-  /* read the number of atoms */
-  fgets2(line,STRLEN,in);
-  sscanf(line,"%d",&natoms);
+  /* Read the title and number of atoms */
+  get_coordnum_fp(in,title,&natoms);
+
   if (natoms > atoms->nr)
     gmx_fatal(FARGS,"gro file contains more atoms (%d) than expected (%d)",
 		natoms,atoms->nr);
@@ -738,6 +739,13 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
 	gmx_fatal(FARGS,"A coordinate in file %s does not contain a '.'",infile);
       ddist = p2 - p1;
       *ndec = ddist - 5;
+
+      p3=strchr(&p2[1],'.');
+      if (p3 == NULL)
+	gmx_fatal(FARGS,"A coordinate in file %s does not contain a '.'",infile);
+
+      if (p3 - p2 != ddist)
+	gmx_fatal(FARGS,"The spacing of the decimal points in file %s is not consistent for x, y and z",infile);
     }
     
     /* residue number*/
@@ -772,8 +780,8 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
 	ptr++;
       }
       buf[c] = '\0';
-      if (sscanf (buf,"%lf",&x1) != 1) {
-	too_few();
+      if (sscanf (buf,"%lf %lf",&x1,&x2) != 1) {
+	gmx_fatal(FARGS,"Something is wrong in the coordinate formatting of file %s. Note that gro is fixed format (see the manual)",infile);
       } else {
 	x[i][m] = x1;
       }
