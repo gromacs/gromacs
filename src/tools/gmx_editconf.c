@@ -589,6 +589,7 @@ int gmx_editconf(int argc, char *argv[])
     if (atoms.nr != top->atoms.nr)
       gmx_fatal(FARGS,"Atom numbers don't match (%d vs. %d)",
 		  atoms.nr,top->atoms.nr);
+    snew(atoms.pdbinfo,top->atoms.nr); 
     ntype = top->idef.atnr;
     for(i=0; (i<atoms.nr); i++) {
       /* Determine the Van der Waals radius from the force field */
