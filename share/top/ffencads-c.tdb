@@ -14,6 +14,19 @@ N	CA	C	O2
 CA	O2	C	O1	improper_X_X_A_X
 N	C	CA	CB	improper_X_X_C_X
 
+[ Gly-COO- ]
+[ replace ]
+C		Abis	12.011	0.84
+[ add ]
+2	8	O	C	CA	N
+	Obis	15.9994	-0.92
+[ delete ]
+O
+[ dihedrals ]
+N	CA	C	O2	
+[ impropers ]
+CA	O2	C	O1	improper_X_X_A_X
+
 [ COOH ]
 [ replace ]
 C		Aprime	12.011	0.38
