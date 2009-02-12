@@ -146,9 +146,9 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
   ptrans("jacobi",ev,dd,e);
 #endif
   
-  /* Sort eigenvalues in descending order */
+  /* Sort eigenvalues in ascending order */
 #define SWAPPER(i) 			\
-  if (fabs(dd[i+1]) > fabs(dd[i])) {	\
+  if (fabs(dd[i+1]) < fabs(dd[i])) {	\
     temp=dd[i];			\
     for(j=0; (j<NDIM); j++) tvec[j]=ev[j][i];\
     dd[i]=dd[i+1];			\
