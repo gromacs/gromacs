@@ -1035,33 +1035,36 @@ static void check_match(FILE *fplog,
     check_string(fplog,"Program name" ,Program()    ,fprog  ,&mm);
     
     npp = cr->nnodes - cr->npmenodes;
-    check_int   (fplog,"#PP-nodes"   ,npp          ,npp_f      ,&mm);
+    check_int   (fplog,"#nodes"       ,cr->nnodes   ,npp_f+npme_f ,&mm);
     if (bPartDecomp)
     {
         dd_nc[XX] = 1;
         dd_nc[YY] = 1;
         dd_nc[ZZ] = 1;
     }
-    if (npp == npp_f && npp > 1)
+    if (npp > 1)
     {
         check_int (fplog,"#PME-nodes"  ,cr->npmenodes,npme_f     ,&mm);
-        check_int (fplog,"#DD-cells[x]",dd_nc[XX]    ,dd_nc_f[XX],&mm);
-        check_int (fplog,"#DD-cells[y]",dd_nc[YY]    ,dd_nc_f[YY],&mm);
-        check_int (fplog,"#DD-cells[z]",dd_nc[ZZ]    ,dd_nc_f[ZZ],&mm);
+        if (npp == npp_f)
+        {
+            check_int (fplog,"#DD-cells[x]",dd_nc[XX]    ,dd_nc_f[XX],&mm);
+            check_int (fplog,"#DD-cells[y]",dd_nc[YY]    ,dd_nc_f[YY],&mm);
+            check_int (fplog,"#DD-cells[z]",dd_nc[ZZ]    ,dd_nc_f[ZZ],&mm);
+        }
     }
     
     if (mm)
     {
 		fprintf(stderr,
 				"Gromacs binary or parallel settings not identical to previous run.\n"
-				"Continuation still works, but is not guaranteed to be binary identical%s.\n\n",
+				"Continuation is exact, but is not guaranteed to be binary identical%s.\n\n",
 				fplog ? ",\n see the log file for details" : "");
 		
         if (fplog)
         {
-			fprintf(stderr,
+			fprintf(fplog,
 					"Gromacs binary or parallel settings not identical to previous run.\n"
-					"Continuation still works, but is not guaranteed to be binary identical.\n\n");
+					"Continuation is exact, but is not guaranteed to be binary identical.\n\n");
 		}
     }
 }
