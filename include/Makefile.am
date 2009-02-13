@@ -31,8 +31,10 @@ fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
-genborn.h \
 gbutil.h \
+gen_ad.h \
+genborn.h \
+genborn.h \
 gmx_fatal.h \
 gmx_ana.h \
 gmx_arpack.h \
