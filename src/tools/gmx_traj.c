@@ -135,8 +135,9 @@ static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
 static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
 			int ngrps,int isize[],atom_id **index)
 {
-  static rvec *xav=NULL,*xavs=NULL;
-  static int *ind0=NULL;
+  static rvec *xav=NULL;
+  static t_atoms *atoms=NULL;
+  t_trxframe fr_av;
   int i;
 
   fr->bV = FALSE;
@@ -144,19 +145,24 @@ static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
   if (bCom) {
     if (xav==NULL) {
       snew(xav,ngrps);
-      snew(xavs,fr->natoms);
-      snew(ind0,ngrps);
-      for(i=0; i<ngrps; i++)
-	ind0[i] = index[i][0];
+      snew(atoms,1);
+      *atoms = *fr->atoms;
+      snew(atoms->atom,ngrps);
+      atoms->nr = ngrps;
+      /* Note that atom and residue names will be the ones of the first atom
+       * in each group.
+       */
+      for(i=0; i<ngrps; i++) {
+	atoms->atom[i]     = fr->atoms->atom[index[i][0]];
+	atoms->atomname[i] = fr->atoms->atomname[index[i][0]];
+      }
     }
     average_data(fr->x,xav,mass,ngrps,isize,index);
-    /* Note that atom and residue names will be the ones of the first atom
-     * in each group.
-     */
-    for(i=0; i<ngrps; i++)
-      copy_rvec(xav[i],xavs[ind0[i]]);
-    fr->x = xavs;
-    write_trxframe_indexed(status,fr,ngrps,ind0);
+    fr_av = *fr;
+    fr_av.natoms = 2;
+    fr_av.atoms  = atoms;
+    fr_av.x      = xav;
+    write_trxframe(status,&fr_av);
   } else {
     write_trxframe_indexed(status,fr,isize[0],index[0]);
   }
