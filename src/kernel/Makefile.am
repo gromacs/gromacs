@@ -22,13 +22,13 @@ gmxcpp.c	gmxcpp.h	\
 gpp_atomtype.c		\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\
-hackblock.c	hackblock.h	\
+hackblock.c		\
 hizzie.c	hizzie.h	\
 pdb2top.h	pdb2top.c	\
 pgutil.c	pgutil.h	\
 readir.c	readir.h	\
 readpull.c	\
-resall.c	resall.h	\
+resall.c	\
 sorting.c 	sorting.h	\
 specbond.c	specbond.h	\
 ter_db.c	ter_db.h	\

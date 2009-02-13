@@ -52,6 +52,7 @@ gpp_atomtype.h \
 gpp_nextnb.h \
 grompp.h \
 gstat.h \
+hackblock.h \
 index.h \
 invblock.h \
 macros.h \
@@ -93,6 +94,7 @@ rdgroup.h \
 readcomp.h \
 readinp.h \
 reorder.h \
+resall.h \
 rmpbc.h \
 shellfc.h \
 shift.h \
