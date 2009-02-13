@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE qhops.dtd PUBLIC "qhops.dtd" "qhops.dtd">
 <qhops>
-<qhop donor="H20" acceptor="OH-">
+<qhop donor="H2O" acceptor="OH-">
   <parameter name="alpha" value="0.0" unit=""/>
   <parameter name="beta" value="0.0" unit=""/>
   <parameter name="gamma" value="0.0" unit=""/>	
@@ -29,7 +29,7 @@
   <parameter name="r_2" value="-0.000014638354" unit=""/>
   <parameter name="r_3" value="0.000000018364" unit=""/>
 </qhop>
-<qhop donor="H30" acceptor="HOH">
+<qhop donor="H3O+" acceptor="H2O">
   <parameter name="alpha" value="0.0" unit=""/>
   <parameter name="beta" value="0.0" unit=""/>
   <parameter name="gamma" value="0.0" unit=""/>	

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
+#include "string2.h"
 #include "futil.h"
 #include "symtab.h"
 #include "hackblock.h"
@@ -112,6 +113,36 @@ static void fill_qhp(t_qhop_parameters *qhp,gmx_qhop gqh)
   lo_fill_qhp(gqh,"r_3",&qhp->r_3);
 }
 
+static void dump_qhp(FILE *fp,t_qhop_parameters *qhp)
+{
+  fprintf(fp,"alpha = %g\n",qhp->alpha);
+  fprintf(fp,"beta  = %g\n",qhp->beta);
+  fprintf(fp,"gamma = %g\n",qhp->gamma);
+  fprintf(fp,"k_1   = %g\n",qhp->k_1);
+  fprintf(fp,"k_2   = %g\n",qhp->k_2);
+  fprintf(fp,"k_3   = %g\n",qhp->k_3);
+  fprintf(fp,"m_1   = %g\n",qhp->m_1);
+  fprintf(fp,"m_2   = %g\n",qhp->m_2);
+  fprintf(fp,"m_3   = %g\n",qhp->m_3);
+  fprintf(fp,"s_A   = %g\n",qhp->s_A);
+  fprintf(fp,"t_A   = %g\n",qhp->t_A);
+  fprintf(fp,"v_A   = %g\n",qhp->v_A);
+  fprintf(fp,"s_B   = %g\n",qhp->s_B);
+  fprintf(fp,"s_C   = %g\n",qhp->s_C);
+  fprintf(fp,"t_C   = %g\n",qhp->t_C);
+  fprintf(fp,"v_C   = %g\n",qhp->v_C);
+  fprintf(fp,"f     = %g\n",qhp->f);
+  fprintf(fp,"g     = %g\n",qhp->g);
+  fprintf(fp,"h     = %g\n",qhp->h);
+  fprintf(fp,"p_1   = %g\n",qhp->p_1);
+  fprintf(fp,"q_1   = %g\n",qhp->q_1);
+  fprintf(fp,"q_2   = %g\n",qhp->q_2);
+  fprintf(fp,"q_3   = %g\n",qhp->q_3);
+  fprintf(fp,"r_1   = %g\n",qhp->r_1);
+  fprintf(fp,"r_2   = %g\n",qhp->r_2);
+  fprintf(fp,"r_3   = %g\n",qhp->r_3);
+}
+
 gmx_qhop_db gmx_qhop_db_read(char *forcefield)
 {
   gmx_qhop_db_t *qdb;
@@ -138,9 +169,15 @@ gmx_qhop_db gmx_qhop_db_read(char *forcefield)
   sprintf(buf,"%s-qhop-debug.dat",forcefield);
   gmx_qhops_write(buf,qdb->ngqh,qdb->gqh);
   snew(qdb->qhop_param,qdb->ngqh);
-  for(i=0; (i<qdb->ngqh); i++) 
+  for(i=0; (i<qdb->ngqh); i++) {
     fill_qhp(&(qdb->qhop_param[i]),qdb->gqh[i]);
-  
+    if (debug) {
+      fprintf(debug,"Donor: %s  Acceptor: %s\n",
+	      gmx_qhop_get_donor(qdb->gqh[i]),
+	      gmx_qhop_get_acceptor(qdb->gqh[i]));
+      dump_qhp(debug,&(qdb->qhop_param[i]));
+    }
+  }
   return (gmx_qhop_db) qdb;
 }
 
@@ -213,14 +250,18 @@ int gmx_qhop_db_get_parameters(gmx_qhop_db qdb,
 			       t_qhop_parameters *qp)
 {
   gmx_qhop_db_t *db = (gmx_qhop_db_t *) qdb;
+  char *aa,*dd;
   int i;
   
   for(i=0; (i<db->ngqh); i++) {
-    if ((strcasecmp(donor,gmx_qhop_get_donor(db->gqh[i])) == 0) &&
-	(strcasecmp(acceptor,gmx_qhop_get_acceptor(db->gqh[i])) == 0)) {
-      memcpy(qp,&(db->qhop_param[i]),sizeof(*qp));
-      
-      return 1;
+    aa = gmx_qhop_get_acceptor(db->gqh[i]);
+    dd = gmx_qhop_get_donor(db->gqh[i]);
+    if (strncmp(donor,dd,3) == 0) {
+      if (strncmp(acceptor,aa,3) == 0) {
+	memcpy(qp,&(db->qhop_param[i]),sizeof(*qp));
+	
+	return 1;
+      }
     }
   }
   return 0;
