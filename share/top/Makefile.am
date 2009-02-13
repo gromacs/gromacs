@@ -27,6 +27,7 @@ topol_DATA = \
 	ffoplsaa.atp    ffoplsaa.itp	ffoplsaabon.itp ffoplsaanb.itp  \
 	ffoplsaa.hdb	ffoplsaa-n.tdb	ffoplsaa-c.tdb	ffoplsaa.rtp	\
 	ffoplsaa.ddb	ffoplsaa.n2t					\
+	ffoplsaa-qhop.rtp	ffoplsaa-qhop.dat			\
 	ffencads-c.tdb  ffencads.itp    ffencadv-c.tdb  ffencadv.itp	\
 	ffencads-n.tdb  ffencads.rtp    ffencadv-n.tdb  ffencadv.rtp	\
 	ffencads.atp    ffencadsbon.itp ffencadv.atp    ffencadvbon.itp	\

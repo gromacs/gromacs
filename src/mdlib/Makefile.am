@@ -24,6 +24,9 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_sse2_single.h				\
 	genborn_sse2_double.c				\
 	genborn_sse2_double.h				\
+	gmx_qhop_parm.c	gmx_qhop_parm.h			\
+	gmx_qhop_xml.c	gmx_qhop_xml.h			\
+	gmx_qhop_db.c	gmx_qhop_db.h			\
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
@@ -40,11 +43,12 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-EXTRA_PROGRAMS = compnl
+EXTRA_PROGRAMS = compnl gmx_qhop_db_test
+
 compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
-
+gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*
