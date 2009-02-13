@@ -103,7 +103,7 @@ static void print_resatoms(FILE *out,t_atomtype atype,t_restp *rtp)
     tpnm = get_atomtype_name(tp,atype);
     if (tpnm == NULL)
       gmx_fatal(FARGS,"Incorrect atomtype (%d)",tp);
-    fprintf(out,"%6s%6s%8.3f%6d\n",
+    fprintf(out,"%6s  %6s  %8.3f  %6d\n",
 	    *(rtp->atomname[j]),tpnm,rtp->atom[j].q,rtp->cgnr[j]);
   }
 }
