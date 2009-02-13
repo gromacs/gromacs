@@ -55,6 +55,7 @@
 #include "futil.h"
 #include "vec.h"
 #include "mtop_util.h"
+#include "random.h"
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
@@ -382,6 +383,14 @@ int main (int argc, char *argv[])
   read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&mtop);
 
   if (bTraj) {
+    fprintf(stderr,"\n"
+	    "NOTE: Reading the state from trajectory is an obsolete feaure of tpbconv.\n"
+	    "      Continuation should be done by loading a checkpoint file with mdrun -cpi\n"
+	    "      This guarantees that all state variables are transferred.\n"
+	    "      tpbconv is now only useful for increasing nsteps,\n"
+	    "      but even that can often be avoided by using mdrun -maxh\n"
+	    "\n");
+
     if (ir->bContinuation != bContinuation)
       fprintf(stderr,"Modifying ir->bContinuation to %s\n",
 	      bool_names[bContinuation]);
