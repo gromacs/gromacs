@@ -1353,7 +1353,8 @@ void init_forcerec(FILE *fp,
     
     bTab = fr->bcoultab || fr->bvdwtab;
 
-    bSep14tab = ((!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT) &&
+    bSep14tab = ((!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT ||
+                  fr->bBHAM) &&
                  (gmx_mtop_ftype_count(mtop,F_LJ14) > 0 ||
                   gmx_mtop_ftype_count(mtop,F_LJC14_Q) > 0 ||
                   gmx_mtop_ftype_count(mtop,F_LJC_PAIRS_NB) > 0));
