@@ -1849,6 +1849,42 @@ static void check_disre(gmx_mtop_t *mtop)
   }
 }
 
+static void absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
+{
+  int d,g,i;
+  gmx_mtop_ilistloop_t iloop;
+  t_ilist *ilist;
+  int nmol;
+  t_iparams *pr;
+
+  /* Check the COM */
+  for(d=0; d<DIM; d++) {
+    AbsRef[d] = (d < ndof_com(ir) ? 0 : 1);
+  }
+  /* Check for freeze groups */
+  for(g=0; g<ir->opts.ngfrz; g++) {
+    for(d=0; d<DIM; d++) {
+      if (ir->opts.nFreeze[g][d] != 0) {
+	AbsRef[d] = 1;
+      }
+    }
+  }
+  /* Check for position restraints */
+  iloop = gmx_mtop_ilistloop_init(sys);
+  while (gmx_mtop_ilistloop_next(iloop,&ilist,&nmol)) {
+    if (nmol > 0) {
+      for(i=0; i<ilist[F_POSRES].nr; i+=2) {
+	pr = &sys->ffparams.iparams[ilist[F_POSRES].iatoms[i]];
+	for(d=0; d<DIM; d++) {
+	  if (pr->posres.fcA[d] != 0) {
+	    AbsRef[d] = 1;
+	  }
+	}
+      }
+    }
+  }
+}
+
 void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
@@ -1859,6 +1895,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
   gmx_mtop_atomloop_block_t aloopb;
   gmx_mtop_atomloop_all_t aloop;
   t_atom *atom;
+  ivec AbsRef;
 
   if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
     bCharge = FALSE;
@@ -1938,6 +1975,17 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
       }
     }
     sfree(mgrp);
+  }
+
+  if (ir->pull != epullNO && ir->pull->grp[0].nat == 0) {
+    absolute_reference(ir,sys,AbsRef);
+    for(m=0; m<DIM; m++) {
+      if (ir->pull->dim[m] && !AbsRef[m]) {
+	set_warning_line(mdparin,-1);
+	warning("You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
+	break;
+      }
+    }
   }
 
   check_disre(sys);
