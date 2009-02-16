@@ -785,7 +785,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
   }
   
   /* Van der Waals time */
-  if (fr->bBHAM) {
+  if (fr->bBHAM && !b14only) {
     tabsel[etiLJ6]  = etabLJ6;
     tabsel[etiLJ12] = etabEXPMIN;
   } else {
