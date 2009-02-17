@@ -221,6 +221,8 @@ int main(int argc,char *argv[])
     "with option [TT]-cpi[tt]. This option is intelligent in the way that",
     "if no checkpoint file is found, Gromacs just assumes a normal run and",
     "starts from the first step of the tpr file.",
+    "The simulation part number is added to all output files,",
+    "unless [TT]-append[tt] or [TT]-noaddpart[tt] are set.",
     "[PAR]",
     "With checkpointing you can also use the option [TT]-append[tt] to",
     "just continue writing to the previous output files. This is not",
@@ -308,7 +310,7 @@ int main(int argc,char *argv[])
   static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   static real cpt_period=15.0,max_hours=-1;
-  static bool bAppendFiles=FALSE;
+  static bool bAppendFiles=FALSE,bAddPart=TRUE;
 	
   static t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
@@ -354,7 +356,9 @@ int main(int argc,char *argv[])
     { "-cpt",     FALSE, etREAL, {&cpt_period},
       "Checkpoint interval (minutes)" },
     { "-append",  FALSE, etBOOL, {&bAppendFiles},
-	  "Append to previous output files when restarting from checkpoint" },
+      "Append to previous output files when continuing from checkpoint" },
+    { "-addpart",  FALSE, etBOOL, {&bAddPart},
+      "Add the simulation part number to all output files when continuing from checkpoint" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
@@ -426,7 +430,7 @@ int main(int argc,char *argv[])
 	  bAppendFiles = FALSE;
   }
 	
-  if(!bAppendFiles && sim_part > 1)
+  if(!bAppendFiles && bAddPart && sim_part > 1)
   {
 	  /* This is a continuation run, rename trajectory output files (except checkpoint files) */
 	  /* create new part name first (zero-filled) */
