@@ -76,7 +76,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL) {
-      fprintf(fplog,"\nWill call MPI_Barrier before each cycle start/stop call\n\n");
+      if(fplog) fprintf(fplog,"\nWill call MPI_Barrier before each cycle start/stop call\n\n");
       wc_barrier = TRUE;
       wc_mpi_comm_mygroup = cr->mpi_comm_mygroup;
     }
@@ -85,7 +85,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
   if (wallcycle_have_counter()) {
     snew(wc,ewcNR);
     if (getenv("GMX_CYCLE_ALL") != NULL) {
-      fprintf(fplog,"\nWill time all the code during the run\n\n");
+      if(fplog) fprintf(fplog,"\nWill time all the code during the run\n\n");
       snew(wc_all,ewcNR*ewcNR);
     }
   } else {
