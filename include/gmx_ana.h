@@ -226,6 +226,9 @@ int
 gmx_trjorder(int argc,char *argv[]);
 
 int 
+gmx_tune_pme(int argc,char *argv[]);
+
+int 
 gmx_velacc(int argc,char *argv[]);
 
 int 
