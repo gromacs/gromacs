@@ -42,7 +42,7 @@ my_invrsq_pd(__m128d x)
 #define _mm_extract_epi64(x, imm) \
 _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-void nb_kernel410_ia32_sse2(int *           p_nri,
+void nb_kernel410_x86_64_sse2(int *           p_nri,
 							int *           iinr,
 							int *           jindex,
 							int *           jjnr,
