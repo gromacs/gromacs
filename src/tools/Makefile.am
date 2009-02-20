@@ -37,7 +37,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
-	addconf.c 	addconf.h	\
+	addconf.c 	addconf.h	gmx_tune_pme.c    \
 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
@@ -61,7 +61,8 @@ bin_PROGRAMS = \
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
 	g_sham 		g_sorient   	g_spol		\
 	g_sdf		g_spatial	\
-	g_tcaf      	g_traj      	g_vanhove	g_velacc    	\
+	g_tcaf      	g_traj      	g_tune_pme   \
+	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics	\
 	sigeps
 
