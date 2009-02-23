@@ -846,9 +846,9 @@ static void check_input(
 
     if (bench_nsteps > 10000 || bench_nsteps < 100)
     {
-        fprintf(stderr, "WARNING: steps = ");
+        fprintf(stderr, "WARNING: steps=");
         fprintf(stderr, gmx_step_pfmt, bench_nsteps);
-        fprintf(stderr, " Are you shure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100)? "few" : "many");
+        fprintf(stderr, ". Are you shure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100)? "few" : "many");
     }
     
     if (maxfac <= 0.0)
@@ -1019,9 +1019,9 @@ int gmx_tune_pme(int argc,char *argv[])
         "Number of tpr files to benchmark. If >1, create files with scaling factors ranging from 1.0 to fac" },
       { "-four",     FALSE, etREAL, {&fs},
           "Fourierspacing that was chosen to create the input tpr file" },        
-      { "-steps",    FALSE, etINT, {&bench_nsteps},
+      { "-steps",    FALSE, etGMX_STEP_T, {&bench_nsteps},
         "Use these many steps for the benchmarks" }, 
-      { "-simsteps", FALSE, etINT, {&new_sim_nsteps},
+      { "-simsteps", FALSE, etGMX_STEP_T, {&new_sim_nsteps},
           "If non-negative, overwrite nsteps from tpr for the simulation" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
         "Lauch the real simulation after optimization" },
