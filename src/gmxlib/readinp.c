@@ -47,24 +47,67 @@
 #include "macros.h"
 #include "statutil.h"
 #include "gmxfio.h"
+#include "gmxcpp.h"
+#include "names.h"
 
 static int inp_count = 1;
 
-t_inpfile *read_inpfile(char *fn,int *ninp)
+/* find an entry; return index, or -1 if not found */
+static int search_einp(int ninp, const t_inpfile *inp, const char *name);
+
+
+t_inpfile *read_inpfile(char *fn,int *ninp, 
+			const char **cppopts)
 {
-  FILE      *in;
+  /*FILE      *in;*/
+  gmx_cpp_t in;
   char      buf[STRLEN],lbuf[STRLEN],rbuf[STRLEN];
   char      *ptr,*cptr;
   t_inpfile *inp=NULL;
-  int       nin,lc,i,j,k;
+  int       nin,lc,i,j,k,status;
+  /* setting cppopts from command-line options would be cooler */
+  const char *cppopts_null[] = { NULL }; 
+  const char **cppopts_given;
+  bool allow_override=FALSE;
 
+    
   if (debug)
     fprintf(debug,"Reading MDP file %s\n",fn);
   inp_count = 1;
-  in        = gmx_fio_fopen(fn,"r");
+  if (!cppopts)
+    cppopts_given=cppopts;
+  else
+    cppopts_given=cppopts_null;
+
+  status = cpp_open_file(fn, &in, cppopts_given);
+    
+  if (status != eCPP_OK)
+  {
+    sprintf(warn_buf, cpp_error(&in, status));
+    warning_error(NULL);
+    return NULL;
+  }
   nin = lc  = 0;
   do {
-    ptr=fgets2(buf,STRLEN-1,in);
+    status=cpp_read_line(&in, STRLEN-1, buf);
+    
+    if (status !=eCPP_OK)
+    {
+      if (status != eCPP_EOF)
+      {
+	sprintf(warn_buf, cpp_error(&in, status));
+	warning_error(NULL);
+	return NULL;
+      }
+      else
+	ptr=0;
+    }
+    else
+    {
+      ptr=buf;
+    }
+    
+    
     lc++;
     if (ptr) {
       /* Strip comment */
@@ -101,18 +144,72 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
 	  }
 	  else {
 	    /* Now finally something sensible */
-	    srenew(inp,++nin);
-	    inp[nin-1].count      = 0;
-	    inp[nin-1].bObsolete  = FALSE;
-	    inp[nin-1].bSet       = FALSE;
-	    inp[nin-1].name       = strdup(lbuf);
-	    inp[nin-1].value      = strdup(rbuf);
+	    int found_index;
+	    
+	    /* first check whether we hit the 'multiple_entries' option */
+	    if (strcasecmp_min(eMultentOpt_names[eMultentOptName], lbuf)==0) 
+	    {
+	      /* we now check whether to allow overrides from here or not */
+	      if (strcasecmp_min(eMultentOpt_names[eMultentOptNo], rbuf)==0)
+	      {
+		allow_override=FALSE;
+	      }
+	      else if (strcasecmp_min(eMultentOpt_names[eMultentOptLast], rbuf)==0)
+	      {
+		allow_override=TRUE;
+	      }
+	      else
+	      {
+		sprintf(warn_buf,
+			"Parameter \"%s\" should either be %s or %s\n",
+			lbuf,
+			eMultentOpt_names[eMultentOptNo],
+			eMultentOpt_names[eMultentOptLast]);
+		warning_error(NULL);
+	      }
+	    }
+	    else
+	    {
+	      /* it is a regular option; check for duplicates */
+	      found_index=search_einp(nin, inp, lbuf);
+	      
+	      if (found_index == -1)
+	      {
+		/* add a new item */
+		srenew(inp,++nin);
+		inp[nin-1].count      = 0;
+		inp[nin-1].bObsolete  = FALSE;
+		inp[nin-1].bSet       = FALSE;
+		inp[nin-1].name       = strdup(lbuf);
+		inp[nin-1].value      = strdup(rbuf);
+	      }
+	      else
+	      {
+		if (!allow_override)
+		{
+		  sprintf(warn_buf,
+			  "Parameter \"%s\" doubly defined (and multiple assignments not allowed)\n",
+			  lbuf);
+		  warning_error(NULL);
+		}
+		else
+		{
+		  /* override */
+		  sfree(inp[found_index].value);
+		  inp[found_index].value = strdup(rbuf);
+		  sprintf(warn_buf,
+			  "Overriding existing parameter \"%s\" with value \"%s\"\n",
+			  lbuf,rbuf);
+		  warning_note(warn_buf);
+		}
+	      }
+	    }
 	  }
 	}
       }
     }
   } while (ptr);
-  gmx_fio_fclose(in);
+  cpp_close_file(&in);
 
   if (debug)
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
@@ -120,6 +217,9 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
   *ninp=nin;
   return inp;
 }
+
+	
+		  
 
 static int inp_comp(const void *a,const void *b)
 {
@@ -155,7 +255,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
       else
 	fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
     } else if (!inp[i].bObsolete) {
-      sprintf(warn_buf,"Unknown or double left-hand '%s' in parameter file\n",
+      sprintf(warn_buf,"Unknown left-hand '%s' in parameter file\n",
 	      inp[i].name);
       if (bHaltOnUnknown) {
 	warning_error(NULL);
@@ -189,17 +289,34 @@ void replace_inp_entry(int ninp,t_inpfile *inp,const char *old_entry,const char 
   }
 }
 
+static int search_einp(int ninp, const t_inpfile *inp, const char *name)
+{
+  int i;
+  
+  if (inp==NULL)
+    return -1;
+  for(i=0; i<ninp; i++)
+    if (strcasecmp_min(name,inp[i].name) == 0)
+      return i;
+  return -1;
+}
+
 static int get_einp(int *ninp,t_inpfile **inp,const char *name)
 {
   int    i;
-  
-  if (inp==NULL)
+  int	 notfound=FALSE;
+
+/*  if (inp==NULL)
     return -1;
   for(i=0; (i<(*ninp)); i++)
     if (strcasecmp_min(name,(*inp)[i].name) == 0)
       break;
-  if (i == (*ninp)) {
-    (*ninp)++;
+  if (i == (*ninp)) {*/
+  i=search_einp(*ninp, *inp, name);
+  if (i == -1)
+  {
+    notfound=TRUE;
+    i=(*ninp)++;
     srenew(*inp,(*ninp));
     (*inp)[i].name=strdup(name);
     (*inp)[i].bSet=TRUE;
@@ -209,7 +326,8 @@ static int get_einp(int *ninp,t_inpfile **inp,const char *name)
   if (debug) 
     fprintf(debug,"Inp %d = %s\n",(*inp)[i].count,(*inp)[i].name);
   
-  if (i == (*ninp)-1)
+  /*if (i == (*ninp)-1)*/
+  if (notfound)
     return -1;
   else
     return i;

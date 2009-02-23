@@ -198,5 +198,7 @@ const char *eQMMMscheme_names[eQMMMschemeNR+1] = {
   "normal", "ONIOM", NULL
 };
 
-
+const char *eMultentOpt_names[eMultentOptNR+1] = {
+  "multiple_entries", "no", "use_last", NULL
+};
 

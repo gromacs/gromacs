@@ -530,7 +530,7 @@ static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
 }
 
 void get_ir(char *mdparin,char *mdparout,
-	    t_inputrec *ir,t_gromppopts *opts,int *nerror)
+	    t_inputrec *ir,t_gromppopts *opts, int *nerror)
 {
   char      *dumstr[2];
   double    dumdub[2][6];
@@ -539,7 +539,7 @@ void get_ir(char *mdparin,char *mdparout,
   int       i,j,m,ninp;
   char      dummy[STRLEN];
   
-  inp=read_inpfile(mdparin,&ninp);
+  inp=read_inpfile(mdparin,&ninp, NULL);
 
   snew(dumstr[0],STRLEN);
   snew(dumstr[1],STRLEN);
@@ -554,7 +554,7 @@ void get_ir(char *mdparin,char *mdparout,
 
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   CTYPE ("Preprocessor information: use cpp syntax.");
-  CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/hoe");
+  CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
   STYPE ("include",	opts->include,	NULL);
   CTYPE ("e.g.: -DI_Want_Cookies -DMe_Too");
   STYPE ("define",	opts->define,	NULL);

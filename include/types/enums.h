@@ -212,3 +212,6 @@ enum {
   eQMMMschemenormal,eQMMMschemeoniom,eQMMMschemeNR
 };
 
+enum {
+  eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
+};

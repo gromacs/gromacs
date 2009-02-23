@@ -94,7 +94,7 @@ extern void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 /* Do even more checks */
 
 extern void get_ir(char *mdparin,char *mdparout,
-		   t_inputrec *ir,t_gromppopts *opts,int *nerror);
+		   t_inputrec *ir,t_gromppopts *opts, int *nerror);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
  * function is called. Also prints the input file back to mdparout.

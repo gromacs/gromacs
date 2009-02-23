@@ -108,7 +108,7 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   int       ninp=0;
   
   if (mpin)
-    inp = read_inpfile(mpin,&ninp);
+    inp = read_inpfile(mpin,&ninp,NULL);
   else
     inp = NULL;
   ETYPE("black&white",    psr->bw,             bools);

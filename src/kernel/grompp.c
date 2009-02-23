@@ -818,7 +818,7 @@ int main (int argc, char *argv[])
     { "-zero",    FALSE, etBOOL, {&bZero},
       "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
-      "Renumber atomtypes and minimize number of atomtypes" },
+      "Renumber atomtypes and minimize number of atomtypes" }
   };
   
   CopyRight(stdout,argv[0]);

@@ -18,7 +18,6 @@ convparm.c 	convparm.h	\
 gen_ad.c 	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
-gmxcpp.c	gmxcpp.h	\
 gpp_atomtype.c		\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\

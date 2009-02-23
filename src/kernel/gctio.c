@@ -432,7 +432,7 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   int       i,j,ninp,nQ,nLJ,nBU,nIP;
   bool      bWrong;
   
-  inp=read_inpfile(fn,&ninp);
+  inp=read_inpfile(fn,&ninp,NULL);
   for(i=0; (i<eoObsNR); i++) {
     tcr->bObsUsed[i] = FALSE;
     RTYPE (eoNames[i],	tcr->ref_value[i],	0.0);

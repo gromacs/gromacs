@@ -97,7 +97,7 @@ static char *strstrw(const char *buf,const char *word)
   return NULL;
 }
 
-static void add_include(char *include)
+static void add_include(const char *include)
 {
   int i;
   
@@ -114,10 +114,11 @@ static void add_include(char *include)
   }
 }
 
-static void add_define(char *define)
+static void add_define(const char *define)
 {
   int  i;
-  char *ptr,name[256];
+  const char *ptr;
+  char name[256];
   
   sscanf(define,"%s%n",name,&i);
   ptr = define + i;
@@ -149,7 +150,7 @@ static void add_define(char *define)
 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
-int cpp_open_file(char *filenm,gmx_cpp_t *handle,char **cppopts)
+int cpp_open_file(char *filenm,gmx_cpp_t *handle, const char **cppopts)
 {
   gmx_cpp_t cpp;
   char *buf;

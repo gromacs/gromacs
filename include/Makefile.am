@@ -35,6 +35,7 @@ gbutil.h \
 gen_ad.h \
 genborn.h \
 genborn.h \
+gmxcpp.h \
 gmx_fatal.h \
 gmx_ana.h \
 gmx_arpack.h \

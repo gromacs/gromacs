@@ -44,14 +44,24 @@
 #include "typedefs.h"
 
 typedef struct {
-  int  count;
-  bool bObsolete;
-  bool bSet;
-  char *name;
-  char *value;
+  int  count; /* sort order for output  */
+  bool bObsolete; /* whether it is an obsolete param value */
+  bool bSet; /* whether it it has been read out */
+  char *name; /* name of the parameter */
+  char *value; /* parameter value string */
 } t_inpfile;
+/* entry in input files (like .mdp files). 
+ Initally read in with read_inpfile, then filled in with missing values
+ through get_eint, get_ereal, etc. */
 
-extern t_inpfile *read_inpfile(char *fn,int *ninp);
+
+
+extern t_inpfile *read_inpfile(char *fn,int *ninp,
+			       const char **cppopts);
+/* Create & populate a t_inpfile struct from values in file fn. 
+   fn = the file name
+   ninp = the number of read parameters
+   cppopts = the cpp-style options for #include paths and #defines */
 
 extern void write_inpfile(char *fn,int ninp,t_inpfile inp[],
 			  bool bHaltOnUnknown);
