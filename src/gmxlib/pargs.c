@@ -91,6 +91,9 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	case etINT:
 	  *pa[j].u.i = iscan(*argc,argv,&i);
 	  break;
+    case etGMX_STEP_T: 
+      *pa[j].u.is = istepscan(*argc,argv,&i);
+      break;	  
 	case etTIME:
 	case etREAL:
 	  *pa[j].u.r = dscan(*argc,argv,&i);
@@ -238,6 +241,9 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
   case etINT:
     sprintf(buf,"%-d",*(pa->u.i));
     break;
+  case etGMX_STEP_T:
+    sprintf(buf,gmx_step_pfmt,*(pa->u.is));
+    break;      
   case etTIME:
   case etREAL:
     sprintf(buf,"%-6g",*(pa->u.r));
