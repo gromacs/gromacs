@@ -94,11 +94,12 @@ extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **def
 
 /* This structure is used for parsing arguments off the comand line */
 enum { 
-  etINT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
+  etINT, etGMX_STEP_T, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
 };
+
 /* names to print in help info */
 static char *argtp[etNR] = {
-  "int", "real", "time", "string", "bool", "vector", "enum" 
+  "int", "step", "real", "time", "string", "bool", "vector", "enum" 
 };
 
 typedef struct {
@@ -108,6 +109,7 @@ typedef struct {
   union {
     void *v;   /* This is a nasty workaround, to be able to use initialized */
     int  *i;   /* arrays */
+    gmx_step_t *is;
     real *r;
     char **c;  /* Must be pointer to string (when type == etSTR)         */
                /* or null terminated list of enums (when type == etENUM) */
