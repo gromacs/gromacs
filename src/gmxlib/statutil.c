@@ -319,6 +319,19 @@ int iscan(int argc,char *argv[],int *i)
   return var;
 }
 
+gmx_step_t istepscan(int argc,char *argv[],int *i)
+{
+  gmx_step_t var;
+
+  if (argc > (*i)+1) {
+    if (!sscanf(argv[++(*i)],gmx_step_pfmt,&var))
+      usage("an integer",argv[(*i)-1]);
+  } else
+    usage("an integer",argv[*i]);
+
+  return var;
+}
+
 double dscan(int argc,char *argv[],int *i)
 {
   double var;
