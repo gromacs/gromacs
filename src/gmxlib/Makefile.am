@@ -14,7 +14,7 @@ if !GMX_EXTERNAL_LAPACK
 endif
 
 
-SUBDIRS = nonbonded $(BLAS_DIR) $(LAPACK_DIR)
+SUBDIRS = nonbonded gmx_statistics $(BLAS_DIR) $(LAPACK_DIR)
 
 AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
@@ -24,6 +24,7 @@ lib_LTLIBRARIES = libgmx@LIBSUFFIX@.la
 # Use a utility library for all the nonbonded kernels and wrapper routines.
 #
 libgmx@LIBSUFFIX@_la_LIBADD =       nonbonded/libnonbonded.la         \
+				    gmx_statistics/libgmx_statistics.la \
 	                            $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
 
 libgmx@LIBSUFFIX@_la_DEPENDENCIES = nonbonded/libnonbonded.la         \

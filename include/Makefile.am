@@ -47,6 +47,7 @@ gmx_fft.h \
 gmx_lapack.h \
 gmx_random.h \
 gmx_parallel_3dfft.h \
+gmx_statistics.h \
 gmx_system_xdr.h \
 gmx_thread.h \
 gmx_parallel_3dfft.h \
