@@ -5,3 +5,5 @@
 .libs
 kernel-stamp
 mknb
+.deps
+Makefile

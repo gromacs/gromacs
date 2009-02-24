@@ -8,3 +8,8 @@ grompp
 *.la
 pdb2gmx
 mdrun
+gmxcheck
+luck
+protonate
+tpbconv
+x2top

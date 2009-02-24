@@ -1,2 +1,6 @@
 Makefile
 Makefile.in
+GMXRC
+GMXRC.bash
+GMXRC.csh
+GMXRC.zsh

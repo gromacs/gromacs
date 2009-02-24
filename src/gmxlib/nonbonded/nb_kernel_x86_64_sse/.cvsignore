@@ -2,3 +2,5 @@
 *.la
 *.lo
 .libs
+.deps
+Makefile
