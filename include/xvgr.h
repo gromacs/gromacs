@@ -87,8 +87,7 @@ extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const c
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
-void
-xvgrclose(FILE *fp);
+extern void xvgrclose(FILE *fp);
 
 extern void xvgr_subtitle(FILE *out,char *subtitle);
 /* Set the subtitle in xvgr */
@@ -123,30 +122,6 @@ extern void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg);
  * ny columns to a file. If leg != NULL it will be written too.
  */
 
-/****************************************************
- *           Some statistics utilities 
- ****************************************************/
-extern void lsq_y_ax(int n, real x[], real y[], real *a);
-/* Fit a straight line y=ax thru the n data points x,y. */
-
-extern real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r);
-/* Fit a straight line y=ax+b thru the n data points x,y.
- * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
- * The correlation coefficient is return in r.
- */
-
-extern real lsq_y_ax_b_xdouble(int n, double x[], real y[],
-			       real *a, real *b,real *r);
-/* As lsq_y_ax_b, but with x in double precision.
- */
-
-extern real lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
-			     real *a, real *b, real *da, real *db,
-			     real *r);
-/* Fit a straight line y=ax+b thru the n data points x,y, with sigma dy
- * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
- * The correlation coefficient is return in r.
- */
 
 /* This function reads ascii (xvg) files and extracts the data sets to a 
  * two dimensional array which is returned.
