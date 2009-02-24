@@ -178,10 +178,10 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 			j33     = 3*jnr3;
 			j43     = 3*jnr4;
 			
-			xmm1    = __builtin_ia32_loadhps(xmm1, (__v2si*) (pos+j3));  /* x1 y1 - - */
-			xmm2    = __builtin_ia32_loadhps(xmm2, (__v2si*) (pos+j23)); /* x2 y2 - - */
-			xmm3    = __builtin_ia32_loadhps(xmm3, (__v2si*) (pos+j33)); /* x3 y3 - - */
-			xmm4    = __builtin_ia32_loadhps(xmm4, (__v2si*) (pos+j43)); /* x4 y4 - - */			
+			xmm1    = _mm_loadh_pi(xmm1, (__m64 *) (pos+j3));  /* x1 y1 - - */
+			xmm2    = _mm_loadh_pi(xmm2, (__m64 *) (pos+j23)); /* x2 y2 - - */
+			xmm3    = _mm_loadh_pi(xmm3, (__m64 *) (pos+j33)); /* x3 y3 - - */
+			xmm4    = _mm_loadh_pi(xmm4, (__m64 *) (pos+j43)); /* x4 y4 - - */			
 						
 			xmm5    = _mm_load1_ps(pos+j3+2);  
 			xmm6    = _mm_load1_ps(pos+j23+2); 
@@ -242,10 +242,10 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 			tj3     = nti+2*type[jnr3];
 			tj4     = nti+2*type[jnr4];
 		
-			xmm1    = __builtin_ia32_loadlps(xmm1,(__v2si*) (vdwparam+tj));
-			xmm1    = __builtin_ia32_loadhps(xmm1,(__v2si*) (vdwparam+tj2));
-			xmm2    = __builtin_ia32_loadlps(xmm2,(__v2si*) (vdwparam+tj3));
-			xmm2    = __builtin_ia32_loadhps(xmm2,(__v2si*) (vdwparam+tj4));
+			xmm1    = _mm_loadl_pi(xmm1,(__m64 *) (vdwparam+tj));
+			xmm1    = _mm_loadh_pi(xmm1,(__m64 *) (vdwparam+tj2));
+			xmm2    = _mm_loadl_pi(xmm2,(__m64 *) (vdwparam+tj3));
+			xmm2    = _mm_loadh_pi(xmm2,(__m64 *) (vdwparam+tj4));
 			
 			xmm3    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,2,0,2)); /* c61 c62 c61 c62 */
 			xmm4    = _mm_shuffle_ps(xmm2,xmm2,_MM_SHUFFLE(0,2,0,2)); /* c63 c64 c63 c64 */
@@ -356,10 +356,10 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 			fiy     = _mm_add_ps(fiy,t2);
 			fiz     = _mm_add_ps(fiz,t3);
 			
-			xmm1    = __builtin_ia32_loadhps(xmm1, (__v2si*) (faction+j3));  /* fx1 fy1 - - */
-			xmm2    = __builtin_ia32_loadhps(xmm2, (__v2si*) (faction+j23)); /* fx1 fy1 - - */
-			xmm3    = __builtin_ia32_loadhps(xmm3, (__v2si*) (faction+j33)); /* fx3 fy3 - - */
-			xmm4    = __builtin_ia32_loadhps(xmm4, (__v2si*) (faction+j43)); /* fx4 fy4 - - */
+			xmm1    = _mm_loadh_pi(xmm1, (__m64 *) (faction+j3));  /* fx1 fy1 - - */
+			xmm2    = _mm_loadh_pi(xmm2, (__m64 *) (faction+j23)); /* fx1 fy1 - - */
+			xmm3    = _mm_loadh_pi(xmm3, (__m64 *) (faction+j33)); /* fx3 fy3 - - */
+			xmm4    = _mm_loadh_pi(xmm4, (__m64 *) (faction+j43)); /* fx4 fy4 - - */
 			
 			xmm5    = _mm_load1_ps(faction+j3+2); 
 			xmm6    = _mm_load1_ps(faction+j23+2);
@@ -388,10 +388,10 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 			xmm2    = _mm_shuffle_ps(xmm2,xmm2,_MM_SHUFFLE(3,1,2,0));
 			
 			/* store fx's and fy's */
-			__builtin_ia32_storelps( (__v2si*) (faction+j3),xmm1);
-			__builtin_ia32_storehps( (__v2si*) (faction+j23),xmm1);
-			__builtin_ia32_storelps( (__v2si*) (faction+j33),xmm2);
-			__builtin_ia32_storehps( (__v2si*) (faction+j43),xmm2);
+			_mm_storel_pi( (__m64 *) (faction+j3),xmm1);
+			_mm_storeh_pi( (__m64 *) (faction+j23),xmm1);
+			_mm_storel_pi( (__m64 *) (faction+j33),xmm2);
+			_mm_storeh_pi( (__m64 *) (faction+j43),xmm2);
 			
 			/* ..then z */
 			_mm_store_ss(faction+j3+2,xmm7);
@@ -412,7 +412,7 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				j3    = jnr*3;
 				tj	  = nti+2*type[jnr];
 				
-				xmm1  = __builtin_ia32_loadlps(xmm1, (__v2si*) (pos+j3));
+				xmm1  = _mm_loadl_pi(xmm1, (__m64 *) (pos+j3));
 				xmm5  = _mm_load1_ps(pos+j3+2);
 				
 				xmm6  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,0,0,0));
@@ -438,8 +438,8 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				tj	  = nti+2*type[jnr];
 				tj2	  = nti+2*type[jnr2];
 				
-				xmm1  = __builtin_ia32_loadhps(xmm1, (__v2si*) (pos+j3));
-				xmm2  = __builtin_ia32_loadhps(xmm2, (__v2si*) (pos+j23));
+				xmm1  = _mm_loadh_pi(xmm1, (__m64 *) (pos+j3));
+				xmm2  = _mm_loadh_pi(xmm2, (__m64 *) (pos+j23));
 				
 				xmm5  = _mm_load1_ps(pos+j3+2);
 				xmm6  = _mm_load1_ps(pos+j23+2);
@@ -466,8 +466,8 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				q     = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				
-				xmm1  = __builtin_ia32_loadlps(xmm1,(__v2si*) (vdwparam+tj));
-				xmm1  = __builtin_ia32_loadhps(xmm1,(__v2si*) (vdwparam+tj2));
+				xmm1  = _mm_loadl_pi(xmm1,(__m64 *) (vdwparam+tj));
+				xmm1  = _mm_loadh_pi(xmm1,(__m64 *) (vdwparam+tj2));
 				
 				c6    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				c12   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
@@ -488,9 +488,9 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				tj2	  = nti+2*type[jnr2];
 				tj3	  = nti+2*type[jnr3];
 				
-				xmm1  = __builtin_ia32_loadhps(xmm1,(__v2si*) (pos+j3)); 
-				xmm2  = __builtin_ia32_loadhps(xmm2,(__v2si*) (pos+j23)); 
-				xmm3  = __builtin_ia32_loadhps(xmm3,(__v2si*) (pos+j33)); 
+				xmm1  = _mm_loadh_pi(xmm1,(__m64 *) (pos+j3)); 
+				xmm2  = _mm_loadh_pi(xmm2,(__m64 *) (pos+j23)); 
+				xmm3  = _mm_loadh_pi(xmm3,(__m64 *) (pos+j33)); 
 				
 				xmm5  = _mm_load1_ps(pos+j3+2); 
 				xmm6  = _mm_load1_ps(pos+j23+2); 
@@ -529,9 +529,9 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				xmm3  = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); 
 				q     = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 				
-				xmm1  = __builtin_ia32_loadlps(xmm1, (__v2si*) (vdwparam+tj)); 
-				xmm1  = __builtin_ia32_loadhps(xmm1, (__v2si*) (vdwparam+tj2));
-				xmm2  = __builtin_ia32_loadlps(xmm2, (__v2si*) (vdwparam+tj3));
+				xmm1  = _mm_loadl_pi(xmm1, (__m64 *) (vdwparam+tj)); 
+				xmm1  = _mm_loadh_pi(xmm1, (__m64 *) (vdwparam+tj2));
+				xmm2  = _mm_loadl_pi(xmm2, (__m64 *) (vdwparam+tj3));
 				
 				xmm3  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,2,0,2));
 				c6    = _mm_shuffle_ps(xmm3,xmm2,_MM_SHUFFLE(1,0,0,1));
@@ -658,7 +658,7 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 			{
 				_mm_store_ss(dvda+jnr,dvdaj);
 			
-				xmm1 = __builtin_ia32_loadlps(xmm1, (__v2si*) (faction+j3));
+				xmm1 = _mm_loadl_pi(xmm1, (__m64 *) (faction+j3));
 				xmm7 = _mm_load1_ps(faction+j3+2);
 				
 				xmm5 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,0,0,0));
@@ -678,8 +678,8 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				xmm1 = _mm_shuffle_ps(dvdaj,dvdaj,_MM_SHUFFLE(0,3,2,1)); 
 				_mm_store_ss(dvda+jnr2,xmm1);
 				
-				xmm1 = __builtin_ia32_loadhps(xmm1, (__v2si*) (faction+j3));
-				xmm2 = __builtin_ia32_loadhps(xmm2, (__v2si*) (faction+j23)); 
+				xmm1 = _mm_loadh_pi(xmm1, (__m64 *) (faction+j3));
+				xmm2 = _mm_loadh_pi(xmm2, (__m64 *) (faction+j23)); 
 				
 				xmm5 = _mm_load1_ps(faction+j3+2); 
 				xmm6 = _mm_load1_ps(faction+j23+2);
@@ -698,8 +698,8 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				xmm1 = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(1,0,1,0)); 
 				xmm5 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,2,0)); 
 				
-				__builtin_ia32_storelps( (__v2si*) (faction+j3), xmm5);
-				__builtin_ia32_storehps( (__v2si*) (faction+j23), xmm5);
+				_mm_storel_pi( (__m64 *) (faction+j3), xmm5);
+				_mm_storeh_pi( (__m64 *) (faction+j23), xmm5);
 				
 				_mm_store_ss(faction+j3+2,xmm7);
 				xmm7 = _mm_shuffle_ps(xmm7,xmm7,_MM_SHUFFLE(0,3,2,1));
@@ -713,9 +713,9 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				xmm1 = _mm_shuffle_ps(dvdaj,dvdaj,_MM_SHUFFLE(1,0,3,2)); 
 				_mm_store_ss(dvda+jnr3,xmm1);
 				
-				xmm1 = __builtin_ia32_loadhps(xmm1, (__v2si*) (faction+j3)); 
-				xmm2 = __builtin_ia32_loadhps(xmm2, (__v2si*) (faction+j23));  
-				xmm3 = __builtin_ia32_loadhps(xmm3, (__v2si*) (faction+j33));
+				xmm1 = _mm_loadh_pi(xmm1, (__m64 *) (faction+j3)); 
+				xmm2 = _mm_loadh_pi(xmm2, (__m64 *) (faction+j23));  
+				xmm3 = _mm_loadh_pi(xmm3, (__m64 *) (faction+j33));
 				
 				xmm5 = _mm_load1_ps(faction+j3+2);
 				xmm6 = _mm_load1_ps(faction+j23+2); 
@@ -740,9 +740,9 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 				xmm1 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,2,0)); 
 				xmm2 = _mm_shuffle_ps(xmm2,xmm2,_MM_SHUFFLE(3,1,2,0)); 
 				
-				__builtin_ia32_storelps( (__v2si*) (faction+j3), xmm1);
-				__builtin_ia32_storehps( (__v2si*) (faction+j23), xmm1);
-				__builtin_ia32_storelps( (__v2si*) (faction+j33), xmm2);
+				_mm_storel_pi( (__m64 *) (faction+j3), xmm1);
+				_mm_storeh_pi( (__m64 *) (faction+j23), xmm1);
+				_mm_storel_pi( (__m64 *) (faction+j33), xmm2);
 				
 				_mm_store_ss(faction+j3+2,xmm7); 
 				xmm7 = _mm_shuffle_ps(xmm7,xmm7,_MM_SHUFFLE(0,3,2,1));
@@ -781,7 +781,7 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 		xmm2    = _mm_and_ps( (__m128) maski, xmm2);
 		
 		/* load i force from memory */
-		xmm4    = __builtin_ia32_loadlps(xmm4, (__v2si*) (faction+ii3));
+		xmm4    = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));
 		xmm5    = _mm_load1_ps(faction+ii3+2);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
 		
@@ -789,7 +789,7 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 		xmm4    = _mm_add_ps(xmm4,xmm2);
 		
 		/* store i force to memory */
-		__builtin_ia32_storelps( (__v2si*) (faction+ii3),xmm4);
+		_mm_storel_pi( (__m64 *) (faction+ii3),xmm4);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
 
