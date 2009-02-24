@@ -189,49 +189,48 @@ CEL1	CEL1	1	0.134	368192.0
 #ifdef HEAVY_H
 ; account for larger inertia with heavy hydrogens
 ; constraints for the rigid NH3 groups
- MNH3     CT1 	2    0.188929
- MNH3     CT2   2    0.188929
- MNH3     CT3   2    0.188929
- MNH3    CTL2   2    0.188929
- MNH3    MNH3   2    0.160473
+MNH3     CT1   2    0.188929
+MNH3     CT2   2    0.188929
+MNH3     CT3   2    0.188929
+MNH3    CTL2   2    0.188929
+MNH3    MNH3   2    0.160473
 ; constraints for rigid ch3
- MCH3     CT1   2    0.203533
- MCH3     CT2   2    0.203533
- MCH3     CT3   2    0.203533
- MCH3    CTL3   2    0.203533
- MCH3    CTL5   2    0.203533
- MCH3    MCH3   2    0.184320   
- MCH3       S   2    0.229582
+MCH3     CT1   2    0.203533
+MCH3     CT2   2    0.203533
+MCH3     CT3   2    0.203533
+MCH3    CTL3   2    0.203533
+MCH3    CTL5   2    0.203533
+MCH3    MCH3   2    0.184320
+MCH3       S   2    0.229582
 #else
 ; no heavy hydrogens.
 ; constraints for the rigid NH3 groups
- MNH3     CT1   2    0.158255
- MNH3     CT2   2    0.158255
- MNH3     CT3   2    0.158255
- MNH3    CTL2   2    0.158255
- MNH3    MNH3   2    0.080236
+MNH3     CT1   2    0.158255
+MNH3     CT2   2    0.158255
+MNH3     CT3   2    0.158255
+MNH3    CTL2   2    0.158255
+MNH3    MNH3   2    0.080236
 ; constraints for rigid ch3
- MCH3     CT1   2    0.167031
- MCH3     CT2   2    0.167031
- MCH3     CT3   2    0.167031
- MCH3    CTL3   2    0.167031
- MCH3    CTL5   2    0.167031
- MCH3    MCH3   2    0.092160
- MCH3       S   2    0.193874
-#endif 
+MCH3     CT1   2    0.167031
+MCH3     CT2   2    0.167031
+MCH3     CT3   2    0.167031
+MCH3    CTL3   2    0.167031
+MCH3    CTL5   2    0.167031
+MCH3    MCH3   2    0.092160
+MCH3       S   2    0.193874
+#endif
 ; angle-derived constraints for OH and SH groups in proteins
 ; The constraint A-C is calculated from the angle A-B-C and bonds A-B, B-C.
-  CA        H   2     0.19393
-  CD        H   2     0.19305     
-  CT1       H   2     0.19305
-  CT2       H   2     0.19305
-  CT3       H   2     0.19305
-  CT       HS   2     0.23593
-  CT1      HS   2     0.23593
-  CT2      HS   2     0.23593
-  CT3      HS   2     0.23593
-  CA       HS   2     0.23018
-
+CA        H   2     0.19393
+CD        H   2     0.19305
+CT1       H   2     0.19305
+CT2       H   2     0.19305
+CT3       H   2     0.19305
+CT       HS   2     0.23593
+CT1      HS   2     0.23593
+CT2      HS   2     0.23593
+CT3      HS   2     0.23593
+CA       HS   2     0.23018
 
 [ angletypes ]
 ; i	j	k	func	th0	cth	ub0	cub
