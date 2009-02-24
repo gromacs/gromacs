@@ -2,3 +2,9 @@ Makefile
 Makefile.in
 .deps
 .libs
+*.lo
+gmxdump
+grompp
+*.la
+pdb2gmx
+mdrun

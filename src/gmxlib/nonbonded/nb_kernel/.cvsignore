@@ -1,0 +1,7 @@
+*.in
+*.la
+*.c
+*.lo
+.libs
+kernel-stamp
+mknb
