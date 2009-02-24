@@ -51,6 +51,7 @@
 #include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
+#include "gmx_statistics.h"
 #include "xvgr.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */
@@ -80,7 +81,7 @@ static void power_fit(int n,int nset,real **val,real *t)
       y[i] = log(val[s][i]);
     if (i < n)
       fprintf(stdout,"Will power fit up to point %d, since it is not larger than 0\n",i);
-    quality = lsq_y_ax_b(i,x,y,&a,&b,&r);
+    lsq_y_ax_b(i,x,y,&a,&b,&r,&quality);
     fprintf(stdout,"Power fit set %3d:  error %.3f  a %g  b %g\n",
 	    s+1,quality,a,exp(b));
   }
@@ -138,9 +139,9 @@ static void regression_analysis(int n,bool bXYdy,real *x,real **val)
   printf("Error estimates will be given if w_i (sigma) values are given\n");
   printf("(use option -xydy).\n\n");
   if (bXYdy) 
-    S =  lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r);
+    lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r,&S);
   else
-    S =  lsq_y_ax_b(n,x,val[0],&a,&b,&r);
+    lsq_y_ax_b(n,x,val[0],&a,&b,&r,&S);
   chi2 = sqr((n-2)*S);
   printf("Chi2                    = %g\n",chi2);
   printf("S (Sqrt(Chi2/(n-2))     = %g\n",S);

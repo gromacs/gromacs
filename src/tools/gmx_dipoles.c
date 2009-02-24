@@ -50,6 +50,7 @@
 #include "futil.h"
 #include "xvgr.h"
 #include "txtdump.h"
+#include "gmx_statistics.h"
 #include "gstat.h"
 #include "index.h"
 #include "random.h"
@@ -675,8 +676,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
   double     M[3],M2[3],M4[3],Gk=0,g_k=0;
-  t_lsq      Mx,My,Mz,Msq,Vol;
-  t_lsq      *Qlsq,mulsq,muframelsq;
+  gmx_stats_t Mx,My,Mz,Msq,Vol,*Qlsq,mulsq,muframelsq=NULL;
   ivec       iMu;
   real       **muall=NULL;
   rvec       *slab_dipoles=NULL;
@@ -739,8 +739,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   /* Statistics */
   snew(Qlsq,DIM);
   for(i=0; (i<DIM); i++) 
-    init_lsq(&(Qlsq[i]));
-  init_lsq(&mulsq);
+    Qlsq[i] = gmx_stats_init();
+  mulsq = gmx_stats_init();
   
   /* Open all the files */
   outmtot = xvgropen(out_mtot,
@@ -868,7 +868,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       }
       rm_pbc(&(top->idef),ePBC,natom,box,x,x);
       
-      init_lsq(&muframelsq);
+      muframelsq = gmx_stats_init();
       /* Begin loop of all molecules in frame */
       for(n=0; (n<ncos); n++) {
 	for(i=0; (i<gnx[n]); i++) {
@@ -878,15 +878,15 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 	  ind1  = mols->index[molindex[n][i]+1];
 	  
 	  mol_dip(ind0,ind1,x,atom,dipole[i]);
-	  add_lsq(&mulsq,0,norm(dipole[i]));
-	  add_lsq(&muframelsq,0,norm(dipole[i]));
+	  gmx_stats_add_point(mulsq,0,norm(dipole[i]),0,0);
+	  gmx_stats_add_point(muframelsq,0,norm(dipole[i]),0,0);
 	  if (bSlab) 
 	    update_slab_dipoles(ind0,ind1,x,
 				dipole[i],idim,nslices,slab_dipoles,box);
 	  if (bQuad) {
 	    mol_quad(ind0,ind1,x,atom,quad);
 	    for(m=0; (m<DIM); m++)
-	      add_lsq(&Qlsq[m],0,quad[m]);
+	      gmx_stats_add_point(Qlsq[m],0,quad[m],0,0);
 	  }
 	  if (bCorr && !bTotal) {
 	    tel3=DIM*teller;
@@ -1029,9 +1029,11 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       fprintf(outaver,"%10g  %10.3e %10.3e %10.3e %10.3e\n",
 	      t,M2_ave,M_ave2,M_diff,M_ave2/M2_ave);
       
-      if (fnadip) 
-	fprintf(adip, "%10g %f \n", t,aver_lsq(&muframelsq));
-
+      if (fnadip) {
+	real aver;
+	gmx_stats_get_average(muframelsq,&aver);
+	fprintf(adip, "%10g %f \n", t,aver);
+      }
       /*if (dipole)
 	printf("%f %f\n", norm(dipole[0]), norm(dipole[1]));
       */      
@@ -1112,19 +1114,24 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     }
   }
   if (!bMU) {
+    real aver,sigma,error,lsq;
+
+    gmx_stats_get_ase(mulsq,&aver,&sigma,&error);
     printf("\nDipole moment (Debye)\n");
     printf("---------------------\n");
     printf("Average  = %8.4f  Std. Dev. = %8.4f  Error = %8.4f\n",
-	   aver_lsq(&mulsq),sigma_lsq(&mulsq),error_lsq(&mulsq));
+	   aver,sigma,error);
     if (bQuad) {
+      rvec a,s,e;
+      int mm;
+      for(m=0; (m<DIM); m++)
+	gmx_stats_get_ase(mulsq,&(a[m]),&(s[m]),&(e[m]));
+    
       printf("\nQuadrupole moment (Debye-Ang)\n");
       printf("-----------------------------\n");
-      printf("Averages  = %8.4f  %8.4f  %8.4f\n",
-	     aver_lsq(&Qlsq[XX]),aver_lsq(&Qlsq[YY]),aver_lsq(&Qlsq[ZZ]));
-      printf("Std. Dev. = %8.4f  %8.4f  %8.4f\n",
-	     sigma_lsq(&Qlsq[XX]),sigma_lsq(&Qlsq[YY]),sigma_lsq(&Qlsq[ZZ]));
-      printf("Error     = %8.4f  %8.4f  %8.4f\n",
-	     error_lsq(&Qlsq[XX]),error_lsq(&Qlsq[YY]),error_lsq(&Qlsq[ZZ]));
+      printf("Averages  = %8.4f  %8.4f  %8.4f\n",a[XX],a[YY],a[ZZ]);
+      printf("Std. Dev. = %8.4f  %8.4f  %8.4f\n",s[XX],s[YY],s[ZZ]);
+      printf("Error     = %8.4f  %8.4f  %8.4f\n",e[XX],e[YY],e[ZZ]);
     }
     printf("\n");
   }

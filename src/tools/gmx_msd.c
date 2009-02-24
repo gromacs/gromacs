@@ -52,6 +52,7 @@
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gstat.h"
+#include "gmx_statistics.h"
 #include "tpxio.h"
 #include "pbc.h"
 #include "vec.h"
@@ -70,7 +71,7 @@ typedef struct {
   matrix  **datam;
   rvec    **x0;
   rvec    *com;
-  t_lsq   **lsq;
+  gmx_stats_t **lsq;
   int     type,axis,ncoords,nrestart,nmol,nframes,nlast,ngrp;
   int     *n_offs;
   int     **ndata;
@@ -437,7 +438,7 @@ static real calc1_mol(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
     /* We don't need to normalize as the mass was set to 1 */
     gtot += g;
     if (tt >= this->beginfit && (this->endfit < 0 || tt <= this->endfit))
-      add_lsq(&(this->lsq[nx0][i]),tt,g);
+      gmx_stats_add_point(this->lsq[nx0][i],tt,g,0,0);
   }
   msmul(mat,1.0/nx,mat);
 
@@ -450,7 +451,7 @@ void printmol(t_corr *this,char *fn,
 {
 #define NDIST 100
   FILE  *out,out_pdb;
-  t_lsq lsq1;
+  gmx_stats_t lsq1;
   int   i,j;
   real  a,b,r,D,Dav,D2av,VarD,sqrtD,sqrtD_max,scale;
   t_pdbinfo *pdbinfo=NULL;
@@ -468,15 +469,21 @@ void printmol(t_corr *this,char *fn,
   Dav = D2av = 0;
   sqrtD_max = 0;
   for(i=0; (i<this->nmol); i++) {
-    init_lsq(&lsq1);
+    lsq1 = gmx_stats_init();
     for(j=0; (j<this->nrestart); j++) {
-      lsq1.sx+=this->lsq[j][i].sx;
-      lsq1.sy+=this->lsq[j][i].sy;
-      lsq1.xx+=this->lsq[j][i].xx;
-      lsq1.yx+=this->lsq[j][i].yx;
-      lsq1.np+=this->lsq[j][i].np;
+      real xx,yy,dx,dy;
+      
+      while(gmx_stats_get_point(this->lsq[j][i],&xx,&yy,&dx,&dy) == estatsOK)
+	gmx_stats_add_point(lsq1,xx,yy,dx,dy);
+      /* lsq1.sx+=this->lsq[j][i].sx;
+	 lsq1.sy+=this->lsq[j][i].sy;
+	 lsq1.xx+=this->lsq[j][i].xx;
+	 lsq1.yx+=this->lsq[j][i].yx;
+	 lsq1.np+=this->lsq[j][i].np; */
     }
-    get_lsq_ab(&lsq1,&a,&b);
+    gmx_stats_get_ab(lsq1,elsqWEIGHT_NONE,&a,&b,NULL,NULL,NULL,NULL);
+    gmx_stats_done(lsq1);
+    sfree(lsq1);
     D     = a*FACTOR/this->dim_factor;
     if (D < 0)
       D   = 0;
@@ -684,7 +691,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
   atom_id      **index;
   char         **grpname;
   int          i,i0,i1,j,N,nat_trx;
-  real         *DD,*SigmaD,a,a2,b,r;
+  real         *DD,*SigmaD,a,a2,b,r,chi2;
   rvec         *x;
   matrix       box;
   
@@ -753,12 +760,12 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
     snew(SigmaD,msd->ngrp);
     for(j=0; j<msd->ngrp; j++) {
       if (N >= 4) {
-	lsq_y_ax_b(N/2,&(msd->time[i0]),&(msd->data[j][i0]),&a,&b,&r);
-	lsq_y_ax_b(N/2,&(msd->time[i0+N/2]),&(msd->data[j][i0+N/2]),&a2,&b,&r);
+	lsq_y_ax_b(N/2,&(msd->time[i0]),&(msd->data[j][i0]),&a,&b,&r,&chi2);
+	lsq_y_ax_b(N/2,&(msd->time[i0+N/2]),&(msd->data[j][i0+N/2]),&a2,&b,&r,&chi2);
 	SigmaD[j] = fabs(a-a2);
       } else
 	SigmaD[j] = 0;
-      lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b,&r);
+      lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b,&r,&chi2);
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
       fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",

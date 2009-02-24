@@ -50,7 +50,7 @@
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "gstat.h"
+#include "gmx_statistics.h"
 #include "tpxio.h"
 
 static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
@@ -85,7 +85,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   int    *btab=NULL;
   real   b0=0,b1,db=0;
   real   bond,bav;
-  t_lsq  b_one,*b_all=NULL;
+  gmx_stats_t b_one=NULL,*b_all=NULL;
   /*real   mean, mean2, sqrdev2, sigma2; 
     int    counter;*/
   rvec   *x;
@@ -95,14 +95,16 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   real   t,fac;
   int    bind,i,nframes,i0,i1;
   t_pbc  pbc;
+  int    N;
+  real   aver,sigma,error;
   
   if (!bAver) {
     snew(b_all,gnx/2);
     for(i=0; (i<gnx/2); i++)
-      init_lsq(&(b_all[i]));
+      b_all[i] = gmx_stats_init();
   }
   else {
-    init_lsq(&b_one);
+    b_one = gmx_stats_init();
     snew(btab,MAXTAB+1);
   }
   
@@ -132,7 +134,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
       else if (fdist)
 	fprintf(outd," %.3f",bond);
       if (bAver) {
-	add_lsq(&b_one,t,bond);
+	gmx_stats_add_point(b_one,t,bond,0,0);
 	if (db == 0) {
 	  if (blen == -1) {
 	    b0 = 0;
@@ -156,7 +158,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
 	}
       }
       else {
-	add_lsq(&(b_all[i/2]),t,bond);
+	gmx_stats_add_point(b_all[i/2],t,bond,0,0);
       }
     }
     if (bAverDist)
@@ -178,15 +180,15 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   /* For definitions see "Weet wat je meet" */
   if (bAver) {
     printf("\n");
-    printf("Total number of samples               : %d\n",
-	    npoints_lsq(&b_one));
-    printf("Mean                                  : %g\n",
-	    aver_lsq(&b_one));
-    printf("Standard deviation of the distribution: %g\n",
-	    sigma_lsq(&b_one));
-    printf("Standard deviation of the mean        : %g\n",
-	    error_lsq(&b_one));
-	    
+    gmx_stats_get_npoints(b_one,&N);
+    printf("Total number of samples               : %d\n",N);
+    gmx_stats_get_ase(b_one,&aver,&sigma,&error);
+    printf("Mean                                  : %g\n",aver);
+    printf("Standard deviation of the distribution: %g\n",sigma);
+    printf("Standard deviation of the mean        : %g\n",error);
+    gmx_stats_done(b_one);
+    sfree(b_one);
+    	    
     out=xvgropen(fbond,"Bond Stretching Distribution",
 		 "Bond Length (nm)","");
     
@@ -208,9 +210,13 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   else {
     fprintf(log,"%5s  %5s  %8s  %8s\n","i","j","b_aver","sigma");
     for(i=0; (i<gnx/2); i++) {
+      gmx_stats_get_ase(b_all[i],&aver,&sigma,NULL);
       fprintf(log,"%5u  %5u  %8.5f  %8.5f\n",1+index[2*i],1+index[2*i+1],
-	      aver_lsq(&b_all[i]),sigma_lsq(&b_all[i]));
+	      aver,sigma);
+      gmx_stats_done(b_all[i]);
+      sfree(b_all[i]);
     }
+    sfree(b_all);
   }
 }
 

@@ -14,7 +14,7 @@ libgmxana@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 libgmxana@LIBSUFFIX@_la_SOURCES = \
 	autocorr.c 	expfit.c 	polynomials.c 	levenmar.c	\
 	anadih.c 	pp2shift.c 	pp2shift.h 	dlist.c		\
-	eigio.c		lsq.c		cmat.c 		cmat.h		\
+	eigio.c		cmat.c 		cmat.h		\
 	eigensolver.c   eigensolver.h	nsc.c 		nsc.h		\
 	hxprops.c 	hxprops.h 	fitahx.c 	fitahx.h	\
 	gmx_analyze.c	gmx_anaeig.c	gmx_angle.c	gmx_bond.c	\
@@ -70,6 +70,7 @@ bin_PROGRAMS = \
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
+EXTRA_PROGRAMS = gmx_stats_test
 
 
 CLEANFILES   = *.la *~ \\\#*

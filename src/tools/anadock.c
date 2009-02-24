@@ -44,7 +44,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"
-#include "gstat.h"
+#include "gmx_statistics.h"
 #include "statutil.h"
 #include "typedefs.h"
 #include "xvgr.h"
@@ -175,20 +175,23 @@ static void analyse_em_all(int npdb,t_pdbfile *pdbf[],
 static void clust_stat(FILE *fp,int start,int end,t_pdbfile *pdbf[])
 {
   int i;
-  t_lsq ed,ef;
+  gmx_stats_t ed,ef;
+  real aver,sigma;
   
-  init_lsq(&ed);
-  init_lsq(&ef);
+  ed = gmx_stats_init();
+  ef = gmx_stats_init();
   for(i=start; (i<end); i++) {
-    add_lsq(&ed,i-start,pdbf[i]->edocked);
-    add_lsq(&ef,i-start,pdbf[i]->efree);
+    gmx_stats_add_point(ed,i-start,pdbf[i]->edocked,0,0);
+    gmx_stats_add_point(ef,i-start,pdbf[i]->efree,0,0);
   }
-  fprintf(fp,"  <%12s> = %8.3f (+/- %6.3f)\n",etitles[FALSE],
-	  aver_lsq(&ed),sigma_lsq(&ed));
-  fprintf(fp,"  <%12s> = %8.3f (+/- %6.3f)\n",etitles[TRUE],
-	  aver_lsq(&ef),sigma_lsq(&ef));
-  done_lsq(&ed);
-  done_lsq(&ef);
+  gmx_stats_get_ase(ed,&aver,&sigma,NULL);
+  fprintf(fp,"  <%12s> = %8.3f (+/- %6.3f)\n",etitles[FALSE],aver,sigma);
+  gmx_stats_get_ase(ef,&aver,&sigma,NULL);
+  fprintf(fp,"  <%12s> = %8.3f (+/- %6.3f)\n",etitles[TRUE],aver,sigma);
+  gmx_stats_done(ed);
+  gmx_stats_done(ef);
+  sfree(ed);
+  sfree(ef);
 }
 
 static real rmsd_dist(t_pdbfile *pa,t_pdbfile *pb,bool bRMSD)
