@@ -57,7 +57,6 @@
 #include "update.h"
 #include "genborn.h"
 
-#define MD_GLAS         (1<<1)
 #define MD_POLARISE     (1<<2)
 #define MD_IONIZE       (1<<3)
 #define MD_RERUN        (1<<4)

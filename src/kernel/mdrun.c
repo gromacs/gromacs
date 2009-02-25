@@ -206,8 +206,7 @@ int main(int argc,char *argv[])
     "is performed after every exchange.[PAR]",
     "Finally some experimental algorithms can be tested when the",
     "appropriate options have been given. Currently under",
-    "investigation are: polarizability, glass simulations",
-    "and X-Ray bombardments.",
+    "investigation are: polarizability, and X-Ray bombardments.",
     "[PAR]",
     "The option [TT]-pforce[tt] is useful when you suspect a simulation",
     "crashes due to too large forces. With this option coordinates and",
@@ -290,7 +289,6 @@ int main(int argc,char *argv[])
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
   static bool bSepPot      = FALSE;
-  static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
   static bool bConfout     = TRUE;
   static bool bReproducible = FALSE;
@@ -367,8 +365,6 @@ int main(int argc,char *argv[])
       "Attempt replica exchange every # steps" },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
-    { "-glas",    FALSE, etBOOL,{&bGlas},
-      "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-confout", FALSE, etBOOL, {&bConfout},
@@ -451,7 +447,6 @@ int main(int argc,char *argv[])
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
   Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
-  Flags = Flags | (bGlas         ? MD_GLAS         : 0);
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
   Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);

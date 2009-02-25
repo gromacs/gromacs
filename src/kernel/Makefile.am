@@ -62,7 +62,7 @@ gmxcheck_SOURCES = gmxcheck.c
 x2top_SOURCES = x2top.c nm2type.c x2top.h
 
 mdrun_SOURCES = \
-	glaasje.c 	glaasje.h 	gctio.c 	\
+	gctio.c 	\
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	md.c		mdrun.c		\

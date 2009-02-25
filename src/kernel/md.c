@@ -556,7 +556,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int         count,nconverged=0;
   real        timestep=0;
   double      tcount=0;
-  bool        bIonize=FALSE,bGlas=FALSE;
+  bool        bIonize=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
   bool        bAppend;
   real        temp0,mu_aver=0,dvdl;
@@ -576,7 +576,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN);
   bIonize  = (Flags & MD_IONIZE);
-  bGlas    = (Flags & MD_GLAS);
   bFFscan  = (Flags & MD_FFSCAN);
   bGStatEveryStep = !(Flags & MD_NOGSTAT);
   bAppend  = (Flags & MD_APPENDFILES);
@@ -1248,9 +1247,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bTCR)
       mu_aver = calc_mu_aver(cr,state->x,mdatoms->chargeA,
 			     mu_tot,&top_global->mols,mdatoms,gnx,grpindex);
-    if (bGlas)
-      do_glas(fplog,mdatoms->start,mdatoms->homenr,state->x,f,
-	      fr,mdatoms,top->idef.atnr,ir,enerd->term);
     
     if (bTCR && bFirstStep) {
       tcr=init_coupling(fplog,nfile,fnm,cr,fr,mdatoms,&(top->idef));
