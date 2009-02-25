@@ -122,9 +122,9 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     if (ir->etc == etcNOSEHOOVER) {
       state->flags |= (1<<estNH_XI);
     }
-    if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
-      state->flags |= (1<<estTC_INT);
-    }
+  }
+  if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
+    state->flags |= (1<<estTC_INT);
   }
 
   init_ekinstate(&state->ekinstate,ir);
