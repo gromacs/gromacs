@@ -389,6 +389,14 @@ int main (int argc, char *argv[])
   run_t    = ir->init_step*ir->delta_t + ir->init_t;
 
   if (bTraj) {
+    fprintf(stderr,"\n"
+	    "NOTE: Reading the state from trajectory is an obsolete feaure of tpbconv.\n"
+	    "      Continuation should be done by loading a checkpoint file with mdrun -cpi\n"
+	    "      This guarantees that all state variables are transferred.\n"
+	    "      tpbconv is now only useful for increasing nsteps,\n"
+	    "      but even that can often be avoided by using mdrun -maxh\n"
+	    "\n");
+
     if (ir->bContinuation != bContinuation)
       fprintf(stderr,"Modifying ir->bContinuation to %s\n",
 	      bool_names[bContinuation]);
