@@ -73,7 +73,7 @@ if GMX_FAHCORE
   libfahcore_la_SOURCES = $(mdrun_SOURCES) 
   libfahcore_la_CFLAGS = $(AM_CFLAGS)
   libfahcore_la_LDFLAGS = -all-static $(AM_LDFLAGS)
-  libfahcore_la_LIBADD = libgmxpreprocess.la
+  libfahcore_la_LIBADD = libgmxpreprocess@LIBSUFFIX@.la
 endif
 
 fahcore: libfahcore.la 
