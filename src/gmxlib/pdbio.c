@@ -286,7 +286,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
     if (bWideFormat)
       strcpy(pdbform,"%-6s%5u %-4.4s %3.3s %c%4d    %10.5f%10.5f%10.5f%8.4f%8.4f\n");
     else {
-      if (strlen(nm)<4)
+      if ((strlen(nm)<4) && (atoms->atom[i].atomnumber < 10))
 	strcpy(pdbform,pdbformat);
       else {
 	strcpy(pdbform,pdbformat4);

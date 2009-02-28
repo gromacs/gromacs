@@ -577,6 +577,10 @@ int gmx_editconf(int argc, char *argv[])
   snew(x,natom);
   snew(v,natom);
   read_stx_conf(infile,title,&atoms,x,v,&ePBC,box);
+  if (fn2ftp(infile) == efPDB) 
+    {
+      get_pdb_atomnumber(&atoms,aps);
+    }
   printf("Read %d atoms\n",atoms.nr); 
   if (ePBC != epbcNONE) {
     real vol = det(box);
