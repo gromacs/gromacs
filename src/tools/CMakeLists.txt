@@ -2,7 +2,7 @@
 add_library(gmxana 
             autocorr.c      expfit.c        polynomials.c   levenmar.c      
             anadih.c        pp2shift.c      dlist.c         
-            eigio.c         lsq.c           cmat.c          
+            eigio.c         cmat.c          
             eigensolver.c   nsc.c           
             hxprops.c       fitahx.c        
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      

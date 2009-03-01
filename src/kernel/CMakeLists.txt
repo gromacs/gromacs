@@ -5,8 +5,7 @@ set(GMXPREPROCESS_SOURCES
     convparm.c      
     gen_ad.c        
     gen_vsite.c     
-    genhydro.c      
-    gmxcpp.c        
+    genhydro.c   
     gpp_atomtype.c  
     gpp_bond_atomtype.c     
     h_db.c          
