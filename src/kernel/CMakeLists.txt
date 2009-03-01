@@ -69,6 +69,10 @@ add_executable(mdrun ${MDRUN_SOURCES})
 target_link_libraries(mdrun md ${GMX_EXTRA_LIBRARIES})
 
 
+install(TARGETS 
+        grompp tpbconv pdb2gmx protonate luck gmxdump
+        x2top gmxcheck mdrun
+        RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 
 if(GMX_FAHCORE)

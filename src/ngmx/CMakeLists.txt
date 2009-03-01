@@ -34,4 +34,8 @@ target_link_libraries(scrollw md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
 add_executable(showcol showcol.c ${NGMX_COMMON_SOURCE})
 target_link_libraries(showcol md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
 
+install(TARGETS
+	ngmx xrama highway gmxlogo dlg scrollw showcol
+      	RUNTIME DESTINATION ${BIN_INSTALL_DIR})
+
 endif(X11_FOUND)

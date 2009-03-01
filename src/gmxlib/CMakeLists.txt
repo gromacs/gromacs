@@ -3,4 +3,5 @@ file(GLOB GMXLIB_SOURCES *.c gmx_blas/*.c gmx_lapack/*.c gmx_statistics/*.c nonb
 
 add_library(gmx ${GMXLIB_SOURCES})
 
+install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
