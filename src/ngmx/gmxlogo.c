@@ -39,7 +39,8 @@
 
 #include "logo.h"
 
-void main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   t_x11  *x11;
   t_logo *logo;

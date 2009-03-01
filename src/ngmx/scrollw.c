@@ -186,7 +186,8 @@ void read_lines(FILE *in,t_scrollw *sw)
   }
 }
 
-void main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   t_x11     *x11;
   t_scrollw *sw;

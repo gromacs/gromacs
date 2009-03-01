@@ -41,4 +41,5 @@ dlg_SOURCES     = dlg.c $(XSRC)
 scrollw_SOURCES = scrollw.c $(XSRC)
 showcol_SOURCES = showcol.c $(XSRC)
 
+
 CLEANFILES   = 	*~ \\\#*

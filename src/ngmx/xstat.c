@@ -192,7 +192,8 @@ static void add_opts(t_x11 *x11,t_data *data)
   SetDlgSize(data->dlg,w+2*OFFS_X,y0,TRUE);
 }
 
-void main(int argc,char *argv[])
+int
+main(int argc,char *argv[])
 {
   t_x11  *x11;
   t_data data;

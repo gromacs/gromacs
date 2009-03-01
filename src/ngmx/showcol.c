@@ -254,7 +254,8 @@ static t_sc *init_sc(t_x11 *x11,Window Parent,char *rgb)
   return sc;
 }
 
-void main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   t_x11 *x11;
   t_sc  *sc;
