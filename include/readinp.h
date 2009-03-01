@@ -57,7 +57,7 @@ typedef struct {
 
 
 extern t_inpfile *read_inpfile(char *fn,int *ninp,
-			       const char **cppopts);
+			       char **cppopts);
 /* Create & populate a t_inpfile struct from values in file fn. 
    fn = the file name
    ninp = the number of read parameters

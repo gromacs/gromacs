@@ -232,7 +232,8 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   }
 }
 
-static char **cpp_opts(char *define,char *include,char *infile)
+char **
+cpp_opts(char *define,char *include,char *infile)
 {
   int  n,len;
   int  ncppopts=0;

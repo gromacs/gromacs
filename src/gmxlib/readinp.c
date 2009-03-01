@@ -57,7 +57,7 @@ static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
 
 t_inpfile *read_inpfile(char *fn,int *ninp, 
-			const char **cppopts)
+			char **cppopts)
 {
   /*FILE      *in;*/
   gmx_cpp_t in;
@@ -66,8 +66,8 @@ t_inpfile *read_inpfile(char *fn,int *ninp,
   t_inpfile *inp=NULL;
   int       nin,lc,i,j,k,status;
   /* setting cppopts from command-line options would be cooler */
-  const char *cppopts_null[] = { NULL }; 
-  const char **cppopts_given;
+  char *cppopts_null[] = { NULL }; 
+  char **cppopts_given;
   bool allow_override=FALSE;
 
     

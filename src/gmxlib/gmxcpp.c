@@ -150,7 +150,7 @@ static void add_define(const char *define)
 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
-int cpp_open_file(char *filenm,gmx_cpp_t *handle, const char **cppopts)
+int cpp_open_file(char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
   char *buf;
