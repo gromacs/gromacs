@@ -1,0 +1,269 @@
+/* Manually created from config.h.in to work with cmake */
+
+/* Name of package (translate from cmake to autoconf macro name) */
+#define PACKAGE  "@PROJECT_NAME@"
+
+/* Version number of package (translate from cmake to autoconf macro name) */
+#define VERSION  "@PROJECT_VERSION@"
+
+/* Default location of data files */
+#cmakedefine GMXLIBDIR "@GMXLIBDIR@"
+
+/* Hardware and OS version for build host */
+#cmakedefine BUILD_MACHINE "@BUILD_MACHINE@"
+
+/* Date and time for build */
+#cmakedefine BUILD_TIME "@BUILD_TIME@"
+
+/* User doing build */
+#cmakedefine BUILD_USER "@BUILD_USER@"
+
+/* Turn off water-water neighborlist optimization only */
+#cmakedefine DISABLE_WATERWATER_NLIST
+
+/* Turn off all water neighborlist optimization */
+#cmakedefine DISABLE_WATER_NLIST
+
+/* Fortran support */
+#cmakedefine GMX_FORTRAN
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case), which must not contain underscores, for linking with Fortran. */
+#define F77_FUNC(name,NAME)     @F77_FUNCDEF@
+
+/* As F77_FUNC, but for C identifiers containing underscores. */
+#define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
+
+/* Use the d prefix on fftw2 includes */
+#cmakedefine FFTW2_NAME_DFFTW
+
+/* Dont use any prefix on fftw2 includes */
+#cmakedefine FFTW2_NAME_FFTW
+
+/* Use the s prefix on fftw2 includes */
+#cmakedefine FFTW2_NAME_SFFTW
+
+/* IEEE754 floating-point format. Memory layout is defined by macros
+ * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
+ */
+#cmakedefine GMX_FLOAT_FORMAT_IEEE754
+
+/* Use assembly intrinsics kernels for BlueGene */
+#cmakedefine GMX_BLUEGENE
+
+/* Power6 acceleration */
+#cmakedefine GMX_POWER6
+
+/* Work around broken calloc() */
+#cmakedefine GMX_BROKEN_CALLOC
+
+/* Enable special hacks for Cray XT3 */
+#cmakedefine GMX_CRAY_XT3
+
+/* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
+#cmakedefine GMX_DISABLE_FFTW_MEASURE
+
+/* Compile in double precision */
+#cmakedefine GMX_DOUBLE
+
+/* Use Built-in FFTPACK FFT library */
+#cmakedefine GMX_FFT_FFTPACK
+
+/* Use FFTW2 FFT library */
+#cmakedefine GMX_FFT_FFTW2
+
+/* Use FFTW3 FFT library */
+#cmakedefine GMX_FFT_FFTW3
+
+/* Use Intel MKL FFT library */
+#cmakedefine GMX_FFT_MKL
+
+/* Use AMD core math library */
+#cmakedefine GMX_FFT_ACML
+
+/* Single-precision SSE instructions on ia32 */
+#undef GMX_IA32_SSE
+
+/* Double-precision SSE2 instructions on ia32 */
+#undef GMX_IA32_SSE2
+
+/* Use ia64 assembly tuned for Itanium2 */
+#cmakedefine GMX_IA64_ASM
+
+/* Integer byte order is big endian. */
+#cmakedefine GMX_INTEGER_BIG_ENDIAN 
+
+/* Use our own instead of system XDR libraries */
+#cmakedefine GMX_INTERNAL_XDR
+
+/* Make a parallel version of GROMACS using MPI */
+#cmakedefine GMX_MPI
+
+/* Ignore calls to nice(3) */
+#cmakedefine GMX_NO_NICE
+
+/* Ignore calls to system(3) */
+#cmakedefine GMX_NO_SYSTEM
+
+/* Use PowerPC Altivec inner loops */
+#cmakedefine GMX_PPC_ALTIVEC
+
+/* Use (modified) Gamess-UK for QM-MM calculations */
+#cmakedefine GMX_QMMM_GAMESS
+
+/* Use (modified) Gaussian0x for QM-MM calculations */
+#cmakedefine GMX_QMMM_GAUSSIAN
+
+/* Use (modified) Mopac 7 for QM-MM calculations */
+#cmakedefine GMX_QMMM_MOPAC
+
+/* Use the GROMACS software 1/sqrt(x) */
+#cmakedefine GMX_SOFTWARE_INVSQRT
+
+/* Use pthreads for Gromacs multithreading */
+#cmakedefine GMX_THREAD_PTHREAD
+
+/* Have pthread.h */
+#cmakedefine HAVE_PTHREAD_H
+
+/* Single-precision SSE instructions on X86_64 */
+#undef GMX_X86_64_SSE
+
+/* Double-precision SSE2 instructions on X86_64 */
+#undef GMX_X86_64_SSE2
+
+/* Enable x86 gcc inline assembly */
+#cmakedefine GMX_X86_GCC_INLINE_ASM
+
+/* Enable x86 MSVC inline assembly */
+#cmakedefine GMX_X86_MSVC_INLINE_ASM
+
+/* Support for SSE intrinsics */
+#cmakedefine GMX_SSE
+
+/* Support for SSE2 intrinsics */
+#cmakedefine GMX_SSE2
+
+/* Support for SSE3 intrinsics */
+#cmakedefine GMX_SSE3
+
+/* Support for SSE4.1 intrinsics */
+#cmakedefine GMX_SSE4_1
+
+/* Define to 1 if you have the <altivec.h> header file. */
+#cmakedefine HAVE_ALTIVEC_H
+
+/* Define to 1 if the system has the type bool. */
+#cmakedefine HAVE_BOOL
+
+/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#cmakedefine HAVE_FSEEKO
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the m library (-lm). */
+#cmakedefine HAVE_LIBM
+
+/* Define to 1 if you have the mkl library (-lmkl). */
+#cmakedefine HAVE_LIBMKL
+
+
+/* Define to 1 if you have the xml2 library (-lxml2). */
+#cmakedefine HAVE_LIBXML2
+
+/* Define to 1 if you have the <limits.h> header file. */
+#cmakedefine HAVE_LIMITS_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#cmakedefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <rpc/rpc.h> header file. */
+#cmakedefine HAVE_RPC_RPC_H
+
+/* Define to 1 if you have the <rpc/xdr.h> header file. */
+#cmakedefine HAVE_RPC_XDR_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the strcasecmp() function. */
+#cmakedefine HAVE_STRCASECMP
+
+/* Define to 1 if you have the strdup() function. */
+#cmakedefine HAVE_STRDUP
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#cmakedefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* Define to 1 if you have the vprintf() function. */
+#cmakedefine HAVE_VPRINTF
+
+/* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
+   Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
+#cmakedefine GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
+
+/* The two words in a double precision variable are in b ig-endian order if
+   set, little-endian if not. Do NOT assume this is the same as the byte
+   order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
+#cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
+
+/* Define as the return type of signal handlers (int or void). */
+#cmakedefine RETSIGTYPE @RETSIGTYPE@
+
+/* The size of int, as computed by sizeof. */
+#cmakedefine SIZEOF_INT @SIZEOF_INT@
+
+/* The size of long int, as computed by sizeof. */
+#cmakedefine SIZEOF_LONG_INT @SIZEOF_LONG_INT@
+
+/* The size of long long int, as computed by sizeof. */
+#cmakedefine SIZEOF_LONG_LONG_INT @SIZEOF_LONG_LONG_INT@
+
+/* The size of off_t, as computed by sizeof. */
+#cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+#cmakedefine _LARGEFILE_SOURCE
+
+/* Define for large files, on AIX-style hosts. */
+#cmakedefine _LARGE_FILES
+
+/* Some systems requires this to be set to 64 for large file support */
+#cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
+
+/* Gromacs shortcut define for fseeko & ftello being present with 64-bit support */
+#cmakedefine GMX_LARGEFILES
+
+/* Define to int if <sys/types.h> does not define. */
+#cmakedefine gid_t int
+
+/* Define to __inline__ or __inline if that is what the C compiler
+   calls it, or to nothing if inline is not supported under any name.  */
+#ifndef __cplusplus
+#define inline ${INLINE_KEYWORD}
+#endif
+
+/* Define to long int if <sys/types.h> does not define. */                    
+#cmakedefine off_t int                                                                
+                                                                                
+/* Define to unsigned int if <sys/types.h> does not define. */
+#cmakedefine size_t int                                                                
+
+/* Define to int if <sys/types.h> does not define. */
+#cmakedefine uid_t int
+                                                                
+/* Build special-purpose mdrun library */
+#cmakedefine GMX_FAHCORE   
