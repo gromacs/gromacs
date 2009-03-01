@@ -192,7 +192,7 @@ if AC_TRY_EVAL(ac_compile); then
     acx_float_format='IEEE754 (little-endian byte and word order)'
 # next: little-endian byte order, but big-endian word order - MORGXSCA
   elif grep 'ORGXSC' conftest.o >/dev/null 2>&1; then
-    acx_float_format='IEEE754 (big-endian byte, little-endian word order)'
+    acx_float_format='IEEE754 (litte-endian byte, little-endian word order)'
   elif grep '__floa' conftest.o >/dev/null 2>&1; then
     acx_float_format='VAX D-float'
   elif grep 'BMHEXF' conftest.o >/dev/null 2>&1; then
