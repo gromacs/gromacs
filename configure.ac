@@ -637,7 +637,7 @@ LDFLAGS="$LDFLAGS $extra_LDFLAGS"
 # Checks for header files and types
 ########################################################################
 
-AC_CHECK_HEADERS([limits.h strings.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
+AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 
 #####
@@ -959,7 +959,6 @@ AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])
 AC_CONFIG_FILES([ man/Makefile man/man1/Makefile man/man7/Makefile ])
-
 AC_OUTPUT
 
 
