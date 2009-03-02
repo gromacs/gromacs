@@ -7,7 +7,7 @@
 #  Remember to have a cmakedefine for it too...
 
 MACRO(GMX_TEST_INLINE VARIABLE)
-    IF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    IF(NOT DEFINED ${VARIABLE})
         
         MESSAGE(STATUS "Checking for inline keyword")
 
@@ -28,8 +28,7 @@ MACRO(GMX_TEST_INLINE VARIABLE)
             MESSAGE(STATUS "Checking for inline keyword - not found")
         ENDIF(NOT DEFINED C_INLINE)
         
-    ENDIF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
-
+    ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_INLINE VARIABLE)
 
 

@@ -7,8 +7,7 @@
 #  Remember to have a cmakedefine for it too...
 
 MACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
-    IF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
-
+    IF(NOT DEFINED ${VARIABLE})
         
         MESSAGE(STATUS "Checking for GCC x86 inline asm")
 
@@ -20,9 +19,10 @@ MACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
         else(${VARIABLE})
             MESSAGE(STATUS "Checking for GCC x86 inline asm - not supported")
+            set(${VARIABLE} 0 CACHE INTERNAL "Result of test for GCC x86 inline asm" FORCE)
       	endif(${VARIABLE})
-        
-    ENDIF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+
+    ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
 
 
@@ -36,7 +36,7 @@ ENDMACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
 #  Remember to have a cmakedefine for it too...
 
 MACRO(GMX_TEST_INLINE_ASM_MSVC_X86 VARIABLE)
-    IF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    IF(NOT DEFINED ${VARIABLE})
 
         MESSAGE(STATUS "Checking for MSVC x86 inline asm")
 
@@ -48,9 +48,10 @@ MACRO(GMX_TEST_INLINE_ASM_MSVC_X86 VARIABLE)
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for MSVC x86 inline asm" FORCE)
       	else(${VARIABLE})
             MESSAGE(STATUS "Checking for MSVC x86 inline asm - not supported")
+            set(${VARIABLE} 0 CACHE INTERNAL "Result of test for MSVC x86 inline asm" FORCE)
         endif(${VARIABLE})
 
-    ENDIF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_INLINE_ASM_MSVC_X86 VARIABLE)
 
 

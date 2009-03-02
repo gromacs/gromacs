@@ -93,6 +93,7 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
                 set(HAVE_FSEEKO 1)
             else(HAVE_${VARIABLE})
                 MESSAGE(STATUS "Checking for fseeko/ftello - not found")
+                SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
             endif(HAVE_${VARIABLE})
 
         endif(NOT FILE64_OK)

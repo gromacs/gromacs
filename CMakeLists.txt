@@ -139,7 +139,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 include(gmxCheckBuildUserTime)
-gmx_check_build_user_time()
+gmx_check_build_user_time(BUILD_TIME BUILD_USER BUILD_MACHINE)
 
 include(gmxTestFloatFormat)
 gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 

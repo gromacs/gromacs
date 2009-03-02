@@ -7,7 +7,7 @@
 #  Remember to have a cmakedefine for it too...
 
 MACRO(GMX_TEST_XDR VARIABLE)
-    IF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    IF(NOT DEFINED ${VARIABLE})
 
         MESSAGE(STATUS "Checking for system XDR support")
 
@@ -23,7 +23,7 @@ MACRO(GMX_TEST_XDR VARIABLE)
 
         set(${VARIABLE} ${XDR_COMPILE_OK} CACHE INTERNAL "Result of test for system XDR support" FORCE)
         
-    ENDIF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_XDR VARIABLE)
 
 

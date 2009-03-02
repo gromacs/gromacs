@@ -13,29 +13,21 @@ include_directories(${X11_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
-add_executable(ngmx ngmx.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(ngmx md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
+# List of programs with single corresponding *.c source file,
+# used to create build rules automatically.
+#
+set(NGMX_PROGRAMS 
+    ngmx xrama highway gmxlogo dlg scrollw showcol)
 
-add_executable(xrama xrama.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(xrama md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
 
-add_executable(highway highway.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(highway md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
+foreach(PROG ${NGMX_PROGRAMS})
+        add_executable(${PROG} ${PROG}.c ${NGMX_COMMON_SOURCE})
+        target_link_libraries(${PROG} gmx ${X11_LIBRARIES})
+endforeach(PROG) 
 
-add_executable(gmxlogo gmxlogo.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(gmxlogo md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
 
-add_executable(dlg dlg.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(dlg md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
+install(TARGETS ${NGMX_PROGRAMS}
+        RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
-add_executable(scrollw scrollw.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(scrollw md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
-
-add_executable(showcol showcol.c ${NGMX_COMMON_SOURCE})
-target_link_libraries(showcol md ${X11_LIBRARIES} ${GROMACS_EXTRA_LIBRARIES})
-
-install(TARGETS
-	ngmx xrama highway gmxlogo dlg scrollw showcol
-      	RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(X11_FOUND)

@@ -39,34 +39,33 @@ set(MDRUN_SOURCES
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
 
-set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} gmxpreprocess)
-
 add_executable(grompp grompp.c)
-target_link_libraries(grompp md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(grompp gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(tpbconv tpbconv.c)
-target_link_libraries(tpbconv md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(tpbconv gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(pdb2gmx pdb2gmx.c)
-target_link_libraries(pdb2gmx md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(pdb2gmx gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(protonate protonate.c)
-target_link_libraries(protonate md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(protonate gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(luck luck.c)
-target_link_libraries(luck md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(luck gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(gmxdump gmxdump.c)
-target_link_libraries(gmxdump md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(gmxdump gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(x2top x2top.c)
-target_link_libraries(x2top md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(x2top gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 add_executable(gmxcheck gmxcheck.c)
-target_link_libraries(gmxcheck md gmx ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(gmxcheck gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(mdrun gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
 
 install(TARGETS 

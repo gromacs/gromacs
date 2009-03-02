@@ -7,7 +7,7 @@
 #  Remember to have a cmakedefine for it too...
 
 MACRO(GMX_TEST_RETSIGTYPE VARIABLE)
-    IF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    IF(NOT DEFINED ${VARIABLE})
 
         MESSAGE(STATUS "Checking for return type of signals")
 
@@ -23,7 +23,7 @@ MACRO(GMX_TEST_RETSIGTYPE VARIABLE)
       	    set(${VARIABLE} "void" CACHE INTERNAL "Result of test for signal return type" FORCE)
       	endif(RETSIGTYPE_INT_OK)
         
-    ENDIF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_RETSIGTYPE VARIABLE)
 
 
