@@ -9,6 +9,6 @@ libgmx_statistics_la_SOURCES =	\
 
 LDADD =	../libgmx@LIBSUFFIX@.la
 
-EXTRA_PROGRAMS = gmx_stats_test
+EXTRA_PROGRAMS = gmx_statistics_test
 
 CLEANFILES     = *.la *~ \\\#* 
