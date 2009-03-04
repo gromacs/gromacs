@@ -582,6 +582,11 @@ int gmx_editconf(int argc, char *argv[])
       get_pdb_atomnumber(&atoms,aps);
     }
   printf("Read %d atoms\n",atoms.nr); 
+  
+  /* Get the element numbers if available in a pdb file */
+  if (fn2ftp(infile) == efPDB)
+    get_pdb_atomnumber(&atoms,aps);
+    
   if (ePBC != epbcNONE) {
     real vol = det(box);
     printf("Volume: %g nm^3, corresponds to roughly %d electrons\n",
