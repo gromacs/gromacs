@@ -135,7 +135,7 @@ int gmx_spol(int argc,char *argv[])
   int     *isize,nrefgrp;
   atom_id **index,*molindex;
   char    **grpname;
-  real    rmin2,rmax2,rcut,rcut2,rdx2=0,rtry2,q,dip2,invbw;
+  real    rmin2,rmax2,rcut,rcut2,rdx2=0,rtry2,qav,q,dip2,invbw;
   int     nbin,i,m,mol,a0,a1,a,d;
   double  sdip,sdip2,sinp,sdinp,nmol;
   int     *hist;
@@ -152,6 +152,8 @@ int gmx_spol(int argc,char *argv[])
     "For each distance between [TT]-rmin[tt] and [TT]-rmax[tt]",
     "the inner product of the distance vector",
     "and the dipole of the solvent molecule is determined.",
+    "For solvent molecules with net charge (ions), the net charge of the ion",
+    "is subtracted evenly at all atoms in the selection of each ion.",
     "The average of these dipole components is printed.",
     "The same is done for the polarization, where the average dipole is",
     "subtracted from the instantaneous dipole. The magnitude of the average",
@@ -259,8 +261,13 @@ int gmx_spol(int argc,char *argv[])
       if (rdx2 >= rmin2 && rdx2 < rmax2) {
 	unitv(dx,dx);
 	clear_rvec(dip);
+	qav = 0;
 	for(a=a0; a<a1; a++) {
-	  q = atom[a].q;
+	  qav += atom[a].q;
+	}
+	qav /= (a1 - a0);
+	for(a=a0; a<a1; a++) {
+	  q = atom[a].q - qav;
 	  for(d=0; d<DIM; d++)
 	    dip[d] += q*x[a][d];
 	}
