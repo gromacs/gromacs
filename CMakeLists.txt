@@ -107,7 +107,7 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 set(GMX_EXTRA_LIBRARIES)
 
-find_package(LibXML2)
+find_package(LibXml2)
 if(LIBXML2_FOUND)
     include_directories(${LIBXML2_INCLUDE_DIR})
     set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${LIBXML2_LIBRARIES})
