@@ -48,17 +48,22 @@ typedef struct {
   unsigned short type;		/* Atom type				*/
   unsigned short typeB;		/* Atom type for Free Energy calc	*/
   int           ptype;		/* Particle type			*/
-  int 		resnr;		/* Residue number			*/
+  int 		resind;		/* Index into resinfo in t_atoms)       */
   int           atomnumber;     /* Atomic Number or NOTSET              */
-  unsigned char chain;          /* chain identifier                     */
 } t_atom;
+
+typedef struct {
+  char          **name;         /* Pointer to the residue name          */
+  int           nr;             /* Residue number                       */
+  unsigned char ic;             /* Code for insertion of residues       */
+  unsigned char chain;          /* Chain identifier                     */
+} t_resinfo;
 
 typedef struct {
   int  type;                    /* PDB record name                      */
   int  atomnr;                  /* PDB atom number                      */
   char altloc;                  /* Alternate location indicator         */
   char atomnm[6];               /* True atom name including spaces      */
-  char pdbresnr[6];             /* PDB res number                       */
   real occup;                   /* Occupancy                            */
   real bfac;                    /* B-factor                             */
   bool bAnisotropic;            /* (an)isotropic switch                 */
@@ -81,9 +86,8 @@ typedef struct {
 				/* use: (*(atomtype[i]))		*/
   char		***atomtypeB;	/* Array of pointers to B atom types	*/
 				/* use: (*(atomtypeB[i]))		*/
-  int		nres;		/* Nr of residue names			*/
-  char		***resname; 	/* Array of pointers to residue names 	*/
-				/* use: (*(resname[i]))	       	*/
+  int		nres;		/* The number of resinfo entries	*/
+  t_resinfo     *resinfo;       /* Array of residue names and numbers   */
   t_pdbinfo     *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 

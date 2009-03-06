@@ -61,7 +61,7 @@ t_dlist *mk_dlist(FILE *log,
   ires = -1;
   i    =  0;
   while (i<atoms->nr) {
-    ires=atoms->atom[i].resnr;
+    ires = atoms->atom[i].resind;
     
     /* Initiate all atom numbers to -1 */
     atm.minC=atm.H=atm.N=atm.C=atm.O=atm.minO=-1;
@@ -70,7 +70,7 @@ t_dlist *mk_dlist(FILE *log,
       
     /* Look for atoms in this residue */
     /* maybe should allow for chis to hydrogens? */
-    while ((i<atoms->nr) && (atoms->atom[i].resnr == ires)) {
+    while ((i<atoms->nr) && (atoms->atom[i].resind == ires)) {
       if ((strcmp(*(atoms->atomname[i]),"H") == 0) ||
 	  (strcmp(*(atoms->atomname[i]),"H1") == 0) )
 	atm.H=i;
@@ -114,23 +114,25 @@ t_dlist *mk_dlist(FILE *log,
 	atm.Cn[7]=i;
       i++;
     }
+
+    thisres = *(atoms->resinfo[ires].name);	
     
     /* added by grs - special case for aromatics, whose chis above 2 are 
        not real and produce rubbish output - so set back to -1 */ 
-    if (strcmp(*(atoms->resname[ires]),"PHE") == 0 ||
-	strcmp(*(atoms->resname[ires]),"TYR") == 0 ||
-	strcmp(*(atoms->resname[ires]),"PTR") == 0 ||
-	strcmp(*(atoms->resname[ires]),"TRP") == 0 ||
-	strcmp(*(atoms->resname[ires]),"HIS") == 0 ||
-	strcmp(*(atoms->resname[ires]),"HISA") == 0 ||
-	strcmp(*(atoms->resname[ires]),"HISB") == 0 )  {
+    if (strcmp(thisres,"PHE") == 0 ||
+	strcmp(thisres,"TYR") == 0 ||
+	strcmp(thisres,"PTR") == 0 ||
+	strcmp(thisres,"TRP") == 0 ||
+	strcmp(thisres,"HIS") == 0 ||
+	strcmp(thisres,"HISA") == 0 ||
+	strcmp(thisres,"HISB") == 0 )  {
       for (ii=5 ; ii<=7 ; ii++) 
 	atm.Cn[ii]=-1; 
     }
     /* end fixing aromatics */ 
 
     /* Special case for Pro, has no H */
-    if (strcmp(*(atoms->resname[ires]),"PRO") == 0) 
+    if (strcmp(thisres,"PRO") == 0) 
       atm.H=atm.Cn[4];
     /* Carbon from previous residue */
     if (prev.C != -1)
@@ -139,8 +141,6 @@ t_dlist *mk_dlist(FILE *log,
       atm.minO = prev.O;
     prev = atm;
       
-    thisres=*(atoms->resname[ires]);	
-    
     /* Check how many dihedrals we have */
     if ((atm.N != -1) && (atm.Cn[1] != -1) && (atm.C != -1) &&
       (atm.O != -1) && ((atm.H != -1) || (atm.minC != -1))) {

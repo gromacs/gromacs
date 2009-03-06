@@ -391,7 +391,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
   presnr = NOTSET;
   snew(residx, atoms->nres);
   for(i=0; i<n; i++) {
-    resnr = atoms->atom[index[i]].resnr;
+    resnr = atoms->atom[index[i]].resind;
     if (resnr != presnr) {
       residx[nres]=i;
       nres++;

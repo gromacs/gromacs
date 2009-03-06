@@ -467,7 +467,7 @@ static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih,
 	  nidih++;
 	}
       }
-      while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
+      while ((start<atoms->nr) && (atoms->atom[start].resind == i))
 	start++;
     }
   }
@@ -502,15 +502,15 @@ bool is_hydro(t_atoms *atoms,int ai)
 }
 
 static void get_atomnames_min(int n,char **anm,
-			      int res,t_atoms *atoms,atom_id *a)
+			      int resind,t_atoms *atoms,atom_id *a)
 {
   int m;
 
   /* Assume ascending residue numbering */
   for(m=0; m<n; m++) {
-    if (atoms->atom[a[m]].resnr < res)
+    if (atoms->atom[a[m]].resind < resind)
       strcpy(anm[m],"-");
-    else if (atoms->atom[a[m]].resnr > res)
+    else if (atoms->atom[a[m]].resind > resind)
       strcpy(anm[m],"+");
     else
       strcpy(anm[m],"");
@@ -529,8 +529,8 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
 
   astart = 0;
   for(a=0; a<atoms->nr; a++) {
-    r = atoms->atom[a].resnr;
-    if (a==atoms->nr-1 || atoms->atom[a+1].resnr!=r) {
+    r = atoms->atom[a].resind;
+    if (a==atoms->nr-1 || atoms->atom[a+1].resind != r) {
       hbexcl = &hb[r].rb[ebtsEXCLS];
       
       for(e=0; e<hbexcl->nb; e++) {
@@ -692,11 +692,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 	    ang[nang].C1=NOTSET;
 	    set_p_string(&(ang[nang]),"");
 	    if (hb) {
-	      minres = atoms->atom[ang[nang].a[0]].resnr;
+	      minres = atoms->atom[ang[nang].a[0]].resind;
 	      maxres = minres;
 	      for(m=1; m<3; m++) {
-		minres = min(minres,atoms->atom[ang[nang].a[m]].resnr);
-		maxres = max(maxres,atoms->atom[ang[nang].a[m]].resnr);
+		minres = min(minres,atoms->atom[ang[nang].a[m]].resind);
+		maxres = max(maxres,atoms->atom[ang[nang].a[m]].resind);
 	      }
 	      res = 2*minres-maxres;
 	      do {
@@ -739,11 +739,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 		set_p_string(&(dih[ndih]),"");
 		nFound = 0;
 		if (hb) {
-		  minres = atoms->atom[dih[ndih].a[0]].resnr;
+		  minres = atoms->atom[dih[ndih].a[0]].resind;
 		  maxres = minres;
 		  for(m=1; m<4; m++) {
-		    minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
-		    maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
+		    minres = min(minres,atoms->atom[dih[ndih].a[m]].resind);
+		    maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resind);
 		  }
 		  res = 2*minres-maxres;
 		  do {

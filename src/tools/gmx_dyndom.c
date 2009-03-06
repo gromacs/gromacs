@@ -215,7 +215,7 @@ int gmx_dyndom(int argc,char *argv[])
     if (label > 'Z')
       label-=26;
     for(j=0; (j<atoms.nr); j++)
-      atoms.atom[j].chain = label;
+      atoms.resinfo[atoms.atom[j].resind].chain = label;
     
     write_trx(status,atoms.nr,index_all,&atoms,i,angle,box,xout,vout);  
   }

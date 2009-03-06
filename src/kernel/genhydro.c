@@ -67,30 +67,32 @@ static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
   *atoms2->atomname[a2]=strdup(*atoms1->atomname[a1]);
 }
 
-atom_id pdbasearch_atom(char *name,int resnr,t_atoms *pdba, char *searchtype)
+static atom_id pdbasearch_atom(char *name,int resind,t_atoms *pdba,
+			       char *searchtype)
 {
   int  i;
   
-  for(i=0; (i<pdba->nr) && (pdba->atom[i].resnr != resnr); i++)
+  for(i=0; (i<pdba->nr) && (pdba->atom[i].resind != resind); i++)
     ;
     
   return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname,
 		     searchtype,TRUE);
 }
 
-void hacksearch_atom(int *ii, int *jj, char *name, int nab[], t_hack *ab[], 
-		     int resnr, t_atoms *pdba)
+static void hacksearch_atom(int *ii, int *jj, char *name,
+			    int nab[], t_hack *ab[], 
+			    int resind, t_atoms *pdba)
 {
   int  i,j;
   
   *ii=-1;
   if (name[0] == '-') {
     name++;
-    resnr--;
+    resind--;
   }
-  for(i=0; (i<pdba->nr) && (pdba->atom[i].resnr != resnr); i++)
+  for(i=0; (i<pdba->nr) && (pdba->atom[i].resind != resind); i++)
     ;
-  for(   ; (i<pdba->nr) && (pdba->atom[i].resnr == resnr) && (*ii<0); i++)
+  for(   ; (i<pdba->nr) && (pdba->atom[i].resind == resind) && (*ii<0); i++)
     for(j=0; (j < nab[i]) && (*ii<0); j++)
       if (ab[i][j].nname && strcmp(name,ab[i][j].nname) == 0) {
 	*ii=i;
@@ -139,7 +141,7 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
-    ahptr=search_h_db(nah,ah,*pdba->resname[rnr]);
+    ahptr=search_h_db(nah,ah,*pdba->resinfo[rnr].name);
     if ( ahptr ) {
       if (hb[rnr].name==NULL)
 	hb[rnr].name=strdup(ahptr->name);
@@ -227,13 +229,13 @@ static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
   for(i=0; i < pdba->nr; i++) {
     bN = FALSE;
     for(j=0; j<nterpairs && !bN; j++)
-      bN = pdba->atom[i].resnr==rN[j];
+      bN = pdba->atom[i].resind==rN[j];
     bC = FALSE;
     for(j=0; j<nterpairs && !bC; j++)
-      bC = pdba->atom[i].resnr==rC[j];
+      bC = pdba->atom[i].resind==rC[j];
 
     /* add hacks to this atom */
-    expand_hackblocks_one(&hb[pdba->atom[i].resnr], *pdba->atomname[i], 
+    expand_hackblocks_one(&hb[pdba->atom[i].resind], *pdba->atomname[i], 
 			  &nab[i], &ab[i], bN, bC);
   }
   if (debug) fprintf(debug,"\n");
@@ -245,7 +247,7 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
   
   nadd=0;
   for(i=0; i < pdba->nr; i++) {
-    rnr = pdba->atom[i].resnr;
+    rnr = pdba->atom[i].resind;
     for(j=0; j<nab[i]; j++)
       if ( ab[i][j].oname==NULL ) { 
 	/* we're adding */
@@ -291,7 +293,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
   jj = 0;
   
   for(i=0; i < pdba->nr; i++) {
-    rnr   = pdba->atom[i].resnr;
+    rnr   = pdba->atom[i].resind;
     for(j=0; j < nab[i]; j+=ab[i][j].nr) {
       /* check if we're adding: */
       if (ab[i][j].oname==NULL && ab[i][j].tp > 0) {
@@ -302,8 +304,10 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 	    hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);
 	    if (ii < 0)
 	      gmx_fatal(FARGS,"Atom %s not found in residue %s%d"
-			  " while adding hydrogens",
-			  ab[i][j].a[m],*pdba->resname[rnr],rnr+1);
+			" while adding hydrogens",
+			ab[i][j].a[m],
+			*pdba->resinfo[rnr].name,
+			pdba->resinfo[rnr].nr);
 	    else
 	      copy_rvec(ab[ii][jj].newx, xa[m]);
 	  } else
@@ -399,8 +403,8 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
     snew(newpdba,1);
     init_t_atoms(newpdba,natoms+nadd,FALSE);
     newpdba->nres    = pdba->nres;   
-    sfree(newpdba->resname);
-    newpdba->resname = pdba->resname;
+    sfree(newpdba->resinfo);
+    newpdba->resinfo = pdba->resinfo;
   } else {
     nadd = 0;
   }
@@ -423,8 +427,8 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
       }
       if (debug) fprintf(debug,"(%3d) %3d %4s %4s%3d %3d",
 			 i+1, newi+1, *pdba->atomname[i],
-			 *pdba->resname[pdba->atom[i].resnr],
-			 pdba->atom[i].resnr+1, nab[i]);
+			 *pdba->resinfo[pdba->atom[i].resind].name,
+			 pdba->resinfo[pdba->atom[i].resind].nr, nab[i]);
       if (bUpdate_pdba)
 	copy_atom(pdba,i, newpdba,newi);
       copy_rvec((*xptr)[i],xn[newi]);
@@ -443,7 +447,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
 	    debug_gmx();
 	  }
 	  if (bUpdate_pdba) {
-	    newpdba->atom[newi].resnr=pdba->atom[i].resnr;
+	    newpdba->atom[newi].resind=pdba->atom[i].resind;
 	  }
 	  if (debug) fprintf(debug," + %d",newi+1);
 	}
@@ -553,7 +557,7 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
 
     if (nntdb>=4 && nctdb>=2) {
       /* Yuk, yuk, hardcoded default termini selections !!! */
-      if (strncmp(*atoms->resname[atoms->atom[atoms->nr-1].resnr],"PRO",3)==0)
+      if (strncmp(*atoms->resinfo[atoms->atom[atoms->nr-1].resind].name,"PRO",3)==0)
 	nt = 3;
       else
 	nt = 1;
@@ -569,7 +573,7 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     snew(protdata->rN, NTERPAIRS);
     snew(protdata->rC, NTERPAIRS);
     protdata->rN[0]=0;
-    protdata->rC[0]=atoms->atom[atoms->nr-1].resnr;
+    protdata->rC[0]=atoms->atom[atoms->nr-1].resind;
     
     /* keep unprotonated topology: */
     protdata->upatoms = atoms;

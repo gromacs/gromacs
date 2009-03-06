@@ -160,15 +160,16 @@ static void reduce_rvec(int gnx,atom_id index[],rvec vv[])
 }
 
 static void reduce_atom(int gnx,atom_id index[],t_atom atom[],char ***atomname,
-			int *nres, char ***resname)
+			int *nres,t_resinfo *resinfo)
 {
   t_atom *ptr;
-  char   ***aname,***rname;
+  char   ***aname;
+  t_resinfo *rinfo;
   int    i,nr;
   
   snew(ptr,gnx);
   snew(aname,gnx);
-  snew(rname,atom[index[gnx-1]].resnr+1);
+  snew(rinfo,atom[index[gnx-1]].resind+1);
   for(i=0; (i<gnx); i++) {
     ptr[i]   = atom[index[i]];
     aname[i] = atomname[index[i]];
@@ -177,20 +178,21 @@ static void reduce_atom(int gnx,atom_id index[],t_atom atom[],char ***atomname,
   for(i=0; (i<gnx); i++) {
     atom[i]     = ptr[i];
     atomname[i] = aname[i];
-    if ((i==0) || (atom[i].resnr != atom[i-1].resnr)) {
+    if ((i==0) || (atom[i].resind != atom[i-1].resind)) {
       nr++;
-      rname[nr]=resname[atom[i].resnr];
+      rinfo[nr] = resinfo[atom[i].resind];
     }
-    atom[i].resnr=nr;
+    atom[i].resind = nr;
   }
   nr++;
-  for(i=0; (i<nr); i++)
-    resname[i]=rname[i];
+  for(i=0; (i<nr); i++) {
+    resinfo[i] = rinfo[i];
+  }
   *nres=nr;
 
   sfree(aname);
   sfree(ptr);
-  sfree(rname);
+  sfree(rinfo);
 }
 
 static void reduce_ilist(atom_id invindex[],bool bKeep[],
@@ -244,7 +246,7 @@ static void reduce_topology_x(int gnx,atom_id index[],
   reduce_rvec(gnx,index,x);
   reduce_rvec(gnx,index,v);
   reduce_atom(gnx,index,top.atoms.atom,top.atoms.atomname,
-	      &(top.atoms.nres),top.atoms.resname);
+	      &(top.atoms.nres),top.atoms.resinfo);
 
   for(i=0; (i<F_NRE); i++) {
     reduce_ilist(invindex,bKeep,&(top.idef.il[i]),

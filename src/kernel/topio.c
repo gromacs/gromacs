@@ -153,7 +153,7 @@ static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, int comb, bool b
 double check_mol(gmx_mtop_t *mtop)
 {
   char    buf[256];
-  int     i,mb,nmol,rn,pt;
+  int     i,mb,nmol,ri,pt;
   double  q;
   real    m;
   t_atoms *atoms;
@@ -172,16 +172,22 @@ double check_mol(gmx_mtop_t *mtop)
        * else, if it is a shell, a vsite or a bondshell it can have mass zero
        */
       if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus))) {
-	rn=atoms->atom[i].resnr;
+	ri = atoms->atom[i].resind;
 	sprintf(buf,"atom %s (Res %s-%d) has mass %g\n",
-		*(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
+		*(atoms->atomname[i]),
+		*(atoms->resinfo[ri].name),
+		atoms->resinfo[ri].nr,
+		m);
 	warning_error(buf);
       } else 
 	if ((m!=0) && (pt == eptVSite)) {
-	  rn=atoms->atom[i].resnr;
+	  ri = atoms->atom[i].resind;
 	  sprintf(buf,"virtual site %s (Res %s-%d) has non-zero mass %g\n"
 		  "     Check your topology.\n",
-		  *(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
+		  *(atoms->atomname[i]),
+		  *(atoms->resinfo[ri].name),
+		  atoms->resinfo[ri].nr,
+		  m);
 	  warning_error(buf);
 	  /* The following statements make LINCS break! */
 	  /* atoms->atom[i].m=0; */

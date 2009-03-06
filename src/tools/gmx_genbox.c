@@ -103,7 +103,7 @@ static void mk_vdw(t_atoms *a,real rvdw[],gmx_atomprop_t aps,
   fprintf(stderr,"Initialising van der waals distances...\n");
   for(i=0; (i < a->nr); i++)
     if (!gmx_atomprop_query(aps,epropVDW,
-			    *(a->resname[a->atom[i].resnr]), 
+			    *(a->resinfo[a->atom[i].resind].name), 
 			    *(a->atomname[i]),&(rvdw[i])))
       rvdw[i] =	r_distance;
 }
@@ -135,21 +135,21 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
   nrmoltypes=0;
   atnr=0;
   for (i=0; i<atoms->nr; i++) {
-    if ( (i==0) || (atoms->atom[i].resnr != atoms->atom[i-1].resnr) ) {
+    if ( (i==0) || (atoms->atom[i].resind != atoms->atom[i-1].resind) ) {
       /* see if this was a molecule type we haven't had yet: */
       moltp=NOTSET;
       for (j=0; (j<nrmoltypes) && (moltp==NOTSET); j++)
-	if (strcmp(*(atoms->resname[atoms->atom[i].resnr]),
+	if (strcmp(*(atoms->resinfo[atoms->atom[i].resind].name),
 		   moltypes[j].name)==0)
 	  moltp=j;
       if (moltp==NOTSET) {
 	moltp=nrmoltypes;
 	nrmoltypes++;
 	srenew(moltypes,nrmoltypes);
-	moltypes[moltp].name=*(atoms->resname[atoms->atom[i].resnr]);
+	moltypes[moltp].name=*(atoms->resinfo[atoms->atom[i].resind].name);
 	atnr = 0;
 	while ((i+atnr<atoms->nr) && 
-	       (atoms->atom[i].resnr == atoms->atom[i+atnr].resnr))
+	       (atoms->atom[i].resind == atoms->atom[i+atnr].resind))
 	  atnr++;
 	moltypes[moltp].natoms=atnr;
 	moltypes[moltp].nmol=0;
@@ -184,7 +184,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
     snew(newatoms,1);
     init_t_atoms(newatoms,atoms->nr,FALSE);
     newatoms->nres=atoms->nres;
-    snew(newatoms->resname,atoms->nres);
+    snew(newatoms->resinfo,atoms->nres);
     snew(newx,atoms->nr);
     if (v) snew(newv,atoms->nr);
     snew(newr,atoms->nr);
@@ -192,10 +192,11 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
     for (i=0; i<atoms->nr; i++) {
       resnr = moltypes[tps[i]].res0 +
 	(moltypes[tps[i]].i-moltypes[tps[i]].i0) / moltypes[tps[i]].natoms;
-      newatoms->resname[resnr] = atoms->resname[atoms->atom[i].resnr];
+      newatoms->atom[moltypes[tps[i]].i].resind = resnr;
+      newatoms->resinfo[resnr] = atoms->resinfo[atoms->atom[i].resind];
+      newatoms->resinfo[resnr].nr = resnr + 1;
       newatoms->atomname[moltypes[tps[i]].i] = atoms->atomname[i];
       newatoms->atom[moltypes[tps[i]].i] = atoms->atom[i];
-      newatoms->atom[moltypes[tps[i]].i].resnr = resnr;
       copy_rvec(x[i],newx[moltypes[tps[i]].i]);
       if (v) copy_rvec(v[i],newv[moltypes[tps[i]].i]);
       newr[moltypes[tps[i]].i] = r[i];
@@ -204,7 +205,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
     
     /* put them back into the original arrays and throw away temporary arrays */
     sfree(atoms->atomname);
-    sfree(atoms->resname);
+    sfree(atoms->resinfo);
     sfree(atoms->atom);
     sfree(atoms);
     *atoms_solvt = newatoms;
@@ -234,7 +235,7 @@ void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
       rvec_inc(xcg,x[n]);
     }
     if ( (n+1 == atoms->nr) || 
-	 (atoms->atom[n+1].resnr != atoms->atom[n].resnr) ) {
+	 (atoms->atom[n+1].resind != atoms->atom[n].resind) ) {
       /* if nat==0 we have only hydrogens in the solvent, 
 	 we take last coordinate as cg */
       if (nat==0) {
@@ -286,7 +287,7 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   /* allocate memory for atom coordinates of insert molecules */
   snew(x_insrt,atoms_insrt.nr);
   snew(r_insrt,atoms_insrt.nr);
-  snew(atoms_insrt.resname,atoms_insrt.nr);
+  snew(atoms_insrt.resinfo,atoms_insrt.nr);
   snew(atoms_insrt.atomname,atoms_insrt.nr);
   snew(atoms_insrt.atom,atoms_insrt.nr);
   atoms_insrt.pdbinfo = NULL;
@@ -299,12 +300,12 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
 		&ePBC_insrt,box_insrt);
   fprintf(stderr,"%s\nContaining %d atoms in %d residue\n",
 	  title_insrt,atoms_insrt.nr,atoms_insrt.nres);
-  srenew(atoms_insrt.resname,atoms_insrt.nres);  
+  srenew(atoms_insrt.resinfo,atoms_insrt.nres);  
     
   /* initialise van der waals arrays of insert molecules */
   mk_vdw(&atoms_insrt,r_insrt,aps,r_distance);
 
-  srenew(atoms->resname,(atoms->nres+nmol_insrt));
+  srenew(atoms->resinfo,(atoms->nres+nmol_insrt));
   srenew(atoms->atomname,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(atoms->atom,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(*x,(atoms->nr+atoms_insrt.nr*nmol_insrt));
@@ -314,7 +315,7 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   while ((mol < nmol_insrt) && (try < ntry*nmol_insrt)) {
     fprintf(stderr,"\rTry %d",try++);
     for (i=0;(i<atoms_insrt.nr);i++) {
-      if (atoms_insrt.atom[i].resnr!=0) 
+      if (atoms_insrt.atom[i].resind!=0) 
 	gmx_fatal(FARGS,"more then one residue in insert molecules\n"
 		    "program terminated\n");
       copy_rvec(x_insrt[i],x_n[i]);
@@ -339,7 +340,7 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
       fprintf(stderr," success (now %d atoms)!",atoms->nr);
     }
   }
-  srenew(atoms->resname,  atoms->nres);
+  srenew(atoms->resinfo,  atoms->nres);
   srenew(atoms->atomname, atoms->nr);
   srenew(atoms->atom,     atoms->nr);
   srenew(*x,              atoms->nr);
@@ -348,7 +349,7 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   fprintf(stderr,"\n");
   /* print number of molecules added */
   fprintf(stderr,"Added %d molecules (out of %d requested) of %s\n",
-	  mol,nmol_insrt,*atoms_insrt.resname[0]); 
+	  mol,nmol_insrt,*atoms_insrt.resinfo[0].name); 
     
   return title_insrt;
 }
@@ -377,7 +378,7 @@ static void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
   snew(x_solvt,atoms_solvt->nr);
   if (v) snew(v_solvt,atoms_solvt->nr);
   snew(r_solvt,atoms_solvt->nr);
-  snew(atoms_solvt->resname,atoms_solvt->nr);
+  snew(atoms_solvt->resinfo,atoms_solvt->nr);
   snew(atoms_solvt->atomname,atoms_solvt->nr);
   snew(atoms_solvt->atom,atoms_solvt->nr);
   atoms_solvt->pdbinfo = NULL;
@@ -408,7 +409,7 @@ static void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
 	  n_box[XX],n_box[YY],n_box[ZZ]);
   
   /* realloc atoms_solvt for the new solvent configuration */
-  srenew(atoms_solvt->resname,atoms_solvt->nres*nmol);
+  srenew(atoms_solvt->resinfo,atoms_solvt->nres*nmol);
   srenew(atoms_solvt->atomname,atoms_solvt->nr*nmol);
   srenew(atoms_solvt->atom,atoms_solvt->nr*nmol);
   srenew(x_solvt,atoms_solvt->nr*nmol);
@@ -484,15 +485,15 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
   
   for(i=0; (i<atoms->nres); i++) {
     /* calculate number of SOLvent molecules */
-    if ( (strcmp(*atoms->resname[i],"SOL")==0) ||
-	 (strcmp(*atoms->resname[i],"WAT")==0) ||
-	 (strcmp(*atoms->resname[i],"HOH")==0) )
+    if ( (strcmp(*atoms->resinfo[i].name,"SOL")==0) ||
+	 (strcmp(*atoms->resinfo[i].name,"WAT")==0) ||
+	 (strcmp(*atoms->resinfo[i].name,"HOH")==0) )
       nsol++;
   }
   mtot = 0;
   for(i=0; (i<atoms->nr); i++) {
     gmx_atomprop_query(aps,epropMass,
-		       *atoms->resname[atoms->atom[i].resnr],
+		       *atoms->resinfo[atoms->atom[i].resind].name,
 		       *atoms->atomname[i],&mm);
     mtot += mm;
   }
@@ -734,7 +735,7 @@ int gmx_genbox(int argc,char *argv[])
   if (!bProt) {
     atoms.nr=0;
     atoms.nres=0;
-    atoms.resname=NULL;
+    atoms.resinfo=NULL;
     atoms.atomname=NULL;
     atoms.atom=NULL;
     atoms.pdbinfo=NULL;

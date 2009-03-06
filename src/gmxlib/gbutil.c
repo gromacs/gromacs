@@ -193,9 +193,10 @@ void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box)
     int offsres = i*atoms->nres;
     for (j=0;(j<atoms->nr);j++) {
       atoms->atomname[offs+j]  = atoms->atomname[j];
-      atoms->atom[offs+j].resnr = atoms->atom[j].resnr+offsres;
-      atoms->resname[atoms->atom[offs+j].resnr]=
-	atoms->resname[atoms->atom[j].resnr];
+      atoms->atom[offs+j].resind = atoms->atom[j].resind + offsres;
+      atoms->resinfo[atoms->atom[offs+j].resind] =
+	atoms->resinfo[atoms->atom[j].resind];
+      atoms->resinfo[atoms->atom[offs+j].resind].nr += offsres;
     }
   }
   atoms->nr*=nmol;

@@ -257,12 +257,15 @@ int gmx_genconf(int argc, char *argv[])
 	  for(m=0; (m<DIM); m++) {
 	    x[ndx+l][m] += shift[m];
 	  }
-	  atoms->atom[ndx+l].resnr=(bRenum ? nrdx:0) + atoms->atom[l].resnr;
+	  atoms->atom[ndx+l].resind = nrdx + atoms->atom[l].resind;
 	  atoms->atomname[ndx+l]=atoms->atomname[l];
 	}
 
-	for(l=0; (l<nres); l++)
-	  atoms->resname[nrdx+l]=atoms->resname[l];
+	for(l=0; (l<nres); l++) {
+	  atoms->resinfo[nrdx+l] = atoms->resinfo[l];
+	  if (bRenum)
+	    atoms->resinfo[nrdx+l].nr += nrdx;
+	}
 	if (bTRX)
 	  if (!read_next_x(status,&t,natoms,xx,boxx) && 
 	      ((i+1)*(j+1)*(k+1) < vol))

@@ -117,6 +117,7 @@ typedef struct {
   t_hackblock **sel_ntdb, **sel_ctdb;
   int         nah;
   t_symtab    tab;
+  /* residue indices (not numbers!) of the N and C termini */
   int         *rN, *rC;
   t_atomtype  atype;
   /* protonated topology: */

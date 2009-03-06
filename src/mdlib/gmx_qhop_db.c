@@ -15,23 +15,23 @@
 typedef struct {
   int id,charge,natom;
   int ndonor,*donor,nacceptor,*acceptor;
-} t_resinfo;
+} qhop_resinfo_t;
   
 typedef struct {
-  int        nrtp;
-  t_restp    *rtp;
-  t_resinfo  *resinfo;
-  int        bts[4];
-  int        nrexcl;
-  bool       bAllDih,bHH14,bRemoveDih;
-  t_atomtype atype;
-  t_symtab   tab;
-  int        ngqh;
-  gmx_qhop   *gqh;
+  int               nrtp;
+  t_restp           *rtp;
+  qhop_resinfo_t    *resinfo;
+  int               bts[4];
+  int               nrexcl;
+  bool              bAllDih,bHH14,bRemoveDih;
+  t_atomtype        atype;
+  t_symtab          tab;
+  int               ngqh;
+  gmx_qhop          *gqh;
   t_qhop_parameters *qhop_param;
 } gmx_qhop_db_t;
 
-static void fill_resinfo(t_restp *rtp,t_resinfo *ri)
+static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
 {
   int    j,k,m;
   bool   bDonor;

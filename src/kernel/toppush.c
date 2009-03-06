@@ -905,21 +905,45 @@ push_gb_params (t_atomtype at, char *line)
 static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
 			  int atomicnumber,
 			  int type,char *ctype,int ptype,
-			  int resnumber,int cgnumber,
+			  char *resnumberic,int cgnumber,
 			  char *resname,char *name,real m0,real q0,
 			  int typeB,char *ctypeB,real mB,real qB)
 {
-  int j,resnr_diff=-1;
+  int j,resind,resnr;
+  unsigned char ric;
   int nr = at->nr;
 
   if (((nr==0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))
     gmx_fatal(FARGS,"Atoms in the .top are not numbered consecutively from 1 (rather, atomnr = %d, while at->nr = %d)",atomnr,at->nr);
-  if (nr)
-    resnr_diff = resnumber - (at->atom[at->nr-1].resnr+1);
-  if (((nr==0) && (resnumber != 1)) || 
-      (nr && (resnr_diff != 0) && (resnr_diff != 1))) 
-    gmx_fatal(FARGS,"Residue numbers in the .top are not numbered consecutively from 1 (rather, resnumber = %d and resnr_diff = %d)",resnumber,resnr_diff);
-  
+
+  j = strlen(resnumberic) - 1;
+  if (isdigit(resnumberic[j])) {
+    ric = ' ';
+  } else {
+    ric = resnumberic[j];
+    if (j == 0 || !isdigit(resnumberic[j-1])) {
+      gmx_fatal(FARGS,"Invalid residue number '%s' for atom %d",
+		resnumberic,atomnr);
+    }
+  }
+  resnr = atoi(resnumberic);
+
+  if (nr == 0) {
+    resind = 0;
+  } else {
+    resind = at->atom[at->nr-1].resind;
+    if (strcmp(resname,*at->resinfo[resind].name) != 0 ||
+	resnr != at->resinfo[resind].nr ||
+	ric   != at->resinfo[resind].ic) {
+      resind++;
+      at->nres = resind + 1;
+      srenew(at->resinfo,at->nres);
+      at->resinfo[resind].name = put_symtab(symtab,resname);
+      at->resinfo[resind].nr   = resnr;
+      at->resinfo[resind].ic   = ric;
+    }
+  }
+
   /* New atom instance
    * get new space for arrays 
    */
@@ -928,11 +952,6 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   srenew(at->atomtype,nr+1);
   srenew(at->atomtypeB,nr+1);
 
-  if (resnumber > at->nres) {
-    at->nres=resnumber;
-    srenew(at->resname,resnumber);
-    at->resname[resnumber-1] = put_symtab(symtab,resname);
-  }
   /* fill the list */
   at->atom[nr].type  = type;
   at->atom[nr].ptype = ptype;
@@ -942,7 +961,7 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   at->atom[nr].qB    = qB;
   at->atom[nr].mB    = mB;
   
-  at->atom[nr].resnr = resnumber-1;
+  at->atom[nr].resind = resind;
   at->atom[nr].atomnumber = atomicnumber;
   at->atomname[nr] = put_symtab(symtab,name);
   at->atomtype[nr] = put_symtab(symtab,ctype);
@@ -968,9 +987,9 @@ void push_atom(t_symtab *symtab,t_block *cgs,
 	       t_atoms *at,t_atomtype atype,char *line,int *lastcg)
 {
   int 		nr,ptype;
-  int 		resnumber,cgnumber,atomnr,type,typeB,nscan;
+  int 		cgnumber,atomnr,type,typeB,nscan;
   char 		id[STRLEN],ctype[STRLEN],ctypeB[STRLEN],
-       		resname[STRLEN],name[STRLEN],check[STRLEN];
+                resnumberic[STRLEN],resname[STRLEN],name[STRLEN],check[STRLEN];
   double        m,q,mb,qb;
   real          m0,q0,mB,qB;
 
@@ -978,8 +997,8 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   nr = at->nr;
 
   /* Fixed parameters */
-  if (sscanf(line,"%s%s%d%s%s%d",
-	     id,ctype,&resnumber,resname,name,&cgnumber) != 6) {
+  if (sscanf(line,"%s%s%s%s%s%d",
+	     id,ctype,resnumberic,resname,name,&cgnumber) != 6) {
     too_few();
     return;
   }
@@ -1025,7 +1044,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   push_cg(cgs,lastcg,cgnumber,nr);
 
   push_atom_now(symtab,at,atomnr,get_atomtype_atomnumber(type,atype),
-		type,ctype,ptype,resnumber,cgnumber,
+		type,ctype,ptype,resnumberic,cgnumber,
 		resname,name,m0,q0,typeB,
 		typeB==type ? ctype : ctypeB,mB,qB);
 }

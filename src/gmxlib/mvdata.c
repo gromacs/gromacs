@@ -92,6 +92,26 @@ static void bc_strings(const t_commrec *cr,t_symtab *symtab,int nr,char ****nm)
   sfree(handle);
 }
 
+static void bc_strings_resinfo(const t_commrec *cr,t_symtab *symtab,
+			       int nr,t_resinfo *resinfo)
+{
+  int  i;
+  int  *handle;
+
+  snew(handle,nr);
+  if (MASTER(cr)) {
+    for(i=0; (i<nr); i++)
+      handle[i] = lookup_symtab(symtab,resinfo[i].name);
+  }
+  nblock_bc(cr,nr,handle);
+
+  if (!MASTER(cr)) {
+    for (i=0; (i<nr); i++) 
+      resinfo[i].name = get_symtab_handle(symtab,handle[i]);
+  }
+  sfree(handle);
+}
+
 static void bc_symtab(const t_commrec *cr,t_symtab *symtab)
 {
   int i,nr,len;
@@ -151,7 +171,8 @@ static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
   nblock_bc(cr,atoms->nr,atoms->atom);
   bc_strings(cr,symtab,atoms->nr,&atoms->atomname);
   block_bc(cr,atoms->nres);
-  bc_strings(cr,symtab,atoms->nres,&atoms->resname);
+  nblock_bc(cr,atoms->nres,atoms->resinfo);
+  bc_strings_resinfo(cr,symtab,atoms->nres,atoms->resinfo);
   /* QMMM requires atomtypes to be known on all nodes as well */
   bc_strings(cr,symtab,atoms->nr,&atoms->atomtype);
 }

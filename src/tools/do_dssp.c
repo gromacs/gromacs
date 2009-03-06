@@ -142,7 +142,7 @@ bool *bPhobics(t_atoms *atoms)
   snew(bb,atoms->nres);
   
   for(i=0; (i<atoms->nres); i++) {
-    if (search_str(nb,cb,*atoms->resname[i]) != -1)
+    if (search_str(nb,cb,*atoms->resinfo[i].name) != -1)
       bb[i]=TRUE;
   }
   return bb;
@@ -179,12 +179,12 @@ static void norm_acc(t_atoms *atoms, int nres,
   }
   
   for(i=0; (i<nres); i++) {
-    n = search_str(n_surf,surf_res,*atoms->resname[i]);
+    n = search_str(n_surf,surf_res,*atoms->resinfo[i].name);
     if ( n != -1)
       norm_av_area[i] = av_area[i] / surf[n];
     else 
       fprintf(stderr,"Residue %s not found in surface database (%s)\n",
-	      *atoms->resname[i],surffn);
+	      *atoms->resinfo[i].name,surffn);
   }
 }
 
@@ -387,8 +387,8 @@ int main(int argc,char *argv[])
   nres=0;
   nr0=-1;
   for(i=0; (i<gnx); i++) {
-    if (atoms->atom[index[i]].resnr != nr0) {
-      nr0=atoms->atom[index[i]].resnr;
+    if (atoms->atom[index[i]].resind != nr0) {
+      nr0=atoms->atom[index[i]].resind;
       nres++;
     }
   }

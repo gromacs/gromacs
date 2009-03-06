@@ -255,7 +255,7 @@ int gmx_helix(int argc,char *argv[])
 	    top->atoms.nr,natoms);
 	    
   bb=mkbbind(ftp2fn(efNDX,NFILE,fnm),&nres,&nbb,r0,&nall,&allindex,
-	     top->atoms.atomname,top->atoms.atom,top->atoms.resname);
+	     top->atoms.atomname,top->atoms.atom,top->atoms.resinfo);
   snew(bbindex,natoms);
   snew(caindex,nres);
   

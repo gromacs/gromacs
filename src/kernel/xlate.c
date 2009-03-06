@@ -122,7 +122,7 @@ void rename_atoms(t_atoms *atoms,t_symtab *symtab,t_aa_names *aan)
   xlatom = get_xlatoms(&nxlate);
 
   for(a=0; (a<atoms->nr); a++) {
-    res  = *(atoms->resname[atoms->atom[a].resnr]);
+    res = *(atoms->resinfo[atoms->atom[a].resind].name);
     strcpy(atombuf,*(atoms->atomname[a]));
     if (isdigit(atombuf[0])) {
       c = atombuf[0];

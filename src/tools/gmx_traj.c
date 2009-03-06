@@ -387,8 +387,8 @@ static void write_pdb_bfac(char *fname,char *xname,
     
     printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
 	   title,sqrt(max)/nfr_v,maxi+1,*(atoms->atomname[maxi]),
-	   *(atoms->resname[atoms->atom[maxi].resnr]),
-	   atoms->atom[maxi].resnr+1);
+	   *(atoms->resinfo[atoms->atom[maxi].resind].name),
+	   atoms->resinfo[atoms->atom[maxi].resind].nr);
     
     if (atoms->pdbinfo == NULL)
       snew(atoms->pdbinfo,atoms->nr);

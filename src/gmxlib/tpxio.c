@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 62;
+static const int tpx_version = 63;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -73,7 +73,7 @@ static const int tpx_version = 62;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 18;
+static const int tpx_generation = 19;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -1200,7 +1200,7 @@ static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version,
   do_ushort(atom->type);
   do_ushort(atom->typeB);
   do_int (atom->ptype);
-  do_int (atom->resnr);
+  do_int (atom->resind);
   if (file_version >= 52)
     do_int(atom->atomnumber);
   else if (bRead)
@@ -1273,6 +1273,23 @@ static void do_strstr(int nstr,char ***nm,bool bRead,t_symtab *symtab)
     do_symstr(&(nm[j]),bRead,symtab);
 }
 
+static void do_resinfo(int n,t_resinfo *ri,bool bRead,t_symtab *symtab,
+		       int file_version)
+{
+  int  j;
+  
+  for (j=0; (j<n); j++) {
+    do_symstr(&(ri[j].name),bRead,symtab);
+    if (file_version >= 63) {
+      do_int  (ri[j].nr);
+      do_uchar(ri[j].ic);
+    } else {
+      ri[j].nr = j + 1;
+      ri[j].ic = ' ';
+    }
+  }
+}
+
 static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab,
 		     int file_version,
 		     gmx_groups_t *groups)
@@ -1293,7 +1310,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab,
     snew(atoms->atomname,atoms->nr);
     snew(atoms->atomtype,atoms->nr);
     snew(atoms->atomtypeB,atoms->nr);
-    snew(atoms->resname,atoms->nres);
+    snew(atoms->resinfo,atoms->nres);
     if (file_version < 57) {
       snew(groups->grpname,groups->ngrpname);
     }
@@ -1312,7 +1329,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab,
     do_strstr(atoms->nr,atoms->atomtype,bRead,symtab);
     do_strstr(atoms->nr,atoms->atomtypeB,bRead,symtab);
   }
-  do_strstr(atoms->nres,atoms->resname,bRead,symtab);
+  do_resinfo(atoms->nres,atoms->resinfo,bRead,symtab,file_version);
 
   if (file_version < 57) {
     do_strstr(groups->ngrpname,groups->grpname,bRead,symtab);
@@ -1426,8 +1443,8 @@ static void do_symtab(t_symtab *symtab,bool bRead)
 void 
 tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
 {
-  int m,a,a0,a1;
-  char c,chain;
+  int m,a,a0,a1,r;
+  unsigned char c,chain;
 #define CHAIN_MIN_ATOMS 15
 
   chain='A';
@@ -1439,12 +1456,15 @@ tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
       chain++;
     } else
       c=' ';
-    for(a=a0; a<a1; a++)
-      atoms->atom[a].chain=c;  
+    for(a=a0; a<a1; a++) {
+      atoms->resinfo[atoms->atom[a].resind].chain = c;
+    }
   }
-  if (chain == 'B')
-    for(a=0; a<atoms->nr; a++)
-      atoms->atom[a].chain=' ';
+  if (chain == 'B') {
+    for(r=0; r<atoms->nres; r++) {
+      atoms->resinfo[r].chain = ' ';
+    }
+  }
 }
   
 static void do_moltype(gmx_moltype_t *molt,bool bRead,t_symtab *symtab,
@@ -2102,13 +2122,13 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
       aps = gmx_atomprop_init();
       for(i=0; (i<natoms); i++)
 	if (!gmx_atomprop_query(aps,epropMass,
-				*top->atoms.resname[top->atoms.atom[i].resnr],
+				*top->atoms.resinfo[top->atoms.atom[i].resind].name,
 				*top->atoms.atomname[i],
 				&(top->atoms.atom[i].m))) {
 	  if (debug) 
 	    fprintf(debug,"Can not find mass for atom %s %d %s, setting to 1\n",
-		    *top->atoms.resname[top->atoms.atom[i].resnr],
-		    top->atoms.atom[i].resnr+1,
+		    *top->atoms.resinfo[top->atoms.atom[i].resind].name,
+		    top->atoms.resinfo[top->atoms.atom[i].resind].nr,
 		    *top->atoms.atomname[i]);
 	}
       gmx_atomprop_destroy(aps);

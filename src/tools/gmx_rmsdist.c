@@ -268,12 +268,12 @@ static int analyze_noe_equivalent(char *eq_fn,
 	/* check explicit list of equivalent atoms */
 	do {
 	  j=i+1;
-	  rnri=atoms->atom[index[i]].resnr;
-	  rnrj=atoms->atom[index[j]].resnr;
+	  rnri=atoms->atom[index[i]].resind;
+	  rnrj=atoms->atom[index[j]].resind;
 	  bEquiv = 
 	    is_equiv(neq, equiv, &nnm[i], 
-		     rnri, *atoms->resname[rnri], *atoms->atomname[index[i]],
-		     rnrj, *atoms->resname[rnrj], *atoms->atomname[index[j]]);
+		     rnri,*atoms->resinfo[rnri].name,*atoms->atomname[index[i]],
+		     rnrj,*atoms->resinfo[rnrj].name,*atoms->atomname[index[j]]);
 	  if(nnm[i] && bEquiv)
 	    nnm[j]=strdup(nnm[i]);
 	  if (bEquiv) {
@@ -322,9 +322,9 @@ static int analyze_noe_equivalent(char *eq_fn,
   if (debug)
     /* dump new names */
     for(i=0; i<isize; i++) {
-      rnri=atoms->atom[index[i]].resnr;
+      rnri=atoms->atom[index[i]].resind;
       fprintf(debug,"%s %s %d -> %s\n",*atoms->atomname[index[i]],
-	      *atoms->resname[rnri],rnri,nnm[i]?nnm[i]:"");
+	      *atoms->resinfo[rnri].name,rnri,nnm[i]?nnm[i]:"");
     }
     
   for(i=0; i<isize; i++) {
@@ -339,8 +339,8 @@ static int analyze_noe_equivalent(char *eq_fn,
 	if ( noe_index[i]==noe_index[i+1] )
 	  noe_gr[gi].aname[strlen(noe_gr[gi].aname)-1]='*';
       }
-      noe_gr[gi].rnr=atoms->atom[index[i]].resnr;
-      noe_gr[gi].rname=strdup(*atoms->resname[noe_gr[gi].rnr]);
+      noe_gr[gi].rnr=atoms->atom[index[i]].resind;
+      noe_gr[gi].rname=strdup(*atoms->resinfo[noe_gr[gi].rnr].name);
       /* dump group definitions */
       if (debug) fprintf(debug,"%d %d %d %d %s %s %d\n",i,gi,
 			 noe_gr[gi].ianr,noe_gr[gi].anr,noe_gr[gi].aname,

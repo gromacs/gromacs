@@ -139,13 +139,13 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   
   at1=*pdba->atomname[a1];
   at2=*pdba->atomname[a2];
-  res1=*pdba->resname[pdba->atom[a1].resnr];
-  res2=*pdba->resname[pdba->atom[a2].resnr];
+  res1=*pdba->resinfo[pdba->atom[a1].resind].name;
+  res2=*pdba->resinfo[pdba->atom[a2].resind].name;
   
   if (debug) 
     fprintf(stderr,"Checking %s-%d %s-%d and %s-%d %s-%d: %g ",
-	    res1, pdba->atom[a1].resnr+1, at1, a1+1,
-	    res2, pdba->atom[a2].resnr+1, at2, a2+1, d);
+	    res1, pdba->resinfo[pdba->atom[a1].resind].nr, at1, a1+1,
+	    res2, pdba->resinfo[pdba->atom[a2].resind].nr, at2, a2+1, d);
 		    
   for(i=0; (i<nsb); i++) {
     *index_sb = i;
@@ -174,13 +174,15 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba,int resnr,char *newres)
+static void rename_1res(t_atoms *pdba,int resind,char *newres)
 {
   if(debug) fprintf(stderr,"Renaming %s-%d to %s\n", 
-		    *pdba->resname[resnr], resnr+1, newres);
+		    *pdba->resinfo[resind].name,
+		    pdba->resinfo[resind].nr,
+		    newres);
   /* this used to free *resname, which fucks up the symtab! */
-  snew(pdba->resname[resnr],1);
-  *pdba->resname[resnr]=strdup(newres);
+  snew(pdba->resinfo[resind].name,1);
+  *pdba->resinfo[resind].name = strdup(newres);
 }
 
 int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
@@ -206,9 +208,9 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     
     nspec = 0;
     for(i=0;(i<pdba->nr);i++) {
-      if (is_special(nsb,sb,*pdba->resname[pdba->atom[i].resnr],
+      if (is_special(nsb,sb,*pdba->resinfo[pdba->atom[i].resind].name,
 		     *pdba->atomname[i])) {
-	specp[nspec] = pdba->atom[i].resnr;
+	specp[nspec] = pdba->atom[i].resind;
 	sgp[nspec] = i;
 	nspec++;
       }
@@ -233,8 +235,8 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	fprintf(stderr,"%8s%8s","","");
 	e=min(b+MAXCOL, nspec-1);
 	for(i=b; (i<e); i++) {
-	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
-		  specp[i]+1);
+	  sprintf(buf,"%s%d",*pdba->resinfo[pdba->atom[sgp[i]].resind].name,
+		  pdba->resinfo[specp[i]].nr);
 	  fprintf(stderr,"%8s",buf);
 	}
 	fprintf(stderr,"\n");
@@ -249,8 +251,8 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	/* print matrix */
 	e=min(b+MAXCOL, nspec);
 	for(i=b+1; (i<nspec); i++) {
-	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
-		  specp[i]+1);
+	  sprintf(buf,"%s%d",*pdba->resinfo[pdba->atom[sgp[i]].resind].name,
+		  pdba->resinfo[specp[i]].nr);
 	  fprintf(stderr,"%8s",buf);
 	  sprintf(buf,"%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
 	  fprintf(stderr,"%8s",buf);
@@ -271,9 +273,11 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	if (is_bond(nsb,sb,pdba,ai,aj,d[i][j],&index_sb,&bSwap)) {
 	  fprintf(stderr,"%s %s-%d %s-%d and %s-%d %s-%d%s",
 		  bInteractive ? "Link" : "Linking",
-		  *pdba->resname[pdba->atom[ai].resnr], specp[i]+1, 
+		  *pdba->resinfo[pdba->atom[ai].resind].name,
+		  pdba->resinfo[specp[i]].nr, 
 		  *pdba->atomname[ai], ai+1,
-		  *pdba->resname[pdba->atom[aj].resnr], specp[j]+1, 
+		  *pdba->resinfo[pdba->atom[aj].resind].name,
+		  pdba->resinfo[specp[j]].nr, 
 		  *pdba->atomname[aj], aj+1,
 		  bInteractive ? " (y/n) ?" : "...\n");
 	  bDoit=bInteractive ? yesno() : TRUE;

@@ -276,9 +276,9 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
     parse_int(string,&up);
 
     for(i=0; i<atoms->nr; i++) {
-      resnr=atoms->atom[i].resnr;
+      resnr = atoms->resinfo[atoms->atom[i].resind].nr;
       for(j=n1; (j<=up); j++) {
-	if (resnr==j-1) {
+	if (resnr == j) {
 	  index[*nr]=i;
 	  (*nr)++;
 	}
@@ -297,7 +297,7 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
     sprintf(gname,"r");
     do {
       for(i=0; i<atoms->nr; i++) {
-	if (atoms->atom[i].resnr==j-1) {
+	if (atoms->resinfo[atoms->atom[i].resind].nr == j) {
 	index[*nr]=i;
 	(*nr)++;
 	}
@@ -325,9 +325,9 @@ static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
       return FALSE;
     }
   for(i=0; i<atoms->nr; i++) {
-    resnr=atoms->atom[i].resnr;
+    resnr = atoms->resinfo[atoms->atom[i].resind].nr;
     for (j=j0; j<j1; j++)
-      if (block->a[j]==resnr) {
+      if (block->a[j]+1 == resnr) {
 	index[*nr]=i;
 	(*nr)++;
 	break;
@@ -377,7 +377,7 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
   name[1]=0;
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
-    name[0]=atoms->atom[i].chain;
+    name[0] = atoms->resinfo[atoms->atom[i].resind].chain;
     j=0; 
     while (j<n_names && !comp_name(name,names[j])) 
       j++;
@@ -434,7 +434,7 @@ static int select_residuenames(t_atoms *atoms,int n_names,char **names,
 
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
-    name=*(atoms->resname[atoms->atom[i].resnr]);
+    name = *(atoms->resinfo[atoms->atom[i].resind].name);
     j=0; 
     while (j<n_names && !comp_name(name,names[j])) 
       j++;
@@ -521,7 +521,7 @@ static void split_group(t_atoms *atoms,int sel_nr,t_blocka *block,char ***gn,
 			bool bAtom)
 {
   char buf[STRLEN],*name;
-  int i,nr;
+  int i,resind;
   atom_id a,n0,n1;
 
   printf("Splitting group %d '%s' into %s\n",sel_nr,(*gn)[sel_nr],
@@ -532,9 +532,9 @@ static void split_group(t_atoms *atoms,int sel_nr,t_blocka *block,char ***gn,
   srenew(block->a,block->nra+n1-n0);
   for (i=n0; i<n1; i++) {
     a=block->a[i];
-    nr=atoms->atom[a].resnr;
-    name=*(atoms->resname[nr]);
-    if (bAtom || (i==n0) || (atoms->atom[block->a[i-1]].resnr!=nr)) { 
+    resind = atoms->atom[a].resind;
+    name = *(atoms->resinfo[resind].name);
+    if (bAtom || (i==n0) || (atoms->atom[block->a[i-1]].resind!=resind)) { 
       if (i>n0)
 	block->index[block->nr]=block->nra;
       block->nr++;
@@ -543,7 +543,7 @@ static void split_group(t_atoms *atoms,int sel_nr,t_blocka *block,char ***gn,
       if (bAtom)
 	sprintf(buf,"%s_%s_%u",(*gn)[sel_nr],*atoms->atomname[a],a+1);
       else
-	sprintf(buf,"%s_%s_%d",(*gn)[sel_nr],name,nr+1);
+	sprintf(buf,"%s_%s_%d",(*gn)[sel_nr],name,atoms->resinfo[resind].nr);
       (*gn)[block->nr-1]=strdup(buf);
     }
     block->a[block->nra]=a;
@@ -572,7 +572,8 @@ static int split_chain(t_atoms *atoms,rvec *x,
       srenew(end,nchain+1);
       start[nchain]=ca_start;
       while ((start[nchain]>0) && 
-	     (atoms->atom[start[nchain]-1].resnr==atoms->atom[ca_start].resnr))
+	     (atoms->atom[start[nchain]-1].resind ==
+	      atoms->atom[ca_start].resind))
 	start[nchain]--;
 
       i=ca_start;
@@ -587,7 +588,7 @@ static int split_chain(t_atoms *atoms,rvec *x,
       
       end[nchain]=ca_end;
       while ((end[nchain]+1<natoms) && 
-	    (atoms->atom[end[nchain]+1].resnr==atoms->atom[ca_end].resnr)) 
+	    (atoms->atom[end[nchain]+1].resind==atoms->atom[ca_end].resind)) 
 	end[nchain]++;
       ca_start=end[nchain]+1;
       nchain++;
@@ -767,30 +768,33 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
 
 static void list_residues(t_atoms *atoms)
 {
-  int i,j,start,end,prev_resnr,resnr;
+  int i,j,start,end,prev_resind,resind;
   bool bDiff;
 
   /* Print all the residues, assuming continuous resnr count */ 
-  start = atoms->atom[0].resnr;
-  prev_resnr = start;
+  start = atoms->atom[0].resind;
+  prev_resind = start;
   for(i=0; i<atoms->nr; i++) {
-    resnr = atoms->atom[i].resnr;
-    if ((resnr != prev_resnr) || (i==atoms->nr-1)) {
-      if ((bDiff=strcmp(*atoms->resname[resnr],*atoms->resname[start])) || 
+    resind = atoms->atom[i].resind;
+    if ((resind != prev_resind) || (i==atoms->nr-1)) {
+      if ((bDiff=strcmp(*atoms->resinfo[resind].name,
+			*atoms->resinfo[start].name)) || 
 	  (i==atoms->nr-1)) {
 	if (bDiff)
-	  end = prev_resnr;
+	  end = prev_resind;
 	else
-	  end = resnr;
+	  end = resind;
 	if (end < start+3)
 	  for(j=start; j<=end; j++)
-	    printf("%4d %-5s",j+1,*(atoms->resname[j]));
+	    printf("%4d %-5s",
+		   j+1,*(atoms->resinfo[j].name));
 	else
-	  printf(" %4d - %4d %-5s  ",start+1,end+1,*(atoms->resname[start]));
-	start = resnr;
+	  printf(" %4d - %4d %-5s  ",
+		 start+1,end+1,*(atoms->resinfo[start].name));
+	start = resind;
       }
     }
-    prev_resnr = resnr;
+    prev_resind = resind;
   }   
   printf("\n");
 }

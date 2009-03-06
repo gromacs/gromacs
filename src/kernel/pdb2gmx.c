@@ -178,10 +178,10 @@ static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
   int i;
   
   for(i=0; (i<pdba->nres); i++) {
-    resnm=*pdba->resname[i];
+    resnm = *pdba->resinfo[i].name;
     if ((bFullCompare && (strcasecmp(resnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
-      pdba->resname[i] = put_symtab(symtab,newnm);
+      pdba->resinfo[i].name = put_symtab(symtab,newnm);
     }
   }
 }
@@ -195,11 +195,11 @@ static void rename_pdbresint(t_atoms *pdba,char *oldnm,
   char *resnm;
   
   for(i=0; i<pdba->nres; i++) {
-    resnm=*pdba->resname[i];
+    resnm = *pdba->resinfo[i].name;
     if ((bFullCompare && (strcmp(resnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(resnm,oldnm) != NULL)) {
       ptr=gettp(i);
-      pdba->resname[i]=put_symtab(symtab,ptr);
+      pdba->resinfo[i].name = put_symtab(symtab,ptr);
     }
   }
 }
@@ -218,8 +218,8 @@ static void check_occupancy(t_atoms *atoms,char *filename,bool bVerbose)
       if (atoms->pdbinfo[i].occup != 1) {
 	if (bVerbose)
 	  fprintf(stderr,"Occupancy for atom %s%d-%s is %f rather than 1\n",
-		  *atoms->resname[atoms->atom[i].resnr],
-		  atoms->atom[i].resnr+1,
+		  *atoms->resinfo[atoms->atom[i].resind].name,
+		  atoms->resinfo[ atoms->atom[i].resind].nr,
 		  *atoms->atomname[i],
 		  atoms->pdbinfo[i].occup);
 	if (atoms->pdbinfo[i].occup == 0) 
@@ -403,15 +403,15 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   snew(pdbi, natoms);
   
   for(i=0; i<natoms; i++) {
-    atomnm=*pdba->atomname[i];
-    resnm=*pdba->resname[pdba->atom[i].resnr];
+    atomnm = *pdba->atomname[i];
+    resnm = *pdba->resinfo[pdba->atom[i].resind].name;
     if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL)
       gmx_fatal(FARGS,"Residue type %s not found",resnm);
     for(j=0; (j<rptr->natom); j++)
       if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0)
 	break;
     if (j==rptr->natom) {
-      if ( ( ( pdba->atom[i].resnr == 0) && (atomnm[0] == 'H') &&
+      if ( ( ( pdba->atom[i].resind == 0) && (atomnm[0] == 'H') &&
 	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
 	       (atomnm[1] == '3') ) ) )
 	j=1;
@@ -420,7 +420,9 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 	
 	sprintf(buf,"Atom %s in residue %s %d not found in rtp entry with %d atoms\n"
 		"             while sorting atoms%s",atomnm,
-		rptr->resname,pdba->atom[i].resnr+1,rptr->natom,
+		rptr->resname,
+		pdba->resinfo[pdba->atom[i].resind].nr,
+		rptr->natom,
 		is_hydrogen(atomnm) ? ". Maybe different protonation state.\n"
 		"             Remove this hydrogen or choose a different "
 		"protonation state.\n"
@@ -430,7 +432,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
       }
     }
     /* make shadow array to be sorted into indexgroup */
-    pdbi[i].resnr  = pdba->atom[i].resnr;
+    pdbi[i].resnr  = pdba->atom[i].resind;
     pdbi[i].j      = j;
     pdbi[i].index  = i;
     pdbi[i].anm1   = atomnm[1];
@@ -445,8 +447,8 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   snew(*xnew,natoms);
   pdbnew->nr=pdba->nr;
   pdbnew->nres=pdba->nres;
-  sfree(pdbnew->resname);
-  pdbnew->resname=pdba->resname;
+  sfree(pdbnew->resinfo);
+  pdbnew->resinfo=pdba->resinfo;
   for (i=0; i<natoms; i++) {
     pdbnew->atom[i]     = pdba->atom[pdbi[i].index];
     pdbnew->atomname[i] = pdba->atomname[pdbi[i].index];
@@ -473,6 +475,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
 {
   int     i,j,oldnatoms,ndel;
+  t_resinfo *ri;
   
   printf("Checking for duplicate atoms....\n");
   oldnatoms    = pdba->nr;
@@ -482,15 +485,15 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
     /* compare 'i' and 'i-1', throw away 'i' if they are identical 
        this is a 'while' because multiple alternate locations can be present */
     while ( (i < pdba->nr) &&
-	    (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
+	    (pdba->atom[i-1].resind == pdba->atom[i].resind) &&
 	    (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) ) {
       ndel++;
       if (bVerbose) {
-	printf("deleting duplicate atom %4s  %s%4d",
-	       *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
-	       pdba->atom[i].resnr+1);
-	if (pdba->atom[i].chain && (pdba->atom[i].chain!=' '))
-	  printf(" ch %c", pdba->atom[i].chain);
+	ri = &pdba->resinfo[pdba->atom[i].resind];
+	printf("deleting duplicate atom %4s  %s%4d%c",
+	       *pdba->atomname[i],*ri->name,ri->nr,ri->ic);
+	if (ri->chain && (ri->chain != ' '))
+	  printf(" ch %c", ri->chain);
 	if (pdba->pdbinfo) {
 	  if (pdba->pdbinfo[i].atomnr)
 	    printf("  pdb nr %4d",pdba->pdbinfo[i].atomnr);
@@ -526,9 +529,9 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
   *rc=-1;
 
   for(rnr=r0; rnr<r1; rnr++) {
-    if ((*rn == -1) && (is_protein(aan,*pdba->resname[rnr])))
+    if ((*rn == -1) && (is_protein(aan,*pdba->resinfo[rnr].name)))
 	*rn=rnr;
-    if ((*rc != rnr) && (is_protein(aan,*pdba->resname[rnr])))
+    if ((*rc != rnr) && (is_protein(aan,*pdba->resinfo[rnr].name)))
       *rc=rnr;
   }
 
@@ -648,6 +651,7 @@ int main(int argc, char *argv[])
   int        natom,nres;
   t_atoms    pdba_all,*pdba;
   t_atoms    *atoms;
+  t_resinfo  *ri;
   t_blocka   *block;
   int        chain,nch,maxch,nwaterchain;
   t_pdbchain *pdb_ch;
@@ -860,11 +864,12 @@ int main(int argc, char *argv[])
   pchain='?';
   pdb_ch=NULL;
   for (i=0; (i<natom); i++) {
-    bWat = strcasecmp(*pdba_all.resname[pdba_all.atom[i].resnr],watres) == 0;
-    if ((i==0) || (pdba_all.atom[i].chain!=pchain) || (bWat != bPrevWat)) {
+    ri = &pdba_all.resinfo[pdba_all.atom[i].resind];
+    bWat = strcasecmp(*ri->name,watres) == 0;
+    if ((i == 0) || (ri->chain != pchain) || (bWat != bPrevWat)) {
       if (bMerge && i>0 && !bWat) {
 	printf("Merge chain '%c' and '%c'? (n/y) ",
-	       pchain,pdba_all.atom[i].chain);
+	       pchain,ri->chain);
 	if(NULL==fgets(select,STRLEN-1,stdin))
         {
 	    gmx_fatal(FARGS,"Error reading from stdin");
@@ -872,10 +877,10 @@ int main(int argc, char *argv[])
       } 
       else
 	select[0] = 'n';
-      pchain=pdba_all.atom[i].chain;
+      pchain = ri->chain;
       if (select[0] == 'y') {
 	pdb_ch[nch-1].chainstart[pdb_ch[nch-1].nterpairs] = 
-	  pdba_all.atom[i].resnr;
+	  pdba_all.atom[i].resind;
 	pdb_ch[nch-1].nterpairs++;
 	srenew(pdb_ch[nch-1].chainstart,pdb_ch[nch-1].nterpairs+1);
       } else {
@@ -884,20 +889,20 @@ int main(int argc, char *argv[])
 	  pdb_ch[nch-1].natom=i-pdb_ch[nch-1].start;
 	if (bWat) {
 	  nwaterchain++;
-	  pdba_all.atom[i].chain='\0';
+	  ri->chain = '\0';
 	}
 	/* check if chain identifier was used before */
 	for (j=0; (j<nch); j++)
 	  if ((pdb_ch[j].chain != '\0') && (pdb_ch[j].chain != ' ') &&
-	      (pdb_ch[j].chain == pdba_all.atom[i].chain))
+	      (pdb_ch[j].chain == ri->chain))
 	    gmx_fatal(FARGS,"Chain identifier '%c' was used "
-			"in two non-sequential blocks (residue %d, atom %d)",
-			pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
+		      "in two non-sequential blocks (residue %d, atom %d)",
+		      ri->chain,ri->nr,i+1);
 	if (nch == maxch) {
 	  maxch += 16;
 	  srenew(pdb_ch,maxch);
 	}
-	pdb_ch[nch].chain=pdba_all.atom[i].chain;
+	pdb_ch[nch].chain = ri->chain;
 	pdb_ch[nch].start=i;
 	pdb_ch[nch].bAllWat=bWat;
 	if (bWat)
@@ -965,20 +970,22 @@ int main(int argc, char *argv[])
       *chains[i].pdba->atomname[j] = 
 	strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
       /* make all chain identifiers equal to that off the chain */
-      chains[i].pdba->atom[j].chain=pdb_ch[si].chain;
+      chains[i].pdba->resinfo[chains[i].pdba->atom[j].resind].chain =
+	pdb_ch[si].chain;
       chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[pdb_ch[si].start+j];
       copy_rvec(pdbx[pdb_ch[si].start+j],chains[i].x[j]);
     }
     /* Renumber the residues assuming that the numbers are continuous */
-    k    = chains[i].pdba->atom[0].resnr;
-    nres = chains[i].pdba->atom[chains[i].pdba->nr-1].resnr - k + 1;
+    k    = chains[i].pdba->atom[0].resind;
+    nres = chains[i].pdba->atom[chains[i].pdba->nr-1].resind - k + 1;
     chains[i].pdba->nres = nres;
     for(j=0; j < chains[i].pdba->nr; j++)
-      chains[i].pdba->atom[j].resnr -= k;
-    srenew(chains[i].pdba->resname,nres);
+      chains[i].pdba->atom[j].resind -= k;
+    srenew(chains[i].pdba->resinfo,nres);
     for(j=0; j<nres; j++) {
-      snew(chains[i].pdba->resname[j],1);
-      *chains[i].pdba->resname[j] = strdup(*pdba_all.resname[k+j]);
+      chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
+      snew(chains[i].pdba->resinfo[j].name,1);
+      *chains[i].pdba->resinfo[j].name = strdup(*pdba_all.resinfo[k+j].name);
     }
   }
 
@@ -989,7 +996,7 @@ int main(int argc, char *argv[])
   printf("There are %d chains and %d blocks of water and "
 	 "%d residues with %d atoms\n",
 	 nch-nwaterchain,nwaterchain,
-	 pdba_all.atom[natom-1].resnr+1,natom);
+	 pdba_all.resinfo[pdba_all.atom[natom-1].resind].nr,natom);
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
   for (i=0; (i<nch); i++)
@@ -1102,7 +1109,7 @@ int main(int argc, char *argv[])
 	 * (or a generic terminus if no-residue specific is available).
 	 */
 	/* First the N terminus */
-	strncpy(resname,*pdba->resname[cc->rN[i]],3);
+	strncpy(resname,*pdba->resinfo[cc->rN[i]].name,3);
 	tdblist=filter_ter(nNtdb,ntdb,resname,&ntdblist);
 	if(ntdblist==0)
 	  gmx_fatal(FARGS,"No suitable N-terminus found in database");
@@ -1115,7 +1122,7 @@ int main(int argc, char *argv[])
 	sfree(tdblist);
 	
 	/* And the C terminus */
-	strncpy(resname,*pdba->resname[cc->rC[i]],3);
+	strncpy(resname,*pdba->resinfo[cc->rC[i]].name,3);
 	tdblist=filter_ter(nCtdb,ctdb,resname,&ntdblist);
 	if(ntdblist==0)
 	  gmx_fatal(FARGS,"No suitable C-terminus found in database");
@@ -1140,8 +1147,8 @@ int main(int argc, char *argv[])
     if (debug)
       for(i=0; (i<natom); i++)
 	fprintf(debug,"Res %s%d atom %d %s\n",
-		*(pdba->resname[pdba->atom[i].resnr]),
-		pdba->atom[i].resnr+1,i+1,*pdba->atomname[i]);
+		*(pdba->resinfo[pdba->atom[i].resind].name),
+		pdba->resinfo[pdba->atom[i].resind].nr,i+1,*pdba->atomname[i]);
     
     strcpy(posre_fn,ftp2fn(efITP,NFILE,fnm));
     
@@ -1245,10 +1252,10 @@ int main(int argc, char *argv[])
   snew(atoms,1);
   init_t_atoms(atoms,natom,FALSE);
   for(i=0; i < atoms->nres; i++)
-    sfree(atoms->resname[i]);
-  sfree(atoms->resname);
+    sfree(atoms->resinfo[i].name);
+  sfree(atoms->resinfo);
   atoms->nres=nres;
-  snew(atoms->resname,nres);
+  snew(atoms->resinfo,nres);
   snew(x,natom);
   k=0;
   l=0;
@@ -1258,14 +1265,14 @@ int main(int argc, char *argv[])
 	     i+1,chains[i].pdba->nr,chains[i].pdba->nres);
     for (j=0; (j<chains[i].pdba->nr); j++) {
       atoms->atom[k]=chains[i].pdba->atom[j];
-      atoms->atom[k].resnr+=l; /* l is processed nr of residues */
+      atoms->atom[k].resind += l; /* l is processed nr of residues */
       atoms->atomname[k]=chains[i].pdba->atomname[j];
-      atoms->atom[k].chain=chains[i].chain;
+      atoms->resinfo[atoms->atom[k].resind].chain = chains[i].chain;
       copy_rvec(chains[i].x[j],x[k]);
       k++;
     }
     for (j=0; (j<chains[i].pdba->nres); j++) {
-      atoms->resname[l]=chains[i].pdba->resname[j];
+      atoms->resinfo[l] = chains[i].pdba->resinfo[j];
       l++;
     }
   }

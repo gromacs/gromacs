@@ -42,19 +42,19 @@
 #include "pgutil.h"
 #include "string.h"
 
-void atom_not_found(int fatal_errno,const char *file,int line,
-		    char *atomname,int resnr,
-		    char *bondtype,bool bDontQuit)
+static void atom_not_found(int fatal_errno,const char *file,int line,
+			   char *atomname,int resind,
+			   char *bondtype,bool bDontQuit)
 {
   if (strcmp(bondtype,"check") != 0) {
     if (bDontQuit) {
       fprintf(stderr,
-	      "WARNING: atom %s not found in residue %d while adding %s\n",
-	      atomname,resnr,bondtype);
+	      "WARNING: atom %s not found in residue seq.nr. %d while adding %s\n",
+	      atomname,resind+1,bondtype);
     } else {
       gmx_fatal(fatal_errno,file,line,
-		"Atom %s not found in residue %d while adding %s\n",
-		atomname,resnr,bondtype);
+		"Atom %s not found in residue seq.nr. %d while adding %s\n",
+		atomname,resind+1,bondtype);
     }
   }
 }
@@ -62,48 +62,48 @@ void atom_not_found(int fatal_errno,const char *file,int line,
 atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[],
 		    char *bondtype,bool bDontQuit)
 {
-  int     i,resnr=-1;
+  int     i,resind=-1;
   bool    bPrevious,bNext;
 
   bPrevious = (strchr(type,'-') != NULL);
   bNext     = (strchr(type,'+') != NULL);
 
   if (!bPrevious) {
-    resnr = at[start].resnr;
+    resind = at[start].resind;
     if (bNext) {
       /* The next residue */
       type++;
-      while ((start<natoms) && (at[start].resnr == resnr))
+      while ((start<natoms) && (at[start].resind == resind))
 	start++;
       if (start < natoms)
-	resnr = at[start].resnr;
+	resind = at[start].resind;
     }
     
-    for(i=start; (i<natoms) && (bNext || (at[i].resnr == resnr)); i++) {
+    for(i=start; (i<natoms) && (bNext || (at[i].resind == resind)); i++) {
       if (anm[i] && strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     }
-    if (!(bNext && at[start].resnr==at[natoms-1].resnr))
-      atom_not_found(FARGS,type,at[start].resnr+1,bondtype,bDontQuit);
+    if (!(bNext && at[start].resind==at[natoms-1].resind))
+      atom_not_found(FARGS,type,at[start].resind,bondtype,bDontQuit);
   }
   else {
     /* The previous residue */
     type++;
     if (start > 0)
-      resnr = at[start-1].resnr;
-    for(i=start-1; (i>=0) /*&& (at[i].resnr == resnr)*/; i--)
+      resind = at[start-1].resind;
+    for(i=start-1; (i>=0) /*&& (at[i].resind == resind)*/; i--)
       if (strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     if (start > 0)
-      atom_not_found(FARGS,type,at[start].resnr+1,bondtype,bDontQuit);
+      atom_not_found(FARGS,type,at[start].resind,bondtype,bDontQuit);
   }
   return NO_ATID;
 }
 
-void set_at(t_atom *at,real m,real q,int type,int resnr)
+void set_at(t_atom *at,real m,real q,int type,int resind)
 {
   at->m=m;
   at->q=q;
   at->type=type;
-  at->resnr=resnr;
+  at->resind=resind;
 }

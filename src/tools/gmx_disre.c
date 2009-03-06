@@ -461,7 +461,7 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
     atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
     for(mol=0; mol<mtop->molblock[mb].nmol; mol++) {
       for(a=0; a<atoms->nr; a++) {
-	resnr[a_offset+a] = n_res + atoms->atom[a].resnr;
+	resnr[a_offset+a] = n_res + atoms->atom[a].resind;
       }
       n_res    += atoms->nres;
       a_offset += atoms->nr;

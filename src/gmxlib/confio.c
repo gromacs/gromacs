@@ -84,7 +84,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
       shift = CHAR_SHIFT;
     else
       shift = 0;
-    newres  = 0;
+    newres  = -1;
     oldres  = -666; /* Unlikely number for the first residue! */
     bEnd    = FALSE;
     while (!bEnd && fgets2(line,STRLEN,fp)) {
@@ -112,16 +112,18 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
 	  atoms->atomname[natoms]=put_symtab(symtab,anm);
 	  if (resnr != oldres) {
 	    oldres = resnr;
+	    newres++;
 	    if (newres >= atoms->nr)
 	      gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 			  infile,atoms->nr);
-	    atoms->resname[newres] = put_symtab(symtab,resnm);
-	    newres++;
-	    if (newres > atoms->nres)
-	      atoms->nres = newres;
+	    atoms->atom[natoms].resind = newres;
+	    if (newres+1 > atoms->nres) {
+	      atoms->nres = newres+1;
+	    }
+	    t_atoms_set_resinfo(atoms,natoms,symtab,resnm,resnr,' ',' ');
+	  } else {
+	    atoms->atom[natoms].resind = newres;
 	  }
-	  resnr = newres;
-	  atoms->atom[natoms].resnr = resnr-1;
 	}
 	if (fr->x) {
 	  fr->x[natoms][0] = db1;
@@ -309,8 +311,8 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
 	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-		(atoms->atom[a].resnr+1) % 100000,
-		*atoms->resname[atoms->atom[a].resnr],
+		(atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
+		*atoms->resinfo[atoms->atom[a].resind].name,
 		*atoms->atomname[a],(i+1) % 10000000,
 		fr->x[a][XX],fr->x[a][YY],fr->x[a][ZZ]);
       }
@@ -330,8 +332,8 @@ void write_g96_conf(FILE *out,t_trxframe *fr,
       for(i=0; i<nout; i++) {
 	if (index) a = index[i]; else a = i;
 	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-		(atoms->atom[a].resnr+1) % 100000,
-		*atoms->resname[atoms->atom[a].resnr],
+		(atoms->resinfo[atoms->atom[a].resind].nr) % 100000,
+		*atoms->resinfo[atoms->atom[a].resind].name,
 		*atoms->atomname[a],(i+1) % 10000000,
 		fr->v[a][XX],fr->v[a][YY],fr->v[a][ZZ]);
       }
@@ -445,7 +447,7 @@ static void read_espresso_conf(char *infile,
   static t_symtab *symtab=NULL;
   FILE *fp;
   char word[STRLEN],buf[STRLEN];
-  int  natoms,level,npar,r,nprop,p,i,m;
+  int  natoms,level,npar,r,nprop,p,i,m,molnr;
   int  prop[32];
   double d;
   bool bFoundParticles,bFoundProp,bFoundVariable,bMol;
@@ -531,7 +533,17 @@ static void read_espresso_conf(char *infile,
 	      break;
 	    case espMOLECULE:
 	      r = get_espresso_word(fp,word);
-	      atoms->atom[i].resnr = atoi(word);
+	      molnr = atoi(word);
+	      if (i == 0 ||
+		  atoms->resinfo[atoms->atom[i-1].resind].nr != molnr) {
+		atoms->atom[i].resind =
+		  (i == 0 ? 0 : atoms->atom[i-1].resind+1); 
+		atoms->resinfo[atoms->atom[i].resind].nr    = molnr;
+		atoms->resinfo[atoms->atom[i].resind].ic    = ' ';
+		atoms->resinfo[atoms->atom[i].resind].chain = ' ';
+	      } else {
+		atoms->atom[i].resind = atoms->atom[i-1].resind;
+	      }
 	      break;
 	    }
 	  }
@@ -539,12 +551,13 @@ static void read_espresso_conf(char *infile,
 	  sprintf(buf,"T%d",atoms->atom[i].type);
 	  atoms->atomname[i] = put_symtab(symtab,buf);
 	  if (bMol) {
-	    if (i == 0 || atoms->atom[i].resnr != atoms->atom[i-1].resnr) {
-	      atoms->resname[atoms->atom[i].resnr] = put_symtab(symtab,"MOL");
+	    if (i == 0 || atoms->atom[i].resind != atoms->atom[i-1].resind) {
+	      atoms->resinfo[atoms->atom[i].resind].name =
+		put_symtab(symtab,"MOL");
 	    }
 	  } else {
 	    /* Residue number is the atom number */
-	    atoms->atom[i].resnr = i;
+	    atoms->atom[i].resind = i;
 	    /* Generate an residue name from the particle type */
 	    if (atoms->atom[i].type < 26) {
 	      sprintf(buf,"T%c",'A'+atoms->atom[i].type);
@@ -552,7 +565,7 @@ static void read_espresso_conf(char *infile,
 	      sprintf(buf,"T%c%c",
 		      'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
 	    }
-	    atoms->resname[atoms->atom[i].resnr] = put_symtab(symtab,buf);
+	    t_atoms_set_resinfo(atoms,i,symtab,buf,i,' ',' ');
 	  }	  
 
 	  if (r == 3)
@@ -696,7 +709,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
   bool   bFirst,bVel;
   char   *p1,*p2,*p3;
   
-  newres  = 0;
+  newres  = -1;
   oldres  = NOTSET; /* Unlikely number for the first residue! */
   ddist   = 0;
   
@@ -756,14 +769,15 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
     name[5]='\0';
     if (resnr != oldres) {
       oldres = resnr;
+      newres++;
       if (newres >= natoms)
 	gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 		    infile,natoms);
-      atoms->resname[newres] = put_symtab(symtab,name);
-      newres++;
+      atoms->atom[i].resind = newres;
+      t_atoms_set_resinfo(atoms,i,symtab,name,i,' ',' ');
+    } else {
+      atoms->atom[i].resind = newres;
     }
-    resnr = newres;
-    atoms->atom[i].resnr = resnr-1;
 
     /* atomname */
     memcpy(name,line+10,5);
@@ -805,7 +819,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
       }
     }
   }
-  atoms->nres=newres;
+  atoms->nres = newres + 1;
 
   /* box */
   fgets2 (line,STRLEN,in);
@@ -870,13 +884,13 @@ static void get_conf(FILE *in, char *title, int *natoms,
   atoms.nr=*natoms;
   snew(atoms.atom,*natoms);
   atoms.nres=*natoms;
-  snew(atoms.resname,*natoms);
+  snew(atoms.resinfo,*natoms);
   snew(atoms.atomname,*natoms);
   
   get_w_conf(in,title,title,&atoms,&ndec,x,v,box);
   
   sfree(atoms.atom);
-  sfree(atoms.resname);
+  sfree(atoms.resinfo);
   sfree(atoms.atomname);
 }
 
@@ -893,7 +907,7 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   atoms.nr=fr->natoms;
   snew(atoms.atom,fr->natoms);
   atoms.nres=fr->natoms;
-  snew(atoms.resname,fr->natoms);
+  snew(atoms.resinfo,fr->natoms);
   snew(atoms.atomname,fr->natoms);
   
   fr->bV = get_w_conf(status,title,title,&atoms,&ndec,fr->x,fr->v,fr->box);
@@ -908,7 +922,7 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   fr->bBox = TRUE;
 
   sfree(atoms.atom);
-  sfree(atoms.resname);
+  sfree(atoms.resinfo);
   sfree(atoms.atomname);
 
   if ((p=strstr(title,"t=")) != NULL) {
@@ -999,7 +1013,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
 			   rvec *x,rvec *v,matrix box)
 {
   char resnm[6],nm[6],format[100];
-  int  ai,i,resnr;
+  int  ai,i,resind,resnr;
 
   bromacs(format,99);
   fprintf (out,"%s\n",(title && title[0])?title:format);
@@ -1010,17 +1024,22 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   for (i=0; (i<nx); i++) {
     ai=index[i];
     
-    resnr=atoms->atom[ai].resnr;
+    resind = atoms->atom[ai].resind;
     strcpy(resnm," ??? ");
-    if (resnr < atoms->nres)
-      strcpy(resnm,*atoms->resname[resnr]);
+    if (resind < atoms->nres) {
+      strcpy(resnm,*atoms->resinfo[resind].name);
+      resnr = atoms->resinfo[resind].nr;
+    } else {
+      strcpy(resnm," ??? ");
+      resnr = resind + 1;
+    }
     
     if (atoms->atom)
       strcpy(nm,*atoms->atomname[ai]);
     else
       strcpy(nm," ??? ");
 
-    fprintf(out,"%5d%-5.5s%5.5s%5d",(resnr+1)%100000,resnm,nm,(ai+1)%100000);
+    fprintf(out,"%5d%-5.5s%5.5s%5d",resnr%100000,resnm,nm,(ai+1)%100000);
     /* next fprintf uses built format string */
     if (v)
       fprintf(out,format,

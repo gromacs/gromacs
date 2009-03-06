@@ -169,6 +169,13 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
+extern void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
+				char *resname,int resnr,unsigned char ic,
+				unsigned char chain);
+/* Set the residue name, number, insertion code and chain identifier
+ * of atom index atom_ind.
+ */
+
 void free_t_atoms(t_atoms *atoms,bool bFreeNames);
 /* free all the arrays and set the nr and nres to 0 */
 

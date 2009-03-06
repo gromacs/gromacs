@@ -68,7 +68,7 @@
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
-static int missing_atoms(t_restp *rp, int resnr,
+static int missing_atoms(t_restp *rp, int resind,
 			 t_atoms *at, int i0, int i, bool bCTer)
 {
   int  j,k,nmiss;
@@ -86,11 +86,11 @@ static int missing_atoms(t_restp *rp, int resnr,
       nmiss++;
       fprintf(stderr,"\nWARNING: "
 	      "atom %s is missing in residue %s %d in the pdb file\n",
-	      name,*(at->resname[resnr]),resnr+1);
+	      name,*(at->resinfo[resind].name),at->resinfo[resind].nr);
       if (name[0]=='H' || name[0]=='h')
 	fprintf(stderr,"         You might need to add atom %s to the hydrogen database of residue %s\n"
 		       "         in the file ff???.hdb (see the manual)\n",
-		name,*(at->resname[resnr]));
+		name,*(at->resinfo[resind].name));
       fprintf(stderr,"\n");
       }
       /* } */
@@ -164,7 +164,7 @@ choose_ff(char *forcefield, int maxlen)
 static int name2type(t_atoms *at, int **cgnr, t_atomtype atype, 
 		     t_restp restp[])
 {
-  int     i,j,prevresnr,resnr,i0,prevcg,cg,curcg;
+  int     i,j,prevresind,resind,i0,prevcg,cg,curcg;
   char    *name;
   bool    bProt, bNterm;
   double  qt;
@@ -173,7 +173,7 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype atype,
   
   nmissat = 0;
 
-  resnr=-1;
+  resind=-1;
   bProt=FALSE;
   bNterm=FALSE;
   i0=0;
@@ -186,32 +186,32 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype atype,
   aan = get_aa_names();
   
   for(i=0; (i<at->nr); i++) {
-    prevresnr=resnr;
-    if (at->atom[i].resnr != resnr) {
-      resnr=at->atom[i].resnr;
-      bProt=is_protein(aan,*(at->resname[resnr]));
-      bNterm=bProt && (resnr == 0);
-      if (resnr>0)
+    prevresind=resind;
+    if (at->atom[i].resind != resind) {
+      resind = at->atom[i].resind;
+      bProt = is_protein(aan,*(at->resinfo[resind].name));
+      bNterm=bProt && (resind == 0);
+      if (resind > 0)
 	nmissat += 
-	  missing_atoms(&restp[prevresnr],prevresnr,at,i0,i,
-			(!bProt && is_protein(aan,restp[prevresnr].resname)));
+	  missing_atoms(&restp[prevresind],prevresind,at,i0,i,
+			(!bProt && is_protein(aan,restp[prevresind].resname)));
       i0=i;
     }
     if (at->atom[i].m == 0) {
       if (debug)
 	fprintf(debug,"atom %d%s: curcg=%d, prevcg=%d, cg=%d\n",
 		i+1,*(at->atomname[i]),curcg,prevcg,
-		j==NOTSET ? NOTSET : restp[resnr].cgnr[j]);
+		j==NOTSET ? NOTSET : restp[resind].cgnr[j]);
       qt=0;
       prevcg=cg;
       name=*(at->atomname[i]);
-      j=search_jtype(&restp[resnr],name,bNterm);
-      at->atom[i].type = restp[resnr].atom[j].type;
-      at->atom[i].q    = restp[resnr].atom[j].q;
-      at->atom[i].m    = get_atomtype_massA(restp[resnr].atom[j].type,
+      j=search_jtype(&restp[resind],name,bNterm);
+      at->atom[i].type = restp[resind].atom[j].type;
+      at->atom[i].q    = restp[resind].atom[j].q;
+      at->atom[i].m    = get_atomtype_massA(restp[resind].atom[j].type,
 					    atype);
-      cg = restp[resnr].cgnr[j];
-      if ( (cg != prevcg) || (resnr != prevresnr) )
+      cg = restp[resind].cgnr[j];
+      if ( (cg != prevcg) || (resind != prevresind) )
 	curcg++;
     } else {
       if (debug)
@@ -229,8 +229,8 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype atype,
     at->atom[i].qB    = at->atom[i].q;
     at->atom[i].mB    = at->atom[i].m;
   }
-  nmissat += missing_atoms(&restp[resnr],resnr,at,i0,i,
-			   (!bProt || is_protein(aan,restp[resnr].resname)));
+  nmissat += missing_atoms(&restp[resind],resind,at,i0,i,
+			   (!bProt || is_protein(aan,restp[resind].resname)));
   done_aa_names(&aan);
 			   
   return nmissat;
@@ -357,14 +357,14 @@ void write_top(FILE *out, char *pr,char *molname,
   }
 }
 
-static atom_id search_res_atom(char *type,int resnr,
+static atom_id search_res_atom(char *type,int resind,
 			       int natom,t_atom at[],char **aname[],
 			       char *bondtype,bool bMissing)
 {
   int i;
 
   for(i=0; (i<natom); i++)
-    if (at[i].resnr == resnr)
+    if (at[i].resind == resind)
       return search_atom(type,i,natom,at,aname,bondtype,bMissing);
   
   return NO_ATID;
@@ -395,7 +395,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 		     int nres, rvec x[], 
 		     real long_bond_dist, real short_bond_dist)
 {
-  int     resnr,i,j,k;
+  int     resind,i,j,k;
   atom_id ai,aj;
   real    dist2, long_bond_dist2, short_bond_dist2;
   char    *ptr;
@@ -410,16 +410,16 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 
   fprintf(stderr,"Making bonds...\n");
   i=0;
-  for(resnr=0; (resnr < nres) && (i<natoms); resnr++) {
+  for(resind=0; (resind < nres) && (i<natoms); resind++) {
     /* add bonds from list of bonded interactions */
-    for(j=0; j < hb[resnr].rb[ebtsBONDS].nb; j++) {
+    for(j=0; j < hb[resind].rb[ebtsBONDS].nb; j++) {
       /* Unfortunately we can not issue errors or warnings
        * for missing atoms in bonds, as the hydrogens and terminal atoms
        * have not been added yet.
        */
-      ai=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname,
+      ai=search_atom(hb[resind].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname,
 		     ptr,TRUE);
-      aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname,
+      aj=search_atom(hb[resind].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname,
 		     ptr,TRUE);
       if (ai != NO_ATID && aj != NO_ATID) {
 	dist2 = distance2(x[ai],x[aj]);
@@ -429,23 +429,23 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 	else if (dist2 < short_bond_dist2 )
 	  fprintf(stderr,"Warning: Short Bond (%d-%d = %g nm)\n",
 		  ai+1,aj+1,sqrt(dist2));
-	add_param(psb,ai,aj,NULL,hb[resnr].rb[ebtsBONDS].b[j].s);
+	add_param(psb,ai,aj,NULL,hb[resind].rb[ebtsBONDS].b[j].s);
       }
     }
     /* add bonds from list of hacks (each added atom gets a bond) */
-    while( (i<natoms) && (atom[i].resnr == resnr) ) {
-      for(j=0; j < hb[resnr].nhack; j++)
-	if ( ( hb[resnr].hack[j].tp > 0 ||
-	       hb[resnr].hack[j].oname==NULL ) &&
-	     strcmp(hb[resnr].hack[j].AI,*(aname[i])) == 0 ) {
-	  switch(hb[resnr].hack[j].tp) {
+    while( (i<natoms) && (atom[i].resind == resind) ) {
+      for(j=0; j < hb[resind].nhack; j++)
+	if ( ( hb[resind].hack[j].tp > 0 ||
+	       hb[resind].hack[j].oname==NULL ) &&
+	     strcmp(hb[resind].hack[j].AI,*(aname[i])) == 0 ) {
+	  switch(hb[resind].hack[j].tp) {
 	  case 9:          /* COOH terminus */
 	    add_param(psb,i,i+1,NULL,NULL);     /* C-O  */
 	    add_param(psb,i,i+2,NULL,NULL);     /* C-OA */
 	    add_param(psb,i+2,i+3,NULL,NULL);   /* OA-H */
 	    break;
 	  default:
-	    for(k=0; (k<hb[resnr].hack[j].nr); k++)
+	    for(k=0; (k<hb[resind].hack[j].nr); k++)
 	      add_param(psb,i,i+k+1,NULL,NULL);
 	  }
 	}
@@ -526,10 +526,12 @@ void print_sums(t_atoms *atoms, bool bSystem)
   fprintf(stderr,"Total charge%s %.3f e\n",where,qtot);
 }
 
-void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
-			int nrtp, t_restp rtp[], int nres, char **resname[], 
-			int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
-			int *rn, int *rc)
+static void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
+			       int nrtp, t_restp rtp[],
+			       int nres, t_resinfo *resinfo, 
+			       int nterpairs,
+			       t_hackblock **ntdb, t_hackblock **ctdb,
+			       int *rn, int *rc)
 {
   int i, j, k, l;
   t_restp *res;
@@ -549,7 +551,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 
   /* then the whole rtp */
   for(i=0; i < nres; i++) {
-    res = search_rtp(*resname[i],nrtp,rtp);
+    res = search_rtp(*resinfo[i].name,nrtp,rtp);
     copy_t_restp(res, &(*restp)[i]);
     bN = FALSE;
     for(j=0; j<nterpairs && !bN; j++)
@@ -579,7 +581,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 		      "while combining tdb and rtp",
 		      (*hb)[i].hack[j].oname!=NULL ? 
 		      (*hb)[i].hack[j].oname : (*hb)[i].hack[j].AI, 
-		      i+1,*resname[i]);
+		      i+1,*resinfo[i].name);
 	if ( (*hb)[i].hack[j].oname==NULL ) {
 	  /* we're adding: */
 	  if (debug) 
@@ -673,7 +675,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_plist(plist);
 
   /* lookup hackblocks and rtp for all residues */
-  get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resname, 
+  get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resinfo, 
 		     nterpairs, ntdb, ctdb, rn, rc);
   /* ideally, now we would not need the rtp itself anymore, but do 
      everything using the hb and restp arrays. Unfortunately, that 

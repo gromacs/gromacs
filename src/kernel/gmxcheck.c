@@ -429,10 +429,11 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
     snew(atom_vdw,natom);
     aps = gmx_atomprop_init();
     for (i=0; (i<natom); i++) {
-      gmx_atomprop_query(aps,epropVDW,*(atoms->resname[atoms->atom[i].resnr]),
+      gmx_atomprop_query(aps,epropVDW,
+			 *(atoms->resinfo[atoms->atom[i].resind].name),
 			 *(atoms->atomname[i]),&(atom_vdw[i]));
       if (debug) fprintf(debug,"%5d %4s %4s %7g\n",i+1,
-			 *(atoms->resname[atoms->atom[i].resnr]),
+			 *(atoms->resinfo[atoms->atom[i].resind].name),
 			 *(atoms->atomname[i]),
 			 atom_vdw[i]);
     }
@@ -462,10 +463,12 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	  fprintf(stderr,
 		  "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n",
 		  i+1,*(atoms->atomname[i]),
-		  *(atoms->resname[atoms->atom[i].resnr]),atoms->atom[i].resnr+1,
+		  *(atoms->resinfo[atoms->atom[i].resind].name),
+		  atoms->resinfo[atoms->atom[i].resind].nr,
 		  atom_vdw[i],
 		  j+1,*(atoms->atomname[j]),
-		  *(atoms->resname[atoms->atom[j].resnr]),atoms->atom[j].resnr+1,
+		  *(atoms->resinfo[atoms->atom[j].resind].name),
+		  atoms->resinfo[atoms->atom[j].resind].nr,
 		  atom_vdw[j],
 		  sqrt(r2) );
 	}
@@ -498,8 +501,8 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	  fprintf(stderr,
 		  "%5d %4s %4s%4d %-5.3g",
 		  i,*(atoms->atomname[i]),
-		  *(atoms->resname[atoms->atom[i].resnr]),
-		  atoms->atom[i].resnr,atom_vdw[i]);
+		  *(atoms->resinfo[atoms->atom[i].resind].name),
+		  atoms->resinfo[atoms->atom[i].resind].nr,atom_vdw[i]);
 	  for (j=0; (j<DIM); j++)
 	    fprintf(stderr," %6.3g",x[i][j]);
 	  fprintf(stderr,"\n");

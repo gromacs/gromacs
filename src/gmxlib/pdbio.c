@@ -225,9 +225,10 @@ void write_pdbfile_indexed(FILE *out,char *title,
 			   int ePBC,matrix box,char chain,
 			   int model_nr, atom_id nindex, atom_id index[])
 {
-  char resnm[6],nm[6],ch,pdbform[128],pukestring[100];
+  char resnm[6],nm[6],pdbform[128],pukestring[100];
   atom_id i,ii;
-  int  resnr,type;
+  int  resind,resnr,type;
+  unsigned char resic,ch;
   real occup,bfac;
   bool bOccup;
   int  nlongname=0;
@@ -258,21 +259,23 @@ void write_pdbfile_indexed(FILE *out,char *title,
     fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
-    resnr=atoms->atom[i].resnr;
-    strcpy(resnm,*atoms->resname[resnr]);
+    resind = atoms->atom[i].resind;
+    strcpy(resnm,*atoms->resinfo[resind].name);
     strcpy(nm,*atoms->atomname[i]);
 	/* rename HG12 to 2HG1, etc. */
     xlate_atomname_gmx2pdb(nm);
-    resnr++;
+    resnr = atoms->resinfo[resind].nr;
+    resic = atoms->resinfo[resind].ic;
+    if (chain) {
+      ch = chain;
+    } else {
+      ch = atoms->resinfo[resind].chain;
+      if (ch == 0) {
+	ch = ' ';
+      }
+    }
     if (resnr>=10000)
       resnr = resnr % 10000;
-    if (chain)
-      ch=chain;
-    else
-      if (atoms->atom[i].chain)
-	ch=atoms->atom[i].chain;
-      else
-	  ch=' ';
     if (atoms->pdbinfo) {
       type  = atoms->pdbinfo[i].type;
       occup = bOccup ? 1.0 : atoms->pdbinfo[i].occup;
@@ -284,7 +287,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
       bfac  = 0.0;
     }
     if (bWideFormat)
-      strcpy(pdbform,"%-6s%5u %-4.4s %3.3s %c%4d    %10.5f%10.5f%10.5f%8.4f%8.4f\n");
+      strcpy(pdbform,"%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f\n");
     else {
       if ((strlen(nm)<4) && (atoms->atom[i].atomnumber < 10))
 	strcpy(pdbform,pdbformat);
@@ -302,11 +305,11 @@ void write_pdbfile_indexed(FILE *out,char *title,
       }
       strcat(pdbform,"%6.2f%6.2f\n");
     }
-    fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
+    fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,resic,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
     if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic) {
-      fprintf(out,"ANISOU%5u  %-4.4s%3.3s %c%4d  %7d%7d%7d%7d%7d%7d\n",
-	      (i+1)%100000,nm,resnm,ch,resnr,
+      fprintf(out,"ANISOU%5u  %-4.4s%3.3s %c%4d%c %7d%7d%7d%7d%7d%7d\n",
+	      (i+1)%100000,nm,resnm,ch,resnr,resic,
 	      atoms->pdbinfo[i].uij[0],atoms->pdbinfo[i].uij[1],
 	      atoms->pdbinfo[i].uij[2],atoms->pdbinfo[i].uij[3],
 	      atoms->pdbinfo[i].uij[4],atoms->pdbinfo[i].uij[5]);
@@ -435,10 +438,10 @@ static int read_atom(t_symtab *symtab,
   t_atom *atomn;
   int  j,k;
   char nc='\0';
-  char anr[12],anm[12],anm_copy[12],altloc,resnm[12],chain[12],resnr[12];
-  char xc[12],yc[12],zc[12],occup[12],bfac[12],pdbresnr[12];
-  static char oldresnm[12],oldresnr[12];
-  int  newres,atomnumber;
+  char anr[12],anm[12],anm_copy[12],altloc,resnm[12],rnr[12];
+  char xc[12],yc[12],zc[12],occup[12],bfac[12];
+  unsigned char resic,chain;
+  int  resnr,atomnumber;
 
   if (natom>=atoms->nr)
     gmx_fatal(FARGS,"\nFound more atoms (%d) in pdb file than expected (%d)",
@@ -462,19 +465,16 @@ static int read_atom(t_symtab *symtab,
   resnm[k]=nc;
   trim(resnm);
 
-  for(k=0; (k<1); k++,j++)
-    chain[k]=line[j];
-  chain[k]=nc;
+  chain = line[j];
+  j++;
   
   for(k=0; (k<4); k++,j++) {
-    resnr[k]=line[j];
-    pdbresnr[k]=line[j];
+    rnr[k] = line[j];
   }
-  resnr[k]=nc;
-  trim(resnr);
-  pdbresnr[k]=line[j];
-  pdbresnr[k+1]=nc;
-  trim(pdbresnr);
+  rnr[k] = nc;
+  trim(rnr);
+  resnr = atoi(rnr);
+  resic = line[j];
   j+=4;
 
   /* X,Y,Z Coordinate */
@@ -495,24 +495,27 @@ static int read_atom(t_symtab *symtab,
 
   if (atoms->atom) {
     atomn=&(atoms->atom[natom]);
-    if ((natom==0) || (strcmp(oldresnr,pdbresnr)!=0) || 
-	(strcmp(oldresnm,resnm)!=0)) {
-      strcpy(oldresnr,pdbresnr);
-      strcpy(oldresnm,resnm);
-      if (natom==0)
-	newres=0;
-      else
-	newres=atoms->atom[natom-1].resnr+1;
-      atoms->nres=newres+1;
-      atoms->resname[newres]=put_symtab(symtab,resnm);
+    if ((natom==0) ||
+	atoms->resinfo[atoms->atom[natom-1].resind].nr != resnr ||
+	atoms->resinfo[atoms->atom[natom-1].resind].ic != resic ||
+	(strcmp(*atoms->resinfo[atoms->atom[natom-1].resind].name,resnm) != 0))
+    {
+      if (natom == 0) {
+	atomn->resind = 0;
+      } else {
+	atomn->resind = atoms->atom[natom-1].resind + 1;
+      }
+      atoms->nres = atomn->resind + 1;
+      t_atoms_set_resinfo(atoms,natom,symtab,resnm,resnr,resic,chain);
     }
     else
-      newres=atoms->atom[natom-1].resnr;
-    if (bChange)
+    {
+      atomn->resind = atoms->atom[natom-1].resind;
+    }
+    if (bChange) {
       xlate_atomname_pdb2gmx(anm); 
+    }
     atoms->atomname[natom]=put_symtab(symtab,anm);
-    atomn->chain=chain[0];
-    atomn->resnr=newres;
     atomn->m = 0.0;
     atomn->q = 0.0;
     atomn->atomnumber = atomnumber;
@@ -524,7 +527,6 @@ static int read_atom(t_symtab *symtab,
     atoms->pdbinfo[natom].type=type;
     atoms->pdbinfo[natom].atomnr=atoi(anr);
     atoms->pdbinfo[natom].altloc=altloc;
-    strcpy(atoms->pdbinfo[natom].pdbresnr,pdbresnr);
     strcpy(atoms->pdbinfo[natom].atomnm,anm_copy);
     atoms->pdbinfo[natom].bfac=atof(bfac);
     atoms->pdbinfo[natom].occup=atof(occup);

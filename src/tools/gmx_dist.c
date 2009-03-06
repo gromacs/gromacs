@@ -221,9 +221,9 @@ int gmx_dist(int argc,char *argv[])
 	dist2 = norm2(dx);
 	if (dist2<cut2) {
 	  if (bPrintDist) {
-	    res=top->atoms.atom[j].resnr;
+	    res=top->atoms.atom[j].resind;
 	    fprintf(stdout,"\rt: %g  %d %s %d %s  %g (nm)\n",
-		    t,res+1,*top->atoms.resname[res],
+		    t,top->atoms.resinfo[res].nr,*top->atoms.resinfo[res].name,
 		    j+1,*top->atoms.atomname[j],sqrt(dist2));
 	  }
 	  if (bLifeTime)

@@ -344,7 +344,7 @@ static void print_rtp(char *filenm,char *title,t_atoms *atoms,
   fp = gmx_fio_fopen(filenm,"w");
   fprintf(fp,"; %s\n",title);
   fprintf(fp,"\n");
-  fprintf(fp,"[ %s ]\n",*atoms->resname[0]);
+  fprintf(fp,"[ %s ]\n",*atoms->resinfo[0].name);
   fprintf(fp,"\n");
   fprintf(fp,"[ atoms ]\n");
   for(i=0; (i<atoms->nr); i++) {

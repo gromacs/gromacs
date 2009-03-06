@@ -124,7 +124,8 @@ char *comment_str[eitemNR] = {
 static t_fileio *FIO = NULL;
 static t_fileio *curfio = NULL;
 static int  nFIO = 0;
-static char *eioNames[eioNR] = { "REAL", "INT", "NUCHAR", "USHORT", 
+static char *eioNames[eioNR] = { "REAL", "INT", "GMX_STE_T",
+				 "UCHAR", "NUCHAR", "USHORT", 
 				 "RVEC", "NRVEC", "IVEC", "STRING" };
 static char *add_comment = NULL;
 
@@ -229,6 +230,9 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   case eioGMX_STEP_T:
     sprintf(strbuf,"%s%s%s","%",gmx_step_fmt,"\n");
     res = fprintf(curfio->fp,strbuf,*((gmx_step_t *)item),dbgstr(desc));
+    break;
+  case eioUCHAR:
+    res = fprintf(curfio->fp,"%4d%s\n",*((unsigned char *)item),dbgstr(desc));
     break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
@@ -342,7 +346,7 @@ static bool do_ascread(void *item,int nitem,int eio,
   gmx_step_t s;
   double d,x;
   real   *ptr;
-  unsigned char *ucptr;
+  unsigned char uc,*ucptr;
   char   *cptr;
   
   check_nitem();  
@@ -358,7 +362,11 @@ static bool do_ascread(void *item,int nitem,int eio,
     break;
   case eioGMX_STEP_T:
     res = sscanf(next_item(fp),gmx_step_pfmt,&s);
-    if (item) *((int *)item) = s;
+    if (item) *((gmx_step_t *)item) = s;
+    break;
+  case eioUCHAR:
+    res = sscanf(next_item(fp),"%c",&uc);
+    if (item) *((unsigned char *)item) = uc;
     break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
@@ -432,6 +440,9 @@ static bool do_binwrite(void *item,int nitem,int eio,
   case eioGMX_STEP_T:
     size = sizeof(gmx_step_t);
     break;
+  case eioUCHAR:
+    size = sizeof(unsigned char);
+    break;
   case eioNUCHAR:
     size = sizeof(unsigned char);
     break;
@@ -488,6 +499,9 @@ static bool do_binread(void *item,int nitem,int eio,
   case eioGMX_STEP_T:
     size = sizeof(gmx_step_t);
     break;
+  case eioUCHAR:
+    size = sizeof(unsigned char);
+    break;
   case eioNUCHAR:
     size = sizeof(unsigned char);
     break;
@@ -533,7 +547,7 @@ static bool do_binread(void *item,int nitem,int eio,
 static bool do_xdr(void *item,int nitem,int eio,
 		   char *desc,char *srcfile,int line)
 {
-  unsigned char *ucptr;
+  unsigned char ucdum,*ucptr;
   bool_t res=0;
   float  fvec[DIM];
   double dvec[DIM];
@@ -576,13 +590,17 @@ static bool do_xdr(void *item,int nitem,int eio,
     res = xdr_gmx_step_t(curfio->xdr,&sdum,NULL);
     if (item) *(gmx_step_t *)item = sdum;
     break;
+  case eioUCHAR:
+    if (item && !curfio->bRead) idum = *(unsigned char *)item;
+    res = xdr_u_char(curfio->xdr,&ucdum);
+    if (item) *(unsigned char *)item = ucdum;
+    break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
     res   = 1;
     for(j=0; (j<nitem) && res; j++) {
       res = xdr_u_char(curfio->xdr,&(ucptr[j]));
     }
-    
     break;
   case eioUSHORT:
     if (item && !curfio->bRead) us = *(unsigned short *)item;

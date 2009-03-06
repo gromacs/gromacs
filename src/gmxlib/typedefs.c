@@ -112,7 +112,7 @@ void init_atom(t_atoms *at)
   at->nr       = 0;
   at->nres     = 0;
   at->atom     = NULL;
-  at->resname  = NULL;
+  at->resinfo  = NULL;
   at->atomname = NULL;
   at->atomtype = NULL;
   at->atomtypeB= NULL;
@@ -252,7 +252,7 @@ void done_atom (t_atoms *at)
   at->nr       = 0;
   at->nres     = 0;
   sfree(at->atom);
-  sfree(at->resname);
+  sfree(at->resinfo);
   sfree(at->atomname);
 }
 
@@ -513,12 +513,25 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
   snew(atoms->atomname,natoms);
   atoms->atomtype=NULL;
   atoms->atomtypeB=NULL;
-  snew(atoms->resname,natoms);
+  snew(atoms->resinfo,natoms);
   snew(atoms->atom,natoms);
   if (bPdbinfo)
     snew(atoms->pdbinfo,natoms);
   else
     atoms->pdbinfo=NULL;
+}
+
+void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
+			 char *resname,int resnr,unsigned char ic,
+			 unsigned char chain)
+{
+  t_resinfo *ri;
+
+  ri = &atoms->resinfo[atoms->atom[atom_ind].resind];
+  ri->name  = put_symtab(symtab,resname);
+  ri->nr    = resnr;
+  ri->ic    = ic;
+  ri->chain = chain;
 }
 
 void free_t_atoms(t_atoms *atoms,bool bFreeNames)
@@ -531,13 +544,13 @@ void free_t_atoms(t_atoms *atoms,bool bFreeNames)
       *atoms->atomname[i]=NULL;
     }
     for(i=0; i<atoms->nres; i++) {
-      sfree(*atoms->resname[i]);
-      *atoms->resname[i]=NULL;
+      sfree(*atoms->resinfo[i].name);
+      *atoms->resinfo[i].name=NULL;
     }
   }
   sfree(atoms->atomname);
   /* Do we need to free atomtype and atomtypeB as well ? */
-  sfree(atoms->resname);
+  sfree(atoms->resinfo);
   sfree(atoms->atom);
   if (atoms->pdbinfo)
     sfree(atoms->pdbinfo);

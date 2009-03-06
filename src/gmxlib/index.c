@@ -167,7 +167,7 @@ atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
   snew(a,atoms->nr);
   *nra=0;
   for(i=0; (i<atoms->nr); i++) 
-    if ((restp[atoms->atom[i].resnr] == res) == bTrue)
+    if ((restp[atoms->atom[i].resind] == res) == bTrue)
       a[(*nra)++]=i;
   
   return a;
@@ -180,7 +180,7 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
   char **attp=NULL;
   char *rname,*aname;
   atom_id *other_ndx,*aid,*aaid;
-  int  i,j,k,l,resnr,naid,naaid,natp,nrestp=0;
+  int  i,j,k,l,resind,naid,naaid,natp,nrestp=0;
   
   for(i=0; (i<atoms->nres); i++)
     if (Restp[i] == etOther)
@@ -191,9 +191,9 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       printf("Analysing Other...\n");
     snew(other_ndx,atoms->nr);
     for(k=0; (k<atoms->nr); k++) {
-      resnr=atoms->atom[k].resnr;
-      rname=*atoms->resname[resnr];
-      if (Restp[resnr] ==  etOther) {
+      resind = atoms->atom[k].resind;
+      rname = *atoms->resinfo[resind].name;
+      if (Restp[resind] == etOther) {
 	for(l=0; (l<nrestp); l++)
 	  if (strcmp(restp[l],rname) == 0)
 	    break;
@@ -207,7 +207,7 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       snew(aid,atoms->nr);
       naid=0;
       for(j=0; (j<atoms->nr); j++) {
-	rname=*atoms->resname[atoms->atom[j].resnr];
+	rname = *atoms->resinfo[atoms->atom[j].resind].name;
 	if (strcmp(restp[i],rname) == 0) 
 	  aid[naid++] = j;
       }
@@ -313,7 +313,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   for(i=0; (i<NCH); i++) {
     nra=0;
     for(n=0; (n<atoms->nr); n++) {
-      if (restp[atoms->atom[n].resnr] == etProt) {
+      if (restp[atoms->atom[n].resind] == etProt) {
 	match=FALSE;
 	for(j=0; (j<sizes[i]); j++) {
 	  /* skip digits at beginning of atomname, e.g. 1H */
@@ -342,11 +342,11 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
     for(i=0; (i<NCH); i++) {
       printf("Split %12s into %5d residues (y/n) ? ",ch_name[i],npres);
       if (gmx_ask_yesno(bASK)) {
-	int resnr;
+	int resind;
 	nra = 0;
-	for(n=0;((atoms->atom[n].resnr<npres) && (n<atoms->nr));) {
-	  resnr = atoms->atom[n].resnr;
-	  for(;((atoms->atom[n].resnr==resnr) && (n<atoms->nr));n++) {
+	for(n=0;((atoms->atom[n].resind < npres) && (n<atoms->nr));) {
+	  resind = atoms->atom[n].resind;
+	  for(;((atoms->atom[n].resind==resind) && (n<atoms->nr));n++) {
 	    match=FALSE;
 	    for(j=0;(j<sizes[i]); j++) 
 	      if (strcasecmp(chains[i][j],*atoms->atomname[n]) == 0)
@@ -356,8 +356,10 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 	  }
 	  /* copy the residuename to the tail of the groupname */
 	  if (nra > 0) {
-	    sprintf(ndx_name,"%s_%s%d",
-		    ch_name[i],*atoms->resname[resnr],resnr+1);
+	    t_resinfo *ri;
+	    ri = &atoms->resinfo[resind];
+	    sprintf(ndx_name,"%s_%s%d%c",
+		    ch_name[i],*ri->name,ri->nr,ri->ic==' ' ? '\0' : ri->ic);
 	    add_grp(gb,gn,nra,aid,ndx_name);
 	    nra = 0;
 	  }
@@ -367,12 +369,12 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
     printf("Make group with sidechain and C=O swapped (y/n) ? ");
     if (gmx_ask_yesno(bASK)) {
       /* Make swap sidechain C=O index */
-      int resnr,hold;
+      int resind,hold;
       nra = 0;
-      for(n=0;((atoms->atom[n].resnr<npres) && (n<atoms->nr));) {
-	resnr = atoms->atom[n].resnr;
+      for(n=0;((atoms->atom[n].resind < npres) && (n<atoms->nr));) {
+	resind = atoms->atom[n].resind;
 	hold  = -1;
-	for(;((atoms->atom[n].resnr==resnr) && (n<atoms->nr));n++)
+	for(;((atoms->atom[n].resind==resind) && (n<atoms->nr));n++)
 	  if (strcmp("CA",*atoms->atomname[n]) == 0) {
 	    aid[nra++]=n;
 	    hold=nra;
@@ -468,7 +470,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 
   aan = get_aa_names();
   for(i=0; (i<atoms->nres); i++) {
-    resnm=*atoms->resname[i];
+    resnm = *atoms->resinfo[i].name;
     if ((restp[i] == etOther) && is_protein(aan,resnm))
       restp[i] = etProt;
     if (restp[i] == etOther)

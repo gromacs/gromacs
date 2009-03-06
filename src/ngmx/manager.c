@@ -215,17 +215,19 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   aps = gmx_atomprop_init();
   for(i=0; (i<man->natom); i++) {
     char *aname=*(at->atomname[i]);
-    int  resnr=at->atom[i].resnr;
+    t_resinfo *ri=&at->resinfo[at->atom[i].resind];
 
     man->col[i]=Type2Color(aname);
     snew(man->szLab[i],20);
-    sprintf(man->szLab[i],"%s%d, %s",*(at->resname[resnr]),resnr+1,aname);
+    if (ri->ic != ' ') {
+      sprintf(man->szLab[i],"%s%d%c, %s",*ri->name,ri->nr,ri->ic,aname);
+    } else {
+      sprintf(man->szLab[i],"%s%d, %s",*ri->name,ri->nr,aname);
+    }
     man->bHydro[i]=(toupper(aname[0])=='H');
     if ( man->bHydro[i] )
       man->vdw[i]=0;
-    else if (!gmx_atomprop_query(aps,epropVDW,
-				 *(at->resname[resnr]),aname,
-				 &(man->vdw[i])))
+    else if (!gmx_atomprop_query(aps,epropVDW,*ri->name,aname,&(man->vdw[i])))
       man->vdw[i] = 0;
   }
   gmx_atomprop_destroy(aps);

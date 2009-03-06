@@ -419,9 +419,9 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     type=at->atom[atom].type;
   else {
     /* get type from rtp */
-    rtpp = search_rtp(*(at->resname[at->atom[atom].resnr]),nrtp,rtp);
-    bNterm = is_protein(aan,*(at->resname[at->atom[atom].resnr])) && 
-      (at->atom[atom].resnr == 0);
+    rtpp = search_rtp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
+    bNterm = is_protein(aan,*(at->resinfo[at->atom[atom].resind].name)) && 
+      (at->atom[atom].resind == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
     type=rtpp->atom[j].type;
   }
@@ -452,9 +452,9 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
     mass=at->atom[atom].m;
   else {
     /* get mass from rtp */
-    rtpp = search_rtp(*(at->resname[at->atom[atom].resnr]),nrtp,rtp);
-    bNterm = is_protein(aan,*(at->resname[at->atom[atom].resnr])) && 
-      (at->atom[atom].resnr == 0);
+    rtpp = search_rtp(*(at->resinfo[at->atom[atom].resind].name),nrtp,rtp);
+    bNterm = is_protein(aan,*(at->resinfo[at->atom[atom].resind].name)) && 
+      (at->atom[atom].resind == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
     mass=rtpp->atom[j].m;
   }
@@ -914,8 +914,7 @@ static int gen_vsites_trp(t_atomtype atype, rvec *newx[],
     (*newatom)      [atM[j]].q     = (*newatom)[atM[j]].qB    = 0.0;
     (*newatom)      [atM[j]].type  = (*newatom)[atM[j]].typeB = tpM;
     (*newatom)      [atM[j]].ptype = eptAtom;
-    (*newatom)      [atM[j]].resnr = at->atom[i0].resnr;
-    (*newatom)      [atM[j]].chain = at->atom[i0].chain;
+    (*newatom)      [atM[j]].resind= at->atom[i0].resind;
     (*newvsite_type)[atM[j]]       = NOTSET;
     (*newcgnr)      [atM[j]]       = (*cgnr)[i0];
   }
@@ -1081,8 +1080,7 @@ static int gen_vsites_tyr(t_atomtype atype, rvec *newx[],
   (*newatom)      [atM].q     = (*newatom)[atM].qB    = 0.0;
   (*newatom)      [atM].type  = (*newatom)[atM].typeB = tpM;
   (*newatom)      [atM].ptype = eptAtom;
-  (*newatom)      [atM].resnr = at->atom[i0].resnr;
-  (*newatom)      [atM].chain = at->atom[i0].chain;
+  (*newatom)      [atM].resind= at->atom[i0].resind;
   (*newvsite_type)[atM]       = NOTSET;
   (*newcgnr)      [atM]       = (*cgnr)[i0]; 
   /* renumber cgnr: */
@@ -1326,7 +1324,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
 		real mHmult, bool bVsiteAromatics, char *ff)
 {
 #define MAXATOMSPERRESIDUE 16
-  int  i,j,k,i0,ni0,whatres,resnr,add_shift,ftype,nvsite,nadd;
+  int  i,j,k,i0,ni0,whatres,resind,add_shift,ftype,nvsite,nadd;
   int  ai,aj,ak,al;
   int  nrfound=0,needed,nrbonds,nrHatoms,Heavy,nrheavies,tpM,tpHeavy;
   int  Hatoms[4],heavies[4],bb;
@@ -1421,11 +1419,11 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
     
   /* generate vsite constructions */
   /* loop over all atoms */
-  resnr=NOTSET;
+  resind = -1;
   for(i=0; (i<at->nr); i++) {
-    if (at->atom[i].resnr != resnr) {
-      resnr=at->atom[i].resnr;
-      resnm=*(at->resname[resnr]);
+    if (at->atom[i].resind != resind) {
+      resind = at->atom[i].resind;
+      resnm  = *(at->resinfo[resind].name);
     }
     /* first check for aromatics to virtualize */
     /* don't waste our effort on DNA, water etc. */
@@ -1433,28 +1431,30 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
      * CA atom, since there might be an X2/X3 group on the
      * N-terminus that must be treated first.
      */
-    if ( bVsiteAromatics && !strcmp(*(at->atomname[i]),"CA") &&
-	 !bResProcessed[resnr] && is_protein(aan,*(at->resname[resnr])) ) {
+    if ( bVsiteAromatics &&
+	 !strcmp(*(at->atomname[i]),"CA") &&
+	 !bResProcessed[resind] &&
+	 is_protein(aan,*(at->resinfo[resind].name)) ) {
       /* mark this residue */
-      bResProcessed[resnr]=TRUE;
+      bResProcessed[resind] = TRUE;
       /* find out if this residue needs converting */
       whatres=NOTSET;
       for(j=0; j<resNR && whatres==NOTSET; j++) {
 		  
-		  cmplength = bPartial ? strlen(resnm)-1 : strlen(resnm);
-		  
-		  bFound = ((strncasecmp(resnm,resnms[j], cmplength)==0) ||
-					(strncasecmp(resnm,resnmsN[j],cmplength)==0) ||
-					(strncasecmp(resnm,resnmsC[j],cmplength)==0));
-		
-		  if ( bFound ) {
-			  whatres=j;
+	cmplength = bPartial[j] ? strlen(resnm)-1 : strlen(resnm);
+	
+	bFound = ((strncasecmp(resnm,resnms[j], cmplength)==0) ||
+		  (strncasecmp(resnm,resnmsN[j],cmplength)==0) ||
+		  (strncasecmp(resnm,resnmsC[j],cmplength)==0));
+	
+	if ( bFound ) {
+	  whatres=j;
 	  /* get atoms we will be needing for the conversion */
 	  nrfound=0;
 	  for (k=0; atnms[j][k]; k++) {
 	    ats[k]=NOTSET;
 	    i0=i;
-	    while (i<at->nr && at->atom[i].resnr==resnr && ats[k]==NOTSET) {
+	    while (i<at->nr && at->atom[i].resind==resind && ats[k]==NOTSET) {
 	      if (strcasecmp(*(at->atomname[i]),atnms[j][k])==0) {
 		ats[k]=i;
 		nrfound++;
@@ -1472,9 +1472,9 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
 	    needed = k;
 	  if (nrfound<needed)
 	    gmx_fatal(FARGS,"not enough atoms found (%d, need %d) in "
-			"residue %s %d while\n             "
-			"generating aromatics virtual site construction",
-			nrfound,needed,resnm,resnr+1);
+		      "residue %s %d while\n             "
+		      "generating aromatics virtual site construction",
+		      nrfound,needed,resnm,at->resinfo[resind].nr);
 	}
       }
       /* the enums for every residue MUST correspond to atnms[residue] */
@@ -1507,7 +1507,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
 		    __FILE__,__LINE__);
       } /* switch whatres */
       /* skip back to beginning of residue */
-      while(i>0 && at->atom[i-1].resnr==resnr)
+      while(i>0 && at->atom[i-1].resind == resind)
 	i--;
     } /* if bVsiteAromatics & is protein */
     
@@ -1676,8 +1676,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
 	  newatom[ni0+j].q     = newatom[ni0+j].qB    = 0.0;
 	  newatom[ni0+j].type  = newatom[ni0+j].typeB = tpM;
 	  newatom[ni0+j].ptype = eptAtom;
-	  newatom[ni0+j].resnr = at->atom[i0].resnr;
-	  newatom[ni0+j].chain = at->atom[i0].chain;
+	  newatom[ni0+j].resind= at->atom[i0].resind;
 	  newvsite_type[ni0+j] = NOTSET;
 	  newcgnr[ni0+j]       = (*cgnr)[i0];
 	}
@@ -1736,9 +1735,9 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
     for(i=0; i<at->nr; i++)
       fprintf(debug,"%4d %4d %4s %4d %4s %6d %-10s\n",i+1,o2n[i]+1,
 	      at->atomname[i]?*(at->atomname[i]):"(NULL)",
-	      at->atom[i].resnr,
-	      at->resname[at->atom[i].resnr]?
-	      *(at->resname[at->atom[i].resnr]):"(NULL)",
+	      at->resinfo[at->atom[i].resind].nr,
+	      at->resinfo[at->atom[i].resind].name ?
+	      *(at->resinfo[at->atom[i].resind].name):"(NULL)",
 	      (*cgnr)[i],
 	      ((*vsite_type)[i]==NOTSET) ? 
 	      "NOTSET" : interaction_function[(*vsite_type)[i]].name);
@@ -1747,7 +1746,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
       if (newatomname[i])
 	fprintf(debug,"%4d %4s %4d %6d %-10s\n",i+1,
 		newatomname[i]?*(newatomname[i]):"(NULL)",
-		newatom[i].resnr,newcgnr[i],
+		newatom[i].resind,newcgnr[i],
 		(newvsite_type[i]==NOTSET) ? 
 		"NOTSET" : interaction_function[newvsite_type[i]].name);
   }
@@ -1782,9 +1781,9 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
     for(i=0; i<at->nr; i++)
       fprintf(debug,"%4d %4s %4d %4s %6d %-10s\n",i+1,
 	      at->atomname[i]?*(at->atomname[i]):"(NULL)",
-	      at->atom[i].resnr, 
-	      at->resname[at->atom[i].resnr]?
-	      *(at->resname[at->atom[i].resnr]):"(NULL)",
+	      at->resinfo[at->atom[i].resind].nr, 
+	      at->resinfo[at->atom[i].resind].name ?
+	      *(at->resinfo[at->atom[i].resind].name):"(NULL)",
 	      (*cgnr)[i],
 	      ((*vsite_type)[i]==NOTSET) ? 
 	      "NOTSET" : interaction_function[(*vsite_type)[i]].name);

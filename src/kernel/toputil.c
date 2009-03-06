@@ -393,9 +393,11 @@ void print_atoms(FILE *out,t_atomtype atype,t_atoms *at,int *cgnr)
       if ((tpnmA = get_atomtype_name(tpA,atype)) == NULL)
 	gmx_fatal(FARGS,"tpA = %d, i= %d in print_atoms",tpA,i);
       
-      fprintf(out,"%6d %10s %6d %6s %6s %6d %10g %10g",
-	      i+1,tpnmA,at->atom[i].resnr+1,  
-	      *(at->resname[at->atom[i].resnr]),
+      fprintf(out,"%6d %10s %6d%c %5s %6s %6d %10g %10g",
+	      i+1,tpnmA,
+	      at->resinfo[at->atom[i].resind].nr,
+	      at->resinfo[at->atom[i].resind].ic,
+	      *(at->resinfo[at->atom[i].resind].name),
 	      *(at->atomname[i]),cgnr[i],
 	      at->atom[i].q,at->atom[i].m);
       if (PERTURBED(at->atom[i])) {

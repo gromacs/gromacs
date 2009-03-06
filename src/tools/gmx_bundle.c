@@ -291,8 +291,10 @@ int gmx_bundle(int argc,char *argv[])
     outatoms.nr = 3*n;
     for(i=0; i<3*n; i++) {
       outatoms.atomname[i] = &anm;
-      outatoms.atom[i].resnr = i/3;
-      outatoms.resname[i/3] = &rnm;
+      outatoms.atom[i].resind = i/3;
+      outatoms.resinfo[i/3].name = &rnm;
+      outatoms.resinfo[i/3].nr   = i/3 + 1;
+      outatoms.resinfo[i/3].ic   = ' ';
     }
     fpdb = open_trx(opt2fn("-oa",NFILE,fnm),"w");
   } else

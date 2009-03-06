@@ -49,6 +49,6 @@ extern atom_id search_atom(char *type,int start,
  * When bDontQuit=FALSE an fatal error is issued, otherwise a warning.
  */
 
-extern void set_at(t_atom *at,real m,real q,int type,int resnr);
+extern void set_at(t_atom *at,real m,real q,int type,int resind);
 
 #endif	/* _pgutil_h */

@@ -313,7 +313,7 @@ static void put_residue_com_in_box(int unitcell_enum,int ecenter,
   clear_rvec(com);
   mtot = 0;
   for(i=0; i<natoms+1; i++) {
-    if (i == natoms || (presnr != atom[i].resnr && presnr != NOTSET)) {
+    if (i == natoms || (presnr != atom[i].resind && presnr != NOTSET)) {
       /* calculate final COM */
       res_end = i;
       res_nat = res_end - res_start;
@@ -336,7 +336,7 @@ static void put_residue_com_in_box(int unitcell_enum,int ecenter,
       if (norm2(shift)) {
 	if (debug)
 	  fprintf (debug,"\nShifting position of residue %d (atoms %u-%u) "
-		   "by %g,%g,%g\n", atom[res_start].resnr+1, 
+		   "by %g,%g,%g\n", atom[res_start].resind+1, 
 		   res_start+1, res_end+1, PR_VEC(shift));
 	for(j=res_start; j<res_end; j++)
 	  rvec_inc(x[j],shift);
@@ -354,7 +354,7 @@ static void put_residue_com_in_box(int unitcell_enum,int ecenter,
 	com[d] += m*x[i][d];
       mtot += m;
 
-      presnr = atom[i].resnr;
+      presnr = atom[i].resind;
     }
   }
 }
@@ -966,12 +966,12 @@ int gmx_trjconv(int argc,char *argv[])
     if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB)) {
       /* get memory for stuff to go in pdb file */
       init_t_atoms(&useatoms,atoms->nr,FALSE);
-      sfree(useatoms.resname);
-      useatoms.resname=atoms->resname;
+      sfree(useatoms.resinfo);
+      useatoms.resinfo = atoms->resinfo;
       for(i=0;(i<nout);i++) {
 	useatoms.atomname[i]=atoms->atomname[index[i]];
 	useatoms.atom[i]=atoms->atom[index[i]];
-	useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
+	useatoms.nres=max(useatoms.nres,useatoms.atom[i].resind+1);
       }
       useatoms.nr=nout;
     }

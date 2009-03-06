@@ -305,7 +305,7 @@ static void set_ahcity(int nbb,t_bb bb[])
 t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
 	      int *nall,atom_id **index,
 	      char ***atomname,t_atom atom[],
-	      char ***resname)
+	      t_resinfo *resinfo)
 {
   static char * bb_nm[] = { "N", "H", "CA", "C", "O" };
 #define NBB asize(bb_nm)
@@ -317,10 +317,10 @@ t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
   rd_index(fn,1,&gnx,index,&grpname);
   *nall=gnx;
   fprintf(stderr,"Checking group %s\n",grpname);
-  r0=r1=atom[(*index)[0]].resnr;
+  r0=r1=atom[(*index)[0]].resind;
   for(i=1; (i<gnx); i++) {
-    r0=min(r0,atom[(*index)[i]].resnr);
-    r1=max(r1,atom[(*index)[i]].resnr);
+    r0=min(r0,atom[(*index)[i]].resind);
+    r1=max(r1,atom[(*index)[i]].resind);
   }    
   rnr=r1-r0+1;
   fprintf(stderr,"There are %d residues\n",rnr);
@@ -330,8 +330,8 @@ t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
     
   for(i=j=0; (i<gnx); i++) {
     ai=(*index)[i];
-    ri=atom[ai].resnr-r0;
-    if (strcmp(*(resname[ri]),"PRO") == 0) {
+    ri=atom[ai].resind-r0;
+    if (strcmp(*(resinfo[ri].name),"PRO") == 0) {
       if (strcmp(*(atomname[ai]),"CD") == 0)
 	bb[ri].H=ai;
     }
@@ -392,8 +392,8 @@ t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
   
   /* Set the labels */
   for(i=0; (i<rnr); i++) {
-    ri=atom[bb[i].CA].resnr;
-    sprintf(bb[i].label,"%s%d",*(resname[ri]),ri+res0);
+    ri=atom[bb[i].CA].resind;
+    sprintf(bb[i].label,"%s%d",*(resinfo[ri].name),ri+res0);
   }
   
   *nres=rnr;

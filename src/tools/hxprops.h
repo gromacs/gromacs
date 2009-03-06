@@ -99,7 +99,7 @@ extern void av_phipsi(FILE *fphi,FILE *fpsi,FILE *fphi2,FILE *fpsi2,
 extern t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
 		     int *nall,atom_id **index,
 		     char ***atomname,t_atom atom[],
-		     char ***resname);
+		     t_resinfo *resinfo);
 		     
 extern void do_start_end(int nres,t_bb bb[],rvec x[],int *nbb,
 			 atom_id bbindex[],int *nca,atom_id caindex[],

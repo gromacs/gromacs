@@ -387,8 +387,9 @@ static char *mkatomname(t_atoms *atoms,int i)
   static char buf[32];
   int rnr;
   
-  rnr = atoms->atom[i].resnr;
-  sprintf(buf,"%4s%d%-4s",*atoms->resname[rnr],rnr+1,*atoms->atomname[i]);
+  rnr = atoms->atom[i].resind;
+  sprintf(buf,"%4s%d%-4s",
+	  *atoms->resinfo[rnr].name,atoms->resinfo[rnr].nr,*atoms->atomname[i]);
   
   return buf;
 }
@@ -2351,8 +2352,8 @@ int gmx_hbond(int argc,char *argv[])
 			    gmx_fatal(FARGS,"Invalid donor %d",i);
 			  if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
 			    gmx_fatal(FARGS,"Invalid acceptor %d",j);
-			  resdist=abs(top.atoms.atom[i].resnr-
-				      top.atoms.atom[j].resnr);
+			  resdist=abs(top.atoms.atom[i].resind-
+				      top.atoms.atom[j].resind);
 			  if (resdist >= max_hx) 
 			    resdist = max_hx-1;
 			  hb->nhx[nframes][resdist]++;

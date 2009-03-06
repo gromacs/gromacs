@@ -63,11 +63,11 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
     snew(leg[i/2],256);
     sprintf(leg[i/2],"%s %s%d - %s %s%d",
 	    *(atoms->atomname[index[i]]),
-	    *(atoms->resname[atoms->atom[index[i]].resnr]),
-            atoms->atom[index[i]].resnr+1,
+	    *(atoms->resinfo[atoms->atom[index[i]].resind].name),
+            atoms->resinfo[atoms->atom[index[i]].resind].nr,
 	    *(atoms->atomname[index[i+1]]),
-	    *(atoms->resname[atoms->atom[index[i+1]].resnr]),
-            atoms->atom[index[i+1]].resnr+1);
+	    *(atoms->resinfo[atoms->atom[index[i+1]].resind].name),
+            atoms->resinfo[atoms->atom[index[i+1]].resind].nr);
   }
   xvgr_legend(fp,gnx/2,leg);
   for(i=0; i<gnx/2; i++)

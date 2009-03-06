@@ -77,8 +77,10 @@ static t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
       cg[ncg].q=qq;
       cg[ncg].cg=i;
       anr=cgs->index[i];
-      resnr=atoms->atom[anr].resnr;
-      sprintf(buf,"%s%d",*(atoms->resname[resnr]),resnr+1);
+      resnr=atoms->atom[anr].resind;
+      sprintf(buf,"%s%d",
+	      *(atoms->resinfo[resnr].name),
+	      atoms->resinfo[resnr].nr);
       cg[ncg].label=strdup(buf);
       ncg++;
     }

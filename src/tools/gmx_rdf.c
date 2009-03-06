@@ -190,8 +190,8 @@ static void split_group(int isize,int *index,char *grpname,
 	cur = mol;
       }
     } else if (type == 'r') {
-      /* Check if the residue number has changed */
-      res = atom[a].resnr;
+      /* Check if the residue index has changed */
+      res = atom[a].resind;
       if (res != cur) {
 	coi[is++] = i;
 	cur = res;

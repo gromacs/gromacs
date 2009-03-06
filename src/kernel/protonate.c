@@ -80,7 +80,7 @@ int main (int argc,char *argv[])
   rvec        *x,*ix;
   int         nidx,natoms,natoms_out;
   matrix      box;
-  int         i,frame,resnr;
+  int         i,frame,resind;
   bool        bReadMultiple;
   
   t_filenm fnm[] = {
@@ -133,15 +133,15 @@ int main (int argc,char *argv[])
   snew(iatoms,1);
   init_t_atoms(iatoms,nidx,FALSE);
   snew(iatoms->atom, iatoms->nr);
-  resnr = 0;
+  resind = 0;
   for(i=0; i<nidx; i++) {
     iatoms->atom[i] = atoms->atom[index[i]];
     iatoms->atomname[i] = atoms->atomname[index[i]];
-    if ( i>0 && (atoms->atom[index[i]].resnr!=atoms->atom[index[i-1]].resnr) )
-      resnr++;
-    iatoms->atom[i].resnr = resnr;
-    iatoms->resname[resnr] = atoms->resname[atoms->atom[index[i]].resnr];
-    iatoms->nres = max(iatoms->nres, iatoms->atom[i].resnr+1);
+    if ( i>0 && (atoms->atom[index[i]].resind!=atoms->atom[index[i-1]].resind) )
+      resind++;
+    iatoms->atom[i].resind = resind;
+    iatoms->resinfo[resind] = atoms->resinfo[atoms->atom[index[i]].resind];
+    iatoms->nres = max(iatoms->nres, iatoms->atom[i].resind+1);
   }
   
   init_t_protonate(&protdata);

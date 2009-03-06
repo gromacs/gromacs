@@ -51,10 +51,6 @@
 #define	USE_WIDTH	((LINE_WIDTH)-(RMARGIN))
 #define INDENT		3
 
-extern char *atomname(t_atoms *a,int i);
-/* Return pointer to a buffer which holds the atomname in the
- * form resname resnr atomname. Pointer can be freed afterwards.
- */
 int pr_indent(FILE *fp,int n);
 int available(FILE *fp,void *p,int indent,const char *title);
 int pr_title(FILE *fp,int indent,const char *title);

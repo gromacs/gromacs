@@ -175,7 +175,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
   if (np+nn > 0) {
     /* Put the positive and negative ions at the end */
     starta = index[nsa*(nw - np - nn)];
-    startr = atoms->atom[starta].resnr;
+    startr = atoms->atom[starta].resind;
 
     if (np) {
       snew(pptr,1);
@@ -198,16 +198,16 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 	k = startr+npi;
 	copy_rvec(x[index[nsa*i]],xt[j]);
 	atoms->atomname[j] = paptr;
-	atoms->atom[j].resnr = k ;
-	atoms->resname[k] = pptr;
+	atoms->atom[j].resind = k ;
+	atoms->resinfo[k].name = pptr;
 	npi++;
       } else if (r < 0) {
 	j = starta+np+nni;
 	k = startr+np+nni;
 	copy_rvec(x[index[nsa*i]],xt[j]);
 	atoms->atomname[j] = naptr;
-	atoms->atom[j].resnr = k;
-	atoms->resname[k] = nptr;
+	atoms->atom[j].resind = k;
+	atoms->resinfo[k].name = nptr;
 	nni++;
       }
     }
@@ -436,8 +436,8 @@ int gmx_genion(int argc, char *argv[])
 		  grpname,i,index[i-1]+1,i+1,index[i]+1);
     nsa = 1;
     while ((nsa<nwa) &&
-	   (atoms.atom[index[nsa]].resnr ==
-	    atoms.atom[index[nsa-1]].resnr))
+	   (atoms.atom[index[nsa]].resind ==
+	    atoms.atom[index[nsa-1]].resind))
       nsa++;
     if (nwa % nsa)
       gmx_fatal(FARGS,"Your solvent group size (%d) is not a multiple of %d",

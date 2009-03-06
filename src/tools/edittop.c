@@ -60,7 +60,7 @@ void replace_atom(t_topology *top,int inr,char *anm,char *resnm,
   atoms->atom[inr].type = atoms->atom[inr].typeB = type;
   
   /* Residue name */
-  atoms->resname[atoms->atom[inr].resnr] = put_symtab(&top->symtab,resnm);
+  atoms->resinfo[atoms->atom[inr].resind].name = put_symtab(&top->symtab,resnm);
   /* Atom name */
   atoms->atomname[inr] = put_symtab(&top->symtab,anm);
   if (debug)

@@ -58,22 +58,23 @@
 #include "confio.h"
 #include "eigensolver.h"
 
-static real find_pdb_bfac(t_atoms *atoms,char *resnm,int resnr,char *atomnm)
+static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
 {
   char rresnm[8];
   int i;
   
-  strcpy(rresnm,resnm);
+  strcpy(rresnm,*ri->name);
   rresnm[3]='\0';
   for(i=0; (i<atoms->nr); i++) {
-    if ((resnr == atoms->atom[i].resnr) &&
-	(strcmp(*atoms->resname[resnr],rresnm) == 0) &&
+    if ((ri->nr == atoms->resinfo[atoms->atom[i].resind].nr) &&
+	(ri->ic == atoms->resinfo[atoms->atom[i].resind].ic) &&
+	(strcmp(*atoms->resinfo[atoms->atom[i].resind].name,rresnm) == 0) &&
 	(strstr(*atoms->atomname[i],atomnm) != NULL))
       break;
   }
   if (i == atoms->nr) {
     fprintf(stderr,"\rCan not find %s%d-%s in pdbfile\n",
-	    rresnm,resnr,atomnm);
+	    rresnm,ri->nr,atomnm);
     return 0.0;
   }
     
@@ -108,7 +109,7 @@ void average_residues(real f[],int isize,atom_id index[],real w_rls[],
     av += w_rls[index[i]]*f[i];
     m += w_rls[index[i]];
     if (i+1==isize || 
-	atoms->atom[index[i]].resnr!=atoms->atom[index[i+1]].resnr) {
+	atoms->atom[index[i]].resind!=atoms->atom[index[i+1]].resind) {
       av /= m;
       for(j=start; j<=i; j++)
 	f[j] = av;
@@ -207,7 +208,7 @@ int gmx_rmsf(int argc,char *argv[])
   
   FILE         *fp;               /* the graphics file */
   char         *devfn,*dirfn;
-  int          resnr;
+  int          resind;
 
   bool         bReadPDB;  
   atom_id      *index;
@@ -386,13 +387,13 @@ int gmx_rmsf(int argc,char *argv[])
     xvgr_legend(fp,2,leg);
     for(i=0;(i<isize);i++) {
       if (!bRes || i+1==isize ||
-	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr) {
-	resnr    = top.atoms.atom[index[i]].resnr;
-	pdb_bfac = find_pdb_bfac(pdbatoms,*(top.atoms.resname[resnr]),resnr,
+	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind) {
+	resind    = top.atoms.atom[index[i]].resind;
+	pdb_bfac = find_pdb_bfac(pdbatoms,&top.atoms.resinfo[resind],
 				 *(top.atoms.atomname[index[i]]));
 	
 	fprintf(fp,"%5d  %10.5f  %10.5f\n",
-		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,rmsf[i]*bfac,
+		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,rmsf[i]*bfac,
 		pdb_bfac);
       }
     }
@@ -401,9 +402,9 @@ int gmx_rmsf(int argc,char *argv[])
     fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation",label,"(nm)");
     for(i=0; i<isize; i++)
       if (!bRes || i+1==isize ||
-	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr)
+	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
 	fprintf(fp,"%5d %8.4f\n",
-		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,sqrt(rmsf[i]));
+		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,sqrt(rmsf[i]));
     fclose(fp);
   }
   
@@ -419,9 +420,9 @@ int gmx_rmsf(int argc,char *argv[])
     fp = xvgropen(devfn,"RMS Deviation",label,"(nm)");
     for(i=0; i<isize; i++)
       if (!bRes || i+1==isize ||
-	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr)
+	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
 	fprintf(fp,"%5d %8.4f\n",
-		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,sqrt(rmsf[i]));
+		bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : i+1,sqrt(rmsf[i]));
     fclose(fp);
   }
 

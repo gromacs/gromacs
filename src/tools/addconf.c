@@ -76,11 +76,11 @@ static void set_margin(t_atoms *atoms, rvec *x, real *r)
   start=0;
   for(i=0; i < atoms->nr; i++) {
     if ( (i+1 == atoms->nr) || 
-	 (atoms->atom[i+1].resnr != atoms->atom[i].resnr) ) {
+	 (atoms->atom[i+1].resind != atoms->atom[i].resind) ) {
       d=max_dist(x,r,start,i+1);
       if (debug && d>box_margin)
 	fprintf(debug,"getting margin from %s: %g\n",
-		*(atoms->resname[atoms->atom[i].resnr]),box_margin);
+		*(atoms->resinfo[atoms->atom[i].resind].name),box_margin);
       box_margin=max(box_margin,d);
       start=i+1;
     }
@@ -104,12 +104,12 @@ static bool outside_box_plus_margin(rvec x,matrix box)
 
 static int mark_res(int at, bool *mark, int natoms, t_atom *atom,int *nmark)
 {
-  int resnr;
+  int resind;
   
-  resnr = atom[at].resnr;
-  while( (at > 0) && (resnr==atom[at-1].resnr) )
+  resind = atom[at].resind;
+  while( (at > 0) && (resind==atom[at-1].resind) )
     at--;
-  while( (at < natoms) && (resnr==atom[at].resnr) ) {
+  while( (at < natoms) && (resind==atom[at].resind) ) {
     if (!mark[at]) {
       mark[at]=TRUE;
       (*nmark)++;
@@ -163,11 +163,11 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
     copy_rvec(xs[i],xc[j]);
     if (vc) copy_rvec(vs[i],vc[j]);
     memcpy(&(ac->atom[j]),&(as->atom[i]),sizeof(as->atom[i]));
-    ac->atom[j].type   = 0;
-    ac->atom[j].resnr += res0;
+    ac->atom[j].type    = 0;
+    ac->atom[j].resind += res0;
   }
   ac->nr   = j;
-  ac->nres = ac->atom[j-1].resnr+1;
+  ac->nres = ac->atom[j-1].resind+1;
   /* Fill all elements to prevent uninitialized memory */
   for(i=0; i<ac->nr; i++) {
     ac->atom[i].m     = 1;
@@ -411,8 +411,8 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 	      (outside_box_minus_margin2(x_solvt[is1],box) && /* is1 on edge */
 	       outside_box_minus_margin2(x_solvt[is2],box))   /* is2 on edge */
 	      ) &&
-	     (atoms_solvt->atom[is1].resnr !=  /* Not the same residue */
-	      atoms_solvt->atom[is2].resnr))) {
+	     (atoms_solvt->atom[is1].resind !=  /* Not the same residue */
+	      atoms_solvt->atom[is2].resind))) {
 	  
 	  ntest++;
 	  rvec_sub(xi,xj,dx);
@@ -481,22 +481,22 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
     if (!remove[i]) {
       j++;
       if ((i == 0) || 
-	  (atoms_solvt->atom[i].resnr != atoms_solvt->atom[i-1].resnr))
+	  (atoms_solvt->atom[i].resind != atoms_solvt->atom[i-1].resind))
 	jnres++;
     }
   }
   if (debug)
     fprintf(debug,"Will add %d atoms in %d residues\n",j,jnres);
   /* Flag the remaing solvent atoms to be removed */
-  jjj = atoms_solvt->atom[i-1].resnr;
+  jjj = atoms_solvt->atom[i-1].resind;
   for ( ; (i<atoms_solvt->nr); i++) 
-    if (atoms_solvt->atom[i].resnr > jjj)
+    if (atoms_solvt->atom[i].resind > jjj)
       remove[i] = TRUE;
     else
       j++;
 
   if (bSrenew) {
-    srenew(atoms->resname,  atoms->nres+atoms_solvt->nres);
+    srenew(atoms->resinfo,  atoms->nres+atoms_solvt->nres);
     srenew(atoms->atomname, atoms->nr+j);
     srenew(atoms->atom,     atoms->nr+j);
     srenew(*x,              atoms->nr+j);
@@ -510,7 +510,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   for (i=0; i<atoms_solvt->nr; i++)
     if (!remove[i]) {
       if (prev==NOTSET || 
-	  atoms_solvt->atom[i].resnr != atoms_solvt->atom[prev].resnr) {
+	  atoms_solvt->atom[i].resind != atoms_solvt->atom[prev].resind) {
 	nresadd ++;
 	atoms->nres++;
 	/* calculate shift of the solvent molecule using the first atom */
@@ -523,14 +523,16 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
       rvec_add(x_solvt[i],dx,(*x)[atoms->nr]);
       if (v) copy_rvec(v_solvt[i],(*v)[atoms->nr]);
       (*r)[atoms->nr]   = r_solvt[i];
-      atoms->atom[atoms->nr].resnr = atoms->nres-1;
-      atoms->resname[atoms->nres-1] =
-	atoms_solvt->resname[atoms_solvt->atom[i].resnr];
+      atoms->atom[atoms->nr].resind = atoms->nres-1;
+      atoms->resinfo[atoms->nres-1] =
+	atoms_solvt->resinfo[atoms_solvt->atom[i].resind];
+      atoms->resinfo[atoms->nres-1].nr =
+	(atoms->nres == 1 ? 1 : atoms->resinfo[atoms->nres-2].nr + 1);
       atoms->nr++;
       prev=i;
     }
   if (bSrenew)
-    srenew(atoms->resname,  atoms->nres+nresadd);
+    srenew(atoms->resinfo,  atoms->nres+nresadd);
   
   if (bVerbose)
     fprintf(stderr,"Added %d molecules\n",nresadd);

@@ -554,9 +554,11 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
       fact=1.0;
 
     for(i=0; i<nframes; i++) {
-      atoms.resname[i]=&resnm;
-      atoms.atomname[i]=&atnm;
-      atoms.atom[i].resnr=ceil(i*fact);
+      atoms.atomname[i] = &atnm;
+      atoms.atom[i].resind = i;
+      atoms.resinfo[i].name = &resnm;
+      atoms.resinfo[i].nr   = ceil(i*fact);
+      atoms.resinfo[i].ic   = ' ';
       x[i][XX]=inprod[0][i];
       x[i][YY]=inprod[1][i];
       x[i][ZZ]=inprod[2][i];
@@ -631,8 +633,9 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
       out=open_trx(str2,"w");
       for(frame=0; frame<nextr; frame++) {
 	if ((extreme==0) && (nextr<=3))
-	  for(i=0; i<natoms; i++)
-	    atoms->atom[index[i]].chain='A'+frame;
+	  for(i=0; i<natoms; i++) {
+	    atoms->resinfo[atoms->atom[index[i]].resind].chain = 'A' + frame;
+	  }
 	for(i=0; i<natoms; i++)
 	  for(d=0; d<DIM; d++) 
 	    xread[index[i]][d] = 

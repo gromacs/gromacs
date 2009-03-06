@@ -1369,11 +1369,11 @@ int gmx_cluster(int argc,char *argv[])
     }
     init_t_atoms(&useatoms,isize,FALSE);
     snew(usextps, isize);
-    useatoms.resname=top.atoms.resname;
+    useatoms.resinfo = top.atoms.resinfo;
     for(i=0; i<isize; i++) {
       useatoms.atomname[i]=top.atoms.atomname[index[i]];
-      useatoms.atom[i].resnr=top.atoms.atom[index[i]].resnr;
-      useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
+      useatoms.atom[i].resind = top.atoms.atom[index[i]].resind;
+      useatoms.nres = max(useatoms.nres,useatoms.atom[i].resind+1);
       copy_rvec(xtps[index[i]],usextps[i]);
     }
     useatoms.nr=isize;

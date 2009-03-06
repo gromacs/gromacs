@@ -110,10 +110,10 @@ static void pr_hbonds(FILE *fp,t_blocka *hb,t_atoms *pdba)
     for(j=j0; (j<j1); j++) {
       k=hb->a[j];
       fprintf(fp,"%5s%4d%5s - %5s%4d%5s\n",
-	      *pdba->resname[pdba->atom[i].resnr],
-	      pdba->atom[i].resnr+1,*pdba->atomname[i],
-	      *pdba->resname[pdba->atom[k].resnr],
-	      pdba->atom[k].resnr+1,*pdba->atomname[k]);
+	      *pdba->resinfo[pdba->atom[i].resind].name,
+	      pdba->resinfo[pdba->atom[i].resind].nr,*pdba->atomname[i],
+	      *pdba->resinfo[pdba->atom[k].resind].name,
+	      pdba->resinfo[pdba->atom[k].resind].nr,*pdba->atomname[k]);
     }
   }
 }
@@ -129,13 +129,13 @@ static bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
   
   natom=pdba->nr;
   bHB = FALSE;
-  ri = pdba->atom[i].resnr;
+  ri = pdba->atom[i].resind;
   dist2=sqr(dist);
   for(j=0; (j<natom); j++) {
     /* Check whether the other atom is a donor/acceptor and not i */
     if ((ad[j]) && (j != i)) {
       /* Check whether the other atom is on the same ring as well */
-      if ((pdba->atom[j].resnr != ri) ||
+      if ((pdba->atom[j].resind != ri) ||
 	  ((strcmp(*pdba->atomname[j],"ND1") != 0) &&
 	   (strcmp(*pdba->atomname[j],"NE2") != 0))) {
 	aj = j;
@@ -147,10 +147,11 @@ static bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
 	  if (debug)
 	    fprintf(debug,
 		    "HBOND between %s%d-%s and %s%d-%s is %g nm, %g deg\n",
-		    *pdba->resname[pdba->atom[i].resnr], 
-		    pdba->atom[i].resnr+1, *pdba->atomname[i],
-		    *pdba->resname[pdba->atom[aj].resnr],
-		    pdba->atom[aj].resnr+1,*pdba->atomname[aj],sqrt(d2),a);
+		    *pdba->resinfo[pdba->atom[i].resind].name, 
+		    pdba->resinfo[pdba->atom[i].resind].nr,*pdba->atomname[i],
+		    *pdba->resinfo[pdba->atom[aj].resind].name,
+		    pdba->resinfo[pdba->atom[aj].resind].nr,*pdba->atomname[aj],
+		    sqrt(d2),a);
 	  hbond[i] = TRUE;
 	  bHB      = TRUE;
 	}
@@ -189,7 +190,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   bool bHDd,bHEd;
   rvec xh1,xh2;
   int  natom;
-  int  i,j,nd,na,aj,hisnr,his0,type=-1;
+  int  i,j,nd,na,aj,hisind,his0,type=-1;
   int  nd1,ne2,cg,cd2,ce1;
   t_blocka *hb;
   real d;
@@ -219,17 +220,17 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   fprintf(stderr,"There are %d hydrogen bonds\n",hb->nra);
   
   /* Now do the HIS stuff */
-  hisnr=-1;
+  hisind=-1;
   for(i=0; (i<natom); ) {
-    if (strcasecmp(*pdba->resname[pdba->atom[i].resnr],"HIS") != 0) 
+    if (strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name,"HIS") != 0) 
       i++;
     else {
-      if (pdba->atom[i].resnr != hisnr) {
-	hisnr=pdba->atom[i].resnr;
+      if (pdba->atom[i].resind != hisind) {
+	hisind=pdba->atom[i].resind;
 	
 	/* Find the  atoms in the ring */
 	nd1=ne2=cg=cd2=ce1=-1;
-	for(j=i; (pdba->atom[j].resnr==hisnr) && (j<natom); j++) {
+	for(j=i; (pdba->atom[j].resind==hisind) && (j<natom); j++) {
 	  atomnm=*pdba->atomname[j];
 	  if (strcmp(atomnm,"CD2") == 0)
 	    cd2=j;
@@ -261,13 +262,15 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
 	  }
 	  else 
 	    type = ehisB;
-	  fprintf(stderr,"Will use %s for residue %d\n",hh[type],hisnr+1);
+	  fprintf(stderr,"Will use %s for residue %d\n",
+		  hh[type],pdba->resinfo[hisind].nr);
 	}
 	else 
-	  gmx_fatal(FARGS,"Incomplete ring in HIS%d",hisnr+1);
+	  gmx_fatal(FARGS,"Incomplete ring in HIS%d",
+		    pdba->resinfo[hisind].nr);
 	
-	sfree(*pdba->resname[hisnr]);
-	*pdba->resname[hisnr]=strdup(hh[type]);
+	sfree(*pdba->resinfo[hisind].name);
+	*pdba->resinfo[hisind].name = strdup(hh[type]);
       }
     }
   }

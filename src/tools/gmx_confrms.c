@@ -83,11 +83,11 @@ int build_res_index(int isize, atom_id index[], t_atom atom[], int rindex[])
   int i, r;
   
   r=0;
-  rindex[r] = atom[index[0]].resnr;
+  rindex[r] = atom[index[0]].resind;
   r++;
   for(i=1; i<isize; i++)
-    if (atom[index[i]].resnr != rindex[r-1]) {
-      rindex[r] = atom[index[i]].resnr;
+    if (atom[index[i]].resind != rindex[r-1]) {
+      rindex[r] = atom[index[i]].resind;
       r++;
     }
   
@@ -98,8 +98,8 @@ int find_res_end(int i, int isize, atom_id index[], t_atoms *atoms)
 {
   int rnr;
   
-  rnr = atoms->atom[index[i]].resnr;
-  while(i<isize && atoms->atom[index[i]].resnr==rnr)
+  rnr = atoms->atom[index[i]].resind;
+  while(i<isize && atoms->atom[index[i]].resind==rnr)
     i++;
   return i;
 }
@@ -157,8 +157,10 @@ int find_next_match_atoms_in_res(int *i1,int isize1,atom_id index1[],
   return cmp;
 }
 
-int find_next_match_res(int *rnr1, int isize1, int index1[], char **resnms1[],
-			int *rnr2, int isize2, int index2[], char **resnms2[])
+static int find_next_match_res(int *rnr1, int isize1,
+			       int index1[], t_resinfo *resinfo1,
+			       int *rnr2, int isize2,
+			       int index2[], t_resinfo *resinfo2)
 {
   int dx, dy, dmax, cmp, rr1, rr2;
   bool bFW=FALSE,bFF=FALSE;
@@ -181,17 +183,20 @@ int find_next_match_res(int *rnr1, int isize1, int index1[], char **resnms1[],
 	cmp=NOTSET;
 	if ( rr1+dx<isize1 && rr2+dy<isize2 ) {
 	  bFW=TRUE;
-	  cmp=debug_strcmp(*resnms1[index1[rr1+dx]],*resnms2[index2[rr2+dy]]);
+	  cmp=debug_strcmp(*resinfo1[index1[rr1+dx]].name,
+			   *resinfo2[index2[rr2+dy]].name);
 	  if (debug) fprintf(debug,"(%d %d)", rr1+dx, rr2+dy);
 	}
 	if ( cmp!=0 && rr1+dy<isize1 && rr2+dx<isize2 ) {
 	  bFW=FALSE;
-	  cmp=debug_strcmp(*resnms1[index1[rr1+dy]],*resnms2[index2[rr2+dx]]);
+	  cmp=debug_strcmp(*resinfo1[index1[rr1+dy]].name,
+			   *resinfo2[index2[rr2+dx]].name);
 	  if (debug) fprintf(debug,"(%d %d)", rr1+dy, rr2+dx);
 	}
 	if ( dx!=0 && cmp!=0 && rr1+dx<isize1 && rr2+dx<isize2 ) {
 	  bFF=TRUE;
-	  cmp=debug_strcmp(*resnms1[index1[rr1+dx]],*resnms2[index2[rr2+dx]]);
+	  cmp=debug_strcmp(*resinfo1[index1[rr1+dx]].name,
+			   *resinfo2[index2[rr2+dx]].name);
 	  if (debug) fprintf(debug,"(%d %d)", rr1+dx, rr2+dx);
 	} else
 	  bFF=FALSE;
@@ -204,7 +209,8 @@ int find_next_match_res(int *rnr1, int isize1, int index1[], char **resnms1[],
      to allow for single mutations of residues... */
   if (bFF) {
     if (debug) fprintf(debug, "%d.%d.%dX%sX%s",dx,rr1,rr2,
-		       *resnms1[index1[rr1+1]],*resnms2[index2[rr2+1]]);
+		       *resinfo1[index1[rr1+1]].name,
+		       *resinfo2[index2[rr2+1]].name);
     dx=1;
   }
   if (cmp==0) {
@@ -232,10 +238,10 @@ int find_first_atom_in_res(int rnr, int isize, atom_id index[], t_atom atom[])
   int i;
   
   i=0;
-  while(i<isize && atom[index[i]].resnr!=rnr)
+  while(i<isize && atom[index[i]].resind!=rnr)
     i++;
   
-  if (atom[index[i]].resnr==rnr)
+  if (atom[index[i]].resind==rnr)
     return i;
   else
     return NOTSET;
@@ -250,13 +256,14 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
   int rsize1, rsize2;
   int *rindex1, *rindex2;
   char *resnm1, *resnm2, *atnm1, *atnm2;
-  char ***resnms1,***resnms2,***atnms1,***atnms2;
+  char ***atnms1,***atnms2;
+  t_resinfo *resinfo1,*resinfo2;
   
   /* set some handy shortcuts */  
-  resnms1 = atoms1->resname;
-  atnms1  = atoms1->atomname;
-  resnms2 = atoms2->resname;
-  atnms2  = atoms2->atomname;
+  resinfo1 = atoms1->resinfo;
+  atnms1   = atoms1->atomname;
+  resinfo2 = atoms2->resinfo;
+  atnms2   = atoms2->atomname;
   
   /* build indexes of selected residues */
   snew(rindex1,atoms1->nres);
@@ -271,12 +278,12 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
   if (debug) fprintf(debug, "Find matching names: %d, %d\n", *isize1, *isize2);
   while ( atcmp==0 && i1<*isize1 && i2<*isize2 ) {
     /* prologue */
-    rnr1 = atoms1->atom[index1[i1]].resnr;
-    rnr2 = atoms2->atom[index2[i2]].resnr;
+    rnr1 = atoms1->atom[index1[i1]].resind;
+    rnr2 = atoms2->atom[index2[i2]].resind;
     if (rnr1!=prnr1 || rnr2!=prnr2) {
       if (debug) fprintf(debug, "R: %s%d %s%d\n", 
-			 *resnms1[rnr1],rnr1,*resnms2[rnr2],rnr2);
-      rescmp=strcmp(*resnms1[rnr1], *resnms2[rnr2]);
+			 *resinfo1[rnr1].name,rnr1,*resinfo2[rnr2].name,rnr2);
+      rescmp=strcmp(*resinfo1[rnr1].name, *resinfo2[rnr2].name);
     }
     if (debug) fprintf(debug, "comparing %d %d", i1, i2);
     atcmp=debug_strcmp(*atnms1[index1[i1]], *atnms2[index2[i2]]);
@@ -295,15 +302,17 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
     if (atcmp!=0) { /* still no match -> next residue(s) */
       prnr1=rnr1;
       prnr2=rnr2;
-      rescmp = find_next_match_res(&rnr1,rsize1,rindex1,resnms1,
-				   &rnr2,rsize2,rindex2,resnms2);
+      rescmp = find_next_match_res(&rnr1,rsize1,rindex1,resinfo1,
+				   &rnr2,rsize2,rindex2,resinfo2);
       if (rnr1!=prnr1) 
 	i1 = find_first_atom_in_res(rnr1, *isize1, index1, atoms1->atom);
       if (rnr2!=prnr2) 
 	i2 = find_first_atom_in_res(rnr2, *isize2, index2, atoms2->atom);
       if (debug) fprintf(debug, " -> %s%d-%s%d %s%d-%s%d",
-			 *resnms1[rnr1],rnr1, *atnms1[index1[i1]],index1[i1],
-			 *resnms2[rnr2],rnr2, *atnms2[index2[i2]],index2[i2]);
+			 *resinfo1[rnr1].name,rnr1,
+			 *atnms1[index1[i1]],index1[i1],
+			 *resinfo2[rnr2].name,rnr2,
+			 *atnms2[index2[i2]],index2[i2]);
       m1 = find_res_end(i1, *isize1, index1, atoms1);
       m2 = find_res_end(i2, *isize2, index2, atoms2);
       if (debug) fprintf(debug, " [%d<%d %d<%d]", i1,m1, i2,m2);
@@ -564,7 +573,7 @@ int gmx_confrms(int argc,char *argv[])
 	if (bBfac)
 	  atoms1->pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
 	if (bLabel)
-	  atoms1->atom[index1[i]].chain = 'A';
+	  atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A';
       }
       snew(atoms2->pdbinfo, atoms2->nr);
       snew(atoms2->atom, atoms2->nr);
@@ -574,7 +583,7 @@ int gmx_confrms(int argc,char *argv[])
 	if (bBfac)
 	  atoms2->pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
 	if (bLabel)
-	  atoms2->atom[index2[i]].chain = 'B';
+	  atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B';
       }
     }
     fp=ffopen(outfile,"w");

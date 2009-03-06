@@ -81,7 +81,7 @@ static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF,
   int        *isize;
   int        isize_cg=0;
   int        isize_ref=3;
-  int        ref_resnr[3];
+  int        ref_resind[3];
   int        nrefmol=0,refc=0;
   atom_id    **index;
   atom_id    *index_cg=NULL;
@@ -187,16 +187,16 @@ structure if needed */
         {
           /* check if all three atoms come from the same molecule */
           for (j=G_REF1; j<=G_REF3; j++)
-            ref_resnr[j] = top.atoms.atom[index[j][i]].resnr;
+            ref_resind[j] = top.atoms.atom[index[j][i]].resind;
 
 
-          if ( ref_resnr[G_REF1] != ref_resnr[G_REF2] ||
-                 ref_resnr[G_REF2] != ref_resnr[G_REF3] ||
-                 ref_resnr[G_REF3] != ref_resnr[G_REF1] )
+          if ( ref_resind[G_REF1] != ref_resind[G_REF2] ||
+                 ref_resind[G_REF2] != ref_resind[G_REF3] ||
+                 ref_resind[G_REF3] != ref_resind[G_REF1] )
               {
                 fprintf(stderr,"\nWarning: reference triple (%d) will be skipped.\n",i);
                 fprintf(stderr,  "         resnr[1]: %d, resnr[2]: %d, resnr[3]: %d\n",
-                        ref_resnr[G_REF1],ref_resnr[G_REF2], ref_resnr[G_REF3]);
+                        ref_resind[G_REF1],ref_resind[G_REF2], ref_resind[G_REF3]);
                 isize[NDX_REF1]--;
                 for (j=NDX_REF1; j<=NDX_REF3; j++)
                   srenew(index[j],isize[NDX_REF1]);
@@ -232,18 +232,18 @@ structure if needed */
         {
           /* check consistency for atoms 1 and 2 */
           for (j=G_REF1; j<=G_REF2; j++)
-            ref_resnr[j] = top.atoms.atom[index[j][i]].resnr;
+            ref_resind[j] = top.atoms.atom[index[j][i]].resind;
 
 
-          if ( ref_resnr[G_REF1] != ref_resnr[G_REF2] ||
+          if ( ref_resind[G_REF1] != ref_resind[G_REF2] ||
                index[G_REF1][i] == index[G_REF2][i] )
             {
-              if ( ref_resnr[G_REF1] != ref_resnr[G_REF2] )
+              if ( ref_resind[G_REF1] != ref_resind[G_REF2] )
                 {
                   fprintf(stderr,"\nWarning: bond (%d) not from one molecule."
                           "Will not be used for SDF.\n",i);
                   fprintf(stderr,  "         resnr[1]: %d, resnr[2]: %d\n",
-                          ref_resnr[G_REF1],ref_resnr[G_REF2]);
+                          ref_resind[G_REF1],ref_resind[G_REF2]);
                 }
               else
                 {
@@ -271,14 +271,14 @@ structure if needed */
 
 
       for (i=G_REF1; i<=G_REF3; i++)
-        ref_resnr[i] = top.atoms.atom[index[i][0]].resnr;
+        ref_resind[i] = top.atoms.atom[index[i][0]].resind;
 
 
       for (i=0; i<natoms; i++)
         {
-          if (  ref_resnr[G_REF1] == top.atoms.atom[i].resnr ||
-                ref_resnr[G_REF2] == top.atoms.atom[i].resnr ||
-                ref_resnr[G_REF3] == top.atoms.atom[i].resnr )
+          if (  ref_resind[G_REF1] == top.atoms.atom[i].resind ||
+                ref_resind[G_REF2] == top.atoms.atom[i].resind ||
+                ref_resind[G_REF3] == top.atoms.atom[i].resind )
             nrefmol++;
         }
       srenew(index[G_REFMOL],nrefmol);
@@ -288,9 +288,9 @@ structure if needed */
 
       for (i=0; i<natoms; i++)
         {
-          if (  ref_resnr[G_REF1] == top.atoms.atom[i].resnr ||
-                ref_resnr[G_REF2] == top.atoms.atom[i].resnr ||
-                ref_resnr[G_REF3] == top.atoms.atom[i].resnr )
+          if (  ref_resind[G_REF1] == top.atoms.atom[i].resind ||
+                ref_resind[G_REF2] == top.atoms.atom[i].resind ||
+                ref_resind[G_REF3] == top.atoms.atom[i].resind )
             {
               index[G_REFMOL][nrefmol] = i;
               nrefmol++;
@@ -360,8 +360,8 @@ structure if needed */
             for (j=0; j<isize[G_REF3]; j++)
               {
                 /* Avoid expensive stuff if possible */
-                if ( top.atoms.atom[index[G_REF1][i]].resnr != 
-                     top.atoms.atom[index[G_REF3][j]].resnr &&
+                if ( top.atoms.atom[index[G_REF1][i]].resind != 
+                     top.atoms.atom[index[G_REF3][j]].resind &&
                      index[G_REF1][i] != index[G_REF3][j] &&
                      index[G_REF2][i] != index[G_REF3][j] )
                   {
@@ -405,8 +405,8 @@ structure if needed */
             for (j=0; j<isize[G_REF2]; j++)
               {
                 /* Avoid expensive stuff if possible */
-                if ( top.atoms.atom[index[G_REF1][i]].resnr != 
-                     top.atoms.atom[index[G_REF2][j]].resnr &&
+                if ( top.atoms.atom[index[G_REF1][i]].resind != 
+                     top.atoms.atom[index[G_REF2][j]].resind &&
                      index[G_REF1][i] != index[G_REF2][j] )
                   {
                     pbc_dx(&pbc,x[index[G_REF1][i]],x[index[G_REF2][j]],dx);
@@ -416,10 +416,10 @@ structure if needed */
                       {
                         for (k=0; k<isize[G_REF3]; k++)
                           {
-                            if ( top.atoms.atom[index[G_REF1][i]].resnr != 
-                                 top.atoms.atom[index[G_REF3][k]].resnr &&
-                                 top.atoms.atom[index[G_REF2][j]].resnr != 
-                                 top.atoms.atom[index[G_REF3][k]].resnr &&
+                            if ( top.atoms.atom[index[G_REF1][i]].resind != 
+                                 top.atoms.atom[index[G_REF3][k]].resind &&
+                                 top.atoms.atom[index[G_REF2][j]].resind != 
+                                 top.atoms.atom[index[G_REF3][k]].resind &&
                                  index[G_REF1][i] != index[G_REF3][k] &&
                                  index[G_REF2][j] != index[G_REF3][k])
                               {
@@ -551,8 +551,8 @@ structure if needed */
 
       for (i=0; i<isize[G_REFMOL]; i++)
         fprintf(fp,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
-                top.atoms.atom[index[G_REFMOL][i]].resnr+1,
-                *(top.atoms.resname[top.atoms.atom[index[G_REFMOL][i]].resnr]),
+                top.atoms.resinfo[top.atoms.atom[index[G_REFMOL][i]].resind].nr,
+                *(top.atoms.resinfo[top.atoms.atom[index[G_REFMOL][i]].resind].name),
                 *(top.atoms.atomname[index[G_REFMOL][i]]),i+1,
                 -1*x_refmol[i][XX],-1*x_refmol[i][YY],-1*x_refmol[i][ZZ]);
       /* Inserted -1* on the line above three times */

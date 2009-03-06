@@ -67,9 +67,9 @@ int *res_ndx(t_atoms *atoms)
   if (atoms->nr <= 0)
     return NULL;
   snew(rndx,atoms->nr);
-  r0=atoms->atom[0].resnr;
+  r0=atoms->atom[0].resind;
   for(i=0; (i<atoms->nr); i++)
-    rndx[i]=atoms->atom[i].resnr-r0;
+    rndx[i]=atoms->atom[i].resind-r0;
   
   return rndx;
 }
@@ -82,10 +82,10 @@ int *res_natm(t_atoms *atoms)
   if (atoms->nr <= 0)
     return NULL;
   snew(natm,atoms->nres);
-  r0=atoms->atom[0].resnr;
+  r0=atoms->atom[0].resind;
   j=0;
   for(i=0; (i<atoms->nres); i++) {
-    while ((atoms->atom[j].resnr)-r0 == i) {
+    while ((atoms->atom[j].resind)-r0 == i) {
       natm[i]++;
       j++;
     }
@@ -223,25 +223,25 @@ int gmx_mdmat(int argc,char *argv[])
   snew(useatoms.atomname,natoms);
     
   useatoms.nres = 0;
-  snew(useatoms.resname,natoms);
+  snew(useatoms.resinfo,natoms);
   
-  prevres = top.atoms.atom[index[0]].resnr;
+  prevres = top.atoms.atom[index[0]].resind;
   newres  = 0;
   for(i=0;(i<isize);i++) {
     int ii = index[i];
     useatoms.atomname[i]=top.atoms.atomname[ii];
-    if (top.atoms.atom[ii].resnr != prevres) {
-      prevres = top.atoms.atom[ii].resnr;
+    if (top.atoms.atom[ii].resind != prevres) {
+      prevres = top.atoms.atom[ii].resind;
       newres++;
-      useatoms.resname[i] = top.atoms.resname[prevres];
+      useatoms.resinfo[i] = top.atoms.resinfo[prevres];
       if (debug) {
 	fprintf(debug,"New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
-		*(top.atoms.resname[top.atoms.atom[ii].resnr]),
+		*(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
 		*(top.atoms.atomname[ii]),
 		ii,i,newres);
       }
     }
-    useatoms.atom[i].resnr = newres;
+    useatoms.atom[i].resind = newres;
   }
   useatoms.nres = newres+1;
   useatoms.nr = isize;

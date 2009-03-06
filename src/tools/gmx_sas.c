@@ -140,8 +140,9 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     r0 = atoms->nres;
     srenew(atoms->atom,atoms->nr+ndots);
     srenew(atoms->atomname,atoms->nr+ndots);
-    srenew(atoms->resname,r0+1);
-    atoms->resname[r0]  = put_symtab(symtab,resnm);
+    srenew(atoms->resinfo,r0+1);
+    atoms->atom[i0].resind = r0;
+    t_atoms_set_resinfo(atoms,i0,symtab,resnm,r0+1,' ',' ');
     srenew(atoms->pdbinfo,atoms->nr+ndots);
     snew(xnew,atoms->nr+ndots);
     for(i=0; (i<atoms->nr); i++)
@@ -149,11 +150,9 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     for(i=k=0; (i<ndots); i++) {
       ii0 = i0+i;
       atoms->atomname[ii0] = put_symtab(symtab,atomnm);
-      sprintf(atoms->pdbinfo[ii0].pdbresnr,"%d",r0+1);
       atoms->pdbinfo[ii0].type = epdbATOM;
-      atoms->atom[ii0].chain = ' ';
       atoms->pdbinfo[ii0].atomnr= ii0;
-      atoms->atom[ii0].resnr = r0;
+      atoms->atom[ii0].resind = r0;
       xnew[ii0][XX] = dots[k++];
       xnew[ii0][YY] = dots[k++];
       xnew[ii0][ZZ] = dots[k++];
@@ -168,16 +167,15 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
   }
   else {
     init_t_atoms(&aaa,ndots,TRUE);
+    aaa.atom[0].resind = 0;
+    t_atoms_set_resinfo(&aaa,0,symtab,resnm,1,' ',' ');
     snew(xnew,ndots);
     for(i=k=0; (i<ndots); i++) {
       ii0 = i;
-      aaa.resname[ii0]  = put_symtab(symtab,resnm);
       aaa.atomname[ii0] = put_symtab(symtab,atomnm);
-      strcpy(aaa.pdbinfo[ii0].pdbresnr,"1");
       aaa.pdbinfo[ii0].type = epdbATOM;
-      aaa.atom[ii0].chain = ' ';
       aaa.pdbinfo[ii0].atomnr= ii0;
-      aaa.atom[ii0].resnr = 0;
+      aaa.atom[ii0].resind = 0;
       xnew[ii0][XX] = dots[k++];
       xnew[ii0][YY] = dots[k++];
       xnew[ii0][ZZ] = dots[k++];
@@ -305,7 +303,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   ndefault = 0;
   for(i=0; (i<natoms); i++) {
     if (!gmx_atomprop_query(aps,epropVDW,
-			    *(top->atoms.resname[top->atoms.atom[i].resnr]),
+			    *(top->atoms.resinfo[top->atoms.atom[i].resind].name),
 			    *(top->atoms.atomname[i]),&radius[i]))
       ndefault++;
     /* radius[i] = calc_radius(*(top->atoms.atomname[i])); */
@@ -342,12 +340,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     }
     if (bDGsol)
       if (!gmx_atomprop_query(aps,epropDGsol,
-			      *(atoms->resname[atoms->atom[ii].resnr]),
+			      *(atoms->resinfo[atoms->atom[ii].resind].name),
 			      *(atoms->atomtype[ii]),&(dgs_factor[i])))
 	dgs_factor[i] = dgs_default;
     if (debug)
       fprintf(debug,"Atom %5d %5s-%5s: q= %6.3f, r= %6.3f, dgsol= %6.3f, hydrophobic= %s\n",
-	      ii+1,*(atoms->resname[atoms->atom[ii].resnr]),
+	      ii+1,*(atoms->resinfo[atoms->atom[ii].resind].name),
 	      *(atoms->atomname[ii]),
 	      atoms->atom[ii].q,radius[ii]-solsize,dgs_factor[i],
 	      BOOL(bPhobic[i]));
@@ -423,7 +421,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	if (bResAt) {
 	  atom_area[i] += at_area;
 	  atom_area2[i] += sqr(at_area);
-	  res_a[atoms->atom[ii].resnr] += at_area;
+	  res_a[atoms->atom[ii].resind] += at_area;
 	}
 	tarea += at_area;
 	if (bDGsol)
@@ -490,12 +488,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     }
     for(i=0; i<nx[0]; i++) {
       ii = index[0][i];
-      res = atoms->atom[ii].resnr;
-      if (i==nx[0]-1 || res!=atoms->atom[index[0][i+1]].resnr) {
+      res = atoms->atom[ii].resind;
+      if (i==nx[0]-1 || res!=atoms->atom[index[0][i+1]].resind) {
 	fluc2 = res_area2[res]-sqr(res_area[res]);
 	if (fluc2 < 0)
 	  fluc2 = 0;
-	fprintf(fp,"%10d  %10g %10g\n",res+1,res_area[res],sqrt(fluc2));
+	fprintf(fp,"%10d  %10g %10g\n",
+		atoms->resinfo[res].nr,res_area[res],sqrt(fluc2));
       }
       fluc2 = atom_area2[i]-sqr(atom_area[i]);
       if (fluc2 < 0)

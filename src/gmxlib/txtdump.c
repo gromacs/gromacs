@@ -1117,6 +1117,23 @@ static void pr_strings2(FILE *fp,int indent,const char *title,
     }
 }
 
+static void pr_resinfo(FILE *fp,int indent,const char *title,t_resinfo *resinfo,int n, bool bShowNumbers)
+{
+    int i;
+    
+    if (available(fp,resinfo,indent,title))
+    {  
+        indent=pr_title_n(fp,indent,title,n);
+        for (i=0; i<n; i++)
+        {
+            (void) pr_indent(fp,indent);
+            (void) fprintf(fp,"%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
+                           title,bShowNumbers?i:-1,
+                           *(resinfo[i].name),resinfo[i].nr,resinfo[i].ic);
+        }
+    }
+}
+
 static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
 {
   int i,j;
@@ -1126,9 +1143,10 @@ static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
     for (i=0; i<n; i++) {
       (void) pr_indent(fp,indent);
       fprintf(fp,"%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
-	      "q=%12.5e, mB=%12.5e, qB=%12.5e, resnr=%5d, atomnumber=%3d}\n",
-	      title,i,atom[i].type,atom[i].typeB,ptype_str[atom[i].ptype],
-	      atom[i].m,atom[i].q,atom[i].mB,atom[i].qB,atom[i].resnr,atom[i].atomnumber);
+              "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
+              title,i,atom[i].type,atom[i].typeB,ptype_str[atom[i].ptype],
+              atom[i].m,atom[i].q,atom[i].mB,atom[i].qB,
+              atom[i].resind,atom[i].atomnumber);
     }
   }
 }
@@ -1209,7 +1227,7 @@ void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
       pr_atom(fp,indent,"atom",atoms->atom,atoms->nr);
       pr_strings(fp,indent,"atom",atoms->atomname,atoms->nr,bShownumbers);
       pr_strings2(fp,indent,"type",atoms->atomtype,atoms->atomtypeB,atoms->nr,bShownumbers);
-      pr_strings(fp,indent,"residue",atoms->resname,atoms->nres,bShownumbers);
+      pr_resinfo(fp,indent,"residue",atoms->resinfo,atoms->nres,bShownumbers);
     }
 }
 
@@ -1335,16 +1353,6 @@ void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
       pr_indent(fp,indent);
       fprintf(fp,"lambda = %e\n",sh->lambda);
     }
-}
-
-char *atomname(t_atoms *a,int i)
-{
-  char buf[32];
-  int resnr=a->atom[i].resnr;
-  
-  sprintf(buf,"%s%d-%s",*a->resname[resnr],resnr+1,*a->atomname[i]);
-  
-  return strdup(buf);
 }
 
 void pr_commrec(FILE *fp,int indent,t_commrec *cr)

@@ -128,7 +128,7 @@ void gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_t *mtop,int atnr_global,
 void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
                               char **atomname,int *resnr,char **resname)
 {
-    int mb,a_start,a_end,resnr_offset,at_loc;
+    int mb,a_start,a_end,resnr_last,at_loc;
     gmx_molblock_t *molb;
     t_atoms *atoms=NULL;
     
@@ -140,12 +140,21 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
     
     mb = -1;
     a_end = 0;
-    resnr_offset = 0;
+    resnr_last = 0;
     do
     {
         if (mb >= 0)
         {
-            resnr_offset += mtop->molblock[mb].nmol*atoms->nres;
+            if (atoms->nres > 1)
+            {
+                /* Multiple residue molecule, do not renumber the residues */
+                resnr_last = atoms->resinfo[atoms->nres-1].nr;
+            }
+            else
+            {
+                /* Single residue molecule, keep counting */
+                resnr_last += mtop->molblock[mb].nmol;
+            }
         }
         mb++;
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
@@ -156,8 +165,13 @@ void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
 
     at_loc = (atnr_global - a_start) % atoms->nr;
     *atomname = *(atoms->atomname[at_loc]);
-    *resnr    = resnr_offset + atoms->atom[at_loc].resnr;
-    *resname  = *(atoms->resname[atoms->atom[at_loc].resnr]);
+    *resnr    = atoms->resinfo[atoms->atom[at_loc].resind].nr;
+    if (atoms->nres == 1)
+    {
+        /* Single residue molecule, keep counting */
+        *resnr += resnr_last;
+    }
+    *resname  = *(atoms->resinfo[atoms->atom[at_loc].resind].name);
 }
 
 typedef struct gmx_mtop_atomloop_all
@@ -166,7 +180,7 @@ typedef struct gmx_mtop_atomloop_all
     int        mblock;
     t_atoms    *atoms;
     int        mol;
-    int        resnr_offset;
+    int        resnr_last;
     int        at_local;
     int        at_global;
 } t_gmx_mtop_atomloop_all;
@@ -183,7 +197,7 @@ gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop)
     aloop->atoms        =
         &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
     aloop->mol          = 0;
-    aloop->resnr_offset = 0;
+    aloop->resnr_last   = 0;
     aloop->at_local     = -1;
     aloop->at_global    = -1;
 
@@ -208,7 +222,16 @@ bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
 
     if (aloop->at_local >= aloop->atoms->nr)
     {
-        aloop->resnr_offset += aloop->atoms->nres;
+        if (aloop->atoms->nres > 1)
+        {
+            /* Multiple residue molecule, keep the residue numbers */
+            aloop->resnr_last = aloop->atoms->resinfo[aloop->atoms->nres-1].nr;
+        }
+        else
+        {
+            /* Single residue molecule, increase the count with one */
+            aloop->resnr_last++;
+        }
         aloop->mol++;
         aloop->at_local = 0;
         if (aloop->mol >= aloop->mtop->molblock[aloop->mblock].nmol)
@@ -233,12 +256,16 @@ bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
 void gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
                                  char **atomname,int *resnr,char **resname)
 {
-    int resnr_mol;
+    int resind_mol;
 
     *atomname = *(aloop->atoms->atomname[aloop->at_local]);
-    resnr_mol = aloop->atoms->atom[aloop->at_local].resnr;
-    *resnr    = aloop->resnr_offset + resnr_mol;
-    *resname  = *(aloop->atoms->resname[resnr_mol]);
+    resind_mol = aloop->atoms->atom[aloop->at_local].resind;
+    *resnr = aloop->atoms->resinfo[resind_mol].nr;
+    if (aloop->atoms->nres == 1)
+    {
+        *resnr += aloop->resnr_last;
+    }
+    *resname  = *(aloop->atoms->resinfo[resind_mol].name);
 }
 
 void gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
@@ -480,14 +507,14 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies)
     if (src->nres)
     {
         size=dest->nres+copies*src->nres;
-        srenew(dest->resname,size);
+        srenew(dest->resinfo,size);
     }
     
     /* residue information */
     for (l=dest->nres,j=0; (j<copies); j++,l+=src->nres)
     {
-        memcpy((char *) &(dest->resname[l]),(char *) &(src->resname[0]),
-               (size_t)(src->nres*sizeof(src->resname[0])));
+        memcpy((char *) &(dest->resinfo[l]),(char *) &(src->resinfo[0]),
+               (size_t)(src->nres*sizeof(src->resinfo[0])));
     }
     
     for (l=destnr,j=0; (j<copies); j++,l+=srcnr)
@@ -502,12 +529,22 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies)
                (size_t)(srcnr*sizeof(src->atom[0])));
     }
     
-    /* Increment residue numbers */
+    /* Increment residue indices */
     for (l=destnr,j=0; (j<copies); j++)
     {
         for (i=0; (i<srcnr); i++,l++)
         {
-            dest->atom[l].resnr  = dest->nres+j*src->nres+src->atom[i].resnr;
+            dest->atom[l].resind = dest->nres+j*src->nres+src->atom[i].resind;
+        }
+    }    
+    
+    if (src->nres == 1)
+    {
+        /* Single residue molecule, continue counting residues */
+        for (j=0; (j<copies); j++)
+        {
+            dest->resinfo[dest->nres+j].nr =
+                dest->resinfo[dest->nres-1].nr + 1 + j;
         }
     }
     
