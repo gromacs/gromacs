@@ -532,6 +532,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   double x1m,x1mk;
   real Temp=-1,Pres=-1,VarV=-1,VarT=-1;
   int  i,j;
+  real chi2;
   bool bIsEner;
   char buf[256];
 
@@ -646,7 +647,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	pr_stddev = stddev;
       }
       if (nenergy > 1) {
-	lsq_y_ax_b_xdouble(nenergy,time,eneset[i],&a,&b,&r);
+	lsq_y_ax_b_xdouble(nenergy,time,eneset[i],&a,&b,&r,&chi2);
 	totaldrift = a * delta_t;
       } else {
 	totaldrift = 0;

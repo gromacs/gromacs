@@ -565,7 +565,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,FILE
 
   }
   
-				rest=lsq_y_ax_b(ie-ii,xfit,yfit,&sigma,&malt,&err);
+				lsq_y_ax_b(ie-ii,xfit,yfit,&sigma,&malt,&err,&rest);
 
 				malt=exp(malt);
 
@@ -623,7 +623,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,FILE
 				yfit[i-bi]=dsp2[i];
 			}
 
-			rest=lsq_y_ax_b(ei-bi,xfit,yfit,&sigma,&malt,&err);
+			lsq_y_ax_b(ei-bi,xfit,yfit,&sigma,&malt,&err,&rest);
 
 			sigma*=1e12;
 			dk_d=calceps(prefactor,md2,0.5*malt/prefactorav,corint,eps_rf,TRUE);
