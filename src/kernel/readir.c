@@ -429,7 +429,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   if(ir->coulombtype==eelGB_NOTUSED)
   {
-    ir->coulombtype==eelCUT;
+    ir->coulombtype=eelCUT;
     ir->implicit_solvent=eisGBSA;
     fprintf(stderr,"Note: Old option for generalized born electrostatics given:\n"
 	    "Changing coulombtype from \"generalized-born\" to \"cut-off\" and instead\n"
@@ -1977,7 +1977,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     sfree(mgrp);
   }
 
-  if (ir->pull != epullNO && ir->pull->grp[0].nat == 0) {
+  if (ir->ePull != epullNO && ir->pull->grp[0].nat == 0) {
     absolute_reference(ir,sys,AbsRef);
     for(m=0; m<DIM; m++) {
       if (ir->pull->dim[m] && !AbsRef[m]) {

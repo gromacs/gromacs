@@ -772,7 +772,7 @@ int gmx_fio_open(const char *fn,char *mode)
 			{
 			#ifndef GMX_FAHCORE
 			/* only make backups for normal gromacs */
-				if (fexist(fn)) 
+				if (gmx_fexist(fn)) 
 				{
 					bf=(char *)backup_fn(fn);
 					if (rename(fn,bf) == 0) 
@@ -789,7 +789,7 @@ int gmx_fio_open(const char *fn,char *mode)
 			else 
 			{
 				/* Check whether file exists */
-				if (!fexist(fn))
+				if (!gmx_fexist(fn))
 				{
 					gmx_open(fn);
 				}

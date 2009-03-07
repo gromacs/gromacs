@@ -53,8 +53,19 @@ static int gmx_nint(double x)
     return (int) (x+0.5);
 }
 
+/****************************
+ DO NOT USE MACROS FOR MIN/MAX!!!
+ 
+ * They violate ISO C (arguments can only be expanded once)
+ * They prevent the compiler from doing proper bug and type checking
+ * They are error-prone, e.g. i = max(i,*(pi++))
+ 
+ Sorry, but the convenience of saving a couple of keystrokes is NOT worth this.
+ 
 #define min(a,b) ((a) < (b)) ? (a) : (b)
 #define max(a,b) ((a) > (b)) ? (a) : (b)
+
+ ***************************/
 
 typedef struct {
     //double yy,yx,xx,sx,sy;
@@ -493,8 +504,8 @@ int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
     miny = maxy = stats->y[0];
     for(i=1; (i<stats->np); i++) 
     {
-        miny = min(miny,stats->y[i]);
-        maxy = max(maxy,stats->y[i]);
+        miny = (stats->y[i] < miny) ? stats->y[i] : miny;
+        maxy = (stats->y[i] > maxy) ? stats->y[i] : maxy;
     }
     if (binwidth == 0)
     {
@@ -522,7 +533,15 @@ int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
     for(i=0; (i<stats->np); i++) 
     {
         index = (stats->y[i]-miny)/binwidth;
-        index = min(nbins-1,max(0,index));
+		
+		if(index<0)
+		{
+			index = 0;
+		}
+		if(index>nbins-1)
+		{
+			index = nbins-1;
+		}
         (*y)[index] += dy;
     }
     

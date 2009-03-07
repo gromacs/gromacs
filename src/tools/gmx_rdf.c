@@ -827,9 +827,9 @@ void compute_structure_factor (structure_factor * sf, matrix box,
     k_factor[YY] = 2 * M_PI / box[YY][YY];
     k_factor[ZZ] = 2 * M_PI / box[ZZ][ZZ];
 
-    maxkx = (int) rint (end_q / k_factor[XX]);
-    maxky = (int) rint (end_q / k_factor[YY]);
-    maxkz = (int) rint (end_q / k_factor[ZZ]);
+    maxkx = (int) (end_q / k_factor[XX] + 0.5);
+    maxky = (int) (end_q / k_factor[YY] + 0.5);
+    maxkz = (int) (end_q / k_factor[ZZ] + 0.5);
 
     snew (counter, sf->n_angles);
 
@@ -850,7 +850,7 @@ void compute_structure_factor (structure_factor * sf, matrix box,
 		    kz = k * k_factor[ZZ];
 		    krr = sqrt (sqr (kx) + sqr (ky) + sqr (kz));
 		    if (krr >= start_q && krr <= end_q) {
-			kr = (int) rint (krr/sf->ref_k);
+			kr = (int) (krr/sf->ref_k + 0.5);
 			if (kr < sf->n_angles) {
 			    counter[kr]++;  /* will be used for the copmutation 
 					       of the average*/
@@ -880,9 +880,9 @@ void compute_structure_factor (structure_factor * sf, matrix box,
 	    ky = j * k_factor[YY]; for (k = 0; k < maxkz; k++) {
 		kz = k * k_factor[ZZ]; krr = sqrt (sqr (kx) + sqr (ky)
 		+ sqr (kz)); if (krr >= start_q && krr <= end_q) {
-		    kr = (int) rint (krr / sf->ref_k); if (kr <
-		    sf->n_angles && counter[kr] != 0)
-			sf->F[group][kr] +=
+		    kr = (int) (krr / sf->ref_k + 0.5); 
+			if (kr < sf->n_angles && counter[kr] != 0)
+				sf->F[group][kr] +=
 			    (sqr (tmpSF[i][j][k].re) +
 			     sqr (tmpSF[i][j][k].im))/ counter[kr];
 		}
@@ -980,7 +980,7 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
 
     sf->ref_k = (2.0 * M_PI) / (r_tmp);
     /* ref_k will be the reference momentum unit */
-    sf->n_angles = (int) rint (end_q / sf->ref_k);
+    sf->n_angles = (int) (end_q / sf->ref_k + 0.5);
 
     snew (sf->F, ng);
     for (i = 0; i < ng; i++)

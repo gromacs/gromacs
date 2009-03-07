@@ -1187,7 +1187,7 @@ FILE *pdo_open_file(char *fn)
     char Buffer[1024],gunzip[1024],*Path=0;
     FILE *fp;
 
-    if (!fexist(fn))
+    if (!gmx_fexist(fn))
 	{
         gmx_fatal(FARGS,"File %s does not exist.\n",fn);
 	}
@@ -1200,7 +1200,7 @@ FILE *pdo_open_file(char *fn)
             sprintf(gunzip,"%s","/bin/gunzip");
         else
             sprintf(gunzip,"%s/gunzip",Path);
-        if (!fexist(gunzip))
+        if (!gmx_fexist(gunzip))
             gmx_fatal(FARGS,"Cannot find executable %s. You may want to define the path to gunzip "
                     "with the environment variable GMX_PATH_GZIP.",gunzip);
         sprintf(Buffer,"%s -c < %s",gunzip,fn);

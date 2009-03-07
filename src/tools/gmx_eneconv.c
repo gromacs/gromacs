@@ -403,7 +403,7 @@ static void update_ee_sum(int nre,
 
   fr_nsum = fr->nsum;
   if (fr_nsum == 0) {
-    fr_nsum == 1;
+    fr_nsum = 1;
   }
 
   if (ns == 0) {

@@ -38,12 +38,19 @@
 #endif
 
 #include <time.h>
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <process.h>
+#endif
 #include "sysstuff.h"
 #include "typedefs.h"
 
 int make_seed(void)
 {
-  return (int)(((long)time(NULL)+(long)getpid()) % (long)1000000);
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  return (int)_getpid();
+#else
+  return (int)getpid();
+#endif
 }
 	
 real rando(int *ig)

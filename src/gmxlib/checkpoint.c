@@ -895,7 +895,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
         npmenodes = 0;
     }
     
-    if (fexist(fn))
+    if (gmx_fexist(fn))
     {
         /* Rename the previous checkpoint file */
         strcpy(buf,fn);
@@ -1544,7 +1544,7 @@ read_checkpoint_simulation_part(char *filename)
 	double t;
     int  natoms,ngtc,fflags,flags_eks,flags_enh,simulation_part;
 		
-	if(!fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
+	if(!gmx_fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
 	{
 		return 0;
 	}

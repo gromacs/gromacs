@@ -11,6 +11,9 @@
 #endif
 #include <time.h>
 #include <math.h>
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <process.h>
+#endif
 
 #include "maths.h"
 #include "gmx_random_gausstable.h"
@@ -147,6 +150,7 @@ gmx_rng_make_seed(void)
   FILE *fp;
   unsigned int data;
   int ret;
+  long my_pid;
 
 #ifdef HAVE_UNISTD_H
   fp=fopen("/dev/random","rb"); /* will return NULL if it is not present */
@@ -158,7 +162,12 @@ gmx_rng_make_seed(void)
     fclose(fp);
   } else {
     /* No random device available, use time-of-day and process id */
-    data=(unsigned int)(((long)time(NULL)+(long)getpid()) % (long)1000000);
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    my_pid = (long)_getpid();
+#else
+    my_pid = (long)getpid();
+#endif
+    data=(unsigned int)(((long)time(NULL)+my_pid) % (long)1000000);
   }
   return data;
 }

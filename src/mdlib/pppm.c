@@ -509,7 +509,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
   for(m=0; m<DIM; m++)
     box_diag[m] = box[m][m];
 
-  if (!fexist(ghatfn)) {    
+  if (!gmx_fexist(ghatfn)) {    
     beta[XX]=beta[YY]=beta[ZZ]= 1.85;
     nx     = ir->nkx;
     ny     = ir->nky;

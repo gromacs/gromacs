@@ -413,6 +413,7 @@ int main(int argc, char *argv[])
   int        natoms;       /* number of atoms in one molecule  */
   int        nres;         /* number of molecules? */
   int        i,j,k,l,m,ndih;
+  int        epbc;
   bool       bRTP,bTOP,bOPLS;
   t_symtab   symtab;
   real       cutoff,qtot,mtot;
@@ -509,7 +510,7 @@ int main(int argc, char *argv[])
   init_t_atoms(atoms,natoms,TRUE);
   snew(x,natoms);              
 
-  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,epbcXYZ,box);
+  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,&epbc,box);
 
   nm2t = rd_nm2type(forcefield,&nnm);
   printf("There are %d name to type translations\n",nnm);

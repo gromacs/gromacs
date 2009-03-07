@@ -100,7 +100,7 @@ static void calc_entropy_schlitter(FILE *fp,int n,int nskip,
 
   hbar = PLANCK1/(2*M_PI);
   kt   = BOLTZMANN*temp;
-  kteh = kt*exp(2.0)/sqr(hbar)*AMU*sqr(NANO);
+  kteh = kt*exp(2.0)/(hbar*hbar)*AMU*sqr(NANO);
   if (debug)
     fprintf(debug,"n = %d, nskip = %d kteh = %g\n",n,nskip,kteh);
   

@@ -43,6 +43,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <direct.h>
+#include <io.h>
+#endif
+
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
@@ -87,6 +93,25 @@ void push_ps(FILE *fp)
 #undef fclose
 #endif
 #endif
+
+
+#ifndef HAVE_PIPES
+static FILE *popen(char *nm,char *mode)
+{
+  gmx_impl("Sorry no pipes...");
+
+  return NULL;
+}
+
+static int pclose(FILE *fp)
+{
+  gmx_impl("Sorry no pipes...");
+
+  return 0;
+}
+#endif
+
+
 
 void ffclose(FILE *fp)
 {
@@ -155,22 +180,6 @@ bool is_pipe(FILE *fp)
   return FALSE;
 }
 
-#ifndef HAVE_PIPES
-static FILE *popen(char *nm,char *mode)
-{
-  gmx_impl("Sorry no pipes...");
-  
-  return NULL;
-}
-
-static int pclose(FILE *fp)
-{
-  gmx_impl("Sorry no pipes...");
-  
-  return 0;
-}
-#endif
-
 
 static FILE *uncompress(char *fn,char *mode)
 {
@@ -200,7 +209,7 @@ static FILE *gunzip(char *fn,char *mode)
   return fp;
 }
 
-bool fexist(const char *fname)
+bool gmx_fexist(const char *fname)
 {
   FILE *test;
   
@@ -215,7 +224,7 @@ bool fexist(const char *fname)
   }
 }
 
-bool eof(FILE *fp)
+bool gmx_eof(FILE *fp)
 {
   char data[4];
   bool beof;
@@ -258,7 +267,7 @@ char *backup_fn(const char *file)
   do {
     sprintf(buf,"%s/#%s.%d#",directory,fn,count);
     count++;
-  } while ((count < COUNTMAX) && fexist(buf));
+  } while ((count < COUNTMAX) && gmx_fexist(buf));
   
   /* Arbitrarily bail out */
   if (count == COUNTMAX) 
@@ -279,7 +288,7 @@ bool make_backup(const char * name)
     return FALSE; /* skip making backups */
 #else
 
-    if(fexist(name)) {
+    if(gmx_fexist(name)) {
       backup = backup_fn(name);
       if(rename(name, backup) == 0) {
         fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
@@ -307,7 +316,7 @@ FILE *ffopen(const char *file,char *mode)
   
   bRead= mode[0]=='r';
   strcpy(buf,file);
-  if (fexist(buf) || !bRead) {
+  if (gmx_fexist(buf) || !bRead) {
     if ((ff=fopen(buf,mode))==NULL)
       gmx_file(buf);
     where();
@@ -332,12 +341,12 @@ FILE *ffopen(const char *file,char *mode)
   }
   else {
     sprintf(buf,"%s.Z",file);
-    if (fexist(buf)) {
+    if (gmx_fexist(buf)) {
       ff=uncompress(buf,mode);
     }
     else {
       sprintf(buf,"%s.gz",file);
-      if (fexist(buf)) {
+      if (gmx_fexist(buf)) {
 	ff=gunzip(buf,mode);
       }
       else 
@@ -357,24 +366,24 @@ bool search_subdirs(char *parent, char *libdir)
   /* Search a few common subdirectory names for the gromacs library dir */
   sprintf(libdir,"%s%cshare%ctop%cgurgle.dat",parent,
 	  DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR);
-  found=fexist(libdir);
+  found=gmx_fexist(libdir);
   if(!found) {
     sprintf(libdir,"%s%cshare%cgromacs%ctop%cgurgle.dat",parent,
 	    DIR_SEPARATOR,DIR_SEPARATOR,
 	    DIR_SEPARATOR,DIR_SEPARATOR);
-    found=fexist(libdir);
+    found=gmx_fexist(libdir);
   }    
   if(!found) {
     sprintf(libdir,"%s%cshare%cgromacs-%s%ctop%cgurgle.dat",parent,
 	    DIR_SEPARATOR,DIR_SEPARATOR,VERSION,
 	    DIR_SEPARATOR,DIR_SEPARATOR);
-    found=fexist(libdir);
+    found=gmx_fexist(libdir);
   }    
   if(!found) {
     sprintf(libdir,"%s%cshare%cgromacs%cgromacs-%s%ctop%cgurgle.dat",parent,
 	    DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR,
 	    VERSION,DIR_SEPARATOR,DIR_SEPARATOR);
-      found=fexist(libdir);
+      found=gmx_fexist(libdir);
   }    
   
   /* Remove the gurgle.dat part from libdir if we found something */
@@ -430,7 +439,11 @@ bool get_libdir(char *libdir)
       s=getenv("PATH");
 
       /* Add the local dir since it is not in the path on windows */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+      pdum=_getcwd(system_path,sizeof(system_path)-1);
+#else
       pdum=getcwd(system_path,sizeof(system_path)-1);
+#endif
       strcat(system_path,PATH_SEPARATOR);
       if (s != NULL)
 	strcat(system_path,s);
@@ -438,7 +451,7 @@ bool get_libdir(char *libdir)
       found=FALSE;
       while (!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
 	sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
-	found=fexist(full_path);
+	found=gmx_fexist(full_path);
 	s=NULL; /* pointer should be null for subseq. calls to strtok */
       }
       if (!found)
@@ -448,7 +461,11 @@ bool get_libdir(char *libdir)
        * it does not start at the root, i.e.
        * name is relative to the current dir 
        */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+      pdum=_getcwd(buf,sizeof(buf)-1);
+#else
       pdum=getcwd(buf,sizeof(buf)-1);
+#endif
       strcpy(full_path,buf);
       strcat(full_path,"/");
       strcat(full_path,bin_name);
@@ -522,7 +539,7 @@ const char *low_libfn(const char *file, bool bFatal)
     bFirst=0;
   }
 
-  if (fexist(file))
+  if (gmx_fexist(file))
     ret=file;
   else {
     found=FALSE;
@@ -530,7 +547,7 @@ const char *low_libfn(const char *file, bool bFatal)
     s=tmppath;
     while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
       sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
-      found=fexist(buf);
+      found=gmx_fexist(buf);
       s = NULL;
     }
     ret=buf;
@@ -587,13 +604,13 @@ void gmx_tmpnam(char *buf)
     buf[i] = 'X';
   }
   /* mktemp is dangerous and we should use mkstemp instead, but 
-   * since windows doesnt support it we have to separate the cases:
+   * since windows doesnt support it we have to separate the cases.
+   * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
    */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-  fd = open(mktemp(buf),O_RDWR | O_EXCL | O_CREAT, S_IREAD | S_IWRITE );
+  _mktemp(buf);
 #else
   fd = mkstemp(buf);
-#endif
 
   switch (fd) {
   case EINVAL:
@@ -609,7 +626,8 @@ void gmx_tmpnam(char *buf)
     break;
   }   
   close(fd);
-  /* Buf should now be OK */
+#endif
+  /* name in Buf should now be OK */
 }
 
 int

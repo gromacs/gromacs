@@ -462,7 +462,7 @@ static void sendbits(int buf[], int num_of_bits, int num) {
 */
 
 static int sizeofint(const int size) {
-    unsigned int num = 1;
+    int num = 1;
     int num_of_bits = 0;
     
     while (size >= num && num_of_bits < 32) {
@@ -486,7 +486,8 @@ static int sizeofint(const int size) {
 
 static int sizeofints( const int num_of_ints, unsigned int sizes[]) {
     int i, num;
-    unsigned int num_of_bytes, num_of_bits, bytes[32], bytecnt, tmp;
+	int bytes[32];
+    unsigned int num_of_bytes, num_of_bits, bytecnt, tmp;
     num_of_bytes = 1;
     bytes[0] = 1;
     num_of_bits = 0;
@@ -531,8 +532,8 @@ static int sizeofints( const int num_of_ints, unsigned int sizes[]) {
 static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
 	unsigned int sizes[], unsigned int nums[]) {
 
-    int i;
-    unsigned int bytes[32], num_of_bytes, bytecnt, tmp;
+    int i, num_of_bytes, bytecnt;
+    unsigned int bytes[32], tmp;
 
     tmp = nums[0];
     num_of_bytes = 0;
@@ -585,8 +586,8 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
 
 static int receivebits(int buf[], int num_of_bits) {
 
-    int cnt, num; 
-    unsigned int lastbits, lastbyte;
+    int cnt, num, lastbits; 
+    unsigned int lastbyte;
     unsigned char * cbuf;
     int mask = (1 << num_of_bits) -1;
 

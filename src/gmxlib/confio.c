@@ -901,7 +901,7 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   double  tt;
   int     ndec,i;
 
-  if (eof(status))
+  if (gmx_eof(status))
     return FALSE;
 
   atoms.nr=fr->natoms;

@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "smalloc.h"
+#include "string2.h"
+
 #include "gmx_qhop_parm.h"	
 	
 typedef struct {
@@ -93,7 +95,7 @@ int gmx_qhop_get_value(gmx_qhop gqh,char *name,double *x)
   int i;
   
   for(i=0; (i<qht->nparam); i++) 
-    if (strcasecmp(qht->name[i],name) == 0) {
+    if (gmx_strcasecmp(qht->name[i],name) == 0) {
       *x = atof(qht->value[i]);
       return 1;
     }

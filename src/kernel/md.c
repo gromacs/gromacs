@@ -222,7 +222,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Check if checkpoint file exists before doing continuation.
        * This way we can use identical input options for the first and subsequent runs...
        */
-      if( fexist(opt2fn("-cpi",nfile,fnm)) )
+      if( gmx_fexist(opt2fn("-cpi",nfile,fnm)) )
       {
 	  load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
 			  cr,Flags & MD_PARTDEC,ddxyz,

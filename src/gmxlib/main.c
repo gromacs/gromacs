@@ -56,6 +56,11 @@
 #include <unistd.h>
 #endif
 
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <process.h>
+#endif
+
+
 #define BUFSIZE	1024
 
 
@@ -163,9 +168,13 @@ FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly, unsigned lo
   time(&t);
 
 #ifndef NO_GETPID
-  pid = getpid();
+#   if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+	  pid = _getpid();
+#   else
+	  pid = getpid();
+#   endif
 #else
-  pid = 0;
+	pid = 0;
 #endif
 
   if(bAppend)

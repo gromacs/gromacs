@@ -860,7 +860,7 @@ int main (int argc, char *argv[])
     pr_symtab(debug,0,"Just opened",&sys->symtab);
     
   strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
-  if (!fexist(fn)) 
+  if (!gmx_fexist(fn)) 
     gmx_fatal(FARGS,"%s does not exist",fn);
   new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 	     opts,ir,bZero,bGenVel,bVerbose,&state,

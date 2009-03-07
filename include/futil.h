@@ -64,10 +64,10 @@ extern "C" {
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
-extern bool fexist(const char *fname);
+extern bool gmx_fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
-extern bool eof(FILE *fp);
+extern bool gmx_eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
 extern bool is_pipe(FILE *fp);

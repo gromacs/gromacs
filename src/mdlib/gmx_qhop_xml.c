@@ -4,6 +4,7 @@
 #include "macros.h"
 #include "futil.h"
 #include "gmx_qhop_parm.h"
+
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -232,7 +233,8 @@ static void qhop_process_tree(FILE *fp,xmlNodePtr tree,int parent,
   }
 }
 
-gmx_qhop *gmx_qhops_read(char *fn,int *nqhop)
+gmx_qhop *
+gmx_qhops_read(char *fn,int *nqhop)
 {
   xmlDocPtr     doc;
   int           i,npd;
@@ -243,8 +245,8 @@ gmx_qhop *gmx_qhops_read(char *fn,int *nqhop)
   if (NULL == fn) 
     fn = (char *)libfn(db);
   if ((doc = xmlParseFile(fn)) == NULL) {
-    fprintf(stderr,"Reading XML file %s. Run a syntax checker such as nsgmls.",
-	    fn);
+		fprintf(stderr,"Reading XML file %s. Run a syntax checker such as nsgmls.",
+				fn);
     exit(1);
   }
 
@@ -319,6 +321,7 @@ void gmx_qhops_write(char *fn,int nqhop,gmx_qhop qht[])
 gmx_qhop *gmx_qhops_read(char *fn,int *nqhop)
 {
   gmx_fatal(FARGS,"You need to configure the software with --with-xml for function gmx_qhops_read to work");
+  return NULL;
 }
 
 void gmx_qhops_write(char *fn,int nqhop,gmx_qhop qht[])

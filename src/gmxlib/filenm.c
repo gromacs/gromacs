@@ -502,7 +502,7 @@ static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
       type = ftps[i];
       strcpy(buf2,buf);
       set_extension(buf2,type);
-      if (fexist(buf2)) {
+      if (gmx_fexist(buf2)) {
 	bValidExt = TRUE;
 	strcpy(buf,buf2);
       }
@@ -528,7 +528,7 @@ static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
   if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
     gmx_fatal(FARGS,"file type out of range (%d)",fnm->ftp);
 
-  if ((fnm->flag & ffREAD) && name && fexist(name)) {
+  if ((fnm->flag & ffREAD) && name && gmx_fexist(name)) {
     /* check if filename ends in .gz or .Z, if so remove that: */
     len    = strlen(name);
     for (i=0; i<NZEXT; i++) {

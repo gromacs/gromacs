@@ -108,7 +108,7 @@ static t_pdbfile **read_em_all(char *fn,int *npdbf)
   i=0;
   do {
     sprintf(name,"%s_%d.pdb",buf,i+1);
-    if ((bExist = fexist(name)) == TRUE) {
+    if ((bExist = gmx_fexist(name)) == TRUE) {
       pdbf[i] = read_pdbf(name);
       pdbf[i]->index = i+1;
       i++;

@@ -40,6 +40,11 @@
 #include <string.h>
 #include <time.h>
 
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <direct.h>
+#include <io.h>
+#endif
+
 #include "statutil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -122,7 +127,7 @@ int gmx_covar(int argc,char *argv[])
   char       *fitfile,*trxfile,*ndxfile;
   char       *eigvalfile,*eigvecfile,*averfile,*logfile;
   char       *asciifile,*xpmfile,*xpmafile;
-  char       str[STRLEN],*fitname,*ananame;
+  char       str[STRLEN],*fitname,*ananame,*pcwd;
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*ifit;
   bool       bDiffMass1,bDiffMass2;
@@ -452,7 +457,12 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Covariance analysis log, written %s\n",
 	  ctime(&now));
   fprintf(out,"Program: %s\n",argv[0]);
-  if(NULL==getcwd(str,STRLEN))
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  pcwd=_getcwd(str,STRLEN);
+#else
+  pcwd=getcwd(str,STRLEN);
+#endif
+  if(NULL==pcwd)
   {
       gmx_fatal(FARGS,"Current working directory is undefined");
   }

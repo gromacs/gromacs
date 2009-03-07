@@ -418,7 +418,7 @@ int main(int argc,char *argv[])
   
   if ((dptr=getenv("DSSP")) == NULL)
     dptr="/usr/local/bin/dssp";
-  if (!fexist(dptr))
+  if (!gmx_fexist(dptr))
     gmx_fatal(FARGS,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
   sprintf(dssp,"%s %s %s %s > /dev/null %s",

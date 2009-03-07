@@ -121,7 +121,7 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
     int   npme;
 
 
-    if (!fexist(logfile))
+    if (!gmx_fexist(logfile))
     {
         fprintf(stderr, "WARNING: Could not find logfile %s.\n", logfile);
         return eParselogNotFound;
@@ -809,7 +809,7 @@ static void check_input(
         char *fn_top)
 {
     /* Make shure the input file exists */
-    if (!fexist(fn_top))
+    if (!gmx_fexist(fn_top))
         gmx_fatal(FARGS, "File %s not found.", fn_top);
     
     /* Make shure that repeats is >= 0 (if == 0, only write tpr files) */

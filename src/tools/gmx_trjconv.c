@@ -1007,7 +1007,7 @@ int gmx_trjconv(int argc,char *argv[])
 	tzero=fr.time;
       
       /* open output for writing */
-      if ((bAppend) && (fexist(out_file))) {
+      if ((bAppend) && (gmx_fexist(out_file))) {
 	strcpy(filemode,"a");
 	fprintf(stderr,"APPENDING to existing file %s\n",out_file);
       } else
