@@ -774,7 +774,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
 	gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 		    infile,natoms);
       atoms->atom[i].resind = newres;
-      t_atoms_set_resinfo(atoms,i,symtab,name,i,' ',' ');
+      t_atoms_set_resinfo(atoms,i,symtab,name,resnr,' ',' ');
     } else {
       atoms->atom[i].resind = newres;
     }
