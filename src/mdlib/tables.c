@@ -38,6 +38,7 @@
 #endif
 
 #include <math.h>
+#include "maths.h"
 #include "typedefs.h"
 #include "names.h"
 #include "smalloc.h"
@@ -644,14 +645,14 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       break;
     case etabEwald:
     case etabEwaldSwitch:
-      Vtab  = erfc(ewc*r)/r;
-      Ftab  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Vtab  = gmx_erfc(ewc*r)/r;
+      Ftab  = gmx_erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
       break;
     case etabEwaldUser:
     case etabEwaldUserSwitch:
       /* Only calculate minus the reciprocal space contribution */
-      Vtab  = -erf(ewc*r)/r;
-      Ftab  = -erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Vtab  = -gmx_erf(ewc*r)/r;
+      Ftab  = -gmx_erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
       break;
     case etabRF:
     case etabRF_ZERO:

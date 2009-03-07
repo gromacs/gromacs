@@ -33,14 +33,12 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
-#include "mpelogging.h"
-
 #ifndef _vec_h
 #define _vec_h
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+/*
 #define gmx_inline inline
 #else
 #ifdef __GNUC__
@@ -48,7 +46,9 @@
 #else
 #define inline
 #endif
+*/
 #endif
+
 /*
   collection of in-line ready operations:
   
@@ -118,11 +118,13 @@
   real trace(matrix m)                             = trace(m)
 */
 
+#include "types/simple.h"
 #include "maths.h"
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "gmx_fatal.h"
+#include "mpelogging.h"
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
@@ -476,7 +478,7 @@ static inline double diprod(const dvec a,const dvec b)
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static inline real iiprod(const ivec a,const ivec b)
+static inline int iiprod(const ivec a,const ivec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
@@ -488,7 +490,7 @@ static inline real norm2(const rvec a)
 
 static inline real norm(const rvec a)
 {
-  return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
+  return (real)sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
 
 static inline double dnorm(const dvec a)
@@ -503,7 +505,7 @@ static inline real cos_angle(const rvec a,const rvec b)
    * cos-vec (a,b) =  ---------------------
    *                      ||a|| * ||b||
    */
-  real   cos;
+  real   cosval;
   int    m;
   double aa,bb,ip,ipa,ipb,ipab; /* For accuracy these must be double! */
   
@@ -517,22 +519,22 @@ static inline real cos_angle(const rvec a,const rvec b)
   }
   ipab = ipa*ipb;
   if (ipab > 0)
-    cos = ip*invsqrt(ipab);		/*  7		*/
+    cosval = ip*invsqrt(ipab);		/*  7		*/
   else 
-    cos = 1;
+    cosval = 1;
 					/* 25 TOTAL	*/
-  if (cos > 1.0) 
+  if (cosval > 1.0) 
     return  1.0; 
-  if (cos <-1.0) 
+  if (cosval <-1.0) 
     return -1.0;
   
-  return cos;
+  return cosval;
 }
 
 static inline real cos_angle_no_table(const rvec a,const rvec b)
 {
   /* This version does not need the invsqrt lookup table */
-  real   cos;
+  real   cosval;
   int    m;
   double aa,bb,ip,ipa,ipb; /* For accuracy these must be double! */
   
@@ -544,14 +546,14 @@ static inline real cos_angle_no_table(const rvec a,const rvec b)
     ipa += aa*aa;
     ipb += bb*bb;
   }
-  cos=ip/sqrt(ipa*ipb); 		/* 12		*/
+  cosval=ip/sqrt(ipa*ipb); 		/* 12		*/
 					/* 30 TOTAL	*/
-  if (cos > 1.0) 
+  if (cosval > 1.0) 
     return  1.0; 
-  if (cos <-1.0) 
+  if (cosval <-1.0) 
     return -1.0;
   
-  return cos;
+  return cosval;
 }
 
 static inline void cprod(const rvec a,const rvec b,rvec c)
@@ -694,13 +696,13 @@ static inline void m_inv_ur0(matrix src,matrix dest)
 
 static inline void m_inv(matrix src,matrix dest)
 {
-  const real smallreal = 1.0e-24;
-  const real largereal = 1.0e24;
+  const real smallreal = (real)1.0e-24;
+  const real largereal = (real)1.0e24;
   real  deter,c,fc;
 
   deter = det(src);
-  c     = 1.0/deter;
-  fc    = fabs(c);
+  c     = (real)1.0/deter;
+  fc    = (real)fabs(c);
   
   if ((fc <= smallreal) || (fc >= largereal)) 
     gmx_fatal(FARGS,"Can not invert matrix, determinant = %e",deter);

@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include "maths.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "coulomb.h"
@@ -59,14 +60,14 @@ real calc_ewaldcoeff(real rc,real dtol)
   do {
     i++;
     x*=2;
-  } while (erfc(x*rc) > dtol);
+  } while (gmx_erfc(x*rc) > dtol);
 
   n=i+60; /* search tolerance is 2^-60 */
   low=0;
   high=x;
   for(i=0;i<n;i++) {
     x=(low+high)/2;
-    if (erfc(x*rc) > dtol)
+    if (gmx_erfc(x*rc) > dtol)
       low=x;
     else 
       high=x;
@@ -234,7 +235,7 @@ real ewald_LRcorrection(FILE *fplog,
 	     * tables: 
 	     */
 	      ewcdr   = ewc*dr;
-	      vc      = qqA*erf(ewcdr)*rinv;
+	      vc      = qqA*gmx_erf(ewcdr)*rinv;
 	      Vexcl  += vc;
 #ifdef GMX_DOUBLE
 	      /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
@@ -306,7 +307,7 @@ real ewald_LRcorrection(FILE *fplog,
 	      rinv   = invsqrt(dr2);
 	      rinv2  = rinv*rinv;
 	      dr     = 1.0/rinv;      
-	      v      = erf(ewc*dr)*rinv;
+	      v      = gmx_erf(ewc*dr)*rinv;
 	      vc     = qqL*v;
 	      Vexcl += vc;
 	      fscal  = rinv2*(vc-2.0*qqL*ewc*isp*exp(-ewc*ewc*dr2));

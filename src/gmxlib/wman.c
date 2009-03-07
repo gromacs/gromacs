@@ -180,11 +180,11 @@ static char *mydate(char buf[], int maxsize,bool bWiki)
     mynum(ss,tm->tm_sec);
     mynum(hh,tm->tm_hour);
     mynum(mn,tm->tm_min);
-    snprintf(buf,maxsize-1,"%4d-%2s-%2sT%2s:%2s:%2sZ",
+    sprintf(buf,"%4d-%2s-%2sT%2s:%2s:%2sZ",
 	     tm->tm_year+1900,mm,dd,hh,mn,ss);
   }
   else
-    snprintf(buf,maxsize-1,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
+    sprintf(buf,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
 	     mon[tm->tm_mon],tm->tm_year+1900);
   
   return buf;
@@ -348,7 +348,7 @@ char *fileopt(unsigned long flag,char buf[],int maxsize)
   if (FLAG_SET(flag, ffMULT))
     strcat(tmp,", Mult.");
 
-  snprintf(buf,maxsize-1,"%s",tmp);
+  sprintf(buf,"%s",tmp);
   
   return buf;
 }

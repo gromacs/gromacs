@@ -374,7 +374,7 @@ gmx_step_t get_egmx_step_t(int *ninp,t_inpfile **inp,
     return def;
   }
   else {
-    ret = str_to_gmx_step_t((*inp)[ii].value,&ptr,10);
+    ret = str_to_gmx_step_t((*inp)[ii].value,&ptr);
     if (ptr == (*inp)[ii].value) {
       sprintf(warn_buf,"Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n",(*inp)[ii].value,(*inp)[ii].name);
       warning_error(NULL);

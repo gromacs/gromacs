@@ -404,7 +404,7 @@ static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], int repeats
      }
 
      /* Clean up ... */
-     sprintf(command, "\\rm -rf %s", filename);
+	 remove(filename);
      gmx_system_call(command);
 }
 
@@ -927,8 +927,6 @@ int gmx_tune_pme(int argc,char *argv[])
     /* Default program names if nothing else is found */
     char        *cmd_mpirun, *cmd_mdrun;
     char        def_mpirun[]="mpirun", def_mdrun[]="mdrun";
-    cmd_mdrun  = def_mdrun;
-    cmd_mpirun = def_mpirun;
 
     int         cmdline_length;
     char        *command;
@@ -938,7 +936,6 @@ int gmx_tune_pme(int argc,char *argv[])
     int         i,j,k;
     char        *args_for_mdrun=NULL;
     FILE        *fp;
-
 
     static t_filenm fnm[] = {
       /* g_tune_pme */
@@ -1084,6 +1081,9 @@ int gmx_tune_pme(int argc,char *argv[])
         "HIDDENFrequency of writing the remaining runtime" },
     };
 
+    cmd_mdrun  = def_mdrun;
+    cmd_mpirun = def_mpirun;
+
 #define NFILE asize(fnm)
 
     CopyRight(stderr,argv[0]);
@@ -1213,10 +1213,16 @@ int gmx_tune_pme(int argc,char *argv[])
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)
     {
-        sprintf(command, "cat %s", opt2fn("-p", NFILE, fnm));
-        
-        gmx_system_call(command);
-        
+		FILE *fp = fopen(opt2fn("-p", NFILE, fnm),"r");
+		char buf[STRLEN];
+        fprintf(stdout,"\n\n");
+		
+		while( fgets(buf,STRLEN-1,fp) != NULL )
+		{
+			fprintf(stdout,"%s",buf);
+		}
+		fclose(fp);
+        fprintf(stdout,"\n\n");
         thanx(stderr);
     }
     

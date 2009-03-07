@@ -378,7 +378,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                  */
                 if (r != 0) 
                 {
-                    VV    = erf(ewc*r)*rinv;
+                    VV    = gmx_erf(ewc*r)*rinv;
                     FF    = rinv*rinv*(VV - 2.0*ewc*isp*exp(-ewc*ewc*rsq));
                 }
                 else 

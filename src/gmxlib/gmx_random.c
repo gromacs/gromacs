@@ -6,10 +6,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <time.h>
 #include <math.h>
 
+#include "maths.h"
 #include "gmx_random_gausstable.h"
 
 #define RNG_N 624
@@ -145,8 +148,12 @@ gmx_rng_make_seed(void)
   unsigned int data;
   int ret;
 
+#ifdef HAVE_UNISTD_H
   fp=fopen("/dev/random","rb"); /* will return NULL if it is not present */
-  if(fp) {
+#else
+  fp=NULL;
+#endif
+  if(fp!=NULL) {
     ret=fread(&data,sizeof(unsigned int),1,fp);
     fclose(fp);
   } else {

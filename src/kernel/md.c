@@ -89,7 +89,7 @@
 #include <mpi.h>
 #endif
 
-#ifdef FAHCORE
+#ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
 
@@ -104,9 +104,11 @@ static RETSIGTYPE signal_handler(int n)
   case SIGTERM:
     bGotTermSignal = TRUE;
     break;
+#ifdef HAVE_SIGUSR1
   case SIGUSR1:
     bGotUsr1Signal = TRUE;
     break;
+#endif
   }
 }
 
@@ -410,11 +412,13 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	fprintf(debug,"Installing signal handler for SIGTERM\n");
       signal(SIGTERM,signal_handler);
     }
+#ifdef HAVE_SIGUSR1
     if (getenv("GMX_NO_USR1") == NULL) {
-      if (debug)
-	fprintf(debug,"Installing signal handler for SIGUSR1\n");
-      signal(SIGUSR1,signal_handler);
+        if (debug)
+            fprintf(debug,"Installing signal handler for SIGUSR1\n");
+        signal(SIGUSR1,signal_handler);
     }
+#endif
   }
 
   if (cr->duty & DUTY_PP) {
@@ -568,7 +572,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   matrix      boxcopy,lastbox;
   double      cycles;
   char        sbuf[22],sbuf2[22];
-#ifdef FAHCORE
+#ifdef GMX_FAHCORE
   /* Temporary addition for FAHCORE checkpointing */
   int chkpt_ret;
 #endif
@@ -1072,7 +1076,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     } 
 
-    #ifdef FAHCORE
+    #ifdef GMX_FAHCORE
     /*temporary code for alternate checkpointing scheme.  to do: make more compact */
     if ((step !=0) && bNS) {
         if DOMAINDECOMP(cr)
@@ -1267,10 +1271,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
 
-    #ifdef FAHCORE
+#ifdef GMX_FAHCORE
       bX = bX || bLastStep; /*enforce writing positions and velocities at end of run */
       bV = bV || bLastStep;
-    #endif
+#endif
 
     if (bX || bV || bF || bXTC || bCPT) {
       wallcycle_start(wcycle,ewcTRAJ);

@@ -770,8 +770,8 @@ int gmx_fio_open(const char *fn,char *mode)
 			 */
 			if (newmode[0]=='w') 
 			{
-			#ifndef FAHCORE
-			/*if FAHCORE is defined, skip making backups */
+			#ifndef GMX_FAHCORE
+			/* only make backups for normal gromacs */
 				if (fexist(fn)) 
 				{
 					bf=(char *)backup_fn(fn);

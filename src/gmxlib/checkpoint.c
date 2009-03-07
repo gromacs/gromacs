@@ -35,6 +35,7 @@
 #include "network.h"
 #include "gmx_random.h"
 #include "checkpoint.h"
+#include "futil.h"
 
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
@@ -1309,10 +1310,15 @@ read_checkpoint(char *fn,FILE *fplog,
 	{
 		for(i=0;i<nfiles;i++)
 		{
-			if(0 != truncate(outputfiles[i].filename,outputfiles[i].offset) )
+#ifdef _MSC_VER
+            /* Microsoft */
+            
+#else
+			if(0 != gmx_truncatefile(outputfiles[i].filename,outputfiles[i].offset) )
             {
                 gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
             }
+#endif
 		}
 	}
 	

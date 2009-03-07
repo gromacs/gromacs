@@ -40,6 +40,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "maths.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "genborn.h"
@@ -129,15 +130,15 @@ void fill_log_table(const int n, real *table)
 	int *const exp_ptr=((int*)&numlog);
 	int x = *exp_ptr;
 	
-	x=0x3F800000;
-	*exp_ptr = x;
-	
 	int incr = 1 << (23-n);
 	int p=pow(2,n);
 	
-	for(i=0;i<p;++i)
+	x=0x3F800000;
+        *exp_ptr = x;
+
+ 	for(i=0;i<p;++i)
 	{
-		table[i]=log2(numlog);
+		table[i]=gmx_log2(numlog);
 		x+=incr;
 		*exp_ptr=x;
 	}
@@ -149,9 +150,11 @@ real table_log(float val, const real *table, const int n)
 	int *const exp_ptr = ((int*)&val);
 	int x              = *exp_ptr;
 	const int log_2    = ((x>>23) & 255) - 127;
+
 	x &= 0x7FFFFF;
 	x = x >> (23-n);
 	val = table[x];
+
 	return ((val+log_2)*0.69314718);  
 }
 
@@ -277,9 +280,12 @@ int init_gb_still(t_commrec *cr, t_forcerec  *fr, t_atomtypes *atype, t_idef *id
 	real r,ri,rj,ri2,ri3,rj2,r2,r3,r4,rk,ratio,term,h,doffset;
 	real p1,p2,p3,factor,cosine,rab,rbc;
 	
-	real vsol[natoms];
-	real gp[natoms];
+	real *vsol;
+	real *gp;
 	
+	snew(vsol,natoms);
+	snew(gp,natoms);
+
 	if(PAR(cr))
 	{
 		pd_at_range(cr,&at0,&at1);
@@ -434,7 +440,10 @@ int init_gb_still(t_commrec *cr, t_forcerec  *fr, t_atomtypes *atype, t_idef *id
 	 
 	exit(1);
 	*/
-	
+
+	sfree(vsol);
+	sfree(gp);
+
 	return 0;
 }
 
@@ -1447,9 +1456,11 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, rvec x[], rvec t[], real *dvda,
 	real fgb,fij,rb2,rbi,fix1,fiy1,fiz1;
 	real ix1,iy1,iz1,jx1,jy1,jz1,dx11,dy11,dz11,rsq11;
 	real rinv11,tx,ty,tz,rbai;
-	real rb[natoms];
+	real *rb;
 	rvec dx;
 	
+	snew(rb,natoms);
+
 	n=0;		
 	
 	/* Loop to get the proper form for the Born radius term */
@@ -1528,7 +1539,7 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, rvec x[], rvec t[], real *dvda,
 		
 	}
 	
-	
+	sfree(rb);
 	return 0;	
 }
 
@@ -1600,10 +1611,15 @@ int calc_surfStill(t_inputrec *ir,
   real dx,dy,dz,d,rni,dist,bee,ri,rn,asurf,t1ij,t2ij,bij,bji,dbijp;
   real dbjip,tip,tmp,tij,tji,t3ij,t4ij,t5ij,t3ji,t4ji,t5ji,dbij,dbji;
   real dpf,dpx,dpy,dpz,pi,pn,si,sn;
-  real aprob[natoms];
+  real *aprob;
+  int k,type,ai,aj,nj0,nj1;
+  real dr2,sar,rai,raj,fij;
+  rvec dxx;
+
 
   int factor=1;
   
+  snew(aprob,natoms);
 
   /*bonds_t *bonds,*bonds13;*/
   
@@ -1651,10 +1667,6 @@ int calc_surfStill(t_inputrec *ir,
 	 *********************************************************
 	 *********************************************************
 	 *********************************************************/
-	
-	int k,type,ai,aj,nj0,nj1;
-	real dr2,sar,rai,raj,fij;
-	rvec dxx;
 	
 	/* First set up the individual areas */
 	for(n=0;n<natoms;n++)
@@ -1910,6 +1922,8 @@ int calc_surfStill(t_inputrec *ir,
 		n++;
 	}
 	*/
+
+  sfree(aprob);
   return 0;
 }
 
@@ -1928,8 +1942,11 @@ int calc_surfBrooks(t_inputrec *ir,
   real kappa,sassum,tx,ty,tz,fix1,fiy1,fiz1;
 
   real ck[5];
-  real Aij[natoms];
-  real sasi[natoms];
+  real *Aij;
+  real *sasi;
+
+  snew(Aij,natoms);
+  snew(sasi,natoms);
 
   /* Brooks parameter for cutoff between atom pairs
    * Increasing kappa will increase the number of atom pairs
@@ -2017,6 +2034,8 @@ int calc_surfBrooks(t_inputrec *ir,
 
   printf("Brooks total surface area is: %g\n", sassum);
 
+  sfree(Aij);
+  sfree(sasi);
 
   return 0;
 }
@@ -2026,9 +2045,10 @@ int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	int i,l,ii,j,k,n,nj0,nj1,ai,aj,idx,ii_idx,nalloc,at0,at1,found;
 	t_nblist *nblist;
 
-	int count[natoms];
+	int *count;
 	int **atoms;
 	
+	snew(count,natoms);
 	memset(count,0,sizeof(int)*natoms);
 	atoms=(int **) malloc(sizeof(int *)*natoms);
 	
@@ -2172,7 +2192,8 @@ int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		free(atoms[i]);
 	
 	free(atoms);
-	
+
+	sfree(count);
 	return 0;
 }
 

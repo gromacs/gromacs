@@ -122,7 +122,7 @@ static int search_col(t_psdata ps,real r,real g,real b)
     srenew(ps->rgb,ps->maxrgb);
   }
   
-  snprintf(buf,11,"C%d",ps->nrgb);
+  sprintf(buf,"C%d",ps->nrgb);
   ps_defcolor(ps,r,g,b,buf);
   fprintf(ps->fp,"/B%d {%s b} bind def\n",ps->nrgb,buf);
   ps->rgb[i].r=r;
@@ -140,7 +140,7 @@ void ps_color(t_psdata ps,real r,real g,real b)
   
   i=search_col(ps,r,g,b);
   
-  snprintf(buf,11,"C%d",i);
+  sprintf(buf,"C%d",i);
   ps_selcolor(ps,buf);
 }
 

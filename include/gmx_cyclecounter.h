@@ -28,6 +28,10 @@
  *  subtract these numbers as normal integers of type gmx_cycles_t.
  */
 
+#if (defined(_MSC_VER) && (_MSC_VER>=1400) && !defined(_M_IX86))
+#include <intrin.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" 
 {
@@ -344,10 +348,7 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
 #elif (defined(_MSC_VER) && (_MSC_VER>=1400))
 static __inline gmx_cycles_t gmx_cycles_read(void)
 { 
-    /* AMD64, since it was not an x86 CPU */
-    unsigned low, high; 
-    asm volatile("rdtsc" : "=a" (low), "=d" (high)); 
-    return ((gmx_cycles_t)low) | (((gmx_cycles_t)high) << 32); 
+	return __rdtsc();
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 static inline gmx_cycles_t gmx_cycles_read(void)

@@ -44,16 +44,15 @@
 #endif
 
 #ifdef GMX_CRAY_XT3
-#ifndef NO_PWUID
-#define NO_PWUID
-#endif
+#undef HAVE_PWD_H
 #endif
 
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/types.h>
-#ifndef NO_PWUID
+#ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <time.h>
@@ -159,7 +158,7 @@ void nice_header (FILE *out,char *fn)
   int    gh;
   uid_t  uid;
   char   buf[256];
-#ifndef NO_PWUID
+#ifdef HAVE_PWD_H
   struct passwd *pw;
 #endif
 
@@ -168,7 +167,7 @@ void nice_header (FILE *out,char *fn)
   fprintf (out,"%c\n",COMMENTSIGN);
   fprintf (out,"%c\tFile '%s' was generated\n",COMMENTSIGN,fn ? fn : unk);
   
-#ifndef NO_PWUID
+#ifdef HAVE_PWD_H
   uid = getuid();
   pw  = getpwuid(uid);
   gh  = gethostname(buf,255);
@@ -373,4 +372,57 @@ char **split(char sep,char *str)
   ptr[nptr-1] = NULL;
   
   return ptr;
+}
+
+
+gmx_step_t
+str_to_gmx_step_t(const char *str, char **endptr)
+{
+	int         sign = 1;
+	gmx_step_t  val  = 0;
+	char        ch;
+	const char  *p;
+	
+	p = str;
+	if(p==NULL)
+	{
+		*endptr=NULL;
+		return 0;
+	}
+	
+	/* Strip off initial white space */
+	while(isspace(*p))
+	{
+		p++;
+	}
+	/* Conform to ISO C99 - return original pointer if string does not contain a number */
+	if(*str=='\0')
+	{
+		*endptr=(char *)str;
+	}
+	
+	if(*p=='-')
+	{
+		p++;
+		sign *= -1;
+	}
+	
+	while( ((ch=*p) != '\0') && isdigit(ch) )
+	{
+		/* Important to add sign here, so we dont overflow in final multiplication */
+		ch = (ch-'0')*sign; 
+		val = val*10 + ch;
+		if(ch != val%10) 
+		{
+			/* Some sort of overflow has occured, set endptr to original string */
+			*endptr=(char *)str;
+			errno = ERANGE;
+			return(0);
+		}
+		p++;
+	}
+	
+	*endptr=(char *)p;
+	
+	return val;
 }

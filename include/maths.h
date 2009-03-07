@@ -129,6 +129,15 @@ gmx_numzero(double a)
 }
 
 
+static real
+gmx_log2(real x)
+{
+  const real iclog2 = 1.0/log( 2.0 );
+
+    return log( x ) * iclog2;
+}
+
+
 #ifdef CPLUSPLUS
 }
 #endif

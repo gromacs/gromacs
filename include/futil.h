@@ -118,6 +118,9 @@ extern FILE *low_libopen(const char *file,bool bFatal);
  */
 extern void gmx_tmpnam(char *buf);
 
+int
+gmx_truncatefile(char *path, off_t length);
+
 #ifdef CPLUSPLUS
 }
 #endif

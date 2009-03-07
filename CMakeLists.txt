@@ -36,6 +36,7 @@ check_include_files(string.h     HAVE_STRING_H)
 check_include_files(limits.h     HAVE_LIMITS_H)
 check_include_files(memory.h     HAVE_MEMORY_H)
 check_include_files(unistd.h	 HAVE_UNISTD_H)
+check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(stdint.h	 HAVE_STDINT_H)
 check_include_files(stdlib.h	 HAVE_STDLIB_H)
 check_include_files(pthread.h    HAVE_PTHREAD_H)
@@ -134,8 +135,8 @@ endif(PTHREADS_FOUND)
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
-add_definitions(-DHAVE_CONFIG_H)
-include_directories(${CMAKE_SOURCE_DIR}/src)
+add_definitions( -DHAVE_CONFIG_H )
+include_directories(${CMAKE_BINARY_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 include(gmxCheckBuildUserTime)
@@ -149,11 +150,15 @@ gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
 include(gmxTestLargeFiles)
 gmx_test_large_files(GMX_LARGEFILES)
 
-include(gmxTestRetSigType)
+include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
+gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
+
+include(gmxTestPipes)
+gmx_test_pipes(HAVE_PIPES)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)

@@ -95,7 +95,7 @@ int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,char *warn)
   int ia,ib;
   int ret;
 
-#if SIZEOF_GMX_STEP_T == 8
+#if ((defined SIZEOF_GMX_STEP_T) && SIZEOF_GMX_STEP_T == 8)
   gmx_step_t ia64,ib64;
 
   ia64 = ((*i)>>32) & two_p32_m1;
@@ -116,8 +116,8 @@ int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,char *warn)
   ret = xdr_int(xdrs,&ia);
   ret = xdr_int(xdrs,&ib);
 
-#if SIZEOF_GMX_STEP_T == 8
-  *i = (((int64_t)ia << 32) | ((int64_t)ib & two_p32_m1));
+#if ((defined SIZEOF_GMX_STEP_T) && SIZEOF_GMX_STEP_T == 8)
+  *i = (((gmx_step_t)ia << 32) | ((gmx_step_t)ib & two_p32_m1));
 #else
   *i = ib;
   

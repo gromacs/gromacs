@@ -37,7 +37,6 @@
 #include <config.h>
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,6 +50,11 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+
+/* Windows file stuff, only necessary for visual studio */
+#ifdef _MSC_VER
+#include "windows.h"
+#endif
 
 typedef struct t_pstack {
   FILE   *fp;
@@ -75,8 +79,8 @@ void push_ps(FILE *fp)
   pstack   = ps;
 }
 
-#ifdef FAHCORE
-/*if FAHCORE, redefine fclose */
+#ifdef GMX_FAHCORE
+/* redefine fclose */
 #define fclose fah_fclose
 #else
 #ifdef fclose
@@ -151,7 +155,7 @@ bool is_pipe(FILE *fp)
   return FALSE;
 }
 
-#ifdef NO_PIPE
+#ifndef HAVE_PIPES
 static FILE *popen(char *nm,char *mode)
 {
   gmx_impl("Sorry no pipes...");
@@ -271,7 +275,7 @@ bool make_backup(const char * name)
 {
     char * backup;
 
-#ifdef FAHCORE
+#ifdef GMX_FAHCORE
     return FALSE; /* skip making backups */
 #else
 
@@ -606,4 +610,26 @@ void gmx_tmpnam(char *buf)
   }   
   close(fd);
   /* Buf should now be OK */
+}
+
+int
+gmx_truncatefile(char *path, off_t length)
+{
+#ifdef _MSC_VER
+  /* Microsoft visual studio does not have "truncate" */
+  HANDLE fh;
+  LARGE_INTEGER win_length;
+
+  win_length.QuadPart = length;
+
+  fh = CreateFile(path,GENERIC_READ | GENERIC_WRITE,0,NULL,
+		  OPEN_EXISTING,0,NULL);
+  SetFilePointerEx(fh,win_length,NULL,FILE_BEGIN);
+  SetEndOfFile(fh);
+  CloseHandle(fh);
+
+  return 0;
+#else
+  return truncate(path,length);
+#endif
 }

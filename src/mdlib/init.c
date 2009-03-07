@@ -63,7 +63,7 @@
 
 static char *int_title(char *title,int nodeid,char buf[], int size)
 {
-  snprintf(buf,size-1,"%s (%d)",title,nodeid);
+  sprintf(buf,"%s (%d)",title,nodeid);
   
   return buf;
 }

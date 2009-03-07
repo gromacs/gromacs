@@ -1,5 +1,13 @@
 /* Manually created from config.h.in to work with cmake */
 
+/* Disable warnings about double-to-float conversion accuracy loss on MSVC */
+#ifdef _MSC_VER
+#pragma warning (disable : 4305)
+#pragma warning (disable : 4244)
+#pragma warning (disable : 4101)
+#pragma warning (disable : 4996)
+#endif
+
 /* Name of package (translate from cmake to autoconf macro name) */
 #define PACKAGE  "@PROJECT_NAME@"
 
@@ -168,7 +176,6 @@
 /* Define to 1 if you have the mkl library (-lmkl). */
 #cmakedefine HAVE_LIBMKL
 
-
 /* Define to 1 if you have the xml2 library (-lxml2). */
 #cmakedefine HAVE_LIBXML2
 
@@ -223,6 +230,9 @@
 /* Define as the return type of signal handlers (int or void). */
 #cmakedefine RETSIGTYPE @RETSIGTYPE@
 
+/* Define if SIGUSR1 is present */
+#cmakedefine HAVE_SIGUSR1
+
 /* The size of int, as computed by sizeof. */
 #cmakedefine SIZEOF_INT @SIZEOF_INT@
 
@@ -267,3 +277,6 @@
                                                                 
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
+
+/* Define if we have pipes */
+#cmakedefine HAVE_PIPES

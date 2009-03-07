@@ -51,6 +51,9 @@ AC_ARG_ENABLE(fortran,
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
+if test "$enable_fortran" = "yes"; then
+  AC_DEFINE(GMX_FORTRAN,,[Enable Fortran support])
+fi
 # Generic fortran kernels will be turned off below if you enable power6-specific optimization!
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
@@ -402,6 +405,27 @@ AC_TRY_COMPILE([
    AC_MSG_ERROR([size_t is smaller than int*. Check if your compiler needs a flag to make it 64 bit.])])
 
 
+#############
+# Check that SIGUSR1 is defined
+#############
+AC_MSG_CHECKING([for SIGUSR1])
+AC_TRY_COMPILE([#include <signal.h>],[int i=SIGUSR1;],[
+AC_MSG_RESULT([yes])
+AC_DEFINE(HAVE_SIGUSR1,,[SIGUSR1 supported and defined])
+],AC_MSG_RESULT([no]))
+
+#############
+# Check if pipes are supported
+#############
+AC_MSG_CHECKING([for pipes])
+AC_TRY_COMPILE([#include <stdio.h>],[
+FILE *pipe=popen("/tmp/pipe","r");
+],[
+AC_MSG_RESULT([yes])
+AC_DEFINE(HAVE_PIPES,,[Pipes (popen/pclose) supported])
+],AC_MSG_RESULT([no]))
+
+
 
 #############
 # Check floating-point format and endian
@@ -564,6 +588,7 @@ AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
+
 
 
 #####

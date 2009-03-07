@@ -59,7 +59,7 @@ gmx_cycles_calibrate(double sampletime)
   
   QueryPerformanceFrequency(&i);
   
-  return 1.0/((double) i);
+  return 1.0/((double) i.QuadPart);
   /* end of MS Windows implementation */
   
 #elif (defined HAVE_GETTIMEOFDAY)

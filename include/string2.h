@@ -56,6 +56,8 @@ extern "C" {
 #include <stdio.h>
 #include "typedefs.h"
 
+#include "types/simple.h"
+
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
 
@@ -111,7 +113,18 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
  
   extern char **split(char sep,char *str);
   /* Implementation of the well-known Perl function split */
-   
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+#include "errno.h"
+
+#define gmx_step_t long long
+
+gmx_step_t
+str_to_gmx_step_t(const char *str, char **endptr);
+
 #ifdef CPLUSPLUS
 }
 #endif

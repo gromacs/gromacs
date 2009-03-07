@@ -374,7 +374,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
         sscanf(ptr,"%lf",&time); /* printf("Time %f\n",time); */
         /* Round time to fs */
-        time=1.0/1000*(rint(time*1000));
+        time=1.0/1000*( (int) (time*1000+0.5) );
 
         /* get time step of pdo file */
         if (count==0)
@@ -384,7 +384,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
             dt=time-time0;
             if (opt->dt>0.0)
             {
-                dstep=(int)rint(opt->dt/dt);
+	      dstep=(int)(opt->dt/dt+0.5);
                 if (dstep==0)
                     dstep=1;
             }
@@ -479,7 +479,7 @@ void enforceEqualWeights(t_UmbrellaWindow * window,int nWindows)
             ratio=1.0*NEnforced/window[j].Ntot[k];
             for(i=0;i<window[0].nBin;++i)
                 window[j].Histo[k][i]*=ratio;
-            window[j].N[k]=(int)rint(ratio*window[j].N[k]);
+            window[j].N[k]=(int)(ratio*window[j].N[k]+0.5);
         }
 }
 
@@ -749,7 +749,7 @@ void prof_normalization_and_unit(double * profile, t_UmbrellaOptions *opt)
         diff=profile[0];
     else{
         /* Get bin with shortest distance to opt->zProf0 */
-        imin=rint((opt->zProf0-opt->min)/opt->dz-0.5);
+      imin=(int)((opt->zProf0-opt->min)/opt->dz);
         if (imin<0)
             imin=0;
         else if (imin>=bins)
@@ -899,7 +899,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
         nsynth=N;
     else
     {
-        nsynth=rint(thisWindow->N[pullid]*thisWindow->dt/opt->dtBootStrap);
+      nsynth=(int)(thisWindow->N[pullid]*thisWindow->dt/opt->dtBootStrap+0.5);
         if (nsynth>N)
             nsynth=N;
     }
@@ -1182,15 +1182,20 @@ void read_wham_in(char *fn,char ***filenamesRet, int *nfilesRet,
 }
 
 
-FILE *open_pdo_pipe(char *fn)
+FILE *pdo_open_file(char *fn)
 {
     char Buffer[1024],gunzip[1024],*Path=0;
-    FILE *pipe;
+    FILE *fp;
 
-
+    if (!fexist(fn))
+	{
+        gmx_fatal(FARGS,"File %s does not exist.\n",fn);
+	}
+	
     /* gzipped pdo file? */
     if (strcmp(fn+strlen(fn)-3,".gz")==0)
     {
+#ifdef HAVE_PIPES
         if(!(Path=getenv("GMX_PATH_GZIP")))
             sprintf(gunzip,"%s","/bin/gunzip");
         else
@@ -1199,18 +1204,33 @@ FILE *open_pdo_pipe(char *fn)
             gmx_fatal(FARGS,"Cannot find executable %s. You may want to define the path to gunzip "
                     "with the environment variable GMX_PATH_GZIP.",gunzip);
         sprintf(Buffer,"%s -c < %s",gunzip,fn);
+		if((fp=popen(Buffer,"r"))==NULL)
+		{
+			gmx_fatal(FARGS,"Unable to open pipe to `%s'\n",Buffer);
+		}
+#else
+		gmx_fatal(FARGS,"Cannot open a compressed file on platform without pipe support");
+#endif
     }
     else
-        sprintf(Buffer,"/bin/cat %s",fn);
-
-    if (!fexist(fn))
-        gmx_fatal(FARGS,"File %s does not exist.\n",fn);
-
-    if((pipe=popen(Buffer,"r"))==NULL)
-        gmx_fatal(FARGS,"Unable to open pipe to `%s'\n",Buffer);
-    return pipe;
+	{
+		if((fp=fopen(fn,"r"))==NULL)
+		{
+			gmx_fatal(FARGS,"Unable to open file %s\n",fn);
+		}		
+	}
+	return fp;
 }
 
+void
+pdo_close_file(FILE *fp)
+{
+#ifdef HAVE_PIPES
+	pclose(fp);
+#else
+	fclose(fp);
+#endif
+}
 
 /* Reading pdo files */
 void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
@@ -1232,7 +1252,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         opt->max=-1e20;
         for(i=0;i<nfiles;++i)
         {
-            file=open_pdo_pipe(fn[i]);
+            file=pdo_open_file(fn[i]);
             printf("\rOpening %s ...",fn[i]); fflush(stdout);
             if (opt->verbose)
                 printf("\n");
@@ -1243,7 +1263,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
                 opt->max=maxtmp;
             if (mintmp<opt->min)
                 opt->min=mintmp;
-            pclose(file);
+            pdo_close_file(file);
         }
         printf("\n");
         printf("\nDetermined boundaries to %f and %f\n\n",opt->min,opt->max);
@@ -1265,12 +1285,12 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         printf("\rOpening %s ...",fn[i]); fflush(stdout);
         if (opt->verbose)
             printf("\n");
-        file=open_pdo_pipe(fn[i]);
+        file=pdo_open_file(fn[i]);
         /* read in the headers */
         read_pdo_header(file,header,opt);
         /* load data into window */
         read_pdo_data(file,header,i,*window,opt,FALSE,NULL,NULL);
-        pclose(file);
+        pdo_close_file(file);
     }
     printf("\n");
 }
@@ -1446,7 +1466,7 @@ void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
     for (i=0;i<nt;i++)
     {
         /* Do you want that time frame? */
-        t=1.0/1000*(rint(y[0][i]*1000)); /* round time to fs */
+      t=1.0/1000*((int)(0.5+y[0][i]*1000)); /* round time to fs */
 
         /* get time step of pdo file and get dstep from opt->dt */
         if (i==0)
@@ -1456,7 +1476,7 @@ void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
             dt=t-time0;
             if (opt->dt>0.0)
             {
-                dstep=(int)rint(opt->dt/dt);
+                dstep=(int)(opt->dt/dt+0.5);
                 if (dstep==0)
                     dstep=1;
             }
@@ -1687,41 +1707,9 @@ int gmx_wham(int argc,char *argv[])
     static t_UmbrellaOptions opt;
     static bool bHistOnly=FALSE;
 
-    opt.bins=200;
-    opt.verbose=FALSE;
-    opt.cycl=enCycl_no;
-    opt.tmin=50;
-    opt.tmax=1e20;
-    opt.dt=0.0;
-    opt.bShift=TRUE;
-    opt.nBootStrap=0;
-    opt.dtBootStrap=0.0;
-    opt.bsSeed=-1;
-    opt.bHistBootStrap=TRUE;
-    opt.histBootStrapBlockLength=12;
-    opt.zProfZero=0.0;
-    opt.bWeightedCycl=FALSE;
-    opt.alpha=2;
-    opt.bHistOutOnly=FALSE;
-    opt.min=0;
-    opt.max=0;
-    opt.bLog=TRUE;
-    opt.unit=en_kJ;
-    opt.zProf0=0.0;
-    opt.nBootStrap=0;
-    opt.bsSeed=-1;
-    opt.bHistBootStrap=TRUE;
-    opt.histBootStrapBlockLength=8;
-    opt.bs_verbose=FALSE;
-    opt.Temperature=298;
-    opt.bFlipProf=FALSE;
-    opt.Tolerance=1e-6;
-    opt.bAuto=TRUE;
-    opt.bBoundsOnly=FALSE;
-
-    static char *en_unit[5]={NULL,"kJ","kCal","kT",NULL};
-    static char *en_unit_label[24]={"","E (kJ mol\\S-1\\N)","E (kcal mol\\S-1\\N)","E (kT)",};
-    static char *en_cycl[5]={NULL,"no","yes","weighted",NULL};
+    static char *en_unit[]={NULL,"kJ","kCal","kT",NULL};
+    static char *en_unit_label[]={"","E (kJ mol\\S-1\\N)","E (kcal mol\\S-1\\N)","E (kT)",};
+    static char *en_cycl[]={NULL,"no","yes","weighted",NULL};
 
     t_pargs pa[] = {
             { "-min", FALSE, etREAL, {&opt.min},
@@ -1796,6 +1784,39 @@ int gmx_wham(int argc,char *argv[])
     bool bMinSet,bMaxSet,bAutoSet,bExact=FALSE;
     char **fninTpr,**fninPull,**fninPdo,*fnPull;
     FILE *histout,*profout;
+    char ylabel[256],title[256];
+
+    opt.bins=200;
+    opt.verbose=FALSE;
+    opt.cycl=enCycl_no;
+    opt.tmin=50;
+    opt.tmax=1e20;
+    opt.dt=0.0;
+    opt.bShift=TRUE;
+    opt.nBootStrap=0;
+    opt.dtBootStrap=0.0;
+    opt.bsSeed=-1;
+    opt.bHistBootStrap=TRUE;
+    opt.histBootStrapBlockLength=12;
+    opt.zProfZero=0.0;
+    opt.bWeightedCycl=FALSE;
+    opt.alpha=2;
+    opt.bHistOutOnly=FALSE;
+    opt.min=0;
+    opt.max=0;
+    opt.bLog=TRUE;
+    opt.unit=en_kJ;
+    opt.zProf0=0.0;
+    opt.nBootStrap=0;
+    opt.bsSeed=-1;
+    opt.bHistBootStrap=TRUE;
+    opt.histBootStrapBlockLength=8;
+    opt.bs_verbose=FALSE;
+    opt.Temperature=298;
+    opt.bFlipProf=FALSE;
+    opt.Tolerance=1e-6;
+    opt.bAuto=TRUE;
+    opt.bBoundsOnly=FALSE;
 
 
 #define NFILE asize(fnm)
@@ -1919,7 +1940,6 @@ int gmx_wham(int argc,char *argv[])
     printf("Converged in %d iterations. Final maximum change %g\n",i,maxchange);
 
     /* Write profile in energy units? */
-    char ylabel[256],title[256];
     if (opt.bLog)
     {
         prof_normalization_and_unit(profile,&opt);
