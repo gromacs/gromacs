@@ -12,6 +12,9 @@
 #include "gmx_qhop_xml.h"
 #include "gmx_qhop_db.h"
 
+#if 0
+/* These routines link to invalid dependencies in kernel/resall.c! */
+
 typedef struct {
   int id,charge,natom;
   int ndonor,*donor,nacceptor,*acceptor;
@@ -266,3 +269,5 @@ int gmx_qhop_db_get_parameters(gmx_qhop_db qdb,
   }
   return 0;
 }
+
+#endif
