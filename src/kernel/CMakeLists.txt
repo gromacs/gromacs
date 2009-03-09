@@ -39,6 +39,12 @@ set(MDRUN_SOURCES
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
 
+if(GMX_FAHCORE)
+
+  add_library(fahcore ${MDRUN_SOURCES})
+
+else(GMX_FAHCORE)
+
 add_executable(grompp grompp.c)
 target_link_libraries(grompp gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
@@ -63,21 +69,15 @@ target_link_libraries(x2top gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 add_executable(gmxcheck gmxcheck.c)
 target_link_libraries(gmxcheck gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
 
-
 add_executable(mdrun ${MDRUN_SOURCES})
 target_link_libraries(mdrun gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
-
 
 install(TARGETS 
         grompp tpbconv pdb2gmx protonate luck gmxdump
         x2top gmxcheck mdrun
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
-
-if(GMX_FAHCORE)
-  add_library(fahcore ${MDRUN_SOURCES})
-#  libfahcore_la_CFLAGS = $(AM_CFLAGS)
-#  libfahcore_la_LDFLAGS = -all-static $(AM_LDFLAGS)
-#  libfahcore_la_LIBADD = libgmxpreprocess.la
 endif(GMX_FAHCORE)
+
+
 
