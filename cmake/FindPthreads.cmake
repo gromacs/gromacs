@@ -33,6 +33,12 @@
 # Define a default exception scheme to link against
 # and validate user choice.
 #
+IF(PTHREADS_INCLUDE_DIR)
+  # Already in cache, be silent
+  SET(PTHREADS_FIND_QUIETLY TRUE)
+ENDIF(PTHREADS_INCLUDE_DIR)
+
+
 IF(NOT DEFINED PTHREADS_EXCEPTION_SCHEME)
     # Assign default if needed
     SET(PTHREADS_EXCEPTION_SCHEME "C")

@@ -13,7 +13,7 @@
 #  end up in a config.h file that is included in your source if necessary!
 
 MACRO(GMX_TEST_LARGE_FILES VARIABLE)
-    IF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+    IF(NOT DEFINED ${VARIABLE})
 
         # On most platforms it is probably overkill to first test the flags for 64-bit off_t,
         # and then separately fseeko. However, in the future we might have 128-bit filesystems
@@ -71,34 +71,34 @@ MACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
             MESSAGE(STATUS "Checking for fseeko/ftello")            
 	    # Test if ftello/fseeko are	available
-	    TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
+	    TRY_COMPILE(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
                         "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c")
-	    if(HAVE_${VARIABLE})
+	    if(FSEEKO_COMPILE_OK)
                 MESSAGE(STATUS "Checking for fseeko/ftello - present")
-            endif(HAVE_${VARIABLE})
+            endif(FSEEKO_COMPILE_OK)
 
-            if(NOT HAVE_${VARIABLE})
+            if(NOT FSEEKO_COMPILE_OK)
                 # glibc 2.2 neds _LARGEFILE_SOURCE for fseeko (but not 64-bit off_t...)
-                TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
+                TRY_COMPILE(FSEEKO_COMPILE_OK "${CMAKE_BINARY_DIR}"
                             "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TestLargeFiles.c"
                             COMPILE_DEFINITIONS "-D_LARGEFILE_SOURCE" )
-                if(HAVE_${VARIABLE})
+                if(FSEEKO_COMPILE_OK)
                     MESSAGE(STATUS "Checking for fseeko/ftello - present with _LARGEFILE_SOURCE")
                     set(_LARGEFILE_SOURCE 1)
-                endif(HAVE_${VARIABLE})
-            endif(NOT HAVE_${VARIABLE})
-
-	    if(HAVE_${VARIABLE})
-                SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
-                set(HAVE_FSEEKO 1)
-            else(HAVE_${VARIABLE})
-                MESSAGE(STATUS "Checking for fseeko/ftello - not found")
-                SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
-            endif(HAVE_${VARIABLE})
+                endif(FSEEKO_COMPILE_OK)
+            endif(NOT FSEEKO_COMPILE_OK)
 
         endif(NOT FILE64_OK)
-        
-    ENDIF("HAVE_${VARIABLE}" MATCHES "^HAVE_${VARIABLE}$")
+
+	    if(FSEEKO_COMPILE_OK)
+                SET(${VARIABLE} 1 CACHE INTERNAL "Result of test for large file support" FORCE)
+                set(HAVE_FSEEKO 1)
+            else(FSEEKO_COMPILE_OK)
+                MESSAGE(STATUS "Checking for fseeko/ftello - not found")
+                SET(${VARIABLE} 0 CACHE INTERNAL "Result of test for large file support" FORCE)
+            endif(FSEEKO_COMPILE_OK)
+
+    ENDIF(NOT DEFINED ${VARIABLE})
 ENDMACRO(GMX_TEST_LARGE_FILES VARIABLE)
 
 

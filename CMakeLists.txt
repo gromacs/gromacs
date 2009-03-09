@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 
 project(Gromacs)
-set(PROJECT_VERSION "4.0.99_development_20090221" 
+set(PROJECT_VERSION "4.0.99_development_20090307" 
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -96,7 +96,6 @@ if(NOT off_t)
 else(NOT off_t)
   set(off_t 0)
 endif(NOT off_t)
-
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
@@ -268,7 +267,7 @@ endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 # Process FFT library settings
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-    MESSAGE(STATUS "Using external FFT library - fftw3")
+#    MESSAGE(STATUS "Using external FFT library - fftw3")
     if(GMX_DOUBLE)
         find_package(FFTW3 REQUIRED)
     else(GMX_DOUBLE)
@@ -284,7 +283,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${FFTW3_LIBRARIES})
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
-    MESSAGE(STATUS "Using external FFT library - fftw2")
+#    MESSAGE(STATUS "Using external FFT library - fftw2")
     if(GMX_DOUBLE)
         find_package(FFTW2 REQUIRED)
     else(GMX_DOUBLE)
@@ -307,7 +306,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
 
     set(GMX_FFT_FFTW2 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-    MESSAGE(STATUS "Using external FFT library - Intel MKL")
+#    MESSAGE(STATUS "Using external FFT library - Intel MKL")
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIR})
     set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${MKL_LIBRARIES})
