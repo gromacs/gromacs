@@ -334,7 +334,7 @@ endif(HAVE_LIBM)
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
       "Path to swindirect.h")
-  include_directories(${COREWRA_INCLUDE_DIR})
+  include_directories(${COREWRAP_INCLUDE_DIR})
 endif(GMX_FAHCORE)
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 
