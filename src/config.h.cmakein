@@ -279,5 +279,11 @@
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
+#ifdef GMX_FAHCORE
+#include "swindirect.h"
+#define FULLINDIRECT 1
+#define USE_FAH_XDR  1
+#endif
+
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
