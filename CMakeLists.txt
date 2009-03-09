@@ -7,6 +7,7 @@ set(PROJECT_VERSION "4.0.99_development_20090307"
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -24,6 +25,8 @@ option(GMX_DISABLE_FFTW_MEASURE
 set(GMX_QMMM_PROGRAM "none" 
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
+#option(GMX_EXTERNAL_BLAS "Use external BLAS instead of built-in" OFF)
+#option(GMX_EXTERNAL_LAPACK "Use external LAPACK instead of built-in" OFF)
 
 enable_language(C)
 
@@ -128,7 +131,10 @@ if(PTHREADS_FOUND)
     set(HAVE_PTHREADS 1)
 endif(PTHREADS_FOUND)
 
-
+if(APPLE)
+   find_library(ACCELERATE_FRAMEWORK Accelerate)
+   set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${ACCELERATE_FRAMEWORK})
+endif(APPLE)
 
 
 ########################################################################
@@ -193,9 +199,11 @@ endif(GMX_FORTRAN OR GMX_POWER6)
 if(GMX_MPI)
     find_package(MPI)
     if(MPI_FOUND)
-        set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${MPI_COMPILE_FLAGS} ${MPI_LINK_FLAGS})
+        set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${MPI_COMPILE_FLAGS})
+        set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${MPI_LINK_FLAGS})
         include_directories(${MPI_INCLUDE_PATH})
         set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${MPI_LIBRARIES})
+        add_definitions( -DMPI ) #for FAHCORE
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
@@ -324,6 +332,17 @@ else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftw2, mkl, acml, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
+# MKL has BLAS/LAPACK routines
+if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
+  set(GMX_EXTERNAL_BLAS TRUE CACHE STRING "Use external BLAS instead of built-in" FORCE)
+  set(GMX_EXTERNAL_LAPACK TRUE CACHE STRING "Use external LAPACK instead of built-in" FORCE)
+else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
+  set(GMX_EXTERNAL_BLAS FALSE CACHE STRING "Use external BLAS instead of built-in")
+  set(GMX_EXTERNAL_LAPACK FALSE CACHE STRING "Use external LAPACK instead of built-in")
+endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
+
+
+
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
@@ -354,3 +373,5 @@ add_subdirectory(include)
 add_subdirectory(man)
 
 add_subdirectory(src)
+
+

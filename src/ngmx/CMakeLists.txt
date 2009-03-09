@@ -19,10 +19,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(NGMX_PROGRAMS 
     ngmx xrama highway gmxlogo dlg scrollw showcol)
 
-
 foreach(PROG ${NGMX_PROGRAMS})
         add_executable(${PROG} ${PROG}.c ${NGMX_COMMON_SOURCE})
-        target_link_libraries(${PROG} gmx ${X11_LIBRARIES})
+        target_link_libraries(${PROG} gmx ${GMX_EXTRA_LIBRARIES} ${X11_LIBRARIES})
 endforeach(PROG) 
 
 

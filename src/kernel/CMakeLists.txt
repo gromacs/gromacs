@@ -40,41 +40,48 @@ add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
 
 if(GMX_FAHCORE)
-
   add_library(fahcore ${MDRUN_SOURCES})
-
 else(GMX_FAHCORE)
 
+set(${GMX_EXTRA_LIBRARIES} gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+
 add_executable(grompp grompp.c)
-target_link_libraries(grompp gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(grompp ${GMX_EXTRA_LIBRARIES})
 
 add_executable(tpbconv tpbconv.c)
-target_link_libraries(tpbconv gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(tpbconv ${GMX_EXTRA_LIBRARIES})
 
 add_executable(pdb2gmx pdb2gmx.c)
-target_link_libraries(pdb2gmx gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(pdb2gmx ${GMX_EXTRA_LIBRARIES})
 
 add_executable(protonate protonate.c)
-target_link_libraries(protonate gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(protonate ${GMX_EXTRA_LIBRARIES})
 
 add_executable(luck luck.c)
-target_link_libraries(luck gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(luck ${GMX_EXTRA_LIBRARIES})
 
 add_executable(gmxdump gmxdump.c)
-target_link_libraries(gmxdump gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(gmxdump ${GMX_EXTRA_LIBRARIES})
 
 add_executable(x2top x2top.c)
-target_link_libraries(x2top gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(x2top ${GMX_EXTRA_LIBRARIES})
 
 add_executable(gmxcheck gmxcheck.c)
-target_link_libraries(gmxcheck gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES})
 
 install(TARGETS 
-        grompp tpbconv pdb2gmx protonate luck gmxdump
-        x2top gmxcheck mdrun
+        grompp
+        tpbconv
+        pdb2gmx
+        protonate
+        luck
+        gmxdump
+        x2top
+        gmxcheck
+        mdrun
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(GMX_FAHCORE)

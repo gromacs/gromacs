@@ -2,15 +2,22 @@
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 
-file(GLOB GMXLIB_SOURCES *.c gmx_blas/*.c gmx_lapack/*.c 
+file(GLOB GMXLIB_SOURCES *.c 
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
+
+if(NOT GMX_EXTERNAL_BLAS)
+  file(GLOB BLAS_SOURCES gmx_blas/*.c)
+endif(NOT GMX_EXTERNAL_BLAS)
+
+if(NOT GMX_EXTERNAL_LAPACK)
+  file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
+endif(NOT GMX_EXTERNAL_LAPACK)
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
 
-add_library(gmx ${GMXLIB_SOURCES})
-
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
