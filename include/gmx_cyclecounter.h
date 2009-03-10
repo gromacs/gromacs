@@ -28,7 +28,7 @@
  *  subtract these numbers as normal integers of type gmx_cycles_t.
  */
 
-#if (defined(_MSC_VER) && (_MSC_VER>=1400) && !defined(_M_IX86))
+#ifdef _MSC_VER
 #include <intrin.h>
 #endif
 
@@ -56,16 +56,9 @@ extern "C"
 typedef unsigned long long 
 gmx_cycles_t;
 
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1200) && (_M_IX86 >= 500))
-/* MS Visual C, taken from FFTW who got it from Morten Nissov */
+#elif defined(_MSC_VER)
 #include <windows.h>
 typedef __int64
-gmx_cycles_t;
-
-#elif (defined(_MSC_VER) && (_MSC_VER>=1400))
-/* AMD64 windows, since it was not an x86 CPU */
-#include <windows.h>
-typedef ULONG64 
 gmx_cycles_t;
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
@@ -191,16 +184,9 @@ static __inline__ int gmx_cycles_have_counter(void)
 	/* x86 or x86-64 with GCC inline assembly - pentium TSC register */
 	return 1;
 }
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1200) && (_M_IX86 >= 500))
+#elif (defined(_MSC_VER))
 static __inline int gmx_cycles_have_counter(void)
 { 
-	/* MS Visual C, taken from FFTW who got it from Morten Nissov */
-	return 1;
-}
-#elif (defined(_MSC_VER) && (_MSC_VER>=1400))
-static __inline int gmx_cycles_have_counter(void)
-{ 
-	/* AMD64, since it is not an x86 CPU */
 	return 1;
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
@@ -332,20 +318,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     
     return cycle;
 }
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1200) && (_M_IX86 >= 500))
-static __inline gmx_cycles_t gmx_cycles_read(void)
-{ 
-    unsigned long low,high;
-    
-    __asm 
-    {
-        __asm __emit 0fh __asm __emit 031h
-        mov high, edx
-        mov low,  eax
-    }
-    return ((gmx_cycles_t)low) | (((gmx_cycles_t)high) << 32);   
-}
-#elif (defined(_MSC_VER) && (_MSC_VER>=1400))
+#elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 { 
 	return __rdtsc();
