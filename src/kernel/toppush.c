@@ -928,6 +928,9 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   }
   resnr = atoi(resnumberic);
 
+  if (nr > 0) {
+    resind = at->atom[nr-1].resind;
+  }
   if (nr == 0 || strcmp(resname,*at->resinfo[resind].name) != 0 ||
       resnr != at->resinfo[resind].nr ||
       ric   != at->resinfo[resind].ic) {
