@@ -12,7 +12,6 @@ set(NGMX_COMMON_SOURCE
 include_directories(${X11_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-
 # List of programs with single corresponding *.c source file,
 # used to create build rules automatically.
 #

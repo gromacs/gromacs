@@ -7,7 +7,6 @@ set(PROJECT_VERSION "4.0.99_development_20090307"
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-
 ########################################################################
 # User input options                                                   #
 ########################################################################
@@ -25,11 +24,42 @@ option(GMX_DISABLE_FFTW_MEASURE
 set(GMX_QMMM_PROGRAM "none" 
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
-#option(GMX_EXTERNAL_BLAS "Use external BLAS instead of built-in" OFF)
-#option(GMX_EXTERNAL_LAPACK "Use external LAPACK instead of built-in" OFF)
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
 
 enable_language(C)
 
+########################################################################
+# Fix stupid flags on MSVC
+########################################################################
+IF(CMAKE_GENERATOR MATCHES "Visual Studio")
+    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)   
+ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
+
+
+########################################################################
+#Process MPI settings
+########################################################################
+if(GMX_MPI)
+    find_package(MPI)
+    if(MPI_FOUND)
+        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
+	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
+        include_directories(${MPI_INCLUDE_PATH})
+	set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${MPI_LIBRARIES})
+        add_definitions( -DMPI ) #for FAHCORE
+    else(MPI_FOUND)
+    message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
+    endif(MPI_FOUND)
+    include(gmxTestCatamount)
+    gmx_test_catamount(GMX_CRAY_XT3)
+    if(GMX_CRAY_XT3)
+        set(GMX_NO_SYSTEM 1)
+        set(GMX_NO_NICE 1)
+    endif(GMX_CRAY_XT3)
+endif(GMX_MPI)
 
 ########################################################################
 # Basic system tests (standard libraries, headers, functions, types)   #
@@ -136,7 +166,6 @@ if(APPLE)
    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
 
-
 ########################################################################
 # Our own GROMACS tests
 ########################################################################
@@ -195,25 +224,6 @@ else(GMX_FORTRAN OR GMX_POWER6)
         set(F77_FUNCDEF_  "name ## _")
 endif(GMX_FORTRAN OR GMX_POWER6)
 
-#Process MPI settings
-if(GMX_MPI)
-    find_package(MPI)
-    if(MPI_FOUND)
-        set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${MPI_COMPILE_FLAGS})
-        set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} ${MPI_LINK_FLAGS})
-        include_directories(${MPI_INCLUDE_PATH})
-        set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${MPI_LIBRARIES})
-        add_definitions( -DMPI ) #for FAHCORE
-    else(MPI_FOUND)
-        message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
-    endif(MPI_FOUND)
-    include(gmxTestCatamount)
-    gmx_test_catamount(GMX_CRAY_XT3)
-    if(GMX_CRAY_XT3)
-        set(GMX_NO_SYSTEM 1)
-        set(GMX_NO_NICE 1)
-    endif(GMX_CRAY_XT3)
-endif(GMX_MPI)
 
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
@@ -334,11 +344,11 @@ endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
 # MKL has BLAS/LAPACK routines
 if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-  set(GMX_EXTERNAL_BLAS TRUE CACHE STRING "Use external BLAS instead of built-in" FORCE)
-  set(GMX_EXTERNAL_LAPACK TRUE CACHE STRING "Use external LAPACK instead of built-in" FORCE)
+  set(GMX_EXTERNAL_BLAS TRUE STRING "Use external BLAS instead of built-in")
+  set(GMX_EXTERNAL_LAPACK TRUE STRING "Use external LAPACK instead of built-in")
 else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-  set(GMX_EXTERNAL_BLAS FALSE CACHE STRING "Use external BLAS instead of built-in")
-  set(GMX_EXTERNAL_LAPACK FALSE CACHE STRING "Use external LAPACK instead of built-in")
+  set(GMX_EXTERNAL_BLAS FALSE STRING "Use external BLAS instead of built-in")
+  set(GMX_EXTERNAL_LAPACK FALSE STRING "Use external LAPACK instead of built-in")
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 
 
@@ -355,7 +365,10 @@ if(GMX_FAHCORE)
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif(GMX_FAHCORE)
+
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
+set(CMAKE_C_FLAGS ${GROMACS_C_FLAGS} CACHE STRING "Compiler flags")
+set(CMAKE_EXE_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} CACHE STRING "Linker flags")
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #

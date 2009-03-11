@@ -270,4 +270,6 @@ int gmx_qhop_db_get_parameters(gmx_qhop_db qdb,
   return 0;
 }
 
+#else
+int gmx_qhop_db_dummy=0;
 #endif
