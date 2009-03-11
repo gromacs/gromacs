@@ -62,6 +62,8 @@
 #include "windows.h"
 #endif
 
+#define MAX_PATHBUF 4096
+
 typedef struct t_pstack {
   FILE   *fp;
   struct t_pstack *prev;
@@ -408,20 +410,19 @@ static bool filename_is_absolute(char *name)
 #endif
 }
 
-
 bool get_libdir(char *libdir)
 {
   char bin_name[512];
   char buf[512];
-  char full_path[512];
-  char test_file[512];
-  char system_path[512];
+  char full_path[MAX_PATHBUF];
+  char test_file[MAX_PATHBUF];
+  char system_path[MAX_PATHBUF];
   char *dir,*ptr,*s,*pdum;
   bool found=FALSE;
   int i;
 
   /* First - detect binary name */
-  strcpy(bin_name,Program());
+  strncpy(bin_name,Program(),512);
   
   /* On windows & cygwin we need to add the .exe extension
    * too, or we wont be able to detect that the file exists
@@ -432,7 +433,7 @@ bool get_libdir(char *libdir)
 #endif
 
   /* Only do the smart search part if we got a real name */
-  if (NULL!=bin_name && strcmp(bin_name,"GROMACS")) {
+  if (NULL!=bin_name && strncmp(bin_name,"GROMACS",512)) {
   
     if (!strchr(bin_name,DIR_SEPARATOR)) {
       /* No slash or backslash in name means it must be in the path - search it! */
@@ -466,11 +467,11 @@ bool get_libdir(char *libdir)
 #else
       pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-      strcpy(full_path,buf);
+      strncpy(full_path,buf,MAX_PATHBUF);
       strcat(full_path,"/");
       strcat(full_path,bin_name);
     } else {
-      strcpy(full_path,bin_name);
+      strncpy(full_path,bin_name,MAX_PATHBUF);
     }
     
     /* Now we should have a full path and name in full_path,
@@ -481,9 +482,9 @@ bool get_libdir(char *libdir)
       buf[i]='\0';
       /* If it doesn't start with "/" it is relative */
       if (buf[0]!=DIR_SEPARATOR) {
-	strcpy(strrchr(full_path,DIR_SEPARATOR)+1,buf);
+	strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,MAX_PATHBUF);
       } else
-	strcpy(full_path,buf);
+	strncpy(full_path,buf,MAX_PATHBUF);
     }
 #endif
     
@@ -520,10 +521,10 @@ const char *low_libfn(const char *file, bool bFatal)
   const char *ret=NULL;
   char *lib,*dir;
   static char buf[1024];
-  static char libpath[4096];
+  static char libpath[MAX_PATHBUF];
   static int  bFirst=1;
   static bool env_is_set;
-  char   *s,tmppath[4096];
+  char   *s,tmppath[MAX_PATHBUF];
   bool found;
   
   if (bFirst) {
@@ -531,10 +532,10 @@ const char *low_libfn(const char *file, bool bFatal)
     lib=getenv("GMXLIB");
     if (lib != NULL) {
       env_is_set=TRUE;
-      strcpy(libpath,lib);
+      strncpy(libpath,lib,MAX_PATHBUF);
     } 
     else if (!get_libdir(libpath))
-      strcpy(libpath,GMXLIBDIR);
+      strncpy(libpath,GMXLIBDIR,MAX_PATHBUF);
     
     bFirst=0;
   }
@@ -543,7 +544,7 @@ const char *low_libfn(const char *file, bool bFatal)
     ret=file;
   else {
     found=FALSE;
-    strcpy(tmppath,libpath);
+    strncpy(tmppath,libpath,MAX_PATHBUF);
     s=tmppath;
     while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
       sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
