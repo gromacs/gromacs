@@ -160,14 +160,19 @@ static int parse_names(char **string,int *n_names,char **names)
   return *n_names;
 }
 
-static bool parse_int(char **string,int *nr)
+static bool parse_int_char(char **string,int *nr,char *c)
 {
+  char *orig;
   bool bRet;
+
+  orig = *string;
 
   while ((*string)[0]==' ')
     (*string)++;
 
   bRet=FALSE;
+
+  *c = ' ';
 
   if (isdigit((*string)[0])) {
     *nr=(*string)[0]-'0';
@@ -176,10 +181,34 @@ static bool parse_int(char **string,int *nr)
       *nr = (*nr)*10+(*string)[0]-'0';
       (*string)++;
     }
-    bRet=TRUE;
+    if (isalpha((*string)[0])) {
+      *c = (*string)[0];
+      (*string)++;
+    }
+    /* Check if there is at most one non-digit character */
+    if (!isalnum((*string)[0])) {
+      bRet = TRUE;
+    } else {
+      *string = orig;
+    }
   }
   else
     *nr=NOTSET;
+
+  return bRet;
+}
+
+static bool parse_int(char **string,int *nr)
+{
+  char *orig,c;
+  bool bRet;
+
+  orig = *string;
+  bRet = parse_int_char(string,nr,&c);
+  if (bRet && c != ' ') {
+    *string = orig;
+    bRet = FALSE;
+  }
 
   return bRet;
 }
@@ -261,24 +290,30 @@ static int select_atomnumbers(char **string,t_atoms *atoms,atom_id n1,
   return *nr;
 }
 
-static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
+static int select_residuenumbers(char **string,t_atoms *atoms,
+				 atom_id n1,char c,
 				 atom_id *nr,atom_id *index,char *gname)
 {
   char    buf[STRLEN];
-  int     j,resnr;
-  int     i,up;
+  int     i,j,up;
+  t_resinfo *ri;
 
   *nr=0;
   while ((*string)[0]==' ')
     (*string)++;
   if ((*string)[0]=='-') {
+    /* Residue number range selection */
+    if (c != ' ') {
+      printf("Error: residue insertion codes can not be used with residue range selection\n");
+      return 0;
+    }
     (*string)++;
     parse_int(string,&up);
 
     for(i=0; i<atoms->nr; i++) {
-      resnr = atoms->resinfo[atoms->atom[i].resind].nr;
+      ri = &atoms->resinfo[atoms->atom[i].resind];
       for(j=n1; (j<=up); j++) {
-	if (resnr == j) {
+	if (ri->nr == j && (c == ' ' || ri->ic == c)) {
 	  index[*nr]=i;
 	  (*nr)++;
 	}
@@ -293,18 +328,20 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
     strcpy(gname,buf);
   }
   else {
+    /* Individual residue number/insertion code selection */
     j=n1;
     sprintf(gname,"r");
     do {
       for(i=0; i<atoms->nr; i++) {
-	if (atoms->resinfo[atoms->atom[i].resind].nr == j) {
+	ri = &atoms->resinfo[atoms->atom[i].resind];
+	if (ri->nr == j && ri->ic == c) {
 	index[*nr]=i;
 	(*nr)++;
 	}
       }
       sprintf(buf,"_%d",j);
       strcat(gname,buf);
-    } while (parse_int(string,&j));
+    } while (parse_int_char(string,&j,&c));
   }
   
   return *nr;
@@ -645,6 +682,7 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
   static bool bFirst=TRUE;
   int         j,n_names,sel_nr1;
   atom_id     i,nr1,*index1;
+  char        c;
   bool        bRet,bCompl;
 
   if (bFirst) {
@@ -717,8 +755,8 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
   else if ((*string)[0]=='r') {
     (*string)++;
     if (check_have_atoms(atoms, ostring)) {
-    if (parse_int(string,&sel_nr1)) {
-      bRet=select_residuenumbers(string,atoms,sel_nr1,nr,index,gname);
+      if (parse_int_char(string,&sel_nr1,&c)) {
+	bRet=select_residuenumbers(string,atoms,sel_nr1,c,nr,index,gname);
     } 
     else if (parse_names(string,&n_names,names)) {
       bRet=select_residuenames(atoms,n_names,names,nr,index);
@@ -875,7 +913,8 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char 
       printf(" 'a' name1[*] [name2[*] ...] : selects atoms by name(s), wildcard allowed\n"); 
       printf("                               at the end of a name.\n");
       printf(" 't' type1[*] [type2[*] ...] : as 'a' but for type, run input file required.\n");
-      printf(" 'r'               : analogous to 'a', but for residues.\n");
+      printf(" 'r' nr1[ic1] [nr2[ic2] ...] : selects residues by number and insertion code.\n");
+      printf(" 'r' nr1 - nr2         : selects residues in the range from nr1 to nr2.\n"); 
       printf(" 'chain' ch1 [ch2 ...] : selects atoms by chain identifier(s),\n");
       printf("                         not available with a .gro file as input.\n");
       printf(" !                 : takes the complement of a group with respect to all\n");
