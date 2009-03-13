@@ -910,13 +910,14 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char 
       
       printf(" 'a' nr1 [nr2 ...] : selects atoms, atom numbering starts at 1.\n");
       printf(" 'a' nr1 - nr2     : selects atoms in the range from nr1 to nr2.\n"); 
-      printf(" 'a' name1[*] [name2[*] ...] : selects atoms by name(s), wildcard allowed\n"); 
-      printf("                               at the end of a name.\n");
-      printf(" 't' type1[*] [type2[*] ...] : as 'a' but for type, run input file required.\n");
+      printf(" 'a' name1[*] [name2[*] ...] : selects atoms by name(s), '?' matches any char,\n"); 
+      printf("                               wildcard '*' allowed at the end of a name.\n");
+      printf(" 't' type1[*] [type2[*] ...] : as 'a', but for type, run input file required.\n");
       printf(" 'r' nr1[ic1] [nr2[ic2] ...] : selects residues by number and insertion code.\n");
-      printf(" 'r' nr1 - nr2         : selects residues in the range from nr1 to nr2.\n"); 
-      printf(" 'chain' ch1 [ch2 ...] : selects atoms by chain identifier(s),\n");
-      printf("                         not available with a .gro file as input.\n");
+      printf(" 'r' nr1 - nr2               : selects residues in the range from nr1 to nr2.\n");
+      printf(" 'r' name1[*] [name2[*] ...] : as 'a', but for residue names.\n");
+      printf(" 'chain' ch1 [ch2 ...]       : selects atoms by chain identifier(s),\n");
+      printf("                               not available with a .gro file as input.\n");
       printf(" !                 : takes the complement of a group with respect to all\n");
       printf("                     the atoms in the input file.\n");
       printf(" & |               : AND and OR, can be placed between any of the options\n");
