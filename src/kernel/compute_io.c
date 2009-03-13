@@ -72,5 +72,17 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
   cio += nstlog*(nrener*16*2.0); /* 16 bytes per energy term plus header */
   cio += (1.0*nste)*nrener*sizeof(t_energy);
   
+  if (ir->efep != efepNO) {
+    cio += (1 + nsteps)*20; /* roughly 20 chars per line */
+  }
+  if (ir->pull != NULL) {
+    if (ir->pull->nstxout > 0) {
+      cio += (1 + nsteps)/ir->pull->nstxout*20; /* roughly 20 chars per line */
+    }
+    if (ir->pull->nstfout > 0) {
+      cio += (1 + nsteps)/ir->pull->nstfout*20; /* roughly 20 chars per line */
+    }
+  }
+
   return cio*nrepl/(1024*1024);
 }
