@@ -902,6 +902,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
         buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
         strcat(buf,"_prev");
         strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
+		(void)remove(buf); /* Unix will overwrite buf if it exists, but for windows we need to remove first */
         if(rename(fn,buf) != 0)
 		{
 			gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
