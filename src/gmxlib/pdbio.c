@@ -262,7 +262,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
     resind = atoms->atom[i].resind;
     strcpy(resnm,*atoms->resinfo[resind].name);
     strcpy(nm,*atoms->atomname[i]);
-	/* rename HG12 to 2HG1, etc. */
+    /* rename HG12 to 2HG1, etc. */
     xlate_atomname_gmx2pdb(nm);
     resnr = atoms->resinfo[resind].nr;
     resic = atoms->resinfo[resind].ic;
@@ -287,7 +287,8 @@ void write_pdbfile_indexed(FILE *out,char *title,
       bfac  = 0.0;
     }
     if (bWideFormat)
-      strcpy(pdbform,"%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f\n");
+      strcpy(pdbform,
+	     "%-6s%5u %-4.4s %3.3s %c%4d%c   %10.5f%10.5f%10.5f%8.4f%8.4f    %2s\n");
     else {
       if ((strlen(nm)<4) && (atoms->atom[i].atomnumber < 10))
 	strcpy(pdbform,pdbformat);
@@ -303,10 +304,10 @@ void write_pdbfile_indexed(FILE *out,char *title,
 	  nlongname++;
 	}
       }
-      strcat(pdbform,"%6.2f%6.2f\n");
+      strcat(pdbform,"%6.2f%6.2f    %2s\n");
     }
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,resic,
-	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac,atoms->atom[i].elem);
     if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic) {
       fprintf(out,"ANISOU%5u  %-4.4s%3.3s %c%4d%c %7d%7d%7d%7d%7d%7d\n",
 	      (i+1)%100000,nm,resnm,ch,resnr,resic,
@@ -426,6 +427,7 @@ void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 	atomnumber = gmx_nint(eval);
     }
     atoms->atom[i].atomnumber = atomnumber;
+    sprintf(atoms->atom[i].elem,"%2s",gmx_atomprop_element(aps,atomnumber));
     if (debug)
       fprintf(debug,"Atomnumber for atom '%s' is %d\n",anm,atomnumber);
   }
@@ -519,6 +521,7 @@ static int read_atom(t_symtab *symtab,
     atomn->m = 0.0;
     atomn->q = 0.0;
     atomn->atomnumber = atomnumber;
+    atomn->elem[0] = '\0';
   }
   x[natom][XX]=atof(xc)*0.1;
   x[natom][YY]=atof(yc)*0.1;

@@ -50,6 +50,7 @@ typedef struct {
   int           ptype;		/* Particle type			*/
   int 		resind;		/* Index into resinfo in t_atoms)       */
   int           atomnumber;     /* Atomic Number or NOTSET              */
+  char          elem[4];        /* Element name                         */
 } t_atom;
 
 typedef struct {
