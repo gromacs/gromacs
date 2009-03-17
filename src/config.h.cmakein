@@ -280,9 +280,9 @@
 #cmakedefine GMX_FAHCORE   
 
 #ifdef GMX_FAHCORE
-#include "swindirect.h"
 #define FULLINDIRECT 1
 #define USE_FAH_XDR  1
+#include "swindirect.h"
 #endif
 
 /* Define if we have pipes */
