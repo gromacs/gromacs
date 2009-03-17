@@ -304,7 +304,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
 	  nlongname++;
 	}
       }
-      strcat(pdbform,"%6.2f%6.2f    %2s\n");
+      strcat(pdbform,"%6.2f%6.2f          %2s\n");
     }
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,resic,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac,atoms->atom[i].elem);
