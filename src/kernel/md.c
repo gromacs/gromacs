@@ -158,7 +158,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   	
   if (bVerbose && SIMMASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
-  
+ 
   if (Flags & MD_APPENDFILES) 
   {
 	  fplog = NULL;
@@ -183,7 +183,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)) {
     cr->npmenodes = 0;
   }
-  
+ 
   /* NMR restraints must be initialized before load_checkpoint,
    * since with time averaging the history is added to t_state.
    * For proper consistency check we therefore need to extend
@@ -895,6 +895,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (fplog)
     fprintf(fplog,"\n");
 
+  /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
+  #ifdef GMX_FAHCORE
+	chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
+             NULL);
+  if ( chkpt_ret == 0 ) 
+        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", 0 );
+  #endif
+			 
   /* Set the node time counter to 0 after initialisation */
   start_time();
   debug_gmx();
@@ -932,7 +940,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     step = ir->init_step;
     step_rel = 0;
-    
+
     bLastStep = (bRerunMD || step_rel > ir->nsteps);
     while (!bLastStep || (bRerunMD && bNotLastFrame)) {
         
@@ -1076,56 +1084,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     } 
 
-    #ifdef GMX_FAHCORE
-    /*temporary code for alternate checkpointing scheme.  to do: make more compact */
-    if ((step !=0) && bNS) {
-        if DOMAINDECOMP(cr)
-       {
-       /*if domain decomposition, use global vars for checkpoint */
-         {
-           dd_collect_state(cr->dd,state,state_global);
-          }
-         chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
-             &step, sizeof(step),
-             &step_rel, sizeof(step_rel),
-             state_global->x,  sizeof(rvec)*mdatoms->nr,
-             state_global->v,  sizeof(rvec)*mdatoms->nr,
-             f_global,     sizeof(rvec)*mdatoms->nr,
-             buf, sizeof(rvec)*mdatoms->nr,
-             &state_global->lambda,   sizeof(float),
-             state_global->box, sizeof(rvec)*3,
-             state_global->boxv, sizeof(rvec)*3,
-             &state->nosehoover_xi, sizeof(float),
-             state_global->sd_X, sizeof(rvec)*state->nalloc,
-             NULL
-             );
-       }
-       else
-         chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
-             &step, sizeof(step),
-             &step_rel, sizeof(step_rel),
-             state->x,  sizeof(rvec)*mdatoms->nr,
-             state->v,  sizeof(rvec)*mdatoms->nr,
-             f,     sizeof(rvec)*mdatoms->nr,
-             buf, sizeof(rvec)*mdatoms->nr,
-             &state->lambda,   sizeof(float),
-             state->box, sizeof(rvec)*3,
-             state->boxv, sizeof(rvec)*3,
-             &state->nosehoover_xi, sizeof(float),
-             state->sd_X, sizeof(rvec)*state->nalloc,
-             NULL
-             );
-
-      if ( chkpt_ret == 0 ) {
-        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
-      }
-
-    if (MASTER(cr))
-      fcReportProgress( ir->nsteps, step_rel );
-    }  
-    #endif /* end FAHCORE block */
-
-
     if (terminate_now > 0 || (terminate_now < 0 && bNS)) {
       bLastStep = TRUE;
     }
@@ -1136,7 +1094,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     {
 	bBornRadii=TRUE;
     }
-
     do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
     do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
 
@@ -1263,7 +1220,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      * the update.
      * for RerunMD t is read from input trajectory
      */
-
     GMX_MPE_LOG(ev_output_start);
 
     bX   = do_per_step(step,ir->nstxout);
@@ -1274,6 +1230,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 #ifdef GMX_FAHCORE
       bX = bX || bLastStep; /*enforce writing positions and velocities at end of run */
       bV = bV || bLastStep;
+	  bCPT = bCPT || fcCheckPointPending();  
+ 	if (bCPT)
+		fcRequestCheckPoint(); /* sync bCPT and fc record-keeping */
+
+    if (MASTER(cr))
+      fcReportProgress( ir->nsteps, step_rel );
 #endif
 
     if (bX || bV || bF || bXTC || bCPT) {
@@ -1290,7 +1252,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,fn_cpt,bCPT,
 				 top_global,ir->eI,ir->simulation_part,step,t,state,state_global,f,f_global);
       debug_gmx();
-
       if (bLastStep && step_rel == ir->nsteps &&
 	  (Flags & MD_CONFOUT) && MASTER(cr) &&
 	  !bRerunMD && !bFFscan) {
