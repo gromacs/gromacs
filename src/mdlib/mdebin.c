@@ -762,29 +762,35 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
     
     enerhist->nsum     = mdebin->ebin->nsum;
     enerhist->nsum_sim = mdebin->ebin->nsum_sim;
+    enerhist->nener    = mdebin->ebin->nener;
 
-    if (mdebin->ebin->nsum > 0 || mdebin->ebin->nsum_sim > 0)
+    if (mdebin->ebin->nsum > 0)
     {
         /* Check if we need to allocate first */
-        if(enerhist->nener < mdebin->ebin->nener)
+        if(enerhist->ener_ave == NULL)
         {
-            enerhist->nener = mdebin->ebin->nener;
             snew(enerhist->ener_ave,enerhist->nener);
             snew(enerhist->ener_sum,enerhist->nener);
+        }
+        
+        for(i=0;i<enerhist->nener;i++)
+        {
+            enerhist->ener_ave[i] = mdebin->ebin->e[i].eav;
+            enerhist->ener_sum[i] = mdebin->ebin->e[i].esum;
+        }
+    }
+
+    if (mdebin->ebin->nsum_sim > 0)
+    {
+        /* Check if we need to allocate first */
+        if(enerhist->ener_sum_sim == NULL)
+        {
             snew(enerhist->ener_sum_sim,enerhist->nener);
         }
         
         for(i=0;i<enerhist->nener;i++)
         {
-            if (enerhist->nsum > 0)
-            {
-                enerhist->ener_ave[i]     = mdebin->ebin->e[i].eav;
-                enerhist->ener_sum[i]     = mdebin->ebin->e[i].esum;
-            }
-            if (enerhist->nsum_sim > 0)
-            {
-                enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].esum;
-            }
+            enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].eav;
         }
     }
 }
