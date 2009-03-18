@@ -37,6 +37,10 @@
 #include "checkpoint.h"
 #include "futil.h"
 
+#ifdef GMX_FAHCORE
+#include "corewrap.h"
+#endif
+
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
