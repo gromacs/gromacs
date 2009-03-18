@@ -914,9 +914,6 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     ftime = strdup(ctime(&now));
     ftime[strlen(ftime)-1] = '\0';
 
-    /* Get offsets for open files */
-	gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
-
 	/* No need to pollute stderr every time we write a checkpoint file */
     /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
@@ -925,6 +922,9 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
                 gmx_step_str(step,buf),ftime);
     }
     
+    /* Get offsets for open files */
+	gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
+
     fp = gmx_fio_open(fn,"w");
 	
     flags_eks =
@@ -970,6 +970,14 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     
     sfree(ftime);
 	sfree(outputfiles);
+	#ifdef GMX_FAHCORE
+    /*code for alternate checkpointing scheme.  moved from top of loop over steps */
+      if ( fcCheckPointParallel( (MASTER(cr)==0), NULL) == 0 ) {
+        gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
+      }
+
+	#endif /* end FAHCORE block */
+
 }
 
 static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
@@ -1311,15 +1319,10 @@ read_checkpoint(char *fn,FILE *fplog,
 	{
 		for(i=0;i<nfiles;i++)
 		{
-#ifdef _MSC_VER
-            /* Microsoft */
-            
-#else
 			if(0 != gmx_truncatefile(outputfiles[i].filename,outputfiles[i].offset) )
             {
                 gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
             }
-#endif
 		}
 	}
 	

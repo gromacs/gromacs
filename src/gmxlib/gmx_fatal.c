@@ -190,7 +190,7 @@ static void quit_gmx(const char *msg)
     }
   }
 
-  exit(-1);
+  exit(fatal_errno);
 }
 
 void _set_fatal_tmp_file(const char *fn, const char *file, int line)
