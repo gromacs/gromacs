@@ -898,7 +898,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
   #ifdef GMX_FAHCORE
 	chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
-             NULL);
+             NULL,0);
   if ( chkpt_ret == 0 ) 
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", 0 );
   #endif
