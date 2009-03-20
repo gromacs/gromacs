@@ -2705,9 +2705,9 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     gmx_domdec_comm_t *comm;
     int  ncd,d1,i,j,pos,nmin,nmin_old;
     bool bLimLo,bLimHi;
-    real load_aver,load_i,imbalance,change;
+    real load_aver,load_i,imbalance,change,change_max,sc;
     real cellsize_limit_f,dist_min_f,fac,space,halfway;
-    real change_max = 0.05;
+    real change_limit = 0.1;
     real relax = 0.5;
 
     comm = dd->comm;
@@ -2728,6 +2728,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     else if (dd_load_count(comm))
     {
         load_aver = comm->load[d].sum_m/ncd;
+        change_max = 0;
         for(i=0; i<ncd; i++)
         {
             /* Determine the relative imbalance of cell i */
@@ -2735,16 +2736,24 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             imbalance = (load_i - load_aver)/load_aver;
             /* Determine the change of the cell size using underrelaxation */
             change = -relax*imbalance;
-            /* Limit the amount of scaling */
-            if (change > change_max)
-            {
-                change = change_max;
-            }
-            else if (change < -change_max)
-            {
-                change = -change_max;
-            }
-            /* Set the optimal cell size */
+            change_max = max(change_max,max(change,-change));
+        }
+        /* Limit the amount of scaling.
+         * We need to use the same rescaling for all cells in one row,
+         * otherwise the load balancing might not converge.
+         */
+        sc = relax;
+        if (change_max > change_limit)
+        {
+            sc *= change_limit/change_max;
+        }
+        for(i=0; i<ncd; i++)
+        {
+            /* Determine the relative imbalance of cell i */
+            load_i = comm->load[d].load[i*comm->load[d].nload+2];
+            imbalance = (load_i - load_aver)/load_aver;
+            /* Determine the change of the cell size using underrelaxation */
+            change = -sc*imbalance;
             root->cell_size[i] *= 1 + change;
         }
     }
@@ -2784,7 +2793,13 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             }
         }
     }
-    
+
+    /* First we need to check if the scaling does not make cells
+     * smaller than the smallest allowed size.
+     * We need to do this iteratively, since if a cell is too small,
+     * it needs to be enlarged, which makes all the other cells smaller,
+     * which could in turn make another cell smaller than allowed.
+     */
     for(i=0; i<ncd; i++)
     {
         root->bCellMin[i] = FALSE;
@@ -2802,7 +2817,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                 fac += root->cell_size[i];
             }
         }
-        fac = (1 - nmin*dist_min_f)/fac;
+        fac = (1 - nmin*cellsize_limit_f)/fac;
         /* Determine the cell boundaries */
         root->cell_f[0] = 0;
         for(i=0; i<ncd; i++)
