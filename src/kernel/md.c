@@ -184,6 +184,10 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     cr->npmenodes = 0;
   }
  
+  #ifdef GMX_FAHCORE
+    fcRegisterSteps(inputrec->nsteps,inputrec->init_step);
+  #endif
+ 
   /* NMR restraints must be initialized before load_checkpoint,
    * since with time averaging the history is added to t_state.
    * For proper consistency check we therefore need to extend
@@ -1235,7 +1239,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		fcRequestCheckPoint(); /* sync bCPT and fc record-keeping */
 
     if (MASTER(cr))
-      fcReportProgress( ir->nsteps, step_rel );
+      fcReportProgress( ir->nsteps, step );
 #endif
 
     if (bX || bV || bF || bXTC || bCPT) {
