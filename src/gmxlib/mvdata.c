@@ -171,6 +171,7 @@ static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
   nblock_bc(cr,atoms->nr,atoms->atom);
   bc_strings(cr,symtab,atoms->nr,&atoms->atomname);
   block_bc(cr,atoms->nres);
+  snew_bc(cr,atoms->resinfo,atoms->nres);
   nblock_bc(cr,atoms->nres,atoms->resinfo);
   bc_strings_resinfo(cr,symtab,atoms->nres,atoms->resinfo);
   /* QMMM requires atomtypes to be known on all nodes as well */
