@@ -183,7 +183,7 @@ int gmx_stats_add_points(gmx_stats_t gstats,int n,real *x,real *y,
 static int gmx_stats_compute(gmx_stats *stats,int weight)
 {
     double yy,yx,xx,sx,sy,dy,chi2,chi2aa,d2;
-    double w,wtot,yx_nw,sy_nw,yy_nw,xx_nw,dx2,dy2;
+    double w,wtot,yx_nw,sy_nw,sx_nw,yy_nw,xx_nw,dx2,dy2;
     int i;
   
     if (stats->computed == 0) 
@@ -198,7 +198,7 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             return estatsNOT_IMPLEMENTED;
         }
         
-        xx = xx_nw = yy = yy_nw = yx = yx_nw = sx = sy = sy_nw = 0;
+        xx = xx_nw = yy = yy_nw = yx = yx_nw = sx = sy = sy_nw = sx_nw = 0;
         wtot = 0;
         d2 = 0;
         for(i=0; (i<stats->np); i++) 
@@ -223,6 +223,7 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             sx    += w*stats->x[i];
             sy    += w*stats->y[i];
             sy_nw += stats->y[i];
+            sx_nw += stats->x[i];
         }
       
         /* Compute average, sigma and error */
@@ -234,8 +235,10 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
         stats->rmsd = sqrt(d2/stats->np);
        
         /* Correlation coefficient for data */
-        stats->Rdata = sqr(yx_nw)/(xx_nw*yy_nw);
-   
+        stats->Rdata = ((stats->np*yx_nw - xx_nw*yy_nw)/
+                        (sqrt(stats->np*xx_nw-sqr(sx_nw))*
+                         sqrt(stats->np*yy_nw-sqr(sy_nw))));
+        
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
            end b) */
