@@ -75,6 +75,23 @@ static void gyro_eigen(double **gyr,double *eig,double **eigv,int *ord)
   }
 }
 
+/* Calculate mean square internal distances (Auhl et al., JCP 119, 12718) */
+static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
+{
+  int ii, jj;
+  const int ml = i1 - i0 + 1; /* Number of beads in molecule. */
+  int bd; /* Distance between beads */
+  double d;
+
+  for (bd = 1; bd < ml; bd++) {
+    d = 0.;
+    for (ii = i0; ii <= i1 - bd; ii++)
+      d += distance2(x[ii], x[ii+bd]);
+    d /= ml - bd;
+    intd[bd - 1] += d;
+  }
+}
+
 int gmx_polystat(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -88,7 +105,9 @@ int gmx_polystat(int argc,char *argv[])
     "for the average gyration tensor are written.",
     "With option [TT]-v[tt] the eigenvectors are written.",
     "With option [TT]-pc[tt] also the average eigenvalues of the individual",
-    "gyration tensors are written.[PAR]",
+    "gyration tensors are written.",
+    "With option [TT]-i[tt] the mean square internal distances are",
+    "written.[PAR]",
     "With option [TT]-p[tt] the presistence length is determined.",
     "The chosen index group should consist of atoms that are",
     "consecutively bonded in the polymer mainchains.",
@@ -114,7 +133,8 @@ int gmx_polystat(int argc,char *argv[])
     { efNDX, NULL, NULL,  ffOPTRD },
     { efXVG, "-o", "polystat",  ffWRITE },
     { efXVG, "-v", "polyvec", ffOPTWR },
-    { efXVG, "-p", "persist",  ffOPTWR }
+    { efXVG, "-p", "persist",  ffOPTWR },
+    { efXVG, "-i", "intdist", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -132,9 +152,10 @@ int gmx_polystat(int argc,char *argv[])
   double sum_eed2,sum_eed2_tot,sum_gyro,sum_gyro_tot,sum_pers_tot;
   int    *ninp=NULL;
   double *sum_inp=NULL,pers;
+  double *intd, ymax, ymin;
   double mmol,m;
   char   title[STRLEN];
-  FILE   *out,*outv,*outp;
+  FILE   *out,*outv,*outp, *outi;
   char   *leg[8] = { "end to end", "<R\\sg\\N>",
 		     "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
 		     "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
@@ -204,6 +225,15 @@ int gmx_polystat(int argc,char *argv[])
     outp = NULL;
   }
 
+  if (opt2bSet("-i", NFILE, fnm)) {
+    outi = xvgropen(opt2fn("-i", NFILE, fnm), "Internal distances",
+                    "n", "<R\\S2\\N(n)>/n (nm\\S2\\N)");
+    i = index[molind[1]-1] - index[molind[0]]; /* Length of polymer -1 */
+    snew(intd, i);
+  } else {
+    outi = NULL;
+  }
+
   natoms = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
   snew(gyr,DIM);
@@ -242,6 +272,11 @@ int gmx_polystat(int argc,char *argv[])
 
       /* Determine end to end distance */
       sum_eed2 += distance2(x[index[ind0]],x[index[ind1-1]]);
+
+      /* Determine internal distances */
+      if (outi) {
+        calc_int_dist(intd, x, index[ind0], index[ind1-1]);
+      }
 
       /* Determine the radius of gyration */
       clear_dvec(cm);
@@ -359,6 +394,26 @@ int gmx_polystat(int argc,char *argv[])
   if (opt2bSet("-p",NFILE,fnm))
     fprintf(stdout,"\nAverage persistence length:  %.2f bonds\n",
 	    sum_pers_tot);
+
+  /* Handle printing of internal distances. */
+  if (outi) {
+    fprintf(outi, "@    xaxes scale Logarithmic\n");
+    ymax = -1;
+    ymin = 1e300;
+    j = index[molind[1]-1] - index[molind[0]]; /* Polymer length -1. */
+    for (i = 0; i < j; i++) {
+      intd[i] /= (i + 1) * frame * nmol;
+      if (intd[i] > ymax)
+        ymax = intd[i];
+      if (intd[i] < ymin)
+        ymin = intd[i];
+    }
+    xvgr_world(outi, 1, ymin, j, ymax);
+    for (i = 0; i < j; i++) {
+      fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
+    }
+    fclose(outi);
+  }
 
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   if (opt2bSet("-v",NFILE,fnm))
