@@ -203,7 +203,7 @@ extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 /* In domdec_top.c */
 
 extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
-                                          int local_count);
+                                          int local_count,  gmx_mtop_t *top_global, t_state *state_local);
 
 extern void dd_make_reverse_top(FILE *fplog,
                                 gmx_domdec_t *dd,gmx_mtop_t *mtop,
@@ -231,7 +231,10 @@ extern void dd_bonded_cg_distance(FILE *fplog,
                                   bool bBCheck,
                                   real *r_2b,real *r_mb);
 
-
+extern void write_dd_pdb(char *fn,gmx_step_t step,char *title,
+                         gmx_mtop_t *mtop,
+                         t_commrec *cr,
+                         rvec x[],matrix box);
 /* In domdec_setup.c */
 
 extern real dd_choose_grid(FILE *fplog,
@@ -244,6 +247,10 @@ extern real dd_choose_grid(FILE *fplog,
  * for the system.
  * On the master node returns the actual cellsize limit used.
  */
+
+
+
+
 
 #endif	/* _domdec_h */
 

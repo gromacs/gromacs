@@ -611,7 +611,8 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     wallcycle_start(wcycle,ewcMoveE);
 
     global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
-		inputrec,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate);
+		inputrec,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate,
+		top_global,state);
 
     wallcycle_stop(wcycle,ewcMoveE);
   }

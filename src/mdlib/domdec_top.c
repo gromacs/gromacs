@@ -263,7 +263,7 @@ static void print_missing_interactions_atoms(FILE *fplog,t_commrec *cr,
     }
 }
 
-void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
+void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count,  gmx_mtop_t *top_global, t_state *state_local)
 {
     int  ndiff_tot,cl[F_NRE],n,ndiff,rest_global,rest_local;
     int  ftype,nral;
@@ -337,7 +337,8 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     
     print_missing_interactions_atoms(fplog,cr,err_top_global,
                                      &err_top_local->idef);
-    
+    write_dd_pdb("dd_dump_err",0,"dump",top_global,cr,
+                             state_local->x,state_local->box);
     if (DDMASTER(dd))
     {
         if (ndiff_tot > 0)

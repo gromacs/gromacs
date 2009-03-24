@@ -136,7 +136,8 @@ extern void global_stat(FILE *log,
 			t_inputrec *inputrec,
 			gmx_ekindata_t *ekind,bool bSumEkinhOld,
 			gmx_constr_t constr,t_vcm *vcm,
-			int *nabnsb,real *chkpt,real *terminate);
+			int *nabnsb,real *chkpt,real *terminate,
+			gmx_mtop_t *top_global, t_state *state_local);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 void write_traj(FILE *fplog,t_commrec *cr,

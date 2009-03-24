@@ -74,7 +74,8 @@ void global_stat(FILE *fplog,
 		 gmx_ekindata_t *ekind,bool bSumEkinhOld,
 		 gmx_constr_t constr,
 		 t_vcm *vcm,int *nabnsb,
-		 real *chkpt,real *terminate)
+		 real *chkpt,real *terminate,
+		 gmx_mtop_t *top_global, t_state *state_local)
 {
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
@@ -201,7 +202,7 @@ void global_stat(FILE *fplog,
   if (DOMAINDECOMP(cr)) {
     extract_bind(rb,inb,1,&nb);
     if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-      dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5));
+      dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
   }
   where();
   if (nabnsb) {

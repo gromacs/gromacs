@@ -1779,19 +1779,21 @@ static void write_dd_grid_pdb(char *fn,gmx_step_t step,
     }
 }
 
-static void write_dd_pdb(char *fn,gmx_step_t step,char *title,
+void write_dd_pdb(char *fn,gmx_step_t step,char *title,
                          gmx_mtop_t *mtop,
-                         t_commrec *cr,int natoms,
+                         t_commrec *cr,
                          rvec x[],matrix box)
 {
     char fname[STRLEN],format[STRLEN],format4[STRLEN],buf[22];
     FILE *out;
     int  i,ii,resnr,c;
     char *atomname,*resname;
+    int natoms;
     real b;
     gmx_domdec_t *dd;
     
     dd = cr->dd;
+    natoms = dd->comm->nat[ddnatVSITE];
     
     sprintf(fname,"%s_%s_n%d.pdb",fn,gmx_step_str(step,buf),cr->sim_nodeid);
     
@@ -7942,7 +7944,6 @@ void dd_partition_system(FILE            *fplog,
     {
         dd_move_x(dd,state_local->box,state_local->x,*buf);
         write_dd_pdb("dd_dump",step,"dump",top_global,cr,
-                     comm->nat[ddnatVSITE],
                      state_local->x,state_local->box);
     }
 
