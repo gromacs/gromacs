@@ -170,11 +170,12 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
     double yy,yx,xx,sx,sy,dy,chi2,chi2aa,d2;
     double ssxx,ssyy,ssxy;
     double w,wtot,yx_nw,sy_nw,sx_nw,yy_nw,xx_nw,dx2,dy2;
-    int i;
+    int i,N;
   
+    N = stats->np;
     if (stats->computed == 0) 
     {
-        if (stats->np <= 2)
+        if (N <= 2)
         {
             return estatsNO_POINTS;
         }
@@ -184,10 +185,14 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             return estatsNOT_IMPLEMENTED;
         }
         
-        xx = xx_nw = yy = yy_nw = yx = yx_nw = sx = sy = sy_nw = sx_nw = 0;
+        xx = xx_nw = 0;
+        yy = yy_nw = 0;
+        yx = yx_nw = 0;
+        sx = sx_nw = 0;
+        sy = sy_nw = 0;
         wtot = 0;
-        d2 = 0;
-        for(i=0; (i<stats->np); i++) 
+        d2   = 0;
+        for(i=0; (i<N); i++) 
         {
             d2 += sqr(stats->x[i]-stats->y[i]);
             if ((stats->dy[i]) && (weight == elsqWEIGHT_Y))
@@ -200,35 +205,45 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             }
             
             wtot  += w;
-            yy    += w*sqr(stats->y[i]);
-            yy_nw += sqr(stats->y[i]);
-            yx    += w*stats->y[i]*stats->x[i];
-            yx_nw += stats->y[i]*stats->x[i];
+            
             xx    += w*sqr(stats->x[i]);
             xx_nw += sqr(stats->x[i]);
+            
+            yy    += w*sqr(stats->y[i]);
+            yy_nw += sqr(stats->y[i]);
+            
+            yx    += w*stats->y[i]*stats->x[i];
+            yx_nw += stats->y[i]*stats->x[i];
+            
             sx    += w*stats->x[i];
             sx_nw += stats->x[i];
+            
             sy    += w*stats->y[i];
             sy_nw += stats->y[i];
         }
       
         /* Compute average, sigma and error */
-        stats->aver       = sy_nw/stats->np;
-        stats->sigma_aver = sqrt(yy_nw/stats->np - sqr(sy_nw/stats->np));
-        stats->error      = stats->sigma_aver/sqrt(stats->np);
+        stats->aver       = sy_nw/N;
+        stats->sigma_aver = sqrt(yy_nw/N - sqr(sy_nw/N));
+        stats->error      = stats->sigma_aver/sqrt(N);
 
         /* Compute RMSD between x and y */
-        stats->rmsd = sqrt(d2/stats->np);
+        stats->rmsd = sqrt(d2/N);
        
         /* Correlation coefficient for data */
-        ssxx = xx_nw - sqr(sx_nw)/stats->np;
-        ssyy = yy_nw - sqr(sy_nw)/stats->np;
-        ssxy = yx_nw - (sx_nw*sy_nw)/stats->np;
-        stats->Rdata = ssxy/sqrt(ssxx*ssyy); 
+        yx_nw /= N;
+        xx_nw /= N;
+        yy_nw /= N;
+        sx_nw /= N;
+        sy_nw /= N;
+        ssxx = N*(xx_nw - sqr(sx_nw));
+        ssyy = N*(yy_nw - sqr(sy_nw));
+        ssxy = N*(yx_nw - (sx_nw*sy_nw));
+        stats->Rdata = sqrt(sqr(ssxy)/(ssxx*ssyy)); 
         
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
-           end b) */
+           and b) */
         yx = yx/wtot;
         xx = xx/wtot;
         sx = sx/wtot;
@@ -242,7 +257,7 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
            chi2aa which returns the deviation from a line y = ax. */
         chi2   = 0;
         chi2aa = 0;
-        for(i=0; (i<stats->np); i++) 
+        for(i=0; (i<N); i++) 
         {
             if (stats->dy[i] > 0)
             {
@@ -255,13 +270,13 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             chi2aa += sqr((stats->y[i]-(stats->aa*stats->x[i]))/dy);
             chi2   += sqr((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
         }
-        stats->chi2   = sqrt(chi2/(stats->np-2));
-        stats->chi2aa = sqrt(chi2aa/(stats->np-2));
+        stats->chi2   = sqrt(chi2/(N-2));
+        stats->chi2aa = sqrt(chi2aa/(N-2));
     
         /* Look up equations! */
         dx2 = (xx-sx*sx);
         dy2 = (yy-sy*sy);
-        stats->sigma_a = sqrt(stats->chi2/((stats->np-2)*dx2));
+        stats->sigma_a = sqrt(stats->chi2/((N-2)*dx2));
         stats->sigma_b = stats->sigma_a*sqrt(xx);
         stats->Rfit    = stats->a*sqrt(dx2/dy2);
         stats->Rfitaa  = stats->aa*sqrt(dx2/dy2);  
