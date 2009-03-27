@@ -46,6 +46,9 @@ int
 gmx_angle(int argc,char *argv[]);
 
 int 
+gmx_bar(int argc,char *argv[]);
+
+int 
 gmx_bond(int argc,char *argv[]);
 
 int 

@@ -61,6 +61,7 @@
 #include "bondf.h"
 #include "nrnb.h"
 #include "smalloc.h"
+#include "nonbonded.h"
 
 #include "nb_kernel_c/nb_kernel_c.h"
 #include "nb_free_energy.h"
@@ -295,8 +296,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,
                   real egnb[],real egcoul[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
-                  bool bLR,int nls,int eNL,bool bDoForces)
+                  int nls,int eNL,int flags)
 {
+    bool            bLR,bDoForces,bForeignLambda;
 	t_nblist *      nlist;
 	real *          fshift;
 	int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
@@ -310,6 +312,10 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
 	
+    bLR            = (flags & GMX_DONB_LR);
+    bDoForces      = (flags & GMX_DONB_FORCES);
+    bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
+
     if (eNL >= 0) 
     {
 		i0 = eNL;
@@ -373,6 +379,12 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 				}
 				else
 				{
+                    if (bForeignLambda)
+                    {
+                        /* We don't need the non-perturbed interactions */
+                        continue;
+                    }
+
 					tabletype = nb_kernel_table[nrnb_ind];
 					
 					/* normal kernels, not free energy */
@@ -439,6 +451,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  fr->sc_alpha,
 											  fr->sc_power,
 											  fr->sc_sigma6,
+                                              bDoForces,
 											  &outeriter,
 											  &inneriter);
                 }
@@ -775,6 +788,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       fr->sc_alpha,
                                       fr->sc_power,
                                       fr->sc_sigma6,
+                                      TRUE,
                                       &outeriter,
                                       &inneriter);
         }

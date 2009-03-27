@@ -111,11 +111,16 @@ extern void xvgr_box(FILE *out,
 		     int BoxFill,int BoxColor,int BoxPattern);
 /* Make a box */
 
-extern int read_xvg(const char *fn,double ***y,int *ny);
+extern int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend);
 /* Read an xvg file for post processing. The number of rows is returned
  * fn is the filename, y is a pointer to a 2D array (to be allocated by
- * the routine) ny is the number of columns (including X if appropriate)
+ * the routine) ny is the number of columns (including X if appropriate).
+ * If legend!=NULL, read the legends for the sets (when present),
+ * 0 is the first y legend, the legend string will be NULL when not present.
  */
+
+extern int read_xvg(const char *fn,double ***y,int *ny);
+/* As read_xvg_legend, but does not read legends. */
  
 extern void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg);
 /* Write a two D array (y) of dimensions nx rows times

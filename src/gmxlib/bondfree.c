@@ -2066,3 +2066,72 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
   if (fcd)
     epot[F_DISRESVIOL] = fcd->disres.sumviol;
 }
+
+void calc_bonds_lambda(FILE *fplog,
+		       const t_idef *idef,
+		       rvec x[],
+		       t_forcerec *fr,
+		       const t_pbc *pbc,const t_graph *g,
+		       gmx_enerdata_t *enerd,t_nrnb *nrnb,
+		       real lambda,
+		       const t_mdatoms *md,
+		       t_fcdata *fcd,int *global_atom_index)
+{
+  int    ftype,nbonds_np,nbonds,ind,nat;
+  real   *epot,v,dvdl;
+  rvec   *f,*fshift_orig;
+  const  t_pbc *pbc_null;
+  t_iatom *iatom_fe;
+
+  if (fr->bMolPBC)
+    pbc_null = pbc;
+  else
+    pbc_null = NULL;
+  
+  epot = enerd->term;
+  
+  snew(f,fr->natoms_force);
+  /* We want to preserve the fshift array in forcerec */
+  fshift_orig = fr->fshift;
+  snew(fr->fshift,SHIFTS);
+
+  /* Loop over all bonded force types to calculate the bonded forces */
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    if(ftype<F_GB12 || ftype>F_GB14) {
+      if (interaction_function[ftype].flags & IF_BOND &&
+	  !(ftype == F_CONNBONDS || ftype == F_POSRES)) {
+	nbonds_np = idef->il[ftype].nr_nonperturbed;
+	nbonds    = idef->il[ftype].nr - nbonds_np;
+	if (nbonds > 0) {
+	  ind = interaction_function[ftype].nrnb_ind;
+	  nat = interaction_function[ftype].nratoms+1;
+	  iatom_fe = idef->il[ftype].iatoms + nbonds*nat;
+	  dvdl = 0;
+	  if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
+	    v =
+	      interaction_function[ftype].ifunc(nbonds,iatom_fe,
+						idef->iparams,
+						(const rvec*)x,f,fr->fshift,
+						pbc_null,g,lambda,&dvdl,md,fcd,
+						global_atom_index);
+	  } else {
+	    v = do_listed_vdw_q(ftype,nbonds,iatom_fe,
+				idef->iparams,
+				(const rvec*)x,f,fr->fshift,
+				pbc_null,g,
+				lambda,&dvdl,
+				md,fr,&enerd->grpp,global_atom_index);
+	  }
+	  if (ind != -1)
+	    inc_nrnb(nrnb,ind,nbonds/nat);
+	  epot[ftype]  += v;
+	  epot[F_DVDL] += dvdl;
+	}
+      }
+    }
+  }
+
+  sfree(fr->fshift);
+  fr->fshift = fshift_orig;
+  sfree(f);
+}

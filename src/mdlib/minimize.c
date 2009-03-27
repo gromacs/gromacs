@@ -81,6 +81,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "pdbio.h"
 
 typedef struct {
   t_state s;
@@ -354,7 +355,7 @@ void init_em(FILE *fplog,const char *title,
   }
 
   snew(*enerd,1);
-  init_enerdata(fplog,top_global->groups.grps[egcENER].nr,*enerd);
+  init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,*enerd);
 
   /* Init bin for energy stuff */
   *mdebin = init_mdebin(*fp_ene,top_global,ir); 
@@ -551,7 +552,6 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   tensor force_vir,shake_vir,ekin;
   real dvdl;
   real terminate=0;
-  t_state *state;
   
   /* Set the time to the initial time, the time does not change during EM */
   t = inputrec->init_t;
@@ -604,7 +604,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(fplog,inputrec,fr,count,mdatoms->nr,ems->s.box,ems->s.lambda,
-		pres,force_vir,enerd->term);
+		pres,force_vir,enerd);
 
   /* Communicate stuff when parallel */
   if (PAR(cr)) {
@@ -612,7 +612,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 
     global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
 		inputrec,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate,
-		top_global,state);
+		top_global,&ems->s);
 
     wallcycle_stop(wcycle,ewcMoveE);
   }
@@ -629,7 +629,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 	      NULL,&shake_vir,nrnb,econqForce);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
-    enerd->term[F_DVDL] += dvdl;
+    enerd->term[F_DGDL_CON] += dvdl;
     m_add(force_vir,shake_vir,vir);
     wallcycle_stop(wcycle,ewcCONSTR);
   } else {
@@ -640,6 +640,8 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   enerd->term[F_PRES] =
     calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres,
 	      (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+
+  sum_dgdl(enerd,ems->s.lambda,inputrec);
 
   get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
 }
@@ -2514,7 +2516,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   update_mdatoms(mdatoms,inputrec->init_lambda);
 
   snew(enerd,1);
-  init_enerdata(fplog,groups->grps[egcENER].nr,enerd);
+  init_enerdata(groups->grps[egcENER].nr,inputrec->n_flambda,enerd);
 
   /* Print to log file  */
   start_t=print_date_and_time(fplog,cr->nodeid,
@@ -2800,7 +2802,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,
-		      pres,vir,enerd->term);
+		      pres,vir,enerd);
 	
 	/* If the compiler doesn't optimize this check away
 	 * we catch the NAN energies.
@@ -2812,6 +2814,15 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	    fprintf(debug,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,epot);
 	  embU = 0;
 	} else {
+	  {
+	    real eo;
+	    printf(pdbformat,"ATOM",step,"CA","GLY",' ',step,' ',
+		   x_tp[XX]*10,x_tp[YY]*10,x_tp[ZZ]*10);
+	    eo = epot*0.05;
+	    printf("%6.2f%6.2f\n",
+		   1.0,
+		   eo < -9.99 ? -9.99 : eo > 9.99 ? 9.99 : eo);
+	  }
 	  embU = exp(-beta*epot);
 	  sum_embU += embU;
 	  /* Determine the weighted energy contributions of each energy group */

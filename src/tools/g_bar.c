@@ -31,43 +31,19 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
-
-#ifndef _nonbonded_h
-#define _nonbonded_h
-
-#include "typedefs.h"
-#include "pbc.h"
-#include "network.h"
-#include "tgroup.h"
-#include "genborn.h"
-
-void
-gmx_setup_kernels(FILE *fplog);
-
-#define GMX_DONB_LR             (1<<0)
-#define GMX_DONB_FORCES         (1<<1)
-#define GMX_DONB_FOREIGNLAMBDA  (1<<2)
-
-void
-do_nonbonded(t_commrec *cr,t_forcerec *fr,
-             rvec x[],rvec f[],t_mdatoms *md,
-             real egnb[],real egcoul[],rvec box_size,
-             t_nrnb *nrnb,real lambda,real *dvdlambda,
-             int nls,int eNL,int flags);
-
-/* Calculate VdW/charge pair interactions (usually 1-4 interactions).
- * global_atom_index is only passed for printing error messages.
- */
-real
-do_listed_vdw_q(int ftype,int nbonds,
-		const t_iatom iatoms[],const t_iparams iparams[],
-		const rvec x[],rvec f[],rvec fshift[],
-		const t_pbc *pbc,const t_graph *g,
-		real lambda,real *dvdlambda,
-		const t_mdatoms *md,
-		const t_forcerec *fr,gmx_grppairener_t *grppener,
-		int *global_atom_index);
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+#include <gmx_ana.h>
+
+
+/* This is just a wrapper binary. */
+int
+main(int argc, char *argv[])
+{
+  gmx_bar(argc,argv);
+  return 0;
+}

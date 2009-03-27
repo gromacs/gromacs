@@ -53,6 +53,7 @@
 #include "orires.h"
 #include "constr.h"
 #include "mtop_util.h"
+#include "xvgr.h"
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
 
@@ -392,6 +393,54 @@ t_mdebin *init_mdebin(int fp_ene,
     return md;
 }
 
+FILE *open_dgdl(char *filename,t_inputrec *ir)
+{
+    FILE *fp;
+    char *dgdl="dG/d\\8l\\4",*deltag="\\8D\\4G",*lambda="\\8l\\4";
+    char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
+    int  nsets,s;
+    char **setname,buf[STRLEN];
+
+    sprintf(label_x,"%s (%s)","Time",unit_time);
+    if (ir->n_flambda == 0)
+    {
+        sprintf(title,"%s",dgdl);
+        sprintf(label_y,"%s (%s %s)",
+                "dG/d\\8l\\4",unit_energy,"[\\8l\\4]\\S-1\\N");
+    }
+    else
+    {
+        sprintf(title,"%s, %s",dgdl,deltag);
+        sprintf(label_y,"(%s)",unit_energy);
+    }
+    fp = xvgropen(filename,title,label_x,label_y);
+
+    if (ir->n_flambda > 0)
+    {
+        /* g_bar has to determine the lambda values used in this simulation
+         * from this xvg legend.
+         */
+        nsets = 1 + ir->n_flambda;
+        snew(setname,nsets);
+        sprintf(buf,"%s %s %g",dgdl,lambda,ir->init_lambda);
+        setname[0] = strdup(buf);
+        for(s=1; s<nsets; s++)
+        {
+            sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s-1]);
+            setname[s] = strdup(buf);
+        }
+        xvgr_legend(fp,nsets,setname);
+
+        for(s=0; s<nsets; s++)
+        {
+            sfree(setname[s]);
+        }
+        sfree(setname);
+    }
+
+    return fp;
+}
+
 static void copy_energy(real e[],real ecpy[])
 {
   int i,j;
@@ -567,9 +616,15 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     
     if (fp_dgdl)
     {
-        fprintf(fp_dgdl,"%.4f %g\n",
+        fprintf(fp_dgdl,"%.4f %g",
                 time,
                 enerd->term[F_DVDL]+enerd->term[F_DKDL]+enerd->term[F_DGDL_CON]);
+        for(i=1; i<enerd->n_lambda; i++)
+        {
+            fprintf(fp_dgdl," %g",
+                    enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
+        }
+        fprintf(fp_dgdl,"\n");
     }
 }
 

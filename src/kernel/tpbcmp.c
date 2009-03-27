@@ -410,6 +410,8 @@ static void cmp_pull(FILE *fp,t_pull *pull1,t_pull *pull2,real ftol)
 
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
 {
+  int i;
+
   fprintf(fp,"comparing inputrec\n");
 
   /* gcc 2.96 doesnt like these defines at all, but issues a huge list
@@ -493,9 +495,14 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
   cmp_double(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
   cmp_double(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);
+  cmp_int(fp,"inputrec->n_flambda",-1,ir1->n_flambda,ir2->n_flambda);
+  for(i=0; i<min(ir1->n_flambda,ir2->n_flambda); i++) {
+    cmp_double(fp,"inputrec->flambda",-1,ir1->flambda[i],ir2->flambda[i],ftol);
+  }
   cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol);
   cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol);
+  cmp_int(fp,"inputrec->nstdgdl",-1,ir1->nstdgdl,ir2->nstdgdl);
 
   cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);
   cmp_int(fp,"inputrec->wall_type",-1,ir1->wall_type,ir2->wall_type);

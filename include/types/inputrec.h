@@ -203,9 +203,12 @@ typedef struct {
   int  efep;   		/* free energy interpolation no/yes		*/
   double init_lambda;	/* initial value for perturbation variable	*/
   double delta_lambda;	/* change of lambda per time step (1/dt)	*/
+  int  n_flambda;       /* The number of foreign lambda points          */
+  double *flambda;      /* The foreign lambda values                    */
   real sc_alpha;        /* free energy soft-core parameter              */
   int  sc_power;        /* lambda power for soft-core interactions      */
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
+  int  nstdgdl;         /* The frequency for calculating dgdl           */
   int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/

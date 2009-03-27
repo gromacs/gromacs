@@ -74,6 +74,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
+static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
@@ -472,6 +473,19 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
   return np;
 }
 
+static void parse_n_double(char *str,int *n,double **r)
+{
+  char *ptr[MAXPTR];
+  int  i;
+
+  *n = str_nelem(str,MAXPTR,ptr);
+
+  snew(*r,*n);
+  for(i=0; i<*n; i++) {
+    (*r)[i] = atof(ptr[i]);
+  }
+}
+
 static void do_wall_params(t_inputrec *ir,
 			   char *wall_atomtype, char *wall_density,
 			   t_gromppopts *opts)
@@ -833,9 +847,11 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
   RTYPE ("init-lambda",	ir->init_lambda,0.0);
   RTYPE ("delta-lambda",ir->delta_lambda,0.0);
+  STYPE ("foreign_lambda", foreign_lambda, NULL);
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
+  ITYPE ("nstdgdl",     ir->nstdgdl, 10);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam, nerror, TRUE);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam, nerror, TRUE);
@@ -997,6 +1013,15 @@ void get_ir(char *mdparin,char *mdparout,
 	      warning(NULL);
 	    }
 	}
+  }
+
+  if (ir->efep != efepNO) {
+    parse_n_double(foreign_lambda,&ir->n_flambda,&ir->flambda);
+    if (ir->n_flambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) {
+      warning_note("For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
+    }
+  } else {
+    ir->n_flambda = 0;
   }
 
   sfree(dumstr[0]);

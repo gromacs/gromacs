@@ -501,10 +501,10 @@ static void pr_pull(FILE *fp,int indent,t_pull *pull)
 }
 
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
-		 bool bMDPformat)
-
+                 bool bMDPformat)
 {
   char *infbuf="inf";
+  int  i;
   
   if (available(fp,ir,indent,title)) {
     if (!bMDPformat)
@@ -525,6 +525,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("nstxtcout",ir->nstxtcout);
     PR("init_t",ir->init_t);
     PR("delta_t",ir->delta_t);
+    
     PR("xtcprec",ir->xtcprec);
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
@@ -589,11 +590,26 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PS("free_energy",EFEPTYPE(ir->efep));
     PR("init_lambda",ir->init_lambda);
+    PR("delta_lambda",ir->delta_lambda);
+    if (!bMDPformat)
+    {
+        PI("n_flambda",ir->n_flambda);
+    }
+    if (ir->n_flambda > 0)
+    {
+        pr_indent(fp,indent);
+        fprintf(fp,"flambda%s",bMDPformat ? " = " : ":");
+        for(i=0; i<ir->n_flambda; i++)
+        {
+            fprintf(fp,"  %10g",ir->flambda[i]);
+        }
+        fprintf(fp,"\n");
+    }
     PR("sc_alpha",ir->sc_alpha);
     PI("sc_power",ir->sc_power);
     PR("sc_sigma",ir->sc_sigma);
-    PR("delta_lambda",ir->delta_lambda);
-    
+    PI("nstdgdl", ir->nstdgdl);
+
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));
     PI("wall_atomtype[0]",ir->wall_atomtype[0]);

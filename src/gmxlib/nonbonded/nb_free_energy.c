@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -72,8 +73,9 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 lambda,
                           real *               dvdlambda,
                           real                 alpha,
-			  int                  lam_power,
+                          int                  lam_power,
                           real                 def_sigma6,
+                          bool                 bDoForces,
                           int *                outeriter,
                           int *                inneriter)
 {
@@ -400,26 +402,32 @@ gmx_nb_free_energy_kernel(int                  icoul,
             dvdl          += lambda*dalfB*FscalB*sigma6b*rinv4B
 	                       - L1*dalfA*FscalA*sigma6a*rinv4A;
                 
-            tx             = Fscal*dx;     
-            ty             = Fscal*dy;     
-            tz             = Fscal*dz;     
-            fix            = fix + tx;      
-            fiy            = fiy + ty;      
-            fiz            = fiz + tz;      
-            f[j3]          = f[j3]   - tx;
-            f[j3+1]        = f[j3+1] - ty;
-            f[j3+2]        = f[j3+2] - tz;
+            if (bDoForces)
+            {
+                tx         = Fscal*dx;     
+                ty         = Fscal*dy;     
+                tz         = Fscal*dz;     
+                fix        = fix + tx;      
+                fiy        = fiy + ty;      
+                fiz        = fiz + tz;      
+                f[j3]      = f[j3]   - tx;
+                f[j3+1]    = f[j3+1] - ty;
+                f[j3+2]    = f[j3+2] - tz;
+            }
         }
         
-        f[ii3]           = f[ii3]        + fix;
-        f[ii3+1]         = f[ii3+1]      + fiy;
-        f[ii3+2]         = f[ii3+2]      + fiz;
-        fshift[is3]      = fshift[is3]   + fix;
-        fshift[is3+1]    = fshift[is3+1] + fiy;
-        fshift[is3+2]    = fshift[is3+2] + fiz;
-        ggid             = gid[n];         
-        Vc[ggid]         = Vc[ggid] + vctot;
-        Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
+        if (bDoForces)
+        {
+            f[ii3]         = f[ii3]        + fix;
+            f[ii3+1]       = f[ii3+1]      + fiy;
+            f[ii3+2]       = f[ii3+2]      + fiz;
+            fshift[is3]    = fshift[is3]   + fix;
+            fshift[is3+1]  = fshift[is3+1] + fiy;
+            fshift[is3+2]  = fshift[is3+2] + fiz;
+        }
+        ggid               = gid[n];
+        Vc[ggid]           = Vc[ggid] + vctot;
+        Vvdw[ggid]         = Vvdw[ggid] + Vvdwtot;
     }
     
     *dvdlambda      += dvdl;

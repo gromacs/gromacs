@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -154,35 +155,6 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
     rvec_inc(f[i],flr[i]);
 }
 
-static void reset_energies(t_grpopts *opts,
-			   t_forcerec *fr,bool bNS,
-			   gmx_enerdata_t *enerd,
-			   bool bMaster)
-{
-  bool bKeepLR;
-  int  i,j;
-  
-  /* First reset all energy components, except for the long range terms
-   * on the master at non neighbor search steps, since the long range
-   * terms have already been summed at the last neighbor search step.
-   */
-  bKeepLR = (fr->bTwinRange && !bNS && bMaster);
-  for(i=0; (i<egNR); i++) {
-    if (!(bKeepLR && (i == egCOULLR || i == egLJLR))) {
-      for(j=0; (j<enerd->grpp.nener); j++)
-	enerd->grpp.ener[i][j] = 0.0;
-    }
-  }
-  
-  /* Normal potential energy components */
-  for(i=0; (i<=F_EPOT); i++) {
-    enerd->term[i] = 0.0;
-  }
-  enerd->term[F_DVDL]     = 0.0;
-  enerd->term[F_DKDL]     = 0.0;
-  enerd->term[F_DGDL_CON] = 0.0;
-}
-
 /* 
  * calc_f_el calculates forces due to an electric field.
  *
@@ -267,46 +239,6 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
 
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
-}
-
-static real sum_v(int n,real v[])
-{
-  real t;
-  int  i;
-  
-  t = 0.0;
-  for(i=0; (i<n); i++)
-    t = t + v[i];
-    
-  return t;
-}
-
-static void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
-{
-  gmx_grppairener_t *grpp;
-  real *epot;
-  int i;
-  
-  grpp = &enerd->grpp;
-  epot = enerd->term;
-
-  /* Accumulate energies */
-  epot[F_COUL_SR]  = sum_v(grpp->nener,grpp->ener[egCOULSR]);
-  epot[F_LJ]       = sum_v(grpp->nener,grpp->ener[egLJSR]);
-  epot[F_LJ14]     = sum_v(grpp->nener,grpp->ener[egLJ14]);
-  epot[F_COUL14]   = sum_v(grpp->nener,grpp->ener[egCOUL14]);
-  epot[F_COUL_LR]  = sum_v(grpp->nener,grpp->ener[egCOULLR]);
-  epot[F_LJ_LR]    = sum_v(grpp->nener,grpp->ener[egLJLR]);
-/* lattice part of LR doesnt belong to any group
- * and has been added earlier
- */
-  epot[F_BHAM]     = sum_v(grpp->nener,grpp->ener[egBHAMSR]);
-  epot[F_BHAM_LR]  = sum_v(grpp->nener,grpp->ener[egBHAMLR]);
-
-  epot[F_EPOT] = 0;
-  for(i=0; (i<F_EPOT); i++)
-    if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
-      epot[F_EPOT] += epot[i];
 }
 
 static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
@@ -468,7 +400,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
 
   /* Reset energies */
-  reset_energies(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));    
+  reset_enerdata(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));    
   if (bNS) {
     wallcycle_start(wcycle,ewcNS);
     
@@ -489,7 +421,7 @@ void do_force(FILE *fplog,t_commrec *cr,
        cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
-    enerd->term[F_DVDL] += dvdl;
+    enerd->dvdl_lr       = dvdl;
 
     wallcycle_stop(wcycle,ewcNS);
   }
@@ -566,7 +498,12 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      interaction_function[F_POSRES].longname,v,dvdl);
     }
     enerd->term[F_POSRES] += v;
-    enerd->term[F_DVDL]   += dvdl;
+    /* This linear lambda dependence assumption is only correct
+     * when only k depends on lambda,
+     * not when the reference position depends on lambda.
+     * grompp checks for this.
+     */
+    enerd->dvdl_lin += dvdl;
     inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
   }
   /* Compute the bonded and non-bonded forces */    
@@ -648,7 +585,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 		     cr,t,lambda,x,f,vir_force,&dvdl);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
-    enerd->term[F_DVDL] += dvdl;
+    enerd->dvdl_lin += dvdl;
   }
 
   if (!(cr->duty & DUTY_PME)) {
@@ -668,7 +605,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
     enerd->term[F_COUL_RECIP] += e;
-    enerd->term[F_DVDL] += dvdl;
+    enerd->dvdl_lin += dvdl;
     if (wcycle)
       dd_cycles_add(cr->dd,cycles_pme,ddCyclPME);
     wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
@@ -971,14 +908,14 @@ static void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 		   gmx_step_t step,int natoms,matrix box,real lambda,
-		   tensor pres,tensor virial,real ener[])
+		   tensor pres,tensor virial,gmx_enerdata_t *enerd)
 {
   static bool bFirst=TRUE;
   bool bCorrAll,bCorrPres;
   real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
   int  m;
 
-  ener[F_DISPCORR] = 0.0;
+  enerd->term[F_DISPCORR] = 0.0;
 
   if (ir->eDispCorr != edispcNO) {
     bCorrAll  = (ir->eDispCorr == edispcAllEner ||
@@ -1008,14 +945,14 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     }
     
     enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-    ener[F_DISPCORR] += avcsix*enerdiff;
+    enerd->term[F_DISPCORR] += avcsix*enerdiff;
     dvdlambda = 0.0;
     if (ir->efep != efepNO)
       dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
 
     if (bCorrAll) {
       enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-      ener[F_DISPCORR] += avctwelve*enerdiff;
+      enerd->term[F_DISPCORR] += avctwelve*enerdiff;
       if (fr->efep != efepNO)
 	dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
     }
@@ -1032,7 +969,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 	virial[m][m] += svir;
 	pres[m][m] += spres;
       }
-      ener[F_PRES] += spres;
+      enerd->term[F_PRES] += spres;
     }
     
     if (bFirst && fplog) {
@@ -1045,19 +982,21 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
       if (bCorrPres)
 	fprintf(fplog,
 		"Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
-                ener[F_DISPCORR],spres,svir);
+                enerd->term[F_DISPCORR],spres,svir);
       else
-	fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",ener[F_DISPCORR]);
+	fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",
+		enerd->term[F_DISPCORR]);
     }
     bFirst = FALSE;
 
     if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
       fprintf(fplog,sepdvdlformat,"Dispersion correction",
-	      ener[F_DISPCORR],dvdlambda);
+	      enerd->term[F_DISPCORR],dvdlambda);
     
-    ener[F_EPOT] += ener[F_DISPCORR];
-    if (fr->efep != efepNO)
-      ener[F_DVDL] += dvdlambda;
+    enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
+    if (fr->efep != efepNO) {
+      enerd->dvdl_lin += dvdlambda;
+    }
   }
 }
 
@@ -1229,117 +1168,127 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 }
 
 void init_md(FILE *fplog,
-	     t_commrec *cr,t_inputrec *ir,
-	     double *t,double *t0,
-	     real *lambda,double *lam0,
-	     t_nrnb *nrnb,gmx_mtop_t *mtop,
-	     gmx_stochd_t *sd,
-	     int nfile,t_filenm fnm[],
-	     int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
-	     FILE **fp_dgdl,FILE **fp_field,
-	     t_mdebin **mdebin,
-	     tensor force_vir,tensor shake_vir,rvec mu_tot,
-	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
+             t_commrec *cr,t_inputrec *ir,
+             double *t,double *t0,
+             real *lambda,double *lam0,
+             t_nrnb *nrnb,gmx_mtop_t *mtop,
+             gmx_stochd_t *sd,
+             int nfile,t_filenm fnm[],
+             int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
+             FILE **fp_dgdl,FILE **fp_field,
+             t_mdebin **mdebin,
+             tensor force_vir,tensor shake_vir,rvec mu_tot,
+             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
 {
-  int  i,j,n;
-  real tmpt,mod;
-  char filemode[2];
-
-  sprintf(filemode, (Flags & MD_APPENDFILES) ? "a" : "w");
+    int  i,j,n;
+    real tmpt,mod;
+    char filemode[2];
+    
+    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a" : "w");
 	
-  /* Initial values */
-  *t = *t0       = ir->init_t;
-  if (ir->efep != efepNO) {
-    *lam0 = ir->init_lambda;
-    *lambda = *lam0 + ir->init_step*ir->delta_lambda;
-  }
-  else {
-    *lambda = *lam0   = 0.0;
-  } 
- 
-  *bSimAnn=FALSE;
-  for(i=0;i<ir->opts.ngtc;i++) {
-    /* set bSimAnn if any group is being annealed */
-    if(ir->opts.annealing[i]!=eannNO)
-      *bSimAnn = TRUE;
-  }
-  if (*bSimAnn) {
-    update_annealing_target_temp(&(ir->opts),ir->init_t);
-  }
-
-  *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-  
-  if (sd && (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE)) {
-    *sd = init_stochd(fplog,ir);
-  }
-
-  if (vcm) {
-    *vcm = init_vcm(fplog,&mtop->groups,ir);
-  }
-   
-  if (EI_DYNAMICS(ir->eI) && !(Flags & MD_APPENDFILES)) {
-    if (ir->etc == etcBERENDSEN) {
-      please_cite(fplog,"Berendsen84a");
+    /* Initial values */
+    *t = *t0       = ir->init_t;
+    if (ir->efep != efepNO)
+    {
+        *lam0 = ir->init_lambda;
+        *lambda = *lam0 + ir->init_step*ir->delta_lambda;
     }
-    if (ir->etc == etcVRESCALE) {
-      please_cite(fplog,"Bussi2007a");
+    else
+    {
+        *lambda = *lam0   = 0.0;
+    } 
+    
+    *bSimAnn=FALSE;
+    for(i=0;i<ir->opts.ngtc;i++)
+    {
+        /* set bSimAnn if any group is being annealed */
+        if(ir->opts.annealing[i]!=eannNO)
+        {
+            *bSimAnn = TRUE;
+        }
     }
-  }
- 
-  init_nrnb(nrnb);
-
-  if (nfile != -1)
-  {
-	  *fp_trn = -1;
-	  *fp_ene = -1;
-	  *fp_xtc = -1;
-	  
-	  if (MASTER(cr)) 
-	  {
-		  *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
-		  if (ir->nstxtcout > 0)
-		  {
-			  *fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
-		  }
-		  *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
-		  *fn_cpt = opt2fn("-cpo",nfile,fnm);
-		  
-		  if ((fp_dgdl != NULL) && ir->efep!=efepNO)
-		  {
-			  if(Flags & MD_APPENDFILES)
-			  {
-				  *fp_dgdl= gmx_fio_fopen(opt2fn("-dgdl",nfile,fnm),filemode);
-			  }
-			  else
-			  {
-				  *fp_dgdl = xvgropen(opt2fn("-dgdl",nfile,fnm),
-									  "dG/d\\8l\\4","Time (ps)",
-									  "dG/d\\8l\\4 (kJ mol\\S-1\\N [\\8l\\4]\\S-1\\N)");
-			  }
-		  }
-		  
-		  if ((fp_field != NULL) && (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
-		  {
-			  if(Flags & MD_APPENDFILES)
-			  {
-				  *fp_dgdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
-			  }
-			  else
-			  {				  
-				  *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
-									   "Applied electric field","Time (ps)",
-									   "E (V/nm)");
-			  }
-		  }
-	  }
-	  *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? -1 : *fp_ene,mtop,ir);
-  }
-
-  /* Initiate variables */  
-  clear_mat(force_vir);
-  clear_mat(shake_vir);
-  clear_rvec(mu_tot);
-
-  debug_gmx();
+    if (*bSimAnn)
+    {
+        update_annealing_target_temp(&(ir->opts),ir->init_t);
+    }
+    
+    *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
+    
+    if (sd && (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE))
+    {
+        *sd = init_stochd(fplog,ir);
+    }
+    
+    if (vcm != NULL)
+    {
+        *vcm = init_vcm(fplog,&mtop->groups,ir);
+    }
+    
+    if (EI_DYNAMICS(ir->eI) && !(Flags & MD_APPENDFILES))
+    {
+        if (ir->etc == etcBERENDSEN)
+        {
+            please_cite(fplog,"Berendsen84a");
+        }
+        if (ir->etc == etcVRESCALE)
+        {
+            please_cite(fplog,"Bussi2007a");
+        }
+    }
+    
+    init_nrnb(nrnb);
+    
+    if (nfile != -1)
+    {
+        *fp_trn = -1;
+        *fp_ene = -1;
+        *fp_xtc = -1;
+        
+        if (MASTER(cr)) 
+        {
+            *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
+            if (ir->nstxtcout > 0)
+            {
+                *fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
+            }
+            *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
+            *fn_cpt = opt2fn("-cpo",nfile,fnm);
+            
+            if ((fp_dgdl != NULL) && ir->efep != efepNO && ir->nstdgdl > 0)
+            {
+                if(Flags & MD_APPENDFILES)
+                {
+                    *fp_dgdl= gmx_fio_fopen(opt2fn("-dgdl",nfile,fnm),filemode);
+                }
+                else
+                {
+                    *fp_dgdl = open_dgdl(opt2fn("-dgdl",nfile,fnm),ir);
+                }
+            }
+            
+            if ((fp_field != NULL) &&
+                (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
+            {
+                if(Flags & MD_APPENDFILES)
+                {
+                    *fp_dgdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
+                }
+                else
+                {				  
+                    *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
+                                         "Applied electric field","Time (ps)",
+                                         "E (V/nm)");
+                }
+            }
+        }
+        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? -1 : *fp_ene,mtop,ir);
+    }
+    
+    /* Initiate variables */  
+    clear_mat(force_vir);
+    clear_mat(shake_vir);
+    clear_rvec(mu_tot);
+    
+    debug_gmx();
 }
 

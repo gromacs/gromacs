@@ -946,10 +946,14 @@ int main (int argc, char *argv[])
   if (nint_ftype(sys,mi,F_POSRES) > 0) {
     if (bVerbose) {
       fprintf(stderr,"Reading position restraint coords from %s",fn);
-      if (strcmp(fn,fnB) ==0) {
+      if (strcmp(fn,fnB) == 0) {
 	fprintf(stderr,"\n");
       } else {
 	fprintf(stderr," and %s\n",fnB);
+	if (ir->efep != efepNO && ir->n_flambda > 0) {
+	  fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
+	  nerror++;
+	}
       }
     }
     gen_posres(sys,mi,fn,fnB,

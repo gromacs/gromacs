@@ -174,7 +174,7 @@ extern void finish_run(FILE *log,t_commrec *cr,char *confout,
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 			  gmx_step_t step,int natoms,matrix box,real lambda,
-			  tensor pres,tensor virial,real ener[]);
+			  tensor pres,tensor virial,gmx_enerdata_t *enerd);
      
 
 typedef enum

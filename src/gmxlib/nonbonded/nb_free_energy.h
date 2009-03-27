@@ -70,6 +70,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 alpha,
 			  int                  lam_power,
                           real                 def_sigma6,
+			  bool                 bDoForces,
                           int *                outeriter,
                           int *                inneriter);
 

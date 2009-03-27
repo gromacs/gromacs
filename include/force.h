@@ -139,8 +139,23 @@ extern void init_forcerec(FILE       *fplog,
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
-extern void init_enerdata(FILE *log,int ngener,gmx_enerdata_t *enerd);
+extern void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
+
+extern void destroy_enerdata(gmx_enerdata_t *enerd);
+/* Free all memory associated with enerd */
+
+extern void reset_enerdata(t_grpopts *opts,
+			   t_forcerec *fr,bool bNS,
+			   gmx_enerdata_t *enerd,
+			   bool bMaster);
+/* Resets the energy data, if bNS=TRUE also zeros the long-range part */
+
+extern void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
+/* Locally sum the non-bonded potential energy terms */
+
+extern void sum_dgdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
+/* Sum the free energy contributions */
 
 extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
@@ -161,6 +176,8 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 #define GMX_FORCE_FORCES       (1<<4)
 /* Calculate the virial */
 #define GMX_FORCE_VIRIAL       (1<<5)
+/* Calculate dgdl */
+#define GMX_FORCE_DGDL         (1<<6)
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 

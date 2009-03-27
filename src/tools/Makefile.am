@@ -17,7 +17,8 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	eigio.c		cmat.c 		cmat.h		\
 	eigensolver.c   eigensolver.h	nsc.c 		nsc.h		\
 	hxprops.c 	hxprops.h 	fitahx.c 	fitahx.h	\
-	gmx_analyze.c	gmx_anaeig.c	gmx_angle.c	gmx_bond.c	\
+	gmx_analyze.c	gmx_anaeig.c	gmx_bar.c	\
+	gmx_angle.c	gmx_bond.c	\
 	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
 	gmx_covar.c	gmx_current.c	\
 	gmx_density.c	gmx_densmap.c   gmx_dih.c	\
@@ -46,7 +47,8 @@ bin_PROGRAMS = \
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
 	anadock		make_edi	\
-	g_analyze   	g_anaeig    	g_angle     	g_bond      	\
+	g_analyze   	g_anaeig    	g_bar		\
+	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
 	g_covar     	g_current	\
 	g_density   	g_densmap       g_dih       	\

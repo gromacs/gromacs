@@ -95,6 +95,20 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  *	    the total potential energy (sum over epot).
  */
 
+extern void calc_bonds_lambda(FILE *fplog,
+			      const t_idef *idef,
+			      rvec x[],
+			      t_forcerec *fr,
+			      const t_pbc *pbc,const t_graph *g,
+			      gmx_enerdata_t *enerd,t_nrnb *nrnb,
+			      real lambda,
+			      const t_mdatoms *md,
+			      t_fcdata *fcd,int *global_atom_index);
+/* As calc_bonds, but only determines the potential energy
+ * for the perturbed interactions.
+ * The shift forces in fr are not affected.
+ */
+
 extern real posres(int nbonds,
 		   const t_iatom forceatoms[],const t_iparams forceparams[],
 		   const rvec x[],rvec f[],rvec vir_diag,

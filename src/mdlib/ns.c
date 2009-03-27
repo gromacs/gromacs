@@ -1725,7 +1725,8 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                 do_nonbonded(cr,fr,x,fr->f_twin,md,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
                              grppener->ener[egCOULLR],box_size,
-                             nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces);
+                             nrnb,lambda,dvdlambda,n,i,
+                             GMX_DONB_LR | GMX_DONB_FORCES);
                 
                 reset_neighbor_list(fr,TRUE,n,i);
             }

@@ -208,13 +208,13 @@ static int wordcount(char *ptr)
   return n;
 }
 
-int read_xvg(const char *fn,double ***y,int *ny)
+int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
 {
   FILE   *fp;
-  char   *ptr;
+  char   *ptr,*ptr0,*ptr1;
   char   *base=NULL;
   char   *fmt=NULL;
-  int    k,line=0,nny,nx,maxx,rval;
+  int    k,line=0,nny,nx,maxx,rval,legend_nalloc,set,nchar;
   double lf;
   double **yy=NULL;
   char  *tmpbuf;
@@ -226,11 +226,49 @@ int read_xvg(const char *fn,double ***y,int *ny)
   fp   = gmx_fio_fopen(fn,"r");
 
   snew(tmpbuf,len);
+  legend_nalloc = 0;
+  *legend       = NULL;
 
   while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL && ptr[0]!='&') {
     line++;
     trim(ptr);
-    if ((ptr[0] != '@') && (ptr[0] != '#')) {
+    if (ptr[0] == '@') {
+      if (legend != NULL) {
+	ptr++;
+	trim(ptr);
+	set = -1;
+	if (strncmp(ptr,"legend string",13) == 0) {
+	  ptr += 13;
+	  sscanf(ptr,"%d%n",&set,&nchar);
+	  ptr += nchar;
+	} else if (ptr[0] == 's') {
+	  ptr++;
+	  sscanf(ptr,"%d%n",&set,&nchar);
+	  ptr += nchar;
+	  trim(ptr);
+	  if (strncmp(ptr,"legend",6) == 0) {
+	    ptr += 6;
+	  } else {
+	    set = -1;
+	  }
+	}
+	if (set >= 0) {
+	  if (set >= legend_nalloc) {
+	    legend_nalloc = set + 1;
+	    srenew(*legend,legend_nalloc);
+	    ptr0 = strchr(ptr,'"');
+	    if (ptr0 != NULL) {
+	      ptr0++;
+	      ptr1 = strchr(ptr0,'"');
+	      if (ptr1 != NULL) {
+		(*legend)[set] = strdup(ptr0);
+		(*legend)[set][ptr1-ptr0] = '\0';
+	      }
+	    }
+	  }
+	}
+      }
+    } else if (ptr[0] != '#') {
       if (nny == 0) {
 	(*ny) = nny = wordcount(ptr);
 	/* fprintf(stderr,"There are %d columns in your file\n",nny);*/
@@ -277,7 +315,21 @@ int read_xvg(const char *fn,double ***y,int *ny)
   *y = yy;
   sfree(tmpbuf);
 
+  if (legend != NULL) {
+    if (*ny - 1 > legend_nalloc) {
+      srenew(*legend,*ny-1);
+      for(set=legend_nalloc; set<*ny-1; set++) {
+	(*legend)[set] = NULL;
+      }
+    }
+  }
+
   return nx;
+}
+
+int read_xvg(const char *fn,double ***y,int *ny)
+{
+  return read_xvg_legend(fn,y,ny,NULL);
 }
 
 void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg)

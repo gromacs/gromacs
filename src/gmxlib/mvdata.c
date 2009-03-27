@@ -418,9 +418,12 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
+  bool bAlloc=TRUE;
   int i;
   
   block_bc(cr,*inputrec);
+  snew_bc(cr,inputrec->flambda,inputrec->n_flambda);
+  nblock_bc(cr,inputrec->n_flambda,inputrec->flambda);
   bc_grpopts(cr,&(inputrec->opts));
   if (inputrec->ePull != epullNO) {
     snew_bc(cr,inputrec->pull,1);

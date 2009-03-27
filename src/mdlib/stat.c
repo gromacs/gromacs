@@ -79,7 +79,8 @@ void global_stat(FILE *fplog,
 {
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
-  int    ie,ifv,isv,irmsd=0,imu=0,idedl=0,icm=0,imass=0,ica=0,inb=0;
+  int    ie,ifv,isv,irmsd=0,imu=0;
+  int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
   int    ibnsb=-1,ichkpt=-1,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
@@ -132,6 +133,13 @@ void global_stat(FILE *fplog,
   for(j=0; (j<egNR); j++)
     inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
   where();
+  if (inputrec->efep != efepNO) {
+    idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
+    idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
+    if (enerd->n_lambda > 0) {
+      iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
+    }
+  }
   if (vcm) {
     icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
     where();
@@ -185,6 +193,13 @@ void global_stat(FILE *fplog,
   }
   for(j=0; (j<egNR); j++)
     extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
+  if (inputrec->efep != efepNO) {
+    extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
+    extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
+    if (enerd->n_lambda > 0) {
+      extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
+    }
+  }
   if (vcm) {
     extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
     where();

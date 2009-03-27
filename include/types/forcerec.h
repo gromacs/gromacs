@@ -90,7 +90,16 @@ typedef struct {
   real term[F_NRE];    /* The energies for all different interaction types */
   gmx_grppairener_t grpp;
   real dvdl_lr;
+  double dvdl_lin;     /* Contributions to dvdl with linear lam-dependence */
+  double dvdl_nonlin;  /* Idem, but non-linear dependence                  */
+  int    n_lambda;
+  double *enerpart_lambda; /* Partial energy for lambda and flambda[] */
 } gmx_enerdata_t;
+/* The idea is that dvdl terms with linear lambda dependence will be added
+ * automatically to enerpart_lambda. Terms with non-linear lambda dependence
+ * should explicitly determine the energies at foreign lambda points
+ * when n_lambda > 0.
+ */
 
 typedef struct {
   /* Domain Decomposition */
