@@ -1577,7 +1577,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                  */
                 global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,bSumEkinhOld,constr,vcm,
-                            ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
+                            ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate,
+                            top_global, state);
                 if (terminate != 0)
                 {
                     terminate_now = terminate;

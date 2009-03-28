@@ -2950,7 +2950,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                 fac += root->cell_size[i];
             }
         }
-        fac = (1 - nmin*dist_min_f)/fac;
+        fac = (1 - nmin*cellsize_limit_f)/fac;
         /* Determine the cell boundaries */
         root->cell_f[0] = 0;
         for(i=0; i<ncd; i++)
