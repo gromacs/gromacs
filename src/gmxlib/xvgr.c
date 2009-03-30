@@ -227,7 +227,9 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
 
   snew(tmpbuf,len);
   legend_nalloc = 0;
-  *legend       = NULL;
+  if (legend != NULL) {
+    *legend = NULL;
+  }
 
   while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL && ptr[0]!='&') {
     line++;
@@ -315,7 +317,7 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
   *y = yy;
   sfree(tmpbuf);
 
-  if (legend != NULL) {
+  if (legend_nalloc > 0) {
     if (*ny - 1 > legend_nalloc) {
       srenew(*legend,*ny-1);
       for(set=legend_nalloc; set<*ny-1; set++) {
