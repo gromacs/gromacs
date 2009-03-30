@@ -62,10 +62,10 @@ extern t_mdebin
 	     const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
 
-FILE *open_dgdl(char *filename,t_inputrec *ir);
-/* Open the dgdl file for output */
+FILE *open_dhdl(char *filename,t_inputrec *ir);
+/* Open the dhdl file for output */
 
-extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
+extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
 		       bool bSum,
 		       double time,
 		       real tmass,
