@@ -1297,7 +1297,7 @@ void init_md(FILE *fplog,
 		  {
 			  if(Flags & MD_APPENDFILES)
 			  {
-				  *fp_dgdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
+				  *fp_field = gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
 			  }
 			  else
 			  {				  
