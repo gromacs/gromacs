@@ -176,7 +176,7 @@ t_mdebin *init_mdebin(int fp_ene,
       bEner[i] = FALSE;
     else if ((i == F_DVDL) || (i == F_DKDL))
       bEner[i] = (ir->efep != efepNO);
-    else if (i == F_DGDL_CON)
+    else if (i == F_DHDL_CON)
       bEner[i] = (ir->efep != efepNO && bConstr);
     else if ((interaction_function[i].flags & IF_VSITE) ||
 	     (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
@@ -393,10 +393,10 @@ t_mdebin *init_mdebin(int fp_ene,
     return md;
 }
 
-FILE *open_dgdl(char *filename,t_inputrec *ir)
+FILE *open_dhdl(char *filename,t_inputrec *ir)
 {
     FILE *fp;
-    char *dgdl="dG/d\\8l\\4",*deltag="\\8D\\4G",*lambda="\\8l\\4";
+    char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  nsets,s;
     char **setname,buf[STRLEN];
@@ -404,13 +404,13 @@ FILE *open_dgdl(char *filename,t_inputrec *ir)
     sprintf(label_x,"%s (%s)","Time",unit_time);
     if (ir->n_flambda == 0)
     {
-        sprintf(title,"%s",dgdl);
+        sprintf(title,"%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
-                "dG/d\\8l\\4",unit_energy,"[\\8l\\4]\\S-1\\N");
+                dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
     else
     {
-        sprintf(title,"%s, %s",dgdl,deltag);
+        sprintf(title,"%s, %s",dhdl,deltag);
         sprintf(label_y,"(%s)",unit_energy);
     }
     fp = xvgropen(filename,title,label_x,label_y);
@@ -422,7 +422,7 @@ FILE *open_dgdl(char *filename,t_inputrec *ir)
          */
         nsets = 1 + ir->n_flambda;
         snew(setname,nsets);
-        sprintf(buf,"%s %s %g",dgdl,lambda,ir->init_lambda);
+        sprintf(buf,"%s %s %g",dhdl,lambda,ir->init_lambda);
         setname[0] = strdup(buf);
         for(s=1; s<nsets; s++)
         {
@@ -452,7 +452,7 @@ static void copy_energy(real e[],real ecpy[])
     gmx_incons("Number of energy terms wrong");
 }
 
-void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
+void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                 bool bSum,
                 double time,
                 real tmass,
@@ -614,17 +614,17 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     
     ebin_increase_count(md->ebin,bSum);
     
-    if (fp_dgdl)
+    if (fp_dhdl)
     {
-        fprintf(fp_dgdl,"%.4f %g",
+        fprintf(fp_dhdl,"%.4f %g",
                 time,
-                enerd->term[F_DVDL]+enerd->term[F_DKDL]+enerd->term[F_DGDL_CON]);
+                enerd->term[F_DVDL]+enerd->term[F_DKDL]+enerd->term[F_DHDL_CON]);
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(fp_dgdl," %g",
+            fprintf(fp_dhdl," %g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
-        fprintf(fp_dgdl,"\n");
+        fprintf(fp_dhdl,"\n");
     }
 }
 

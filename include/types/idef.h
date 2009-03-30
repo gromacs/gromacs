@@ -124,7 +124,7 @@ enum {
   F_PRES,
   F_DVDL,
   F_DKDL,
-  F_DGDL_CON,
+  F_DHDL_CON,
   F_NRE		/* This number is for the total number of energies	*/
 };
   

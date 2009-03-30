@@ -1289,7 +1289,7 @@ for all restraints and the molecular order tensor to the energy file
 <dt><b>yes</b></dt>
 <dd>Interpolate between topology A (lambda=0) to topology B (lambda=1)
 and write the derivative of the Hamiltonian with respect to lambda to
-the energy file and to <tt>dgdl.xvg</tt>.
+the energy file and to <tt>dhdl.xvg</tt>.
 The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc_alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
@@ -1300,7 +1300,7 @@ potentials are used for the LJ and Coulomb interactions.</dd>
 <dd>increment per time step for lambda</dd>
 <dt><h4>foreign_lambda: ()</h4></dt>
 <dd>Zero, one or more lambda values for which Delta G values will
-be determined and written to dgdl.xvg every <b>nstdgdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>.</dd>
 <dt><h4>sc_alpha: (0)</h4></dt>
@@ -1339,8 +1339,8 @@ the molecule definition in the topology.</dd>
 <dt><b>yes</b></dt>
 <dd>The intra-molecular Van der Waals and Coulomb interactions are also turned on/off. This can be useful for partitioning free-energies of relatively large molecules, where the intra-molecular non-bonded interactions might lead to kinetically trapped vacuum conformations. The 1-4 pair interactions are not turned off.
 </dl>
-<dt><h4>nstdgdl: (10)</h4></dt>
-<dd>the frequency for writing dG/dlambda and possibly Delta G to dgdl.xvg,
+<dt><h4>nstdhdl: (10)</h4></dt>
+<dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
 0 means no ouput</dd>
 </dl>
 

@@ -525,14 +525,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene=0,fp_trn=0,fp_xtc=0;
   gmx_step_t step,step_rel;
   char       *fn_cpt;
-  FILE       *fp_dgdl=NULL,*fp_field=NULL;
+  FILE       *fp_dhdl=NULL,*fp_field=NULL;
   time_t     start_t;
   double     run_time;
   double     t,t0,lam0;
   bool       bGStatEveryStep,bGStat,bCalcPres;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep,bBornRadii;
-  bool       bDoDGDL=FALSE;
+  bool       bDoDHDL=FALSE;
   bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	         bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
   bool       bMasterState;
@@ -652,7 +652,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,&sd,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
-	  &fp_dgdl,&fp_field,&mdebin,
+	  &fp_dhdl,&fp_field,&mdebin,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,Flags);
 
   /* Energy terms and groups */
@@ -979,7 +979,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             {
                 state->lambda = lam0 + step*ir->delta_lambda;
             }
-            bDoDGDL = do_per_step(step,ir->nstdgdl);
+            bDoDHDL = do_per_step(step,ir->nstdhdl);
         }
         
         if (bSimAnn) 
@@ -1283,7 +1283,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                      state->lambda,graph,
                      fr,vsite,mu_tot,t,fp_field,ed,born,bBornRadii,
                      GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
-                     GMX_FORCE_ALLFORCES | (bCalcPres ? GMX_FORCE_VIRIAL : 0));
+                     GMX_FORCE_ALLFORCES | (bCalcPres ? GMX_FORCE_VIRIAL : 0) |
+                     (bDoDHDL ? GMX_FORCE_DHDL : 0));
         }
         
         GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1401,7 +1402,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             {
                 fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
             }
-            enerd->term[F_DGDL_CON] += dvdl;
+            enerd->term[F_DHDL_CON] += dvdl;
             wallcycle_stop(wcycle,ewcUPDATE);
         }
         else if (graph)
@@ -1643,7 +1644,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             calc_dispcorr(fplog,ir,fr,step,top_global->natoms,
                           lastbox,state->lambda,pres,total_vir,enerd);
             
-            sum_dgdl(enerd,state->lambda,ir);
+            sum_dhdl(enerd,state->lambda,ir);
             
             enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
             
@@ -1740,7 +1741,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         {
             bool do_dr,do_or;
             
-            upd_mdebin(mdebin,bDoDGDL ? fp_dgdl : NULL,bGStatEveryStep,
+            upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,bGStatEveryStep,
                        t,mdatoms->tmass,enerd,state,lastbox,
                        shake_vir,force_vir,total_vir,pres,
                        ekind,mu_tot,constr);
@@ -1847,9 +1848,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             close_xtc(fp_xtc);
         }
         close_trn(fp_trn);
-        if (fp_dgdl)
+        if (fp_dhdl)
         {
-            gmx_fio_fclose(fp_dgdl);
+            gmx_fio_fclose(fp_dhdl);
         }
         if (fp_field)
         {

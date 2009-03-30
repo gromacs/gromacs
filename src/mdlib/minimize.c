@@ -629,7 +629,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 	      NULL,&shake_vir,nrnb,econqForce);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
-    enerd->term[F_DGDL_CON] += dvdl;
+    enerd->term[F_DHDL_CON] += dvdl;
     m_add(force_vir,shake_vir,vir);
     wallcycle_stop(wcycle,ewcCONSTR);
   } else {
@@ -641,7 +641,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres,
 	      (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
 
-  sum_dgdl(enerd,ems->s.lambda,inputrec);
+  sum_dhdl(enerd,ems->s.lambda,inputrec);
 
   get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
 }

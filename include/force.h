@@ -154,7 +154,7 @@ extern void reset_enerdata(t_grpopts *opts,
 extern void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
 /* Locally sum the non-bonded potential energy terms */
 
-extern void sum_dgdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
+extern void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
 /* Sum the free energy contributions */
 
 extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
@@ -176,8 +176,8 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 #define GMX_FORCE_FORCES       (1<<4)
 /* Calculate the virial */
 #define GMX_FORCE_VIRIAL       (1<<5)
-/* Calculate dgdl */
-#define GMX_FORCE_DGDL         (1<<6)
+/* Calculate dHdl */
+#define GMX_FORCE_DHDL         (1<<6)
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 

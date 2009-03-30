@@ -1683,7 +1683,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
      */
-    if (ir->n_flambda > 0 && (flags & GMX_FORCE_DGDL) && ir->sc_alpha != 0)
+    if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) && ir->sc_alpha != 0)
     {
         init_enerdata(mtop->groups.grps[egcENER].nr,ir->n_flambda,&ed_lam);
 
@@ -1795,7 +1795,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         /* Check if we have to determine energy differences
          * at foreign lambda's.
          */
-        if (ir->n_flambda > 0 && (flags & GMX_FORCE_DGDL) &&
+        if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) &&
             idef->ilsort != ilsortNO_FE)
         {
             if (idef->ilsort != ilsortFE_SORTED)
@@ -2097,10 +2097,10 @@ void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
       epot[F_EPOT] += epot[i];
 }
 
-void sum_dgdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
+void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
 {
     int i;
-    double dlam,dgdl_lin;
+    double dlam,dhdl_lin;
 
     /* dvdl_lr is also non-linear,
      * but currently LR is not supported with foreign lambda FE.
@@ -2125,17 +2125,17 @@ void sum_dgdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
     for(i=1; i<enerd->n_lambda; i++)
     {
         dlam = (ir->flambda[i-1] - lambda);
-        dgdl_lin =
+        dhdl_lin =
             (enerd->dvdl_lin + enerd->dvdl_lr +
-             enerd->term[F_DKDL] + enerd->term[F_DGDL_CON]);
+             enerd->term[F_DKDL] + enerd->term[F_DHDL_CON]);
         if (debug)
         {
             fprintf(debug,"enerdiff lam %g: non-linear %f linear %f*%f\n",
                     ir->flambda[i-1],
                     enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0],
-                    dlam,dgdl_lin);
+                    dlam,dhdl_lin);
         }
-        enerd->enerpart_lambda[i] += dlam*dgdl_lin;
+        enerd->enerpart_lambda[i] += dlam*dhdl_lin;
 
     }
 }
@@ -2172,7 +2172,7 @@ void reset_enerdata(t_grpopts *opts,
   /* Initialize the dVdlambda term with the long range contribution */
   enerd->term[F_DVDL]     = 0.0;
   enerd->term[F_DKDL]     = 0.0;
-  enerd->term[F_DGDL_CON] = 0.0;
+  enerd->term[F_DHDL_CON] = 0.0;
   if (enerd->n_lambda > 0)
   {
       for(i=0; i<enerd->n_lambda; i++)

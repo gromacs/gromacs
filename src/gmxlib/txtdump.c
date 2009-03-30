@@ -593,12 +593,12 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("delta_lambda",ir->delta_lambda);
     if (!bMDPformat)
     {
-        PI("n_flambda",ir->n_flambda);
+        PI("n_foreign_lambda",ir->n_flambda);
     }
     if (ir->n_flambda > 0)
     {
         pr_indent(fp,indent);
-        fprintf(fp,"flambda%s",bMDPformat ? " = " : ":");
+        fprintf(fp,"foreign_lambda%s",bMDPformat ? " = " : ":");
         for(i=0; i<ir->n_flambda; i++)
         {
             fprintf(fp,"  %10g",ir->flambda[i]);
@@ -608,7 +608,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("sc_alpha",ir->sc_alpha);
     PI("sc_power",ir->sc_power);
     PR("sc_sigma",ir->sc_sigma);
-    PI("nstdgdl", ir->nstdgdl);
+    PI("nstdhdl", ir->nstdhdl);
 
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));

@@ -161,7 +161,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("PRES",     "Pressure"         ),
   def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
   def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
-  def_nofc    ("DG/DL_CON","dG/dl constr."    )
+  def_nofc    ("DH/DL_CON","dH/dl constr."    )
 };
 
 bool have_interaction(t_idef *idef,int ftype)

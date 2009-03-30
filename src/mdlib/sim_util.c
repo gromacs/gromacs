@@ -1175,7 +1175,7 @@ void init_md(FILE *fplog,
              gmx_stochd_t *sd,
              int nfile,t_filenm fnm[],
              int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
-             FILE **fp_dgdl,FILE **fp_field,
+             FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
              bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
@@ -1254,15 +1254,15 @@ void init_md(FILE *fplog,
             *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
             *fn_cpt = opt2fn("-cpo",nfile,fnm);
             
-            if ((fp_dgdl != NULL) && ir->efep != efepNO && ir->nstdgdl > 0)
+            if ((fp_dhdl != NULL) && ir->efep != efepNO && ir->nstdhdl > 0)
             {
                 if(Flags & MD_APPENDFILES)
                 {
-                    *fp_dgdl= gmx_fio_fopen(opt2fn("-dgdl",nfile,fnm),filemode);
+                    *fp_dhdl= gmx_fio_fopen(opt2fn("-dhdl",nfile,fnm),filemode);
                 }
                 else
                 {
-                    *fp_dgdl = open_dgdl(opt2fn("-dgdl",nfile,fnm),ir);
+                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir);
                 }
             }
             
@@ -1271,7 +1271,7 @@ void init_md(FILE *fplog,
             {
                 if(Flags & MD_APPENDFILES)
                 {
-                    *fp_dgdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
+                    *fp_dhdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
                 }
                 else
                 {				  

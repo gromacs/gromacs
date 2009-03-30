@@ -858,7 +858,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
-  ITYPE ("nstdgdl",     ir->nstdgdl, 10);
+  ITYPE ("nstdhdl",     ir->nstdhdl, 10);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam, nerror, TRUE);
   EETYPE("couple-lambda1", opts->couple_lam1, couple_lam, nerror, TRUE);

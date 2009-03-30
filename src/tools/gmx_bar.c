@@ -39,6 +39,8 @@
 #endif
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
+#include <math.h>
 
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -59,7 +61,7 @@ typedef struct {
     double **y;
 } barsim_t;
 
-static double calc_bar_sum(int n,double *W,double MmDG,double sb)
+static double calc_bar_sum(int n,double *W,double beta_Wfac,double sbMmDG)
 {
     int    i;
     double sum;
@@ -68,19 +70,19 @@ static double calc_bar_sum(int n,double *W,double MmDG,double sb)
     
     for(i=0; i<n; i++)
     {
-        sum += 1/(1 + exp(sb*(W[i] + MmDG)));
+        sum += 1/(1 + exp(beta_Wfac*W[i] + sbMmDG));
     }
     
     return sum;
 }
 
 static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
-                                real temp,double tol)
+                                double delta_lambda,real temp,double prec)
 {
-    double kT,beta,M;
+    double kT,beta,beta_dl,M;
     double DG;
     int    i;
-    double Wmin,Wmax;
+    double Wfac1,Wfac2,Wmin,Wmax;
     double DG0,DG1,DG2,dDG1;
     double sum1,sum2;
     
@@ -88,18 +90,29 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
     beta = 1/kT;
     
     M = kT*log((double)n1/(double)n2);
-    
+
+    if (delta_lambda == 0)
+    {
+        Wfac1 = 1;
+        Wfac2 = 1;
+    }
+    else
+    {
+        Wfac1 =  delta_lambda;
+        Wfac2 = -delta_lambda;
+    }
+
     Wmin = W1[0];
     Wmax = W1[0];
     for(i=0; i<n1; i++)
     {
-        Wmin = min(Wmin,W1[i]);
-        Wmax = max(Wmax,W1[i]);
+        Wmin = min(Wmin,W1[i]*Wfac1);
+        Wmax = max(Wmax,W1[i]*Wfac1);
     }
     for(i=0; i<n2; i++)
     {
-        Wmin = min(Wmin,-W2[i]);
-        Wmax = max(Wmax,-W2[i]);
+        Wmin = min(Wmin,-W2[i]*Wfac2);
+        Wmax = max(Wmax,-W2[i]*Wfac2);
     }
     DG0 = Wmin;
     DG2 = Wmax;
@@ -109,12 +122,12 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
     {
         fprintf(debug,"DG %9.5f %9.5f\n",DG0,DG2);
     }
-    while (DG2 - DG0 > 2*tol*0.5*(fabs(DG0) + fabs(DG2)))
+    while (DG2 - DG0 > 2*prec)
     {
         DG1 = 0.5*(DG0 + DG2);
         dDG1 =
-            calc_bar_sum(n1,W1,  M-DG1 ,beta) -
-            calc_bar_sum(n2,W2,-(M-DG1),beta);
+            calc_bar_sum(n1,W1,beta*Wfac1, beta*(M-DG1)) -
+            calc_bar_sum(n2,W2,beta*Wfac2,-beta*(M-DG1));
         
         if (dDG1 < 0)
         {
@@ -176,22 +189,34 @@ static int get_lam_set(barsim_t *ba,double lambda)
     return i;
 }
 
-static void calc_bar(barsim_t *ba1,barsim_t *ba2,
+static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                      real begin,real end,real temp,double tol,int npee,
                      double *dg,double *sig)
 {
     int b1,b2,e1,e2,s1,s2,p;
-    double dgp,dgs,dgs2;
+    double delta_lambda,dgp,dgs,dgs2;
 
     get_begin_end(ba1,begin,end,&b1,&e1);
     get_begin_end(ba2,begin,end,&b2,&e2);
 
-    s1 = get_lam_set(ba1,ba2->lambda[0]);
-    s2 = get_lam_set(ba2,ba1->lambda[0]);
+    if (bUsedhdl)
+    {
+        s1 = 0;
+        s2 = 0;
+
+        delta_lambda = ba2->lambda[0] - ba1->lambda[0];
+    }
+    else
+    {
+        s1 = get_lam_set(ba1,ba2->lambda[0]);
+        s2 = get_lam_set(ba2,ba1->lambda[0]);
+
+        delta_lambda = 0;
+    }
 
     *dg = calc_bar_lowlevel(e1-b1,ba1->y[s1]+b1,
                             e2-b2,ba2->y[s2]+b2,
-                            temp,tol);
+                            delta_lambda,temp,tol);
 
     dgs  = 0;
     dgs2 = 0;
@@ -201,7 +226,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,
         {
             dgp = calc_bar_lowlevel((e1-b1)/npee,ba1->y[s1]+b1+p*(e1-b1)/npee,
                                     (e2-b2)/npee,ba2->y[s2]+b2+p*(e2-b2)/npee,
-                                    temp,tol);
+                                    delta_lambda,temp,tol);
             dgs  += dgp;
             dgs2 += dgp*dgp;
         }
@@ -209,6 +234,59 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,
         dgs2 /= npee;
     }
     *sig = sqrt((dgs2-dgs*dgs)/(npee-1));
+}
+
+static double legend2lambda(char *fn,char *legend,bool bdhdl)
+{
+    double lambda=0;
+    char   *ptr;
+
+    if (legend == NULL)
+    {
+        gmx_fatal(FARGS,"There is no legend in file '%s', can not deduce lambda",fn);
+    }
+    ptr = strrchr(legend,' ');
+    if (( bdhdl &&  strstr(legend,"dH") == NULL) ||
+        (!bdhdl && (strchr(legend,'D') == NULL ||
+                    strchr(legend,'H') == NULL)) ||
+        ptr == NULL)
+    {
+        gmx_fatal(FARGS,"There is no proper lambda legend in file '%s', can not deduce lambda",fn);
+    }
+    if (sscanf(ptr,"%lf",&lambda) != 1)
+    {
+        gmx_fatal(FARGS,"There is no proper lambda legend in file '%s', can not deduce lambda",fn);
+    }
+
+    return lambda;
+}
+
+static double filename2lambda(char *fn)
+{
+    double lambda;
+    char   *ptr,*endptr;
+    
+    ptr = fn;
+    while (ptr[0] != '\0' && !isdigit(ptr[0]))
+    {
+        ptr++;
+    }
+    if (!isdigit(ptr[0]))
+    {
+        gmx_fatal(FARGS,"While trying to read the lambda value from the filename: filename '%s' does not contain a number",fn);
+    }
+    if (ptr > fn && fn[ptr-fn-1] == '-')
+    {
+        ptr--;
+    }
+
+    lambda = strtod(ptr,&endptr);
+    if (endptr == ptr)
+    {
+        gmx_fatal(FARGS,"Malformed number in filename '%s'",fn);
+    }
+
+    return lambda;
 }
 
 static void read_barsim(char *fn,barsim_t *ba)
@@ -219,25 +297,28 @@ static void read_barsim(char *fn,barsim_t *ba)
     printf("Reading file '%s', lambda:",fn);
     ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
     snew(ba->lambda,ba->nset-1);
-    for(i=0; i<ba->nset-1; i++)
+    if (legend == NULL)
     {
-        if (legend[i] == 0)
+        /* Check if we have a single set, nset=2 means t and dH/dl */
+        if (ba->nset == 2)
         {
-            gmx_fatal(FARGS,"There is no legend in file '%s', can not deduce lambda",fn);
+            /* Deduce lambda from the file name */
+            ba->lambda[0] = filename2lambda(fn);
+            printf(" %g",ba->lambda[0]);
         }
-        ptr = strrchr(legend[i],' ');
-        if ((i==0 && strstr(legend[i],"dG") == NULL) ||
-            (i>0  && (strchr(legend[i],'D') == NULL ||
-                      strchr(legend[i],'G') == NULL)) ||
-            ptr == NULL)
+        else
         {
-            gmx_fatal(FARGS,"There is no proper lambda legend in file '%s', can not deduce lambda",fn);
+            gmx_fatal(FARGS,"File %s contains multiple sets but no legends, can not determine the lambda values",fn);
         }
-        if (sscanf(ptr,"%lf",&ba->lambda[i]) != 1)
+    }
+    else
+    {
+        for(i=0; i<ba->nset-1; i++)
         {
-            gmx_fatal(FARGS,"There is no proper lambda legend in file '%s', can not deduce lambda",fn);
+            /* Read lambda from the legend */
+            ba->lambda[i] = legend2lambda(fn,legend[i],i==0);
+            printf(" %g",ba->lambda[i]);
         }
-        printf(" %g",ba->lambda[i]);
     }
     printf("\n");
     
@@ -247,43 +328,66 @@ static void read_barsim(char *fn,barsim_t *ba)
     {
         ba->y[i-1] = ba->y[i];
     }
-    for(i=0; i<ba->nset-1; i++)
+    if (legend != NULL)
     {
-        sfree(legend[i]);
+        for(i=0; i<ba->nset-1; i++)
+        {
+            sfree(legend[i]);
+        }
+        sfree(legend);
     }
-    sfree(legend);
     ba->nset--;
 }
 
 int gmx_bar(int argc,char *argv[])
 {
     static char *desc[] = {
-        "g_bar does Bennett acceptance ratio free energy difference estimates.",
-        "Multple dgdl files can be read at once, the (foreign) lambda values",
-        "are determined from the xvg legends.",
-        "A rough error estimate taking into account time correlations",
-        "is done by splitting the data into n blocks and (re-)determining",
+        "g_bar calculates free energy difference estimates through",
+        "Bennett's acceptance ratio method.",
+        "Input option [TT]-f[tt] expects multiple dhdl files.",
+        "Two types of input files are supported:[BR]",
+        "* Files with only one y-value, for such files it is assumed",
+        "that the y-value is dH/dlambda and that the Hamiltonian depends",
+        "linearly on lambda. The lambda value of the simulation is inferred",
+        "from the legend if present, otherwise from a number in the file name.",
+        "[BR]",
+        "* Files with more than one y-value. The files should have columns",
+        "with dH/dlambda and Delta lambda. The lambda values are inferred",
+        "from the legends:",
+        "lambda of the simulation from the legend of dH/dlambda",
+        "and the foreign lambda's from the legends of Delta H.[BR]",
+        "The lambda of the simulation is parsed from the legend containing",
+        "the string dH, the foreign lambda's from the legend containing",
+        "the capitalized letters D and H.[BR]",
+        "The free energy estimates are determined using BAR with bisection,",
+        "the precision of the output is set with [TT]-prec[tt].",
+        "An error estimate taking into account time correlations",
+        "is made by splitting the data into n blocks and determining",
         "the free energy differences over those block and assuming",
         "those are independent."
     };
     static real begin=0,end=-1,temp=298;
-    static int nblock=4;
+    static int nd=2,nblock=4;
     t_pargs pa[] = {
-        { "-b",    FALSE, etREAL, {&begin},  "Begin time (ps)" },
-        { "-e",    FALSE, etREAL, {&end},    "End time (ps)" },
+        { "-b",    FALSE, etREAL, {&begin},  "Begin time for BAR" },
+        { "-e",    FALSE, etREAL, {&end},    "End time for BAR" },
         { "-temp", FALSE, etREAL, {&temp},   "Temperature (K)" },
+        { "-prec", FALSE, etINT,  {&nd},     "The number of digits after the decimal point" },
         { "-nb",   FALSE, etINT,  {&nblock}, "The number of blocks for error estimation" }
     };
     
     t_filenm   fnm[] = {
-        { efXVG, "-f", "dgdl",  ffRDMULT }
+        { efXVG, "-f", "dhdl",  ffRDMULT },
+        { efXVG, "-o", "bar",   ffOPTWR }
     };
 #define NFILE asize(fnm)
     
-    int      nfile,f,f2,fm;
+    int      nfile,f,f2,fm,n1,nm;
     char     **fnms;
     barsim_t *ba,ba_tmp;
-    double   dg_tot,var_tot,dg,sig;
+    double   prec,dg_tot,var_tot,dg,sig;
+    FILE     *fp;
+    char     dgformat[20],xvgformat[STRLEN],buf[STRLEN];
     
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
@@ -296,12 +400,41 @@ int gmx_bar(int argc,char *argv[])
         gmx_fatal(FARGS,"No input files!");
     }
 
+    if (nd < 0)
+    {
+        gmx_fatal(FARGS,"Can not have negative number of digits");
+    }
+    prec = pow(10,-nd);
+    sprintf( dgformat,"%%%d.%df",3+nd,nd);
+    sprintf(xvgformat,"%s %s %s\n","%g",dgformat,dgformat);
+
+
     snew(ba,nfile);
+    n1 = 0;
+    nm = 0;
     for(f=0; f<nfile; f++)
     {
         read_barsim(fnms[f],&ba[f]);
+        
+        if (ba[f].nset == 0)
+        {
+            gmx_fatal(FARGS,"File '%s' contains less than two columns",fnms[f]);
+        }
+        else if (ba[f].nset == 1)
+        {
+            n1++;
+        }
+        else
+        {
+            nm++;
+        }
     }
     printf("\n");
+
+    if (n1 > 0 && nm > 0)
+    {
+        gmx_fatal(FARGS,"Some dhdl files contain only one value (assuming dH/dl), while others contain multiple values (assuming dH/dl and Delta H), will not proceed because of possible inconsistencies");
+    }
 
     /* Sort the data sets on lambda */
     for(f=0; f<nfile-1; f++)
@@ -324,21 +457,60 @@ int gmx_bar(int argc,char *argv[])
         ba[fm] = ba_tmp;
     }
     
+    if (n1 > 0)
+    {
+        printf("Only one y value in all files,\n"
+               "assuming the Hamiltonian depends linearly on lambda\n\n");
+    }
+
+    if (opt2bSet("-o",NFILE,fnm))
+    {
+        sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
+        fp = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
+                      "\\8l\\4",unit_energy);
+        if (bPrintXvgrCodes())
+        {
+            fprintf(fp,"@TYPE xydy\n");
+        }
+    }
+    else
+    {
+        fp = NULL;
+    }
+
     dg_tot  = 0;
     var_tot = 0;
     for(f=0; f<nfile-1; f++)
     {
-        calc_bar(&ba[f],&ba[f+1],begin,end,temp,0.0001,nblock,&dg,&sig);
-        printf("lambda %4.2f - %4.2f, DG %9.5f (+-%.3f)\n",
-               ba[f].lambda[0],ba[f+1].lambda[0],dg,sig);
+        if (fp != NULL)
+        {
+            fprintf(fp,xvgformat,
+                    ba[f].lambda[0],dg_tot,sqrt(var_tot));
+        }
+        calc_bar(&ba[f],&ba[f+1],n1>0,begin,end,temp,prec,nblock,&dg,&sig);
+        printf("lambda %4.2f - %4.2f, DG ",ba[f].lambda[0],ba[f+1].lambda[0]);
+        printf(dgformat,dg);
+        printf(" err");
+        printf(dgformat,sig);
+        printf("\n");
         dg_tot  += dg;
         var_tot += sig*sig;
     }
     printf("\n");
-    printf("total  %4.2f - %4.2f, DG %9.5f (+-%.3f)\n",
-           ba[0].lambda[0],ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
+    printf("total  %4.2f - %4.2f, DG ",ba[0].lambda[0],ba[nfile-1].lambda[0]);
+    printf(dgformat,dg_tot);
+    printf(" err");
+    printf(dgformat,sqrt(var_tot));
+    printf("\n");
 
-    /* do_view(opt2fn("-o",NFILE,fnm),"-nxy"); */
+    if (fp != NULL)
+    {
+        fprintf(fp,xvgformat,
+                ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
+        fclose(fp);
+    }
+
+    do_view(opt2fn_null("-o",NFILE,fnm),"-xydy");
     
     thanx(stderr);
     

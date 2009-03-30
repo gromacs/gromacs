@@ -152,7 +152,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        },
-  { 54, F_DGDL_CON          }
+  { 54, F_DHDL_CON          }
 };
 #define NFTUPD asize(ftupd)
 
@@ -554,9 +554,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     else
       ir->sc_sigma = 0.3;
     if (file_version >= 64) {
-      do_int(ir->nstdgdl);
+      do_int(ir->nstdhdl);
     } else {
-      ir->nstdgdl = 1;
+      ir->nstdhdl = 1;
     }
     if (file_version >= 57) {
       do_int(ir->eDisre); 

@@ -55,6 +55,8 @@ typedef struct {
 			/* The location of the cell in the index*/
 			/* array can be found by calling xyz2ci	*/
   int    *nra;		/* The number of entries in a cell	*/
+  rvec   *os0;
+  rvec   *os1;
   int    *a;		/* The grid of cgs			*/
   int    nr_alloc;      /* Allocation size of cell_index and a  */
   real   *dcx2;         /* Squared distance from atom to j-cell */
