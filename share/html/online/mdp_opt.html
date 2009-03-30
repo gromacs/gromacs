@@ -512,12 +512,11 @@ interaction is up to a few percent of the total electrostatic
 energy and causes a minor difference in the forces and the pressure.</dd>
 
 <dt><b>Shift</b></dt>
-<dd>The Coulomb
-potential is decreased over the whole range and the forces decay smoothly
-to zero between <b>rcoulomb_switch</b> and <b>rcoulomb</b>.
-The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
-<b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
-between neighbor list updates.</dd>
+<dd>Analogous to <b>Shift</b> for <b>vdwtype</b>.
+You might want to use <b>Reaction-Field-zero</b> instead,
+which has a similar potential shape, but has a physical interpretation
+and has better energies due to the exclusion correction terms.
+</dd>
 
 <dt><b>Encad-Shift</b></dt>
 <dd>The Coulomb
@@ -525,14 +524,9 @@ potential is decreased over the whole range, using the definition
 from the Encad simulation package.</dd>
 
 <dt><b>Switch</b></dt>
-<dd>The Coulomb
-potential is normal out to <b>rcoulomb_switch</b>, after which it is switched
-off to reach zero at <b>rcoulomb</b>. Both the potential and force functions
-are continuously smooth, but be aware that all switch functions will give rise
-to a bulge (increase) in the force (since we are switching the potential).
-The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
-<b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
-between neighbor list updates.</dd>
+<dd>Analogous to <b>Switch</b> for <b>vdwtype</b>.
+Switching the Coulomb potential can lead to serious artifacts,
+advice: use <b>Reaction-Field-zero</b> instead.</dd>
 
 <dt><b>User</b></dt> 
 <dd><a name="usertab"></a><tt>mdrun</tt> will now expect to find a file
@@ -1304,6 +1298,11 @@ potentials are used for the LJ and Coulomb interactions.</dd>
 <dd>starting value for lambda</dd>
 <dt><h4>delta_lambda: (0)</h4></dt>
 <dd>increment per time step for lambda</dd>
+<dt><h4>foreign_lambda: ()</h4></dt>
+<dd>Zero, one or more lambda values for which Delta G values will
+be determined and written to dgdl.xvg every <b>nstdgdl</b> steps.
+Free energy differences between different lambda values can then
+be determined with <tt>g_bar</tt>.</dd>
 <dt><h4>sc_alpha: (0)</h4></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
@@ -1340,6 +1339,9 @@ the molecule definition in the topology.</dd>
 <dt><b>yes</b></dt>
 <dd>The intra-molecular Van der Waals and Coulomb interactions are also turned on/off. This can be useful for partitioning free-energies of relatively large molecules, where the intra-molecular non-bonded interactions might lead to kinetically trapped vacuum conformations. The 1-4 pair interactions are not turned off.
 </dl>
+<dt><h4>nstdgdl: (10)</h4></dt>
+<dd>the frequency for writing dG/dlambda and possibly Delta G to dgdl.xvg,
+0 means no ouput</dd>
 </dl>
 
 

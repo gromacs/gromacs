@@ -276,6 +276,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
+  if (ir->coulombtype == eelSWITCH) {
+    sprintf(warn_buf,"coulombtype = %s is only for testing purposes and can lead to serious artifacts, advice: use coulombtype = %s",
+	    eel_names[ir->coulombtype],
+	    eel_names[eelRF_ZERO]);
+    warning(NULL);
+  }
+
   if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
     sprintf(warn_buf,"epsilon_r = %g and epsilon_rf = 1 with reaction field, assuming old format and exchanging epsilon_r and epsilon_rf",ir->epsilon_r);
     warning(NULL);
