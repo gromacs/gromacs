@@ -258,7 +258,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
 	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL,0);
 
-  init_enerdata(fplog,mtop->groups.grps[egcENER].nr,enerd);  
+  init_enerdata(mtop->groups.grps[egcENER].nr,0,enerd);  
 
   ltop = gmx_mtop_generate_local_top(mtop,inputrec);
   *top = *ltop;
