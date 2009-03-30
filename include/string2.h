@@ -120,8 +120,6 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
 #include <ctype.h>
 #include "errno.h"
 
-#define gmx_step_t long long
-
 gmx_step_t
 str_to_gmx_step_t(const char *str, char **endptr);
 
