@@ -47,6 +47,7 @@
 #include "force.h"
 #include "filenm.h"
 #include "nrnb.h"
+#include "vec.h"
 
 void make_wall_tables(FILE *fplog,
 		      const t_inputrec *ir,const char *tabfn,
