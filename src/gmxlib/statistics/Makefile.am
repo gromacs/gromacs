@@ -5,7 +5,7 @@ AM_CPPFLAGS= -I$(top_srcdir)/include
 noinst_LTLIBRARIES = libstatistics.la
 
 libstatistics_la_SOURCES =	\
-	gmx_statistics.c
+	gmx_statistics.c	histogram.c
 
 LDADD =	../libgmx@LIBSUFFIX@.la
 

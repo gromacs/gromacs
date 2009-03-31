@@ -300,6 +300,8 @@ if test "$enable_fortran" = "yes"; then
 fi
 
 AM_PROG_AS( $CC )
+AM_PROG_LEX
+AC_PROG_YACC
 
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
 # above, since autoconf checks that the created file can be executed. This would
@@ -946,7 +948,9 @@ AC_CONFIG_FILES([ src/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_blas/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/statistics/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/trajana/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])

@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+.deps
+.libs
+parser.c
+parser.h
+scanner.c

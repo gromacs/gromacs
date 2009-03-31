@@ -266,6 +266,23 @@ char *gmx_strdup(const char *src)
   return dest;
 }
 
+char *
+gmx_strndup(const char *src, int n)
+{
+    int   len;
+    char *dest;
+
+    len = strlen(src);
+    if (len > n) 
+    {
+        len = n;
+    }
+    snew(dest, len+1);
+    strncpy(dest, src, len);
+    dest[len] = 0;
+    return dest;
+}
+
 char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
 {
   char *b2;

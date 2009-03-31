@@ -13,12 +13,14 @@ bondf.h \
 calcgrid.h \
 calch.h \
 calcmu.h \
+centerofmass.h \
 checkpoint.h \
 confio.h \
 constr.h \
 copyrite.h \
 coulomb.h \
 dihre.h \
+displacement.h \
 disre.h \
 domdec.h \
 domdec_network.h \
@@ -57,7 +59,9 @@ gpp_nextnb.h \
 grompp.h \
 gstat.h \
 hackblock.h \
+histogram.h \
 index.h \
+indexutil.h \
 invblock.h \
 macros.h \
 magic.h \
@@ -73,6 +77,7 @@ mtop_util.h\
 mtxio.h \
 mvdata.h \
 names.h \
+nbsearch.h \
 network.h \
 nonbonded.h \
 nrama.h \
@@ -88,6 +93,8 @@ pdebug.h \
 perf_est.h \
 physics.h \
 pme.h \
+poscalc.h \
+position.h \
 pppm.h \
 princ.h \
 pull.h \
@@ -100,6 +107,10 @@ readinp.h \
 reorder.h \
 resall.h \
 rmpbc.h \
+selection.h \
+selmethod.h \
+selparam.h \
+selvalue.h \
 shellfc.h \
 shift.h \
 smalloc.h \
@@ -120,6 +131,7 @@ tgroup.h \
 topsort.h \
 toputil.h \
 tpxio.h \
+trajana.h \
 transfer.h \
 trnio.h \
 txtdump.h \

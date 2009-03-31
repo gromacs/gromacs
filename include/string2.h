@@ -91,6 +91,7 @@ extern int gmx_strcasecmp(const char *str1, const char *str2);
 extern int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
 extern char *gmx_strdup(const char *src);
+extern char *gmx_strndup(const char *src, int n);
 
 #ifndef HAVE_STRCASECMP
 #define strcasecmp gmx_strcasecmp
@@ -100,6 +101,8 @@ extern char *gmx_strdup(const char *src);
 #ifndef HAVE_STRDUP
 #define strdup gmx_strdup
 #endif
+
+#define strndup gmx_strndup
 
 extern char *wrap_lines(const char *buf,int line_width, int indent,
 			bool bIndentFirst);
