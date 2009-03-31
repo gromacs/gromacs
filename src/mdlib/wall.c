@@ -45,6 +45,7 @@
 #include "force.h"
 #include "filenm.h"
 #include "nrnb.h"
+#include "vec.h"
 
 void make_wall_tables(FILE *fplog,
 		      const t_inputrec *ir,const char *tabfn,
@@ -98,7 +99,8 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
   int  nwall,w,lam,i;
   int  ntw[2],at,ntype,ngid,ggid,*egp_flags,*type;
   real *nbfp,lamfac,fac_d[2],fac_r[2],Cd,Cr,Vtot,Fwall[2];
-  real box_zz,r,mr,r1,r2,r4,Vd,Vr,V,Fd,Fr,F,vir_zz,dvdlambda;
+  real wall_z[2],r,mr,r1,r2,r4,Vd,Vr,V,Fd,Fr,F,dvdlambda;
+  dvec xf_z;
   int  n0,nnn;
   real tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps,Heps2,Fp,VV,FF;
   unsigned short *gid=md->cENER;
@@ -121,10 +123,12 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     }
     Fwall[w] = 0;
   }
-  box_zz = box[ZZ][ZZ];
+  wall_z[0] = 0;
+  wall_z[1] = box[ZZ][ZZ];
 
   Vtot = 0;
   dvdlambda = 0;
+  clear_dvec(xf_z);
   for(lam=0; lam<(md->nPerturbed ? 2 : 1); lam++) {
     if (md->nPerturbed) {
       if (lam == 0) {
@@ -149,7 +153,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 	  if (w == 0) {
 	    r = x[i][ZZ];
 	  } else {
-	    r = box_zz - x[i][ZZ];
+	    r = wall_z[1] - x[i][ZZ];
 	  }
 	  if (r < ir->wall_r_linpot) {
 	    mr = ir->wall_r_linpot - r;
@@ -228,7 +232,17 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 	  Vlj[ggid] += lamfac*V;
 	  Vtot      += V;
 	  f[i][ZZ]  += F;
-	  Fwall[w]  -= F;
+	  /* Because of the single sum virial calculation we need to add
+	   * the full virial contribution of the walls.
+	   * Since the force only has a z-component, there is only
+	   * a contribution to the z component of the virial tensor.
+	   * We could also determine the virial contribution directly,
+	   * which would be cheaper here, but that would require extra
+	   * communication for f_novirsum for with virtual sites in parallel.
+	   */
+	  xf_z[XX]  -= x[i][XX]*F;
+	  xf_z[YY]  -= x[i][YY]*F;
+	  xf_z[ZZ]  -= wall_z[w]*F;
 	}
       }
     }
@@ -238,11 +252,9 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
     inc_nrnb(nrnb,eNR_WALLS,md->homenr);
   }
 
-  /* Since the lower wall is at z=0 it does not contribute
-   * to the single sum virial.
-   */
-  if (nwall == 2)
-    fr->vir_wall_zz = -0.5*box_zz*Fwall[1];
+  for(i=0; i<DIM; i++) {
+    fr->vir_wall_z[i] = -0.5*xf_z[i];
+  }
   
   return dvdlambda;
 }

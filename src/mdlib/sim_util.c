@@ -266,7 +266,9 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
   }
 
   /* Add wall contribution */
-  vir_part[ZZ][ZZ] += fr->vir_wall_zz;
+  for(i=0; i<DIM; i++) {
+    vir_part[i][ZZ] += fr->vir_wall_z[i];
+  }
 
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
