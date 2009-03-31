@@ -234,7 +234,7 @@ typedef struct {
   /* Virial Stuff */
   rvec *fshift;
   rvec vir_diag_posres;
-  real vir_wall_zz;
+  dvec vir_wall_z;
 
   /* Non bonded Parameter lists */
   int  ntype; /* Number of atom types */
