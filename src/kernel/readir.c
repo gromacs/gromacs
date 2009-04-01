@@ -391,6 +391,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning_note(NULL);
   }
 
+  if (ir->vdwtype == evdwUSER && ir->eDispCorr != edispcNO) {
+    warning_note("You have selected user tables with dispersion correction, the dispersion will be corrected to -C6/r^6 beyond rvdw_switch (the tabulated interaction between rvdw_switch and rvdw will not be double counted). Make sure that you really want dispersion correction to -C6/r^6.");
+  }
+
   if (ir->nstlist == -1) {
     sprintf(err_buf,
 	    "nstlist=-1 only works with switched or shifted potentials,\n"
