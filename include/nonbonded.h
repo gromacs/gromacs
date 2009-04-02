@@ -53,7 +53,7 @@ gmx_setup_kernels(FILE *fplog);
 void
 do_nonbonded(t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,
-             real egnb[],real egcoul[],rvec box_size,
+             real egnb[],real egcoul[],real egb[],rvec box_size,
              t_nrnb *nrnb,real lambda,real *dvdlambda,
              int nls,int eNL,int flags);
 

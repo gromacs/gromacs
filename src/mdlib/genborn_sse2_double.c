@@ -1329,175 +1329,93 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop
 
 int
 calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, real *dadx, real *dvda, real *xd, real *f, int gb_algorithm, gmx_genborn_t *born)
-{
-	int i,k,n,ai,aj,ai3,aj1,aj2,aj13,aj23,aj4,nj0,nj1,offset;
-	real rbi;
-	real rb[natoms+4];
-	
-	__m128d ix,iy,iz,jx,jy,jz,fix,fiy,fiz;
-	__m128d dx,dy,dz,t1,t2,t3,dva,dax,fgb;
-	__m128d xmm1,xmm2,xmm3,xmm4,xmm5;
-	
-	/* Loop to get the proper form for the Born radius term */
-	if(gb_algorithm==egbSTILL) {
-		for(i=0;i<natoms;i++)
-		{
-			rbi   = born->bRad[i];
-			rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
-		}
-	}
-	
-	else if(gb_algorithm==egbHCT) {
-		for(i=0;i<natoms;i++)
-		{
-			rbi   = born->bRad[i];
-			rb[i] = rbi * rbi * dvda[i];
-		}
-	}
-	
-	else if(gb_algorithm==egbOBC) {
-		for(i=0;i<natoms;i++)
-		{
-			rbi   = born->bRad[i];
-			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
-		}
-	}
-	
-	n = 0;
-	
-	for(i=0;i<nl->nri;i++)
-	{
-		ai     = nl->iinr[i];
-		ai3    = ai * 3;
-		
-		nj0    = nl->jindex[ai];
-		nj1    = nl->jindex[ai+1];
-		
-		offset = (nj1-nj0)%2;
-		
-		/* Load particle ai coordinates */
-		ix  = _mm_load1_pd(xd+ai3);
-		iy  = _mm_load1_pd(xd+ai3+1);
-		iz  = _mm_load1_pd(xd+ai3+2);
-		
-		/* Load particle ai dvda */
-		dva = _mm_load1_pd(rb+ai);
-		
-		fix = _mm_setzero_pd();
-		fiy = _mm_setzero_pd();
-		fiz = _mm_setzero_pd();	
-		
-		for(k=nj0;k<nj1-offset;k+=2)
-		{
-			aj1 = nl->jjnr[k];
-			aj2 = nl->jjnr[k+1];
-			
-			aj13 = aj1 * 3;
-			aj23 = aj2 * 3;
-			
-			/* Load particle aj1-2 coordinates */
-			xmm1 = _mm_loadl_pd(xmm1,xd+aj13);
-			xmm2 = _mm_loadl_pd(xmm2,xd+aj23);
-			jx   = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0));
-			jy   = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1));
-			
-			jz   = _mm_loadl_pd(jz, xd+aj13+2);
-			jz   = _mm_loadh_pd(jz, xd+aj23+2);
-			
-			dax  = _mm_loadu_pd(dadx+n);
-			n    = n + 2;
-			
-			dx   = _mm_sub_pd(ix,jx);
-			dy   = _mm_sub_pd(iy,jy);
-			dz   = _mm_sub_pd(iz,jz);
-
-			fgb  = _mm_mul_pd(dva,dax); 
-		
-			t1   = _mm_mul_pd(fgb,dx); 
-			t2   = _mm_mul_pd(fgb,dy); 
-			t3   = _mm_mul_pd(fgb,dz); 
-			
-			fix  = _mm_add_pd(fix,t1);
-			fiy  = _mm_add_pd(fiy,t2);
-			fiz  = _mm_add_pd(fiz,t3);	
-			
-			/* accumulate the aj1-2 fx and fy forces from memory */
-			xmm1 = _mm_loadl_pd(xmm1,f+aj13);
-			xmm2 = _mm_loadl_pd(xmm2,f+aj23);
-			xmm1 = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0)); /* fx1 fx2 */
-			xmm2 = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1)); /* fy1 fy2 */
-			
-			xmm3   = _mm_loadl_pd(xmm3, f+aj13+2); 
-			xmm3   = _mm_loadh_pd(xmm3, f+aj23+2); /* fz1 fz2 */
-			
-			/* subtract partial forces */
-			xmm1 = _mm_sub_pd(xmm1, t1); 
-			xmm2 = _mm_sub_pd(xmm2, t2); 
-			xmm3 = _mm_sub_pd(xmm3, t3); 
-			
-			/* transpose back fx and fy */
-			xmm4 = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0));
-			xmm5 = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(1,1));
-			
-			/* store the force, first fx's and fy's */
-			_mm_storeu_pd(f+aj13,xmm4);
-			_mm_storeu_pd(f+aj23,xmm5);
-			
-			/* then fz */
-			_mm_storel_pd(f+aj13+2,xmm3);
-			_mm_storeh_pd(f+aj23+2,xmm3);
-		}
-
-		if(offset!=0)
-		{
-			aj1  = nl->jjnr[k];
-			aj13 = aj1 * 3;
-			
-			jx    = _mm_load_sd(xd+aj13);
-			jy    = _mm_load_sd(xd+aj13+1);
-			jz    = _mm_load_sd(xd+aj13+2);
-			
-			dax  = _mm_load_sd(dadx+n);
-			n    = n + 1;
-			
-			dx   = _mm_sub_sd(ix,jx);
-			dy   = _mm_sub_sd(iy,jy);
-			dz   = _mm_sub_sd(iz,jz);
-			
-			fgb  = _mm_mul_sd(dva,dax); 
-			
-			t1   = _mm_mul_sd(fgb,dx); 
-			t2   = _mm_mul_sd(fgb,dy); 
-			t3   = _mm_mul_sd(fgb,dz); 
-			
-			fix  = _mm_add_sd(fix,t1);
-			fiy  = _mm_add_sd(fiy,t2);
-			fiz  = _mm_add_sd(fiz,t3);	
-			
-			/* accumulate the aj1-2 fx and fy forces from memory */
-			xmm1 = _mm_load_sd(f+aj13);
-			xmm2 = _mm_load_sd(f+aj13+1);
-			xmm3 = _mm_load_sd(f+aj13+2); 
-					
-			/* subtract partial forces */
-			xmm1 = _mm_sub_sd(xmm1, t1); 
-			xmm2 = _mm_sub_sd(xmm2, t2); 
-			xmm3 = _mm_sub_sd(xmm3, t3); 
-					
-			/* store the force */
-			_mm_store_sd(f+aj13,xmm1);
-			_mm_store_sd(f+aj13,xmm2);
-			_mm_store_sd(f+aj13,xmm3);
-		}
-		
-		/* Do end processing ...  */
-		
-		
-		/* ... until here */
-		
-	}
-
-	return 0;
+{      
+       int i,k,n,ai,aj,nj0,nj1;
+       real fgb,fij,rb2,rbi,fix1,fiy1,fiz1;
+       real ix1,iy1,iz1,jx1,jy1,jz1,dx11,dy11,dz11,rsq11;
+       real rinv11,tx,ty,tz,rbai;
+       real rb[natoms];
+       rvec dx;
+       
+       n=0;            
+       
+       /* Loop to get the proper form for the Born radius term */
+       if(gb_algorithm==egbSTILL) {
+               for(i=0;i<natoms;i++)
+               {
+                       rbi   = born->bRad[i];
+                       rb[i] = (2 * rbi * rbi * dvda[i])/ONE_4PI_EPS0;
+               }
+       }
+       
+       else if(gb_algorithm==egbHCT) {
+               for(i=0;i<natoms;i++)
+               {
+                       rbi   = born->bRad[i];
+                       rb[i] = rbi * rbi * dvda[i];
+               }
+       }
+ 
+       else if(gb_algorithm==egbOBC) {
+               for(i=0;i<natoms;i++)
+               {
+                       rbi   = born->bRad[i];
+                       rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
+               }
+       }
+       
+       for(i=0;i<nl->nri;i++)
+       {
+               ai   = nl->iinr[i];
+               nj0      = nl->jindex[ai];
+               nj1  = nl->jindex[ai+1];
+               
+               ix1  = xd[ai*3+0];
+               iy1  = xd[ai*3+1];
+               iz1  = xd[ai*3+2];
+               
+               fix1 = 0;
+               fiy1 = 0;
+               fiz1 = 0;
+               
+               rbai = rb[ai];
+       
+               for(k=nj0;k<nj1;k++)
+               {
+                       aj = nl->jjnr[k];
+                       
+                       jx1     = xd[aj*3+0];
+                       jy1     = xd[aj*3+1];
+                       jz1     = xd[aj*3+2];
+                       
+                       dx11    = ix1 - jx1;
+                       dy11    = iy1 - jy1;
+                       dz11    = iz1 - jz1;
+                       
+                       fgb     = rbai*dadx[n++]; 
+                       
+                       tx      = fgb * dx11;
+                       ty      = fgb * dy11;
+                       tz      = fgb * dz11;
+                       
+                       fix1    = fix1 + tx;
+                       fiy1    = fiy1 + ty;
+                       fiz1    = fiz1 + tz;
+                       
+                       /* Update force on atom aj */
+                       f[aj*3+0] = f[aj*3+0] - tx;
+                       f[aj*3+1] = f[aj*3+1] - ty;
+                       f[aj*3+2] = f[aj*3+2] - tz;
+               }
+               
+               /* Update force on atom ai */
+               f[ai*3+0] = f[ai*3+0] + fix1;
+               f[ai*3+1] = f[ai*3+1] + fiy1;
+               f[ai*3+2] = f[ai*3+2] + fiz1;
+               
+       }
+       
+       return 0;       
 }
 
 #else

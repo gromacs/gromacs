@@ -1724,7 +1724,8 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                 /* Evaluate the energies and forces */
                 do_nonbonded(cr,fr,x,fr->f_twin,md,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
-                             grppener->ener[egCOULLR],box_size,
+                             grppener->ener[egCOULLR],
+                                                      grppener->ener[egGB],box_size,
                              nrnb,lambda,dvdlambda,n,i,
                              GMX_DONB_LR | GMX_DONB_FORCES);
                 

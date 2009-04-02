@@ -1191,14 +1191,15 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_mtop_t *mtop,
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
-			calc_gb_rad_still_sse2_double(cr,fr,md->nr,mtop, atype, x[0], nl, born, md); 
+                        calc_gb_rad_still(cr,fr,md->nr,mtop, atype, x, nl, born, md); 
+			/* disabled: calc_gb_rad_still_sse2_double(cr,fr,md->nr,mtop, atype, x[0], nl, born, md);  */
 			break;
 		case egbHCT:
 			calc_gb_rad_hct_sse2_double(cr,fr,md->nr,mtop, atype, x[0], nl, born, md); 
 			break;
 		case egbOBC:
 			calc_gb_rad_obc_sse2_double(cr,fr,md->nr,mtop, atype, x[0], nl, born, md);
-			//calc_gb_rad_obc(cr,fr,md->nr,mtop, atype, x, nl, born, md);
+			/*calc_gb_rad_obc(cr,fr,md->nr,mtop, atype, x, nl, born, md);*/
 			break;
 			
 		default:

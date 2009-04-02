@@ -1678,7 +1678,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                  fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR] :
                  enerd->grpp.ener[egLJSR],
-                 enerd->grpp.ener[egCOULSR],box_size,nrnb,
+                 enerd->grpp.ener[egCOULSR],
+                                enerd->grpp.ener[egGB],box_size,nrnb,
                  lambda,&dvdlambda,-1,-1,donb_flags);
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
@@ -1696,7 +1697,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                          fr->bBHAM ?
                          ed_lam.grpp.ener[egBHAMSR] :
                          ed_lam.grpp.ener[egLJSR],
-                         ed_lam.grpp.ener[egCOULSR],box_size,nrnb,
+                         ed_lam.grpp.ener[egCOULSR],
+			 enerd->grpp.ener[egGB], box_size,nrnb,
                          lam_i,&dvdl_dum,-1,-1,
                          GMX_DONB_FOREIGNLAMBDA);
             sum_epot(&ir->opts,&ed_lam);
@@ -1712,6 +1714,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 	if (ir->implicit_solvent)  {
 		dvdgb = calc_gb_forces(cr,md,born,mtop,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
 		enerd->term[F_GB12]+=dvdgb;	
+               
+                /* Also add the nonbonded GB potential energy (only from one energy group currently) */
+                enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
 	}
 
 #ifdef GMX_MPI

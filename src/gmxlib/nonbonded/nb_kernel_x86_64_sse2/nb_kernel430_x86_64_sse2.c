@@ -76,7 +76,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 {
 	int           nri,ntype,nthreads,offset,tj,tj2,nti;
 	int           n,ii,is3,ii3,k,nj0,nj1,jnr1,jnr2,j13,j23,ggid;
-	double        facel,krf,crf,tabscl,gbtabscl,vct,vdwt,nt1,nt2;
+	double        facel,krf,crf,tabscl,gbtabscl,vct,vdwt,vgbt,nt1,nt2;
 	double        shX,shY,shZ,isai_d,dva;
 	
 	__m128d       ix,iy,iz,jx,jy,jz;
@@ -85,7 +85,8 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	__m128d		  q,iq,qq,isai,isaj,isaprod,vcoul,gbscale,dvdai,dvdaj;
 	__m128d       Y,F,G,H,Fp,VV,FF,vgb,fijC,fijD,fijR,dvdatmp,dvdasum,vctot,n0d;
 	__m128d		  xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
-	__m128d       c6,c12,Vvdw6,Vvdw12,Vvdwtmp,Vvdwtot,rinvsq,rinvsix;
+	__m128d       c6,c12,Vvdw6,Vvdw12,Vvdwtmp,Vvdwtot,vgbtot,rinvsq,rinvsix;
+	__m128d       fac,tabscale,gbtabscale;
 	__m128i       n0,nnn;
 	
 	const __m128d neg    = {-1.0f,-1.0f};
@@ -107,11 +108,12 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	tabscl     = *p_tabscale;
 	gbtabscl   = *p_gbtabscale;
 	nj1        = 0;
-		
-	const __m128d fac          = {facel, facel};
-	const __m128d tabscale     = {tabscl, tabscl};
-	const __m128d gbtabscale   = {gbtabscl, gbtabscl};
 	
+	/* Splat variables */
+	fac        = _mm_load1_pd(&facel);
+	tabscale   = _mm_load1_pd(&tabscl);
+	gbtabscale = _mm_load1_pd(&gbtabscl);
+		
 	/* Keep compiler happy */
 	Vvdwtmp = _mm_setzero_pd();
 	Vvdwtot = _mm_setzero_pd();
@@ -119,6 +121,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 	dvdaj   = _mm_setzero_pd();
 	isaj    = _mm_setzero_pd();
 	vcoul   = _mm_setzero_pd();
+	vgb     = _mm_setzero_pd();
 	t1      = _mm_setzero_pd();
 	t2      = _mm_setzero_pd();
 	t3      = _mm_setzero_pd();
@@ -159,6 +162,8 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 		fiz     = _mm_setzero_pd();
 		dvdasum = _mm_setzero_pd();
 		vctot   = _mm_setzero_pd();
+		vgbtot  = _mm_setzero_pd();
+		Vvdwtot = _mm_setzero_pd();
 		
 		for(k=nj0;k<nj1-offset; k+=2)
 		{
@@ -265,7 +270,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 			_mm_storeh_pd(dvda+jnr2,dvdaj);
 			
 			vctot	= _mm_add_pd(vctot,vcoul);
-			vctot	= _mm_add_pd(vctot,vgb);
+			vgbtot	= _mm_add_pd(vgbtot,vgb);
 			
 			/* Calculate VDW table index */
 			rt      = _mm_mul_pd(r,tabscale);
@@ -456,7 +461,7 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 			_mm_storel_pd(dvda+jnr1,dvdaj);
 			
 			vctot	= _mm_add_sd(vctot,vcoul);
-			vctot	= _mm_add_sd(vctot,vgb);
+			vgbtot	= _mm_add_sd(vgbtot,vgb);
 			
 			/* Calculate VDW table index */
 			rt      = _mm_mul_sd(r,tabscale);
@@ -593,14 +598,20 @@ void nb_kernel430_x86_64_sse2(int *           p_nri,
 		/* Coulomb potential */
 		vcoul	 = _mm_unpacklo_pd(vcoul,vctot);
 		vctot	 = _mm_add_pd(vctot,vcoul);
-		_mm_storel_pd(&vct,vctot);
+		_mm_storeh_pd(&vct,vctot);
 		Vc[ggid] = Vc[ggid] + vct;
 		
 		/* VdW potential */
 		Vvdwtmp	 = _mm_unpacklo_pd(Vvdwtmp,Vvdwtot);
 		Vvdwtot	 = _mm_add_pd(Vvdwtot,Vvdwtmp);
-		_mm_storel_pd(&vdwt,Vvdwtot);
+		_mm_storeh_pd(&vdwt,Vvdwtot);
 		Vvdw[ggid] = Vvdw[ggid] + vdwt;
+		
+		/* GB potential */
+		vgb  	 = _mm_unpacklo_pd(vgb,vgbtot);
+		vgbtot	 = _mm_add_pd(vgbtot,vgb);
+		_mm_storeh_pd(&vgbt,vgbtot);
+		work[ggid] = work[ggid] + vgbt;
 	}
 	
 	*outeriter   = nri;            

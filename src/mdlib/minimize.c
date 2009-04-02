@@ -594,7 +594,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 	   count,nrnb,wcycle,top,top_global,&top_global->groups,
 	   ems->s.box,ems->s.x,&ems->s.hist,
 	   ems->f,*buf,force_vir,mdatoms,enerd,fcd,
-	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,born,FALSE,
+	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,born,TRUE,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
 	   (bNS ? GMX_FORCE_NS : 0));
 

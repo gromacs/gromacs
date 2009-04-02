@@ -100,15 +100,17 @@ void nb_kernel430_x86_64_sse(int *           p_nri,
 	__m128   rinvsq,dvdaj,r,rt;
 	__m128   eps,eps2,Y,F,G,H,Geps,Heps2;
 	__m128   Fp,VV,FF,vgb,fijC,fijD,fijR,dvdatmp;
-	__m128   rinvsix,Vvdw6,Vvdw12,Vvdwtmp,n0f;
+	__m128   rinvsix,Vvdw6,Vvdw12,Vvdwtmp,vgbtot,n0f;
+	__m128   fac_sse,tabscale_sse,gbtabscale_sse;
 	
 	__m128i  n0, nnn;
 	
-	float vct,vdwt,dva,isai_f;
+	float vct,vdwt,vgbt,dva,isai_f;
 	
-	const __m128 fac_sse          = {facel, facel, facel, facel};
-	const __m128 tabscale_sse     = {tabscale, tabscale, tabscale, tabscale};
-	const __m128 gbtabscale_sse   = {gbtabscale, gbtabscale, gbtabscale, gbtabscale};       
+	/* Splat variables */
+	fac_sse        = _mm_load1_ps(&facel);
+	tabscale_sse   = _mm_load1_ps(&tabscale);
+	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
 	
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
 	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
@@ -126,6 +128,7 @@ void nb_kernel430_x86_64_sse(int *           p_nri,
 	Vvdwtmp = _mm_setzero_ps();
 	dvdatmp = _mm_setzero_ps();
 	vcoul   = _mm_setzero_ps();
+	vgb     = _mm_setzero_ps();
 	t1      = _mm_setzero_ps();
 	t2      = _mm_setzero_ps();
 	t3      = _mm_setzero_ps();
@@ -162,6 +165,7 @@ void nb_kernel430_x86_64_sse(int *           p_nri,
 		vctot            = _mm_setzero_ps();
 		Vvdwtot          = _mm_setzero_ps();
 		dvdasum          = _mm_setzero_ps();
+		vgbtot           = _mm_setzero_ps();
 		fix              = _mm_setzero_ps();
 		fiy              = _mm_setzero_ps();
 		fiz              = _mm_setzero_ps();
@@ -330,7 +334,7 @@ void nb_kernel430_x86_64_sse(int *           p_nri,
 			_mm_store_ss(dvda+jnr4,xmm1);
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
-			vctot   = _mm_add_ps(vctot,vgb);
+			vgbtot  = _mm_add_ps(vgbtot,vgb);
 			
 			/* Calculate VDW table index */
 			rt      = _mm_mul_ps(r,tabscale_sse);
@@ -695,8 +699,8 @@ void nb_kernel430_x86_64_sse(int *           p_nri,
 			vgb     = _mm_and_ps( (__m128) mask, vgb);
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
-			vctot   = _mm_add_ps(vctot,vgb);
-			
+			vgbtot  = _mm_add_ps(vgbtot,vgb);
+						
 			/* Calculate VDW table index */
 			rt      = _mm_mul_ps(r,tabscale_sse);
 			n0      = _mm_cvttps_epi32(rt);
@@ -946,6 +950,15 @@ void nb_kernel430_x86_64_sse(int *           p_nri,
 		
 		_mm_store_ss(&dva,dvdasum);
 		dvda[ii] = dvda[ii] + dva*isai_f*isai_f;
+		
+		/* Store the GB potential to the work array */
+		vgb     = _mm_movehl_ps(vgb,vgbtot);
+		vgbtot  = _mm_add_ps(vgbtot,vgb);
+		vgb     = _mm_shuffle_ps(vgbtot,vgbtot,_MM_SHUFFLE(1,1,1,1));
+		vgbtot  = _mm_add_ss(vgbtot,vgb);
+		
+		_mm_store_ss(&vgbt,vgbtot);
+		work[ggid] = work[ggid] + vgbt;
     }
 	
 	*outeriter       = nri;            

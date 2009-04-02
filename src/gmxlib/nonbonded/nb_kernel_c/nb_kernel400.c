@@ -91,12 +91,12 @@ void nb_kernel400(
     real          Y,F,Geps,Heps2,Fp,VV;
     real          FF;
     real          fijC;
-    real          isai,isaj,isaprod,gbscale,vgb;
+    real          isai,isaj,isaprod,gbscale,vgb,vgbtot;
     real          dvdasum,dvdatmp,dvdaj,fgb;
     real          ix1,iy1,iz1,fix1,fiy1,fiz1;
     real          jx1,jy1,jz1;
     real          dx11,dy11,dz11,rsq11,rinv11;
-
+	
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
@@ -109,7 +109,7 @@ void nb_kernel400(
     /* Reset outer and inner iteration counters */
     nouter           = 0;              
     ninner           = 0;              
-
+	
     /* Loop over thread workunits */
     
     do
@@ -156,7 +156,8 @@ void nb_kernel400(
             isai             = invsqrta[ii];   
 
             /* Zero the potential energy for this list */
-            vctot            = 0;              
+            vctot            = 0;   
+			vgbtot           = 0;
             dvdasum          = 0;              
 
             /* Clear i atom forces */
@@ -217,6 +218,7 @@ void nb_kernel400(
                 dvdasum          = dvdasum + dvdatmp;
                 dvda[jnr]        = dvdaj+dvdatmp*isaj*isaj;
                 vctot            = vctot + vcoul;  
+				vgbtot           = vgbtot + vgb;
                 fscal            = -(fijC-fscal)*rinv11;
 
                 /* Calculate temporary vectorial force */
@@ -249,6 +251,7 @@ void nb_kernel400(
             /* Add potential energies to the group for this list */
             ggid             = gid[n];         
             Vc[ggid]         = Vc[ggid] + vctot;
+			work[ggid]       = work[ggid] + vgbtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
 
             /* Increment number of inner iterations */
@@ -262,8 +265,7 @@ void nb_kernel400(
         nouter           = nouter + nn1 - nn0;
     }
     while (nn1<nri);
-    
-
+	
     /* Write outer/inner iteration count to pointers */
     *outeriter       = nouter;         
     *inneriter       = ninner;         

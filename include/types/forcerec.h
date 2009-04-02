@@ -79,7 +79,7 @@ typedef struct {
 #define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
 
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
-       egCOUL14, egLJ14, egNR };
+       egCOUL14, egLJ14, egGB, egNR };
 
 typedef struct {
   int  nener;        /* The number of energy group pairs     */

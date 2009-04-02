@@ -96,7 +96,7 @@ void nb_kernel430(
     real          FF;
     real          fijC;
     real          fijD,fijR;
-    real          isai,isaj,isaprod,gbscale,vgb;
+    real          isai,isaj,isaprod,gbscale,vgb,vgbtot;
     real          dvdasum,dvdatmp,dvdaj,fgb;
     real          ix1,iy1,iz1,fix1,fiy1,fiz1;
     real          jx1,jy1,jz1;
@@ -165,7 +165,8 @@ void nb_kernel430(
             /* Zero the potential energy for this list */
             vctot            = 0;              
             Vvdwtot          = 0;              
-            dvdasum          = 0;              
+            dvdasum          = 0;    
+			vgbtot           = 0;
 
             /* Clear i atom forces */
             fix1             = 0;              
@@ -228,6 +229,7 @@ void nb_kernel430(
                 dvdasum          = dvdasum + dvdatmp;
                 dvda[jnr]        = dvdaj+dvdatmp*isaj*isaj;
                 vctot            = vctot + vcoul;  
+				vgbtot           = vgbtot + vgb;
 
                 /* Calculate table index */
                 r                = rsq11*rinv11;   
@@ -296,6 +298,7 @@ void nb_kernel430(
             Vc[ggid]         = Vc[ggid] + vctot;
             Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
+			work[ggid]       = work[ggid] + vgbtot;
 
             /* Increment number of inner iterations */
             ninner           = ninner + nj1 - nj0;

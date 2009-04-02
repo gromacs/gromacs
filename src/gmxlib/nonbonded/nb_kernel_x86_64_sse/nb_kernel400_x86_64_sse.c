@@ -69,7 +69,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
                     float *         work)
 {
 	int           nri,ntype,nthreads,offset;
-	float         facel,krf,crf,tabscl,gbtabscl,vct;
+	float         krf,facel,crf,tabscl,gbtabscl,vct,vgbt;
 	int           n,ii,is3,ii3,k,nj0,nj1,jnr1,jnr2,jnr3,jnr4,j13,j23,j33,j43,ggid;
 	float         shX,shY,shZ,isai_f,dva;
 	
@@ -77,7 +77,8 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 	__m128		  dx,dy,dz,t1,t2,t3;
 	__m128		  fix,fiy,fiz,rsq11,rinv,r,fscal,rt,eps,eps2;
 	__m128		  q,iq,qq,isai,isaj,isaprod,vcoul,gbscale,dvdai,dvdaj;
-	__m128        Y,F,G,H,Fp,VV,FF,vgb,fijC,dvdatmp,dvdasum,vctot,n0f;
+	__m128        Y,F,G,H,Fp,VV,FF,vgb,fijC,dvdatmp,dvdasum,vctot,n0f,vgbtot;
+	__m128        fac,tabscale,gbtabscale;
 	__m128		  xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	__m128i       n0,nnn;
 	
@@ -100,13 +101,15 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 	gbtabscl   = *p_gbtabscale;
 	nj1        = 0;
 	
-	const __m128 fac          = {facel, facel, facel, facel};
-	const __m128 tabscale     = {tabscl, tabscl, tabscl, tabscl};
-	const __m128 gbtabscale   = {gbtabscl, gbtabscl, gbtabscl, gbtabscl};
-	
+	/* Splat variables */
+	fac        = _mm_load1_ps(&facel);
+	tabscale   = _mm_load1_ps(&tabscl);
+	gbtabscale = _mm_load1_ps(&gbtabscl);
+		
 	/* Keep the compiler happy */
 	dvdatmp = _mm_setzero_ps();
 	vcoul   = _mm_setzero_ps();
+	vgb     = _mm_setzero_ps();
 	t1      = _mm_setzero_ps();
 	t2      = _mm_setzero_ps();
 	t3      = _mm_setzero_ps();
@@ -139,6 +142,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 		fiz     = _mm_setzero_ps();
 		dvdasum = _mm_setzero_ps();
 		vctot   = _mm_setzero_ps();
+		vgbtot  = _mm_setzero_ps();
 		
 		for(k=nj0;k<nj1-offset; k+=4)
 		{
@@ -283,8 +287,8 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 			_mm_store_ss(dvda+jnr4,xmm1);
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
-			vctot   = _mm_add_ps(vctot,vgb); 
-			
+			vgbtot  = _mm_add_ps(vgbtot,vgb);
+					
 			fscal   = _mm_sub_ps(fijC,fscal);
 			fscal   = _mm_mul_ps(neg,fscal);
 			fscal   = _mm_mul_ps(fscal,rinv);
@@ -541,8 +545,8 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 			vgb     = _mm_and_ps( (__m128) mask, vgb);		
 	
 			vctot   = _mm_add_ps(vctot,vcoul);
-			vctot   = _mm_add_ps(vctot,vgb);
-			
+			vgbtot  = _mm_add_ps(vgbtot,vgb);
+					
 			fscal   = _mm_sub_ps(fijC,fscal);
 			fscal   = _mm_mul_ps(neg,fscal);
 			fscal   = _mm_mul_ps(fscal,rinv);
@@ -714,6 +718,15 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 		
 		_mm_store_ss(&vct,vctot);
 		Vc[ggid] = Vc[ggid] + vct;
+		
+		/* Store the GB potential to the work array */
+		vgb     = _mm_movehl_ps(vgb,vgbtot);
+		vgbtot  = _mm_add_ps(vgbtot,vgb);
+		vgb     = _mm_shuffle_ps(vgbtot,vgbtot,_MM_SHUFFLE(1,1,1,1));
+		vgbtot  = _mm_add_ss(vgbtot,vgb);
+		
+		_mm_store_ss(&vgbt,vgbtot);
+		work[ggid] = work[ggid] + vgbt;
 	}
 	
 	*outeriter       = nri;            
