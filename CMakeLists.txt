@@ -38,6 +38,7 @@ IF(CMAKE_GENERATOR MATCHES "Visual Studio")
     SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)   
 ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio")
 
+set(GMX_EXTRA_LIBRARIES)
 
 ########################################################################
 #Process MPI settings
@@ -48,7 +49,7 @@ if(GMX_MPI)
         set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
 	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
         include_directories(${MPI_INCLUDE_PATH})
-	set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${MPI_LIBRARIES})
+        list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
         add_definitions( -DMPI ) #for FAHCORE
     else(MPI_FOUND)
     message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
@@ -138,12 +139,11 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
-set(GMX_EXTRA_LIBRARIES)
 
 find_package(LibXml2)
 if(LIBXML2_FOUND)
     include_directories(${LIBXML2_INCLUDE_DIR})
-    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${LIBXML2_LIBRARIES})
+    list(APPEND GMX_EXTRA_LIBRARIES ${LIBXML2_LIBRARIES})
     set(HAVE_LIBXML2 1)
 endif(LIBXML2_FOUND)
 
@@ -157,13 +157,13 @@ endif(X11_FOUND)
 find_package(Pthreads)
 if(PTHREADS_FOUND)
     include_directories(${PTHREADS_INCLUDE_DIR})
-    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${PTHREADS_LIBRARIES})
+    list(APPEND	GMX_EXTRA_LIBRARIES ${PTHREADS_LIBRARIES})
     set(HAVE_PTHREADS 1)
 endif(PTHREADS_FOUND)
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)
-   set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${ACCELERATE_FRAMEWORK})
+   list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
 endif(APPLE)
 
 ########################################################################
@@ -298,7 +298,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(GMX_FFT_FFTW3 1)
     include_directories(${FFTW3_INCLUDE_DIR})
-    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${FFTW3_LIBRARIES})
+    list(APPEND	GMX_EXTRA_LIBRARIES ${FFTW3_LIBRARIES})
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
 #    MESSAGE(STATUS "Using external FFT library - fftw2")
@@ -312,7 +312,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
       	   MESSAGE(FATAL_ERROR "Cannot find fftw2 (with correct precision). Fix it, choose another FFT library, or use the Gromacs built-in fftpack (slower)!")
     endif(NOT FFTW2_FOUND)
     include_directories(${FFTW2_INCLUDE_DIR})
-    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${FFTW2_LIBRARIES})
+    list(APPEND	GMX_EXTRA_LIBRARIES ${FFTW2_LIBRARIES})
 
     if("${FFTW2_LIBRARIES}" MATCHES "dfftw")
         set(FFTW2_NAME_DFFTW 1)
@@ -327,7 +327,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 #    MESSAGE(STATUS "Using external FFT library - Intel MKL")
     find_package(MKL REQUIRED)
     include_directories(${MKL_INCLUDE_DIR})
-    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} ${MKL_LIBRARIES})
+    list(APPEND	GMX_EXTRA_LIBRARIES ${MKL_LIBRARIES})
 
     set(GMX_FFT_MKL 1)
     set(HAVE_MKL 1)
@@ -356,7 +356,7 @@ endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
-    set(GMX_EXTRA_LIBRARIES ${GMX_EXTRA_LIBRARIES} m)
+    list(APPEND	GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
 
 

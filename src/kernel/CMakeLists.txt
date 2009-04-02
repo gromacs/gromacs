@@ -43,7 +43,7 @@ if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
 else(GMX_FAHCORE)
 
-set(GMX_EXTRA_LIBRARIES gmxpreprocess md ${GMX_EXTRA_LIBRARIES})
+list(APPEND GMX_EXTRA_LIBRARIES gmxpreprocess md)
 
 add_executable(grompp grompp.c)
 target_link_libraries(grompp ${GMX_EXTRA_LIBRARIES})
