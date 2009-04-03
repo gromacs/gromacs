@@ -163,6 +163,7 @@ static int parse_names(char **string,int *n_names,char **names)
 static bool parse_int(char **string,int *nr)
 {
   bool bRet;
+  char *stringstart=*string;
 
   while ((*string)[0]==' ')
     (*string)++;
@@ -177,6 +178,11 @@ static bool parse_int(char **string,int *nr)
       (*string)++;
     }
     bRet=TRUE;
+	if (isalpha((*string)[0])) {
+	    *string=stringstart; /*rewind to beginning of parse*/
+	    bRet=FALSE; /*we have an alphanumeric string that started with a digit.  Not an int. */
+	    *nr=NOTSET;
+	}
   }
   else
     *nr=NOTSET;
