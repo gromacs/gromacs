@@ -126,7 +126,7 @@ extern void write_trn(char *fn,int step,real t,real lambda,
 /* Write a single trn frame to file fn, which is closed afterwards */
 
 extern void read_trn(char *fn,int *step,real *t,real *lambda,
-		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *);
+		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a single trn frame from file fn, which is closed afterwards 
  */
 
