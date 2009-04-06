@@ -1005,6 +1005,10 @@ if test "$GCC" = "yes"; then
    ACX_CHECK_CC_FLAGS(-std=gnu99,stdgnu99,xCFLAGS="$xCFLAGS -std=gnu99")
 fi
 
+if test "$enable_debug" = "yes"; then
+  xCFLAGS="$xCFLAGS -g"
+fi
+
 if test -n "$CPU_FLAGS"; then
   xCFLAGS="$xCFLAGS $CPU_FLAGS"
   xFFLAGS="$xFFLAGS $CPU_FLAGS"

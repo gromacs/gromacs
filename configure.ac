@@ -84,6 +84,9 @@ AC_ARG_ENABLE(apple_64bit,
               [AC_HELP_STRING([--enable-apple-64bit],
                               [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
 
+AC_ARG_ENABLE(debug,
+	      [AC_HELP_STRING([--enable-debug],
+                              [Add -g to other command line arguments])],,enable_debug=no)
 
 ### IA32 assembly code
 AC_ARG_ENABLE(ia32_sse,
