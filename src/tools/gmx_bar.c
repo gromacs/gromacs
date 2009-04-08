@@ -56,6 +56,8 @@
 typedef struct {
     int    nset;
     int    np;
+    int    begin;
+    int    end;
     double *lambda;
     double *t;
     double **y;
@@ -157,7 +159,7 @@ static void get_begin_end(barsim_t *ba,real begin,real end,int *b,int *e)
     }
     if (i >= ba->np)
     {
-        gmx_fatal(FARGS,"Some data send end before the start time %g",begin);
+        gmx_fatal(FARGS,"Some data end before the start time %g",begin);
     }
     *b = i;
 
@@ -190,14 +192,12 @@ static int get_lam_set(barsim_t *ba,double lambda)
 }
 
 static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
-                     real begin,real end,real temp,double tol,int npee,
+                     real temp,double tol,
+                     int npee0,int npee1,
                      double *dg,double *sig)
 {
-    int b1,b2,e1,e2,s1,s2,p;
+    int np1,np2,s1,s2,npee,p;
     double delta_lambda,dgp,dgs,dgs2;
-
-    get_begin_end(ba1,begin,end,&b1,&e1);
-    get_begin_end(ba2,begin,end,&b2,&e2);
 
     if (bUsedhdl)
     {
@@ -214,26 +214,36 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
         delta_lambda = 0;
     }
 
-    *dg = calc_bar_lowlevel(e1-b1,ba1->y[s1]+b1,
-                            e2-b2,ba2->y[s2]+b2,
+    np1 = ba1->end - ba1->begin;
+    np2 = ba2->end - ba2->begin;
+
+    *dg = calc_bar_lowlevel(np1,ba1->y[s1]+ba1->begin,
+                            np2,ba2->y[s2]+ba2->begin,
                             delta_lambda,temp,tol);
 
-    dgs  = 0;
-    dgs2 = 0;
-    if (e1 - b1 >= npee && e2 - b2 >= npee)
+    *sig = 0;
+    if (np1 >= npee1 && np2 >= npee1)
     {
-        for(p=0; p<npee; p++)
+        for(npee=npee0; npee<=npee1; npee++)
         {
-            dgp = calc_bar_lowlevel((e1-b1)/npee,ba1->y[s1]+b1+p*(e1-b1)/npee,
-                                    (e2-b2)/npee,ba2->y[s2]+b2+p*(e2-b2)/npee,
-                                    delta_lambda,temp,tol);
-            dgs  += dgp;
-            dgs2 += dgp*dgp;
+            dgs  = 0;
+            dgs2 = 0;
+            for(p=0; p<npee; p++)
+            {
+                dgp = calc_bar_lowlevel(np1/npee,
+                                        ba1->y[s1]+ba1->begin+p*(np1/npee),
+                                        np2/npee,
+                                        ba2->y[s2]+ba2->begin+p*(np2/npee),
+                                        delta_lambda,temp,tol);
+                dgs  += dgp;
+                dgs2 += dgp*dgp;
+            }
+            dgs  /= npee;
+            dgs2 /= npee;
+            *sig += sqrt((dgs2-dgs*dgs)/(npee-1));
         }
-        dgs  /= npee;
-        dgs2 /= npee;
+        *sig /= npee1 - npee0 + 1;
     }
-    *sig = sqrt((dgs2-dgs*dgs)/(npee-1));
 }
 
 static double legend2lambda(char *fn,char *legend,bool bdhdl)
@@ -289,13 +299,20 @@ static double filename2lambda(char *fn)
     return lambda;
 }
 
-static void read_barsim(char *fn,barsim_t *ba)
+static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
 {
     int  i;
     char **legend,*ptr;
 
-    printf("Reading file '%s', lambda:",fn);
+    printf("'%s' ",fn);
+
     ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
+    ba->t  = ba->y[0];
+
+    get_begin_end(ba,begin,end,&ba->begin,&ba->end);
+    printf("%.1f - %.1f, %6d points, lam:",
+           ba->t[ba->begin],ba->t[ba->end-1],ba->end-ba->begin);
+
     snew(ba->lambda,ba->nset-1);
     if (legend == NULL)
     {
@@ -323,7 +340,6 @@ static void read_barsim(char *fn,barsim_t *ba)
     printf("\n");
     
     /* Reorder the data */
-    ba->t  = ba->y[0];
     for(i=1; i<ba->nset; i++)
     {
         ba->y[i-1] = ba->y[i];
@@ -362,18 +378,23 @@ int gmx_bar(int argc,char *argv[])
         "The free energy estimates are determined using BAR with bisection,",
         "the precision of the output is set with [TT]-prec[tt].",
         "An error estimate taking into account time correlations",
-        "is made by splitting the data into n blocks and determining",
-        "the free energy differences over those block and assuming",
-        "those are independent."
+        "is made by splitting the data into blocks and determining",
+        "the free energy differences over those blocks and assuming",
+        "the blocks are independent.",
+        "The final error estimate is determined from the average variance",
+        "over 4 and 5 blocks to lower the chance of an low error estimate",
+        "when the differences between the block are coincidentally low",
+        "for a certain number of blocks."
     };
     static real begin=0,end=-1,temp=298;
-    static int nd=2,nblock=4;
+    static int nd=2,nb0=4,nb1=5;
     t_pargs pa[] = {
         { "-b",    FALSE, etREAL, {&begin},  "Begin time for BAR" },
         { "-e",    FALSE, etREAL, {&end},    "End time for BAR" },
         { "-temp", FALSE, etREAL, {&temp},   "Temperature (K)" },
         { "-prec", FALSE, etINT,  {&nd},     "The number of digits after the decimal point" },
-        { "-nb",   FALSE, etINT,  {&nblock}, "The number of blocks for error estimation" }
+        { "-nb0",  FALSE, etINT,  {&nb0}, "HIDDENMinimum number of blocks for error estimation" },
+        { "-nb1",  FALSE, etINT,  {&nb1}, "HIDDENMaximum number of blocks for error estimation" }
     };
     
     t_filenm   fnm[] = {
@@ -414,7 +435,7 @@ int gmx_bar(int argc,char *argv[])
     nm = 0;
     for(f=0; f<nfile; f++)
     {
-        read_barsim(fnms[f],&ba[f]);
+        read_barsim(fnms[f],begin,end,&ba[f]);
         
         if (ba[f].nset == 0)
         {
@@ -487,7 +508,9 @@ int gmx_bar(int argc,char *argv[])
             fprintf(fp,xvgformat,
                     ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
-        calc_bar(&ba[f],&ba[f+1],n1>0,begin,end,temp,prec,nblock,&dg,&sig);
+
+        calc_bar(&ba[f],&ba[f+1],n1>0,temp,prec,nb0,nb1,&dg,&sig);
+
         printf("lambda %4.2f - %4.2f, DG ",ba[f].lambda[0],ba[f+1].lambda[0]);
         printf(dgformat,dg);
         printf(" err");
