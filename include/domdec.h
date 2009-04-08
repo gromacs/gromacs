@@ -49,6 +49,8 @@ extern void dd_store_state(gmx_domdec_t *dd,t_state *state);
  * so it can be reset, even after a new DD partitioning.
  */
 
+extern gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd);
+
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
                              int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 
@@ -212,7 +214,8 @@ extern void dd_make_reverse_top(FILE *fplog,
 
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
-extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+extern void dd_make_local_top(FILE *fplog,
+                              gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                               matrix box,rvec cellsize_min,ivec npulse,
                               t_forcerec *fr,gmx_vsite_t *vsite,
                               gmx_mtop_t *top,gmx_localtop_t *ltop);

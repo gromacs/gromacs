@@ -1895,25 +1895,16 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     
     debug_gmx();
 
-    if (bDomDec)
+    if (fr->n_tpi)
     {
-        cg0 = 0;
-        cg1 = dd->icell[dd->nicell-1].cg1;
+        /* We only want a list for the test particle */
+        cg0 = cgsnr - 1;
     }
     else
     {
-        if (fr->n_tpi)
-        {
-            /* We only want a list for the test particle */
-            cg0 = cgsnr - 1;
-        }
-        else
-        {
-            cg0 = fr->cg0;
-        }
-    
-        cg1 = fr->hcg;
+        cg0 = grid->icg0;
     }
+    cg1 = grid->icg1;
 
     /* Set the shift range */
     for(d=0; d<DIM; d++)
@@ -2387,6 +2378,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     int      cg_start,cg_end,start,end;
     gmx_ns_t *ns;
     t_grid   *grid;
+    gmx_domdec_zones_t *dd_zones;
 	
     ns = &fr->ns;
 
@@ -2426,7 +2418,16 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     {
 		
         grid = ns->grid;
-        bFilledHome = (DOMAINDECOMP(cr) && dd_filled_nsgrid_home(cr->dd));
+        if (DOMAINDECOMP(cr))
+        {
+            dd_zones = domdec_zones(cr->dd);
+            bFilledHome = dd_filled_nsgrid_home(cr->dd);
+        }
+        else
+        {
+            dd_zones = NULL;
+            bFilledHome = FALSE;
+        }
         if (!bFilledHome)
         {
             grid_first(log,grid,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
@@ -2449,12 +2450,17 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         if (DOMAINDECOMP(cr))
         {
             end = cgs->nr;
-            fill_grid(log,cr->dd,grid,box,bFilledHome ? cr->dd->ncg_home : 0,end,
+            fill_grid(log,dd_zones,grid,box,
+                      bFilledHome ? cr->dd->ncg_home : 0,end,
                       fr->cg_cm);
+            grid->icg0 = 0;
+            grid->icg1 = dd_zones->izone[dd_zones->nizone-1].cg1;
         }
         else
         {
             fill_grid(log,NULL,grid,box,fr->cg0,fr->hcg,fr->cg_cm);
+            grid->icg0 = fr->cg0;
+            grid->icg1 = fr->hcg;
             debug_gmx();
             
             if (PARTDECOMP(cr))

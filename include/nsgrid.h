@@ -50,7 +50,7 @@ extern void grid_first(FILE *log,t_grid *grid,gmx_domdec_t *dd,
 		       int ePBC,matrix box,real rlong,int ncg);
 
 extern void fill_grid(FILE *log,
-		      gmx_domdec_t *dd,
+		      gmx_domdec_zones_t *dd_zones,
 		      t_grid *grid,matrix box,
 		      int cg0,int cg1,rvec cg_cm[]);
 

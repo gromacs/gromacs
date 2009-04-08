@@ -920,27 +920,28 @@ static real dd_dist2(t_pbc *pbc_null,rvec *cg_cm,const int *la2lc,int i,int j)
     return norm2(dx);
 }
 
-static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
+static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
+                              gmx_molblock_t *molb,
                               bool bRCheckMB,ivec rcheck,bool bRCheck2B,
                               real rc,
                               int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
                               t_idef *idef,gmx_vsite_t *vsite)
 {
-    int ncell,nicell,ic,la0,la1,i,i_gl,mb,mt,mol,i_mol,j,ftype,nral,d,k,kc;
+    int nzone,nizone,ic,la0,la1,i,i_gl,mb,mt,mol,i_mol,j,ftype,nral,d,k,kc;
     int *index,*rtil,**vsite_pbc,*vsite_pbc_nalloc;
     t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
     bool bBCheck,bUse;
     real rc2;
     ivec k_zero,k_plus;
     gmx_ga2la_t *ga2la;
-    gmx_domdec_ns_ranges_t *icell;
+    gmx_domdec_ns_ranges_t *izone;
     gmx_reverse_top_t *rt;
     gmx_molblock_ind_t *mbi;
     int nbonded_local;
     
-    ncell  = dd->ncell;
-    nicell = dd->nicell;
-    icell  = dd->icell;
+    nzone  = zones->n;
+    nizone = zones->nizone;
+    izone  = zones->izone;
     
     rc2 = rc*rc;
     
@@ -968,10 +969,10 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
     
     mbi = rt->mbi;
     
-    for(ic=0; ic<ncell; ic++)
+    for(ic=0; ic<nzone; ic++)
     {
-        la0 = dd->cgindex[dd->ncg_cell[ic]];
-        la1 = dd->cgindex[dd->ncg_cell[ic+1]];
+        la0 = dd->cgindex[zones->cg_range[ic]];
+        la1 = dd->cgindex[zones->cg_range[ic+1]];
         for(i=la0; i<la1; i++)
         {
             /* Get the global atom number */
@@ -1004,7 +1005,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
                     
                     if (nral == 1)
                     {
-                        /* Assign single-body interactions to the home cell */
+                        /* Assign single-body interactions to the home zone */
                         if (ic == 0)
                         {
                             bUse = TRUE;
@@ -1032,15 +1033,15 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
                         }
                         else
                         {
-                            if (kc >= ncell)
+                            if (kc >= nzone)
                             {
-                                kc -= ncell;
+                                kc -= nzone;
                             }
                             /* Check zone interaction assignments */
-                            bUse = ((ic < nicell && ic <= kc &&
-                                     icell[ic].j0 <= kc && kc < icell[ic].j1) ||
-                                    (kc < nicell && ic >  kc &&
-                                     icell[kc].j0 <= ic && ic < icell[kc].j1));
+                            bUse = ((ic < nizone && ic <= kc &&
+                                     izone[ic].j0 <= kc && kc < izone[ic].j1) ||
+                                    (kc < nizone && ic >  kc &&
+                                     izone[kc].j0 <= ic && ic < izone[kc].j1));
                             if (bUse)
                             {
                                 tiatoms[1] = i;
@@ -1059,9 +1060,9 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
                     {
                         /* Assign this multi-body bonded interaction to
                          * the local node if we have all the atoms involved
-                         * (local or communicated) and the minimum cell shift
+                         * (local or communicated) and the minimum zone shift
                          * in each dimension is zero, for dimensions
-                         * with 2 DD cell an extra check may be necessary.
+                         * with 2 DD cells an extra check may be necessary.
                          */
                         bUse = TRUE;
                         clear_ivec(k_zero);
@@ -1070,7 +1071,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
                         {
                             ga2la = &dd->ga2la[i_gl + iatoms[k] - i_mol];
                             kc = ga2la->cell;
-                            if (kc == -1 || kc >= dd->ncell)
+                            if (kc == -1 || kc >= zones->n)
                             {
                                 /* We do not have this atom of this interaction
                                  * locally, or it comes from more than one cell
@@ -1083,7 +1084,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_molblock_t *molb,
                                 tiatoms[k] = ga2la->a;
                                 for(d=0; d<DIM; d++)
                                 {
-                                    if (dd->shift[kc][d] == 0)
+                                    if (zones->shift[kc][d] == 0)
                                     {
                                         k_zero[d] = k;
                                     }
@@ -1222,13 +1223,14 @@ static int make_local_bondeds_intracg(gmx_domdec_t *dd,gmx_molblock_t *molb,
     return nbonded_local;
 }
 
-static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
+static int make_local_exclusions(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
+                                 gmx_mtop_t *mtop,
                                  bool bRCheck,real rc,
                                  int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
                                  t_forcerec *fr,
                                  t_blocka *lexcls)
 {
-    int  nicell,n,count,ic,jla0,jla1,jla;
+    int  nizone,n,count,ic,jla0,jla1,jla;
     int  cg,la0,la1,la,a_gl,mb,mt,mol,a_mol,j,aj_mol;
     t_blocka *excls;
     gmx_ga2la_t *ga2la;
@@ -1237,13 +1239,13 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
     
     /* Since for RF and PME we need to loop over the exclusions
      * we should store each exclusion only once. This is done
-     * using the same cell scheme as used for neighbor searching.
+     * using the same zone scheme as used for neighbor searching.
      * The exclusions involving non-home atoms are stored only
      * one way: atom j is in the excl list of i only for j > i,
      * where i and j are local atom numbers.
      */
     
-    lexcls->nr = dd->cgindex[dd->icell[dd->nicell-1].cg1];
+    lexcls->nr = dd->cgindex[zones->izone[zones->nizone-1].cg1];
     if (lexcls->nr+1 > lexcls->nalloc_index)
     {
         lexcls->nalloc_index = over_alloc_dd(lexcls->nr)+1;
@@ -1256,19 +1258,19 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
     
     if (dd->n_intercg_excl)
     {
-        nicell = dd->nicell;
+        nizone = zones->nizone;
     }
     else
     {
-        nicell = 1;
+        nizone = 1;
     }
     n = 0;
     count = 0;
-    for(ic=0; ic<nicell; ic++)
+    for(ic=0; ic<nizone; ic++)
     {
-        jla0 = dd->cgindex[dd->icell[ic].jcg0];
-        jla1 = dd->cgindex[dd->icell[ic].jcg1];
-        for(cg=dd->ncg_cell[ic]; cg<dd->ncg_cell[ic+1]; cg++)
+        jla0 = dd->cgindex[zones->izone[ic].jcg0];
+        jla1 = dd->cgindex[zones->izone[ic].jcg1];
+        for(cg=zones->cg_range[ic]; cg<zones->cg_range[ic+1]; cg++)
         {
             /* Here we assume the number of exclusions in one charge group
              * is never larger than 1000.
@@ -1300,7 +1302,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
                              *  the global indexing and distance checking.
                              */
                             /* Intra-cg exclusions are only required
-                             * for the home cell.
+                             * for the home zone.
                              */
                             if (ic == 0)
                             {
@@ -1350,8 +1352,8 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
             else
             {
                 /* There are no inter-cg excls and this cg is self-excluded.
-                 * These exclusions are only required for cell 0,
-                 * since other cells do not see themselves.
+                 * These exclusions are only required for zone 0,
+                 * since other zones do not see themselves.
                  */
                 if (ic == 0)
                 {
@@ -1381,7 +1383,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
         /* There are no exclusions involving non-home charge groups,
          * but we need to set the indices for neighborsearching.
          */
-        la0 = dd->cgindex[dd->icell[0].cg1];
+        la0 = dd->cgindex[zones->izone[0].cg1];
         for(la=la0; la<lexcls->nr; la++)
         {
             lexcls->index[la] = n;
@@ -1394,7 +1396,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_mtop_t *mtop,
         /* nr is only used to loop over the exclusions for Ewald and RF,
          * so we can set it to the number of home atoms for efficiency.
          */
-        lexcls->nr = dd->cgindex[dd->icell[0].cg1];
+        lexcls->nr = dd->cgindex[zones->izone[0].cg1];
     }
     if (debug)
     {
@@ -1411,7 +1413,8 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
   lcgs->index = dd->cgindex;
 }
 
-void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+void dd_make_local_top(FILE *fplog,
+                       gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                        matrix box,rvec cellsize_min,ivec npulse,
                        t_forcerec *fr,gmx_vsite_t *vsite,
                        gmx_mtop_t *mtop,gmx_localtop_t *ltop)
@@ -1502,7 +1505,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
             }
         }
         
-        dd->nbonded_local = make_local_bondeds(dd,mtop->molblock,
+        dd->nbonded_local = make_local_bondeds(dd,zones,mtop->molblock,
                                                bRCheckMB,rcheck,bRCheck2B,rc,
                                                dd->la2lc,
                                                pbc_null,fr->cg_cm,
@@ -1518,7 +1521,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
         gmx_sort_ilist_fe(&ltop->idef);
     }
     
-    nexcl = make_local_exclusions(dd,mtop,bRCheckExcl,
+    nexcl = make_local_exclusions(dd,zones,mtop,bRCheckExcl,
                                   rc,dd->la2lc,pbc_null,fr->cg_cm,
                                   fr,&ltop->excls);
     

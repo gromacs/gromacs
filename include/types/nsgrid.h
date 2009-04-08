@@ -55,6 +55,8 @@ typedef struct {
 			/* The location of the cell in the index*/
 			/* array can be found by calling xyz2ci	*/
   int    *nra;		/* The number of entries in a cell	*/
+  int    icg0;          /* The start of the i-cg range          */
+  int    icg1;          /* The end of the i-cg range            */
   rvec   *os0;
   rvec   *os1;
   int    *a;		/* The grid of cgs			*/

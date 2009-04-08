@@ -43,8 +43,8 @@
 
 #include "idef.h"
 
-#define DD_MAXCELL  8
-#define DD_MAXICELL 4
+#define DD_MAXZONE  8
+#define DD_MAXIZONE 4
 
 typedef struct gmx_domdec_master *gmx_domdec_master_p_t;
 
@@ -57,6 +57,19 @@ typedef struct {
   ivec shift0;   /* Minimum shifts to consider */
   ivec shift1;   /* Maximum shifts to consider */
 } gmx_domdec_ns_ranges_t;
+
+typedef struct {
+  /* The number of zones including the home zone */
+  int  n;
+  /* The shift of the zones with respect to the home zone */
+  ivec shift[DD_MAXZONE];
+  /* The charge group boundaries for the zones */
+  int  cg_range[DD_MAXZONE+1];
+  /* The number of neighbor search zones with i-particles */
+  int  nizone;
+  /* The neighbor search charge group ranges for each i-zone */
+  gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
+} gmx_domdec_zones_t;
 
 typedef struct {
   int     cell;
@@ -104,9 +117,6 @@ typedef struct {
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
   bool bGridJump;
-  /* The bonded and non-bonded communication setup, cartesian index */
-  int  ncell;
-  ivec shift[DD_MAXCELL];
 
   /* Screw PBC? */
   bool bScrewPBC;
@@ -146,9 +156,6 @@ typedef struct {
   gmx_domdec_constraints_p_t constraints;
   gmx_domdec_specat_comm_p_t constraint_comm;
 
-  /* The charge group boundaries for the cells */
-  int ncg_cell[DD_MAXCELL+1];
-
   /* The local to gobal charge group index and local cg to local atom index */
   int  ncg_home;
   int  ncg_tot;
@@ -169,10 +176,6 @@ typedef struct {
 
   /* Global atom number to local atom number, -1 if not local */
   gmx_ga2la_t *ga2la;
-
-  /* For neighborsearching */
-  int  nicell;
-  gmx_domdec_ns_ranges_t icell[DD_MAXICELL];
 
   /* Communication stuff */
   gmx_domdec_comm_p_t comm;

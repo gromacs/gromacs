@@ -72,14 +72,14 @@ typedef struct {
      * that requires communication, the last entry contains the total
      * number of atoms that needs to be communicated.
      */
-    int nsend[DD_MAXICELL+2];
-    int nrecv[DD_MAXICELL+2];
+    int nsend[DD_MAXIZONE+2];
+    int nrecv[DD_MAXIZONE+2];
     /* The charge groups to send */
     int *index;
     int nalloc;
     /* The atom range for non-in-place communication */
-    int cell2at0[DD_MAXICELL];
-    int cell2at1[DD_MAXICELL];
+    int cell2at0[DD_MAXIZONE];
+    int cell2at1[DD_MAXIZONE];
 } gmx_domdec_ind_t;
 
 typedef struct {
@@ -229,6 +229,9 @@ typedef struct gmx_domdec_comm {
     /* The old location of the cell boundaries, to check cg displacements */
     rvec old_cell_x0;
     rvec old_cell_x1;
+
+    /* The communication setup and charge group boundaries for the zones */
+    gmx_domdec_zones_t zones;
     
     /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
      * cell boundaries of neighboring cells for dynamic load balancing.
@@ -245,7 +248,7 @@ typedef struct gmx_domdec_comm {
     int master_cg_ddp_count;
     
     /* The number of cg's received from the direct neighbors */
-    int  cell_ncg1[DD_MAXCELL];
+    int  zone_ncg1[DD_MAXZONE];
     
     /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
     int  nat[ddnatNR];
@@ -314,33 +317,33 @@ typedef struct gmx_domdec_comm {
 #define DD_FLAG_FW(d) (1<<(16+(d)*2))
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
 
-/* Cell permutation required to obtain consecutive charge groups
+/* Zone permutation required to obtain consecutive charge groups
  * for neighbor searching.
  */
-static const int cell_perm[3][4] = { {0,0,0,0},{1,0,0,0},{3,0,1,2} };
+static const int zone_perm[3][4] = { {0,0,0,0},{1,0,0,0},{3,0,1,2} };
 
-/* dd_co and dd_cp3/dd_cp2 are set up such that i zones with non-zero
+/* dd_zo and dd_zp3/dd_zp2 are set up such that i zones with non-zero
  * components see only j zones with that component 0.
  */
 
 /* The DD zone order */
-static const ivec dd_co[DD_MAXCELL] =
+static const ivec dd_zo[DD_MAXZONE] =
   {{0,0,0},{1,0,0},{1,1,0},{0,1,0},{0,1,1},{0,0,1},{1,0,1},{1,1,1}};
 
 /* The 3D setup */
-#define dd_c3n  8
-#define dd_cp3n 4
-static const ivec dd_cp3[dd_cp3n] = {{0,0,8},{1,3,6},{2,5,6},{3,5,7}};
+#define dd_z3n  8
+#define dd_zp3n 4
+static const ivec dd_zp3[dd_zp3n] = {{0,0,8},{1,3,6},{2,5,6},{3,5,7}};
 
 /* The 2D setup */
-#define dd_c2n  4
-#define dd_cp2n 2
-static const ivec dd_cp2[dd_cp2n] = {{0,0,4},{1,3,4}};
+#define dd_z2n  4
+#define dd_zp2n 2
+static const ivec dd_zp2[dd_zp2n] = {{0,0,4},{1,3,4}};
 
 /* The 1D setup */
-#define dd_c1n  2
-#define dd_cp1n 1
-static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
+#define dd_z1n  2
+#define dd_zp1n 1
+static const ivec dd_zp1[dd_zp1n] = {{0,0,2}};
 
 static int nstDDDump,nstDDDumpGrid,DD_debug;
 
@@ -463,38 +466,46 @@ void dd_store_state(gmx_domdec_t *dd,t_state *state)
     state->ddp_count_cg_gl = dd->ddp_count;
 }
 
+gmx_domdec_zones_t *domdec_zones(gmx_domdec_t *dd)
+{
+    return &dd->comm->zones;
+}
+
 void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
                       int *jcg0,int *jcg1,ivec shift0,ivec shift1)
 {
-    int icell,d,dim;
+    gmx_domdec_zones_t *zones;
+    int izone,d,dim;
 
-    icell = 0;
-    while (icg >= dd->icell[icell].cg1)
+    zones = &dd->comm->zones;
+
+    izone = 0;
+    while (icg >= zones->izone[izone].cg1)
     {
-        icell++;
+        izone++;
     }
     
-    if (icell == 0)
+    if (izone == 0)
     {
         *jcg0 = icg;
     }
-    else if (icell < dd->nicell)
+    else if (izone < zones->nizone)
     {
-        *jcg0 = dd->icell[icell].jcg0;
+        *jcg0 = zones->izone[izone].jcg0;
     }
     else
     {
-        gmx_fatal(FARGS,"DD icg %d out of range: icell (%d) >= nicell (%d)",
-                  icg,icell,dd->nicell);
+        gmx_fatal(FARGS,"DD icg %d out of range: izone (%d) >= nizone (%d)",
+                  icg,izone,zones->nizone);
     }
         
-    *jcg1 = dd->icell[icell].jcg1;
+    *jcg1 = zones->izone[izone].jcg1;
     
     for(d=0; d<dd->ndim; d++)
     {
         dim = dd->dim[d];
-        shift0[dim] = dd->icell[icell].shift0[dim];
-        shift1[dim] = dd->icell[icell].shift1[dim];
+        shift0[dim] = zones->izone[izone].shift0[dim];
+        shift1[dim] = zones->izone[izone].shift1[dim];
         if (dd->tric_dir[dim] || (dd->bGridJump && d > 0))
         {
             /* A conservative approach, this can be optimized */
@@ -517,7 +528,7 @@ void dd_get_constraint_range(gmx_domdec_t *dd,int *at_start,int *at_end)
 
 void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
 {
-    int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
+    int  nzone,nat_tot,n,d,p,i,j,at0,at1,zone;
     int  *index,*cgindex;
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
@@ -529,7 +540,7 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
     
     cgindex = dd->cgindex;
     
-    ncell = 1;
+    nzone = 1;
     nat_tot = dd->nat_home;
     for(d=0; d<dd->ndim; d++)
     {
@@ -547,7 +558,7 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
             n = 0;
             if (!bPBC)
             {
-                for(i=0; i<ind->nsend[ncell]; i++)
+                for(i=0; i<ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];
                     at1 = cgindex[index[i]+1];
@@ -560,7 +571,7 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
             }
             else if (!bScrew)
             {
-                for(i=0; i<ind->nsend[ncell]; i++)
+                for(i=0; i<ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];
                     at1 = cgindex[index[i]+1];
@@ -574,7 +585,7 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
             }
             else
             {
-                for(i=0; i<ind->nsend[ncell]; i++)
+                for(i=0; i<ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];
                     at1 = cgindex[index[i]+1];
@@ -603,29 +614,29 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
             }
             /* Send and receive the coordinates */
             dd_sendrecv_rvec(dd, d, dddirBackward,
-                             buf,  ind->nsend[ncell+1],
-                             rbuf, ind->nrecv[ncell+1]);
+                             buf,  ind->nsend[nzone+1],
+                             rbuf, ind->nrecv[nzone+1]);
             if (!cd->bInPlace)
             {
                 j = 0;
-                for(cell=0; cell<ncell; cell++)
+                for(zone=0; zone<nzone; zone++)
                 {
-                    for(i=ind->cell2at0[cell]; i<ind->cell2at1[cell]; i++)
+                    for(i=ind->cell2at0[zone]; i<ind->cell2at1[zone]; i++)
                     {
                         copy_rvec(rbuf[j],x[i]);
                         j++;
                     }
                 }
             }
-            nat_tot += ind->nrecv[ncell+1];
+            nat_tot += ind->nrecv[nzone+1];
         }
-        ncell += ncell;
+        nzone += nzone;
     }
 }
 
 void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
 {
-    int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
+    int  nzone,nat_tot,n,d,p,i,j,at0,at1,zone;
     int  *index,*cgindex;
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
@@ -639,10 +650,8 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
     
     cgindex = dd->cgindex;
 
-    ncell = 1;
-    nat_tot = dd->nat_home;
     n = 0;
-    ncell = dd->ncell/2;
+    nzone = comm->zones.n/2;
     nat_tot = dd->nat_tot;
     for(d=dd->ndim-1; d>=0; d--)
     {
@@ -660,7 +669,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
         cd = &comm->cd[d];
         for(p=cd->np-1; p>=0; p--) {
             ind = &cd->ind[p];
-            nat_tot -= ind->nrecv[ncell+1];
+            nat_tot -= ind->nrecv[nzone+1];
             if (cd->bInPlace)
             {
                 sbuf = f + nat_tot;
@@ -669,9 +678,9 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
             {
                 sbuf = comm->buf_vr2;
                 j = 0;
-                for(cell=0; cell<ncell; cell++)
+                for(zone=0; zone<nzone; zone++)
                 {
-                    for(i=ind->cell2at0[cell]; i<ind->cell2at1[cell]; i++)
+                    for(i=ind->cell2at0[zone]; i<ind->cell2at1[zone]; i++)
                     {
                         copy_rvec(f[i],sbuf[j]);
                         j++;
@@ -680,14 +689,14 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
             }
             /* Communicate the forces */
             dd_sendrecv_rvec(dd, d, dddirForward,
-                             sbuf, ind->nrecv[ncell+1],
-                             buf,  ind->nsend[ncell+1]);
+                             sbuf, ind->nrecv[nzone+1],
+                             buf,  ind->nsend[nzone+1]);
             index = ind->index;
             /* Add the received forces */
             n = 0;
             if (!bPBC)
             {
-                for(i=0; i<ind->nsend[ncell]; i++)
+                for(i=0; i<ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];
                     at1 = cgindex[index[i]+1];
@@ -700,7 +709,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
             }
             else if (!bScrew)
             {
-                for(i=0; i<ind->nsend[ncell]; i++)
+                for(i=0; i<ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];
                     at1 = cgindex[index[i]+1];
@@ -715,7 +724,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
             }
             else
             {
-                for(i=0; i<ind->nsend[ncell]; i++)
+                for(i=0; i<ind->nsend[nzone]; i++)
                 {
                     at0 = cgindex[index[i]];
                     at1 = cgindex[index[i]+1];
@@ -735,13 +744,13 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
                 }
             }
         }
-        ncell /= 2;
+        nzone /= 2;
     }
 }
 
 void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[])
 {
-    int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
+    int  nzone,nat_tot,n,d,p,i,j,at0,at1,zone;
     int  *index,*cgindex;
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
@@ -752,7 +761,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[])
     
     cgindex = dd->cgindex;
     
-    ncell = 1;
+    nzone = 1;
     nat_tot = dd->nat_home;
     for(d=0; d<dd->ndim; d++)
     {
@@ -762,7 +771,7 @@ void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[])
             ind = &cd->ind[p];
             index = ind->index;
             n = 0;
-            for(i=0; i<ind->nsend[ncell]; i++)
+            for(i=0; i<ind->nsend[nzone]; i++)
             {
                 at0 = cgindex[index[i]];
                 at1 = cgindex[index[i]+1];
@@ -783,29 +792,29 @@ void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[])
             }
             /* Send and receive the coordinates */
             dd_sendrecv_real(dd, d, dddirBackward,
-                             buf,  ind->nsend[ncell+1],
-                             rbuf, ind->nrecv[ncell+1]);
+                             buf,  ind->nsend[nzone+1],
+                             rbuf, ind->nrecv[nzone+1]);
             if (!cd->bInPlace)
             {
                 j = 0;
-                for(cell=0; cell<ncell; cell++)
+                for(zone=0; zone<nzone; zone++)
                 {
-                    for(i=ind->cell2at0[cell]; i<ind->cell2at1[cell]; i++)
+                    for(i=ind->cell2at0[zone]; i<ind->cell2at1[zone]; i++)
                     {
                         v[i] = rbuf[j];
                         j++;
                     }
                 }
             }
-            nat_tot += ind->nrecv[ncell+1];
+            nat_tot += ind->nrecv[nzone+1];
         }
-        ncell += ncell;
+        nzone += nzone;
     }
 }
 
 void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[])
 {
-    int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
+    int  nzone,nat_tot,n,d,p,i,j,at0,at1,zone;
     int  *index,*cgindex;
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
@@ -816,17 +825,17 @@ void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[])
     
     cgindex = dd->cgindex;
 
-    ncell = 1;
+    nzone = 1;
     nat_tot = dd->nat_home;
     n = 0;
-    ncell = dd->ncell/2;
+    nzone = comm->zones.n/2;
     nat_tot = dd->nat_tot;
     for(d=dd->ndim-1; d>=0; d--)
     {
         cd = &comm->cd[d];
         for(p=cd->np-1; p>=0; p--) {
             ind = &cd->ind[p];
-            nat_tot -= ind->nrecv[ncell+1];
+            nat_tot -= ind->nrecv[nzone+1];
             if (cd->bInPlace)
             {
                 sbuf = v + nat_tot;
@@ -835,9 +844,9 @@ void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[])
             {
                 sbuf = &comm->buf_vr2[0][0];
                 j = 0;
-                for(cell=0; cell<ncell; cell++)
+                for(zone=0; zone<nzone; zone++)
                 {
-                    for(i=ind->cell2at0[cell]; i<ind->cell2at1[cell]; i++)
+                    for(i=ind->cell2at0[zone]; i<ind->cell2at1[zone]; i++)
                     {
                         sbuf[j] = v[i];
                         j++;
@@ -846,12 +855,12 @@ void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[])
             }
             /* Communicate the forces */
             dd_sendrecv_real(dd, d, dddirForward,
-                             sbuf, ind->nrecv[ncell+1],
-                             buf,  ind->nsend[ncell+1]);
+                             sbuf, ind->nrecv[nzone+1],
+                             buf,  ind->nsend[nzone+1]);
             index = ind->index;
             /* Add the received forces */
             n = 0;
-            for(i=0; i<ind->nsend[ncell]; i++)
+            for(i=0; i<ind->nsend[nzone]; i++)
             {
                 at0 = cgindex[index[i]];
                 at1 = cgindex[index[i]+1];
@@ -862,7 +871,7 @@ void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[])
                 }
             } 
         }
-        ncell /= 2;
+        nzone /= 2;
     }
 }
 
@@ -1811,7 +1820,7 @@ void write_dd_pdb(char *fn,gmx_step_t step,char *title,
         if (i < dd->comm->nat[ddnatZONE])
         {
             c = 0;
-            while (i >= dd->cgindex[dd->ncg_cell[c+1]])
+            while (i >= dd->cgindex[dd->comm->zones.cg_range[c+1]])
             {
                 c++;
             }
@@ -1819,11 +1828,11 @@ void write_dd_pdb(char *fn,gmx_step_t step,char *title,
         }
         else if (i < dd->comm->nat[ddnatVSITE])
         {
-            b = dd->ncell;
+            b = dd->comm->zones.n;
         }
         else
         {
-            b = dd->ncell + 1;
+            b = dd->comm->zones.n + 1;
         }
         fprintf(out,strlen(atomname)<4 ? format : format4,
                 "ATOM",(ii+1)%100000,
@@ -2172,14 +2181,17 @@ static bool receive_vir_ener(t_commrec *cr)
     return bReceive;
 }
 
-static void set_ncg_cell_home(gmx_domdec_t *dd)
+static void set_zones_ncg_home(gmx_domdec_t *dd)
 {
+    gmx_domdec_zones_t *zones;
     int i;
 
-    dd->ncg_cell[0] = 0;
-    for(i=1; i<dd->ncell+1; i++)
+    zones = &dd->comm->zones;
+
+    zones->cg_range[0] = 0;
+    for(i=1; i<zones->n+1; i++)
     {
-        dd->ncg_cell[i] = dd->ncg_home;
+        zones->cg_range[i] = dd->ncg_home;
     }
 }
 
@@ -2204,7 +2216,7 @@ static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
     dd->ncg_home = state->ncg_gl;
     dd->nat_home = nat;
 
-    set_ncg_cell_home(dd);
+    set_zones_ncg_home(dd);
 }
 
 static void dd_set_cginfo(t_forcerec *fr,int *index_gl,int cg0,int cg1,
@@ -2232,8 +2244,8 @@ static void dd_set_cginfo(t_forcerec *fr,int *index_gl,int cg0,int cg1,
 
 static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
 {
-    int cell,cell1,cg0,cg,cg_gl,a,a_gl;
-    int *cell2cg,*cell_ncg1,*index_gl,*gatindex;
+    int nzone,zone,zone1,cg0,cg,cg_gl,a,a_gl;
+    int *zone2cg,*zone_ncg1,*index_gl,*gatindex;
     gmx_ga2la_t *ga2la;
     char *bLocalCG;
 
@@ -2244,43 +2256,44 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
         dd->gatindex_nalloc = over_alloc_dd(dd->nat_tot);
         srenew(dd->gatindex,dd->gatindex_nalloc);
     }
-    
-    cell2cg    = dd->ncg_cell;
-    cell_ncg1  = dd->comm->cell_ncg1;
+
+    nzone      = dd->comm->zones.n;
+    zone2cg    = dd->comm->zones.cg_range;
+    zone_ncg1  = dd->comm->zone_ncg1;
     index_gl   = dd->index_gl;
     gatindex   = dd->gatindex;
 
-    if (cell2cg[1] != dd->ncg_home)
+    if (zone2cg[1] != dd->ncg_home)
     {
-        gmx_incons("dd->ncg_cell is not up to date");
+        gmx_incons("dd->ncg_zone is not up to date");
     }
     
     /* Make the local to global and global to local atom index */
     a = dd->cgindex[cg_start];
-    for(cell=0; cell<dd->ncell; cell++)
+    for(zone=0; zone<nzone; zone++)
     {
-        if (cell == 0)
+        if (zone == 0)
         {
             cg0 = cg_start;
         }
         else
         {
-            cg0 = cell2cg[cell];
+            cg0 = zone2cg[zone];
         }
-        for(cg=cg0; cg<cell2cg[cell+1]; cg++)
+        for(cg=cg0; cg<zone2cg[zone+1]; cg++)
         {
-            cell1 = cell;
-            if (cg - cg0 >= cell_ncg1[cell])
+            zone1 = zone;
+            if (cg - cg0 >= zone_ncg1[zone])
             {
-                /* Signal that this cg is from more than one cell away */
-                cell1 += dd->ncell;
+                /* Signal that this cg is from more than one zone away */
+                zone1 += nzone;
             }
             cg_gl = index_gl[cg];
             for(a_gl=gcgs_index[cg_gl]; a_gl<gcgs_index[cg_gl+1]; a_gl++)
             {
                 gatindex[a] = a_gl;
                 ga2la = &dd->ga2la[a_gl];
-                ga2la->cell = cell1;
+                ga2la->cell = zone1;
                 ga2la->a    = a++;
             }
         }
@@ -4915,9 +4928,10 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
     bool bZYX;
     int  d,dim,i,j,m;
     ivec tmp,s;
-    int  ncell,ncellp;
-    ivec dd_cp[DD_MAXICELL];
-    gmx_domdec_ns_ranges_t *icell;
+    int  nzone,nzonep;
+    ivec dd_zp[DD_MAXIZONE];
+    gmx_domdec_zones_t *zones;
+    gmx_domdec_ns_ranges_t *izone;
     
     for(d=0; d<dd->ndim; d++)
     {
@@ -4952,51 +4966,53 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
     switch (dd->ndim)
     {
     case 3:
-        ncell  = dd_c3n;
-        ncellp = dd_cp3n;
-        for(i=0; i<ncellp; i++)
+        nzone  = dd_z3n;
+        nzonep = dd_zp3n;
+        for(i=0; i<nzonep; i++)
         {
-            copy_ivec(dd_cp3[i],dd_cp[i]);
+            copy_ivec(dd_zp3[i],dd_zp[i]);
         }
         break;
     case 2:
-        ncell  = dd_c2n;
-        ncellp = dd_cp2n;
-        for(i=0; i<ncellp; i++)
+        nzone  = dd_z2n;
+        nzonep = dd_zp2n;
+        for(i=0; i<nzonep; i++)
         {
-            copy_ivec(dd_cp2[i],dd_cp[i]);
+            copy_ivec(dd_zp2[i],dd_zp[i]);
         }
         break;
     case 1:
-        ncell  = dd_c1n;
-        ncellp = dd_cp1n;
-        for(i=0; i<ncellp; i++)
+        nzone  = dd_z1n;
+        nzonep = dd_zp1n;
+        for(i=0; i<nzonep; i++)
         {
-            copy_ivec(dd_cp1[i],dd_cp[i]);
+            copy_ivec(dd_zp1[i],dd_zp[i]);
         }
         break;
     default:
         gmx_fatal(FARGS,"Can only do 1, 2 or 3D domain decomposition");
-        ncell = 0;
-        ncellp = 0;
+        nzone = 0;
+        nzonep = 0;
     }
-    
-    for(i=0; i<ncell; i++)
+
+    zones = &dd->comm->zones;
+
+    for(i=0; i<nzone; i++)
     {
         m = 0;
-        clear_ivec(dd->shift[i]);
+        clear_ivec(zones->shift[i]);
         for(d=0; d<dd->ndim; d++)
         {
-            dd->shift[i][dd->dim[d]] = dd_co[i][m++];
+            zones->shift[i][dd->dim[d]] = dd_zo[i][m++];
         }
     }
     
-    dd->ncell  = ncell;
-    for(i=0; i<ncell; i++)
+    zones->n = nzone;
+    for(i=0; i<nzone; i++)
     {
         for(d=0; d<DIM; d++)
         {
-            s[d] = dd->ci[d] - dd->shift[i][d];
+            s[d] = dd->ci[d] - zones->shift[i][d];
             if (s[d] < 0)
             {
                 s[d] += dd->nc[d];
@@ -5007,52 +5023,52 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
             }
         }
     }
-    dd->nicell = ncellp;
-    for(i=0; i<dd->nicell; i++)
+    zones->nizone = nzonep;
+    for(i=0; i<zones->nizone; i++)
     {
-        if (dd_cp[i][0] != i)
+        if (dd_zp[i][0] != i)
         {
             gmx_fatal(FARGS,"Internal inconsistency in the dd grid setup");
         }
-        icell = &dd->icell[i];
-        icell->j0 = dd_cp[i][1];
-        icell->j1 = dd_cp[i][2];
+        izone = &zones->izone[i];
+        izone->j0 = dd_zp[i][1];
+        izone->j1 = dd_zp[i][2];
         for(dim=0; dim<DIM; dim++)
         {
             if (dd->nc[dim] == 1)
             {
                 /* All shifts should be allowed */
-                icell->shift0[dim] = -1;
-                icell->shift1[dim] = 1;
+                izone->shift0[dim] = -1;
+                izone->shift1[dim] = 1;
             }
             else
             {
                 /*
-                  icell->shift0[d] = 0;
-                  icell->shift1[d] = 0;
-                  for(j=icell->j0; j<icell->j1; j++) {
+                  izone->shift0[d] = 0;
+                  izone->shift1[d] = 0;
+                  for(j=izone->j0; j<izone->j1; j++) {
                   if (dd->shift[j][d] > dd->shift[i][d])
-                  icell->shift0[d] = -1;
+                  izone->shift0[d] = -1;
                   if (dd->shift[j][d] < dd->shift[i][d])
-                  icell->shift1[d] = 1;
+                  izone->shift1[d] = 1;
                   }
                 */
                 
                 int shift_diff;
                 
                 /* Assume the shift are not more than 1 cell */
-                icell->shift0[dim] = 1;
-                icell->shift1[dim] = -1;
-                for(j=icell->j0; j<icell->j1; j++)
+                izone->shift0[dim] = 1;
+                izone->shift1[dim] = -1;
+                for(j=izone->j0; j<izone->j1; j++)
                 {
-                    shift_diff = dd->shift[j][dim] - dd->shift[i][dim];
-                    if (shift_diff < icell->shift0[dim])
+                    shift_diff = zones->shift[j][dim] - zones->shift[i][dim];
+                    if (shift_diff < izone->shift0[dim])
                     {
-                        icell->shift0[dim] = shift_diff;
+                        izone->shift0[dim] = shift_diff;
                     }
-                    if (shift_diff > icell->shift1[dim])
+                    if (shift_diff > izone->shift1[dim])
                     {
-                        icell->shift1[dim] = shift_diff;
+                        izone->shift1[dim] = shift_diff;
                     }
                 }
             }
@@ -6573,19 +6589,19 @@ static void merge_cg_buffers(int ncell,
 }
 
 static void make_cell2at_index(gmx_domdec_comm_dim_t *cd,
-                               int ncell,int cg0,const int *cgindex)
+                               int nzone,int cg0,const int *cgindex)
 {
-    int cg,cell,p;
+    int cg,zone,p;
     
     /* Store the atom block boundaries for easy copying of communication buffers
      */
     cg = cg0;
-    for(cell=0; cell<ncell; cell++)
+    for(zone=0; zone<nzone; zone++)
     {
         for(p=0; p<cd->np; p++) {
-            cd->ind[p].cell2at0[cell] = cgindex[cg];
-            cg += cd->ind[p].nrecv[cell];
-            cd->ind[p].cell2at1[cell] = cgindex[cg];
+            cd->ind[p].cell2at0[zone] = cgindex[cg];
+            cg += cd->ind[p].nrecv[zone];
+            cd->ind[p].cell2at1[zone] = cgindex[cg];
         }
     }
 }
@@ -6610,10 +6626,12 @@ static bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
 static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                                    matrix box,t_forcerec *fr)
 {
-    int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot,ncell,cell,celli,cg0,cg1;
+    int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot;
+    int nzone,zone,zonei,cg0,cg1;
     int c,i,j,cg,cg_gl,nrcg;
-    int *ncg_cell,pos_cg,*index_gl,*cgindex,*recv_i;
+    int *zone_cg_range,pos_cg,*index_gl,*cgindex,*recv_i;
     gmx_domdec_comm_t *comm;
+    gmx_domdec_zones_t *zones;
     gmx_domdec_comm_dim_t *cd;
     gmx_domdec_ind_t *ind;
     bool bBondComm,bDist2B,bDistMB,bDistMB_pulse,bDistBonded,bScrew;
@@ -6665,6 +6683,8 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
     {
         fprintf(debug,"bBondComm %d, r_bc %f\n",bBondComm,sqrt(r_bcomm2));
     }
+
+    zones = &comm->zones;
     
     dim0 = dd->dim[0];
     /* The first dimension is equal for all cells */
@@ -6702,15 +6722,15 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
             if (dd->bGridJump)
             {
                 /* Use the maximum of the i-cells that see a j-cell */
-                for(i=0; i<dd->nicell; i++)
+                for(i=0; i<zones->nizone; i++)
                 {
-                    for(j=dd->icell[i].j0; j<dd->icell[i].j1; j++)
+                    for(j=zones->izone[i].j0; j<zones->izone[i].j1; j++)
                     {
                         if (j >= 4)
                         {
                             corner[2][j-4] =
                                 max(corner[2][j-4],
-                                    comm->zone_d2[dd->shift[i][dim0]][dd->shift[i][dim1]].mch0);
+                                    comm->zone_d2[zones->shift[i][dim0]][zones->shift[i][dim1]].mch0);
                         }
                     }
                 }
@@ -6773,17 +6793,17 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
         v_1 = comm->v[dim1];
     }
     
-    ncg_cell = dd->ncg_cell;
+    zone_cg_range = zones->cg_range;
     index_gl = dd->index_gl;
     cgindex  = dd->cgindex;
     
-    ncg_cell[0]        = 0;
-    ncg_cell[1]        = dd->ncg_home;
-    comm->cell_ncg1[0] = dd->ncg_home;
+    zone_cg_range[0]   = 0;
+    zone_cg_range[1]   = dd->ncg_home;
+    comm->zone_ncg1[0] = dd->ncg_home;
     pos_cg             = dd->ncg_home;
     
     nat_tot = dd->nat_home;
-    ncell = 1;
+    nzone = 1;
     for(dim_ind=0; dim_ind<dd->ndim; dim_ind++)
     {
         dim = dd->dim[dim_ind];
@@ -6806,7 +6826,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
             ind = &cd->ind[p];
             nsend = 0;
             nat = 0;
-            for(cell=0; cell<ncell; cell++)
+            for(zone=0; zone<nzone; zone++)
             {
                 if (tric_dist[dim_ind] && dim_ind > 0)
                 {
@@ -6826,7 +6846,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                                  * and the cell plane is tilted forward
                                  * in dimension i, skip this coupling.
                                  */
-                                if (!(dd->shift[ncell+cell][i] &&
+                                if (!(zones->shift[nzone+zone][i] &&
                                       comm->v[dimd][i][dimd] >= 0))
                                 {
                                     sf2_round[dimd] +=
@@ -6838,23 +6858,23 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                     }
                 }
 
-                celli = cell_perm[dim_ind][cell];
+                zonei = zone_perm[dim_ind][zone];
                 if (p == 0)
                 {
-                    /* Here we permutate the cells to obtain a convenient order
+                    /* Here we permutate the zones to obtain a convenient order
                      * for neighbor searching
                      */
-                    cg0 = ncg_cell[celli];
-                    cg1 = ncg_cell[celli+1];
+                    cg0 = zone_cg_range[zonei];
+                    cg1 = zone_cg_range[zonei+1];
                 }
                 else
                 {
                     /* Look only at the cg's received in the previous grid pulse
                      */
-                    cg1 = ncg_cell[ncell+cell+1];
-                    cg0 = cg1 - cd->ind[p-1].nrecv[cell];
+                    cg1 = zone_cg_range[nzone+zone+1];
+                    cg0 = cg1 - cd->ind[p-1].nrecv[zone];
                 }
-                ind->nsend[cell] = 0;
+                ind->nsend[zone] = 0;
                 for(cg=cg0; cg<cg1; cg++)
                 {
                     r2  = 0;
@@ -6862,7 +6882,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                     if (tric_dist[dim_ind] == 0)
                     {
                         /* Rectangular direction, easy */
-                        r = cg_cm[cg][dim] - corner[dim_ind][cell];
+                        r = cg_cm[cg][dim] - corner[dim_ind][zone];
                         if (r > 0)
                         {
                             r2 += r*r;
@@ -6878,7 +6898,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                         /* Rounding gives at most a 16% reduction
                          * in communicated atoms
                          */
-                        if (dim_ind >= 1 && (celli == 1 || celli == 2))
+                        if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
                         {
                             r = cg_cm[cg][dim0] - corner_round_0;
                             /* This is the first dimension, so always r >= 0 */
@@ -6888,9 +6908,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                                 rb2 += r*r;
                             }
                         }
-                        if (dim_ind == 2 && (celli == 2 || celli == 3))
+                        if (dim_ind == 2 && (zonei == 2 || zonei == 3))
                         {
-                            r = cg_cm[cg][dim1] - corner_round_1[cell];
+                            r = cg_cm[cg][dim1] - corner_round_1[zone];
                             if (r > 0)
                             {
                                 r2 += r*r;
@@ -6913,7 +6933,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                         /* Rounding, conservative as the skew_fac multiplication
                          * will slightly underestimate the distance.
                          */
-                        if (dim_ind >= 1 && (celli == 1 || celli == 2))
+                        if (dim_ind >= 1 && (zonei == 1 || zonei == 2))
                         {
                             rn[dim0] = cg_cm[cg][dim0] - corner_round_0;
                             for(i=dim0+1; i<DIM; i++)
@@ -6942,9 +6962,9 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                                 }
                             }
                         }
-                        if (dim_ind == 2 && (celli == 2 || celli == 3))
+                        if (dim_ind == 2 && (zonei == 2 || zonei == 3))
                         {
-                            rn[dim1] += cg_cm[cg][dim1] - corner_round_1[cell];
+                            rn[dim1] += cg_cm[cg][dim1] - corner_round_1[zone];
                             tric_sh = 0;
                             for(i=dim1+1; i<DIM; i++)
                             {
@@ -6988,7 +7008,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                             }
                         }
                         /* The distance along the communication direction */
-                        rn[dim] += cg_cm[cg][dim] - corner[dim_ind][cell];
+                        rn[dim] += cg_cm[cg][dim] - corner[dim_ind][zone];
                         tric_sh = 0;
                         for(i=dim+1; i<DIM; i++)
                         {
@@ -7001,7 +7021,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                             /* Take care of coupling of the distances
                              * to the planes along dim0 and dim1 through dim2.
                              */
-                            if (dim_ind == 1 && celli == 1)
+                            if (dim_ind == 1 && zonei == 1)
                             {
                                 r2 -= rn[dim0]*rn[dim]*skew_fac_01;
                             }
@@ -7016,7 +7036,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                                 /* Take care of coupling of the distances
                                  * to the planes along dim0 and dim1 through dim2.
                                  */
-                                if (dim_ind == 1 && celli == 1)
+                                if (dim_ind == 1 && zonei == 1)
                                 {
                                     rb2 -= rb[dim0]*rb[dim]*skew_fac_01;
                                 }
@@ -7046,7 +7066,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                         }
                         ind->index[nsend] = cg;
                         comm->buf_int[nsend] = index_gl[cg];
-                        ind->nsend[cell]++;
+                        ind->nsend[zone]++;
                         if (nsend+1 > comm->nalloc_vr)
                         {
                             comm->nalloc_vr = over_alloc_large(nsend+1);
@@ -7073,18 +7093,18 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                     }
                 }
             }
-            ind->nsend[ncell]   = nsend;
-            ind->nsend[ncell+1] = nat;
+            ind->nsend[nzone]   = nsend;
+            ind->nsend[nzone+1] = nat;
             /* Communicate the number of cg's and atoms to receive */
             dd_sendrecv_int(dd, dim_ind, dddirBackward,
-                            ind->nsend, ncell+2,
-                            ind->nrecv, ncell+2);
+                            ind->nsend, nzone+2,
+                            ind->nrecv, nzone+2);
             if (p > 0)
             {
-                /* We can receive in place if only the last cell is not empty */
-                for(cell=0; cell<ncell-1; cell++)
+                /* We can receive in place if only the last zone is not empty */
+                for(zone=0; zone<nzone-1; zone++)
                 {
-                    if (ind->nrecv[cell] > 0)
+                    if (ind->nrecv[zone] > 0)
                     {
                         cd->bInPlace = FALSE;
                     }
@@ -7092,13 +7112,13 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                 if (!cd->bInPlace)
                 {
                     /* The int buffer is only required here for the cg indices */
-                    if (ind->nrecv[ncell] > comm->nalloc_int2)
+                    if (ind->nrecv[nzone] > comm->nalloc_int2)
                     {
-                        comm->nalloc_int2 = over_alloc_dd(ind->nrecv[ncell]);
+                        comm->nalloc_int2 = over_alloc_dd(ind->nrecv[nzone]);
                         srenew(comm->buf_int2,comm->nalloc_int2);
                     }
                     /* The rvec buffer is also required for atom buffers in dd_move_x */
-                    i = max(cd->ind[0].nrecv[ncell+1],ind->nrecv[ncell+1]);
+                    i = max(cd->ind[0].nrecv[nzone+1],ind->nrecv[nzone+1]);
                     if (i > comm->nalloc_vr2)
                     {
                         comm->nalloc_vr2 = over_alloc_dd(i);
@@ -7108,10 +7128,10 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
             }
             
             /* Make space for the global cg indices */
-            if (pos_cg + ind->nrecv[ncell] > dd->cg_nalloc
+            if (pos_cg + ind->nrecv[nzone] > dd->cg_nalloc
                 || dd->cg_nalloc == 0)
             {
-                dd->cg_nalloc = over_alloc_dd(pos_cg + ind->nrecv[ncell]);
+                dd->cg_nalloc = over_alloc_dd(pos_cg + ind->nrecv[nzone]);
                 srenew(index_gl,dd->cg_nalloc);
                 srenew(cgindex,dd->cg_nalloc+1);
             }
@@ -7126,12 +7146,12 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
             }
             dd_sendrecv_int(dd, dim_ind, dddirBackward,
                             comm->buf_int, nsend,
-                            recv_i,        ind->nrecv[ncell]);
+                            recv_i,        ind->nrecv[nzone]);
 
             /* Make space for cg_cm */
-            if (pos_cg + ind->nrecv[ncell] > fr->cg_nalloc)
+            if (pos_cg + ind->nrecv[nzone] > fr->cg_nalloc)
             {
-                dd_realloc_fr_cg(fr,pos_cg + ind->nrecv[ncell]);
+                dd_realloc_fr_cg(fr,pos_cg + ind->nrecv[nzone]);
                 cg_cm = fr->cg_cm;
             }
             /* Communicate cg_cm */
@@ -7145,15 +7165,15 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
             }
             dd_sendrecv_rvec(dd, dim_ind, dddirBackward,
                              comm->buf_vr, nsend,
-                             recv_vr,      ind->nrecv[ncell]);
+                             recv_vr,      ind->nrecv[nzone]);
             
             /* Make the charge group index */
             if (cd->bInPlace)
             {
-                cell = (p == 0 ? 0 : ncell - 1);
-                while (cell < ncell)
+                zone = (p == 0 ? 0 : nzone - 1);
+                while (zone < nzone)
                 {
-                    for(cg=0; cg<ind->nrecv[cell]; cg++)
+                    for(cg=0; cg<ind->nrecv[zone]; cg++)
                     {
                         cg_gl = index_gl[pos_cg];
                         nrcg = gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
@@ -7170,10 +7190,10 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                     }
                     if (p == 0)
                     {
-                        comm->cell_ncg1[ncell+cell] = ind->nrecv[cell];
+                        comm->zone_ncg1[nzone+zone] = ind->nrecv[zone];
                     }
-                    cell++;
-                    ncg_cell[ncell+cell] = pos_cg;
+                    zone++;
+                    zone_cg_range[nzone+zone] = pos_cg;
                 }
             }
             else
@@ -7181,24 +7201,24 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                 /* This part of the code is never executed with bBondComm,
                  * therefore we do not need to set cginfo here.
                  */
-                merge_cg_buffers(ncell,cd,p,ncg_cell,
+                merge_cg_buffers(nzone,cd,p,zone_cg_range,
                                  index_gl,recv_i,cg_cm,recv_vr,
                                  gcgs_index,cgindex);
-                pos_cg += ind->nrecv[ncell];
+                pos_cg += ind->nrecv[nzone];
             }
-            nat_tot += ind->nrecv[ncell+1];
+            nat_tot += ind->nrecv[nzone+1];
         }
         if (!cd->bInPlace)
         {
             /* Store the atom block for easy copying of communication buffers */
-            make_cell2at_index(cd,ncell,ncg_cell[ncell],cgindex);
+            make_cell2at_index(cd,nzone,zone_cg_range[nzone],cgindex);
         }
-        ncell += ncell;
+        nzone += nzone;
     }
     dd->index_gl = index_gl;
     dd->cgindex  = cgindex;
     
-    dd->ncg_tot = ncg_cell[dd->ncell];
+    dd->ncg_tot = zone_cg_range[zones->n];
     dd->nat_tot = nat_tot;
     comm->nat[ddnatHOME] = dd->nat_home;
     for(i=ddnatZONE; i<ddnatNR; i++)
@@ -7213,24 +7233,24 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
 
     if (debug)
     {
-        fprintf(debug,"Finished setting up DD communication, cells:");
-        for(c=0; c<dd->ncell; c++)
+        fprintf(debug,"Finished setting up DD communication, zones:");
+        for(c=0; c<zones->n; c++)
         {
-            fprintf(debug," %d",dd->ncg_cell[c+1]-dd->ncg_cell[c]);
+            fprintf(debug," %d",zones->cg_range[c+1]-zones->cg_range[c]);
         }
         fprintf(debug,"\n");
     }
 }
 
-static void set_cg_boundaries(gmx_domdec_t *dd)
+static void set_cg_boundaries(gmx_domdec_zones_t *zones)
 {
     int c;
     
-    for(c=0; c<dd->nicell; c++)
+    for(c=0; c<zones->nizone; c++)
     {
-        dd->icell[c].cg1  = dd->ncg_cell[c+1];
-        dd->icell[c].jcg0 = dd->ncg_cell[dd->icell[c].j0];
-        dd->icell[c].jcg1 = dd->ncg_cell[dd->icell[c].j1];
+        zones->izone[c].cg1  = zones->cg_range[c+1];
+        zones->izone[c].jcg0 = zones->cg_range[zones->izone[c].j0];
+        zones->izone[c].jcg1 = zones->cg_range[zones->izone[c].j1];
     }
 }
 
@@ -7804,8 +7824,8 @@ void dd_partition_system(FILE            *fplog,
         /* Fill the ns grid with the home cell,
          * so we can sort with the indices.
          */
-        set_ncg_cell_home(dd);
-        fill_grid(fplog,dd,
+        set_zones_ncg_home(dd);
+        fill_grid(fplog,&comm->zones,
                   fr->ns.grid,state_local->box,0,dd->ncg_home,fr->cg_cm);
         
         if (debug)
@@ -7825,7 +7845,7 @@ void dd_partition_system(FILE            *fplog,
     make_dd_indices(dd,cgs_gl->index,cg0);
 
     /* Set the charge group boundaries for neighbor searching */
-    set_cg_boundaries(dd);
+    set_cg_boundaries(&comm->zones);
     
     /*
       write_dd_pdb("dd_home",step,"dump",&top_global->atoms,cr,dd->nat_home,
@@ -7837,7 +7857,7 @@ void dd_partition_system(FILE            *fplog,
     {
         np[dd->dim[i]] = comm->cd[i].np;
     }
-    dd_make_local_top(fplog,dd,state_local->box,
+    dd_make_local_top(fplog,dd,&comm->zones,state_local->box,
                       comm->cellsize_min,np,
                       fr,vsite,top_global,top_local);
     

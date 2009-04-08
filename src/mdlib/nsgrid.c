@@ -413,14 +413,14 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
 }
 
 void fill_grid(FILE *log,
-	       gmx_domdec_t *dd,
+	       gmx_domdec_zones_t *dd_zones,
 	       t_grid *grid,matrix box,
 	       int cg0,int cg1,rvec cg_cm[])
 {
   int    *cell_index=grid->cell_index;
   int    nrx,nry,nrz;
   rvec   n_box,offset;
-  int    cell,ccg0,ccg1,cg,d,not_used;
+  int    zone,ccg0,ccg1,cg,d,not_used;
   ivec   shift0,b0,b1,ind;
   bool   bUse;
   
@@ -444,7 +444,7 @@ void fill_grid(FILE *log,
    * DEBUG_PBC
    */
   debug_gmx();
-  if (dd == NULL) {
+  if (dd_zones == NULL) {
     for (cg=cg0; cg<cg1; cg++) {
       for(d=0; d<DIM; d++) {
 	ind[d] = cg_cm[cg][d]*n_box[d];
@@ -462,15 +462,15 @@ void fill_grid(FILE *log,
     }
   } else {
     copy_rvec(grid->cell_offset,offset);
-    for(cell=0; cell<dd->ncell; cell++) {
-      ccg0 = dd->ncg_cell[cell];
-      ccg1 = dd->ncg_cell[cell+1];
+    for(zone=0; zone<dd_zones->n; zone++) {
+      ccg0 = dd_zones->cg_range[zone];
+      ccg1 = dd_zones->cg_range[zone+1];
       if (ccg1 <= cg0 || ccg0 >= cg1)
 	continue;
 
-      /* Determine the ns grid cell limits for this DD cell */
+      /* Determine the ns grid cell limits for this DD zone */
       for(d=0; d<DIM; d++) {
-	shift0[d] = dd->shift[cell][d];
+	shift0[d] = dd_zones->shift[zone][d];
 	if (grid->ncpddc[d] == 0) {
 	  b0[d] = 0;
 	  b1[d] = grid->n[d];
@@ -488,7 +488,7 @@ void fill_grid(FILE *log,
 
       not_used = ci_not_used(grid->n);
 
-      /* Put all the charge groups of this DD cell on the grid */
+      /* Put all the charge groups of this DD zone on the grid */
       for(cg=ccg0; cg<ccg1; cg++) {
 
 	if (cell_index[cg] == -1) {
@@ -502,7 +502,7 @@ void fill_grid(FILE *log,
 	  ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
 	  /* Here we have to correct for rounding problems,
 	   * as this cg_cm to cell index operation is not necessarily
-	   * binary identical to the operation for the DD cell assignment
+	   * binary identical to the operation for the DD zone assignment
 	   * and therefore a cg could end up in an unused grid cell.
 	   */
 	  if (ind[d] < b0[d]) {
@@ -511,7 +511,7 @@ void fill_grid(FILE *log,
 	    if (shift0[d] == 0) {
 	      ind[d]--;
 	    } else {
-	      /* Charge groups in this DD cell further away than the cut-off
+	      /* Charge groups in this DD zone further away than the cut-off
 	       * in direction do not participate in non-bonded interactions.
 	       */
 	      bUse = FALSE;

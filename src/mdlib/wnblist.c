@@ -56,8 +56,9 @@
 
 static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
 {
-  int i,nii,ii,j,ci,cj0,cj1,aj,cj,nj;
-  int ca1[DD_MAXCELL],np[DD_MAXCELL];
+  int i,nii,ii,j,zi,zj0,zj1,aj,zj,nj;
+  int ca1[DD_MAXZONE],np[DD_MAXZONE];
+  gmx_domdec_zones_t *dd_zones;
 
   if (nblist->nri > 0) {  
     fprintf(out,"il_name: %s  Solvent opt: %s\n",
@@ -65,27 +66,29 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
             enlist_names[nblist->enlist]);
     fprintf(out,"nri: %d  npair: %d\n",nblist->nri,nblist->nrj);
     if (dd) {
-      for(ci=0; ci<dd->ncell; ci++)
-	ca1[ci] = dd->cgindex[dd->ncg_cell[ci+1]];
+      dd_zones = domdec_zones(dd);
+
+      for(zi=0; zi<dd_zones->n; zi++)
+	ca1[zi] = dd->cgindex[dd_zones->cg_range[zi+1]];
       i = 0;
-      for(ci=0; ci<dd->nicell; ci++) {
-	cj0 = dd->icell[ci].j0;
-	cj1 = dd->icell[ci].j1;
-	for(cj=cj0; cj<cj1; cj++)
-	  np[cj] = 0;
-	while(i < nblist->nri && nblist->iinr[i] < ca1[ci]) {
+      for(zi=0; zi<dd_zones->nizone; zi++) {
+	zj0 = dd_zones->izone[zi].j0;
+	zj1 = dd_zones->izone[zi].j1;
+	for(zj=zj0; zj<zj1; zj++)
+	  np[zj] = 0;
+	while(i < nblist->nri && nblist->iinr[i] < ca1[zi]) {
 	  for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++) {
 	    aj = nblist->jjnr[j];
-	    cj = cj0;
-	    while (aj >= ca1[cj])
-	      cj++;
-	    np[cj]++;
+	    zj = zj0;
+	    while (aj >= ca1[zj])
+	      zj++;
+	    np[zj]++;
 	  }
 	  i++;
 	}
-	fprintf(out,"DD cell %d:",ci);
-	for(cj=cj0; cj<cj1; cj++)
-	  fprintf(out," %d %d",cj,np[cj]);
+	fprintf(out,"DD zone %d:",zi);
+	for(zj=zj0; zj<zj1; zj++)
+	  fprintf(out," %d %d",zj,np[zj]);
 	fprintf(out,"\n");
       }
     }
