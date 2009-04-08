@@ -777,31 +777,38 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
 				    repl_ex_nst,repl_ex_seed);
 
-  if (!ir->bContinuation && !bRerunMD) {
-    if (mdatoms->cFREEZE && (state->flags & (1<<estV))) {
-      /* Set the velocities of frozen particles to zero */
-      for(i=mdatoms->start; i<mdatoms->homenr; i++) {
-	for(m=0; m<DIM; m++) {
-	  if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m]) {
-	    state->v[i][m] = 0;
-	  }
-	}
-      }
+    if (!ir->bContinuation && !bRerunMD)
+    {
+        if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
+        {
+            /* Set the velocities of frozen particles to zero */
+            for(i=mdatoms->start; i<mdatoms->homenr; i++)
+            {
+                for(m=0; m<DIM; m++)
+                {
+                    if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m])
+                    {
+                        state->v[i][m] = 0;
+                    }
+                }
+            }
+        }
+        if (constr)
+        {
+            /* Constrain the initial coordinates and velocities */
+            do_constrain_first(fplog,constr,ir,mdatoms,state,
+                               graph,cr,nrnb,fr,&top->idef);
+        }
+        if (vsite)
+        {
+            /* Construct the virtual sites for the initial configuration */
+            construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
+                             top->idef.iparams,top->idef.il,
+                             fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+        }
     }
-    if (constr) {
-      /* Constrain the initial coordinates and velocities */
-      do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
-		    graph,cr,nrnb,fr,&top->idef);
-    }
-    if (vsite) {
-      /* Construct the virtual sites for the initial configuration */
-      construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
-		       top->idef.iparams,top->idef.il,
-		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
-    }
-  }
-
-  debug_gmx();
+    
+    debug_gmx();
 
   if (Flags & MD_READ_EKIN)
   {

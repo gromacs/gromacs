@@ -232,11 +232,11 @@ extern void update_time(void);
 extern double node_time(void);
 /* Return the node time so far in seconds. */
 
-extern void do_shakefirst(FILE *log,gmx_constr_t constr,
-			  t_inputrec *inputrec,t_mdatoms *md,
-			  t_state *state,rvec buf[],rvec f[],
-			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			  t_forcerec *fr,t_idef *idef);
+extern void do_constrain_first(FILE *log,gmx_constr_t constr,
+			       t_inputrec *inputrec,t_mdatoms *md,
+			       t_state *state,
+			       t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
+			       t_forcerec *fr,t_idef *idef);
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,

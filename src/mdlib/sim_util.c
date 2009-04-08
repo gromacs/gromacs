@@ -527,34 +527,41 @@ void do_force(FILE *fplog,t_commrec *cr,
       dd_cycles_add(cr->dd,cycles_force,ddCyclF);
   }
   
-  if (bDoForces) {
-    /* Compute forces due to electric field */
-    calc_f_el(MASTER(cr) ? field : NULL,
-	      start,homenr,mdatoms->chargeA,x,f,inputrec->ex,inputrec->et,t);
-    
-    /* When using PME/Ewald we compute the long range virial there.
-     * otherwise we do it based on long range forces from twin range
-     * cut-off based calculation (or not at all).
-     */
-    
-    /* Communicate the forces */
-    if (PAR(cr)) {
-      wallcycle_start(wcycle,ewcMOVEF);
-      if (DOMAINDECOMP(cr)) {
-	dd_move_f(cr->dd,f,buf,fr->fshift);
-	/* Position restraint do not introduce inter-cg forces.
-	 * When we do not calculate the virial, fr->f_novirsum = f.
-	 */
-	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
-	    (flags & GMX_FORCE_VIRIAL)) {
-	  dd_move_f(cr->dd,fr->f_novirsum,buf,NULL);
-	}
-      } else {
-	move_f(fplog,cr,GMX_LEFT,GMX_RIGHT,f,buf,nrnb);
-      }
-      wallcycle_stop(wcycle,ewcMOVEF);
+    if (bDoForces)
+    {
+        /* Compute forces due to electric field */
+        calc_f_el(MASTER(cr) ? field : NULL,
+                  start,homenr,mdatoms->chargeA,x,f,
+                  inputrec->ex,inputrec->et,t);
+        
+        /* When using PME/Ewald we compute the long range virial there.
+         * otherwise we do it based on long range forces from twin range
+         * cut-off based calculation (or not at all).
+         */
+        
+        /* Communicate the forces */
+        if (PAR(cr))
+        {
+            wallcycle_start(wcycle,ewcMOVEF);
+            if (DOMAINDECOMP(cr))
+            {
+                dd_move_f(cr->dd,f,buf,fr->fshift);
+                /* Position restraint do not introduce inter-cg forces.
+                 * When we do not calculate the virial, fr->f_novirsum = f.
+                 */
+                if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
+                    (flags & GMX_FORCE_VIRIAL))
+                {
+                    dd_move_f(cr->dd,fr->f_novirsum,buf,NULL);
+                }
+            }
+            else
+            {
+                pd_move_f(cr,f,nrnb);
+            }
+            wallcycle_stop(wcycle,ewcMOVEF);
+        }
     }
-  }
 
   if (bDoForces) {
     /* If we have NoVirSum forces, but we do not calculate the virial,
@@ -692,90 +699,125 @@ double node_time(void)
   return runtime;
 }
 
-void do_shakefirst(FILE *fplog,gmx_constr_t constr,
-		   t_inputrec *inputrec,t_mdatoms *md,
-		   t_state *state,rvec buf[],rvec f[],
-		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-		   t_forcerec *fr,t_idef *idef)
+void do_constrain_first(FILE *fplog,gmx_constr_t constr,
+                        t_inputrec *inputrec,t_mdatoms *md,
+                        t_state *state,
+                        t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
+                        t_forcerec *fr,t_idef *idef)
 {
-  int    i,m,start,end,step;
-  double mass,tmass,vcm[4];
-  real   dt=inputrec->delta_t;
-  real   dvdlambda;
-
-  start = md->start;
-  end   = md->homenr + start;
-  if (debug)
-    fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
-	    start,md->homenr,end);
-  /* Do a first SHAKE to reset particles... */
-  step = inputrec->init_step;
-  if (fplog)
-    fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
-  dvdlambda = 0;
-  constrain(NULL,TRUE,FALSE,constr,idef,
-	    inputrec,cr,step,0,md,
-	    state->x,state->x,NULL,
-	    state->box,state->lambda,&dvdlambda,
-	    NULL,NULL,nrnb,econqCoord);
-
-  if (EI_STATE_VELOCITY(inputrec->eI)) {
-    for(i=start; (i<end); i++) {
-      for(m=0; (m<DIM); m++) {
-	/* Reverse the velocity */
-	state->v[i][m] = -state->v[i][m];
-	/* Store the position at t-dt in buf */
-	buf[i][m] = state->x[i][m] + dt*state->v[i][m];
-      }
-    }
+    int    i,m,start,end;
+    gmx_step_t step;
+    double mass,tmass,vcm[4];
+    real   dt=inputrec->delta_t;
+    real   dvdlambda;
+    rvec   *xcon;
+    char   buf[22];
     
-    /* Shake the positions at t=-dt with the positions at t=0
-     * as reference coordinates.
-     */
+    start = md->start;
+    end   = md->homenr + start;
+    if (debug)
+    {
+        fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
+                start,md->homenr,end);
+    }
+    snew(xcon,end);
+
+    /* Do a first constraining to reset particles... */
+    step = inputrec->init_step;
     if (fplog)
-      fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
-	      step);
+    {
+        fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
+                gmx_step_str(step,buf));
+    }
     dvdlambda = 0;
     constrain(NULL,TRUE,FALSE,constr,idef,
-	      inputrec,cr,step,-1,md,
-	      state->x,buf,NULL,
-	      state->box,state->lambda,&dvdlambda,
-	      state->v,NULL,nrnb,econqCoord);
+              inputrec,cr,step,0,md,
+              state->x,state->x,NULL,
+              state->box,state->lambda,&dvdlambda,
+              NULL,NULL,nrnb,econqCoord);
     
-    for(m=0; (m<4); m++)
-      vcm[m] = 0;
-    for(i=start; i<end; i++) {
-      mass = md->massT[i];
-      for(m=0; m<DIM; m++) {
-	/* Re-reverse the velocities */
-	state->v[i][m] = -state->v[i][m];
-	vcm[m] += state->v[i][m]*mass;
-      }
-      vcm[3] += mass;
-    }
+    if (EI_STATE_VELOCITY(inputrec->eI)) {
+        for(i=start; (i<end); i++) {
+            for(m=0; (m<DIM); m++) {
+                /* Reverse the velocity */
+                state->v[i][m] = -state->v[i][m];
+                /* Store the position at t-dt in xcon */
+                xcon[i][m] = state->x[i][m] + dt*state->v[i][m];
+            }
+        }
+        
+        /* Constrain the positions at t=-dt with the positions at t=0
+         * as reference coordinates.
+         */
+        if (fplog)
+        {
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
+                    gmx_step_str(step,buf));
+        }
+        dvdlambda = 0;
+        constrain(NULL,TRUE,FALSE,constr,idef,
+                  inputrec,cr,step,-1,md,
+                  state->x,xcon,NULL,
+                  state->box,state->lambda,&dvdlambda,
+                  state->v,NULL,nrnb,econqCoord);
     
-    if (inputrec->nstcomm != 0 || debug) {
-      /* Compute the global sum of vcm */
-      if (debug)
-	fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-		" total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-      if (PAR(cr))
-	gmx_sumd(4,vcm,cr);
-      tmass = vcm[3];
-      for(m=0; (m<DIM); m++)
-	vcm[m] /= tmass;
-      if (debug) 
-	fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-		" total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-      if (inputrec->nstcomm != 0) {
-	/* Now we have the velocity of center of mass, let's remove it */
-	for(i=start; (i<end); i++) {
-	  for(m=0; (m<DIM); m++)
-	    state->v[i][m] -= vcm[m];
-	}
-      }
+        sfree(xcon);
+
+        for(m=0; (m<4); m++)
+        {
+            vcm[m] = 0;
+        }
+        for(i=start; i<end; i++)
+        {
+            mass = md->massT[i];
+            for(m=0; m<DIM; m++)
+            {
+                /* Re-reverse the velocities */
+                state->v[i][m] = -state->v[i][m];
+                vcm[m] += state->v[i][m]*mass;
+            }
+            vcm[3] += mass;
+        }
+        
+        if (inputrec->nstcomm != 0 || debug)
+        {
+            /* Compute the global sum of vcm */
+            if (debug)
+            {
+                fprintf(debug,
+                        "vcm: %8.3f  %8.3f  %8.3f,"
+                        " total mass = %12.5e\n",
+                        vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
+            }
+            if (PAR(cr))
+            {
+                gmx_sumd(4,vcm,cr);
+            }
+            tmass = vcm[3];
+            for(m=0; (m<DIM); m++)
+            {
+                vcm[m] /= tmass;
+            }
+            if (debug)
+            {
+                fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                        " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
+            }
+            if (inputrec->nstcomm != 0)
+            {
+                /* Now we have the velocity of center of mass,
+                 * let's remove it.
+                 */
+                for(i=start; (i<end); i++)
+                {
+                    for(m=0; (m<DIM); m++)
+                    {
+                        state->v[i][m] -= vcm[m];
+                    }
+                }
+            }
+        }
     }
-  }
 }
 
 static void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)

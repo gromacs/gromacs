@@ -51,6 +51,7 @@
 #include "splitter.h"
 #include "gmx_random.h"
 #include "mtop_util.h"
+#include "mvdata.h"
 
 typedef struct gmx_partdec {
   int  neighbor[2];             /* The nodeids of left and right neighb */
@@ -67,6 +68,7 @@ typedef struct gmx_partdec {
 				/* and left for 'bshift' pulses         */
 				/* This way is not necessary to shift   */
 				/* the coordinates over the entire ring */
+  rvec *vbuf;                   /* Buffer for summing the forces        */
 } gmx_partdec_t;
 
 #ifdef GMX_MPI
@@ -193,6 +195,11 @@ static void set_left_right(t_commrec *cr)
   cr->pd->neighbor[GMX_RIGHT] = (cr->nodeid + 1) % cr->nnodes;
 }
 
+void pd_move_f(const t_commrec *cr,rvec f[],t_nrnb *nrnb)
+{
+  move_f(NULL,cr,GMX_LEFT,GMX_RIGHT,f,cr->pd->vbuf,nrnb);
+}
+
 int *pd_cgindex(const t_commrec *cr)
 {
   return cr->pd->cgindex;
@@ -317,6 +324,11 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
     /* This is a hack to do with bugzilla 148 */
     /*pd->shift = cr->nnodes-1;
       pd->bshift = 0;*/
+
+    /* Allocate a buffer of size natoms of the whole system
+     * for summing the forces over the nodes.
+     */
+    snew(pd->vbuf,cgs->index[cgs->nr]);
   }
 }
 

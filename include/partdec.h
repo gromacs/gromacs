@@ -93,6 +93,9 @@ extern void gmx_tx_rx_real(const t_commrec *cr,
 extern void gmx_wait(int dir_send,int dir_recv);
 /* Wait for communication to finish */
 
+extern void pd_move_f(const t_commrec *cr,rvec f[],t_nrnb *nrnb);
+/* Sum the forces over the nodes */
+
 extern int *pd_cgindex(const t_commrec *cr);
 
 extern int *pd_index(const t_commrec *cr);
