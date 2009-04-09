@@ -82,7 +82,9 @@ typedef struct
 	real obc_gamma;          /* OBC parameters */
 	real gb_doffset;         /* Dielectric offset for Still/HCT/OBC */
 	
-	real *work;              /* used for parallel summation */
+        real *work;              /* Used for parallel summation and in the chain rule */
+        int  *count;             /* Used for setting up the special gb nblist */
+        int  **nblist_work;       /* Used for setting up the special gb nblist */
 } 
 gmx_genborn_t;
 
@@ -128,7 +130,8 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_mtop_t *mt
 
 
 int
-gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], t_forcerec *fr, t_idef *idef);
+gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], 
+                          t_forcerec *fr, t_idef *idef, gmx_genborn_t *born);
 
 
 #endif /* _genborn_h */
