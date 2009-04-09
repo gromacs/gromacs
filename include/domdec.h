@@ -121,27 +121,20 @@ extern void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
 extern void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
 /* Stop the force flop count */
 
-extern void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[]);
-/* Communicate the coordinates to the neighboring cells and do pbc.
- * buf should should have at least size dd->nat_tot.
- */
+extern void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[]);
+/* Communicate the coordinates to the neighboring cells and do pbc. */
 
-extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
+extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec *fshift);
 /* Sum the forces over the neighboring cells.
- * buf should should have at least size dd->nat_tot.
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
 
-extern void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[]);
-/* Communicate a real for each atom to the neighboring cells.
- * buf should should have at least size dd->nat_tot.
- */
+extern void dd_atom_spread_real(gmx_domdec_t *dd,real v[]);
+/* Communicate a real for each atom to the neighboring cells. */
 
-extern void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[]);
-/* Sum the contributions to a real for each atom over the neighboring cells.
- * buf should should have at least size dd->nat_tot.
- */
+extern void dd_atom_sum_real(gmx_domdec_t *dd,real v[]);
+/* Sum the contributions to a real for each atom over the neighboring cells. */
 
 extern void dd_partition_system(FILE            *fplog,
                                 gmx_step_t      step,
@@ -152,7 +145,6 @@ extern void dd_partition_system(FILE            *fplog,
                                 t_inputrec      *ir,
                                 t_state         *state_local,
                                 rvec            **f,
-                                rvec            **buf,
                                 t_mdatoms       *mdatoms,
                                 gmx_localtop_t  *top_local,
                                 t_forcerec      *fr,
@@ -166,6 +158,7 @@ extern void dd_partition_system(FILE            *fplog,
  * step is only used for printing error messages.
  * If bMasterState==TRUE then state_global from the master node is used,
  * else state_local is redistributed between the nodes.
+ * When f!=NULL, *f will be reallocated to the size of state_local.
  */
 
 void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog);

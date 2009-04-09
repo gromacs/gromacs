@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -84,7 +85,7 @@ typedef struct {
   real Yx;
 } gmx_sd_sigma_t;
 
-typedef struct gmx_stochd {
+typedef struct {
   /* The random state */
   gmx_rng_t gaussrand;
   /* BD stuff */
@@ -94,7 +95,13 @@ typedef struct gmx_stochd {
   gmx_sd_sigma_t *sdsig;
   rvec *sd_V;
   int  sd_V_nalloc;
-} t_gmx_stochd;
+} gmx_stochd_t;
+
+typedef struct gmx_update {
+  gmx_stochd_t *sd;
+  rvec *xp;
+  int  xp_nalloc;
+} t_gmx_update;
 
 static void do_update_md(int start,int homenr,double dt,
                          t_grp_tcstat *tcstat,t_grp_acc *gstat,real nh_xi[],
@@ -261,13 +268,13 @@ static void do_update_visc(int start,int homenr,double dt,
   }
 }
 
-gmx_stochd_t init_stochd(FILE *fplog,t_inputrec *ir)
+static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
 {
-  t_gmx_stochd *sd;
-  gmx_sd_const_t *sdc;
-  int  ngtc,n;
-  real y;
-
+    gmx_stochd_t *sd;
+    gmx_sd_const_t *sdc;
+    int  ngtc,n;
+    real y;
+    
   snew(sd,1);
 
   /* Initiate random number generator for langevin type dynamics,
@@ -310,25 +317,42 @@ gmx_stochd_t init_stochd(FILE *fplog,t_inputrec *ir)
   return sd;
 }
 
-void get_stochd_state(t_gmx_stochd *sd,t_state *state)
+void get_stochd_state(gmx_update_t upd,t_state *state)
 {
-  gmx_rng_get_state(sd->gaussrand,state->ld_rng,state->ld_rngi);
+  gmx_rng_get_state(upd->sd->gaussrand,state->ld_rng,state->ld_rngi);
 }
 
-void set_stochd_state(t_gmx_stochd *sd,t_state *state)
+void set_stochd_state(gmx_update_t upd,t_state *state)
 {
-  gmx_rng_set_state(sd->gaussrand,state->ld_rng,state->ld_rngi[0]);
+  gmx_rng_set_state(upd->sd->gaussrand,state->ld_rng,state->ld_rngi[0]);
 }
 
-static void do_update_sd1(t_gmx_stochd *sd,
-			  int start,int homenr,double dt,
-			  rvec accel[],ivec nFreeze[],
-			  real invmass[],unsigned short ptype[],
-			  unsigned short cFREEZE[],unsigned short cACC[],
-			  unsigned short cTC[],
-			  rvec x[],rvec xprime[],rvec v[],rvec f[],
-			  rvec sd_X[],
-			  int ngtc,real tau_t[],real ref_t[])
+gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
+{
+    t_gmx_update *upd;
+    
+    snew(upd,1);
+    
+    if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE)
+    {
+        upd->sd = init_stochd(fplog,ir);
+    }
+
+    upd->xp = NULL;
+    upd->xp_nalloc = 0;
+
+    return upd;
+}
+
+static void do_update_sd1(gmx_stochd_t *sd,
+                          int start,int homenr,double dt,
+                          rvec accel[],ivec nFreeze[],
+                          real invmass[],unsigned short ptype[],
+                          unsigned short cFREEZE[],unsigned short cACC[],
+                          unsigned short cTC[],
+                          rvec x[],rvec xprime[],rvec v[],rvec f[],
+                          rvec sd_X[],
+                          int ngtc,real tau_t[],real ref_t[])
 {
   gmx_sd_const_t *sdc;
   gmx_sd_sigma_t *sig;
@@ -378,16 +402,16 @@ static void do_update_sd1(t_gmx_stochd *sd,
   }
 }
 
-static void do_update_sd2(t_gmx_stochd *sd,bool bInitStep,
-			  int start,int homenr,
-			  rvec accel[],ivec nFreeze[],
-			  real invmass[],unsigned short ptype[],
-			  unsigned short cFREEZE[],unsigned short cACC[],
-			  unsigned short cTC[],
-			  rvec x[],rvec xprime[],rvec v[],rvec f[],
-			  rvec sd_X[],
-			  int ngtc,real tau_t[],real ref_t[],
-			  bool bFirstHalf)
+static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
+                          int start,int homenr,
+                          rvec accel[],ivec nFreeze[],
+                          real invmass[],unsigned short ptype[],
+                          unsigned short cFREEZE[],unsigned short cACC[],
+                          unsigned short cTC[],
+                          rvec x[],rvec xprime[],rvec v[],rvec f[],
+                          rvec sd_X[],
+                          int ngtc,real tau_t[],real ref_t[],
+                          bool bFirstHalf)
 {
   gmx_sd_const_t *sdc;
   gmx_sd_sigma_t *sig;
@@ -739,38 +763,45 @@ static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
 }
 
 void update(FILE         *fplog,
-	    gmx_step_t   step,
+            gmx_step_t   step,
             real         *dvdlambda,    /* FEP stuff */
             t_inputrec   *inputrec,      /* input record and box stuff	*/
             t_mdatoms    *md,
-	    t_state      *state,
+            t_state      *state,
             t_graph      *graph,  
             rvec         force[],        /* forces on home particles */
-	    rvec         xprime[],       /* buffer for x for update  */
-	    t_fcdata     *fcd,
-	    t_idef       *idef,
-	    gmx_ekindata_t *ekind,
-	    matrix       *scale_tot,
+            t_fcdata     *fcd,
+            t_idef       *idef,
+            gmx_ekindata_t *ekind,
+            matrix       *scale_tot,
             t_commrec    *cr,
             t_nrnb       *nrnb,
-	    gmx_wallcycle_t wcycle,
-	    gmx_stochd_t sd,
-	    gmx_constr_t constr,
-	    bool         bCalcVir,
+            gmx_wallcycle_t wcycle,
+            gmx_update_t upd,
+            gmx_constr_t constr,
+            bool         bCalcVir,
             tensor       vir_part,
             bool         bNEMD,
-	    bool         bInitStep)
+            bool         bInitStep)
 {
   bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
-  double           dt;
+  double           dt,eph;
   real             dt_1;
   int              start,homenr,i,n,m,g;
   matrix           pcoupl_mu,M;
   tensor           vir_con;
-  
+  rvec             *xprime;
+
   start  = md->start;
   homenr = md->homenr;
   
+  if (state->nalloc > upd->xp_nalloc)
+  {
+      upd->xp_nalloc = state->nalloc;
+      srenew(upd->xp,upd->xp_nalloc);
+  }
+  xprime = upd->xp;
+
   /* We need to update the NMR restraint history when time averaging is used */
   if (state->flags & (1<<estDISRE_RM3TAV)) {
     update_disres_history(fcd,&state->hist);
@@ -792,25 +823,25 @@ void update(FILE         *fplog,
   }
   clear_mat(M);
 
-  /* We can always tcoupl, even if we did not sum the energies
-   * the previous step, since ekind->tcstat[i].Th is only updated
-   * when the energies have been summed.
-   */
-  switch (inputrec->etc) {
-  case etcNO:
-    break;
-  case etcBERENDSEN:
-    berendsen_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t);
-    break;
-  case etcNOSEHOOVER:
-    nosehoover_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
-		      state->nosehoover_xi,state->therm_integral);
-    break;
-  case etcVRESCALE:
-    vrescale_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
-		    state->therm_integral,sd->gaussrand);
-    break;
-  }
+    /* We can always tcoupl, even if we did not sum the energies
+     * the previous step, since ekind->tcstat[i].Th is only updated
+     * when the energies have been summed.
+     */
+    switch (inputrec->etc) {
+    case etcNO:
+        break;
+    case etcBERENDSEN:
+        berendsen_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t);
+        break;
+    case etcNOSEHOOVER:
+        nosehoover_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
+                          state->nosehoover_xi,state->therm_integral);
+        break;
+    case etcVRESCALE:
+        vrescale_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
+                        state->therm_integral,upd->sd->gaussrand);
+        break;
+    }
   /* We can always pcoupl, even if we did not sum the energies
    * the previous step, since state->pres_prev is only updated
    * when the energies have been summed.
@@ -845,7 +876,7 @@ void update(FILE         *fplog,
 		     state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,bExtended);
     }
   } else if (inputrec->eI == eiSD1) {
-    do_update_sd1(sd,start,homenr,dt,
+    do_update_sd1(upd->sd,start,homenr,dt,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,
 		  md->invmass,md->ptype,
 		  md->cFREEZE,md->cACC,md->cTC,
@@ -855,7 +886,7 @@ void update(FILE         *fplog,
     /* The SD update is done in 2 parts, because an extra constraint step
      * is needed 
      */
-    do_update_sd2(sd,bInitStep,start,homenr,
+    do_update_sd2(upd->sd,bInitStep,start,homenr,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,
 		  md->invmass,md->ptype,
 		  md->cFREEZE,md->cACC,md->cTC,
@@ -869,7 +900,7 @@ void update(FILE         *fplog,
 		 state->x,xprime,state->v,force,
 		 inputrec->bd_fric,
 		 inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		 sd->bd_rf,sd->gaussrand);
+		 upd->sd->bd_rf,upd->sd->gaussrand);
   } else {
     gmx_fatal(FARGS,"Don't know how to update coordinates");
   }
@@ -884,71 +915,79 @@ void update(FILE         *fplog,
    *  BLOCK SHAKE 
    */
 
-  /* When doing PR pressure coupling we have to constrain the
-   * bonds in each iteration. If we are only using Nose-Hoover tcoupling
-   * it is enough to do this once though, since the relative velocities 
-   * after this will be normal to the bond vector
-   */
-  if (constr) {
-    bLastStep = (step == inputrec->init_step+inputrec->nsteps);
-    bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
-    bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
-    if (constr) {
-      /* Constrain the coordinates xprime */
-      wallcycle_start(wcycle,ewcCONSTR);
-      constrain(NULL,bLog,bEner,constr,idef,
-		inputrec,cr,step,1,md,
-		state->x,xprime,NULL,
-		state->box,state->lambda,dvdlambda,
-		state->v,bCalcVir ? &vir_con : NULL,nrnb,econqCoord);
-      wallcycle_stop(wcycle,ewcCONSTR);
+    /* When doing PR pressure coupling we have to constrain the
+     * bonds in each iteration. If we are only using Nose-Hoover tcoupling
+     * it is enough to do this once though, since the relative velocities 
+     * after this will be normal to the bond vector
+     */
+    if (constr)
+    {
+        bLastStep = (step == inputrec->init_step+inputrec->nsteps);
+        bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
+        bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
+        if (constr)
+        {
+            /* Constrain the coordinates xprime */
+            wallcycle_start(wcycle,ewcCONSTR);
+            constrain(NULL,bLog,bEner,constr,idef,
+                      inputrec,cr,step,1,md,
+                      state->x,xprime,NULL,
+                      state->box,state->lambda,dvdlambda,
+                      state->v,bCalcVir ? &vir_con : NULL,nrnb,econqCoord);
+            wallcycle_stop(wcycle,ewcCONSTR);
+        }
+        where();
+        
+        dump_it_all(fplog,"After Shake",
+                    state->natoms,state->x,xprime,state->v,force);
+        
+        if (bCalcVir)
+        {
+            if (inputrec->eI == eiSD2)
+            {
+                /* A correction factor eph is needed for the SD constraint force */
+                /* Here we can, unfortunately, not have proper corrections
+                 * for different friction constants, so we use the first one.
+                 */
+                eph = upd->sd->sdc[0].eph;
+                for(i=0; i<DIM; i++)
+                    for(m=0; m<DIM; m++)
+                        vir_part[i][m] += eph*vir_con[i][m];
+            }
+            else
+            {
+                m_add(vir_part,vir_con,vir_part);
+            }
+            if (debug)
+                pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
+        }
+        where();
     }
-    where();
-
-    dump_it_all(fplog,"After Shake",
-		state->natoms,state->x,xprime,state->v,force);
-
-    if (bCalcVir) {
-      if (inputrec->eI == eiSD2) {
-	/* A correction factor eph is needed for the SD constraint force */
-	/* Here we can, unfortunately, not have proper corrections
-	 * for different friction constants, so we use the first one.
-	 */
-	for(i=0; i<DIM; i++)
-	  for(m=0; m<DIM; m++)
-	    vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
-      } else {
-	m_add(vir_part,vir_con,vir_part);
-      }
-      if (debug)
-	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
-    }
-    where();
-  }
   
-  where();
-  if (inputrec->eI == eiSD2) {
-    /* The second part of the SD integration */
-    do_update_sd2(sd,FALSE,start,homenr,
-		  inputrec->opts.acc,inputrec->opts.nFreeze,
-		  md->invmass,md->ptype,
-		  md->cFREEZE,md->cACC,md->cTC,
-		  state->x,xprime,state->v,force,state->sd_X,
-		  inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		  FALSE);
-    inc_nrnb(nrnb, eNR_UPDATE, homenr);
-    
-    if (constr) {
-      /* Constrain the coordinates xprime */
-      wallcycle_start(wcycle,ewcCONSTR);
-      constrain(NULL,bLog,bEner,constr,idef,
-		inputrec,cr,step,1,md,
-		state->x,xprime,NULL,
-		state->box,state->lambda,dvdlambda,
-		NULL,NULL,nrnb,econqCoord);
-      wallcycle_stop(wcycle,ewcCONSTR);
+    where();
+    if (inputrec->eI == eiSD2)
+    {
+        /* The second part of the SD integration */
+        do_update_sd2(upd->sd,FALSE,start,homenr,
+                      inputrec->opts.acc,inputrec->opts.nFreeze,
+                      md->invmass,md->ptype,
+                      md->cFREEZE,md->cACC,md->cTC,
+                      state->x,xprime,state->v,force,state->sd_X,
+                      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+                      FALSE);
+        inc_nrnb(nrnb, eNR_UPDATE, homenr);
+        
+        if (constr) {
+            /* Constrain the coordinates xprime */
+            wallcycle_start(wcycle,ewcCONSTR);
+            constrain(NULL,bLog,bEner,constr,idef,
+                      inputrec,cr,step,1,md,
+                      state->x,xprime,NULL,
+                      state->box,state->lambda,dvdlambda,
+                      NULL,NULL,nrnb,econqCoord);
+            wallcycle_stop(wcycle,ewcCONSTR);
+        }
     }
-  }
   
   /* We must always unshift here, also if we did not shake
    * x was shifted in do_force */

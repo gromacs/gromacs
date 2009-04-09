@@ -50,16 +50,16 @@
 #include "gmx_random.h"
 
 /* Abstract type for stochastic dynamics */
-typedef struct gmx_stochd *gmx_stochd_t;
+typedef struct gmx_update *gmx_update_t;
 
 /* Initialize the stochastic dynamics struct */
-extern gmx_stochd_t init_stochd(FILE *fplog,t_inputrec *ir);
+extern gmx_update_t init_update(FILE *fplog,t_inputrec *ir);
 
 /* Store the random state from sd in state */
-extern void get_stochd_state(gmx_stochd_t sd,t_state *state);
+extern void get_stochd_state(gmx_update_t sd,t_state *state);
 
 /* Set the random in sd from state */
-extern void set_stochd_state(gmx_stochd_t sd,t_state *state);
+extern void set_stochd_state(gmx_update_t sd,t_state *state);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
@@ -74,7 +74,6 @@ extern void update(FILE         *fplog,
 		   t_state      *state,
 		   t_graph      *graph,	
 		   rvec         force[],    /* forces on home particles */
-		   rvec         xprime[],   /* buffer for x for update  */
 		   t_fcdata     *fcd,
 		   t_idef       *idef,
 		   gmx_ekindata_t *ekind,
@@ -82,7 +81,7 @@ extern void update(FILE         *fplog,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
 		   gmx_wallcycle_t wcycle,
-		   gmx_stochd_t sd,
+		   gmx_update_t upd,
 		   gmx_constr_t constr,
 		   bool         bCalcVir,
 		   tensor       vir_part,

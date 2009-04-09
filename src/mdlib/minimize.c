@@ -234,7 +234,7 @@ void init_em(FILE *fplog,const char *title,
 	     t_commrec *cr,t_inputrec *ir,
 	     t_state *state_global,gmx_mtop_t *top_global,
 	     em_state_t *ems,gmx_localtop_t **top,
-	     rvec *f,rvec **buf,rvec **f_global,
+	     rvec *f,rvec **f_global,
 	     t_nrnb *nrnb,rvec mu_tot,
 	     t_forcerec *fr,gmx_enerdata_t **enerd,
 	     t_graph **graph,t_mdatoms *mdatoms,
@@ -270,7 +270,7 @@ void init_em(FILE *fplog,const char *title,
     /* Distribute the charge groups over the nodes from the master node */
     dd_partition_system(fplog,ir->init_step,cr,TRUE,
 			state_global,top_global,ir,
-			&ems->s,&ems->f,buf,mdatoms,*top,
+			&ems->s,&ems->f,mdatoms,*top,
 			fr,vsite,NULL,constr,
 			nrnb,NULL,FALSE);
     dd_store_state(cr->dd,&ems->s);
@@ -518,7 +518,7 @@ static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
 
 static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
 				   gmx_mtop_t *top_global,t_inputrec *ir,
-				   em_state_t *ems,rvec **buf,gmx_localtop_t *top,
+				   em_state_t *ems,gmx_localtop_t *top,
 				   t_mdatoms *mdatoms,t_forcerec *fr,
 				   gmx_vsite_t *vsite,gmx_constr_t constr,
 				   t_nrnb *nrnb,gmx_wallcycle_t wcycle)
@@ -527,7 +527,7 @@ static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
   wallcycle_start(wcycle,ewcDOMDEC);
   dd_partition_system(fplog,step,cr,FALSE,
 		      NULL,top_global,ir,
-		      &ems->s,&ems->f,buf,
+		      &ems->s,&ems->f,
 		      mdatoms,top,fr,vsite,NULL,constr,
 		      nrnb,wcycle,FALSE);
   dd_store_state(cr->dd,&ems->s);
@@ -536,7 +536,7 @@ static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
     
 static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    t_state *state_global,gmx_mtop_t *top_global,
-			    em_state_t *ems,rvec **buf,gmx_localtop_t *top,
+			    em_state_t *ems,gmx_localtop_t *top,
 			    t_inputrec *inputrec,
 			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			    gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -581,7 +581,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     if (bNS) {
       /* Repartition the domain decomposition */
       em_dd_partition_system(fplog,count,cr,top_global,inputrec,
-			     ems,buf,top,mdatoms,fr,vsite,constr,
+			     ems,top,mdatoms,fr,vsite,constr,
 			     nrnb,wcycle);
     }
   }
@@ -593,7 +593,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   do_force(fplog,cr,inputrec,
 	   count,nrnb,wcycle,top,top_global,&top_global->groups,
 	   ems->s.box,ems->s.x,&ems->s.hist,
-	   ems->f,*buf,force_vir,mdatoms,enerd,fcd,
+	   ems->f,force_vir,mdatoms,enerd,fcd,
 	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,born,TRUE,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
 	   (bNS ? GMX_FORCE_NS : 0));
@@ -763,7 +763,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	     t_inputrec *inputrec,
 	     gmx_mtop_t *top_global,t_fcdata *fcd,
 	     t_state *state_global,rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,
+	     t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     gmx_edsam_t ed,
 	     t_forcerec *fr,gmx_genborn_t *born,
@@ -805,7 +805,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 
   /* Init em and store the local state in s_min */
   init_em(fplog,CG,cr,inputrec,
-	  state_global,top_global,s_min,&top,f,&buf,&f_global,
+	  state_global,top_global,s_min,&top,f,&f_global,
 	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
 
@@ -827,7 +827,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
    * We do not unshift, so molecules are always whole in congrad.c
    */
   evaluate_energy(fplog,bVerbose,cr,
-		  state_global,top_global,s_min,&buf,top,
+		  state_global,top_global,s_min,top,
 		  inputrec,nrnb,wcycle,
 		  vsite,constr,fcd,graph,mdatoms,fr,born,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
@@ -969,7 +969,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     
     if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count) {
       em_dd_partition_system(fplog,step,cr,top_global,inputrec,
-			     s_min,&buf,top,mdatoms,fr,vsite,constr,
+			     s_min,top,mdatoms,fr,vsite,constr,
 			     nrnb,wcycle);
     }
 
@@ -980,7 +980,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     neval++;
     /* Calculate energy for the trial step */
     evaluate_energy(fplog,bVerbose,cr,
-		    state_global,top_global,s_c,&buf,top,
+		    state_global,top_global,s_c,top,
 		    inputrec,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,-1,FALSE);
@@ -1056,7 +1056,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count) {
 	  /* Reload the old state */
 	  em_dd_partition_system(fplog,-1,cr,top_global,inputrec,
-				 s_min,&buf,top,mdatoms,fr,vsite,constr,
+				 s_min,top,mdatoms,fr,vsite,constr,
 				 nrnb,wcycle);
 	}
 
@@ -1067,7 +1067,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	neval++;
 	/* Calculate energy for the trial step */
 	evaluate_energy(fplog,bVerbose,cr,
-			state_global,top_global,s_b,&buf,top,
+			state_global,top_global,s_b,top,
 			inputrec,nrnb,wcycle,
 			vsite,constr,fcd,graph,mdatoms,fr,born,
 			mu_tot,enerd,vir,pres,-1,FALSE);
@@ -1289,7 +1289,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		t_inputrec *inputrec,
 		gmx_mtop_t *top_global,t_fcdata *fcd,
 		t_state *state,rvec f[],
-		rvec buf[],t_mdatoms *mdatoms,
+		t_mdatoms *mdatoms,
 		t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		gmx_edsam_t ed,
 		t_forcerec *fr,gmx_genborn_t *born,
@@ -1367,7 +1367,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 
   /* Init em */
   init_em(fplog,LBFGS,cr,inputrec,
-	  state,top_global,&ems,&top,f,&buf,&f,
+	  state,top_global,&ems,&top,f,&f,
 	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
   /* Do_lbfgs is not completely updated like do_steep and do_cg,
@@ -1415,7 +1415,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   ems.s.x = state->x;
   ems.f = f;
   evaluate_energy(fplog,bVerbose,cr,
-		  state,top_global,&ems,&buf,top,
+		  state,top_global,&ems,top,
 		  inputrec,nrnb,wcycle,
 		  vsite,constr,fcd,graph,mdatoms,fr,born,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
@@ -1569,7 +1569,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     ems.s.x = (rvec *)xc;
     ems.f   = (rvec *)fc;
     evaluate_energy(fplog,bVerbose,cr,
-		    state,top_global,&ems,&buf,top,
+		    state,top_global,&ems,top,
 		    inputrec,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,step,FALSE);
@@ -1647,7 +1647,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	ems.s.x = (rvec *)xb;
 	ems.f   = (rvec *)fb;
 	evaluate_energy(fplog,bVerbose,cr,
-			state,top_global,&ems,&buf,top,
+			state,top_global,&ems,top,
 			inputrec,nrnb,wcycle,
 			vsite,constr,fcd,graph,mdatoms,fr,born,
 			mu_tot,enerd,vir,pres,step,FALSE);
@@ -1925,7 +1925,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		t_inputrec *inputrec,
 		gmx_mtop_t *top_global,t_fcdata *fcd,
 		t_state *state_global,rvec f[],
-		rvec buf[],t_mdatoms *mdatoms,
+		t_mdatoms *mdatoms,
 		t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		gmx_edsam_t ed,
 		t_forcerec *fr,gmx_genborn_t *born,
@@ -1959,7 +1959,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 
   /* Init em and store the local state in s_try */
   init_em(fplog,SD,cr,inputrec,
-	  state_global,top_global,s_try,&top,f,&buf,&f_global,
+	  state_global,top_global,s_try,&top,f,&f_global,
 	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
 
@@ -2001,7 +2001,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     }
     
     evaluate_energy(fplog,bVerbose,cr,
-		    state_global,top_global,s_try,&buf,top,
+		    state_global,top_global,s_try,top,
 		    inputrec,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
@@ -2066,7 +2066,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count) {
 	/* Reload the old state */
 	em_dd_partition_system(fplog,count,cr,top_global,inputrec,
-			       s_min,&buf,top,mdatoms,fr,vsite,constr,
+			       s_min,top,mdatoms,fr,vsite,constr,
 			       nrnb,wcycle);
       }
     }
@@ -2137,7 +2137,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     t_inputrec *inputrec,
 	     gmx_mtop_t *top_global,t_fcdata *fcd,
 	     t_state *state_global,rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,
+	     t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     gmx_edsam_t ed,
 	     t_forcerec *fr,gmx_genborn_t *born,
@@ -2177,7 +2177,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     /* Init em and store the local state in state_minimum */
     init_em(fplog,NM,cr,inputrec,
 	    state_global,top_global,state_work,&top,
-	    f,&buf,&f_global,
+	    f,&f_global,
 	    nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
 	    nfile,fnm,NULL,&fp_ene,&mdebin);
     
@@ -2249,7 +2249,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     
     count = 0;
     evaluate_energy(fplog,bVerbose,cr,
-		    state_global,top_global,state_work,&buf,top,
+		    state_global,top_global,state_work,top,
 		    inputrec,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
@@ -2290,7 +2290,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	  state_work->s.x[step][idum] -= der_range;
           
 	  evaluate_energy(fplog,bVerbose,cr,
-			  state_global,top_global,state_work,&buf,top,
+			  state_global,top_global,state_work,top,
 			  inputrec,nrnb,wcycle,
 			  vsite,constr,fcd,graph,mdatoms,fr,born,
 			  mu_tot,enerd,vir,pres,count,count==0);
@@ -2304,7 +2304,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	  state_work->s.x[step][idum] += 2*der_range;
           
 	  evaluate_energy(fplog,bVerbose,cr,
-			  state_global,top_global,state_work,&buf,top,
+			  state_global,top_global,state_work,top,
 			  inputrec,nrnb,wcycle,
 			  vsite,constr,fcd,graph,mdatoms,fr,born,
 			  mu_tot,enerd,vir,pres,count,count==0);
@@ -2399,7 +2399,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      gmx_mtop_t *top_global,t_fcdata *fcd,
 	      t_state *state,rvec f[],
-	      rvec buf[],t_mdatoms *mdatoms,
+	      t_mdatoms *mdatoms,
 	      t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      gmx_edsam_t ed,
 	      t_forcerec *fr,gmx_genborn_t *born,
@@ -2791,7 +2791,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	do_force(fplog,cr,inputrec,
 		 step,nrnb,wcycle,top,top_global,&top_global->groups,
 		 rerun_fr.box,state->x,&state->hist,
-		 f,buf,force_vir,mdatoms,enerd,fcd,
+		 f,force_vir,mdatoms,enerd,fcd,
 		 lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,born,FALSE,
 		 GMX_FORCE_NONBONDED |
 		 (bNS ? GMX_FORCE_NS : 0) |

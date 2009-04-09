@@ -188,7 +188,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     gmx_mtop_t *mtop,
 		     gmx_groups_t *groups,
 		     matrix box,rvec x[],history_t *hist,
-		     rvec f[],rvec buf[],
+		     rvec f[],
 		     tensor vir_force,
 		     t_mdatoms *mdatoms,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
@@ -204,7 +204,6 @@ extern void do_force(FILE *log,t_commrec *cr,
  * Spread forces for vsites (if present).
  *
  * f is always required.
- * buf is only required with GMX_FORCE_FORCES
  */
 
 extern void ns(FILE       *fplog,

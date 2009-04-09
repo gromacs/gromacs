@@ -262,21 +262,21 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 }
 
 void do_force(FILE *fplog,t_commrec *cr,
-	      t_inputrec *inputrec,
-	      gmx_step_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	      gmx_localtop_t *top,
-	      gmx_mtop_t *mtop,
-	      gmx_groups_t *groups,
-	      matrix box,rvec x[],history_t *hist,
-	      rvec f[],rvec buf[],
-	      tensor vir_force,
-	      t_mdatoms *mdatoms,
-	      gmx_enerdata_t *enerd,t_fcdata *fcd,
-	      real lambda,t_graph *graph,
-	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-	      double t,FILE *field,gmx_edsam_t ed,
-	      gmx_genborn_t *born, bool bBornRadii,
-	      int flags)
+              t_inputrec *inputrec,
+              gmx_step_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+              gmx_localtop_t *top,
+              gmx_mtop_t *mtop,
+              gmx_groups_t *groups,
+              matrix box,rvec x[],history_t *hist,
+              rvec f[],
+              tensor vir_force,
+              t_mdatoms *mdatoms,
+              gmx_enerdata_t *enerd,t_fcdata *fcd,
+              real lambda,t_graph *graph,
+              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+              double t,FILE *field,gmx_edsam_t ed,
+              gmx_genborn_t *born, bool bBornRadii,
+              int flags)
 {
   static rvec box_size;
   int    cg0,cg1,i,j;
@@ -383,7 +383,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   if (PAR(cr)) {
     wallcycle_start(wcycle,ewcMOVEX);
     if (DOMAINDECOMP(cr)) {
-      dd_move_x(cr->dd,box,x,buf);
+      dd_move_x(cr->dd,box,x);
     } else {
       move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
     }
@@ -545,14 +545,14 @@ void do_force(FILE *fplog,t_commrec *cr,
             wallcycle_start(wcycle,ewcMOVEF);
             if (DOMAINDECOMP(cr))
             {
-                dd_move_f(cr->dd,f,buf,fr->fshift);
+                dd_move_f(cr->dd,f,fr->fshift);
                 /* Position restraint do not introduce inter-cg forces.
                  * When we do not calculate the virial, fr->f_novirsum = f.
                  */
                 if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
                     (flags & GMX_FORCE_VIRIAL))
                 {
-                    dd_move_f(cr->dd,fr->f_novirsum,buf,NULL);
+                    dd_move_f(cr->dd,fr->f_novirsum,NULL);
                 }
             }
             else
@@ -720,7 +720,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
                 start,md->homenr,end);
     }
-    snew(xcon,end);
+    snew(xcon,state->nalloc);
 
     /* Do a first constraining to reset particles... */
     step = inputrec->init_step;
@@ -1216,7 +1216,7 @@ void init_md(FILE *fplog,
              double *t,double *t0,
              real *lambda,double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
-             gmx_stochd_t *sd,
+             gmx_update_t *upd,
              int nfile,t_filenm fnm[],
              int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
@@ -1258,9 +1258,9 @@ void init_md(FILE *fplog,
     
     *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
     
-    if (sd && (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE))
+    if (upd)
     {
-        *sd = init_stochd(fplog,ir);
+        *upd = init_update(fplog,ir);
     }
     
     if (vcm != NULL)

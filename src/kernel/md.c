@@ -132,7 +132,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_inputrec *inputrec;
   t_state    *state=NULL;
   matrix     box;
-  rvec       *buf=NULL,*f=NULL;
+  rvec       *f=NULL;
   real       tmpr1,tmpr2;
   t_nrnb     *nrnb;
   gmx_mtop_t *mtop=NULL;
@@ -305,7 +305,6 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	bcast_state(cr,state,TRUE);
       }
 
-      snew(buf,mtop->natoms);
       snew(f,mtop->natoms);
     }
     
@@ -448,7 +447,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 					    bVerbose,bCompact,
 					    vsite,constr,
 					    nstepout,inputrec,mtop,
-					    fcd,state,f,buf,
+					    fcd,state,f,
 					    mdatoms,nrnb,wcycle,ed,fr,
 					    born,
 					    repl_ex_nst,repl_ex_seed,
@@ -514,7 +513,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     gmx_mtop_t *top_global,
 	     t_fcdata *fcd,
 	     t_state *state_global,rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,
+	     t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     gmx_edsam_t ed,t_forcerec *fr, gmx_genborn_t *born,
 	     int repl_ex_nst,int repl_ex_seed,
@@ -555,7 +554,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_state    *state=NULL;
   rvec       *f_global=NULL;
   gmx_enerdata_t *enerd;
-  gmx_stochd_t sd=NULL;
+  gmx_update_t upd=NULL;
   t_graph    *graph=NULL;
 
   bool        bFFscan;
@@ -650,7 +649,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initial values */
   init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
-	  nrnb,top_global,&sd,
+	  nrnb,top_global,&upd,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
 	  &fp_dhdl,&fp_field,&mdebin,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,Flags);
@@ -726,15 +725,17 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
   }
 
-  if (DOMAINDECOMP(cr)) {
-    /* Distribute the charge groups over the nodes from the master node */
-    dd_partition_system(fplog,ir->init_step,cr,TRUE,
-			state_global,top_global,ir,
-			state,&f,&buf,mdatoms,top,fr,vsite,shellfc,constr,
-			nrnb,wcycle,FALSE);
-  }
+    if (DOMAINDECOMP(cr))
+    {
+        /* Distribute the charge groups over the nodes from the master node */
+        dd_partition_system(fplog,ir->init_step,cr,TRUE,
+                            state_global,top_global,ir,
+                            state,&f,mdatoms,top,fr,
+                            vsite,shellfc,constr,
+                            nrnb,wcycle,FALSE);
+    }
 
-  update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda);
 
   if (MASTER(cr))
   {
@@ -748,9 +749,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }	
 	
 	
-  if (sd && (Flags & MD_READ_RNG)) {
+  if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) {
     /* Set the random state if we read a checkpoint file */
-    set_stochd_state(sd,state);
+    set_stochd_state(upd,state);
   }
 
   /* Initialize constraints */
@@ -1185,7 +1186,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 wallcycle_start(wcycle,ewcDOMDEC);
                 dd_partition_system(fplog,step,cr,bMasterState,
                                     state_global,top_global,ir,
-                                    state,&f,&buf,mdatoms,top,fr,
+                                    state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,do_verbose);
                 wallcycle_stop(wcycle,ewcDOMDEC);
@@ -1265,7 +1266,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             count=relax_shell_flexcon(fplog,cr,bVerbose,bFFscan ? step+1 : step,
                                       ir,bNS,bStopCM,top,top_global,
                                       constr,enerd,fcd,
-                                      state,f,buf,force_vir,mdatoms,
+                                      state,f,force_vir,mdatoms,
                                       nrnb,wcycle,graph,groups,
                                       shellfc,fr,born,bBornRadii,t,mu_tot,
                                       state->natoms,&bConverged,vsite,
@@ -1286,7 +1287,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              */
             do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
                      state->box,state->x,&state->hist,
-                     f,buf,force_vir,mdatoms,enerd,fcd,
+                     f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
                      fr,vsite,mu_tot,t,fp_field,ed,born,bBornRadii,
                      GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
@@ -1337,9 +1338,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             wallcycle_start(wcycle,ewcTRAJ);
             if (bCPT)
             {
-                if (sd)
+                if (state->flags & (1<<estLD_RNG))
                 {
-                    get_stochd_state(sd,state);
+                    get_stochd_state(upd,state);
                 }
                 if (MASTER(cr))
                 {
@@ -1374,11 +1375,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         
         clear_mat(shake_vir);
         
-        if (bFFscan)
-        {
-            clear_rvecs(state->natoms,buf);
-        }
-        
         /* Box is changed in update() when we do pressure coupling,
          * but we should still use the old box for energy corrections and when
          * writing it to the energy file, so it matches the trajectory files for
@@ -1401,9 +1397,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              * we should only do it at step % nstlist = 1
              * with bGStatEveryStep=FALSE.
              */
-            update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
+            update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,fcd,
                    &top->idef,ekind,scale_tot,
-                   cr,nrnb,wcycle,sd,constr,bCalcPres,shake_vir,
+                   cr,nrnb,wcycle,upd,constr,bCalcPres,shake_vir,
                    bNEMD,bFirstStep && bStateFromTPX);
             if (fr->bSepDVDL && fplog && do_log)
             {
@@ -1707,7 +1703,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         /* The coordinates (x) were unshifted in update */
         if (bFFscan && (shellfc==NULL || bConverged))
         {
-            if (print_forcefield(fplog,enerd->term,mdatoms->homenr,f,buf,xcopy,
+            if (print_forcefield(fplog,enerd->term,mdatoms->homenr,
+                                 f,NULL,xcopy,
                                  &(top_global->mols),mdatoms->massT,pres))
             {
                 if (gmx_parallel_env)
@@ -1799,7 +1796,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             {
                 dd_partition_system(fplog,step,cr,TRUE,
                                     state_global,top_global,ir,
-                                    state,&f,&buf,mdatoms,top,fr,
+                                    state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,FALSE);
             }
