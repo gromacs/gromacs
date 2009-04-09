@@ -909,7 +909,7 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
 			  char *resname,char *name,real m0,real q0,
 			  int typeB,char *ctypeB,real mB,real qB)
 {
-  int j,resind,resnr;
+  int j,resind=0,resnr;
   unsigned char ric;
   int nr = at->nr;
 
