@@ -2038,7 +2038,7 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 	int	   aj1,aj2,aj3,aj4; 
 	
 	real   rbi;
-	real   rb[natoms+4]; /* FIXME */
+	real   *rb;
 	
 	__m128 ix,iy,iz;
 	__m128 jx,jy,jz;
@@ -2053,6 +2053,7 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 	
 	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
 	real z = 0;
+	rb     = born->work; 
 			
 	/* Loop to get the proper form for the Born radius term, sse style */
 	offset=natoms%4;

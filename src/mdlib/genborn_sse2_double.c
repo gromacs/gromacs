@@ -1334,10 +1334,11 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, real *dadx, real *dvda, 
        real fgb,fij,rb2,rbi,fix1,fiy1,fiz1;
        real ix1,iy1,iz1,jx1,jy1,jz1,dx11,dy11,dz11,rsq11;
        real rinv11,tx,ty,tz,rbai;
-       real rb[natoms];
+       real *rb;
        rvec dx;
        
-       n=0;            
+       n=0;     
+       rb = born->work;       
        
        /* Loop to get the proper form for the Born radius term */
        if(gb_algorithm==egbSTILL) {

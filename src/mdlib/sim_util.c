@@ -429,7 +429,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
   
   if(inputrec->implicit_solvent && bNS) 
-	  gb_nblist_siev(cr,mdatoms->nr,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef);
+	  gb_nblist_siev(cr,mdatoms->nr,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,born);
 	
   if (DOMAINDECOMP(cr)) {
     if (!(cr->duty & DUTY_PME)) {

@@ -545,13 +545,13 @@ int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir
 	
 	fill_log_table(LOG_TABLE_ACCURACY, born->log_table);
 
-	if(PAR(cr))
+        snew(born->work,natoms+4);
+        snew(born->count,natoms);
+       
+        snew(born->nblist_work,natoms);
+        for(i=0;i<natoms;i++)
 	{
-		snew(born->work,natoms);
-	}
-	else
-	{
-		born->work = NULL;
+               snew(born->nblist_work[i],natoms);
 	}
 	
 	return 0;
@@ -1460,9 +1460,8 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, rvec x[], rvec t[], real *dvda,
 	real *rb;
 	rvec dx;
 	
-	snew(rb,natoms);
-
 	n=0;		
+	rb = born->work;
 	
 	/* Loop to get the proper form for the Born radius term */
 	if(gb_algorithm==egbSTILL) {
@@ -1540,7 +1539,6 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, rvec x[], rvec t[], real *dvda,
 		
 	}
 	
-	sfree(rb);
 	return 0;	
 }
 
@@ -1612,7 +1610,7 @@ int calc_surfStill(t_inputrec *ir,
   real dx,dy,dz,d,rni,dist,bee,ri,rn,asurf,t1ij,t2ij,bij,bji,dbijp;
   real dbjip,tip,tmp,tij,tji,t3ij,t4ij,t5ij,t3ji,t4ji,t5ji,dbij,dbji;
   real dpf,dpx,dpy,dpz,pi,pn,si,sn;
-  real *aprob;
+  real aprob[natoms];
   int k,type,ai,aj,nj0,nj1;
   real dr2,sar,rai,raj,fij;
   rvec dxx;
@@ -1620,7 +1618,6 @@ int calc_surfStill(t_inputrec *ir,
 
   int factor=1;
   
-  snew(aprob,natoms);
 
   /*bonds_t *bonds,*bonds13;*/
   
@@ -1924,7 +1921,6 @@ int calc_surfStill(t_inputrec *ir,
 	}
 	*/
 
-  sfree(aprob);
   return 0;
 }
 
@@ -1943,11 +1939,8 @@ int calc_surfBrooks(t_inputrec *ir,
   real kappa,sassum,tx,ty,tz,fix1,fiy1,fiz1;
 
   real ck[5];
-  real *Aij;
-  real *sasi;
-
-  snew(Aij,natoms);
-  snew(sasi,natoms);
+  real Aij[natoms];
+  real sasi[natoms];
 
   /* Brooks parameter for cutoff between atom pairs
    * Increasing kappa will increase the number of atom pairs
@@ -2035,13 +2028,11 @@ int calc_surfBrooks(t_inputrec *ir,
 
   printf("Brooks total surface area is: %g\n", sassum);
 
-  sfree(Aij);
-  sfree(sasi);
-
   return 0;
 }
 
-int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], t_forcerec *fr, t_idef *idef)
+int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], 
+                                  t_forcerec *fr, t_idef *idef, gmx_genborn_t *born)
 {
 	int i,l,ii,j,k,n,nj0,nj1,ai,aj,idx,ii_idx,nalloc,at0,at1,found;
 	t_nblist *nblist;
@@ -2049,9 +2040,11 @@ int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	int *count;
 	int **atoms;
 	
+	count = born->count;
+	atoms = born->nblist_work;
+
 	snew(count,natoms);
 	memset(count,0,sizeof(int)*natoms);
-	atoms=(int **) malloc(sizeof(int *)*natoms);
 	
 	if(PAR(cr))
 	{
@@ -2063,9 +2056,6 @@ int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		at1=natoms;
 	}
 	
-	for(i=0;i<natoms;i++)
-		atoms[i]=(int *) malloc(sizeof(int)*natoms);
-
 	if(gb_algorithm==egbHCT || gb_algorithm==egbOBC)
 	{
 		/* Loop over 1-2, 1-3 and 1-4 interactions */
@@ -2189,12 +2179,6 @@ int gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	
 	fr->gblist.nrj=idx;
 	
-	for(i=0;i<natoms;i++)
-		free(atoms[i]);
-	
-	free(atoms);
-
-	sfree(count);
 	return 0;
 }
 
