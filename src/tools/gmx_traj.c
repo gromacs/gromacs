@@ -162,9 +162,9 @@ static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
     fr_av.natoms = 2;
     fr_av.atoms  = atoms;
     fr_av.x      = xav;
-    write_trxframe(status,&fr_av);
+    write_trxframe(status,&fr_av,NULL);
   } else {
-    write_trxframe_indexed(status,fr,isize[0],index[0]);
+    write_trxframe_indexed(status,fr,isize[0],index[0],NULL);
   }
 }
 

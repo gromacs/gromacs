@@ -619,7 +619,7 @@ int gmx_trjconv(int argc,char *argv[])
   static char *fit[efNR+1] = 
     { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy", "progressive", NULL };
 
-  static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
+  static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
   static bool  bCenter=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3,nzero=0;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
@@ -680,7 +680,9 @@ int gmx_trjconv(int argc,char *argv[])
     { "-dropunder", FALSE, etREAL, {&dropunder},
       "Drop all frames below this value"},
     { "-dropover", FALSE, etREAL, {&dropover},
-      "Drop all frames above this value"}
+      "Drop all frames above this value"},
+    { "-conect", FALSE, etBOOL, {&bCONECT},
+      "Add conect records when writing pdb files. Useful for visualization of non-standard molecules, e.g. coarse grained ones" }
   };
 #define NPA asize(pa)
       
@@ -695,6 +697,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          m,i,d,frame,outframe,natoms,nout,ncent,nre,newstep=0,model_nr;
 #define SKIP 10
   t_topology   top;
+  gmx_conect   gc=NULL;
   int          ePBC=-1;
   t_atoms      *atoms=NULL,useatoms;
   matrix       top_box;
@@ -862,7 +865,7 @@ int gmx_trjconv(int argc,char *argv[])
     /* Determine whether to read a topology */
     bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
 	    bRmPBC || bReset || bPBCcomMol ||
-	    (ftp == efGRO) || (ftp == efPDB));
+	    (ftp == efGRO) || (ftp == efPDB) || bCONECT);
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
@@ -877,6 +880,9 @@ int gmx_trjconv(int argc,char *argv[])
        */
       if ((charpt=strstr(top_title," t= ")))
 	charpt[0]='\0';
+	
+      if (bCONECT)
+	gc = gmx_conect_generate(&top);
     }
     
     /* get frame number index */
@@ -1303,7 +1309,7 @@ int gmx_trjconv(int argc,char *argv[])
 		    gmx_fatal(FARGS,"File %s.xtc should still be open (%d open xtc files)\n""in order to write frame %d. my_clust = %d",
 			      clust->grpname[my_clust],ntrxopen,frame,
 			      my_clust);
-		  write_trxframe(clust_status[my_clust],&frout);
+		  write_trxframe(clust_status[my_clust],&frout,gc);
 		  nfwritten[my_clust]++;
 		  if (nfwritten[my_clust] == 
 		      (clust->clust->index[my_clust+1]-
@@ -1317,7 +1323,7 @@ int gmx_trjconv(int argc,char *argv[])
 		}
 	      }
 	      else
-		write_trxframe(trxout,&frout);
+		write_trxframe(trxout,&frout,gc);
 	      break;
 	    case efGRO:
 	    case efG96:
@@ -1342,7 +1348,7 @@ int gmx_trjconv(int argc,char *argv[])
 		else
 		  model_nr++;
 		write_pdbfile(out,title,&useatoms,frout.x,
-			      frout.ePBC,frout.box,0,model_nr);
+			      frout.ePBC,frout.box,0,model_nr,gc);
 		break;
 	      case efG96:
 		frout.title = title;

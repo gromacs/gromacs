@@ -75,12 +75,13 @@ extern void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
 
 extern void write_pdbfile_indexed(FILE *out,char *title,t_atoms *atoms,
 				  rvec x[],int ePBC,matrix box,char chain,
-				  int model_nr,atom_id nindex,atom_id index[]);
+				  int model_nr,atom_id nindex,atom_id index[],
+				  gmx_conect conect);
 /* REALLY low level */
 
 extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
-			  int model_nr);
+			  int model_nr,gmx_conect conect);
 /* Low level pdb file writing routine.
  * 
  *          ONLY FOR SPECIAL PURPOSES,
@@ -88,7 +89,11 @@ extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
  *       USE write_sto_conf WHEN YOU CAN.
  *
  * override chain-identifiers with chain when chain>0
- * write ENDMDL when bEndmodel is TRUE */
+ * write ENDMDL when bEndmodel is TRUE.
+ *
+ * If the gmx_conect structure is not NULL its content is dumped as CONECT records
+ * which may be useful for visualization purposes.
+ */
   
 extern void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
 /* Routine to extract atomic numbers from the atom names */
@@ -119,11 +124,21 @@ extern bool is_dummymass(char *nm);
 /* Return whether atom nm is a dummy mass */
 
 /* Routines to handle CONECT records if they have been read in */
-extern void dump_conection(FILE *fp,gmx_conect conect);
+extern void gmx_conect_dump(FILE *fp,gmx_conect conect);
 
-extern bool is_conect(gmx_conect conect,int ai,int aj);
+extern bool gmx_conect_exist(gmx_conect conect,int ai,int aj);
 /* Return TRUE if there is a conection between the atoms */
 
-extern gmx_conect init_gmx_conect();
+extern void gmx_conect_add(gmx_conect conect,int ai,int aj);
+/* Add a connection between ai and aj (numbered from 0 to natom-1) */ 
+
+extern gmx_conect gmx_conect_generate(t_topology *top);
+/* Generate a conect structure from a topology */
+
+extern gmx_conect gmx_conect_init();
+/* Initiate data structure */
+
+extern void gmx_conect_done(gmx_conect gc);
+/* Free memory */
 
 #endif	/* _pdbio_h */

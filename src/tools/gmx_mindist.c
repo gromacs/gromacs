@@ -352,7 +352,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
     if (trxout>=0) {
       oindex[0]=bMin?min1:max1;
       oindex[1]=bMin?min2:max2;
-      write_trx(trxout,2,oindex,atoms,i,t,box,x0,NULL);
+      write_trx(trxout,2,oindex,atoms,i,t,box,x0,NULL,NULL);
     }
     bFirst=FALSE;
   } while (read_next_x(status,&t,natoms,x0,box));

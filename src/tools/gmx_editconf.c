@@ -455,7 +455,7 @@ int gmx_editconf(int argc, char *argv[])
     "in that case you can use trjconv"
   };
   static real dist=0.0,rbox=0.0,to_diam=0.0;
-  static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE,bReadVDW=FALSE;
+  static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE,bReadVDW=FALSE,bCONECT=FALSE;
   static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE,bSig56=FALSE;
   static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
@@ -497,13 +497,14 @@ int gmx_editconf(int argc, char *argv[])
       "Read the Van der Waals radii from the file vdwradii.dat rather than computing the radii based on the force field" },
     { "-atom",   FALSE, etBOOL, {&peratom}, "Force B-factor attachment per atom" },
     { "-legend", FALSE, etBOOL, {&bLegend}, "Make B-factor legend" },
-    { "-label",  FALSE, etSTR,  {&label},   "Add chain label for all residues" }
+    { "-label",  FALSE, etSTR,  {&label},   "Add chain label for all residues" },
+    { "-conect", FALSE, etBOOL, {&bCONECT}, "Add CONECT records to a pdb file when written. Can only be done when a topology is present" }
   };
 #define NPA asize(pa)
 
   FILE       *out;
   char       *infile,*outfile,title[STRLEN];
-  int        outftp,natom,i,j,n_bfac,itype,ntype;
+  int        outftp,inftp,natom,i,j,n_bfac,itype,ntype;
   double     *bfac=NULL,c6,c12;
   int        *bfac_nr=NULL;
   t_topology *top;
@@ -518,6 +519,7 @@ int gmx_editconf(int argc, char *argv[])
   bool       bHaveV,bScale,bRho,bTranslate,bRotate,bCalcGeom,bCalcDiam;
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
   gmx_atomprop_t aps;
+  gmx_conect conect;
   t_filenm fnm[] = {
     { efSTX, "-f",    NULL,    ffREAD },
     { efNDX, "-n",    NULL,    ffOPTRD },
@@ -557,6 +559,7 @@ int gmx_editconf(int argc, char *argv[])
   else
     outfile = ftp2fn(efSTO,NFILE,fnm);
   outftp  = fn2ftp(outfile);
+  inftp = fn2ftp(infile);
   
   aps = gmx_atomprop_init();
 
@@ -594,11 +597,12 @@ int gmx_editconf(int argc, char *argv[])
 	   vol,100*((int)(vol*4.5)));
   }
 
-  if (bMead || bGrasp) {
+  if (bMead || bGrasp || bCONECT) 
     top = read_top(infile,NULL);
+  
+  if (bMead || bGrasp) { 
     if (atoms.nr != top->atoms.nr)
-      gmx_fatal(FARGS,"Atom numbers don't match (%d vs. %d)",
-		  atoms.nr,top->atoms.nr);
+      gmx_fatal(FARGS,"Atom numbers don't match (%d vs. %d)",atoms.nr,top->atoms.nr);
     snew(atoms.pdbinfo,top->atoms.nr); 
     ntype = top->idef.atnr;
     for(i=0; (i<atoms.nr); i++) {
@@ -858,17 +862,28 @@ int gmx_editconf(int argc, char *argv[])
                  "If the molecule rotates the actual distance will be smaller. You might want\n"
                  "to use a cubic box instead, or why not try a dodecahedron today?\n");
       }
-  }  
-  
+  }
+  if (bCONECT && (outftp == efPDB) && (inftp == efTPR)) 
+    conect = gmx_conect_generate(top);
+  else
+    conect = NULL;
+    
   if (bIndex) {
     fprintf(stderr,"\nSelect a group for output:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
 	      1,&isize,&index,&grpname);
     if (opt2bSet("-bf",NFILE,fnm))
       gmx_fatal(FARGS,"combination not implemented: -bf -n  or -bf -ndef");
-    else
-      write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,
-			     isize,index); 
+    else {
+      if (outftp == efPDB) {
+	out=ffopen(outfile,"w");
+	write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect);
+	fclose(out);
+      }
+      else
+	write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,
+			       isize,index); 
+    }
   }
   else {
     if ((outftp == efPDB) || (outftp == efPQR)) {
@@ -896,7 +911,7 @@ int gmx_editconf(int argc, char *argv[])
 	for(i=0; (i<atoms.nr); i++) 
 	  atoms.resinfo[atoms.atom[i].resind].chain=label[0];
       }
-      write_pdbfile(out,title,&atoms,x,ePBC,box,0,-1);
+      write_pdbfile(out,title,&atoms,x,ePBC,box,0,-1,conect);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
       if (visbox[0] > 0)

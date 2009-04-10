@@ -235,7 +235,7 @@ int gmx_filter(int argc,char *argv[])
       }
       if (outl && (bLowAll || fr % nf == nf - 1))
 	write_trx(outl,nat,ind,topfile ? &(top.atoms) : NULL,
-		  0,t[nf - 1],bFit ? topbox : boxf,xf,NULL);
+		  0,t[nf - 1],bFit ? topbox : boxf,xf,NULL,NULL);
       if (outh) {
 	/* Highpass filtering */
 	for(j=0; j<nat; j++)
@@ -248,7 +248,7 @@ int gmx_filter(int argc,char *argv[])
 	  for(d=0; d<DIM; d++)
 	    boxf[j][d] = topbox[j][d] + box[nf - 1][j][d] - boxf[j][d];
 	write_trx(outh,nat,ind,topfile ? &(top.atoms) : NULL,
-		  0,t[nf - 1],bFit ? topbox : boxf,xf,NULL);
+		  0,t[nf - 1],bFit ? topbox : boxf,xf,NULL,NULL);
       }
     }
     /* Cycle all the pointer and the box by one */

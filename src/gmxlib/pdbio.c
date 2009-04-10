@@ -223,8 +223,10 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
 void write_pdbfile_indexed(FILE *out,char *title,
 			   t_atoms *atoms,rvec x[],
 			   int ePBC,matrix box,char chain,
-			   int model_nr, atom_id nindex, atom_id index[])
+			   int model_nr, atom_id nindex, atom_id index[],
+			   gmx_conect conect)
 {
+  gmx_conect_t *gc = (gmx_conect_t *)conect;
   char resnm[6],nm[6],pdbform[128],pukestring[100];
   atom_id i,ii;
   int  resind,resnr,type;
@@ -323,10 +325,16 @@ void write_pdbfile_indexed(FILE *out,char *title,
   fprintf(out,"TER\n");
   if (!bTER)
     fprintf(out,"ENDMDL\n");
+  if (NULL != gc) {
+    /* Write conect records */
+    for(i=0; (i<gc->nconect); i++) {
+      fprintf(out,"CONECT%5d%5d\n",gc->conect[i].ai+1,gc->conect[i].aj+1);
+    }
+  }
 }
 
 void write_pdbfile(FILE *out,char *title, t_atoms *atoms,rvec x[],
-		   int ePBC,matrix box,char chain,int model_nr)
+		   int ePBC,matrix box,char chain,int model_nr,gmx_conect conect)
 {
   atom_id i,*index;
 
@@ -334,7 +342,7 @@ void write_pdbfile(FILE *out,char *title, t_atoms *atoms,rvec x[],
   for(i=0; i<atoms->nr; i++)
     index[i]=i;
   write_pdbfile_indexed(out,title,atoms,x,ePBC,box,chain,model_nr,
-			atoms->nr,index);
+			atoms->nr,index,conect);
   sfree(index);
 }
 
@@ -569,7 +577,7 @@ bool is_dummymass(char *nm)
   return FALSE;
 }
 
-static void add_conection(gmx_conect_t *con,char *line)
+static void gmx_conect_addline(gmx_conect_t *con,char *line)
 {
   int n,ai,aj;
   char format[32],form2[32];
@@ -590,7 +598,7 @@ static void add_conection(gmx_conect_t *con,char *line)
   }
 }
 
-void dump_conection(FILE *fp,gmx_conect conect)
+void gmx_conect_dump(FILE *fp,gmx_conect conect)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   int i;
@@ -600,7 +608,7 @@ void dump_conection(FILE *fp,gmx_conect conect)
 	    gc->conect[i].ai+1,gc->conect[i].aj+1);
 }
 
-gmx_conect init_gmx_conect()
+gmx_conect gmx_conect_init()
 {
   gmx_conect_t *gc;
   
@@ -609,7 +617,14 @@ gmx_conect init_gmx_conect()
   return (gmx_conect) gc;
 }
 
-bool is_conect(gmx_conect conect,int ai,int aj)
+void gmx_conect_done(gmx_conect conect)
+{
+  gmx_conect_t *gc = (gmx_conect_t *)conect;
+  
+  sfree(gc->conect);
+}
+
+bool gmx_conect_exist(gmx_conect conect,int ai,int aj)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   int i;
@@ -624,6 +639,21 @@ bool is_conect(gmx_conect conect,int ai,int aj)
 	 (gc->conect[i].ai == aj)))
       return TRUE;
   return FALSE;
+}
+
+void gmx_conect_add(gmx_conect conect,int ai,int aj)
+{
+  gmx_conect_t *gc = (gmx_conect_t *)conect;
+  int i;
+  
+  /* if (!gc->bSorted) 
+     sort_conect(gc);*/
+  
+  if (!gmx_conect_exist(conect,ai,aj)) {   
+    srenew(gc->conect,++gc->nconect);
+    gc->conect[gc->nconect-1].ai = ai;
+    gc->conect[gc->nconect-1].aj = aj;
+  }
 }
 
 int read_pdbfile(FILE *in,char *title,int *model_nr,
@@ -728,7 +758,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
       break;
     case epdbCONECT:
       if (gc) 
-	add_conection(gc,line);
+	gmx_conect_addline(gc,line);
       else if (!bConnWarn) {
 	fprintf(stderr,"WARNING: all CONECT records are ignored\n");
 	bConnWarn = TRUE;
@@ -765,4 +795,22 @@ void read_pdb_conf(char *infile,char *title,
   in = gmx_fio_fopen(infile,"r");
   read_pdbfile(in,title,NULL,atoms,x,ePBC,box,bChange,conect);
   gmx_fio_fclose(in);
+}
+
+gmx_conect gmx_conect_generate(t_topology *top)
+{
+  int f,i;
+  gmx_conect gc;
+  
+  /* Fill the conect records */
+  gc  = gmx_conect_init();
+
+  for(f=0; (f<F_NRE); f++) {
+    if (IS_CHEMBOND(f))
+      for(i=0; (i<top->idef.il[f].nr); i+=interaction_function[f].nratoms+1) {
+	gmx_conect_add(gc,top->idef.il[f].iatoms[i+1],
+		       top->idef.il[f].iatoms[i+2]);
+    }
+  }
+  return gc;
 }

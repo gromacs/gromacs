@@ -458,7 +458,7 @@ int main(int argc,char *argv[])
     }
     rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
     tapein=ffopen(pdbfile,"w");
-    write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,0,-1,gnx,index);
+    write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,0,-1,gnx,index,NULL);
     fclose(tapein);
 
 #ifdef GMX_NO_SYSTEM

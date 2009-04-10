@@ -217,7 +217,7 @@ int gmx_dyndom(int argc,char *argv[])
     for(j=0; (j<atoms.nr); j++)
       atoms.resinfo[atoms.atom[j].resind].chain = label;
     
-    write_trx(status,atoms.nr,index_all,&atoms,i,angle,box,xout,vout);  
+    write_trx(status,atoms.nr,index_all,&atoms,i,angle,box,xout,vout,NULL);  
   }
   close_trx(status);
   

@@ -1159,7 +1159,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   case efENT:
   case efPQR:
     out=gmx_fio_fopen(outfile,"w");
-    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,0,-1,nindex,index);
+    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,0,-1,nindex,index,NULL);
     gmx_fio_fclose(out);
     break;
   case efESP:
@@ -1242,7 +1242,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=gmx_fio_fopen(outfile,"w");
-    write_pdbfile(out, title, atoms, x, ePBC, box, 0, -1);
+    write_pdbfile(out, title, atoms, x, ePBC, box, 0, -1,NULL);
     gmx_fio_fclose(out);
     break;
   case efESP:

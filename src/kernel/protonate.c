@@ -167,7 +167,7 @@ int main (int argc,char *argv[])
     frout.x      = ix;
 
     /* write output */
-    write_trxframe(out,&frout);
+    write_trxframe(out,&frout,NULL);
     frame++;
   } while ( bReadMultiple && read_next_frame(status, &fr) );
   

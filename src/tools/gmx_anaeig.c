@@ -472,7 +472,7 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
 		xread[index[i]][d] +=
 		  inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
 	    }
-	  write_trx(out,natoms,index,atoms,0,t,box,xread,NULL);
+	  write_trx(out,natoms,index,atoms,0,t,box,xread,NULL,NULL);
 	}
 	nframes++;
       }
@@ -641,7 +641,7 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	    xread[index[i]][d] = 
 	      (xav[i][d] + (min*(nextr-frame-1)+max*frame)/(nextr-1)
 	      *eigvec[outvec[v]][i][d]/sqrtm[i]);
-	write_trx(out,natoms,index,atoms,0,frame,topbox,xread,NULL);
+	write_trx(out,natoms,index,atoms,0,frame,topbox,xread,NULL,NULL);
       }
       close_trx(out);
     }

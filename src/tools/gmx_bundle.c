@@ -159,7 +159,7 @@ static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
   frout.natoms = outat->nr;
   frout.atoms  = outat;
   frout.x      = xout;
-  write_trxframe(fp,&frout);
+  write_trxframe(fp,&frout,NULL);
 }
 
 int gmx_bundle(int argc,char *argv[])

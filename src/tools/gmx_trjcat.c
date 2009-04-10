@@ -305,9 +305,9 @@ static void do_demux(int nset,char *fnms[],char *fnms_out[],
       
       if (dt==0 || bRmod(trx[i].time,first_time,dt)) {
 	if (index)
-	  write_trxframe_indexed(fp_out[j],&trx[i],isize,index);
+	  write_trxframe_indexed(fp_out[j],&trx[i],isize,index,NULL);
 	else
-	  write_trxframe(fp_out[j],&trx[i]);
+	  write_trxframe(fp_out[j],&trx[i],NULL);
       }
     }
     
@@ -627,9 +627,9 @@ int gmx_trjcat(int argc,char *argv[])
 	    }
 	    
 	    if (bIndex)
-	      write_trxframe_indexed(trxout,&frout,isize,index);
+	      write_trxframe_indexed(trxout,&frout,isize,index,NULL);
 	    else
-	      write_trxframe(trxout,&frout);
+	      write_trxframe(trxout,&frout,NULL);
 	    if ( ((frame % 10) == 0) || (frame < 10) )
 	      fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
 		      frame_out,convert_time(frout.time),time_unit());

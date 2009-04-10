@@ -324,7 +324,7 @@ int gmx_nmtraj(int argc,char *argv[])
                 }
             }
         }
-        write_trx(out,natoms,dummy,atoms,i,(real)i/(real)nframes,box,xout,NULL);      
+        write_trx(out,natoms,dummy,atoms,i,(real)i/(real)nframes,box,xout,NULL,NULL);
     }    
     
     fprintf(stderr,"\n");

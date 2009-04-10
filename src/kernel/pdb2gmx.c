@@ -1142,7 +1142,7 @@ int main(int argc, char *argv[])
 		NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
-    if (debug) write_pdbfile(debug,title,pdba,x,ePBC,box,0,0);
+    if (debug) write_pdbfile(debug,title,pdba,x,ePBC,box,0,0,NULL);
 
     if (debug)
       for(i=0; (i<natom); i++)

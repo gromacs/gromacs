@@ -160,7 +160,8 @@ void set_trxframe_ePBC(t_trxframe *fr,int ePBC)
   fr->ePBC = ePBC;
 }
 
-int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
+int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind,
+			   gmx_conect gc)
 {
   char title[STRLEN];
   rvec *xout=NULL,*vout=NULL,*fout=NULL;
@@ -231,7 +232,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 			    fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
       write_pdbfile_indexed(gmx_fio_getfp(fnum),title,fr->atoms,
-			    fr->x,-1,fr->box,0,fr->step,nind,ind);
+			    fr->x,-1,fr->box,0,fr->step,nind,ind,gc);
     break;
   case efG87:
     write_gms(gmx_fio_getfp(fnum),nind,xout,fr->box);
@@ -262,7 +263,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
   return 0;
 }
 
-int write_trxframe(int fnum,t_trxframe *fr)
+int write_trxframe(int fnum,t_trxframe *fr,gmx_conect gc)
 {
   char title[STRLEN];
   real prec;
@@ -306,7 +307,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
     else
       write_pdbfile(gmx_fio_getfp(fnum),title,
 		    fr->atoms,fr->x,fr->bPBC ? fr->ePBC : -1,fr->box,
-		    0,fr->step);
+		    0,fr->step,gc);
     break;
   case efG87:
     write_gms(gmx_fio_getfp(fnum),fr->natoms,fr->x,fr->box);
@@ -324,7 +325,8 @@ int write_trxframe(int fnum,t_trxframe *fr)
 }
 
 int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
-	      int step,real time,matrix box,rvec x[],rvec *v)
+	      int step,real time,matrix box,rvec x[],rvec *v,
+	      gmx_conect gc)
 {
   t_trxframe fr;
   
@@ -342,7 +344,7 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
   fr.bBox = TRUE;
   copy_mat(box,fr.box);
   
-  return write_trxframe_indexed(fnum,&fr,nind,ind);
+  return write_trxframe_indexed(fnum,&fr,nind,ind,gc);
 }
 
 void close_trx(int status)

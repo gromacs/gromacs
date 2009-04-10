@@ -165,7 +165,7 @@ int gmx_morph(int argc,char *argv[])
   
   for(i=0; (i<ninterm); i++) {
     fac = dointerp(nat1,x1,x2,xx,i,ninterm,first,last);
-    write_trx(status,nat1,dummy,&atoms,i,fac,box,xx,NULL);
+    write_trx(status,nat1,dummy,&atoms,i,fac,box,xx,NULL,NULL);
     if (bRMS) {
       rms1 = rmsdev_ind(isize,index,mass,x1,xx);
       rms2 = rmsdev_ind(isize,index,mass,x2,xx);

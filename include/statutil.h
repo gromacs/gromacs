@@ -50,6 +50,7 @@ extern "C" {
 #include "filenm.h"
 #include "readinp.h"
 #include "wman.h"
+#include "pdbio.h"
 
   /* The code below is to facilitate controlled begin and end of
      trajectory reading. Corresponding routines in
@@ -102,20 +103,23 @@ extern void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
 extern int nframes_read(void);
 /* Returns the number of frames read from the trajectory */
 
-int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind);
-/* Write an indexed frame to a TRX file, see write_trxframe */
+  int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind,
+			     gmx_conect gc);
+/* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
-int write_trxframe(int status,t_trxframe *fr);
+  int write_trxframe(int status,t_trxframe *fr,gmx_conect gc);
 /* Write a frame to a TRX file. 
  * Only entries for which the boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
  * omitted for certain trajectory formats.
  * The precision for .xtc and .gro is fr->prec, when fr->bPrec=FALSE,
  * the precision is set to 1000.
+ * gc is important for pdb file writing only and may be NULL.
  */
 
 int write_trx(int status,int nind,atom_id *ind,t_atoms *atoms,
-	      int step,real time,matrix box,rvec x[],rvec *v);
+	      int step,real time,matrix box,rvec x[],rvec *v,
+	      gmx_conect gc);
 /* Write an indexed frame to a TRX file.
  * v can be NULL. 
  * atoms can be NULL for file types which don't need atom names.

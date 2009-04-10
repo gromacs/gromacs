@@ -228,7 +228,7 @@ int gmx_nmens(int argc,char *argv[])
     for(i=0; i<natoms; i++)
         copy_rvec(xout1[i],xout2[index[i]]);
     t = s+1;
-    write_trx(out,natoms,index,atoms,0,t,box,xout2,NULL);
+    write_trx(out,natoms,index,atoms,0,t,box,xout2,NULL,NULL);
     fprintf(stderr,"\rGenerated %d structures",s+1);
   }
   fprintf(stderr,"\n");

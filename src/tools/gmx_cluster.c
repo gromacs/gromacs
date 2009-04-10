@@ -889,7 +889,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 		bWrite[i] = rmsd[structure[i1]][structure[i]] > rmsmin;
 	  if (bWrite[i])
 	    write_trx(trxsout,iosize,outidx,atoms,i,time[structure[i]],zerobox,
-		      xx[structure[i]],NULL);
+		      xx[structure[i]],NULL,NULL);
 	}
 	close_trx(trxsout);
       } 
@@ -906,7 +906,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       if (bFit)
 	do_fit(natom,mass,xtps,xav);
       r = cl;
-      write_trx(trxout,iosize,outidx,atoms,cl,time[midstr],zerobox,xav,NULL);
+      write_trx(trxout,iosize,outidx,atoms,cl,time[midstr],zerobox,xav,NULL,NULL);
     }
   }
   /* clean up */

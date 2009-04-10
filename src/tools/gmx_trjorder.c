@@ -253,7 +253,7 @@ int gmx_trjorder(int argc,char *argv[])
 	  }
 	}
       }
-      write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL);
+      write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL,NULL);
     }
   } while(read_next_x(status,&t,natoms,x,box));
   close_trj(status);
