@@ -307,11 +307,13 @@ void write_pdbfile_indexed(FILE *out,char *title,
       }
       strcat(pdbform,"%6.2f%6.2f          %2s\n");
     }
-    fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,resic,
+    fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
+	    (resic == '\0') ? ' ' : resic,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac,atoms->atom[i].elem);
     if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic) {
       fprintf(out,"ANISOU%5u  %-4.4s%3.3s %c%4d%c %7d%7d%7d%7d%7d%7d\n",
-	      (i+1)%100000,nm,resnm,ch,resnr,resic,
+	      (i+1)%100000,nm,resnm,ch,resnr,
+	      (resic == '\0') ? ' ' : resic,
 	      atoms->pdbinfo[i].uij[0],atoms->pdbinfo[i].uij[1],
 	      atoms->pdbinfo[i].uij[2],atoms->pdbinfo[i].uij[3],
 	      atoms->pdbinfo[i].uij[4],atoms->pdbinfo[i].uij[5]);

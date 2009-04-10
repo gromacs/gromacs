@@ -1145,7 +1145,8 @@ static void pr_resinfo(FILE *fp,int indent,const char *title,t_resinfo *resinfo,
             (void) pr_indent(fp,indent);
             (void) fprintf(fp,"%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
                            title,bShowNumbers?i:-1,
-                           *(resinfo[i].name),resinfo[i].nr,resinfo[i].ic);
+                           *(resinfo[i].name),resinfo[i].nr,
+                           (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
         }
     }
 }
