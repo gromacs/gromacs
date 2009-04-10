@@ -47,18 +47,6 @@ bin_PROGRAMS = \
 	protonate	luck		gmxdump				\
 	gmxcheck	x2top
 
-gmxdump_SOURCES = gmxdump.c
-
-grompp_SOURCES = grompp.c
-
-tpbconv_SOURCES = tpbconv.c
-
-pdb2gmx_SOURCES = pdb2gmx.c
-
-protonate_SOURCES = protonate.c
-
-gmxcheck_SOURCES = gmxcheck.c
-
 x2top_SOURCES = x2top.c nm2type.c x2top.h
 
 mdrun_SOURCES = \
