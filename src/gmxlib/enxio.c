@@ -204,7 +204,8 @@ void do_enxnms(int fp,int *nre,gmx_enxnm_t **nms)
     edr_strings(xdr,bRead,file_version,*nre,nms);
 }
 
-static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool *bOK)
+static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool bTest,
+                       bool *bOK)
 {
     int  magic=-7777777;
     real r;
@@ -278,20 +279,20 @@ static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool *bOK)
     if (!do_int (dum))         *bOK = FALSE;
     
     
-    if (*bOK && *file_version == 1)
+    if (*bOK && *file_version == 1 && !bTest)
     {
         if (fp >= ener_old_nalloc)
         {
             gmx_incons("Problem with reading old format energy files");
         }
-
+        
         if (!ener_old[fp].bReadFirstStep)
         {
             ener_old[fp].bReadFirstStep = TRUE;
             ener_old[fp].first_step     = fr->step;
             ener_old[fp].nsum_prev      = 0;
         }
-
+        
         fr->nsum = fr->step - ener_old[fp].first_step + 1;
     }
 	
@@ -351,7 +352,7 @@ int open_enx(char *fn,char *mode)
     gmx_fio_setprecision(fp,FALSE);
     do_enxnms(fp,&nre,&nms);
     snew(fr,1);
-    do_eheader(fp,&file_version,fr,&bDum);
+    do_eheader(fp,&file_version,fr,TRUE,&bDum);
 	if(!bDum)
 	{
 		gmx_file("Cannot read energy file header. Corrupt file?");
@@ -370,7 +371,7 @@ int open_enx(char *fn,char *mode)
       gmx_fio_select(fp);
       gmx_fio_setprecision(fp,TRUE);
       do_enxnms(fp,&nre,&nms);
-      do_eheader(fp,&file_version,fr,&bDum);
+      do_eheader(fp,&file_version,fr,TRUE,&bDum);
   	  if(!bDum)
 	  {
 		  gmx_file("Cannot write energy file header; maybe you are out of quota?");
@@ -485,7 +486,7 @@ bool do_enx(int fp,t_enxframe *fr)
     }
     gmx_fio_select(fp);
     
-    if (!do_eheader(fp,&file_version,fr,&bOK))
+    if (!do_eheader(fp,&file_version,fr,FALSE,&bOK))
     {
         if (bRead)
         {
