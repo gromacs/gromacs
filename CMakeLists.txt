@@ -344,8 +344,8 @@ endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
 # MKL has BLAS/LAPACK routines
 if(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-  set(GMX_EXTERNAL_BLAS TRUE STRING "Use external BLAS instead of built-in")
-  set(GMX_EXTERNAL_LAPACK TRUE STRING "Use external LAPACK instead of built-in")
+  set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
+  set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
 else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
   set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
