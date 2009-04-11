@@ -7,3 +7,4 @@ main()
 #else
 #  error not catamount
 #endif
+}

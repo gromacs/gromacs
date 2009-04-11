@@ -82,6 +82,7 @@ install(TARGETS
         x2top
         gmxcheck
         mdrun
+	gmxpreprocess DESTINATION ${LIB_INSTALL_DIR}
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(GMX_FAHCORE)
