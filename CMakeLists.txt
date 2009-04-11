@@ -171,7 +171,7 @@ endif(APPLE)
 ########################################################################
 
 include(gmxCFlags)
-gmx_c_flags(XFLAGS_O3 XFLAGS_WARN XFLAGS_GNU99)
+gmx_c_flags()
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(${CMAKE_BINARY_DIR}/src)
