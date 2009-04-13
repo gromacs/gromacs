@@ -1610,14 +1610,14 @@ int calc_surfStill(t_inputrec *ir,
   real dx,dy,dz,d,rni,dist,bee,ri,rn,asurf,t1ij,t2ij,bij,bji,dbijp;
   real dbjip,tip,tmp,tij,tji,t3ij,t4ij,t5ij,t3ji,t4ji,t5ji,dbij,dbji;
   real dpf,dpx,dpy,dpz,pi,pn,si,sn;
-  real aprob[natoms];
+  real *aprob;
   int k,type,ai,aj,nj0,nj1;
   real dr2,sar,rai,raj,fij;
   rvec dxx;
 
 
   int factor=1;
-  
+  snew(aprob,natoms);
 
   /*bonds_t *bonds,*bonds13;*/
   
@@ -1921,6 +1921,7 @@ int calc_surfStill(t_inputrec *ir,
 	}
 	*/
 
+  sfree(aprob);
   return 0;
 }
 
@@ -1939,8 +1940,11 @@ int calc_surfBrooks(t_inputrec *ir,
   real kappa,sassum,tx,ty,tz,fix1,fiy1,fiz1;
 
   real ck[5];
-  real Aij[natoms];
-  real sasi[natoms];
+  real *Aij;
+  real *sasi;
+
+  snew(Aij,natoms);
+  snew(sasi,natoms);
 
   /* Brooks parameter for cutoff between atom pairs
    * Increasing kappa will increase the number of atom pairs
@@ -2027,6 +2031,9 @@ int calc_surfBrooks(t_inputrec *ir,
     }
 
   printf("Brooks total surface area is: %g\n", sassum);
+
+  sfree(Aij);
+  sfree(sasi);
 
   return 0;
 }
