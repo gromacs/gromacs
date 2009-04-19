@@ -576,6 +576,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   matrix      boxcopy,lastbox;
   double      cycles;
   char        sbuf[22],sbuf2[22];
+  bool       bHandledSignal=FALSE;
 #ifdef GMX_FAHCORE
   /* Temporary addition for FAHCORE checkpointing */
   int chkpt_ret;
@@ -1476,7 +1477,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         run_time = (double)time(NULL) - (double)start_t;
         
         /* Check whether everything is still allright */    
-        if (bGotTermSignal || bGotUsr1Signal)
+        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
         {
             if (bGotTermSignal || ir->nstlist == 0)
             {
@@ -1503,8 +1504,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                     bGotTermSignal ? "TERM" : "USR1",
                     terminate==-1 ? "NS " : "");
             fflush(stderr);
-            bGotTermSignal = FALSE;
-            bGotUsr1Signal = FALSE;
+            bHandledSignal=TRUE;
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
