@@ -33,7 +33,7 @@
 
 #include <stdio.h>
 
-#include "sse_single.h"
+#include "sse2_single.h"
 
 
 /*
@@ -43,7 +43,7 @@
  * water optimization:      pairs of SPC/TIP3P interactions
  * Calculate forces:        yes
  */
-void nb_kernel110_sse_single(
+void nb_kernel110_sse2_single(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,

@@ -14,11 +14,11 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _NB_KERNEL_SSE_SINGLE_H_
-#define _NB_KERNEL_SSE_SINGLE_H_
+#ifndef _NB_KERNEL_SSE2_SINGLE_H_
+#define _NB_KERNEL_SSE2_SINGLE_H_
 
-/*! \file  nb_kernel_sse_single.h
- *  \brief SSE-intrinsics optimized level2 nonbonded kernels.
+/*! \file  nb_kernel_sse2_single.h
+ *  \brief SSE2-intrinsics optimized level2 nonbonded kernels.
  *
  *  \internal
  */
@@ -30,6 +30,6 @@
 #include "../nb_kerneltype.h"
 
 void
-nb_kernel_setup_sse_single(FILE *log,nb_kernel_t **list);
+nb_kernel_setup_sse2_single(FILE *log,nb_kernel_t **list);
 
-#endif /* _NB_KERNEL_SSE_SINGLE_H_ */
+#endif /* _NB_KERNEL_SSE2_SINGLE_H_ */

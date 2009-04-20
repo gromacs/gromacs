@@ -15,7 +15,7 @@ option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 set(GMX_ACCELERATION "none" 
-    CACHE STRING "Accelerated kernels. Pick one of: SSE, SSE2, BlueGene, Power6, ia64, altivec")
+    CACHE STRING "Accelerated kernels. Pick one of: SSE, BlueGene, Power6, ia64, altivec")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")

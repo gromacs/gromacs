@@ -90,8 +90,8 @@
 #include "nb_kernel_x86_64_sse2/nb_kernel_x86_64_sse2.h"
 #endif
 
-#if defined(GMX_SSE) && !defined(GMX_DOUBLE)
-#include "nb_kernel_sse_single/nb_kernel_sse_single.h"
+#if defined(GMX_SSE2) && !defined(GMX_DOUBLE)
+#include "nb_kernel_sse2_single/nb_kernel_sse2_single.h"
 #endif
 
 #if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
@@ -263,8 +263,8 @@ gmx_setup_kernels(FILE *fplog)
     nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
 #endif
 
-#if defined(GMX_SSE) && !defined(GMX_DOUBLE)
-	nb_kernel_setup_sse_single(fplog,nb_kernel_list);
+#if defined(GMX_SSE2) && !defined(GMX_DOUBLE)
+	nb_kernel_setup_sse2_single(fplog,nb_kernel_list);
 #endif
  
 #if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   

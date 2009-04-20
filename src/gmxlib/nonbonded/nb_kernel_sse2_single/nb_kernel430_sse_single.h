@@ -14,10 +14,10 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _NB_KERNEL430_SSE_SINGLE_H_
-#define _NB_KERNEL430_SSE_SINGLE_H_
+#ifndef _NB_KERNEL430_SSE2_SINGLE_H_
+#define _NB_KERNEL430_SSE2_SINGLE_H_
 
-/*! \file  nb_kernel430_sse_single.h
+/*! \file  nb_kernel430_sse2_single.h
  *  \brief SSE-intrinsics optimized versions of nonbonded kernel 430
  *
  *  \internal
@@ -37,7 +37,7 @@
  *        call sequence. Parameters are documented in nb_kernel.h
  */
 void
-nb_kernel430_sse_single  (int *   nri,        int     iinr[],   int     jindex[],
+nb_kernel430_sse2_single  (int *   nri,        int     iinr[],   int     jindex[],
                        int     jjnr[],     int     shift[],  float   shiftvec[],
                        float   fshift[],   int     gid[],    float   pos[],
                        float   faction[],  float   charge[], float * facel,
@@ -65,7 +65,7 @@ nb_kernel430_sse_single  (int *   nri,        int     iinr[],   int     jindex[]
  *        call sequence. Parameters are documented in nb_kernel.h
  */
 void
-nb_kernel430nf_sse_single(int *   nri,        int     iinr[],   int     jindex[],
+nb_kernel430nf_sse2_single(int *   nri,        int     iinr[],   int     jindex[],
                        int     jjnr[],     int     shift[],  float   shiftvec[],
                        float   fshift[],   int     gid[],    float   pos[],
                        float   faction[],  float   charge[], float * facel,
@@ -81,4 +81,4 @@ nb_kernel430nf_sse_single(int *   nri,        int     iinr[],   int     jindex[]
 
 
 
-#endif /* _NB_KERNEL430_SSE_SINGLE_H_ */
+#endif /* _NB_KERNEL430_SSE2_SINGLE_H_ */

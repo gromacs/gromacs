@@ -31,7 +31,7 @@
 #include <config.h>
 #endif
 
-#include "sse_single.h"
+#include "sse2_single.h"
 
 /*
  * Gromacs nonbonded kernel nb_kernel332
@@ -40,7 +40,7 @@
  * water optimization:      pairs of SPC/TIP3P interactions
  * Calculate forces:        yes
  */
-void nb_kernel332_sse_single(
+void nb_kernel332_sse2_single(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,

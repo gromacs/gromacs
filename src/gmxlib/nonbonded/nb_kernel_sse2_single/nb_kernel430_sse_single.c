@@ -36,7 +36,7 @@ my_invrsq_ps(__m128 x)
 	return (__m128) _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
 }
 
-void nb_kernel430_sse_single(int *           p_nri,
+void nb_kernel430_sse2_single(int *           p_nri,
 						   int *           iinr,
 						   int *           jindex,
 						   int *           jjnr,
@@ -972,7 +972,7 @@ void nb_kernel430_sse_single(int *           p_nri,
  * water optimization:      No
  * Calculate forces:        no
  */
-void nb_kernel430nf_sse_single(
+void nb_kernel430nf_sse2_single(
                     int *           p_nri,
                     int *           iinr,
                     int *           jindex,
