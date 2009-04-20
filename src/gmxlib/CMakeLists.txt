@@ -5,6 +5,10 @@
 file(GLOB GMXLIB_SOURCES *.c 
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
 
+if(GMX_SSE)
+  file(GLOB GMX_SSE_SINGLE_SOURCES nonbonded/nb_kernel_sse_single/*.c)
+endif(GMX_SSE)
+
 if(NOT GMX_EXTERNAL_BLAS)
   file(GLOB BLAS_SOURCES gmx_blas/*.c)
 endif(NOT GMX_EXTERNAL_BLAS)
@@ -18,7 +22,7 @@ endif(NOT GMX_EXTERNAL_LAPACK)
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
 
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSE_SINGLE_SOURCES})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES})
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})

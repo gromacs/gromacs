@@ -74,11 +74,11 @@
 #include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
 #endif
 
-#if defined(GMX_IA32_SSE)
+#if defined(GMX_IA32_SSE) 
 #include "nb_kernel_ia32_sse/nb_kernel_ia32_sse.h"
 #endif
 
-#if defined(GMX_IA32_SSE2)
+#if defined(GMX_IA32_SSE2) 
 #include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
 #endif
 
@@ -88,6 +88,10 @@
 
 #if defined(GMX_X86_64_SSE2)
 #include "nb_kernel_x86_64_sse2/nb_kernel_x86_64_sse2.h"
+#endif
+
+#if defined(GMX_SSE) && !defined(GMX_DOUBLE)
+#include "nb_kernel_sse_single/nb_kernel_sse_single.h"
 #endif
 
 #if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
@@ -258,7 +262,11 @@ gmx_setup_kernels(FILE *fplog)
 #if defined(GMX_X86_64_SSE2)
     nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
 #endif
-	
+
+#if defined(GMX_SSE) && !defined(GMX_DOUBLE)
+	nb_kernel_setup_sse_single(fplog,nb_kernel_list);
+#endif
+ 
 #if defined(GMX_FORTRAN) && defined(GMX_DOUBLE)   
     nb_kernel_setup_f77_double(fplog,nb_kernel_list);
 #endif

@@ -151,7 +151,7 @@ typedef union
 
 
 #ifdef GMX_SOFTWARE_INVSQRT
-static inline real invsqrt(real x)
+static real invsqrt(real x)
 {
   const real  half=0.5;
   const real  three=3.0;
@@ -182,7 +182,7 @@ static inline real invsqrt(real x)
 #endif /* gmx_invsqrt */
 
 #ifdef GMX_POWERPC_SQRT
-static inline real invsqrt(real x)
+static real invsqrt(real x)
 {
   const real  half=0.5;
   const real  three=3.0;
@@ -223,7 +223,7 @@ static inline real invsqrt(real x)
 
 
 
-static inline real sqr(real x)
+static real sqr(real x)
 {
   return (x*x);
 }

@@ -14,8 +14,8 @@ option(GMX_DOUBLE "Use double precision" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
-set(GMX_ACCELERATION "c" 
-    CACHE STRING "Accelerated kernels. Pick one of: SSE, c, Fortran, BlueGene, Power6, ia64, altivec")
+set(GMX_ACCELERATION "none" 
+    CACHE STRING "Accelerated kernels. Pick one of: SSE, SSE2, BlueGene, Power6, ia64, altivec")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,fftw2,mkl,fftpack[built-in]")
@@ -231,8 +231,8 @@ endif(GMX_FORTRAN OR GMX_POWER6)
 
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_ACCELERATION} ${GMX_ACCELERATION})
-if(${GMX_ACCELERATION} STREQUAL "C")
-    # nothing to do
+if(${GMX_ACCELERATION} STREQUAL "NONE")
+  # nothing to do
 elseif(${GMX_ACCELERATION} STREQUAL "SSE")
     if(HAVE_XMMINTRIN_H)
         set(GMX_SSE 1)
@@ -262,9 +262,9 @@ elseif(${GMX_ACCELERATION} STREQUAL "ALTIVEC")
     if(HAVE_ALTIVEC_H)
         set(GMX_PPC_ALTIVEC 1)
     endif(HAVE_ALTIVEC_H)
-else(${GMX_ACCELERATION} STREQUAL "C")
+else(${GMX_ACCELERATION} STREQUAL "NONE")
     MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of SSE, c, Fortran, BlueGene, Power6, ia64, altivec")
-endif(${GMX_ACCELERATION} STREQUAL "C")
+endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 
 
