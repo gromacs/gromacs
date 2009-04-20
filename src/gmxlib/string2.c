@@ -384,6 +384,7 @@ char **split(char sep,char *str)
       str++;
       p++;
     }
+    *p = '\0';
   }
   srenew(ptr,++nptr);
   ptr[nptr-1] = NULL;
