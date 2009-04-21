@@ -57,6 +57,29 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
+
+/* Find a better place for this? */
+const int cmap_coeff_matrix[] = {
+1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4 ,
+0, 0,  0,  0, 0, 0,  0,  0,  3,  0, -9,  6, -2,  0,  6, -4,
+0, 0,  0,  0, 0, 0,  0,  0,  0,  0,  9, -6,  0,  0, -6,  4 ,
+0, 0,  3, -2, 0, 0,  0,  0,  0,  0, -9,  6,  0,  0,  6, -4,
+0, 0,  0,  0, 1, 0, -3,  2, -2,  0,  6, -4,  1,  0, -3,  2 ,
+0, 0,  0,  0, 0, 0,  0,  0, -1,  0,  3, -2,  1,  0, -3,  2 ,
+0, 0,  0,  0, 0, 0,  0,  0,  0,  0, -3,  2,  0,  0,  3, -2,
+0, 0,  0,  0, 0, 0,  3, -2,  0,  0, -6,  4,  0,  0,  3, -2,
+0, 1, -2,  1, 0, 0,  0,  0,  0, -3,  6, -3,  0,  2, -4,  2 ,
+0, 0,  0,  0, 0, 0,  0,  0,  0,  3, -6,  3,  0, -2,  4, -2,
+0, 0,  0,  0, 0, 0,  0,  0,  0,  0, -3,  3,  0,  0,  2, -2,
+0, 0, -1,  1, 0, 0,  0,  0,  0,  0,  3, -3,  0,  0, -2,  2 ,
+0, 0,  0,  0, 0, 1, -2,  1,  0, -2,  4, -2,  0,  1, -2,  1,
+0, 0,  0,  0, 0, 0,  0,  0,  0, -1,  2, -1,  0,  1, -2,  1,
+0, 0,  0,  0, 0, 0,  0,  0,  0,  0,  1, -1,  0,  0, -1,  1,
+0, 0,  0,  0, 0, 0, -1,  1,  0,  0,  2, -2,  0,  0, -1,  1
+};
+
+
+
 int glatnr(int *global_atom_index,int i)
 {
     int atnr;
@@ -1439,6 +1462,446 @@ real rbdihs(int nbonds,
   return vtot;
 }
 
+int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
+{
+	int im1, ip1, ip2;
+	
+	if(ip<0)
+	{
+		ip = ip + grid_spacing - 1;
+	}
+	else if(ip > grid_spacing)
+	{
+		ip = ip - grid_spacing - 1;
+	}
+	
+	im1 = ip - 1;
+	ip1 = ip + 1;
+	ip2 = ip + 2;
+	
+	if(ip == 0)
+	{
+		im1 = grid_spacing - 1;
+	}
+	else if(ip == grid_spacing-2)
+	{
+		ip2 = 0;
+	}
+	else if(ip == grid_spacing-1)
+	{
+		ip1 = 0;
+		ip2 = 1;
+	}
+	
+	*ipm1 = im1;
+	*ipp1 = ip1;
+	*ipp2 = ip2;
+	
+	return ip;
+	
+}
+
+real cmap_dihs(int nbonds,
+			   const t_iatom forceatoms[],const t_iparams forceparams[],gmx_cmap_t *cmap_grid,
+			   const rvec x[],rvec f[],rvec fshift[],
+			   const t_pbc *pbc,const t_graph *g,
+			   real lambda,real *dvdlambda,
+			   const t_mdatoms *md,t_fcdata *fcd,
+			   int *global_atom_index)
+{
+	int i,j,k,n,idx;
+	int ai,aj,ak,al,am;
+	int a1i,a1j,a1k,a1l,a2i,a2j,a2k,a2l;
+	int type,cmapA;
+	int t11,t21,t31,t12,t22,t32;
+	int iphi1,ip1m1,ip1p1,ip1p2;
+	int iphi2,ip2m1,ip2p1,ip2p2;
+	int l1,l2,l3,l4;
+	int pos1,pos2,pos3,pos4,tmp;
+	
+	real ty[4],ty1[4],ty2[4],ty12[4],tc[16],tx[16];
+	real phi1,psi1,cos_phi1,sin_phi1,sign1,xphi1;
+	real phi2,psi2,cos_phi2,sin_phi2,sign2,xphi2;
+	real dx,xx,tt,tu,e,df1,df2,ddf1,ddf2,ddf12,vtot;
+	real ra21,rb21,rg21,rg1,rgr1,ra2r1,rb2r1,rabr1;
+	real ra22,rb22,rg22,rg2,rgr2,ra2r2,rb2r2,rabr2;
+	real fg1,hg1,fga1,hgb1,gaa1,gbb1;
+	real fg2,hg2,fga2,hgb2,gaa2,gbb2;
+	real fac;
+	
+	rvec r1_ij, r1_kj, r1_kl,m1,n1;
+	rvec r2_ij, r2_kj, r2_kl,m2,n2;
+	rvec f1_i,f1_j,f1_k,f1_l;
+	rvec f2_i,f2_j,f2_k,f2_l;
+	rvec a1,b1,a2,b2;
+	rvec f1,g1,h1,f2,g2,h2;
+	rvec dtf1,dtg1,dth1,dtf2,dtg2,dth2;
+	ivec jt1,dt1_ij,dt1_kj,dt1_lj;
+	ivec jt2,dt2_ij,dt2_kj,dt2_lj;
+	
+	int loop_index[4][4] = {
+		{0,4,8,12},
+		{1,5,9,13},
+		{2,6,10,14},
+		{3,7,11,15}
+	};
+	
+	/* Total CMAP energy */
+	vtot = 0;
+	
+	for(n=0;n<nbonds; )
+	{
+		/* Five atoms are involved in the two torsions */
+		type   = forceatoms[n++];
+		ai     = forceatoms[n++];
+		aj     = forceatoms[n++];
+		ak     = forceatoms[n++];
+		al     = forceatoms[n++];
+		am     = forceatoms[n++];
+		
+		/* Which CMAP type is this */
+		cmapA = forceparams[type].cmap.cmapA;
+		
+		/* First torsion */
+		a1i   = ai;
+		a1j   = aj;
+		a1k   = ak;
+		a1l   = al;
+		
+		phi1  = dih_angle(x[a1i], x[a1j], x[a1k], x[a1l], pbc, r1_ij, r1_kj, r1_kl, m1, n1,
+						  &cos_phi1, &sign1, &t11, &t21, &t31); /* 84 */
+		
+		a1[0] = r1_ij[1]*r1_kj[2]-r1_ij[2]*r1_kj[1];
+		a1[1] = r1_ij[2]*r1_kj[0]-r1_ij[0]*r1_kj[2];
+		a1[2] = r1_ij[0]*r1_kj[1]-r1_ij[1]*r1_kj[0]; /* 9 */
+		
+		b1[0] = r1_kl[1]*r1_kj[2]-r1_kl[2]*r1_kj[1];
+		b1[1] = r1_kl[2]*r1_kj[0]-r1_kl[0]*r1_kj[2];
+		b1[2] = r1_kl[0]*r1_kj[1]-r1_kl[1]*r1_kj[0]; /* 9 */
+		
+		tmp = pbc_rvec_sub(pbc,x[a1l],x[a1k],h1);
+		
+		ra21  = iprod(a1,a1);       /* 5 */
+		rb21  = iprod(b1,b1);       /* 5 */
+		rg21  = iprod(r1_kj,r1_kj); /* 5 */
+		rg1   = sqrt(rg21);
+		
+		rgr1  = 1.0/rg1;
+		ra2r1 = 1.0/ra21;
+		rb2r1 = 1.0/rb21;
+		rabr1 = sqrt(ra2r1*rb2r1);
+		
+		sin_phi1 = rg1 * rabr1 * iprod(a1,h1) * (-1);
+		
+		if(cos_phi1 < -0.5 || cos_phi1 > 0.5)
+		{
+			phi1 = asin(sin_phi1);
+			
+			if(cos_phi1 < 0)
+			{
+				if(phi1 > 0)
+				{
+					phi1 = M_PI - phi1;
+				}
+				else
+				{
+					phi1 = -M_PI - phi1;
+				}
+			}
+		}
+		else
+		{
+			phi1 = acos(cos_phi1);
+			
+			if(sin_phi1 < 0)
+			{
+				phi1 = -phi1;
+			}
+		}
+		
+		xphi1 = phi1 + M_PI; /* 1 */
+		
+		/* Second torsion */
+		a2i   = aj;
+		a2j   = ak;
+		a2k   = al;
+		a2l   = am;
+		
+		phi2  = dih_angle(x[a2i], x[a2j], x[a2k], x[a2l], pbc, r2_ij, r2_kj, r2_kl, m2, n2,
+						  &cos_phi2, &sign2, &t12, &t22, &t32); /* 84 */
+		
+		a2[0] = r2_ij[1]*r2_kj[2]-r2_ij[2]*r2_kj[1];
+		a2[1] = r2_ij[2]*r2_kj[0]-r2_ij[0]*r2_kj[2];
+		a2[2] = r2_ij[0]*r2_kj[1]-r2_ij[1]*r2_kj[0]; /* 9 */
+		
+		b2[0] = r2_kl[1]*r2_kj[2]-r2_kl[2]*r2_kj[1];
+		b2[1] = r2_kl[2]*r2_kj[0]-r2_kl[0]*r2_kj[2];
+		b2[2] = r2_kl[0]*r2_kj[1]-r2_kl[1]*r2_kj[0]; /* 9 */
+		
+		tmp = pbc_rvec_sub(pbc,x[a2l],x[a2k],h2);
+		
+		ra22  = iprod(a2,a2);         /* 5 */
+		rb22  = iprod(b2,b2);         /* 5 */
+		rg22  = iprod(r2_kj,r2_kj);   /* 5 */
+		rg2   = sqrt(rg22);
+		
+		rgr2  = 1.0/rg2;
+		ra2r2 = 1.0/ra22;
+		rb2r2 = 1.0/rb22;
+		rabr2 = sqrt(ra2r2*rb2r2);
+		
+		sin_phi2 = rg2 * rabr2 * iprod(a2,h2) * (-1);
+		
+		if(cos_phi2 < -0.5 || cos_phi2 > 0.5)
+		{
+			phi2 = asin(sin_phi2);
+			
+			if(cos_phi2 < 0)
+			{
+				if(phi2 > 0)
+				{
+					phi2 = M_PI - phi2;
+				}
+				else
+				{
+					phi2 = -M_PI - phi2;
+				}
+			}
+		}
+		else
+		{
+			phi2 = acos(cos_phi2);
+			
+			if(sin_phi2 < 0)
+			{
+				phi2 = -phi2;
+			}
+		}
+		
+		xphi2 = phi2 + M_PI; /* 1 */
+		
+		/* Range mangling */
+		if(xphi1<0)
+		{
+			xphi1 = xphi1 + 2*M_PI;
+		}
+		else if(xphi1>=2*M_PI)
+		{
+			xphi1 = xphi1 - 2*M_PI;
+		}
+		
+		if(xphi2<0)
+		{
+			xphi2 = xphi2 + 2*M_PI;
+		}
+		else if(xphi2>=2*M_PI)
+		{
+			xphi2 = xphi2 - 2*M_PI;
+		}
+		
+		/* Number of grid points */
+		dx = 2*M_PI / cmap_grid->grid_spacing;
+		
+		/* Where on the grid are we */
+		iphi1 = (int)(xphi1/dx);
+		iphi2 = (int)(xphi2/dx);
+		
+		iphi1 = cmap_setup_grid_index(iphi1, cmap_grid->grid_spacing, &ip1m1,&ip1p1,&ip1p2);
+		iphi2 = cmap_setup_grid_index(iphi2, cmap_grid->grid_spacing, &ip2m1,&ip2p1,&ip2p2);
+		
+		pos1    = iphi1*cmap_grid->grid_spacing+iphi2;
+		pos2    = ip1p1*cmap_grid->grid_spacing+iphi2;
+		pos3    = ip1p1*cmap_grid->grid_spacing+ip2p1;
+		pos4    = iphi1*cmap_grid->grid_spacing+ip2p1;
+		
+		ty[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4];
+		ty[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4];
+		ty[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4];
+		ty[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4];
+		
+		ty1[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+1];
+		ty1[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+1];
+		ty1[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+1];
+		ty1[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+1];
+		
+		ty2[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+2];
+		ty2[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+2];
+		ty2[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+2];
+		ty2[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+2];
+		
+		ty12[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+3];
+		ty12[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+3];
+		ty12[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+3];
+		ty12[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+3];
+		
+		/* Switch to degrees */
+		dx = 15;
+		xphi1 = xphi1 * RAD2DEG;
+		xphi2 = xphi2 * RAD2DEG; /* HERE */
+		
+		for(i=0;i<4;i++) /* 16 */
+		{
+			tx[i] = ty[i];
+			tx[i+4] = ty1[i]*dx;
+			tx[i+8] = ty2[i]*dx;
+			tx[i+12] = ty12[i]*dx*dx;
+		}
+		
+		idx=0;
+		for(i=0;i<4;i++) /* 1056 */
+		{
+			for(j=0;j<4;j++)
+			{
+				xx = 0;
+				for(k=0;k<16;k++)
+				{
+					xx = xx + cmap_coeff_matrix[k*16+idx]*tx[k];
+				}
+				
+				idx++;
+				tc[i*4+j]=xx;
+			}
+		}
+		
+		tt    = (xphi1-iphi1*dx)/dx;
+		tu    = (xphi2-iphi2*dx)/dx;
+		
+		e     = 0;
+		df1   = 0;
+		df2   = 0;
+		ddf1  = 0;
+		ddf2  = 0;
+		ddf12 = 0;
+		
+		for(i=3;i>=0;i--)
+		{
+			l1 = loop_index[i][3];
+			l2 = loop_index[i][2];
+			l3 = loop_index[i][1];
+			
+			e     = tt * e    + ((tc[i*4+3]*tu+tc[i*4+2])*tu + tc[i*4+1])*tu+tc[i*4];
+			df1   = tu * df1  + (3.0*tc[l1]*tt+2.0*tc[l2])*tt+tc[l3];
+			df2   = tt * df2  + (3.0*tc[i*4+3]*tu+2.0*tc[i*4+2])*tu+tc[i*4+1];
+			ddf1  = tu * ddf1 + 2.0*3.0*tc[l1]*tt+2.0*tc[l2];
+			ddf2  = tt * ddf2 + 2.0*3.0*tc[4*i+3]*tu+2.0*tc[4*i+2];
+		}
+		
+		ddf12 = tc[5] + 2.0*tc[9]*tt + 3.0*tc[13]*tt*tt + 2.0*tu*(tc[6]+2.0*tc[10]*tt+3.0*tc[14]*tt*tt) +
+		3.0*tu*tu*(tc[7]+2.0*tc[11]*tt+3.0*tc[15]*tt*tt);
+		
+		fac     = RAD2DEG/dx;
+		df1     = df1   * fac;
+		df2     = df2   * fac;
+		ddf1    = ddf1  * fac * fac;
+		ddf2    = ddf2  * fac * fac;
+		ddf12   = ddf12 * fac * fac;
+		
+		/* CMAP energy */
+		vtot += e;
+		
+		/* Do forces - first torsion */
+		fg1       = iprod(r1_ij,r1_kj);
+		hg1       = iprod(r1_kl,r1_kj);
+		fga1      = fg1*ra2r1*rgr1;
+		hgb1      = hg1*rb2r1*rgr1;
+		gaa1      = -ra2r1*rg1;
+		gbb1      = rb2r1*rg1;
+		
+		for(i=0;i<DIM;i++)
+		{
+			dtf1[i]   = gaa1 * a1[i];
+			dtg1[i]   = fga1 * a1[i] - hgb1 * b1[i];
+			dth1[i]   = gbb1 * b1[i];
+			
+			f1[i]     = df1  * dtf1[i];
+			g1[i]     = df1  * dtg1[i];
+			h1[i]     = df1  * dth1[i];
+			
+			f1_i[i]   =  f1[i];
+			f1_j[i]   = -f1[i] - g1[i];
+			f1_k[i]   =  h1[i] + g1[i];
+			f1_l[i]   = -h1[i];
+			
+			f[a1i][i] = f[a1i][i] + f1_i[i];
+			f[a1j][i] = f[a1j][i] + f1_j[i]; /* - f1[i] - g1[i] */                                                            
+			f[a1k][i] = f[a1k][i] + f1_k[i]; /* h1[i] + g1[i] */                                                            
+			f[a1l][i] = f[a1l][i] + f1_l[i]; /* h1[i] */                                                                       
+		}
+		
+		/* Do forces - second torsion */
+		fg2       = iprod(r2_ij,r2_kj);
+		hg2       = iprod(r2_kl,r2_kj);
+		fga2      = fg2*ra2r2*rgr2;
+		hgb2      = hg2*rb2r2*rgr2;
+		gaa2      = -ra2r2*rg2;
+		gbb2      = rb2r2*rg2;
+		
+		for(i=0;i<DIM;i++)
+		{
+			dtf2[i]   = gaa2 * a2[i];
+			dtg2[i]   = fga2 * a2[i] - hgb2 * b2[i];
+			dth2[i]   = gbb2 * b2[i];
+			
+			f2[i]     = df2  * dtf2[i];
+			g2[i]     = df2  * dtg2[i];
+			h2[i]     = df2  * dth2[i];
+			
+			f2_i[i]   =  f2[i];
+			f2_j[i]   = -f2[i] - g2[i];
+			f2_k[i]   =  h2[i] + g2[i];
+			f2_l[i]   = -h2[i];
+			
+			f[a2i][i] = f[a2i][i] + f2_i[i]; /* f2[i] */                                                                        
+			f[a2j][i] = f[a2j][i] + f2_j[i]; /* - f2[i] - g2[i] */                                                              
+			f[a2k][i] = f[a2k][i] + f2_k[i]; /* h2[i] + g2[i] */                   		
+			f[a2l][i] = f[a2l][i] + f2_l[i]; /* - h2[i] */                                                                      
+		}
+		
+		/* Shift forces */
+		if(g)
+		{
+			copy_ivec(SHIFT_IVEC(g,a1j), jt1);
+			ivec_sub(SHIFT_IVEC(g,a1i),  jt1,dt1_ij);
+			ivec_sub(SHIFT_IVEC(g,a1k),  jt1,dt1_kj);
+			ivec_sub(SHIFT_IVEC(g,a1l),  jt1,dt1_lj);
+			t11 = IVEC2IS(dt1_ij);
+			t21 = IVEC2IS(dt1_kj);
+			t31 = IVEC2IS(dt1_lj);
+			
+			copy_ivec(SHIFT_IVEC(g,a2j), jt2);
+			ivec_sub(SHIFT_IVEC(g,a2i),  jt2,dt2_ij);
+			ivec_sub(SHIFT_IVEC(g,a2k),  jt2,dt2_kj);
+			ivec_sub(SHIFT_IVEC(g,a2l),  jt2,dt2_lj);
+			t12 = IVEC2IS(dt2_ij);
+			t22 = IVEC2IS(dt2_kj);
+			t32 = IVEC2IS(dt2_lj);
+		}
+		else if(pbc)
+		{
+			t31 = pbc_rvec_sub(pbc,x[a1l],x[a1j],h1);
+			t32 = pbc_rvec_sub(pbc,x[a2l],x[a2j],h2);
+		}
+		else
+		{
+			t31 = CENTRAL;
+			t32 = CENTRAL;
+		}
+		
+		rvec_inc(fshift[t11],f1_i);
+		rvec_inc(fshift[CENTRAL],f1_j);
+		rvec_inc(fshift[t21],f1_k);
+		rvec_inc(fshift[t31],f1_l);
+		
+		rvec_inc(fshift[t21],f2_i);
+		rvec_inc(fshift[CENTRAL],f2_j);
+		rvec_inc(fshift[t22],f2_k);
+		rvec_inc(fshift[t32],f2_l);
+	}	
+	return vtot;
+}
+
+
+
 /***********************************************************
  *
  *   G R O M O S  9 6   F U N C T I O N S
@@ -1982,7 +2445,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		real lambda,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
-		t_atomtypes *atype, gmx_genborn_t *born,
+		t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
 		bool bPrintSepPot,gmx_step_t step)
 {
   int    ftype,nbonds,ind,nat;
@@ -2031,12 +2494,24 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	nat = interaction_function[ftype].nratoms+1;
 	dvdl = 0;
 	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
-	  v =
+		if(ftype==F_CMAP)
+		{
+			v = cmap_dihs(nbonds,idef->il[ftype].iatoms,
+						  idef->iparams,cmap_grid,
+						  (const rvec*)x,f,fr->fshift,
+						  pbc_null,g,lambda,&dvdl,md,fcd,
+						  global_atom_index);
+		}
+		else
+		{
+			v =
 	    interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
 					      idef->iparams,
 					      (const rvec*)x,f,fr->fshift,
 					      pbc_null,g,lambda,&dvdl,md,fcd,
 					      global_atom_index);
+		}
+
 	  if (bPrintSepPot) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);

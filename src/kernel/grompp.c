@@ -649,6 +649,152 @@ static int nrdf_internal(t_atoms *atoms)
   return nrdf;
 }
 
+void
+spline1d( double        dx,
+		 double *      y,
+		 int           n,
+		 double *      u,
+		 double *      y2 )
+{
+    int i;
+    double p,q;
+	
+    y2[0] = 0.0;
+    u[0]  = 0.0;
+	
+    for(i=1;i<n-1;i++)
+    {
+		p = 0.5*y2[i-1]+2.0;
+        y2[i] = -0.5/p;
+        q = (y[i+1]-2.0*y[i]+y[i-1])/dx;
+		u[i] = (3.0*q/dx-0.5*u[i-1])/p;
+    }
+	
+    y2[n-1] = 0.0;
+	
+    for(i=n-2;i>=0;i--)
+    {
+        y2[i] = y2[i]*y2[i+1]+u[i];
+    }
+}
+
+
+void
+interpolate1d( double     xmin,
+			  double     dx,
+			  double *   ya,
+			  double *   y2a,
+			  double     x,
+			  double *   y,
+			  double *   y1)
+{
+    int ix;
+    double a,b;
+	
+    ix = (x-xmin)/dx;
+	
+    a = (xmin+(ix+1)*dx-x)/dx;
+    b = (x-xmin-ix*dx)/dx;
+	
+    *y  = a*ya[ix]+b*ya[ix+1]+((a*a*a-a)*y2a[ix]+(b*b*b-b)*y2a[ix+1])*(dx*dx)/6.0;
+    *y1 = (ya[ix+1]-ya[ix])/dx-(3.0*a*a-1.0)/6.0*dx*y2a[ix]+(3.0*b*b-1.0)/6.0*dx*y2a[ix+1];
+}
+
+
+void
+setup_cmap (int              grid_spacing,
+			int              nc,
+			real *           grid ,
+			gmx_cmap_t *     cmap_grid)
+{
+ 	double *tmp_u,*tmp_u2,*tmp_yy,*tmp_y1,*tmp_t2,*tmp_grid;
+	
+    int    i,j,k,ii,jj,kk,idx;
+	int    offset;
+    double dx,xmin,v,v1,v2,v12;
+    double phi,psi;
+	
+	snew(tmp_u,2*grid_spacing);
+	snew(tmp_u2,2*grid_spacing);
+	snew(tmp_yy,2*grid_spacing);
+	snew(tmp_y1,2*grid_spacing);
+	snew(tmp_t2,2*grid_spacing*2*grid_spacing);
+	snew(tmp_grid,2*grid_spacing*2*grid_spacing);
+	
+    dx = 360.0/grid_spacing;
+    xmin = -180.0-dx*grid_spacing/2;
+	
+	for(kk=0;kk<nc;kk++)
+	{
+		/* Compute an offset depending on which cmap we are using                                 
+		 * Offset will be the map number multiplied with the grid_spacing * grid_spacing * 2      
+		 */
+		offset = kk * grid_spacing * grid_spacing * 2;
+		
+		for(i=0;i<2*grid_spacing;i++)
+		{
+			ii=(i+grid_spacing-grid_spacing/2)%grid_spacing;
+			
+			for(j=0;j<2*grid_spacing;j++)
+			{
+				jj=(j+grid_spacing-grid_spacing/2)%grid_spacing;
+				tmp_grid[i*grid_spacing*2+j] = grid[offset+ii*grid_spacing+jj];
+			}
+		}
+		
+		for(i=0;i<2*grid_spacing;i++)
+		{
+			spline1d(dx,&(tmp_grid[2*grid_spacing*i]),2*grid_spacing,tmp_u,&(tmp_t2[2*grid_spacing*i]));
+		}
+		
+		for(i=grid_spacing/2;i<grid_spacing+grid_spacing/2;i++)
+		{
+			ii = i-grid_spacing/2;
+			phi = ii*dx-180.0;
+			
+			for(j=grid_spacing/2;j<grid_spacing+grid_spacing/2;j++)
+			{
+				jj = j-grid_spacing/2;
+				psi = jj*dx-180.0;
+				
+				for(k=0;k<2*grid_spacing;k++)
+				{
+					interpolate1d(xmin,dx,&(tmp_grid[2*grid_spacing*k]),
+								  &(tmp_t2[2*grid_spacing*k]),psi,&tmp_yy[k],&tmp_y1[k]);
+				}
+				
+				spline1d(dx,tmp_yy,2*grid_spacing,tmp_u,tmp_u2);
+				interpolate1d(xmin,dx,tmp_yy,tmp_u2,phi,&v,&v1);
+				spline1d(dx,tmp_y1,2*grid_spacing,tmp_u,tmp_u2);
+				interpolate1d(xmin,dx,tmp_y1,tmp_u2,phi,&v2,&v12);
+				
+				idx = ii*grid_spacing+jj;
+				cmap_grid->cmapdata[kk].cmap[idx*4] = grid[offset+ii*grid_spacing+jj];
+				cmap_grid->cmapdata[kk].cmap[idx*4+1] = v1;
+				cmap_grid->cmapdata[kk].cmap[idx*4+2] = v2;
+				cmap_grid->cmapdata[kk].cmap[idx*4+3] = v12;
+			}
+		}
+	}
+}				
+				
+void init_cmap_grid(gmx_cmap_t *cmap_grid, int ngrid, int grid_spacing)
+{
+	int i,k,nelem;
+	
+	cmap_grid->ngrid        = ngrid;
+	cmap_grid->grid_spacing = grid_spacing;
+	nelem                   = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
+	
+	snew(cmap_grid->cmapdata,ngrid);
+	
+	for(i=0;i<cmap_grid->ngrid;i++)
+	{
+		snew(cmap_grid->cmapdata[i].cmap,4*nelem);
+	}
+}
+
+
 static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
 {
   int count,count_mol,i,mb;
@@ -975,6 +1121,13 @@ int main (int argc, char *argv[])
     }
   }
   
+	/* If we are using CMAP, setup the pre-interpolation grid */
+	if(plist->ncmap>0)
+	{
+		init_cmap_grid(&sys->cmap_grid, plist->nc, plist->grid_spacing);
+		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->cmap_grid);
+	}
+	
   set_wall_atomtype(atype,opts,ir);
   if (bRenum) {
     renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);

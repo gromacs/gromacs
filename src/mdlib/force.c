@@ -1795,7 +1795,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         GMX_MPE_LOG(ev_calc_bonds_start);
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born, &(mtop->cmap_grid),
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
         
         /* Check if we have to determine energy differences

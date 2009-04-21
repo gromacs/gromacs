@@ -968,9 +968,11 @@ t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
 	
 	
 	/* Only set a Coulomb table for GB */
-	//tabsel[0]=etabGB;
-	//tabsel[1]=-1;
-	//tabsel[2]=-1;
+	/* 
+	 tabsel[0]=etabGB;
+	 tabsel[1]=-1;
+	 tabsel[2]=-1;
+	*/
 	
 	/* Set the table dimensions for GB, not really necessary to
 	 * use etiNR (since we only have one table, but ...) 
@@ -1014,7 +1016,7 @@ t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
 	 * will cause a problem since fr->eeltype==etabGB which will not
 	 * be defined in fill_table and set_table_type
 	 */
-	//fp=fopen("test.xvg","w");
+	
 	for(i=nx0;i<nx;i++)
     {
 		Vtab    = 0.0;
@@ -1038,10 +1040,10 @@ t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
     {
 		fp=xvgropen(fns[0],fns[0],"r","V");
 		/* plot the output 5 times denser than the table data */
-		//for(i=5*nx0;i<5*table.n;i++) 
+		/* for(i=5*nx0;i<5*table.n;i++) */
 		for(i=nx0;i<table.n;i++)
 		{
-			//x0=i*table.r/(5*table.n);
+			/* x0=i*table.r/(5*table.n); */
 			x0=i*table.r/table.n;
 			evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
 			fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
@@ -1070,8 +1072,6 @@ t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
 	 rel_error_r=abs_error_r/y0;
 	 rel_error_r2=fabs(abs_error_r2/yp);
 	 
-	 //printf("rel_error=%15.15f, rel_error_r2=%15.15f\n",rel_error_r, rel_error_r2);
-	 //printf("abs_error=%15.15f, abs_error_r2=%15.15f\n",abs_error_r, abs_error_r2);
 	 
 	 if(rel_error_r>rel_error_r_old)
 	 {

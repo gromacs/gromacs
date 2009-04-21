@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 64;
+static const int tpx_version = 65;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -131,6 +131,7 @@ static const t_ftupd ftupd[] = {
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
   { 43, F_TABDIHS           },
+  { 65, F_CMAP              },
   { 60, F_GB12              },
   { 61, F_GB13              },
   { 61, F_GB14              },	
@@ -152,7 +153,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        },
-  { 54, F_DHDL_CON          }
+  { 54, F_DHDL_CON          },
 };
 #define NFTUPD asize(ftupd)
 
@@ -1039,6 +1040,10 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
 	do_real(iparams->gb.gbr);
 	do_real(iparams->gb.bmlt);
 	break;
+  case F_CMAP:
+	do_int(iparams->cmap.cmapA);
+	do_int(iparams->cmap.cmapB);
+    break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
 		
@@ -1455,6 +1460,41 @@ static void do_symtab(t_symtab *symtab,bool bRead)
   }
 }
 
+static void
+do_cmap(gmx_cmap_t *cmap_grid, bool bRead)
+{
+	int i,j,ngrid,gs,nelem;
+	
+	do_int(cmap_grid->ngrid);
+	do_int(cmap_grid->grid_spacing);
+	
+	ngrid = cmap_grid->ngrid;
+	gs    = cmap_grid->grid_spacing;
+	nelem = gs * gs;
+	
+	if(bRead)
+	{
+		snew(cmap_grid->cmapdata,ngrid);
+		
+		for(i=0;i<cmap_grid->ngrid;i++)
+		{
+			snew(cmap_grid->cmapdata[i].cmap,4*nelem);
+		}
+	}
+	
+	for(i=0;i<cmap_grid->ngrid;i++)
+	{
+		for(j=0;j<nelem;j++)
+		{
+			do_real(cmap_grid->cmapdata[i].cmap[j*4]);
+			do_real(cmap_grid->cmapdata[i].cmap[j*4+1]);
+			do_real(cmap_grid->cmapdata[i].cmap[j*4+2]);
+			do_real(cmap_grid->cmapdata[i].cmap[j*4+3]);
+		}
+	}	
+}
+
+
 void 
 tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
 {
@@ -1674,7 +1714,12 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
     do_idef (&mtop->ffparams,&mtop->moltype[0],bRead,file_version);
     mtop->natoms = mtop->moltype[0].atoms.nr;
   }
-
+	
+  if(file_version >= 65)
+  {
+	  do_cmap(&mtop->cmap_grid,bRead);
+  }
+	
   if (file_version >= 57) {
     do_groups(&mtop->groups,bRead,&(mtop->symtab),file_version);
   }

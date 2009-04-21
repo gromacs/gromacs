@@ -111,6 +111,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER,idihs        ),
   def_bonded  ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
   def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2,  eNR_TABDIHS, tab_dihs     ),
+  def_bonded  ("CMAP",  "CMAP Dih.",          5, -1, -1,  eNR_CMAP,   unimplemented ),
   def_bonded  ("GB12",  "Generalized Born 1,2", 2, 2, 2,  eNR_GB,     unimplemented ),
   def_bonded  ("GB13",  "Generalized Born 1,3", 2, 2, 2,  eNR_GB,     unimplemented ),
   def_bonded  ("GB14",  "Generalized Born 1,4", 2, 2, 2,  eNR_GB,     unimplemented ),

@@ -89,6 +89,7 @@ typedef struct {
   t_block        mols;          /* The molecules                        */
   gmx_groups_t   groups;
   t_symtab	 symtab;        /* The symbol table			*/
+  gmx_cmap_t     cmap_grid;
 } gmx_mtop_t;
 
 /* The mdrun local topology struct, completely written out */

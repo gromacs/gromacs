@@ -106,6 +106,7 @@ enum
     eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
     eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD,
     eNR_VSITE4FDN,            eNR_VSITEN,               eNR_GB,
+	eNR_CMAP,
     eNRNB
 };
 

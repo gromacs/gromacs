@@ -42,7 +42,7 @@
 
 
 /* check kernel/toppush.c when you change these numbers */
-#define MAXATOMLIST	5
+#define MAXATOMLIST	6
 #define MAXFORCEPARAM	12
 #define NR_RBDIHS	6
 #define NR_FOURDIHS     4
@@ -74,6 +74,7 @@ enum {
   F_IDIHS, 
   F_PIDIHS, 
   F_TABDIHS,
+  F_CMAP,
   F_GB12,
   F_GB13,
   F_GB14,
@@ -173,6 +174,7 @@ typedef union
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
   struct {real c6A,c12A,c6B,c12B,sar,st,pi,gbr,bmlt;      } gb;
+  struct {int cmapA,cmapB;                                } cmap;
   struct {real buf[MAXFORCEPARAM];	  	          } generic; /* Conversion */
 } t_iparams;
 
@@ -210,6 +212,20 @@ typedef struct
  *	calculate the interaction and its actual parameters. This type 
  *	identifier is an index in a params[] and functype[] array.
  */
+
+typedef struct
+{
+	real *cmap; /* Has length 4*grid_spacing*grid_spacing, */
+	/* there are 4 entries for each cmap type (V,dVdx,dVdy,d2dVdxdy) */
+} cmapdata_t;
+
+typedef struct
+{
+	int ngrid;            /* Number of allocated cmap (cmapdata_t ) grids */
+	int grid_spacing;     /* Grid spacing */
+	cmapdata_t *cmapdata; /* Pointer to grid with actual, pre-interpolated data */
+} gmx_cmap_t;
+
 
 typedef struct
 {

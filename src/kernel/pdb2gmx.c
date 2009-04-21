@@ -685,7 +685,8 @@ int main(int argc, char *argv[])
   real       mHmult=0;
   bool       bAlldih,HH14,bRemoveDih;
   int        nrexcl;
-  gmx_atomprop_t aps;
+
+	gmx_atomprop_t aps;
   
   t_filenm   fnm[] = { 
     { efSTX, "-f", "eiwit.pdb", ffREAD  },

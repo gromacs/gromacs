@@ -114,6 +114,20 @@ void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
   ps->nr++;
 }
 
+void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, real c0, real c1, char *s)
+{
+	pr_alloc(1,ps);
+	ps->param[ps->nr].AI=ai;
+	ps->param[ps->nr].AJ=aj;
+	ps->param[ps->nr].AK=ak;
+	ps->param[ps->nr].AL=al;
+	ps->param[ps->nr].AM=am;
+	
+	set_p_string(&(ps->param[ps->nr]),s);
+	
+	ps->nr++;
+}
+
 void add_vsite2_atoms(t_params *ps,int ai,int aj,int ak)
 {
   pr_alloc(1,ps);

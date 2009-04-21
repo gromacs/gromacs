@@ -63,6 +63,9 @@ extern void push_bt(directive d,t_params bt[], int nral,
 extern void push_dihedraltype(directive d,t_params bt[],
 			      t_bond_atomtype bat,char *line);
 
+extern void push_cmaptype(directive d,t_params bt[], int nral, t_atomtype at,
+						  t_bond_atomtype bat,char *line);
+
 extern void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
 		     char *plines,int nb_funct);
 
@@ -81,6 +84,10 @@ extern void push_bond(directive d,t_params bondtype[],t_params bond[],
 		      t_atoms *at,t_atomtype atype,char *line,
 		      bool bBonded,bool bGenPairs,real fudgeQQ,
 		      bool bZero,bool *bWarn_copy_A_B);
+
+extern void push_cmap(directive d, t_params bondtype[], t_params bond[],
+					  t_atoms *at, t_atomtype atype, char *line,
+					  bool *bWarn_copy_A_B);
 
 extern void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 			 t_atoms *at,t_atomtype atype,char *line);

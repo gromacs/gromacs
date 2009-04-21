@@ -120,6 +120,10 @@ int ifunc_index(directive d,int type)
       gmx_fatal(FARGS,"Invalid dihedral type %d",type);
     }
     break;
+  case d_cmaptypes:
+  case d_cmap:
+    return F_CMAP;
+		  
   case d_nonbond_params:
     if (type == 1)
       return F_LJ;
@@ -257,6 +261,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_nonbond_params]),d_atomtypes,d_none);
     set_nec(&(necessary[d_implicit_genborn_params]),d_atomtypes,d_none);
     set_nec(&(necessary[d_implicit_surface_params]),d_atomtypes,d_none);
+    set_nec(&(necessary[d_cmaptypes]),d_atomtypes,d_none);
     set_nec(&(necessary[d_moleculetype]),d_atomtypes,d_none);
     set_nec(&(necessary[d_atoms]),d_moleculetype,d_none);
     set_nec(&(necessary[d_vsites2]),d_atoms,d_none);
@@ -282,6 +287,8 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_distance_restraints]),d_atoms,d_none);
     set_nec(&(necessary[d_orientation_restraints]),d_atoms,d_none);
     set_nec(&(necessary[d_dihedral_restraints]),d_atoms,d_none);
+    set_nec(&(necessary[d_cmap]), d_atoms, d_none);
+
     for(i=0; (i<d_maxdir); i++) {
       if (debug)
 	fprintf(debug,"%20s:  ",dir2str((directive)i));

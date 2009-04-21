@@ -874,6 +874,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_GB14:
     fprintf(fp, "c6A=%15.8e, c12A=%15.8e, c6B=%15.8e, c12B=%15.8e, sar=%15.8e, st=%15.8e, pi=%15.8e, gbr=%15.8e, bmlt=%15.8e\n",iparams->gb.c6A,iparams->gb.c12A,iparams->gb.c6B,iparams->gb.c12B,iparams->gb.sar,iparams->gb.st,iparams->gb.pi,iparams->gb.gbr,iparams->gb.bmlt);
     break;		  
+  case F_CMAP:
+    fprintf(fp, "cmapA=%1d, cmapB=%1d\n",iparams->cmap.cmapA, iparams->cmap.cmapB);
+    break;		  
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
 	      ftype,interaction_function[ftype].name,__FILE__,__LINE__);
@@ -1248,6 +1251,46 @@ void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
     }
 }
 
+void pr_cmap(FILE *fp, int indent, const char *title, gmx_cmap_t *cmap_grid,
+             bool bShowNumbers)
+{
+    int i,j,nelem;
+    real dx,idx;
+	
+    dx    = 360.0 / cmap_grid->grid_spacing;
+    nelem = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
+	
+    if(available(fp,cmap_grid,indent,title))
+    {
+        fprintf(fp,"%s\n",title);
+		
+        for(i=0;i<cmap_grid->ngrid;i++)
+        {
+            idx = -180.0;
+            fprintf(fp,"%8s %8s %8s %8s\n","V","dVdx","dVdy","d2dV");
+			
+            fprintf(fp,"grid[%3d]={\n",bShowNumbers?i:-1);
+			
+            for(j=0;j<nelem;j++)
+            {
+                if( (j%cmap_grid->grid_spacing)==0)
+                {
+                    fprintf(fp,"%8.1f\n",idx);
+                    idx+=dx;
+                }
+				
+                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4]);
+                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4+1]);
+                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4+2]);
+                fprintf(fp,"%8.3f\n",cmap_grid->cmapdata[i].cmap[j*4+3]);
+            }
+            fprintf(fp,"\n");
+        }
+    }
+	
+}
+
+
 void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes, 
 		  bool bShowNumbers)
 {
@@ -1327,6 +1370,7 @@ void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
                        &mtop->ffparams,bShowNumbers);
         }
         pr_groups(fp,indent,"groups",&mtop->groups,bShowNumbers);
+        pr_cmap(fp,indent,"cmap",&mtop->cmap_grid,bShowNumbers);
     }
 }
 

@@ -321,6 +321,29 @@ static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
   block_bc(cr,ffp->fudgeQQ);
 }
 
+static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
+{
+	int i,j,nelem,ngrid;
+	
+	block_bc(cr,cmap_grid->ngrid);
+	block_bc(cr,cmap_grid->grid_spacing);
+	
+	ngrid = cmap_grid->ngrid;
+	nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+	
+	if(ngrid>0)
+	{
+		snew_bc(cr,cmap_grid->cmapdata,ngrid);
+		
+		for(i=0;i<ngrid;i++)
+		{
+			snew_bc(cr,cmap_grid->cmapdata[i].cmap,4*nelem);
+			nblock_bc(cr,4*nelem,cmap_grid->cmapdata[i].cmap);
+		}
+	}
+}
+
+
 static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
 {
   int i,n;
@@ -521,4 +544,5 @@ void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
 
   bc_block(cr,&mtop->mols);
   bc_groups(cr,&mtop->symtab,mtop->natoms,&mtop->groups);
+  bc_cmap(cr,&mtop->cmap_grid);
 }

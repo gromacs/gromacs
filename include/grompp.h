@@ -64,9 +64,20 @@ typedef struct {
 } t_param;
 
 typedef struct {
-  int		nr;		/* The number of bonds in this record 	*/
-  int           maxnr;          /* The amount of elements in the array  */
-  t_param 	*param;		/* Array of parameters (dim: nr)	*/
+	int		    nr;		/* The number of bonds in this record 	*/
+	int         maxnr;          /* The amount of elements in the array  */
+	t_param 	*param;		/* Array of parameters (dim: nr)	*/
+
+	/* CMAP tmp data, there are probably better places for this */
+	int        grid_spacing; /* Cmap grid spacing */
+	int        nc;           /* Number of cmap angles */
+	
+	real       *cmap;  /* Temporary storage of the raw cmap grid data */
+	int        ncmap;    /* Number of allocated elements in cmap grid*/
+	
+	int        *cmap_types;  /* Store the five atomtypes followed by a number that identifies the type */
+	int         nct;         /* Number of allocated elements in cmap_types */
+	
 } t_params;
 
 typedef struct {
@@ -124,6 +135,7 @@ typedef enum {
   d_nonbond_params,
   d_implicit_genborn_params,
   d_implicit_surface_params,
+  d_cmaptypes,
   d_moleculetype,
   d_atoms,
   d_vsites2,
@@ -147,6 +159,7 @@ typedef enum {
   d_angle_restraints,
   d_angle_restraints_z,
   d_distance_restraints,
+  d_cmap,
   d_orientation_restraints,
   d_dihedral_restraints,
   d_maxdir,
@@ -165,6 +178,7 @@ static char *ds[d_maxdir+1] = {
   "nonbond_params",
   "implicit_genborn_params",
   "implicit_surface_params",
+  "cmaptypes",
   /* All the directives above can not appear after moleculetype */
   "moleculetype",
   "atoms",
@@ -191,6 +205,7 @@ static char *ds[d_maxdir+1] = {
   "distance_restraints",
   "orientation_restraints",
   "dihedral_restraints",
+  "cmap",
   "invalid"
   };
 

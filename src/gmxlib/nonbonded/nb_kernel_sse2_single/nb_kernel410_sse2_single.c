@@ -334,7 +334,6 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
-			//vctot   = _mm_add_ps(vctot,vgb);
 			
 			rinvsix = _mm_mul_ps(rinvsq,rinvsq);
 			rinvsix = _mm_mul_ps(rinvsix,rinvsq);
@@ -637,7 +636,6 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
-			//vctot   = _mm_add_ps(vctot,vgb);
 			
 			rinvsix = _mm_mul_ps(rinvsq,rinvsq);
 			rinvsix = _mm_mul_ps(rinvsix,rinvsq);

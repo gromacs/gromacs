@@ -102,6 +102,13 @@ void init_plist(t_params plist[])
     plist[i].maxnr = 0;
     plist[i].param = NULL;
   }
+	
+	/* CMAP */
+	plist->ncmap=0;
+	plist->cmap=NULL;
+	
+	plist->nct        = 0;
+	plist->cmap_types = NULL;
 }
 
 void cp_param(t_param *dest,t_param *src)
@@ -273,6 +280,10 @@ void print_bt(FILE *out, directive d, t_atomtype at,
   case F_VSITE4FDN:
       f = 1;
     break;
+  case F_CMAP:
+	  f = 1;
+	break;
+		  		  
   default:
     bDih=FALSE;
   }

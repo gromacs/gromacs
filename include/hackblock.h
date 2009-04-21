@@ -45,7 +45,7 @@
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
-enum { ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsNR };
+enum { ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsCMAP, ebtsNR };
 extern const char *btsNames[ebtsNR];
 extern const int btsNiatoms[ebtsNR];
 

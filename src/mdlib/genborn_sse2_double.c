@@ -1441,8 +1441,6 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 
 			/* scalar force */
 			fgb  = _mm_mul_pd(dva,dax); 
-			//_mm_store_pd(apa,fgb);
-			
 		
 			/* partial forces */
 			t1   = _mm_mul_pd(fgb,dx); 

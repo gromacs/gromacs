@@ -47,6 +47,7 @@ extern "C" {
 
 #define STRLEN 4096
 #define NOTSET -12345
+#define BIG_STRLEN 1048576
 
 #include <sys/types.h>
 #include <sysstuff.h>

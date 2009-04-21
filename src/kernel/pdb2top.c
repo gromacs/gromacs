@@ -342,6 +342,7 @@ void write_top(FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_angles,     F_ANGLES,   bts[ebtsANGLES],plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist);
+    print_bondeds(out,at->nr,d_cmap,       F_CMAP,     bts[ebtsCMAP],  plist);
     print_bondeds(out,at->nr,d_polarization,F_POLARIZATION,   0,       plist);
     print_bondeds(out,at->nr,d_thole_polarization,F_THOLE_POL,0,       plist);
     print_bondeds(out,at->nr,d_vsites2,    F_VSITE2,   0,              plist);
@@ -652,6 +653,56 @@ static void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
       }
 }
 
+void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **aname[], int nres)
+{
+	int     residx,i,ii,j,k;
+	atom_id ai,aj,ak,al,am;
+	char    *ptr;
+	
+	if (debug)
+		ptr = "cmap";
+	else
+		ptr = "check";
+	
+	fprintf(stderr,"Making cmap torsions...");
+	i=0;
+	for(residx=0; residx<nres; residx++)
+	{
+		/* Add CMAP terms from the list of CMAP interactions */
+		for(j=0;j<restp[residx].rb[ebtsCMAP].nb; j++)
+		{
+			ai=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[0],i,natoms,atom,aname,
+						   ptr,TRUE);
+			aj=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[1],i,natoms,atom,aname,
+						   ptr,TRUE);
+			ak=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[2],i,natoms,atom,aname,
+						   ptr,TRUE);
+			al=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[3],i,natoms,atom,aname,
+						   ptr,TRUE);
+			am=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[4],i,natoms,atom,aname,
+						   ptr,TRUE);
+			
+			/* For now, exclude the first and last residues from cmap */
+			if(residx>=1 && residx<nres-1)
+			{
+				add_cmap_param(psb,ai,aj,ak,al,am,0,0,restp[residx].rb[ebtsCMAP].b[j].s);
+			}
+		}
+		
+		if(residx<nres-1)
+		{
+			while(atom[i].resind<residx+1)
+			{
+				i++;
+			}
+		}
+	}
+	
+	/* Start the next residue */
+}
+
+
+
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     t_atoms *atoms, rvec **x, t_atomtype atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
@@ -729,6 +780,10 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih,bRemoveDih,bMissing);
   done_nnb(&nnb);
   
+  /* Make CMAP */
+  gen_cmap(&(plist[F_CMAP]), restp, atoms->nr, atoms->atom, atoms->atomname, atoms->nres);
+  fprintf(stderr, "there are %4d cmap torsions\n",plist[F_CMAP].nr);
+	
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
     do_h_mass(&(plist[F_BONDS]),vsite_type,atoms,mHmult,bDeuterate);

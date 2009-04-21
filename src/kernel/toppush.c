@@ -545,8 +545,10 @@ static void push_bondtype(t_params *       bt,
         memcpy(bt->param[bt->nr+1].c,b->c,sizeof(b->c));
         
         for (j=0; (j < nral); j++) 
+		{
             bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
-        
+        }
+		
         bt->nr += 2;
     }
 }
@@ -561,7 +563,8 @@ void push_bt(directive d,t_params bt[],int nral,
     "%s%s%s",
     "%s%s%s%s",
     "%s%s%s%s%s",
-    "%s%s%s%s%s%s"
+    "%s%s%s%s%s%s",
+    "%s%s%s%s%s%s%s"
   };
   const char *formnl[MAXATOMLIST+1] = {
     "%*s",
@@ -569,7 +572,8 @@ void push_bt(directive d,t_params bt[],int nral,
     "%*s%*s%*s",
     "%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s",
-    "%*s%*s%*s%*s%*s%*s"
+    "%*s%*s%*s%*s%*s%*s",
+    "%*s%*s%*s%*s%*s%*s%*s"
   };
   const char *formlf = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
   int      i,ft,ftype,nn,nrfp,nrfpA,nrfpB;
@@ -636,7 +640,8 @@ void push_dihedraltype(directive d,t_params bt[],
     "%s%s%s",
     "%s%s%s%s",
     "%s%s%s%s%s",
-    "%s%s%s%s%s%s"
+    "%s%s%s%s%s%s",
+    "%s%s%s%s%s%s%s"
   };
   const char *formnl[MAXATOMLIST+1] = {
     "%*s",
@@ -644,7 +649,8 @@ void push_dihedraltype(directive d,t_params bt[],
     "%*s%*s%*s",
     "%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s",
-    "%*s%*s%*s%*s%*s%*s"
+	"%*s%*s%*s%*s%*s%*s",
+	"%*s%*s%*s%*s%*s%*s%*s"
   };
   const char *formlf[MAXFORCEPARAM] = {
     "%lf",
@@ -879,17 +885,14 @@ push_gb_params (t_atomtype at, char *line)
     }
 	
 	/* Search for atomtype */
-	//printf("gb params for atomtype '%s'\n",atypename);
 	found = 0;
 	gfound = -1;
 	for(i=0;i<get_atomtype_ntypes(at) && !found;i++)
         {
 	  if(gmx_strncasecmp(atypename,get_atomtype_name(i,at),STRLEN-1)==0)
 		{
-			//printf("Found matching atomtype in topology: %s\n",get_atomtype_name(i,at));
 			found = i;
 			gfound = i;
-			//printf("found=%d\n",found);
 		}
     }
 	
@@ -901,6 +904,152 @@ push_gb_params (t_atomtype at, char *line)
 
 	set_atomtype_gbparam(at,found,radius,vol,surftens,gb_radius,S_hct);
 }
+
+void 
+push_cmaptype(directive d, t_params bt[], int nral, t_atomtype at, 
+			  t_bond_atomtype bat, char *line)
+{
+	const char *formal="%s%s%s%s%s%s%s%s";
+	
+	int      i,j,ft,ftype,nn,nrfp,nrfpA,nrfpB;
+	int      start;
+	int      nxcmap,nycmap,ncmap,read_cmap,sl,nct;
+	char     s[20],alc[MAXATOMLIST+1][20];
+	t_param  p;
+	bool     bAllowRepeat;
+	char     errbuf[256];
+	
+	/* Keep the compiler happy */
+	read_cmap = 0;
+	start     = 0;
+	
+	if((nn=sscanf(line,formal,alc[0],alc[1],alc[2],alc[3],alc[4],alc[5],alc[6],alc[7])) != nral+3)
+	{
+		sprintf(errbuf,"Incorrect number of atomtypes for cmap (%d instead of 5)",nn-1);
+		warning_error(errbuf);
+		return;
+	}
+	
+	/* Compute an offset for each line where the cmap parameters start
+	 * ie. where the atom types and grid spacing information ends
+	 */
+	for(i=0;i<nn;i++)
+	{
+		start += (int)strlen(alc[i]);
+	}
+	
+	/* There are nn-1 spaces between the atom types and the grid spacing info in the cmap.itp file */
+	/* start is the position on the line where we start to read the actual cmap grid data from the itp file */
+	start = start + nn -1; 
+	
+	ft     = atoi(alc[nral]);
+	nxcmap = atoi(alc[nral+1]);
+	nycmap = atoi(alc[nral+2]);
+	
+	/* Check for equal grid spacing in x and y dims */
+	if(nxcmap!=nycmap)
+	{
+		gmx_fatal(FARGS,"Not the same grid spacing in x and y for cmap grid: x=%d, y=%d",nxcmap,nycmap);
+	}
+	
+	ncmap  = nxcmap*nycmap;
+	ftype = ifunc_index(d,ft);
+	nrfpA = atoi(alc[6])*atoi(alc[6]);
+	nrfpB = atoi(alc[7])*atoi(alc[7]);
+	nrfp  = nrfpA+nrfpB;
+	
+	/* Allocate memory for the CMAP grid */
+	bt->ncmap+=nrfp;
+	srenew(bt->cmap,bt->ncmap);
+	
+	/* Read in CMAP parameters */
+	sl = 0;
+	for(i=0;i<ncmap;i++)
+	{
+		nn=sscanf(line+start+sl,"%s",s);
+		sl+=strlen(s)+1;
+		bt->cmap[i+(bt->ncmap)-nrfp]=atof(s);
+		
+		if(nn==1)
+		{
+			read_cmap++;
+		}
+		else
+		{
+			gmx_fatal(FARGS,"Error in reading cmap parameter for angle %s %s %s %s %s",alc[0],alc[1],alc[2],alc[3],alc[4]);
+		}
+		
+	}
+	
+	/* Check do that we got the number of parameters we expected */
+	if(read_cmap==nrfpA)
+	{
+		for(i=0;i<ncmap;i++)
+		{
+			bt->cmap[i+ncmap]=bt->cmap[i];
+		}
+	}
+	else
+	{
+		if(read_cmap<nrfpA)
+		{
+			warning_error("Not enough cmap parameters");
+		}
+		else if(read_cmap > nrfpA && read_cmap < nrfp)
+		{
+			warning_error("Too many cmap parameters or not enough parameters for topology B");
+		}
+		else if(read_cmap>nrfp)
+		{
+			warning_error("Too many cmap parameters");
+		}
+	}
+	
+	
+	/* Set grid spacing and the number of grids (we assume these numbers to be the same for all grids
+	 * so we can safely assign them each time 
+	 */
+	bt->grid_spacing = nxcmap; /* Or nycmap, they need to be equal */
+	bt->nc           = bt->nc + 1; /* Since we are incrementing here, we need to subtract later, see (*****) */
+	nct              = (nral+1) * bt->nc; 
+	
+	/* Allocate memory for the cmap_types information */
+	srenew(bt->cmap_types,nct);
+	
+	for(i=0; (i<nral); i++) 
+	{
+		if(at && ((p.a[i]=get_bond_atomtype_type(alc[i],bat)) == NOTSET))
+		{
+			gmx_fatal(FARGS,"Unknown atomtype %s\n",alc[i]);
+		}
+		else if (bat && ((p.a[i]=get_bond_atomtype_type(alc[i],bat)) == NOTSET))
+		{
+			gmx_fatal(FARGS,"Unknown bond_atomtype %s\n",alc[i]);
+		}
+		
+		/* Assign a grid number to each cmap_type */
+		bt->cmap_types[bt->nct++]=get_bond_atomtype_type(alc[i],bat);
+	}
+	
+	/* Assign a type number to this cmap */
+	bt->cmap_types[bt->nct++]=bt->nc-1; /* Since we inremented earlier, we need to subtrac here, to get the types right (****) */ 
+	
+	/* Check for the correct number of atoms (again) */
+	if(bt->nct!=nct)
+	{
+		gmx_fatal(FARGS,"Incorrect number of atom types (%d) in cmap type %d\n",nct,bt->nc);
+	}
+	
+	/* Is this correct?? */
+	for(i=0;i<MAXFORCEPARAM;i++)
+	{
+		p.c[i]=NOTSET;
+	}
+	
+	/* Push the bond to the bondlist */
+	push_bondtype (&(bt[ftype]),&p,nral,ftype,FALSE,line);
+}
+
 
 static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
 			  int atomicnumber,
@@ -1146,6 +1295,53 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   return bFound;
 }
 
+static bool default_cmap_params(int ftype, t_params bondtype[],
+								t_atoms *at, t_atomtype atype,
+								t_param *p, bool bB, int *cmap_type, int *nparam_def)
+{
+	int i,j,nparam_found;
+	int ct;
+	bool bFound=FALSE;
+	
+	nparam_found = 0;
+	ct           = 0;
+	
+	/* Match the current cmap angle against the list of cmap_types */
+	for(i=0;i<bondtype->nct && !bFound;i+=6)
+	{
+		if(bB)
+		{
+			
+		}
+		else
+		{
+			if( 
+			   (get_atomtype_batype(at->atom[p->a[0]].type,atype)==bondtype->cmap_types[i])   &&
+			   (get_atomtype_batype(at->atom[p->a[1]].type,atype)==bondtype->cmap_types[i+1]) &&
+			   (get_atomtype_batype(at->atom[p->a[2]].type,atype)==bondtype->cmap_types[i+2]) &&
+			   (get_atomtype_batype(at->atom[p->a[3]].type,atype)==bondtype->cmap_types[i+3]) &&
+			   (get_atomtype_batype(at->atom[p->a[4]].type,atype)==bondtype->cmap_types[i+4]))
+			{
+				/* Found cmap torsion */
+				bFound=TRUE;
+				ct = bondtype->cmap_types[i+5];
+				nparam_found=1;
+			}
+		}
+	}
+	
+	/* If we did not find a matching type for this cmap torsion */
+	if(!bFound)
+	{
+		gmx_fatal(FARGS,"Unknown cmap torsion between atoms %d %d %d %d %d\n",
+				  p->a[0]+1,p->a[1]+1,p->a[2]+1,p->a[3]+1,p->a[4]+1);
+	}
+	
+	*nparam_def = nparam_found;
+	*cmap_type  = ct;
+	
+	return bFound;
+}
 
 static bool default_params(int ftype,t_params bt[],
 			   t_atoms *at,t_atomtype atype,
@@ -1258,14 +1454,16 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%d%d%d",
     "%d%d%d%d",
     "%d%d%d%d%d",
-    "%d%d%d%d%d%d"
+    "%d%d%d%d%d%d",
+    "%d%d%d%d%d%d%d"
   };
   const char *asformat[MAXATOMLIST]= {
     "%*s%*s",
     "%*s%*s%*s",
     "%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s",
-    "%*s%*s%*s%*s%*s%*s"
+    "%*s%*s%*s%*s%*s%*s",
+    "%*s%*s%*s%*s%*s%*s%*s"
   };
   const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
   int      nr,i,j,nral,nread,ftype;
@@ -1568,7 +1766,99 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	}
 }
 
+void push_cmap(directive d, t_params bondtype[], t_params bond[],
+			   t_atoms *at, t_atomtype atype, char *line,
+			   bool *bWarn_copy_A_B)
+{
+	const char *aaformat[MAXATOMLIST+1]= 
+	{
+		"%d",
+		"%d%d",
+		"%d%d%d",
+		"%d%d%d%d",
+		"%d%d%d%d%d",
+		"%d%d%d%d%d%d",
+		"%d%d%d%d%d%d%d"
+	};
 	
+	int i,j,nr,ftype,nral,nread,ncmap_params;
+	int cmap_type;
+	int aa[MAXATOMLIST+1];
+	char  errbuf[256];
+	bool bFound;
+	t_param param,paramB,*param_defA,*param_defB;
+	
+	ftype        = ifunc_index(d,1);
+	nral         = NRAL(ftype);
+	nr           = bondtype[ftype].nr;
+	ncmap_params = 0;
+	
+	nread = sscanf(line,aaformat[nral-1],
+				   &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
+	
+	if (nread < nral) 
+	{
+		too_few();
+		return;
+	} 
+	else if (nread == nral) 
+	{
+		ftype = ifunc_index(d,1);
+	}
+	
+	/* Check for double atoms and atoms out of bounds */
+	for(i=0;i<nral;i++)
+	{
+		if(aa[i] < 1 || aa[i] > at->nr)
+		{
+			gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+					  "Atom index (%d) in %s out of bounds (1-%d).\n"
+					  "This probably means that you have inserted topology section \"%s\"\n"
+					  "in a part belonging to a different molecule than you intended to.\n" 
+					  "In that case move the \"%s\" section to the right molecule.",
+					  get_warning_file(),get_warning_line(),
+					  aa[i],dir2str(d),at->nr,dir2str(d),dir2str(d));
+		}
+		
+		for(j=i+1; (j<nral); j++)
+		{
+			if (aa[i] == aa[j]) 
+			{
+				sprintf(errbuf,"Duplicate atom index (%d) in %s",aa[i],dir2str(d));
+				warning(errbuf);
+			}
+		}
+	}
+	
+	/* default force parameters  */
+	for(j=0; (j<MAXATOMLIST); j++)
+	{
+		param.a[j] = aa[j]-1;
+	}
+	for(j=0; (j<MAXFORCEPARAM); j++)
+	{
+		param.c[j] = 0.0;
+	}	
+	
+	/* Get the cmap type for this cmap angle */
+	bFound = default_cmap_params(ftype,bondtype,at,atype,&param,FALSE,&cmap_type,&ncmap_params);
+	
+	/* We want exactly one parameter (the cmap type in state A (currently no state B) back */
+	if(bFound && ncmap_params==1)
+	{
+		/* Put the values in the appropriate arrays */
+		param.c[0]=cmap_type;
+		add_param_to_list(&bond[ftype],&param);
+	}
+	else
+	{
+		/* This is essentially the same check as in default_cmap_params() done one more time */
+		gmx_fatal(FARGS, "Unable to assign a cmap type to torsion %d %d %d %d and %d\n",
+				  param.a[0]+1,param.a[1]+1,param.a[2]+1,param.a[3]+1,param.a[4]+1);
+	}
+}
+
+
 	
 void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 		  t_atoms *at,t_atomtype atype,char *line)

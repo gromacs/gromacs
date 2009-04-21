@@ -311,7 +311,7 @@ static char **read_topol(char *infile,char *outfile,
 			 bool        bVerbose)
 {
   FILE       *out;
-  int        i,nb_funct,comb;
+  int        i,sl,nb_funct,comb;
   char       *pline=NULL,**title=NULL;
   char       line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
@@ -334,7 +334,8 @@ static char **read_topol(char *infile,char *outfile,
   /* File handling variables */
   int        status,done;
   gmx_cpp_t  handle;
-  
+  char     *tmp_line=NULL;
+
   /* open input and output file */
   status = cpp_open_file(infile,&handle,cpp_opts(define,include,infile));
   if (status != 0) 
@@ -355,6 +356,10 @@ static char **read_topol(char *infile,char *outfile,
   
   comb     = 0;
   
+  /* Init the number of CMAP torsion angles  and grid spacing */
+  plist->grid_spacing = 0;
+  plist->nc           = 0;
+	
   bWarn_copy_A_B = bFEP;
 
   batype = init_bond_atomtype();
@@ -375,20 +380,39 @@ static char **read_topol(char *infile,char *outfile,
     
       pline = strdup(line);
     
-      /* build one long line from several fragments */
-      /*while (continuing(line)) {
-	status = cpp_read_line(&handle,STRLEN,line);
-	done = (status == eCPP_EOF);
-	if (!done) {
-	if (status != eCPP_OK)
-	gmx_fatal(FARGS,cpp_error(&handle,status));
-	else if (out)
-	fprintf(out,"%s\n",line);
+	/* Strip trailing '\' from pline, if it exists */
+	sl = strlen(pline);
+	if ((sl > 0) && (pline[sl-1] == CONTINUE)) {
+		pline[sl-1] = ' ';
 	}
-	srealloc(pline,strlen(pline)+strlen(line)+1);
-	strcat(pline,line);
-	}
-      */
+		
+		/* build one long line from several fragments - necessary for CMAP */
+		while (continuing(line))
+		{
+			status = cpp_read_line(&handle,STRLEN,line);
+			
+			/* Since we depend on the '\' being present to continue to read, we copy line                                           
+			 * to a tmp string, strip the '\' from that string, and cat it to pline                                                 
+			 */
+			tmp_line=strdup(line);
+			
+			sl = strlen(tmp_line);
+			if ((sl > 0) && (tmp_line[sl-1] == CONTINUE)) {
+				tmp_line[sl-1] = ' ';
+			}
+			
+			done = (status == eCPP_EOF);
+			if (!done) {
+				if (status != eCPP_OK)
+					gmx_fatal(FARGS,cpp_error(&handle,status));
+				else if (out)
+					fprintf(out,"%s\n",line);
+			}
+			
+			srealloc(pline,strlen(pline)+strlen(tmp_line)+1);
+			strcat(pline,tmp_line);
+		}
+				
       /* skip trailing and leading spaces and comment text */
       strip_comment (pline);
       trim (pline);
@@ -510,6 +534,10 @@ static char **read_topol(char *infile,char *outfile,
 	    gmx_fatal(FARGS,"Implicit surface directive not supported yet.");
 	    break;
 
+	  case d_cmaptypes:
+		push_cmaptype(d, plist, 5, atype, batype,pline);
+		break;
+			  
 	  case d_moleculetype: {
 	    if (!bReadMolType) {
 	      int ntype;
@@ -572,6 +600,10 @@ static char **read_topol(char *infile,char *outfile,
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
 		      bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B);
 	    break;
+	  case d_cmap:
+		push_cmap(d,plist,mi0->plist,&(mi0->atoms),atype,pline,&bWarn_copy_A_B);
+		break;
+			  
 	  case d_vsitesn:
 	    push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline);
 	    break;
