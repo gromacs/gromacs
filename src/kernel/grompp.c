@@ -996,6 +996,21 @@ int main (int argc, char *argv[])
 	if(ir->implicit_solvent)
 	{
 		printf("Constructing Generalized Born topology...\n");
+
+		/* Check for -normvsbds switch to grompp, necessary for gb together with vsites */
+		if(bRmVSBds && nvsite)
+		{
+			fprintf(stderr, "ERROR: Must use -normvsbds switch to grompp when doing Generalized Born\n"
+					"together with virtual sites\n");
+			nerror++;
+		}
+		
+		if (nerror)
+		{
+			print_warn_num(FALSE);
+			gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
+		}
+		
 		generate_gb_topology(sys,mi);
 	}
 	

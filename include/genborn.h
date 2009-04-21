@@ -59,32 +59,50 @@ typedef struct
  */
 typedef struct
 {
-	int nr;                  /* number of atoms, length of arrays below */
-	int n12;                 /* number of 1-2 (bond) interactions       */
-	int n13;                 /* number of 1-3 (angle) terms             */
-	int n14;                 /* number of 1-4 (torsion) terms           */
-	real  *gpol;             /* Atomic polarisation energies */
-	real  *bRad;             /* Atomic Born radii */
-	real  *vsolv;            /* Atomic solvation volumes */
-	int *vs;                 /* Array for vsites-exclusions */     
-	int nvs;                 /* Length of vs array         */
-	real es;                 /* Solvation energy and derivatives */
-	real *asurf;             /* Atomic surface area */
-	rvec *dasurf;            /* Surface area derivatives */
-	real as;                 /* Total surface area */
-	real *S_hct;             /* Overlap factors for HCT/OBC method */
-	real *drobc;             /* Parameters for OBC chain rule calculation */
-	real *param;             /* Precomputed factor rai*atype->S_hct for HCT/OBC */
-	real *log_table;         /* Table for logarithm lookup */
+	int nr;                   /* number of atoms, length of arrays below */
+	int n12;                  /* number of 1-2 (bond) interactions       */
+	int n13;                  /* number of 1-3 (angle) terms             */
+	int n14;                  /* number of 1-4 (torsion) terms           */
+	int nlocal;               /* Length of local arrays (with DD)        */
 	
-	real obc_alpha;          /* OBC parameters */
-	real obc_beta;           /* OBC parameters */
-	real obc_gamma;          /* OBC parameters */
-	real gb_doffset;         /* Dielectric offset for Still/HCT/OBC */
+	/* Arrays below that end with _globalindex are used for setting up initial values of
+	 * all gb parameters and values. They all have length natoms, which for DD is the 
+	 * global atom number. 
+	 * Values are then taken from these arrays to local copies, that have names without
+	 * _globalindex, in the routine make_local_gb(), which is called once for single
+	 * node runs, and for DD at every call to dd_partition_system
+	 */
+
+	real  *gpol;              /* Atomic polarisation energies */
+	real  *gpol_globalindex;  /*  */
+	real  *bRad;              /* Atomic Born radii */
+	real  *vsolv;             /* Atomic solvation volumes */
+	real  *vsolv_globalindex; /*  */
 	
-        real *work;              /* Used for parallel summation and in the chain rule */
-        int  *count;             /* Used for setting up the special gb nblist */
-        int  **nblist_work;       /* Used for setting up the special gb nblist */
+	int *vs;                  /* Array for vsites-exclusions */   
+	int *vs_globalindex;      /*  */
+		
+	real es;                  /* Solvation energy and derivatives */
+	real *asurf;              /* Atomic surface area */
+	rvec *dasurf;             /* Surface area derivatives */
+	real as;                  /* Total surface area */
+
+	real *drobc;              /* Parameters for OBC chain rule calculation */
+	real *param;              /* Precomputed factor rai*atype->S_hct for HCT/OBC */
+	real *param_globalindex;  /*  */
+	
+	real *log_table;          /* Table for logarithm lookup */
+	
+	real obc_alpha;           /* OBC parameters */
+	real obc_beta;            /* OBC parameters */
+	real obc_gamma;           /* OBC parameters */
+	real gb_doffset;          /* Dielectric offset for Still/HCT/OBC */
+	
+	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
+	real *dd_work;            /* Used for domain decomposition parallell runs, length natoms              */
+	int  *count;              /* Used for setting up the special gb nblist, length natoms                 */
+	int  **nblist_work;       /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */
+	int  nblist_work_nalloc;  /* Length of second dimension of nblist_work                                */
 } 
 gmx_genborn_t;
 
@@ -95,7 +113,7 @@ int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_mtop_t *mtop,
+int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *top,
 				const t_atomtypes *atype, rvec x[], rvec f[],t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
 
 
@@ -125,13 +143,16 @@ generate_gb_topology(gmx_mtop_t *mtop, t_molinfo *mi);
 
 /* Functions for calculating adjustments due to ie chain rule terms */
 real 
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_mtop_t *mtop, const t_atomtypes *atype,
+calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
 			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, bool bRad);
 
 
 int
-gb_nblist_siev(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], 
-                          t_forcerec *fr, t_idef *idef, gmx_genborn_t *born);
+make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], 
+			   t_forcerec *fr, t_idef *idef, gmx_genborn_t *born);
+
+void 
+make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 
 
 #endif /* _genborn_h */

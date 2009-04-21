@@ -32,34 +32,31 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-
 #ifndef _genborn_sse_h
 #define _genborn_sse_h
-
-#include "typedefs.h"
-#include "grompp.h"
-
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
+#include "typedefs.h"
+#include "grompp.h"
 
-real 
-calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, real *xd, real *f, int gb_algorithm, gmx_genborn_t *born);						
+
+float 
+calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, float *xd, float *f, int gb_algorithm, gmx_genborn_t *born);						
 
 
 int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop,
-					  const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
+calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
+					  const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
 
 int 
-calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop, const t_atomtypes *atype, real *x,
+calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top, const t_atomtypes *atype, float *x,
 					t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
 
 int 
-calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop,
-					const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
+calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
+					const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
 
 #endif /* _genborn_sse_h */

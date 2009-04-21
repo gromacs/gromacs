@@ -238,7 +238,7 @@ void init_em(FILE *fplog,const char *title,
 	     t_nrnb *nrnb,rvec mu_tot,
 	     t_forcerec *fr,gmx_enerdata_t **enerd,
 	     t_graph **graph,t_mdatoms *mdatoms,
-	     gmx_vsite_t *vsite,gmx_constr_t constr,
+	     gmx_vsite_t *vsite,gmx_constr_t constr, gmx_genborn_t *born,
 	     int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene,
 	     t_mdebin **mdebin)
 {
@@ -271,7 +271,7 @@ void init_em(FILE *fplog,const char *title,
     dd_partition_system(fplog,ir->init_step,cr,TRUE,
 			state_global,top_global,ir,
 			&ems->s,&ems->f,mdatoms,*top,
-			fr,vsite,NULL,constr,
+			fr,vsite,NULL,constr,born,
 			nrnb,NULL,FALSE);
     dd_store_state(cr->dd,&ems->s);
     
@@ -528,7 +528,7 @@ static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
   dd_partition_system(fplog,step,cr,FALSE,
 		      NULL,top_global,ir,
 		      &ems->s,&ems->f,
-		      mdatoms,top,fr,vsite,NULL,constr,
+		      mdatoms,top,fr,vsite,NULL,constr,NULL,
 		      nrnb,wcycle,FALSE);
   dd_store_state(cr->dd,&ems->s);
   wallcycle_stop(wcycle,ewcDOMDEC);
@@ -806,7 +806,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   /* Init em and store the local state in s_min */
   init_em(fplog,CG,cr,inputrec,
 	  state_global,top_global,s_min,&top,f,&f_global,
-	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
+	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,NULL,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
 
   /* Print to log file */
@@ -1368,7 +1368,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   /* Init em */
   init_em(fplog,LBFGS,cr,inputrec,
 	  state,top_global,&ems,&top,f,&f,
-	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
+	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,born,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
   /* Do_lbfgs is not completely updated like do_steep and do_cg,
    * so we free some memory again.
@@ -1960,7 +1960,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   /* Init em and store the local state in s_try */
   init_em(fplog,SD,cr,inputrec,
 	  state_global,top_global,s_try,&top,f,&f_global,
-	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
+	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,born,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
 
   /* Print to log file  */
@@ -2178,7 +2178,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     init_em(fplog,NM,cr,inputrec,
 	    state_global,top_global,state_work,&top,
 	    f,&f_global,
-	    nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,
+	    nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,NULL,
 	    nfile,fnm,NULL,&fp_ene,&mdebin);
     
     snew(fneg,top_global->natoms);

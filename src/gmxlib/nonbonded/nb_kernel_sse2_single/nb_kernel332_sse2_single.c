@@ -31,6 +31,11 @@
 #include <config.h>
 #endif
 
+
+#include <xmmintrin.h>
+#include <emmintrin.h>
+
+
 #include "sse_common_single.h"
 
 /*

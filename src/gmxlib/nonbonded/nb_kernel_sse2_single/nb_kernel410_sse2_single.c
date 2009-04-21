@@ -19,6 +19,7 @@
 #include<vec.h>
 
 #include <xmmintrin.h>
+#include <emmintrin.h>
 
 /* to extract single integers from a __m128i datatype */
 #define _mm_extract_epi32(x, imm) \
@@ -104,12 +105,12 @@ void nb_kernel410_sse2_single(int *           p_nri,
 	__m128i  n0, nnn;
 	
 	float vct,vdwt,dva,isai_f,vgbt;
-		
+	
 	/* Splat variables */
 	fac_sse        = _mm_load1_ps(&facel);
 	tabscale_sse   = _mm_load1_ps(&tabscale);
 	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
-		
+	
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
 	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
 	const __m128 half   = {0.5f,0.5f,0.5f,0.5f};
@@ -120,7 +121,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 	
 	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);     
 	__m128i mask        = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);   
-
+	
 	/* Keep the compiler happy */
 	Vvdwtmp = _mm_setzero_ps();
 	dvdatmp = _mm_setzero_ps();
@@ -150,13 +151,13 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		ix               = _mm_set1_ps(shX+pos[ii3+0]);
 		iy               = _mm_set1_ps(shY+pos[ii3+1]);
 		iz               = _mm_set1_ps(shZ+pos[ii3+2]);
-	
+		
 		iq               = _mm_load1_ps(charge+ii);
 		iq               = _mm_mul_ps(iq,fac_sse);
-			
+		
         isai_f           = invsqrta[ii];   
 		isai             = _mm_load1_ps(&isai_f);
-								
+		
 		nti              = 2*ntype*type[ii];
 		
 		vctot            = _mm_setzero_ps();
@@ -166,7 +167,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		fix              = _mm_setzero_ps();
 		fiy              = _mm_setzero_ps();
 		fiz              = _mm_setzero_ps();
-				
+		
 		offset           = (nj1-nj0)%4;
         
         for(k=nj0;k<nj1-offset;k+=4)
@@ -175,7 +176,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			jnr2    = jjnr[k+1];
 			jnr3    = jjnr[k+2];
 			jnr4    = jjnr[k+3];
-				      
+			
             j3      = 3*jnr;  
 			j23		= 3*jnr2;
 			j33     = 3*jnr3;
@@ -185,7 +186,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			xmm2    = _mm_loadh_pi(xmm2, (__m64 *) (pos+j23)); /* x2 y2 - - */
 			xmm3    = _mm_loadh_pi(xmm3, (__m64 *) (pos+j33)); /* x3 y3 - - */
 			xmm4    = _mm_loadh_pi(xmm4, (__m64 *) (pos+j43)); /* x4 y4 - - */			
-						
+			
 			xmm5    = _mm_load1_ps(pos+j3+2);  
 			xmm6    = _mm_load1_ps(pos+j23+2); 
 			xmm7    = _mm_load1_ps(pos+j33+2); 
@@ -200,15 +201,15 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			xmm2    = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(3,2,3,2));
 			jx      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(2,0,2,0));
 			jy      = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,1,3,1));
-
+			
 			dx1     = _mm_sub_ps(ix,jx);
 			dy1     = _mm_sub_ps(iy,jy);
 			dz1     = _mm_sub_ps(iz,jz);
-
+			
 			t1      = _mm_mul_ps(dx1,dx1);
 			t2      = _mm_mul_ps(dy1,dy1);
 			t3      = _mm_mul_ps(dz1,dz1);
-
+			
 			rsq     = _mm_add_ps(t1,t2);
 			rsq     = _mm_add_ps(rsq,t3);
 			rinv    = my_invrsq_ps(rsq);
@@ -239,12 +240,12 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			qq      = _mm_mul_ps(qq,neg);
 			qq      = _mm_mul_ps(isaprod,qq);
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
-						
+			
             tj      = nti+2*type[jnr];
 			tj2     = nti+2*type[jnr2];
 			tj3     = nti+2*type[jnr3];
 			tj4     = nti+2*type[jnr4];
-		
+			
 			xmm1    = _mm_loadl_pi(xmm1,(__m64 *) (vdwparam+tj));
 			xmm1    = _mm_loadh_pi(xmm1,(__m64 *) (vdwparam+tj2));
 			xmm2    = _mm_loadl_pi(xmm2,(__m64 *) (vdwparam+tj3));
@@ -318,11 +319,11 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			dvdatmp = _mm_mul_ps(neg,dvdatmp);
 			
 			dvdasum = _mm_add_ps(dvdasum,dvdatmp);
-						
+			
 			xmm1    = _mm_mul_ps(dvdatmp,isaj);
 			xmm1    = _mm_mul_ps(xmm1,isaj);
 			dvdaj   = _mm_add_ps(dvdaj,xmm1);
-		
+			
 			_mm_store_ss(dvda+jnr,dvdaj);
 			xmm1    = _mm_shuffle_ps(dvdaj,dvdaj,_MM_SHUFFLE(0,3,2,1)); 
 			_mm_store_ss(dvda+jnr2,xmm1);
@@ -330,7 +331,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			_mm_store_ss(dvda+jnr3,xmm1);
 			xmm1    = _mm_shuffle_ps(dvdaj,dvdaj,_MM_SHUFFLE(2,1,0,3));
 			_mm_store_ss(dvda+jnr4,xmm1);
-		
+			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
 			//vctot   = _mm_add_ps(vctot,vgb);
@@ -380,7 +381,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			
 			xmm5    = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(2,0,2,0));
 			xmm6    = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,1,3,1));
-												
+			
 			/* subtract partial terms */
 			xmm5    = _mm_sub_ps(xmm5,t1);
 			xmm6    = _mm_sub_ps(xmm6,t2);
@@ -427,7 +428,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				q     = _mm_load_ss(charge+jnr);
 				c6    = _mm_load_ss(vdwparam+tj);
 				c12   = _mm_load_ss(vdwparam+tj+1);
-							
+				
 				mask  =  _mm_set_epi32(0,0,0,0xffffffff);
 				
 			}
@@ -454,7 +455,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2));
 				xmm6  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				xmm4  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
-			
+				
 				xmm1  = _mm_load_ss(invsqrta+jnr);
 				xmm2  = _mm_load_ss(invsqrta+jnr2);
 				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
@@ -464,7 +465,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				xmm2  = _mm_load_ss(dvda+jnr2);
 				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				dvdaj = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
-							
+				
 				xmm1  = _mm_load_ss(charge+jnr);
 				xmm2  = _mm_load_ss(charge+jnr2);
 				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
@@ -499,7 +500,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				xmm5  = _mm_load1_ps(pos+j3+2); 
 				xmm6  = _mm_load1_ps(pos+j23+2); 
 				xmm7  = _mm_load1_ps(pos+j33+2); 
-											
+				
 				xmm5  = _mm_shuffle_ps(xmm5,xmm6, _MM_SHUFFLE(0,0,0,0)); 
 				xmm5  = _mm_shuffle_ps(xmm5,xmm7, _MM_SHUFFLE(3,1,3,1));	
 				
@@ -524,7 +525,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); 
 				xmm3  = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); 
 				dvdaj = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-							
+				
 				xmm1  = _mm_load_ss(charge+jnr);
 				xmm2  = _mm_load_ss(charge+jnr2);
 				xmm3  = _mm_load_ss(charge+jnr3);
@@ -539,7 +540,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				
 				xmm3  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,2,0,2));
 				c6    = _mm_shuffle_ps(xmm3,xmm2,_MM_SHUFFLE(1,0,0,1));
-							
+				
 				xmm3  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
 				c12   = _mm_shuffle_ps(xmm3,xmm2,_MM_SHUFFLE(1,1,1,0));
 				
@@ -573,10 +574,10 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			qq      = _mm_mul_ps(iq,q);
 			vcoul   = _mm_mul_ps(qq,rinv);
 			fscal   = _mm_mul_ps(vcoul,rinv);
-		
+			
 			qq      = _mm_mul_ps(qq,neg);
 			qq      = _mm_mul_ps(isaprod,qq);
-		
+			
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
 			rinvsq  = _mm_mul_ps(rinv,rinv);
 			r       = _mm_mul_ps(rsq,rinv);
@@ -612,7 +613,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			Fp      = _mm_add_ps(Fp,Heps2);
 			VV      = _mm_mul_ps(Fp,eps);
 			VV      = _mm_add_ps(Y,VV);
-	
+			
 			xmm1    = _mm_mul_ps(two,Heps2);
 			FF      = _mm_add_ps(Fp,Geps);
 			FF      = _mm_add_ps(FF,xmm1);
@@ -637,7 +638,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
 			//vctot   = _mm_add_ps(vctot,vgb);
-	
+			
 			rinvsix = _mm_mul_ps(rinvsq,rinvsq);
 			rinvsix = _mm_mul_ps(rinvsix,rinvsq);
 			
@@ -662,7 +663,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			if(offset==1)
 			{
 				_mm_store_ss(dvda+jnr,dvdaj);
-			
+				
 				xmm1 = _mm_loadl_pi(xmm1, (__m64 *) (faction+j3));
 				xmm7 = _mm_load1_ps(faction+j3+2);
 				
@@ -732,10 +733,10 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2)); 
 				xmm2 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(3,2,3,2)); 
-			
+				
 				xmm5 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(2,0,2,0)); 
 				xmm6 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,1,3,1)); 
-						
+				
 				xmm5 = _mm_sub_ps(xmm5, t1);
 				xmm6 = _mm_sub_ps(xmm6, t2);
 				xmm7 = _mm_sub_ps(xmm7, t3);
@@ -759,7 +760,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			t1 = _mm_and_ps( (__m128) mask, t1);
 			t2 = _mm_and_ps( (__m128) mask, t2);
 			t3 = _mm_and_ps( (__m128) mask, t3);
-
+			
 			fix = _mm_add_ps(fix,t1);
 			fiy = _mm_add_ps(fiy,t2);
 			fiz = _mm_add_ps(fiz,t3);
@@ -780,7 +781,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		fix     = _mm_add_ps(fix,t1);
 		fiy     = _mm_add_ps(fiy,t2);
 		fiz     = _mm_add_ps(fiz,t3);
-
+		
 		xmm2    = _mm_unpacklo_ps(fix,fiy); /* fx, fy, - - */
 		xmm2    = _mm_movelh_ps(xmm2,fiz); 
 		xmm2    = _mm_and_ps( (__m128) maski, xmm2);
@@ -797,9 +798,9 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		_mm_storel_pi( (__m64 *) (faction+ii3),xmm4);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
-
+		
         ggid             = gid[n];         
-	
+		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
 		vctot   = _mm_add_ps(vctot,vcoul);
 		vcoul   = _mm_shuffle_ps(vctot,vctot,_MM_SHUFFLE(1,1,1,1));
@@ -807,7 +808,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		
 		_mm_store_ss(&vct,vctot);
 		Vc[ggid] = Vc[ggid] + vct;
-				
+		
 		Vvdwtmp  = _mm_movehl_ps(Vvdwtmp,Vvdwtot);
 		Vvdwtot  = _mm_add_ps(Vvdwtot,Vvdwtmp);
 		Vvdwtmp  = _mm_shuffle_ps(Vvdwtot,Vvdwtot,_MM_SHUFFLE(1,1,1,1));
@@ -824,7 +825,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		
 		_mm_store_ss(&vgbt,vgbtot);
 		work[ggid] = work[ggid] + vgbt;
-				
+		
 		/* dvda */
 		dvdatmp = _mm_movehl_ps(dvdatmp,dvdasum);
 		dvdasum = _mm_add_ps(dvdasum,dvdatmp);

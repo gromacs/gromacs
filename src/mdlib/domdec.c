@@ -5638,12 +5638,15 @@ static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
                   ens_names[ir->ns_type]);
     }
 
-    if (ir->comm_mode == ecmANGULAR)
+    if (ir->comm_mode == ecmANGULAR && !ir->implicit_solvent)
     {
         gmx_fatal(FARGS,
                   "comm-mode %s is not supported with domain decomposition,\n"
                   "use particle decomposition: mdrun -pd",
                   ecm_names[ecmANGULAR]);
+		/* Except when molecules are not interacting with their periodic neighbours, which is the                                                                      
+         * case with gb, so then coom_mode=angular it is fine (and necessary), PL 20090420                                                                             
+         */		
     }
 }
 
@@ -7637,6 +7640,7 @@ void dd_partition_system(FILE            *fplog,
                          gmx_vsite_t     *vsite,
                          gmx_shellfc_t   shellfc,
                          gmx_constr_t    constr,
+						 gmx_genborn_t   *born,
                          t_nrnb          *nrnb,
                          gmx_wallcycle_t wcycle,
                          bool            bVerbose)
@@ -7942,6 +7946,11 @@ void dd_partition_system(FILE            *fplog,
         make_local_shells(cr,mdatoms,shellfc);
     }
     
+	if(ir->implicit_solvent)
+    {
+        make_local_gb(cr,born,ir->gb_algorithm);
+    }
+	
     if (!(cr->duty & DUTY_PME))
     {
         /* Send the charges to our PME only node */

@@ -24,21 +24,21 @@
 #include <types/simple.h>
 #include <types/nrnb.h>
 
-#include "nb_kernel_sse2_single.h"
+#include "nb_kernel_sse2_double.h"
 
-/* Include single precision SSE intrinsics kernel headers in local directory */
-#include "nb_kernel400_sse2_single.h"
-#include "nb_kernel410_sse2_single.h"
-#include "nb_kernel430_sse2_single.h"
+/* Include double precision SSE intrinsics kernel headers in local directory */
+#include "nb_kernel400_sse2_double.h"
+#include "nb_kernel410_sse2_double.h"
+#include "nb_kernel430_sse2_double.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "../nb_kerneltype.h"
-#include "nb_kernel_sse2_single.h"
+#include "nb_kernel_sse2_double.h"
 
 static nb_kernel_t *
-kernellist_sse2_single[eNR_NBKERNEL_NR] = 
+kernellist_sse2_double[eNR_NBKERNEL_NR] = 
 {
     NULL,
     NULL,
@@ -103,9 +103,9 @@ kernellist_sse2_single[eNR_NBKERNEL_NR] =
     NULL,
     NULL,
     NULL,
-    nb_kernel400_sse2_single,
-    nb_kernel410_sse2_single,
-    nb_kernel430_sse2_single
+    nb_kernel400_sse2_double,
+    nb_kernel410_sse2_double,
+    nb_kernel430_sse2_double
 };
 
 
@@ -113,7 +113,7 @@ kernellist_sse2_single[eNR_NBKERNEL_NR] =
  * non-zero on failure.
  */
 int 
-nb_kernel_sse2_single_test(FILE *                log)
+nb_kernel_sse2_double_test(FILE *                log)
 {
 	unsigned int level;
 	unsigned int _eax,_ebx,_ecx,_edx;
@@ -164,19 +164,19 @@ nb_kernel_sse2_single_test(FILE *                log)
 
 
 void
-nb_kernel_setup_sse2_single(FILE *log,nb_kernel_t **list)
+nb_kernel_setup_sse2_double(FILE *log,nb_kernel_t **list)
 {
     int i;
     nb_kernel_t *p;
     
-    if(nb_kernel_sse2_single_test(log) != 0)
+    if(nb_kernel_sse2_double_test(log) != 0)
     {
 		return;
     }
 	
     for(i=0;i<eNR_NBKERNEL_NR;i++)
     {
-        p = kernellist_sse2_single[i];
+        p = kernellist_sse2_double[i];
         if(p!=NULL)
 		{
 			list[i] = p; 

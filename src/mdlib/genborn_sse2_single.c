@@ -32,8 +32,6 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -50,6 +48,7 @@
 #include "names.h"
 #include "physics.h"
 #include "partdec.h"
+#include "domdec.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "mtop_util.h"
@@ -325,7 +324,7 @@ __m128 log_ps(__m128 x) {
 	x = _mm_and_ps(x, *(__m128*)_ps_inv_mant_mask);
 	x = _mm_or_ps(x, *(__m128*)_ps_0p5);
 	
-	/* now e=mm0:mm1 contain the really base-2 exponent */
+	/* now e=mm0:mm1 contain the floatly base-2 exponent */
 	mm0 = _mm_sub_pi32(mm0, *(__m64*)_pi32_0x7f);
 	
 	
@@ -506,16 +505,16 @@ __m128 log2_ps(__m128 x)
 
 
 int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop,
-					  const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
+calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
+					  const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,offset;
 	int aj13,aj23,aj33,aj43;
 	int at0,at1;
-	real *sum_gpi;
+	float *sum_gpi;
 
-	real gpi_ai,gpi2,gpi_tmp;
-	real factor;
+	float gpi_ai,gpi2,gpi_tmp;
+	float factor;
 	
 	__m128 ix,iy,iz;
 	__m128 jx,jy,jz;
@@ -539,18 +538,9 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 	const __m128 pip5   = {STILL_PIP5,  STILL_PIP5,  STILL_PIP5,  STILL_PIP5};
 	const __m128 p4     = {STILL_P4,    STILL_P4,    STILL_P4,    STILL_P4};
 		
-	if(PAR(cr))
-	{
-		pd_at_range(cr,&at0,&at1);
-	}
-	else
-	{
-		at0=0;
-		at1=natoms;
-	}
-	
 	sum_gpi = born->work;	
-	factor = 0.5 * ONE_4PI_EPS0;
+	factor  = 0.5 * ONE_4PI_EPS0;
+	memset(sum_gpi, 0, sizeof(float)*born->nr);
 	
 	/* keep the compiler happy */
 	t1   = _mm_setzero_ps();
@@ -564,7 +554,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 	aj1  = aj2  = aj3  = aj4  = 0;
 	aj13 = aj23 = aj33 = aj43 = 0;
 	n = 0;
-	
+		
 	for(i=0;i<nl->nri;i++)
 	{
 		ai     = nl->iinr[i];
@@ -585,10 +575,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 		iz     = _mm_set1_ps(x[ai3+2]);
 		
 		/* Load particle ai gb_radius */
-		rai = _mm_set1_ps(mtop->atomtypes.gb_radius[md->typeA[ai]]);
-		
-		if(PAR(cr))
-			sum_gpi[ai] = 0;
+		rai    = _mm_set1_ps(top->atomtypes.gb_radius[md->typeA[ai]]);
 		
 		for(k=nj0;k<nj1-offset;k+=4)
 		{
@@ -596,7 +583,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			aj2 = nl->jjnr[k+1];
 			aj3 = nl->jjnr[k+2];
 			aj4 = nl->jjnr[k+3];
-			
+						
 			aj13 = aj1 * 3; 
 			aj23 = aj2 * 3;
 			aj33 = aj3 * 3;
@@ -645,7 +632,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			rinv2     = _mm_mul_ps(rinv,rinv);
 			rinv4     = _mm_mul_ps(rinv2,rinv2);
 			rinv6     = _mm_mul_ps(rinv2,rinv4);
-			 
+			
 			xmm1 = _mm_load_ss(born->vsolv+aj1); /*see comment at invsqrta*/
 			xmm2 = _mm_load_ss(born->vsolv+aj2); 
 			xmm3 = _mm_load_ss(born->vsolv+aj3); 
@@ -655,15 +642,15 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j4 j4*/
 			vaj  = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 			
-			raj       = _mm_set_ps(mtop->atomtypes.gb_radius[md->typeA[aj4]],
-								   mtop->atomtypes.gb_radius[md->typeA[aj3]],
-								   mtop->atomtypes.gb_radius[md->typeA[aj2]],
-								   mtop->atomtypes.gb_radius[md->typeA[aj1]]);
-											   
+			raj       = _mm_set_ps(top->atomtypes.gb_radius[md->typeA[aj4]],
+								   top->atomtypes.gb_radius[md->typeA[aj3]],
+								   top->atomtypes.gb_radius[md->typeA[aj2]],
+								   top->atomtypes.gb_radius[md->typeA[aj1]]);
+			
 			rvdw      = _mm_add_ps(rai,raj); 
 			rvdw      = _mm_mul_ps(rvdw,rvdw);
 			ratio     = _mm_div_ps(rsq11,rvdw); /*ratio = dr2/(rvdw*rvdw)*/
-						
+			
 			mask_cmp  = _mm_cmpgt_ps(ratio,p5inv); /*if ratio>p5inv */
 			
 			switch(_mm_movemask_ps(mask_cmp))
@@ -673,7 +660,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 					dccf = zero;
 					break;
 				default:
-			
+					
 					theta	  = _mm_mul_ps(ratio,pip5);
 					sincos_ps(theta,&sinq,&cosq); /* sine and cosine	*/			
 					term      = _mm_sub_ps(one,cosq); /*1-cosq*/
@@ -681,9 +668,10 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 					ccf	      = _mm_mul_ps(term,term); /* term*term */
 					dccf      = _mm_mul_ps(two,term); /* 2 * term */
 					dccf      = _mm_mul_ps(dccf,sinq); /* 2*term*sinq */
-					dccf      = _mm_mul_ps(dccf,pip5); /*2*term*sinq*pip5 */
-					dccf      = _mm_mul_ps(dccf,ratio); /*dccf = 2*term*sinq*PIP5*ratio*/
-			
+				/*	dccf      = _mm_mul_ps(dccf,pip5); */ /*2*term*sinq*pip5 */
+				/*	dccf      = _mm_mul_ps(dccf,ratio); */ /*dccf = 2*term*sinq*PIP5*ratio*/
+					dccf      = _mm_mul_ps(dccf,theta);
+					
 					ccf	      = _mm_or_ps(_mm_and_ps(mask_cmp,one)  ,_mm_andnot_ps(mask_cmp,ccf)); /*conditional as a mask*/
 					dccf      = _mm_or_ps(_mm_and_ps(mask_cmp,zero) ,_mm_andnot_ps(mask_cmp,dccf));
 					
@@ -712,20 +700,20 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			
 			if(offset==1)
 			{
-				aj1 = nl->jjnr[k];	 /*jnr1-4*/
-				aj13 = aj1 * 3; /*Replace jnr with j3*/
-				
+				aj1   = nl->jjnr[k];	 /*jnr1-4*/
+				aj13  = aj1 * 3; /*Replace jnr with j3*/
+								
 				xmm1  = _mm_loadl_pi(xmm1,(__m64 *) (x+aj13));
 				xmm5  = _mm_load1_ps(x+aj13+2);
 				
 				xmm6  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(0,0,0,0));
 				xmm4  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(1,1,1,1));
 				
-				raj       = _mm_set_ps(0.0f, 0.0f, 0.0f, mtop->atomtypes.gb_radius[md->typeA[aj1]]); 
-				vaj       = _mm_set_ps(0.0f, 0.0f, 0.0f, born->vsolv[aj1]);				   
-								   
+				raj   = _mm_set_ps(0.0f, 0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj1]]); 
+				vaj   = _mm_set_ps(0.0f, 0.0f, 0.0f, born->vsolv[aj1]);				   
+				
 				mask = _mm_set_epi32(0,0,0,0xffffffff);
-
+				
 			}
 			else if(offset==2)
 			{
@@ -737,23 +725,23 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 				
 				xmm1 = _mm_loadu_ps(x+aj13);
 				xmm2 = _mm_loadu_ps(x+aj23);
-							
+				
 				xmm6 = _mm_unpacklo_ps(xmm1, xmm2); /*x1,x2,y1,y2 , done x */
 				xmm4 = _mm_shuffle_ps( xmm6, xmm6, _MM_SHUFFLE(3,2,3,2)); /* y1, y2, y1, y2, done y */
 				xmm5 = _mm_unpackhi_ps(xmm1, xmm2); /* z1, z2, z1, z2 , done z */
-		
-				raj       = _mm_set_ps(0.0f, 0.0f, mtop->atomtypes.gb_radius[md->typeA[aj2]],mtop->atomtypes.gb_radius[md->typeA[aj1]]); 
-				vaj       = _mm_set_ps(0.0f, 0.0f, born->vsolv[aj2], born->vsolv[aj1]);		
+				
+				raj  = _mm_set_ps(0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj2]],top->atomtypes.gb_radius[md->typeA[aj1]]); 
+				vaj  = _mm_set_ps(0.0f, 0.0f, born->vsolv[aj2], born->vsolv[aj1]);		
 				
 				mask = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
-
+				
 			}
 			else
 			{
 				aj1 = nl->jjnr[k];	 
 				aj2 = nl->jjnr[k+1];
 				aj3 = nl->jjnr[k+2];
-						
+				
 				aj13 = aj1 * 3; 
 				aj23 = aj2 * 3;
 				aj33 = aj3 * 3;
@@ -761,33 +749,33 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 				xmm1 = _mm_loadu_ps(x+aj13);
 				xmm2 = _mm_loadu_ps(x+aj23);
 				xmm3 = _mm_loadu_ps(x+aj33);
-											
+				
 				xmm5 = _mm_unpacklo_ps(xmm1, xmm2); /* x1, x2, y1, y2 */
 				xmm6 = _mm_movelh_ps(xmm5, xmm3); /* x1, x2, x3, y3, done x */
-
+				
 				xmm4 = _mm_shuffle_ps(xmm5, xmm5, _MM_SHUFFLE(3,2,3,2)); /*y1, y2, x2, x1 */
 				xmm4 = _mm_shuffle_ps(xmm4, xmm3, _MM_SHUFFLE(0,1,1,0)); /*y1, y2, y3, x3, done y*/
 				
 				xmm5 = _mm_unpackhi_ps(xmm1, xmm2); /* z1, z2, -, - */
 				xmm5 = _mm_shuffle_ps(xmm5, xmm3, _MM_SHUFFLE(3,2,1,0)); /*z1, z2, z3, x4, done z */
 				
-				raj       = _mm_set_ps(0.0f, 
-									   mtop->atomtypes.gb_radius[md->typeA[aj3]],
-									   mtop->atomtypes.gb_radius[md->typeA[aj2]],
-									   mtop->atomtypes.gb_radius[md->typeA[aj1]]);
-											 
-				vaj       = _mm_set_ps(0.0f, 
-						       born->vsolv[aj3], 
-						       born->vsolv[aj2], 
-						       born->vsolv[aj1]);	
-														
+				raj  = _mm_set_ps(0.0f, 
+								  top->atomtypes.gb_radius[md->typeA[aj3]],
+								  top->atomtypes.gb_radius[md->typeA[aj2]],
+								  top->atomtypes.gb_radius[md->typeA[aj1]]);
+				
+				vaj  = _mm_set_ps(0.0f, 
+								  born->vsolv[aj3], 
+								  born->vsolv[aj2], 
+								  born->vsolv[aj1]);	
+				
 				mask = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
 			}
 			
 			jx = _mm_and_ps( (__m128) mask, xmm6);
 			jy = _mm_and_ps( (__m128) mask, xmm4);
 			jz = _mm_and_ps( (__m128) mask, xmm5);
-		
+			
 			dx    = _mm_sub_ps(ix, jx);
 			dy    = _mm_sub_ps(iy, jy);
 			dz    = _mm_sub_ps(iz, jz);
@@ -815,9 +803,9 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			rvdw      = _mm_add_ps(rai,raj); 
 			rvdw      = _mm_mul_ps(rvdw,rvdw);
 			ratio     = _mm_div_ps(rsq11,rvdw); /*ratio = dr2/(rvdw*rvdw)*/
-						
-			mask_cmp  = _mm_cmpgt_ps(ratio,p5inv); /*if ratio>p5inv*/
 			
+			mask_cmp  = _mm_cmpgt_ps(ratio,p5inv); /*if ratio>p5inv*/
+				
 			switch(_mm_movemask_ps(mask_cmp))
 			{
 				case 0xF:
@@ -825,27 +813,28 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 					dccf = zero;
 					break;
 				default:
-			
-					theta	  = _mm_mul_ps(ratio,pip5);
+					
+					theta	  = _mm_mul_ps(ratio,pip5); /* ratio * STILL_PIP5 */
 					sincos_ps(theta,&sinq,&cosq); 
-					term      = _mm_sub_ps(one,cosq);
-					term      = _mm_mul_ps(half,term);
-					ccf	      = _mm_mul_ps(term,term);
-					dccf      = _mm_mul_ps(two,term);
-					dccf      = _mm_mul_ps(dccf,sinq);
-					dccf      = _mm_mul_ps(dccf,pip5);
-					dccf      = _mm_mul_ps(dccf,theta); 
-			
+					term      = _mm_sub_ps(one,cosq);  /* 1.0 - cosq */
+					term      = _mm_mul_ps(half,term); /* term = 0.5*(1-cosq) */
+					ccf	      = _mm_mul_ps(term,term); /* ccf  = term*term */
+					dccf      = _mm_mul_ps(two,term);  /* dccf = 2.0* term */
+					dccf      = _mm_mul_ps(dccf,sinq); /* dccf = 2.0*term *sinq */
+				/*  dccf      = _mm_mul_ps(dccf,pip5); */ /* dccf = 2.0*term*sinq*pip5 */
+				/*  dccf      = _mm_mul_ps(dccf,ratio); */ /* dccf = 2.0*term*sinq*ratio*pip5 */
+					dccf      = _mm_mul_ps(dccf,theta);
+					
 					ccf	      = _mm_or_ps(_mm_and_ps(mask_cmp,one)  ,_mm_andnot_ps(mask_cmp,ccf)); /*conditional as a mask*/
 					dccf      = _mm_or_ps(_mm_and_ps(mask_cmp,zero) ,_mm_andnot_ps(mask_cmp,dccf));
 			}
-		
+			
 			prod      = _mm_mul_ps(p4,vaj);	
 			xmm2      = _mm_mul_ps(ccf,rinv4);
 			xmm2      = _mm_mul_ps(xmm2,prod); /* prod*ccf*idr4*/
 			xmm2      = _mm_and_ps( (__m128) mask, xmm2);
 			gpi       = _mm_add_ps(gpi,xmm2);  /*gpi = gpi + prod*ccf*idr4 */
-			
+						
 			/* Chain rule terms */
 			ccf       = _mm_mul_ps(four,ccf);
 			xmm3      = _mm_sub_ps(ccf,dccf);
@@ -854,7 +843,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 			xmm1      = _mm_and_ps( (__m128) mask, xmm1);
 			
 			_mm_storeu_ps(fr->dadx+n, xmm1); 
-		
+			
 			n = n + offset;
 		} 
 		
@@ -865,57 +854,79 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop
 		gpi   = _mm_add_ss(gpi,xmm2);
 		
 		_mm_store_ss(&gpi_tmp,gpi);
-
+			
+		/* For parallell runs, we compute the sum of all the contributions from the j atoms
+		 * to this i atom, rather than subtracting each value from the initial, since that
+		 * will results in wrong result when summing over several nodes 
+		 */
 		if(PAR(cr))
 		{
-			sum_gpi[ai]=gpi_tmp;
+			sum_gpi[ai] = gpi_tmp;
 		}
 		else
 		{
-			gpi_ai = gpi_ai + gpi_tmp; /* add gpi to the initial pol energy gpi_ai*/
-			gpi2   = gpi_ai * gpi_ai;
-		
-			born->bRad[ai]=factor*invsqrt(gpi2);
-			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+			gpi_ai           = gpi_ai + gpi_tmp; /* add gpi to the initial pol energy gpi_ai*/
+			gpi2             = gpi_ai * gpi_ai;
+			born->bRad[ai]   = factor*invsqrt(gpi2);
+			fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
 		}
-		
 	}
-
-	if(PAR(cr))
+	
+	/* Parallel summations */
+	if(PARTDECOMP(cr))
 	{
+		pd_at_range(cr,&at0,&at1);
 		gmx_sum(natoms,sum_gpi,cr);
-
+		
 		for(i=at0;i<at1;i++)
 		{
-			ai = i;
+			ai     = nl->iinr[i];
 			gpi_ai = born->gpol[ai];
 			gpi_ai = gpi_ai + sum_gpi[ai];
 			gpi2   = gpi_ai*gpi_ai;
 			
-			born->bRad[ai]=factor*invsqrt(gpi2);
-			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+			born->bRad[ai]   = factor*invsqrt(gpi2);
+			fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
 		}
 		
 		/* Communicate Born radii*/
 		gb_pd_send(cr,born->bRad,md->nr);
 		gb_pd_send(cr,fr->invsqrta,md->nr);
-	}		
+	}	
+	else if(DOMAINDECOMP(cr))
+	{
+		dd_atom_sum_float(cr->dd,sum_gpi,born->dd_work);
+		
+		for(i=0;i<nl->nri;i++)
+		{
+			ai     = nl->iinr[i];
+			gpi_ai = born->gpol[ai];
+			gpi_ai = gpi_ai + sum_gpi[ai];
+			gpi2   = gpi_ai*gpi_ai;
+			
+			born->bRad[ai]   = factor*invsqrt(gpi2);
+			fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		}
+		
+		/* Communicate Born radii */
+		dd_atom_spread_float(cr->dd,born->bRad,born->dd_work);
+		dd_atom_spread_float(cr->dd,fr->invsqrta,born->dd_work);
+	}
 
 	return 0;
 	
-
 }
 
 int 
-calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop, const t_atomtypes *atype, real *x,
+calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top, const t_atomtypes *atype, float *x,
 					t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,at0,at1;
 	int aj13,aj23,aj33,aj43;
 	int offset;
-	real ri,rr,sum,sum_tmp,sum_ai,min_rad,rad;
-	real doffset;
-	real *sum_mpi;
+	float ri,rr,sum,sum_tmp,sum_ai,min_rad,rad;
+	float doffset;
+	float *sum_mpi;
 	
 	__m128 ix,iy,iz,jx,jy,jz;
 	__m128 dx,dy,dz,t1,t2,t3;
@@ -937,7 +948,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 	const __m128 two   = {2.0f , 2.0f , 2.0f , 2.0f };
 	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
 
-	if(PAR(cr))
+	if(PARTDECOMP(cr))
 	{
 		pd_at_range(cr,&at0,&at1);
 	}
@@ -946,7 +957,6 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		at0=0;
 		at1=natoms;
 	}
-	
 	
 	/* Keep the compiler happy */
 	tmp  = _mm_setzero_ps();
@@ -973,7 +983,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		offset = (nj1-nj0)%4;
 	
 		/* Load rai*/
-		rr  = mtop->atomtypes.gb_radius[md->typeA[ai]]-doffset;
+		rr  = top->atomtypes.gb_radius[md->typeA[ai]]-doffset;
 		rai = _mm_load1_ps(&rr);
 		
 		/* Load cumulative sums for born radii calculation */
@@ -986,13 +996,21 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		iy = _mm_load1_ps(x+ai3+1);
 		iz = _mm_load1_ps(x+ai3+2);
 
-		if(PAR(cr))
+		if(PARTDECOMP(cr))
 		{
 			/* Only have the master node do this, since we only want one value at one time */
 			if(MASTER(cr))
-				sum_mpi[ai]=sum;
+			{
+				sum_mpi[ai] = sum;
+			}
 			else
-				sum_mpi[ai]=0;
+			{
+				sum_mpi[ai] = 0;
+			}
+		}
+		else if(DOMAINDECOMP(cr))
+		{
+			sum_tmp = 0;
 		}
 	
 		for(k=nj0;k<nj1-offset;k+=4)
@@ -1053,7 +1071,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 			xmm2 = _mm_load_ss(born->param+aj2);  
 			xmm3 = _mm_load_ss(born->param+aj3); 
 			xmm4 = _mm_load_ss(born->param+aj4);
-			
+					
 			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); /*j1 j1 j2 j2*/
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j4 j4*/
 			sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
@@ -1189,7 +1207,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 				xmm4  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(1,1,1,1));
 				
 				sk    = _mm_load1_ps(born->param+aj1);
-						
+				
 				maski = _mm_set_epi32(0,0,0,0xffffffff);
 			}
 			else if(offset==2)
@@ -1215,9 +1233,10 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 				
 				xmm1 = _mm_load1_ps(born->param+aj1);
 				xmm2 = _mm_load1_ps(born->param+aj2);
+								
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				sk   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
-				
+								
 				maski = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
 			}
 			else
@@ -1250,11 +1269,10 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 				xmm1 = _mm_load1_ps(born->param+aj1);
 				xmm2 = _mm_load1_ps(born->param+aj2);
 				xmm3 = _mm_load1_ps(born->param+aj3);
-				
+								
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); /*j1 j1 j2 j2*/
 				xmm3 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j3 j3*/
 				sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-				
 				
 				maski = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
 			}
@@ -1420,7 +1438,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 
 		if(PAR(cr))
 		{
-			sum_mpi[ai]=sum+sum_tmp;
+			sum_mpi[ai]=sum_tmp;
 		}
 		else
 		{
@@ -1434,40 +1452,60 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_t *mtop,
 		}
 	}
 
-	if(PAR(cr))
+	if(PARTDECOMP(cr))
 	{
 		gmx_sum(natoms,sum_mpi,cr);
 
 		for(i=at0;i<at1;i++)
 		{
 			ai      = i;
-			min_rad = mtop->atomtypes.gb_radius[md->typeA[ai]]; 
+			min_rad = top->atomtypes.gb_radius[md->typeA[ai]]; 
 			rad     = 1.0/sum_mpi[ai];
 			
 			born->bRad[ai]=rad > min_rad ? rad : min_rad;
 			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
 		}
 		
+		/* Communicate Born radii */
 		gb_pd_send(cr,born->bRad,md->nr);
 		gb_pd_send(cr,fr->invsqrta,md->nr);
-	}		
+	}	
+	else if(DOMAINDECOMP(cr))
+	{
+		dd_atom_sum_float(cr->dd,sum_mpi,born->dd_work);
+		
+		for(i=0;i<nl->nri;i++)
+		{
+			ai = nl->iinr[i];
+			min_rad = top->atomtypes.gb_radius[md->typeA[ai]]; 
+			sum_ai = 1.0/(min_rad-doffset);
+			sum_mpi[ai] = sum_ai + sum_mpi[ai];
+			rad     = 1.0/sum_mpi[ai];
+			born->bRad[ai]=rad > min_rad ? rad : min_rad;
+			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+		}
+		
+		/* Communicate Born radii */
+		dd_atom_spread_float(cr->dd,born->bRad,born->dd_work);
+		dd_atom_spread_float(cr->dd,fr->invsqrta,born->dd_work);
+	}
 
 
 	return 0;
 }
 
 int 
-calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop,
-					const t_atomtypes *atype, real *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
+calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
+					const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,at0,at1;
 	int aj13,aj23,aj33,aj43,offset;
-	real ri;
-	real doffset;
-	real rr,rr_inv,sum_tmp,sum_ai,gbr;
-	real sum_ai2, sum_ai3,tsum,tchain;
-	real z = 0;
-	real *sum_mpi;
+	float ri;
+	float doffset;
+	float rr,rr_inv,sum_tmp,sum_ai,gbr;
+	float sum_ai2, sum_ai3,tsum,tchain;
+	float z = 0;
+	float *sum_mpi;
 	
 	__m128 ix,iy,iz,jx,jy,jz;
 	__m128 dx,dy,dz,t1,t2,t3;
@@ -1499,7 +1537,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 	xmm4 = _mm_setzero_ps();
 	tmp  = _mm_setzero_ps();
 	
-	if(PAR(cr))
+	if(PARTDECOMP(cr))
 	{
 		pd_at_range(cr,&at0,&at1);
 	}
@@ -1526,7 +1564,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 		
 		offset   = (nj1-nj0)%4;
 		
-		rr       = mtop->atomtypes.gb_radius[md->typeA[ai]];
+		rr       = top->atomtypes.gb_radius[md->typeA[ai]];
 		ri       = rr-doffset;
 		rai      = _mm_load1_ps(&ri);
 		
@@ -1540,7 +1578,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 		sum_ai   = 0;
 		tmp_sum = _mm_load1_ps(&z);
 		
-		if(PAR(cr))
+		if(PARTDECOMP(cr))
 		{
 			sum_mpi[ai] = 0;
 		}
@@ -1603,7 +1641,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 			xmm2 = _mm_load_ss(born->param+aj2); 
 			xmm3 = _mm_load_ss(born->param+aj3); 
 			xmm4 = _mm_load_ss(born->param+aj4);
-			
+						
 			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); /*j1 j1 j2 j2*/
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j4 j4*/
 			sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
@@ -1771,6 +1809,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 				
 				xmm1 = _mm_load1_ps(born->param+aj1);
 				xmm2 = _mm_load1_ps(born->param+aj2);
+				
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				sk   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				
@@ -1802,15 +1841,14 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 				
 				xmm6 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(2,0,2,0)); 
 				xmm4 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,1,3,1));
-			
+				
 				xmm1 = _mm_load1_ps(born->param+aj1);
 				xmm2 = _mm_load1_ps(born->param+aj2);
 				xmm3 = _mm_load1_ps(born->param+aj3);
-				
+							
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); /*j1 j1 j2 j2*/
 				xmm3 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j3 j3*/
 				sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-				
 				
 				maski = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
 			}
@@ -1997,14 +2035,15 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 		}
 
 	}
-
-	if(PAR(cr))
+	
+	if(PARTDECOMP(cr))
 	{
 		gmx_sum(natoms,sum_mpi,cr);
+		
 		for(i=at0;i<at1;i++)
 		{
 			ai      = i;
-			rr      = mtop->atomtypes.gb_radius[md->typeA[ai]];
+			rr      = top->atomtypes.gb_radius[md->typeA[ai]];
 			rr_inv  = 1.0/rr;
 			
 			sum_ai  = sum_mpi[ai];
@@ -2026,19 +2065,48 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop_t *mtop
 		gb_pd_send(cr,fr->invsqrta,md->nr);
 		gb_pd_send(cr,born->drobc,md->nr);
 	}
+	else if(DOMAINDECOMP(cr))
+	{
+		dd_atom_sum_float(cr->dd,sum_mpi,born->dd_work);
+		
+		for(i=0;i<nl->nri;i++)
+		{
+			ai      = nl->iinr[i];
+			rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doffset;
+			rr_inv = 1.0/rr;
+			
+			sum_ai  = sum_mpi[ai];
+			sum_ai  = rr     * sum_ai;
+			sum_ai2 = sum_ai  * sum_ai;
+			sum_ai3 = sum_ai2 * sum_ai;
+			
+			tsum    = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
+			born->bRad[ai] = rr_inv - tsum/top->atomtypes.gb_radius[md->typeA[ai]];
+			
+			born->bRad[ai] = 1.0 / born->bRad[ai];
+			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+			
+			tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
+			born->drobc[ai] = (1.0-tsum*tsum)*tchain/top->atomtypes.gb_radius[md->typeA[ai]];
+		}
+		
+		dd_atom_spread_float(cr->dd,born->bRad,born->dd_work);
+		dd_atom_spread_float(cr->dd,fr->invsqrta,born->dd_work);
+		dd_atom_spread_float(cr->dd,born->drobc,born->dd_work);
+	}
 	
 	return 0;
 }
 
 
 
-real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, real *xd, real *f, int gb_algorithm, gmx_genborn_t *born)						
+float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, float *xd, float *f, int gb_algorithm, gmx_genborn_t *born)						
 {
 	int    i,k,n,ai,aj,ai3,nj0,nj1,offset;
 	int	   aj1,aj2,aj3,aj4; 
 	
-	real   rbi;
-	real   *rb;
+	float   rbi;
+	float   *rb;
 	
 	__m128 ix,iy,iz;
 	__m128 jx,jy,jz;
@@ -2052,7 +2120,7 @@ real calc_gb_chainrule_sse(int natoms, t_nblist *nl, real *dadx, real *dvda, rea
 	__m128i maski  = _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff);
 	
 	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
-	real z = 0;
+	float z = 0;
 	rb     = born->work; 
 			
 	/* Loop to get the proper form for the Born radius term, sse style */

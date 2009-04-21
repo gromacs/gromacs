@@ -732,10 +732,16 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         dd_partition_system(fplog,ir->init_step,cr,TRUE,
                             state_global,top_global,ir,
                             state,&f,mdatoms,top,fr,
-                            vsite,shellfc,constr,
+                            vsite,shellfc,constr,born,
                             nrnb,wcycle,FALSE);
     }
 
+	/* If not DD, copy gb data */
+    if(ir->implicit_solvent && !PAR(cr))
+    {
+        make_local_gb(cr,born,ir->gb_algorithm);
+    }
+	
     update_mdatoms(mdatoms,state->lambda);
 
   if (MASTER(cr))
@@ -1188,7 +1194,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 dd_partition_system(fplog,step,cr,bMasterState,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
-                                    vsite,shellfc,constr,
+                                    vsite,shellfc,constr,born,
                                     nrnb,wcycle,do_verbose);
                 wallcycle_stop(wcycle,ewcDOMDEC);
             }
@@ -1797,7 +1803,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 dd_partition_system(fplog,step,cr,TRUE,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
-                                    vsite,shellfc,constr,
+                                    vsite,shellfc,constr,born,
                                     nrnb,wcycle,FALSE);
             }
             else

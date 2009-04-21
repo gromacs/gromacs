@@ -85,7 +85,8 @@
 #define ATOMICMASS_keV   (940000.0)             /* Atomic mass in keV   */
 #define ELECTRONMASS_keV (512.0)                /* Electron mas in keV  */
 
-#define FACEL		 (332.0636*CAL2JOULE)   /* (10 * (ONE_4PI_EPS0)) */
+/* Improved accuracy (PL & EL, 20090421) */
+#define FACEL		 (332.0636930*CAL2JOULE)/* (10 * (ONE_4PI_EPS0)) */
 #define ONE_4PI_EPS0	 (FACEL*0.1)            /* 1/(4*pi*e0)*/
 #define PRESFAC           (16.6054)             /* bar / pressure unity */
 #define ENM2DEBYE         48.0321               /* Convert electron nm  *

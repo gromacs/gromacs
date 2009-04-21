@@ -20,6 +20,7 @@
 
 
 #include <xmmintrin.h>
+#include <emmintrin.h>
 
 /* to extract single integers from a __m128i datatype */
 #define _mm_extract_epi32(x, imm) \
@@ -259,7 +260,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm3    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1)); /* c121 c122 c121 c122 */
 			xmm4    = _mm_shuffle_ps(xmm2,xmm2,_MM_SHUFFLE(3,1,3,1)); /* c123 c124 c123 c124 */
 			c12     = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(1,0,1,0)); /* c121 c122 c123 c124 */		
-				
+			
 			xmm1    = _mm_load_ss(dvda+jnr); 
 			xmm2    = _mm_load_ss(dvda+jnr2); 
 			xmm3    = _mm_load_ss(dvda+jnr3);
@@ -279,7 +280,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			eps2    = _mm_mul_ps(eps,eps);
 			nnn     = _mm_slli_epi32(n0,2);
-		
+			
 			/* the tables are 16-byte aligned, so we can use _mm_load_ps */			
 			xmm1    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
 			xmm2    = _mm_load_ps(GBtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
@@ -342,7 +343,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			eps     = _mm_sub_ps(rt,n0f);
 			eps2    = _mm_mul_ps(eps,eps);
 			nnn     = _mm_slli_epi32(n0,3);
-
+			
 			/* Tabulated VdW interaction - disperion */			
 			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
 			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
@@ -369,7 +370,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm1    = _mm_mul_ps(two,Heps2);
 			FF      = _mm_add_ps(Fp,Geps);
 			FF      = _mm_add_ps(FF,xmm1);
-
+			
 			Vvdw6   = _mm_mul_ps(c6,VV);
 			fijD    = _mm_mul_ps(c6,FF);
 			
@@ -414,7 +415,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm1    = _mm_sub_ps(xmm1,fscal);
 			fscal   = _mm_mul_ps(xmm1,neg);
 			fscal   = _mm_mul_ps(fscal,rinv);
-	
+			
 			t1      = _mm_mul_ps(fscal,dx1);
 			t2      = _mm_mul_ps(fscal,dy1);
 			t3      = _mm_mul_ps(fscal,dz1);
@@ -699,7 +700,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
-						
+			
 			/* Calculate VDW table index */
 			rt      = _mm_mul_ps(r,tabscale_sse);
 			n0      = _mm_cvttps_epi32(rt);
@@ -713,7 +714,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
 			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */
 			xmm4    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,3)));  /* Y4,F4,G4,H4 */
-		
+			
 			/* transpose 4*4 */
 			xmm5    = _mm_unpacklo_ps(xmm1,xmm2); /* Y1,Y2,F1,F2 */
 			xmm6    = _mm_unpacklo_ps(xmm3,xmm4); /* Y3,Y4,F3,F4 */
@@ -740,7 +741,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 			
 			/* Tabulated VdW interaction - repulsion */
 			nnn     = _mm_add_epi32(nnn,four);
-					
+			
 			xmm1    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,0)));  /* Y1,F1,G1,H1 */
 			xmm2    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,1)));  /* Y2,F2,G2,H2 */
 			xmm3    = _mm_load_ps(VFtab+(_mm_extract_epi32(nnn,2)));  /* Y3,F3,G3,H3 */

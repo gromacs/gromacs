@@ -429,7 +429,9 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
   
   if(inputrec->implicit_solvent && bNS) 
-	  gb_nblist_siev(cr,mdatoms->nr,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,born);
+  {
+	  make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,born);
+  }
 	
   if (DOMAINDECOMP(cr)) {
     if (!(cr->duty & DUTY_PME)) {
@@ -510,11 +512,11 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
   /* Compute the bonded and non-bonded forces */    
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
-		    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
-		    x,hist,f,enerd,fcd,mtop,born,
-		    &(top->atomtypes),bBornRadii,box,
-		    lambda,graph,&(top->excls),mu_tot_AB,
-		    flags,&cycles_force);
+                    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
+                    x,hist,f,enerd,fcd,mtop,top,born,
+                    &(top->atomtypes),bBornRadii,box,
+                    lambda,graph,&(top->excls),mu_tot_AB,
+                    flags,&cycles_force);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
   if (ed) {

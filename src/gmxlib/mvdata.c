@@ -176,6 +176,7 @@ static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
   bc_strings_resinfo(cr,symtab,atoms->nres,atoms->resinfo);
   /* QMMM requires atomtypes to be known on all nodes as well */
   bc_strings(cr,symtab,atoms->nr,&atoms->atomtype);
+  bc_strings(cr,symtab,atoms->nr,&atoms->atomtypeB);
 }
 
 static void bc_groups(const t_commrec *cr,t_symtab *symtab,
@@ -467,6 +468,28 @@ static void bc_molblock(const t_commrec *cr,gmx_molblock_t *molb)
   if (debug) fprintf(debug,"after bc_molblock\n");
 }
 
+static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
+{
+  int nr;
+
+  block_bc(cr,atomtypes->nr);
+
+  nr = atomtypes->nr;
+
+  snew_bc(cr,atomtypes->radius,nr);
+  snew_bc(cr,atomtypes->vol,nr);
+  snew_bc(cr,atomtypes->surftens,nr);
+  snew_bc(cr,atomtypes->gb_radius,nr);
+  snew_bc(cr,atomtypes->S_hct,nr);
+
+  nblock_bc(cr,nr,atomtypes->radius);
+  nblock_bc(cr,nr,atomtypes->vol);
+  nblock_bc(cr,nr,atomtypes->surftens);
+  nblock_bc(cr,nr,atomtypes->gb_radius);
+  nblock_bc(cr,nr,atomtypes->S_hct);
+}
+
+
 void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
 {
   int i; 
@@ -493,7 +516,8 @@ void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
   }
 
   block_bc(cr,mtop->natoms);
-  /* communication for mtop->atomtypes is missing here */
+
+  bc_atomtypes(cr,&mtop->atomtypes);
 
   bc_block(cr,&mtop->mols);
   bc_groups(cr,&mtop->symtab,mtop->natoms,&mtop->groups);

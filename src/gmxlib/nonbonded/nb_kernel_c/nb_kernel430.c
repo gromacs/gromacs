@@ -166,7 +166,7 @@ void nb_kernel430(
             vctot            = 0;              
             Vvdwtot          = 0;              
             dvdasum          = 0;    
-			vgbtot           = 0;
+	    vgbtot           = 0;
 
             /* Clear i atom forces */
             fix1             = 0;              
@@ -229,7 +229,7 @@ void nb_kernel430(
                 dvdasum          = dvdasum + dvdatmp;
                 dvda[jnr]        = dvdaj+dvdatmp*isaj*isaj;
                 vctot            = vctot + vcoul;  
-				vgbtot           = vgbtot + vgb;
+		vgbtot           = vgbtot + vgb;
 
                 /* Calculate table index */
                 r                = rsq11*rinv11;   
@@ -298,7 +298,7 @@ void nb_kernel430(
             Vc[ggid]         = Vc[ggid] + vctot;
             Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
-			work[ggid]       = work[ggid] + vgbtot;
+            work[ggid]       = work[ggid] + vgbtot;
 
             /* Increment number of inner iterations */
             ninner           = ninner + nj1 - nj0;

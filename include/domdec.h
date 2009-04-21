@@ -26,6 +26,7 @@
 
 #include "typedefs.h"
 #include "vsite.h"
+#include "genborn.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -151,6 +152,7 @@ extern void dd_partition_system(FILE            *fplog,
                                 gmx_vsite_t     *vsite,
                                 gmx_shellfc_t   shellfc,
                                 gmx_constr_t    constr,
+								gmx_genborn_t   *born,
                                 t_nrnb          *nrnb,
                                 gmx_wallcycle_t wcycle,
                                 bool            bVerbose);

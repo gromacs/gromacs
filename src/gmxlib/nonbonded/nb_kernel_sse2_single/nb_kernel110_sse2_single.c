@@ -33,6 +33,9 @@
 
 #include <stdio.h>
 
+#include <xmmintrin.h>
+#include <emmintrin.h>
+
 #include "sse_common_single.h"
 
 

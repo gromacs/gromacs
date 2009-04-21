@@ -231,7 +231,7 @@ void nb_kernel410(
                 dvdasum          = dvdasum + dvdatmp;
                 dvda[jnr]        = dvdaj+dvdatmp*isaj*isaj;
                 vctot            = vctot + vcoul;  
-				vgbtot           = vgbtot + vgb;
+                vgbtot           = vgbtot + vgb;
 
                 /* Lennard-Jones interaction */
                 rinvsix          = rinvsq*rinvsq*rinvsq;
@@ -270,7 +270,7 @@ void nb_kernel410(
             /* Add potential energies to the group for this list */
             ggid             = gid[n];         
             Vc[ggid]         = Vc[ggid] + vctot;
-			work[ggid]       = work[ggid] + vgbtot;
+            work[ggid]       = work[ggid] + vgbtot;
             Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
 

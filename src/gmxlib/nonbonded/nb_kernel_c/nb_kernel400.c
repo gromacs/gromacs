@@ -157,7 +157,7 @@ void nb_kernel400(
 
             /* Zero the potential energy for this list */
             vctot            = 0;   
-			vgbtot           = 0;
+	    vgbtot           = 0;
             dvdasum          = 0;              
 
             /* Clear i atom forces */
@@ -218,7 +218,7 @@ void nb_kernel400(
                 dvdasum          = dvdasum + dvdatmp;
                 dvda[jnr]        = dvdaj+dvdatmp*isaj*isaj;
                 vctot            = vctot + vcoul;  
-				vgbtot           = vgbtot + vgb;
+		vgbtot           = vgbtot + vgb;
                 fscal            = -(fijC-fscal)*rinv11;
 
                 /* Calculate temporary vectorial force */
@@ -251,7 +251,7 @@ void nb_kernel400(
             /* Add potential energies to the group for this list */
             ggid             = gid[n];         
             Vc[ggid]         = Vc[ggid] + vctot;
-			work[ggid]       = work[ggid] + vgbtot;
+            work[ggid]       = work[ggid] + vgbtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
 
             /* Increment number of inner iterations */

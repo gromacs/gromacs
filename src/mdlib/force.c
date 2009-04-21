@@ -1573,7 +1573,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                        rvec       f[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
-                       gmx_mtop_t *mtop,
+                       gmx_mtop_t     *mtop,
+                       gmx_localtop_t *top,
                        gmx_genborn_t *born,
                        t_atomtypes *atype,
                        bool       bBornRadii,
@@ -1653,17 +1654,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         enerd->dvdl_lin += dvdlambda;
     }
 	
-	/* If doing GB,  calculate the Born radii and reset dvda */
+	/* If doing GB, calculate the Born radii and reset dvda */
 	if (ir->implicit_solvent)
 	{
-		for(i=0;i<md->nr;i++)
+		for(i=0;i<born->nr;i++)
 		{
 			fr->dvda[i]=0;
 		}
 		
 		if(bBornRadii)
 		{
-			calc_gb_rad(cr,fr,ir,mtop,atype,x,f,&(fr->gblist),born,md);
+			calc_gb_rad(cr,fr,ir,top,atype,x,f,&(fr->gblist),born,md);
 		}
 	}
 	 
@@ -1679,7 +1680,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                  enerd->grpp.ener[egBHAMSR] :
                  enerd->grpp.ener[egLJSR],
                  enerd->grpp.ener[egCOULSR],
-                                enerd->grpp.ener[egGB],box_size,nrnb,
+				 enerd->grpp.ener[egGB],box_size,nrnb,
                  lambda,&dvdlambda,-1,-1,donb_flags);
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
@@ -1712,11 +1713,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,mtop,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
+		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
 		enerd->term[F_GB12]+=dvdgb;	
                
-                /* Also add the nonbonded GB potential energy (only from one energy group currently) */
-                enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
+		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
+		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
 	}
 
 #ifdef GMX_MPI
