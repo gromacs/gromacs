@@ -596,7 +596,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop
 	}
 	else if(DOMAINDECOMP(cr))
 	{
-		dd_atom_sum_double(cr->dd,sum_gpi,born->dd_work);
+		dd_atom_sum_real(cr->dd,sum_gpi);
 		
 		for(i=0;i<nl->nri;i++)
 		{
@@ -610,8 +610,8 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop
 		}
 		
 		/* Communicate Born radii */
-		dd_atom_spread_double(cr->dd,born->bRad,born->dd_work);
-		dd_atom_spread_double(cr->dd,fr->invsqrta,born->dd_work);
+		dd_atom_spread_real(cr->dd,born->bRad);
+		dd_atom_spread_real(cr->dd,fr->invsqrta);
 	}
 	
 	
