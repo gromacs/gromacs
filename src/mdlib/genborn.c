@@ -129,11 +129,11 @@ void fill_log_table(const int n, real *table)
 	int *const exp_ptr=((int*)&numlog);
 	int x = *exp_ptr;
 	
-	x=0x3F800000;
-	*exp_ptr = x;
-	
 	int incr = 1 << (23-n);
 	int p=pow(2,n);
+
+	x=0x3F800000;
+	*exp_ptr = x;
 	
 	for(i=0;i<p;++i)
 	{
@@ -1615,6 +1615,7 @@ real calc_gb_chainrule(t_commrec *cr, int natoms, t_nblist *nl, rvec x[], rvec t
 	real rinv11,tx,ty,tz,rbai;
 	real *rb;
 	rvec dx;
+	volatile int idx;
 	
 	n  = 0;	
 	rb = born->work;
@@ -1638,10 +1639,10 @@ real calc_gb_chainrule(t_commrec *cr, int natoms, t_nblist *nl, rvec x[], rvec t
 	}
 	else if(gb_algorithm==egbOBC) 
 	{
-		for(i=0;i<natoms;i++)
+		for(idx=0;idx<natoms;idx++)
 		{
-			rbi   = born->bRad[i];
-			rb[i] = rbi * rbi * born->drobc[i] * dvda[i];
+			rbi   = born->bRad[idx];
+			rb[idx] = rbi * rbi * born->drobc[idx] * dvda[idx];
 		}
 	}
 	
@@ -1778,6 +1779,10 @@ int calc_surfStill(t_inputrec *ir,
 
   int factor=1;
   
+	int k,type,ai,aj,nj0,nj1;
+	real dr2,sar,rai,raj,fij;
+	rvec dxx;
+	
 	aprob = born->work;
   /*bonds_t *bonds,*bonds13;*/
   
@@ -1825,10 +1830,6 @@ int calc_surfStill(t_inputrec *ir,
 	 *********************************************************
 	 *********************************************************
 	 *********************************************************/
-	
-	int k,type,ai,aj,nj0,nj1;
-	real dr2,sar,rai,raj,fij;
-	rvec dxx;
 	
 	/* First set up the individual areas */
 	for(n=0;n<natoms;n++)
