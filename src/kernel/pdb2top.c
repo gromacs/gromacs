@@ -701,6 +701,16 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 	/* Start the next residue */
 }
 
+static void 
+scrub_charge_groups(int *cgnr, int natoms)
+{
+	int i;
+	
+	for(i=0;i<natoms;i++)
+	{
+		cgnr[i]=i+1;
+	}
+}
 
 
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
@@ -712,7 +722,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     bool bVsites, bool bVsiteAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
-	     bool bDeuterate)
+	     bool bDeuterate, bool bChargeGroups)
 {
   t_hackblock *hb;
   t_restp  *restp;
@@ -807,6 +817,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   print_sums(atoms, FALSE);
   
+  if(FALSE==bCharge)
+  {
+	  remove_charge_groups(cgnr, atoms->nr);
+  }
+	
   if (top_file) {
     fprintf(stderr,"Writing topology\n");
     write_top(top_file, posre_fn, molname,
