@@ -263,7 +263,7 @@ elseif(${GMX_ACCELERATION} STREQUAL "ALTIVEC")
         set(GMX_PPC_ALTIVEC 1)
     endif(HAVE_ALTIVEC_H)
 else(${GMX_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of SSE, c, Fortran, BlueGene, Power6, ia64, altivec")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_ACCELERATION}. Pick one of none, SSE, Fortran, BlueGene, Power6, ia64, altivec")
 endif(${GMX_ACCELERATION} STREQUAL "NONE")
 
 
