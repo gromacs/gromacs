@@ -895,7 +895,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 	}	
 	else if(DOMAINDECOMP(cr))
 	{
-		dd_atom_sum_float(cr->dd,sum_gpi,born->dd_work);
+		dd_atom_sum_real(cr->dd,sum_gpi);
 		
 		for(i=0;i<nl->nri;i++)
 		{
@@ -909,8 +909,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 		}
 		
 		/* Communicate Born radii */
-		dd_atom_spread_float(cr->dd,born->bRad,born->dd_work);
-		dd_atom_spread_float(cr->dd,fr->invsqrta,born->dd_work);
+		dd_atom_spread_real(cr->dd,born->bRad);
+		dd_atom_spread_real(cr->dd,fr->invsqrta);
 	}
 
 	return 0;
@@ -1472,7 +1472,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 	}	
 	else if(DOMAINDECOMP(cr))
 	{
-		dd_atom_sum_float(cr->dd,sum_mpi,born->dd_work);
+		dd_atom_sum_real(cr->dd,sum_mpi);
 		
 		for(i=0;i<nl->nri;i++)
 		{
@@ -1486,8 +1486,8 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 		}
 		
 		/* Communicate Born radii */
-		dd_atom_spread_float(cr->dd,born->bRad,born->dd_work);
-		dd_atom_spread_float(cr->dd,fr->invsqrta,born->dd_work);
+		dd_atom_spread_real(cr->dd,born->bRad);
+		dd_atom_spread_real(cr->dd,fr->invsqrta);
 	}
 
 
@@ -2067,7 +2067,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 	}
 	else if(DOMAINDECOMP(cr))
 	{
-		dd_atom_sum_float(cr->dd,sum_mpi,born->dd_work);
+		dd_atom_sum_real(cr->dd,sum_mpi);
 		
 		for(i=0;i<nl->nri;i++)
 		{
@@ -2090,9 +2090,9 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			born->drobc[ai] = (1.0-tsum*tsum)*tchain/top->atomtypes.gb_radius[md->typeA[ai]];
 		}
 		
-		dd_atom_spread_float(cr->dd,born->bRad,born->dd_work);
-		dd_atom_spread_float(cr->dd,fr->invsqrta,born->dd_work);
-		dd_atom_spread_float(cr->dd,born->drobc,born->dd_work);
+		dd_atom_spread_real(cr->dd,born->bRad);
+		dd_atom_spread_real(cr->dd,fr->invsqrta);
+		dd_atom_spread_real(cr->dd,born->drobc);
 	}
 	
 	return 0;
