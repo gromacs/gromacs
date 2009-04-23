@@ -712,7 +712,7 @@ void update_QMMMrec(t_commrec *cr,
    * ns needs to be fixed!  
    */
   int 
-    mm_max=0,mm_nr=0,mm_nr_new,i,j,is;
+    mm_max=0,mm_nr=0,mm_nr_new,i,j,is,k,shift;
   t_j_particle 
     *mm_j_particles=NULL,*qm_i_particles=NULL;
   t_QMMMrec 
@@ -776,10 +776,11 @@ void update_QMMMrec(t_commrec *cr,
       qm_i_particles[0].shift = XYZ2IS(0,0,0);
       for(i=0;i<QMMMlist_sr.nri;i++){
 	qm_i_particles[i].j     = QMMMlist_sr.iinr[i];
+	
 	if(i){
 	  qm_i_particles[i].shift = pbc_dx_aiuc(&pbc,x[QMMMlist_sr.iinr[0]],
 						x[QMMMlist_sr.iinr[i]],dx);
-
+	  
 	}
 	/* However, since nri >= nrQMatoms, we do a quicksort, and throw
 	 * out double, triple, etc. entries later, as we do for the MM
@@ -810,13 +811,14 @@ void update_QMMMrec(t_commrec *cr,
       
       /* quicksort QM and MM shift arrays and throw away multiple entries */
       
+
+
       qsort(qm_i_particles,QMMMlist_sr.nri,
 	    (size_t)sizeof(qm_i_particles[0]),
 	    struct_comp);
       qsort(mm_j_particles,mm_nr,
 	    (size_t)sizeof(mm_j_particles[0]),
 	    struct_comp);
-      
       /* remove multiples in the QM shift array, since in init_QMMM() we
        * went through the atom numbers from 0 to md.nr, the order sorted
        * here matches the one of QMindex already.
@@ -853,8 +855,24 @@ void update_QMMMrec(t_commrec *cr,
       mm_nr = mm_nr_new;
       /* store the data retrieved above into the QMMMrec
        */    
+      k=0;
+      /* Keep the compiler happy,
+       * shift will always be set in the loop for i=0
+       */
+      shift = 0;
       for(i=0;i<qm->nrQMatoms;i++){
-	qm->shiftQM[i]=qm_i_particles[i].shift;
+	/* not all qm particles might have appeared as i
+	 * particles. They might have been part of the same charge
+	 * group for instance.
+	 */
+	if (qm->indexQM[i] == qm_i_particles[k].j) {
+	  shift = qm_i_particles[k++].shift;
+	}
+	/* use previous shift, assuming they belong the same charge
+	 * group anyway,
+	 */
+	
+	qm->shiftQM[i] = shift;
       }
     }
     /* parallel excecution */
@@ -914,7 +932,7 @@ void update_QMMMrec(t_commrec *cr,
     srenew(mm->MMcharges,mm->nrMMatoms);
     for(i=0;i<mm->nrMMatoms;i++){/* no free energy yet */
       mm->MMcharges[i]=md->chargeA[mm->indexMM[i]]*mm->scalefactor; 
-    } 
+    }  
     if(qm->bTS||qm->bOPT){
       /* store (copy) the c6 and c12 parameters into the MMrec struct 
        */
@@ -934,7 +952,7 @@ void update_QMMMrec(t_commrec *cr,
      * both the qunatum atoms and the MM atoms, using the shifts
      * calculated above.  
      */
-    /*    fprintf(stderr,"qr->qm[0].nrQMatoms = %d\n",qr->qm[0]->nrQMatoms);*/
+
     update_QMMM_coord(x,fr,qr->qm[0],qr->mm);
     free(qm_i_particles);
     free(mm_j_particles);
