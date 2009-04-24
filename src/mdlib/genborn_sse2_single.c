@@ -540,8 +540,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 		
 	sum_gpi = born->work;	
 	factor  = 0.5 * ONE_4PI_EPS0;
-	memset(sum_gpi, 0, sizeof(float)*born->nr);
-	
+		
 	/* keep the compiler happy */
 	t1   = _mm_setzero_ps();
 	t2   = _mm_setzero_ps();
@@ -877,7 +876,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 	{
 		pd_at_range(cr,&at0,&at1);
 		gmx_sum(natoms,sum_gpi,cr);
-		
+	
 		for(i=at0;i<at1;i++)
 		{
 			ai     = nl->iinr[i];
@@ -892,6 +891,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 		/* Communicate Born radii*/
 		gb_pd_send(cr,born->bRad,md->nr);
 		gb_pd_send(cr,fr->invsqrta,md->nr);
+		
 	}	
 	else if(DOMAINDECOMP(cr))
 	{
@@ -912,7 +912,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 		dd_atom_spread_real(cr->dd,born->bRad);
 		dd_atom_spread_real(cr->dd,fr->invsqrta);
 	}
-
+	
 	return 0;
 	
 }
@@ -948,16 +948,6 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 	const __m128 two   = {2.0f , 2.0f , 2.0f , 2.0f };
 	const __m128 three = {3.0f , 3.0f , 3.0f , 3.0f };
 
-	if(PARTDECOMP(cr))
-	{
-		pd_at_range(cr,&at0,&at1);
-	}
-	else
-	{
-		at0=0;
-		at1=natoms;
-	}
-	
 	/* Keep the compiler happy */
 	tmp  = _mm_setzero_ps();
 	xmm1 = _mm_setzero_ps();
@@ -1454,16 +1444,19 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 
 	if(PARTDECOMP(cr))
 	{
+		pd_at_range(cr,&at0,&at1);
 		gmx_sum(natoms,sum_mpi,cr);
 
 		for(i=at0;i<at1;i++)
 		{
-			ai      = i;
-			min_rad = top->atomtypes.gb_radius[md->typeA[ai]]; 
-			rad     = 1.0/sum_mpi[ai];
+			ai               = nl->iinr[i];
+			min_rad          = top->atomtypes.gb_radius[md->typeA[ai]]; 
+			sum_ai           = 1.0/(min_rad-doffset);
+			sum_mpi[ai]      = sum_ai + sum_mpi[ai];
+			rad              = 1.0/sum_mpi[ai];
 			
-			born->bRad[ai]=rad > min_rad ? rad : min_rad;
-			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+			born->bRad[ai]   = rad > min_rad ? rad : min_rad;
+			fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
 		}
 		
 		/* Communicate Born radii */
@@ -1476,13 +1469,13 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 		
 		for(i=0;i<nl->nri;i++)
 		{
-			ai = nl->iinr[i];
-			min_rad = top->atomtypes.gb_radius[md->typeA[ai]]; 
-			sum_ai = 1.0/(min_rad-doffset);
-			sum_mpi[ai] = sum_ai + sum_mpi[ai];
-			rad     = 1.0/sum_mpi[ai];
-			born->bRad[ai]=rad > min_rad ? rad : min_rad;
-			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+			ai               = nl->iinr[i];
+			min_rad          = top->atomtypes.gb_radius[md->typeA[ai]]; 
+			sum_ai           = 1.0/(min_rad-doffset);
+			sum_mpi[ai]      = sum_ai + sum_mpi[ai];
+			rad              = 1.0/sum_mpi[ai];
+			born->bRad[ai]   = rad > min_rad ? rad : min_rad;
+			fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
 		}
 		
 		/* Communicate Born radii */
@@ -1536,17 +1529,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 	xmm3 = _mm_setzero_ps();
 	xmm4 = _mm_setzero_ps();
 	tmp  = _mm_setzero_ps();
-	
-	if(PARTDECOMP(cr))
-	{
-		pd_at_range(cr,&at0,&at1);
-	}
-	else
-	{
-		at0=0;
-		at1=natoms;
-	}
-	
+		
 	doffset = born->gb_doffset;
 	sum_mpi = born->work;
 	
@@ -2038,11 +2021,12 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 	
 	if(PARTDECOMP(cr))
 	{
+		pd_at_range(cr,&at0,&at1);
 		gmx_sum(natoms,sum_mpi,cr);
 		
 		for(i=at0;i<at1;i++)
 		{
-			ai      = i;
+			ai      = nl->iinr[i];
 			rr      = top->atomtypes.gb_radius[md->typeA[ai]];
 			rr_inv  = 1.0/rr;
 			
@@ -2073,7 +2057,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 		{
 			ai      = nl->iinr[i];
 			rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doffset;
-			rr_inv = 1.0/rr;
+			rr_inv  = 1.0/rr;
 			
 			sum_ai  = sum_mpi[ai];
 			sum_ai  = rr     * sum_ai;
