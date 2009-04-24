@@ -437,7 +437,7 @@ int init_gb_still(t_commrec *cr, t_forcerec  *fr, t_atomtypes *atype, t_idef *id
 			born->gpol_globalindex[i]=born->gpol_globalindex[i]+gp[i];
 		}	
 	}
-
+	
 	sfree(vsol);
 	sfree(gp);
 		
@@ -2374,7 +2374,7 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		fr->gblist.jindex[ii_idx+1]=idx;	
 		ii_idx++;
 	}
-
+	
 	return 0;
 }
 
@@ -2440,24 +2440,30 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 	else
 	{
 		/* Particle decompostion code in here */
+		born->gpol  = born->gpol_globalindex;
+		born->vsolv = born->vsolv_globalindex; 
+		born->vs    = born->vs_globalindex; 
 	}
 	
-	/* Copy data from global arrays to local copies */
-	if(gb_algorithm==egbSTILL)
+	/* If dd, Copy data from global arrays to local copies */
+	if(DOMAINDECOMP(cr))
 	{
-		for(i=at0;i<at1;i++)
+		if(gb_algorithm==egbSTILL)
 		{
-			born->gpol[i]  = born->gpol_globalindex[dd->gatindex[i]];
-			born->vsolv[i] = born->vsolv_globalindex[dd->gatindex[i]];
-			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			for(i=at0;i<at1;i++)
+			{
+				born->gpol[i]  = born->gpol_globalindex[dd->gatindex[i]];
+				born->vsolv[i] = born->vsolv_globalindex[dd->gatindex[i]];
+				born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			}
 		}
-	}
-	else
-	{
-		for(i=at0;i<at1;i++)
+		else
 		{
-			born->param[i] = born->param_globalindex[dd->gatindex[i]];
-			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			for(i=at0;i<at1;i++)
+			{
+				born->param[i] = born->param_globalindex[dd->gatindex[i]];
+				born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			}
 		}
 	}
 }

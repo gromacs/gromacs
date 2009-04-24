@@ -323,7 +323,7 @@ int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Initialise GB-stuff */
     if(fr->bGB)
       init_gb(&born,cr,fr,inputrec,mtop,state->x,inputrec->rgbradii,inputrec->gb_algorithm);
-
+	  
     /* Initialize QM-MM */
     if(fr->bQMMM)
       init_QMMMrec(cr,box,mtop,inputrec,fr);
@@ -735,9 +735,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                             vsite,shellfc,constr,born,
                             nrnb,wcycle,FALSE);
     }
-
+	
 	/* If not DD, copy gb data */
-    if(ir->implicit_solvent && !PAR(cr))
+    if(ir->implicit_solvent && !DOMAINDECOMP(cr))
     {
         make_local_gb(cr,born,ir->gb_algorithm);
     }
@@ -780,7 +780,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
   }
   
-
   if (repl_ex_nst > 0 && MASTER(cr))
     repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
 				    repl_ex_nst,repl_ex_seed);
@@ -817,7 +816,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     debug_gmx();
-
+	
   if (Flags & MD_READ_EKIN)
   {
       restore_ekinstate_from_state(cr,ekind,&state_global->ekinstate);
@@ -845,7 +844,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
        debug_gmx();
   }
-  
+
   /* Calculate the initial half step temperature */
   temp0 = sum_ekin(TRUE,&(ir->opts),ekind,ekin,NULL);
 
@@ -1160,6 +1159,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         {
             bBornRadii=TRUE;
         }
+		
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
             (step % stepout == 0 || bFirstStep || bLastStep);
@@ -1292,6 +1292,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              * This is parallellized as well, and does communication too. 
              * Check comments in sim_util.c
              */
+			
             do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
