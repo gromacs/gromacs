@@ -2203,6 +2203,7 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 				   t_forcerec *fr, t_idef *idef, gmx_genborn_t *born)
 {
 	int i,l,ii,j,k,n,nj0,nj1,ai,aj,idx,ii_idx,nalloc,at0,at1,found;
+	int apa;
 	t_nblist *nblist;
 
 	int *count;
@@ -2225,15 +2226,6 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 				
 				found=0;
 				
-				/* Allocate extra memory if needed */
-				/*
-				if(count[ai]>=born->nblist_work_nalloc || count[aj]>=born->nblist_work_nalloc)
-				{
-					born->nblist_work_nalloc += 500;
-					srenew(atoms[ai],born->nblist_work_nalloc);
-					srenew(atoms[aj],born->nblist_work_nalloc);
-				}
-			*/
 				/* So that we do not add the same bond twice. This happens with some constraints between 1-3 atoms
 				 * that are in the bond-list but should not be in the GB nb-list */
 				for(i=0;i<count[ai];i++)
@@ -2276,20 +2268,15 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 				}
 			}	
 			 
-			/* Allocate extra memory if needed */
-			/*if(count[ai]>=born->nblist_work_nalloc || count[aj]>=born->nblist_work_nalloc)
-			{
-				born->nblist_work_nalloc += 500;
-				srenew(atoms[ai],born->nblist_work_nalloc);
-				srenew(atoms[aj],born->nblist_work_nalloc);
-			}
-			*/
 			/* Also for Still, we need to add (1-4) interactions twice */
-			atoms[ai][count[ai]]=aj;
-			count[ai]++;
-			
-			atoms[aj][count[aj]]=ai;
-			count[aj]++;
+			if(found==0)
+			{
+				atoms[ai][count[ai]]=aj;
+				count[ai]++;
+				
+				atoms[aj][count[aj]]=ai;
+				count[aj]++;
+			}
 		}
 	}
 	
@@ -2317,10 +2304,12 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 						if(count[ai]>=born->nblist_work_nalloc || count[aj]>=born->nblist_work_nalloc)
 						{
 							born->nblist_work_nalloc += 500;
-							srenew(atoms[ai],born->nblist_work_nalloc);
-							srenew(atoms[aj],born->nblist_work_nalloc);
+							for(apa=0;apa<natoms;apa++)
+							{
+								srenew(born->nblist_work[apa],born->nblist_work_nalloc);
+							}
 						}
-						
+												
 						if(ai>aj)
 						{
 							atoms[aj][count[aj]]=ai;
