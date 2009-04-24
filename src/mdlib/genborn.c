@@ -892,7 +892,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 			fr->dadx[n++] = prod*(4*ccf-dccf)*idr6;
 		}
 		
-		if(DOMAINDECOMP(cr))
+		if(PAR(cr))
 		{
 			sum_gpi[ai] = gpi;
 		}
@@ -2343,9 +2343,20 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	
 	for(i=0;i<natoms;i++)
 	{
-		/* Only add those atoms that actually have neighbours (ie. all except vsites) */ 
-		if(count[i]>0)
+		/* Only add those atoms that actually have neighbours (ie. all except vsites) */
+		if(!PARTDECOMP(cr))
 		{
+			if(count[i]>0)
+			{
+				fr->gblist.iinr[fr->gblist.nri]=i;
+				fr->gblist.nri++;
+			}
+		}
+		else
+		{
+			/* For pd, some atoms can have all their neighbours on one node, and then count[ai] will be zero
+			 * but such atoms still need to be added to the nblist to get correct summations
+			 */
 			fr->gblist.iinr[fr->gblist.nri]=i;
 			fr->gblist.nri++;
 		}
