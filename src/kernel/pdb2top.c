@@ -817,7 +817,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   print_sums(atoms, FALSE);
   
-  if(FALSE==bCharge)
+  if (FALSE == bChargeGroups)
   {
 	  remove_charge_groups(cgnr, atoms->nr);
   }
