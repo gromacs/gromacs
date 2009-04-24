@@ -932,7 +932,7 @@ static int
 calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 					const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {
-	int i,k,n,ai,aj,nj0,nj1,dum;
+	int i,k,n,ai,aj,nj0,nj1,at0,at1;
 	real rai,raj,gpi,dr2,dr,sk,sk2,lij,uij,diff2,tmp,sum_ai;
 	real rad,min_rad,rinv,rai_inv;
 	real ix1,iy1,iz1,jx1,jy1,jz1,dx11,dy11,dz11;
@@ -1064,24 +1064,30 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 			
 			born->bRad[ai]=rad > min_rad ? rad : min_rad;
 			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
-			printf("node=%d, ai=%d, sum_ai=%15.15g\n",cr->nodeid, ai,sum_ai);
 		}
 	}
 
 	if(PARTDECOMP(cr))
 	{
+		pd_at_range(cr,&at0,&at1);
 		gmx_sum(natoms,sum_tmp,cr);
 
 		/* Calculate the Born radii so that they are available on all nodes */
-		for(i=0;i<natoms;i++)
+		for(i=at0;i<at1;i++)
 		{
-			ai      = i;
-			min_rad = top->atomtypes.gb_radius[md->typeA[ai]]; 
-			rad     = 1.0/sum_tmp[ai];
+			ai          = nl->iinr[i];
+			min_rad     = top->atomtypes.gb_radius[md->typeA[ai]]; 
+			sum_ai      = 1.0/(min_rad-doffset);
+			sum_tmp[ai] = sum_ai + sum_tmp[ai];
+			rad         = 1.0/sum_tmp[ai];
 			
 			born->bRad[ai]=rad > min_rad ? rad : min_rad;
 			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
 		}
+		
+		/* Communicate Born radii */
+		gb_pd_send(cr,born->bRad,md->nr);
+		gb_pd_send(cr,fr->invsqrta,md->nr);
 	}
 	else if(DOMAINDECOMP(cr))
 	{
@@ -1124,7 +1130,7 @@ static int
 calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 					const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {
-	int i,k,ai,aj,nj0,nj1,n;
+	int i,k,ai,aj,nj0,nj1,n,at0,at1;
 	real rai,raj,gpi,dr2,dr,sk,sk2,lij,uij,diff2,tmp,sum_ai;
 	real rad, min_rad,sum_ai2,sum_ai3,tsum,tchain,rinv,rai_inv,lij_inv,rai_inv2;
 	real log_term,prod,sk2_rinv;
@@ -1251,11 +1257,12 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 
 	if(PARTDECOMP(cr))
 	{
+		pd_at_range(cr,&at0,&at1);
 		gmx_sum(natoms,sum_tmp,cr);
 
-		for(i=0;i<natoms;i++)
+		for(i=at0;i<at1;i++)
 		{
-			ai      = i;
+			ai      = nl->iinr[i];
 			rai     = top->atomtypes.gb_radius[md->typeA[ai]];
 			rai_inv = 1.0/rai;
 			
@@ -1264,15 +1271,18 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 			sum_ai2 = sum_ai  * sum_ai;
 			sum_ai3 = sum_ai2 * sum_ai;
 			
-			tsum    = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
-			born->bRad[ai] = rai_inv - tsum/top->atomtypes.gb_radius[md->typeA[ai]];
-			
-			born->bRad[ai] = 1.0 / born->bRad[ai];
-			fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+			tsum             = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
+			born->bRad[ai]   = rai_inv - tsum/top->atomtypes.gb_radius[md->typeA[ai]];
+			born->bRad[ai]   = 1.0 / born->bRad[ai];
+			fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
 			
 			tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
 			born->drobc[ai] = (1.0-tsum*tsum)*tchain/top->atomtypes.gb_radius[md->typeA[ai]];
 		}
+		
+		gb_pd_send(cr,born->bRad,md->nr);
+		gb_pd_send(cr,fr->invsqrta,md->nr);
+		gb_pd_send(cr,born->drobc,md->nr);
 	}
 	else if(DOMAINDECOMP(cr))
 	{
@@ -1345,7 +1355,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 	}
 	
 #else
-
 	/* Switch for determining which algorithm to use for Born radii calculation */
 	switch(ir->gb_algorithm)
 	{
@@ -2354,8 +2363,8 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		}
 		else
 		{
-			/* For pd, some atoms can have all their neighbours on one node, and then count[ai] will be zero
-			 * but such atoms still need to be added to the nblist to get correct summations
+			/* For pd, some atoms can have all their neighbours on one node, and then count[ai] will be zero on the other
+			 * nodes, but such ai atoms still need to be added to the nblist on all nodes to get correct summations
 			 */
 			fr->gblist.iinr[fr->gblist.nri]=i;
 			fr->gblist.nri++;
@@ -2394,22 +2403,15 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 	int i,at0,at1;
 	gmx_domdec_t *dd=NULL;
 	
-	if(PAR(cr))
+	if(DOMAINDECOMP(cr))
 	{
-		if(DOMAINDECOMP(cr))
-		{
-			dd = cr->dd;
-			at0 = 0;
-			at1 = dd->nat_tot;
-		}
-		else
-		{
-			pd_at_range(cr,&at0,&at1);
-		}
+		dd = cr->dd;
+		at0 = 0;
+		at1 = dd->nat_tot;
 	}
 	else
 	{
-		/* Single node (global==local), just copy pointers and return */
+		/* Single node or particle decomp (global==local), just copy pointers and return */
 		if(gb_algorithm==egbSTILL)
 		{
 			born->gpol  = born->gpol_globalindex;
@@ -2425,56 +2427,42 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		return;
 	}
 	
-	
-	if(DOMAINDECOMP(cr))
+	/* Reallocation of local arrays if necessary */
+	if(born->nlocal < dd->nat_tot)
 	{
-		/* Reallocation if necessary */
-		if(born->nlocal < dd->nat_tot)
+		born->nlocal = dd->nat_tot;
+		
+		/* Arrays specific to different gb algorithms */
+		if(gb_algorithm==egbSTILL)
 		{
-			born->nlocal = dd->nat_tot;
-			
-			/* Arrays specific to different gb algorithms */
-			if(gb_algorithm==egbSTILL)
-			{
-				srenew(born->gpol,  born->nlocal+3);
-				srenew(born->vsolv, born->nlocal+3);
-			}
-			else
-			{
-				srenew(born->param, born->nlocal+3);
-			}
-			
-			/* All gb-algorithms use the array for vsites exclusions */
-			srenew(born->vs,    born->nlocal+3);
+			srenew(born->gpol,  born->nlocal+3);
+			srenew(born->vsolv, born->nlocal+3);
+		}
+		else
+		{
+			srenew(born->param, born->nlocal+3);
+		}
+		
+		/* All gb-algorithms use the array for vsites exclusions */
+		srenew(born->vs,    born->nlocal+3);
+	}
+	
+	/* With dd, copy algorithm specific arrays */
+	if(gb_algorithm==egbSTILL)
+	{
+		for(i=at0;i<at1;i++)
+		{
+			born->gpol[i]  = born->gpol_globalindex[dd->gatindex[i]];
+			born->vsolv[i] = born->vsolv_globalindex[dd->gatindex[i]];
+			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
 		}
 	}
 	else
 	{
-		/* Particle decompostion code in here */
-		born->gpol  = born->gpol_globalindex;
-		born->vsolv = born->vsolv_globalindex; 
-		born->vs    = born->vs_globalindex; 
-	}
-	
-	/* If dd, Copy data from global arrays to local copies */
-	if(DOMAINDECOMP(cr))
-	{
-		if(gb_algorithm==egbSTILL)
+		for(i=at0;i<at1;i++)
 		{
-			for(i=at0;i<at1;i++)
-			{
-				born->gpol[i]  = born->gpol_globalindex[dd->gatindex[i]];
-				born->vsolv[i] = born->vsolv_globalindex[dd->gatindex[i]];
-				born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
-			}
-		}
-		else
-		{
-			for(i=at0;i<at1;i++)
-			{
-				born->param[i] = born->param_globalindex[dd->gatindex[i]];
-				born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
-			}
+			born->param[i] = born->param_globalindex[dd->gatindex[i]];
+			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
 		}
 	}
 }
