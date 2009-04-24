@@ -1719,7 +1719,13 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
   {
 	  do_cmap(&mtop->cmap_grid,bRead);
   }
-	
+  else
+  {
+	  mtop->cmap_grid.ngrid=0;
+	  mtop->cmap_grid.grid_spacing=0.1;
+	  mtop->cmap_grid.cmapdata=NULL;
+  }
+	  
   if (file_version >= 57) {
     do_groups(&mtop->groups,bRead,&(mtop->symtab),file_version);
   }
