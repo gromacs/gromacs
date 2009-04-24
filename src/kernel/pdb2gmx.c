@@ -767,7 +767,7 @@ int main(int argc, char *argv[])
     { "-heavyh", FALSE, etBOOL, {&bHeavyH},
       "Make hydrogen atoms heavy" },
     { "-deuterate", FALSE, etBOOL, {&bDeuterate},
-      "Change the mass of hydrogens to 2 amu" }
+      "Change the mass of hydrogens to 2 amu" },
 	{ "-chargegrp", TRUE, etBOOL, {&bChargeGroups},
 	  "Use (default) or disable charge groups in the rtp file"  }
   };
