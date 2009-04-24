@@ -819,7 +819,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   if (FALSE == bChargeGroups)
   {
-	  remove_charge_groups(cgnr, atoms->nr);
+	  scrub_charge_groups(cgnr, atoms->nr);
   }
 	
   if (top_file) {
