@@ -181,7 +181,7 @@ static void write_constr_pdb(char *fn,char *title,gmx_mtop_t *mtop,
     }
     gmx_mtop_atominfo_global(mtop,ii,&anm,&resnr,&resnm);
     fprintf(out,format,"ATOM",(ii+1)%100000,
-	    anm,resnm,' ',(resnr+1)%10000,
+	    anm,resnm,' ',(resnr+1)%10000,' ',
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
   }
   fprintf(out,"TER\n");
