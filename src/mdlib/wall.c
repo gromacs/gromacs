@@ -62,8 +62,10 @@ void make_wall_tables(FILE *fplog,
   negp_pp = ir->opts.ngener - ir->nwall;
   nm_ind  = groups->grps[egcENER].nm_ind;
 
-  fprintf(fplog,"Reading user tables for %d energy groups with %d walls\n",
-	  negp_pp,ir->nwall);
+  if (fplog) {
+    fprintf(fplog,"Reading user tables for %d energy groups with %d walls\n",
+	    negp_pp,ir->nwall);
+  }
 
   snew(fr->wall_tab,ir->nwall);
   for(w=0; w<ir->nwall; w++) {
