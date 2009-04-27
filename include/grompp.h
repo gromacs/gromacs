@@ -159,9 +159,9 @@ typedef enum {
   d_angle_restraints,
   d_angle_restraints_z,
   d_distance_restraints,
-  d_cmap,
   d_orientation_restraints,
   d_dihedral_restraints,
+  d_cmap,
   d_maxdir,
   d_invalid,
   d_none
