@@ -7787,6 +7787,13 @@ void dd_partition_system(FILE            *fplog,
     
     set_dd_ns_cell_sizes(dd,state_local->box,step);
     
+    /* Initialize the ns grid */
+    copy_ivec(fr->ns.grid->n,ncells_old);
+    grid_first(fplog,fr->ns.grid,dd,fr->ePBC,
+               state_local->box,dd->cell_ns_x0,dd->cell_ns_x1,
+               fr->rlistlong,dd->ncg_home,dd->cell_x0,dd->cell_x1);
+
+    /* Check if we should sort the charge groups */
     if (comm->nstSortCG > 0)
     {
         bSortCG = (bMasterState ||
@@ -7799,9 +7806,6 @@ void dd_partition_system(FILE            *fplog,
     comm->bFilled_nsgrid_home = bSortCG;
     if (comm->bFilled_nsgrid_home)
     {
-        /* Initialize the ns grid */
-        copy_ivec(fr->ns.grid->n,ncells_old);
-        grid_first(fplog,fr->ns.grid,dd,fr->ePBC,state_local->box,fr->rlistlong,dd->ncg_home);
         if (!bMasterState &&
             fr->ns.grid->n[XX] == ncells_old[XX] &&
             fr->ns.grid->n[YY] == ncells_old[YY] &&

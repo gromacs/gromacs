@@ -44,10 +44,15 @@ extern t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 extern void done_grid(t_grid *grid);
 
+extern void get_nsgrid_boundaries(t_grid *grid,matrix box,
+				  int ncg,rvec *cgcm,
+				  rvec grid_x0,rvec grid_x1);
+
 extern void set_grid_ncg(t_grid *grid,int ncg);
 
 extern void grid_first(FILE *log,t_grid *grid,gmx_domdec_t *dd,
-		       int ePBC,matrix box,real rlong,int ncg);
+		       int ePBC,matrix box,rvec izones_x0,rvec izones_x1,
+		       real rlong,int ncg,rvec dens_x0,rvec dens_x1);
 
 extern void fill_grid(FILE *log,
 		      gmx_domdec_zones_t *dd_zones,

@@ -161,18 +161,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"Can not have Ewald with pbc=%s",epbc_names[ir->ePBC]);
     CHECK(EEL_FULL(ir->coulombtype));
     
-    if (ir->ePBC == epbcNONE)
-      ns_type = ensSIMPLE;
-    else
-      ns_type = ensGRID;
-    if (ir->ns_type != ns_type) {
-      sprintf(warn_buf,"Can only use nstype=%s with pbc=%s, setting nstype "
-	      "to %s\n",
-	      ens_names[ns_type],epbc_names[ir->ePBC],ens_names[ns_type]);
-      warning(NULL);
-      ir->ns_type = ns_type;
-    }
-    
     sprintf(err_buf,"Can not have dispersion correction with pbc=%s",
 	    epbc_names[ir->ePBC]);
     CHECK(ir->eDispCorr != edispcNO);

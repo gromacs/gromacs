@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-  
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * $Id$
  * 
@@ -1911,9 +1911,11 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     {
         sh0[d] = -1;
         sh1[d] = 1;
-        if (bDomDec && dd->nc[d] > 1)
+        /* Check if we need periodicity shifts.
+         * Without PBC or with domain decomposition we don't need them.
+         */
+        if (d >= ePBC2npbcdim(fr->ePBC) || (bDomDec && dd->nc[d] > 1))
         {
-            /* With domain decomposition we don't need periodic shifts */
             shp[d] = 0;
         }
         else
@@ -1928,10 +1930,6 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                 shp[d] = 1;
             }
         }
-    }
-    if (fr->ePBC == epbcXY)
-    {
-        shp[ZZ] = 0;
     }
     
     /* Loop over charge groups */
@@ -2368,7 +2366,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       bool bFillGrid,bool bDoForces)
 {
     t_block  *cgs=&(top->cgs);
-    rvec     box_size;
+    rvec     box_size,grid_x0,grid_x1;
     int      i,j,m,ngid;
     real     min_size;
     int      nsearch;
@@ -2427,14 +2425,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         {
             dd_zones = NULL;
             bFilledHome = FALSE;
-        }
-        if (!bFilledHome)
-        {
-            grid_first(log,grid,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
-        }
-        else
-        {
-            set_grid_ncg(grid,cgs->nr);
+
+            get_nsgrid_boundaries(grid,box,cgs->nr,fr->cg_cm,grid_x0,grid_x1);
+
+            grid_first(log,grid,cr->dd,fr->ePBC,box,grid_x0,grid_x1,
+                       fr->rlistlong,cgs->nr,grid_x0,grid_x1);
         }
         debug_gmx();
         
