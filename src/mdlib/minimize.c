@@ -359,6 +359,14 @@ void init_em(FILE *fplog,const char *title,
 
   /* Init bin for energy stuff */
   *mdebin = init_mdebin(*fp_ene,top_global,ir); 
+	
+	/* If doing gb, copy make local gb data (for dd, this is done in dd_partition_system) */
+	if(ir->implicit_solvent && !DOMAINDECOMP(cr))
+    {
+        make_local_gb(cr,born,ir->gb_algorithm);
+    }
+	
+	
 }
 
 static void finish_em(FILE *fplog,t_commrec *cr,
@@ -597,7 +605,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,born,TRUE,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
 	   (bNS ? GMX_FORCE_NS : 0));
-
+	
   /* Clear the unused shake virial and pressure */
   clear_mat(shake_vir);
   clear_mat(pres);
@@ -1962,7 +1970,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 	  state_global,top_global,s_try,&top,f,&f_global,
 	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,born,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
-
+	
   /* Print to log file  */
   start_t=print_date_and_time(fplog,cr->nodeid,"Started Steepest Descents");
   wallcycle_start(wcycle,ewcRUN);
@@ -2005,7 +2013,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		    inputrec,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
-    
+	 
     if (MASTER(cr))
       print_ebin_header(fplog,count,count,s_try->s.lambda);
 
