@@ -1653,22 +1653,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         PRINT_SEPDVDL("Walls",0.0,dvdlambda);
         enerd->dvdl_lin += dvdlambda;
     }
-	
-	/* If doing GB, calculate the Born radii and reset dvda */
-	if (ir->implicit_solvent)
-	{
-		for(i=0;i<born->nr;i++)
-		{
-			fr->dvda[i]=0;
-		}
 		
-		if(bBornRadii)
-		{
-			calc_gb_rad(cr,fr,ir,top,atype,x,f,&(fr->gblist),born,md);
-		}
-	}
-	 
-	 
     where();
     donb_flags = 0;
     if (flags & GMX_FORCE_FORCES)
@@ -1827,7 +1812,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);
     }
-	 
+
     where();
     if (EEL_FULL(fr->eeltype))
     {
@@ -2015,6 +2000,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     }
     
     GMX_MPE_LOG(ev_force_finish);
+
 }
 
 void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd)
