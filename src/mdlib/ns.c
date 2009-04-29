@@ -2420,6 +2420,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         {
             dd_zones = domdec_zones(cr->dd);
             bFilledHome = dd_filled_nsgrid_home(cr->dd);
+
+            set_grid_ncg(grid,cgs->nr);
         }
         else
         {
