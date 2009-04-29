@@ -55,7 +55,7 @@
 #include "tpxio.h"
 #include "viewit.h"
 
-static void strip_dssp(char *dsspfile,int nres,
+static int strip_dssp(char *dsspfile,int nres,
 		       bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[])
@@ -66,7 +66,8 @@ static void strip_dssp(char *dsspfile,int nres,
   static int xsize,frame;
   char buf[STRLEN+1];
   char SSTP;
-  int  i,nr,iacc;
+  int  i,nr,iacc,nresidues;
+  int  naccf,naccb; /* Count hydrophobic and hydrophilic residues */
   real iaccf,iaccb;
   t_xpmelmt c;
   
@@ -77,26 +78,55 @@ static void strip_dssp(char *dsspfile,int nres,
     fgets2(buf,STRLEN,tapeout);
   } while (strstr(buf,"KAPPA") == NULL);
   if (bFirst) {
-    snew(ssbuf,nres+10);
+    /* Since we also have empty lines in the dssp output (temp) file,
+     * and some line content is saved to the ssbuf variable,
+     * we need more memory than just nres elements. To be shure,
+     * we allocate 2*nres-1, since for each chain there is a 
+     * separating line in the temp file. (At most each residue 
+     * could have been defined as a separate chain.) */
+    snew(ssbuf,2*nres-1);
   }
   
   iaccb=iaccf=0;
+  nresidues = 0;
+  naccf = 0;
+  naccb = 0;
   for(nr=0; (fgets2(buf,STRLEN,tapeout) != NULL); nr++) {
-    SSTP=buf[16]==' ' ? '~' : buf[16];
+      if (buf[13] == '!')   /* Chain separator line has '!' at pos. 13 */
+          SSTP='=';         /* Chain separator sign '=' */
+      else
+          SSTP=buf[16]==' ' ? '~' : buf[16];
     ssbuf[nr]=SSTP;
     
     buf[39]='\0';
-    sscanf(&(buf[34]),"%d",&iacc);
-    acc[nr]=iacc;
-    average_area[nr]+=iacc;
-    if (bPhobres[nr])
-      iaccb+=iacc;
-    else
-      iaccf+=iacc;
+    
+    /* Only calculate solvent accessible area if needed */
+    if ((NULL != acc) && (buf[13] != '!'))
+    {
+      sscanf(&(buf[34]),"%d",&iacc);
+      acc[nr]=iacc;
+      /* average_area and bPhobres are counted from 0...nres-1 */
+      average_area[nresidues]+=iacc;
+      if (bPhobres[nresidues])
+      {
+        naccb++;
+        iaccb+=iacc;
+      }
+      else
+      {
+        naccf++;
+        iaccf+=iacc;
+      }
+      /* Keep track of the residue number (do not count chain separator lines '!') */
+      nresidues++;
+    }
   }
   ssbuf[nr]='\0';
   
   if (bFirst) {
+    if (0 != acc)
+        fprintf(stderr, "%d residues were classified as hydrophobic and %d as hydrophilic.\n", naccb, naccf);
+    
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
     sprintf(mat->label_x,"%s",time_label());
@@ -130,6 +160,11 @@ static void strip_dssp(char *dsspfile,int nres,
   if (fTArea)
     fprintf(fTArea,"%10g  %10g  %10g\n",t,0.01*iaccb,0.01*iaccf);
   fclose(tapeout);
+  
+  /* Return the number of lines found in the dssp file (i.e. number
+   * of redidues plus chain separator lines).
+   * This is the number of y elements needed for the area xpm file */
+  return nr;
 }
 
 bool *bPhobics(t_atoms *atoms)
@@ -309,6 +344,8 @@ int main(int argc,char *argv[])
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
+    "Individual chains are separated by light grey lines in the xpm and",
+    "postscript files.",
     "The number of residues with each secondary structure type and the",
     "total secondary structure ([TT]-sss[tt]) count as a function of",
     "time are also written to file ([TT]-sc[tt]).[PAR]",
@@ -341,19 +378,20 @@ int main(int argc,char *argv[])
   int        ePBC;
   t_atoms    *atoms;
   t_matrix   mat;
-  int        nres,nr0,naccr;
+  int        nres,nr0,naccr,nres_plus_separators;
   bool       *bPhbres,bDoAccSurf;
   real       t;
-  int        i,j,natoms,nframe=0;
+  int        i,natoms,nframe=0;
   matrix     box;
   int        gnx;
   char       *grpnm,*ss_str;
   atom_id    *index;
   rvec       *xp,*x;
   int        *average_area;
-  real       **accr,*av_area, *norm_av_area;
+  real       **accr,*accr_ptr=NULL,*av_area, *norm_av_area;
   char       pdbfile[32],tmpfile[32],title[256];
   char       dssp[256],*dptr;
+  
   
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD },
@@ -443,18 +481,18 @@ int main(int argc,char *argv[])
   if (gnx > natoms)
     gmx_fatal(FARGS,"\nTrajectory does not match selected group!");
   
-  snew(average_area,atoms->nres+10);
-  snew(av_area,atoms->nres+10);
-  snew(norm_av_area,atoms->nres+10);
+  snew(average_area, atoms->nres);
+  snew(av_area     , atoms->nres);
+  snew(norm_av_area, atoms->nres);
   accr=NULL;
   naccr=0;
   do {
     t = convert_time(t);
-    if (nframe>=naccr) {
+    if (bDoAccSurf && nframe>=naccr) {
       naccr+=10;
       srenew(accr,naccr);
       for(i=naccr-10; i<naccr; i++)
-	snew(accr[i],atoms->nres+10);
+        snew(accr[i],2*atoms->nres-1);
     }
     rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
     tapein=ffopen(pdbfile,"w");
@@ -472,8 +510,14 @@ int main(int argc,char *argv[])
     }
 #endif
 
-    strip_dssp(tmpfile,nres,bPhbres,t,
-	       accr[nframe],fTArea,&mat,average_area);
+    /* strip_dssp returns the number of lines found in the dssp file, i.e.
+     * the number of residues plus the separator lines */
+    
+    if (bDoAccSurf)
+        accr_ptr = accr[nframe];
+
+    nres_plus_separators = strip_dssp(tmpfile,nres,bPhbres,t,
+	       accr_ptr,fTArea,&mat,average_area);
     remove(tmpfile);
     remove(pdbfile);
     nframe++;
@@ -486,6 +530,7 @@ int main(int argc,char *argv[])
   prune_ss_legend(&mat);
   
   ss=opt2FILE("-o",NFILE,fnm,"w");
+  mat.flags = 0;  
   write_xpm_m(ss,mat);
   ffclose(ss);
   
@@ -502,7 +547,7 @@ int main(int argc,char *argv[])
   analyse_ss(fnSCount,&mat,ss_string);
 
   if (bDoAccSurf) {
-    write_sas_mat(fnArea,accr,nframe,nres,&mat);
+    write_sas_mat(fnArea,accr,nframe,nres_plus_separators,&mat);
   
     for(i=0; i<atoms->nres; i++)
       av_area[i] = (average_area[i] / (real)nframe);
