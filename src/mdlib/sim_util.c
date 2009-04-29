@@ -295,7 +295,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   bSepDVDL = (fr->bSepDVDL && do_per_step(step,inputrec->nstlog));
 
   clear_mat(vir_force);
-  
+
   if (PARTDECOMP(cr)) {
     pd_cg_range(cr,&cg0,&cg1);
   } else {
@@ -427,7 +427,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     wallcycle_stop(wcycle,ewcNS);
   }
-  
+	
   if(inputrec->implicit_solvent && bNS) 
   {
 	  make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,born);
@@ -439,6 +439,20 @@ void do_force(FILE *fplog,t_commrec *cr,
       dd_force_flop_start(cr->dd,nrnb);
     }
   }
+	
+	if (inputrec->implicit_solvent)
+	{
+		for(i=0;i<born->nr;i++)
+		{
+			fr->dvda[i]=0;
+		}
+		
+		if(bBornRadii)
+		{
+			calc_gb_rad(cr,fr,inputrec,top,&(top->atomtypes),x,f,&(fr->gblist),born,mdatoms);
+		}
+	}
+	
   /* Start the force cycle counter.
    * This counter is stopped in do_forcelow_level.
    * No parallel communication should occur while this counter is running,
