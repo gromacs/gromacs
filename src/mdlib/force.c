@@ -1655,7 +1655,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     }
 		
 	/* If doing GB, reset dvda and calculate the Born radii */
-	if (inputrec->implicit_solvent)
+	if (ir->implicit_solvent)
 	{
 		/* wallcycle_start(wcycle,ewcGB); */
 		
@@ -1666,7 +1666,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 		
 		if(bBornRadii)
 		{
-			calc_gb_rad(cr,fr,inputrec,top,&(top->atomtypes),x,f,&(fr->gblist),born,mdatoms);
+			calc_gb_rad(cr,fr,ir,top,atype,x,f,&(fr->gblist),born,mdatoms);
 		}
 		
 		/* wallcycle_stop(wcycle, ewcGB); */
