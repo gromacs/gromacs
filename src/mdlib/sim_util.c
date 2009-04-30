@@ -440,24 +440,6 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
   }
 	
-	/* If doing GB, reset dvda and calculate the Born radii */
-	if (inputrec->implicit_solvent)
-	{
-		wallcycle_start(wcycle,ewcGB);
-		
-		for(i=0;i<born->nr;i++)
-		{
-			fr->dvda[i]=0;
-		}
-		
-		if(bBornRadii)
-		{
-			calc_gb_rad(cr,fr,inputrec,top,&(top->atomtypes),x,f,&(fr->gblist),born,mdatoms);
-		}
-		
-		wallcycle_stop(wcycle, ewcGB);
-	}
-	
   /* Start the force cycle counter.
    * This counter is stopped in do_forcelow_level.
    * No parallel communication should occur while this counter is running,
