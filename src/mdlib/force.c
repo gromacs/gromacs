@@ -1666,7 +1666,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 		
 		if(bBornRadii)
 		{
-			calc_gb_rad(cr,fr,ir,top,atype,x,f,&(fr->gblist),born,mdatoms);
+			calc_gb_rad(cr,fr,ir,top,atype,x,f,&(fr->gblist),born,md);
 		}
 		
 		/* wallcycle_stop(wcycle, ewcGB); */
