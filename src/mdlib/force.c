@@ -1654,6 +1654,24 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         enerd->dvdl_lin += dvdlambda;
     }
 		
+	/* If doing GB, reset dvda and calculate the Born radii */
+	if (inputrec->implicit_solvent)
+	{
+		/* wallcycle_start(wcycle,ewcGB); */
+		
+		for(i=0;i<born->nr;i++)
+		{
+			fr->dvda[i]=0;
+		}
+		
+		if(bBornRadii)
+		{
+			calc_gb_rad(cr,fr,inputrec,top,&(top->atomtypes),x,f,&(fr->gblist),born,mdatoms);
+		}
+		
+		/* wallcycle_stop(wcycle, ewcGB); */
+	}
+	
     where();
     donb_flags = 0;
     if (flags & GMX_FORCE_FORCES)
@@ -1693,6 +1711,16 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         destroy_enerdata(&ed_lam);
     }
     where();
+	
+	/* If we are doing GB, calculate bonded forces and apply corrections 
+	 * to the solvation forces */
+	if (ir->implicit_solvent)  {
+		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
+		enerd->term[F_GB12]+=dvdgb;	
+		
+		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
+		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
+	}
 
 #ifdef GMX_MPI
     if (TAKETIME)
@@ -1959,17 +1987,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     }
     where();
     debug_gmx();
-
-	
-	/* If we are doing GB, calculate bonded forces and apply corrections 
-	 * to the solvation forces */
-	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
-		enerd->term[F_GB12]+=dvdgb;	
-		
-		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
-		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
-	}
 	
     if (debug)
     {
