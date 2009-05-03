@@ -368,26 +368,33 @@ char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
 
 char **split(char sep,char *str)
 {
-  char **ptr = NULL,*p;
-  int  nptr = 0;
+  char **ptr = NULL;
+  int  n,nn,nptr = 0;
   
   if (str == NULL)
     return NULL;
+  nn = strlen(str);
+  for(n=0; (n<nn); n++)
+    if (str[n] == sep)
+      nptr++;
+  snew(ptr,nptr+2);
+  nptr = 0;
   while (*str != '\0') {
     while ((*str != '\0') && (*str == sep))
       str++;
-    srenew(ptr,++nptr);
-    snew(ptr[nptr-1],strlen(str));
-    p = ptr[nptr-1];
-    while ((*str != '\0') && (*str != sep)) {
-      *p = *str;
-      str++;
-      p++;
+    if (*str != '\0') {
+      snew(ptr[nptr],1+strlen(str));
+      n = 0;
+      while ((*str != '\0') && (*str != sep)) {
+	ptr[nptr][n] = *str;
+	str++;
+	n++;
+      }
+      ptr[nptr][n] = '\0';
+      nptr++;
     }
-    *p = '\0';
   }
-  srenew(ptr,++nptr);
-  ptr[nptr-1] = NULL;
+  ptr[nptr] = NULL;
   
   return ptr;
 }
