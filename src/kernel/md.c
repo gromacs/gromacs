@@ -1628,7 +1628,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
 	  
   if (MASTER(cr)) {
-    if (bGStatEveryStep) {
+    if (bGStatEveryStep && !bRerunMD) {
       print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_ene,t,
 		 eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
       print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_ene,t,
