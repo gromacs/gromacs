@@ -543,16 +543,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN);
   bGStatEveryStep = !(Flags & MD_NOGSTAT);
   bAppend  = (Flags & MD_APPENDFILES);
-
-  /* If we do reruns, the step numbers in the output energy frames cannot be
-   * used for averages (since energies are only calculated for trajectory frames).
-   * By turning of bGStatEveryStep we force g_energy to use the actual energy frame 
-   * contents for the averages instead.
-   */
-  if(bRerunMD)
-  {
-      bGStatEveryStep = FALSE;
-  }
 	
   if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
     char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
@@ -917,34 +907,44 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (ir->efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
-	state->lambda = rerun_fr.lambda;
+	state_global->lambda = rerun_fr.lambda;
       else
-	state->lambda = lam0 + step*ir->delta_lambda;
+	state_global->lambda = lam0 + step*ir->delta_lambda;
+      state->lambda = state_global->lambda;
     }
     
     if (bSimAnn) 
       update_annealing_target_temp(&(ir->opts),t);
     
     if (bRerunMD) {
-      for(i=0; i<mdatoms->nr; i++)
-	copy_rvec(rerun_fr.x[i],state->x[i]);
-      if (rerun_fr.bV)
-	for(i=0; i<mdatoms->nr; i++)
-	  copy_rvec(rerun_fr.v[i],state->v[i]);
-      else {
-	for(i=0; i<mdatoms->nr; i++)
-	    clear_rvec(state->v[i]);
-	if (bRerunWarnNoV) {
-	  fprintf(stderr,"\nWARNING: Some frames do not contain velocities.\n"
-		  "         Ekin, temperature and pressure are incorrect,\n"
-		  "         the virial will be incorrect when constraints are present.\n"
-		  "\n");
-	  bRerunWarnNoV = FALSE;
+      if (!(DOMAINDECOMP(cr) && !MASTER(cr))) {
+	for(i=0; i<state_global->natoms; i++) {
+	  copy_rvec(rerun_fr.x[i],state_global->x[i]);
+	}
+	if (rerun_fr.bV) {
+	  for(i=0; i<state_global->natoms; i++) {
+	    copy_rvec(rerun_fr.v[i],state_global->v[i]);
+	  }
+	} else {
+	  for(i=0; i<state_global->natoms; i++) {
+	    clear_rvec(state_global->v[i]);
+	  }
+	  if (bRerunWarnNoV) {
+	    fprintf(stderr,"\nWARNING: Some frames do not contain velocities.\n"
+		    "         Ekin, temperature and pressure are incorrect,\n"
+		    "         the virial will be incorrect when constraints are present.\n"
+		    "\n");
+	    bRerunWarnNoV = FALSE;
+	  }
 	}
       }
-      copy_mat(rerun_fr.box,state->box);
+      copy_mat(rerun_fr.box,state_global->box);
+      copy_mat(state_global->box,state->box);
 
-      if (vsite) {
+      if (vsite && (Flags & MD_RERUN_VSITE)) {
+	if (DOMAINDECOMP(cr)) {
+	  gmx_fatal(FARGS,"Vsite recalculation with -rerun is not implemented for domain decomposition, use particle decomposition");
+	}
 	if (graph) {
 	  /* Following is necessary because the graph may get out of sync
 	   * with the coordinates if we only have every N'th coordinate set
@@ -1073,6 +1073,18 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (ir->efep != efepNO)
       update_mdatoms(mdatoms,state->lambda); 
+
+    if (bRerunMD && rerun_fr.bV) {
+      /* We need the kinetic energy at minus the half step for determining
+       * the full step kinetic energy and possibly for T-coupling.
+       */
+      calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
+      if (PAR(cr)) {
+	global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+		    ir,ekind,FALSE,constr,vcm,NULL,NULL,&terminate);
+      }
+      sum_ekin(FALSE,&(ir->opts),ekind,ekin,NULL);
+    }
     
     clear_mat(force_vir);
     
@@ -1425,7 +1437,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
       
       /* Sum the kinetic energies of the groups & calc temp */
-      enerd->term[F_TEMP] = sum_ekin(bRerunMD,&(ir->opts),ekind,ekin,
+      enerd->term[F_TEMP] = sum_ekin((bRerunMD && !rerun_fr.bV),
+				     &(ir->opts),ekind,ekin,
 				     &(enerd->term[F_DKDL]));
       enerd->term[F_EKIN] = trace(ekin);
       
@@ -1533,7 +1546,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr)) {
       bool do_dr,do_or;
       
-      upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep,
+      /* If we do reruns, the step numbers in the output energy frames
+       * cannot be used for averages (since energies are only calculated
+       * for trajectory frames).
+       */
+       upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep && !bRerunMD,
 		 mdatoms->tmass,step_ene,t,enerd,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,
 		 ekind,mu_tot,constr);
