@@ -60,6 +60,7 @@
 #define MD_POLARISE     (1<<2)
 #define MD_IONIZE       (1<<3)
 #define MD_RERUN        (1<<4)
+#define MD_RERUN_VSITE  (1<<5)
 #define MD_FFSCAN       (1<<6)
 #define MD_SEPPOT       (1<<7)
 #define MD_PARTDEC      (1<<9)

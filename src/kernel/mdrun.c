@@ -289,6 +289,7 @@ int main(int argc,char *argv[])
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
   static bool bSepPot      = FALSE;
+  static bool bRerunVSite  = FALSE;
   static bool bIonize      = FALSE;
   static bool bConfout     = TRUE;
   static bool bReproducible = FALSE;
@@ -365,6 +366,8 @@ int main(int argc,char *argv[])
       "Attempt replica exchange every # steps" },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
+    { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
+      "HIDDENRecalculate virtual site coordinates with -rerun" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-confout", FALSE, etBOOL, {&bConfout},
@@ -452,6 +455,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
+  Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
