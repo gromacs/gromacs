@@ -27,9 +27,12 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
+#if 0
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 
 #include <stdio.h>
 
@@ -88,9 +91,9 @@ void nb_kernel110_sse2_single(
 	int           j3A,j3B,j3C,j3D,jnrA,jnrB,jnrC,jnrD;
 	float         tfloat1[4],tfloat2[4],tfloat3[4];
 
-	__m128     mask1 = (__m128) _mm_set_epi32(0, 0, 0, 0xffffffff);
-	__m128     mask2 = (__m128) _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff);
-	__m128     mask3 = (__m128) _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);
+	__m128     mask1 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	__m128     mask2 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	__m128     mask3 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
 	__m128     mask;
 	
 	__m128     qqOO,qqOH,qqHH,c6,c12,Vvdwtot,vctot;
@@ -289,3 +292,4 @@ void nb_kernel110_sse2_single(
 }
 
 
+#endif

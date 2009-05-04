@@ -865,17 +865,17 @@ gmx_printxmm_ps(const char *s,__m128 xmm)
 static inline __m128
 gmx_mm_scalarprod_ps(__m128 x, __m128 y, __m128 z)
 {
-	return (__m128) _mm_add_ps(_mm_add_ps(_mm_mul_ps(x,x),_mm_mul_ps(y,y)),_mm_mul_ps(z,z));
+	return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x,x),_mm_mul_ps(y,y)),_mm_mul_ps(z,z));
 }
 
 
 static inline __m128
 gmx_mm_recip_ps(__m128 x)
 {
-	const __m128 two  = (const __m128) {2.0,2.0,2.0,2.0};
+	const __m128 two  = {2.0,2.0,2.0,2.0};
 	
 	__m128 lu = _mm_rcp_ps(x);
-	return (__m128) _mm_mul_ps(lu,_mm_sub_ps(two,_mm_mul_ps(x,lu)));
+	return _mm_mul_ps(lu,_mm_sub_ps(two,_mm_mul_ps(x,lu)));
 }
 
 
@@ -883,12 +883,12 @@ gmx_mm_recip_ps(__m128 x)
 static inline __m128
 gmx_mm_invsqrt_ps(__m128 x)
 {
-	const __m128 half  = (const __m128) {0.5,0.5,0.5,0.5};
-	const __m128 three = (const __m128) {3.0,3.0,3.0,3.0};
+	const __m128 half  = {0.5,0.5,0.5,0.5};
+	const __m128 three = {3.0,3.0,3.0,3.0};
 
 	__m128 lu = _mm_rsqrt_ps(x);
 	
-	return (__m128) _mm_mul_ps(half,_mm_mul_ps(_mm_sub_ps(three,_mm_mul_ps(_mm_mul_ps(lu,lu),x)),lu));
+	return _mm_mul_ps(half,_mm_mul_ps(_mm_sub_ps(three,_mm_mul_ps(_mm_mul_ps(lu,lu),x)),lu));
 }
 
 
@@ -900,11 +900,11 @@ gmx_mm_setup_switch5_constants_ps(__m128 rswitch, __m128 rcut,
 								  __m128 *switch_C3, __m128 *switch_C4, __m128 *switch_C5,
 								  __m128 *switch_D2, __m128 *switch_D3, __m128 *switch_D4)
 {
-	const __m128  cm6  = (const __m128) { -6.0, -6.0, -6.0, -6.0};
-	const __m128 cm10  = (const __m128) {-10.0,-10.0,-10.0,-10.0};
-	const __m128  c15  = (const __m128) { 15.0, 15.0, 15.0, 15.0};
-	const __m128 cm30  = (const __m128) {-30.0,-30.0,-30.0,-30.0};
-	const __m128  c60  = (const __m128) { 60.0, 60.0, 60.0, 60.0};
+	const __m128  cm6  = { -6.0, -6.0, -6.0, -6.0};
+	const __m128 cm10  = {-10.0,-10.0,-10.0,-10.0};
+	const __m128  c15  = { 15.0, 15.0, 15.0, 15.0};
+	const __m128 cm30  = {-30.0,-30.0,-30.0,-30.0};
+	const __m128  c60  = { 60.0, 60.0, 60.0, 60.0};
 
 	__m128 d,dinv,dinv2,dinv3,dinv4,dinv5;
 	
@@ -925,7 +925,7 @@ gmx_mm_setup_switch5_constants_ps(__m128 rswitch, __m128 rcut,
 
 
 #define GMX_MM_SET_SWITCH5_PS(r,rswitch,rcut,sw,dsw,sw_C3,sw_C4,sw_C5,sw_D2,sw_D3,sw_D4) {   \
-    const __m128  _sw_one  = (const __m128) {  1.0,  1.0,  1.0,  1.0};                       \
+    const __m128  _sw_one  = {  1.0,  1.0,  1.0,  1.0};                                      \
     __m128 d,d2;                                                                             \
     d     = _mm_max_ps(r,rswitch);                                                           \
     d     = _mm_min_ps(d,rcut);                                                              \
@@ -951,7 +951,7 @@ gmx_mm_int_coulomb_ps(__m128 rinv, __m128 qq,__m128 *vctot)
 {
 	__m128 vcoul = _mm_mul_ps(qq,rinv);
 	*vctot   = _mm_add_ps(*vctot,vcoul);
-	return (__m128) vcoul;
+	return vcoul;
 }
 
 
@@ -965,16 +965,16 @@ gmx_mm_int_coulomb_noforce_ps(__m128 rinv, __m128 qq,__m128 *vctot)
 
 /* Returns fscaltmp, multiply with rinvsq to get fscal! */
 static inline __m128
-gmx_mm_int_coulombrf_ps(__m128 rinv, __m128 rsq, __m128 krf, __m128 crf, __m128 qq,__m128 *vctot)
+gmx_mm_int_coulombrf_ps(const __m128 rinv, const __m128 rsq, const __m128 krf, const __m128 crf, const __m128 qq,__m128 *vctot)
 {
-	const __m128 two  = (const __m128) {2.0,2.0,2.0,2.0};
+	const __m128 two  = {2.0,2.0,2.0,2.0};
 	__m128 vcoul,krsq;
 	
 	krsq   = _mm_mul_ps(krf,rsq);
 	vcoul  = _mm_mul_ps(qq, _mm_sub_ps(_mm_add_ps(rinv,krsq),crf));
-	*vctot   = _mm_add_ps(*vctot,vcoul);
+	*vctot = _mm_add_ps(*vctot,vcoul);
 	
-	return (__m128) _mm_mul_ps(qq, _mm_sub_ps(rinv, _mm_mul_ps(two,krsq)));
+	return _mm_mul_ps(qq, _mm_sub_ps(rinv, _mm_mul_ps(two,krsq)));
 }
 
 
@@ -1002,8 +1002,8 @@ gmx_mm_int_coulombrf_noforce_ps(__m128 rinv, __m128 rsq, __m128 krf, __m128 crf,
 static inline __m128
 gmx_mm_int_lj_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
 {
-	const __m128 six    = (const __m128) {6.0,6.0,6.0,6.0};
-	const __m128 twelve = (const __m128) {12.0,12.0,12.0,12.0};
+	const __m128 six    = {6.0,6.0,6.0,6.0};
+	const __m128 twelve = {12.0,12.0,12.0,12.0};
 	
 	__m128 rinvsix,vvdw6,vvdw12;
 		
@@ -1012,7 +1012,7 @@ gmx_mm_int_lj_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
 	vvdw12   = _mm_mul_ps(c12, _mm_mul_ps(rinvsix,rinvsix));
 	*vvdwtot = _mm_add_ps(*vvdwtot , _mm_sub_ps(vvdw12,vvdw6));
 	
-	return (__m128) _mm_sub_ps( _mm_mul_ps(twelve,vvdw12),_mm_mul_ps(six,vvdw6));
+	return _mm_sub_ps( _mm_mul_ps(twelve,vvdw12),_mm_mul_ps(six,vvdw6));
 }
 		   
 
@@ -1067,7 +1067,7 @@ gmx_mm_int_4_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 q
 	
 	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
 	
-	return (__m128) _mm_mul_ps(F,tabscale);
+	return _mm_mul_ps(F,tabscale);
 }
 
 
@@ -1118,7 +1118,7 @@ gmx_mm_int_4_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, _
 	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
 }
 
 
@@ -1179,7 +1179,7 @@ gmx_mm_int_4_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, _
 	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
 }
 
 
@@ -1214,7 +1214,7 @@ gmx_mm_int_3_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 q
 	
 	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
 	
-	return (__m128) _mm_mul_ps(F,tabscale);
+	return _mm_mul_ps(F,tabscale);
 }
 
 
@@ -1264,7 +1264,7 @@ gmx_mm_int_3_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, _
 	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
 }
 
 
@@ -1324,7 +1324,7 @@ gmx_mm_int_3_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, _
 	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
 }
 
 
@@ -1360,7 +1360,7 @@ gmx_mm_int_2_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 q
 	
 	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
 	
-	return (__m128) _mm_mul_ps(F,tabscale);
+	return _mm_mul_ps(F,tabscale);
 }
 
 
@@ -1409,7 +1409,7 @@ gmx_mm_int_2_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, _
 	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
 }
 
 
@@ -1467,7 +1467,7 @@ gmx_mm_int_2_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, _
 	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
 }
 
 
@@ -1501,7 +1501,7 @@ gmx_mm_int_1_table_coulomb_ps(__m128 r, __m128 tabscale, float * VFtab, __m128 q
 	
 	F        = _mm_mul_ps(qq, _mm_add_ps(F, _mm_add_ps(G, _mm_add_ps(H,H))));
 	
-	return (__m128) _mm_mul_ps(F,tabscale);
+	return _mm_mul_ps(F,tabscale);
 }
 
 
@@ -1549,7 +1549,7 @@ gmx_mm_int_1_table_lj_ps(__m128 r, __m128 tabscale, float * VFtab, int offset, _
 	Fd        = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr        = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fd,Fr),tabscale);
 }
 
 
@@ -1606,7 +1606,7 @@ gmx_mm_int_1_table_coulomb_and_lj_ps(__m128 r, __m128 tabscale, float * VFtab, _
 	Fd       = _mm_mul_ps(c6,  _mm_add_ps(Fd, _mm_add_ps(Gd, _mm_add_ps(Hd,Hd))));
 	Fr       = _mm_mul_ps(c12, _mm_add_ps(Fr, _mm_add_ps(Gr, _mm_add_ps(Hr,Hr))));
 	
-	return (__m128) _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
+	return _mm_mul_ps( _mm_add_ps(Fc,_mm_add_ps(Fd,Fr)),tabscale);
 }
 
 
@@ -1621,7 +1621,7 @@ gmx_mm_int_4_genborn_ps(__m128 r, __m128 isai,
 						float *dvdaj1, float *dvdaj2, float *dvdaj3, float *dvdaj4, 
 						__m128 *vgbtot)
 {
-	const __m128 half  = (const __m128) {0.5,0.5,0.5,0.5};
+	const __m128 half  = {0.5,0.5,0.5,0.5};
 	
     __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
 	__m128i n0;
@@ -1667,7 +1667,7 @@ gmx_mm_int_4_genborn_ps(__m128 r, __m128 isai,
 
 	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
 	
-	dvdatmp  = _mm_mul_ps(half,(vgb+ftmp*r));
+	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
 	
 	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
 	
@@ -1687,7 +1687,7 @@ gmx_mm_int_4_genborn_ps(__m128 r, __m128 isai,
 	_mm_store_ss( dvdaj3 , _mm_add_ss( G, t3 ) );
 	_mm_store_ss( dvdaj4 , _mm_add_ss( H, t4 ) );
 	
-	return (__m128) ftmp;
+	return ftmp;
 }
 
 
@@ -1700,7 +1700,7 @@ gmx_mm_int_3_genborn_ps(__m128 r, __m128 isai,
 						float *dvdaj1, float *dvdaj2, float *dvdaj3,
 						__m128 *vgbtot)
 {
-	const __m128 half  = (const __m128) {0.5,0.5,0.5,0.5};
+	const __m128 half  = {0.5,0.5,0.5,0.5};
 	
     __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
 	__m128i n0;
@@ -1744,7 +1744,7 @@ gmx_mm_int_3_genborn_ps(__m128 r, __m128 isai,
 	
 	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
 	
-	dvdatmp  = _mm_mul_ps(half,(vgb+ftmp*r));
+	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
 	
 	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
 	
@@ -1761,7 +1761,7 @@ gmx_mm_int_3_genborn_ps(__m128 r, __m128 isai,
 	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
 	_mm_store_ss( dvdaj3 , _mm_add_ss( G, t3 ) );
 	
-	return (__m128) ftmp;
+	return ftmp;
 }
 
 
@@ -1775,7 +1775,7 @@ gmx_mm_int_2_genborn_ps(__m128 r, __m128 isai,
 						float *dvdaj1, float *dvdaj2,
 						__m128 *vgbtot)
 {
-	const __m128 half  = (const __m128) {0.5,0.5,0.5,0.5};
+	const __m128 half  = {0.5,0.5,0.5,0.5};
 	
     __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
 	__m128i n0;
@@ -1815,7 +1815,7 @@ gmx_mm_int_2_genborn_ps(__m128 r, __m128 isai,
 	
 	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
 	
-	dvdatmp  = _mm_mul_ps(half,(vgb+ftmp*r));
+	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
 	
 	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
 	
@@ -1829,7 +1829,7 @@ gmx_mm_int_2_genborn_ps(__m128 r, __m128 isai,
 	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
 	_mm_store_ss( dvdaj2 , _mm_add_ss( F, t2 ) );
 	
-	return (__m128) ftmp;
+	return ftmp;
 }
 
 /* Return force should be multiplied by +rinv to get fscal */
@@ -1840,7 +1840,7 @@ gmx_mm_int_1_genborn_ps(__m128 r, __m128 isai,
 						float *dvdaj1, 
 						__m128 *vgbtot)
 {
-	const __m128 half  = (const __m128) {0.5,0.5,0.5,0.5};
+	const __m128 half  = {0.5,0.5,0.5,0.5};
 	
     __m128  rt,eps,eps2,Y,F,G,H,VV,FF,ftmp,isaprod,t2,t3,t4,isaj,vgb,dvdatmp;
 	__m128i n0;
@@ -1877,7 +1877,7 @@ gmx_mm_int_1_genborn_ps(__m128 r, __m128 isai,
 	
 	ftmp     = _mm_mul_ps(_mm_mul_ps(qq, FF), gbtabscale);
 	
-	dvdatmp  = _mm_mul_ps(half,(vgb+ftmp*r));
+	dvdatmp  = _mm_mul_ps(half, _mm_add_ps(vgb,_mm_mul_ps(ftmp,r)));
 	
 	*dvdasum = _mm_add_ps(*dvdasum,dvdatmp);
 	
@@ -1888,7 +1888,7 @@ gmx_mm_int_1_genborn_ps(__m128 r, __m128 isai,
 	
 	_mm_store_ss( dvdaj1 , _mm_add_ss( Y, dvdatmp ) );
 	
-	return (__m128) ftmp;
+	return ftmp;
 }
 
 

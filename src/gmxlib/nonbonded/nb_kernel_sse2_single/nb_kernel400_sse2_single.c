@@ -28,12 +28,12 @@
 static inline __m128
 my_invrsq_ps(__m128 x)
 {
-	const __m128 three = (const __m128) {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = (const __m128) {0.5f, 0.5f, 0.5f, 0.5f};
+	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
+	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
 	
 	__m128 t1 = _mm_rsqrt_ps(x);
 	
-	return (__m128) _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
+	return _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
 }
 
 void nb_kernel400_sse2_single(int *           p_nri,
@@ -82,14 +82,17 @@ void nb_kernel400_sse2_single(int *           p_nri,
 	__m128		  xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	__m128i       n0,nnn;
 	
+	__m128  mask, mask0001,mask0011,mask0111;
+
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
 	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
 	const __m128 half   = {0.5f,0.5f,0.5f,0.5f};
 	const __m128 two    = {2.0f,2.0f,2.0f,2.0f};
 	const __m128 three  = {3.0f,3.0f,3.0f,3.0f};
 	
-	__m128i mask        = _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff);
-	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);
+	mask0001 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	mask0011 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	mask0111 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
 	
 	nri        = *p_nri;
 	ntype      = *p_ntype;
@@ -371,7 +374,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
 				dvdaj = _mm_load_ss(dvda+jnr1);
 				q     = _mm_load_ss(charge+jnr1);
 				
-				mask  =  _mm_set_epi32(0,0,0,0xffffffff);
+				mask  = mask0001;
 			}
 			else if(offset==2)
 			{
@@ -409,7 +412,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				q    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				
-				mask  = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+				mask  = mask0011;
 			}
 			else
 			{
@@ -459,16 +462,16 @@ void nb_kernel400_sse2_single(int *           p_nri,
 				xmm3  = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); 
 				q     = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 				
-				mask  = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+				mask  = mask0111;
 			}	
 			
-			jx      = _mm_and_ps( (__m128) mask, xmm6);
-			jy      = _mm_and_ps( (__m128) mask, xmm4);
-			jz      = _mm_and_ps( (__m128) mask, xmm5);
+			jx      = _mm_and_ps( mask, xmm6);
+			jy      = _mm_and_ps( mask, xmm4);
+			jz      = _mm_and_ps( mask, xmm5);
 			
-			dvdaj   = _mm_and_ps( (__m128) mask, dvdaj);
-			isaj    = _mm_and_ps( (__m128) mask, isaj);			
-			q       = _mm_and_ps( (__m128) mask, q);
+			dvdaj   = _mm_and_ps( mask, dvdaj);
+			isaj    = _mm_and_ps( mask, isaj);			
+			q       = _mm_and_ps( mask, q);
 			
 			dx      = _mm_sub_ps(ix,jx);
 			dy      = _mm_sub_ps(iy,jy);
@@ -541,8 +544,8 @@ void nb_kernel400_sse2_single(int *           p_nri,
 			xmm1    = _mm_mul_ps(xmm1,isaj);
 			dvdaj   = _mm_add_ps(dvdaj,xmm1);
 			
-			vcoul   = _mm_and_ps( (__m128) mask, vcoul);
-			vgb     = _mm_and_ps( (__m128) mask, vgb);		
+			vcoul   = _mm_and_ps( mask, vcoul);
+			vgb     = _mm_and_ps( mask, vgb);		
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
@@ -651,9 +654,9 @@ void nb_kernel400_sse2_single(int *           p_nri,
 				_mm_store_ss(dvda+jnr3,xmm1);
 			}
 			
-			t1      = _mm_and_ps( (__m128) mask, t1);
-			t2      = _mm_and_ps( (__m128) mask, t2);
-			t3      = _mm_and_ps( (__m128) mask, t3);		
+			t1      = _mm_and_ps( mask, t1);
+			t2      = _mm_and_ps( mask, t2);
+			t3      = _mm_and_ps( mask, t3);		
 			
 			/* add the i force */
 			fix     = _mm_add_ps(fix,t1);
@@ -684,7 +687,7 @@ void nb_kernel400_sse2_single(int *           p_nri,
 		
 		xmm2 = _mm_unpacklo_ps(fix,fiy); /* fx, fy, - - */
 		xmm2 = _mm_movelh_ps(xmm2,fiz);  
-		xmm2 = _mm_and_ps( (__m128) maski, xmm2);
+		xmm2 = _mm_and_ps( mask0111, xmm2);
 		
 		/* load i force from memory */
 		xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));

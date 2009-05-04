@@ -124,7 +124,7 @@ int print_nblist(int natoms, t_nblist *nl)
 
 void fill_log_table(const int n, real *table)
 {
-	float numlog;
+	real numlog,logfactor;
 	int i;
 	int *const exp_ptr=((int*)&numlog);
 	int x = *exp_ptr;
@@ -132,19 +132,21 @@ void fill_log_table(const int n, real *table)
 	int incr = 1 << (23-n);
 	int p=pow(2,n);
 
+	logfactor = 1.0/log(2.0);
+	
 	x=0x3F800000;
 	*exp_ptr = x;
 	
 	for(i=0;i<p;++i)
 	{
-		table[i]=log2(numlog);
+		table[i]=log(numlog)*logfactor; /* log2(numlog)=log(numlog)/log(2.0) */
 		x+=incr;
 		*exp_ptr=x;
 	}
 }
 
 
-real table_log(float val, const real *table, const int n)
+real table_log(real val, const real *table, const int n)
 {
 	int *const exp_ptr = ((int*)&val);
 	int x              = *exp_ptr;

@@ -118,30 +118,39 @@ nb_kernel_sse2_double_test(FILE *                log)
 	unsigned int level;
 	unsigned int _eax,_ebx,_ecx,_edx;
 	int status;
+	int CPUInfo[4];
 	
 	if(NULL != log)
     {
 		fprintf(log,"Checking CPU SSE2 support... ");
     }
-        
+	
 	level = 1;
 #ifdef _MSC_VER
-	/* Microsoft inline asm */
-	_asm {
-		push ebx
-		mov  eax,       level
-		cpuid
-		mov c, ecx
-		mov d, edx
-		pop ebx
-	}
-#else
-	/* GCC inline asm */
+	__cpuid(CPUInfo,1);
+	
+	_eax=CPUInfo[0];
+	_ebx=CPUInfo[1];
+	_ecx=CPUInfo[2];
+	_edx=CPUInfo[3];
+	
+#elif defined(__x86_64__)
+	/* GCC 64-bit inline asm */
+	__asm__ ("push %%rbx\n\tcpuid\n\tpop %%rbx\n"                 \
+			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
+			 : "0" (level));
+#elif defined(__i386__)
 	__asm__ ("push %%ebx\n\tcpuid\n\tpop %%ebx\n"                 \
 			 : "=a" (_eax), "=S" (_ebx), "=c" (_ecx), "=d" (_edx) \
 			 : "0" (level));
+#else
+	if(NULL != log)
+	{
+		fprintf(log,"Don't know how to call cpuid() on this system!\n");
+	}
+	_eax=_ebx=_ecx=_edx=0;
 #endif
-        
+	
 	/* Features:                                                                                                       
 	 *                                                                                                                 
 	 * SSE      Bit 25 of edx should be set                                                                            
@@ -150,7 +159,7 @@ nb_kernel_sse2_double_test(FILE *                log)
 	 * SSE4.1   Bit 19 of ecx should be set                                                                            
 	 */
 	status =  (_edx & (1 << 26)) != 0;
-
+	
 	if(NULL != log)
 	{
 		fprintf(log,"%s present.", (status==0) ? "not" : "");

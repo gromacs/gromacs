@@ -200,7 +200,7 @@ void add_vsite4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
 
 int search_jtype(t_restp *rtp,char *name,bool bNterm)
 {
-  int  j,k,kmax,jmax;
+  int  j,k,kmax,jmax,minstrlen;
   char *rtpname,searchname[12];
   
   strcpy(searchname,name);
@@ -220,7 +220,8 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
       kmax=strlen(searchname);
       break;
     }
-    for(k=0; k < min(strlen(searchname), strlen(rtpname)); k++) 
+	  minstrlen = min(strlen(searchname), strlen(rtpname));
+    for(k=0; k < minstrlen; k++) 
       if (searchname[k] != rtpname[k])
 	break;
     if (k > kmax) {

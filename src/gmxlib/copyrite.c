@@ -163,7 +163,7 @@ static void pukeit(char *db,char *defstring, char *retstring,
     sfree(help);
   }
   else 
-    strncpy(retstring,defstring,min(retsize,strlen(defstring)+1));
+    strncpy(retstring,defstring,retsize);
 }
 
 void bromacs(char *retstring, int retsize)

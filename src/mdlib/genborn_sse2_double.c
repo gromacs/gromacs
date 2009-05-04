@@ -26,7 +26,7 @@
 #endif
 
 /* Only compile this file if SSE2 intrinsics are available */
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
@@ -312,8 +312,8 @@ __m128 log2_ps(__m128 x)
 static inline __m128d
 my_invrsq_pd(__m128d x)
 {
-	const __m128d three = (const __m128d) {3.0f, 3.0f};
-	const __m128d half  = (const __m128d) {0.5f, 0.5f};
+	const __m128d three = {3.0, 3.0};
+	const __m128d half  = {0.5, 0.5};
 	
 	__m128  t  = _mm_rsqrt_ps(_mm_cvtpd_ps(x)); /* Convert to single precision and do _mm_rsqrt_ps() */
 	__m128d t1 = _mm_cvtps_pd(t); /* Convert back to double precision */
@@ -322,19 +322,19 @@ my_invrsq_pd(__m128d x)
 	__m128d t2 = _mm_mul_pd(half,_mm_mul_pd(t1,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t1,t1)))));
 	
 	/* Return second Newton-Rapson step, accuracy 48 bits */
-	return (__m128d) _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
+	return _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
 }
 
 static inline __m128d
 my_inv_pd(__m128d x)
 {
-	const __m128d two = (const __m128d) {2.0f, 2.0f};
+	const __m128d two = {2.0, 2.0};
 	
 	__m128  t  = _mm_rcp_ps(_mm_cvtpd_ps(x));
 	__m128d t1 = _mm_cvtps_pd(t);
 	__m128d t2 = _mm_mul_pd(t1,_mm_sub_pd(two,_mm_mul_pd(t1,x)));
 	
-	return (__m128d) _mm_mul_pd(t2,_mm_sub_pd(two,_mm_mul_pd(t2,x)));
+	return _mm_mul_pd(t2,_mm_sub_pd(two,_mm_mul_pd(t2,x)));
 }
 
 int
@@ -354,12 +354,12 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop
 	__m128d xmm1,xmm2,xmm3;
 	__m128  tmp,sinq_single,cosq_single;
 	
-	const __m128d half  = {0.5f, 0.5f};
-	const __m128d three = {3.0f, 3.0f};
-	const __m128d one   = {1.0f, 1.0f};
-	const __m128d two   = {2.0f, 2.0f};
-	const __m128d zero  = {0.0f, 0.0f};
-	const __m128d four  = {4.0f, 4.0f};
+	const __m128d half  = {0.5, 0.5};
+	const __m128d three = {3.0, 3.0};
+	const __m128d one   = {1.0, 1.0};
+	const __m128d two   = {2.0, 2.0};
+	const __m128d zero  = {0.0, 0.0};
+	const __m128d four  = {4.0, 4.0};
 	
 	const __m128d p5inv  = {STILL_P5INV, STILL_P5INV};
 	const __m128d pip5   = {STILL_PIP5,  STILL_PIP5};
@@ -635,14 +635,14 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_mtop_
 	__m128d xmm1,xmm2,xmm3,xmm4,xmm8;
 	__m128  log_term_single;
 	
-	const __m128d neg   = {-1.0f, -1.0f};
-	const __m128d zero  = {0.0f, 0.0f};
-	const __m128d eigth = {0.125f, 0.125f};
-	const __m128d qrtr  = {0.25f, 0.25f};
-	const __m128d half  = {0.5f, 0.5f};
-	const __m128d one   = {1.0f, 1.0f};
-	const __m128d two   = {2.0f, 2.0f};
-	const __m128d three = {3.0f, 3.0f};
+	const __m128d neg   = {-1.0, -1.0};
+	const __m128d zero  = {0.0, 0.0};
+	const __m128d eigth = {0.125, 0.125};
+	const __m128d qrtr  = {0.25, 0.25};
+	const __m128d half  = {0.5, 0.5};
+	const __m128d one   = {1.0, 1.0};
+	const __m128d two   = {2.0, 2.0};
+	const __m128d three = {3.0, 3.0};
 	
 	if(PAR(cr))
 	{
@@ -993,14 +993,14 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop
 	__m128d xmm1,xmm2,xmm3,xmm4,xmm8;
 	__m128 log_term_single;
 	
-	const __m128d neg   = {-1.0f, -1.0f};
-	const __m128d zero  = {0.0f, 0.0f};
-	const __m128d eigth = {0.125f, 0.125f};
-	const __m128d qrtr  = {0.25f, 0.25f};
-	const __m128d half  = {0.5f, 0.5f};
-	const __m128d one   = {1.0f, 1.0f};
-	const __m128d two   = {2.0f, 2.0f};
-	const __m128d three = {3.0f, 3.0f};
+	const __m128d neg   = {-1.0, -1.0};
+	const __m128d zero  = {0.0, 0.0};
+	const __m128d eigth = {0.125, 0.125};
+	const __m128d qrtr  = {0.25, 0.25};
+	const __m128d half  = {0.5, 0.5};
+	const __m128d one   = {1.0, 1.0};
+	const __m128d two   = {2.0, 2.0};
+	const __m128d three = {3.0, 3.0};
 	
 	if(PAR(cr))
 	{

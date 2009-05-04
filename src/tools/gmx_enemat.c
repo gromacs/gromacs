@@ -58,10 +58,10 @@
 static int search_str2(int nstr,char **str,char *key)
 {
   int  i,n;
-
+  int  keylen = strlen(key);
   /* Linear search */
   n=0;
-  while( (n<strlen(key)) && ((key[n]<'0') || (key[n]>'9')) )
+  while( (n<keylen) && ((key[n]<'0') || (key[n]>'9')) )
     n++;
   for(i=0; (i<nstr); i++) 
     if (strncasecmp(str[i],key,n)==0)

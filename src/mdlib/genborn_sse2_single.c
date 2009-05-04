@@ -59,7 +59,7 @@
 #endif
 
 /* Only compile this file if SSE intrinsics are available */
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
@@ -196,8 +196,13 @@ typedef union xmm_mm_union {
 } xmm_mm_union;
 
 void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
-	__m128 xmm1, xmm2, xmm3 = _mm_setzero_ps(), sign_bit_sin, y;
+	__m128 xmm1, xmm2, xmm3, sign_bit_sin, y, z;
 	__m64 mm0, mm1, mm2, mm3, mm4, mm5;
+	__m128 swap_sign_bit_sin,sign_bit_cos;
+	__m128 poly_mask,tmp,y2,ysin1,ysin2;
+
+	xmm3 = _mm_setzero_ps();
+	
 	sign_bit_sin = x;
 	/* take the absolute value */
 	x = _mm_and_ps(x, *(__m128*)_ps_inv_sign_mask);
@@ -228,7 +233,7 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	mm1 = _mm_and_si64(mm3, *(__m64*)_pi32_4);
 	mm0 = _mm_slli_pi32(mm0, 29);
 	mm1 = _mm_slli_pi32(mm1, 29);
-	__m128 swap_sign_bit_sin;
+
 	COPY_MM_TO_XMM(mm0, mm1, swap_sign_bit_sin);
 	
 	/* get the polynom selection mask for the sine */
@@ -237,7 +242,6 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	mm3 = _mm_and_si64(mm3, *(__m64*)_pi32_2);
 	mm2 = _mm_cmpeq_pi32(mm2, _mm_setzero_si64());
 	mm3 = _mm_cmpeq_pi32(mm3, _mm_setzero_si64());
-	__m128 poly_mask;
 	COPY_MM_TO_XMM(mm2, mm3, poly_mask);
 	
 	/* The magic pass: "Extended precision modular arithmetic" 
@@ -260,14 +264,13 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	mm5 = _mm_andnot_si64(mm5, *(__m64*)_pi32_4);
 	mm4 = _mm_slli_pi32(mm4, 29);
 	mm5 = _mm_slli_pi32(mm5, 29);
-	__m128 sign_bit_cos;
+
 	COPY_MM_TO_XMM(mm4, mm5, sign_bit_cos);
 	
 	sign_bit_sin = _mm_xor_ps(sign_bit_sin, swap_sign_bit_sin);
 	
-	
 	/* Evaluate the first polynom  (0 <= x <= Pi/4) */
-	__m128 z = _mm_mul_ps(x,x);
+	z = _mm_mul_ps(x,x);
 	y = *(__m128*)_ps_coscof_p0;
 	
 	y = _mm_mul_ps(y, z);
@@ -276,12 +279,12 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	y = _mm_add_ps(y, *(__m128*)_ps_coscof_p2);
 	y = _mm_mul_ps(y, z);
 	y = _mm_mul_ps(y, z);
-	__m128 tmp = _mm_mul_ps(z, *(__m128*)_ps_0p5);
+	tmp = _mm_mul_ps(z, *(__m128*)_ps_0p5);
 	y = _mm_sub_ps(y, tmp);
 	y = _mm_add_ps(y, *(__m128*)_ps_1);
 	
 	/* Evaluate the second polynom  (Pi/4 <= x <= 0) */
-	__m128 y2 = *(__m128*)_ps_sincof_p0;
+	y2 = *(__m128*)_ps_sincof_p0;
 	y2 = _mm_mul_ps(y2, z);
 	y2 = _mm_add_ps(y2, *(__m128*)_ps_sincof_p1);
 	y2 = _mm_mul_ps(y2, z);
@@ -292,8 +295,8 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	
 	/* select the correct result from the two polynoms */  
 	xmm3 = poly_mask;
-	__m128 ysin2 = _mm_and_ps(xmm3, y2);
-	__m128 ysin1 = _mm_andnot_ps(xmm3, y);
+	ysin2 = _mm_and_ps(xmm3, y2);
+	ysin1 = _mm_andnot_ps(xmm3, y);
 	y2 = _mm_sub_ps(y2,ysin2);
 	y = _mm_sub_ps(y, ysin1);
 	
@@ -309,6 +312,7 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 
 __m128 log_ps(__m128 x) {
 	__m64 mm0, mm1;
+	__m128 mask,tmp,z,y,e;
 	__m128 one = *(__m128*)_ps_1;
 	
 	__m128 invalid_mask = _mm_cmple_ps(x, _mm_setzero_ps());
@@ -330,7 +334,7 @@ __m128 log_ps(__m128 x) {
 	
 	mm1 = _mm_sub_pi32(mm1, *(__m64*)_pi32_0x7f);
 	
-	__m128 e = _mm_cvtpi32x2_ps(mm0, mm1);
+	e = _mm_cvtpi32x2_ps(mm0, mm1);
 	e = _mm_add_ps(e, one);
 	
 	/* part2: 
@@ -339,17 +343,17 @@ __m128 log_ps(__m128 x) {
 	 x = x + x - 1.0;
      } else { x = x - 1.0; }
 	 */
-	__m128 mask = _mm_cmplt_ps(x, *(__m128*)_ps_cephes_SQRTHF);
+	mask = _mm_cmplt_ps(x, *(__m128*)_ps_cephes_SQRTHF);
 	
-	__m128 tmp = _mm_and_ps(x, mask);
+	tmp = _mm_and_ps(x, mask);
 	x = _mm_sub_ps(x, one);
 	e = _mm_sub_ps(e, _mm_and_ps(one, mask));
 	x = _mm_add_ps(x, tmp);
 	
 	
-	__m128 z = _mm_mul_ps(x,x);
+	z = _mm_mul_ps(x,x);
 	
-	__m128 y = *(__m128*)_ps_cephes_log_p0;
+	y = *(__m128*)_ps_cephes_log_p0;
 	y = _mm_mul_ps(y, x);
 	y = _mm_add_ps(y, *(__m128*)_ps_cephes_log_p1);
 	y = _mm_mul_ps(y, x);
@@ -387,10 +391,12 @@ __m128 log_ps(__m128 x) {
 }
 
 __m128 exp_ps(__m128 x) {
-	__m128 tmp = _mm_setzero_ps(), fx;
+	__m128 y,z,mask,pow2n;
+	__m128 tmp, fx;
 	__m64 mm0, mm1;
 	__m128 one = *(__m128*)_ps_1;
 	
+	tmp = _mm_setzero_ps();
 	x = _mm_min_ps(x, *(__m128*)_ps_exp_hi);
 	x = _mm_max_ps(x, *(__m128*)_ps_exp_lo);
 	
@@ -406,18 +412,18 @@ __m128 exp_ps(__m128 x) {
 	/* step 2 : cast back to float */
 	tmp = _mm_cvtpi32x2_ps(mm0, mm1);
 	/* if greater, substract 1 */
-	__m128 mask = _mm_cmpgt_ps(tmp, fx);    
+	mask = _mm_cmpgt_ps(tmp, fx);    
 	mask = _mm_and_ps(mask, one);
 	fx = _mm_sub_ps(tmp, mask);
 	
 	tmp = _mm_mul_ps(fx, *(__m128*)_ps_cephes_exp_C1);
-	__m128 z = _mm_mul_ps(fx, *(__m128*)_ps_cephes_exp_C2);
+	z = _mm_mul_ps(fx, *(__m128*)_ps_cephes_exp_C2);
 	x = _mm_sub_ps(x, tmp);
 	x = _mm_sub_ps(x, z);
 	
 	z = _mm_mul_ps(x,x);
 	
-	__m128 y = *(__m128*)_ps_cephes_exp_p0;
+	y = *(__m128*)_ps_cephes_exp_p0;
 	y = _mm_mul_ps(y, x);
 	y = _mm_add_ps(y, *(__m128*)_ps_cephes_exp_p1);
 	y = _mm_mul_ps(y, x);
@@ -440,8 +446,7 @@ __m128 exp_ps(__m128 x) {
 	mm1 = _mm_add_pi32(mm1, *(__m64*)_pi32_0x7f);
 	mm0 = _mm_slli_pi32(mm0, 23); 
 	mm1 = _mm_slli_pi32(mm1, 23);
-	
-	__m128 pow2n; 
+	 
 	COPY_MM_TO_XMM(mm0, mm1, pow2n);
 	
 	y = _mm_mul_ps(y, pow2n);
@@ -452,53 +457,52 @@ __m128 exp_ps(__m128 x) {
 
 __m128 log2_ps(__m128 x)
 {
-	__m128i exp   = _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000);
-	__m128i one   = _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000); 
-	__m128i off   = _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000); 
-	__m128i mant  = _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF);
-	__m128i sign  = _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
-	__m128i base  = _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000);
-	__m128i loge  = _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218);
+	const __m128 exp_ps  = _mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
+	const __m128 one_ps  = _mm_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
+	const __m128 off_ps  = _mm_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
+	const __m128 mant_ps = _mm_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
+	const __m128 sign_ps = _mm_castsi128_ps( _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000) );
+	const __m128 base_ps = _mm_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
+	const __m128 loge_ps = _mm_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
 	
-	__m128i D5     = _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5);
-	__m128i D4     = _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD); 
-	__m128i D3     = _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9);
-	__m128i D2     = _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B);
-	__m128i D1     = _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD); 
-	__m128i D0     = _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A);
+	const __m128 D5      = _mm_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
+	const __m128 D4      = _mm_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
+	const __m128 D3      = _mm_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
+	const __m128 D2      = _mm_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
+	const __m128 D1      = _mm_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
+	const __m128 D0      = _mm_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
 	
 	__m128  xmm0,xmm1,xmm2;
 	__m128i xmm1i;
 	
 	xmm0  = x;
 	xmm1  = xmm0;
-	xmm1  = _mm_and_ps(xmm1, (__m128) exp);
-	xmm1 = (__m128) _mm_srli_epi32( (__m128i) xmm1,8); 
+	xmm1  = _mm_and_ps(xmm1, exp_ps);
+	xmm1 = _mm_castsi128_ps( _mm_srli_epi32( _mm_castps_si128(xmm1),8) ); 
 	
-	xmm1  = _mm_or_ps(xmm1,(__m128) one);
-	xmm1  = _mm_sub_ps(xmm1,(__m128) off);
+	xmm1  = _mm_or_ps(xmm1, one_ps);
+	xmm1  = _mm_sub_ps(xmm1, off_ps);
 	
-	xmm1  = _mm_mul_ps(xmm1,(__m128) base);
-	xmm0  = _mm_and_ps(xmm0,(__m128) mant);
-	xmm0  = _mm_or_ps(xmm0,(__m128) one);
+	xmm1  = _mm_mul_ps(xmm1, base_ps);
+	xmm0  = _mm_and_ps(xmm0, mant_ps);
+	xmm0  = _mm_or_ps(xmm0, one_ps);
 	
-	xmm2  = _mm_mul_ps(xmm0, (__m128) D5);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D4);
+	xmm2  = _mm_mul_ps(xmm0, D5);
+	xmm2  = _mm_add_ps(xmm2, D4);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D3);
+	xmm2  = _mm_add_ps(xmm2, D3);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D2);
+	xmm2  = _mm_add_ps(xmm2, D2);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D1);
+	xmm2  = _mm_add_ps(xmm2, D1);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D0);
-	xmm0  = _mm_sub_ps(xmm0, (__m128) one);
+	xmm2  = _mm_add_ps(xmm2, D0);
+	xmm0  = _mm_sub_ps(xmm0, one_ps);
 	xmm0  = _mm_mul_ps(xmm0,xmm2);
 	xmm1  = _mm_add_ps(xmm1,xmm0);
 	
-	
 	x     = xmm1;
-	x  = _mm_mul_ps(x,(__m128)loge);
+	x  = _mm_mul_ps(x, loge_ps);
 	
     return x;
 }
@@ -523,9 +527,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 	__m128 rsq11,rinv,rinv2,rinv4,rinv6;
 	__m128 ratio,gpi,rai,raj,vaj,rvdw,mask_cmp;
 	__m128 ccf,dccf,theta,cosq,term,sinq,res,prod;
-	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8; 
-	
-	__m128i mask, maski;
+	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8; 	
+	__m128 mask;
 	
 	const __m128 half   = {0.5f , 0.5f , 0.5f , 0.5f };
 	const __m128 three  = {3.0f , 3.0f , 3.0f , 3.0f };
@@ -711,7 +714,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				raj   = _mm_set_ps(0.0f, 0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj1]]); 
 				vaj   = _mm_set_ps(0.0f, 0.0f, 0.0f, born->vsolv[aj1]);				   
 				
-				mask = _mm_set_epi32(0,0,0,0xffffffff);
+				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 				
 			}
 			else if(offset==2)
@@ -732,7 +735,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				raj  = _mm_set_ps(0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj2]],top->atomtypes.gb_radius[md->typeA[aj1]]); 
 				vaj  = _mm_set_ps(0.0f, 0.0f, born->vsolv[aj2], born->vsolv[aj1]);		
 				
-				mask = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 				
 			}
 			else
@@ -768,12 +771,12 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 								  born->vsolv[aj2], 
 								  born->vsolv[aj1]);	
 				
-				mask = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+				mask = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
-			jx = _mm_and_ps( (__m128) mask, xmm6);
-			jy = _mm_and_ps( (__m128) mask, xmm4);
-			jz = _mm_and_ps( (__m128) mask, xmm5);
+			jx = _mm_and_ps( mask, xmm6);
+			jy = _mm_and_ps( mask, xmm4);
+			jz = _mm_and_ps( mask, xmm5);
 			
 			dx    = _mm_sub_ps(ix, jx);
 			dy    = _mm_sub_ps(iy, jy);
@@ -831,7 +834,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			prod      = _mm_mul_ps(p4,vaj);	
 			xmm2      = _mm_mul_ps(ccf,rinv4);
 			xmm2      = _mm_mul_ps(xmm2,prod); /* prod*ccf*idr4*/
-			xmm2      = _mm_and_ps( (__m128) mask, xmm2);
+			xmm2      = _mm_and_ps(mask, xmm2);
 			gpi       = _mm_add_ps(gpi,xmm2);  /*gpi = gpi + prod*ccf*idr4 */
 						
 			/* Chain rule terms */
@@ -839,7 +842,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			xmm3      = _mm_sub_ps(ccf,dccf);
 			xmm3      = _mm_mul_ps(xmm3,rinv6);
 			xmm1      = _mm_mul_ps(xmm3,prod);
-			xmm1      = _mm_and_ps( (__m128) mask, xmm1);
+			xmm1      = _mm_and_ps(mask, xmm1);
 			
 			_mm_storeu_ps(fr->dadx+n, xmm1); 
 			
@@ -937,7 +940,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	__m128 mask_cmp,mask_cmp2,mask_cmp3;
 	
-	__m128i maski;
+	__m128 maski;
 	
 	const __m128 neg   = {-1.0f , -1.0f , -1.0f , -1.0f };
 	const __m128 zero  = {0.0f , 0.0f , 0.0f , 0.0f };
@@ -1198,7 +1201,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 				
 				sk    = _mm_load1_ps(born->param+aj1);
 				
-				maski = _mm_set_epi32(0,0,0,0xffffffff);
+				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -1227,7 +1230,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				sk   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 								
-				maski = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -1264,14 +1267,14 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 				xmm3 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j3 j3*/
 				sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 				
-				maski = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+				maski = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
-			jx = _mm_and_ps( (__m128) maski, xmm6);
-			jy = _mm_and_ps( (__m128) maski, xmm4);
-			jz = _mm_and_ps( (__m128) maski, xmm5);
+			jx = _mm_and_ps( maski, xmm6);
+			jy = _mm_and_ps( maski, xmm4);
+			jz = _mm_and_ps( maski, xmm5);
 			
-			sk = _mm_and_ps ( (__m128) maski, sk);
+			sk = _mm_and_ps ( maski, sk);
 						
 			dx    = _mm_sub_ps(ix, jx);
 			dy    = _mm_sub_ps(iy, jy);
@@ -1406,7 +1409,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 			xmm2   = _mm_add_ps(xmm2,t2);/*dlij*t1+duij*t2 */
 			xmm2   = _mm_add_ps(xmm2,t3); /*everyhting * t3 */
 			xmm2   = _mm_mul_ps(xmm2,rinv); /*everything * t3 *rinv */
-			xmm2   = _mm_and_ps( (__m128) maski,xmm2);
+			xmm2   = _mm_and_ps(maski,xmm2);
 					
 			_mm_storeu_ps(fr->dadx+n,xmm2); /* store excess elements, but since we are only advancing n by
 											 * offset, this will be corrected by the "main" loop */
@@ -1509,7 +1512,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8; 
 	__m128 mask_cmp,mask_cmp2,mask_cmp3;
 	
-	__m128i maski;
+	__m128 maski;
 	
 	const __m128 neg   = {-1.0f , -1.0f , -1.0f , -1.0f };
 	const __m128 zero  = {0.0f , 0.0f , 0.0f , 0.0f };
@@ -1767,7 +1770,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 				
 				sk    = _mm_load1_ps(born->param+aj1);
 						
-				maski = _mm_set_epi32(0,0,0,0xffffffff);
+				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -1796,7 +1799,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				sk   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				
-				maski = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -1833,14 +1836,14 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 				xmm3 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j3 j3*/
 				sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 				
-				maski = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+				maski = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
-			jx = _mm_and_ps( (__m128) maski, xmm6);
-			jy = _mm_and_ps( (__m128) maski, xmm4);
-			jz = _mm_and_ps( (__m128) maski, xmm5);
+			jx = _mm_and_ps( maski, xmm6);
+			jy = _mm_and_ps( maski, xmm4);
+			jz = _mm_and_ps( maski, xmm5);
 			
-			sk = _mm_and_ps ( (__m128) maski, sk);
+			sk = _mm_and_ps ( maski, sk);
 			
 			dx    = _mm_sub_ps(ix, jx);
 			dy    = _mm_sub_ps(iy, jy);
@@ -1977,7 +1980,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			xmm2   = _mm_add_ps(xmm2,t3); 
 			xmm2   = _mm_mul_ps(xmm2,rinv);
 			
-			xmm2   = _mm_and_ps( (__m128) maski,xmm2);
+			xmm2   = _mm_and_ps( maski,xmm2);
 			_mm_storeu_ps(fr->dadx+n,xmm2); /* store excess elements, but since we are only advancing n by
 											* offset, this will be corrected by the "main" loop
 											*/
@@ -2100,8 +2103,8 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 	__m128 dva,dax,fgb;
 	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	
-	__m128i mask   = _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff);
-	__m128i maski  = _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff);
+	__m128 mask   = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
+	__m128 maski  = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
 	
 	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
 	float z = 0;
@@ -2113,11 +2116,11 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 	if(offset!=0)
 	{
 		if(offset==1)
-			mask = _mm_set_epi32(0,0,0,0xffffffff);
+			mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 		else if(offset==2)
-			mask = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+			mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 		else
-			mask = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+			mask = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 	}
 	
 	if(gb_algorithm==egbSTILL) {
@@ -2151,7 +2154,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 			
 			xmm1 = _mm_mul_ps(xmm1,xmm2); 
 			xmm1 = _mm_div_ps(xmm1,xmm3); 
-			xmm1 = _mm_and_ps( (__m128) mask, xmm1);
+			xmm1 = _mm_and_ps(mask, xmm1);
 		
 			_mm_storeu_ps(rb+i, xmm1); 
 		}
@@ -2177,7 +2180,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 			xmm2 = _mm_loadu_ps(dvda+i);
 			
 			xmm1 = _mm_mul_ps(xmm1,xmm2); /* rbi*rbi*dvda[i] */
-			xmm1 = _mm_and_ps( (__m128) mask, xmm1);
+			xmm1 = _mm_and_ps(mask, xmm1);
 			
 			_mm_storeu_ps(rb+i, xmm1);
 		}
@@ -2206,7 +2209,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 			xmm1 = _mm_mul_ps(xmm1,xmm2); /* rbi*rbi*dvda[i] */
 			xmm2 = _mm_loadu_ps(born->drobc+i);
 			xmm1 = _mm_mul_ps(xmm1, xmm2); /*rbi*rbi*dvda[i]*born->drobc[i] */
-			xmm1 = _mm_and_ps( (__m128) mask, xmm1);				
+			xmm1 = _mm_and_ps(mask, xmm1);				
 												
 			_mm_storeu_ps(rb+i, xmm1);
 		}
@@ -2369,7 +2372,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 				xmm6 = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(0,0,0,0)); /*x1 - - - */ 
 				xmm4 = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(1,1,1,1)); /*y1 - - - */
 				
-				mask = _mm_set_epi32(0,0,0,0xffffffff);
+				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -2392,7 +2395,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 				xmm6 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0)); /*x1 x2 x1 x2 */
 				xmm4 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1)); /*y1 y2 y1 y2 */	
 										
-				mask = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -2421,16 +2424,16 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 				xmm6 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(2,0,2,0)); /* x1 x2 x3 x3 */
 				xmm4 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,1,3,1)); /* y1 y2 y3 y3 */
 				
-				mask = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+				mask = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 						
-			jx = _mm_and_ps( (__m128) mask, xmm6);
-			jy = _mm_and_ps( (__m128) mask, xmm4);
-			jz = _mm_and_ps( (__m128) mask, xmm5);
+			jx = _mm_and_ps( mask, xmm6);
+			jy = _mm_and_ps( mask, xmm4);
+			jz = _mm_and_ps( mask, xmm5);
 			
 			dax  = _mm_loadu_ps(dadx+n);
 			n   = n + offset;
-			dax = _mm_and_ps( (__m128) mask, dax); 
+			dax = _mm_and_ps( mask, dax); 
 			
 			dx   = _mm_sub_ps(ix, jx);
 			dy   = _mm_sub_ps(iy, jy);
@@ -2525,9 +2528,9 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 
 			}
 			
-			t1 = _mm_and_ps( (__m128) mask, t1);
-			t2 = _mm_and_ps( (__m128) mask, t2);
-			t3 = _mm_and_ps( (__m128) mask, t3);
+			t1 = _mm_and_ps( mask, t1);
+			t2 = _mm_and_ps( mask, t2);
+			t3 = _mm_and_ps( mask, t3);
 
 			fix = _mm_add_ps(fix,t1);
 			fiy = _mm_add_ps(fiy,t2);
@@ -2556,7 +2559,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 		
 		xmm2 = _mm_unpacklo_ps(fix,fiy); /*fx, fy, - - */
 		xmm2 = _mm_movelh_ps(xmm2,fiz);
-		xmm2 = _mm_and_ps( (__m128) maski, xmm2);
+		xmm2 = _mm_and_ps(maski, xmm2);
 		
 		/* load i force from memory */
 		xmm4 = _mm_loadl_pi(xmm4,(__m64 *) (f+ai3)); /*fx fy - -  */

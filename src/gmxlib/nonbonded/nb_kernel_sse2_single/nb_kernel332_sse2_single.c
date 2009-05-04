@@ -27,6 +27,7 @@
  * To help fund GROMACS development, we humbly ask that you cite
  * the papers people have written on it - you can find them on the website!
  */
+#if 0
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -36,7 +37,7 @@
 #include <emmintrin.h>
 
 
-#include "sse_common_single.h"
+/* #include "sse_common_single.h" */
 
 /*
  * Gromacs nonbonded kernel nb_kernel332
@@ -255,15 +256,15 @@ void nb_kernel332_sse2_single(
                 rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv12           = invsqrt(rsq12);
-                rinv13           = invsqrt(rsq13);
-                rinv21           = invsqrt(rsq21);
-                rinv22           = invsqrt(rsq22);
-                rinv23           = invsqrt(rsq23);
-                rinv31           = invsqrt(rsq31);
-                rinv32           = invsqrt(rsq32);
-                rinv33           = invsqrt(rsq33);
+                rinv11           = 1.0/sqrt(rsq11);
+                rinv12           = 1.0/sqrt(rsq12);
+                rinv13           = 1.0/sqrt(rsq13);
+                rinv21           = 1.0/sqrt(rsq21);
+                rinv22           = 1.0/sqrt(rsq22);
+                rinv23           = 1.0/sqrt(rsq23);
+                rinv31           = 1.0/sqrt(rsq31);
+                rinv32           = 1.0/sqrt(rsq32);
+                rinv33           = 1.0/sqrt(rsq33);
 
                 /* Load parameters for j atom */
                 qq               = qqOO;           
@@ -700,6 +701,6 @@ void nb_kernel332_sse2_single(
     *inneriter       = ninner;         
 }
 
-
+#endif
 
 

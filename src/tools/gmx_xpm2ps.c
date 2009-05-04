@@ -517,20 +517,21 @@ int add_maps(t_mapping **newmap,
 	     int nmap1, t_mapping map1[], int nmap2, t_mapping map2[])
 {
   static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?"; 
-#define NMAP strlen(mapper)
+  int       nsymbols;
   int       nmap,j,k;
   t_mapping *map;
   
+  nsymbols = strlen(mapper);
   nmap=nmap1+nmap2;
-  if (nmap > NMAP*NMAP) 
+  if (nmap > nsymbols*nsymbols) 
     gmx_fatal(FARGS,"Not enough symbols to merge the two colormaps\n");
   printf("Combining colormaps of %d and %d elements into one of %d elements\n",
 	 nmap1, nmap2, nmap);
   snew(map,nmap);
   for(j=0; j<nmap1; j++) {
-    map[j].code.c1=mapper[j % NMAP];
-    if (nmap > NMAP)
-      map[j].code.c2=mapper[j/NMAP];
+    map[j].code.c1=mapper[j % nsymbols];
+    if (nmap > nsymbols)
+      map[j].code.c2=mapper[j/nsymbols];
     map[j].rgb.r = map1[j].rgb.r;
     map[j].rgb.g = map1[j].rgb.g;
     map[j].rgb.b = map1[j].rgb.b;
@@ -538,9 +539,9 @@ int add_maps(t_mapping **newmap,
   }
   for(j=0; j<nmap2; j++) {
     k=j+nmap1;
-    map[k].code.c1=mapper[k % NMAP];
-    if (nmap > NMAP)
-      map[k].code.c2=mapper[k/NMAP];
+    map[k].code.c1=mapper[k % nsymbols];
+    if (nmap > nsymbols)
+      map[k].code.c2=mapper[k/nsymbols];
     map[k].rgb.r = map2[j].rgb.r;
     map[k].rgb.g = map2[j].rgb.g;
     map[k].rgb.b = map2[j].rgb.b;

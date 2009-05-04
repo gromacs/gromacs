@@ -28,12 +28,12 @@
 static inline __m128
 my_invrsq_ps(__m128 x)
 {
-	const __m128 three = (const __m128) {3.0f, 3.0f, 3.0f, 3.0f};
-	const __m128 half  = (const __m128) {0.5f, 0.5f, 0.5f, 0.5f};
+	const __m128 three = {3.0f, 3.0f, 3.0f, 3.0f};
+	const __m128 half  = {0.5f, 0.5f, 0.5f, 0.5f};
 	
 	__m128 t1 = _mm_rsqrt_ps(x);
 	
-	return (__m128) _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
+	return _mm_mul_ps(half,_mm_mul_ps(t1,_mm_sub_ps(three,_mm_mul_ps(x,_mm_mul_ps(t1,t1)))));
 }
 
 void nb_kernel410_sse2_single(int *           p_nri,
@@ -76,16 +76,6 @@ void nb_kernel410_sse2_single(int *           p_nri,
 	int           jnr,jnr2,jnr3,jnr4,j3,j23,j33,j43;
 	int           tj,tj2,tj3,tj4;
 	
-	nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-    gbtabscale       = *p_gbtabscale;  
-    nj1              = 0;
-	
 	__m128   iq,qq,q,isai;
 	__m128   ix,iy,iz;
 	__m128   jx,jy,jz;
@@ -103,13 +93,9 @@ void nb_kernel410_sse2_single(int *           p_nri,
 	__m128   fac_sse,tabscale_sse,gbtabscale_sse;
 	
 	__m128i  n0, nnn;
-	
+	__m128  mask, mask0001,mask0011,mask0111;
+
 	float vct,vdwt,dva,isai_f,vgbt;
-	
-	/* Splat variables */
-	fac_sse        = _mm_load1_ps(&facel);
-	tabscale_sse   = _mm_load1_ps(&tabscale);
-	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
 	
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
 	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
@@ -119,8 +105,9 @@ void nb_kernel410_sse2_single(int *           p_nri,
 	const __m128 six    = {6.0f,6.0f,6.0f,6.0f};
 	const __m128 twelwe = {12.0f,12.0f,12.0f,12.0f};  
 	
-	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);     
-	__m128i mask        = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);   
+	mask0001 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	mask0011 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	mask0111 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
 	
 	/* Keep the compiler happy */
 	Vvdwtmp = _mm_setzero_ps();
@@ -136,6 +123,21 @@ void nb_kernel410_sse2_single(int *           p_nri,
 	xmm4    = _mm_setzero_ps();
 	j23     = j33  = 0;
 	jnr2    = jnr3 = 0;
+	
+	nri              = *p_nri;         
+    ntype            = *p_ntype;       
+    nthreads         = *p_nthreads;    
+    facel            = *p_facel;       
+    krf              = *p_krf;         
+    crf              = *p_crf;         
+    tabscale         = *p_tabscale;    
+    gbtabscale       = *p_gbtabscale;  
+    nj1              = 0;
+	
+	/* Splat variables */
+	fac_sse        = _mm_load1_ps(&facel);
+	tabscale_sse   = _mm_load1_ps(&tabscale);
+	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
 	
     for(n=0; (n<nri); n++)
     {
@@ -428,7 +430,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				c6    = _mm_load_ss(vdwparam+tj);
 				c12   = _mm_load_ss(vdwparam+tj+1);
 				
-				mask  =  _mm_set_epi32(0,0,0,0xffffffff);
+				mask  =  mask0001;
 				
 			}
 			else if(offset==2)
@@ -476,7 +478,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				c6    = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				c12   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
 				
-				mask  = _mm_set_epi32(0,0,0xffffffff,0xffffffff);
+				mask  = mask0011;
 			}
 			else
 			{
@@ -543,18 +545,18 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				xmm3  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
 				c12   = _mm_shuffle_ps(xmm3,xmm2,_MM_SHUFFLE(1,1,1,0));
 				
-				mask  = _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff);
+				mask  = mask0111;
 			}
 			
-			jx      = _mm_and_ps( (__m128) mask, xmm6);
-			jy      = _mm_and_ps( (__m128) mask, xmm4);
-			jz      = _mm_and_ps( (__m128) mask, xmm5);
+			jx      = _mm_and_ps( mask, xmm6);
+			jy      = _mm_and_ps( mask, xmm4);
+			jz      = _mm_and_ps( mask, xmm5);
 			
-			c6      = _mm_and_ps( (__m128) mask, c6);
-			c12     = _mm_and_ps( (__m128) mask, c12);
-			dvdaj   = _mm_and_ps( (__m128) mask, dvdaj);
-			isaj    = _mm_and_ps( (__m128) mask, isaj);			
-			q       = _mm_and_ps( (__m128) mask, q);
+			c6      = _mm_and_ps( mask, c6);
+			c12     = _mm_and_ps( mask, c12);
+			dvdaj   = _mm_and_ps( mask, dvdaj);
+			isaj    = _mm_and_ps( mask, isaj);			
+			q       = _mm_and_ps( mask, q);
 			
 			dx1     = _mm_sub_ps(ix,jx);
 			dy1     = _mm_sub_ps(iy,jy);
@@ -631,8 +633,8 @@ void nb_kernel410_sse2_single(int *           p_nri,
 			xmm1    = _mm_mul_ps(xmm1,isaj);
 			dvdaj   = _mm_add_ps(dvdaj,xmm1);
 			
-			vcoul   = _mm_and_ps( (__m128) mask, vcoul);
-			vgb     = _mm_and_ps( (__m128) mask, vgb);
+			vcoul   = _mm_and_ps( mask, vcoul);
+			vgb     = _mm_and_ps( mask, vgb);
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
@@ -755,9 +757,9 @@ void nb_kernel410_sse2_single(int *           p_nri,
 				_mm_store_ss(faction+j33+2,xmm7); 
 			}
 			
-			t1 = _mm_and_ps( (__m128) mask, t1);
-			t2 = _mm_and_ps( (__m128) mask, t2);
-			t3 = _mm_and_ps( (__m128) mask, t3);
+			t1 = _mm_and_ps( mask, t1);
+			t2 = _mm_and_ps( mask, t2);
+			t3 = _mm_and_ps( mask, t3);
 			
 			fix = _mm_add_ps(fix,t1);
 			fiy = _mm_add_ps(fiy,t2);
@@ -782,7 +784,7 @@ void nb_kernel410_sse2_single(int *           p_nri,
 		
 		xmm2    = _mm_unpacklo_ps(fix,fiy); /* fx, fy, - - */
 		xmm2    = _mm_movelh_ps(xmm2,fiz); 
-		xmm2    = _mm_and_ps( (__m128) maski, xmm2);
+		xmm2    = _mm_and_ps( mask0111, xmm2);
 		
 		/* load i force from memory */
 		xmm4    = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));

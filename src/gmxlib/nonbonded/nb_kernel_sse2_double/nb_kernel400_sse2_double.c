@@ -25,8 +25,8 @@
 static inline __m128d
 my_invrsq_pd(__m128d x)
 {
-	const __m128d three = (const __m128d) {3.0f, 3.0f};
-	const __m128d half  = (const __m128d) {0.5f, 0.5f};
+	const __m128d three = {3.0, 3.0};
+	const __m128d half  = {0.5, 0.5};
 	
 	__m128  t  = _mm_rsqrt_ps(_mm_cvtpd_ps(x)); /* Convert to single precision and do _mm_rsqrt_ps() */
 	__m128d t1 = _mm_cvtps_pd(t); /* Convert back to double precision */
@@ -35,7 +35,7 @@ my_invrsq_pd(__m128d x)
 	__m128d t2 = _mm_mul_pd(half,_mm_mul_pd(t1,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t1,t1)))));
 	
 	/* Return second Newton-Rapson step, accuracy 48 bits */
-	return (__m128d) _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
+	return _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
 }
 
 /* to extract single integers from a __m128i datatype */
@@ -88,11 +88,11 @@ void nb_kernel400_sse2_double(int *           p_nri,
 	__m128d       fac,tabscale,gbtabscale;
 	__m128i       n0,nnn;
 	
-	const __m128d neg    = {-1.0f,-1.0f};
-	const __m128d zero   = {0.0f,0.0f};
-	const __m128d half   = {0.5f,0.5f};
-	const __m128d two    = {2.0f,2.0f};
-	const __m128d three  = {3.0f,3.0f};
+	const __m128d neg    = {-1.0,-1.0};
+	const __m128d zero   = {0.0,0.0};
+	const __m128d half   = {0.5,0.5};
+	const __m128d two    = {2.0,2.0};
+	const __m128d three  = {3.0,3.0};
 	
 	nri        = *p_nri;
 	ntype      = *p_ntype;
