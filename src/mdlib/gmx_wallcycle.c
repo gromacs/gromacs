@@ -229,7 +229,11 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
   char   *myline = "-----------------------------------------------------------------------";
   
   if (wc) {
-    npp = nnodes - npme;
+    if (npme > 0) {
+      npp = nnodes - npme;
+    } else {
+      npp = nnodes;
+    }
     tot = cycles[ewcRUN];
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
