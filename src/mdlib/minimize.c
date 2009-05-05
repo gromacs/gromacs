@@ -385,6 +385,28 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state)
     copy_rvec(ems->s.x[i],state->x[i]);
 }
 
+static void write_em_traj(FILE *fplog,t_commrec *cr,
+			  int fp_trn,bool bX,bool bF,char *confout,
+			  gmx_mtop_t *top_global,
+			  t_inputrec *ir,int step,
+			  em_state_t *state,
+			  t_state *state_global,rvec *f_global)
+{
+  if ((bX || confout != NULL) && !PAR(cr)) {
+    copy_em_coords_back(state,state_global);
+  }
+  
+  write_traj(fplog,cr,fp_trn,bX,FALSE,bF,0,FALSE,0,NULL,FALSE,
+	     top_global,ir->eI,ir->simulation_part,step,(double)step,
+	     &state->s,state_global,state->f,f_global);
+  
+  if (confout != NULL && MASTER(cr)) {
+    write_sto_conf_mtop(confout,
+			*top_global->name,top_global,
+			state_global->x,NULL,ir->ePBC,state_global->box);
+  }
+}
+  
 static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
 		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
 		       gmx_constr_t constr,gmx_localtop_t *top,
@@ -933,9 +955,9 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-	       top_global,inputrec->eI,inputrec->simulation_part,step,(double)step,
-	       &s_min->s,state_global,s_min->f,f_global);
+    write_em_traj(fplog,cr,fp_trn,do_x,do_f,NULL,
+		  top_global,inputrec,step,
+		  s_min,state_global,f_global);
     
     /* Take a step downhill.
      * In theory, we should minimize the function along this direction.
@@ -1223,10 +1245,6 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
   }
-  
-  if (!PAR(cr)) {
-    copy_em_coords_back(s_min,state_global);
-  }
 
   /* Print some stuff... */
   if (MASTER(cr))
@@ -1242,15 +1260,9 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   do_x = !do_per_step(step,inputrec->nstxout);
   do_f = (inputrec->nstfout > 0 && !do_per_step(step,inputrec->nstfout));
   
-  write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,
-	     0,FALSE,0,NULL,FALSE,
-	     top_global,inputrec->eI,inputrec->simulation_part,step,(real)step,
-	     &s_min->s,state_global,s_min->f,f_global);
-  if (MASTER(cr)) {
-    write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
-			*top_global->name,top_global,
-			state_global->x,NULL,inputrec->ePBC,state_global->box);
-  }
+  write_em_traj(fplog,cr,fp_trn,do_x,do_f,ftp2fn(efSTO,nfile,fnm),
+		top_global,inputrec,step,
+		s_min,state_global,f_global);
   
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
   
@@ -1473,8 +1485,9 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-	       top_global,inputrec->eI,inputrec->simulation_part,step,(real)step,state,state,f,f);
+    write_em_traj(fplog,cr,fp_trn,do_x,do_f,NULL,
+		  top_global,inputrec,step,
+		  &ems,state,f);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */
     
@@ -1881,14 +1894,9 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
    */  
   do_x = !do_per_step(step,inputrec->nstxout);
   do_f = !do_per_step(step,inputrec->nstfout);
-  write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-	     top_global,inputrec->eI,inputrec->simulation_part,step,(real)step,state,state,f,f);
-  
-  if (MASTER(cr)) {
-    write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
-			*top_global->name,top_global,
-			state->x,NULL,inputrec->ePBC,state->box);
-  }
+  write_em_traj(fplog,cr,fp_trn,do_x,do_f,ftp2fn(efSTO,nfile,fnm),
+		top_global,inputrec,step,
+		&ems,state,f);
   
   if (MASTER(cr)) {
     print_converged(stderr,LBFGS,inputrec->em_tol,step,converged,
@@ -2046,9 +2054,9 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       /* Write to trn, if necessary */
       do_x = do_per_step(steps_accepted,inputrec->nstxout);
       do_f = do_per_step(steps_accepted,inputrec->nstfout);
-      write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-		 top_global,inputrec->eI,inputrec->simulation_part,count,(real)count,
-		 &s_min->s,state_global,s_min->f,f_global);
+      write_em_traj(fplog,cr,fp_trn,do_x,do_f,NULL,
+		    top_global,inputrec,count,
+		    s_min,state_global,f_global);
     } 
     else {
       /* If energy is not smaller make the step smaller...  */
@@ -2082,27 +2090,16 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     count++;
   } /* End of the loop  */
   
-  /* In parallel write_traj copies back the coordinates,
-   * otherwise we have to do it explicitly.
-   */
-  if (!PAR(cr)) {
-    copy_em_coords_back(s_min,state_global);
-  }
-
     /* Print some shit...  */
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
-  write_traj(fplog,cr,fp_trn,TRUE,FALSE,inputrec->nstfout,0,FALSE,0,NULL,FALSE,
-	     top_global,inputrec->eI,inputrec->simulation_part,count,(real)count,
-	     &s_min->s,state_global,s_min->f,f_global);
+  write_em_traj(fplog,cr,fp_trn,TRUE,inputrec->nstfout,ftp2fn(efSTO,nfile,fnm),
+		top_global,inputrec,count,
+		s_min,state_global,f_global);
 
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
 
   if (MASTER(cr)) {
-    write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
-			*top_global->name,top_global,
-			state_global->x,NULL,inputrec->ePBC,state_global->box);
-    
     print_converged(stderr,SD,inputrec->em_tol,count,bDone,nsteps,
 		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
     print_converged(fplog,SD,inputrec->em_tol,count,bDone,nsteps,
