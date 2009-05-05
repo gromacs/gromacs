@@ -877,9 +877,16 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     
     fp = gmx_fio_open(fn,"w");
 	
-    flags_eks =
-        ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksDEKINDL) |
-         (1<<eeksMVCOS));
+    if (state->ekinstate.bUpToDate)
+    {
+        flags_eks =
+            ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksDEKINDL) |
+             (1<<eeksMVCOS));
+    }
+    else
+    {
+        flags_eks = 0;
+    }
     flags_enh =
         ((1<<eenhENERGY_N) | (1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM));
 
