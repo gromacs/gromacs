@@ -59,10 +59,21 @@
 #endif
 
 /* Only compile this file if SSE intrinsics are available */
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && !defined(GMX_DOUBLE) )
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+
+#if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
+#define gmx_castsi128_ps(a) _mm_castsi128_ps(a)
+#define gmx_castps_si128(a) _mm_castps_si128(a)
+#elif defined(__GNUC__)
+#define gmx_castsi128_ps(a) ((__m128)(a))
+#define gmx_castps_si128(a) ((__m128i)(a))
+#else
+static __m128 gmx_castsi128_ps(__m128i a) { return *(__m128 *) &a; } 
+static __m128i gmx_castps_si128(__m128 a) { return *(__m128i *) &a; } 
+#endif
 
 /* SIMD (SSE1+MMX indeed) implementation of sin, cos, exp and log
  
@@ -457,20 +468,20 @@ __m128 exp_ps(__m128 x) {
 
 __m128 log2_ps(__m128 x)
 {
-	const __m128 exp_ps  = _mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
-	const __m128 one_ps  = _mm_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
-	const __m128 off_ps  = _mm_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
-	const __m128 mant_ps = _mm_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
-	const __m128 sign_ps = _mm_castsi128_ps( _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000) );
-	const __m128 base_ps = _mm_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
-	const __m128 loge_ps = _mm_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
+	const __m128 exp_ps  = gmx_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
+	const __m128 one_ps  = gmx_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
+	const __m128 off_ps  = gmx_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
+	const __m128 mant_ps = gmx_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
+	const __m128 sign_ps = gmx_castsi128_ps( _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000) );
+	const __m128 base_ps = gmx_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
+	const __m128 loge_ps = gmx_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
 	
-	const __m128 D5      = _mm_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
-	const __m128 D4      = _mm_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
-	const __m128 D3      = _mm_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
-	const __m128 D2      = _mm_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
-	const __m128 D1      = _mm_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
-	const __m128 D0      = _mm_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
+	const __m128 D5      = gmx_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
+	const __m128 D4      = gmx_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
+	const __m128 D3      = gmx_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
+	const __m128 D2      = gmx_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
+	const __m128 D1      = gmx_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
+	const __m128 D0      = gmx_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
 	
 	__m128  xmm0,xmm1,xmm2;
 	__m128i xmm1i;
@@ -478,7 +489,7 @@ __m128 log2_ps(__m128 x)
 	xmm0  = x;
 	xmm1  = xmm0;
 	xmm1  = _mm_and_ps(xmm1, exp_ps);
-	xmm1 = _mm_castsi128_ps( _mm_srli_epi32( _mm_castps_si128(xmm1),8) ); 
+	xmm1 = gmx_castsi128_ps( _mm_srli_epi32( gmx_castps_si128(xmm1),8) ); 
 	
 	xmm1  = _mm_or_ps(xmm1, one_ps);
 	xmm1  = _mm_sub_ps(xmm1, off_ps);
@@ -714,7 +725,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				raj   = _mm_set_ps(0.0f, 0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj1]]); 
 				vaj   = _mm_set_ps(0.0f, 0.0f, 0.0f, born->vsolv[aj1]);				   
 				
-				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
+				mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 				
 			}
 			else if(offset==2)
@@ -735,7 +746,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				raj  = _mm_set_ps(0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj2]],top->atomtypes.gb_radius[md->typeA[aj1]]); 
 				vaj  = _mm_set_ps(0.0f, 0.0f, born->vsolv[aj2], born->vsolv[aj1]);		
 				
-				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
+				mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 				
 			}
 			else
@@ -771,7 +782,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 								  born->vsolv[aj2], 
 								  born->vsolv[aj1]);	
 				
-				mask = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
+				mask = gmx_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
 			jx = _mm_and_ps( mask, xmm6);
@@ -1201,7 +1212,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 				
 				sk    = _mm_load1_ps(born->param+aj1);
 				
-				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
+				maski = gmx_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -1230,7 +1241,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				sk   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 								
-				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
+				maski = gmx_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -1267,7 +1278,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 				xmm3 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j3 j3*/
 				sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 				
-				maski = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
+				maski = gmx_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
 			jx = _mm_and_ps( maski, xmm6);
@@ -1770,7 +1781,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 				
 				sk    = _mm_load1_ps(born->param+aj1);
 						
-				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
+				maski = gmx_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -1799,7 +1810,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 				xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0));
 				sk   = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
 				
-				maski = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
+				maski = gmx_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -1836,7 +1847,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 				xmm3 = _mm_shuffle_ps(xmm3,xmm3,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j3 j3*/
 				sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
 				
-				maski = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
+				maski = gmx_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
 			jx = _mm_and_ps( maski, xmm6);
@@ -2103,8 +2114,8 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 	__m128 dva,dax,fgb;
 	__m128 xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	
-	__m128 mask   = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
-	__m128 maski  = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
+	__m128 mask   = gmx_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
+	__m128 maski  = gmx_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
 	
 	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
 	float z = 0;
@@ -2116,11 +2127,11 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 	if(offset!=0)
 	{
 		if(offset==1)
-			mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
+			mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 		else if(offset==2)
-			mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
+			mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 		else
-			mask = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
+			mask = gmx_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 	}
 	
 	if(gb_algorithm==egbSTILL) {
@@ -2372,7 +2383,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 				xmm6 = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(0,0,0,0)); /*x1 - - - */ 
 				xmm4 = _mm_shuffle_ps(xmm1, xmm1, _MM_SHUFFLE(1,1,1,1)); /*y1 - - - */
 				
-				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
+				mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -2395,7 +2406,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 				xmm6 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0)); /*x1 x2 x1 x2 */
 				xmm4 = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1)); /*y1 y2 y1 y2 */	
 										
-				mask = _mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
+				mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -2424,7 +2435,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 				xmm6 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(2,0,2,0)); /* x1 x2 x3 x3 */
 				xmm4 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,1,3,1)); /* y1 y2 y3 y3 */
 				
-				mask = _mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
+				mask = gmx_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 						
 			jx = _mm_and_ps( mask, xmm6);

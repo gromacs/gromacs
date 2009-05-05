@@ -2,8 +2,6 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_DOUBLE
-
 #include <math.h>
 #include <string.h>
 
@@ -15,6 +13,7 @@
 #include "pdbio.h"
 #include "names.h"
 #include "physics.h"
+#include "domdec.h"
 #include "partdec.h"
 #include "network.h"
 #include "gmx_fatal.h"
@@ -26,9 +25,22 @@
 #endif
 
 /* Only compile this file if SSE2 intrinsics are available */
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && defined(GMX_DOUBLE) )
 #include <xmmintrin.h>
 #include <emmintrin.h>
+
+#if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
+#define gmx_castsi128_ps(a) _mm_castsi128_ps(a)
+#define gmx_castps_si128(a) _mm_castps_si128(a)
+#elif defined(__GNUC__)
+#define gmx_castsi128_ps(a) ((__m128)(a))
+#define gmx_castps_si128(a) ((__m128i)(a))
+#else
+static __m128 gmx_castsi128_ps(__m128i a) { return *(__m128 *) &a; } 
+static __m128i gmx_castps_si128(__m128 a) { return *(__m128i *) &a; } 
+#endif
+
+
 
 /* Still parameters - make sure to edit in genborn.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
@@ -145,8 +157,13 @@ typedef union xmm_mm_union {
 } xmm_mm_union;
 
 void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
-	__m128 xmm1, xmm2, xmm3 = _mm_setzero_ps(), sign_bit_sin, y;
+	__m128 xmm1, xmm2, xmm3, sign_bit_sin, y, z;
 	__m64 mm0, mm1, mm2, mm3, mm4, mm5;
+	__m128 swap_sign_bit_sin,sign_bit_cos;
+	__m128 poly_mask,tmp,y2,ysin1,ysin2;
+	
+	xmm3 = _mm_setzero_ps();
+	
 	sign_bit_sin = x;
 	/* take the absolute value */
 	x = _mm_and_ps(x, *(__m128*)_ps_inv_sign_mask);
@@ -177,7 +194,7 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	mm1 = _mm_and_si64(mm3, *(__m64*)_pi32_4);
 	mm0 = _mm_slli_pi32(mm0, 29);
 	mm1 = _mm_slli_pi32(mm1, 29);
-	__m128 swap_sign_bit_sin;
+	
 	COPY_MM_TO_XMM(mm0, mm1, swap_sign_bit_sin);
 	
 	/* get the polynom selection mask for the sine */
@@ -186,7 +203,6 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	mm3 = _mm_and_si64(mm3, *(__m64*)_pi32_2);
 	mm2 = _mm_cmpeq_pi32(mm2, _mm_setzero_si64());
 	mm3 = _mm_cmpeq_pi32(mm3, _mm_setzero_si64());
-	__m128 poly_mask;
 	COPY_MM_TO_XMM(mm2, mm3, poly_mask);
 	
 	/* The magic pass: "Extended precision modular arithmetic" 
@@ -209,14 +225,13 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	mm5 = _mm_andnot_si64(mm5, *(__m64*)_pi32_4);
 	mm4 = _mm_slli_pi32(mm4, 29);
 	mm5 = _mm_slli_pi32(mm5, 29);
-	__m128 sign_bit_cos;
+	
 	COPY_MM_TO_XMM(mm4, mm5, sign_bit_cos);
 	
 	sign_bit_sin = _mm_xor_ps(sign_bit_sin, swap_sign_bit_sin);
 	
-	
 	/* Evaluate the first polynom  (0 <= x <= Pi/4) */
-	__m128 z = _mm_mul_ps(x,x);
+	z = _mm_mul_ps(x,x);
 	y = *(__m128*)_ps_coscof_p0;
 	
 	y = _mm_mul_ps(y, z);
@@ -225,12 +240,12 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	y = _mm_add_ps(y, *(__m128*)_ps_coscof_p2);
 	y = _mm_mul_ps(y, z);
 	y = _mm_mul_ps(y, z);
-	__m128 tmp = _mm_mul_ps(z, *(__m128*)_ps_0p5);
+	tmp = _mm_mul_ps(z, *(__m128*)_ps_0p5);
 	y = _mm_sub_ps(y, tmp);
 	y = _mm_add_ps(y, *(__m128*)_ps_1);
 	
 	/* Evaluate the second polynom  (Pi/4 <= x <= 0) */
-	__m128 y2 = *(__m128*)_ps_sincof_p0;
+	y2 = *(__m128*)_ps_sincof_p0;
 	y2 = _mm_mul_ps(y2, z);
 	y2 = _mm_add_ps(y2, *(__m128*)_ps_sincof_p1);
 	y2 = _mm_mul_ps(y2, z);
@@ -241,8 +256,8 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 	
 	/* select the correct result from the two polynoms */  
 	xmm3 = poly_mask;
-	__m128 ysin2 = _mm_and_ps(xmm3, y2);
-	__m128 ysin1 = _mm_andnot_ps(xmm3, y);
+	ysin2 = _mm_and_ps(xmm3, y2);
+	ysin1 = _mm_andnot_ps(xmm3, y);
 	y2 = _mm_sub_ps(y2,ysin2);
 	y = _mm_sub_ps(y, ysin1);
 	
@@ -256,58 +271,60 @@ void sincos_ps(__m128 x, __m128 *s, __m128 *c) {
 }
 
 
+
 __m128 log2_ps(__m128 x)
 {
-	__m128i exp   = _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000);
-	__m128i one   = _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000); 
-	__m128i off   = _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000); 
-	__m128i mant  = _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF);
-	__m128i sign  = _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000);
-	__m128i base  = _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000);
-	__m128i loge  = _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218);
+	const __m128 exp_ps  = gmx_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
+	const __m128 one_ps  = gmx_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
+	const __m128 off_ps  = gmx_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
+	const __m128 mant_ps = gmx_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
+	const __m128 sign_ps = gmx_castsi128_ps( _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000) );
+	const __m128 base_ps = gmx_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
+	const __m128 loge_ps = gmx_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
 	
-	__m128i D5     = _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5);
-	__m128i D4     = _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD); 
-	__m128i D3     = _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9);
-	__m128i D2     = _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B);
-	__m128i D1     = _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD); 
-	__m128i D0     = _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A);
+	const __m128 D5      = gmx_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
+	const __m128 D4      = gmx_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
+	const __m128 D3      = gmx_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
+	const __m128 D2      = gmx_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
+	const __m128 D1      = gmx_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
+	const __m128 D0      = gmx_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
 	
 	__m128  xmm0,xmm1,xmm2;
 	__m128i xmm1i;
 	
 	xmm0  = x;
 	xmm1  = xmm0;
-	xmm1  = _mm_and_ps(xmm1, (__m128) exp);
-	xmm1 = (__m128) _mm_srli_epi32( (__m128i) xmm1,8); 
+	xmm1  = _mm_and_ps(xmm1, exp_ps);
+	xmm1 = gmx_castsi128_ps( _mm_srli_epi32( gmx_castps_si128(xmm1),8) ); 
 	
-	xmm1  = _mm_or_ps(xmm1,(__m128) one);
-	xmm1  = _mm_sub_ps(xmm1,(__m128) off);
+	xmm1  = _mm_or_ps(xmm1, one_ps);
+	xmm1  = _mm_sub_ps(xmm1, off_ps);
 	
-	xmm1  = _mm_mul_ps(xmm1,(__m128) base);
-	xmm0  = _mm_and_ps(xmm0,(__m128) mant);
-	xmm0  = _mm_or_ps(xmm0,(__m128) one);
+	xmm1  = _mm_mul_ps(xmm1, base_ps);
+	xmm0  = _mm_and_ps(xmm0, mant_ps);
+	xmm0  = _mm_or_ps(xmm0, one_ps);
 	
-	xmm2  = _mm_mul_ps(xmm0, (__m128) D5);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D4);
+	xmm2  = _mm_mul_ps(xmm0, D5);
+	xmm2  = _mm_add_ps(xmm2, D4);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D3);
+	xmm2  = _mm_add_ps(xmm2, D3);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D2);
+	xmm2  = _mm_add_ps(xmm2, D2);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D1);
+	xmm2  = _mm_add_ps(xmm2, D1);
 	xmm2  = _mm_mul_ps(xmm2,xmm0);
-	xmm2  = _mm_add_ps(xmm2, (__m128) D0);
-	xmm0  = _mm_sub_ps(xmm0, (__m128) one);
+	xmm2  = _mm_add_ps(xmm2, D0);
+	xmm0  = _mm_sub_ps(xmm0, one_ps);
 	xmm0  = _mm_mul_ps(xmm0,xmm2);
 	xmm1  = _mm_add_ps(xmm1,xmm0);
 	
-	
 	x     = xmm1;
-	x  = _mm_mul_ps(x,(__m128)loge);
+	x  = _mm_mul_ps(x, loge_ps);
 	
     return x;
 }
+
+
 
 static inline __m128d
 my_invrsq_pd(__m128d x)
@@ -1565,8 +1582,3 @@ int genborn_sse_dummy;
 
 #endif /* SSE2 intrinsics available */
 
-#else
-/* keep compiler happy */
-int genborn_sse2_double_dummy;
-
-#endif /* double precision available */

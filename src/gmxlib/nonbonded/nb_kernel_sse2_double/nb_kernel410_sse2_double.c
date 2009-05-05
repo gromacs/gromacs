@@ -35,7 +35,7 @@ my_invrsq_pd(__m128d x)
 	__m128d t2 = _mm_mul_pd(half,_mm_mul_pd(t1,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t1,t1)))));
 	
 	/* Return second Newton-Rapson step, accuracy 48 bits */
-	return (__m128d) _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
+	return _mm_mul_pd(half,_mm_mul_pd(t2,_mm_sub_pd(three,_mm_mul_pd(x,_mm_mul_pd(t2,t2)))));
 }
 
 /* to extract single integers from a __m128i datatype */

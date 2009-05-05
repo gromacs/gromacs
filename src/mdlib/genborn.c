@@ -58,14 +58,14 @@
 #include "mpi.h"
 #endif
 
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#ifdef GMX_DOUBLE
+#include "genborn_sse2_double.h"
+#else
 #include "genborn_sse2_single.h"
+#endif /* GMX_DOUBLE */
 #endif
 
-/* x86 SSE2 double precision intrinsics implementations of selected generalized born routines */
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) )
-#include "genborn_sse2_double.h"
-#endif
 
 /* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
@@ -1333,7 +1333,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 		
 #ifdef GMX_DOUBLE
 	
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2))
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
 	/* Currently, the double-precision sse code is disabled, since I have yet to implement
 	 * double precision sse versions of sin/cos/log/exp-functions
 	 */
@@ -1378,7 +1378,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 						
 #else				
 			
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE))
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	switch(ir->gb_algorithm)
 	{
@@ -1617,7 +1617,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr,int natoms,gmx_genborn_t *bo
 
 
 
-real calc_gb_chainrule(t_commrec *cr, int natoms, t_nblist *nl, rvec x[], rvec t[], real *dvda, real *dadx, 
+real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], 
 					   int gb_algorithm, gmx_genborn_t *born)
 {	
 	int i,k,n,ai,aj,nj0,nj1;
@@ -1741,20 +1741,20 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 	
 #ifdef GMX_DOUBLE	
 	
-#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) )	
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )	
 	calc_gb_chainrule_sse2_double(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x[0], f[0], gb_algorithm, born);
 #else
-	calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x[0], f[0], gb_algorithm, born);
+	calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x, f, gb_algorithm, born);
 #endif
 	
 #else
 	
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) )
+#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	calc_gb_chainrule_sse(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x[0], f[0], gb_algorithm, born);	
 #else
 	/* Calculate the forces due to chain rule terms with non sse code */
-	calc_gb_chainrule(cr, born->nr, &(fr->gblist), x, f, fr->dvda, fr->dadx, gb_algorithm, born);	
+	calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x, f, gb_algorithm, born);	
 #endif	
 #endif
 
