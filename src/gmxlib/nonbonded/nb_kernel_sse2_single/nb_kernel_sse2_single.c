@@ -183,7 +183,7 @@ nb_kernel_setup_sse2_single(FILE *log,nb_kernel_t **list)
     int i;
     nb_kernel_t *p;
     
-    if(nb_kernel_sse2_single_test(log) != 0)
+    if(nb_kernel_sse2_single_test(log) == 0)
     {
 		return;
     }
