@@ -1407,14 +1407,16 @@ void init_forcerec(FILE *fp,
                     egp_flags = ir->opts.egp_flags[GID(egi,egj,ir->opts.ngener)];
                     if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL)) {
                         nbl = &(fr->nblists[m]);
-                        fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = m;
+                        if (fr->nnblists > 1) {
+                            fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = m;
+                        }
                         /* Read the table file with the two energy groups names appended */
                         make_nbf_tables(fp,fr,rtab,cr,tabfn,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
                         m++;
-                    } else {
+                    } else if (fr->nnblists > 1) {
                         fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = 0;
                     }
                 }
