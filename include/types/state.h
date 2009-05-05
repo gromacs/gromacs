@@ -78,6 +78,7 @@ typedef struct
  */
 typedef struct
 {
+  bool     bUpToDate;
   int      ekinh_n;
   tensor * ekinh;
   real     dekindl;

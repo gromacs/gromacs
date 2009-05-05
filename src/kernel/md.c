@@ -1366,7 +1366,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 }
                 if (MASTER(cr))
                 {
-                    update_ekinstate(&state_global->ekinstate,ekind);
+                    if (bSumEkinhOld)
+                    {
+                        state_global->ekinstate.bUpToDate = FALSE;
+                    }
+                    else
+                    {
+                        update_ekinstate(&state_global->ekinstate,ekind);
+                        state_global->ekinstate.bUpToDate = TRUE;
+                    }
                     update_energyhistory(&state_global->enerhist,mdebin);
                 }
             }
