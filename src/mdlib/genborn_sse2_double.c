@@ -246,6 +246,7 @@ my_inv_pd(__m128d x)
 	return _mm_mul_pd(t2,_mm_sub_pd(two,_mm_mul_pd(t2,x)));
 }
 
+#if 0
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_mtop_t *mtop,
 							  const t_atomtypes *atype, double *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
@@ -1257,6 +1258,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_mtop
 	return 0;
 
 }
+#endif
 
 int
 calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dvda, double *xd, double *f, int gb_algorithm, gmx_genborn_t *born)
@@ -1269,6 +1271,7 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 	__m128d dx,dy,dz,t1,t2,t3,dva,dax,fgb;
 	__m128d xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7;
 	
+	t1 = t2 = t3 = _mm_setzero_pd();
 	rb = born->work;
 	
 	/* Loop to get the proper form for the Born radius term */
