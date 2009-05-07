@@ -2642,10 +2642,10 @@
 [ dihedraltypes ]
 ; Improper OPLS dihedrals to keep groups planar.
 ; (OPLS doesnt use impropers for chiral atoms).
-; Since these functions are periodic of the form 1-cos(2*x), the are actually
+; Since these functions are periodic of the form 1-cos(2*x), they are actually
 ; implemented as proper dihedrals [1+cos(2*x+180)] for the moment, 
 ; to keep things compatible.
-; The defines are used in ffoplsaa.rtp or directly in your .top ile.
+; The defines are used in ffoplsaa.rtp or directly in your .top file.
 
 ; O?-C -X -Y improper torsion. C can be C_2 or C_3 too.
 #define improper_O_C_X_Y        180.0     43.93200   2
