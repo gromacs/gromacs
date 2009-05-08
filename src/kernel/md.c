@@ -922,35 +922,52 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
    *
    ************************************************************/
   
-  /* if rerunMD then read coordinates and velocities from input trajectory */
-  if (bRerunMD) {
-    if (getenv("GMX_FORCE_UPDATE"))
-      bForceUpdate = TRUE;
+    /* if rerunMD then read coordinates and velocities from input trajectory */
+    if (bRerunMD)
+    {
+        if (getenv("GMX_FORCE_UPDATE"))
+        {
+            bForceUpdate = TRUE;
+        }
 
-    bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
-				     &rerun_fr,TRX_NEED_X | TRX_READ_V);
-    if (rerun_fr.natoms != top_global->natoms)
-      gmx_fatal(FARGS,"Number of atoms in trajectory (%d) does not match the "
-		"run input file (%d)\n",rerun_fr.natoms,top_global->natoms);
-    if (ir->ePBC != epbcNONE) {
-      if (!rerun_fr.bBox)
-	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
-      if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
-	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+        bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
+                                         &rerun_fr,TRX_NEED_X | TRX_READ_V);
+        if (rerun_fr.natoms != top_global->natoms)
+        {
+            gmx_fatal(FARGS,
+                      "Number of atoms in trajectory (%d) does not match the "
+                      "run input file (%d)\n",
+                      rerun_fr.natoms,top_global->natoms);
+        }
+        if (ir->ePBC != epbcNONE)
+        {
+            if (!rerun_fr.bBox)
+            {
+                gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
+            }
+            if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
+            {
+                gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+            }
+
+            /* Set the shift vectors.
+             * Necessary here when have a static box different from the tpr box.
+             */
+            calc_shifts(rerun_fr.box,fr->shift_vec);
+        }
     }
-  }
 
-  /* loop over MD steps or if rerunMD to end of input trajectory */
-  bFirstStep = TRUE;
-  /* Skip the first Nose-Hoover integration when we get the state from tpx */
-  bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
-  bLastStep = FALSE;
-  bSumEkinhOld = FALSE,
-  bExchanged = FALSE;
-
+    /* loop over MD steps or if rerunMD to end of input trajectory */
+    bFirstStep = TRUE;
+    /* Skip the first Nose-Hoover integration when we get the state from tpx */
+    bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
+    bLastStep = FALSE;
+    bSumEkinhOld = FALSE;
+    bExchanged = FALSE;
+    
     step = ir->init_step;
     step_rel = 0;
-
+    
     bLastStep = (bRerunMD || step_rel > ir->nsteps);
     while (!bLastStep || (bRerunMD && bNotLastFrame)) {
         
