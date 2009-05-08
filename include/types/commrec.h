@@ -209,6 +209,10 @@ typedef struct {
 } gmx_nodecomm_t;
 
 typedef struct {
+  
+} gmx_commrec_thread_t;
+
+typedef struct {
   /* The nodids in one sim are numbered sequentially from 0.
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
@@ -221,7 +225,11 @@ typedef struct {
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
 #endif
-  
+
+#ifdef GMX_THREAD
+  gmx_commrec_thread_t thread;
+#endif
+
   gmx_nodecomm_t nc;
   
   /* For domain decomposition */
