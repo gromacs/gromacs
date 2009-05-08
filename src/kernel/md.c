@@ -863,6 +863,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
       if (max_cutoff2(ir->ePBC,rerun_fr.box) < sqr(fr->rlistlong))
 	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+
+      /* Set the shift vectors.
+       * Necessary here when have a static box different from the tpr box.
+       */
+      calc_shifts(rerun_fr.box,fr->shift_vec);
     }
   }
 
