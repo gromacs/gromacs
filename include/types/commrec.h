@@ -256,4 +256,4 @@ typedef struct {
 #define MASTERSIM(ms)      ((ms)->sim == 0)
 
 /* The master of all (the node that prints the remaining run time etc.) */
-#define MULTIMASTER(cr)    (MASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
+#define MULTIMASTER(cr)    (SIMMASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))

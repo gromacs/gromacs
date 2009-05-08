@@ -34,20 +34,23 @@
  *  all platforms where it is possible we try to use lower-latency spinlocks
  *  instead of real posix style mutexes.
  *
- *  A key difference compared to pthreads is that you must use dynamic
- *  (instead of static) initialization of all variables by calling a routine.
- *  The reason for this is that static initialization doesn't work for many
- *  other thread libraries, not that we are lazy...
- *  The only type which can be initialized statically is gmx_thread_once_t.
- *  Note that you can only declare variable as a pointer to a mutex 
- *  and not a mutex variable directly. Declare a pointer, and call 
- *  gmx_thread_mutex_create() to get a pointer to a new mutex. Don't forget to
- *  embed it in a function called by gmx_thread_once() if your routine can be
- *  executed by multiple threads...
+ *  IMPORTANT:
+ *  The Gromacs thread implementation is used to guarantee threadsafe 
+ *  operation for the gmx_message.h functions, which in turn is used by
+ *  the gmx_memory.h allocation stuff.
+ *  This means we cannot use gmx_message() or gmx_new() memory calls 
+ *  in the implementation.
+ *
+ *  Since this module is merely intended to be a transparent wrapper around
+ *  a system-dependent thread implementation, we simply echo errors to stderr.
+ *  The user should check the return codes\] and take appropriate action 
+ *  when using these functions (fat chance, but errors are rare).
  */
 
 
+
 #include <stdio.h>
+
 
 
 #ifdef __cplusplus
@@ -63,38 +66,64 @@ extern "C"
 
 /*! \brief Opaque datatype for gromacs thread
  *
- *  Note that in contrast to pthreads you must always work with pointers
- *  to Gromacs threads. This is unfortunately necessary in order to hide the
- *  underlying implementation - we can't let this header file to depend
- *  on config.h since it might be used with a different compiler, or on 
- *  a different system from where Gromacs was compiled.
+ *  A new thread will be initiated when you start a thread
+ *  with gmx_thread_create(), and it will be destroyed when you
+ *  join the thread with gmx_thread_join(). Remember to join your threads!
  */
-typedef struct gmx_thread              gmx_thread_t;
+typedef struct gmx_thread *            gmx_thread_t;
 
+
+
+
+
+/*! \brief Status for one-time initialization of thread stuff.
+ *
+ *  \internal
+ *
+ *  This is used both for the static initialization, and as
+ *  a safeguard to catch errors where the user
+ *  is sloppy and fails to initialize various things in the 
+ *  thread system. It is only defined here to enable static
+ *  initialization - don't use it outside the thread code.
+ */
+enum gmx_thread_once_status
+{
+    GMX_THREAD_ONCE_STATUS_NOTCALLED = 0,   /*!< Not yet initialized     */
+    GMX_THREAD_ONCE_STATUS_PROGRESS = 1,    /*!< Somebody working on it  */
+    GMX_THREAD_ONCE_STATUS_READY = 2        /*!< Everything completed    */
+}; 
 
 
 
 
 /*! \brief Opaque mutex datatype for Gromacs threads
  *
- *  Note that in contrast to pthreads you must always work with pointers
- *  to Gromacs mutexes. This is unfortunately necessary in order to hide the
- *  underlying implementation - we can't let this header file to depend
- *  on config.h since it might be used with a different compiler, or on 
- *  a different system from where Gromacs was compiled.
+ *  This type is only defined in the header to enable static
+ *  initialization with GMX_THREAD_MUTEX_INITIALIZER.
+ *  You should _never_ touch the contents or create a variable
+ *  with automatic storage class without calling gmx_thread_mutex_init().
  */
-typedef struct gmx_thread_mutex        gmx_thread_mutex_t;
+typedef struct gmx_mutex  
+{
+    enum gmx_thread_once_status       status;       /*!< Indicates completed init */
+    void *                            actual_mutex; /*!< Implementation pointer   */
+} 
+gmx_thread_mutex_t;
 
 
 
-/*! \brief Opaque mutex datatype for Gromacs threads
+
+
+/*! \brief Statical initializer for gmx_thread_mutex_t
  *
- *  Note that in contrast to pthreads you must always work with pointers
- *  to Gromacs threads. This is unfortunately necessary in order to hide the
- *  underlying implementation - we can't let this header file to depend
- *  on config.h since it might be used with a different compiler, or on 
- *  a different system from where Gromacs was compiled.
+ *  See the description of the gmx_thread_mutex_t datatype for instructions
+ *  on how to use this. Note that any variables initialized with this value
+ *  MUST have static storage allocation.
  */
+#define GMX_THREAD_MUTEX_INITIALIZER     { GMX_THREAD_ONCE_STATUS_NOTCALLED, NULL }
+
+
+
 
 
 /*! \brief One-time initialization data for Gromacs thread
@@ -103,30 +132,18 @@ typedef struct gmx_thread_mutex        gmx_thread_mutex_t;
  *  but since it needs to be initialized statically it must be defined
  *  in the header. You will be sorry if you touch the contents.
  *  Variables of this type should always be initialized statically to
- *  GMX_THREAD_ONCE_INITIALIZER.
+ *  GMX_THREAD_ONCE_INIT.
  *
  *  This type is used as control data for single-time initialization.
  *  The most common example is a mutex at file scope used when calling 
  *  a non-threadsafe function, e.g. the FFTW initialization routines.
- *  In contrast to pthreads, many thread libraries (think windows) do not
- *  support static initialization of the mutex. This means it needs to be
- *  initialized by the first thread trying to use it, but we must also 
- *  make sure it is only initialized by exactly one thread.
  *
- *  The situation is solved by declaring the mutex statically in the file,
- *  but not initialized. However, you should also declare a static variable
- *  of the gmx_thread_once_t, and initialize it to GMX_THREAD_ONCE_INITIALIZER.
- *
- *  Write a small static routine (no arguments) that initializes your mutex,
- *  and in the routine where you need to use the mutex you first make a call to
- *  gmx_thread_once() with the once control data type and your initialization
- *  routines as arguments.
  */
 typedef struct
- {
-    int  started; /*!< -1 if nobody has touched it, >=0 when init. started */
-    int  done;    /*!<  1 once the initialization is complete, 0 otherwise */
-} gmx_thread_once_t;
+{
+    enum gmx_thread_once_status     status; /*!< not called, progress, or ready */
+}
+gmx_thread_once_t;
 
 
 
@@ -136,8 +153,7 @@ typedef struct
  *  on how to use this. Normally, all variables of that type should be 
  *  initialized statically to this value.
  */
-#define GMX_THREAD_ONCE_INITIALIZER     { -1, 0 }
-
+#define GMX_THREAD_ONCE_INIT       GMX_THREAD_ONCE_STATUS_NOTCALLED
 
 
 
@@ -148,9 +164,99 @@ typedef struct
  *  you can use gmx_thread_setspecific() and gmx_thread_getspecific()
  *  to access a pointer which will be private to each thread.
  */
-typedef struct gmx_thread_key          gmx_thread_key_t;
+typedef struct gmx_thread_key *         gmx_thread_key_t;
 
 
+
+/*! \brief Condition variable handle for Gromacs threads
+ *
+ *  Condition variables are useful for synchronization together
+ *  with a mutex: Lock the mutex and check if our thread is the last
+ *  to the barrier. If no, wait for the condition to be signaled.
+ *  If yes, reset whatever data you want and then signal the condition.
+ *
+ *  This should be considered an opaque structure, but since it is sometimes
+ *  useful to initialize it statically it must go in the header. 
+ *  You will be sorry if you touch the contents.
+ *  
+ *  There are two alternatives: Either initialize it as a static variable
+ *  with GMX_THREAD_COND_INITIALIZER, or call gmx_thread_cond_init()
+ *  before using it.
+ */
+typedef struct gmx_thread_cond
+{
+    enum gmx_thread_once_status         status;      /*!< Initialized or not */
+    void *                              actual_cond; /*!< Implementation ptr */
+}
+gmx_thread_cond_t;
+
+
+
+/*! \brief Statical initializer for gmx_thread_cond_t
+*
+*  See the description of the gmx_thread_cond_t datatype for instructions
+*  on how to use this. Note that any variables initialized with this value
+*  MUST have static storage allocation.
+*/
+#define GMX_THREAD_COND_INITIALIZER     { GMX_THREAD_ONCE_STATUS_NOTCALLED, NULL }
+
+
+
+/*! \brief Thread synchronization barrier datatype
+ *
+ *  Barrier variables are used to guarantee that all threads
+ *  reach an execution point before they continue. This is the general
+ *  Gromacs barrier type which uses a mutex and condition variable to
+ *  suspend waiting threads. In performance-critical sections you might
+ *  consider using the busy-waiting spinlock barrier instead.
+ *
+ *  Note that barrier variables must be initialized with
+ *  gmx_thread_barrier_init().
+ */
+typedef struct gmx_thread_barrier 
+{
+    enum gmx_thread_once_status         status;         /*!< Initialized or not */
+    void *                              actual_barrier; /*!< Implementation ptr */
+    int                                 init_threshold; /*!< For static init    */
+}
+gmx_thread_barrier_t;
+
+
+
+/*! \brief Statical initializer for gmx_thread_barrier_t
+ *
+ *  See the description of the gmx_thread_barrier_t datatype for instructions
+ *  on how to use this. Note that variables initialized with this value
+ *  MUST have static storage allocation.
+ *
+ * \param cnt  Threshold for barrier
+ */
+#define GMX_THREAD_BARRIER_INITIALIZER(cnt)   { GMX_THREAD_ONCE_STATUS_NOTCALLED, NULL, (cnt) }
+
+
+
+/*! \brief Thread support status enumeration */
+enum gmx_thread_support
+{
+    GMX_THREAD_SUPPORT_NO = 0,  /*!< Starting threads will fail */
+    GMX_THREAD_SUPPORT_YES = 1  /*!< Thread support available   */
+};
+
+
+
+/*! \brief Check if threads are supported
+ *
+ *  This routine provides a cleaner way to check if threads are supported
+ *  instead of sprinkling your code with preprocessor conditionals.
+ *
+ *  All Gromacs thread functions are still available even without thread support,
+ *  but some of them might return failure error codes, for instance if you try
+ *  to start a thread.
+ * 
+ *  \return 1 if threads are supported, 0 if not.
+ */
+enum gmx_thread_support
+gmx_thread_support(void);
 
 
 
@@ -159,13 +265,15 @@ typedef struct gmx_thread_key          gmx_thread_key_t;
  *  The new thread will call start_routine() with the argument arg.
  *  Please be careful not to change arg after calling this function.
  * 
+ *  \param thread          Pointer to opaque thread datatype
  *  \param start_routine   The function to call in the new thread
  *  \param arg             Argument to call with
  *  
- *  \return Pointer to a thread identifier, or NULL if an error occured.
+ *  \return Status - 0 on success, or an error code.
  */
-gmx_thread_t *
-gmx_thread_create   (void *            (*start_routine)(void *),
+int
+gmx_thread_create   (gmx_thread_t *      thread,
+                     void *            (*start_routine)(void *),
                      void *              arg);
 
 
@@ -175,24 +283,28 @@ gmx_thread_create   (void *            (*start_routine)(void *),
  *
  *  If the thread has already finished the routine returns immediately.
  *
- *  \param thread      Thread to wait for.
+ *  \param thread      Opaque thread datatype to wait for.
  *  \param value_ptr   Pointer to location where to store pointer to exit value
  *                     from threads that called gmx_thread_exit().
  *  
- *  \return GMX_SUCCESS if the join went ok, or a non-zero error code.
+ *  \return 0 if the join went ok, or a non-zero error code.
  */
 int
-gmx_thread_join     (gmx_thread_t *    thread,
+gmx_thread_join     (gmx_thread_t      thread,
                      void **           value_ptr);
 
 
 
-/*! \brief Create a new mutex
+/*! \brief Initialize a new mutex
  *
- *  \return Pointer to the new mutex, NULL if creation failed.
+ *  This routine must be called before using any mutex not initialized
+ *  with static storage class and GMX_THREAD_MUTEX_INITIALIZER.
+ *
+ *  \param mtx   Pointer to a gromacs mutex opaque type.
+ *  \return      0 or an error code.
  */
-gmx_thread_mutex_t *
-gmx_thread_mutex_create(void);
+int
+gmx_thread_mutex_init(gmx_thread_mutex_t *    mtx);
 
 
 
@@ -204,10 +316,10 @@ gmx_thread_mutex_create(void);
 *  with dynamic memory allocation.
 * 
 *  \param mtx  Pointer to a mutex variable to get rid of.
-*  \return GMX_SUCCESS or a non-zero error code.
+*  \return 0 or a non-zero error code.
 */
 int
-gmx_thread_mutex_destroy(gmx_thread_mutex_t *mtx);
+gmx_thread_mutex_destroy(gmx_thread_mutex_t *    mtx);
 
 
 
@@ -217,10 +329,10 @@ gmx_thread_mutex_destroy(gmx_thread_mutex_t *mtx);
 *  This routine does not return until the mutex has been acquired.
 *
 *  \param mtx  Pointer to the mutex to lock
-*  \return GMX_SUCCESS or a non-zero error code.
+*  \return 0 or a non-zero error code.
 */
 int
-gmx_thread_mutex_lock(gmx_thread_mutex_t *mtx);
+gmx_thread_mutex_lock(gmx_thread_mutex_t *    mtx);
 
 
 
@@ -228,14 +340,14 @@ gmx_thread_mutex_lock(gmx_thread_mutex_t *mtx);
 /*! \brief Try to lock a mutex, return if busy
  *
  *  This routine always return directly. If the mutex was available and
- *  we successfully locked it we return GMX_SUCCESS, otherwise a non-zero
+ *  we successfully locked it we return 0, otherwise a non-zero
  *  error code (usually meaning the mutex was already locked).
  *
  *  \param mtx  Pointer to the mutex to try and lock
- *  \return GMX_SUCCESS or a non-zero error code.
+ *  \return 0 or a non-zero error code.
  */
 int
-gmx_thread_mutex_trylock(gmx_thread_mutex_t *mtx);
+gmx_thread_mutex_trylock(gmx_thread_mutex_t *   mtx);
 
 
 
@@ -243,10 +355,10 @@ gmx_thread_mutex_trylock(gmx_thread_mutex_t *mtx);
 /*! \brief Release the exclusive access to a mutex
  *
  *  \param mtx  Pointer to the mutex to release
- *  \return GMX_SUCCESS or a non-zero error code.
+ *  \return 0 or a non-zero error code.
  */
 int
-gmx_thread_mutex_unlock(gmx_thread_mutex_t *mtx);
+gmx_thread_mutex_unlock(gmx_thread_mutex_t *   mtx);
 
 
 
@@ -258,11 +370,15 @@ gmx_thread_mutex_unlock(gmx_thread_mutex_t *mtx);
  *  gmx_thread_once() routine and corresponding data to initialize the 
  *  thread-specific-storage key the first time you access it.
  *
+ *  \param  key          Pointer to opaque Gromacs thread key type.
  *  \param  destructor   Routine to call (to free memory of key) when we quit
- *  \return Pointer to the new key, or NULL if an error occured.
+ *
+ *  \return status - 0 on sucess or a standard error code.
+ *
  */
-gmx_thread_key_t *     
-gmx_thread_key_create(void                   (*destructor)(void *));
+int
+gmx_thread_key_create(gmx_thread_key_t *       key,
+                      void                   (*destructor)(void *));
 
 
 
@@ -272,11 +388,11 @@ gmx_thread_key_create(void                   (*destructor)(void *));
  *  Calling this routine will kill the handle, and invoke the automatic 
  *  destructor routine for each non-NULL value pointed to by key.
  *
- *  \param  key  Handle to the key to get rid off.
- *  \return GMX_SUCCESS or a non-zero error message.
+ *  \param  key  Opaque Gromacs key type to destroy
+ *  \return 0 or a non-zero error message.
  */
 int
-gmx_thread_key_delete(gmx_thread_key_t *      key);
+gmx_thread_key_delete(gmx_thread_key_t       key);
 
 
 
@@ -289,7 +405,7 @@ gmx_thread_key_delete(gmx_thread_key_t *      key);
  *  \return Pointer-to-void, the value of the data in this thread.
 */
 void *
-gmx_thread_getspecific(gmx_thread_key_t *key);
+gmx_thread_getspecific(gmx_thread_key_t    key);
 
 
 
@@ -297,10 +413,11 @@ gmx_thread_getspecific(gmx_thread_key_t *key);
  *
  *  \param key     Thread-specific-storage handle.
  *  \param value   What to set the data to (pointer-to-void).
- *  \return GMX_SUCCESS or a non-zero error message.
+ *  \return 0 or a non-zero error message.
  */
 int
-gmx_thread_setspecific(gmx_thread_key_t *key, void *value);
+gmx_thread_setspecific(gmx_thread_key_t       key, 
+                       void *                 value);
 
 
 
@@ -314,11 +431,85 @@ gmx_thread_setspecific(gmx_thread_key_t *key, void *value);
  *
  *  \param once_data     Initialized one-time execution data
  *  \param init_routine  Function to call exactly once
- *  \return GMX_SUCCESS or a non-zero error message.
+ *  \return 0 or a non-zero error message.
  */
 int
-gmx_thread_once(gmx_thread_once_t *     once_data,
+gmx_thread_once(gmx_thread_once_t *      once_data,
                 void                    (*init_routine)(void));    
+
+
+
+/*! \brief Initialize condition variable
+ *
+ *  This routine must be called before using any condition variable
+ *  not initialized with static storage class and GMX_THREAD_COND_INITIALIZER.
+ *
+ *  \param cond  Pointer to previously allocated condition variable
+ *  \return      0 or a non-zero error message.
+ */
+int
+gmx_thread_cond_init(gmx_thread_cond_t *     cond);
+
+
+
+/*! \brief Destroy condition variable
+ *
+ *  This routine should be called when you are done with a condition variable.
+ *  Note that it only releases memory allocated internally, not the 
+ *  gmx_thread_cond_t structure you provide a pointer to.
+ *
+ *  \param cond Pointer to gromacs condition variable.
+ *  \return 0 or a non-zero error message.
+ */
+int
+gmx_thread_cond_destroy(gmx_thread_cond_t *    cond);
+
+
+
+/*! \brief Wait for a condition to be signaled
+ *
+ *  This routine releases the mutex, and waits for the
+ *  condition to be signaled by another thread before
+ *  it returns.
+ *
+ * \param cond  Gromacs condition variable
+ *  \param mtx  Mutex protecting the condition variable
+ *
+ *  \return 0 or a non-zero error message.
+ */
+int 
+gmx_thread_cond_wait(gmx_thread_cond_t *    cond,
+                     gmx_thread_mutex_t *   mtx);
+
+
+
+
+/*! \brief Unblock one waiting thread
+ *
+ *  This routine signals a condition variable to one
+ *  thread (if any) waiting for it after calling
+ *  gmx_thread_cond_wait().
+ * 
+ * \param cond  Gromacs condition variable
+ *
+ *  \return 0 or a non-zero error message.
+ */
+int
+gmx_thread_cond_signal(gmx_thread_cond_t *  cond);
+
+
+/*! \brief Unblock all waiting threads
+*
+*  This routine signals a condition variable to all
+*  (if any) threads that are waiting for it after calling
+*  gmx_thread_cond_wait().
+* 
+* \param cond  Gromacs condition variable
+*
+*  \return 0 or a non-zero error message.
+*/
+int
+gmx_thread_cond_broadcast(gmx_thread_cond_t *  cond);
 
 
 
@@ -329,8 +520,9 @@ gmx_thread_once(gmx_thread_once_t *     once_data,
  *
  *  \param value_ptr   Pointer to a return value. Threads waiting for us to
  *                     join them can read this value if they try.
+ *  \return 
  */
-int
+void
 gmx_thread_exit(void *      value_ptr);
 
 
@@ -341,10 +533,52 @@ gmx_thread_exit(void *      value_ptr);
  *  no guarantees it will succeed.
  *
  *  \param thread     Handle to thread we want to see dead.
-*  \return GMX_SUCCESS or a non-zero error message.
+ *  \return 0 or a non-zero error message.
  */
 int
-gmx_thread_cancel(gmx_thread_t *    thread);
+gmx_thread_cancel(gmx_thread_t      thread);
+
+
+/*! \brief Initialize a synchronization barrier type
+ *
+ *  You only need to initialize a barrier once. They cycle 
+ *  automatically, so after release it is immediately ready
+ *  to accept waiting threads again.
+ *
+ *  \param barrier  Pointer to previously allocated barrier type
+ *  \param count    Number of threads to synchronize. All threads
+ *                  will be released after \a count calls to 
+ *                  gmx_thread_barrier_wait(). 
+ */
+int
+gmx_thread_barrier_init(gmx_thread_barrier_t *      barrier,
+                        int                         count);
+
+
+
+/*! \brief Release data in a barrier datatype
+ *
+ *  \param barrier  Pointer to previously 
+ *                  initialized barrier.
+ */
+int
+gmx_thread_barrier_destroy(gmx_thread_barrier_t *   barrier);
+
+
+/*! \brief Perform barrier synchronization
+ *
+ *  This routine blocks until it has been called N times,
+ *  where N is the count value the barrier was initialized with.
+ *  After N total calls all threads return. The barrier automatically
+ *  cycles, and thus requires another N calls to unblock another time.
+ *
+ *  \param barrier  Pointer to previously create barrier.
+ *
+ *  \return The last thread returns -1, all the others 0.
+ */
+int
+gmx_thread_barrier_wait(gmx_thread_barrier_t *   barrier);
+
 
 
 /*! \brief Lock a file so only one thread can use it
@@ -352,8 +586,8 @@ gmx_thread_cancel(gmx_thread_t *    thread);
  *  Call this routine before writing to logfiles or standard out, in order
  *  to avoid mixing output from multiple threads.
  */
-int
-gmx_lockfile(FILE *stream);
+void
+gmx_lockfile(FILE *   stream);
 
 
 /*! \brief Unlock a file (allow other threads to use it)
@@ -361,9 +595,9 @@ gmx_lockfile(FILE *stream);
  *  Call this routine when you finish a write statement to a file, so other
  *  threads can use it again.
  */
-int
-gmx_unlockfile(FILE *stream);
+void
+gmx_unlockfile(FILE *   stream);
 
 
+#endif /* _GMX_THREAD_H_ */
 
-#endif

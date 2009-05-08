@@ -62,7 +62,9 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	libxdrf.c	gmx_arpack.c			\
 	dihres.c	gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
-	gmx_system_xdr.c
+	gmx_system_xdr.c  \
+	gmx_thread_pthreads.c   	gmx_thread_no.c
+
 
 
 # clean all libtool libraries, since the target names might have changed

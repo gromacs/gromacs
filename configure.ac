@@ -208,6 +208,13 @@ AC_ARG_ENABLE(fftw-measure,
 			     enable_fftw_measure=yes)
 
 
+AC_ARG_WITH(threads,
+              [AC_HELP_STRING([--with-threads=@<:@pthreads@:>@],
+                              [Use threads instead of MPI for decomposition])],,with_threads=no)
+if test "$with_threads" = "yes"; then
+   with_threads=pthreads;
+fi
+
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
 ###
@@ -343,11 +350,12 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
 # end of "$enable_mpi" = "yes"
 fi
 
-if test "$enable_threads" = "yes"; then
-   AC_MSG_CHECKING([for pthreads])
-   AC_MSG_RESULT([yes])
-   AC_DEFINE([GMX_THREAD_PTHREAD],,[Use pthreads for Gromacs multithreading])
-#  ACX_PTHREAD([],AC_MSG_ERROR([Cannot compile with pthreads; use --disable-threads])
+if test "$with_threads" = "pthreads"; then
+  AC_CHECK_HEADER([pthread.h],,[AC_MSG_ERROR([Cannot find pthread.h - required for pthread support!])])
+  if test "$enable_mpi" = "yes"; then
+    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
+  fi
+  AC_DEFINE([GMX_THREAD_PTHREADS],,[Use pthreads for Gromacs multithreading])
 fi
 
 
@@ -675,8 +683,11 @@ AC_CHECK_HEADERS(unistd.h)
 AC_C_CONST
 AC_TYPE_SIZE_T
 AC_STRUCT_TM
-AC_TYPE_UID_T
 AC_C_INLINE
+
+# AC_TYPE_UID_T is broken on Mac OS X, so use generic tests instead
+AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
+AC_CHECK_TYPES([gid_t],[],[AC_DEFINE(gid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
     
 
 # Test stuff for ia32 and x86_64 assembly, and add objects/libraries.

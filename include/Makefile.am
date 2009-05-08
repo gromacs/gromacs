@@ -6,6 +6,7 @@
 SUBDIRS = . types
 
 pkginclude_HEADERS = \
+gmx_thread.h \
 3dview.h \
 assert.h \
 atomprop.h \
