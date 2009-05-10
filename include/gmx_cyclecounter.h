@@ -408,7 +408,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 { 
     /* gcc inline assembly on sparc v9 */
-    ticks ret;
+    unsigned long ret;
     __asm__("rd %%tick, %0" : "=r" (ret));
     return ret;  
 }
