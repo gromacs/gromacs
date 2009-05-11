@@ -310,8 +310,6 @@ if test "$enable_fortran" = "yes"; then
 fi
 
 AM_PROG_AS( $CC )
-AM_PROG_LEX
-AC_PROG_YACC
 
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
 # above, since autoconf checks that the created file can be executed. This would
@@ -397,14 +395,6 @@ ACX_COMPILER_MAXOPT
 AC_C_BIGENDIAN([AC_DEFINE([GMX_INTEGER_BIG_ENDIAN],,[Integer byte order is big endian.])],[],[
 AC_MSG_ERROR([Cannot determine endian in compiled output])])
 # Little endian implied if GMX_INTEGER_BIG_ENDIAN not defined in source.
-
-#############
-# Check integer sizes, set to zero if e.g. long long is not supported.
-#############
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(long int)
-AC_CHECK_SIZEOF(long long int)
-AC_CHECK_SIZEOF(off_t)
 
 #############
 # Make sure size_t can hold pointers.
@@ -589,6 +579,15 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
   ;;
 esac
 
+
+########################################################################
+# Checks for header files and types
+########################################################################
+
+AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
+AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(sys/types.h)
+
 #####
 # Checks for additional and/or optional functions or libraries.
 #AC_FUNC_MALLOC
@@ -601,6 +600,19 @@ AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
+
+
+
+
+
+#############
+# Check integer sizes, set to zero if e.g. long long is not supported.
+# (Note: this must come *after* type checks for the corresponding types!)
+#############
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long int)
+AC_CHECK_SIZEOF(long long int)
+AC_CHECK_SIZEOF(off_t)
 
 
 
@@ -670,13 +682,6 @@ LDFLAGS="$LDFLAGS $extra_LDFLAGS"
 
 
 
-
-########################################################################
-# Checks for header files and types
-########################################################################
-
-AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
-AC_CHECK_HEADERS(unistd.h)
 
 #####
 # Checks for typedefs, structures, and compiler characteristics.
