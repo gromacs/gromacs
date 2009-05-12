@@ -1641,9 +1641,8 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 	int i,k,n,ai,aj,nj0,nj1;
 	real fgb,fij,rb2,rbi,fix1,fiy1,fiz1;
 	real ix1,iy1,iz1,jx1,jy1,jz1,dx11,dy11,dz11,rsq11;
-	real rinv11,tx,ty,tz,rbai,rbaj,fgb_aj;
+	real rinv11,tx,ty,tz,rbai,rbaj,fgb_ai;
 	real *rb;
-	rvec dx;
 	volatile int idx;
 	
 	n  = 0;	
