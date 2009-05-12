@@ -1,7 +1,10 @@
-;
-; Charmm27 implementation for Gromacs.
-; Written by Paer Bjelkmar, bjelkmar@cbr.su.se
-;
+****************************************************************
+*               Charmm to Gromacs port writted by              *
+*               Par Bjelkmar, bjelkmar@cbr.su.se               *
+*               Alternative correspondance:                    *
+*               Erik Lindahl, lindahl@cbr.su.se                *
+****************************************************************
+
 
 #define _FF_CHARMM
 

@@ -164,7 +164,7 @@
 	C	CA	+N	O
 	CG	CB	OD2	OD1
 
-[ CYSH ]
+[ CYS ]
  [ atoms ]
 	N	NH1	-0.47	0
 	HN	H	0.31	0
@@ -192,35 +192,6 @@
  [ impropers ]
 	N	-C	CA	HN
 	C	CA	+N	O
-
-[ CYS2 ] ; aka CYX
- [ atoms ]
-        N       NH1     -0.47   0
-        HN      H       0.31    0
-        CA      CT1     0.07    0
-        HA      HB      0.09    0
-        CB      CT2     -0.10   1
-        HB1     HA      0.09    1
-        HB2     HA      0.09    1
-        SG      SM      -0.08   1
-        C       C       0.51    2
-        O       O       -0.51   2
- [ bonds ]
-        CB      CA
-        SG      CB
-        N       HN
-        N       CA
-        C       CA
-        C       +N
-        CA      HA
-        CB      HB1
-        CB      HB2
-        O       C
- [ impropers ]
-        N       -C      CA      HN
-        C       CA      +N      O
-
-
 
 [ GLN ]
  [ atoms ]
@@ -328,54 +299,6 @@
 
 [ HSD ]
  [ atoms ]
-        N       NH1     -0.47   0
-        HN      H       0.31    0
-        CA      CT1     0.07    0
-        HA      HB      0.09    0
-        CB      CT2     -0.09   1
-        HB1     HA      0.09    1
-        HB2     HA      0.09    1
-        ND1     NR1     -0.36   1
-        HD1     H       0.32    1
-        CG      CPH1    -0.05   1
-        CE1     CPH2    0.25    2
-        HE1     HR1     0.13    2
-        NE2     NR2     -0.70   2
-        CD2     CPH1    0.22    2
-        HD2     HR3     0.10    2
-        C       C       0.51    3
-        O       O       -0.51   3
- [ bonds ]
-        CB      CA
-        CG      CB
-        ND1     CG
-        CE1     ND1
-        NE2     CD2
-        N       HN
-        N       CA
-        C       CA
-        C       +N
-        CA      HA
-        CB      HB1
-        CB      HB2
-        ND1     HD1
-        CD2     HD2
-        CE1     HE1
-        O       C
-        CG      CD2
-        CE1     NE2
- [ impropers ]
-        ND1     CG      CE1     HD1
-        CD2     CG      NE2     HD2
-        CE1     ND1     NE2     HE1
-        ND1     CE1     CG      HD1
-        CD2     NE2     CG      HD2
-        CE1     NE2     ND1     HE1
-        N       -C      CA      HN
-        C       CA      +N      O
-
-[ HISA ]
- [ atoms ]
 	N	NH1	-0.47	0
 	HN	H	0.31	0
 	CA	CT1	0.07	0
@@ -470,54 +393,6 @@
 	N	-C	CA	HN
 	C	CA	+N	O
 
-[ HISB ]
- [ atoms ]
-        N       NH1     -0.47   0
-        HN      H       0.31    0
-        CA      CT1     0.07    0
-        HA      HB      0.09    0
-        CB      CT2     -0.08   1
-        HB1     HA      0.09    1
-        HB2     HA      0.09    1
-        ND1     NR2     -0.70   1
-        CG      CPH1    0.22    1
-        CE1     CPH2    0.25    1
-        HE1     HR1     0.13    1
-        NE2     NR1     -0.36   2
-        HE2     H       0.32    2
-        CD2     CPH1    -0.05   2
-        HD2     HR3     0.09    2
-        C       C       0.51    3
-        O       O       -0.51   3
- [ bonds ]
-        CB      CA
-        CG      CB
-        ND1     CG
-        NE2     CD2
-        N       HN
-        N       CA
-        C       CA
-        C       +N
-        NE2     CE1
-        CA      HA
-        CB      HB1
-        CB      HB2
-        NE2     HE2
-        CD2     HD2
-        CE1     HE1
-        O       C
-        CD2     CG
-        CE1     ND1
- [ impropers ]
-        NE2     CD2     CE1     HE2
-        CD2     CG      NE2     HD2
-        CE1     ND1     NE2     HE1
-        NE2     CE1     CD2     HE2
-        CD2     NE2     CG      HD2
-        CE1     NE2     ND1     HE1
-        N       -C      CA      HN
-        C       CA      +N      O
-
 [ HSP ]
  [ atoms ]
 	N	NH1	-0.47	0
@@ -565,54 +440,6 @@
 	NE2	CE1	CD2	HE2
 	N	-C	CA	HN
 	C	CA	+N	O
-
-[ HISH ]
- [ atoms ]
-        N       NH1     -0.47   0
-        HN      H       0.31    0
-        CA      CT1     0.07    0
-        HA      HB      0.09    0
-        CB      CT2     -0.05   1
-        HB1     HA      0.09    1
-        HB2     HA      0.09    1
-        CD2     CPH1    0.19    1
-        HD2     HR1     0.13    1
-        CG      CPH1    0.19    1
-        NE2     NR3     -0.51   2
-        HE2     H       0.44    2
-        ND1     NR3     -0.51   2
-        HD1     H       0.44    2
-        CE1     CPH2    0.32    2
-        HE1     HR2     0.18    2
-        C       C       0.51    3
-        O       O       -0.51   3
- [ bonds ]
-        CB      CA
-        CG      CB
-        ND1     CG
-        CE1     ND1
-        NE2     CD2
-        N       HN
-        N       CA
-        C       CA
-        C       +N
-        CA      HA
-        CB      HB1
-        CB      HB2
-        ND1     HD1
-        NE2     HE2
-        CD2     HD2
-        CE1     HE1
-        O       C
-        CD2     CG
-        NE2     CE1
- [ impropers ]
-        ND1     CG      CE1     HD1
-        ND1     CE1     CG      HD1
-        NE2     CD2     CE1     HE2
-        NE2     CE1     CD2     HE2
-        N       -C      CA      HN
-        C       CA      +N      O
 
 [ ILE ]
  [ atoms ]
@@ -704,7 +531,7 @@
 	N	-C	CA	HN
 	C	CA	+N	O
 
-[ LYSH ]
+[ LYS ]
  [ atoms ]
 	N	NH1	-0.47	0
 	HN	H	0.31	0
@@ -1160,30 +987,6 @@
  [ bonds ]
 	OH2	H1
 	OH2	H2
-
-[ SOL ]
- [ atoms ]
-        OH2     OT      -0.834  0
-        H1      HT      0.417   0
-        H2      HT      0.417   0
- [ bonds ]
-        OH2     H1
-        OH2     H2
-        H1      H2
-
-; for now this water uses Gromacs names on atoms,
-; to work with the stupid automatic renaming in xlateall.dat
-[ HOH ]
- [ atoms ]
-        OW       OT      -0.834  0
-        HW1      HT      0.417   0
-        HW2      HT      0.417   0
- [ bonds ]
-        OW     HW1
-	OW     HW2
-	HW1    HW2
-
-
 
 [ SOD ]
  [ atoms ]

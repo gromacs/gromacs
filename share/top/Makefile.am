@@ -32,6 +32,9 @@ topol_DATA = \
 	ffencads-n.tdb  ffencads.rtp    ffencadv-n.tdb  ffencadv.rtp	\
 	ffencads.atp    ffencadsbon.itp ffencadv.atp    ffencadvbon.itp	\
 	ffencads.hdb    ffencadsnb.itp  ffencadv.hdb    ffencadvnb.itp	\
+	ffcharmm27.atp  ffcharmm27bon.itp  ffcharmm27-c.tdb             \
+	ffcharmm27.ddb  ffcharmm27.hdb  ffcharmm27.itp  ffcharmm27nb.itp\
+	ffcharmm27-n.tdb ffcharmm27.rtp					\
 	1mlg.itp	2mlg.itp	benzamide.itp	bondadd.itp	\
 	buck.itp	decane.itp	dlg.itp		dmso.itp	\
 	fa.itp		ff_dum.itp	flexspc.itp	flexspce.itp	\

@@ -117,15 +117,3 @@ CC1B	12.01100 ;	alkene conjugation
 CC2	12.01100 ;	alkene conjugation 
 NS1	14.00700 ;	N for deprotonated Schiff's base 
 NS2	14.00700 ;	N for protonated Schiff's base 
-; extra atomtypes not part of the CHARMM distribution
-OWT4    15.9994 ; TIP4P O
-HWT4     1.0080 ; TIP4P H
-MWT4     0.0000 ; TIP4P vsite
-OW      15.9994 ; SPC O
-HW       1.0080 ; SPC H
-MNH3     0.0000 ; vsite
-MNH2     0.0000 ; vsite
-MCH3     0.0000 ; vsite
-Cu2+    63.5460 ; Copper
-Ar      39.9480 ; Argon
-SI      28.0800 ; Silicon, copied from GROMACS
