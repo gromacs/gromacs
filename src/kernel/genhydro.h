@@ -44,7 +44,7 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
 		 int nah, t_hackblock ah[],
 		 int nterpairs,
 		 t_hackblock **ntdb, t_hackblock **ctdb, 
-		 int *rN, int *rC, 
+		 int *rN, int *rC, bool bMissing,
 		 int **nabptr, t_hack ***abptr,
 		 bool bUpdate_pdba, bool bKeep_old_pdba);
 /* Generate hydrogen atoms and N and C terminal patches.
@@ -52,6 +52,7 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.
  * rN[i] is the residue number of the N-terminus of chain i,
  * rC[i] is the residue number of the C-terminus of chain i
+ * if bMissing==TRUE, conitue when atoms are not found
  * if nabptr && abptrb, the hack array will be returned in them to be used
  * a second time
  * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged

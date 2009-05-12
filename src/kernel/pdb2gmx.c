@@ -1131,7 +1131,7 @@ int main(int argc, char *argv[])
 
     /* Generate Hydrogen atoms (and termini) in the sequence */
     natom=add_h(&pdba,&x,nah,ah,
-		cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,
+		cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
 		NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
