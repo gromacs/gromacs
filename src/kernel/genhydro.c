@@ -68,7 +68,7 @@ static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
 }
 
 static atom_id pdbasearch_atom(char *name,int resind,t_atoms *pdba,
-			       char *searchtype)
+			       char *searchtype,bool bMissing)
 {
   int  i;
   
@@ -76,7 +76,7 @@ static atom_id pdbasearch_atom(char *name,int resind,t_atoms *pdba,
     ;
     
   return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname,
-		     searchtype,TRUE);
+		     searchtype,bMissing);
 }
 
 static void hacksearch_atom(int *ii, int *jj, char *name,
@@ -241,7 +241,8 @@ static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[],
   if (debug) fprintf(debug,"\n");
 }
 
-static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
+static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[],
+			       bool bMissing)
 {
   int i, j, k, d, rnr, nadd;
   
@@ -254,7 +255,7 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 	if (ab[i][j].nname == NULL)
 	  gmx_incons("ab[i][j].name not allocated");
 	/* check if the atom is already present */
-	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check");
+	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check", bMissing);
 	if ( k != -1 ) {
 	  /* we found the added atom, so move the hack there: */
 	  srenew(ab[k], nab[k]+1);
@@ -283,7 +284,8 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
   return nadd;
 }
 
-static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
+static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
+			 bool bMissing)
 {
   int i, j, ii, jj, m, ia, d, rnr;
 #define MAXH 4
@@ -298,7 +300,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
       /* check if we're adding: */
       if (ab[i][j].oname==NULL && ab[i][j].tp > 0) {
 	for(m=0; (m<ab[i][j].nctl); m++) {
-	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba, "atom");
+	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba, "atom", bMissing);
 	  if (ia < 0) {
 	    /* not found in original atoms, might still be in t_hack (ab) */
 	    hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);
@@ -330,7 +332,8 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 int add_h(t_atoms **pdbaptr, rvec *xptr[], 
 	  int nah, t_hackblock ah[],
 	  int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb, 
-	  int *rN, int *rC, int **nabptr, t_hack ***abptr,
+	  int *rN, int *rC, bool bMissing,
+	  int **nabptr, t_hack ***abptr,
 	  bool bUpdate_pdba, bool bKeep_old_pdba)
 {
   t_atoms     *newpdba=NULL,*pdba=NULL;
@@ -382,7 +385,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
   }
   
   /* Now calc the positions */
-  calc_all_pos(pdba, *xptr, nab, ab);
+  calc_all_pos(pdba, *xptr, nab, ab, bMissing);
 
   if (debug) { 
     fprintf(debug,"after calc_all_pos\n");
@@ -392,7 +395,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
   if (bUpdate_pdba) {
     /* we don't have to add atoms that are already present in pdba,
        so we will remove them from the ab (t_hack) */
-    nadd = check_atoms_present(pdba, nab, ab);
+    nadd = check_atoms_present(pdba, nab, ab, bMissing);
     if (debug) {
       fprintf(debug, "removed add hacks that were already in pdba:\n");
       dump_ab(debug, natoms, nab, ab, TRUE);
@@ -599,7 +602,7 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
   /* now protonate */
   nadd = add_h(&atoms, xptr, protdata->nah, protdata->ah,
 	       NTERPAIRS, protdata->sel_ntdb, protdata->sel_ctdb,
-	       protdata->rN, protdata->rC,
+	       protdata->rN, protdata->rC, TRUE,
 	       &protdata->nab, &protdata->ab, bUpdate_pdba, bKeep_old_pdba);
   if ( ! protdata->patoms )
     /* store protonated topology */
