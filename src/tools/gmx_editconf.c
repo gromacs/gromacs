@@ -507,7 +507,7 @@ int gmx_editconf(int argc, char *argv[])
   int        outftp,inftp,natom,i,j,n_bfac,itype,ntype;
   double     *bfac=NULL,c6,c12;
   int        *bfac_nr=NULL;
-  t_topology *top;
+  t_topology *top=NULL;
   t_atoms    atoms;
   char       *grpname,*sgrpname;
   int        isize,ssize,tsize;
