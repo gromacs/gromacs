@@ -526,11 +526,11 @@ int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir
 	/* If HCT/OBC,  precalculate the sk*atype->S_hct factors */
 	else if(gb_algorithm==egbHCT || gb_algorithm==egbOBC)
 	{
+		
+		snew(born->gpol_hct_work, natoms+3);
+		
 		for(i=0;i<natoms;i++)
 		{	
-			
-			snew(born->gpol_hct_work, natoms+3);
-			
 			if(born->vs_globalindex[i]==1)
 			{
 				rai            = mtop->atomtypes.gb_radius[atoms.atom[i].type]-doffset; 
