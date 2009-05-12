@@ -75,6 +75,8 @@ typedef struct
 
 	real  *gpol;              /* Atomic polarisation energies */
 	real  *gpol_globalindex;  /*  */
+	real  *gpol_still_work;   /* Work array for Still model */
+	real  *gpol_hct_work;     /* Work array for HCT/OBC models */
 	real  *bRad;              /* Atomic Born radii */
 	real  *vsolv;             /* Atomic solvation volumes */
 	real  *vsolv_globalindex; /*  */
