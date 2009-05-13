@@ -2357,9 +2357,6 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	fr->gblist.nri=0;
 	fr->gblist.nrj=0;
 	
-	printf("natoms=%d\n",natoms);
-	printf("cr->dd->nat_tot=%d, nat_home=%d\n",cr->dd->nat_tot, cr->dd->nat_home);
-	exit(1);
 	for(i=0;i<natoms;i++)
 	{
 		/* Only add those atoms that actually have neighbours (ie. all except vsites) */
