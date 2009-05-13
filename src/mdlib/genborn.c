@@ -1342,12 +1342,9 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *top,
 				const t_atomtypes *atype, rvec x[], rvec f[],t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {	
-	/* First check that the allocated size of the dadx array is sufficient */
-	if(nl->nrj > fr->nalloc_dadx)
-	{
-		fr->nalloc_dadx = 2.1*nl->nrj;
-		srenew(fr->dadx,fr->nalloc_dadx);
-	}
+	/* First, reallocate the dadx array */
+	fr->nalloc_dadx = 2.1*nl->nrj;
+	srenew(fr->dadx,fr->nalloc_dadx);
 		
 #ifdef GMX_DOUBLE
 	
@@ -1775,7 +1772,6 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
 	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	calc_gb_chainrule_sse(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x[0], f[0], gb_algorithm, born);	
-	//calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x, f, gb_algorithm, born);
 #else
 	/* Calculate the forces due to chain rule terms with non sse code */
 	calc_gb_chainrule(born->nr, &(fr->gblist), fr->dadx, fr->dvda, x, f, gb_algorithm, born);	
@@ -2361,6 +2357,9 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	fr->gblist.nri=0;
 	fr->gblist.nrj=0;
 	
+	printf("natoms=%d\n",natoms);
+	printf("cr->dd->nat_tot=%d, nat_home=%d\n",cr->dd->nat_tot, cr->dd->nat_home);
+	exit(1);
 	for(i=0;i<natoms;i++)
 	{
 		/* Only add those atoms that actually have neighbours (ie. all except vsites) */
