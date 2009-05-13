@@ -109,16 +109,17 @@ static void do_update_md(int start,int homenr,double dt,
                          unsigned short ptype[],unsigned short cFREEZE[],
                          unsigned short cACC[],unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],
-                         rvec f[],matrix M,bool bExtended)
+                         rvec f[],matrix M,
+                         bool bNH,bool bPR)
 {
   double imass,w_dt;
   int    gf=0,ga=0,gt=0;
   rvec   vrel;
   real   vn,vv,va,vb,vnrel;
-  real   lg,xi,u;
+  real   lg,xi=0,u;
   int    n,d;
 
-  if(bExtended) {
+  if (bNH || bPR) {
     /* Update with coupling to extended ensembles, used for
      * Nose-Hoover and Parrinello-Rahman coupling
      * Nose-Hoover uses the reversible leap-frog integrator from
@@ -133,7 +134,8 @@ static void do_update_md(int start,int homenr,double dt,
       if (cTC)
 	gt   = cTC[n];
       lg   = tcstat[gt].lambda;
-      xi   = nh_xi[gt];
+      if (bNH)
+          xi = nh_xi[gt];
 
       rvec_sub(v[n],gstat[ga].u,vrel);
 
@@ -186,23 +188,24 @@ static void do_update_md(int start,int homenr,double dt,
 }
 
 static void do_update_visc(int start,int homenr,double dt,
-			   t_grp_tcstat *tcstat,real invmass[],real nh_xi[],
+                           t_grp_tcstat *tcstat,real invmass[],real nh_xi[],
                            unsigned short ptype[],unsigned short cTC[],
                            rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
-                           cos_accel,real vcos,bool bExtended)
+                           cos_accel,real vcos,
+                           bool bNH,bool bPR)
 {
   double imass,w_dt;
   int    gt=0;
   real   vn,vc;
-  real   lg,xi,vv;
+  real   lg,xi=0,vv;
   real   fac,cosz;
   rvec   vrel;
   int    n,d;
 
   fac = 2*M_PI/(box[ZZ][ZZ]);
 
-  if(bExtended) {
+  if (bNH || bPR) {
     /* Update with coupling to extended ensembles, used for
      * Nose-Hoover and Parrinello-Rahman coupling
      */
@@ -217,7 +220,8 @@ static void do_update_visc(int start,int homenr,double dt,
 
       vc            = cosz*vcos;
       vrel[XX]     -= vc;
-      xi           = nh_xi[gt];
+      if (bNH)
+          xi        = nh_xi[gt];
 
       for(d=0; d<DIM; d++) {
         vn             = v[n][d];
@@ -784,7 +788,7 @@ void update(FILE         *fplog,
             bool         bNEMD,
             bool         bInitStep)
 {
-  bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
+  bool             bNH,bPR,bLastStep,bLog=FALSE,bEner=FALSE;
   double           dt,eph;
   real             dt_1;
   int              start,homenr,i,n,m,g;
@@ -810,9 +814,8 @@ void update(FILE         *fplog,
     update_orires_history(fcd,&state->hist);
   }
 
-  bExtended =
-    (inputrec->etc == etcNOSEHOOVER) ||
-    (inputrec->epc == epcPARRINELLORAHMAN);
+  bNH = (inputrec->etc == etcNOSEHOOVER);
+  bPR = (inputrec->epc == epcPARRINELLORAHMAN);
 
   dt   = inputrec->delta_t;
   dt_1 = 1.0/dt;
@@ -868,12 +871,13 @@ void update(FILE         *fplog,
 		   inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,
 		   state->x,xprime,state->v,force,M,
-		   bExtended);
+		   bNH,bPR);
     } else {
       do_update_visc(start,homenr,dt,
 		     ekind->tcstat,md->invmass,state->nosehoover_xi,
 		     md->ptype,md->cTC,state->x,xprime,state->v,force,M,
-		     state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,bExtended);
+		     state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,
+		     bNH,bPR);
     }
   } else if (inputrec->eI == eiSD1) {
     do_update_sd1(upd->sd,start,homenr,dt,
@@ -905,7 +909,7 @@ void update(FILE         *fplog,
     gmx_fatal(FARGS,"Don't know how to update coordinates");
   }
   where();
-  inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
+  inc_nrnb(nrnb, (bNH || bPR) ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
   dump_it_all(fplog,"After update",
 	      state->natoms,state->x,xprime,state->v,force);
 
