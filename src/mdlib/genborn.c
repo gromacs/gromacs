@@ -2357,6 +2357,11 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	fr->gblist.nri=0;
 	fr->gblist.nrj=0;
 	
+	if(DOMAINDECOMP(cr))
+	{
+		natoms = cr->dd->nat_home;
+	}
+	
 	for(i=0;i<natoms;i++)
 	{
 		/* Only add those atoms that actually have neighbours (ie. all except vsites) */
