@@ -191,8 +191,8 @@ typedef struct {
   real gb_obc_beta;     /* 2nd scaling factor for Bashford-Case GB      */
   real gb_obc_gamma;    /* 3rd scaling factor for Bashford-Case GB      */
   real gb_dielectric_offset; /* Dielectric offset for Still/HCT/OBC     */
-  real sa_algorithm;    /* Algorithm for SA part of GBSA                */
-  int  sa_surface_tension; /* Energy factor for SA part of GBSA */
+  int  sa_algorithm;    /* Algorithm for SA part of GBSA                */
+  real sa_surface_tension; /* Energy factor for SA part of GBSA */
   int  vdwtype;         /* Type of Van der Waals treatment              */
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
   real rvdw;		    /* Van der Waals cutoff (nm)	        */
