@@ -766,13 +766,16 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				aj13 = aj1 * 3; 
 				aj23 = aj2 * 3;
 				
-				xmm1 = _mm_loadu_ps(x+aj13);
-				xmm2 = _mm_loadu_ps(x+aj23);
+				xmm5  = _mm_load1_ps(x+aj13+2);
+				xmm6  = _mm_load1_ps(x+aj23+2);
 				
-				xmm6 = _mm_unpacklo_ps(xmm1, xmm2); /*x1,x2,y1,y2 , done x */
-				xmm4 = _mm_shuffle_ps( xmm6, xmm6, _MM_SHUFFLE(3,2,3,2)); /* y1, y2, y1, y2, done y */
-				xmm5 = _mm_unpackhi_ps(xmm1, xmm2); /* z1, z2, z1, z2 , done z */
+				xmm5  = _mm_shuffle_ps(xmm5,xmm6,_MM_SHUFFLE(0,0,0,0));
+				xmm5  = _mm_shuffle_ps(xmm5,xmm5,_MM_SHUFFLE(2,0,2,0));
 				
+				xmm1  = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(3,2,3,2));
+				xmm6  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(2,0,2,0));
+				xmm4  = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(3,1,3,1));
+								
 				raj  = _mm_set_ps(0.0f, 0.0f, top->atomtypes.gb_radius[md->typeA[aj2]],top->atomtypes.gb_radius[md->typeA[aj1]]); 
 				vaj  = _mm_set_ps(0.0f, 0.0f, born->vsolv[aj2], born->vsolv[aj1]);		
 				
@@ -789,18 +792,23 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				aj23 = aj2 * 3;
 				aj33 = aj3 * 3;
 				
-				xmm1 = _mm_loadu_ps(x+aj13);
-				xmm2 = _mm_loadu_ps(x+aj23);
-				xmm3 = _mm_loadu_ps(x+aj33);
+				xmm1 = _mm_loadh_pi(xmm1,(__m64 *) (x+aj13)); 
+				xmm2 = _mm_loadh_pi(xmm2,(__m64 *) (x+aj23)); 
+				xmm3 = _mm_loadh_pi(xmm3,(__m64 *) (x+aj33)); 
 				
-				xmm5 = _mm_unpacklo_ps(xmm1, xmm2); /* x1, x2, y1, y2 */
-				xmm6 = _mm_movelh_ps(xmm5, xmm3); /* x1, x2, x3, y3, done x */
+				xmm5 = _mm_load1_ps(x+aj13+2); 
+				xmm6 = _mm_load1_ps(x+aj23+2); 
+				xmm7 = _mm_load1_ps(x+aj33+2); 
 				
-				xmm4 = _mm_shuffle_ps(xmm5, xmm5, _MM_SHUFFLE(3,2,3,2)); /*y1, y2, x2, x1 */
-				xmm4 = _mm_shuffle_ps(xmm4, xmm3, _MM_SHUFFLE(0,1,1,0)); /*y1, y2, y3, x3, done y*/
+				xmm5 = _mm_shuffle_ps(xmm5,xmm6, _MM_SHUFFLE(0,0,0,0));
+				xmm5 = _mm_shuffle_ps(xmm5,xmm7, _MM_SHUFFLE(3,1,3,1));						
 				
-				xmm5 = _mm_unpackhi_ps(xmm1, xmm2); /* z1, z2, -, - */
-				xmm5 = _mm_shuffle_ps(xmm5, xmm3, _MM_SHUFFLE(3,2,1,0)); /*z1, z2, z3, x4, done z */
+				xmm1 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,2,3,2));
+				xmm2 = _mm_shuffle_ps(xmm3,xmm3, _MM_SHUFFLE(3,2,3,2));
+				
+				xmm6 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(2,0,2,0)); 
+				xmm4 = _mm_shuffle_ps(xmm1,xmm2, _MM_SHUFFLE(3,1,3,1));
+				
 				
 				raj  = _mm_set_ps(0.0f, 
 								  top->atomtypes.gb_radius[md->typeA[aj3]],
@@ -1009,7 +1017,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 		dd_atom_spread_real(cr->dd, born->bRad);
 		dd_atom_spread_real(cr->dd, fr->invsqrta);
 	}
-	
+
 	return 0;
 	
 }
