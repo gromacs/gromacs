@@ -269,9 +269,6 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
 	  g > 0 && norm2(pgrp->vec) == 0)
 	gmx_fatal(FARGS,"pull_vec%d can not be zero with geometry %s and non-zero rate",
 		  g,EPULLGEOM(pull->eGeom));
-      if (pull->eGeom == epullgCYL &&
-	  (pgrp->vec[XX] != 0 || pgrp->vec[YY] != 0))
-	gmx_fatal(FARGS,"With geometry %s pull_vec%d should have x and y components set to zero",EPULLGEOM(pull->eGeom),g);
     } else {
       if (g == 0) {
 	if (pull->eGeom == epullgCYL)

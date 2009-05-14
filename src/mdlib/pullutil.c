@@ -151,8 +151,8 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 {
   static double *dbuf=NULL;
   int g,i,ii,m,start,end;
-  rvec g_x,dx;
-  double r0_2,sum_z,sum_zp,dr2,mass,weight,wmass,wwmass;
+  rvec g_x,dx,dir;
+  double r0_2,sum_a,sum_ap,dr2,mass,weight,wmass,wwmass,inp;
   t_pullgrp *pref,*pdyna;
   gmx_ga2la_t *ga2la=NULL;
 
@@ -172,8 +172,9 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   pref = &pull->grp[0];
   for(g=1; g<1+pull->ngrp; g++) {
     pdyna = &pull->dyna[g];
-    sum_z = 0;
-    sum_zp = 0;
+    copy_rvec(pull->grp[g].vec,dir);
+    sum_a = 0;
+    sum_ap = 0;
     wmass = 0;
     wwmass = 0;
     pdyna->nat_loc = 0;
@@ -191,9 +192,12 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 	  ii = -1;
       }
       if (ii >= start && ii < end) {
-	/* get_distance takes pbc into account */
 	pbc_dx_aiuc(pbc,x[ii],g_x,dx);
-	dr2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	inp = iprod(dir,dx);
+	dr2 = 0;
+	for(m=0; m<DIM; m++) {
+	  dr2 += dsqr(dx[m] - inp*dir[m]);
+	}
 
 	if (dr2 < r0_2) {
 	  /* add to index, to sum of COM, to weight array */
@@ -206,9 +210,11 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 	  mass = md->massT[ii];
 	  weight = get_weight(sqrt(dr2),pull->cyl_r1,pull->cyl_r0);
 	  pdyna->weight_loc[pdyna->nat_loc] = weight;
-	  sum_z += mass*weight*x[ii][ZZ];
+	  sum_a += mass*weight*inp;
 	  if (xp) {
-	    sum_zp += mass*weight*xp[ii][ZZ];
+	    pbc_dx_aiuc(pbc,xp[ii],g_x,dx);
+	    inp = iprod(dir,dx);
+	    sum_ap += mass*weight*inp;
 	  }
 	  wmass += mass*weight;
 	  wwmass += mass*sqr(weight);
@@ -218,8 +224,8 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
     }
     dbuf[(g-1)*4+0] = wmass;
     dbuf[(g-1)*4+1] = wwmass;
-    dbuf[(g-1)*4+2] = sum_z;
-    dbuf[(g-1)*4+3] = sum_zp;
+    dbuf[(g-1)*4+2] = sum_a;
+    dbuf[(g-1)*4+3] = sum_ap;
   }
 
   if (cr && PAR(cr)) {
@@ -235,13 +241,13 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
     pdyna->wscale = wmass/wwmass;
     pdyna->invtm = 1.0/(pdyna->wscale*wmass);
 
-    pdyna->x[XX] = 0;
-    pdyna->x[YY] = 0;
-    pdyna->x[ZZ] = dbuf[(g-1)*4+2]/wmass;
-    if (xp) {
-      pdyna->xp[XX] = 0;
-      pdyna->xp[YY] = 0;
-      pdyna->xp[ZZ] = dbuf[(g-1)*4+3]/wmass;
+    for(m=0; m<DIM; m++) {
+      pdyna->x[m] =
+	pull->grp[g].x[m] + pull->grp[g].vec[m]*dbuf[(g-1)*4+2]/wmass;
+      if (xp) {
+	pdyna->xp[m] = 
+	  pull->grp[g].x[m] + pull->grp[g].vec[m]*dbuf[(g-1)*4+3]/wmass;
+      }
     }
 
     if (debug) {

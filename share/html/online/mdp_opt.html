@@ -1123,13 +1123,15 @@ Components can be selected with <b>pull_dim</b>.</dd>
 <dt><b>cylinder</b></dt>
 <dd>Designed for pulling with respect to a layer where the reference COM
 is given by a local cylindrical part of the reference group.
-The pulling is in the direction of <b>pull_vec</b>,
-which should have only a z-component.
-From the reference group a cylinder is selected for determining the COM,
-with the axis given by the x/y location
-of the group to be pulled and two radii. The radius <b>pull_r1</b> gives the
-radius within which all the relative weights are one, between <b>pull_r1</b> and
+The pulling is in the direction of <b>pull_vec</b>.
+From the reference group a cylinder is selected around the axis going
+through the pull group with direction <b>pull_vec</b> using two radii.
+The radius <b>pull_r1</b> gives the radius within which all
+the relative weights are one, between <b>pull_r1</b> and
 <b>pull_r0</b> the weights are switched to zero. Mass weighting is also used.
+Note that for tilted cylinders the radii should be smaller
+than half the box size, since the distance of an atom in the reference
+group from the COM of the pull group has both a radial and an axial component.
 <dt><b>position</b></dt>
 <dd>Pull to the position of the reference group plus
 <b>pull_init</b> + time*<b>pull_rate</b>*<b>pull_vec</b>.</dd>
