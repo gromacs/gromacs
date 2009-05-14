@@ -246,6 +246,10 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
              * that are within cut-off distance of the i-particle.
              */
             grid->n[i] = (int)(size*inv_r_ideal + 0.5);
+            if (grid->n[i] < 2)
+            {
+                grid->n[i] = 2;
+            }
             grid->cell_size[i] = size/grid->n[i];
             grid->ncpddc[i] = 0;
         }
