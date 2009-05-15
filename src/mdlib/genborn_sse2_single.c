@@ -766,6 +766,9 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				aj13 = aj1 * 3; 
 				aj23 = aj2 * 3;
 				
+				xmm1  = _mm_loadh_pi(xmm1, (__m64 *) (x+aj13));
+				xmm2  = _mm_loadh_pi(xmm2, (__m64 *) (x+aj23));
+				
 				xmm5  = _mm_load1_ps(x+aj13+2);
 				xmm6  = _mm_load1_ps(x+aj23+2);
 				
