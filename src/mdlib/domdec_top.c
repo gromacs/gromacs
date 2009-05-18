@@ -1856,15 +1856,32 @@ static void get_cgcm_mol(gmx_moltype_t *molt,gmx_ffparams_t *ffparams,
                          gmx_vsite_t *vsite,
                          rvec *x,rvec *xs,rvec *cg_cm)
 {
-    mk_mshift(NULL,graph,ePBC,box,x);
-    
-    shift_x(graph,box,x,xs);
-    /* By doing an extra mk_mshift the molecules that are broken
-     * because they were e.g. imported from another software
-     * will be made whole again. Such are the healing powers
-     * of GROMACS.
-     */  
-    mk_mshift(NULL,graph,ePBC,box,xs);
+    int n,i;
+
+    if (ePBC != epbcNONE)
+    {
+        mk_mshift(NULL,graph,ePBC,box,x);
+        
+        shift_x(graph,box,x,xs);
+        /* By doing an extra mk_mshift the molecules that are broken
+         * because they were e.g. imported from another software
+         * will be made whole again. Such are the healing powers
+         * of GROMACS.
+         */  
+        mk_mshift(NULL,graph,ePBC,box,xs);
+    }
+    else
+    {
+        /* We copy the coordinates so the original coordinates remain
+         * unchanged, just to be 100% sure that we do not affect
+         * binary reproducability of simulations.
+         */
+        n = molt->cgs.index[molt->cgs.nr];
+        for(i=0; i<n; i++)
+        {
+            copy_rvec(x[i],xs[i]);
+        }
+    }
     
     if (vsite)
     {
@@ -1930,8 +1947,11 @@ void dd_bonded_cg_distance(FILE *fplog,
         }
         else
         {
-            mk_graph_ilist(NULL,molt->ilist,0,molt->atoms.nr,FALSE,FALSE,
-                           &graph);
+            if (ir->ePBC != epbcNONE)
+            {
+                mk_graph_ilist(NULL,molt->ilist,0,molt->atoms.nr,FALSE,FALSE,
+                               &graph);
+            }
             
             at2cg = make_at2cg(&molt->cgs);
             snew(xs,molt->atoms.nr);
@@ -1966,7 +1986,10 @@ void dd_bonded_cg_distance(FILE *fplog,
             sfree(cg_cm);
             sfree(xs);
             sfree(at2cg);
-            done_graph(&graph);
+            if (ir->ePBC != epbcNONE)
+            {
+                done_graph(&graph);
+            }
         }
     }
     
