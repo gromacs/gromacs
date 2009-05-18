@@ -43,6 +43,7 @@
 typedef struct {
   int	 nr;		/* Total number of charge groups	*/
   int    nboundeddim;   /* The number of bounded dimensions     */
+  int    npbcdim;       /* The number of dimensions with pbc    */
   int    ncg_ideal;     /* The ideal number of cg's per cell    */
   ivec	 n;	        /* The dimension of the grid		*/
   int    ncells;	/* Total number of cells		*/
