@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -73,6 +74,18 @@ int ePBC2npbcdim(int ePBC)
   }
 
   return npbcdim;
+}
+
+int inputrec2nboundeddim(t_inputrec *ir)
+{
+    if (ir->nwall == 2 && ir->ePBC == epbcXY)
+    {
+        return 3;
+    }
+    else
+    {
+        return ePBC2npbcdim(ir->ePBC);
+    }
 }
 
 void dump_pbc(FILE *fp,t_pbc *pbc) 

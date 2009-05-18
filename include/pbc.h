@@ -64,6 +64,11 @@ extern "C" {
   extern int ePBC2npbcdim(int ePBC);
   /* Returns the number of dimensions that use pbc, starting at X */
 
+  extern int inputrec2nboundeddim(t_inputrec *ir);
+  /* Returns the number of dimensions in which
+   * the coordinates of the particles are bounded, starting at X.
+   */
+
   extern void dump_pbc(FILE *fp,t_pbc *pbc);
   /* Dump the contents of the pbc structure to the file */
   
