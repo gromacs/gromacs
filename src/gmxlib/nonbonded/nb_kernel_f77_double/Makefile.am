@@ -4,41 +4,41 @@ AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 noinst_LTLIBRARIES = libnb_kernel_f77_double.la
 
 libnb_kernel_f77_double_la_SOURCES = \
-	nb_kernel010_f77d.c nb_kernel020_f77d.c nb_kernel030_f77d.c nb_kernel100_f77d.c \
-	nb_kernel101_f77d.c nb_kernel102_f77d.c nb_kernel103_f77d.c nb_kernel104_f77d.c \
-	nb_kernel110_f77d.c nb_kernel111_f77d.c nb_kernel112_f77d.c nb_kernel113_f77d.c \
-	nb_kernel114_f77d.c nb_kernel120_f77d.c nb_kernel121_f77d.c nb_kernel122_f77d.c \
-	nb_kernel123_f77d.c nb_kernel124_f77d.c nb_kernel130_f77d.c nb_kernel131_f77d.c \
-	nb_kernel132_f77d.c nb_kernel133_f77d.c nb_kernel134_f77d.c nb_kernel200_f77d.c \
-	nb_kernel201_f77d.c nb_kernel202_f77d.c nb_kernel203_f77d.c nb_kernel204_f77d.c \
-	nb_kernel210_f77d.c nb_kernel211_f77d.c nb_kernel212_f77d.c nb_kernel213_f77d.c \
-	nb_kernel214_f77d.c nb_kernel220_f77d.c nb_kernel221_f77d.c nb_kernel222_f77d.c \
-	nb_kernel223_f77d.c nb_kernel224_f77d.c nb_kernel230_f77d.c nb_kernel231_f77d.c \
-	nb_kernel232_f77d.c nb_kernel233_f77d.c nb_kernel234_f77d.c nb_kernel300_f77d.c \
-	nb_kernel301_f77d.c nb_kernel302_f77d.c nb_kernel303_f77d.c nb_kernel304_f77d.c \
-	nb_kernel310_f77d.c nb_kernel311_f77d.c nb_kernel312_f77d.c nb_kernel313_f77d.c \
-	nb_kernel314_f77d.c nb_kernel320_f77d.c nb_kernel321_f77d.c nb_kernel322_f77d.c \
-	nb_kernel323_f77d.c nb_kernel324_f77d.c nb_kernel330_f77d.c nb_kernel331_f77d.c \
-	nb_kernel332_f77d.c nb_kernel333_f77d.c nb_kernel334_f77d.c nb_kernel400_f77d.c \
-	nb_kernel410_f77d.c nb_kernel420_f77d.c nb_kernel430_f77d.c                     \
-	nb_kernel010_f77d.h nb_kernel020_f77d.h nb_kernel030_f77d.h nb_kernel100_f77d.h \
-	nb_kernel101_f77d.h nb_kernel102_f77d.h nb_kernel103_f77d.h nb_kernel104_f77d.h \
-	nb_kernel110_f77d.h nb_kernel111_f77d.h nb_kernel112_f77d.h nb_kernel113_f77d.h \
-	nb_kernel114_f77d.h nb_kernel120_f77d.h nb_kernel121_f77d.h nb_kernel122_f77d.h \
-	nb_kernel123_f77d.h nb_kernel124_f77d.h nb_kernel130_f77d.h nb_kernel131_f77d.h \
-	nb_kernel132_f77d.h nb_kernel133_f77d.h nb_kernel134_f77d.h nb_kernel200_f77d.h \
-	nb_kernel201_f77d.h nb_kernel202_f77d.h nb_kernel203_f77d.h nb_kernel204_f77d.h \
-	nb_kernel210_f77d.h nb_kernel211_f77d.h nb_kernel212_f77d.h nb_kernel213_f77d.h \
-	nb_kernel214_f77d.h nb_kernel220_f77d.h nb_kernel221_f77d.h nb_kernel222_f77d.h \
-	nb_kernel223_f77d.h nb_kernel224_f77d.h nb_kernel230_f77d.h nb_kernel231_f77d.h \
-	nb_kernel232_f77d.h nb_kernel233_f77d.h nb_kernel234_f77d.h nb_kernel300_f77d.h \
-	nb_kernel301_f77d.h nb_kernel302_f77d.h nb_kernel303_f77d.h nb_kernel304_f77d.h \
-	nb_kernel310_f77d.h nb_kernel311_f77d.h nb_kernel312_f77d.h nb_kernel313_f77d.h \
-	nb_kernel314_f77d.h nb_kernel320_f77d.h nb_kernel321_f77d.h nb_kernel322_f77d.h \
-	nb_kernel323_f77d.h nb_kernel324_f77d.h nb_kernel330_f77d.h nb_kernel331_f77d.h \
-	nb_kernel332_f77d.h nb_kernel333_f77d.h nb_kernel334_f77d.h nb_kernel400_f77d.h \
-	nb_kernel410_f77d.h nb_kernel420_f77d.h nb_kernel430_f77d.h                     \
-	nb_kernel_f77d.c    nb_kernel_f77d.h	                                        \
+	nb_kernel010_f77_double.c nb_kernel020_f77_double.c nb_kernel030_f77_double.c nb_kernel100_f77_double.c \
+	nb_kernel101_f77_double.c nb_kernel102_f77_double.c nb_kernel103_f77_double.c nb_kernel104_f77_double.c \
+	nb_kernel110_f77_double.c nb_kernel111_f77_double.c nb_kernel112_f77_double.c nb_kernel113_f77_double.c \
+	nb_kernel114_f77_double.c nb_kernel120_f77_double.c nb_kernel121_f77_double.c nb_kernel122_f77_double.c \
+	nb_kernel123_f77_double.c nb_kernel124_f77_double.c nb_kernel130_f77_double.c nb_kernel131_f77_double.c \
+	nb_kernel132_f77_double.c nb_kernel133_f77_double.c nb_kernel134_f77_double.c nb_kernel200_f77_double.c \
+	nb_kernel201_f77_double.c nb_kernel202_f77_double.c nb_kernel203_f77_double.c nb_kernel204_f77_double.c \
+	nb_kernel210_f77_double.c nb_kernel211_f77_double.c nb_kernel212_f77_double.c nb_kernel213_f77_double.c \
+	nb_kernel214_f77_double.c nb_kernel220_f77_double.c nb_kernel221_f77_double.c nb_kernel222_f77_double.c \
+	nb_kernel223_f77_double.c nb_kernel224_f77_double.c nb_kernel230_f77_double.c nb_kernel231_f77_double.c \
+	nb_kernel232_f77_double.c nb_kernel233_f77_double.c nb_kernel234_f77_double.c nb_kernel300_f77_double.c \
+	nb_kernel301_f77_double.c nb_kernel302_f77_double.c nb_kernel303_f77_double.c nb_kernel304_f77_double.c \
+	nb_kernel310_f77_double.c nb_kernel311_f77_double.c nb_kernel312_f77_double.c nb_kernel313_f77_double.c \
+	nb_kernel314_f77_double.c nb_kernel320_f77_double.c nb_kernel321_f77_double.c nb_kernel322_f77_double.c \
+	nb_kernel323_f77_double.c nb_kernel324_f77_double.c nb_kernel330_f77_double.c nb_kernel331_f77_double.c \
+	nb_kernel332_f77_double.c nb_kernel333_f77_double.c nb_kernel334_f77_double.c nb_kernel400_f77_double.c \
+	nb_kernel410_f77_double.c nb_kernel420_f77_double.c nb_kernel430_f77_double.c                     \
+	nb_kernel010_f77_double.h nb_kernel020_f77_double.h nb_kernel030_f77_double.h nb_kernel100_f77_double.h \
+	nb_kernel101_f77_double.h nb_kernel102_f77_double.h nb_kernel103_f77_double.h nb_kernel104_f77_double.h \
+	nb_kernel110_f77_double.h nb_kernel111_f77_double.h nb_kernel112_f77_double.h nb_kernel113_f77_double.h \
+	nb_kernel114_f77_double.h nb_kernel120_f77_double.h nb_kernel121_f77_double.h nb_kernel122_f77_double.h \
+	nb_kernel123_f77_double.h nb_kernel124_f77_double.h nb_kernel130_f77_double.h nb_kernel131_f77_double.h \
+	nb_kernel132_f77_double.h nb_kernel133_f77_double.h nb_kernel134_f77_double.h nb_kernel200_f77_double.h \
+	nb_kernel201_f77_double.h nb_kernel202_f77_double.h nb_kernel203_f77_double.h nb_kernel204_f77_double.h \
+	nb_kernel210_f77_double.h nb_kernel211_f77_double.h nb_kernel212_f77_double.h nb_kernel213_f77_double.h \
+	nb_kernel214_f77_double.h nb_kernel220_f77_double.h nb_kernel221_f77_double.h nb_kernel222_f77_double.h \
+	nb_kernel223_f77_double.h nb_kernel224_f77_double.h nb_kernel230_f77_double.h nb_kernel231_f77_double.h \
+	nb_kernel232_f77_double.h nb_kernel233_f77_double.h nb_kernel234_f77_double.h nb_kernel300_f77_double.h \
+	nb_kernel301_f77_double.h nb_kernel302_f77_double.h nb_kernel303_f77_double.h nb_kernel304_f77_double.h \
+	nb_kernel310_f77_double.h nb_kernel311_f77_double.h nb_kernel312_f77_double.h nb_kernel313_f77_double.h \
+	nb_kernel314_f77_double.h nb_kernel320_f77_double.h nb_kernel321_f77_double.h nb_kernel322_f77_double.h \
+	nb_kernel323_f77_double.h nb_kernel324_f77_double.h nb_kernel330_f77_double.h nb_kernel331_f77_double.h \
+	nb_kernel332_f77_double.h nb_kernel333_f77_double.h nb_kernel334_f77_double.h nb_kernel400_f77_double.h \
+	nb_kernel410_f77_double.h nb_kernel420_f77_double.h nb_kernel430_f77_double.h                     \
+	nb_kernel_f77_double.c    nb_kernel_f77_double.h	                                        \
 	f77dkernel010.f     f77dkernel020.f     f77dkernel030.f     f77dkernel100.f     \
 	f77dkernel101.f     f77dkernel102.f     f77dkernel103.f     f77dkernel104.f     \
 	f77dkernel110.f     f77dkernel111.f     f77dkernel112.f     f77dkernel113.f     \
