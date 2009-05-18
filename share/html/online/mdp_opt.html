@@ -399,20 +399,16 @@ every <b>nstlist</b> steps.</dd>
 <dt><b>xyz</b></dt>
 <dd>Use periodic boundary conditions in all directions.</dd>
 <dt><b>no</b></dt>
-<dd>Use no periodic boundary conditions, ignore the box,
-only works with <b>ns_type=simple</b>.
-To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.
-Note that for large molecules it is more efficient to use <b>pbc=xyz</b>,
-because this allow the use of grid neighbor searching.</dd>
+<dd>Use no periodic boundary conditions, ignore the box.
+To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
 <dt><b>xy</b></dt>
 <dd>Use periodic boundary conditions in x and y directions only.
 This works only with <b>ns_type=grid</b> and can be used
 in combination with <b><a href="#walls">walls</a></b>.
 Without walls or with only one wall the system size is infinite
 in the z direction. Therefore pressure coupling or Ewald summation
-methods can not be used. For thick layers neighbor searching will
-become slow, as a simple search is used for the z direction.
-All these disadvantages do not apply when two walls are used.</dd>
+methods can not be used.
+These disadvantages do not apply when two walls are used.</dd>
 </dl></dd>
 
 <dt><h4>periodic_molecules:</h4></dt>
