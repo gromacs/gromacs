@@ -228,7 +228,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
         nw[i] = nc[i]*cutoff/bt[i];
         
-        if (bt[i] < nc[i]*limit)
+        /* Without PBC there are no cell size limits with 2 cells */
+        if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
         {
             return -1;
         }
@@ -391,7 +392,7 @@ static real optimize_ncells(FILE *fplog,
                             bool bInterCGBondeds,bool bInterCGMultiBody,
                             ivec nc)
 {
-    int npp,npme,ndiv,*div,*mdiv,d;
+    int npp,npme,ndiv,*div,*mdiv,d,nmax;
     bool bExcl_pbcdx;
     float pbcdxr;
     real limit;
@@ -456,10 +457,12 @@ static real optimize_ncells(FILE *fplog,
             fprintf(fplog,"The maximum allowed number of cells is:");
             for(d=0; d<DIM; d++)
             {
-                fprintf(fplog," %c %d",
-                        'X' + d,
-                        (d == ZZ && ir->ePBC == epbcXY && ir->nwall < 2) ? 1 :
-                        (int)(ddbox->box_size[d]*ddbox->skew_fac[d]/limit));
+                nmax = (int)(ddbox->box_size[d]*ddbox->skew_fac[d]/limit);
+                if (d >= ddbox->npbcdim && nmax < 2)
+                {
+                    nmax = 2;
+                }
+                fprintf(fplog," %c %d",'X' + d,nmax);
             }
             fprintf(fplog,"\n");
         }
