@@ -71,9 +71,6 @@ extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes,int *node_peer);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
-extern void dd_set_tric_dir(gmx_domdec_t *dd,matrix box);
-/* Set the triclinic box information in dd */
-
 extern int dd_pme_maxshift(gmx_domdec_t *dd);
 /* Returns the maximum shift for coordinate communication in PME */
 
@@ -88,7 +85,7 @@ init_domain_decomposition(FILE *fplog,
                           char *dlb_opt,real dlb_scale,
                           char *sizex,char *sizey,char *sizez,
                           gmx_mtop_t *mtop,t_inputrec *ir,
-                          matrix box,rvec *x);
+                          matrix box,rvec *x,gmx_ddbox_t *ddbox);
 
 extern void dd_init_bondeds(FILE *fplog,
                             gmx_domdec_t *dd,gmx_mtop_t *mtop,
@@ -98,7 +95,7 @@ extern void dd_init_bondeds(FILE *fplog,
 
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                               t_inputrec *ir,t_forcerec *fr,
-                              matrix box);
+                              gmx_ddbox_t *ddbox);
 /* Set DD grid dimensions and limits,
  * should be called after calling dd_init_bondeds.
  */
@@ -211,7 +208,8 @@ extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 extern void dd_make_local_top(FILE *fplog,
                               gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
-                              matrix box,rvec cellsize_min,ivec npulse,
+                              int npbcdim,matrix box,
+                              rvec cellsize_min,ivec npulse,
                               t_forcerec *fr,gmx_vsite_t *vsite,
                               gmx_mtop_t *top,gmx_localtop_t *ltop);
 
@@ -232,12 +230,17 @@ extern void dd_bonded_cg_distance(FILE *fplog,
 extern void write_dd_pdb(char *fn,gmx_step_t step,char *title,
                          gmx_mtop_t *mtop,
                          t_commrec *cr,
-                         rvec x[],matrix box);
+                         int natoms,rvec x[],matrix box);
+/* Dump a pdb file with the current DD home + communicated atoms.
+ * When natoms=-1, dump all known atoms.
+ */
+
+
 /* In domdec_setup.c */
 
 extern real dd_choose_grid(FILE *fplog,
                            t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-                           gmx_mtop_t *mtop,matrix box,
+                           gmx_mtop_t *mtop,matrix box,gmx_ddbox_t *ddbox,
                            bool bDynLoadBal,real dlb_scale,
                            real cellsize_limit,real cutoff_dd,
                            bool bInterCGBondeds,bool bInterCGMultiBody);
@@ -247,9 +250,16 @@ extern real dd_choose_grid(FILE *fplog,
  */
 
 
+/* In domdec_box.c */
 
+extern void set_ddbox(gmx_domdec_t *dd,bool bMasterState,t_commrec *cr_sum,
+                      t_inputrec *ir,matrix box,
+                      bool bCalcUnboundedSize,t_block *cgs,rvec *x,
+                      gmx_ddbox_t *ddbox);
+
+extern void set_ddbox_cr(t_commrec *cr,ivec *dd_nc,
+                         t_inputrec *ir,matrix box,t_block *cgs,rvec *x,
+                         gmx_ddbox_t *ddbox);
 
 
 #endif	/* _domdec_h */
-
-

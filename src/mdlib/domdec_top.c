@@ -338,7 +338,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count,  g
     print_missing_interactions_atoms(fplog,cr,err_top_global,
                                      &err_top_local->idef);
     write_dd_pdb("dd_dump_err",0,"dump",top_global,cr,
-                             state_local->x,state_local->box);
+                 -1,state_local->x,state_local->box);
     if (DDMASTER(dd))
     {
         if (ndiff_tot > 0)
@@ -1415,7 +1415,8 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 
 void dd_make_local_top(FILE *fplog,
                        gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
-                       matrix box,rvec cellsize_min,ivec npulse,
+                       int npbcdim,matrix box,
+                       rvec cellsize_min,ivec npulse,
                        t_forcerec *fr,gmx_vsite_t *vsite,
                        gmx_mtop_t *mtop,gmx_localtop_t *ltop)
 {
@@ -1459,7 +1460,7 @@ void dd_make_local_top(FILE *fplog,
             /* Only need to check for dimensions where the part of the box
              * that is not communicated is smaller than the cut-off.
              */
-            if (dd->nc[d] > 1 &&
+            if (d < npbcdim && dd->nc[d] > 1 &&
                 (dd->nc[d] - npulse[d])*cellsize_min[d] < 2*rc)
             {
                 if (dd->nc[d] == 2)

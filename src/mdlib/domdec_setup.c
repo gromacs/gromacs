@@ -185,7 +185,8 @@ static int lcd(int n1,int n2)
 }
 
 static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
-                           matrix box,t_inputrec *ir,float pbcdxr,
+                           matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
+                           float pbcdxr,
                            int npme,ivec nc)
 {
     int  i,j,k,npp;
@@ -209,7 +210,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     /* Check if the triclinic requirements are met */
     for(i=0; i<DIM; i++)
     {
-        for(j=i+1; j<DIM; j++)
+        for(j=i+1; j<ddbox->npbcdim; j++)
         {
             if (box[j][i] != 0 || ir->deform[j][i] != 0 ||
                 (ir->epc != epcNO && ir->compress[j][i] != 0))
@@ -224,7 +225,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     
     for(i=0; i<DIM; i++)
     {
-        bt[i] = box[i][i]*dd->skew_fac[i];
+        bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
         nw[i] = nc[i]*cutoff/bt[i];
         
         if (bt[i] < nc[i]*limit)
@@ -298,8 +299,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     cost_pbcdx = 0;
     if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir->ePBC != epbcXY))
     {
-        if ((dd->tric_dir[XX] && nc[XX] == 1) ||
-            (dd->tric_dir[YY] && nc[YY] == 1))
+        if ((ddbox->tric_dir[XX] && nc[XX] == 1) ||
+            (ddbox->tric_dir[YY] && nc[YY] == 1))
         {
             cost_pbcdx = pbcdxr*pbcdx_tric_fac/npp;
         }
@@ -323,7 +324,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
 
 static void assign_factors(gmx_domdec_t *dd,
                            real limit,real cutoff,
-                           matrix box,t_inputrec *ir,float pbcdxr,int npme,
+                           matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
+                           float pbcdxr,int npme,
                            int ndiv,int *div,int *mdiv,ivec try,ivec opt)
 {
     int x,y,z,i;
@@ -331,9 +333,9 @@ static void assign_factors(gmx_domdec_t *dd,
     
     if (ndiv == 0)
     {
-        ce = comm_cost_est(dd,limit,cutoff,box,ir,pbcdxr,npme,try);
+        ce = comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,try);
         if (ce >= 0 && (opt[XX] == 0 ||
-                        ce < comm_cost_est(dd,limit,cutoff,box,ir,pbcdxr,
+                        ce < comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,
                                            npme,opt)))
         {
             copy_ivec(try,opt);
@@ -360,7 +362,7 @@ static void assign_factors(gmx_domdec_t *dd,
             }
             
             /* recurse */
-            assign_factors(dd,limit,cutoff,box,ir,pbcdxr,npme,
+            assign_factors(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,
                            ndiv-1,div+1,mdiv+1,try,opt);
             
             for(i=0; i<mdiv[0]-x-y; i++)
@@ -382,7 +384,8 @@ static void assign_factors(gmx_domdec_t *dd,
 static real optimize_ncells(FILE *fplog,
                             int nnodes_tot,int npme_only,
                             bool bDynLoadBal,real dlb_scale,
-                            gmx_mtop_t *mtop,matrix box,t_inputrec *ir,
+                            gmx_mtop_t *mtop,matrix box,gmx_ddbox_t *ddbox,
+                            t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit,real cutoff,
                             bool bInterCGBondeds,bool bInterCGMultiBody,
@@ -399,7 +402,6 @@ static real optimize_ncells(FILE *fplog,
     dd->nc[XX] = 1;
     dd->nc[YY] = 1;
     dd->nc[ZZ] = 1;
-    dd_set_tric_dir(dd,box);
 
     npp = nnodes_tot - npme_only;
     if (EEL_PME(ir->coulombtype))
@@ -457,7 +459,7 @@ static real optimize_ncells(FILE *fplog,
                 fprintf(fplog," %c %d",
                         'X' + d,
                         (d == ZZ && ir->ePBC == epbcXY && ir->nwall < 2) ? 1 :
-                        (int)(box[d][d]*dd->skew_fac[d]/limit));
+                        (int)(ddbox->box_size[d]*ddbox->skew_fac[d]/limit));
             }
             fprintf(fplog,"\n");
         }
@@ -475,7 +477,8 @@ static real optimize_ncells(FILE *fplog,
     try[YY] = 1;
     try[ZZ] = 1;
     clear_ivec(nc);
-    assign_factors(dd,limit,cutoff,box,ir,pbcdxr,npme,ndiv,div,mdiv,try,nc);
+    assign_factors(dd,limit,cutoff,box,ddbox,ir,pbcdxr,
+                   npme,ndiv,div,mdiv,try,nc);
     
     sfree(div);
     sfree(mdiv);
@@ -485,7 +488,7 @@ static real optimize_ncells(FILE *fplog,
 
 real dd_choose_grid(FILE *fplog,
                     t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-                    gmx_mtop_t *mtop,matrix box,
+                    gmx_mtop_t *mtop,matrix box,gmx_ddbox_t *ddbox,
                     bool bDynLoadBal,real dlb_scale,
                     real cellsize_limit,real cutoff_dd,
                     bool bInterCGBondeds,bool bInterCGMultiBody)
@@ -532,7 +535,7 @@ real dd_choose_grid(FILE *fplog,
         
         limit = optimize_ncells(fplog,cr->nnodes,cr->npmenodes,
                                 bDynLoadBal,dlb_scale,
-                                mtop,box,ir,dd,
+                                mtop,box,ddbox,ir,dd,
                                 cellsize_limit,cutoff_dd,
                                 bInterCGBondeds,bInterCGMultiBody,
                                 dd->nc);

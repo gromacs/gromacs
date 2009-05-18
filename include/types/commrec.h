@@ -87,6 +87,20 @@ typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
 
 typedef struct {
+  int  npbcdim;
+  int  nboundeddim;
+  rvec box0;
+  rvec box_size;
+  /* Tells if the box is skewed for each of the three cartesian directions */
+  ivec tric_dir;
+  rvec skew_fac;
+  /* Orthogonal vectors for triclinic cells, Cartesian index */
+  rvec v[DIM][DIM];
+  /* Normal vectors for the cells walls */
+  rvec normal[DIM];
+} gmx_ddbox_t;
+
+typedef struct {
   /* The DD particle-particle nodes only */
   /* The communication setup within the communicator all
    * defined in dd->comm in domdec.c
@@ -118,19 +132,12 @@ typedef struct {
   ivec dim;  /* indexed by 0 to ndim */
   bool bGridJump;
 
+  /* PBC from dim 0 to npbcdim */
+  int npbcdim;
+
   /* Screw PBC? */
   bool bScrewPBC;
 
-  /* Tells if the box is skewed for each of the three cartesian directions */
-  ivec tric_dir;
-  rvec skew_fac;
-
-  /* The cell boundaries */
-  rvec cell_x0;
-  rvec cell_x1;
-  /* The extreme sizes of the local cells needed for the neighbor searching */
-  rvec cell_ns_x0;
-  rvec cell_ns_x1;
   /* Forward and backward neighboring cells, indexed by 0 to ndim */
   int  neighbor[DIM][2];
 

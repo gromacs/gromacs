@@ -44,20 +44,35 @@ extern t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 extern void done_grid(t_grid *grid);
 
-extern void get_nsgrid_boundaries(t_grid *grid,matrix box,
+extern void get_nsgrid_boundaries(t_grid *grid,
+				  gmx_domdec_t *dd,
+				  matrix box,rvec *gr0,rvec *gr1,
 				  int ncg,rvec *cgcm,
-				  rvec grid_x0,rvec grid_x1);
+				  rvec grid_x0,rvec grid_x1,
+				  real *grid_density);
+/* Return the ns grid boundaries grid_x0 and grid_x1
+ * and the estimate for the grid density.
+ * For non-bounded dimensions the boundaries are determined
+ * from the average and std.dev. of cgcm.
+ * The are determined from box, unless gr0!=NULL or gr1!=NULL,
+ * then they are taken from gr0 or gr1.
+ * With dd and unbounded dimensions, the proper grid borders for cells
+ * on the edges are determined from cgcm.
+ */
 
-extern void set_grid_ncg(t_grid *grid,int ncg);
-
-extern void grid_first(FILE *log,t_grid *grid,gmx_domdec_t *dd,
+extern void grid_first(FILE *log,t_grid *grid,
+		       gmx_domdec_t *dd,const gmx_ddbox_t *ddbox,
 		       int ePBC,matrix box,rvec izones_x0,rvec izones_x1,
-		       real rlong,int ncg,rvec dens_x0,rvec dens_x1);
+		       real rlong,real grid_density);
 
 extern void fill_grid(FILE *log,
 		      gmx_domdec_zones_t *dd_zones,
-		      t_grid *grid,matrix box,
+		      t_grid *grid,int ncg_tot,
 		      int cg0,int cg1,rvec cg_cm[]);
+/* Allocates space on the grid for ncg_tot cg's.
+ * Fills the grid with cg's from cg0 to cg1.
+ * When cg0 is -1, contiues filling from grid->nr to cg1.
+ */
 
 extern void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
 

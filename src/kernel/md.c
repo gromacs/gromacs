@@ -119,391 +119,462 @@ typedef struct {
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md} };
 
-int  mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-	      bool bVerbose,bool bCompact,
-	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-	      char *dddlb_opt,real dlb_scale,
-	      char *ddcsx,char *ddcsy,char *ddcsz,
-	      int nstepout,gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
-	      real pforce,real cpt_period,real max_hours,
-	      unsigned long Flags)
+int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
+             bool bVerbose,bool bCompact,
+             ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+             char *dddlb_opt,real dlb_scale,
+             char *ddcsx,char *ddcsy,char *ddcsz,
+             int nstepout,gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
+             real pforce,real cpt_period,real max_hours,
+             unsigned long Flags)
 {
-  double     nodetime=0,realtime;
-  t_inputrec *inputrec;
-  t_state    *state=NULL;
-  matrix     box;
-  rvec       *f=NULL;
-  real       tmpr1,tmpr2;
-  t_nrnb     *nrnb;
-  gmx_mtop_t *mtop=NULL;
-  t_mdatoms  *mdatoms=NULL;
-  t_forcerec *fr=NULL;
-  t_fcdata   *fcd=NULL;
-  real       ewaldcoeff=0;
-  gmx_pme_t  *pmedata=NULL;
-  time_t     start_t=0;
-  gmx_vsite_t *vsite=NULL;
-  gmx_constr_t constr;
-  int        i,m,nChargePerturbed=-1,status,nalloc;
-  char       *gro;
-  gmx_wallcycle_t wcycle;
-  bool       bReadRNG,bReadEkin;
-  int        list;
-  gmx_step_t nsteps_done;
-  int        rc;
-  gmx_genborn_t *born;
-
-  snew(inputrec,1);
-  snew(mtop,1);
+    double     nodetime=0,realtime;
+    t_inputrec *inputrec;
+    t_state    *state=NULL;
+    matrix     box;
+    gmx_ddbox_t ddbox;
+    rvec       *f=NULL;
+    real       tmpr1,tmpr2;
+    t_nrnb     *nrnb;
+    gmx_mtop_t *mtop=NULL;
+    t_mdatoms  *mdatoms=NULL;
+    t_forcerec *fr=NULL;
+    t_fcdata   *fcd=NULL;
+    real       ewaldcoeff=0;
+    gmx_pme_t  *pmedata=NULL;
+    time_t     start_t=0;
+    gmx_vsite_t *vsite=NULL;
+    gmx_constr_t constr;
+    int        i,m,nChargePerturbed=-1,status,nalloc;
+    char       *gro;
+    gmx_wallcycle_t wcycle;
+    bool       bReadRNG,bReadEkin;
+    int        list;
+    gmx_step_t nsteps_done;
+    int        rc;
+    gmx_genborn_t *born;
+    
+    snew(inputrec,1);
+    snew(mtop,1);
   	
-  if (bVerbose && SIMMASTER(cr)) 
-    fprintf(stderr,"Getting Loaded...\n");
- 
-  if (Flags & MD_APPENDFILES) 
-  {
-	  fplog = NULL;
-  }
+    if (bVerbose && SIMMASTER(cr))
+    {
+        fprintf(stderr,"Getting Loaded...\n");
+    }
+    
+    if (Flags & MD_APPENDFILES) 
+    {
+        fplog = NULL;
+    }
 	
-  if (PAR(cr)) {
-    /* The master thread on the master node reads from disk, 
-     * then distributes everything to the other processors.
-     */
-	
-    list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
-		  
-    snew(state,1);
-    init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
-		  inputrec,mtop,state,list);
-	  
-  } else {
-    /* Read a file for a single processor */
-    snew(state,1);
-    init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
-  }
-  if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)) {
-    cr->npmenodes = 0;
-  }
- 
-  #ifdef GMX_FAHCORE
+    if (PAR(cr))
+    {
+        /* The master thread on the master node reads from disk, 
+         * then distributes everything to the other processors.
+         */
+        
+        list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
+        
+        snew(state,1);
+        init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
+                      inputrec,mtop,state,list);
+        
+    }
+    else
+    {
+        /* Read a file for a single processor */
+        snew(state,1);
+        init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
+    }
+    if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
+    {
+        cr->npmenodes = 0;
+    }
+    
+#ifdef GMX_FAHCORE
     fcRegisterSteps(inputrec->nsteps,inputrec->init_step);
   #endif
- 
-  /* NMR restraints must be initialized before load_checkpoint,
-   * since with time averaging the history is added to t_state.
-   * For proper consistency check we therefore need to extend
-   * t_state here.
-   * So the PME-only nodes (if present) will also initialize
-   * the distance restraints.
-   */
-  snew(fcd,1);
-
-  /* This needs to be called before read_checkpoint to extend the state */
-  init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
-					  
-  if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0) {
-    if (PAR(cr) && !(Flags & MD_PARTDEC)) {
-      gmx_fatal(FARGS,"Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+    
+    /* NMR restraints must be initialized before load_checkpoint,
+     * since with time averaging the history is added to t_state.
+     * For proper consistency check we therefore need to extend
+     * t_state here.
+     * So the PME-only nodes (if present) will also initialize
+     * the distance restraints.
+     */
+    snew(fcd,1);
+    
+    /* This needs to be called before read_checkpoint to extend the state */
+    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
+    
+    if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0)
+    {
+        if (PAR(cr) && !(Flags & MD_PARTDEC))
+        {
+            gmx_fatal(FARGS,"Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+        }
+        /* Orientation restraints */
+        if (MASTER(cr))
+        {
+            init_orires(fplog,mtop,state->x,inputrec,cr->ms,&(fcd->orires),
+                        state);
+        }
     }
-    /* Orientation restraints */
-    if (MASTER(cr)) {
-      init_orires(fplog,mtop,state->x,inputrec,cr->ms,&(fcd->orires),state);
+    
+    if (DEFORM(*inputrec))
+    {
+        /* Store the deform reference box before reading the checkpoint */
+        if (SIMMASTER(cr))
+        {
+            copy_mat(state->box,box);
+        }
+        if (PAR(cr))
+        {
+            gmx_bcast(sizeof(box),box,cr);
+        }
+        set_deform_reference_box(inputrec->init_step,box);
     }
-  }
-  
-  if (DEFORM(*inputrec)) {
-    /* Store the deform reference box before reading the checkpoint */
-    if (SIMMASTER(cr)) {
-      copy_mat(state->box,box);
+    
+    if (opt2bSet("-cpi",nfile,fnm)) 
+    {
+        /* Check if checkpoint file exists before doing continuation.
+         * This way we can use identical input options for the first and subsequent runs...
+         */
+        if( gmx_fexist(opt2fn("-cpi",nfile,fnm)) )
+        {
+            load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
+                            cr,Flags & MD_PARTDEC,ddxyz,
+                            inputrec,state,&bReadRNG,&bReadEkin,
+                            (Flags & MD_APPENDFILES));
+            
+            if (bReadRNG)
+            {
+                Flags |= MD_READ_RNG;
+            }
+            if (bReadEkin)
+            {
+                Flags |= MD_READ_EKIN;
+            }
+        }
     }
-    if (PAR(cr)) {
-      gmx_bcast(sizeof(box),box,cr);
+    
+    if (MASTER(cr) && (Flags & MD_APPENDFILES))
+    {
+        fplog = gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
+                             Flags);
     }
-    set_deform_reference_box(inputrec->init_step,box);
-  }
-
-  if (opt2bSet("-cpi",nfile,fnm)) 
-  {
-      /* Check if checkpoint file exists before doing continuation.
-       * This way we can use identical input options for the first and subsequent runs...
-       */
-      if( gmx_fexist(opt2fn("-cpi",nfile,fnm)) )
-      {
-	  load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
-			  cr,Flags & MD_PARTDEC,ddxyz,
-			  inputrec,state,&bReadRNG,&bReadEkin,
-			  (Flags & MD_APPENDFILES));
-	  
-	  if (bReadRNG)
-	  {
-	      Flags |= MD_READ_RNG;
-	  }
-	  if (bReadEkin)
-	  {
-	      Flags |= MD_READ_EKIN;
-	  }
-      }
-  }
-  
-  if (MASTER(cr) && (Flags & MD_APPENDFILES))
-  {
-      fplog = gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr, !(Flags & MD_SEPPOT) ,Flags);
-  }
-  
-  if (SIMMASTER(cr)) 
-  {
-      copy_mat(state->box,box);
-  }
+    
+    if (SIMMASTER(cr)) 
+    {
+        copy_mat(state->box,box);
+    }
 	
-  if (PAR(cr)) 
-  {
-      gmx_bcast(sizeof(box),box,cr);
-  }
+    if (PAR(cr)) 
+    {
+        gmx_bcast(sizeof(box),box,cr);
+    }
 	
-  if (bVerbose && SIMMASTER(cr))
-    fprintf(stderr,"Loaded with Money\n\n");
-
-  if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
-    cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
-				       dddlb_opt,dlb_scale,
-				       ddcsx,ddcsy,ddcsz,
-				       mtop,inputrec,
-				       box,state->x);
+    if (bVerbose && SIMMASTER(cr))
+    {
+        fprintf(stderr,"Loaded with Money\n\n");
+    }
     
-    make_dd_communicators(fplog,cr,dd_node_order);
+    if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI)))
+    {
+        cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
+                                           dddlb_opt,dlb_scale,
+                                           ddcsx,ddcsy,ddcsz,
+                                           mtop,inputrec,
+                                           box,state->x,&ddbox);
+        
+        make_dd_communicators(fplog,cr,dd_node_order);
+        
+        /* Set overallocation to avoid frequent reallocation of arrays */
+        set_over_alloc_dd(TRUE);
+    }
+    else
+    {
+        cr->duty = (DUTY_PP | DUTY_PME);
 
-    /* Set overallocation to avoid frequent reallocation of arrays */
-    set_over_alloc_dd(TRUE);
-  } else {
-    cr->duty = (DUTY_PP | DUTY_PME);
-
-    if (inputrec->ePBC == epbcSCREW)
-      gmx_fatal(FARGS,"pbc=%s is only implemented with domain decomposition",
-		epbc_names[inputrec->ePBC]);
-  }
-
-  if (PAR(cr)) {
-    /* After possible communicator splitting in make_dd_communicators.
-     * we can set up the intra/inter node communication.
-     */
-    gmx_setup_nodecomm(fplog,cr);
-  }
+        if (inputrec->ePBC == epbcSCREW)
+        {
+            gmx_fatal(FARGS,
+                      "pbc=%s is only implemented with domain decomposition",
+                      epbc_names[inputrec->ePBC]);
+        }
+    }
+    
+    if (PAR(cr))
+    {
+        /* After possible communicator splitting in make_dd_communicators.
+         * we can set up the intra/inter node communication.
+         */
+            gmx_setup_nodecomm(fplog,cr);
+    }
 	
-  wcycle = wallcycle_init(fplog,cr);
+    wcycle = wallcycle_init(fplog,cr);
+    
+    snew(nrnb,1);
+    if (cr->duty & DUTY_PP)
+    {
+        /* For domain decomposition we allocate dynamically
+         * in dd_partition_system.
+         */
+        if (DOMAINDECOMP(cr))
+        {
+            bcast_state_setup(cr,state);
+        }
+        else
+        {
+            if (PAR(cr))
+            {
+                if (!MASTER(cr))
+                {
+                    snew(state,1);
+                }
+                bcast_state(cr,state,TRUE);
+            }
+            
+            snew(f,mtop->natoms);
+        }
+    
+        /* Dihedral Restraints */
+        if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0)
+        {
+            init_dihres(fplog,mtop,inputrec,fcd);
+        }
+        
+        /* Initiate forcerecord */
+        fr = mk_forcerec();
+        init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
+                      opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
+                      opt2fn("-tableb",nfile,fnm),FALSE,pforce);
+        fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
+        
+        /* Initialise GB-stuff */
+        if(fr->bGB)
+        {
+            init_gb(&born,cr,fr,inputrec,mtop,state->x,
+                    inputrec->rgbradii,inputrec->gb_algorithm);
+        }
 
-  snew(nrnb,1);
-  if (cr->duty & DUTY_PP) {
-    /* For domain decomposition we allocate dynamically
-     * in dd_partition_system.
-     */
-    if (DOMAINDECOMP(cr)) {
-      bcast_state_setup(cr,state);
-    } else {
-      if (PAR(cr)) {
-	if (!MASTER(cr)) {
-	  snew(state,1);
-	}
-	bcast_state(cr,state,TRUE);
-      }
-
-      snew(f,mtop->natoms);
+        /* Initialize QM-MM */
+        if(fr->bQMMM)
+        {
+            init_QMMMrec(cr,box,mtop,inputrec,fr);
+        }
+        
+        /* Initialize the mdatoms structure.
+         * mdatoms is not filled with atom data,
+         * as this can not be done now with domain decomposition.
+         */
+        mdatoms = init_mdatoms(fplog,mtop,inputrec->efep!=efepNO);
+        
+        /* Initialize the virtual site communication */
+        vsite = init_vsite(mtop,cr);
+        
+        calc_shifts(box,fr->shift_vec);
+        
+        /* With periodic molecules the charge groups should be whole at start up
+         * and the virtual sites should not be far from their proper positions.
+         */
+        if (!inputrec->bContinuation && MASTER(cr) &&
+            !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
+        {
+            /* Make molecules whole at start of run */
+            if (fr->ePBC != epbcNONE)
+            {
+                do_pbc_first_mtop(fplog,inputrec->ePBC,box,mtop,state->x);
+            }
+            if (vsite)
+            {
+                /* Correct initial vsite positions are required
+                 * for the initial distribution in the domain decomposition
+                 * and for the initial shell prediction.
+                 */
+                construct_vsites_mtop(fplog,vsite,mtop,state->x);
+            }
+        }
+        
+        /* Initiate PPPM if necessary */
+        if (fr->eeltype == eelPPPM)
+        {
+            if (mdatoms->nChargePerturbed)
+            {
+                gmx_fatal(FARGS,"Free energy with %s is not implemented",
+                          eel_names[fr->eeltype]);
+            }
+            status = gmx_pppm_init(fplog,cr,FALSE,TRUE,box,
+                                   getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
+            if (status != 0)
+            {
+                gmx_fatal(FARGS,"Error %d initializing PPPM",status);
+            }
+        }
+        
+        if (EEL_PME(fr->eeltype))
+        {
+            ewaldcoeff = fr->ewaldcoeff;
+            pmedata = &fr->pmedata;
+        }
+        else
+        {
+            pmedata = NULL;
+        }
+    }
+    else
+    {
+        /* This is a PME only node */
+        
+        /* We don't need the state */
+        done_state(state);
+        
+        ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+        snew(pmedata,1);
     }
     
-    /* Dihedral Restraints */
-    if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0) {
-      init_dihres(fplog,mtop,inputrec,fcd);
+    /* Initiate PME if necessary,
+     * either on all nodes or on dedicated PME nodes only. */
+    if (EEL_PME(inputrec->coulombtype))
+    {
+        if (mdatoms)
+        {
+            nChargePerturbed = mdatoms->nChargePerturbed;
+        }
+        if (cr->npmenodes > 0)
+        {
+            /* The PME only nodes need to know nChargePerturbed */
+            gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
+        }
+        if (cr->duty & DUTY_PME)
+        {
+            status = gmx_pme_init(pmedata,cr,inputrec,
+                                  mtop ? mtop->natoms : 0,nChargePerturbed,
+                                  (Flags & MD_REPRODUCIBLE));
+            if (status != 0)
+                gmx_fatal(FARGS,"Error %d initializing PME",status);
+        }
     }
     
-    /* Initiate forcerecord */
-    fr = mk_forcerec();
-    init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
-		  opt2fn("-tableb",nfile,fnm),FALSE,pforce);
-    fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
     
-    /* Initialise GB-stuff */
-    if(fr->bGB)
-      init_gb(&born,cr,fr,inputrec,mtop,state->x,inputrec->rgbradii,inputrec->gb_algorithm);
-	  
-    /* Initialize QM-MM */
-    if(fr->bQMMM)
-      init_QMMMrec(cr,box,mtop,inputrec,fr);
-    
-    /* Initialize the mdatoms structure.
-     * mdatoms is not filled with atom data,
-     * as this can not be done now with domain decomposition.
-     */
-    mdatoms = init_mdatoms(fplog,mtop,inputrec->efep!=efepNO);
-    
-    /* Initialize the virtual site communication */
-    vsite = init_vsite(mtop,cr);
-
-    calc_shifts(box,fr->shift_vec);
-
-    /* With periodic molecules the charge groups should be whole at start up
-     * and the virtual sites should not be far from their proper positions.
-     */
-    if (!inputrec->bContinuation && MASTER(cr) &&
-	!(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols)) {
-      /* Make molecules whole at start of run */
-      if (fr->ePBC != epbcNONE)  {
-	do_pbc_first_mtop(fplog,inputrec->ePBC,box,mtop,state->x);
-      }
-      if (vsite) {
-	/* Correct initial vsite positions are required
-	 * for the initial distribution in the domain decomposition
-	 * and for the initial shell prediction.
-	 */
-	construct_vsites_mtop(fplog,vsite,mtop,state->x);
-      }
-    }
-	  
-    /* Initiate PPPM if necessary */
-    if (fr->eeltype == eelPPPM) {
-      if (mdatoms->nChargePerturbed)
-	gmx_fatal(FARGS,"Free energy with %s is not implemented",
-		  eel_names[fr->eeltype]);
-      status = gmx_pppm_init(fplog,cr,FALSE,TRUE,box,
-			     getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
-      if (status != 0)
-	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
-    }
-
-    if (EEL_PME(fr->eeltype)) {
-      ewaldcoeff = fr->ewaldcoeff;
-      pmedata = &fr->pmedata;
-    } else {
-      pmedata = NULL;
-    }
-  } else {
-    /* This is a PME only node */
-    
-    /* We don't need the state */
-    done_state(state);
-
-    ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
-    snew(pmedata,1);
-  }
-
-  /* Initiate PME if necessary,
-   * either on all nodes or on dedicated PME nodes only. */
-  if (EEL_PME(inputrec->coulombtype)) {
-    if (mdatoms) {
-      nChargePerturbed = mdatoms->nChargePerturbed;
-    }
-    if (cr->npmenodes > 0) {
-      /* The PME only nodes need to know nChargePerturbed */
-      gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
-    }
-    if (cr->duty & DUTY_PME) {
-      status = gmx_pme_init(pmedata,cr,inputrec,
-			    mtop ? mtop->natoms : 0,nChargePerturbed,
-			    (Flags & MD_REPRODUCIBLE));
-      if (status != 0)
-	gmx_fatal(FARGS,"Error %d initializing PME",status);
-    }
-  }
-
-  
-  if (integrator[inputrec->eI].func == do_md) {
-    /* Turn on signal handling on all nodes */
-    /*
-     * (A user signal from the PME nodes (if any)
-     * is communicated to the PP nodes.
-     */
-    if (getenv("GMX_NO_TERM") == NULL) {
-      if (debug)
-	fprintf(debug,"Installing signal handler for SIGTERM\n");
-      signal(SIGTERM,signal_handler);
-    }
+    if (integrator[inputrec->eI].func == do_md)
+    {
+        /* Turn on signal handling on all nodes */
+        /*
+         * (A user signal from the PME nodes (if any)
+         * is communicated to the PP nodes.
+         */
+        if (getenv("GMX_NO_TERM") == NULL)
+        {
+            if (debug)
+            {
+                fprintf(debug,"Installing signal handler for SIGTERM\n");
+            }
+            signal(SIGTERM,signal_handler);
+        }
 #ifdef HAVE_SIGUSR1
-    if (getenv("GMX_NO_USR1") == NULL) {
-        if (debug)
-            fprintf(debug,"Installing signal handler for SIGUSR1\n");
-        signal(SIGUSR1,signal_handler);
-    }
+        if (getenv("GMX_NO_USR1") == NULL)
+        {
+            if (debug)
+            {
+                fprintf(debug,"Installing signal handler for SIGUSR1\n");
+            }
+            signal(SIGUSR1,signal_handler);
+        }
 #endif
-  }
-
-  if (cr->duty & DUTY_PP) {
-    if (inputrec->ePull != epullNO) {
-      /* Initialize pull code */
-      init_pull(fplog,inputrec,nfile,fnm,mtop,cr,
-		EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
     }
-
-    constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
-
-    if (DOMAINDECOMP(cr)) {
-      dd_init_bondeds(fplog,cr->dd,mtop,vsite,constr,inputrec,
-		      Flags & MD_DDBONDCHECK,fr->cginfo_global);
-
-      set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,box);
-     
-      setup_dd_grid(fplog,cr->dd);
-    }
-
-    /* Now do whatever the user wants us to do (how flexible...) */
-    start_t = integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
-					    bVerbose,bCompact,
-					    vsite,constr,
-					    nstepout,inputrec,mtop,
-					    fcd,state,f,
-					    mdatoms,nrnb,wcycle,ed,fr,
-					    born,
-					    repl_ex_nst,repl_ex_seed,
-					    cpt_period,max_hours,
-					    Flags,
-					    &nsteps_done);
-
-    if (inputrec->ePull != epullNO)
-      finish_pull(fplog,inputrec->pull);
-  } else {
-    /* do PME only */
-    gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
-  }
- 
-  /* Some timing stats */  
-  if (MASTER(cr)) {
-    realtime=difftime(time(NULL),start_t);
-    if ((nodetime=node_time()) == 0)
-      nodetime=realtime;
-  }
-  else 
-    realtime=0;
-
-  wallcycle_stop(wcycle,ewcRUN);
     
-  /* Finish up, write some stuff
-   * if rerunMD, don't write last frame again 
-   */
-  finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
-	     inputrec,nrnb,wcycle,nodetime,realtime,nsteps_done,
-	     EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
-  
-  /* Does what it says */  
-  print_date_and_time(fplog,cr->nodeid,"Finished mdrun");
+    if (cr->duty & DUTY_PP)
+    {
+        if (inputrec->ePull != epullNO)
+        {
+            /* Initialize pull code */
+            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,
+                      EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
+        }
+        
+        constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
+        
+        if (DOMAINDECOMP(cr))
+        {
+            dd_init_bondeds(fplog,cr->dd,mtop,vsite,constr,inputrec,
+                            Flags & MD_DDBONDCHECK,fr->cginfo_global);
+            
+            set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,&ddbox);
+            
+            setup_dd_grid(fplog,cr->dd);
+        }
+        
+        /* Now do whatever the user wants us to do (how flexible...) */
+        start_t = integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
+                                                bVerbose,bCompact,
+                                                vsite,constr,
+                                                nstepout,inputrec,mtop,
+                                                fcd,state,f,
+                                                mdatoms,nrnb,wcycle,ed,fr,
+                                                born,
+                                                repl_ex_nst,repl_ex_seed,
+                                                cpt_period,max_hours,
+                                                Flags,
+                                                &nsteps_done);
+        
+        if (inputrec->ePull != epullNO)
+        {
+            finish_pull(fplog,inputrec->pull);
+        }
+    }
+    else
+    {
+        /* do PME only */
+        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
+    }
+    
+    /* Some timing stats */  
+    if (MASTER(cr))
+    {
+        realtime=difftime(time(NULL),start_t);
+        if ((nodetime=node_time()) == 0)
+        {
+            nodetime = realtime;
+        }
+    }
+    else
+    {
+        realtime=0;
+    }
 
+    wallcycle_stop(wcycle,ewcRUN);
+    
+    /* Finish up, write some stuff
+     * if rerunMD, don't write last frame again 
+     */
+    finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
+               inputrec,nrnb,wcycle,nodetime,realtime,nsteps_done,
+               EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+    
+    /* Does what it says */  
+    print_date_and_time(fplog,cr->nodeid,"Finished mdrun");
+    
 	/* Close logfile already here if we were appending to it */
 	if (MASTER(cr) && (Flags & MD_APPENDFILES))
 	{
 		gmx_log_close(fplog);
 	}	
-
-  if(bGotTermSignal)
-  {
-    rc = 1;
-  }
-  else if(bGotUsr1Signal)
-  {
-    rc = 2;
-  }
-  else
-  {
-    rc = 0;
-  }
+    
+    if(bGotTermSignal)
+    {
+        rc = 1;
+    }
+    else if(bGotUsr1Signal)
+    {
+        rc = 2;
+    }
+    else
+    {
+        rc = 0;
+    }
 	
-  return rc;
-
+    return rc;
 }
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],

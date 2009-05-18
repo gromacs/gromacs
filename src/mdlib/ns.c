@@ -1790,9 +1790,12 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
         dd = cr->dd;
     }
     
-    bTriclinicX = (((!bDomDec || dd->nc[YY]==1) && box[YY][XX] != 0) ||
-                   ((!bDomDec || dd->nc[ZZ]==1) && box[ZZ][XX] != 0));
-    bTriclinicY =  ((!bDomDec || dd->nc[ZZ]==1) && box[ZZ][YY] != 0);
+    bTriclinicX = ((YY < grid->npbcdim &&
+                    (!bDomDec || dd->nc[YY]==1) && box[YY][XX] != 0) ||
+                   (ZZ < grid->npbcdim &&
+                    (!bDomDec || dd->nc[ZZ]==1) && box[ZZ][XX] != 0));
+    bTriclinicY =  (ZZ < grid->npbcdim &&
+                    (!bDomDec || dd->nc[ZZ]==1) && box[ZZ][YY] != 0);
     
     cgsnr    = cgs->nr;
     rs2      = sqr(fr->rlist);
@@ -2368,9 +2371,9 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     t_block  *cgs=&(top->cgs);
     rvec     box_size,grid_x0,grid_x1;
     int      i,j,m,ngid;
-    real     min_size;
+    real     min_size,grid_dens;
     int      nsearch;
-    bool     bGrid,bFilledHome;
+    bool     bGrid;
     char     *ptr;
     bool     *i_egp_flags;
     int      cg_start,cg_end,start,end;
@@ -2419,19 +2422,16 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         if (DOMAINDECOMP(cr))
         {
             dd_zones = domdec_zones(cr->dd);
-            bFilledHome = dd_filled_nsgrid_home(cr->dd);
-
-            set_grid_ncg(grid,cgs->nr);
         }
         else
         {
             dd_zones = NULL;
-            bFilledHome = FALSE;
 
-            get_nsgrid_boundaries(grid,box,cgs->nr,fr->cg_cm,grid_x0,grid_x1);
+            get_nsgrid_boundaries(grid,NULL,box,NULL,NULL,
+                                  cgs->nr,fr->cg_cm,grid_x0,grid_x1,&grid_dens);
 
-            grid_first(log,grid,cr->dd,fr->ePBC,box,grid_x0,grid_x1,
-                       fr->rlistlong,cgs->nr,grid_x0,grid_x1);
+            grid_first(log,grid,NULL,NULL,fr->ePBC,box,grid_x0,grid_x1,
+                       fr->rlistlong,grid_dens);
         }
         debug_gmx();
         
@@ -2447,15 +2447,13 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         if (DOMAINDECOMP(cr))
         {
             end = cgs->nr;
-            fill_grid(log,dd_zones,grid,box,
-                      bFilledHome ? cr->dd->ncg_home : 0,end,
-                      fr->cg_cm);
+            fill_grid(log,dd_zones,grid,end,-1,end,fr->cg_cm);
             grid->icg0 = 0;
             grid->icg1 = dd_zones->izone[dd_zones->nizone-1].cg1;
         }
         else
         {
-            fill_grid(log,NULL,grid,box,fr->cg0,fr->hcg,fr->cg_cm);
+            fill_grid(log,NULL,grid,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
             debug_gmx();
@@ -2480,7 +2478,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         /* Set the grid cell index for the test particle only.
          * The cell to cg index is not corrected, but that does not matter.
          */
-        fill_grid(log,NULL,ns->grid,box,fr->hcg-1,fr->hcg,fr->cg_cm);
+        fill_grid(log,NULL,ns->grid,fr->hcg,fr->hcg-1,fr->hcg,fr->cg_cm);
     }
     debug_gmx();
     
