@@ -159,7 +159,7 @@ static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
     }
     average_data(fr->x,xav,mass,ngrps,isize,index);
     fr_av = *fr;
-    fr_av.natoms = 2;
+    fr_av.natoms = ngrps;
     fr_av.atoms  = atoms;
     fr_av.x      = xav;
     write_trxframe(status,&fr_av);
