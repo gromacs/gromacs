@@ -40,13 +40,25 @@
 
 #include "typedefs.h"
 
+#define   GRID_STDDEV_FAC  sqrt(3)
+#define NSGRID_STDDEV_FAC  2.0
+/*
+ * GRID_STDDEV_FAC * stddev is used to estimate the interaction density.
+ * sqrt(3) gives a uniform load for a rectangular block of cg's.
+ * For a sphere it is not a bad approximation for 4x1x1 up to 4x2x2.
+ *
+ * The extent of the neighborsearch grid is a bit larger than sqrt(3)
+ * to account for less dense regions at the edges of the system.
+ */
+
 extern t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 extern void done_grid(t_grid *grid);
 
 extern void get_nsgrid_boundaries(t_grid *grid,
 				  gmx_domdec_t *dd,
-				  matrix box,rvec *gr0,rvec *gr1,
+				  matrix box,gmx_ddbox_t *ddbox,
+				  rvec *gr0,rvec *gr1,
 				  int ncg,rvec *cgcm,
 				  rvec grid_x0,rvec grid_x1,
 				  real *grid_density);

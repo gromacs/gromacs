@@ -417,6 +417,11 @@ static int ddcoord2ddnodeid(gmx_domdec_t *dd,ivec c)
     return ddnodeid;
 }
 
+static bool dynamic_dd_box(gmx_ddbox_t *ddbox,t_inputrec *ir)
+{
+    return (ddbox->nboundeddim < DIM || DYNAMIC_BOX(*ir));
+}
+
 int ddglatnr(gmx_domdec_t *dd,int i)
 {
     int atnr;
@@ -934,12 +939,13 @@ static void dd_sendrecv_ddzone(const gmx_domdec_t *dd,
 static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                           rvec cell_ns_x0,rvec cell_ns_x1)
 {
-    int  d,d1,dim,dim1,pos,buf_size,i,j,k,p,npulse;
+    int  d,d1,dim,dim1,pos,buf_size,i,j,k,p,npulse,npulse_min;
     gmx_ddzone_t *zp,buf_s[5],buf_r[5],buf_e[5];
     rvec extr_s[2],extr_r[2];
     rvec dh;
     real dist_d,c=0,det;
     gmx_domdec_comm_t *comm;
+    bool bPBC,bUse;
 
     comm = dd->comm;
 
@@ -957,7 +963,8 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
     
     for(d=dd->ndim-2; d>=0; d--)
     {
-        dim   = dd->dim[d];
+        dim  = dd->dim[d];
+        bPBC = (dim < ddbox->npbcdim);
 
         /* Use an rvec to store two reals */
         extr_s[d][0] = comm->cell_f0[d+1];
@@ -996,17 +1003,36 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
          * in the forward direction
          */
         npulse = comm->cd[d].np;
-        /* Take the minimum to avoid double communication */
-        for(p=0; p<min(npulse,dd->nc[dim]-1-npulse); p++)
+        if (bPBC)
+        {
+            /* Take the minimum to avoid double communication */
+            npulse_min = min(npulse,dd->nc[dim]-1-npulse);
+        }
+        else
+        {
+            /* Without PBC we should really not communicate over
+             * the boundaries, but implementing that complicates
+             * the communication setup and therefore we simply
+             * do all communication, but ignore some data.
+             */
+            npulse_min = npulse;
+        }
+        for(p=0; p<npulse_min; p++)
         {
             /* Communicate the extremes forward */
+            bUse = (bPBC || dd->ci[dim] > 0);
+
             dd_sendrecv_rvec(dd, d, dddirForward,
                              extr_s+d, dd->ndim-d-1,
                              extr_r+d, dd->ndim-d-1);
-            for(d1=d; d1<dd->ndim-1; d1++)
+
+            if (bUse)
             {
-                extr_s[d1][0] = max(extr_s[d1][0],extr_r[d1][0]);
-                extr_s[d1][1] = min(extr_s[d1][1],extr_r[d1][1]);
+                for(d1=d; d1<dd->ndim-1; d1++)
+                {
+                    extr_s[d1][0] = max(extr_s[d1][0],extr_r[d1][0]);
+                    extr_s[d1][1] = min(extr_s[d1][1],extr_r[d1][1]);
+                }
             }
         }
 
@@ -1014,6 +1040,8 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
         for(p=0; p<npulse; p++)
         {
             /* Communicate all the zone information backward */
+            bUse = (bPBC || dd->ci[dim] < dd->nc[dim] - 1);
+
             dd_sendrecv_ddzone(dd, d, dddirBackward,
                                buf_s, buf_size,
                                buf_r, buf_size);
@@ -1062,8 +1090,11 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                 }
                 else
                 {
-                    buf_e[i].min0 = min(buf_e[i].min0,buf_r[i].min0);
-                    buf_e[i].max1 = max(buf_e[i].max1,buf_r[i].max1);
+                    if (bUse)
+                    {
+                        buf_e[i].min0 = min(buf_e[i].min0,buf_r[i].min0);
+                        buf_e[i].max1 = max(buf_e[i].max1,buf_r[i].max1);
+                    }
 
                     if (dd->ndim == 3 && d == 0 && i == buf_size - 1)
                     {
@@ -1073,7 +1104,7 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                     {
                         d1 = d + 1;
                     }
-                    if (dh[d1] >= 0)
+                    if (bUse && dh[d1] >= 0)
                     {
                         buf_e[i].mch0 = max(buf_e[i].mch0,buf_r[i].mch0-dh[d1]);
                         buf_e[i].mch1 = max(buf_e[i].mch1,buf_r[i].mch1-dh[d1]);
@@ -1084,7 +1115,8 @@ static void dd_move_cellx(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                  */
                 buf_s[i] = buf_r[i];
             }
-            if (p == npulse - 1)
+            if (((bPBC || dd->ci[dim]+npulse < dd->nc[dim]) && p == npulse-1) ||
+                (!bPBC && dd->ci[dim]+1+p == dd->nc[dim]-1))
             {
                 /* Store the extremes */ 
                 pos = 0;
@@ -2766,13 +2798,16 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     int  ncd,d1,i,j,pos,nmin,nmin_old;
     bool bLimLo,bLimHi;
     real load_aver,load_i,imbalance,change,change_max,sc;
-    real cellsize_limit_f,dist_min_f,fac,space,halfway;
+    real cellsize_limit_f,dist_min_f,fac,space,halfway,cellsize_limit_f_i;
     real change_limit = 0.1;
     real relax = 0.5;
+    bool bPBC;
 
     comm = dd->comm;
 
     ncd = dd->nc[dim];
+
+    bPBC = (dim < ddbox->npbcdim);
 
     /* Store the original boundaries */
     for(i=0; i<ncd+1; i++)
@@ -2885,10 +2920,18 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             if (root->bCellMin[i] == FALSE)
             {
                 root->cell_size[i] *= fac;
-                if (root->cell_size[i] < cellsize_limit_f)
+                if (!bPBC && (i == 0 || i == dd->nc[dim] -1))
+                {
+                    cellsize_limit_f_i = 0;
+                }
+                else
+                {
+                    cellsize_limit_f_i = cellsize_limit_f;
+                }
+                if (root->cell_size[i] < cellsize_limit_f_i)
                 {
                     root->bCellMin[i] = TRUE;
-                    root->cell_size[i] = cellsize_limit_f;
+                    root->cell_size[i] = cellsize_limit_f_i;
                     nmin++;
                 }
             }
@@ -2905,7 +2948,8 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
      * but a slightly smaller factor,
      * since rounding could get use below the limit.
      */
-    if (root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
+    if (bPBC &&
+        root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
     {
         char buf[22];
         gmx_fatal(FARGS,"Step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
@@ -2995,7 +3039,8 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
      */
     for(i=0; i<ncd; i++)
     {
-        if (root->cell_f[i+1] - root->cell_f[i] <
+        if ((bPBC || (i != 0 && i != dd->nc[dim]-1)) &&
+            root->cell_f[i+1] - root->cell_f[i] <
             cellsize_limit_f/DD_CELL_MARGIN)
         {
             char buf[22];
@@ -3219,7 +3264,10 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
     {
         dim = dd->dim[dim_ind];
         
-        if (comm->bDynLoadBal &&
+        /* Without PBC we don't have restrictions on the outer cells */
+        if (!(dim >= ddbox->npbcdim && 
+              (dd->ci[dim] == 0 || dd->ci[dim] == dd->nc[dim] - 1)) &&
+            comm->bDynLoadBal &&
             (comm->cell_x1[dim] - comm->cell_x0[dim])*ddbox->skew_fac[dim] <
             comm->cellsize_min[dim])
         {
@@ -6179,7 +6227,7 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
     gmx_domdec_comm_t *comm;
     int  d;
     ivec np;
-    real limit;
+    real limit,shrink;
     char buf[64];
 
     if (fplog == NULL)
@@ -6204,10 +6252,17 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
         {
             if (dd->nc[d] > 1)
             {
-                fprintf(fplog," %c %.2f",
-                        dim2char(d),
+                if (d >= ddbox->npbcdim && dd->nc[d] == 2)
+                {
+                    shrink = 0;
+                }
+                else
+                {
+                    shrink =
                         comm->cellsize_min_dlb[d]/
-                        (ddbox->box_size[d]*ddbox->skew_fac[d]/dd->nc[d]));
+                        (ddbox->box_size[d]*ddbox->skew_fac[d]/dd->nc[d]);
+                }
+                fprintf(fplog," %c %.2f",dim2char(d),shrink);
             }
         }
         fprintf(fplog,"\n");
@@ -6244,7 +6299,7 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
         }
         else
         {
-            if (DYNAMIC_BOX(*ir))
+            if (dynamic_dd_box(ddbox,ir))
             {
                 fprintf(fplog,"(the following are initial values, they could change due to box deformation)\n");
             }
@@ -7702,7 +7757,7 @@ void dd_partition_system(FILE            *fplog,
         bRedist = TRUE;
     }
     
-    set_dd_cell_sizes(dd,&ddbox,DYNAMIC_BOX(*ir),bMasterState,step);
+    set_dd_cell_sizes(dd,&ddbox,dynamic_dd_box(&ddbox,ir),bMasterState,step);
     
     if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
     {
@@ -7730,7 +7785,7 @@ void dd_partition_system(FILE            *fplog,
     }
     
     get_nsgrid_boundaries(fr->ns.grid,dd,
-                          state_local->box,&comm->cell_x0,&comm->cell_x1,
+                          state_local->box,&ddbox,&comm->cell_x0,&comm->cell_x1,
                           dd->ncg_home,fr->cg_cm,
                           cell_ns_x0,cell_ns_x1,&grid_density);
 

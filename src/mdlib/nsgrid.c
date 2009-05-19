@@ -107,16 +107,29 @@ void get_nsgrid_boundaries_vac(real av,real stddev,
      * For a sphere stddev is r/sqrt(5): 99.2% falls within the width.
      * For a Gaussian distribution 98% fall within the width.
      */
-    *bound0 = av - 2*stddev;
-    *bound1 = av + 2*stddev;
+    *bound0 = av - NSGRID_STDDEV_FAC*stddev;
+    *bound1 = av + NSGRID_STDDEV_FAC*stddev;
 
-    *bdens0 = av - sqrt(3)*stddev;
-    *bdens1 = av + sqrt(3)*stddev;
+    *bdens0 = av - GRID_STDDEV_FAC*stddev;
+    *bdens1 = av + GRID_STDDEV_FAC*stddev;
+}
+
+static void dd_box_bounds_to_ns_bounds(real box0,real box_size,
+                                       real *gr0,real *gr1)
+{
+    real av,stddev;
+
+    /* Redetermine av and stddev from the DD box boundaries */
+    av     = box0 + 0.5*box_size;
+    stddev = 0.5*box_size/GRID_STDDEV_FAC;
+
+    *gr0 = av - NSGRID_STDDEV_FAC*stddev;
+    *gr1 = av + NSGRID_STDDEV_FAC*stddev;
 }
 
 void get_nsgrid_boundaries(t_grid *grid,
                            gmx_domdec_t *dd,
-                           matrix box,rvec *gr0,rvec *gr1,
+                           matrix box,gmx_ddbox_t *ddbox,rvec *gr0,rvec *gr1,
                            int ncg,rvec *cgcm,
                            rvec grid_x0,rvec grid_x1,
                            real *grid_density)
@@ -133,7 +146,7 @@ void get_nsgrid_boundaries(t_grid *grid,
     vol = 1;
     for(d=0; d<DIM; d++)
     {
-        if (d < grid->nboundeddim)
+        if (d < grid->nboundeddim || dd != NULL)
         {
             grid_x0[d] = (gr0 != NULL ? (*gr0)[d] : 0);
             grid_x1[d] = (gr1 != NULL ? (*gr1)[d] : box[d][d]);
@@ -141,9 +154,24 @@ void get_nsgrid_boundaries(t_grid *grid,
         }
         else
         {
-            get_nsgrid_boundaries_vac(av[d],stddev[d],
-                                      &grid_x0[d],&grid_x1[d],
-                                      &bdens0,&bdens1);
+            if (ddbox == NULL)
+            {
+                get_nsgrid_boundaries_vac(av[d],stddev[d],
+                                          &grid_x0[d],&grid_x1[d],
+                                          &bdens0,&bdens1);
+            }
+            else
+            {
+                /* Temporary fix which uses global ddbox boundaries
+                 * for unbounded dimensions.
+                 * Should be replaced by local boundaries, which makes
+                 * the ns grid smaller and does not require global comm.
+                 */
+                dd_box_bounds_to_ns_bounds(ddbox->box0[d],ddbox->box_size[d],
+                                           &grid_x0[d],&grid_x1[d]);
+                bdens0 = grid_x0[d];
+                bdens1 = grid_x1[d];
+            }
             /* Check for a DD cell not at a lower edge */
             if (dd != NULL && gr0 != NULL && dd->ci[d] > 0)
             {
