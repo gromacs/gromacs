@@ -425,7 +425,7 @@ static void bc_pullgrp(const t_commrec *cr,t_pullgrp *pgrp)
     nblock_bc(cr,pgrp->nat,pgrp->ind);
   }
   if (pgrp->nweight > 0) {
-    snew_bc(cr,pgrp->ind,pgrp->nweight);
+    snew_bc(cr,pgrp->weight,pgrp->nweight);
     nblock_bc(cr,pgrp->nweight,pgrp->weight);
   }
 }
