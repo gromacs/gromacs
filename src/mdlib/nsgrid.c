@@ -146,7 +146,7 @@ void get_nsgrid_boundaries(t_grid *grid,
     vol = 1;
     for(d=0; d<DIM; d++)
     {
-        if (d < grid->nboundeddim || dd != NULL)
+        if (d < grid->nboundeddim)
         {
             grid_x0[d] = (gr0 != NULL ? (*gr0)[d] : 0);
             grid_x1[d] = (gr1 != NULL ? (*gr1)[d] : box[d][d]);
@@ -185,6 +185,12 @@ void get_nsgrid_boundaries(t_grid *grid,
                 bdens1     = (*gr1)[d];
             }
             vol *= (bdens1 - bdens0);
+        }
+
+        if (debug)
+        {
+            fprintf(debug,"Set grid boundaries dim %d: %f %f\n",
+                    d,grid_x0[d],grid_x1[d]);
         }
     }
 
