@@ -59,18 +59,32 @@
 #include "mtop_util.h"
 #include "mdrun.h"
 
+static void pull_print_x_grp(FILE *out,bool bRef,ivec dim,t_pullgrp *pgrp) 
+{
+  int m;
+
+  for(m=0; m<DIM; m++) {
+    if (dim[m]) {
+      fprintf(out,"\t%g",bRef ? pgrp->x[m] : pgrp->dr[m]);
+    }
+  }
+}
+
 static void pull_print_x(FILE *out,t_pull *pull,double t) 
 {
-  int g,m;
+  int g;
   
   fprintf(out, "%.4f", t);
 
-  for (g=0; g<1+pull->ngrp; g++) {
-    if (pull->grp[g].nat > 0) {
-      for(m=0; m<DIM; m++) {
-	if (pull->dim[m]) {
-	  fprintf(out,"\t%g",g == 0 ? pull->grp[g].x[m] : pull->grp[g].dr[m]);
-	}
+  if (PULL_CYL(pull)) {
+    for (g=1; g<1+pull->ngrp; g++) {
+      pull_print_x_grp(out,TRUE ,pull->dim,&pull->dyna[g]);
+      pull_print_x_grp(out,FALSE,pull->dim,&pull->grp[g]);
+    }
+  } else {
+    for (g=0; g<1+pull->ngrp; g++) {
+      if (pull->grp[g].nat > 0) {
+	pull_print_x_grp(out,g==0,pull->dim,&pull->grp[g]);
       }
     }
   }
@@ -121,8 +135,17 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
     snew(setname,(1+pull->ngrp)*DIM);
     nsets = 0;
     for(g=0; g<1+pull->ngrp; g++) {
-      if (pull->grp[g].nat > 0 && (g > 0 || bCoord)) {
+      if (pull->grp[g].nat > 0 && (g > 0 || (bCoord && !PULL_CYL(pull)))) {
 	if (bCoord || pull->eGeom == epullgPOS) {
+	  if (PULL_CYL(pull)) {
+	    for(m=0; m<DIM; m++) {
+	      if (pull->dim[m]) {
+		sprintf(buf,"%d %s%c",g,"c",'X'+m);
+		setname[nsets] = strdup(buf);
+		nsets++;
+	      }
+	    }
+	  }
 	  for(m=0; m<DIM; m++) {
 	    if (pull->dim[m]) {
 	      sprintf(buf,"%d %s%c",g,(bCoord && g > 0)?"d":"",'X'+m);
