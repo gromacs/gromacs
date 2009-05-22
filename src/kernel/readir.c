@@ -339,14 +339,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   if (EEL_PME(ir->coulombtype)) {
-    if ((ir->pme_order < 4) || ((ir->pme_order % 2) == 1)) {
-      if (ir->pme_order < 4)
-	ir->pme_order = 4;
-      else if ((ir->pme_order % 2) == 1)
-	ir->pme_order++;
-      sprintf(err_buf,"pme_order should be even and at least 4, modified to %d",
-	      ir->pme_order);
-      warning(NULL);
+    if ((ir->pme_order < 4) || (ir->pme_order % 2 == 1)) {
+      warning_error("pme_order should be even and at least 4");
     }
   }
 
