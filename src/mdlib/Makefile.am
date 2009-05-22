@@ -44,9 +44,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-EXTRA_PROGRAMS = compnl gmx_qhop_db_test
+EXTRA_PROGRAMS = gmx_qhop_db_test
 
-compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la

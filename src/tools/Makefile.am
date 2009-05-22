@@ -74,8 +74,6 @@ bin_PROGRAMS = \
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
-EXTRA_PROGRAMS = gmx_stats_test
-
 
 CLEANFILES   = *.la *~ \\\#*
 
