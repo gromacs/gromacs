@@ -197,6 +197,11 @@ static void set_tric_dir(ivec *dd_nc,gmx_ddbox_t *ddbox,matrix box)
         {
             ddbox->skew_fac[d] = 1;
             
+            for(i=0; i<DIM; i++)
+            {
+                clear_rvec(ddbox->v[d][i]);
+                ddbox->v[d][i][i] = 1;
+            }   
             clear_rvec(normal[d]);
             normal[d][d] = 1;
         }
