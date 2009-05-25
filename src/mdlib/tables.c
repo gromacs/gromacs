@@ -54,7 +54,7 @@ enum {
   etabRF,    etabCOUL, etabEwald, etabEwaldUser,
   etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
   etabLJ6Encad, etabLJ12Encad, etabCOULEncad,  
-  etabEXPMIN, etabUSER, etabNR 
+  etabUSER, etabNR 
 };
 
 static const char *tabnm[etabNR] = { 
@@ -62,7 +62,7 @@ static const char *tabnm[etabNR] = {
   "RF",    "COUL", "Ewald", "Ewald-User",
   "LJ6Switch", "LJ12Switch","COULSwitch", 
   "LJ6-Encad shift", "LJ12-Encad shift", "COUL-Encad shift",  
-  "EXPMIN","USER" 
+  "USER" 
 };
 
 /* This flag tells whether this is a Coulomb type funtion */
@@ -82,7 +82,6 @@ bool bCoulomb[etabNR] = {
     FALSE,   /* LJ6-Encad  */
     FALSE,   /* LJ12-Encad */ 
     TRUE,    /* Coul Encad */
-    FALSE,   /* Expmin     */
     FALSE    /* User  (?)  */
 }; 
 
@@ -491,13 +490,6 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       Vtab2 = 2.0/(r*r2) + 2*fr->k_rf;
       Ftab2 = 6.0/(r2*r2);
       break;
-    case etabEXPMIN:
-      expr  = exp(-r);
-      Vtab  = expr;
-      Ftab  = expr;
-      Vtab2 = expr;
-      Ftab2 = expr;
-      break;
     case etabCOULEncad:
         if(r < rc) {
             Vtab  = 1.0/r-(rc-r)/(rc*rc)-1.0/rc;
@@ -619,14 +611,10 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
   }
   
   /* Van der Waals time */
-  if (fr->bBHAM) {
-    tabsel[etiLJ6]  = etabLJ6;
-    tabsel[etiLJ12] = etabEXPMIN;
-  } else {
     if (b14only && fr->vdwtype != evdwUSER)
-      vdwtype = evdwCUT;
+        vdwtype = evdwCUT;
     else
-      vdwtype = fr->vdwtype;
+        vdwtype = fr->vdwtype;
 
     switch (vdwtype) {
     case evdwSWITCH:
@@ -653,7 +641,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",vdwtype,
 		  __FILE__,__LINE__);
     } 
-  }
+  
 }
 
 t_forcetable make_tables(FILE *out,const t_forcerec *fr,
@@ -708,12 +696,6 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
       nx = table.n = rtab*table.scale;
     }
   }
-  if (fr->bBHAM) {
-    if(fr->bham_b_max!=0)
-      table.scale_exp = table.scale/fr->bham_b_max;
-    else
-      table.scale_exp = table.scale;
-  }
 
   /* Each table type (e.g. coul,lj6,lj12) requires four 
    * numbers per datapoint. For performance reasons we want
@@ -734,7 +716,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,
-		 (tabsel[k] == etabEXPMIN) ? table.scale_exp : table.scale,
+		 table.scale,
 		 &(td[k]),!bReadTab);
       fill_table(&(td[k]),tabsel[k],fr);
       if (out) 
