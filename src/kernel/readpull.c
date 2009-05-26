@@ -289,7 +289,7 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
   t_pullgrp *pgrp;
   t_pbc     pbc;
   int       ndim,g,m;
-  double    tinvrate;
+  double    t_start,tinvrate;
   rvec      init;
   dvec      dr,dev;
 
@@ -307,7 +307,9 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
 
   set_pbc(&pbc,ir->ePBC,box);
 
-  pull_calc_coms(NULL,pull,md,&pbc,x,NULL);
+  t_start = ir->init_t + ir->init_step*ir->delta_t;
+
+  pull_calc_coms(NULL,pull,md,&pbc,t_start,x,NULL);
 
   fprintf(stderr,"Pull group  natoms  pbc atom  distance at start     reference at t=0\n");
   for(g=0; g<pull->ngrp+1; g++) {
@@ -319,7 +321,7 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
       if (pgrp->rate == 0)
 	tinvrate = 0;
       else
-	tinvrate = (ir->init_t + ir->init_step*ir->delta_t)/pgrp->rate;
+	tinvrate = t_start/pgrp->rate;
       get_pullgrp_distance(pull,&pbc,g,0,dr,dev);
       for(m=0; m<DIM; m++) {
 	if (m < ndim)

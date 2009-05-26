@@ -718,7 +718,7 @@ real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 {
   real V,dVdl;
 
-  pull_calc_coms(cr,pull,md,pbc,x,NULL);
+  pull_calc_coms(cr,pull,md,pbc,t,x,NULL);
 
   do_pull_pot(ePull,pull,pbc,t,lambda,&V,MASTER(cr) ? vir : NULL,&dVdl);
 
@@ -736,7 +736,7 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 		     t_commrec *cr, double dt, double t,
 		     rvec *x, rvec *xp, rvec *v, tensor vir)
 {
-  pull_calc_coms(cr,pull,md,pbc,x,xp);
+  pull_calc_coms(cr,pull,md,pbc,t,x,xp);
 
   do_constraint(pull,md,pbc,xp,v,MASTER(cr),vir,dt,t);
 }

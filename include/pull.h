@@ -96,6 +96,7 @@ extern void pull_calc_coms(t_commrec *cr,
 			   t_pull *pull,   /* the pull group */
 			   t_mdatoms *md,  /* all atoms */
 			   t_pbc *pbc,
+			   double t,       /* only used for cylinder ref. */
 			   rvec x[],       /* local coordinates */
 			   rvec *xp        /* updated x, can be NULL */
 			   );    

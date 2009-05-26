@@ -147,13 +147,13 @@ static real get_weight(real x, real r1, real r0)
 }
 
 static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
-			     t_pbc *pbc,rvec *x,rvec *xp) 
+			     t_pbc *pbc,double t,rvec *x,rvec *xp) 
 {
   static double *dbuf=NULL;
   int g,i,ii,m,start,end;
   rvec g_x,dx,dir;
   double r0_2,sum_a,sum_ap,dr2,mass,weight,wmass,wwmass,inp;
-  t_pullgrp *pref,*pdyna;
+  t_pullgrp *pref,*pgrp,*pdyna;
   gmx_ga2la_t *ga2la=NULL;
 
   if (dbuf == NULL) {
@@ -171,16 +171,18 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   /* loop over all groups to make a reference group for each*/
   pref = &pull->grp[0];
   for(g=1; g<1+pull->ngrp; g++) {
+    pgrp  = &pull->grp[g];
     pdyna = &pull->dyna[g];
-    copy_rvec(pull->grp[g].vec,dir);
+    copy_rvec(pgrp->vec,dir);
     sum_a = 0;
     sum_ap = 0;
     wmass = 0;
     wwmass = 0;
     pdyna->nat_loc = 0;
 
-    for(m=0; m<DIM; m++)
-      g_x[m] = pull->grp[g].x[m];
+    for(m=0; m<DIM; m++) {
+      g_x[m] = pgrp->x[m] - pgrp->vec[m]*(pgrp->init[0] + pgrp->rate*t);
+    }
 
     /* loop over all atoms in the main ref group */
     for(i=0; i<pref->nat; i++) {
@@ -234,6 +236,7 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   }
 
   for(g=1; g<1+pull->ngrp; g++) {
+    pgrp  = &pull->grp[g];
     pdyna = &pull->dyna[g];
 
     wmass        = dbuf[(g-1)*4+0];
@@ -242,11 +245,10 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
     pdyna->invtm = 1.0/(pdyna->wscale*wmass);
 
     for(m=0; m<DIM; m++) {
-      pdyna->x[m] =
-	pull->grp[g].x[m] + pull->grp[g].vec[m]*dbuf[(g-1)*4+2]/wmass;
+      g_x[m] = pgrp->x[m] - pgrp->vec[m]*(pgrp->init[0] + pgrp->rate*t);
+      pdyna->x[m]    = g_x[m] + pgrp->vec[m]*dbuf[(g-1)*4+2]/wmass;
       if (xp) {
-	pdyna->xp[m] = 
-	  pull->grp[g].x[m] + pull->grp[g].vec[m]*dbuf[(g-1)*4+3]/wmass;
+	pdyna->xp[m] = g_x[m] + pgrp->vec[m]*dbuf[(g-1)*4+3]/wmass;
       }
     }
 
@@ -271,7 +273,7 @@ static double atan2_0_2pi(double y,double x)
 
 /* calculates center of mass of selection index from all coordinates x */
 void pull_calc_coms(t_commrec *cr,
-		    t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+		    t_pull *pull, t_mdatoms *md, t_pbc *pbc,double t,
 		    rvec x[], rvec *xp)
 {
   static rvec *rbuf=NULL;
@@ -460,6 +462,6 @@ void pull_calc_coms(t_commrec *cr,
   
   if (PULL_CYL(pull)) {
     /* Calculate the COMs for the cyclinder reference groups */
-    make_cyl_refgrps(cr,pull,md,pbc,x,xp);
+    make_cyl_refgrps(cr,pull,md,pbc,t,x,xp);
   }  
 }
