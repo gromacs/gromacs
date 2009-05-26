@@ -473,8 +473,12 @@ static char **read_topol(char *infile,char *outfile,
 	      
 	      get_nbparm(nb_str,comb_str,&nb_funct,&comb);
 	      *combination_rule = comb;
-	      if (nscan >= 3) 
+	      if (nscan >= 3) {
 		bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
+		if (nb_funct != eNBF_LJ && bGenPairs) {
+		  gmx_fatal(FARGS,"Generating pair parameters is only supported with LJ non-bonded interactions");
+		}
+	      }
 	      if (nscan >= 4)
 		fudgeLJ   = fLJ;
 	      if (nscan >= 5)
