@@ -400,7 +400,10 @@ every <b>nstlist</b> steps.</dd>
 <dd>Use periodic boundary conditions in all directions.</dd>
 <dt><b>no</b></dt>
 <dd>Use no periodic boundary conditions, ignore the box.
-To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
+To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.
+For best performance without cut-offs, use <b>nstlist</b>=0,
+<b>ns_type</b>=simple
+and particle decomposition instead of domain decomposition.</dd>
 <dt><b>xy</b></dt>
 <dd>Use periodic boundary conditions in x and y directions only.
 This works only with <b>ns_type=grid</b> and can be used

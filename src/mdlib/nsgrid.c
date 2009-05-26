@@ -206,7 +206,7 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
     bool bDD,bDDRect;
     rvec av,stddev;
     rvec izones_size;
-    real inv_r_ideal,size,add_tric;
+    real inv_r_ideal,size,add_tric,radd;
     
     for(i=0; (i<DIM); i++)
     {
@@ -221,7 +221,7 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
 
     /* Use the ideal number of cg's per cell to set the ideal cell size */
     inv_r_ideal = pow(grid_density/grid->ncg_ideal,1.0/3.0);
-    if (inv_r_ideal*rlist < 1)
+    if (rlist > 0 && inv_r_ideal*rlist < 1)
     {
         inv_r_ideal = 1/rlist;
     }
@@ -250,15 +250,27 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
              */
             bDDRect = !(ddbox->tric_dir[i] ||
                         (dd->bGridJump && i != dd->dim[0]));
+
+            radd = rlist;
+            if (i >= ddbox->npbcdim &&
+                (rlist == 0 ||
+                 izones_x1[i] + radd > ddbox->box0[i] + ddbox->box_size[i]))
+            {
+                radd = ddbox->box0[i] + ddbox->box_size[i] - izones_x1[i];
+                if (radd < 0)
+                {
+                    radd = 0;
+                }
+            }
             
             /* With DD we only need a grid of one DD cell size + rlist */
             if (bDDRect)
             {
-                size += rlist;
+                size += radd;
             }
             else
             {
-                size += rlist/ddbox->skew_fac[i];
+                size += radd/ddbox->skew_fac[i];
             }
 
             /* Check if the cell boundary in this direction is
@@ -327,7 +339,7 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
                 grid->ncpddc[i] = 2;
             }
             grid->cell_size[i] = izones_size[i]/grid->ncpddc[i];
-            grid->n[i] = grid->ncpddc[i] + (int)(rlist/grid->cell_size[i]) + 1;
+            grid->n[i] = grid->ncpddc[i] + (int)(radd/grid->cell_size[i]) + 1;
         }
         if (debug)
         {
@@ -633,7 +645,7 @@ void fill_grid(FILE *log,
     int    nrx,nry,nrz;
     rvec   n_box,offset;
     int    zone,ccg0,ccg1,cg,d,not_used;
-    ivec   shift0,b0,b1,ind;
+    ivec   shift0,useall,b0,b1,ind;
     bool   bUse;
     
     if (cg0 == -1)
@@ -709,6 +721,7 @@ void fill_grid(FILE *log,
             for(d=0; d<DIM; d++)
             {
                 shift0[d] = dd_zones->shift[zone][d];
+                useall[d] = (shift0[d] == 0 || d >= grid->npbcdim);
                 /* Check if we need to do normal or optimized grid assignments.
                  * Normal is required for dims without DD or triclinic dims.
                  * DD edge cell on dims without pbc will be automatically
@@ -765,7 +778,7 @@ void fill_grid(FILE *log,
                     }
                     else if (ind[d] >= b1[d])
                     {
-                        if (shift0[d] == 0)
+                        if (useall[d])
                         {
                             ind[d] = b1[d] - 1;
                         }

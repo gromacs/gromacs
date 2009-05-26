@@ -222,6 +222,8 @@ typedef struct gmx_domdec_comm {
     rvec cellsize_min_dlb;
     /* The lower limit for the DD cell size with DLB */
     real cellsize_limit;
+    /* Effectively no NB cut-off limit with DLB for systems without PBC? */
+    bool bVacDLBNoLimit;
 
     /* tric_dir is only stored here because dd_get_ns_ranges needs it */
     ivec tric_dir;
@@ -2488,13 +2490,22 @@ static void clear_dd_indices(gmx_domdec_t *dd,int cg_start,int a_start)
 
 static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
 {
+    real grid_jump_limit;
+
     /* The distance between the boundaries of cells at distance
      * x+-1,y+-1 or y+-1,z+-1 is limited by the cut-off restrictions
      * and by the fact that cells should not be shifted by more than
      * half their size, such that cg's only shift by one cell
      * at redecomposition.
      */
-    return max(comm->cellsize_limit,comm->cutoff/comm->cd[dim_ind].np);
+    grid_jump_limit = comm->cellsize_limit;
+    if (!comm->bVacDLBNoLimit)
+    {
+        grid_jump_limit = max(grid_jump_limit,
+                              comm->cutoff/comm->cd[dim_ind].np);
+    }
+
+    return grid_jump_limit;
 }
 
 static void check_grid_jump(gmx_step_t step,gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
@@ -2717,7 +2728,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                 comm->cell_x1[d] = ddbox->box0[d] + (dd->ci[d]+1)*cell_dx;
             }
             cellsize = cell_dx*ddbox->skew_fac[d];
-            while (cellsize*npulse[d] < comm->cutoff)
+            while (cellsize*npulse[d] < comm->cutoff && npulse[d] < dd->nc[d]-1)
             {
                 npulse[d]++;
             }
@@ -2744,7 +2755,8 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                 cell_dx = ddbox->box_size[d]*comm->slb_frac[d][j];
                 cell_x[j+1] = cell_x[j] + cell_dx;
                 cellsize = cell_dx*ddbox->skew_fac[d];
-                while (cellsize*npulse[d] < comm->cutoff)
+                while (cellsize*npulse[d] < comm->cutoff &&
+                       npulse[d] < dd->nc[d]-1)
                 {
                     npulse[d]++;
                 }
@@ -3039,6 +3051,12 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
      */
     for(i=0; i<ncd; i++)
     {
+        if (debug)
+        {
+            fprintf(debug,"Relative bounds dim %d  cell %d: %f %f\n",
+                    dim,i,root->cell_f[i],root->cell_f[i+1]);
+        }
+
         if ((bPBC || (i != 0 && i != dd->nc[dim]-1)) &&
             root->cell_f[i+1] - root->cell_f[i] <
             cellsize_limit_f/DD_CELL_MARGIN)
@@ -5579,6 +5597,16 @@ static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
         gmx_fatal(FARGS,"With pbc=%s can only do domain decomposition in the x-direction",epbc_names[ir->ePBC]);
     }
 
+    if (ir->ns_type == ensSIMPLE)
+    {
+        gmx_fatal(FARGS,"Domain decomposition does not support simple neighbor searching, use grid searching or use particle decomposition");
+    }
+
+    if (ir->nstlist == 0)
+    {
+        gmx_fatal(FARGS,"Domain decomposition does not work with nstlist=0");
+    }
+
     if (ir->comm_mode == ecmANGULAR && ir->ePBC != epbcNONE)
     {
         gmx_fatal(FARGS,
@@ -5849,7 +5877,18 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     
     dd->bInterCGcons = inter_charge_group_constraints(mtop);
 
-    comm->cutoff       = max(ir->rlist,max(ir->rvdw,ir->rcoulomb));
+    if (ir->rvdw == 0 || ir->rcoulomb == 0)
+    {
+        /* Set the cut-off to some very large value,
+         * so we don't need if statements everywhere in the code.
+         * We use sqrt, since the cut-off is squared in some places.
+         */
+        comm->cutoff   = 0.5*sqrt(GMX_FLOAT_MAX);
+    }
+    else
+    {
+        comm->cutoff   = max(ir->rlist,max(ir->rvdw,ir->rcoulomb));
+    }
     comm->cutoff_mbody = 0;
     
     comm->cellsize_limit = 0;
@@ -6343,8 +6382,11 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 {
     gmx_domdec_comm_t *comm;
     int  d,dim,npulse,npulse_d_max,npulse_d;
+    bool bNoCutOff;
 
     comm = dd->comm;
+
+    bNoCutOff = (ir->rvdw == 0 || ir->rcoulomb == 0);
 
     if (EEL_PME(ir->coulombtype))
     {
@@ -6391,7 +6433,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
             /* Only a single pulse is required */
             npulse = 1;
         }
-        else if (comm->cellsize_limit > 0)
+        else if (!bNoCutOff && comm->cellsize_limit > 0)
         {
             /* We round down slightly here to avoid overhead due to the latency
              * of extra communication calls when the cut-off
@@ -6407,7 +6449,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
             npulse = max(dd->nc[XX]-1,max(dd->nc[YY]-1,dd->nc[ZZ]-1));
         }
 
-        if (npulse > 1)
+        if (!bNoCutOff && npulse > 1)
         {
             /* See if we can do with less pulses, based on dlb_scale */
             npulse_d_max = 0;
@@ -6429,22 +6471,31 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         }
 
         comm->maxpulse = 1;
+        comm->bVacDLBNoLimit = (ir->ePBC == epbcNONE);
         for(d=0; d<dd->ndim; d++)
         {
             comm->cd[d].np_dlb = min(npulse,dd->nc[dd->dim[d]]-1);
             comm->cd[d].np_nalloc = comm->cd[d].np_dlb;
             snew(comm->cd[d].ind,comm->cd[d].np_nalloc);
             comm->maxpulse = max(comm->maxpulse,comm->cd[d].np_dlb);
+            if (comm->cd[d].np_dlb < dd->nc[dd->dim[d]]-1)
+            {
+                comm->bVacDLBNoLimit = FALSE;
+            }
         }
         
         /* cellsize_limit is set for LINCS in init_domain_decomposition */
-        comm->cellsize_limit = max(comm->cellsize_limit,
-                                   comm->cutoff/comm->maxpulse);
+        if (!comm->bVacDLBNoLimit)
+        {
+            comm->cellsize_limit = max(comm->cellsize_limit,
+                                       comm->cutoff/comm->maxpulse);
+        }
         comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
         /* Set the minimum cell size for each DD dimension */
         for(d=0; d<dd->ndim; d++)
         {
-            if (comm->cd[d].np_dlb*comm->cellsize_limit >= comm->cutoff)
+            if (comm->bVacDLBNoLimit ||
+                comm->cd[d].np_dlb*comm->cellsize_limit >= comm->cutoff)
             {
                 comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
             }
