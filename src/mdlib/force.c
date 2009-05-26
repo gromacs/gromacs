@@ -1238,10 +1238,10 @@ void init_forcerec(FILE *fp,
           fr->bMask[i] = TRUE;
           }*/
     
-    if (fr->cg_cm == NULL && !DOMAINDECOMP(cr)) {
+    if (ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr)) {
         /* Count the total number of charge groups */
         fr->cg_nalloc = ncg_mtop(mtop);
-        snew(fr->cg_cm,fr->cg_nalloc);
+        srenew(fr->cg_cm,fr->cg_nalloc);
     }
     if (fr->shift_vec == NULL)
         snew(fr->shift_vec,SHIFTS);
