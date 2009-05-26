@@ -1128,9 +1128,10 @@ through the pull group with direction <b>pull_vec</b> using two radii.
 The radius <b>pull_r1</b> gives the radius within which all
 the relative weights are one, between <b>pull_r1</b> and
 <b>pull_r0</b> the weights are switched to zero. Mass weighting is also used.
-Note that for tilted cylinders the radii should be smaller
-than half the box size, since the distance of an atom in the reference
-group from the COM of the pull group has both a radial and an axial component.
+Note that the radii should be smaller than half the box size.
+For tilted cylinders they should be even smaller than half the box size
+since the distance of an atom in the reference group
+from the COM of the pull group has both a radial and an axial component.
 <dt><b>position</b></dt>
 <dd>Pull to the position of the reference group plus
 <b>pull_init</b> + time*<b>pull_rate</b>*<b>pull_vec</b>.</dd>
@@ -1188,7 +1189,8 @@ This option is only important when the diameter of the pull group
 is larger than half the shortest box vector.
 For determining the COM, all atoms in the group are put at their periodic image
 which is closest to <b>pull_pbcatom1</b>.
-A value of 0 means that the middle atom (number wise) is used.</dd>
+A value of 0 means that the middle atom (number wise) is used.
+This parameter is not used with geometry <b>cylinder</b>.</dd>
 <dt><h4>pull_vec1: (0.0 0.0 0.0)</h4></dt>
 <dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
 <dt><h4>pull_init1: (0.0) / (0.0 0.0 0.0) [nm]</h4></dt>
