@@ -26,6 +26,7 @@
 #include "pbc.h"
 #include "domdec.h"
 #include "domdec_network.h"
+#include "nsgrid.h"
 #include "network.h"
 
 static void calc_cgcm_av_stddev(t_block *cgs,int n,rvec *x,rvec av,rvec stddev,
@@ -230,13 +231,14 @@ static void low_set_ddbox(t_inputrec *ir,ivec *dd_nc,matrix box,
     {
         calc_cgcm_av_stddev(cgs,ncg,x,av,stddev,cr_sum);
 
-        /* sqrt(3)*stddev gives a uniform load for a rectangular block of cg's.
+        /* GRID_STDDEV_FAC * stddev
+         * gives a uniform load for a rectangular block of cg's.
          * For a sphere it is not a bad approximation for 4x1x1 up to 4x2x2.
          */
         for(d=ddbox->nboundeddim; d<DIM; d++)
         {
-            b0 = av[d] - sqrt(3)*stddev[d];
-            b1 = av[d] + sqrt(3)*stddev[d];
+            b0 = av[d] - GRID_STDDEV_FAC*stddev[d];
+            b1 = av[d] + GRID_STDDEV_FAC*stddev[d];
             if (debug)
             {
                 fprintf(debug,"Setting global DD grid boundaries to %f - %f\n",
