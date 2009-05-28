@@ -168,15 +168,20 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
-	    "with coulombtype = %s or coulombtype = %s "
-	    "and simple neighborsearch\n"
+	    "with coulombtype = %s or coulombtype = %s\n"
 	    "without periodic boundary conditions (pbc = %s) and\n"
 	    "rcoulomb and rvdw set to zero",
 	    eel_names[eelCUT],eel_names[eelUSER],epbc_names[epbcNONE]);
-    CHECK(((ir->coulombtype != eelCUT) && (ir->coulombtype != eelUSER))
-	  || (ir->ns_type != ensSIMPLE) || 
+    CHECK(((ir->coulombtype != eelCUT) && (ir->coulombtype != eelUSER)) ||
 	  (ir->ePBC     != epbcNONE) || 
 	  (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
+
+    if (ir->nstlist < 0) {
+      warning_error("Can not have heuristic neighborlist updates without cut-off");
+    }
+    if (ir->nstlist > 0) {
+      warning_note("Simulating without cut-offs is usually (slightly) faster with nstlist=0, nstype=simple and particle decomposition");
+    }
   }
 
   /* COMM STUFF */
