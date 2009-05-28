@@ -75,6 +75,7 @@ void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
   static real imO,imH,invdOH,invdHH;
   static matrix invmat;
 
+  real imOn,imHn;
   matrix mat;
   int i,m,m2,ow1,hw2,hw3;
   rvec roh2,roh3,rhh,dc,fc;
@@ -85,19 +86,27 @@ void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
 
     imO = invmO;
     imH = invmH;
+    /* We normalize the inverse masses with imO for the matrix inversion.
+     * so we can keep using masses of almost zero for frozen particles,
+     * without running out of the float range in m_inv.
+     */
+    imOn = 1;
+    imHn = imH/imO;
 
     /* Construct the constraint coupling matrix */
-    mat[0][0] = imO + imH;
-    mat[0][1] = imO*(1 - 0.5*dHH*dHH/(dOH*dOH));
-    mat[0][2] = imH*0.5*dHH/dOH;
+    mat[0][0] = imOn + imHn;
+    mat[0][1] = imOn*(1 - 0.5*dHH*dHH/(dOH*dOH));
+    mat[0][2] = imHn*0.5*dHH/dOH;
     mat[1][1] = mat[0][0];
     mat[1][2] = mat[0][2];
-    mat[2][2] = imH + imH;
+    mat[2][2] = imHn + imHn;
     mat[1][0] = mat[0][1];
     mat[2][0] = mat[0][2];
     mat[2][1] = mat[1][2];
 
     m_inv(mat,invmat);
+
+    msmul(invmat,1/imO,invmat);
 
     invdOH = 1/dOH;
     invdHH = 1/dHH;
