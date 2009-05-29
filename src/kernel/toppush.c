@@ -1177,7 +1177,9 @@ void push_atom(t_symtab *symtab,t_block *cgs,
     if (nscan > 1) {
       m0 = mB = m;
       if (nscan > 2) {
-	typeB=get_atomtype_type(ctypeB,atype);
+	if ((typeB = get_atomtype_type(ctypeB,atype)) == NOTSET) {
+	  gmx_fatal(FARGS,"Atomtype %s not found",ctypeB);
+	}
 	qB = get_atomtype_qA(typeB,atype);
 	mB = get_atomtype_massA(typeB,atype);
 	if (nscan > 3) {
