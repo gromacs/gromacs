@@ -146,11 +146,12 @@ gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bVa
 extern void
 xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc);
 
-/* In parser.y */
+/* In parsetree.c */
 //! Parses selection(s) from standard input.
 extern int
 gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
-                                  gmx_ana_indexgrps_t *grps);
+                                  gmx_ana_indexgrps_t *grps,
+                                  bool bInteractive);
 //! Parses selection(s) from a file.
 extern int
 gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, char *fnm,

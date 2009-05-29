@@ -984,6 +984,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     gmx_ana_indexgrps_t *grps;
     int                  natoms;
     bool                 bStdIn;
+    bool                 bInteractive;
     bool                 bOk;
 
     if (d->sel)
@@ -1014,7 +1015,11 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
              || (d->selection && d->selection[0] == 0)
              || (!d->selfile && !d->selection);
-    if (bStdIn && isatty(fileno(stdin)))
+    if (bStdIn)
+    {
+        bInteractive = isatty(fileno(stdin));
+    }
+    if (bStdIn && bInteractive)
     {
         /* Parse from stdin */
         /* First we parse the reference groups if there are any */
@@ -1031,7 +1036,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
             }
             fprintf(stderr, ":\n");
             fprintf(stderr, "(one selection per line, use \\ for line continuation)\n");
-            rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nrefgrps, grps);
+            rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nrefgrps, grps, TRUE);
             nr = gmx_ana_selcollection_get_count(d->sc);
             if (rc != 0 || nr != d->nrefgrps)
             {
@@ -1057,12 +1062,12 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
         fprintf(stderr, " for analysis:\n");
         fprintf(stderr, "(one selection per line, use \\ for line continuation%s)\n",
                 d->nanagrps == -1 ? ", Ctrl-D to end" : "");
-        rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nanagrps, grps);
+        rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nanagrps, grps, TRUE);
         fprintf(stderr, "\n");
     }
     else if (bStdIn)
     {
-        rc = gmx_ana_selcollection_parse_stdin(d->sc, -1, grps);
+        rc = gmx_ana_selcollection_parse_stdin(d->sc, -1, grps, FALSE);
     }
     else if (d->selection)
     {

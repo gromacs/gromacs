@@ -513,6 +513,12 @@ struct gmx_sel_lexer_t
 
 static gmx_sel_lexer_t *gstate;
 
+static int
+process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state);
+static int
+process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+                   gmx_sel_lexer_t *state);
+
 #define YY_INPUT(buf,result,max_size) \
     { \
         gmx_sel_lexer_t *state = gstate; \
@@ -709,31 +715,14 @@ YY_DECL
 	register char *yy_cp = NULL, *yy_bp = NULL;
 	register int yy_act;
 
-#line 154 "scanner.l"
+#line 160 "scanner.l"
 
 
 
     /* Return END_OF_METHOD/PARAM_* immediately if necessary */
     if (state->nextparam)
     {
-        gmx_ana_selparam_t *param = state->nextparam;
-        if (state->neom > 0)
-        {
-            --state->neom;
-            return END_OF_METHOD;
-        }
-        state->nextparam = NULL;
-        yylval->str = param->name;
-        switch (param->val.type)
-        {
-            case NO_VALUE:   return PARAM_BOOL;
-            case INT_VALUE:  return PARAM_INT;
-            case REAL_VALUE: return PARAM_REAL;
-            case STR_VALUE:  return PARAM_STR;
-            case POS_VALUE:  return PARAM_POS;
-            case GROUP_VALUE:return PARAM_GROUP;
-        }
-        return INVALID; /* Should not be reached */
+        return process_next_param(yylval, state);
     }
     /* Handle the start conditions for 'of' matching */
     if (state->bMatchOf)
@@ -831,264 +820,97 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 191 "scanner.l"
+#line 180 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 192 "scanner.l"
+#line 181 "scanner.l"
 { yylval->i   = atoi(yytext);                return INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 193 "scanner.l"
+#line 182 "scanner.l"
 { yylval->r   = atof(yytext);                return REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 194 "scanner.l"
+#line 183 "scanner.l"
 { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 196 "scanner.l"
+#line 185 "scanner.l"
 { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 197 "scanner.l"
+#line 186 "scanner.l"
 { if (yytext[0] == ';' || state->prompt) return CMD_SEP; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 198 "scanner.l"
+#line 187 "scanner.l"
 { return GROUP; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 199 "scanner.l"
+#line 188 "scanner.l"
 { return TO; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 200 "scanner.l"
+#line 189 "scanner.l"
 { BEGIN(0); return OF; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 201 "scanner.l"
+#line 190 "scanner.l"
 { return AND; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 202 "scanner.l"
+#line 191 "scanner.l"
 { return OR; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 203 "scanner.l"
+#line 192 "scanner.l"
 { return XOR; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 204 "scanner.l"
+#line 193 "scanner.l"
 { return NOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 205 "scanner.l"
+#line 194 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); return CMP_OP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 207 "scanner.l"
-{
-    gmx_sel_symrec_t *symbol;
-    e_symbol_t        symtype;
-
-    /* Check if the identifier matches with a parameter name */
-    if (state->msp >= 0)
-    {
-        gmx_ana_selparam_t *param = NULL;
-        int                 sp = state->msp;
-        while (!param && sp >= 0)
-        {
-            int             i;
-            for (i = 0; i < state->mstack[sp]->nparams; ++i)
-            {
-                if (state->mstack[sp]->param[i].name == NULL)
-                {
-                    continue;
-                }
-                if (!strncmp(state->mstack[sp]->param[i].name, yytext, yyleng))
-                {
-                    param = &state->mstack[sp]->param[i];
-                    break;
-                }
-            }
-            if (!param)
-            {
-                --sp;
-            }
-        }
-        if (param)
-        {
-            if (sp < state->msp)
-            {
-                state->neom = state->msp - sp - 1;
-                state->nextparam = param;
-                return END_OF_METHOD;
-            }
-            yylval->str = param->name;
-            switch (param->val.type)
-            {
-                case NO_VALUE:    return PARAM_BOOL;
-                case INT_VALUE:   return PARAM_INT;
-                case REAL_VALUE:  return PARAM_REAL;
-                case STR_VALUE:   return PARAM_STR;
-                case POS_VALUE:   return PARAM_POS;
-                case GROUP_VALUE: return PARAM_GROUP;
-            }
-            return INVALID; /* Should not be reached */
-        }
-    }
-
-    /* Check if the identifier matches with a symbol */
-    symbol = _gmx_sel_find_symbol_len(state->sc->symtab, yytext, yyleng, FALSE);
-    /* If there is no match, return the token as a string */
-    if (!symbol)
-    {
-        yylval->str = strndup(yytext, yyleng);
-        return IDENTIFIER;
-    }
-    symtype = _gmx_sel_sym_type(symbol);
-    /* Reserved symbols should have been caught earlier */
-    if (symtype == SYMBOL_RESERVED)
-    {
-        return INVALID;
-    }
-    /* For variable symbols, return the type of the variable value */
-    if (symtype == SYMBOL_VARIABLE)
-    {
-        t_selelem *var;
-
-        var = _gmx_sel_sym_value_var(symbol);
-        /* Return simple tokens for constant variables */
-        if (var->type == SEL_CONST)
-        {
-            switch (var->v.type)
-            {
-                case INT_VALUE:
-                    yylval->i = var->v.u.i[0];
-                    return INT;
-                case REAL_VALUE:
-                    yylval->r = var->v.u.r[0];
-                    return REAL;
-                case POS_VALUE:
-                    break;
-                default:
-                    return INVALID;
-            }
-        }
-        yylval->sel = var;
-        switch (var->v.type)
-        {
-            case INT_VALUE:   return VARIABLE_NUMERIC;
-            case REAL_VALUE:  return VARIABLE_NUMERIC;
-            case POS_VALUE:   return VARIABLE_POS;
-            case GROUP_VALUE: return VARIABLE_GROUP;
-            default:          return INVALID;
-        }
-        return INVALID;
-    }
-    /* For method symbols, return the correct type */
-    if (symtype == SYMBOL_METHOD)
-    {
-        gmx_ana_selmethod_t *method;
-
-        method = _gmx_sel_sym_value_method(symbol);
-        yylval->meth = method;
-        if (!(method->flags & SMETH_MODIFIER) && method->nparams == 0)
-        {
-            /* Keyword */
-            switch (method->type)
-            {
-                case INT_VALUE:   return KEYWORD_INT;
-                case REAL_VALUE:  return KEYWORD_REAL;
-                case STR_VALUE:   return KEYWORD_STR;
-                case GROUP_VALUE: return KEYWORD_GROUP;
-                default:          return INVALID;
-            }
-        } else {
-            /* Method with parameters or a modifier */
-            if (method->flags & SMETH_MODIFIER)
-            {
-                /* Remove all methods from the stack */
-                state->msp = -1;
-                if (method->param[1].name == NULL)
-                {
-                    state->nextparam = &method->param[1];
-                }
-            }
-            else
-            {
-                if (method->param[0].name == NULL)
-                {
-                    state->nextparam = &method->param[0];
-                }
-            }
-            ++state->msp;
-            if (state->msp >= state->mstack_alloc)
-            {
-                state->mstack_alloc += 10;
-                srenew(state->mstack, state->mstack_alloc);
-            }
-            state->mstack[state->msp] = method;
-            if (method->flags & SMETH_MODIFIER)
-            {
-                return MODIFIER;
-            }
-            switch (method->type)
-            {
-                case INT_VALUE:   return METHOD_NUMERIC;
-                case REAL_VALUE:  return METHOD_NUMERIC;
-                case POS_VALUE:   return METHOD_POS;
-                case GROUP_VALUE: return METHOD_GROUP;
-                default:
-                    --state->msp;
-                    return INVALID;
-            }
-        }
-    }
-    /* For position symbols, we need to return KEYWORD_POS, but we also need
-     * some additional handling. */
-    if (symtype == SYMBOL_POS)
-    {
-        state->bMatchOf = TRUE;
-        yylval->str = _gmx_sel_sym_name(symbol);
-        return KEYWORD_POS;
-    }
-    return INVALID;
-}
+#line 196 "scanner.l"
+{ return process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 376 "scanner.l"
+#line 198 "scanner.l"
 
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 377 "scanner.l"
+#line 199 "scanner.l"
 { yylval->str = strndup(yytext, yyleng);     return STR; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 378 "scanner.l"
+#line 200 "scanner.l"
 { return yytext[0]; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 380 "scanner.l"
+#line 202 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -1973,9 +1795,206 @@ int main()
 	return 0;
 	}
 #endif
-#line 380 "scanner.l"
+#line 202 "scanner.l"
 
 /*! \endcond */
+
+static int
+process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
+{
+    gmx_ana_selparam_t *param = state->nextparam;
+
+    if (state->neom > 0)
+    {
+        --state->neom;
+        return END_OF_METHOD;
+    }
+    state->nextparam = NULL;
+    yylval->str = param->name;
+    switch (param->val.type)
+    {
+        case NO_VALUE:    return PARAM_BOOL;
+        case INT_VALUE:   return PARAM_INT;
+        case REAL_VALUE:  return PARAM_REAL;
+        case STR_VALUE:   return PARAM_STR;
+        case POS_VALUE:   return PARAM_POS;
+        case GROUP_VALUE: return PARAM_GROUP;
+    }
+    return INVALID; /* Should not be reached */
+}
+
+static int
+process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+                   gmx_sel_lexer_t *state)
+{
+    gmx_sel_symrec_t *symbol;
+    e_symbol_t        symtype;
+
+    /* Check if the identifier matches with a parameter name */
+    if (state->msp >= 0)
+    {
+        gmx_ana_selparam_t *param = NULL;
+        int                 sp = state->msp;
+        while (!param && sp >= 0)
+        {
+            int             i;
+            for (i = 0; i < state->mstack[sp]->nparams; ++i)
+            {
+                if (state->mstack[sp]->param[i].name == NULL)
+                {
+                    continue;
+                }
+                if (!strncmp(state->mstack[sp]->param[i].name, yytext, yyleng))
+                {
+                    param = &state->mstack[sp]->param[i];
+                    break;
+                }
+            }
+            if (!param)
+            {
+                --sp;
+            }
+        }
+        if (param)
+        {
+            if (sp < state->msp)
+            {
+                state->neom = state->msp - sp - 1;
+                state->nextparam = param;
+                return END_OF_METHOD;
+            }
+            yylval->str = param->name;
+            switch (param->val.type)
+            {
+                case NO_VALUE:    return PARAM_BOOL;
+                case INT_VALUE:   return PARAM_INT;
+                case REAL_VALUE:  return PARAM_REAL;
+                case STR_VALUE:   return PARAM_STR;
+                case POS_VALUE:   return PARAM_POS;
+                case GROUP_VALUE: return PARAM_GROUP;
+            }
+            return INVALID; /* Should not be reached */
+        }
+    }
+
+    /* Check if the identifier matches with a symbol */
+    symbol = _gmx_sel_find_symbol_len(state->sc->symtab, yytext, yyleng, FALSE);
+    /* If there is no match, return the token as a string */
+    if (!symbol)
+    {
+        yylval->str = strndup(yytext, yyleng);
+        return IDENTIFIER;
+    }
+    symtype = _gmx_sel_sym_type(symbol);
+    /* Reserved symbols should have been caught earlier */
+    if (symtype == SYMBOL_RESERVED)
+    {
+        return INVALID;
+    }
+    /* For variable symbols, return the type of the variable value */
+    if (symtype == SYMBOL_VARIABLE)
+    {
+        t_selelem *var;
+
+        var = _gmx_sel_sym_value_var(symbol);
+        /* Return simple tokens for constant variables */
+        if (var->type == SEL_CONST)
+        {
+            switch (var->v.type)
+            {
+                case INT_VALUE:
+                    yylval->i = var->v.u.i[0];
+                    return INT;
+                case REAL_VALUE:
+                    yylval->r = var->v.u.r[0];
+                    return REAL;
+                case POS_VALUE:
+                    break;
+                default:
+                    return INVALID;
+            }
+        }
+        yylval->sel = var;
+        switch (var->v.type)
+        {
+            case INT_VALUE:   return VARIABLE_NUMERIC;
+            case REAL_VALUE:  return VARIABLE_NUMERIC;
+            case POS_VALUE:   return VARIABLE_POS;
+            case GROUP_VALUE: return VARIABLE_GROUP;
+            default:          return INVALID;
+        }
+        return INVALID;
+    }
+    /* For method symbols, return the correct type */
+    if (symtype == SYMBOL_METHOD)
+    {
+        gmx_ana_selmethod_t *method;
+
+        method = _gmx_sel_sym_value_method(symbol);
+        yylval->meth = method;
+        if (!(method->flags & SMETH_MODIFIER) && method->nparams == 0)
+        {
+            /* Keyword */
+            switch (method->type)
+            {
+                case INT_VALUE:   return KEYWORD_INT;
+                case REAL_VALUE:  return KEYWORD_REAL;
+                case STR_VALUE:   return KEYWORD_STR;
+                case GROUP_VALUE: return KEYWORD_GROUP;
+                default:          return INVALID;
+            }
+        } else {
+            /* Method with parameters or a modifier */
+            if (method->flags & SMETH_MODIFIER)
+            {
+                /* Remove all methods from the stack */
+                state->msp = -1;
+                if (method->param[1].name == NULL)
+                {
+                    state->nextparam = &method->param[1];
+                }
+            }
+            else
+            {
+                if (method->param[0].name == NULL)
+                {
+                    state->nextparam = &method->param[0];
+                }
+            }
+            ++state->msp;
+            if (state->msp >= state->mstack_alloc)
+            {
+                state->mstack_alloc += 10;
+                srenew(state->mstack, state->mstack_alloc);
+            }
+            state->mstack[state->msp] = method;
+            if (method->flags & SMETH_MODIFIER)
+            {
+                return MODIFIER;
+            }
+            switch (method->type)
+            {
+                case INT_VALUE:   return METHOD_NUMERIC;
+                case REAL_VALUE:  return METHOD_NUMERIC;
+                case POS_VALUE:   return METHOD_POS;
+                case GROUP_VALUE: return METHOD_GROUP;
+                default:
+                    --state->msp;
+                    return INVALID;
+            }
+        }
+    }
+    /* For position symbols, we need to return KEYWORD_POS, but we also need
+     * some additional handling. */
+    if (symtype == SYMBOL_POS)
+    {
+        state->bMatchOf = TRUE;
+        yylval->str = _gmx_sel_sym_name(symbol);
+        return KEYWORD_POS;
+    }
+    /* Should not be reached */
+    return INVALID;
+}
 
 void
 _gmx_sel_init_lexer(gmx_sel_lexer_t **statep, struct gmx_ana_selcollection_t *sc,

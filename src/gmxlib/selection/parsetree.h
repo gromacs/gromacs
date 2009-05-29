@@ -51,6 +51,7 @@
 struct t_selelem;
 struct gmx_ana_selmethod_t;
 struct gmx_ana_selparam_t;
+struct gmx_sel_lexer_t;
 
 /*! \internal \brief
  * Describes a parsed value, possibly resulting from expression evaluation.
@@ -145,11 +146,30 @@ struct t_selelem *
 _gmx_sel_init_modifier(struct gmx_ana_selcollection_t *sc,
                        struct gmx_ana_selmethod_t *mod,
                        t_selexpr_param *params, struct t_selelem *sel);
+//! Creates a root \c t_selelem for a selection.
+struct t_selelem *
+_gmx_sel_init_selection(struct gmx_sel_lexer_t *scanner,
+                        struct t_selelem *sel);
+//! Creates a root \c t_selelem elements for a variable assignment.
+struct t_selelem *
+_gmx_sel_assign_variable(struct gmx_sel_lexer_t *scanner, char *name,
+                         struct t_selelem *expr);
+//! Appends a root \c t_selelem to a selection collection.
+struct t_selelem *
+_gmx_sel_append_selection(struct gmx_ana_selcollection_t *sc,
+                          struct t_selelem *sel, struct t_selelem *last);
 
 /* In params.c */
 //! Initializes an array of parameters based on input from the selection parser.
 extern bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
                       struct gmx_ana_selparam_t *param, struct t_selelem *root);
+
+/* In parser.y */
+//! Internal helper function used by gmx_ana_selcollection_parse_*() to do the actual work.
+int
+_gmx_sel_run_parser(struct gmx_sel_lexer_t *scanner,
+                    struct gmx_ana_selcollection_t *sc,
+                    struct gmx_ana_indexgrps_t *grps, int maxnr);
 
 #endif

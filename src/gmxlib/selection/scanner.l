@@ -90,6 +90,12 @@ struct gmx_sel_lexer_t
 
 static gmx_sel_lexer_t *gstate;
 
+static int
+process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state);
+static int
+process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+                   gmx_sel_lexer_t *state);
+
 #define YY_INPUT(buf,result,max_size) \
     { \
         gmx_sel_lexer_t *state = gstate; \
@@ -157,24 +163,7 @@ COMMENT    (#.*)
     /* Return END_OF_METHOD/PARAM_* immediately if necessary */
     if (state->nextparam)
     {
-        gmx_ana_selparam_t *param = state->nextparam;
-        if (state->neom > 0)
-        {
-            --state->neom;
-            return END_OF_METHOD;
-        }
-        state->nextparam = NULL;
-        yylval->str = param->name;
-        switch (param->val.type)
-        {
-            case NO_VALUE:   return PARAM_BOOL;
-            case INT_VALUE:  return PARAM_INT;
-            case REAL_VALUE: return PARAM_REAL;
-            case STR_VALUE:  return PARAM_STR;
-            case POS_VALUE:  return PARAM_POS;
-            case GROUP_VALUE:return PARAM_GROUP;
-        }
-        return INVALID; /* Should not be reached */
+        return process_next_param(yylval, state);
     }
     /* Handle the start conditions for 'of' matching */
     if (state->bMatchOf)
@@ -204,7 +193,43 @@ xor             { return XOR; }
 not|"!"         { return NOT; }
 {CMPOP}         { yylval->str = strndup(yytext, yyleng); return CMP_OP; }
 
-{IDENTIFIER}    {
+{IDENTIFIER}    { return process_identifier(yylval, yytext, yyleng, state); }
+
+[[:blank:]]+
+[_[:alnum:]]+   { yylval->str = strndup(yytext, yyleng);     return STR; }
+.               { return yytext[0]; }
+
+%%
+/*! \endcond */
+
+static int
+process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
+{
+    gmx_ana_selparam_t *param = state->nextparam;
+
+    if (state->neom > 0)
+    {
+        --state->neom;
+        return END_OF_METHOD;
+    }
+    state->nextparam = NULL;
+    yylval->str = param->name;
+    switch (param->val.type)
+    {
+        case NO_VALUE:    return PARAM_BOOL;
+        case INT_VALUE:   return PARAM_INT;
+        case REAL_VALUE:  return PARAM_REAL;
+        case STR_VALUE:   return PARAM_STR;
+        case POS_VALUE:   return PARAM_POS;
+        case GROUP_VALUE: return PARAM_GROUP;
+    }
+    return INVALID; /* Should not be reached */
+}
+
+static int
+process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+                   gmx_sel_lexer_t *state)
+{
     gmx_sel_symrec_t *symbol;
     e_symbol_t        symtype;
 
@@ -370,15 +395,9 @@ not|"!"         { return NOT; }
         yylval->str = _gmx_sel_sym_name(symbol);
         return KEYWORD_POS;
     }
+    /* Should not be reached */
     return INVALID;
 }
-
-[[:blank:]]+
-[_[:alnum:]]+   { yylval->str = strndup(yytext, yyleng);     return STR; }
-.               { return yytext[0]; }
-
-%%
-/*! \endcond */
 
 void
 _gmx_sel_init_lexer(gmx_sel_lexer_t **statep, struct gmx_ana_selcollection_t *sc,

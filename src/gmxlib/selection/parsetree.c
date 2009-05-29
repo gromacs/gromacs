@@ -153,6 +153,7 @@
 
 #include <stdio.h>
 
+#include <futil.h>
 #include <smalloc.h>
 #include <string2.h>
 
@@ -164,6 +165,9 @@
 #include "parsetree.h"
 #include "selcollection.h"
 #include "selelem.h"
+#include "symrec.h"
+
+#include "scanner.h"
 
 /*!
  * It is a simple wrapper for fprintf(stderr, ...).
@@ -752,4 +756,291 @@ _gmx_sel_init_modifier(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
     }
 
     return root;
+}
+
+/*!
+ * \param      scanner  Scanner data structure.
+ * \param[in]  sel      The selection element that evaluates the selection.
+ * \returns    The created root selection element.
+ *
+ * This function handles the creation of root (\ref SEL_ROOT) \c t_selelem
+ * objects for selections.
+ */
+t_selelem *
+_gmx_sel_init_selection(gmx_sel_lexer_t *scanner, t_selelem *sel)
+{
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    t_selelem               *root;
+    int                      rc;
+
+    if (sel->v.type != POS_VALUE)
+    {
+        gmx_bug("each selection must evaluate to a position");
+        /* FIXME: Better handling of this error */
+        return NULL;
+    }
+
+    root = _gmx_selelem_create(SEL_ROOT);
+    root->child = sel;
+    /* Update the flags */
+    rc = _gmx_selelem_update_flags(root);
+    if (rc != 0)
+    {
+        _gmx_selelem_free(root);
+        return NULL;
+    }
+
+    /* Print out some information if the parser is interactive */
+    if (_gmx_sel_is_lexer_interactive(scanner))
+    {
+        /* TODO: It would be nice to print the whole selection here */
+        fprintf(stderr, "Selection parsed\n");
+    }
+
+    return root;
+}
+
+
+/*!
+ * \param      scanner  Scanner data structure.
+ * \param[in]  name     Name of the variable (should not be freed after this
+ *   function).
+ * \param[in]  expr     The selection element that evaluates the variable.
+ * \returns    The created root selection element.
+ *
+ * This function handles the creation of root \c t_selelem objects for
+ * variable assignments. A \ref SEL_ROOT element and a \ref SEL_SUBEXPR
+ * element are both created.
+ */
+t_selelem *
+_gmx_sel_assign_variable(gmx_sel_lexer_t *scanner, char *name, t_selelem *expr)
+{
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    t_selelem               *root;
+    int                      rc;
+
+    rc = _gmx_selelem_update_flags(expr);
+    if (rc != 0)
+    {
+        sfree(name);
+        _gmx_selelem_free(expr);
+        return NULL;
+    }
+    /* Check if this is a constant non-group value */
+    if (expr->type == SEL_CONST && expr->v.type != GROUP_VALUE)
+    {
+        /* If so, just assign the constant value to the variable */
+        if (!_gmx_sel_add_var_symbol(sc->symtab, name, expr))
+        {
+            _gmx_selelem_free(expr);
+            sfree(name);
+            return NULL;
+        }
+        _gmx_selelem_free(expr);
+        if (_gmx_sel_is_lexer_interactive(scanner))
+        {
+            fprintf(stderr, "Variable '%s' parsed\n", name);
+        }
+        sfree(name);
+        return NULL;
+    }
+    /* Check if we are assigning a variable to another variable */
+    if (expr->type == SEL_SUBEXPRREF)
+    {
+        /* If so, make a simple alias */
+        if (!_gmx_sel_add_var_symbol(sc->symtab, name, expr->child))
+        {
+            _gmx_selelem_free(expr);
+            sfree(name);
+            return NULL;
+        }
+        _gmx_selelem_free(expr);
+        if (_gmx_sel_is_lexer_interactive(scanner))
+        {
+            fprintf(stderr, "Variable '%s' parsed\n", name);
+        }
+        sfree(name);
+        return NULL;
+    }
+    /* Create the root element */
+    root = _gmx_selelem_create(SEL_ROOT);
+    root->name          = name;
+    root->u.cgrp.name   = name;
+    /* Create the subexpression element */
+    root->child = _gmx_selelem_create(SEL_SUBEXPR);
+    root->child->name   = name;
+    root->child->v.type = expr->v.type;
+    root->child->child  = expr;
+    /* Update flags */
+    rc = _gmx_selelem_update_flags(root);
+    if (rc != 0)
+    {
+        _gmx_selelem_free(root);
+        return NULL;
+    }
+    /* Add the variable to the symbol table */
+    if (!_gmx_sel_add_var_symbol(sc->symtab, name, root->child))
+    {
+        _gmx_selelem_free(root);
+        return NULL;
+    }
+    if (_gmx_sel_is_lexer_interactive(scanner))
+    {
+        fprintf(stderr, "Variable '%s' parsed\n", name);
+    }
+    return root;
+}
+
+/*!
+ * \param[in,out] sc    Selection collection to append to.
+ * \param         sel   Selection to append to \p sc (can be NULL, in which
+ *   case nothing is done).
+ * \param         last  Last selection in \p sc, or NULL if not present or not
+ *   known.
+ * \returns       The last selection in \p sc after the append.
+ *
+ * Appends \p sel after the last root element in \p sc, and returns either
+ * \p sel (if it was non-NULL) or the last element in \p sc (if \p sel was
+ * NULL).
+ */
+t_selelem *
+_gmx_sel_append_selection(gmx_ana_selcollection_t *sc, t_selelem *sel,
+                          t_selelem *last)
+{
+    if (last)
+    {
+        last->next = sel;
+    }
+    else
+    {
+        if (sc->root)
+        {
+            last = sc->root;
+            while (last->next)
+            {
+                last = last->next;
+            }
+            last->next = sel;
+        }
+        else
+        {
+            sc->root = sel;
+        }
+    }
+    if (sel)
+    {
+        last = sel;
+        /* Add the new selection to the collection if it is not a variable. */
+        if (sel->child->type != SEL_SUBEXPR)
+        {
+            int        i;
+
+            sc->nr++;
+            srenew(sc->sel, sc->nr);
+            i = sc->nr - 1;
+            snew(sc->sel[i], 1);
+
+            if (sel->child->type == SEL_CONST)
+            {
+                gmx_ana_pos_copy(&sc->sel[i]->p, sel->child->v.u.p, TRUE);
+                sc->sel[i]->bDynamic = FALSE;
+            }
+            else
+            {
+                t_selelem *child;
+
+                child = sel->child;
+                child->flags     &= ~SEL_ALLOCVAL;
+                child->v.u.p      = &sc->sel[i]->p;
+                /* We should also skip any modifiers to determine the dynamic
+                 * status. */
+                while (child->type == SEL_MODIFIER)
+                {
+                    child = child->child;
+                }
+                /* For variable references, we should skip the
+                 * SEL_SUBEXPRREF and SEL_SUBEXPR elements. */
+                if (child->type == SEL_SUBEXPRREF)
+                {
+                    child = child->child->child;
+                }
+                sc->sel[i]->bDynamic = (child->child->flags & SEL_DYNAMIC);
+            }
+            /* The group will be set after compilation */
+            sc->sel[i]->g        = NULL;
+            sc->sel[i]->selelem  = sel;
+            gmx_ana_selection_init_coverfrac(sc->sel[i], CFRAC_NONE);
+        }
+    }
+    return last;
+}
+
+/*!
+ * \param[in,out] sc    Selection collection to use for output.
+ * \param[in]     nr    Number of selections to parse
+ *   (if -1, parse as many as provided by the user).
+ * \param[in]     grps  External index groups (can be NULL).
+ * \param[in]     bInteractive Whether the parser should behave interactively.
+ * \returns       0 on success, -1 on error.
+ *
+ * The number of selections parsed can be accessed with
+ * gmx_ana_selcollection_get_count() (note that if you call the parser
+ * multiple times, this function returns the total count).
+ */
+int
+gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
+                                  gmx_ana_indexgrps_t *grps, bool bInteractive)
+{
+    gmx_sel_lexer_t *scanner;
+
+    _gmx_sel_init_lexer(&scanner, sc, bInteractive);
+    _gmx_sel_set_lex_input_file(scanner, stdin);
+    return _gmx_sel_run_parser(scanner, sc, grps, nr);
+}
+
+/*!
+ * \param[in,out] sc    Selection collection to use for output.
+ * \param[in]     fnm   Name of the file to parse selections from.
+ * \param[in]     grps  External index groups (can be NULL).
+ * \returns       0 on success, -1 on error.
+ *
+ * The number of selections parsed can be accessed with
+ * gmx_ana_selcollection_get_count() (note that if you call the parser
+ * multiple times, this function returns the total count).
+ */
+int
+gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, char *fnm,
+                                 gmx_ana_indexgrps_t *grps)
+{
+    gmx_sel_lexer_t *scanner;
+    FILE *fp;
+    int   rc;
+
+    _gmx_sel_init_lexer(&scanner, sc, FALSE);
+    fp = ffopen(fnm, "r");
+    _gmx_sel_set_lex_input_file(scanner, fp);
+    rc = _gmx_sel_run_parser(scanner, sc, grps, -1);
+    fclose(fp);
+    return rc;
+}
+
+/*!
+ * \param[in,out] sc    Selection collection to use for output.
+ * \param[in]     str   String to parse selections from.
+ * \param[in]     grps  External index groups (can be NULL).
+ * \returns       0 on success, -1 on error.
+ *
+ * The number of selections parsed can be accessed with
+ * gmx_ana_selcollection_get_count() (note that if you call the parser
+ * multiple times, this function returns the total count).
+ */
+int
+gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, char *str,
+                                gmx_ana_indexgrps_t *grps)
+{
+    gmx_sel_lexer_t *scanner;
+
+    _gmx_sel_init_lexer(&scanner, sc, FALSE);
+    _gmx_sel_set_lex_input_str(scanner, str);
+    return _gmx_sel_run_parser(scanner, sc, grps, -1);
 }
