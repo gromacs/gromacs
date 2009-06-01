@@ -1690,15 +1690,26 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
                 fprintf(debug,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
         }
         
-        atc = &pme->atc[0];
-        if (DOMAINDECOMP(cr)) {
-            snew(atc->node_dest,pme->nnodes);
-            snew(atc->node_src,pme->nnodes);
-            setup_coordinate_communication(atc);
+        for(d=0; d<pme->ndecompdim; d++)
+        {
+            atc = &pme->atc[d];
+            if (d == 0)
+            {
+                atc->nslab = nnodes_major;
+            }
+            else
+            {
+                atc->nslab = pme->nnodes/nnodes_major;
+            }
+            if (DOMAINDECOMP(cr)) {
+                snew(atc->node_dest,atc->nslab);
+                snew(atc->node_src,atc->nslab);
+                setup_coordinate_communication(atc);
+            }
+            snew(atc->count,atc->nslab);
+            snew(atc->rcount,atc->nslab);
+            snew(atc->buf_index,atc->nslab);
         }
-        snew(atc->count,pme->nnodes);
-        snew(atc->rcount,pme->nnodes);
-        snew(atc->buf_index,pme->nnodes);
         
         init_overlap_comm(pme,&pme->overlap[0]);
     } else {
