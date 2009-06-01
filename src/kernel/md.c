@@ -133,6 +133,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     t_state    *state=NULL;
     matrix     box;
     gmx_ddbox_t ddbox;
+    int        npme_major;
     rvec       *f=NULL;
     real       tmpr1,tmpr2;
     t_nrnb     *nrnb;
@@ -285,7 +286,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                                            dddlb_opt,dlb_scale,
                                            ddcsx,ddcsy,ddcsz,
                                            mtop,inputrec,
-                                           box,state->x,&ddbox);
+                                           box,state->x,
+                                           &ddbox,&npme_major);
         
         make_dd_communicators(fplog,cr,dd_node_order);
         
@@ -295,6 +297,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     else
     {
         cr->duty = (DUTY_PP | DUTY_PME);
+        npme_major = cr->nnodes;
 
         if (inputrec->ePBC == epbcSCREW)
         {
@@ -448,7 +451,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         }
         if (cr->duty & DUTY_PME)
         {
-            status = gmx_pme_init(pmedata,cr,inputrec,
+            status = gmx_pme_init(pmedata,cr,npme_major,inputrec,
                                   mtop ? mtop->natoms : 0,nChargePerturbed,
                                   (Flags & MD_REPRODUCIBLE));
             if (status != 0)

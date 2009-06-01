@@ -86,7 +86,8 @@ typedef struct gmx_pme_pp {
 typedef struct gmx_pme_comm_n_box {
   int    natoms;
   matrix box;
-  int    maxshift;
+  int    maxshift0;
+  int    maxshift1;
   real   lambda;
   int    flags;
 } gmx_pme_comm_n_box_t;
@@ -143,7 +144,8 @@ static void gmx_pme_send_q_x_wait(gmx_domdec_t *dd)
 static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 			     real *chargeA, real *chargeB,
 			     matrix box, rvec *x,
-			     real lambda, int maxshift)
+			     real lambda,
+			     int maxshift0, int maxshift1)
 {
   gmx_domdec_t *dd;
   gmx_pme_comm_n_box_t *cnb;
@@ -169,10 +171,11 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
       snew(dd->cnb,1);
     cnb = dd->cnb;
 
-    cnb->flags    = flags;
-    cnb->natoms   = n;
-    cnb->maxshift = maxshift;
-    cnb->lambda   = lambda;
+    cnb->flags     = flags;
+    cnb->natoms    = n;
+    cnb->maxshift0 = maxshift0;
+    cnb->maxshift1 = maxshift1;
+    cnb->lambda    = lambda;
     if (flags & PP_PME_COORD)
       copy_mat(box,cnb->box);
 #ifdef GMX_MPI
@@ -218,7 +221,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 
 void gmx_pme_send_q(t_commrec *cr,
 		    bool bFreeEnergy, real *chargeA, real *chargeB,
-		    int maxshift)
+		    int maxshift0, int maxshift1)
 {
   int flags;
 
@@ -226,7 +229,7 @@ void gmx_pme_send_q(t_commrec *cr,
   if (bFreeEnergy)
     flags |= PP_PME_CHARGEB;
 
-  gmx_pme_send_q_x(cr,flags,chargeA,chargeB,NULL,NULL,0,maxshift);
+  gmx_pme_send_q_x(cr,flags,chargeA,chargeB,NULL,NULL,0,maxshift0,maxshift1);
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
@@ -238,7 +241,7 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
   if (bFreeEnergy)
     flags |= PP_PME_FEP;
 
-  gmx_pme_send_q_x(cr,flags,NULL,NULL,box,x,lambda,0);
+  gmx_pme_send_q_x(cr,flags,NULL,NULL,box,x,lambda,0,0);
 }
 
 void gmx_pme_finish(t_commrec *cr)
@@ -247,13 +250,13 @@ void gmx_pme_finish(t_commrec *cr)
 
   flags = PP_PME_FINISH;
 
-  gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,0,0);
+  gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,0,0,0);
 }
 
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 		     real **chargeA, real **chargeB,
 		     matrix box, rvec **x,rvec **f,
-		     int *maxshift,
+		     int *maxshift0, int *maxshift1,
 		     bool *bFreeEnergy,real *lambda)
 {
   gmx_pme_comm_n_box_t cnb;
@@ -305,7 +308,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
       }
 
       /* maxshift is sent when the charges are sent */
-      *maxshift = cnb.maxshift;
+      *maxshift0 = cnb.maxshift0;
+      *maxshift1 = cnb.maxshift1;
 
       /* Receive the charges in place */
       for(q=0; q<((cnb.flags & PP_PME_CHARGEB) ? 2 : 1); q++) {

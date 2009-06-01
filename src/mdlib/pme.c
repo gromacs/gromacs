@@ -131,6 +131,8 @@ typedef struct {
     int  *node_src;         /* The nodes to receive x and q from with DD */
     int  *buf_index;        /* Index for commnode into the buffers */
 
+    int  maxshift;
+
     int  npd;
     int  pd_nalloc;
     int  *pd;
@@ -495,7 +497,7 @@ static void pme_dd_sendrecv(pme_atomcomm_t *atc,
 #endif
 }
 
-static void dd_pmeredist_x_q(gmx_pme_t pme, int maxshift,
+static void dd_pmeredist_x_q(gmx_pme_t pme, 
                              int n, bool bX, rvec *x, real *charge,
                              pme_atomcomm_t *atc)
 {
@@ -505,7 +507,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme, int maxshift,
     commnode  = atc->node_dest;
     buf_index = atc->buf_index;
     
-    nnodes_comm = min(2*maxshift,atc->nslab-1);
+    nnodes_comm = min(2*atc->maxshift,atc->nslab-1);
     
     nsend = 0;
     for(i=0; i<nnodes_comm; i++) {
@@ -581,7 +583,6 @@ static void dd_pmeredist_x_q(gmx_pme_t pme, int maxshift,
 }
 
 static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
-                           int maxshift,
                            int n, rvec *f,
                            bool bAddF)
 {
@@ -591,7 +592,7 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
   commnode  = atc->node_dest;
   buf_index = atc->buf_index;
 
-  nnodes_comm = min(2*maxshift,atc->nslab-1);
+  nnodes_comm = min(2*atc->maxshift,atc->nslab-1);
 
   local_pos = atc->count[pme->nodeid];
   buf_pos = 0;
@@ -1593,7 +1594,7 @@ static void init_overlap_comm(gmx_pme_t pme,pme_overlap_t *ol)
     }
 }
 
-int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
+int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
                  t_inputrec *ir,int homenr,
                  bool bFreeEnergy,
                  bool bReproducible)
@@ -1617,7 +1618,18 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
         if (pme->nnodes == 1) {
             pme->ndecompdim = 0;
         } else {
-            pme->ndecompdim = 1;
+            if (pme->nnodes == nnodes_major)
+            {
+                pme->ndecompdim = 1;
+            }
+            else
+            {
+                if (pme->nnodes % nnodes_major != 0)
+                {
+                    gmx_incons("nnodes_major incompatible with #PME nodes");
+                }
+                pme->ndecompdim = 2;
+            }
         }
         pme->bPPnode = (cr->duty & DUTY_PP);
     } else {
@@ -1639,6 +1651,10 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     
     /* Use atc[0] for spreading */
     init_atomcomm(pme,&pme->atc[0],TRUE);
+    if (pme->ndecompdim >= 2)
+    {
+        init_atomcomm(pme,&pme->atc[1],FALSE);
+    }
     
     if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
         pme->nky <= pme->pme_order ||
@@ -1809,7 +1825,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     rvec *x_pp=NULL,*f_pp=NULL;
     real *chargeA=NULL,*chargeB=NULL;
     real lambda=0;
-    int  maxshift=0;
+    int  maxshift0=0,maxshift1=0;
     real energy,dvdlambda;
     matrix vir;
     float cycles;
@@ -1825,7 +1841,8 @@ int gmx_pmeonly(gmx_pme_t pme,
         /* Domain decomposition */
         natoms = gmx_pme_recv_q_x(pme_pp,
                                   &chargeA,&chargeB,box,&x_pp,&f_pp,
-                                  &maxshift,&pme->bFEP,&lambda);
+                                  &maxshift0,&maxshift1,
+                                  &pme->bFEP,&lambda);
         
         if (natoms == -1) {
             /* We should stop: break out of the loop */
@@ -1840,7 +1857,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         dvdlambda = 0;
         clear_mat(vir);
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
-                   cr,maxshift,nrnb,vir,ewaldcoeff,
+                   cr,maxshift0,maxshift1,nrnb,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
                    GMX_PME_DO_ALL);
         
@@ -1864,18 +1881,20 @@ int gmx_pme_do(gmx_pme_t pme,
                rvec x[],        rvec f[],
                real *chargeA,   real *chargeB,
                matrix box,	t_commrec *cr,
-               int  maxshift,   t_nrnb *nrnb,    
+               int  maxshift0,  int maxshift1,
+               t_nrnb *nrnb,    
                matrix vir,      real ewaldcoeff,
                real *energy,    real lambda, 
                real *dvdlambda, int flags)
 {
-    int     q,i,j,ntot,npme;
+    int     q,d,i,j,ntot,npme;
     int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
-    int     local_ny;
-    pme_atomcomm_t *atc;
+    int     n_d,local_ny;
+    pme_atomcomm_t *atc=NULL;
     t_fftgrid *grid=NULL;
     real    *ptr;
-    real    *charge=NULL,vol;
+    rvec    *x_d,*f_d;
+    real    *charge=NULL,*q_d,vol;
     real    energy_AB[2];
     matrix  vir_AB[2];
     bool    bClearF;
@@ -1887,6 +1906,7 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->pd_nalloc = over_alloc_dd(atc->npd);
             srenew(atc->pd,atc->pd_nalloc);
         }
+        atc->maxshift = maxshift0;
     }
     
     for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
@@ -1918,8 +1938,8 @@ int gmx_pme_do(gmx_pme_t pme,
 #endif
         where();
         
-        atc = &pme->atc[0];
         if (pme->nnodes == 1) {
+            atc = &pme->atc[0];
             if (DOMAINDECOMP(cr)) {
                 atc->n = homenr;
                 pme_realloc_atomcomm_things(atc);
@@ -1928,15 +1948,37 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->q = charge;
             atc->f = f;
         } else {
-            pme_calc_pidx(pme->nnodes,homenr,box,x+start,atc);
-            where();
-            
-            GMX_BARRIER(cr->mpi_comm_mysim);
-            /* Redistribute x (only once) and qA or qB */
-            if (DOMAINDECOMP(cr)) {
-                dd_pmeredist_x_q(pme, maxshift, homenr, q==0, x, charge, atc);
-            } else {
-                pmeredist(pme, TRUE, homenr, q==0, x+start, charge, atc);
+            for(d=pme->ndecompdim-1; d>=0; d--)
+            {
+                if (d == pme->ndecompdim-1)
+                {
+                    n_d = homenr;
+                    x_d = x + start;
+                    q_d = charge;
+                }
+                else
+                {
+                    n_d = pme->atc[d+1].n;
+                    x_d = atc->x;
+                    q_d = atc->q;
+                }
+                atc = &pme->atc[d];
+                atc->npd = n_d;
+                if (atc->npd > atc->pd_nalloc) {
+                    atc->pd_nalloc = over_alloc_dd(atc->npd);
+                    srenew(atc->pd,atc->pd_nalloc);
+                }
+                atc->maxshift = (d==0 ? maxshift0 : maxshift1);
+                pme_calc_pidx(atc->nslab,n_d,box,x_d,atc);
+                where();
+                
+                GMX_BARRIER(cr->mpi_comm_mysim);
+                /* Redistribute x (only once) and qA or qB */
+                if (DOMAINDECOMP(cr)) {
+                    dd_pmeredist_x_q(pme, n_d, q==0, x_d, q_d, atc);
+                } else {
+                    pmeredist(pme, TRUE, n_d, q==0, x_d, q_d, atc);
+                }
             }
             where();
         }
@@ -2051,11 +2093,26 @@ int gmx_pme_do(gmx_pme_t pme,
     } /* of q-loop */
     
     if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
-        GMX_BARRIER(cr->mpi_comm_mysim);
-        if (DOMAINDECOMP(cr)) {
-            dd_pmeredist_f(pme,&pme->atc[0],maxshift,homenr,f,pme->bPPnode);
-        } else {
-            pmeredist(pme, FALSE, homenr, TRUE, f+start, NULL, &pme->atc[0]);
+        for(d=0; d<pme->ndecompdim; d++)
+        {
+            atc = &pme->atc[d];
+            if (d == pme->ndecompdim - 1)
+            {
+                n_d = homenr;
+                f_d = f + start;
+            }
+            else
+            {
+                n_d = pme->atc[d+1].n;
+                f_d = pme->atc[d+1].f;
+            }
+            GMX_BARRIER(cr->mpi_comm_mysim);
+            if (DOMAINDECOMP(cr)) {
+                dd_pmeredist_f(pme,atc,n_d,f_d,
+                               d==pme->ndecompdim-1 && pme->bPPnode);
+            } else {
+                pmeredist(pme, FALSE, n_d, TRUE, f_d, NULL, atc);
+            }
         }
     }
     where();

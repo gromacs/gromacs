@@ -1952,7 +1952,10 @@ static void dd_cart_coord2pmecoord(gmx_domdec_t *dd,ivec coord,ivec coord_pme)
 
 static int low_ddindex2pmeindex(int ndd,int npme,int ddindex)
 {
-    /* We add cr->npmenodes/2 to obtain an even distribution */
+    /* Here we assign a PME node to communicate with this DD node
+     * by assuming that the major index of both is x.
+     * We add cr->npmenodes/2 to obtain an even distribution.
+     */
     return (ddindex*npme + npme/2)/ndd;
 }
 
@@ -2601,9 +2604,14 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     }
 }
 
-int dd_pme_maxshift(gmx_domdec_t *dd)
+int dd_pme_maxshift0(gmx_domdec_t *dd)
 {
     return dd->comm->ddpme[0].maxshift;
+}
+
+int dd_pme_maxshift1(gmx_domdec_t *dd)
+{
+    return dd->comm->ddpme[1].maxshift;
 }
 
 static void set_pme_maxshift(gmx_domdec_t *dd,int dimind,gmx_ddpme_t *ddpme,
@@ -5777,7 +5785,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                         char *sizex,char *sizey,char *sizez,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
                                         matrix box,rvec *x,
-                                        gmx_ddbox_t *ddbox)
+                                        gmx_ddbox_t *ddbox,
+                                        int *npme_major)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6071,6 +6080,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     else
     {
         comm->npmenodes = dd->nnodes;
+    }
+    if (FALSE && dd->nc[XX] > cr->npmenodes && cr->npmenodes % dd->nc[XX] == 0)
+    {
+        *npme_major = dd->nc[XX];
+    }
+    else
+    {
+        *npme_major = comm->npmenodes;
     }
     
     snew(comm->slb_frac,DIM);
@@ -7985,7 +8002,7 @@ void dd_partition_system(FILE            *fplog,
         /* Send the charges to our PME only node */
         gmx_pme_send_q(cr,mdatoms->nChargePerturbed,
                        mdatoms->chargeA,mdatoms->chargeB,
-                       comm->ddpme[0].maxshift);
+                       comm->ddpme[0].maxshift,comm->ddpme[1].maxshift);
     }
     
     if (constr)

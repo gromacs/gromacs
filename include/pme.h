@@ -58,7 +58,7 @@ extern int pme_inconvenient_nnodes(int nkx,int nky,int nnodes);
  * 2 when using less PME nodes is expected to be faster
  */
 
-extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
+extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy, bool bReproducible);
 			
@@ -77,7 +77,8 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
 		      matrix box,      t_commrec *cr,
-		      int  maxshift,   t_nrnb *nrnb,
+		      int  maxshift0,  int maxshift1,
+		      t_nrnb *nrnb,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
 		      real *dvdlambda, int flags);
@@ -114,7 +115,7 @@ extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 
 extern void gmx_pme_send_q(t_commrec *cr,
 			   bool bFreeEnergy, real *chargeA, real *chargeB,
-			   int maxshift);
+			   int maxshift0, int maxshift1);
 /* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
@@ -133,7 +134,7 @@ extern void gmx_pme_receive_f(t_commrec *cr,
 extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
 			    matrix box, rvec **x,rvec **f,
-			    int *maxshift,
+			    int *maxshift0,int *maxshift1,
 			    bool *bFreeEnergy,real *lambda);
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.
