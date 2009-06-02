@@ -55,7 +55,8 @@
 #define DDRANK(dd,rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
 
-typedef struct gmx_domdec_master {
+typedef struct gmx_domdec_master
+{
     /* The cell boundaries */
     real **cell_x;
     /* The global charge group division */
@@ -67,7 +68,8 @@ typedef struct gmx_domdec_master {
     rvec *vbuf;    /* Buffer for state scattering and gathering */
 } gmx_domdec_master_t;
 
-typedef struct {
+typedef struct
+{
     /* The numbers of charge groups to send and receive for each cell
      * that requires communication, the last entry contains the total
      * number of atoms that needs to be communicated.
@@ -82,7 +84,8 @@ typedef struct {
     int cell2at1[DD_MAXIZONE];
 } gmx_domdec_ind_t;
 
-typedef struct {
+typedef struct
+{
     int  np;                   /* Number of grid pulses in this dimension */
     int  np_dlb;               /* For dlb, for use with edlbAUTO          */
     gmx_domdec_ind_t *ind;     /* The indices to communicate, size np     */
@@ -90,7 +93,8 @@ typedef struct {
     bool bInPlace;             /* Can we communicate in place?            */
 } gmx_domdec_comm_dim_t;
 
-typedef struct {
+typedef struct
+{
     real *cell_size;
     bool *bCellMin;
     real *cell_f;
@@ -107,7 +111,8 @@ typedef struct {
 /* Here floats are accurate enough, since these variables
  * only influence the load balancing, not the actual MD results.
  */
-typedef struct {
+typedef struct
+{
     int  nload;
     float *load;
     float sum;
@@ -119,13 +124,15 @@ typedef struct {
     int   flags;
 } gmx_domdec_load_t;
 
-typedef struct {
+typedef struct
+{
     int  nsc;
     int  ind_gl;
     int  ind;
 } gmx_cgsort_t;
 
-typedef struct {
+typedef struct
+{
     gmx_cgsort_t *sort1,*sort2;
     int  sort_nalloc;
     gmx_cgsort_t *sort_new;
@@ -134,7 +141,8 @@ typedef struct {
     int  ibuf_nalloc;
 } gmx_domdec_sort_t;
 
-typedef struct {
+typedef struct
+{
     rvec *v;
     int  nalloc;
 } vec_rvec_t;
@@ -150,11 +158,12 @@ char *edlb_names[edlbNR] = { "auto", "no", "yes" };
 
 typedef struct
 {
-    int dim;      /* The dimension                                          */
-    int nslab;    /* The number of PME slabs in this dimension              */
-    int *pp_min;  /* The minimum pp node location, size nslab               */
-    int *pp_max;  /* The maximum pp node location,size nslab                */
-    int maxshift; /* The maximum shift for coordinate redistribution in PME */
+    int  dimind;   /* The dimension index                                    */
+    int  nslab;    /* The number of PME slabs in this dimension              */
+    real *slb_dim_f; /* Cell sizes for determining the PME comm. with SLB    */
+    int  *pp_min;  /* The minimum pp node location, size nslab               */
+    int  *pp_max;  /* The maximum pp node location,size nslab                */
+    int  maxshift; /* The maximum shift for coordinate redistribution in PME */
 } gmx_ddpme_t;
 
 typedef struct
@@ -167,13 +176,17 @@ typedef struct
     real p1_1;    /* The top value of the first cell in this zone           */
 } gmx_ddzone_t;
 
-typedef struct gmx_domdec_comm {
+typedef struct gmx_domdec_comm
+{
     /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
      * unless stated otherwise.
      */
-    
+
+    /* The number of decomposition dimensions for PME, 0: no PME */
+    int  npmedecompdim;
     /* The number of nodes doing PME (PP/PME or only PME) */
     int  npmenodes;
+    int  npmenodes_major;
     /* The communication setup including the PME only nodes */
     bool bCartesianPP_PME;
     ivec ntot;
@@ -210,8 +223,6 @@ typedef struct gmx_domdec_comm {
 
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
-    /* Cell sizes for determining the PME communication with SLB */
-    real *pme_dim_f;
     
     /* The width of the communicated boundaries */
     real cutoff_mbody;
@@ -2564,14 +2575,43 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
     return load;
 }
 
-static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
-                       int dim,int nslab)
+static void set_slb_pme_dim_f(gmx_domdec_t *dd,int dimind,real **dim_f)
 {
-    int	 slab,nso,i;
+    gmx_domdec_comm_t *comm;
+    int i;
+    
+    comm = dd->comm;
+    
+    if (dd->dim[dimind] != dimind)
+    {
+        *dim_f = NULL;
+        return;
+    }
+    
+    snew(*dim_f,dd->nc[dimind]+1);
+    (*dim_f)[0] = 0;
+    for(i=1; i<dd->nc[dimind]; i++)
+    {
+        if (comm->slb_frac[dimind])
+        {
+            (*dim_f)[i] = (*dim_f)[i-1] + comm->slb_frac[dimind][i-1];
+        }
+        else
+        {
+            (*dim_f)[i] = (real)i/(real)dd->nc[dimind];
+        }
+    }
+    (*dim_f)[dd->nc[dimind]] = 1;
+}
+
+static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
+                       int dimind,int nslab)
+{
+    int	 pmeindex,slab,nso,i;
     ivec xyz;
     
-    ddpme->dim	 = dim;
-    ddpme->nslab = nslab;
+    ddpme->dimind = dimind;
+    ddpme->nslab  = nslab;
 
     if (nslab <= 1)
     {
@@ -2583,7 +2623,7 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     snew(ddpme->pp_min,nslab);
     snew(ddpme->pp_max,nslab);
     for(slab=0; slab<nslab; slab++) {
-        ddpme->pp_min[slab] = dd->nc[dim] - 1;
+        ddpme->pp_min[slab] = dd->nc[dd->dim[dimind]] - 1;
         ddpme->pp_max[slab] = 0;
     }
     for(i=0; i<dd->nnodes; i++) {
@@ -2591,17 +2631,19 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
         /* For y only use our y/z slab.
          * This assumes that the PME x grid size matches the DD grid size.
          */
-        if (dim == XX || xyz[YY] == dd->ci[YY]) {
-            slab = ddindex2pmeindex(dd,i);
-            if (dim == XX) {
-                slab /= nso;
+        if (dimind == 0 || xyz[YY] == dd->ci[YY]) {
+            pmeindex = ddindex2pmeindex(dd,i);
+            if (dimind == 0) {
+                slab = pmeindex/nso;
             } else {
-                slab = slab % nslab;
+                slab = pmeindex % nslab;
             }
-            ddpme->pp_min[slab] = min(ddpme->pp_min[slab],xyz[dim]);
-            ddpme->pp_max[slab] = max(ddpme->pp_max[slab],xyz[dim]);
+            ddpme->pp_min[slab] = min(ddpme->pp_min[slab],xyz[dimind]);
+            ddpme->pp_max[slab] = max(ddpme->pp_max[slab],xyz[dimind]);
         }
     }
+
+    set_slb_pme_dim_f(dd,ddpme->dimind,&ddpme->slb_dim_f);
 }
 
 int dd_pme_maxshift0(gmx_domdec_t *dd)
@@ -2614,7 +2656,7 @@ int dd_pme_maxshift1(gmx_domdec_t *dd)
     return dd->comm->ddpme[1].maxshift;
 }
 
-static void set_pme_maxshift(gmx_domdec_t *dd,int dimind,gmx_ddpme_t *ddpme,
+static void set_pme_maxshift(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
                              bool bUniform,gmx_ddbox_t *ddbox,real *cell_f)
 {
     gmx_domdec_comm_t *comm;
@@ -2624,11 +2666,11 @@ static void set_pme_maxshift(gmx_domdec_t *dd,int dimind,gmx_ddpme_t *ddpme,
     int  sh;
     
     comm = dd->comm;
-    dim = ddpme->dim;
+    dim = ddpme->dimind;
     nc  = dd->nc[dim];
     ns  = ddpme->nslab;
     
-    if (dd->dim[dimind] != dim)
+    if (dd->dim[dim] != dim)
     {
         /* PP decomposition is not along dim: the worst situation */
         sh = ns/2;
@@ -2683,7 +2725,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd,int dimind,gmx_ddpme_t *ddpme,
     if (debug)
     {
         fprintf(debug,"PME slab communication range for dimind %d is %d\n",
-                dimind,ddpme->maxshift);
+                ddpme->dimind,ddpme->maxshift);
     }
 }
 
@@ -2801,11 +2843,12 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
     {
         copy_rvec(cellsize_min,comm->cellsize_min);
     }
-    
-    if (comm->npmenodes)
+   
+    for(d=0; d<comm->npmedecompdim; d++)
     {
-        set_pme_maxshift(dd,0,&comm->ddpme[0],
-                         comm->slb_frac[XX]==NULL,ddbox,comm->pme_dim_f);
+        set_pme_maxshift(dd,&comm->ddpme[d],
+                         comm->slb_frac[dd->dim[d]]==NULL,ddbox,
+                         comm->ddpme[d].slb_dim_f);
     }
 }
 
@@ -3086,13 +3129,12 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         root->cell_f[pos++] = comm->cell_f1[d1];
     }
     
-    if (comm->npmenodes > 0 && d <= 1)
+    if (d < comm->npmedecompdim)
     {
         /* The master determines the maximum shift for
          * the coordinate communication between separate PME nodes.
          */
-        set_pme_maxshift(dd,d,&comm->ddpme[d],
-                         bUniform,ddbox,root->cell_f);
+        set_pme_maxshift(dd,&comm->ddpme[d],bUniform,ddbox,root->cell_f);
     }
     root->cell_f[pos++] = comm->ddpme[0].maxshift;
     if (d >= 1)
@@ -5522,35 +5564,6 @@ static real *get_slb_frac(FILE *fplog,char *dir,int nc,char *size_string)
     return slb_frac;
 }
 
-static void set_slb_pme_dim_f(gmx_domdec_t *dd)
-{
-    gmx_domdec_comm_t *comm;
-    int i;
-    
-    comm = dd->comm;
-    
-    if (dd->dim[0] != XX)
-    {
-        comm->pme_dim_f = NULL;
-        return;
-    }
-    
-    snew(comm->pme_dim_f,dd->nc[XX]+1);
-    comm->pme_dim_f[0] = 0;
-    for(i=1; i<dd->nc[XX]; i++)
-    {
-        if (comm->slb_frac[XX])
-        {
-            comm->pme_dim_f[i] = comm->pme_dim_f[i-1] + comm->slb_frac[XX][i-1];
-        }
-        else
-        {
-            comm->pme_dim_f[i] = (real)i/(real)dd->nc[XX];
-        }
-    }
-    comm->pme_dim_f[dd->nc[XX]] = 1;
-}
-
 static int multi_body_bondeds_count(gmx_mtop_t *mtop)
 {
     int n,nmol,ftype;
@@ -6081,15 +6094,27 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     {
         comm->npmenodes = dd->nnodes;
     }
-    if (FALSE && dd->nc[XX] > cr->npmenodes && cr->npmenodes % dd->nc[XX] == 0)
+
+    if (EEL_PME(ir->coulombtype))
     {
-        *npme_major = dd->nc[XX];
+        if (FALSE && dd->nc[XX] > cr->npmenodes && cr->npmenodes % dd->nc[XX] == 0)
+        {
+            comm->npmedecompdim   = 2;
+            comm->npmenodes_major = dd->nc[XX];
+        }
+        else
+        {
+            comm->npmedecompdim   = 1;
+            comm->npmenodes_major = comm->npmenodes;
+        }
     }
     else
     {
-        *npme_major = comm->npmenodes;
+        comm->npmedecompdim   = 0;
+        comm->npmenodes_major = 0;
     }
-    
+    *npme_major = comm->npmenodes_major;
+        
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)
     {
@@ -6407,9 +6432,12 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
     if (EEL_PME(ir->coulombtype))
     {
-        init_ddpme(dd,&comm->ddpme[0],XX,comm->npmenodes);
-        init_ddpme(dd,&comm->ddpme[1],YY,1);
-        set_slb_pme_dim_f(dd);
+        init_ddpme(dd,&comm->ddpme[0],0,comm->npmenodes_major);
+        if (comm->npmedecompdim >= 2)
+        {
+            init_ddpme(dd,&comm->ddpme[1],1,
+                       comm->npmenodes/comm->npmenodes_major);
+        }
     }
     else
     {
