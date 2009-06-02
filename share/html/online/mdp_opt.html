@@ -782,6 +782,7 @@ This thermostat is similar to Berendsen coupling, with the same scaling
 using <b>tau_t</b>, but the stochastic term ensures that a proper
 canonical ensemble is generated. The random seed is set with
 <b><A HREF="#ld">ld_seed</A></b>.
+This thermostat works correctly even for <b>tau_t</b>=0.
 For NVT simulations the conserved energy quantity is written
 to the energy and log file.</dd>
 </dl>
@@ -790,7 +791,7 @@ to the energy and log file.</dd>
 <dd>groups to couple separately to temperature bath</dd>
 <dt><h4>tau_t: [ps]</h4></dt>
 <dd>time constant for coupling (one for each group in tc_grps),
-0 means no temperature coupling</dd>
+-1 means no temperature coupling</dd>
 <dt><h4>ref_t: [K]</h4></dt>
 <dd>reference temperature for coupling (one for each group in tc_grps)</dd>
 </dl>

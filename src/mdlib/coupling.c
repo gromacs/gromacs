@@ -447,33 +447,112 @@ real nosehoover_energy(t_grpopts *opts,gmx_ekindata_t *ekind,
   return ener_nh;
 }
 
+static real vrescale_gamdev(int ia, gmx_rng_t rng)
+/* Gamma distribution, adapted from numerical recipes */
+{
+  int j;
+  real am,e,s,v1,v2,x,y;
+  
+  if (ia < 6) {
+    x = 1.0;
+    for(j=1; j<=ia; j++) {
+      x *= gmx_rng_uniform_real(rng);
+    }
+    x = -log(x);
+  } else {
+    do {
+      do {
+        do {
+          v1 = gmx_rng_uniform_real(rng);
+          v2 = 2.0*gmx_rng_uniform_real(rng)-1.0;
+        } while (v1*v1 + v2*v2 > 1.0);
+        y = v2/v1;
+        am = ia - 1;
+        s = sqrt(2.0*am + 1.0);
+        x = s*y + am;
+      } while (x <= 0.0);
+      e = (1.0 + y*y)*exp(am*log(x/am) - s*y);
+    } while (gmx_rng_uniform_real(rng) > e);
+  }
+
+  return x;
+}
+
+static real vrescale_sumnoises(int nn,gmx_rng_t rng)
+{
+/*
+ * Returns the sum of n independent gaussian noises squared
+ * (i.e. equivalent to summing the square of the return values
+ * of nn calls to gmx_rng_gaussian_real).xs
+ */
+  real rr;
+
+  if (nn == 0) {
+    return 0.0;
+  } else if (nn == 1) {
+    rr = gmx_rng_gaussian_real(rng);
+    return rr*rr;
+  } else if (nn % 2 == 0) {
+    return 2.0*vrescale_gamdev(nn/2,rng);
+  } else {
+    rr = gmx_rng_gaussian_real(rng);
+    return 2.0*vrescale_gamdev((nn-1)/2,rng) + rr*rr;
+  }
+}
+
+static real vrescale_resamplekin(real kk,real sigma, int ndeg, real taut,
+				 gmx_rng_t rng)
+{
+/*
+ * Generates a new value for the kinetic energy,
+ * according to Bussi et al JCP (2007), Eq. (A7)
+ * kk:    present value of the kinetic energy of the atoms to be thermalized (in arbitrary units)
+ * sigma: target average value of the kinetic energy (ndeg k_b T/2)  (in the same units as kk)
+ * ndeg:  number of degrees of freedom of the atoms to be thermalized
+ * taut:  relaxation time of the thermostat, in units of 'how often this routine is called'
+ */
+  real factor,rr;
+
+  if (taut > 0.1) {
+    factor = exp(-1.0/taut);
+  } else {
+    factor = 0.0;
+  }
+  rr = gmx_rng_gaussian_real(rng);
+  return
+    kk +
+    (1.0 - factor)*(sigma*(vrescale_sumnoises(ndeg-1,rng) + rr*rr)/ndeg - kk) +
+    2.0*rr*sqrt(kk*sigma/ndeg*(1.0 - factor)*factor);
+}
+
 void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 		     double therm_integral[],
 		     gmx_rng_t rng)
 {
   int    i;
-  real   Ek,Ek_ref1,Ek_ref,dEk_Beren,dEk_stoch,dEk; 
+  real   Ek,Ek_ref1,Ek_ref,Ek_new; 
 
   for(i=0; (i<opts->ngtc); i++) {
     Ek = trace(ekind->tcstat[i].ekinh);
     
-    if ((opts->tau_t[i] > 0) && (Ek > 0.0)) {
+    if (opts->tau_t[i] >= 0 && opts->nrdf[i] > 0 && Ek > 0) {
       Ek_ref1   = 0.5*opts->ref_t[i]*BOLTZ;
       Ek_ref    = Ek_ref1*opts->nrdf[i];
-      dEk_Beren = (Ek_ref - Ek)*dt/opts->tau_t[i];
-      dEk_stoch = 2*sqrt(Ek*Ek_ref1*dt/opts->tau_t[i])*gmx_rng_gaussian_table(rng);
-      dEk       = dEk_Beren + dEk_stoch;
-      if (Ek + dEk <= 0) {
+
+      Ek_new =
+	vrescale_resamplekin(Ek,Ek_ref,opts->nrdf[i],opts->tau_t[i]/dt,rng);
+
+      /* Analytically Ek_new>=0, but we check for rounding errors */
+      if (Ek_new <= 0) {
 	ekind->tcstat[i].lambda = 0.0;
       } else {
-	ekind->tcstat[i].lambda = sqrt((Ek + dEk)/Ek);
-	ekind->tcstat[i].lambda = max(min(1.25,ekind->tcstat[i].lambda),0.8);
+	ekind->tcstat[i].lambda = sqrt(Ek_new/Ek);
       }
-      therm_integral[i] -= dEk;
+      therm_integral[i] -= Ek_new - Ek;
 
       if (debug) {
-	fprintf(debug,"TC: group %d: Ekr %g, Ek %g, dEk %g + %g, Lambda: %g\n",
-		i,Ek_ref,Ek,dEk_Beren,dEk_stoch,ekind->tcstat[i].lambda);
+	fprintf(debug,"TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
+		i,Ek_ref,Ek,Ek_new,ekind->tcstat[i].lambda);
       }
     } else {
        ekind->tcstat[i].lambda = 1.0;

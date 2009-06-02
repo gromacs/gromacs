@@ -141,7 +141,7 @@ static void do_update_md(int start,int homenr,double dt,
 
       for(d=0; d<DIM; d++) {
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-          vnrel = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
+            vnrel = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
 				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);  
           /* do not scale the mean velocities u */
           vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
@@ -170,7 +170,7 @@ static void do_update_md(int start,int homenr,double dt,
         vn             = v[n][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-          vv             = lg*(vn + f[n][d]*w_dt);
+          vv             = lg*vn + f[n][d]*w_dt;
 
           /* do not scale the mean velocities u */
           u              = gstat[ga].u[d];
@@ -227,7 +227,7 @@ static void do_update_visc(int start,int homenr,double dt,
         vn             = v[n][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
-          vn    = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
+            vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
 				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);
           if(d == XX)
             vn += vc + dt*cosz*cos_accel;
@@ -259,7 +259,7 @@ static void do_update_visc(int start,int homenr,double dt,
             /* Add the cosine accelaration profile */
             vv          += dt*cosz*cos_accel;
           } else
-            vv           = lg*(vn + f[n][d]*w_dt);
+            vv           = lg*vn + f[n][d]*w_dt;
 
           v[n][d]        = vv;
           xprime[n][d]   = x[n][d]+vv*dt;
