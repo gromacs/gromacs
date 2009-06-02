@@ -121,11 +121,12 @@ typedef struct {
 } pme_overlap_t;
 
 typedef struct {
+    int  dimind;            /* The index of the dimension, 0=x, 1=y */
+    int  nslab;
+    int  nodeid;
 #ifdef GMX_MPI
     MPI_Comm mpi_comm;
 #endif
-    int  nslab;
-    int  nodeid;
 
     int  *node_dest;        /* The nodes to send x and q to with DD */
     int  *node_src;         /* The nodes to receive x and q from with DD */
@@ -159,6 +160,7 @@ typedef struct gmx_pme {
     int  nnodes;             /* The number of nodes doing PME */
 #ifdef GMX_MPI
     MPI_Comm mpi_comm;
+    MPI_Comm mpi_comm_d[2];
 #endif
 
     bool bPPnode;            /* Node also does particle-particle forces */
@@ -307,42 +309,76 @@ static void calc_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
 #endif
 }
 
-static void pme_calc_pidx(int npmenodes,
-                          int natoms,matrix box, rvec x[],
+static void pme_calc_pidx(int natoms,matrix box, rvec x[],
                           pme_atomcomm_t *atc)
 {
-  int  i;
-  int  tix;
-  real *xptr,tx;
-  real rxx,ryx,rzx;
-  matrix recipbox;
+    int  nslab,i;
+    int  si;
+    real *xptr,s;
+    real rxx,ryx,rzx,ryy,rzy;
+    matrix recipbox;
     
-  /* Calculate PME task index (pidx) for each grid index.
-   * Here we always assign equally sized slabs to each node
-   * for load balancing reasons (the PME grid spacing is not used).
-   */
+    /* Calculate PME task index (pidx) for each grid index.
+     * Here we always assign equally sized slabs to each node
+     * for load balancing reasons (the PME grid spacing is not used).
+     */
+    
+    nslab = atc->nslab;
 
-  /* Reset the count */
-  for(i=0; i<npmenodes; i++)
-    atc->count[i] = 0;
-
-  calc_recipbox(box,recipbox);
-  rxx = recipbox[XX][XX];
-  ryx = recipbox[YY][XX];
-  rzx = recipbox[ZZ][XX];
-  /* Calculate the node index in x-dimension */
-  for(i=0; (i<natoms); i++) {
-    xptr   = x[i];
-    /* Fractional coordinates along box vectors */
-    tx = npmenodes * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
-    tix = (int)(tx + npmenodes) - npmenodes;
-    if (tix < 0)
-      tix += npmenodes;
-    else if (tix >= npmenodes)
-      tix -= npmenodes;
-    atc->pd[i] = tix;
-    atc->count[tix]++;
-  }
+    /* Reset the count */
+    for(i=0; i<nslab; i++)
+    {
+        atc->count[i] = 0;
+    }
+    
+    calc_recipbox(box,recipbox);
+    if (atc->dimind == 0)
+    {
+        rxx = recipbox[XX][XX];
+        ryx = recipbox[YY][XX];
+        rzx = recipbox[ZZ][XX];
+        /* Calculate the node index in x-dimension */
+        for(i=0; (i<natoms); i++)
+        {
+            xptr   = x[i];
+            /* Fractional coordinates along box vectors */
+            s = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
+            si = (int)(s + nslab) - nslab;
+            if (si < 0)
+            {
+                si += nslab;
+            }
+            else if (si >= nslab)
+            {
+                si -= nslab;
+            }
+            atc->pd[i] = si;
+            atc->count[si]++;
+        }
+    }
+    else
+    {
+        ryy = recipbox[YY][YY];
+        rzy = recipbox[ZZ][YY];
+        /* Calculate the node index in y-dimension */
+        for(i=0; (i<natoms); i++)
+        {
+            xptr   = x[i];
+            /* Fractional coordinates along box vectors */
+            s = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
+            si = (int)(s + nslab) - nslab;
+            if (si < 0)
+            {
+                si += nslab;
+            }
+            else if (si >= nslab)
+            {
+                si -= nslab;
+            }
+            atc->pd[i] = si;
+            atc->count[si]++;
+        }
+    }
 }
 
 static void pme_realloc_atomcomm_things(pme_atomcomm_t *atc)
@@ -515,9 +551,10 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
         nsend += atc->count[commnode[i]];
     }
     if (bX) {
-        if (atc->count[pme->nodeid] + nsend != n)
-            gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than a cell length out of the domain decomposition cell of their charge group",
-                      n - (atc->count[pme->nodeid] + nsend),pme->nodeid);
+        if (atc->count[atc->nodeid] + nsend != n)
+            gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than a cell length out of the domain decomposition cell of their charge group in dimension %c",
+                      n - (atc->count[atc->nodeid] + nsend),
+                      pme->nodeid,'x'+atc->dimind);
         
         if (nsend > pme->buf_nalloc) {
             pme->buf_nalloc = over_alloc_dd(nsend);
@@ -525,13 +562,13 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
             srenew(pme->bufr,pme->buf_nalloc);
         }
         
-        atc->n = atc->count[pme->nodeid];
+        atc->n = atc->count[atc->nodeid];
         for(i=0; i<nnodes_comm; i++) {
             scount = atc->count[commnode[i]];
             /* Communicate the count */
             if (debug)
-                fprintf(debug,"PME node %d send to node %d: %d\n",
-                        pme->nodeid,commnode[i],scount);
+                fprintf(debug,"dimind %d PME node %d send to node %d: %d\n",
+                        atc->dimind,atc->nodeid,commnode[i],scount);
             pme_dd_sendrecv(atc,FALSE,i,
                             &scount,sizeof(int),
                             &atc->rcount[i],sizeof(int));
@@ -544,7 +581,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     local_pos = 0;
     for(i=0; i<n; i++) {
         node = atc->pd[i];
-        if (node == pme->nodeid) {
+        if (node == atc->nodeid) {
             /* Copy direct to the receive buffer */
             if (bX) {
                 copy_rvec(x[i],atc->x[local_pos]);
@@ -594,7 +631,7 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
 
   nnodes_comm = min(2*atc->maxshift,atc->nslab-1);
 
-  local_pos = atc->count[pme->nodeid];
+  local_pos = atc->count[atc->nodeid];
   buf_pos = 0;
   for(i=0; i<nnodes_comm; i++) {
     scount = atc->rcount[i];
@@ -616,7 +653,7 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
         for(i=0; i<n; i++)
         {
             node = atc->pd[i];
-            if (node == pme->nodeid)
+            if (node == atc->nodeid)
             {
                 /* Add from the local force array */
                 rvec_inc(f[i],atc->f[local_pos]);
@@ -635,7 +672,7 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
         for(i=0; i<n; i++)
         {
             node = atc->pd[i];
-            if (node == pme->nodeid)
+            if (node == atc->nodeid)
             {
                 /* Copy from the local force array */
                 copy_rvec(atc->f[local_pos],f[i]);
@@ -1498,18 +1535,23 @@ int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
   return ret;
 }
 
-static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,bool bSpread)
+static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
+                          int dimind,bool bSpread)
 {
     int lbnd,rbnd,maxlr,b,i;
     int nn,nk;
     pme_grid_comm_t *pgc;
 
+    atc->dimind  = dimind;
 #ifdef GMX_MPI
-    atc->mpi_comm = pme->mpi_comm;
+    atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
+    MPI_Comm_size(atc->mpi_comm,&atc->nslab);
+    MPI_Comm_rank(atc->mpi_comm,&atc->nodeid);
+    if (debug)
+    {
+        fprintf(debug,"For PME atom communication in dimind %d: nslab %d rank %d\n",atc->dimind,atc->nslab,atc->nodeid);
+    }
 #endif
-
-    atc->nslab   = pme->nnodes;
-    atc->nodeid  = pme->nodeid;
 
     atc->bSpread   = bSpread;
     atc->pme_order = pme->pme_order;
@@ -1602,7 +1644,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     gmx_pme_t pme=NULL;
     
     pme_atomcomm_t *atc;
-    int b,d,i,lbnd,rbnd,maxlr;
+    int nminor,b,d,i,lbnd,rbnd,maxlr;
     
     if (debug)
         fprintf(debug,"Creating PME data structures.\n");
@@ -1621,7 +1663,10 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
             if (pme->nnodes == nnodes_major)
             {
                 pme->ndecompdim = 1;
-            }
+#ifdef GMX_MPI
+                pme->mpi_comm_d[0] = pme->mpi_comm;
+#endif
+           }
             else
             {
                 if (pme->nnodes % nnodes_major != 0)
@@ -1629,6 +1674,13 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
                     gmx_incons("nnodes_major incompatible with #PME nodes");
                 }
                 pme->ndecompdim = 2;
+#ifdef GMX_MPI
+                nminor = pme->nnodes/nnodes_major;
+                MPI_Comm_split(pme->mpi_comm,pme->nodeid % nminor,
+                               pme->nodeid,&pme->mpi_comm_d[0]);
+                MPI_Comm_split(pme->mpi_comm,pme->nodeid/nminor,
+                               pme->nodeid,&pme->mpi_comm_d[1]);
+#endif
             }
         }
         pme->bPPnode = (cr->duty & DUTY_PP);
@@ -1650,10 +1702,10 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     pme->epsilon_r   = ir->epsilon_r;
     
     /* Use atc[0] for spreading */
-    init_atomcomm(pme,&pme->atc[0],TRUE);
+    init_atomcomm(pme,&pme->atc[0],0,TRUE);
     if (pme->ndecompdim >= 2)
     {
-        init_atomcomm(pme,&pme->atc[1],FALSE);
+        init_atomcomm(pme,&pme->atc[1],1,FALSE);
     }
     
     if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
@@ -1980,7 +2032,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     srenew(atc->pd,atc->pd_nalloc);
                 }
                 atc->maxshift = (d==0 ? maxshift0 : maxshift1);
-                pme_calc_pidx(atc->nslab,n_d,box,x_d,atc);
+                pme_calc_pidx(n_d,box,x_d,atc);
                 where();
                 
                 GMX_BARRIER(cr->mpi_comm_mysim);
