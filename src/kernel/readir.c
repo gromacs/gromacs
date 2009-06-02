@@ -1525,10 +1525,10 @@ void do_index(char* mdparin, char *ndx,
       if (ir->opts.tau_t[i] < 0) {
 	gmx_fatal(FARGS,"tau_t for group %d negative",i);
       }
-      /* Factor 22 seemed rather arbitrary, and if we warn about an
-       * order-of-magnitude we should check for that too :-)
+      /* We check the relative magnitude of the coupling time tau_t.
+       * V-rescale works correctly, even for tau_t=0.
        */
-      if (ir->etc &&
+      if ((ir->etc == etcBERENDSEN || ir->etc == etcNOSEHOOVER) &&
 	  ir->opts.tau_t[i] != 0 && ir->opts.tau_t[i] < 10*ir->delta_t) {
 	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than delta_t (%g)",
 		ir->opts.tau_t[i],ir->delta_t);
