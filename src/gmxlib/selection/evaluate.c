@@ -163,10 +163,13 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
     {
         gmx_ana_selection_t *sel = sc->sel[g];
 
-        for (i = 0; i < sel->p.nr; ++i)
+        if (sel->m != sel->orgm)
         {
-            sel->m[i] = sel->orgm[sel->p.m.refid[i]];
-            sel->q[i] = sel->orgq[sel->p.m.refid[i]];
+            for (i = 0; i < sel->p.nr; ++i)
+            {
+                sel->m[i] = sel->orgm[sel->p.m.refid[i]];
+                sel->q[i] = sel->orgq[sel->p.m.refid[i]];
+            }
         }
         if (sel->bCFracDyn)
         {

@@ -1279,10 +1279,21 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         /* TODO: It might be faster to evaluate the positions within this
          * loop instead of in the beginning. */
-        for (bi = 0; bi < p->nr; ++bi)
+        if (pc->flags & POS_DYNAMIC)
         {
-            bj = pc->baseid[p->m.refid[bi]];
-            copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
+            for (bi = 0; bi < p->nr; ++bi)
+            {
+                bj = pc->baseid[p->m.refid[bi]];
+                copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
+            }
+        }
+        else
+        {
+            for (bi = 0; bi < p->nr; ++bi)
+            {
+                bj = pc->baseid[bi];
+                copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
+            }
         }
     }
     else /* pc->sbase is NULL */
