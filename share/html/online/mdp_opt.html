@@ -54,7 +54,7 @@ wall_density, wall_ewald_zfac)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
-<li><A HREF="#gbsa"><b>Implcit solvent</b></A> (implicit_solvent, gb_algorithm, nstgbradii, rgbradii, gb_epsilon_solvent,gb_saltconc, gb_obc_alpha, gb_obc_beta,gb_obc_gamma,gb_dielectric_offset,sa_algorithm,sa_surface_tension)   
+<li><A HREF="#gbsa"><b>Implicit solvent</b></A> (implicit_solvent, gb_algorithm, nstgbradii, rgbradii, gb_epsilon_solvent,gb_saltconc, gb_obc_alpha, gb_obc_beta,gb_obc_gamma,gb_dielectric_offset,sa_algorithm,sa_surface_tension)   
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
 <li><A HREF="#idx"><b>Index</b></A>
 </ul>
@@ -1499,6 +1499,66 @@ simulation. This option only works in combination with the CASSCF
 method.</dd>
 </dl>
 </dl>
+
+<A NAME="gbsa"><br>
+<hr>
+<h3>Implicit solvent</h3>
+
+<dt></dt><h4>implicit_solvent:</h4>
+<dd><dl compact="compact">
+<dt><b>no</b></dt>
+<dd>No implicit solvent</dd>
+<dt><b>GBSA</b></dt>
+<dd>Do a simulation with implicit solvent using the Generalized Born formalism. 
+Three different methods for calculating the Born radii are available, Still, HCT and
+OBC. These are specified with the <b>gb_algorithm</b> field.</dd>
+</dl>
+
+<dt></dt><h4>gb_algorithm:</h4>
+<dd><dl compact="compact">
+<dt><b>Still</b></dt>
+<dd>Use the Still method to calculate the Born radii</dd>
+<dt><b>HCT</b></dt>
+<dd>Use the Hawkins-Cramer-Truhlar method to calculate the Born radii</dd>
+<dt><b>OBC</b></dt>
+<dd>Use the Onufriev-Bashford-Case method to calculate the Born radii</dd>
+</dl>
+
+<dt></dt><h4>nstgbradii: (1) [steps]</h4>
+<dd>Frequency to (re)-calculate the Born radii. For most practial purposes,
+setting a value larger than 1 violates energy conservation and leads to
+unstable trajectories.</dd>
+
+<dt></dt><h4>rgbradii: (1.0) [nm]</h4>
+<dd>Cut-off for the calculation of the Born radii. Currently must be equal to rlist</dd>
+
+<dt></dt><h4>gb_epsilon_solvent: (80)</h4>
+<dd>Dielectric constant for the implicit solvent</dd>
+
+<dt></dt><h4>gb_saltconc: (0) [M]</h4>
+<dd>Salt concentration for implicit solvent models, currently not used</dd>
+
+<dt></dt><h4>gb_obc_alpha (1); gb_obc_beta (0.8); gb_obc_gama (4.85);</h4>
+<dd>Scale factors for the OBC model. Default values are OBC(II).
+Values for OBC(I) are 0.8, 0 and 2.91 respectively</dd>
+
+<dt></dt><h4>gb_dielectric_offset: (0.09) [nm]</h4>
+<dd>Distance for the di-electric offset when calculating the Born radii. This is
+the offset between the center of each atom the center of the polarization energy 
+for the corresponding atom</dd>
+
+<dt></dt><h4>sa_algorithm</h4>
+<dd><dl compact="compact">
+<dt><b>no</bt></dt>
+<dd>Which algorithm is used the the SA part. Note that currently no specific
+SA algorithm is implemented. With implicit_solvent=GBSA, a very crude ACE-style
+algorithm is used by default</dd>
+</dl>
+
+<dt></dt><h4>sa_surface_tension: (2.092) [kj/mol/nm^2]</h4>
+<dd>Default values for surface tension with SA algorithms. The value, 2.092, 
+correponds to 0.005 kcal/mol/Angstrom^2</dd>
+</dl>   
 
 
 <A NAME="user"><br>
