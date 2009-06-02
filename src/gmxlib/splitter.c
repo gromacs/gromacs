@@ -767,7 +767,7 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
   over processors. The results in DP are the same. */
 #ifndef MOL_BORDER
   /* Make a special shake block that includes settles */
-  init_block(&sblock);
+  init_blocka(&sblock);
   gen_sblocks(fp,0,natoms,&top->idef,&sblock,TRUE);
 #else
   sblock = block2blocka(mols);
