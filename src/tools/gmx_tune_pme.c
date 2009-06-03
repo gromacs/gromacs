@@ -367,6 +367,7 @@ static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], int repeats
 {
     char *command=NULL;
     char *cp;
+    char *cp2;
     FILE *fp;
     const char filename[] = "tune.test";
     char line[STRLEN];
@@ -393,8 +394,8 @@ static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], int repeats
          fp = fopen(filename, "r");
          while ( (!feof(fp)) && (bFound==FALSE) )
          {
-             fgets(line, STRLEN, fp);
-             if (str_starts(line, match_mdrun))
+             cp2=fgets(line, STRLEN, fp);
+             if (cp2!=NULL && str_starts(line, match_mdrun))
                  bFound = TRUE;
          }
          if (!bFound)

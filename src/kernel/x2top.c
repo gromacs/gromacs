@@ -63,8 +63,8 @@
 #include "x2top.h"
 #include "atomprop.h"
 
-char atp[6] = "HCNOSX";
-#define NATP asize(atp)
+char atp[7] = "HCNOSX";
+#define NATP (asize(atp)-1)
 
 real blen[NATP][NATP] = { 
   {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },

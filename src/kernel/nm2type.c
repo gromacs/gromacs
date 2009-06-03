@@ -137,15 +137,15 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
 
 enum { ematchNone, ematchWild, ematchElem, ematchExact, ematchNR };
 
-static int match_str(const char *atom,const char *template)
+static int match_str(const char *atom,const char *template_string)
 {
-  if (!atom || !template)
+  if (!atom || !template_string)
     return ematchNone;
-  else if (strcasecmp(atom,template) == 0) 
+  else if (strcasecmp(atom,template_string) == 0) 
     return ematchExact;
-  else if (atom[0] == template[0])
+  else if (atom[0] == template_string[0])
     return ematchElem;
-  else if (strcmp(template,"*") == 0) 
+  else if (strcmp(template_string,"*") == 0) 
     return ematchWild;
   else
     return ematchNone;

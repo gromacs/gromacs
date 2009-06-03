@@ -538,6 +538,29 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
   if (debug) fprintf(debug,"nres: %d, rN: %d, rC: %d\n",pdba->nres,*rn,*rc);
 }
 
+
+typedef struct {
+  char chain;
+  int  start;
+  int  natom;
+  bool bAllWat;
+  int  nterpairs;
+  int  *chainstart;
+} t_pdbchain;
+
+typedef struct {
+  char chain;
+  bool bAllWat;
+  int nterpairs;
+  int *chainstart;
+  t_hackblock **ntdb;
+  t_hackblock **ctdb;
+  int *rN;
+  int *rC;
+  t_atoms *pdba;
+  rvec *x;
+} t_chain;
+
 int main(int argc, char *argv[])
 {
   const char *desc[] = {
@@ -625,27 +648,6 @@ int main(int argc, char *argv[])
     "(heavy) atom so that the total mass of the system remains the same."
   };
 
-  typedef struct {
-    char chain;
-    int  start;
-    int  natom;
-    bool bAllWat;
-    int  nterpairs;
-    int  *chainstart;
-  } t_pdbchain;
-
-  typedef struct {
-    char chain;
-    bool bAllWat;
-    int nterpairs;
-    int *chainstart;
-    t_hackblock **ntdb;
-    t_hackblock **ctdb;
-    int *rN;
-    int *rC;
-    t_atoms *pdba;
-    rvec *x;
-  } t_chain;
   
   FILE       *fp,*top_file,*top_file2,*itp_file=NULL;
   int        natom,nres;

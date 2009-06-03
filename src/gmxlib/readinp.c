@@ -83,7 +83,7 @@ t_inpfile *read_inpfile(char *fn,int *ninp,
     
   if (status != eCPP_OK)
   {
-    sprintf(warn_buf, cpp_error(&in, status));
+    sprintf(warn_buf, "%s", cpp_error(&in, status));
     warning_error(NULL);
     return NULL;
   }
@@ -95,7 +95,7 @@ t_inpfile *read_inpfile(char *fn,int *ninp,
     {
       if (status != eCPP_EOF)
       {
-	sprintf(warn_buf, cpp_error(&in, status));
+	sprintf(warn_buf, "%s", cpp_error(&in, status));
 	warning_error(NULL);
 	return NULL;
       }
