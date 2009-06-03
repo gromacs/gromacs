@@ -63,7 +63,7 @@
 static void insert_ion(int nsa,int *nwater,
 		       bool bSet[],int repl[],atom_id index[],
 		       real pot[],rvec x[],t_pbc *pbc,
-		       int sign,int q,char *ionname,
+		       int sign,int q,const char *ionname,
 		       t_mdatoms *mdatoms,
 		       real rmin,bool bRandom,int *seed)
 {
@@ -132,7 +132,7 @@ static void insert_ion(int nsa,int *nwater,
   }
 }
 
-static char *aname(char *mname)
+static char *aname(const char *mname)
 {
   char *str;
   int  i;
@@ -149,7 +149,7 @@ static char *aname(char *mname)
 
 void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 	       t_atoms *atoms,rvec x[],
-	       char *p_name,char *n_name)
+	       const char *p_name,const char *n_name)
 {
   int i,j,k,r,np,nn,starta,startr,npi,nni;
   rvec *xt;
@@ -179,13 +179,13 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 
     if (np) {
       snew(pptr,1);
-      pptr[0] = p_name;
+      pptr[0] = strdup(p_name);
       snew(paptr,1);
       paptr[0] = aname(p_name);
     }
     if (nn) {
       snew(nptr,1);
-      nptr[0] = n_name;
+      nptr[0] = strdup(n_name);
       snew(naptr,1);
       naptr[0] = aname(n_name);
     }
@@ -227,7 +227,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 }
 
 static void update_topol(char *topinout,int p_num,int n_num,
-			 char *p_name,char *n_name,char *grpname)
+			 const char *p_name,const char *n_name,char *grpname)
 {
 #define TEMP_FILENM "temp.top"
   FILE *fpin,*fpout;
@@ -317,7 +317,7 @@ int gmx_genion(int argc, char *argv[])
     "If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added."
   };
   static int  p_num=0,n_num=0,p_q=1,n_q=-1;
-  static char *p_name="Na",*n_name="Cl";
+  static const char *p_name="Na",*n_name="Cl";
   static real rmin=0.6,scale=0.001,conc=0;
   static int  seed=1993;
   static bool bRandom=TRUE,bNeutral=FALSE;

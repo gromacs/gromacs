@@ -104,7 +104,7 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   /* this must correspond to t_rgb *linecolors[] below */
   static const char *colors[] = { "none", "black", "white", NULL };
   t_inpfile *inp;
-  char      *tmp;
+  const char *tmp;
   int       ninp=0;
   
   if (mpin)
