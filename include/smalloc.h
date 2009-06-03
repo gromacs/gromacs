@@ -110,6 +110,39 @@
  * 
  */
 
+#ifdef __cplusplus
+extern "C" { 
+#endif
+
+void *save_malloc(const char *name,const char *file,int line,size_t size); 
+void *save_calloc(const char *name,const char *file,int line,
+		  unsigned nelem,size_t elsize); 
+void *save_realloc(const char *name,const char *file,int line,
+		   void *ptr,unsigned nelem,size_t elsize);
+void save_free(const char *name,const char *file,int line, void *ptr);
+size_t maxavail(void);
+size_t memavail(void);
+
+#ifdef __cplusplus
+}
+
+template <typename T>
+void _snew(const char *name, T *&ptr, int nelem)
+{
+    ptr = (T *)save_calloc(name, __FILE__, __LINE__, nelem, sizeof(T));
+}
+template <typename T>
+void _srenew(const char *name, T *&ptr, int nelem)
+{
+    ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, nelem, sizeof(T));
+}
+
+#define snew(ptr,nelem) _snew(#ptr,(ptr),(nelem))
+#define srenew(ptr,nelem) _srenew(#ptr,(ptr),(nelem))
+
+#else
+
+/* These macros work in C, not in C++ */
 #define snew(ptr,nelem) (ptr)=save_calloc(#ptr,__FILE__,__LINE__,\
 			(nelem),sizeof(*(ptr)))
 #define srenew(ptr,nelem) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
@@ -119,23 +152,8 @@
 		(ptr)=save_calloc(#ptr,__FILE__,__LINE__,nelem,elsize)
 #define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
 			(ptr),size,1)
+#endif
+
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
-
-#ifdef CPLUSPLUS 
-extern "C" { 
-#endif
-
-void *save_malloc(char *name,char *file,int line,size_t size); 
-void *save_calloc(char *name,char *file,int line,
-		  unsigned nelem,size_t elsize); 
-void *save_realloc(char *name,char *file,int line,
-		   void *ptr,unsigned nelem,size_t elsize);
-void save_free(char *name,char *file,int line, void *ptr);
-size_t maxavail(void);
-size_t memavail(void);
-
-#ifdef CPLUSPLUS
-}
-#endif
 
 #endif	/* _smalloc_h */
