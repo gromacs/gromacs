@@ -104,7 +104,7 @@ static void cp_error()
     gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of quota?");
 }
 
-static void do_cpt_string_err(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
+static void do_cpt_string_err(XDR *xd,bool bRead,const char *desc,char **s,FILE *list)
 {
 #define CPTSTRLEN 1024
     bool_t res=0;
@@ -125,7 +125,7 @@ static void do_cpt_string_err(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
     }
 }
 
-static int do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
+static int do_cpt_int(XDR *xd,const char *desc,int *i,FILE *list)
 {
     bool_t res=0;
     
@@ -141,7 +141,7 @@ static int do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
     return 0;
 }
 
-static void do_cpt_int_err(XDR *xd,char *desc,int *i,FILE *list)
+static void do_cpt_int_err(XDR *xd,const char *desc,int *i,FILE *list)
 {
     if (do_cpt_int(xd,desc,i,list) < 0)
     {
@@ -165,7 +165,7 @@ static void do_cpt_step_err(XDR *xd,const char *desc,gmx_step_t *i,FILE *list)
     }
 }
 
-static void do_cpt_double_err(XDR *xd,char *desc,double *f,FILE *list)
+static void do_cpt_double_err(XDR *xd,const char *desc,double *f,FILE *list)
 {
     bool_t res=0;
     
@@ -867,10 +867,10 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 {
     int  fp;
     int  file_version;
-    char *version=VERSION;
-    char *btime=BUILD_TIME;
-    char *buser=BUILD_USER;
-    char *bmach=BUILD_MACHINE;
+    char *version;
+    char *btime;
+    char *buser;
+    char *bmach;
     char *fprog;
     char *ftime;
     time_t now;
@@ -957,12 +957,23 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
         }
     }
 
+    
+    version = strdup(VERSION);
+    btime   = strdup(BUILD_TIME);
+    buser   = strdup(BUILD_USER);
+    bmach   = strdup(BUILD_MACHINE);
+
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,
                   &state->flags,&flags_eks,&flags_enh,NULL);
+
+    sfree(version);
+    sfree(btime);
+    sfree(buser);
+    sfree(bmach);
 
     if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
 		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
@@ -1010,7 +1021,7 @@ static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
     }
 }
 
-static void check_int(FILE *fplog,char *type,int p,int f,bool *mm)
+static void check_int(FILE *fplog,const char *type,int p,int f,bool *mm)
 {
 	FILE *fp = fplog ? fplog : stderr;
 
@@ -1024,7 +1035,8 @@ static void check_int(FILE *fplog,char *type,int p,int f,bool *mm)
     }
 }
 
-static void check_string(FILE *fplog,char *type,char *p,char *f,bool *mm)
+static void check_string(FILE *fplog,const char *type,const char *p,
+                         const char *f,bool *mm)
 {
 	FILE *fp = fplog ? fplog : stderr;
 	
@@ -1109,10 +1121,10 @@ read_checkpoint(char *fn,FILE *fplog,
 	gmx_file_position_t *outputfiles;
 	int  nfiles;
 	
-    char *int_warn=
+    const char *int_warn=
         "WARNING: The checkpoint file was generator with integrator %s,\n"
         "         while the simulation uses integrator %s\n\n";
-    char *sd_note=
+    const char *sd_note=
         "NOTE: The checkpoint file was for %d nodes doing SD or BD,\n"
         "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
