@@ -91,7 +91,7 @@ xvgrclose(FILE *fp)
 	gmx_fio_fclose(fp);
 }
 
-void xvgr_subtitle(FILE *out,char *subtitle)
+void xvgr_subtitle(FILE *out,const char *subtitle)
 {
   if (bPrintXvgrCodes()) 
     fprintf(out,"@ subtitle \"%s\"\n",subtitle);

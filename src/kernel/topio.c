@@ -245,8 +245,8 @@ cpp_opts(char *define,char *include,char *infile)
   int  ncppopts=0;
   char *cppadds[2];
   char **cppopts  = NULL;
-  char *option[2] = { "-D","-I" };
-  char *nopt[2]   = { "define", "include" };
+  const char *option[2] = { "-D","-I" };
+  const char *nopt[2]   = { "define", "include" };
   char *ptr,*rptr,*buf;
   
   cppadds[0] = define;
@@ -295,7 +295,7 @@ cpp_opts(char *define,char *include,char *infile)
 static char **read_topol(char *infile,char *outfile,
 			 char *define,char *include,
 			 t_symtab    *symtab,
-			 t_atomtype  atype,
+			 gpp_atomtype_t atype,
 			 int         *nrmols,
 			 t_molinfo   **molinfo,
 			 t_params    plist[],
@@ -409,7 +409,7 @@ static char **read_topol(char *infile,char *outfile,
 					fprintf(out,"%s\n",line);
 			}
 			
-			srealloc(pline,strlen(pline)+strlen(tmp_line)+1);
+			srenew(pline,strlen(pline)+strlen(tmp_line)+1);
 			strcat(pline,tmp_line);
 		}
 				
@@ -725,7 +725,7 @@ char **do_top(bool         bVerbose,
 	      int          *combination_rule,
 	      real         *repulsion_power,
 	      real         *fudgeQQ,
-	      t_atomtype   atype,
+	      gpp_atomtype_t atype,
 	      int          *nrmols,
 	      t_molinfo    **molinfo,
 	      t_inputrec   *ir,

@@ -61,7 +61,7 @@
 #include "gpp_atomtype.h"
 #include "x2top.h"
 
-t_nm2type *rd_nm2type(char *ff,int *nnm)
+t_nm2type *rd_nm2type(const char *ff,int *nnm)
 {
   FILE      *fp;
   bool      bCont;
@@ -137,7 +137,7 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
 
 enum { ematchNone, ematchWild, ematchElem, ematchExact, ematchNR };
 
-static int match_str(char *atom,char *template)
+static int match_str(const char *atom,const char *template)
 {
   if (!atom || !template)
     return ematchNone;
@@ -152,7 +152,7 @@ static int match_str(char *atom,char *template)
 }
 
 int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
-	    t_atomtype atype,int *nbonds,t_params *bonds)
+	    gpp_atomtype_t atype,int *nbonds,t_params *bonds)
 {
   int cur = 0;
 #define prev (1-cur)

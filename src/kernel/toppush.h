@@ -51,46 +51,46 @@ typedef struct {
 } t_block2;
 
 extern void generate_nbparams(int comb,int funct,t_params plist[],
-			      t_atomtype atype);
+			      gpp_atomtype_t atype);
 			      
-extern void push_at (t_symtab *symtab,t_atomtype at,
+extern void push_at (t_symtab *symtab,gpp_atomtype_t at,
 		     t_bond_atomtype bat,char *line,int nb_funct,
 		     t_nbparam ***nbparam,t_nbparam ***pair);
 
 extern void push_bt(directive d,t_params bt[], int nral,
-		    t_atomtype at,t_bond_atomtype bat,char *line);
+		    gpp_atomtype_t at,t_bond_atomtype bat,char *line);
 
 extern void push_dihedraltype(directive d,t_params bt[],
 			      t_bond_atomtype bat,char *line);
 
-extern void push_cmaptype(directive d,t_params bt[], int nral, t_atomtype at,
+extern void push_cmaptype(directive d,t_params bt[], int nral, gpp_atomtype_t at,
 						  t_bond_atomtype bat,char *line);
 
-extern void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
+extern void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
 		     char *plines,int nb_funct);
 
 void
-push_gb_params(t_atomtype atype,
+push_gb_params(gpp_atomtype_t atype,
 	       char       *line);
 
 extern void push_atom(t_symtab   *symtab, 
 		      t_block    *cgs,
 		      t_atoms    *at,
-		      t_atomtype atype,
+		      gpp_atomtype_t atype,
 		      char       *line,
 		      int        *lastcg);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
-		      t_atoms *at,t_atomtype atype,char *line,
+		      t_atoms *at,gpp_atomtype_t atype,char *line,
 		      bool bBonded,bool bGenPairs,real fudgeQQ,
 		      bool bZero,bool *bWarn_copy_A_B);
 
 extern void push_cmap(directive d, t_params bondtype[], t_params bond[],
-					  t_atoms *at, t_atomtype atype, char *line,
+					  t_atoms *at, gpp_atomtype_t atype, char *line,
 					  bool *bWarn_copy_A_B);
 
 extern void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
-			 t_atoms *at,t_atomtype atype,char *line);
+			 t_atoms *at,gpp_atomtype_t atype,char *line);
 
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
 		     int *whichmol,int *nrcopies);
@@ -109,7 +109,7 @@ extern void b_to_b2(t_blocka *b, t_block2 *b2);
 
 extern void b2_to_b(t_block2 *b2, t_blocka *b);
 
-extern int add_atomtype_decoupled(t_symtab *symtab,t_atomtype at,
+extern int add_atomtype_decoupled(t_symtab *symtab,gpp_atomtype_t at,
 				  t_nbparam ***nbparam,t_nbparam ***pair);
 /* Add an atom type with all parameters set to zero (no interactions).
  * Returns the atom type number.

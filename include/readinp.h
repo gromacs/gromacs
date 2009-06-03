@@ -75,7 +75,7 @@ extern gmx_step_t get_egmx_step_t(int *ninp,t_inpfile **inp,const char *name,gmx
 
 extern double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def);
 
-extern char *get_estr(int *ninp,t_inpfile **inp,const char *name,char *def);
+extern const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def);
 
 extern int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 		      int *nerror,bool bPrintError);
@@ -93,13 +93,14 @@ extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **def
 #define REM_TYPE(name)       replace_inp_entry(ninp,inp,name,NULL)
 #define REPL_TYPE(old,new)   replace_inp_entry(ninp,inp,old,new)
 #define STYPE(name,var,def)  if ((tmp=get_estr(&ninp,&inp,name,def)) != NULL) strcpy(var,tmp)
+#define STYPENC(name,def) get_estr(&ninp,&inp,name,def)
 #define ITYPE(name,var,def)  var=get_eint(&ninp,&inp,name,def)
 #define STEPTYPE(name,var,def)  var=get_egmx_step_t(&ninp,&inp,name,def)
 #define RTYPE(name,var,def)  var=get_ereal(&ninp,&inp,name,def)
 #define ETYPE(name,var,defs) var=get_eenum(&ninp,&inp,name,defs)
 #define EETYPE(name,var,defs,nerr,bErr) var=get_eeenum(&ninp,&inp,name,defs,nerr,bErr)
-#define CCTYPE(s) STYPE("\n; "s,dummy,NULL)
-#define CTYPE(s)  STYPE("; "s,dummy,NULL)
+#define CCTYPE(s) STYPENC("\n; "s,NULL)
+#define CTYPE(s)  STYPENC("; "s,NULL)
 /* This last one prints a comment line where you can add some explanation */
 
 /* This structure is used for parsing arguments off the comand line */

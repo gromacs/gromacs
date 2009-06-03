@@ -209,7 +209,7 @@ const char *dir2str (directive d)
 
 directive str2dir (char *dstr)
 {
-  directive d;
+  int d;
   char buf[STRLEN],*ptr;
   
   /* Hack to be able to read old topologies */
@@ -220,9 +220,9 @@ directive str2dir (char *dstr)
     ptr = dstr;
   }
   
-  for (d=(directive)0; (d<d_maxdir); d++)
-    if (strcasecmp_min(ptr,dir2str(d)) == 0)
-      return d;
+  for (d=0; (d<d_maxdir); d++)
+    if (strcasecmp_min(ptr,dir2str((directive)d)) == 0)
+      return (directive)d;
 
   return d_invalid;
 }
@@ -238,7 +238,7 @@ static void set_nec(directive **n, ...)
 
   va_start(ap,n);
   do {
-    d=va_arg(ap,directive);
+    d = (directive)va_arg(ap,int);
     srenew(*n,++ind);
     (*n)[ind-1]=d;
   } while (d != d_none);

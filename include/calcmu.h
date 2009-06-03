@@ -45,7 +45,7 @@
 #include "network.h"
 
 extern void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
-		    bool nChargePerturbed,
+		    int nChargePerturbed,
 		    dvec mu,dvec mu_B);
 
 extern bool read_mu(FILE *fp,rvec mu,real *vol);

@@ -194,10 +194,10 @@ int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
   return cgnr;
 }
 
-t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-			 int *nbonds,int nnm,t_nm2type nm2t[])
+gpp_atomtype_t set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
+			     int *nbonds,int nnm,t_nm2type nm2t[])
 {
-  t_atomtype atype;
+  gpp_atomtype_t atype;
   int nresolved;
   
   atype = init_atomtype();
@@ -334,7 +334,7 @@ static void print_pl(FILE *fp,t_params plist[],int ftp,char *name,
 }
 
 static void print_rtp(char *filenm,char *title,t_atoms *atoms,
-		      t_params plist[],t_atomtype atype,int cgnr[],
+		      t_params plist[],gpp_atomtype_t atype,int cgnr[],
 		      int nbts,int bts[])
 {
   FILE *fp;
@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
   t_params   plist[F_NRE];
   t_excls    *excls;
   t_atoms    *atoms;       /* list with all atoms */
-  t_atomtype atype;
+  gpp_atomtype_t atype;
   t_nextnb   nnb;
   t_nm2type  *nm2t;
   t_mols     mymol;

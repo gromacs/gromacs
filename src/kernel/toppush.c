@@ -54,7 +54,7 @@
 #include "gpp_atomtype.h"
 #include "gpp_bond_atomtype.h"
 
-void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype atype)
+void generate_nbparams(int comb,int ftype,t_params *plist,gpp_atomtype_t atype)
 {
   int   i,j,k=-1,nf;
   int   nr,nrfp;
@@ -144,7 +144,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype atype)
   }
 }
 
-static void realloc_nb_params(t_atomtype at,
+static void realloc_nb_params(gpp_atomtype_t at,
 			      t_nbparam ***nbparam,t_nbparam ***pair)
 {
   /* Add space in the non-bonded parameters matrix */
@@ -170,12 +170,12 @@ static void copy_B_from_A(int ftype,double *c)
   }
 }
 
-void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
+void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
 	      char *line,int nb_funct,
 	      t_nbparam ***nbparam,t_nbparam ***pair)
 {
   typedef struct {
-    char *entry;
+    const char *entry;
     int  ptype;
   } t_xlate;
   t_xlate xl[eptNR] = {
@@ -554,7 +554,7 @@ static void push_bondtype(t_params *       bt,
 }
 
 void push_bt(directive d,t_params bt[],int nral,
-	     t_atomtype at,
+	     gpp_atomtype_t at,
 	     t_bond_atomtype bat,char *line)
 {
   const char *formal[MAXATOMLIST+1] = {
@@ -773,7 +773,7 @@ void push_dihedraltype(directive d,t_params bt[],
 }
 
 
-void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
+void push_nbt(directive d,t_nbparam **nbt,gpp_atomtype_t atype,
 	      char *pline,int nb_funct)
 {
   /* swap the atoms */
@@ -870,7 +870,7 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
 }
 
 void 
-push_gb_params (t_atomtype at, char *line)
+push_gb_params (gpp_atomtype_t at, char *line)
 {
 	int nfield;
 	int i,n,k,found,gfound;
@@ -906,8 +906,8 @@ push_gb_params (t_atomtype at, char *line)
 }
 
 void 
-push_cmaptype(directive d, t_params bt[], int nral, t_atomtype at, 
-			  t_bond_atomtype bat, char *line)
+push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at, 
+	      t_bond_atomtype bat, char *line)
 {
 	const char *formal="%s%s%s%s%s%s%s%s";
 	
@@ -1137,7 +1137,7 @@ void push_cg(t_block *block, int *lastindex, int index, int a)
 }
 
 void push_atom(t_symtab *symtab,t_block *cgs,
-	       t_atoms *at,t_atomtype atype,char *line,int *lastcg)
+	       t_atoms *at,gpp_atomtype_t atype,char *line,int *lastcg)
 {
   int 		nr,ptype;
   int 		cgnumber,atomnr,type,typeB,nscan;
@@ -1298,8 +1298,9 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
 }
 
 static bool default_cmap_params(int ftype, t_params bondtype[],
-								t_atoms *at, t_atomtype atype,
-								t_param *p, bool bB, int *cmap_type, int *nparam_def)
+				t_atoms *at, gpp_atomtype_t atype,
+				t_param *p, bool bB,
+				int *cmap_type, int *nparam_def)
 {
 	int i,j,nparam_found;
 	int ct;
@@ -1346,7 +1347,7 @@ static bool default_cmap_params(int ftype, t_params bondtype[],
 }
 
 static bool default_params(int ftype,t_params bt[],
-			   t_atoms *at,t_atomtype atype,
+			   t_atoms *at,gpp_atomtype_t atype,
 			   t_param *p,bool bB,
 			   t_param **param_def,
                int *nparam_def)
@@ -1447,7 +1448,7 @@ static bool default_params(int ftype,t_params bt[],
 
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
-	       t_atoms *at,t_atomtype atype,char *line,
+	       t_atoms *at,gpp_atomtype_t atype,char *line,
 	       bool bBonded,bool bGenPairs,real fudgeQQ,
 	       bool bZero,bool *bWarn_copy_A_B)
 {
@@ -1769,7 +1770,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 }
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
-			   t_atoms *at, t_atomtype atype, char *line,
+			   t_atoms *at, gpp_atomtype_t atype, char *line,
 			   bool *bWarn_copy_A_B)
 {
 	const char *aaformat[MAXATOMLIST+1]= 
@@ -1863,7 +1864,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 
 	
 void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
-		  t_atoms *at,t_atomtype atype,char *line)
+		  t_atoms *at,gpp_atomtype_t atype,char *line)
 {
   char *ptr;
   int  type,ftype,j,n,ret,nj,a;
@@ -2112,7 +2113,7 @@ void merge_excl(t_blocka *excl, t_block2 *b2)
   b2_to_b(b2,excl);
 }
 
-int add_atomtype_decoupled(t_symtab *symtab,t_atomtype at,
+int add_atomtype_decoupled(t_symtab *symtab,gpp_atomtype_t at,
 			   t_nbparam ***nbparam,t_nbparam ***pair)
 {
   t_atom  atom;

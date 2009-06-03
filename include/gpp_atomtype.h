@@ -45,44 +45,44 @@
 #include "typedefs.h"
 #include "macros.h"
 
-typedef struct gpp_atomtype *t_atomtype;
+typedef struct gpp_atomtype *gpp_atomtype_t;
 
-extern int get_atomtype_type(char *str,t_atomtype at);
+extern int get_atomtype_type(const char *str,gpp_atomtype_t at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
-extern int get_atomtype_ntypes(t_atomtype at);
+extern int get_atomtype_ntypes(gpp_atomtype_t at);
 /* Return number of atomtypes */
 
-extern char *get_atomtype_name(int nt, t_atomtype at);
+extern char *get_atomtype_name(int nt,gpp_atomtype_t at);
 /* Return name corresponding to atomtype nt, or NULL if not found */
 
-extern real get_atomtype_massA(int nt,t_atomtype at);
-extern real get_atomtype_massB(int nt,t_atomtype at);
-extern real get_atomtype_qA(int nt,t_atomtype at);
-extern real get_atomtype_qB(int nt,t_atomtype at);
-extern real get_atomtype_radius(int nt,t_atomtype at);
-extern real get_atomtype_vol(int nt,t_atomtype at);
-extern real get_atomtype_surftens(int nt,t_atomtype at);
-extern real get_atomtype_gb_radius(int nt,t_atomtype at);
-extern real get_atomtype_S_hct(int nt,t_atomtype at);
-extern int get_atomtype_ptype(int nt,t_atomtype at);
-extern int get_atomtype_batype(int nt,t_atomtype at);
-extern int get_atomtype_atomnumber(int nt,t_atomtype at);
+extern real get_atomtype_massA(int nt,gpp_atomtype_t at);
+extern real get_atomtype_massB(int nt,gpp_atomtype_t at);
+extern real get_atomtype_qA(int nt,gpp_atomtype_t at);
+extern real get_atomtype_qB(int nt,gpp_atomtype_t at);
+extern real get_atomtype_radius(int nt,gpp_atomtype_t at);
+extern real get_atomtype_vol(int nt,gpp_atomtype_t at);
+extern real get_atomtype_surftens(int nt,gpp_atomtype_t at);
+extern real get_atomtype_gb_radius(int nt,gpp_atomtype_t at);
+extern real get_atomtype_S_hct(int nt,gpp_atomtype_t at);
+extern int get_atomtype_ptype(int nt,gpp_atomtype_t at);
+extern int get_atomtype_batype(int nt,gpp_atomtype_t at);
+extern int get_atomtype_atomnumber(int nt,gpp_atomtype_t at);
 
 /* Return the above variable for atomtype nt, or NOTSET if not found */
 
-extern real get_atomtype_nbparam(int nt,int param,t_atomtype at);
+extern real get_atomtype_nbparam(int nt,int param,gpp_atomtype_t at);
 /* Similar to the previous but returns the paramth parameter or NOTSET */
 
-extern t_atomtype init_atomtype(void);
+extern gpp_atomtype_t init_atomtype(void);
 /* Return a new atomtype structure */
 
-extern void done_atomtype(t_atomtype *at);
+extern void done_atomtype(gpp_atomtype_t at);
 /* Free the memory in the structure */
 
-extern int set_atomtype(int nt,t_atomtype at,t_symtab *tab,
-			t_atom *a,char *name,t_param *nb,
+extern int set_atomtype(int nt,gpp_atomtype_t at,t_symtab *tab,
+			t_atom *a,const char *name,t_param *nb,
 			int bondatomtype,
 			real radius,real vol,real surftens,int atomnumber,
 			real gb_radius, real S_hct);
@@ -90,26 +90,26 @@ extern int set_atomtype(int nt,t_atomtype at,t_symtab *tab,
    NOTSET on error. */	
 
 int
-set_atomtype_gbparam(t_atomtype at, int i,
+set_atomtype_gbparam(gpp_atomtype_t at, int i,
 		     real radius,real vol,real surftens,
 		     real gb_radius, real S_hct);
 
-extern int add_atomtype(t_atomtype at,t_symtab *tab,
-			t_atom *a,char *name,t_param *nb,
+extern int add_atomtype(gpp_atomtype_t at,t_symtab *tab,
+			t_atom *a,const char *name,t_param *nb,
 			int bondatomtype,
 			real radius,real vol,real surftens,real atomnumber,
 			real gb_radius, real S_hct);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 
-extern void print_at (FILE * out, t_atomtype at);
+extern void print_at (FILE * out, gpp_atomtype_t at);
 /* Print an atomtype record to a text file */
 
 extern void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 			int *wall_atomtype,
-			t_atomtype at,bool bVerbose);
+			gpp_atomtype_t at,bool bVerbose);
 			
-extern void copy_atomtype_atomtypes(t_atomtype atype,t_atomtypes *atypes);
+extern void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 /* Copy from one structure to another */
 #endif	/* _gpp_atomtype_h */
 

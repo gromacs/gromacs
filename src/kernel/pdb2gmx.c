@@ -670,7 +670,7 @@ int main(int argc, char *argv[])
   t_restp    *restp;
   t_hackblock *ah;
   t_symtab   symtab;
-  t_atomtype atype;
+  gpp_atomtype_t atype;
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];

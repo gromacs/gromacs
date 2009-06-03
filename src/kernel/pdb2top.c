@@ -111,10 +111,11 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
+typedef struct { char *desc,*fn; } t_fff;
+
 void
 choose_ff(char *forcefield, int maxlen)
 {
-  typedef struct { char *desc,*fn; } t_fff;
   FILE    *in;
   t_fff   *fff;
   int     i,nff,sel;
@@ -161,7 +162,7 @@ choose_ff(char *forcefield, int maxlen)
 }
 
 
-static int name2type(t_atoms *at, int **cgnr, t_atomtype atype, 
+static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype, 
 		     t_restp restp[])
 {
   int     i,j,prevresind,resind,i0,prevcg,cg,curcg;
@@ -325,7 +326,7 @@ void print_top_mols(FILE *out, char *title, char *water,
 
 void write_top(FILE *out, char *pr,char *molname,
 	       t_atoms *at,int bts[],t_params plist[],t_excls excls[],
-	       t_atomtype atype,int *cgnr, int nrexcl)
+	       gpp_atomtype_t atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
 {
   if (at && atype && cgnr) {
@@ -358,9 +359,10 @@ void write_top(FILE *out, char *pr,char *molname,
   }
 }
 
-static atom_id search_res_atom(char *type,int resind,
-			       int natom,t_atom at[],char **aname[],
-			       char *bondtype,bool bMissing)
+static atom_id search_res_atom(const char *type,int resind,
+			       int natom,t_atom at[],
+			       const char * const * const aname[],
+			       const char *bondtype,bool bMissing)
 {
   int i;
 
@@ -399,7 +401,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
   int     resind,i,j,k;
   atom_id ai,aj;
   real    dist2, long_bond_dist2, short_bond_dist2;
-  char    *ptr;
+  const char *ptr;
 
   long_bond_dist2  = sqr(long_bond_dist);
   short_bond_dist2 = sqr(short_bond_dist);
@@ -509,7 +511,7 @@ void print_sums(t_atoms *atoms, bool bSystem)
 {
   double m,qtot;
   int    i;
-  char   *where;
+  const char *where;
   
   if (bSystem)
     where=" in system";
@@ -537,7 +539,7 @@ static void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
   int i, j, k, l;
   t_restp *res;
   char buf[STRLEN];
-  char Hnum[6]="123456";
+  const char *Hnum="123456";
   bool bN,bC;
 
   snew(*hb,nres);
@@ -657,7 +659,7 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 {
 	int     residx,i,ii,j,k;
 	atom_id ai,aj,ak,al,am;
-	char    *ptr;
+	const char *ptr;
 	
 	if (debug)
 		ptr = "cmap";
@@ -714,7 +716,7 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
-	     t_atoms *atoms, rvec **x, t_atomtype atype, t_symtab *tab,
+	     t_atoms *atoms, rvec **x, gpp_atomtype_t atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
 	     int *rn, int *rc, bool bMissing,

@@ -51,7 +51,7 @@
 #include "names.h"
 #include "gpp_atomtype.h"
 
-static int round_check(real r,int limit,int ftype,char *name)
+static int round_check(real r,int limit,int ftype,const char *name)
 {
   int i;
 

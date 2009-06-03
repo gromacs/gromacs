@@ -53,7 +53,7 @@ typedef struct {
 
 extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    t_atoms *atoms,rvec **x,
-		    t_atomtype atype,t_symtab *tab,
+		    gpp_atomtype_t atype,t_symtab *tab,
 		    int bts[],
 		    int nrtp, t_restp rtp[],
 		    int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,

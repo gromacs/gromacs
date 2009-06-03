@@ -49,14 +49,14 @@
 #include "resall.h"
 #include "pgutil.h"
 
-t_atomtype read_atype(char *adb,t_symtab *tab)
+gpp_atomtype_t read_atype(const char *adb,t_symtab *tab)
 {
   FILE       *in;
   char       aadb[STRLEN];
   char       buf[STRLEN],name[STRLEN];
   double     m;
   int        nratt=0;
-  t_atomtype at;
+  gpp_atomtype_t at;
   t_atom     *a;
   t_param    *nb;
   
@@ -88,7 +88,7 @@ t_atomtype read_atype(char *adb,t_symtab *tab)
   return at;
 }
 
-static void print_resatoms(FILE *out,t_atomtype atype,t_restp *rtp)
+static void print_resatoms(FILE *out,gpp_atomtype_t atype,t_restp *rtp)
 {
   int j,tp;
   char *tpnm;
@@ -109,7 +109,7 @@ static void print_resatoms(FILE *out,t_atomtype atype,t_restp *rtp)
 }
 
 static bool read_atoms(FILE *in,char *line,
-		       t_restp *r0,t_symtab *tab,t_atomtype atype)
+		       t_restp *r0,t_symtab *tab,gpp_atomtype_t atype)
 {
   int    i,j,cg,maxentries;
   char   buf[256],buf1[256];
@@ -237,7 +237,7 @@ void clear_t_restp(t_restp *rrtp)
 }
 
 int read_resall(char *ff, int bts[], t_restp **rtp, 
-		t_atomtype atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
+		gpp_atomtype_t atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
 		bool *HH14, bool *bRemoveDih)
 {
   FILE      *in;
@@ -373,7 +373,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 }
 
 void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
-		  t_atomtype atype, bool bAlldih, int nrexcl, 
+		  gpp_atomtype_t atype, bool bAlldih, int nrexcl, 
 		  bool HH14, bool bRemoveDih)
 {
   int i,bt;

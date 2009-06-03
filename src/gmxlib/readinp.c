@@ -409,7 +409,7 @@ double get_ereal(int *ninp,t_inpfile **inp,const char *name,double def)
   }
 }
 
-char *get_estr(int *ninp,t_inpfile **inp,const char *name,char *def)
+const char *get_estr(int *ninp,t_inpfile **inp,const char *name,const char *def)
 {
   char buf[32];
   int  ii;

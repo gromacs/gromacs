@@ -42,7 +42,7 @@
 #include "grompp.h"
 
 extern int read_ter_db(char *FF,char ter,
-		       t_hackblock **tbptr,t_atomtype atype);
+		       t_hackblock **tbptr,gpp_atomtype_t atype);
 /* Read database for N&C terminal hacking */
 
 extern t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret);

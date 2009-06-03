@@ -67,8 +67,8 @@ static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
   *atoms2->atomname[a2]=strdup(*atoms1->atomname[a1]);
 }
 
-static atom_id pdbasearch_atom(char *name,int resind,t_atoms *pdba,
-			       char *searchtype,bool bMissing)
+static atom_id pdbasearch_atom(const char *name,int resind,t_atoms *pdba,
+			       const char *searchtype,bool bMissing)
 {
   int  i;
   

@@ -54,7 +54,7 @@
 #include "enxio.h"
 #include "mtop_util.h"
 
-static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
+static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
 {
   if (i1 != i2) {
     if (index != -1)
@@ -64,7 +64,7 @@ static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
   }
 }
 
-static void cmp_gmx_step_t(FILE *fp,char *s,gmx_step_t i1,gmx_step_t i2)
+static void cmp_gmx_step_t(FILE *fp,const char *s,gmx_step_t i1,gmx_step_t i2)
 {
   if (i1 != i2) {
     fprintf(fp,"%s (",s);
@@ -75,7 +75,7 @@ static void cmp_gmx_step_t(FILE *fp,char *s,gmx_step_t i1,gmx_step_t i2)
   }
 }
 
-static void cmp_us(FILE *fp,char *s,int index,unsigned short i1,unsigned short i2)
+static void cmp_us(FILE *fp,const char *s,int index,unsigned short i1,unsigned short i2)
 {
   if (i1 != i2) {
     if (index != -1)
@@ -85,7 +85,7 @@ static void cmp_us(FILE *fp,char *s,int index,unsigned short i1,unsigned short i
   }
 }
 
-static void cmp_uc(FILE *fp,char *s,int index,unsigned char i1,unsigned char i2)
+static void cmp_uc(FILE *fp,const char *s,int index,unsigned char i1,unsigned char i2)
 {
   if (i1 != i2) {
     if (index != -1)
@@ -110,7 +110,8 @@ static bool cmp_bool(FILE *fp, const char *s, int index, bool b1, bool b2)
   return b1 && b2;
 }
 
-static void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
+static void cmp_str(FILE *fp, const char *s, int index,
+		    const char *s1, const char *s2)
 {
   if (strcmp(s1,s2) != 0) {
     if (index != -1)
@@ -140,7 +141,7 @@ static void cmp_real(FILE *fp,const char *s,int index,real i1,real i2,real ftol)
   }
 }
 
-static void cmp_double(FILE *fp,char *s,int index,double i1,double i2,real ftol)
+static void cmp_double(FILE *fp,const char *s,int index,double i1,double i2,real ftol)
 {
   if (!equal_double(i1,i2,ftol)) {
     if (index != -1)
@@ -150,7 +151,7 @@ static void cmp_double(FILE *fp,char *s,int index,double i1,double i2,real ftol)
   }
 }
 
-static void cmp_rvec(FILE *fp,char *s,int index,rvec i1,rvec i2,real ftol)
+static void cmp_rvec(FILE *fp,const char *s,int index,rvec i1,rvec i2,real ftol)
 {
   if (2*fabs(i1[XX] - i2[XX]) > (fabs(i1[XX]) + fabs(i2[XX]))*ftol ||
       2*fabs(i1[YY] - i2[YY]) > (fabs(i1[YY]) + fabs(i2[YY]))*ftol ||
@@ -164,7 +165,7 @@ static void cmp_rvec(FILE *fp,char *s,int index,rvec i1,rvec i2,real ftol)
   }
 }
 
-static void cmp_ivec(FILE *fp,char *s,int index,ivec i1,ivec i2)
+static void cmp_ivec(FILE *fp,const char *s,int index,ivec i1,ivec i2)
 {
   if ((i1[XX] != i2[XX]) || (i1[YY] != i2[YY]) || (i1[ZZ] != i2[ZZ])) {
     if (index != -1)
@@ -195,7 +196,7 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
       cmp_int(fp,buf,i,il1->iatoms[i],il2->iatoms[i]);
 }
 
-void cmp_iparm(FILE *fp,char *s,t_functype ft,
+void cmp_iparm(FILE *fp,const char *s,t_functype ft,
 	       t_iparams ip1,t_iparams ip2,real ftol) 
 {
   int i;
@@ -212,7 +213,7 @@ void cmp_iparm(FILE *fp,char *s,t_functype ft,
   }
 }
 
-void cmp_iparm_AB(FILE *fp,char *s,t_functype ft,t_iparams ip1,real ftol) 
+void cmp_iparm_AB(FILE *fp,const char *s,t_functype ft,t_iparams ip1,real ftol) 
 {
   int nrfpA,nrfpB,p0,i;
   bool bDiff;
@@ -340,7 +341,7 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol)
   }
 }
 
-static void cmp_rvecs(FILE *fp,char *title,int n,rvec x1[],rvec x2[],real ftol)
+static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],real ftol)
 {
   int i;
   
@@ -388,7 +389,7 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol)
     cmp_ivec(fp,"inputrec->grpopts.nFreeze",i,opt1->nFreeze[i],opt2->nFreeze[i]);
 }
 
-static void cmp_cosines(FILE *fp,char *s,t_cosines c1[DIM],t_cosines c2[DIM],real ftol)
+static void cmp_cosines(FILE *fp,const char *s,t_cosines c1[DIM],t_cosines c2[DIM],real ftol)
 {
   int i,m;
   char buf[256];
@@ -596,9 +597,9 @@ static void comp_state(t_state *st1, t_state *st2,real ftol)
   }
 }
 
-void comp_tpx(char *fn1,char *fn2,real ftol)
+void comp_tpx(const char *fn1,const char *fn2,real ftol)
 {
-  char        *ff[2];
+  const char  *ff[2];
   t_tpxheader sh[2];
   t_inputrec  ir[2];
   t_state     state[2];
@@ -752,7 +753,7 @@ static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol)
   }
 }
 
-void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
+void comp_enx(char *fn1,const char *fn2,real ftol,const char *lastener)
 {
   int        in1,in2,nre,nre1,nre2,block;
   int        i,maxener;

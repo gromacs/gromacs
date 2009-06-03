@@ -275,7 +275,7 @@ static void
 new_status(char *topfile,char *topppfile,char *confin,
 	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
-	   t_atomtype atype,gmx_mtop_t *sys,
+	   gpp_atomtype_t atype,gmx_mtop_t *sys,
 	   int *nmi,t_molinfo **mi,t_params plist[],
 	   int *comb,real *reppow,real *fudgeQQ,
 	   bool bMorse,
@@ -615,7 +615,7 @@ static void gen_posres(gmx_mtop_t *mtop,t_molinfo *mi,
   }
 }
 
-static void set_wall_atomtype(t_atomtype at,t_gromppopts *opts,
+static void set_wall_atomtype(gpp_atomtype_t at,t_gromppopts *opts,
 			      t_inputrec *ir)
 {
   int i;
@@ -831,7 +831,7 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
 
 int main (int argc, char *argv[])
 {
-  const char *desc[] = {
+  static const char *desc[] = {
     "The gromacs preprocessor",
     "reads a molecular topology file, checks the validity of the",
     "file, expands the topology from a molecular description to an atomic",
@@ -916,7 +916,7 @@ int main (int argc, char *argv[])
   gmx_mtop_t   *sys;
   int          nmi;
   t_molinfo    *mi;
-  t_atomtype   atype;
+  gpp_atomtype_t atype;
   t_inputrec   *ir;
   int          natoms,nvsite,comb,mt;
   t_params     *plist;

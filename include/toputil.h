@@ -46,7 +46,7 @@ extern int name2index(char *str, char ***typenames, int ntypes);
 
 extern void pr_alloc (int extra, t_params *pr);
 
-extern void set_p_string(t_param *p,char *s);
+extern void set_p_string(t_param *p,const char *s);
 
 extern void cp_param(t_param *dest,t_param *src);
 
@@ -73,10 +73,10 @@ extern void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
-extern void print_blocka(FILE *out,char *szName,char *szIndex, 
-			 char *szA,t_blocka *block);
+extern void print_blocka(FILE *out,const char *szName,const char *szIndex, 
+			 const char *szA,t_blocka *block);
 
-extern void print_atoms(FILE *out,t_atomtype atype,t_atoms *at,int *cgnr);
+extern void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr);
 
 extern void print_bondeds(FILE *out,int natoms,directive d,
 			  int ftype,int fsubtype,t_params plist[]);

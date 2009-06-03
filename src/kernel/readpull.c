@@ -101,9 +101,10 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
 {
   int  ninp,nerror,i,nchar,ndim,nscan,m;
   t_inpfile *inp;
-  char *tmp,**grpbuf;
+  const char *tmp;
+  char **grpbuf;
   char dummy[STRLEN],buf[STRLEN],init[STRLEN];
-  char *init_def1="0.0",*init_def3="0.0 0.0 0.0";
+  const char *init_def1="0.0",*init_def3="0.0 0.0 0.0";
   char wbuf[STRLEN],VecTemp[STRLEN];
   dvec vec;
 

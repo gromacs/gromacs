@@ -61,7 +61,7 @@ static t_2morse *read_dissociation_energies(int *n2morse)
   FILE     *fp;
   char     ai[32],aj[32];
   double   e_diss;
-  char     *fn="edissoc.dat";
+  const char *fn="edissoc.dat";
   t_2morse *t2m=NULL;
   int      maxn2m=0,n2m=0;
   int      nread;
@@ -172,7 +172,7 @@ static real search_e_diss(int n2m,t_2morse t2m[],char *ai,char *aj)
   }
 }
 
-void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype atype)
+void convert_harmonics(int nrmols,t_molinfo mols[],gpp_atomtype_t atype)
 {
   int      n2m;
   t_2morse *t2m;

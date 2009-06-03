@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "macros.h"
 
-extern void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype atype);
+extern void convert_harmonics(int nrmols,t_molinfo mols[],gpp_atomtype_t atype);
 
 #endif	/* _grompp_h */
 

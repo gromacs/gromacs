@@ -119,7 +119,7 @@ typedef struct {
   t_symtab    tab;
   /* residue indices (not numbers!) of the N and C termini */
   int         *rN, *rC;
-  t_atomtype  atype;
+  gpp_atomtype_t atype;
   /* protonated topology: */
   t_atoms     *patoms;
   /* unprotonated topology: */

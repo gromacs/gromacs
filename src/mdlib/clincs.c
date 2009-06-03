@@ -701,7 +701,7 @@ static int int_comp(const void *a,const void *b)
 
 gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
                            int nflexcon_global,t_blocka *at2con,
-                           int bPLINCS,int nIter,int nProjOrder)
+                           bool bPLINCS,int nIter,int nProjOrder)
 {
     struct gmx_lincsdata *li;
     int mb;

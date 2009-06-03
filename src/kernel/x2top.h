@@ -48,7 +48,7 @@ typedef struct {
   double *blen;
 } t_nm2type;
 
-extern t_nm2type *rd_nm2type(char *ff,int *nnm);
+extern t_nm2type *rd_nm2type(const char *ff,int *nnm);
 /* Read the name 2 type database. nnm is the number of entries 
  * ff is the force field.
  */
@@ -57,7 +57,7 @@ extern void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
 extern int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
-		   t_atomtype atype,int *nbonds,t_params *bond);
+		   gpp_atomtype_t atype,int *nbonds,t_params *bond);
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list 
  */

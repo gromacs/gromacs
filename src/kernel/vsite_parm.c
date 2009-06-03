@@ -318,7 +318,7 @@ static real get_angle(int nrang, t_mybonded angles[],
   return angle;
 }
 
-static bool calc_vsite3_param(t_atomtype atype,
+static bool calc_vsite3_param(gpp_atomtype_t atype,
 			      t_param *param, t_atoms *at,
 			      int nrbond, t_mybonded *bonds,
 			      int nrang,  t_mybonded *angles )
@@ -465,7 +465,7 @@ static bool calc_vsite3fad_param(t_param *param,
   return bError;
 }
 
-static bool calc_vsite3out_param(t_atomtype atype,
+static bool calc_vsite3out_param(gpp_atomtype_t atype,
 				 t_param *param, t_atoms *at,
 				 int nrbond, t_mybonded *bonds,
 				 int nrang,  t_mybonded *angles)
@@ -683,7 +683,7 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
 		t_params plist[])
 {
   int i,j,ftype;

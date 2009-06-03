@@ -78,12 +78,12 @@ typedef struct {
   char resname[MAXNAME];
   int nbonds;
   int nangles;
-  struct {
+  struct vsitetop_bond {
     char   atom1[MAXNAME];
     char   atom2[MAXNAME];
     float  value;
   } *bond; /* list of bonds */
-  struct {
+  struct vsitetop_angle {
     char   atom1[MAXNAME];
     char   atom2[MAXNAME];
     char   atom3[MAXNAME];
@@ -303,7 +303,9 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[],int nvsiteconf,char 
   
 
 
-static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop, char res[], char atom1[], char atom2[])
+static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop,
+			 const char res[],
+			 const char atom1[], const char atom2[])
 {
   int i,j;
   
@@ -324,7 +326,9 @@ static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop, char res[], char a
 }
       
 
-static real get_ddb_angle(t_vsitetop *vsitetop, int nvsitetop, char res[], char atom1[], char atom2[], char atom3[])
+static real get_ddb_angle(t_vsitetop *vsitetop, int nvsitetop,
+			  const char res[], const char atom1[],
+			  const char atom2[], const char atom3[])
 {
   int i,j;
   
@@ -428,7 +432,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
   return type;
 }
 
-static int vsite_nm2type(char *name, t_atomtype atype)
+static int vsite_nm2type(const char *name, gpp_atomtype_t atype)
 {
   int tp;
   
@@ -704,12 +708,13 @@ static void calc_vsite3_param(real xd,real yd,real xi,real yi,real xj,real yj,
 }
 
 
-static int gen_vsites_trp(t_atomtype atype, rvec *newx[],
-			t_atom *newatom[], char ***newatomname[], 
-			int *o2n[], int *newvsite_type[], int *newcgnr[],
-			t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
-			t_atoms *at, int *vsite_type[], t_params plist[], 
-			int nrfound, int *ats, int add_shift, t_vsitetop *vsitetop, int nvsitetop)
+static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
+			  t_atom *newatom[], char ***newatomname[], 
+			  int *o2n[], int *newvsite_type[], int *newcgnr[],
+			  t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
+			  t_atoms *at, int *vsite_type[], t_params plist[], 
+			  int nrfound, int *ats, int add_shift,
+			  t_vsitetop *vsitetop, int nvsitetop)
 {
 #define NMASS 2
   /* these MUST correspond to the atnms array in do_vsite_aromatics! */
@@ -953,12 +958,13 @@ static int gen_vsites_trp(t_atomtype atype, rvec *newx[],
 }
 
 
-static int gen_vsites_tyr(t_atomtype atype, rvec *newx[],
-			t_atom *newatom[], char ***newatomname[], 
+static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
+			  t_atom *newatom[], char ***newatomname[], 
 			int *o2n[], int *newvsite_type[], int *newcgnr[],
-			t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
-			t_atoms *at, int *vsite_type[], t_params plist[], 
-			int nrfound, int *ats, int add_shift, t_vsitetop *vsitetop, int nvsitetop)
+			  t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
+			  t_atoms *at, int *vsite_type[], t_params plist[], 
+			  int nrfound, int *ats, int add_shift,
+			  t_vsitetop *vsitetop, int nvsitetop)
 {
   int nvsite,i,i0,j,atM,tpM;
   real dCGCE,dCEOH,dCGM,tmp1,a,b;
@@ -1318,7 +1324,7 @@ static bool is_vsite(int vsite_type)
 
 static char atomnamesuffix[] = "1234";
 
-void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype, 
+void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype, 
 		t_atoms *at, t_symtab *symtab, rvec *x[], 
 		t_params plist[], int *vsite_type[], int *cgnr[], 
 		real mHmult, bool bVsiteAromatics, char *ff)
@@ -1361,16 +1367,16 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype,
   /* if bVsiteAromatics=TRUE do_vsites will specifically convert atoms in 
      PHE, TRP, TYR and HIS to a construction of virtual sites */
   enum                    { resPHE, resTRP, resTYR, resHIS, resNR };
-  char *resnms[resNR]   = {   "PHE",  "TRP",  "TYR",  "HIS" };
+  const char *resnms[resNR]   = {   "PHE",  "TRP",  "TYR",  "HIS" };
 	/* Amber03 alternative names for termini */
-  char *resnmsN[resNR]  = {  "NPHE", "NTRP", "NTYR", "NHIS" };
-  char *resnmsC[resNR]  = {  "CPHE", "CTRP", "CTYR", "CHIS" };
+  const char *resnmsN[resNR]  = {  "NPHE", "NTRP", "NTYR", "NHIS" };
+  const char *resnmsC[resNR]  = {  "CPHE", "CTRP", "CTYR", "CHIS" };
   /* HIS can be known as HISH, HIS1, HISA, HID, HIE, HIP, etc. too */
   bool bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
   /* the atnms for every residue MUST correspond to the enums in the 
      gen_vsites_* (one for each residue) routines! */
   /* also the atom names in atnms MUST be in the same order as in the .rtp! */
-  char *atnms[resNR][MAXATOMSPERRESIDUE+1] = { 
+  const char *atnms[resNR][MAXATOMSPERRESIDUE+1] = { 
     { "CG", /* PHE */
       "CD1", "HD1", "CD2", "HD2", 
       "CE1", "HE1", "CE2", "HE2", 

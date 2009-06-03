@@ -52,7 +52,7 @@
 
 /* UTILITIES */
 
-void set_p_string(t_param *p,char *s)
+void set_p_string(t_param *p,const char *s)
 {
   if (s) {
     if (strlen(s) < sizeof(p->s)-1)
@@ -175,7 +175,7 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-static void print_nbt (FILE *out,char *title,t_atomtype at,
+static void print_nbt (FILE *out,char *title,gpp_atomtype_t at,
 		       int ftype,t_params *nbt)
 {
   int f,i,j,k,l,nrfp,ntype;
@@ -210,7 +210,7 @@ static void print_nbt (FILE *out,char *title,t_atomtype at,
   fprintf (out,"\n");
 }
 
-void print_bt(FILE *out, directive d, t_atomtype at,
+void print_bt(FILE *out, directive d, gpp_atomtype_t at,
 	      int ftype,int fsubtype,t_params plist[],
 	      bool bFullDih)
 {
@@ -335,8 +335,8 @@ void print_bt(FILE *out, directive d, t_atomtype at,
   fflush (out);
 }
 
-void print_blocka(FILE *out, char *szName, 
-		  char *szIndex, char *szA,
+void print_blocka(FILE *out, const char *szName, 
+		  const char *szIndex, const char *szA,
 		  t_blocka *block)
 {
   int i,j;
@@ -379,7 +379,7 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
   }
 }
 
-void print_atoms(FILE *out,t_atomtype atype,t_atoms *at,int *cgnr)
+void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr)
 {
   int  i;
   int  tpA,tpB;
@@ -433,7 +433,7 @@ void print_bondeds(FILE *out,int natoms,directive d,
 		   int ftype,int fsubtype,t_params plist[])
 {
   t_symtab   stab;
-  t_atomtype atype;
+  gpp_atomtype_t atype;
   t_param    *param;
   t_atom     *a;
   int i;
@@ -452,6 +452,6 @@ void print_bondeds(FILE *out,int natoms,directive d,
   done_symtab(&stab);
   sfree(a);
   sfree(param);
-  done_atomtype(&atype);
+  done_atomtype(atype);
 }
 

@@ -44,12 +44,12 @@
 
 /* stuff for pdb2gmx */
 
-extern void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype, 
+extern void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype, 
 		      t_atoms *at, t_symtab *symtab, rvec *x[], 
 		      t_params plist[], int *dummy_type[], int *cgnr[], 
 		      real mHmult, bool bVSiteAromatics, char *ff);
 
-extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult,
+extern void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
 		      bool bDeuterate);
 
 #endif	/* _gen_vsite_h */

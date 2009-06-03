@@ -43,8 +43,8 @@
 #include "string.h"
 
 static void atom_not_found(int fatal_errno,const char *file,int line,
-			   char *atomname,int resind,
-			   char *bondtype,bool bDontQuit)
+			   const char *atomname,int resind,
+			   const char *bondtype,bool bDontQuit)
 {
   if (strcmp(bondtype,"check") != 0) {
     if (bDontQuit) {
@@ -59,8 +59,9 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
   }
 }
 	
-atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[],
-		    char *bondtype,bool bDontQuit)
+atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
+		    const char * const * const anm[],
+		    const char *bondtype,bool bDontQuit)
 {
   int     i,resind=-1;
   bool    bPrevious,bNext;

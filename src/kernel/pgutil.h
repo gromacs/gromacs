@@ -39,9 +39,10 @@
 
 #include "typedefs.h"
 
-extern atom_id search_atom(char *type,int start,
-			   int natoms,t_atom at[],char **anm[],
-			   char *bondtype,bool bDontQuit);
+extern atom_id search_atom(const char *type,int start,
+			   int natoms,t_atom at[],
+			   const char * const * const anm[],
+			   const char *bondtype,bool bDontQuit);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
  * bondtype is only used for printing the error/warning string,

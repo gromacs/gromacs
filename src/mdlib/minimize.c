@@ -1321,7 +1321,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		unsigned long Flags,
 		gmx_step_t *nsteps_done)
 {
-  static char *LBFGS="Low-Memory BFGS Minimizer";
+  static const char *LBFGS="Low-Memory BFGS Minimizer";
   em_state_t ems;
   gmx_localtop_t *top;
   gmx_enerdata_t *enerd;

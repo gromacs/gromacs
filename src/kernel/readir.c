@@ -442,7 +442,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 }
 
-static int str_nelem(char *str,int maxptr,char *ptr[])
+static int str_nelem(const char *str,int maxptr,char *ptr[])
 {
   int  np=0;
   char *copy0,*copy;
@@ -547,9 +547,8 @@ void get_ir(char *mdparin,char *mdparout,
   char      *dumstr[2];
   double    dumdub[2][6];
   t_inpfile *inp;
-  char      *tmp;
+  const char *tmp;
   int       i,j,m,ninp;
-  char      dummy[STRLEN];
   
   inp=read_inpfile(mdparin,&ninp, NULL);
 
@@ -1404,7 +1403,7 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
 }
 
 static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
-			char *option,char *val,int flag)
+			const char *option,const char *val,int flag)
 {
   /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
    * But since this is much larger than STRLEN, such a line can not be parsed.
@@ -1986,7 +1985,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     }
     for(m=0; (m<DIM); m++) {
       if (fabs(acc[m]) > 1e-6) {
-	char *dim[DIM] = { "X", "Y", "Z" };
+	const char *dim[DIM] = { "X", "Y", "Z" };
 	fprintf(stderr,
 		"Net Acceleration in %s direction, will %s be corrected\n",
 		dim[m],ir->nstcomm != 0 ? "" : "not");

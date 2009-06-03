@@ -57,7 +57,7 @@
 #define ekwAdd  ebtsNR+2
 #define ekwDel  ebtsNR+3
 #define ekwNR   3
-char *kw_names[ekwNR] = {
+const char *kw_names[ekwNR] = {
   "replace", "add", "delete" 
 };
 
@@ -77,7 +77,7 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(char *line, t_atom *a, t_atomtype atype, int *cgnr)
+static void read_atom(char *line, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
   int    i, n;
   char   type[12];
@@ -92,13 +92,14 @@ static void read_atom(char *line, t_atom *a, t_atomtype atype, int *cgnr)
     *cgnr = NOTSET;
 }
 
-static void print_atom(FILE *out,t_atom *a,t_atomtype atype,char *newnm)
+static void print_atom(FILE *out,t_atom *a,gpp_atomtype_t atype,char *newnm)
 {
   fprintf(out,"\t%s\t%g\t%g\n",
 	  get_atomtype_name(a->type,atype),a->m,a->q);
 }
 
-static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype atype) 
+static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],
+			 gpp_atomtype_t atype) 
 {
   FILE *out;
   int i,j,k,bt,nrepl,nadd,ndel;
@@ -161,7 +162,7 @@ static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype atyp
   gmx_fio_fclose(out);
 }
 
-int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype atype)
+int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 {
   FILE       *in;
   char       inf[STRLEN],header[STRLEN],buf[STRLEN],line[STRLEN];
