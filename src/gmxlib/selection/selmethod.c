@@ -582,7 +582,7 @@ gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
 int
 gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
 {
-    int  i;
+    size_t i;
     int  rc;
     bool bOk;
 

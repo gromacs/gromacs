@@ -66,7 +66,7 @@ static t_acf acf;
 
 enum { enNorm, enCos, enSin };
 
-int sffn2effn(char **sffn)
+int sffn2effn(const char **sffn)
 {
   int eFitFn,i;
   

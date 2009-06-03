@@ -79,7 +79,8 @@ gmx_sel_symrec_t *
 _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact);
 //! Finds a symbol by name.
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, int len, bool bExact);
+_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
+                         bool bExact);
 //! Returns the first symbol of a given type.
 gmx_sel_symrec_t *
 _gmx_sel_first_symbol(gmx_sel_symtab_t *tab, e_symbol_t type);

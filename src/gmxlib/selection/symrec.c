@@ -151,7 +151,7 @@ add_reserved_symbols(gmx_sel_symtab_t *tab)
 {
     gmx_sel_symrec_t *sym;
     gmx_sel_symrec_t *last;
-    int               i;
+    size_t            i;
 
     last = NULL;
     for (i = 0; i < asize(sym_reserved); ++i)
@@ -282,7 +282,8 @@ _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact)
  * without modifying the text to be scanned or copying it.
  */
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, int len, bool bExact)
+_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
+                         bool bExact)
 {
     gmx_sel_symrec_t *sym;
     gmx_sel_symrec_t *match;

@@ -312,7 +312,8 @@ void pr_def(FILE *fp,int ftp)
 
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 {
-  int  i,j,f;
+  int  i,f;
+  size_t j;
   char buf[256],*wbuf,opt_buf[32];
 #define OPTLEN 4
 #define NAMELEN 14

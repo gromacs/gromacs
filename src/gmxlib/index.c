@@ -459,7 +459,8 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
   char    *resnm;
   atom_id *aid;
   int     nra;
-  int     i,j;
+  int     i;
+  size_t  j;
 
   if (bVerb)
     printf("Analysing residue names:\n");

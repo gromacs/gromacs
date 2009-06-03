@@ -294,7 +294,8 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
 			real *value)
 {
   gmx_atomprop *ap = (gmx_atomprop*) aps;
-  int  i,j;
+  size_t i;
+  int  j;
 #define MAXQ 32
   char atomname[MAXQ],resname[MAXQ];
   bool bExact;

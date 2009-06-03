@@ -406,7 +406,8 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
 
 void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 {
-  int  i,k,atomnumber;
+  int  i,atomnumber;
+  size_t k;
   char anm[6],anm_copy[6];
   char nc='\0';
   real eval;

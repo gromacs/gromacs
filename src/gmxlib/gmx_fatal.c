@@ -604,7 +604,7 @@ char *gmx_strerror(const char *key)
   };
 #define NMSG asize(msg)
   char buf[1024];
-  int  i;
+  size_t i;
   
   if (key == NULL)
     return strdup("Empty message");

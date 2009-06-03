@@ -300,7 +300,7 @@ const char **
 gmx_ana_poscalc_create_type_enum(bool bAtom)
 {
     const char **pcenum;
-    int          i;
+    size_t       i;
 
     if (bAtom)
     {

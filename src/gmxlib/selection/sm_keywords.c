@@ -295,7 +295,8 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
     char               *buf;
     char               *s;
-    int                 i, j;
+    int                 i;
+    size_t              j;
     bool                bRegExp;
 
     d->v   = param[0].val.u.s;

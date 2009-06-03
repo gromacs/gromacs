@@ -623,7 +623,8 @@ parse_trjana_args(gmx_ana_traj_t *d,
     int                *fnm_map;
     t_pargs            *all_pa = NULL;
     int                 max_pa, npall;
-    int                 i, k;
+    size_t              i;
+    int                 k;
     int                 rc;
 
     static t_filenm     def_fnm[] = {
@@ -696,9 +697,9 @@ parse_trjana_args(gmx_ana_traj_t *d,
         def_fnm[1].flag |= ffOPT;
     }
     snew(fnm_map, nfile);
-    for (i = 0; i < nfile; ++i)
+    for (k = 0; k < nfile; ++k)
     {
-        fnm_map[i] = -1;
+        fnm_map[k] = -1;
     }
 
     for (i = 0; i < asize(def_fnm); ++i)
@@ -722,12 +723,12 @@ parse_trjana_args(gmx_ana_traj_t *d,
         }
     }
 
-    for (i = 0; i < nfile; ++i)
+    for (k = 0; k < nfile; ++k)
     {
-        if (fnm_map[i] == -1)
+        if (fnm_map[k] == -1)
         {
-            fnm_map[i] = nfall;
-            nfall = add_fnmarg(nfall, all_fnm, &(fnm[i]));
+            fnm_map[k] = nfall;
+            nfall = add_fnmarg(nfall, all_fnm, &(fnm[k]));
         }
     }
 
@@ -773,9 +774,9 @@ parse_trjana_args(gmx_ana_traj_t *d,
         }
     }
 
-    for (i = 0; i < npargs; ++i)
+    for (k = 0; k < npargs; ++k)
     {
-        npall = add_parg(npall, all_pa, &(pa[i]));
+        npall = add_parg(npall, all_pa, &(pa[k]));
     }
 
     pca_flags |= PCA_CAN_TIME | PCA_BE_NICE;
@@ -783,13 +784,13 @@ parse_trjana_args(gmx_ana_traj_t *d,
                       ndesc, desc, nbugs, bugs);
 
     /* Copy the results back */
-    for (i = 0; i < nfile; ++i)
+    for (k = 0; k < nfile; ++k)
     {
-        memcpy(&(fnm[i]), &(all_fnm[fnm_map[i]]), (size_t)sizeof(fnm[i]));
+        memcpy(&(fnm[k]), &(all_fnm[fnm_map[k]]), sizeof(fnm[k]));
     }
-    for (i = 0, k = npall - npargs; i < npargs; ++i, ++k)
+    for (i = 0, k = npall - npargs; i < (size_t)npargs; ++i, ++k)
     {
-        memcpy(&(pa[i]), &(all_pa[k]), (size_t)sizeof(pa[i]));
+        memcpy(&(pa[i]), &(all_pa[k]), sizeof(pa[i]));
     }
 
     d->trjfile         = ftp2fn(efTRX, nfall, all_fnm);

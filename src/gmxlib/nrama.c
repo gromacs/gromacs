@@ -131,7 +131,8 @@ static void add_xr(t_xrama *xr,int ff[5],t_atoms *atoms)
 static void get_dih(t_xrama *xr,t_atoms *atoms)
 {
   int found,ff[NPP];
-  int i,j;
+  int i;
+  size_t j;
 
   for(i=0; (i<atoms->nr); ) {
     found=i;
@@ -177,7 +178,8 @@ static void get_dih2(t_xrama *xr,t_functype functype[],
 		     t_ilist *bondeds,t_atoms *atoms)
 {
   int     found,**ff,thisff[NPP];
-  int     i,j,k,type,ftype,nat,ai,aj,ak,al;
+  int     i,type,ftype,nat,ai,aj,ak,al;
+  size_t  j,k;
   char    *cai,*caj,*cak,*cal;
   int     ndih,maxdih;
   t_iatom *iatoms;
