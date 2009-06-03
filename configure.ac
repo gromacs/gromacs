@@ -378,6 +378,8 @@ fi
 
 
 AC_PROG_CPP
+# Needed by libtool scripts?
+AC_PROG_EGREP
 
 if test "$enable_cpu_optimization" = "yes"; then
   ACX_DETECT_GMXCPU
