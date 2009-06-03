@@ -88,7 +88,7 @@ static void set_ljparams(int comb,real reppow,real v,real w,real *c6,real *c12)
   }
 }
 
-static void assign_param(t_functype ftype,t_iparams *new,
+static void assign_param(t_functype ftype,t_iparams *newparam,
 			 real old[MAXFORCEPARAM],int comb,real reppow)
 {
   int  i,j;
@@ -96,175 +96,175 @@ static void assign_param(t_functype ftype,t_iparams *new,
 
   /* Set to zero */
   for(j=0; (j<MAXFORCEPARAM); j++)
-    new->generic.buf[j]=0.0;
+    newparam->generic.buf[j]=0.0;
     
   switch (ftype) {
   case F_G96ANGLES:
     /* Post processing of input data: store cosine iso angle itself */
-    new->harmonic.rA =cos(old[0]*DEG2RAD);
-    new->harmonic.krA=old[1];
-    new->harmonic.rB =cos(old[2]*DEG2RAD);
-    new->harmonic.krB=old[3];
+    newparam->harmonic.rA =cos(old[0]*DEG2RAD);
+    newparam->harmonic.krA=old[1];
+    newparam->harmonic.rB =cos(old[2]*DEG2RAD);
+    newparam->harmonic.krB=old[3];
     break;
   case F_G96BONDS:
     /* Post processing of input data: store square of length itself */
-    new->harmonic.rA =sqr(old[0]);
-    new->harmonic.krA=old[1];
-    new->harmonic.rB =sqr(old[2]);
-    new->harmonic.krB=old[3];
+    newparam->harmonic.rA =sqr(old[0]);
+    newparam->harmonic.krA=old[1];
+    newparam->harmonic.rB =sqr(old[2]);
+    newparam->harmonic.krB=old[3];
     break;
   case F_FENEBONDS:
-    new->fene.bm=old[0];
-    new->fene.kb=old[1];
+    newparam->fene.bm=old[0];
+    newparam->fene.kb=old[1];
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
   case F_TABANGLES:
   case F_TABDIHS:
-    new->tab.table = round_check(old[0],0,ftype,"table index");
-    new->tab.kA    = old[1];
-    new->tab.kB    = old[3];
+    newparam->tab.table = round_check(old[0],0,ftype,"table index");
+    newparam->tab.kA    = old[1];
+    newparam->tab.kB    = old[3];
     break;
   case F_CROSS_BOND_BONDS:
-    new->cross_bb.r1e=old[0];
-    new->cross_bb.r2e=old[1];
-    new->cross_bb.krr=old[2];
+    newparam->cross_bb.r1e=old[0];
+    newparam->cross_bb.r2e=old[1];
+    newparam->cross_bb.krr=old[2];
     break;
   case F_CROSS_BOND_ANGLES:
-    new->cross_ba.r1e=old[0];
-    new->cross_ba.r2e=old[1];
-    new->cross_ba.r3e=old[2];
-    new->cross_ba.krt=old[3];
+    newparam->cross_ba.r1e=old[0];
+    newparam->cross_ba.r2e=old[1];
+    newparam->cross_ba.r3e=old[2];
+    newparam->cross_ba.krt=old[3];
     break;
   case F_UREY_BRADLEY:
-    new->u_b.theta=old[0];
-    new->u_b.ktheta=old[1];
-    new->u_b.r13=old[2];
-    new->u_b.kUB=old[3];
+    newparam->u_b.theta=old[0];
+    newparam->u_b.ktheta=old[1];
+    newparam->u_b.r13=old[2];
+    newparam->u_b.kUB=old[3];
     break;
   case F_QUARTIC_ANGLES:
-    new->qangle.theta=old[0];
+    newparam->qangle.theta=old[0];
     for(i=0; i<5; i++)
-      new->qangle.c[i]=old[i+1];
+      newparam->qangle.c[i]=old[i+1];
     break;
   case F_ANGLES:
   case F_BONDS:
   case F_HARMONIC:
   case F_IDIHS:
-    new->harmonic.rA =old[0];
-    new->harmonic.krA=old[1];
-    new->harmonic.rB =old[2];
-    new->harmonic.krB=old[3];
+    newparam->harmonic.rA =old[0];
+    newparam->harmonic.krA=old[1];
+    newparam->harmonic.rB =old[2];
+    newparam->harmonic.krB=old[3];
     break;
   case F_MORSE:
-    new->morse.b0    =old[0];
-    new->morse.cb    =old[1];
-    new->morse.beta  =old[2];
+    newparam->morse.b0    =old[0];
+    newparam->morse.cb    =old[1];
+    newparam->morse.beta  =old[2];
     break;
   case F_CUBICBONDS:
-    new->cubic.b0    =old[0];
-    new->cubic.kb    =old[1];
-    new->cubic.kcub  =old[2];
+    newparam->cubic.b0    =old[0];
+    newparam->cubic.kb    =old[1];
+    newparam->cubic.kcub  =old[2];
     break;
   case F_CONNBONDS:
     break;
   case F_POLARIZATION:
-    new->polarize.alpha = old[0];
+    newparam->polarize.alpha = old[0];
     break;
   case F_WATER_POL:
-    new->wpol.al_x   =old[0];
-    new->wpol.al_y   =old[1];
-    new->wpol.al_z   =old[2];
-    new->wpol.rOH    =old[3];
-    new->wpol.rHH    =old[4];
-    new->wpol.rOD    =old[5];
+    newparam->wpol.al_x   =old[0];
+    newparam->wpol.al_y   =old[1];
+    newparam->wpol.al_z   =old[2];
+    newparam->wpol.rOH    =old[3];
+    newparam->wpol.rHH    =old[4];
+    newparam->wpol.rOD    =old[5];
     break;
   case F_THOLE_POL:
-    new->thole.a      = old[0];
-    new->thole.alpha1 = old[1];
-    new->thole.alpha2 = old[2];
+    newparam->thole.a      = old[0];
+    newparam->thole.alpha1 = old[1];
+    newparam->thole.alpha2 = old[2];
     if ((old[1] > 0) && (old[2] > 0))
-      new->thole.rfac = old[0]*pow(old[1]*old[2],-1.0/6.0);
+      newparam->thole.rfac = old[0]*pow(old[1]*old[2],-1.0/6.0);
     else
-      new->thole.rfac = 1;
+      newparam->thole.rfac = 1;
     break;
   case F_BHAM:
-    new->bham.a = old[0];
-    new->bham.b = old[1];
-    new->bham.c = old[2];
+    newparam->bham.a = old[0];
+    newparam->bham.b = old[1];
+    newparam->bham.c = old[2];
     break;
   case F_LJ14:
-    set_ljparams(comb,reppow,old[0],old[1],&new->lj14.c6A,&new->lj14.c12A);
-    set_ljparams(comb,reppow,old[2],old[3],&new->lj14.c6B,&new->lj14.c12B);
+    set_ljparams(comb,reppow,old[0],old[1],&newparam->lj14.c6A,&newparam->lj14.c12A);
+    set_ljparams(comb,reppow,old[2],old[3],&newparam->lj14.c6B,&newparam->lj14.c12B);
     break;
   case F_LJC14_Q:
-    new->ljc14.fqq = old[0];
-    new->ljc14.qi  = old[1];
-    new->ljc14.qj  = old[2];
-    set_ljparams(comb,reppow,old[3],old[4],&new->ljc14.c6,&new->ljc14.c12);
+    newparam->ljc14.fqq = old[0];
+    newparam->ljc14.qi  = old[1];
+    newparam->ljc14.qj  = old[2];
+    set_ljparams(comb,reppow,old[3],old[4],&newparam->ljc14.c6,&newparam->ljc14.c12);
     break;
   case F_LJC_PAIRS_NB:
-    new->ljcnb.qi = old[0];
-    new->ljcnb.qj = old[1];
-    set_ljparams(comb,reppow,old[2],old[3],&new->ljcnb.c6,&new->ljcnb.c12);
+    newparam->ljcnb.qi = old[0];
+    newparam->ljcnb.qj = old[1];
+    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6,&newparam->ljcnb.c12);
     break;
   case F_LJ:
-    set_ljparams(comb,reppow,old[0],old[1],&new->lj.c6,&new->lj.c12);
+    set_ljparams(comb,reppow,old[0],old[1],&newparam->lj.c6,&newparam->lj.c12);
     break;
   case F_PDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
-    new->pdihs.phiA = old[0];
-    new->pdihs.cpA  = old[1];
+    newparam->pdihs.phiA = old[0];
+    newparam->pdihs.cpA  = old[1];
 		  
     /* Dont do any checks if all parameters are zero (such interactions will be removed) */
     tmp=fabs(old[0])+fabs(old[1])+fabs(old[2])+fabs(old[3])+fabs(old[4]);
-    new->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],1,ftype,"multiplicity");
+    newparam->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],1,ftype,"multiplicity");
 		  
-    new->pdihs.phiB = old[3];
-    new->pdihs.cpB  = old[4];
+    newparam->pdihs.phiB = old[3];
+    newparam->pdihs.cpB  = old[4];
     break;
   case F_POSRES:
-    new->posres.fcA[XX]   = old[0];
-    new->posres.fcA[YY]   = old[1];
-    new->posres.fcA[ZZ]   = old[2];
-    new->posres.fcB[XX]   = old[3];
-    new->posres.fcB[YY]   = old[4];
-    new->posres.fcB[ZZ]   = old[5];
-    new->posres.pos0A[XX] = old[6];
-    new->posres.pos0A[YY] = old[7];
-    new->posres.pos0A[ZZ] = old[8];
-    new->posres.pos0B[XX] = old[9];
-    new->posres.pos0B[YY] = old[10];
-    new->posres.pos0B[ZZ] = old[11];
+    newparam->posres.fcA[XX]   = old[0];
+    newparam->posres.fcA[YY]   = old[1];
+    newparam->posres.fcA[ZZ]   = old[2];
+    newparam->posres.fcB[XX]   = old[3];
+    newparam->posres.fcB[YY]   = old[4];
+    newparam->posres.fcB[ZZ]   = old[5];
+    newparam->posres.pos0A[XX] = old[6];
+    newparam->posres.pos0A[YY] = old[7];
+    newparam->posres.pos0A[ZZ] = old[8];
+    newparam->posres.pos0B[XX] = old[9];
+    newparam->posres.pos0B[YY] = old[10];
+    newparam->posres.pos0B[ZZ] = old[11];
     break;
   case F_DISRES:
-    new->disres.label = round_check(old[0],0,ftype,"label");
-    new->disres.type  = round_check(old[1],1,ftype,"type'");
-    new->disres.low   = old[2];
-    new->disres.up1   = old[3];
-    new->disres.up2   = old[4];
-    new->disres.kfac  = old[5];
+    newparam->disres.label = round_check(old[0],0,ftype,"label");
+    newparam->disres.type  = round_check(old[1],1,ftype,"type'");
+    newparam->disres.low   = old[2];
+    newparam->disres.up1   = old[3];
+    newparam->disres.up2   = old[4];
+    newparam->disres.kfac  = old[5];
     break;
   case F_ORIRES:
-    new->orires.ex    = round_check(old[0],1,ftype,"experiment") - 1;
-    new->orires.label = round_check(old[1],1,ftype,"label");
-    new->orires.power = round_check(old[2],0,ftype,"power");
-    new->orires.c     = old[3];
-    new->orires.obs   = old[4];
-    new->orires.kfac  = old[5];
+    newparam->orires.ex    = round_check(old[0],1,ftype,"experiment") - 1;
+    newparam->orires.label = round_check(old[1],1,ftype,"label");
+    newparam->orires.power = round_check(old[2],0,ftype,"power");
+    newparam->orires.c     = old[3];
+    newparam->orires.obs   = old[4];
+    newparam->orires.kfac  = old[5];
     break;
   case F_DIHRES:
-    new->dihres.label = round_check(old[0],0,ftype,"label");
-    new->dihres.phi   = old[1];
-    new->dihres.dphi  = old[2];
-    new->dihres.kfac  = old[3];
-    new->dihres.power = round_check(old[4],0,ftype,"power");
+    newparam->dihres.label = round_check(old[0],0,ftype,"label");
+    newparam->dihres.phi   = old[1];
+    newparam->dihres.dphi  = old[2];
+    newparam->dihres.kfac  = old[3];
+    newparam->dihres.power = round_check(old[4],0,ftype,"power");
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {
-      new->rbdihs.rbcA[i]=old[i]; 
-      new->rbdihs.rbcB[i]=old[NR_RBDIHS+i]; 
+      newparam->rbdihs.rbcA[i]=old[i]; 
+      newparam->rbdihs.rbcB[i]=old[NR_RBDIHS+i]; 
     }
     break;
   case F_FOURDIHS:
@@ -273,28 +273,28 @@ static void assign_param(t_functype ftype,t_iparams *new,
      * Ryckaert-Bellemans form.
      */   
     /* Use conversion formula for OPLS to Ryckaert-Bellemans: */
-    new->rbdihs.rbcA[0]=old[1]+0.5*(old[0]+old[2]);
-    new->rbdihs.rbcA[1]=0.5*(3.0*old[2]-old[0]);
-    new->rbdihs.rbcA[2]=4.0*old[3]-old[1];
-    new->rbdihs.rbcA[3]=-2.0*old[2];
-    new->rbdihs.rbcA[4]=-4.0*old[3];
-    new->rbdihs.rbcA[5]=0.0;
+    newparam->rbdihs.rbcA[0]=old[1]+0.5*(old[0]+old[2]);
+    newparam->rbdihs.rbcA[1]=0.5*(3.0*old[2]-old[0]);
+    newparam->rbdihs.rbcA[2]=4.0*old[3]-old[1];
+    newparam->rbdihs.rbcA[3]=-2.0*old[2];
+    newparam->rbdihs.rbcA[4]=-4.0*old[3];
+    newparam->rbdihs.rbcA[5]=0.0;
 
-    new->rbdihs.rbcB[0]=old[NR_FOURDIHS+1]+0.5*(old[NR_FOURDIHS+0]+old[NR_FOURDIHS+2]);
-    new->rbdihs.rbcB[1]=0.5*(3.0*old[NR_FOURDIHS+2]-old[NR_FOURDIHS+0]);
-    new->rbdihs.rbcB[2]=4.0*old[NR_FOURDIHS+3]-old[NR_FOURDIHS+1];
-    new->rbdihs.rbcB[3]=-2.0*old[NR_FOURDIHS+2];
-    new->rbdihs.rbcB[4]=-4.0*old[NR_FOURDIHS+3];
-    new->rbdihs.rbcB[5]=0.0;
+    newparam->rbdihs.rbcB[0]=old[NR_FOURDIHS+1]+0.5*(old[NR_FOURDIHS+0]+old[NR_FOURDIHS+2]);
+    newparam->rbdihs.rbcB[1]=0.5*(3.0*old[NR_FOURDIHS+2]-old[NR_FOURDIHS+0]);
+    newparam->rbdihs.rbcB[2]=4.0*old[NR_FOURDIHS+3]-old[NR_FOURDIHS+1];
+    newparam->rbdihs.rbcB[3]=-2.0*old[NR_FOURDIHS+2];
+    newparam->rbdihs.rbcB[4]=-4.0*old[NR_FOURDIHS+3];
+    newparam->rbdihs.rbcB[5]=0.0;
     break;    
   case F_CONSTR:
   case F_CONSTRNC:
-    new->constr.dA = old[0];
-    new->constr.dB = old[1];
+    newparam->constr.dA = old[0];
+    newparam->constr.dB = old[1];
     break;
   case F_SETTLE:
-    new->settle.doh=old[0];
-    new->settle.dhh=old[1];
+    newparam->settle.doh=old[0];
+    newparam->settle.dhh=old[1];
     break;
   case F_VSITE2:
   case F_VSITE3:
@@ -302,28 +302,28 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_VSITE3OUT:
   case F_VSITE4FD:
   case F_VSITE4FDN:
-    new->vsite.a=old[0];
-    new->vsite.b=old[1];
-    new->vsite.c=old[2];
-    new->vsite.d=old[3];
-    new->vsite.e=old[4];
-    new->vsite.f=old[5];
+    newparam->vsite.a=old[0];
+    newparam->vsite.b=old[1];
+    newparam->vsite.c=old[2];
+    newparam->vsite.d=old[3];
+    newparam->vsite.e=old[4];
+    newparam->vsite.f=old[5];
     break;
   case F_VSITE3FAD:
-    new->vsite.a=old[1] * cos(DEG2RAD * old[0]);
-    new->vsite.b=old[1] * sin(DEG2RAD * old[0]);
-    new->vsite.c=old[2];
-    new->vsite.d=old[3];
-    new->vsite.e=old[4];
-    new->vsite.f=old[5];
+    newparam->vsite.a=old[1] * cos(DEG2RAD * old[0]);
+    newparam->vsite.b=old[1] * sin(DEG2RAD * old[0]);
+    newparam->vsite.c=old[2];
+    newparam->vsite.d=old[3];
+    newparam->vsite.e=old[4];
+    newparam->vsite.f=old[5];
     break;
   case F_VSITEN:
-    new->vsiten.n = round_check(old[0],1,ftype,"number of atoms");
-    new->vsiten.a = old[1];
+    newparam->vsiten.n = round_check(old[0],1,ftype,"number of atoms");
+    newparam->vsiten.a = old[1];
     break;
   case F_CMAP:
-	new->cmap.cmapA=old[0];
-	new->cmap.cmapB=old[1];
+	newparam->cmap.cmapA=old[0];
+	newparam->cmap.cmapB=old[1];
 	break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
@@ -335,14 +335,14 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 			real forceparams[MAXFORCEPARAM],int comb,real reppow,
 			int start,bool bAppend)
 {
-  t_iparams new;
+  t_iparams newparam;
   int       type;
   
-  assign_param(ftype,&new,forceparams,comb,reppow);
+  assign_param(ftype,&newparam,forceparams,comb,reppow);
   if (!bAppend) {
     for (type=start; (type<ffparams->ntypes); type++) {
       if (ffparams->functype[type]==ftype) {
-	if (memcmp(&new,&ffparams->iparams[type],(size_t)sizeof(new)) == 0)
+	if (memcmp(&newparam,&ffparams->iparams[type],(size_t)sizeof(newparam)) == 0)
 	  return type;
       }
     }
@@ -351,9 +351,9 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
     type = ffparams->ntypes;
   }
   if (debug)
-    fprintf(debug,"copying new to ffparams->iparams[%d] (ntypes=%d)\n",
+    fprintf(debug,"copying newparam to ffparams->iparams[%d] (ntypes=%d)\n",
 	    type,ffparams->ntypes);
-  memcpy(&ffparams->iparams[type],&new,(size_t)sizeof(new));
+  memcpy(&ffparams->iparams[type],&newparam,(size_t)sizeof(newparam));
   
   ffparams->ntypes++;
   ffparams->functype[type]=ftype;

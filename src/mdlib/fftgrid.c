@@ -160,10 +160,9 @@ t_fftgrid *mk_fftgrid(int          nx,
     }
     else 
     {
-        flags = bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : 0;
-        gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz,flags);
+        gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz,bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : GMX_FFT_FLAG_NONE);
     }
-    grid->ptr = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
+    grid->ptr = (real *)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
     
 #ifdef GMX_MPI
     if (grid->bParallel && debug) 
@@ -174,7 +173,7 @@ t_fftgrid *mk_fftgrid(int          nx,
     {
         maxlocalsize = max((nx/nnodes + x1)*ny*grid->la2c*2,
                            (ny/nnodes + y1)*nx*grid->la2c*2);
-        grid->workspace =
+        grid->workspace = (real *)
             gmx_alloc_aligned(maxlocalsize*sizeof(*(grid->workspace)));
     }
     else
@@ -183,7 +182,7 @@ t_fftgrid *mk_fftgrid(int          nx,
             gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
     }
 #else /* no MPI */
-    grid->workspace = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+    grid->workspace = (real *)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
 #endif
 
     return grid;
@@ -229,9 +228,9 @@ void done_fftgrid(t_fftgrid *grid)
 }
 
 
-void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
+void gmxfft3D(t_fftgrid *grid,enum gmx_fft_direction dir,t_commrec *cr)
 {
-  void *tmp;
+  real *tmp;
 
   if (grid->bParallel) 
   {

@@ -86,7 +86,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -148,7 +148,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -182,7 +182,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
      * This is not acceptable for the Gromacs interface, so we define a
      * work array and copy the data there before doing complex-to-real FFTs.
      */
-    fft->work = malloc(sizeof(real)*( (nx/2 + 1)*2) );
+    fft->work = (real *)malloc(sizeof(real)*( (nx/2 + 1)*2) );
     if(fft->work == NULL)
     {
         gmx_fatal(FARGS,"Cannot allocate complex-to-real FFT workspace.");
@@ -221,7 +221,7 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -285,7 +285,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -319,7 +319,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
      * This is not acceptable for the Gromacs interface, so we define a
      * work array and copy the data there before doing complex-to-real FFTs.
      */
-    fft->work = malloc(sizeof(real)*( nx*(ny/2 + 1)*2) );
+    fft->work = (real *)malloc(sizeof(real)*( nx*(ny/2 + 1)*2) );
     if(fft->work == NULL)
     {
         gmx_fatal(FARGS,"Cannot allocate complex-to-real FFT workspace.");
@@ -360,7 +360,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -428,7 +428,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -462,7 +462,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * This is not acceptable for the Gromacs interface, so we define a
      * work array and copy the data there before doing complex-to-real FFTs.
      */
-    fft->work = malloc(sizeof(real)*( nx*ny*(nz/2 + 1)*2) );
+    fft->work = (real *)malloc(sizeof(real)*( nx*ny*(nz/2 + 1)*2) );
     if(fft->work == NULL)
     {
         gmx_fatal(FARGS,"Cannot allocate complex-to-real FFT workspace.");
@@ -496,7 +496,7 @@ gmx_fft_1d(gmx_fft_t                  fft,
         return EINVAL;
     }
     
-    fftw_one(fft->single[inplace][isforward],in_data,out_data);
+    fftw_one(fft->single[inplace][isforward],(fftw_complex *)in_data,(fftw_complex *)out_data);
     
   return 0;
 }
@@ -599,7 +599,7 @@ gmx_fft_2d(gmx_fft_t                  fft,
         return EINVAL;
     }
     
-    fftwnd_one(fft->multi[inplace][isforward],in_data,out_data);
+    fftwnd_one(fft->multi[inplace][isforward],(fftw_complex *)in_data,(fftw_complex *)out_data);
     
     return 0;
 }
@@ -632,11 +632,11 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
     
     if(isforward)
     {
-        rfftwnd_one_real_to_complex(fft->multi[inplace][isforward],in_data,out_data);
+        rfftwnd_one_real_to_complex(fft->multi[inplace][isforward],(fftw_real *)in_data,(fftw_complex *)out_data);
     }
     else
     {
-        rfftwnd_one_complex_to_real(fft->multi[inplace][isforward],in_data,out_data);
+        rfftwnd_one_complex_to_real(fft->multi[inplace][isforward],(fftw_complex *)in_data,(fftw_real *)out_data);
     }
     
     return 0;
@@ -659,7 +659,7 @@ gmx_fft_3d(gmx_fft_t                  fft,
         return EINVAL;
     }
     
-    fftwnd_one(fft->multi[inplace][isforward],in_data,out_data);
+    fftwnd_one(fft->multi[inplace][isforward],(fftw_complex *)in_data,(fftw_complex *)out_data);
     
     return 0;
 }
@@ -692,11 +692,11 @@ gmx_fft_3d_real(gmx_fft_t                  fft,
 
     if(isforward)
     {
-        rfftwnd_one_real_to_complex(fft->multi[inplace][isforward],in_data,out_data);
+        rfftwnd_one_real_to_complex(fft->multi[inplace][isforward],(fftw_real *)in_data,(fftw_complex *)out_data);
     }
     else
     {
-        rfftwnd_one_complex_to_real(fft->multi[inplace][isforward],in_data,out_data);
+        rfftwnd_one_complex_to_real(fft->multi[inplace][isforward],(fftw_complex *)in_data,(fftw_real *)out_data);
     }
     
     return 0;

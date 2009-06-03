@@ -108,7 +108,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -174,7 +174,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -250,7 +250,7 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -322,7 +322,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -445,7 +445,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     
     if ( status == 0 )
     {
-        if ((fft->work = malloc(sizeof(t_complex)*(nx*(ny/2+1)))) == NULL)
+        if ((fft->work = (t_complex *)malloc(sizeof(t_complex)*(nx*(ny/2+1)))) == NULL)
         {
             status = ENOMEM;
         }
@@ -488,7 +488,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -567,7 +567,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
 
     nzc = (nz/2 + 1);
     
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -755,7 +755,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     
     if ( status == 0 )
     {
-        if ((fft->work = malloc(sizeof(t_complex)*(nx*ny*(nz/2+1)))) == NULL)
+        if ((fft->work = (t_complex *)malloc(sizeof(t_complex)*(nx*ny*(nz/2+1)))) == NULL)
         {
             status = ENOMEM;
         }

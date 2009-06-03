@@ -76,20 +76,20 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
         
-    if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t)FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2));
+    p1  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2));
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
         return ENOMEM;
     }
     
-    p2  = FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2));
+    p2  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx+2));
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -174,20 +174,20 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = FFTWPREFIX(malloc)(sizeof(real)*(nx+2));
+    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx+2));
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
         return ENOMEM;
     }
     
-    p2  = FFTWPREFIX(malloc)(sizeof(real)*(nx+2));
+    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*(nx+2));
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -274,20 +274,20 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny+2));
+    p1  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny+2));
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
         return ENOMEM;
     }
     
-    p2  = FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny+2));
+    p2  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny+2));
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -374,20 +374,20 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = FFTWPREFIX(malloc)(sizeof(real)*( nx*(ny/2+1)*2 + 2) );
+    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*( nx*(ny/2+1)*2 + 2) );
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
         return ENOMEM;
     }
     
-    p2  = FFTWPREFIX(malloc)(sizeof(real)*( nx*(ny/2+1)*2 + 2) );
+    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*( nx*(ny/2+1)*2 + 2) );
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -475,20 +475,20 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny*nz+2));
+    p1  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny*nz+2));
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
         return ENOMEM;
     }
     
-    p2  = FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny*nz+2));
+    p2  = (FFTWPREFIX(complex) *) FFTWPREFIX(malloc)(sizeof(FFTWPREFIX(complex))*(nx*ny*nz+2));
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -576,20 +576,20 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
         
-    if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
     
     /* allocate aligned, and extra memory to make it unaligned */
-    p1  = FFTWPREFIX(malloc)(sizeof(real)*( nx*ny*(nz/2+1)*2 + 2) );
+    p1  = (real *) FFTWPREFIX(malloc)(sizeof(real)*( nx*ny*(nz/2+1)*2 + 2) );
     if(p1==NULL)
     {
         FFTWPREFIX(free)(fft);
         return ENOMEM;
     }
     
-    p2  = FFTWPREFIX(malloc)(sizeof(real)*( nx*ny*(nz/2+1)*2 + 2) );
+    p2  = (real *) FFTWPREFIX(malloc)(sizeof(real)*( nx*ny*(nz/2+1)*2 + 2) );
     if(p2==NULL)
     {
         FFTWPREFIX(free)(p1);
@@ -669,8 +669,8 @@ gmx_fft_1d               (gmx_fft_t                  fft,
     }    
 
     FFTWPREFIX(execute_dft)(fft->plan[aligned][inplace][isforward],
-                            in_data,
-                            out_data);
+                            (FFTWPREFIX(complex) *)in_data,
+                            (FFTWPREFIX(complex) *)out_data);
     
     return 0;
 }
@@ -697,12 +697,12 @@ gmx_fft_1d_real          (gmx_fft_t                  fft,
     if(isforward)
     {
         FFTWPREFIX(execute_dft_r2c)(fft->plan[aligned][inplace][isforward],
-                                    in_data,out_data);
+                                    (real *)in_data,(FFTWPREFIX(complex) *)out_data);
     }
     else
     {
         FFTWPREFIX(execute_dft_c2r)(fft->plan[aligned][inplace][isforward],
-                                    in_data,out_data);
+                                    (FFTWPREFIX(complex) *)in_data,(real *)out_data);
     }
     
     return 0;
@@ -728,8 +728,8 @@ gmx_fft_2d               (gmx_fft_t                  fft,
     }    
 
     FFTWPREFIX(execute_dft)(fft->plan[aligned][inplace][isforward],
-                            in_data,
-                            out_data);
+                            (FFTWPREFIX(complex) *)in_data,
+                            (FFTWPREFIX(complex) *)out_data);
     
     return 0;
 }
@@ -756,14 +756,14 @@ gmx_fft_2d_real          (gmx_fft_t                  fft,
     if(isforward)
     {
         FFTWPREFIX(execute_dft_r2c)(fft->plan[aligned][inplace][isforward],
-                                    in_data,
-                                    out_data);
+                                    (real *)in_data,
+                                    (FFTWPREFIX(complex) *)out_data);
     }
     else
     {
         FFTWPREFIX(execute_dft_c2r)(fft->plan[aligned][inplace][isforward],
-                                    in_data,
-                                    out_data);
+                                    (FFTWPREFIX(complex) *)in_data,
+                                    (real *)out_data);
     }
     
     
@@ -790,8 +790,8 @@ gmx_fft_3d               (gmx_fft_t                  fft,
     }    
     
     FFTWPREFIX(execute_dft)(fft->plan[aligned][inplace][isforward],
-                            in_data,
-                            out_data);
+                            (FFTWPREFIX(complex) *)in_data,
+                            (FFTWPREFIX(complex) *)out_data);
     
     return 0;
 }
@@ -818,14 +818,14 @@ gmx_fft_3d_real          (gmx_fft_t                  fft,
     if(isforward)
     {
         FFTWPREFIX(execute_dft_r2c)(fft->plan[aligned][inplace][isforward],
-                                    in_data,
-                                    out_data);
+                                    (real *)in_data,
+                                    (FFTWPREFIX(complex) *)out_data);
     }
     else
     {
         FFTWPREFIX(execute_dft_c2r)(fft->plan[aligned][inplace][isforward],
-                                    in_data,
-                                    out_data);
+                                    (FFTWPREFIX(complex) *)in_data,
+                                    (real *)out_data);
     }
     
     

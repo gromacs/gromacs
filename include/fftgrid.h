@@ -99,7 +99,7 @@ extern void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid);
 extern void done_fftgrid(t_fftgrid *grid);
 /* And throw it away again */
 
-extern void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr);
+extern void gmxfft3D(t_fftgrid *grid,enum gmx_fft_direction dir,t_commrec *cr);
 /* Do the FFT, direction may be either 
  * FFTW_FORWARD (sign -1) for real -> complex transform 
  * FFTW_BACKWARD (sign 1) for complex -> real transform

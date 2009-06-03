@@ -46,8 +46,6 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 EXTRA_PROGRAMS = gmx_qhop_db_test
 
-compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
-
 gmx_qhop_db_test_LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la ../kernel/libgmxpreprocess@LIBSUFFIX@.la
 
 # clean all libtool libraries, since the target names might have changed
