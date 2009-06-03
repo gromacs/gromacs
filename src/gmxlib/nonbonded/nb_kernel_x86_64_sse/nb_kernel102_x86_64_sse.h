@@ -26,6 +26,13 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 /*! \brief Nonbonded kernel 102 with forces, optimized for x86_64 sse.
  *
  *  \internal
@@ -80,6 +87,9 @@ nb_kernel102nf_x86_64_sse(int *   nri,        int     iinr[],   int     jindex[]
                        float * work);
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL102_X86_64_SSE_H_ */

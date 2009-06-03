@@ -26,6 +26,12 @@
  */
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 204 with forces, optimized for ia32 sse.
  *
@@ -82,5 +88,8 @@ nb_kernel204nf_ia32_sse(int *   nri,        int     iinr[],   int     jindex[],
 
 
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _NB_KERNEL204_IA32_SSE_H_ */

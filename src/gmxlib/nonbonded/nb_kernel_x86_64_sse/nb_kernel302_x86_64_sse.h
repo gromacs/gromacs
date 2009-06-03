@@ -26,6 +26,14 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
+
 /*! \brief Nonbonded kernel 302 with forces, optimized for x86_64 sse.
  *
  *  \internal
@@ -81,6 +89,9 @@ nb_kernel302nf_x86_64_sse(int *   nri,        int     iinr[],   int     jindex[]
 
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL302_X86_64_SSE_H_ */

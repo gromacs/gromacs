@@ -26,6 +26,13 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 /*! \brief Nonbonded kernel 232 with forces, optimized for Altivec.
  *
  *  \internal
@@ -79,6 +86,9 @@ nb_kernel232nf_ppc_altivec(int *   nri,        int     iinr[],   int     jindex[
                        float * work);
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL232_ALTIVEC_H_ */

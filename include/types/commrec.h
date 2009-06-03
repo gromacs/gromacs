@@ -216,7 +216,7 @@ typedef struct {
 } gmx_nodecomm_t;
 
 typedef struct {
-  
+	int dummy;
 } gmx_commrec_thread_t;
 
 typedef struct {

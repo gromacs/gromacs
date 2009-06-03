@@ -19,8 +19,19 @@
 #ifndef _NB_KERNEL_ALTIVEC_TEST_H_
 #define _NB_KERNEL_ALTIVEC_TEST_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 void
 nb_kernel_ppc_altivec_issue_instructions(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL_ALTIVEC_TEST_H_ */

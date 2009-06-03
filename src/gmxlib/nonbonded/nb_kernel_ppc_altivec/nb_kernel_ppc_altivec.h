@@ -23,7 +23,18 @@
 
 #include "../nb_kerneltype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 void
 nb_kernel_setup_ppc_altivec(FILE *fplog, nb_kernel_t **list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _NB_KERNEL_ALTIVEC_H_ */

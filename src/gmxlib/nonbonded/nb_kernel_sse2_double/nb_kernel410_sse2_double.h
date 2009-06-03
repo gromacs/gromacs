@@ -23,6 +23,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 410 with forces, optimized for sse.
  *
@@ -77,6 +83,9 @@ nb_kernel410nf_sse2_double(int *   nri,        int     iinr[],   int     jindex[
                        double * work);
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 

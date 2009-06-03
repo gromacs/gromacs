@@ -39,6 +39,8 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -608,34 +610,6 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
     }
 }
 
-static void dump_nsgrid_pdb(char *fn,int n,rvec x[],t_grid *grid)
-{
-    char format[STRLEN];
-    FILE *out;
-    int  i,cx,cy,cz;
-    real *c;
-
-    snew(c,grid->ncells);
-    for(i=0; i<grid->ncells; i++)
-        c[i] = 10*random()/(double)RAND_MAX;
-
-    sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
-    
-    out = ffopen(fn,"w");
-    for(i=0; i<n; i++)
-    {
-        ci2xyz(grid,i,&cx,&cy,&cz);
-        fprintf(out,format,"ATOM",1+i,"CA","GLY",' ',1+i,
-                10*x[i][XX] + 20*grid->cell_size[XX]*cx,
-                10*x[i][YY] + 20*grid->cell_size[YY]*cy,
-                10*x[i][ZZ] + 20*grid->cell_size[ZZ]*cz,
-                1.0,c[grid->cell_index[i]]);
-    }
-    fclose(out);
-
-    sfree(c);
-}
-
 void fill_grid(FILE *log,
                gmx_domdec_zones_t *dd_zones,
                t_grid *grid,int ncg_tot,
@@ -809,8 +783,6 @@ void fill_grid(FILE *log,
     }
     debug_gmx();
 
-    //if (log)
-    //   dump_nsgrid_pdb("nsgrid.pdb",cg1,cg_cm,grid);
 }
 
 void check_grid(FILE *log,t_grid *grid)

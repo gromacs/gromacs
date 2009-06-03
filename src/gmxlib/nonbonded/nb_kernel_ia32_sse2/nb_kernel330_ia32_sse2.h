@@ -25,6 +25,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 330 with forces, optimized for ia32 sse2.
  *
@@ -83,6 +89,9 @@ nb_kernel330nf_ia32_sse2(int *    nri,        int      iinr[],    int      jinde
 
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 

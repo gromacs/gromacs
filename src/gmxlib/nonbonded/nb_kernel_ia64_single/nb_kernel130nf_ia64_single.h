@@ -25,6 +25,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 130 without forces, optimized for ia64 single precision assembly.
  *
@@ -51,6 +57,9 @@ nb_kernel130nf_ia64_single  (int *   nri,        int     iinr[],   int     jinde
                        void *  mtx,        int *   outeriter,int *   inneriter,
                        float * work);
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL130NF_IA64S_H_ */

@@ -24,6 +24,13 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 /*! \brief Try to execute a couple of ia32 SSE2 instructions
  *
  *  \internal
@@ -38,3 +45,7 @@
  */
 void
 nb_kernel_ia32_sse2_test_asm(void);
+
+#ifdef __cplusplus
+}
+#endif

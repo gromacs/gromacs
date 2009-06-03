@@ -29,7 +29,19 @@
 
 #include "../nb_kerneltype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
+
 void
 nb_kernel_setup_sse2_double(FILE *log,nb_kernel_t **list);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _NB_KERNEL_SSE2_DOUBLE_H_ */

@@ -24,6 +24,13 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 /*! \brief Try to execute a couple of x86-64 SSE instructions
  *
  *  \internal
@@ -38,3 +45,7 @@
  */
 void
 nb_kernel_x86_64_sse2_test_asm(void);
+
+#ifdef __cplusplus
+}
+#endif

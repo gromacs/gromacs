@@ -25,6 +25,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 230 with forces, optimized for ia64 single precision assembly.
  *
@@ -50,6 +56,9 @@ nb_kernel230_ia64_single    (int *   nri,        int     iinr[],   int     jinde
                        float   GBtab[],    int *   nthreads, int *   count,
                        void *  mtx,        int *   outeriter,int *   inneriter,
                        float * work);
+#ifdef __cplusplus
+}
+#endif
 
 
 

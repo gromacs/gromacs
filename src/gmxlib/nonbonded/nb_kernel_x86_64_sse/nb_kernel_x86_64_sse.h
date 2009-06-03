@@ -31,8 +31,18 @@
 
 #include "../nb_kerneltype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 void
 nb_kernel_setup_x86_64_sse(FILE *log,nb_kernel_t **list);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _NB_KERNEL_X86_64_SSE_H_ */

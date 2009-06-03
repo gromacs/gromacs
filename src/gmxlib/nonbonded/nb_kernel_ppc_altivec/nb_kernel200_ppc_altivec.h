@@ -25,6 +25,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 200 with forces, optimized for Altivec.
  *
@@ -78,6 +84,9 @@ nb_kernel200nf_ppc_altivec(int *   nri,        int     iinr[],   int     jindex[
                        void *  mtx,        int *   outeriter,int *   inneriter,
                        float * work);
 
+#ifdef __cplusplus
+}
+#endif
 
 
 

@@ -25,6 +25,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 200 with forces, optimized for ia64 double precision assembly.
  *
@@ -52,6 +58,9 @@ nb_kernel200_ia64_double  (int *    nri,        int      iinr[],    int      jin
                      double * work);
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL200_IA64D_H_ */

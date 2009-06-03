@@ -26,6 +26,13 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
 
 /*! \brief Nonbonded kernel 231 with forces, optimized for x86-64 sse2.
  *
@@ -84,6 +91,9 @@ nb_kernel231nf_x86_64_sse2(int *    nri,        int      iinr[],    int      jin
 
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 

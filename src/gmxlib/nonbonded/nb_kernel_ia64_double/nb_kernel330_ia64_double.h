@@ -25,6 +25,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 330 with forces, optimized for ia64 double precision assembly.
  *
@@ -51,5 +57,8 @@ nb_kernel330_ia64_double  (int *    nri,        int      iinr[],    int      jin
                      void *   mtx,        int *    outeriter, int *    inneriter,
                      double * work);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _NB_KERNEL330_IA64D_H_ */

@@ -17,6 +17,12 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 
 /*! \file  nb_kernel_x86_64_sse_test_asm.h
@@ -38,3 +44,7 @@
  */
 void
 nb_kernel_x86_64_sse_test_asm(void);
+
+#ifdef __cplusplus
+}
+#endif

@@ -23,6 +23,12 @@
  *  \internal
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
 /*! \brief Nonbonded kernel 400 with forces, optimized for sse.
  *
@@ -79,6 +85,9 @@ nb_kernel400nf_sse2_single(int *   nri,        int     iinr[],   int     jindex[
 
 
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _NB_KERNEL400_SSE2_SINGLE_H_ */
