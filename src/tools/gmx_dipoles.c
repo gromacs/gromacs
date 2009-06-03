@@ -1232,14 +1232,14 @@ int gmx_dipoles(int argc,char *argv[])
     "an average dipole moment of the molecule of 2.273 (SPC). For the",
     "distribution function a maximum of 5.0 will be used."
   };
-  static real mu_max=5, mu_aver=-1,rcmax=0;
-  static real epsilonRF=0.0, temp=300;
-  static bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
-  static const char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
-  static const char *axtitle="Z";
-  static int  nslices = 10;      /* nr of slices defined       */
-  static int  skip=0,nFA=0,nFB=0,ncos=1;
-  static int  nlevels=20,ndegrees=90;
+  real mu_max=5, mu_aver=-1,rcmax=0;
+  real epsilonRF=0.0, temp=300;
+  bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
+  const char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
+  const char *axtitle="Z";
+  int  nslices = 10;      /* nr of slices defined       */
+  int  skip=0,nFA=0,nFB=0,ncos=1;
+  int  nlevels=20,ndegrees=90;
   t_pargs pa[] = {
     { "-mu",       FALSE, etREAL, {&mu_aver},
       "dipole of a single molecule (in Debye)" },

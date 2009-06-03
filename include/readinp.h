@@ -122,7 +122,7 @@ typedef struct {
     int  *i;   /* arrays */
     gmx_step_t *is;
     real *r;
-    const char **c;  /* Must be pointer to string (when type == etSTR)         */
+    const char **c; /* Must be pointer to string (when type == etSTR)         */
                /* or null terminated list of enums (when type == etENUM) */
     bool *b;
     rvec *rv;
