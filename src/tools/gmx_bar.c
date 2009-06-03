@@ -246,7 +246,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
     }
 }
 
-static double legend2lambda(char *fn,char *legend,bool bdhdl)
+static double legend2lambda(char *fn,const char *legend,bool bdhdl)
 {
     double lambda=0;
     char   *ptr;
@@ -357,7 +357,7 @@ static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
 
 int gmx_bar(int argc,char *argv[])
 {
-    static char *desc[] = {
+    static const char *desc[] = {
         "g_bar calculates free energy difference estimates through",
         "Bennett's acceptance ratio method.",
         "Input option [TT]-f[tt] expects multiple dhdl files.",

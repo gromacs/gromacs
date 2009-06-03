@@ -62,7 +62,7 @@ int can_view(int ftp)
   return 0;
 }
 
-void do_view(char *fn, char *opts)
+void do_view(const char *fn, const char *opts)
 {
   char buf[STRLEN], env[STRLEN];
   const char *cmd;

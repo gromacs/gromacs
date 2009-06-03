@@ -582,7 +582,7 @@ real fit_acf(int ncorr,int fitfn,bool bVerbose,
   return sumtot;
 }
 
-void low_do_autocorr(char *fn,char *title,
+void low_do_autocorr(const char *fn,const char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bNormalize,
@@ -770,7 +770,8 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
   return ppa;
 }
 
-void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
+void do_autocorr(const char *fn,const char *title,
+		 int nframes,int nitem,real **c1,
 		 real dt,unsigned long mode,bool bAver)
 {
   if (!bACFinit) {

@@ -47,7 +47,7 @@ extern "C" {
 
 #include "typedefs.h"
 
-extern void do_view(char *fn, char *opts);
+extern void do_view(const char *fn, const char *opts);
 /* forks off appropriate command to view file.
  * currently eps, xpm, xvg and pdb are supported 
  * defaults are provided, can be overriden with environment vars 

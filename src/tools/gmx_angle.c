@@ -89,7 +89,7 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,char *fn,real dt)
 
 int gmx_angle(int argc,char *argv[])
 {
-  static char *desc[] = {
+  static const char *desc[] = {
     "g_angle computes the angle distribution for a number of angles",
     "or dihedrals. This way you can check whether your simulation",
     "is correct. With option -ov you can plot the average angle of",
@@ -106,7 +106,7 @@ int gmx_angle(int argc,char *argv[])
     "sin of selected dihedral angles which subsequently can be used as",
     "input for a PCA analysis using [TT]g_covar[tt]."
   };
-  static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
+  static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
   static real binwidth=1;
   t_pargs pa[] = {
@@ -123,7 +123,7 @@ int gmx_angle(int argc,char *argv[])
     { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
       "Average the correlation functions for the individual angles/dihedrals" }
   };
-  static char *bugs[] = {
+  static const char *bugs[] = {
     "Counting transitions only works for dihedrals with multiplicity 3"
   };
   

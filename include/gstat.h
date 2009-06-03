@@ -122,11 +122,12 @@ extern real fit_acf(int ncorr,int fitfn,bool bVerbose,
 		    real tbeginfit,real tendfit,real dt,real c1[],real *fit);
   /* Fit an ACF to a given function */
   
-extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
+extern void do_autocorr(const char *fn,const char *title,
+			int nframes,int nitem,real **c1,
 			real dt,unsigned long mode,bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
-extern void low_do_autocorr(char *fn,char *title,
+extern void low_do_autocorr(const char *fn,const char *title,
 			    int  nframes,int nitem,int nout,real **c1,
 			    real dt,unsigned long mode,int nrestart,
 			    bool bAver,bool bNormalize,
