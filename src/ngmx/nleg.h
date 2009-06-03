@@ -45,10 +45,10 @@ typedef struct {
   t_windata wd;
 } t_legendwin;
 
-extern unsigned long Type2Color(char *type);
+extern unsigned long Type2Color(const char *type);
 /* Return the color for a given atomtype */
 
-extern t_rgb *Type2RGB(char *type);
+extern t_rgb *Type2RGB(const char *type);
 /* Return the color for a given atomtype */
 
 extern t_legendwin *init_legw(t_x11 *x11,Window Parent,

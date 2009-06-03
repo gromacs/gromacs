@@ -46,7 +46,7 @@
 #include "writeps.h"
 
 typedef struct {
-  char  *tp;
+  const char    *tp;
   unsigned long *col;
   t_rgb rgb;
 } t_atomcolor;
@@ -65,7 +65,7 @@ static t_atomcolor ac[] = {
 };
 #define NAC asize(ac)
 
-int search_ac(char *type)
+int search_ac(const char *type)
 {
   int i,nb,mij,best,besti;
 
@@ -86,7 +86,7 @@ int search_ac(char *type)
   return besti;
 }
 
-unsigned long Type2Color(char *type)
+unsigned long Type2Color(const char *type)
 {
   int i;
   
@@ -95,7 +95,7 @@ unsigned long Type2Color(char *type)
   return *(ac[i].col);
 }
 
-t_rgb *Type2RGB(char *type)
+t_rgb *Type2RGB(const char *type)
 {
   int i;
   
@@ -108,7 +108,7 @@ void DrawLegend(t_x11 *x11,t_windata *Win)
 {
 #define NLAB 6
 #define COLS 3
-  static char *lab[NLAB] = { "C", "O", "H", "S", "N", "P" };
+  static const char *lab[NLAB] = { "C", "O", "H", "S", "N", "P" };
   int  i,i0,dh,dw,w,y,x1,x0;
   unsigned long cind;
   real h_2;

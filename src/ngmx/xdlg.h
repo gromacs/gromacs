@@ -78,7 +78,7 @@ typedef struct {
  * cb and data may be NULL.
  *
  ****************************/
-t_dlg *CreateDlg(t_x11 *x11,Window Parent,char *title,
+t_dlg *CreateDlg(t_x11 *x11,Window Parent,const char *title,
 		 int x0,int y0,int w,int h,int bw,unsigned long fg,unsigned long bg,
 		 DlgCallback *cb,void *data);
 

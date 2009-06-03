@@ -165,7 +165,7 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 
 t_logo *init_logo(t_x11 *x11,Window parent)
 {
-  static char *bfname[]= {
+  static const char *bfname[]= {
     "-b&h-lucida-bold-i-normal-sans-34-240-100-100-p-215-iso8859-1",
     "-b&h-lucida-bold-i-normal-sans-26-190-100-100-p-166-iso8859-1",
     "lucidasans-bolditalic-24",
@@ -174,7 +174,7 @@ t_logo *init_logo(t_x11 *x11,Window parent)
     "fixed"
     };
 #define NBF asize(bfname)
-  static char *sfname[]= {
+  static const char *sfname[]= {
     "lucidasans-bold-18",
     "10x20",
     "fixed"

@@ -476,7 +476,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
  *
  ****************************/
 t_dlgitem *CreateButton(t_x11 *x11,
-			char *szLab,bool bDef,t_id id,t_id groupid,
+			const char *szLab,bool bDef,t_id id,t_id groupid,
 			int x0,int y0,int w,int h,int bw)
 {
   t_dlgitem *dlgitem;
@@ -503,7 +503,7 @@ t_dlgitem *CreateButton(t_x11 *x11,
 }
 
 t_dlgitem *CreateRadioButton(t_x11 *x11,
-			     char *szLab,bool bSet,t_id id,
+			     const char *szLab,bool bSet,t_id id,
 			     t_id groupid,
 			     int x0,int y0,int w,int h,int bw)
 {
@@ -523,7 +523,7 @@ t_dlgitem *CreateRadioButton(t_x11 *x11,
 }
 
 t_dlgitem *CreateGroupBox(t_x11 *x11,
-			  char *szLab,t_id id,
+			  const char *szLab,t_id id,
 			  int nitems, t_id items[],
 			  int x0,int y0,int w,int h,int bw)
 {
@@ -546,7 +546,7 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
 }
 
 t_dlgitem *CreateCheckBox(t_x11 *x11,
-			  char *szLab,bool bCheckedInitial,t_id id,
+			  const char *szLab,bool bCheckedInitial,t_id id,
 			  t_id groupid,
 			  int x0,int y0,int w,int h,int bw)
 {
@@ -582,7 +582,8 @@ t_dlgitem *CreatePixmap(t_x11 *x11,
 }
 
 t_dlgitem *CreateStaticText(t_x11 *x11,
-			    int nlines,char **lines,t_id id,t_id groupid,
+			    int nlines,const char *const*lines,t_id id,
+                            t_id groupid,
 			    int x0,int y0,int w,int h,int bw)
 {
   t_dlgitem *dlgitem;
@@ -609,7 +610,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
 }
 
 t_dlgitem *CreateEditText(t_x11 *x11,
-			  char *title,
+			  const char *title,
 			  int screenbuf,char *buf, t_id id,t_id groupid,
 			  int x0,int y0,int w,int h,int bw)
 {

@@ -319,7 +319,7 @@ void NoHelp(t_dlg *dlg)
 
 void HelpDlg(t_dlg *dlg)
 {
-  char *lines[] = {
+  const char *lines[] = {
     "Place the cursor over one of the items",
     "and press the F1 key to get more help.",
     "First press the OK button."
@@ -641,7 +641,7 @@ void FreeDlg(t_dlg *dlg)
  * Routine to create the DLG structure, returns NULL on failure
  *
  ****************************/
-t_dlg *CreateDlg(t_x11 *x11, Window Parent, char *title,
+t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
 		 int x0,int y0,int w,int h,int bw, unsigned long fg, unsigned long bg,
 		 DlgCallback *cb,void *data)
 {

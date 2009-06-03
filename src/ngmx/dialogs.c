@@ -67,7 +67,7 @@ void write_gmx(t_x11 *x11,t_gmx *gmx,int mess)
   XSendEvent(x11->disp,letter.xclient.window,True,0,&letter);
 }
 
-static void shell_comm(char *title,char *script,int nsleep)
+static void shell_comm(const char *title,const char *script,int nsleep)
 {
   FILE *tfil;
   char command[STRLEN];
@@ -135,7 +135,7 @@ static void MBCallback(t_x11 *x11,int dlg_mess,int item_id,
 
 static t_dlg *about_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static char *lines[]={
+  static const char *lines[]={
     "         G R O M A C S",
     " Machine for Simulating Chemistry",
     "       Copyright (c) 1992-2000",
@@ -163,7 +163,7 @@ static void QuitCB(t_x11 *x11,int dlg_mess,int item_id,
 
 static t_dlg *quit_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static char *lines[]={
+  static const char *lines[]={
     " Do you really want to Quit ?"
     };
 
@@ -175,7 +175,7 @@ static t_dlg *quit_mb(t_x11 *x11,t_gmx *gmx)
 
 static t_dlg *help_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static char *lines[]={
+  static const char *lines[]={
     " Help will soon be added"
     };
   
@@ -187,7 +187,7 @@ static t_dlg *help_mb(t_x11 *x11,t_gmx *gmx)
 
 static t_dlg *ni_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static char *lines[]={
+  static const char *lines[]={
     " This feature has not been",
     " implemented yet."
     };
@@ -383,7 +383,7 @@ typedef t_dlg *t_mmb(t_x11 *x11,t_gmx *gmx);
 
 typedef struct {
   eDialogs    ed;
-  char        *dlgfile;
+  const char  *dlgfile;
   DlgCallback *cb;
 } t_dlginit;
 
@@ -431,7 +431,7 @@ void done_dlgs(t_gmx *gmx)
     FreeDlg(gmx->mboxes[i]);
 }
 
-void edit_file(char *fn)
+void edit_file(const char *fn)
 {
   if (fork()==0) {
     char script[256];

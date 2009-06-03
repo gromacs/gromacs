@@ -241,7 +241,7 @@ t_butbox *init_bbox(t_x11 *x11,Window Parent,Window SendTo,
 		    int width,unsigned long fg,unsigned long bg)
 {
   t_butbox *bbox;
-  static char *lbut[IDBUTNR] = {
+  static const char *lbut[IDBUTNR] = {
     "< X-Rotate >", "< Y-Rotate >", "< Z-Rotate >", 
     "< X-Move >", "< Y-Move >", "< Z-Move >", "< Scale >", 
     };

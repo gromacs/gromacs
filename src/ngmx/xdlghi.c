@@ -82,7 +82,7 @@ t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
   return dlgitem;
 }
 
-t_dlgitem **CreateDlgitemGroup(t_x11 *x11, char *szTitle, 
+t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle, 
 			       t_id GroupID, int x0, int y0,
 			       int nitem, ...)
      /* This routine creates a dlgitem group at the
@@ -117,17 +117,17 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, char *szTitle,
     switch (edlg) {
     case edlgBN:
       name=va_arg(ap,char *);
-      bBool=va_arg(ap,bool);
+      bBool=va_arg(ap,int);
       dlgitem[i+1]=CreateButton(x11,name,bBool,ids[i],GroupID,x,y,0,0,0);
       break;
     case edlgRB:
       name=va_arg(ap,char *);
-      bBool=va_arg(ap,bool);
+      bBool=va_arg(ap,int);
       dlgitem[i+1]=CreateRadioButton(x11,name,bBool,ids[i],GroupID,x,y,0,0,0);
       break;
     case edlgCB:
       name=va_arg(ap,char *);
-      bBool=va_arg(ap,bool);
+      bBool=va_arg(ap,int);
       dlgitem[i+1]=CreateCheckBox(x11,name,bBool,ids[i],GroupID,x,y,0,0,0);
       break;
     case edlgPM:

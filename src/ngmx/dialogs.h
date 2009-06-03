@@ -103,7 +103,7 @@ extern void show_mb(t_gmx *gmx,int mb);
 
 extern void done_dlgs(t_gmx *gmx);
 
-extern void edit_file(char *fn);
+extern void edit_file(const char *fn);
 
 extern t_filter *init_filter(t_atoms *atoms, char *fn, int natom_trx);
 

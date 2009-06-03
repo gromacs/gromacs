@@ -53,8 +53,8 @@
 #define MB_APPLMODAL       (1<<21)
 #define MB_DONTSHOW        (1<<22)
 
-t_dlg *MessageBox(t_x11 *x11, Window Parent, char *title,
-		  int nlines, char *lines[], unsigned long Flags,
+t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
+		  int nlines, const char *const lines[], unsigned long Flags,
 		  DlgCallback *cb, void *data);
 
 #endif	/* _xmb_h */

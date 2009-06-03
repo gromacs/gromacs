@@ -46,11 +46,11 @@
 #include "typedefs.h"
 #include "string2.h"
 
-int CheckWin(Window win,char *file, int line)
+int CheckWin(Window win,const char *file, int line)
 {
   typedef struct {
     int  n;
-    char *s;
+    const char *s;
   } t_winerr;
   t_winerr winerr[] = {
     { BadAlloc,  "Bad Alloc" },

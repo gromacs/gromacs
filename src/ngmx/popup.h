@@ -44,7 +44,7 @@ typedef struct {
   Window send_to;	/* Window to send messages to			*/
   int    nreturn;	/* Value returned when entry is selected 	*/
   bool   bChecked;	/* Indicate whether menu item is check-marked	*/
-  char   *str;		/* Text for menu entry				*/
+  const char *str;      /* Text for menu entry				*/
 } t_mentry;
 
 typedef struct {

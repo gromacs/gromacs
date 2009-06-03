@@ -66,7 +66,7 @@ typedef struct t_int_psdata *t_psdata;
 
 extern const char *fontnm[efontNR];
 
-extern t_psdata ps_open(char *fn,real x1,real y1,real x2,real y2);
+extern t_psdata ps_open(const char *fn,real x1,real y1,real x2,real y2);
 
 extern void ps_linewidth(t_psdata ps,int lw);
 extern void ps_color(t_psdata ps,real r,real g,real b);

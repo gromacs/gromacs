@@ -65,7 +65,7 @@ struct t_int_psdata  {
 };
 
 
-t_psdata ps_open(char *fn,real x1,real y1,real x2,real y2)
+t_psdata ps_open(const char *fn,real x1,real y1,real x2,real y2)
 {
   t_psdata ps;
   

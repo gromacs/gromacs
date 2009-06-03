@@ -46,12 +46,13 @@
 #include "fgrid.h"
 #include "futil.h"
 
-static char *type[] = { 
+static const char *type[] = { 
   "button", "radiobuttons", "groupbox", "checkbox",
   "pixmap", "statictext",   "edittext", "defbutton"
   };
 
-void ReadDlgError(char *infile,eDLGERR err,char *s,char *file,int line)
+void ReadDlgError(const char *infile,eDLGERR err,const char *s,
+                  const char *file,int line)
 {
   fprintf(stderr,"Error: ");
   switch(err) {
@@ -103,7 +104,7 @@ static void GetBuf(FILE *in, char *buf)
   rc=fscanf(in,"%s",buf);
 }
 
-static void ReadAccOpen(char *infile, FILE *in)
+static void ReadAccOpen(const char *infile, FILE *in)
 {
   char buf[STRLEN];
   
@@ -112,7 +113,7 @@ static void ReadAccOpen(char *infile, FILE *in)
     ReadDlgErr(infile,eACCOEXP,buf);
 }
 
-static void ReadAccClose(char *infile, FILE *in)
+static void ReadAccClose(const char *infile, FILE *in)
 {
   char buf[STRLEN];
   
@@ -121,7 +122,7 @@ static void ReadAccClose(char *infile, FILE *in)
     ReadDlgErr(infile,eACCCEXP,buf);
 }
 
-void ReadQuoteString(char *infile, FILE *in, char *buf)
+void ReadQuoteString(const char *infile, FILE *in, char *buf)
 {
   char c[2];
   int i=0;
@@ -159,7 +160,7 @@ static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
   buf[i]='\0';
 }
 
-static bool bNotAccClose(char *buf)
+static bool bNotAccClose(const char *buf)
 {
   return (strcmp(buf,"}")!=0);
 }
@@ -282,7 +283,7 @@ void DoneFGrid(t_fgrid *fgrid)
   sfree(fgrid->fsimple);
 }
 
-static t_fitem *ScanFItem(char *infile, FILE *in, char *buf)
+static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
 {
   char set[STRLEN],get[STRLEN],help[STRLEN],def[STRLEN];
   edlgitem edlg;
@@ -338,7 +339,7 @@ static t_fitem *ScanFItem(char *infile, FILE *in, char *buf)
   return fitem;
 }
 
-t_fgrid *FGridFromFile(char *infile)
+t_fgrid *FGridFromFile(const char *infile)
 {
   FILE *in;
   char buf[STRLEN];

@@ -59,7 +59,7 @@ extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
  * nSelect is the ordinal of the selected button.
  */
 
-extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, char *szTitle, 
+extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle, 
 				      t_id GroupID, int x0, int y0,
 				      int nitem, ...);
 /* This routine creates a dlgitem group at the

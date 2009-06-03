@@ -65,7 +65,7 @@ typedef struct t_x11 {
   unsigned long       fg,bg;
   char        *title;
   struct t_wlist *wlist;
-  void        (*GetNamedColor)(struct t_x11 *x11,char *name,unsigned long *col);
+  void        (*GetNamedColor)(struct t_x11 *x11,const char *name,unsigned long *col);
   void        (*MainLoop)(struct t_x11 *x11);
   void        (*RegisterCallback)(struct t_x11 *x11,Window w,Window Parent,
 				  bool cb CBARGS, void *data);
@@ -130,6 +130,6 @@ t_x11 *GetX11(int *argc, char *argv[]);
  *    memory allocated by x11 before.
  */
 
-extern void GetNamedColor(t_x11 *x11,char *name,unsigned long *col);
+extern void GetNamedColor(t_x11 *x11,const char *name,unsigned long *col);
 
 #endif	/* _x11_h */

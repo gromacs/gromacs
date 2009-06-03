@@ -121,20 +121,20 @@ typedef struct t_dlgitem {
  * on the dlg box, and if wished resize them.
  *
  ****************************/
-extern t_dlgitem *CreateButton(t_x11 *x11, char *szLab,bool bDef,
+extern t_dlgitem *CreateButton(t_x11 *x11, const char *szLab,bool bDef,
 			       t_id id,t_id groupid,
 			       int x0,int y0,int w,int h,int bw);
 
 extern t_dlgitem *CreateRadioButton(t_x11 *x11,
-				    char *szLab,bool bSet,t_id id,
+				    const char *szLab,bool bSet,t_id id,
 				    t_id groupid,
 				    int x0,int y0,int w,int h,int bw);
 
-extern t_dlgitem *CreateGroupBox(t_x11 *x11,char *szLab,t_id id,
+extern t_dlgitem *CreateGroupBox(t_x11 *x11,const char *szLab,t_id id,
 				 int nitems, t_id items[],
 				 int x0,int y0,int w,int h,int bw);
 
-extern t_dlgitem *CreateCheckBox(t_x11 *x11,char *szLab,
+extern t_dlgitem *CreateCheckBox(t_x11 *x11,const char *szLab,
 				 bool bCheckedInitial,
 				 t_id id,t_id groupid,
 				 int x0,int y0,int w,int h,int bw);
@@ -143,11 +143,11 @@ extern t_dlgitem *CreatePixmap(t_x11 *x11,Pixmap pm,t_id id,t_id groupid,
 			       int x0,int y0,int w,int h,int bw);
 
 extern t_dlgitem *CreateStaticText(t_x11 *x11,
-				   int nlines,char **lines,t_id id,
+				   int nlines,const char *const*lines,t_id id,
 				   t_id groupid,
 				   int x0,int y0,int w,int h,int bw);
 
-extern t_dlgitem *CreateEditText(t_x11 *x11,char *title, 
+extern t_dlgitem *CreateEditText(t_x11 *x11,const char *title, 
 				 int screenbuf,char *buf, t_id id,t_id groupid,
 				 int x0,int y0,int w,int h,int bw);
 

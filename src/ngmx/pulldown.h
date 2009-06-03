@@ -45,12 +45,13 @@ typedef struct {
   int       nsel;
   int       *xpos;
   t_menu    **m;
-  char      **title;
+  const char **title;
 } t_pulldown;
 
 extern t_pulldown *init_pd(t_x11 *x11,Window Parent,int width,int height,
 			   unsigned long fg,unsigned long bg,
-			   int nmenu,int *nsub,t_mentry *ent[],char **title);
+			   int nmenu,int *nsub,t_mentry *ent[],
+                           const char **title);
 /* nmenu is the number of submenus, title are the titles of
  * the submenus, nsub are the numbers of entries in each submenu
  * ent are the entries in the pulldown menu, analogous to these in the

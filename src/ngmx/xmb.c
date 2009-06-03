@@ -72,8 +72,8 @@ void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long 
   icon_bg=bg;
 }
 
-t_dlg *MessageBox(t_x11 *x11, Window Parent, char *title,
-		  int nlines, char *lines[], unsigned long Flags,
+t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
+		  int nlines, const char *const lines[], unsigned long Flags,
 		  DlgCallback *cb, void *data)
 {
   t_dlg         *dlg;

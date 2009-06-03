@@ -341,7 +341,7 @@ static int gmx_pd_size[MSIZE] = {
   asize(FileMenu), asize(DispMenu), asize(HelpMenu)
 };
 
-static char *MenuTitle[MSIZE] = {
+static const char *MenuTitle[MSIZE] = {
   "File", "Display", "Help"
 };
 

@@ -51,7 +51,7 @@ unsigned long BLACK,BLUE,GREEN,CYAN,RED,BROWN,GREY,DARKGREY;
 /* These colours will be mapped to white on a monochrome screen */
 unsigned long LIGHTBLUE,LIGHTGREEN,LIGHTGREY,LIGHTCYAN,LIGHTRED,VIOLET,YELLOW,WHITE;
 
-static XFontStruct *XLQF(FILE *err, Display *disp, char *name)
+static XFontStruct *XLQF(FILE *err, Display *disp, const char *name)
 {
   XFontStruct *font=XLoadQueryFont(disp,name);
 #ifdef DEBUG
@@ -63,7 +63,7 @@ static XFontStruct *XLQF(FILE *err, Display *disp, char *name)
   
 static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
 {
-  static char *fontnames[] = { 
+  static const char *fontnames[] = { 
     "sansb12","8x13bold","8x13",
     "9x15","6x13","fixed" 
     };
@@ -102,7 +102,7 @@ static GC GetGC(Display *disp, XFontStruct *font)
   return XCreateGC(disp,DefaultRootWindow(disp),GCForeground|GCFont,&values);
 }
 
-void GetNamedColor(t_x11 *x11,char *name,unsigned long *col)
+void GetNamedColor(t_x11 *x11,const char *name,unsigned long *col)
 {
   /* If name is found than col set to that colour else col is unchanged */
   XColor exact,clr;
@@ -316,7 +316,7 @@ static void Flush(t_x11 *x11)
 
 t_x11 *GetX11(int *argc, char *argv[])
 {
-  static char *v_name[] = {
+  static const char *v_name[] = {
     "DirectColor","TrueColor", "PseudoColor",
     "StaticColor","GrayScale", "StaticGray"
     };

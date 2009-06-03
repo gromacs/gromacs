@@ -54,7 +54,7 @@ typedef struct {
   Cursor cursor;
 } t_windata;
 
-extern int CheckWin(Window win,char *file, int line);
+extern int CheckWin(Window win,const char *file, int line);
 
 #define CheckWindow(win) CheckWin(win,__FILE__,__LINE__)
 
