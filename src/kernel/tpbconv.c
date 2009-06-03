@@ -292,7 +292,7 @@ static void zeroq(int n,atom_id index[],gmx_mtop_t *mtop)
 
 int main (int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "tpbconv can edit run input files in four ways.[PAR]"
     "[BB]1st.[bb] by modifying the number of steps in a run input file",
     "with option [TT]-nsteps[tt] or option [TT]-runtime[tt].[PAR]",

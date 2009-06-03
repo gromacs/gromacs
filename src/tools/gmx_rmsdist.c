@@ -507,7 +507,7 @@ real rms_diff(int natom,real **d,real **d_r)
 
 int gmx_rmsdist (int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_rmsdist computes the root mean square deviation of atom distances,",
     "which has the advantage that no fit is needed like in standard RMS",
     "deviation as computed by g_rms.",

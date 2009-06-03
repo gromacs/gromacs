@@ -664,7 +664,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char
 
 int gmx_kinetics(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_kinetics reads two xvg files, each one containing data for N replicas.",
     "The first file contains the temperature of each replica at each timestep,"
     "and the second contains real values that can be interpreted as",

@@ -55,7 +55,7 @@
 
 int gmx_rotacf(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_rotacf calculates the rotational correlation function",
     "for molecules. Three atoms (i,j,k) must be given in the index",
     "file, defining two vectors ij and jk. The rotational acf",

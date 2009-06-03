@@ -453,7 +453,7 @@ void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,struct edi
 int main(int argc,char *argv[])
 {
 
-  static char *desc[] = {
+  const char *desc[] = {
       "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with mdrun",
       "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a", 
       "normal modes anaysis ([TT]g_nmeig[tt]).",

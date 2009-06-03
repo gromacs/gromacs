@@ -365,7 +365,7 @@ static void print_rtp(char *filenm,char *title,t_atoms *atoms,
 
 int main(int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "x2top generates a primitive topology from a coordinate file.",
     "The program assumes all hydrogens are present when defining",
     "the hybridization from the atom name and the number of bonds.",
@@ -389,7 +389,7 @@ int main(int argc, char *argv[])
     "one of the short names above on the command line instead. In that",
     "case pdb2gmx just looks for the corresponding file.[PAR]",
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
     "Periodic boundary conditions screw up the bonding",
     "No improper dihedrals are generated",

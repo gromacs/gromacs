@@ -1011,7 +1011,7 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
 
 int gmx_rdf(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "The structure of liquids can be studied by either neutron or X-ray",
     "scattering. The most common way to describe liquid structure is by a",
     "radial distribution function. However, this is not easy to obtain from",

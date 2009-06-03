@@ -421,7 +421,7 @@ void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
 
 int gmx_mindist(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_mindist computes the distance between one group and a number of",
     "other groups. Both the minimum distance", 
     "(between any pair of atoms from the respective groups)",
@@ -438,7 +438,7 @@ int gmx_mindist(int argc,char *argv[])
     "Other programs that calculate distances are [TT]g_dist[tt]",
     "and [TT]g_bond[tt]."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "The [TT]-pi[tt] option is very slow."
   };
   

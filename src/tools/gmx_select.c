@@ -137,7 +137,7 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 int
 gmx_select(int argc, char *argv[])
 {
-    char               *desc[] = {
+    const char *desc[] = {
         "g_select writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",

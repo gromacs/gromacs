@@ -164,7 +164,7 @@ static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
 
 int gmx_bundle(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_bundle analyzes bundles of axes. The axes can be for instance",
     "helix axes. The program reads two index groups and divides both",
     "of them in [TT]-na[tt] parts. The centers of mass of these parts",

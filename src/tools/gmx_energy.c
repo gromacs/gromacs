@@ -862,7 +862,7 @@ static void fec(char *ene2fn, char *runavgfn,
 
 int gmx_energy(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     
     "g_energy extracts energy components or distance restraint",
     "data from an energy file. The user is prompted to interactively",

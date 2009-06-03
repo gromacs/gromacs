@@ -676,7 +676,7 @@ static void ehisto(char *fh,int n,real **enerT)
 
 int gmx_sham(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
     "g_sham reads one or more xvg files and analyzes data sets.",
     "g_sham basic purpose is plotting Gibbs free energy landscapes",

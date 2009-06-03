@@ -968,7 +968,7 @@ static void order_params(FILE *log,
 
 int gmx_chi(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_chi computes phi, psi, omega and chi dihedrals for all your ",
     "amino acid backbone and sidechains.",
     "It can compute dihedral angle as a function of time, and as",
@@ -1022,7 +1022,7 @@ int gmx_chi(int argc,char *argv[])
 
   };
   
-  static char *bugs[] = {
+  const char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
     "Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like g_rama.", 
     "-r0 option does not work properly", 

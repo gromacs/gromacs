@@ -67,7 +67,7 @@ static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
 
 int gmx_dist(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_dist can calculate the distance between the centers of mass of two",
     "groups of atoms as a function of time. The total distance and its",
     "x, y and z components are plotted.[PAR]",

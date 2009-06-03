@@ -125,7 +125,7 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
 
 int gmx_dyndom(int argc,char *argv[])
 {
-  char *desc[] = {
+  const char *desc[] = {
     "g_dyndom reads a pdb file output from DynDom",
     "http://www.cmp.uea.ac.uk/dyndom/",
     "It reads the coordinates, and the coordinates of the rotation axis",

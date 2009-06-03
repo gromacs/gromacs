@@ -480,7 +480,7 @@ void do_trunc(char *fn, real t0)
 
 int gmx_trjconv(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "trjconv can convert trajectory files in many ways:[BR]",
     "[BB]1.[bb] from one format to another[BR]",
     "[BB]2.[bb] select a subset of atoms[BR]"
@@ -600,23 +600,23 @@ int gmx_trjconv(int argc,char *argv[])
   int pbc_enum;
   enum
     { epSel,epNone, epComMol, epComRes, epComAtom, epNojump, epCluster, epWhole, epNR };
-  static char *pbc_opt[epNR+1] = 
+  const char *pbc_opt[epNR+1] = 
     { NULL, "none", "mol", "res", "atom", "nojump", "cluster", "whole", NULL };
   
   int unitcell_enum;
-  static char *unitcell_opt[euNR+1] = 
+  const char *unitcell_opt[euNR+1] = 
     { NULL, "rect", "tric", "compact", NULL };
 
   enum
     { ecSel, ecTric, ecRect, ecZero, ecNR};
-  static char *center_opt[ecNR+1] = 
+  const char *center_opt[ecNR+1] = 
     { NULL, "tric", "rect", "zero", NULL };
   int ecenter;
   
   int fit_enum;
   enum 
     { efSel, efNone, efFit,       efFitXY,         efReset,       efResetXY, efPFit,       efNR };
-  static char *fit[efNR+1] = 
+  const char *fit[efNR+1] = 
     { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;

@@ -576,7 +576,7 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 
 int gmx_genbox(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Genbox can do one of 3 things:[PAR]",
     
     "1) Generate a box of solvent. Specify -cs and -box. Or specify -cs and",
@@ -645,7 +645,7 @@ int gmx_genbox(int argc,char *argv[])
     "line with the total number of solvent molecules in your coordinate file."
   };
 
-  static char *bugs[] = {
+  const char *bugs[] = {
     "Molecules must be whole in the initial configurations.",
   };
   

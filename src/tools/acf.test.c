@@ -49,7 +49,7 @@
 int main(int argc,char *argv[])
 {
   FILE *fp;
-  static char *desc[] = {
+  const char *desc[] = {
     "testac tests the functioning of the GROMACS acf routines"
   };
   static int nframes = 1024;

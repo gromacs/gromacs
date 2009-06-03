@@ -141,7 +141,7 @@ int gmx_spol(int argc,char *argv[])
   int     *hist;
   t_pbc   pbc;
   
-  static char *desc[] = {
+  const char *desc[] = {
     "g_spol analyzes dipoles around a solute; it is especially useful",
     "for polarizable water. A group of reference atoms, or a center",
     "of mass reference (option [TT]-com[tt]) and a group of solvent",

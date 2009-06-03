@@ -117,7 +117,7 @@ static real calc_dist(t_pbc *pbc,rvec x[],t_block *cgs,int icg,int jcg)
 
 int gmx_saltbr(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_saltbr plots the distance between all combination of charged groups",
     "as a function of time. The groups are combined in different ways."
     "A minimum distance can be given, (eg. the cut-off), then groups",

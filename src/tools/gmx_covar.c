@@ -70,7 +70,7 @@
 
 int gmx_covar(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",
     "covariance matrix.",
     "All structures are fitted to the structure in the structure file.",

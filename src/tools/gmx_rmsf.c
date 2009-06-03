@@ -156,7 +156,7 @@ void print_dir(FILE *fp,real *Uaver)
 
 int gmx_rmsf(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",
     "deviation) of atomic positions ",
     "after (optionally) fitting to a reference frame.[PAR]",

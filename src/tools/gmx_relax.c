@@ -463,7 +463,7 @@ void spectrum(bool bVerbose,
 
 int gmx_relax(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_noe calculates a NOE spectrum"
   };
 

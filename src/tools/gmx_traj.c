@@ -453,7 +453,7 @@ static void print_histo(char *fn,int nhisto,int histo[],real binwidth)
 
 int gmx_traj(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_traj plots coordinates, velocities, forces and/or the box.",
     "With [TT]-com[tt] the coordinates, velocities and forces are",
     "calculated for the center of mass of each group.",

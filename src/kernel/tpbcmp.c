@@ -95,7 +95,7 @@ static void cmp_uc(FILE *fp,char *s,int index,unsigned char i1,unsigned char i2)
   }
 }
 
-static bool cmp_bool(FILE *fp, char *s, int index, bool b1, bool b2)
+static bool cmp_bool(FILE *fp, const char *s, int index, bool b1, bool b2)
 {
   b1 = b1 & TRUE;
   b2 = b2 & TRUE;
@@ -110,7 +110,7 @@ static bool cmp_bool(FILE *fp, char *s, int index, bool b1, bool b2)
   return b1 && b2;
 }
 
-static void cmp_str(FILE *fp, char *s, int index, char *s1, char *s2)
+static void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
 {
   if (strcmp(s1,s2) != 0) {
     if (index != -1)
@@ -130,7 +130,7 @@ static bool equal_double(double i1,double i2,real ftol)
   return 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol;
 }
 
-static void cmp_real(FILE *fp,char *s,int index,real i1,real i2,real ftol)
+static void cmp_real(FILE *fp,const char *s,int index,real i1,real i2,real ftol)
 {
   if (!equal_real(i1,i2,ftol)) {
     if (index != -1)

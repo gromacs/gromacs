@@ -53,7 +53,7 @@
 
 int gmx_genpr(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "genrestr produces an include file for a topology containing",
     "a list of atom numbers and three force constants for the",
     "X, Y and Z direction. A single isotropic force constant may",

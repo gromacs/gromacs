@@ -593,7 +593,7 @@ void chk_enx(char *fn)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
     "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
     "or an index file ([TT].ndx[tt])",

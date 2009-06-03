@@ -137,9 +137,12 @@ void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
     snew(buf,30);
     buf = getenv("CPMCSCF");
     if (buf)
-      sscanf(buf,"%d",&qm->cpmcscf);
-    else
-      qm->cpmcscf=0;
+	{
+		sscanf(buf,"%d",&i);
+		qm->cpmcscf = (i!=0);
+	}
+	else
+      qm->cpmcscf=FALSE;
     if (qm->cpmcscf)
       fprintf(stderr,"using cp-mcscf in l1003\n");
     else

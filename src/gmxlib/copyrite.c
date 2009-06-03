@@ -202,7 +202,7 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
   sfree(tmpstr);
 }
 
-void CopyRight(FILE *out,char *szProgram)
+void CopyRight(FILE *out,const char *szProgram)
 {
   /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the 
    * name of a file. Otherwise, we won't be able to find the library dir.

@@ -425,7 +425,7 @@ void sgangle_plot_single(char *fn,char *afile,char *dfile,
 
 int gmx_sgangle(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Compute the angle and distance between two groups. ",
     "The groups are defined by a number of atoms given in an index file and",
     "may be two or three atoms in size.",

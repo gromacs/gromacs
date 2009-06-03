@@ -1195,7 +1195,7 @@ void dipole_atom2molindex(int *n,int *index,t_block *mols)
 }
 int gmx_dipoles(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_dipoles computes the total dipole plus fluctuations of a simulation",
     "system. From this you can compute e.g. the dielectric constant for",
     "low dielectric media.",

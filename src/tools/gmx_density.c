@@ -374,7 +374,7 @@ void plot_density(real *slDensity[], char *afile, int nslices,
  
 int gmx_density(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Compute partial densities across the box, using an index file. Densities",
     "in kg/m^3, number densities or electron densities can be",
     "calculated. For electron densities, a file describing the number of",
@@ -412,7 +412,7 @@ int gmx_density(int argc,char *argv[])
       "Shift the center of mass along the axis to zero. This means if your axis is Z and your box is bX, bY, bZ, the center of mass will be at bX/2, bY/2, 0."}
   };
 
-  static char *bugs[] = {
+  const char *bugs[] = {
     "When calculating electron densities, atomnames are used instead of types. This is bad.",
   };
   

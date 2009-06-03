@@ -944,7 +944,7 @@ static void convert_mat(t_matrix *mat,t_mat *rms)
 
 int gmx_cluster(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_cluster can cluster structures with several different methods.",
     "Distances between structures can be determined from a trajectory",
     "or read from an XPM matrix file with the [TT]-dm[tt] option.",

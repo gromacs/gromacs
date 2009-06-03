@@ -69,7 +69,7 @@ static const char *GPLText[] = {
 
 extern void pr_difftime(FILE *out,double dt);
 
-void CopyRight(FILE *out,char *szProgram);
+void CopyRight(FILE *out,const char *szProgram);
   
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This

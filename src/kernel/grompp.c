@@ -831,7 +831,7 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
 
 int main (int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "The gromacs preprocessor",
     "reads a molecular topology file, checks the validity of the",
     "file, expands the topology from a molecular description to an atomic",

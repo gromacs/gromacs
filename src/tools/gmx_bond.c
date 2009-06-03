@@ -222,7 +222,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
 
 int gmx_bond(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_bond makes a distribution of bond lengths. If all is well a",
     "gaussian distribution should be made when using a harmonic potential.",
     "bonds are read from a single group in the index file in order i1-j1",
@@ -235,7 +235,7 @@ int gmx_bond(int argc,char *argv[])
     "the output. If however the option [TT]-averdist[tt] is given (as well",
     "or separately) the average bond length is plotted instead."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "It should be possible to get bond information from the topology."
   };
   static real blen=-1.0,tol=0.1;

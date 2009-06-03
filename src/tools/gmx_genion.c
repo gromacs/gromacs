@@ -291,7 +291,7 @@ static void update_topol(char *topinout,int p_num,int n_num,
 
 int gmx_genion(int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "genion replaces solvent molecules by monoatomic ions at",
     "the position of the first atoms with the most favorable electrostatic",
     "potential or at random. The potential is calculated on all atoms, using",
@@ -312,7 +312,7 @@ int gmx_genion(int argc, char *argv[])
     "with the [TT]-scale[tt] option.[PAR]",
     "For larger ions, e.g. sulfate we recommended to use genbox."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "Calculation of the potential is not reliable, therefore the [TT]-random[tt] option is now turned on by default.",
     "If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added."
   };

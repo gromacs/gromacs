@@ -179,7 +179,7 @@ static void get_dih2(t_xrama *xr,t_functype functype[],
 {
   int     found,**ff,thisff[NPP];
   int     i,type,ftype,nat,ai,aj,ak,al;
-  size_t  j,k;
+  int     j,k;
   char    *cai,*caj,*cak,*cal;
   int     ndih,maxdih;
   t_iatom *iatoms;

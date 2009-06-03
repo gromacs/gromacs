@@ -86,7 +86,7 @@ static void norm_princ(t_atoms *atoms, int isize, atom_id *index,
 
 int gmx_rms (int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_rms compares two structures by computing the root mean square",
     "deviation (RMSD), the size-independent 'rho' similarity parameter",
     "(rho) or the scaled rho (rhosc), ",
@@ -142,7 +142,7 @@ int gmx_rms (int argc,char *argv[])
   /* strings and things for selecting difference method */
   enum                      {ewSel,ewRMSD,      ewRho,     ewRhoSc, ewNR };
   int ewhat;
-  static char *what[ewNR+1]={NULL, "rmsd",      "rho",     "rhosc", NULL};
+  const char *what[ewNR+1]={NULL, "rmsd",      "rho",     "rhosc", NULL};
   char *whatname[ewNR]     ={NULL, "RMSD",      "Rho",     "Rho sc"};
   char *whatlabel[ewNR]    ={NULL, "RMSD (nm)", "Rho",     "Rho sc"};
   char *whatxvgname[ewNR]  ={NULL, "RMSD",      "\\8r\\4", "\\8r\\4\\ssc\\N"};
@@ -151,7 +151,7 @@ int gmx_rms (int argc,char *argv[])
   enum 
     { efSel, efFit,      efReset,       efNone , efNR };
   int efit;
-  static char *fit[efNR+1] = 
+  const char *fit[efNR+1] = 
     { NULL, "rot+trans", "translation", "none", NULL };
   char *fitgraphlabel[efNR+1] = 
     { NULL, "lsq fit", "translational fit", "no fit" };

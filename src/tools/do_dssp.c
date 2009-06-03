@@ -331,7 +331,7 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "do_dssp ", 
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",

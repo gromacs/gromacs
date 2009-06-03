@@ -293,7 +293,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
 
 int gmx_dih(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_dih can do two things. The default is to analyze dihedral transitions",
     "by merely computing all the dihedral angles defined in your topology",
     "for the whole trajectory. When a dihedral flips over to another minimum",

@@ -739,7 +739,7 @@ int gmx_current(int argc,char *argv[])
 #define NFILE asize(fnm)
 
 
-    static char *desc[] = {
+    const char *desc[] = {
     "This is a tool for calculating the current autocorrelation function, the correlation",
     "of the rotational and translational dipole moment of the system, and the resulting static",
     "dielectric constant. To obtain a reasonable result the index group has to be neutral.",

@@ -63,7 +63,7 @@
 
 int gmx_densmap(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_densmap computes 2D number-density maps.",
     "It can make planar and axial-radial density maps.",
     "The output [TT].xpm[tt] file can be visualized with for instance xv",

@@ -639,7 +639,7 @@ structure if needed */
 
 int gmx_sdf(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_sdf calculates the spatial distribution function (SDF) of a set of atoms",
     "within a coordinate system defined by three atoms. There is single body, ",
     "two body and three body SDF implemented (select with option -mode). ",

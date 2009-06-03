@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99_development_20090425, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.99_DEAD_CVS_BRANCH_20090603, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -1054,6 +1054,22 @@ if test "$enable_shared" = "no"; then
 fi  
 
 echo ""
+echo ""
+echo "****************************************************************"
+echo "*    IMPORTANT  IMPORTANT  IMPORTANT  IMPORTANT  IMPORTANT     *"
+echo "*                                                              *"
+echo "* As of 2009-06-03, Gromacs revision control has moved to git. *"
+echo "* This is the FINAL version in the CVS repository, and will    *"
+echo "* not be updated further. The reason for keeping it up a short *"
+echo "* while is to facilitate developer migration work (cvs diff).  *"
+echo "*                                                              *"
+echo "* Unless you absolutely need to run on a dead branch, look at  *"
+echo "* www.gromacs.org (developers section) for information on how  *"
+echo "* to check out a version from the up-to-date git tree instead! *"
+echo "****************************************************************"
+echo ""
+
+
 
 
 

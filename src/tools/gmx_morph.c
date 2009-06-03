@@ -64,7 +64,7 @@ static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],
 
 int gmx_morph(int argc,char *argv[])
 {
-  char *desc[] = {
+  const char *desc[] = {
     "g_morph does a linear interpolation of conformations in order to",
     "create intermediates. Of course these are completely unphysical, but",
     "that you may try to justify yourself. Output is in the form of a ",

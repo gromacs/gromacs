@@ -548,7 +548,7 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
 
 int gmx_order(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Compute the order parameter per atom for carbon tails. For atom i the",
     "vector i-1, i+1 is used together with an axis. ",
     "The index file should contain only the groups to be used for calculations,",

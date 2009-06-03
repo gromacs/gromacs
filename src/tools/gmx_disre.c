@@ -541,7 +541,7 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
 
 int gmx_disre(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_disre computes violations of distance restraints.",
     "If necessary all protons can be added to a protein molecule ",
     "using the protonate program.[PAR]",

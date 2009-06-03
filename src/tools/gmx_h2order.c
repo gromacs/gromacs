@@ -239,7 +239,7 @@ void h2order_plot(rvec dipole[], real order[], char *afile,
 
 int gmx_h2order(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Compute the orientation of water molecules with respect to the normal",
     "of the box. The program determines the average cosine of the angle",
     "between de dipole moment of water and an axis of the box. The box is",
@@ -259,7 +259,7 @@ int gmx_h2order(int argc,char *argv[])
       "Calculate order parameter as function of boxlength, dividing the box"
       " in #nr slices."}
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "The program assigns whole water molecules to a slice, based on the first"
     "atom of three in the index file group. It assumes an order O,H,H."
     "Name is not important, but the order is. If this demand is not met,"

@@ -1078,7 +1078,7 @@ void rainbow_mat(bool bBlue, int nmat, t_matrix mat[])
   
 int gmx_xpm2ps(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "xpm2ps makes a beautiful color plot of an XPixelMap file.",
     "Labels and axis can be displayed, when they are supplied",
     "in the correct matrix format.",
@@ -1129,15 +1129,15 @@ int gmx_xpm2ps(int argc,char *argv[])
   static real size=400,boxx=0,boxy=0,cmin=0,cmax=0;
   static rvec grad={0,0,0};
   enum                    { etSel, etTop, etOnce, etYlabel, etNone, etNR };
-  static char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
+  const char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
   /* MUST correspond to enum elXxx as defined at top of file */
-  static char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
+  const char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
   enum                    { edSel, edFirst, edSecond, edNone, edNR };
-  static char *diag[]    = { NULL, "first", "second", "none", NULL };
+  const char *diag[]    = { NULL, "first", "second", "none", NULL };
   enum                    { erSel, erNo, erBlue, erRed, erNR };
-  static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
+  const char *rainbow[] = { NULL, "no", "blue", "red", NULL };
   /* MUST correspond to enum ecXxx as defined at top of file */
-  static char *combine[] = {
+  const char *combine[] = {
     NULL, "halves", "add", "sub", "mult", "div", NULL };
   static int skip=1,mapoffset=0;
   t_pargs pa[] = {

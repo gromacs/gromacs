@@ -61,7 +61,7 @@
 
 int gmx_nmtraj(int argc,char *argv[])
 {
-    static char *desc[] = 
+    const char *desc[] = 
     {
         "[TT]g_nmtraj[tt] generates an virtual trajectory from an eigenvector, ",
         "corresponding to a harmonic cartesian oscillation around the average ",

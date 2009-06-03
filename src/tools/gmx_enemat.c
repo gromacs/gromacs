@@ -72,7 +72,7 @@ static int search_str2(int nstr,char **str,char *key)
 
 int gmx_enemat(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_enemat extracts an energy matrix from the energy file ([TT]-f[tt]).",
     "With [TT]-groups[tt] a file must be supplied with on each",
     "line a group of atoms to be used. For these groups matrix of",

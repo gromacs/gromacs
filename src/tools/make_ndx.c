@@ -1108,7 +1108,7 @@ void merge_blocks(t_blocka *dest, t_blocka *source)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Index groups are necessary for almost every gromacs program.",
     "All these programs can generate default index groups. You ONLY",
     "have to use make_ndx when you need SPECIAL index groups.",

@@ -371,7 +371,7 @@ void plot_potential(double *potential[], double *charge[], double *field[],
 
 int gmx_potential(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Compute the electrostatical potential across the box. The potential is"
     "calculated by first summing the charges per slice and then integrating"
     "twice of this charge distribution. Periodic boundaries are not taken  "
@@ -407,7 +407,7 @@ int gmx_potential(int argc,char *argv[])
     { "-correct",  FALSE, etBOOL, {&bCorrect},
       "Assume net zero charge of groups to improve accuracy" }
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "Discarding slices for integration should not be necessary."
   };
 

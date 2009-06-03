@@ -58,7 +58,7 @@
 
 int gmx_vanhove(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_vanhove computes the Van Hove correlation function.",
     "The Van Hove G(r,t) is the probability that a particle that is at r0",
     "at time zero can be found at position r0+r at time t.",

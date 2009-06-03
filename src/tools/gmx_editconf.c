@@ -370,7 +370,7 @@ void visualize_box(FILE *out,int a0,int r0,matrix box,rvec gridsize)
 
 int gmx_editconf(int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
     "or [TT].pdb[tt].",
     "[PAR]",
@@ -450,7 +450,7 @@ int gmx_editconf(int argc, char *argv[])
     "[TT]editconf -f <in> -rotate 0 45 35.264 -bt o -box <veclen> -o <out>[tt][BR]",
     "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "For complex molecules, the periodicity removal routine may break down, "
     "in that case you can use trjconv"
   };

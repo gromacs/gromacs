@@ -296,7 +296,7 @@ static void cluster_em_all(FILE *fp,int npdb,t_pdbfile *pdbf[],
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "anadock analyses the results of an Autodock run and clusters the",
     "structures together, based on distance or RMSD. The docked energy",
     "and free energy estimates are analysed, and for each cluster the",

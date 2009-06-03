@@ -869,7 +869,7 @@ static void check_input(
 
 int gmx_tune_pme(int argc,char *argv[])
 {
-    static char *desc[] = {
+    const char *desc[] = {
             "For a given number [TT]-np[tt] of processors this program systematically",
             "times mdrun with various numbers of PME-only nodes and determines",
             "which setting is fastest. It will also test whether performance can",

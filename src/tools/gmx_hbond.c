@@ -1899,7 +1899,7 @@ static void dump_hbmap(t_hbdata *hb,
 
 int gmx_hbond(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",
     "determined based on cutoffs for the angle Acceptor - Donor - Hydrogen",
     "(zero is extended) and the distance Hydrogen - Acceptor.",
@@ -2003,7 +2003,7 @@ int gmx_hbond(int argc,char *argv[])
     { "-merge", FALSE, etBOOL, {&bMerge},
       "H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF." }
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
   };
   t_filenm fnm[] = {

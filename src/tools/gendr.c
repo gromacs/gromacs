@@ -254,7 +254,7 @@ void conv_dr(FILE *in,FILE *out,char *map,t_atoms *atoms,int r0,bool bXplor,
 
 int main (int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "gendr generates a distance restraint entry for a gromacs topology",
     "from another format. The format of the input file must be:[BR]",
     "resnr-i resname-i atomnm-i resnr-j resname-j atomnm-j lower upper[BR]"  ,
@@ -263,7 +263,7 @@ int main (int argc,char *argv[])
     "free format. Some expansion of templates like MB -> HB1, HB2 is done",
     "but this is not really well tested."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "This program is not well tested. Use at your own risk."
   };
   

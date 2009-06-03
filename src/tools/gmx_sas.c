@@ -513,7 +513,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
 int gmx_sas(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",
     "As a side effect the Connolly surface can be generated as well in",
     "a pdb file where the nodes are represented as atoms and the vertices",

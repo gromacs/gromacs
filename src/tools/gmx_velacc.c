@@ -109,7 +109,7 @@ static void precalc(t_topology top,real normm[]){
 
 int gmx_velacc(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_velacc computes the velocity autocorrelation function.",
     "When the [TT]-m[tt] option is used, the momentum autocorrelation",
     "function is calculated.[PAR]",

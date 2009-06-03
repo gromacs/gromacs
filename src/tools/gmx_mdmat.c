@@ -149,7 +149,7 @@ static void tot_nmat(int nres, int natoms, int nframes, int **nmat,
 
 int gmx_mdmat(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_mdmat makes distance matrices consisting of the smallest distance",
     "between residue pairs. With -frames these distance matrices can be",
     "stored as a function",

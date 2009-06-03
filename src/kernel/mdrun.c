@@ -55,7 +55,7 @@
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "The mdrun program is the main computational chemistry engine",
     "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
     "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -302,7 +302,7 @@ int main(int argc,char *argv[])
   static int  nthreads=1;
   
   static rvec realddxyz={0,0,0};
-  static char *ddno_opt[ddnoNR+1] =
+  static const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
   static char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };

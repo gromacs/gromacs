@@ -198,7 +198,7 @@ void proptrj(char *fngro,char *fndat,t_topology *top,t_pinp *p)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "proptrj"
   };
   t_manual man = { asize(desc),desc,0,NULL,NULL,0,NULL};

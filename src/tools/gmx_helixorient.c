@@ -56,7 +56,7 @@
 
 int gmx_helixorient(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_helixorient calculates coordinates and direction of the average",
     "axis inside an alpha helix, and the direction/vectors of both the",
     "alpha carbon and (optionally) a sidechain atom relative to the axis.[PAR]",

@@ -60,7 +60,7 @@
 
 int gmx_nmens(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "[TT]g_nmens[tt] generates an ensemble around an average structure",
     "in a subspace which is defined by a set of normal modes (eigenvectors).",
     "The eigenvectors are assumed to be mass-weighted.",

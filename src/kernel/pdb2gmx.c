@@ -540,7 +540,7 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
 
 int main(int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "This program reads a pdb file, reads",
     "some database files, adds hydrogens to the molecules and generates",
     "coordinates in Gromacs (Gromos) format and a topology in Gromacs format.",

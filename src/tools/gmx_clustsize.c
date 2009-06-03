@@ -346,7 +346,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 
 int gmx_clustsize(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "This program computes the size distributions of molecular/atomic clusters in",
     "the gas phase. The output is given in the form of a XPM file.",
     "The total number of clusters is written to a XVG file.[PAR]",

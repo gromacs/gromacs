@@ -213,7 +213,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 
 int gmx_tcaf(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_tcaf computes tranverse current autocorrelations.",
     "These are used to estimate the shear viscosity eta.",
     "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",

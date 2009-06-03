@@ -450,7 +450,7 @@ static void update_ee_sum(int nre,
  
 int gmx_eneconv(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[BR]",
     "Concatenates several energy files in sorted order.",
     "In case of double time frames the one",
@@ -467,7 +467,7 @@ int gmx_eneconv(int argc,char *argv[])
     "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
     "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
   };
   int        in,out=0;

@@ -677,7 +677,7 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
 
 int gmx_multipoles(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_multipoles computes the electric multipole moments of",
     "molecules selected by a molecular index file.",
     "The center of mass of the molecule is used as the origin"

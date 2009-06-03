@@ -73,7 +73,7 @@ real dpot(real x,real qq,real c6,real cn,int npow)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "Sigeps is a simple utility that converts c6/c12 or c6/cn combinations",
     "to sigma and epsilon, or vice versa. It can also plot the potential",
     "in  file. In addition it makes an approximation of a Buckingham potential",

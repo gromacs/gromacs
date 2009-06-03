@@ -79,7 +79,7 @@ static int ocomp(const void *a,const void *b)
 
 int gmx_trjorder(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "trjorder orders molecules according to the smallest distance",
     "to atoms in a reference group. It will ask for a group of reference",
     "atoms and a group of molecules. For each frame of the trajectory",

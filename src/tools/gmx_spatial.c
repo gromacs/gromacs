@@ -58,7 +58,7 @@ static void mequit(void){
 
 int gmx_spatial(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_spatial calculates the spatial distribution function and ",
     "outputs it in a form that can be read by VMD as Gaussian98 cube format. ",
     "This was developed from template.c (gromacs-3.3). ",

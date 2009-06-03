@@ -324,7 +324,7 @@ static void do_demux(int nset,char *fnms[],char *fnms_out[],
 
 int gmx_trjcat(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
       "trjcat concatenates several input trajectory files in sorted order. ",
       "In case of double time frames the one in the later file is used. ",
       "By specifying [TT]-settime[tt] you will be asked for the start time ",

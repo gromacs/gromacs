@@ -122,7 +122,7 @@ int gmx_sorient(int argc,char *argv[])
   char    *legc[] = { "cos(\\8q\\4\\s1\\N)", 
 		      "3cos\\S2\\N(\\8q\\4\\s2\\N)-1" };
   
-  static char *desc[] = {
+  const char *desc[] = {
     "g_sorient analyzes solvent orientation around solutes.", 
     "It calculates two angles between the vector from one or more",
     "reference positions to the first atom of each solvent molecule:[BR]"

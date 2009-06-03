@@ -781,7 +781,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 
 int gmx_msd(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_msd computes the mean square displacement (MSD) of atoms from",
     "their initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation.",

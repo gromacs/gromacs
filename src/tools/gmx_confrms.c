@@ -356,7 +356,7 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
 
 int gmx_confrms(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_confrms computes the root mean square deviation (RMSD) of two",
     "structures after LSQ fitting the second structure on the first one.",
     "The two structures do NOT need to have the same number of atoms,",

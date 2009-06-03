@@ -149,7 +149,7 @@ void calc_gyro_z(rvec x[],matrix box,
 
 int gmx_gyrate(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_gyrate computes the radius of gyration of a group of atoms",
     "and the radii of gyration about the x, y and z axes,",
     "as a function of time. The atoms are explicitly mass weighted.[PAR]",

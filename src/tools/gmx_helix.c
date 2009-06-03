@@ -120,7 +120,7 @@ void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
 
 int gmx_helix(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "g_helix computes all kind of helix properties. First, the peptide",
     "is checked to find the longest helical part. This is determined by",
     "Hydrogen bonds and Phi/Psi angles.",
