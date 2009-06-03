@@ -53,8 +53,8 @@ static const char *exml_names[exmlNR] = {
 };
 
 typedef struct {
-  int      nqh;
-  gmx_qhop *gqh;
+  int        nqh;
+  gmx_qhop_t *gqh;
 } t_xmlrec;
 
 static int find_elem(char *name,int nr,const char *names[])
@@ -136,7 +136,7 @@ static char *sp(int n, char buf[], int maxindent)
 }
 
 static void qhop_process_attr(FILE *fp,xmlAttrPtr attr,int parent,
-			      int elem,int indent,gmx_qhop qht)
+			      int elem,int indent,gmx_qhop_t qht)
 {
   char *attrname,*attrval;
   char buf[100];
@@ -233,7 +233,7 @@ static void qhop_process_tree(FILE *fp,xmlNodePtr tree,int parent,
   }
 }
 
-gmx_qhop *
+gmx_qhop_t *
 gmx_qhops_read(char *fn,int *nqhop)
 {
   xmlDocPtr     doc;
@@ -260,7 +260,7 @@ gmx_qhops_read(char *fn,int *nqhop)
   return xml->gqh;
 }
 
-static void add_xml_qhop(xmlNodePtr parent,gmx_qhop qht)
+static void add_xml_qhop(xmlNodePtr parent,gmx_qhop_t qht)
 {
   xmlNodePtr ptr,child,grandchild,comp;
   char   *name,*type,*value,*unit;
@@ -280,7 +280,7 @@ static void add_xml_qhop(xmlNodePtr parent,gmx_qhop qht)
   }
 }
 
-void gmx_qhops_write(char *fn,int nqhop,gmx_qhop qht[])
+void gmx_qhops_write(char *fn,int nqhop,gmx_qhop_t qht[])
 {
   xmlDocPtr  doc;
   xmlDtdPtr  dtd;

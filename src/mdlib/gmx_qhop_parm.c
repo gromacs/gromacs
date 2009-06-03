@@ -9,7 +9,7 @@ typedef struct gmx_qhop {
   char *donor,*acceptor;
   int nparam,nparam_c;
   char **value,**unit,**name;
-} t_gmx_qhop;
+} gmx_qhop;
 
 #define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
