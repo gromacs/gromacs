@@ -71,7 +71,7 @@
 #include "hizzie.h"
 
 
-static const char *select_res(int nr,int resnr,const char *name[],const char *expl[],char *title)
+static const char *select_res(int nr,int resnr,const char *name[],const char *expl[],const char *title)
 {
   int sel=0;
 
@@ -171,7 +171,7 @@ static const char *get_histp(int resnr)
   return select_res(ehisNR,resnr,hh,expl,"HISTIDINE");
 }
 
-static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
+static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
 			  bool bFullCompare,t_symtab *symtab)
 {
   char *resnm;
@@ -186,7 +186,7 @@ static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
   }
 }
 
-static void rename_pdbresint(t_atoms *pdba,char *oldnm,
+static void rename_pdbresint(t_atoms *pdba,const char *oldnm,
 			     const char *gettp(int),bool bFullCompare,
 			     t_symtab *symtab)
 {
@@ -265,7 +265,7 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
 static int read_pdball(char *inf, char *outf,char *title,
 		       t_atoms *atoms, rvec **x,
 		       int *ePBC,matrix box, bool bRemoveH,
-		       t_symtab *symtab,t_aa_names *aan,char *watres,
+		       t_symtab *symtab,t_aa_names *aan,const char *watres,
 		       gmx_atomprop_t aps)
 /* Read a pdb file. (containing proteins) */
 {
@@ -676,7 +676,8 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
-  char       *c,*watres,forcefield[STRLEN],fff[STRLEN],suffix[STRLEN];
+  char       *c,forcefield[STRLEN],fff[STRLEN],suffix[STRLEN];
+  const char *watres;
   char       rtp[STRLEN];
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
@@ -711,9 +712,10 @@ int main(int argc, char *argv[])
   static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
-  static char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
-  static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", "f3c", NULL };
-  static char *ff = "select";
+  static const char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
+  static const char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", "f3c", NULL };
+  static const char *ff = "select";
+
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},

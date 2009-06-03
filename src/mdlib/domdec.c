@@ -5514,7 +5514,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     }
 }
 
-static real *get_slb_frac(FILE *fplog,const char *dir,int nc,char *size_string)
+static real *get_slb_frac(FILE *fplog,const char *dir,int nc,const char *size_string)
 {
     real *slb_frac,tot;
     int  i,n;
@@ -5697,7 +5697,7 @@ static void dd_warning(t_commrec *cr,FILE *fplog,const char *warn_string)
 }
 
 static int check_dlb_support(FILE *fplog,t_commrec *cr,
-                             char *dlb_opt,bool bRecordLoad,
+                             const char *dlb_opt,bool bRecordLoad,
                              unsigned long Flags,t_inputrec *ir)
 {
     gmx_domdec_t *dd;
@@ -5794,8 +5794,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                         unsigned long Flags,
                                         ivec nc,
                                         real comm_distance_min,real rconstr,
-                                        char *dlb_opt,real dlb_scale,
-                                        char *sizex,char *sizey,char *sizez,
+                                        const char *dlb_opt,real dlb_scale,
+                                        const char *sizex,const char *sizey,const char *sizez,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
                                         matrix box,rvec *x,
                                         gmx_ddbox_t *ddbox,

@@ -422,7 +422,7 @@ static void launch_simulation(
         int  nPMEnodes)         /* Number of PME nodes to use */
 {
     char  *command;
-    char  *command_extra="";
+    char  *command_extra;
     
     
     /* Make enough space for the system call command, 100 extra chars for the tpr filename: */

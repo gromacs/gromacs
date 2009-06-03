@@ -304,7 +304,7 @@ int main(int argc,char *argv[])
   static rvec realddxyz={0,0,0};
   static const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-  static char *dddlb_opt[] =
+  static const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
   static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;

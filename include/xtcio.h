@@ -52,7 +52,7 @@ extern "C" {
  * bOK tells if a frame is not corrupted 
  */  
 
-extern int open_xtc(char *filename,char *mode);
+extern int open_xtc(const char *filename,const char *mode);
 /* Open a file for xdr I/O */
   
 extern void close_xtc(int fp);

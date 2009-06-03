@@ -359,7 +359,7 @@ t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret)
 }
 
 
-t_hackblock *choose_ter(int nb,t_hackblock **tb,char *title)
+t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title)
 {
   int i,sel,ret;
   

@@ -160,7 +160,7 @@ static const t_cross   cross_sec_li[] = {
 };
 
 typedef struct {
-  char *name;
+  const char *name;
   int  nel;
   const t_cross *cross;
 } t_element;
@@ -250,7 +250,7 @@ static int   ionize_seed = 1993;
 #define NENER asize(Energies)
 /* END GLOBAL VARIABLES */
 
-void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
+void dump_ca(FILE *fp,t_cross_atom *ca,int i,const char *file,int line)
 {
   fprintf(fp,PREFIX"(line %d) atom %d, z = %d, n = %d, k = %d\n",
 	  line,i,ca->z,ca->n,ca->k);
@@ -560,7 +560,7 @@ void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
 	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
 {
   static FILE  *xvg,*ion;
-  static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
+  static const char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE;
   static real  t0,imax,width,rho,nphot;
   static real  interval;

@@ -522,7 +522,7 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 }
 
 void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-			 char *resname,int resnr,unsigned char ic,
+			 const char *resname,int resnr,unsigned char ic,
 			 unsigned char chain)
 {
   t_resinfo *ri;

@@ -988,7 +988,8 @@ int gmx_energy(int argc,char *argv[])
   double     *time=NULL;
   real       **eneset=NULL, **enesum=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
-  char       **leg=NULL,**pairleg,**odtleg,**otenleg;
+  char       **pairleg,**odtleg,**otenleg;
+  char       **leg=NULL;
   char       **nms;
   char       *anm_j,*anm_k,*resnm_j,*resnm_k;
   int        resnr_j,resnr_k;
@@ -1096,7 +1097,7 @@ int gmx_energy(int argc,char *argv[])
     for(i=0; (i<nset); i++)
       leg[i] = enm[set[i]].name;
     if (bSum) {
-      leg[nset]="Sum";
+      leg[nset]=strdup("Sum");
       xvgr_legend(out,nset+1,leg);
     }
     else

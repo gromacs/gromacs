@@ -445,8 +445,8 @@ int gmx_sgangle(int argc,char *argv[])
     "-od2: For two planes this option has no meaning."
   };
 
-  char	    *fna, *fnd, *fnd1, *fnd2;		
-  char      *grpname[2];          		/* name of the two groups */
+  char	     *fna, *fnd, *fnd1, *fnd2;		
+  char *      grpname[2];          		/* name of the two groups */
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 
   int       ePBC;
@@ -501,7 +501,7 @@ int gmx_sgangle(int argc,char *argv[])
 		index[1],gnx[1],grpname[1],top); 
     else {
       gnx[1] = 0;
-      grpname[1] = "Z-axis";
+      grpname[1] = strdup("Z-axis");
     }  
     sgangle_plot(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 		 index[0],gnx[0],grpname[0],

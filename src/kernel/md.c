@@ -122,8 +122,8 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              bool bVerbose,bool bCompact,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-             char *dddlb_opt,real dlb_scale,
-             char *ddcsx,char *ddcsy,char *ddcsz,
+             const char *dddlb_opt,real dlb_scale,
+             const char *ddcsx,const char *ddcsy,const char *ddcsz,
              int nstepout,gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
              real pforce,real cpt_period,real max_hours,
              unsigned long Flags)
@@ -664,7 +664,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bAppend  = (Flags & MD_APPENDFILES);
 
   if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
-    char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
+    const char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
     fprintf(stderr,"%s\n",warn);
     if (fplog)
       fprintf(fplog,"%s\n",warn);

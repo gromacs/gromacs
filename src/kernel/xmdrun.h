@@ -64,7 +64,7 @@ enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,
        eoPx, eoPy, eoPz, 
        eoPolarizability, eoDipole, eoObsNR, 
        eoMemory=eoObsNR, eoInter, eoUseVirial,  eoCombRule, eoNR };
-extern char *eoNames[eoNR];
+extern const char *eoNames[eoNR];
 
 typedef struct {
   int  at_i,at_j;   	/* Atom type # for i and j                   	*/

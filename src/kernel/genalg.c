@@ -76,7 +76,7 @@
 #include "main.h"
 #include "gmxfio.h"
 
-static char  *strat[] = {
+static const char  *strat[] = {
   "DE/best/1/exp",          "DE/rand/1/exp",
   "DE/rand-to-best/1/exp",  "DE/best/2/exp",
   "DE/rand/2/exp",          "DE/best/1/bin",

@@ -69,7 +69,7 @@ static int xdr_r2f(XDR *xdrs,real *r,bool bRead)
 }
 
 
-int open_xtc(char *fn,char *mode)
+int open_xtc(const char *fn,const char *mode)
 {
   return gmx_fio_open(fn,mode);
 }

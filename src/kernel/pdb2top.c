@@ -248,7 +248,7 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 	    "in pdb2top\n",mHmult);
 }
 
-void print_top_comment(FILE *out,char *filename,char *title,bool bITP)
+void print_top_comment(FILE *out,const char *filename,const char *title,bool bITP)
 {
   char tmp[256]; 
   
@@ -259,8 +259,8 @@ void print_top_comment(FILE *out,char *filename,char *title,bool bITP)
   fprintf(out,";\n");
 }
 
-void print_top_header(FILE *out,char *filename, 
-		      char *title,bool bITP,char *ff,real mHmult)
+void print_top_header(FILE *out,const char *filename, 
+		      const char *title,bool bITP,const char *ff,real mHmult)
 {
   print_top_comment(out,filename,title,bITP);
 
@@ -269,7 +269,7 @@ void print_top_header(FILE *out,char *filename,
   fprintf(out,"#include \"%s.itp\"\n\n",ff);
 }
 
-static void print_top_posre(FILE *out,char *pr)
+static void print_top_posre(FILE *out,const char *pr)
 {
   fprintf(out,"; Include Position restraint file\n");
   fprintf(out,"#ifdef POSRES\n");
@@ -277,7 +277,7 @@ static void print_top_posre(FILE *out,char *pr)
   fprintf(out,"#endif\n\n");
 }
   
-static void print_top_water(FILE *out,char *water)
+static void print_top_water(FILE *out,const char *water)
 {
   fprintf(out,"; Include water topology\n");
   fprintf(out,"#include \"%s.itp\"\n",water);
@@ -293,14 +293,14 @@ static void print_top_water(FILE *out,char *water)
   fprintf(out,"\n");
 }
 
-static void print_top_system(FILE *out, char *title)
+static void print_top_system(FILE *out, const char *title)
 {
   fprintf(out,"[ %s ]\n",dir2str(d_system));
   fprintf(out,"; Name\n");
   fprintf(out,"%s\n\n",title[0]?title:"Protein");
 }
 
-void print_top_mols(FILE *out, char *title, char *water,
+void print_top_mols(FILE *out, const char *title, const char *water,
 		    int nincl, char **incls, int nmol, t_mols *mols)
 {
   int i;

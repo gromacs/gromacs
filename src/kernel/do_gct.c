@@ -110,9 +110,9 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
   char        buf[256];
-  char        *leg[]  =  { "C12", "C6" };
-  char        *eleg[] =  { "Epsilon", "Sigma" };
-  char        *bleg[] = { "A", "B", "C" };
+  const char        *leg[]  =  { "C12", "C6" };
+  const char        *eleg[] =  { "Epsilon", "Sigma" };
+  const char        *bleg[] = { "A", "B", "C" };
   char        **raleg;
   int         i,j,index;
   
@@ -246,7 +246,7 @@ static void pr_dev(t_coupl_rec *tcr,
 		   real t,real dev[eoObsNR],t_commrec *cr,int nfile,t_filenm fnm[])
 {
   static FILE *fp=NULL;
-  char   **ptr;
+  const char   **ptr;
   int    i,j;
   
   if (!fp) {

@@ -185,9 +185,12 @@ bool *bPhobics(t_atoms *atoms)
  
 static void check_oo(t_atoms *atoms)
 {
-  static char *OOO="O";
+  char *OOO;
+
   int i;
-  
+
+  OOO=strdup("O");
+
   for(i=0; (i<atoms->nr); i++) {
     if (strcmp(*(atoms->atomname[i]),"OXT")==0)
       atoms->atomname[i]=&OOO;

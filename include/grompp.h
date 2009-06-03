@@ -110,12 +110,12 @@ extern void choose_ff(char *ff,int maxlen);
 extern bool is_int(double x);
 /* Returns TRUE when x is integer */
 
-extern void print_top_comment(FILE *out,char *filename,char *title,bool bITP);
+extern void print_top_comment(FILE *out,const char *filename,const char *title,bool bITP);
 
-extern void print_top_header(FILE *out,char *filename,char *title,bool bITP, 
-			     char *ff,real mHmult);
+extern void print_top_header(FILE *out,const char *filename,const char *title,bool bITP, 
+			     const char *ff,real mHmult);
 
-extern void print_top_mols(FILE *out, char *title, char *water,
+extern void print_top_mols(FILE *out, const char *title, const char *water,
 			   int nincl, char **incls,
 			   int nmol, t_mols *mols);
 

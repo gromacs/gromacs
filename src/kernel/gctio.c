@@ -51,7 +51,7 @@
 #include "names.h"
 #include "gmxfio.h"
 
-char *eoNames[eoNR] = { 
+const char *eoNames[eoNR] = { 
   "Pres", "Epot", "Vir", "Dist", "Mu", "Force", "Fx", "Fy", "Fz",
   "Px", "Py", "Pz",
   "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial",

@@ -669,10 +669,10 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
     cmp_rvecs(fp,"box",3,fr1->box,fr2->box,ftol);
 }
 
-void comp_trx(char *fn1, char *fn2, real ftol)
+void comp_trx(const char *fn1, const char *fn2, real ftol)
 {
   int i;
-  char *fn[2];
+  const char *fn[2];
   t_trxframe fr[2];
   int status[2];
   bool b[2];
@@ -753,7 +753,7 @@ static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol)
   }
 }
 
-void comp_enx(char *fn1,const char *fn2,real ftol,const char *lastener)
+void comp_enx(const char *fn1,const char *fn2,real ftol,const char *lastener)
 {
   int        in1,in2,nre,nre1,nre2,block;
   int        i,maxener;

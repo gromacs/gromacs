@@ -68,7 +68,7 @@ typedef struct gmx_repl_ex {
 } t_gmx_repl_ex;
 
 enum { ereTEMP, ereLAMBDA, ereNR };
-char *erename[ereNR] = { "temperature", "lambda" };
+const char *erename[ereNR] = { "temperature", "lambda" };
 
 static void repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
 			  struct gmx_repl_ex *re,int ere,real q)
@@ -390,7 +390,7 @@ shift = cr->nnodes - cr->npmenodes - 1;
     move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->sd_X,NULL,shift,NULL);
 }
 
-static void print_ind(FILE *fplog,char *leg,int n,int *ind,bool *bEx)
+static void print_ind(FILE *fplog,const char *leg,int n,int *ind,bool *bEx)
 {
   int i;
 
@@ -401,7 +401,7 @@ static void print_ind(FILE *fplog,char *leg,int n,int *ind,bool *bEx)
   fprintf(fplog,"\n");
 }
 
-static void print_prob(FILE *fplog,char *leg,int n,real *prob)
+static void print_prob(FILE *fplog,const char *leg,int n,real *prob)
 {
   int  i;
   char buf[8];
@@ -418,7 +418,7 @@ static void print_prob(FILE *fplog,char *leg,int n,real *prob)
   fprintf(fplog,"\n");
 }
 
-static void print_count(FILE *fplog,char *leg,int n,int *count)
+static void print_count(FILE *fplog,const char *leg,int n,int *count)
 {
   int i;
 

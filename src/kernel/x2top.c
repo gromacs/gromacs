@@ -311,7 +311,7 @@ static void dump_hybridization(FILE *fp,t_atoms *atoms,int nbonds[])
   }
 }
 
-static void print_pl(FILE *fp,t_params plist[],int ftp,char *name,
+static void print_pl(FILE *fp,t_params plist[],int ftp,const char *name,
 		     char ***atomname)
 { 
   int i,j,nral,nrfp;
@@ -333,7 +333,7 @@ static void print_pl(FILE *fp,t_params plist[],int ftp,char *name,
   }
 }
 
-static void print_rtp(char *filenm,char *title,t_atoms *atoms,
+static void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
 		      t_params plist[],gpp_atomtype_t atype,int cgnr[],
 		      int nbts,int bts[])
 {
@@ -430,8 +430,8 @@ int main(int argc, char *argv[])
   static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
   static bool bPairs = TRUE, bPBC = TRUE;
   static bool bUsePDBcharge = FALSE,bVerbose=FALSE;
-  static char *molnm = "ICE";
-  static char *ff = "oplsaa";
+  static const char *molnm = "ICE";
+  static const char *ff = "oplsaa";
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
       "Force field for your simulation. Type \"select\" for interactive selcection." },

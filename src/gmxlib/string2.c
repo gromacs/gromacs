@@ -150,7 +150,7 @@ void trim (char *str)
   rtrim (str);
 }
 
-void nice_header (FILE *out,char *fn)
+void nice_header (FILE *out,const char *fn)
 {
   const char *unk = "onbekend";
   time_t clock;

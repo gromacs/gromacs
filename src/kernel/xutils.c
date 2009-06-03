@@ -107,7 +107,7 @@ real cost(tensor P,real MSF,real E)
   
 }
 
-static char     *esenm[eseNR] = { "SIG", "EPS", "BHAMA", "BHAMB", "BHAMC", "CELlX", "CELLY", "CELLZ" };
+static const char     *esenm[eseNR] = { "SIG", "EPS", "BHAMA", "BHAMB", "BHAMC", "CELlX", "CELLY", "CELLZ" };
 static int      nparm=0,*param_val=NULL;
 static t_range  *range=NULL;
 static t_genalg *ga=NULL;
@@ -422,7 +422,7 @@ static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
 		       rvec x[],t_block *mols,real mass[],tensor pres)
 {
   static bool bFirst = TRUE;
-  static char *desc[] = {
+  static const char *desc[] = {
     "------------------------------------------------------------------------",
     "In the output from the forcefield scan we have the potential energy,", 
     "then the root mean square force on the atoms, and finally the parameters",

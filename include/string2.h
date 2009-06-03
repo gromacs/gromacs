@@ -79,7 +79,7 @@ extern void rtrim (char *str);
 
 extern void trim (char *str);
 
-extern void nice_header (FILE *out,char *fn);
+extern void nice_header (FILE *out,const char *fn);
 
 extern int strcasecmp_min(const char *str1, const char *str2);
 extern int strncasecmp_min(const char *str1, const char *str2, int n);

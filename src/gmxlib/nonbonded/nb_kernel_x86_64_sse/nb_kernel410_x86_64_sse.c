@@ -21,6 +21,8 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+#include "nb_kernel410_x86_64_sse.h"
+
 /* to extract single integers from a __m128i datatype */
 #define _mm_extract_epi32(x, imm) \
     _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))

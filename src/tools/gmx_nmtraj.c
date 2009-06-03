@@ -82,8 +82,8 @@ int gmx_nmtraj(int argc,char *argv[])
     static real refamplitude=0.25;
     static int  nframes=30;
     static real temp=300.0;
-    static char *eignrvec = "7";
-    static char *phasevec  = "0.0";
+    static const char *eignrvec = "7";
+    static const char *phasevec  = "0.0";
     
     t_pargs pa[] =
     {
@@ -127,7 +127,8 @@ int gmx_nmtraj(int argc,char *argv[])
   real       *amplitude;
   real       *phases;
   real       dum;
-  char       *p,*pe;  
+  const char       *p;
+  char *pe;  
     
   t_filenm fnm[] = 
   { 
@@ -164,7 +165,8 @@ int gmx_nmtraj(int argc,char *argv[])
   for(i=0;i<nmodes;i++)
   {
 	  /* C indices start on 0 */
-      imodes[i]=strtol(p,&p,10)-1;
+      imodes[i]=strtol(p,&pe,10)-1;
+      p = pe;
   }
  
   /* Now read phases */
@@ -186,7 +188,8 @@ int gmx_nmtraj(int argc,char *argv[])
 
   for(i=0;i<nphases;i++)
   {
-      phases[i]=strtod(p,&p);
+      phases[i]=strtod(p,&pe);
+      p = pe;
   }
 
   if(nmodes>nphases)

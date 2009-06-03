@@ -48,7 +48,7 @@ extern int read_ter_db(char *FF,char ter,
 extern t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret);
 /* Return a list of pointers to blocks that match residue name */
 
-extern t_hackblock *choose_ter(int nb,t_hackblock **tb,char *title);
+extern t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title);
 /* Interactively select one.. */
 
 #endif	/* _ter_db_h */

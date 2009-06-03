@@ -243,6 +243,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
   FILE      *in;
   char      rrdb[STRLEN],line[STRLEN],header[STRLEN];
   int       i,nrtp,maxrtp,bt,nparam;
+  int       dum1,dum2,dum3;
   t_restp   *rrtp;
   bool      bNextResidue,bError;
   
@@ -279,8 +280,13 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
     gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
   if (strncasecmp("bondedtypes",header,5)==0) {
     get_a_line(in,line,STRLEN);
-    if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3],bAlldih,nrexcl,HH14,bRemoveDih)) < 4 )
+    if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3],&dum1,nrexcl,&dum2,&dum3)) < 4 )
+    {
       gmx_fatal(FARGS,"need at least 4 (up to 8) parameters in .rtp file at line:\n%s\n",line);
+    }
+    *bAlldih    = (dum1 != 0);
+    *HH14       = (dum2 != 0);
+    *bRemoveDih = (dum3 != 0);
     get_a_line(in,line,STRLEN);
     if(nparam<5) {
       fprintf(stderr,"Using default: not generating all possible dihedrals\n");
