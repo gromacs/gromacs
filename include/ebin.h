@@ -60,7 +60,8 @@ enum { eprNORMAL, eprAVER, eprRMS, eprNR };
 extern t_ebin *mk_ebin(void);
 /* Create an energy bin */
 
-extern int get_ebin_space(t_ebin *eb,int nener,char *enm[],char *unit);
+extern int get_ebin_space(t_ebin *eb,int nener,const char *enm[],
+			  const char *unit);
 /* Create space in the energy bin and register names.
  * The enm array must be static, because the contents are not copied,
  * but only the pointers.

@@ -78,7 +78,7 @@ extern real gk(real k,real rc,real r1);
 extern real gknew(real k,real rc,real r1);
 /* Compute the (new!) Ghat function for a single k-value */
 
-extern void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat);
+extern void pr_scalar_gk(const char *fn,int nx,int ny,int nz,rvec box,real ***ghat);
 
 extern void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
 		    rvec box,real r1,real rc,bool bSym,bool bOld);
@@ -104,7 +104,7 @@ extern real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspacing,
  * function.
  */
 		  
-extern void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,
+extern void wr_ghat(const char *fn,int n1max,int n2max,int n3max,real h1,
 		    real h2,real h3,real ***ghat,int nalias,
 		    int porder,int niter,bool bSym,rvec beta,
 		    real r1,real rc,real pval,real zval,real eref,real qopt);

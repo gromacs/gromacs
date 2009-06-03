@@ -232,7 +232,7 @@ extern void dd_bonded_cg_distance(FILE *fplog,
                                   bool bBCheck,
                                   real *r_2b,real *r_mb);
 
-extern void write_dd_pdb(char *fn,gmx_step_t step,char *title,
+extern void write_dd_pdb(const char *fn,gmx_step_t step,const char *title,
                          gmx_mtop_t *mtop,
                          t_commrec *cr,
                          int natoms,rvec x[],matrix box);
