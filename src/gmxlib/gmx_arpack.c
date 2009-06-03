@@ -1618,7 +1618,7 @@ F77_FUNC(dsaup2,DSAUP2)(int *     ido,
     int nevd2;
     int nevm2;
     int nevbef;
-    const char wprime[2];
+    char wprime[2];
     int nptemp;
 
     --workd;
@@ -2111,7 +2111,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
     int ierr;
     double temp;
     int next;
-    const char type__[6];
+    char type__[6];
     int ritz;
     int reord;
     int nconv;
@@ -4076,7 +4076,7 @@ F77_FUNC(ssaup2,SSAUP2)(int *     ido,
     int nevd2;
     int nevm2;
     int nevbef;
-    const char wprime[2];
+    char wprime[2];
     int nptemp;
 
     --workd;
