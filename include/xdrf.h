@@ -81,7 +81,7 @@ int
 xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
-extern int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,char *warn);
+extern int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,const char *warn);
 /* Read or write a gmx_step_t value.
  * 32bit code reading a 64bit gmx_step_t value from xdrs could
  * lead to values out of int range.

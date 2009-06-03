@@ -309,7 +309,7 @@ static bool step_man(t_manager *man,int *nat)
   static bool bWarn = FALSE;
   bool        bEof;
   int         dum;
-  char        *warn;
+  const char *warn;
 
   if (!man->natom) {
     fprintf(stderr,"Not initiated yet!");

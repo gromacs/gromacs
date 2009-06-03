@@ -208,7 +208,7 @@ static bool do_trn(int fp,bool bRead,int *step,real *t,real *lambda,
  *
  ************************************************************/
  
-void read_trnheader(char *fn,t_trnheader *trn)
+void read_trnheader(const char *fn,t_trnheader *trn)
 {
   int  fp;
   bool bOK;
@@ -224,7 +224,7 @@ bool fread_trnheader(int fp,t_trnheader *trn, bool *bOK)
   return do_trnheader(fp,TRUE,trn,bOK);
 }
 
-void write_trn(char *fn,int step,real t,real lambda,
+void write_trn(const char *fn,int step,real t,real lambda,
 	       rvec *box,int natoms,rvec *x,rvec *v,rvec *f)
 {
   int fp;
@@ -234,7 +234,7 @@ void write_trn(char *fn,int step,real t,real lambda,
   close_trn(fp);
 }
 
-void read_trn(char *fn,int *step,real *t,real *lambda,
+void read_trn(const char *fn,int *step,real *t,real *lambda,
 	      rvec *box,int *natoms,rvec *x,rvec *v,rvec *f)
 {
   int fp;
@@ -265,7 +265,7 @@ bool fread_htrn(int fp,t_trnheader *trn,rvec *box,rvec *x,rvec *v,rvec *f)
   return do_htrn(fp,TRUE,trn,box,x,v,f);
 }
 
-int open_trn(char *fn,char *mode)
+int open_trn(const char *fn,const char *mode)
 {
   return gmx_fio_open(fn,mode);
 }

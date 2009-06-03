@@ -53,7 +53,7 @@ static int gmx_nint(double x)
     return (int) (x+0.5);
 }
 
-typedef struct {
+typedef struct gmx_stats {
     double aa,a,b,sigma_aa,sigma_a,sigma_b,aver,sigma_aver,error;
     double rmsd,Rdata,Rfit,Rfitaa,chi2,chi2aa;
     double *x,*y,*dx,*dy;
@@ -553,7 +553,7 @@ int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
     return estatsOK;
 }
 
-char *stats_error[estatsNR] = 
+static const char *stats_error[estatsNR] = 
 {
     "All well in STATS land",
     "No points",
@@ -563,7 +563,7 @@ char *stats_error[estatsNR] =
     "Not implemented yet"
 };
 
-char *gmx_stats_message(int estats)
+const char *gmx_stats_message(int estats)
 {
     if ((estats >= 0) && (estats < estatsNR))
     {

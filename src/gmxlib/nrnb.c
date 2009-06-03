@@ -48,7 +48,7 @@
 #include "copyrite.h"
 
 typedef struct {
-  char *name;
+  const char *name;
   int  flop;
 } t_nrnb_data;
 
@@ -297,7 +297,7 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 {
   int    i;
   double mni,frac,tfrac,tflop;
-  char   *myline = "-----------------------------------------------------------------------";
+  const char   *myline = "-----------------------------------------------------------------------";
   
   *nbfs = 0.0;
   for(i=0; (i<eNR_NBKERNEL_NR); i++) {
@@ -403,7 +403,7 @@ int cost_nrnb(int enr)
   return nbdata[enr].flop;
 }
 
-char *nrnb_str(int enr)
+const char *nrnb_str(int enr)
 {
   return nbdata[enr].name;
 }
@@ -422,7 +422,7 @@ static const int    constr_index[]={
 #define NCONSTR_INDEX asize(constr_index)
 
 static double pr_av(FILE *log,t_commrec *cr,
-		    double fav,double ftot[],char *title)
+		    double fav,double ftot[],const char *title)
 {
   int    i,perc;
   double dperc,unb;

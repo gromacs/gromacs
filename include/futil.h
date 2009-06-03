@@ -81,7 +81,7 @@ extern char *backup_fn(const char *file);
 */
 extern bool make_backup(const char * file);
 
-extern FILE *ffopen(const char *file,char *mode);
+extern FILE *ffopen(const char *file, const char *mode);
 /* Return a valid file pointer when succesfull, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)

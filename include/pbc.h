@@ -72,7 +72,7 @@ extern "C" {
   extern void dump_pbc(FILE *fp,t_pbc *pbc);
   /* Dump the contents of the pbc structure to the file */
   
-  extern char *check_box(int ePBC,matrix box);
+  extern const char *check_box(int ePBC,matrix box);
   /* Returns NULL if the box is supported by Gromacs.
    * Otherwise is returns a string with the problem.
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
@@ -222,8 +222,9 @@ extern "C" {
    * box center as calculated by calc_box_center.
    */
 
-  extern char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,matrix box,
-					     int natoms,rvec x[]);
+  extern const char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,
+                                                   matrix box,
+					           int natoms,rvec x[]);
   /* This puts ALL atoms at the closest distance for the center of the box
    * as calculated by calc_box_center.
    * Will return NULL is everything went ok and a warning string if not

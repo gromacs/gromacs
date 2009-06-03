@@ -103,7 +103,7 @@ typedef struct t_methoddata_kwstr
     //! Number of elements in the \p val array.
     int                n;
     //! Array of strings/regular expressions to match against.
-    struct {
+    struct t_methoddata_kwstr_match {
         //! TRUE if the expression is a regular expression, FALSE otherwise.
         bool           bRegExp;
         //! The value to match against.

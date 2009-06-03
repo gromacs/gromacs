@@ -140,7 +140,7 @@ static void ster_print(FILE *out,const char *s)
 }
 
 
-static void pukeit(char *db,char *defstring, char *retstring, 
+static void pukeit(const char *db,const char *defstring, char *retstring, 
 		   int retsize, int *cqnum)
 {
   FILE *fp;
@@ -266,15 +266,15 @@ void thanx(FILE *fp)
 }
 
 typedef struct {
-  char *key;
-  char *author;
-  char *title;
-  char *journal;
+  const char *key;
+  const char *author;
+  const char *title;
+  const char *journal;
   int volume,year;
-  char *pages;
+  const char *pages;
 } t_citerec;
 
-void please_cite(FILE *fp,char *key)
+void please_cite(FILE *fp,const char *key)
 {
   static t_citerec citedb[] = {
     { "Berendsen95a",

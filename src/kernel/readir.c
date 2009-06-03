@@ -2018,7 +2018,7 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
 {
   real min_size,rlong;
   bool bTWIN;
-  char *ptr;
+  const char *ptr;
   
   ptr = check_box(ir->ePBC,box);
   if (ptr) {

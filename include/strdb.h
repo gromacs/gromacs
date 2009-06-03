@@ -69,12 +69,12 @@ extern int search_str(int nstr,char **str,char *key);
  * -1 if not found.
  */
 
-extern int get_strings(char *db,char ***strings);
+extern int get_strings(const char *db,char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
-extern int get_file(char *db,char ***strings);
+extern int get_file(const char *db,char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * Does not need number of lines as first line in the file. 

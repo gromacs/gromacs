@@ -46,7 +46,7 @@ typedef struct tagDirStack {
 
 extern int ifunc_index(directive d,int type);
 
-extern char *dir2str (directive d);
+extern const char *dir2str (directive d);
 
 extern directive str2dir (char *dstr);
 

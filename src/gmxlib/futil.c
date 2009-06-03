@@ -98,7 +98,7 @@ void push_ps(FILE *fp)
 
 
 #ifndef HAVE_PIPES
-static FILE *popen(char *nm,char *mode)
+static FILE *popen(const char *nm,const char *mode)
 {
   gmx_impl("Sorry no pipes...");
 
@@ -183,7 +183,7 @@ bool is_pipe(FILE *fp)
 }
 
 
-static FILE *uncompress(char *fn,char *mode)
+static FILE *uncompress(const char *fn,const char *mode)
 {
   FILE *fp;
   char buf[256];
@@ -197,7 +197,7 @@ static FILE *uncompress(char *fn,char *mode)
   return fp;
 }
 
-static FILE *gunzip(char *fn,char *mode)
+static FILE *gunzip(const char *fn,const char *mode)
 {
   FILE *fp;
   char buf[256];
@@ -304,7 +304,7 @@ bool make_backup(const char * name)
 #endif
 }
 
-FILE *ffopen(const char *file,char *mode)
+FILE *ffopen(const char *file,const char *mode)
 {
   FILE *ff=NULL;
   char buf[256],*bf,*bufsize=0,*ptr;
@@ -360,7 +360,7 @@ FILE *ffopen(const char *file,char *mode)
 
 
 
-bool search_subdirs(char *parent, char *libdir)
+bool search_subdirs(const char *parent, char *libdir)
 {
   char *ptr;
   bool found;

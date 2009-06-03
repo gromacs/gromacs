@@ -642,14 +642,14 @@ static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, 
     char newfilename[STRLEN];
     char *fn=NULL;
     int i;
-    char *opt;
+    const char *opt;
 
 
     fprintf(stdout, "Cleaning up ...\n");
 
     for (i=0; i<nfile; i++)
     {
-        opt = fnm[i].opt;
+        opt = (char *)fnm[i].opt;
         if ( strcmp(opt, "-p") == 0 )
         {
             /* do nothing */

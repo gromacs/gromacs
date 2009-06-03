@@ -49,7 +49,7 @@
 #include "vsite.h"
 #include "genborn.h"
 
-static char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
+static const char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
 
 extern void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir,
 		     bool bScrewPBC,matrix box);

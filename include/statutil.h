@@ -78,7 +78,7 @@ extern char *ShortProgram(void);
 /* Id. without leading directory */
 extern char *command_line(void);
 /* Return the command line for this program */
-extern void set_program_name(char *argvzero);
+extern void set_program_name(const char *argvzero);
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
@@ -162,7 +162,7 @@ extern int check_times(real t);
  *          1 if t>tend
  */
 
-extern char *time_unit(void);
+extern const char *time_unit(void);
 /* return time unit (e.g. ps or ns) */
 
 extern char *time_label(void);
@@ -298,7 +298,7 @@ extern char *sscan(int argc,char *argv[],int *i);
 extern void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
-extern int nenum(char *enumc[]);
+extern int nenum(const char *enumc[]);
 /* returns ordinal number of selected enum from args 
  * depends on enumc[0] pointing to one of the other elements
  * array must be terminated by a NULL pointer 

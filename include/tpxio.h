@@ -82,13 +82,14 @@ typedef struct
  * but double and single precision can be read by either.
  */
 
-extern int open_tpx(char *fn,char *mode);
+extern int open_tpx(const char *fn, const char *mode);
 /* Return an integer corresponding to the file you have just opened */
   
 extern void close_tpx(int fp);
 /*  Close the file corresponding to fp */
   
-extern void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK, int *version, int *generation);
+extern void read_tpxheader(const char *fn, t_tpxheader *tpx, bool TopOnlyOK,
+                           int *version, int *generation);
 /* Read the header from a tpx file and then close it again.
  * By setting TopOnlyOK to true, it is possible to read future
  * versions too (we skip the changed inputrec), provided we havent
@@ -99,17 +100,17 @@ extern void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK, int *versi
  * are returned in the two last arguments.
  */
 
-extern void write_tpx_state(char *fn,
+extern void write_tpx_state(const char *fn,
 			    t_inputrec *ir,t_state *state,gmx_mtop_t *mtop);
 /* Write a file, and close it again. 
  * If fn == NULL, an efTPA file will be written to stdout (which
  * will not be closed afterwards)
  */
 
-extern void read_tpx_state(char *fn,
+extern void read_tpx_state(const char *fn,
 			   t_inputrec *ir,t_state *state,rvec *f,
 			   gmx_mtop_t *mtop);
-extern int read_tpx(char *fn,
+extern int read_tpx(const char *fn,
 		    t_inputrec *ir,matrix box,int *natoms,
 		    rvec *x,rvec *v,rvec *f,gmx_mtop_t *mtop);
 /* Read a file, and close it again. 
@@ -119,7 +120,7 @@ extern int read_tpx(char *fn,
  * Returns ir->ePBC, if it could be read from the file.
  */
 
-extern int read_tpx_top(char *fn,
+extern int read_tpx_top(const char *fn,
 			t_inputrec *ir, matrix box,int *natoms,
 			rvec *x,rvec *v,rvec *f,t_topology *top);
 /* As read_tpx, but for the old t_topology struct */

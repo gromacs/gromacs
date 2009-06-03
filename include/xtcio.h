@@ -73,10 +73,10 @@ extern int write_xtc(int fp,
 		     matrix box,rvec *x,real prec);
 /* Write a frame to xtc file */
 
-extern int xtc_check(char *str,bool bResult,char *file,int line);
+extern int xtc_check(const char *str,bool bResult,const char *file,int line);
 #define XTC_CHECK(s,b) xtc_check(s,b,__FILE__,__LINE__)
 
-extern void xtc_check_fat_err(char *str,bool bResult,char *file,int line);
+extern void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line);
 #define XTC_CHECK_FAT_ERR(s,b) xtc_check_fat_err(s,b,__FILE__,__LINE__)
 
 #ifdef CPLUSPLUS

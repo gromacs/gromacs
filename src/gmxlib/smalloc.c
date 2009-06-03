@@ -98,7 +98,7 @@ static void log_action(int bMal,char *what,char *file,int line,
 }
 #endif
 
-void *save_malloc(char *name,char *file,int line,size_t size)
+void *save_malloc(const char *name,const char *file,int line,size_t size)
 {
   void *p;
   
@@ -119,7 +119,7 @@ void *save_malloc(char *name,char *file,int line,size_t size)
   return p;
 }
 
-void *save_calloc(char *name,char *file,int line,
+void *save_calloc(const char *name,const char *file,int line,
                   unsigned nelem,size_t elsize)
 {
   void *p;
@@ -154,7 +154,7 @@ void *save_calloc(char *name,char *file,int line,
   return p;
 }
 
-void *save_realloc(char *name,char *file,int line,void *ptr,
+void *save_realloc(const char *name,const char *file,int line,void *ptr,
 		   unsigned nelem,size_t elsize)
 {
   void *p;
@@ -186,7 +186,7 @@ void *save_realloc(char *name,char *file,int line,void *ptr,
   return p;
 }
 
-void save_free(char *name,char *file,int line, void *ptr)
+void save_free(const char *name,const char *file,int line, void *ptr)
 {
 #ifdef DEBUG
   log_action(0,name,file,line,0,0,ptr);
@@ -204,7 +204,7 @@ size_t maxavail(void)
   high=256e6;
   while ((high-low) > 4) {
     size=(high+low)/2;
-    if ((ptr=malloc((size_t)size))==NULL)
+    if ((ptr=(char *)malloc((size_t)size))==NULL)
       high=size;
     else {
       free(ptr);
@@ -221,7 +221,7 @@ size_t memavail(void)
   
   size = maxavail(); 
   if (size != 0) { 
-    if ((ptr=malloc((size_t)size)) != NULL) {
+    if ((ptr=(char *)malloc((size_t)size)) != NULL) {
       size += memavail();
       free(ptr);
     }

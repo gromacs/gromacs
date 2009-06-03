@@ -199,7 +199,7 @@ int ifunc_index(directive d,int type)
   return -1;
 }
   
-char *dir2str (directive d)
+const char *dir2str (directive d)
 {
   if (d < d_maxdir)
     return ds[d];

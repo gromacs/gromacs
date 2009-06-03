@@ -173,7 +173,7 @@
  * It is a simple wrapper for fprintf(stderr, ...).
  */
 void
-_gmx_selparser_error(char *fmt, ...)
+_gmx_selparser_error(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -221,7 +221,7 @@ _gmx_selexpr_create_value_expr(t_selelem *expr)
  * No copy of \p name is made.
  */
 t_selexpr_param *
-_gmx_selexpr_create_param(char *name)
+_gmx_selexpr_create_param(const char *name)
 {
     t_selexpr_param *param;
     snew(param, 1);

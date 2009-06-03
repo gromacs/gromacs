@@ -108,12 +108,12 @@ enum {
 };
 
 /* names to print in help info */
-static char *argtp[etNR] = {
+static const char *argtp[etNR] = {
   "int", "step", "real", "time", "string", "bool", "vector", "enum" 
 };
 
 typedef struct {
-  char *option;
+  const char *option;
   bool bSet;
   int  type;
   union {
@@ -126,7 +126,7 @@ typedef struct {
     bool *b;
     rvec *rv;
   } u;
-  char *desc;
+  const char *desc;
 } t_pargs;
 
 extern void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
@@ -145,17 +145,17 @@ extern char *pa_val(t_pargs *pa,char *buf, int sz);
  * The return value is also a pointer to buf.
  */
 
-extern int opt2parg_int(char *option,int nparg,t_pargs pa[]);
+extern int opt2parg_int(const char *option,int nparg,t_pargs pa[]);
 
-extern bool opt2parg_bool(char *option,int nparg,t_pargs pa[]);
+extern bool opt2parg_bool(const char *option,int nparg,t_pargs pa[]);
 
-extern real opt2parg_real(char *option,int nparg,t_pargs pa[]);
+extern real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
 
-extern char *opt2parg_str(char *option,int nparg,t_pargs pa[]);
+extern char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
 
-extern char *opt2parg_enum(char *option,int nparg,t_pargs pa[]);
+extern char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
 
-extern bool opt2parg_bSet(char *option,int nparg,t_pargs pa[]);
+extern bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
 
 extern void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace);
 

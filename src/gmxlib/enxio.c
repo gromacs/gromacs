@@ -320,7 +320,7 @@ void close_enx(int fp)
     }
 }
 
-static bool empty_file(char *fn)
+static bool empty_file(const char *fn)
 {
     FILE *fp;
     char dum;
@@ -338,7 +338,7 @@ static bool empty_file(char *fn)
 static int  framenr;
 static real frametime;
 
-int open_enx(char *fn,char *mode)
+int open_enx(const char *fn,const char *mode)
 {
   int        fp,nre,i;
   gmx_enxnm_t *nms=NULL;
@@ -633,7 +633,8 @@ bool do_enx(int fp,t_enxframe *fr)
     return TRUE;
 }
 
-static real find_energy(char *name, int nre, gmx_enxnm_t *enm, t_enxframe *fr)
+static real
+find_energy(const char *name, int nre, gmx_enxnm_t *enm, t_enxframe *fr)
 {
     int i;
     
@@ -655,12 +656,12 @@ void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state)
 {
   /* Should match the names in mdebin.c */
-  static char *boxvel_nm[] = {
+  static const char *boxvel_nm[] = {
   "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
   "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
   };
   
-  static char *pcouplmu_nm[] = {
+  static const char *pcouplmu_nm[] = {
     "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
     "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
   };

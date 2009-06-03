@@ -60,20 +60,20 @@ enum { eioREAL, eioDOUBLE, eioINT, eioGMX_STEP_T,
 
 /* Functions for reading and writing data */
 typedef bool do_func(void *item,int nitem,int eio,
-		     char *desc,char *srcfile,int line);
+		     const char *desc,const char *srcfile,int line);
 		     
 /* Global variables defined in gmxfio.h */
 extern do_func *do_read;
 extern do_func *do_write;
-extern char *itemstr[eitemNR];
-extern char *comment_str[eitemNR];
+extern const char *itemstr[eitemNR];
+extern const char *comment_str[eitemNR];
 
 /********************************************************
  * Open and Close 
  ********************************************************/
 
 int 
-gmx_fio_open(const char *fn,char *mode);
+gmx_fio_open(const char *fn,const char *mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
@@ -146,7 +146,7 @@ extern XDR *gmx_fio_getxdr(int fio);
 
 /* Open a file, return a stream, record the entry in internal FIO object */
 FILE *
-gmx_fio_fopen(const char *fn,char *mode);
+gmx_fio_fopen(const char *fn,const char *mode);
 
 /* Close a file previously opened with gmx_fio_fopen. 
  * Do not mix these calls with standard fopen/fclose ones!
@@ -189,7 +189,7 @@ extern int
 xtc_seek_time(real time, int fio, int natoms);
 
 	
-extern void set_comment(char *comment);
+extern void set_comment(const char *comment);
 /* Add this to the comment string for debugging */
 
 extern void unset_comment(void);

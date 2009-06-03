@@ -60,8 +60,8 @@ enum {
 
 typedef struct {
   int  ftp;		/* File type (see enum above)		*/
-  char *opt;		/* Command line option			*/
-  char *fn;		/* File name (as set in source code)	*/
+  const char *opt;	/* Command line option			*/
+  const char *fn;       /* File name (as set in source code)	*/
   unsigned long flag;	/* Flag for all kinds of info (see defs)*/
   int  nfiles;		/* number of files			*/
   char **fns;		/* File names				*/

@@ -151,7 +151,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
   sfree(bKeep);
 }
 
-int opt2parg_int(char *option,int nparg,t_pargs pa[])
+int opt2parg_int(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -164,7 +164,7 @@ int opt2parg_int(char *option,int nparg,t_pargs pa[])
   return 0;
 }
 
-bool opt2parg_bool(char *option,int nparg,t_pargs pa[])
+bool opt2parg_bool(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -177,7 +177,7 @@ bool opt2parg_bool(char *option,int nparg,t_pargs pa[])
   return FALSE;
 }
 
-real opt2parg_real(char *option,int nparg,t_pargs pa[])
+real opt2parg_real(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -190,7 +190,7 @@ real opt2parg_real(char *option,int nparg,t_pargs pa[])
   return 0.0;
 }
 
-char *opt2parg_str(char *option,int nparg,t_pargs pa[])
+char *opt2parg_str(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -203,7 +203,7 @@ char *opt2parg_str(char *option,int nparg,t_pargs pa[])
   return NULL;
 }
 
-bool opt2parg_bSet(char *option,int nparg,t_pargs pa[])
+bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -216,7 +216,7 @@ bool opt2parg_bSet(char *option,int nparg,t_pargs pa[])
   return FALSE; /* Too make some compilers happy */
 }
 
-char *opt2parg_enum(char *option,int nparg,t_pargs pa[])
+char *opt2parg_enum(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   

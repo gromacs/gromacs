@@ -167,7 +167,7 @@ typedef enum {
   d_none
 } directive;
 
-static char *ds[d_maxdir+1] = {
+static const char *ds[d_maxdir+1] = {
   "defaults",
   "atomtypes",
   "bondtypes",

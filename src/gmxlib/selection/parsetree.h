@@ -89,7 +89,7 @@ typedef struct t_selexpr_value
 typedef struct t_selexpr_param
 {
     //! Name of the parameter.
-    char                   *name;
+    const char             *name;
     //! Number of values given for this parameter.
     int                     nval;
     //! Pointer to the first value.
@@ -100,7 +100,7 @@ typedef struct t_selexpr_param
 
 //! Error reporting function for the selection parser.
 void
-_gmx_selparser_error(char *fmt, ...);
+_gmx_selparser_error(const char *fmt, ...);
 
 //! Allocates and initializes a constant \c t_selexpr_value.
 t_selexpr_value *
@@ -110,7 +110,7 @@ t_selexpr_value *
 _gmx_selexpr_create_value_expr(struct t_selelem *expr);
 //! Allocates and initializes a \c t_selexpr_param.
 t_selexpr_param *
-_gmx_selexpr_create_param(char *name);
+_gmx_selexpr_create_param(const char *name);
 
 //! Frees the memory allocated for a chain of values.
 void

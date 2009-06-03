@@ -87,7 +87,7 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
-int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,char *warn)
+int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,const char *warn)
 {
   /* This routine stores values compatible with xdr_int64_t */
 

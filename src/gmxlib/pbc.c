@@ -109,9 +109,9 @@ void dump_pbc(FILE *fp,t_pbc *pbc)
   }
 }
 
-char *check_box(int ePBC,matrix box)
+const char *check_box(int ePBC,matrix box)
 {
-  char *ptr;
+  const char *ptr;
 
   if (ePBC == -1)
     ePBC = guess_ePBC(box);
@@ -281,9 +281,9 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
   int  ii,jj,kk,i,j,k,d,dd,jc,kc,npbcdim,shift;
   ivec bPBC;
   real d2old,d2new,d2new_c;
-  rvec try,pos;
+  rvec trial,pos;
   bool bXY,bUse;
-  char *ptr;
+  const char *ptr;
 
   copy_mat(box,pbc->box);
   pbc->bLimitDistance = FALSE;
@@ -397,21 +397,21 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 	      d2old = 0;
 	      d2new = 0;
 	      for(d=0; d<DIM; d++) {
-		try[d] = i*box[XX][d] + j*box[YY][d] + k*box[ZZ][d];
+		trial[d] = i*box[XX][d] + j*box[YY][d] + k*box[ZZ][d];
 		/* Choose the vector within the brick around 0,0,0 that
 		 * will become the shortest due to shift try.
 		 */
 		if (d == pbc->dim) {
-		  try[d] = 0;
+		  trial[d] = 0;
 		  pos[d] = 0;
 		} else {
-		  if (try[d] < 0)
-		    pos[d] = min( pbc->hbox_diag[d],-try[d]);
+		  if (trial[d] < 0)
+		    pos[d] = min( pbc->hbox_diag[d],-trial[d]);
 		  else
-		    pos[d] = max(-pbc->hbox_diag[d],-try[d]);
+		    pos[d] = max(-pbc->hbox_diag[d],-trial[d]);
 		}
 		d2old += sqr(pos[d]);
-		d2new += sqr(pos[d] + try[d]);
+		d2new += sqr(pos[d] + trial[d]);
 	      }
 	      if (BOX_MARGIN*d2new < d2old) {
 		if (j < -1 || j > 1 || k < -1 || k > 1) {
@@ -426,7 +426,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		    kc = k/2;
 		  d2new_c = 0;
 		  for(d=0; d<DIM; d++)
-		    d2new_c += sqr(pos[d] + try[d] 
+		    d2new_c += sqr(pos[d] + trial[d] 
 				   - jc*box[YY][d] - kc*box[ZZ][d]);
 		  if (d2new_c > BOX_MARGIN*d2new) {
 		    /* Reject this shift vector, as there is no a priori limit
@@ -444,7 +444,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		    if (shift) {
 		      d2new_c = 0;
 		      for(d=0; d<DIM; d++)
-			d2new_c += sqr(pos[d] + try[d] - shift*box[dd][d]);
+			d2new_c += sqr(pos[d] + trial[d] - shift*box[dd][d]);
 		      if (d2new_c <= BOX_MARGIN*d2new)
 			bUse = FALSE;
 		    }
@@ -456,7 +456,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 			      "  There is probably something wrong with your box.\n",MAX_NTRICVEC);
 		      pr_rvecs(stderr,0,"         Box",box,DIM);
 		    } else {
-		      copy_rvec(try,pbc->tric_vec[pbc->ntric_vec]);
+		      copy_rvec(trial,pbc->tric_vec[pbc->ntric_vec]);
 		      pbc->tric_shift[pbc->ntric_vec][XX] = i;
 		      pbc->tric_shift[pbc->ntric_vec][YY] = j;
 		      pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
@@ -468,7 +468,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		  fprintf(debug,"  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
 			  pbc->ntric_vec,i,j,k,
 			  sqrt(d2old),sqrt(d2new),
-			  try[XX],try[YY],try[ZZ],
+			  trial[XX],trial[YY],trial[ZZ],
 			  pos[XX],pos[YY],pos[ZZ]);
 		}
 	      }
@@ -522,8 +522,8 @@ t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
 void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
   int  i,j;
-  rvec dx_start,try;
-  real d2min,d2try;
+  rvec dx_start,trial;
+  real d2min,d2trial;
   bool bRot;
 
   rvec_sub(x1,x2,dx);
@@ -560,11 +560,11 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
        */
       i = 0;
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
-	rvec_add(dx_start,pbc->tric_vec[i],try);
-	d2try = norm2(try);
-	if (d2try < d2min) {
-	  copy_rvec(try,dx);
-	  d2min = d2try;
+	rvec_add(dx_start,pbc->tric_vec[i],trial);
+	d2trial = norm2(trial);
+	if (d2trial < d2min) {
+	  copy_rvec(trial,dx);
+	  d2min = d2trial;
 	}
 	i++;
       }
@@ -605,16 +605,16 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
        */
       i = 0;
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
-	rvec_add(dx_start,pbc->tric_vec[i],try);
-	d2try = 0;
+	rvec_add(dx_start,pbc->tric_vec[i],trial);
+	d2trial = 0;
 	for(j=0; j<DIM; j++) {
 	  if (j != pbc->dim) {
-	    d2try += try[j]*try[j];
+	    d2trial += trial[j]*trial[j];
 	  }
 	}
-	if (d2try < d2min) {
-	  copy_rvec(try,dx);
-	  d2min = d2try;
+	if (d2trial < d2min) {
+	  copy_rvec(trial,dx);
+	  d2min = d2trial;
 	}
 	i++;
       }
@@ -658,8 +658,8 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
   int  i,j,is;
-  rvec dx_start,try;
-  real d2min,d2try;
+  rvec dx_start,trial;
+  real d2min,d2trial;
   ivec ishift,ishift_start;
 
   rvec_sub(x1,x2,dx);
@@ -723,12 +723,12 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
        */
       i = 0;
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
-	rvec_add(dx_start,pbc->tric_vec[i],try);
-	d2try = norm2(try);
-	if (d2try < d2min) {
-	  copy_rvec(try,dx);
+	rvec_add(dx_start,pbc->tric_vec[i],trial);
+	d2trial = norm2(trial);
+	if (d2trial < d2min) {
+	  copy_rvec(trial,dx);
 	  ivec_add(ishift_start,pbc->tric_shift[i],ishift);
-	  d2min = d2try;
+	  d2min = d2trial;
 	}
 	i++;
       }
@@ -790,17 +790,17 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
        */
       i = 0;
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
-	rvec_add(dx_start,pbc->tric_vec[i],try);
-	d2try = 0;
+	rvec_add(dx_start,pbc->tric_vec[i],trial);
+	d2trial = 0;
 	for(j=0; j<DIM; j++) {
 	  if (j != pbc->dim) {
-	    d2try += try[j]*try[j];
+	    d2trial += trial[j]*trial[j];
 	  }
 	}
-	if (d2try < d2min) {
-	  copy_rvec(try,dx);
+	if (d2trial < d2min) {
+	  copy_rvec(trial,dx);
 	  ivec_add(ishift_start,pbc->tric_shift[i],ishift);
-	  d2min = d2try;
+	  d2min = d2trial;
 	}
 	i++;
       }
@@ -869,8 +869,8 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
 {
   int  i,j;
-  dvec dx_start,try;
-  double d2min,d2try;
+  dvec dx_start,trial;
+  double d2min,d2trial;
   bool bRot;
 
   dvec_sub(x1,x2,dx);
@@ -913,17 +913,17 @@ void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
       i = 0;
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
 	for(j=0; j<DIM; j++) {
-	  try[j] = dx_start[j] + pbc->tric_vec[i][j];
+	  trial[j] = dx_start[j] + pbc->tric_vec[i][j];
 	}
-	d2try = 0;
+	d2trial = 0;
 	for(j=0; j<DIM; j++) {
 	  if (j != pbc->dim) {
-	    d2try += try[j]*try[j];
+	    d2trial += trial[j]*trial[j];
 	  }
 	}
-	if (d2try < d2min) {
-	  copy_dvec(try,dx);
-	  d2min = d2try;
+	if (d2trial < d2min) {
+	  copy_dvec(trial,dx);
+	  d2min = d2trial;
 	}
 	i++;
       }
@@ -1372,8 +1372,9 @@ void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
     }
 }
 
-char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,matrix box,
-				    int natoms,rvec x[])
+const char *
+put_atoms_in_compact_unitcell(int ePBC,int ecenter,matrix box,
+                              int natoms,rvec x[])
 {
   t_pbc pbc;
   rvec box_center,dx;

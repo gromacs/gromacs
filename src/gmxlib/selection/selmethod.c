@@ -98,7 +98,7 @@ static gmx_ana_selmethod_t *smtable_def[] = {
  * Convenience function for reporting errors found in selection methods.
  */
 static void
-report_error(FILE *fp, char *name, char *fmt, ...)
+report_error(FILE *fp, const char *name, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -115,7 +115,8 @@ report_error(FILE *fp, char *name, char *fmt, ...)
  * Convenience function for reporting errors found in selection method parameters.
  */
 static void
-report_param_error(FILE *fp, char *mname, char *pname, char *fmt, ...)
+report_param_error(FILE *fp, const char *mname, const char *pname,
+                   const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -150,7 +151,7 @@ report_param_error(FILE *fp, char *mname, char *pname, char *fmt, ...)
  * resulting parameters.
  */
 static bool
-check_params(FILE *fp, char *name, int nparams, gmx_ana_selparam_t param[],
+check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
              gmx_sel_symtab_t *symtab)
 {
     bool              bOk = TRUE;
@@ -544,7 +545,7 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
  */
 int
 gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
-                           char *name, gmx_ana_selmethod_t *method)
+                           const char *name, gmx_ana_selmethod_t *method)
 {
     bool bOk;
 
@@ -607,7 +608,7 @@ gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
  * This is a simple wrapper for gmx_ana_selparam_find().
  */
 gmx_ana_selparam_t *
-gmx_ana_selmethod_find_param(char *name, gmx_ana_selmethod_t *method)
+gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method)
 {
     return gmx_ana_selparam_find(name, method->nparams, method->param);
 }

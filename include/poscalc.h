@@ -125,9 +125,9 @@ struct gmx_ana_pos_t;
 
 //! Converts a string to parameters for gmx_ana_poscalc_create().
 extern int
-gmx_ana_poscalc_type_from_enum(char *post, e_poscalc_t *type, int *flags);
+gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags);
 //! Creates a list of strings for position enum parameter handling.
-extern char **
+extern const char **
 gmx_ana_poscalc_create_type_enum(bool bAtom);
 
 //! Creates a new position calculation collection object.

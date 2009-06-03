@@ -58,7 +58,7 @@ typedef struct {
   int ai,aj;
 } gmx_conection_t;
 
-typedef struct {
+typedef struct gmx_conect_t {
   int  nconect;
   bool bSorted;
   gmx_conection_t *conect;

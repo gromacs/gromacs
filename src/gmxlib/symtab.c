@@ -211,7 +211,7 @@ void free_symtab(t_symtab *symtab)
     gmx_incons("Freeing symbol table (symtab) structure");
 }
 
-void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
+void pr_symtab(FILE *fp,int indent,const char *title,t_symtab *symtab)
 {
   int i,j,nr;
   t_symbuf *symbuf;

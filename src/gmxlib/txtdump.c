@@ -250,9 +250,9 @@ void pr_rvecs_len(FILE *fp,int indent,const char *title,rvec vec[],int n)
 
 void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n)
 {
-  char *fshort = "%12.5e";
-  char *flong  = "%15.8e";
-  char *format;
+  const char *fshort = "%12.5e";
+  const char *flong  = "%15.8e";
+  const char *format;
   int i,j;
 
   if (getenv("LONGFORMAT") != NULL)
@@ -503,7 +503,7 @@ static void pr_pull(FILE *fp,int indent,t_pull *pull)
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
                  bool bMDPformat)
 {
-  char *infbuf="inf";
+  const char *infbuf="inf";
   int  i;
   
   if (available(fp,ir,indent,title)) {
@@ -676,7 +676,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
 #undef PR
 #undef PI
 
-static void pr_harm(FILE *fp,t_iparams *iparams,char *r,char *kr)
+static void pr_harm(FILE *fp,t_iparams *iparams,const char *r,const char *kr)
 {
   fprintf(fp,"%sA=%12.5e, %sA=%12.5e, %sB=%12.5e, %sB=%12.5e\n",
 	  r,iparams->harmonic.rA,kr,iparams->harmonic.krA,
@@ -1309,7 +1309,7 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes,
   }
 }
 
-static void pr_moltype(FILE *fp,int indent,char *title,
+static void pr_moltype(FILE *fp,int indent,const char *title,
                        gmx_moltype_t *molt,int n,
                        gmx_ffparams_t *ffparams,
                        bool bShowNumbers)
@@ -1328,7 +1328,7 @@ static void pr_moltype(FILE *fp,int indent,char *title,
     }
 }
 
-static void pr_molblock(FILE *fp,int indent,char *title,
+static void pr_molblock(FILE *fp,int indent,const char *title,
                         gmx_molblock_t *molb,int n,
                         gmx_moltype_t *molt,
                         bool bShowNumbers)

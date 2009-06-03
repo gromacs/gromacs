@@ -85,8 +85,8 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
  */
 typedef struct
 {
-  char    *name;	/* the name of this function			*/
-  char    *longname;    /* The name for printing etc.                   */
+  const char *name;	/* the name of this function			*/
+  const char *longname; /* The name for printing etc.                   */
   int     nratoms;	/* nr of atoms needed for this function		*/
   int     nrfpA,nrfpB;  /* number of parameters for this function.      */
                         /* this corresponds to the number of params in  */

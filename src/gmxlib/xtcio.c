@@ -86,7 +86,7 @@ static void check_xtc_magic(int magic)
 		magic,XTC_MAGIC);
 }
 
-int xtc_check(char *str,bool bResult,char *file,int line)
+int xtc_check(const char *str,bool bResult,const char *file,int line)
 {
   if (!bResult) {
     if (debug)
@@ -97,7 +97,7 @@ int xtc_check(char *str,bool bResult,char *file,int line)
   return 1;
 }
 
-void xtc_check_fat_err(char *str,bool bResult,char *file,int line)
+void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line)
 {
   if (!bResult) {
     gmx_fatal(FARGS,"XTC read/write of %s failed, "

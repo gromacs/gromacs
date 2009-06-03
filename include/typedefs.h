@@ -108,7 +108,7 @@ extern int over_alloc_dd(int n);
 /* Over allocation for large data types: complex structs */
 #define over_alloc_large(n) (OVER_ALLOC_FAC*(n) + 1000)
 
-extern int gmx_step_t_to_int(gmx_step_t step,char *warn);
+extern int gmx_step_t_to_int(gmx_step_t step,const char *warn);
 /* Convert a gmx_step_t value to int.
  * If warn!=NULL a warning message will be written
  * to stderr when step does not fit in an int,

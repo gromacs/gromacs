@@ -55,7 +55,7 @@ static t_timecontrol timecontrol[TNR] = {
 
 typedef struct {
   real tfactor;
-  char *tstr,*xvgstr;
+  const char *tstr,*xvgstr;
 } t_timeconvert;
 
 static t_timeconvert timeconvert[] = {

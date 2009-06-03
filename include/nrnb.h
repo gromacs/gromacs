@@ -76,7 +76,7 @@ extern void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
 extern int cost_nrnb(int enr);
 /* Cost in i860 cycles of this component of MD */
 
-extern char *nrnb_str(int enr);
+extern const char *nrnb_str(int enr);
 /* Name of this component */
 
 #endif	/* _nrnb_h */

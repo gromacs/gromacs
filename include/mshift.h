@@ -63,7 +63,7 @@ extern void mk_graph_ilist(FILE *fplog,
 extern void done_graph(t_graph *g);
 /* Free the memory in g */
  
-extern void p_graph(FILE *log,char *title,t_graph *g);
+extern void p_graph(FILE *log,const char *title,t_graph *g);
 /* Print a graph to log */
 
 extern void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[]);

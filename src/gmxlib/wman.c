@@ -51,10 +51,14 @@
 #include "readinp.h"
 
 typedef struct {
+  const char *search,*replace;
+} t_sandr_const;
+
+typedef struct {
   char *search,*replace;
 } t_sandr;
 
-const t_sandr sandrTeX[] = {
+const t_sandr_const sandrTeX[] = {
   { "[TT]", "{\\tt " },
   { "[tt]", "}"      },
   { "[BB]", "{\\bf " },
@@ -79,7 +83,7 @@ const t_sandr sandrTeX[] = {
 };
 #define NSRTEX asize(sandrTeX)
 
-const t_sandr sandrTty[] = {
+const t_sandr_const sandrTty[] = {
   { "[TT]", "" },
   { "[tt]", "" },
   { "[BB]", "" },
@@ -91,7 +95,7 @@ const t_sandr sandrTty[] = {
 };
 #define NSRTTY asize(sandrTty)
 
-const t_sandr sandrWiki[] = {
+const t_sandr_const sandrWiki[] = {
   { "&",    "&amp;" },
   { "<",    "&lt;" },
   { ">",    "&gt;" },
@@ -106,7 +110,7 @@ const t_sandr sandrWiki[] = {
 };
 #define NSRWIKI asize(sandrWiki)
 
-const t_sandr sandrNROFF[] = {
+const t_sandr_const sandrNROFF[] = {
   { "[TT]", "\\fB " },
   { "[tt]", "\\fR" },
   { "[BB]", "\\fB " },
@@ -124,7 +128,7 @@ const t_sandr sandrNROFF[] = {
 };
 #define NSRNROFF asize(sandrNROFF)
 
-const t_sandr sandrHTML[] = {
+const t_sandr_const sandrHTML[] = {
   { "<",    "&lt;" },
   { ">",    "&gt;" },
   { "[TT]", "<tt>" },
@@ -138,7 +142,7 @@ const t_sandr sandrHTML[] = {
 };
 #define NSRHTML asize(sandrHTML)
 
-t_sandr sandrXML[] = {
+const t_sandr_const sandrXML[] = {
   { "<",    "&lt;" },
   { ">",    "&gt;" },
   { "[TT]", "<arg>" },
@@ -218,7 +222,7 @@ static void finish_linkdata(t_linkdata *p)
   sfree(p);
 }
 
-static char *repall(const char *s,int nsr,const t_sandr sa[])
+static char *repall(const char *s,int nsr,const t_sandr_const sa[])
 {
   int  i;
   char *buf1,*buf2;
@@ -261,7 +265,7 @@ static char *repallww(const char *s,int nsr,const t_sandr sa[])
   return buf1;
 }
 
-static char *html_xref(char *s,char *program, t_linkdata *links,bool bWiki)
+static char *html_xref(char *s,const char *program, t_linkdata *links,bool bWiki)
 {
   char   buf[256],**filestr;
   int    i,j,n;
@@ -299,7 +303,7 @@ static char *check_nroff(const char *s)
   return repall(s,NSRNROFF,sandrNROFF);
 }
 
-static char *check_wiki(const char *s,char *program, t_linkdata *links)
+static char *check_wiki(const char *s,const char *program, t_linkdata *links)
 {
   char *buf;
   
@@ -309,7 +313,7 @@ static char *check_wiki(const char *s,char *program, t_linkdata *links)
   return buf;
 }
 
-static char *check_html(const char *s,char *program, t_linkdata *links)
+static char *check_html(const char *s,const char *program, t_linkdata *links)
 {
   char *buf;
   
@@ -353,7 +357,7 @@ char *fileopt(unsigned long flag,char buf[],int maxsize)
   return buf;
 }
 
-static void write_texman(FILE *out,char *program,
+static void write_texman(FILE *out,const char *program,
 			 int nldesc,char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
@@ -415,7 +419,7 @@ static void write_texman(FILE *out,char *program,
 }
 
 static void write_nroffman(FILE *out,
-			   char *program,
+			   const char *program,
 			   int nldesc,char **desc,
 			   int nfile,t_filenm *fnm,
 			   int npargs,t_pargs *pa,
@@ -502,8 +506,9 @@ char *check_tty(const char *s)
   return repall(s,NSRTTY,sandrTty);
 }
 
-void print_tty_formatted(FILE *out, int nldesc, char **desc,int indent,
-			 t_linkdata *links,char *program,bool bWiki)
+static void
+print_tty_formatted(FILE *out, int nldesc, char **desc,int indent,
+                    t_linkdata *links,const char *program,bool bWiki)
 {
   char *buf;
   char *temp;
@@ -534,7 +539,7 @@ void print_tty_formatted(FILE *out, int nldesc, char **desc,int indent,
 }
 
 static void write_ttyman(FILE *out,
-			 char *program,
+			 const char *program,
 			 int nldesc,char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
@@ -574,7 +579,7 @@ static void write_ttyman(FILE *out,
 }
 
 static void pr_html_files(FILE *out,int nfile,t_filenm fnm[],
-			  char *program,t_linkdata *links,bool bWiki)
+			  const char *program,t_linkdata *links,bool bWiki)
 { 
   int  i;
   char link[10],tmp[255];
@@ -619,7 +624,7 @@ static void pr_html_files(FILE *out,int nfile,t_filenm fnm[],
 }
 
 static void write_wikiman(FILE *out,
-			  char *program,
+			  const char *program,
 			  int nldesc,char **desc,
 			  int nfile,t_filenm *fnm,
 			  int npargs,t_pargs *pa,
@@ -671,7 +676,7 @@ static void write_wikiman(FILE *out,
 }
 
 static void write_htmlman(FILE *out,
-			  char *program,
+			  const char *program,
 			  int nldesc,char **desc,
 			  int nfile,t_filenm *fnm,
 			  int npargs,t_pargs *pa,
@@ -746,7 +751,7 @@ static void write_htmlman(FILE *out,
   fprintf(out,"</BODY>\n");
 }
 
-char *check_xml(char *s,char *program,t_linkdata *links)
+char *check_xml(char *s,const char *program,t_linkdata *links)
 {
   char *buf;
   
@@ -757,7 +762,7 @@ char *check_xml(char *s,char *program,t_linkdata *links)
 }
 
 static void write_xmlman(FILE *out,
-			 char *program,
+			 const char *program,
 			 int nldesc,char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
@@ -915,7 +920,7 @@ static void write_bashcompl(FILE *out,
   fprintf(out,"esac }\ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
 }
 
-static void write_py(FILE *out,char *program,
+static void write_py(FILE *out,const char *program,
 		     int nldesc,char **desc,
 		     int nfile,t_filenm *fnm,
 		     int npargs,t_pargs *pa,
@@ -923,7 +928,7 @@ static void write_py(FILE *out,char *program,
 		     t_linkdata *links)
 {
   bool bHidden;
-  char *class = program;
+  const char *cls = program;
   char *tmp;
   int  i,j;
 
@@ -931,11 +936,11 @@ static void write_py(FILE *out,char *program,
   fprintf(out,"#!/usr/bin/python\n\nfrom GmxDialog import *\n\n");
   
   /* Class definition */
-  fprintf(out,"class %s:\n",class);
+  fprintf(out,"class %s:\n",cls);
   fprintf(out,"    def __init__(self,tk):\n");
   
   /* Help text */
-  fprintf(out,"        %s_help = \"\"\"\n",class);
+  fprintf(out,"        %s_help = \"\"\"\n",cls);
   fprintf(out,"        DESCRIPTION\n");
   print_tty_formatted(out,nldesc,desc,8,links,program,FALSE);
   if (nbug > 0) {
@@ -991,23 +996,23 @@ static void write_py(FILE *out,char *program,
     
   /* Make the dialog box */
   fprintf(out,"        gmxd = gmx_dialog(tk,\"%s\",flags,%s_help)\n\n",
-	  class,class);
+	  cls,cls);
 	  
   /* Main loop */
   fprintf(out,"#####################################################\n");
   fprintf(out,"tk     = Tk()\n");
-  fprintf(out,"my%s = %s(tk)\n",class,class);
+  fprintf(out,"my%s = %s(tk)\n",cls,cls);
   fprintf(out,"tk.mainloop()\n");
 }
 
-void write_man(FILE *out,char *mantp,
-	       char *program,
+void write_man(FILE *out,const char *mantp,
+	       const char *program,
 	       int nldesc,char **desc,
 	       int nfile,t_filenm *fnm,
 	       int npargs,t_pargs *pa,
 	       int nbug,char **bugs,bool bHidden)
 {
-  char    *pr;
+  const char *pr;
   int     i,npar;
   t_pargs *par;
  

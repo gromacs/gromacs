@@ -278,7 +278,7 @@ static void get_dih_props(t_xrama *xr,t_idef *idef,int mult)
     
     key.ai[1]=ia[2];
     key.ai[2]=ia[3];
-    if ((dd = bsearch(&key,xr->dih,xr->ndih,(size_t)sizeof(key),d_comp))
+    if ((dd = (t_dih *)bsearch(&key,xr->dih,xr->ndih,(size_t)sizeof(key),d_comp))
 	!= NULL) {
       dd->mult=idef->iparams[ft].pdihs.mult;
       dd->phi0=idef->iparams[ft].pdihs.phiA;

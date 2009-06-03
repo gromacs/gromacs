@@ -196,7 +196,7 @@ static void reduce_atom(int gnx,atom_id index[],t_atom atom[],char ***atomname,
 }
 
 static void reduce_ilist(atom_id invindex[],bool bKeep[],
-			 t_ilist *il,int nratoms,char *name)
+			 t_ilist *il,int nratoms,const char *name)
 {
   t_iatom *ia;
   int i,j,newnr;

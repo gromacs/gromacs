@@ -76,7 +76,7 @@ struct gmx_sel_symrec_t
 };
 
 //! List of reserved symbols to register in add_reserved_symbols().
-static char *sym_reserved[] = {
+static const char *sym_reserved[] = {
     "group",
     "to",
     "not",
@@ -180,7 +180,7 @@ add_reserved_symbols(gmx_sel_symtab_t *tab)
 static void
 add_position_symbols(gmx_sel_symtab_t *tab)
 {
-    char             **postypes;
+    const char       **postypes;
     gmx_sel_symrec_t  *sym;
     gmx_sel_symrec_t  *last;
     int                i;
@@ -262,7 +262,7 @@ _gmx_sel_symtab_free(gmx_sel_symtab_t *tab)
  * begins with \p name if a unique matching symbol is found.
  */
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, char *name, bool bExact)
+_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact)
 {
     return _gmx_sel_find_symbol_len(tab, name, strlen(name), bExact);
 }
@@ -282,7 +282,7 @@ _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, char *name, bool bExact)
  * without modifying the text to be scanned or copying it.
  */
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, char *name, int len, bool bExact)
+_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, int len, bool bExact)
 {
     gmx_sel_symrec_t *sym;
     gmx_sel_symrec_t *match;
@@ -383,7 +383,7 @@ _gmx_sel_next_symbol(gmx_sel_symrec_t *after, e_symbol_t type)
  *   conflicts with an existing symbol.
  */
 static gmx_sel_symrec_t *
-add_symbol(gmx_sel_symtab_t *tab, char *name, e_symbol_t *ctype)
+add_symbol(gmx_sel_symtab_t *tab, const char *name, e_symbol_t *ctype)
 {
     gmx_sel_symrec_t *sym, *psym;
     int               len;
@@ -425,7 +425,8 @@ add_symbol(gmx_sel_symtab_t *tab, char *name, e_symbol_t *ctype)
  *   symbol with the same name.
  */
 gmx_sel_symrec_t *
-_gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, char *name, struct t_selelem *sel)
+_gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
+                        struct t_selelem *sel)
 {
     gmx_sel_symrec_t *sym;
     e_symbol_t        ctype;
@@ -466,7 +467,7 @@ _gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, char *name, struct t_selelem *sel
  *   symbol with the same name.
  */
 gmx_sel_symrec_t *
-_gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, char *name,
+_gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, const char *name,
                            struct gmx_ana_selmethod_t *method)
 {
     gmx_sel_symrec_t *sym;

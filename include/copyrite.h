@@ -46,6 +46,7 @@ extern "C" {
 #endif
   
 #include <stdio.h>
+#include <types/simple.h>
   
 /* Has to be a function, so we can get version number from autoconf */   
 const char *GromacsVersion(void);
@@ -82,7 +83,7 @@ extern void bromacs(char *retstring, int retsize);
  */
 extern void cool_quote(char *retstring, int retsize, int *cqnum);
 
-extern int be_cool(void);
+extern bool be_cool(void);
 /* Return TRUE when the user is COOL, FALSE otherwise */
 
 extern void thanx(FILE *fp);
@@ -90,7 +91,7 @@ extern void thanx(FILE *fp);
 enum { eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR, 
        eCITEDISRE, eCITERF, eCITELINCS, eCITENR };
 
-extern void please_cite(FILE *fp,char *key);
+extern void please_cite(FILE *fp, const char *key);
 /* Print a message asking to cite something... */
 
 #ifdef CPLUSPLUS

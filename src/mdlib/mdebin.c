@@ -206,7 +206,8 @@ t_mdebin *init_mdebin(int fp_ene,
     {
         if (bEner[i])
         {
-            ener_nm[f_nre]=interaction_function[i].longname;
+            /* FIXME: The constness should not be cast away */
+            ener_nm[f_nre]=(char *)interaction_function[i].longname;
             f_nre++;
         }
     }

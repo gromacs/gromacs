@@ -99,7 +99,7 @@ bool get_header(char line[],char *header)
   return TRUE;
 }
 
-int get_strings(char *db,char ***strings)
+int get_strings(const char *db,char ***strings)
 {
   FILE *in;
   char **ptr;
@@ -185,7 +185,7 @@ int get_lines(const char *db,char ***strings)
   return nstr;
 }
 
-int get_file(char *db,char ***strings)
+int get_file(const char *db,char ***strings)
 {
   FILE *in;
   char **ptr=NULL;

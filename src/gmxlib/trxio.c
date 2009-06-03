@@ -74,7 +74,7 @@ int nframes_read(void)
   return __frame;
 }
 
-static void printcount_(char *l,real t)
+static void printcount_(const char *l,real t)
 {
   if ((__frame < 2*SKIP1 || __frame % SKIP1 == 0) &&
       (__frame < 2*SKIP2 || __frame % SKIP2 == 0) &&

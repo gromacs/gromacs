@@ -172,7 +172,7 @@ int cpp_open_file(char *filenm,gmx_cpp_t *handle, char **cppopts)
     fprintf(debug,"Added %d command line arguments",i);
   
   snew(cpp,1);
-  *handle      = (void *)cpp;
+  *handle      = cpp;
   cpp->fn      = strdup(filenm);
   cpp->line_len= 0;
   cpp->line    = NULL;
@@ -323,7 +323,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
       fprintf(debug,"Going to open include file '%s' i0 = %d, strlen = %d\n",
 	      inc_fn,i0,len);
     /* Open include file and store it as a child in the handle structure */
-    status = cpp_open_file(inc_fn,(void *)&(handle->child),NULL);
+    status = cpp_open_file(inc_fn,&(handle->child),NULL);
     sfree(inc_fn);
     if (status != eCPP_OK) {
       handle->child = NULL;
@@ -447,7 +447,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
 char *cpp_error(gmx_cpp_t *handlep,int status)
 {
   char buf[256];
-  char *ecpp[] = {
+  const char *ecpp[] = {
     "OK", "File not found", "End of file", "Syntax error", "Interrupted",
     "Invalid file handle", 
     "File not open", "Unknown error", "Error status out of range"
@@ -455,7 +455,7 @@ char *cpp_error(gmx_cpp_t *handlep,int status)
   gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   
   if (!handle)
-    return ecpp[eCPP_INVALID_HANDLE];
+    return (char *)ecpp[eCPP_INVALID_HANDLE];
     
   if ((status < 0) || (status >= eCPP_NR))
     status = eCPP_NR;

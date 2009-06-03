@@ -114,9 +114,9 @@ static const int tpss[]={
 
 typedef struct {
   int  ftype;
-  char *ext;
-  char *defnm;
-  char *defopt;
+  const char *ext;
+  const char *defnm;
+  const char *defopt;
   const char *descr;
   int  ntps;
   const int  *tps;
@@ -264,22 +264,24 @@ const char *ftp2defnm(int ftp)
 void pr_def(FILE *fp,int ftp)
 {
   t_deffile *df;
-  char *s=NULL,*flst;
+  const char *s=NULL;
+  char *flst, *tmp;
   const char *ext,*desc;
   
   df=&(deffile[ftp]);
   /* find default file extension and \tt-ify description */
-  flst="";
+  /* FIXME: The constness should not be cast away */
+  flst=(char *)"";
   if (df->ntps) {
     ext = deffile[df->tps[0]].ext;
     desc= strdup(df->descr);
-    s = strstr(desc,": ")+1;
-    if (s) {
-      s[0] = '\0';
-      s++;
-      snew(flst,strlen(s)+6);
+    tmp = strstr(desc,": ")+1;
+    if (tmp) {
+      tmp[0] = '\0';
+      tmp++;
+      snew(flst,strlen(tmp)+6);
       strcpy(flst, " \\tt ");
-      strcat(flst, s);
+      strcat(flst, tmp);
     }
   } else {
     ext = df->ext;
@@ -464,14 +466,14 @@ static void set_extension(char *buf,int ftp)
     strcat(buf,df->ext);
 }
 
-static void add_filenm(t_filenm *fnm, char *filenm)
+static void add_filenm(t_filenm *fnm, const char *filenm)
 {
   srenew(fnm->fns, fnm->nfiles+1);
   fnm->fns[fnm->nfiles] = strdup(filenm);
   fnm->nfiles++;
 }
 
-static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
+static void set_grpfnm(t_filenm *fnm,const char *name,bool bCanNotOverride)
 {
   char buf[256],buf2[256];
   int  i,type;
@@ -516,7 +518,7 @@ static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
   add_filenm(fnm, buf);
 }
 
-static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
+static void set_filenm(t_filenm *fnm,const char *name,bool bCanNotOverride)
 {
   /* Set the default filename, extension and option for those fields that 
    * are not already set. An extension is added if not present, if fn = NULL
@@ -528,6 +530,8 @@ static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
   if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
     gmx_fatal(FARGS,"file type out of range (%d)",fnm->ftp);
 
+  if (name)
+    strcpy(buf, name);
   if ((fnm->flag & ffREAD) && name && gmx_fexist(name)) {
     /* check if filename ends in .gz or .Z, if so remove that: */
     len    = strlen(name);
@@ -535,18 +539,16 @@ static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
       extlen = strlen(z_ext[i]);
       if (len > extlen)
 	if (strcasecmp(name+len-extlen,z_ext[i]) == 0) {
-	  name[len-extlen]='\0';
+	  buf[len-extlen]='\0';
 	  break;
 	}
     }
   }
   
   if (deffile[fnm->ftp].ntps)
-    set_grpfnm(fnm,name,bCanNotOverride);
+    set_grpfnm(fnm,name ? buf : NULL,bCanNotOverride);
   else {
-    if ((name != NULL) && (bCanNotOverride || (default_file_name == NULL)))
-      strcpy(buf,name);
-    else
+    if ((name == NULL) || !(bCanNotOverride || (default_file_name == NULL)))
       strcpy(buf,deffile[fnm->ftp].defnm);
     set_extension(buf,fnm->ftp);
     
@@ -619,7 +621,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	
 }
 
-char *opt2fn(char *opt,int nfile,t_filenm fnm[])
+char *opt2fn(const char *opt,int nfile,t_filenm fnm[])
 {
   int i;
   
@@ -633,7 +635,7 @@ char *opt2fn(char *opt,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[])
+int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[])
 {
   int i;
   
@@ -686,7 +688,7 @@ bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
   return FALSE;
 }
 
-bool opt2bSet(char *opt,int nfile,t_filenm fnm[])
+bool opt2bSet(const char *opt,int nfile,t_filenm fnm[])
 {
   int i;
   
@@ -699,7 +701,7 @@ bool opt2bSet(char *opt,int nfile,t_filenm fnm[])
   return FALSE;
 }
 
-char *opt2fn_null(char *opt,int nfile,t_filenm fnm[])
+char *opt2fn_null(const char *opt,int nfile,t_filenm fnm[])
 {
   int i;
   

@@ -2215,7 +2215,7 @@ real cross_bond_angle(int nbonds,
   return vtot;
 }
 
-static real bonded_tab(char *type,int table_nr,
+static real bonded_tab(const char *type,int table_nr,
 		       const bondedtable_t *table,real kA,real kB,real r,
 		       real lambda,real *V,real *F)
 {

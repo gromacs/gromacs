@@ -104,7 +104,7 @@ extern long rd_symtab(FILE *fp,t_symtab *symtab);
       * state afterwards, so no strings can be added to it.
       */
 
-extern void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab);
+extern void pr_symtab(FILE *fp,int indent,const char *title,t_symtab *symtab);
      /* This routine prints out a (human) readable representation of 
       * the symbol table symtab to the file fp. Ident specifies the
       * number of spaces the text should be indented. Title is used

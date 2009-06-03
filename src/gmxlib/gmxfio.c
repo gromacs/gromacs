@@ -84,7 +84,7 @@ bool in_ftpset(int ftp,int nset,const int set[])
 }
 
 static bool do_dummy(void *item,int nitem,int eio,
-		     char *desc,char *srcfile,int line)
+		     const char *desc,const char *srcfile,int line)
 {
   gmx_fatal(FARGS,"gmx_fio_select not called!");
   
@@ -94,12 +94,12 @@ static bool do_dummy(void *item,int nitem,int eio,
 /* Global variables */
 do_func *do_read  = do_dummy;
 do_func *do_write = do_dummy;
-char *itemstr[eitemNR] = {
+const char *itemstr[eitemNR] = {
   "[header]",      "[inputrec]",   "[box]",         "[topology]", 
   "[coordinates]", "[velocities]", "[forces]"
 };
 /* Comment strings for TPA only */
-char *comment_str[eitemNR] = {
+const char *comment_str[eitemNR] = {
   "; The header holds information on the number of atoms etc. and on whether\n"
   "; certain items are present in the file or not.\n"
   "; \n"
@@ -124,15 +124,15 @@ char *comment_str[eitemNR] = {
 static t_fileio *FIO = NULL;
 static t_fileio *curfio = NULL;
 static int  nFIO = 0;
-static char *eioNames[eioNR] = { "REAL", "INT", "GMX_STE_T",
-				 "UCHAR", "NUCHAR", "USHORT", 
-				 "RVEC", "NRVEC", "IVEC", "STRING" };
+static const char *eioNames[eioNR] = { "REAL", "INT", "GMX_STE_T",
+	     			       "UCHAR", "NUCHAR", "USHORT", 
+				       "RVEC", "NRVEC", "IVEC", "STRING" };
 static char *add_comment = NULL;
 
 
-static char *dbgstr(char *desc)
+static const char *dbgstr(const char *desc)
 {
-  static char *null_str="";
+  static const char *null_str="";
   static char buf[STRLEN];
   
   if (!curfio->bDebug)
@@ -143,7 +143,7 @@ static char *dbgstr(char *desc)
   }
 }
 
-void set_comment(char *comment)
+void set_comment(const char *comment)
 {
   if (comment)
     add_comment = strdup(comment);
@@ -157,7 +157,7 @@ void unset_comment(void)
 }
 
 
-static void _check_nitem(int eio,int nitem,char *file,int line)
+static void _check_nitem(int eio,int nitem,const char *file,int line)
 {
   if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR)))
     gmx_fatal(FARGS,"nitem (%d) may differ from 1 only for %s or %s, not for %s"
@@ -167,7 +167,7 @@ static void _check_nitem(int eio,int nitem,char *file,int line)
 
 #define check_nitem() _check_nitem(eio,nitem,__FILE__,__LINE__)
 
-static void fe(int eio,char *desc,char *srcfile,int line)
+static void fe(int eio,const char *desc,const char *srcfile,int line)
 {
   gmx_fatal(FARGS,"Trying to %s %s type %d (%s), src %s, line %d",
 	    curfio->bRead ? "read" : "write",desc,eio,
@@ -210,7 +210,7 @@ static void decode_string(int maxlen,char dst[],char src[])
 
 
 static bool do_ascwrite(void *item,int nitem,int eio,
-			char *desc,char *srcfile,int line)
+			const char *desc,const char *srcfile,int line)
 {
   int  i;
   int  res=0,*iptr;
@@ -339,7 +339,7 @@ static char *next_item(FILE *fp)
 }
 
 static bool do_ascread(void *item,int nitem,int eio,
-		       char *desc,char *srcfile,int line)
+		       const char *desc,const char *srcfile,int line)
 {
   FILE   *fp = curfio->fp;
   int    i,m,res=0,*iptr,ix;
@@ -421,7 +421,7 @@ static bool do_ascread(void *item,int nitem,int eio,
 }
 
 static bool do_binwrite(void *item,int nitem,int eio,
-			char *desc,char *srcfile,int line)
+			const char *desc,const char *srcfile,int line)
 {
   size_t size=0,wsize;
   int    ssize;
@@ -477,7 +477,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
 }
 
 static bool do_binread(void *item,int nitem,int eio,
-		       char *desc,char *srcfile,int line)
+		       const char *desc,const char *srcfile,int line)
 {
   size_t size=0,rsize;
   int    ssize;
@@ -545,7 +545,7 @@ static bool do_binread(void *item,int nitem,int eio,
 
 #ifdef USE_XDR
 static bool do_xdr(void *item,int nitem,int eio,
-		   char *desc,char *srcfile,int line)
+		   const char *desc,const char *srcfile,int line)
 {
   unsigned char ucdum,*ucptr;
   bool_t res=0;
@@ -692,7 +692,7 @@ static bool do_xdr(void *item,int nitem,int eio,
  *                     EXPORTED SECTION
  *
  *****************************************************************/
-int gmx_fio_open(const char *fn,char *mode)
+int gmx_fio_open(const char *fn,const char *mode)
 {
 	t_fileio *fio=NULL;
 	int      i,nfio=0;
@@ -854,7 +854,7 @@ gmx_fio_close(int fio)
 }
 
 FILE *
-gmx_fio_fopen(const char *fn,char *mode)
+gmx_fio_fopen(const char *fn,const char *mode)
 {
 	FILE *fp;
 	int   fd;

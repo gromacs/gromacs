@@ -465,7 +465,7 @@ void warning_error(const char *s)
   low_warning("ERROR",nwarn_error,s);
 }
 
-static void print_warn_count(char *type,int n)
+static void print_warn_count(const char *type,int n)
 {
   if (n > 0) {
     fprintf(stderr,"\nThere %s %d %s%s\n",
@@ -574,7 +574,7 @@ void doexceptions(void)
 }
 #endif /* __sgi and FPE */
 
-static char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
+static const char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
 static void (*gmx_error_handler)(const char *msg) = quit_gmx;
 
@@ -586,7 +586,7 @@ void set_gmx_error_handler(void (*func)(const char *msg))
 char *gmx_strerror(const char *key)
 {
   typedef struct {
-    char *key,*msg;
+    const char *key,*msg;
   } error_msg_t;
   error_msg_t msg[] = {
     { "bug",    "Possible bug" },
@@ -627,7 +627,7 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   int  cqnum;
 
   /* protect the audience from suggestive discussions */
-  char *lines = "-------------------------------------------------------";
+  const char *lines = "-------------------------------------------------------";
   
   cool_quote(tmpbuf,1023,&cqnum);
   sprintf(buf,"\n%s\nProgram %s, %s\n"

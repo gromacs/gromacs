@@ -237,7 +237,7 @@ char *line2string(char **line)
   return *line;
 }
 
-void parsestring(char *line,char *label, char *string)
+void parsestring(char *line,const char *label, char *string)
 {
   if (strstr(line,label)) {
     if (strstr(line,label) < strchr(line,'\"')) {
@@ -686,7 +686,8 @@ void write_xpm_map(FILE *out,int n_x, int n_y,int *nlevels,real lo,real hi,
   }
 }
 
-void write_xpm_axis(FILE *out, char *axis, bool bSpatial, int n, real *label)
+void write_xpm_axis(FILE *out, const char *axis, bool bSpatial, int n,
+                    real *label)
 {
   int i;
 

@@ -71,11 +71,11 @@
 static real timefactor     = NOTSET;
 static real timeinvfac     = NOTSET;
 static char *timelabel     = NULL;
-static char *timestr[]     = { NULL, "fs", "ps", "ns", "us", "ms", "s", NULL };
+static const char *timestr[]     = { NULL, "fs", "ps", "ns", "us", "ms", "s", NULL };
 static real timefactors[]  = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 0 };
 static real timeinvfacs[]  = { 0,   1e-3,  1,     1e3,  1e6,  1e9,  1e12, 0 };
-static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
-			       NULL };
+static const char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
+                                     NULL };
 static bool  bView         = FALSE;
 static bool  bXvgrCodes    = TRUE;
 static char  *program      = NULL;
@@ -111,7 +111,7 @@ char *command_line(void)
     return "GROMACS";
 }
 
-void set_program_name(char *argvzero)
+void set_program_name(const char *argvzero)
 {
   /* When you run a dynamically linked program before installing
    * it, libtool uses wrapper scripts and prefixes the name with "lt-".
@@ -182,7 +182,7 @@ int check_times(real t)
   return check_times2(t,t,t,t,FALSE);
 }
 
-char *time_unit(void)
+const char *time_unit(void)
 {
   return timestr[0];
 }
@@ -254,7 +254,7 @@ void default_time(void)
   xvgrtimestr[0] = xvgrtimestr[1];
 }
 
-static void set_default_time_unit(char *select)
+static void set_default_time_unit(const char *select)
 {
   int i,j;
   
@@ -300,7 +300,7 @@ t_topology *read_top(char *fn,int *ePBC)
  *
  *************************************************************/
 
-static void usage(char *type,char *arg)
+static void usage(const char *type,const char *arg)
 {
   if (arg != NULL)
     gmx_fatal(FARGS,"Expected %s argument for option %s\n",type,arg);
@@ -357,7 +357,7 @@ char *sscan(int argc,char *argv[],int *i)
   return argv[++(*i)];
 }
 
-int nenum(char *enumc[])
+int nenum(const char *enumc[])
 {
   int i;
   
@@ -400,10 +400,11 @@ bool bPrintXvgrCodes()
   return bXvgrCodes;
 }
 
-static FILE *man_file(char *program,char *mantp)
+static FILE *man_file(const char *program,const char *mantp)
 {
   FILE   *fp;
-  char   buf[256],*pr;
+  char   buf[256];
+  const char *pr;
 
   if ((pr=strrchr(program,'/')) == NULL)
     pr=program;
@@ -426,7 +427,7 @@ static int add_parg(int npargs,t_pargs *pa,t_pargs *pa_add)
   return npargs+1;
 }
 
-static char *mk_desc(t_pargs *pa, char *time_unit_str)
+static char *mk_desc(t_pargs *pa, const char *time_unit_str)
 {
   char *newdesc=NULL,*ndesc=NULL,*ptr=NULL;
   int  len,k;
@@ -492,7 +493,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int ndesc,char **desc,int nbugs,char **bugs)
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
-  static char *manstr[]      = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", "wiki", NULL };
+  static const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", "wiki", NULL };
   static int  nicelevel=0,mantp=0,npri=0,debug_level=0;
   static char *deffnm=NULL;
   static real tbegin=0,tend=0,tdelta=0;
@@ -537,7 +538,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   bool bPrint,bExit,bXvgr;
   int  i,j,k,npall,max_pa,cmdlength;
   char *ptr,*newdesc;
-  char *envstr;
+  const char *envstr;
 
 #define FF(arg) ((Flags & arg)==arg)
 

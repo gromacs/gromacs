@@ -553,7 +553,7 @@ typedef int   (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 typedef struct gmx_ana_selmethod_t
 {
     //! Name of the method.
-    char               *name;
+    const char         *name;
     //! Type which the method returns.
     e_selvalue_t        type;
     /*! \brief
@@ -589,14 +589,14 @@ typedef struct gmx_ana_selmethod_t
 //! Registers a selection method.
 extern int
 gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
-                           char *name, gmx_ana_selmethod_t *method);
+                           const char *name, gmx_ana_selmethod_t *method);
 //! Registers all selection methods in the library.
 extern int
 gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc);
 
 //! Finds a parameter from a selection method by name.
 extern gmx_ana_selparam_t *
-gmx_ana_selmethod_find_param(char *name, gmx_ana_selmethod_t *method);
+gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method);
 
 #ifdef __cplusplus
 }

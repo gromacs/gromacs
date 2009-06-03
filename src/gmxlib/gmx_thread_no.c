@@ -275,7 +275,7 @@ gmx_thread_key_create(gmx_thread_key_t *       key,
      * Allocate memory for the pthread key. We must use the system malloc
      * here since the gromacs memory allocation depends on gmx_message.h and gmx_thread.h.
      */
-    *key = malloc(sizeof(struct gmx_thread_key));
+    *key = (gmx_thread_key_t)malloc(sizeof(struct gmx_thread_key));
     
     if(*key==NULL)
     {

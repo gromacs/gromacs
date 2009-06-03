@@ -80,7 +80,7 @@ typedef struct		/* This struct describes the order and the	*/
   real	lambda;		/* Current value of lambda			*/
 } t_trnheader;
 
-extern int open_trn(char *fn,char *mode);
+extern int open_trn(const char *fn,const char *mode);
 /* Open a trj / trr file */
 
 extern void close_trn(int fp);
@@ -91,7 +91,7 @@ extern bool fread_trnheader(int fp,t_trnheader *trn,bool *bOK);
  * bOK will be FALSE when the header is incomplete.
  */
 
-extern void read_trnheader(char *fn,t_trnheader *header);
+extern void read_trnheader(const char *fn,t_trnheader *header);
 /* Read the header of a trn file from fn, and close the file afterwards. 
  */
 
@@ -121,11 +121,11 @@ extern bool fread_trn(int fp,int *step,real *t,real *lambda,
  * return FALSE on error
  */
  
-extern void write_trn(char *fn,int step,real t,real lambda,
+extern void write_trn(const char *fn,int step,real t,real lambda,
 		      rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a single trn frame to file fn, which is closed afterwards */
 
-extern void read_trn(char *fn,int *step,real *t,real *lambda,
+extern void read_trn(const char *fn,int *step,real *t,real *lambda,
 		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a single trn frame from file fn, which is closed afterwards 
  */

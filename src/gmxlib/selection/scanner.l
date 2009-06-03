@@ -70,7 +70,7 @@ struct gmx_sel_lexer_t
 {
     struct gmx_ana_selcollection_t *sc;
     bool                  bPrompt;
-    char                 *prompt;
+    const char           *prompt;
 
     char                **strstore;
     int                   slen;
@@ -213,7 +213,8 @@ process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
         return END_OF_METHOD;
     }
     state->nextparam = NULL;
-    yylval->str = param->name;
+    /* FIXME: The constness should not be cast away */
+    yylval->str = (char *)param->name;
     switch (param->val.type)
     {
         case NO_VALUE:    return PARAM_BOOL;
@@ -266,7 +267,8 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
                 state->nextparam = param;
                 return END_OF_METHOD;
             }
-            yylval->str = param->name;
+            /* FIXME: The constness should not be cast away */
+            yylval->str = (char *)param->name;
             switch (param->val.type)
             {
                 case NO_VALUE:    return PARAM_BOOL;

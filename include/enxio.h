@@ -119,7 +119,7 @@ external "C" {
   extern void free_enxframe(t_enxframe *fr);
   /* Frees all allocated memory in fr */
 
-  extern int open_enx(char *fn,char *mode);
+  extern int open_enx(const char *fn,const char *mode);
   
   extern void close_enx(int fp_ene);
   

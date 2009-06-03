@@ -383,7 +383,8 @@ void print_atoms(FILE *out,t_atomtype atype,t_atoms *at,int *cgnr)
 {
   int  i;
   int  tpA,tpB;
-  char *as,*tpnmA,*tpnmB;
+  const char *as;
+  char *tpnmA,*tpnmB;
   double qtot;
   
   as=dir2str(d_atoms);

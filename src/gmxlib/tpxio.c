@@ -160,7 +160,7 @@ static const t_ftupd ftupd[] = {
 /* Needed for backward compatibility */
 #define MAXNODES 256
 
-void _do_section(int fp,int key,bool bRead,char *src,int line)
+void _do_section(int fp,int key,bool bRead,const char *src,int line)
 {
   char buf[STRLEN];
   bool bDbg;
@@ -2057,7 +2057,7 @@ static int do_tpx(int fp,bool bRead,
  *
  ************************************************************/
 
-int open_tpx(char *fn,char *mode)
+int open_tpx(const char *fn,const char *mode)
 {
   return gmx_fio_open(fn,mode);
 }    
@@ -2067,7 +2067,8 @@ void close_tpx(int fp)
   gmx_fio_close(fp);
 }
 
-void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version, int *file_generation)
+void read_tpxheader(const char *fn, t_tpxheader *tpx, bool TopOnlyOK,
+                    int *file_version, int *file_generation)
 {
   int fp;
 
@@ -2076,7 +2077,7 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
   close_tpx(fp);
 }
 
-void write_tpx_state(char *fn,
+void write_tpx_state(const char *fn,
 		     t_inputrec *ir,t_state *state,gmx_mtop_t *mtop)
 {
   int fp;
@@ -2086,7 +2087,7 @@ void write_tpx_state(char *fn,
   close_tpx(fp);
 }
 
-void read_tpx_state(char *fn,
+void read_tpx_state(const char *fn,
 		    t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop)
 {
   int fp;
@@ -2096,7 +2097,7 @@ void read_tpx_state(char *fn,
   close_tpx(fp);
 }
 
-int read_tpx(char *fn,
+int read_tpx(const char *fn,
 	     t_inputrec *ir, matrix box,int *natoms,
 	     rvec *x,rvec *v,rvec *f,gmx_mtop_t *mtop)
 {
@@ -2119,7 +2120,7 @@ int read_tpx(char *fn,
   return ePBC;
 }
 
-int read_tpx_top(char *fn,
+int read_tpx_top(const char *fn,
 		 t_inputrec *ir, matrix box,int *natoms,
 		 rvec *x,rvec *v,rvec *f,t_topology *top)
 {

@@ -210,7 +210,7 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
   ap->bSet = TRUE;
 }
 
-static void atomprop_name_warning(char *type)
+static void atomprop_name_warning(const char *type)
 {
   printf("WARNING: %s will be determined based on residue and atom names,\n"
 	 "         this can deviate from the real mass of the atom type\n",
@@ -220,7 +220,7 @@ static void atomprop_name_warning(char *type)
 static void set_prop(gmx_atomprop_t aps,int eprop) 
 {
   gmx_atomprop *ap2 = (gmx_atomprop*) aps;
-  char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
+  const char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
   double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
   double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
   aprop_t *ap;
@@ -290,7 +290,7 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
 }
 
 bool gmx_atomprop_query(gmx_atomprop_t aps,
-			int eprop,char *resnm,char *atomnm,
+			int eprop,const char *resnm,const char *atomnm,
 			real *value)
 {
   gmx_atomprop *ap = (gmx_atomprop*) aps;
@@ -344,7 +344,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber)
   return NULL;
 }
 
-int gmx_atomprop_atomnumber(gmx_atomprop_t aps,char *elem)
+int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *elem)
 {
   gmx_atomprop *ap = (gmx_atomprop*) aps;
   int i;

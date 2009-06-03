@@ -83,7 +83,7 @@ extern int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int nbins,
 				    int normalized,real **x,real **y);
 
 /* Return message belonging to error code */
-extern char *gmx_stats_message(int estats);
+extern const char *gmx_stats_message(int estats);
 
 /****************************************************
  * Some statistics utilities for convenience: useful when a complete data

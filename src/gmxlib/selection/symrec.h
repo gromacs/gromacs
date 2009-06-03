@@ -76,10 +76,10 @@ void
 _gmx_sel_symtab_free(gmx_sel_symtab_t *tab);
 //! Finds a symbol by name.
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, char *name, bool bExact);
+_gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact);
 //! Finds a symbol by name.
 gmx_sel_symrec_t *
-_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, char *name, int len, bool bExact);
+_gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, int len, bool bExact);
 //! Returns the first symbol of a given type.
 gmx_sel_symrec_t *
 _gmx_sel_first_symbol(gmx_sel_symtab_t *tab, e_symbol_t type);
@@ -88,11 +88,11 @@ gmx_sel_symrec_t *
 _gmx_sel_next_symbol(gmx_sel_symrec_t *after, e_symbol_t type);
 //! Adds a new variable symbol.
 gmx_sel_symrec_t *
-_gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, char *name,
+_gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
                         struct t_selelem *sel);
 //! Adds a new method symbol.
 gmx_sel_symrec_t *
-_gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, char *name,
+_gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, const char *name,
                            struct gmx_ana_selmethod_t *method);
 
 #endif

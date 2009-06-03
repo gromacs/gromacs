@@ -83,11 +83,11 @@ extern void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 /* Parse command line for file names. When bKeep is set args are 
  * not removed from argv. */
 
-extern char *opt2fn(char *opt,int nfile,t_filenm fnm[]);
+extern char *opt2fn(const char *opt,int nfile,t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when 
  * no such option. */
 
-extern int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[]);
+extern int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[]);
 /* Return the filenames belonging to cmd-line option opt, or NULL when 
  * no such option. */
 
@@ -113,10 +113,10 @@ extern char *ftp2filter(int ftp);
 extern bool ftp2bSet(int ftp,int nfile,t_filenm fnm[]);
 /* Return TRUE when this file type has been found on the cmd-line */
 
-extern bool opt2bSet(char *opt,int nfile,t_filenm fnm[]);
+extern bool opt2bSet(const char *opt,int nfile,t_filenm fnm[]);
 /* Return TRUE when this option has been found on the cmd-line */
 
-extern char *opt2fn_null(char *opt,int nfile,t_filenm fnm[]);
+extern char *opt2fn_null(const char *opt,int nfile,t_filenm fnm[]);
 /* Return the filenm belonging top cmd-line option opt, or NULL when 
  * no such option. 
  * Also return NULL when opt is optional and option is not set. 

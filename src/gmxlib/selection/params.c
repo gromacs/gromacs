@@ -58,7 +58,7 @@
  * The comparison is case-sensitive.
  */
 gmx_ana_selparam_t *
-gmx_ana_selparam_find(char *name, int nparam, gmx_ana_selparam_t *param)
+gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
 {
     int                i;
 

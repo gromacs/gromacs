@@ -59,7 +59,7 @@ int over_alloc_dd(int n)
     return n;
 }
 
-int gmx_step_t_to_int(gmx_step_t step,char *warn)
+int gmx_step_t_to_int(gmx_step_t step,const char *warn)
 {
   int i;
 

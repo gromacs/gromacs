@@ -46,13 +46,14 @@
 #include "futil.h"
 #include "vec.h"	
 
-void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],rvec x_s[])
-{
-  typedef struct {
+typedef struct {
     int     natoms;
     t_graph *gr;
-  } multi_graph;
-  
+} multi_graph;
+
+
+void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],rvec x_s[])
+{
   static int ngraph=0;
   static multi_graph *mgraph=NULL;
   static bool bFirst=TRUE;

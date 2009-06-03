@@ -196,7 +196,7 @@ struct gmx_ana_poscalc_t
     gmx_ana_poscalc_coll_t   *coll;
 };
     
-static char *poscalc_enum_strings[] = {
+static const char *poscalc_enum_strings[] = {
     "atom",
     "res_com",       "res_cog",
     "mol_com",       "mol_cog",
@@ -228,9 +228,9 @@ static char *poscalc_enum_strings[] = {
  * may be accepted for \p post, but the results are undefined.
  */
 int
-gmx_ana_poscalc_type_from_enum(char *post, e_poscalc_t *type, int *flags)
+gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
 {
-    char *ptr;
+    const char *ptr;
 
     if (post[0] == 'a')
     {
@@ -296,11 +296,11 @@ gmx_ana_poscalc_type_from_enum(char *post, e_poscalc_t *type, int *flags)
  * The first string in the returned list is always NULL to allow the list to
  * be used with Gromacs command-line parsing.
  */
-char **
+const char **
 gmx_ana_poscalc_create_type_enum(bool bAtom)
 {
-    char **pcenum;
-    int    i;
+    const char **pcenum;
+    int          i;
 
     if (bAtom)
     {

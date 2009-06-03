@@ -728,7 +728,7 @@ int gmx_trjconv(int argc,char *argv[])
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
   bool         bWarnCompact=FALSE;
-  char         *warn;
+  const char  *warn;
 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD  },

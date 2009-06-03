@@ -672,12 +672,14 @@ parse_trjana_args(gmx_ana_traj_t *d,
         bSelDump = TRUE;
     }
 
-    rpost = gmx_ana_poscalc_create_type_enum(!(d->flags & ANA_REQUIRE_WHOLE));
+    /* FIXME: The constness should not be cast away */
+    rpost = (char **)gmx_ana_poscalc_create_type_enum(!(d->flags & ANA_REQUIRE_WHOLE));
     if (rpost == NULL)
     {
         return ENOMEM;
     }
-    spost = gmx_ana_poscalc_create_type_enum(TRUE);
+    /* FIXME: The constness should not be cast away */
+    spost = (char **)gmx_ana_poscalc_create_type_enum(TRUE);
     if (spost == NULL)
     {
         sfree(rpost);

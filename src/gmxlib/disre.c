@@ -123,7 +123,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     if (PAR(cr) && !bPartDecomp)
     {
         /* Temporary check, will be removed when disre is implemented with DD */
-        char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
+        const char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
         
         if (MASTER(cr))
             fprintf(stderr,"\n%s\n\n",notestr);

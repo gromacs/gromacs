@@ -59,7 +59,7 @@ extern void gmx_log_close(FILE *fp);
 /* Close the log file */
 
 extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
-			    int val,char *name);
+			    int val,const char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.

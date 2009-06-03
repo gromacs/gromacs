@@ -152,7 +152,7 @@ void trim (char *str)
 
 void nice_header (FILE *out,char *fn)
 {
-  char   *unk = "onbekend";
+  const char *unk = "onbekend";
   time_t clock;
   char   *user=NULL;
   int    gh;

@@ -130,17 +130,17 @@ static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
   }
 }
 
-static void g_error(int line,char *file)
+static void g_error(int line,const char *file)
 {
   gmx_fatal(FARGS,"Tring to print non existant graph (file %s, line %d)",
 	      file,line);
 }
 #define GCHECK(g) if (g == NULL) g_error(__LINE__,__FILE__)
 
-void p_graph(FILE *log,char *title,t_graph *g)
+void p_graph(FILE *log,const char *title,t_graph *g)
 {
   int  i,j;
-  char *cc[egcolNR] = { "W", "G", "B" };
+  const char *cc[egcolNR] = { "W", "G", "B" };
   
   GCHECK(g);
   fprintf(log,"graph:  %s\n",title);
