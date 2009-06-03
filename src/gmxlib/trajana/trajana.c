@@ -1017,10 +1017,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
              || (d->selection && d->selection[0] == 0)
              || (!d->selfile && !d->selection);
-    if (bStdIn)
-    {
-        bInteractive = isatty(fileno(stdin));
-    }
+    bInteractive = bStdIn && isatty(fileno(stdin));
     if (bStdIn && bInteractive)
     {
         /* Parse from stdin */

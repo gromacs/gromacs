@@ -231,6 +231,7 @@ int gmx_polystat(int argc,char *argv[])
     i = index[molind[1]-1] - index[molind[0]]; /* Length of polymer -1 */
     snew(intd, i);
   } else {
+    intd = NULL;
     outi = NULL;
   }
 
