@@ -266,7 +266,7 @@ static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 
 int main(int argc, char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "ngmx is the Gromacs trajectory viewer. This program reads a",
     "trajectory file, a run input file and an index file and plots a",
     "3D structure of your molecule on your standard X Window",
@@ -282,7 +282,7 @@ int main(int argc, char *argv[])
     "Some of the more common X command line options can be used:[BR]",
     "-bg, -fg change colors, -font fontname, changes the font."
   };
-  static char *bugs[] = {
+  const char *bugs[] = {
     "Balls option does not work",
     "Some times dumps core without a good reason"
   };

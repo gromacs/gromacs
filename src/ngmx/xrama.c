@@ -307,7 +307,7 @@ static void mk_gly(t_app *app)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "xrama shows a Ramachandran movie, that is, it shows",
     "the Phi/Psi angles as a function of time in an X-Window.[PAR]"
     "Static Phi/Psi plots for printing can be made with g_rama.[PAR]",

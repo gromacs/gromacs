@@ -38,6 +38,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "futil.h"
 #include "macros.h"
@@ -425,6 +426,7 @@ t_xhighway *GetXHW(t_x11 *x11,char *infile)
 {
   t_xhighway *xhw;
   int        i,h,dh,w;
+  char       progname[STRLEN];
 
   snew(xhw,1);
   xhw->ncars=read_input(x11,infile,&(xhw->cars),&xhw->ir);
@@ -432,7 +434,8 @@ t_xhighway *GetXHW(t_x11 *x11,char *infile)
   h=xhw->ir.nlane*40;
   dh=20;
   w=752;
-  InitWin(&xhw->main,0,0,w,h+dh+7,1,Program());
+  strncpy(progname,Program(),STRLEN-1);
+  InitWin(&xhw->main,0,0,w,h+dh+7,1,progname);
   xhw->main.self=XCreateSimpleWindow(x11->disp,x11->root,
 				     xhw->main.x,xhw->main.y,
 				     xhw->main.width,xhw->main.height,
@@ -469,7 +472,7 @@ t_xhighway *GetXHW(t_x11 *x11,char *infile)
 
 int main(int argc,char *argv[])
 {
-  static char *desc[] = {
+  const char *desc[] = {
     "highway is the gromacs highway simulator. It is an X-windows",
     "gadget that shows a (periodic) Autobahn with a user defined",
     "number of cars. Fog can be turned on or off to increase the",
