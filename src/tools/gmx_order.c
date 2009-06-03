@@ -573,7 +573,7 @@ int gmx_order(int argc,char *argv[])
   static int  nslices = 1;                    /* nr of slices defined       */
   static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
   static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
-  static char *normal_axis[] = { NULL, "z", "x", "y", NULL };
+  static const char *normal_axis[] = { NULL, "z", "x", "y", NULL };
   t_pargs pa[] = {
     { "-d",      FALSE, etENUM, {normal_axis}, 
       "Direction of the normal on the membrane" },

@@ -73,14 +73,14 @@ typedef enum {
   eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS 
   } eDLGERR;
 
-extern void ReadDlgErr(char *infile, eDLGERR err, char *s);
+extern void ReadDlgErr(const char *infile, eDLGERR err, char *s);
 
-extern t_fgrid *FGridFromFile(char *infile);
+extern t_fgrid *FGridFromFile(const char *infile);
 
 extern void DoneFGrid(t_fgrid *fgrid);
 
 extern void DumpFGrid(t_fgrid *fgrid);
 
-extern void ReadQuoteString(char *infile, FILE *in, char *buf);
+extern void ReadQuoteString(const char *infile, FILE *in, char *buf);
 
 #endif	/* _fgrid_h */

@@ -290,7 +290,7 @@ static t_fitem *ScanFItem(char *infile, FILE *in, char *buf)
   
   fitem=NewFItem();
   
-  for(edlg=(edlgitem)0; (edlg<edlgNR+1); edlg++)
+  for(edlg=(edlgitem)0; (edlg<edlgNR+1); edlg = (edlgitem)(edlg + 1))
     if (strcmp(buf,type[edlg])==0)
       break;
   if (edlg==edlgNR) {

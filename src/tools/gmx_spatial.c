@@ -35,7 +35,7 @@
  */
 
 /* This line is only for CVS version info */
-static char *SRCID_template_c = "$Id$";
+static const char *SRCID_template_c = "$Id$";
 
 #include "statutil.h"
 #include "typedefs.h"

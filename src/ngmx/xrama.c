@@ -255,7 +255,7 @@ static t_xrama *init_xrama(t_x11 *x11,Window Parent,int y0,t_app *app)
 
 static t_app *init_app(t_x11 *x11,int argc,char *argv[])
 {
-  static     char *but_nm[ebutNR] = { "Quit", "Start", "Stop", "Rewind", "Toggle Gly" };
+  static const char *but_nm[ebutNR] = { "Quit", "Start", "Stop", "Rewind", "Toggle Gly" };
   XSizeHints hints;
   Pixmap     pm;
   int        th;

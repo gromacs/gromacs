@@ -122,7 +122,7 @@ typedef struct {
     int  *i;   /* arrays */
     gmx_step_t *is;
     real *r;
-    char **c;  /* Must be pointer to string (when type == etSTR)         */
+    const char **c;  /* Must be pointer to string (when type == etSTR)         */
                /* or null terminated list of enums (when type == etENUM) */
     bool *b;
     rvec *rv;
@@ -152,9 +152,9 @@ extern bool opt2parg_bool(const char *option,int nparg,t_pargs pa[]);
 
 extern real opt2parg_real(const char *option,int nparg,t_pargs pa[]);
 
-extern char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
+extern const char *opt2parg_str(const char *option,int nparg,t_pargs pa[]);
 
-extern char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
+extern const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[]);
 
 extern bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[]);
 

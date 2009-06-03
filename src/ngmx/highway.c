@@ -71,10 +71,10 @@ typedef struct {
   int   sleep;          /* How long to sleep in between updates */
 } t_input;
 
-static char *Driving[]      = { "Start","Stop"   };
-static char *Fogs[]         = { "Fog",  "No Fog" };
-enum buttons                  {  Quit,   StartStop,   Fog, NBUT };
-static char *but_name[NBUT] = { "Quit", "Start", "Fog"  };
+static const char *Driving[]      = { "Start","Stop"   };
+static const char *Fogs[]         = { "Fog",  "No Fog" };
+enum buttons                        {  Quit,   StartStop,   Fog, NBUT };
+static const char *but_name[NBUT] = { "Quit", "Start", "Fog"  };
 
 typedef struct {
   int       ncars;
@@ -358,7 +358,7 @@ static bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   XSetWindowAttributes attr;
   t_xhighway *xhw;
   t_windata  *win;
-  char       *label;
+  const char *label;
   int        i;
 
   xhw = (t_xhighway *)data;

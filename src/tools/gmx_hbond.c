@@ -61,7 +61,7 @@
 #define max_hx 7
 typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
-char *hxtypenames[NRHXTYPES]=
+const char *hxtypenames[NRHXTYPES]=
 {"n-n","n-n+1","n-n+2","n-n+3","n-n+4","n-n+5","n-n>6"};
 #define MAXHH 4
 
@@ -69,7 +69,7 @@ enum { gr0,  gr1,    grI,  grNR };
 enum { hbNo, hbDist, hbHB, hbNR, hbR2}; 
 enum { noDA, ACC, DON, DA, INGROUP};
   
-static char *grpnames[grNR] = {"0","1","I" };
+static const char *grpnames[grNR] = {"0","1","I" };
 
 static bool bDebug = FALSE;
 
@@ -452,7 +452,7 @@ static void search_acceptors(t_topology *top,int isize,
 }
 
 static int _acceptor_index(t_acceptors *a,int grp,atom_id i,
-			   char *file,int line)
+			   const char *file,int line)
 {
   int ai = a->aptr[i];
 
@@ -467,7 +467,7 @@ static int _acceptor_index(t_acceptors *a,int grp,atom_id i,
 }
 #define acceptor_index(a,grp,i) _acceptor_index(a,grp,i,__FILE__,__LINE__)
 
-static int _donor_index(t_donors *d,int grp,atom_id i,char *file,int line)
+static int _donor_index(t_donors *d,int grp,atom_id i,const char *file,int line)
 {
   int di = d->dptr[i];
   
@@ -1104,7 +1104,7 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
 static void do_hblife(char *fn,t_hbdata *hb,bool bMerge,bool bContact)
 {
   FILE *fp;
-  static char *leg[] = { "p(t)", "t p(t)" };
+  static const char *leg[] = { "p(t)", "t p(t)" };
   int  *histo;
   int  i,j,j0,k,m,nh,ihb,ohb,nhydro,ndump=0;
   int   nframes = hb->nframes;
@@ -1574,7 +1574,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
                     real temp,bool R2,real smooth_tail_start)
 {
   FILE *fp;
-  static char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
+  static const char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
   int  i,j,k,m,n,nd,ihb,idist,n2,nn;
   bool bNorm=FALSE;
   double nhb = 0;
@@ -1767,7 +1767,7 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
 static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
 {
   static FILE *fp = NULL;
-  static char *leg[] = { "Nbound", "Nfree" };
+  static const char *leg[] = { "Nbound", "Nfree" };
   int i,j,k,nbound,nb,nhtot;
   
   if (!fn)
@@ -2028,7 +2028,7 @@ int gmx_hbond(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   char  hbmap [HB_NR]={ ' ',    'o',      '-',       '*' };
-  char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
+  const char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
   t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},   {0,0,1},    {1,0,1} };
   
   int     status;
@@ -2047,7 +2047,7 @@ int gmx_hbond(int argc,char *argv[])
   int     xi,yi,zi,ai;
   int     xj,yj,zj,aj,xjj,yjj,zjj;
   int     xk,yk,zk,ak,xkk,ykk,zkk;
-  bool    bSelected,bHBmap,bStop,bTwo,new,was,bBox,bTric;
+  bool    bSelected,bHBmap,bStop,bTwo,was,bBox,bTric;
   int     *adist,*rdist;
   int        grp,nabin,nrbin,bin,resdist,ihb;
   char       **leg;
@@ -2087,7 +2087,7 @@ int gmx_hbond(int argc,char *argv[])
 	    opt2bSet("-hbm",NFILE,fnm));
   
   if (opt2bSet("-nhbdist",NFILE,fnm)) {
-    char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
+    const char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
     fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
 		     "Number of donor-H with N HBs","Time (ps)","N");
     xvgr_legend(fpnhb,asize(leg),leg);

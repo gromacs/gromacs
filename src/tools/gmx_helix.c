@@ -152,7 +152,7 @@ int gmx_helix(int argc,char *argv[])
     "[BB]10.[bb] Ellipticity at 222 nm according to [IT]Hirst and Brooks[it]",
     "[PAR]"
   };
-  static char *ppp[efhNR+2] = { 
+  static const char *ppp[efhNR+2] = { 
     NULL, "RAD", "TWIST", "RISE", "LEN", "NHX", "DIP", "RMS", "CPHI", 
     "RMSA", "PHI", "PSI", "HB3", "HB4", "HB5", "CD222", NULL
   };
@@ -180,10 +180,10 @@ int gmx_helix(int argc,char *argv[])
   typedef struct {
     FILE *fp,*fp2;
     bool bfp2;
-    char *filenm;
-    char *title;
-    char *xaxis;
-    char *yaxis;
+    const char *filenm;
+    const char *title;
+    const char *xaxis;
+    const char *yaxis;
     real val;
   } t_xvgrfile;
   

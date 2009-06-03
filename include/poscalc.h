@@ -150,7 +150,7 @@ gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
 //! Creates a new position calculation based on an enum value.
 extern int
 gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
-                            char *post, int flags);
+                            const char *post, int flags);
 //! Sets the flags for position calculation.
 extern void
 gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags);

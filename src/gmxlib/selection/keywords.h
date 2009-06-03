@@ -54,6 +54,6 @@ _gmx_selelem_print_compare_info(FILE *fp, void *data);
 
 //! Sets the position type for position keyword evaluation.
 void
-_gmx_selelem_set_kwpos_type(char *type, int flags, void *data);
+_gmx_selelem_set_kwpos_type(const char *type, int flags, void *data);
 
 #endif

@@ -366,7 +366,8 @@ _gmx_selcollection_clear_symtab(gmx_ana_selcollection_t *sc)
  * gmx_ana_selcollection_parse_*().
  */
 void
-gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, char *type)
+gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc,
+                                     const char *type)
 {
     sc->rpost     = type;
 }
@@ -383,8 +384,8 @@ gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, char *type)
  * gmx_ana_selcollection_parse_*().
  */
 void
-gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc, char *type,
-                                     bool bMaskOnly)
+gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
+                                     const char *type, bool bMaskOnly)
 {
     if (type)
     {

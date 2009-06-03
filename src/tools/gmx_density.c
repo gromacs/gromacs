@@ -335,11 +335,11 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
 void plot_density(real *slDensity[], char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
-		  char **dens_opt,
+		  const char **dens_opt,
 		  bool bSymmetrize)
 {
   FILE  *den;
-  char  *ylabel=NULL;
+  const char *ylabel=NULL;
   int   slice, n;
   real  ddd;
 
@@ -389,10 +389,10 @@ int gmx_density(int argc,char *argv[])
     "partial charge."
   };
 
-  static char *dens_opt[] = 
+  static const char *dens_opt[] = 
     { NULL, "mass", "number", "charge", "electron", NULL };
   static int  axis = 2;          /* normal to memb. default z  */
-  static char *axtitle="Z"; 
+  static const char *axtitle="Z"; 
   static int  nslices = 50;      /* nr of slices defined       */
   static int  ngrps   = 1;       /* nr. of groups              */
   static bool bSymmetrize=FALSE;

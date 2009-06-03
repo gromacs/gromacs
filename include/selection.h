@@ -121,11 +121,11 @@ extern void
 gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc);
 //! Sets the default reference position handling for a selection collection.
 extern void
-gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, char *type);
+gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *type);
 //! Sets the default output position handling for a selection collection.
 extern void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
-                                     char *type, bool bMaskOnly);
+                                     const char *type, bool bMaskOnly);
 //! Sets the topology for a selection collection.
 extern int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,

@@ -63,7 +63,7 @@ typedef struct {
   int *qq;
 } t_liedata;
 
-static t_liedata *analyze_names(int nre,gmx_enxnm_t *names,char *ligand)
+static t_liedata *analyze_names(int nre,gmx_enxnm_t *names,const char *ligand)
 {
   int       i;
   t_liedata *ld;
@@ -129,7 +129,7 @@ int gmx_lie(int argc,char *argv[])
     "Coul (A-B) LJ-SR (A-B) etc."
   };
   static real lie_lj=0,lie_qq=0,fac_lj=0.181,fac_qq=0.5;
-  static char *ligand="none";
+  static const char *ligand="none";
   t_pargs pa[] = {
     { "-Elj",  FALSE, etREAL, {&lie_lj},
       "Lennard-Jones interaction between ligand and solvent" },

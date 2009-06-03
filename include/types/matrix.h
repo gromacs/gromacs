@@ -53,7 +53,7 @@ typedef short t_matelmt;
 
 typedef struct {
   t_xpmelmt code; /* see comment for t_xpmelmt */
-  char *desc;
+  const char *desc;
   t_rgb rgb;
 } t_mapping;
 

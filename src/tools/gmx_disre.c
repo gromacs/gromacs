@@ -242,8 +242,8 @@ static int drs_comp(const void *a,const void *b)
 
 static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
 {
-  static char *core[] = { "All restraints", "Core restraints" };
-  static char *tp[]   = { "linear", "third power", "sixth power" };
+  static const char *core[] = { "All restraints", "Core restraints" };
+  static const char *tp[]   = { "linear", "third power", "sixth power" };
   real viol_tot,viol_max,viol=0;
   bool bCore;
   int  nviol,nrestr;

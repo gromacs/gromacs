@@ -141,8 +141,8 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   int  *set;
   bool bEOF,bVerbose = TRUE,bLong=FALSE;
   char *ptr,buf[STRLEN];
-  char *fm4="%3d  %-14s";
-  char *fm2="%3d  %-34s";
+  const char *fm4="%3d  %-14s";
+  const char *fm2="%3d  %-34s";
   char **newnm=NULL;
   
   if ((getenv("VERBOSE")) != NULL)
@@ -456,7 +456,8 @@ static void analyse_disre(char *voutfn,    int nframes,
   do_view(voutfn,"-graphtype bar");
 }
 
-static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
+static void einstein_visco(const char *fn,const char *fni,int nsets,
+                           int nframes,real **sum,
 			   real V,real T,int nsteps,double time[])
 {
   FILE *fp0,*fp1;
@@ -695,7 +696,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
     /* Do correlation function */
     Dt = delta_t/nenergy;
     if (bVisco) {
-      char *leg[] = { "Shear", "Bulk" };
+      const char *leg[] = { "Shear", "Bulk" };
       real factor;
     
       /* Assume pressure tensor is in Pxx Pxy Pxz Pyx Pyy Pyz Pzx Pzy Pzz */
@@ -772,8 +773,8 @@ static void fec(char *ene2fn, char *runavgfn,
 		real reftemp, int nset, int set[], char *leg[], 
 		int nenergy, real **eneset, double time[])
 {
-  char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
-		      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
+  const char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
+	   	            "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   int  enx;
   int  nre,timecheck,step,nenergy2,maxenergy;
@@ -951,11 +952,11 @@ int gmx_energy(int argc,char *argv[])
     { "-ovec", FALSE, etBOOL, {&bOvec},
       "Also plot the eigenvectors with -oten" }
   };
-  static char *drleg[] = {
+  static const char *drleg[] = {
     "Running average",
     "Instantaneous"
   };
-  static char *setnm[] = {
+  static const char *setnm[] = {
     "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
     "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
     "Volume",  "Pressure"
@@ -991,7 +992,7 @@ int gmx_energy(int argc,char *argv[])
   char       **nms;
   char       *anm_j,*anm_k,*resnm_j,*resnm_k;
   int        resnr_j,resnr_k;
-  char       *orinst_sub = "@ subtitle \"instantaneous\"\n";
+  const char *orinst_sub = "@ subtitle \"instantaneous\"\n";
   char       buf[256];
   t_filenm   fnm[] = {
     { efEDR, "-f",    NULL,      ffREAD  },
@@ -1501,7 +1502,7 @@ int gmx_energy(int argc,char *argv[])
   }
   
   {
-    char *nxy = "-nxy";
+    const char *nxy = "-nxy";
     
     do_view(opt2fn("-o",NFILE,fnm),nxy);
     do_view(opt2fn_null("-ravg",NFILE,fnm),nxy);

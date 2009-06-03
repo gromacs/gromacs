@@ -226,7 +226,7 @@ int gmx_dielectric(int argc,char *argv[])
   real dt,integral,fitintegral,*fitparms,fac,rffac;
   double **yd;
   real   **y;
-  char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
+  const char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
   static int fix=0,bFour = 0,bX = 1,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;
   static real A=0.5,tau1=10.0,tau2=1.0,eps0=80,epsRF=78.5,tail=500.0;

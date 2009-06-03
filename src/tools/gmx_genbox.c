@@ -276,7 +276,7 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   int     i,mol,onr;
   real    alfa,beta,gamma;
   rvec    offset_x;
-  int     try;
+  int     trial;
    
   set_pbc(&pbc,ePBC,box);
   
@@ -311,9 +311,9 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   srenew(*x,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   srenew(*r,(atoms->nr+atoms_insrt.nr*nmol_insrt));
   
-  try=mol=0;
-  while ((mol < nmol_insrt) && (try < ntry*nmol_insrt)) {
-    fprintf(stderr,"\rTry %d",try++);
+  trial=mol=0;
+  while ((mol < nmol_insrt) && (trial < ntry*nmol_insrt)) {
+    fprintf(stderr,"\rTry %d",trial++);
     for (i=0;(i<atoms_insrt.nr);i++) {
       if (atoms_insrt.atom[i].resind!=0) 
 	gmx_fatal(FARGS,"more then one residue in insert molecules\n"

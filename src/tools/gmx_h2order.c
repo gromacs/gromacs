@@ -250,7 +250,7 @@ int gmx_h2order(int argc,char *argv[])
     "instead of the angle between the dipole and a box axis."
   };
   static int  axis = 2;                       /* normal to memb. default z  */
-  static char *axtitle="Z"; 
+  static const char *axtitle="Z"; 
   static int  nslices = 0;                    /* nr of slices defined       */
   t_pargs pa[] = {
     { "-d",   FALSE, etSTR, {&axtitle}, 

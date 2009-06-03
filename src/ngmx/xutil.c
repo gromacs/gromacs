@@ -129,19 +129,19 @@ void SpecialTextInRect(t_x11 *x11,XFontStruct *font,Drawable win,
 }
 
 void TextInRect(t_x11 *x11,Drawable win,
-		char *s,int x,int y,int width,int height,
+		const char *s,int x,int y,int width,int height,
 		eXPos eX,eYPos eY)
 {
   SpecialTextInRect(x11,NULL,win,s,x,y,width,height,eX,eY);
 }
 
 void TextInWin(t_x11 *x11, t_windata *win,
-	       char *s, eXPos eX, eYPos eY)
+	       const char *s, eXPos eX, eYPos eY)
 {
   TextInRect(x11,win->self,s,0,0,win->width,win->height,eX,eY);
 }
 
-void InitWin(t_windata *win, int x0,int y0, int w, int h, int bw, char *text)
+void InitWin(t_windata *win, int x0,int y0, int w, int h, int bw, const char *text)
 {
   win->self=0;
   win->color=0;

@@ -280,12 +280,12 @@ void write_sas_mat(char *fn,real **accr,int nframe,int nres,t_matrix *mat)
   }
 }
 
-void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
+void analyse_ss(char *outfile, t_matrix *mat, const char *ss_string)
 {
   FILE *fp;
   t_mapping *map;
   int s,f,r,*count,ss_count;
-  char **leg;
+  const char **leg;
   
   map=mat->map;
   snew(count,mat->nmap);
@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
     "function of secondary structure type."
   };
   static bool bVerbose;
-  static char *ss_string="HEBT"; 
+  static const char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, {&bVerbose},
       "HIDDENGenerate miles of useless information" },
@@ -373,7 +373,7 @@ int main(int argc,char *argv[])
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
-  char       *leg[] = { "Phobic", "Phylic" };
+  const char *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;
@@ -390,7 +390,8 @@ int main(int argc,char *argv[])
   int        *average_area;
   real       **accr,*accr_ptr=NULL,*av_area, *norm_av_area;
   char       pdbfile[32],tmpfile[32],title[256];
-  char       dssp[256],*dptr;
+  char       dssp[256];
+  const char *dptr;
   
   
   t_filenm   fnm[] = {

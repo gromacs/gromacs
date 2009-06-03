@@ -140,12 +140,12 @@ int gmx_saltbr(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   FILE       *out[3],*fp;
-  static char *title[3] = {
+  static const char *title[3] = {
     "Distance between positively charged groups",
     "Distance between negatively charged groups",
     "Distance between oppositely charged groups"
   };
-  static char *fn[3] = {
+  static const char *fn[3] = {
     "plus-plus.xvg",
     "min-min.xvg",
     "plus-min.xvg"

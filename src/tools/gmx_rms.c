@@ -143,17 +143,17 @@ int gmx_rms (int argc,char *argv[])
   enum                      {ewSel,ewRMSD,      ewRho,     ewRhoSc, ewNR };
   int ewhat;
   const char *what[ewNR+1]={NULL, "rmsd",      "rho",     "rhosc", NULL};
-  char *whatname[ewNR]     ={NULL, "RMSD",      "Rho",     "Rho sc"};
-  char *whatlabel[ewNR]    ={NULL, "RMSD (nm)", "Rho",     "Rho sc"};
-  char *whatxvgname[ewNR]  ={NULL, "RMSD",      "\\8r\\4", "\\8r\\4\\ssc\\N"};
-  char *whatxvglabel[ewNR] ={NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N"};
+  const char *whatname[ewNR]     ={NULL, "RMSD",      "Rho",     "Rho sc"};
+  const char *whatlabel[ewNR]    ={NULL, "RMSD (nm)", "Rho",     "Rho sc"};
+  const char *whatxvgname[ewNR]  ={NULL, "RMSD",      "\\8r\\4", "\\8r\\4\\ssc\\N"};
+  const char *whatxvglabel[ewNR] ={NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N"};
   /* strings and things for fitting methods */
   enum 
     { efSel, efFit,      efReset,       efNone , efNR };
   int efit;
   const char *fit[efNR+1] = 
     { NULL, "rot+trans", "translation", "none", NULL };
-  char *fitgraphlabel[efNR+1] = 
+  const char *fitgraphlabel[efNR+1] = 
     { NULL, "lsq fit", "translational fit", "no fit" };
   static int nrms = 1;
   static bool bMassWeighted = TRUE;

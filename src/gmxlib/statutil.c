@@ -357,7 +357,7 @@ char *sscan(int argc,char *argv[],int *i)
   return argv[++(*i)];
 }
 
-int nenum(const char *enumc[])
+int nenum(const char *const enumc[])
 {
   int i;
   

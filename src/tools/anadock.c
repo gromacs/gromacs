@@ -49,7 +49,7 @@
 #include "typedefs.h"
 #include "xvgr.h"
 	
-static char *etitles[] = { "E-docked", "Free Energy" };
+static const char *etitles[] = { "E-docked", "Free Energy" };
 
 typedef struct {
   real    edocked,efree;

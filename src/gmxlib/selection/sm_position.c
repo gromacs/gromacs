@@ -194,7 +194,7 @@ set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data)
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_type(char *type, int flags, void *data)
+_gmx_selelem_set_kwpos_type(const char *type, int flags, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 

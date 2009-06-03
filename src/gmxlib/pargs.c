@@ -190,7 +190,7 @@ real opt2parg_real(const char *option,int nparg,t_pargs pa[])
   return 0.0;
 }
 
-char *opt2parg_str(const char *option,int nparg,t_pargs pa[])
+const char *opt2parg_str(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   
@@ -216,7 +216,7 @@ bool opt2parg_bSet(const char *option,int nparg,t_pargs pa[])
   return FALSE; /* Too make some compilers happy */
 }
 
-char *opt2parg_enum(const char *option,int nparg,t_pargs pa[])
+const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[])
 {
   int i;
   

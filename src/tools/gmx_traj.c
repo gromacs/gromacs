@@ -172,7 +172,7 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 			char **name,bool bCom,bool bMol,bool bDim[])
 {
   char **leg;
-  char *dimtxt[] = { " X", " Y", " Z", "" };
+  const char *dimtxt[] = { " X", " Y", " Z", "" };
   int n,i,j,d;
   
   if (bCom)
@@ -325,7 +325,7 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
 }
 
 static void write_pdb_bfac(char *fname,char *xname,
-			   char *title,t_atoms *atoms,int ePBC,matrix box,
+			   const char *title,t_atoms *atoms,int ePBC,matrix box,
 			   int isize,atom_id *index,int nfr_x,rvec *x,
 			   int nfr_v,rvec *sum,
 			   bool bDim[],real scale_factor)
@@ -531,7 +531,7 @@ int gmx_traj(int argc,char *argv[])
   t_block    *mols;
   bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
   bool       bDim[4],bDum[4],bVD;
-  char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
+  const char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },

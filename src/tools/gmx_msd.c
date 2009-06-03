@@ -79,80 +79,81 @@ typedef struct {
 
 typedef real t_calc_func(t_corr *,int,atom_id[],int,rvec[],rvec,bool,matrix);
 			      
-static real thistime(t_corr *this) 
+static real thistime(t_corr *curr) 
 {
-  return this->time[this->nframes]; 
+  return curr->time[curr->nframes]; 
 }
 
-static bool in_data(t_corr *this,int nx00) 
+static bool in_data(t_corr *curr,int nx00) 
 { 
-  return this->nframes-this->n_offs[nx00]; 
+  return curr->nframes-curr->n_offs[nx00]; 
 }
 
 t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
 		  int nmol,bool bTen,bool bMass,real dt,t_topology *top,
 		  real beginfit,real endfit)
 {
-  t_corr  *this;
+  t_corr  *curr;
   t_atoms *atoms;
   int     i;
 
-  snew(this,1);
-  this->type      = type;
-  this->axis      = axis;
-  this->ngrp      = nrgrp;
-  this->nrestart  = 0;
-  this->delta_t   = dt;
-  this->beginfit  = (1 - 2*GMX_REAL_EPS)*beginfit;
-  this->endfit    = (1 + 2*GMX_REAL_EPS)*endfit;
-  this->x0        = NULL;
-  this->n_offs    = NULL;
-  this->nframes   = 0;
-  this->nlast     = 0;
-  this->dim_factor = dim_factor;
+  snew(curr,1);
+  curr->type      = type;
+  curr->axis      = axis;
+  curr->ngrp      = nrgrp;
+  curr->nrestart  = 0;
+  curr->delta_t   = dt;
+  curr->beginfit  = (1 - 2*GMX_REAL_EPS)*beginfit;
+  curr->endfit    = (1 + 2*GMX_REAL_EPS)*endfit;
+  curr->x0        = NULL;
+  curr->n_offs    = NULL;
+  curr->nframes   = 0;
+  curr->nlast     = 0;
+  curr->dim_factor = dim_factor;
   
-  snew(this->ndata,nrgrp);
-  snew(this->data,nrgrp);
+  snew(curr->ndata,nrgrp);
+  snew(curr->data,nrgrp);
   if (bTen)
-    snew(this->datam,nrgrp);
+    snew(curr->datam,nrgrp);
   for(i=0; (i<nrgrp); i++) {
-    this->ndata[i] = NULL;
-    this->data[i]  = NULL;
+    curr->ndata[i] = NULL;
+    curr->data[i]  = NULL;
     if (bTen)
-      this->datam[i] = NULL;
+      curr->datam[i] = NULL;
   }
-  this->time = NULL;
-  this->lsq  = NULL;
-  this->nmol = nmol;
-  if (this->nmol > 0) {
-    snew(this->mass,this->nmol);
-    for(i=0; i<this->nmol; i++)
-      this->mass[i] = 1;
+  curr->time = NULL;
+  curr->lsq  = NULL;
+  curr->nmol = nmol;
+  if (curr->nmol > 0) {
+    snew(curr->mass,curr->nmol);
+    for(i=0; i<curr->nmol; i++)
+      curr->mass[i] = 1;
   }
   else {
     if (bMass) {
       atoms = &top->atoms;
-      snew(this->mass,atoms->nr);
+      snew(curr->mass,atoms->nr);
       for(i=0; (i<atoms->nr); i++) {
-	this->mass[i] = atoms->atom[i].m;
+	curr->mass[i] = atoms->atom[i].m;
       }
     }
   }
 
-  return this;
+  return curr;
 }
 
-static void done_corr(t_corr *this)
+static void done_corr(t_corr *curr)
 {
   int i;
   
-  sfree(this->n_offs);
-  for(i=0; (i<this->nrestart); i++)
-    sfree(this->x0[i]);
-  sfree(this->x0);
+  sfree(curr->n_offs);
+  for(i=0; (i<curr->nrestart); i++)
+    sfree(curr->x0[i]);
+  sfree(curr->x0);
 }
 
-static void corr_print(t_corr *this,bool bTen,char *fn,char *title,char *yaxis,
+static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
+                       const char *yaxis,
 		       real msdtime,real beginfit,real endfit,
 		       real *DD,real *SigmaD,char *grpname[])
 {
@@ -162,25 +163,25 @@ static void corr_print(t_corr *this,bool bTen,char *fn,char *title,char *yaxis,
   out=xvgropen(fn,title,xvgr_tlabel(),yaxis);
   if (DD) {
     fprintf(out,"# MSD gathered over %g %s with %d restarts\n",
-	    msdtime,time_unit(),this->nrestart);
+	    msdtime,time_unit(),curr->nrestart);
     fprintf(out,"# Diffusion constants fitted from time %g to %g %s\n",
 	    beginfit,endfit,time_unit());
-    for(i=0; i<this->ngrp; i++) 
+    for(i=0; i<curr->ngrp; i++) 
       fprintf(out,"# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
 	      grpname[i],DD[i],SigmaD[i]);
   }
-  for(i=0; i<this->nframes; i++) {
-    fprintf(out,"%10g",convert_time(this->time[i]));
-    for(j=0; j<this->ngrp; j++) {
-      fprintf(out,"  %10g",this->data[j][i]);
+  for(i=0; i<curr->nframes; i++) {
+    fprintf(out,"%10g",convert_time(curr->time[i]));
+    for(j=0; j<curr->ngrp; j++) {
+      fprintf(out,"  %10g",curr->data[j][i]);
       if (bTen) {
 	fprintf(out," %10g %10g %10g %10g %10g %10g",
-		this->datam[j][i][XX][XX],
-		this->datam[j][i][YY][YY],
-		this->datam[j][i][ZZ][ZZ],
-		this->datam[j][i][YY][XX],
-		this->datam[j][i][ZZ][XX],
-		this->datam[j][i][ZZ][YY]);
+		curr->datam[j][i][XX][XX],
+		curr->datam[j][i][YY][YY],
+		curr->datam[j][i][ZZ][ZZ],
+		curr->datam[j][i][YY][XX],
+		curr->datam[j][i][ZZ][XX],
+		curr->datam[j][i][ZZ][YY]);
       }
     }
     fprintf(out,"\n");
@@ -189,7 +190,7 @@ static void corr_print(t_corr *this,bool bTen,char *fn,char *title,char *yaxis,
 }
 
 /* called from corr_loop, to do the main calculations */
-static void calc_corr(t_corr *this,int nr,int nx,atom_id index[],rvec xc[],
+static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
 		      bool bRmCOMM,rvec com,t_calc_func *calc1,bool bTen)
 {
   int  nx0;
@@ -198,38 +199,38 @@ static void calc_corr(t_corr *this,int nr,int nx,atom_id index[],rvec xc[],
   rvec dcom;
   
   /* Check for new starting point */
-  if (this->nlast < this->nrestart) {
-    if ((thistime(this) >= (this->nlast*this->delta_t)) && (nr==0)) {
-      memcpy(this->x0[this->nlast],xc,this->ncoords*sizeof(xc[0]));
-      this->n_offs[this->nlast]=this->nframes;
-      copy_rvec(com,this->com[this->nlast]);
-      this->nlast++;
+  if (curr->nlast < curr->nrestart) {
+    if ((thistime(curr) >= (curr->nlast*curr->delta_t)) && (nr==0)) {
+      memcpy(curr->x0[curr->nlast],xc,curr->ncoords*sizeof(xc[0]));
+      curr->n_offs[curr->nlast]=curr->nframes;
+      copy_rvec(com,curr->com[curr->nlast]);
+      curr->nlast++;
     }
   }
 
   /* nx0 appears to be the number of new starting points,
    * so for all starting points, call calc1. 
    */
-  for(nx0=0; (nx0<this->nlast); nx0++) {
+  for(nx0=0; (nx0<curr->nlast); nx0++) {
     if (bRmCOMM) {
-      rvec_sub(this->com[nx0],com,dcom);
+      rvec_sub(curr->com[nx0],com,dcom);
     } else {
       clear_rvec(dcom);
     }
-    g = calc1(this,nx,index,nx0,xc,dcom,bTen,mat);
+    g = calc1(curr,nx,index,nx0,xc,dcom,bTen,mat);
 #ifdef DEBUG2
     printf("g[%d]=%g\n",nx0,g);
 #endif
-    this->data[nr][in_data(this,nx0)] += g;
+    curr->data[nr][in_data(curr,nx0)] += g;
     if (bTen) {
-      m_add(this->datam[nr][in_data(this,nx0)],mat,
-	    this->datam[nr][in_data(this,nx0)]);
+      m_add(curr->datam[nr][in_data(curr,nx0)],mat,
+	    curr->datam[nr][in_data(curr,nx0)]);
     }
-    this->ndata[nr][in_data(this,nx0)]++;
+    curr->ndata[nr][in_data(curr,nx0)]++;
   }
 }
 
-static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
+static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 		       rvec dcom,bool bTen,matrix mat)
 {
   int  i,ix,m,m2;
@@ -242,10 +243,10 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
   for(i=0; (i<nx); i++) {
     ix=index[i];
     r2=0.0;
-    switch (this->type) {
+    switch (curr->type) {
     case NORMAL:
       for(m=0; (m<DIM); m++) {
-	rv[m] = this->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+	rv[m] = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
 	r2   += rv[m]*rv[m];
 	if (bTen) {
 	  for(m2=0; m2<=m; m2++)
@@ -256,20 +257,20 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
     case X:
     case Y:
     case Z:
-      r = this->x0[nx0][ix][this->type-X] - xc[ix][this->type-X]
-	- dcom[this->type-X];
+      r = curr->x0[nx0][ix][curr->type-X] - xc[ix][curr->type-X]
+	- dcom[curr->type-X];
       r2 += r*r;
       break;
     case LATERAL:
       for(m=0; (m<DIM); m++) {
-	if (m != this->axis) {
-	  r   = this->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+	if (m != curr->axis) {
+	  r   = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
 	  r2 += r*r;
 	}
       }
       break;
     default:
-      gmx_fatal(FARGS,"Error: did not expect option value %d",this->type);
+      gmx_fatal(FARGS,"Error: did not expect option value %d",curr->type);
     }
     g+=r2;
   }
@@ -300,22 +301,22 @@ static void calc_mol_com(int nmol,int *molindex,t_block *mols,t_atoms *atoms,
   }
 }
 
-static real calc_one_mw(t_corr *this,int ix,int nx0,rvec xc[],real *tm,
+static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
 			rvec dcom,bool bTen,matrix mat)
 {
   real r2,r,mm;
   rvec rv;
   int  m,m2;
   
-  mm=this->mass[ix];
+  mm=curr->mass[ix];
   if (mm == 0)
     return 0;
   (*tm) += mm;
   r2     = 0.0;
-  switch (this->type) {
+  switch (curr->type) {
   case NORMAL:
     for(m=0; (m<DIM); m++) {
-      rv[m] = this->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+      rv[m] = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
       r2   += mm*rv[m]*rv[m];
       if (bTen) {
 	for(m2=0; m2<=m; m2++)
@@ -326,25 +327,25 @@ static real calc_one_mw(t_corr *this,int ix,int nx0,rvec xc[],real *tm,
   case X:
   case Y:
   case Z:
-    r  = this->x0[nx0][ix][this->type-X] - xc[ix][this->type-X]
-      - dcom[this->type-X];
+    r  = curr->x0[nx0][ix][curr->type-X] - xc[ix][curr->type-X]
+      - dcom[curr->type-X];
     r2 = mm*r*r;
       break;
   case LATERAL:
     for(m=0; (m<DIM); m++) {
-      if (m != this->axis) {
-	r   = this->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
+      if (m != curr->axis) {
+	r   = curr->x0[nx0][ix][m] - xc[ix][m] - dcom[m];
 	r2 += mm*r*r;
       }
     }
     break;
   default:
-    gmx_fatal(FARGS,"Options got screwed. Did not expect value %d\n",this->type);
+    gmx_fatal(FARGS,"Options got screwed. Did not expect value %d\n",curr->type);
   } /* end switch */
   return r2;
 }
 
-static real calc1_mw(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
+static real calc1_mw(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 		     rvec dcom,bool bTen,matrix mat)
 {
   int  i;
@@ -353,7 +354,7 @@ static real calc1_mw(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
   g=tm=0.0;
   clear_mat(mat);
   for(i=0; (i<nx); i++) 
-    g += calc_one_mw(this,index[i],nx0,xc,&tm,dcom,bTen,mat);
+    g += calc_one_mw(curr,index[i],nx0,xc,&tm,dcom,bTen,mat);
   
   g/=tm;
   if (bTen)
@@ -423,29 +424,29 @@ static void prep_data(bool bMol,int gnx,atom_id index[],
   }
 }
 
-static real calc1_mol(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
+static real calc1_mol(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 		      rvec dcom,bool bTen,matrix mat)
 {
   int  i;
   real g,mm,gtot,tt;
 
-  tt = this->time[in_data(this,nx0)];
+  tt = curr->time[in_data(curr,nx0)];
   gtot = 0;
   clear_mat(mat);
   for(i=0; (i<nx); i++) {
     mm = 0;
-    g = calc_one_mw(this,i,nx0,xc,&mm,dcom,bTen,mat);
+    g = calc_one_mw(curr,i,nx0,xc,&mm,dcom,bTen,mat);
     /* We don't need to normalize as the mass was set to 1 */
     gtot += g;
-    if (tt >= this->beginfit && (this->endfit < 0 || tt <= this->endfit))
-      gmx_stats_add_point(this->lsq[nx0][i],tt,g,0,0);
+    if (tt >= curr->beginfit && (curr->endfit < 0 || tt <= curr->endfit))
+      gmx_stats_add_point(curr->lsq[nx0][i],tt,g,0,0);
   }
   msmul(mat,1.0/nx,mat);
 
   return gtot/nx;
 }
 
-void printmol(t_corr *this,char *fn,
+void printmol(t_corr *curr,char *fn,
 	      char *fn_pdb,int *molindex,t_topology *top,
 	      rvec *x,int ePBC,matrix box)
 {
@@ -468,23 +469,23 @@ void printmol(t_corr *this,char *fn,
 
   Dav = D2av = 0;
   sqrtD_max = 0;
-  for(i=0; (i<this->nmol); i++) {
+  for(i=0; (i<curr->nmol); i++) {
     lsq1 = gmx_stats_init();
-    for(j=0; (j<this->nrestart); j++) {
+    for(j=0; (j<curr->nrestart); j++) {
       real xx,yy,dx,dy;
       
-      while(gmx_stats_get_point(this->lsq[j][i],&xx,&yy,&dx,&dy) == estatsOK)
+      while(gmx_stats_get_point(curr->lsq[j][i],&xx,&yy,&dx,&dy) == estatsOK)
 	gmx_stats_add_point(lsq1,xx,yy,dx,dy);
-      /* lsq1.sx+=this->lsq[j][i].sx;
-	 lsq1.sy+=this->lsq[j][i].sy;
-	 lsq1.xx+=this->lsq[j][i].xx;
-	 lsq1.yx+=this->lsq[j][i].yx;
-	 lsq1.np+=this->lsq[j][i].np; */
+      /* lsq1.sx+=curr->lsq[j][i].sx;
+	 lsq1.sy+=curr->lsq[j][i].sy;
+	 lsq1.xx+=curr->lsq[j][i].xx;
+	 lsq1.yx+=curr->lsq[j][i].yx;
+	 lsq1.np+=curr->lsq[j][i].np; */
     }
     gmx_stats_get_ab(lsq1,elsqWEIGHT_NONE,&a,&b,NULL,NULL,NULL,NULL);
     gmx_stats_done(lsq1);
     sfree(lsq1);
-    D     = a*FACTOR/this->dim_factor;
+    D     = a*FACTOR/curr->dim_factor;
     if (D < 0)
       D   = 0;
     Dav  += D;
@@ -502,11 +503,11 @@ void printmol(t_corr *this,char *fn,
   do_view(fn,"-graphtype bar");
   
   /* Compute variance, stddev and error */
-  Dav  /= this->nmol;
-  D2av /= this->nmol;
+  Dav  /= curr->nmol;
+  D2av /= curr->nmol;
   VarD  = D2av - sqr(Dav);
   printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n",
-	 Dav,sqrt(VarD),sqrt(VarD/this->nmol));
+	 Dav,sqrt(VarD),sqrt(VarD/curr->nmol));
 
   if (fn_pdb && x) {
     scale = 1;
@@ -524,7 +525,7 @@ void printmol(t_corr *this,char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-int corr_loop(t_corr *this,char *fn,t_topology *top,int ePBC,
+int corr_loop(t_corr *curr,char *fn,t_topology *top,int ePBC,
 	      bool bMol,int gnx[],atom_id *index[],
 	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
 	      real t_pdb,rvec **x_pdb,matrix box_pdb)
@@ -536,7 +537,7 @@ int corr_loop(t_corr *this,char *fn,t_topology *top,int ePBC,
   matrix       box;
   bool         bFirst;
 
-  natoms = read_first_x(&status,fn,&this->t0,&(x[cur]),box);
+  natoms = read_first_x(&status,fn,&curr->t0,&(x[cur]),box);
 #ifdef DEBUG
   fprintf(stderr,"Read %d atoms for first frame\n",natoms);
 #endif
@@ -547,17 +548,17 @@ int corr_loop(t_corr *this,char *fn,t_topology *top,int ePBC,
   snew(x[prev],natoms);
 
   if (bMol) {
-    this->ncoords = this->nmol;
-    snew(xa[0],this->ncoords);
-    snew(xa[1],this->ncoords);
+    curr->ncoords = curr->nmol;
+    snew(xa[0],curr->ncoords);
+    snew(xa[1],curr->ncoords);
   } else {
-    this->ncoords = natoms;
+    curr->ncoords = natoms;
     xa[0] = x[0];
     xa[1] = x[1];
   }
 
   bFirst = TRUE;
-  t=this->t0;
+  t=curr->t0;
   if (x_pdb)
     *x_pdb = NULL;
   do {
@@ -573,49 +574,49 @@ int corr_loop(t_corr *this,char *fn,t_topology *top,int ePBC,
     }
       
 
-    if (bRmod(t,this->t0,dt)) {
-      this->nrestart++;
+    if (bRmod(t,curr->t0,dt)) {
+      curr->nrestart++;
   
-      srenew(this->x0,this->nrestart);
-      snew(this->x0[this->nrestart-1],this->ncoords);
-      srenew(this->com,this->nrestart);
-      srenew(this->n_offs,this->nrestart);
-      srenew(this->lsq,this->nrestart);
-      snew(this->lsq[this->nrestart-1],this->nmol);
+      srenew(curr->x0,curr->nrestart);
+      snew(curr->x0[curr->nrestart-1],curr->ncoords);
+      srenew(curr->com,curr->nrestart);
+      srenew(curr->n_offs,curr->nrestart);
+      srenew(curr->lsq,curr->nrestart);
+      snew(curr->lsq[curr->nrestart-1],curr->nmol);
       if (debug)
 	fprintf(debug,"Extended data structures because of new restart %d\n",
-		this->nrestart);
+		curr->nrestart);
     }
-    if (this->nframes >= maxframes-1) {
+    if (curr->nframes >= maxframes-1) {
       if (maxframes==0) {
-	for(i=0; (i<this->ngrp); i++) {
-	  this->ndata[i] = NULL;
-	  this->data[i]  = NULL;
+	for(i=0; (i<curr->ngrp); i++) {
+	  curr->ndata[i] = NULL;
+	  curr->data[i]  = NULL;
 	  if (bTen)
-	    this->datam[i] = NULL;
+	    curr->datam[i] = NULL;
 	}
-	this->time = NULL;
+	curr->time = NULL;
       }
       maxframes+=10;
-      for(i=0; (i<this->ngrp); i++) {
-	srenew(this->ndata[i],maxframes);
-	srenew(this->data[i],maxframes);
+      for(i=0; (i<curr->ngrp); i++) {
+	srenew(curr->ndata[i],maxframes);
+	srenew(curr->data[i],maxframes);
 	if (bTen)
-	  srenew(this->datam[i],maxframes);
+	  srenew(curr->datam[i],maxframes);
 	for(j=maxframes-10; j<maxframes; j++) {
-	  this->ndata[i][j]=0;
-	  this->data[i][j]=0;
+	  curr->ndata[i][j]=0;
+	  curr->data[i][j]=0;
 	  if (bTen)
-	    clear_mat(this->datam[i][j]);
+	    clear_mat(curr->datam[i][j]);
 	}
       }
-      srenew(this->time,maxframes);
+      srenew(curr->time,maxframes);
     }
 
-    this->time[this->nframes] = t - this->t0;
+    curr->time[curr->nframes] = t - curr->t0;
 
     if (bFirst) {
-      memcpy(xa[prev],xa[cur],this->ncoords*sizeof(xa[prev][0]));
+      memcpy(xa[prev],xa[cur],curr->ncoords*sizeof(xa[prev][0]));
       bFirst = FALSE;
     }
 
@@ -623,29 +624,29 @@ int corr_loop(t_corr *this,char *fn,t_topology *top,int ePBC,
       rm_pbc(&top->idef,ePBC,natoms,box,x[cur],x[cur]);
 
     if (bRmCOMM)
-      remove_pbc(bMol,this->nmol,natoms,&top->atoms,xa[cur],xa[prev],box,com);
+      remove_pbc(bMol,curr->nmol,natoms,&top->atoms,xa[cur],xa[prev],box,com);
 
     if (bMol)
       calc_mol_com(gnx[0],index[0],&top->mols,&top->atoms,
 		   x[cur],xa[cur]);
     
     /* loop over all groups in index file */
-    for(i=0; (i<this->ngrp); i++) {
+    for(i=0; (i<curr->ngrp); i++) {
       /* nice for putting things in boxes and such */
       if (!bRmCOMM)
 	prep_data(bMol,gnx[i],index[i],xa[cur],xa[prev],box);
       /* calculate something useful, like mean square displacements */
-      calc_corr(this,i,gnx[i],index[i],xa[cur],bRmCOMM,com,calc1,bTen);
+      calc_corr(curr,i,gnx[i],index[i],xa[cur],bRmCOMM,com,calc1,bTen);
     }
     cur=prev;
     t_prev = t;
     
-    this->nframes++;
+    curr->nframes++;
   } while (read_next_x(status,&t,natoms,x[cur],box));
   fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
-	  this->nrestart, 
+	  curr->nrestart, 
 	  convert_time(dt), time_unit(),
-	  convert_time(this->time[this->nframes-1]), time_unit() );
+	  convert_time(curr->time[curr->nframes-1]), time_unit() );
   
   close_trj(status);
 
@@ -820,8 +821,8 @@ int gmx_msd(int argc,char *argv[])
     "the diffusion coefficient of the molecule.",
     "This option implies option [TT]-mol[tt]."
   };
-  static char *normtype[]= { NULL,"no","x","y","z",NULL };
-  static char *axtitle[] = { NULL,"no","x","y","z",NULL };
+  static const char *normtype[]= { NULL,"no","x","y","z",NULL };
+  static const char *axtitle[] = { NULL,"no","x","y","z",NULL };
   static int  ngroup     = 1;
   static real dt         = 10; 
   static real t_pdb      = 0; 

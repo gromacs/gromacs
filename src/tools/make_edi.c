@@ -116,7 +116,7 @@ void make_t_edx(struct edix *edx, int natoms, rvec *pos, atom_id index[]) {
   edx->x=pos;
 }
 
-void write_t_edx(FILE *fp, struct edix edx, char *comment) {
+void write_t_edx(FILE *fp, struct edix edx, const char *comment) {
  /*here we copy only the pointers into the t_edx struct
   no data is copied and edx.box is ignored  */
  int i;
@@ -126,7 +126,7 @@ void write_t_edx(FILE *fp, struct edix edx, char *comment) {
   }
 }
 
-int sscan_list(int *list[], char *str, char *listname) {
+int sscan_list(int *list[], const char *str, const char *listname) {
  /*this routine scans a string of the form 1,3-6,9 and returns the
     selected numbers (in this case 1 3 4 5 6 9) in NULL-terminated array of integers.
     memory for this list will be allocated  in this routine -- sscan_list expects *list to
@@ -248,7 +248,7 @@ int sscan_list(int *list[], char *str, char *listname) {
    return nvecs;
 } /*sscan_list*/
   
-void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec, char *grouptitle,real steps[]) {
+void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec, const char *grouptitle,real steps[]) {
 /* eig_list is a zero-terminated list of indices into the eigvecs array.
    eigvecs are coordinates of eigenvectors
    grouptitle to write in the comment line
@@ -378,7 +378,7 @@ void read_eigenvalues(int vecs[],char *eigfile, real values[], bool bHesse, real
 };
 
 
-static real *scan_vecparams(char *str,char * par, int nvecs)
+static real *scan_vecparams(const char *str,const char * par, int nvecs)
 {
   char   f0[256],f1[256];             /*format strings adapted every pass of the loop*/
   double d,tcap=0;
@@ -453,7 +453,7 @@ void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,struct edi
 int main(int argc,char *argv[])
 {
 
-  const char *desc[] = {
+  static const char *desc[] = {
       "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with mdrun",
       "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a", 
       "normal modes anaysis ([TT]g_nmeig[tt]).",
@@ -544,10 +544,10 @@ int main(int argc,char *argv[])
     static t_edipar edi_params;     
     
     enum  { evSTEPEND = evRADFIX + 1}; 
-    static char* evSelections[evEND]= {NULL,NULL,NULL,NULL,NULL,NULL};
-    static char* evOptions[evEND] = {"-linfix","-linacc","-flood","-radfix","-radacc","-radcon","-mon"};
-    static char* evParams[evSTEPEND] ={NULL,NULL};
-    static char* evStepOptions[evSTEPEND] = {"-linstep","-accdir","-not_used","-radstep"};
+    static const char* evSelections[evEND]= {NULL,NULL,NULL,NULL,NULL,NULL};
+    static const char* evOptions[evEND] = {"-linfix","-linacc","-flood","-radfix","-radacc","-radcon","-mon"};
+    static const char* evParams[evSTEPEND] ={NULL,NULL};
+    static const char* evStepOptions[evSTEPEND] = {"-linstep","-accdir","-not_used","-radstep"};
     static real* evStepList[evSTEPEND];
     static real  radfix=0.0;
     static real deltaF0=150;

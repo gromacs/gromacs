@@ -186,7 +186,7 @@ extern void low_do_autocorr(const char *fn,const char *title,
  */
  
 typedef struct {
-  char *name;   /* Description of the J coupling constant */
+  const char *name; /* Description of the J coupling constant */
   real A,B,C;   /* Karplus coefficients */
   real offset;  /* Offset for dihedral angle in histogram (e.g. -M_PI/3) */
   real Jc;      /* Resulting Jcoupling */

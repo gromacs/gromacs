@@ -100,8 +100,8 @@ extern void ps_circle(t_psdata ps,real x1,real y1,real rad);
 extern void ps_font(t_psdata ps,int font,real size);
 extern void ps_strfont(t_psdata ps,char *font,real size);
 
-extern void ps_text(t_psdata ps,real x1,real y1,char *str);
-extern void ps_ctext(t_psdata ps,real x1,real y1,char *str,int expos);
+extern void ps_text(t_psdata ps,real x1,real y1,const char *str);
+extern void ps_ctext(t_psdata ps,real x1,real y1,const char *str,int expos);
 
 extern void ps_close(t_psdata ps);
 
@@ -117,6 +117,6 @@ extern void ps_unsetorigin(t_psdata ps);
 
 extern void viewps(char *fn);
 
-extern void ps_comment(t_psdata ps,char *s);
+extern void ps_comment(t_psdata ps,const char *s);
 
 #endif	/* _writeps_h */

@@ -98,7 +98,7 @@ extern void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax);
 extern void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax);
 /* Set the world in xvgr */
 
-extern void xvgr_legend(FILE *out,int nsets,char *setname[]);
+extern void xvgr_legend(FILE *out,int nsets,const char *const setname[]);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
 extern void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor);
@@ -122,7 +122,8 @@ extern int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend);
 extern int read_xvg(const char *fn,double ***y,int *ny);
 /* As read_xvg_legend, but does not read legends. */
  
-extern void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg);
+extern void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
+                      const char *const*leg);
 /* Write a two D array (y) of dimensions nx rows times
  * ny columns to a file. If leg != NULL it will be written too.
  */

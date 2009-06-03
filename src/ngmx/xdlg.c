@@ -526,7 +526,7 @@ void DoCreateDlg(t_dlg *dlg)
 			 dlg->title,None,NULL,0,&hints);
 }
 
-void AddDlgItem(t_dlg *dlg, t_dlgitem *new)
+void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
 {
 #define EnterLeaveMask (EnterWindowMask | LeaveWindowMask)
 #define UserMask (ButtonPressMask | KeyPressMask)
@@ -543,41 +543,41 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *new)
   if (!dlg->win.self)
     DoCreateDlg(dlg);
   srenew(dlg->dlgitem,dlg->nitem+1);
-  if (!new)
+  if (!item)
     gmx_fatal(FARGS,"dlgitem not allocated");
-  new->win.self=
-    XCreateSimpleWindow(dlg->x11->disp,dlg->win.self,new->win.x,new->win.y,
-			new->win.width,new->win.height,
-			new->win.bwidth,dlg->x11->fg,dlg->x11->bg);
-  CheckWindow(new->win.self);
+  item->win.self=
+    XCreateSimpleWindow(dlg->x11->disp,dlg->win.self,item->win.x,item->win.y,
+			item->win.width,item->win.height,
+			item->win.bwidth,dlg->x11->fg,dlg->x11->bg);
+  CheckWindow(item->win.self);
 
-  dlg->x11->RegisterCallback(dlg->x11,new->win.self,dlg->win.self,
+  dlg->x11->RegisterCallback(dlg->x11,item->win.self,dlg->win.self,
 			     DlgCB,dlg);  
-  dlg->x11->SetInputMask(dlg->x11,new->win.self,InputMask[new->type]);
+  dlg->x11->SetInputMask(dlg->x11,item->win.self,InputMask[item->type]);
 
-  switch (new->type) {
+  switch (item->type) {
   case edlgPM:
-    XSetWindowBackgroundPixmap(dlg->x11->disp,new->win.self,new->u.pixmap.pm);
+    XSetWindowBackgroundPixmap(dlg->x11->disp,item->win.self,item->u.pixmap.pm);
     break;
   default:
     break;
   }
-  dlg->dlgitem[dlg->nitem]=new;
+  dlg->dlgitem[dlg->nitem]=item;
 
   dlg->nitem++;
 }
 
-void AddDlgItems(t_dlg *dlg,int nitem,t_dlgitem *new[])
+void AddDlgItems(t_dlg *dlg,int nitem,t_dlgitem *item[])
 {
   int i;
   
   for(i=0; (i<nitem); i++) {
 #ifdef DEBUG
     fprintf(dlg->x11->console,
-	    "Adding item: %d from group %d\n",new[i]->ID,new[i]->GroupID);
+	    "Adding item: %d from group %d\n",item[i]->ID,item[i]->GroupID);
     dlg->x11->Flush(dlg->x11);
 #endif
-    AddDlgItem(dlg,new[i]);
+    AddDlgItem(dlg,item[i]);
   }
 }
 

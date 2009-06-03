@@ -1392,7 +1392,7 @@ void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
     int ny,nt,bins,ibin,i,g,dstep=1,nColPerGrp,nColRef,nColExpect;
     real min,max,minfound,maxfound;
     bool dt_ok,timeok,bHaveForce;
-    char *quantity;
+    const char *quantity;
 
 	minfound=1e20;
 	maxfound=-1e20;

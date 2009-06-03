@@ -105,7 +105,7 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
 				  int n,atom_id index[],bool bSplit)
 {
   FILE   *out;
-  char   *leg[5] = { "min per.","max int.","box1","box2","box3" };
+  const char *leg[5] = { "min per.","max int.","box1","box2","box3" };
   int    status;
   real   t;
   rvec   *x;

@@ -99,8 +99,8 @@ int gmx_densmap(int argc,char *argv[])
   static int n1=0,n2=0;
   static real xmin=-1,xmax=-1,bin=0.02,dmin=0,dmax=0,amax=0,rmax=0;
   static bool bMirror=FALSE;
-  static char *eaver[]={ NULL, "z", "y", "x", NULL };
-  static char *eunit[]={ NULL, "nm-3", "nm-2", "count", NULL };
+  static const char *eaver[]={ NULL, "z", "y", "x", NULL };
+  static const char *eunit[]={ NULL, "nm-3", "nm-2", "count", NULL };
 
   t_pargs pa[] = {
     { "-bin", FALSE, etREAL, {&bin},
@@ -138,14 +138,15 @@ int gmx_densmap(int argc,char *argv[])
   real       t,m,mtot;
   t_pbc      pbc;
   int        cav=0,c1=0,c2=0,natoms;
-  char       **grpname,title[256],buf[STRLEN],*unit;
+  char       **grpname,title[256],buf[STRLEN];
+  const char *unit;
   int        i,j,k,l,ngrps,anagrp,*gnx=NULL,nindex,nradial=0,nfr,nmpower;
   atom_id    **ind=NULL,*index;
   real       **grid,maxgrid,m1,m2,box1,box2,*tickx,*tickz,invcellvol;
   real       invspa=0,invspz=0,axial,r,vol_old,vol;
   int        nlev=51;
   t_rgb rlo={1,1,1}, rhi={0,0,0};
-  char *label[]={ "x (nm)", "y (nm)", "z (nm)" };
+  const char *label[]={ "x (nm)", "y (nm)", "z (nm)" };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
     { efTPS, NULL,   NULL,       ffOPTRD }, 

@@ -76,7 +76,7 @@ typedef struct {
   int      nsatm;
   t_simat sat[3];
 } t_simlist;
-static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
+static const char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
 
 real calc_mass(t_atoms *atoms,bool bGetMass,gmx_atomprop_t aps)
 {
@@ -279,7 +279,7 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
 }
-void visualize_images(char *fn,int ePBC,matrix box)
+void visualize_images(const char *fn,int ePBC,matrix box)
 {
   t_atoms atoms;
   rvec    *img;
@@ -290,8 +290,9 @@ void visualize_images(char *fn,int ePBC,matrix box)
   init_t_atoms(&atoms,nat,FALSE);
   atoms.nr = nat;
   snew(img,nat);
-  c = "C";
-  ala = "ALA";
+  /* FIXME: Constness should not be cast away */
+  c = (char *)"C";
+  ala = (char *)"ALA";
   for(i=0; i<nat; i++) {
     atoms.atomname[i] = &c;
     atoms.atom[i].resind = i;
@@ -460,7 +461,7 @@ int gmx_editconf(int argc, char *argv[])
   static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
   static rvec center={0,0,0},translation={0,0,0},rotangles={0,0,0};
-  static char *btype[]={ NULL, "triclinic", "cubic", "dodecahedron", "octahedron", NULL },*label="A";
+  static const char *btype[]={ NULL, "triclinic", "cubic", "dodecahedron", "octahedron", NULL },*label="A";
   static rvec visbox={0,0,0};
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 

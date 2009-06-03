@@ -62,7 +62,7 @@ typedef struct {
   mat4   RotM[DIM];
 } t_3dview;
 
-extern void print_m4(FILE *fp,char *s,mat4 A);
+extern void print_m4(FILE *fp,const char *s,mat4 A);
 
 extern void print_v4(FILE *fp,char *s,int dim,real *a);
 

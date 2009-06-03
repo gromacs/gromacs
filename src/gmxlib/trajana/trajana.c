@@ -644,7 +644,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
          "Make molecules whole for each frame"},
     };
     static char        *selection = NULL;
-    static char       **rpost     = NULL;
+    static const char **rpost     = NULL;
     static bool         bSelDump  = FALSE;
     static t_pargs      sel_pa[] = {
         {"-select",   FALSE, etSTR,  {&selection},
@@ -656,7 +656,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
         {"-selrpos",  FALSE, etENUM, {NULL},
          "Selection reference position"},
     };
-    static char       **spost = NULL;
+    static const char **spost = NULL;
     static t_pargs      selpt_pa[] = {
         {"-seltype",  FALSE, etENUM, {NULL},
          "Default analysis positions"},
@@ -674,14 +674,12 @@ parse_trjana_args(gmx_ana_traj_t *d,
         bSelDump = TRUE;
     }
 
-    /* FIXME: The constness should not be cast away */
-    rpost = (char **)gmx_ana_poscalc_create_type_enum(!(d->flags & ANA_REQUIRE_WHOLE));
+    rpost = gmx_ana_poscalc_create_type_enum(!(d->flags & ANA_REQUIRE_WHOLE));
     if (rpost == NULL)
     {
         return ENOMEM;
     }
-    /* FIXME: The constness should not be cast away */
-    spost = (char **)gmx_ana_poscalc_create_type_enum(TRUE);
+    spost = gmx_ana_poscalc_create_type_enum(TRUE);
     if (spost == NULL)
     {
         sfree(rpost);

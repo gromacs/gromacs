@@ -181,24 +181,24 @@ static void MainLoop(t_x11 *x11)
 static void RegisterCallback(t_x11 *x11,Window w,Window Parent,
 			     CallBack cb, void *data)
 {
-  t_wlist *curs,*new;
+  t_wlist *curs,*item;
 
-  snew(new,1);
-  new->w=w;
-  new->Parent=Parent;
-  new->cb=cb;
-  new->mask=0;
-  new->data=data;
-  new->next=NULL;
+  snew(item,1);
+  item->w=w;
+  item->Parent=Parent;
+  item->cb=cb;
+  item->mask=0;
+  item->data=data;
+  item->next=NULL;
 
   if (x11->wlist) {
     curs=x11->wlist;
     while(curs->next)
       curs=curs->next;
-    curs->next=new;
+    curs->next=item;
   }
   else
-    x11->wlist=new;
+    x11->wlist=item;
 }
 
 static void UnRegisterCallback(t_x11 *x11, Window w)

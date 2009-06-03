@@ -104,7 +104,7 @@ int gmx_dist(int argc,char *argv[])
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
   
-  char    *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
+  const char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
   

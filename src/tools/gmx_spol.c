@@ -128,7 +128,7 @@ int gmx_spol(int argc,char *argv[])
   int      status;
   int      nrefat,natoms,nf,ntot;
   real     t;
-  rvec     *xtop,*x,xref,try,dx,dip,dir;
+  rvec     *xtop,*x,xref,trial,dx,dip,dir;
   matrix   box;
   
   FILE    *fp;
@@ -249,10 +249,10 @@ int gmx_spol(int argc,char *argv[])
       a0 = molindex[mol];
       a1 = molindex[mol+1];
       for(i=0; i<nrefgrp; i++) {
-	pbc_dx(&pbc,x[a0+srefat],bCom ? xref : x[index[0][i]],try);
-	rtry2 = norm2(try);
+	pbc_dx(&pbc,x[a0+srefat],bCom ? xref : x[index[0][i]],trial);
+	rtry2 = norm2(trial);
 	if (i==0 || rtry2 < rdx2) {
-	  copy_rvec(try,dx);
+	  copy_rvec(trial,dx);
 	  rdx2 = rtry2;
 	}
       }

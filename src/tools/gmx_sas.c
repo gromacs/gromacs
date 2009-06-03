@@ -221,9 +221,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real dgs_default,bool bFindex)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
-  char         *flegend[] = { "Hydrophobic", "Hydrophilic", 
+  const char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
 			      "Total", "D Gsolv" };
-  char         *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  const char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
   char         *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;

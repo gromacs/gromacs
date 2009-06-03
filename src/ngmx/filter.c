@@ -100,9 +100,9 @@ static void FilterCB(t_x11 *x11,int dlg_mess,int item_id,
 
 t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
 {
-  static char *title="Group";
-  static char *dummy="\"FALSE\"";
-  static char *ok="\"Ok\"";
+  static const char *title="Group";
+  static const char *dummy="\"FALSE\"";
+  static const char *ok="\"Ok\"";
   FILE   *tmp;
   t_dlg  *dlg;
   char   tmpfile[STRLEN];

@@ -65,12 +65,12 @@ extern void SpecialTextInRect(t_x11 *x11,XFontStruct *font,Drawable win,
 			      eXPos eX,eYPos eY);
 
 extern void TextInRect(t_x11 *x11, Drawable win,
-		       char *s, int x, int y, int width, int height,
+		       const char *s, int x, int y, int width, int height,
 		       eXPos eX, eYPos eY);
 
-extern void TextInWin(t_x11 *x11, t_windata *win, char *s, eXPos eX, eYPos eY);
+extern void TextInWin(t_x11 *x11, t_windata *win, const char *s, eXPos eX, eYPos eY);
 
-extern void InitWin(t_windata *win, int x0,int y0, int w, int h, int bw, char *text);
+extern void InitWin(t_windata *win, int x0,int y0, int w, int h, int bw, const char *text);
 
 extern void FreeWin(Display *disp, t_windata *win);
 

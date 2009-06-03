@@ -63,7 +63,7 @@
 
 static bool bAllowed(real phi,real psi)
 {
-  static char *map[] = {
+  static const char *map[] = {
     "1100000000000000001111111000000000001111111111111111111111111",
     "1100000000000000001111110000000000011111111111111111111111111",
     "1100000000000000001111110000000000011111111111111111111111111",
@@ -410,7 +410,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 #define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
   
   FILE    *fp,*ssfp[3];
-  char    *sss[3] = { "sheet", "helix", "coil" };
+  const char *sss[3] = { "sheet", "helix", "coil" };
   real    S2;
   real    *normhisto;
   real    **Jc,**Jcsig;
@@ -697,7 +697,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   }
 }
 
-static FILE *rama_file(char *fn,char *title,char *xaxis,char *yaxis)
+static FILE *rama_file(const char *fn,const char *title,const char *xaxis,
+                       const char *yaxis)
 {
   FILE *fp;
 
@@ -835,7 +836,7 @@ static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
   int  i,Dih,Xi;
 
   /*  must correspond with enum in pp2shift.h:38 */  
-  char *leg[edMax] = { "Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  const char *leg[edMax] = { "Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
 #define NLEG asize(leg) 
   
   /* Print order parameters */
@@ -873,7 +874,7 @@ static void order_params(FILE *log,
   real S2Max, S2Min;
 
   /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */  
-  char *leg[2+edMax] = { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  const char *leg[2+edMax] = { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
 #define NLEG asize(leg) 
   
   /* Print order parameters */
@@ -1034,7 +1035,7 @@ int gmx_chi(int argc,char *argv[])
   static bool bAll=FALSE;
   static bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
   static real bfac_init=-1.0,bfac_max=0;
-  static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
+  static const char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
   static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE,bPBC=TRUE;
   static real core_frac=0.5 ;  

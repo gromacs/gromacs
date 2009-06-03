@@ -203,7 +203,8 @@ int gmx_rmsf(int argc,char *argv[])
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
   int          status,npdbatoms,res0;
-  char         buf[256],*label;
+  char         buf[256];
+  const char   *label;
   char         title[STRLEN];
   
   FILE         *fp;               /* the graphics file */
@@ -224,7 +225,7 @@ int gmx_rmsf(int argc,char *argv[])
   real         count=0;
   rvec         xcm;
 
-  char         *leg[2] = { "MD", "X-Ray" };
+  const char  *leg[2] = { "MD", "X-Ray" };
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD  },

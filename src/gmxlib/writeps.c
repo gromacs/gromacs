@@ -281,7 +281,7 @@ void ps_strfont(t_psdata ps,char *font,real size)
   fprintf(ps->fp,"%g scalefont setfont\n",size);
 }
 
-void ps_text(t_psdata ps,real x1,real y1,char *str)
+void ps_text(t_psdata ps,real x1,real y1,const char *str)
 {
   ps_moveto(ps,x1,y1);
   fprintf(ps->fp,"(%s) show\n",str);
@@ -300,7 +300,7 @@ void ps_rotate(t_psdata ps,real angle)
   fprintf(ps->fp,"%f rotate\n",angle);
 }
 
-void ps_ctext(t_psdata ps,real x1,real y1,char *str,int expos)
+void ps_ctext(t_psdata ps,real x1,real y1,const char *str,int expos)
 {
   if (expos == eXLeft) {
     ps_text(ps,x1,y1,str);
@@ -352,7 +352,7 @@ void ps_close(t_psdata ps)
   sfree(ps);
 }
 
-void ps_comment(t_psdata ps,char *s)
+void ps_comment(t_psdata ps,const char *s)
 {
   fprintf(ps->fp,"%%%% %s\n",s);
 }

@@ -474,7 +474,7 @@ set_method(gmx_ana_selcollection_t *sc, t_selelem *sel,
  * \returns       0 on success, a non-zero error code on error.
  */
 static int
-set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, char *rpost)
+set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost)
 {
     int  rc;
 
@@ -558,7 +558,7 @@ _gmx_sel_init_comparison(gmx_ana_selcollection_t *sc,
 t_selelem *
 _gmx_sel_init_keyword(gmx_ana_selcollection_t *sc,
                       gmx_ana_selmethod_t *method, int nargs,
-                      t_selexpr_value *args, char *rpost)
+                      t_selexpr_value *args, const char *rpost)
 {
     t_selelem         *root, *child;
     t_selexpr_param   *params, *param;
@@ -629,7 +629,7 @@ on_error:
  */
 t_selelem *
 _gmx_sel_init_position(gmx_ana_selcollection_t *sc, t_selelem *expr,
-                       char *type, bool bSelPos)
+                       const char *type, bool bSelPos)
 {
     t_selelem       *root;
     t_selexpr_param *params;
@@ -677,7 +677,7 @@ _gmx_sel_init_position(gmx_ana_selcollection_t *sc, t_selelem *expr,
  */
 t_selelem *
 _gmx_sel_init_method(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
-                     t_selexpr_param *params, char *rpost)
+                     t_selexpr_param *params, const char *rpost)
 {
     t_selelem       *root;
     int              rc;

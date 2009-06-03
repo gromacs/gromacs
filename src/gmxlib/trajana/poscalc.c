@@ -993,7 +993,7 @@ gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
  */
 int
 gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
-                            char *post, int flags)
+                            const char *post, int flags)
 {
     e_poscalc_t  type;
     int          cflags;

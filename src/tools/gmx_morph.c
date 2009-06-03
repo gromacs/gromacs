@@ -102,7 +102,7 @@ int gmx_morph(int argc,char *argv[])
     { "-fit",     FALSE, etBOOL, {&bFit},
       "Do a least squares fit of the second to the first structure before interpolating" }
   };
-  char     *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
+  const char *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
   FILE     *fp=NULL;
   int      i,isize,is_lsq,status,nat1,nat2;
   atom_id  *index,*index_lsq,*index_all,*dummy;

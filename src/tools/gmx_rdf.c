@@ -63,7 +63,7 @@
 
 typedef struct
 {
-  char *label;
+  const char *label;
   int  elem,mass;
   real a[4], b[4], c;
 } t_CM_table;
@@ -210,8 +210,8 @@ static void split_group(int isize,int *index,char *grpname,
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,char *close,
-		   char **rdft,bool bXY,bool bPBC,bool bNormalize,
+		   bool bCM,const char *close,
+		   const char **rdft,bool bXY,bool bPBC,bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng)
 {
   FILE       *fp;
@@ -673,10 +673,10 @@ t_complex *** rc_tensor_allocation(int x, int y, int z)
   return t;
 }
     
-int return_atom_type (char *name)
+int return_atom_type (const char *name)
 {
   typedef struct {
-    char *name;
+    const char *name;
     int  nh;
   } t_united_h;
   t_united_h uh[] = {
@@ -1054,8 +1054,8 @@ int gmx_rdf(int argc,char *argv[])
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
 
-  static char *closet[]= { NULL, "no", "mol", "res", NULL };
-  static char *rdft[]={ NULL, "atom", "mol_com", "mol_cog", "res_com", "res_cog", NULL };
+  static const char *closet[]= { NULL, "no", "mol", "res", NULL };
+  static const char *rdft[]={ NULL, "atom", "mol_com", "mol_cog", "res_com", "res_cog", NULL };
 
   t_pargs pa[] = {
     { "-bin",      FALSE, etREAL, {&binwidth},

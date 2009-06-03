@@ -167,7 +167,7 @@ static void fill_ang(int nft,int *ft,int fac,
   }
 }
 
-static int *select_ftype(char *opt,int *nft,int *mult)
+static int *select_ftype(const char *opt,int *nft,int *mult)
 {
   int *ft=NULL,ftype;
 
@@ -205,12 +205,12 @@ static int *select_ftype(char *opt,int *nft,int *mult)
 
 int main(int argc,char *argv[])
 {
-  const char *desc[] = {
+  static const char *desc[] = {
     "mk_angndx makes an index file for calculation of",
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
-  static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
+  static const char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static bool bH=TRUE;
   static real hq=-1;
   t_pargs pa[] = {

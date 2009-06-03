@@ -415,7 +415,7 @@ static void launch_simulation(
         char *cmd_mpirun,       /* Command for mpirun */
         char *cmd_mdrun,        /* Command for mdrun */
         char *args_for_mdrun,   /* Arguments for mdrun */
-        char *deffnm,           /* Extra argument just for launch */
+        const char *deffnm,     /* Extra argument just for launch */
         char *simulation_tpr,   /* This tpr will be simulated */
         int  nnodes,            /* Number of nodes to run on */
         int  nPMEnodes)         /* Number of PME nodes to use */
@@ -704,7 +704,7 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPME
     char    buf[STRLEN];
 
     /* This string array corresponds to the eParselog enum type from above */
-    char* ParseLog[] = {"OK", "Logfile not found", "No timings in log file", "Run was terminated"};
+    const char* ParseLog[] = {"OK", "Logfile not found", "No timings in log file", "Run was terminated"};
 
 
     /* Allocate space for the mdrun command line. 100 extra characters should be more than enough
@@ -988,15 +988,15 @@ int gmx_tune_pme(int argc,char *argv[])
     static int  repl_ex_seed=-1;
     static int  nstepout=100;
 
-    static char *ddno_opt[ddnoNR+1] =
+    static const char *ddno_opt[ddnoNR+1] =
       { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    static char *dddlb_opt[] =
+    static const char *dddlb_opt[] =
       { NULL, "auto", "no", "yes", NULL };
     static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
     static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
     static real cpt_period=15.0,max_hours=-1;
     static bool bAppendFiles=FALSE;
-    static char *deffnm="";
+    static const char *deffnm="";
 
     static t_pargs pa[] = {
       /***********************/

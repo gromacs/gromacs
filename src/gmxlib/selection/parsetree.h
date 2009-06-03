@@ -131,16 +131,16 @@ _gmx_sel_init_comparison(struct gmx_ana_selcollection_t *sc,
 struct t_selelem *
 _gmx_sel_init_keyword(struct gmx_ana_selcollection_t *sc,
                       struct gmx_ana_selmethod_t *method,
-                      int nargs, t_selexpr_value *args, char *rpost);
+                      int nargs, t_selexpr_value *args, const char *rpost);
 //! Creates a \c t_selelem for evaluation of reference positions.
 struct t_selelem *
 _gmx_sel_init_position(struct gmx_ana_selcollection_t *sc,
-                       struct t_selelem *expr, char *type, bool bSelPos);
+                       struct t_selelem *expr, const char *type, bool bSelPos);
 //! Creates a \c t_selelem for a method expression from the parsed data.
 struct t_selelem *
 _gmx_sel_init_method(struct gmx_ana_selcollection_t *sc,
                      struct gmx_ana_selmethod_t *method,
-                     t_selexpr_param *params, char *rpost);
+                     t_selexpr_param *params, const char *rpost);
 //! Creates a \c t_selelem for a modifier expression from the parsed data.
 struct t_selelem *
 _gmx_sel_init_modifier(struct gmx_ana_selcollection_t *sc,

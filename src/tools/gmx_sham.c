@@ -91,7 +91,7 @@ typedef struct{
   real * ed; /* data */
 } XplorMap;
 
-static void lo_write_xplor(XplorMap * map,char * file)
+static void lo_write_xplor(XplorMap * map,const char * file)
 {
   FILE * fp;
   int z,i,j,n;
@@ -126,7 +126,7 @@ static void lo_write_xplor(XplorMap * map,char * file)
   fclose(fp) ;
 }
 
-static void write_xplor(char *file,real *data,int *ibox,real dmin[],real dmax[])
+static void write_xplor(const char *file,real *data,int *ibox,real dmin[],real dmax[])
 {
   XplorMap *xm;
   int i,j,k,n;
@@ -271,7 +271,7 @@ static void do_sham(char *fn,char *ndx,
 		    real Tref,
 		    real pmax,real gmax,
 		    real *emin,real *emax,int nlevels,real pmin,
-		    char *mname,bool bSham,int *idim,int *ibox,
+		    const char *mname,bool bSham,int *idim,int *ibox,
 		    bool bXmin,real *xmin,bool bXmax,real *xmax)
 {
   FILE    *fp;
@@ -726,7 +726,7 @@ int gmx_sham(int argc,char *argv[])
   static rvec nrbox = {32,32,32};
   static rvec xmin  = {0,0,0}, xmax={1,1,1};
   static int  nsets_in=1,nb_min=4,resol=10,nlevels=25;
-  static char *mname="";
+  static const char *mname="";
   t_pargs pa[] = {
     { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },

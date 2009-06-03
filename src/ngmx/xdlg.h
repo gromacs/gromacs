@@ -89,9 +89,9 @@ t_dlg *CreateDlg(t_x11 *x11,Window Parent,char *title,
  * the item itself may not be freed until the dlg is done with
  *
  ****************************/
-void AddDlgItem(t_dlg *dlg,t_dlgitem *new);
+void AddDlgItem(t_dlg *dlg,t_dlgitem *item);
 
-void AddDlgItems(t_dlg *dlg,int nitem,t_dlgitem *new[]);
+void AddDlgItems(t_dlg *dlg,int nitem,t_dlgitem *item[]);
 
 /*****************************
  *

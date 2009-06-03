@@ -206,7 +206,9 @@ int gmx_bundle(int argc,char *argv[])
   t_atoms    outatoms;
   real       t,comp;
   int        natoms;
-  char       *grpname[MAX_ENDS],title[256],*anm="CA",*rnm="GLY";
+  char       *grpname[MAX_ENDS],title[256];
+  /* FIXME: The constness should not be cast away */
+  char       *anm=(char *)"CA",*rnm=(char *)"GLY";
   int        i,j,gnx[MAX_ENDS];
   atom_id    *index[MAX_ENDS];
   t_bundle   bun;

@@ -452,7 +452,7 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
   sfree(nnb);
 }
 
-static void dump_nnb (FILE *fp, char *title, int n1, t_nnb *nnb)
+static void dump_nnb (FILE *fp, const char *title, int n1, t_nnb *nnb)
 {
   int i,j;
   
@@ -1028,7 +1028,7 @@ int gmx_cluster(int argc,char *argv[])
   bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
 
   int method,ncluster=0;  
-  static char *methodname[] = { 
+  static const char *methodname[] = { 
     NULL, "linkage", "jarvis-patrick","monte-carlo", 
     "diagonalization", "gromos", NULL
   };

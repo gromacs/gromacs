@@ -68,7 +68,7 @@ void unity_m4(mat4 m)
 	m[i][j]=0.0;
 }
 
-void print_m4(FILE *fp,char *s,mat4 A)
+void print_m4(FILE *fp,const char *s,mat4 A)
 {
   int i,j;
   
