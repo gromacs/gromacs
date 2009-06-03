@@ -73,6 +73,12 @@ extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     t_commrec *cr,matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
+ * If v is passed, the velocities of the vsites will be calculated
+ * as the new positions minus the old positions divided by dt,
+ * thus v should only be passed when the coordinates have been
+ * updated with a full time step.
+ * Note that velocitis of vsites are completely irrelevant
+ * for the integration, they are only useful for analysis.
  */
 
 void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
