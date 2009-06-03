@@ -319,7 +319,7 @@ void NoHelp(t_dlg *dlg)
 
 void HelpDlg(t_dlg *dlg)
 {
-  const char *lines[] = {
+  char *lines[] = {
     "Place the cursor over one of the items",
     "and press the F1 key to get more help.",
     "First press the OK button."

@@ -189,8 +189,8 @@ int gmx_gyrate(int argc,char *argv[])
   char       *grpname,title[256];
   int        i,j,m,gnx,nam,mol;
   atom_id    *index;
-  const char *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
-  const char *legI[] = { "Itot", "I1", "I2", "I3" }; 
+  char *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
+  char *legI[] = { "Itot", "I1", "I2", "I3" }; 
 #define NLEG asize(leg) 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 

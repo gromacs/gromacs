@@ -117,9 +117,9 @@ int gmx_sorient(int argc,char *argv[])
   bool    bTPS;
   rvec    xref,dx,dxh1,dxh2,outer;
   t_pbc   pbc;
-  const char *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
+  char *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
 	 	         "<3cos\\S2\\N(\\8q\\4\\s2\\N)-1>" };
-  const char *legc[] = { "cos(\\8q\\4\\s1\\N)", 
+  char *legc[] = { "cos(\\8q\\4\\s1\\N)", 
 		         "3cos\\S2\\N(\\8q\\4\\s2\\N)-1" };
   
   const char *desc[] = {

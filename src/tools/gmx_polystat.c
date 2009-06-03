@@ -156,7 +156,7 @@ int gmx_polystat(int argc,char *argv[])
   double mmol,m;
   char   title[STRLEN];
   FILE   *out,*outv,*outp, *outi;
-  const char *leg[8] = { "end to end", "<R\\sg\\N>",
+  char *leg[8] = { "end to end", "<R\\sg\\N>",
 	 	         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
 		         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
   char   **legp,buf[STRLEN];

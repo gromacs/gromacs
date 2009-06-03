@@ -361,7 +361,7 @@ void write_top(FILE *out, char *pr,char *molname,
 
 static atom_id search_res_atom(const char *type,int resind,
 			       int natom,t_atom at[],
-			       const char * const * const aname[],
+			       char ** const *aname,
 			       const char *bondtype,bool bMissing)
 {
   int i;

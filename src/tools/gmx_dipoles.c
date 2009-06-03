@@ -288,7 +288,7 @@ static void print_gkrbin(char *fn,t_gkrbin *gb,
    * models into account. The RDF is calculated as well, almost for free!
    */
   FILE   *fp;
-  const char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
+  char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
   int    i,j,n,last;
   real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav,ener;
   double fac;
@@ -554,7 +554,7 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
   char buf[STRLEN];
   int  i;
   real mutot;
-  const char *leg_dim[4] = { 
+  char *leg_dim[4] = { 
     "\\f{12}m\\f{4}\\sX\\N",
     "\\f{12}m\\f{4}\\sY\\N",
     "\\f{12}m\\f{4}\\sZ\\N",
@@ -623,27 +623,27 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		   bool bSlab,    int nslices,
 		   const char *axtitle, char *slabfn)
 {
-  static const char *leg_mtot[] = { 
+  char *leg_mtot[] = { 
     "M\\sx \\N", 
     "M\\sy \\N",
     "M\\sz \\N",
     "|M\\stot \\N|"
   };
 #define NLEGMTOT asize(leg_mtot)
-  static const char *leg_eps[] = { 
+  char *leg_eps[] = { 
     "epsilon",
     "G\\sk",
     "g\\sk"
   };
 #define NLEGEPS asize(leg_eps)
-  static const char *leg_aver[] = { 
+  char *leg_aver[] = { 
     "< |M|\\S2\\N >", 
     "< |M| >\\S2\\N",
     "< |M|\\S2\\N > - < |M| >\\S2\\N",
     "< |M| >\\S2\\N / < |M|\\S2\\N >"
   };
 #define NLEGAVER asize(leg_aver)
-  static const char *leg_cosaver[] = {
+  char *leg_cosaver[] = {
     "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
     "RMSD cos",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
@@ -651,7 +651,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
-  static const char *leg_adip[] = {
+  char *leg_adip[] = {
     "<mu>",
     "Std. Dev.",
     "Error"

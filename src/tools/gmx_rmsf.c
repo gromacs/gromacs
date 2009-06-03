@@ -225,7 +225,7 @@ int gmx_rmsf(int argc,char *argv[])
   real         count=0;
   rvec         xcm;
 
-  const char  *leg[2] = { "MD", "X-Ray" };
+  char  *leg[2] = { "MD", "X-Ray" };
 
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD  },

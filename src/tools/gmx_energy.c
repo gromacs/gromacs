@@ -696,7 +696,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
     /* Do correlation function */
     Dt = delta_t/nenergy;
     if (bVisco) {
-      const char *leg[] = { "Shear", "Bulk" };
+      char *leg[] = { "Shear", "Bulk" };
       real factor;
     
       /* Assume pressure tensor is in Pxx Pxy Pxz Pyx Pyy Pyz Pzx Pzy Pzz */
@@ -773,7 +773,7 @@ static void fec(char *ene2fn, char *runavgfn,
 		real reftemp, int nset, int set[], char *leg[], 
 		int nenergy, real **eneset, double time[])
 {
-  const char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
+  char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
 	   	            "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   int  enx;
@@ -952,7 +952,7 @@ int gmx_energy(int argc,char *argv[])
     { "-ovec", FALSE, etBOOL, {&bOvec},
       "Also plot the eigenvectors with -oten" }
   };
-  static const char *drleg[] = {
+  char *drleg[] = {
     "Running average",
     "Instantaneous"
   };

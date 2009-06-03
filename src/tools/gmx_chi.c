@@ -419,7 +419,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
   int     i,j,k,m,n,nn,Dih,nres,hindex,angle;
   bool    bBfac,bOccup;
   char    hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str=NULL;
-  char    **leg ; 
+  char **leg; 
   
   if (bSSHisto) {
     fp = ffopen(ssdump,"r");
@@ -578,16 +578,13 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
     fp=xvgropen(fn,"\\S3\\NJ-Couplings from Karplus Equation","Residue","Coupling"); 
     snew(leg,NJC); 
     for(i=0; (i<NKKKPHI); i++){
-      snew(leg[i],strlen(kkkphi[i].name)); 
-      strcpy(leg[i],kkkphi[i].name); 
+		leg[i] = strdup(kkkphi[i].name); 
     }
     for(i=0; (i<NKKKPSI); i++){
-      snew(leg[i+NKKKPHI],strlen(kkkpsi[i].name)); 
-      strcpy(leg[i+NKKKPHI],kkkpsi[i].name); 
+		leg[i+NKKKPHI]=strdup(kkkpsi[i].name); 
     }
     for(i=0; (i<NKKKCHI); i++){
-      snew(leg[i+NKKKPHI+NKKKPSI],strlen(kkkchi1[i].name)); 
-      strcpy(leg[i+NKKKPHI+NKKKPSI],kkkchi1[i].name); 
+      leg[i+NKKKPHI+NKKKPSI]=strdup(kkkchi1[i].name); 
     }      
     xvgr_legend(fp,NJC,leg);
     fprintf(fp,"%5s ","#Res.");
@@ -834,10 +831,20 @@ static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
   FILE *fp;
   int  nh[edMax];
   int  i,Dih,Xi;
-
+	
   /*  must correspond with enum in pp2shift.h:38 */  
-  const char *leg[edMax] = { "Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  char *leg[edMax];
 #define NLEG asize(leg) 
+
+  leg[0] = strdup("Phi");
+  leg[1] = strdup("Psi");
+  leg[2] = strdup("Omega");
+  leg[3] = strdup("Chi1");
+  leg[4] = strdup("Chi2");
+  leg[5] = strdup("Chi3");
+  leg[6] = strdup("Chi4");
+  leg[7] = strdup("Chi5");
+  leg[8] = strdup("Chi6");
   
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Rotamer Transitions","Residue","Transitions/ns");
@@ -874,9 +881,14 @@ static void order_params(FILE *log,
   real S2Max, S2Min;
 
   /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */  
-  const char *leg[2+edMax] = { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  const char *const_leg[2+edMax]= { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
 #define NLEG asize(leg) 
   
+  char *leg[2+edMax];	
+	
+	for(i=0;i<NLEG;i++)
+		leg[i]=strdup(const_leg[i]);
+	
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2");
   xvgr_legend(fp,2+NONCHI+maxchi,leg);
@@ -965,6 +977,10 @@ static void order_params(FILE *log,
     for(Xi=0; (Xi<maxchi); Xi++)
       fprintf(log,"%4d  ",nh[NONCHI+Xi]);
   fprintf(log,"\n");
+	
+	for(i=0;i<NLEG;i++)
+		sfree(leg[i]);
+
 }
 
 int gmx_chi(int argc,char *argv[])

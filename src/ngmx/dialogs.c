@@ -135,7 +135,7 @@ static void MBCallback(t_x11 *x11,int dlg_mess,int item_id,
 
 static t_dlg *about_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static const char *lines[]={
+  char *lines[]={
     "         G R O M A C S",
     " Machine for Simulating Chemistry",
     "       Copyright (c) 1992-2000",
@@ -163,7 +163,7 @@ static void QuitCB(t_x11 *x11,int dlg_mess,int item_id,
 
 static t_dlg *quit_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static const char *lines[]={
+  char *lines[]={
     " Do you really want to Quit ?"
     };
 
@@ -175,7 +175,7 @@ static t_dlg *quit_mb(t_x11 *x11,t_gmx *gmx)
 
 static t_dlg *help_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static const char *lines[]={
+  char *lines[]={
     " Help will soon be added"
     };
   
@@ -187,7 +187,7 @@ static t_dlg *help_mb(t_x11 *x11,t_gmx *gmx)
 
 static t_dlg *ni_mb(t_x11 *x11,t_gmx *gmx)
 {
-  static const char *lines[]={
+  char *lines[]={
     " This feature has not been",
     " implemented yet."
     };

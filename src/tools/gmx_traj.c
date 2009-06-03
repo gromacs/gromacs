@@ -531,7 +531,7 @@ int gmx_traj(int argc,char *argv[])
   t_block    *mols;
   bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
   bool       bDim[4],bDum[4],bVD;
-  const char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
+  char *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },

@@ -99,7 +99,7 @@ int main(int argc,char *argv[])
     { efXVG, "-o", "potje", ffWRITE }
   };
 #define NFILE asize(fnm)
-  static const char *legend[] = { "Lennard-Jones", "Buckingham" };
+  char *legend[] = { "Lennard-Jones", "Buckingham" };
   FILE      *fp;
   int       i;
   bool      bBham;

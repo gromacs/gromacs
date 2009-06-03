@@ -560,7 +560,7 @@ void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
 	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
 {
   static FILE  *xvg,*ion;
-  static const char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
+  static const char  *const_leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE;
   static real  t0,imax,width,rho,nphot;
   static real  interval;
@@ -576,7 +576,8 @@ void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
   bool bIonize=FALSE,bKHole,bL,bDOIT;
   int  i,k,kk,m,nK,nL,dq,nkh,nkdecay;
   int  *nionize,*nkhole,*ndecay,nbuf[2];
-
+  char **leg;
+	
 
   if (bFirst) {
     /* Get parameters for gaussian photon pulse from inputrec */
@@ -589,6 +590,10 @@ void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
     mode     = ir->userint3;   /* Mode of ionizing                      */
     interval = 0.001*ir->userint4;   /* Interval between pulses (ps)    */
     gaussrand=gmx_rng_init(ionize_seed);
+	  
+    snew(leg,asize(const_leg));
+    for(i=0;i<asize(const_leg);i++)
+		leg[i]=strdup(const_leg[i]);
    
     if ((width <= 0) || (nphot <= 0))
       gmx_fatal(FARGS,"Your parameters for ionization are not set properly\n"

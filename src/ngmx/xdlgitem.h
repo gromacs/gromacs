@@ -143,7 +143,7 @@ extern t_dlgitem *CreatePixmap(t_x11 *x11,Pixmap pm,t_id id,t_id groupid,
 			       int x0,int y0,int w,int h,int bw);
 
 extern t_dlgitem *CreateStaticText(t_x11 *x11,
-				   int nlines,const char *const*lines,t_id id,
+				   int nlines,char * const * lines,t_id id,
 				   t_id groupid,
 				   int x0,int y0,int w,int h,int bw);
 

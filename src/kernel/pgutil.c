@@ -60,7 +60,7 @@ static void atom_not_found(int fatal_errno,const char *file,int line,
 }
 	
 atom_id search_atom(const char *type,int start,int natoms,t_atom at[],
-		    const char * const * const anm[],
+		    char ** const * anm,
 		    const char *bondtype,bool bDontQuit)
 {
   int     i,resind=-1;

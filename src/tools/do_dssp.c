@@ -288,14 +288,14 @@ void analyse_ss(char *outfile, t_matrix *mat, const char *ss_string)
   FILE *fp;
   t_mapping *map;
   int s,f,r,*count,ss_count;
-  const char **leg;
+  char **leg;
   
   map=mat->map;
   snew(count,mat->nmap);
   snew(leg,mat->nmap+1);
   leg[0]="Structure";
   for(s=0; s<mat->nmap; s++)
-    leg[s+1]=map[s].desc;
+    leg[s+1]=strdup(map[s].desc);
   
   fp=xvgropen(outfile,"Secondary Structure",
 	      xvgr_tlabel(),"Number of Residues");
@@ -376,7 +376,7 @@ int main(int argc,char *argv[])
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
   char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
-  const char *leg[] = { "Phobic", "Phylic" };
+  char *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   int        ePBC;
   t_atoms    *atoms;
