@@ -7,7 +7,7 @@
 
 
 void
-F77_FUNC(slascl,SLASCL)(char *type,
+F77_FUNC(slascl,SLASCL)(const char *type,
                         int *kl,
                         int *ku,
                         float *cfrom,
@@ -18,7 +18,7 @@ F77_FUNC(slascl,SLASCL)(char *type,
                         int *lda,
                         int *info)
 {
-  char ch=toupper(*type);
+  const char ch=toupper(*type);
   int i,j,k,l,k1,k2,k3,k4;
   int done=0;
   float minval,smlnum,bignum;

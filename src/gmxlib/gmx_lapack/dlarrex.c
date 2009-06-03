@@ -10,7 +10,7 @@
 
 
 void
-F77_FUNC(dlarrex,DLARREX)(char *range,
+F77_FUNC(dlarrex,DLARREX)(const char *range,
 	 int *n, 
 	 double *vl, 
 	 double *vu, 

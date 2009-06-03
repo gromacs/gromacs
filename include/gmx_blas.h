@@ -89,12 +89,12 @@ double
 F77_FUNC(ddot,DDOT)(int *n, double *dx, int *incx, double *dy, int *incy);
 
 void
-F77_FUNC(dgemm,DGEMM)(char *transa, char *transb, int *m, int *n, int *k, 
+F77_FUNC(dgemm,DGEMM)(const char *transa, const char *transb, int *m, int *n, int *k, 
        double *alpha, double *a, int *lda, double *b, int *ldb, 
        double *beta, double *c, int *ldc);
 
 void
-F77_FUNC(dgemv,DGEMV)(char *trans, int *m, int *n, double *alpha, double *a, int *lda,
+F77_FUNC(dgemv,DGEMV)(const char *trans, int *m, int *n, double *alpha, double *a, int *lda,
        double *x, int *incx, double *beta, double *y, int *incy);
 
 void
@@ -115,27 +115,27 @@ void
 F77_FUNC(dswap,DSWAP)(int *n, double *dx, int *incx, double *dy, int *incy);
 
 void
-F77_FUNC(dsymv,DSYMV)(char *uplo, int *n, double *alpha, double *a, int *lda,
+F77_FUNC(dsymv,DSYMV)(const char *uplo, int *n, double *alpha, double *a, int *lda,
        double *x, int *incx, double *beta, double *y, int *incy);
 
 void
-F77_FUNC(dsyr2,DSYR2)(char *uplo, int *n, double *alpha, double *x, int *incx,
+F77_FUNC(dsyr2,DSYR2)(const char *uplo, int *n, double *alpha, double *x, int *incx,
        double *y, int *incy, double *a, int *lda);
 
 void
-F77_FUNC(dsyr2k,DSYR2K)(char *uplo, char *trans, int *n, int *k, double *alpha, double *a,
+F77_FUNC(dsyr2k,DSYR2K)(const char *uplo, const char *trans, int *n, int *k, double *alpha, double *a,
         int *lda, double *b, int *ldb, double *beta, double *c, int *ldc);
 
 void 
-F77_FUNC(dtrmm,DTRMM)(char *side, char *uplo, char *transa, char *diag, int *m, int *n, 
+F77_FUNC(dtrmm,DTRMM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n, 
        double *alpha, double *a, int *lda, double *b, int *ldb);
 
 void 
-F77_FUNC(dtrmv,DTRMV)(char *uplo, char *trans, char *diag, int *n, 
+F77_FUNC(dtrmv,DTRMV)(const char *uplo, const char *trans, const char *diag, int *n, 
        double *a, int *lda, double *x, int *incx);
 
 void
-F77_FUNC(dtrsm,DTRSM)(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
+F77_FUNC(dtrsm,DTRSM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n,
        double *alpha, double *a,int *lda, double *b, int *ldb);
 
 int
@@ -157,12 +157,12 @@ float
 F77_FUNC(sdot,SDOT)(int *n, float *dx, int *incx, float *dy, int *incy);
 
 void
-F77_FUNC(sgemm,SGEMM)(char *transa, char *transb, int *m, int *n, int *k, 
+F77_FUNC(sgemm,SGEMM)(const char *transa, const char *transb, int *m, int *n, int *k, 
        float *alpha, float *a, int *lda, float *b, int *ldb, 
        float *beta, float *c, int *ldc);
 
 void
-F77_FUNC(sgemv,SGEMV)(char *trans, int *m, int *n, float *alpha, float *a, int *lda,
+F77_FUNC(sgemv,SGEMV)(const char *trans, int *m, int *n, float *alpha, float *a, int *lda,
        float *x, int *incx, float *beta, float *y, int *incy);
 
 void
@@ -183,27 +183,27 @@ void
 F77_FUNC(sswap,SSWAP)(int *n, float *dx, int *incx, float *dy, int *incy);
 
 void
-F77_FUNC(ssymv,SSYMV)(char *uplo, int *n, float *alpha, float *a, int *lda,
+F77_FUNC(ssymv,SSYMV)(const char *uplo, int *n, float *alpha, float *a, int *lda,
        float *x, int *incx, float *beta, float *y, int *incy);
 
 void
-F77_FUNC(ssyr2,SSYR2)(char *uplo, int *n, float *alpha, float *x, int *incx,
+F77_FUNC(ssyr2,SSYR2)(const char *uplo, int *n, float *alpha, float *x, int *incx,
        float *y, int *incy, float *a, int *lda);
 
 void
-F77_FUNC(ssyr2k,SSYR2K)(char *uplo, char *trans, int *n, int *k, float *alpha, float *a,
+F77_FUNC(ssyr2k,SSYR2K)(const char *uplo, const char *trans, int *n, int *k, float *alpha, float *a,
         int *lda, float *b, int *ldb, float *beta, float *c, int *ldc);
 
 void 
-F77_FUNC(strmm,STRMM)(char *side, char *uplo, char *transa, char *diag, int *m, int *n, 
+F77_FUNC(strmm,STRMM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n, 
        float *alpha, float *a, int *lda, float *b, int *ldb);
 
 void 
-F77_FUNC(strmv,STRMV)(char *uplo, char *trans, char *diag, int *n, 
+F77_FUNC(strmv,STRMV)(const char *uplo, const char *trans, const char *diag, int *n, 
        float *a, int *lda, float *x, int *incx);
 
 void
-F77_FUNC(strsm,STRSM)(char *side, char *uplo, char *transa, char *diag, int *m, int *n,
+F77_FUNC(strsm,STRSM)(const char *side, const char *uplo, const char *transa, const char *diag, int *m, int *n,
        float *alpha, float *a,int *lda, float *b, int *ldb);
 
 int

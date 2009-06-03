@@ -4,9 +4,9 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(dlasr,DLASR)(char *side, 
-       char *pivot, 
-       char *direct, 
+F77_FUNC(dlasr,DLASR)(const char *side, 
+       const char *pivot, 
+       const char *direct, 
        int *m,
        int *n, 
        double *c__, 

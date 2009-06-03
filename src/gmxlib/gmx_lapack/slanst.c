@@ -4,12 +4,12 @@
 
 
 float
-F77_FUNC(slanst,SLANST)(char *norm,
+F77_FUNC(slanst,SLANST)(const char *norm,
 	int *n,
 	float *d,
 	float *e)
 {
-  char ch=toupper(*norm);
+  const char ch=toupper(*norm);
   float dtemp,max,val,scale,sum;
   int i,j;
 

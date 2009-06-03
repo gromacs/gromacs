@@ -1,7 +1,7 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(dlasrt,DLASRT)(char *id, 
+F77_FUNC(dlasrt,DLASRT)(const char *id, 
 	int *n, 
 	double *d__, 
 	int *info)

@@ -6,8 +6,8 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dgemm,DGEMM)(char *transa,
-                      char *transb,
+F77_FUNC(dgemm,DGEMM)(const char *transa,
+                      const char *transb,
                       int *m__,
                       int *n__,
                       int *k__,
@@ -20,8 +20,8 @@ F77_FUNC(dgemm,DGEMM)(char *transa,
                       double *c,
                       int *ldc__)
 {
-  char tra=toupper(*transa);
-  char trb=toupper(*transb);
+  const char tra=toupper(*transa);
+  const char trb=toupper(*transb);
   double temp;
   int i,j,l;
   int nrowa,ncola,nrowb;

@@ -3,7 +3,7 @@
 
 /* LAPACK */
 void
-F77_FUNC(dlacpy,DLACPY)(char *uplo,
+F77_FUNC(dlacpy,DLACPY)(const char *uplo,
 	int *m,
 	int *n,
 	double *a,
@@ -12,7 +12,7 @@ F77_FUNC(dlacpy,DLACPY)(char *uplo,
 	int *ldb)
 {
   int i,j,minjm;
-  char ch=toupper(*uplo);
+  const char ch=toupper(*uplo);
 
   if(ch=='U') {
     for(j=0;j<*n;j++) {

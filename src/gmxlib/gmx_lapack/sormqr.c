@@ -2,8 +2,8 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(sormqr,SORMQR)(char *side, 
-	char *trans, 
+F77_FUNC(sormqr,SORMQR)(const char *side, 
+	const char *trans, 
 	int *m, 
 	int *n, 
 	int *k, 

@@ -3,9 +3,9 @@
 
 
 void
-F77_FUNC(dormtr,DORMTR)(char *side, 
-	char *uplo,
-	char *trans, 
+F77_FUNC(dormtr,DORMTR)(const char *side, 
+	const char *uplo,
+	const char *trans, 
 	int *m, 
 	int *n,
 	double *a, 

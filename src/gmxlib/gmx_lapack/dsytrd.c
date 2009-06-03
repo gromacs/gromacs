@@ -3,7 +3,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dsytrd,DSYTRD)(char *uplo, int *n, double *a, int *
+F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *a, int *
 	lda, double *d__, double *e, double *tau, double *
 	work, int *lwork, int *info)
 {

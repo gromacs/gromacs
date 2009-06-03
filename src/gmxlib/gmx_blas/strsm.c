@@ -5,10 +5,10 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(strsm,STRSM)(char * side,
-                      char * uplo,
-                      char * transa,
-                      char * diag,
+F77_FUNC(strsm,STRSM)(const char * side,
+                      const char * uplo,
+                      const char * transa,
+                      const char * diag,
                       int *  m__,
                       int *  n__,
                       float *alpha__,
@@ -17,10 +17,10 @@ F77_FUNC(strsm,STRSM)(char * side,
                       float *b,
                       int *  ldb__)
 {
-  char xside  = toupper(*side);
-  char xuplo  = toupper(*uplo);
-  char xtrans = toupper(*transa);
-  char xdiag  = toupper(*diag);
+  const char xside  = toupper(*side);
+  const char xuplo  = toupper(*uplo);
+  const char xtrans = toupper(*transa);
+  const char xdiag  = toupper(*diag);
   int i,j,k;
   float temp;
 

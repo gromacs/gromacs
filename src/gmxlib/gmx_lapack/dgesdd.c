@@ -7,7 +7,7 @@
 
 
 void 
-F77_FUNC(dgesdd,DGESDD)(char *jobz, 
+F77_FUNC(dgesdd,DGESDD)(const char *jobz, 
 	int *m, 
 	int *n, 
 	double *a, 

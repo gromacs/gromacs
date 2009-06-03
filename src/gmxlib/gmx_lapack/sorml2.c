@@ -2,8 +2,8 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(sorml2,SORML2)(char *side,
-                        char *trans,
+F77_FUNC(sorml2,SORML2)(const char *side,
+                        const char *trans,
                         int *m,
                         int *n,
                         int *k,
@@ -15,8 +15,8 @@ F77_FUNC(sorml2,SORML2)(char *side,
                         float *work,
                         int *info)
 {
-  char xside=toupper(*side);
-  char xtrans=toupper(*trans);
+  const char xside=toupper(*side);
+  const char xtrans=toupper(*trans);
   int i,i1,i2,i3,ni,mi,ic,jc;
   float aii;
 

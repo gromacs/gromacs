@@ -6,8 +6,8 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(dtrtri,DTRTRI)(char *uplo,
-	char *diag, 
+F77_FUNC(dtrtri,DTRTRI)(const char *uplo,
+	const char *diag, 
 	int *n,
 	double *a, 
 	int *lda,

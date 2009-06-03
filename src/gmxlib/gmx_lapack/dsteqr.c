@@ -6,7 +6,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dsteqr,DSTEQR)(char *    compz, 
+F77_FUNC(dsteqr,DSTEQR)(const char *    compz, 
 	int *     n, 
 	double *  d__, 
 	double *  e, 

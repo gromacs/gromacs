@@ -5,7 +5,7 @@
 
 
 void 
-F77_FUNC(dlasdq,DLASDQ)(char *uplo,
+F77_FUNC(dlasdq,DLASDQ)(const char *uplo,
                         int *sqre,
                         int *n,
                         int *ncvt,
@@ -22,7 +22,7 @@ F77_FUNC(dlasdq,DLASDQ)(char *uplo,
                         double *work, 
                         int *info)
 {
-    char xuplo=toupper(*uplo);
+    const char xuplo=toupper(*uplo);
     int c_dim1, c_offset, u_dim1, u_offset, vt_dim1, vt_offset, i__1, 
 	    i__2;
     int c__1 = 1;

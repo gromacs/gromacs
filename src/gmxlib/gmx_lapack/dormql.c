@@ -2,7 +2,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dormql,DORMQL)(char *side, char *trans, int *m, int *n, 
+F77_FUNC(dormql,DORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, double *a, int *lda, double *tau, double *
 	c__, int *ldc, double *work, int *lwork, int *info)
 {

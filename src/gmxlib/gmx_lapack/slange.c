@@ -4,14 +4,14 @@
 
 
 float
-F77_FUNC(slange,SLANGE)(char *norm,
+F77_FUNC(slange,SLANGE)(const char *norm,
 	int *m,
 	int *n,
 	float *a,
 	int *lda,
 	float *work)
 {
-  char ch=toupper(*norm);
+  const char ch=toupper(*norm);
   float dtemp,sum,max,val,scale;
   int i,j;
 

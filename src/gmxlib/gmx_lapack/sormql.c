@@ -2,7 +2,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sormql,SORMQL)(char *side, char *trans, int *m, int *n, 
+F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, float *a, int *lda, float *tau, float *
 	c__, int *ldc, float *work, int *lwork, int *info)
 {

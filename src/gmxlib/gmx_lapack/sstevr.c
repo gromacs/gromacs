@@ -11,8 +11,8 @@
  * case this is just a wrapper to sstegr.
  */
 void
-F77_FUNC(sstevr,SSTEVR)(char *jobz, 
-                        char *range,
+F77_FUNC(sstevr,SSTEVR)(const char *jobz, 
+                        const char *range,
                         int *n,
                         float *d,
                         float *e,

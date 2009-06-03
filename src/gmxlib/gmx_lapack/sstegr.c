@@ -6,8 +6,8 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(sstegr,SSTEGR)(char *jobz, 
-	char *range, 
+F77_FUNC(sstegr,SSTEGR)(const char *jobz, 
+	const char *range, 
 	int *n, 
 	float *d__, 
 	float *e, 

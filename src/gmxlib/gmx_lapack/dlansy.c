@@ -4,7 +4,7 @@
 #include "gmx_lapack.h"
 
 double 
-F77_FUNC(dlansy,DLANSY)(char *norm, char *uplo, int *n, double *a, int 
+F77_FUNC(dlansy,DLANSY)(const char *norm, const char *uplo, int *n, double *a, int 
 	*lda, double *work)
 {
     /* System generated locals */

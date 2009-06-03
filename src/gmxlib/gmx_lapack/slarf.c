@@ -7,7 +7,7 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(slarf,SLARF)(char *side,
+F77_FUNC(slarf,SLARF)(const char *side,
        int *m,
        int *n,
        float *v,
@@ -17,7 +17,7 @@ F77_FUNC(slarf,SLARF)(char *side,
        int *ldc,
        float *work)
 {
-  char ch=toupper(*side);
+  const char ch=toupper(*side);
   float one = 1.0;
   float zero = 0.0;
   float minustau = -(*tau);

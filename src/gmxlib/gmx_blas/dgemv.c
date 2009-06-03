@@ -6,7 +6,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dgemv,DGEMV)(char *trans, 
+F77_FUNC(dgemv,DGEMV)(const char *trans, 
        int *m__,
        int *n__,
        double *alpha__,
@@ -18,7 +18,7 @@ F77_FUNC(dgemv,DGEMV)(char *trans,
        double *y,
        int *incy__)
 {
-  char ch=toupper(*trans);
+  const char ch=toupper(*trans);
   int lenx,leny,kx,ky;
   int i,j,jx,jy,ix,iy;
   double temp;

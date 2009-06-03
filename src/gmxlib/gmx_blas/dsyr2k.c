@@ -6,8 +6,8 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dsyr2k,DSYR2K)(char *uplo, 
-	char *trans,
+F77_FUNC(dsyr2k,DSYR2K)(const char *uplo, 
+	const char *trans,
 	int *n__,
 	int *k__,
 	double *alpha__,

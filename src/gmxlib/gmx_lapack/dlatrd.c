@@ -5,7 +5,7 @@
 
 
 void
-F77_FUNC(dlatrd,DLATRD)(char *  uplo,
+F77_FUNC(dlatrd,DLATRD)(const char *  uplo,
        int  *   n,
        int  *   nb,
        double * a,
@@ -18,7 +18,7 @@ F77_FUNC(dlatrd,DLATRD)(char *  uplo,
   int i,iw;
   int ti1,ti2,ti3;
   double one,zero,minusone,alpha;
-  char ch=toupper(*uplo);
+  const char ch=toupper(*uplo);
 
   one=1.0;
   minusone=-1.0;

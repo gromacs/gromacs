@@ -5,8 +5,8 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(sstebz,SSTEBZ)(char *range, 
-                        char *order,
+F77_FUNC(sstebz,SSTEBZ)(const char *range, 
+                        const char *order,
                         int *n,
                         float *vl, 
                         float *vu, 

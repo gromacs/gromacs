@@ -3,10 +3,10 @@
 
 
 void 
-F77_FUNC(slarfb,SLARFB)(char *side, 
-	char *trans, 
-	char *direct, 
-	char *storev, 
+F77_FUNC(slarfb,SLARFB)(const char *side, 
+	const char *trans, 
+	const char *direct, 
+	const char *storev, 
 	int *m, 
 	int *n, 
 	int *k, 

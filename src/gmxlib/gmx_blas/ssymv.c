@@ -5,7 +5,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(ssymv,SSYMV)(char *uplo,
+F77_FUNC(ssymv,SSYMV)(const char *uplo,
                       int *n__,
                       float *alpha__,
                       float *a,
@@ -16,7 +16,7 @@ F77_FUNC(ssymv,SSYMV)(char *uplo,
                       float *y,
                       int *incy__)
 {
-    char ch=toupper(*uplo);
+    const char ch=toupper(*uplo);
     int kx,ky,i,j,ix,iy,jx,jy;
     float temp1,temp2;
     

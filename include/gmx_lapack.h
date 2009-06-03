@@ -86,7 +86,7 @@ extern "C" {
 /* Double precision */
 
 void
-F77_FUNC(dbdsdc,DBDSDC)(char *uplo, char *compq, int *n, double *d, double *e, double *u, 
+F77_FUNC(dbdsdc,DBDSDC)(const char *uplo, const char *compq, int *n, double *d, double *e, double *u, 
 	int *ldu, double *vt, int *ldvt, double *q, int *iq, double *work, 
 	int *iwork, int *info);
 
@@ -120,7 +120,7 @@ F77_FUNC(dorgl2,DORGL2)(int *m,	int *n,	int *k,	double *a, int *lda,
 	double *tau, double *work, int *info);
 
 void
-F77_FUNC(dbdsqr,DBDSQR)(char *uplo, int *n, int *ncvt, int *nru, int *ncc, double *d, 
+F77_FUNC(dbdsqr,DBDSQR)(const char *uplo, int *n, int *ncvt, int *nru, int *ncc, double *d, 
 	double *e, double *vt, int *ldvt, double *u, int *ldu,
 	double *c, int *ldc, double *work, int *info);
 
@@ -132,17 +132,17 @@ F77_FUNC(dgetri,DGETRI)(int *n,	double *a, int *lda, int *ipiv, double *work,
 	int *lwork, int *info);
 
 void
-F77_FUNC(dgetrs,DGETRS)(char *trans, int *n, int *nrhs,	double *a, int *lda, int *ipiv,
+F77_FUNC(dgetrs,DGETRS)(const char *trans, int *n, int *nrhs,	double *a, int *lda, int *ipiv,
 	double *b, int *ldb, int *info);
 
 void
-F77_FUNC(dtrtri,DTRTRI)(char *uplo, char *diag, int *n, double *a, int *lda, int *info);
+F77_FUNC(dtrtri,DTRTRI)(const char *uplo, const char *diag, int *n, double *a, int *lda, int *info);
 
 void
-F77_FUNC(dtrti2,DTRTI2)(char *uplo, char *diag, int *n, double *a, int *lda, int *info);
+F77_FUNC(dtrti2,DTRTI2)(const char *uplo, const char *diag, int *n, double *a, int *lda, int *info);
 
 double
-F77_FUNC(dlange,DLANGE)(char *norm, int *m, int *n, double *a, int *lda, double *work);
+F77_FUNC(dlange,DLANGE)(const char *norm, int *m, int *n, double *a, int *lda, double *work);
 
 void
 F77_FUNC(dlarrbx,DLARRBX)(int *n, double *d, double *l, double *ld, double *lld, int *ifirst,
@@ -155,12 +155,12 @@ F77_FUNC(dlasd1,DLASD1)(int *nl, int *nr, int *sqre, double *d, double *alpha, d
 	double *work, int *info);
 
 void
-F77_FUNC(dlasdq,DLASDQ)(char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
+F77_FUNC(dlasdq,DLASDQ)(const char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
 	double *d, double *e, double *vt, int *ldvt, double *u, int *ldu, 
 	double *c, int *ldc, double *work, int *info);
 
 void 
-F77_FUNC(dlasr,DLASR)(char *side, char *pivot, char *direct, int *m, int *n, double *c, 
+F77_FUNC(dlasr,DLASR)(const char *side, const char *pivot, const char *direct, int *m, int *n, double *c, 
        double *s, double *a, int *lda);
 
 void 
@@ -168,7 +168,7 @@ F77_FUNC(dorglq,DORGLQ)(int *m, int *n, int *k, double *a, int *lda,
 	double *tau, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dormtr,DORMTR)(char *side, char *uplo, char *trans, int *m, int *n, double *a, 
+F77_FUNC(dormtr,DORMTR)(const char *side, const char *uplo, const char *trans, int *m, int *n, double *a, 
 	int *lda, double *tau, double *c, int *ldc,
 	double *work, int *lwork, int *info);
 
@@ -182,13 +182,13 @@ F77_FUNC(dlabrd,DLABRD)(int *m, int *n, int *nb, double *a, int *lda, double *d,
 	int *ldx, double *y, int *ldy);
 
 double
-F77_FUNC(dlanst,DLANST)(char *norm, int *n, double *d, double *e);
+F77_FUNC(dlanst,DLANST)(const char *norm, int *n, double *d, double *e);
 
 double
-F77_FUNC(dlansy,DLANSY)(char *norm, char *uplo, int *n, double *a, int *lda, double *work);
+F77_FUNC(dlansy,DLANSY)(const char *norm, const char *uplo, int *n, double *a, int *lda, double *work);
 
 void
-F77_FUNC(dlarrex,DLARREX)(char *range, int *n, double *vl, double *vu, int *il, int *iu,
+F77_FUNC(dlarrex,DLARREX)(const char *range, int *n, double *vl, double *vu, int *il, int *iu,
 	 double *d, double *e, double *tol, int *nsplit, 
 	 int *isplit, int *m, double *w, int *iblock, int *indexw,
 	 double *gersch, double *work, int *iwork, int *info);
@@ -205,26 +205,26 @@ F77_FUNC(dlasdt,DLASDT)(int *n, int *lvl, int *nd, int *inode, int *ndiml,
 	int *ndimr, int *msub);
 
 void 
-F77_FUNC(dlasrt,DLASRT)(char *id, int *n, double *d, int *info);
+F77_FUNC(dlasrt,DLASRT)(const char *id, int *n, double *d, int *info);
 
 void
-F77_FUNC(dlasrt2,DLASRT2)(char *id, int *n, double *d, int *key, int *info);
+F77_FUNC(dlasrt2,DLASRT2)(const char *id, int *n, double *d, int *key, int *info);
 
 void
-F77_FUNC(ilasrt2,ILASRT2)(char *id, int *n, int *d, int *key, int *info);
+F77_FUNC(ilasrt2,ILASRT2)(const char *id, int *n, int *d, int *key, int *info);
 
 void 
 F77_FUNC(dorgqr,DORGQR)(int *m, int *n, int *k, double *a, int *lda, double *tau, 
 	double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dstebz,DSTEBZ)(char *range, char *order, int *n, double *vl, double *vu, 
+F77_FUNC(dstebz,DSTEBZ)(const char *range, const char *order, int *n, double *vl, double *vu, 
 	int *il, int *iu, double *abstol, double *d, double *e, 
 	int *m, int *nsplit, double *w, int *iblock, int *isplit, 
 	double *work, int *iwork, int *info);
 
 void
-F77_FUNC(dsteqr,DSTEQR)(char *compz, int *n, double *d__, double *e, 
+F77_FUNC(dsteqr,DSTEQR)(const char *compz, int *n, double *d__, double *e, 
         double *z__,  int *ldz, double *work, int *info);
 
 void
@@ -232,7 +232,7 @@ F77_FUNC(dgebrd,DGEBRD)(int *m, int *n, double *a, int *lda, double *d, double *
 	double *tauq, double *taup, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dlacpy,DLACPY)(char *uplo, int *m, int *n, double *a, int *lda, double *b, int *ldb);
+F77_FUNC(dlacpy,DLACPY)(const char *uplo, int *m, int *n, double *a, int *lda, double *b, int *ldb);
 
 double
 F77_FUNC(dlapy2,DLAPY2)(double * x, double * y);
@@ -250,24 +250,24 @@ F77_FUNC(dlasd3,DLASD3)(int *nl, int *nr, int *sqre, int *k, double *d, double *
 	int *ctot, double *z, int *info);
 
 void
-F77_FUNC(dlaset,DLASET)(char *uplo, int *m, int *n, double *alpha, 
+F77_FUNC(dlaset,DLASET)(const char *uplo, int *m, int *n, double *alpha, 
 	double *beta, double *a, int *lda);
 
 void
 F77_FUNC(dlassq,DLASSQ)(int *n, double *x, int *incx, double *scale, double *sumsq);
 
 void
-F77_FUNC(dorm2l,DORM2L)(char *side, char *trans, int *m, int *n, int *k, double *a, int *lda, 
+F77_FUNC(dorm2l,DORM2L)(const char *side, const char *trans, int *m, int *n, int *k, double *a, int *lda, 
 	double *tau, double *c, int *ldc, double *work, int *info);
 
 void
-F77_FUNC(dstegr,DSTEGR)(char *jobz, char *range, int *n, double *d, double *e, double *vl, 
+F77_FUNC(dstegr,DSTEGR)(const char *jobz, const char *range, int *n, double *d, double *e, double *vl, 
 	double *vu, int *il, int *iu, double *abstol, int *m, double *w, 
 	double *z, int *ldz, int *isuppz, double *work, 
 	int *lwork, int *iwork,	int *liwork, int *info);
 
 void
-F77_FUNC(ssteqr,SSTEQR)(char *compz, int *n, float *d__, float *e, 
+F77_FUNC(ssteqr,SSTEQR)(const char *compz, int *n, float *d__, float *e, 
         float *z__,  int *ldz, float *work, int *info);
 
 void
@@ -303,7 +303,7 @@ F77_FUNC(dlasv2,DLASV2)(double *f, double *g, double *h, double *ssmin, double *
 	double *snr, double *csr, double *snl, double *csl);
 
 void 
-F77_FUNC(dorm2r,DORM2R)(char *side, char *trans, int *m, int *n, int *k, double *a, 
+F77_FUNC(dorm2r,DORM2R)(const char *side, const char *trans, int *m, int *n, int *k, double *a, 
 	int *lda, double *tau, double *c, int *ldc, double *work, int *info);
 
 void
@@ -321,7 +321,7 @@ F77_FUNC(dlaebz,DLAEBZ)(int *ijob, int *nitmax, int *n, int *mmax, int *minp, in
 	double *work, int *iwork, int *info);
 
 void
-F77_FUNC(dlarf,DLARF)(char *side, int *m, int *n, double *v, int *incv, double *tau,
+F77_FUNC(dlarf,DLARF)(const char *side, int *m, int *n, double *v, int *incv, double *tau,
        double *c, int *ldc, double *work);
 
 void
@@ -343,7 +343,7 @@ void
 F77_FUNC(dlaswp,DLASWP)(int *n,	double *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
 
 void 
-F77_FUNC(dormbr,DORMBR)(char *vect, char *side, char *trans, int *m, int *n, int *k, 
+F77_FUNC(dormbr,DORMBR)(const char *vect, const char *side, const char *trans, int *m, int *n, int *k, 
 	double *a, int *lda, double *tau, double *c, int *ldc, double *work,
 	int *lwork, int *info);
 
@@ -359,7 +359,7 @@ F77_FUNC(dlaed6,DLAED6)(int *kniter, int *orgati, double *rho, double *d,
 	double *z, double *finit, double *tau, int *info);
 
 void 
-F77_FUNC(dlarfb,DLARFB)(char *side, char *trans, char *direct, char *storev, int *m, int *n, 
+F77_FUNC(dlarfb,DLARFB)(const char *side, const char *trans, const char *direct, const char *storev, int *m, int *n, 
 	int *k, double *v, int *ldv, double *t, int *ldt, double *c,
 	int *ldc, double *work, int *ldwork);
 
@@ -374,42 +374,42 @@ F77_FUNC(dlasd6,DLASD6)(int *icompq, int *nl, int *nr, int *sqre, double *d, dou
 	double *c, double *s, double *work, int *iwork, int *info);
 
 void
-F77_FUNC(dlatrd,DLATRD)(char *uplo, int *n, int *nb, double *a, int *lda, double *e, 
+F77_FUNC(dlatrd,DLATRD)(const char *uplo, int *n, int *nb, double *a, int *lda, double *e, 
 	double * tau, double *w, int *ldw);
 
 void
-F77_FUNC(dorml2,DORML2)(char *side, char *trans, int *m, int *n, int *k, double *a,
+F77_FUNC(dorml2,DORML2)(const char *side, const char *trans, int *m, int *n, int *k, double *a,
 	int *lda, double *tau, double *c, int *ldc, double *work, int *info);
 
 void
-F77_FUNC(dstevr,DSTEVR)(char *jobz, char *range, int *n, double *d, double *e, double *vl, 
+F77_FUNC(dstevr,DSTEVR)(const char *jobz, const char *range, int *n, double *d, double *e, double *vl, 
 	double *vu, int *il, int *iu, double *abstol, int *m, double *w, 
 	double *z, int *ldz, int *isuppz, double *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(dsytrd,DSYTRD)(char *uplo, int *n, double *  a, int *lda, double *d, 
+F77_FUNC(dsytrd,DSYTRD)(const char *uplo, int *n, double *  a, int *lda, double *d, 
 	double *e, double *tau, double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dsyevr,DSYEVR)(char *jobz, char *range, char *uplo, int *n, 
+F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	double *a, int *lda, double *vl, double *vu, int *
 	il, int *iu, double *abstol, int *m, double *w, 
 	double *z__, int *ldz, int *isuppz, double *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(dormql,DORMQL)(char *side, char *trans, int *m, int *n, 
+F77_FUNC(dormql,DORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, double *a, int *lda, double *tau, double *
 	c, int *ldc, double *work, int *lwork, int *info);
 
 void 
-F77_FUNC(dormqr,DORMQR)(char *side, char *trans, int *m, int *n, int *k, double *a, 
+F77_FUNC(dormqr,DORMQR)(const char *side, const char *trans, int *m, int *n, int *k, double *a, 
         int *lda, double *tau, double *c, int *ldc, 
         double *work, int *lwork, int *info);
 
 void
-F77_FUNC(dorgbr,DORGBR)(char *vect, int *m, int *n, int *k, double *a, int *lda,
+F77_FUNC(dorgbr,DORGBR)(const char *vect, int *m, int *n, int *k, double *a, int *lda,
 	double *tau, double *work, int *lwork, int *info);
 
 void
@@ -423,11 +423,11 @@ F77_FUNC(dlasd8,DLASD8)(int *icompq, int *k, double *d, double *z, double *vf, d
 	double *work, int *info);
 
 void
-F77_FUNC(dlascl,DLASCL)(char *type, int *kl, int *ku, double *cfrom, double *cto, int *m, 
+F77_FUNC(dlascl,DLASCL)(const char *type, int *kl, int *ku, double *cfrom, double *cto, int *m, 
 	int *n, double *a, int *lda, int *info);
 
 void 
-F77_FUNC(dlarft,DLARFT)(char *direct, char *storev, int *n, int *k, double *v, 
+F77_FUNC(dlarft,DLARFT)(const char *direct, const char *storev, int *n, int *k, double *v, 
 	int *ldv, double *tau, double *t, int *ldt);
 
 void
@@ -435,16 +435,16 @@ F77_FUNC(dlagts,DLAGTS)(int *job, int *n, double *a, double *b, double *c, doubl
 	int *in, double *y, double *tol, int *info);
 
 void 
-F77_FUNC(dgesdd,DGESDD)(char *jobz, int *m, int *n, double *a, int *lda, double *s, double *u, 
+F77_FUNC(dgesdd,DGESDD)(const char *jobz, int *m, int *n, double *a, int *lda, double *s, double *u, 
 	int *ldu, double *vt, int *ldvt, double *work, int *lwork, 
 	int *iwork, int *info);
 
 void
-F77_FUNC(dsytd2,DSYTD2)(char *uplo, int *n, double *a, int *lda, double *d, 
+F77_FUNC(dsytd2,DSYTD2)(const char *uplo, int *n, double *a, int *lda, double *d, 
 	double *e, double *tau, int *info);
 
 void 
-F77_FUNC(dormlq,DORMLQ)(char *side, char *trans, int *m, int *n, int *k, double *a, int *lda, 
+F77_FUNC(dormlq,DORMLQ)(const char *side, const char *trans, int *m, int *n, int *k, double *a, int *lda, 
 	double *tau, double *c, int *ldc, double *work, int *lwork, int *info);
 
 void
@@ -482,7 +482,7 @@ F77_FUNC(dgeqrf,DGEQRF)(int *m, int *n, double *a, int *lda, double *tau,
 /* Single precision */
 
 void
-F77_FUNC(sbdsdc,SBDSDC)(char *uplo, char *compq, int *n, float *d, float *e, float *u, 
+F77_FUNC(sbdsdc,SBDSDC)(const char *uplo, const char *compq, int *n, float *d, float *e, float *u, 
 	int *ldu, float *vt, int *ldvt, float *q, int *iq, float *work, 
 	int *iwork, int *info);
 
@@ -516,7 +516,7 @@ F77_FUNC(sorgl2,SORGL2)(int *m,	int *n,	int *k,	float *a, int *lda,
 	float *tau, float *work, int *info);
 
 void
-F77_FUNC(sbdsqr,SBDSQR)(char *uplo, int *n, int *ncvt, int *nru, int *ncc, float *d, 
+F77_FUNC(sbdsqr,SBDSQR)(const char *uplo, int *n, int *ncvt, int *nru, int *ncc, float *d, 
 	float *e, float *vt, int *ldvt, float *u, int *ldu,
 	float *c, int *ldc, float *work, int *info);
 
@@ -528,17 +528,17 @@ F77_FUNC(sgetri,SGETRI)(int *n,	float *a, int *lda, int *ipiv, float *work,
 	int *lwork, int *info);
 
 void
-F77_FUNC(sgetrs,SGETRS)(char *trans, int *n, int *nrhs,	float *a, int *lda, int *ipiv,
+F77_FUNC(sgetrs,SGETRS)(const char *trans, int *n, int *nrhs,	float *a, int *lda, int *ipiv,
 	float *b, int *ldb, int *info);
 
 void
-F77_FUNC(strtri,STRTRI)(char *uplo, char *diag, int *n, float *a, int *lda, int *info);
+F77_FUNC(strtri,STRTRI)(const char *uplo, const char *diag, int *n, float *a, int *lda, int *info);
 
 void
-F77_FUNC(strti2,STRTI2)(char *uplo, char *diag, int *n, float *a, int *lda, int *info);
+F77_FUNC(strti2,STRTI2)(const char *uplo, const char *diag, int *n, float *a, int *lda, int *info);
 
 float
-F77_FUNC(slange,SLANGE)(char *norm, int *m, int *n, float *a, int *lda, float *work);
+F77_FUNC(slange,SLANGE)(const char *norm, int *m, int *n, float *a, int *lda, float *work);
 
 void
 F77_FUNC(slarrbx,SLARRBX)(int *n, float *d, float *l, float *ld, float *lld, int *ifirst,
@@ -551,12 +551,12 @@ F77_FUNC(slasd1,SLASD1)(int *nl, int *nr, int *sqre, float *d, float *alpha, flo
 	float *work, int *info);
 
 void
-F77_FUNC(slasdq,SLASDQ)(char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
+F77_FUNC(slasdq,SLASDQ)(const char *uplo, int *sqre, int *n, int *ncvt, int *nru, int *ncc,
 	float *d, float *e, float *vt, int *ldvt, float *u, int *ldu, 
 	float *c, int *ldc, float *work, int *info);
 
 void 
-F77_FUNC(slasr,SLASR)(char *side, char *pivot, char *direct, int *m, int *n, float *c, 
+F77_FUNC(slasr,SLASR)(const char *side, const char *pivot, const char *direct, int *m, int *n, float *c, 
        float *s, float *a, int *lda);
 
 void 
@@ -564,7 +564,7 @@ F77_FUNC(sorglq,SORGLQ)(int *m, int *n, int *k, float *a, int *lda,
 	float *tau, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sormtr,SORMTR)(char *side, char *uplo, char *trans, int *m, int *n, float *a, 
+F77_FUNC(sormtr,SORMTR)(const char *side, const char *uplo, const char *trans, int *m, int *n, float *a, 
 	int *lda, float *tau, float *c, int *ldc,
 	float *work, int *lwork, int *info);
 
@@ -578,13 +578,13 @@ F77_FUNC(slabrd,SLABRD)(int *m, int *n, int *nb, float *a, int *lda, float *d,
 	int *ldx, float *y, int *ldy);
 
 float
-F77_FUNC(slanst,SLANST)(char *norm, int *n, float *d, float *e);
+F77_FUNC(slanst,SLANST)(const char *norm, int *n, float *d, float *e);
 
 float
-F77_FUNC(slansy,SLANSY)(char *norm, char *uplo, int *n, float *a, int *lda, float *work);
+F77_FUNC(slansy,SLANSY)(const char *norm, const char *uplo, int *n, float *a, int *lda, float *work);
 
 void
-F77_FUNC(slarrex,SLARREX)(char *range, int *n, float *vl, float *vu, int *il, int *iu,
+F77_FUNC(slarrex,SLARREX)(const char *range, int *n, float *vl, float *vu, int *il, int *iu,
 	 float *d, float *e, float *tol, int *nsplit, 
 	 int *isplit, int *m, float *w, int *iblock, int *indexw,
 	 float *gersch, float *work, int *iwork, int *info);
@@ -601,17 +601,17 @@ F77_FUNC(slasdt,SLASDT)(int *n, int *lvl, int *nd, int *inode, int *ndiml,
 	int *ndimr, int *msub);
 
 void 
-F77_FUNC(slasrt,SLASRT)(char *id, int *n, float *d, int *info);
+F77_FUNC(slasrt,SLASRT)(const char *id, int *n, float *d, int *info);
 
 void
-F77_FUNC(slasrt2,SLASRT2)(char *id, int *n, float *d, int *key, int *info);
+F77_FUNC(slasrt2,SLASRT2)(const char *id, int *n, float *d, int *key, int *info);
 
 void 
 F77_FUNC(sorgqr,SORGQR)(int *m, int *n, int *k, float *a, int *lda, float *tau, 
 	float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sstebz,SSTEBZ)(char *range, char *order, int *n, float *vl, float *vu, 
+F77_FUNC(sstebz,SSTEBZ)(const char *range, const char *order, int *n, float *vl, float *vu, 
 	int *il, int *iu, float *abstol, float *d, float *e, 
 	int *m, int *nsplit, float *w, int *iblock, int *isplit, 
 	float *work, int *iwork, int *info);
@@ -621,7 +621,7 @@ F77_FUNC(sgebrd,SGEBRD)(int *m, int *n, float *a, int *lda, float *d, float *e,
 	float *tauq, float *taup, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(slacpy,SLACPY)(char *uplo, int *m, int *n, float *a, int *lda, float *b, int *ldb);
+F77_FUNC(slacpy,SLACPY)(const char *uplo, int *m, int *n, float *a, int *lda, float *b, int *ldb);
 
 float
 F77_FUNC(slapy2,SLAPY2)(float * x, float * y);
@@ -638,18 +638,18 @@ F77_FUNC(slasd3,SLASD3)(int *nl, int *nr, int *sqre, int *k, float *d, float *q,
 	int *ctot, float *z, int *info);
 
 void
-F77_FUNC(slaset,SLASET)(char *uplo, int *m, int *n, float *alpha, 
+F77_FUNC(slaset,SLASET)(const char *uplo, int *m, int *n, float *alpha, 
 	float *beta, float *a, int *lda);
 
 void
 F77_FUNC(slassq,SLASSQ)(int *n, float *x, int *incx, float *scale, float *sumsq);
 
 void
-F77_FUNC(sorm2l,SORM2L)(char *side, char *trans, int *m, int *n, int *k, float *a, int *lda, 
+F77_FUNC(sorm2l,SORM2L)(const char *side, const char *trans, int *m, int *n, int *k, float *a, int *lda, 
 	float *tau, float *c, int *ldc, float *work, int *info);
 
 void
-F77_FUNC(sstegr,SSTEGR)(char *jobz, char *range, int *n, float *d, float *e, float *vl, 
+F77_FUNC(sstegr,SSTEGR)(const char *jobz, const char *range, int *n, float *d, float *e, float *vl, 
 	float *vu, int *il, int *iu, float *abstol, int *m, float *w, 
 	float *z, int *ldz, int *isuppz, float *work, 
 	int *lwork, int *iwork,	int *liwork, int *info);
@@ -687,7 +687,7 @@ F77_FUNC(slasv2,SLASV2)(float *f, float *g, float *h, float *ssmin, float *ssmax
 	float *snr, float *csr, float *snl, float *csl);
 
 void 
-F77_FUNC(sorm2r,SORM2R)(char *side, char *trans, int *m, int *n, int *k, float *a, 
+F77_FUNC(sorm2r,SORM2R)(const char *side, const char *trans, int *m, int *n, int *k, float *a, 
 	int *lda, float *tau, float *c, int *ldc, float *work, int *info);
 
 void
@@ -705,7 +705,7 @@ F77_FUNC(slaebz,SLAEBZ)(int *ijob, int *nitmax, int *n, int *mmax, int *minp, in
 	float *work, int *iwork, int *info);
 
 void
-F77_FUNC(slarf,SLARF)(char *side, int *m, int *n, float *v, int *incv, float *tau,
+F77_FUNC(slarf,SLARF)(const char *side, int *m, int *n, float *v, int *incv, float *tau,
        float *c, int *ldc, float *work);
 
 void
@@ -727,7 +727,7 @@ void
 F77_FUNC(slaswp,SLASWP)(int *n,	float *a, int *lda, int *k1, int *k2, int *ipiv, int *incx);
 
 void 
-F77_FUNC(sormbr,SORMBR)(char *vect, char *side, char *trans, int *m, int *n, int *k, 
+F77_FUNC(sormbr,SORMBR)(const char *vect, const char *side, const char *trans, int *m, int *n, int *k, 
 	float *a, int *lda, float *tau, float *c, int *ldc, float *work,
 	int *lwork, int *info);
 
@@ -743,7 +743,7 @@ F77_FUNC(slaed6,SLAED6)(int *kniter, int *orgati, float *rho, float *d,
 	float *z, float *finit, float *tau, int *info);
 
 void 
-F77_FUNC(slarfb,SLARFB)(char *side, char *trans, char *direct, char *storev, int *m, int *n, 
+F77_FUNC(slarfb,SLARFB)(const char *side, const char *trans, const char *direct, const char *storev, int *m, int *n, 
 	int *k, float *v, int *ldv, float *t, int *ldt, float *c,
 	int *ldc, float *work, int *ldwork);
 
@@ -758,42 +758,42 @@ F77_FUNC(slasd6,SLASD6)(int *icompq, int *nl, int *nr, int *sqre, float *d, floa
 	float *c, float *s, float *work, int *iwork, int *info);
 
 void
-F77_FUNC(slatrd,SLATRD)(char *uplo, int *n, int *nb, float *a, int *lda, float *e, 
+F77_FUNC(slatrd,SLATRD)(const char *uplo, int *n, int *nb, float *a, int *lda, float *e, 
 	float * tau, float *w, int *ldw);
 
 void
-F77_FUNC(sorml2,SORML2)(char *side, char *trans, int *m, int *n, int *k, float *a,
+F77_FUNC(sorml2,SORML2)(const char *side, const char *trans, int *m, int *n, int *k, float *a,
 	int *lda, float *tau, float *c, int *ldc, float *work, int *info);
 
 void
-F77_FUNC(sstevr,SSTEVR)(char *jobz, char *range, int *n, float *d, float *e, float *vl, 
+F77_FUNC(sstevr,SSTEVR)(const char *jobz, const char *range, int *n, float *d, float *e, float *vl, 
 	float *vu, int *il, int *iu, float *abstol, int *m, float *w, 
 	float *z, int *ldz, int *isuppz, float *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(ssytrd,SSYTRD)(char *uplo, int *n, float *  a, int *lda, float *d, 
+F77_FUNC(ssytrd,SSYTRD)(const char *uplo, int *n, float *  a, int *lda, float *d, 
 	float *e, float *tau, float *work, int *lwork, int *info);
 
 void
-F77_FUNC(ssyevr,SSYEVR)(char *jobz, char *range, char *uplo, int *n, 
+F77_FUNC(ssyevr,SSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	float *a, int *lda, float *vl, float *vu, int *
 	il, int *iu, float *abstol, int *m, float *w, 
 	float *z__, int *ldz, int *isuppz, float *work, 
 	int *lwork, int *iwork, int *liwork, int *info);
 
 void
-F77_FUNC(sormql,SORMQL)(char *side, char *trans, int *m, int *n, 
+F77_FUNC(sormql,SORMQL)(const char *side, const char *trans, int *m, int *n, 
 	int *k, float *a, int *lda, float *tau, float *
 	c, int *ldc, float *work, int *lwork, int *info);
 
 void 
-F77_FUNC(sormqr,SORMQR)(char *side, char *trans, int *m, int *n, int *k, float *a, 
+F77_FUNC(sormqr,SORMQR)(const char *side, const char *trans, int *m, int *n, int *k, float *a, 
         int *lda, float *tau, float *c, int *ldc, 
         float *work, int *lwork, int *info);
 
 void
-F77_FUNC(sorgbr,SORGBR)(char *vect, int *m, int *n, int *k, float *a, int *lda,
+F77_FUNC(sorgbr,SORGBR)(const char *vect, int *m, int *n, int *k, float *a, int *lda,
 	float *tau, float *work, int *lwork, int *info);
 
 void
@@ -807,11 +807,11 @@ F77_FUNC(slasd8,SLASD8)(int *icompq, int *k, float *d, float *z, float *vf, floa
 	float *work, int *info);
 
 void
-F77_FUNC(slascl,SLASCL)(char *type, int *kl, int *ku, float *cfrom, float *cto, int *m, 
+F77_FUNC(slascl,SLASCL)(const char *type, int *kl, int *ku, float *cfrom, float *cto, int *m, 
 	int *n, float *a, int *lda, int *info);
 
 void 
-F77_FUNC(slarft,SLARFT)(char *direct, char *storev, int *n, int *k, float *v, 
+F77_FUNC(slarft,SLARFT)(const char *direct, const char *storev, int *n, int *k, float *v, 
 	int *ldv, float *tau, float *t, int *ldt);
 
 void
@@ -819,16 +819,16 @@ F77_FUNC(slagts,SLAGTS)(int *job, int *n, float *a, float *b, float *c, float *d
 	int *in, float *y, float *tol, int *info);
 
 void 
-F77_FUNC(sgesdd,SGESDD)(char *jobz, int *m, int *n, float *a, int *lda, float *s, float *u, 
+F77_FUNC(sgesdd,SGESDD)(const char *jobz, int *m, int *n, float *a, int *lda, float *s, float *u, 
 	int *ldu, float *vt, int *ldvt, float *work, int *lwork, 
 	int *iwork, int *info);
 
 void
-F77_FUNC(ssytd2,SSYTD2)(char *uplo, int *n, float *a, int *lda, float *d, 
+F77_FUNC(ssytd2,SSYTD2)(const char *uplo, int *n, float *a, int *lda, float *d, 
 	float *e, float *tau, int *info);
 
 void 
-F77_FUNC(sormlq,SORMLQ)(char *side, char *trans, int *m, int *n, int *k, float *a, int *lda, 
+F77_FUNC(sormlq,SORMLQ)(const char *side, const char *trans, int *m, int *n, int *k, float *a, int *lda, 
 	float *tau, float *c, int *ldc, float *work, int *lwork, int *info);
 
 void

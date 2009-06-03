@@ -4,9 +4,9 @@
 #include "gmx_blas.h"
 
 void 
-F77_FUNC(dtrmv,DTRMV)(char *uplo, 
-       char *trans,
-       char *diag, 
+F77_FUNC(dtrmv,DTRMV)(const char *uplo, 
+       const char *trans,
+       const char *diag, 
        int *n__, 
        double *a, 
        int *lda__, 

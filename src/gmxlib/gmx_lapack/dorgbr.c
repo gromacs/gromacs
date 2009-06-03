@@ -2,7 +2,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(dorgbr,DORGBR)(char *vect,
+F77_FUNC(dorgbr,DORGBR)(const char *vect,
 	int *m,
 	int *n,
 	int *k,

@@ -7,7 +7,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(sgesdd,SGESDD)(char *jobz, 
+F77_FUNC(sgesdd,SGESDD)(const char *jobz, 
                         int *m, 
                         int *n, 
                         float *a, 

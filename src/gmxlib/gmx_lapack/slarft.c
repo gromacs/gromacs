@@ -5,8 +5,8 @@
 #include "gmx_lapack.h"
 
 void 
-F77_FUNC(slarft,SLARFT)(char *direct, 
-	char *storev, 
+F77_FUNC(slarft,SLARFT)(const char *direct, 
+	const char *storev, 
 	int *n, 
 	int *k, 
 	float *v, 

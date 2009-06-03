@@ -7,7 +7,7 @@
 #include <types/simple.h>
 
 void 
-F77_FUNC(sbdsqr,SBDSQR)(char *uplo,
+F77_FUNC(sbdsqr,SBDSQR)(const char *uplo,
                         int *n,
                         int *ncvt,
                         int *nru, 
@@ -23,7 +23,7 @@ F77_FUNC(sbdsqr,SBDSQR)(char *uplo,
                         float *work,
                         int *info)
 {
-    char xuplo = toupper(*uplo);
+    const char xuplo = toupper(*uplo);
     int c_dim1, c_offset, u_dim1, u_offset, vt_dim1, vt_offset, i__1, 
 	    i__2;
     float r__1, r__2, r__3, r__4;

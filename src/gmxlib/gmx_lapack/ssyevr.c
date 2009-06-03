@@ -5,7 +5,7 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(ssyevr,SSYEVR)(char *jobz, char *range, char *uplo, int *n, 
+F77_FUNC(ssyevr,SSYEVR)(const char *jobz, const char *range, const char *uplo, int *n, 
 	float *a, int *lda, float *vl, float *vu, int *
 	il, int *iu, float *abstol, int *m, float *w, 
 	float *z__, int *ldz, int *isuppz, float *work, 

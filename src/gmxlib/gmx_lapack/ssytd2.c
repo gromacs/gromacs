@@ -7,7 +7,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(ssytd2,SSYTD2)(char *    uplo,
+F77_FUNC(ssytd2,SSYTD2)(const char *    uplo,
 	int *     n,
 	float *  a,
 	int *     lda,
@@ -19,7 +19,7 @@ F77_FUNC(ssytd2,SSYTD2)(char *    uplo,
   float minusone,zero;
   float taui,alpha,tmp;
   int ti1,ti2,ti3,i;
-  char ch=toupper(*uplo);
+  const char ch=toupper(*uplo);
 
   zero = 0.0;
   minusone = -1.0;

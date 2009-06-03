@@ -2,8 +2,8 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(dormqr,DORMQR)(char *side, 
-	char *trans, 
+F77_FUNC(dormqr,DORMQR)(const char *side, 
+	const char *trans, 
 	int *m, 
 	int *n, 
 	int *k, 

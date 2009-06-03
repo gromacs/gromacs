@@ -10,7 +10,7 @@
 
 
 void
-F77_FUNC(slarrex,SLARREX)(char *range,
+F77_FUNC(slarrex,SLARREX)(const char *range,
 	 int *n, 
 	 float *vl, 
 	 float *vu, 

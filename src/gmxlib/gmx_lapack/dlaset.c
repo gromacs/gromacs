@@ -3,7 +3,7 @@
 
 
 void
-F77_FUNC(dlaset,DLASET)(char *uplo,
+F77_FUNC(dlaset,DLASET)(const char *uplo,
 	int *m,
 	int *n,
 	double *alpha,
@@ -12,7 +12,7 @@ F77_FUNC(dlaset,DLASET)(char *uplo,
 	int *lda)
 {
   int i,j,k;
-  char ch=toupper(*uplo);
+  const char ch=toupper(*uplo);
 
   if(ch=='U') {
     for(j=1;j<*n;j++) {

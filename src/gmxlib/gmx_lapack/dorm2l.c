@@ -1,8 +1,8 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(dorm2l,DORM2L)(char *side, 
-	char *trans, 
+F77_FUNC(dorm2l,DORM2L)(const char *side, 
+	const char *trans, 
 	int *m, 
 	int *n, 
 	int *k, 

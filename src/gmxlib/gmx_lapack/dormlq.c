@@ -3,8 +3,8 @@
 
 
 void 
-F77_FUNC(dormlq,DORMLQ)(char *side, 
-	char *trans,
+F77_FUNC(dormlq,DORMLQ)(const char *side, 
+	const char *trans,
 	int *m, 
 	int *n, 
 	int *k,

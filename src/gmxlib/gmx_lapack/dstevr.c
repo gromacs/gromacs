@@ -11,8 +11,8 @@
  * case this is just a wrapper to dstegr.
  */
 void
-F77_FUNC(dstevr,DSTEVR)(char *jobz, 
-	char *range,
+F77_FUNC(dstevr,DSTEVR)(const char *jobz, 
+	const char *range,
 	int *n,
 	double *d,
 	double *e,

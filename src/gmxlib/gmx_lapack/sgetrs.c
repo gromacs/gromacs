@@ -2,7 +2,7 @@
 #include "gmx_lapack.h"
 
 void
-F77_FUNC(sgetrs,SGETRS)(char *trans, 
+F77_FUNC(sgetrs,SGETRS)(const char *trans, 
 	int *n, 
 	int *nrhs, 
 	float *a, 

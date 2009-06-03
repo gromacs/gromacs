@@ -5,10 +5,10 @@
 #include "gmx_blas.h"
 
 void 
-F77_FUNC(dtrmm,DTRMM)(char *side, 
-       char *uplo, 
-       char *transa, 
-       char *diag, 
+F77_FUNC(dtrmm,DTRMM)(const char *side, 
+       const char *uplo, 
+       const char *transa, 
+       const char *diag, 
        int *m__, 
        int *n__, 
        double *alpha__, 

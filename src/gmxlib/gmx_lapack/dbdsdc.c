@@ -7,8 +7,8 @@
 #include <types/simple.h>
 
 void
-F77_FUNC(dbdsdc,DBDSDC)(char *uplo, 
-	char *compq, 
+F77_FUNC(dbdsdc,DBDSDC)(const char *uplo, 
+	const char *compq, 
 	int *n,
 	double *d__, 
 	double *e, 

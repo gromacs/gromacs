@@ -4,10 +4,10 @@
 #include "gmx_blas.h"
 
 void 
-F77_FUNC(strmm,STRMM)(char *side, 
-                      char *uplo, 
-                      char *transa, 
-                      char *diag, 
+F77_FUNC(strmm,STRMM)(const char *side, 
+                      const char *uplo, 
+                      const char *transa, 
+                      const char *diag, 
                       int *m__, 
                       int *n__, 
                       float *alpha__, 

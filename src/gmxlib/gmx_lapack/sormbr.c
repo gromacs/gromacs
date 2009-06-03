@@ -2,9 +2,9 @@
 #include "lapack_limits.h"
 
 void 
-F77_FUNC(sormbr,SORMBR)(char *vect, 
-	char *side, 
-	char *trans, 
+F77_FUNC(sormbr,SORMBR)(const char *vect, 
+	const char *side, 
+	const char *trans, 
 	int *m, 
 	int *n, 
 	int *k, 

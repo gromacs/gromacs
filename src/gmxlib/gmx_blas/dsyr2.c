@@ -6,7 +6,7 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dsyr2,DSYR2)(char *    uplo,
+F77_FUNC(dsyr2,DSYR2)(const char *    uplo,
                       int *     n__,
                       double *  alpha__,
                       double *  x,
@@ -18,7 +18,7 @@ F77_FUNC(dsyr2,DSYR2)(char *    uplo,
 {
     int kx,ky,ix,iy,jx,jy,j,i;
     double temp1,temp2;
-    char ch=toupper(*uplo);
+    const char ch=toupper(*uplo);
     
     int n = *n__;
     int lda = *lda__;

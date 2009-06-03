@@ -3,9 +3,9 @@
 
 
 void
-F77_FUNC(sormtr,SORMTR)(char *side, 
-	char *uplo,
-	char *trans, 
+F77_FUNC(sormtr,SORMTR)(const char *side, 
+	const char *uplo,
+	const char *trans, 
 	int *m, 
 	int *n,
 	float *a, 

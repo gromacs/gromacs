@@ -7,7 +7,7 @@
 
 
 void
-F77_FUNC(dlascl,DLASCL)(char *type,
+F77_FUNC(dlascl,DLASCL)(const char *type,
                         int *kl,
                         int *ku,
                         double *cfrom,
@@ -18,7 +18,7 @@ F77_FUNC(dlascl,DLASCL)(char *type,
                         int *lda,
                         int *info)
 {
-  char ch=toupper(*type);
+  const char ch=toupper(*type);
   int i,j,k,l,k1,k2,k3,k4;
   int done=0;
   double minval,smlnum,bignum;

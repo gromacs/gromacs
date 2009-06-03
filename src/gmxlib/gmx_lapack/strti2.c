@@ -3,8 +3,8 @@
 #include "lapack_limits.h"
 
 void
-F77_FUNC(strti2,STRTI2)(char *uplo,
-	char *diag, 
+F77_FUNC(strti2,STRTI2)(const char *uplo,
+	const char *diag, 
 	int *n, 
 	float *a,
 	int *lda,

@@ -4,12 +4,12 @@
 
 
 double
-F77_FUNC(dlanst,DLANST)(char *norm,
+F77_FUNC(dlanst,DLANST)(const char *norm,
 	int *n,
 	double *d,
 	double *e)
 {
-  char ch=toupper(*norm);
+  const char ch=toupper(*norm);
   double dtemp,max,val,scale,sum;
   int i,j;
 

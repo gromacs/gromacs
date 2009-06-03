@@ -4,14 +4,14 @@
 
 
 double
-F77_FUNC(dlange,DLANGE)(char *norm,
+F77_FUNC(dlange,DLANGE)(const char *norm,
 	int *m,
 	int *n,
 	double *a,
 	int *lda,
 	double *work)
 {
-  char ch=toupper(*norm);
+  const char ch=toupper(*norm);
   double dtemp,sum,max,val,scale;
   int i,j;
 
