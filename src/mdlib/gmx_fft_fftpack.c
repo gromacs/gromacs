@@ -1817,7 +1817,7 @@ fftpack_rffti1(int          n,
 int
 gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                nx,
-                enum gmx_fft_flag  flags)
+                int                flags)
 {
     gmx_fft_t    fft;
     
@@ -1828,7 +1828,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
     
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -1837,7 +1837,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     fft->n    = nx;
     
     /* Need 4*n storage for 1D complex FFT */
-    if( (fft->work=malloc(sizeof(real)*(4*nx))) == NULL) 
+    if( (fft->work = (real *)malloc(sizeof(real)*(4*nx))) == NULL) 
     {
         free(fft);
         return ENOMEM;
@@ -1855,7 +1855,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
 int
 gmx_fft_init_1d_real(gmx_fft_t *        pfft,
                      int                nx,
-                     enum gmx_fft_flag  flags)
+                     int                flags)
 {
     gmx_fft_t    fft;
     
@@ -1866,7 +1866,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -1875,7 +1875,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     fft->n    = nx;
 
     /* Need 2*n storage for 1D real FFT */
-    if((fft->work=malloc(sizeof(real)*(2*nx)))==NULL) 
+    if((fft->work = (real *)malloc(sizeof(real)*(2*nx)))==NULL) 
     {
         free(fft);
         return ENOMEM;
@@ -1894,7 +1894,7 @@ int
 gmx_fft_init_2d(gmx_fft_t *        pfft,
                 int                nx,
                 int                ny,
-                enum gmx_fft_flag  flags)
+                int                flags)
 {
     gmx_fft_t     fft;
     int           rc;
@@ -1928,7 +1928,7 @@ int
 gmx_fft_init_2d_real(gmx_fft_t *        pfft,
                      int                nx,
                      int                ny,
-                     enum gmx_fft_flag  flags)
+                     int                flags)
 {
     gmx_fft_t     fft;
     int           nyc = (ny/2 + 1);
@@ -1942,7 +1942,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     *pfft = NULL;
     
     /* Create the X transform */
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -1952,7 +1952,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     /* Need 4*nx storage for 1D complex FFT, and another
      * 2*nx*nyc elements for complex-to-real storage in our high-level routine.
      */
-    if( (fft->work=malloc(sizeof(real)*(4*nx+2*nx*nyc))) == NULL) 
+    if( (fft->work = (real *)malloc(sizeof(real)*(4*nx+2*nx*nyc))) == NULL) 
     {
         free(fft);
         return ENOMEM;
@@ -1976,7 +1976,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
                 int                nx,
                 int                ny,
                 int                nz,
-                enum gmx_fft_flag  flags)
+                int                flags)
 {
     gmx_fft_t     fft;
     int           rc;
@@ -1990,7 +1990,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
 
     /* Create the X transform */
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -2000,7 +2000,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     /* Need 4*nx storage for 1D complex FFT, and another
      * 2*nz elements for gmx_fft_transpose_2d_nelem() storage.
      */
-    if( (fft->work=malloc(sizeof(real)*(4*nx+2*nz))) == NULL) 
+    if( (fft->work = (real *)malloc(sizeof(real)*(4*nx+2*nz))) == NULL) 
     {
         free(fft);
         return ENOMEM;
@@ -2026,7 +2026,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
                      int                nx,
                      int                ny,
                      int                nz,
-                     enum gmx_fft_flag  flags)
+                     int                flags)
 {
     gmx_fft_t     fft;
     int           nzc = (nz/2 + 1);
@@ -2040,7 +2040,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     *pfft = NULL;
         
     /* Create the X transform */
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if( (fft = (struct gmx_fft *)malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }    
@@ -2052,7 +2052,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * doing out-of-place complex-to-real FFTs, and finally
      * 2*nzc elements for transpose work space.
      */
-    if( (fft->work=malloc(sizeof(real)*(4*nx+2*nx*ny*nzc+2*nzc))) == NULL) 
+    if( (fft->work = (real *)malloc(sizeof(real)*(4*nx+2*nx*ny*nzc+2*nzc))) == NULL) 
     {
         free(fft);
         return ENOMEM;
@@ -2242,7 +2242,7 @@ gmx_fft_2d               (gmx_fft_t                  fft,
     }
 
     /* Much easier to do pointer arithmetic when base has the correct type */
-    data = out_data;
+    data = (t_complex *)out_data;
 
     /* y transforms */
     for(i=0;i<nx;i++)
@@ -2422,7 +2422,7 @@ gmx_fft_3d          (gmx_fft_t                  fft,
     }
     
     /* Much easier to do pointer arithmetic when base has the correct type */
-    data = out_data;
+    data = (t_complex *)out_data;
 
     /* Perform z transforms */
     for(i=0;i<nx*ny;i++)
@@ -2517,7 +2517,7 @@ gmx_fft_3d_real          (gmx_fft_t                  fft,
     work_transp = (t_complex *)(fft->work+4*nx+2*nx*ny*nzc);
 
     /* Much easier to do pointer arithmetic when base has the correct type */
-    data = out_data;
+    data = (t_complex *)out_data;
 
     if(dir==GMX_FFT_REAL_TO_COMPLEX) 
     {

@@ -78,7 +78,7 @@ enum {
 };
 
 typedef struct {
-  char *name;
+  const char *name;
   bool bCoulomb;
 } t_tab_props;
 

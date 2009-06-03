@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -194,32 +195,35 @@ int init_gb_plist(t_params *p_list)
 }
 
 
-static void assign_gb_param(t_functype ftype,t_iparams *new,
-							real old[MAXFORCEPARAM],int comb,real reppow)
+static void assign_gb_param(t_functype ftype,t_iparams *new_par,
+                            real old[MAXFORCEPARAM],int comb,real reppow)
 {
-	int  i,j;
-	
-  /* Set to zero */
-  for(j=0; (j<MAXFORCEPARAM); j++)
-    new->generic.buf[j]=0.0;
-	
-	switch (ftype) {
-		case F_GB12:
-		case F_GB13:
-		case F_GB14:
-			new->gb.c6A=old[0];
-			new->gb.c12A=old[1];
-			new->gb.c6B=old[2];
-			new->gb.c12B=old[3];
-			new->gb.sar=old[4];
-			new->gb.st=old[5];
-			new->gb.pi=old[6];
-			new->gb.gbr=old[7];
-			new->gb.bmlt=old[8];
-			break;
-		default:
-			gmx_fatal(FARGS,"unknown function type %d in %s line %d",
-								ftype,__FILE__,__LINE__);		
+    int  i,j;
+    
+    /* Set to zero */
+    for(j=0; (j<MAXFORCEPARAM); j++)
+    {
+        new_par->generic.buf[j] = 0.0;
+    }
+  
+    switch (ftype)
+    {
+    case F_GB12:
+    case F_GB13:
+    case F_GB14:
+        new_par->gb.c6A=old[0];
+        new_par->gb.c12A=old[1];
+        new_par->gb.c6B=old[2];
+        new_par->gb.c12B=old[3];
+        new_par->gb.sar=old[4];
+        new_par->gb.st=old[5];
+        new_par->gb.pi=old[6];
+        new_par->gb.gbr=old[7];
+        new_par->gb.bmlt=old[8];
+        break;
+    default:
+        gmx_fatal(FARGS,"unknown function type %d in %s line %d",
+                  ftype,__FILE__,__LINE__);		
 	}
 }
 
@@ -245,14 +249,14 @@ enter_gb_params(gmx_ffparams_t *ffparams, t_functype ftype,
 				real forceparams[MAXFORCEPARAM],int comb,real reppow,
 				int start,bool bAppend)
 {
-  t_iparams new;
+  t_iparams new_par;
   int       type;
 	
-	assign_gb_param(ftype,&new,forceparams,comb,reppow);
+	assign_gb_param(ftype,&new_par,forceparams,comb,reppow);
   if (!bAppend) {
 		for (type=start; (type<ffparams->ntypes); type++) {
       if (ffparams->functype[type]==ftype) {
-					if (memcmp(&new,&ffparams->iparams[type],(size_t)sizeof(new)) == 0)
+					if (memcmp(&new_par,&ffparams->iparams[type],(size_t)sizeof(new_par)) == 0)
 					return type;
       }
     }
@@ -260,9 +264,9 @@ enter_gb_params(gmx_ffparams_t *ffparams, t_functype ftype,
   else
     type=ffparams->ntypes;
   if (debug)
-    fprintf(debug,"copying new to idef->iparams[%d] (ntypes=%d)\n",
+    fprintf(debug,"copying new_par to idef->iparams[%d] (ntypes=%d)\n",
 						type,ffparams->ntypes);
-  memcpy(&ffparams->iparams[type],&new,(size_t)sizeof(new));
+  memcpy(&ffparams->iparams[type],&new_par,(size_t)sizeof(new_par));
   
   ffparams->ntypes++;
   ffparams->functype[type]=ftype;

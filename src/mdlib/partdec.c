@@ -332,7 +332,8 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
   }
 }
 
-static void print_partdec(FILE *fp,char *title,int nnodes,gmx_partdec_t *pd)
+static void print_partdec(FILE *fp,const char *title,
+			  int nnodes,gmx_partdec_t *pd)
 {
   int i;
 

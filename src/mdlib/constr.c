@@ -129,7 +129,7 @@ int n_flexible_constraints(struct gmx_constr *constr)
 
 void too_many_constraint_warnings(int eConstrAlg,int warncount)
 {
-  char *abort="- aborting to avoid logfile runaway.\n"
+  const char *abort="- aborting to avoid logfile runaway.\n"
     "This normally happens when your system is not sufficiently equilibrated,"
     "or if you are changing lambda too fast in free energy simulations.\n";
   
@@ -143,7 +143,8 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
 	    "adjust the lincs warning threshold in your mdp file\nor " : "\n");
 }
 
-static void write_constr_pdb(char *fn,char *title,gmx_mtop_t *mtop,
+static void write_constr_pdb(const char *fn,const char *title,
+			     gmx_mtop_t *mtop,
 			     int start,int homenr,t_commrec *cr,
 			     rvec x[],matrix box)
 {
@@ -210,7 +211,7 @@ static void dump_confs(FILE *fplog,gmx_step_t step,gmx_mtop_t *mtop,
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
 
-static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
+static void pr_sortblock(FILE *fp,const char *title,int nsb,t_sortblock sb[])
 {
   int i;
   

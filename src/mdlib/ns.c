@@ -1373,7 +1373,7 @@ static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
     nsbuf->nj += nrj;
 }
 
-static void ns_inner_tric(rvec x[],int icg,bool *i_egp_flags,
+static void ns_inner_tric(rvec x[],int icg,int *i_egp_flags,
                           int njcg,atom_id jcg[],
                           matrix box,rvec b_inv,real rcut2,
                           t_block *cgs,t_ns_buf **ns_buf,
@@ -1404,7 +1404,7 @@ static void ns_inner_tric(rvec x[],int icg,bool *i_egp_flags,
     }
 }
 
-static void ns_inner_rect(rvec x[],int icg,bool *i_egp_flags,
+static void ns_inner_rect(rvec x[],int icg,int *i_egp_flags,
                           int njcg,atom_id jcg[],
                           bool bBox,rvec box_size,rvec b_inv,real rcut2,
                           t_block *cgs,t_ns_buf **ns_buf,
@@ -1474,7 +1474,8 @@ static int ns_simple_core(t_forcerec *fr,
     t_blocka *excl=&(top->excls);
     rvec     b_inv;
     int      m;
-    bool     bBox,bTriclinic,*i_egp_flags;
+    bool     bBox,bTriclinic;
+    int      *i_egp_flags;
     
     rlist2 = sqr(fr->rlist);
     
@@ -1483,7 +1484,7 @@ static int ns_simple_core(t_forcerec *fr,
     {
         for(m=0; (m<DIM); m++)
         {
-            b_inv[m]=divide(1.0,box_size[m]);
+            b_inv[m] = divide(1.0,box_size[m]);
         }
         bTriclinic = TRICLINIC(box);
     }
@@ -1793,7 +1794,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     bool    rvdw_lt_rcoul,rcoul_lt_rvdw;
     rvec    xi,*cgcm,grid_offset;
     real    r2,rs2,rvdw2,rcoul2,rm2,rl2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
-    bool    *i_egp_flags;
+    int     *i_egp_flags;
     bool    bDomDec,bTriclinicX,bTriclinicY;
     ivec    ncpddc;
     
@@ -2363,7 +2364,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
         }
     }
     if (debug) 
-        pr_ivec(debug,0,"bHaveVdW",ns->bHaveVdW,fr->ntype,TRUE);
+        pr_bvec(debug,0,"bHaveVdW",ns->bHaveVdW,fr->ntype,TRUE);
     
     if (!DOMAINDECOMP(cr))
     {

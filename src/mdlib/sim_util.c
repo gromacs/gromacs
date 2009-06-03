@@ -127,7 +127,7 @@ void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir)
   fflush(out);
 }
 
-time_t print_date_and_time(FILE *fplog,int nodeid,char *title)
+time_t print_date_and_time(FILE *fplog,int nodeid,const char *title)
 {
   int i;
   char *ts,time_string[STRLEN];

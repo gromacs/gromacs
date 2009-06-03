@@ -551,7 +551,7 @@ static void do_update_bd(int start,int homenr,double dt,
   }
 }
 
-static void dump_it_all(FILE *fp,char *title,
+static void dump_it_all(FILE *fp,const char *title,
                         int natoms,rvec x[],rvec xp[],rvec v[],rvec f[])
 {
 #ifdef DEBUG
@@ -715,55 +715,65 @@ static matrix     deformref_box;
 
 void set_deform_reference_box(gmx_step_t step,matrix box)
 {
-  deformref_step = step;
-  copy_mat(box,deformref_box);
+    deformref_step = step;
+    copy_mat(box,deformref_box);
 }
 
 static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
-		   const t_inputrec *ir,gmx_step_t step)
+                   const t_inputrec *ir,gmx_step_t step)
 {
-  matrix new,invbox,mu;
-  real   elapsed_time;
-  int    i,j;  
-
-  elapsed_time = (step + 1 - deformref_step)*ir->delta_t;
-  copy_mat(box,new);
-  for(i=0; i<DIM; i++) {
-    for(j=0; j<DIM; j++) {
-      if (ir->deform[i][j] != 0) {
-	new[i][j] = deformref_box[i][j] + elapsed_time*ir->deform[i][j];
-      }
+    matrix bnew,invbox,mu;
+    real   elapsed_time;
+    int    i,j;  
+    
+    elapsed_time = (step + 1 - deformref_step)*ir->delta_t;
+    copy_mat(box,bnew);
+    for(i=0; i<DIM; i++)
+    {
+        for(j=0; j<DIM; j++)
+        {
+            if (ir->deform[i][j] != 0)
+            {
+                bnew[i][j] =
+                    deformref_box[i][j] + elapsed_time*ir->deform[i][j];
+            }
+        }
     }
-  }
-  /* We correct the off-diagonal elements,
-   * which can grow indefinitely during shearing,
-   * so the shifts do not get messed up.
-   */
-  for(i=1; i<DIM; i++) {
-    for(j=i-1; j>=0; j--) {
-      while (new[i][j] - box[i][j] > 0.5*new[j][j]) {
-	rvec_dec(new[i],new[j]);
-      }
-      while (new[i][j] - box[i][j] < -0.5*new[j][j]) {
-	rvec_inc(new[i],new[j]);
-      }
-    }
-  }
-  m_inv_ur0(box,invbox);
-  copy_mat(new,box);
-  mmul_ur0(box,invbox,mu);
-  
-  for(i=start; i<start+homenr; i++) {
-    x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
-    x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
-    x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
-  }
-  if (*scale_tot) {
-    /* The transposes of the scaling matrices are stored,
-     * so we need to do matrix multiplication in the inverse order.
+    /* We correct the off-diagonal elements,
+     * which can grow indefinitely during shearing,
+     * so the shifts do not get messed up.
      */
-    mmul_ur0(*scale_tot,mu,*scale_tot);
-  }
+    for(i=1; i<DIM; i++)
+    {
+        for(j=i-1; j>=0; j--)
+        {
+            while (bnew[i][j] - box[i][j] > 0.5*bnew[j][j])
+            {
+                rvec_dec(bnew[i],bnew[j]);
+            }
+            while (bnew[i][j] - box[i][j] < -0.5*bnew[j][j])
+            {
+                rvec_inc(bnew[i],bnew[j]);
+            }
+        }
+    }
+    m_inv_ur0(box,invbox);
+    copy_mat(bnew,box);
+    mmul_ur0(box,invbox,mu);
+  
+    for(i=start; i<start+homenr; i++)
+    {
+        x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
+        x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
+        x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
+    }
+    if (*scale_tot)
+    {
+        /* The transposes of the scaling matrices are stored,
+         * so we need to do matrix multiplication in the inverse order.
+         */
+        mmul_ur0(*scale_tot,mu,*scale_tot);
+    }
 }
 
 void update(FILE         *fplog,
@@ -862,7 +872,7 @@ void update(FILE         *fplog,
   /* Now do the actual update of velocities and positions */
   where();
   dump_it_all(fplog,"Before update",
-	      state->natoms,state->x,xprime,state->v,force);
+              state->natoms,state->x,xprime,state->v,force);
   if (inputrec->eI == eiMD) {
     if (ekind->cosacc.cos_accel == 0) {
       /* use normal version of update */

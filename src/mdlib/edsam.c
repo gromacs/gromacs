@@ -210,8 +210,11 @@ struct t_ed_buffer
 /* Function declarations */
 static void fit_to_reference(rvec *xcoll,rvec transvec,matrix rotmat,t_edpar *edi);
 
-static void get_coordinates(t_commrec *cr,rvec *xc,ivec *shifts_xc,ivec *extra_shifts_xc,bool bNeedShiftsUpdate,
-        rvec *x_loc,struct gmx_edx *s, matrix box,char title[]);
+static void get_coordinates(t_commrec *cr,rvec *xc,
+                            ivec *shifts_xc,ivec *extra_shifts_xc,
+                            bool bNeedShiftsUpdate,
+                            rvec *x_loc,struct gmx_edx *s,matrix box,
+                            const char title[]);
 
 static void translate_and_rotate(rvec *x,int nat,rvec transvec,matrix rotmat);
 /* End funtion declarations */
@@ -343,7 +346,7 @@ static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int 
 
 
 /* Debug helper */
-static void dump_edi_positions(FILE *out, struct gmx_edx *s, char name[])
+static void dump_edi_positions(FILE *out, struct gmx_edx *s, const char name[])
 {
     int i;
 
@@ -366,7 +369,8 @@ static void dump_edi_positions(FILE *out, struct gmx_edx *s, char name[])
 
 
 /* Debug helper */
-static void dump_edi_eigenvecs(FILE *out, t_eigvec *ev, char name[], int length)
+static void dump_edi_eigenvecs(FILE *out, t_eigvec *ev,
+                               const char name[], int length)
 {
     int i,j;
 
@@ -1236,14 +1240,14 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
 }
 
 
-static void check(char *line, char *label)
+static void check(const char *line, const char *label)
 {
     if (!strstr(line,label)) 
         gmx_fatal(FARGS,"Could not find input parameter %s at expected position in edsam input-file (.edi)\nline read instead is %s",label,line);
 }
 
 
-static int read_checked_edint(FILE *file,char *label)
+static int read_checked_edint(FILE *file,const char *label)
 {
     char line[STRLEN+1];
     int idum;
@@ -1282,7 +1286,7 @@ static int read_edint(FILE *file,bool *bEOF)
 }
 
 
-static real read_checked_edreal(FILE *file,char *label)
+static real read_checked_edreal(FILE *file,const char *label)
 {
     char line[STRLEN+1];
     double rdum;
@@ -1807,7 +1811,7 @@ static void get_coordinates(t_commrec      *cr,
                             rvec           *x_loc,            /* Local coordinates on this node (read coords from here) */ 
                             struct gmx_edx *s,                /* The structure for which to get the current coordinates */
                             matrix         box,
-                            char           title[])
+                            const char     title[])
 {
     int i;
 

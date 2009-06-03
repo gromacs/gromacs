@@ -66,11 +66,11 @@ t_ebin *mk_ebin(void)
   return eb;
 }
 
-int get_ebin_space(t_ebin *eb,int nener,char *enm[],char *unit)
+int get_ebin_space(t_ebin *eb,int nener,const char *enm[],const char *unit)
 {
     int  index;
     int  i,f;
-    char *u;
+    const char *u;
 
     index = eb->nener;
     eb->nener += nener;

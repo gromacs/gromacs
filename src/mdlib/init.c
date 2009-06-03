@@ -61,7 +61,7 @@
 #define NOT_FINISHED(l1,l2) \
   printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
 
-static char *int_title(char *title,int nodeid,char buf[], int size)
+static char *int_title(const char *title,int nodeid,char buf[], int size)
 {
   sprintf(buf,"%s (%d)",title,nodeid);
   

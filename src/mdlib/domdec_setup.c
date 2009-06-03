@@ -80,7 +80,7 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 {
 	float ratio;
 	int  npme,nkx,nky,ndiv,*div,*mdiv,ldiv;
-	t_inputrec try;
+	t_inputrec ir_try;
 	
 	ratio = pme_load_estimate(mtop,ir,box);
 	
@@ -327,19 +327,19 @@ static void assign_factors(gmx_domdec_t *dd,
                            real limit,real cutoff,
                            matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
                            float pbcdxr,int npme,
-                           int ndiv,int *div,int *mdiv,ivec try,ivec opt)
+                           int ndiv,int *div,int *mdiv,ivec ir_try,ivec opt)
 {
     int x,y,z,i;
     float ce;
     
     if (ndiv == 0)
     {
-        ce = comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,try);
+        ce = comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,ir_try);
         if (ce >= 0 && (opt[XX] == 0 ||
                         ce < comm_cost_est(dd,limit,cutoff,box,ddbox,ir,pbcdxr,
                                            npme,opt)))
         {
-            copy_ivec(try,opt);
+            copy_ivec(ir_try,opt);
         }
         
         return;
@@ -349,35 +349,35 @@ static void assign_factors(gmx_domdec_t *dd,
     {
         for(i=0; i<x; i++)
         {
-            try[XX] *= div[0];
+            ir_try[XX] *= div[0];
         }
         for(y=mdiv[0]-x; y>=0; y--)
         {
             for(i=0; i<y; i++)
             {
-                try[YY] *= div[0];
+                ir_try[YY] *= div[0];
             }
             for(i=0; i<mdiv[0]-x-y; i++)
             {
-                try[ZZ] *= div[0];
+                ir_try[ZZ] *= div[0];
             }
             
             /* recurse */
             assign_factors(dd,limit,cutoff,box,ddbox,ir,pbcdxr,npme,
-                           ndiv-1,div+1,mdiv+1,try,opt);
+                           ndiv-1,div+1,mdiv+1,ir_try,opt);
             
             for(i=0; i<mdiv[0]-x-y; i++)
             {
-                try[ZZ] /= div[0];
+                ir_try[ZZ] /= div[0];
             }
             for(i=0; i<y; i++)
             {
-                try[YY] /= div[0];
+                ir_try[YY] /= div[0];
             }
         }
         for(i=0; i<x; i++)
         {
-            try[XX] /= div[0];
+            ir_try[XX] /= div[0];
         }
     }
 }
@@ -396,7 +396,7 @@ static real optimize_ncells(FILE *fplog,
     bool bExcl_pbcdx;
     float pbcdxr;
     real limit;
-    ivec try;
+    ivec itry;
     
     limit  = cellsize_limit;
     
@@ -476,12 +476,12 @@ static real optimize_ncells(FILE *fplog,
     /* Decompose npp in factors */
     ndiv = factorize(npp,&div,&mdiv);
     
-    try[XX] = 1;
-    try[YY] = 1;
-    try[ZZ] = 1;
+    itry[XX] = 1;
+    itry[YY] = 1;
+    itry[ZZ] = 1;
     clear_ivec(nc);
     assign_factors(dd,limit,cutoff,box,ddbox,ir,pbcdxr,
-                   npme,ndiv,div,mdiv,try,nc);
+                   npme,ndiv,div,mdiv,itry,nc);
     
     sfree(div);
     sfree(mdiv);

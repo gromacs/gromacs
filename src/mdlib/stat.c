@@ -243,7 +243,7 @@ int do_per_step(gmx_step_t step,gmx_step_t nstep)
 }
 
 static void moveit(t_commrec *cr,
-		   int left,int right,char *s,rvec xx[])
+		   int left,int right,const char *s,rvec xx[])
 {
   if (!xx) 
     return;

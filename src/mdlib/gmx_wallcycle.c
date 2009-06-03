@@ -54,7 +54,7 @@ typedef struct gmx_wallcycle {
   gmx_cycles_t last;
 } gmx_wallcycle_t_t;
 
-static char *wcn[ewcNR] =
+static const char *wcn[ewcNR] =
   { "Run", "Step", "PP during PME", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test", "Born radii" };
 
 /* variables for testing/debugging */
@@ -207,7 +207,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
   }
 }
 
-static void print_cycles(FILE *fplog, double c2t, char *name, int nnodes,
+static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
 			 int n, gmx_cycles_t c, gmx_cycles_t tot)
 {
   char num[11];
@@ -228,7 +228,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
   double c2t,tot,sum;
   int    i,j,npp;
   char   buf[STRLEN];
-  char   *myline = "-----------------------------------------------------------------------";
+  const char *myline = "-----------------------------------------------------------------------";
   
   if (wc) {
     if (npme > 0) {

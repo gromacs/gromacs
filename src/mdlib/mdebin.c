@@ -59,20 +59,20 @@ static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
 
 static bool bEner[F_NRE];
 
-static char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
+static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
-static char *boxs_nm[] = { "Box-X", "Box-Y", "Box-Z" };
+static const char *boxs_nm[] = { "Box-X", "Box-Y", "Box-Z" };
 
-static char *tricl_boxs_nm[] = { "Box-XX", "Box-YX", "Box-YY",
+static const char *tricl_boxs_nm[] = { "Box-XX", "Box-YX", "Box-YY",
                                  "Box-ZX", "Box-ZY", "Box-ZZ" };
 
-static char *vol_nm[] = { "Volume" };
+static const char *vol_nm[] = { "Volume" };
 
-static char *dens_nm[] = {"Density" };
+static const char *dens_nm[] = {"Density" };
 
-static char *pv_nm[] = {"pV" };
+static const char *pv_nm[] = {"pV" };
 
-static char *boxvel_nm[] = {
+static const char *boxvel_nm[] = {
   "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
   "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
 };
@@ -87,37 +87,37 @@ t_mdebin *init_mdebin(int fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir)
 {
-  char *ener_nm[F_NRE];
-  static char *vir_nm[] = {
+  const char *ener_nm[F_NRE];
+  static const char *vir_nm[] = {
     "Vir-XX", "Vir-XY", "Vir-XZ",
     "Vir-YX", "Vir-YY", "Vir-YZ",
     "Vir-ZX", "Vir-ZY", "Vir-ZZ"
   };
-  static char *sv_nm[] = {
+  static const char *sv_nm[] = {
     "ShakeVir-XX", "ShakeVir-XY", "ShakeVir-XZ",
     "ShakeVir-YX", "ShakeVir-YY", "ShakeVir-YZ",
     "ShakeVir-ZX", "ShakeVir-ZY", "ShakeVir-ZZ"
   };
-  static char *fv_nm[] = {
+  static const char *fv_nm[] = {
     "ForceVir-XX", "ForceVir-XY", "ForceVir-XZ",
     "ForceVir-YX", "ForceVir-YY", "ForceVir-YZ",
     "ForceVir-ZX", "ForceVir-ZY", "ForceVir-ZZ"
   };
-  static char *pres_nm[] = {
+  static const char *pres_nm[] = {
     "Pres-XX","Pres-XY","Pres-XZ",
     "Pres-YX","Pres-YY","Pres-YZ",
     "Pres-ZX","Pres-ZY","Pres-ZZ"
   };
-  static char *surft_nm[] = {
+  static const char *surft_nm[] = {
     "#Surf*SurfTen"
   };
-  static char *mu_nm[] = {
+  static const char *mu_nm[] = {
     "Mu-X", "Mu-Y", "Mu-Z"
   };
-  static char *vcos_nm[] = {
+  static const char *vcos_nm[] = {
     "2CosZ*Vel-X"
   };
-  static char *visc_nm[] = {
+  static const char *visc_nm[] = {
     "1/Viscosity"
   };
   static   char   **grpnms;
@@ -321,7 +321,8 @@ t_mdebin *init_mdebin(int fp_ene,
                         kk++;
                     }
                 }
-                md->igrp[n]=get_ebin_space(md->ebin,md->nEc,gnm,unit_energy);
+                md->igrp[n]=get_ebin_space(md->ebin,md->nEc,
+                                           (const char **)gnm,unit_energy);
                 n++;
             }
         }
@@ -345,7 +346,8 @@ t_mdebin *init_mdebin(int fp_ene,
         sprintf(buf,"T-%s",*(groups->grpname[ni]));
         grpnms[i]=strdup(buf);
     }
-    md->itemp=get_ebin_space(md->ebin,md->nTC,grpnms,unit_temp_K);
+    md->itemp=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,
+                             unit_temp_K);
     if (etc == etcNOSEHOOVER)
     {
         for(i=0; (i<md->nTC); i++)
@@ -354,7 +356,8 @@ t_mdebin *init_mdebin(int fp_ene,
             sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
             grpnms[i]=strdup(buf);
         }
-        md->itc=get_ebin_space(md->ebin,md->nTC,grpnms,unit_invtime);
+        md->itc=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,
+                               unit_invtime);
     }
     else  if (etc == etcBERENDSEN || etc == etcYES || etc == etcVRESCALE)
     {
@@ -364,7 +367,7 @@ t_mdebin *init_mdebin(int fp_ene,
             sprintf(buf,"Lamb-%s",*(groups->grpname[ni]));
             grpnms[i]=strdup(buf);
         }
-        md->itc=get_ebin_space(md->ebin,md->nTC,grpnms,"");
+        md->itc=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,"");
     }
     sfree(grpnms);
     
@@ -382,7 +385,7 @@ t_mdebin *init_mdebin(int fp_ene,
             sprintf(buf,"Uz-%s",*(groups->grpname[ni]));
             grpnms[3*i+ZZ]=strdup(buf);
         }
-        md->iu=get_ebin_space(md->ebin,3*md->nU,grpnms,unit_vel);
+        md->iu=get_ebin_space(md->ebin,3*md->nU,(const char **)grpnms,unit_vel);
         sfree(grpnms);
     }
     
@@ -394,10 +397,10 @@ t_mdebin *init_mdebin(int fp_ene,
     return md;
 }
 
-FILE *open_dhdl(char *filename,t_inputrec *ir)
+FILE *open_dhdl(const char *filename,t_inputrec *ir)
 {
     FILE *fp;
-    char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";
+    const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  nsets,s;
     char **setname,buf[STRLEN];
@@ -634,7 +637,7 @@ static void npr(FILE *log,int n,char c)
   for(; (n>0); n--) fprintf(log,"%c",c);
 }
 
-static void pprint(FILE *log,char *s)
+static void pprint(FILE *log,const char *s)
 {
   char   CHAR='#';
   int slen;

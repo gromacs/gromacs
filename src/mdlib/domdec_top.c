@@ -638,7 +638,7 @@ void dd_make_reverse_top(FILE *fplog,
         mtop->nmolblock == 1 && mtop->molblock[0].nmol == 1)
     {
         /* mtop comes from a pre Gromacs 4 tpr file */
-        char *note="NOTE: The tpr file used for this simulation is in an old format, for less memory usage and possibly more performance create a new tpr file with an up to date version of grompp";
+        const char *note="NOTE: The tpr file used for this simulation is in an old format, for less memory usage and possibly more performance create a new tpr file with an up to date version of grompp";
         if (fplog)
         {
             fprintf(fplog,"\n%s\n\n",note);

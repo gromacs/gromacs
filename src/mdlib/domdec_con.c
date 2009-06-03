@@ -448,7 +448,8 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                                       int *ga2la_specat,
                                       int at_start,
                                       int vbuf_fac,
-                                      char *specat_type,char *add_err)
+                                      const char *specat_type,
+                                      const char *add_err)
 {
     int  nsend[2],nlast,nsend_zero[2]={0,0},*nsend_ptr;
     int  d,dim,ndir,dir,nr,ns,i,nrecv_local,n0,start,ireq,ind,buf[2];

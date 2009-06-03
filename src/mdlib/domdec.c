@@ -154,7 +154,7 @@ typedef struct
 enum { ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR };
 
 enum { edlbAUTO, edlbNO, edlbYES, edlbNR };
-char *edlb_names[edlbNR] = { "auto", "no", "yes" };
+const char *edlb_names[edlbNR] = { "auto", "no", "yes" };
 
 typedef struct
 {
@@ -1757,7 +1757,7 @@ static char dim2char(int dim)
     return c;
 }
 
-static void write_dd_grid_pdb(char *fn,gmx_step_t step,
+static void write_dd_grid_pdb(const char *fn,gmx_step_t step,
                               gmx_domdec_t *dd,matrix box,gmx_ddbox_t *ddbox)
 {
     rvec grid_s[2],*grid_r=NULL,cx,r;
@@ -1846,7 +1846,7 @@ static void write_dd_grid_pdb(char *fn,gmx_step_t step,
     }
 }
 
-void write_dd_pdb(char *fn,gmx_step_t step,char *title,
+void write_dd_pdb(const char *fn,gmx_step_t step,const char *title,
                   gmx_mtop_t *mtop,t_commrec *cr,
                   int natoms,rvec x[],matrix box)
 {
@@ -2362,8 +2362,8 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
     }
 }
 
-static int check_bLocalCG(gmx_domdec_t *dd,int ncg_sys,char *bLocalCG,
-                           char *where)
+static int check_bLocalCG(gmx_domdec_t *dd,int ncg_sys,const char *bLocalCG,
+                          const char *where)
 {
     int ncg,i,ngl,nerr;
 
@@ -2400,7 +2400,7 @@ static int check_bLocalCG(gmx_domdec_t *dd,int ncg_sys,char *bLocalCG,
 
 static void check_index_consistency(gmx_domdec_t *dd,
                                     int natoms_sys,int ncg_sys,
-                                    char *where)
+                                    const char *where)
 {
     int  nerr,ngl,i,a;
     int  *have;
@@ -5514,7 +5514,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     }
 }
 
-static real *get_slb_frac(FILE *fplog,char *dir,int nc,char *size_string)
+static real *get_slb_frac(FILE *fplog,const char *dir,int nc,char *size_string)
 {
     real *slb_frac,tot;
     int  i,n;
@@ -5587,7 +5587,7 @@ static int multi_body_bondeds_count(gmx_mtop_t *mtop)
   return n;
 }
 
-static int dd_nst_env(FILE *fplog,char *env_var,int def)
+static int dd_nst_env(FILE *fplog,const char *env_var,int def)
 {
     char *val;
     int  nst;
@@ -5684,7 +5684,7 @@ static real average_cellsize_min(gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
     return r;
 }
 
-static void dd_warning(t_commrec *cr,FILE *fplog,char *warn_string)
+static void dd_warning(t_commrec *cr,FILE *fplog,const char *warn_string)
 {
     if (MASTER(cr))
     {

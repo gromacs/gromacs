@@ -2440,7 +2440,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   real   *mass_cavity=NULL,mass_tot;
   int    nbin;
   double invbinw,*bin,refvolshift,logV,bUlogV;
-  char   *tpid_leg[2]={"direct","reweighted"};
+  const char *tpid_leg[2]={"direct","reweighted"};
 
   /* Since numerical problems can lead to extreme negative energies
    * when atoms overlap, we need to set a lower limit for beta*U.
@@ -2941,7 +2941,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 		    "\\8b\\4U - log(V/<V>)","count");
   sprintf(str,"number \\8b\\4U > %g: %9.3e",bU_bin_limit,bin[0]);
   xvgr_subtitle(fp_tpi,str);
-  xvgr_legend(fp_tpi,2,tpid_leg);
+  xvgr_legend(fp_tpi,2,(char **)tpid_leg);
   for(i=nbin-1; i>0; i--) {
     bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
     fprintf(fp_tpi,"%6.2f %10d %12.5e\n",

@@ -318,13 +318,13 @@ void gmx_qhops_write(char *fn,int nqhop,gmx_qhop qht[])
 
 #else
 
-gmx_qhop *gmx_qhops_read(char *fn,int *nqhop)
+gmx_qhop_t gmx_qhops_read(char *fn,int *nqhop)
 {
   gmx_fatal(FARGS,"You need to configure the software with --with-xml for function gmx_qhops_read to work");
   return NULL;
 }
 
-void gmx_qhops_write(char *fn,int nqhop,gmx_qhop qht[])
+void gmx_qhops_write(char *fn,int nqhop,gmx_qhop_t qht)
 {
   gmx_fatal(FARGS,"You need to configure the software with --with-xml for function gmx_qhops_write to work");
 }
