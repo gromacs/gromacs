@@ -24,7 +24,7 @@
  * ARPACK was written by 
  *
  *     Danny Sorensen               Phuong Vu
- *    Riconst chard Lehoucq              CRPC / Rice University
+ *    Rihard Lehoucq              CRPC / Rice University
  *    Dept. of Computational &     Houston, Texas
  *    Applied Mathematics
  *    Rice University           
@@ -4570,7 +4570,7 @@ F77_FUNC(sseupd,SSEUPD)(int *     rvec,
     int ierr;
     float temp;
     int next;
-    const char type__[6];
+    char type__[6];
     int ritz;
     int reord;
     int nconv;
