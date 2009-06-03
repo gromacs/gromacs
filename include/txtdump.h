@@ -58,6 +58,7 @@ int pr_title_n(FILE *fp,int indent,const char *title,int n);
 int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2);
 void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers);
 void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShowNumbers);
+void pr_bvec(FILE *fp,int indent,const char *title,bool vec[],int n, bool bShowNnumbers);
 void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowNumbers);
 void pr_dvec(FILE *fp,int indent,const char *title,double vec[],int n, bool bShowNumbers);
 void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n);
