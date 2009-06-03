@@ -63,7 +63,8 @@
 
 #define CHAR_SHIFT 24
 
-static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
+static int read_g96_pos(char line[],t_symtab *symtab,
+			FILE *fp,const char *infile,
 			t_trxframe *fr)
 {
   t_atoms *atoms;
@@ -144,7 +145,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
   return natoms;
 }
 
-static int read_g96_vel(char line[],FILE *fp,char *infile,
+static int read_g96_vel(char line[],FILE *fp,const char *infile,
 			t_trxframe *fr)
 {
   bool   bEnd;
@@ -186,7 +187,7 @@ static int read_g96_vel(char line[],FILE *fp,char *infile,
   return natoms;
 }
 
-int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
+int read_g96_conf(FILE *fp,const char *infile,t_trxframe *fr)
 {
   static t_symtab *symtab=NULL;
   static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
@@ -209,8 +210,10 @@ int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
   if (bAtStart) {
     while ( !fr->bTitle && fgets2(line,STRLEN,fp))
       fr->bTitle = (strcmp(line,"TITLE") == 0);
-    if (fr->title)
-      fgets2(fr->title,STRLEN,fp);
+    if (fr->title == NULL) {
+      fgets2(line,STRLEN,fp);
+      fr->title = strdup(line);
+    }
     bEnd = FALSE;
     while (!bEnd && fgets2(line,STRLEN,fp))
       bEnd = (strcmp(line,"END") == 0);
@@ -441,7 +444,7 @@ enum { espID, espPOS, espTYPE, espQ, espV, espF, espMOLECULE, espNR };
 const char *esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f",
 				"molecule" };
 
-static void read_espresso_conf(char *infile,
+static void read_espresso_conf(const char *infile,
 			       t_atoms *atoms,rvec x[],rvec *v,matrix box)
 {
   static t_symtab *symtab=NULL;
@@ -606,7 +609,7 @@ static void read_espresso_conf(char *infile,
   gmx_fio_fclose(fp);
 }
 
-static int get_espresso_coordnum(char *infile)
+static int get_espresso_coordnum(const char *infile)
 {
   FILE *fp;
   char word[STRLEN];
@@ -675,7 +678,7 @@ static void write_espresso_conf_indexed(FILE *out,const char *title,
   fprintf(out,"}\n");
 }
 
-static void get_coordnum_fp (FILE *in,char *title, int *natoms)
+static void get_coordnum_fp (FILE *in, char *title, int *natoms)
 {
   char line[STRLEN+1];
 
@@ -686,7 +689,7 @@ static void get_coordnum_fp (FILE *in,char *title, int *natoms)
   }
 }
 
-static void get_coordnum (char *infile,int *natoms)
+static void get_coordnum (const char *infile,int *natoms)
 {
   FILE *in;
   char title[STRLEN];
@@ -696,7 +699,7 @@ static void get_coordnum (char *infile,int *natoms)
   gmx_fio_fclose (in);
 }
 
-static bool get_w_conf(FILE *in, char *infile, char *title,
+static bool get_w_conf(FILE *in,const char *infile,char *title,
 		       t_atoms *atoms, int *ndec, rvec x[],rvec *v, matrix box)
 {
   static t_symtab *symtab=NULL;
@@ -861,7 +864,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
   return bVel;
 }
 
-static void read_whole_conf(char *infile, char *title,
+static void read_whole_conf(const char *infile,char *title,
 			    t_atoms *atoms, rvec x[],rvec *v, matrix box)
 {
   FILE   *in;
@@ -875,7 +878,7 @@ static void read_whole_conf(char *infile, char *title,
   gmx_fio_fclose(in);
 }
 
-static void get_conf(FILE *in, char *title, int *natoms, 
+static void get_conf(FILE *in,char *title,int *natoms, 
 		     rvec x[],rvec *v,matrix box)
 {
   t_atoms  atoms;
@@ -1008,7 +1011,7 @@ static void write_hconf_box(FILE *out,int pr,matrix box)
   }
 }
 
-void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
+void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
 			   int nx,atom_id index[], int pr,
 			   rvec *x,rvec *v,matrix box)
 {
@@ -1054,7 +1057,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   fflush(out);
 }
 
-static void write_hconf_mtop(FILE *out,char *title,gmx_mtop_t *mtop,
+static void write_hconf_mtop(FILE *out,const char *title,gmx_mtop_t *mtop,
 			     int pr,
 			     rvec *x,rvec *v,matrix box)
 {
@@ -1090,7 +1093,7 @@ static void write_hconf_mtop(FILE *out,char *title,gmx_mtop_t *mtop,
   fflush(out);
 }
 
-void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
+void write_hconf_p(FILE *out,const char *title,t_atoms *atoms, int pr,
 		   rvec *x,rvec *v,matrix box)
 {
   atom_id *aa;
@@ -1103,7 +1106,8 @@ void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
   sfree(aa);
 }
 
-void write_conf_p(char *outfile, char *title, t_atoms *atoms, int pr,
+void write_conf_p(const char *outfile, const char *title,
+		  t_atoms *atoms, int pr,
 		  rvec *x, rvec *v,matrix box)
 {
   FILE *out;
@@ -1114,13 +1118,14 @@ void write_conf_p(char *outfile, char *title, t_atoms *atoms, int pr,
   gmx_fio_fclose (out);
 }
 
-static void write_conf(char *outfile, char *title, t_atoms *atoms,
+static void write_conf(const char *outfile, const char *title, t_atoms *atoms,
 		       rvec *x, rvec *v,matrix box)
 {
   write_conf_p(outfile, title, atoms, 3, x, v, box);
 }
 
-void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
+void write_sto_conf_indexed(const char *outfile,const char *title,
+			    t_atoms *atoms, 
 			    rvec x[],rvec *v,int ePBC,matrix box,
 			    atom_id nindex,atom_id index[])
 {
@@ -1177,7 +1182,8 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   }
 }
 
-static void write_xyz_conf(char *outfile,char *title,t_atoms *atoms,rvec *x)
+static void write_xyz_conf(const char *outfile,const char *title,
+			   t_atoms *atoms,rvec *x)
 {
   FILE *fp;
   int i,anr;
@@ -1204,8 +1210,8 @@ static void write_xyz_conf(char *outfile,char *title,t_atoms *atoms,rvec *x)
   gmx_atomprop_destroy(aps);
 }
 
-void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec *v,int ePBC,matrix box)
+void write_sto_conf(const char *outfile,const char *title,t_atoms *atoms, 
+		    rvec x[],rvec *v,int ePBC,matrix box)
 {
   FILE       *out;
   int        ftp;
@@ -1260,7 +1266,8 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   }
 }
 
-void write_sto_conf_mtop(char *outfile, char *title,gmx_mtop_t *mtop,
+void write_sto_conf_mtop(const char *outfile,const char *title,
+			 gmx_mtop_t *mtop,
 			 rvec x[],rvec *v,int ePBC,matrix box)
 {
   int  ftp;
@@ -1287,7 +1294,7 @@ void write_sto_conf_mtop(char *outfile, char *title,gmx_mtop_t *mtop,
   }
 }
 
-static int get_xyz_coordnum(char *infile)
+static int get_xyz_coordnum(const char *infile)
 {
   FILE *fp;
   int n;
@@ -1300,7 +1307,8 @@ static int get_xyz_coordnum(char *infile)
   return n;
 }
 
-static void read_xyz_conf(char *infile,char *title,t_atoms *atoms,rvec *x)
+static void read_xyz_conf(const char *infile,char *title,
+			  t_atoms *atoms,rvec *x)
 {
   FILE   *fp;
   int    i,n;
@@ -1327,7 +1335,7 @@ static void read_xyz_conf(char *infile,char *title,t_atoms *atoms,rvec *x)
   gmx_fio_fclose(fp);
 }
 
-void get_stx_coordnum(char *infile,int *natoms)
+void get_stx_coordnum(const char *infile,int *natoms)
 {
   FILE *in;
   int ftp,tpxver,tpxgen;
@@ -1378,7 +1386,7 @@ void get_stx_coordnum(char *infile,int *natoms)
   }
 }
 
-void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
+void read_stx_conf(const char *infile,char *title,t_atoms *atoms, 
 		   rvec x[],rvec *v,int *ePBC,matrix box)
 {
   FILE       *in;

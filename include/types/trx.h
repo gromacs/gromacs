@@ -55,7 +55,7 @@ typedef struct
                   /* tpf and tppf are needed to       */
                   /* correct rounding errors for -e   */
   bool bTitle;
-  char *title;    /* title of the frame               */
+  const char *title; /* title of the frame            */
   bool bStep;
   int  step;      /* MD step number                   */
   bool bTime;

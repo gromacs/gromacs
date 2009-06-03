@@ -89,9 +89,6 @@ extern void get_chi_product_traj (real **dih,int nframes,int nangles,
 			   int **lookup,int *xity,bool bRb,bool bNormalize,
 			   real core_frac); 
 
-extern void print_one (char *base,char *name,char *title, char *ylabel,
-		      int nf,real time[],real data[]); 
-
 #endif
 
 

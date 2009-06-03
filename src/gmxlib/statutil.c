@@ -81,7 +81,7 @@ static bool  bXvgrCodes    = TRUE;
 static char  *program      = NULL;
 static char  *cmdline      = NULL;
 
-char *ShortProgram(void)
+const char *ShortProgram(void)
 {
   char *pr;
   
@@ -95,7 +95,7 @@ char *ShortProgram(void)
     return "GROMACS";
 }
 
-char *Program(void)
+const char *Program(void)
 {
   if (program)
     return program;
@@ -103,7 +103,7 @@ char *Program(void)
     return "GROMACS";
 }
 
-char *command_line(void)
+const char *command_line(void)
 {
   if (cmdline)
     return cmdline;
@@ -281,7 +281,7 @@ static void set_default_time_unit(const char *select)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology *read_top(char *fn,int *ePBC)
+t_topology *read_top(const char *fn,int *ePBC)
 {
   int        epbc,natoms;
   t_topology *top;
@@ -490,7 +490,8 @@ static char *mk_desc(t_pargs *pa, const char *time_unit_str)
 
 void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-		       int ndesc,char **desc,int nbugs,char **bugs)
+		       int ndesc,const char **desc,
+		       int nbugs,const char **bugs)
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
   static const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", "wiki", NULL };

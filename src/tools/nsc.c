@@ -69,7 +69,7 @@ int    last_cubus=0;
 #define DP_TOL     0.001
 
 #define UPDATE_FL  __file__=__FILE__,__line__=__LINE__
-char * __file__;         /* declared versions of macros */
+const char * __file__;   /* declared versions of macros */
 int  __line__;           /* __FILE__  and __LINE__ */
 
 #define ERROR UPDATE_FL,error

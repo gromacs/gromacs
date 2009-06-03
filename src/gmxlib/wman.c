@@ -358,10 +358,10 @@ char *fileopt(unsigned long flag,char buf[],int maxsize)
 }
 
 static void write_texman(FILE *out,const char *program,
-			 int nldesc,char **desc,
+			 int nldesc,const char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
-			 int nbug,char **bugs,
+			 int nbug,const char **bugs,
 			 t_linkdata *links)
 {
   int i;
@@ -420,10 +420,10 @@ static void write_texman(FILE *out,const char *program,
 
 static void write_nroffman(FILE *out,
 			   const char *program,
-			   int nldesc,char **desc,
+			   int nldesc,const char **desc,
 			   int nfile,t_filenm *fnm,
 			   int npargs,t_pargs *pa,
-			   int nbug,char **bugs,
+			   int nbug,const char **bugs,
 			   t_linkdata *links)
 
 {
@@ -507,7 +507,7 @@ char *check_tty(const char *s)
 }
 
 static void
-print_tty_formatted(FILE *out, int nldesc, char **desc,int indent,
+print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
                     t_linkdata *links,const char *program,bool bWiki)
 {
   char *buf;
@@ -540,10 +540,10 @@ print_tty_formatted(FILE *out, int nldesc, char **desc,int indent,
 
 static void write_ttyman(FILE *out,
 			 const char *program,
-			 int nldesc,char **desc,
+			 int nldesc,const char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
-			 int nbug,char **bugs,bool bHeader,
+			 int nbug,const char **bugs,bool bHeader,
 			 t_linkdata *links)
 {
   int i;
@@ -625,10 +625,10 @@ static void pr_html_files(FILE *out,int nfile,t_filenm fnm[],
 
 static void write_wikiman(FILE *out,
 			  const char *program,
-			  int nldesc,char **desc,
+			  int nldesc,const char **desc,
 			  int nfile,t_filenm *fnm,
 			  int npargs,t_pargs *pa,
-			  int nbug,char **bugs,bool bHeader,
+			  int nbug,const char **bugs,bool bHeader,
 			  t_linkdata *links)
 {
   int i;
@@ -677,10 +677,10 @@ static void write_wikiman(FILE *out,
 
 static void write_htmlman(FILE *out,
 			  const char *program,
-			  int nldesc,char **desc,
+			  int nldesc,const char **desc,
 			  int nfile,t_filenm *fnm,
 			  int npargs,t_pargs *pa,
-			  int nbug,char **bugs,
+			  int nbug,const char **bugs,
 			  t_linkdata *links)
 {
   int i;
@@ -751,7 +751,7 @@ static void write_htmlman(FILE *out,
   fprintf(out,"</BODY>\n");
 }
 
-char *check_xml(char *s,const char *program,t_linkdata *links)
+char *check_xml(const char *s,const char *program,t_linkdata *links)
 {
   char *buf;
   
@@ -763,10 +763,10 @@ char *check_xml(char *s,const char *program,t_linkdata *links)
 
 static void write_xmlman(FILE *out,
 			 const char *program,
-			 int nldesc,char **desc,
+			 int nldesc,const char **desc,
 			 int nfile,t_filenm *fnm,
 			 int npargs,t_pargs *pa,
-			 int nbug,char **bugs,
+			 int nbug,const char **bugs,
 			 t_linkdata *links)
 {
   int i;
@@ -921,10 +921,10 @@ static void write_bashcompl(FILE *out,
 }
 
 static void write_py(FILE *out,const char *program,
-		     int nldesc,char **desc,
+		     int nldesc,const char **desc,
 		     int nfile,t_filenm *fnm,
 		     int npargs,t_pargs *pa,
-		     int nbug,char **bugs,
+		     int nbug,const char **bugs,
 		     t_linkdata *links)
 {
   bool bHidden;
@@ -1007,10 +1007,11 @@ static void write_py(FILE *out,const char *program,
 
 void write_man(FILE *out,const char *mantp,
 	       const char *program,
-	       int nldesc,char **desc,
+	       int nldesc,const char **desc,
 	       int nfile,t_filenm *fnm,
 	       int npargs,t_pargs *pa,
-	       int nbug,char **bugs,bool bHidden)
+	       int nbug,const char **bugs,
+	       bool bHidden)
 {
   const char *pr;
   int     i,npar;

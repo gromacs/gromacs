@@ -771,7 +771,7 @@ static inline real trace(matrix m)
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-static inline real _divide(real a,real b,char *file,int line)
+static inline real _divide(real a,real b,const char *file,int line)
 {
     if (gmx_within_tol(b,0.0,GMX_REAL_MIN)) 
         gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);

@@ -208,8 +208,9 @@ gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags);
 extern int
 parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   unsigned long pca_flags, int nfile, t_filenm fnm[],
-                  int npargs, t_pargs *pa, int ndesc, char **desc,
-                  int nbugs, char **bugs);
+                  int npargs, t_pargs *pa,
+		  int ndesc, const char **desc,
+                  int nbugs, const char **bugs);
 //! Initializes selection information.
 extern int
 gmx_ana_init_selections(gmx_ana_traj_t *d);

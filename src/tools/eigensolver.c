@@ -67,7 +67,7 @@ eigensolver(real *   a,
     int *   iwork;
     real *  work;
     real    vl,vu;
-    char *  jobz;
+    const char *  jobz;
     
     if(index_lower<0)
         index_lower = 0;

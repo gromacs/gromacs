@@ -307,7 +307,7 @@ t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
 	      char ***atomname,t_atom atom[],
 	      t_resinfo *resinfo)
 {
-  static char * bb_nm[] = { "N", "H", "CA", "C", "O" };
+  static const char * bb_nm[] = { "N", "H", "CA", "C", "O" };
 #define NBB asize(bb_nm)
   t_bb    *bb;
   char    *grpname;

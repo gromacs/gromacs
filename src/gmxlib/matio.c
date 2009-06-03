@@ -109,7 +109,7 @@ t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c)
   return -1;
 }
 
-int getcmap(FILE *in,char *fn,t_mapping **map)
+int getcmap(FILE *in,const char *fn,t_mapping **map)
 {
   int       i,n;
   char      line[STRLEN];
@@ -139,7 +139,7 @@ int getcmap(FILE *in,char *fn,t_mapping **map)
   return n;
 }
 
-int readcmap(char *fn,t_mapping **map)
+int readcmap(const char *fn,t_mapping **map)
 {
   FILE      *in;
   int       n;
@@ -163,7 +163,7 @@ void printcmap(FILE *out,int n,t_mapping map[])
 	    map[i].desc,map[i].rgb.r,map[i].rgb.g,map[i].rgb.b);
 }
 
-void writecmap(char *fn,int n,t_mapping map[])
+void writecmap(const char *fn,int n,t_mapping map[])
 {
   FILE *out;
   
@@ -426,7 +426,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     gmx_incons("Not enough rows in the matrix");
 }
 
-int read_xpm_matrix(char *fnm,t_matrix **matrix)
+int read_xpm_matrix(const char *fnm,t_matrix **matrix)
 {
   FILE *in;
   char *line;
@@ -490,7 +490,8 @@ real **matrix2real(t_matrix *matrix,real **mat)
 }
 
 void write_xpm_header(FILE *out,
-		      char *title,char *legend,char *label_x,char *label_y,
+		      const char *title,const char *legend,
+		      const char *label_x,const char *label_y,
 		      bool bDiscrete)
 {
   fprintf(out,  "/* XPM */\n");
@@ -848,7 +849,8 @@ void write_xpm_m(FILE *out, t_matrix m)
 }
 
 void write_xpm3(FILE *out,unsigned int flags,
-		char *title,char *legend,char *label_x,char *label_y,
+		const char *title,const char *legend,
+		const char *label_x,const char *label_y,
 		int n_x,int n_y,real axis_x[],real axis_y[],
 		real *matrix[],real lo,real mid,real hi,
 		t_rgb rlo,t_rgb rmid,t_rgb rhi,int *nlevels)
@@ -868,7 +870,8 @@ void write_xpm3(FILE *out,unsigned int flags,
 }
 
 void write_xpm_split(FILE *out,unsigned int flags,
-		     char *title,char *legend,char *label_x,char *label_y,
+		     const char *title,const char *legend,
+		     const char *label_x,const char *label_y,
 		     int n_x,int n_y,real axis_x[],real axis_y[],
 		     real *matrix[],
 		     real lo_top,real hi_top,int *nlevel_top,
@@ -898,7 +901,8 @@ void write_xpm_split(FILE *out,unsigned int flags,
 }
 
 void write_xpm(FILE *out,unsigned int flags,
-	       char *title,char *legend,char *label_x,char *label_y,
+	       const char *title,const char *legend,
+	       const char *label_x,const char *label_y,
 	       int n_x,int n_y,real axis_x[],real axis_y[],
 	       real *matrix[],real lo,real hi,
 	       t_rgb rlo,t_rgb rhi,int *nlevels)

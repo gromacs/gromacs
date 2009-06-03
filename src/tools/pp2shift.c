@@ -94,7 +94,7 @@ static real interpolate(real phi,real psi,t_shiftdata *sd)
 	  sd->data[iphi1] [ipsi1] * wx1*wy1);
 }
 
-static void dump_sd(char *fn,t_shiftdata *sd)
+static void dump_sd(const char *fn,t_shiftdata *sd)
 {
   FILE  *fp;
   int   i,j;
@@ -138,7 +138,7 @@ static void dump_sd(char *fn,t_shiftdata *sd)
   sfree(y_psi);
 }
 
-static t_shiftdata *read_shifts(char *fn)
+static t_shiftdata *read_shifts(const char *fn)
 {
   FILE        *fp;
   double      xx;

@@ -86,13 +86,13 @@ gmx_fft_t;
  *  GMX_FFT_FORWARD or GMX_FFT_BACKWARD, and for real-complex transforms you
  *  can only use GMX_FFT_REAL_TO_COMPLEX or GMX_FFT_COMPLEX_TO_REAL.
  */
-enum gmx_fft_direction
+typedef enum gmx_fft_direction
 {
     GMX_FFT_FORWARD,         /*!< Forward complex-to-complex transform  */
     GMX_FFT_BACKWARD,        /*!< Backward complex-to-complex transform */
     GMX_FFT_REAL_TO_COMPLEX, /*!< Real-to-complex valued fft            */
     GMX_FFT_COMPLEX_TO_REAL  /*!< Complex-to-real valued fft            */
-};
+} gmx_fft_direction;
 
 /*! \brief Specifier for FFT flags. 
  *
@@ -104,11 +104,10 @@ enum gmx_fft_direction
  *  optimization, but there are no guarantees since we cannot control what
  *  the FFT libraries do internally.
  */
-enum gmx_fft_flag
-{
-    GMX_FFT_FLAG_NONE = 0,
-    GMX_FFT_FLAG_CONSERVATIVE = (1<<0)
-};
+
+typedef int gmx_fft_flag;
+static const int GMX_FFT_FLAG_NONE = 0;
+static const int GMX_FFT_FLAG_CONSERVATIVE = (1<<0);
 
 /*! \brief Setup a 1-dimensional complex-to-complex transform 
  *
@@ -125,7 +124,7 @@ enum gmx_fft_flag
 int
 gmx_fft_init_1d        (gmx_fft_t *       fft,
                         int               nx,
-                        enum gmx_fft_flag flags);
+                        gmx_fft_flag      flags);
 
 
 
@@ -144,7 +143,7 @@ gmx_fft_init_1d        (gmx_fft_t *       fft,
 int
 gmx_fft_init_1d_real        (gmx_fft_t *       fft,
                              int               nx,
-                             enum gmx_fft_flag flags);
+                             gmx_fft_flag      flags);
 
 
 
@@ -165,7 +164,7 @@ int
 gmx_fft_init_2d        (gmx_fft_t *         fft,
                         int                 nx, 
                         int                 ny,
-                        enum gmx_fft_flag   flags);
+                        gmx_fft_flag        flags);
 
 
 /*! \brief Setup a 2-dimensional real-to-complex transform 
@@ -188,7 +187,7 @@ int
 gmx_fft_init_2d_real        (gmx_fft_t *         fft,
                              int                 nx, 
                              int                 ny,
-                             enum gmx_fft_flag   flags);
+                             gmx_fft_flag        flags);
 
 
 /*! \brief Setup a 3-dimensional complex-to-complex transform 
@@ -210,7 +209,7 @@ gmx_fft_init_3d        (gmx_fft_t *         fft,
                         int                 nx, 
                         int                 ny,
                         int                 nz,
-                        enum gmx_fft_flag   flags);
+                        gmx_fft_flag   flags);
 
 
 /*! \brief Setup a 3-dimensional real-to-complex transform 
@@ -235,7 +234,7 @@ gmx_fft_init_3d_real   (gmx_fft_t *         fft,
                         int                 nx, 
                         int                 ny,
                         int                 nz,
-                        enum gmx_fft_flag   flags);
+                        gmx_fft_flag   flags);
 
 
 

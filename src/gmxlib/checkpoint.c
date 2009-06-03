@@ -913,7 +913,6 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 		}
     }
     
-    fprog = Program();
     now = time(NULL);
     ftime = strdup(ctime(&now));
     ftime[strlen(ftime)-1] = '\0';
@@ -962,6 +961,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     btime   = strdup(BUILD_TIME);
     buser   = strdup(BUILD_USER);
     bmach   = strdup(BUILD_MACHINE);
+    fprog   = strdup(Program());
 
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
@@ -974,6 +974,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     sfree(btime);
     sfree(buser);
     sfree(bmach);
+    sfree(fprog);
 
     if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
 		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||

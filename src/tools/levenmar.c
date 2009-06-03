@@ -43,7 +43,7 @@
 
 #include "types/simple.h"
 
-static void nrerror(char error_text[], bool bExit)
+static void nrerror(const char error_text[], bool bExit)
 {
   fprintf(stderr,"Numerical Recipes run-time error...\n");
   fprintf(stderr,"%s\n",error_text);

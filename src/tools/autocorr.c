@@ -720,7 +720,7 @@ void low_do_autocorr(char *fn,char *title,
   sfree(fit);
 }
 
-static char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
+static const char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
 
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {

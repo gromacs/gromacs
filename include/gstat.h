@@ -102,11 +102,11 @@ typedef struct {
 
 extern int  nfp_ffn[effnNR];
 
-extern char *s_ffn[effnNR+2];
+extern const char *s_ffn[effnNR+2];
 
-extern char *longs_ffn[effnNR];
+extern const char *longs_ffn[effnNR];
 
-int sffn2effn(char **sffn);
+int sffn2effn(const char **sffn);
 /* Returns the ffn enum corresponding to the selected enum option in sffn */
 
 extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
@@ -406,8 +406,8 @@ extern void get_chi_product_traj (real **dih,int nframes,int nangles,
 				  int **lookup,int *xity,bool bRb,bool bNormalize,
 				  real core_frac,bool bAll,char *fnall); 
 
-extern void print_one (char *base,char *name,char *title, char *ylabel,
-		      int nf,real time[],real data[]); 
+extern void print_one (const char *base,const char *name,const char *title,
+		       const char *ylabel,int nf,real time[],real data[]); 
 		      
   /* Routines from g_hbond */
   extern void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],

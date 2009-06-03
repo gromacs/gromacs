@@ -52,11 +52,11 @@
 
 int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 9, 3 };
 
-char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
-			  "exp5", "exp7", "exp9", NULL, NULL };
+const char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
+				"exp5", "exp7", "exp9", NULL, NULL };
 /* We don't allow errest as a choice on the command line */
 
-char *longs_ffn[effnNR] = {
+const char *longs_ffn[effnNR] = {
   "no fit",
   "y = exp(-x/a1)",
   "y = a2 exp(-x/a1)",

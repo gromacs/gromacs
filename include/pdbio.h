@@ -73,13 +73,13 @@ extern void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
  * with ePBC=-1 the pbc is guessed from the box
  */
 
-extern void write_pdbfile_indexed(FILE *out,char *title,t_atoms *atoms,
+extern void write_pdbfile_indexed(FILE *out,const char *title,t_atoms *atoms,
 				  rvec x[],int ePBC,matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[],
 				  gmx_conect conect);
 /* REALLY low level */
 
-extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
+extern void write_pdbfile(FILE *out,const char *title,t_atoms *atoms,
 			  rvec x[],int ePBC,matrix box,char chain,
 			  int model_nr,gmx_conect conect);
 /* Low level pdb file writing routine.
@@ -105,7 +105,7 @@ extern int read_pdbfile(FILE *in,char *title,int *model_nr,
  * ePBC and gmx_conect structure may be NULL.
  */
 
-extern void read_pdb_conf(char *infile,char *title, 
+extern void read_pdb_conf(const char *infile,char *title, 
 			  t_atoms *atoms,rvec x[],int *ePBC,matrix box,
 			  bool bChange,gmx_conect conect);
 /* Read a pdb file and extract ATOM and HETATM fields.
@@ -117,10 +117,10 @@ extern void read_pdb_conf(char *infile,char *title,
 extern void get_pdb_coordnum(FILE *in,int *natoms);
 /* Read a pdb file and count the ATOM and HETATM fields. */
 
-extern bool is_hydrogen(char *nm);
+extern bool is_hydrogen(const char *nm);
 /* Return whether atom nm is a hydrogen */
 
-extern bool is_dummymass(char *nm);
+extern bool is_dummymass(const char *nm);
 /* Return whether atom nm is a dummy mass */
 
 /* Routines to handle CONECT records if they have been read in */

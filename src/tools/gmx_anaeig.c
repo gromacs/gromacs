@@ -114,7 +114,7 @@ static void calc_entropy_schlitter(FILE *fp,int n,int nskip,
   fprintf(fp,"The Entropy due to the Schlitter formula is %g J/mol K\n",S);
 }
 
-char *proj_unit;
+const char *proj_unit;
 
 static real tick_spacing(real range,int minticks)
 {
@@ -127,9 +127,9 @@ static real tick_spacing(real range,int minticks)
   return sp;
 }
 
-static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
-			      char *title, char *subtitle,
-			      char *xlabel, char **ylabel,
+static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
+			      const char *title, const char *subtitle,
+			      const char *xlabel, const char **ylabel,
 			      int n, real *x, real **y, real ***sy,
 			      real scale_x, bool bZero, bool bSplit)
 {
@@ -495,7 +495,8 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
     write_xvgr_graphs(projfile, noutvec, 1, str, NULL, xvgr_tlabel(),
-		      ylabel, nframes, inprod[noutvec], inprod, NULL,
+		      (const char **)ylabel,
+		      nframes, inprod[noutvec], inprod, NULL,
 		      time_factor(), FALSE, bSplit);
   }
   
@@ -680,7 +681,7 @@ static void components(char *outfile,int natoms,
   }
   write_xvgr_graphs(outfile,noutvec,4,"Eigenvector components",
 		    "black: total, red: x, green: y, blue: z",
-		    "Atom number",ylabel,
+		    "Atom number",(const char **)ylabel,
 		    natoms,x,NULL,y,1,FALSE,FALSE);
   fprintf(stderr,"\n");
 }
@@ -717,14 +718,14 @@ rmsf(char *outfile,int natoms,real *sqrtm,
           y[g][i] = sqrt(eigval[eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
   }
   write_xvgr_graphs(outfile,noutvec,1,"RMS fluctuation (nm) ",NULL,
-                    "Atom number",ylabel,
+                    "Atom number",(const char **)ylabel,
                     natoms,x,y,NULL,1,TRUE,FALSE);
   fprintf(stderr,"\n");
 }
 
 int gmx_anaeig(int argc,char *argv[])
 {
-  static char *desc[] = {
+  static const char *desc[] = {
     "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
     "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes anaysis",
     "([TT]g_nmeig[tt]).[PAR]",

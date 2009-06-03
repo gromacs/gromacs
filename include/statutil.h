@@ -66,17 +66,17 @@ extern "C" {
   
   /* End trajectory time control */
   
-typedef int t_first_x(int *status,char *fn,real *t,rvec **x,matrix box);
+typedef int t_first_x(int *status,const char *fn,real *t,rvec **x,matrix box);
 
 typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
 
 /* I/O function types */
 
-extern char *Program(void);
+extern const char *Program(void);
 /* Return the name of the program */
-extern char *ShortProgram(void);
+extern const char *ShortProgram(void);
 /* Id. without leading directory */
-extern char *command_line(void);
+extern const char *command_line(void);
 /* Return the command line for this program */
 extern void set_program_name(const char *argvzero);
 /* set the program name to the provided string, but note
@@ -130,7 +130,7 @@ void close_trx(int status);
  * or open_trx. Identical to close_trj.
  */
 
-int open_trx(char *outfile,char *filemode);
+int open_trx(const char *outfile,const char *filemode);
 /* Open a TRX file and return the file number */
 
 extern bool bRmod_fd(double a, double b, double c,bool bDouble);
@@ -202,7 +202,8 @@ extern void convert_times(int n, real *time);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-extern int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags);
+extern int read_first_frame(int *status,const char *fn,
+			    t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
    * Returns natoms when succeeded, 0 otherwise.
@@ -216,7 +217,7 @@ extern bool read_next_frame(int status,t_trxframe *fr);
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-extern int read_first_x(int *status,char *fn,
+extern int read_first_x(int *status,const char *fn,
 			real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
  * memory for the coordinates, for a trajectory file.
@@ -238,7 +239,7 @@ extern void close_trj(int status);
 extern void rewind_trj(int status);
 /* Rewind trj file as opened with read_first_x */
 
-extern t_topology *read_top(char *fn,int *ePBC);
+extern t_topology *read_top(const char *fn,int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
@@ -307,7 +308,8 @@ extern int nenum(const char *enumc[]);
 #ifdef HAVE_MOTIF
 extern void gmx_gui(int *argc,char *argv[],
 		    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
-		    int ndesc,char *desc[],int nbugs,char *bugs[]);
+		    int ndesc,const char *desc[],
+		    int nbugs,const char *bugs[]);
 /* This function plops up a Motif dialog box in which the command-line options
  * can be changed.
  */
@@ -315,7 +317,8 @@ extern void gmx_gui(int *argc,char *argv[],
 
 extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 			      int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-			      int ndesc,char **desc,int nbugs,char **bugs);
+			      int ndesc,const char **desc,
+			      int nbugs,const char **bugs);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables

@@ -43,17 +43,17 @@
 
 #include "readinp.h"
 
-extern void write_java(FILE *out,char *program,
-		       int nldesc,char **desc,
+extern void write_java(FILE *out,const char *program,
+		       int nldesc,const char **desc,
 		       int nfile,t_filenm *fnm,
 		       int npargs,t_pargs *pa,
-		       int nbug,char **bugs);
+		       int nbug,const char **bugs);
      
 extern void write_man(FILE *out,const char *mantp,const char *program,
-		      int nldesc,char **desc,
+		      int nldesc,const char **desc,
 		      int nfile,t_filenm *fnm,
 		      int npargs,t_pargs *pa,
-		      int nbug,char **bugs,
+		      int nbug,const char **bugs,
 		      bool bHidden);
 
 extern char *fileopt(unsigned long flag,char buf[],int maxsize);

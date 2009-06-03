@@ -162,7 +162,7 @@ extern int do_any_io(int step, t_inputrec *ir);
  
 extern void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir);
 
-extern time_t print_date_and_time(FILE *log,int pid,char *title);
+extern time_t print_date_and_time(FILE *log,int pid,const char *title);
 
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);

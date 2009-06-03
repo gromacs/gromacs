@@ -51,8 +51,8 @@
 #include "gstat.h"
 #include "confio.h"
 
-void print_one(char *base,char *name,char *title, char *ylabel,
-		      int nf,real time[],real data[])
+void print_one(const char *base,const char *name,const char *title,
+	       const char *ylabel,int nf,real time[],real data[])
 {
   FILE *fp;
   char buf[256],t2[256];

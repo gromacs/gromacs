@@ -615,7 +615,8 @@ int
 parse_trjana_args(gmx_ana_traj_t *d,
                   int *argc, char *argv[], unsigned long pca_flags,
                   int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
-                  int ndesc, char **desc, int nbugs, char **bugs)
+                  int ndesc, const char **desc,
+		  int nbugs, const char **bugs)
 {
     t_filenm           *all_fnm = NULL;
     int                 max_fnm, nfall;

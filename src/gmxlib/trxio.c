@@ -352,7 +352,7 @@ void close_trx(int status)
   gmx_fio_close(status);
 }
 
-int open_trx(char *outfile,char *filemode)
+int open_trx(const char *outfile,const char *filemode)
 {
   if (filemode[0]!='w' && filemode[0]!='a')
     gmx_fatal(FARGS,"Sorry, write_trx can only write");
@@ -726,7 +726,7 @@ bool read_next_frame(int status,t_trxframe *fr)
   return bRet;
 }
 
-int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
+int read_first_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 {
   int  fp;
   bool bFirst,bOK;
@@ -818,7 +818,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
 
 /***** C O O R D I N A T E   S T U F F *****/
 
-int read_first_x(int *status,char *fn,
+int read_first_x(int *status,const char *fn,
 		 real *t,rvec **x,matrix box)
 {
   t_trxframe fr;
@@ -871,7 +871,7 @@ static void clear_v(t_trxframe *fr)
       clear_rvec(fr->v[i]);
 }
 
-int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
+int read_first_v(int *status,const char *fn,real *t,rvec **v,matrix box)
 {
   t_trxframe fr;
 

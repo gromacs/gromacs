@@ -664,7 +664,7 @@ static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
 
 int gmx_analyze(int argc,char *argv[])
 {
-  static char *desc[] = {
+  static const char *desc[] = {
     "g_analyze reads an ascii file and analyzes data sets.",
     "A line in the input file may start with a time",
     "(see option [TT]-time[tt]) and any number of y values may follow.",
@@ -747,7 +747,7 @@ int gmx_analyze(int argc,char *argv[])
   static real temp=298.15,fit_start=1,smooth_tail_start=-1;
   
   /* must correspond to enum avbar* declared at beginning of file */
-  static char *avbar_opt[avbarNR+1] = { 
+  static const char *avbar_opt[avbarNR+1] = { 
     NULL, "none", "stddev", "error", "90", NULL
   };
 

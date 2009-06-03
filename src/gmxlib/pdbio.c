@@ -220,7 +220,7 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
   }
 }
   
-void write_pdbfile_indexed(FILE *out,char *title,
+void write_pdbfile_indexed(FILE *out,const char *title,
 			   t_atoms *atoms,rvec x[],
 			   int ePBC,matrix box,char chain,
 			   int model_nr, atom_id nindex, atom_id index[],
@@ -333,7 +333,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
   }
 }
 
-void write_pdbfile(FILE *out,char *title, t_atoms *atoms,rvec x[],
+void write_pdbfile(FILE *out,const char *title, t_atoms *atoms,rvec x[],
 		   int ePBC,matrix box,char chain,int model_nr,gmx_conect conect)
 {
   atom_id i,*index;
@@ -550,7 +550,7 @@ static int read_atom(t_symtab *symtab,
   return natom;
 }
 
-bool is_hydrogen(char *nm)
+bool is_hydrogen(const char *nm)
 {
   char buf[30];
   
@@ -564,7 +564,7 @@ bool is_hydrogen(char *nm)
   return FALSE;
 }
 
-bool is_dummymass(char *nm)
+bool is_dummymass(const char *nm)
 {
   char buf[30];
   
@@ -786,7 +786,7 @@ void get_pdb_coordnum(FILE *in,int *natoms)
   }
 }
 
-void read_pdb_conf(char *infile,char *title, 
+void read_pdb_conf(const char *infile,char *title, 
 		   t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
 		   gmx_conect conect)
 {

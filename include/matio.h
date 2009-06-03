@@ -50,19 +50,19 @@ extern t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
  * return -1 if not found
  */
 
-extern int getcmap(FILE *in,char *fn,t_mapping **map);
+extern int getcmap(FILE *in,const char *fn,t_mapping **map);
 /* Read the mapping table from in, return number of entries */
 
-extern int readcmap(char *fn,t_mapping **map);
+extern int readcmap(const char *fn,t_mapping **map);
 /* Read the mapping table from fn, return number of entries */
 
 extern void printcmap(FILE *out,int n,t_mapping map[]);
 /* print mapping table to out */
 
-extern void writecmap(char *fn,int n,t_mapping map[]);
+extern void writecmap(const char *fn,int n,t_mapping map[]);
 /* print mapping table to fn */
 
-extern int read_xpm_matrix(char *fnm, t_matrix **matrix);
+extern int read_xpm_matrix(const char *fnm, t_matrix **matrix);
 /* Reads a number of matrices from .xpm file fnm and returns this number */
 
 extern real **matrix2real(t_matrix *matrix,real **mat);
@@ -75,7 +75,8 @@ extern void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */ 
 
 extern void write_xpm3(FILE *out,unsigned int flags,
-		       char *title,char *legend,char *label_x,char *label_y,
+		       const char *title,const char *legend,
+		       const char *label_x,const char *label_y,
 		       int n_x,int n_y,real axis_x[],real axis_y[],
 		       real *matrix[],real lo,real mid,real hi,
 		       t_rgb rlo,t_rgb rmid,t_rgb rhi,int *nlevels);
@@ -83,8 +84,8 @@ extern void write_xpm3(FILE *out,unsigned int flags,
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
 extern void write_xpm_split(FILE *out,unsigned int flags,
-			    char *title,char *legend,
-			    char *label_x,char *label_y,
+			    const char *title,const char *legend,
+			    const char *label_x,const char *label_y,
 			    int n_x,int n_y,real axis_x[],real axis_y[],
 			    real *matrix[],
 			    real lo_top,real hi_top,int *nlevel_top,
@@ -99,7 +100,8 @@ extern void write_xpm_split(FILE *out,unsigned int flags,
  */
 
 extern void write_xpm(FILE *out,unsigned int flags,
-		      char *title,char *legend,char *label_x,char *label_y,
+		      const char *title,const char *legend,
+		      const char *label_x,const char *label_y,
 		      int n_x,int n_y,real t_x[],real t_y[],
 		      real *matrix[],real lo,real hi,
 		      t_rgb rlo,t_rgb rhi,int *nlevels);
