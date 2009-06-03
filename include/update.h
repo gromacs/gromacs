@@ -89,9 +89,8 @@ extern void update(FILE         *fplog,
 		   bool         bInitStep);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
-extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
-			 gmx_ekindata_t *ekind,t_nrnb *nrnb,
-			 real lambda);
+extern void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
+			 gmx_ekindata_t *ekind,t_nrnb *nrnb);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -106,16 +105,6 @@ extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
  * Now also computes the contribution of the kinetic energy to the
  * free energy
  *
- */
-
-extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
-			      t_grpopts *opts,t_mdatoms *md,
-			      gmx_ekindata_t *ekind,t_nrnb *nrnb,
-			      real lambda);
-/* The same as calc_ke_part, but for viscosity calculations.
- * The cosine velocity profile is excluded from the kinetic energy.
- * The new amplitude of the velocity profile is calculated for this
- * node and stored in grps->cosacc.mvcos.
  */
 
 extern void

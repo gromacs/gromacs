@@ -888,12 +888,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   else
   {
       /* Compute initial EKin for all.. */
-      if (ekind->cosacc.cos_accel == 0) {
-          calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
-      } else {
-	  calc_ke_part_visc(state->box,state->x,state->v,&(ir->opts),
-			    mdatoms,ekind,nrnb,state->lambda);
-      }
+      calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb);
       debug_gmx();
 
       if (PAR(cr))
@@ -1305,7 +1300,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.
              */
-            calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
+            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb);
             if (PAR(cr))
             {
                 global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
@@ -1570,15 +1565,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         }
         
         debug_gmx();
-        if (ekind->cosacc.cos_accel == 0)
-        {
-            calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
-        }
-        else
-        {
-            calc_ke_part_visc(state->box,state->x,state->v,&(ir->opts),
-                              mdatoms,ekind,nrnb,state->lambda);
-        }
+        calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb);
         
         /* since we use the new coordinates in calc_ke_part_visc, we should use
          * the new box too. Still, won't this be offset by one timestep in the

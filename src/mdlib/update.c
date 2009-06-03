@@ -565,9 +565,8 @@ static void dump_it_all(FILE *fp,const char *title,
 #endif
 }
 
-void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
-		  gmx_ekindata_t *ekind,
-                  t_nrnb *nrnb,real lambda)
+static void calc_ke_part_normal(rvec v[],t_grpopts *opts,t_mdatoms *md,
+                                gmx_ekindata_t *ekind,t_nrnb *nrnb)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,ga=0,gt=0;
@@ -611,10 +610,10 @@ void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
-                       t_grpopts *opts,t_mdatoms *md,
-		       gmx_ekindata_t *ekind,
-                       t_nrnb *nrnb,real lambda)
+static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
+                              t_grpopts *opts,t_mdatoms *md,
+                              gmx_ekindata_t *ekind,
+                              t_nrnb *nrnb)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,gt=0;
@@ -660,6 +659,21 @@ void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
   cosacc->mvcos = mvcos;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
+}
+
+void calc_ke_part(t_state *state,
+                  t_grpopts *opts,t_mdatoms *md,
+                  gmx_ekindata_t *ekind,
+                  t_nrnb *nrnb)
+{
+    if (ekind->cosacc.cos_accel == 0)
+    {
+        calc_ke_part_normal(state->v,opts,md,ekind,nrnb);
+    }
+    else
+    {
+        calc_ke_part_visc(state->box,state->x,state->v,opts,md,ekind,nrnb);
+    }
 }
 
 void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
