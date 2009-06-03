@@ -598,6 +598,9 @@ gmx_lockfile(FILE *   stream);
 void
 gmx_unlockfile(FILE *   stream);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _GMX_THREAD_H_ */
 
