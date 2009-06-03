@@ -24,7 +24,7 @@
  * ARPACK was written by 
  *
  *     Danny Sorensen               Phuong Vu
- *    Richard Lehoucq              CRPC / Rice University
+ *    Riconst chard Lehoucq              CRPC / Rice University
  *    Dept. of Computational &     Houston, Texas
  *    Applied Mathematics
  *    Rice University           
@@ -455,7 +455,7 @@ L190:
 
 static void 
 F77_FUNC(dgetv0,DGETV0)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     itry, 
                         int *     initv, 
                         int *     n, 
@@ -816,7 +816,7 @@ L9000:
 
 
 static void 
-F77_FUNC(dsortr,DSORTR)(char *    which, 
+F77_FUNC(dsortr,DSORTR)(const char *    which, 
                         int *     apply, 
                         int *     n, 
                         double *  x1, 
@@ -982,7 +982,7 @@ L9000:
 
 
 static void 
-F77_FUNC(dsesrt,DSESRT)(char *    which, 
+F77_FUNC(dsesrt,DSESRT)(const char *    which, 
                         int *     apply, 
                         int *     n, 
                         double *  x, 
@@ -1149,7 +1149,7 @@ L9000:
 
 static void
 F77_FUNC(dsgets,DSGETS)(int *     ishift, 
-                        char *    which, 
+                        const char *    which, 
                         int *     kev, 
                         int *     np, 
                         double *  ritz, 
@@ -1279,7 +1279,7 @@ L9000:
 
 static void 
 F77_FUNC(dsaitr,DSAITR)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
                         int *     k,
                         int *     np, 
@@ -1579,9 +1579,9 @@ L9000:
 
 static void 
 F77_FUNC(dsaup2,DSAUP2)(int *     ido, 
-                        char *    bmat,
+                        const char *    bmat,
                         int *     n,
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         int *     np,
                         double *  tol, 
@@ -1618,7 +1618,7 @@ F77_FUNC(dsaup2,DSAUP2)(int *     ido,
     int nevd2;
     int nevm2;
     int nevbef;
-    char wprime[2];
+    const char wprime[2];
     int nptemp;
 
     --workd;
@@ -1927,9 +1927,9 @@ L9000:
 
 void 
 F77_FUNC(dsaupd,DSAUPD)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *	  which, 
+                        const char *	  which, 
                         int *     nev, 
                         double *  tol, 
                         double *  resid, 
@@ -2077,15 +2077,15 @@ L9000:
 
 void
 F77_FUNC(dseupd,DSEUPD)(int *     rvec, 
-                        char *    howmny, 
+                        const char *    howmny, 
                         int *     select, 
                         double *  d__, 
                         double *  z__, 
                         int *     ldz, 
                         double *  sigma, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         double *  tol, 
                         double *  resid, 
@@ -2111,7 +2111,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
     int ierr;
     double temp;
     int next;
-    char type__[6];
+    const char type__[6];
     int ritz;
     int reord;
     int nconv;
@@ -2913,7 +2913,7 @@ L190:
 
 static void 
 F77_FUNC(sgetv0,SGETV0)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     itry, 
                         int *     initv, 
                         int *     n, 
@@ -3274,7 +3274,7 @@ L9000:
 
 
 static void 
-F77_FUNC(ssortr,SSORTR)(char *    which, 
+F77_FUNC(ssortr,SSORTR)(const char *    which, 
                         int *     apply, 
                         int *     n, 
                         float *  x1, 
@@ -3440,7 +3440,7 @@ L9000:
 
 
 static void 
-F77_FUNC(ssesrt,SSESRT)(char *    which, 
+F77_FUNC(ssesrt,SSESRT)(const char *    which, 
                         int *     apply, 
                         int *     n, 
                         float *  x, 
@@ -3607,7 +3607,7 @@ L9000:
 
 static void
 F77_FUNC(ssgets,SSGETS)(int *     ishift, 
-                        char *    which, 
+                        const char *    which, 
                         int *     kev, 
                         int *     np, 
                         float *  ritz, 
@@ -3737,7 +3737,7 @@ L9000:
 
 static void 
 F77_FUNC(ssaitr,SSAITR)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
                         int *     k,
                         int *     np, 
@@ -4037,9 +4037,9 @@ L9000:
 
 static void 
 F77_FUNC(ssaup2,SSAUP2)(int *     ido, 
-                        char *    bmat,
+                        const char *    bmat,
                         int *     n,
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         int *     np,
                         float *  tol, 
@@ -4076,7 +4076,7 @@ F77_FUNC(ssaup2,SSAUP2)(int *     ido,
     int nevd2;
     int nevm2;
     int nevbef;
-    char wprime[2];
+    const char wprime[2];
     int nptemp;
 
     --workd;
@@ -4386,9 +4386,9 @@ L9000:
 
 void 
 F77_FUNC(ssaupd,SSAUPD)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *	  which, 
+                        const char *	  which, 
                         int *     nev, 
                         float *  tol, 
                         float *  resid, 
@@ -4536,15 +4536,15 @@ L9000:
 
 void
 F77_FUNC(sseupd,SSEUPD)(int *     rvec, 
-                        char *    howmny, 
+                        const char *    howmny, 
                         int *     select, 
                         float *  d__, 
                         float *  z__, 
                         int *     ldz, 
                         float *  sigma, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         float *  tol, 
                         float *  resid, 
@@ -4570,7 +4570,7 @@ F77_FUNC(sseupd,SSEUPD)(int *     rvec,
     int ierr;
     float temp;
     int next;
-    char type__[6];
+    const char type__[6];
     int ritz;
     int reord;
     int nconv;

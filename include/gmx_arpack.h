@@ -23,7 +23,7 @@
  * ARPACK was written by 
  *
  *     Danny Sorensen               Phuong Vu
- *    Richard Lehoucq              CRPC / Rice University
+ *    Riconst chard Lehoucq              CRPC / Rice University
  *    Dept. of Computational &     Houston, Texas
  *    Applied Mathematics
  *    Rice University           
@@ -105,9 +105,9 @@
  */
 void
 F77_FUNC(dsaupd,DSAUPD)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *	  which, 
+                        const char *	  which, 
                         int *     nev, 
                         double *  tol, 
                         double *  resid, 
@@ -164,15 +164,15 @@ F77_FUNC(dsaupd,DSAUPD)(int *     ido,
  */
 void
 F77_FUNC(dseupd,DSEUPD)(int *     rvec, 
-                        char *    howmny, 
+                        const char *    howmny, 
                         int *     select, 
                         double *  d, 
                         double *  z, 
                         int *     ldz, 
                         double *  sigma, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         double *  tol, 
                         double *  resid, 
@@ -236,9 +236,9 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
  */
 void 
 F77_FUNC(ssaupd,SSAUPD)(int *     ido, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         float *   tol, 
                         float *   resid, 
@@ -297,15 +297,15 @@ F77_FUNC(ssaupd,SSAUPD)(int *     ido,
  */
 void
 F77_FUNC(sseupd,SSEUPD)(int *     rvec, 
-                        char *    howmny, 
+                        const char *    howmny, 
                         int *     select, 
                         float *   d, 
                         float *   z, 
                         int *     ldz, 
                         float *   sigma, 
-                        char *    bmat, 
+                        const char *    bmat, 
                         int *     n, 
-                        char *    which, 
+                        const char *    which, 
                         int *     nev, 
                         float *   tol, 
                         float *   resid, 
