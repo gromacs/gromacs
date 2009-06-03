@@ -50,7 +50,7 @@
 
 
 #ifdef DEBUG
-static void log_action(int bMal,char *what,char *file,int line,
+static void log_action(int bMal,const char *what,const char *file,int line,
                        int nelem,int size,void *ptr)
 {
   static int btot=0;
