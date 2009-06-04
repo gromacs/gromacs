@@ -1,5 +1,4 @@
 /*
- *       $Id$
  *
  *       This source code is part of
  *
@@ -26,7 +25,6 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID_update_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>

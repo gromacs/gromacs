@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 
  *                This source code is part of
  * 
@@ -34,8 +33,6 @@
  * Gyas ROwers Mature At Cryogenic Speed
  */
 
-/* This line is only for CVS version info */
-static const char *SRCID_template_c = "$Id$";
 
 #include "statutil.h"
 #include "typedefs.h"

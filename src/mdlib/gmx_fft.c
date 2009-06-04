@@ -1,6 +1,5 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- 
  *
- * $Id$
  *
  * Gromacs 4.0                         Copyright (c) 1991-2003
  * Erik Lindahl, David van der Spoel, University of Groningen.

@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 
  * This file is part of Gromacs        Copyright (c) 1991-2004
  * David van der Spoel, Erik Lindahl, University of Groningen.

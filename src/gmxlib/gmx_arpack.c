@@ -1,6 +1,5 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: m; c-basic-offset: 4 -*- 
  *
- * $Id$
  * 
  * This file is part of Gromacs        Copyright (c) 1991-2004
  * David van der Spoel, Erik Lindahl, University of Groningen.

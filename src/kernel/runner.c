@@ -1,5 +1,4 @@
 /*
- *       $Id$
  *
  *       This source code is part of
  *
@@ -26,7 +25,6 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
-static char *SRCID_runner_c = "$Id$";
 
 #include <string.h>
 #include <time.h>

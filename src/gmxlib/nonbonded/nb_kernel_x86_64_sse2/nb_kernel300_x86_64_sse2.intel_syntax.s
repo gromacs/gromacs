@@ -1,5 +1,4 @@
 ;#
-;# $Id$
 ;#
 ;# Gromacs 4.0                         Copyright (c) 1991-2003 
 ;# David van der Spoel, Erik Lindahl

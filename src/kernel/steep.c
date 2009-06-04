@@ -1,5 +1,4 @@
 /*
- *       $Id$
  *
  *       This source code is part of
  *
@@ -26,7 +25,6 @@
  * And Hey:
  * Great Red Oystrich Makes All Chemists Sane
  */
-static char *SRCID_steep_c = "$Id$";
 
 #define FORCE_CRIT
 

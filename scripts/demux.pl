@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-# $Id$
 
 # in: input filename
 $in = shift || die("Please specify input filename");

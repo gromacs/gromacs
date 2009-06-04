@@ -1,5 +1,4 @@
 /*
- *       $Id$
  *
  *       This source code is part of
  *
@@ -26,7 +25,6 @@
  * And Hey:
  * S  C  A  M  O  R  G
  */
-static char *SRCID_clincs_c = "$Id$";
 
 #include <math.h>
 #include "main.h"
