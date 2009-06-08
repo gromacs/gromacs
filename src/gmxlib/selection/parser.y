@@ -263,16 +263,16 @@ sel_expr:    GROUP string       { $$ = get_group_by_name(grps, $2);
 
 /* External variables */
 sel_expr:    VARIABLE_GROUP     { $$ = _gmx_selelem_create(SEL_SUBEXPRREF);
+                                  _gmx_selelem_set_vtype($$, $1->v.type);
                                   $$->name   = $1->name;
-                                  $$->v.type = $1->v.type;
                                   $$->child  = $1;
                                   $1->refcount++;                        }
 ;
 
 numeric_expr:
              VARIABLE_NUMERIC   { $$ = _gmx_selelem_create(SEL_SUBEXPRREF);
+                                  _gmx_selelem_set_vtype($$, $1->v.type);
                                   $$->name   = $1->name;
-                                  $$->v.type = $1->v.type;
                                   $$->child  = $1;
                                   $1->refcount++;                        }
 ;
@@ -281,8 +281,8 @@ pos_expr:    VARIABLE_POS       { if ($1->type == SEL_CONST) {
                                       $$ = $1;
                                   } else {
                                       $$ = _gmx_selelem_create(SEL_SUBEXPRREF);
+                                      _gmx_selelem_set_vtype($$, $1->v.type);
                                       $$->name   = $1->name;
-                                      $$->v.type = $1->v.type;
                                       $$->child  = $1;
                                   }
                                   $1->refcount++;                        }
@@ -336,12 +336,12 @@ sel_expr:    numeric_expr CMP_OP numeric_expr
 /* Expressions that can (and should) be compared numerically */
 numeric_expr:
              INT                { $$ = _gmx_selelem_create(SEL_CONST);
-                                  $$->v.type = INT_VALUE;
-                                  snew($$->v.u.i, 1);
+                                  _gmx_selelem_set_vtype($$, INT_VALUE);
+                                  _gmx_selvalue_reserve(&$$->v, 1);
                                   $$->v.u.i[0] = $1;                  }
            | REAL               { $$ = _gmx_selelem_create(SEL_CONST);
-                                  $$->v.type = REAL_VALUE;
-                                  snew($$->v.u.r, 1);
+                                  _gmx_selelem_set_vtype($$, REAL_VALUE);
+                                  _gmx_selvalue_reserve(&$$->v, 1);
                                   $$->v.u.r[0] = $1;                  }
            | pos_mod KEYWORD_INT
              {
@@ -431,8 +431,8 @@ pos_expr_nosel_impl:
 pos_expr:    '(' number ',' number ',' number ')'
                                 { rvec x;
                                   $$ = _gmx_selelem_create(SEL_CONST);
-                                  $$->v.type = POS_VALUE;
-                                  snew($$->v.u.p, 1);
+                                  _gmx_selelem_set_vtype($$, POS_VALUE);
+                                  _gmx_selvalue_reserve(&$$->v, 1);
                                   x[XX] = $2; x[YY] = $4; x[ZZ] = $6;
                                   gmx_ana_pos_init_const($$->v.u.p, x);  }
 ;
@@ -537,7 +537,7 @@ get_group_by_name(gmx_ana_indexgrps_t *grps, char *name)
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
-    sel->v.type = GROUP_VALUE;
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, name))
     {
         _gmx_selelem_free(sel);
@@ -557,7 +557,7 @@ get_group_by_id(gmx_ana_indexgrps_t *grps, int id)
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
-    sel->v.type = GROUP_VALUE;
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, grps, id))
     {
         _gmx_selelem_free(sel);

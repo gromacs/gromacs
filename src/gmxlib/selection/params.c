@@ -250,15 +250,7 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
         }
     }
 
-    switch (param->val.type)
-    {
-        case INT_VALUE:  snew(param->val.u.i, nval); break;
-        case REAL_VALUE: snew(param->val.u.r, nval); break;
-        case STR_VALUE:  snew(param->val.u.s, nval); break;
-        default:
-            gmx_bug("internal error");
-            return FALSE;
-    }
+    _gmx_selvalue_reserve(&param->val, nval);
     value = values;
     i     = 0;
     while (value)
@@ -349,8 +341,8 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
         {
             return NULL;
         }
+        _gmx_selelem_set_vtype(child, expr->v.type);
         child->child  = expr;
-        child->v.type = expr->v.type;
     }
     /* Put the child element in the correct place */
     if (!root->child || n < root->child->u.param - ps)
@@ -569,23 +561,19 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                 *param->nvalptr = 1;
             }
             param->nvalptr = NULL;
-            switch (param->val.type)
+            if (param->val.type == INT_VALUE || param->val.type == REAL_VALUE
+                || param->val.type == STR_VALUE)
             {
-                case INT_VALUE:  snew(param->val.u.i, 1); break;
-                case REAL_VALUE: snew(param->val.u.r, 1); break;
-                case STR_VALUE:  snew(param->val.u.s, 1); break;
-                default:         break;
+                _gmx_selvalue_reserve(&param->val, 1);
             }
             return set_expr_value_store(child, param, 0);
         }
         /* If we reach here, proceed with normal parameter handling */
         param->val.nr = 1;
-        switch (param->val.type)
+        if (param->val.type == INT_VALUE || param->val.type == REAL_VALUE
+            || param->val.type == STR_VALUE)
         {
-            case INT_VALUE:  snew(param->val.u.i, 1); break;
-            case REAL_VALUE: snew(param->val.u.r, 1); break;
-            case STR_VALUE:  snew(param->val.u.s, 1); break;
-            default:         break;
+            _gmx_selvalue_reserve(&param->val, 1);
         }
         param->flags &= ~SPAR_ATOMVAL;
         param->flags &= ~SPAR_DYNAMIC;

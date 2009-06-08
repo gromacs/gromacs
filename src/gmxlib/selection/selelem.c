@@ -113,7 +113,8 @@ _gmx_selelem_boolean_type_str(t_selelem *sel)
  * \c t_selelem::type is set to \p type,
  * \c t_selelem::v::type is set to \ref GROUP_VALUE for boolean and comparison
  * expressions and \ref NO_VALUE for others,
- * \ref SEL_ALLOCVAL and \ref SEL_ALLOCDATA are set for non-root elements,
+ * \ref SEL_ALLOCVAL is set for non-root elements (\ref SEL_ALLOCDATA is also
+ * set for \ref SEL_BOOLEAN elements),
  * and \c t_selelem::refcount is set to one.
  * All the pointers are set to NULL.
  */
@@ -125,9 +126,11 @@ _gmx_selelem_create(e_selelem_t type)
     snew(sel, 1);
     sel->name       = NULL;
     sel->type       = type;
+    sel->flags      = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
     if (type == SEL_BOOLEAN)
     {
         sel->v.type = GROUP_VALUE;
+        sel->flags |= SEL_ALLOCDATA;
     }
     else
     {
@@ -136,12 +139,43 @@ _gmx_selelem_create(e_selelem_t type)
     sel->v.nr       = 0;
     sel->v.u.ptr    = NULL;
     sel->evaluate   = NULL;
-    sel->flags      = (type != SEL_ROOT) ? (SEL_ALLOCVAL | SEL_ALLOCDATA) : 0;
     sel->child      = NULL;
     sel->next       = NULL;
     sel->refcount   = 1;
 
     return sel;
+}
+
+/*!
+ * \param[in,out] sel   Selection element to set the type for.
+ * \param[in]     vtype Value type for the selection element.
+ * \returns       0 on success, EINVAL if the value type is invalid.
+ *
+ * If the new type is \ref GROUP_VALUE or \ref POS_VALUE, the
+ * \ref SEL_ALLOCDATA flag is also set.
+ *
+ * This function should only be called at most once for each element,
+ * preferably right after calling _gmx_selelem_create().
+ */
+int
+_gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype)
+{
+    if (sel->type == SEL_BOOLEAN && vtype != GROUP_VALUE)
+    {
+        gmx_bug("internal error");
+        return EINVAL;
+    }
+    if (sel->v.type != NO_VALUE && vtype != sel->v.type)
+    {
+        gmx_call("_gmx_selelem_set_vtype() called more than once");
+        return EINVAL;
+    }
+    sel->v.type = vtype;
+    if (vtype == GROUP_VALUE || vtype == POS_VALUE)
+    {
+        sel->flags |= SEL_ALLOCDATA;
+    }
+    return 0;
 }
 
 /*!
