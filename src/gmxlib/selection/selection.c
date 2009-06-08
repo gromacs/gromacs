@@ -161,6 +161,11 @@ VARNAME = EXPR ;
  *  - <tt>name STR ... </tt>: selects atoms by name
  *  - <tt>type STR ... </tt>: selects atoms by type
  *  - <tt>resname STR ... </tt>: selects residues by name
+ *  - <tt>mass</tt>: returns the mass of the atom, use, e.g., like
+ *    <tt>mass < 15</tt>
+ *  - <tt>charge</tt>: returns the charge of the atom
+ *  - <tt>occupancy</tt>: returns the occupancy of the atom from the PDB file
+ *  - <tt>betafactor</tt>: returns the B-factor of the atom from the PDB file
  *  - <tt>within RADIUS of POS_EXPR</tt>: Selects atoms that are within
  *    RADIUS of any positions defined by POS_EXPR. POS_EXPR can be defined
  *    as in selections above (\p -selrpos is used instead of \p -seltype to

@@ -65,6 +65,25 @@ check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 static int
 evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+//! Evaluates the \p mass selection keyword.
+static int
+evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+//! Evaluates the \p charge selection keyword.
+static int
+evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+//! Checks whether PDB info is present in the topology.
+static int
+check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+//! Evaluates the \p occupancy selection keyword.
+static int
+evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+//! Evaluates the \p betafactor selection keyword.
+static int
+evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 //! Evaluates the \p resname selection keyword.
 static int
 evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -178,6 +197,62 @@ gmx_ana_selmethod_t sm_resname = {
     NULL,
     NULL,
     &evaluate_resname,
+    NULL,
+};
+
+//! \internal Selection method data for \p mass selection keyword.
+gmx_ana_selmethod_t sm_mass = {
+    "mass", REAL_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_mass,
+    NULL,
+};
+
+//! \internal Selection method data for \p charge selection keyword.
+gmx_ana_selmethod_t sm_charge = {
+    "charge", REAL_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_charge,
+    NULL,
+};
+
+//! \internal Selection method data for \p occupancy selection keyword.
+gmx_ana_selmethod_t sm_occupancy = {
+    "occupancy", REAL_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    &check_pdbinfo,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_occupancy,
+    NULL,
+};
+
+//! \internal Selection method data for \p betafactor selection keyword.
+gmx_ana_selmethod_t sm_betafactor = {
+    "betafactor", REAL_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    &check_pdbinfo,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_betafactor,
     NULL,
 };
 
@@ -375,6 +450,111 @@ evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         resind = top->atoms.atom[g->index[i]].resind;
         out->u.s[i] = *top->atoms.resinfo[resind].name;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the mass for each atom in \p out->u.r.
+ */
+static int
+evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.r[i] = top->atoms.atom[g->index[i]].m;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the charge for each atom in \p out->u.r.
+ */
+static int
+evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.r[i] = top->atoms.atom[g->index[i]].q;
+    }
+    return 0;
+}
+
+/*!
+ * \param[in] top  Topology structure.
+ * \param     npar Not used.
+ * \param     param Not used.
+ * \param     data Not used.
+ * \returns   0 if PDB info is present in the topology, -1 otherwise.
+ *
+ * If PDB info is not found, also prints an error message.
+ */
+static int
+check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+{
+    bool bOk;
+
+    bOk = (top != NULL && top->atoms.pdbinfo != NULL);
+    if (!bOk)
+    {
+        fprintf(stderr, "PDB info not available in topology!\n");
+        return -1;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the occupancy numbers for each atom in \p out->u.r.
+ * Segfaults if PDB info is not found in the topology.
+ */
+static int
+evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.r[i] = top->atoms.pdbinfo[g->index[i]].occup;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the B-factors for each atom in \p out->u.r.
+ * Segfaults if PDB info is not found in the topology.
+ */
+static int
+evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.r[i] = top->atoms.pdbinfo[g->index[i]].bfac;
     }
     return 0;
 }
