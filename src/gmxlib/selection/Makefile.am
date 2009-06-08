@@ -15,4 +15,8 @@ libselection_la_SOURCES =	\
 	sm_keywords.c	sm_permute.c	sm_position.c	sm_simple.c	\
 	symrec.c	symrec.h
 
+LDADD = ../libgmx@LIBSUFFIX@.la ../../mdlib/libmd@LIBSUFFIX@.la
+
+EXTRA_PROGRAMS = test_selection
+
 CLEANFILES     = *.la *~ \\\#* 
