@@ -288,7 +288,7 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = 0; i < g->isize; ++i)
     {
         resind = top->atoms.atom[g->index[i]].resind;
-        out->u.i[i] = top->atoms.resinfo[resind].nr+1;
+        out->u.i[i] = top->atoms.resinfo[resind].nr;
     }
     return 0;
 }
