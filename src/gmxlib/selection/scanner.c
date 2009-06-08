@@ -545,7 +545,7 @@ char *yytext;
  * \brief
  * Generated (from scanner.l by Flex) tokenizer for the selection language.
  */
-#line 46 "scanner.l"
+#line 45 "scanner.l"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -644,7 +644,7 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     }
 /*! \cond */
 
-#line 649 "<stdout>"
+#line 648 "<stdout>"
 
 #define INITIAL 0
 #define matchof 1
@@ -798,7 +798,7 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 160 "scanner.l"
+#line 159 "scanner.l"
 
 
 
@@ -819,7 +819,7 @@ YY_DECL
     }
 
 
-#line 824 "<stdout>"
+#line 823 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -904,102 +904,102 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 180 "scanner.l"
+#line 179 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 181 "scanner.l"
+#line 180 "scanner.l"
 { yylval->i   = atoi(yytext);                return INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 182 "scanner.l"
+#line 181 "scanner.l"
 { yylval->r   = atof(yytext);                return REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 183 "scanner.l"
+#line 182 "scanner.l"
 { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 185 "scanner.l"
+#line 184 "scanner.l"
 { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 186 "scanner.l"
+#line 185 "scanner.l"
 { if (yytext[0] == ';' || state->prompt) return CMD_SEP; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 187 "scanner.l"
+#line 186 "scanner.l"
 { return GROUP; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 188 "scanner.l"
+#line 187 "scanner.l"
 { return TO; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 189 "scanner.l"
+#line 188 "scanner.l"
 { BEGIN(0); return OF; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 190 "scanner.l"
+#line 189 "scanner.l"
 { return AND; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 191 "scanner.l"
+#line 190 "scanner.l"
 { return OR; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 192 "scanner.l"
+#line 191 "scanner.l"
 { return XOR; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 193 "scanner.l"
+#line 192 "scanner.l"
 { return NOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 194 "scanner.l"
+#line 193 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); return CMP_OP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 196 "scanner.l"
+#line 195 "scanner.l"
 { return process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 198 "scanner.l"
+#line 197 "scanner.l"
 
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 199 "scanner.l"
+#line 198 "scanner.l"
 { yylval->str = strndup(yytext, yyleng);     return STR; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 200 "scanner.l"
+#line 199 "scanner.l"
 { return yytext[0]; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 202 "scanner.l"
+#line 201 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1004 "<stdout>"
+#line 1003 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(matchof):
 	yyterminate();
@@ -1986,7 +1986,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 202 "scanner.l"
+#line 201 "scanner.l"
 
 
 /*! \endcond */
