@@ -10,6 +10,7 @@ aclocal.m4
 stamp-h1
 configure
 config.h
+config.h.in
 *.cache
 libtool
 config.status
