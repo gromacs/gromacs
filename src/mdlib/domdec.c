@@ -94,7 +94,6 @@ typedef struct
 
 typedef struct
 {
-    real *cell_size;
     bool *bCellMin;
     real *cell_f;
     real *old_cell_f;
@@ -103,6 +102,7 @@ typedef struct
     real *bound_min;
     real *bound_max;
     bool bLimited;
+    real *buf_ncd;
 } gmx_domdec_root_t;
 
 #define DD_NLOAD_MAX 9
@@ -2859,6 +2859,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     gmx_domdec_comm_t *comm;
     int  ncd,d1,i,j,pos,nmin,nmin_old;
     bool bLimLo,bLimHi;
+    real *cell_size;
     real load_aver,load_i,imbalance,change,change_max,sc;
     real cellsize_limit_f,dist_min_f,fac,space,halfway,cellsize_limit_f_i;
     real change_limit = 0.1;
@@ -2871,6 +2872,8 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
 
     bPBC = (dim < ddbox->npbcdim);
 
+    cell_size = root->buf_ncd;
+
     /* Store the original boundaries */
     for(i=0; i<ncd+1; i++)
     {
@@ -2879,7 +2882,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     if (bUniform) {
         for(i=0; i<ncd; i++)
         {
-            root->cell_size[i] = 1.0/ncd;
+            cell_size[i] = 1.0/ncd;
         }
     }
     else if (dd_load_count(comm))
@@ -2911,7 +2914,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             imbalance = (load_i - load_aver)/(load_aver>0 ? load_aver : 1);
             /* Determine the change of the cell size using underrelaxation */
             change = -sc*imbalance;
-            root->cell_size[i] *= 1 + change;
+            cell_size[i] *= (root->cell_f[i+1]-root->cell_f[i])*(1 + change);
         }
     }
     
@@ -2971,7 +2974,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         {
             if (root->bCellMin[i] == FALSE)
             {
-                fac += root->cell_size[i];
+                fac += cell_size[i];
             }
         }
         fac = (1 - nmin*cellsize_limit_f)/fac;
@@ -2981,7 +2984,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         {
             if (root->bCellMin[i] == FALSE)
             {
-                root->cell_size[i] *= fac;
+                cell_size[i] *= fac;
                 if (!bPBC && (i == 0 || i == dd->nc[dim] -1))
                 {
                     cellsize_limit_f_i = 0;
@@ -2990,14 +2993,14 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                 {
                     cellsize_limit_f_i = cellsize_limit_f;
                 }
-                if (root->cell_size[i] < cellsize_limit_f_i)
+                if (cell_size[i] < cellsize_limit_f_i)
                 {
                     root->bCellMin[i] = TRUE;
-                    root->cell_size[i] = cellsize_limit_f_i;
+                    cell_size[i] = cellsize_limit_f_i;
                     nmin++;
                 }
             }
-            root->cell_f[i+1] = root->cell_f[i] + root->cell_size[i];
+            root->cell_f[i+1] = root->cell_f[i] + cell_size[i];
         }
     }
     while (nmin > nmin_old);
@@ -3005,13 +3008,12 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     /* Set the last boundary to exactly 1 */
     i = ncd - 1;
     root->cell_f[i+1] = 1;
-    root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
+    cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
     /* For this check we should not use DD_CELL_MARGIN,
      * but a slightly smaller factor,
      * since rounding could get use below the limit.
      */
-    if (bPBC &&
-        root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
+    if (bPBC && cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
     {
         char buf[22];
         gmx_fatal(FARGS,"Step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
@@ -4908,7 +4910,6 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                 root = dd->comm->root[dim_ind];
                 snew(root->cell_f,DD_CELL_F_SIZE(dd,dim_ind));
                 snew(root->old_cell_f,dd->nc[dim]+1);
-                snew(root->cell_size,dd->nc[dim]);
                 snew(root->bCellMin,dd->nc[dim]);
                 if (dim_ind > 0)
                 {
@@ -4917,7 +4918,8 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                     snew(root->bound_min,dd->nc[dim]);
                     snew(root->bound_max,dd->nc[dim]);
                 }
-            }
+                 snew(root->buf_ncd,dd->nc[dim]);
+           }
             else
             {
                 /* This is not a root process, we only need to receive cell_f */
@@ -5609,7 +5611,20 @@ static int dd_nst_env(FILE *fplog,const char *env_var,int def)
     return nst;
 }
 
-static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
+static void dd_warning(t_commrec *cr,FILE *fplog,const char *warn_string)
+{
+    if (MASTER(cr))
+    {
+        fprintf(stderr,"\n%s\n",warn_string);
+    }
+    if (fplog)
+    {
+        fprintf(fplog,"\n%s\n",warn_string);
+    }
+}
+
+static void check_dd_restrictions(t_commrec *cr,gmx_domdec_t *dd,
+                                  t_inputrec *ir,FILE *fplog)
 {
     if (ir->ePBC == epbcSCREW &&
         (dd->nc[XX] == 1 || dd->nc[YY] > 1 || dd->nc[ZZ] > 1))
@@ -5629,10 +5644,7 @@ static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
 
     if (ir->comm_mode == ecmANGULAR && ir->ePBC != epbcNONE)
     {
-        gmx_fatal(FARGS,
-                  "comm-mode %s is not supported with domain decomposition and pbc,\n"
-                  "use particle decomposition or turn off pbc",
-                  ecm_names[ecmANGULAR]);
+        dd_warning(cr,fplog,"comm-mode angular will give incorrect results when the comm group partially crosses a periodic boundary");
     }
 }
 
@@ -5681,18 +5693,6 @@ static real average_cellsize_min(gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
     }
 
     return r;
-}
-
-static void dd_warning(t_commrec *cr,FILE *fplog,const char *warn_string)
-{
-    if (MASTER(cr))
-    {
-        fprintf(stderr,"\n%s\n",warn_string);
-    }
-    if (fplog)
-    {
-        fprintf(fplog,"\n%s\n",warn_string);
-    }
 }
 
 static int check_dlb_support(FILE *fplog,t_commrec *cr,
@@ -6171,7 +6171,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     
     if (DDMASTER(dd))
     {
-        check_dd_restrictions(dd,ir);
+        check_dd_restrictions(cr,dd,ir,fplog);
         
         dd->ma = init_gmx_domdec_master_t(dd,ncg_mtop(mtop),mtop->natoms);
     }
@@ -6241,7 +6241,6 @@ static void turn_on_dlb(FILE *fplog,t_commrec *cr,gmx_step_t step)
             nc = dd->nc[dd->dim[d]];
             for(i=0; i<nc; i++)
             {
-                comm->root[d]->cell_size[i] = 1/(real)nc;
                 comm->root[d]->cell_f[i]    = i/(real)nc;
                 if (d > 0)
                 {
