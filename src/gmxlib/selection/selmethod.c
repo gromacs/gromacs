@@ -464,6 +464,11 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
             bOk = FALSE;
         }
     }
+    if ((method->flags & SMETH_CHARVAL) && method->type != STR_VALUE)
+    {
+        report_error(fp, method->name, "error: SMETH_CHARVAL can only be specified for STR_VALUE methods");
+        bOk = FALSE;
+    }
     /* Check the parameters */
     if (!check_params(fp, method->name, method->nparams, method->param, symtab))
     {

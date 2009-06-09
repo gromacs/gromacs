@@ -1139,6 +1139,26 @@ init_method(t_selelem *sel, t_topology *top, int isize)
             {
                 sel->v.nr = isize;
             }
+            /* If the method is char-valued, pre-allocate the strings. */
+            if (sel->u.expr.method->flags & SMETH_CHARVAL)
+            {
+                int  i;
+
+                /* A sanity check */
+                if (sel->v.type != STR_VALUE)
+                {
+                    gmx_bug("internal error");
+                    return -1;
+                }
+                sel->flags |= SEL_ALLOCDATA;
+                for (i = 0; i < isize; ++i)
+                {
+                    if (sel->v.u.s[i] == NULL)
+                    {
+                        snew(sel->v.u.s[i], 2);
+                    }
+                }
+            }
         }
     }
 

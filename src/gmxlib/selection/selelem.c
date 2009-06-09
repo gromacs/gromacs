@@ -184,15 +184,42 @@ _gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype)
 void
 _gmx_selelem_free_values(t_selelem *sel)
 {
+    int   i, n;
+
     if ((sel->flags & SEL_ALLOCDATA) && sel->v.u.ptr)
     {
-        if (sel->v.type == GROUP_VALUE)
+        /* The number of position/group structures is constant, so the
+         * backup of using sel->v.nr should work for them.
+         * For strings, we report an error if we don't know the allocation
+         * size here. */
+        n = (sel->v.nalloc > 0) ? sel->v.nalloc : sel->v.nr;
+        switch (sel->v.type)
         {
-            gmx_ana_index_deinit(sel->v.u.g);
-        }
-        else if (sel->v.type == POS_VALUE)
-        {
-            gmx_ana_pos_deinit(sel->v.u.p);
+            case STR_VALUE:
+                if (sel->v.nalloc == 0)
+                {
+                    gmx_bug("SEL_ALLOCDATA should only be set for allocated STR_VALUE values");
+                    break;
+                }
+                for (i = 0; i < n; ++i)
+                {
+                    sfree(sel->v.u.s[i]);
+                }
+                break;
+            case POS_VALUE:
+                for (i = 0; i < n; ++i)
+                {
+                    gmx_ana_pos_deinit(&sel->v.u.p[i]);
+                }
+                break;
+            case GROUP_VALUE:
+                for (i = 0; i < n; ++i)
+                {
+                    gmx_ana_index_deinit(&sel->v.u.g[i]);
+                }
+                break;
+            default: /* No special handling for other types */
+                break;
         }
     }
     if (sel->flags & SEL_ALLOCVAL)
