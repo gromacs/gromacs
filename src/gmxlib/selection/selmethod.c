@@ -56,8 +56,11 @@ extern gmx_ana_selmethod_t sm_resnr;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
+extern gmx_ana_selmethod_t sm_insertcode;
+extern gmx_ana_selmethod_t sm_chain;
 extern gmx_ana_selmethod_t sm_mass;
 extern gmx_ana_selmethod_t sm_charge;
+extern gmx_ana_selmethod_t sm_altloc;
 extern gmx_ana_selmethod_t sm_occupancy;
 extern gmx_ana_selmethod_t sm_betafactor;
 extern gmx_ana_selmethod_t sm_x;
@@ -85,8 +88,11 @@ static gmx_ana_selmethod_t *smtable_def[] = {
     &sm_atomname,
     &sm_atomtype,
     &sm_resname,
+    &sm_insertcode,
+    &sm_chain,
     &sm_mass,
     &sm_charge,
+    &sm_altloc,
     &sm_occupancy,
     &sm_betafactor,
     &sm_x,
