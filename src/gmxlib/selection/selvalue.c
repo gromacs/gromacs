@@ -49,26 +49,30 @@
  * Reserves memory for the values within \p val to store at least \p n values,
  * of the type specified in the \p val structure.
  *
- * If the type is \ref POS_VALUE or \ref GROUP_VALUE, only a single data
- * structure is reserved, independent of the value of \p n.
- * No memory is reserved inside these newly allocated data structures.
+ * If the type is \ref POS_VALUE or \ref GROUP_VALUE, memory is reserved for
+ * the data structures, but no memory is reserved inside these newly allocated
+ * data structures.
+ * Similarly, for \ref STR_VALUE values, the pointers are set to NULL.
+ * For other values, the memory is uninitialized.
  */
 int
 _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
 {
     int  i;
 
-    if (val->type == POS_VALUE || val->type == GROUP_VALUE)
-    {
-        n = 1;
-    }
     if (!val->u.ptr || val->nalloc < n)
     {
         switch (val->type)
         {
             case INT_VALUE:   srenew(val->u.i, n); break;
             case REAL_VALUE:  srenew(val->u.r, n); break;
-            case STR_VALUE:   srenew(val->u.s, n); break;
+            case STR_VALUE:
+                srenew(val->u.s, n);
+                for (i = val->nalloc; i < n; ++i)
+                {
+                    val->u.s[i] = NULL;
+                }
+                break;
             case POS_VALUE:
                 srenew(val->u.p, n);
                 for (i = val->nalloc; i < n; ++i)

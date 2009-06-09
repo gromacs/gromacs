@@ -250,6 +250,12 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
         }
     }
 
+    if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE
+        && param->val.type != STR_VALUE)
+    {
+        gmx_bug("internal error");
+        return FALSE;
+    }
     _gmx_selvalue_reserve(&param->val, nval);
     value = values;
     i     = 0;

@@ -260,7 +260,7 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
     int        nalloc;
 
     /* Find out the number of elements to allocate */
-    if (sel->v.type == GROUP_VALUE || (sel->flags & SEL_SINGLEVAL))
+    if (sel->flags & SEL_SINGLEVAL)
     {
         nalloc = 1;
     }
@@ -283,6 +283,13 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
         }
         nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
     }
+    /* For positions, we actually want to allocate just a single structure
+     * for nalloc positions. */
+    if (sel->v.type == POS_VALUE)
+    {
+        isize  = nalloc;
+        nalloc = 1;
+    }
     /* Allocate memory for sel->v.u if needed */
     if ((sel->flags & SEL_ALLOCVAL)
         || (sel->type == SEL_SUBEXPRREF && sel->u.param
@@ -297,12 +304,10 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
         if (sel->v.type == GROUP_VALUE)
         {
             gmx_ana_index_reserve(sel->v.u.g, isize);
-            /* Update the compiler data consistently, although it is not used */
-            nalloc = isize;
         }
         else if (sel->v.type == POS_VALUE)
         {
-            gmx_ana_pos_reserve(sel->v.u.p, nalloc, 0);
+            gmx_ana_pos_reserve(sel->v.u.p, isize, 0);
         }
     }
     return TRUE;
