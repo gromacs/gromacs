@@ -2914,7 +2914,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             imbalance = (load_i - load_aver)/(load_aver>0 ? load_aver : 1);
             /* Determine the change of the cell size using underrelaxation */
             change = -sc*imbalance;
-            cell_size[i] *= (root->cell_f[i+1]-root->cell_f[i])*(1 + change);
+            cell_size[i] = (root->cell_f[i+1]-root->cell_f[i])*(1 + change);
         }
     }
     
@@ -4918,8 +4918,8 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                     snew(root->bound_min,dd->nc[dim]);
                     snew(root->bound_max,dd->nc[dim]);
                 }
-                 snew(root->buf_ncd,dd->nc[dim]);
-           }
+                snew(root->buf_ncd,dd->nc[dim]);
+            }
             else
             {
                 /* This is not a root process, we only need to receive cell_f */
