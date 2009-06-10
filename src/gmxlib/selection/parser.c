@@ -1794,8 +1794,8 @@ yyreduce:
   case 26:
 #line 265 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_SUBEXPRREF);
+                                  _gmx_selelem_set_vtype((yyval.sel), (yyvsp[(1) - (1)].sel)->v.type);
                                   (yyval.sel)->name   = (yyvsp[(1) - (1)].sel)->name;
-                                  (yyval.sel)->v.type = (yyvsp[(1) - (1)].sel)->v.type;
                                   (yyval.sel)->child  = (yyvsp[(1) - (1)].sel);
                                   (yyvsp[(1) - (1)].sel)->refcount++;                        ;}
     break;
@@ -1803,8 +1803,8 @@ yyreduce:
   case 27:
 #line 273 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_SUBEXPRREF);
+                                  _gmx_selelem_set_vtype((yyval.sel), (yyvsp[(1) - (1)].sel)->v.type);
                                   (yyval.sel)->name   = (yyvsp[(1) - (1)].sel)->name;
-                                  (yyval.sel)->v.type = (yyvsp[(1) - (1)].sel)->v.type;
                                   (yyval.sel)->child  = (yyvsp[(1) - (1)].sel);
                                   (yyvsp[(1) - (1)].sel)->refcount++;                        ;}
     break;
@@ -1815,8 +1815,8 @@ yyreduce:
                                       (yyval.sel) = (yyvsp[(1) - (1)].sel);
                                   } else {
                                       (yyval.sel) = _gmx_selelem_create(SEL_SUBEXPRREF);
+                                      _gmx_selelem_set_vtype((yyval.sel), (yyvsp[(1) - (1)].sel)->v.type);
                                       (yyval.sel)->name   = (yyvsp[(1) - (1)].sel)->name;
-                                      (yyval.sel)->v.type = (yyvsp[(1) - (1)].sel)->v.type;
                                       (yyval.sel)->child  = (yyvsp[(1) - (1)].sel);
                                   }
                                   (yyvsp[(1) - (1)].sel)->refcount++;                        ;}
@@ -1876,16 +1876,16 @@ yyreduce:
   case 34:
 #line 338 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_CONST);
-                                  (yyval.sel)->v.type = INT_VALUE;
-                                  snew((yyval.sel)->v.u.i, 1);
+                                  _gmx_selelem_set_vtype((yyval.sel), INT_VALUE);
+                                  _gmx_selvalue_reserve(&(yyval.sel)->v, 1);
                                   (yyval.sel)->v.u.i[0] = (yyvsp[(1) - (1)].i);                  ;}
     break;
 
   case 35:
 #line 342 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_CONST);
-                                  (yyval.sel)->v.type = REAL_VALUE;
-                                  snew((yyval.sel)->v.u.r, 1);
+                                  _gmx_selelem_set_vtype((yyval.sel), REAL_VALUE);
+                                  _gmx_selvalue_reserve(&(yyval.sel)->v, 1);
                                   (yyval.sel)->v.u.r[0] = (yyvsp[(1) - (1)].r);                  ;}
     break;
 
@@ -1995,8 +1995,8 @@ yyreduce:
 #line 432 "parser.y"
     { rvec x;
                                   (yyval.sel) = _gmx_selelem_create(SEL_CONST);
-                                  (yyval.sel)->v.type = POS_VALUE;
-                                  snew((yyval.sel)->v.u.p, 1);
+                                  _gmx_selelem_set_vtype((yyval.sel), POS_VALUE);
+                                  _gmx_selvalue_reserve(&(yyval.sel)->v, 1);
                                   x[XX] = (yyvsp[(2) - (7)].r); x[YY] = (yyvsp[(4) - (7)].r); x[ZZ] = (yyvsp[(6) - (7)].r);
                                   gmx_ana_pos_init_const((yyval.sel)->v.u.p, x);  ;}
     break;
@@ -2359,7 +2359,7 @@ get_group_by_name(gmx_ana_indexgrps_t *grps, char *name)
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
-    sel->v.type = GROUP_VALUE;
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, name))
     {
         _gmx_selelem_free(sel);
@@ -2379,7 +2379,7 @@ get_group_by_id(gmx_ana_indexgrps_t *grps, int id)
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
-    sel->v.type = GROUP_VALUE;
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, grps, id))
     {
         _gmx_selelem_free(sel);

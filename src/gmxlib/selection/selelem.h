@@ -155,7 +155,7 @@ _gmx_sel_value_type_str(gmx_ana_selvalue_t *val);
  * managed externally.
  *
  * This field has no effect if the value type is not \ref GROUP_VALUE or
- * \ref POS_VALUE.
+ * \ref POS_VALUE, but should not be set.
  */
 #define SEL_ALLOCDATA   (1<<9)
 /*! \brief
@@ -281,6 +281,9 @@ typedef struct t_selelem
 //! Allocates memory and performs some common initialization for a \c t_selelem.
 extern t_selelem *
 _gmx_selelem_create(e_selelem_t type);
+//! Sets the value type of a \c t_selelem.
+extern int
+_gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype);
 //! Frees the memory allocated for a \c t_selelem structure and all its children.
 extern void
 _gmx_selelem_free(t_selelem *sel);
