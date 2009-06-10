@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -53,8 +54,9 @@ typedef struct gmx_wallcycle {
   gmx_cycles_t last;
 } gmx_wallcycle_t_t;
 
+/* Each name should not exceed 19 characters */
 static const char *wcn[ewcNR] =
-  { "Run", "Step", "PP during PME", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test", "Born radii" };
+  { "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test", "Born radii" };
 
 /* variables for testing/debugging */
 static bool              wc_barrier=FALSE;
@@ -161,49 +163,73 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
-  double buf[ewcNR],*cyc_all,*buf_all;
-  int    i;
+    double buf[ewcNR],*cyc_all,*buf_all;
+    int    i;
 
-  if (wc) {
-    if (wc[ewcPMEMESH_SEP].n > 0) {
-      /* This must be a PME only node, calculate the Wait + Comm. time */
-      wc[ewcPMEWAITCOMM].c = wc[ewcRUN].c - wc[ewcPMEMESH_SEP].c;
-    } else {
-      /* Correct the PME mesh only call count */
-      wc[ewcPMEMESH_SEP].n = wc[ewcFORCE].n;
-      wc[ewcPMEWAITCOMM].n = wc[ewcFORCE].n;
-    }
+    if (wc)
+    {
+        if (wc[ewcDDCOMMLOAD].n > 0)
+        {
+            wc[ewcDOMDEC].c -= wc[ewcDDCOMMLOAD].c;
+        }
+        if (wc[ewcDDCOMMBOUND].n > 0)
+        {
+            wc[ewcDOMDEC].c -= wc[ewcDDCOMMBOUND].c;
+        }
 
-    /* Store the cycles in a double buffer for summing */
-    for(i=0; i<ewcNR; i++) {
-      cycles[i] = (double)wc[i].c;
-    }
-
-    if (wc[ewcUPDATE].n > 0) {
-      /* Remove the constraint part from the update count */
-      cycles[ewcUPDATE] -= cycles[ewcCONSTR];
-    }
-
+        if (wc[ewcPMEMESH_SEP].n > 0)
+        {
+            /* This must be a PME only node, calculate the Wait + Comm. time */
+            wc[ewcPMEWAITCOMM].c = wc[ewcRUN].c - wc[ewcPMEMESH_SEP].c;
+        }
+        else
+        {
+            /* Correct the PME mesh only call count */
+            wc[ewcPMEMESH_SEP].n = wc[ewcFORCE].n;
+            wc[ewcPMEWAITCOMM].n = wc[ewcFORCE].n;
+        }
+        
+        /* Store the cycles in a double buffer for summing */
+        for(i=0; i<ewcNR; i++)
+        {
+            cycles[i] = (double)wc[i].c;
+        }
+        
+        if (wc[ewcUPDATE].n > 0)
+        {
+            /* Remove the constraint part from the update count */
+            cycles[ewcUPDATE] -= cycles[ewcCONSTR];
+        }
+        
 #ifdef GMX_MPI    
-    if (cr->nnodes > 1) {
-      MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mysim);
-      for(i=0; i<ewcNR; i++)
-	cycles[i] = buf[i];
-      if (wc_all) {
-	snew(cyc_all,ewcNR*ewcNR);
-	snew(buf_all,ewcNR*ewcNR);
-	for(i=0; i<ewcNR*ewcNR; i++)
-	  cyc_all[i] = wc_all[i].c;
-	MPI_Allreduce(cyc_all,buf_all,ewcNR*ewcNR,MPI_DOUBLE,MPI_SUM,
-		      cr->mpi_comm_mysim);
-	for(i=0; i<ewcNR*ewcNR; i++)
-	  wc_all[i].c = buf_all[i];
-	sfree(buf_all);
-	sfree(cyc_all);
-      }
-    }
+        if (cr->nnodes > 1)
+        {
+            MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,
+                          cr->mpi_comm_mysim);
+            for(i=0; i<ewcNR; i++)
+            {
+                cycles[i] = buf[i];
+            }
+            if (wc_all)
+            {
+                snew(cyc_all,ewcNR*ewcNR);
+                snew(buf_all,ewcNR*ewcNR);
+                for(i=0; i<ewcNR*ewcNR; i++)
+                {
+                    cyc_all[i] = wc_all[i].c;
+                }
+                MPI_Allreduce(cyc_all,buf_all,ewcNR*ewcNR,MPI_DOUBLE,MPI_SUM,
+                              cr->mpi_comm_mysim);
+                for(i=0; i<ewcNR*ewcNR; i++)
+                {
+                    wc_all[i].c = buf_all[i];
+                }
+                sfree(buf_all);
+                sfree(cyc_all);
+            }
+        }
 #endif
-  }
+    }
 }
 
 static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,

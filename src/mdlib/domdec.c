@@ -3144,6 +3144,25 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     }
 }    
 
+static void relative_to_absolute_cell_bounds(gmx_domdec_t *dd,
+                                             gmx_ddbox_t *ddbox,int dimind)
+{
+    gmx_domdec_comm_t *comm;
+    int dim;
+
+    comm = dd->comm;
+
+    /* Set the cell dimensions */
+    dim = dd->dim[dimind];
+    comm->cell_x0[dim] = comm->cell_f0[dimind]*ddbox->box_size[dim];
+    comm->cell_x1[dim] = comm->cell_f1[dimind]*ddbox->box_size[dim];
+    if (dim >= ddbox->nboundeddim)
+    {
+        comm->cell_x0[dim] += ddbox->box0[dim];
+        comm->cell_x1[dim] += ddbox->box0[dim];
+    }
+}
+
 static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
                                          int d,int dim,real *cell_f_row,
                                          gmx_ddbox_t *ddbox)
@@ -3173,15 +3192,7 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
             comm->cell_f0[d1] = cell_f_row[pos++];
             comm->cell_f1[d1] = cell_f_row[pos++];
         }
-        /* Set the cell dimensions */
-        dim1 = dd->dim[d1];
-        comm->cell_x0[dim1] = comm->cell_f0[d1]*ddbox->box_size[dim1];
-        comm->cell_x1[dim1] = comm->cell_f1[d1]*ddbox->box_size[dim1];
-        if (dim1 >= ddbox->nboundeddim)
-        {
-            comm->cell_x0[dim1] += ddbox->box0[dim1];
-            comm->cell_x1[dim1] += ddbox->box0[dim1];
-        }
+        relative_to_absolute_cell_bounds(dd,ddbox,d1);
     }
     /* Convert the communicated shift from float to int */
     comm->ddpme[0].maxshift = (int)(cell_f_row[pos++] + 0.5);
@@ -3191,9 +3202,25 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
     }
 }
 
+static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
+{
+    int d;
+
+    /* This function assumes the box is static and should therefore
+     * not be called when the box has changed since the last
+     * call to dd_partition_system.
+     */
+    for(d=0; d<dd->ndim; d++)
+    {
+        relative_to_absolute_cell_bounds(dd,ddbox,d); 
+    }
+}
+
+
+
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
                                   gmx_ddbox_t *ddbox,bool bDynamicBox,
-                                  bool bUniform,gmx_step_t step)
+                                  bool bUniform,bool bDoDLB,gmx_step_t step)
 {
     gmx_domdec_comm_t *comm;
     int d,dim,d1;
@@ -3202,36 +3229,43 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
 
     comm = dd->comm;
     
-    for(d=0; d<dd->ndim; d++)
+    if (bDoDLB)
     {
-        dim = dd->dim[d];
-        bRowMember = TRUE;
-        bRowRoot = TRUE;
-        for(d1=d; d1<dd->ndim; d1++)
+        for(d=0; d<dd->ndim; d++)
         {
-            if (dd->ci[dd->dim[d1]] > 0)
+            dim = dd->dim[d];
+            bRowMember = TRUE;
+            bRowRoot = TRUE;
+            for(d1=d; d1<dd->ndim; d1++)
             {
-                if (d1 > d)
+                if (dd->ci[dd->dim[d1]] > 0)
                 {
-                    bRowMember = FALSE;
+                    if (d1 > d)
+                    {
+                        bRowMember = FALSE;
+                    }
+                    bRowRoot = FALSE;
                 }
-                bRowRoot = FALSE;
+            }
+            if (bRowMember)
+            {
+                if (bRowRoot)
+                {
+                    set_dd_cell_sizes_dlb_root(dd,d,dim,comm->root[d],
+                                               ddbox,bDynamicBox,bUniform,step);
+                    cell_f_row = comm->root[d]->cell_f;
+                }
+                else
+                {
+                    cell_f_row = comm->cell_f_row;
+                }
+                distribute_dd_cell_sizes_dlb(dd,d,dim,cell_f_row,ddbox);
             }
         }
-        if (bRowMember)
-        {
-            if (bRowRoot)
-            {
-                set_dd_cell_sizes_dlb_root(dd,d,dim,comm->root[d],
-                                           ddbox,bDynamicBox,bUniform,step);
-                cell_f_row = comm->root[d]->cell_f;
-            }
-            else
-            {
-                cell_f_row = comm->cell_f_row;
-            }
-            distribute_dd_cell_sizes_dlb(dd,d,dim,cell_f_row,ddbox);
-        }
+    }
+    else if (bDynamicBox)
+    {
+        set_dd_cell_sizes_dlb_nochange(dd,ddbox);
     }
     
     /* Set the dimensions for which no DD is used */
@@ -3283,7 +3317,8 @@ static void realloc_comm_ind(gmx_domdec_t *dd,ivec npulse)
 
 static void set_dd_cell_sizes(gmx_domdec_t *dd,
                               gmx_ddbox_t *ddbox,bool bDynamicBox,
-                              bool bUniform,gmx_step_t step)
+                              bool bUniform,bool bDoDLB,gmx_step_t step,
+                              gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
     int  d;
@@ -3301,7 +3336,9 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,
         {
             check_box_size(dd,ddbox);
         }
-        set_dd_cell_sizes_dlb(dd,ddbox,bDynamicBox,bUniform,step);
+        wallcycle_start(wcycle,ewcDDCOMMBOUND);
+        set_dd_cell_sizes_dlb(dd,ddbox,bDynamicBox,bUniform,bDoDLB,step);
+        wallcycle_stop(wcycle,ewcDDCOMMBOUND);
     }
     else
     {
@@ -4532,6 +4569,8 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
     {
         fprintf(debug,"get_load_distribution start\n");
     }
+
+    wallcycle_start(wcycle,ewcDDCOMMLOAD);
     
     comm = dd->comm;
     
@@ -4685,6 +4724,8 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
             comm->load_pme += comm->load[0].pme;
         }
     }
+
+    wallcycle_stop(wcycle,ewcDDCOMMLOAD);
     
     if (debug)
     {
@@ -7711,7 +7752,7 @@ void dd_partition_system(FILE            *fplog,
     t_block *cgs_gl;
     rvec cell_ns_x0,cell_ns_x1;
     int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
-    bool bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG,bResortAll;
+    bool bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG,bResortAll;
     ivec ncells_old,np;
     real grid_density;
     char sbuf[22];
@@ -7719,7 +7760,11 @@ void dd_partition_system(FILE            *fplog,
     dd = cr->dd;
     comm = dd->comm;
 
-    cgs_gl = &comm->cgs_gl;
+    /* Should we do dynamic load balacing this step?
+     * Since it requires (possibly expensive) global communication,
+     * we might want to do DLB less frequently.
+     */
+    bDoDLB = comm->bDynLoadBal;
 
     /* Check if we have recorded loads on the nodes */
     if (comm->bRecordLoad && dd_load_count(comm))
@@ -7736,7 +7781,7 @@ void dd_partition_system(FILE            *fplog,
         bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
                     comm->n_load_collect == 0 ||
                     (step + ir->nstlist > ir->init_step + ir->nsteps));
-        if (comm->bDynLoadBal || bLogLoad || bVerbose || bCheckDLB)
+        if (bDoDLB || bLogLoad || bVerbose || bCheckDLB)
         {
             get_load_distribution(dd,wcycle);
             if (DDMASTER(dd))
@@ -7769,11 +7814,14 @@ void dd_partition_system(FILE            *fplog,
                 if (bTurnOnDLB)
                 {
                     turn_on_dlb(fplog,cr,step);
+                    bDoDLB = TRUE;
                 }
             }
         }
         comm->n_load_have++;
     }
+
+    cgs_gl = &comm->cgs_gl;
 
     bRedist = FALSE;
     if (bMasterState)
@@ -7851,7 +7899,8 @@ void dd_partition_system(FILE            *fplog,
         bRedist = TRUE;
     }
     
-    set_dd_cell_sizes(dd,&ddbox,dynamic_dd_box(&ddbox,ir),bMasterState,step);
+    set_dd_cell_sizes(dd,&ddbox,dynamic_dd_box(&ddbox,ir),bMasterState,bDoDLB,
+                      step,wcycle);
     
     if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
     {
