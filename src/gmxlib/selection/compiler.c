@@ -184,8 +184,6 @@ typedef struct t_compiler_data
 {
     //! The real evaluation method.
     sel_evalfunc  evaluate; 
-    //! Number of elements allocated for value data (\c t_selelem::d).
-    int           ndata_alloc;
     /*! \brief
      * Whether the element is a method parameter.
      *
@@ -262,7 +260,7 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
     int        nalloc;
 
     /* Find out the number of elements to allocate */
-    if (sel->v.type == GROUP_VALUE || (sel->flags & SEL_SINGLEVAL))
+    if (sel->flags & SEL_SINGLEVAL)
     {
         nalloc = 1;
     }
@@ -285,35 +283,19 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
         }
         nalloc = (sel->v.type == POS_VALUE) ? child->v.u.p->nr : child->v.nr;
     }
+    /* For positions, we actually want to allocate just a single structure
+     * for nalloc positions. */
+    if (sel->v.type == POS_VALUE)
+    {
+        isize  = nalloc;
+        nalloc = 1;
+    }
     /* Allocate memory for sel->v.u if needed */
     if ((sel->flags & SEL_ALLOCVAL)
         || (sel->type == SEL_SUBEXPRREF && sel->u.param
             && (sel->u.param->flags & (SPAR_VARNUM | SPAR_ATOMVAL))))
     {
-        if (!sel->v.u.ptr)
-        {
-            switch (sel->v.type)
-            {
-                case INT_VALUE:   snew(sel->v.u.i, nalloc); break;
-                case REAL_VALUE:  snew(sel->v.u.r, nalloc); break;
-                case STR_VALUE:   snew(sel->v.u.s, nalloc); break;
-                case POS_VALUE:   snew(sel->v.u.p, 1);      break;
-                case GROUP_VALUE: snew(sel->v.u.g, 1);      break;
-                case NO_VALUE:    break;
-            }
-        }
-        else if (sel->cdata->ndata_alloc < nalloc)
-        {
-            switch (sel->v.type)
-            {
-                case INT_VALUE:   srenew(sel->v.u.i, nalloc); break;
-                case REAL_VALUE:  srenew(sel->v.u.r, nalloc); break;
-                case STR_VALUE:   srenew(sel->v.u.s, nalloc); break;
-                case POS_VALUE:   break;
-                case GROUP_VALUE: break;
-                case NO_VALUE:    break;
-            }
-        }
+        _gmx_selvalue_reserve(&sel->v, nalloc);
     }
     /* Reserve memory inside group and position structures if
      * SEL_ALLOCDATA is set. */
@@ -322,18 +304,11 @@ alloc_selection_data(t_selelem *sel, int isize, bool bChildEval)
         if (sel->v.type == GROUP_VALUE)
         {
             gmx_ana_index_reserve(sel->v.u.g, isize);
-            /* Update the compiler data consistently, although it is not used */
-            nalloc = isize;
         }
         else if (sel->v.type == POS_VALUE)
         {
-            gmx_ana_pos_reserve(sel->v.u.p, nalloc, 0);
+            gmx_ana_pos_reserve(sel->v.u.p, isize, 0);
         }
-    }
-    /* Update the compiler data structure */
-    if (sel->cdata->ndata_alloc < nalloc)
-    {
-        sel->cdata->ndata_alloc = nalloc;
     }
     return TRUE;
 }
@@ -449,8 +424,8 @@ extract_item_subselections(t_selelem *sel, gmx_ana_index_t *gall, int *subexprn)
             }
             /* Create the subexpression element */
             subexpr->child = _gmx_selelem_create(SEL_SUBEXPR);
+            _gmx_selelem_set_vtype(subexpr->child, child->v.type);
             create_subexpression_name(subexpr->child, ++*subexprn);
-            subexpr->child->v.type   = child->v.type;
             /* Move the actual subexpression under the created element */
             subexpr->child->child    = child->child;
             child->child             = subexpr->child;
@@ -733,14 +708,9 @@ init_item_evaluation(t_selelem *sel)
     /* Make sure that the group/position structure is allocated */
     if (!sel->v.u.ptr && (sel->flags & SEL_ALLOCVAL))
     {
-        if (sel->v.type == GROUP_VALUE)
+        if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
         {
-            snew(sel->v.u.g, 1);
-            sel->v.nr = 1;
-        }
-        else if (sel->v.type == POS_VALUE)
-        {
-            snew(sel->v.u.p, 1);
+            _gmx_selvalue_reserve(&sel->v, 1);
             sel->v.nr = 1;
         }
     }
@@ -815,9 +785,6 @@ init_item_compilerdata(t_selelem *sel)
 
     /* Store the real evaluation method because the compiler will replace it */
     sel->cdata->evaluate = sel->evaluate;
-
-    /* Initialize the data allocation count */
-    sel->cdata->ndata_alloc = 0;
 
     /* Initialize the flags */
     sel->cdata->bMethodParam = FALSE;
@@ -1172,6 +1139,26 @@ init_method(t_selelem *sel, t_topology *top, int isize)
             {
                 sel->v.nr = isize;
             }
+            /* If the method is char-valued, pre-allocate the strings. */
+            if (sel->u.expr.method->flags & SMETH_CHARVAL)
+            {
+                int  i;
+
+                /* A sanity check */
+                if (sel->v.type != STR_VALUE)
+                {
+                    gmx_bug("internal error");
+                    return -1;
+                }
+                sel->flags |= SEL_ALLOCDATA;
+                for (i = 0; i < isize; ++i)
+                {
+                    if (sel->v.u.s[i] == NULL)
+                    {
+                        snew(sel->v.u.s[i], 2);
+                    }
+                }
+            }
         }
     }
 
@@ -1222,13 +1209,12 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
         snew(child, 1);
         child->type       = SEL_CONST;
         child->flags      = SEL_FLAGSSET | SEL_SINGLEVAL | SEL_ALLOCVAL | SEL_ALLOCDATA;
+        _gmx_selelem_set_vtype(child, GROUP_VALUE);
         child->evaluate   = NULL;
-        child->v.type     = GROUP_VALUE;
-        snew(child->v.u.g, 1);
+        _gmx_selvalue_reserve(&child->v, 1);
         gmx_ana_index_copy(child->v.u.g, sel->v.u.g, TRUE);
         init_item_compilerdata(child);
         child->cdata->bStaticEval = sel->cdata->bStaticEval;
-        child->cdata->ndata_alloc = child->v.u.g->isize;
         child->next = next;
         sel->child = child;
     }
@@ -1794,9 +1780,9 @@ init_root_item(t_selelem *root)
             /* expr should evaluate the positions for a selection */
             if (expr->v.u.p->g)
             {
-                root->v.type  = GROUP_VALUE;
+                _gmx_selelem_set_vtype(root, GROUP_VALUE);
                 root->flags  |= (SEL_ALLOCVAL | SEL_ALLOCDATA);
-                snew(root->v.u.g, 1);
+                _gmx_selvalue_reserve(&root->v, 1);
                 gmx_ana_index_copy(root->v.u.g, expr->v.u.p->g, TRUE);
             }
             gmx_ana_index_set(&root->u.cgrp, -1, NULL, NULL, 0);

@@ -39,6 +39,11 @@
 
 #include <typedefs.h>
 
+#ifdef CPLUSPLUS
+extern "C"
+{
+#endif
+
 //! Defines the value type of a different selection objects.
 typedef enum
 {
@@ -68,7 +73,7 @@ typedef struct gmx_ana_selvalue_t
      * the number of atoms in the group.
      */
     int                         nr;
-    //! Pointer to the \p value.
+    //! Pointer to the value.
     union {
         //! Integer value(s) (type \ref INT_VALUE).
         int                    *i;
@@ -85,6 +90,18 @@ typedef struct gmx_ana_selvalue_t
         //! Generic pointer for operations that do not need type information.
         void                   *ptr;
     }                           u;
+    /*! \brief
+     * Number of elements allocated for the value array.
+     */
+    int                         nalloc;
 } gmx_ana_selvalue_t;
+
+//! Reserve memory for storing selection values.
+extern int
+_gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
+
+#ifdef CPLUSPLUS
+}
+#endif
 
 #endif

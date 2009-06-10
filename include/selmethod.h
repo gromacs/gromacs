@@ -102,6 +102,10 @@
  * Currently, the above flags only work (have been tested) for \ref POS_VALUE
  * methods.
  *
+ * There is one additional flag that can only be specified for \ref STR_VALUE
+ * methods: \ref SMETH_CHARVAL . It is meant for to ease implementation of
+ * methods that evaluate to strings consisting of single characters.
+ *
  * The next two values determine the number of parameters and a pointer to
  * the parameter array. The contents of the parameter array are described in
  * \ref selmethods_params. If the method does not take parameters, the first
@@ -308,6 +312,16 @@ struct gmx_ana_selcollection_t;
  * Cannot be combined with \ref SMETH_SINGLEVAL or with \ref GROUP_VALUE.
  */
 #define SMETH_VARNUMVAL  8
+/*! \brief
+ * If set, the method evaluates to single-character strings.
+ *
+ * This flag can only be set for \ref STR_VALUE methods. If it is set, the
+ * selection engine automatically allocates and frees the required strings.
+ * The evaluation function should store the character values as the first
+ * character in the strings in the output data structure and should not change
+ * the string pointers.
+ */
+#define SMETH_CHARVAL    64
 /*! \brief
  * If set, the method is a selection modifier.
  *

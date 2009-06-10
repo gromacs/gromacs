@@ -456,8 +456,8 @@ set_method(gmx_ana_selcollection_t *sc, t_selelem *sel,
 {
     int      i;
 
+    _gmx_selelem_set_vtype(sel, method->type);
     sel->name   = method->name;
-    sel->v.type = method->type;
     snew(sel->u.expr.method, 1);
     memcpy(sel->u.expr.method, method, sizeof(gmx_ana_selmethod_t));
     init_method_params(sc, sel);
@@ -867,8 +867,8 @@ _gmx_sel_assign_variable(gmx_sel_lexer_t *scanner, char *name, t_selelem *expr)
     root->u.cgrp.name   = name;
     /* Create the subexpression element */
     root->child = _gmx_selelem_create(SEL_SUBEXPR);
+    _gmx_selelem_set_vtype(root->child, expr->v.type);
     root->child->name   = name;
-    root->child->v.type = expr->v.type;
     root->child->child  = expr;
     /* Update flags */
     rc = _gmx_selelem_update_flags(root);

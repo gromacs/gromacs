@@ -65,6 +65,14 @@ check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 static int
 evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+//! Evaluates the \p insertcode selection keyword.
+static int
+evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+//! Evaluates the \p chain selection keyword.
+static int
+evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 //! Evaluates the \p mass selection keyword.
 static int
 evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -76,6 +84,10 @@ evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 //! Checks whether PDB info is present in the topology.
 static int
 check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+//! Evaluates the \p altloc selection keyword.
+static int
+evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 //! Evaluates the \p occupancy selection keyword.
 static int
 evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -200,6 +212,34 @@ gmx_ana_selmethod_t sm_resname = {
     NULL,
 };
 
+//! \internal Selection method data for \p chain selection keyword.
+gmx_ana_selmethod_t sm_insertcode = {
+    "insertcode", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
+    0, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_insertcode,
+    NULL,
+};
+
+//! \internal Selection method data for \p chain selection keyword.
+gmx_ana_selmethod_t sm_chain = {
+    "chain", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
+    0, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_chain,
+    NULL,
+};
+
 //! \internal Selection method data for \p mass selection keyword.
 gmx_ana_selmethod_t sm_mass = {
     "mass", REAL_VALUE, SMETH_REQTOP,
@@ -225,6 +265,20 @@ gmx_ana_selmethod_t sm_charge = {
     NULL,
     NULL,
     &evaluate_charge,
+    NULL,
+};
+
+//! \internal Selection method data for \p chain selection keyword.
+gmx_ana_selmethod_t sm_altloc = {
+    "altloc", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
+    0, NULL,
+    NULL,
+    NULL,
+    &check_pdbinfo,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_altloc,
     NULL,
 };
 
@@ -458,6 +512,50 @@ evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * See sel_updatefunc() for description of the parameters.
  * \p data is not used.
  *
+ * Returns the insertion code for each atom in \p out->u.s.
+ */
+static int
+evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+    int  resind;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        resind = top->atoms.atom[g->index[i]].resind;
+        out->u.s[i][0] = top->atoms.resinfo[resind].ic;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the chain for each atom in \p out->u.s.
+ */
+static int
+evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+    int  resind;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        resind = top->atoms.atom[g->index[i]].resind;
+        out->u.s[i][0] = top->atoms.resinfo[resind].chain;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
  * Returns the mass for each atom in \p out->u.r.
  */
 static int
@@ -513,6 +611,26 @@ check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     {
         fprintf(stderr, "PDB info not available in topology!\n");
         return -1;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the alternate location identifier for each atom in \p out->u.s.
+ */
+static int
+evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.s[i][0] = top->atoms.pdbinfo[g->index[i]].altloc;
     }
     return 0;
 }

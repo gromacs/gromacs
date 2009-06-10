@@ -113,7 +113,8 @@ _gmx_selelem_boolean_type_str(t_selelem *sel)
  * \c t_selelem::type is set to \p type,
  * \c t_selelem::v::type is set to \ref GROUP_VALUE for boolean and comparison
  * expressions and \ref NO_VALUE for others,
- * \ref SEL_ALLOCVAL and \ref SEL_ALLOCDATA are set for non-root elements,
+ * \ref SEL_ALLOCVAL is set for non-root elements (\ref SEL_ALLOCDATA is also
+ * set for \ref SEL_BOOLEAN elements),
  * and \c t_selelem::refcount is set to one.
  * All the pointers are set to NULL.
  */
@@ -125,9 +126,11 @@ _gmx_selelem_create(e_selelem_t type)
     snew(sel, 1);
     sel->name       = NULL;
     sel->type       = type;
+    sel->flags      = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
     if (type == SEL_BOOLEAN)
     {
         sel->v.type = GROUP_VALUE;
+        sel->flags |= SEL_ALLOCDATA;
     }
     else
     {
@@ -136,7 +139,6 @@ _gmx_selelem_create(e_selelem_t type)
     sel->v.nr       = 0;
     sel->v.u.ptr    = NULL;
     sel->evaluate   = NULL;
-    sel->flags      = (type != SEL_ROOT) ? (SEL_ALLOCVAL | SEL_ALLOCDATA) : 0;
     sel->child      = NULL;
     sel->next       = NULL;
     sel->refcount   = 1;
@@ -145,20 +147,79 @@ _gmx_selelem_create(e_selelem_t type)
 }
 
 /*!
+ * \param[in,out] sel   Selection element to set the type for.
+ * \param[in]     vtype Value type for the selection element.
+ * \returns       0 on success, EINVAL if the value type is invalid.
+ *
+ * If the new type is \ref GROUP_VALUE or \ref POS_VALUE, the
+ * \ref SEL_ALLOCDATA flag is also set.
+ *
+ * This function should only be called at most once for each element,
+ * preferably right after calling _gmx_selelem_create().
+ */
+int
+_gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype)
+{
+    if (sel->type == SEL_BOOLEAN && vtype != GROUP_VALUE)
+    {
+        gmx_bug("internal error");
+        return EINVAL;
+    }
+    if (sel->v.type != NO_VALUE && vtype != sel->v.type)
+    {
+        gmx_call("_gmx_selelem_set_vtype() called more than once");
+        return EINVAL;
+    }
+    sel->v.type = vtype;
+    if (vtype == GROUP_VALUE || vtype == POS_VALUE)
+    {
+        sel->flags |= SEL_ALLOCDATA;
+    }
+    return 0;
+}
+
+/*!
  * \param[in] sel Selection to free.
  */
 void
 _gmx_selelem_free_values(t_selelem *sel)
 {
+    int   i, n;
+
     if ((sel->flags & SEL_ALLOCDATA) && sel->v.u.ptr)
     {
-        if (sel->v.type == GROUP_VALUE)
+        /* The number of position/group structures is constant, so the
+         * backup of using sel->v.nr should work for them.
+         * For strings, we report an error if we don't know the allocation
+         * size here. */
+        n = (sel->v.nalloc > 0) ? sel->v.nalloc : sel->v.nr;
+        switch (sel->v.type)
         {
-            gmx_ana_index_deinit(sel->v.u.g);
-        }
-        else if (sel->v.type == POS_VALUE)
-        {
-            gmx_ana_pos_deinit(sel->v.u.p);
+            case STR_VALUE:
+                if (sel->v.nalloc == 0)
+                {
+                    gmx_bug("SEL_ALLOCDATA should only be set for allocated STR_VALUE values");
+                    break;
+                }
+                for (i = 0; i < n; ++i)
+                {
+                    sfree(sel->v.u.s[i]);
+                }
+                break;
+            case POS_VALUE:
+                for (i = 0; i < n; ++i)
+                {
+                    gmx_ana_pos_deinit(&sel->v.u.p[i]);
+                }
+                break;
+            case GROUP_VALUE:
+                for (i = 0; i < n; ++i)
+                {
+                    gmx_ana_index_deinit(&sel->v.u.g[i]);
+                }
+                break;
+            default: /* No special handling for other types */
+                break;
         }
     }
     if (sel->flags & SEL_ALLOCVAL)

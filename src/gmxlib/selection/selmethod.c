@@ -56,8 +56,11 @@ extern gmx_ana_selmethod_t sm_resnr;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
+extern gmx_ana_selmethod_t sm_insertcode;
+extern gmx_ana_selmethod_t sm_chain;
 extern gmx_ana_selmethod_t sm_mass;
 extern gmx_ana_selmethod_t sm_charge;
+extern gmx_ana_selmethod_t sm_altloc;
 extern gmx_ana_selmethod_t sm_occupancy;
 extern gmx_ana_selmethod_t sm_betafactor;
 extern gmx_ana_selmethod_t sm_x;
@@ -85,8 +88,11 @@ static gmx_ana_selmethod_t *smtable_def[] = {
     &sm_atomname,
     &sm_atomtype,
     &sm_resname,
+    &sm_insertcode,
+    &sm_chain,
     &sm_mass,
     &sm_charge,
+    &sm_altloc,
     &sm_occupancy,
     &sm_betafactor,
     &sm_x,
@@ -463,6 +469,11 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method, gmx_sel_symtab_t *symtab)
             report_error(fp, method->name, "error: SMETH_SINGLEVAL and SMETH_VARNUMVAL both set");
             bOk = FALSE;
         }
+    }
+    if ((method->flags & SMETH_CHARVAL) && method->type != STR_VALUE)
+    {
+        report_error(fp, method->name, "error: SMETH_CHARVAL can only be specified for STR_VALUE methods");
+        bOk = FALSE;
     }
     /* Check the parameters */
     if (!check_params(fp, method->name, method->nparams, method->param, symtab))
