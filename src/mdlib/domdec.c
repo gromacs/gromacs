@@ -5083,6 +5083,37 @@ static void receive_ddindex2simnodeid(t_commrec *cr)
 #endif
 }
 
+static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
+                                                     int ncg,int natoms)
+{
+    gmx_domdec_master_t *ma;
+    int i;
+
+    snew(ma,1);
+    
+    snew(ma->ncg,dd->nnodes);
+    snew(ma->index,dd->nnodes+1);
+    snew(ma->cg,ncg);
+    snew(ma->nat,dd->nnodes);
+    snew(ma->ibuf,dd->nnodes*2);
+    snew(ma->cell_x,DIM);
+    for(i=0; i<DIM; i++)
+    {
+        snew(ma->cell_x[i],dd->nc[i]+1);
+    }
+
+    if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
+    {
+        ma->vbuf = NULL;
+    }
+    else
+    {
+        snew(ma->vbuf,natoms);
+    }
+
+    return ma;
+}
+
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
 			       int reorder)
 {
@@ -5301,6 +5332,13 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     {
         dd->pme_nodeid = -1;
     }
+
+    if (DDMASTER(dd))
+    {
+        dd->ma = init_gmx_domdec_master_t(dd,
+                                          comm->cgs_gl.nr,
+                                          comm->cgs_gl.index[comm->cgs_gl.nr]);
+    }
 }
 
 static real *get_slb_frac(FILE *fplog,char *dir,int nc,char *size_string)
@@ -5482,37 +5520,6 @@ static void check_dd_restrictions(t_commrec *cr,gmx_domdec_t *dd,
     {
         dd_warning(cr,fplog,"comm-mode angular will give incorrect results when the comm group partially crosses a periodic boundary");
     }
-}
-
-static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
-                                                     int ncg,int natoms)
-{
-    gmx_domdec_master_t *ma;
-    int i;
-
-    snew(ma,1);
-    
-    snew(ma->ncg,dd->nnodes);
-    snew(ma->index,dd->nnodes+1);
-    snew(ma->cg,ncg);
-    snew(ma->nat,dd->nnodes);
-    snew(ma->ibuf,dd->nnodes*2);
-    snew(ma->cell_x,DIM);
-    for(i=0; i<DIM; i++)
-    {
-        snew(ma->cell_x[i],dd->nc[i]+1);
-    }
-
-    if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
-    {
-        ma->vbuf = NULL;
-    }
-    else
-    {
-        snew(ma->vbuf,natoms);
-    }
-
-    return ma;
 }
 
 static real average_cellsize_min(gmx_domdec_t *dd,matrix box)
@@ -5963,11 +5970,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                 comm->bBondComm,comm->cellsize_limit);
     }
     
-    if (DDMASTER(dd))
+    if (MASTER(cr))
     {
         check_dd_restrictions(cr,dd,ir,fplog);
-        
-        dd->ma = init_gmx_domdec_master_t(dd,ncg_mtop(mtop),mtop->natoms);
     }
     
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
