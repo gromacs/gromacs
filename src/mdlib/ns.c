@@ -265,11 +265,15 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
      gmx_fatal(FARGS,"%s, %d: Negative number of short range atoms.\n"
 		 "Call your Gromacs dealer for assistance.",__FILE__,__LINE__);
    }
-   maxsr_wat = fr->nWatMol; 
+   /* This is just for initial allocation, so we do not reallocate
+    * all the nlist arrays many times in a row.
+    * The numbers seem very accurate, but they are uncritical.
+    */
+   maxsr_wat = min(fr->nWatMol,(homenr+2)/3); 
    if (fr->bTwinRange) 
    {
        maxlr     = 50;
-       maxlr_wat = min(fr->nWatMol,maxlr);
+       maxlr_wat = min(maxsr_wat,maxlr);
    }
    else
    {

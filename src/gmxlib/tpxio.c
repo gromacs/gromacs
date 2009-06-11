@@ -1969,8 +1969,6 @@ static int do_tpx(int fp,bool bRead,
   if (tpx.bX) {
     if (bRead) {
       state->flags |= (1<<estX);
-      if (!bXVallocated)
-	snew(state->x,state->nalloc);
     }
     ndo_rvec(state->x,state->natoms);
   }
@@ -1980,8 +1978,6 @@ static int do_tpx(int fp,bool bRead,
   if (tpx.bV) {
     if (bRead) {
       state->flags |= (1<<estV);
-      if (!bXVallocated)
-	snew(state->v,state->nalloc);
     }
     ndo_rvec(state->v,state->natoms);
   }
