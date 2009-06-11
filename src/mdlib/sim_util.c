@@ -1131,40 +1131,28 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 		bool bWriteStat)
 {
   int    i,j;
-  t_nrnb *nrnb_all=NULL,ntot;
+  t_nrnb *nrnb_tot=NULL;
   real   delta_t;
   double nbfs,mflop;
   double cycles[ewcNR];
-#ifdef GMX_MPI
-  int    sender;
-  double nrnb_buf[4];
-  MPI_Status status;
-#endif
 
   wallcycle_sum(cr,wcycle,cycles);
 
   if (cr->nnodes > 1) {
     if (SIMMASTER(cr))
-      snew(nrnb_all,cr->nnodes);
+      snew(nrnb_tot,1);
 #ifdef GMX_MPI
-    MPI_Gather(nrnb,sizeof(t_nrnb),MPI_BYTE,
-	       nrnb_all,sizeof(t_nrnb),MPI_BYTE,
-	       0,cr->mpi_comm_mysim);
+    MPI_Reduce(nrnb->n,nrnb_tot->n,eNRNB,MPI_DOUBLE,MPI_SUM,
+               MASTERRANK(cr),cr->mpi_comm_mysim);
 #endif  
   } else {
-    nrnb_all = nrnb;
+    nrnb_tot = nrnb;
   }
     
   if (SIMMASTER(cr)) {
-    for(i=0; (i<eNRNB); i++)
-      ntot.n[i]=0;
-    for(i=0; (i<cr->nnodes); i++)
-      for(j=0; (j<eNRNB); j++)
-	ntot.n[j] += nrnb_all[i].n[j];
-
-    print_flop(fplog,&ntot,&nbfs,&mflop);
-    if (nrnb_all) {
-      sfree(nrnb_all);
+    print_flop(fplog,nrnb_tot,&nbfs,&mflop);
+    if (cr->nnodes > 1) {
+      sfree(nrnb_tot);
     }
   }
 
@@ -1174,7 +1162,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 
   if (SIMMASTER(cr)) {
     if (PARTDECOMP(cr)) {
-      pr_load(fplog,cr,nrnb_all);
+      pr_load(fplog,cr,nrnb_tot);
     }
 
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
