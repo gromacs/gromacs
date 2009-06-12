@@ -129,9 +129,14 @@ void *save_calloc(const char *name,const char *file,int line,
   else
     {
 #ifdef PRINT_ALLOC_KB
+      int rank=0;
       if (nelem*elsize >= PRINT_ALLOC_KB*1024) {
-	printf("Allocating %.1f MB for %s\n",
-	       nelem*elsize/(PRINT_ALLOC_KB*1024.0),name);
+#ifdef GMX_MPI
+#include <mpi.h>
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#endif
+	printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
+	       nelem*elsize/1048576.0,name,file,line,rank);
       }
 #endif
 #ifdef GMX_BROKEN_CALLOC
@@ -165,9 +170,14 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
   else
     {
 #ifdef PRINT_ALLOC_KB
+      int rank=0;
       if (size >= PRINT_ALLOC_KB*1024) {
-	printf("Reallocating %.1f MB for %s\n",
-	       size/(PRINT_ALLOC_KB*1024.0),name);
+#ifdef GMX_MPI
+#include <mpi.h>
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+#endif
+	printf("Reallocating %.1f MB for %s (called from file %s, line %d on %d)\n",
+	       size/1048576.0,name,file,line,rank);
       }
 #endif
       if (ptr==NULL) 
