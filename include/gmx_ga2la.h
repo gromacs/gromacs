@@ -90,7 +90,11 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
 
     snew(ga2la,1);
 
-    /* Use whichever method uses less memory.
+    /* There are two methods implemented for finding the local atom number
+     * belonging to a global atom number:
+     * 1) a simple, direct arrary
+     * 2) a list of linked lists indexed with the global number modulo mod.
+     * We use whichever method uses less memory.
      * The direct array indexing method is faster for small systems
      * and small systems should (hopefully) have more than a quarter
      * of the atoms locally (local means home + communicated atoms).
@@ -133,7 +137,7 @@ static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
     
     if (ga2la->lal[ind].ga >= 0)
     {
-        /* Search the last entry in the list for this index */
+        /* Search the last entry in the linked list for this index */
         ind_prev = ind;
         while(ga2la->lal[ind_prev].next >= 0)
         {
@@ -145,6 +149,7 @@ static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
         {
             ind++;
         }
+        /* If we are a the end of the list we need to increase the size */
         if (ind == ga2la->nalloc)
         {
             ga2la->nalloc = over_alloc_dd(ind+1);
@@ -186,8 +191,8 @@ static void ga2la_del(gmx_ga2la_t ga2la,int a_gl)
             {
                 ga2la->lal[ind_prev].next = ga2la->lal[ind].next;
 
-                /* This index is a linked entry, so we free an entry,
-                 * so check if we are creating the first empty space.
+                /* This index is a linked entry, so we free an entry.
+                 * Check if we are creating the first empty space.
                  */
                 if (ind < ga2la->start_space_search)
                 {

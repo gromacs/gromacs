@@ -55,6 +55,7 @@
 #include "network.h"
 #include "pbc.h"
 #include "pull.h"
+#include "gmx_ga2la.h"
 
 void pull_d_pbc_dx(int npbcdim,matrix box,
 		   const dvec x1, const dvec x2, dvec dx)
@@ -85,10 +86,9 @@ static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
 
   if (cr && PAR(cr)) {
     if (DOMAINDECOMP(cr)) {
-      if (cr->dd->ga2la[pg->pbcatom].cell == 0)
-	a = cr->dd->ga2la[pg->pbcatom].a;
-      else
+      if (!ga2la_home(cr->dd->ga2la,pg->pbcatom,&a)) {
 	a = -1;
+      }
     } else {
       a = pg->pbcatom;
     }
@@ -153,7 +153,7 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   rvec g_x,dx,dir;
   double r0_2,sum_a,sum_ap,dr2,mass,weight,wmass,wwmass,inp;
   t_pullgrp *pref,*pgrp,*pdyna;
-  gmx_ga2la_t *ga2la=NULL;
+  gmx_ga2la_t ga2la=NULL;
 
   if (dbuf == NULL) {
     snew(dbuf,pull->ngrp*4);
@@ -187,10 +187,9 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
     for(i=0; i<pref->nat; i++) {
       ii = pull->grp[0].ind[i];
       if (ga2la) {
-	if (ga2la[pref->ind[i]].cell == 0)
-	  ii = ga2la[pref->ind[i]].a;
-	else
+	if (!ga2la_home(ga2la,pref->ind[i],&ii)) {
 	  ii = -1;
+	}
       }
       if (ii >= start && ii < end) {
 	pbc_dx_aiuc(pbc,x[ii],g_x,dx);

@@ -183,13 +183,55 @@ static int lcd(int n1,int n2)
   return d;
 }
 
+real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox)
+{
+    int  i,j,k,npp;
+    rvec bt,nw;
+    real comm_vol;
+
+    for(i=0; i<DIM; i++)
+    {
+        bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
+        nw[i] = dd_nc[i]*cutoff/bt[i];
+    }
+
+    npp = 1;
+    comm_vol = 0;
+    for(i=0; i<DIM; i++)
+    {
+        if (dd_nc[i] > 1)
+        {
+            npp *= dd_nc[i];
+            comm_vol += nw[i];
+            for(j=i+1; j<DIM; j++)
+            {
+                if (dd_nc[j] > 1)
+                {
+                    comm_vol += nw[i]*nw[j]*M_PI/4;
+                    for(k=j+1; k<DIM; k++)
+                    {
+                        if (dd_nc[k] > 1)
+                        {
+                            comm_vol += nw[i]*nw[j]*nw[k]*M_PI/6;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /* Normalize by the number of PP nodes */
+    comm_vol /= npp;
+   
+    return comm_vol;
+}
+
 static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
                            matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
                            float pbcdxr,
                            int npme,ivec nc)
 {
     int  i,j,k,npp;
-    rvec bt,nw;
+    rvec bt;
     float comm_vol,comm_vol_pme,cost_pbcdx;
     /* This is the cost of a pbc_dx call relative to the cost
      * of communicating the coordinate and force of an atom.
@@ -222,10 +264,11 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         }
     }
     
+    npp = 1;
     for(i=0; i<DIM; i++)
     {
+        npp *= nc[i];
         bt[i] = ddbox->box_size[i]*ddbox->skew_fac[i];
-        nw[i] = nc[i]*cutoff/bt[i];
         
         /* Without PBC there are no cell size limits with 2 cells */
         if (!(i >= ddbox->npbcdim && nc[i] <= 2) && bt[i] < nc[i]*limit)
@@ -252,32 +295,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         }
     }
     
-    npp = 1;
-    comm_vol = 0;
-    for(i=0; i<DIM; i++)
-    {
-        if (nc[i] > 1)
-        {
-            npp *= nc[i];
-            comm_vol += nw[i];
-            for(j=i+1; j<DIM; j++)
-            {
-                if (nc[j] > 1)
-                {
-                    comm_vol += nw[i]*nw[j]*M_PI/4;
-                    for(k=j+1; k<DIM; k++)
-                    {
-                        if (nc[k] > 1)
-                        {
-                            comm_vol += nw[i]*nw[j]*nw[k]*M_PI/6;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    /* Normalize by the number of PP nodes */
-    comm_vol /= npp;
+    comm_vol = comm_box_frac(nc,cutoff,ddbox);
 
     /* Determine the largest volume that a PME only needs to communicate */
     comm_vol_pme = 0;

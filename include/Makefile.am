@@ -47,6 +47,7 @@ gmxcomplex.h \
 gmx_cyclecounter.h \
 gmxfio.h \
 gmx_fft.h \
+gmx_ga2la.h \
 gmx_lapack.h \
 gmx_random.h \
 gmx_parallel_3dfft.h \

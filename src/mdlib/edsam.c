@@ -58,6 +58,7 @@
 #include "edsam.h"
 #include "mpelogging.h"
 #include "gmxfio.h"
+#include "gmx_ga2la.h"
 
 
 /* We use the same defines as in mvdata.c here */
@@ -1639,7 +1640,7 @@ static real rmsd_from_structure(rvec           *x,  /* The x coordinates under c
 static void dd_make_local_indices(gmx_domdec_t *dd, struct gmx_edx *s, t_mdatoms *md)
 {
     int         i,ii;
-    gmx_ga2la_t *ga2la=NULL;
+    gmx_ga2la_t ga2la;
 
 
     ga2la = dd->ga2la;
@@ -1649,9 +1650,8 @@ static void dd_make_local_indices(gmx_domdec_t *dd, struct gmx_edx *s, t_mdatoms
     /* go through all the atom indices of the structure */
     for(i=0; i<s->nr; i++)
     {
-        if (ga2la[s->anrs[i]].cell == 0)
+        if (ga2la_home(ga2la,s->anrs[i],&ii))
         {
-            ii = ga2la[s->anrs[i]].a;
             if (ii < md->start+md->homenr)
             {
                 /* The atom with this index is a home atom, therefore 

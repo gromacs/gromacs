@@ -46,6 +46,7 @@
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
+#include "gmx_ga2la.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -2353,9 +2354,8 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
             for(a_gl=gcgs_index[cg_gl]; a_gl<gcgs_index[cg_gl+1]; a_gl++)
             {
                 gatindex[a] = a_gl;
-                ga2la = &dd->ga2la[a_gl];
-                ga2la->cell = zone1;
-                ga2la->a    = a++;
+                ga2la_set(dd->ga2la,a_gl,a,zone1);
+                a++;
             }
         }
     }
@@ -2401,7 +2401,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
                                     int natoms_sys,int ncg_sys,
                                     const char *where)
 {
-    int  nerr,ngl,i,a;
+    int  nerr,ngl,i,a,cell;
     int  *have;
 
     nerr = 0;
@@ -2428,9 +2428,8 @@ static void check_index_consistency(gmx_domdec_t *dd,
     ngl  = 0;
     for(i=0; i<natoms_sys; i++)
     {
-        if (dd->ga2la[i].cell >= 0)
+        if (ga2la_get(dd->ga2la,i,&a,&cell))
         {
-            a = dd->ga2la[i].a;
             if (a >= dd->nat_tot)
             {
                 fprintf(stderr,"DD node %d: global atom %d marked as local atom %d, which is larger than nat_tot (%d)\n",dd->rank,i+1,a+1,dd->nat_tot);
@@ -2478,10 +2477,17 @@ static void clear_dd_indices(gmx_domdec_t *dd,int cg_start,int a_start)
     int  i;
     char *bLocalCG;
 
-    /* Clear the indices without looping over all the atoms in the system */
-    for(i=a_start; i<dd->nat_tot; i++)
+    if (a_start == 0)
     {
-        dd->ga2la[dd->gatindex[i]].cell = -1;
+        /* Clear the whole list without searching */
+        ga2la_clear(dd->ga2la);
+    }
+    else
+    {
+        for(i=a_start; i<dd->nat_tot; i++)
+        {
+            ga2la_del(dd->ga2la,dd->gatindex[i]);
+        }
     }
 
     bLocalCG = dd->comm->bLocalCG;
@@ -3782,7 +3788,7 @@ static int compact_and_copy_vec_cg(int ncg,int *move,
 static int compact_ind(int ncg,int *move,
                        int *index_gl,int *cgindex,
                        int *gatindex,
-                       gmx_ga2la_t *ga2la,char *bLocalCG,
+                       gmx_ga2la_t ga2la,char *bLocalCG,
                        int *cginfo)
 {
     int cg,nat,a0,a1,a,a_gl;
@@ -3805,7 +3811,7 @@ static int compact_ind(int ncg,int *move,
                 a_gl = gatindex[a];
                 gatindex[nat] = a_gl;
                 /* The cell number stays 0, so we don't need to set it */
-                ga2la[a_gl].a = nat;
+                ga2la_change_la(ga2la,a_gl,nat);
                 nat++;
             }
             index_gl[home_pos] = index_gl[cg];
@@ -3818,8 +3824,7 @@ static int compact_ind(int ncg,int *move,
             /* Clear the global indices */
             for(a=a0; a<a1; a++)
             {
-                a_gl = gatindex[a];
-                ga2la[a_gl].cell = -1;
+                ga2la_del(ga2la,gatindex[a]);
             }
             if (bLocalCG)
             {
@@ -3834,10 +3839,10 @@ static int compact_ind(int ncg,int *move,
 
 static void clear_and_mark_ind(int ncg,int *move,
                                int *index_gl,int *cgindex,int *gatindex,
-                               gmx_ga2la_t *ga2la,char *bLocalCG,
+                               gmx_ga2la_t ga2la,char *bLocalCG,
                                int *cell_index)
 {
-    int cg,a0,a1,a,a_gl;
+    int cg,a0,a1,a;
     
     for(cg=0; cg<ncg; cg++)
     {
@@ -3848,8 +3853,7 @@ static void clear_and_mark_ind(int ncg,int *move,
             /* Clear the global indices */
             for(a=a0; a<a1; a++)
             {
-                a_gl = gatindex[a];
-                ga2la[a_gl].cell = -1;
+                ga2la_del(ga2la,gatindex[a]);
             }
             if (bLocalCG)
             {
@@ -6469,6 +6473,8 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     gmx_domdec_comm_t *comm;
     int  d,dim,npulse,npulse_d_max,npulse_d;
     bool bNoCutOff;
+    int  natoms_tot;
+    real vol_frac;
 
     comm = dd->comm;
 
@@ -6613,6 +6619,15 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         }
         print_dd_settings(fplog,dd,ir,TRUE,dlb_scale,ddbox);
     }
+
+    vol_frac = 1/(real)dd->nnodes + comm_box_frac(dd->nc,comm->cutoff,ddbox);
+    if (debug)
+    {
+        fprintf(debug,"Volume fraction for all DD zones: %f\n",vol_frac);
+    }
+    natoms_tot = comm->cgs_gl.index[comm->cgs_gl.nr];
+   
+    dd->ga2la = ga2la_init(natoms_tot,vol_frac*natoms_tot);
 }
 
 static void merge_cg_buffers(int ncell,
@@ -7978,6 +7993,7 @@ void dd_partition_system(FILE            *fplog,
                       bResortAll ? -1 : ncg_home_old);
         /* Rebuild all the indices */
         cg0 = 0;
+        ga2la_clear(dd->ga2la);
     }
     
     /* Setup up the communication and communicate the coordinates */

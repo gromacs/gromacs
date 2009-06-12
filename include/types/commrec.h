@@ -70,10 +70,7 @@ typedef struct {
   gmx_domdec_ns_ranges_t izone[DD_MAXIZONE];
 } gmx_domdec_zones_t;
 
-typedef struct {
-  int     cell;
-  atom_id a;
-} gmx_ga2la_t;
+typedef struct gmx_ga2la *gmx_ga2la_t;
 
 typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
 
@@ -180,8 +177,8 @@ typedef struct {
   int  *gatindex;
   int  gatindex_nalloc;
 
-  /* Global atom number to local atom number, -1 if not local */
-  gmx_ga2la_t *ga2la;
+  /* Global atom number to local atom number list */
+  gmx_ga2la_t ga2la;
 
   /* Communication stuff */
   gmx_domdec_comm_p_t comm;

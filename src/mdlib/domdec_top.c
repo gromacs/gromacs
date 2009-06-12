@@ -34,6 +34,7 @@
 #include "mtop_util.h"
 #include "mshift.h"
 #include "vsite.h"
+#include "gmx_ga2la.h"
 
 typedef struct {
     int  *index;  /* Index for each atom into il                  */ 
@@ -43,7 +44,7 @@ typedef struct {
 typedef struct {
     int  a_start;
     int  a_end;
-  int  natoms_mol;
+    int  natoms_mol;
     int  type;
 } gmx_molblock_ind_t;
 
@@ -671,12 +672,7 @@ void dd_make_reverse_top(FILE *fplog,
     }
     
     natoms = mtop->natoms;
-    snew(dd->ga2la,natoms);
-    for(a=0; a<natoms; a++)
-    {
-        dd->ga2la[a].cell = -1;
-    }
-    
+
     if (vsite && vsite->n_intercg_vsite > 0)
     {
         if (fplog)
@@ -760,7 +756,7 @@ static void add_posres(int mol,int a_mol,gmx_molblock_t *molb,
     iatoms[0] = n;
 }
 
-static void add_vsite(gmx_domdec_t *dd,int *index,int *rtil,
+static void add_vsite(gmx_ga2la_t ga2la,int *index,int *rtil,
                       int ftype,int nral,
                       bool bHomeA,int a,int a_gl,int a_mol,
                       t_iatom *iatoms,
@@ -768,7 +764,6 @@ static void add_vsite(gmx_domdec_t *dd,int *index,int *rtil,
 {
     int  k,ak_gl,vsi,pbc_a_mol;
     t_iatom tiatoms[1+MAXATOMLIST],*iatoms_r;
-    gmx_ga2la_t *ga2la;
     int  j,ftype_r,nral_r;
     
     /* Copy the type */
@@ -788,12 +783,7 @@ static void add_vsite(gmx_domdec_t *dd,int *index,int *rtil,
     for(k=2; k<1+nral; k++)
     {
         ak_gl = a_gl + iatoms[k] - a_mol;
-        ga2la = &dd->ga2la[ak_gl];
-        if (ga2la->cell == 0)
-        {
-            tiatoms[k] = ga2la->a;
-        }
-        else
+        if (!ga2la_home(ga2la,ak_gl,&tiatoms[k]))
         {
             /* Copy the global index, convert later in make_local_vsites */
             tiatoms[k] = -(ak_gl + 1);
@@ -865,7 +855,7 @@ static void add_vsite(gmx_domdec_t *dd,int *index,int *rtil,
                     if (interaction_function[ftype_r].flags & IF_VSITE)
                     {
                         /* Add this vsite (recursion) */
-                        add_vsite(dd,index,rtil,ftype_r,nral_r,
+                        add_vsite(ga2la,index,rtil,ftype_r,nral_r,
                                   FALSE,-1,a_gl+iatoms[k]-iatoms[1],iatoms[k],
                                   rtil+j,idef,vsite_pbc,vsite_pbc_nalloc);
                         j += 1 + nral_r + 2;
@@ -926,13 +916,15 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                               int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
                               t_idef *idef,gmx_vsite_t *vsite)
 {
-    int nzone,nizone,ic,la0,la1,i,i_gl,mb,mt,mol,i_mol,j,ftype,nral,d,k,kc;
+    int nzone,nizone,ic,la0,la1,i,i_gl,mb,mt,mol,i_mol,j,ftype,nral,d,k;
     int *index,*rtil,**vsite_pbc,*vsite_pbc_nalloc;
     t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
-    bool bBCheck,bUse;
+    bool bBCheck,bUse,bLocal;
     real rc2;
     ivec k_zero,k_plus;
-    gmx_ga2la_t *ga2la;
+    gmx_ga2la_t ga2la;
+    int  a_loc;
+    int  kc;
     gmx_domdec_ns_ranges_t *izone;
     gmx_reverse_top_t *rt;
     gmx_molblock_ind_t *mbi;
@@ -967,6 +959,8 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
     nbonded_local = 0;
     
     mbi = rt->mbi;
+
+    ga2la = dd->ga2la;
     
     for(ic=0; ic<nzone; ic++)
     {
@@ -991,7 +985,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                     /* The vsite construction goes where the vsite itself is */
                     if (ic == 0)
                     {
-                        add_vsite(dd,index,rtil,ftype,nral,
+                        add_vsite(dd->ga2la,index,rtil,ftype,nral,
                                   TRUE,i,i_gl,i_mol,
                                   iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
                     }
@@ -1024,9 +1018,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                         /* This is a two-body interaction, we can assign
                          * analogous to the non-bonded assignments.
                          */
-                        ga2la = &dd->ga2la[i_gl + iatoms[2] - i_mol];
-                        kc = ga2la->cell;
-                        if (kc == -1)
+                        if (!ga2la_get(ga2la,i_gl+iatoms[2]-i_mol,&a_loc,&kc))
                         {
                             bUse = FALSE;
                         }
@@ -1044,7 +1036,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                             if (bUse)
                             {
                                 tiatoms[1] = i;
-                                tiatoms[2] = ga2la->a;
+                                tiatoms[2] = a_loc;
                                 /* If necessary check the cgcm distance */
                                 if (bRCheck2B &&
                                     dd_dist2(pbc_null,cg_cm,la2lc,
@@ -1068,9 +1060,9 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                         clear_ivec(k_plus);
                         for(k=1; k<=nral && bUse; k++)
                         {
-                            ga2la = &dd->ga2la[i_gl + iatoms[k] - i_mol];
-                            kc = ga2la->cell;
-                            if (kc == -1 || kc >= zones->n)
+                            bLocal = ga2la_get(ga2la,i_gl+iatoms[k]-i_mol,
+                                               &a_loc,&kc);
+                            if (!bLocal || kc >= zones->n)
                             {
                                 /* We do not have this atom of this interaction
                                  * locally, or it comes from more than one cell
@@ -1080,7 +1072,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                             }
                             else
                             {
-                                tiatoms[k] = ga2la->a;
+                                tiatoms[k] = a_loc;
                                 for(d=0; d<DIM; d++)
                                 {
                                     if (zones->shift[kc][d] == 0)
@@ -1192,7 +1184,7 @@ static int make_local_bondeds_intracg(gmx_domdec_t *dd,gmx_molblock_t *molb,
             if (interaction_function[ftype].flags & IF_VSITE)
             {
                 /* The vsite construction goes where the vsite itself is */
-                add_vsite(dd,index,rtil,ftype,nral,
+                add_vsite(dd->ga2la,index,rtil,ftype,nral,
                           TRUE,i,i_gl,i_mol,
                           iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
                 j += 1 + nral + 2;
@@ -1232,7 +1224,9 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
     int  nizone,n,count,ic,jla0,jla1,jla;
     int  cg,la0,la1,la,a_gl,mb,mt,mol,a_mol,j,aj_mol;
     t_blocka *excls;
-    gmx_ga2la_t *ga2la;
+    gmx_ga2la_t ga2la;
+    int  a_loc;
+    int  cell;
     gmx_molblock_ind_t *mbi;
     real rc2;
     
@@ -1253,6 +1247,8 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
     
     mbi = dd->reverse_top->mbi;
     
+    ga2la = dd->ga2la;
+
     rc2 = rc*rc;
     
     if (dd->n_intercg_excl)
@@ -1316,17 +1312,15 @@ static int make_local_exclusions(gmx_domdec_t *dd,gmx_domdec_zones_t *zones,
                         else
                         {
                             /* This is a inter-cg exclusion */
-                            ga2la = &dd->ga2la[a_gl + aj_mol - a_mol];
                             /* Since exclusions are pair interactions,
                              * just like non-bonded interactions,
                              * they can be assigned properly up
                              * to the DD cutoff (not cutoff_min as
                              * for the other bonded interactions).
                              */
-                            if (ga2la->cell != -1)
+                            if (ga2la_get(ga2la,a_gl+aj_mol-a_mol,&jla,&cell))
                             {
-                                jla = ga2la->a;
-                                if (ic == 0 && ga2la->cell == 0)
+                                if (ic == 0 && cell == 0)
                                 {
                                     lexcls->a[n++] = jla;
                                     /* Check to avoid double counts */

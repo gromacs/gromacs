@@ -57,6 +57,7 @@
 #include "pbc.h"
 #include "mtop_util.h"
 #include "mdrun.h"
+#include "gmx_ga2la.h"
 
 static void pull_print_x_grp(FILE *out,bool bRef,ivec dim,t_pullgrp *pgrp) 
 {
@@ -171,7 +172,7 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
 
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
-			     gmx_ga2la_t *ga2la,
+			     gmx_ga2la_t ga2la,
 			     dvec f_pull, int sign, rvec *f)
 {
   int i,ii,m,start,end;
@@ -194,7 +195,7 @@ static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t *ga2la,
+static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
 			 rvec *f)
 {
   int i;
@@ -740,7 +741,7 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
   do_constraint(pull,md,pbc,xp,v,MASTER(cr),vir,dt,t);
 }
 
-static void make_local_pull_group(gmx_ga2la_t *ga2la,
+static void make_local_pull_group(gmx_ga2la_t ga2la,
 				  t_pullgrp *pg,int start,int end)
 {
   int i,ii;
@@ -749,10 +750,9 @@ static void make_local_pull_group(gmx_ga2la_t *ga2la,
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
     if (ga2la) {
-      if (ga2la[ii].cell == 0)
-	ii = ga2la[ii].a;
-      else
+      if (!ga2la_home(ga2la,ii,&ii)) {
 	ii = -1;
+      }
     }
     if (ii >= start && ii < end) {
       /* This is a home atom, add it to the local pull group */
@@ -774,7 +774,7 @@ static void make_local_pull_group(gmx_ga2la_t *ga2la,
 
 void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 {
-  gmx_ga2la_t *ga2la;
+  gmx_ga2la_t ga2la;
   int g;
   
   if (dd) {
@@ -798,7 +798,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   real m,w,mbd;
   double tmass,wmass,wwmass;
   bool bDomDec;
-  gmx_ga2la_t *ga2la=NULL;
+  gmx_ga2la_t ga2la=NULL;
   gmx_groups_t *groups;
   t_atom *atom;
 
