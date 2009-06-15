@@ -65,6 +65,10 @@ typedef struct {
 } t_nblists;
 
 /* macros for the cginfo data in forcerec */
+/* The maximum cg size is 255, because we only have space for 8 bits in cginfo,
+ * this cg size entry is actually only read with domain decomposition.
+ */
+#define MAX_CHARGEGROUP_SIZE 256
 #define SET_CGINFO_GID(cgi,gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
 #define GET_CGINFO_GID(cgi)        ( (cgi)            &   65535)
 #define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
@@ -76,6 +80,8 @@ typedef struct {
 /* This bit is only used with bBondComm in the domain decomposition */
 #define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<22))
 #define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
+#define SET_CGINFO_NATOMS(cgi,opt)   (cgi) = (((cgi)  & ~(255<<23)) | ((opt)<<23))
+#define GET_CGINFO_NATOMS(cgi)     (((cgi)>>23)       &   255)
 
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egGB, egNR };
@@ -99,6 +105,13 @@ typedef struct {
  * should explicitly determine the energies at foreign lambda points
  * when n_lambda > 0.
  */
+
+typedef struct {
+  int cg_start;
+  int cg_end;
+  int cg_mod;
+  int *cginfo;
+} cginfo_mb_t;
 
 typedef struct {
   /* Domain Decomposition */
@@ -174,7 +187,7 @@ typedef struct {
   int  solvent_opt;
   int  nWatMol;
   bool bGrid;
-  int  *cginfo_global;
+  cginfo_mb_t *cginfo_mb;
   int  *cginfo;
   rvec *cg_cm;
   int  cg_nalloc;

@@ -150,6 +150,7 @@ typedef struct
 static void
 check_solvent_cg(const gmx_moltype_t   *molt,
                  int                   cg0,
+                 int                   nmol,
                  const unsigned char   *qm_grpnr,
                  const t_grps          *qm_grps,
                  t_forcerec *          fr,
@@ -293,7 +294,7 @@ check_solvent_cg(const gmx_moltype_t   *molt,
              * Flag it with this type for later processing.
              */
             *cg_sp = k;
-            (solvent_parameters[k].count)++;
+            solvent_parameters[k].count += nmol;
 
             /* We are done with this charge group */
             return;
@@ -352,7 +353,7 @@ check_solvent_cg(const gmx_moltype_t   *molt,
         {
             srenew(solvent_parameters,*n_solvent_parameters+1);
             solvent_parameters[*n_solvent_parameters].model = esolSPC;
-            solvent_parameters[*n_solvent_parameters].count = 1;
+            solvent_parameters[*n_solvent_parameters].count = nmol;
             for(k=0;k<3;k++)
             {
                 solvent_parameters[*n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
@@ -379,8 +380,8 @@ check_solvent_cg(const gmx_moltype_t   *molt,
            tmp_charge[3]  != 0)
         {
             srenew(solvent_parameters,*n_solvent_parameters+1);
-            solvent_parameters[*n_solvent_parameters].model=esolTIP4P;
-            solvent_parameters[*n_solvent_parameters].count=1;
+            solvent_parameters[*n_solvent_parameters].model = esolTIP4P;
+            solvent_parameters[*n_solvent_parameters].count = nmol;
             for(k=0;k<4;k++)
             {
                 solvent_parameters[*n_solvent_parameters].vdwtype[k] = tmp_vdwtype[k];
@@ -399,15 +400,15 @@ static void
 check_solvent(FILE *                fp,
               const gmx_mtop_t *    mtop,
               t_forcerec *          fr,
-              int                   *cginfo)
+              cginfo_mb_t           *cginfo_mb)
 {
     const t_block *   cgs;
     const t_block *   mols;
     const gmx_moltype_t *molt;
-    int               mb,mol,cg_mol,cg_offset,at_offset,ncg,i;
+    int               mb,mol,cg_mol,at_offset,cg_offset,am,cgm,i,nmol_ch,nmol;
     int               n_solvent_parameters;
     solvent_parameters_t *solvent_parameters;
-    int               *cg_sp;
+    int               **cg_sp;
     int               bestsp,bestsol;
 
     if (debug)
@@ -420,33 +421,38 @@ check_solvent(FILE *                fp,
     n_solvent_parameters = 0;
     solvent_parameters = NULL;
     /* Allocate temporary array for solvent type */
-    ncg = ncg_mtop(mtop);
-    snew(cg_sp,ncg);
+    snew(cg_sp,mtop->nmolblock);
 
     cg_offset = 0;
     at_offset = 0;
-    for(mb=0; mb<mtop->nmolblock; mb++) {
+    for(mb=0; mb<mtop->nmolblock; mb++)
+    {
         molt = &mtop->moltype[mtop->molblock[mb].type];
         cgs  = &molt->cgs;
         /* Here we have to loop over all individual molecules
          * because we need to check for QMMM particles.
          */
-        for(mol=0; mol<mtop->molblock[mb].nmol; mol++)
+        snew(cg_sp[mb],cginfo_mb[mb].cg_mod);
+        nmol_ch = cginfo_mb[mb].cg_mod/cgs->nr;
+        nmol    = mtop->molblock[mb].nmol/nmol_ch;
+        for(mol=0; mol<nmol_ch; mol++)
         {
+            cgm = mol*cgs->nr;
+            am  = mol*cgs->index[cgs->nr];
             for(cg_mol=0; cg_mol<cgs->nr; cg_mol++)
             {
-                check_solvent_cg(molt,cg_mol,
+                check_solvent_cg(molt,cg_mol,nmol,
                                  mtop->groups.grpnr[egcQMMM] ?
-                                 mtop->groups.grpnr[egcQMMM]+at_offset : 0,
+                                 mtop->groups.grpnr[egcQMMM]+at_offset+am : 0,
                                  &mtop->groups.grps[egcQMMM],
                                  fr,
                                  &n_solvent_parameters,&solvent_parameters,
-                                 cginfo[cg_offset+cg_mol],
-                                 &cg_sp[cg_offset+cg_mol]);
+                                 cginfo_mb[mb].cginfo[cgm+cg_mol],
+                                 &cg_sp[mb][cgm+cg_mol]);
             }
-            cg_offset += cgs->nr;
-            at_offset += cgs->index[cgs->nr];
         }
+        cg_offset += cgs->nr;
+        at_offset += cgs->index[cgs->nr];
     }
 
     /* Puh! We finished going through all charge groups.
@@ -478,18 +484,25 @@ check_solvent(FILE *                fp,
 #endif
 
     fr->nWatMol = 0;
-    for(i=0; i<ncg; i++)
+    for(mb=0; mb<mtop->nmolblock; mb++)
     {
-        if (cg_sp[i] == bestsp)
+        cgs = &mtop->moltype[mtop->molblock[mb].type].cgs;
+        nmol = (mtop->molblock[mb].nmol*cgs->nr)/cginfo_mb[mb].cg_mod;
+        for(i=0; i<cginfo_mb[mb].cg_mod; i++)
         {
-            SET_CGINFO_SOLOPT(cginfo[i],bestsol);
-            fr->nWatMol++;
+            if (cg_sp[mb][i] == bestsp)
+            {
+                SET_CGINFO_SOLOPT(cginfo_mb[mb].cginfo[i],bestsol);
+                fr->nWatMol += nmol;
+            }
+            else
+            {
+                SET_CGINFO_SOLOPT(cginfo_mb[mb].cginfo[i],esolNO);
+            }
         }
-        else
-        {
-            SET_CGINFO_SOLOPT(cginfo[i],esolNO);
-        }
+        sfree(cg_sp[mb]);
     }
+    sfree(cg_sp);
     
     if (bestsol != esolNO && fp!=NULL)
     {
@@ -498,24 +511,25 @@ check_solvent(FILE *                fp,
                 solvent_parameters[bestsp].count);
     }
 
-    sfree(cg_sp);
     sfree(solvent_parameters);
     fr->solvent_opt = bestsol;
 }
 
-static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
-                        t_forcerec *fr,bool bNoSolvOpt)
+static cginfo_mb_t *init_cginfo_mb(FILE *fplog,const gmx_mtop_t *mtop,
+                                   t_forcerec *fr,bool bNoSolvOpt)
 {
     const t_block *cgs;
     const t_blocka *excl;
     const gmx_moltype_t *molt;
     const gmx_molblock_t *molb;
+    cginfo_mb_t *cginfo_mb;
     int  *cginfo;
-    int  mb,m,ncg_tot,cg_offset,cg,a_offset,a0,a1,gid,ai,j,aj,excl_nalloc;
-    bool *bExcl,bExclIntraAll,bExclInter;
+    int  cg_offset,a_offset,cgm,am;
+    int  mb,m,ncg_tot,cg,a0,a1,gid,ai,j,aj,excl_nalloc;
+    bool bId,*bExcl,bExclIntraAll,bExclInter;
 
     ncg_tot = ncg_mtop(mtop);
-    snew(cginfo,ncg_tot);
+    snew(cginfo_mb,mtop->nmolblock);
     
     excl_nalloc = 10;
     snew(bExcl,excl_nalloc);
@@ -527,16 +541,57 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
         molt = &mtop->moltype[molb->type];
         cgs  = &molt->cgs;
         excl = &molt->excls;
+
+        /* Check if the cginfo is identical for all molecules in this block.
+         * If so, we only need an array of the size of one molecule.
+         * Otherwise we make an array of #mol times #cgs per molecule.
+         */
+        bId = TRUE;
+        am = 0;
         for(m=0; m<molb->nmol; m++)
         {
+            am = m*cgs->index[cgs->nr];
+            for(cg=0; cg<cgs->nr; cg++)
+            {
+                a0 = cgs->index[cg];
+                a1 = cgs->index[cg+1];
+                if (ggrpnr(&mtop->groups,egcENER,a_offset+am+a0) !=
+                    ggrpnr(&mtop->groups,egcENER,a_offset   +a0))
+                {
+                    bId = FALSE;
+                }
+                if (mtop->groups.grpnr[egcQMMM] != NULL)
+                {
+                    for(ai=a0; ai<a1; ai++)
+                    {
+                        if (mtop->groups.grpnr[egcQMMM][a_offset+am+ai] !=
+                            mtop->groups.grpnr[egcQMMM][a_offset   +ai])
+                        {
+                            bId = FALSE;
+                        }
+                    }
+                }
+            }
+        }
+
+        cginfo_mb[mb].cg_start = cg_offset;
+        cginfo_mb[mb].cg_end   = cg_offset + molb->nmol*cgs->nr;
+        cginfo_mb[mb].cg_mod   = (bId ? 1 : molb->nmol)*cgs->nr;
+        snew(cginfo_mb[mb].cginfo,cginfo_mb[mb].cg_mod);
+        cginfo = cginfo_mb[mb].cginfo;
+
+        for(m=0; m<(bId ? 1 : molb->nmol); m++)
+        {
+            cgm = m*cgs->nr;
+            am  = m*cgs->index[cgs->nr];
             for(cg=0; cg<cgs->nr; cg++)
             {
                 a0 = cgs->index[cg];
                 a1 = cgs->index[cg+1];
 
                 /* Store the energy group in cginfo */
-                gid = ggrpnr(&mtop->groups,egcENER,a_offset+a0);
-                SET_CGINFO_GID(cginfo[cg_offset+cg],gid);
+                gid = ggrpnr(&mtop->groups,egcENER,a_offset+am+a0);
+                SET_CGINFO_GID(cginfo[cgm+cg],gid);
                 
                 /* Check the intra/inter charge group exclusions */
                 if (a1-a0 > excl_nalloc) {
@@ -577,16 +632,22 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
                 }
                 if (bExclIntraAll)
                 {
-                    SET_CGINFO_EXCL_INTRA(cginfo[cg_offset+cg]);
+                    SET_CGINFO_EXCL_INTRA(cginfo[cgm+cg]);
                 }
                 if (bExclInter)
                 {
-                    SET_CGINFO_EXCL_INTER(cginfo[cg_offset+cg]);
+                    SET_CGINFO_EXCL_INTER(cginfo[cgm+cg]);
                 }
+                if (a1 - a0 > MAX_CHARGEGROUP_SIZE)
+                {
+                    /* The size in cginfo is currently only read with DD */
+                    gmx_fatal(FARGS,"A charge group has size %d which is larger than the limit of %d atoms",a1-a0,MAX_CHARGEGROUP_SIZE);
+                }
+                SET_CGINFO_NATOMS(cginfo[cgm+cg],a1-a0);
             }
-            cg_offset += cgs->nr;
-            a_offset  += cgs->index[cgs->nr];
         }
+        cg_offset += molb->nmol*cgs->nr;
+        a_offset  += molb->nmol*cgs->index[cgs->nr];
     }
     sfree(bExcl);
     
@@ -595,7 +656,7 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
      * optimized solvent
      */
 
-    check_solvent(fplog,mtop,fr,cginfo);
+    check_solvent(fplog,mtop,fr,cginfo_mb);
     
     if (getenv("GMX_NO_SOLV_OPT"))
     {
@@ -612,15 +673,38 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
     }
     if (!fr->solvent_opt)
     {
-        for(cg=0; cg<ncg_tot; cg++)
+        for(mb=0; mb<mtop->nmolblock; mb++)
         {
-            SET_CGINFO_SOLOPT(cginfo[cg],esolNO);
+            for(cg=0; cg<cginfo_mb[mb].cg_mod; cg++)
+            {
+                SET_CGINFO_SOLOPT(cginfo_mb[mb].cginfo[cg],esolNO);
+            }
         }
     }
     
-    return cginfo;
+    return cginfo_mb;
 }
 
+static int *cginfo_expand(int nmb,cginfo_mb_t *cgi_mb)
+{
+    int ncg,mb,cg;
+    int *cginfo;
+
+    ncg = cgi_mb[nmb-1].cg_end;
+    snew(cginfo,ncg);
+    mb = 0;
+    for(cg=0; cg<ncg; cg++)
+    {
+        while (cg >= cgi_mb[mb].cg_end)
+        {
+            mb++;
+        }
+        cginfo[cg] =
+            cgi_mb[mb].cginfo[(cg - cgi_mb[mb].cg_start) % cgi_mb[mb].cg_mod];
+    }
+
+    return cginfo;
+}
 
 void set_chargesum(FILE *log,t_forcerec *fr,const gmx_mtop_t *mtop)
 {
@@ -1459,11 +1543,11 @@ void init_forcerec(FILE *fp,
     fr->qr         = mk_QMMMrec();
     
     /* Set all the static charge group info */
-    fr->cginfo_global = init_cginfo(fp,mtop,fr,bNoSolvOpt);
+    fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt);
     if (DOMAINDECOMP(cr)) {
         fr->cginfo = NULL;
     } else {
-        fr->cginfo = fr->cginfo_global;
+        fr->cginfo = cginfo_expand(mtop->nmolblock,fr->cginfo_mb);
     }
     
     if (!DOMAINDECOMP(cr))

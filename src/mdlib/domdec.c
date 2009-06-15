@@ -2281,21 +2281,35 @@ static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
     set_zones_ncg_home(dd);
 }
 
-static void dd_set_cginfo(t_forcerec *fr,int *index_gl,int cg0,int cg1,
-                          char *bLocalCG)
+static int ddcginfo(const cginfo_mb_t *cginfo_mb,int cg)
 {
-    int *cginfo_global,*cginfo;
-    int cg;
-
-    cginfo_global = fr->cginfo_global;
-    cginfo        = fr->cginfo;
-
-    for(cg=cg0; cg<cg1; cg++)
+    while (cg >= cginfo_mb->cg_end)
     {
-        cginfo[cg] = cginfo_global[index_gl[cg]];
+        cginfo_mb++;
     }
 
-    if (bLocalCG)
+    return cginfo_mb->cginfo[(cg - cginfo_mb->cg_start) % cginfo_mb->cg_mod];
+}
+
+static void dd_set_cginfo(int *index_gl,int cg0,int cg1,
+                          t_forcerec *fr,char *bLocalCG)
+{
+    cginfo_mb_t *cginfo_mb;
+    int *cginfo;
+    int cg;
+
+    if (fr != NULL)
+    {
+        cginfo_mb = fr->cginfo_mb;
+        cginfo    = fr->cginfo;
+
+        for(cg=cg0; cg<cg1; cg++)
+        {
+            cginfo[cg] = ddcginfo(cginfo_mb,index_gl[cg]);
+        }
+    }
+
+    if (bLocalCG != NULL)
     {
         for(cg=cg0; cg<cg1; cg++)
         {
@@ -3951,7 +3965,7 @@ static void rotate_state_atom(t_state *state,int a)
 }
 
 static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
-                              gmx_domdec_t *dd,t_block *gcgs,ivec tric_dir,
+                              gmx_domdec_t *dd,ivec tric_dir,
                               t_state *state,rvec **f,
                               t_forcerec *fr,t_mdatoms *md,
                               bool bCompact,
@@ -3972,6 +3986,7 @@ static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
     matrix tcm;
     rvec *cg_cm,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
     atom_id *cgindex;
+    cginfo_mb_t *cginfo_mb;
     gmx_domdec_comm_t *comm;
     
     if (dd->bScrewPBC)
@@ -4285,6 +4300,8 @@ static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
                            fr->ns.grid->cell_index);
     }
     
+    cginfo_mb = fr->cginfo_mb;
+
     ncg_stay_home = home_pos_cg;
     for(d=0; d<dd->ndim; d++)
     {
@@ -4421,8 +4438,8 @@ static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
                 }
                 copy_rvec(comm->vbuf.v[buf_pos++],cg_cm[home_pos_cg]);
                 /* Set the cginfo */
-                fr->cginfo[home_pos_cg] =
-                    fr->cginfo_global[dd->index_gl[home_pos_cg]];
+                fr->cginfo[home_pos_cg] = ddcginfo(cginfo_mb,
+                                                   dd->index_gl[home_pos_cg]);
                 if (comm->bLocalCG)
                 {
                     comm->bLocalCG[dd->index_gl[home_pos_cg]] = TRUE;
@@ -6321,7 +6338,7 @@ static char *init_bLocalCG(gmx_mtop_t *mtop)
 void dd_init_bondeds(FILE *fplog,
                      gmx_domdec_t *dd,gmx_mtop_t *mtop,
                      gmx_vsite_t *vsite,gmx_constr_t constr,
-                     t_inputrec *ir,bool bBCheck,int *cginfo)
+                     t_inputrec *ir,bool bBCheck,cginfo_mb_t *cginfo_mb)
 {
     gmx_domdec_comm_t *comm;
     bool bBondComm;
@@ -6336,7 +6353,7 @@ void dd_init_bondeds(FILE *fplog,
         /* Communicate atoms beyond the cut-off for bonded interactions */
         comm = dd->comm;
 
-        comm->cglink = make_charge_group_links(mtop,dd,cginfo);
+        comm->cglink = make_charge_group_links(mtop,dd,cginfo_mb);
 
         comm->bLocalCG = init_bLocalCG(mtop);
     }
@@ -6635,7 +6652,8 @@ static void merge_cg_buffers(int ncell,
                              int  *ncg_cell,
                              int  *index_gl, int  *recv_i,
                              rvec *cg_cm,    rvec *recv_vr,
-                             int *gcgs_index, int *cgindex)
+                             int *cgindex,
+                             cginfo_mb_t *cginfo_mb,int *cginfo)
 {
     gmx_domdec_ind_t *ind,*ind_p;
     int p,cell,c,cg,cg0,cg1,cg_gl,nat;
@@ -6700,7 +6718,8 @@ static void merge_cg_buffers(int ncell,
             copy_rvec(recv_vr[cg0],cg_cm[cg1]);
             /* Add it to the cgindex */
             cg_gl = index_gl[cg1];
-            nat = gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
+            cginfo[cg1] = ddcginfo(cginfo_mb,cg_gl);
+            nat = GET_CGINFO_NATOMS(cginfo[cg1]);
             cgindex[cg1+1] = cgindex[cg1] + nat;
             cg0++;
             cg1++;
@@ -6746,7 +6765,7 @@ static bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
     return bMiss;
 }
 
-static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
+static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box,gmx_ddbox_t *ddbox,t_forcerec *fr)
 {
     int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot;
@@ -6757,6 +6776,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
     gmx_domdec_zones_t *zones;
     gmx_domdec_comm_dim_t *cd;
     gmx_domdec_ind_t *ind;
+    cginfo_mb_t *cginfo_mb;
     bool bBondComm,bDist2B,bDistMB,bDistMB_pulse,bDistBonded,bScrew;
     real r_mb,r_comm2,r_scomm2,r_bcomm2,r,r_0,r_1,r2,rb2,r2inc,inv_ncg,tric_sh;
     rvec rb,rn;
@@ -6920,6 +6940,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
     zone_cg_range = zones->cg_range;
     index_gl = dd->index_gl;
     cgindex  = dd->cgindex;
+    cginfo_mb = fr->cginfo_mb;
     
     zone_cg_range[0]   = 0;
     zone_cg_range[1]   = dd->ncg_home;
@@ -7316,14 +7337,14 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
                     for(cg=0; cg<ind->nrecv[zone]; cg++)
                     {
                         cg_gl = index_gl[pos_cg];
-                        nrcg = gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
+                        fr->cginfo[pos_cg] = ddcginfo(cginfo_mb,cg_gl);
+                        nrcg = GET_CGINFO_NATOMS(fr->cginfo[pos_cg]);
                         cgindex[pos_cg+1] = cgindex[pos_cg] + nrcg;
                         if (bBondComm)
                         {
-                            /* Update the CG info and presence,
+                            /* Update the charge group presence,
                              * so we can use it in the next pass of the loop.
                              */
-                            fr->cginfo[pos_cg] = fr->cginfo_global[cg_gl];
                             comm->bLocalCG[cg_gl] = TRUE;
                         }
                         pos_cg++;
@@ -7338,12 +7359,10 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
             }
             else
             {
-                /* This part of the code is never executed with bBondComm,
-                 * therefore we do not need to set cginfo here.
-                 */
+                /* This part of the code is never executed with bBondComm. */
                 merge_cg_buffers(nzone,cd,p,zone_cg_range,
                                  index_gl,recv_i,cg_cm,recv_vr,
-                                 gcgs_index,cgindex);
+                                 cgindex,fr->cginfo_mb,fr->cginfo);
                 pos_cg += ind->nrecv[nzone];
             }
             nat_tot += ind->nrecv[nzone+1];
@@ -7368,7 +7387,11 @@ static void setup_dd_communication(gmx_domdec_t *dd,int *gcgs_index,
 
     if (!bBondComm)
     {
-        dd_set_cginfo(fr,dd->index_gl,dd->ncg_home,dd->ncg_tot,comm->bLocalCG);
+        /* We don't need to update cginfo, since that was alrady done above.
+         * So we pass NULL for the forcerec.
+         */
+        dd_set_cginfo(dd->index_gl,dd->ncg_home,dd->ncg_tot,
+                      NULL,comm->bLocalCG);
     }
 
     if (debug)
@@ -7869,7 +7892,7 @@ void dd_partition_system(FILE            *fplog,
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
         
-        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,comm->bLocalCG);
+        dd_set_cginfo(dd->index_gl,0,dd->ncg_home,fr,comm->bLocalCG);
 
         cg0 = 0;
     }
@@ -7898,7 +7921,7 @@ void dd_partition_system(FILE            *fplog,
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
-        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,comm->bLocalCG);
+        dd_set_cginfo(dd->index_gl,0,dd->ncg_home,fr,comm->bLocalCG);
         
         bRedist = comm->bDynLoadBal;
     }
@@ -7942,7 +7965,7 @@ void dd_partition_system(FILE            *fplog,
 
     if (bRedist)
     {
-        cg0 = dd_redistribute_cg(fplog,step,dd,cgs_gl,ddbox.tric_dir,
+        cg0 = dd_redistribute_cg(fplog,step,dd,ddbox.tric_dir,
                                  state_local,f,fr,mdatoms,
                                  !bSortCG,nrnb);
     }
@@ -7997,7 +8020,7 @@ void dd_partition_system(FILE            *fplog,
     }
     
     /* Setup up the communication and communicate the coordinates */
-    setup_dd_communication(dd,cgs_gl->index,state_local->box,&ddbox,fr);
+    setup_dd_communication(dd,state_local->box,&ddbox,fr);
     
     /* Set the indices */
     make_dd_indices(dd,cgs_gl->index,cg0);

@@ -1636,7 +1636,7 @@ static int *make_at2cg(t_block *cgs)
 }
 
 t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
-                                  int *cginfo)
+                                  cginfo_mb_t *cginfo_mb)
 {
     gmx_reverse_top_t *rt;
     int  mb,cg_offset,cg,cg_gl,a,aj,i,j,ftype,nral,nlink_mol,mol,ncgi;
@@ -1647,6 +1647,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
     int *a2c;
     gmx_reverse_ilist_t ril;
     t_blocka *link;
+    cginfo_mb_t *cgi_mb;
     
     /* For each charge group make a list of other charge groups
      * in the system that a linked to it via bonded interactions
@@ -1679,6 +1680,8 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
          * The constraints are discarded here.
          */
         make_reverse_ilist(molt,NULL,FALSE,FALSE,TRUE,&ril);
+
+        cgi_mb = &cginfo_mb[mb];
         
         for(cg=0; cg<cgs->nr; cg++)
         {
@@ -1718,7 +1721,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
             }
             if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
             {
-                SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
+                SET_CGINFO_BOND_INTER(cgi_mb[mb].cginfo[cg]);
                 ncgi++;
             }
         }
@@ -1750,9 +1753,10 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
                     {
                         link->a[j] = link->a[j-nlink_mol] + cgs->nr;
                     }
-                    if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
+                    if (link->index[cg_gl+1] - link->index[cg_gl] > 0 &&
+                        cg_gl - cgi_mb->cg_start < cgi_mb->cg_mod)
                     {
-                        SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
+                        SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg_gl - cgi_mb->cg_start]);
                         ncgi++;
                     }
                 }

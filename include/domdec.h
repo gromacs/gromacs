@@ -94,7 +94,7 @@ init_domain_decomposition(FILE *fplog,
 extern void dd_init_bondeds(FILE *fplog,
                             gmx_domdec_t *dd,gmx_mtop_t *mtop,
                             gmx_vsite_t *vsite,gmx_constr_t constr,
-                            t_inputrec *ir,bool bBCheck,int *cginfo);
+                            t_inputrec *ir,bool bBCheck,cginfo_mb_t *cginfo_mb);
 /* Initialize data structures for bonded interactions */
 
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
@@ -223,7 +223,7 @@ extern void dd_init_local_state(gmx_domdec_t *dd,
                                 t_state *state_global,t_state *local_state);
 
 extern t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
-                                         int *cginfo);
+                                         cginfo_mb_t *cginfo_mb);
 
 extern void dd_bonded_cg_distance(FILE *fplog,
                                   gmx_domdec_t *dd,gmx_mtop_t *mtop,

@@ -500,7 +500,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         if (DOMAINDECOMP(cr))
         {
             dd_init_bondeds(fplog,cr->dd,mtop,vsite,constr,inputrec,
-                            Flags & MD_DDBONDCHECK,fr->cginfo_global);
+                            Flags & MD_DDBONDCHECK,fr->cginfo_mb);
             
             set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,&ddbox);
             
