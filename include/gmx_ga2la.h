@@ -94,12 +94,14 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
      * belonging to a global atom number:
      * 1) a simple, direct arrary
      * 2) a list of linked lists indexed with the global number modulo mod.
-     * We use whichever method uses less memory.
-     * The direct array indexing method is faster for small systems
-     * and small systems should (hopefully) have more than a quarter
-     * of the atoms locally (local means home + communicated atoms).
+     * Memory requirements:
+     * 1) nat_tot*2 ints
+     * 2) nat_loc*(2+1-2(1-e^-1/2))*4 ints
+     * where nat_loc is the number of atoms in the home + communicated zones.
+     * Method 1 is faster for low parallelization, 2 for high parallelization.
+     * We switch to method 2 when it uses less than half the memory method 1.
      */
-    ga2la->bAll = (4*nat_loc >= nat_tot);
+    ga2la->bAll = (9*nat_loc >= nat_tot);
     if (ga2la->bAll)
     {
         ga2la->nalloc = nat_tot;
@@ -108,7 +110,11 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
     else
     {
         /* Make the direct list twice as large as the number of local atoms.
-         * Then most linked lists should have size 0 or 1.
+         * The fraction of entries in the list with:
+         * 0   size lists: e^-1/f
+         * >=1 size lists: 1 - e^-1/f
+         * where f is: the direct list length / #local atoms
+         * The fraction of atoms not in the direct list is: 1-f(1-e^-1/f).
          */
         ga2la->mod = 2*nat_loc;
         ga2la->nalloc = over_alloc_dd(ga2la->mod);
