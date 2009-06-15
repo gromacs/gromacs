@@ -42,6 +42,20 @@
 #include <selvalue.h>
 
 /*!
+ * \param[out] val  Output structure
+ *
+ * The type of \p val is not touched.
+ * Any contents of \p val are discarded without freeing.
+ */
+void
+_gmx_selvalue_clear(gmx_ana_selvalue_t *val)
+{
+    val->nr     = 0;
+    val->u.ptr  = NULL;
+    val->nalloc = 0;
+}
+
+/*!
  * \param[in,out] val  Value structure to allocate.
  * \param[in]     n    Maximum number of values needed.
  * \returns       Zero on success.
@@ -59,6 +73,11 @@ int
 _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
 {
     int  i;
+
+    if (val->nalloc == -1)
+    {
+        return 0;
+    }
 
     if (!val->u.ptr || val->nalloc < n)
     {
@@ -91,5 +110,34 @@ _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
         }
         val->nalloc = n;
     }
+    return 0;
+}
+
+/*!
+ * \param[in,out] val    Value structure to allocate.
+ * \param[in]     ptr    Pointer where the values should be stored.
+ * \returns       Zero on success.
+ *
+ * Automatic memory management is disabled for \p ptr.
+ */
+int
+_gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr)
+{
+    val->u.ptr  = ptr;
+    val->nalloc = -1;
+    return 0;
+}
+
+/*!
+ * \param[in,out] val    Value structure to allocate.
+ * \param[in]     ptr    Pointer where the values should be stored.
+ * \param[in]     nalloc Number of values allocated for \p ptr.
+ * \returns       Zero on success.
+ */
+int
+_gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc)
+{
+    val->u.ptr  = ptr;
+    val->nalloc = nalloc;
     return 0;
 }

@@ -416,11 +416,11 @@ init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
     for (i = 0; i < nparams; ++i)
     {
         param[i].flags &= ~SPAR_SET;
+        _gmx_selvalue_clear(&param[i].val);
         if (param[i].flags & SPAR_VARNUM)
         {
             param[i].val.nr = -1;
         }
-        param[i].val.u.ptr = NULL;
     }
     mdata = NULL;
     if (sel->u.expr.method->init_data)
@@ -950,7 +950,7 @@ _gmx_sel_append_selection(gmx_ana_selcollection_t *sc, t_selelem *sel,
 
                 child = sel->child;
                 child->flags     &= ~SEL_ALLOCVAL;
-                child->v.u.p      = &sc->sel[i]->p;
+                _gmx_selvalue_setstore(&child->v, &sc->sel[i]->p);
                 /* We should also skip any modifiers to determine the dynamic
                  * status. */
                 while (child->type == SEL_MODIFIER)
