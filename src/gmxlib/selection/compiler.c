@@ -1052,15 +1052,10 @@ store_param_val(t_selelem *sel)
         return;
     }
 
-    switch (sel->v.type)
+    if (sel->v.type == INT_VALUE || sel->v.type == REAL_VALUE
+        || sel->v.type == STR_VALUE)
     {
-        case INT_VALUE:   sel->u.param->val.u.i = sel->v.u.i; break;
-        case REAL_VALUE:  sel->u.param->val.u.r = sel->v.u.r; break;
-        case STR_VALUE:   sel->u.param->val.u.s = sel->v.u.s; break;
-        case POS_VALUE:   break;
-        case GROUP_VALUE: break;
-        default:
-            gmx_bug("internal error");
+        _gmx_selvalue_setstore(&sel->u.param->val, sel->v.u.ptr);
     }
 }
 
@@ -1877,17 +1872,19 @@ optimize_item_subexpressions(t_selelem *sel)
         {
             sel->cdata->evaluate = sel->evaluate;
         }
+        /* Replace the value of the child */
         _gmx_selelem_free_values(sel->child);
         sel->child->flags            &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
-        sel->child->v.u.ptr           = sel->v.u.ptr;
+        _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
         sel->child->evaluate = &_gmx_sel_evaluate_subexpr_pass;
         if (sel->child->cdata)
         {
             sel->child->cdata->evaluate = sel->child->evaluate;
         }
+        /* Replace the value of the grandchild */
         _gmx_selelem_free_values(sel->child->child);
         sel->child->child->flags     &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
-        sel->child->child->v.u.ptr    = sel->v.u.ptr;
+        _gmx_selvalue_setstore(&sel->child->child->v, sel->v.u.ptr);
     }
 }
 

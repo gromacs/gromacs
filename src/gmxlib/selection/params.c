@@ -195,7 +195,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
     {
         srenew(data, j);
         param->val.nr  = n;
-        param->val.u.i = data;
+        _gmx_selvalue_setstore_alloc(&param->val, data, j);
     }
     else
     {
@@ -438,7 +438,7 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
     if (child->v.type == POS_VALUE || child->v.type == GROUP_VALUE)
     {
         /* Set the value storage */
-        child->v.u.ptr = param->val.u.ptr;
+        _gmx_selvalue_setstore(&child->v, param->val.u.ptr);
         param->val.nr = 1;
         if (param->nvalptr)
         {
@@ -495,6 +495,7 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i)
             gmx_bug("internal error");
             return FALSE;
     }
+    sel->v.nalloc = -1;
     return TRUE;
 }
 

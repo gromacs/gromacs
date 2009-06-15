@@ -136,8 +136,7 @@ _gmx_selelem_create(e_selelem_t type)
     {
         sel->v.type = NO_VALUE;
     }
-    sel->v.nr       = 0;
-    sel->v.u.ptr    = NULL;
+    _gmx_selvalue_clear(&sel->v);
     sel->evaluate   = NULL;
     sel->child      = NULL;
     sel->next       = NULL;
@@ -226,7 +225,7 @@ _gmx_selelem_free_values(t_selelem *sel)
     {
         sfree(sel->v.u.ptr);
     }
-    sel->v.u.ptr = NULL;
+    _gmx_selvalue_clear(&sel->v);
 }
 
 /*!
