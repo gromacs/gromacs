@@ -58,6 +58,8 @@
 #include "atomprop.h"
 #include "physics.h"
 
+#include <trajana.h>
+
 typedef struct {
   atom_id  aa,ab;
   real     d2a,d2b;
@@ -215,155 +217,289 @@ real calc_radius(char *atom)
   return r;
 }
 
-void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,bool bSave,real minarea,bool bPBC,
-	      real dgs_default,bool bFindex)
+typedef struct {
+  int   ndots;
+  bool  bResAt, bDGsol, bSave;
+  bool  bFindex;
+  char *fnConnelly;
+  FILE **fp;
+  FILE *vp;
+  gmx_ana_selection_t *nwsel;
+  gmx_ana_selection_t *fsel;
+
+  real  totmass;
+  bool *bPhobic;
+  real *radius, *dgs_factor;
+  real *atom_area, *atom_area2;
+  real *res_a, *res_area, *res_area2;
+} t_sasdata;
+
+static int
+analyze_frame(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+              int nr, gmx_ana_selection_t *sel[], void *data)
 {
-  FILE         *fp,*fp2,*fp3=NULL,*vp;
-  char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
-			      "Total", "D Gsolv" };
-  char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
-  char         *vfile;
-  real         t;
-  gmx_atomprop_t aps=NULL;
-  int          status,ndefault;
-  int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
-  rvec         *x;
-  matrix       box;
-  t_topology   *top;
-  int          ePBC;
-  t_atoms      *atoms;
-  bool         *bOut,*bPhobic;
+  t_sasdata   *d = (t_sasdata *)data;
   bool         bConnelly;
-  bool         bResAt,bITP,bDGsol;
-  real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
-  real         at_area,*atom_area=NULL,*atom_area2=NULL;
-  real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
-  real         totarea,totvolume,totmass=0,density,harea,tarea,fluc2;
-  atom_id      **index,*findex;
-  int          *nx,nphobic,npcheck,retval;
-  char         **grpname,*fgrpname;
+  bool         bPhobic;
+  int          g,i,k,ii,flag,nsurfacedots;
+  int          retval;
+  real        *surfacedots, *area;
+  real         totarea,totvolume,density,harea,tarea;
+  real         at_area;
   real         dgsolv;
 
-  bITP   = opt2bSet("-i",nfile,fnm);
-  bResAt = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
+  surfacedots = NULL;
+  area        = NULL;
+  bConnelly = (d->fnConnelly != NULL);
+  if (bConnelly)
+    flag = FLAG_ATOM_AREA | FLAG_DOTS;
+  else
+    flag = FLAG_ATOM_AREA;
+  if (d->vp)
+    flag = flag | FLAG_VOLUME;
 
-  top   = read_top(ftp2fn(efTPX,nfile,fnm),&ePBC);
-  atoms = &(top->atoms);
-  
-  bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
-  if (!bDGsol) 
+  if (debug)
+    write_sto_conf("check.pdb","pbc check",&top->atoms,fr->x,NULL,fr->ePBC,fr->box);
+
+  retval = nsc_dclm_pbc(fr->x,d->radius,d->nwsel->p.nr,d->ndots,flag,&totarea,
+                        &area,&totvolume,&surfacedots,&nsurfacedots,
+                        d->nwsel->g->index,fr->ePBC,pbc ? fr->box : NULL);
+  if (retval)
+    gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
+
+  if (bConnelly) {
+    connelly_plot(d->fnConnelly,
+                  nsurfacedots,surfacedots,fr->x,&top->atoms,
+                  &(top->symtab),fr->ePBC,fr->box,d->bSave);
+    d->fnConnelly = NULL;
+  }
+  if (d->bFindex) {
+    for (i = 0; i < d->fsel->g->isize; ++i)
+      d->bPhobic[d->fsel->g->index[i]] = TRUE;
+  }
+
+  /* Update atom and residue areas */
+  if (d->bResAt) {
+    for (i = 0; i < top->atoms.nres; ++i)
+      d->res_a[i] = 0;
+    for (i = 0; i < d->nwsel->p.nr; ++i) {
+      ii = d->nwsel->g->index[i];
+      at_area = area[i];
+      if (d->bResAt) {
+        d->atom_area[d->nwsel->p.m.refid[i]]  += at_area;
+        d->atom_area2[d->nwsel->p.m.refid[i]] += sqr(at_area);
+        d->res_a[top->atoms.atom[ii].resind] += at_area;
+      }
+    }
+    for (i = 0; i < top->atoms.nres; ++i) {
+      d->res_area[i] += d->res_a[i];
+      d->res_area2[i] += sqr(d->res_a[i]);
+    }
+  }
+
+  /* Loop through the output groups */
+  for (g = 0; g < nr; ++g) {
+    harea  = 0;
+    tarea  = 0;
+    dgsolv = 0;
+    k      = 0;
+    for (i = 0; i < d->nwsel->p.nr; ++i) {
+      ii = d->nwsel->g->index[i];
+      bPhobic = d->bPhobic[ii];
+      /* Here we assume that the calculation group contains all the output
+       * groups and that the groups are sorted. */
+      if (sel[g]->g->index[k] == ii) {
+        at_area = area[i];
+        tarea += at_area;
+        if (d->bDGsol)
+          dgsolv += at_area*d->dgs_factor[d->nwsel->p.m.refid[i]];
+        if (bPhobic)
+          harea += at_area;
+        ++k;
+      }
+    }
+    fprintf(d->fp[g],"%10g  %10g  %10g  %10g",fr->time,harea,tarea-harea,tarea);
+    if (d->bDGsol)
+      fprintf(d->fp[g],"  %10g\n",dgsolv);
+    else
+      fprintf(d->fp[g],"\n");
+  }
+
+  /* Print volume */
+  if (d->vp) {
+    density = d->totmass*AMU/(totvolume*NANO*NANO*NANO);
+    fprintf(d->vp,"%12.5e  %12.5e  %12.5e\n",fr->time,totvolume,density);
+  }
+  if (area) {
+    sfree(area);
+    area = NULL;
+  }
+  if (surfacedots) {
+    sfree(surfacedots);
+    surfacedots = NULL;
+  }
+  return 0;
+}
+
+void sas_plot(gmx_ana_traj_t *trj,int nfile,t_filenm fnm[],
+              real solsize,int ndots,real qcut,bool bSave,real minarea,
+	      real dgs_default,bool bFindex)
+{
+  FILE         *fp,*fp2,*fp3=NULL;
+  char         *flegend[] = { "Hydrophobic", "Hydrophilic",
+			      "Total", "D Gsolv" };
+  char         *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
+  char        **fnsOut;
+  char         *vfile;
+  gmx_atomprop_t aps=NULL;
+  t_topology   *top;
+  t_atoms      *atoms;
+  int          ngrps;
+  gmx_ana_selection_t **sel;
+  t_trxframe   *fr;
+  int          nframes;
+  int          noutf;
+  int          ndefault;
+  int          i,j,ii,res;
+  bool         bITP;
+  real         fluc2;
+  int          nphobic;
+  t_sasdata    d;
+
+  gmx_ana_get_topology(trj, TRUE, &top, NULL);
+  noutf        = opt2fns(&fnsOut, "-o",nfile,fnm);
+  atoms        = &top->atoms;
+  bITP         = opt2bSet("-i",nfile,fnm);
+  d.ndots      = ndots;
+  d.bSave      = bSave;
+  d.bResAt     = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
+  d.bDGsol     = strcmp(*(atoms->atomtype[0]),"?") != 0;
+  d.bFindex    = bFindex;
+  d.fnConnelly = opt2fn_null("-q",nfile,fnm);
+  gmx_ana_get_refsel(trj, 0, &d.nwsel);
+  if (bFindex)
+    gmx_ana_get_refsel(trj, 0, &d.fsel);
+  else
+    d.fsel = NULL;
+  gmx_ana_get_nanagrps(trj, &ngrps);
+  gmx_ana_get_anagrps(trj, &sel);
+
+  if (noutf != ngrps)
+    gmx_fatal(FARGS, "The number of output files (%d) and the number of "
+              "output groups (%d) should be equal", noutf, ngrps);
+  if (!d.bDGsol) {
     fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
-  else {
+  } else {
     printf("In case you use free energy of solvation predictions:\n");
     please_cite(stdout,"Eisenberg86a");
   }
 
+  if (!gmx_ana_index_check_sorted(d.nwsel->g))
+    gmx_fatal(FARGS, "Calculation group not sorted or contains duplicates");
+  if (bFindex) {
+    if (!gmx_ana_index_check_sorted(d.fsel->g))
+      gmx_fatal(FARGS, "Hydrophobic group not sorted or contains duplicates");
+    if (!gmx_ana_index_contains(d.nwsel->g, d.fsel->g))
+      fprintf(stderr,"NOTE: hydrophobic index group not contained in the calculation group\n");
+  }
+  for (i = 0; i < ngrps; ++i) {
+    if (!gmx_ana_index_check_sorted(sel[i]->g))
+      gmx_fatal(FARGS, "Output group '%s' not sorted or contains duplicates",
+                sel[i]->name);
+    if (!gmx_ana_index_contains(d.nwsel->g, sel[i]->g))
+      gmx_fatal(FARGS, "Output group '%s' not a subset of the calculation group",
+                sel[i]->name);
+  }
+
   aps = gmx_atomprop_init();
   
-  if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
-			   &t,&x,box))==0)
-    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
+  gmx_ana_get_first_frame(trj, &fr);
+  fprintf(stderr, "\n");
 
-  if ((ePBC != epbcXYZ) || (TRICLINIC(box))) {
-    fprintf(stderr,"\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
-	    "Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
-	    "will certainly crash the analysis.\n\n");
+  if ((fr->ePBC != epbcXYZ) && gmx_ana_has_pbc(trj)) {
+    fprintf(stderr,"\n\nWARNING: Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
+	    "will certainly crash the analysis. Turning off pbc.\n\n");
+    gmx_ana_set_pbc(trj, FALSE);
   }
-  snew(nx,2);
-  snew(index,2);
-  snew(grpname,2);
-  fprintf(stderr,"Select a group for calculation of surface and a group for output:\n");
-  get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),2,nx,index,grpname);
 
-  if (bFindex) {
-    fprintf(stderr,"Select a group of hydrophobic atoms:\n");
-    get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nphobic,&findex,&fgrpname);
+  /* Now compute atomic radii including solvent probe size */
+  snew(d.radius,  fr->natoms);
+  snew(d.bPhobic, fr->natoms);
+  if (d.bResAt) {
+    snew(d.atom_area,  d.nwsel->p.nr);
+    snew(d.atom_area2, d.nwsel->p.nr);
+    snew(d.res_a,      atoms->nres);
+    snew(d.res_area,   atoms->nres);
+    snew(d.res_area2,  atoms->nres);
   }
-  snew(bOut,natoms);
-  for(i=0; i<nx[1]; i++)
-    bOut[index[1][i]] = TRUE;
-
-  /* Now compute atomic readii including solvent probe size */
-  snew(radius,natoms);
-  snew(bPhobic,nx[0]);
-  if (bResAt) {
-    snew(atom_area,nx[0]);
-    snew(atom_area2,nx[0]);
-    snew(res_a,atoms->nres);
-    snew(res_area,atoms->nres);
-    snew(res_area2,atoms->nres);
-  }
-  if (bDGsol)
-    snew(dgs_factor,nx[0]);
+  if (d.bDGsol)
+    snew(d.dgs_factor, d.nwsel->p.nr);
 
   /* Get a Van der Waals radius for each atom */
   ndefault = 0;
-  for(i=0; (i<natoms); i++) {
+  for (i = 0; i < fr->natoms; ++i) {
     if (!gmx_atomprop_query(aps,epropVDW,
 			    *(top->atoms.resinfo[top->atoms.atom[i].resind].name),
-			    *(top->atoms.atomname[i]),&radius[i]))
+			    *(top->atoms.atomname[i]),&d.radius[i]))
       ndefault++;
     /* radius[i] = calc_radius(*(top->atoms.atomname[i])); */
-    radius[i] += solsize;
+    d.radius[i] += solsize;
   }
   if (ndefault > 0)
     fprintf(stderr,"WARNING: could not find a Van der Waals radius for %d atoms\n",ndefault);
+
   /* Determine which atom is counted as hydrophobic */
+  nphobic = 0;
   if (bFindex) {
-    npcheck = 0;
-    for(i=0; (i<nx[0]); i++) {
-      ii = index[0][i];
-      for(j=0; (j<nphobic); j++) {
-	if (findex[j] == ii) {
-	  bPhobic[i] = TRUE;
-	  if (bOut[ii])
-	    npcheck++;
-	}
-      }
+    for (i = 0; i < d.fsel->g->isize; ++i) {
+      ii = d.fsel->g->index[i];
+      d.bPhobic[ii] = TRUE;
     }
-    if (npcheck != nphobic)
-      gmx_fatal(FARGS,"Consistency check failed: not all %d atoms in the hydrophobic index\n"
-		  "found in the normal index selection (%d atoms)",nphobic,npcheck);
+    /* The bPhobic array only needs to be updated in analyze_frame() if
+     * the hydrophobic group is dynamic. */
+    if (!d.fsel->bDynamic)
+      d.bFindex = FALSE;
   }
-  else
-    nphobic = 0;
-    
-  for(i=0; (i<nx[0]); i++) {
-    ii = index[0][i];
+
+  for (i = 0; i < d.nwsel->g->isize; ++i) {
+    ii = d.nwsel->g->index[i];
     if (!bFindex) {
-      bPhobic[i] = fabs(atoms->atom[ii].q) <= qcut;
-      if (bPhobic[i] && bOut[ii])
-	nphobic++;
+      d.bPhobic[ii] = fabs(atoms->atom[ii].q) <= qcut;
+      if (d.bPhobic[ii])
+        nphobic++;
     }
-    if (bDGsol)
+    if (d.bDGsol)
       if (!gmx_atomprop_query(aps,epropDGsol,
-			      *(atoms->resinfo[atoms->atom[ii].resind].name),
-			      *(atoms->atomtype[ii]),&(dgs_factor[i])))
-	dgs_factor[i] = dgs_default;
+                              *(atoms->resinfo[atoms->atom[ii].resind].name),
+                              *(atoms->atomtype[ii]),&d.dgs_factor[i]))
+        d.dgs_factor[i] = dgs_default;
     if (debug)
       fprintf(debug,"Atom %5d %5s-%5s: q= %6.3f, r= %6.3f, dgsol= %6.3f, hydrophobic= %s\n",
-	      ii+1,*(atoms->resinfo[atoms->atom[ii].resind].name),
-	      *(atoms->atomname[ii]),
-	      atoms->atom[ii].q,radius[ii]-solsize,dgs_factor[i],
-	      BOOL(bPhobic[i]));
+              ii+1,*(atoms->resinfo[atoms->atom[ii].resind].name),
+              *(atoms->atomname[ii]),
+              atoms->atom[ii].q,d.radius[ii]-solsize,d.dgs_factor[i],
+              BOOL(d.bPhobic[ii]));
   }
-  fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
-	  nphobic,nx[1]);
+  if (!bFindex)
+    fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
+            nphobic,d.nwsel->g->isize);
   
-  fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
-	      "Area (nm\\S2\\N)");
-  xvgr_legend(fp,asize(flegend) - (bDGsol ? 0 : 1),flegend);
+  snew(d.fp, ngrps);
+  for (i = 0; i < ngrps; ++i) {
+    d.fp[i]=xvgropen(fnsOut[i],"Solvent Accessible Surface","Time (ps)",
+                "Area (nm\\S2\\N)");
+    xvgr_legend(d.fp[i],asize(flegend) - (d.bDGsol ? 0 : 1),flegend);
+  }
   vfile = opt2fn_null("-tv",nfile,fnm);
   if (vfile) {
-    vp=xvgropen(vfile,"Volume and Density","Time (ps)","");
-    xvgr_legend(vp,asize(vlegend),vlegend);
-    totmass  = 0;
+    d.vp=xvgropen(vfile,"Volume and Density","Time (ps)","");
+    xvgr_legend(d.vp,asize(vlegend),vlegend);
+    d.totmass  = 0;
     ndefault = 0;
-    for(i=0; (i<nx[0]); i++) {
+    for (i = 0; i < d.nwsel->p.nr; i++) {
       real mm;
-      ii = index[0][i];
+      ii = d.nwsel->g->index[i];
       /*
       if (!query_atomprop(atomprop,epropMass,
 			  *(top->atoms.resname[top->atoms.atom[ii].resnr]),
@@ -371,106 +507,34 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	ndefault++;
       totmass += mm;
       */
-      totmass += top->atoms.atom[ii].m;
+      d.totmass += atoms->atom[ii].m;
     }
     if (ndefault)
       fprintf(stderr,"WARNING: Using %d default masses for density calculation, which most likely are inaccurate\n",ndefault);
   }
   else
-    vp = NULL;
+    d.vp = NULL;
     
   gmx_atomprop_destroy(aps);
 
-  nfr=0;
-  do {
-    if (bPBC)
-      rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+  gmx_ana_do(trj, 0, &analyze_frame, &d);
+  gmx_ana_get_nframes(trj, &nframes);
     
-    bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
-    if (bConnelly)
-      flag = FLAG_ATOM_AREA | FLAG_DOTS;
-    else
-      flag = FLAG_ATOM_AREA;
-    if (vp)
-      flag = flag | FLAG_VOLUME;
-      
-    if (debug)
-      write_sto_conf("check.pdb","pbc check",atoms,x,NULL,ePBC,box);
-
-    retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
-			  &area,&totvolume,&surfacedots,&nsurfacedots,
-			  index[0],ePBC,bPBC ? box : NULL);
-    if (retval)
-      gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
-    
-    if (bConnelly)
-      connelly_plot(ftp2fn(efPDB,nfile,fnm),
-		    nsurfacedots,surfacedots,x,atoms,
-		    &(top->symtab),ePBC,box,bSave);
-    harea  = 0; 
-    tarea  = 0;
-    dgsolv = 0;
-    if (bResAt)
-      for(i=0; i<atoms->nres; i++)
-	res_a[i] = 0;
-    for(i=0; (i<nx[0]); i++) {
-      ii = index[0][i];
-      if (bOut[ii]) {
-	at_area = area[i];
-	if (bResAt) {
-	  atom_area[i] += at_area;
-	  atom_area2[i] += sqr(at_area);
-	  res_a[atoms->atom[ii].resind] += at_area;
-	}
-	tarea += at_area;
-	if (bDGsol)
-	  dgsolv += at_area*dgs_factor[i];
-	if (bPhobic[i])
-	  harea += at_area;
-      }
-    }
-    if (bResAt)
-      for(i=0; i<atoms->nres; i++) {
-	res_area[i] += res_a[i];
-	res_area2[i] += sqr(res_a[i]);
-      }
-    fprintf(fp,"%10g  %10g  %10g  %10g",t,harea,tarea-harea,tarea);
-    if (bDGsol)
-      fprintf(fp,"  %10g\n",dgsolv);
-    else
-      fprintf(fp,"\n");
-    
-    /* Print volume */
-    if (vp) {
-      density = totmass*AMU/(totvolume*NANO*NANO*NANO);
-      fprintf(vp,"%12.5e  %12.5e  %12.5e\n",t,totvolume,density);
-    }
-    if (area) {
-      sfree(area);
-      area = NULL;
-    }
-    if (surfacedots) {
-      sfree(surfacedots);
-      surfacedots = NULL;
-    }
-    nfr++;
-  } while (read_next_x(status,&t,natoms,x,box));
-  
   fprintf(stderr,"\n");
-  close_trj(status);
-  fclose(fp);
-  if (vp)
-    fclose(vp);
+  for (i = 0; i < ngrps; ++i)
+    fclose(d.fp[i]);
+  if (d.vp)
+    fclose(d.vp);
     
   /* if necessary, print areas per atom to file too: */
-  if (bResAt) {
+  if (d.bResAt) {
     for(i=0; i<atoms->nres; i++) {
-      res_area[i] /= nfr;
-      res_area2[i] /= nfr;
+      d.res_area[i]  /= nframes;
+      d.res_area2[i] /= nframes;
     }
-    for(i=0; i<nx[0]; i++) {
-      atom_area[i] /= nfr;
-      atom_area2[i] /= nfr;
+    for (i = 0; i < d.nwsel->p.nr; ++i) {
+      d.atom_area[i]  /= nframes;
+      d.atom_area2[i] /= nframes;
     }
     fprintf(stderr,"Printing out areas per atom\n");
     fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
@@ -485,29 +549,29 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      "#define FCZ 1000\n"
 	      "; Atom  Type  fx   fy   fz\n");
     }
-    for(i=0; i<nx[0]; i++) {
-      ii = index[0][i];
+    for (i = 0; i < d.nwsel->p.nr; ++i) {
+      ii = d.nwsel->g->index[i];
       res = atoms->atom[ii].resind;
-      if (i==nx[0]-1 || res!=atoms->atom[index[0][i+1]].resind) {
-	fluc2 = res_area2[res]-sqr(res_area[res]);
+      if (i == d.nwsel->p.nr-1 ||
+          res != atoms->atom[d.nwsel->g->index[i+1]].resind) {
+	fluc2 = d.res_area2[res] - sqr(d.res_area[res]);
 	if (fluc2 < 0)
 	  fluc2 = 0;
 	fprintf(fp,"%10d  %10g %10g\n",
-		atoms->resinfo[res].nr,res_area[res],sqrt(fluc2));
+                atoms->resinfo[res].nr,d.res_area[res],sqrt(fluc2));
       }
-      fluc2 = atom_area2[i]-sqr(atom_area[i]);
+      fluc2 = d.atom_area2[i]-sqr(d.atom_area[i]);
       if (fluc2 < 0)
 	fluc2 = 0;
-      fprintf(fp2,"%d %g %g\n",index[0][i]+1,atom_area[i],sqrt(fluc2));
-      if (bITP && (atom_area[i] > minarea))
-	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
+      fprintf(fp2,"%d %g %g\n",ii+1,d.atom_area[i],sqrt(fluc2));
+      if (bITP && (d.atom_area[i] > minarea))
+	fprintf(fp3,"%5d   1     FCX  FCY  FCZ\n",ii+1);
     }
     if (bITP)
       fclose(fp3);
+    fclose(fp2);
     fclose(fp);
   }
-
-  sfree(x);
 }
 
 int gmx_sas(int argc,char *argv[])
@@ -542,7 +606,7 @@ int gmx_sas(int argc,char *argv[])
   static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
-  static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
+  static bool bSave   = TRUE, bFindex=FALSE;
   t_pargs pa[] = {
     { "-probe", FALSE, etREAL, {&solsize},
       "Radius of the solvent probe (nm)" },
@@ -554,29 +618,32 @@ int gmx_sas(int argc,char *argv[])
       "Determine from a group in the index file what are the hydrophobic atoms rather than from the charge" },
     { "-minarea", FALSE, etREAL, {&minarea},
       "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
-    { "-pbc",     FALSE, etBOOL, {&bPBC},
-      "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
       "Output the protein to the connelly pdb file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
       "default value for solvation free energy per area (kJ/mol/nm^2)" }
   };
   t_filenm  fnm[] = {
-    { efTRX, "-f",   NULL,       ffREAD },
-    { efTPX, "-s",   NULL,       ffREAD },
-    { efXVG, "-o",   "area",     ffWRITE },
+    { efXVG, "-o",   "area",     ffWRMULT },
     { efXVG, "-or",  "resarea",  ffOPTWR },
     { efXVG, "-oa",  "atomarea", ffOPTWR },
     { efXVG, "-tv",  "volume",   ffOPTWR },
     { efPDB, "-q",   "connelly", ffOPTWR },
-    { efNDX, "-n",   "index",    ffOPTRD },
     { efITP, "-i",   "surfat",   ffOPTWR }
   };
 #define NFILE asize(fnm)
 
+  gmx_ana_traj_t *trj;
+
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+  gmx_ana_traj_create(&trj, ANA_REQUIRE_TOP | ANA_USER_SELINIT | ANA_ONLY_ATOMPOS);
+  gmx_ana_set_nrefgrps(trj, 1);
+  gmx_ana_set_nanagrps(trj, -1);
+  parse_trjana_args(trj, &argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  if (bFindex)
+    gmx_ana_set_nrefgrps(trj, 2);
+  gmx_ana_init_selections(trj);
   if (solsize < 0) {
     solsize=1e-3;
     fprintf(stderr,"Probe size too small, setting it to %g\n",solsize);
@@ -588,7 +655,7 @@ int gmx_sas(int argc,char *argv[])
 
   please_cite(stderr,"Eisenhaber95");
     
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default,bFindex);
+  sas_plot(trj,NFILE,fnm,solsize,ndots,qcut,bSave,minarea,dgs_default,bFindex);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-or",NFILE,fnm),"-nxy");
