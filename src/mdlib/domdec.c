@@ -95,15 +95,15 @@ typedef struct
 
 typedef struct
 {
-    bool *bCellMin;
-    real *cell_f;
-    real *old_cell_f;
-    real *cell_f_max0;
-    real *cell_f_min1;
-    real *bound_min;
-    real *bound_max;
-    bool bLimited;
-    real *buf_ncd;
+    bool *bCellMin;    /* Temp. var.: is this cell size at the limit     */
+    real *cell_f;      /* State var.: cell boundaries, box relative      */
+    real *old_cell_f;  /* Temp. var.: old cell size                      */
+    real *cell_f_max0; /* State var.: max lower boundary, incl neighbors */
+    real *cell_f_min1; /* State var.: min upper boundary, incl neighbors */
+    real *bound_min;   /* Temp. var.: lower limit for cell boundary      */
+    real *bound_max;   /* Temp. var.: upper limit for cell boundary      */
+    bool bLimited;     /* State var.: is DLB limited in this dim and row */
+    real *buf_ncd;     /* Temp. var.                                     */
 } gmx_domdec_root_t;
 
 #define DD_NLOAD_MAX 9
@@ -2871,17 +2871,224 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
     }
 }
 
+
+static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
+                                       int d,int dim,gmx_domdec_root_t *root,
+                                       gmx_ddbox_t *ddbox,
+                                       bool bUniform,gmx_step_t step, real cellsize_limit_f, int range[])
+{
+    gmx_domdec_comm_t *comm;
+    int  ncd,i,j,nmin,nmin_old;
+    bool bLimLo,bLimHi;
+    real *cell_size;
+    real fac,halfway,cellsize_limit_f_i,region_size;
+    bool bPBC,bLastHi=FALSE;
+    int nrange[]={range[0],range[1]};
+
+    region_size= root->cell_f[range[1]]-root->cell_f[range[0]];  
+
+    comm = dd->comm;
+
+    ncd = dd->nc[dim];
+
+    bPBC = (dim < ddbox->npbcdim);
+
+    cell_size = root->buf_ncd;
+
+    if (debug) 
+    {
+        fprintf(debug,"enforce_limits: %d %d\n",range[0],range[1]);
+    }
+
+    /* First we need to check if the scaling does not make cells
+     * smaller than the smallest allowed size.
+     * We need to do this iteratively, since if a cell is too small,
+     * it needs to be enlarged, which makes all the other cells smaller,
+     * which could in turn make another cell smaller than allowed.
+     */
+    for(i=range[0]; i<range[1]; i++)
+    {
+        root->bCellMin[i] = FALSE;
+    }
+    nmin = 0;
+    do
+    {
+        nmin_old = nmin;
+        /* We need the total for normalization */
+        fac = 0;
+        for(i=range[0]; i<range[1]; i++)
+        {
+            if (root->bCellMin[i] == FALSE)
+            {
+                fac += cell_size[i];
+            }
+        }
+        fac = ( region_size - nmin*cellsize_limit_f)/fac; /* substracting cells already set to cellsize_limit_f */
+        /* Determine the cell boundaries */
+        for(i=range[0]; i<range[1]; i++)
+        {
+            if (root->bCellMin[i] == FALSE)
+            {
+                cell_size[i] *= fac;
+                if (!bPBC && (i == 0 || i == dd->nc[dim] -1))
+                {
+                    cellsize_limit_f_i = 0;
+                }
+                else
+                {
+                    cellsize_limit_f_i = cellsize_limit_f;
+                }
+                if (cell_size[i] < cellsize_limit_f_i)
+                {
+                    root->bCellMin[i] = TRUE;
+                    cell_size[i] = cellsize_limit_f_i;
+                    nmin++;
+                }
+            }
+            root->cell_f[i+1] = root->cell_f[i] + cell_size[i];
+        }
+    }
+    while (nmin > nmin_old);
+    
+    i=range[1]-1;
+    cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
+    /* For this check we should not use DD_CELL_MARGIN,
+     * but a slightly smaller factor,
+     * since rounding could get use below the limit.
+     */
+    if (bPBC && cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
+    {
+        char buf[22];
+        gmx_fatal(FARGS,"Step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
+                  gmx_step_str(step,buf),
+                  dim2char(dim),ddbox->box_size[dim],ddbox->skew_fac[dim],
+                  ncd,comm->cellsize_min[dim]);
+    }
+    
+    root->bLimited = (nmin > 0) || (range[0]>0) || (range[1]<ncd);
+    
+    if (!bUniform)
+    {
+        /* Check if the boundary did not displace more than halfway
+         * each of the cells it bounds, as this could cause problems,
+         * especially when the differences between cell sizes are large.
+         * If changes are applied, they will not make cells smaller
+         * than the cut-off, as we check all the boundaries which
+         * might be affected by a change and if the old state was ok,
+         * the cells will at most be shrunk back to their old size.
+         */
+        for(i=range[0]+1; i<range[1]; i++)
+        {
+            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
+            if (root->cell_f[i] < halfway)
+            {
+                root->cell_f[i] = halfway;
+                /* Check if the change also causes shifts of the next boundaries */
+                for(j=i+1; j<range[1]; j++)
+                {
+                    if (root->cell_f[j] < root->cell_f[j-1] + cellsize_limit_f)
+                        root->cell_f[j] =  root->cell_f[j-1] + cellsize_limit_f;
+                }
+            }
+            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
+            if (root->cell_f[i] > halfway)
+            {
+                root->cell_f[i] = halfway;
+                /* Check if the change also causes shifts of the next boundaries */
+                for(j=i-1; j>=range[0]+1; j--)
+                {
+                    if (root->cell_f[j] > root->cell_f[j+1] - cellsize_limit_f)
+                        root->cell_f[j] = root->cell_f[j+1] - cellsize_limit_f;
+                }
+            }
+        }
+    }
+    
+    /* nrange is defined as [lower, upper) range for new call to enforce_limits */
+    /* find highest violation of LimLo (a) and the following violation of LimHi (thus the lowest following) (b)
+     * then call enforce_limits for (oldb,a), (a,b). In the next step: (b,nexta). oldb and nexta can be the boundaries.
+     * for a and b nrange is used */
+    if (d > 0)
+    {
+        /* Take care of the staggering of the cell boundaries */
+        if (bUniform)
+        {
+            for(i=range[0]; i<range[1]; i++)
+            {
+                root->cell_f_max0[i] = root->cell_f[i];
+                root->cell_f_min1[i] = root->cell_f[i+1];
+            }
+        }
+        else
+        {
+            for(i=range[0]+1; i<range[1]; i++)
+            {
+                bLimLo = (root->cell_f[i] < root->bound_min[i]);
+                bLimHi = (root->cell_f[i] > root->bound_max[i]);
+                if (bLimLo && bLimHi)
+                {
+                    /* Both limits violated, try the best we can */
+                    /* For this case we split the original range (range) in two parts and care about the other limitiations in the next iteration. */
+                    root->cell_f[i] = 0.5*(root->bound_min[i] + root->bound_max[i]);
+                    nrange[0]=range[0];
+                    nrange[1]=i;
+                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+
+                    nrange[0]=i;
+                    nrange[1]=range[1];
+                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+
+                    return;
+                }
+                else if (bLimLo)
+                {
+                    /* root->cell_f[i] = root->bound_min[i]; */
+                    nrange[1]=i;  /* only store violation location. There could be a LimLo violation following with an higher index */
+                    bLastHi=FALSE;
+                }
+                else if (bLimHi && !bLastHi)
+                {
+                    bLastHi=TRUE;
+                    if (nrange[1] < range[1])   /* found a LimLo before */
+                    {
+                        root->cell_f[nrange[1]] = root->bound_min[nrange[1]];
+                        dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                        nrange[0]=nrange[1];
+                    }
+                    root->cell_f[i] = root->bound_max[i];
+                    nrange[1]=i; 
+                    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                    nrange[0]=i;
+                    nrange[1]=range[1];
+                }
+            }
+            if (nrange[1] < range[1])   /* found last a LimLo */
+            {
+                root->cell_f[nrange[1]] = root->bound_min[nrange[1]];
+                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+                nrange[0]=nrange[1];
+                nrange[1]=range[1];
+                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+            } 
+            else if (nrange[0] > range[0]) /* found at least one LimHi */
+            {
+                dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, nrange);
+            }
+        }
+    }
+}
+
+
 static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                                        int d,int dim,gmx_domdec_root_t *root,
                                        gmx_ddbox_t *ddbox,bool bDynamicBox,
                                        bool bUniform,gmx_step_t step)
 {
     gmx_domdec_comm_t *comm;
-    int  ncd,d1,i,j,pos,nmin,nmin_old;
-    bool bLimLo,bLimHi;
+    int  ncd,d1,i,j,pos;
     real *cell_size;
     real load_aver,load_i,imbalance,change,change_max,sc;
-    real cellsize_limit_f,dist_min_f,fac,space,halfway,cellsize_limit_f_i;
+    real cellsize_limit_f,dist_min_f,dist_min_f_hard,space;
     real change_limit = 0.1;
     real relax = 0.5;
     bool bPBC;
@@ -2940,19 +3147,25 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     
     cellsize_limit_f  = comm->cellsize_min[dim]/ddbox->box_size[dim];
     cellsize_limit_f *= DD_CELL_MARGIN;
-    dist_min_f        = grid_jump_limit(comm,d)/ddbox->box_size[dim];
-    dist_min_f       *= DD_CELL_MARGIN;
+    dist_min_f_hard        = grid_jump_limit(comm,d)/ddbox->box_size[dim];
+    dist_min_f       = dist_min_f_hard * DD_CELL_MARGIN;
     if (ddbox->tric_dir[dim])
     {
         cellsize_limit_f /= ddbox->skew_fac[dim];
         dist_min_f       /= ddbox->skew_fac[dim];
     }
-    if (bDynamicBox && d > 0) {
+    if (bDynamicBox && d > 0)
+    {
         dist_min_f *= DD_PRES_SCALE_MARGIN;
     }
-    if (d > 0 && !bUniform) {
+    if (d > 0 && !bUniform)
+    {
         /* Make sure that the grid is not shifted too much */
         for(i=1; i<ncd; i++) {
+            if (root->cell_f_min1[i] - root->cell_f_max0[i-1] < 2 * dist_min_f_hard) 
+            {
+                gmx_incons("Inconsistent DD boundary staggering limits!");
+            }
             root->bound_min[i] = root->cell_f_max0[i-1] + dist_min_f;
             space = root->cell_f[i] - (root->cell_f_max0[i-1] + dist_min_f);
             if (space > 0) {
@@ -2963,7 +3176,8 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             if (space < 0) {
                 root->bound_max[i] += 0.5*space;
             }
-            if (debug) {
+            if (debug)
+            {
                 fprintf(debug,
                         "dim %d boundary %d %.3f < %.3f < %.3f < %.3f < %.3f\n",
                         d,i,
@@ -2973,151 +3187,12 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             }
         }
     }
+    int range[] = { 0, ncd };
+    root->cell_f[0] = 0;
+    root->cell_f[ncd] = 1;
+    dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, range);
 
-    /* First we need to check if the scaling does not make cells
-     * smaller than the smallest allowed size.
-     * We need to do this iteratively, since if a cell is too small,
-     * it needs to be enlarged, which makes all the other cells smaller,
-     * which could in turn make another cell smaller than allowed.
-     */
-    for(i=0; i<ncd; i++)
-    {
-        root->bCellMin[i] = FALSE;
-    }
-    nmin = 0;
-    do
-    {
-        nmin_old = nmin;
-        /* We need the total for normalization */
-        fac = 0;
-        for(i=0; i<ncd; i++)
-        {
-            if (root->bCellMin[i] == FALSE)
-            {
-                fac += cell_size[i];
-            }
-        }
-        fac = (1 - nmin*cellsize_limit_f)/fac;
-        /* Determine the cell boundaries */
-        root->cell_f[0] = 0;
-        for(i=0; i<ncd; i++)
-        {
-            if (root->bCellMin[i] == FALSE)
-            {
-                cell_size[i] *= fac;
-                if (!bPBC && (i == 0 || i == dd->nc[dim] -1))
-                {
-                    cellsize_limit_f_i = 0;
-                }
-                else
-                {
-                    cellsize_limit_f_i = cellsize_limit_f;
-                }
-                if (cell_size[i] < cellsize_limit_f_i)
-                {
-                    root->bCellMin[i] = TRUE;
-                    cell_size[i] = cellsize_limit_f_i;
-                    nmin++;
-                }
-            }
-            root->cell_f[i+1] = root->cell_f[i] + cell_size[i];
-        }
-    }
-    while (nmin > nmin_old);
-    
-    /* Set the last boundary to exactly 1 */
-    i = ncd - 1;
-    root->cell_f[i+1] = 1;
-    cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
-    /* For this check we should not use DD_CELL_MARGIN,
-     * but a slightly smaller factor,
-     * since rounding could get use below the limit.
-     */
-    if (bPBC && cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
-    {
-        char buf[22];
-        gmx_fatal(FARGS,"Step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
-                  gmx_step_str(step,buf),
-                  dim2char(dim),ddbox->box_size[dim],ddbox->skew_fac[dim],
-                  ncd,comm->cellsize_min[dim]);
-    }
-    
-    root->bLimited = (nmin > 0);
-    
-    if (!bUniform)
-    {
-        /* Check if the boundary did not displace more than halfway
-         * each of the cells it bounds, as this could cause problems,
-         * especially when the differences between cell sizes are large.
-         * If changes are applied, they will not make cells smaller
-         * than the cut-off, as we check all the boundaries which
-         * might be affected by a change and if the old state was ok,
-         * the cells will at most be shrunk back to their old size.
-         */
-        for(i=1; i<ncd; i++)
-        {
-            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
-            if (root->cell_f[i] < halfway)
-            {
-                root->cell_f[i] = halfway;
-                /* Check if the change also causes shifts of the next boundaries */
-                for(j=i+1; j<ncd; j++)
-                {
-                    if (root->cell_f[j] < root->cell_f[j-1] + cellsize_limit_f)
-                        root->cell_f[j] =  root->cell_f[j-1] + cellsize_limit_f;
-                }
-            }
-            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
-            if (root->cell_f[i] > halfway)
-            {
-                root->cell_f[i] = halfway;
-                /* Check if the change also causes shifts of the next boundaries */
-                for(j=i-1; j>=1; j--)
-                {
-                    if (root->cell_f[j] > root->cell_f[j+1] - cellsize_limit_f)
-                        root->cell_f[j] = root->cell_f[j+1] - cellsize_limit_f;
-                }
-            }
-        }
-    }
-    
-    if (d > 0)
-    {
-        /* Take care of the staggering of the cell boundaries */
-        if (bUniform)
-        {
-            for(i=0; i<ncd; i++)
-            {
-                root->cell_f_max0[i] = root->cell_f[i];
-                root->cell_f_min1[i] = root->cell_f[i+1];
-            }
-        }
-        else
-        {
-            for(i=1; i<ncd; i++)
-            {
-                bLimLo = (root->cell_f[i] < root->bound_min[i]);
-                bLimHi = (root->cell_f[i] > root->bound_max[i]);
-                if (bLimLo && bLimHi)
-                {
-                    /* Both limits violated, try the best we can */
-                    root->cell_f[i] = 0.5*(root->bound_min[i] + root->bound_max[i]);
-                }
-                else if (bLimLo)
-                {
-                    root->cell_f[i] = root->bound_min[i];
-                }
-                else if (bLimHi)
-                {
-                    root->cell_f[i] = root->bound_max[i];
-                }
-                if (bLimLo || bLimHi)
-                {
-                    root->bLimited = TRUE;
-                }
-            }
-        }
-    }
+
     /* After the checks above, the cells should obey the cut-off
      * restrictions, but it does not hurt to check.
      */
@@ -4251,7 +4326,7 @@ static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
     for(mc=0; mc<dd->ndim*2; mc++)
     {
         nvr = ncg[mc] + nat[mc]*nvec;
-        if (nvr>comm->cgcm_state_nalloc[mc])
+        if (nvr > comm->cgcm_state_nalloc[mc])
         {
             comm->cgcm_state_nalloc[mc] = over_alloc_dd(nvr);
             srenew(comm->cgcm_state[mc],comm->cgcm_state_nalloc[mc]);
@@ -4541,10 +4616,28 @@ static double force_flop_count(t_nrnb *nrnb)
 {
     int i;
     double sum;
-    
+    const char *name;
+
     sum = 0;
-    for(i=eNR_NBKERNEL010; i<=eNR_NB14; i++)
+    for(i=eNR_NBKERNEL010; i<eNR_NBKERNEL_FREE_ENERGY; i++)
     {
+        /* To get closer to the real timings, we half the count
+         * for the normal loops and again half it for water loops.
+         */
+        name = nrnb_str(i);
+        if (strstr(name,"W3") != NULL || strstr(name,"W4") != NULL)
+        {
+            sum += nrnb->n[i]*0.25*cost_nrnb(i);
+        }
+        else
+        {
+            sum += nrnb->n[i]*0.50*cost_nrnb(i);
+        }
+    }
+    for(i=eNR_NBKERNEL_FREE_ENERGY; i<=eNR_NB14; i++)
+    {
+        name = nrnb_str(i);
+        if (strstr(name,"W3") != NULL || strstr(name,"W4") != NULL)
         sum += nrnb->n[i]*cost_nrnb(i);
     }
     for(i=eNR_BONDS; i<=eNR_WALLS; i++)
