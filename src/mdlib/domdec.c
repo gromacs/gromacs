@@ -4388,11 +4388,18 @@ static int dd_redistribute_cg(FILE *fplog,gmx_step_t step,
                                         comm->vbuf.v[buf_pos][d3]*tcm[d3][dim2];
                                 }
                             }
-                            if (pos_d >= cell_x1[dim2])
+                            /* Check of we are not at the box edge.
+                             * pbc is only handled in the first step above,
+                             * but this check could move over pbc while
+                             * the first step did not due to different rounding.
+                             */
+                            if (pos_d >= cell_x1[dim2] &&
+                                dd->ci[dim2] != dd->nc[dim2]-1)
                             {
                                 flag |= DD_FLAG_FW(d2);
                             }
-                            else if (pos_d < cell_x0[dim2])
+                            else if (pos_d < cell_x0[dim2] &&
+                                     dd->ci[dim2] != 0)
                             {
                                 flag |= DD_FLAG_BW(d2);
                             }
