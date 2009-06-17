@@ -67,6 +67,7 @@ typedef struct gmx_lincsdata {
     real *ddist;      /* the reference distance in top B - the r.d. in top A */
     int  *bla;        /* the atom pairs involved in the constraints */
     real *blc;        /* 1/sqrt(invmass1 + invmass2) */
+    real *blc1;       /* as blc, but with all masses 1 */
     int  *blnr;       /* index into blbnb and blmf */
     int  *blbnb;      /* list of constraint connections */
     int  ntriangle;   /* the local number of constraints in triangles */
@@ -74,6 +75,7 @@ typedef struct gmx_lincsdata {
     int  *tri_bits;   /* the bits tell if the matrix element should be used */
     int  ncc_triangle;/* the number of constraint connections in triangles */
     real *blmf;       /* matrix of mass factors for constraint connections */
+    real *blmf1;      /* as blmf, but with all masses 1 */
     real *bllen;      /* the reference bond length */
     /* arrays for temporary storage in the LINCS algorithm */
     rvec *tmpv;
@@ -196,8 +198,18 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
     r      = lincsd->tmpv;
     blnr   = lincsd->blnr;
     blbnb  = lincsd->blbnb;
-    blc    = lincsd->blc;
-    blmf   = lincsd->blmf;
+    if (econq != econqForce)
+    {
+        /* Use mass-weighted parameters */
+        blc  = lincsd->blc;
+        blmf = lincsd->blmf; 
+    }
+    else
+    {
+        /* Use non mass-weighted parameters */
+        blc  = lincsd->blc1;
+        blmf = lincsd->blmf1;
+    }
     blcc   = lincsd->tmpncc;
     rhs1   = lincsd->tmp1;
     rhs2   = lincsd->tmp2;
@@ -250,33 +262,59 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
     lincs_matrix_expand(lincsd,blcc,rhs1,rhs2,sol);
     /* nrec*(ncons+2*nrtot) flops */
     
-    for(b=0; b<ncons; b++)
+    if (econq != econqForce)
     {
-        /* With econqDeriv_FlexCon only use the flexible constraints */
-        if (econq != econqDeriv_FlexCon ||
-            (lincsd->bllen0[b] == 0 && lincsd->ddist[b] == 0))
+        for(b=0; b<ncons; b++)
+        {
+            /* With econqDeriv_FlexCon only use the flexible constraints */
+            if (econq != econqDeriv_FlexCon ||
+                (lincsd->bllen0[b] == 0 && lincsd->ddist[b] == 0))
+            {
+                i = bla[2*b];
+                j = bla[2*b+1];
+                mvb = blc[b]*sol[b];
+                im1 = invmass[i];
+                im2 = invmass[j];
+                tmp0 = r[b][0]*mvb;
+                tmp1 = r[b][1]*mvb;
+                tmp2 = r[b][2]*mvb;
+                fp[i][0] -= tmp0*im1;
+                fp[i][1] -= tmp1*im1;
+                fp[i][2] -= tmp2*im1;
+                fp[j][0] += tmp0*im2;
+                fp[j][1] += tmp1*im2;
+                fp[j][2] += tmp2*im2;
+                if (dvdlambda)
+                {
+                    /* This is only correct with forces and invmass=1 */
+                    *dvdlambda -= mvb*lincsd->ddist[b];
+                }
+            }
+        } /* 16 ncons flops */
+    }
+    else
+    {
+        for(b=0; b<ncons; b++)
         {
             i = bla[2*b];
             j = bla[2*b+1];
             mvb = blc[b]*sol[b];
-            im1 = invmass[i];
-            im2 = invmass[j];
             tmp0 = r[b][0]*mvb;
             tmp1 = r[b][1]*mvb;
             tmp2 = r[b][2]*mvb;
-            fp[i][0] -= tmp0*im1;
-            fp[i][1] -= tmp1*im1;
-            fp[i][2] -= tmp2*im1;
-            fp[j][0] += tmp0*im2;
-            fp[j][1] += tmp1*im2;
-            fp[j][2] += tmp2*im2;
+            fp[i][0] -= tmp0;
+            fp[i][1] -= tmp1;
+            fp[i][2] -= tmp2;
+            fp[j][0] += tmp0;
+            fp[j][1] += tmp1;
+            fp[j][2] += tmp2;
             if (dvdlambda)
             {
-                /* This is only correct with forces and invmass=1 */
                 *dvdlambda -= mvb*lincsd->ddist[b];
             }
         }
-    } /* 16 ncons flops */
+        /* 10 ncons flops */
+    }
     
     if (bCalcVir)
     {
@@ -549,12 +587,14 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
 {
     int i,a1,a2,n,k,sign,center;
     int end,nk,kk;
+    const real invsqrt2=0.7071067811865475244;
     
     for(i=0; (i<li->nc); i++)
     {
         a1 = li->bla[2*i];
         a2 = li->bla[2*i+1];
-        li->blc[i] = invsqrt(invmass[a1] + invmass[a2]);
+        li->blc[i]  = invsqrt(invmass[a1] + invmass[a2]);
+        li->blc1[i] = invsqrt2;
     }
     
     /* Construct the coupling coefficient matrix blmf */
@@ -585,7 +625,8 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
                 center = a2;
                 end    = a1;
             }
-            li->blmf[n] = sign*invmass[center]*li->blc[i]*li->blc[k];
+            li->blmf[n]  = sign*invmass[center]*li->blc[i]*li->blc[k];
+            li->blmf1[n] = sign*0.5;
             if (li->ncg_triangle > 0)
             {
                 /* Look for constraint triangles */
@@ -818,6 +859,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
         srenew(li->ddist,li->nc_alloc);
         srenew(li->bla,2*li->nc_alloc);
         srenew(li->blc,li->nc_alloc);
+        srenew(li->blc1,li->nc_alloc);
         srenew(li->blnr,li->nc_alloc+1);
         srenew(li->bllen,li->nc_alloc);
         srenew(li->tmpv,li->nc_alloc);
@@ -918,6 +960,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     {
         li->ncc_alloc = ncc_alloc;
         srenew(li->blmf,li->ncc_alloc);
+        srenew(li->blmf1,li->ncc_alloc);
         srenew(li->tmpncc,li->ncc_alloc);
     }
     

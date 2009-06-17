@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -41,6 +42,114 @@
 #include "vec.h"
 #include "constr.h"
 #include "gmx_fatal.h"
+#include "smalloc.h"
+
+typedef struct
+{
+    real   mO;
+    real   mH;
+    double wo;
+    double wh;
+    double wohh;
+    real   dOH;
+    real   dHH;
+    real   ra;
+    real   rb;
+    real   rc;
+    real   rc2;
+    /* For projection */
+    real   imO;
+    real   imH;
+    real   invdOH;
+    real   invdHH;
+    matrix invmat;
+} settleparam_t;
+
+typedef struct gmx_settledata
+{
+    settleparam_t massw;
+    settleparam_t mass1;
+} t_gmx_settledata;
+
+
+static void init_proj_matrix(settleparam_t *p,
+                             real invmO,real invmH,real dOH,real dHH)
+{
+    real   imOn,imHn;
+    matrix mat;
+
+    p->imO = invmO;
+    p->imH = invmH;
+    /* We normalize the inverse masses with imO for the matrix inversion.
+     * so we can keep using masses of almost zero for frozen particles,
+     * without running out of the float range in m_inv.
+     */
+    imOn = 1;
+    imHn = p->imH/p->imO;
+
+    /* Construct the constraint coupling matrix */
+    mat[0][0] = imOn + imHn;
+    mat[0][1] = imOn*(1 - 0.5*dHH*dHH/(dOH*dOH));
+    mat[0][2] = imHn*0.5*dHH/dOH;
+    mat[1][1] = mat[0][0];
+    mat[1][2] = mat[0][2];
+    mat[2][2] = imHn + imHn;
+    mat[1][0] = mat[0][1];
+    mat[2][0] = mat[0][2];
+    mat[2][1] = mat[1][2];
+
+    m_inv(mat,p->invmat);
+
+    msmul(p->invmat,1/p->imO,p->invmat);
+
+    p->invdOH = 1/dOH;
+    p->invdHH = 1/dHH;
+}
+
+static void settleparam_init(settleparam_t *p,
+                             real mO,real mH,real invmO,real invmH,
+                             real dOH,real dHH)
+{
+    p->mO     = mO;
+    p->mH     = mH;
+    p->wo     = mO;
+    p->wh     = mH;
+    p->wohh   = mO + 2.0*mH;
+    p->dOH    = dOH;
+    p->dHH    = dHH;
+    p->rc     = dHH/2.0;
+    p->ra     = 2.0*p->wh*sqrt(dOH*dOH - p->rc*p->rc)/p->wohh;
+    p->rb     = sqrt(dOH*dOH - p->rc*p->rc) - p->ra;
+    p->rc2    = dHH;
+
+    p->wo    /= p->wohh;
+    p->wh    /= p->wohh;
+
+    /* For projection: connection matrix inversion */
+    init_proj_matrix(p,invmO,invmH,dOH,dHH);
+
+    if (debug)
+    {
+        fprintf(debug,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
+                p->wo,p->wh,p->wohh,p->rc,p->ra);
+        fprintf(debug,"rb = %g, rc2 = %g, dHH = %g, dOH = %g\n",
+                p->rb,p->rc2,p->dHH,p->dOH);
+    }
+}
+
+gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
+                             real dOH,real dHH)
+{
+    gmx_settledata_t settled;
+
+    snew(settled,1);
+
+    settleparam_init(&settled->massw,mO,mH,invmO,invmH,dOH,dHH);
+
+    settleparam_init(&settled->mass1,1.0,1.0,1.0,1.0,dOH,dHH);
+
+    return settled;
+}
 
 #ifdef DEBUG
 static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
@@ -59,112 +168,108 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 #endif
 
 
-void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
-		 real dOH,real dHH,real invmO,real invmH,
-		 rvec *der,rvec *derp,
-		 bool bCalcVir,tensor rmdder)
+void settle_proj(FILE *fp,
+                 gmx_settledata_t settled,int econq,
+                 int nsettle, t_iatom iatoms[],rvec x[],
+                 rvec *der,rvec *derp,
+                 bool bCalcVir,tensor rmdder)
 {
-  /* Settle for projection out constraint components
-   * of derivatives of the coordinates.
-   * Berk Hess 2008-1-10
-   */
-
-  /* Initialized data */
-  static bool bFirst=TRUE;
-  static real imO,imH,invdOH,invdHH;
-  static matrix invmat;
-
-  real imOn,imHn;
-  matrix mat;
-  int i,m,m2,ow1,hw2,hw3;
-  rvec roh2,roh3,rhh,dc,fc;
-
-  if (bFirst) {
-    if (fp)
-      fprintf(fp,"Going to use settle for derivatives (%d waters)\n",nsettle);
-
-    imO = invmO;
-    imH = invmH;
-    /* We normalize the inverse masses with imO for the matrix inversion.
-     * so we can keep using masses of almost zero for frozen particles,
-     * without running out of the float range in m_inv.
+    /* Settle for projection out constraint components
+     * of derivatives of the coordinates.
+     * Berk Hess 2008-1-10
      */
-    imOn = 1;
-    imHn = imH/imO;
 
-    /* Construct the constraint coupling matrix */
-    mat[0][0] = imOn + imHn;
-    mat[0][1] = imOn*(1 - 0.5*dHH*dHH/(dOH*dOH));
-    mat[0][2] = imHn*0.5*dHH/dOH;
-    mat[1][1] = mat[0][0];
-    mat[1][2] = mat[0][2];
-    mat[2][2] = imHn + imHn;
-    mat[1][0] = mat[0][1];
-    mat[2][0] = mat[0][2];
-    mat[2][1] = mat[1][2];
+    settleparam_t *p;
+    real   imO,imH,dOH,dHH,invdOH,invdHH;
+    matrix invmat;
+    int    i,m,m2,ow1,hw2,hw3;
+    rvec   roh2,roh3,rhh,dc,fc;
 
-    m_inv(mat,invmat);
-
-    msmul(invmat,1/imO,invmat);
-
-    invdOH = 1/dOH;
-    invdHH = 1/dHH;
-
-    bFirst = FALSE;
-  }
+    if (econq == econqForce)
+    {
+        p = &settled->mass1;
+    }
+    else
+    {
+        p = &settled->massw;
+    }
+    imO    = p->imO;
+    imH    = p->imH;
+    copy_mat(p->invmat,invmat);
+    dOH    = p->dOH;
+    dHH    = p->dHH;
+    invdOH = p->invdOH;
+    invdHH = p->invdHH;
 
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
-  for (i=0; i<nsettle; i++) {
-    ow1 = iatoms[i*2+1];
-    hw2 = ow1 + 1;
-    hw3 = ow1 + 2;
-    
-    for(m=0; m<DIM; m++)
-      roh2[m] = (x[ow1][m] - x[hw2][m])*invdOH;
-    for(m=0; m<DIM; m++)
-      roh3[m] = (x[ow1][m] - x[hw3][m])*invdOH;
-    for(m=0; m<DIM; m++)
-      rhh [m] = (x[hw2][m] - x[hw3][m])*invdHH;
-    /* 18 flops */
+    for (i=0; i<nsettle; i++)
+    {
+        ow1 = iatoms[i*2+1];
+        hw2 = ow1 + 1;
+        hw3 = ow1 + 2;
+        
+        for(m=0; m<DIM; m++)
+        {
+            roh2[m] = (x[ow1][m] - x[hw2][m])*invdOH;
+        }
+        for(m=0; m<DIM; m++)
+        {
+            roh3[m] = (x[ow1][m] - x[hw3][m])*invdOH;
+        }
+        for(m=0; m<DIM; m++)
+        {
+            rhh [m] = (x[hw2][m] - x[hw3][m])*invdHH;
+        }
+        /* 18 flops */
+        
+        /* Determine the projections of der on the bonds */
+        clear_rvec(dc);
+        for(m=0; m<DIM; m++)
+        {
+            dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
+        }
+        for(m=0; m<DIM; m++)
+        {
+            dc[1] += (der[ow1][m] - der[hw3][m])*roh3[m];
+        }
+        for(m=0; m<DIM; m++)
+        {
+            dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
+        }
+        /* 27 flops */
+        
+        /* Determine the correction for the three bonds */
+        mvmul(invmat,dc,fc);
+        /* 15 flops */
+        
+        /* Subtract the corrections from derp */
+        for(m=0; m<DIM; m++)
+        {
+            derp[ow1][m] -= imO*( fc[0]*roh2[m] + fc[1]*roh3[m]);
+            derp[hw2][m] -= imH*(-fc[0]*roh2[m] + fc[2]*rhh [m]);
+            derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
+        }
+        /* 45 flops */
 
-    /* Determine the projections of der on the bonds */
-    clear_rvec(dc);
-    for(m=0; m<DIM; m++)
-      dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
-    for(m=0; m<DIM; m++)
-      dc[1] += (der[ow1][m] - der[hw3][m])*roh3[m];
-    for(m=0; m<DIM; m++)
-      dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
-    /* 27 flops */
-
-    /* Determine the correction for the three bonds */
-    mvmul(invmat,dc,fc);
-    /* 15 flops */
-
-    /* Subtract the corrections from derp */
-    for(m=0; m<DIM; m++) {
-      derp[ow1][m] -= imO*( fc[0]*roh2[m] + fc[1]*roh3[m]);
-      derp[hw2][m] -= imH*(-fc[0]*roh2[m] + fc[2]*rhh [m]);
-      derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
+        if (bCalcVir)
+        {
+            /* Determining r x m der is easy,
+             * since fc contains the mass weighted corrections for der.
+             */
+            for(m=0; m<DIM; m++)
+            {
+                for(m2=0; m2<DIM; m2++)
+                {
+                    rmdder[m][m2] +=
+                        dOH*roh2[m]*roh2[m2]*fc[0] +
+                        dOH*roh3[m]*roh3[m2]*fc[1] +
+                        dHH*rhh [m]*rhh [m2]*fc[2];
+                }
+            }
+        }
     }
-    /* 45 flops */
-
-    if (bCalcVir) {
-      /* Determining r x m der is easy,
-       * since fc contains the mass weighted corrections for der.
-       */
-      for(m=0; m<DIM; m++) {
-	for(m2=0; m2<DIM; m2++) {
-	  rmdder[m][m2] +=
-	    dOH*roh2[m]*roh2[m2]*fc[0] +
-	    dOH*roh3[m]*roh3[m2]*fc[1] +
-	    dHH*rhh [m]*rhh [m2]*fc[2];
-	}
-      }
-    }
-  }
 }
 
 
@@ -251,76 +356,63 @@ static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH)
 }
 
 
-void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
-	     real dOH,real dHH,real mO,real mH,
-	     real invdt,real *v,bool bCalcVir,tensor rmdr,int *error)
+void csettle(gmx_settledata_t settled,
+             int nsettle, t_iatom iatoms[],real b4[], real after[],
+             real invdt,real *v,bool bCalcVir,tensor rmdr,int *error)
 {
-  /* ***************************************************************** */
-  /*                                                               ** */
-  /*    Subroutine : setlep - reset positions of TIP3P waters      ** */
-  /*    Author : Shuichi Miyamoto                                  ** */
-  /*    Date of last update : Oct. 1, 1992                         ** */
-  /*                                                               ** */
-  /*    Reference for the SETTLE algorithm                         ** */
-  /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992). ** */
-  /*                                                               ** */
-  /* ***************************************************************** */
-  
-  /* Initialized data */
-  static bool bFirst=TRUE;
-  /* These three weights need have double precision. Using single precision
-   * can result in huge velocity and pressure deviations. */
-  static double wo,wh,wohh;
-  static real ra,rb,rc,rc2,rone;
-#ifdef DEBUG_PRES
-  static int step = 0;
-#endif
-  
+    /* ***************************************************************** */
+    /*                                                               ** */
+    /*    Subroutine : setlep - reset positions of TIP3P waters      ** */
+    /*    Author : Shuichi Miyamoto                                  ** */
+    /*    Date of last update : Oct. 1, 1992                         ** */
+    /*                                                               ** */
+    /*    Reference for the SETTLE algorithm                         ** */
+    /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992). ** */
+    /*                                                               ** */
+    /* ***************************************************************** */
     
-  /* Local variables */
-  real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
-  real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22, 
-    trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe, 
-    cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd, 
-    xb0, yb0, zb0, xc0, yc0, zc0, xa1;
-  real ya1, za1, xb1, yb1;
-  real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3, 
-    xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d, 
-    za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d, 
-    xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
-  real t1,t2;
-  real dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
-  real mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
+    /* Initialized data */
+    settleparam_t *p;
+    real   mO,mH;
+    /* These three weights need have double precision. Using single precision
+     * can result in huge velocity and pressure deviations. */
+    double wo,wh,wohh;
+    real   ra,rb,rc,rc2,dOH,dHH;
+    
+    /* Local variables */
+    real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
+    real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22, 
+        trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe, 
+        cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd, 
+        xb0, yb0, zb0, xc0, yc0, zc0, xa1;
+    real ya1, za1, xb1, yb1;
+    real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3, 
+        xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d, 
+        za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d, 
+        xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
+    real t1,t2;
+    real dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
+    real mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
+    
+    int doshake;
+    
+    int i, shakeret, ow1, hw2, hw3;
+    
+    *error = -1;
 
-  int doshake;
-  
-  int i, shakeret, ow1, hw2, hw3;
+    p = &settled->massw;
+    mO   = p->mO;
+    mH   = p->mH;
+    wo   = p->wo;
+    wh   = p->wh;
+    wohh = p->wohh;
+    rc   = p->rc;
+    ra   = p->ra;
+    rb   = p->rb;
+    rc2  = p->rc2;
+    dOH  = p->dOH;
+    dHH  = p->dHH;
 
-  *error=-1;
-  if (bFirst) {
-    if (fp)
-      fprintf(fp,"Going to use C-settle (%d waters)\n",nsettle);
-    wo     = mO;
-    wh     = mH;
-    wohh   = mO+2.0*mH;
-    rc     = dHH/2.0;
-    ra     = 2.0*wh*sqrt(dOH*dOH-rc*rc)/wohh;
-    rb     = sqrt(dOH*dOH-rc*rc)-ra;
-    rc2    = dHH;
-    rone   = 1.0;
-
-    wo    /= wohh;
-    wh    /= wohh;
-
-    if (fp) {
-      fprintf(fp,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
-	      wo,wh,wohh,rc,ra);
-      fprintf(fp,"rb = %g, rc2 = %g, rone = %g, dHH = %g, dOH = %g\n",
-	      rb,rc2,rone,dHH,dOH);
-    }
-
-    bFirst = FALSE;
-  }
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
@@ -398,7 +490,7 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
     /* 65 flops */
         
     sinphi = za1d / ra;
-    tmp    = rone - sinphi * sinphi;
+    tmp    = 1.0 - sinphi * sinphi;
     if (tmp <= 0) {
       *error = i;
       doshake = 1;
@@ -407,7 +499,7 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
     else
       cosphi = tmp*invsqrt(tmp);
     sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
-    tmp2   = rone - sinpsi * sinpsi;
+    tmp2   = 1.0 - sinpsi * sinpsi;
     if (tmp2 <= 0) {
       *error = i;
       doshake = 1;
@@ -436,7 +528,7 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
       /* 47 flops */
       
       /*  --- Step4  A3' --- */
-      tmp2  = rone - sinthe *sinthe;
+      tmp2  = 1.0 - sinthe *sinthe;
       costhe = tmp2*invsqrt(tmp2);
       xa3d = -ya2d * sinthe;
       ya3d = ya2d * costhe;
@@ -522,7 +614,10 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
 	*error=i;
     }
 #ifdef DEBUG
-    check_cons(fp,"settle",after,ow1,hw2,hw3);
+    if (debug)
+    {
+        check_cons(debug,"settle",after,ow1,hw2,hw3);
+    }
 #endif
   }
 }

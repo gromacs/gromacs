@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -38,13 +39,16 @@
 
 #include "typedefs.h"
 
-enum { econqCoord,         /* Constrain coordinates (mass weighted)     */ 
-       econqVeloc,         /* Constrain velocities (mass weighted)      */
-       econqDeriv,         /* Constrain a derivative (mass weighted),   *
-			    * for instance velocity or acceleration,    *
-			    * constraint virial can not be calculated.  */
-       econqDeriv_FlexCon, /* As econqDeriv, but only output flex. con. */
-       econqForce          /* Constrain forces (non mass-weighted)      */
+enum
+{
+    econqCoord,         /* Constrain coordinates (mass weighted)           */ 
+    econqVeloc,         /* Constrain velocities (mass weighted)            */
+    econqDeriv,         /* Constrain a derivative (mass weighted),         *
+                         * for instance velocity or acceleration,          *
+                         * constraint virial can not be calculated.        */
+    econqDeriv_FlexCon, /* As econqDeriv, but only output flex. con.       */
+    econqForce,         /* Constrain forces (non mass-weighted)            */
+    econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
 extern int n_flexible_constraints(struct gmx_constr *constr);
@@ -53,7 +57,11 @@ extern int n_flexible_constraints(struct gmx_constr *constr);
 extern void too_many_constraint_warnings(int eConstrAlg,int warncount);
 /* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
+extern gmx_shakedata_t shake_init();
+/* Initializes and return the SHAKE data structure */
+
 extern bool bshakef(FILE *log,		/* Log file			*/
+                    gmx_shakedata_t shaked, /* SHAKE data */
 		    int natoms,		/* Total number of atoms	*/
 		    real invmass[],	/* Atomic masses		*/
 		    int nblocks,	/* The number of shake blocks	*/
@@ -80,23 +88,25 @@ extern bool bshakef(FILE *log,		/* Log file			*/
  * sblock[n] to sblock[n+1]. Array sblock should be large enough.
  * Return TRUE when OK, FALSE when shake-error
  */
-extern void csettle(FILE *log,
+
+extern gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
+				    real dOH,real dHH);
+/* Initializes and returns a structure with SETTLE parameters */
+
+extern void csettle(gmx_settledata_t settled,
 		    int nsettle,	/* Number of settles  	        */
 		    t_iatom iatoms[],	/* The settle iatom list        */
 		    real b4[],		/* Old coordinates		*/
 		    real after[],	/* New coords, to be settled	*/
-		    real dOH,		/* Constraint length Ox-Hyd	*/
-		    real dHH, 		/* Constraint length Hyd-Hyd	*/
-		    real mO,  		/* Mass of Oxygen		*/
-		    real mH, 		/* Mass of Hydrogen		*/
 		    real invdt,         /* 1/delta_t                    */
 		    real *v,            /* Also constrain v if v!=NULL  */
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
 		    int *xerror);
 
-extern void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
-			real dOH,real dHH,real invmO,real invmH,
+extern void settle_proj(FILE *fp,
+			gmx_settledata_t settled,int econq,
+			int nsettle, t_iatom iatoms[],rvec x[],
 			rvec *der,rvec *derp,
 			bool bCalcVir,tensor rmdder);
 /* Analytical algorithm to subtract the components of derivatives

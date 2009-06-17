@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -56,22 +57,24 @@
 #include "gmxfio.h"
 
 typedef struct gmx_constr {
-  int             ncon_tot;     /* The total number of constraints    */
-  int             nflexcon;     /* The number of flexible constraints */
-  int             n_at2con_mt;  /* The size of at2con = #moltypes     */
-  t_blocka        *at2con_mt;   /* A list of atoms to constraints     */
-  gmx_lincsdata_t lincsd;       /* LINCS data                         */
-  int             nblocks;      /* The number of SHAKE blocks         */
-  int             *sblock;      /* The SHAKE blocks                   */
-  int             sblock_nalloc;/* The allocation size of sblock      */
-  real            *lagr;        /* Lagrange multipliers for SHAKE     */
-  int             lagr_nalloc;  /* The allocation size of lagr        */
-  int             maxwarn;      /* The maximum number of warnings     */
-  int             warncount_lincs;
-  int             warncount_settle;
-  gmx_edsam_t     ed;           /* The essential dynamics data        */
+  int              ncon_tot;     /* The total number of constraints    */
+  int              nflexcon;     /* The number of flexible constraints */
+  int              n_at2con_mt;  /* The size of at2con = #moltypes     */
+  t_blocka         *at2con_mt;   /* A list of atoms to constraints     */
+  gmx_lincsdata_t  lincsd;       /* LINCS data                         */
+  gmx_shakedata_t  shaked;       /* SHAKE data                         */
+  gmx_settledata_t settled;      /* SETTLE data                        */
+  int              nblocks;      /* The number of SHAKE blocks         */
+  int              *sblock;      /* The SHAKE blocks                   */
+  int              sblock_nalloc;/* The allocation size of sblock      */
+  real             *lagr;        /* Lagrange multipliers for SHAKE     */
+  int              lagr_nalloc;  /* The allocation size of lagr        */
+  int              maxwarn;      /* The maximum number of warnings     */
+  int              warncount_lincs;
+  int              warncount_settle;
+  gmx_edsam_t      ed;           /* The essential dynamics data        */
 
-  gmx_mtop_t      *warn_mtop;   /* Only used for printing warnings    */
+  gmx_mtop_t       *warn_mtop;   /* Only used for printing warnings    */
 } t_gmx_constr;
 
 typedef struct {
@@ -79,16 +82,12 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-static int pcount=0;
-
 static int pcomp(const void *p1, const void *p2)
 {
   int     db;
   atom_id min1,min2,max1,max2;
   t_sortblock *a1=(t_sortblock *)p1;
   t_sortblock *a2=(t_sortblock *)p2;
-
-  pcount++;
   
   db=a1->blocknr-a2->blocknr;
   
@@ -222,169 +221,209 @@ static void pr_sortblock(FILE *fp,const char *title,int nsb,t_sortblock sb[])
 }
 
 bool constrain(FILE *fplog,bool bLog,bool bEner,
-	       struct gmx_constr *constr,
-	       t_idef *idef,t_inputrec *ir,
-	       t_commrec *cr,
-	       gmx_step_t step,int delta_step,
-	       t_mdatoms *md,
-	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-	       real lambda,real *dvdlambda,
-	       rvec *v,tensor *vir,
-	       t_nrnb *nrnb,int econq)
+               struct gmx_constr *constr,
+               t_idef *idef,t_inputrec *ir,
+               t_commrec *cr,
+               gmx_step_t step,int delta_step,
+               t_mdatoms *md,
+               rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+               real lambda,real *dvdlambda,
+               rvec *v,tensor *vir,
+               t_nrnb *nrnb,int econq)
 {
-  bool    bOK;
-  int     start,homenr;
-  int     i,j;
-  int     ncons,error;
-  tensor  rmdr;
-  real    invdt,vir_fac,t;
-  t_ilist *settle;
-  int     nsettle;
-  real    mO,mH,dOH,dHH;
-  t_pbc   pbc;
-  char    buf[22];
-
-  if (econq == econqForce && !EI_ENERGY_MINIMIZATION(ir->eI))
-    gmx_incons("constrain called for forces while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
-
-  bOK = TRUE;
-
-  start  = md->start;
-  homenr = md->homenr;
-  if (ir->delta_t == 0)
-    invdt = 0;
-  else
-    invdt  = 1/ir->delta_t;
-
-  if (ir->efep != efepNO && EI_DYNAMICS(ir->eI)) {
-    /* Set the constraint lengths for the step at which this configuration
-     * is meant to be. The invmasses should not be changed.
-     */
-    lambda += delta_step*ir->delta_lambda;
-  }
-
-  if (vir != NULL)
-    clear_mat(rmdr);
+    bool    bOK;
+    int     start,homenr;
+    int     i,j;
+    int     ncons,error;
+    tensor  rmdr;
+    real    invdt,vir_fac,t;
+    t_ilist *settle;
+    int     nsettle;
+    t_pbc   pbc;
+    char    buf[22];
     
-  where();
-  if (constr->lincsd) {
-    bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr->dd,
-			  x,xprime,min_proj,box,lambda,dvdlambda,
-			  invdt,v,vir!=NULL,rmdr,
-			  econq,nrnb,
-			  constr->maxwarn,&constr->warncount_lincs);
-    if (!bOK && constr->maxwarn >= 0 && fplog)
-      fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
-	      econstr_names[econtLINCS],gmx_step_str(step,buf));
-  }
-  
-  if (constr->nblocks > 0) {
-    if (econq != econqCoord)
-      gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
-
-    bOK = bshakef(fplog,homenr,md->invmass,constr->nblocks,constr->sblock,
-		  idef,ir,box,x,xprime,nrnb,
-		  constr->lagr,lambda,dvdlambda,
-		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
-    if (!bOK && constr->maxwarn >= 0 && fplog)
-      fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
-	      econstr_names[econtSHAKE],gmx_step_str(step,buf));
-  }
-  
-  settle  = &idef->il[F_SETTLE];
-  if (settle->nr > 0) {
-    nsettle = settle->nr/2;
-    mO   = md->massT[settle->iatoms[1]];
-    mH   = md->massT[settle->iatoms[1]+1];
-    dOH  = idef->iparams[settle->iatoms[0]].settle.doh;
-    dHH  = idef->iparams[settle->iatoms[0]].settle.dhh;
-
-    switch (econq) {
-    case econqCoord:
-      csettle(fplog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
-	      invdt,v[0],vir!=NULL,rmdr,&error);
-      inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-      if (v != NULL)
-	inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
-      if (vir != NULL)
-	inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+    if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
+    {
+        gmx_incons("constrain called for forces displacements while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
+    }
     
-      bOK = (error < 0);
-      if (!bOK && constr->maxwarn >= 0) {
-	char buf[256];
-	sprintf(buf,
-		"\nt = %.3f ps: Water molecule starting at atom %d can not be "
-		"settled.\nCheck for bad contacts and/or reduce the timestep.\n",
-		ir->init_t+step*ir->delta_t,
-		ddglatnr(cr->dd,settle->iatoms[error*2+1]));
-	if (fplog)
-	  fprintf(fplog,"%s",buf);
-	fprintf(stderr,"%s",buf);
-	constr->warncount_settle++;
-	if (constr->warncount_settle > constr->maxwarn)
-	  too_many_constraint_warnings(-1,constr->warncount_settle);
-	break;
-      case econqVeloc:
-      case econqDeriv:
-      case econqForce:
-	settle_proj(fplog,nsettle,settle->iatoms,x,dOH,dHH,
-		    md->invmass[settle->iatoms[1]],
-		    md->invmass[settle->iatoms[1]+1],
-		    xprime,min_proj,vir!=NULL,rmdr);
-
-	/* This is an overestimate */
-	inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-	break;
-      case econqDeriv_FlexCon:
-	/* Nothing to do, since the are no flexible constraints in settles */
-	break;
-      default:
-	gmx_incons("Unknown constraint quantity for settle");
-      }
+    bOK = TRUE;
+    
+    start  = md->start;
+    homenr = md->homenr;
+    if (ir->delta_t == 0)
+    {
+        invdt = 0;
     }
-  }
-
-  if (vir != NULL) {
-    switch (econq) {
-    case econqCoord:
-      vir_fac = 0.5/(ir->delta_t*ir->delta_t);
-      break;
-    case econqVeloc:
-      /* Assume that these are velocities */
-      vir_fac = 0.5/ir->delta_t;
-      break;
-    case econqForce:
-      vir_fac = 0.5;
-      break;
-    default:
-      vir_fac = 0;
-      gmx_incons("Unsupported constraint quantity for virial");
+    else
+    {
+        invdt  = 1/ir->delta_t;
     }
-    for(i=0; i<DIM; i++)
-      for(j=0; j<DIM; j++)
-	(*vir)[i][j] = vir_fac*rmdr[i][j];
-  }
 
-  if (!bOK && constr->maxwarn >= 0) 
-    dump_confs(fplog,step,constr->warn_mtop,start,homenr,cr,x,xprime,box);
-
-  if (econq == econqCoord) {
-      if (ir->ePull == epullCONSTRAINT) {
-        if (EI_DYNAMICS(ir->eI)) {
-              t = ir->init_t + (step + delta_step)*ir->delta_t;
-          } else {
-              t = ir->init_t;
-          }
-          set_pbc(&pbc,ir->ePBC,box);
-          pull_constraint(ir->pull,md,&pbc,cr,ir->delta_t,t,x,xprime,v,*vir);
-      }
-      if (constr->ed && delta_step > 0) {
-        /* apply the essential dynamcs constraints here */
-        do_edsam(ir,step,md,cr,xprime,v,box,constr->ed);
-      }
-  }
-  
-  return bOK;
+    if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
+    {
+        /* Set the constraint lengths for the step at which this configuration
+         * is meant to be. The invmasses should not be changed.
+         */
+        lambda += delta_step*ir->delta_lambda;
+    }
+    
+    if (vir != NULL)
+    {
+        clear_mat(rmdr);
+    }
+    
+    where();
+    if (constr->lincsd)
+    {
+        bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr->dd,
+                              x,xprime,min_proj,box,lambda,dvdlambda,
+                              invdt,v,vir!=NULL,rmdr,
+                              econq,nrnb,
+                              constr->maxwarn,&constr->warncount_lincs);
+        if (!bOK && constr->maxwarn >= 0 && fplog)
+        {
+            fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+                    econstr_names[econtLINCS],gmx_step_str(step,buf));
+        }
+    }
+    
+    if (constr->nblocks > 0)
+    {
+        if (econq != econqCoord)
+        {
+            gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+        }
+        
+        bOK = bshakef(fplog,constr->shaked,
+                      homenr,md->invmass,constr->nblocks,constr->sblock,
+                      idef,ir,box,x,xprime,nrnb,
+                      constr->lagr,lambda,dvdlambda,
+                      invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
+        if (!bOK && constr->maxwarn >= 0 && fplog)
+        {
+            fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
+                    econstr_names[econtSHAKE],gmx_step_str(step,buf));
+        }
+    }
+    
+    settle  = &idef->il[F_SETTLE];
+    if (settle->nr > 0)
+    {
+        nsettle = settle->nr/2;
+        
+        switch (econq)
+        {
+        case econqCoord:
+            csettle(constr->settled,
+                    nsettle,settle->iatoms,x[0],xprime[0],
+                    invdt,v[0],vir!=NULL,rmdr,&error);
+            inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+            if (v != NULL)
+            {
+                inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
+            }
+            if (vir != NULL)
+            {
+                inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+            }
+            
+            bOK = (error < 0);
+            if (!bOK && constr->maxwarn >= 0)
+            {
+                char buf[256];
+                sprintf(buf,
+                        "\nt = %.3f ps: Water molecule starting at atom %d can not be "
+                        "settled.\nCheck for bad contacts and/or reduce the timestep.\n",
+                        ir->init_t+step*ir->delta_t,
+                        ddglatnr(cr->dd,settle->iatoms[error*2+1]));
+                if (fplog)
+                {
+                    fprintf(fplog,"%s",buf);
+                }
+                fprintf(stderr,"%s",buf);
+                constr->warncount_settle++;
+                if (constr->warncount_settle > constr->maxwarn)
+                {
+                    too_many_constraint_warnings(-1,constr->warncount_settle);
+                }
+                break;
+            case econqVeloc:
+            case econqDeriv:
+            case econqForce:
+            case econqForceDispl:
+                settle_proj(fplog,constr->settled,econq,
+                            nsettle,settle->iatoms,x,
+                            xprime,min_proj,vir!=NULL,rmdr);
+                
+                /* This is an overestimate */
+                inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+                break;
+            case econqDeriv_FlexCon:
+                /* Nothing to do, since the are no flexible constraints in settles */
+                break;
+            default:
+                gmx_incons("Unknown constraint quantity for settle");
+            }
+        }
+    }
+    
+    if (vir != NULL)
+    {
+        switch (econq)
+        {
+        case econqCoord:
+            vir_fac = 0.5/(ir->delta_t*ir->delta_t);
+            break;
+        case econqVeloc:
+            /* Assume that these are velocities */
+            vir_fac = 0.5/ir->delta_t;
+            break;
+        case econqForce:
+        case econqForceDispl:
+            vir_fac = 0.5;
+            break;
+        default:
+            vir_fac = 0;
+            gmx_incons("Unsupported constraint quantity for virial");
+        }
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                (*vir)[i][j] = vir_fac*rmdr[i][j];
+            }
+        }
+    }
+    
+    if (!bOK && constr->maxwarn >= 0)
+    {
+        dump_confs(fplog,step,constr->warn_mtop,start,homenr,cr,x,xprime,box);
+    }
+    
+    if (econq == econqCoord)
+    {
+        if (ir->ePull == epullCONSTRAINT)
+        {
+            if (EI_DYNAMICS(ir->eI))
+            {
+                t = ir->init_t + (step + delta_step)*ir->delta_t;
+            }
+            else
+            {
+                t = ir->init_t;
+            }
+            set_pbc(&pbc,ir->ePBC,box);
+            pull_constraint(ir->pull,md,&pbc,cr,ir->delta_t,t,x,xprime,v,*vir);
+        }
+        if (constr->ed && delta_step > 0)
+        {
+            /* apply the essential dynamcs constraints here */
+            do_edsam(ir,step,md,cr,xprime,v,box,constr->ed);
+        }
+    }
+    
+    return bOK;
 }
 
 real *constr_rmsd_data(struct gmx_constr *constr)
@@ -460,7 +499,6 @@ static void make_shake_sblock_pd(struct gmx_constr *constr,
   qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
   
   if (debug) {
-    fprintf(debug,"I used %d calls to pcomp\n",pcount);
     pr_sortblock(debug,"After sorting",ncons,sb);
   }
   
@@ -595,42 +633,67 @@ t_blocka make_at2con(int start,int natoms,
 }
 
 void set_constraints(struct gmx_constr *constr,
-		     gmx_localtop_t *top,t_inputrec *ir,
-		     t_mdatoms *md,gmx_domdec_t *dd)
+                     gmx_localtop_t *top,t_inputrec *ir,
+                     t_mdatoms *md,gmx_domdec_t *dd)
 {
-  t_idef *idef;
-  int    ncons;
-
-  if (constr->ncon_tot > 0) {
+    t_idef *idef;
+    int    ncons;
+    t_ilist *settle;
+    int    iO,iH;
+    
     idef = &top->idef;
-    
-    /* We are using the local topology, so there are only F_CONSTR constraints.
-     */
-    ncons = idef->il[F_CONSTR].nr/3;
-    
-    /* With DD we might also need to call LINCS with ncons=0 for communicating
-     * coordinates to other nodes that do have constraints.
-     */
-    if (ir->eConstrAlg == econtLINCS) {
-      set_lincs(idef,md,EI_DYNAMICS(ir->eI),dd,constr->lincsd);
-    }
-    if (ir->eConstrAlg == econtSHAKE) {
-      if (dd) {
-	make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
-      } else {
-	make_shake_sblock_pd(constr,idef,md);
-      }
-      if (ncons > constr->lagr_nalloc) {
-	constr->lagr_nalloc = over_alloc_dd(ncons);
-	srenew(constr->lagr,constr->lagr_nalloc);
-      }
-    }
-  }
+       
+    if (constr->ncon_tot > 0)
+    {
+        /* We are using the local topology,
+         * so there are only F_CONSTR constraints.
+         */
+        ncons = idef->il[F_CONSTR].nr/3;
+        
+        /* With DD we might also need to call LINCS with ncons=0 for
+         * communicating coordinates to other nodes that do have constraints.
+         */
+        if (ir->eConstrAlg == econtLINCS)
+        {
+            set_lincs(idef,md,EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+        }
+        if (ir->eConstrAlg == econtSHAKE)
+        {
+            if (dd)
+            {
+                make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
+            }
+            else
+            {
+                make_shake_sblock_pd(constr,idef,md);
+            }
+            if (ncons > constr->lagr_nalloc)
+            {
+                constr->lagr_nalloc = over_alloc_dd(ncons);
+                srenew(constr->lagr,constr->lagr_nalloc);
+            }
 
-  /* Make a selection of the local atoms for essential dynamics */
-  if (constr->ed && dd) {
-    dd_make_local_ed_indices(dd,constr->ed,md);
-  }
+            constr->shaked = shake_init();
+        }
+    }
+
+    if (idef->il[F_SETTLE].nr > 0 && constr->settled == NULL)
+    {
+        settle = &idef->il[F_SETTLE];
+        iO = settle->iatoms[1];
+        iH = settle->iatoms[1]+1;
+        constr->settled =
+            settle_init(md->massT[iO],md->massT[iH],
+                        md->invmass[iO],md->invmass[iH],
+                        idef->iparams[settle->iatoms[0]].settle.doh,
+                        idef->iparams[settle->iatoms[0]].settle.dhh);
+    }
+    
+    /* Make a selection of the local atoms for essential dynamics */
+    if (constr->ed && dd)
+    {
+        dd_make_local_ed_indices(dd,constr->ed,md);
+    }
 }
 
 static void constr_recur(t_blocka *at2con,
@@ -784,9 +847,9 @@ real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir)
 }
 
 gmx_constr_t init_constraints(FILE *fplog,
-			      gmx_mtop_t *mtop,t_inputrec *ir,
-			      gmx_edsam_t ed,t_state *state,
-			      t_commrec *cr)
+                              gmx_mtop_t *mtop,t_inputrec *ir,
+                              gmx_edsam_t ed,t_state *state,
+                              t_commrec *cr)
 {
   int  ncon,nset,nmol,settle_type,i,natoms,mt,nflexcon;
   struct gmx_constr *constr;

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -46,6 +47,38 @@
 #include "nrnb.h"
 #include "constr.h"
 
+typedef struct gmx_shakedata
+{
+    rvec *rij;
+    real *M2;
+    real *tt;
+    real *dist2;
+    int  nalloc;
+    /* SOR stuff */
+    real delta;
+    real omega;
+    real gamma;
+} t_gmx_shakedata;
+
+gmx_shakedata_t shake_init()
+{
+    gmx_shakedata_t d;
+
+    snew(d,1);
+
+    d->nalloc = 0;
+    d->rij    = NULL;
+    d->M2     = NULL;
+    d->tt     = NULL;
+    d->dist2  = NULL;
+
+    /* SOR initialization */
+    d->delta = 0.1;
+    d->omega = 1.0;
+    d->gamma = 1000000;
+
+    return d;
+}
 
 static void pv(FILE *log,char *s,rvec x)
 {
@@ -136,7 +169,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
   *nerror=error;
 }
 
-int vec_shakef(FILE *fplog,
+int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
 	       int natoms,real invmass[],int ncon,
 	       t_iparams ip[],t_iatom *iatom,
 	       real tol,rvec x[],rvec xp[],real omega,
@@ -144,26 +177,28 @@ int vec_shakef(FILE *fplog,
 	       real invdt,rvec *v,
 	       bool bCalcVir,tensor rmdr)
 {
-  static  rvec *rij=NULL;
-  static  real *M2=NULL,*tt=NULL,*dist2=NULL;
-  static  int  maxcon=0;
-  int     maxnit=1000;
-  int     nit,ll,i,j,type;
-  t_iatom *ia;
-  real    L1,tol2,toler;
-  real    mm,tmp;
-  int     error;
+    rvec *rij;
+    real *M2,*tt,*dist2;
+    int     maxnit=1000;
+    int     nit,ll,i,j,type;
+    t_iatom *ia;
+    real    L1,tol2,toler;
+    real    mm,tmp;
+    int     error;
     
-  if (ncon > maxcon) {
-    srenew(rij,ncon);
-    srenew(M2,ncon);
-    srenew(tt,ncon);
-    srenew(dist2,ncon);
-    maxcon=ncon;
-#ifdef DEBUG
-    fprintf(fplog,"shake: maxcon = %d\n",maxcon);
-#endif
-  }
+    
+    if (ncon > shaked->nalloc)
+    {
+        shaked->nalloc = over_alloc_dd(ncon);
+        srenew(shaked->rij,shaked->nalloc);
+        srenew(shaked->M2,shaked->nalloc);
+        srenew(shaked->tt,shaked->nalloc);
+        srenew(shaked->dist2,shaked->nalloc);
+    }
+    rij   = shaked->rij;
+    M2    = shaked->M2;
+    tt    = shaked->tt;
+    dist2 = shaked->dist2;
 
   L1=1.0-lambda;
   tol2=2.0*tol;
@@ -266,16 +301,12 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
   }
 }
 
-bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
-	     t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-	     t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-	     real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
+bool bshakef(FILE *log,gmx_shakedata_t shaked,
+             int natoms,real invmass[],int nblocks,int sblock[],
+             t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
+             t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
+             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
 {
-  /* Stuff for successive overrelaxation */
-  static  real delta=0.1;
-  static  real omega=1.0;
-  static  int  gamma=1000000;
-  
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
   int     i,n0,ncons,blen,type;
@@ -295,8 +326,8 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   for(i=0; (i<nblocks); ) {
     blen  = (sblock[i+1]-sblock[i]);
     blen /= 3;
-    n0 = vec_shakef(log,natoms,invmass,blen,idef->iparams,
-		    iatoms,ir->shake_tol,x_s,xp,omega,
+    n0 = vec_shakef(log,shaked,natoms,invmass,blen,idef->iparams,
+		    iatoms,ir->shake_tol,x_s,xp,shaked->omega,
 		    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr);
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
@@ -327,11 +358,11 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   fprintf(log,"tnit: %5d  omega: %10.5f\n",tnit,omega);
 #endif
   if (ir->bShakeSOR) {
-    if (tnit > gamma) {
-      delta = -0.5*delta;
+    if (tnit > shaked->gamma) {
+      shaked->delta *= -0.5;
     }
-    omega = omega + delta;
-    gamma = tnit;
+    shaked->omega += shaked->delta;
+    shaked->gamma  = tnit;
   }
   inc_nrnb(nrnb,eNR_SHAKE,tnit);
   inc_nrnb(nrnb,eNR_SHAKE_RIJ,trij);

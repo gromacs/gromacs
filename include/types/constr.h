@@ -42,6 +42,12 @@
 /* Abstract type for LINCS that is defined only in the file that uses it */
 typedef struct gmx_lincsdata *gmx_lincsdata_t;
 
+/* Abstract type for SHAKE that is defined only in the file that uses it */
+typedef struct gmx_shakedata *gmx_shakedata_t;
+
+/* Abstract type for SETTLE that is defined only in the file that uses it */
+typedef struct gmx_settledata *gmx_settledata_t;
+
 /* Abstract type for constraints */
 typedef struct gmx_constr *gmx_constr_t;
 

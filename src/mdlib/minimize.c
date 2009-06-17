@@ -658,7 +658,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     constrain(NULL,FALSE,FALSE,constr,&top->idef,
 	      inputrec,cr,count,0,mdatoms,
 	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
-	      NULL,&shake_vir,nrnb,econqForce);
+	      NULL,&shake_vir,nrnb,econqForceDispl);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
     enerd->term[F_DHDL_CON] += dvdl;
