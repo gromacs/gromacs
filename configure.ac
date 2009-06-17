@@ -323,6 +323,7 @@ if test "$enable_mpi" = "yes"; then
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
 AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+  AC_DEFINE(GMX_LIB_MPI,,[Use a real MPI library])
 
 # on the cray xt3 we have to tell autoconf that we 
 # are actually cross-compiling even if the architecture
