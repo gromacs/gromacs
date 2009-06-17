@@ -12,6 +12,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 ########################################################################
 option(GMX_DOUBLE "Use double precision" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
+option(GMX_THREADED    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" OFF)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 set(GMX_ACCELERATION "none" 
@@ -44,6 +45,9 @@ set(GMX_EXTRA_LIBRARIES)
 #Process MPI settings
 ########################################################################
 if(GMX_MPI)
+    if(GMX_THREADED)
+        message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
+    endif(GMX_THREADED)
     find_package(MPI)
     if(MPI_FOUND)
         set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
@@ -52,7 +56,7 @@ if(GMX_MPI)
         list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
         add_definitions( -DMPI ) #for FAHCORE
     else(MPI_FOUND)
-    message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
+        message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
     include(gmxTestCatamount)
     gmx_test_catamount(GMX_CRAY_XT3)
@@ -60,6 +64,7 @@ if(GMX_MPI)
         set(GMX_NO_SYSTEM 1)
         set(GMX_NO_NICE 1)
     endif(GMX_CRAY_XT3)
+    set(GMX_LIB_MPI 1)
 endif(GMX_MPI)
 
 ########################################################################
@@ -159,6 +164,15 @@ if(PTHREADS_FOUND)
     include_directories(${PTHREADS_INCLUDE_DIR})
     list(APPEND	GMX_EXTRA_LIBRARIES ${PTHREADS_LIBRARIES})
     set(HAVE_PTHREADS 1)
+    set(GMX_THREAD_PTHREADS 1)
+    if (GMX_THREADED)
+        set(GMX_THREAD_MPI 1)
+        set(GMX_MPI 1)
+    endif (GMX_THREADED)
+else(PTHREADS_FOUND)
+    if(GMX_THREADED)
+        message(FATAL_ERROR "Thread-based parallelization requested, but no threads library found.")
+    endif(GMX_THREADED)
 endif(PTHREADS_FOUND)
 
 if(APPLE)
@@ -354,9 +368,6 @@ else(HAVE_MKL OR ACCELERATE_FRAMEWORK)
   set(GMX_EXTERNAL_BLAS FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
   set(GMX_EXTERNAL_LAPACK FALSE CACHE BOOL "Use external LAPACK instead of built-in") 
 endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
-
-
-
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)

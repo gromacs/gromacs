@@ -315,7 +315,14 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   argv = *argv_ptr;
   
 #ifdef GMX_MPI
+#ifdef GMX_THREAD_MPI
+  if (tMPI_Get_N(argc, argv_ptr)>1)
+    gmx_parallel_env=1;
+  else
+    gmx_parallel_env=0;
+#else
   gmx_parallel_env = 1;
+#endif
 #ifdef GMX_CHECK_MPI_ENV
   /* Do not use MPI calls when env.var. GMX_CHECK_MPI_ENV is not set */
   if (getenv(GMX_CHECK_MPI_ENV) == NULL)

@@ -84,8 +84,11 @@
 #include "mtop_util.h"
 #include "genborn.h"
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
+#endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
 #endif
 
 #ifdef GMX_FAHCORE
@@ -1345,7 +1348,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                                   mdatoms->nr,state->x,state->box)) {
                 if (gmx_parallel_env)
                 {
-                    gmx_finalize(cr);
+                    gmx_finalize();
                 }
                 exit(0);
             }
@@ -1834,7 +1837,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                                  &(top_global->mols),mdatoms->massT,pres))
             {
                 if (gmx_parallel_env)
-                    gmx_finalize(cr);
+                    gmx_finalize();
                 fprintf(stderr,"\n");
                 exit(0);
             }

@@ -21,12 +21,16 @@ if(NOT GMX_EXTERNAL_LAPACK)
   file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
 endif(NOT GMX_EXTERNAL_LAPACK)
 
+if(GMX_THREAD_MPI)
+  file(GLOB THREAD_SOURCES parallel/thread_mpi.c)
+endif(GMX_THREAD_MPI)
+
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
 
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSE2_SOURCES})
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSE2_SOURCES} ${THREAD_SOURCES})
 target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES})
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})

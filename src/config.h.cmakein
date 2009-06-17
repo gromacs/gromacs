@@ -106,7 +106,14 @@
 /* Use our own instead of system XDR libraries */
 #cmakedefine GMX_INTERNAL_XDR
 
-/* Make a parallel version of GROMACS using MPI */
+/* Use MPI (with mpicc) for parallelization */
+#cmakedefine GMX_LIB_MPI
+
+/* Use threads (thread_mpi) for parallelization */
+#cmakedefine GMX_THREAD_MPI
+
+/* Make a parallel version of GROMACS using message passing 
+   (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
 /* Ignore calls to nice(3) */
@@ -130,8 +137,11 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
+/* Use threads for parallelization */
+#cmakedefine GMX_THREADED
+
 /* Use pthreads for Gromacs multithreading */
-#cmakedefine GMX_THREAD_PTHREAD
+#cmakedefine GMX_THREAD_PTHREADS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H

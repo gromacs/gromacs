@@ -30,7 +30,6 @@
 #include <pthread.h>
 
 
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -46,6 +45,7 @@
  *  This means we cannot use gmx_message() or gmx_new() memory calls 
  *  in the implementation.
  */
+
 
 #include "gmx_thread.h"
 #include "gmx_fatal.h"
