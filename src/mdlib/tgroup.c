@@ -108,14 +108,10 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
 {
   /* This routine will only be called when it's necessary */
-  static t_bin *rb=NULL;
-  int          g;
+  t_bin *rb;
+  int   g;
 
-  if (rb == NULL) {
-    rb=mk_bin();
-  }
-  else
-    reset_bin(rb);
+  rb = mk_bin();
 
   for(g=0; (g<opts->ngacc); g++) 
     add_binr(rb,DIM,ekind->grpstat[g].u);
@@ -124,6 +120,8 @@ void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
   
   for(g=0; (g<opts->ngacc); g++) 
     extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
+
+  destroy_bin(rb);
 }       
 
 static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,

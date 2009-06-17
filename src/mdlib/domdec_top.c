@@ -57,11 +57,11 @@ typedef struct gmx_reverse_top {
     int  ril_mt_tot_size;
     int  ilsort;        /* The sorting state of bondeds for free energy */
     gmx_molblock_ind_t *mbi;
+    
+    /* Pointers only used for an error message */
+    gmx_mtop_t     *err_top_global;
+    gmx_localtop_t *err_top_local;
 } gmx_reverse_top_t;
-
-/* Static pointers only used for an error message */
-static gmx_mtop_t     *err_top_global;
-static gmx_localtop_t *err_top_local;
 
 static int nral_rt(int ftype)
 {
@@ -269,8 +269,13 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count,  g
     int  ftype,nral;
     char buf[STRLEN];
     gmx_domdec_t *dd;
+    gmx_mtop_t     *err_top_global;
+    gmx_localtop_t *err_top_local;
     
     dd = cr->dd;
+
+    err_top_global = dd->reverse_top->err_top_global;
+    err_top_local  = dd->reverse_top->err_top_local;
     
     if (fplog)
     {
@@ -1527,8 +1532,8 @@ void dd_make_local_top(FILE *fplog,
     ltop->atomtypes  = mtop->atomtypes;
     
     /* For an error message only */
-    err_top_global = mtop;
-    err_top_local  = ltop;
+    dd->reverse_top->err_top_global = mtop;
+    dd->reverse_top->err_top_local  = ltop;
 }
 
 gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)

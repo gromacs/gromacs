@@ -63,7 +63,8 @@ extern void set_stochd_state(gmx_update_t sd,t_state *state);
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
  */
-extern void set_deform_reference_box(gmx_step_t step,matrix box);
+extern void set_deform_reference_box(gmx_update_t upd,
+				     gmx_step_t step,matrix box);
 
 extern void update(FILE         *fplog,
 		   gmx_step_t   step,

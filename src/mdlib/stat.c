@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -66,7 +67,35 @@
 #include "checkpoint.h"
 #include "mdrun.h"
 
-void global_stat(FILE *fplog,
+typedef struct gmx_global_stat
+{
+    t_bin *rb;
+    int   *itc0;
+    int   *itc1;
+} t_gmx_global_stat;
+
+gmx_global_stat_t global_stat_init(t_inputrec *ir)
+{
+    gmx_global_stat_t gs;
+
+    snew(gs,1);
+    
+    gs->rb = mk_bin();
+    snew(gs->itc0,ir->opts.ngtc);
+    snew(gs->itc1,ir->opts.ngtc);
+
+    return gs;
+}
+
+void global_stat_destroy(gmx_global_stat_t gs)
+{
+    destroy_bin(gs->rb);
+    sfree(gs->itc0);
+    sfree(gs->itc1);
+    sfree(gs);
+}
+
+void global_stat(FILE *fplog,gmx_global_stat_t gs,
 		 t_commrec *cr,gmx_enerdata_t *enerd,
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,
@@ -76,8 +105,8 @@ void global_stat(FILE *fplog,
 		 real *chkpt,real *terminate,
 		 gmx_mtop_t *top_global, t_state *state_local)
 {
-  static t_bin *rb=NULL; 
-  static int   *itc0,*itc1;
+  t_bin  *rb;
+  int    *itc0,*itc1;
   int    ie,ifv,isv,irmsd=0,imu=0;
   int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
   int    ibnsb=-1,ichkpt=-1,iterminate;
@@ -87,13 +116,11 @@ void global_stat(FILE *fplog,
   real   *rmsd_data,rbnsb;
   double nb;
   
-  if (rb==NULL) {
-    rb=mk_bin();
-    snew(itc0,inputrec->opts.ngtc);
-    snew(itc1,inputrec->opts.ngtc);
-  }
-  else
-    reset_bin(rb);
+  rb   = gs->rb;
+  itc0 = gs->itc0;
+  itc1 = gs->itc1;
+
+  reset_bin(rb);
 
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 

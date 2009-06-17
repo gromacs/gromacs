@@ -96,6 +96,8 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				unsigned long Flags,
 				gmx_step_t *nsteps_done);
 
+typedef struct gmx_global_stat *gmx_global_stat_t;
+
 /* ROUTINES from md.c */
 
 extern gmx_integrator_t do_md;
@@ -129,8 +131,12 @@ extern void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 			gmx_mtop_t *mtop,rvec x[]);
 
 		     
-/* ROUTINES from stat.c */		
-extern void global_stat(FILE *log,
+/* ROUTINES from stat.c */
+extern gmx_global_stat_t global_stat_init(t_inputrec *ir);
+
+extern void global_stat_destroy(gmx_global_stat_t gs);
+
+extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			t_commrec *cr,gmx_enerdata_t *enerd,
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,

@@ -52,6 +52,8 @@ typedef struct {
   int nnextconstr;
   int *idxprevconstr; /* indices of nonlocal constructing atoms */
   int *idxnextconstr;
+  rvec *prevbuf;
+  rvec *nextbuf;
 } t_comm_vsites;
 
 typedef struct {

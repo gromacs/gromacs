@@ -96,10 +96,14 @@ typedef struct {
   int  sd_V_nalloc;
 } gmx_stochd_t;
 
-typedef struct gmx_update {
-  gmx_stochd_t *sd;
-  rvec *xp;
-  int  xp_nalloc;
+typedef struct gmx_update
+{
+    gmx_stochd_t *sd;
+    rvec *xp;
+    int  xp_nalloc;
+    /* Variables for the deform algorithm */
+    gmx_step_t deformref_step;
+    matrix     deformref_box;
 } t_gmx_update;
 
 static void do_update_md(int start,int homenr,double dt,
@@ -722,24 +726,21 @@ restore_ekinstate_from_state(t_commrec *cr,
   }
 }
 
-/* Static variables for the deform algorithm */
-static gmx_step_t deformref_step;
-static matrix     deformref_box;
-
-void set_deform_reference_box(gmx_step_t step,matrix box)
+void set_deform_reference_box(gmx_update_t upd,gmx_step_t step,matrix box)
 {
-    deformref_step = step;
-    copy_mat(box,deformref_box);
+    upd->deformref_step = step;
+    copy_mat(box,upd->deformref_box);
 }
 
-static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
+static void deform(gmx_update_t upd,
+                   int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
                    const t_inputrec *ir,gmx_step_t step)
 {
     matrix bnew,invbox,mu;
     real   elapsed_time;
     int    i,j;  
     
-    elapsed_time = (step + 1 - deformref_step)*ir->delta_t;
+    elapsed_time = (step + 1 - upd->deformref_step)*ir->delta_t;
     copy_mat(box,bnew);
     for(i=0; i<DIM; i++)
     {
@@ -748,7 +749,7 @@ static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
             if (ir->deform[i][j] != 0)
             {
                 bnew[i][j] =
-                    deformref_box[i][j] + elapsed_time*ir->deform[i][j];
+                    upd->deformref_box[i][j] + elapsed_time*ir->deform[i][j];
             }
         }
     }
@@ -1068,7 +1069,7 @@ void update(FILE         *fplog,
     }
   }
   if (DEFORM(*inputrec)) {
-    deform(start,homenr,state->x,state->box,scale_tot,inputrec,step);
+      deform(upd,start,homenr,state->x,state->box,scale_tot,inputrec,step);
   }
   where();
 }

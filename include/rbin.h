@@ -53,6 +53,9 @@ typedef struct {
 extern t_bin *mk_bin(void);
 /* Create a real bin */
 
+extern void destroy_bin(t_bin *b);
+/* Destroy the bin structure */
+
 extern void reset_bin(t_bin *b);
 /* Reset number of entries to zero */
 

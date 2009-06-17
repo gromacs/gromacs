@@ -118,6 +118,10 @@ typedef struct {
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md} };
 
+/* Static variables for temporary use with the deform option */
+static int    init_step_tpx;
+static matrix box_tpx;
+
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              bool bVerbose,bool bCompact,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
@@ -232,7 +236,14 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         {
             gmx_bcast(sizeof(box),box,cr);
         }
-        set_deform_reference_box(inputrec->init_step,box);
+        /* Because we do not have the update struct available yet
+         * in which the reference values should be stored,
+         * we store them temporarily in static variables.
+         * This should be thread safe, since they are only written once
+         * and with identical values.
+         */
+        init_step_tpx = inputrec->init_step;
+        copy_mat(box,box_tpx);
     }
     
     if (opt2bSet("-cpi",nfile,fnm)) 
@@ -627,6 +638,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_state    *state=NULL;
   rvec       *f_global=NULL;
   gmx_enerdata_t *enerd;
+  gmx_global_stat_t gstat;
   gmx_update_t upd=NULL;
   t_graph    *graph=NULL;
 
@@ -726,6 +738,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   init_ekindata(fplog,top_global,&(ir->opts),ekind);
   /* Copy the cos acceleration to the groups struct */
   ekind->cosacc.cos_accel = ir->cos_accel;
+  
+  gstat = global_stat_init(ir);
 
   debug_gmx();
 
@@ -735,6 +749,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 			       (ir->bContinuation || 
 				(DOMAINDECOMP(cr) && !MASTER(cr))) ?
 			       NULL : state_global->x);
+
+    if (DEFORM(*ir))
+    {
+        set_deform_reference_box(upd,init_step_tpx,box_tpx);
+    }
 
   {
     double io = compute_io(ir,top_global->natoms,groups,mdebin->ebin->nener,1);
@@ -894,7 +913,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       {
 	  GMX_MPE_LOG(ev_global_stat_start);
 	  
-	  global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+	  global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
 		      ir,ekind,FALSE,constr,vcm,NULL,NULL,&terminate,
 		      top_global,state);
 	  
@@ -1302,7 +1321,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb);
             if (PAR(cr))
             {
-                global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+                global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,FALSE,constr,vcm,NULL,NULL,&terminate,
                             top_global,state);
             }
@@ -1685,7 +1704,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 /* Globally (over all NODEs) sum energy, virial etc. 
                  * This includes communication 
                  */
-                global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+                global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,bSumEkinhOld,constr,vcm,
                             ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate,
                             top_global, state);

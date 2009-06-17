@@ -52,6 +52,15 @@ t_bin *mk_bin(void)
   return b;
 }
 
+void destroy_bin(t_bin *b)
+{
+  if (b->maxreal > 0) {
+    sfree(b->rbuf);
+  }
+  
+  sfree(b);
+}
+
 void reset_bin(t_bin *b)
 {
   b->nreal = 0;

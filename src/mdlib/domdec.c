@@ -324,6 +324,11 @@ typedef struct gmx_domdec_comm
     ivec   load_lim;
     double load_mdf;
     double load_pme;
+
+    /* Debugging */
+    int  nstDDDump;
+    int  nstDDDumpGrid;
+    int  DD_debug;
 } gmx_domdec_comm_t;
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
@@ -361,8 +366,6 @@ static const ivec dd_zp2[dd_zp2n] = {{0,0,4},{1,3,4}};
 #define dd_z1n  2
 #define dd_zp1n 1
 static const ivec dd_zp1[dd_zp1n] = {{0,0,2}};
-
-static int nstDDDump,nstDDDumpGrid,DD_debug;
 
 /* Factors used to avoid problems due to rounding issues */
 #define DD_CELL_MARGIN       1.0001
@@ -2420,7 +2423,7 @@ static void check_index_consistency(gmx_domdec_t *dd,
 
     nerr = 0;
 
-    if (DD_debug > 1)
+    if (dd->comm->DD_debug > 1)
     {
         snew(have,natoms_sys);
         for(a=0; a<dd->nat_tot; a++)
@@ -5989,16 +5992,16 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     snew(comm->cggl_flag,DIM*2);
     snew(comm->cgcm_state,DIM*2);
 
-    dd->npbcdim      = ePBC2npbcdim(ir->ePBC);
-    dd->bScrewPBC    = (ir->ePBC == epbcSCREW);
+    dd->npbcdim   = ePBC2npbcdim(ir->ePBC);
+    dd->bScrewPBC = (ir->ePBC == epbcSCREW);
     
-    dd->bSendRecv2   = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
-    comm->eFlop      = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
-    recload          = dd_nst_env(fplog,"GMX_DD_LOAD",1);
-    comm->nstSortCG  = dd_nst_env(fplog,"GMX_DD_SORT",1);
-    nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP",0);
-    nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
-    DD_debug         = dd_nst_env(fplog,"GMX_DD_DEBUG",0);
+    dd->bSendRecv2      = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
+    comm->eFlop         = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
+    recload             = dd_nst_env(fplog,"GMX_DD_LOAD",1);
+    comm->nstSortCG     = dd_nst_env(fplog,"GMX_DD_SORT",1);
+    comm->nstDDDump     = dd_nst_env(fplog,"GMX_DD_DUMP",0);
+    comm->nstDDDumpGrid = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
+    comm->DD_debug      = dd_nst_env(fplog,"GMX_DD_DEBUG",0);
 
     if (dd->bSendRecv2 && fplog)
     {
@@ -8046,7 +8049,7 @@ void dd_partition_system(FILE            *fplog,
     set_dd_cell_sizes(dd,&ddbox,dynamic_dd_box(&ddbox,ir),bMasterState,bDoDLB,
                       step,wcycle);
     
-    if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
+    if (comm->nstDDDumpGrid > 0 && step % comm->nstDDDumpGrid == 0)
     {
         write_dd_grid_pdb("dd_grid",step,dd,state_local->box,&ddbox);
     }
@@ -8247,7 +8250,7 @@ void dd_partition_system(FILE            *fplog,
      */
     dd_move_x_vsites(dd,state_local->box,state_local->x);
     
-    if (nstDDDump > 0 && step % nstDDDump == 0)
+    if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
     {
         dd_move_x(dd,state_local->box,state_local->x);
         write_dd_pdb("dd_dump",step,"dump",top_global,cr,
@@ -8266,7 +8269,7 @@ void dd_partition_system(FILE            *fplog,
         comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
 
-    if (DD_debug)
+    if (comm->DD_debug > 0)
     {
         /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
         check_index_consistency(dd,top_global->natoms,ncg_mtop(top_global),

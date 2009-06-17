@@ -51,10 +51,6 @@
 #include "partdec.h"
 #include "mtop_util.h"
 
-/* Communication buffers */
-
-static rvec *prevbuf=NULL,*nextbuf=NULL;
-
 /* Routines to send/recieve coordinates and force
  * of constructing atoms and vsites. This is necessary
  * when vsite constructs cross node borders (unavoidable
@@ -72,15 +68,16 @@ static rvec *prevbuf=NULL,*nextbuf=NULL;
 
 static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 {
-  static bool bFirst=TRUE;
+  rvec *prevbuf,*nextbuf;
   int i;
    
-  if (bFirst) {
+  if (vsitecomm->prevbuf == NULL) {
     /* Make the larger than necessary to avoid cache sharing */
-    snew(nextbuf,2*(vsitecomm->nnextvsite+vsitecomm->nnextconstr)+100);
-    snew(prevbuf,2*(vsitecomm->nprevvsite+vsitecomm->nprevconstr)+100);
-    bFirst=FALSE;
+    snew(vsitecomm->nextbuf,2*(vsitecomm->nnextvsite+vsitecomm->nnextconstr)+100);
+    snew(vsitecomm->prevbuf,2*(vsitecomm->nprevvsite+vsitecomm->nprevconstr)+100);
   }
+  prevbuf = vsitecomm->prevbuf;
+  nextbuf = vsitecomm->nextbuf;
    
   /* package coords to send left. Vsite coords are needed to create v */
   for(i=0;i<vsitecomm->nprevconstr;i++)
@@ -118,6 +115,7 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 {
   int i;
   int sendsize,recvsize;
+  rvec *prevbuf,*nextbuf;
 
   sendsize=sizeof(rvec)*vsitecomm->nnextvsite;
   recvsize=sizeof(rvec)*vsitecomm->nprevvsite;
@@ -126,6 +124,9 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
     sendsize=sendsize*2;
     recvsize=recvsize*2;
   }
+
+  prevbuf = vsitecomm->prevbuf;
+  nextbuf = vsitecomm->nextbuf;
 
   /* Package nonlocal constructed vsites */
   for(i=0;i<vsitecomm->nnextvsite;i++)
@@ -162,6 +163,10 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 {
   int i;
+  rvec *prevbuf,*nextbuf;
+
+  prevbuf = vsitecomm->prevbuf;
+  nextbuf = vsitecomm->nextbuf;
 
   /* package vsite particle forces to send left */
   for(i=0;i<vsitecomm->nprevvsite;i++)
@@ -198,6 +203,10 @@ static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 {
   int i;
+  rvec *prevbuf,*nextbuf;
+
+  prevbuf = vsitecomm->prevbuf;
+  nextbuf = vsitecomm->nextbuf;
 
   /* Spread forces to nonlocal constructing atoms.
    */

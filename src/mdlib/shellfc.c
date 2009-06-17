@@ -85,6 +85,9 @@ typedef struct gmx_shellfc {
   rvec    *acc_dir;        /* Acceleration direction for flexcon       */
   rvec    *x_old;          /* Old coordinates for flexcon              */
   int     flex_nalloc;     /* The allocation size of acc_dir and x_old */
+  rvec    *adir_xnold;     /* Work space for init_adir                 */
+  rvec    *adir_xnew;      /* Work space for init_adir                 */
+  int     adir_nalloc;     /* Work space for init_adir                 */
 } t_gmx_shellfc;
 
 	
@@ -677,7 +680,7 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
-static void init_adir(FILE *log,
+static void init_adir(FILE *log,gmx_shellfc_t shfc,
 		      gmx_constr_t constr,t_idef *idef,t_inputrec *ir,
 		      t_commrec *cr,int dd_ac1,
 		      gmx_step_t step,t_mdatoms *md,int start,int end,
@@ -685,8 +688,7 @@ static void init_adir(FILE *log,
 		      rvec *f,rvec *acc_dir,matrix box,
 		      real lambda,real *dvdlambda,t_nrnb *nrnb)
 {
-  static rvec *xnold=NULL,*xnew=NULL;
-  static int x_nalloc=0;
+  rvec   *xnold,*xnew;
   double w_dt;
   int    gf,ga,gt;
   real   dt,scale;
@@ -698,11 +700,13 @@ static void init_adir(FILE *log,
     n = dd_ac1;
   else
     n = end - start;
-  if (n > x_nalloc) {
-    x_nalloc = over_alloc_dd(n);
-    srenew(xnold,x_nalloc);
-    srenew(xnew,x_nalloc);
+  if (n > shfc->adir_nalloc) {
+    shfc->adir_nalloc = over_alloc_dd(n);
+    srenew(shfc->adir_xnold,shfc->adir_nalloc);
+    srenew(shfc->adir_xnew ,shfc->adir_nalloc);
   }
+  xnold = shfc->adir_xnold;
+  xnew  = shfc->adir_xnew;
     
   ptype = md->ptype;
 
@@ -882,7 +886,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 
   sf_dir = 0;
   if (nflexcon) {
-    init_adir(fplog,constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
+    init_adir(fplog,shfc,
+	      constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 	      shfc->x_old-start,state->x,state->x,force[Min],
 	      shfc->acc_dir-start,state->box,state->lambda,&dum,nrnb);
 
@@ -936,7 +941,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
      
     if (nflexcon) {
-      init_adir(fplog,constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
+      init_adir(fplog,shfc,
+		constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
@@ -969,7 +975,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     sf_dir = 0;
     if (nflexcon) {
-      init_adir(fplog,constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
+      init_adir(fplog,shfc,
+		constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
 

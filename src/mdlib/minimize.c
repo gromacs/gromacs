@@ -236,7 +236,7 @@ void init_em(FILE *fplog,const char *title,
 	     rvec *f,rvec **f_global,
 	     t_nrnb *nrnb,rvec mu_tot,
 	     t_forcerec *fr,gmx_enerdata_t **enerd,
-	     t_graph **graph,t_mdatoms *mdatoms,
+	     t_graph **graph,t_mdatoms *mdatoms,gmx_global_stat_t *gstat,
 	     gmx_vsite_t *vsite,gmx_constr_t constr, gmx_genborn_t *born,
 	     int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene,
 	     t_mdebin **mdebin)
@@ -340,6 +340,11 @@ void init_em(FILE *fplog,const char *title,
 	      ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
 	      NULL,NULL,nrnb,econqCoord);
   }
+
+  if (PAR(cr)) {
+    *gstat = global_stat_init(ir);
+  }
+
 
   if (MASTER(cr)) {
     if (fp_trn)
@@ -571,6 +576,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    em_state_t *ems,gmx_localtop_t *top,
 			    t_inputrec *inputrec,
 			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+			    gmx_global_stat_t gstat,
 			    gmx_vsite_t *vsite,gmx_constr_t constr,
 			    t_fcdata *fcd,
 			    t_graph *graph,t_mdatoms *mdatoms,
@@ -642,7 +648,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   if (PAR(cr)) {
     wallcycle_start(wcycle,ewcMoveE);
 
-    global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+    global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
 		inputrec,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate,
 		top_global,&ems->s);
 
@@ -809,6 +815,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   em_state_t *s_min,*s_a,*s_b,*s_c;
   gmx_localtop_t *top;
   gmx_enerdata_t *enerd;
+  gmx_global_stat_t gstat;
   t_graph    *graph;
   rvec   *f_global,*p,*sf,*sfm;
   double gpa,gpb,gpc,tmp,sum[2],minstep;
@@ -838,7 +845,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   /* Init em and store the local state in s_min */
   init_em(fplog,CG,cr,inputrec,
 	  state_global,top_global,s_min,&top,f,&f_global,
-	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,NULL,
+	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,NULL,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
 
   /* Print to log file */
@@ -860,7 +867,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
    */
   evaluate_energy(fplog,bVerbose,cr,
 		  state_global,top_global,s_min,top,
-		  inputrec,nrnb,wcycle,
+		  inputrec,nrnb,wcycle,gstat,
 		  vsite,constr,fcd,graph,mdatoms,fr,born,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
@@ -1013,7 +1020,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     /* Calculate energy for the trial step */
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_c,top,
-		    inputrec,nrnb,wcycle,
+		    inputrec,nrnb,wcycle,gstat,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,-1,FALSE);
     
@@ -1100,7 +1107,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	/* Calculate energy for the trial step */
 	evaluate_energy(fplog,bVerbose,cr,
 			state_global,top_global,s_b,top,
-			inputrec,nrnb,wcycle,
+			inputrec,nrnb,wcycle,gstat,
 			vsite,constr,fcd,graph,mdatoms,fr,born,
 			mu_tot,enerd,vir,pres,-1,FALSE);
 	
@@ -1324,6 +1331,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   em_state_t ems;
   gmx_localtop_t *top;
   gmx_enerdata_t *enerd;
+  gmx_global_stat_t gstat;
   t_graph    *graph;
   int    ncorr,nmaxcorr,point,cp,neval,nminstep;
   double stepsize,gpa,gpb,gpc,tmp,minstep;
@@ -1390,7 +1398,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   /* Init em */
   init_em(fplog,LBFGS,cr,inputrec,
 	  state,top_global,&ems,&top,f,&f,
-	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,born,
+	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,born,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
   /* Do_lbfgs is not completely updated like do_steep and do_cg,
    * so we free some memory again.
@@ -1438,7 +1446,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   ems.f = f;
   evaluate_energy(fplog,bVerbose,cr,
 		  state,top_global,&ems,top,
-		  inputrec,nrnb,wcycle,
+		  inputrec,nrnb,wcycle,gstat,
 		  vsite,constr,fcd,graph,mdatoms,fr,born,
 		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
@@ -1592,7 +1600,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     ems.f   = (rvec *)fc;
     evaluate_energy(fplog,bVerbose,cr,
 		    state,top_global,&ems,top,
-		    inputrec,nrnb,wcycle,
+		    inputrec,nrnb,wcycle,gstat,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,step,FALSE);
     EpotC = ems.epot;
@@ -1670,7 +1678,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	ems.f   = (rvec *)fb;
 	evaluate_energy(fplog,bVerbose,cr,
 			state,top_global,&ems,top,
-			inputrec,nrnb,wcycle,
+			inputrec,nrnb,wcycle,gstat,
 			vsite,constr,fcd,graph,mdatoms,fr,born,
 			mu_tot,enerd,vir,pres,step,FALSE);
 	EpotB = ems.epot;
@@ -1956,6 +1964,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   rvec       *f_global;
   gmx_localtop_t *top;
   gmx_enerdata_t *enerd;
+  gmx_global_stat_t gstat;
   t_graph    *graph;
   real   stepsize,constepsize;
   real   ustep,dvdlambda,fnormn;
@@ -1977,7 +1986,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   /* Init em and store the local state in s_try */
   init_em(fplog,SD,cr,inputrec,
 	  state_global,top_global,s_try,&top,f,&f_global,
-	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,born,
+	  nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,born,
 	  nfile,fnm,&fp_trn,&fp_ene,&mdebin);
 	
   /* Print to log file  */
@@ -2019,7 +2028,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_try,top,
-		    inputrec,nrnb,wcycle,
+		    inputrec,nrnb,wcycle,gstat,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
 	 
@@ -2159,6 +2168,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     rvec       *f_global;
     gmx_localtop_t *top;
     gmx_enerdata_t *enerd;
+    gmx_global_stat_t gstat;
     t_graph    *graph;
     real       t,lambda,t0,lam0;
     bool       bNS;
@@ -2184,7 +2194,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     init_em(fplog,NM,cr,inputrec,
 	    state_global,top_global,state_work,&top,
 	    f,&f_global,
-	    nrnb,mu_tot,fr,&enerd,&graph,mdatoms,vsite,constr,NULL,
+	    nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,NULL,
 	    nfile,fnm,NULL,&fp_ene,&mdebin);
     
     snew(fneg,top_global->natoms);
@@ -2256,7 +2266,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     count = 0;
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,state_work,top,
-		    inputrec,nrnb,wcycle,
+		    inputrec,nrnb,wcycle,gstat,
 		    vsite,constr,fcd,graph,mdatoms,fr,born,
 		    mu_tot,enerd,vir,pres,count,count==0);
     count++;
@@ -2297,7 +2307,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
           
 	  evaluate_energy(fplog,bVerbose,cr,
 			  state_global,top_global,state_work,top,
-			  inputrec,nrnb,wcycle,
+			  inputrec,nrnb,wcycle,gstat,
 			  vsite,constr,fcd,graph,mdatoms,fr,born,
 			  mu_tot,enerd,vir,pres,count,count==0);
 	  count++;
@@ -2311,7 +2321,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
           
 	  evaluate_energy(fplog,bVerbose,cr,
 			  state_global,top_global,state_work,top,
-			  inputrec,nrnb,wcycle,
+			  inputrec,nrnb,wcycle,gstat,
 			  vsite,constr,fcd,graph,mdatoms,fr,born,
 			  mu_tot,enerd,vir,pres,count,count==0);
 	  count++;
