@@ -6684,6 +6684,7 @@ static void merge_cg_buffers(int ncell,
                 index_gl[cg+shift] = index_gl[cg];
                 copy_rvec(cg_cm[cg],cg_cm[cg+shift]);
                 cgindex[cg+shift] = cgindex[cg];
+                cginfo[cg+shift] = cginfo[cg];
             }
             /* Correct the already stored send indices for the shift */
             for(p=1; p<=pulse; p++)
