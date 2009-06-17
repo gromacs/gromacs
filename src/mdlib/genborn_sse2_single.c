@@ -53,8 +53,11 @@
 #include "mtop_util.h"
 #include "genborn.h"
 
-#ifdef GMX_MPI
-#include "mpi.h"
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
+#endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
 #endif
 
 /* Only compile this file if SSE intrinsics are available */

@@ -43,6 +43,9 @@
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
+#if 0 /* avoid screwing up indentation */
+}
+#endif
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -51,19 +54,19 @@ extern "C" {
 #include "wman.h"
 #include "pdbio.h"
 
-  /* The code below is to facilitate controlled begin and end of
-     trajectory reading. Corresponding routines in
-     src/gmxlib/tcontrol.c
-   */
-  enum { TBEGIN, TEND, TDELTA, TNR };
-  
-  extern bool bTimeSet(int tcontrol);
-  
-  extern real rTimeValue(int tcontrol); 
-  
-  extern void setTimeValue(int tcontrol,real value);
-  
-  /* End trajectory time control */
+/* The code below is to facilitate controlled begin and end of
+ trajectory reading. Corresponding routines in
+ src/gmxlib/tcontrol.c
+ */
+enum { TBEGIN, TEND, TDELTA, TNR };
+
+extern bool bTimeSet(int tcontrol);
+
+extern real rTimeValue(int tcontrol); 
+
+extern void setTimeValue(int tcontrol,real value);
+
+/* End trajectory time control */
   
 typedef int t_first_x(int *status,const char *fn,real *t,rvec **x,matrix box);
 
@@ -71,17 +74,36 @@ typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
 
 /* I/O function types */
 
-extern const char *Program(void);
+    
+/* This is for re-entrant versions of the functions below. The env_info
+   structure holds information about program name, cmd line, default times,
+   etc. Right now, there is a global variable of this type in statutil.c to 
+   enable the old functions, but this should change. All the functions below
+   now have re-entrant versions listed with them. */
+struct env_info;
+
+static void set_env_info(struct env_info *einf,  bool bView, bool bXvgrCodes, 
+                          const char *timenm);
+static void init_env_info(struct env_info *einf,  int argc, char *argv[],
+                           bool bView, bool bXvgrCodes, const char *timenm);
+
+    
 /* Return the name of the program */
-extern const char *ShortProgram(void);
+extern const char *Program(void);
+extern const char *get_program(const struct env_info *einf);
 /* Id. without leading directory */
-extern const char *command_line(void);
+extern const char *ShortProgram(void);
+extern const char *get_short_program(const struct env_info *einf);
 /* Return the command line for this program */
-extern void set_program_name(const char *argvzero);
+extern const char *command_line(void);
+extern const char *get_command_line(const struct env_info *einf);
+
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
- */
+ */    
+extern void set_program_name(const char *argvzero);
+extern void set_program(struct env_info *einf, const char *argvzero);
 
 /************************************************
  *             Trajectory functions
@@ -102,11 +124,11 @@ extern void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
 extern int nframes_read(void);
 /* Returns the number of frames read from the trajectory */
 
-  int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind,
-			     gmx_conect gc);
+int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind,
+			   gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
-  int write_trxframe(int status,t_trxframe *fr,gmx_conect gc);
+int write_trxframe(int status,t_trxframe *fr,gmx_conect gc);
 /* Write a frame to a TRX file. 
  * Only entries for which the boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
@@ -162,24 +184,31 @@ extern int check_times(real t);
  */
 
 extern const char *time_unit(void);
+extern const char *get_time_unit(const struct env_info *einf);
 /* return time unit (e.g. ps or ns) */
 
-extern char *time_label(void);
+extern const char *time_label(void);
+extern const char *get_time_label(const struct env_info *einf);
 /* return time unit label (e.g. "Time (ps)") */
 
-extern char *xvgr_tlabel(void);
+extern const char *xvgr_tlabel(void);
+extern const char *get_xvgr_tlabel(const struct env_info *einf);
 /* retrun x-axis time label for xmgr */
 
 extern real time_factor(void);
+extern real get_time_factor(const struct env_info *einf);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
 extern real time_invfactor(void);
+extern real get_time_invfactor(const struct env_info *einf);
 /* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
 
 extern real convert_time(real time);
+extern real conv_time(const struct env_info *einf, real time);
 /* return converted time */
 
 extern void convert_times(int n, real *time);
+extern void conv_times(const struct env_info *einf, int n, real *time);
 /* convert array of times */
 
 /* For trxframe.flags, used in trxframe read routines.

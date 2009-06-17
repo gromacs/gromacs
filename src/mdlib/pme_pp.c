@@ -48,9 +48,14 @@
 #include "pme.h"
 #include "network.h"
 #include "domdec.h"
-#ifdef GMX_MPI
+
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
+#endif
+
 #include "mpelogging.h"
 
 #define PP_PME_CHARGE   (1<<0)

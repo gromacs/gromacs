@@ -789,7 +789,7 @@ int gmx_disre(int argc,char *argv[])
   thanx(stderr);
 
   if (gmx_parallel_env)
-    gmx_finalize(cr);
+    gmx_finalize();
 
   gmx_log_close(fplog);
   

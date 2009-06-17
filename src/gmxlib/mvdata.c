@@ -345,64 +345,68 @@ static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 
 static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
 {
-  int i,n;
-  
-  block_bc(cr,g->ngtc);
-  block_bc(cr,g->ngacc);
-  block_bc(cr,g->ngfrz);
-  block_bc(cr,g->ngener);
-  snew_bc(cr,g->nrdf,g->ngtc);
-  snew_bc(cr,g->tau_t,g->ngtc);
-  snew_bc(cr,g->ref_t,g->ngtc);
-  snew_bc(cr,g->acc,g->ngacc);
-  snew_bc(cr,g->nFreeze,g->ngfrz);
-  snew_bc(cr,g->egp_flags,g->ngener*g->ngener);
-
-  nblock_bc(cr,g->ngtc,g->nrdf);
-  nblock_bc(cr,g->ngtc,g->tau_t);
-  nblock_bc(cr,g->ngtc,g->ref_t);
-  nblock_bc(cr,g->ngacc,g->acc);
-  nblock_bc(cr,g->ngfrz,g->nFreeze);
-  nblock_bc(cr,g->ngener*g->ngener,g->egp_flags);
-  snew_bc(cr,g->annealing,g->ngtc);
-  snew_bc(cr,g->anneal_npoints,g->ngtc);
-  snew_bc(cr,g->anneal_time,g->ngtc);
-  snew_bc(cr,g->anneal_temp,g->ngtc);
-  nblock_bc(cr,g->ngtc,g->annealing);
-  nblock_bc(cr,g->ngtc,g->anneal_npoints);
-  for(i=0;(i<g->ngtc); i++) {
-    n = g->anneal_npoints[i];
-    if (n > 0) {
-      snew_bc(cr,g->anneal_time[i],n);
-      snew_bc(cr,g->anneal_temp[i],n);
-      nblock_bc(cr,n,g->anneal_time[i]);
-      nblock_bc(cr,n,g->anneal_temp[i]);
+    int i,n;
+    
+    block_bc(cr,g->ngtc);
+    block_bc(cr,g->ngacc);
+    block_bc(cr,g->ngfrz);
+    block_bc(cr,g->ngener);
+    snew_bc(cr,g->nrdf,g->ngtc);
+    snew_bc(cr,g->tau_t,g->ngtc);
+    snew_bc(cr,g->ref_t,g->ngtc);
+    snew_bc(cr,g->acc,g->ngacc);
+    snew_bc(cr,g->nFreeze,g->ngfrz);
+    snew_bc(cr,g->egp_flags,g->ngener*g->ngener);
+    
+    nblock_bc(cr,g->ngtc,g->nrdf);
+    nblock_bc(cr,g->ngtc,g->tau_t);
+    nblock_bc(cr,g->ngtc,g->ref_t);
+    nblock_bc(cr,g->ngacc,g->acc);
+    nblock_bc(cr,g->ngfrz,g->nFreeze);
+    nblock_bc(cr,g->ngener*g->ngener,g->egp_flags);
+    snew_bc(cr,g->annealing,g->ngtc);
+    snew_bc(cr,g->anneal_npoints,g->ngtc);
+    snew_bc(cr,g->anneal_time,g->ngtc);
+    snew_bc(cr,g->anneal_temp,g->ngtc);
+    nblock_bc(cr,g->ngtc,g->annealing);
+    nblock_bc(cr,g->ngtc,g->anneal_npoints);
+    for(i=0;(i<g->ngtc); i++) {
+        n = g->anneal_npoints[i];
+        if (n > 0) {
+            snew_bc(cr,g->anneal_time[i],n);
+            snew_bc(cr,g->anneal_temp[i],n);
+            nblock_bc(cr,n,g->anneal_time[i]);
+            nblock_bc(cr,n,g->anneal_temp[i]);
+        }
     }
-  }
-
-  /* QMMM stuff, see inputrec */
-  block_bc(cr,g->ngQM);
-  snew_bc(cr,g->QMmethod,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->QMmethod);
-  snew_bc(cr,g->QMbasis,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->QMbasis);
-  snew_bc(cr,g->QMcharge,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->QMcharge);
-  snew_bc(cr,g->QMmult,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->QMmult);
-  snew_bc(cr,g->bSH,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->bSH);
-  snew_bc(cr,g->CASorbitals,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->CASorbitals);
-  snew_bc(cr,g->CASelectrons,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->CASelectrons);
-  snew_bc(cr,g->SAon,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->SAon);
-  snew_bc(cr,g->SAoff,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->SAoff);
-  snew_bc(cr,g->SAsteps,g->ngQM);
-  nblock_bc(cr,g->ngQM,g->SAsteps);
-  /* end of QMMM stuff */
+    
+    /* QMMM stuff, see inputrec */
+    block_bc(cr,g->ngQM);
+    snew_bc(cr,g->QMmethod,g->ngQM);
+    snew_bc(cr,g->QMbasis,g->ngQM);
+    snew_bc(cr,g->QMcharge,g->ngQM);
+    snew_bc(cr,g->QMmult,g->ngQM);
+    snew_bc(cr,g->bSH,g->ngQM);
+    snew_bc(cr,g->CASorbitals,g->ngQM);
+    snew_bc(cr,g->CASelectrons,g->ngQM);
+    snew_bc(cr,g->SAon,g->ngQM);
+    snew_bc(cr,g->SAoff,g->ngQM);
+    snew_bc(cr,g->SAsteps,g->ngQM);
+    
+    if (g->ngQM)
+    {
+        nblock_bc(cr,g->ngQM,g->QMmethod);
+        nblock_bc(cr,g->ngQM,g->QMbasis);
+        nblock_bc(cr,g->ngQM,g->QMcharge);
+        nblock_bc(cr,g->ngQM,g->QMmult);
+        nblock_bc(cr,g->ngQM,g->bSH);
+        nblock_bc(cr,g->ngQM,g->CASorbitals);
+        nblock_bc(cr,g->ngQM,g->CASelectrons);
+        nblock_bc(cr,g->ngQM,g->SAon);
+        nblock_bc(cr,g->ngQM,g->SAoff);
+        nblock_bc(cr,g->ngQM,g->SAsteps);
+        /* end of QMMM stuff */
+    }
 }
 
 static void bc_cosines(const t_commrec *cr,t_cosines *cs)

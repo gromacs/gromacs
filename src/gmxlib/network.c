@@ -45,10 +45,15 @@
 #include "statutil.h"
 #include "ctype.h"
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
-#include "mpelogging.h"
 #endif
+
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
+#endif
+
+#include "mpelogging.h"
 
 bool gmx_mpi_initialized(void)
 {
@@ -521,7 +526,7 @@ void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms)
 #endif
 }
 
-void gmx_finalize(const t_commrec *cr)
+void gmx_finalize(void)
 {
   int ret;
 #ifndef GMX_MPI

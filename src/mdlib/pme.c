@@ -79,9 +79,14 @@
 #include "nrnb.h"
 #include "copyrite.h"
 #include "gmx_wallcycle.h"
-#ifdef GMX_MPI
+
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
+#endif
+
 #include "mpelogging.h"
 
 #define DFT_TOL 1e-7

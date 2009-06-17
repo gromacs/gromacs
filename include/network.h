@@ -46,9 +46,14 @@
  */
 
 #include <stdio.h>
-#ifdef GMX_MPI
+
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
+#endif
+
 #include "typedefs.h"
 #include "main.h"
 #include "gmx_fatal.h"
@@ -109,7 +114,8 @@ extern void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
 extern void gmx_abort(int nodeid,int nnodes,int errorno);
 /* Abort the parallel run */
 
-extern void gmx_finalize(const t_commrec *cr);
+extern void gmx_finalize(void);
+
 /* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE

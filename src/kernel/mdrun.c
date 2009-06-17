@@ -247,7 +247,7 @@ int main(int argc,char *argv[])
     "When mdrun is started with MPI, it does not run niced by default."
   };
   t_commrec    *cr;
-  static t_filenm fnm[] = {
+  t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
     { efTRN, "-o",      NULL,       ffWRITE },
     { efXTC, "-x",      NULL,       ffOPTWR },
@@ -279,38 +279,38 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  static bool bCart        = FALSE;
-  static bool bPPPME       = FALSE;
-  static bool bPartDec     = FALSE;
-  static bool bDDBondCheck = TRUE;
-  static bool bDDBondComm  = TRUE;
-  static bool bSumEner     = TRUE;
-  static bool bVerbose     = FALSE;
-  static bool bCompact     = TRUE;
-  static bool bSepPot      = FALSE;
-  static bool bRerunVSite  = FALSE;
-  static bool bIonize      = FALSE;
-  static bool bConfout     = TRUE;
-  static bool bReproducible = FALSE;
+  bool bCart        = FALSE;
+  bool bPPPME       = FALSE;
+  bool bPartDec     = FALSE;
+  bool bDDBondCheck = TRUE;
+  bool bDDBondComm  = TRUE;
+  bool bSumEner     = TRUE;
+  bool bVerbose     = FALSE;
+  bool bCompact     = TRUE;
+  bool bSepPot      = FALSE;
+  bool bRerunVSite  = FALSE;
+  bool bIonize      = FALSE;
+  bool bConfout     = TRUE;
+  bool bReproducible = FALSE;
     
-  static int  npme=-1;
-  static int  nmultisim=0;
-  static int  repl_ex_nst=0;
-  static int  repl_ex_seed=-1;
-  static int  nstepout=100;
-  static int  nthreads=1;
+  int  npme=-1;
+  int  nmultisim=0;
+  int  repl_ex_nst=0;
+  int  repl_ex_seed=-1;
+  int  nstepout=100;
+  int  nthreads=1;
   
-  static rvec realddxyz={0,0,0};
-  static const char *ddno_opt[ddnoNR+1] =
+  rvec realddxyz={0,0,0};
+  const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-  static const char *dddlb_opt[] =
+  const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
-  static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
-  static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
-  static real cpt_period=15.0,max_hours=-1;
-  static bool bAppendFiles=FALSE,bAddPart=TRUE;
+  real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
+  char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
+  real cpt_period=15.0,max_hours=-1;
+  bool bAppendFiles=FALSE,bAddPart=TRUE;
 	
-  static t_pargs pa[] = {
+  t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
@@ -396,7 +396,9 @@ int main(int argc,char *argv[])
     PCA_Flags |= PCA_BE_NICE;
 
   parse_common_args(&argc,argv,PCA_Flags,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+                    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+    
+
 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
@@ -495,7 +497,7 @@ int main(int argc,char *argv[])
 		cpt_period,max_hours,Flags);
   
   if (gmx_parallel_env)
-    gmx_finalize(cr);
+    gmx_finalize();
 
   if (MULTIMASTER(cr)) {
     thanx(stderr);

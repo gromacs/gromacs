@@ -30,7 +30,12 @@
 #include "gmx_fft.h"
 
 /* We NEED MPI here. */
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
+#endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
+#endif
 
 typedef struct gmx_parallel_3dfft *
 gmx_parallel_3dfft_t;

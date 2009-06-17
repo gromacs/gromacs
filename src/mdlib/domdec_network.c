@@ -23,8 +23,11 @@
 #include <string.h>
 #include "domdec_network.h"
 
-#ifdef GMX_MPI
+#ifdef GMX_LIB_MPI
 #include <mpi.h>
+#endif
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi.h"
 #endif
 
 
