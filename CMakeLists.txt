@@ -12,7 +12,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 ########################################################################
 option(GMX_DOUBLE "Use double precision" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADED    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" OFF)
+option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" OFF)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 set(GMX_ACCELERATION "none" 
@@ -45,9 +45,9 @@ set(GMX_EXTRA_LIBRARIES)
 #Process MPI settings
 ########################################################################
 if(GMX_MPI)
-    if(GMX_THREADED)
+    if(GMX_THREADS)
         message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
-    endif(GMX_THREADED)
+    endif(GMX_THREADS)
     find_package(MPI)
     if(MPI_FOUND)
         set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
@@ -165,14 +165,18 @@ if(PTHREADS_FOUND)
     list(APPEND	GMX_EXTRA_LIBRARIES ${PTHREADS_LIBRARIES})
     set(HAVE_PTHREADS 1)
     set(GMX_THREAD_PTHREADS 1)
-    if (GMX_THREADED)
+    if (GMX_THREADS)
         set(GMX_THREAD_MPI 1)
         set(GMX_MPI 1)
-    endif (GMX_THREADED)
+    endif (GMX_THREADS)
+# note that there is already some code that is enabled if GMX_THREADS
+# is defined. This value is not actually defined by this option and 
+# is therefore not enabled here; that code is now superceeded by the 
+# thread_mpi library, so it could be removed.
 else(PTHREADS_FOUND)
-    if(GMX_THREADED)
+    if(GMX_THREADS)
         message(FATAL_ERROR "Thread-based parallelization requested, but no threads library found.")
-    endif(GMX_THREADED)
+    endif(GMX_THREADS)
 endif(PTHREADS_FOUND)
 
 if(APPLE)
