@@ -49,6 +49,11 @@ tyle: "stroustrup"; -*-
 
 /*#define TMPI_DEBUG*/
 
+/* if this is defined, MPI will warn/hang/crash on practices that don't conform
+   to the MPI standard (such as not calling MPI_Comm_free on all threads that
+   are part of the comm being freed). */
+#define TMPI_STRICT 
+
 
 /* the max. number of envelopes waiting to be read at thread */
 #define MAX_ENVELOPES 128
@@ -1204,6 +1209,16 @@ int MPI_Group_free(MPI_Group *group)
 
 int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
 {
+    int i;
+    struct mpi_group_ *ret=tMPI_Group_alloc();
+
+    ret->N=comm->grp.N;
+    for(i=0;i<comm->grp.N;i++)
+    {
+        ret->peers[i]=comm->grp.peers[i];
+    }
+    *group=ret;
+#if 0
     if (comm)
     {
         *group=&(comm->grp);
@@ -1212,6 +1227,7 @@ int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
     {
         *group=NULL;
     }
+#endif
 
     return MPI_SUCCESS;
 }
@@ -1321,6 +1337,7 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
 
 int MPI_Comm_free(MPI_Comm *comm)
 {
+#ifndef TMPI_STRICT
     int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     if (! *comm)
         return MPI_SUCCESS;
@@ -1348,9 +1365,9 @@ int MPI_Comm_free(MPI_Comm *comm)
         }
         sfree(*comm);
     }
-
-#if 0
-    /* This would be correct if programs actually treated Comm_free as a 
+#else
+    int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
+    /* This is correct if programs actually treat Comm_free as a 
        collective call */
     /* we need to barrier because the comm is a shared structure and
        we have to be sure that nobody else is using it 

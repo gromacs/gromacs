@@ -294,7 +294,6 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 	      mpi_hostname,hostnum);
     }
 
-
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
     MPI_Comm_rank(nc->comm_intra,&nc->rank_intra);
@@ -322,7 +321,6 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
       MPI_Comm_free(&nc->comm_intra);
     }
 #endif
-    
   }
 #endif
 }
