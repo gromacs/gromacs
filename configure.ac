@@ -80,6 +80,7 @@ if test "$enable_mpi_environment" != "no"; then
   AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
+
 AC_ARG_ENABLE(apple_64bit,
               [AC_HELP_STRING([--enable-apple-64bit],
                               [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
@@ -210,7 +211,7 @@ AC_ARG_ENABLE(fftw-measure,
 
 AC_ARG_WITH(threads,
               [AC_HELP_STRING([--with-threads=@<:@pthreads@:>@],
-                              [Use threads instead of MPI for decomposition])],,with_threads=no)
+                              [Compile for parallel runs using threads])],,with_threads=no)
 if test "$with_threads" = "yes"; then
    with_threads=pthreads;
 fi
@@ -354,7 +355,11 @@ if test "$with_threads" = "pthreads"; then
   if test "$enable_mpi" = "yes"; then
     AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
   fi
-  AC_DEFINE([GMX_THREAD_PTHREADS],,[Use pthreads for Gromacs multithreading])
+  AC_DEFINE(GMX_THREAD_PTHREADS,,[Use pthreads for Gromacs multithreading])
+  AC_DEFINE(GMX_THREAD_MPI,,[Use internal thread_mpi library])
+  AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+  AM_CONDITIONAL(THREAD_PARALLEL,true)
+  AM_CONDITIONAL(THREAD_PTHREADS,true)
 fi
 
 
@@ -973,6 +978,7 @@ AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/statistics/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/trajana/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/parallel/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])

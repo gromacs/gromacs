@@ -46,7 +46,6 @@ tyle: "stroustrup"; -*-
 #include "gmx_thread.h"
 #include "thread_mpi.h"
 
-
 /*#define TMPI_DEBUG*/
 
 
