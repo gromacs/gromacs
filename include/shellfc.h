@@ -37,7 +37,6 @@
 #endif
 
 #include "typedefs.h"
-#include "genborn.h"
 
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
@@ -66,7 +65,7 @@ extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       gmx_groups_t *groups,
 			       gmx_shellfc_t shfc,
 			       t_forcerec *fr,
-			       gmx_genborn_t *born, bool bBornRadii,
+			       bool bBornRadii,
 			       double t,rvec mu_tot,
 			       int natoms,bool *bConverged,
 			       gmx_vsite_t *vsite,

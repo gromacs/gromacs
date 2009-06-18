@@ -194,7 +194,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     real lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
-		     gmx_genborn_t *born, bool bBornRadii,
+		     bool bBornRadii,
 		     int flags);
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).

@@ -279,116 +279,151 @@ static void moveit(t_commrec *cr,
 }
 
 void write_traj(FILE *fplog,t_commrec *cr,
-		int fp_trn,bool bX,bool bV,bool bF,
-		int fp_xtc,bool bXTC,int xtc_prec,
-		char *fn_cpt,bool bCPT,
-		gmx_mtop_t *top_global,
-		int eIntegrator,int simulation_part,gmx_step_t step,double t,
-		t_state *state_local,t_state *state_global,
-		rvec *f_local,rvec *f_global)
+                int fp_trn,bool bX,bool bV,bool bF,
+                int fp_xtc,bool bXTC,int xtc_prec,
+                char *fn_cpt,bool bCPT,
+                gmx_mtop_t *top_global,
+                int eIntegrator,int simulation_part,gmx_step_t step,double t,
+                t_state *state_local,t_state *state_global,
+                rvec *f_local,rvec *f_global,
+                int *n_xtc,rvec **x_xtc)
 {
-  static int  nxtc=-1;
-  static rvec *xxtc=NULL;
-  int     i,j;
-  gmx_groups_t *groups;
-
+    int     i,j;
+    gmx_groups_t *groups;
+    rvec    *xxtc;
+    
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
-
-  if (DOMAINDECOMP(cr)) {
-    if (bCPT) {
-      dd_collect_state(cr->dd,state_local,state_global);
-    } else {
-      if (bX || bXTC) {
-	dd_collect_vec(cr->dd,state_local,state_local->x,state_global->x);
-      }
-      if (bV) {
-        dd_collect_vec(cr->dd,state_local,state_local->v,state_global->v);
-      }
+    
+    if (DOMAINDECOMP(cr))
+    {
+        if (bCPT)
+        {
+            dd_collect_state(cr->dd,state_local,state_global);
+        }
+        else
+        {
+            if (bX || bXTC)
+            {
+                dd_collect_vec(cr->dd,state_local,state_local->x,
+                               state_global->x);
+            }
+            if (bV)
+            {
+                dd_collect_vec(cr->dd,state_local,state_local->v,
+                               state_global->v);
+            }
+        }
+        if (bF)
+        {
+            dd_collect_vec(cr->dd,state_local,f_local,f_global);
+        }
     }
-    if (bF) {
-      dd_collect_vec(cr->dd,state_local,f_local,f_global);
-    }
-  } else {
-    if (bCPT) {
-      /* All pointers in state_local are equal to state_global,
-       * but we need to copy the non-pointer entries.
-       */
-      state_global->lambda = state_local->lambda;
-      copy_mat(state_local->box,state_global->box);
-      copy_mat(state_local->boxv,state_global->boxv);
-      copy_mat(state_local->pres_prev,state_global->pres_prev);
-    }
-    if (cr->nnodes > 1) {
-      /* Particle decomposition, collect the data on the master node */
-      if (bCPT) {
-	if (state_local->flags & (1<<estX))   MX(state_global->x);
-	if (state_local->flags & (1<<estV))   MX(state_global->v);
-	if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
-	if (state_global->nrngi > 1) {
-	  if (state_local->flags & (1<<estLD_RNG)) {
+    else
+    {
+        if (bCPT)
+        {
+            /* All pointers in state_local are equal to state_global,
+             * but we need to copy the non-pointer entries.
+             */
+            state_global->lambda = state_local->lambda;
+            copy_mat(state_local->box,state_global->box);
+            copy_mat(state_local->boxv,state_global->boxv);
+            copy_mat(state_local->pres_prev,state_global->pres_prev);
+        }
+        if (cr->nnodes > 1)
+        {
+            /* Particle decomposition, collect the data on the master node */
+            if (bCPT)
+            {
+                if (state_local->flags & (1<<estX))   MX(state_global->x);
+                if (state_local->flags & (1<<estV))   MX(state_global->v);
+                if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
+                if (state_global->nrngi > 1) {
+                    if (state_local->flags & (1<<estLD_RNG)) {
 #ifdef GMX_MPI
-	    MPI_Gather(state_local->ld_rng ,
-		       state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
-		       state_global->ld_rng,
-		       state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
-		       MASTERRANK(cr),cr->mpi_comm_mygroup);
+                        MPI_Gather(state_local->ld_rng ,
+                                   state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+                                   state_global->ld_rng,
+                                   state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+                                   MASTERRANK(cr),cr->mpi_comm_mygroup);
 #endif
-	  }
-	  if (state_local->flags & (1<<estLD_RNGI)) {
+                    }
+                    if (state_local->flags & (1<<estLD_RNGI))
+                    {
 #ifdef GMX_MPI
-	    MPI_Gather(state_local->ld_rngi,
-		       sizeof(state_local->ld_rngi[0]),MPI_BYTE,
-		       state_global->ld_rngi,
-		       sizeof(state_local->ld_rngi[0]),MPI_BYTE,
-		       MASTERRANK(cr),cr->mpi_comm_mygroup);
+                        MPI_Gather(state_local->ld_rngi,
+                                   sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+                                   state_global->ld_rngi,
+                                   sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+                                   MASTERRANK(cr),cr->mpi_comm_mygroup);
 #endif
-	  }
-	}
-      } else {
-	if (bX || bXTC) MX(state_global->x);
-	if (bV)         MX(state_global->v);
-      }
-      if (bF)         MX(f_global);
+                    }
+                }
+            }
+            else
+            {
+                if (bX || bXTC) MX(state_global->x);
+                if (bV)         MX(state_global->v);
+            }
+            if (bF)         MX(f_global);
+        }
     }
-  }
-
-  if (MASTER(cr)) {
-    if (bCPT) {
-      write_checkpoint(fn_cpt,fplog,cr,eIntegrator,simulation_part,step,t,state_global);
+    
+    if (MASTER(cr)) {
+        if (bCPT) {
+            write_checkpoint(fn_cpt,fplog,cr,eIntegrator,simulation_part,step,t,state_global);
+        }
+        
+        if (bX || bV || bF) {
+            fwrite_trn(fp_trn,step,t,state_local->lambda,
+                       state_local->box,top_global->natoms,
+                       bX ? state_global->x : NULL,
+                       bV ? state_global->v : NULL,
+                       bF ? f_global : NULL);
+            if(gmx_fio_flush(fp_trn) != 0)
+            {
+                gmx_file("Cannot write trajectory; maybe you are out of quota?");
+            }
+        }      
+        if (bXTC) {
+            groups = &top_global->groups;
+            if (*n_xtc == -1)
+            {
+                *n_xtc = 0;
+                for(i=0; (i<top_global->natoms); i++)
+                {
+                    if (ggrpnr(groups,egcXTC,i) == 0)
+                    {
+                        (*n_xtc)++;
+                    }
+                }
+                if (*n_xtc != top_global->natoms)
+                {
+                    snew(*x_xtc,*n_xtc);
+                }
+            }
+            if (*n_xtc == top_global->natoms)
+            {
+                xxtc = state_global->x;
+            }
+            else
+            {
+                xxtc = *x_xtc;
+                j = 0;
+                for(i=0; (i<top_global->natoms); i++)
+                {
+                    if (ggrpnr(groups,egcXTC,i) == 0)
+                    {
+                        copy_rvec(state_global->x[i],xxtc[j++]);
+                    }
+                }
+            }
+            if (write_xtc(fp_xtc,*n_xtc,step,t,
+                          state_local->box,xxtc,xtc_prec) == 0)
+            {
+                gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
+            }
+        }
     }
-
-    if (bX || bV || bF) {
-      fwrite_trn(fp_trn,step,t,state_local->lambda,
-		 state_local->box,top_global->natoms,
-		 bX ? state_global->x : NULL,
-		 bV ? state_global->v : NULL,
-		 bF ? f_global : NULL);
-		if(gmx_fio_flush(fp_trn) != 0)
-		{
-			gmx_file("Cannot write trajectory; maybe you are out of quota?");
-		}
-    }      
-    if (bXTC) {
-      groups = &top_global->groups;
-      if (nxtc == -1) {
-	nxtc = 0;
-	for(i=0; (i<top_global->natoms); i++)
-	  if (ggrpnr(groups,egcXTC,i) == 0)
-	    nxtc++;
-		  if (nxtc != top_global->natoms)
-			  snew(xxtc,nxtc);
-      }
-		if (nxtc == top_global->natoms) {
-			xxtc = state_global->x;
-		} else {
-			j = 0;
-			for(i=0; (i<top_global->natoms); i++)
-				if (ggrpnr(groups,egcXTC,i) == 0)
-					copy_rvec(state_global->x[i],xxtc[j++]);
-		}
-		if (write_xtc(fp_xtc,nxtc,step,t,state_local->box,xxtc,xtc_prec) == 0)
-			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
-    }
-  }
 }
 

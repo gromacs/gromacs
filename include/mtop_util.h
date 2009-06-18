@@ -195,19 +195,19 @@ gmx_mtop_ftype_count(const gmx_mtop_t *mtop,int ftype);
 
 /* Returns a charge group index for the whole system */
 extern t_block
-gmx_mtop_global_cgs(gmx_mtop_t *mtop);
+gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
 
 
 /* Returns a single t_atoms struct for the whole system */ 
 extern t_atoms
-gmx_mtop_global_atoms(gmx_mtop_t *mtop);
+gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
 /* Generate a 'local' topology for the whole system.
  * When ir!=NULL the free energy interactions will be sorted to the end.
  */
 extern gmx_localtop_t *
-gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir);
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.

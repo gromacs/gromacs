@@ -82,7 +82,6 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
-#include "genborn.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -149,7 +148,6 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     t_fcdata   *fcd=NULL;
     real       ewaldcoeff=0;
     gmx_pme_t  *pmedata=NULL;
-    time_t     start_t=0;
     gmx_vsite_t *vsite=NULL;
     gmx_constr_t constr;
     int        i,m,nChargePerturbed=-1,status,nalloc;
@@ -157,9 +155,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     gmx_wallcycle_t wcycle;
     bool       bReadRNG,bReadEkin;
     int        list;
-    gmx_step_t nsteps_done;
+    gmx_runtime_t runtime;
     int        rc;
-    gmx_genborn_t *born;
     
     snew(inputrec,1);
     snew(mtop,1);
@@ -367,13 +364,6 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
         
-        /* Initialise GB-stuff */
-        if(fr->bGB)
-        {
-            init_gb(&born,cr,fr,inputrec,mtop,state->x,
-                    inputrec->rgbradii,inputrec->gb_algorithm);
-        }
-
         /* Initialize QM-MM */
         if(fr->bQMMM)
         {
@@ -522,17 +512,16 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         }
         
         /* Now do whatever the user wants us to do (how flexible...) */
-        start_t = integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
-                                                bVerbose,bCompact,
-                                                vsite,constr,
-                                                nstepout,inputrec,mtop,
-                                                fcd,state,f,
-                                                mdatoms,nrnb,wcycle,ed,fr,
-                                                born,
-                                                repl_ex_nst,repl_ex_seed,
-                                                cpt_period,max_hours,
-                                                Flags,
-                                                &nsteps_done);
+        integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
+                                      bVerbose,bCompact,
+                                      vsite,constr,
+                                      nstepout,inputrec,mtop,
+                                      fcd,state,f,
+                                      mdatoms,nrnb,wcycle,ed,fr,
+                                      repl_ex_nst,repl_ex_seed,
+                                      cpt_period,max_hours,
+                                      Flags,
+                                      &runtime);
         
         if (inputrec->ePull != epullNO)
         {
@@ -544,19 +533,21 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         /* do PME only */
         gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
     }
-    
-    /* Some timing stats */  
-    if (MASTER(cr))
+
+    if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
     {
-        realtime=difftime(time(NULL),start_t);
-        if ((nodetime=node_time()) == 0)
+        /* Some timing stats */  
+        if (MASTER(cr))
         {
-            nodetime = realtime;
+            if (runtime.proc == 0)
+            {
+                runtime.proc = runtime.real;
+            }
         }
-    }
-    else
-    {
-        realtime=0;
+        else
+        {
+            runtime.real = 0;
+        }
     }
 
     wallcycle_stop(wcycle,ewcRUN);
@@ -565,11 +556,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      * if rerunMD, don't write last frame again 
      */
     finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
-               inputrec,nrnb,wcycle,nodetime,realtime,nsteps_done,
+               inputrec,nrnb,wcycle,&runtime,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
     
     /* Does what it says */  
-    print_date_and_time(fplog,cr->nodeid,"Finished mdrun");
+    print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);
     
 	/* Close logfile already here if we were appending to it */
 	if (MASTER(cr) && (Flags & MD_APPENDFILES))
@@ -594,25 +585,24 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 }
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,
-	     gmx_vsite_t *vsite,gmx_constr_t constr,
-	     int stepout,t_inputrec *ir,
-	     gmx_mtop_t *top_global,
-	     t_fcdata *fcd,
-	     t_state *state_global,rvec f[],
-	     t_mdatoms *mdatoms,
-	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	     gmx_edsam_t ed,t_forcerec *fr, gmx_genborn_t *born,
-	     int repl_ex_nst,int repl_ex_seed,
-	     real cpt_period,real max_hours,
-	     unsigned long Flags,
-	     gmx_step_t *nsteps_done)
+             bool bVerbose,bool bCompact,
+             gmx_vsite_t *vsite,gmx_constr_t constr,
+             int stepout,t_inputrec *ir,
+             gmx_mtop_t *top_global,
+             t_fcdata *fcd,
+             t_state *state_global,rvec f[],
+             t_mdatoms *mdatoms,
+             t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+             gmx_edsam_t ed,t_forcerec *fr,
+             int repl_ex_nst,int repl_ex_seed,
+             real cpt_period,real max_hours,
+             unsigned long Flags,
+             gmx_runtime_t *runtime)
 {
   int        fp_ene=0,fp_trn=0,fp_xtc=0;
   gmx_step_t step,step_rel;
   char       *fn_cpt;
   FILE       *fp_dhdl=NULL,*fp_field=NULL;
-  time_t     start_t;
   double     run_time;
   double     t,t0,lam0;
   bool       bGStatEveryStep,bGStat,bCalcPres;
@@ -640,6 +630,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_mdebin *mdebin=NULL;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
+  int        n_xtc=-1;
+  rvec       *x_xtc=NULL;
   gmx_enerdata_t *enerd;
   gmx_global_stat_t gstat;
   gmx_update_t upd=NULL;
@@ -817,14 +809,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         dd_partition_system(fplog,ir->init_step,cr,TRUE,
                             state_global,top_global,ir,
                             state,&f,mdatoms,top,fr,
-                            vsite,shellfc,constr,born,
+                            vsite,shellfc,constr,
                             nrnb,wcycle,FALSE);
     }
 	
 	/* If not DD, copy gb data */
     if(ir->implicit_solvent && !DOMAINDECOMP(cr))
     {
-        make_local_gb(cr,born,ir->gb_algorithm);
+        make_local_gb(cr,fr->born,ir->gb_algorithm);
     }
 	
     update_mdatoms(mdatoms,state->lambda);
@@ -989,8 +981,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     scale_tot = NULL;
   }
 
-  /* Write start time */
-  start_t=print_date_and_time(fplog,cr->nodeid,"Started mdrun");
+  /* Set and write start time */
+  runtime_start(runtime);
+  print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
   wallcycle_start(wcycle,ewcRUN);
   if (fplog)
     fprintf(fplog,"\n");
@@ -1003,8 +996,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", 0 );
   #endif
 			 
-  /* Set the node time counter to 0 after initialisation */
-  start_time();
   debug_gmx();
   /***********************************************************
    *
@@ -1300,7 +1291,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 dd_partition_system(fplog,step,cr,bMasterState,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
-                                    vsite,shellfc,constr,born,
+                                    vsite,shellfc,constr,
                                     nrnb,wcycle,do_verbose);
                 wallcycle_stop(wcycle,ewcDOMDEC);
             }
@@ -1396,7 +1387,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                                       constr,enerd,fcd,
                                       state,f,force_vir,mdatoms,
                                       nrnb,wcycle,graph,groups,
-                                      shellfc,fr,born,bBornRadii,t,mu_tot,
+                                      shellfc,fr,bBornRadii,t,mu_tot,
                                       state->natoms,&bConverged,vsite,
                                       fp_field);
             tcount+=count;
@@ -1418,7 +1409,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
-                     fr,vsite,mu_tot,t,fp_field,ed,born,bBornRadii,
+                     fr,vsite,mu_tot,t,fp_field,ed,bBornRadii,
                      GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
                      GMX_FORCE_ALLFORCES | (bCalcPres ? GMX_FORCE_VIRIAL : 0) |
                      (bDoDHDL ? GMX_FORCE_DHDL : 0));
@@ -1486,7 +1477,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 }
             }
             write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,fn_cpt,bCPT,
-                       top_global,ir->eI,ir->simulation_part,step,t,state,state_global,f,f_global);
+                       top_global,ir->eI,ir->simulation_part,step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
@@ -1602,7 +1593,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         }
         
         /* Determine the wallclock run time up till now */
-        run_time = (double)time(NULL) - (double)start_t;
+        run_time = (double)time(NULL) - (double)runtime->real;
         
         /* Check whether everything is still allright */    
         if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
@@ -1866,7 +1857,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         /* Time for performance */
         if (((step % stepout) == 0) || bLastStep)
         {
-            update_time();
+            runtime_upd_proc(runtime);
         }
         
         /* Output stuff */
@@ -1912,7 +1903,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             {
                 fprintf(stderr,"\n");
             }
-            print_time(stderr,start_t,step,ir);
+            print_time(stderr,runtime,step,ir);
         }
         
         /* Replica exchange */
@@ -1931,7 +1922,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 dd_partition_system(fplog,step,cr,TRUE,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
-                                    vsite,shellfc,constr,born,
+                                    vsite,shellfc,constr,
                                     nrnb,wcycle,FALSE);
             }
             else
@@ -1963,6 +1954,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
+
+    /* Stop the time */
+    runtime_end(runtime);
     
     if (bRerunMD)
     {
@@ -2016,7 +2010,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         print_replica_exchange_statistics(fplog,repl_ex);
     }
     
-    *nsteps_done = step_rel;
+    runtime->nsteps_done = step_rel;
     
-    return start_t;
+    return 0;
 }

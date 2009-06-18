@@ -53,6 +53,9 @@ typedef struct {
   int    ivcos,ivisc;
   int    nE,nEg,nEc,nTC,nU;
   int    *igrp;
+  char   **grpnms;
+  real   *tmp_r;
+  rvec   *tmp_v;
 } t_mdebin;
 
 extern t_mdebin

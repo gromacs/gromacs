@@ -108,9 +108,9 @@ static bool ip_pert(int ftype,t_iparams *ip)
     return bPert;
 }
 
-bool gmx_mtop_bondeds_free_energy(gmx_mtop_t *mtop)
+bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 {
-    gmx_ffparams_t *ffparams;
+    const gmx_ffparams_t *ffparams;
     int  i,ftype;
     bool bPert;
 

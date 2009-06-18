@@ -119,7 +119,7 @@ t_mdebin *init_mdebin(int fp_ene,
   static const char *visc_nm[] = {
     "1/Viscosity"
   };
-  static   char   **grpnms;
+  char     **grpnms;
   const gmx_groups_t *groups;
   char     **gnm;
   char     buf[256];
@@ -338,7 +338,10 @@ t_mdebin *init_mdebin(int fp_ene,
     }
     
     md->nTC=groups->grps[egcTC].nr;
-    snew(grpnms,md->nTC);
+    snew(md->grpnms,md->nTC);
+    snew(md->tmp_r,md->nTC);
+    snew(md->tmp_v,md->nTC);
+    grpnms = md->grpnms;
     for(i=0; (i<md->nTC); i++)
     {
         ni=groups->grps[egcTC].nm_ind[i];
@@ -470,8 +473,6 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                 rvec mu_tot,
                 gmx_constr_t constr)
 {
-    static real *ttt=NULL;
-    static rvec *uuu=NULL;
     int    i,j,k,kk,m,n,gid;
     real   crmsd[2],tmp6[6];
     real   bs[NTRICLBOXS],vol,dens,pv;
@@ -575,44 +576,36 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     
     if (ekind)
     {
-        if (ttt == NULL)
-        {
-            snew(ttt,md->nTC);
-        }
         for(i=0; (i<md->nTC); i++)
         {
-            ttt[i] = ekind->tcstat[i].T;
+            md->tmp_r[i] = ekind->tcstat[i].T;
         }
-        add_ebin(md->ebin,md->itemp,md->nTC,ttt,bSum);
+        add_ebin(md->ebin,md->itemp,md->nTC,md->tmp_r,bSum);
         if (etc == etcNOSEHOOVER)
         {
             for(i=0; (i<md->nTC); i++)
             {
-                ttt[i] = state->nosehoover_xi[i];
+                 md->tmp_r[i] = state->nosehoover_xi[i];
             }
-            add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum);
+            add_ebin(md->ebin,md->itc,md->nTC,md->tmp_r,bSum);
         }
         else if (etc == etcBERENDSEN || etc == etcYES || etc == etcVRESCALE)
         {
             for(i=0; (i<md->nTC); i++)
             {
-                ttt[i] = ekind->tcstat[i].lambda;
+                md->tmp_r[i] = ekind->tcstat[i].lambda;
             }
-            add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum);
+            add_ebin(md->ebin,md->itc,md->nTC,md->tmp_r,bSum);
         }
     }
     
     if (ekind && md->nU > 1)
     {
-        if (uuu == NULL)
-        {
-            snew(uuu,md->nU);
-        }
         for(i=0; (i<md->nU); i++)
         {
-            copy_rvec(ekind->grpstat[i].u,uuu[i]);
+            copy_rvec(ekind->grpstat[i].u,md->tmp_v[i]);
         }
-        add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],bSum);
+        add_ebin(md->ebin,md->iu,3*md->nU,md->tmp_v[0],bSum);
     }
     
     ebin_increase_count(md->ebin,bSum);
