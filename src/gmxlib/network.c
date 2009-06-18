@@ -268,6 +268,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
   nc = &cr->nc;
 
   nc->bUse = FALSE;
+#ifndef GMX_THREAD_MPI
   if (getenv("GMX_NO_NODECOMM") == NULL) {
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
@@ -320,8 +321,8 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
       MPI_Comm_free(&nc->comm_intra);
     }
 #endif
-    
   }
+#endif
 }
 
 void gmx_barrier(const t_commrec *cr)

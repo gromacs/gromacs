@@ -46,7 +46,13 @@ tyle: "stroustrup"; -*-
 #include "gmx_thread.h"
 #include "thread_mpi.h"
 
+
 /*#define TMPI_DEBUG*/
+
+/* if this is defined, MPI will warn/hang/crash on practices that don't conform
+   to the MPI standard (such as not calling MPI_Comm_free on all threads that
+   are part of the comm being freed). */
+#define TMPI_STRICT 
 
 
 /* the max. number of envelopes waiting to be read at thread */
@@ -1203,6 +1209,16 @@ int MPI_Group_free(MPI_Group *group)
 
 int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
 {
+    int i;
+    struct mpi_group_ *ret=tMPI_Group_alloc();
+
+    ret->N=comm->grp.N;
+    for(i=0;i<comm->grp.N;i++)
+    {
+        ret->peers[i]=comm->grp.peers[i];
+    }
+    *group=ret;
+#if 0
     if (comm)
     {
         *group=&(comm->grp);
@@ -1211,6 +1227,7 @@ int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
     {
         *group=NULL;
     }
+#endif
 
     return MPI_SUCCESS;
 }
@@ -1320,20 +1337,59 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
 
 int MPI_Comm_free(MPI_Comm *comm)
 {
+#ifndef TMPI_STRICT
+    int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     if (! *comm)
         return MPI_SUCCESS;
 
-    sfree((*comm)->grp.peers);
-    sfree((*comm)->multicast_barrier);
-    sfree((*comm)->sendbuf);
-    sfree((*comm)->recvbuf);
-    if ( (*comm)->cart)
+    if ((*comm)->grp.N > 1)
     {
-        sfree((*comm)->cart->dims);
-        sfree((*comm)->cart->periods);
-        sfree((*comm)->cart);
+        /* we remove ourselves from the comm. */
+        gmx_thread_mutex_lock(&((*comm)->comm_create_mutex));
+        (*comm)->grp.peers[myrank] = (*comm)->grp.peers[(*comm)->grp.N-1];
+        (*comm)->grp.N--;
+        gmx_thread_mutex_unlock(&((*comm)->comm_create_mutex));
     }
-    sfree(*comm);
+    else
+    {
+        /* we're the last one so we can safely destroy it */
+        sfree((*comm)->grp.peers);
+        sfree((*comm)->multicast_barrier);
+        sfree((*comm)->sendbuf);
+        sfree((*comm)->recvbuf);
+        if ( (*comm)->cart)
+        {
+            sfree((*comm)->cart->dims);
+            sfree((*comm)->cart->periods);
+            sfree((*comm)->cart);
+        }
+        sfree(*comm);
+    }
+#else
+    int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
+    /* This is correct if programs actually treat Comm_free as a 
+       collective call */
+    /* we need to barrier because the comm is a shared structure and
+       we have to be sure that nobody else is using it 
+       (for example, to get its rank, like above) before destroying it*/
+    MPI_Barrier(*comm);
+    /* this is a collective call on a shared data structure, so only 
+       one process (rank[0] in this case) should do anything */
+    if (myrank==0)
+    {
+        sfree((*comm)->grp.peers);
+        sfree((*comm)->multicast_barrier);
+        sfree((*comm)->sendbuf);
+        sfree((*comm)->recvbuf);
+        if ( (*comm)->cart)
+        {
+            sfree((*comm)->cart->dims);
+            sfree((*comm)->cart->periods);
+            sfree((*comm)->cart);
+        }
+        sfree(*comm);
+    }
+#endif
     return MPI_SUCCESS;
 }
 
