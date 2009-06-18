@@ -456,7 +456,7 @@ int gmx_mtop_ftype_count(const gmx_mtop_t *mtop,int ftype)
     return n;
 }
 
-t_block gmx_mtop_global_cgs(gmx_mtop_t *mtop)
+t_block gmx_mtop_global_cgs(const gmx_mtop_t *mtop)
 {
     t_block cgs_gl,*cgs_mol;
     int mb,mol,cg;
@@ -551,7 +551,7 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies)
     dest->nr   += copies*src->nr;
 }
 
-t_atoms gmx_mtop_global_atoms(gmx_mtop_t *mtop)
+t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
 {
     t_atoms atoms;
     int mb;
@@ -699,13 +699,14 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
     }
 }
 
-static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,bool bMergeConstr,
+static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
+                          bool bMergeConstr,
                           gmx_localtop_t *top)
 {
     int mb,srcnr,destnr,ftype,ftype_dest,mt,natoms,mol,nposre_old;
     gmx_molblock_t *molb;
     gmx_moltype_t *molt;
-    gmx_ffparams_t *ffp;
+    const gmx_ffparams_t *ffp;
     t_idef *idef;
 
     top->atomtypes = mtop->atomtypes;
@@ -791,7 +792,8 @@ static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,bool bMergeConstr,
     }
 }
 
-gmx_localtop_t *gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir)
+gmx_localtop_t *gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
+                                            const t_inputrec *ir)
 {
     gmx_localtop_t *top;
 
