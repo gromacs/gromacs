@@ -268,6 +268,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
   nc = &cr->nc;
 
   nc->bUse = FALSE;
+#ifndef GMX_THREAD_MPI
   if (getenv("GMX_NO_NODECOMM") == NULL) {
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
@@ -292,6 +293,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
       fprintf(debug,"In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
 	      mpi_hostname,hostnum);
     }
+
 
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
@@ -322,6 +324,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 #endif
     
   }
+#endif
 }
 
 void gmx_barrier(const t_commrec *cr)
