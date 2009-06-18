@@ -37,6 +37,7 @@
 #endif
 
 #include "ns.h"
+#include "genborn.h"
 #include "qmmmrec.h"
 
 /* Abstract type for PME that is defined only in the routine that use them. */
@@ -134,9 +135,12 @@ typedef struct {
   /* Constants for reaction fields */
   real kappa,k_rf,c_rf;
 
-  /* Charge sum for topology A/B ([0]/[1]) for Ewald corrections */
+  /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
   double qsum[2];
+  rvec   mu_tot[2];
 
+  /* Dispersion correction stuff */
+  int  eDispCorr;
   /* The shift of the shift or user potentials */
   real enershiftsix;
   real enershifttwelve;
@@ -274,6 +278,8 @@ typedef struct {
   real *atype_gb_radius;
   /* Implicit solvent - overlap for HCT model */
   real *atype_S_hct;
+  /* Generalized born interaction data */
+  gmx_genborn_t *born;
 
   /* Table scale for GB */
   real gbtabscale;

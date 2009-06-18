@@ -934,6 +934,19 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
         fr->avcsix[q]    = csix;
         fr->avctwelve[q] = ctwelve;
     }
+    if (fplog != NULL)
+    {
+        if (fr->eDispCorr == edispcAllEner ||
+            fr->eDispCorr == edispcAllEnerPres)
+        {
+            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                    fr->avcsix[0],fr->avctwelve[0]);
+        }
+        else
+        {
+            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e\n",fr->avcsix[0]);
+        }
+    }
 }
 
 
@@ -1361,6 +1374,7 @@ void init_forcerec(FILE *fp,
         fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
                 fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
     
+    fr->eDispCorr = ir->eDispCorr;
     if (ir->eDispCorr != edispcNO)
     {
         set_avcsixtwelve(fp,fr,mtop);
@@ -1407,6 +1421,8 @@ void init_forcerec(FILE *fp,
 		
 		fr->gbtabr=50;
 		fr->gbtab=make_gb_table(fp,fr,tabpfn,fr->gbtabscale);
+
+        init_gb(&fr->born,cr,fr,ir,mtop,ir->rgbradii,ir->gb_algorithm);
     }
 
     /* Set the charge scaling */
@@ -1532,6 +1548,11 @@ void init_forcerec(FILE *fp,
             fprintf(debug,"No fcdata or table file name passed, can not read table, can not do bonded interactions\n");
     }
     
+    if (ir->eDispCorr != edispcNO)
+    {
+        calc_enervirdiff(fp,ir->eDispCorr,fr);
+    }
+
     /* QM/MM initialization if requested
      */
     if (ir->bQMMM)

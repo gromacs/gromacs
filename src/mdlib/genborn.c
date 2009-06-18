@@ -276,7 +276,7 @@ enter_gb_params(gmx_ffparams_t *ffparams, t_functype ftype,
   return type;
 }
 
-int init_gb_still(t_commrec *cr, t_forcerec  *fr, t_atomtypes *atype, t_idef *idef, t_atoms *atoms, gmx_genborn_t *born,int natoms)
+int init_gb_still(const t_commrec *cr, t_forcerec  *fr, const t_atomtypes *atype, t_idef *idef, t_atoms *atoms, gmx_genborn_t *born,int natoms)
 {
 	
 	int i,j,i1,i2,k,m,nbond,nang,ia,ib,ic,id,nb,idx,idx2,at;
@@ -460,8 +460,9 @@ int init_gb_still(t_commrec *cr, t_forcerec  *fr, t_atomtypes *atype, t_idef *id
 
 
 /* Initialize all GB datastructs and compute polarization energies */
-int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir,
-			gmx_mtop_t *mtop, rvec x[], real rgbradii, int gb_algorithm)
+int init_gb(gmx_genborn_t **p_born,
+            const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
+			const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm)
 {
 	int i,j,m,ai,aj,jj,natoms,nalloc;
 	real rai,sk,p,doffset;

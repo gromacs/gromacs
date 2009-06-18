@@ -93,13 +93,14 @@
 
 #include "qmmm.h"
 
+typedef struct gmx_timeprint {
+    
+} t_gmx_timeprint;
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
-void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir)
+void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
 {
-  static real time_per_step;
-  static time_t end;
   time_t finish;
   double dt;
   char buf[48];
@@ -110,14 +111,14 @@ void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir)
   if ((step >= ir->nstlist)) {
     if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
       /* We have done a full cycle let's update time_per_step */
-      end=time(NULL);
-      dt=difftime(end,start);
-      time_per_step=dt/(step - ir->init_step + 1);
+      runtime->last = time(NULL);
+      dt = difftime(runtime->last,runtime->real);
+      runtime->time_per_step = dt/(step - ir->init_step + 1);
     }
-    dt=(ir->nsteps + ir->init_step - step)*time_per_step;
+    dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
 
     if (dt >= 300) {    
-      finish = end+(time_t)dt;
+      finish = runtime->last + (time_t)dt;
       sprintf(buf,"%s",ctime(&finish));
       buf[strlen(buf)-1]='\0';
       fprintf(out,", will finish %s",buf);
@@ -131,20 +132,88 @@ void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir)
   fflush(out);
 }
 
-time_t print_date_and_time(FILE *fplog,int nodeid,const char *title)
+#ifdef NO_CLOCK 
+#define clock() -1
+#endif
+
+static double set_proctime(gmx_runtime_t *runtime)
 {
-  int i;
-  char *ts,time_string[STRLEN];
-  time_t now;
+    double diff;
+#ifdef GMX_CRAY_XT3
+    double prev;
 
-  now=time(NULL);
-  ts=ctime(&now);
-  for (i=0; ts[i]>=' '; i++) time_string[i]=ts[i];
-  time_string[i]='\0';
-  if (fplog)
-    fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
+    prev = runtime->proc;
+    runtime->proc = dclock();
+    
+    diff = runtime->proc - prev;
+#else
+    clock_t prev;
 
-  return now;
+    prev = runtime->proc;
+    runtime->proc = clock();
+
+    diff = (double)(runtime->proc - prev)/(double)CLOCKS_PER_SEC;
+#endif
+    if (diff < 0)
+    {
+        /* The counter has probably looped, ignore this data */
+        diff = 0;
+    }
+
+    return diff;
+}
+
+void runtime_start(gmx_runtime_t *runtime)
+{
+    runtime->real = time(NULL);
+    set_proctime(runtime);
+    runtime->realtime      = 0;
+    runtime->proctime      = 0;
+    runtime->last          = 0;
+    runtime->time_per_step = 0;
+}
+
+void runtime_end(gmx_runtime_t *runtime)
+{
+    time_t now;
+    
+    now = time(NULL);
+    
+    runtime->proctime += set_proctime(runtime);
+    runtime->realtime  = now - runtime->real;
+    runtime->real      = now;
+}
+
+void runtime_upd_proc(gmx_runtime_t *runtime)
+{
+    runtime->proctime += set_proctime(runtime);
+}
+
+void print_date_and_time(FILE *fplog,int nodeid,const char *title,
+                         const gmx_runtime_t *runtime)
+{
+    int i;
+    char *ts,time_string[STRLEN];
+    time_t t;
+
+    if (runtime != NULL)
+    {
+        ts = ctime(&runtime->real);
+    }
+    else
+    {
+        t = time(NULL);
+        ts = ctime(&t);
+    }
+    for(i=0; ts[i]>=' '; i++)
+    {
+        time_string[i]=ts[i];
+    }
+    time_string[i]='\0';
+    if (fplog)
+    {
+        fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
+    }
 }
 
 static void sum_forces(int start,int end,rvec f[],rvec flr[])
@@ -279,14 +348,12 @@ void do_force(FILE *fplog,t_commrec *cr,
               real lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
-              gmx_genborn_t *born, bool bBornRadii,
+              bool bBornRadii,
               int flags)
 {
-  static rvec box_size;
   int    cg0,cg1,i,j;
   int    start,homenr;
-  static double mu[2*DIM]; 
-  rvec   mu_tot_AB[2];
+  double mu[2*DIM]; 
   bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS,bDoForces;
   matrix boxs;
   real   e,v,dvdl;
@@ -318,16 +385,17 @@ void do_force(FILE *fplog,t_commrec *cr,
   bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
   bDoForces     = (flags & GMX_FORCE_FORCES);
 
-  if (bStateChanged) {
-    update_forcerec(fplog,fr,box);
-    
-    /* Calculate total (local) dipole moment in a temporary common array. 
-     * This makes it possible to sum them over nodes faster.
-     */
-    calc_mu(start,homenr,
-	    x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
-	    mu,mu+DIM);
-  }
+    if (bStateChanged)
+    {
+        update_forcerec(fplog,fr,box);
+        
+        /* Calculate total (local) dipole moment in a temporary common array. 
+         * This makes it possible to sum them over nodes faster.
+         */
+        calc_mu(start,homenr,
+                x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
+                mu,mu+DIM);
+    }
   
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step,
@@ -383,27 +451,47 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
 #endif /* GMX_MPI */
 
-  /* Communicate coordinates and sum dipole if necessary */
-  if (PAR(cr)) {
-    wallcycle_start(wcycle,ewcMOVEX);
-    if (DOMAINDECOMP(cr)) {
-      dd_move_x(cr->dd,box,x);
-    } else {
-      move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
+    /* Communicate coordinates and sum dipole if necessary */
+    if (PAR(cr))
+    {
+        wallcycle_start(wcycle,ewcMOVEX);
+        if (DOMAINDECOMP(cr))
+        {
+            dd_move_x(cr->dd,box,x);
+        }
+        else
+        {
+            move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
+        }
+        /* When we don't need the total dipole we sum it in global_stat */
+        if (bStateChanged && NEED_MUTOT(*inputrec))
+        {
+            gmx_sumd(2*DIM,mu,cr);
+        }
+        wallcycle_stop(wcycle,ewcMOVEX);
     }
-    /* When we don't need the total dipole we sum it in global_stat */
-    if (NEED_MUTOT(*inputrec))
-      gmx_sumd(2*DIM,mu,cr);
-    wallcycle_stop(wcycle,ewcMOVEX);
-  }
-  for(i=0; i<2; i++)
-    for(j=0;j<DIM;j++)
-      mu_tot_AB[i][j] = mu[i*DIM + j];
-  if (fr->efep == efepNO)
-    copy_rvec(mu_tot_AB[0],mu_tot);
-  else
-    for(j=0; j<DIM; j++)
-      mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
+    if (bStateChanged)
+    {
+        for(i=0; i<2; i++)
+        {
+            for(j=0;j<DIM;j++)
+            {
+                fr->mu_tot[i][j] = mu[i*DIM + j];
+            }
+        }
+    }
+    if (fr->efep == efepNO)
+    {
+        copy_rvec(fr->mu_tot[0],mu_tot);
+    }
+    else
+    {
+        for(j=0; j<DIM; j++)
+        {
+            mu_tot[j] =
+                (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+        }
+    }
 
   /* Reset energies */
   reset_enerdata(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));    
@@ -434,7 +522,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	
   if(inputrec->implicit_solvent && bNS) 
   {
-	  make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,born);
+	  make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,fr->born);
   }
 	
   if (DOMAINDECOMP(cr)) {
@@ -518,9 +606,9 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Compute the bonded and non-bonded forces */    
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                     cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
-                    x,hist,f,enerd,fcd,mtop,top,born,
+                    x,hist,f,enerd,fcd,mtop,top,fr->born,
                     &(top->atomtypes),bBornRadii,box,
-                    lambda,graph,&(top->excls),mu_tot_AB,
+                    lambda,graph,&(top->excls),fr->mu_tot,
                     flags,&cycles_force);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
@@ -662,50 +750,6 @@ void do_force(FILE *fplog,t_commrec *cr,
     print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
 }
 
-#ifdef NO_CLOCK 
-#define clock() -1
-#endif
-static double runtime=0;
-#ifdef GMX_CRAY_XT3
-static double cprev;
-
-void start_time(void)
-{
-  cprev   = dclock();
-  runtime = 0.0;
-}
-
-void update_time(void)
-{
-  double c;
-
-  c        = dclock();
-  runtime += (c-cprev);
-  cprev    = c;
-}
-#else
-static clock_t cprev;
-
-void start_time(void)
-{
-  cprev   = clock();
-  runtime = 0.0;
-}
-
-void update_time(void)
-{
-  clock_t c;
-  
-  c        = clock();
-  runtime += (c-cprev)/(double)CLOCKS_PER_SEC;
-  cprev    = c;
-}
-#endif
-double node_time(void)
-{
-  return runtime;
-}
-
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                         t_inputrec *inputrec,t_mdatoms *md,
                         t_state *state,
@@ -827,7 +871,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     }
 }
 
-static void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
+void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 {
   double eners[2],virs[2],enersum,virsum,y0,f,g,h;
   double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
@@ -961,7 +1005,6 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 		   gmx_step_t step,int natoms,matrix box,real lambda,
 		   tensor pres,tensor virial,gmx_enerdata_t *enerd)
 {
-  static bool bFirst=TRUE;
   bool bCorrAll,bCorrPres;
   real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
   int  m;
@@ -974,9 +1017,6 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     bCorrPres = (ir->eDispCorr == edispcEnerPres ||
 		 ir->eDispCorr == edispcAllEnerPres);
 
-    if (bFirst)
-      calc_enervirdiff(fplog,ir->eDispCorr,fr);
-    
     invvol = 1/det(box);
     if (fr->n_tpi) {
       /* Only correct for the interactions with the inserted molecule */
@@ -1022,23 +1062,6 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
       }
       enerd->term[F_PRES] += spres;
     }
-    
-    if (bFirst && fplog) {
-      if (bCorrAll)
-	fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
-		avcsix,avctwelve);
-      else
-	fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e\n",avcsix);
-      
-      if (bCorrPres)
-	fprintf(fplog,
-		"Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
-                enerd->term[F_DISPCORR],spres,svir);
-      else
-	fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",
-		enerd->term[F_DISPCORR]);
-    }
-    bFirst = FALSE;
 
     if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
       fprintf(fplog,sepdvdlformat,"Dispersion correction",
@@ -1130,10 +1153,10 @@ void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 }
 
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,
-		t_inputrec *inputrec,
-		t_nrnb nrnb[],gmx_wallcycle_t wcycle,
-		double nodetime,double realtime,gmx_step_t nsteps_done,
-		bool bWriteStat)
+                t_inputrec *inputrec,
+                t_nrnb nrnb[],gmx_wallcycle_t wcycle,
+                gmx_runtime_t *runtime,
+                bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_tot=NULL;
@@ -1170,7 +1193,8 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       pr_load(fplog,cr,nrnb_tot);
     }
 
-    wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
+    wallcycle_print(fplog,cr->nnodes,cr->npmenodes,runtime->realtime,
+                    wcycle,cycles);
 
     if (EI_DYNAMICS(inputrec->eI)) {
       delta_t = inputrec->delta_t;
@@ -1179,12 +1203,14 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     }
     
     if (fplog) {
-      print_perf(fplog,nodetime,realtime,cr->nnodes-cr->npmenodes,
-		 nsteps_done,delta_t,nbfs,mflop);
+        print_perf(fplog,runtime->proctime,runtime->realtime,
+                   cr->nnodes-cr->npmenodes,
+                   runtime->nsteps_done,delta_t,nbfs,mflop);
     }
     if (bWriteStat) {
-      print_perf(stderr,nodetime,realtime,cr->nnodes-cr->npmenodes,
-		 nsteps_done,delta_t,nbfs,mflop);
+        print_perf(stderr,runtime->proctime,runtime->realtime,
+                   cr->nnodes-cr->npmenodes,
+                   runtime->nsteps_done,delta_t,nbfs,mflop);
     }
 
     /*

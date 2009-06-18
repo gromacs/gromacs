@@ -54,7 +54,6 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
-#include "genborn.h"
 
 #define MD_POLARISE     (1<<2)
 #define MD_IONIZE       (1<<3)
@@ -78,6 +77,20 @@ enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
+typedef struct {
+  time_t real;
+#ifdef GMX_CRAY_XT3
+  double proc;
+#else
+  clock_t proc;
+#endif
+  time_t realtime;
+  double proctime;
+  double time_per_step;
+  time_t last;
+  gmx_step_t nsteps_done;
+} gmx_runtime_t;
+
 typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				int nfile,t_filenm fnm[],
 				bool bVerbose,bool bCompact,
@@ -90,11 +103,10 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 				gmx_edsam_t ed, 
 				t_forcerec *fr,
-				gmx_genborn_t *born,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
 				unsigned long Flags,
-				gmx_step_t *nsteps_done);
+				gmx_runtime_t *runtime);
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
@@ -153,7 +165,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		gmx_mtop_t *top_global,
 		int eIntegrator,int simulation_part,gmx_step_t step,double t,
 		t_state *state_local,t_state *state_global,
-		rvec *f_local,rvec *f_global);
+		rvec *f_local,rvec *f_global,
+		int *n_xtc,rvec **x_xtc);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
  * Data is collected to the master node only when necessary.
  */
@@ -164,10 +177,21 @@ extern int do_per_step(gmx_step_t step,gmx_step_t nstep);
 extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
- 
-extern void print_time(FILE *out,time_t start,gmx_step_t step,t_inputrec *ir);
 
-extern time_t print_date_and_time(FILE *log,int pid,const char *title);
+extern void print_time(FILE *out,
+		       gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir);
+
+extern void runtime_start(gmx_runtime_t *runtime);
+
+extern void runtime_end(gmx_runtime_t *runtime);
+
+extern void runtime_upd_proc(gmx_runtime_t *runtime);
+/* The processor time should be updated every once in a while,
+ * since on 32-bit manchines it loops after 72 minutes.
+ */
+
+extern void print_date_and_time(FILE *log,int pid,const char *title,
+				const gmx_runtime_t *runtime);
 
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
@@ -175,8 +199,10 @@ extern void nstop_cm(FILE *log,t_commrec *cr,
 extern void finish_run(FILE *log,t_commrec *cr,char *confout,
 		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
-		       double nodetime,double realtime,gmx_step_t step,
+		       gmx_runtime_t *runtime,
 		       bool bWriteStat);
+
+extern void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 			  gmx_step_t step,int natoms,matrix box,real lambda,
@@ -226,17 +252,6 @@ extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       * returns the number of shifts over the ring to perform to calculate
       * all interactions.
       */
-
-extern void start_time(void);
-/* Start timing routines */
-
-extern void update_time(void);
-/* Update the timer.This must be done at least every INT_MAX microseconds,
- * or 2400 s, in order to give reliable answers.
- */
- 
-extern double node_time(void);
-/* Return the node time so far in seconds. */
 
 extern void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_inputrec *inputrec,t_mdatoms *md,

@@ -45,72 +45,10 @@
 #endif
 
 
-typedef struct
-{
-	int nbonds;
-	int bond[10];
-	real length[10];
-} genborn_bonds_t;
-
-
-/* Struct to hold all the information for GB 
- * All these things are currently allocated in md.c
- */
-typedef struct
-{
-	int nr;                   /* number of atoms, length of arrays below */
-	int n12;                  /* number of 1-2 (bond) interactions       */
-	int n13;                  /* number of 1-3 (angle) terms             */
-	int n14;                  /* number of 1-4 (torsion) terms           */
-	int nlocal;               /* Length of local arrays (with DD)        */
-	
-	/* Arrays below that end with _globalindex are used for setting up initial values of
-	 * all gb parameters and values. They all have length natoms, which for DD is the 
-	 * global atom number. 
-	 * Values are then taken from these arrays to local copies, that have names without
-	 * _globalindex, in the routine make_local_gb(), which is called once for single
-	 * node runs, and for DD at every call to dd_partition_system
-	 */
-
-	real  *gpol;              /* Atomic polarisation energies */
-	real  *gpol_globalindex;  /*  */
-	real  *gpol_still_work;   /* Work array for Still model */
-	real  *gpol_hct_work;     /* Work array for HCT/OBC models */
-	real  *bRad;              /* Atomic Born radii */
-	real  *vsolv;             /* Atomic solvation volumes */
-	real  *vsolv_globalindex; /*  */
-	
-	int *vs;                  /* Array for vsites-exclusions */   
-	int *vs_globalindex;      /*  */
-		
-	real es;                  /* Solvation energy and derivatives */
-	real *asurf;              /* Atomic surface area */
-	rvec *dasurf;             /* Surface area derivatives */
-	real as;                  /* Total surface area */
-
-	real *drobc;              /* Parameters for OBC chain rule calculation */
-	real *param;              /* Precomputed factor rai*atype->S_hct for HCT/OBC */
-	real *param_globalindex;  /*  */
-	
-	real *log_table;          /* Table for logarithm lookup */
-	
-	real obc_alpha;           /* OBC parameters */
-	real obc_beta;            /* OBC parameters */
-	real obc_gamma;           /* OBC parameters */
-	real gb_doffset;          /* Dielectric offset for Still/HCT/OBC */
-	
-	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
-	real *dd_work;            /* Used for domain decomposition parallell runs, length natoms              */
-	int  *count;              /* Used for setting up the special gb nblist, length natoms                 */
-	int  **nblist_work;       /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */
-	int  nblist_work_nalloc;  /* Length of second dimension of nblist_work                                */
-} 
-gmx_genborn_t;
-
-
 /* Initialise GB stuff */
-int init_gb(gmx_genborn_t **p_born,t_commrec *cr, t_forcerec *fr, t_inputrec *ir,
-			gmx_mtop_t *mtop, rvec x[], real rgbradii, int gb_algorithm);
+int init_gb(gmx_genborn_t **p_born,
+	    const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
+	    const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm);
 
 
 /* Born radii calculations, both with and without SSE acceleration */

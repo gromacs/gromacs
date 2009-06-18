@@ -7891,7 +7891,6 @@ void dd_partition_system(FILE            *fplog,
                          gmx_vsite_t     *vsite,
                          gmx_shellfc_t   shellfc,
                          gmx_constr_t    constr,
-						 gmx_genborn_t   *born,
                          t_nrnb          *nrnb,
                          gmx_wallcycle_t wcycle,
                          bool            bVerbose)
@@ -8218,9 +8217,9 @@ void dd_partition_system(FILE            *fplog,
         make_local_shells(cr,mdatoms,shellfc);
     }
     
-	if(ir->implicit_solvent)
+	if (ir->implicit_solvent)
     {
-        make_local_gb(cr,born,ir->gb_algorithm);
+        make_local_gb(cr,fr->born,ir->gb_algorithm);
     }
 	
     if (!(cr->duty & DUTY_PME))
