@@ -176,6 +176,7 @@ typedef struct gmx_edsam
     char          *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
+    bool          bFirst;
 } t_gmx_edsam;
 
 
@@ -199,9 +200,8 @@ struct t_do_edsam
 /* definition of ED buffer structure */
 struct t_ed_buffer
 {
-    struct t_fitit *                fitit;
+    struct t_fit_to_ref *           fit_to_ref;
     struct t_do_edfit *             do_edfit;
-    struct t_remove_pbc_effect *    remove_pbc_effect;
     struct t_do_edsam *             do_edsam;
     struct t_do_radcon *            do_radcon;
 };
@@ -319,7 +319,8 @@ static real calc_radius(t_eigvec *vec)
 static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int step)
 {
     int i;
-    static FILE *fp = NULL;
+    FILE *fp;
+    char fn[STRLEN];
     rvec *xcoll;
     ivec *shifts, *eshifts;
 
@@ -327,21 +328,20 @@ static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int 
     if (!MASTER(cr))
         return;
     
-    xcoll = buf->xcoll;
-    shifts = buf->shifts_xcoll;
+    xcoll   = buf->xcoll;
+    shifts  = buf->shifts_xcoll;
     eshifts = buf->extra_shifts_xcoll;
     
-    if (!fp)
-      fp = gmx_fio_fopen("xcolldump.txt", "w");
+    sprintf(fn, "xcolldump_step%d.txt", step);
+    fp = fopen(fn, "w");
     
-    fprintf(fp, "Step %d\n", step);
     for (i=0; i<edi->sav.nr; i++)
         fprintf(fp, "%d %9.5f %9.5f %9.5f   %d %d %d   %d %d %d\n", edi->sav.anrs[i]+1, 
-                xcoll[i][XX], xcoll[i][YY], xcoll[i][ZZ],
-                shifts[i][XX], shifts[i][YY], shifts[i][ZZ], 
+                xcoll[i][XX]  , xcoll[i][YY]  , xcoll[i][ZZ],
+                shifts[i][XX] , shifts[i][YY] , shifts[i][ZZ], 
                 eshifts[i][XX], eshifts[i][YY], eshifts[i][ZZ]);
 
-    fflush(fp);
+    fclose(fp);
 }
 
 
@@ -390,20 +390,14 @@ static void dump_edi_eigenvecs(FILE *out, t_eigvec *ev,
 /* Debug helper */
 static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
 {
-    static FILE  *out;
-    static bool  bFirst=TRUE;
-    char         fname[255];
+    FILE  *out;
+    char  fn[STRLEN];
 
 
-    if (bFirst)
-    {
-        sprintf(fname, "EDdump%.2d", cr->nodeid);
-        out = fopen(fname, "w");
-        bFirst=FALSE;
-    }
+    sprintf(fn, "EDdump_node%d_edi%d", cr->nodeid, nr_edi);
+    out = ffopen(fn, "w");
 
-    fprintf(out,"=== ED dataset #%d ===\n", nr_edi);
-    fprintf(out,"#NINI\n %d\n#SELMAS\n %d\n#ANALYSIS_MAS\n %d\n",
+    fprintf(out,"#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
             edpars->nini,edpars->fitmas,edpars->pcamas);
     fprintf(out,"#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
             edpars->outfrq,edpars->maxedsteps,edpars->slope);
@@ -428,14 +422,12 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING"  , edpars->sav.nr);
 
     /* Dump ed local buffer */
-    fprintf(out, "buf->fitit            =%p\n", edpars->buf->fitit            );
+    //fprintf(out, "buf->fitit            =%p\n", edpars->buf->fitit            );
     fprintf(out, "buf->do_edfit         =%p\n", edpars->buf->do_edfit         );
-    fprintf(out, "buf->remove_pbc_effect=%p\n", edpars->buf->remove_pbc_effect);
     fprintf(out, "buf->do_edsam         =%p\n", edpars->buf->do_edsam         );
     fprintf(out, "buf->do_radcon        =%p\n", edpars->buf->do_radcon        );
 
-    fprintf(out, "\n");
-    fflush(out);
+    ffclose(out);
 }
 
 
@@ -1407,7 +1399,7 @@ static bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
 static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int edi_nr, t_commrec *cr)
 {
     int readmagic;
-    static const int magic=669;
+    const int magic=669;
     bool bEOF;
 
     
@@ -1550,6 +1542,10 @@ static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms, t_commre
 }
 
 
+struct t_fit_to_ref {
+    rvec *xcopy;       /* Working copy of the coordinates in fit_to_reference */
+};
+
 /* Fit the current coordinates to the reference coordinates 
  * Do not actually do the fit, just return rotation and translation.
  * Note that the COM of the reference structure was already put into 
@@ -1559,34 +1555,33 @@ static void fit_to_reference(rvec      *xcoll,    /* The coordinates to be fitte
                              matrix    rotmat,    /* The rotation matrix */
                              t_edpar   *edi)      /* Just needed for do_edfit */
 {
-    static rvec *xcopy=NULL;  /* Working copy of the coordinates */
-    static int  alloc=0;      /* Keep track of buffer alloc size */
-    static rvec com;          /* center of mass */
-    int         i;
-
+    rvec com;          /* center of mass */
+    int  i;
+    struct t_fit_to_ref *loc;
+    
 
     GMX_MPE_LOG(ev_fit_to_reference_start);
 
-    /* We do not touch the original coordinates but work on a copy.
-     * Take care with buffer allocation, since sref.nr can be different for
-     * each edi dataset */
-    if (alloc < edi->sref.nr)
+    /* Allocate memory the first time this routine is called for each edi dataset */
+    if (NULL == edi->buf->fit_to_ref)
     {
-        alloc = edi->sref.nr;
-        srenew(xcopy, alloc);
+        snew(edi->buf->fit_to_ref, 1);
+        snew(edi->buf->fit_to_ref->xcopy, edi->sref.nr);
     }
-
+    loc = edi->buf->fit_to_ref;
+ 
+    /* We do not touch the original coordinates but work on a copy. */
     for (i=0; i<edi->sref.nr; i++)
-        copy_rvec(xcoll[i], xcopy[i]);
+        copy_rvec(xcoll[i], loc->xcopy[i]);
 
     /* Calculate the center of mass */
-    get_COM(edi->sref.nr, xcopy, edi->sref.m, edi->sref.mtot, com);
+    get_COM(edi->sref.nr, loc->xcopy, edi->sref.m, edi->sref.mtot, com);
 
     /* Subtract the center of mass from the copy */
-    subtract_COM(edi->sref.nr, xcopy, com);
+    subtract_COM(edi->sref.nr, loc->xcopy, com);
 
     /* Determine the rotation matrix */
-    do_edfit(edi->sref.nr, edi->sref.x, xcopy, rotmat, edi);
+    do_edfit(edi->sref.nr, edi->sref.x, loc->xcopy, rotmat, edi);
 
     transvec[XX] = -com[XX];
     transvec[YY] = -com[YY];
@@ -2231,7 +2226,10 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
     GMX_MPE_LOG(ev_edsam_start);
 
     if (MASTER(cr))
-        fprintf(stderr, "ED: Initialzing essential dynamics constraints.\n");
+        fprintf(stderr, "ED: Initializing essential dynamics constraints.\n");
+    
+    /* Needed for initializing radacc radius in do_edsam */
+    ed->bFirst = 1;
 
     /* The input file is read by the master and the edi structures are
      * initialized here. Input is stored in ed->edpar. Then the edi
@@ -2478,22 +2476,10 @@ void do_edsam(t_inputrec  *ir,
     rvec    transvec;       /* translation vector */
     rvec    dv,dx,x_unsh;   /* tmp vectors for velocity, distance, unshifted x coordinate */
     real    dt_1;           /* 1/dt */
-    static bool  bFirst=TRUE;
     struct t_do_edsam *buf;
     t_edpar *edi;
     real    rmsdev=-1;      /* RMSD from reference structure prior to applying the constraints */
 
-
-#ifdef DEBUGPRINT
-    static FILE *fdebug;
-    char fname[255];
-
-    if (bFirst)
-    {
-        sprintf(fname, "debug%2.2d", cr->nodeid);
-        fdebug = fopen(fname, "w");
-    }
-#endif
 
     /* Check if ED sampling has to be performed */
     if ( ed->eEDtype==eEDnone )
@@ -2512,7 +2498,7 @@ void do_edsam(t_inputrec  *ir,
 
             buf=edi->buf->do_edsam;
 
-            if (bFirst)
+            if (ed->bFirst)
                 /* initialise radacc radius for slope criterion */
                 buf->oldrad=calc_radius(&edi->vecs.radacc);
 
@@ -2525,7 +2511,10 @@ void do_edsam(t_inputrec  *ir,
              * xs could already have been modified by an earlier ED */
             
             get_coordinates(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, xs, &edi->sav,  box, "XC_AVERAGE");  
-            
+
+#ifdef DEBUG_ED
+            dump_xcoll(edi, buf, cr, step);
+#endif
             /* Only assembly reference coordinates if their indices differ from the average ones */
             if (!edi->bRefEqAv)
                 get_coordinates(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, xs, &edi->sref, box, "XC_REFERENCE");
@@ -2630,7 +2619,7 @@ void do_edsam(t_inputrec  *ir,
         
     } /* END of loop over ED datasets */
 
-    bFirst = FALSE;
+    ed->bFirst = FALSE;
 
     GMX_MPE_LOG(ev_edsam_finish);
 }
