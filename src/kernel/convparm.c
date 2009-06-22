@@ -70,7 +70,8 @@ static int round_check(real r,int limit,int ftype,const char *name)
   return i;
 }
 
-static void set_ljparams(int comb,real reppow,real v,real w,real *c6,real *c12)
+static void set_ljparams(int comb,double reppow,real v,real w,
+			 real *c6,real *c12)
 {
   if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
     if (v >= 0) {
@@ -88,7 +89,7 @@ static void set_ljparams(int comb,real reppow,real v,real w,real *c6,real *c12)
 }
 
 static void assign_param(t_functype ftype,t_iparams *newparam,
-			 real old[MAXFORCEPARAM],int comb,real reppow)
+			 real old[MAXFORCEPARAM],int comb,double reppow)
 {
   int  i,j;
   real tmp;
@@ -411,7 +412,7 @@ static void new_interaction_list(t_ilist *ilist)
 }
 
 void convert_params(int atnr,t_params nbtypes[],
-		    t_molinfo *mi,int comb,real reppow,real fudgeQQ,
+		    t_molinfo *mi,int comb,double reppow,real fudgeQQ,
 		    gmx_mtop_t *mtop)
 {
   int    i,j,maxtypes,mt;
@@ -427,6 +428,7 @@ void convert_params(int atnr,t_params nbtypes[],
   ffp->atnr     = atnr;
   ffp->functype = NULL;
   ffp->iparams  = NULL;
+  ffp->reppow   = reppow;
 
   enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb,reppow,ffp,NULL,
 		 &maxtypes,TRUE,TRUE);

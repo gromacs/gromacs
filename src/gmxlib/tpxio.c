@@ -61,7 +61,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 65;
+static const int tpx_version = 66;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -72,7 +72,7 @@ static const int tpx_version = 65;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 19;
+static const int tpx_generation = 20;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -152,6 +152,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        },
+  { 66, F_PDISPCORR         },
   { 54, F_DHDL_CON          },
 };
 #define NFTUPD asize(ftupd)
@@ -1095,6 +1096,12 @@ static void do_ffparams(gmx_ffparams_t *ffparams,
   ndo_int(ffparams->functype,ffparams->ntypes,bDum);
   if (bRead && debug)
     pr_ivec(debug,0,"functype",ffparams->functype,ffparams->ntypes,TRUE);
+
+  if (file_version >= 66) {
+    do_double(ffparams->reppow);
+  } else {
+    ffparams->reppow = 12.0;
+  }
 
   if (file_version >= 57) {
     do_real(ffparams->fudgeQQ);

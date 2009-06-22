@@ -321,6 +321,12 @@ static void pr_real(FILE *fp,int indent,const char *title,real r)
   fprintf(fp,"%-20s = %g\n",title,r);
 }
 
+static void pr_double(FILE *fp,int indent,const char *title,double d)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"%-20s = %g\n",title,d);
+}
+
 static void pr_str(FILE *fp,int indent,const char *title,const char *s)
 {
   pr_indent(fp,indent);
@@ -937,6 +943,7 @@ void pr_ffparams(FILE *fp,int indent,const char *title,
                      interaction_function[ffparams->functype[i]].name);
       pr_iparams(fp,ffparams->functype[i],&ffparams->iparams[i]);
   }
+  (void) pr_double(fp,indent,"reppow",ffparams->reppow);
   (void) pr_real(fp,indent,"fudgeQQ",ffparams->fudgeQQ);
 }
 

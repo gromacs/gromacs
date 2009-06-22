@@ -1998,6 +1998,11 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     sfree(mgrp);
   }
 
+  if (ir->efep != efepNO && ir->sc_alpha != 0 &&
+      !gmx_within_tol(sys->ffparams.reppow,12.0,10*GMX_DOUBLE_EPS)) {
+    gmx_fatal(FARGS,"Soft-core interactions are only supported with VdW repulsion power 12");
+  }
+
   if (ir->ePull != epullNO && ir->pull->grp[0].nat == 0) {
     absolute_reference(ir,sys,AbsRef);
     for(m=0; m<DIM; m++) {

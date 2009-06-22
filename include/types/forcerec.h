@@ -171,6 +171,7 @@ typedef struct {
   real *phi;
 
   /* VdW stuff */
+  double reppow;
   real rvdw_switch,rvdw;
   real bham_b_max;
 

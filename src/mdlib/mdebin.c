@@ -184,7 +184,7 @@ t_mdebin *init_mdebin(int fp_ene,
       bEner[i] = TRUE;
     else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
       bEner[i] = EI_DYNAMICS(ir->eI);
-    else if (i == F_DISPCORR)
+    else if (i == F_DISPCORR || i == F_PDISPCORR)
       bEner[i] = (ir->eDispCorr != edispcNO);
     else if (i == F_DISRESVIOL)
       bEner[i] = (gmx_mtop_ftype_count(mtop,F_DISRES) > 0);

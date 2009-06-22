@@ -492,7 +492,8 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 #ifdef DEBUG_SWITCH
   FILE *fp;
 #endif
-  int  i,p;
+  int  i;
+  double reppow,p;
   double r1,rc,r12,r13;
   double r,r2,r6,rc6;
   double expr,Vtab,Ftab;
@@ -511,6 +512,8 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
 
+  reppow = fr->reppow;
+
   if (tprops[tp].bCoulomb) {
     r1 = fr->rcoulomb_switch;
     rc = fr->rcoulomb;
@@ -525,11 +528,11 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     ksw  = 0.0;
   if (bShift) {
     if (tp == etabShift)
-      p=1;
+      p = 1;
     else if (tp == etabLJ6Shift) 
-      p=6; 
+      p = 6; 
     else 
-      p=12;
+      p = reppow;
     
     A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc,p+2)*pow2(rc-r1));
     B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc,p+2)*pow3(rc-r1));
@@ -603,14 +606,14 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     case etabLJ12:
       /* Repulsion */
       Vtab  = r12;
-      Ftab  = 12.0*Vtab/r;
+      Ftab  = reppow*Vtab/r;
       break;
     case etabLJ12Switch:
     case etabLJ12Shift:
       /* Repulsion */
       if (r < rc) {                
 	Vtab  = r12;
-	Ftab  = 12.0*Vtab/r;
+	Ftab  = reppow*Vtab/r;
       }  
       break;
 	case etabLJ6Encad:
@@ -824,20 +827,22 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
 
 t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 			 bool bVerbose,const char *fn,
-			 real rtab,bool bForceUser,bool b14only)
+			 real rtab,int flags)
 {
   const char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   const char *fns14[3] = { "ctab14.xvg", "dtab14.xvg", "rtab14.xvg" };
   FILE        *fp;
   t_tabledata *td;
-  bool        bReadTab,bGenTab;
+  bool        b14only,bReadTab,bGenTab;
   real        x0,y0,yp;
   int         i,j,k,nx,nx0,tabsel[etiNR];
   void *      p_tmp;
   
   t_forcetable table;
 
-  if (bForceUser) {
+  b14only = (flags & GMX_MAKETABLES_14ONLY);
+
+  if (flags & GMX_MAKETABLES_FORCEUSER) {
     tabsel[etiCOUL] = etabUSER;
     tabsel[etiLJ6]  = etabUSER;
     tabsel[etiLJ12] = etabUSER;
@@ -863,7 +868,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   }
   if (bReadTab) {
     read_tables(out,fn,etiNR,0,td);
-    if (rtab == 0 || b14only) {
+    if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY)) {
       rtab      = td[0].x[td[0].nx-1];
       table.n   = td[0].nx;
       nx        = table.n;

@@ -276,7 +276,7 @@ new_status(char *topfile,char *topppfile,char *confin,
 	   bool bGenVel,bool bVerbose,t_state *state,
 	   gpp_atomtype_t atype,gmx_mtop_t *sys,
 	   int *nmi,t_molinfo **mi,t_params plist[],
-	   int *comb,real *reppow,real *fudgeQQ,
+	   int *comb,double *reppow,real *fudgeQQ,
 	   bool bMorse,
 	   int *nerror)
 {
@@ -921,7 +921,8 @@ int main (int argc, char *argv[])
   t_params     *plist;
   t_state      state;
   matrix       box;
-  real         max_spacing,reppow,fudgeQQ;
+  real         max_spacing,fudgeQQ;
+  double       reppow;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;

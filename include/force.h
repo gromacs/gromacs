@@ -93,9 +93,12 @@ extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 
 extern t_forcerec *mk_forcerec(void);
 
+#define GMX_MAKETABLES_FORCEUSER  (1<<0)
+#define GMX_MAKETABLES_14ONLY     (1<<1)
+
 extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
 				bool bVerbose,const char *fn,
-				real rtab,bool bForceUser,bool b14only);
+				real rtab,int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */

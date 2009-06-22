@@ -121,6 +121,7 @@ enum {
   F_ETOT,
   F_ECONSERVED,
   F_TEMP,
+  F_PDISPCORR,
   F_PRES,
   F_DVDL,
   F_DKDL,
@@ -232,7 +233,8 @@ typedef struct
   int        atnr;
   t_functype *functype;
   t_iparams  *iparams;
-  real       fudgeQQ;
+  double     reppow;     /* The repulsion power for VdW: C12*r^-reppow   */
+  real       fudgeQQ;    /* The scaling factor for Coulomb 1-4: f*q1*q2  */
 } gmx_ffparams_t;
 
 enum {

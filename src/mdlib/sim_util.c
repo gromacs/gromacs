@@ -1002,76 +1002,95 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-		   gmx_step_t step,int natoms,matrix box,real lambda,
-		   tensor pres,tensor virial,gmx_enerdata_t *enerd)
+                   gmx_step_t step,int natoms,matrix box,real lambda,
+                   tensor pres,tensor virial,gmx_enerdata_t *enerd)
 {
-  bool bCorrAll,bCorrPres;
-  real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
-  int  m;
-
-  enerd->term[F_DISPCORR] = 0.0;
-
-  if (ir->eDispCorr != edispcNO) {
-    bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-		 ir->eDispCorr == edispcAllEnerPres);
-    bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-		 ir->eDispCorr == edispcAllEnerPres);
-
-    invvol = 1/det(box);
-    if (fr->n_tpi) {
-      /* Only correct for the interactions with the inserted molecule */
-      dens = (natoms - fr->n_tpi)*invvol;
-      ninter = fr->n_tpi;
-    } else {
-      dens = natoms*invvol;
-      ninter = 0.5*natoms;
-    }
-
-    if (ir->efep == efepNO) {
-      avcsix    = fr->avcsix[0];
-      avctwelve = fr->avctwelve[0];
-    } else {
-      avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
-      avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
-    }
+    bool bCorrAll,bCorrPres;
+    real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
+    int  m;
     
-    enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-    enerd->term[F_DISPCORR] += avcsix*enerdiff;
-    dvdlambda = 0.0;
-    if (ir->efep != efepNO)
-      dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
-
-    if (bCorrAll) {
-      enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-      enerd->term[F_DISPCORR] += avctwelve*enerdiff;
-      if (fr->efep != efepNO)
-	dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
-    }
-
-    if (bCorrPres) {
-      svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
-      if (ir->eDispCorr == edispcAllEnerPres)
-	svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
-      
-      /* The factor 2 is because of the Gromacs virial definition */
-      spres = -2.0*invvol*svir*PRESFAC;
-      
-      for(m=0; m<DIM; m++) {
-	virial[m][m] += svir;
-	pres[m][m] += spres;
-      }
-      enerd->term[F_PRES] += spres;
-    }
-
-    if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-      fprintf(fplog,sepdvdlformat,"Dispersion correction",
-	      enerd->term[F_DISPCORR],dvdlambda);
+    enerd->term[F_DISPCORR] = 0.0;
+    enerd->term[F_PDISPCORR] = 0.0;
     
-    enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
-    if (fr->efep != efepNO) {
-      enerd->dvdl_lin += dvdlambda;
+    if (ir->eDispCorr != edispcNO)
+    {
+        bCorrAll  = (ir->eDispCorr == edispcAllEner ||
+                     ir->eDispCorr == edispcAllEnerPres);
+        bCorrPres = (ir->eDispCorr == edispcEnerPres ||
+                     ir->eDispCorr == edispcAllEnerPres);
+        
+        invvol = 1/det(box);
+        if (fr->n_tpi)
+        {
+            /* Only correct for the interactions with the inserted molecule */
+            dens = (natoms - fr->n_tpi)*invvol;
+            ninter = fr->n_tpi;
+        }
+        else
+        {
+            dens = natoms*invvol;
+            ninter = 0.5*natoms;
+        }
+        
+        if (ir->efep == efepNO)
+        {
+            avcsix    = fr->avcsix[0];
+            avctwelve = fr->avctwelve[0];
+        }
+        else
+        {
+            avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
+            avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
+        }
+    
+        enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
+        enerd->term[F_DISPCORR] += avcsix*enerdiff;
+        dvdlambda = 0.0;
+        if (ir->efep != efepNO)
+        {
+            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+        }
+        
+        if (bCorrAll)
+        {
+            enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
+            enerd->term[F_DISPCORR] += avctwelve*enerdiff;
+            if (fr->efep != efepNO)
+            {
+                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+            }
+        }
+        
+        if (bCorrPres)
+        {
+            svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
+            if (ir->eDispCorr == edispcAllEnerPres)
+            {
+                svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
+            }
+            /* The factor 2 is because of the Gromacs virial definition */
+            spres = -2.0*invvol*svir*PRESFAC;
+            
+            for(m=0; m<DIM; m++) {
+                virial[m][m] += svir;
+                pres[m][m] += spres;
+            }
+            enerd->term[F_PDISPCORR] = spres;
+            enerd->term[F_PRES]     += spres;
+        }
+        
+        if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+        {
+            fprintf(fplog,sepdvdlformat,"Dispersion correction",
+                    enerd->term[F_DISPCORR],dvdlambda);
+        }
+        
+        enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
+        if (fr->efep != efepNO)
+        {
+            enerd->dvdl_lin += dvdlambda;
+        }
     }
-  }
 }
 
 

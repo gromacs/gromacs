@@ -1025,7 +1025,7 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
     /* Append the two energy group names */
     sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
 	    eg1,eg2,ftp2ext(efXVG));
-  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,FALSE,FALSE);
+  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,0);
   /* Copy the contents of the table to separate coulomb and LJ tables too,
    * to improve cache performance.
    */
@@ -1237,7 +1237,10 @@ void init_forcerec(FILE *fp,
     fr->bTwinRange = fr->rlistlong > fr->rlist;
     fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
     
-    fr->bvdwtab    = (fr->vdwtype != evdwCUT);
+    fr->reppow     = mtop->ffparams.reppow;
+    fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
+                      !gmx_within_tol(mtop->ffparams.reppow,12.0,
+                                      10*GMX_DOUBLE_EPS));
     fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
                       fr->eeltype == eelRF_ZERO);
     
@@ -1523,8 +1526,11 @@ void init_forcerec(FILE *fp,
         }
     }
     if (bSep14tab)
+    {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,rtab,FALSE,TRUE);
+        fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,rtab,
+                                GMX_MAKETABLES_14ONLY);
+    }
     
     /* Wall stuff */
     fr->nwall = ir->nwall;
