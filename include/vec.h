@@ -678,7 +678,7 @@ static inline void msmul(matrix m1,real r1,matrix dest)
 static inline void m_inv_ur0(matrix src,matrix dest)
 {
   double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
-  if (gmx_within_tol(tmp,0.0,100*GMX_REAL_MIN))
+  if (fabs(tmp) <= 100*GMX_REAL_MIN)
     gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
 
   dest[XX][XX] = 1/src[XX][XX];
@@ -772,7 +772,7 @@ static inline real trace(matrix m)
 
 static inline real _divide(real a,real b,const char *file,int line)
 {
-    if (gmx_within_tol(b,0.0,GMX_REAL_MIN)) 
+    if (fabs(b) <= GMX_REAL_MIN) 
         gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);
     return a/b;
 }
