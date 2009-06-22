@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -100,7 +101,7 @@ gmx_within_tol(double   f1,
                double   tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if( fabs(f1-f2) <= tol*fabs(f1+f2+1.0) )
+    if( fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
     {
         return 1;
     }
