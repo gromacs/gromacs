@@ -166,7 +166,10 @@ extern void dd_partition_system(FILE            *fplog,
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
 
-void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog);
+extern void reset_dd_statistics_counters(gmx_domdec_t *dd);
+/* Reset all the statistics and counters for total run counting */
+
+extern void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog);
 
 /* In domdec_con.c */
 

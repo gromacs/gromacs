@@ -308,6 +308,7 @@ typedef struct gmx_domdec_comm
     /* Cycle counters */
     float cycl[ddCyclNr];
     int   cycl_n[ddCyclNr];
+    float cycl_max[ddCyclNr];
     /* Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
     int eFlop;
     double flop;
@@ -2595,6 +2596,15 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
     else
     {
         load = comm->cycl[ddCyclF];
+        if (comm->cycl_n[ddCyclF] > 1)
+        {
+            /* Subtract the maximum of the last n cycle counts
+             * to get rid of possible high counts due to other soures,
+             * for instance system activity, that would otherwise
+             * affect the dynamic load balancing.
+             */
+            load -= comm->cycl_max[ddCyclF];
+        }
     }
     
     return load;
@@ -4616,6 +4626,10 @@ void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl)
 {
     dd->comm->cycl[ddCycl] += cycles;
     dd->comm->cycl_n[ddCycl]++;
+    if (cycles > dd->comm->cycl_max[ddCycl])
+    {
+        dd->comm->cycl_max[ddCycl] = cycles;
+    }
 }
 
 static double force_flop_count(t_nrnb *nrnb)
@@ -4678,6 +4692,7 @@ static void clear_dd_cycle_counts(gmx_domdec_t *dd)
     {
         dd->comm->cycl[i] = 0;
         dd->comm->cycl_n[i] = 0;
+        dd->comm->cycl_max[i] = 0;
     }
     dd->comm->flop = 0;
     dd->comm->flop_n = 0;
@@ -7818,6 +7833,28 @@ static void add_dd_statistics(gmx_domdec_t *dd)
             comm->nat[ddnat] - comm->nat[ddnat-1];
     }
     comm->ndecomp++;
+}
+
+void reset_dd_statistics_counters(gmx_domdec_t *dd)
+{
+    gmx_domdec_comm_t *comm;
+    int ddnat;
+    
+    comm = dd->comm;
+
+    /* Reset all the statistics and counters for total run counting */
+    for(ddnat=ddnatZONE; ddnat<ddnatNR; ddnat++)
+    {
+        comm->sum_nat[ddnat-ddnatZONE] = 0;
+    }
+    comm->ndecomp = 0;
+    comm->nload = 0;
+    comm->load_step = 0;
+    comm->load_sum = 0;
+    comm->load_max = 0;
+    clear_ivec(comm->load_lim);
+    comm->load_mdf = 0;
+    comm->load_pme = 0;
 }
 
 void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)

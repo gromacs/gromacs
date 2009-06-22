@@ -170,6 +170,22 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
   return last;
 }
 
+void wallcycle_reset_all(gmx_wallcycle_t wc)
+{
+    int i;
+
+    if (wc)
+    {
+        for(i=0; i<ewcNR; i++)
+        {
+            wc[i].n = 0;
+            wc[i].c = 0;
+            wc[i].start = 0;
+            wc[i].last = 0;
+        }
+    }
+}
+
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
     double buf[ewcNR],*cyc_all,*buf_all;

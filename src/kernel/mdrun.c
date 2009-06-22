@@ -370,7 +370,7 @@ int main(int argc,char *argv[])
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-confout", FALSE, etBOOL, {&bConfout},
-      "HIDDENWrite the last configuration with -c" },
+      "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };

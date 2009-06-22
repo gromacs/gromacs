@@ -584,6 +584,38 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     return rc;
 }
 
+static void reset_all_counters(FILE *fplog,t_commrec *cr,
+                               gmx_step_t step,
+                               gmx_step_t *step_rel,t_inputrec *ir,
+                               gmx_wallcycle_t wcycle,t_nrnb *nrnb,
+                               gmx_runtime_t *runtime)
+{
+    char sbuf[22];
+
+    /* Reset all the counters related to performance over the run */
+    if (fplog)
+    {
+        fprintf(fplog,"\nStep %s: resetting all time and cycle counters\n",gmx_step_str(step,sbuf));
+    }
+    if (MASTER(cr))
+    {
+        fprintf(stderr,"\nStep %s: resetting all time and cycle counters\n\n",gmx_step_str(step,sbuf));
+    }
+    wallcycle_stop(wcycle,ewcRUN);
+    wallcycle_reset_all(wcycle);
+    if (DOMAINDECOMP(cr))
+    {
+        reset_dd_statistics_counters(cr->dd);
+    }
+    init_nrnb(nrnb);
+    ir->init_step += *step_rel;
+    ir->nsteps    -= *step_rel;
+    *step_rel = 0;
+    wallcycle_start(wcycle,ewcRUN);
+    runtime_start(runtime);
+    print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
+}
+    
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              bool bVerbose,bool bCompact,
              gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -655,12 +687,19 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   double      cycles;
+  int         reset_counters=0;
+  char        *env_ptr;
   char        sbuf[22],sbuf2[22];
-  bool       bHandledSignal=FALSE;
+  bool        bHandledSignal=FALSE;
 #ifdef GMX_FAHCORE
   /* Temporary addition for FAHCORE checkpointing */
   int chkpt_ret;
 #endif
+
+    if ((env_ptr=getenv("GMX_RESET_COUNTERS")) != NULL)
+    {
+        sscanf(env_ptr,"%d",&reset_counters);
+    }
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN);
@@ -1349,7 +1388,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         
         if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD)
         {
-            bCPT = (chkpt > 0 || bLastStep);
+            bCPT = (chkpt > 0 || (bLastStep && (Flags & MD_CONFOUT)));
             if (bCPT)
             {
                 chkpt = 0;
@@ -1950,6 +1989,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         if (DOMAINDECOMP(cr) && wcycle)
         {
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
+        }
+
+        if (step_rel == reset_counters)
+        {
+            /* Reset all the counters related to performance over the run */
+            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
+            reset_counters = 0;
         }
     }
     /* End of main MD loop */

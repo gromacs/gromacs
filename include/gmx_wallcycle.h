@@ -55,6 +55,9 @@ extern void wallcycle_start(gmx_wallcycle_t wc, int ewc);
 extern double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
+extern void wallcycle_reset_all(gmx_wallcycle_t wc);
+/* Resets all cycle counters to zero */
+
 extern void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[]);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
