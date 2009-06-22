@@ -668,7 +668,7 @@ void dd_make_reverse_top(FILE *fplog,
     if (dd->reverse_top->bExclRequired)
     {
         dd->nbonded_global += nexcl;
-        if (dd->n_intercg_excl && fplog)
+        if (EEL_FULL(ir->coulombtype) && dd->n_intercg_excl > 0 && fplog)
         {
             fprintf(fplog,"There are %d inter charge-group exclusions,\n"
                     "will use an extra communication step for exclusion forces for %s\n",

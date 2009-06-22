@@ -8229,7 +8229,14 @@ void dd_partition_system(FILE            *fplog,
         }
         else
         {
-            nat_f_novirsum = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
+            if (EEL_FULL(ir->coulombtype) && dd->n_intercg_excl > 0)
+            {
+                nat_f_novirsum = dd->nat_tot;
+            }
+            else
+            {
+                nat_f_novirsum = dd->nat_home;
+            }
         }
     }
     else
