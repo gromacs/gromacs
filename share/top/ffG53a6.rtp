@@ -12,6 +12,7 @@
      C     O   gb_5
      C    +N   gb_19
  [ angles ]
+   CA     C     O    ga_30   
    CA     C    +N    ga_19
     O     C    +N    ga_33
  [ impropers ]
