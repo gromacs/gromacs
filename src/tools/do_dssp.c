@@ -192,9 +192,9 @@ static void check_oo(t_atoms *atoms)
 
   for(i=0; (i<atoms->nr); i++) {
     if (strcmp(*(atoms->atomname[i]),"OXT")==0)
-      atoms->atomname[i]=&OOO;
+       *atoms->atomname[i]=OOO;
     else if (strcmp(*(atoms->atomname[i]),"O1")==0)
-      atoms->atomname[i]=&OOO;
+      *atoms->atomname[i]=OOO;
   }
 }
 
