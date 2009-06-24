@@ -1121,7 +1121,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   int     natoms,ai,aj,i,j,d,g,imin,jmin,nc;
   t_iatom *ia;
   int     *nrdf,*na_vcm,na_tot;
-  double  *nrdf_vcm,nrdf_uc,n_sub=0;
+  double  *nrdf_tc,*nrdf_vcm,nrdf_uc,n_sub=0;
   gmx_mtop_atomloop_all_t aloop;
   t_atom  *atom;
   int     mb,mol,as;
@@ -1141,11 +1141,15 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   natoms = mtop->natoms;
 
   /* Allocate one more for a possible rest group */
+  /* We need to sum degrees of freedom into doubles,
+   * since floats give too low nrdf's above 3 million atoms.
+   */
+  snew(nrdf_tc,groups->grps[egcTC].nr+1);
   snew(nrdf_vcm,groups->grps[egcVCM].nr+1);
   snew(na_vcm,groups->grps[egcVCM].nr+1);
   
   for(i=0; i<groups->grps[egcTC].nr; i++)
-    opts->nrdf[i] = 0;
+    nrdf_tc[i] = 0;
   for(i=0; i<groups->grps[egcVCM].nr+1; i++)
     nrdf_vcm[i] = 0;
 
@@ -1161,8 +1165,8 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 	  nrdf[i] += 2;
 	}
       }
-      opts->nrdf[ggrpnr(groups,egcTC,i)] += 0.5*nrdf[i];
-      nrdf_vcm[ggrpnr(groups,egcVCM,i)]  += 0.5*nrdf[i];
+      nrdf_tc [ggrpnr(groups,egcTC ,i)] += 0.5*nrdf[i];
+      nrdf_vcm[ggrpnr(groups,egcVCM,i)] += 0.5*nrdf[i];
     }
   }
 
@@ -1199,10 +1203,10 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 	  jmin = min(jmin,nrdf[aj]);
 	  nrdf[ai] -= imin;
 	  nrdf[aj] -= jmin;
-	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5*imin;
-	  opts->nrdf[ggrpnr(groups,egcTC,aj)] -= 0.5*jmin;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5*imin;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,aj)]  -= 0.5*jmin;
+	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
+	  nrdf_tc [ggrpnr(groups,egcTC ,aj)] -= 0.5*jmin;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,aj)] -= 0.5*jmin;
 	}
 	ia += interaction_function[F_CONSTR].nratoms+1;
 	i  += interaction_function[F_CONSTR].nratoms+1;
@@ -1211,8 +1215,8 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
       for(i=0; i<molt->ilist[F_SETTLE].nr; ) {
 	/* Subtract 1 dof from every atom in the SETTLE */
 	for(ai=as+ia[1]; ai<as+ia[1]+3; ai++) {
-	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 1;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 1;
+	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 1;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 1;
 	}
 	ia += 2;
 	i  += 2;
@@ -1243,17 +1247,17 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
       if (pull->grp[0].nat > 0) {
 	/* Subtract 1/2 dof from the reference group */
 	ai = pull->grp[0].ind[0];
-	if (opts->nrdf[ggrpnr(groups,egcTC,ai)] > 1) {
-	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5;
-	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5;
+	if (nrdf_tc[ggrpnr(groups,egcTC,ai)] > 1) {
+	  nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5;
 	  imin--;
 	}
       }
       /* Subtract 1/2 dof from the pulled group */
       ai = pull->grp[1+i].ind[0];
-      opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5*imin;
-      nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5*imin;
-      if (opts->nrdf[ggrpnr(groups,egcTC,ai)] < 0)
+      nrdf_tc [ggrpnr(groups,egcTC ,ai)] -= 0.5*imin;
+      nrdf_vcm[ggrpnr(groups,egcVCM,ai)] -= 0.5*imin;
+      if (nrdf_tc[ggrpnr(groups,egcTC,ai)] < 0)
 	gmx_fatal(FARGS,"Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative",gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups,egcTC,ai)]]);
     }
   }
@@ -1288,25 +1292,26 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
       /* Correct for VCM removal according to the fraction of each VCM
        * group present in this TC group.
        */
-      nrdf_uc = opts->nrdf[i];
+      nrdf_uc = nrdf_tc[i];
       if (debug) {
 	fprintf(debug,"T-group[%d] nrdf_uc = %g, n_sub = %g\n",
 		i,nrdf_uc,n_sub);
       }
-      opts->nrdf[i] = 0;
+      nrdf_tc[i] = 0;
       for(j=0; j<groups->grps[egcVCM].nr+1; j++) {
 	if (nrdf_vcm[j] > n_sub) {
-	  opts->nrdf[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
+	  nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
 	    (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
 	}
 	if (debug) {
 	  fprintf(debug,"  nrdf_vcm[%d] = %g, nrdf = %g\n",
-		  j,nrdf_vcm[j],opts->nrdf[i]);
+		  j,nrdf_vcm[j],nrdf_tc[i]);
 	}
       }
     }
   }
   for(i=0; (i<groups->grps[egcTC].nr); i++) {
+    opts->nrdf[i] = nrdf_tc[i];
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;
     fprintf(stderr,
@@ -1315,6 +1320,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   }
   
   sfree(nrdf);
+  sfree(nrdf_tc);
   sfree(nrdf_vcm);
   sfree(na_vcm);
 }
