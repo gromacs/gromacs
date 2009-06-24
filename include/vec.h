@@ -82,9 +82,11 @@
   double diprod(dvec a,dvec b)                     = a . b (inner product)
   real iiprod(ivec a,ivec b)                       = a . b (integers)
   real norm2(rvec a)                               = | a |^2 ( = x*y*z )
+  double dnorm2(dvec a)                            = | a |^2 ( = x*y*z )
   real norm(rvec a)                                = | a |
   double dnorm(dvec a)                             = | a |
   void cprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
+  void dprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
   void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
   real cos_angle(rvec a,rvec b)
   real cos_angle_no_table(rvec a,rvec b)
@@ -487,6 +489,11 @@ static inline real norm2(const rvec a)
   return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
+static inline double dnorm2(const dvec a)
+{
+  return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
+}
+
 static inline real norm(const rvec a)
 {
   return (real)sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
@@ -556,6 +563,13 @@ static inline real cos_angle_no_table(const rvec a,const rvec b)
 }
 
 static inline void cprod(const rvec a,const rvec b,rvec c)
+{
+  c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
+  c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];
+  c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
+}
+
+static inline void dcprod(const dvec a,const dvec b,dvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
   c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];

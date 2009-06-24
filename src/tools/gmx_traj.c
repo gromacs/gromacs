@@ -202,9 +202,10 @@ static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
 {
   static real **TCM=NULL,**L;
-  real   tm,m0,lxx,lxy,lxz,lyy,lyz,lzz,ekrot;
-  rvec   dx,a0,ocm;
-  rvec   xcm,vcm,acm;
+  double tm,m0,lxx,lxy,lxz,lyy,lyz,lzz,ekrot;
+  rvec   a0,ocm;
+  dvec   dx,b0;
+  dvec   xcm,vcm,acm;
   int    i,j,m,n;
 
   if (TCM == NULL) {
@@ -216,9 +217,9 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
       snew(L[i],DIM);
   }
 
-  clear_rvec(xcm);
-  clear_rvec(vcm);
-  clear_rvec(acm);
+  clear_dvec(xcm);
+  clear_dvec(vcm);
+  clear_dvec(acm);
   tm=0.0;
   for(i=0; i<isize; i++) {
     j = index[i];
@@ -231,11 +232,11 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
       acm[m]+=m0*a0[m];   /* rotational velocity around c.o.m. */
     }
   }
-  cprod(xcm,vcm,a0);
+  dcprod(xcm,vcm,b0);
   for(m=0; (m<DIM); m++) {
     xcm[m]/=tm;
     vcm[m]/=tm;
-    acm[m]-=a0[m]/tm;
+    acm[m]-=b0[m]/tm;
   }
 
   lxx=lxy=lxz=lyy=lyz=lzz=0.0;
@@ -277,11 +278,11 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
 
 static real ektrans(rvec v[],real mass[],int isize,atom_id index[])
 {
-  rvec   mvcom;
+  dvec   mvcom;
   real   mtot=0;
   int    i,j,d;
   
-  clear_rvec(mvcom);
+  clear_dvec(mvcom);
   for(i=0; i<isize; i++) {
     j = index[i];
     for(d=0; d<DIM; d++)
@@ -289,12 +290,12 @@ static real ektrans(rvec v[],real mass[],int isize,atom_id index[])
     mtot += mass[j];
   }
 
-  return norm2(mvcom)/(mtot*2);
+  return dnorm2(mvcom)/(mtot*2);
 }
 
 static real temp(rvec v[],real mass[],int isize,atom_id index[])
 {
-  real ekin2=0;
+  double ekin2=0;
   int  i,j;
 
   for(i=0; i<isize; i++) {
