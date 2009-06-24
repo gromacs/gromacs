@@ -3313,6 +3313,50 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
     }
 }
 
+static void set_dd_cell_sizes_dlb_change(gmx_domdec_t *dd,
+                                         gmx_ddbox_t *ddbox,bool bDynamicBox,
+                                         bool bUniform,gmx_step_t step)
+{
+    gmx_domdec_comm_t *comm;
+    int d,dim,d1;
+    bool bRowMember,bRowRoot;
+    real *cell_f_row;
+    
+    comm = dd->comm;
+
+    for(d=0; d<dd->ndim; d++)
+    {
+        dim = dd->dim[d];
+        bRowMember = TRUE;
+        bRowRoot = TRUE;
+        for(d1=d; d1<dd->ndim; d1++)
+        {
+            if (dd->ci[dd->dim[d1]] > 0)
+            {
+                if (d1 > d)
+                {
+                    bRowMember = FALSE;
+                }
+                bRowRoot = FALSE;
+            }
+        }
+        if (bRowMember)
+        {
+            if (bRowRoot)
+            {
+                set_dd_cell_sizes_dlb_root(dd,d,dim,comm->root[d],
+                                           ddbox,bDynamicBox,bUniform,step);
+                cell_f_row = comm->root[d]->cell_f;
+            }
+            else
+            {
+                cell_f_row = comm->cell_f_row;
+            }
+            distribute_dd_cell_sizes_dlb(dd,d,dim,cell_f_row,ddbox);
+        }
+    }
+}    
+
 static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
 {
     int d;
@@ -3331,48 +3375,19 @@ static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t *dd,gmx_ddbox_t *ddbox)
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,
                                   gmx_ddbox_t *ddbox,bool bDynamicBox,
-                                  bool bUniform,bool bDoDLB,gmx_step_t step)
+                                  bool bUniform,bool bDoDLB,gmx_step_t step,
+                                  gmx_wallcycle_t wcycle)
 {
     gmx_domdec_comm_t *comm;
-    int d,dim,d1;
-    bool bRowMember,bRowRoot;
-    real *cell_f_row;
+    int dim;
 
     comm = dd->comm;
     
     if (bDoDLB)
     {
-        for(d=0; d<dd->ndim; d++)
-        {
-            dim = dd->dim[d];
-            bRowMember = TRUE;
-            bRowRoot = TRUE;
-            for(d1=d; d1<dd->ndim; d1++)
-            {
-                if (dd->ci[dd->dim[d1]] > 0)
-                {
-                    if (d1 > d)
-                    {
-                        bRowMember = FALSE;
-                    }
-                    bRowRoot = FALSE;
-                }
-            }
-            if (bRowMember)
-            {
-                if (bRowRoot)
-                {
-                    set_dd_cell_sizes_dlb_root(dd,d,dim,comm->root[d],
-                                               ddbox,bDynamicBox,bUniform,step);
-                    cell_f_row = comm->root[d]->cell_f;
-                }
-                else
-                {
-                    cell_f_row = comm->cell_f_row;
-                }
-                distribute_dd_cell_sizes_dlb(dd,d,dim,cell_f_row,ddbox);
-            }
-        }
+        wallcycle_start(wcycle,ewcDDCOMMBOUND);
+        set_dd_cell_sizes_dlb_change(dd,ddbox,bDynamicBox,bUniform,step);
+        wallcycle_stop(wcycle,ewcDDCOMMBOUND);
     }
     else if (bDynamicBox)
     {
@@ -3447,9 +3462,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,
         {
             check_box_size(dd,ddbox);
         }
-        wallcycle_start(wcycle,ewcDDCOMMBOUND);
-        set_dd_cell_sizes_dlb(dd,ddbox,bDynamicBox,bUniform,bDoDLB,step);
-        wallcycle_stop(wcycle,ewcDDCOMMBOUND);
+        set_dd_cell_sizes_dlb(dd,ddbox,bDynamicBox,bUniform,bDoDLB,step,wcycle);
     }
     else
     {
