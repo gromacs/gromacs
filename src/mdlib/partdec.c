@@ -68,11 +68,12 @@ typedef struct gmx_partdec {
 				/* This way is not necessary to shift   */
 				/* the coordinates over the entire ring */
   rvec *vbuf;                   /* Buffer for summing the forces        */
+#ifdef GMX_MPI
+  MPI_Request mpi_req_rx;       /* MPI reqs for async transfers */
+  MPI_Request mpi_req_tx;
+#endif
 } gmx_partdec_t;
 
-#ifdef GMX_MPI
-static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
-#endif
 
 void gmx_tx(const t_commrec *cr,int dir,void *buf,int bufsize)
 {
@@ -91,8 +92,8 @@ void gmx_tx(const t_commrec *cr,int dir,void *buf,int bufsize)
 #endif
 #ifdef MPI_TEST
   /* workaround for crashes encountered with MPI on IRIX 6.5 */
-  if (mpi_req_tx != MPI_REQUEST_NULL) {
-    MPI_Test(&mpi_req_tx,&flag,&status);
+  if (cr->pd->mpi_req_tx != MPI_REQUEST_NULL) {
+    MPI_Test(&cr->pd->mpi_req_tx,&flag,&status);
     if (flag==FALSE) {
       fprintf(stdlog,"gmx_tx called before previous send was complete: nodeid=%d, buf=%x, bufsize=%d\n",
 	      nodeid,buf,bufsize);
@@ -101,12 +102,12 @@ void gmx_tx(const t_commrec *cr,int dir,void *buf,int bufsize)
   }
 #endif
   tag = 0;
-  if (MPI_Isend(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup,&mpi_req_tx) != 0)
+  if (MPI_Isend(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup,&cr->pd->mpi_req_tx) != 0)
     gmx_comm("MPI_Isend Failed");
 #endif
 }
 
-void gmx_tx_wait(int dir)
+void gmx_tx_wait(const t_commrec *cr, int dir)
 {
 #ifndef GMX_MPI
   gmx_call("gmx_tx_wait");
@@ -114,7 +115,7 @@ void gmx_tx_wait(int dir)
   MPI_Status  status;
   int mpi_result;
 
-  if ((mpi_result=MPI_Wait(&mpi_req_tx,&status)) != 0)
+  if ((mpi_result=MPI_Wait(&cr->pd->mpi_req_tx,&status)) != 0)
     gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
 #endif
 }
@@ -133,12 +134,12 @@ void gmx_rx(const t_commrec *cr,int dir,void *buf,int bufsize)
 	  nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Irecv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &mpi_req_rx) != 0 )
+  if (MPI_Irecv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &cr->pd->mpi_req_rx) != 0 )
     gmx_comm("MPI_Recv Failed");
 #endif
 }
 
-void gmx_rx_wait(int nodeid)
+void gmx_rx_wait(const t_commrec *cr, int nodeid)
 {
 #ifndef GMX_MPI
   gmx_call("gmx_rx_wait");
@@ -146,7 +147,7 @@ void gmx_rx_wait(int nodeid)
   MPI_Status  status;
   int mpi_result;
   
-  if ((mpi_result=MPI_Wait(&mpi_req_rx,&status)) != 0)
+  if ((mpi_result=MPI_Wait(&cr->pd->mpi_req_rx,&status)) != 0)
     gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
 #endif
 }
@@ -178,13 +179,13 @@ void gmx_tx_rx_real(const t_commrec *cr,
 #endif
 }
 		 
-void gmx_wait(int dir_send,int dir_recv)
+void gmx_wait(const t_commrec *cr, int dir_send,int dir_recv)
 {
 #ifndef GMX_MPI
   gmx_call("gmx_wait");
 #else
-  gmx_tx_wait(dir_send);
-  gmx_rx_wait(dir_recv);
+  gmx_tx_wait(cr, dir_send);
+  gmx_rx_wait(cr, dir_recv);
 #endif
 }
 
@@ -329,6 +330,10 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
      */
     snew(pd->vbuf,cgs->index[cgs->nr]);
   }
+#ifdef GMX_MPI
+  pd->mpi_req_tx=MPI_REQUEST_NULL;
+  pd->mpi_req_rx=MPI_REQUEST_NULL;
+#endif
 }
 
 static void print_partdec(FILE *fp,const char *title,

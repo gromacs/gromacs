@@ -1988,7 +1988,7 @@ int gmx_pme_do(gmx_pme_t pme,
         if (debug) {
             fprintf(debug,"PME: nnodes = %d, nodeid = %d\n",
                     cr->nnodes,cr->nodeid);
-            fprintf(debug,"Grid = %p\n",grid);
+            fprintf(debug,"Grid = %p\n",(void*)grid);
             if (grid == NULL)
                 gmx_fatal(FARGS,"No grid!");
         }

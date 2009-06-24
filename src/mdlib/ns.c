@@ -364,6 +364,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
                    maxsr,maxlr,0,icoul,FALSE,enlistATOM_ATOM);
    }
 
+   fr->ns.nblist_initialized=TRUE;
 }
 
  static void reset_nblist(t_nblist *nl)
@@ -2373,6 +2374,25 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     {
         /* This could be reduced with particle decomposition */
         ns_realloc_natoms(ns,mtop->natoms);
+    }
+
+    ns->nblist_initialized=FALSE;
+
+    /* nbr list debug dump */
+    {
+        char *ptr=getenv("GMX_DUMP_NL");
+        if (ptr)
+        {
+            ns->dump_nl=atoi(ptr);
+            if (fplog)
+            {
+                fprintf(fplog, "GMX_DUMP_NL = %d", ns->dump_nl);
+            }
+        }
+        else
+        {
+            ns->dump_nl=0;
+        }
     }
 }
 

@@ -817,7 +817,7 @@ static void check_input(
         gmx_fatal(FARGS, "Number of repeats < 1. Need at least one test for each configuration.");
 
     /* We need at least one topology to test */
-    if (ntprs <= 0)
+    if ((*ntprs) <= 0)
         gmx_fatal(FARGS, "-ntpr must be larger than zero.");
 
     if ( (1 == *ntprs) && !is_equal(maxfac,1.0) )

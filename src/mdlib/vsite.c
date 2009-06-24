@@ -95,10 +95,10 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 	   sizeof(rvec)*(vsitecomm->nnextconstr+vsitecomm->nnextvsite));
   
   if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
-    gmx_tx_wait(GMX_LEFT);
+    gmx_tx_wait(cr, GMX_LEFT);
   
   if(vsitecomm->nnextconstr>0 || vsitecomm->nnextvsite>0)
-    gmx_rx_wait(GMX_RIGHT);
+    gmx_rx_wait(cr, GMX_RIGHT);
   
   /* Put them where they belong */
   for(i=0;i<vsitecomm->nnextconstr;i++)
@@ -144,10 +144,10 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
     gmx_rx(cr,GMX_LEFT,prevbuf,recvsize);
   
   if(vsitecomm->nnextvsite>0)
-    gmx_tx_wait(GMX_RIGHT);
+    gmx_tx_wait(cr, GMX_RIGHT);
   
   if(vsitecomm->nprevvsite>0)
-    gmx_rx_wait(GMX_LEFT);
+    gmx_rx_wait(cr, GMX_LEFT);
   
   /* Put them where they belong */
   for(i=0;i<vsitecomm->nprevvsite;i++)
@@ -181,10 +181,10 @@ static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
     gmx_rx(cr,GMX_RIGHT,nextbuf,sizeof(rvec)*vsitecomm->nnextvsite);
   
   if(vsitecomm->nprevvsite>0)
-    gmx_tx_wait(GMX_LEFT);
+    gmx_tx_wait(cr, GMX_LEFT);
   
   if(vsitecomm->nnextvsite>0)
-    gmx_rx_wait(GMX_RIGHT);
+    gmx_rx_wait(cr, GMX_RIGHT);
 
   /* Put them where they belong */
   for(i=0;i<vsitecomm->nnextvsite;i++)
@@ -222,10 +222,10 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
     gmx_rx(cr,GMX_LEFT,prevbuf,sizeof(rvec)*vsitecomm->nprevconstr);
   
   if(vsitecomm->nnextconstr>0)
-    gmx_tx_wait(GMX_RIGHT);
+    gmx_tx_wait(cr, GMX_RIGHT);
 
   if(vsitecomm->nprevconstr>0)
-    gmx_rx_wait(GMX_LEFT);
+    gmx_rx_wait(cr, GMX_LEFT);
   
   /* Add them where they belong */
   for(i=0;i<vsitecomm->nprevconstr;i++)

@@ -322,6 +322,11 @@ typedef struct {
   /* Limit for printing large forces, negative is don't print */
   real print_force;
 
+  /* coarse load balancing time measurement */
+  double t_fnbf;
+  double t_wait;
+  int timesteps;
+
   /* User determined parameters, copied from the inputrec */
   int  userint1;
   int  userint2;
