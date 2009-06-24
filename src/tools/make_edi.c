@@ -278,10 +278,10 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec,
       copy_rvec(eigvecs[eig_list[n]-1][i],x);
       sum+=norm2(x);
       fprintf(fp,"%8.5f %8.5f %8.5f\n",x[XX],x[YY],x[ZZ]);      
-    };    
+    }    
     n++;
-  };
-};
+  }
+}
 
 
 /*enum referring to the different lists of eigenvectors*/
@@ -319,7 +319,7 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs, int nvec,
     /*Target and Origin positions */
     write_t_edx(fp,edpars->star,"NTARGET, XTARGET");
     write_t_edx(fp,edpars->sori,"NORIGIN, XORIGIN");
-}; 
+} 
 
 int read_conffile(char *confin,char *title,rvec *x[]) {
 /* read coordinates out of STX file  */
@@ -340,7 +340,7 @@ int read_conffile(char *confin,char *title,rvec *x[]) {
     snew(*x,natoms);
     read_stx_conf(confin,title,&confat,*x,NULL,NULL,box);
     return natoms;
-};   
+}  
 
 
 void read_eigenvalues(int vecs[],char *eigfile, real values[], bool bHesse, real kT) {
@@ -374,7 +374,7 @@ void read_eigenvalues(int vecs[],char *eigfile, real values[], bool bHesse, real
   for (i=0; i<nrow; i++)
     sfree(eigval[i]);
   sfree(eigval);
-};
+}
 
 
 static real *scan_vecparams(const char *str,const char * par, int nvecs)
@@ -405,7 +405,7 @@ void init_edx(struct edix *edx) {
   edx->nr=0;
   snew(edx->x,1);
   snew(edx->anrs,1);
-};
+}
 
 void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, atom_id igro[],rvec *x,char* structure) {
 /* filter2edx copies coordinates from x to edx which are given in index
@@ -422,8 +422,8 @@ void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, atom_id i
               gmx_fatal(FARGS,"Couldn't find atom with index %d in structure %s",index[i],structure);
          edx->anrs[ix]=index[i];
          copy_rvec(x[pos],edx->x[ix]);
-   };
-};
+   }
+}
 
 void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,struct edix *edx,int nfit,
                     atom_id ifit[],int natoms, atom_id index[]) {
@@ -447,7 +447,7 @@ void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,struct edi
   filter2edx(edx,nfit,ifit,ngro,igro,xtar,StructureFile);
   if (ifit!=index) /*if fit structure is different append these coordinates, too -- don't mind duplicates*/
      filter2edx(edx,natoms,index,ngro,igro,xtar,StructureFile);
-};
+}
 
 int main(int argc,char *argv[])
 {

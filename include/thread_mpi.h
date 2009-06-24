@@ -103,18 +103,21 @@ extern MPI_Datatype MPI_BYTE;
 #define MPI_ERR_GROUP                       1
 #define MPI_ERR_COMM                        2
 #define MPI_ERR_STATUS                      3
-#define MPI_ERR_DIMS                        4
-#define MPI_ERR_COORDS                      5
-#define MPI_ERR_CART_CREATE_NPROCS          6
-#define MPI_ERR_XFER_COUNTERPART            7
-#define MPI_ERR_XFER_BUFSIZE                8
-#define MPI_ERR_SEND_DEST                   9
-#define MPI_ERR_RECV_SRC                    10
-#define MPI_ERR_BUF                         11
-#define MPI_ERR_OP_FN                       12
-#define MPI_ERR_UNKNOWN                     13
-#define MPI_FAILURE                         14
-#define N_MPI_ERR                           15
+#define MPI_ERR_GROUP_RANK                  4
+#define MPI_ERR_DIMS                        5
+#define MPI_ERR_COORDS                      6
+#define MPI_ERR_CART_CREATE_NPROCS          7
+#define MPI_ERR_XFER_COUNTERPART            8
+#define MPI_ERR_XFER_BUFSIZE                9
+#define MPI_ERR_XFER_BUF_OVERLAP            10
+#define MPI_ERR_SEND_DEST                   11
+#define MPI_ERR_RECV_SRC                    12
+#define MPI_ERR_BUF                         13
+#define MPI_ERR_OP_FN                       14
+#define MPI_ERR_UNKNOWN                     15
+#define MPI_FAILURE                         16
+#define MPI_ERR_ENVELOPES                   17
+#define N_MPI_ERR                           18
 
 #define MPI_MAX_ERROR_STRING                256
 

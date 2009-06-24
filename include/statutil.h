@@ -80,30 +80,30 @@ typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
    etc. Right now, there is a global variable of this type in statutil.c to 
    enable the old functions, but this should change. All the functions below
    now have re-entrant versions listed with them. */
-struct env_info;
+typedef struct output_env *output_env_t;
 
-static void set_env_info(struct env_info *einf,  bool bView, bool bXvgrCodes, 
-                          const char *timenm);
-static void init_env_info(struct env_info *einf,  int argc, char *argv[],
-                           bool bView, bool bXvgrCodes, const char *timenm);
+static void set_output_env(output_env_t oenv,  bool bView, bool bXvgrCodes, 
+                           const char *timenm);
+static void init_output_env(output_env_t oenv,  int argc, char *argv[],
+                            bool bView, bool bXvgrCodes, const char *timenm);
 
     
 /* Return the name of the program */
 extern const char *Program(void);
-extern const char *get_program(const struct env_info *einf);
+extern const char *get_program(const output_env_t oenv);
 /* Id. without leading directory */
 extern const char *ShortProgram(void);
-extern const char *get_short_program(const struct env_info *einf);
+extern const char *get_short_program(const output_env_t oenv);
 /* Return the command line for this program */
 extern const char *command_line(void);
-extern const char *get_command_line(const struct env_info *einf);
+extern const char *get_command_line(const output_env_t oenv);
 
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
  */    
 extern void set_program_name(const char *argvzero);
-extern void set_program(struct env_info *einf, const char *argvzero);
+extern void set_program(output_env_t oenv, const char *argvzero);
 
 /************************************************
  *             Trajectory functions
@@ -184,31 +184,31 @@ extern int check_times(real t);
  */
 
 extern const char *time_unit(void);
-extern const char *get_time_unit(const struct env_info *einf);
+extern const char *get_time_unit(const output_env_t oenv);
 /* return time unit (e.g. ps or ns) */
 
 extern const char *time_label(void);
-extern const char *get_time_label(const struct env_info *einf);
+extern const char *get_time_label(const output_env_t oenv);
 /* return time unit label (e.g. "Time (ps)") */
 
 extern const char *xvgr_tlabel(void);
-extern const char *get_xvgr_tlabel(const struct env_info *einf);
+extern const char *get_xvgr_tlabel(const output_env_t oenv);
 /* retrun x-axis time label for xmgr */
 
 extern real time_factor(void);
-extern real get_time_factor(const struct env_info *einf);
+extern real get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
 extern real time_invfactor(void);
-extern real get_time_invfactor(const struct env_info *einf);
+extern real get_time_invfactor(const output_env_t oenv);
 /* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
 
 extern real convert_time(real time);
-extern real conv_time(const struct env_info *einf, real time);
+extern real conv_time(const output_env_t oenv, real time);
 /* return converted time */
 
 extern void convert_times(int n, real *time);
-extern void conv_times(const struct env_info *einf, int n, real *time);
+extern void conv_times(const output_env_t oenv, int n, real *time);
 /* convert array of times */
 
 /* For trxframe.flags, used in trxframe read routines.

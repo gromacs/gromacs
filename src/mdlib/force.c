@@ -1579,6 +1579,12 @@ void init_forcerec(FILE *fp,
     }
     
     fr->print_force = print_force;
+
+
+    /* coarse load balancing vars */
+    fr->t_fnbf=0.;
+    fr->t_wait=0.;
+    fr->timesteps=0;
     
     /* Initialize neighbor search */
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
@@ -1627,26 +1633,13 @@ void ns(FILE *fp,
         bool       bFillGrid,
         bool       bDoForces)
 {
-  static bool bFirst=TRUE;
-  static int  nDNL;
   char   *ptr;
   int    nsearch;
 
   GMX_MPE_LOG(ev_ns_start);
-
-  if (bFirst) {
-    ptr=getenv("DUMPNL");
-    if (ptr) {
-      nDNL = atoi(ptr);
-      if (fp) {
-	fprintf(fp,"nDNL = %d\n",nDNL);  
-      }
-    } else
-      nDNL=0;
-    /* Allocate memory for the neighbor lists */
-    init_neighbor_list(fp,fr,md->homenr);
-      
-    bFirst=FALSE;
+  if (!fr->ns.nblist_initialized)
+  {
+      init_neighbor_list(fp, fr, md->homenr);
   }
     
   if (fr->bTwinRange) 
@@ -1663,8 +1656,8 @@ void ns(FILE *fp,
     count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
     &(top->idef),opts->ngener);
   */
-  if (nDNL > 0)
-    dump_nblist(fp,cr,fr,nDNL);
+  if (fr->ns.dump_nl > 0)
+    dump_nblist(fp,cr,fr,fr->ns.dump_nl);
 
   GMX_MPE_LOG(ev_ns_finish);
 }
@@ -1709,8 +1702,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
-    static double  t_fnbf=0.0, t_wait=0.0;
-    static int     timesteps=0;
     
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
@@ -1743,7 +1734,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     dvdlambda = 0;
     
 #ifdef GMX_MPI
-    /*#define TAKETIME ((cr->npmenodes) && (timesteps < 12))*/
+    /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
 #define TAKETIME FALSE
     if (TAKETIME)
     {
@@ -1832,7 +1823,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     if (TAKETIME)
     {
         t1=MPI_Wtime();
-        t_fnbf += t1-t0;
+        fr->t_fnbf += t1-t0;
     }
 #endif
     
@@ -2107,14 +2098,15 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         t2=MPI_Wtime();
         MPI_Barrier(cr->mpi_comm_mygroup);
         t3=MPI_Wtime();
-        t_wait += t3-t2;
-        if (timesteps == 11)
+        fr->t_wait += t3-t2;
+        if (fr->timesteps == 11)
         {
             fprintf(stderr,"* PP load balancing info: node %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n", 
-                    cr->nodeid, gmx_step_str(timesteps,buf), 
-                    100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
+                    cr->nodeid, gmx_step_str(fr->timesteps,buf), 
+                    100*fr->t_wait/(fr->t_wait+fr->t_fnbf), 
+                    (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);
         }	  
-        timesteps++;
+        fr->timesteps++;
     }
 #endif
     

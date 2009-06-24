@@ -281,8 +281,8 @@ static void mpi_errors_return_fn(MPI_Comm *comm, int *err);
 struct mpi_errhandler_ mpi_errors_are_fatal = { 0, mpi_errors_are_fatal_fn };
 struct mpi_errhandler_ mpi_errors_return = { 0, mpi_errors_return_fn };
 
-MPI_Errhandler MPI_ERRORS_ARE_FATAL=&mpi_errors_are_fatal;;
-MPI_Errhandler MPI_ERRORS_RETURN=&mpi_errors_return;;
+MPI_Errhandler MPI_ERRORS_ARE_FATAL=&mpi_errors_are_fatal;
+MPI_Errhandler MPI_ERRORS_RETURN=&mpi_errors_return;
 
 
 
@@ -514,16 +514,19 @@ char *mpi_errmsg[] =
     "Invalid MPI_Group",
     "Invalid MPI_Comm",
     "Invalid MPI_Status",
+    "Invalid MPI_Group rank",
     "Invalid Cartesian topology dimensions",
     "Invalid Cartesian topology coordinates",
     "Insufficient number processes for Cartesian topology",
     "Invalid counterpart for MPI transfer",
     "Receive buffer size too small for transmission",
+    "Overlapping send/receive buffers: probably due to thread-unsafe code.",
     "Invalid send destination",
     "Invalid receive source",
     "Invalid buffer",
     "Invalid reduce operator",
-    "Transmission failure"
+    "Transmission failure",
+    "Out of receive envelopes: this shouldn't happen (probably a bug).",
     "Unknown MPI error"
 };
 
@@ -533,6 +536,9 @@ char *mpi_errmsg[] =
 static struct mpi_thread_ *tMPI_Get_current(void);
 /* mostly for debugging: gives current thread if thr==0*/
 static int tMPI_Threadnr(struct mpi_thread_ *thr);
+
+/* handle an error, returning the errorcode */
+static int tMPI_Error(MPI_Comm comm, int mpi_errno);
 
 
 /* check whether we're the main thread */
@@ -637,8 +643,9 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
 
 /* run a single binary reduce operation on src_a and src_b, producing dest. 
    dest and src_a may be identical */
-static void tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
-                               MPI_Datatype datatype, int count, MPI_Op op);
+static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
+                        MPI_Datatype datatype, int count, MPI_Op op, 
+                        MPI_Comm comm);
 
 
 /* and we need this prototype */
@@ -663,8 +670,6 @@ static int tMPI_Threadnr(struct mpi_thread_ *thr)
     return tMPI_Comm_seek_rank(MPI_COMM_WORLD, tMPI_Get_current());
 }
 
-
-
 static bool tMPI_Is_master(void)
 {
     /* if there are no other threads, we're the main thread */
@@ -682,6 +687,12 @@ MPI_Comm tMPI_Get_comm_self(void)
     return th->self_comm;
 }
 
+static int tMPI_Error(MPI_Comm comm, int mpi_errno)
+{
+    comm->erh->err=mpi_errno;
+    comm->erh->fn(&comm, &mpi_errno);
+    return mpi_errno;
+}
 
 int MPI_Error_string(int errorcode, char *strn, int *resultlen)
 {
@@ -734,6 +745,11 @@ static void mpi_errors_are_fatal_fn(MPI_Comm *comm, int *err)
 
 static void mpi_errors_return_fn(MPI_Comm *comm, int *err)
 {
+    char errstr[MPI_MAX_ERROR_STRING];
+    int len;
+
+    MPI_Error_string(*err, errstr, &len);
+    fprintf(stderr, "MPI error: %s\n", errstr);
     return;
 }
 
@@ -804,8 +820,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
 
         if (gmx_thread_key_create(&id_key, NULL))
         {
-            gmx_fatal(errno, __FILE__, __LINE__, 
-                    "thread_key_create failed");
+            gmx_fatal(errno, __FILE__, __LINE__, "thread_key_create failed");
         }
         /*printf("thread keys created\n"); fflush(NULL);*/
         for(i=0;i<N;i++)
@@ -1017,10 +1032,7 @@ int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int *count)
 {
     if (!status)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_STATUS;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD,
-                                       &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_STATUS);
     }
     *count = status->transferred/datatype->size;
     return MPI_SUCCESS;
@@ -1245,7 +1257,7 @@ int MPI_Group_incl(MPI_Group group, int n, int *ranks, MPI_Group *newgroup)
     {
         if (ranks[i] < 0 || !group || ranks[i] >= group->N)
         {
-            gmx_fatal(FARGS, "MPI_Group_incl: group rank illegal");
+            return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_GROUP_RANK);
         }
         ng->peers[i]=group->peers[ranks[i]];
     }
@@ -1477,9 +1489,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     if (!comm)
     {
         *newcomm=NULL;
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     /*printf("**Calling MPI_Comm_split with color %d, key %d\n",color, key);*/
 
@@ -1648,9 +1658,7 @@ int MPI_Topo_test(MPI_Comm comm, int status)
 {
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
 
     if (comm->cart)
@@ -1667,9 +1675,7 @@ int MPI_Cartdim_get(MPI_Comm comm, int *ndims)
 {
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!comm->cart || comm->cart->ndims==0)
     {
@@ -1688,9 +1694,7 @@ int MPI_Cart_get(MPI_Comm comm, int maxdims, int *dims, int *periods,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!comm->cart || comm->cart->ndims==0)
         return MPI_SUCCESS;
@@ -1701,9 +1705,7 @@ int MPI_Cart_get(MPI_Comm comm, int maxdims, int *dims, int *periods,
     {
         if (i>=maxdims)
         {
-            comm->erh->err=MPI_ERR_DIMS;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_DIMS);
         }
         dims[i]=comm->cart->dims[i];
         periods[i]=comm->cart->periods[i];
@@ -1717,9 +1719,7 @@ int MPI_Cart_rank(MPI_Comm comm, int *coords, int *rank)
     int i,mul=1,ret=0;
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!comm->cart || comm->cart->ndims==0)
         return MPI_SUCCESS;
@@ -1739,9 +1739,7 @@ int MPI_Cart_rank(MPI_Comm comm, int *coords, int *rank)
         {
             if (rcoord < 0 || rcoord >= comm->cart->dims[i])
             {
-                comm->erh->err=MPI_ERR_DIMS;
-                comm->erh->fn(&comm, &(comm->erh->err));
-                return comm->erh->err;
+                return tMPI_Error(comm, MPI_ERR_DIMS);
             }
         }
         ret += mul*rcoord;
@@ -1757,17 +1755,13 @@ int MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int *coords)
     int rank_left=rank;
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!comm->cart || comm->cart->ndims==0)
         return MPI_SUCCESS;
     if (maxdims < comm->cart->ndims)
     {
-        comm->erh->err=MPI_ERR_DIMS;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_DIMS);
     }
 
     /* again, row-major ordering */
@@ -1794,9 +1788,7 @@ int MPI_Cart_map(MPI_Comm comm, int ndims, int *dims, int *periods,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     /* calculate the total number of procs in cartesian comm */
     for(i=0;i<ndims;i++)
@@ -1831,9 +1823,7 @@ int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims, int *periods,
 
     if (!comm_old)
     {
-        comm_old->erh->err=MPI_ERR_COMM;
-        comm_old->erh->fn(&comm_old, &(comm_old->erh->err));
-        return comm_old->erh->err;
+        return tMPI_Error(comm_old, MPI_ERR_COMM);
     }
     /* calculate the total number of procs in cartesian comm */
     for(i=0;i<ndims;i++)
@@ -1845,11 +1835,8 @@ int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims, int *periods,
     {
         *comm_cart=MPI_COMM_NULL;
 #if 1
-        comm_old->erh->err=MPI_ERR_CART_CREATE_NPROCS;
-        comm_old->erh->fn(&comm_old, &(comm_old->erh->err));
-        return comm_old->erh->err;
+        return tMPI_Error(comm_old, MPI_ERR_CART_CREATE_NPROCS);
 #endif
-        return MPI_FAILURE;
     }
 
     if (key >= Ntot)
@@ -1904,8 +1891,8 @@ static struct mpi_thread_ *tMPI_Get_thread(MPI_Comm comm, int rank)
     /* check destination */
     if ( (rank < 0) || (rank > comm->grp.N) )
     {
-        gmx_fatal(FARGS, "illegal rank");
-        return 0;
+        tMPI_Error(comm, MPI_ERR_GROUP_RANK);
+        return NULL;
     }
     return comm->grp.peers[rank];
 }
@@ -2053,7 +2040,11 @@ static void tMPI_Try_put_send_envelope(struct mpi_send_envelope_ *ev)
 #endif
         /* we add the envelope to the receiver's list */
         if (ev->dest->N_evs >= MAX_ENVELOPES)
+        {
+            tMPI_Error(ev->comm, MPI_ERR_ENVELOPES);
             gmx_fatal(FARGS, "A receive thread has reached the maximum number of send envelopes. This is probably a bug\n");
+            exit(1);
+        }
         ev->dest->evs[ev->dest->N_evs]=ev;
         ev->dest->N_evs++;
     }
@@ -2125,7 +2116,9 @@ static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev)
 #endif
         if (ev->dest->N_evr >= MAX_ENVELOPES)
         {
-            gmx_fatal(FARGS, "A receive thread has reached the maximum number of recv envelopes. This is probably a bug\n");
+            tMPI_Error(ev->comm, MPI_ERR_ENVELOPES);
+            gmx_fatal(FARGS, "A receive thread has reached the maximum number of receive envelopes. This is probably a bug\n");
+            exit(1);
         }
         ev->dest->evr[ev->dest->N_evr]=ev;
         ev->dest->N_evr++;
@@ -2210,22 +2203,24 @@ static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status,
 
     if (!evr->counterpart)
     {
-        evr->comm->erh->err=MPI_ERR_XFER_COUNTERPART;
-        evr->comm->erh->fn(&(evr->comm), &(evr->comm->erh->err));
+        ret=tMPI_Error((evr->comm), MPI_ERR_XFER_COUNTERPART);
         rets=MPI_FAILURE;
-        ret=evr->comm->erh->err;
         goto end;
     }
 
     transferred=evr->counterpart->bufsize;
     if (evr->bufsize < transferred)
     {
-        evr->comm->erh->err=MPI_ERR_XFER_BUFSIZE;
-        evr->comm->erh->fn(&evr->comm, &(evr->comm->erh->err));
+        ret=tMPI_Error((evr->comm), MPI_ERR_XFER_BUFSIZE);
         rets=MPI_FAILURE;
-        ret=evr->comm->erh->err;
         evr->finished=TRUE;
         evr->counterpart->finished=TRUE;
+        goto end;
+    }
+    if ( evr->counterpart->buf == evr->buf)
+    {
+        ret=tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
+        rets=MPI_FAILURE;
         goto end;
     }
     /* we do the actual transfer */
@@ -2287,23 +2282,26 @@ static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs,
     }
     if (!evs->counterpart)
     {
-        evs->comm->erh->err=MPI_ERR_XFER_COUNTERPART;
-        evs->comm->erh->fn(&(evs->comm), &(evs->comm->erh->err));
+        ret=tMPI_Error((evs->comm), MPI_ERR_XFER_COUNTERPART);
         rets=MPI_FAILURE;
-        ret=evs->comm->erh->err;
         goto end;
     }
     transferred=evs->bufsize;
     if (evs->counterpart->bufsize < transferred)
     {
-        evs->comm->erh->err=MPI_ERR_XFER_BUFSIZE;
-        evs->comm->erh->fn(&evs->comm, &(evs->comm->erh->err));
+        ret=tMPI_Error((evs->comm), MPI_ERR_XFER_BUFSIZE);
         rets=MPI_FAILURE;
-        ret=evs->comm->erh->err;
         evs->finished=TRUE;
         evs->counterpart->finished=TRUE;
         goto end;
     }
+    if ( evs->counterpart->buf == evs->buf)
+    {
+        ret=tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
+        rets=MPI_FAILURE;
+        goto end;
+    }
+
     /* we do the actual transfer */
     memcpy(evs->counterpart->buf, evs->buf, transferred);
     evs->counterpart->transferred=transferred;
@@ -2339,21 +2337,15 @@ static int MPI_Send_r(void* buf, int count, MPI_Datatype datatype, int dest,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!send_dst)
     {
-        comm->erh->err=MPI_ERR_SEND_DEST;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_SEND_DEST);
     }
     if (!buf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     tMPI_Prep_send_envelope(&sd, comm, send_dst, buf, count, datatype, tag, xt);
@@ -2379,15 +2371,11 @@ static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!buf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     if(status)
@@ -2400,9 +2388,7 @@ static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype,
         recv_src=tMPI_Get_thread(comm, source);
         if (!recv_src)
         {
-            comm->erh->err=MPI_ERR_RECV_SRC;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_RECV_SRC); 
         }
     }
 
@@ -2431,21 +2417,15 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!send_dst)
     {
-        comm->erh->err=MPI_ERR_SEND_DEST;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_SEND_DEST); 
     }
     if (!sendbuf || !recvbuf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
     if(status)
     {
@@ -2456,9 +2436,7 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
         recv_src=tMPI_Get_thread(comm, source);
         if (!recv_src)
         {
-            comm->erh->err=MPI_ERR_RECV_SRC;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_RECV_SRC);
         }
     }
     /* we first prepare to send */
@@ -2501,21 +2479,15 @@ static int tMPI_Isend_r(void* buf, int count, MPI_Datatype datatype, int dest,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!send_dst)
     {
-        comm->erh->err=MPI_ERR_SEND_DEST;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_SEND_DEST);
     }
     if (!buf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     rq->recv=FALSE;
@@ -2537,15 +2509,11 @@ static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!buf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     if (source!=MPI_ANY_SOURCE)
@@ -2553,9 +2521,7 @@ static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype,
         recv_src=tMPI_Get_thread(comm, source);
         if (!recv_src)
         {
-            comm->erh->err=MPI_ERR_RECV_SRC;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_RECV_SRC);
         }
     }
     rq->recv=TRUE;
@@ -2877,12 +2843,11 @@ int MPI_Barrier(MPI_Comm comm)
 {
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
 
-    gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
+    if (comm->grp.N>1)
+        gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
     return MPI_SUCCESS;
 }
 
@@ -2894,15 +2859,11 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
     int myrank,ret=MPI_SUCCESS;
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!buffer)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
@@ -2977,15 +2938,11 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!sendbuf || !recvbuf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
 
@@ -3022,9 +2979,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (myrank==root)
     {
@@ -3037,9 +2992,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
         if (!recvbuf)
         {
-            comm->erh->err=MPI_ERR_BUF;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_BUF);
         }
 
         if (N>MAX_THREADS)
@@ -3086,9 +3039,11 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                     sfree(rqr);
                     sfree(rq);
                 }
-                comm->erh->err=MPI_ERR_XFER_BUFSIZE;
-                comm->erh->fn(&comm, &(comm->erh->err));
-                return comm->erh->err;
+                return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
+            }
+            if ( (char*)recvbuf + displs[myrank]*recvtype->size == sendbuf )
+            {
+                return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
             }
             memcpy((char*)recvbuf + displs[myrank]*recvtype->size,
                    sendbuf, sendsize);
@@ -3104,9 +3059,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     {
         if (!sendbuf)
         {
-            comm->erh->err=MPI_ERR_BUF;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_BUF);
         }
         ret=MPI_Send_r(sendbuf, sendcount, sendtype, root, TMPI_GATHER_TAG, 
                        comm, multicast);
@@ -3162,9 +3115,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     int myrank,ret=MPI_SUCCESS;
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
@@ -3179,9 +3130,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 
         if (!sendbuf)
         {
-            comm->erh->err=MPI_ERR_BUF;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_BUF);
         }
 
         if (N>MAX_THREADS)
@@ -3220,11 +3169,14 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
             int sendsize=sendtype->size*sendcounts[myrank];
             if (recvsize < sendsize)
             {
-                comm->erh->err=MPI_ERR_XFER_BUFSIZE;
-                comm->erh->fn(&comm, &(comm->erh->err));
-                return comm->erh->err;
+                return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
             }
-            memcpy(recvbuf, (char*)sendbuf+ displs[myrank]*sendtype->size,
+            if ( recvbuf == (char*)sendbuf+displs[myrank]*sendtype->size )
+            {
+                return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
+            }
+
+            memcpy(recvbuf, (char*)sendbuf+displs[myrank]*sendtype->size,
                    sendsize);
         }
         ret=tMPI_Waitall_r(N, rq, 0, FALSE);
@@ -3238,9 +3190,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     {
         if (!recvbuf)
         {
-            comm->erh->err=MPI_ERR_BUF;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_BUF);
         }
         ret=MPI_Recv_r(recvbuf, recvcount, recvtype, root, TMPI_SCATTER_TAG, 
                        comm, 0, multicast);
@@ -3271,9 +3221,7 @@ int MPI_Alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (N>MAX_THREADS)
     {
@@ -3323,15 +3271,11 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     if (!sendbuf || !recvbuf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
@@ -3369,9 +3313,12 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
         int sendsize=sendtype->size*sendcounts[myrank];
         if (recvsize < sendsize)
         {
-            comm->erh->err=MPI_ERR_XFER_BUFSIZE;
-            comm->erh->fn(&comm, &(comm->erh->err));
-            return comm->erh->err;
+            return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
+        }
+        if ( (char*)recvbuf+rdispls[myrank]*recvtype->size == 
+             (char*)sendbuf+sdispls[myrank]*sendtype->size )
+        {
+            return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
         }
         memcpy((char*)recvbuf + rdispls[myrank]*recvtype->size, 
                (char*)sendbuf + sdispls[myrank]*sendtype->size,
@@ -3408,18 +3355,25 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
 
 
 
-void tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
-                        MPI_Datatype datatype, int count, MPI_Op op)
+int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
+                        MPI_Datatype datatype, int count, MPI_Op op, 
+                        MPI_Comm comm)
 {
     tMPI_Op_fn fn=datatype->op_functions[op];
 
+    if (src_a==src_b)
+    {
+        return tMPI_Error(comm, MPI_ERR_XFER_BUF_OVERLAP);
+    }
     fn(dest, src_a, src_b, count);
+    return MPI_SUCCESS;
 }
 
 int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
                MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    int i;
 
     /* this function uses a binary tree-like reduction algorithm: */
     int N=tMPI_Comm_N(comm);
@@ -3434,23 +3388,17 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
    
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
 #if 0
     if (!sendbuf || recvbuf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 #endif
     if ( (!datatype->op_functions) || (!datatype->op_functions[op]) )
     {
-        comm->erh->err=MPI_ERR_OP_FN;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_OP_FN);
     }
 
 
@@ -3467,6 +3415,16 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
        send/recvbuf in the global list */
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
 
+    /* check the buffers */
+    for(i=0;i<N;i++)
+    {
+        if ( (i!=myrank) && ( (comm->recvbuf[i]==recvbuf) || 
+                              (comm->sendbuf[i]==sendbuf) ) )
+        {
+            return tMPI_Error(comm, MPI_ERR_XFER_BUF_OVERLAP);
+        }
+    }
+
     while(Nnbrs>1)
     {
         int nbr;
@@ -3481,6 +3439,8 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
         {
             if (myrank_rtr+nbr_dist<N) 
             {
+                void *a,*b;
+                int ret;
 #ifdef TMPI_DEBUG
                 printf("%d: reducing with %d, iteration=%d\n", 
                         myrank, myrank+nbr_dist, iteration);
@@ -3488,7 +3448,6 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
 #endif
                /* we reduce with our neighbour*/
                 nbr=(N+myrank+nbr_dist)%N; /* here we use the real rank */
-                void *a,*b;
                 if (iteration==0)
                 {
                     a=sendbuf;
@@ -3499,7 +3458,9 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
                     a=recvbuf;
                     b=(void*)(comm->recvbuf[nbr]);
                 }
-                tMPI_Reduce_run_op(recvbuf, a, b, datatype, count, op);
+                if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype, 
+                                            count, op, comm)) != MPI_SUCCESS)
+                    return ret;
             }
             else
             {
@@ -3539,8 +3500,9 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
 int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
 {
-    void *rootbuf=0;
+    void *rootbuf=NULL; /* root process' receive buffer */
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    int i;
 
     /* this function uses a binary tree-like reduction algorithm: */
     int N=tMPI_Comm_N(comm);
@@ -3551,35 +3513,25 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     int stepping=2; /* distance between non-communicating neighbours
                        (increases exponentially) */
     int iteration=0;
-   
+
     if (!comm)
     {
-        MPI_COMM_WORLD->erh->err=MPI_ERR_COMM;
-        MPI_COMM_WORLD->erh->fn(&MPI_COMM_WORLD, &(MPI_COMM_WORLD->erh->err));
-        return MPI_COMM_WORLD->erh->err;
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
 #if 0
     if (!sendbuf || recvbuf)
     {
-        comm->erh->err=MPI_ERR_BUF;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 #endif
     if ( (!datatype->op_functions) || (!datatype->op_functions[op]) )
     {
-        comm->erh->err=MPI_ERR_OP_FN;
-        comm->erh->fn(&comm, &(comm->erh->err));
-        return comm->erh->err;
+        return tMPI_Error(comm, MPI_ERR_OP_FN);
     }
 
-    if (myrank==0)
+    if (!recvbuf) /* i.e. recvbuf == MPI_IN_PLACE */
     {
-        if (!recvbuf) /* i.e. recvbuf == MPI_IN_PLACE */
-        {
-            recvbuf=sendbuf;
-        }
-        rootbuf=recvbuf;
+        recvbuf=sendbuf;
     }
     comm->sendbuf[myrank]=sendbuf;
     comm->recvbuf[myrank]=recvbuf;
@@ -3587,11 +3539,24 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
        send/recvbuf in the global list */
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
 
+    /* distribute rootbuf */
+    rootbuf=(void*)comm->recvbuf[0];
+
+    /* check the buffers */
+    for(i=0;i<N;i++)
+    {
+        if ( (i!=myrank) && ( (comm->recvbuf[i]==recvbuf) || 
+                              (comm->sendbuf[i]==sendbuf) ) )
+        {
+            return tMPI_Error(comm, MPI_ERR_XFER_BUF_OVERLAP);
+        }
+    }
+
     while(Nnbrs>1)
     {
         int nbr;
         /* reduce between myrank and myrank+nbr_dist, if there is such
-            a neighbour. */
+           a neighbour. */
 #ifdef TMPI_DEBUG
         printf("%d: iteration=%d, Nnbrs=%d, barrier size=%d and I'm still in here\n", 
                 myrank, iteration, comm->N_multicast_barrier[iteration], Nnbrs);
@@ -3601,14 +3566,15 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
         {
             if (myrank+nbr_dist<N) 
             {
+                int ret;
+                void *a,*b;
 #ifdef TMPI_DEBUG
                 printf("%d: reducing with %d, iteration=%d\n", 
                         myrank, myrank+nbr_dist, iteration);
                 fflush(0);
 #endif
-               /* we reduce with our neighbour*/
+                /* we reduce with our neighbour*/
                 nbr=(N+myrank+nbr_dist)%N; /* here we use the real rank */
-                void *a,*b;
                 if (iteration==0)
                 {
                     a=sendbuf;
@@ -3619,7 +3585,11 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
                     a=recvbuf;
                     b=(void*)(comm->recvbuf[nbr]);
                 }
-                tMPI_Reduce_run_op(recvbuf, a, b, datatype, count, op);
+                /*tMPI_Reduce_run_op(recvbuf, a, b, datatype, count, op);*/
+                if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype, 
+                                            count, op, comm)) != MPI_SUCCESS)
+                    return ret;
+
             }
             else
             {
@@ -3660,6 +3630,10 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
        a better MPI_Scatter, and use that. */
     if (myrank != 0)
     {
+        if (rootbuf==recvbuf)
+        {
+            return tMPI_Error(comm, MPI_ERR_XFER_BUF_OVERLAP);
+        }
         memcpy(recvbuf, rootbuf, datatype->size*count );
     }
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));

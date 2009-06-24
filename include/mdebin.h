@@ -56,6 +56,16 @@ typedef struct {
   char   **grpnms;
   real   *tmp_r;
   rvec   *tmp_v;
+  bool	 bConstr;
+  bool   bConstrVir;
+  bool   bTricl;
+  bool   bDynBox;
+  int    f_nre;
+  int    epc;
+  int	 etc;
+  int    nCrmsd;
+  bool   bEner[F_NRE];
+  bool   bEInd[egNR];
 } t_mdebin;
 
 extern t_mdebin

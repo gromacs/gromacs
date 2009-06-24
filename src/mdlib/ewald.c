@@ -101,7 +101,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	      matrix lrvir,    real ewaldcoeff,
 	      real lambda,     real *dvdlambda)
 {
-  static    bool bFirst = TRUE;
+  static    bool bFirst = TRUE; /* TODO: make this thread-safe */
   static    int       nx,ny,nz,kmax;
   static    cvec      **eir;
   static    t_complex  *tab_xy,*tab_qxyz;

@@ -86,7 +86,7 @@
    {str,lstr,    0,     0,     0,IF_NULL,                    -1,unimplemented}
 
 /* this MUST correspond to the enum in include/types/idef.h */
-const t_interaction_function interaction_function[F_NRE]=
+const t_interaction_function const interaction_function[F_NRE]=
 {
   def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),
   def_bond    ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds      ),
