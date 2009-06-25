@@ -33,18 +33,32 @@ tyle: "stroustrup"; -*-
 #include <string.h>
 #include <sys/time.h>
 
-#ifndef THREAD_MPI_TESTING
+#ifndef THREAD_MPI_STANDALONE
 #include "main.h"
 #include "statutil.h"
 #include "ctype.h"
+/*#include "gmx_fatal.h"*/
+
+#else
+
+#define GMX_THREAD_MPI  1
+#ifndef cplusplus__
+typedef int bool;
+#define TRUE 1
+#define FALSE 0
+#else
+#define TRUE true
+#define FALSE false
+#endif
 #endif
 
 #ifdef GMX_THREAD_MPI
 
-#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "gmx_thread.h"
 #include "thread_mpi.h"
+
+
 
 
 /*#define TMPI_DEBUG*/
@@ -176,6 +190,7 @@ struct mpi_graph_topol_
 };
 #endif
 
+/* to be able to separate the types of transfer */
 enum xfertype_
 {
     point_to_point,
@@ -340,18 +355,18 @@ MPI_Group MPI_GROUP_EMPTY=NULL;
 
 /* the threads themselves (mpi_comm only contains lists of pointers to this
    structure */
-struct mpi_thread_ *threads=NULL;
-int Nthreads=0;
+static struct mpi_thread_ *threads=NULL;
+static int Nthreads=0;
 
 /* thread info */
-gmx_thread_key_t id_key; /* the key to get the thread id */
+static gmx_thread_key_t id_key; /* the key to get the thread id */
 
 /* whether MPI has finalized (we need this to distinguish pre-inited from
     post-finalized states */
 static bool mpi_finalized=FALSE;
 
 /* misc. global information about MPI */
-struct mpi_global_ *mpi_global=NULL;
+static struct mpi_global_ *mpi_global=NULL;
 
 
 
@@ -508,9 +523,11 @@ MPI_Datatype MPI_BYTE               = &mpi_byte_;
 
 
 /* error messages */
-char *mpi_errmsg[] = 
+static const char *mpi_errmsg[] = 
 {
     "No error",
+    "MPI Initialization error",
+    "MPI Finalize error",
     "Invalid MPI_Group",
     "Invalid MPI_Comm",
     "Invalid MPI_Status",
@@ -525,17 +542,15 @@ char *mpi_errmsg[] =
     "Invalid receive source",
     "Invalid buffer",
     "Invalid reduce operator",
-    "Transmission failure",
     "Out of receive envelopes: this shouldn't happen (probably a bug).",
-    "Unknown MPI error"
+    "Unknown MPI error",
+    "Transmission failure"
 };
 
 
 
 /* get the current thread structure pointer */
 static struct mpi_thread_ *tMPI_Get_current(void);
-/* mostly for debugging: gives current thread if thr==0*/
-static int tMPI_Threadnr(struct mpi_thread_ *thr);
 
 /* handle an error, returning the errorcode */
 static int tMPI_Error(MPI_Comm comm, int mpi_errno);
@@ -662,7 +677,9 @@ static struct mpi_thread_ *tMPI_Get_current(void)
 
     return (struct mpi_thread_*)gmx_thread_getspecific(id_key);
 } 
-static int tMPI_Threadnr(struct mpi_thread_ *thr)
+
+
+int tMPI_Threadnr(struct mpi_thread_ *thr)
 {
     if (thr)
         return tMPI_Comm_seek_rank(MPI_COMM_WORLD, thr);
@@ -689,8 +706,16 @@ MPI_Comm tMPI_Get_comm_self(void)
 
 static int tMPI_Error(MPI_Comm comm, int mpi_errno)
 {
-    comm->erh->err=mpi_errno;
-    comm->erh->fn(&comm, &mpi_errno);
+    if (comm)
+    {
+        comm->erh->err=mpi_errno;
+        comm->erh->fn(&comm, &mpi_errno);
+    }
+    else
+    {
+        /* initialization errors have no comm */
+        mpi_errors_are_fatal_fn(NULL, &mpi_errno);
+    }
     return mpi_errno;
 }
 
@@ -820,7 +845,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
 
         if (gmx_thread_key_create(&id_key, NULL))
         {
-            gmx_fatal(errno, __FILE__, __LINE__, "thread_key_create failed");
+            tMPI_Error(MPI_COMM_WORLD, MPI_ERR_INIT);
         }
         /*printf("thread keys created\n"); fflush(NULL);*/
         for(i=0;i<N;i++)
@@ -866,7 +891,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
                                   tMPI_Thread_starter,
                                   (void*)&(threads[i]) ) )
             {
-                gmx_fatal(errno, __FILE__, __LINE__, "thread_create failed");
+                tMPI_Error(MPI_COMM_WORLD, MPI_ERR_INIT);
             }
         }
     }
@@ -937,7 +962,9 @@ int MPI_Finalize(void)
         for(i=1;i<Nthreads;i++)
         {
             if (gmx_thread_join(threads[i].thread_id, NULL))
-                gmx_fatal(errno, __FILE__, __LINE__, "thread_join failed");
+            {
+                tMPI_Error(MPI_COMM_WORLD, MPI_ERR_FINALIZE);
+            }
         }
         for(i=0;i<Nthreads;i++)
         {
@@ -1767,7 +1794,6 @@ int MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int *coords)
     /* again, row-major ordering */
     for(i=comm->cart->ndims-1;i>=0;i--)
     {
-        /*printf("dims[%d]=%d\n",i,dims[i]);*/
         coords[i]=rank_left%comm->cart->dims[i];
         rank_left /= comm->cart->dims[i];
     }   
@@ -2042,7 +2068,7 @@ static void tMPI_Try_put_send_envelope(struct mpi_send_envelope_ *ev)
         if (ev->dest->N_evs >= MAX_ENVELOPES)
         {
             tMPI_Error(ev->comm, MPI_ERR_ENVELOPES);
-            gmx_fatal(FARGS, "A receive thread has reached the maximum number of send envelopes. This is probably a bug\n");
+            fprintf(stderr, "A receive thread has reached the maximum number of send envelopes. This is probably a bug\n");
             exit(1);
         }
         ev->dest->evs[ev->dest->N_evs]=ev;
@@ -2117,7 +2143,7 @@ static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev)
         if (ev->dest->N_evr >= MAX_ENVELOPES)
         {
             tMPI_Error(ev->comm, MPI_ERR_ENVELOPES);
-            gmx_fatal(FARGS, "A receive thread has reached the maximum number of receive envelopes. This is probably a bug\n");
+            fprintf(stderr, "A receive thread has reached the maximum number of receive envelopes. This is probably a bug\n");
             exit(1);
         }
         ev->dest->evr[ev->dest->N_evr]=ev;
@@ -2940,11 +2966,6 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (!sendbuf || !recvbuf)
-    {
-        return tMPI_Error(comm, MPI_ERR_BUF);
-    }
-
 
     if (N>MAX_THREADS)
     {

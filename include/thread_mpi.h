@@ -99,29 +99,33 @@ extern MPI_Datatype MPI_BYTE;
 
 
 /* error codes */
-#define MPI_SUCCESS                         0
-#define MPI_ERR_GROUP                       1
-#define MPI_ERR_COMM                        2
-#define MPI_ERR_STATUS                      3
-#define MPI_ERR_GROUP_RANK                  4
-#define MPI_ERR_DIMS                        5
-#define MPI_ERR_COORDS                      6
-#define MPI_ERR_CART_CREATE_NPROCS          7
-#define MPI_ERR_XFER_COUNTERPART            8
-#define MPI_ERR_XFER_BUFSIZE                9
-#define MPI_ERR_XFER_BUF_OVERLAP            10
-#define MPI_ERR_SEND_DEST                   11
-#define MPI_ERR_RECV_SRC                    12
-#define MPI_ERR_BUF                         13
-#define MPI_ERR_OP_FN                       14
-#define MPI_ERR_UNKNOWN                     15
-#define MPI_FAILURE                         16
-#define MPI_ERR_ENVELOPES                   17
-#define N_MPI_ERR                           18
+#define MPI_SUCCESS                     0
+#define MPI_ERR_INIT                    1
+#define MPI_ERR_FINALIZE                2
+#define MPI_ERR_GROUP                   3
+#define MPI_ERR_COMM                    4
+#define MPI_ERR_STATUS                  5
+#define MPI_ERR_GROUP_RANK              6
+#define MPI_ERR_DIMS                    7
+#define MPI_ERR_COORDS                  8
+#define MPI_ERR_CART_CREATE_NPROCS      9
+#define MPI_ERR_XFER_COUNTERPART        10
+#define MPI_ERR_XFER_BUFSIZE            11
+#define MPI_ERR_XFER_BUF_OVERLAP        12
+#define MPI_ERR_SEND_DEST               13
+#define MPI_ERR_RECV_SRC                14
+#define MPI_ERR_BUF                     15
+#define MPI_ERR_OP_FN                   16
+#define MPI_ERR_UNKNOWN                 17
+#define MPI_ERR_ENVELOPES               18
+#define MPI_FAILURE                     19
 
-#define MPI_MAX_ERROR_STRING                256
+#define N_MPI_ERR                       20
+
+#define MPI_MAX_ERROR_STRING            256
 
 #define MPI_UNDEFINED -1
+
 #if 1
 /* error handling */
 typedef void (*MPI_Errhandler_fn)(MPI_Comm*, int*);
@@ -205,11 +209,17 @@ int MPI_Init(int *argc, char ***argv);
 
 /** Alternate thread MPI intializer. Creates N threads (including main thread) 
     that run main() again so they can catch up to MPI_Init themselves */
-
 int MPI_Init_N(int N);
+
 /** get the number of threads that will be requested (can be called before 
     MPI_Init() ) */
 int tMPI_Get_N(int *argc, char ***argv);
+
+
+/** mostly for debugging: gives current thread if thr==0*/
+struct mpi_thread_;
+int tMPI_Threadnr(struct mpi_thread_ *thr);
+
 
 
 /** waits for all threads to join() */
