@@ -50,6 +50,9 @@
 
 #define TOL 2e-5
 
+
+/* TODO: fix thread-safety */
+
 /* the other routines are in complex.h */
 static t_complex conjmul(t_complex a,t_complex b)
 {

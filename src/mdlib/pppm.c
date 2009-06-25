@@ -62,6 +62,9 @@
 #define llim2 (-3)
 #define ulim2  (3)
 
+
+/* TODO: fix thread-safety */
+
 static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
 {
   invh[XX] = nx/box[XX];

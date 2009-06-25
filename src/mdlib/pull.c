@@ -217,7 +217,8 @@ static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
 void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 			  dvec dr,dvec dev)
 {
-  static bool bWarned=FALSE;
+  static bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety, 
+                                but is fairly benign */
   t_pullgrp *pref,*pgrp;
   int       m;
   dvec      ref;
@@ -949,6 +950,9 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   if (cr && PARTDECOMP(cr)) {
     pd_at_range(cr,&start,&end);
   }
+  pull->rbuf=NULL;
+  pull->dbuf=NULL;
+  pull->dbuf_cyl=NULL;
   pull->bRefAt = FALSE;
   pull->cosdim = -1;
   for(g=0; g<pull->ngrp+1; g++) {
