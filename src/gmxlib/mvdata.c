@@ -317,6 +317,7 @@ static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
   snew_bc(cr,ffp->iparams,ffp->ntypes);
   nblock_bc(cr,ffp->ntypes,ffp->functype);
   nblock_bc(cr,ffp->ntypes,ffp->iparams);
+  block_bc(cr,ffp->reppow);
   block_bc(cr,ffp->fudgeQQ);
 }
 
