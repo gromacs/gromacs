@@ -73,7 +73,11 @@ static MPI_Comm          wc_mpi_comm_mygroup;
 
 bool wallcycle_have_counter(void)
 {
+#ifndef GMX_THREAD_MPI
   return gmx_cycles_have_counter();
+#else
+  return FALSE; /* TODO: fix this so that we can actually count cycles */
+#endif
 }
 
 gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
