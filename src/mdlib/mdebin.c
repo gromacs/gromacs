@@ -399,6 +399,8 @@ t_mdebin *init_mdebin(int fp_ene,
     {
         do_enxnms(fp_ene,&md->ebin->nener,&md->ebin->enm);
     }
+
+    md->print_grpnms=NULL;
     
     return md;
 }
@@ -665,7 +667,6 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
                 t_mdebin *md,t_fcdata *fcd,
                 gmx_groups_t *groups,t_grpopts *opts)
 {
-  static char **grpnms=NULL;
   char        buf[246];
   int         i,j,n,ni,nj,ndr,nor;
   int         nr[enxNR];
@@ -757,15 +758,15 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
       fprintf(log,"\n");
       
       if (md->nE > 1) {
-	if (grpnms==NULL) {
-	  snew(grpnms,md->nE);
+	if (md->print_grpnms==NULL) {
+	  snew(md->print_grpnms,md->nE);
 	  n=0;
 	  for(i=0; (i<md->nEg); i++) {
 	    ni=groups->grps[egcENER].nm_ind[i];
 	    for(j=i; (j<md->nEg); j++) {
 	      nj=groups->grps[egcENER].nm_ind[j];
 	      sprintf(buf,"%s-%s",*(groups->grpname[ni]),*(groups->grpname[nj]));
-	      grpnms[n++]=strdup(buf);
+	      md->print_grpnms[n++]=strdup(buf);
 	    }
 	  }
 	}
@@ -776,7 +777,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 	    fprintf(log,"%12s   ",egrp_nm[i]);
 	fprintf(log,"\n");
 	for(i=0; (i<md->nE); i++) {
-	  fprintf(log,"%15s",grpnms[i]);
+	  fprintf(log,"%15s",md->print_grpnms[i]);
 	  pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,FALSE);
 	}
 	fprintf(log,"\n");

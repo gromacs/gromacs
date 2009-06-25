@@ -66,6 +66,9 @@
 #include "typedefs.h"
 #include <stdlib.h>
 
+
+/* TODO: this should be made thread-safe */
+
 /* Gaussian interface routines */
 
 void init_gaussian(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)

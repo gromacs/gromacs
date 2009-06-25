@@ -83,7 +83,7 @@ typedef struct {
 
 /* This structure holds name and a flag that tells whether 
    this is a Coulomb type funtion */
-static t_tab_props tprops[etabNR] = {
+static const t_tab_props tprops[etabNR] = {
   { "LJ6",  FALSE },
   { "LJ12", FALSE },
   { "LJ6Shift", FALSE },

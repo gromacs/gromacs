@@ -66,6 +66,7 @@ typedef struct {
   int    nCrmsd;
   bool   bEner[F_NRE];
   bool   bEInd[egNR];
+  char   **print_grpnms;
 } t_mdebin;
 
 extern t_mdebin

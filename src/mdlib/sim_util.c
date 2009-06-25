@@ -93,9 +93,11 @@
 
 #include "qmmm.h"
 
+#if 0
 typedef struct gmx_timeprint {
     
 } t_gmx_timeprint;
+#endif
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 

@@ -105,6 +105,8 @@
 MPI_Datatype  rvec_mpi;
 #endif
 
+/* TODO: fix thread-safety */
+
 /* Internal datastructures */
 typedef struct {
     int snd0;
