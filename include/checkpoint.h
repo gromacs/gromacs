@@ -79,7 +79,7 @@ extern void list_checkpoint(char *fn,FILE *out);
  * to be able to rename the logfile correctly.
  */
 int
-read_checkpoint_simulation_part(char *filename);
+read_checkpoint_simulation_part(char *filename, t_commrec *cr);
 
 
 #endif

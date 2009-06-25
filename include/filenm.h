@@ -78,13 +78,18 @@ extern void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell);
 /* prints file options in tcsh 'complete' format */
 
 extern void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
-			    bool bKeep);
+			    bool bKeep, bool bReadNode);
 /* Parse command line for file names. When bKeep is set args are 
  * not removed from argv. */
 
 extern char *opt2fn(const char *opt,int nfile,t_filenm fnm[]);
 /* Return the filename belonging to cmd-line option opt, or NULL when 
  * no such option. */
+
+extern char *opt2fn_master(const char *opt,int nfile,t_filenm fnm[],t_commrec *cr);
+/* Return the filename belonging to cmd-line option opt, or NULL when 
+ * no such option or not running on master */
+
 
 extern int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[]);
 /* Return the filenames belonging to cmd-line option opt, or NULL when 
