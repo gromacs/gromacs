@@ -343,7 +343,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   if (!PAR(cr) && (cr->sim_nodeid != 0))
     gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
   
-  if (PAR(cr)) {
+  if (gmx_parallel_env) {
 #ifdef GMX_MPI
     cr->mpi_comm_mysim = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
