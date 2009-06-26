@@ -792,7 +792,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	      xxi[YY] = yi;
 	      xxi[ZZ] = zi;
 	      pbc_dx(&pbc,pco,xxi,ddx);*/
-	      pbc_dx(&pbc,coords[i_at],coords[j_at],ddx);
+	      pbc_dx(&pbc,coords[j_at],coords[i_at],ddx);
 	      dx = ddx[XX];
 	      dy = ddx[YY];
 	      dz = ddx[ZZ];
@@ -804,8 +804,9 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	    }
 	    dd = dx*dx+dy*dy+dz*dz;
 	    as = ai+aj; 
-	    if (dd > as*as) 
+	    if (dd > as*as) {
 	      continue;
+	    }
 	    nnei++;
 	    ctnb->x = dx; 
 	    ctnb->y = dy; 
