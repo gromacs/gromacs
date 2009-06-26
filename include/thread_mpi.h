@@ -407,9 +407,9 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
 int MPI_Reduce(void* sendbuf, void* recvbuf, int count, 
                MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm);
 /** Do an MPI_Reduce, but with the following assumption:
-    recvbuf points to a valid buffer in all calling threads, or has the
-    value MPI_IN_PLACE (in which case the values of sendbuf may be changed
-    in that thread).  
+    recvbuf points to a valid buffer in all calling threads, or 
+    sendbuf has the value MPI_IN_PLACE (in which case the values of 
+    sendbuf may be changed in that thread).  
     This avoids unnecesary memory allocations associated with the normal
     MPI_Reduce. */
 int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count, 

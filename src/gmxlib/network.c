@@ -376,17 +376,17 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 #else
     if (cr->nc.bUse) {
         /* Use two step summing. This should be MPI_Reduce, right? */
-        MPI_Reduce(r,MPI_IN_PLACE,nr,MPI_DOUBLE,MPI_SUM,0,cr->nc.comm_intra);
+        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,0,cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum the roots of the internal (intra) buffers. */
-            MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_DOUBLE,MPI_SUM,
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,
                           cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,MPI_DOUBLE,0,cr->nc.comm_intra);
     } 
     else 
     {
-        MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_DOUBLE,MPI_SUM, 
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM, 
                       cr->mpi_comm_mygroup);
     }
 #endif
@@ -399,17 +399,17 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 #else
     if (cr->nc.bUse) {
         /* Use two step summing. This should be MPI_Reduce, right? */
-        MPI_Reduce(r,MPI_IN_PLACE,nr,MPI_FLOAT,MPI_SUM,0,cr->nc.comm_intra);
+        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,0,cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum the roots of the internal (intra) buffers */
-            MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_FLOAT,MPI_SUM,
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,
                           cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,MPI_FLOAT,0,cr->nc.comm_intra);
     } 
     else 
     {
-        MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
     }
 #endif
 }
@@ -421,16 +421,16 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #else
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Reduce(r,MPI_IN_PLACE,nr,MPI_INT,MPI_SUM,0,cr->nc.comm_intra);
+        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,0,cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,MPI_INT,0,cr->nc.comm_intra);
     } 
     else 
     {
-        MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
     }
 #endif
 }
@@ -438,14 +438,14 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #ifdef GMX_MPI
 void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 {
-  MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
+  MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
 }
 #endif
 
 #ifdef GMX_MPI
 void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
 {
-  MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
+  MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
 }
 #endif
 
@@ -472,7 +472,7 @@ void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-  MPI_Allreduce(r,MPI_IN_PLACE,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
+  MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
 #endif
 }
 

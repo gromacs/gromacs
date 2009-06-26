@@ -245,7 +245,7 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
     break;      
   case etTIME:
   case etREAL:
-    sprintf(buf,"%-6g",*(pa->u.r));
+    sprintf(buf,"%-6g",(double)(*(pa->u.r)));
     break;
   case etBOOL:
     sprintf(buf,"%-6s",*(pa->u.b) ? "yes" : "no");
@@ -262,7 +262,9 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
     strcpy(buf,pa->u.c[0]);
     break;
   case etRVEC:
-    sprintf(buf,"%g %g %g",(*pa->u.rv)[0],(*pa->u.rv)[1],(*pa->u.rv)[2]);
+    sprintf(buf,"%g %g %g",(double)(*pa->u.rv)[0],
+                           (double)(*pa->u.rv)[1],
+                           (double)(*pa->u.rv)[2]);
     break;
   }
   return buf;

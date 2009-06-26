@@ -3411,7 +3411,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (!sendbuf)
+    if (!recvbuf)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
@@ -3420,9 +3420,9 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
         return tMPI_Error(comm, MPI_ERR_OP_FN);
     }
 
-    if (!recvbuf)/* i.e. recvbuf == MPI_IN_PLACE */
+    if (!sendbuf)/* i.e. sendbuf == MPI_IN_PLACE */
     {
-        recvbuf=sendbuf;
+        sendbuf=recvbuf;
     }
     comm->sendbuf[myrank]=sendbuf;
     comm->recvbuf[myrank]=recvbuf;
@@ -3519,9 +3519,9 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
 
     if (myrank==root)
     {
-        if (!recvbuf) /* i.e. recvbuf == MPI_IN_PLACE */
+        if (!sendbuf) /* i.e. sendbuf == MPI_IN_PLACE */
         {
-            recvbuf=sendbuf;
+            sendbuf=recvbuf;
         }
     }
     else
@@ -3541,126 +3541,20 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 {
     void *rootbuf=NULL; /* root process' receive buffer */
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-    int i;
+    int ret;
 
-    /* this function uses a binary tree-like reduction algorithm: */
-    int N=tMPI_Comm_N(comm);
-    int Nnbrs=N; /* number of neighbours to communicate with 
-                    (decreases exponentially) */
-    int nbr_dist=1; /* distance between communicating neighbours 
-                       (increases exponentially) */
-    int stepping=2; /* distance between non-communicating neighbours
-                       (increases exponentially) */
-    int iteration=0;
-
-    if (!comm)
-    {
-        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
-    }
-    if (!sendbuf)
+    if (!recvbuf)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
-    if ( (!datatype->op_functions) || (!datatype->op_functions[op]) )
+    if (!sendbuf) /* i.e. sendbuf == MPI_IN_PLACE */
     {
-        return tMPI_Error(comm, MPI_ERR_OP_FN);
+        sendbuf=recvbuf;
     }
 
-    if (!recvbuf) /* i.e. recvbuf == MPI_IN_PLACE */
-    {
-        recvbuf=sendbuf;
-    }
-    comm->sendbuf[myrank]=sendbuf;
-    comm->recvbuf[myrank]=recvbuf;
-    /* there's a barrier to wait for all the processes to put their 
-       send/recvbuf in the global list */
-    gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
-
+    ret=tMPI_Reduce_fast(sendbuf, recvbuf, count, datatype, op, 0, comm);
     /* distribute rootbuf */
     rootbuf=(void*)comm->recvbuf[0];
-
-    /* check the buffers */
-    for(i=0;i<N;i++)
-    {
-        if ( (i!=myrank) && ( (comm->recvbuf[i]==recvbuf) || 
-                              (comm->sendbuf[i]==sendbuf) ) )
-        {
-            return tMPI_Error(comm, MPI_ERR_XFER_BUF_OVERLAP);
-        }
-    }
-
-    while(Nnbrs>1)
-    {
-        int nbr;
-        /* reduce between myrank and myrank+nbr_dist, if there is such
-           a neighbour. */
-#ifdef TMPI_DEBUG
-        printf("%d: iteration=%d, Nnbrs=%d, barrier size=%d and I'm still in here\n", 
-                myrank, iteration, comm->N_multicast_barrier[iteration], Nnbrs);
-        fflush(0);
-#endif
-        if (myrank%stepping == 0 )
-        {
-            if (myrank+nbr_dist<N) 
-            {
-                int ret;
-                void *a,*b;
-#ifdef TMPI_DEBUG
-                printf("%d: reducing with %d, iteration=%d\n", 
-                        myrank, myrank+nbr_dist, iteration);
-                fflush(0);
-#endif
-                /* we reduce with our neighbour*/
-                nbr=(N+myrank+nbr_dist)%N; /* here we use the real rank */
-                if (iteration==0)
-                {
-                    a=sendbuf;
-                    b=(void*)(comm->sendbuf[nbr]);
-                }
-                else
-                {
-                    a=recvbuf;
-                    b=(void*)(comm->recvbuf[nbr]);
-                }
-                /*tMPI_Reduce_run_op(recvbuf, a, b, datatype, count, op);*/
-                if ((ret=tMPI_Reduce_run_op(recvbuf, a, b, datatype, 
-                                            count, op, comm)) != MPI_SUCCESS)
-                    return ret;
-
-            }
-            else
-            {
-                /* we still need to put things in the right buffer for the next
-                   iteration */
-                if (iteration==0)
-                    memcpy(recvbuf, sendbuf, datatype->size*count);
-            }
-            /* split barrier */
-            gmx_thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-        }
-        else 
-        {
-            /* this barrier is split because the threads not actually 
-               calculating still need to be waiting for the thread using its
-               data to finish calculating */
-#ifdef TMPI_DEBUG
-            printf("%d: barrier waiting, iteration=%d\n", myrank,  iteration);
-            fflush(0);
-#endif
-            gmx_thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-            break;
-        }
-#ifdef TMPI_DEBUG
-        printf("%d: barrier over, iteration=%d\n", myrank,  iteration);
-        fflush(0);
-#endif
-        Nnbrs = Nnbrs/2 + Nnbrs%2;
-        nbr_dist*=2;
-        stepping*=2;
-        /* there's a barrier to wait for all the processes to put their 
-           send/recvbuf in the global list */
-        iteration++;
-    }
 
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
     /* and now we just copy things back inefficiently. We should make

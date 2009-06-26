@@ -283,7 +283,9 @@ const char *get_time_unit(const output_env_t oenv)
 
 const char *get_time_label(const output_env_t oenv)
 {
-    static char label[20];
+    /*static char label[20];*/
+    char *label;
+    snew(label, 20);
     
     sprintf(label,"Time (%s)",time_units_str[oenv->time_unit] ? 
             time_units_str[oenv->time_unit]: "ps");
@@ -293,7 +295,8 @@ const char *get_time_label(const output_env_t oenv)
 
 const char *get_xvgr_tlabel(const output_env_t oenv)
 {
-    static char label[20];
+    char *label;
+    snew(label, 20);
     
     sprintf(label,"Time (%s)", time_units_xvgr[oenv->time_unit] ?
             time_units_xvgr[oenv->time_unit] : "ps");
@@ -819,8 +822,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)
-            write_man(stderr,"help",get_program(&oenv),ndesc,desc,nfile,fnm,npall,all_pa,
-                      nbugs,bugs,bHidden);
+            write_man(stderr,"help",get_program(&oenv),ndesc,desc,nfile,
+                      fnm,npall,all_pa, nbugs,bugs,bHidden);
         else if (bPrint) {
             pr_fns(stderr,nfile,fnm);
             print_pargs(stderr,npall,all_pa,FALSE);
@@ -831,21 +834,21 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         if(!strcmp(manstr[0],"completion")) {
             /* one file each for csh, bash and zsh if we do completions */
             fp=man_file(&oenv,"completion-zsh");
-            write_man(fp,"completion-zsh",get_program(&oenv),ndesc,desc,nfile,fnm,
-                      npall,all_pa,nbugs,bugs,bHidden);
+            write_man(fp,"completion-zsh",get_program(&oenv),ndesc,desc,nfile,
+                      fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
             fp=man_file(&oenv,"completion-bash");
-            write_man(fp,"completion-bash",get_program(&oenv),ndesc,desc,nfile,fnm,
-                      npall,all_pa,nbugs,bugs,bHidden);
+            write_man(fp,"completion-bash",get_program(&oenv),ndesc,desc,nfile,
+                      fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
             fp=man_file(&oenv,"completion-csh");
-            write_man(fp,"completion-csh",get_program(&oenv),ndesc,desc,nfile,fnm,
-                      npall,all_pa,nbugs,bugs,bHidden);
+            write_man(fp,"completion-csh",get_program(&oenv),ndesc,desc,nfile,
+                      fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
         } else {
             fp=man_file(&oenv,manstr[0]);
-            write_man(fp,manstr[0],get_program(&oenv),ndesc,desc,nfile,fnm,npall,
-                      all_pa,nbugs,bugs,bHidden);
+            write_man(fp,manstr[0],get_program(&oenv),ndesc,desc,nfile,fnm,
+                      npall, all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
         }
     }
