@@ -1546,18 +1546,15 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
     int nn,nk;
     pme_grid_comm_t *pgc;
 
-    atc->dimind  = dimind;
+    atc->dimind = dimind;
+    atc->nslab  = 1;
+    atc->nodeid = 0;
 #ifdef GMX_MPI
-    atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
     if (gmx_parallel_env)
     {
+        atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
         MPI_Comm_rank(atc->mpi_comm,&atc->nodeid);
-    }
-    else
-    {
-        atc->nslab  = 1;
-        atc->nodeid = 0;
     }
     if (debug)
     {
@@ -1567,6 +1564,18 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
 
     atc->bSpread   = bSpread;
     atc->pme_order = pme->pme_order;
+
+    if (atc->nslab > 1)
+    {
+        /* These three allocations are not required for particle decomp. */
+        snew(atc->node_dest,atc->nslab);
+        snew(atc->node_src,atc->nslab);
+        setup_coordinate_communication(atc);
+        
+        snew(atc->count,atc->nslab);
+        snew(atc->rcount,atc->nslab);
+        snew(atc->buf_index,atc->nslab);
+    }
 }
 
 static void init_overlap_comm(gmx_pme_t pme,pme_overlap_t *ol)
@@ -1662,47 +1671,49 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
         fprintf(debug,"Creating PME data structures.\n");
     snew(pme,1);
     
-    if (PAR(cr)) {
-        pme->ndecompdim = 1;
+    pme->nnodes  = 1;
+    pme->bPPnode = TRUE;
 #ifdef GMX_MPI
+    if (gmx_parallel_env)
+    {
         pme->mpi_comm = cr->mpi_comm_mygroup;
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
+
+        pme->mpi_comm_d[0] = pme->mpi_comm;
+    }
 #endif
-        if (pme->nnodes == 1) {
-            pme->ndecompdim = 0;
-        } else {
-            if (pme->nnodes == nnodes_major)
+
+    if (pme->nnodes == 1)
+    {
+        pme->ndecompdim = 0;
+    }
+    else
+    {
+        if (pme->nnodes == nnodes_major)
+        {
+            pme->ndecompdim = 1;
+        }
+        else
+        {
+            if (pme->nnodes % nnodes_major != 0)
             {
-                pme->ndecompdim = 1;
-#ifdef GMX_MPI
-                pme->mpi_comm_d[0] = pme->mpi_comm;
-#endif
-           }
-            else
-            {
-                if (pme->nnodes % nnodes_major != 0)
-                {
-                    gmx_incons("nnodes_major incompatible with #PME nodes");
-                }
-                pme->ndecompdim = 2;
-#ifdef GMX_MPI
-                nminor = pme->nnodes/nnodes_major;
-                MPI_Comm_split(pme->mpi_comm,pme->nodeid % nminor,
-                               pme->nodeid,&pme->mpi_comm_d[0]);
-                MPI_Comm_split(pme->mpi_comm,pme->nodeid/nminor,
-                               pme->nodeid,&pme->mpi_comm_d[1]);
-#endif
+                gmx_incons("nnodes_major incompatible with #PME nodes");
             }
+            pme->ndecompdim = 2;
+#ifdef GMX_MPI
+            nminor = pme->nnodes/nnodes_major;
+            MPI_Comm_split(pme->mpi_comm,pme->nodeid % nminor,
+                           pme->nodeid,&pme->mpi_comm_d[0]);
+            MPI_Comm_split(pme->mpi_comm,pme->nodeid/nminor,
+                           pme->nodeid,&pme->mpi_comm_d[1]);
+#endif
         }
         pme->bPPnode = (cr->duty & DUTY_PP);
-    } else {
-        pme->nnodes = 1;
-        pme->ndecompdim = 0;
-        pme->bPPnode = TRUE;
     }
     
-    if (ir->ePBC == epbcSCREW) {
+    if (ir->ePBC == epbcSCREW)
+    {
         gmx_fatal(FARGS,"pme does not (yet) work with pbc = screw");
     }
     
@@ -1753,28 +1764,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
             if ((ir->nkx % pme->nnodes) != 0)
                 fprintf(debug,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
         }
-        
-        for(d=0; d<pme->ndecompdim; d++)
-        {
-            atc = &pme->atc[d];
-            if (d == 0)
-            {
-                atc->nslab = nnodes_major;
-            }
-            else
-            {
-                atc->nslab = pme->nnodes/nnodes_major;
-            }
-            if (DOMAINDECOMP(cr)) {
-                snew(atc->node_dest,atc->nslab);
-                snew(atc->node_src,atc->nslab);
-                setup_coordinate_communication(atc);
-            }
-            snew(atc->count,atc->nslab);
-            snew(atc->rcount,atc->nslab);
-            snew(atc->buf_index,atc->nslab);
-        }
-        
+
         init_overlap_comm(pme,&pme->overlap[0]);
     } else {
         pme->overlap[0].s2g = NULL;
