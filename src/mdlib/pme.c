@@ -1549,8 +1549,16 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
     atc->dimind  = dimind;
 #ifdef GMX_MPI
     atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
-    MPI_Comm_size(atc->mpi_comm,&atc->nslab);
-    MPI_Comm_rank(atc->mpi_comm,&atc->nodeid);
+    if (gmx_parallel_env)
+    {
+        MPI_Comm_size(atc->mpi_comm,&atc->nslab);
+        MPI_Comm_rank(atc->mpi_comm,&atc->nodeid);
+    }
+    else
+    {
+        atc->nslab  = 1;
+        atc->nodeid = 0;
+    }
     if (debug)
     {
         fprintf(debug,"For PME atom communication in dimind %d: nslab %d rank %d\n",atc->dimind,atc->nslab,atc->nodeid);
