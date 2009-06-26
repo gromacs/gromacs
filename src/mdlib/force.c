@@ -1696,7 +1696,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
                        int        flags,
-                       float      *cycles_force)
+                       float      *cycles_pme)
 {
     int     i,status;
     int     donb_flags;
@@ -1943,6 +1943,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     }
 
     where();
+
+    *cycles_pme = 0;
     if (EEL_FULL(fr->eeltype))
     {
         bSB = (ir->nwall == 2);
@@ -1991,9 +1993,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                                        fr->vir_el_recip);
         }
         
-        *cycles_force = wallcycle_stop(wcycle,ewcFORCE);
-        /* Now we can do communication again */
-        
         dvdlambda = 0;
         status = 0;
         switch (fr->eeltype)
@@ -2028,7 +2027,15 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                                         fr->vir_el_recip,fr->ewaldcoeff,
                                         &Vlr,lambda,&dvdlambda,
                                         pme_flags);
-                    wallcycle_stop(wcycle,ewcPMEMESH);
+                    *cycles_pme = wallcycle_stop(wcycle,ewcPMEMESH);
+
+                    /* We should try to do as little computation after
+                     * this as possible, because parallel PME synchronizes
+                     * the nodes, so we want all load imbalance of the rest
+                     * of the force calculation to be before the PME call.
+                     * DD load balancing is done on the whole time of
+                     * the force call (without PME).
+                     */
                 }
                 if (fr->n_tpi > 0)
                 {
@@ -2094,9 +2101,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
             PRINT_SEPDVDL("RF exclusion correction",
                           enerd->term[F_RF_EXCL],dvdlambda);
         }
-        
-        *cycles_force = wallcycle_stop(wcycle,ewcFORCE);
-        /* Now we can do communication again */
     }
     where();
     debug_gmx();

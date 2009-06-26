@@ -201,6 +201,10 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
         {
             wc[ewcDOMDEC].c -= wc[ewcDDCOMMBOUND].c;
         }
+        if (wc[ewcPMEMESH].n > 0)
+        {
+            wc[ewcFORCE].c -= wc[ewcPMEMESH].c;
+        }
 
         if (wc[ewcPMEMESH_SEP].n > 0)
         {

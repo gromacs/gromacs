@@ -252,7 +252,7 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      t_blocka     *excl,
 			      rvec         mu_tot[2],
 			      int          flags,
-			      float        *cycles_force);
+			      float        *cycles_pme);
 /* Call all the force routines */
 
 

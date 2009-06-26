@@ -358,7 +358,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   matrix boxs;
   real   e,v,dvdl;
   t_pbc  pbc;
-  float  cycles_ppdpme,cycles_pme,cycles_force;
+  float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
   
   start  = mdatoms->start;
   homenr = mdatoms->homenr;
@@ -609,7 +609,9 @@ void do_force(FILE *fplog,t_commrec *cr,
                     x,hist,f,enerd,fcd,mtop,top,fr->born,
                     &(top->atomtypes),bBornRadii,box,
                     lambda,graph,&(top->excls),fr->mu_tot,
-                    flags,&cycles_force);
+                    flags,&cycles_pme);
+
+  cycles_force = wallcycle_stop(wcycle,ewcFORCE);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
   if (ed) {
@@ -619,7 +621,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   if (DOMAINDECOMP(cr)) {
     dd_force_flop_stop(cr->dd,nrnb);
     if (wcycle)
-      dd_cycles_add(cr->dd,cycles_force,ddCyclF);
+      dd_cycles_add(cr->dd,cycles_force-cycles_pme,ddCyclF);
   }
   
     if (bDoForces)
@@ -692,29 +694,30 @@ void do_force(FILE *fplog,t_commrec *cr,
     enerd->dvdl_lin += dvdl;
   }
 
-  if (!(cr->duty & DUTY_PME)) {
-    cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
-    dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
-  }
+    if (PAR(cr) && !(cr->duty & DUTY_PME))
+    {
+        cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
+        dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
 
-#ifdef GMX_MPI
-  if (PAR(cr) && !(cr->duty & DUTY_PME)) {
-    /* In case of node-splitting, the PP nodes receive the long-range 
-     * forces, virial and energy from the PME nodes here.
-     */    
-    wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-    dvdl = 0;
-    gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
-		      &cycles_pme);
-    if (bSepDVDL)
-      fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
-    enerd->term[F_COUL_RECIP] += e;
-    enerd->dvdl_lin += dvdl;
-    if (wcycle)
-      dd_cycles_add(cr->dd,cycles_pme,ddCyclPME);
-    wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
-  }
-#endif
+        /* In case of node-splitting, the PP nodes receive the long-range 
+         * forces, virial and energy from the PME nodes here.
+         */    
+        wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
+        dvdl = 0;
+        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
+                          &cycles_seppme);
+        if (bSepDVDL)
+        {
+            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
+        }
+        enerd->term[F_COUL_RECIP] += e;
+        enerd->dvdl_lin += dvdl;
+        if (wcycle)
+        {
+            dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
+        }
+        wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
+    }
 
   if (bDoForces && fr->bF_NoVirSum) {
     if (vsite) {
