@@ -3390,7 +3390,7 @@ int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
     return MPI_SUCCESS;
 }
 
-int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
+int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
 {
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
@@ -3411,24 +3411,18 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-#if 0
-    if (!sendbuf || recvbuf)
+    if (!sendbuf)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
-#endif
     if ( (!datatype->op_functions) || (!datatype->op_functions[op]) )
     {
         return tMPI_Error(comm, MPI_ERR_OP_FN);
     }
 
-
-    if (myrank==root)
+    if (!recvbuf)/* i.e. recvbuf == MPI_IN_PLACE */
     {
-        if (!recvbuf) /* i.e. recvbuf == MPI_IN_PLACE */
-        {
-            recvbuf=sendbuf;
-        }
+        recvbuf=sendbuf;
     }
     comm->sendbuf[myrank]=sendbuf;
     comm->recvbuf[myrank]=recvbuf;
@@ -3517,6 +3511,30 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
     return MPI_SUCCESS;
 }
 
+int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
+               MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm)
+{
+    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    int ret;
+
+    if (myrank==root)
+    {
+        if (!recvbuf) /* i.e. recvbuf == MPI_IN_PLACE */
+        {
+            recvbuf=sendbuf;
+        }
+    }
+    else
+    {
+        smalloc(recvbuf, datatype->size*count);
+    }
+    ret=tMPI_Reduce_fast(sendbuf, recvbuf, count, datatype, op, root, comm);
+    if (myrank!=root)
+    {
+        sfree(recvbuf);
+    }
+    return ret;
+}
 
 int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
@@ -3539,12 +3557,10 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-#if 0
-    if (!sendbuf || recvbuf)
+    if (!sendbuf)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
-#endif
     if ( (!datatype->op_functions) || (!datatype->op_functions[op]) )
     {
         return tMPI_Error(comm, MPI_ERR_OP_FN);
