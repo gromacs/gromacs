@@ -329,7 +329,7 @@ FILE *ffopen(const char *file,const char *mode)
       if (bUnbuffered)
 	bs = 0;
       else
-	bs=atoi(bufsize);
+	bs=strtol(bufsize, NULL, 0); 
       if (bs <= 0)
 	setbuf(ff,NULL); 
       else {

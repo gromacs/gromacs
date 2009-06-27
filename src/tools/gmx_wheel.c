@@ -236,11 +236,11 @@ int gmx_wheel(int argc,char *argv[])
   
   for(i=1; (i<argc); i++) {
     if (strcmp(argv[i],"-r0") == 0) {
-      r0=atoi(argv[++i]);
+      r0=strtol(argv[++i],NULL,0);
       fprintf(stderr,"First residue is %d\n",r0);
     }
     else if (strcmp(argv[i],"-rot0") == 0) {
-      rot0=atof(argv[++i]);
+      rot0=strtod(argv[++i],NULL);
       fprintf(stderr,"Initial rotation is %g\n",rot0);
     }
     else if (strcmp(argv[i],"-T") == 0) {

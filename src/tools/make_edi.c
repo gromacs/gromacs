@@ -174,7 +174,7 @@ int sscan_list(int *list[], const char *str, const char *listname) {
         case sNumber: if (c==',') {
              /*store number*/
              srenew(*list,nvecs+1);
-             (*list)[nvecs++]=number=atoi(start);
+             (*list)[nvecs++]=number=strtol(start,NULL,0);
              status=sBefore;
              if (number==0)
                  status=sZero;
@@ -204,8 +204,8 @@ int sscan_list(int *list[], const char *str, const char *listname) {
         case sRange:
             if (c==',') {
                /*store numbers*/
-               end_number=atoi(end);
-               number=atoi(start);
+               end_number=strtol(end,NULL,0);
+               number=strtol(start,NULL,0);
                status=sBefore;
                if (number==0) {
                   status=sZero; break;
@@ -215,7 +215,7 @@ int sscan_list(int *list[], const char *str, const char *listname) {
                }
                srenew(*list,nvecs+end_number-number+1);
 	       if (step) {
-		 istep=atoi(step);
+		 istep=strtol(step,NULL,0);
 		 step=NULL;
 	       } else istep=1;
                for (i=number;i<=end_number;i+=istep)

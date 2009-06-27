@@ -226,7 +226,8 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
     gmx_bcast(sizeof(len),&len,cr);
     if (!MASTER(cr))
       snew((*argv)[i],len);
-    gmx_bcast(len*sizeof((*argv)[i][0]),(*argv)[i],cr);
+    /*gmx_bcast(len*sizeof((*argv)[i][0]),(*argv)[i],cr);*/
+    gmx_bcast(len*sizeof(char),(*argv)[i],cr);
   }
   debug_gmx();
 }
@@ -313,20 +314,21 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   snew(cr,1);
 
   argv = *argv_ptr;
-  
+
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
   if (tMPI_Get_N(argc, argv_ptr)>1)
     gmx_parallel_env=1;
   else
     gmx_parallel_env=0;
-#else
-  gmx_parallel_env = 1;
 #endif
+#ifdef GMX_LIB_MPI
+  gmx_parallel_env = 1;
 #ifdef GMX_CHECK_MPI_ENV
   /* Do not use MPI calls when env.var. GMX_CHECK_MPI_ENV is not set */
   if (getenv(GMX_CHECK_MPI_ENV) == NULL)
     gmx_parallel_env = 0;
+#endif
 #endif
   if (gmx_parallel_env) {
     cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);

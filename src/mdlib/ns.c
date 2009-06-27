@@ -2383,7 +2383,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
         char *ptr=getenv("GMX_DUMP_NL");
         if (ptr)
         {
-            ns->dump_nl=atoi(ptr);
+            ns->dump_nl=strtol(ptr,NULL,0);
             if (fplog)
             {
                 fprintf(fplog, "GMX_DUMP_NL = %d", ns->dump_nl);

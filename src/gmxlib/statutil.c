@@ -93,7 +93,7 @@ static struct output_env oenv;
 
 #ifdef GMX_THREAD_MPI
 /* For now, some things here are simply not re-entrant, so
- we have to actively lock them out. */
+   we have to actively lock them. */
 static gmx_thread_mutex_t init_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -675,24 +675,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     }
     debug_gmx();
     
-    
-#if 0
-    /* Fill the cmdline string */
-    snew(cmdline,cmdlength+*argc+1);
-    for (i=0; (i<*argc); i++) {
-        strcat(cmdline,argv[i]);
-        strcat(cmdline," ");
-    }
-#endif
-    
     /* Handle the flags argument, which is a bit field 
      * The FF macro returns whether or not the bit is set
      */
     bPrint        = !FF(PCA_SILENT);
-    
-#if 0
-    set_program_name(argv[0]);
-#endif
     
     /* Check ALL the flags ... */
     max_pa = NPCA_PA + EXTRA_PA + npargs;
@@ -704,11 +690,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifdef __sgi
     envstr = getenv("GMXNPRIALL");
     if (envstr)
-        npri=atoi(envstr);
+        npri=strtol(envstr,NULL,0);
     if (FF(PCA_BE_NICE)) {
         envstr = getenv("GMXNPRI");
         if (envstr)
-            npri=atoi(envstr);
+            npri=strtol(envstr,NULL,0);
     }
     npall = add_parg(npall,all_pa,&npri_pa);
 #endif
@@ -728,8 +714,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (FF(PCA_TIME_UNIT)) {
         set_default_time_unit(time_units);
         npall = add_parg(npall,all_pa,&time_pa);
-    } /*else      
-     set_default_time_unit("ps");*/
+    } 
     if (FF(PCA_CAN_VIEW)) 
         npall = add_parg(npall,all_pa,&view_pa);
     

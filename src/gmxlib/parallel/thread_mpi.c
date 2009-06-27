@@ -2703,7 +2703,7 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
         flags[i]=FALSE;
     /* Waitall polls all the requests by calling MPI_Test. This
        ensures that incoming receives are handled in the order that they
-       come in, but of course is another busy-wait type function. */
+       come in, but of course is busy-wait . */
     do
     {
         /* first take care of duds */
@@ -2715,38 +2715,48 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
         /* do receives */
         for(i=0;i<count;i++)
         {
-            MPI_Status *st=0; if (array_of_statuses) st=&(array_of_statuses[i]);
             if (!flags[i] && array_of_requests[i]->recv)
             {
+                MPI_Status *st=0; 
+                if (array_of_statuses) 
+                    st=&(array_of_statuses[i]);
                 tMPI_Test_r(array_of_requests[i], &(flags[i]), st);
                 if (flags[i])
                 {
                     if (may_free)
+                    {
                         sfree(array_of_requests[i]);
-                    array_of_requests[i]=MPI_REQUEST_NULL;
+                        array_of_requests[i]=MPI_REQUEST_NULL;
+                    }
                 }
             }
         }
         /* then  do sends */
         for(i=0;i<count;i++)
         {
-            MPI_Status *st=0; if (array_of_statuses) st=&(array_of_statuses[i]);
             if (!flags[i] && !(array_of_requests[i]->recv))
             {
+                MPI_Status *st=0; 
+                if (array_of_statuses) 
+                    st=&(array_of_statuses[i]);
                 tMPI_Test_r(array_of_requests[i], &(flags[i]), st);
                 if (flags[i])
                 {
                     if (may_free)
+                    {
                         sfree(array_of_requests[i]);
-                    array_of_requests[i]=MPI_REQUEST_NULL;
+                        array_of_requests[i]=MPI_REQUEST_NULL;
+                    }
                 }
             }
         }
         /* count done flags */
         done=0;
         for(i=0;i<count;i++)
+        {
             if (flags[i])
                 done++;
+        }
     }
     while (done<count);
 
@@ -2915,7 +2925,8 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
             {
                 int ret2;
                 if ((ret2=tMPI_Isend_r(buffer, count, datatype, i, 
-                                TMPI_BCAST_TAG, comm, &(rqr[i]), multicast)) !=
+                                       TMPI_BCAST_TAG, comm, 
+                                       &(rqr[i]), multicast)) !=
                         MPI_SUCCESS)
                 {
                     if (N>MAX_THREADS)

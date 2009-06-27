@@ -562,7 +562,7 @@ t_blocka *init_index(char *gfile, char ***grpname)
 	    maxentries+=1024;
 	    srenew(b->a,maxentries);
 	  }
-	  b->a[i]=atoi(str)-1;
+	  b->a[i]=strtol(str, NULL, 0)-1;
 	  b->index[b->nr]++;
 	  (b->nra)++;
 	  pt=strstr(pt,str)+strlen(str);
@@ -660,27 +660,28 @@ int find_group(char s[], int ngrps, char **grpname)
 
 static int qgroup(int *a, int ngrps, char **grpname)
 {
-  char s[STRLEN];
-  int  aa;
-  bool bInRange;
-  
-  do {
-  fprintf(stderr,"Select a group: ");
-  do {
-    if ( scanf("%s",s)!=1 ) 
-      gmx_fatal(FARGS,"Cannot read from input");
-  trim(s); /* remove spaces */
-  } while (strlen(s)==0);
-  aa = atoi(s);
-    if (aa==0 && strcmp(s,"0")!=0 ) /* string entered */
-      aa = find_group(s, ngrps, grpname);
-    bInRange = aa>=0 && aa<ngrps;
-    if (!bInRange)
-      printf("Error: No such group '%s'\n", s);
-  } while (!bInRange);
-  printf("Selected %d: '%s'\n", aa, grpname[aa]);
-  *a = aa;
-  return aa;
+    char s[STRLEN];
+    int  aa;
+    bool bInRange;
+    char *end;
+
+    do {
+        fprintf(stderr,"Select a group: ");
+        do {
+            if ( scanf("%s",s)!=1 ) 
+                gmx_fatal(FARGS,"Cannot read from input");
+            trim(s); /* remove spaces */
+        } while (strlen(s)==0);
+        aa = strtol(s, &end, 0);
+        if (aa==0 && end != '\0') /* string entered */
+            aa = find_group(s, ngrps, grpname);
+        bInRange = aa>=0 && aa<ngrps;
+        if (!bInRange)
+            printf("Error: No such group '%s'\n", s);
+    } while (!bInRange);
+    printf("Selected %d: '%s'\n", aa, grpname[aa]);
+    *a = aa;
+    return aa;
 }
 
 static void rd_groups(t_blocka *grps,char **grpname,char *gnames[],

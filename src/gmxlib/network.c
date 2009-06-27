@@ -281,7 +281,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     while(i > 0 && isdigit(mpi_hostname[i-1]))
       i--;
     if (isdigit(mpi_hostname[i])) {
-      hostnum = atoi(mpi_hostname+i);
+      hostnum = strtol(mpi_hostname+i, NULL, 0); 
     } else {
       hostnum = 0;
     }

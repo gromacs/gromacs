@@ -76,7 +76,7 @@ void _where(const char *file,int line)
   
   if ( bFirst ) {
     if ((temp=getenv("WHERE")) != NULL)
-      nskip = atoi(temp);
+      nskip = strtol(temp, NULL, 0); 
     bFirst = FALSE;
   } 
 
