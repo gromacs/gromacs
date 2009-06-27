@@ -102,9 +102,12 @@ extern char *ftp2fn(int ftp,int nfile,t_filenm fnm[]);
 extern int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[]);
 /* Return the number of files for the first option with type ftp
    and the files in **fns[] (will be allocated), or NULL when none found. */
-  
+ 
+#if 0
+/* This function is not thread-safe and used nowhere: */
 extern char *ftp2filter(int ftp);
 /* Return a file extension filter for file type */
+#endif
 
 #define ftp2FILE(ftp,nfile,fnm,mode) ffopen(ftp2fn(ftp,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */

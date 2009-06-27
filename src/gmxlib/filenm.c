@@ -48,6 +48,10 @@
 #include "xdrf.h"
 #include "macros.h"
 
+/* NOTE: this is a cesspool of thread-unsafe code, but its effects 'should be'
+         fairly benign. */
+
+
 /* XDR should be available on all platforms now, 
  * but we keep the possibility of turning it off...
  */
@@ -173,6 +177,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".xpm", "root",   NULL, "X PixMap compatible matrix file"        }
 };
 
+
 static char *default_file_name=NULL;
 
 #define NZEXT 2
@@ -250,6 +255,7 @@ const char *ftp2ftype(int ftp)
 
 const char *ftp2defnm(int ftp)
 {
+#if 0
   static char buf[256];
   
   if ((0 <= ftp) && (ftp < efNR)) {
@@ -258,6 +264,13 @@ const char *ftp2defnm(int ftp)
   } 
   else
     return NULL;
+#endif
+  const char *buf=NULL;
+  if ((0 <= ftp) && (ftp < efNR)) 
+  {
+      buf=deffile[ftp].defnm;
+  }
+  return buf;
 }
 
 void pr_def(FILE *fp,int ftp)
@@ -731,6 +744,7 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   return NULL;
 }
 
+#if 0
 static void add_filters(char *filter,int *n,int nf,const int ftp[])
 {
   char buf[8];
@@ -776,6 +790,8 @@ char *ftp2filter(int ftp)
   }
   return filter;
 }
+#endif
+
 
 bool is_optional(t_filenm *fnm)
 {

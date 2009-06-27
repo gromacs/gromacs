@@ -769,9 +769,16 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     /* Now copy the results back... */
     for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
         memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
-    
+
+
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_lock(&init_mutex);
+#endif        
     for(i=0; (i<npall); i++)
-        all_pa[i].desc = mk_desc(&(all_pa[i]), time_unit() );
+        all_pa[i].desc = mk_desc(&(all_pa[i]), get_time_unit(&oenv) );
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_unlock(&init_mutex);
+#endif  
     
     bExit = bHelp || (strcmp(manstr[0],"no") != 0);
     
