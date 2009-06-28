@@ -1273,8 +1273,8 @@ void load_checkpoint(char *fn,FILE *fplog,
       gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
       gmx_bcast(DIM*sizeof(dd_nc[0]),dd_nc,cr);
       gmx_bcast(sizeof(step),&step,cr);
-      gmx_bcast(sizeof(&bReadRNG),bReadRNG,cr);
-      gmx_bcast(sizeof(&bReadEkin),bReadEkin,cr);
+      gmx_bcast(sizeof(*bReadRNG),bReadRNG,cr);
+      gmx_bcast(sizeof(*bReadEkin),bReadEkin,cr);
     }
     ir->bContinuation    = TRUE;
     ir->nsteps          += ir->init_step - step;
