@@ -432,6 +432,7 @@ gmx_thread_cond_init_once(gmx_thread_cond_t *     cond)
     /* No threads = nothing to worry about */
     if(cond->status != GMX_THREAD_ONCE_STATUS_READY)
         return gmx_thread_cond_init(cond);
+    return 0;
 }
 
 
