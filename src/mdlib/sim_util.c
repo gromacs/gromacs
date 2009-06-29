@@ -44,6 +44,9 @@
 
 #include <stdio.h>
 #include <time.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #include <math.h>
 #include "typedefs.h"
 #include "string2.h"
@@ -97,11 +100,36 @@ typedef struct gmx_timeprint {
     
 } t_gmx_timeprint;
 
+
+double
+gmx_gettime()
+{
+#ifdef HAVE_GETTIMEOFDAY
+	struct timeval t;
+	struct timezone tz = { 0,0 };
+	double seconds;
+	
+	gettimeofday(&t,&tz);
+	
+	seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
+	
+	return seconds;
+#else
+	double  seconds;
+	
+	seconds = time(NULL);
+	
+	return seconds;
+#endif
+}
+
+
 #define difftime(end,start) ((double)(end)-(double)(start))
 
 void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
 {
   time_t finish;
+
   double dt;
   char buf[48];
 
@@ -111,14 +139,14 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
   if ((step >= ir->nstlist)) {
     if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
       /* We have done a full cycle let's update time_per_step */
-      runtime->last = time(NULL);
+      runtime->last = gmx_gettime();
       dt = difftime(runtime->last,runtime->real);
       runtime->time_per_step = dt/(step - ir->init_step + 1);
     }
     dt = (ir->nsteps + ir->init_step - step)*runtime->time_per_step;
 
     if (dt >= 300) {    
-      finish = runtime->last + (time_t)dt;
+      finish = (time_t) (runtime->last + dt);
       sprintf(buf,"%s",ctime(&finish));
       buf[strlen(buf)-1]='\0';
       fprintf(out,", will finish %s",buf);
@@ -165,7 +193,7 @@ static double set_proctime(gmx_runtime_t *runtime)
 
 void runtime_start(gmx_runtime_t *runtime)
 {
-    runtime->real = time(NULL);
+    runtime->real = gmx_gettime();
     set_proctime(runtime);
     runtime->realtime      = 0;
     runtime->proctime      = 0;
@@ -175,9 +203,9 @@ void runtime_start(gmx_runtime_t *runtime)
 
 void runtime_end(gmx_runtime_t *runtime)
 {
-    time_t now;
+    double now;
     
-    now = time(NULL);
+    now = gmx_gettime();
     
     runtime->proctime += set_proctime(runtime);
     runtime->realtime  = now - runtime->real;
@@ -194,16 +222,17 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
 {
     int i;
     char *ts,time_string[STRLEN];
-    time_t t;
+    time_t tmptime;
 
     if (runtime != NULL)
     {
-        ts = ctime(&runtime->real);
+		tmptime = (time_t) runtime->real;
+        ts = ctime(&tmptime);
     }
     else
     {
-        t = time(NULL);
-        ts = ctime(&t);
+        tmptime = (time_t) gmx_gettime();
+        ts = ctime(&tmptime);
     }
     for(i=0; ts[i]>=' '; i++)
     {

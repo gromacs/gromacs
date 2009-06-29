@@ -590,6 +590,7 @@ esac
 AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
+AC_CHECK_HEADERS(sys/time.h)
 
 #####
 # Checks for additional and/or optional functions or libraries.
@@ -601,6 +602,8 @@ AC_FUNC_VPRINTF
 AM_WITH_DMALLOC
 AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
+AC_CHECK_FUNCS(gettimeofday)
+
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
 

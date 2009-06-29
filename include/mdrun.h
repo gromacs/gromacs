@@ -78,20 +78,20 @@ enum {
 };
 
 typedef struct {
-  time_t real;
+  double real;
 #ifdef GMX_CRAY_XT3
   double proc;
 #else
   clock_t proc;
 #endif
-  time_t realtime;
+  double realtime;
   double proctime;
   double time_per_step;
-  time_t last;
+  double last;
   gmx_step_t nsteps_done;
 } gmx_runtime_t;
 
-typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
+typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				int nfile,t_filenm fnm[],
 				bool bVerbose,bool bCompact,
 				gmx_vsite_t *vsite,gmx_constr_t constr,

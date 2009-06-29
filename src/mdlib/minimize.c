@@ -796,7 +796,7 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
   return sum/sqr(s_min->fnorm);
 }
 
-time_t do_cg(FILE *fplog,t_commrec *cr,
+double do_cg(FILE *fplog,t_commrec *cr,
 	     int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -1312,7 +1312,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 } /* That's all folks */
 
 
-time_t do_lbfgs(FILE *fplog,t_commrec *cr,
+double do_lbfgs(FILE *fplog,t_commrec *cr,
                 int nfile,t_filenm fnm[],
                 bool bVerbose,bool bCompact,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -1944,7 +1944,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 } /* That's all folks */
 
 
-time_t do_steep(FILE *fplog,t_commrec *cr,
+double do_steep(FILE *fplog,t_commrec *cr,
 		int nfile,t_filenm fnm[],
 		bool bVerbose,bool bCompact,
 		gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -2145,7 +2145,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 } /* That's all folks */
 
 
-time_t do_nm(FILE *fplog,t_commrec *cr,
+double do_nm(FILE *fplog,t_commrec *cr,
 	     int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -2165,7 +2165,6 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     t_mdebin   *mdebin;
 	const char *NM = "Normal Mode Analysis";
     int        fp_ene,step,i;
-    time_t     start_t;
     rvec       *f_global;
     gmx_localtop_t *top;
     gmx_enerdata_t *enerd;
@@ -2408,7 +2407,7 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
   }
 }
 
-time_t do_tpi(FILE *fplog,t_commrec *cr,
+double do_tpi(FILE *fplog,t_commrec *cr,
 	      int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -2434,7 +2433,6 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   int    status;
   t_trxframe rerun_fr;
   bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
-  time_t start_t; 
   tensor force_vir,shake_vir,vir,pres;
   int    cg_tp,a_tp0,a_tp1,ngid,gid_tp,nener,e;
   rvec   *x_mol;
