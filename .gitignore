@@ -18,3 +18,5 @@ log
 config.log
 Makefile.in
 Makefile
+.deps
+.libs
