@@ -56,6 +56,10 @@
 #include "smalloc.h"
 #include "statutil.h"
 
+#ifdef GMX_THREAD_MPI
+#include "gmx_thread.h"
+#endif
+
 /* Windows file stuff, only necessary for visual studio */
 #ifdef _MSC_VER
 #include "windows.h"
@@ -63,27 +67,43 @@
 
 #define MAX_PATHBUF 4096
 
+/* we keep a linked list of all files opened through pipes (i.e. 
+   compressed or .gzipped files. This way we can distinguish between them
+   without having to change the semantics of reading from/writing to files) 
+   */
 typedef struct t_pstack {
-  FILE   *fp;
-  struct t_pstack *prev;
+    FILE   *fp;
+    struct t_pstack *prev;
 } t_pstack;
 
 static t_pstack *pstack=NULL;
 static bool     bUnbuffered=FALSE;
 
+#ifdef GMX_THREAD_MPI
+/* this linked list is an intrinsically globally shared object, so we have
+   to protect it with mutexes */
+static gmx_thread_mutex_t pstack_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+#endif
+
 void no_buffers(void)
 {
-  bUnbuffered=TRUE;
+    bUnbuffered=TRUE;
 }
 
 void push_ps(FILE *fp)
 {
-  t_pstack *ps;
- 
-  snew(ps,1);
-  ps->fp   = fp;
-  ps->prev = pstack;
-  pstack   = ps;
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_lock(&pstack_mutex);
+#endif
+    t_pstack *ps;
+
+    snew(ps,1);
+    ps->fp   = fp;
+    ps->prev = pstack;
+    pstack   = ps;
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_unlock(&pstack_mutex);
+#endif
 }
 
 #ifdef GMX_FAHCORE
@@ -99,16 +119,16 @@ void push_ps(FILE *fp)
 #ifndef HAVE_PIPES
 static FILE *popen(const char *nm,const char *mode)
 {
-  gmx_impl("Sorry no pipes...");
+    gmx_impl("Sorry no pipes...");
 
-  return NULL;
+    return NULL;
 }
 
 static int pclose(FILE *fp)
 {
-  gmx_impl("Sorry no pipes...");
+    gmx_impl("Sorry no pipes...");
 
-  return 0;
+    return 0;
 }
 #endif
 
@@ -116,36 +136,40 @@ static int pclose(FILE *fp)
 
 void ffclose(FILE *fp)
 {
-  t_pstack *ps,*tmp;
-  
-  ps=pstack;
-  if (ps == NULL) {
-    if (fp != NULL) 
-      fclose(fp);
-    return;
-  }
-  if (ps->fp == fp) {
-    if (fp != NULL)
-      pclose(fp);
-    pstack=pstack->prev;
-    sfree(ps);
-  }
-  else {
-    while ((ps->prev != NULL) && (ps->prev->fp != fp))
-      ps=ps->prev;
-    if (ps->prev->fp == fp) {
-      if (ps->prev->fp != NULL)
-	pclose(ps->prev->fp);
-      tmp=ps->prev;
-      ps->prev=ps->prev->prev;
-      sfree(tmp);
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_lock(&pstack_mutex);
+#endif
+    t_pstack *ps,*tmp;
+
+    ps=pstack;
+    if (ps == NULL) {
+        if (fp != NULL) 
+            fclose(fp);
+    }
+    else if (ps->fp == fp) {
+        if (fp != NULL)
+            pclose(fp);
+        pstack=pstack->prev;
+        sfree(ps);
     }
     else {
-      if (fp != NULL)
-	fclose(fp);
-      return;
+        while ((ps->prev != NULL) && (ps->prev->fp != fp))
+            ps=ps->prev;
+        if (ps->prev->fp == fp) {
+            if (ps->prev->fp != NULL)
+                pclose(ps->prev->fp);
+            tmp=ps->prev;
+            ps->prev=ps->prev->prev;
+            sfree(tmp);
+        }
+        else {
+            if (fp != NULL)
+                fclose(fp);
+        }
     }
-  }
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_unlock(&pstack_mutex);
+#endif
 }
 
 #ifdef rewind
@@ -154,131 +178,151 @@ void ffclose(FILE *fp)
 
 void frewind(FILE *fp)
 {
-  t_pstack *ps;
-  
-  ps=pstack;
-  while (ps != NULL) {
-    if (ps->fp == fp) {
-      fprintf(stderr,"Cannot rewind compressed file!\n");
-      return;
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_lock(&pstack_mutex);
+#endif
+    t_pstack *ps;
+
+    ps=pstack;
+    while (ps != NULL) {
+        if (ps->fp == fp) {
+            fprintf(stderr,"Cannot rewind compressed file!\n");
+#ifdef GMX_THREAD_MPI
+            gmx_thread_mutex_unlock(&pstack_mutex);
+#endif
+            return;
+        }
+        ps=ps->prev;
     }
-    ps=ps->prev;
-  }
-  rewind(fp);
+    rewind(fp);
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_unlock(&pstack_mutex);
+#endif
 }
 
 bool is_pipe(FILE *fp)
 {
-  t_pstack *ps;
-  
-  ps=pstack;
-  while (ps != NULL) {
-    if (ps->fp == fp) {
-      return TRUE;
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_lock(&pstack_mutex);
+#endif
+    t_pstack *ps;
+
+    ps=pstack;
+    while (ps != NULL) {
+        if (ps->fp == fp) {
+#ifdef GMX_THREAD_MPI
+            gmx_thread_mutex_unlock(&pstack_mutex);
+#endif
+            return TRUE;
+        }
+        ps=ps->prev;
     }
-    ps=ps->prev;
-  }
-  return FALSE;
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_unlock(&pstack_mutex);
+#endif
+    return FALSE;
 }
 
 
 static FILE *uncompress(const char *fn,const char *mode)
 {
-  FILE *fp;
-  char buf[256];
-  
-  sprintf(buf,"uncompress -c < %s",fn);
-  fprintf(stderr,"Going to execute '%s'\n",buf);
-  if ((fp=popen(buf,mode)) == NULL)
-    gmx_open(fn);
-  push_ps(fp);
-  
-  return fp;
+    FILE *fp;
+    char buf[256];
+
+    sprintf(buf,"uncompress -c < %s",fn);
+    fprintf(stderr,"Going to execute '%s'\n",buf);
+    if ((fp=popen(buf,mode)) == NULL)
+        gmx_open(fn);
+    push_ps(fp);
+
+    return fp;
 }
 
 static FILE *gunzip(const char *fn,const char *mode)
 {
-  FILE *fp;
-  char buf[256];
-  
-  sprintf(buf,"gunzip -c < %s",fn);
-  fprintf(stderr,"Going to execute '%s'\n",buf);
-  if ((fp=popen(buf,mode)) == NULL)
-    gmx_open(fn);
-  push_ps(fp);
-  
-  return fp;
+    FILE *fp;
+    char buf[256];
+
+    sprintf(buf,"gunzip -c < %s",fn);
+    fprintf(stderr,"Going to execute '%s'\n",buf);
+    if ((fp=popen(buf,mode)) == NULL)
+        gmx_open(fn);
+    push_ps(fp);
+
+    return fp;
 }
 
 bool gmx_fexist(const char *fname)
 {
-  FILE *test;
-  
-  if (fname == NULL)
-    return FALSE;
-  test=fopen(fname,"r");
-  if (test == NULL) 
-    return FALSE;
-  else {
-    fclose(test);
-    return TRUE;
-  }
+    FILE *test;
+
+    if (fname == NULL)
+        return FALSE;
+    test=fopen(fname,"r");
+    if (test == NULL) 
+        return FALSE;
+    else {
+        fclose(test);
+        return TRUE;
+    }
 }
 
 bool gmx_eof(FILE *fp)
 {
-  char data[4];
-  bool beof;
+    char data[4];
+    bool beof;
 
-  if (is_pipe(fp))
-    return feof(fp);
-  else {
-    if ((beof=fread(data,1,1,fp))==1)
-      fseek(fp,-1,SEEK_CUR);
-    return !beof;
-  }
+    if (is_pipe(fp))
+        return feof(fp);
+    else {
+        if ((beof=fread(data,1,1,fp))==1)
+            fseek(fp,-1,SEEK_CUR);
+        return !beof;
+    }
 }
 
 char *backup_fn(const char *file)
 {
-  /* Use a reasonably low value for countmax; we might
-   * generate 4-5 files in each round, and we dont
-   * want to hit directory limits of 1024 or 2048 files.
-   */
+    /* Use a reasonably low value for countmax; we might
+     * generate 4-5 files in each round, and we dont
+     * want to hit directory limits of 1024 or 2048 files.
+     */
 #define COUNTMAX 128
-  int         i,count=1;
-  char        *directory,*fn;
-  static char buf[256];
-  
-  for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
-    ;
-  /* Must check whether i > 0, i.e. whether there is a directory
-   * in the file name. In that case we overwrite the / sign with
-   * a '\0' to end the directory string .
-   */
-  if (i > 0) {
-    directory    = strdup(file);
-    directory[i] = '\0';
-    fn           = strdup(file+i+1);
-  }
-  else {
-    directory    = strdup(".");
-    fn           = strdup(file);
-  }
-  do {
-    sprintf(buf,"%s/#%s.%d#",directory,fn,count);
-    count++;
-  } while ((count < COUNTMAX) && gmx_fexist(buf));
-  
-  /* Arbitrarily bail out */
-  if (count == COUNTMAX) 
-    gmx_fatal(FARGS,"Won't make more than %d backups of %s for you",
-	      COUNTMAX,fn);
-  
-  sfree(directory);
-  sfree(fn);
-  
-  return buf;
+    int         i,count=1;
+    char        *directory,*fn;
+    char        *buf;
+
+    smalloc(buf, MAX_PATHBUF);
+
+    for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
+        ;
+    /* Must check whether i > 0, i.e. whether there is a directory
+     * in the file name. In that case we overwrite the / sign with
+     * a '\0' to end the directory string .
+     */
+    if (i > 0) {
+        directory    = strdup(file);
+        directory[i] = '\0';
+        fn           = strdup(file+i+1);
+    }
+    else {
+        directory    = strdup(".");
+        fn           = strdup(file);
+    }
+    do {
+        sprintf(buf,"%s/#%s.%d#",directory,fn,count);
+        count++;
+    } while ((count < COUNTMAX) && gmx_fexist(buf));
+
+    /* Arbitrarily bail out */
+    if (count == COUNTMAX) 
+        gmx_fatal(FARGS,"Won't make more than %d backups of %s for you",
+                COUNTMAX,fn);
+
+    sfree(directory);
+    sfree(fn);
+
+    return buf;
 }
 
 bool make_backup(const char * name)
@@ -290,14 +334,15 @@ bool make_backup(const char * name)
 #else
 
     if(gmx_fexist(name)) {
-      backup = backup_fn(name);
-      if(rename(name, backup) == 0) {
-        fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
-                name, backup);
-      } else {
-        fprintf(stderr, "Sorry couldn't backup %s to %s\n", name, backup);
-        return FALSE;
-      }
+        backup = backup_fn(name);
+        if(rename(name, backup) == 0) {
+            fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
+                    name, backup);
+        } else {
+            fprintf(stderr, "Sorry couldn't backup %s to %s\n", name, backup);
+            return FALSE;
+        }
+        sfree(backup);
     }
     return TRUE;
 #endif
@@ -305,94 +350,94 @@ bool make_backup(const char * name)
 
 FILE *ffopen(const char *file,const char *mode)
 {
-  FILE *ff=NULL;
-  char buf[256],*bf,*bufsize=0,*ptr;
-  bool bRead;
-  int  bs;
-  
-  if (mode[0]=='w') {
-    make_backup(file);
-  }
-  where();
-  
-  bRead= mode[0]=='r';
-  strcpy(buf,file);
-  if (gmx_fexist(buf) || !bRead) {
-    if ((ff=fopen(buf,mode))==NULL)
-      gmx_file(buf);
-    where();
-    /* Check whether we should be using buffering (default) or not
-     * (for debugging)
-     */
-    if (bUnbuffered || ((bufsize=getenv("LOG_BUFS")) != NULL)) {
-      /* Check whether to use completely unbuffered */
-      if (bUnbuffered)
-	bs = 0;
-      else
-	bs=strtol(bufsize, NULL, 0); 
-      if (bs <= 0)
-	setbuf(ff,NULL); 
-      else {
-	snew(ptr,bs+8);
-	if (setvbuf(ff,ptr,_IOFBF,bs) != 0)
-	  gmx_file("Buffering File");
-      }
+    FILE *ff=NULL;
+    char buf[256],*bf,*bufsize=0,*ptr;
+    bool bRead;
+    int  bs;
+
+    if (mode[0]=='w') {
+        make_backup(file);
     }
     where();
-  }
-  else {
-    sprintf(buf,"%s.Z",file);
-    if (gmx_fexist(buf)) {
-      ff=uncompress(buf,mode);
+
+    bRead= mode[0]=='r';
+    strcpy(buf,file);
+    if (gmx_fexist(buf) || !bRead) {
+        if ((ff=fopen(buf,mode))==NULL)
+            gmx_file(buf);
+        where();
+        /* Check whether we should be using buffering (default) or not
+         * (for debugging)
+         */
+        if (bUnbuffered || ((bufsize=getenv("LOG_BUFS")) != NULL)) {
+            /* Check whether to use completely unbuffered */
+            if (bUnbuffered)
+                bs = 0;
+            else
+                bs=strtol(bufsize, NULL, 0); 
+            if (bs <= 0)
+                setbuf(ff,NULL); 
+            else {
+                snew(ptr,bs+8);
+                if (setvbuf(ff,ptr,_IOFBF,bs) != 0)
+                    gmx_file("Buffering File");
+            }
+        }
+        where();
     }
     else {
-      sprintf(buf,"%s.gz",file);
-      if (gmx_fexist(buf)) {
-	ff=gunzip(buf,mode);
-      }
-      else 
-	gmx_file(file);
+        sprintf(buf,"%s.Z",file);
+        if (gmx_fexist(buf)) {
+            ff=uncompress(buf,mode);
+        }
+        else {
+            sprintf(buf,"%s.gz",file);
+            if (gmx_fexist(buf)) {
+                ff=gunzip(buf,mode);
+            }
+            else 
+                gmx_file(file);
+        }
     }
-  }
-  return ff;
+    return ff;
 }
 
 
 
 bool search_subdirs(const char *parent, char *libdir)
 {
-  char *ptr;
-  bool found;
-  
-  /* Search a few common subdirectory names for the gromacs library dir */
-  sprintf(libdir,"%s%cshare%ctop%cgurgle.dat",parent,
-	  DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR);
-  found=gmx_fexist(libdir);
-  if(!found) {
-    sprintf(libdir,"%s%cshare%cgromacs%ctop%cgurgle.dat",parent,
-	    DIR_SEPARATOR,DIR_SEPARATOR,
-	    DIR_SEPARATOR,DIR_SEPARATOR);
+    char *ptr;
+    bool found;
+
+    /* Search a few common subdirectory names for the gromacs library dir */
+    sprintf(libdir,"%s%cshare%ctop%cgurgle.dat",parent,
+            DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR);
     found=gmx_fexist(libdir);
-  }    
-  if(!found) {
-    sprintf(libdir,"%s%cshare%cgromacs-%s%ctop%cgurgle.dat",parent,
-	    DIR_SEPARATOR,DIR_SEPARATOR,VERSION,
-	    DIR_SEPARATOR,DIR_SEPARATOR);
-    found=gmx_fexist(libdir);
-  }    
-  if(!found) {
-    sprintf(libdir,"%s%cshare%cgromacs%cgromacs-%s%ctop%cgurgle.dat",parent,
-	    DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR,
-	    VERSION,DIR_SEPARATOR,DIR_SEPARATOR);
-      found=gmx_fexist(libdir);
-  }    
-  
-  /* Remove the gurgle.dat part from libdir if we found something */
-  if(found) {
-    ptr=strrchr(libdir,DIR_SEPARATOR); /* slash or backslash always present, no check necessary */
-    *ptr='\0';
-  }
-  return found;
+    if(!found) {
+        sprintf(libdir,"%s%cshare%cgromacs%ctop%cgurgle.dat",parent,
+                DIR_SEPARATOR,DIR_SEPARATOR,
+                DIR_SEPARATOR,DIR_SEPARATOR);
+        found=gmx_fexist(libdir);
+    }    
+    if(!found) {
+        sprintf(libdir,"%s%cshare%cgromacs-%s%ctop%cgurgle.dat",parent,
+                DIR_SEPARATOR,DIR_SEPARATOR,VERSION,
+                DIR_SEPARATOR,DIR_SEPARATOR);
+        found=gmx_fexist(libdir);
+    }    
+    if(!found) {
+        sprintf(libdir,"%s%cshare%cgromacs%cgromacs-%s%ctop%cgurgle.dat",parent,
+                DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR,
+                VERSION,DIR_SEPARATOR,DIR_SEPARATOR);
+        found=gmx_fexist(libdir);
+    }    
+
+    /* Remove the gurgle.dat part from libdir if we found something */
+    if(found) {
+        ptr=strrchr(libdir,DIR_SEPARATOR); /* slash or backslash always present, no check necessary */
+        *ptr='\0';
+    }
+    return found;
 }
 
 
@@ -403,171 +448,170 @@ bool search_subdirs(const char *parent, char *libdir)
 static bool filename_is_absolute(char *name)
 {
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-  return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
+    return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
 #else
-  return (name[0] == DIR_SEPARATOR);
+    return (name[0] == DIR_SEPARATOR);
 #endif
 }
 
 bool get_libdir(char *libdir)
 {
-  char bin_name[512];
-  char buf[512];
-  char full_path[MAX_PATHBUF];
-  char test_file[MAX_PATHBUF];
-  char system_path[MAX_PATHBUF];
-  char *dir,*ptr,*s,*pdum;
-  bool found=FALSE;
-  int i;
+    char bin_name[512];
+    char buf[512];
+    char full_path[MAX_PATHBUF];
+    char test_file[MAX_PATHBUF];
+    char system_path[MAX_PATHBUF];
+    char *dir,*ptr,*s,*pdum;
+    bool found=FALSE;
+    int i;
 
-  /* First - detect binary name */
-  strncpy(bin_name,Program(),512);
-  
-  /* On windows & cygwin we need to add the .exe extension
-   * too, or we wont be able to detect that the file exists
-   */
+    /* First - detect binary name */
+    strncpy(bin_name,Program(),512);
+
+    /* On windows & cygwin we need to add the .exe extension
+     * too, or we wont be able to detect that the file exists
+     */
 #if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
-  if(strlen(bin_name)<3 || strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
-    strcat(bin_name,".exe");
+    if(strlen(bin_name)<3 || strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
+        strcat(bin_name,".exe");
 #endif
 
-  /* Only do the smart search part if we got a real name */
-  if (NULL!=bin_name && strncmp(bin_name,"GROMACS",512)) {
-  
-    if (!strchr(bin_name,DIR_SEPARATOR)) {
-      /* No slash or backslash in name means it must be in the path - search it! */
-      s=getenv("PATH");
+    /* Only do the smart search part if we got a real name */
+    if (NULL!=bin_name && strncmp(bin_name,"GROMACS",512)) {
 
-      /* Add the local dir since it is not in the path on windows */
+        if (!strchr(bin_name,DIR_SEPARATOR)) {
+            /* No slash or backslash in name means it must be in the path - search it! */
+            s=getenv("PATH");
+
+            /* Add the local dir since it is not in the path on windows */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-      pdum=_getcwd(system_path,sizeof(system_path)-1);
+            pdum=_getcwd(system_path,sizeof(system_path)-1);
 #else
-      pdum=getcwd(system_path,sizeof(system_path)-1);
+            pdum=getcwd(system_path,sizeof(system_path)-1);
 #endif
-      strcat(system_path,PATH_SEPARATOR);
-      if (s != NULL)
-	strcat(system_path,s);
-      s=system_path;
-      found=FALSE;
-      while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
-      {
-          sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
-          found=gmx_fexist(full_path);
-      }
-      if (!found)
-	return FALSE;
-    } else if (!filename_is_absolute(bin_name)) {
-      /* name contains directory separators, but 
-       * it does not start at the root, i.e.
-       * name is relative to the current dir 
-       */
+            strcat(system_path,PATH_SEPARATOR);
+            if (s != NULL)
+                strcat(system_path,s);
+            s=system_path;
+            found=FALSE;
+            while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+            {
+                sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
+                found=gmx_fexist(full_path);
+            }
+            if (!found)
+                return FALSE;
+        } else if (!filename_is_absolute(bin_name)) {
+            /* name contains directory separators, but 
+             * it does not start at the root, i.e.
+             * name is relative to the current dir 
+             */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-      pdum=_getcwd(buf,sizeof(buf)-1);
+            pdum=_getcwd(buf,sizeof(buf)-1);
 #else
-      pdum=getcwd(buf,sizeof(buf)-1);
+            pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-      strncpy(full_path,buf,MAX_PATHBUF);
-      strcat(full_path,"/");
-      strcat(full_path,bin_name);
-    } else {
-      strncpy(full_path,bin_name,MAX_PATHBUF);
-    }
-    
-    /* Now we should have a full path and name in full_path,
-     * but on unix it might be a link, or a link to a link to a link..
-     */
+            strncpy(full_path,buf,MAX_PATHBUF);
+            strcat(full_path,"/");
+            strcat(full_path,bin_name);
+        } else {
+            strncpy(full_path,bin_name,MAX_PATHBUF);
+        }
+
+        /* Now we should have a full path and name in full_path,
+         * but on unix it might be a link, or a link to a link to a link..
+         */
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
-    while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
-      buf[i]='\0';
-      /* If it doesn't start with "/" it is relative */
-      if (buf[0]!=DIR_SEPARATOR) {
-	strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,MAX_PATHBUF);
-      } else
-	strncpy(full_path,buf,MAX_PATHBUF);
-    }
+        while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
+            buf[i]='\0';
+            /* If it doesn't start with "/" it is relative */
+            if (buf[0]!=DIR_SEPARATOR) {
+                strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,MAX_PATHBUF);
+            } else
+                strncpy(full_path,buf,MAX_PATHBUF);
+        }
 #endif
-    
-    /* Remove the executable name - it always contains at least one slash */
-    *(strrchr(full_path,DIR_SEPARATOR)+1)='\0';
-    /* Now we have the full path to the gromacs executable.
-     * Use it to find the library dir. 
+
+        /* Remove the executable name - it always contains at least one slash */
+        *(strrchr(full_path,DIR_SEPARATOR)+1)='\0';
+        /* Now we have the full path to the gromacs executable.
+         * Use it to find the library dir. 
+         */
+        found=FALSE;
+        while(!found && ( (ptr=strrchr(full_path,DIR_SEPARATOR)) != NULL ) ) {
+            *ptr='\0';
+            found=search_subdirs(full_path,libdir);
+        }
+    }
+    /* End of smart searching. If we didn't find it in our parent tree,
+     * or if the program name wasn't set, at least try some standard 
+     * locations before giving up, in case we are running from e.g. 
+     * a users home directory. This only works on unix or cygwin...
      */
-    found=FALSE;
-    while(!found && ( (ptr=strrchr(full_path,DIR_SEPARATOR)) != NULL ) ) {
-      *ptr='\0';
-      found=search_subdirs(full_path,libdir);
-    }
-  }
-  /* End of smart searching. If we didn't find it in our parent tree,
-   * or if the program name wasn't set, at least try some standard 
-   * locations before giving up, in case we are running from e.g. 
-   * a users home directory. This only works on unix or cygwin...
-   */
 #if ((!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64) || defined __CYGWIN__ || defined __CYGWIN32__)
-  if(!found) 
-    found=search_subdirs("/usr/local",libdir);
-  if(!found) 
-    found=search_subdirs("/usr",libdir);
-  if(!found) 
-    found=search_subdirs("/opt",libdir);
+    if(!found) 
+        found=search_subdirs("/usr/local",libdir);
+    if(!found) 
+        found=search_subdirs("/usr",libdir);
+    if(!found) 
+        found=search_subdirs("/opt",libdir);
 #endif
-  return found;
+    return found;
 }
 
 
 const char *low_libfn(const char *file, bool bFatal)
 {
-  const char *ret=NULL;
-  char *lib,*dir;
-  static char buf[1024];
-  static char libpath[MAX_PATHBUF];
-  static int  bFirst=1;
-  static bool env_is_set;
-  char   *s,tmppath[MAX_PATHBUF];
-  bool found;
-  
-  if (bFirst) {
+    const char *ret=NULL;
+    char *lib,*dir;
+    char buf[1024];
+    char libpath[MAX_PATHBUF];
+    bool env_is_set=FALSE;
+    char   *s,tmppath[MAX_PATHBUF];
+    bool found;
+
     /* GMXLIB can be a path now */
     lib=getenv("GMXLIB");
     if (lib != NULL) {
-      env_is_set=TRUE;
-      strncpy(libpath,lib,MAX_PATHBUF);
+        env_is_set=TRUE;
+        strncpy(libpath,lib,MAX_PATHBUF);
     } 
     else if (!get_libdir(libpath))
-      strncpy(libpath,GMXLIBDIR,MAX_PATHBUF);
-    
-    bFirst=0;
-  }
+        strncpy(libpath,GMXLIBDIR,MAX_PATHBUF);
 
-  if (gmx_fexist(file))
-    ret=file;
-  else {
-    found=FALSE;
-    strncpy(tmppath,libpath,MAX_PATHBUF);
-    s=tmppath;
-#if 0
-    while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
-      sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
-      found=gmx_fexist(buf);
-      s = NULL;
-    }
-#endif
-    while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
+    if (gmx_fexist(file))
     {
-        sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
-        found=gmx_fexist(buf);
+        ret=file;
     }
-    ret=buf;
-    if (bFatal && !found) {
-      if (env_is_set) 
-	gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
-      else
-	gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
-		    "(You can set the directories to search with the GMXLIB path variable)",file);
+    else 
+    {
+        found=FALSE;
+        strncpy(tmppath,libpath,MAX_PATHBUF);
+        s=tmppath;
+#if 0
+        while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
+            sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
+            found=gmx_fexist(buf);
+            s = NULL;
+        }
+#endif
+        while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
+        {
+            sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
+            found=gmx_fexist(buf);
+        }
+        ret=buf;
+        if (bFatal && !found) 
+        {
+            if (env_is_set) 
+                gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+            else
+                gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
+                        "(You can set the directories to search with the GMXLIB path variable)",file);
+        }
     }
-  }
-    
-  return ret;
+
+    return ret;
 }
 
 
@@ -575,86 +619,86 @@ const char *low_libfn(const char *file, bool bFatal)
 
 FILE *low_libopen(const char *file,bool bFatal)
 {
-  FILE *ff;
-  const char *fn;
+    FILE *ff;
+    const char *fn;
 
-  fn=low_libfn(file,bFatal);
+    fn=low_libfn(file,bFatal);
 
-  if (fn==NULL) {
-    ff=NULL;
-  } else {
-    if (bFatal)
-      fprintf(stderr,"Opening library file %s\n",fn);
-    ff=fopen(fn,"r");
-  }
+    if (fn==NULL) {
+        ff=NULL;
+    } else {
+        if (bFatal)
+            fprintf(stderr,"Opening library file %s\n",fn);
+        ff=fopen(fn,"r");
+    }
 
-  return ff;
+    return ff;
 }
 
 const char *libfn(const char *file)
 {
-  return low_libfn(file,TRUE);
+    return low_libfn(file,TRUE);
 }
 
 FILE *libopen(const char *file)
 {
-  return low_libopen(file,TRUE);
+    return low_libopen(file,TRUE);
 }
 
 void gmx_tmpnam(char *buf)
 {
-  int i,len,fd;
-  
-  if ((len = strlen(buf)) < 7)
-    gmx_fatal(FARGS,"Buf passed to gmx_tmpnam must be at least 7 bytes long");
-  for(i=len-6; (i<len); i++) {
-    buf[i] = 'X';
-  }
-  /* mktemp is dangerous and we should use mkstemp instead, but 
-   * since windows doesnt support it we have to separate the cases.
-   * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
-   */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-  _mktemp(buf);
-#else
-  fd = mkstemp(buf);
+    int i,len,fd;
 
-  switch (fd) {
-  case EINVAL:
-    gmx_fatal(FARGS,"Invalid template %s for mkstemp",buf);
-    break;
-  case EEXIST:
-    gmx_fatal(FARGS,"mkstemp created existing file",buf);
-    break;
-  case EACCES: 
-    gmx_fatal(FARGS,"Permission denied for opening %s",buf);
-    break;
-  default:
-    break;
-  }   
-  close(fd);
+    if ((len = strlen(buf)) < 7)
+        gmx_fatal(FARGS,"Buf passed to gmx_tmpnam must be at least 7 bytes long");
+    for(i=len-6; (i<len); i++) {
+        buf[i] = 'X';
+    }
+    /* mktemp is dangerous and we should use mkstemp instead, but 
+     * since windows doesnt support it we have to separate the cases.
+     * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
+     */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    _mktemp(buf);
+#else
+    fd = mkstemp(buf);
+
+    switch (fd) {
+        case EINVAL:
+            gmx_fatal(FARGS,"Invalid template %s for mkstemp",buf);
+            break;
+        case EEXIST:
+            gmx_fatal(FARGS,"mkstemp created existing file",buf);
+            break;
+        case EACCES: 
+            gmx_fatal(FARGS,"Permission denied for opening %s",buf);
+            break;
+        default:
+            break;
+    }   
+    close(fd);
 #endif
-  /* name in Buf should now be OK */
+    /* name in Buf should now be OK */
 }
 
-int
+    int
 gmx_truncatefile(char *path, off_t length)
 {
 #ifdef _MSC_VER
-  /* Microsoft visual studio does not have "truncate" */
-  HANDLE fh;
-  LARGE_INTEGER win_length;
+    /* Microsoft visual studio does not have "truncate" */
+    HANDLE fh;
+    LARGE_INTEGER win_length;
 
-  win_length.QuadPart = length;
+    win_length.QuadPart = length;
 
-  fh = CreateFile(path,GENERIC_READ | GENERIC_WRITE,0,NULL,
-		  OPEN_EXISTING,0,NULL);
-  SetFilePointerEx(fh,win_length,NULL,FILE_BEGIN);
-  SetEndOfFile(fh);
-  CloseHandle(fh);
+    fh = CreateFile(path,GENERIC_READ | GENERIC_WRITE,0,NULL,
+            OPEN_EXISTING,0,NULL);
+    SetFilePointerEx(fh,win_length,NULL,FILE_BEGIN);
+    SetEndOfFile(fh);
+    CloseHandle(fh);
 
-  return 0;
+    return 0;
 #else
-  return truncate(path,length);
+    return truncate(path,length);
 #endif
 }

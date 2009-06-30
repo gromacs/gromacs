@@ -216,7 +216,7 @@ void CopyRight(FILE *out,const char *szProgram)
   char buf[256],tmpstr[1024];
   int i;
 
-  set_program_name(szProgram);
+/*  set_program_name(szProgram);*/
 
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
@@ -241,7 +241,7 @@ void CopyRight(FILE *out,const char *szProgram)
 
   fprintf(out,"\n");
 
-  sprintf(buf,"%s",Program());
+  sprintf(buf,"%s",get_program_str(szProgram));
 #ifdef GMX_DOUBLE
   strcat(buf," (double precision)");
 #endif

@@ -309,6 +309,7 @@ int main(int argc,char *argv[])
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
   bool bAppendFiles=FALSE,bAddPart=TRUE;
+  output_env_t oenv=NULL;
 	
   t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
@@ -395,8 +396,9 @@ int main(int argc,char *argv[])
   if (!gmx_parallel_env)
     PCA_Flags |= PCA_BE_NICE;
 
-  parse_common_args(&argc,argv,PCA_Flags,
-                    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args_r(&argc,argv,PCA_Flags,
+                      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,
+                      &oenv);
     
 
 

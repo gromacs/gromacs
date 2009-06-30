@@ -82,10 +82,11 @@ typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
    now have re-entrant versions listed with them. */
 typedef struct output_env *output_env_t;
 
-static void set_output_env(output_env_t oenv,  bool bView, bool bXvgrCodes, 
+extern void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes, 
                            const char *timenm);
-static void init_output_env(output_env_t oenv,  int argc, char *argv[],
-                            bool bView, bool bXvgrCodes, const char *timenm);
+extern void init_output_env(output_env_t oenv,  int argc, char *argv[],
+                            bool view, bool xvgr_codes, const char *timenm);
+
 
     
 /* Return the name of the program */
@@ -104,6 +105,8 @@ extern const char *get_command_line(const output_env_t oenv);
  */    
 extern void set_program_name(const char *argvzero);
 extern void set_program(output_env_t oenv, const char *argvzero);
+/* this is purely for copyright() output */
+extern const char *get_program_str(const char *argvzero);
 
 /************************************************
  *             Trajectory functions
@@ -125,7 +128,7 @@ extern int nframes_read(void);
 /* Returns the number of frames read from the trajectory */
 
 int write_trxframe_indexed(int status,t_trxframe *fr,int nind,atom_id *ind,
-			   gmx_conect gc);
+                           gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
 int write_trxframe(int status,t_trxframe *fr,gmx_conect gc);
@@ -139,8 +142,8 @@ int write_trxframe(int status,t_trxframe *fr,gmx_conect gc);
  */
 
 int write_trx(int status,int nind,atom_id *ind,t_atoms *atoms,
-	      int step,real time,matrix box,rvec x[],rvec *v,
-	      gmx_conect gc);
+              int step,real time,matrix box,rvec x[],rvec *v,
+              gmx_conect gc);
 /* Write an indexed frame to a TRX file.
  * v can be NULL. 
  * atoms can be NULL for file types which don't need atom names.
@@ -211,6 +214,17 @@ extern void convert_times(int n, real *time);
 extern void conv_times(const output_env_t oenv, int n, real *time);
 /* convert array of times */
 
+extern bool bDoView(void);
+extern bool get_view(const output_env_t oenv);
+/* Return TRUE when user requested viewing of the file */
+
+extern bool bPrintXvgrCodes(void);
+extern bool get_print_xvgr_codes(const output_env_t oenv);
+/* Return TRUE when user wants printing of legends etc. in the file. */
+
+
+
+
 /* For trxframe.flags, used in trxframe read routines.
  * When a READ flag is set, the field will be read when present,
  * but a frame might be returned which does not contain the field.
@@ -231,7 +245,7 @@ extern void conv_times(const output_env_t oenv, int n, real *time);
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 extern int read_first_frame(int *status,const char *fn,
-			    t_trxframe *fr,int flags);
+                            t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
    * Returns natoms when succeeded, 0 otherwise.
@@ -246,7 +260,7 @@ extern bool read_next_frame(int status,t_trxframe *fr);
    */
 
 extern int read_first_x(int *status,const char *fn,
-			real *t,rvec **x,matrix box);
+                        real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.
@@ -271,12 +285,6 @@ extern t_topology *read_top(const char *fn,int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
-
-extern bool bDoView(void);
-/* Return TRUE when user requested viewing of the file */
-
-extern bool bPrintXvgrCodes(void);
-/* Return TRUE when user wants printing of legends etc. in the file. */
 
 /*****************************************************
  *         Some command line parsing routines 
@@ -335,18 +343,18 @@ extern int nenum(const char *const enumc[]);
 
 #ifdef HAVE_MOTIF
 extern void gmx_gui(int *argc,char *argv[],
-		    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
-		    int ndesc,const char *desc[],
-		    int nbugs,const char *bugs[]);
+                    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
+                    int ndesc,const char *desc[],
+                    int nbugs,const char *bugs[]);
 /* This function plops up a Motif dialog box in which the command-line options
  * can be changed.
  */
 #endif
 
 extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
-			      int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-			      int ndesc,const char **desc,
-			      int nbugs,const char **bugs);
+                              int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
+                              int ndesc,const char **desc,
+                              int nbugs,const char **bugs);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables
@@ -354,6 +362,14 @@ extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
  * -b and -e will be used for begin and end time, whether this is 
  * appropriate or not!
  */
+
+
+extern void parse_common_args_r(int *argc,char *argv[],unsigned long Flags,
+                                int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
+                                int ndesc,const char **desc,
+                                int nbugs,const char **bugs, 
+                                output_env_t *oenv);
+/* re-entrant version of parse_common_args, with output_env_t */
 
 #ifdef CPLUSPLUS
 }

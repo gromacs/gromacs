@@ -695,7 +695,7 @@ int gmx_fio_open(const char *fn,const char *mode)
 {
 	t_fileio *fio=NULL;
 	int      i,nfio=0;
-	char     *bf,newmode[5];
+	char     newmode[5];
 	bool     bRead;
 	int      xdrid;
 	
@@ -773,7 +773,7 @@ int gmx_fio_open(const char *fn,const char *mode)
 			/* only make backups for normal gromacs */
 				if (gmx_fexist(fn)) 
 				{
-					bf=(char *)backup_fn(fn);
+					char *bf=(char *)backup_fn(fn);
 					if (rename(fn,bf) == 0) 
 					{
 						fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",fn,bf);
@@ -782,6 +782,7 @@ int gmx_fio_open(const char *fn,const char *mode)
 					{
 						fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
 					}
+                                        sfree(bf);
 				}
 			#endif
 			}
