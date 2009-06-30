@@ -501,7 +501,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-real fit_acf(int ncorr,int fitfn,bool bVerbose,
+real fit_acf(int ncorr,int fitfn,output_env_t oenv,bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
@@ -562,7 +562,7 @@ real fit_acf(int ncorr,int fitfn,bool bVerbose,
     /* Use the previous fitparm as starting values for the next fit */
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,NULL,1);
-    tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
+    tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,oenv,
 			 bDebugMode(),fitfn,fitparm,0);
     sumtot = sum+tail_corr;
     if (fit && ((jmax == 1) || (j == 1)))
@@ -581,7 +581,7 @@ real fit_acf(int ncorr,int fitfn,bool bVerbose,
   return sumtot;
 }
 
-void low_do_autocorr(const char *fn,const char *title,
+void low_do_autocorr(const char *fn,output_env_t oenv,const char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bNormalize,
@@ -661,7 +661,7 @@ void low_do_autocorr(const char *fn,const char *title,
   
   if (fn) {
     snew(fit,nout);
-    fp=xvgropen(fn,title,"Time (ps)","C(t)");
+    fp=xvgropen(fn,title,"Time (ps)","C(t)",oenv);
   } else {
     fit = NULL;
     fp  = NULL;
@@ -674,7 +674,7 @@ void low_do_autocorr(const char *fn,const char *title,
       normalize_acf(nout,c1[0]);
     
     if (eFitFn != effnNONE) {
-      fit_acf(nout,eFitFn,fn!=NULL,tbeginfit,tendfit,dt,c1[0],fit);
+      fit_acf(nout,eFitFn,oenv,fn!=NULL,tbeginfit,tendfit,dt,c1[0],fit);
       sum = print_and_integrate(fp,nout,dt,c1[0],fit,1);
     } else {
       sum = print_and_integrate(fp,nout,dt,c1[0],NULL,1);
@@ -685,12 +685,12 @@ void low_do_autocorr(const char *fn,const char *title,
     /* Not averaging. Normalize individual ACFs */
     Ctav = Ct2av = 0;
     if (debug)
-      gp = xvgropen("ct-distr.xvg","Correlation times","item","time (ps)");
+      gp = xvgropen("ct-distr.xvg","Correlation times","item","time (ps)",oenv);
     for(i=0; i<nitem; i++) {
       if (bNormalize)
 	normalize_acf(nout,c1[i]);
       if (eFitFn != effnNONE) {
-	fit_acf(nout,eFitFn,fn!=NULL,tbeginfit,tendfit,dt,c1[i],fit);
+	fit_acf(nout,eFitFn,oenv,fn!=NULL,tbeginfit,tendfit,dt,c1[i],fit);
 	sum = print_and_integrate(fp,nout,dt,c1[i],fit,1);
       } else {
 	sum = print_and_integrate(fp,nout,dt,c1[i],NULL,1);
@@ -769,7 +769,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
   return ppa;
 }
 
-void do_autocorr(const char *fn,const char *title,
+void do_autocorr(const char *fn,output_env_t oenv,const char *title,
 		 int nframes,int nitem,real **c1,
 		 real dt,unsigned long mode,bool bAver)
 {
@@ -795,7 +795,7 @@ void do_autocorr(const char *fn,const char *title,
     break;
   }
   
-  low_do_autocorr(fn,title,nframes,nitem,acf.nout,c1,dt,mode,
+  low_do_autocorr(fn,oenv,title,nframes,nitem,acf.nout,c1,dt,mode,
 		  acf.nrestart,bAver,acf.bNormalize,
 		  bDebugMode(),acf.tbeginfit,acf.tendfit,
 		  acf.fitfn,acf.nskip);

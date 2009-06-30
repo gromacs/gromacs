@@ -81,6 +81,7 @@ int main (int argc,char *argv[])
   matrix      box;
   int         i,frame,resind;
   bool        bReadMultiple;
+  output_env_t oenv;
   
   t_filenm fnm[] = {
     { efTPS, NULL, NULL,         ffREAD  },
@@ -92,7 +93,7 @@ int main (int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,
-		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
+		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL,&oenv);
   
   infile=opt2fn("-s",NFILE,fnm);
   read_tps_conf(infile,title,&top,&ePBC,&x,NULL,box,FALSE);
@@ -102,7 +103,7 @@ int main (int argc,char *argv[])
   bReadMultiple = opt2bSet("-f",NFILE,fnm);
   if (bReadMultiple) {
     infile = opt2fn("-f",NFILE,fnm);
-    if ( !read_first_frame(&status, infile, &fr, TRX_NEED_X ) )
+    if ( !read_first_frame(oenv,&status, infile, &fr, TRX_NEED_X ) )
       gmx_fatal(FARGS,"cannot read coordinate file %s",infile);
     natoms = fr.natoms;
   } else {
@@ -168,7 +169,7 @@ int main (int argc,char *argv[])
     /* write output */
     write_trxframe(out,&frout,NULL);
     frame++;
-  } while ( bReadMultiple && read_next_frame(status, &fr) );
+  } while ( bReadMultiple && read_next_frame(oenv,status, &fr) );
   
   thanx(stderr);
 

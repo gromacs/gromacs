@@ -555,8 +555,9 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
     return FALSE;
 }
 
-void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
-	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
+void ionize(FILE *fp,output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
+            real t,t_inputrec *ir, rvec x[],rvec v[],int start,int end,
+            matrix box,t_commrec *cr)
 {
   static FILE  *xvg,*ion;
   static const char  *const_leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
@@ -631,8 +632,8 @@ void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
     dq_tot  = 0;
     nkd_tot = 0;
 
-    xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()");
-    xvgr_legend(xvg,asize(leg),leg);
+    xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()",oenv);
+    xvgr_legend(xvg,asize(leg),leg,oenv);
     ion   = gmx_fio_fopen("ionize.log","w");
 
     fprintf(fp,PREFIX"Parameters for ionization events:\n");

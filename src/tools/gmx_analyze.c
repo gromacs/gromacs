@@ -110,13 +110,15 @@ static real cosine_content(int nhp,int n,real *y)
   return 2*cosyint*cosyint/(n*yyint);
 }
 
-static void plot_coscont(char *ccfile,int n,int nset,real **val)
+static void plot_coscont(char *ccfile,int n,int nset,real **val,
+                         output_env_t oenv)
 {
   FILE *fp;
   int  s;
   real cc;
   
-  fp = xvgropen(ccfile,"Cosine content","set / half periods","cosine content");
+  fp = xvgropen(ccfile,"Cosine content","set / half periods","cosine content",
+                oenv);
   
   for(s=0; s<nset; s++) {
     cc = cosine_content(s+1,n,val[s]);
@@ -156,7 +158,8 @@ static void regression_analysis(int n,bool bXYdy,real *x,real **val)
   }
 }
 
-void histogram(char *distfile,real binwidth,int n, int nset, real **val)
+void histogram(char *distfile,real binwidth,int n, int nset, real **val,
+               output_env_t oenv)
 {
   FILE *fp;
   int  i,s;
@@ -186,7 +189,7 @@ void histogram(char *distfile,real binwidth,int n, int nset, real **val)
   nbin = (int)((max - min)/binwidth + 0.5) + 1;
   fprintf(stderr,"Making distributions with %d bins\n",nbin);
   snew(histo,nbin);
-  fp = xvgropen(distfile,"Distribution","","");
+  fp = xvgropen(distfile,"Distribution","","",oenv);
   for(s=0; s<nset; s++) {
     for(i=0; i<nbin; i++)
       histo[i] = 0;
@@ -289,7 +292,8 @@ static real anal_ee(real *parm,real T,real t)
 
 static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 			   double *av,double *sig,real **val,real dt,
-			   bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr)
+			   bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr,
+                           output_env_t oenv)
 {
   FILE   *fp;
   int    bs,prev_bs,nbs,nb;
@@ -306,13 +310,14 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
     return;
   }
 
-  fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
-  if (bPrintXvgrCodes())
+  fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate",
+                oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,
 	    "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
 	    (n-1)*dt,n);
   snew(leg,2*nset);
-  xvgr_legend(fp,2*nset,leg);
+  xvgr_legend(fp,2*nset,leg,oenv);
   sfree(leg);
 
   spacing = pow(2,1.0/resol);
@@ -397,7 +402,8 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
        * to halfway between tau1_est and the total time (on log scale).
        */
       fitparm[2] = sqrt(tau1_est*(n-1)*dt);
-      do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
+      do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,oenv,bDebugMode(),effnERREST,
+               fitparm,0);
       fitparm[3] = 1-fitparm[1];
     }
     if (bSingleExpFit || fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0
@@ -421,7 +427,8 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 	fitparm[1] = 0.95;
 	fitparm[2] = (n-1)*dt;
 	fprintf(stderr,"Will fix tau2 at the total time: %g\n",fitparm[2]);
-	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,4);
+	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,oenv,bDebugMode(),
+                 effnERREST,fitparm,4);
 	fitparm[3] = 1-fitparm[1];
       }
       if (bSingleExpFit || fitparm[0]<0 || fitparm[1]<0
@@ -437,7 +444,8 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 	fitparm[0] = tau1_est;
 	fitparm[1] = 1.0;
 	fitparm[2] = 0.0;
-	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
+	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,oenv,bDebugMode(),effnERREST,
+                 fitparm,6);
 	fitparm[3] = 1-fitparm[1];
       }
     }
@@ -463,7 +471,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 	else
 	  fitsig[i] = 1;
       }
-      low_do_autocorr(NULL,NULL,n,1,-1,&ac,
+      low_do_autocorr(NULL,oenv,NULL,n,1,-1,&ac,
 		      dt,eacNormal,1,FALSE,TRUE,
 		      FALSE,0,0,effnNONE,0);
       
@@ -482,7 +490,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       ac_fit[0] = 0.5*acint;
       ac_fit[1] = 0.95;
       ac_fit[2] = 10*acint;
-      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,fitlen*dt,
+      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,fitlen*dt,oenv,
               bDebugMode(),effnEXP3,ac_fit,0);
       ac_fit[3] = 1 - ac_fit[1];
 
@@ -507,7 +515,8 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 }
 
 static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
-			 bool bError,real fit_start,real smooth_tail_start)
+			 bool bError,real fit_start,real smooth_tail_start,
+                         output_env_t oenv)
 {
   const real tol = 1e-8;
   real *kt;
@@ -529,12 +538,12 @@ static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
       fprintf(debug,"RMS difference in derivatives is %g\n",sqrt(d2/nn));
     }
     analyse_corr(nn,time,val[0],val[2],kt,NULL,NULL,NULL,fit_start,
-		 temp,smooth_tail_start);
+		 temp,smooth_tail_start,oenv);
     sfree(kt);
   }
   else if (nset == 6) {
     analyse_corr(nn,time,val[0],val[2],val[4],
-		 val[1],val[3],val[5],fit_start,temp,smooth_tail_start);
+		 val[1],val[3],val[5],fit_start,temp,smooth_tail_start,oenv);
   }
   else {
     printf("Inconsistent input. I need c(t) sigma_c(t) n(t) sigma_n(t) K(t) sigma_K(t)\n");
@@ -542,7 +551,8 @@ static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
   }
 }
 
-static void filter(real flen,int n,int nset,real **val,real dt)
+static void filter(real flen,int n,int nset,real **val,real dt,
+                   output_env_t oenv)
 {
   int    f,s,i,j;
   double *filt,sum,vf,fluc,fluctot;
@@ -579,7 +589,7 @@ static void filter(real flen,int n,int nset,real **val,real dt)
 }
 
 static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
-		   int npargs,t_pargs *ppa)
+		   int npargs,t_pargs *ppa,output_env_t oenv)
 {
   real *c1=NULL,*sig=NULL,*fitparm;
   real dt=0,tendfit,tbeginfit;
@@ -652,7 +662,7 @@ static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
   for(i=0; (i<nparm); i++) 
     fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
   if (do_lmfit(ny,c1,sig,dt,x0,tbeginfit,tendfit,
-	       bDebugMode(),efitfn,fitparm,0)) {
+	       oenv,bDebugMode(),efitfn,fitparm,0)) {
     for(i=0; (i<nparm); i++) 
       fprintf(out,"a%-2d = %12.5e\n",i+1,fitparm[i]);
   }
@@ -810,6 +820,7 @@ int gmx_analyze(int argc,char *argv[])
   real     **val,*t,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
   char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile,*fitfile;
+  output_env_t oenv;
   
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
@@ -831,7 +842,7 @@ int gmx_analyze(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv); 
 
   acfile   = opt2fn_null("-ac",NFILE,fnm);
   msdfile  = opt2fn_null("-msd",NFILE,fnm);
@@ -876,10 +887,10 @@ int gmx_analyze(int argc,char *argv[])
   if (fitfile) {
     out_fit = ffopen(fitfile,"w");
     if (bXYdy && nset>=2) {
-      do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa);
+      do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa,oenv);
     } else {
       for(s=0; s<nset; s++)
-	do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa);
+	do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa,oenv);
     }
     fclose(out_fit);
   }
@@ -921,11 +932,11 @@ int gmx_analyze(int argc,char *argv[])
   printf("\n");
 
   if (filtlen)
-    filter(filtlen,n,nset,val,dt);
+    filter(filtlen,n,nset,val,dt,oenv);
   
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",
-		 "time","MSD (nm\\S2\\N)");
+		 "time","MSD (nm\\S2\\N)",oenv);
     nlast = (int)(n*frac);
     for(s=0; s<nset; s++) {
       for(j=0; j<=nlast; j++) {
@@ -944,15 +955,15 @@ int gmx_analyze(int argc,char *argv[])
     fprintf(stderr,"\r%d, time=%g\n",j-1,(j-1)*dt);
   }
   if (ccfile)
-    plot_coscont(ccfile,n,nset,val);
+    plot_coscont(ccfile,n,nset,val,oenv);
   
   if (distfile)
-    histogram(distfile,binwidth,n,nset,val);
+    histogram(distfile,binwidth,n,nset,val,oenv);
   if (avfile)
     average(avfile,nenum(avbar_opt),n,nset,val,t);
   if (eefile)
     estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,
-		   bEeFitAc,bEESEF,bEENLC);
+		   bEeFitAc,bEESEF,bEENLC,oenv);
   if (bPower)
     power_fit(n,nset,val,t);
   if (acfile) {
@@ -960,16 +971,16 @@ int gmx_analyze(int argc,char *argv[])
       for(s=0; s<nset; s++)
 	for(i=0; i<n; i++)
 	  val[s][i] -= av[s];
-    do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
+    do_autocorr(acfile,oenv,"Autocorrelation",n,nset,val,dt,
 		eacNormal,bAverCorr);
   }
   if (bRegression)
     regression_analysis(n,bXYdy,t,val);
 
   if (bLuzar) 
-    luzar_correl(n,t,nset,val,temp,bXYdy,fit_start,smooth_tail_start);
+    luzar_correl(n,t,nset,val,temp,bXYdy,fit_start,smooth_tail_start,oenv);
     
-  view_all(NFILE, fnm);
+  view_all(oenv,NFILE, fnm);
   
   thanx(stderr);
 

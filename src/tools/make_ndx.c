@@ -1134,6 +1134,7 @@ int main(int argc,char *argv[])
   };
 #define NPA asize(pa)
 
+  output_env_t oenv;
   char     title[STRLEN];
   int      nndxin;   
   char     *stxfile, **ndxinfiles, *ndxoutfile;
@@ -1155,7 +1156,7 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,0,NFILE,fnm,NPA,pa,asize(desc),desc,
-		    0,NULL);
+		    0,NULL,&oenv);
   
   stxfile = ftp2fn_null(efSTX,NFILE,fnm);
   if (opt2bSet("-n",NFILE,fnm)) {

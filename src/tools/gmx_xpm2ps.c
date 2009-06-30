@@ -1120,6 +1120,7 @@ int gmx_xpm2ps(int argc,char *argv[])
     "the [TT]-xpm[tt] option."
   };
 
+  output_env_t oenv;
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
   int       i,nmat,nmat2,etitle,elegend,ediag,erainbow,ecombine;
   t_matrix *mat=NULL,*mat2=NULL;
@@ -1179,7 +1180,7 @@ int gmx_xpm2ps(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,NPA,pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
   etitle   = nenum(title);
   elegend  = nenum(legend);
@@ -1267,7 +1268,7 @@ int gmx_xpm2ps(int argc,char *argv[])
 	   opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip,
 	   mapoffset);
   
-  view_all(NFILE, fnm);
+  view_all(oenv,NFILE, fnm);
     
   thanx(stderr);
   

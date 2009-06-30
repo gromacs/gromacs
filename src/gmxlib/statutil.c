@@ -86,13 +86,19 @@ struct output_env
     int time_unit; /*  the time unit as index for the above-defined arrays */
     bool view;  /* view of file requested */
     bool xvgr_codes; /* xmgrace-style legends etc. in file output */
+#if 0
     const char *program; /* the program name */
     char *cmdline; /* the re-assembled command line */
+#endif
 };
 
 /* this is a global variable that should be removed */
 /*static struct output_env oenv_g;*/
 static output_env_t oenv_gp=NULL;
+
+/* inherently globally shared names: */
+static const char *program_name=NULL;
+static char *cmd_line=NULL;
 
 #ifdef GMX_THREAD_MPI
 /* For now, some things here are simply not re-entrant, so
@@ -110,29 +116,6 @@ static gmx_thread_mutex_t init_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 void init_output_env(output_env_t oenv,  int argc, char *argv[],
                      bool view, bool xvgr_codes, const char *timenm)
 {
-    int i;
-    size_t cmdlength;
-    
-    cmdlength = strlen(argv[0]);
-    for (i=1; i<argc; i++) 
-    {
-        cmdlength += strlen(argv[i]);
-    }
-    
-    /* Fill the cmdline string */
-    snew(oenv->cmdline,cmdlength+argc+1);
-    for (i=0; i<argc; i++) 
-    {
-        strcat(oenv->cmdline,argv[i]);
-        strcat(oenv->cmdline," ");
-    }
-    
-    set_program(oenv, argv[0]);
-    
-    /* now check for empty values */
-    if (oenv->cmdline == NULL)
-        oenv->cmdline = "GROMACS";
-    
     set_output_env(oenv, view, xvgr_codes, timenm);
 }
 
@@ -160,7 +143,7 @@ void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes,
 }
 
 
-const char *get_program_str(const char *argvzero)
+static const char *get_program_str(const char *argvzero)
 {
     const char *ret=NULL;
     /* When you run a dynamically linked program before installing
@@ -176,68 +159,87 @@ const char *get_program_str(const char *argvzero)
     return ret;
 }
 
-void set_program(output_env_t oenv, const char *argvzero)
-{
-    oenv->program=get_program_str(argvzero);
-}
-
-
-const char *get_short_program(const output_env_t oenv)
+const char *get_short_program_str(const char *program_name)
 {
     char *pr;
-    if ((pr=strrchr(oenv->program,'/')) != NULL)
+    if ((pr=strrchr(program_name,'/')) != NULL)
         return pr+1;
     else
-        return oenv->program;
+        return program_name;
 }
 
-const char *get_program(const output_env_t oenv)
-{
-    return oenv->program;
-}
-
-const char *get_command_line(const output_env_t oenv)
-{
-    return oenv->cmdline;
-}
 
 
 const char *ShortProgram(void)
 {
-    if (!oenv_gp)
-        gmx_fatal(FARGS,"static output env uninitialized");
-    return get_short_program(oenv_gp);
+    char *pr;
+    if ((pr=strrchr(program_name,'/')) != NULL)
+        return pr+1;
+    else
+        return program_name;
 }
 
 const char *Program(void)
 {
-    if (!oenv_gp)
-    {
-        fprintf(stderr,"static output env uninitialized");
-        return NULL;
-    }
-    return get_program(oenv_gp);
+    return program_name;
 }
 
 const char *command_line(void)
 {
-    if (!oenv_gp)
-        gmx_fatal(FARGS,"static output env uninitialized");
-    return get_command_line(oenv_gp);
+    return cmd_line;
 }
 
 void set_program_name(const char *argvzero)
 {
-    if (!oenv_gp)
-        gmx_fatal(FARGS,"static output env uninitialized");
 #ifdef GMX_THREAD_MPI
     gmx_thread_mutex_lock(&init_mutex);
 #endif
-    set_program(oenv_gp, argvzero);
+    /* When you run a dynamically linked program before installing
+     * it, libtool uses wrapper scripts and prefixes the name with "lt-".
+     * Until libtool is fixed to set argv[0] right, rip away the prefix:
+     */
+    if (program_name == NULL)
+    {
+        if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
+            program_name=strdup(argvzero+3);
+        else
+            program_name=strdup(argvzero);
+    }
+    if (program_name == NULL)
+        program_name="GROMACS";
 #ifdef GMX_THREAD_MPI
     gmx_thread_mutex_unlock(&init_mutex);
 #endif
 }
+
+
+void set_command_line(int argc, char *argv[])
+{
+    int i;
+    size_t cmdlength;
+
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    cmdlength = strlen(argv[0]);
+    for (i=1; i<argc; i++) 
+    {
+        cmdlength += strlen(argv[i]);
+    }
+    
+    /* Fill the cmdline string */
+    snew(cmd_line,cmdlength+argc+1);
+    for (i=0; i<argc; i++) 
+    {
+        strcat(cmd_line,argv[i]);
+        strcat(cmd_line," ");
+    }
+#ifdef GMX_THREAD_MPI
+    gmx_thread_mutex_unlock(&init_mutex);
+#endif
+
+}
+
 
 bool bRmod_fd(double a, double b, double c, bool bDouble)
 {
@@ -364,21 +366,29 @@ bool get_print_xvgr_codes(const output_env_t oenv)
 const char *time_unit(void)
 {
     if (!oenv_gp)
+    {
+        abort();
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_time_unit(oenv_gp);
 }
 
 const char *time_label(void)
 {
     if (!oenv_gp)
+    {
+        abort();
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_time_label(oenv_gp);
 }
 
 const char *xvgr_tlabel(void)
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_xvgr_tlabel(oenv_gp);
 }
 
@@ -386,21 +396,27 @@ const char *xvgr_tlabel(void)
 real time_factor(void)
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_time_factor(oenv_gp);
 }
 
 real time_invfactor(void)
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_time_invfactor(oenv_gp);
 }
 
 real convert_time(real time)
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return conv_time(oenv_gp, time);
 }
 
@@ -408,7 +424,9 @@ real convert_time(real time)
 void convert_times(int n, real *time)
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     conv_times(oenv_gp, n, time);
 }
 
@@ -416,14 +434,18 @@ void convert_times(int n, real *time)
 bool bDoView(void)
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_view(oenv_gp);
 }
 
 bool bPrintXvgrCodes()
 {
     if (!oenv_gp)
+    {
         gmx_fatal(FARGS,"static output env uninitialized");
+    }
     return get_print_xvgr_codes(oenv_gp);
 }
 
@@ -568,8 +590,8 @@ static FILE *man_file(const output_env_t oenv,const char *mantp)
     char   buf[256];
     const char *pr;
     
-    if ((pr=strrchr(oenv->program,'/')) == NULL)
-        pr=oenv->program;
+    if ( (pr=strrchr(program_name,'/')) == NULL)
+        pr=program_name;
     else 
         pr+=1;
     
@@ -650,6 +672,7 @@ static char *mk_desc(t_pargs *pa, const char *time_unit_str)
     return newdesc;
 }
 
+#if 0
 void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
 		       int ndesc,const char **desc,
@@ -667,14 +690,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     gmx_thread_mutex_unlock(&init_mutex);
 #endif
 }
+#endif
 
 
-
-void parse_common_args_r(int *argc,char *argv[],unsigned long Flags,
-		         int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-		         int ndesc,const char **desc,
-		         int nbugs,const char **bugs,
-                         output_env_t *oenv)
+void parse_common_args(int *argc,char *argv[],unsigned long Flags,
+		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
+		       int ndesc,const char **desc,
+		       int nbugs,const char **bugs,
+                       output_env_t *oenv)
 {
     bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
     const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", "wiki", NULL };
@@ -875,7 +898,7 @@ void parse_common_args_r(int *argc,char *argv[],unsigned long Flags,
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)
-            write_man(stderr,"help",get_program(*oenv),ndesc,desc,nfile,
+            write_man(stderr,"help",Program(),ndesc,desc,nfile,
                       fnm,npall,all_pa, nbugs,bugs,bHidden);
         else if (bPrint) {
             pr_fns(stderr,nfile,fnm);
@@ -887,20 +910,20 @@ void parse_common_args_r(int *argc,char *argv[],unsigned long Flags,
         if(!strcmp(manstr[0],"completion")) {
             /* one file each for csh, bash and zsh if we do completions */
             fp=man_file(*oenv,"completion-zsh");
-            write_man(fp,"completion-zsh",get_program(*oenv),ndesc,desc,nfile,
+            write_man(fp,"completion-zsh",Program(),ndesc,desc,nfile,
                       fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
             fp=man_file(*oenv,"completion-bash");
-            write_man(fp,"completion-bash",get_program(*oenv),ndesc,desc,nfile,
+            write_man(fp,"completion-bash",Program(),ndesc,desc,nfile,
                       fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
             fp=man_file(*oenv,"completion-csh");
-            write_man(fp,"completion-csh",get_program(*oenv),ndesc,desc,nfile,
+            write_man(fp,"completion-csh",Program(),ndesc,desc,nfile,
                       fnm, npall,all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
         } else {
             fp=man_file(*oenv,manstr[0]);
-            write_man(fp,manstr[0],get_program(*oenv),ndesc,desc,nfile,fnm,
+            write_man(fp,manstr[0],Program(),ndesc,desc,nfile,fnm,
                       npall, all_pa,nbugs,bugs,bHidden);
             gmx_fio_fclose(fp);
         }

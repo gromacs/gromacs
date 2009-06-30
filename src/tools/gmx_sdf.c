@@ -65,7 +65,7 @@ static void f_write(FILE *output,float value)
 
 static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF, 
                    char *fnREF, bool bRef, rvec cutoff, real binwidth,
-                   int mode, rvec triangle, rvec dtri)
+                   int mode, rvec triangle, rvec dtri, output_env_t oenv)
 {
   FILE       *fp;
   int        status;
@@ -145,7 +145,7 @@ structure if needed */
 
 
   /* Read first frame and check it */
-  natoms=read_first_x(&status,fnTRX,&t,&x,box);
+  natoms=read_first_x(oenv,&status,fnTRX,&t,&x,box);
   if ( !natoms )
     gmx_fatal(FARGS,"Could not read coordinates from statusfile!\n");
 
@@ -153,8 +153,9 @@ structure if needed */
   /* check with topology */
   if (fnTPS)
     if ( natoms > top.atoms.nr )
-      gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)!\n",
-                  natoms,top.atoms.nr);
+      gmx_fatal(FARGS,
+                "Trajectory (%d atoms) does not match topology (%d atoms)!\n",
+                natoms,top.atoms.nr);
 
 
   /* check with index groups */
@@ -530,7 +531,7 @@ structure if needed */
               }
           }
       }
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
   close_trj(status);
@@ -683,6 +684,7 @@ int gmx_sdf(int argc,char *argv[])
     "For further information about SDF's have a look at: A. Vishnyakov, JPC A, 105,",
     "2001, 1702 and the references cited within."
   };
+  output_env_t oenv;
   static bool bRef=FALSE;
   static int mode=1;
   static rvec triangle={0.0,0.0,0.0};
@@ -715,7 +717,7 @@ int gmx_sdf(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
-                    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
+                    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
 
   fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
@@ -748,7 +750,7 @@ int gmx_sdf(int argc,char *argv[])
 
 
   do_sdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),
-         fnREF,bRef,cutoff,binwidth,mode,triangle,dtri);
+         fnREF,bRef,cutoff,binwidth,mode,triangle,dtri,oenv);
 
 
   thanx(stderr);

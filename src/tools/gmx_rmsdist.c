@@ -556,6 +556,9 @@ int gmx_rmsdist (int argc,char *argv[])
   static int  nlevels=40;
   static real scalemax=-1.0;
   static bool bSumH=TRUE;
+
+  output_env_t oenv;
+
   t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  {&nlevels}, 
       "Discretize rms in # levels" },
@@ -581,7 +584,7 @@ int gmx_rmsdist (int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE ,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   bRMS  = opt2bSet("-rms", NFILE,fnm);
   bScale= opt2bSet("-scl", NFILE,fnm);
@@ -640,19 +643,20 @@ int gmx_rmsdist (int argc,char *argv[])
   sfree(x);
 
   /*open output files*/
-  fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS Deviation","Time (ps)","RMSD (nm)");
-  if (bPrintXvgrCodes())
+  fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS Deviation","Time (ps)","RMSD (nm)",
+              oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"of distances between %s atoms\"\n",grpname);
   
   /*do a first step*/
-  natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natom=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   do {
     calc_dist_tot(isize,index,x,ePBC,box,d,dtot,dtot2,bNMR,dtot1_3,dtot1_6);
     
     rmsnow=rms_diff(isize,d,d_r);
     fprintf(fp,"%g  %g\n",t,rmsnow);
-  } while (read_next_x(status,&t,natom,x,box));
+  } while (read_next_x(oenv,status,&t,natom,x,box));
   fprintf(stderr, "\n");
 
   fclose(fp);
@@ -720,7 +724,7 @@ int gmx_rmsdist (int argc,char *argv[])
   if (bNOE)
     write_noe(opt2FILE("-noe",NFILE,fnm,"w"), gnr, noe, noe_gr, scalemax);
   
-  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(oenv,ftp2fn(efXVG,NFILE,fnm),NULL);
  
   thanx(stderr);
   return 0;

@@ -429,6 +429,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  output_env_t oenv;
   /* Command line options */
   static bool bXVG=FALSE;
   static bool bShowNumbers=TRUE;
@@ -441,7 +442,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
 
   if (ftp2bSet(efTPX,NFILE,fnm))

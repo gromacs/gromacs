@@ -187,7 +187,8 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
 static t_forcerec *fr=NULL;
 
 void do_nsgrid(FILE *fp,bool bVerbose,
-	       matrix box,rvec x[],t_atoms *atoms,real rlong)
+	       matrix box,rvec x[],t_atoms *atoms,real rlong, 
+               output_env_t oenv)
 {
   gmx_mtop_t *mtop;
   gmx_localtop_t *top;
@@ -283,7 +284,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Init things dependent on parameters */  
   ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
-  init_forcerec(stdout,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,TRUE,-1);
+  init_forcerec(stdout,oenv,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,
+                TRUE,-1);
   if (debug)
     pr_forcerec(debug,fr,cr);
 		
@@ -314,7 +316,7 @@ bool bXor(bool b1,bool b2)
 void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 	      int ePBC, matrix box, bool bInsert,
 	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt,
-	      bool bVerbose,real rshell,int max_sol)
+	      bool bVerbose,real rshell,int max_sol, output_env_t oenv)
 {
   t_nblist   *nlist;
   t_atoms    *atoms_all;
@@ -371,7 +373,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 		&atoms_all,&x_all,&v_all);
 	     
   /* Do neighboursearching step */
-  do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,max_vdw);
+  do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,max_vdw,oenv);
   
   /* check solvent with solute */
   nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
@@ -439,7 +441,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
       
   /* Search again, now with another cut-off */
   if (rshell > 0) {
-    do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,rshell);
+    do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,rshell,oenv);
     nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
     fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
     nkeep = 0;

@@ -159,6 +159,7 @@ int gmx_enemat(int argc,char *argv[])
   char       **ereflines,**erefres=NULL;
   real       *eref=NULL,*edif=NULL;
   int        neref=0;
+  output_env_t oenv;
 
   t_filenm   fnm[] = {
     { efEDR, "-f", NULL, ffOPTRD },
@@ -171,7 +172,7 @@ int gmx_enemat(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   egrp_use[egCOULSR]=bCoulSR;
   egrp_use[egLJSR]=bLJSR;
@@ -405,8 +406,9 @@ int gmx_enemat(int argc,char *argv[])
       }
     }
 
-    out=xvgropen(ftp2fn(efXVG,NFILE,fnm),"Mean Energy","Residue","kJ/mol");
-    xvgr_legend(out,0,NULL);
+    out=xvgropen(ftp2fn(efXVG,NFILE,fnm),"Mean Energy","Residue","kJ/mol",
+                 oenv);
+    xvgr_legend(out,0,NULL, oenv);
     j=0;
     for (m=0; (m<egNR+egSP); m++) 
       if (egrp_use[m])

@@ -548,7 +548,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
-		      real **time)
+		      real **time,output_env_t oenv)
 {
   rvec   **xx,*x;
   matrix box;
@@ -559,7 +559,7 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
   max_nf = 0;
   xx     = NULL;
   *time  = NULL;
-  natom = read_first_x(&status,fn,&t,&x,box);
+  natom = read_first_x(oenv,&status,fn,&t,&x,box);
   i  = 0;
   i0 = 0;
   do {
@@ -577,7 +577,7 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
       i0 ++;
     }
     i++;
-  } while (read_next_x(status,&t,natom,x,box));
+  } while (read_next_x(oenv,status,&t,natom,x,box));
   fprintf(stderr,"Allocated %lu bytes for frames\n",
 	  (unsigned long) (max_nf*isize*sizeof(**xx)));
   fprintf(stderr,"Read %d frames from trajectory %s\n",i0,fn);
@@ -674,7 +674,7 @@ static char *parse_filename(char *fn, int maxnr)
 
 static void ana_trans(t_clusters *clust, int nf, 
 		      char *transfn, char *ntransfn, FILE *log,
-		      t_rgb rlo,t_rgb rhi)
+		      t_rgb rlo,t_rgb rhi,output_env_t oenv)
 {
   FILE *fp;
   real **trans,*axis;
@@ -711,7 +711,8 @@ static void ana_trans(t_clusters *clust, int nf,
     ffclose(fp);
   }
   if (ntransfn) {
-    fp=xvgropen(ntransfn,"Cluster Transitions","Cluster #","# transitions");
+    fp=xvgropen(ntransfn,"Cluster Transitions","Cluster #","# transitions",
+                oenv);
     for(i=0; i<clust->ncl; i++)
       fprintf(fp,"%5d %5d\n",i+1,ntrans[i]);
     ffclose(fp);
@@ -730,8 +731,9 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     int iosize, atom_id *outidx,
 			     char *trxfn, char *sizefn, char *transfn, 
 			     char *ntransfn, char *clustidfn, bool bAverage, 
-			     int write_ncl, int write_nst, real rmsmin,bool bFit,
-			     FILE *log,t_rgb rlo,t_rgb rhi)
+			     int write_ncl, int write_nst, real rmsmin,
+                             bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
+                             output_env_t oenv)
 {
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;
@@ -784,10 +786,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   }
   
   if (transfn || ntransfn) 
-    ana_trans(clust, nf, transfn, ntransfn, log,rlo,rhi);
+    ana_trans(clust, nf, transfn, ntransfn, log,rlo,rhi,oenv);
   
   if (clustidfn) {
-    fp=xvgropen(clustidfn,"Clusters",xvgr_tlabel(),"Cluster #");
+    fp=xvgropen(clustidfn,"Clusters",get_xvgr_tlabel(oenv),"Cluster #",oenv);
     fprintf(fp,"@    s0 symbol 2\n");
     fprintf(fp,"@    s0 symbol size 0.2\n");
     fprintf(fp,"@    s0 linestyle 0\n");
@@ -796,7 +798,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     ffclose(fp);
   }
   if (sizefn) {
-    fp=xvgropen(sizefn,"Cluster Sizes","Cluster #","# Structures");
+    fp=xvgropen(sizefn,"Cluster Sizes","Cluster #","# Structures",oenv);
     fprintf(fp,"@g%d type %s\n",0,"bar");
   }
   snew(structure,nf);
@@ -1044,6 +1046,7 @@ int gmx_cluster(int argc,char *argv[])
   static int  niter=10000,seed=1993,write_ncl=0,write_nst=1,minstruct=1;
   static real kT=1e-3;
   static int  M=10,P=3;
+  output_env_t oenv;
   t_pargs pa[] = {
     { "-dista", FALSE, etBOOL, {&bRMSdist},
       "Use RMSD of distances instead of RMS deviation" },
@@ -1103,8 +1106,10 @@ int gmx_cluster(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,
+                    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,
+                    &oenv);
 
   /* parse options */
   bReadMat   = opt2bSet("-dm",NFILE,fnm);
@@ -1117,10 +1122,10 @@ int gmx_cluster(int argc,char *argv[])
     trx_out_fn = opt2fn("-cl",NFILE,fnm);
   else
     trx_out_fn = NULL;
-  if (bReadMat && time_factor()!=1) {
+  if (bReadMat && get_time_factor(oenv)!=1) {
     fprintf(stderr,
 	    "\nWarning: assuming the time unit in %s is %s\n",
-	    opt2fn("-dm",NFILE,fnm),time_unit());
+	    opt2fn("-dm",NFILE,fnm),get_time_unit(oenv));
   }
   if (trx_out_fn && !bReadTraj)
     fprintf(stderr,"\nWarning: "
@@ -1228,8 +1233,8 @@ int gmx_cluster(int argc,char *argv[])
     /* Loop over first coordinate file */
     fn = opt2fn("-f",NFILE,fnm);
     
-    xx = read_whole_trj(fn,isize,index,skip,&nf,&time);
-    convert_times(nf, time);
+    xx = read_whole_trj(fn,isize,index,skip,&nf,&time,oenv);
+    conv_times(oenv, nf, time);
     if (!bRMSdist || bAnalyze) {
       /* Center all frames on zero */
       snew(mass,isize);
@@ -1254,7 +1259,7 @@ int gmx_cluster(int argc,char *argv[])
     nf = readmat[0].nx;
     sfree(time);
     time = readmat[0].axis_x;
-    time_invfac = time_invfactor();
+    time_invfac = get_time_invfactor(oenv);
     for(i=0; i<nf; i++)
       time[i] *= time_invfac;
 
@@ -1310,7 +1315,7 @@ int gmx_cluster(int argc,char *argv[])
 	    rmsmin,rmsdcut);
   
   /* Plot the rmsd distribution */
-  rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
+  rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms,oenv);
   
   if (bBinary) {
     for(i1=0; (i1 < nf); i1++) 
@@ -1336,7 +1341,7 @@ int gmx_cluster(int argc,char *argv[])
       sfree(tmp);
       
       fp = xvgropen(opt2fn("-ev",NFILE,fnm),"RMSD matrix Eigenvalues",
-                    "Eigenvector index","Eigenvalues (nm\\S2\\N)");
+                    "Eigenvector index","Eigenvalues (nm\\S2\\N)",oenv);
       for(i=0; (i<nf); i++)
           fprintf(fp,"%10d  %10g\n",i,eigval[i]);
           ffclose(fp);
@@ -1384,7 +1389,7 @@ int gmx_cluster(int argc,char *argv[])
 		     opt2fn_null("-ntr",NFILE,fnm),
 		     opt2fn_null("-clid",NFILE,fnm),
 		     bAverage, write_ncl, write_nst, rmsmin, bFit, log,
-		     rlo_bot,rhi_bot);
+		     rlo_bot,rhi_bot,oenv);
   }
   ffclose(log);
   
@@ -1403,7 +1408,7 @@ int gmx_cluster(int argc,char *argv[])
 	      rms->mat,0.0,rms->maxrms,rlo_top,rhi_top,&nlevels);
   } 
   else {
-    sprintf(buf,"Time (%s)",time_unit());
+    sprintf(buf,"Time (%s)",get_time_unit(oenv));
     sprintf(title,"RMS%sDeviation / Cluster Index",
  	    bRMSdist ? " Distance " : " ");
     if (minstruct > 1) {
@@ -1421,15 +1426,15 @@ int gmx_cluster(int argc,char *argv[])
   ffclose(fp);
   
   /* now show what we've done */
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn_null("-sz",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn_null("-sz",NFILE,fnm),"-nxy");
   if (method == m_diagonalize)
-    do_view(opt2fn_null("-ev",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-dist",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn_null("-ev",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-dist",NFILE,fnm),"-nxy");
   if (bAnalyze) {
-    do_view(opt2fn_null("-tr",NFILE,fnm),"-nxy");
-    do_view(opt2fn_null("-ntr",NFILE,fnm),"-nxy");
-    do_view(opt2fn_null("-clid",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn_null("-tr",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn_null("-ntr",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn_null("-clid",NFILE,fnm),"-nxy");
   }
   
   /* Thank the user for her patience */  

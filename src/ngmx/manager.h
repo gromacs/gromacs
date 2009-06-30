@@ -126,12 +126,14 @@ typedef struct {
   t_butbox    *vbox;		/* The video box			*/
   t_butbox    *bbox;		/* The button box			*/
   t_legendwin *legw;		/* The legend window			*/
+
+  output_env_t oenv;            /* output env data */
 } t_manager;
 
 extern t_manager *init_man(t_x11 *x11,Window Parent,
 			   int x,int y,int width,int height,
 			   unsigned long fg,unsigned long bg,
-			   int ePBC,matrix box);
+			   int ePBC,matrix box, output_env_t oenv);
 /* Initiate the display manager */
 
 extern void move_man(t_x11 *x11,t_manager *man,int width,int height);

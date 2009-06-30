@@ -156,7 +156,7 @@ static int pdbf_comp(const void *a,const void *b)
 }
 
 static void analyse_em_all(int npdb,t_pdbfile *pdbf[],
-			   char *edocked,char *efree)
+			   char *edocked,char *efree, output_env_t oenv)
 {
   FILE *fp;
   int i;
@@ -164,7 +164,7 @@ static void analyse_em_all(int npdb,t_pdbfile *pdbf[],
   for(bFreeSort = FALSE; (bFreeSort <= TRUE); bFreeSort++) {
     qsort(pdbf,npdb,sizeof(pdbf[0]),pdbf_comp);
     fp = xvgropen(bFreeSort ? efree : edocked,
-		  etitles[bFreeSort],"()","E (kJ/mol)");
+		  etitles[bFreeSort],"()","E (kJ/mol)",oenv);
     for(i=0; (i<npdb); i++)
       fprintf(fp,"%12lf\n",bFreeSort ? pdbf[i]->efree : pdbf[i]->edocked);
     fclose(fp);
@@ -311,6 +311,7 @@ int main(int argc,char *argv[])
     { efXVG, "-of", "efree",   ffWRITE },
     { efLOG, "-g",  "anadock", ffWRITE }
   };
+  output_env_t oenv;
 #define NFILE asize(fnm)
   static bool bFree=FALSE,bRMS=TRUE;
   static real cutoff = 0.2;
@@ -329,8 +330,8 @@ int main(int argc,char *argv[])
   int       npdbf;
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,NFILE,fnm,NPA,pa,
-		    asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,0,NFILE,fnm,NPA,pa, asize(desc),desc,0,
+                    NULL,&oenv);
   
   fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
   please_cite(stdout,"Hetenyi2002b");
@@ -338,7 +339,8 @@ int main(int argc,char *argv[])
   
   pdbf = read_em_all(opt2fn("-f",NFILE,fnm),&npdbf);
   
-  analyse_em_all(npdbf,pdbf,opt2fn("-od",NFILE,fnm),opt2fn("-of",NFILE,fnm));
+  analyse_em_all(npdbf,pdbf,opt2fn("-od",NFILE,fnm),opt2fn("-of",NFILE,fnm),
+                 oenv);
   
   cluster_em_all(fp,npdbf,pdbf,opt2fn("-ox",NFILE,fnm),
 		 bFree,bRMS,cutoff);

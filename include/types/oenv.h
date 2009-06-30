@@ -30,33 +30,13 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * GRoups of Organic Molecules in ACtion for Science
  */
-
-#ifndef _viewit_h
-#define _viewit_h
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
-extern "C" {
-#endif
+/* output options opaque type, for functions in statutil.c */
+typedef struct output_env *output_env_t;
 
-#include "typedefs.h"
 
-extern void do_view(output_env_t oenv,const char *fn, const char *opts);
-/* forks off appropriate command to view file.
- * currently eps, xpm, xvg and pdb are supported 
- * defaults are provided, can be overriden with environment vars 
- */
-
-extern void view_all(output_env_t oenv,int nf, t_filenm fnm[]);
-/* calls do_view for all viewable output files in fnm[] */
- 
-#ifdef CPLUSPLUS
-}
-#endif
-
-#endif	/* _maths_h */

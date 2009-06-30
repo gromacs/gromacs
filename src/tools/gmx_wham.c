@@ -652,7 +652,7 @@ double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, t_Umbrel
 
 void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
         int nWindows, t_UmbrellaOptions * opt,
-        bool bAppendCorr2File, char *fn)
+        bool bAppendCorr2File, char *fn, output_env_t oenv)
 {
     int i,j,k,bins=opt->bins;
     static int first=1;
@@ -701,9 +701,11 @@ void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
 
     if (bAppendCorr2File)
     {
-        fp=xvgropen(fn,"Corrections to enforce periodicity","z","\\f{12}D\\f{}G(z)");
-        sprintf(buf,"corrections propotional to 1/(n\\si\\Nn\\si+1\\N)\\S%.2f",opt->alpha);
-        xvgr_subtitle(fp,buf);
+        fp=xvgropen(fn,"Corrections to enforce periodicity","z",
+                    "\\f{12}D\\f{}G(z)",oenv);
+        sprintf(buf,"corrections propotional to 1/(n\\si\\Nn\\si+1\\N)\\S%.2f",
+                opt->alpha);
+        xvgr_subtitle(fp,buf,oenv);
         for (i=0;i<bins-1;i++)
             fprintf(fp,"%g %g\n",opt->min+opt->dz*(i+1),-corr[i]);
         fclose(fp);
@@ -804,7 +806,7 @@ void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
    which are distributed according to the histograms. Required to generate
    the "synthetic" histograms for the Bootstrap method */
 void calc_cummulants(t_UmbrellaWindow *window,int nWindows,
-        t_UmbrellaOptions *opt,char *fnhist)
+        t_UmbrellaOptions *opt,char *fnhist, output_env_t oenv)
 {
     int i,j,k,nbin;
     double last;
@@ -817,7 +819,8 @@ void calc_cummulants(t_UmbrellaWindow *window,int nWindows,
         snew(fn,strlen(fnhist)+10);
         snew(buf,strlen(fnhist)+10);
         sprintf(fn,"%s_cumul.xvg",strncpy(buf,fnhist,strlen(fnhist)-4));
-        fp=xvgropen(fn,"Cummulants of umbrella histograms","z","cummulant");
+        fp=xvgropen(fn,"Cummulants of umbrella histograms","z","cummulant",
+                    oenv);
     }
 
     nbin=opt->bins;
@@ -929,7 +932,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
 
 
 void print_histograms(char *fnhist, t_UmbrellaWindow * window, int nWindows,
-        int bs_index,t_UmbrellaOptions *opt)
+        int bs_index,t_UmbrellaOptions *opt, output_env_t oenv)
 {
     char *fn,*buf=0,title[256];
     FILE *fp;
@@ -949,7 +952,7 @@ void print_histograms(char *fnhist, t_UmbrellaWindow * window, int nWindows,
         sprintf(title,"Umbrella histograms. Bootstrap #%d",bs_index);
     }
 
-    fp=xvgropen(fn,title,"z","count");
+    fp=xvgropen(fn,title,"z","count",oenv);
     bins=opt->bins;
 
     /* Write histograms */
@@ -978,7 +981,8 @@ void print_histograms(char *fnhist, t_UmbrellaWindow * window, int nWindows,
 
 void do_bootstrapping(char *fnres, char* fnprof, char *fnhist,
         char* ylabel, double *profile,
-        t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt)
+        t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt,
+        output_env_t oenv)
 {
     t_UmbrellaWindow * synthWindow;
     double *bsProfile,*bsProfiles_av, *bsProfiles_av2,maxchange=1e20,tmp,stddev;
@@ -1040,11 +1044,11 @@ void do_bootstrapping(char *fnres, char* fnprof, char *fnhist,
     }
     else
     {
-        calc_cummulants(window,nWindows,opt,fnhist);
+        calc_cummulants(window,nWindows,opt,fnhist,oenv);
     }
 
     /* do bootstrapping */
-    fp=xvgropen(fnprof,"Boot strap profiles","z",ylabel);
+    fp=xvgropen(fnprof,"Boot strap profiles","z",ylabel,oenv);
     for (ib=0;ib<opt->nBootStrap;ib++)
     {
         printf("  *******************************************\n"
@@ -1075,7 +1079,7 @@ void do_bootstrapping(char *fnres, char* fnprof, char *fnhist,
 
         /* print histos in case of verbose output */
         if (opt->bs_verbose)
-            print_histograms(fnhist,synthWindow,nAllPull,ib,opt);
+            print_histograms(fnhist,synthWindow,nAllPull,ib,opt,oenv);
 
         /* do wham */
         i=0;
@@ -1096,7 +1100,8 @@ void do_bootstrapping(char *fnres, char* fnprof, char *fnhist,
             prof_normalization_and_unit(bsProfile,opt);
         /* Force cyclic profile by wheighted correction */
         if (opt->cycl==enCycl_weighted)
-            cyclicProfByWeightedCorr(bsProfile,synthWindow,nAllPull,opt, FALSE, 0);
+            cyclicProfByWeightedCorr(bsProfile,synthWindow,nAllPull,opt, 
+                                     FALSE, 0,oenv);
 
         /* save stuff to get average and stddev */
         for (i=0;i<opt->bins;i++)
@@ -1784,6 +1789,7 @@ int gmx_wham(int argc,char *argv[])
     char **fninTpr,**fninPull,**fninPdo,*fnPull;
     FILE *histout,*profout;
     char ylabel[256],title[256];
+    output_env_t oenv;
 
     opt.bins=200;
     opt.verbose=FALSE;
@@ -1822,7 +1828,7 @@ int gmx_wham(int argc,char *argv[])
 
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,PCA_BE_NICE,
-            NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+            NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
     opt.unit=nenum(en_unit);
     opt.cycl=nenum(en_cycl);
@@ -1894,7 +1900,7 @@ int gmx_wham(int argc,char *argv[])
 
     /* write histograms */
     histout=xvgropen(opt2fn("-hist",NFILE,fnm),"Umbrella histograms",
-            "z","count");
+            "z","count",oenv);
     for(l=0;l<opt.bins;++l)
     {
         fprintf(histout,"%e\t",(double)(l+0.5)/opt.bins*(opt.max-opt.min)+opt.min);
@@ -1953,11 +1959,12 @@ int gmx_wham(int argc,char *argv[])
     /* Force cyclic profile by wheighted correction? */
     if (opt.cycl==enCycl_weighted)
         cyclicProfByWeightedCorr(profile,window,nwins,&opt,TRUE,
-                opt2fn("-wcorr",NFILE,fnm));
+                                 opt2fn("-wcorr",NFILE,fnm),oenv);
 
-    profout=xvgropen(opt2fn("-o",NFILE,fnm),title,"z",ylabel);
+    profout=xvgropen(opt2fn("-o",NFILE,fnm),title,"z",ylabel,oenv);
     for(i=0;i<opt.bins;++i)
-        fprintf(profout,"%e\t%e\n",(double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min,profile[i]);
+        fprintf(profout,"%e\t%e\n",
+                (double)(i+0.5)/opt.bins*(opt.max-opt.min)+opt.min,profile[i]);
     ffclose(profout);
     printf("Wrote %s\n",opt2fn("-o",NFILE,fnm));
 
@@ -1965,7 +1972,7 @@ int gmx_wham(int argc,char *argv[])
     if (opt.nBootStrap)
         do_bootstrapping(opt2fn("-bsres",NFILE,fnm),opt2fn("-bsprof",NFILE,fnm),
                 opt2fn("-hist",NFILE,fnm),
-                ylabel, profile, window, nwins, &opt);
+                ylabel, profile, window, nwins, &opt,oenv);
 
     thanx(stderr);
     return 0;

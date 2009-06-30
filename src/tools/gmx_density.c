@@ -142,7 +142,8 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 			   real ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
-			   t_electron eltab[], int nr,bool bCenter)
+			   t_electron eltab[], int nr,bool bCenter,
+                           output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -172,7 +173,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   if (! *nslices)
@@ -220,7 +221,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 	}
     }
       nr_frames++;
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
   
   /*********** done with status file **********/
   close_trj(status);
@@ -243,7 +244,8 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 
 void calc_density(char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
-		  int axis, int nr_grps, real *slWidth, bool bCenter)
+		  int axis, int nr_grps, real *slWidth, bool bCenter,
+                  output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -273,7 +275,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   if (! *nslices) {
@@ -310,7 +312,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
     }
 
     nr_frames++;
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
   
   /*********** done with status file **********/
   close_trj(status);
@@ -335,7 +337,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 void plot_density(real *slDensity[], char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
-		  bool bSymmetrize)
+		  bool bSymmetrize, output_env_t oenv)
 {
   FILE  *den;
   const char *ylabel=NULL;
@@ -349,9 +351,9 @@ void plot_density(real *slDensity[], char *afile, int nslices,
   case 'e': ylabel = "Electron density (e nm\\S-3\\N)"; break;
   }
   
-  den = xvgropen(afile, "Partial densities", "Box (nm)", ylabel);
+  den = xvgropen(afile, "Partial densities", "Box (nm)", ylabel,oenv);
 
-  xvgr_legend(den,nr_grps,grpname);
+  xvgr_legend(den,nr_grps,grpname,oenv);
 
   for (slice = 0; (slice < nslices); slice++) { 
     fprintf(den,"%12g  ", slice * slWidth);
@@ -388,6 +390,7 @@ int gmx_density(int argc,char *argv[])
     "partial charge."
   };
 
+  output_env_t oenv;
   static const char *dens_opt[] = 
     { NULL, "mass", "number", "charge", "electron", NULL };
   static int  axis = 2;          /* normal to memb. default z  */
@@ -439,7 +442,8 @@ int gmx_density(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs,
+                    &oenv);
 
   if (bSymmetrize && !bCenter) {
     fprintf(stderr,"Can not symmetrize without centering. Turning on -center\n");
@@ -469,16 +473,16 @@ int gmx_density(int argc,char *argv[])
 
     calc_electron_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, 
 			  &nslices, top, ePBC, axis, ngrps, &slWidth, el_tab, 
-			  nr_electrons,bCenter);
+			  nr_electrons,bCenter,oenv);
   } else
     calc_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, &nslices, top, 
-		 ePBC, axis, ngrps, &slWidth, bCenter); 
+		 ePBC, axis, ngrps, &slWidth, bCenter,oenv); 
   
   plot_density(density, opt2fn("-o",NFILE,fnm),
 	       nslices, ngrps, grpname, slWidth, dens_opt,
-	       bSymmetrize);
+	       bSymmetrize,oenv);
   
-  do_view(opt2fn("-o",NFILE,fnm), "-nxy");       /* view xvgr file */
+  do_view(oenv,opt2fn("-o",NFILE,fnm), "-nxy");       /* view xvgr file */
   thanx(stderr);
   return 0;
 }

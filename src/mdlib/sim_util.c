@@ -1235,7 +1235,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 }
 
 void init_md(FILE *fplog,
-             t_commrec *cr,t_inputrec *ir,
+             t_commrec *cr,t_inputrec *ir,output_env_t oenv,
              double *t,double *t0,
              real *lambda,double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
@@ -1329,7 +1329,7 @@ void init_md(FILE *fplog,
                 }
                 else
                 {
-                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir);
+                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
                 }
             }
             
@@ -1344,7 +1344,7 @@ void init_md(FILE *fplog,
                 {				  
                     *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
                                          "Applied electric field","Time (ps)",
-                                         "E (V/nm)");
+                                         "E (V/nm)",oenv);
                 }
             }
         }

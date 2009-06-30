@@ -484,6 +484,7 @@ int gmx_eneconv(int argc,char *argv[])
   bool       ok;
   int        *cont_type;
   bool       bNewFile,bFirst,bNewOutput;
+  output_env_t oenv;
   
   t_filenm fnm[] = {
     { efEDR, "-f", NULL,    ffRDMULT },
@@ -518,8 +519,8 @@ int gmx_eneconv(int argc,char *argv[])
   };
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE ,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+  parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),
+                    pa,asize(desc),desc,asize(bugs),bugs,&oenv);
   tadjust  = 0;
   nremax   = 0;
   nset     = 0;

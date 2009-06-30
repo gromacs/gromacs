@@ -199,7 +199,8 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   read_tpx_top(status,NULL,man->box,&man->natom,NULL,NULL,NULL,&man->top);
   
   man->natom=
-    read_first_x(&man->status,trajectory,&(man->time),&(man->x),man->box);
+    read_first_x(man->oenv,&man->status,trajectory,&(man->time),&(man->x),
+                 man->box);
   man->trajfile=strdup(trajectory);
   if (man->natom > man->top.atoms.nr)
     gmx_fatal(FARGS,"Topology %s (%d atoms) and trajectory %s (%d atoms) "
@@ -314,7 +315,7 @@ static bool step_man(t_manager *man,int *nat)
     fprintf(stderr,"Not initiated yet!");
     exit(1);
   }
-  bEof=read_next_x(man->status,&man->time,man->natom,man->x,man->box);
+  bEof=read_next_x(man->oenv,man->status,&man->time,man->natom,man->x,man->box);
   *nat=man->natom;
   if (ncount == man->nSkip) {
     switch (man->molw->boxtype) {
@@ -391,7 +392,8 @@ static void HandleClient(t_x11 *x11,t_manager *man,long data[])
   case IDREWIND:
     if (man->status != -1) {
       rewind_trj(man->status);
-      read_next_x(man->status,&(man->time),man->natom,man->x,man->box);
+      read_next_x(man->oenv,man->status,&(man->time),man->natom,man->x,
+                  man->box);
       man->bEof=FALSE;
       draw_mol(x11,man);
     }
@@ -567,7 +569,8 @@ bool toggle_pbc (t_manager *man)
 t_manager *init_man(t_x11 *x11,Window Parent,
 		    int x,int y,int width,int height,
 		    unsigned long fg,unsigned long bg,
-		    int ePBC,matrix box)
+		    int ePBC,matrix box,
+                    output_env_t oenv)
 {
   t_manager *man;
 
@@ -575,6 +578,7 @@ t_manager *init_man(t_x11 *x11,Window Parent,
   man->status=-1;
   man->bPlus=TRUE;
   man->bSort=TRUE;
+  man->oenv=oenv;
   InitWin(&(man->wd),x,y,width,height,0,"Manager");
   man->wd.self=XCreateSimpleWindow(x11->disp,Parent,man->wd.x, man->wd.y, 
 				   man->wd.width,man->wd.height,

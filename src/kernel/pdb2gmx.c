@@ -688,6 +688,7 @@ int main(int argc, char *argv[])
   real       mHmult=0;
   bool       bAlldih,HH14,bRemoveDih;
   int        nrexcl;
+  output_env_t oenv;
 
 	gmx_atomprop_t aps;
   
@@ -700,7 +701,8 @@ int main(int argc, char *argv[])
     { efSTO, "-q", "clean.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
-  
+ 
+
   /* Command line arguments must be static */
   static bool bNewRTP=FALSE,bMerge=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
@@ -779,7 +781,7 @@ int main(int argc, char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    0,NULL);
+		    0,NULL,&oenv);
   if (strcmp(ff,"select") == 0) {
     /* Interactive forcefield selection */
     choose_ff(forcefield,sizeof(forcefield));

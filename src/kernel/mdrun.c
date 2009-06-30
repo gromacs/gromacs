@@ -396,9 +396,9 @@ int main(int argc,char *argv[])
   if (!gmx_parallel_env)
     PCA_Flags |= PCA_BE_NICE;
 
-  parse_common_args_r(&argc,argv,PCA_Flags,
-                      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,
-                      &oenv);
+  parse_common_args(&argc,argv,PCA_Flags,
+                    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,
+                    &oenv);
     
 
 
@@ -492,7 +492,7 @@ int main(int argc,char *argv[])
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
-  rc = mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
+  rc = mdrunner(fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
 		ddxyz,dd_node_order,rdd,rconstr,
 		dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
 		nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,

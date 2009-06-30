@@ -118,7 +118,8 @@ void pull_print_output(t_pull *pull, gmx_step_t step, double time)
     pull_print_f(pull->out_f,pull,time);
 }
 
-static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flags)
+static FILE *open_pull_out(char *fn,t_pull *pull,output_env_t oenv, 
+                           bool bCoord, unsigned long Flags)
 {
   FILE *fp;
   int  nsets,g,m;
@@ -128,9 +129,9 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
     fp = gmx_fio_fopen(fn,"a");
   } else {
     if (bCoord)
-      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
+      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)",oenv);
     else
-      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)");
+      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)",oenv);
     
     snew(setname,(1+pull->ngrp)*DIM);
     nsets = 0;
@@ -161,7 +162,7 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
       }
     }
     if (bCoord || nsets > 1)
-      xvgr_legend(fp,nsets,setname);
+      xvgr_legend(fp,nsets,setname,oenv);
     for(g=0; g<nsets; g++)
       sfree(setname[g]);
     sfree(setname);
@@ -920,7 +921,8 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       gmx_mtop_t *mtop,t_commrec *cr,bool bOutFile, unsigned long Flags)
+	       gmx_mtop_t *mtop,t_commrec *cr,output_env_t oenv,
+               bool bOutFile, unsigned long Flags)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
@@ -1003,10 +1005,11 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   pull->out_f = NULL;
   if (bOutFile) {
     if (pull->nstxout > 0) {
-      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE,Flags);
+      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,oenv,TRUE,Flags);
     }
     if (pull->nstfout > 0) {
-      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,FALSE,Flags);
+      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,oenv,
+                                  FALSE,Flags);
     }
   }
 }

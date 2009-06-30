@@ -478,6 +478,7 @@ int main(int argc,char *argv[])
     "number of crashes. Nice for a background CPU-eater. A sample",
     "input file is in $GMXDATA/top/highway.dat"
   };
+  output_env_t oenv;
   t_x11      *x11;
   t_xhighway *xhw;
   t_filenm fnm[] = {
@@ -487,7 +488,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,
-		    0,NULL,asize(desc),desc,0,NULL);
+		    0,NULL,asize(desc),desc,0,NULL,&oenv);
   
   if ((x11=GetX11(&argc,argv))==NULL) {
     fprintf(stderr,"Can't connect to X Server.\n"

@@ -124,7 +124,8 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real combined[],real d
   return integralSmth;
 }
 
-void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
+void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF,
+             output_env_t oenv)
 {
   FILE      *fp,*cp;
   t_complex *tmp,gw,hw,kw;
@@ -153,8 +154,8 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
     fac = (eps0-1)/tmp[0].re;
   else
     fac=((eps0-1)/(2*epsRF+eps0))/tmp[0].re;  
-  fp=xvgropen(fn,"Epsilon(\\8w\\4)","Freq. (GHz)","eps");
-  cp=xvgropen(cn,"Cole-Cole plot","Eps'","Eps''");
+  fp=xvgropen(fn,"Epsilon(\\8w\\4)","Freq. (GHz)","eps",oenv);
+  cp=xvgropen(cn,"Cole-Cole plot","Eps'","Eps''",oenv);
   maxeps = 0;
   numax  = 0;
   for(i=0; (i<nxsav); i++) {
@@ -221,6 +222,7 @@ int gmx_dielectric(int argc,char *argv[])
     { efXVG, "-c", "cole",   ffWRITE }
   };
 #define NFILE asize(fnm)
+  output_env_t oenv;
   int  i,j,nx,ny,nxtail,eFitFn,nfitparm;
   real dt,integral,fitintegral,*fitparms,fac,rffac;
   double **yd;
@@ -263,7 +265,7 @@ int gmx_dielectric(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   please_cite(stdout,"Spoel98a");
   
   nx     = read_xvg(opt2fn("-f",NFILE,fnm),&yd,&ny);
@@ -319,7 +321,7 @@ int gmx_dielectric(int argc,char *argv[])
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
 				 dt,y[1],NULL,1);
   integral += do_lmfit(nx,y[1],y[2],dt,y[0],tbegin,tend,
-		       TRUE,eFitFn,fitparms,fix);
+		       oenv,TRUE,eFitFn,fitparms,fix);
   for(i=0; i<nx; i++)
     y[3][i] = fit_function(eFitFn,fitparms,y[0][i]);
 
@@ -345,15 +347,15 @@ int gmx_dielectric(int argc,char *argv[])
 	  fitintegral,fitintegral*rffac);
 	  
   /* Now we have the negative gradient of <Phi(0) Phi(t)> */
-  write_xvg(opt2fn("-d",NFILE,fnm),"Data",nx-1,6,y,legend);
+  write_xvg(opt2fn("-d",NFILE,fnm),"Data",nx-1,6,y,legend,oenv);
   
   /* Do FFT and analysis */  
   do_four(opt2fn("-o",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-	  nx-1,y[0],y[5],eps0,epsRF);
+	  nx-1,y[0],y[5],eps0,epsRF,oenv);
 
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-c",NFILE,fnm),NULL);
-  do_view(opt2fn("-d",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-c",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn("-d",NFILE,fnm),"-nxy");
 	    
   thanx(stderr);
 

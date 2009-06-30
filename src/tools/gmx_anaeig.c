@@ -130,14 +130,15 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
 			      const char *title, const char *subtitle,
 			      const char *xlabel, const char **ylabel,
 			      int n, real *x, real **y, real ***sy,
-			      real scale_x, bool bZero, bool bSplit)
+			      real scale_x, bool bZero, bool bSplit,
+                              output_env_t oenv)
 {
   FILE *out;
   int g,s,i;
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
-  if (!use_xmgr() && bPrintXvgrCodes())
+  if (!use_xmgr() && get_print_xvgr_codes(oenv))
     fprintf(out,"@ autoscale onread none\n");
   for(g=0; g<ngraphs; g++) {
     if (y) {
@@ -163,7 +164,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
     max=max+0.1*(max-min);
     xsp=tick_spacing((x[n-1]-x[0])*scale_x,4);
     ysp=tick_spacing(max-min,3);
-    if (bPrintXvgrCodes()) {
+    if (get_print_xvgr_codes(oenv)) {
       fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
       if (g==0) {
 	fprintf(out,"@ title \"%s\"\n",title);
@@ -197,14 +198,17 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
       }
     }
     for(s=0; s<nsetspergraph; s++) {
-      for(i=0; i<n; i++) {
-	if ( bSplit && i>0 && abs(x[i])<1e-5 )
-	  if (bPrintXvgrCodes())
-	    fprintf(out,"&\n");
-	fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y ? y[g][i] : sy[g][s][i]);
-      }
-      if (bPrintXvgrCodes())
-	fprintf(out,"&\n");
+        for(i=0; i<n; i++) {
+            if ( bSplit && i>0 && abs(x[i])<1e-5 )
+            {
+                if (get_print_xvgr_codes(oenv))
+                    fprintf(out,"&\n");
+            }
+            fprintf(out,"%10.4f %10.5f\n",
+                    x[i]*scale_x,y ? y[g][i] : sy[g][s][i]);
+        }
+        if (get_print_xvgr_codes(oenv))
+            fprintf(out,"&\n");
     }
   }
   fclose(out);
@@ -350,7 +354,8 @@ static void inprod_matrix(char *matfile,int natoms,
 static void overlap(char *outfile,int natoms,
 		    rvec **eigvec1,
 		    int nvec2,int *eignr2,rvec **eigvec2,
-		    int noutvec,int *outvec)
+		    int noutvec,int *outvec,
+                    output_env_t oenv)
 {
   FILE *out;
   int i,v,vec,x;
@@ -362,7 +367,7 @@ static void overlap(char *outfile,int natoms,
   fprintf(stderr,"\n");
 
   out=xvgropen(outfile,"Subspace overlap",
-	       "Eigenvectors of trajectory 2","Overlap");
+	       "Eigenvectors of trajectory 2","Overlap",oenv);
   fprintf(out,"@ subtitle \"using %d eigenvectors of trajectory 1\"\n",
 	  noutvec);
   overlap=0;
@@ -389,7 +394,8 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
 		    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
 		    real *sqrtm,rvec *xav,
 		    int *eignr,rvec **eigvec,
-		    int noutvec,int *outvec, bool bSplit)
+		    int noutvec,int *outvec, bool bSplit,
+                    output_env_t oenv)
 {
   FILE    *xvgrout=NULL;
   int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
@@ -423,7 +429,7 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
     snew_size=0;
     nfr=0;
     nframes=0;
-    nat=read_first_x(&status,trajfile,&t,&xread,box);
+    nat=read_first_x(oenv,&status,trajfile,&t,&xread,box);
     if (nat>atoms->nr)
       gmx_fatal(FARGS,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
     snew(all_at,nat);
@@ -476,7 +482,7 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	nframes++;
       }
       nfr++;
-    } while (read_next_x(status,&t,nat,xread,box));
+    } while (read_next_x(oenv,status,&t,nat,xread,box));
     close_trj(status);
      sfree(x);
      if (filterfile)
@@ -493,10 +499,10 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
       ylabel[v]=strdup(str);
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
-    write_xvgr_graphs(projfile, noutvec, 1, str, NULL, xvgr_tlabel(),
+    write_xvgr_graphs(projfile, noutvec, 1, str, NULL, get_xvgr_tlabel(oenv),
 		      (const char **)ylabel,
 		      nframes, inprod[noutvec], inprod, NULL,
-		      time_factor(), FALSE, bSplit);
+		      get_time_factor(oenv), FALSE, bSplit,oenv);
   }
   
   if (twodplotfile) {
@@ -504,7 +510,8 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	    eignr[outvec[0]]+1,proj_unit);
     sprintf(str2,"projection on eigenvector %d (%s)",
 	    eignr[outvec[noutvec-1]]+1,proj_unit); 
-    xvgrout=xvgropen(twodplotfile,"2D projection of trajectory",str,str2);
+    xvgrout=xvgropen(twodplotfile,"2D projection of trajectory",str,str2,
+                     oenv);
     for(i=0; i<nframes; i++) {
       if ( bSplit && i>0 && abs(inprod[noutvec][i])<1e-5 ) 
 	fprintf(xvgrout,"&\n");
@@ -651,7 +658,8 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
 
 static void components(char *outfile,int natoms,
 		       int *eignr,rvec **eigvec,
-		       int noutvec,int *outvec)
+		       int noutvec,int *outvec,
+                       output_env_t oenv)
 {
   int g,s,v,i;
   real *x,***y;
@@ -681,15 +689,15 @@ static void components(char *outfile,int natoms,
   write_xvgr_graphs(outfile,noutvec,4,"Eigenvector components",
 		    "black: total, red: x, green: y, blue: z",
 		    "Atom number",(const char **)ylabel,
-		    natoms,x,NULL,y,1,FALSE,FALSE);
+		    natoms,x,NULL,y,1,FALSE,FALSE,oenv);
   fprintf(stderr,"\n");
 }
 
-static void 
-rmsf(char *outfile,int natoms,real *sqrtm,
-     int *eignr,rvec **eigvec,
-     int noutvec,int *outvec,
-     real *eigval, int neig)
+static void rmsf(char *outfile,int natoms,real *sqrtm,
+                 int *eignr,rvec **eigvec,
+                 int noutvec,int *outvec,
+                 real *eigval, int neig,
+                 output_env_t oenv)
 {
   int   nrow,g,v,i;
   real  *x,**y;
@@ -718,7 +726,7 @@ rmsf(char *outfile,int natoms,real *sqrtm,
   }
   write_xvgr_graphs(outfile,noutvec,1,"RMS fluctuation (nm) ",NULL,
                     "Atom number",(const char **)ylabel,
-                    natoms,x,y,NULL,1,TRUE,FALSE);
+                    natoms,x,y,NULL,1,TRUE,FALSE,oenv);
   fprintf(stderr,"\n");
 }
 
@@ -850,6 +858,7 @@ int gmx_anaeig(int argc,char *argv[])
   real       *eigval1=NULL,*eigval2=NULL;
   int        neig1,neig2;
   double     **xvgdata;
+  output_env_t oenv;
   
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -872,8 +881,9 @@ int gmx_anaeig(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE ,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
+  parse_common_args(&argc,argv,
+                    PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE ,
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
 
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
@@ -1121,10 +1131,11 @@ int gmx_anaeig(int argc,char *argv[])
   fprintf(stderr,"\n");
     
   if (CompFile)
-    components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec);
+    components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec,oenv);
   
   if (RmsfFile)
-    rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,eigval1,neig1);
+    rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,eigval1,
+         neig1,oenv);
     
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
@@ -1132,11 +1143,12 @@ int gmx_anaeig(int argc,char *argv[])
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
-	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit);
+	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit,
+            oenv);
     
   if (OverlapFile)
     overlap(OverlapFile,natoms,
-	    eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
+	    eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec,oenv);
     
   if (InpMatFile)
     inprod_matrix(InpMatFile,natoms,
@@ -1147,12 +1159,15 @@ int gmx_anaeig(int argc,char *argv[])
     compare(natoms,nvec1,eigvec1,nvec2,eigvec2,eigval1,neig1,eigval2,neig2);
   
   
-  if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare && !bEntropy)
+  if (!CompFile && !bProj && !OverlapFile && !InpMatFile && 
+          !bCompare && !bEntropy)
+  {
     fprintf(stderr,"\nIf you want some output,"
 	    " set one (or two or ...) of the output file options\n");
+  }
   
   
-  view_all(NFILE, fnm);
+  view_all(oenv,NFILE, fnm);
   
   thanx(stdout);
   

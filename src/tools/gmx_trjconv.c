@@ -728,6 +728,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          xdr=0;
   bool         bWarnCompact=FALSE;
   const char  *warn;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD  },
@@ -742,9 +743,10 @@ int gmx_trjconv(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
-		    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
+                    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | 
+                            PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,
-		    0,NULL);
+		    0,NULL,&oenv);
 
   top_file = ftp2fn(efTPS,NFILE,fnm);
   init_top(&top);
@@ -925,7 +927,7 @@ int gmx_trjconv(int argc,char *argv[])
 		1,&nout,&index,&grpnm);
     } else {
       /* no index file, so read natoms from TRX */
-      if (!read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP))
+      if (!read_first_frame(oenv,&status,in_file,&fr,TRX_DONT_SKIP))
 	gmx_fatal(FARGS,"Could not read a frame from %s",in_file);
       natoms = fr.natoms;
       close_trj(status);
@@ -991,7 +993,7 @@ int gmx_trjconv(int argc,char *argv[])
       flags = flags | TRX_READ_F;
 
     /* open trx file for reading */
-    bHaveFirstFrame = read_first_frame(&status,in_file,&fr,flags);
+    bHaveFirstFrame = read_first_frame(oenv,&status,in_file,&fr,flags);
     if (fr.bPrec)
       fprintf(stderr,"\nPrecision of %s is %g (nm)\n",in_file,1/fr.prec);
     if (bNeedPrec) {
@@ -1191,7 +1193,7 @@ int gmx_trjconv(int argc,char *argv[])
 
 	  if (bTDump)
 	    fprintf(stderr,"\nDumping frame at t= %g %s\n",
-		    convert_time(fr.time),time_unit());
+		    conv_time(oenv,fr.time),get_time_unit(oenv));
 
 	/* check for writing at each delta_t */
 	  bDoIt=(delta_t == 0);
@@ -1202,7 +1204,7 @@ int gmx_trjconv(int argc,char *argv[])
 	    /* print sometimes */
 	    if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	      fprintf(stderr," ->  frame %6d time %8.3f      \r",
-		      outframe,convert_time(fr.time));
+		      outframe,conv_time(oenv,fr.time));
 	  
 	    if (!bPFit) {
 	      /* Now modify the coords according to the flags,
@@ -1396,7 +1398,7 @@ int gmx_trjconv(int argc,char *argv[])
 	  }
 	}
 	frame++;
-	bHaveNextFrame=read_next_frame(status,&fr);
+	bHaveNextFrame=read_next_frame(oenv,status,&fr);
       } while (!(bTDump && bDumpFrame) && bHaveNextFrame);
     }
     
@@ -1418,7 +1420,7 @@ int gmx_trjconv(int argc,char *argv[])
     }
   }
   
-  do_view(out_file,NULL);
+  do_view(oenv,out_file,NULL);
   
   thanx(stderr);
   

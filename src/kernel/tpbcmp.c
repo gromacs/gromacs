@@ -668,7 +668,7 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
     cmp_rvecs(fp,"box",3,fr1->box,fr2->box,ftol);
 }
 
-void comp_trx(const char *fn1, const char *fn2, real ftol)
+void comp_trx(output_env_t oenv,const char *fn1, const char *fn2, real ftol)
 {
   int i;
   const char *fn[2];
@@ -680,14 +680,14 @@ void comp_trx(const char *fn1, const char *fn2, real ftol)
   fn[1]=fn2;
   fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
   for (i=0; i<2; i++)
-    b[i] = read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
+    b[i] = read_first_frame(oenv,&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
   
   if (b[0] && b[1]) { 
     do {
       comp_frame(stdout, &(fr[0]), &(fr[1]), ftol);
       
       for (i=0; i<2; i++)
-	b[i] = read_next_frame(status[i],&fr[i]);
+	b[i] = read_next_frame(oenv,status[i],&fr[i]);
     } while (b[0] && b[1]);
     
     for (i=0; i<2; i++) {

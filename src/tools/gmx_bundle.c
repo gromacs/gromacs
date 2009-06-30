@@ -213,6 +213,7 @@ int gmx_bundle(int argc,char *argv[])
   t_bundle   bun;
   bool       bKink;
   rvec       va,vb,vc,vr,vl;
+  output_env_t oenv;
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
@@ -233,7 +234,7 @@ int gmx_bundle(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,TRUE);
 
@@ -264,27 +265,27 @@ int gmx_bundle(int argc,char *argv[])
   snew(bun.len,n);
 
   flen   = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
-		    xvgr_tlabel(),"(nm)");
+		    get_xvgr_tlabel(oenv),"(nm)",oenv);
   fdist  = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
-		    xvgr_tlabel(),"(nm)");
+		    get_xvgr_tlabel(oenv),"(nm)",oenv);
   fz     = xvgropen(opt2fn("-oz",NFILE,fnm),"Z-shift of axis centers",
-		    xvgr_tlabel(),"(nm)");
+		    get_xvgr_tlabel(oenv),"(nm)",oenv);
   ftilt  = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
-		    xvgr_tlabel(),"(degrees)");
+		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
   ftiltr = xvgropen(opt2fn("-otr",NFILE,fnm),"Radial axis tilts",
-		    xvgr_tlabel(),"(degrees)");
+		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
-		    xvgr_tlabel(),"(degrees)");
+		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
   
   if (bKink) {
     fkink  = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
-		      xvgr_tlabel(),"(degrees)");
+		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
-		      xvgr_tlabel(),"(degrees)");
-    if (bPrintXvgrCodes())
+		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
+    if (get_print_xvgr_codes(oenv))
       fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
-		      xvgr_tlabel(),"(degrees)");
+		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
   }
 
   if (opt2bSet("-oa",NFILE,fnm)) {
@@ -301,12 +302,12 @@ int gmx_bundle(int argc,char *argv[])
   } else
     fpdb = -1;
   
-  read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,TRX_NEED_X); 
+  read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,TRX_NEED_X); 
   
   do {
     rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
-    t = convert_time(fr.time);
+    t = conv_time(oenv,fr.time);
     fprintf(flen," %10g",t);
     fprintf(fdist," %10g",t);
     fprintf(fz," %10g",t);
@@ -360,7 +361,7 @@ int gmx_bundle(int argc,char *argv[])
     }
     if (fpdb >= 0)
       dump_axes(fpdb,&fr,&outatoms,&bun);
-  } while(read_next_frame(status,&fr));
+  } while(read_next_frame(oenv,status,&fr));
 
   close_trx(status);
   

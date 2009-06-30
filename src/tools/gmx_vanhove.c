@@ -124,6 +124,7 @@ int gmx_vanhove(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  output_env_t oenv;
   char     *matfile,*otfile,*orfile;
   char     title[256];
   t_topology top;
@@ -145,7 +146,7 @@ int gmx_vanhove(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   matfile = opt2fn_null("-om",NFILE,fnm);
   if (opt2parg_bSet("-fr",NPA,pa))
@@ -173,7 +174,7 @@ int gmx_vanhove(int argc,char *argv[])
   sx   = NULL;
   clear_mat(avbox);
 
-  natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natom=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   nfr = 0;
   do {
     if (nfr >= nalloc) {
@@ -194,7 +195,7 @@ int gmx_vanhove(int argc,char *argv[])
      copy_rvec(x[index[i]],sx[nfr][i]);
     
     nfr++;
-  } while (read_next_x(status,&t,natom,x,box));
+  } while (read_next_x(oenv,status,&t,natom,x,box));
 
   /* clean up */
   sfree(x);
@@ -349,14 +350,14 @@ int gmx_vanhove(int argc,char *argv[])
   }
   
   if (orfile) {
-    fp = xvgropen(orfile,"Van Hove function","r (nm)","G (nm\\S-1\\N)");
+    fp = xvgropen(orfile,"Van Hove function","r (nm)","G (nm\\S-1\\N)",oenv);
     fprintf(fp,"@ subtitle \"for particles in group %s\"\n",grpname);
     snew(legend,nr);
     for(fbin=0; fbin<nr; fbin++) {
       sprintf(buf,"%g ps",(fbin + 1)*fshift*dt);
       legend[fbin] = strdup(buf);
     }
-    xvgr_legend(fp,nr,legend);
+    xvgr_legend(fp,nr,legend,oenv);
     for(i=0; i<nalloc; i++) {
       fprintf(fp,"%g",i*rbin);
       for(fbin=0; fbin<nr; fbin++)
@@ -369,16 +370,16 @@ int gmx_vanhove(int argc,char *argv[])
   
   if (otfile) {
     sprintf(buf,"Probability of moving less than %g nm",rint);
-    fp = xvgropen(otfile,buf,"t (ps)","");
+    fp = xvgropen(otfile,buf,"t (ps)","",oenv);
     fprintf(fp,"@ subtitle \"for particles in group %s\"\n",grpname);
     for(f=0; f<=ftmax; f++)
       fprintf(fp,"%g %g\n",f*dt,(real)pt[f]/(tcount[f]*isize));
     fclose(fp);
   }
 
-  do_view(matfile,NULL);
-  do_view(orfile,NULL);
-  do_view(otfile,NULL);
+  do_view(oenv, matfile,NULL);
+  do_view(oenv, orfile,NULL);
+  do_view(oenv, otfile,NULL);
 
   thanx(stderr);
   

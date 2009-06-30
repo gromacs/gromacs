@@ -205,7 +205,8 @@ int gmx_helix(int argc,char *argv[])
     { NULL, NULL,FALSE,  "JCaHa",   "J-Coupling Values",        "Residue", "Hz" , 0.0 },
     { NULL, NULL,FALSE,  "helicity","Helicity per Residue",     "Residue", "% of time" , 0.0 }
   };
-  
+ 
+  output_env_t oenv;
   FILE       *otrj;
   char       buf[54],prop[256];
   int        status;
@@ -232,14 +233,14 @@ int gmx_helix(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   bRange=(opt2parg_bSet("-ahxstart",asize(pa),pa) &&
 	  opt2parg_bSet("-ahxend",asize(pa),pa));
 		        
   top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
   
-  natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
 
   if (opt2bSet("-to",NFILE,fnm)) {
     otrj=opt2FILE("-to",NFILE,fnm,"w");
@@ -264,8 +265,9 @@ int gmx_helix(int argc,char *argv[])
   for(i=0; (i<efhNR); i++) {
     sprintf(buf,"%s.xvg",xf[i].filenm);
     remove(buf);
-    xf[i].fp=xvgropen(buf,xf[i].title,xf[i].xaxis ? xf[i].xaxis : "Time (ps)",
-		      xf[i].yaxis);
+    xf[i].fp=xvgropen(buf,xf[i].title,
+                      xf[i].xaxis ? xf[i].xaxis : "Time (ps)",
+		      xf[i].yaxis,oenv);
     if (xf[i].bfp2) {
       sprintf(buf,"%s.out",xf[i].filenm);
       remove(buf);
@@ -327,7 +329,7 @@ int gmx_helix(int argc,char *argv[])
       if (otrj) 
 	dump_otrj(otrj,nall,allindex,x,xf[nSel].val,xav);
     }
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
   close_trj(status);
@@ -358,7 +360,7 @@ int gmx_helix(int argc,char *argv[])
     fclose(xf[i].fp);
     if (xf[i].bfp2)
       fclose(xf[i].fp2);
-    do_view(xf[i].filenm,"-nxy");
+    do_view(oenv,xf[i].filenm,"-nxy");
   }
   
   thanx(stderr);

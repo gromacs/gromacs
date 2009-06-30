@@ -129,7 +129,7 @@ static gmx_thread_mutex_t box_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 #endif
 
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-             bool bVerbose,bool bCompact,
+             output_env_t oenv, bool bVerbose,bool bCompact,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -369,7 +369,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         
         /* Initiate forcerecord */
         fr = mk_forcerec();
-        init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
+        init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
@@ -420,7 +420,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 gmx_fatal(FARGS,"Free energy with %s is not implemented",
                           eel_names[fr->eeltype]);
             }
-            status = gmx_pppm_init(fplog,cr,FALSE,TRUE,box,
+            status = gmx_pppm_init(fplog,cr,oenv,FALSE,TRUE,box,
                                    getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
             if (status != 0)
             {
@@ -505,7 +505,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
-            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,
+            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
         
@@ -523,7 +523,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         
         /* Now do whatever the user wants us to do (how flexible...) */
         integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
-                                      bVerbose,bCompact,
+                                      oenv,bVerbose,bCompact,
                                       vsite,constr,
                                       nstepout,inputrec,mtop,
                                       fcd,state,f,
@@ -595,7 +595,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 }
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-             bool bVerbose,bool bCompact,
+             output_env_t oenv, bool bVerbose,bool bCompact,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
              gmx_mtop_t *top_global,
@@ -729,7 +729,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   groups = &top_global->groups;
 
   /* Initial values */
-  init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
+  init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,&upd,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
 	  &fp_dhdl,&fp_field,&mdebin,
@@ -1027,7 +1027,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             bForceUpdate = TRUE;
         }
 
-        bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
+        bNotLastFrame = read_first_frame(oenv,&status,
+                                         opt2fn("-rerun",nfile,fnm),
                                          &rerun_fr,TRX_NEED_X | TRX_READ_V);
         if (rerun_fr.natoms != top_global->natoms)
         {
@@ -1343,7 +1344,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         /* Ionize the atoms if necessary */
         if (bIonize)
         {
-            ionize(fplog,mdatoms,top_global,t,ir,state->x,state->v,
+            ionize(fplog,oenv,mdatoms,top_global,t,ir,state->x,state->v,
                    mdatoms->start,mdatoms->start+mdatoms->homenr,state->box,cr);
         }
         
@@ -1861,7 +1862,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             /* Since this is called with the new coordinates state->x, I assume
              * we want the new box state->box too. / EL 20040121
              */
-            do_coupling(fplog,nfile,fnm,tcr,t,step,enerd->term,fr,
+            do_coupling(fplog,oenv,nfile,fnm,tcr,t,step,enerd->term,fr,
                         ir,MASTER(cr),
                         mdatoms,&(top->idef),mu_aver,
                         top_global->mols.nr,cr,
@@ -1952,7 +1953,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         if (bRerunMD) 
         {
             /* read next frame from input trajectory */
-            bNotLastFrame = read_next_frame(status,&rerun_fr);
+            bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
         }
         
         if (!bRerunMD || !rerun_fr.bStep)

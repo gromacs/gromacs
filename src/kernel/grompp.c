@@ -421,7 +421,8 @@ new_status(char *topfile,char *topppfile,char *confin,
 static void cont_status(char *slog,char *ener,
 			bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
-			gmx_mtop_t *sys)
+			gmx_mtop_t *sys,
+                        output_env_t oenv)
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;
@@ -438,9 +439,9 @@ static void cont_status(char *slog,char *ener,
     if (bGenVel)
       fprintf(stderr,"Velocities generated: "
 	      "ignoring velocities in input trajectory\n");
-    read_first_frame(&fp,slog,&fr,TRX_NEED_X);
+    read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X);
   } else
-    read_first_frame(&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
+    read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
   
   state->natoms = fr.natoms;
 
@@ -449,7 +450,7 @@ static void cont_status(char *slog,char *ener,
 		"is not the same as in Trajectory");
 
   /* Find the appropriate frame */
-  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(fp,&fr));
+  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(oenv,fp,&fr));
   
   close_trj(fp);
 
@@ -930,6 +931,7 @@ int main (int argc, char *argv[])
   int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -976,7 +978,7 @@ int main (int argc, char *argv[])
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+                    asize(desc),desc,0,NULL,&oenv);
   
   init_warning(maxwarn);
   
@@ -1219,7 +1221,7 @@ int main (int argc, char *argv[])
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
     cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efEDR,NFILE,fnm),
-		bNeedVel,bGenVel,fr_time,ir,&state,sys);
+		bNeedVel,bGenVel,fr_time,ir,&state,sys,oenv);
   }
 
   if (ir->ePBC==epbcXY && ir->nwall!=2)
@@ -1240,7 +1242,7 @@ int main (int argc, char *argv[])
   }
 
   if (ir->ePull != epullNO)
-    set_pull_init(ir,sys,state.x,state.box,opts->pull_start);
+    set_pull_init(ir,sys,state.x,state.box,oenv,opts->pull_start);
 
   /*  reset_multinr(sys); */
   

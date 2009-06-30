@@ -57,7 +57,8 @@
 #include "tpxio.h"
 
 /* Forward declarations: I Don't want all that init shit here */
-void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[]);
+void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
+              output_env_t oenv);
 
 int EventSignaller(t_manager *man);
 
@@ -286,6 +287,7 @@ int main(int argc, char *argv[])
     "Some times dumps core without a good reason"
   };
 
+  output_env_t oenv;
   t_x11 *x11;
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
@@ -296,14 +298,14 @@ int main(int argc, char *argv[])
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,
-		    0,NULL,asize(desc),desc,asize(bugs),bugs);
+		    0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
   
   if ((x11=GetX11(&argc,argv))==NULL) {
     fprintf(stderr,"Can't connect to X Server.\n"
 	    "Check your DISPLAY environment variable\n");
     exit(1);
   }
-  init_gmx(x11,argv[0],NFILE,fnm);
+  init_gmx(x11,argv[0],NFILE,fnm,oenv);
 
   x11->MainLoop(x11);
   x11->CleanUp(x11);
@@ -344,7 +346,8 @@ static const char *MenuTitle[MSIZE] = {
   "File", "Display", "Help"
 };
 
-void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
+void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[], 
+              output_env_t oenv)
 {
   Pixmap               pm;
   t_gmx                *gmx;
@@ -364,7 +367,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   ePBC = read_tpx_top(ftp2fn(efTPX,nfile,fnm),
 		      NULL,box,&natom,NULL,NULL,NULL,&top);
 
-  read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_DONT_SKIP);
+  read_first_frame(oenv,&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_DONT_SKIP);
   close_trx(status);
   natom_trx = fr.natoms;
 	   
@@ -395,7 +398,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 
   /* The order of creating windows is important here! */
   /* Manager */
-  gmx->man  = init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,ePBC,box);
+  gmx->man  = init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,ePBC,box,oenv);
   gmx->logo = init_logo(x11,gmx->wd->self);
 
   /* Now put all windows in the proper place */

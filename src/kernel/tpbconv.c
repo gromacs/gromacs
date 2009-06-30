@@ -335,6 +335,7 @@ int main (int argc, char *argv[])
   gmx_enxnm_t  *enm=NULL;
   t_enxframe   *fr_ener=NULL;
   char         buf[200],buf2[200];
+  output_env_t oenv;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
     { efTRN, "-f",  NULL,    ffOPTRD },
@@ -371,7 +372,7 @@ int main (int argc, char *argv[])
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
   /* Convert int to gmx_step_t */
   nsteps_req = nsteps_req_int;

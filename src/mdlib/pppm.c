@@ -484,7 +484,7 @@ static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
 int gmx_pppm_init(FILE *log,      t_commrec *cr,
-                  bool bVerbose,
+                  output_env_t oenv, bool bVerbose,
                   bool bOld,      matrix box,
                   char *ghatfn,   t_inputrec *ir,
                   bool bReproducible)
@@ -530,11 +530,11 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
 	    ir->rcoulomb_switch,ir->rcoulomb,TRUE,bOld);
     
     if (bVerbose)
-      pr_scalar_gk("generghat.xvg",nx,ny,nz,box_diag,ghat);
+      pr_scalar_gk("generghat.xvg",oenv,nx,ny,nz,box_diag,ghat);
   }
   else {
     fprintf(stderr,"Reading Ghat function from %s\n",ghatfn);
-    ghat = rd_ghat(log,ghatfn,grids,spacing,beta,&porder,&r1,&rc);
+    ghat = rd_ghat(log,oenv,ghatfn,grids,spacing,beta,&porder,&r1,&rc);
     
     /* Check whether cut-offs correspond */
     if ((fabs(r1-ir->rcoulomb_switch)>tol) || (fabs(rc-ir->rcoulomb)>tol)) {
@@ -569,7 +569,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
     nz = grids[ZZ];
     
     if (bVerbose)
-      pr_scalar_gk("optimghat.xvg",nx,ny,nz,box_diag,ghat);
+      pr_scalar_gk("optimghat.xvg",oenv,nx,ny,nz,box_diag,ghat);
   }
   /* Now setup the FFT things */
 #ifdef GMX_MPI

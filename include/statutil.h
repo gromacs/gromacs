@@ -80,8 +80,6 @@ typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
    etc. Right now, there is a global variable of this type in statutil.c to 
    enable the old functions, but this should change. All the functions below
    now have re-entrant versions listed with them. */
-typedef struct output_env *output_env_t;
-
 extern void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes, 
                            const char *timenm);
 extern void init_output_env(output_env_t oenv,  int argc, char *argv[],
@@ -90,23 +88,18 @@ extern void init_output_env(output_env_t oenv,  int argc, char *argv[],
 
     
 /* Return the name of the program */
-extern const char *Program(void);
-extern const char *get_program(const output_env_t oenv);
+/*extern const char *get_program(const output_env_t oenv);*/
 /* Id. without leading directory */
 extern const char *ShortProgram(void);
-extern const char *get_short_program(const output_env_t oenv);
-/* Return the command line for this program */
 extern const char *command_line(void);
-extern const char *get_command_line(const output_env_t oenv);
+extern void set_command_line(int argc, char *argv[]);
 
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
  */    
+extern const char *Program(void);
 extern void set_program_name(const char *argvzero);
-extern void set_program(output_env_t oenv, const char *argvzero);
-/* this is purely for copyright() output */
-extern const char *get_program_str(const char *argvzero);
 
 /************************************************
  *             Trajectory functions
@@ -186,39 +179,30 @@ extern int check_times(real t);
  *          1 if t>tend
  */
 
-extern const char *time_unit(void);
 extern const char *get_time_unit(const output_env_t oenv);
 /* return time unit (e.g. ps or ns) */
 
-extern const char *time_label(void);
 extern const char *get_time_label(const output_env_t oenv);
 /* return time unit label (e.g. "Time (ps)") */
 
-extern const char *xvgr_tlabel(void);
 extern const char *get_xvgr_tlabel(const output_env_t oenv);
 /* retrun x-axis time label for xmgr */
 
-extern real time_factor(void);
 extern real get_time_factor(const output_env_t oenv);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
-extern real time_invfactor(void);
 extern real get_time_invfactor(const output_env_t oenv);
 /* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
 
-extern real convert_time(real time);
 extern real conv_time(const output_env_t oenv, real time);
 /* return converted time */
 
-extern void convert_times(int n, real *time);
 extern void conv_times(const output_env_t oenv, int n, real *time);
 /* convert array of times */
 
-extern bool bDoView(void);
 extern bool get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
-extern bool bPrintXvgrCodes(void);
 extern bool get_print_xvgr_codes(const output_env_t oenv);
 /* Return TRUE when user wants printing of legends etc. in the file. */
 
@@ -244,7 +228,7 @@ extern bool get_print_xvgr_codes(const output_env_t oenv);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-extern int read_first_frame(int *status,const char *fn,
+extern int read_first_frame(output_env_t oenv,int *status,const char *fn,
                             t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
@@ -254,12 +238,12 @@ extern int read_first_frame(int *status,const char *fn,
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-extern bool read_next_frame(int status,t_trxframe *fr);
+extern bool read_next_frame(output_env_t oenv,int status,t_trxframe *fr);
   /* Reads the next frame which is in accordance with fr->flags.
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-extern int read_first_x(int *status,const char *fn,
+extern int read_first_x(output_env_t oenv,int *status,const char *fn,
                         real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
  * memory for the coordinates, for a trajectory file.
@@ -267,7 +251,8 @@ extern int read_first_x(int *status,const char *fn,
  * The integer in status should be passed to calls of read_next_x
  */
 
-extern bool read_next_x(int status,real *t,int natoms,rvec x[],matrix box);
+extern bool read_next_x(output_env_t oenv,int status,real *t,int natoms,
+                        rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
@@ -354,7 +339,8 @@ extern void gmx_gui(int *argc,char *argv[],
 extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                               int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
                               int ndesc,const char **desc,
-                              int nbugs,const char **bugs);
+                              int nbugs,const char **bugs, 
+                              output_env_t *oenv);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables
@@ -362,15 +348,6 @@ extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
  * -b and -e will be used for begin and end time, whether this is 
  * appropriate or not!
  */
-
-
-extern void parse_common_args_r(int *argc,char *argv[],unsigned long Flags,
-                                int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-                                int ndesc,const char **desc,
-                                int nbugs,const char **bugs, 
-                                output_env_t *oenv);
-/* re-entrant version of parse_common_args, with output_env_t */
-
 #ifdef CPLUSPLUS
 }
 #endif

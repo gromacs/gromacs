@@ -238,7 +238,7 @@ static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
     }
 }
 
-void chk_trj(char *fn,char *tpr,real tol)
+void chk_trj(output_env_t oenv,char *fn,char *tpr,real tol)
 {
   t_trxframe   fr;
   t_count      count;
@@ -290,7 +290,7 @@ void chk_trj(char *fn,char *tpr,real tol)
   last.bF = 0;
   last.bBox = 0;
 
-  read_first_frame(&status,fn,&fr,TRX_READ_X | TRX_READ_V | TRX_READ_F);
+  read_first_frame(oenv,&status,fn,&fr,TRX_READ_X | TRX_READ_V | TRX_READ_F);
 
   do {
     if (j == 0) {
@@ -340,7 +340,7 @@ void chk_trj(char *fn,char *tpr,real tol)
     INC(fr,count,first,last,bBox);
 #undef INC
     fpos = gmx_fio_ftell(status);
-  } while (read_next_frame(status,&fr));
+  } while (read_next_frame(oenv,status,&fr));
   
   fprintf(stderr,"\n");
 
@@ -633,7 +633,8 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   char *fn1=NULL,*fn2=NULL,*tex=NULL;
-  
+ 
+  output_env_t oenv;
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
   static real bon_hi=0.7;
@@ -657,15 +658,15 @@ int main(int argc,char *argv[])
 
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
   fn1 = opt2fn_null("-f",NFILE,fnm);
   fn2 = opt2fn_null("-f2",NFILE,fnm);
   tex = opt2fn_null("-m",NFILE,fnm);
   if (fn1 && fn2)
-    comp_trx(fn1,fn2,ftol);
+    comp_trx(oenv,fn1,fn2,ftol);
   else if (fn1)
-    chk_trj(fn1,opt2fn_null("-s1",NFILE,fnm),ftol);
+    chk_trj(oenv,fn1,opt2fn_null("-s1",NFILE,fnm),ftol);
   else if (fn2)
     fprintf(stderr,"Please give me TWO trajectory (.xtc/.trr/.trj) files!\n");
   

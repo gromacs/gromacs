@@ -61,13 +61,13 @@ int can_view(int ftp)
   return 0;
 }
 
-void do_view(const char *fn, const char *opts)
+void do_view(output_env_t oenv,const char *fn, const char *opts)
 {
   char buf[STRLEN], env[STRLEN];
   const char *cmd;
   int ftp, n;
   
-  if (bDoView() && fn) {
+  if (get_view(oenv) && fn) {
     if (getenv("DISPLAY") == NULL) {
       fprintf(stderr,"Can not view %s, no DISPLAY environment variable.\n",fn);
     } else {
@@ -109,12 +109,12 @@ void do_view(const char *fn, const char *opts)
   }
 }
 
-void view_all(int nf, t_filenm fnm[])
+void view_all(output_env_t oenv,int nf, t_filenm fnm[])
 {
   int i;
   
   for(i=0; i<nf; i++)
     if ( can_view(fnm[i].ftp) && is_output(&(fnm[i])) && 
 	 ( ! is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
-      do_view(fnm[i].fns[0], NULL);
+      do_view(oenv,fnm[i].fns[0], NULL);
 }

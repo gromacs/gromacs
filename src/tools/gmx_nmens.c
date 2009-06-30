@@ -102,11 +102,13 @@ int gmx_nmens(int argc,char *argv[])
   atom_id    *index;
   real       rfac,invfr,rhalf,jr;
   int *      eigvalnr;
+  output_env_t oenv;
   
   unsigned long      jran;
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
   const unsigned long ic = 18257;
+
 
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -119,7 +121,7 @@ int gmx_nmens(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
 
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 

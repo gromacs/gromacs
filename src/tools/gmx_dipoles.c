@@ -278,7 +278,8 @@ static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
 }
 
 static void print_gkrbin(char *fn,t_gkrbin *gb,
-			 int ngrp,int nframes,real volume)
+			 int ngrp,int nframes,real volume,
+                         output_env_t oenv)
 {
   /* We compute Gk(r), gOO and hOO according to
    * Nymand & Linse, JCP 112 (2000) pp 6386-6395.
@@ -292,8 +293,8 @@ static void print_gkrbin(char *fn,t_gkrbin *gb,
   real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav,ener;
   double fac;
     
-  fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
-  xvgr_legend(fp,asize(leg),leg);
+  fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)",oenv);
+  xvgr_legend(fp,asize(leg),leg,oenv);
   
   Gkr = 1;  /* Self-dipole inproduct = 1 */
   rho = ngrp/volume;
@@ -547,7 +548,7 @@ static void update_slab_dipoles(int k0,int k1,rvec x[],rvec mu,
 }
 
 static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
-			      matrix box,int nframes)
+			      matrix box,int nframes,output_env_t oenv)
 {
   FILE *fp;
   char buf[STRLEN];
@@ -561,8 +562,9 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
   };
   
   sprintf(buf,"Box-%c (nm)",'X'+idim);
-  fp = xvgropen(fn,"Average dipole moment per slab",buf,"\\f{12}m\\f{4} (D)");
-  xvgr_legend(fp,DIM,leg_dim); 
+  fp = xvgropen(fn,"Average dipole moment per slab",buf,"\\f{12}m\\f{4} (D)",
+                oenv);
+  xvgr_legend(fp,DIM,leg_dim,oenv); 
   for(i=0; (i<nslice); i++) {
     mutot = norm(slab_dipole[i])/nframes;
     fprintf(fp,"%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
@@ -573,7 +575,7 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
 	    mutot);
   }
   fclose(fp);
-  do_view(fn,"-autoscale xy -nxy");
+  do_view(oenv,fn,"-autoscale xy -nxy");
 }
 			    
 static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
@@ -620,7 +622,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		   real epsilonRF,real temp,
 		   int  *gkatom,  int skip,
 		   bool bSlab,    int nslices,
-		   const char *axtitle, char *slabfn)
+		   const char *axtitle, char *slabfn,
+                   output_env_t oenv)
 {
   char *leg_mtot[] = { 
     "M\\sx \\N", 
@@ -744,11 +747,11 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   /* Open all the files */
   outmtot = xvgropen(out_mtot,
 		     "Total dipole moment of the simulation box vs. time",
-		     "Time (ps)","Total Dipole Moment (Debye)");
+		     "Time (ps)","Total Dipole Moment (Debye)",oenv);
   outeps  = xvgropen(out_eps,"Epsilon and Kirkwood factors",
-		     "Time (ps)","");
+		     "Time (ps)","",oenv);
   outaver = xvgropen(out_aver,"Total dipole moment",
-		     "Time (ps)","D");
+		     "Time (ps)","D",oenv);
   if (bSlab) {
     idim = axtitle[0] - 'X';
     if ((idim < 0) || (idim >= DIM))
@@ -766,14 +769,15 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   }
   
   if (fnadip) {
-    adip = xvgropen(fnadip, "Average molecular dipole","Dipole (D)","");
-    xvgr_legend(adip,NLEGADIP,leg_adip);
+    adip = xvgropen(fnadip, "Average molecular dipole","Dipole (D)","",oenv);
+    xvgr_legend(adip,NLEGADIP,leg_adip, oenv);
   
   }
   if (cosaver) {
     caver = xvgropen(cosaver,bPairs ? "Average pair orientation" :
-		     "Average absolute dipole orientation","Time (ps)","");
-    xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[1]));
+		     "Average absolute dipole orientation","Time (ps)","",oenv);
+    xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[1]),
+                oenv);
   }
     
   if (fndip3d) {
@@ -791,13 +795,13 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   }
   
   /* Write legends to all the files */
-  xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
-  xvgr_legend(outaver,NLEGAVER,leg_aver);
+  xvgr_legend(outmtot,NLEGMTOT,leg_mtot,oenv);
+  xvgr_legend(outaver,NLEGAVER,leg_aver,oenv);
   
   if (bMU && (mu_aver == -1))
-    xvgr_legend(outeps,NLEGEPS-2,leg_eps);
+    xvgr_legend(outeps,NLEGEPS-2,leg_eps,oenv);
   else
-    xvgr_legend(outeps,NLEGEPS,leg_eps);
+    xvgr_legend(outeps,NLEGEPS,leg_eps,oenv);
     
   snew(fr,1);
   clear_rvec(mu_t);
@@ -819,7 +823,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       }
     } while (bCont && (timecheck < 0));
   else
-    natom  = read_first_x(&status,fn,&t,&x,box);
+    natom  = read_first_x(oenv,&status,fn,&t,&x,box);
   
   /* Calculate spacing for dipole bin (simple histogram) */
   ndipbin = 1+(mu_max/0.01);
@@ -1056,7 +1060,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     if (bMU)
       bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr); 
     else
-      bCont = read_next_x(status,&t,natom,x,box);
+      bCont = read_next_x(oenv,status,&t,natom,x,box);
   } while (bCont);
   
   if (!bMU)
@@ -1082,14 +1086,14 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   }
 
   if (bSlab) {
-    dump_slab_dipoles(slabfn,idim,nslices,slab_dipoles,box,teller);
+    dump_slab_dipoles(slabfn,idim,nslices,slab_dipoles,box,teller,oenv);
     sfree(slab_dipoles);
   }
   
   vol_aver /= teller;
   printf("Average volume over run is %g\n",vol_aver);
   if (bGkr) {
-    print_gkrbin(gkrfn,gkrbin,gnx[0],teller,vol_aver);
+    print_gkrbin(gkrfn,gkrbin,gnx[0],teller,vol_aver,oenv);
     print_cmap(cmap,gkrbin,nlevels);
   }
   /* Autocorrelation function */  
@@ -1104,10 +1108,10 @@ static void do_dip(t_topology *top,int ePBC,real volume,
       mode = eacVector;
 
       if (bTotal)
-	do_autocorr(corf,"Autocorrelation Function of Total Dipole",
+	do_autocorr(corf,oenv,"Autocorrelation Function of Total Dipole",
 		    teller,1,muall,dt,mode,TRUE);
       else
-	do_autocorr(corf,"Dipole Autocorrelation Function",
+	do_autocorr(corf,oenv,"Dipole Autocorrelation Function",
 		    teller,gnx_tot,muall,dt,
 		    mode,strcmp(corrtype,"molsep"));
     }
@@ -1157,7 +1161,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   if (!bMU) {
     /* Write to file the dipole moment distibution during the simulation.
      */
-    outdd=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","");
+    outdd=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","",oenv);
     for(i=0; (i<ndipbin); i++)
       fprintf(outdd,"%10g  %10f\n",
 	      (i*mu_max)/ndipbin,dipole_bin[i]/(double)teller);
@@ -1239,6 +1243,7 @@ int gmx_dipoles(int argc,char *argv[])
   int  nslices = 10;      /* nr of slices defined       */
   int  skip=0,nFA=0,nFB=0,ncos=1;
   int  nlevels=20,ndegrees=90;
+  output_env_t oenv;
   t_pargs pa[] = {
     { "-mu",       FALSE, etREAL, {&mu_aver},
       "dipole of a single molecule (in Debye)" },
@@ -1308,7 +1313,7 @@ int gmx_dipoles(int argc,char *argv[])
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
 
   printf("Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max,mu_aver);
@@ -1370,13 +1375,13 @@ int gmx_dipoles(int argc,char *argv[])
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bMU,     opt2fn("-en",NFILE,fnm),
 	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFF,skip,
-	 bSlab,nslices,axtitle,opt2fn("-slab",NFILE,fnm));
+	 bSlab,nslices,axtitle,opt2fn("-slab",NFILE,fnm),oenv);
   
-  do_view(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
-  do_view(opt2fn("-eps",NFILE,fnm),"-autoscale xy -nxy");
-  do_view(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
-  do_view(opt2fn("-d",NFILE,fnm),"-autoscale xy");
-  do_view(opt2fn("-c",NFILE,fnm),"-autoscale xy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(oenv,opt2fn("-eps",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(oenv,opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
+  do_view(oenv,opt2fn("-d",NFILE,fnm),"-autoscale xy");
+  do_view(oenv,opt2fn("-c",NFILE,fnm),"-autoscale xy");
 
   thanx(stderr);
   

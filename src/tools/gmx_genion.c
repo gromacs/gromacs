@@ -355,6 +355,7 @@ int gmx_genion(int argc, char *argv[])
   bool        *bSet,bPDB;
   int         i,nw,nwa,nsa,nsalt,iqtot;
   FILE        *fplog;
+  output_env_t oenv;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,      ffREAD  },
     { efXVG, "-table","table", ffOPTRD },
@@ -367,8 +368,8 @@ int gmx_genion(int argc, char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    asize(bugs),bugs);
+  parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
+                    asize(desc),desc, asize(bugs),bugs,&oenv);
   bPDB = ftp2bSet(efPDB,NFILE,fnm);
   if (bRandom && bPDB) {
     fprintf(stderr,"Not computing potential with random option!\n");
@@ -383,7 +384,7 @@ int gmx_genion(int argc, char *argv[])
   snew(top,1);
   fplog = init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 		       opt2fn("-table",NFILE,fnm),mtop,top,&inputrec,&cr,
-		       &graph,&mdatoms,&fr,&enerd,&pot,box,&x);
+		       &graph,&mdatoms,&fr,&enerd,&pot,box,&x,oenv);
 
   atoms = gmx_mtop_global_atoms(mtop);
 

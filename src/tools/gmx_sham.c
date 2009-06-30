@@ -624,7 +624,7 @@ static void do_sham(char *fn,char *ndx,
   }
 }
 
-static void ehisto(char *fh,int n,real **enerT)
+static void ehisto(char *fh,int n,real **enerT, output_env_t oenv)
 {
   FILE *fp;
   int  i,j,k,nbin,blength;
@@ -662,7 +662,7 @@ static void ehisto(char *fh,int n,real **enerT)
     k = (enerT[0][j]-bmin)/bwidth;
     histo[bindex[j]][k]++;
   }
-  fp = xvgropen(fh,"Energy distribution","E (kJ/mol)","");
+  fp = xvgropen(fh,"Energy distribution","E (kJ/mol)","",oenv);
   for(j=0; (j<blength); j++) {
     fprintf(fp,"%8.3f",bmin+j*bwidth);
     for(k=0; (k<nbin); k++) {
@@ -776,6 +776,7 @@ int gmx_sham(int argc,char *argv[])
   real     *rmin,*rmax;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
   char     *fn_ge,*fn_ene;
+  output_env_t oenv;
     
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
@@ -801,7 +802,7 @@ int gmx_sham(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE ,
-		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL,&oenv); 
 
   val=read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
 		    opt2parg_bSet("-b",npargs,pa),tb-ttol,
@@ -847,7 +848,7 @@ int gmx_sham(int argc,char *argv[])
     dt_val = NULL;
 
   if (fn_ene && et_val)
-    ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val);
+    ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val,oenv);
 
   snew(idim,nset);
   snew(ibox,nset);

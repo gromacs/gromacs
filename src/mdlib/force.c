@@ -1005,7 +1005,8 @@ static void set_bham_b_max(FILE *fplog,t_forcerec *fr,
     }
 }
 
-static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
+static void make_nbf_tables(FILE *fp,output_env_t oenv,
+                            t_forcerec *fr,real rtab,
 			    const t_commrec *cr,
 			    const char *tabfn,char *eg1,char *eg2,
 			    t_nblists *nbl)
@@ -1025,7 +1026,7 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
     /* Append the two energy group names */
     sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
 	    eg1,eg2,ftp2ext(efXVG));
-  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,FALSE,FALSE);
+  nbl->tab = make_tables(fp,oenv,fr,MASTER(cr),buf,rtab,FALSE,FALSE);
   /* Copy the contents of the table to separate coulomb and LJ tables too,
    * to improve cache performance.
    */
@@ -1158,6 +1159,7 @@ void forcerec_set_ranges(t_forcerec *fr,
 }
     
 void init_forcerec(FILE *fp,
+                   output_env_t oenv,
                    t_forcerec *fr,
                    t_fcdata   *fcd,
                    const t_inputrec *ir,
@@ -1420,7 +1422,7 @@ void init_forcerec(FILE *fp,
 #endif
 		
 		fr->gbtabr=50;
-		fr->gbtab=make_gb_table(fp,fr,tabpfn,fr->gbtabscale);
+		fr->gbtab=make_gb_table(fp,oenv,fr,tabpfn,fr->gbtabscale);
 
         init_gb(&fr->born,cr,fr,ir,mtop,ir->rgbradii,ir->gb_algorithm);
     }
@@ -1491,7 +1493,7 @@ void init_forcerec(FILE *fp,
     if (bTab) {
         /* make tables for ordinary interactions */
         if (bNormalnblists) {
-            make_nbf_tables(fp,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
+            make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
             if (!bSep14tab)
                 fr->tab14 = fr->nblists[0].tab;
             m = 1;
@@ -1510,7 +1512,7 @@ void init_forcerec(FILE *fp,
                             fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = m;
                         }
                         /* Read the table file with the two energy groups names appended */
-                        make_nbf_tables(fp,fr,rtab,cr,tabfn,
+                        make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
@@ -1524,13 +1526,13 @@ void init_forcerec(FILE *fp,
     }
     if (bSep14tab)
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,rtab,FALSE,TRUE);
+        fr->tab14 = make_tables(fp,oenv,fr,MASTER(cr),tabpfn,rtab,FALSE,TRUE);
     
     /* Wall stuff */
     fr->nwall = ir->nwall;
     if (ir->nwall && ir->wall_type==ewtTABLE)
     {
-        make_wall_tables(fp,ir,tabfn,&mtop->groups,fr);
+        make_wall_tables(fp,oenv,ir,tabfn,&mtop->groups,fr);
     }
     
     if (fcd && tabbfn) {

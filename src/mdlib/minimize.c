@@ -797,8 +797,8 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 }
 
 time_t do_cg(FILE *fplog,t_commrec *cr,
-	     int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,
+	     int nfile,t_filenm fnm[], 
+             output_env_t oenv, bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
 	     t_inputrec *inputrec,
@@ -1314,7 +1314,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 
 time_t do_lbfgs(FILE *fplog,t_commrec *cr,
                 int nfile,t_filenm fnm[],
-                bool bVerbose,bool bCompact,
+                output_env_t oenv, bool bVerbose,bool bCompact,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
                 t_inputrec *inputrec,
@@ -1946,7 +1946,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 
 time_t do_steep(FILE *fplog,t_commrec *cr,
 		int nfile,t_filenm fnm[],
-		bool bVerbose,bool bCompact,
+                output_env_t oenv, bool bVerbose,bool bCompact,
 		gmx_vsite_t *vsite,gmx_constr_t constr,
 		int stepout,
 		t_inputrec *inputrec,
@@ -2147,7 +2147,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 
 time_t do_nm(FILE *fplog,t_commrec *cr,
 	     int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,
+             output_env_t oenv, bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
 	     t_inputrec *inputrec,
@@ -2410,7 +2410,7 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 
 time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      int nfile,t_filenm fnm[],
-	      bool bVerbose,bool bCompact,
+              output_env_t oenv, bool bVerbose,bool bCompact,
 	      gmx_vsite_t *vsite,gmx_constr_t constr,
 	      int stepout,
 	      t_inputrec *inputrec,
@@ -2617,8 +2617,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) {
     fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
 		      "TPI energies","Time (ps)",
-		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
-    xvgr_subtitle(fp_tpi,"f. are averages over one frame");
+		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)",oenv);
+    xvgr_subtitle(fp_tpi,"f. are averages over one frame",oenv);
     snew(leg,4+nener);
     e = 0;
     sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
@@ -2655,7 +2655,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	leg[e++] = strdup(str);
       }
     }
-    xvgr_legend(fp_tpi,4+nener,leg);
+    xvgr_legend(fp_tpi,4+nener,leg,oenv);
     for(i=0; i<4+nener; i++)
       sfree(leg[i]);
     sfree(leg);
@@ -2668,7 +2668,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   nbin = 10;
   snew(bin,nbin);
 
-  bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
+  bNotLastFrame = read_first_frame(oenv,&status,opt2fn("-rerun",nfile,fnm),
 				   &rerun_fr,TRX_NEED_X);
   frame = 0;
 
@@ -2921,7 +2921,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
       fflush(fp_tpi);
     }
 
-    bNotLastFrame = read_next_frame(status,&rerun_fr);
+    bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
   } /* End of the loop  */
 
   runtime_end(runtime);
@@ -2947,10 +2947,10 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   }
   fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
 		    "TPI energy distribution",
-		    "\\8b\\4U - log(V/<V>)","count");
+		    "\\8b\\4U - log(V/<V>)","count",oenv);
   sprintf(str,"number \\8b\\4U > %g: %9.3e",bU_bin_limit,bin[0]);
-  xvgr_subtitle(fp_tpi,str);
-  xvgr_legend(fp_tpi,2,(char **)tpid_leg);
+  xvgr_subtitle(fp_tpi,str,oenv);
+  xvgr_legend(fp_tpi,2,(char **)tpid_leg,oenv);
   for(i=nbin-1; i>0; i--) {
     bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
     fprintf(fp_tpi,"%6.2f %10d %12.5e\n",

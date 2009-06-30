@@ -520,6 +520,7 @@ int gmx_editconf(int argc, char *argv[])
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
   gmx_atomprop_t aps;
   gmx_conect conect;
+  output_env_t oenv;
   t_filenm fnm[] = {
     { efSTX, "-f",    NULL,    ffREAD },
     { efNDX, "-n",    NULL,    ffOPTRD },
@@ -531,7 +532,7 @@ int gmx_editconf(int argc, char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,NFILE,fnm,NPA,pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,asize(bugs),bugs,&oenv);
 
   bIndex    = opt2bSet("-n",NFILE,fnm) || bNDEF;
   bMead     = opt2bSet("-mead",NFILE,fnm);
@@ -924,7 +925,7 @@ int gmx_editconf(int argc, char *argv[])
   }
   gmx_atomprop_destroy(aps);
 
-  do_view(outfile,NULL);
+  do_view(oenv,outfile,NULL);
     
   thanx(stderr);
   

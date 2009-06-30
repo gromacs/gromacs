@@ -227,7 +227,7 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
 				  char *sgfn,char *skfn,
 				  int nslice,int slice_dim,
-				  char *sgslfn,char *skslfn)
+				  char *sgslfn,char *skslfn,output_env_t oenv)
 {
   FILE       *fpsg=NULL,*fpsk=NULL;
   t_topology top;
@@ -259,14 +259,16 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   get_index(&top.atoms,fnNDX,ng,isize,index,grpname);
 
   /* Analyze trajectory */
-  natoms=read_first_x(&status,fnTRX,&t,&x,box);
+  natoms=read_first_x(oenv,&status,fnTRX,&t,&x,box);
   if ( natoms > top.atoms.nr )
     gmx_fatal(FARGS,"Topology (%d atoms) does not match trajectory (%d atoms)",
 	      top.atoms.nr,natoms);
   check_index(NULL,ng,index[0],NULL,natoms);
 
-  fpsg=xvgropen(sgfn,"S\\sg\\N Angle Order Parameter","Time (ps)","S\\sg\\N");
-  fpsk=xvgropen(skfn,"S\\sk\\N Distance Order Parameter","Time (ps)","S\\sk\\N");
+  fpsg=xvgropen(sgfn,"S\\sg\\N Angle Order Parameter","Time (ps)","S\\sg\\N",
+                oenv);
+  fpsk=xvgropen(skfn,"S\\sk\\N Distance Order Parameter","Time (ps)","S\\sk\\N",
+                oenv);
 
   /* loop over frames */
   nframes = 0;
@@ -280,7 +282,7 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
     fprintf(fpsg,"%f %f\n", t, sg);
     fprintf(fpsk,"%f %f\n", t, sk);
     nframes++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
  
   sfree(grpname);
@@ -290,11 +292,17 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   fclose(fpsg);
   fclose(fpsk);
   
-  fpsg = xvgropen(sgslfn,"S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N");
-  fpsk = xvgropen(skslfn,"S\\sk\\N Distance Order Parameter / Slab","(nm)","S\\sk\\N");
+  fpsg = xvgropen(sgslfn,
+                  "S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N",
+                   oenv);
+  fpsk = xvgropen(skslfn,
+                  "S\\sk\\N Distance Order Parameter / Slab","(nm)","S\\sk\\N",
+                  oenv);
   for(i=0; (i<nslice); i++) {
-    fprintf(fpsg,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,sg_slice_tot[i]/nframes);
-    fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,sk_slice_tot[i]/nframes);
+    fprintf(fpsg,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,
+            sg_slice_tot[i]/nframes);
+    fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,
+            sk_slice_tot[i]/nframes);
   }
   fclose(fpsg);
   fclose(fpsk);
@@ -324,7 +332,8 @@ static void check_length(real length, int a, int b)
 
 void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
-		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis)
+		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
+                output_env_t oenv)
 { 
   rvec *x0,          /* coordinates with pbc                           */
     *x1,             /* coordinates without pbc                        */
@@ -349,7 +358,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
    real dbangle = 0, /* angle between double bond and  axis            */ 
         sdbangle = 0;/* sum of these angles                            */
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) 
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0) 
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   snew(slCount, nslices);
@@ -368,7 +377,8 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 
   nr_tails = index[1] - index[0];
   fprintf(stderr,"Number of elements in first group: %d\n",nr_tails);
-  /* take first group as standard. Not rocksolid, but might catch error in index*/
+  /* take first group as standard. Not rocksolid, but might catch error 
+     in index*/
 
   teller = 0; 
 
@@ -476,7 +486,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
     }
     nr_frames++;
     
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
   /*********** done with status file **********/
   
   fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
@@ -502,7 +512,8 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 
 
 void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile, 
-		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly)
+		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
+                output_env_t oenv)
 {
   FILE       *ord, *slOrd;           /* xvgr files with order parameters  */
   int        atom, slice;            /* atom corresponding to order para.*/
@@ -511,11 +522,11 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
 
   if (bSzonly) {
     sprintf(buf,"Orderparameters Sz per atom");
-    ord = xvgropen(afile,buf,"Atom","S");
+    ord = xvgropen(afile,buf,"Atom","S",oenv);
     fprintf(stderr,"ngrps = %d, nslices = %d",ngrps, nslices);
 
     sprintf(buf, "Orderparameters per atom per slice");
-    slOrd = xvgropen(bfile, buf, "Slice", "S");
+    slOrd = xvgropen(bfile, buf, "Slice", "S",oenv);
     
     for (atom = 1; atom < ngrps - 1; atom++)
       fprintf(ord,"%12d       %12g\n", atom, order[atom][ZZ]);
@@ -529,9 +540,9 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
 
   } else {
     sprintf(buf,"Order tensor diagonal elements");
-    ord = xvgropen(afile,buf,"Atom","S");
+    ord = xvgropen(afile,buf,"Atom","S",oenv);
     sprintf(buf,"Deuterium order parameters");
-    slOrd = xvgropen(cfile,buf, "Atom", "Scd");
+    slOrd = xvgropen(cfile,buf, "Atom", "Scd",oenv);
 
     for (atom = 1; atom < ngrps - 1; atom++) {
       fprintf(ord,"%12d   %12g   %12g   %12g\n", atom, order[atom][XX],
@@ -613,11 +624,12 @@ int gmx_order(int argc,char *argv[])
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
   char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
+  output_env_t oenv;
 
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL,&oenv);
   if (nslices < 1)
     gmx_fatal(FARGS,"Can not have nslices < 1");
   sgfnm = opt2fn_null("-Sg",NFILE,fnm);
@@ -650,13 +662,14 @@ int gmx_order(int argc,char *argv[])
     sgfnm = opt2fn("-Sg",NFILE,fnm);
     skfnm = opt2fn("-Sk",NFILE,fnm);
     calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm,nslices,axis,
-			  opt2fn("-Sgsl",NFILE,fnm),opt2fn("-Sksl",NFILE,fnm));
+			  opt2fn("-Sgsl",NFILE,fnm),opt2fn("-Sksl",NFILE,fnm),
+                          oenv);
     /* view xvgr files */
-    do_view(opt2fn("-Sg",NFILE,fnm), NULL);
-    do_view(opt2fn("-Sk",NFILE,fnm), NULL);
+    do_view(oenv,opt2fn("-Sg",NFILE,fnm), NULL);
+    do_view(oenv,opt2fn("-Sk",NFILE,fnm), NULL);
     if (nslices > 1) {
-      do_view(opt2fn("-Sgsl",NFILE,fnm), NULL);
-      do_view(opt2fn("-Sksl",NFILE,fnm), NULL);
+      do_view(oenv,opt2fn("-Sgsl",NFILE,fnm), NULL);
+      do_view(oenv,opt2fn("-Sksl",NFILE,fnm), NULL);
     }
   } 
   else {  
@@ -684,14 +697,15 @@ int gmx_order(int argc,char *argv[])
     
     calc_order(ftp2fn(efTRX,NFILE,fnm), index, a, &order, 
 	       &slOrder, &slWidth, nslices, bSliced, bUnsat,
-	       top, ePBC, ngrps, axis); 
+	       top, ePBC, ngrps, axis, oenv); 
     
     order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
-	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);
+	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly,
+               oenv);
     
-    do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
-    do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
-    do_view(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
+    do_view(oenv,opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
+    do_view(oenv,opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
+    do_view(oenv,opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
   }
   
   thanx(stderr);

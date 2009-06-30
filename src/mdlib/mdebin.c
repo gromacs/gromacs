@@ -405,7 +405,7 @@ t_mdebin *init_mdebin(int fp_ene,
     return md;
 }
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir)
+FILE *open_dhdl(const char *filename,t_inputrec *ir,output_env_t oenv)
 {
     FILE *fp;
     const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";
@@ -425,7 +425,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir)
         sprintf(title,"%s, %s",dhdl,deltag);
         sprintf(label_y,"(%s)",unit_energy);
     }
-    fp = xvgropen(filename,title,label_x,label_y);
+    fp = xvgropen(filename,title,label_x,label_y,oenv);
 
     if (ir->n_flambda > 0)
     {
@@ -441,7 +441,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir)
             sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s-1]);
             setname[s] = strdup(buf);
         }
-        xvgr_legend(fp,nsets,setname);
+        xvgr_legend(fp,nsets,setname,oenv);
 
         for(s=0; s<nsets; s++)
         {

@@ -70,7 +70,8 @@
 #define FLAGS (TRX_READ_X | TRX_READ_V | TRX_READ_F)
 
 static void scan_trj_files(char **fnms,int nfiles,
-			   real *readtime,real *timestep,atom_id imax)
+			   real *readtime,real *timestep,atom_id imax,
+                           output_env_t oenv)
 {
   /* Check start time of all files */
   int i,status,natoms=0;
@@ -79,7 +80,7 @@ static void scan_trj_files(char **fnms,int nfiles,
   bool ok;
   
   for(i=0;i<nfiles;i++) {
-    ok=read_first_frame(&status,fnms[i],&fr,FLAGS);
+    ok=read_first_frame(oenv,&status,fnms[i],&fr,FLAGS);
     
     if(!ok) 
       gmx_fatal(FARGS,"\nCouldn't read frame from file.");
@@ -104,7 +105,7 @@ static void scan_trj_files(char **fnms,int nfiles,
 		      fr.natoms,imax);
       }
     }
-    ok=read_next_frame(status,&fr);
+    ok=read_next_frame(oenv,status,&fr);
     if(ok && fr.bTime) {
       timestep[i] = fr.time - readtime[i];
     } else {
@@ -144,7 +145,8 @@ static void sort_files(char **fnms,real *settime,int nfile)
 
 
 static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
-		       real *settime, int *cont_type, bool bSetTime,bool bSort)
+		       real *settime, int *cont_type, bool bSetTime,bool bSort,
+                       output_env_t oenv)
 {
     int i;
     bool ok;
@@ -160,16 +162,16 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 		"same amount as in the previous. Use it when the time in the\n"
 		"new run continues from the end of the previous one,\n"
 		"since this takes possible overlap into account.\n\n",
-		time_unit() );
+		get_time_unit(oenv) );
 	
 	  fprintf(stderr,
 	  "          File             Current start (%s)  New start (%s)\n"
 		  "---------------------------------------------------------\n",
-		  time_unit(), time_unit() );
+		  get_time_unit(oenv), get_time_unit(oenv) );
 	  
 	  for(i=0;i<nfiles;i++) {
 	      fprintf(stderr,"%25s   %10.3f %s          ",
-		      fnms[i],convert_time(readtime[i]), time_unit());
+		      fnms[i],conv_time(oenv,readtime[i]), get_time_unit(oenv));
 	      ok=FALSE;
 	      do {
 		  if(NULL==fgets(inputstring,STRLEN-1,stdin))
@@ -193,7 +195,8 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 		    settime[i]=FLT_MAX;			  
 		  }
 		  else {
-		    settime[i]=strtod(inputstring,&chptr)*time_invfactor();
+		    settime[i]=strtod(inputstring,&chptr)*
+                                    get_time_invfactor(oenv);
 		    if(chptr==inputstring) {
 		      fprintf(stderr,"'%s' not recognized as a floating point number, 'c' or 'l'. "
 			      "Try again: ",inputstring);
@@ -229,8 +232,8 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 	case TIME_EXPLICIT:
 	  fprintf(stderr,"%25s   %10.3f %s   %10.3f %s",
 		  fnms[i],
-		  convert_time(settime[i]),time_unit(),
-		  convert_time(timestep[i]),time_unit());
+		  conv_time(oenv,settime[i]),get_time_unit(oenv),
+		  conv_time(oenv,timestep[i]),get_time_unit(oenv));
 	  if ( i>0 && 
 	       cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
 	    fprintf(stderr," WARNING: same Start time as previous");
@@ -253,7 +256,8 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 
 static void do_demux(int nset,char *fnms[],char *fnms_out[],
 		     int nval,real **value,real *time,real dt_remd,
-		     int isize,atom_id index[],real dt)
+		     int isize,atom_id index[],real dt,
+                     output_env_t oenv)
 {
   int        i,j,k,natoms,nnn;
   int        *fp_in,*fp_out;
@@ -267,7 +271,7 @@ static void do_demux(int nset,char *fnms[],char *fnms_out[],
   natoms = -1;
   t = -1;
   for(i=0; (i<nset); i++) {
-    nnn = read_first_frame(&(fp_in[i]),fnms[i],&(trx[i]),TRX_NEED_X);
+    nnn = read_first_frame(oenv,&(fp_in[i]),fnms[i],&(trx[i]),TRX_NEED_X);
     if (natoms == -1) {
       natoms = nnn;
       first_time = trx[i].time;
@@ -312,7 +316,7 @@ static void do_demux(int nset,char *fnms[],char *fnms_out[],
     
     bCont = (k < nval);
     for(i=0; (i<nset); i++) 
-      bCont = bCont && read_next_frame(fp_in[i],&trx[i]);
+      bCont = bCont && read_next_frame(oenv,fp_in[i],&trx[i]);
   } while (bCont);
   
   for(i=0; (i<nset); i++) {
@@ -396,6 +400,7 @@ int gmx_trjcat(int argc,char *argv[])
   char        *grpname;
   real        **val=NULL,*t=NULL,dt_remd;
   int         n,nset;
+  output_env_t oenv;
   t_filenm fnm[] = {
       { efTRX, "-f",     NULL,      ffRDMULT },
       { efTRO, "-o",     NULL,      ffWRMULT },
@@ -408,7 +413,7 @@ int gmx_trjcat(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE|PCA_TIME_UNIT,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    0,NULL);
+		    0,NULL,&oenv);
 
   bIndex = ftp2bSet(efNDX,NFILE,fnm);
   bDeMux = ftp2bSet(efXVG,NFILE,fnm);
@@ -471,16 +476,17 @@ int gmx_trjcat(int argc,char *argv[])
 	sprintf(fnms_out[i],"%d_%s",i,buf);
       }
     }
-    do_demux(nfile_in,fnms,fnms_out,n,val,t,dt_remd,isize,index,dt);
+    do_demux(nfile_in,fnms,fnms_out,n,val,t,dt_remd,isize,index,dt,oenv);
   }
   else {
     snew(readtime,nfile_in+1);
     snew(timest,nfile_in+1);
-    scan_trj_files(fnms,nfile_in,readtime,timest,imax);
+    scan_trj_files(fnms,nfile_in,readtime,timest,imax,oenv);
     
     snew(settime,nfile_in+1);
     snew(cont_type,nfile_in+1);
-    edit_files(fnms,nfile_in,readtime,timest,settime,cont_type,bSetTime,bSort);
+    edit_files(fnms,nfile_in,readtime,timest,settime,cont_type,bSetTime,bSort,
+               oenv);
   
     /* Check whether the output file is amongst the input files 
      * This has to be done after sorting etc.
@@ -517,9 +523,9 @@ int gmx_trjcat(int argc,char *argv[])
     }
     else {
       /* Read file to find what is the last frame in it */
-      if (!read_first_frame(&status,out_file,&fr,FLAGS))
+      if (!read_first_frame(oenv,&status,out_file,&fr,FLAGS))
 	gmx_fatal(FARGS,"Reading first frame from %s",out_file);
-      while (read_next_frame(status,&fr))
+      while (read_next_frame(oenv,status,&fr))
 	;
       close_trj(status);
       lasttime = fr.time;
@@ -560,14 +566,15 @@ int gmx_trjcat(int argc,char *argv[])
 	    fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
 		    "spacing than the rest,\n"
 		    "might be a gap or overlap that couldn't be corrected "
-		    "automatically.\n",convert_time(frout.time),time_unit());
+		    "automatically.\n",conv_time(oenv,frout.time),
+                    get_time_unit(oenv));
       }
       
       /* if we don't have a timestep in the current file, use the old one */
       if ( timest[i] != 0 )
 	timestep = timest[i];
       
-      read_first_frame(&status,fnms[i],&fr,FLAGS);
+      read_first_frame(oenv,&status,fnms[i],&fr,FLAGS);
       if(!fr.bTime) {
 	fr.time=0;
 	fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
@@ -621,7 +628,8 @@ int gmx_trjcat(int argc,char *argv[])
 	    if(bNewFile) {
 	      fprintf(stderr,"\nContinue writing frames from %s t=%g %s, "
 		      "frame=%d      \n",
-		      fnms[i],convert_time(frout.time),time_unit(),frame);
+		      fnms[i],conv_time(oenv,frout.time),get_time_unit(oenv),
+                      frame);
 	      bNewFile=FALSE;
 	    }
 	    
@@ -631,10 +639,10 @@ int gmx_trjcat(int argc,char *argv[])
 	      write_trxframe(trxout,&frout,NULL);
 	    if ( ((frame % 10) == 0) || (frame < 10) )
 	      fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
-		      frame_out,convert_time(frout.time),time_unit());
+		      frame_out,conv_time(oenv,frout.time),get_time_unit(oenv));
 	  }
 	}
-      } while( read_next_frame(status,&fr));
+      } while( read_next_frame(oenv,status,&fr));
       
       close_trj(status);
       
@@ -644,7 +652,7 @@ int gmx_trjcat(int argc,char *argv[])
       close_trx(trxout);
      
     fprintf(stderr,"\nLast frame written was %d, time %f %s\n",
-	    frame,convert_time(last_ok_t),time_unit()); 
+	    frame,conv_time(oenv,last_ok_t),get_time_unit(oenv)); 
   }
   thanx(stderr);
   

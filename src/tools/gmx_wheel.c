@@ -207,6 +207,7 @@ int gmx_wheel(int argc,char *argv[])
     "the number of residues and each consecutive line contains a residue"
     "name."
   };
+  output_env_t oenv;
   static real rot0=0;
   static bool bNum=TRUE;
   static char *title=NULL;
@@ -232,7 +233,7 @@ int gmx_wheel(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
   
   for(i=1; (i<argc); i++) {
     if (strcmp(argv[i],"-r0") == 0) {

@@ -397,8 +397,8 @@ static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 }
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
-	      real begintimefit,real endtimefit,bool bVerbose,
-	      int eFitFn,real fitparms[],int fix)
+	      real begintimefit,real endtimefit,output_env_t oenv,
+              bool bVerbose, int eFitFn,real fitparms[],int fix)
 {
   FILE *fp;
   char buf[32];
@@ -476,7 +476,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 		begintimefit,integral);
 	
 	sprintf(buf,"test%d.xvg",nfitpnts);
-	fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
+	fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)",oenv);
 	fprintf(fp,"# parm0 = %g, parm1 = %g, parm2 = %g\n",
 		parm[0],parm[1],parm[2]);
 	for(j=0; (j<nfitpnts); j++) {

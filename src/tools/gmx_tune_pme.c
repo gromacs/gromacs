@@ -997,6 +997,7 @@ int gmx_tune_pme(int argc,char *argv[])
     static real cpt_period=15.0,max_hours=-1;
     static bool bAppendFiles=FALSE;
     static const char *deffnm="";
+    output_env_t oenv;
 
     static t_pargs pa[] = {
       /***********************/
@@ -1092,7 +1093,8 @@ int gmx_tune_pme(int argc,char *argv[])
     mdrun_args(argc,argv,&args_for_mdrun);
 
     parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,
-              NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);        
+                      NFILE,fnm,asize(pa),pa,asize(desc),desc,
+                      0,NULL,&oenv);        
 
     /* Open performance output file and write header info */
     fp = ffopen(opt2fn("-p",NFILE,fnm),"w");

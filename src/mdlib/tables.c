@@ -822,7 +822,8 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
   }
 }
 
-t_forcetable make_tables(FILE *out,const t_forcerec *fr,
+t_forcetable make_tables(FILE *out,output_env_t oenv,
+                         const t_forcerec *fr,
 			 bool bVerbose,const char *fn,
 			 real rtab,bool bForceUser,bool b14only)
 {
@@ -926,9 +927,9 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
     
     if (bDebugMode() && bVerbose) {
       if (b14only)
-	fp=xvgropen(fns14[k],fns14[k],"r","V");
+	fp=xvgropen(fns14[k],fns14[k],"r","V",oenv);
       else
-	fp=xvgropen(fns[k],fns[k],"r","V");
+	fp=xvgropen(fns[k],fns[k],"r","V",oenv);
       /* plot the output 5 times denser than the table data */
       for(i=5*((nx0+1)/2); i<5*table.n; i++) {
 	x0 = i*table.r/(5*(table.n-1));
@@ -944,9 +945,10 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   return table;
 }
 
-t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
-						   const char *fn,
-						   real rtab)
+t_forcetable make_gb_table(FILE *out,output_env_t oenv,
+                           const t_forcerec *fr,
+                           const char *fn,
+                           real rtab)
 {
 	const char *fns[3] = { "gbctab.xvg", "gbdtab.xvg", "gbrtab.xvg" };
 	const char *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
@@ -1000,7 +1002,8 @@ t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
 	 * to do this :-)
 	 */
 	
-	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra to align it. */
+	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
+           to align it. */
 	p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
 	
 	/* align it - size_t has the same same as a pointer */
@@ -1037,7 +1040,7 @@ t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
 	
 	if(bDebugMode())
     {
-		fp=xvgropen(fns[0],fns[0],"r","V");
+		fp=xvgropen(fns[0],fns[0],"r","V",oenv);
 		/* plot the output 5 times denser than the table data */
 		/* for(i=5*nx0;i<5*table.n;i++) */
 		for(i=nx0;i<table.n;i++)

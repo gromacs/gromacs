@@ -223,7 +223,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
 		   t_forcerec **fr,
 		   gmx_enerdata_t *enerd,
 		   real **pot,
-		   matrix box,rvec **x)
+		   matrix box,rvec **x, output_env_t oenv)
 {
   gmx_localtop_t *ltop;
   double   t,t0,lam0;
@@ -252,7 +252,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   snew(state,1);
   init_single(fplog,inputrec,tpx,mtop,state);
   clear_rvec(mutot);
-  init_md(fplog,*cr,inputrec,&t,&t0,&lam,&lam0,
+  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
 	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL,0);
@@ -288,7 +288,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(fplog,*fr,NULL,inputrec,mtop,*cr,
+  init_forcerec(fplog,oenv,*fr,NULL,inputrec,mtop,*cr,
 		state->box,FALSE,table,table,NULL,TRUE,-1);
 
   /* Remove periodicity */  

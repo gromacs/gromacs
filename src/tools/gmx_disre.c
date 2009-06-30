@@ -602,6 +602,7 @@ int gmx_disre(int argc,char *argv[])
   t_pbc       pbc,*pbc_null;
   int         my_clust;
   FILE        *fplog;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efTPX, NULL, NULL, ffREAD },
@@ -622,7 +623,7 @@ int gmx_disre(int argc,char *argv[])
   cr  = init_par(&argc,&argv);
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
   fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE,0);
   
@@ -664,7 +665,7 @@ int gmx_disre(int argc,char *argv[])
   if (ftp2bSet(efNDX,NFILE,fnm)) {
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
     xvg=xvgropen(opt2fn("-dr",NFILE,fnm),"Inidividual Restraints","Time (ps)",
-		 "nm");
+		 "nm",oenv);
     snew(vvindex,isize);
     snew(leg,isize);
     for(i=0; (i<isize); i++) {
@@ -672,7 +673,7 @@ int gmx_disre(int argc,char *argv[])
       snew(leg[i],12);
       sprintf(leg[i],"index %d",index[i]);
     }
-    xvgr_legend(xvg,isize,leg);
+    xvgr_legend(xvg,isize,leg,oenv);
   }
   else 
     isize=0;
@@ -680,7 +681,7 @@ int gmx_disre(int argc,char *argv[])
   ir.dr_tau=0.0;
   init_disres(fplog,&mtop,&ir,NULL,FALSE,&fcd,NULL);
 
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
   
   init_dr_res(&dr,fcd.disres.nres);
@@ -692,13 +693,13 @@ int gmx_disre(int argc,char *argv[])
   }
   else {	
     out =xvgropen(opt2fn("-ds",NFILE,fnm),
-		  "Sum of Violations","Time (ps)","nm");
+		  "Sum of Violations","Time (ps)","nm",oenv);
     aver=xvgropen(opt2fn("-da",NFILE,fnm),
-		  "Average Violation","Time (ps)","nm");
+		  "Average Violation","Time (ps)","nm",oenv);
     numv=xvgropen(opt2fn("-dn",NFILE,fnm),
-		  "# Violations","Time (ps)","#");
+		  "# Violations","Time (ps)","#",oenv);
     maxxv=xvgropen(opt2fn("-dm",NFILE,fnm),
-		   "Largest Violation","Time (ps)","nm");
+		   "Largest Violation","Time (ps)","nm",oenv);
   }
 
   mdatoms = init_mdatoms(fplog,&mtop,ir.efep!=efepNO);
@@ -706,7 +707,8 @@ int gmx_disre(int argc,char *argv[])
   update_mdatoms(mdatoms,ir.init_lambda);
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
-  init_forcerec(fplog,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,FALSE,-1);
+  init_forcerec(fplog,oenv,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,
+                FALSE,-1);
   init_nrnb(&nrnb);
   j=0;
   do {
@@ -754,7 +756,7 @@ int gmx_disre(int argc,char *argv[])
       fprintf(numv, "%10g  %10d\n",t,dr.nv);
     }
     j++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
 
   if (clust) {
@@ -779,12 +781,12 @@ int gmx_disre(int argc,char *argv[])
     fclose(maxxv);
     if (isize > 0) {
       fclose(xvg);
-      do_view(opt2fn("-dr",NFILE,fnm),"-nxy");
+      do_view(oenv,opt2fn("-dr",NFILE,fnm),"-nxy");
     }
-    do_view(opt2fn("-dn",NFILE,fnm),"-nxy");
-    do_view(opt2fn("-da",NFILE,fnm),"-nxy");
-    do_view(opt2fn("-ds",NFILE,fnm),"-nxy");
-    do_view(opt2fn("-dm",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-dn",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-da",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-ds",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-dm",NFILE,fnm),"-nxy");
   }
   thanx(stderr);
 

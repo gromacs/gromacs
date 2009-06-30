@@ -628,7 +628,8 @@ int main(int argc,char *argv[])
     char       *TargetFile;
     char       *OriginFile;
     char       *EigvecFile;
-    
+   
+    output_env_t oenv;
     
     /*to read topology file*/
     t_topology top;
@@ -651,7 +652,7 @@ int main(int argc,char *argv[])
     edi_params.outfrq=100; edi_params.slope=0.0; edi_params.maxedsteps=0;
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv, 0 ,
-                      NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
+                      NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
     
     indexfile=ftp2fn_null(efNDX,NFILE,fnm);
     EdiFile=ftp2fn(efEDI,NFILE,fnm);
