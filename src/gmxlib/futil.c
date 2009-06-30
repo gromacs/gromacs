@@ -449,10 +449,10 @@ bool get_libdir(char *libdir)
 	strcat(system_path,s);
       s=system_path;
       found=FALSE;
-      while (!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
-	sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
-	found=gmx_fexist(full_path);
-	s=NULL; /* pointer should be null for subseq. calls to strtok */
+      while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL)
+      {
+          sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
+          found=gmx_fexist(full_path);
       }
       if (!found)
 	return FALSE;
@@ -545,10 +545,17 @@ const char *low_libfn(const char *file, bool bFatal)
     found=FALSE;
     strncpy(tmppath,libpath,MAX_PATHBUF);
     s=tmppath;
+#if 0
     while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
       sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
       found=gmx_fexist(buf);
       s = NULL;
+    }
+#endif
+    while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
+    {
+        sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
+        found=gmx_fexist(buf);
     }
     ret=buf;
     if (bFatal && !found) {
