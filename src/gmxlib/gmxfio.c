@@ -319,7 +319,7 @@ static char *next_item(FILE *fp, char *buf, int buflen)
     {
         if (in_comment)
         {
-            if (isspace(rd))
+            if (rd=='\n')
                 in_comment=FALSE;
         }
         else if (in_token)
@@ -345,69 +345,11 @@ static char *next_item(FILE *fp, char *buf, int buflen)
             break;
     } while( (rd=getc(fp)) != EOF );
 
+    fprintf(stderr,"WARNING, ftpASC file type not tested!\n");
+
     buf[i]=0;
 
     return buf;
-
-#if 0
-  /* This routine reads strings from the file fp, strips comment
-   * and buffers. If there are multiple strings on a line, they will
-   * be stored here, and indices in the line buffer (buf) will be
-   * stored in bufindex. This way we can uncomment on the fly,
-   * without too much double work. Each string is first read through
-   * fscanf in this routine, and then through sscanf in do_read.
-   * No unnecessary string copying is done.
-   */
-#define MAXBUF 20
-  static  char buf[STRLEN];
-  static  int  bufindex[MAXBUF];
-  int     i,j0;
-  char    ccc;
-  
-  if (nbuf) {
-    j0 = bufindex[0];
-    for(i=1; (i<nbuf); i++)
-      bufindex[i-1] = bufindex[i];
-    nbuf--;
-
-    return buf+j0;
-  }
-  else {
-    /* First read until we find something that is not comment */
-    if (fgets2(buf,STRLEN-1,fp) == NULL)
-      gmx_file("End of file");
-      
-    i = 0;
-    do {
-      /* Skip over leading spaces */
-      while ((buf[i] != '\0') && (buf[i] != ';') && isspace(buf[i]))
-	i++;
-
-      /* Store start of something non-space */
-      j0 = i;
-      
-      /* Look for next spaces */
-      while ((buf[i] != '\0') && (buf[i] != ';') && !isspace(buf[i]))
-	i++;
-	
-      /* Store the last character in the string */
-      ccc = buf[i];
-      
-      /* If the string is non-empty, add it to the list */
-      if (i > j0) {
-	buf[i] = '\0';
-	bufindex[nbuf++] = j0;
-	
-	/* We increment i here; otherwise the next test for buf[i] would be 
-	 * '\0', since we test the main loop for ccc anyway, we cant go SEGV
-	 */
-	i++;
-      }
-    } while ((ccc != '\0') && (ccc != ';'));
-
-    return next_item(fp);
-  }
-#endif
 }
 
 static bool do_ascread(void *item,int nitem,int eio,
