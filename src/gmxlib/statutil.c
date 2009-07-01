@@ -608,7 +608,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     int  nicelevel=0,mantp=0,npri=0,debug_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
-    bool bView=TRUE, bXvgrCodes=TRUE;
+    bool bView=FALSE, bXvgrCodes=TRUE;
     
     t_pargs *all_pa=NULL;
     
