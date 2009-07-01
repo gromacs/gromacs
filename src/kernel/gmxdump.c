@@ -309,7 +309,8 @@ void list_trx(char *fn,bool bXVG)
 
 void list_ene(char *fn)
 {
-  int        in,ndr;
+  int        ndr;
+  ener_file_t in;
   bool       bCont;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;

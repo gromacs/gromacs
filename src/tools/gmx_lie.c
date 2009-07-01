@@ -144,7 +144,8 @@ int gmx_lie(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE      *out;
-  int       fp,nre,nframes=0,ct=0;
+  int       nre,nframes=0,ct=0;
+  ener_file_t fp;
   bool      bCont;
   t_liedata *ld;
   gmx_enxnm_t *enm=NULL;

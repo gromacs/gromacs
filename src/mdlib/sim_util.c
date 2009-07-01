@@ -1241,7 +1241,7 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
+             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
@@ -1308,7 +1308,7 @@ void init_md(FILE *fplog,
     if (nfile != -1)
     {
         *fp_trn = -1;
-        *fp_ene = -1;
+        *fp_ene = NULL;
         *fp_xtc = -1;
         
         if (MASTER(cr)) 
@@ -1348,7 +1348,8 @@ void init_md(FILE *fplog,
                 }
             }
         }
-        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? -1 : *fp_ene,mtop,ir);
+        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? NULL : *fp_ene,
+                                mtop,ir);
     }
     
     /* Initiate variables */  

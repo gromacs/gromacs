@@ -144,7 +144,8 @@ static int scan_ene_files(char **fnms, int nfiles,
 			  real *readtime, real *timestep, int *nremax)
 {
   /* Check number of energy terms and start time of all files */
-  int        f,i,in,nre,nremin=0,nresav=0;
+  int        f,i,nre,nremin=0,nresav=0;
+  ener_file_t in;
   real       t1,t2;
   char       inputstring[STRLEN];
   gmx_enxnm_t *enm=NULL;
@@ -469,7 +470,7 @@ int gmx_eneconv(int argc,char *argv[])
   const char *bugs[] = {
     "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
   };
-  int        in,out=0;
+  ener_file_t in,out=NULL;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr,*fro;
   gmx_step_t ee_sum_step=0,ee_sum_nsum;

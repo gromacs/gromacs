@@ -70,7 +70,7 @@ typedef struct {
 } t_mdebin;
 
 extern t_mdebin
-*init_mdebin(int fp_ene,
+*init_mdebin(ener_file_t fp_ene,
 	     const gmx_mtop_t *mtop,
 	     const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
@@ -95,7 +95,7 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
      
 extern void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb);
 
-extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
+extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 		       FILE *log,
 		       gmx_step_t step,double time,
 		       int mode,bool bCompact,

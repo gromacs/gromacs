@@ -79,15 +79,15 @@ external "C" {
   };
 
   typedef struct {
-    double   t;	            /* Timestamp of this frame		              */
-    gmx_step_t step;        /* MD step				              */
+    double   t;	            /* Timestamp of this frame	              */
+    gmx_step_t step;        /* MD */
     gmx_step_t nsum;        /* The number of steps for the sums in ener       */
-    int      nre;           /* Number of energies			      */
-    int      ndisre;        /* Number of distance restraints	              */
+    int      nre;           /* Number of energies		      */
+    int      ndisre;        /* Number of distance restraints	             */
     int      nblock;        /* Number of following energy blocks              */
     int      *nr;           /* Number of things in additional blocks (nblock) */
-    int      e_size;        /* Size (in bytes) of energies		      */
-    int      d_size;        /* Size (in bytes) of disre blocks	              */
+    int      e_size;        /* Size (in bytes) of energies		     */
+    int      d_size;        /* Size (in bytes) of disre blocks              */
     int      nr_alloc;      /* Allocated size of nr and block                 */
     int      e_alloc;       /* Allocated size (in elements) of ener           */
     int      d_alloc;       /* Allocated size (in elements) of rav and rt     */
@@ -98,10 +98,13 @@ external "C" {
     real     **block;       /* Additional energy blocks (nblock x b_alloc[b]) */
   } t_enxframe;
 
+  /* file handle */
+  typedef struct ener_file *ener_file_t;
+
   /* 
    * An energy file is read like this:
    *
-   * int fp;
+   * ener_file_t fp;
    * t_enxframe *fr;
    *
    * fp = open_enx(...);
@@ -118,16 +121,16 @@ external "C" {
   extern void free_enxframe(t_enxframe *fr);
   /* Frees all allocated memory in fr */
 
-  extern int open_enx(const char *fn,const char *mode);
+  extern ener_file_t open_enx(const char *fn,const char *mode);
   
-  extern void close_enx(int fp_ene);
+  extern void close_enx(ener_file_t ef);
   
-  extern void do_enxnms(int fp_ene,int *nre,gmx_enxnm_t **enms);
+  extern void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);
   
   extern void free_enxnms(int n,gmx_enxnm_t *nms);
   /* Frees nms and all strings in it */
 
-  extern bool do_enx(int fp_ene,t_enxframe *fr);
+  extern bool do_enx(ener_file_t ef,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
   extern void get_enx_state(char *fn, real t,

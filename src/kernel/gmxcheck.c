@@ -544,7 +544,8 @@ void chk_ndx(char *fn)
 
 void chk_enx(char *fn)
 {
-  int        in,nre,fnr,ndr;
+  int        nre,fnr,ndr;
+  ener_file_t in;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   bool       bShowTStep;

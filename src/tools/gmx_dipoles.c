@@ -346,8 +346,8 @@ static void print_gkrbin(char *fn,t_gkrbin *gb,
   ffclose(fp);
 }
 
-bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,real *t,
-		      int nre,t_enxframe *fr)
+bool read_mu_from_enx(ener_file_t fmu,int Vol,ivec iMu,rvec mu,real *vol,
+                      real *t, int nre,t_enxframe *fr)
 {
   int      i;
   bool     bCont;
@@ -666,7 +666,8 @@ static void do_dip(t_topology *top,int ePBC,real volume,
   t_gkrbin   *gkrbin = NULL;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
-  int        nframes=1000,fmu=0,nre,timecheck=0,ncolour=0;
+  int        nframes=1000,nre,timecheck=0,ncolour=0;
+  ener_file_t fmu=NULL;
   int        i,j,k,n,m,natom=0,nmol,status,gnx_tot,teller,tel3;
   int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;

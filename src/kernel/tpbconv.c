@@ -314,7 +314,8 @@ int main (int argc, char *argv[])
   };
 
   char         *top_fn,*frame_fn;
-  int          fp,fp_ener=-1;
+  int          fp;
+  ener_file_t  fp_ener=NULL;
   t_trnheader head;
   int          i;
   gmx_step_t   nsteps_req,run_step,frame;

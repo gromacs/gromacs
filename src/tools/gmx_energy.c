@@ -780,7 +780,7 @@ static void fec(char *ene2fn, char *runavgfn,
   char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
 	   	            "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
-  int  enx;
+  ener_file_t enx;
   int  nre,timecheck,step,nenergy2,maxenergy;
   int  i,j;
   bool bCont;
@@ -968,7 +968,7 @@ int gmx_energy(int argc,char *argv[])
   
   FILE       *out,*fp_pairs=NULL,*fort=NULL,*fodt=NULL,*foten=NULL;
   FILE       **drout;
-  int        fp;
+  ener_file_t fp;
   int        timecheck=0;
   gmx_mtop_t mtop;
   gmx_localtop_t *top=NULL;

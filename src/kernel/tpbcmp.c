@@ -754,7 +754,8 @@ static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol)
 
 void comp_enx(const char *fn1,const char *fn2,real ftol,const char *lastener)
 {
-  int        in1,in2,nre,nre1,nre2,block;
+  int        nre,nre1,nre2,block;
+  ener_file_t in1, in2;
   int        i,maxener;
   char       buf[256];
   gmx_enxnm_t *enm1=NULL,*enm2=NULL;

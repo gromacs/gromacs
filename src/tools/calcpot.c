@@ -234,7 +234,8 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   rvec     mutot;
   t_nrnb   nrnb;
   t_mdebin *mdebin;
-  int      fp_ene,m;
+  ener_file_t fp_ene;
+  int      m;
   rvec     box_size;
   tensor   force_vir,shake_vir;
   FILE     *fplog;

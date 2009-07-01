@@ -239,7 +239,7 @@ void init_em(FILE *fplog,const char *title,
 	     t_forcerec *fr,gmx_enerdata_t **enerd,
 	     t_graph **graph,t_mdatoms *mdatoms,gmx_global_stat_t *gstat,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
-	     int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene,
+	     int nfile,t_filenm fnm[],int *fp_trn,ener_file_t *fp_ene,
 	     t_mdebin **mdebin)
 {
   int  start,homenr,i;
@@ -356,7 +356,7 @@ void init_em(FILE *fplog,const char *title,
     if (fp_trn)
       *fp_trn = -1;
     if (fp_ene)
-      *fp_ene = -1;
+      *fp_ene = NULL;
   }
 
   snew(*enerd,1);
@@ -375,7 +375,7 @@ void init_em(FILE *fplog,const char *title,
 }
 
 static void finish_em(FILE *fplog,t_commrec *cr,
-		      int fp_traj,int fp_ene)
+		      int fp_traj,ener_file_t fp_ene)
 {
   if (!(cr->duty & DUTY_PME)) {
     /* Tell the PME only node to finish */
@@ -833,7 +833,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
   tensor vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
-  int    fp_trn,fp_ene;
+  int    fp_trn;
+  ener_file_t fp_ene;
   int    i,m,gf,step,nminstep;
   real   terminate=0;  
 
@@ -1348,7 +1349,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   real   fnorm,fmax;
   bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
   tensor vir,pres;
-  int    fp_trn,fp_ene,start,end,number_steps;
+  int    fp_trn,start,end,number_steps;
+  ener_file_t fp_ene;
   int    i,k,m,n,nfmax,gf,step;
   /* not used */
   real   terminate;
@@ -1970,7 +1972,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   t_graph    *graph;
   real   stepsize,constepsize;
   real   ustep,dvdlambda,fnormn;
-  int        fp_trn,fp_ene; 
+  int        fp_trn; 
+  ener_file_t fp_ene;
   t_mdebin   *mdebin; 
   bool   bDone,bAbort,do_x,do_f; 
   tensor vir,pres; 
@@ -2164,7 +2167,8 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 {
     t_mdebin   *mdebin;
 	const char *NM = "Normal Mode Analysis";
-    int        fp_ene,step,i;
+    int        step,i;
+    ener_file_t fp_ene;
     time_t     start_t;
     rvec       *f_global;
     gmx_localtop_t *top;
@@ -2370,7 +2374,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr)) 
     {
-        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,t,eprAVER,
+        print_ebin(NULL,FALSE,FALSE,FALSE,fplog,step,t,eprAVER,
                    FALSE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
       

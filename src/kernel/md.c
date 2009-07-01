@@ -609,7 +609,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
-  int        fp_ene=0,fp_trn=0,fp_xtc=0;
+  int        fp_trn=0,fp_xtc=0;
+  ener_file_t fp_ene=NULL;
   gmx_step_t step,step_rel;
   char       *fn_cpt;
   FILE       *fp_dhdl=NULL,*fp_field=NULL;

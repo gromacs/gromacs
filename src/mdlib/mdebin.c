@@ -75,7 +75,7 @@ static const char *boxvel_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-t_mdebin *init_mdebin(int fp_ene,
+t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir)
 {
@@ -395,7 +395,7 @@ t_mdebin *init_mdebin(int fp_ene,
         sfree(grpnms);
     }
     
-    if (fp_ene != -1)
+    if (! fp_ene )
     {
         do_enxnms(fp_ene,&md->ebin->nener,&md->ebin->enm);
     }
@@ -660,7 +660,7 @@ void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb)
             "Step","Time","Lambda",gmx_step_str(steps,buf),time,lamb);
 }
 
-void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
+void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 FILE *log,
                 gmx_step_t step,double time,
                 int mode,bool bCompact,

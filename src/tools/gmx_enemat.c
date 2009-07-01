@@ -137,7 +137,7 @@ int gmx_enemat(int argc,char *argv[])
 #define egTotal egNR
 #define egSP 1
   bool       egrp_use[egNR+egSP];
-  int        in;
+  ener_file_t in;
   FILE       *out;
   int        timecheck=0;
   gmx_enxnm_t *enm=NULL;
