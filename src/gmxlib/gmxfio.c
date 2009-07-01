@@ -47,6 +47,10 @@
 #include "string2.h"
 #include "gmxfio.h"
 
+#ifdef GMX_THREADS
+#include "gmx_thread.h"
+#endif
+
 /* XDR should be available on all platforms now, 
  * but we keep the possibility of turning it off...
  */
@@ -128,6 +132,10 @@ static const char *eioNames[eioNR] = { "REAL", "INT", "GMX_STE_T",
 				       "RVEC", "NRVEC", "IVEC", "STRING" };
 static char *add_comment = NULL;
 
+#ifdef GMX_THREADS
+static gmx_thread_mutex_t fio_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+#endif
+
 
 static const char *dbgstr(const char *desc)
 {
@@ -144,15 +152,27 @@ static const char *dbgstr(const char *desc)
 
 void set_comment(const char *comment)
 {
-  if (comment)
-    add_comment = strdup(comment);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    if (comment)
+        add_comment = strdup(comment);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
 
 void unset_comment(void)
 {
-  if (add_comment)
-    sfree(add_comment);
-  add_comment = NULL;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    if (add_comment)
+        sfree(add_comment);
+    add_comment = NULL;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
 
 
@@ -168,6 +188,7 @@ static void _check_nitem(int eio,int nitem,const char *file,int line)
 
 static void fe(int eio,const char *desc,const char *srcfile,int line)
 {
+
   gmx_fatal(FARGS,"Trying to %s %s type %d (%s), src %s, line %d",
 	    curfio->bRead ? "read" : "write",desc,eio,
 	    ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
@@ -217,6 +238,9 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   char strbuf[256];
   unsigned char *ucptr;
   
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
   check_nitem();
   switch (eio) {
   case eioREAL:
@@ -270,6 +294,9 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   if ((res <= 0) && curfio->bDebug)
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
+#ifdef GMX_THREADS
+  gmx_thread_mutex_unlock(&fio_mutex);
+#endif
   return (res > 0);
 }
 
@@ -278,6 +305,50 @@ static  int  nbuf=0;
 
 static char *next_item(FILE *fp)
 {
+    int read;
+    bool in_comment=FALSE;
+    bool in_token=FALSE;
+    /* This routine reads strings from the file fp, strips comment
+     * and buffers. For thread-safety reasons, It reads through getc()  */
+
+    i = 0;
+    read=getc(fp);
+    if (read==EOF)
+        gmx_file("End of file");
+    do
+    {
+        
+    } while( (read=getc(fp)) != EOF )
+
+    do {
+      /* Skip over leading spaces */
+      while ((buf[i] != '\0') && (buf[i] != ';') && isspace(buf[i]))
+	i++;
+
+      /* Store start of something non-space */
+      j0 = i;
+      
+      /* Look for next spaces */
+      while ((buf[i] != '\0') && (buf[i] != ';') && !isspace(buf[i]))
+	i++;
+	
+      /* Store the last character in the string */
+      ccc = buf[i];
+      
+      /* If the string is non-empty, add it to the list */
+      if (i > j0) {
+	buf[i] = '\0';
+	bufindex[nbuf++] = j0;
+	
+	/* We increment i here; otherwise the next test for buf[i] would be 
+	 * '\0', since we test the main loop for ccc anyway, we cant go SEGV
+	 */
+	i++;
+      }
+    } while ((ccc != '\0') && (ccc != ';'));
+
+
+#if 0
   /* This routine reads strings from the file fp, strips comment
    * and buffers. If there are multiple strings on a line, they will
    * be stored here, and indices in the line buffer (buf) will be
@@ -335,6 +406,7 @@ static char *next_item(FILE *fp)
 
     return next_item(fp);
   }
+#endif
 }
 
 static bool do_ascread(void *item,int nitem,int eio,
@@ -412,10 +484,16 @@ static bool do_ascread(void *item,int nitem,int eio,
   default:
     FE();
   }
+
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
   if ((res <= 0) && curfio->bDebug)
     fprintf(stderr,"Error reading %s %s from file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
-  
+#ifdef GMX_THREADS
+  gmx_thread_mutex_unlock(&fio_mutex);
+#endif
   return (res > 0);
 }
 
@@ -459,11 +537,21 @@ static bool do_binwrite(void *item,int nitem,int eio,
     break;
   case eioSTRING:
     size = ssize = strlen((char *)item)+1;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
     do_binwrite(&ssize,1,eioINT,desc,srcfile,line);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
     break;
   default:
     FE();
   }
+
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
   wsize = fwrite(item,size,nitem,curfio->fp);
   
   if ((wsize != nitem) && curfio->bDebug) {
@@ -472,6 +560,9 @@ static bool do_binwrite(void *item,int nitem,int eio,
     fprintf(stderr,"written size %u bytes, source size %u bytes\n",
 	    (unsigned int)wsize,(unsigned int)size);
   }
+#ifdef GMX_THREADS
+  gmx_thread_mutex_unlock(&fio_mutex);
+#endif
   return (wsize == nitem);
 }
 
@@ -481,6 +572,9 @@ static bool do_binread(void *item,int nitem,int eio,
   size_t size=0,rsize;
   int    ssize;
   
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
   check_nitem();
   switch (eio) {
   case eioREAL:
@@ -518,7 +612,13 @@ static bool do_binread(void *item,int nitem,int eio,
     size = sizeof(ivec);
     break;
   case eioSTRING:
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
     do_binread(&ssize,1,eioINT,desc,srcfile,line);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
     size = ssize;
     break;
   default:
@@ -539,6 +639,9 @@ static bool do_binread(void *item,int nitem,int eio,
     fprintf(stderr,"Error reading %s %s from file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
 	    
+#ifdef GMX_THREADS
+  gmx_thread_mutex_unlock(&fio_mutex);
+#endif
   return (rsize == nitem);
 }
 
@@ -557,6 +660,9 @@ static bool do_xdr(void *item,int nitem,int eio,
   double d=0;
   float  f=0;
   
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
   check_nitem();
   switch (eio) {
   case eioREAL:
@@ -680,6 +786,10 @@ static bool do_xdr(void *item,int nitem,int eio,
   if ((res == 0) && (curfio->bDebug))
     fprintf(stderr,"Error in xdr I/O %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
+
+#ifdef GMX_THREADS
+  gmx_thread_mutex_unlock(&fio_mutex);
+#endif
   return (res != 0);
 }
 #endif
@@ -693,407 +803,540 @@ static bool do_xdr(void *item,int nitem,int eio,
  *****************************************************************/
 int gmx_fio_open(const char *fn,const char *mode)
 {
-	t_fileio *fio=NULL;
-	int      i,nfio=0;
-	char     newmode[5];
-	bool     bRead;
-	int      xdrid;
-	
-	if (fn2ftp(fn)==efTPA)
-	{
-		strcpy(newmode,mode);
-	}
-	else 
-	{
-		if (mode[0]=='r')
-		{
-			strcpy(newmode,"r");
-		}
-		else if (mode[0]=='w')
-		{
-			strcpy(newmode,"w");
-		}
-		else if (mode[0]=='a')
-		{
-			strcpy(newmode,"a");
-		}
-		else
-		{
-			gmx_fatal(FARGS,"DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
-		}
-	}
+    t_fileio *fio=NULL;
+    int      i,nfio=0;
+    char     newmode[5];
+    bool     bRead;
+    int      xdrid;
 
-	/* Check if it should be opened as a binary file */
-	if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) 
-	{
-		/* Not ascii, add b to file mode */
-		if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
-		{
-			strcat(newmode,"b");
-		}
-	}
-	
-	/* Determine whether we have to make a new one */
-	for(i=0; (i<nFIO); i++)
-	{
-		if (!FIO[i].bOpen) 
-		{
-			fio  = &(FIO[i]);
-			nfio = i;
-			break;
-		}
-	}
-	
-	if (i == nFIO) 
-	{
-		nFIO++;
-		srenew(FIO,nFIO);
-		fio  = &(FIO[nFIO-1]);
-		nfio = nFIO-1;
-	}
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    if (fn2ftp(fn)==efTPA)
+    {
+        strcpy(newmode,mode);
+    }
+    else 
+    {
+        if (mode[0]=='r')
+        {
+            strcpy(newmode,"r");
+        }
+        else if (mode[0]=='w')
+        {
+            strcpy(newmode,"w");
+        }
+        else if (mode[0]=='a')
+        {
+            strcpy(newmode,"a");
+        }
+        else
+        {
+            gmx_fatal(FARGS,"DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
+        }
+    }
 
-	bRead = (newmode[0]=='r');
-	fio->fp  = NULL;
-	fio->xdr = NULL;
-	if (fn) 
-	{
-		fio->iFTP   = fn2ftp(fn);
-		fio->fn     = strdup(fn);
-		fio->bStdio = FALSE;
-		
-		/* If this file type is in the list of XDR files, open it like that */
-		if (in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR)) 
-		{
-			/* First check whether we have to make a backup,
-			 * only for writing, not for read or append.
-			 */
-			if (newmode[0]=='w') 
-			{
-			#ifndef GMX_FAHCORE
-			/* only make backups for normal gromacs */
-				if (gmx_fexist(fn)) 
-				{
-					char *bf=(char *)backup_fn(fn);
-					if (rename(fn,bf) == 0) 
-					{
-						fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",fn,bf);
-					}
-					else
-					{
-						fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
-					}
-                                        sfree(bf);
-				}
-			#endif
-			}
-			else 
-			{
-				/* Check whether file exists */
-				if (!gmx_fexist(fn))
-				{
-					gmx_open(fn);
-				}
-			}
-			snew(fio->xdr,1);
-			xdrid = xdropen(fio->xdr,fn,newmode); 
-			if (xdrid == 0)
-			{
-				if(newmode[0]=='r') 
-				  gmx_fatal(FARGS,"Cannot open file %s for reading\nCheck permissions if it exists.",fn); 
-				else
-				  gmx_fatal(FARGS,"Cannot open file %s for writing.\nCheck your permissions, disk space and/or quota.",fn);
-			}
-			fio->fp = xdr_get_fp(xdrid);
-		}
-		else
-		{
-			/* If it is not, open it as a regular file */
-			fio->fp = ffopen(fn,newmode);
-		}
-	}
-	else
-	{
-		/* Use stdin/stdout for I/O */
-		fio->iFTP   = efTPA;
-		fio->fp     = bRead ? stdin : stdout;
-		fio->fn     = strdup("STDIO");
-		fio->bStdio = TRUE;
-	}
-	fio->bRead  = bRead;
-	fio->bDouble= (sizeof(real) == sizeof(double));
-	fio->bDebug = FALSE;
-	fio->bOpen  = TRUE;
-	
-	return nfio;
+    /* Check if it should be opened as a binary file */
+    if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) 
+    {
+        /* Not ascii, add b to file mode */
+        if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
+        {
+            strcat(newmode,"b");
+        }
+    }
+
+    /* Determine whether we have to make a new one */
+    for(i=0; (i<nFIO); i++)
+    {
+        if (!FIO[i].bOpen) 
+        {
+            fio  = &(FIO[i]);
+            nfio = i;
+            break;
+        }
+    }
+
+    if (i == nFIO) 
+    {
+        nFIO++;
+        srenew(FIO,nFIO);
+        fio  = &(FIO[nFIO-1]);
+        nfio = nFIO-1;
+    }
+
+    bRead = (newmode[0]=='r');
+    fio->fp  = NULL;
+    fio->xdr = NULL;
+    if (fn) 
+    {
+        fio->iFTP   = fn2ftp(fn);
+        fio->fn     = strdup(fn);
+        fio->bStdio = FALSE;
+
+        /* If this file type is in the list of XDR files, open it like that */
+        if (in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR)) 
+        {
+            /* First check whether we have to make a backup,
+             * only for writing, not for read or append.
+             */
+            if (newmode[0]=='w') 
+            {
+#ifndef GMX_FAHCORE
+                /* only make backups for normal gromacs */
+                if (gmx_fexist(fn)) 
+                {
+                    char *bf=(char *)backup_fn(fn);
+                    if (rename(fn,bf) == 0) 
+                    {
+                        fprintf(stderr,
+                                "\nBack Off! I just backed up %s to %s\n",
+                                fn,bf);
+                    }
+                    else
+                    {
+                        fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",
+                                fn,bf);
+                    }
+                    sfree(bf);
+                }
+#endif
+            }
+            else 
+            {
+                /* Check whether file exists */
+                if (!gmx_fexist(fn))
+                {
+                    gmx_open(fn);
+                }
+            }
+            snew(fio->xdr,1);
+            xdrid = xdropen(fio->xdr,fn,newmode); 
+            if (xdrid == 0)
+            {
+                if(newmode[0]=='r') 
+                    gmx_fatal(FARGS,"Cannot open file %s for reading\nCheck permissions if it exists.",fn); 
+                else
+                    gmx_fatal(FARGS,"Cannot open file %s for writing.\nCheck your permissions, disk space and/or quota.",fn);
+            }
+            fio->fp = xdr_get_fp(xdrid);
+        }
+        else
+        {
+            /* If it is not, open it as a regular file */
+            fio->fp = ffopen(fn,newmode);
+        }
+    }
+    else
+    {
+        /* Use stdin/stdout for I/O */
+        fio->iFTP   = efTPA;
+        fio->fp     = bRead ? stdin : stdout;
+        fio->fn     = strdup("STDIO");
+        fio->bStdio = TRUE;
+    }
+    fio->bRead  = bRead;
+    fio->bDouble= (sizeof(real) == sizeof(double));
+    fio->bDebug = FALSE;
+    fio->bOpen  = TRUE;
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return nfio;
 }
 
 
-int 
-gmx_fio_close(int fio)
+int gmx_fio_close(int fio)
 {
-  int rc = 0;
-	
-  gmx_fio_check(fio);
-  
-  if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
-    rc = !xdrclose(FIO[fio].xdr); /* xdrclose returns 1 if happy, negate it */
-    sfree(FIO[fio].xdr);
-  }
-  else {
-    /* Don't close stdin and stdout! */
-    if (!FIO[fio].bStdio)
-		rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
-  }
+    int rc = 0;
 
-  sfree(FIO[fio].fn);
-  FIO[fio].bOpen = FALSE;
-  do_read  = do_dummy;
-  do_write = do_dummy;
-	
-  return rc;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+
+    if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
+        rc = !xdrclose(FIO[fio].xdr); /* xdrclose returns 1 if happy, 
+                                         negate it */
+        sfree(FIO[fio].xdr);
+    }
+    else {
+        /* Don't close stdin and stdout! */
+        if (!FIO[fio].bStdio)
+            rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+    }
+
+    sfree(FIO[fio].fn);
+    FIO[fio].bOpen = FALSE;
+    do_read  = do_dummy;
+    do_write = do_dummy;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+
+    return rc;
 }
 
-FILE *
-gmx_fio_fopen(const char *fn,const char *mode)
+FILE * gmx_fio_fopen(const char *fn,const char *mode)
 {
-	FILE *fp;
-	int   fd;
-	
-	fd = gmx_fio_open(fn,mode);
-	
-	return FIO[fd].fp;
+    FILE *fp,*ret;
+    int   fd;
+
+    fd = gmx_fio_open(fn,mode);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    ret=FIO[fd].fp;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    return ret;
 }
 
 
 int
 gmx_fio_fclose(FILE *fp)
 {
-	int i,rc,found;
-	
-	found = 0;
-	rc = -1;
-	
-	for(i=0;i<nFIO && !found;i++)
-	{
-		if(fp == FIO[i].fp)
-		{
-			rc = gmx_fio_close(i);
-			found=1;
-		}
-	}
-	return rc;
+    int i,rc,found;
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    found = 0;
+    rc = -1;
+
+    for(i=0;i<nFIO && !found;i++)
+    {
+        if(fp == FIO[i].fp)
+        {
+#ifdef GMX_THREADS
+            gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+            rc = gmx_fio_close(i);
+#ifdef GMX_THREADS
+            gmx_thread_mutex_lock(&fio_mutex);
+#endif
+            found=1;
+        }
+    }
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return rc;
 }
 
 
 int
-gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nfiles)
+gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, 
+        int *p_nfiles)
 {
-	int                      i,nfiles,rc,nalloc;
-	int                      pos_hi,pos_lo;
-	long                     pos;	
-	gmx_file_position_t *    outputfiles;
-	char                     buf[STRLEN];
+    int                      i,nfiles,rc,nalloc;
+    int                      pos_hi,pos_lo;
+    long                     pos;	
+    gmx_file_position_t *    outputfiles;
+    char                     buf[STRLEN];
 
-	nfiles = 0;
-	
-	nalloc = 100;
-	snew(outputfiles,nalloc);
-		
-	for(i=0;i<nFIO;i++)
-	{
-		/* Skip the checkpoint files themselves, since they could be open when we call this routine... */
-		if(FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && FIO[i].iFTP!=efCPT)
-		{
-			/* This is an output file currently open for writing, add it */
-			if(nfiles == nalloc)
-			{
-				nalloc += 100;
-				srenew(outputfiles,nalloc);
-			}
-			
-			strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
-			
-			/* Flush the file, so we are sure it is written */
-			if (gmx_fio_flush(i) != 0)
-			{
-			    sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
-			    gmx_file(buf);
-			}
-
-			/* We cannot count on XDR being able to write 64-bit integers, so separate into high/low 32-bit values.
-			 * In case the filesystem has 128-bit offsets we only care about the first 64 bits - we'll have to fix
-			 * this when exabyte-size output files are common...
-			 */
-#ifdef HAVE_FSEEKO
-			outputfiles[nfiles].offset = ftello(FIO[i].fp);
-#else
-			outputfiles[nfiles].offset = ftell(FIO[i].fp);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
 #endif
-			nfiles++;
-		}
-	}	
-	*p_nfiles = nfiles;
-	*p_outputfiles = outputfiles;
-	
-	return 0;
+    nfiles = 0;
+
+    nalloc = 100;
+    snew(outputfiles,nalloc);
+
+    for(i=0;i<nFIO;i++)
+    {
+        /* Skip the checkpoint files themselves, since they could be open when we call this routine... */
+        if(FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && 
+                FIO[i].iFTP!=efCPT)
+        {
+            /* This is an output file currently open for writing, add it */
+            if(nfiles == nalloc)
+            {
+                nalloc += 100;
+                srenew(outputfiles,nalloc);
+            }
+
+            strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
+
+            /* Flush the file, so we are sure it is written */
+            if (gmx_fio_flush(i) != 0)
+            {
+                sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
+                gmx_file(buf);
+            }
+
+            /* We cannot count on XDR being able to write 64-bit integers, 
+               so separate into high/low 32-bit values.
+               In case the filesystem has 128-bit offsets we only care 
+               about the first 64 bits - we'll have to fix
+               this when exabyte-size output files are common...
+             */
+#ifdef HAVE_FSEEKO
+            outputfiles[nfiles].offset = ftello(FIO[i].fp);
+#else
+            outputfiles[nfiles].offset = ftell(FIO[i].fp);
+#endif
+            nfiles++;
+        }
+    }	
+    *p_nfiles = nfiles;
+    *p_outputfiles = outputfiles;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+
+    return 0;
 }
 
 
 
 void gmx_fio_select(int fio)
 {
-  gmx_fio_check(fio);
 #ifdef DEBUG
-  fprintf(stderr,"Select fio called with type %d for file %s\n",
-	  FIO[fio].iFTP,FIO[fio].fn);
+    fprintf(stderr,"Select fio called with type %d for file %s\n",
+            FIO[fio].iFTP,FIO[fio].fn);
 #endif
 
-  if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
 #ifdef USE_XDR    
-    do_read  = do_xdr;
-    do_write = do_xdr;
+        do_read  = do_xdr;
+        do_write = do_xdr;
 #else
-    gmx_fatal(FARGS,"Sorry, no XDR");
+        gmx_fatal(FARGS,"Sorry, no XDR");
 #endif
-  }
-  else if (in_ftpset(FIO[fio].iFTP,asize(ftpASC),ftpASC)) {
-    do_read  = do_ascread;
-    do_write = do_ascwrite;
-  }
-  else if (in_ftpset(FIO[fio].iFTP,asize(ftpBIN),ftpBIN)) {
-    do_read  = do_binread;
-    do_write = do_binwrite;
-  }
+    }
+    else if (in_ftpset(FIO[fio].iFTP,asize(ftpASC),ftpASC)) {
+        do_read  = do_ascread;
+        do_write = do_ascwrite;
+    }
+    else if (in_ftpset(FIO[fio].iFTP,asize(ftpBIN),ftpBIN)) {
+        do_read  = do_binread;
+        do_write = do_binwrite;
+    }
 #ifdef HAVE_XMl
-  else if (in_ftpset(FIO[fio].iFTP,asize(ftpXML),ftpXML)) {
-    do_read  = do_dummy;
-    do_write = do_dummy;
-  }
+    else if (in_ftpset(FIO[fio].iFTP,asize(ftpXML),ftpXML)) {
+        do_read  = do_dummy;
+        do_write = do_dummy;
+    }
 #endif
-  else 
-    gmx_fatal(FARGS,"Can not read/write topologies to file type %s",
-	      ftp2ext(curfio->iFTP));
-  
-  curfio = &(FIO[fio]);
+    else 
+        gmx_fatal(FARGS,"Can not read/write topologies to file type %s",
+                ftp2ext(curfio->iFTP));
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    curfio = &(FIO[fio]);
 }
 
 void gmx_fio_setprecision(int fio,bool bDouble)
 {
-  gmx_fio_check(fio);
-  FIO[fio].bDouble = bDouble;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    FIO[fio].bDouble = bDouble;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
 
 bool gmx_fio_getdebug(int fio)
 {
-  gmx_fio_check(fio);
-  return FIO[fio].bDebug;
+    bool ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    ret=FIO[fio].bDebug;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return FIO[fio].bDebug;
 }
 
 void gmx_fio_setdebug(int fio,bool bDebug)
 {
-  gmx_fio_check(fio);
-  FIO[fio].bDebug = bDebug;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    FIO[fio].bDebug = bDebug;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
 
 char *gmx_fio_getname(int fio)
 {
-  gmx_fio_check(fio);
-  return curfio->fn;
+    char *ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    ret=curfio->fn;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return ret;
 }
 
 void gmx_fio_setftp(int fio,int ftp)
 {
-  gmx_fio_check(fio);
-  FIO[fio].iFTP = ftp;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    FIO[fio].iFTP = ftp;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
 
 int gmx_fio_getftp(int fio)
 {
-  gmx_fio_check(fio);
-  return FIO[fio].iFTP;
-}
- 
-void gmx_fio_rewind(int fio)
-{
-  gmx_fio_check(fio);
-  if (FIO[fio].xdr) {
-    xdrclose(FIO[fio].xdr);
-    /* File is always opened as binary by xdropen */
-    xdropen(FIO[fio].xdr,FIO[fio].fn,FIO[fio].bRead ? "r" : "w");
-  }
-  else
-    frewind(FIO[fio].fp);
+    int ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    ret=FIO[fio].iFTP;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return ret;
 }
 
-int
-gmx_fio_flush(int fio)
+void gmx_fio_rewind(int fio)
 {
-	int rc=0;
-	
-  gmx_fio_check(fio);
-  if (FIO[fio].fp)
-    rc = fflush(FIO[fio].fp);
-  else if (FIO[fio].xdr)
-    rc = fflush ((FILE *) FIO[fio].xdr->x_private);
-	
-	return rc;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].xdr) {
+        xdrclose(FIO[fio].xdr);
+        /* File is always opened as binary by xdropen */
+        xdropen(FIO[fio].xdr,FIO[fio].fn,FIO[fio].bRead ? "r" : "w");
+    }
+    else
+        frewind(FIO[fio].fp);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
-  
+
+int gmx_fio_flush(int fio)
+{
+    int rc=0;
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
+        rc = fflush(FIO[fio].fp);
+    else if (FIO[fio].xdr)
+        rc = fflush ((FILE *) FIO[fio].xdr->x_private);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+
+    return rc;
+}
+
 off_t gmx_fio_ftell(int fio)
 {
-  gmx_fio_check(fio);
-  if (FIO[fio].fp)
-    return ftell(FIO[fio].fp);
-  else
-    return 0;
+    off_t ret=0;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
+        ret=ftell(FIO[fio].fp);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return ret;
 }
 
 void gmx_fio_seek(int fio, off_t fpos)
 {
-  gmx_fio_check(fio);
-  if (FIO[fio].fp)
-#ifdef HAVE_FSEEKO
-    fseeko(FIO[fio].fp,fpos,SEEK_SET);
-#else
-    fseek(FIO[fio].fp,fpos,SEEK_SET);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
 #endif
-  else
-    gmx_file(FIO[fio].fn);
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
+    {
+#ifdef HAVE_FSEEKO
+        fseeko(FIO[fio].fp,fpos,SEEK_SET);
+#else
+        fseek(FIO[fio].fp,fpos,SEEK_SET);
+#endif
+    }
+    else
+        gmx_file(FIO[fio].fn);
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
 }
 
 FILE *gmx_fio_getfp(int fio)
 {
-  gmx_fio_check(fio);
-  if (FIO[fio].fp)
-    return FIO[fio].fp;
-  else
-    return NULL;
+    FILE *ret=NULL;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
+        ret=FIO[fio].fp;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return ret;
 }
 
 XDR *gmx_fio_getxdr(int fio)
 {
-  gmx_fio_check(fio);
-  if (FIO[fio].xdr) 
-    return FIO[fio].xdr;
-  else
-    return NULL;
+    XDR *ret=NULL;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (FIO[fio].xdr) 
+        ret= FIO[fio].xdr;
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return ret;
 }
 
 bool gmx_fio_getread(int fio)
 {
-  gmx_fio_check(fio);
-  
-  return FIO[fio].bRead;
+    bool ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    ret=FIO[fio].bRead;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+    return ret;
 }
 
-int 
-xtc_seek_frame(int frame, int fio, int natoms)
+int xtc_seek_frame(int frame, int fio, int natoms)
 {
-  return xdr_xtc_seek_frame(frame,FIO[fio].fp,FIO[fio].xdr,natoms);
+    return xdr_xtc_seek_frame(frame,FIO[fio].fp,FIO[fio].xdr,natoms);
 }
 
-int 
-xtc_seek_time(real time, int fio, int natoms)
+int xtc_seek_time(real time, int fio, int natoms)
 {
-  return xdr_xtc_seek_time(time,FIO[fio].fp,FIO[fio].xdr,natoms);
+    return xdr_xtc_seek_time(time,FIO[fio].fp,FIO[fio].xdr,natoms);
 }

@@ -86,7 +86,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 #include "gmx_thread.h"
 #include "thread_mpi.h"
 #endif
@@ -124,7 +124,7 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 /* Static variables for temporary use with the deform option */
 static int    init_step_tpx;
 static matrix box_tpx;
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 static gmx_thread_mutex_t box_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 #endif
 
@@ -246,12 +246,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
          * This should be thread safe, since they are only written once
          * and with identical values.
          */
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 	gmx_thread_mutex_lock(&box_mutex);
 #endif
         init_step_tpx = inputrec->init_step;
         copy_mat(box,box_tpx);
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 	gmx_thread_mutex_unlock(&box_mutex);
 #endif
     }
@@ -757,11 +757,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (DEFORM(*ir))
     {
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 	gmx_thread_mutex_lock(&box_mutex);
 #endif
         set_deform_reference_box(upd,init_step_tpx,box_tpx);
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 	gmx_thread_mutex_unlock(&box_mutex);
 #endif
     }

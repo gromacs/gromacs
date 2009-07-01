@@ -55,7 +55,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 #include "gmx_thread.h"
 #endif
 
@@ -96,7 +96,7 @@ struct output_env
 static const char *program_name=NULL;
 static char *cmd_line=NULL;
 
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 /* For now, some things here are simply not re-entrant, so
    we have to actively lock them. */
 static gmx_thread_mutex_t init_mutex=GMX_THREAD_MUTEX_INITIALIZER;
@@ -139,55 +139,52 @@ void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes,
 }
 
 
-static const char *get_program_str(const char *argvzero)
-{
-    const char *ret=NULL;
-    /* When you run a dynamically linked program before installing
-     * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-     * Until libtool is fixed to set argv[0] right, rip away the prefix:
-     */
-    if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
-        ret=strdup(argvzero+3);
-    else
-        ret=strdup(argvzero);
-    if (ret ==NULL)
-        ret="GROMACS";
-    return ret;
-}
-
-const char *get_short_program_str(const char *program_name)
-{
-    char *pr;
-    if ((pr=strrchr(program_name,'/')) != NULL)
-        return pr+1;
-    else
-        return program_name;
-}
-
-
-
 const char *ShortProgram(void)
 {
-    char *pr;
-    if ((pr=strrchr(program_name,'/')) != NULL)
-        return pr+1;
-    else
-        return program_name;
+    const char *pr,*ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    pr=ret=program_name; 
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    if ((pr=strrchr(ret,'/')) != NULL)
+        ret=pr+1;
+    /*else
+        ret=ret;*/
+    return ret;
 }
 
 const char *Program(void)
 {
-    return program_name;
+    const char *ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    ret=program_name; 
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    return ret;
 }
 
 const char *command_line(void)
 {
-    return cmd_line;
+    const char *ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    ret=cmd_line; 
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&init_mutex);
+#endif
+    return ret;
 }
 
 void set_program_name(const char *argvzero)
 {
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
     gmx_thread_mutex_lock(&init_mutex);
 #endif
     /* When you run a dynamically linked program before installing
@@ -203,7 +200,7 @@ void set_program_name(const char *argvzero)
     }
     if (program_name == NULL)
         program_name="GROMACS";
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
     gmx_thread_mutex_unlock(&init_mutex);
 #endif
 }
@@ -214,7 +211,7 @@ void set_command_line(int argc, char *argv[])
     int i;
     size_t cmdlength;
 
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
     gmx_thread_mutex_lock(&init_mutex);
 #endif
     cmdlength = strlen(argv[0]);
@@ -230,7 +227,7 @@ void set_command_line(int argc, char *argv[])
         strcat(cmd_line,argv[i]);
         strcat(cmd_line," ");
     }
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
     gmx_thread_mutex_unlock(&init_mutex);
 #endif
 
@@ -290,7 +287,6 @@ int check_times(real t)
 
 
 
-/* re-entrant first */
 const char *get_time_unit(const output_env_t oenv)
 {
     return time_units_str[oenv->time_unit];
@@ -298,7 +294,6 @@ const char *get_time_unit(const output_env_t oenv)
 
 const char *get_time_label(const output_env_t oenv)
 {
-    /*static char label[20];*/
     char *label;
     snew(label, 20);
     
@@ -497,6 +492,7 @@ static FILE *man_file(const output_env_t oenv,const char *mantp)
     FILE   *fp;
     char   buf[256];
     const char *pr;
+    const char *program_name=Program();
     
     if ( (pr=strrchr(program_name,'/')) == NULL)
         pr=program_name;
@@ -778,7 +774,20 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifndef GMX_NO_NICE
     /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
     if (nicelevel != 0 && !bExit)
-        i=nice(nicelevel); /* assign ret value to avoid warnings */
+    {
+#ifdef GMX_THREADS
+        static bool nice_set=FALSE;
+        gmx_thread_mutex_lock(&init_mutex);
+        if (!nice_set)
+        {
+#endif
+            i=nice(nicelevel); /* assign ret value to avoid warnings */
+#ifdef GMX_THREADS
+            nice_set=TRUE;
+        }
+        gmx_thread_mutex_unlock(&init_mutex);
+#endif
+    }
 #endif
 #endif
     

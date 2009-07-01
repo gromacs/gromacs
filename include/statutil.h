@@ -88,9 +88,6 @@ extern void init_output_env(output_env_t oenv,  int argc, char *argv[],
 
     
 /* Return the name of the program */
-/*extern const char *get_program(const output_env_t oenv);*/
-/* Id. without leading directory */
-extern const char *ShortProgram(void);
 extern const char *command_line(void);
 extern void set_command_line(int argc, char *argv[]);
 
@@ -100,6 +97,8 @@ extern void set_command_line(int argc, char *argv[]);
  */    
 extern const char *Program(void);
 extern void set_program_name(const char *argvzero);
+/* Id. without leading directory */
+extern const char *ShortProgram(void);
 
 /************************************************
  *             Trajectory functions
