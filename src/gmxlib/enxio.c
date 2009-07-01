@@ -45,6 +45,10 @@
 #include "enxio.h"
 #include "vec.h"
 
+#ifdef GMX_THREADS
+#include "gmx_thread.h"
+#endif
+
 /* This number should be increased whenever the file format changes! */
 static const int enx_version = 2;
 
@@ -61,7 +65,9 @@ typedef struct {
 
 static ener_old_t *ener_old=NULL;
 static int ener_old_nalloc=0;
-
+#ifdef GMX_THREADS
+static gmx_thread_mutex_t enxio_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+#endif
 
 void free_enxframe(t_enxframe *fr)
 {
@@ -339,68 +345,70 @@ static real frametime;
 
 int open_enx(const char *fn,const char *mode)
 {
-  int        fp,nre,i;
-  gmx_enxnm_t *nms=NULL;
-  int        file_version=-1;
-  t_enxframe *fr;
-  bool       bDum=TRUE;
+    int        fp,nre,i;
+    gmx_enxnm_t *nms=NULL;
+    int        file_version=-1;
+    t_enxframe *fr;
+    bool       bDum=TRUE;
 
-  if (mode[0]=='r') {
-    fp=gmx_fio_open(fn,mode);
-    gmx_fio_select(fp);
-    gmx_fio_setprecision(fp,FALSE);
-    do_enxnms(fp,&nre,&nms);
-    snew(fr,1);
-    do_eheader(fp,&file_version,fr,TRUE,&bDum);
-	if(!bDum)
-	{
-		gmx_file("Cannot read energy file header. Corrupt file?");
-	}
-	  
-    /* Now check whether this file is in single precision */
-    if (((fr->e_size && (fr->nre == nre) && 
-	  (nre*4*sizeof(float) == fr->e_size)) ||
-	 (fr->d_size && 
-	  (fr->ndisre*sizeof(float)*2+sizeof(int) == fr->d_size)))){
-      fprintf(stderr,"Opened %s as single precision energy file\n",fn);
-      free_enxnms(nre,nms);
-    }
-    else {
-      gmx_fio_rewind(fp);
-      gmx_fio_select(fp);
-      gmx_fio_setprecision(fp,TRUE);
-      do_enxnms(fp,&nre,&nms);
-      do_eheader(fp,&file_version,fr,TRUE,&bDum);
-  	  if(!bDum)
-	  {
-		  gmx_file("Cannot write energy file header; maybe you are out of quota?");
-	  }
-		
-      if (((fr->e_size && (fr->nre == nre) && 
-	    (nre*4*sizeof(double) == fr->e_size)) ||
-	   (fr->d_size && 
-	    (fr->ndisre*sizeof(double)*2+sizeof(int) == fr->d_size))))
-	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
-      else {
-	if (empty_file(fn))
-	  gmx_fatal(FARGS,"File %s is empty",fn);
-	else
-	  gmx_fatal(FARGS,"Energy file %s not recognized, maybe different CPU?",
-		      fn);
-      }
-      free_enxnms(nre,nms);
-    }
-    free_enxframe(fr);
-    sfree(fr);
-    gmx_fio_rewind(fp);
-  }
-  else 
-    fp = gmx_fio_open(fn,mode);
-    
-  framenr=0;
-  frametime=0;
+    if (mode[0]=='r') {
+        fp=gmx_fio_open(fn,mode);
+        gmx_fio_select(fp);
+        gmx_fio_setprecision(fp,FALSE);
+        do_enxnms(fp,&nre,&nms);
+        snew(fr,1);
+        do_eheader(fp,&file_version,fr,TRUE,&bDum);
+        if(!bDum)
+        {
+            gmx_file("Cannot read energy file header. Corrupt file?");
+        }
 
-  return fp;
+        /* Now check whether this file is in single precision */
+        if (((fr->e_size && (fr->nre == nre) && 
+                        (nre*4*sizeof(float) == fr->e_size)) ||
+                    (fr->d_size && 
+                     (fr->ndisre*sizeof(float)*2+sizeof(int) == fr->d_size)))){
+            fprintf(stderr,"Opened %s as single precision energy file\n",fn);
+            free_enxnms(nre,nms);
+        }
+        else {
+            gmx_fio_rewind(fp);
+            gmx_fio_select(fp);
+            gmx_fio_setprecision(fp,TRUE);
+            do_enxnms(fp,&nre,&nms);
+            do_eheader(fp,&file_version,fr,TRUE,&bDum);
+            if(!bDum)
+            {
+                gmx_file("Cannot write energy file header; maybe you are out of quota?");
+            }
+
+            if (((fr->e_size && (fr->nre == nre) && 
+                            (nre*4*sizeof(double) == fr->e_size)) ||
+                        (fr->d_size && 
+                         (fr->ndisre*sizeof(double)*2+sizeof(int) == 
+                          fr->d_size))))
+                fprintf(stderr,"Opened %s as double precision energy file\n",
+                        fn);
+            else {
+                if (empty_file(fn))
+                    gmx_fatal(FARGS,"File %s is empty",fn);
+                else
+                    gmx_fatal(FARGS,"Energy file %s not recognized, maybe different CPU?",
+                              fn);
+            }
+            free_enxnms(nre,nms);
+        }
+        free_enxframe(fr);
+        sfree(fr);
+        gmx_fio_rewind(fp);
+    }
+    else 
+        fp = gmx_fio_open(fn,mode);
+
+    framenr=0;
+    frametime=0;
+
+    return fp;
 }
 
 static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
@@ -632,8 +640,8 @@ bool do_enx(int fp,t_enxframe *fr)
     return TRUE;
 }
 
-static real
-find_energy(const char *name, int nre, gmx_enxnm_t *enm, t_enxframe *fr)
+static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
+                        t_enxframe *fr)
 {
     int i;
     

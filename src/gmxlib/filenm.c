@@ -52,8 +52,8 @@
 #include "gmx_thread.h"
 #endif
 
-/* NOTE: this is a cesspool of thread-unsafe code, but its effects 'should be'
-         fairly benign. */
+/* NOTE: this was a cesspool of thread-unsafe code, has now been 
+         properly proteced by mutexes (hopefully). */
 
 
 /* XDR should be available on all platforms now, 

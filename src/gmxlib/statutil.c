@@ -65,7 +65,8 @@
 #include <sys/sysmp.h>
 #endif
 
-/* the source code in this file *should* be thread-safe */
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
 
 /******************************************************************
  *

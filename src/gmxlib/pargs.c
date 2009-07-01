@@ -49,7 +49,8 @@
 #include "string2.h"
 #include "vec.h"
 
-/* the source code in this file *should* be thread-safe */
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
 
 bool is_hidden(t_pargs *pa)
 {

@@ -43,6 +43,9 @@
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+/* The source code in this file should be thread-safe. 
+   Please keep it that way. */
+
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
  * The state data format itself is backward and forward compatible.
@@ -785,8 +788,9 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
     return ret;
 }
 
-static int
-do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfiles, FILE *list)
+static int do_cpt_files(XDR *xd, bool bRead, 
+                        gmx_file_position_t **p_outputfiles, int *nfiles, 
+                        FILE *list)
 {
 	int    i;
 	off_t  offset;
@@ -1102,12 +1106,11 @@ static void check_match(FILE *fplog,
     }
 }
 
-static void 
-read_checkpoint(char *fn,FILE *fplog,
-                t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-                int eIntegrator,gmx_step_t *step,double *t,
-                t_state *state,bool *bReadRNG,bool *bReadEkin,
-                int *simulation_part,bool bAppendOutputFiles)
+static void read_checkpoint(char *fn,FILE *fplog,
+                            t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+                            int eIntegrator,gmx_step_t *step,double *t,
+                            t_state *state,bool *bReadRNG,bool *bReadEkin,
+                            int *simulation_part,bool bAppendOutputFiles)
 {
     int  fp,i,j;
     int  file_version;

@@ -51,7 +51,8 @@
 #define xH3 xh[2]
 #define xH4 xh[3]
 
-/* the source code in this file *should* be thread-safe */
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
 
 static void gen_waterhydrogen(int nh,rvec xa[], rvec xh[],int *l)
 {

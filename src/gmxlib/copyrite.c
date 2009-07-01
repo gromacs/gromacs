@@ -275,7 +275,7 @@ typedef struct {
 
 void please_cite(FILE *fp,const char *key)
 {
-  static t_citerec citedb[] = {
+  static const t_citerec citedb[] = {
     { "Berendsen95a",
       "H. J. C. Berendsen, D. van der Spoel and R. van Drunen",
       "GROMACS: A message-passing parallel molecular dynamics implementation",
