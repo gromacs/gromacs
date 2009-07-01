@@ -147,7 +147,7 @@ const char *ShortProgram(void)
 #endif
     pr=ret=program_name; 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    gmx_thread_mutex_unlock(&init_mutex);
 #endif
     if ((pr=strrchr(ret,'/')) != NULL)
         ret=pr+1;
@@ -164,7 +164,7 @@ const char *Program(void)
 #endif
     ret=program_name; 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    gmx_thread_mutex_unlock(&init_mutex);
 #endif
     return ret;
 }
@@ -177,7 +177,7 @@ const char *command_line(void)
 #endif
     ret=cmd_line; 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    gmx_thread_mutex_unlock(&init_mutex);
 #endif
     return ret;
 }

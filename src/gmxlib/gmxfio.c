@@ -301,52 +301,53 @@ static bool do_ascwrite(void *item,int nitem,int eio,
 }
 
 /* This is a global variable that is reset when a file is opened. */
-static  int  nbuf=0;
+/*static  int  nbuf=0;*/
 
-static char *next_item(FILE *fp)
+static char *next_item(FILE *fp, char *buf, int buflen)
 {
-    int read;
+    int rd;
     bool in_comment=FALSE;
     bool in_token=FALSE;
+    int i=0;
     /* This routine reads strings from the file fp, strips comment
      * and buffers. For thread-safety reasons, It reads through getc()  */
 
-    i = 0;
-    read=getc(fp);
-    if (read==EOF)
+    rd=getc(fp);
+    if (rd==EOF)
         gmx_file("End of file");
     do
     {
-        
-    } while( (read=getc(fp)) != EOF )
+        if (in_comment)
+        {
+            if (isspace(rd))
+                in_comment=FALSE;
+        }
+        else if (in_token)
+        {
+            if (isspace(rd) || rd==';')
+                break;
+            buf[i++]=(char)rd;
+        }
+        else
+        {
+            if (!isspace(rd))
+            {
+                if (rd==';')
+                    in_comment=TRUE;
+                else 
+                {
+                    in_token=TRUE;
+                    buf[i++]=(char)(rd);
+                }
+            }
+        }
+        if (i >= buflen-2)
+            break;
+    } while( (rd=getc(fp)) != EOF );
 
-    do {
-      /* Skip over leading spaces */
-      while ((buf[i] != '\0') && (buf[i] != ';') && isspace(buf[i]))
-	i++;
+    buf[i]=0;
 
-      /* Store start of something non-space */
-      j0 = i;
-      
-      /* Look for next spaces */
-      while ((buf[i] != '\0') && (buf[i] != ';') && !isspace(buf[i]))
-	i++;
-	
-      /* Store the last character in the string */
-      ccc = buf[i];
-      
-      /* If the string is non-empty, add it to the list */
-      if (i > j0) {
-	buf[i] = '\0';
-	bufindex[nbuf++] = j0;
-	
-	/* We increment i here; otherwise the next test for buf[i] would be 
-	 * '\0', since we test the main loop for ccc anyway, we cant go SEGV
-	 */
-	i++;
-      }
-    } while ((ccc != '\0') && (ccc != ';'));
-
+    return buf;
 
 #if 0
   /* This routine reads strings from the file fp, strips comment
@@ -419,41 +420,43 @@ static bool do_ascread(void *item,int nitem,int eio,
   real   *ptr;
   unsigned char uc,*ucptr;
   char   *cptr;
+#define NEXT_ITEM_BUF_LEN 128
+  char   ni_buf[NEXT_ITEM_BUF_LEN];
   
   check_nitem();  
   switch (eio) {
   case eioREAL:
   case eioDOUBLE:
-    res = sscanf(next_item(fp),"%lf",&d);
+    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%lf",&d);
     if (item) *((real *)item) = d;
     break;
   case eioINT:
-    res = sscanf(next_item(fp),"%d",&i);
+    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%d",&i);
     if (item) *((int *)item) = i;
     break;
   case eioGMX_STEP_T:
-    res = sscanf(next_item(fp),gmx_step_pfmt,&s);
+    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),gmx_step_pfmt,&s);
     if (item) *((gmx_step_t *)item) = s;
     break;
   case eioUCHAR:
-    res = sscanf(next_item(fp),"%c",&uc);
+    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%c",&uc);
     if (item) *((unsigned char *)item) = uc;
     break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
     for(i=0; (i<nitem); i++) {
-      res = sscanf(next_item(fp),"%d",&ix);
+      res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%d",&ix);
       if (item) ucptr[i] = ix;
     }
     break;
   case eioUSHORT:
-    res = sscanf(next_item(fp),"%d",&i);
+    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%d",&i);
     if (item) *((unsigned short *)item) = i;
     break;
   case eioRVEC:
     ptr = (real *)item;
     for(m=0; (m<DIM); m++) {
-      res = sscanf(next_item(fp),"%lf\n",&x);
+      res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%lf\n",&x);
       ptr[m] = x;
     }
     break;
@@ -461,7 +464,7 @@ static bool do_ascread(void *item,int nitem,int eio,
     for(i=0; (i<nitem); i++) {
       ptr = ((rvec *)item)[i];
       for(m=0; (m<DIM); m++) {
-	res = sscanf(next_item(fp),"%lf\n",&x);
+	res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%lf\n",&x);
 	if (item) ptr[m] = x;
       }
     }
@@ -469,12 +472,12 @@ static bool do_ascread(void *item,int nitem,int eio,
   case eioIVEC:
     iptr = (int *)item;
     for(m=0; (m<DIM); m++) {
-      res = sscanf(next_item(fp),"%d\n",&ix);
+      res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%d\n",&ix);
       if (item) iptr[m] = ix;
     }
     break;
   case eioSTRING:
-    cptr = next_item(fp);
+    cptr = next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN);
     if (item) {
       decode_string(strlen(cptr)+1,(char *)item,cptr);
       /* res = sscanf(cptr,"%s",(char *)item);*/
@@ -740,7 +743,13 @@ static bool do_xdr(void *item,int nitem,int eio,
     for(j=0; (j<nitem) && res; j++) {
       if (item)
 	ptr = ((rvec *)item)[j];
+#ifdef GMX_THREADS
+  gmx_thread_mutex_unlock(&fio_mutex);
+#endif
       res = do_xdr(ptr,1,eioRVEC,desc,srcfile,line);
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
     }
     break;
   case eioIVEC:
@@ -989,14 +998,13 @@ FILE * gmx_fio_fopen(const char *fn,const char *mode)
 #endif
     ret=FIO[fd].fp;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    gmx_thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
 
 
-int
-gmx_fio_fclose(FILE *fp)
+int gmx_fio_fclose(FILE *fp)
 {
     int i,rc,found;
 
@@ -1027,8 +1035,7 @@ gmx_fio_fclose(FILE *fp)
 }
 
 
-int
-gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, 
+int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, 
         int *p_nfiles)
 {
     int                      i,nfiles,rc,nalloc;
@@ -1051,6 +1058,7 @@ gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
         if(FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && 
                 FIO[i].iFTP!=efCPT)
         {
+            int ret;
             /* This is an output file currently open for writing, add it */
             if(nfiles == nalloc)
             {
@@ -1059,9 +1067,15 @@ gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             }
 
             strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
-
+#ifdef GMX_THREADS
+            gmx_thread_mutex_unlock(&fio_mutex);
+#endif
+            ret=gmx_fio_flush(i);
+#ifdef GMX_THREADS
+            gmx_thread_mutex_lock(&fio_mutex);
+#endif
             /* Flush the file, so we are sure it is written */
-            if (gmx_fio_flush(i) != 0)
+            if (ret != 0)
             {
                 sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
                 gmx_file(buf);
