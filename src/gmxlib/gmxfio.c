@@ -51,6 +51,9 @@
 #include "gmx_thread.h"
 #endif
 
+
+/* the source code in this file *should* be thread-safe */
+
 /* XDR should be available on all platforms now, 
  * but we keep the possibility of turning it off...
  */

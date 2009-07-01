@@ -55,6 +55,8 @@
 
 #include "mpelogging.h"
 
+/* the source code in this file *should* be thread-safe */
+
 bool gmx_mpi_initialized(void)
 {
   int n;

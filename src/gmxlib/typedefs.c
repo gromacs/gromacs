@@ -43,11 +43,31 @@
 #include "pbc.h"
 #include <string.h>
 
+#ifdef GMX_THREADS
+#include "gmx_thread.h"
+#endif
+
+/* the source code in this file *should* be thread-safe */
+
+
+
 static bool bOverAllocDD=FALSE;
+#ifdef GMX_THREADS
+static gmx_thread_mutex_t over_alloc_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+#endif
+
 
 void set_over_alloc_dd(bool set)
 {
-  bOverAllocDD = set;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&over_alloc_mutex);
+    /* we just make sure that we don't set this at the same time. 
+       We don't worry too much about reading this rarely-set variable */
+#endif    
+    bOverAllocDD = set;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&over_alloc_mutex);
+#endif    
 }
 
 int over_alloc_dd(int n)

@@ -49,6 +49,8 @@
 #include "string2.h"
 #include "vec.h"
 
+/* the source code in this file *should* be thread-safe */
+
 bool is_hidden(t_pargs *pa)
 {
   return ((strstr(pa->desc,"HIDDEN") != NULL) || 

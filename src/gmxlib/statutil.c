@@ -65,6 +65,8 @@
 #include <sys/sysmp.h>
 #endif
 
+/* the source code in this file *should* be thread-safe */
+
 /******************************************************************
  *
  *             T R A J E C T O R Y   S T U F F
