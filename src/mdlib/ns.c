@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include <pthread.h> 
 #endif
 
@@ -235,7 +235,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         nl->jindex      = NULL;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
         nl->counter = 0;
         snew(nl->mtx,1);
         pthread_mutex_init(nl->mtx,NULL);

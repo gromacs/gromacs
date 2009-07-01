@@ -166,7 +166,7 @@ kernellist_ia32_sse[eNR_NBKERNEL_NR] =
     nb_kernel430_ia32_sse
 };
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 static gmx_thread_mutex_t 
 nb_kernel_ia32_sse_test_mutex = GMX_THREAD_MUTEX_INITIALIZER;
 #endif
@@ -202,7 +202,7 @@ nb_kernel_ia32_sse_test(FILE *                log)
 	 * This should NOT be called from threads, 
 	 * but just in case you still try to do it...
 	 */
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 	gmx_thread_mutex_lock(&nb_kernel_ia32_sse_test_mutex);
 #endif
     
@@ -228,7 +228,7 @@ nb_kernel_ia32_sse_test(FILE *                log)
 		fprintf(log," %spresent.\n", 
 				nb_kernel_ia32_sse_present ? "":"not ");
         
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 	gmx_thread_mutex_unlock(&nb_kernel_ia32_sse_test_mutex);
 #endif	
 	return ((nb_kernel_ia32_sse_present) ? 0 : -1);

@@ -89,7 +89,7 @@ nb_kernel204_ppc_altivec  (int *             p_nri,
 	int jnra,jnrb,jnrc,jnrd;
 	int j3a,j3b,j3c,j3d;
 	int nri, ntype, nouter, ninner;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 	int nn0, nn1;
 #endif
 
@@ -110,7 +110,7 @@ nb_kernel204_ppc_altivec  (int *             p_nri,
 	qqMH      = vec_madd(qqMH,vfacel,nul);
 	qqHH      = vec_madd(qqHH,vfacel,nul);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
     nthreads = *p_nthreads;
 	do {
 		gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
@@ -1049,7 +1049,7 @@ nb_kernel204_ppc_altivec  (int *             p_nri,
 			add_vector_to_float(Vc+gid[n],vctot);
 			ninner += nj1 - nj0;
 		}
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 		nouter += nn1 - nn0;
 	} while (nn1<nri);
 #else
@@ -1116,7 +1116,7 @@ nb_kernel204nf_ppc_altivec(int *             p_nri,
 	int jnra,jnrb,jnrc,jnrd;
 	int j3a,j3b,j3c,j3d;
 	int nri, ntype, nouter, ninner;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 	int nn0, nn1;
 #endif
 
@@ -1137,7 +1137,7 @@ nb_kernel204nf_ppc_altivec(int *             p_nri,
 	qqMH      = vec_madd(qqMH,vfacel,nul);
 	qqHH      = vec_madd(qqHH,vfacel,nul);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
     nthreads = *p_nthreads;
 	do {
 		gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
@@ -1649,7 +1649,7 @@ nb_kernel204nf_ppc_altivec(int *             p_nri,
 			add_vector_to_float(Vc+gid[n],vctot);
 			ninner += nj1 - nj0;
 		}
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 		nouter += nn1 - nn0;
 	} while (nn1<nri);
 #else

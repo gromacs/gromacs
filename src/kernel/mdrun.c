@@ -405,7 +405,7 @@ int main(int argc,char *argv[])
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
     
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_SHM_FDECOMP
   if (nthreads > 1)
     gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif

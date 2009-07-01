@@ -117,7 +117,7 @@ void nb_kernel330(
     
     do
     {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
         gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
         nn0              = *count;         
 		
@@ -371,7 +371,7 @@ void nb_kernel330nf(
     
     do
     {
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
         gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
         nn0              = *count;         
 		

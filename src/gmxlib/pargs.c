@@ -81,7 +81,8 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
                     pa[j].bSet = TRUE;
                     bKeep[i] = FALSE;
                 }
-            } else if (strcmp(pa[j].option,argv[i])== 0) {
+            } 
+            else if (strcmp(pa[j].option,argv[i])== 0) {
                 if (pa[j].bSet)
                     fprintf(stderr,"Setting option %s more than once!\n",
                             pa[j].option);

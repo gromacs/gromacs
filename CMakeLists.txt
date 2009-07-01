@@ -169,10 +169,10 @@ if(PTHREADS_FOUND)
         set(GMX_THREAD_MPI 1)
         set(GMX_MPI 1)
     endif (GMX_THREADS)
-# note that there is already some code that is enabled if GMX_THREADS
-# is defined. This value is not actually defined by this option and 
-# is therefore not enabled here; that code is now superceeded by the 
-# thread_mpi library, so it could be removed.
+# note that there is already some old threaded code that is enabled if 
+# GMX_THREAD_SHM_FDECOMP is defined. This is not actually defined 
+# by this option and is therefore not enabled here; that code is now 
+# superceeded by the thread_mpi library, so it could be removed.
 else(PTHREADS_FOUND)
     if(GMX_THREADS)
         message(FATAL_ERROR "Thread-based parallelization requested, but no threads library found.")

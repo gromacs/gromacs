@@ -287,7 +287,7 @@ int main(int argc,char *argv[])
   if (nnodes > 1) 
     gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
 #endif
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_SHM_FDECOMP
   if(nthreads > 1)
     gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif

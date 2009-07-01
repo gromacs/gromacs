@@ -603,14 +603,14 @@ do_listed_vdw_q(int ftype,int nbonds,
     int       icoul,ivdw;
     bool      bMolPBC,bFreeEnergy;
     
-#if GMX_THREADS
+#if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
 #else
     void *    mtx = NULL;
 #endif
 
     
-#if GMX_THREADS
+#if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_initialize(&mtx);
 #endif
 

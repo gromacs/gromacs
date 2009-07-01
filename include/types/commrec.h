@@ -233,7 +233,7 @@ typedef struct {
   MPI_Comm mpi_comm_mygroup;
 #endif
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
   gmx_commrec_thread_t thread;
 #endif
 

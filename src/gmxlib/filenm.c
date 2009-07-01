@@ -810,29 +810,29 @@ bool is_set(t_filenm *fnm)
 
  
 
-int
-add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix)
+int add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix)
 {
-	int   i,j,pos;
-	char  buf[STRLEN],newname[STRLEN];
-	char  *extpos;
-	
-	for( i=0 ; i<nfile ; i++)
-	{
-		if( is_output(&fnm[i]) && fnm[i].ftp != efCPT )
-		{
-			/* We never use multiple _outputs_, but we might as well check for it, just in case... */
-			for( j=0 ; j<fnm[i].nfiles ; j++)
-			{
-				strncpy(buf,fnm[i].fns[j],STRLEN-1);
-				extpos = strrchr(buf,'.');
-				*extpos = '\0';
-				sprintf(newname,"%s.%s.%s",buf,suffix,extpos+1);
-				free(fnm[i].fns[j]);
-				fnm[i].fns[j]=strdup(newname);
-			}
-		}
-	}
-	return 0;
+    int   i,j,pos;
+    char  buf[STRLEN],newname[STRLEN];
+    char  *extpos;
+
+    for( i=0 ; i<nfile ; i++)
+    {
+        if( is_output(&fnm[i]) && fnm[i].ftp != efCPT )
+        {
+            /* We never use multiple _outputs_, but we might as well check 
+               for it, just in case... */
+            for( j=0 ; j<fnm[i].nfiles ; j++)
+            {
+                strncpy(buf,fnm[i].fns[j],STRLEN-1);
+                extpos = strrchr(buf,'.');
+                *extpos = '\0';
+                sprintf(newname,"%s.%s.%s",buf,suffix,extpos+1);
+                free(fnm[i].fns[j]);
+                fnm[i].fns[j]=strdup(newname);
+            }
+        }
+    }
+    return 0;
 }
 

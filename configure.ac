@@ -357,6 +357,7 @@ if test "$with_threads" = "pthreads"; then
   fi
   AC_DEFINE(GMX_THREAD_PTHREADS,,[Use pthreads for Gromacs multithreading])
   AC_DEFINE(GMX_THREAD_MPI,,[Use internal thread_mpi library])
+  AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
   AM_CONDITIONAL(THREAD_PTHREADS,true)

@@ -116,6 +116,12 @@
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
+/* Use threads for parallelization */
+#cmakedefine GMX_THREADS
+
+/* Use old threading (domain decomp force calc) code */
+#cmakedefine GMX_THREAD_SHM_FDECOMP 
+
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
 
@@ -136,9 +142,6 @@
 
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
-
-/* Use threads for parallelization */
-#cmakedefine GMX_THREADED
 
 /* Use pthreads for Gromacs multithreading */
 #cmakedefine GMX_THREAD_PTHREADS

@@ -92,10 +92,6 @@ struct output_env
 #endif
 };
 
-/* this is a global variable that should be removed */
-/*static struct output_env oenv_g;*/
-static output_env_t oenv_gp=NULL;
-
 /* inherently globally shared names: */
 static const char *program_name=NULL;
 static char *cmd_line=NULL;
@@ -362,94 +358,6 @@ bool get_print_xvgr_codes(const output_env_t oenv)
 
 
 
-
-const char *time_unit(void)
-{
-    if (!oenv_gp)
-    {
-        abort();
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_time_unit(oenv_gp);
-}
-
-const char *time_label(void)
-{
-    if (!oenv_gp)
-    {
-        abort();
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_time_label(oenv_gp);
-}
-
-const char *xvgr_tlabel(void)
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_xvgr_tlabel(oenv_gp);
-}
-
-
-real time_factor(void)
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_time_factor(oenv_gp);
-}
-
-real time_invfactor(void)
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_time_invfactor(oenv_gp);
-}
-
-real convert_time(real time)
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return conv_time(oenv_gp, time);
-}
-
-
-void convert_times(int n, real *time)
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    conv_times(oenv_gp, n, time);
-}
-
-
-bool bDoView(void)
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_view(oenv_gp);
-}
-
-bool bPrintXvgrCodes()
-{
-    if (!oenv_gp)
-    {
-        gmx_fatal(FARGS,"static output env uninitialized");
-    }
-    return get_print_xvgr_codes(oenv_gp);
-}
-
-
 static void set_default_time_unit(const char *time_list[])
 {
     int i,j;
@@ -672,26 +580,6 @@ static char *mk_desc(t_pargs *pa, const char *time_unit_str)
     return newdesc;
 }
 
-#if 0
-void parse_common_args(int *argc,char *argv[],unsigned long Flags,
-		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-		       int ndesc,const char **desc,
-		       int nbugs,const char **bugs)
-{
-#ifdef GMX_THREAD_MPI
-    if (oenv_gp)
-        gmx_fatal(FARGS, "non-reentrant parse_common_args called several times in threaded program");
-    gmx_thread_mutex_lock(&init_mutex);
-#endif 
-    /*oenv_gp=&oenv_g;*/
-    parse_common_args_r(argc, argv, Flags, nfile, fnm, npargs, pa,
-                        ndesc, desc, nbugs, bugs, &oenv_gp);
-#ifdef GMX_THREAD_MPI
-    gmx_thread_mutex_unlock(&init_mutex);
-#endif
-}
-#endif
-
 
 void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
@@ -700,8 +588,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                        output_env_t *oenv)
 {
     bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
-    const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", "wiki", NULL };
-    const char *time_units[] = { NULL, "ps", "fs", "ns", "us", "ms", "s", NULL };
+    const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", 
+                            "completion", "py", "xml", "wiki", NULL };
+    const char *time_units[] = { NULL, "ps", "fs", "ns", "us", "ms", "s", 
+                                NULL };
     int  nicelevel=0,mantp=0,npri=0,debug_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
@@ -933,7 +823,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     for(i=0; i<npall; i++) {
         if ((all_pa[i].type == etTIME) && (*all_pa[i].u.r >= 0)) {
-            *all_pa[i].u.r *= time_invfactor();
+            *all_pa[i].u.r *= get_time_invfactor(*oenv);
         }
     }
     

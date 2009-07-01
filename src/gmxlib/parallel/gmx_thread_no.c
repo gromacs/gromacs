@@ -24,7 +24,7 @@
 #include <config.h>
 #endif
 
-#if ( !defined(GMX_THREAD_PTHREADS) && !defined(GMX_THREADS_WINDOWS) )
+#if ( !defined(GMX_THREAD_PTHREADS) && !defined(GMX_THREAD_SHM_FDECOMP_WINDOWS) )
 /* Hide this implementation from Doxygen, since it conflicts with pthreads */
 #ifndef DOXYGEN
 
