@@ -672,7 +672,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     bPrint        = !FF(PCA_SILENT);
     
     /* Check ALL the flags ... */
-    max_pa = NPCA_PA + EXTRA_PA + npargs;
+    max_pa = NPCA_PA + EXTRA_PA + npargs+1;
     snew(all_pa,max_pa);
     
     for(i=npall=0; (i<NPCA_PA); i++)
