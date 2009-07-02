@@ -395,7 +395,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         sfree(grpnms);
     }
     
-    if (! fp_ene )
+    if ( fp_ene )
     {
         do_enxnms(fp_ene,&md->ebin->nener,&md->ebin->enm);
     }
