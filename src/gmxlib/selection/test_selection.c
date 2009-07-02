@@ -133,7 +133,7 @@ print_selections(int nr, gmx_ana_selection_t **sel)
 int
 gmx_test_selection(int argc, char *argv[])
 {
-    static const char  *desc[] = {
+    const char         *desc[] = {
         "This is a test program for selections.",
     };
 

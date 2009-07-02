@@ -195,7 +195,7 @@ struct gmx_ana_poscalc_t
     gmx_ana_poscalc_coll_t   *coll;
 };
     
-static const char *poscalc_enum_strings[] = {
+static const char *const poscalc_enum_strings[] = {
     "atom",
     "res_com",       "res_cog",
     "mol_com",       "mol_cog",

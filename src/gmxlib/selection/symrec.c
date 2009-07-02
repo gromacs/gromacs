@@ -75,7 +75,7 @@ struct gmx_sel_symrec_t
 };
 
 //! List of reserved symbols to register in add_reserved_symbols().
-static const char *sym_reserved[] = {
+static const char *const sym_reserved[] = {
     "group",
     "to",
     "not",

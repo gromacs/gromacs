@@ -45,6 +45,25 @@
 #include "selcollection.h"
 #include "symrec.h"
 
+/*
+ * These global variables cannot be const because gmx_ana_selmethod_register()
+ * modifies them to set some defaults. This is a small price to pay for the
+ * convenience of not having to remember exactly how the selection compiler
+ * expects the structures to be filled, and even more so if the expectations
+ * change. Also, even if the gmx_ana_selmethod_t structures were made const,
+ * the parameters could not be without typecasts somewhere, because the param
+ * field in gmx_ana_selmethod_t cannot be declared const.
+ *
+ * Even though the variables may be modified, this should be thread-safe as
+ * modifications are done only in gmx_ana_selmethod_register(), and it should
+ * work even if called more than once for the same structure, and even if
+ * called concurrently from multiple threads (as long as the selection
+ * collection is not the same).
+ *
+ * All of these problems should go away if/when the selection methods are
+ * implemented as C++ classes.
+ */
+
 /* From sm_com.c */
 extern gmx_ana_selmethod_t sm_cog;
 extern gmx_ana_selmethod_t sm_com;
@@ -77,7 +96,7 @@ extern gmx_ana_selmethod_t sm_insolidangle;
 extern gmx_ana_selmethod_t sm_permute;
 
 //! Array of selection methods defined in the library.
-static gmx_ana_selmethod_t *smtable_def[] = {
+static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_cog,
     &sm_com,
 

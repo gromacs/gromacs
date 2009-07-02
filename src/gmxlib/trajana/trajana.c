@@ -626,37 +626,37 @@ parse_trjana_args(gmx_ana_traj_t *d,
     int                 k;
     int                 rc;
 
-    static t_filenm     def_fnm[] = {
+    t_filenm            def_fnm[] = {
         {efTRX, NULL,  NULL,        ffREAD},
         {efTPS, NULL,  NULL,        ffREAD},
         {efDAT, "-sf", "selection", ffOPTRD},
         {efNDX, NULL,  NULL,        ffOPTRD},
     };
-    static bool         bPBC = TRUE;
-    static t_pargs      pbc_pa[] = {
+    bool                bPBC = TRUE;
+    t_pargs             pbc_pa[] = {
         {"-pbc",      FALSE, etBOOL, {&bPBC},
          "Use periodic boundary conditions for distance calculation"},
     };
-    static bool         bRmPBC = TRUE;
-    static t_pargs      rmpbc_pa[] = {
+    bool                bRmPBC = TRUE;
+    t_pargs             rmpbc_pa[] = {
         {"-rmpbc",    FALSE, etBOOL, {&bRmPBC},
          "Make molecules whole for each frame"},
     };
-    static char        *selection = NULL;
-    static const char **rpost     = NULL;
-    static bool         bSelDump  = FALSE;
-    static t_pargs      sel_pa[] = {
+    char               *selection = NULL;
+    const char        **rpost     = NULL;
+    bool                bSelDump  = FALSE;
+    t_pargs             sel_pa[] = {
         {"-select",   FALSE, etSTR,  {&selection},
          "Selection string"},
         {"-seldebug", FALSE, etBOOL, {&bSelDump},
          "HIDDENPrint out the parsed and compiled selection trees"},
     };
-    static t_pargs      dsel_pa[] = {
+    t_pargs             dsel_pa[] = {
         {"-selrpos",  FALSE, etENUM, {NULL},
          "Selection reference position"},
     };
-    static const char **spost = NULL;
-    static t_pargs      selpt_pa[] = {
+    const char        **spost = NULL;
+    t_pargs             selpt_pa[] = {
         {"-seltype",  FALSE, etENUM, {NULL},
          "Default analysis positions"},
     };
