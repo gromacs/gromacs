@@ -73,11 +73,7 @@ static MPI_Comm          wc_mpi_comm_mygroup;
 
 bool wallcycle_have_counter(void)
 {
-#ifndef GMX_THREAD_MPI
   return gmx_cycles_have_counter();
-#else
-  return FALSE; /* TODO: fix this so that we can actually count cycles */
-#endif
 }
 
 gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
@@ -98,11 +94,15 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
   if (wallcycle_have_counter()) {
     snew(wc,ewcNR);
     if (getenv("GMX_CYCLE_ALL") != NULL) {
+#ifndef GMX_THREAD_MPI
         if (fplog) 
         {
             fprintf(fplog,"\nWill time all the code during the run\n\n");
             snew(wc_all,ewcNR*ewcNR);
         }
+#else
+        gmx_fatal(FARGS, "GMX_CYCLE_ALL is incompatible with threaded code");
+#endif
     }
   } else {
     wc = NULL;
