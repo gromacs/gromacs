@@ -84,6 +84,9 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim"
 };
 
+
+enum { ecprREAL, ecprRVEC, ecprMATRIX };
+
 static const char *st_names(int cptp,int ecpt)
 {
     switch (cptp)
@@ -182,7 +185,6 @@ static void do_cpt_double_err(XDR *xd,const char *desc,double *f,FILE *list)
     }
 }
 
-enum { ecprREAL, ecprRVEC, ecprMATRIX };
 
 static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
                              int n,real **v,

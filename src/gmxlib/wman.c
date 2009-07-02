@@ -49,6 +49,10 @@
 #include "time.h"
 #include "readinp.h"
 
+/* The source code in this file should be thread-safe. 
+         Please keep it that way. */
+
+
 typedef struct {
   const char *search,*replace;
 } t_sandr_const;

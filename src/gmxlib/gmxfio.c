@@ -486,23 +486,17 @@ static bool do_binwrite(void *item,int nitem,int eio,
     break;
   case eioSTRING:
     size = ssize = strlen((char *)item)+1;
-#ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
-#endif
     do_binwrite(&ssize,1,eioINT,desc,srcfile,line);
-#ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
-#endif
     break;
   default:
     FE();
   }
 
+  wsize = fwrite(item,size,nitem,curfio->fp);
+
 #ifdef GMX_THREADS
   gmx_thread_mutex_lock(&fio_mutex);
 #endif
-  wsize = fwrite(item,size,nitem,curfio->fp);
-  
   if ((wsize != nitem) && curfio->bDebug) {
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
@@ -521,9 +515,6 @@ static bool do_binread(void *item,int nitem,int eio,
   size_t size=0,rsize;
   int    ssize;
   
-#ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
-#endif
   check_nitem();
   switch (eio) {
   case eioREAL:
@@ -561,33 +552,31 @@ static bool do_binread(void *item,int nitem,int eio,
     size = sizeof(ivec);
     break;
   case eioSTRING:
-#ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
-#endif
     do_binread(&ssize,1,eioINT,desc,srcfile,line);
-#ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
-#endif
     size = ssize;
     break;
   default:
     FE();
   }
+
+#ifdef GMX_THREADS
+  gmx_thread_mutex_lock(&fio_mutex);
+#endif
   if (item)
-    rsize = fread(item,size,nitem,curfio->fp);
+      rsize = fread(item,size,nitem,curfio->fp);
   else {
-    /* Skip over it if we have a NULL pointer here */
+      /* Skip over it if we have a NULL pointer here */
 #ifdef HAVE_FSEEKO
-    fseeko(curfio->fp,(off_t)(size*nitem),SEEK_CUR);
+      fseeko(curfio->fp,(off_t)(size*nitem),SEEK_CUR);
 #else
-    fseek(curfio->fp,(size*nitem),SEEK_CUR);
+      fseek(curfio->fp,(size*nitem),SEEK_CUR);
 #endif    
-    rsize = nitem;
+      rsize = nitem;
   }
   if ((rsize != nitem) && (curfio->bDebug))
-    fprintf(stderr,"Error reading %s %s from file %s (source %s, line %d)\n",
-	    eioNames[eio],desc,curfio->fn,srcfile,line);
-	    
+      fprintf(stderr,"Error reading %s %s from file %s (source %s, line %d)\n",
+              eioNames[eio],desc,curfio->fn,srcfile,line);
+
 #ifdef GMX_THREADS
   gmx_thread_mutex_unlock(&fio_mutex);
 #endif
@@ -764,9 +753,6 @@ int gmx_fio_open(const char *fn,const char *mode)
     bool     bRead;
     int      xdrid;
 
-#ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
-#endif
     if (fn2ftp(fn)==efTPA)
     {
         strcpy(newmode,mode);
@@ -801,6 +787,9 @@ int gmx_fio_open(const char *fn,const char *mode)
         }
     }
 
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&fio_mutex);
+#endif
     /* Determine whether we have to make a new one */
     for(i=0; (i<nFIO); i++)
     {

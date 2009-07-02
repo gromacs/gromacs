@@ -40,6 +40,13 @@
 #include "statutil.h"
 #include "gmx_fatal.h"
 
+#ifdef GMX_THREADS
+#include "gmx_thread.h"
+#endif
+
+/* The source code in this file should be thread-safe. 
+         Please keep it that way. */
+
 /* Globals for trajectory input */
 typedef struct {
   real t;
@@ -52,12 +59,16 @@ static t_timecontrol timecontrol[TNR] = {
   { 0, FALSE }
 };
 
+#ifdef GMX_THREADS
+static gmx_thread_mutex_t tc_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+#endif
+
 typedef struct {
   real tfactor;
   const char *tstr,*xvgstr;
 } t_timeconvert;
 
-static t_timeconvert timeconvert[] = {
+static const t_timeconvert timeconvert[] = {
     { 0,                   NULL,  NULL       },
     { 1e3,  		   "fs",  "fs"       },
     { 1,    		   "ps",  "ps"       },
@@ -72,21 +83,46 @@ static t_timeconvert timeconvert[] = {
 
 bool bTimeSet(int tcontrol)
 {
-  range_check(tcontrol,0,TNR);
-  return timecontrol[tcontrol].bSet;
+    bool ret;
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&tc_mutex);
+#endif
+    range_check(tcontrol,0,TNR);
+    ret=timecontrol[tcontrol].bSet;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&tc_mutex);
+#endif
+
+    return ret;
 }
   
 real rTimeValue(int tcontrol)
 {
-  range_check(tcontrol,0,TNR);
-  return timecontrol[tcontrol].t;
+    real ret;
+
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&tc_mutex);
+#endif
+    range_check(tcontrol,0,TNR);
+    ret=timecontrol[tcontrol].t;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&tc_mutex);
+#endif
+    return ret;
 }
   
 void setTimeValue(int tcontrol,real value)
 {
-  range_check(tcontrol,0,TNR);
-  timecontrol[tcontrol].t = value;
-  timecontrol[tcontrol].bSet = TRUE;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&tc_mutex);
+#endif
+    range_check(tcontrol,0,TNR);
+    timecontrol[tcontrol].t = value;
+    timecontrol[tcontrol].bSet = TRUE;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&tc_mutex);
+#endif
 }
 
 

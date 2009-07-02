@@ -51,6 +51,10 @@
 #include "mdrun.h"
 #include "gmxfio.h"
 
+/* The source code in this file should be thread-safe. 
+         Please keep it that way. */
+
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -62,7 +66,9 @@
 
 #define BUFSIZE	1024
 
-
+/* this is not strictly thread-safe, but it's only written to at the beginning
+   of the simulation, once by each thread with the same value. We assume
+   that writing to an int is atomic.*/
 int  gmx_parallel_env=0;
 
 static void par_fn(char *base,int ftp,const t_commrec *cr,
@@ -92,7 +98,8 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
   strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efEDR) ? "edr" : ftp2ext(ftp));
 }
 
-void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,const char *name)
+void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
+                     const char *name)
 {
   int  *ibuf,p;
   bool bCompatible;
@@ -123,7 +130,8 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,const char *name
   sfree(ibuf);
 }
 
-FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly, unsigned long Flags)
+FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly, 
+                   unsigned long Flags)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
