@@ -370,8 +370,11 @@ static void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
   int     ePBC_solvt;
   matrix  box_solvt;
   int     onr,onres;
+  char    *lfn;
 
-  strncpy(filename,libfn(fn),STRLEN);
+  lfn=libfn(fn);
+  strncpy(filename,lfn,STRLEN);
+  sfree(lfn);
   snew(atoms_solvt,1);
   get_stx_coordnum(filename,&(atoms_solvt->nr)); 
   if (atoms_solvt->nr == 0)

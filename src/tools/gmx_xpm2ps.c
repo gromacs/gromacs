@@ -647,8 +647,9 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   int       nmap1=0,nmap2=0,leg_nmap;
   t_mapping *map1=NULL,*map2=NULL,*leg_map;
   bool   bMap1,bNextMap1,bDiscrete;
-  
-  libm2p = m2p ? strdup(libfn(m2p)) : m2p;
+ 
+  /* memory leak: */
+  libm2p = m2p ? libfn(m2p) : m2p;
   get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;

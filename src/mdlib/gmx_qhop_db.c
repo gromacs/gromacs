@@ -181,6 +181,7 @@ gmx_qhop_db gmx_qhop_db_read(char *forcefield)
       dump_qhp(debug,&(qdb->qhop_param[i]));
     }
   }
+  sfree(fn);
   return (gmx_qhop_db) qdb;
 }
 

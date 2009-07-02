@@ -560,9 +560,9 @@ bool get_libdir(char *libdir)
 }
 
 
-const char *low_libfn(const char *file, bool bFatal)
+char *low_libfn(const char *file, bool bFatal)
 {
-    const char *ret=NULL;
+    char *ret=NULL;
     char *lib,*dir;
     char buf[1024];
     char libpath[MAX_PATHBUF];
@@ -581,26 +581,18 @@ const char *low_libfn(const char *file, bool bFatal)
 
     if (gmx_fexist(file))
     {
-        ret=file;
+        ret=strdup(file);
     }
     else 
     {
         found=FALSE;
         strncpy(tmppath,libpath,MAX_PATHBUF);
         s=tmppath;
-#if 0
-        while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
-            sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
-            found=gmx_fexist(buf);
-            s = NULL;
-        }
-#endif
         while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
         {
             sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
             found=gmx_fexist(buf);
         }
-        ret=buf;
         if (bFatal && !found) 
         {
             if (env_is_set) 
@@ -609,6 +601,7 @@ const char *low_libfn(const char *file, bool bFatal)
                 gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
                         "(You can set the directories to search with the GMXLIB path variable)",file);
         }
+        ret=strdup(buf);
     }
 
     return ret;
@@ -620,7 +613,7 @@ const char *low_libfn(const char *file, bool bFatal)
 FILE *low_libopen(const char *file,bool bFatal)
 {
     FILE *ff;
-    const char *fn;
+    char *fn;
 
     fn=low_libfn(file,bFatal);
 
@@ -631,11 +624,12 @@ FILE *low_libopen(const char *file,bool bFatal)
             fprintf(stderr,"Opening library file %s\n",fn);
         ff=fopen(fn,"r");
     }
+    sfree(fn);
 
     return ff;
 }
 
-const char *libfn(const char *file)
+char *libfn(const char *file)
 {
     return low_libfn(file,TRUE);
 }

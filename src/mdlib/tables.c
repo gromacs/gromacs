@@ -348,7 +348,7 @@ static void set_forces(FILE *fp,int angle,
 static void read_tables(FILE *fp,const char *fn,
 			int ntab,int angle,t_tabledata td[])
 {
-  const char *libfn;
+  char *libfn;
   char buf[STRLEN];
   double **yy=NULL,start,end,ssd,vm,vp,f,numf;
   int  k,i,nx,nx0=0,ny,nny,ns;
@@ -463,6 +463,7 @@ static void read_tables(FILE *fp,const char *fn,
   for(i=0; (i<ny); i++)
     sfree(yy[i]);
   sfree(yy);
+  sfree(libfn);
 }
 
 static void done_tabledata(t_tabledata *td)

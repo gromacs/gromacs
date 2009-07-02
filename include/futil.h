@@ -97,7 +97,8 @@ extern void frewind(FILE *fp);
 
 bool is_pipe(FILE *fp);
 
-extern const char *libfn(const char *file);
+extern char *libfn(const char *file);
+/* allocates and returns a string with the full file name for a library file */
 
 extern FILE *libopen(const char *file);
 /* Open a library file for reading. This looks in the current directory
@@ -107,7 +108,7 @@ extern FILE *libopen(const char *file);
   
 extern bool get_libdir(char *libdir);
 
-extern const char *low_libfn(const char *file,bool bFatal);
+extern char *low_libfn(const char *file,bool bFatal);
 
 extern FILE *low_libopen(const char *file,bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
