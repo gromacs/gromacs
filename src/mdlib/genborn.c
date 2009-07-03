@@ -1557,7 +1557,10 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
 		at1=natoms;
 		
 	}
-			
+		
+	/* Scale the electrostatics by gb_epsilon_solvent */
+	facel = facel * (1.0 - 1.0/born->gb_epsilon_solvent);
+	
 	vtot=0.0;
 	
 	/* Apply self corrections */
