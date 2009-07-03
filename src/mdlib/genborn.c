@@ -522,6 +522,7 @@ int init_gb(gmx_genborn_t **p_born,
 	born->obc_beta   = ir->gb_obc_beta;
 	born->obc_gamma  = ir->gb_obc_gamma;
 	born->gb_doffset = ir->gb_dielectric_offset;
+	born->gb_epsilon_solvent = ir->gb_epsilon_solvent;
 	
 	doffset = born->gb_doffset;
 	
@@ -1451,7 +1452,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
-				  real epsilon_r, real facel)
+				  real gb_epsilon_solvent, real facel)
 {
 	int i,j,n0,nnn,type,ai,aj,ai3,aj3;
 	real isai,isaj;
@@ -1463,6 +1464,9 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 	
 	t_iatom *forceatoms;
 
+	/* Scale the electrostatics by gb_epsilon_solvent */
+	facel = facel * (1.0 - 1.0/gb_epsilon_solvent);
+	
 	gbtabscale=*p_gbtabscale;
 	vctot = 0.0;
 	
@@ -1753,7 +1757,7 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 	
 	/* Calculate the bonded GB-interactions */
 	v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
-					  fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,fr->epsilon_r, fr->epsfac);
+					  fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
 	
 	/* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
 	v += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac); 		
