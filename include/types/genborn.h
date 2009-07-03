@@ -88,6 +88,7 @@ typedef struct
 	real obc_beta;            /* OBC parameters */
 	real obc_gamma;           /* OBC parameters */
 	real gb_doffset;          /* Dielectric offset for Still/HCT/OBC */
+	real gb_epsilon_solvent;  /*   */
 	
 	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
 	real *dd_work;            /* Used for domain decomposition parallel runs, length natoms              */
