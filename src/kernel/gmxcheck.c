@@ -129,7 +129,7 @@ static void tpx2params(FILE *fp,t_inputrec *ir)
   fprintf(fp,"\n\n");
 }
 
-static void tpx2methods(char *tpx,char *tex)
+static void tpx2methods(const char *tpx,const char *tex)
 {
   FILE         *fp;
   t_tpxheader sh;
@@ -238,7 +238,7 @@ static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
     }
 }
 
-void chk_trj(output_env_t oenv,char *fn,char *tpr,real tol)
+void chk_trj(output_env_t oenv,const char *fn,const char *tpr,real tol)
 {
   t_trxframe   fr;
   t_count      count;
@@ -360,7 +360,7 @@ void chk_trj(output_env_t oenv,char *fn,char *tpr,real tol)
   PRINTITEM ( "Box",        bBox );
 }  
 
-void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
+void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
 {
   int       natom,i,j,k;
   char      title[STRLEN];
@@ -516,7 +516,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   }
 }
 
-void chk_ndx(char *fn)
+void chk_ndx(const char *fn)
 {
   t_blocka *grps;
   char **grpname=NULL;
@@ -542,7 +542,7 @@ void chk_ndx(char *fn)
   done_blocka(grps);
 }
 
-void chk_enx(char *fn)
+void chk_enx(const char *fn)
 {
   int        nre,fnr,ndr;
   ener_file_t in;
@@ -633,7 +633,7 @@ int main(int argc,char *argv[])
     { efTEX, "-m",  NULL, ffOPTWR }
   };
 #define NFILE asize(fnm)
-  char *fn1=NULL,*fn2=NULL,*tex=NULL;
+  const char *fn1=NULL,*fn2=NULL,*tex=NULL;
  
   output_env_t oenv;
   static real vdw_fac=0.8;

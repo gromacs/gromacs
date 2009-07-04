@@ -100,7 +100,8 @@ extern void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
                        output_env_t oenv);
 /* Set the world in xvgr */
 
-extern void xvgr_legend(FILE *out,int nsets,char **setnames,output_env_t oenv);
+extern void xvgr_legend(FILE *out,int nsets,char **setnames,
+                        output_env_t oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
 extern void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor,
@@ -126,7 +127,7 @@ extern int read_xvg(const char *fn,double ***y,int *ny);
 /* As read_xvg_legend, but does not read legends. */
  
 extern void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-                     char ** leg,output_env_t oenv);
+                      char **leg, output_env_t oenv);
 /* Write a two D array (y) of dimensions nx rows times
  * ny columns to a file. If leg != NULL it will be written too.
  */
@@ -135,7 +136,7 @@ extern void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
 /* This function reads ascii (xvg) files and extracts the data sets to a 
  * two dimensional array which is returned.
  */
-extern real **read_xvg_time(char *fn,
+extern real **read_xvg_time(const char *fn,
 			    bool bHaveT,
 			    bool bTB,real tb,
 			    bool bTE,real te,

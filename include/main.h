@@ -49,7 +49,8 @@ extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
 			       * with: mpirun -np 1 
 			       */
 
-extern FILE *gmx_log_open(char *fn,const t_commrec *cr,bool bMasterOnly, unsigned long Flags);
+extern FILE *gmx_log_open(const char *fn,const t_commrec *cr,
+                          bool bMasterOnly, unsigned long Flags);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
@@ -64,8 +65,8 @@ extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
  * if the val's don't match.
  */
 
-extern void init_multisystem(t_commrec *cr,int nsim,int nfile,t_filenm fnm[],
-			     bool bParFn);
+extern void init_multisystem(t_commrec *cr,int nsim,int nfile,
+                             const t_filenm fnm[], bool bParFn);
 /* Splits the communication into nsim seperate simulations
  * and creates a communication structure between the master
  * these simulations.

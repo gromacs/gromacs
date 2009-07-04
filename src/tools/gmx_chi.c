@@ -208,7 +208,7 @@ int bin(real chi,int mult)
 }
 
 
-static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
+static void do_dihcorr(const char *fn,int nf,int ndih,real **dih,real dt,
 		       int nlist,t_dlist dlist[],real time[],int maxchi,
 		       bool bPhi,bool bPsi,bool bChi,bool bOmega,
                        output_env_t oenv)
@@ -389,9 +389,9 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 			  int nlist,t_dlist dlist[],
 			  atom_id index[],
 			  bool bPhi,bool bPsi,bool bOmega,bool bChi,
-			  bool bNormalize,bool bSSHisto,char *ssdump,
+			  bool bNormalize,bool bSSHisto,const char *ssdump,
 			  real bfac_max,t_atoms *atoms, 
-			  bool bDo_jc, char *fn,
+			  bool bDo_jc, const char *fn,
                           output_env_t oenv)
 {
   /* also gets 3J couplings and order parameters S2 */ 
@@ -829,10 +829,10 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 }
 
 
-static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
-			     t_atoms *atoms,rvec x[],matrix box,
-			     bool bPhi,bool bPsi,bool bChi,real dt,
-                             output_env_t oenv)
+static void print_transitions(const char *fn,int maxchi,int nlist,
+                              t_dlist dlist[], t_atoms *atoms,rvec x[],
+                              matrix box, bool bPhi,bool bPsi,bool bChi,real dt,
+                              output_env_t oenv)
 {
   /* based on order_params below */ 
   FILE *fp;
@@ -878,8 +878,8 @@ static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
 }
 
 static void order_params(FILE *log,
-			 char *fn,int maxchi,int nlist,t_dlist dlist[],
-			 char *pdbfn,real bfac_init,
+			 const char *fn,int maxchi,int nlist,t_dlist dlist[],
+			 const char *pdbfn,real bfac_init,
 			 t_atoms *atoms,rvec x[],int ePBC,matrix box,
 			 bool bPhi,bool bPsi,bool bChi,output_env_t oenv)
 {
@@ -889,7 +889,9 @@ static void order_params(FILE *log,
   real S2Max, S2Min;
 
   /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */  
-  const char *const_leg[2+edMax]= { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  const char *const_leg[2+edMax]= { "S2Min","S2Max","Phi","Psi","Omega", 
+                                    "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", 
+                                    "Chi6" };
 #define NLEG asize(leg) 
   
   char *leg[2+edMax];	

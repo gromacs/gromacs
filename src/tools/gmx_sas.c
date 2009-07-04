@@ -92,7 +92,7 @@ void add_rec(t_conect c[],atom_id i,atom_id j,real d2)
   }
 }
 
-void do_conect(char *fn,int n,rvec x[])
+void do_conect(const char *fn,int n,rvec x[])
 {
   FILE     *fp;
   int      i,j;
@@ -123,7 +123,7 @@ void do_conect(char *fn,int n,rvec x[])
   sfree(c);
 }
 
-void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
+void connelly_plot(const char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
 		   t_symtab *symtab,int ePBC,matrix box,bool bSave)
 {
   static const char *atomnm="DOT";
@@ -223,7 +223,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   char   *flegend[] = { "Hydrophobic", "Hydrophilic", 
 			      "Total", "D Gsolv" };
   char   *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
-  char         *vfile;
+  const char   *vfile;
   real         t;
   gmx_atomprop_t aps=NULL;
   int          status,ndefault;

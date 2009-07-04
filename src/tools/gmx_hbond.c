@@ -1100,7 +1100,7 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
 /* Changed the contact code slightly.
  * - Erik Marklund, June 29, 2006
  */
-static void do_hblife(char *fn,t_hbdata *hb,bool bMerge,bool bContact,
+static void do_hblife(const char *fn,t_hbdata *hb,bool bMerge,bool bContact,
                       output_env_t oenv)
 {
   FILE *fp;
@@ -1572,7 +1572,7 @@ void compute_derivative(int nn,real x[],real y[],real dydx[])
 /* Changed contact code and added argument R2 
  * - Erik Marklund, June 29, 2006
  */
-static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
+static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		    int nDump,bool bMerge,bool bContact,real fit_start,
                     real temp,bool R2,real smooth_tail_start,
                     output_env_t oenv)
@@ -1769,7 +1769,7 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
   /*set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);*/
 }
 
-static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t,
+static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
                                 output_env_t oenv)
 {
   static FILE *fp = NULL;

@@ -92,7 +92,7 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
   return;
 }
 
-void calc_potential(char *fn, atom_id **index, int gnx[], 
+void calc_potential(const char *fn, atom_id **index, int gnx[], 
 		    double ***slPotential, double ***slCharge, 
 		    double ***slField, int *nslices, 
 		    t_topology *top, int ePBC,
@@ -327,8 +327,8 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
 }
 
 void plot_potential(double *potential[], double *charge[], double *field[], 
-		    char *afile, char *bfile, char *cfile, int nslices,
-		    int nr_grps, char *grpname[], double slWidth,
+		    const char *afile, const char *bfile, const char *cfile, 
+                    int nslices, int nr_grps, char *grpname[], double slWidth,
                     output_env_t oenv)
 {
   FILE       *pot,     /* xvgr file with potential */

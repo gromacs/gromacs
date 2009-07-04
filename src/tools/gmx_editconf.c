@@ -170,7 +170,7 @@ void scale_conf(int natom,rvec x[],matrix box,rvec scale)
       box[i][j] *= scale[j];
 }
 
-void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
+void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 {
   int  i;
   char **bfac_lines;
@@ -503,7 +503,8 @@ int gmx_editconf(int argc, char *argv[])
 #define NPA asize(pa)
 
   FILE       *out;
-  char       *infile,*outfile,title[STRLEN];
+  const char *infile,*outfile;
+  char       title[STRLEN];
   int        outftp,inftp,natom,i,j,n_bfac,itype,ntype;
   double     *bfac=NULL,c6,c12;
   int        *bfac_nr=NULL;

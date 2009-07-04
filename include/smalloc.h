@@ -135,9 +135,23 @@ void _srenew(const char *name, T *&ptr, int nelem)
 {
     ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, nelem, sizeof(T));
 }
+template <typename T>
+void _smalloc(const char *name, T *&ptr, size_t size)
+{
+    ptr = (T *)save_malloc(name, __FILE__, __LINE__, size);
+}
+template <typename T>
+void _srealloc(const char *name, T *&ptr, size_t size)
+{
+    ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, size, sizeof(char));
+}
+
+
 
 #define snew(ptr,nelem) _snew(#ptr,(ptr),(nelem))
 #define srenew(ptr,nelem) _srenew(#ptr,(ptr),(nelem))
+#define smalloc(ptr, size) _smalloc(#ptr,(ptr),(size))
+#define srealloc(ptr, size) _srealloc(#ptr,(ptr),(size))
 
 #else
 

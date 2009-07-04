@@ -260,7 +260,7 @@ void prune_ss_legend(t_matrix *mat)
   }
 }
 
-void write_sas_mat(char *fn,real **accr,int nframe,int nres,t_matrix *mat)
+void write_sas_mat(const char *fn,real **accr,int nframe,int nres,t_matrix *mat)
 {
   real lo,hi;
   int i,j,nlev;
@@ -283,7 +283,7 @@ void write_sas_mat(char *fn,real **accr,int nframe,int nres,t_matrix *mat)
   }
 }
 
-void analyse_ss(char *outfile, t_matrix *mat, const char *ss_string,
+void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
                 output_env_t oenv)
 {
   FILE *fp;
@@ -376,7 +376,7 @@ int main(int argc,char *argv[])
   int        status;
   FILE       *tapein;
   FILE       *ss,*acc,*fTArea,*tmpf;
-  char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
+  const char *fnSCount,*fnArea,*fnTArea,*fnAArea;
   char *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   int        ePBC;

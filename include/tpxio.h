@@ -124,11 +124,11 @@ extern int read_tpx_top(const char *fn,
 			rvec *x,rvec *v,rvec *f,t_topology *top);
 /* As read_tpx, but for the old t_topology struct */
 
-extern bool fn2bTPX(char *file);
+extern bool fn2bTPX(const char *file);
 /* return if *file is one of the TPX file types */ 
 
-extern bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
-			  rvec **x,rvec **v,matrix box,bool bMass);
+extern bool read_tps_conf(const char *infile,char *title,t_topology *top,
+                          int *ePBC, rvec **x,rvec **v,matrix box,bool bMass);
 /* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
  * memory for atoms, x and v will be allocated.  
  * Return TRUE if a complete topology was read. 

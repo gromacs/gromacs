@@ -2130,7 +2130,7 @@ int read_tpx_top(const char *fn,
   return ePBC;
 }
 
-bool fn2bTPX(char *file)
+bool fn2bTPX(const char *file)
 {
   switch (fn2ftp(file)) {
   case efTPR:
@@ -2142,7 +2142,7 @@ bool fn2bTPX(char *file)
   }
 }
 
-bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
+bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
 		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;

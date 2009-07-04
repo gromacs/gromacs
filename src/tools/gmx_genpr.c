@@ -105,7 +105,8 @@ int gmx_genpr(int argc,char *argv[])
   int          igrp;
   real         d,dd,lo,hi;
   atom_id      *ind_grp;
-  char         *gn_grp,*xfn,*nfn;
+  const char   *xfn,*nfn;
+  char         *gn_grp;
   char         title[STRLEN];
   matrix       box;
   bool         bFreeze;

@@ -224,10 +224,12 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 }
 
 
-static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
-				  char *sgfn,char *skfn,
+static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
+                                  const char *fnTRX, const char *sgfn,
+                                  const char *skfn,
 				  int nslice,int slice_dim,
-				  char *sgslfn,char *skslfn,output_env_t oenv)
+                                  const char *sgslfn,const char *skslfn,
+                                  output_env_t oenv)
 {
   FILE       *fpsg=NULL,*fpsk=NULL;
   t_topology top;
@@ -330,7 +332,7 @@ static void check_length(real length, int a, int b)
 	    a, b, length);
 }
 
-void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
+void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
 		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
                 output_env_t oenv)
@@ -511,9 +513,9 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 }
 
 
-void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile, 
-		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
-                output_env_t oenv)
+void order_plot(rvec order[], real *slOrder[], const char *afile, 
+                const char *bfile, const char *cfile, int ngrps, int nslices, 
+                real slWidth, bool bSzonly, output_env_t oenv)
 {
   FILE       *ord, *slOrd;           /* xvgr files with order parameters  */
   int        atom, slice;            /* atom corresponding to order para.*/
@@ -623,7 +625,7 @@ int gmx_order(int argc,char *argv[])
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-  char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
+  const char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
   output_env_t oenv;
 
   CopyRight(stderr,argv[0]);

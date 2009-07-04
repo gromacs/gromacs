@@ -357,9 +357,10 @@ ener_file_t open_enx(const char *fn,const char *mode)
 
         /* Now check whether this file is in single precision */
         if (((fr->e_size && (fr->nre == nre) && 
-                        (nre*4*sizeof(float) == fr->e_size)) ||
+                        (nre*4*(long int)sizeof(float) == fr->e_size)) ||
                     (fr->d_size && 
-                     (fr->ndisre*sizeof(float)*2+sizeof(int) == fr->d_size)))){
+                     (fr->ndisre*(long int)sizeof(float)*2+(long int)sizeof(int) 
+                            == fr->d_size)))){
             fprintf(stderr,"Opened %s as single precision energy file\n",fn);
             free_enxnms(nre,nms);
         }
@@ -375,9 +376,10 @@ ener_file_t open_enx(const char *fn,const char *mode)
             }
 
             if (((fr->e_size && (fr->nre == nre) && 
-                            (nre*4*sizeof(double) == fr->e_size)) ||
+                            (nre*4*(long int)sizeof(double) == fr->e_size)) ||
                         (fr->d_size && 
-                         (fr->ndisre*sizeof(double)*2+sizeof(int) == 
+                         (fr->ndisre*(long int)sizeof(double)*2+
+                                     (long int)sizeof(int) == 
                           fr->d_size))))
                 fprintf(stderr,"Opened %s as double precision energy file\n",
                         fn);
@@ -650,7 +652,7 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
 }
 
 
-void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
+void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state)
 {
   /* Should match the names in mdebin.c */

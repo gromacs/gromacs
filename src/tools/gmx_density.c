@@ -74,7 +74,7 @@ int compare(void *a, void *b)
   return strcmp(tmp1->atomname,tmp2->atomname);
 }
 
-int get_electrons(t_electron **eltab, char *fn)
+int get_electrons(t_electron **eltab, const char *fn)
 {
   char buffer[256];  /* to read in a line   */
   char tempname[80]; /* buffer to hold name */
@@ -138,7 +138,7 @@ void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
     rvec_dec(x0[i],shift);
 }
 
-void calc_electron_density(char *fn, atom_id **index, int gnx[], 
+void calc_electron_density(const char *fn, atom_id **index, int gnx[], 
 			   real ***slDensity, int *nslices, t_topology *top,
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
@@ -242,7 +242,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   sfree(x0);  /* free memory used by coordinate array */
 }
 
-void calc_density(char *fn, atom_id **index, int gnx[], 
+void calc_density(const char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
 		  int axis, int nr_grps, real *slWidth, bool bCenter,
                   output_env_t oenv)
@@ -334,7 +334,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
   sfree(x0);  /* free memory used by coordinate array */
 }
 
-void plot_density(real *slDensity[], char *afile, int nslices,
+void plot_density(real *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
 		  bool bSymmetrize, output_env_t oenv)

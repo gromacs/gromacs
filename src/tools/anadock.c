@@ -59,7 +59,7 @@ typedef struct {
   matrix  box;
 } t_pdbfile;
 
-static t_pdbfile *read_pdbf(char *fn)
+static t_pdbfile *read_pdbf(const char *fn)
 {
   t_pdbfile *pdbf;
   double    e;
@@ -93,7 +93,7 @@ static t_pdbfile *read_pdbf(char *fn)
   return pdbf;
 }
 
-static t_pdbfile **read_em_all(char *fn,int *npdbf)
+static t_pdbfile **read_em_all(const char *fn,int *npdbf)
 {
   t_pdbfile **pdbf=0;
   int  i,maxpdbf;
@@ -155,8 +155,8 @@ static int pdbf_comp(const void *a,const void *b)
     return dc;
 }
 
-static void analyse_em_all(int npdb,t_pdbfile *pdbf[],
-			   char *edocked,char *efree, output_env_t oenv)
+static void analyse_em_all(int npdb,t_pdbfile *pdbf[], const char *edocked,
+                           const char *efree, output_env_t oenv)
 {
   FILE *fp;
   int i;
@@ -229,7 +229,7 @@ static void line(FILE *fp)
 }
 
 static void cluster_em_all(FILE *fp,int npdb,t_pdbfile *pdbf[],
-			   char *pdbout,bool bFree,bool bRMSD,real cutoff)
+			   const char *pdbout,bool bFree,bool bRMSD,real cutoff)
 {
   int  i,j,k;
   int  *cndx,ncluster;

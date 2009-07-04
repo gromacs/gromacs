@@ -128,7 +128,7 @@ static matrix box_tpx;
 static gmx_thread_mutex_t box_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 #endif
 
-int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
+int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              output_env_t oenv, bool bVerbose,bool bCompact,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
@@ -594,7 +594,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     return rc;
 }
 
-time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
+time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              output_env_t oenv, bool bVerbose,bool bCompact,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
@@ -612,7 +612,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_trn=0,fp_xtc=0;
   ener_file_t fp_ene=NULL;
   gmx_step_t step,step_rel;
-  char       *fn_cpt;
+  const char *fn_cpt;
   FILE       *fp_dhdl=NULL,*fp_field=NULL;
   double     run_time;
   double     t,t0,lam0;
@@ -1494,8 +1494,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                     update_energyhistory(&state_global->enerhist,mdebin);
                 }
             }
-            write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,fn_cpt,bCPT,
-                       top_global,ir->eI,ir->simulation_part,step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
+            write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
+                       fn_cpt,bCPT,top_global,ir->eI,ir->simulation_part,
+                       step,t,state, state_global,f,f_global,&n_xtc,&x_xtc);
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&

@@ -149,7 +149,7 @@ typedef struct {
   char *aname;
 } t_equiv;
 
-static int read_equiv(char *eq_fn, t_equiv ***equivptr)
+static int read_equiv(const char *eq_fn, t_equiv ***equivptr)
 {
   FILE *fp;
   char   line[STRLEN],resname[10],atomname[10],*lp;
@@ -240,7 +240,7 @@ static bool is_equiv(int neq, t_equiv **equiv, char **nname,
   return bFound;
 }
 
-static int analyze_noe_equivalent(char *eq_fn,
+static int analyze_noe_equivalent(const char *eq_fn,
 				  t_atoms *atoms, int isize, atom_id *index, 
 				  bool bSumH, 
 				  atom_id *noe_index, t_noe_gr *noe_gr)

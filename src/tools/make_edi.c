@@ -290,7 +290,9 @@ enum { evLINFIX, evLINACC, evFLOOD, evRADFIX, evRADACC, evRADCON , evMON,  evEND
 #define MAGIC 669
 
 
-void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs, int nvec, int *eig_listen[], real* evStepList[]) {
+void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs, 
+                           int nvec, int *eig_listen[], real* evStepList[]) 
+{
 /* write edi-file */
 
     /*Header*/
@@ -321,7 +323,8 @@ void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs, int nvec,
     write_t_edx(fp,edpars->sori,"NORIGIN, XORIGIN");
 } 
 
-int read_conffile(char *confin,char *title,rvec *x[]) {
+int read_conffile(const char *confin,char *title,rvec *x[]) 
+{
 /* read coordinates out of STX file  */
   int natoms;
   t_atoms  confat;
@@ -343,7 +346,9 @@ int read_conffile(char *confin,char *title,rvec *x[]) {
 }  
 
 
-void read_eigenvalues(int vecs[],char *eigfile, real values[], bool bHesse, real kT) {
+void read_eigenvalues(int vecs[],const char *eigfile, real values[], 
+                      bool bHesse, real kT) 
+{
   int  neig,nrow,i;
   double **eigval;
   
@@ -407,7 +412,9 @@ void init_edx(struct edix *edx) {
   snew(edx->anrs,1);
 }
 
-void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, atom_id igro[],rvec *x,char* structure) {
+void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, 
+                atom_id igro[],rvec *x,const char* structure) 
+{
 /* filter2edx copies coordinates from x to edx which are given in index
 */
   
@@ -425,10 +432,10 @@ void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, atom_id i
    }
 }
 
-void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,struct edix *edx,int nfit,
-                    atom_id ifit[],int natoms, atom_id index[]) {
-
-
+void get_structure(t_atoms *atoms,const char *IndexFile,
+                   const char *StructureFile,struct edix *edx,int nfit,
+                   atom_id ifit[],int natoms, atom_id index[]) 
+{
   atom_id *igro;  /*index corresponding to target or origin structure*/
   int ngro;
   int ntar;
@@ -616,7 +623,8 @@ int main(int argc,char *argv[])
     rvec       *xav1,**eigvec1=NULL;
     t_atoms    *atoms=NULL;
     int natoms;
-    char       *grpname,*indexfile;
+    char       *grpname;
+    const char *indexfile;
     int        i;
     atom_id    *index,*ifit;
     int        nfit;
@@ -624,10 +632,10 @@ int main(int argc,char *argv[])
     int nvecs;
     real *eigval1=NULL; /* in V3.3 this is parameter of read_eigenvectors */
     
-    char       *EdiFile;
-    char       *TargetFile;
-    char       *OriginFile;
-    char       *EigvecFile;
+    const char *EdiFile;
+    const char *TargetFile;
+    const char *OriginFile;
+    const char *EigvecFile;
    
     output_env_t oenv;
     

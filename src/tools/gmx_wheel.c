@@ -75,7 +75,7 @@ bool *bPhobics(int nres,char *resnm[])
   return bb;
 }
  
-void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
+void wheel(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
 {
   const real fontsize  = 16;
   const real gray      = 0.9;
@@ -144,7 +144,7 @@ void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   ps_close(out);
 }
 
-void wheel2(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
+void wheel2(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
 {
   const real fontsize  = 14;
   const real gray      = 0.9;

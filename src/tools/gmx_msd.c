@@ -448,8 +448,8 @@ static real calc1_mol(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
   return gtot/nx;
 }
 
-void printmol(t_corr *curr,char *fn,
-	      char *fn_pdb,int *molindex,t_topology *top,
+void printmol(t_corr *curr,const char *fn,
+	      const char *fn_pdb,int *molindex,t_topology *top,
 	      rvec *x,int ePBC,matrix box, output_env_t oenv)
 {
 #define NDIST 100
@@ -527,7 +527,7 @@ void printmol(t_corr *curr,char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-int corr_loop(t_corr *curr,char *fn,t_topology *top,int ePBC,
+int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 	      bool bMol,int gnx[],atom_id *index[],
 	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
 	      real t_pdb,rvec **x_pdb,matrix box_pdb, output_env_t oenv)
@@ -682,8 +682,8 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
   *n = nmol;
 }
 			    
-void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
-	     char *pdb_file,real t_pdb,
+void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file, 
+             const char *mol_file, const char *pdb_file,real t_pdb,
 	     int nrgrp, t_topology *top,int ePBC,
 	     bool bTen,bool bMW,bool bRmCOMM,
 	     int type,real dim_factor,int axis,
@@ -871,7 +871,7 @@ int gmx_msd(int argc,char *argv[])
   int         ePBC;
   matrix      box;
   char        title[256];
-  char        *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
+  const char  *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
   rvec        *xdum;
   bool        bTop;
   int         axis,type;

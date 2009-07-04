@@ -62,7 +62,7 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
+void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 		  real **slOrder, real *slWidth, int *nslices, 
 		  t_topology *top, int ePBC,
 		  int axis, bool bMicel, atom_id micel[], int nmic,
@@ -215,7 +215,7 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
   sfree(x0);  /* free memory used by coordinate arrays */
 }
 
-void h2order_plot(rvec dipole[], real order[], char *afile, 
+void h2order_plot(rvec dipole[], real order[], const char *afile, 
 		  int nslices, real slWidth, output_env_t oenv)
 {
   FILE       *ord;                /* xvgr files with order parameters  */

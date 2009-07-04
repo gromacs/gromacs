@@ -76,7 +76,7 @@ extern void dd_make_local_pull_groups(gmx_domdec_t *dd,
 extern void init_pull(FILE *fplog,  
                       t_inputrec *ir, /* the inputrec */
                       int nfile,       
-                      t_filenm fnm[], /* standard filename struct */
+                      const t_filenm fnm[], /* standard filename struct */
                       gmx_mtop_t *mtop, /* the topology of the whole system */
                       t_commrec * cr, /* struct for communication info */
                       output_env_t oenv,  /* output options */

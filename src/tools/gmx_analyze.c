@@ -110,7 +110,7 @@ static real cosine_content(int nhp,int n,real *y)
   return 2*cosyint*cosyint/(n*yyint);
 }
 
-static void plot_coscont(char *ccfile,int n,int nset,real **val,
+static void plot_coscont(const char *ccfile,int n,int nset,real **val,
                          output_env_t oenv)
 {
   FILE *fp;
@@ -158,7 +158,7 @@ static void regression_analysis(int n,bool bXYdy,real *x,real **val)
   }
 }
 
-void histogram(char *distfile,real binwidth,int n, int nset, real **val,
+void histogram(const char *distfile,real binwidth,int n, int nset, real **val,
                output_env_t oenv)
 {
   FILE *fp;
@@ -215,7 +215,7 @@ static int real_comp(const void *a,const void *b)
     return 0;
 }
 
-static void average(char *avfile,int avbar_opt,
+static void average(const char *avfile,int avbar_opt,
 		    int n, int nset,real **val,real *t)
 {
   FILE   *fp;
@@ -290,8 +290,8 @@ static real anal_ee(real *parm,real T,real t)
 	      parm[3]*2*parm[2]/T*((e2 - 1)*parm[2]/t + 1));
 }
 
-static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
-			   double *av,double *sig,real **val,real dt,
+static void estimate_error(const char *eefile,int nb_min,int resol,int n,
+                           int nset, double *av,double *sig,real **val,real dt,
 			   bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr,
                            output_env_t oenv)
 {
@@ -819,7 +819,7 @@ int gmx_analyze(int argc,char *argv[])
   int      n,nlast,s,nset,i,j=0;
   real     **val,*t,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
-  char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile,*fitfile;
+  const char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile,*fitfile;
   output_env_t oenv;
   
   t_filenm fnm[] = { 

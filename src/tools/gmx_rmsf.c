@@ -80,7 +80,8 @@ static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
   return atoms->pdbinfo[i].bfac;
 }
 
-void correlate_aniso(char *fn,t_atoms *ref,t_atoms *calc,output_env_t oenv)
+void correlate_aniso(const char *fn,t_atoms *ref,t_atoms *calc,
+                     output_env_t oenv)
 {
   FILE *fp;
   int  i,j;
@@ -208,7 +209,7 @@ int gmx_rmsf(int argc,char *argv[])
   char         title[STRLEN];
   
   FILE         *fp;               /* the graphics file */
-  char         *devfn,*dirfn;
+  const char   *devfn,*dirfn;
   int          resind;
 
   bool         bReadPDB;  

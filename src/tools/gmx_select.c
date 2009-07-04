@@ -197,7 +197,7 @@ gmx_select(int argc, char *argv[])
     gmx_ana_selection_t **sel;
     char                **grpnames;
     t_dsdata              d;
-    char                 *fnSize, *fnFrac, *fnIndex, *fnMask;
+    const char            *fnSize, *fnFrac, *fnIndex, *fnMask;
     int                   g;
     int                   rc;
     output_env_t          oenv;

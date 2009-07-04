@@ -696,7 +696,7 @@ int gmx_current(int argc,char *argv[])
   t_topology top;
   char       title[STRLEN];
   char       **grpname=NULL;
-  char	     *indexfn;
+  const char *indexfn;
   t_trxframe fr;
   real       *mass2=NULL;
   rvec       *xtop,*vtop;

@@ -112,7 +112,7 @@ typedef struct
 
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
 
-extern const t_interaction_function const interaction_function[F_NRE];
+extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
 
 #endif

@@ -99,7 +99,7 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
   *rmax = sqrt(r2max);
 }
 
-static void periodic_mindist_plot(char *trxfn,char *outfn,
+static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 				  t_topology *top,int ePBC,
 				  int n,atom_id index[],bool bSplit,
                                   output_env_t oenv)
@@ -225,8 +225,8 @@ static void calc_dist(real rcut, int ePBC, matrix box, rvec x[],
   *rmax = sqrt(rmax2);
 }
 
-void dist_plot(char *fn,char *afile,char *dfile,
-	       char *nfile,char *rfile,char *xfile,
+void dist_plot(const char *fn,const char *afile,const char *dfile,
+	       const char *nfile,const char *rfile,const char *xfile,
 	       real rcut,bool bMat,t_atoms *atoms,
 	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
 	       bool bMin, int nres, atom_id *residue,bool bPBC,int ePBC,
@@ -474,7 +474,7 @@ int gmx_mindist(int argc,char *argv[])
   
   FILE      *atm;
   int       i,j,nres=0;
-  char      *trxfnm,*tpsfnm,*ndxfnm,*distfnm,*numfnm,*atmfnm,*oxfnm,*resfnm;
+  const char *trxfnm,*tpsfnm,*ndxfnm,*distfnm,*numfnm,*atmfnm,*oxfnm,*resfnm;
   char      **grpname;
   int       *gnx;
   atom_id   **index, *residues=NULL;

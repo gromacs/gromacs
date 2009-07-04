@@ -195,7 +195,7 @@ static int comp_minima(const void *a,const void *b)
     return 0;
 }
 
-static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
+static void pick_minima(const char *logfile,int *ibox,int ndim,int len,real W[])
 {
   FILE *fp;
   int  i,j,k,ijk,nmin;
@@ -261,9 +261,10 @@ static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
   sfree(mm);
 }
 
-static void do_sham(char *fn,char *ndx,
-		    char *xpmP,char *xpm,char *xpm2,
-		    char *xpm3,char *xpm4,char *pdb,char *logf,
+static void do_sham(const char *fn,const char *ndx,
+		    const char *xpmP,const char *xpm,const char *xpm2,
+		    const char *xpm3,const char *xpm4,const char *pdb,
+                    const char *logf,
 		    int n,int neig,real **eig,
 		    bool bGE,int nenerT,real **enerT,
 		    int nmap,real *mapindex,real **map,
@@ -624,7 +625,7 @@ static void do_sham(char *fn,char *ndx,
   }
 }
 
-static void ehisto(char *fh,int n,real **enerT, output_env_t oenv)
+static void ehisto(const char *fh,int n,real **enerT, output_env_t oenv)
 {
   FILE *fp;
   int  i,j,k,nbin,blength;
@@ -775,7 +776,7 @@ int gmx_sham(int argc,char *argv[])
   real     **val,**et_val,**dt_val,*t,*e_t,e_dt,d_dt,*d_t,dt,tot,error;
   real     *rmin,*rmax;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
-  char     *fn_ge,*fn_ene;
+  const char     *fn_ge,*fn_ene;
   output_env_t oenv;
     
   t_filenm fnm[] = { 

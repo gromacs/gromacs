@@ -111,7 +111,8 @@ gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
  * If both are null, the index group structure is initialized empty.
  */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm)
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
+                       const char *fnm)
 {
     t_blocka *block = NULL;
     char    **names = NULL;

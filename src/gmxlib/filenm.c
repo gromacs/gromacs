@@ -346,7 +346,7 @@ void pr_def(FILE *fp,int ftp)
           check_tex(desc),check_tex(flst));
 }
 
-void pr_fns(FILE *fp,int nf,t_filenm tfn[])
+void pr_fns(FILE *fp,int nf,const t_filenm tfn[])
 {
   int  i,f;
   size_t j;
@@ -383,7 +383,7 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   fflush(fp);
 }
 
-void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell)
+void pr_fopts(FILE *fp,int nf,const t_filenm tfn[], int shell)
 {
   int i,j;
   
@@ -662,7 +662,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	
 }
 
-char *opt2fn(const char *opt,int nfile,t_filenm fnm[])
+const char *opt2fn(const char *opt,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -676,7 +676,7 @@ char *opt2fn(const char *opt,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[])
+int opt2fns(char **fns[], const char *opt,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -690,7 +690,7 @@ int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[])
   return 0;
 }
 
-char *ftp2fn(int ftp,int nfile,t_filenm fnm[])
+const char *ftp2fn(int ftp,int nfile,const t_filenm fnm[])
 {
   int i;
   
@@ -702,7 +702,7 @@ char *ftp2fn(int ftp,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[])
+int ftp2fns(char **fns[], int ftp,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -716,7 +716,7 @@ int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[])
   return 0;
 }
 
-bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
+bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[])
 {
   int i;
   
@@ -729,7 +729,7 @@ bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
   return FALSE;
 }
 
-bool opt2bSet(const char *opt,int nfile,t_filenm fnm[])
+bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[])
 {
   int i;
   
@@ -742,7 +742,7 @@ bool opt2bSet(const char *opt,int nfile,t_filenm fnm[])
   return FALSE;
 }
 
-char *opt2fn_null(const char *opt,int nfile,t_filenm fnm[])
+const char *opt2fn_null(const char *opt,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -757,7 +757,7 @@ char *opt2fn_null(const char *opt,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
+const char *ftp2fn_null(int ftp,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -821,24 +821,24 @@ char *ftp2filter(int ftp)
 #endif
 
 
-bool is_optional(t_filenm *fnm)
+bool is_optional(const t_filenm *fnm)
 {
   return ((fnm->flag & ffOPT) == ffOPT);
 }
 
-bool is_output(t_filenm *fnm)
+bool is_output(const t_filenm *fnm)
 {
   return ((fnm->flag & ffWRITE) == ffWRITE);
 }
 
-bool is_set(t_filenm *fnm)
+bool is_set(const t_filenm *fnm)
 {
   return ((fnm->flag & ffSET) == ffSET);
 }  
 
  
 
-int add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix)
+int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
     int   i,j,pos;
     char  buf[STRLEN],newname[STRLEN];

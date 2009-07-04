@@ -75,10 +75,10 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
   sfree(leg);
 }
 
-static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
-		     int gnx,atom_id index[],
-		     real blen,real tol,bool bAver,
-		     t_topology *top,int ePBC,bool bAverDist,
+static void do_bonds(FILE *log,const char *fn,const char *fbond,
+                     const char *fdist, int gnx,atom_id index[],
+                     real blen,real tol,bool bAver,
+                     t_topology *top,int ePBC,bool bAverDist,
                      output_env_t oenv)
 {
 #define MAXTAB 1000
@@ -252,7 +252,8 @@ int gmx_bond(int argc,char *argv[])
       "Average distances (turns on -d)" }
   };
   FILE      *fp;
-  char      *grpname,*fdist;
+  char      *grpname;
+  const char *fdist;
   int       gnx;
   atom_id   *index;
   char      title[STRLEN];

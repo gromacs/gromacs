@@ -313,7 +313,7 @@ int main (int argc, char *argv[])
     "using the LIE (Linear Interaction Energy) method."
   };
 
-  char         *top_fn,*frame_fn;
+  const char   *top_fn,*frame_fn;
   int          fp;
   ener_file_t  fp_ener=NULL;
   t_trnheader head;

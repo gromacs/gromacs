@@ -237,9 +237,9 @@ extern void expfit(int n, real x[], real y[], real Dy[],
  * Routine from Computers in physics, 7(3) (1993), p. 280-285.
  */
 
-extern void ana_dih_trans(char *fn_trans,char *fn_histo,
+extern void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 			  real **dih,int nframes,int nangles,
-			  char *grpname,real t0,real dt,bool bRb,
+			  const char *grpname,real t0,real dt,bool bRb,
                           output_env_t oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
@@ -264,10 +264,10 @@ extern void ana_dih_trans(char *fn_trans,char *fn_histo,
  *           (trans = 0)
  */
 
-extern void low_ana_dih_trans(bool bTrans, char *fn_trans,
-			      bool bHisto, char *fn_histo, int maxchi, 
+extern void low_ana_dih_trans(bool bTrans, const char *fn_trans,
+			      bool bHisto, const char *fn_histo, int maxchi, 
 			      real **dih, int nlist, t_dlist dlist[], 
-                              int nframes, int nangles, char *grpname, 
+                              int nframes, int nangles, const char *grpname, 
                               int xity[], real t0, real dt, bool bRb, 
                               real core_frac, output_env_t oenv); 
   /* as above but passes dlist so can copy occupancies into it, and xity[] 
@@ -279,7 +279,7 @@ extern void low_ana_dih_trans(bool bTrans, char *fn_trans,
 
 
 
-extern void read_ang_dih(char *trj_fn,
+extern void read_ang_dih(const char *trj_fn,
 			 bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
 			 int maxangstat,int angstat[],
 			 int *nframes,real **time,
@@ -408,7 +408,7 @@ extern void get_chi_product_traj (real **dih,int nframes,int nangles,
 				  int nlist,int maxchi, t_dlist dlist[], 
                                   real time[], int **lookup,int *xity,
                                   bool bRb,bool bNormalize,
-				  real core_frac,bool bAll,char *fnall,
+				  real core_frac,bool bAll,const char *fnall,
                                   output_env_t oenv); 
 
 extern void print_one (output_env_t oenv, const char *base,const char *name,

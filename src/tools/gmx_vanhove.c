@@ -125,7 +125,7 @@ int gmx_vanhove(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   output_env_t oenv;
-  char     *matfile,*otfile,*orfile;
+  const char *matfile,*otfile,*orfile;
   char     title[256];
   t_topology top;
   int      ePBC;

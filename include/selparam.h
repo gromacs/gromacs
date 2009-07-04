@@ -124,7 +124,7 @@ extern "C"
  */
 typedef struct gmx_ana_selparam_t
 {
-    //! Name of the parameter.
+    /*! Name of the parameter.*/
     const char         *name;
     /*! \brief
      * The parameter value.
@@ -167,7 +167,7 @@ typedef struct gmx_ana_selparam_t
     int                 flags;
 } gmx_ana_selparam_t;
 
-//! Finds a parameter from an array by name.
+/*! Finds a parameter from an array by name.*/
 extern gmx_ana_selparam_t *
 gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param);
 

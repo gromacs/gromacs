@@ -67,7 +67,7 @@ int main (int argc,char *argv[])
   };
   
   char        title[STRLEN+1];  
-  char        *infile;
+  const char  *infile;
   char        *grpnm;
   t_topology  top;
   int         ePBC;

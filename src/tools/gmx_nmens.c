@@ -96,7 +96,8 @@ int gmx_nmens(int argc,char *argv[])
   matrix     box;
   real       *eigval,totmass,*invsqrtm,t,disp;
   int        natoms,neigval;
-  char       *grpname,*indexfile,title[STRLEN];
+  char       *grpname,title[STRLEN];
+  const char *indexfile;
   int        i,j,d,s,v;
   int        nout,*iout,noutvec,*outvec;
   atom_id    *index;

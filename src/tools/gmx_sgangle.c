@@ -177,8 +177,8 @@ static void calc_angle(int ePBC,matrix box,rvec x[], atom_id index1[],
   } 
 }
 
-void sgangle_plot(char *fn,char *afile,char *dfile, 
-		  char *d1file, char *d2file,
+void sgangle_plot(const char *fn,const char *afile,const char *dfile, 
+		  const char *d1file, const char *d2file,
 		  atom_id index1[], int gnx1, char *grpn1,
 		  atom_id index2[], int gnx2, char *grpn2,
 		  t_topology *top,int ePBC,output_env_t oenv)
@@ -336,8 +336,8 @@ static void calc_angle_single(int ePBC,
 }
  
  
-void sgangle_plot_single(char *fn,char *afile,char *dfile, 
-			 char *d1file, char *d2file,
+void sgangle_plot_single(const char *fn,const char *afile,const char *dfile, 
+			 const char *d1file, const char *d2file,
 			 atom_id index1[], int gnx1, char *grpn1,
 			 atom_id index2[], int gnx2, char *grpn2,
 			 t_topology *top,int ePBC, output_env_t oenv)
@@ -445,7 +445,7 @@ int gmx_sgangle(int argc,char *argv[])
   };
 
   output_env_t oenv;
-  char	     *fna, *fnd, *fnd1, *fnd2;		
+  const char *fna, *fnd, *fnd1, *fnd2;		
   char *      grpname[2];          		/* name of the two groups */
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 

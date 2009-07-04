@@ -92,7 +92,7 @@ typedef struct {
  */
 typedef struct {
   int       status;
-  char      *trajfile;
+  const char  *trajfile;
   int       natom;		/* The number of atoms			*/
   t_topology top;               /* topology                             */
   rvec      box_size;
@@ -142,7 +142,8 @@ extern void move_man(t_x11 *x11,t_manager *man,int width,int height);
 extern void step_message(t_x11 *x11,t_manager *man);
 /* Send a message to the manager */
 
-extern void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status);
+extern void set_file(t_x11 *x11,t_manager *man,const char *trajectory,
+                     const char *status);
 /* Read a new trajectory and topology */
 
 extern void map_man(t_x11 *x11,t_manager *man);

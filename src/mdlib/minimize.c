@@ -239,7 +239,7 @@ void init_em(FILE *fplog,const char *title,
 	     t_forcerec *fr,gmx_enerdata_t **enerd,
 	     t_graph **graph,t_mdatoms *mdatoms,gmx_global_stat_t *gstat,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
-	     int nfile,t_filenm fnm[],int *fp_trn,ener_file_t *fp_ene,
+	     int nfile,const t_filenm fnm[],int *fp_trn,ener_file_t *fp_ene,
 	     t_mdebin **mdebin)
 {
   int  start,homenr,i;
@@ -408,7 +408,7 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
 }
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
-                          int fp_trn,bool bX,bool bF,char *confout,
+                          int fp_trn,bool bX,bool bF,const char *confout,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir,gmx_step_t step,
                           em_state_t *state,
@@ -797,7 +797,7 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 }
 
 time_t do_cg(FILE *fplog,t_commrec *cr,
-	     int nfile,t_filenm fnm[], 
+	     int nfile, const t_filenm fnm[], 
              output_env_t oenv, bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
@@ -1314,7 +1314,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 
 
 time_t do_lbfgs(FILE *fplog,t_commrec *cr,
-                int nfile,t_filenm fnm[],
+                int nfile,const t_filenm fnm[],
                 output_env_t oenv, bool bVerbose,bool bCompact,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
@@ -1947,7 +1947,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 
 
 time_t do_steep(FILE *fplog,t_commrec *cr,
-		int nfile,t_filenm fnm[],
+		int nfile,const t_filenm fnm[],
                 output_env_t oenv, bool bVerbose,bool bCompact,
 		gmx_vsite_t *vsite,gmx_constr_t constr,
 		int stepout,
@@ -2149,7 +2149,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 
 
 time_t do_nm(FILE *fplog,t_commrec *cr,
-	     int nfile,t_filenm fnm[],
+	     int nfile,const t_filenm fnm[],
              output_env_t oenv, bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
@@ -2413,7 +2413,7 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 }
 
 time_t do_tpi(FILE *fplog,t_commrec *cr,
-	      int nfile,t_filenm fnm[],
+	      int nfile,const t_filenm fnm[],
               output_env_t oenv, bool bVerbose,bool bCompact,
 	      gmx_vsite_t *vsite,gmx_constr_t constr,
 	      int stepout,

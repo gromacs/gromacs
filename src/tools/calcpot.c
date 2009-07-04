@@ -216,7 +216,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
 }
 
-FILE *init_calcpot(char *log,char *tpx,char *table,
+FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 		   gmx_mtop_t *mtop,gmx_localtop_t *top,
 		   t_inputrec *inputrec,t_commrec **cr,
 		   t_graph **graph,t_mdatoms **mdatoms,

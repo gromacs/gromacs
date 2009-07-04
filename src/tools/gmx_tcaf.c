@@ -70,9 +70,10 @@ rvec v1[NK]={{0,1,0},{0,0,1},{1,0,0}, {0, 0,1},{0, 0,1},{0,1,0}, {0,1, 0},{1,0, 
 rvec v2[NK]={{0,0,1},{1,0,0},{0,1,0}, {1,-1,0},{1, 1,0},{1,0,-1},{1,0, 1},{0,1,-1},{0,1, 1}, {1, 1,-2},{1, 1, 2},{1, 2, 1},{ 2,1, 1}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}};
 
 static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
-			 real rho,real wt,char *fn_trans,
-			 char *fn_tca,char *fn_tc,char *fn_tcf,char *fn_cub,
-			 char *fn_vk, output_env_t oenv)
+			 real rho,real wt,const char *fn_trans,
+			 const char *fn_tca,const char *fn_tc,
+                         const char *fn_tcf,const char *fn_cub,
+			 const char *fn_vk, output_env_t oenv)
 {
   FILE *fp,*fp_vk,*fp_cub=NULL;
   int  nk,ntc;

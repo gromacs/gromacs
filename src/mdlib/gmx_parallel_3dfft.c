@@ -70,7 +70,7 @@ static int *copy_int_array(int n,int *src)
 {
     int *dest,i;
 
-    dest = malloc(n*sizeof(int));
+    dest = (int*)malloc(n*sizeof(int));
     for(i=0; i<n; i++)
         dest[i] = src[i];
 
@@ -81,7 +81,7 @@ static int *make_slab2grid(int nnodes,int ngrid)
 {
     int *s2g,i;
 
-    s2g = malloc((nnodes+1)*sizeof(int));
+    s2g = (int*)malloc((nnodes+1)*sizeof(int));
     for(i=0; i<nnodes+1; i++) {
         /* We always round up */
         s2g[i] = (i*ngrid + nnodes - 1)/nnodes;
@@ -107,7 +107,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     
     flags = bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : 0;
     
-    p = malloc(sizeof(struct gmx_parallel_3dfft));
+    p = (gmx_parallel_3dfft_t)malloc(sizeof(struct gmx_parallel_3dfft));
     
     if(p==NULL)
         return ENOMEM;
@@ -142,11 +142,11 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     p->slab2grid_y     = make_slab2grid(p->nnodes,p->ny);
 
     if (node2slab || p->nx % p->nnodes || p->ny % p->nnodes) {
-        p->aav = malloc(sizeof(alltoallv_t));
-        p->aav->sdisps  = malloc(p->nnodes*sizeof(int));
-        p->aav->scounts = malloc(p->nnodes*sizeof(int));
-        p->aav->rdisps  = malloc(p->nnodes*sizeof(int));
-        p->aav->rcounts = malloc(p->nnodes*sizeof(int));
+        p->aav = (alltoallv_t*)malloc(sizeof(alltoallv_t));
+        p->aav->sdisps  = (int*)malloc(p->nnodes*sizeof(int));
+        p->aav->scounts = (int*)malloc(p->nnodes*sizeof(int));
+        p->aav->rdisps  = (int*)malloc(p->nnodes*sizeof(int));
+        p->aav->rcounts = (int*)malloc(p->nnodes*sizeof(int));
     } else {
         p->aav  = NULL;
     }
@@ -164,13 +164,15 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                       ((p->ny + p->nnodes - 1)/p->nnodes);
 
     
-    p0               = malloc(sizeof(real)*2*(p->nzc)*nxy_n + 32);
+    p0               = (real*)malloc(sizeof(real)*2*(p->nzc)*nxy_n + 32);
     p->work_rawptr   = p0;
-    p->work          = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
+    p->work          = (t_complex*) ((void *) (((size_t) p0 + 32) & 
+                                                (~((size_t) 31))));
 
-    p0               = malloc(sizeof(real)*2*(p->nzc)*nxy_n);
+    p0               = (real*)malloc(sizeof(real)*2*(p->nzc)*nxy_n);
     p->work2_rawptr  = p0;
-    p->work2         = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
+    p->work2         = (t_complex*) ((void *) (((size_t) p0 + 32) & 
+                                                (~((size_t) 31))));
     
     if(p->work == NULL || p->work2 == NULL)
     {
@@ -488,7 +490,7 @@ gmx_parallel_3dfft_complex2real(gmx_parallel_3dfft_t    pfft_setup,
     t_complex *  cdata;
     
     work    = pfft_setup->work;
-    cdata   = data;
+    cdata   = (t_complex*)data;
 
     nx  = pfft_setup->nx;
     ny  = pfft_setup->ny;

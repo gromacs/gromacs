@@ -207,8 +207,8 @@ static void split_group(int isize,int *index,char *grpname,
   *coi_out = coi;
 }
 
-static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
-		   char *fnRDF,char *fnCNRDF, char *fnHQ,
+static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
+		   const char *fnRDF,const char *fnCNRDF, const char *fnHQ,
 		   bool bCM,const char *close,
 		   const char **rdft,bool bXY,bool bPBC,bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng,
@@ -891,8 +891,8 @@ void compute_structure_factor (structure_factor * sf, matrix box,
     } sfree (counter); free(tmpSF[0][0]); free(tmpSF[0]); free(tmpSF);
 }
 
-void save_data (structure_factor * sf, char *file, int ngrps, real start_q,
-                real end_q, output_env_t oenv)
+void save_data (structure_factor * sf, const char *file, int ngrps, 
+                real start_q, real end_q, output_env_t oenv)
 {
 
     FILE *fp;
@@ -930,8 +930,9 @@ void save_data (structure_factor * sf, char *file, int ngrps, real start_q,
     ffclose (fp);
 }
 
-int do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, 
-                             char *fnTRX, real start_q,real end_q, 
+int do_scattering_intensity (const char* fnTPS, const char* fnNDX, 
+                             const char* fnXVG, const char *fnTRX, 
+                             real start_q,real end_q, 
                              real energy,int ng,output_env_t oenv)
 {
     int i,*isize,status,flags = TRX_READ_X,**index_atp;
@@ -1097,7 +1098,7 @@ int gmx_rdf(int argc,char *argv[])
      "Energy of the incoming X-ray (keV) "}
   };
 #define NPA asize(pa)
-  char       *fnTPS,*fnNDX;
+  const char *fnTPS,*fnNDX;
   bool       bSQ,bRDF;
   output_env_t oenv;
   

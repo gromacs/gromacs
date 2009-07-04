@@ -118,7 +118,7 @@ void pull_print_output(t_pull *pull, gmx_step_t step, double time)
     pull_print_f(pull->out_f,pull,time);
 }
 
-static FILE *open_pull_out(char *fn,t_pull *pull,output_env_t oenv, 
+static FILE *open_pull_out(const char *fn,t_pull *pull,output_env_t oenv, 
                            bool bCoord, unsigned long Flags)
 {
   FILE *fp;
@@ -920,7 +920,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   }
 }
 
-void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
+void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
 	       gmx_mtop_t *mtop,t_commrec *cr,output_env_t oenv,
                bool bOutFile, unsigned long Flags)
 {

@@ -348,7 +348,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-        char ** leg,output_env_t oenv)
+               char **leg,output_env_t oenv)
 {
     FILE *fp;
     int  i,j;
@@ -365,7 +365,7 @@ void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
     xvgrclose(fp);
 }
 
-real **read_xvg_time(char *fn,
+real **read_xvg_time(const char *fn,
 		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
 		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {

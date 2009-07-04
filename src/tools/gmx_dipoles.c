@@ -244,7 +244,7 @@ static real normalize_cmap(t_gkrbin *gb)
   return hi;  
 }
 
-static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
+static void print_cmap(const char *cmap,t_gkrbin *gb,int *nlevels)
 {
   FILE   *out;
   int    i,j;
@@ -277,7 +277,7 @@ static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
   sfree(yaxis);
 }
 
-static void print_gkrbin(char *fn,t_gkrbin *gb,
+static void print_gkrbin(const char *fn,t_gkrbin *gb,
 			 int ngrp,int nframes,real volume,
                          output_env_t oenv)
 {
@@ -547,8 +547,9 @@ static void update_slab_dipoles(int k0,int k1,rvec x[],rvec mu,
   rvec_inc(slab_dipole[k],mu);
 }
 
-static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
-			      matrix box,int nframes,output_env_t oenv)
+static void dump_slab_dipoles(const char *fn,int idim,int nslice,
+                              rvec slab_dipole[], matrix box,int nframes,
+                              output_env_t oenv)
 {
   FILE *fp;
   char buf[STRLEN];
@@ -605,24 +606,24 @@ static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
 }
 
 static void do_dip(t_topology *top,int ePBC,real volume,
-		   char *fn,
-		   char *out_mtot,char *out_eps,char *out_aver, 
-		   char *dipdist,
-		   char *cosaver, char *fndip3d,
-		   char *fnadip,  bool bPairs,
-		   const char *corrtype,char *corf,
-		   bool bGkr,     char *gkrfn,
+		   const char *fn,
+		   const char *out_mtot,const char *out_eps,
+                   const char *out_aver, const char *dipdist,
+		   const char *cosaver, const char *fndip3d,
+		   const char *fnadip,  bool bPairs,
+		   const char *corrtype,const char *corf,
+		   bool bGkr,     const char *gkrfn,
 		   bool bPhi,     int  *nlevels,  int ndegrees,
 		   int  ncos,
-		   char *cmap,    real rcmax,
-		   bool bQuad,    char *quadfn,
-		   bool bMU,      char *mufn,
+		   const char *cmap,    real rcmax,
+		   bool bQuad,    const char *quadfn,
+		   bool bMU,      const char *mufn,
 		   int  *gnx,     int  *molindex[],
 		   real mu_max,   real mu_aver,
 		   real epsilonRF,real temp,
 		   int  *gkatom,  int skip,
 		   bool bSlab,    int nslices,
-		   const char *axtitle, char *slabfn,
+		   const char *axtitle, const char *slabfn,
                    output_env_t oenv)
 {
   char *leg_mtot[] = { 

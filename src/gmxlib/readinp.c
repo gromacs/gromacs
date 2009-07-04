@@ -55,7 +55,7 @@ static int inp_count = 1;
 static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
 
-t_inpfile *read_inpfile(char *fn,int *ninp, 
+t_inpfile *read_inpfile(const char *fn,int *ninp, 
 			char **cppopts)
 {
   /*FILE      *in;*/
@@ -239,7 +239,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
   qsort(inp,ninp,(size_t)sizeof(inp[0]),inp_comp);
 }
 
-void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
+void write_inpfile(const char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
 {
   FILE *out;
   int  i;

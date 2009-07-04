@@ -540,7 +540,7 @@ static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
   }
 }
 
-void get_ir(char *mdparin,char *mdparout,
+void get_ir(const char *mdparin,const char *mdparout,
 	    t_inputrec *ir,t_gromppopts *opts, int *nerror)
 {
   char      *dumstr[2];
@@ -1446,7 +1446,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   return bSet;
 }
 
-void do_index(char* mdparin, char *ndx,
+void do_index(const char* mdparin, const char *ndx,
 	      gmx_mtop_t *mtop,
 	      bool bVerbose,
 	      t_inputrec *ir,rvec *v)
@@ -1906,7 +1906,7 @@ static void absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
   }
 }
 
-void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
+void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
   int  i,m,nmol,npct;

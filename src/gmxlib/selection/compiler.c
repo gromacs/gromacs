@@ -182,7 +182,7 @@
  */
 typedef struct t_compiler_data
 {
-    //! The real evaluation method.
+    /*! The real evaluation method.*/
     sel_evalfunc  evaluate; 
     /*! \brief
      * Whether the element is a method parameter.
@@ -198,15 +198,15 @@ typedef struct t_compiler_data
      * but it is also FALSE for static elements within common subexpressions.
      */
     bool          bStatic;
-    //! TRUE if the subexpression will always be evaluated with the same group.
+    /*! TRUE if the subexpression will always be evaluated with the same group.*/
     bool          bStaticEval;
-    //! TRUE if the compiler evaluation routine should return the maximal selection.
+    /*! TRUE if the compiler evaluation routine should return the maximal selection.*/
     bool          bEvalMax;
-    //! Smallest selection that can be selected by the subexpression.
+    /*! Smallest selection that can be selected by the subexpression.*/
     gmx_ana_index_t *gmin;
-    //! Largest selection that can be selected by the subexpression.
+    /*! Largest selection that can be selected by the subexpression.*/
     gmx_ana_index_t *gmax;
-    //! TRUE if memory has been allocated for \p gmin and \p gmax.
+    /*! TRUE if memory has been allocated for \p gmin and \p gmax.*/
     bool             bMinMaxAlloc;
 } t_compiler_data;
 

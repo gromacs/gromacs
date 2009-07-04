@@ -624,15 +624,16 @@ static void tMPI_Wait_send(struct mpi_send_envelope_ *ev);
 /* do a transfer from an envelope send to recv buffer, updating status. 
    This function will lock a mutex if the envelope says that there's a
    non-blocking receiver (in that case, the sender may have to initiate
-   transer). If try=true, it will just try to lock (and return if it doesn't
-   get a lock), if try=false, it will wait until it gets a lock. 
+   transer). If try_lock=true, it will just try_lock to lock (and return if 
+   it doesn't get a lock), if try_lock=false, it will wait until it gets 
+   a lock. 
    
    There are two versions of Xfer: one for recv-initiated transfers (Xfer_recv)
    and one for sender-initiated transfers (Xfer-send). */
 static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status, 
-                          bool try);
+                          bool try_lock);
 static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs, MPI_Status *status, 
-                          bool try);
+                          bool try_lock);
 
 
 
@@ -1089,9 +1090,8 @@ int MPI_Type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
     {
         /* make space */
         mpi_global->Nalloc_usertypes=2*(mpi_global->N_usertypes + 1);
-        mpi_global->usertypes=srealloc(mpi_global->usertypes, 
-                                        (sizeof(struct mpi_datatype_ *)*
-                                          mpi_global->Nalloc_usertypes));
+        srealloc(mpi_global->usertypes, 
+                 (sizeof(struct mpi_datatype_ *)*mpi_global->Nalloc_usertypes));
     }
     /* add to the list */
     mpi_global->usertypes[mpi_global->N_usertypes]=ntp;
@@ -2194,7 +2194,7 @@ static void tMPI_Wait_send(struct mpi_send_envelope_ *ev)
 }
 
 static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status, 
-                         bool try)
+                         bool try_lock)
 {
     bool locked=FALSE;
     size_t transferred;
@@ -2207,7 +2207,7 @@ static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status,
 #endif
     if (evr->nonblock)
     {
-        if (try)
+        if (try_lock)
         {
             int ret=gmx_thread_mutex_trylock(&(evr->dest->xmit_mutex));
             if (ret==EBUSY)
@@ -2273,7 +2273,7 @@ end:
 }
 
 static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs, 
-                          MPI_Status *status, bool try)
+                          MPI_Status *status, bool try_lock)
 {
     bool locked=FALSE;
     size_t transferred;
@@ -2287,7 +2287,7 @@ static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs,
 #endif
     if (evs->recv_nonblock)
     {
-        if (try)
+        if (try_lock)
         {
             int ret=gmx_thread_mutex_trylock(&(evs->dest->xmit_mutex));
             if (ret==EBUSY)

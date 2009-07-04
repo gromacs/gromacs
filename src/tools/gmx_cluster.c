@@ -547,8 +547,8 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
   clust->ncl=k-1;
 }
 
-rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
-		      real **time,output_env_t oenv)
+rvec **read_whole_trj(const char *fn,int isize,atom_id index[],int skip,
+                      int *nframe, real **time,output_env_t oenv)
 {
   rvec   **xx,*x;
   matrix box;
@@ -644,7 +644,7 @@ static void mark_clusters(int nf, real **mat, real val, t_clusters *clust)
 	mat[i][j] = 0;
 }
 
-static char *parse_filename(char *fn, int maxnr)
+static char *parse_filename(const char *fn, int maxnr)
 {
   int i;
   char *fnout, *ext;
@@ -673,7 +673,7 @@ static char *parse_filename(char *fn, int maxnr)
 }
 
 static void ana_trans(t_clusters *clust, int nf, 
-		      char *transfn, char *ntransfn, FILE *log,
+		      const char *transfn, const char *ntransfn, FILE *log,
 		      t_rgb rlo,t_rgb rhi,output_env_t oenv)
 {
   FILE *fp;
@@ -729,8 +729,9 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     real *mass, rvec **xx, real *time,
 			     int ifsize, atom_id *fitidx,
 			     int iosize, atom_id *outidx,
-			     char *trxfn, char *sizefn, char *transfn, 
-			     char *ntransfn, char *clustidfn, bool bAverage, 
+			     const char *trxfn, const char *sizefn, 
+                             const char *transfn, const char *ntransfn, 
+                             const char *clustidfn, bool bAverage, 
 			     int write_ncl, int write_nst, real rmsmin,
                              bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
                              output_env_t oenv)
@@ -1011,7 +1012,7 @@ int gmx_cluster(int argc,char *argv[])
 
   matrix       box;
   rvec         *xtps,*usextps,*x1,**xx=NULL;
-  char         *fn,*trx_out_fn;
+  const char   *fn,*trx_out_fn;
   t_clusters   clust;
   t_mat        *rms;
   real         *eigval;

@@ -115,7 +115,7 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-static int strcount(char *s1,char *s2)
+static int strcount(const char *s1,const char *s2)
 {
   int n=0;
   while (s1 && s2 && (toupper(s1[n]) == toupper(s2[n])))
@@ -272,7 +272,7 @@ static int *select_by_name(int nre,gmx_enxnm_t *nm,int *nset)
   return set;
 }
 
-static void get_orires_parms(char *topnm,
+static void get_orires_parms(const char *topnm,
 			     int *nor,int *nex,int **label,real **obs)
 {
   gmx_mtop_t mtop;
@@ -309,7 +309,7 @@ static void get_orires_parms(char *topnm,
 	  *nor,*nex);
 }
 
-static int get_bounds(char *topnm,
+static int get_bounds(const char *topnm,
 		      real **bounds,int **index,int **dr_pair,int *npairs,
 		      gmx_mtop_t *mtop,gmx_localtop_t **ltop,t_inputrec *ir)
 {
@@ -411,7 +411,7 @@ static void calc_violations(real rt[],real rav3[],int nb,int index[],
   *sa = sumaver;
 }
 
-static void analyse_disre(char *voutfn,    int nframes,
+static void analyse_disre(const char *voutfn,    int nframes,
 			  real violaver[], real bounds[], int index[],
 			  int pair[],      int nbounds,
                           output_env_t oenv)
@@ -511,9 +511,9 @@ static void einstein_visco(const char *fn,const char *fni,int nsets,
     fclose(fp1);
 }
 
-static void analyse_ener(bool bCorr,char *corrfn,
+static void analyse_ener(bool bCorr,const char *corrfn,
 			 bool bFee,bool bSum,bool bFluct,
-			 bool bVisco,char *visfn,int  nmol,int ndf,
+			 bool bVisco,const char *visfn,int  nmol,int ndf,
 			 gmx_step_t start_step,double start_t,
 			 gmx_step_t step,double t,
 			 double time[], real reftemp,
@@ -521,7 +521,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 			 t_energy ee_sum[],enersum_t *enersum,
 			 int nset,int set[],int nenergy,real **eneset,
 			 real **enesum,
-			 char *leg[],gmx_enxnm_t *enm,
+			 char **leg,gmx_enxnm_t *enm,
 			 real Vaver,real ezero, output_env_t oenv)
 {
   FILE *fp;
@@ -772,13 +772,13 @@ static void print1(FILE *fp,bool bDp,real e)
 
 }
 
-static void fec(char *ene2fn, char *runavgfn, 
+static void fec(const char *ene2fn, const char *runavgfn, 
 		real reftemp, int nset, int set[], char *leg[], 
 		int nenergy, real **eneset, double time[],
                 output_env_t oenv)
 {
   char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
-	   	            "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
+	   	      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   ener_file_t enx;
   int  nre,timecheck,step,nenergy2,maxenergy;

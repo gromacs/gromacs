@@ -866,7 +866,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
 }
 
 
-void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
+void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
                       gmx_step_t step,double t,t_state *state)
 {
@@ -1108,7 +1108,7 @@ static void check_match(FILE *fplog,
     }
 }
 
-static void read_checkpoint(char *fn,FILE *fplog,
+static void read_checkpoint(const char *fn,FILE *fplog,
                             t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_step_t *step,double *t,
                             t_state *state,bool *bReadRNG,bool *bReadEkin,
@@ -1358,7 +1358,7 @@ static void read_checkpoint(char *fn,FILE *fplog,
 }
 
 
-void load_checkpoint(char *fn,FILE *fplog,
+void load_checkpoint(const char *fn,FILE *fplog,
                      t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
                      bool *bReadRNG,bool *bReadEkin,bool bAppend)
@@ -1446,7 +1446,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
 }
 
 void 
-read_checkpoint_state(char *fn,int *simulation_part,
+read_checkpoint_state(const char *fn,int *simulation_part,
                       gmx_step_t *step,double *t,t_state *state)
 {
     int  fp;
@@ -1501,7 +1501,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     done_state(&state);
 }
 
-void list_checkpoint(char *fn,FILE *out)
+void list_checkpoint(const char *fn,FILE *out)
 {
     int  fp;
     int  file_version;
@@ -1564,8 +1564,7 @@ void list_checkpoint(char *fn,FILE *out)
 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-int
-read_checkpoint_simulation_part(char *filename)
+int read_checkpoint_simulation_part(const char *filename)
 {
     int  fp;
 	int  file_version;

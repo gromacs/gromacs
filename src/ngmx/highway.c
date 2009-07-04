@@ -87,7 +87,7 @@ typedef struct {
   t_windata but[NBUT];
 } t_xhighway;
 
-int read_input(t_x11 *x11,char *fn,t_car **cars,t_input *ir)
+int read_input(t_x11 *x11,const char *fn,t_car **cars,t_input *ir)
 {
   FILE   *in;
   int    i,n;
@@ -421,7 +421,7 @@ static bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   return FALSE;
 }
 
-t_xhighway *GetXHW(t_x11 *x11,char *infile)
+t_xhighway *GetXHW(t_x11 *x11,const char *infile)
 {
   t_xhighway *xhw;
   int        i,h,dh,w;

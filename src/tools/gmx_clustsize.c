@@ -63,10 +63,10 @@
 #include "matio.h"
 #include "mtop_util.h"
 
-static void clust_size(char *ndx,char *trx,char *xpm,
-		       char *xpmw,char *ncl,char *acl, 
-		       char *mcl,char *histo,char *tempf,
-		       char *mcn,bool bMol,bool bPBC,char *tpr,
+static void clust_size(const char *ndx,const char *trx,const char *xpm,
+		       const char *xpmw,const char *ncl,const char *acl, 
+		       const char *mcl,const char *histo,const char *tempf,
+		       const char *mcn,bool bMol,bool bPBC,const char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi,int ndf,
                        output_env_t oenv)
@@ -396,7 +396,7 @@ int gmx_clustsize(int argc,char *argv[])
       "RGB values for the color of the highest occupied cluster size" }
   };
 #define NPA asize(pa)
-  char       *fnNDX,*fnTPR;
+  const char *fnNDX,*fnTPR;
   bool       bSQ,bRDF;
   t_rgb      rgblo,rgbhi;
   

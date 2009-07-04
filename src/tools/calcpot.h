@@ -33,7 +33,7 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 	
-extern FILE *init_calcpot(char *log,char *tpx,char *table,
+extern FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 			  gmx_mtop_t *mtop,
 			  gmx_localtop_t *top,t_inputrec *inputrec,
                           t_commrec **cr,

@@ -403,14 +403,14 @@ static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
   strcat(out_file,ext);
 }
 
-void check_trn(char *fn)
+void check_trn(const char *fn)
 {
   if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
     gmx_fatal(FARGS,"%s is not a trj file, exiting\n",fn);
 }
 
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
-void do_trunc(char *fn, real t0)
+void do_trunc(const char *fn, real t0)
 {
   int          in;
   FILE         *fp;
@@ -722,7 +722,8 @@ int gmx_trjconv(int argc,char *argv[])
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
   bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
   bool         bWriteFrame,bSplitHere;
-  char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
+  const char   *top_file,*in_file,*out_file=NULL;
+  char         out_file2[256],*charpt;
   char         *outf_base=NULL,*outf_ext=NULL;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;

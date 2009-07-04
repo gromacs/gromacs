@@ -284,7 +284,7 @@ compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
 }
 
 
-static void inprod_matrix(char *matfile,int natoms,
+static void inprod_matrix(const char *matfile,int natoms,
 			  int nvec1,int *eignr1,rvec **eigvec1,
 			  int nvec2,int *eignr2,rvec **eigvec2,
 			  bool bSelect,int noutvec,int *outvec)
@@ -351,7 +351,7 @@ static void inprod_matrix(char *matfile,int natoms,
   fclose(out);
 }
 
-static void overlap(char *outfile,int natoms,
+static void overlap(const char *outfile,int natoms,
 		    rvec **eigvec1,
 		    int nvec2,int *eignr2,rvec **eigvec2,
 		    int noutvec,int *outvec,
@@ -385,16 +385,16 @@ static void overlap(char *outfile,int natoms,
   fclose(out);
 }
 
-static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
-		    rvec *xtop,
-		    char *projfile,char *twodplotfile,char *threedplotfile,
-		    char *filterfile,int skip,
-		    char *extremefile,bool bExtrAll,real extreme,int nextr,
-		    t_atoms *atoms,int natoms,atom_id *index,
-		    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
-		    real *sqrtm,rvec *xav,
-		    int *eignr,rvec **eigvec,
-		    int noutvec,int *outvec, bool bSplit,
+static void project(const char *trajfile,t_topology *top,int ePBC,
+                    matrix topbox, rvec *xtop,
+                    const char *projfile,const char *twodplotfile,
+                    const char *threedplotfile, const char *filterfile,int skip,
+                    const char *extremefile,bool bExtrAll,real extreme,
+                    int nextr, t_atoms *atoms,int natoms,atom_id *index,
+                    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
+                    real *sqrtm,rvec *xav,
+                    int *eignr,rvec **eigvec,
+                    int noutvec,int *outvec, bool bSplit,
                     output_env_t oenv)
 {
   FILE    *xvgrout=NULL;
@@ -656,7 +656,7 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
   fprintf(stderr,"\n");
 }
 
-static void components(char *outfile,int natoms,
+static void components(const char *outfile,int natoms,
 		       int *eignr,rvec **eigvec,
 		       int noutvec,int *outvec,
                        output_env_t oenv)
@@ -693,7 +693,7 @@ static void components(char *outfile,int natoms,
   fprintf(stderr,"\n");
 }
 
-static void rmsf(char *outfile,int natoms,real *sqrtm,
+static void rmsf(const char *outfile,int natoms,real *sqrtm,
                  int *eignr,rvec **eigvec,
                  int noutvec,int *outvec,
                  real *eigval, int neig,
@@ -843,16 +843,18 @@ int gmx_anaeig(int argc,char *argv[])
   matrix     topbox;
   real       xid,totmass,*sqrtm,*w_rls,t,lambda;
   int        natoms,step;
-  char       *grpname,*indexfile,title[STRLEN];
+  char       *grpname;
+  const char *indexfile;
+  char       title[STRLEN];
   int        i,j,d;
   int        nout,*iout,noutvec,*outvec,nfit;
   atom_id    *index,*ifit;
-  char       *VecFile,*Vec2File,*topfile;
-  char       *EigFile,*Eig2File;
-  char       *CompFile,*RmsfFile,*ProjOnVecFile;
-  char       *TwoDPlotFile,*ThreeDPlotFile;
-  char       *FilterFile,*ExtremeFile;
-  char       *OverlapFile,*InpMatFile;
+  const char *VecFile,*Vec2File,*topfile;
+  const char *EigFile,*Eig2File;
+  const char *CompFile,*RmsfFile,*ProjOnVecFile;
+  const char *TwoDPlotFile,*ThreeDPlotFile;
+  const char *FilterFile,*ExtremeFile;
+  const char *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
   bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
   real       *eigval1=NULL,*eigval2=NULL;

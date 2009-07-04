@@ -130,13 +130,14 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
-FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly, 
+FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
                    unsigned long Flags)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
   FILE *fp;
+  char *tmpnm;
 
   bool bAppend = Flags & MD_APPENDFILES;	
   
@@ -144,23 +145,31 @@ FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly,
   
   /* Communicate the filename for logfile */
   if (cr->nnodes > 1 && !bMasterOnly) {
-    if (MASTER(cr))
-      len = strlen(lognm)+1;
-    gmx_bcast(sizeof(len),&len,cr);
-    if (!MASTER(cr))
-      snew(lognm,len+8);
-    gmx_bcast(len*sizeof(*lognm),lognm,cr);
+      if (MASTER(cr))
+          len = strlen(lognm)+1;
+      gmx_bcast(sizeof(len),&len,cr);
+      if (!MASTER(cr))
+          snew(tmpnm,len+8);
+      else
+          tmpnm=strdup(lognm);
+      gmx_bcast(len*sizeof(*tmpnm),tmpnm,cr);
+  }
+  else
+  {
+      tmpnm=strdup(lognm);
   }
   
   debug_gmx();
 
   if (PAR(cr) && !bMasterOnly) {
     /* Since log always ends with '.log' let's use this info */
-    par_fn(lognm,efLOG,cr,cr->ms!=NULL,buf,255);
+    par_fn(tmpnm,efLOG,cr,cr->ms!=NULL,buf,255);
 	  fp = gmx_fio_fopen(buf, bAppend ? "a" : "w" );
   } else {
-	  fp = gmx_fio_fopen(lognm, bAppend ? "a" : "w" );
+	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a" : "w" );
   }
+
+  sfree(tmpnm);
 
   gmx_fatal_set_log_file(fp);
   
@@ -240,8 +249,8 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   debug_gmx();
 }
 
-void init_multisystem(t_commrec *cr,int nsim,
-		      int nfile,t_filenm fnm[],bool bParFn)
+void init_multisystem(t_commrec *cr,int nsim, int nfile,
+                      const t_filenm fnm[],bool bParFn)
 {
   gmx_multisim_t *ms;
   int  nnodes,nnodpersim,sim,i,ftp;

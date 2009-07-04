@@ -97,7 +97,7 @@ enum { elSel, elBoth, elFirst, elSecond, elNone, elNR };
 /* MUST correspond to char *combine[] in main() */
 enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
 
-void get_params(char *mpin,char *mpout,t_psrec *psr)
+void get_params(const char *mpin,const char *mpout,t_psrec *psr)
 {
   static const char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
@@ -249,8 +249,8 @@ void leg_continuous(t_psdata ps,real x0,real x,real y0,char *label,
 	   - boxxh/2,yhh,map[nmap-1].desc,eXCenter);
 }
 
-void leg_bicontinuous(t_psdata ps,real x0,real x,real y0,char *label1,char *label2,
-		      real fontsize,char *font,
+void leg_bicontinuous(t_psdata ps,real x0,real x,real y0,char *label1,
+                      char *label2, real fontsize,char *font,
 		      int nmap1,t_mapping map1[],int nmap2,t_mapping map2[])
 {
   real xx1,xx2,x1,x2;
@@ -551,8 +551,8 @@ int add_maps(t_mapping **newmap,
   return nmap;
 }
 
-void xpm_mat(char *outf,
-	     int nmat,t_matrix *mat,t_matrix *mat2,bool bDiag,bool bFirstDiag)
+void xpm_mat(const char *outf, int nmat,t_matrix *mat,t_matrix *mat2,
+             bool bDiag,bool bFirstDiag)
 {
   FILE   *out;
   char   buf[100];
@@ -630,13 +630,13 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 	  axisnm, *major, *minor);
 }
 
-void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
+void ps_mat(const char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    bool bFrame,bool bDiag,bool bFirstDiag,
 	    bool bTitle,bool bTitleOnce,bool bYonce,int elegend,
-	    real size,real boxx,real boxy,char *m2p,char *m2pout,
+	    real size,real boxx,real boxy,const char *m2p,const char *m2pout,
 	    int mapoffset)
 {
-  char   *libm2p;
+  const char   *libm2p;
   char buf[256],*legend;
   t_psdata out;
   t_psrec  psrec,*psr;
@@ -912,7 +912,7 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
     }
 }
 
-void write_combined_matrix(int ecombine, char *fn,
+void write_combined_matrix(int ecombine, const char *fn,
 			   int nmat, t_matrix *mat1, t_matrix *mat2,
 			   real *cmin,real *cmax)
 {
@@ -979,8 +979,8 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
 	    bool bFrame,bool bZeroLine,bool bDiag,bool bFirstDiag,bool bTitle,
 	    bool bTitleOnce,bool bYonce,int elegend,
 	    real size,real boxx,real boxy,
-	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,int skip,
-	    int mapoffset)
+	    const char *epsfile,const char *xpmfile,const char *m2p,
+            const char *m2pout,int skip, int mapoffset)
 {
   int      i,j,k;
 
@@ -1122,7 +1122,7 @@ int gmx_xpm2ps(int argc,char *argv[])
   };
 
   output_env_t oenv;
-  char      *fn,*epsfile=NULL,*xpmfile=NULL;
+  const char *fn,*epsfile=NULL,*xpmfile=NULL;
   int       i,nmat,nmat2,etitle,elegend,ediag,erainbow,ecombine;
   t_matrix *mat=NULL,*mat2=NULL;
   bool      bTitle,bTitleOnce,bDiag,bFirstDiag,bGrad;

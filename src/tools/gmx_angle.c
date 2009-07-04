@@ -53,7 +53,8 @@
 #include "gstat.h"
 #include "trnio.h"
 
-static void dump_dih_trn(int nframes,int nangles,real **dih,char *fn,real dt)
+static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
+                         real dt)
 {
   int    i,j,k,l,m,na,trn;
   rvec   *x;

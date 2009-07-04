@@ -171,7 +171,8 @@ static void hide_label(t_x11 *x11,t_manager *man,int x,int y)
   do_label(x11,man,x,y,FALSE);
 }
 
-void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
+void set_file(t_x11 *x11,t_manager *man,const char *trajectory,
+              const char *status)
 {
   gmx_atomprop_t aps;
   char         buf[256],quote[256];

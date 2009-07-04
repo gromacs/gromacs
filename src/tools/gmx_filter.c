@@ -90,7 +90,7 @@ int gmx_filter(int argc,char *argv[])
     { "-fit", FALSE, etBOOL, {&bFit},
       "Fit all frames to a reference structure" }
   };
-  char       *topfile,*lowfile,*highfile;
+  const char *topfile,*lowfile,*highfile;
   bool       bTop=FALSE;
   t_topology top;
   int        ePBC=-1;

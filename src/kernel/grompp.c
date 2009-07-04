@@ -92,7 +92,7 @@ static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
   return n;
 }
 
-static int check_atom_names(char *fn1, char *fn2, 
+static int check_atom_names(const char *fn1, const char *fn2, 
 			    gmx_mtop_t *mtop, t_atoms *at)
 {
   int mb,m,i,j,nmismatch;
@@ -157,7 +157,7 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
   }  
 }
 
-static void check_cg_sizes(char *topfn,t_block *cgs)
+static void check_cg_sizes(const char *topfn,t_block *cgs)
 {
   int maxsize,cg;
 
@@ -271,7 +271,7 @@ static void molinfo2mtop(int nmi,t_molinfo *mi,gmx_mtop_t *mtop)
 }
 
 static void
-new_status(char *topfile,char *topppfile,char *confin,
+new_status(const char *topfile,const char *topppfile,const char *confin,
 	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
 	   gpp_atomtype_t atype,gmx_mtop_t *sys,
@@ -418,7 +418,7 @@ new_status(char *topfile,char *topppfile,char *confin,
   *mi  = molinfo;
 }
 
-static void cont_status(char *slog,char *ener,
+static void cont_status(const char *slog,const char *ener,
 			bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
 			gmx_mtop_t *sys,
@@ -923,7 +923,8 @@ int main (int argc, char *argv[])
   t_state      state;
   matrix       box;
   real         max_spacing,reppow,fudgeQQ;
-  char         fn[STRLEN],fnB[STRLEN],*mdparin;
+  char         fn[STRLEN],fnB[STRLEN];
+  const char   *mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;
   bool         have_radius,have_vol,have_surftens,have_gb_radius,have_S_hct;

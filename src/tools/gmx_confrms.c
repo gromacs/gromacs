@@ -396,7 +396,7 @@ int gmx_confrms(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   /* the two structure files */
-  char    *conf1file, *conf2file, *matchndxfile, *outfile;
+  const char *conf1file, *conf2file, *matchndxfile, *outfile;
   FILE    *fp;
   char    title1[STRLEN],title2[STRLEN],*name1,*name2;
   t_topology *top1,*top2;

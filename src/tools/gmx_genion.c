@@ -225,7 +225,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
   }
 }
 
-static void update_topol(char *topinout,int p_num,int n_num,
+static void update_topol(const char *topinout,int p_num,int n_num,
 			 const char *p_name,const char *n_name,char *grpname)
 {
 #define TEMP_FILENM "temp.top"

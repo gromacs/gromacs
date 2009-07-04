@@ -105,7 +105,7 @@ static bool str_starts(const char *string, const char *substring)
 }
 
 
-static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
+static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr)
 {
     FILE  *fp;
     char  line[STRLEN], dumstring[STRLEN];
@@ -362,7 +362,8 @@ static int analyze_data(
 
 
 /* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], int repeats)
+static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], 
+                              int repeats)
 {
     char *command=NULL;
     char *cp;
@@ -416,7 +417,7 @@ static void launch_simulation(
         char *cmd_mdrun,        /* Command for mdrun */
         char *args_for_mdrun,   /* Arguments for mdrun */
         const char *deffnm,     /* Extra argument just for launch */
-        char *simulation_tpr,   /* This tpr will be simulated */
+        const char *simulation_tpr,   /* This tpr will be simulated */
         int  nnodes,            /* Number of nodes to run on */
         int  nPMEnodes)         /* Number of PME nodes to use */
 {
@@ -454,8 +455,8 @@ static void launch_simulation(
 
 static void modify_PMEsettings(
         gmx_step_t simsteps, /* Set this value as number of time steps */
-        char *fn_best_tpr,   /* tpr file with the best performance */
-        char *fn_sim_tpr)    /* name of tpr file to be launched */
+        const char *fn_best_tpr,   /* tpr file with the best performance */
+        const char *fn_sim_tpr)    /* name of tpr file to be launched */
 {
     t_inputrec   *ir;
     t_state      state;
@@ -481,7 +482,7 @@ static void modify_PMEsettings(
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
 static void make_benchmark_tprs(
-        char *fn_sim_tpr,       /* READ : User-provided tpr file */
+        const char *fn_sim_tpr,       /* READ : User-provided tpr file */
         char *fn_bench_tprs[],  /* WRITE: Names of benchmark tpr files */
         gmx_step_t benchsteps,  /* Number of time steps for benchmark runs */
         real maxfac,            /* Max scaling factor for rcoulomb and fourierspacing */
@@ -636,11 +637,12 @@ static void make_benchmark_tprs(
 
 /* Rename the files we want to keep to some meaningful filename and
  * delete the rest */
-static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, int nr)
+static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes, 
+                    int nPMEnodes, int nr)
 {
     char numstring[STRLEN];
     char newfilename[STRLEN];
-    char *fn=NULL;
+    const char *fn=NULL;
     int i;
     const char *opt;
 
@@ -692,9 +694,11 @@ static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, 
 }
 
 
-static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPMEnodes,
+static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, 
+        int minPMEnodes,
         int datasets, t_perf **perfdata, int repeats, int nnodes, int nr_tprs,
-        char *cmd_mpirun, char *cmd_mdrun, char *args_for_mdrun, t_filenm *fnm, int nfile)
+        char *cmd_mpirun, char *cmd_mdrun, char *args_for_mdrun, 
+        const t_filenm *fnm, int nfile)
 {
     int     i,nr,k,ret;
     int     nPMEnodes;
@@ -806,7 +810,7 @@ static void check_input(
         real minPMEfraction,
         real fourierspacing,
         gmx_step_t bench_nsteps,
-        char *fn_top)
+        const char *fn_top)
 {
     /* Make shure the input file exists */
     if (!gmx_fexist(fn_top))
@@ -921,7 +925,7 @@ int gmx_tune_pme(int argc,char *argv[])
     bool        bOverwrite=FALSE;
     static bool bLaunch=FALSE;
     char        **tpr_names=NULL;
-    char        *simulation_tpr=NULL;
+    const char  *simulation_tpr=NULL;
     int         best_npme, best_tpr;
     
     /* Default program names if nothing else is found */
@@ -1203,13 +1207,15 @@ int gmx_tune_pme(int argc,char *argv[])
     if ((best_tpr > 0) || bOverwrite)
     {
         simulation_tpr = opt2fn("-so",NFILE,fnm);
-        modify_PMEsettings(bOverwrite? new_sim_nsteps:info->orig_sim_steps, tpr_names[best_tpr], simulation_tpr);            
+        modify_PMEsettings(bOverwrite? new_sim_nsteps:info->orig_sim_steps,
+                           tpr_names[best_tpr], simulation_tpr);            
     }
     else
         simulation_tpr = opt2fn("-s",NFILE,fnm);
             
     /* Now start the real simulation if the user requested it ... */
-    launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, args_for_mdrun, deffnm, simulation_tpr, nnodes, best_npme);
+    launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, args_for_mdrun, 
+                      deffnm, simulation_tpr, nnodes, best_npme);
     fclose(fp);
 
     /* ... or simply print the performance results to screen: */

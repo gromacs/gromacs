@@ -87,7 +87,7 @@ t_blocka *new_blocka(void)
   return block;
 }
 
-void write_index(char *outf, t_blocka *b,char **gnames)
+void write_index(const char *outf, t_blocka *b,char **gnames)
 {
   FILE *out;
   int  i,j,k;
@@ -292,11 +292,12 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
      specify -1 to always add group */
   const int compareto[NCH] = { -1,-1,-1,-1,-1,-1,-1,-1,-1, 0 };
 
-  int     i,n,j;
+  int     n,j;
   atom_id *aid;
   int     nra,nnpres,npres;
   bool    match;
   char    ndx_name[STRLEN],*atnm;
+  int i;
 
   if (bVerb)
     printf("Analysing Protein...\n");
@@ -309,7 +310,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
       npres++;
 
   /* find matching or complement atoms */
-  for(i=0; (i<NCH); i++) {
+  for(i=0; (i<(int)NCH); i++) {
     nra=0;
     for(n=0; (n<atoms->nr); n++) {
       if (restp[atoms->atom[n].resind] == etProt) {
@@ -338,7 +339,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   }
   
   if (bASK) {
-    for(i=0; (i<NCH); i++) {
+    for(i=0; (i<(int)NCH); i++) {
       printf("Split %12s into %5d residues (y/n) ? ",ch_name[i],npres);
       if (gmx_ask_yesno(bASK)) {
 	int resind;
@@ -526,7 +527,7 @@ void check_index(char *gname,int n,atom_id index[],char *traj,int natoms)
 		gname ? gname : "Index",i+1, index[i]+1);
 }
 
-t_blocka *init_index(char *gfile, char ***grpname)
+t_blocka *init_index(const char *gfile, char ***grpname)
 {
   FILE     *in;
   t_blocka  *b;
@@ -713,7 +714,7 @@ static void rd_groups(t_blocka *grps,char **grpname,char *gnames[],
   }
 }
 
-void rd_index(char *statfile,int ngrps,int isize[],
+void rd_index(const char *statfile,int ngrps,int isize[],
 	      atom_id *index[],char *grpnames[])
 {
   char    **gnames;
@@ -740,7 +741,7 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
   rd_groups(grps,gnames,grpnames,ngrps,isize,index,grpnr);
 }
 
-void get_index(t_atoms *atoms, char *fnm, int ngrps,
+void get_index(t_atoms *atoms, const char *fnm, int ngrps,
 	       int isize[], atom_id *index[],char *grpnames[])
 {
   char    ***gnames;
@@ -763,7 +764,7 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
   rd_groups(grps,*gnames,grpnames,ngrps,isize,index,grpnr);
 }
 
-t_cluster_ndx *cluster_index(FILE *fplog,char *ndx)
+t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx)
 {
   t_cluster_ndx *c;
   int i;

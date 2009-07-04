@@ -111,9 +111,9 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
  return 0;
 }
 
-void ana_dih_trans(char *fn_trans,char *fn_histo,
+void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 		   real **dih,int nframes,int nangles,
-		   char *grpname,real t0,real dt,bool bRb,
+		   const char *grpname,real t0,real dt,bool bRb,
                    output_env_t oenv)
 {
   /* just a wrapper; declare extra args, then chuck away at end. */ 
@@ -137,10 +137,10 @@ void ana_dih_trans(char *fn_trans,char *fn_histo,
   
 }
 
-void low_ana_dih_trans(bool bTrans, char *fn_trans,
-		       bool bHisto, char *fn_histo, int maxchi, 
+void low_ana_dih_trans(bool bTrans, const char *fn_trans,
+		       bool bHisto, const char *fn_histo, int maxchi, 
 		       real **dih, int nlist, t_dlist dlist[], int nframes,
-		       int nangles, char *grpname, int xity[], 
+		       int nangles, const char *grpname, int xity[], 
 		       real t0, real dt, bool bRb, real core_frac,
                        output_env_t oenv)
 {
@@ -370,7 +370,7 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 			   int maxchi, t_dlist dlist[], real time[], 
 			   int **lookup, int *xity,bool bRb, bool bNormalize,
-			   real core_frac, bool bAll, char *fnall,
+			   real core_frac, bool bAll, const char *fnall,
                            output_env_t oenv) 
 {
 
@@ -651,7 +651,7 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
     normhisto[i]=fac*histo[i];
 }
 
-void read_ang_dih(char *trj_fn,
+void read_ang_dih(const char *trj_fn,
 		  bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
 		  int maxangstat,int angstat[],
 		  int *nframes,real **time,

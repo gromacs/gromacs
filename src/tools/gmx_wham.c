@@ -102,7 +102,7 @@ typedef struct
 
 typedef struct
 {
-    char *fnTpr,*fnPullf,*fnPdo,*fnPullx;
+    const char *fnTpr,*fnPullf,*fnPdo,*fnPullx;
     bool bTpr,bPullf,bPdo,bPullx;
     int bins,cycl;
     bool verbose,bShift,bAuto,bBoundsOnly;
@@ -150,7 +150,7 @@ void searchOrderedTable(double xx[], int n, double x, int *j)
 
 
 /* Read and setup tabulated umbrella potential */
-void setup_tab(char *fn,t_UmbrellaOptions *opt)
+void setup_tab(const char *fn,t_UmbrellaOptions *opt)
 {
     int i,ny,nl;
     double **y;
@@ -181,7 +181,8 @@ void setup_tab(char *fn,t_UmbrellaOptions *opt)
 }
 
 
-void read_pdo_header(FILE * file,t_UmbrellaHeader * header, t_UmbrellaOptions *opt)
+void read_pdo_header(FILE * file,t_UmbrellaHeader * header, 
+                     t_UmbrellaOptions *opt)
 {
     char Buffer0[256];
     char Buffer1[256];
@@ -652,7 +653,7 @@ double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, t_Umbrel
 
 void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
         int nWindows, t_UmbrellaOptions * opt,
-        bool bAppendCorr2File, char *fn, output_env_t oenv)
+        bool bAppendCorr2File, const char *fn, output_env_t oenv)
 {
     int i,j,k,bins=opt->bins;
     static int first=1;
@@ -806,7 +807,8 @@ void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
    which are distributed according to the histograms. Required to generate
    the "synthetic" histograms for the Bootstrap method */
 void calc_cummulants(t_UmbrellaWindow *window,int nWindows,
-        t_UmbrellaOptions *opt,char *fnhist, output_env_t oenv)
+                    t_UmbrellaOptions *opt,const char *fnhist, 
+                    output_env_t oenv)
 {
     int i,j,k,nbin;
     double last;
@@ -885,8 +887,9 @@ void searchCummulant(double xx[], int n, double x, int *j)
 }
 
 
-void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thisWindow,
-        int pullid,t_UmbrellaOptions *opt)
+void create_synthetic_histo(t_UmbrellaWindow *synthWindow, 
+                            t_UmbrellaWindow *thisWindow,
+                            int pullid,t_UmbrellaOptions *opt)
 {
     int nsynth,N,i,nbins,r_index;
     double r;
@@ -931,17 +934,19 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
 }
 
 
-void print_histograms(char *fnhist, t_UmbrellaWindow * window, int nWindows,
-        int bs_index,t_UmbrellaOptions *opt, output_env_t oenv)
+void print_histograms(const char *fnhist, t_UmbrellaWindow * window, 
+                      int nWindows, int bs_index,t_UmbrellaOptions *opt, 
+                      output_env_t oenv)
 {
-    char *fn,*buf=0,title[256];
+    char *fn;
+    char *buf=0,title[256];
     FILE *fp;
     int bins,l,i,j;
 
 
     if (bs_index<0)
     {
-        fn=fnhist;
+        fn=strdup(fnhist);
         strcpy(title,"Umbrella histograms");
     }
     else
@@ -979,10 +984,10 @@ void print_histograms(char *fnhist, t_UmbrellaWindow * window, int nWindows,
 }
 
 
-void do_bootstrapping(char *fnres, char* fnprof, char *fnhist,
-        char* ylabel, double *profile,
-        t_UmbrellaWindow * window, int nWindows, t_UmbrellaOptions *opt,
-        output_env_t oenv)
+void do_bootstrapping(const char *fnres, const char* fnprof, 
+                      const char *fnhist, char* ylabel, double *profile,
+                      t_UmbrellaWindow * window, int nWindows, 
+                      t_UmbrellaOptions *opt, output_env_t oenv)
 {
     t_UmbrellaWindow * synthWindow;
     double *bsProfile,*bsProfiles_av, *bsProfiles_av2,maxchange=1e20,tmp,stddev;
@@ -1134,7 +1139,7 @@ void do_bootstrapping(char *fnres, char* fnprof, char *fnhist,
 }
 
 
-int whaminFileType(char *fn)
+int whaminFileType(const char *fn)
 {
     int len;
     len=strlen(fn);
@@ -1150,8 +1155,8 @@ int whaminFileType(char *fn)
 }
 
 
-void read_wham_in(char *fn,char ***filenamesRet, int *nfilesRet,
-        t_UmbrellaOptions *opt)
+void read_wham_in(const char *fn,char ***filenamesRet, int *nfilesRet,
+                  t_UmbrellaOptions *opt)
 {
     char **filename,tmp[STRLEN];
     int nread,sizenow,i,block=10;
@@ -1186,7 +1191,7 @@ void read_wham_in(char *fn,char ***filenamesRet, int *nfilesRet,
 }
 
 
-FILE *pdo_open_file(char *fn)
+FILE *pdo_open_file(const char *fn)
 {
     char Buffer[1024],gunzip[1024],*Path=0;
     FILE *fp;
@@ -1302,7 +1307,8 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 
 #define int2YN(a) (((a)==0)?("N"):("Y"))
 
-void read_tpr_header(char *fn,t_UmbrellaHeader* header,t_UmbrellaOptions *opt)
+void read_tpr_header(const char *fn,t_UmbrellaHeader* header,
+                     t_UmbrellaOptions *opt)
 {
     t_inputrec  ir;
     int         i,ngrp,d;
@@ -1387,10 +1393,10 @@ double dist_ndim(double **dx,int ndim,int line)
 }
 
 
-void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
-        t_UmbrellaWindow * window,
-        t_UmbrellaOptions *opt,
-        bool bGetMinMax,real *mintmp,real *maxtmp)
+void read_pull_xf(const char *fn, const char *fntpr, 
+                  t_UmbrellaHeader * header, t_UmbrellaWindow * window,
+                  t_UmbrellaOptions *opt, bool bGetMinMax,real *mintmp,
+                  real *maxtmp)
 {
     double **y,pos=0.,t,force,time0=0.,dt;
     int ny,nt,bins,ibin,i,g,dstep=1,nColPerGrp,nColRef,nColExpect;
@@ -1566,9 +1572,9 @@ void read_pull_xf(char *fn, char *fntpr, t_UmbrellaHeader * header,
 }
 
 
-void read_tpr_pullxf_files(char **fnTprs,char **fnPull,int nfiles,
-        t_UmbrellaHeader* header,
-        t_UmbrellaWindow **window, t_UmbrellaOptions *opt)
+void read_tpr_pullxf_files(char **fnTprs,char **fnPull,
+                           int nfiles, t_UmbrellaHeader* header,
+                           t_UmbrellaWindow **window, t_UmbrellaOptions *opt)
 {
     int i;
     real mintmp,maxtmp;
@@ -1765,7 +1771,8 @@ int gmx_wham(int argc,char *argv[])
               "Accounts better for long autocorrelations."},
             { "-histbs-block", FALSE, etINT, {&opt.histBootStrapBlockLength},
               "when mixin histograms only mix within blocks of -histBS_block."},
-            { "-vbs", FALSE, etBOOL, {&opt.bs_verbose},                                                                                                                                                                              "verbose bootstrapping. Print the cummulants and a histogram file for each bootstrap."},
+            { "-vbs", FALSE, etBOOL, {&opt.bs_verbose},
+                "verbose bootstrapping. Print the cummulants and a histogram file for each bootstrap."},
     };
 
     t_filenm fnm[] = {
@@ -1786,7 +1793,8 @@ int gmx_wham(int argc,char *argv[])
     t_UmbrellaWindow * window=NULL;
     double *profile,maxchange=1e20;
     bool bMinSet,bMaxSet,bAutoSet,bExact=FALSE;
-    char **fninTpr,**fninPull,**fninPdo,*fnPull;
+    char **fninTpr,**fninPull,**fninPdo;
+    const char *fnPull;
     FILE *histout,*profout;
     char ylabel[256],title[256];
     output_env_t oenv;

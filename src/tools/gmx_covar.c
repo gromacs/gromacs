@@ -123,9 +123,9 @@ int gmx_covar(int argc,char *argv[])
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes0,nframes,nlevels;
   int        WriteXref;
-  char       *fitfile,*trxfile,*ndxfile;
-  char       *eigvalfile,*eigvecfile,*averfile,*logfile;
-  char       *asciifile,*xpmfile,*xpmafile;
+  const char *fitfile,*trxfile,*ndxfile;
+  const char *eigvalfile,*eigvecfile,*averfile,*logfile;
+  const char *asciifile,*xpmfile,*xpmafile;
   char       str[STRLEN],*fitname,*ananame,*pcwd;
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*ifit;

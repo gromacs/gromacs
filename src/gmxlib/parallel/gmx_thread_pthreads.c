@@ -143,7 +143,7 @@ gmx_thread_create   (gmx_thread_t *    thread,
     /* We cannot use gromacs memory operations since they
      * are dependent on messages, which in turn require thread support.
      */
-    *thread = malloc(sizeof(struct gmx_thread));
+    *thread = (gmx_thread_t)malloc(sizeof(struct gmx_thread));
 
     if(*thread==NULL)
     {
@@ -378,7 +378,7 @@ gmx_thread_key_create(gmx_thread_key_t *       key,
      * Allocate memory for the pthread key. We must use the system malloc
      * here since the gromacs memory allocation depends on gmx_message.h and gmx_thread.h.
      */
-    *key = malloc(sizeof(struct gmx_thread_key));
+    *key = (gmx_thread_key_t)malloc(sizeof(struct gmx_thread_key));
     
     if(*key==NULL)
     {
@@ -721,7 +721,7 @@ gmx_thread_barrier_init(gmx_thread_barrier_t *    barrier,
         return ENOMEM;
     }
     
-    p = barrier->actual_barrier;
+    p = (gmx_thread_pthread_barrier_t*)barrier->actual_barrier;
     
     ret = pthread_mutex_init(&p->mutex,NULL);
         
@@ -764,7 +764,7 @@ gmx_thread_barrier_destroy(gmx_thread_barrier_t *barrier)
         return EINVAL;
     }
 
-    p = barrier->actual_barrier;
+    p = (gmx_thread_pthread_barrier_t*)barrier->actual_barrier;
     
     if(barrier->status != GMX_THREAD_ONCE_STATUS_READY)
     {
@@ -855,7 +855,7 @@ gmx_thread_barrier_wait(gmx_thread_barrier_t *   barrier)
         gmx_thread_barrier_init_once(barrier,barrier->init_threshold);        
     }
 
-    p = barrier->actual_barrier;
+    p = (gmx_thread_pthread_barrier_t*)barrier->actual_barrier;
     
     rc = pthread_mutex_lock(&p->mutex);
 

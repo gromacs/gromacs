@@ -1137,7 +1137,9 @@ int main(int argc,char *argv[])
   output_env_t oenv;
   char     title[STRLEN];
   int      nndxin;   
-  char     *stxfile, **ndxinfiles, *ndxoutfile;
+  const char *stxfile; 
+  char     **ndxinfiles;
+  const char *ndxoutfile;
   bool     bNatoms;
   int      i,j;
   t_atoms  *atoms;

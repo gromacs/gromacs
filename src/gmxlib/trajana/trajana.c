@@ -127,17 +127,17 @@ struct gmx_ana_traj_t
     bool                      bPBC;
 
     //! Name of the trajectory file.
-    char                     *trjfile;
+    const char               *trjfile;
     //! Name of the topology file (NULL if no topology loaded).
-    char                     *topfile;
+    const char               *topfile;
     //! Non-NULL name of the topology file.
-    char                     *topfile_notnull;
+    const char               *topfile_notnull;
     //! Name of the index file (NULL if no index file provided).
-    char                     *ndxfile;
+    const char               *ndxfile;
     //! Name of the selection file (NULL if no file provided).
-    char                     *selfile;
+    const char               *selfile;
     //! The selection string (NULL if not provided).
-    char                     *selection;
+    const char               *selection;
 
     //! The topology structure, or \p NULL if no topology loaded.
     t_topology               *top;

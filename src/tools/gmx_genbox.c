@@ -261,7 +261,7 @@ void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
   }
 }
 
-static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
+static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
 			 t_atoms *atoms,rvec **x,real **r,int ePBC,matrix box,
 			 gmx_atomprop_t aps,real r_distance,real rshell,
                          output_env_t oenv)
@@ -354,7 +354,7 @@ static char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   return title_insrt;
 }
 
-static void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
+static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
 		     int ePBC,matrix box,
 		     gmx_atomprop_t aps,real r_distance,int *atoms_added,
 		     int *residues_added,real rshell,int max_sol,
@@ -448,8 +448,9 @@ static void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
 	  *atoms_added,*residues_added);
 }
 
-static char *read_prot(char *confin,t_atoms *atoms,rvec **x,rvec **v,real **r,
-		       int *ePBC,matrix box,gmx_atomprop_t aps,real r_distance)
+static char *read_prot(const char *confin,t_atoms *atoms,rvec **x,rvec **v,
+                       real **r, int *ePBC,matrix box,gmx_atomprop_t aps,
+                       real r_distance)
 {
   char *title;
   int  natoms;
@@ -480,7 +481,8 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
 {
 #define TEMP_FILENM "temp.top"
   FILE   *fpin,*fpout;
-  char   buf[STRLEN],buf2[STRLEN],*temp,*topinout;
+  char   buf[STRLEN],buf2[STRLEN],*temp;
+  const char *topinout;
   int    line;
   bool   bSystem,bMolecules,bSkip;
   int    i,nsol=0;
@@ -655,7 +657,7 @@ int gmx_genbox(int argc,char *argv[])
   
   /* parameter data */
   bool bSol,bProt,bBox;
-  char *conf_prot,*confout;
+  const char *conf_prot,*confout;
   int  bInsert;
   real *r;
   char *title_ins;

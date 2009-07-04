@@ -63,9 +63,10 @@ static void f_write(FILE *output,float value)
 }
 
 
-static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF, 
-                   char *fnREF, bool bRef, rvec cutoff, real binwidth,
-                   int mode, rvec triangle, rvec dtri, output_env_t oenv)
+static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX, 
+                   const char *fnSDF, const char *fnREF, bool bRef, 
+                   rvec cutoff, real binwidth, int mode, rvec triangle, 
+                   rvec dtri, output_env_t oenv)
 {
   FILE       *fp;
   int        status;
@@ -704,7 +705,7 @@ int gmx_sdf(int argc,char *argv[])
       "Size of the 3D-grid (nm,nm,nm)"}
   };
 #define NPA asize(pa)
-  char       *fnTPS,*fnNDX,*fnREF;
+  const char       *fnTPS,*fnNDX,*fnREF;
   
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD },

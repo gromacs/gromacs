@@ -173,8 +173,8 @@ typedef struct edpar
 typedef struct gmx_edsam
 {
     int           eEDtype;        /* Type of ED: see enums above          */
-    char          *edinam;        /* name of ED sampling input file       */
-    char          *edonam;        /*                     output           */
+    const char    *edinam;        /* name of ED sampling input file       */
+    const char    *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
 } t_gmx_edsam;
@@ -1064,7 +1064,7 @@ static void subtract_COM(int   nat,  /* number of atoms in the coordinate buffer
 }
 
 
-gmx_edsam_t ed_open(int nfile,t_filenm fnm[],t_commrec *cr)
+gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
 {   
     gmx_edsam_t ed;
     

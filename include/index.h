@@ -53,10 +53,10 @@ extern void check_index(char *gname,int n,atom_id index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-t_blocka *init_index(char *gfile, char ***grpname);
+t_blocka *init_index(const char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
-void rd_index(char *statfile,int ngrps,int isize[],
+void rd_index(const char *statfile,int ngrps,int isize[],
 	      atom_id *index[],char *grpnames[]);
 /* Assume the group file is generated, so the
  * format need not be user-friendly. The format is:
@@ -75,7 +75,7 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
 		  atom_id *index[],char *grpnames[],int grpnr[]);
 /* the same but also reads the number of the selected group*/
 
-void get_index(t_atoms *atoms, char *fnm, int ngrps,
+void get_index(t_atoms *atoms, const char *fnm, int ngrps,
 	       int isize[], atom_id *index[],char *grpnames[]);
 /* Does the same as rd_index, but if the fnm pointer is NULL it
  * will not read from fnm, but it will make default index groups
@@ -89,7 +89,7 @@ typedef struct {
   atom_id  *inv_clust;
 } t_cluster_ndx;
 
-extern t_cluster_ndx *cluster_index(FILE *fplog,char *ndx);
+extern t_cluster_ndx *cluster_index(FILE *fplog,const char *ndx);
   
 typedef struct {
   int n;
@@ -108,7 +108,7 @@ extern void done_aa_names(t_aa_names **aan);
 extern t_blocka *new_blocka(void);
 /* allocate new block */
 
-extern void write_index(char *outf, t_blocka *b,char **gnames);
+extern void write_index(const char *outf, t_blocka *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
 void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);

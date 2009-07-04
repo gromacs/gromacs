@@ -204,7 +204,7 @@ static void rename_pdbresint(t_atoms *pdba,const char *oldnm,
   }
 }
 
-static void check_occupancy(t_atoms *atoms,char *filename,bool bVerbose)
+static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
 {
   int i,ftp;
   int nzero=0;
@@ -262,7 +262,7 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
   gmx_fio_fclose(fp);
 }
 
-static int read_pdball(char *inf, char *outf,char *title,
+static int read_pdball(const char *inf, const char *outf,char *title,
 		       t_atoms *atoms, rvec **x,
 		       int *ePBC,matrix box, bool bRemoveH,
 		       t_symtab *symtab,t_aa_names *aan,const char *watres,
@@ -674,7 +674,8 @@ int main(int argc, char *argv[])
   t_symtab   symtab;
   gpp_atomtype_t atype;
   t_aa_names *aan;
-  char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
+  const char *top_fn;
+  char       fn[256],itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
   char       *c,forcefield[STRLEN],fff[STRLEN],suffix[STRLEN];
   const char *watres;

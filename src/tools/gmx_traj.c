@@ -324,7 +324,7 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
     }
 }
 
-static void write_pdb_bfac(char *fname,char *xname,
+static void write_pdb_bfac(const char *fname,const char *xname,
 			   const char *title,t_atoms *atoms,int ePBC,matrix box,
 			   int isize,atom_id *index,int nfr_x,rvec *x,
 			   int nfr_v,rvec *sum,
@@ -440,7 +440,7 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
   }
 }
 
-static void print_histo(char *fn,int nhisto,int histo[],real binwidth,
+static void print_histo(const char *fn,int nhisto,int histo[],real binwidth,
                         output_env_t oenv)
 {
   FILE *fp;
@@ -517,7 +517,8 @@ int gmx_traj(int argc,char *argv[])
   t_topology top;
   int        ePBC;
   real       *mass,time;
-  char       title[STRLEN],*indexfn;
+  char       title[STRLEN];
+  const char *indexfn;
   t_trxframe fr,frout;
   int        flags,nvhisto=0,*vhisto=NULL;
   rvec       *xtop,*xp=NULL;

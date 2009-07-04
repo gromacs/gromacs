@@ -45,8 +45,8 @@ extern double check_mol(gmx_mtop_t *mtop);
 /* Check mass and charge */
 
 extern char **do_top(bool         bVerbose,
-		     char         *topfile,
-		     char         *topppfile,
+		     const char   *topfile,
+		     const char   *topppfile,
 		     t_gromppopts *opts,
 		     bool         bZero,
 		     t_symtab     *symtab,
@@ -64,7 +64,6 @@ extern char **do_top(bool         bVerbose,
 
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
-void 
-generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir);
+void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir);
 
 #endif	/* _topio_h */
