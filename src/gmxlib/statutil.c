@@ -217,18 +217,21 @@ void set_command_line(int argc, char *argv[])
 #ifdef GMX_THREADS
     gmx_thread_mutex_lock(&init_mutex);
 #endif
-    cmdlength = strlen(argv[0]);
-    for (i=1; i<argc; i++) 
+    if (cmd_line==NULL)
     {
-        cmdlength += strlen(argv[i]);
-    }
-    
-    /* Fill the cmdline string */
-    snew(cmd_line,cmdlength+argc+1);
-    for (i=0; i<argc; i++) 
-    {
-        strcat(cmd_line,argv[i]);
-        strcat(cmd_line," ");
+        cmdlength = strlen(argv[0]);
+        for (i=1; i<argc; i++) 
+        {
+            cmdlength += strlen(argv[i]);
+        }
+        
+        /* Fill the cmdline string */
+        snew(cmd_line,cmdlength+argc+1);
+        for (i=0; i<argc; i++) 
+        {
+            strcat(cmd_line,argv[i]);
+            strcat(cmd_line," ");
+        }
     }
 #ifdef GMX_THREADS
     gmx_thread_mutex_unlock(&init_mutex);
@@ -779,7 +782,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (nicelevel != 0 && !bExit)
     {
 #ifdef GMX_THREADS
-        static bool nice_set=FALSE;
+        static bool nice_set=FALSE; /* only set it once */
         gmx_thread_mutex_lock(&init_mutex);
         if (!nice_set)
         {

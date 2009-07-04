@@ -116,7 +116,14 @@ void space(FILE *out, int n)
   fprintf(out,"%*s",n,"");
 }
 
-void f(char *a){int i;for(i=0;i<(int)strlen(a);i++)a[i]=~a[i]; }
+void f(char *a)
+{
+    int i;
+    int len=strlen(a);
+    
+    for(i=0;i<len;i++)
+        a[i]=~a[i]; 
+}
 
 static void sp_print(FILE *out,const char *s)
 {

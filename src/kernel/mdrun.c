@@ -401,7 +401,6 @@ int main(int argc,char *argv[])
                     &oenv);
     
 
-
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
     

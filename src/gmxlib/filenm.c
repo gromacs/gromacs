@@ -368,7 +368,8 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
       strcat(buf, deffile[tfn[i].ftp].descr);
       if ( (strlen(tfn[i].opt)>OPTLEN) && 
 	   (strlen(tfn[i].opt)<=
-	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nfiles-1]))) ) {
+	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nfiles-1]))) ) 
+      {
 	for(j=strlen(tfn[i].opt); 
 	    j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
 	  buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];

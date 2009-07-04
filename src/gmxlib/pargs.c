@@ -242,7 +242,9 @@ const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[])
 
 char *pa_val(t_pargs *pa, char buf[], int sz)
 {
-  
+  char buf_str[1256]; buf_str[0]='\0';
+  real r;
+
   buf[0]='\0';
 
   if(sz<255)
@@ -257,7 +259,9 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
     break;      
   case etTIME:
   case etREAL:
-    sprintf(buf,"%-6g",(double)(*(pa->u.r)));
+    r=*(pa->u.r);
+    sprintf(buf_str,"%-6g",r);
+    strcpy(buf, buf_str);
     break;
   case etBOOL:
     sprintf(buf,"%-6s",*(pa->u.b) ? "yes" : "no");
@@ -271,12 +275,12 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
     }
     break;
   case etENUM:
-    strcpy(buf,pa->u.c[0]);
+    strcpy(buf,*(pa->u.c));
     break;
   case etRVEC:
-    sprintf(buf,"%g %g %g",(double)(*pa->u.rv)[0],
-                           (double)(*pa->u.rv)[1],
-                           (double)(*pa->u.rv)[2]);
+    sprintf(buf,"%g %g %g",(*pa->u.rv)[0],
+                           (*pa->u.rv)[1],
+                           (*pa->u.rv)[2]);
     break;
   }
   return buf;
