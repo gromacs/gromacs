@@ -359,16 +359,16 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         
         /* Initiate forcerecord */
         fr = mk_forcerec();
-        /*
+        
         init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
-                      */
+                      
         /* version for PCA_NOT_READ_NODE (see md.c) */
-        init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
+        /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
                               "nofile","nofile","nofile",FALSE,pforce);
-                
+        */        
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
         
         /* Initialize QM-MM */

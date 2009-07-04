@@ -401,11 +401,12 @@ int main(int argc,char *argv[])
    * also comment out the version of init_forcerec in md.c 
    * with NULL instead of opt2fn
    */
+  /*
   if (!MASTER(cr))
   {
       PCA_Flags |= PCA_NOT_READ_NODE;
   }
-  
+  */
   
   parse_common_args(&argc,argv,PCA_Flags,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
