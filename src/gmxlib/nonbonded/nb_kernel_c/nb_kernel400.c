@@ -36,6 +36,9 @@
 #include "vec.h"
 #include "gmx_thread.h"
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
 #include "nb_kernel400.h"
 
 /*
@@ -96,11 +99,16 @@ void nb_kernel400(
     real          ix1,iy1,iz1,fix1,fiy1,fiz1;
     real          jx1,jy1,jz1;
     real          dx11,dy11,dz11,rsq11,rinv11;
+	gmx_gbdata_t *gbdata;
+	real *        gpol;
+	
+	gbdata           = (gmx_gbdata_t *)work;
+	gpol             = gbdata->gpol;
 	
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
+    facel            = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
@@ -251,7 +259,7 @@ void nb_kernel400(
             /* Add potential energies to the group for this list */
             ggid             = gid[n];         
             Vc[ggid]         = Vc[ggid] + vctot;
-            work[ggid]       = work[ggid] + vgbtot;
+            gpol[ggid]       = gpol[ggid] + vgbtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
 
             /* Increment number of inner iterations */

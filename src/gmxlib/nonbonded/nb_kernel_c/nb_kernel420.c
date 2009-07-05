@@ -36,6 +36,9 @@
 #include "vec.h"
 #include "gmx_thread.h"
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
 #include "nb_kernel420.h"
 
 /*

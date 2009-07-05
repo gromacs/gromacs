@@ -1389,6 +1389,7 @@ void init_forcerec(FILE *fp,
     }
 
     fr->bGB = (ir->implicit_solvent == eisGBSA);
+	fr->gb_epsilon_solvent = ir->gb_epsilon_solvent;
 
     /* Copy the GBSA data (radius, volume and surftens for each
      * atomtype) from the topology atomtype section to forcerec.

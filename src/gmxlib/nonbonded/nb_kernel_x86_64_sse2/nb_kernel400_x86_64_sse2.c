@@ -21,6 +21,9 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
 static inline __m128d
 my_invrsq_pd(__m128d x)
 {
@@ -77,7 +80,9 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 	int           n,ii,is3,ii3,k,nj0,nj1,jnr1,jnr2,j13,j23,ggid;
 	double        facel,krf,crf,tabscl,gbtabscl,vct,vgbt;
 	double        shX,shY,shZ,isai_d,dva;
-	
+	gmx_gbdata_t *gbdata;
+	float *        gpol;
+
 	__m128d       ix,iy,iz,jx,jy,jz;
 	__m128d		  dx,dy,dz,t1,t2,t3;
 	__m128d		  fix,fiy,fiz,rsq11,rinv,r,fscal,rt,eps,eps2;
@@ -93,10 +98,13 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 	const __m128d two    = {2.0f,2.0f};
 	const __m128d three  = {3.0f,3.0f};
 	
+	gbdata     = (gmx_gbdata_t *)work;
+	gpol       = gbdata->gpol;
+
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-	facel      = *p_facel;
+    facel      = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;
@@ -446,7 +454,7 @@ void nb_kernel400_x86_64_sse2(int *           p_nri,
 		vgb  	 = _mm_unpacklo_pd(vgb,vgbtot);
 		vgbtot	 = _mm_add_pd(vgbtot,vgb);
 		_mm_storeh_pd(&vgbt,vgbtot);
-		work[ggid] = work[ggid] + vgbt;
+		gpol[ggid] = gpol[ggid] + vgbt;
 	}
 	
 	*outeriter   = nri;            

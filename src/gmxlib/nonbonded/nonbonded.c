@@ -309,7 +309,7 @@ gmx_setup_kernels(FILE *fplog)
 
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,
-                  real egnb[],real egcoul[],real egb[],rvec box_size,
+                  real egnb[],real egcoul[],real egpol[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   int nls,int eNL,int flags)
 {
@@ -326,11 +326,15 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	int             tabletype;
 	int             outeriter,inneriter;
 	real *          tabledata = NULL;
-	
+	gmx_gbdata_t    gbdata;
+
     bLR            = (flags & GMX_DONB_LR);
     bDoForces      = (flags & GMX_DONB_FORCES);
     bForeignLambda = (flags & GMX_DONB_FOREIGNLAMBDA); 
 
+	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
+	gbdata.gpol               = egpol;
+	
     if (eNL >= 0) 
     {
 		i0 = eNL;
@@ -547,7 +551,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                                       nlist->mtx,
                                       &outeriter,
                                       &inneriter,
-                                      egb);
+                                      (real *)&gbdata);
                     }
                 }
                 

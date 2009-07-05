@@ -45,6 +45,16 @@ extern "C" {
 
 
 
+/* Temporary structure to be able to pass 2 GB data through the
+ * work data pointer argument.
+ */
+typedef struct 
+{
+	real      gb_epsilon_solvent;  /* Epsilon for solvent */
+	real *    gpol;                /* Polarization energy group */
+} gmx_gbdata_t;
+	
+	
 /** Interface to level1 optimized nonbonded kernels.
  * 
  *  \internal
@@ -324,7 +334,6 @@ nb_kernel_t(int *             nri,
             int *             outeriter,
             int *             inneriter,
             real *            work);
-
 
 
 
