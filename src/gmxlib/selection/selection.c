@@ -623,7 +623,7 @@ gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)
  * \param[in] sc   Selection collection which should be written.
  */
 void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
-                        output_env_t oenv)
+                        const output_env_t oenv)
 {
     char  *buf;
     char  *p, *nl;

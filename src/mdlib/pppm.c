@@ -484,7 +484,7 @@ static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
 int gmx_pppm_init(FILE *log,      t_commrec *cr,
-                  output_env_t oenv, bool bVerbose,
+                  const output_env_t oenv, bool bVerbose,
                   bool bOld,      matrix box,
                   char *ghatfn,   t_inputrec *ir,
                   bool bReproducible)

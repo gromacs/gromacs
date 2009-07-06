@@ -41,7 +41,7 @@ extern FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 			  t_forcerec **fr,
 			  gmx_enerdata_t *enerdata,
 			  real **coulomb,
-			  matrix box,rvec **x, output_env_t oenv);
+			  matrix box,rvec **x, const output_env_t oenv);
 
 extern void calc_pot(FILE *logf,t_commrec *cr,
 		     gmx_mtop_t *mtop,

@@ -125,7 +125,7 @@ real numerical_deriv(int nx,real x[],real y[],real fity[],real combined[],real d
 }
 
 void do_four(const char *fn,const char *cn,int nx,real x[],real dy[],
-             real eps0,real epsRF, output_env_t oenv)
+             real eps0,real epsRF, const output_env_t oenv)
 {
   FILE      *fp,*cp;
   t_complex *tmp,gw,hw,kw;

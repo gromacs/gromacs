@@ -77,7 +77,7 @@ typedef struct {
 } t_corr;
 
 typedef real t_calc_func(t_corr *,int,atom_id[],int,rvec[],rvec,bool,matrix,
-                         output_env_t);
+                         const output_env_t oenv);
 			      
 static real thistime(t_corr *curr) 
 {
@@ -156,7 +156,7 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
                        const char *yaxis,
 		       real msdtime,real beginfit,real endfit,
 		       real *DD,real *SigmaD,char *grpname[],
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
   FILE *out;
   int  i,j;
@@ -193,7 +193,7 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
 /* called from corr_loop, to do the main calculations */
 static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
 		      bool bRmCOMM,rvec com,t_calc_func *calc1,bool bTen,
-                      output_env_t oenv)
+                      const output_env_t oenv)
 {
   int  nx0;
   real g;
@@ -233,7 +233,7 @@ static void calc_corr(t_corr *curr,int nr,int nx,atom_id index[],rvec xc[],
 }
 
 static real calc1_norm(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
-		      rvec dcom,bool bTen,matrix mat, output_env_t oenv)
+		      rvec dcom,bool bTen,matrix mat, const output_env_t oenv)
 {
   int  i,ix,m,m2;
   real g,r,r2;
@@ -348,7 +348,7 @@ static real calc_one_mw(t_corr *curr,int ix,int nx0,rvec xc[],real *tm,
 }
 
 static real calc1_mw(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
-		     rvec dcom,bool bTen,matrix mat,output_env_t oenv)
+		     rvec dcom,bool bTen,matrix mat,const output_env_t oenv)
 {
   int  i;
   real g,tm;
@@ -427,7 +427,7 @@ static void prep_data(bool bMol,int gnx,atom_id index[],
 }
 
 static real calc1_mol(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
-		      rvec dcom,bool bTen,matrix mat, output_env_t oenv)
+		      rvec dcom,bool bTen,matrix mat, const output_env_t oenv)
 {
   int  i;
   real g,mm,gtot,tt;
@@ -450,7 +450,7 @@ static real calc1_mol(t_corr *curr,int nx,atom_id index[],int nx0,rvec xc[],
 
 void printmol(t_corr *curr,const char *fn,
 	      const char *fn_pdb,int *molindex,t_topology *top,
-	      rvec *x,int ePBC,matrix box, output_env_t oenv)
+	      rvec *x,int ePBC,matrix box, const output_env_t oenv)
 {
 #define NDIST 100
   FILE  *out,out_pdb;
@@ -530,7 +530,7 @@ void printmol(t_corr *curr,const char *fn,
 int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 	      bool bMol,int gnx[],atom_id *index[],
 	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
-	      real t_pdb,rvec **x_pdb,matrix box_pdb, output_env_t oenv)
+	      real t_pdb,rvec **x_pdb,matrix box_pdb, const output_env_t oenv)
 {
   rvec         *x[2],*xa[2],com;
   real         t,t_prev=0;
@@ -687,7 +687,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 	     int nrgrp, t_topology *top,int ePBC,
 	     bool bTen,bool bMW,bool bRmCOMM,
 	     int type,real dim_factor,int axis,
-	     real dt,real beginfit,real endfit,output_env_t oenv)
+	     real dt,real beginfit,real endfit,const output_env_t oenv)
 {
   t_corr       *msd;
   int          *gnx;

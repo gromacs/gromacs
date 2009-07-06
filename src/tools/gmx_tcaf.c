@@ -73,7 +73,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 			 real rho,real wt,const char *fn_trans,
 			 const char *fn_tca,const char *fn_tc,
                          const char *fn_tcf,const char *fn_cub,
-			 const char *fn_vk, output_env_t oenv)
+			 const char *fn_vk, const output_env_t oenv)
 {
   FILE *fp,*fp_vk,*fp_cub=NULL;
   int  nk,ntc;

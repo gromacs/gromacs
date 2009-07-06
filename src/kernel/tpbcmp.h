@@ -39,11 +39,12 @@
 extern void comp_tpx(const char *fn1,const char *fn2,real ftol);
 /* Compare two binary topology files */
 
-extern void comp_trx(output_env_t oenv,const char *fn1,const char *fn2,
+extern void comp_trx(const output_env_t oenv,const char *fn1,const char *fn2,
                      real ftol);
 /* Compare two binary trajectory files */
 
-extern void comp_enx(const char *fn1,const char *fn2,real ftol,const char *lastener);
+extern void comp_enx(const char *fn1,const char *fn2,real ftol,
+                     const char *lastener);
 /* Compare two binary energy files */
 
 #endif

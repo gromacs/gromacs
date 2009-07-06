@@ -181,7 +181,7 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
 		  const char *d1file, const char *d2file,
 		  atom_id index1[], int gnx1, char *grpn1,
 		  atom_id index2[], int gnx2, char *grpn2,
-		  t_topology *top,int ePBC,output_env_t oenv)
+		  t_topology *top,int ePBC,const output_env_t oenv)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
@@ -340,7 +340,7 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
 			 const char *d1file, const char *d2file,
 			 atom_id index1[], int gnx1, char *grpn1,
 			 atom_id index2[], int gnx2, char *grpn2,
-			 t_topology *top,int ePBC, output_env_t oenv)
+			 t_topology *top,int ePBC, const output_env_t oenv)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */

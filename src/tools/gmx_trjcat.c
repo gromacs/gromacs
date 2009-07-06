@@ -71,7 +71,7 @@
 
 static void scan_trj_files(char **fnms,int nfiles,
 			   real *readtime,real *timestep,atom_id imax,
-                           output_env_t oenv)
+                           const output_env_t oenv)
 {
   /* Check start time of all files */
   int i,status,natoms=0;
@@ -146,7 +146,7 @@ static void sort_files(char **fnms,real *settime,int nfile)
 
 static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 		       real *settime, int *cont_type, bool bSetTime,bool bSort,
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
     int i;
     bool ok;
@@ -257,7 +257,7 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 static void do_demux(int nset,char *fnms[],char *fnms_out[],
 		     int nval,real **value,real *time,real dt_remd,
 		     int isize,atom_id index[],real dt,
-                     output_env_t oenv)
+                     const output_env_t oenv)
 {
   int        i,j,k,natoms,nnn;
   int        *fp_in,*fp_out;

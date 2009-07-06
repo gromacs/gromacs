@@ -48,7 +48,7 @@
 #include "nrnb.h"
 #include "vec.h"
 
-void make_wall_tables(FILE *fplog,output_env_t oenv,
+void make_wall_tables(FILE *fplog,const output_env_t oenv,
 		      const t_inputrec *ir,const char *tabfn,
 		      const gmx_groups_t *groups,
 		      t_forcerec *fr)

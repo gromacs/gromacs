@@ -143,7 +143,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
 			   t_electron eltab[], int nr,bool bCenter,
-                           output_env_t oenv)
+                           const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -245,7 +245,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
 void calc_density(const char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
 		  int axis, int nr_grps, real *slWidth, bool bCenter,
-                  output_env_t oenv)
+                  const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -337,7 +337,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
 void plot_density(real *slDensity[], const char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
 		  const char **dens_opt,
-		  bool bSymmetrize, output_env_t oenv)
+		  bool bSymmetrize, const output_env_t oenv)
 {
   FILE  *den;
   const char *ylabel=NULL;

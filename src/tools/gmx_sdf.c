@@ -66,7 +66,7 @@ static void f_write(FILE *output,float value)
 static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX, 
                    const char *fnSDF, const char *fnREF, bool bRef, 
                    rvec cutoff, real binwidth, int mode, rvec triangle, 
-                   rvec dtri, output_env_t oenv)
+                   rvec dtri, const output_env_t oenv)
 {
   FILE       *fp;
   int        status;

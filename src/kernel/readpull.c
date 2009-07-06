@@ -282,7 +282,7 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
 }
 
 void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
-		   output_env_t oenv,bool bStart)
+		   const output_env_t oenv,bool bStart)
 {
   t_mdatoms *md;
   t_pull    *pull;

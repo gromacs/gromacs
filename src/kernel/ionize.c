@@ -555,7 +555,7 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
     return FALSE;
 }
 
-void ionize(FILE *fp,output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
+void ionize(FILE *fp,const output_env_t oenv,t_mdatoms *md,gmx_mtop_t *mtop,
             real t,t_inputrec *ir, rvec x[],rvec v[],int start,int end,
             matrix box,t_commrec *cr)
 {

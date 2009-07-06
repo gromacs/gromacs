@@ -548,7 +548,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 }
 
 rvec **read_whole_trj(const char *fn,int isize,atom_id index[],int skip,
-                      int *nframe, real **time,output_env_t oenv)
+                      int *nframe, real **time,const output_env_t oenv)
 {
   rvec   **xx,*x;
   matrix box;
@@ -674,7 +674,7 @@ static char *parse_filename(const char *fn, int maxnr)
 
 static void ana_trans(t_clusters *clust, int nf, 
 		      const char *transfn, const char *ntransfn, FILE *log,
-		      t_rgb rlo,t_rgb rhi,output_env_t oenv)
+		      t_rgb rlo,t_rgb rhi,const output_env_t oenv)
 {
   FILE *fp;
   real **trans,*axis;
@@ -734,7 +734,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
                              const char *clustidfn, bool bAverage, 
 			     int write_ncl, int write_nst, real rmsmin,
                              bool bFit, FILE *log,t_rgb rlo,t_rgb rhi,
-                             output_env_t oenv)
+                             const output_env_t oenv)
 {
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;

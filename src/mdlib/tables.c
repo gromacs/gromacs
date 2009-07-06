@@ -823,7 +823,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
   }
 }
 
-t_forcetable make_tables(FILE *out,output_env_t oenv,
+t_forcetable make_tables(FILE *out,const output_env_t oenv,
                          const t_forcerec *fr,
 			 bool bVerbose,const char *fn,
 			 real rtab,bool bForceUser,bool b14only)
@@ -946,7 +946,7 @@ t_forcetable make_tables(FILE *out,output_env_t oenv,
   return table;
 }
 
-t_forcetable make_gb_table(FILE *out,output_env_t oenv,
+t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
                            const t_forcerec *fr,
                            const char *fn,
                            real rtab)

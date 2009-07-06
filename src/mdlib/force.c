@@ -1005,7 +1005,7 @@ static void set_bham_b_max(FILE *fplog,t_forcerec *fr,
     }
 }
 
-static void make_nbf_tables(FILE *fp,output_env_t oenv,
+static void make_nbf_tables(FILE *fp,const output_env_t oenv,
                             t_forcerec *fr,real rtab,
 			    const t_commrec *cr,
 			    const char *tabfn,char *eg1,char *eg2,
@@ -1159,7 +1159,7 @@ void forcerec_set_ranges(t_forcerec *fr,
 }
     
 void init_forcerec(FILE *fp,
-                   output_env_t oenv,
+                   const output_env_t oenv,
                    t_forcerec *fr,
                    t_fcdata   *fcd,
                    const t_inputrec *ir,

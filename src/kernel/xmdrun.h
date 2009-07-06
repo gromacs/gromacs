@@ -130,7 +130,7 @@ extern void calc_force(int natom,rvec f[],rvec fff[]);
 extern void calc_f_dev(int natoms,real charge[],rvec x[],rvec f[],
 		       t_idef *idef,real *xiH,real *xiS);
 
-extern void do_coupling(FILE *log,output_env_t oenv,int nfile,
+extern void do_coupling(FILE *log,const output_env_t oenv,int nfile,
                         const t_filenm fnm[],
 			t_coupl_rec *tcr,real t,int step,real ener[],
 			t_forcerec *fr,t_inputrec *ir,bool bMaster,

@@ -289,7 +289,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
                        real trust,real bfit,real efit,real bvit,real evit,
 		       int status,int isize,int nmols, int nshift,
                        atom_id *index0,int indexm[],real mass2[],
-                       real qmol[], real eps_rf, output_env_t oenv)
+                       real qmol[], real eps_rf, const output_env_t oenv)
 {
   int   i,j,k,l,f;
   int		valloc,nalloc,nfr,nvfr,m,itrust=0;

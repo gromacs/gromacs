@@ -217,7 +217,7 @@ real calc_radius(char *atom)
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real qcut,bool bSave,real minarea,bool bPBC,
-	      real dgs_default,bool bFindex, output_env_t oenv)
+	      real dgs_default,bool bFindex, const output_env_t oenv)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
   char   *flegend[] = { "Hydrophobic", "Hydrophilic", 

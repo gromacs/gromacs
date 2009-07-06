@@ -1101,7 +1101,7 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
  * - Erik Marklund, June 29, 2006
  */
 static void do_hblife(const char *fn,t_hbdata *hb,bool bMerge,bool bContact,
-                      output_env_t oenv)
+                      const output_env_t oenv)
 {
   FILE *fp;
   char *leg[] = { "p(t)", "t p(t)" };
@@ -1437,7 +1437,7 @@ static real compute_weighted_rates(int n,real t[],real ct[],real nt[],
 }
 
 static void smooth_tail(int n,real t[],real c[],real sigma_c[],real start,
-                        output_env_t oenv)
+                        const output_env_t oenv)
 {
   FILE *fp;
   real e_1,fitparm[4];
@@ -1458,7 +1458,7 @@ static void smooth_tail(int n,real t[],real c[],real sigma_c[],real start,
 void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 		  real sigma_ct[],real sigma_nt[],real sigma_kt[],
 		  real fit_start,real temp,real smooth_tail_start,
-                  output_env_t oenv)
+                  const output_env_t oenv)
 {
   int    i0,i;
   real   k=1,kp=1,kow=1;
@@ -1575,7 +1575,7 @@ void compute_derivative(int nn,real x[],real y[],real dydx[])
 static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		    int nDump,bool bMerge,bool bContact,real fit_start,
                     real temp,bool R2,real smooth_tail_start,
-                    output_env_t oenv)
+                    const output_env_t oenv)
 {
   FILE *fp;
   char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
@@ -1770,7 +1770,7 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
 }
 
 static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
-                                output_env_t oenv)
+                                const output_env_t oenv)
 {
   static FILE *fp = NULL;
   char *leg[] = { "Nbound", "Nfree" };

@@ -143,7 +143,8 @@ extern void
 gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bValues);
 /*! Prints the selection strings into an XVGR file as comments.*/
 extern void
-xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, output_env_t oenv);
+xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
+                   const output_env_t oenv);
 
 /* In parsetree.c */
 /*! Parses selection(s) from standard input.*/

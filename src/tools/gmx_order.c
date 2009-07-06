@@ -229,7 +229,7 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
                                   const char *skfn,
 				  int nslice,int slice_dim,
                                   const char *sgslfn,const char *skslfn,
-                                  output_env_t oenv)
+                                  const output_env_t oenv)
 {
   FILE       *fpsg=NULL,*fpsk=NULL;
   t_topology top;
@@ -335,7 +335,7 @@ static void check_length(real length, int a, int b)
 void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
 		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis,
-                output_env_t oenv)
+                const output_env_t oenv)
 { 
   rvec *x0,          /* coordinates with pbc                           */
     *x1,             /* coordinates without pbc                        */
@@ -515,7 +515,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
 void order_plot(rvec order[], real *slOrder[], const char *afile, 
                 const char *bfile, const char *cfile, int ngrps, int nslices, 
-                real slWidth, bool bSzonly, output_env_t oenv)
+                real slWidth, bool bSzonly, const output_env_t oenv)
 {
   FILE       *ord, *slOrd;           /* xvgr files with order parameters  */
   int        atom, slice;            /* atom corresponding to order para.*/

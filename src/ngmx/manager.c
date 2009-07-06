@@ -571,7 +571,7 @@ t_manager *init_man(t_x11 *x11,Window Parent,
 		    int x,int y,int width,int height,
 		    unsigned long fg,unsigned long bg,
 		    int ePBC,matrix box,
-                    output_env_t oenv)
+                    const output_env_t oenv)
 {
   t_manager *man;
 

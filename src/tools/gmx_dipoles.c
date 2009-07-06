@@ -279,7 +279,7 @@ static void print_cmap(const char *cmap,t_gkrbin *gb,int *nlevels)
 
 static void print_gkrbin(const char *fn,t_gkrbin *gb,
 			 int ngrp,int nframes,real volume,
-                         output_env_t oenv)
+                         const output_env_t oenv)
 {
   /* We compute Gk(r), gOO and hOO according to
    * Nymand & Linse, JCP 112 (2000) pp 6386-6395.
@@ -549,7 +549,7 @@ static void update_slab_dipoles(int k0,int k1,rvec x[],rvec mu,
 
 static void dump_slab_dipoles(const char *fn,int idim,int nslice,
                               rvec slab_dipole[], matrix box,int nframes,
-                              output_env_t oenv)
+                              const output_env_t oenv)
 {
   FILE *fp;
   char buf[STRLEN];
@@ -624,7 +624,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
 		   int  *gkatom,  int skip,
 		   bool bSlab,    int nslices,
 		   const char *axtitle, const char *slabfn,
-                   output_env_t oenv)
+                   const output_env_t oenv)
 {
   char *leg_mtot[] = { 
     "M\\sx \\N", 

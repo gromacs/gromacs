@@ -185,7 +185,7 @@ struct gmx_ana_traj_t
 //! Loads the topology.
 static int load_topology(gmx_ana_traj_t *d, bool bReq);
 //! Loads the first frame and does some checks.
-static int init_first_frame(gmx_ana_traj_t *d, output_env_t oenv);
+static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv);
 
 static int add_fnmarg(int nfile, t_filenm *fnm, t_filenm *fnm_add)
 {
@@ -973,7 +973,7 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
  *
  * \see ANA_USER_SELINIT
  */
-int gmx_ana_init_selections(gmx_ana_traj_t *d, output_env_t oenv)
+int gmx_ana_init_selections(gmx_ana_traj_t *d, const output_env_t oenv)
 {
     int                  rc;
     int                  i;
@@ -1255,7 +1255,7 @@ gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type)
  * \param[in] d    Trajectory analysis data structure.
  * \returns   0 on success, a non-zero error code on error.
  */
-int xvgr_selections(FILE *out, gmx_ana_traj_t *d, output_env_t oenv)
+int xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv)
 {
     xvgr_selcollection(out, d->sc, oenv);
     return 0;
@@ -1265,7 +1265,7 @@ int xvgr_selections(FILE *out, gmx_ana_traj_t *d, output_env_t oenv)
  * \param[in,out] d       Trajectory analysis data structure.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int init_first_frame(gmx_ana_traj_t *d, output_env_t oenv)
+static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
 {
     int                 i;
 
@@ -1314,7 +1314,7 @@ static int init_first_frame(gmx_ana_traj_t *d, output_env_t oenv)
  * \see gmx_ana_do()
  */
 int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr, 
-                            output_env_t oenv)
+                            const output_env_t oenv)
 {
     int rc;
 
@@ -1345,7 +1345,7 @@ int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr,
  * This function also calculates the number of frames during the run.
  */
 int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, 
-               void *data, output_env_t oenv)
+               void *data, const output_env_t oenv)
 {
     t_pbc               pbc;
     t_pbc              *ppbc;

@@ -102,7 +102,7 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 static void periodic_mindist_plot(const char *trxfn,const char *outfn,
 				  t_topology *top,int ePBC,
 				  int n,atom_id index[],bool bSplit,
-                                  output_env_t oenv)
+                                  const output_env_t oenv)
 {
   FILE   *out;
   char *leg[5] = { "min per.","max int.","box1","box2","box3" };
@@ -230,7 +230,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	       real rcut,bool bMat,t_atoms *atoms,
 	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
 	       bool bMin, int nres, atom_id *residue,bool bPBC,int ePBC,
-               output_env_t oenv)
+               const output_env_t oenv)
 {
   FILE         *atm,*dist,*num;
   int          trxout;

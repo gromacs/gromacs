@@ -625,7 +625,7 @@ static void do_sham(const char *fn,const char *ndx,
   }
 }
 
-static void ehisto(const char *fh,int n,real **enerT, output_env_t oenv)
+static void ehisto(const char *fh,int n,real **enerT, const output_env_t oenv)
 {
   FILE *fp;
   int  i,j,k,nbin,blength;

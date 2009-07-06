@@ -238,7 +238,7 @@ static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
     }
 }
 
-void chk_trj(output_env_t oenv,const char *fn,const char *tpr,real tol)
+void chk_trj(const output_env_t oenv,const char *fn,const char *tpr,real tol)
 {
   t_trxframe   fr;
   t_count      count;

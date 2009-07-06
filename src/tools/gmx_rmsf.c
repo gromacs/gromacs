@@ -81,7 +81,7 @@ static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
 }
 
 void correlate_aniso(const char *fn,t_atoms *ref,t_atoms *calc,
-                     output_env_t oenv)
+                     const output_env_t oenv)
 {
   FILE *fp;
   int  i,j;

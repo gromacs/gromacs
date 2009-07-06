@@ -111,7 +111,7 @@ static real cosine_content(int nhp,int n,real *y)
 }
 
 static void plot_coscont(const char *ccfile,int n,int nset,real **val,
-                         output_env_t oenv)
+                         const output_env_t oenv)
 {
   FILE *fp;
   int  s;
@@ -159,7 +159,7 @@ static void regression_analysis(int n,bool bXYdy,real *x,real **val)
 }
 
 void histogram(const char *distfile,real binwidth,int n, int nset, real **val,
-               output_env_t oenv)
+               const output_env_t oenv)
 {
   FILE *fp;
   int  i,s;
@@ -293,7 +293,7 @@ static real anal_ee(real *parm,real T,real t)
 static void estimate_error(const char *eefile,int nb_min,int resol,int n,
                            int nset, double *av,double *sig,real **val,real dt,
 			   bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr,
-                           output_env_t oenv)
+                           const output_env_t oenv)
 {
   FILE   *fp;
   int    bs,prev_bs,nbs,nb;
@@ -516,7 +516,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
 
 static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
 			 bool bError,real fit_start,real smooth_tail_start,
-                         output_env_t oenv)
+                         const output_env_t oenv)
 {
   const real tol = 1e-8;
   real *kt;
@@ -552,7 +552,7 @@ static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
 }
 
 static void filter(real flen,int n,int nset,real **val,real dt,
-                   output_env_t oenv)
+                   const output_env_t oenv)
 {
   int    f,s,i,j;
   double *filt,sum,vf,fluc,fluctot;
@@ -589,7 +589,7 @@ static void filter(real flen,int n,int nset,real **val,real dt,
 }
 
 static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
-		   int npargs,t_pargs *ppa,output_env_t oenv)
+		   int npargs,t_pargs *ppa,const output_env_t oenv)
 {
   real *c1=NULL,*sig=NULL,*fitparm;
   real dt=0,tendfit,tbeginfit;

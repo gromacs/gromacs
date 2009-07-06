@@ -133,7 +133,7 @@ typedef struct {
 extern t_manager *init_man(t_x11 *x11,Window Parent,
 			   int x,int y,int width,int height,
 			   unsigned long fg,unsigned long bg,
-			   int ePBC,matrix box, output_env_t oenv);
+			   int ePBC,matrix box, const output_env_t oenv);
 /* Initiate the display manager */
 
 extern void move_man(t_x11 *x11,t_manager *man,int width,int height);

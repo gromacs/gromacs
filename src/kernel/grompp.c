@@ -422,7 +422,7 @@ static void cont_status(const char *slog,const char *ener,
 			bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
 			gmx_mtop_t *sys,
-                        output_env_t oenv)
+                        const output_env_t oenv)
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;

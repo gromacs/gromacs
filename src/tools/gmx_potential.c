@@ -98,7 +98,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 		    t_topology *top, int ePBC,
 		    int axis, int nr_grps, double *slWidth,
 		    double fudge_z, bool bSpherical, bool bCorrect,
-                    output_env_t oenv)
+                    const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -329,7 +329,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
 void plot_potential(double *potential[], double *charge[], double *field[], 
 		    const char *afile, const char *bfile, const char *cfile, 
                     int nslices, int nr_grps, char *grpname[], double slWidth,
-                    output_env_t oenv)
+                    const output_env_t oenv)
 {
   FILE       *pot,     /* xvgr file with potential */
              *cha,     /* xvgr file with charges   */

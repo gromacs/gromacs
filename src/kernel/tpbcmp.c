@@ -668,7 +668,8 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
     cmp_rvecs(fp,"box",3,fr1->box,fr2->box,ftol);
 }
 
-void comp_trx(output_env_t oenv,const char *fn1, const char *fn2, real ftol)
+void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2, 
+              real ftol)
 {
   int i;
   const char *fn[2];

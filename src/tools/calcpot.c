@@ -223,7 +223,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 		   t_forcerec **fr,
 		   gmx_enerdata_t *enerd,
 		   real **pot,
-		   matrix box,rvec **x, output_env_t oenv)
+		   matrix box,rvec **x, const output_env_t oenv)
 {
   gmx_localtop_t *ltop;
   double   t,t0,lam0;

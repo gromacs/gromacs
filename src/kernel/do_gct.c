@@ -101,7 +101,7 @@ static char *mk_gct_nm(const char *fn,int ftp,int ati,int atj)
 
 static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 		  t_commrec *cr,int nfile,const t_filenm fnm[],
-                  output_env_t oenv)
+                  const output_env_t oenv)
 {
   static FILE *prop;
   static FILE **out=NULL;
@@ -245,7 +245,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 
 static void pr_dev(t_coupl_rec *tcr,
 		   real t,real dev[eoObsNR],t_commrec *cr,int nfile,
-                   const t_filenm fnm[],output_env_t oenv)
+                   const t_filenm fnm[],const output_env_t oenv)
 {
   static FILE *fp=NULL;
   char   **ptr;
@@ -470,10 +470,10 @@ static void dump_fm(FILE *fp,int n,real f[],char *s)
   }
 }
 
-void do_coupling(FILE *log,output_env_t oenv,int nfile,const t_filenm fnm[],
-		 t_coupl_rec *tcr,real t,int step,real ener[],
-		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
-		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
+void do_coupling(FILE *log,const output_env_t oenv,int nfile,
+                 const t_filenm fnm[], t_coupl_rec *tcr,real t,
+                 int step,real ener[], t_forcerec *fr,t_inputrec *ir,
+                 bool bMaster, t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 		 t_commrec *cr,matrix box,tensor virial,
 		 tensor pres,rvec mu_tot,
 		 rvec x[],rvec f[],bool bDoIt)

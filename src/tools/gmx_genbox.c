@@ -264,7 +264,7 @@ void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
 static char *insert_mols(const char *mol_insrt,int nmol_insrt,int ntry,int seed,
 			 t_atoms *atoms,rvec **x,real **r,int ePBC,matrix box,
 			 gmx_atomprop_t aps,real r_distance,real rshell,
-                         output_env_t oenv)
+                         const output_env_t oenv)
 {
   t_pbc   pbc;
   static  char    *title_insrt;
@@ -358,7 +358,7 @@ static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
 		     int ePBC,matrix box,
 		     gmx_atomprop_t aps,real r_distance,int *atoms_added,
 		     int *residues_added,real rshell,int max_sol,
-                     output_env_t oenv)
+                     const output_env_t oenv)
 {
   int     i,nmol;
   ivec    n_box;

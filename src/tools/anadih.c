@@ -50,7 +50,7 @@
 #include "gstat.h"
 #include "confio.h"
 
-void print_one(output_env_t oenv,const char *base,const char *name,
+void print_one(const output_env_t oenv,const char *base,const char *name,
                const char *title, const char *ylabel,int nf,real time[],
                real data[])
 {
@@ -114,7 +114,7 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
 void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 		   real **dih,int nframes,int nangles,
 		   const char *grpname,real t0,real dt,bool bRb,
-                   output_env_t oenv)
+                   const output_env_t oenv)
 {
   /* just a wrapper; declare extra args, then chuck away at end. */ 
   int maxchi = 0 ; 
@@ -142,7 +142,7 @@ void low_ana_dih_trans(bool bTrans, const char *fn_trans,
 		       real **dih, int nlist, t_dlist dlist[], int nframes,
 		       int nangles, const char *grpname, int xity[], 
 		       real t0, real dt, bool bRb, real core_frac,
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
   FILE *fp;
   int  *tr_f,*tr_h;
@@ -371,7 +371,7 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 			   int maxchi, t_dlist dlist[], real time[], 
 			   int **lookup, int *xity,bool bRb, bool bNormalize,
 			   real core_frac, bool bAll, const char *fnall,
-                           output_env_t oenv) 
+                           const output_env_t oenv) 
 {
 
   bool bRotZero, bHaveChi=FALSE; 
@@ -659,7 +659,7 @@ void read_ang_dih(const char *trj_fn,
 		  real **trans_frac,
 		  real **aver_angle,
 		  real *dih[],
-                  output_env_t oenv)
+                  const output_env_t oenv)
 {
   t_pbc      *pbc;
   int        i,angind,status,natoms,total,teller;

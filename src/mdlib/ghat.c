@@ -135,7 +135,7 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
     symmetrize_ghat(nx,ny,nz,ghat);
 }
 
-void wr_ghat(const char *fn,output_env_t oenv,  
+void wr_ghat(const char *fn,const output_env_t oenv,  
 	     int n1max,int n2max,int n3max,real h1,real h2,real h3,
 	     real ***ghat,int nalias,int porder,int niter,bool bSym,rvec beta,
 	     real r1,real rc,real pval,real zval,real eref,real qopt)
@@ -194,7 +194,7 @@ void wr_ghat(const char *fn,output_env_t oenv,
   gmx_fio_fclose(fp);
 }
 
-void pr_scalar_gk(const char *fn,output_env_t oenv,int nx,int ny,int nz,
+void pr_scalar_gk(const char *fn,const output_env_t oenv,int nx,int ny,int nz,
                   rvec box,real ***ghat)
 {
   FILE *fp;
@@ -217,8 +217,8 @@ void pr_scalar_gk(const char *fn,output_env_t oenv,int nx,int ny,int nz,
   gmx_fio_fclose(fp);
 }
 
-real ***rd_ghat(FILE *log,output_env_t oenv,char *fn,ivec igrid,rvec gridspace,
-		rvec beta,int *porder,real *r1,real *rc)
+real ***rd_ghat(FILE *log,const output_env_t oenv,char *fn,ivec igrid,
+                rvec gridspace, rvec beta,int *porder,real *r1,real *rc)
 {
   FILE   *in;
   real   ***gh;

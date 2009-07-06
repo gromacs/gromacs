@@ -501,7 +501,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-real fit_acf(int ncorr,int fitfn,output_env_t oenv,bool bVerbose,
+real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
@@ -581,7 +581,7 @@ real fit_acf(int ncorr,int fitfn,output_env_t oenv,bool bVerbose,
   return sumtot;
 }
 
-void low_do_autocorr(const char *fn,output_env_t oenv,const char *title,
+void low_do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bNormalize,
@@ -769,7 +769,7 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
   return ppa;
 }
 
-void do_autocorr(const char *fn,output_env_t oenv,const char *title,
+void do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 		 int nframes,int nitem,real **c1,
 		 real dt,unsigned long mode,bool bAver)
 {

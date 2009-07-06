@@ -397,7 +397,7 @@ static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 }
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
-	      real begintimefit,real endtimefit,output_env_t oenv,
+	      real begintimefit,real endtimefit,const output_env_t oenv,
               bool bVerbose, int eFitFn,real fitparms[],int fix)
 {
   FILE *fp;

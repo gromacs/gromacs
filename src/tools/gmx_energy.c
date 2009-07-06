@@ -414,7 +414,7 @@ static void calc_violations(real rt[],real rav3[],int nb,int index[],
 static void analyse_disre(const char *voutfn,    int nframes,
 			  real violaver[], real bounds[], int index[],
 			  int pair[],      int nbounds,
-                          output_env_t oenv)
+                          const output_env_t oenv)
 {
     FILE   *vout;
     double sum,sumt,sumaver;
@@ -461,7 +461,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
 static void einstein_visco(const char *fn,const char *fni,int nsets,
                            int nframes,real **sum,
                            real V,real T,int nsteps,double time[],
-                           output_env_t oenv)
+                           const output_env_t oenv)
 {
     FILE *fp0,*fp1;
     double av[4],avold[4];
@@ -522,7 +522,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 			 int nset,int set[],int nenergy,real **eneset,
 			 real **enesum,
 			 char **leg,gmx_enxnm_t *enm,
-			 real Vaver,real ezero, output_env_t oenv)
+			 real Vaver,real ezero, const output_env_t oenv)
 {
   FILE *fp;
   /* Check out the printed manual for equations! */
@@ -775,7 +775,7 @@ static void print1(FILE *fp,bool bDp,real e)
 static void fec(const char *ene2fn, const char *runavgfn, 
 		real reftemp, int nset, int set[], char *leg[], 
 		int nenergy, real **eneset, double time[],
-                output_env_t oenv)
+                const output_env_t oenv)
 {
   char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
 	   	      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };

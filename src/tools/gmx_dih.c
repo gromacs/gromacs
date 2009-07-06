@@ -249,7 +249,7 @@ static void ana_cluster(FILE *out, t_xrama *xr,real **dih,real time[],
 }
 
 static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
-		      t_topology *top,int nframes, output_env_t oenv)
+		      t_topology *top,int nframes, const output_env_t oenv)
 {
   FILE *outd;
   real prev_phi,prev_psi;

@@ -117,19 +117,19 @@ extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
 extern void cross_corr(int n,real f[],real g[],real corr[]);
 /* Simple minded cross correlation algorithm */
   
-extern real fit_acf(int ncorr,int fitfn,output_env_t oenv,bool bVerbose,
+extern real fit_acf(int ncorr,int fitfn,const output_env_t oenv,bool bVerbose,
 		    real tbeginfit,real tendfit,real dt,real c1[],real *fit);
   /* Fit an ACF to a given function */
   
-extern void do_autocorr(const char *fn,output_env_t oenv,const char *title,
+extern void do_autocorr(const char *fn,const output_env_t oenv,const char *title,
 			int nframes,int nitem,real **c1,
 			real dt,unsigned long mode,bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
-extern void low_do_autocorr(const char *fn,output_env_t oenv,const char *title,
-			    int  nframes,int nitem,int nout,real **c1,
-			    real dt,unsigned long mode,int nrestart,
-			    bool bAver,bool bNormalize,
+extern void low_do_autocorr(const char *fn,const output_env_t oenv,
+                            const char *title, int  nframes,int nitem,
+                            int nout,real **c1, real dt,unsigned long mode,
+                            int nrestart, bool bAver,bool bNormalize,
 			    bool bVerbose,real tbeginfit,real tendfit,
 			    int nfitparm,int nskip);
 /* 
@@ -240,7 +240,7 @@ extern void expfit(int n, real x[], real y[], real Dy[],
 extern void ana_dih_trans(const char *fn_trans,const char *fn_histo,
 			  real **dih,int nframes,int nangles,
 			  const char *grpname,real t0,real dt,bool bRb,
-                          output_env_t oenv);
+                          const output_env_t oenv);
 /*
  * Analyse dihedral transitions, by counting transitions per dihedral
  * and per frame. The total number of transitions is printed to
@@ -269,7 +269,7 @@ extern void low_ana_dih_trans(bool bTrans, const char *fn_trans,
 			      real **dih, int nlist, t_dlist dlist[], 
                               int nframes, int nangles, const char *grpname, 
                               int xity[], real t0, real dt, bool bRb, 
-                              real core_frac, output_env_t oenv); 
+                              real core_frac, const output_env_t oenv); 
   /* as above but passes dlist so can copy occupancies into it, and xity[] 
    *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of
    * rotamers. Also production of xvg output files is conditional 
@@ -287,7 +287,7 @@ extern void read_ang_dih(const char *trj_fn,
 			 real **trans_frac,
 			 real **aver_angle,
 			 real *dih[],
-                         output_env_t oenv);
+                         const output_env_t oenv);
 /* 
  * Read a trajectory and calculate angles and dihedrals.
  *
@@ -347,7 +347,7 @@ extern real fit_function(int eFitFn,real *parm,real x);
 /* or to a transverse current autocorrelation function */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
-		     real begintimefit,real endtimefit,output_env_t oenv,
+		     real begintimefit,real endtimefit,const output_env_t oenv,
                      bool bVerbose, int eFitFn,real fitparms[],int fix);
 /* Returns integral.
  * If x == NULL, the timestep dt will be used to create a time axis.
@@ -409,9 +409,10 @@ extern void get_chi_product_traj (real **dih,int nframes,int nangles,
                                   real time[], int **lookup,int *xity,
                                   bool bRb,bool bNormalize,
 				  real core_frac,bool bAll,const char *fnall,
-                                  output_env_t oenv); 
+                                  const output_env_t oenv); 
 
-extern void print_one (output_env_t oenv, const char *base,const char *name,
+extern void print_one (const output_env_t oenv, const char *base,
+                       const char *name,
                        const char *title, const char *ylabel,int nf,
                        real time[],real data[]); 
 		      
@@ -419,7 +420,7 @@ extern void print_one (output_env_t oenv, const char *base,const char *name,
 extern void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
                          real sigma_ct[],real sigma_nt[],real sigma_kt[],
                          real fit_start,real temp,real smooth_tail_start,
-                         output_env_t oenv);
+                         const output_env_t oenv);
 
 extern void compute_derivative(int nn,real x[],real y[],real dydx[]);
 

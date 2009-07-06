@@ -58,7 +58,7 @@
 
 /* Forward declarations: I Don't want all that init shit here */
 void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[],
-              output_env_t oenv);
+              const output_env_t oenv);
 
 int EventSignaller(t_manager *man);
 
@@ -347,7 +347,7 @@ static const char *MenuTitle[MSIZE] = {
 };
 
 void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[], 
-              output_env_t oenv)
+              const output_env_t oenv)
 {
   Pixmap               pm;
   t_gmx                *gmx;

@@ -212,7 +212,7 @@ static void do_rdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
 		   bool bCM,const char *close,
 		   const char **rdft,bool bXY,bool bPBC,bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng,
-                   output_env_t oenv)
+                   const output_env_t oenv)
 {
   FILE       *fp;
   int        status;
@@ -892,7 +892,7 @@ void compute_structure_factor (structure_factor * sf, matrix box,
 }
 
 void save_data (structure_factor * sf, const char *file, int ngrps, 
-                real start_q, real end_q, output_env_t oenv)
+                real start_q, real end_q, const output_env_t oenv)
 {
 
     FILE *fp;
@@ -933,7 +933,7 @@ void save_data (structure_factor * sf, const char *file, int ngrps,
 int do_scattering_intensity (const char* fnTPS, const char* fnNDX, 
                              const char* fnXVG, const char *fnTRX, 
                              real start_q,real end_q, 
-                             real energy,int ng,output_env_t oenv)
+                             real energy,int ng,const output_env_t oenv)
 {
     int i,*isize,status,flags = TRX_READ_X,**index_atp;
     char **grpname,title[STRLEN];

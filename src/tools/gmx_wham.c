@@ -652,8 +652,9 @@ double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, t_Umbrel
 
 
 void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
-        int nWindows, t_UmbrellaOptions * opt,
-        bool bAppendCorr2File, const char *fn, output_env_t oenv)
+                              int nWindows, t_UmbrellaOptions * opt,
+                              bool bAppendCorr2File, const char *fn, 
+                              const output_env_t oenv)
 {
     int i,j,k,bins=opt->bins;
     static int first=1;
@@ -807,8 +808,8 @@ void copy_pullgrp_to_synthwindow(t_UmbrellaWindow *synthWindow,
    which are distributed according to the histograms. Required to generate
    the "synthetic" histograms for the Bootstrap method */
 void calc_cummulants(t_UmbrellaWindow *window,int nWindows,
-                    t_UmbrellaOptions *opt,const char *fnhist, 
-                    output_env_t oenv)
+                     t_UmbrellaOptions *opt,const char *fnhist, 
+                     const output_env_t oenv)
 {
     int i,j,k,nbin;
     double last;
@@ -936,7 +937,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow,
 
 void print_histograms(const char *fnhist, t_UmbrellaWindow * window, 
                       int nWindows, int bs_index,t_UmbrellaOptions *opt, 
-                      output_env_t oenv)
+                      const output_env_t oenv)
 {
     char *fn;
     char *buf=0,title[256];
@@ -987,7 +988,7 @@ void print_histograms(const char *fnhist, t_UmbrellaWindow * window,
 void do_bootstrapping(const char *fnres, const char* fnprof, 
                       const char *fnhist, char* ylabel, double *profile,
                       t_UmbrellaWindow * window, int nWindows, 
-                      t_UmbrellaOptions *opt, output_env_t oenv)
+                      t_UmbrellaOptions *opt, const output_env_t oenv)
 {
     t_UmbrellaWindow * synthWindow;
     double *bsProfile,*bsProfiles_av, *bsProfiles_av2,maxchange=1e20,tmp,stddev;

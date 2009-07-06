@@ -156,7 +156,7 @@ static int pdbf_comp(const void *a,const void *b)
 }
 
 static void analyse_em_all(int npdb,t_pdbfile *pdbf[], const char *edocked,
-                           const char *efree, output_env_t oenv)
+                           const char *efree, const output_env_t oenv)
 {
   FILE *fp;
   int i;

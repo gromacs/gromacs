@@ -405,7 +405,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     return md;
 }
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir,output_env_t oenv)
+FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
 {
     FILE *fp;
     const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";

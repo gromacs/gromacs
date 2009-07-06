@@ -66,7 +66,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 		  real **slOrder, real *slWidth, int *nslices, 
 		  t_topology *top, int ePBC,
 		  int axis, bool bMicel, atom_id micel[], int nmic,
-                  output_env_t oenv)
+                  const output_env_t oenv)
 {
   rvec *x0,              /* coordinates with pbc */
        dipole,           /* dipole moment due to one molecules */
@@ -216,7 +216,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 }
 
 void h2order_plot(rvec dipole[], real order[], const char *afile, 
-		  int nslices, real slWidth, output_env_t oenv)
+		  int nslices, real slWidth, const output_env_t oenv)
 {
   FILE       *ord;                /* xvgr files with order parameters  */
   int        slice;               /* loop index     */

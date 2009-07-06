@@ -73,7 +73,7 @@ typedef struct {
   output_env_t oenv;
 } t_xrama;
 
-extern t_topology *init_rama(output_env_t oenv, const char *infile,
+extern t_topology *init_rama(const output_env_t oenv, const char *infile,
                              const char *topfile, t_xrama *xr,int mult);
 
 extern bool new_data(t_xrama *xr);

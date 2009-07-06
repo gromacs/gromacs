@@ -131,7 +131,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
 			      const char *xlabel, const char **ylabel,
 			      int n, real *x, real **y, real ***sy,
 			      real scale_x, bool bZero, bool bSplit,
-                              output_env_t oenv)
+                              const output_env_t oenv)
 {
   FILE *out;
   int g,s,i;
@@ -355,7 +355,7 @@ static void overlap(const char *outfile,int natoms,
 		    rvec **eigvec1,
 		    int nvec2,int *eignr2,rvec **eigvec2,
 		    int noutvec,int *outvec,
-                    output_env_t oenv)
+                    const output_env_t oenv)
 {
   FILE *out;
   int i,v,vec,x;
@@ -395,7 +395,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,
                     real *sqrtm,rvec *xav,
                     int *eignr,rvec **eigvec,
                     int noutvec,int *outvec, bool bSplit,
-                    output_env_t oenv)
+                    const output_env_t oenv)
 {
   FILE    *xvgrout=NULL;
   int     status,out=0,nat,i,j,d,v,vec,nfr,nframes=0,snew_size,frame;
@@ -659,7 +659,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,
 static void components(const char *outfile,int natoms,
 		       int *eignr,rvec **eigvec,
 		       int noutvec,int *outvec,
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
   int g,s,v,i;
   real *x,***y;
@@ -697,7 +697,7 @@ static void rmsf(const char *outfile,int natoms,real *sqrtm,
                  int *eignr,rvec **eigvec,
                  int noutvec,int *outvec,
                  real *eigval, int neig,
-                 output_env_t oenv)
+                 const output_env_t oenv)
 {
   int   nrow,g,v,i;
   real  *x,**y;

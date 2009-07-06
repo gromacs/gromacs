@@ -211,7 +211,7 @@ int bin(real chi,int mult)
 static void do_dihcorr(const char *fn,int nf,int ndih,real **dih,real dt,
 		       int nlist,t_dlist dlist[],real time[],int maxchi,
 		       bool bPhi,bool bPsi,bool bChi,bool bOmega,
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
   char name1[256],name2[256];
   int  i,j,Xi;
@@ -272,7 +272,7 @@ static void copy_dih_data(real in[], real out[], int nf, bool bLEAVE)
 static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
 			real **dih,int maxchi,
 			bool bPhi,bool bPsi,bool bChi,bool bOmega, bool bRAD,
-                        output_env_t oenv)
+                        const output_env_t oenv)
 {
   char name[256], titlestr[256], ystr[256]; 
   real *data ; 
@@ -392,7 +392,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 			  bool bNormalize,bool bSSHisto,const char *ssdump,
 			  real bfac_max,t_atoms *atoms, 
 			  bool bDo_jc, const char *fn,
-                          output_env_t oenv)
+                          const output_env_t oenv)
 {
   /* also gets 3J couplings and order parameters S2 */ 
   t_karplus kkkphi[] = {
@@ -701,7 +701,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 }
 
 static FILE *rama_file(const char *fn,const char *title,const char *xaxis,
-                       const char *yaxis,output_env_t oenv)
+                       const char *yaxis,const output_env_t oenv)
 {
   FILE *fp;
 
@@ -734,7 +734,7 @@ static FILE *rama_file(const char *fn,const char *title,const char *xaxis,
 }
 
 static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
-		    bool bViol,bool bRamOmega,output_env_t oenv)
+		    bool bViol,bool bRamOmega,const output_env_t oenv)
 {
   FILE *fp,*gp=NULL;
   bool bOm;
@@ -832,7 +832,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 static void print_transitions(const char *fn,int maxchi,int nlist,
                               t_dlist dlist[], t_atoms *atoms,rvec x[],
                               matrix box, bool bPhi,bool bPsi,bool bChi,real dt,
-                              output_env_t oenv)
+                              const output_env_t oenv)
 {
   /* based on order_params below */ 
   FILE *fp;
@@ -881,7 +881,7 @@ static void order_params(FILE *log,
 			 const char *fn,int maxchi,int nlist,t_dlist dlist[],
 			 const char *pdbfn,real bfac_init,
 			 t_atoms *atoms,rvec x[],int ePBC,matrix box,
-			 bool bPhi,bool bPsi,bool bChi,output_env_t oenv)
+			 bool bPhi,bool bPsi,bool bChi,const output_env_t oenv)
 {
   FILE *fp;
   int  nh[edMax];

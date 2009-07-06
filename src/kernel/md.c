@@ -129,7 +129,7 @@ static gmx_thread_mutex_t box_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 #endif
 
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, bool bVerbose,bool bCompact,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -595,7 +595,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 }
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
-             output_env_t oenv, bool bVerbose,bool bCompact,
+             const output_env_t oenv, bool bVerbose,bool bCompact,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
              gmx_mtop_t *top_global,

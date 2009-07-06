@@ -1235,7 +1235,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 }
 
 void init_md(FILE *fplog,
-             t_commrec *cr,t_inputrec *ir,output_env_t oenv,
+             t_commrec *cr,t_inputrec *ir,const output_env_t oenv,
              double *t,double *t0,
              real *lambda,double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,

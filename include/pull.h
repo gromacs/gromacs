@@ -79,7 +79,7 @@ extern void init_pull(FILE *fplog,
                       const t_filenm fnm[], /* standard filename struct */
                       gmx_mtop_t *mtop, /* the topology of the whole system */
                       t_commrec * cr, /* struct for communication info */
-                      output_env_t oenv,  /* output options */
+                      const output_env_t oenv,  /* output options */
                       bool bOutFile,   /* open output files */
                       unsigned long Flags);
 

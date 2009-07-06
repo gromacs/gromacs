@@ -69,7 +69,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 		       const char *mcn,bool bMol,bool bPBC,const char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi,int ndf,
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
   FILE    *fp,*gp,*hp,*tp;
   atom_id *index=NULL;

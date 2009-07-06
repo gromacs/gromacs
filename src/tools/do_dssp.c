@@ -58,7 +58,7 @@ static int strip_dssp(char *dsspfile,int nres,
 		       bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[],
-                       output_env_t oenv)
+                       const output_env_t oenv)
 {
   static bool bFirst=TRUE;
   static char *ssbuf;
@@ -284,7 +284,7 @@ void write_sas_mat(const char *fn,real **accr,int nframe,int nres,t_matrix *mat)
 }
 
 void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
-                output_env_t oenv)
+                const output_env_t oenv)
 {
   FILE *fp;
   t_mapping *map;

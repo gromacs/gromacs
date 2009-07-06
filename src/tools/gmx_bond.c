@@ -53,7 +53,7 @@
 #include "tpxio.h"
 
 static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
-                          output_env_t oenv)
+                          const output_env_t oenv)
 {
   char **leg;
   int  i;
@@ -79,7 +79,7 @@ static void do_bonds(FILE *log,const char *fn,const char *fbond,
                      const char *fdist, int gnx,atom_id index[],
                      real blen,real tol,bool bAver,
                      t_topology *top,int ePBC,bool bAverDist,
-                     output_env_t oenv)
+                     const output_env_t oenv)
 {
 #define MAXTAB 1000
   FILE   *out,*outd=NULL;

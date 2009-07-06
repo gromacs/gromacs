@@ -60,7 +60,7 @@ bool use_xmgr()
 } 
 
 FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
-               const char *yaxis,output_env_t oenv)
+               const char *yaxis,const output_env_t oenv)
 {
     FILE *xvgr;
     char pukestr[100];
@@ -92,7 +92,7 @@ xvgrclose(FILE *fp)
 	gmx_fio_fclose(fp);
 }
 
-void xvgr_subtitle(FILE *out,const char *subtitle,output_env_t oenv)
+void xvgr_subtitle(FILE *out,const char *subtitle,const output_env_t oenv)
 {
     if (get_print_xvgr_codes(oenv))
     {
@@ -101,7 +101,7 @@ void xvgr_subtitle(FILE *out,const char *subtitle,output_env_t oenv)
 }
 
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,
-               output_env_t oenv)
+               const output_env_t oenv)
 {
     if (get_print_xvgr_codes(oenv))
     {
@@ -110,7 +110,7 @@ void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,
 }
 
 void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
-                output_env_t oenv)
+                const output_env_t oenv)
 {
     if (get_print_xvgr_codes(oenv))
     {
@@ -121,7 +121,7 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
     }
 }
 
-void xvgr_legend(FILE *out,int nsets,char **setname,output_env_t oenv)
+void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
 {
   int i;
   
@@ -144,7 +144,7 @@ void xvgr_legend(FILE *out,int nsets,char **setname,output_env_t oenv)
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
-                     output_env_t oenv)
+                     const output_env_t oenv)
 {
     if (get_print_xvgr_codes(oenv))
     {
@@ -161,7 +161,7 @@ void xvgr_box(FILE *out,
 	      int LocType,
 	      real xmin,real ymin,real xmax,real ymax,
 	      int LineStyle,int LineWidth,int LineColor,
-	      int BoxFill,int BoxColor,int BoxPattern,output_env_t oenv)
+	      int BoxFill,int BoxColor,int BoxPattern,const output_env_t oenv)
 {
     if (get_print_xvgr_codes(oenv))
     {
@@ -348,7 +348,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-               char **leg,output_env_t oenv)
+               char **leg,const output_env_t oenv)
 {
     FILE *fp;
     int  i,j;

@@ -169,7 +169,7 @@ static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
 
 static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 			char **name,bool bCom,bool bMol,bool bDim[],
-                        output_env_t oenv)
+                        const output_env_t oenv)
 {
   char **leg;
   const char *dimtxt[] = { " X", " Y", " Z", "" };
@@ -328,7 +328,8 @@ static void write_pdb_bfac(const char *fname,const char *xname,
 			   const char *title,t_atoms *atoms,int ePBC,matrix box,
 			   int isize,atom_id *index,int nfr_x,rvec *x,
 			   int nfr_v,rvec *sum,
-			   bool bDim[],real scale_factor, output_env_t oenv)
+			   bool bDim[],real scale_factor, 
+                           const output_env_t oenv)
 {
   FILE    *fp;
   real    max,len2,scale;
@@ -441,7 +442,7 @@ static void update_histo(int gnx,atom_id index[],rvec v[],
 }
 
 static void print_histo(const char *fn,int nhisto,int histo[],real binwidth,
-                        output_env_t oenv)
+                        const output_env_t oenv)
 {
   FILE *fp;
   int i;

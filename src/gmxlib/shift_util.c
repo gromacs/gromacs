@@ -376,7 +376,7 @@ static real rgbset(real col)
 
 
 
-real analyse_diff(FILE *log,char *label,output_env_t oenv,
+real analyse_diff(FILE *log,char *label,const output_env_t oenv,
 		  int natom,rvec ffour[],rvec fpppm[],
 		  real phi_f[],real phi_p[],real phi_sr[],
 		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)

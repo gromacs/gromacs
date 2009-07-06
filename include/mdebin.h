@@ -75,7 +75,7 @@ extern t_mdebin
 	     const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir,output_env_t oenv);
+FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv);
 /* Open the dhdl file for output */
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,

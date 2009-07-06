@@ -188,7 +188,7 @@ static t_forcerec *fr=NULL;
 
 void do_nsgrid(FILE *fp,bool bVerbose,
 	       matrix box,rvec x[],t_atoms *atoms,real rlong, 
-               output_env_t oenv)
+               const output_env_t oenv)
 {
   gmx_mtop_t *mtop;
   gmx_localtop_t *top;
@@ -316,7 +316,7 @@ bool bXor(bool b1,bool b2)
 void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 	      int ePBC, matrix box, bool bInsert,
 	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt,
-	      bool bVerbose,real rshell,int max_sol, output_env_t oenv)
+	      bool bVerbose,real rshell,int max_sol, const output_env_t oenv)
 {
   t_nblist   *nlist;
   t_atoms    *atoms_all;

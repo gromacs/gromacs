@@ -81,7 +81,7 @@ extern void init_generalized_rf(FILE *fplog,
 
 
 /* In wall.c */
-extern void make_wall_tables(FILE *fplog,output_env_t oenv,
+extern void make_wall_tables(FILE *fplog,const output_env_t oenv,
 			     const t_inputrec *ir,const char *tabfn,
 			     const gmx_groups_t *groups,
 			     t_forcerec *fr);
@@ -93,7 +93,7 @@ extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 
 extern t_forcerec *mk_forcerec(void);
 
-extern t_forcetable make_tables(FILE *fp,output_env_t oenv,
+extern t_forcetable make_tables(FILE *fp,const output_env_t oenv,
                                 const t_forcerec *fr,
                                 bool bVerbose,const char *fn,
                                 real rtab,bool bForceUser,bool b14only);
@@ -107,7 +107,7 @@ extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle);
  */
 
 /* Return a table for GB calculations */
-extern t_forcetable make_gb_table(FILE *out,output_env_t oenv,
+extern t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
                                   const t_forcerec *fr,
                                   const char *fn,
                                   real rtab);
@@ -121,7 +121,7 @@ forcerec_set_ranges(t_forcerec *fr,
 /* Set the number of cg's and atoms for the force calculation */
 
 extern void init_forcerec(FILE       *fplog,     
-                          output_env_t oenv,
+                          const output_env_t oenv,
 			  t_forcerec *fr,   
 			  t_fcdata   *fcd,
 			  const t_inputrec *ir,   

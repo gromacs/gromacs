@@ -227,7 +227,7 @@ extern bool get_print_xvgr_codes(const output_env_t oenv);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-extern int read_first_frame(output_env_t oenv,int *status,const char *fn,
+extern int read_first_frame(const output_env_t oenv,int *status,const char *fn,
                             t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
@@ -237,12 +237,12 @@ extern int read_first_frame(output_env_t oenv,int *status,const char *fn,
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-extern bool read_next_frame(output_env_t oenv,int status,t_trxframe *fr);
+extern bool read_next_frame(const output_env_t oenv,int status,t_trxframe *fr);
   /* Reads the next frame which is in accordance with fr->flags.
    * Returns TRUE when succeeded, FALSE otherwise.
    */
 
-extern int read_first_x(output_env_t oenv,int *status,const char *fn,
+extern int read_first_x(const output_env_t oenv,int *status,const char *fn,
                         real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
  * memory for the coordinates, for a trajectory file.
@@ -250,7 +250,7 @@ extern int read_first_x(output_env_t oenv,int *status,const char *fn,
  * The integer in status should be passed to calls of read_next_x
  */
 
-extern bool read_next_x(output_env_t oenv,int status,real *t,int natoms,
+extern bool read_next_x(const output_env_t oenv,int status,real *t,int natoms,
                         rvec x[],matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
