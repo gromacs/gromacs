@@ -76,7 +76,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 						   float *         work)
 {
     int           nri,ntype,nthreads;
-    float         facel,krf,crf,tabscale,gbtabscale;
+    float         facel,krf,crf,tabscale,gbtabscale,scl_gb;
     int           n,ii,is3,ii3,k,nj0,nj1,ggid;
     float         shX,shY,shZ;
 	int			  offset,nti;
@@ -99,7 +99,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 	__m128   eps,eps2,Y,F,G,H,Geps,Heps2;
 	__m128   Fp,VV,FF,vgb,fijC,fijD,fijR,dvdatmp;
 	__m128   rinvsix,Vvdw6,Vvdw12,Vvdwtmp,vgbtot,n0f;
-	__m128   fac_sse,tabscale_sse,gbtabscale_sse;
+	__m128   fac_sse,tabscale_sse,gbtabscale_sse,scale_gb;
 	
 	__m128i  n0, nnn;
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
@@ -122,7 +122,8 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 	nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
-    facel            = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
+    facel            = *p_facel; 
+	scl_gb           = 1.0 - (1.0/gbdata->gb_epsilon_solvent);
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
@@ -133,6 +134,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 	fac_sse        = _mm_load1_ps(&facel);
 	tabscale_sse   = _mm_load1_ps(&tabscale);
 	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
+	scale_gb       = _mm_load1_ps(&scl_gb);
 	
 	
 	/* Keep the compiler happy */
@@ -251,6 +253,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			vcoul   = _mm_mul_ps(qq,rinv);
 			fscal   = _mm_mul_ps(vcoul,rinv);
 			qq      = _mm_mul_ps(qq,neg);
+			qq      = _mm_mul_ps(qq,scale_gb);
 			qq      = _mm_mul_ps(isaprod,qq);
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
 			
@@ -650,6 +653,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 			fscal   = _mm_mul_ps(vcoul,rinv);
 			
 			qq      = _mm_mul_ps(qq,neg);
+			qq      = _mm_mul_ps(qq,scale_gb);
 			qq      = _mm_mul_ps(isaprod,qq);
 			
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);

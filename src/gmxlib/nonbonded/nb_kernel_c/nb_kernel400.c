@@ -101,6 +101,7 @@ void nb_kernel400(
     real          dx11,dy11,dz11,rsq11,rinv11;
 	gmx_gbdata_t *gbdata;
 	real *        gpol;
+	real          scale_gb;
 	
 	gbdata           = (gmx_gbdata_t *)work;
 	gpol             = gbdata->gpol;
@@ -108,7 +109,8 @@ void nb_kernel400(
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
-    facel            = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
+    facel            = *p_facel;
+	scale_gb         = 1.0 - (1.0/gbdata->gb_epsilon_solvent); 
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
@@ -165,7 +167,7 @@ void nb_kernel400(
 
             /* Zero the potential energy for this list */
             vctot            = 0;   
-	    vgbtot           = 0;
+			vgbtot           = 0;
             dvdasum          = 0;              
 
             /* Clear i atom forces */
@@ -200,7 +202,7 @@ void nb_kernel400(
                 qq               = iq*charge[jnr]; 
                 vcoul            = qq*rinv11;      
                 fscal            = vcoul*rinv11;   
-                qq               = isaprod*(-qq);  
+                qq               = isaprod*(-qq)*scale_gb;  
                 gbscale          = isaprod*gbtabscale;
 
                 /* Tabulated Generalized-Born interaction */

@@ -107,6 +107,7 @@ void nb_kernel430(
     real          c6,c12;
 	gmx_gbdata_t *gbdata;
 	real *        gpol;
+	real          scale_gb;
 	
 	gbdata           = (gmx_gbdata_t *)work;
 	gpol             = gbdata->gpol;
@@ -114,7 +115,8 @@ void nb_kernel430(
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
-    facel            = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
+    facel            = *p_facel;   
+    scale_gb         = 1.0 - (1.0/gbdata->gb_epsilon_solvent);
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
@@ -208,7 +210,7 @@ void nb_kernel430(
                 qq               = iq*charge[jnr]; 
                 vcoul            = qq*rinv11;      
                 fscal            = vcoul*rinv11;   
-                qq               = isaprod*(-qq);  
+                qq               = isaprod*(-qq)*scale_gb;  
                 gbscale          = isaprod*gbtabscale;
                 tj               = nti+2*type[jnr];
                 c6               = vdwparam[tj];   
