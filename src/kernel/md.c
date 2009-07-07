@@ -1355,7 +1355,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (update_forcefield(fplog,
                                   nfile,fnm,fr,
                                   mdatoms->nr,state->x,state->box)) {
-                if (gmx_parallel_env)
+                if (gmx_parallel_env())
                 {
                     gmx_finalize();
                 }
@@ -1846,7 +1846,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                  f,NULL,xcopy,
                                  &(top_global->mols),mdatoms->massT,pres))
             {
-                if (gmx_parallel_env)
+                if (gmx_parallel_env())
                     gmx_finalize();
                 fprintf(stderr,"\n");
                 exit(0);

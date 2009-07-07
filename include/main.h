@@ -44,10 +44,10 @@
 #include <stdio.h>
 #include "network.h"
 
-extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
-			       * so could also be 1 when mdrun was started
-			       * with: mpirun -np 1 
-			       */
+extern bool gmx_parallel_env(void); 
+/* 1 when running in a parallel environment, so could also be 1 if
+   mdrun was started with: mpirun -np 1 */
+
 
 extern FILE *gmx_log_open(const char *fn,const t_commrec *cr,
                           bool bMasterOnly, unsigned long Flags);

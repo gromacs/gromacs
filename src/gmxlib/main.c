@@ -51,6 +51,10 @@
 #include "mdrun.h"
 #include "gmxfio.h"
 
+#ifdef GMX_THREADS
+#include "gmx_thread.h"
+#endif
+
 /* The source code in this file should be thread-safe. 
          Please keep it that way. */
 
@@ -69,7 +73,40 @@
 /* this is not strictly thread-safe, but it's only written to at the beginning
    of the simulation, once by each thread with the same value. We assume
    that writing to an int is atomic.*/
-int  gmx_parallel_env=0;
+static bool parallel_env_val;
+#ifdef GMX_THREADS
+gmx_thread_mutex_t parallel_env_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+#endif
+
+bool gmx_parallel_env(void)
+{
+    bool ret;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&parallel_env_mutex);
+#endif
+    ret=parallel_env_val;
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&parallel_env_mutex);
+#endif
+    return ret;
+}
+
+static void set_parallel_env(bool val)
+{
+#ifdef GMX_THREADS
+    gmx_thread_mutex_lock(&parallel_env_mutex);
+#endif
+    if (!parallel_env_val)
+    {
+        /* we only allow it to be set, not unset */
+        parallel_env_val=val;
+    }
+#ifdef GMX_THREADS
+    gmx_thread_mutex_unlock(&parallel_env_mutex);
+#endif
+}
+
+
 
 static void par_fn(char *base,int ftp,const t_commrec *cr,
 		   bool bUnderScore,
@@ -327,6 +364,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   t_commrec *cr;
   char      **argv;
   int       i;
+  bool      pe=FALSE;
   
   snew(cr,1);
 
@@ -335,26 +373,28 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
   if (tMPI_Get_N(argc, argv_ptr)>1)
-    gmx_parallel_env=1;
+      pe=TRUE;
   else
-    gmx_parallel_env=0;
+      pe=FALSE;
 #endif
 #ifdef GMX_LIB_MPI
-  gmx_parallel_env = 1;
+  pe = TRUE;
 #ifdef GMX_CHECK_MPI_ENV
   /* Do not use MPI calls when env.var. GMX_CHECK_MPI_ENV is not set */
   if (getenv(GMX_CHECK_MPI_ENV) == NULL)
-    gmx_parallel_env = 0;
+      pe = FALSE;
 #endif
 #endif
-  if (gmx_parallel_env) {
+  set_parallel_env(pe);
+  if (pe) {
     cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
   } else {
     cr->nnodes     = 1;
     cr->sim_nodeid = 0;
   }
 #else
-  gmx_parallel_env = 0; 
+  pe=FALSE;
+  set_parallel_env(pe);
   cr->sim_nodeid   = 0;
   cr->nnodes       = 1;
 #endif
@@ -373,8 +413,10 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   cr->duty = (DUTY_PP | DUTY_PME);
 
   /* Communicate arguments if parallel */
+#ifndef GMX_THREADS
   if (PAR(cr))
     comm_args(cr,argc,argv_ptr);
+#endif
 
   return cr;
 }

@@ -107,7 +107,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
   double dt;
   char buf[48];
 
-  if (!gmx_parallel_env)
+  if (!gmx_parallel_env())
     fprintf(out,"\r");
   fprintf(out,"step %s",gmx_step_str(step,buf));
   if ((step >= ir->nstlist)) {
@@ -128,7 +128,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
     else
       fprintf(out,", remaining runtime: %5d s          ",(int)dt);
   }
-  if (gmx_parallel_env)
+  if (gmx_parallel_env())
     fprintf(out,"\n");
 
   fflush(out);

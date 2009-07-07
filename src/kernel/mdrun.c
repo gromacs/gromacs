@@ -384,6 +384,7 @@ int main(int argc,char *argv[])
     int      sim_part;
     char     suffix[STRLEN];
     int      rc;
+    int      dumbuf[128];
 
     cr = init_par(&argc,&argv);
 
@@ -393,12 +394,11 @@ int main(int argc,char *argv[])
     PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
             | (MASTER(cr) ? 0 : PCA_QUIET));
     /* Only run niced when not running in parallel */
-    if (!gmx_parallel_env)
+    if (!gmx_parallel_env())
         PCA_Flags |= PCA_BE_NICE;
 
-    parse_common_args(&argc,argv,PCA_Flags,
-            NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,
-            &oenv);
+    parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
+                      asize(desc),desc,0,NULL, &oenv);
 
 
     dd_node_order = nenum(ddno_opt);
@@ -492,12 +492,12 @@ int main(int argc,char *argv[])
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     rc = mdrunner(fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
-            ddxyz,dd_node_order,rdd,rconstr,
-            dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-            nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
-            cpt_period,max_hours,Flags);
+                  ddxyz,dd_node_order,rdd,rconstr,
+                  dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+                  nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
+                  cpt_period,max_hours,Flags);
 
-    if (gmx_parallel_env)
+    if (gmx_parallel_env())
         gmx_finalize();
 
     if (MULTIMASTER(cr)) {

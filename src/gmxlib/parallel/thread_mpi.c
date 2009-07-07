@@ -74,9 +74,8 @@ typedef int bool;
 
 /* the normal maximum number of threads for pre-defined arrays
    (if the actual number of threads is bigger than this, it'll
-    allocate/deallocate arrays, so no problems will arise
-    if the number of threads is bigger than this) */
-#define MAX_THREADS 32
+    allocate/deallocate arrays, so no problems will arise).*/
+#define MAX_PREALLOC_THREADS 32
 
 
 /* information about a running thread. This structure is put in a 
@@ -835,13 +834,6 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
         MPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
         MPI_GROUP_EMPTY=tMPI_Group_alloc();
 
-        /* allocate mutex for communicator creation */
-        gmx_thread_mutex_init( &(MPI_COMM_WORLD->comm_create_mutex) );
-        gmx_thread_cond_init( &(MPI_COMM_WORLD->comm_create_prep) );
-        MPI_COMM_WORLD->split = NULL;
-        MPI_COMM_WORLD->new_comm = NULL;
-
-
         MPI_COMM_WORLD->grp.N=N;
 
         if (gmx_thread_key_create(&id_key, NULL))
@@ -855,7 +847,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
             threads[i].N_evs=0;
             MPI_COMM_WORLD->grp.peers[i]=&(threads[i]);
 
-            /* create the mutexes and conditions */
+            /* create the per-thread send/recv mutexes and conditions */
             gmx_thread_mutex_init(&(threads[i].envelope_mutex));
             gmx_thread_mutex_init(&(threads[i].xmit_mutex));
 
@@ -871,15 +863,13 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
                 smalloc(threads[i].argv, threads[i].argc*sizeof(char*));
                 for(j=0;j<threads[i].argc;j++)
                 {
-                    size_t len=strlen((*argv)[j]);
-                    smalloc(threads[i].argv[j], len+1);
-                    strncpy(threads[i].argv[j], (*argv)[j], len);
+                    threads[i].argv[j]=strdup( (*argv)[j] );
                 }
             }
             else
             {
                 threads[i].argc=0;
-                threads[i].argv=0;
+                threads[i].argv=NULL;
             }
         }
         /* set the main thread specific item */
@@ -1027,12 +1017,8 @@ int MPI_Abort(MPI_Comm comm, int errorcode)
 
 int MPI_Get_processor_name(char *name, int *resultlen)
 {
-    /*int *ret;
-
-    ret=gmx_thread_getspecific(id_key);*/
-
-    *resultlen=snprintf(name, MPI_MAX_PROCESSOR_NAME, "thread #%d", 
-                        tMPI_Threadnr(0));
+    snprintf(name, MPI_MAX_PROCESSOR_NAME, "thread #%d", tMPI_Threadnr(0));
+    *resultlen=strlen(name);
     return MPI_SUCCESS;
 }
 
@@ -1324,6 +1310,15 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
 
     gmx_thread_mutex_init( &(ret->multicast_mutex) );
     gmx_thread_cond_init( &(ret->multicast_cond) );
+    gmx_thread_mutex_init( &(ret->comm_create_mutex) );
+    gmx_thread_cond_init( &(ret->comm_create_prep) );
+    gmx_thread_cond_init( &(ret->comm_create_finish) );
+
+    ret->split = NULL;
+    ret->new_comm = NULL;
+    /* we have no topology to start out with */
+    ret->cart=NULL;
+    /*ret->graph=NULL;*/
 
     /* calculate the number of multicast barriers */
     Nbarriers=0;
@@ -1349,9 +1344,6 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     smalloc(ret->sendbuf, sizeof(void*)*Nthreads);
     smalloc(ret->recvbuf, sizeof(void*)*Nthreads);
 
-    gmx_thread_mutex_init( &(ret->comm_create_mutex) );
-    gmx_thread_cond_init( &(ret->comm_create_prep) );
-    gmx_thread_cond_init( &(ret->comm_create_finish) );
 
     if (parent)
     {
@@ -1361,16 +1353,6 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     {
         ret->erh=MPI_ERRORS_ARE_FATAL;
     }
-
-
-    /* we have no topology to start out with */
-    ret->cart=NULL;
-    /*ret->graph=NULL;*/
-
-#if 0
-    ret->grp.Nref=1;
-#endif
-    /*ret->context_tag=mpi_context_tags++;*/
     return ret;
 }
 
@@ -1505,10 +1487,12 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     int i,j;
     int N=tMPI_Comm_N(comm);
     volatile MPI_Comm *newcomm_list;
-    volatile int colors[MAX_THREADS]; /* array with the colors of each thread */
-    volatile int keys[MAX_THREADS]; /* same for keys (only one of the 
-                                       threads actually suplies these arrays 
-                                       to the comm structure) */
+    volatile int colors[MAX_PREALLOC_THREADS]; /* array with the colors 
+                                                  of each thread */
+    volatile int keys[MAX_PREALLOC_THREADS]; /* same for keys (only one of 
+                                                the threads actually suplies 
+                                                these arrays to the comm 
+                                                structure) */
     bool i_am_first=FALSE;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct mpi_split_ *spl;
@@ -1526,7 +1510,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     {
         smalloc(comm->split, sizeof(struct mpi_split_));
         smalloc(comm->new_comm, N*sizeof(MPI_Comm));
-        if (N<=MAX_THREADS)
+        if (N<=MAX_PREALLOC_THREADS)
         {
             comm->split->colors=colors;
             comm->split->keys=keys;
@@ -1560,8 +1544,8 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     else
     {
         int Ncomms=0;
-        int comm_color_[MAX_THREADS]; 
-        int comm_N_[MAX_THREADS]; 
+        int comm_color_[MAX_PREALLOC_THREADS]; 
+        int comm_N_[MAX_PREALLOC_THREADS]; 
         int *comm_color=comm_color_; /* there can't be more comms than N*/
         int *comm_N=comm_N_; /* the number of procs in a group */
 
@@ -1578,7 +1562,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
         comm->split=0;
 
         smalloc(comm_groups, N*N*sizeof(int));
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             smalloc(comm_color, N*sizeof(int));
             smalloc(comm_N, N*sizeof(int));
@@ -1636,7 +1620,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
             printf("\n");
         }
 #endif
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             sfree((int*)spl->colors);
             sfree((int*)spl->keys);
@@ -2243,14 +2227,15 @@ static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status,
         evr->counterpart->finished=TRUE;
         goto end;
     }
-    if ( evr->counterpart->buf == evr->buf)
+    if ( evr->counterpart->buf == evr->buf && transferred!=0 )
     {
         ret=tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
         rets=MPI_FAILURE;
         goto end;
     }
     /* we do the actual transfer */
-    memcpy(evr->buf, evr->counterpart->buf, transferred);
+    if (transferred>0)
+        memcpy(evr->buf, evr->counterpart->buf, transferred);
     evr->transferred=transferred;
     if(status)
     {
@@ -2321,7 +2306,7 @@ static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs,
         evs->counterpart->finished=TRUE;
         goto end;
     }
-    if ( evs->counterpart->buf == evs->buf)
+    if ( evs->counterpart->buf == evs->buf && transferred!=0 )
     {
         ret=tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
         rets=MPI_FAILURE;
@@ -2329,7 +2314,8 @@ static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs,
     }
 
     /* we do the actual transfer */
-    memcpy(evs->counterpart->buf, evs->buf, transferred);
+    if (transferred>0)
+        memcpy(evs->counterpart->buf, evs->buf, transferred);
     evs->counterpart->transferred=transferred;
     if(status)
     {
@@ -2369,7 +2355,7 @@ static int MPI_Send_r(void* buf, int count, MPI_Datatype datatype, int dest,
     {
         return tMPI_Error(comm, MPI_ERR_SEND_DEST);
     }
-    if (!buf)
+    if (!buf && count!=0)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
@@ -2399,7 +2385,7 @@ static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (!buf)
+    if ( !buf && count!=0) 
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
@@ -2449,11 +2435,11 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     {
         return tMPI_Error(comm, MPI_ERR_SEND_DEST); 
     }
-    if (!sendbuf || !recvbuf)
+    if ( (!sendbuf && sendcount!=0)  || (!recvbuf && recvcount!=0) )
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
-    if(status)
+    if (status)
     {
         status->MPI_ERROR=MPI_FAILURE; /* assume we fail */
     }
@@ -2511,7 +2497,7 @@ static int tMPI_Isend_r(void* buf, int count, MPI_Datatype datatype, int dest,
     {
         return tMPI_Error(comm, MPI_ERR_SEND_DEST);
     }
-    if (!buf)
+    if (!buf && count!=0)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
@@ -2537,7 +2523,7 @@ static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (!buf)
+    if (!buf && count!=0)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
@@ -2690,11 +2676,11 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
                           MPI_Status *array_of_statuses, bool may_free)
 {
     int done;
-    int flags_[MAX_THREADS];
+    int flags_[MAX_PREALLOC_THREADS];
     int *flags=flags_;
     int i;
 
-    if (count > MAX_THREADS)
+    if (count > MAX_PREALLOC_THREADS)
     {
         smalloc(flags, sizeof(int)*count);
     }
@@ -2760,7 +2746,7 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
     }
     while (done<count);
 
-    if (count > MAX_THREADS)
+    if (count > MAX_PREALLOC_THREADS)
         sfree(flags);
 
     return MPI_SUCCESS;
@@ -2897,23 +2883,18 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (!buffer)
-    {
-        return tMPI_Error(comm, MPI_ERR_BUF);
-    }
-
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
     if (myrank==root)
     {
         int i;
         int N=tMPI_Comm_N(comm);
-        struct mpi_req_ rqr_[MAX_THREADS]; 
-        MPI_Request rq_[MAX_THREADS]; 
+        struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; 
+        MPI_Request rq_[MAX_PREALLOC_THREADS]; 
         struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
         MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
 
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
@@ -2929,7 +2910,7 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
                                        &(rqr[i]), multicast)) !=
                         MPI_SUCCESS)
                 {
-                    if (N>MAX_THREADS)
+                    if (N>MAX_PREALLOC_THREADS)
                     {
                         sfree(rqr);
                         sfree(rq);
@@ -2945,7 +2926,7 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
         }
         ret=tMPI_Waitall_r(N, rq, 0, FALSE);
 
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             sfree(rqr);
             sfree(rq);
@@ -2967,8 +2948,8 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 {
     int i;
     int N=tMPI_Comm_N(comm);
-    int displs_[MAX_THREADS];
-    int recvcounts_[MAX_THREADS];
+    int displs_[MAX_PREALLOC_THREADS];
+    int recvcounts_[MAX_PREALLOC_THREADS];
     int *displs=displs_;
     int *recvcounts=recvcounts_;
     int ret;
@@ -2978,7 +2959,7 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
 
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         smalloc(displs, sizeof(int)*N);
         smalloc(recvcounts, sizeof(int)*N);
@@ -2992,7 +2973,7 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     ret=MPI_Gatherv(sendbuf, sendcount, sendtype,
                        recvbuf, recvcounts, displs, recvtype, root, comm);
 
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         sfree(displs);
         sfree(recvcounts);
@@ -3017,8 +2998,8 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     {
         int i;
         int N=tMPI_Comm_N(comm);
-        struct mpi_req_ rqr_[MAX_THREADS]; 
-        MPI_Request rq_[MAX_THREADS]; 
+        struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; 
+        MPI_Request rq_[MAX_PREALLOC_THREADS]; 
         struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
         MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
 
@@ -3027,7 +3008,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
 
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
@@ -3045,7 +3026,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                                        multicast)) !=
                         MPI_SUCCESS)
                 {
-                    if (N>MAX_THREADS)
+                    if (N>MAX_PREALLOC_THREADS)
                     {
                         sfree(rqr);
                         sfree(rq);
@@ -3066,7 +3047,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
             int sendsize=sendtype->size*sendcount;
             if (recvsize < sendsize)
             {
-                if (N>MAX_THREADS)
+                if (N>MAX_PREALLOC_THREADS)
                 {
                     sfree(rqr);
                     sfree(rq);
@@ -3081,7 +3062,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                    sendbuf, sendsize);
         }
         ret=tMPI_Waitall_r(N, rq, 0, FALSE);
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             sfree(rqr);
             sfree(rq);
@@ -3089,7 +3070,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
     else
     {
-        if (!sendbuf)
+        if (!sendbuf && sendcount!=0)
         {
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
@@ -3106,13 +3087,13 @@ int MPI_Scatter(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 {
     int i;
     int N=tMPI_Comm_N(comm);
-    int displs_[MAX_THREADS];
-    int sendcounts_[MAX_THREADS];
+    int displs_[MAX_PREALLOC_THREADS];
+    int sendcounts_[MAX_PREALLOC_THREADS];
     int *displs=displs_;
     int *sendcounts=sendcounts_;
     int ret;
 
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         smalloc(displs, sizeof(struct mpi_req_)*N);
         smalloc(sendcounts, sizeof(MPI_Request)*N);
@@ -3126,7 +3107,7 @@ int MPI_Scatter(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     ret=MPI_Scatterv(sendbuf, sendcounts, displs, sendtype,
                         recvbuf, recvcount, recvtype, root, comm);
 
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         sfree(displs);
         sfree(sendcounts);
@@ -3155,8 +3136,8 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     {
         int i;
         int N=tMPI_Comm_N(comm);
-        struct mpi_req_ rqr_[MAX_THREADS]; 
-        MPI_Request rq_[MAX_THREADS]; 
+        struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; 
+        MPI_Request rq_[MAX_PREALLOC_THREADS]; 
         struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
         MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
 
@@ -3165,7 +3146,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
 
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
@@ -3180,7 +3161,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
                                 TMPI_SCATTER_TAG, comm, &(rqr[i]), multicast))
                         != MPI_SUCCESS)
                 {
-                    if (N>MAX_THREADS)
+                    if (N>MAX_PREALLOC_THREADS)
                     {
                         smalloc(rqr, sizeof(struct mpi_req_)*N);
                         smalloc(rq, sizeof(MPI_Request)*N);
@@ -3212,7 +3193,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
                    sendsize);
         }
         ret=tMPI_Waitall_r(N, rq, 0, FALSE);
-        if (N>MAX_THREADS)
+        if (N>MAX_PREALLOC_THREADS)
         {
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
@@ -3220,7 +3201,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     }
     else
     {
-        if (!recvbuf)
+        if (!recvbuf && recvcount!=0)
         {
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
@@ -3241,10 +3222,10 @@ int MPI_Alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 {
     int i;
     int N=tMPI_Comm_N(comm);
-    int sdispls_[MAX_THREADS];
-    int rdispls_[MAX_THREADS];
-    int sendcounts_[MAX_THREADS];
-    int recvcounts_[MAX_THREADS];
+    int sdispls_[MAX_PREALLOC_THREADS];
+    int rdispls_[MAX_PREALLOC_THREADS];
+    int sendcounts_[MAX_PREALLOC_THREADS];
+    int recvcounts_[MAX_PREALLOC_THREADS];
     int *sdispls=sdispls_;
     int *rdispls=rdispls_;
     int *sendcounts=sendcounts_;
@@ -3255,7 +3236,7 @@ int MPI_Alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         smalloc(sdispls, N*sizeof(int));
         smalloc(rdispls, N*sizeof(int));
@@ -3274,7 +3255,7 @@ int MPI_Alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     ret= MPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype,
                        recvbuf, recvcounts, rdispls, recvtype, 
                        comm);
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         sfree(sdispls);
         sfree(rdispls);
@@ -3293,10 +3274,10 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     int i,myrank,ret=MPI_SUCCESS;
     int N=tMPI_Comm_N(comm);
 
-    struct mpi_req_ rqs_[MAX_THREADS]; /* send requests */
-    struct mpi_req_ rqr_[MAX_THREADS]; /* receive requests */
+    struct mpi_req_ rqs_[MAX_PREALLOC_THREADS]; /* send requests */
+    struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; /* receive requests */
     /* pointers to the requests for tMPI_Waitall */
-    MPI_Request rq_[2*MAX_THREADS]; 
+    MPI_Request rq_[2*MAX_PREALLOC_THREADS]; 
 
     struct mpi_req_ *rqs=rqs_; /* send requests */
     struct mpi_req_ *rqr=rqr_; /* receive requests */
@@ -3311,7 +3292,7 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     }
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
-    if (N>MAX_THREADS)
+    if (N>MAX_PREALLOC_THREADS)
     {
         smalloc(rqs, sizeof(struct mpi_req_)*N);
         smalloc(rqr, sizeof(struct mpi_req_)*N);
@@ -3417,7 +3398,9 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     int stepping=2; /* distance between non-communicating neighbours
                        (increases exponentially) */
     int iteration=0;
-   
+  
+    if (count==0)
+        return MPI_SUCCESS;
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
@@ -3554,6 +3537,8 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     int ret;
 
+    if (count==0)
+        return MPI_SUCCESS;
     if (!recvbuf)
     {
         return tMPI_Error(comm, MPI_ERR_BUF);

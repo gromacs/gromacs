@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
   mdrunner(fplog,cr,NFILE,fnm,ff.bVerbose,FALSE,
 	   ddxyz,0,0,0,loadx,loady,loadz,1,
 	   ed,0,0,Flags);
-  if (gmx_parallel_env)
+  if (gmx_parallel_env())
     gmx_finalize(cr);
 
   gmx_log_close(fplog);

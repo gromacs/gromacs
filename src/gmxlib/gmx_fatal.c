@@ -192,7 +192,7 @@ static void quit_gmx(const char *msg)
     perror(msg);
   }
   
-  if (gmx_parallel_env) {
+  if (gmx_parallel_env()) {
     int  nnodes;
     int  noderank;
     

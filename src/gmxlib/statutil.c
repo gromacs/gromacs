@@ -769,7 +769,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #endif
     
     /* Set the nice level */
-#ifdef __sgi
+#ifdef __sgi*
     if (npri != 0 && !bExit) {
         schedctl(MPTS_RTPRI,0,npri);
     }
@@ -861,7 +861,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         }
     } 
     if (bExit) {
-        if (gmx_parallel_env)
+        if (gmx_parallel_env())
             /*gmx_abort(gmx_node_rank(),gmx_node_num(),0);*/
             gmx_finalize();
         exit(0);
