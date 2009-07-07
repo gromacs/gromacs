@@ -76,7 +76,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 	int           nri,ntype,nthreads,offset;
 	float         krf,facel,crf,tabscl,gbtabscl,vct,vgbt;
 	int           n,ii,is3,ii3,k,nj0,nj1,jnr1,jnr2,jnr3,jnr4,j13,j23,j33,j43,ggid;
-	float         shX,shY,shZ,isai_f,dva;
+	float         shX,shY,shZ,isai_f,dva,scl_gb;
 	gmx_gbdata_t *gbdata;
 	float *        gpol;
 		
@@ -87,6 +87,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 	__m128        Y,F,G,H,Fp,VV,FF,vgb,fijC,dvdatmp,dvdasum,vctot,n0f,vgbtot;
 	__m128        fac,tabscale,gbtabscale;
 	__m128		  xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
+	__m128        scale_gb;
 	__m128i       n0,nnn;
 	
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
@@ -104,7 +105,8 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-    facel      = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
+    facel      = *p_facel;    
+	scl_gb     = 1.0 - (1.0/gbdata->gb_epsilon_solvent);
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;
@@ -115,6 +117,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 	fac        = _mm_load1_ps(&facel);
 	tabscale   = _mm_load1_ps(&tabscl);
 	gbtabscale = _mm_load1_ps(&gbtabscl);
+	scale_gb   = _mm_load1_ps(&scl_gb);
 		
 	/* Keep the compiler happy */
 	dvdatmp = _mm_setzero_ps();
@@ -226,6 +229,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 			fscal   = _mm_mul_ps(vcoul,rinv);
 			qq      = _mm_mul_ps(isaprod, qq);
 			qq      = _mm_mul_ps(qq,neg);
+			qq      = _mm_mul_ps(qq,scale_gb);
 			gbscale = _mm_mul_ps(isaprod,gbtabscale);
 			
 			/* load dvdaj */
@@ -500,6 +504,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 			
 			qq      = _mm_mul_ps(isaprod, qq);
 			qq      = _mm_mul_ps(qq,neg);
+			qq      = _mm_mul_ps(qq,scale_gb);
 			gbscale = _mm_mul_ps(isaprod,gbtabscale);
 			
 			r       = _mm_mul_ps(rsq11,rinv);
