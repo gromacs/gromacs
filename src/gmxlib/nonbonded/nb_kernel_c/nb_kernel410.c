@@ -211,7 +211,7 @@ void nb_kernel410(
                 qq               = iq*charge[jnr]; 
                 vcoul            = qq*rinv11;      
                 fscal            = vcoul*rinv11;   
-                qq               = isaprod*(-qq);  
+                qq               = isaprod*(-qq)*scale_gb;  
                 gbscale          = isaprod*gbtabscale;
                 tj               = nti+2*type[jnr];
                 c6               = vdwparam[tj];   
