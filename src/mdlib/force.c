@@ -1273,6 +1273,7 @@ void init_forcerec(FILE *fp,
             }
         }
         fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        init_ewald_tab(&(fr->ewald_table), cr, ir, fp);
         if (fp)
         {
             fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
@@ -2041,7 +2042,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                            md->chargeA,md->chargeB,
                            box_size,cr,md->homenr,
                            fr->vir_el_recip,fr->ewaldcoeff,
-                           lambda,&dvdlambda);
+                           lambda,&dvdlambda,fr->ewald_table);
             PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
             break;
         default:
