@@ -262,6 +262,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
   bts[1] = 1; /* normal angles    */
   bts[2] = 1; /* normal dihedrals */
   bts[3] = 2; /* normal impropers */
+  bts[5] = 1; /* normal cmap torsions */
   
   
   /* Column 5 & 6 aren't really bonded types, but we include

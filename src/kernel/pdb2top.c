@@ -667,7 +667,7 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 	
 	fprintf(stderr,"Making cmap torsions...");
 	i=0;
-	for(residx=0; residx<nres; residx++)
+	for(residx=0; residx<nres-1; residx++)
 	{
 		/* Add CMAP terms from the list of CMAP interactions */
 		for(j=0;j<restp[residx].rb[ebtsCMAP].nb; j++)
@@ -684,7 +684,7 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 						   ptr,TRUE);
 			
 			/* For now, exclude the first and last residues from cmap */
-			if(residx>=1 && residx<nres-1)
+			if(ai!=NO_ATID && aj!=NO_ATID && ak!=NO_ATID && al!=NO_ATID && am!=NO_ATID)
 			{
 				add_cmap_param(psb,ai,aj,ak,al,am,0,0,restp[residx].rb[ebtsCMAP].b[j].s);
 			}
