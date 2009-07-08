@@ -667,6 +667,8 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 	
 	fprintf(stderr,"Making cmap torsions...");
 	i=0;
+	/* End loop at nres-1, since the very last residue does not have a +N atom, and
+	 * therefore we get a valgrind invalid 4 byte read error with atom am */
 	for(residx=0; residx<nres-1; residx++)
 	{
 		/* Add CMAP terms from the list of CMAP interactions */
