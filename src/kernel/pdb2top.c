@@ -683,7 +683,7 @@ void gen_cmap(t_params *psb, t_restp *restp, int natoms, t_atom atom[], char **a
 			am=search_atom(restp[residx].rb[ebtsCMAP].b[j].a[4],i,natoms,atom,aname,
 						   ptr,TRUE);
 			
-			/* For now, exclude the first and last residues from cmap */
+			/* The first and last residues no not have cmap torsions */
 			if(ai!=NO_ATID && aj!=NO_ATID && ak!=NO_ATID && al!=NO_ATID && am!=NO_ATID)
 			{
 				add_cmap_param(psb,ai,aj,ak,al,am,0,0,restp[residx].rb[ebtsCMAP].b[j].s);
