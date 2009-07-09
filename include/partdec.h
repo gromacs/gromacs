@@ -120,4 +120,18 @@ extern bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 extern t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global);
 /* Generate a local state struct from the global one */
 
+void
+pd_get_constraint_range(gmx_partdec_p_t pd,int *start,int *natoms);
+
+
+int *
+pd_constraints_nlocalatoms(gmx_partdec_p_t pd);
+
+/* Move x0 and also x1 if x1!=NULL */
+void
+pd_move_x_constraints(t_commrec *  cr,
+					  rvec *       x0,
+					  rvec *       x1);
+
+
 #endif

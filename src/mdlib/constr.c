@@ -276,7 +276,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     where();
     if (constr->lincsd)
     {
-        bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr->dd,
+        bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
                               x,xprime,min_proj,box,lambda,dvdlambda,
                               invdt,v,vir!=NULL,rmdr,
                               econq,nrnb,
@@ -286,7 +286,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
                     econstr_names[econtLINCS],gmx_step_str(step,buf));
         }
-    }
+    }	
     
     if (constr->nblocks > 0)
     {
@@ -367,7 +367,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             }
         }
     }
-    
+
     if (vir != NULL)
     {
         switch (econq)
@@ -634,7 +634,7 @@ t_blocka make_at2con(int start,int natoms,
 
 void set_constraints(struct gmx_constr *constr,
                      gmx_localtop_t *top,t_inputrec *ir,
-                     t_mdatoms *md,gmx_domdec_t *dd)
+                     t_mdatoms *md,t_commrec *cr)
 {
     t_idef *idef;
     int    ncons;
@@ -655,13 +655,13 @@ void set_constraints(struct gmx_constr *constr,
          */
         if (ir->eConstrAlg == econtLINCS)
         {
-            set_lincs(idef,md,EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+            set_lincs(idef,md,EI_DYNAMICS(ir->eI),cr,constr->lincsd);
         }
         if (ir->eConstrAlg == econtSHAKE)
         {
-            if (dd)
+            if (cr->dd)
             {
-                make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
+                make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,cr->dd);
             }
             else
             {
@@ -690,9 +690,9 @@ void set_constraints(struct gmx_constr *constr,
     }
     
     /* Make a selection of the local atoms for essential dynamics */
-    if (constr->ed && dd)
+    if (constr->ed && cr->dd)
     {
-        dd_make_local_ed_indices(dd,constr->ed,md);
+        dd_make_local_ed_indices(cr->dd,constr->ed,md);
     }
 }
 

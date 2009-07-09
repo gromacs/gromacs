@@ -105,32 +105,83 @@ static int min_nodeid(int nr,atom_id list[],int hid[])
   return minnodeid;
 }
 
-static void split_force2(int nnodes,int hid[],int ftype,t_ilist *ilist,
-			 int *multinr)
+
+static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist *ilist,
+						 int *multinr,
+						 int *constr_min_nodeid,int * constr_max_nodeid,
+						 int *left_range, int *right_range)
 {
   int     i,j,k,type,nodeid,nratoms,tnr;
   int     nvsite_constr,tmpid;
-  t_iatom ai;
+  t_iatom ai,aj;
+  int     node_low_ai,node_low_aj,node_high_ai,node_high_aj;
+  int     node_low,node_high;
+  int     nodei,nodej;
   t_sf    *sf;
-  
+  int     nextra;
+	
   sf = init_sf(nnodes);
 
+  node_high = node_low = 0;
+  nextra    = 0;
+	
   /* Walk along all the bonded forces, find the appropriate node
    * to calc it on, and add it to that nodes list.
    */
-  for (i=0; i<ilist->nr; i+=(1+nratoms)) {
+  for (i=0; i<ilist->nr; i+=(1+nratoms)) 
+  {
     type    = ilist->iatoms[i];
     nratoms = interaction_function[ftype].nratoms;
 
-    if (ftype == F_CONSTR) {
-      /* SPECIAL CASE: All Atoms must have the same home node! */
-      nodeid=hid[ilist->iatoms[i+1]];
-      if (hid[ilist->iatoms[i+2]] != nodeid) 
-	gmx_fatal(FARGS,"Shake block crossing node boundaries\n"
-		  "constraint between atoms (%d,%d)",
-		  ilist->iatoms[i+1]+1,ilist->iatoms[i+2]+1);
+    if (ftype == F_CONSTR) 
+	{
+		ai = ilist->iatoms[i+1];
+		aj = ilist->iatoms[i+2];
+		
+		nodei = hid[ai];
+		nodej = hid[aj];
+		nodeid = nodei;
+
+		if(ir->eConstrAlg == econtLINCS)
+		{
+			node_low_ai   = constr_min_nodeid[ai];
+			node_low_aj   = constr_min_nodeid[aj];
+			node_high_ai  = constr_max_nodeid[ai];
+			node_high_aj  = constr_max_nodeid[aj];
+
+			node_low      = max(node_low_ai,node_low_aj);
+			node_high     = min(node_high_ai,node_high_aj);
+			
+			if( (node_high-nodeid)>1 || (nodeid-node_low)>1 )
+			{
+				gmx_fatal(FARGS,"Constraint dependencies further away than next-neighbor\n"
+						  "in particle decomposition. Constraint between atoms %d--%d evaluated\n"
+						  "on node %d, but atom %d has connections within four bonds of node %d,\n"
+						  "and atom %d has connections within four bonds of node %d.\n"
+						  "Reduce the # nodes, constraint order, or\n"
+						  "try domain decomposition.",ai,aj,nodeid,ai,node_low,aj,node_high);
+			}
+			
+			if(node_low<nodeid)
+			{
+				right_range[node_low] = max(right_range[node_low],aj);
+			}
+			if(node_high>nodeid)
+			{
+				left_range[node_high] = min(left_range[node_high],ai);
+			}
+		}
+		else 
+		{
+			/* Shake */
+			if (hid[ilist->iatoms[i+2]] != nodeid) 
+				gmx_fatal(FARGS,"Shake block crossing node boundaries\n"
+						  "constraint between atoms (%d,%d) (try LINCS instead!)",
+						  ilist->iatoms[i+1]+1,ilist->iatoms[i+2]+1);
+		}
     }
-    else if (ftype == F_SETTLE) {
+    else if (ftype == F_SETTLE) 
+	{
       /* Only the first particle is stored for settles ... */
       ai=ilist->iatoms[i+1];
       nodeid=hid[ai];
@@ -139,47 +190,78 @@ static void split_force2(int nnodes,int hid[],int ftype,t_ilist *ilist,
 	gmx_fatal(FARGS,"Settle block crossing node boundaries\n"
 		  "constraint between atoms (%d-%d)",ai+1,ai+2+1);
     }
-    else if(interaction_function[ftype].flags & IF_VSITE) {
+    else if(interaction_function[ftype].flags & IF_VSITE) 
+	{
       /* Virtual sites should be constructed on the home node */
-  
-      if (ftype==F_VSITE2)
-	nvsite_constr=2;
-      else if(ftype==F_VSITE4FD || ftype==F_VSITE4FDN)
-	nvsite_constr=4;
-      else
-	nvsite_constr=3;
-      
-      tmpid=hid[ilist->iatoms[i+1]];
-      
-      for(k=2;k<nvsite_constr+2;k++) {
-	if(hid[ilist->iatoms[i+k]]<(tmpid-1) ||
-	   hid[ilist->iatoms[i+k]]>(tmpid+1))
-	  gmx_fatal(FARGS,"Virtual site %d and its constructing"
-		      " atoms are not on the same or adjacent\n" 
-		      " nodes. This is necessary to avoid a lot\n"
-		      " of extra communication. The easiest way"
-		      " to ensure this is to place virtual sites\n"
-		      " close to the constructing atoms.\n"
-		      " Sorry, but you will have to rework your topology!\n",
-		      ilist->iatoms[i+1]);
-      }
-      nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
-    } else
-      nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
-
-    /* Add it to the list */
-    push_sf(&(sf[nodeid]),nratoms+1,&(ilist->iatoms[i]));
+		
+		if (ftype==F_VSITE2)
+			nvsite_constr=2;
+		else if(ftype==F_VSITE4FD || ftype==F_VSITE4FDN)
+			nvsite_constr=4;
+		else
+			nvsite_constr=3;
+		
+		tmpid=hid[ilist->iatoms[i+1]];
+		
+		for(k=2;k<nvsite_constr+2;k++) 
+		{
+			if(hid[ilist->iatoms[i+k]]<(tmpid-1) ||
+			   hid[ilist->iatoms[i+k]]>(tmpid+1))
+				gmx_fatal(FARGS,"Virtual site %d and its constructing"
+						  " atoms are not on the same or adjacent\n" 
+						  " nodes. This is necessary to avoid a lot\n"
+						  " of extra communication. The easiest way"
+						  " to ensure this is to place virtual sites\n"
+						  " close to the constructing atoms.\n"
+						  " Sorry, but you will have to rework your topology!\n",
+						  ilist->iatoms[i+1]);
+		}
+		nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
+    } 
+	else
+    {
+		nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
+	}
+	  
+	if (ftype == F_CONSTR && ir->eConstrAlg == econtLINCS)
+	{
+		push_sf(&(sf[nodeid]),nratoms+1,&(ilist->iatoms[i]));
+	
+		if(node_low<nodeid)
+		{
+			push_sf(&(sf[node_low]),nratoms+1,&(ilist->iatoms[i]));
+			nextra+=nratoms+1;
+		}
+		if(node_high>nodeid)
+		{
+			push_sf(&(sf[node_high]),nratoms+1,&(ilist->iatoms[i]));
+			nextra+=nratoms+1;
+		}
+	}
+	else
+	{
+		push_sf(&(sf[nodeid]),nratoms+1,&(ilist->iatoms[i]));
+	}
   }
-  tnr=0;
+
+  if(nextra>0)
+  {
+	  ilist->nr += nextra;
+	  srenew(ilist->iatoms,ilist->nr);
+  }
+	
+  tnr=0;	
   for(nodeid=0; (nodeid<nnodes); nodeid++) {
     for (i=0; (i<sf[nodeid].nr); i++) 
       ilist->iatoms[tnr++]=sf[nodeid].ia[i];
 
     multinr[nodeid]=(nodeid==0) ? 0 : multinr[nodeid-1];
-    multinr[nodeid]+=sf[nodeid].nr;
+    multinr[nodeid]+=sf[nodeid].nr;	  
   }
-  if (tnr != ilist->nr)
-    gmx_incons("Splitting forces over processors");
+	
+	if (tnr != ilist->nr)
+		gmx_incons("Splitting forces over processors");
+
   done_sf(nnodes,sf);
 }
 
@@ -741,8 +823,81 @@ static t_blocka block2blocka(t_block *block)
   return blocka;
 }
 
-void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
-	       real *capacity,int *multinr_cgs,int **multinr_nre)
+typedef struct
+{
+	int   nconstr;
+	int   index[10];
+} pd_constraintlist_t;
+	
+
+static void
+find_constraint_range_recursive(pd_constraintlist_t *  constraintlist,
+								int                    thisatom,
+								int                    order,
+								int *                  min_atomid,
+								int *                  max_atomid)
+{
+	int i,j;
+	int nconstr;
+	
+	for(i=0;i<constraintlist[thisatom].nconstr;i++)
+	{
+		j = constraintlist[thisatom].index[i];
+
+		*min_atomid = (j<*min_atomid) ? j : *min_atomid;
+		*max_atomid = (j>*max_atomid) ? j : *max_atomid;
+
+		if(order>1)
+		{
+			find_constraint_range_recursive(constraintlist,j,order-1,min_atomid,max_atomid);
+		}
+	}
+}
+
+static void
+pd_determine_constraints_range(t_inputrec *      ir,
+							   int               natoms,
+							   t_ilist *         ilist,
+							   int               hid[],
+							   int *             min_nodeid,
+							   int *             max_nodeid)
+{
+	int i,j,k;
+	int nratoms;
+	int order;
+	int ai,aj;
+	int min_atomid,max_atomid;
+	pd_constraintlist_t *constraintlist;
+	
+	nratoms = interaction_function[F_CONSTR].nratoms;
+	order   = ir->nProjOrder;
+
+	snew(constraintlist,natoms);
+	
+	/* Make a list of all the connections */
+	for(i=0;i<ilist->nr;i+=nratoms+1)
+	{
+		ai=ilist->iatoms[i+1];
+		aj=ilist->iatoms[i+2];
+		constraintlist[ai].index[constraintlist[ai].nconstr++]=aj;
+		constraintlist[aj].index[constraintlist[aj].nconstr++]=ai;
+	}
+	
+	for(i=0;i<natoms;i++)
+	{
+		min_atomid = i;
+		max_atomid = i;
+		
+		find_constraint_range_recursive(constraintlist,i,order,&min_atomid,&max_atomid);
+		min_nodeid[i] = hid[min_atomid];
+		max_nodeid[i] = hid[max_atomid];		
+	}
+	sfree(constraintlist);
+}
+
+
+void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_inputrec *ir,t_block *mols,
+	       real *capacity,int *multinr_cgs,int **multinr_nre, int *left_range, int * right_range)
 {
   int     natoms,i,j,k,mj,atom,maxatom,sstart,send,bstart,nodeid;
   int     *multinr_shk;
@@ -752,7 +907,9 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
   int ftype,nvsite_constr,nra,nrd;
   t_iatom   *ia;
   int minhome,ihome,minidx;
-  
+	int *constr_min_nodeid;
+	int *constr_max_nodeid;
+	
   if (nnodes <= 1)
     return;
   
@@ -774,7 +931,7 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
 
   snew(multinr_shk,nnodes);
   split_blocks(fp,nnodes,&top->cgs,&sblock,capacity,multinr_cgs,multinr_shk);
-  
+  	
   /* Now transform atom numbers to real inverted shake blocks */
   init_blocka(&shakeblock);
   gen_sblocks(fp,0,natoms,&top->idef,&shakeblock,TRUE);
@@ -792,10 +949,39 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
     multinr_shk[j] = mj+1;
   }
   homeind=home_index(nnodes,&top->cgs,multinr_cgs);
-  
-  for(j=0; (j<F_NRE); j++)
-    split_force2(nnodes,homeind,j,&top->idef.il[j],multinr_nre[j]);
 
+  snew(constr_min_nodeid,natoms);
+  snew(constr_max_nodeid,natoms);
+
+  if(top->idef.il[F_CONSTR].nr>0)
+  {
+	  pd_determine_constraints_range(ir,natoms,&top->idef.il[F_CONSTR],homeind,constr_min_nodeid,constr_max_nodeid);
+  }
+  else
+  {
+	  /* Not 100% necessary, but it is a bad habit to have uninitialized arrays around... */
+	  for(i=0;i<natoms;i++)
+	  {
+		  constr_min_nodeid[i] = constr_max_nodeid[i] = homeind[i];  
+	  }
+  }
+
+  /* Default limits (no communication) for PD constraints */
+  left_range[0] = 0;
+  for(i=1;i<nnodes;i++)
+  {
+	left_range[i]    = top->cgs.index[multinr_cgs[i-1]];
+	right_range[i-1] = left_range[i]-1;
+  }
+  right_range[nnodes-1] = top->cgs.index[multinr_cgs[nnodes-1]]-1;
+	
+  for(j=0; (j<F_NRE); j++)
+    split_force2(ir, nnodes,homeind,j,&top->idef.il[j],multinr_nre[j],constr_min_nodeid,constr_max_nodeid,
+				 left_range,right_range);
+
+  sfree(constr_min_nodeid);
+  sfree(constr_max_nodeid);
+	
   sfree(sblinv);
   sfree(multinr_shk);
   sfree(homeind);

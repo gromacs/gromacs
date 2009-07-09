@@ -8289,7 +8289,7 @@ void dd_partition_system(FILE            *fplog,
     
     if (constr)
     {
-        set_constraints(constr,top_local,ir,mdatoms,dd);
+        set_constraints(constr,top_local,ir,mdatoms,cr);
     }
     
     if (ir->ePull != epullNO)

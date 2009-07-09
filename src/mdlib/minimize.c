@@ -332,7 +332,7 @@ void init_em(FILE *fplog,const char *title,
     }
 
     if (!DOMAINDECOMP(cr))
-      set_constraints(constr,*top,ir,mdatoms,NULL);
+		set_constraints(constr,*top,ir,mdatoms,cr);
 
     /* Constrain the starting coordinates */
     dvdlambda=0;
