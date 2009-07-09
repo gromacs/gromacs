@@ -887,7 +887,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initialize constraints */
   if (constr) {
     if (!DOMAINDECOMP(cr))
-      set_constraints(constr,top,ir,mdatoms,NULL);
+		set_constraints(constr,top,ir,mdatoms,cr);
   }
 
   /* Check whether we have to GCT stuff */
