@@ -208,8 +208,12 @@ MPI_Comm tMPI_Get_comm_self(void);
 int MPI_Init(int *argc, char ***argv);
 
 /** Alternate thread MPI intializer. Creates N threads (including main thread) 
-    that run main() again so they can catch up to MPI_Init themselves */
-int MPI_Init_N(int N);
+    that run the function start_function, which takes a void* argument, 
+    given by arg. The function start_function also gets called by the main
+    thread. When the function start_function returns it, will behave 
+    as if MPI_Finalize is called, and if it's a sub-thread it will
+    stop running. */
+int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg);
 
 /** get the number of threads that will be requested (can be called before 
     MPI_Init() ) */

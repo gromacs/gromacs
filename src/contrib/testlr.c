@@ -373,11 +373,14 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 {
   int  i;
   real energy;
+  ewald_tab_t et;
+
+  init_ewald_tab(&et, NULL, ir, log);
 
   if (bOldEwald)  
-    energy = do_ewald(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld);
+    energy = do_ewald(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld,et);
   else
-    energy = do_ewald_new(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld);
+    energy = do_ewald_new(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld,et);
   
   /*symmetrize_phi(log,atoms->nr,phi_f,bVerbose);*/
     

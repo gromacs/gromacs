@@ -845,8 +845,6 @@ int
 gmx_thread_barrier_wait(gmx_thread_barrier_t *   barrier)
 {
     int    cycle;
-    int    status;
-    int    i;
     int    rc;
     gmx_thread_pthread_barrier_t *p;
 
@@ -868,7 +866,7 @@ gmx_thread_barrier_wait(gmx_thread_barrier_t *   barrier)
     /* Decrement the count atomically and check if it is zero.
         * This will only be true for the last thread calling us.
         */
-    if( --p->count == 0 )
+    if( --p->count <= 0 )
     { 
         p->cycle = !p->cycle;
         p->count = p->threshold;

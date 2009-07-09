@@ -84,10 +84,12 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
   /* Call the MPI routines */
+#ifdef GMX_LIB_MPI
 #ifdef GMX_FAHCORE
   (void) fah_MPI_Init(argc,&argv);
 #else
   (void) MPI_Init(argc,&argv);
+#endif
 #endif
   (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
@@ -481,10 +483,17 @@ void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms)
 
 void gmx_finalize(void)
 {
-  int ret;
 #ifndef GMX_MPI
   gmx_call("gmx_finalize");
 #else
+  int ret;
+
+  /* just as a check; we don't want to finalize twice */
+  int finalized;
+  MPI_Finalized(&finalized);
+  if (finalized)
+      return;
+
   /* We sync the processes here to try to avoid problems
    * with buggy MPI implementations that could cause
    * unfinished processes to terminate.

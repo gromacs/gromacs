@@ -169,7 +169,8 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
  * topology (uses Gromacs routine get_index()).
  */
 void
-gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm, int ngrps)
+gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, 
+                      const char *fnm, int ngrps)
 {
     int      *isize;
     atom_id **index;
@@ -199,7 +200,7 @@ gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm, int n
  * rd_index().
  */
 void
-gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, char *fnm, int ngrps)
+gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, const char *fnm, int ngrps)
 {
     gmx_ana_indexgrps_get(g, NULL, fnm, ngrps);
 }

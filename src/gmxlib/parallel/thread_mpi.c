@@ -107,6 +107,10 @@ struct mpi_thread_
 
     MPI_Comm self_comm;
 
+    void (*start_fn)(void*); /* The start function (or NULL, if main() is to be
+                               called */
+    void *start_arg; /* the argument to the start function (if it's not main()*/
+
     /* we copy these for each thread (this is not required by the 
        MPI standard, but it's convenient). Note that we copy, because
        some programs (like Gromacs) like to manipulate these. */    
@@ -565,9 +569,11 @@ static int tMPI_Comm_seek_rank(MPI_Comm comm, struct mpi_thread_ *th);
 /* find the size of a comm */
 static int tMPI_Comm_N(MPI_Comm comm);
 
-/* start N threads with argc, argv (used by MPI_Init) */
-static void tMPI_Start_threads(int N, int *argc, char ***argv);
-/* starter function for threads; calls main() */
+/* start N threads with argc, argv (used by MPI_Init)*/
+static void tMPI_Start_threads(int N, int *argc, char ***argv, 
+                               void (*start_fn)(void*), void *start_arg);
+/* starter function for threads; takes a void pointer to a
+   struct mpi_starter_, which calls main() if mpi_start_.fn == NULL */
 static void* tMPI_Thread_starter(void *arg);
 
 /* allocate a comm object, making space for N threads */
@@ -807,16 +813,26 @@ int tMPI_Get_N(int *argc, char ***argv)
 static void* tMPI_Thread_starter(void *arg)
 {
     struct mpi_thread_ *th=(struct mpi_thread_*)arg;
+
     gmx_thread_setspecific(id_key, arg);
 
-    main(th->argc, th->argv);
+    if (! th->start_fn )
+        main(th->argc, th->argv);
+    else
+    {
+        th->start_fn(th->start_arg);
+        if (!mpi_finalized)
+            MPI_Finalize();
+    }
+
     return 0;
 }
 
 
-void tMPI_Start_threads(int N, int *argc, char ***argv)
+void tMPI_Start_threads(int N, int *argc, char ***argv, 
+                        void (*start_fn)(void*), void *start_arg)
 {
-    if (N>1) 
+    if (N>0) 
     {
         int i;
 
@@ -871,6 +887,8 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
                 threads[i].argc=0;
                 threads[i].argv=NULL;
             }
+            threads[i].start_fn=start_fn;
+            threads[i].start_arg=start_arg;
         }
         /* set the main thread specific item */
         gmx_thread_setspecific(id_key, (void*)&(threads[0]));
@@ -885,6 +903,11 @@ void tMPI_Start_threads(int N, int *argc, char ***argv)
                 tMPI_Error(MPI_COMM_WORLD, MPI_ERR_INIT);
             }
         }
+        /* the main thread now also runs start_fn */
+        if (start_fn)
+            start_fn(start_arg);
+        if (!mpi_finalized)
+            MPI_Finalize();
     }
 }
 
@@ -894,7 +917,7 @@ int MPI_Init(int *argc, char ***argv)
     if (MPI_COMM_WORLD==0) /* we're the main process */
     {
         int N=tMPI_Get_N(argc, argv);
-        tMPI_Start_threads(N, argc, argv);
+        tMPI_Start_threads(N, argc, argv, NULL, NULL);
     }
     else
     {
@@ -905,11 +928,11 @@ int MPI_Init(int *argc, char ***argv)
     return MPI_SUCCESS;
 }
 
-int MPI_Init_N(int N)
+int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 {
-    if (MPI_COMM_WORLD==0 && N>1) /* we're the main process */
+    if (MPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
-        tMPI_Start_threads(N, 0, 0);
+        tMPI_Start_threads(N, 0, 0, start_function, arg);
     }
     return MPI_SUCCESS;
 }
@@ -1553,8 +1576,11 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
         MPI_Comm *comms; /* the communicators */
 
         /* wait for the colors to be done */
-        gmx_thread_cond_wait( &(comm->comm_create_prep), 
-                              &(comm->comm_create_mutex));
+        if (N>1)
+        {
+            gmx_thread_cond_wait( &(comm->comm_create_prep), 
+                                  &(comm->comm_create_mutex));
+        }
 
         /* reset the state so that a new comm creating function can run */
         spl->Ncol_destroy=N;
@@ -2233,9 +2259,17 @@ static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status,
         rets=MPI_FAILURE;
         goto end;
     }
-    /* we do the actual transfer */
     if (transferred>0)
+    {
+        if (!evr->counterpart->buf || !evr->buf)
+        {
+            ret=tMPI_Error(evr->comm, MPI_ERR_BUF);
+            rets=MPI_FAILURE;
+            goto end;
+        }
+        /* we do the actual transfer */
         memcpy(evr->buf, evr->counterpart->buf, transferred);
+    }
     evr->transferred=transferred;
     if(status)
     {
@@ -2313,9 +2347,17 @@ static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs,
         goto end;
     }
 
-    /* we do the actual transfer */
     if (transferred>0)
+    {
+        if (!evs->counterpart->buf || !evs->buf)
+        {
+            ret=tMPI_Error(evs->comm, MPI_ERR_BUF);
+            rets=MPI_FAILURE;
+            goto end;
+        }
+        /* we do the actual transfer */
         memcpy(evs->counterpart->buf, evs->buf, transferred);
+    }
     evs->counterpart->transferred=transferred;
     if(status)
     {
@@ -2355,10 +2397,6 @@ static int MPI_Send_r(void* buf, int count, MPI_Datatype datatype, int dest,
     {
         return tMPI_Error(comm, MPI_ERR_SEND_DEST);
     }
-    if (!buf && count!=0)
-    {
-        return tMPI_Error(comm, MPI_ERR_BUF);
-    }
 
     tMPI_Prep_send_envelope(&sd, comm, send_dst, buf, count, datatype, tag, xt);
     tMPI_Try_put_send_envelope(&sd);
@@ -2384,10 +2422,6 @@ static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype,
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
-    }
-    if ( !buf && count!=0) 
-    {
-        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     if(status)
@@ -2434,10 +2468,6 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     if (!send_dst)
     {
         return tMPI_Error(comm, MPI_ERR_SEND_DEST); 
-    }
-    if ( (!sendbuf && sendcount!=0)  || (!recvbuf && recvcount!=0) )
-    {
-        return tMPI_Error(comm, MPI_ERR_BUF);
     }
     if (status)
     {
@@ -2522,10 +2552,6 @@ static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype,
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
-    }
-    if (!buf && count!=0)
-    {
-        return tMPI_Error(comm, MPI_ERR_BUF);
     }
 
     if (source!=MPI_ANY_SOURCE)
@@ -3003,7 +3029,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
         struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
         MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
 
-        if (!recvbuf)
+        if (!recvbuf) /* don't do pointer arithmetic on a NULL ptr */
         {
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
@@ -3070,10 +3096,6 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
     else
     {
-        if (!sendbuf && sendcount!=0)
-        {
-            return tMPI_Error(comm, MPI_ERR_BUF);
-        }
         ret=MPI_Send_r(sendbuf, sendcount, sendtype, root, TMPI_GATHER_TAG, 
                        comm, multicast);
     }
@@ -3141,7 +3163,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
         MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
 
-        if (!sendbuf)
+        if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
         {
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
@@ -3286,7 +3308,7 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
-    if (!sendbuf || !recvbuf)
+    if (!sendbuf || !recvbuf) /* don't do pointer arithmetic on a NULL ptr */
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }

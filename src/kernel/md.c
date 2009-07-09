@@ -128,12 +128,126 @@ static matrix box_tpx;
 static gmx_thread_mutex_t box_mutex=GMX_THREAD_MUTEX_INITIALIZER;
 #endif
 
+
+#ifdef GMX_THREAD_MPI
+struct mdrunner_arglist
+{
+    FILE *fplog;
+    t_commrec *cr;
+    int nfile;
+    const t_filenm *fnm;
+    output_env_t oenv;
+    bool bVerbose;
+    bool bCompact;
+    ivec ddxyz;
+    int dd_node_order;
+    real rdd;
+    real rconstr;
+    const char *dddlb_opt;
+    real dlb_scale;
+    const char *ddcsx;
+    const char *ddcsy;
+    const char *ddcsz;
+    int nstepout;
+    int repl_ex_nst;
+    int repl_ex_seed;
+    real pforce;
+    real cpt_period;
+    real max_hours;
+    unsigned long Flags;
+    int ret; /* return value */
+};
+
+
+static void mdrunner_start_fn(void *arg)
+{
+    struct mdrunner_arglist *mda=(struct mdrunner_arglist*)arg;
+    struct mdrunner_arglist mc=*mda; /* copy the arg list to make sure 
+                                        that it's thread-local. This doesn't
+                                        copy pointed-to items, of course,
+                                        but those are all const. */
+    t_commrec *cr;  /* we need a local version of this */
+    FILE *fplog=NULL;
+   
+    cr=init_par_threads(mc.cr);
+    if (MASTER(cr))
+    {
+        fplog=mc.fplog;
+    }
+   
+    mda->ret=mdrunner(fplog, cr, mc.nfile, mc.fnm, mc.oenv, mc.bVerbose,
+                      mc.bCompact, mc.ddxyz, mc.dd_node_order, mc.rdd,
+                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout,
+                      mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
+                      mc.cpt_period, mc.max_hours, mc.Flags);
+}
+
+
+int mdrunner_threads(int nthreads, 
+                     FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
+                     const output_env_t oenv, bool bVerbose,bool bCompact,
+                     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+                     const char *dddlb_opt,real dlb_scale,
+                     const char *ddcsx,const char *ddcsy,const char *ddcsz,
+                     int nstepout,int repl_ex_nst,int repl_ex_seed,
+                     real pforce,real cpt_period,real max_hours,
+                     unsigned long Flags)
+{
+    int ret;
+    /* first check whether we even need to start tMPI */
+    if (nthreads < 2)
+    {
+        ret=mdrunner(fplog, cr, nfile, fnm, oenv, bVerbose, bCompact,
+                 ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
+                 ddcsx, ddcsy, ddcsz, nstepout, repl_ex_nst, repl_ex_seed,
+                 pforce, cpt_period, max_hours, Flags);
+    }
+    else
+    {
+        struct mdrunner_arglist mda;
+        mda.fplog=fplog;
+        mda.cr=cr;
+        mda.nfile=nfile;
+        mda.fnm=fnm;
+        mda.oenv=oenv;
+        mda.bVerbose=bVerbose;
+        mda.bCompact=bCompact;
+        mda.ddxyz[XX]=ddxyz[XX];
+        mda.ddxyz[YY]=ddxyz[YY];
+        mda.ddxyz[ZZ]=ddxyz[ZZ];
+        mda.dd_node_order=dd_node_order;
+        mda.rdd=rdd;
+        mda.rconstr=rconstr;
+        mda.dddlb_opt=dddlb_opt;
+        mda.dlb_scale=dlb_scale;
+        mda.ddcsx=ddcsx;
+        mda.ddcsy=ddcsy;
+        mda.ddcsz=ddcsz;
+        mda.nstepout=nstepout;
+        mda.repl_ex_nst=repl_ex_nst;
+        mda.repl_ex_seed=repl_ex_seed;
+        mda.pforce=pforce;
+        mda.cpt_period=cpt_period;
+        mda.max_hours=max_hours;
+        mda.Flags=Flags;
+
+        tMPI_Init_fn(nthreads, mdrunner_start_fn, (void*)(&mda) );
+        ret=mda.ret;
+    }
+    return ret;
+}
+#endif
+
+
+
+
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
-             int nstepout,gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
+             int nstepout,int repl_ex_nst,int repl_ex_seed,
              real pforce,real cpt_period,real max_hours,
              unsigned long Flags)
 {
@@ -161,6 +275,17 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        list;
     gmx_runtime_t runtime;
     int        rc;
+    gmx_edsam_t ed;
+
+    /* Essential dynamics */
+    if (opt2bSet("-ei",nfile,fnm)) 
+    {
+        /* Open input and output files, allocate space for ED data structure */
+        ed = ed_open(nfile,fnm,cr);
+    } 
+    else
+        ed=NULL;
+
     
     snew(inputrec,1);
     snew(mtop,1);

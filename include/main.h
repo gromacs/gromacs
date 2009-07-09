@@ -81,6 +81,11 @@ extern t_commrec *init_par(int *argc,char ***argv_ptr);
  * array of argument strings.
  */
 
+extern t_commrec *init_par_threads(t_commrec *cro);
+/* Initiate the communication records for thread-parallel simulations. 
+   Must be called before any communication takes place by the individual
+   threads. cro is the old shared commrec */
+
 
 extern t_commrec *init_cr_nopar(void);
 /* Returns t_commrec for non-parallel functionality */

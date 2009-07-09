@@ -361,64 +361,88 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
 
 t_commrec *init_par(int *argc,char ***argv_ptr)
 {
-  t_commrec *cr;
-  char      **argv;
-  int       i;
-  bool      pe=FALSE;
-  
-  snew(cr,1);
+    t_commrec *cr;
+    char      **argv;
+    int       i;
+    bool      pe=FALSE;
 
-  argv = *argv_ptr;
+    snew(cr,1);
+
+    argv = *argv_ptr;
 
 #ifdef GMX_MPI
+#if 0
 #ifdef GMX_THREAD_MPI
-  if (tMPI_Get_N(argc, argv_ptr)>1)
-      pe=TRUE;
-  else
-      pe=FALSE;
+    if (tMPI_Get_N(argc, argv_ptr)>1)
+        pe=TRUE;
+    else
+        pe=FALSE;
+#endif /* GMX_THREAD_MPI */
 #endif
 #ifdef GMX_LIB_MPI
-  pe = TRUE;
+    pe = TRUE;
 #ifdef GMX_CHECK_MPI_ENV
-  /* Do not use MPI calls when env.var. GMX_CHECK_MPI_ENV is not set */
-  if (getenv(GMX_CHECK_MPI_ENV) == NULL)
-      pe = FALSE;
-#endif
-#endif
-  set_parallel_env(pe);
-  if (pe) {
-    cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
-  } else {
-    cr->nnodes     = 1;
-    cr->sim_nodeid = 0;
-  }
-#else
-  pe=FALSE;
-  set_parallel_env(pe);
-  cr->sim_nodeid   = 0;
-  cr->nnodes       = 1;
-#endif
+    /* Do not use MPI calls when env.var. GMX_CHECK_MPI_ENV is not set */
+    if (getenv(GMX_CHECK_MPI_ENV) == NULL)
+        pe = FALSE;
+#endif /* GMX_CHECK_MPI_ENV */
+#endif /* GMX_LIB_MPI  */
+    set_parallel_env(pe);
+    if (pe) {
+        cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
+    } else {
+        cr->nnodes     = 1;
+        cr->sim_nodeid = 0;
+    }
+#else /* GMX_MPI */
+    pe=FALSE;
+    set_parallel_env(pe);
+    cr->sim_nodeid   = 0;
+    cr->nnodes       = 1;
+#endif /* GMX_MPI */
 
-  if (!PAR(cr) && (cr->sim_nodeid != 0))
-    gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
-  
-  if (PAR(cr)) {
+    if (!PAR(cr) && (cr->sim_nodeid != 0))
+        gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
+
+    if (PAR(cr)) {
 #ifdef GMX_MPI
+        cr->mpi_comm_mysim = MPI_COMM_WORLD;
+        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+#endif /* GMX_MPI */
+    }
+    cr->nodeid = cr->sim_nodeid;
+
+    cr->duty = (DUTY_PP | DUTY_PME);
+
+    /* Communicate arguments if parallel */
+#ifndef GMX_THREADS
+    if (PAR(cr))
+        comm_args(cr,argc,argv_ptr);
+#endif /* GMX_THREADS */
+
+    return cr;
+}
+
+t_commrec *init_par_threads(t_commrec *cro)
+{
+    int initialized;
+    t_commrec *cr;
+
+    snew(cr,1);
+    MPI_Initialized(&initialized);
+    if (!initialized)
+        gmx_comm("Initializing threads without comm");
+    set_parallel_env(TRUE);
+    /* once threads will be getting along with MPI, we'll
+       fill the cr structure with more sensible data here */
+    cr->sim_nodeid = gmx_setup(0,NULL, &cr->nnodes);
+
     cr->mpi_comm_mysim = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-#endif
-  }
-  cr->nodeid = cr->sim_nodeid;
+    cr->nodeid = cr->sim_nodeid;
+    cr->duty = (DUTY_PP | DUTY_PME);
 
-  cr->duty = (DUTY_PP | DUTY_PME);
-
-  /* Communicate arguments if parallel */
-#ifndef GMX_THREADS
-  if (PAR(cr))
-    comm_args(cr,argc,argv_ptr);
-#endif
-
-  return cr;
+    return cr;
 }
 
 t_commrec *init_cr_nopar(void)

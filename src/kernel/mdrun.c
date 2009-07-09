@@ -404,10 +404,6 @@ int main(int argc,char *argv[])
     dd_node_order = nenum(ddno_opt);
     cr->npmenodes = npme;
 
-#ifndef GMX_THREAD_SHM_FDECOMP
-    if (nthreads > 1)
-        gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
-#endif
 
     if (repl_ex_nst != 0 && nmultisim < 2)
         gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
@@ -419,7 +415,7 @@ int main(int argc,char *argv[])
     sim_part = 1;
     if(opt2bSet("-cpi",NFILE,fnm))
     {
-        sim_part = read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm)) + 1;
+        sim_part = read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm))+1;
         /* sim_part will now be 1 if no checkpoint file was found */
         if (sim_part==1 && MASTER(cr))
         {
@@ -434,7 +430,8 @@ int main(int argc,char *argv[])
 
     if(!bAppendFiles && bAddPart && sim_part > 1)
     {
-        /* This is a continuation run, rename trajectory output files (except checkpoint files) */
+        /* This is a continuation run, rename trajectory output files 
+           (except checkpoint files) */
         /* create new part name first (zero-filled) */
         if(sim_part<10)
             sprintf(suffix,"part000%d",sim_part);
@@ -463,9 +460,9 @@ int main(int argc,char *argv[])
     Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
 
 
-    /* We postpone opening the log file if we are appending, so we can first truncate
-     * the old log file and append to the correct position there instead.
-     */
+    /* We postpone opening the log file if we are appending, so we can 
+       first truncate the old log file and append to the correct position 
+       there instead.  */
     if (MASTER(cr) && !bAppendFiles) 
     {
         fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
@@ -480,22 +477,25 @@ int main(int argc,char *argv[])
         fplog = NULL;
     }
 
-    /* Essential dynamics */
-    if (opt2bSet("-ei",NFILE,fnm)) {
-        /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(NFILE,fnm,cr);
-    } else
-        ed=NULL;
 
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
+#ifdef GMX_THREAD_MPI
+    rc = mdrunner_threads(nthreads,
+                          fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
+                          ddxyz,dd_node_order,rdd,rconstr,
+                          dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+                          nstepout,repl_ex_nst,repl_ex_seed,pforce,
+                          cpt_period,max_hours,Flags);
+#else
     rc = mdrunner(fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                   ddxyz,dd_node_order,rdd,rconstr,
                   dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                  nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
+                  nstepout,repl_ex_nst,repl_ex_seed,pforce,
                   cpt_period,max_hours,Flags);
+#endif
 
     if (gmx_parallel_env())
         gmx_finalize();
@@ -504,12 +504,12 @@ int main(int argc,char *argv[])
         thanx(stderr);
     }
 
-    /* Log file has to be closed in mdrunner if we are appending to it (fplog not set here) */
+    /* Log file has to be closed in mdrunner if we are appending to it 
+       (fplog not set here) */
     if (MASTER(cr) && !bAppendFiles) 
     {
         gmx_log_close(fplog);
     }
-
 
     return rc;
 }
