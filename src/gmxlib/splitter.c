@@ -149,17 +149,17 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 			node_high_ai  = constr_max_nodeid[ai];
 			node_high_aj  = constr_max_nodeid[aj];
 
-			node_low      = max(node_low_ai,node_low_aj);
-			node_high     = min(node_high_ai,node_high_aj);
+			node_low      = min(node_low_ai,node_low_aj);
+			node_high     = max(node_high_ai,node_high_aj);
 			
 			if( (node_high-nodeid)>1 || (nodeid-node_low)>1 )
 			{
 				gmx_fatal(FARGS,"Constraint dependencies further away than next-neighbor\n"
 						  "in particle decomposition. Constraint between atoms %d--%d evaluated\n"
-						  "on node %d, but atom %d has connections within four bonds of node %d,\n"
-						  "and atom %d has connections within four bonds of node %d.\n"
-						  "Reduce the # nodes, constraint order, or\n"
-						  "try domain decomposition.",ai,aj,nodeid,ai,node_low,aj,node_high);
+						  "on node %d, but atom %d has connections within %d bonds (lincs_order)\n"
+						  "of node %d, and atom %d has connections within %d bonds of node %d.\n"
+						  "Reduce the # nodes, lincs_order, or\n"
+						  "try domain decomposition.",ai,aj,nodeid,ai,ir->nProjOrder,node_low,aj,ir->nProjOrder,node_high);
 			}
 			
 			if(node_low<nodeid)
@@ -855,7 +855,7 @@ typedef struct
 static void
 find_constraint_range_recursive(pd_constraintlist_t *  constraintlist,
 								int                    thisatom,
-								int                    order,
+								int                    depth,
 								int *                  min_atomid,
 								int *                  max_atomid)
 {
@@ -869,9 +869,9 @@ find_constraint_range_recursive(pd_constraintlist_t *  constraintlist,
 		*min_atomid = (j<*min_atomid) ? j : *min_atomid;
 		*max_atomid = (j>*max_atomid) ? j : *max_atomid;
 
-		if(order>1)
+		if(depth>0)
 		{
-			find_constraint_range_recursive(constraintlist,j,order-1,min_atomid,max_atomid);
+			find_constraint_range_recursive(constraintlist,j,depth-1,min_atomid,max_atomid);
 		}
 	}
 }
@@ -886,13 +886,13 @@ pd_determine_constraints_range(t_inputrec *      ir,
 {
 	int i,j,k;
 	int nratoms;
-	int order;
+	int depth;
 	int ai,aj;
 	int min_atomid,max_atomid;
 	pd_constraintlist_t *constraintlist;
 	
 	nratoms = interaction_function[F_CONSTR].nratoms;
-	order   = ir->nProjOrder;
+	depth   = ir->nProjOrder;
 
 	snew(constraintlist,natoms);
 	
@@ -904,13 +904,14 @@ pd_determine_constraints_range(t_inputrec *      ir,
 		constraintlist[ai].index[constraintlist[ai].nconstr++]=aj;
 		constraintlist[aj].index[constraintlist[aj].nconstr++]=ai;
 	}
-	
+			   
 	for(i=0;i<natoms;i++)
 	{
 		min_atomid = i;
 		max_atomid = i;
 		
-		find_constraint_range_recursive(constraintlist,i,order,&min_atomid,&max_atomid);
+		find_constraint_range_recursive(constraintlist,i,depth,&min_atomid,&max_atomid);
+		
 		min_nodeid[i] = hid[min_atomid];
 		max_nodeid[i] = hid[max_atomid];		
 	}
@@ -971,7 +972,7 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_inputrec *ir,t_block *m
 		  constr_min_nodeid[i] = constr_max_nodeid[i] = homeind[i];  
 	  }
   }
-
+	
   /* Default limits (no communication) for PD constraints */
   left_range[0] = 0;
   for(i=1;i<nnodes;i++)
