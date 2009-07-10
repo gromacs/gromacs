@@ -193,7 +193,31 @@ void gmx_tx_rx_real(const t_commrec *cr,
 #undef mpi_type
 #endif
 }
-		 
+
+
+void gmx_tx_rx_void(const t_commrec *cr,
+					int send_dir,void *send_buf,int send_bufsize,
+					int recv_dir,void *recv_buf,int recv_bufsize)
+{
+#ifndef GMX_MPI
+	gmx_call("gmx_tx_rx_void");
+#else
+	int send_nodeid,recv_nodeid;
+	int tx_tag = 0,rx_tag = 0;
+	MPI_Status stat;
+	
+	send_nodeid = cr->pd->neighbor[send_dir];
+	recv_nodeid = cr->pd->neighbor[recv_dir];
+	
+	
+	MPI_Sendrecv(send_buf,send_bufsize,MPI_BYTE,RANK(cr,send_nodeid),tx_tag,
+				 recv_buf,recv_bufsize,MPI_BYTE,RANK(cr,recv_nodeid),rx_tag,
+				 cr->mpi_comm_mygroup,&stat);
+
+#endif
+}
+
+
 void gmx_wait(int dir_send,int dir_recv)
 {
 #ifndef GMX_MPI
@@ -743,7 +767,7 @@ gmx_localtop_t *split_system(FILE *log,
 	
   sfree(capacity);
   init_partdec(log,cr,&(top->cgs),multinr_cgs,&(top->idef));
-
+	
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/
   
@@ -805,133 +829,122 @@ static void create_vsitelist(int nindex, int *list,
   *listptr=newlist;
 }
   
+static void
+add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
+{
+	int  i,idx;
+	bool found;
+	
+	found = FALSE;
+	idx = *nitem;
+	for(i=0; i<idx && !found;i++)
+	{
+		found = (newitem ==(*list)[i]);
+	}
+	if(!found)
+	{
+		*nalloc+=100;
+		srenew(*list,*nalloc);
+		(*list)[idx++] = newitem;
+		*nitem = idx;
+	}
+}
 
 bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
-			   t_comm_vsites *vsitecomm)
+						   t_comm_vsites *vsitecomm)
 {
-  int i,inr,j,k,ftype;
-  int minidx,minhome,ihome;
-  int nra,nrd,nconstr;
-  bool found=FALSE;
-  t_iatom   *ia;
-  int *idxprevvsite;
-  int *idxnextvsite;
-  int *idxprevconstr;
-  int *idxnextconstr;
-  int  nprevvsite=0,nnextvsite=0;
-  int  nprevconstr=0,nnextconstr=0;
-  gmx_partdec_t *pd;
-
-#define BUFLEN 100
-
-  pd = cr->pd;
-
-  snew(idxprevvsite,BUFLEN);
-  snew(idxnextvsite,BUFLEN);
-  snew(idxprevconstr,BUFLEN);
-  snew(idxnextconstr,BUFLEN);  
-
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_VSITE) {
-      nra    = interaction_function[ftype].nratoms;
-      nrd    = idef->il[ftype].nr;
-      ia     = idef->il[ftype].iatoms;
-      
-      for(i=0; (i<nrd); ) {
+	int i,j,ftype;
+	int nra;
+	bool do_comm;
+	t_iatom   *ia;
+	gmx_partdec_t *pd;
+	int  ivsite,iconstruct;
+	int  i0,i1;
+	int  nalloc_right_vsite,nalloc_right_construct;
+	int  sendbuf[2],recvbuf[2];
+	int  bufsize,leftbuf,rightbuf;
 	
-	/* The vsite and constructing atoms */
-	if (ftype==F_VSITE2)
-	  nconstr=2;
-	else if(ftype==F_VSITE4FDN || ftype==F_VSITE4FD)
-	  nconstr=4;
-	else
-	  nconstr=3;
+	pd = cr->pd;
 	
-	minidx=ia[1];
-	for(j=2;j<nconstr+2;j++) 
-	  if(ia[j]<minidx)
-	    minidx=ia[j];
-
-	minhome=0;
-	while(minidx>=(pd->index[minhome+1]))
-          minhome++;
-
-	if(minhome==cr->nodeid) {
-	  /* This is my vsite interaction - but is the vsite local?
-	   * If not, he must be on the next node (error otherwise)
-	   * (but we do account for the cyclic ring structure)
-	   */
-	  if(ia[1]<pd->index[cr->nodeid] ||
-	     ia[1]>=(pd->index[cr->nodeid+1])) {
-	    if((nnextvsite%BUFLEN)==0 && nnextvsite>0)
-	      srenew(idxnextvsite,nnextvsite+BUFLEN);
-	    idxnextvsite[nnextvsite++]=ia[1];
-	    found=TRUE;
-	  }
-	  for(j=2;j<nconstr+2;j++) {
-	    inr=ia[j];
-	    ihome=0;
-	    while(inr>=(pd->index[ihome+1]))
-	      ihome++;
-	    if( ihome>(cr->nodeid+1))
-	      gmx_fatal(FARGS,"Vsite particle %d and its constructing"
-			  " atoms are not on the same or adjacent\n" 
-			  " nodes. This is necessary to avoid a lot\n"
-			  " of extra communication. The easiest way"
-			  " to ensure this is to place vsites\n"
-			  " close to the constructing atoms.\n"
-			  " Sorry, but you will have to rework your topology!\n",
-			  ia[1]);
-	    else if(ihome==((cr->nodeid+1)%cr->nnodes)) {
-	      if((nnextconstr%BUFLEN)==0 && nnextconstr>0)
-		srenew(idxnextconstr,nnextconstr+BUFLEN);
-	      idxnextconstr[nnextconstr++]=ia[j];
-	      found=TRUE;
-	    }
-	  }
-	} else if(minhome==((cr->nodeid-1+cr->nnodes)%cr->nnodes)) {
-	  /* Not our vsite, but we might be involved */
-	  if(ia[1]>=pd->index[cr->nodeid] &&
-	     (ia[1]<(pd->index[cr->nodeid+1]))) {
-	    if((nprevvsite%BUFLEN)==0 && nprevvsite>0)
-	      srenew(idxprevvsite,nprevvsite+BUFLEN);
-	    idxprevvsite[nprevvsite++]=ia[1];
-	    found=TRUE;
-	  }
-	  for(j=2;j<nconstr+2;j++) {
-	    inr=ia[j];
-	    if(ia[j]>=pd->index[cr->nodeid] &&
-	       (ia[1]<(pd->index[cr->nodeid+1]))) {
-	      if((nprevconstr%BUFLEN)==0 && nprevconstr>0)
-		srenew(idxprevconstr,nprevconstr+BUFLEN);
-	      idxprevconstr[nprevconstr++]=ia[j];
-	      found=TRUE;
-	    }
-	  }
-	}
-	/* Increment loop variables */
-	i  += nra+1;
-	ia += nra+1;
-      }
+	i0 = pd->index[cr->nodeid];
+	i1 = pd->index[cr->nodeid+1];
+	
+	nalloc_right_vsite     = 0;
+	nalloc_right_construct = 0;
+	vsitecomm->right_vsite      = NULL;	
+	vsitecomm->right_nvsite     = 0;
+	vsitecomm->right_construct  = NULL;	
+	vsitecomm->right_nconstruct = 0;
+	
+	for(ftype=0; (ftype<F_NRE); ftype++) 
+	{
+		if ( !(interaction_function[ftype].flags & IF_VSITE) )
+		{
+			continue;
+		}
+		
+		nra    = interaction_function[ftype].nratoms;
+		ia     = idef->il[ftype].iatoms;
+				
+		for(i=0; i<idef->il[ftype].nr;i+=nra+1) 
+		{	
+			ivsite = ia[i+1];
+			
+			if(ivsite>=i1)
+			{
+				add_to_vsitelist(&vsitecomm->right_vsite,
+								 &vsitecomm->right_nvsite,
+								 &nalloc_right_vsite,ivsite);
+			}
+			
+			for(j=2;j<1+nra;j++)
+			{
+				iconstruct = ia[i+j];
+				if(iconstruct>=i1)
+				{
+					add_to_vsitelist(&vsitecomm->right_construct,
+									 &vsitecomm->right_nconstruct,
+									 &nalloc_right_construct,iconstruct);
+				}
+			}
+		}
     }
-  }
 
-  create_vsitelist(nprevvsite,idxprevvsite,
-		   &(vsitecomm->nprevvsite),&(vsitecomm->idxprevvsite));
-  create_vsitelist(nnextvsite,idxnextvsite,
-		   &(vsitecomm->nnextvsite),&(vsitecomm->idxnextvsite));
-  create_vsitelist(nprevconstr,idxprevconstr,
-		   &(vsitecomm->nprevconstr),&(vsitecomm->idxprevconstr));
-  create_vsitelist(nnextconstr,idxnextconstr,
-		   &(vsitecomm->nnextconstr),&(vsitecomm->idxnextconstr));
+	/* Pre-communicate the array lengths */
+	sendbuf[0] = vsitecomm->right_nvsite;
+	sendbuf[1] = vsitecomm->right_nconstruct;
+	
+	gmx_tx_rx_void(cr,
+				   GMX_RIGHT,(void *)sendbuf,2*sizeof(int),
+				   GMX_LEFT, (void *)recvbuf,2*sizeof(int));
 
-  sfree(idxprevvsite);
-  sfree(idxnextvsite);
-  sfree(idxprevconstr);
-  sfree(idxnextconstr);
+	vsitecomm->left_nvsite     = recvbuf[0];
+	vsitecomm->left_nconstruct = recvbuf[1];
 
-  return found;
-#undef BUFLEN
+	snew(vsitecomm->left_vsite,vsitecomm->left_nvsite);
+	snew(vsitecomm->left_construct,vsitecomm->left_nconstruct);
+	
+	/* Communicate the vsite array */
+	gmx_tx_rx_void(cr,
+				   GMX_RIGHT,(void *)vsitecomm->right_vsite,vsitecomm->right_nvsite*sizeof(int),
+				   GMX_LEFT, (void *)vsitecomm->left_vsite, vsitecomm->left_nvsite*sizeof(int));
+	
+	/* Communicate the constructing atom array */
+	gmx_tx_rx_void(cr,
+				   GMX_RIGHT,(void *)vsitecomm->right_construct,vsitecomm->right_nconstruct*sizeof(int),
+				   GMX_LEFT, (void *)vsitecomm->left_construct, vsitecomm->left_nconstruct*sizeof(int));
+	
+	leftbuf  = vsitecomm->left_nvsite + vsitecomm->left_nconstruct;
+	rightbuf = vsitecomm->right_nvsite + vsitecomm->right_nconstruct;
+
+	bufsize  = max(leftbuf,rightbuf);
+	
+	do_comm = (bufsize>0);
+			   	
+	snew(vsitecomm->send_buf,bufsize);
+	snew(vsitecomm->recv_buf,bufsize);
+
+	return do_comm;
 }
 
 t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global)

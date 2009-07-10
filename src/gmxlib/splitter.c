@@ -192,7 +192,26 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
     }
     else if(interaction_function[ftype].flags & IF_VSITE) 
 	{
-      /* Virtual sites should be constructed on the home node */
+      /* Virtual sites are special, since we need to pre-communicate
+	   * their coordinates to construct vsites before then main
+	   * coordinate communication. In particular, imagine you have
+	   * 20 atoms (0..19), and two nodes responsible for atoms 0..9 and 10..19.
+	   * Further imagine that atom 8 is a vsite, with constructing atoms
+	   * 7,9,10. 
+	   * This means we first have to send atom 10 to the lower node, construct
+	   * the vsite there, so that we finally can send atom 8 to the upper node.
+	   *
+	   * Vsites can have constructing atoms both larger and smaller than themselves,
+	   * so to avoid two steps of precommunication (left+right), we use a slightly
+	   * different node assignment standard with particle decomposition, 
+	   * and always construct the vsites on the home node of the atom with the lowest
+	   * index of the vsite itself and all constructing atoms.
+	   * This way we only need to pulse (a few) coordinates to the left in the 
+	   * pre-communication.
+	   *
+	   * (for normal interactions this is never an issue, since they are typicall sorted 
+	   * so the first atom is the lowest index).
+	   */
 		
 		if (ftype==F_VSITE2)
 			nvsite_constr=2;
@@ -327,7 +346,7 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
   if (debug) {
     for(i=0; (i<natom); i++) {
       fprintf(debug,"atom: %6d  cgindex: %6d  shkindex: %6d\n",
-	      i,invcgs[i],invshk[i]);
+			  i, invcgs[i], invshk[i]);
     }
   }
     
@@ -343,8 +362,14 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
   sbor[ns] = 0;
   cbor[nc] = 0;
   if (fp)
-    fprintf(fp,"There are %d charge group borders and %d shake borders\n",
-	    nc,ns);
+  {
+	  fprintf(fp,"There are %d charge group borders",nc);
+	  if(invshk!=NULL)
+	  {
+		  fprintf(fp," and %d shake borders",ns);
+	  }
+	  fprintf(fp,".\n");
+  }
   snew(bor,max(nc,ns));
   ic = is = nbor = 0;
   while ((ic < nc) || (is < ns)) {
@@ -384,9 +409,9 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
   return bor;
 }
 
-static void split_blocks(FILE *fp,int nnodes,
+static void split_blocks(FILE *fp,t_inputrec *ir, int nnodes,
 			 t_block *cgs,t_blocka *sblock,real capacity[],
-			 int *multinr_cgs,int *multinr_shk)
+			 int *multinr_cgs)
 {
   int      natoms,*maxatom;
   int      i,ii,ai,b0,b1;
@@ -398,14 +423,14 @@ static void split_blocks(FILE *fp,int nnodes,
   atom_id *shknum,*cgsnum;
   
   natoms = cgs->index[cgs->nr];
-
+	
   if (debug) {
     pr_block(debug,0,"cgs",cgs,TRUE);
     pr_blocka(debug,0,"sblock",sblock,TRUE);
   }
 
+  cgsnum = make_invblock(cgs,natoms+1);	
   shknum = make_invblocka(sblock,natoms+1);
-  cgsnum = make_invblock(cgs,natoms+1);
   border = mk_border(fp,natoms,cgsnum,shknum,&nbor);
 
   snew(maxatom,nnodes);
@@ -424,25 +449,21 @@ static void split_blocks(FILE *fp,int nnodes,
     if ((fabs(b0-tload)<fabs(b1-tload))) {
       /* New nodeid time */
       multinr_cgs[nodeid] = border[i].ic;
-      /* Store the atom number here, has to be processed later */
-      multinr_shk[nodeid] = border[i].atom;
       maxatom[nodeid]     = b0;
       tcap -= capacity[nodeid];
       nodeid++;
       
       /* Recompute target load */
-      tload = b0 +
-	(natoms-b0)*capacity[nodeid]/tcap;
+      tload = b0 + (natoms-b0)*capacity[nodeid]/tcap;
 
-      if (debug)
-	fprintf(debug,"tload: %g tcap: %g  nodeid: %d\n",tload,tcap,nodeid);
+    if(debug)   
+	  printf("tload: %g tcap: %g  nodeid: %d\n",tload,tcap,nodeid);
     } 
   }
   /* Now the last one... */
   while (nodeid < nnodes) {
     multinr_cgs[nodeid] = cgs->nr;
     /* Store atom number, see above */
-    multinr_shk[nodeid] = natoms;
     maxatom[nodeid]     = natoms;
     nodeid++;
   }
@@ -453,13 +474,14 @@ static void split_blocks(FILE *fp,int nnodes,
 
   for(i=nnodes-1; (i>0); i--)
     maxatom[i]-=maxatom[i-1];
+
   if (fp) {
     fprintf(fp,"Division over nodes in atoms:\n");
     for(i=0; (i<nnodes); i++)
       fprintf(fp," %7d",maxatom[i]);
     fprintf(fp,"\n");
   }
-
+	
   sfree(maxatom);
   sfree(shknum);
   sfree(cgsnum);
@@ -726,8 +748,8 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
 }
 
 void gen_sblocks(FILE *fp,int at_start,int at_end,
-		 t_idef *idef,t_blocka *sblock,
-		 bool bSettle)
+				 t_idef *idef,t_blocka *sblock,
+				 bool bSettle)
 {
   t_graph *g;
   int     i,i0,j,k,istart,n;
@@ -900,10 +922,8 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_inputrec *ir,t_block *m
 	       real *capacity,int *multinr_cgs,int **multinr_nre, int *left_range, int * right_range)
 {
   int     natoms,i,j,k,mj,atom,maxatom,sstart,send,bstart,nodeid;
-  int     *multinr_shk;
-  t_blocka sblock,shakeblock;
+  t_blocka sblock;
   int     *homeind;
-  atom_id *sblinv;
   int ftype,nvsite_constr,nra,nrd;
   t_iatom   *ia;
   int minhome,ihome,minidx;
@@ -921,33 +941,19 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_inputrec *ir,t_block *m
 /*#define MOL_BORDER*/
 /*Removed the above to allow splitting molecules with h-bond constraints
   over processors. The results in DP are the same. */
+  init_blocka(&sblock);
+  if(ir->eConstrAlg != econtLINCS)
+  {
 #ifndef MOL_BORDER
   /* Make a special shake block that includes settles */
-  init_blocka(&sblock);
-  gen_sblocks(fp,0,natoms,&top->idef,&sblock,TRUE);
+	  gen_sblocks(fp,0,natoms,&top->idef,&sblock,TRUE);		
 #else
-  sblock = block2blocka(mols);
+	  sblock = block2blocka(mols);
 #endif  
-
-  snew(multinr_shk,nnodes);
-  split_blocks(fp,nnodes,&top->cgs,&sblock,capacity,multinr_cgs,multinr_shk);
-  	
-  /* Now transform atom numbers to real inverted shake blocks */
-  init_blocka(&shakeblock);
-  gen_sblocks(fp,0,natoms,&top->idef,&shakeblock,TRUE);
-  sblinv = make_invblocka(&shakeblock,natoms+1);
-  done_blocka(&shakeblock);
-  for(j=0; (j<nnodes); j++) {
-    atom = multinr_shk[j];
-    mj   = NO_ATID;
-    for(k=(j == 0) ? 0 : multinr_shk[j-1]; (k<atom); k++)
-      if (sblinv[k] != NO_ATID)
-	mj = max(mj,(int)sblinv[k]);
-    if (mj == NO_ATID) 
-      mj = (j == 0) ? -1 : multinr_shk[j-1]-1;
-    
-    multinr_shk[j] = mj+1;
   }
+	
+  split_blocks(fp,ir,nnodes,&top->cgs,&sblock,capacity,multinr_cgs);
+  	
   homeind=home_index(nnodes,&top->cgs,multinr_cgs);
 
   snew(constr_min_nodeid,natoms);
@@ -982,8 +988,6 @@ void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_inputrec *ir,t_block *m
   sfree(constr_min_nodeid);
   sfree(constr_max_nodeid);
 	
-  sfree(sblinv);
-  sfree(multinr_shk);
   sfree(homeind);
   done_blocka(&sblock);
 }
