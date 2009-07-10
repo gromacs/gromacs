@@ -317,7 +317,7 @@ int main(int argc,char *argv[])
         { "-dd",      FALSE, etRVEC,{&realddxyz},
             "Domain decomposition grid, 0 is optimize" },
         { "-nt",      FALSE, etINT, {&nthreads},
-            "HIDDENNumber of threads to start on each node" },
+            "Number of threads to start on each node" },
         { "-npme",    FALSE, etINT, {&npme},
             "Number of separate nodes to be used for PME, -1 is guess" },
         { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -404,12 +404,8 @@ int main(int argc,char *argv[])
     dd_node_order = nenum(ddno_opt);
     cr->npmenodes = npme;
 
-
     if (repl_ex_nst != 0 && nmultisim < 2)
         gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
-
-    if (nmultisim > 1 && PAR(cr))
-        init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 
     /* Check if there is ANY checkpoint file available */	
     sim_part = 1;
@@ -482,20 +478,13 @@ int main(int argc,char *argv[])
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
-#ifdef GMX_THREAD_MPI
+    /* even if nthreads = 1, we still call this one */
     rc = mdrunner_threads(nthreads,
                           fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
                           ddxyz,dd_node_order,rdd,rconstr,
                           dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                          nstepout,repl_ex_nst,repl_ex_seed,pforce,
+                          nstepout,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
                           cpt_period,max_hours,Flags);
-#else
-    rc = mdrunner(fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
-                  ddxyz,dd_node_order,rdd,rconstr,
-                  dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                  nstepout,repl_ex_nst,repl_ex_seed,pforce,
-                  cpt_period,max_hours,Flags);
-#endif
 
     if (gmx_parallel_env())
         gmx_finalize();

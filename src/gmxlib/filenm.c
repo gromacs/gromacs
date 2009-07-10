@@ -470,25 +470,25 @@ static void check_opts(int nf,t_filenm fnm[])
 
 int fn2ftp(const char *fn)
 {
-	int  i,len;
-	const char *feptr;
-	const char *eptr;
-  
-  if (!fn)
-    return efNR;
+    int  i,len;
+    const char *feptr;
+    const char *eptr;
 
-  len=strlen(fn);
-  if ((len >= 4) && (fn[len-4] == '.'))
-    feptr=&(fn[len-4]);
-  else
-    return efNR;
-  
-  for(i=0; (i<efNR); i++)
-    if ((eptr=deffile[i].ext) != NULL)
-      if (strcasecmp(feptr,eptr)==0)
-	break;
-      
-  return i;
+    if (!fn)
+        return efNR;
+
+    len=strlen(fn);
+    if ((len >= 4) && (fn[len-4] == '.'))
+        feptr=&(fn[len-4]);
+    else
+        return efNR;
+
+    for(i=0; (i<efNR); i++)
+        if ((eptr=deffile[i].ext) != NULL)
+            if (strcasecmp(feptr,eptr)==0)
+                break;
+
+    return i;
 }
 
 static void set_extension(char *buf,int ftp)
@@ -862,5 +862,36 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
         }
     }
     return 0;
+}
+
+t_filenm *dup_tfn(int nf, const t_filenm tfn[])
+{
+    int i,j;
+    t_filenm *ret;
+
+    snew(ret, nf);
+    for(i=0;i<nf;i++)
+    {
+        ret[i] = tfn[i]; /* just directly copy all non-string fields */
+        if (tfn[i].opt)
+            ret[i].opt = strdup(tfn[i].opt);
+        else
+            ret[i].opt = NULL;
+
+        if (tfn[i].fn)
+            ret[i].fn = strdup(tfn[i].fn);
+        else
+            ret[i].fn = NULL;
+
+        if (tfn[i].nfiles > 0)
+        {
+            snew(ret[i].fns,tfn[i].nfiles);
+            for(j=0;j<tfn[i].nfiles;j++)
+            {
+                ret[i].fns[j] = strdup(tfn[i].fns[j]);
+            }
+        }
+    }
+    return ret;
 }
 

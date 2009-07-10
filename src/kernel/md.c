@@ -149,6 +149,7 @@ struct mdrunner_arglist
     const char *ddcsy;
     const char *ddcsz;
     int nstepout;
+    int nmultisim;
     int repl_ex_nst;
     int repl_ex_seed;
     real pforce;
@@ -168,21 +169,24 @@ static void mdrunner_start_fn(void *arg)
                                         but those are all const. */
     t_commrec *cr;  /* we need a local version of this */
     FILE *fplog=NULL;
+    t_filenm *fnm=dup_tfn(mc.nfile, mc.fnm);
    
     cr=init_par_threads(mc.cr);
     if (MASTER(cr))
     {
         fplog=mc.fplog;
     }
+
    
     mda->ret=mdrunner(fplog, cr, mc.nfile, mc.fnm, mc.oenv, mc.bVerbose,
                       mc.bCompact, mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
-                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout,
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.nmultisim,
                       mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
                       mc.cpt_period, mc.max_hours, mc.Flags);
 }
 
+#endif
 
 int mdrunner_threads(int nthreads, 
                      FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
@@ -190,9 +194,9 @@ int mdrunner_threads(int nthreads,
                      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
                      const char *dddlb_opt,real dlb_scale,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int repl_ex_nst,int repl_ex_seed,
-                     real pforce,real cpt_period,real max_hours,
-                     unsigned long Flags)
+                     int nstepout,int nmultisim,int repl_ex_nst,
+                     int repl_ex_seed, real pforce,real cpt_period,
+                     real max_hours, unsigned long Flags)
 {
     int ret;
     /* first check whether we even need to start tMPI */
@@ -200,12 +204,16 @@ int mdrunner_threads(int nthreads,
     {
         ret=mdrunner(fplog, cr, nfile, fnm, oenv, bVerbose, bCompact,
                  ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
-                 ddcsx, ddcsy, ddcsz, nstepout, repl_ex_nst, repl_ex_seed,
-                 pforce, cpt_period, max_hours, Flags);
+                 ddcsx, ddcsy, ddcsz, nstepout, nmultisim, repl_ex_nst, 
+                 repl_ex_seed, pforce, cpt_period, max_hours, Flags);
     }
     else
     {
+#ifndef GMX_THREADS
+        gmx_comm("Multiple threads requested but not compiled with threads");
+#else
         struct mdrunner_arglist mda;
+        /* fill the data structure to pass as void pointer to thread start fn */
         mda.fplog=fplog;
         mda.cr=cr;
         mda.nfile=nfile;
@@ -225,6 +233,7 @@ int mdrunner_threads(int nthreads,
         mda.ddcsy=ddcsy;
         mda.ddcsz=ddcsz;
         mda.nstepout=nstepout;
+        mda.nmultisim=nmultisim;
         mda.repl_ex_nst=repl_ex_nst;
         mda.repl_ex_seed=repl_ex_seed;
         mda.pforce=pforce;
@@ -234,10 +243,10 @@ int mdrunner_threads(int nthreads,
 
         tMPI_Init_fn(nthreads, mdrunner_start_fn, (void*)(&mda) );
         ret=mda.ret;
+#endif
     }
     return ret;
 }
-#endif
 
 
 
@@ -247,7 +256,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
-             int nstepout,int repl_ex_nst,int repl_ex_seed,
+             int nstepout,int nmultisim,int repl_ex_nst,int repl_ex_seed,
              real pforce,real cpt_period,real max_hours,
              unsigned long Flags)
 {
@@ -277,6 +286,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        rc;
     gmx_edsam_t ed;
 
+
+    if (nmultisim > 1 && PAR(cr))
+        init_multisystem(cr,nmultisim,nfile,fnm,TRUE);
+
+
     /* Essential dynamics */
     if (opt2bSet("-ei",nfile,fnm)) 
     {
@@ -286,7 +300,6 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     else
         ed=NULL;
 
-    
     snew(inputrec,1);
     snew(mtop,1);
   	
