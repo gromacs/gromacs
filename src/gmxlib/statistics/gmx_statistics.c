@@ -364,15 +364,15 @@ int gmx_stats_get_ase(gmx_stats_t gstats,real *aver,real *sigma,real *error)
         return ok;
     }
     
-    if (*aver)
+    if (NULL != aver)
     {
         *aver  = stats->aver;
     }
-    if (*sigma) 
+    if (NULL != sigma) 
     {
         *sigma = stats->sigma_aver;
     }
-    if (*error) 
+    if (NULL != error) 
     {
         *error = stats->error;
     }
