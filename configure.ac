@@ -361,6 +361,9 @@ if test "$with_threads" = "pthreads"; then
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
   AM_CONDITIONAL(THREAD_PTHREADS,true)
+else
+  AM_CONDITIONAL(THREAD_PARALLEL,false)
+  AM_CONDITIONAL(THREAD_PTHREADS,false)
 fi
 
 

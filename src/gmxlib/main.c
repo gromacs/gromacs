@@ -425,6 +425,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
 t_commrec *init_par_threads(t_commrec *cro)
 {
+#ifdef GMX_THREAD_MPI
     int initialized;
     t_commrec *cr;
 
@@ -443,6 +444,9 @@ t_commrec *init_par_threads(t_commrec *cro)
     cr->duty = (DUTY_PP | DUTY_PME);
 
     return cr;
+#else
+    return NULL;
+#endif
 }
 
 t_commrec *init_cr_nopar(void)

@@ -274,18 +274,17 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile, const t_filenm fnm[],
 	     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
-#ifdef GMX_THREAD_MPI
 int mdrunner_threads(int nthreads,
                      FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      const output_env_t oenv, bool bVerbose,bool bCompact,
                      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
                      const char *dddlb_opt,real dlb_scale,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int nmultisim, int repl_ex_nst,int repl_ex_seed,
-                     real pforce,real cpt_period,real max_hours,
-                     unsigned long Flags);
-/* same, but initializes nthread threads before running mdrunner */
-#endif
+                     int nstepout,int nmultisim, int repl_ex_nst,
+                     int repl_ex_seed, real pforce,real cpt_period,
+                     real max_hours, unsigned long Flags);
+/* initializes nthread threads before running mdrunner: is the preferred
+   way to start a simulation (even if nthreads=1 and no threads are started) */
 
 
 extern void init_md(FILE *fplog,

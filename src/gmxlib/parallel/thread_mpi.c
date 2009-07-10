@@ -56,12 +56,19 @@ typedef int bool;
 
 #include "smalloc.h"
 #include "gmx_thread.h"
+#include "gmx_atomic.h"
 #include "thread_mpi.h"
 
 
 
 
 /*#define TMPI_DEBUG*/
+
+/* if this is define, all mutexes will be implemented using atomic operations  
+   instead of the mutexes provided by the OS. This will cause the CPU time 
+   to be spent busy-waiting, but will increase performance because no time 
+   is wasted on unneccesary (and very costly) context switches. */
+#define TMPI_ATOMIC
 
 /* if this is defined, MPI will warn/hang/crash on practices that don't conform
    to the MPI standard (such as not calling MPI_Comm_free on all threads that
@@ -99,11 +106,19 @@ struct mpi_thread_
        a matching envelope, the other process will complete the data
        structure, allowing the receiving end (in nonblocking communication
        also the sending end) to transfer the data. */
-    gmx_thread_mutex_t envelope_mutex;
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_t envelope_lock;
+#else
+    gmx_thread_mutex_t envelope_lock;
+#endif
     /* mutex for transmitting data in the case of non-blocking receives.
        If receives are non-blocking, the sender may need to initiate transfer
        so this mutex is used for locking out one or the other party. */
-    gmx_thread_mutex_t xmit_mutex;
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_t xmit_lock;
+#else
+    gmx_thread_mutex_t xmit_lock;
+#endif
 
     MPI_Comm self_comm;
 
@@ -135,9 +150,6 @@ struct mpi_comm_
 {
     struct mpi_group_ grp; /* the communicator group */
 
-    /* mutex and condition types for comm syncs */
-    gmx_thread_mutex_t multicast_mutex;
-    gmx_thread_cond_t multicast_cond;
     /* list of barrier_t's. 
        multicast_barrier[0] contains a barrier for N threads 
        (N=the number of threads in the communicator)
@@ -146,15 +158,21 @@ struct mpi_comm_
        multicast_barrier[3] contains a barrier for N/8 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for MPI_Reduce, etc.  */
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_barrier_t *multicast_barrier;   
+#else
     gmx_thread_barrier_t *multicast_barrier;   
+#endif
     int *N_multicast_barrier;
     int Nbarriers;
 
     /* lists of globally shared send/receive buffers for MPI_Reduce, etc. */
     volatile void **sendbuf, **recvbuf; 
     
-    /* mutex for communcation object creation */ 
-    gmx_thread_mutex_t comm_create_mutex;
+    /* mutex for communication object creation. Traditional mutexes are 
+       better here because communicator creation should not be doen in 
+       time-critical sections of code anyway.   */ 
+    gmx_thread_mutex_t comm_create_lock;
     gmx_thread_cond_t comm_create_prep; 
     gmx_thread_cond_t comm_create_finish;
 
@@ -205,13 +223,13 @@ enum xfertype_
   
    Transmitting data works by either the transmitting or receiving process
    putting a pointer to an envelope on the envelope list (the envelope
-   list is protected by mutexes). The other end then puts a pointer in
-   the 'counterpart' field. If it's the sending side, it then waits 
+   list is protected by mutexes/spinlocks). The other end then puts a pointer 
+   in the 'counterpart' field. If it's the sending side, it then waits 
    for the receiver to complete the transfer. The receiving side starts
    the transfer as soon as the data is available from the sender. 
 
    If the receiver is non-blocking, the sender may also initiate transfers,
-   and transfers become excluded by mutexes.  */
+   and transfers become excluded by mutexes/spinlocks.  */
 struct mpi_send_envelope_
 {
     MPI_Comm comm;  /* this is a structure shared across threads, so we
@@ -282,6 +300,16 @@ struct mpi_recv_envelope_
 
        The counterpart can be relied on to exist until finished is true.  */
     volatile struct mpi_send_envelope_ *counterpart; 
+
+    /* mutex/spinlock for transmitting data in the case of non-blocking 
+       receives.  If receives are non-blocking, the sender may need to 
+       initiate transfer so this lock is used for locking out one or the 
+       other party. */
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_t xmit_lock;
+#else
+    gmx_thread_mutex_t xmit_lock;
+#endif
 };
 
 
@@ -312,8 +340,12 @@ struct mpi_global_
     int N_usertypes;
     int Nalloc_usertypes;
 
-    /* mutex for manipulating mpi_user_types */
-    gmx_thread_mutex_t datatype_mutex;
+    /* spinlock/mutex for manipulating mpi_user_types */
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_t  datatype_lock;
+#else
+    gmx_thread_mutex_t datatype_lock;
+#endif
 };
 
 
@@ -844,6 +876,12 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         mpi_global->usertypes=NULL;
         mpi_global->N_usertypes=0;
         mpi_global->Nalloc_usertypes=0;
+#ifdef TMPI_ATOMIC
+/*#if 0*/
+        gmx_spinlock_init(&(mpi_global->datatype_lock));
+#else
+        gmx_thread_mutex_init(&(mpi_global->datatype_lock));
+#endif
 
         /* allocate world and thread data */
         smalloc(threads, sizeof(struct mpi_thread_)*N);
@@ -864,8 +902,13 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
             MPI_COMM_WORLD->grp.peers[i]=&(threads[i]);
 
             /* create the per-thread send/recv mutexes and conditions */
-            gmx_thread_mutex_init(&(threads[i].envelope_mutex));
-            gmx_thread_mutex_init(&(threads[i].xmit_mutex));
+#ifdef TMPI_ATOMIC
+            gmx_spinlock_init(&(threads[i].envelope_lock));
+            gmx_spinlock_init(&(threads[i].xmit_lock));
+#else
+            gmx_thread_mutex_init(&(threads[i].envelope_lock));
+            gmx_thread_mutex_init(&(threads[i].xmit_lock));
+#endif
 
             /* allocate comm.self */
             threads[i].self_comm=tMPI_Comm_alloc(MPI_COMM_WORLD, 1);
@@ -982,8 +1025,10 @@ int MPI_Finalize(void)
         }
         for(i=0;i<Nthreads;i++)
         {
-            gmx_thread_mutex_destroy(&(threads[i].envelope_mutex));
-            gmx_thread_mutex_destroy(&(threads[i].xmit_mutex));
+#ifndef TMPI_ATOMIC
+            gmx_thread_mutex_destroy(&(threads[i].envelope_lock));
+            gmx_thread_mutex_destroy(&(threads[i].xmit_lock));
+#endif
         }
         sfree(threads);
         sfree(MPI_COMM_WORLD);
@@ -1093,21 +1138,29 @@ int MPI_Type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
     ntp->committed=FALSE;
 
     /* now add it to the list.  */
-    gmx_thread_mutex_lock(&(mpi_global->datatype_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_lock(&(mpi_global->datatype_lock));
+#else
+    gmx_thread_mutex_lock(&(mpi_global->datatype_lock));
+#endif
     /* check whether there's space */
     if (mpi_global->N_usertypes + 1 >= mpi_global->Nalloc_usertypes)
     {
         /* make space */
-        mpi_global->Nalloc_usertypes=2*(mpi_global->N_usertypes + 1);
+        mpi_global->Nalloc_usertypes=Nthreads*(mpi_global->N_usertypes) + 1;
         srealloc(mpi_global->usertypes, 
                  (sizeof(struct mpi_datatype_ *)*mpi_global->Nalloc_usertypes));
     }
     /* add to the list */
     mpi_global->usertypes[mpi_global->N_usertypes]=ntp;
     mpi_global->N_usertypes++;
-    gmx_thread_mutex_unlock(&(mpi_global->datatype_mutex));
-
     *newtype=ntp;
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_unlock(&(mpi_global->datatype_lock));
+#else
+    gmx_thread_mutex_unlock(&(mpi_global->datatype_lock));
+#endif
+
 
     return MPI_SUCCESS;
 }
@@ -1125,7 +1178,11 @@ int MPI_Type_commit(MPI_Datatype *datatype)
        already a committed type that has the same composition, we just 
        make the datatype pointer point to it, ensuring we share datatype 
        information across threads. */
-    gmx_thread_mutex_lock(&(mpi_global->datatype_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_lock(&(mpi_global->datatype_lock));
+#else
+    gmx_thread_mutex_lock(&(mpi_global->datatype_lock));
+#endif
     for(i=0;i<mpi_global->N_usertypes;i++)
     {
         struct mpi_datatype_ *lt=mpi_global->usertypes[i];
@@ -1134,8 +1191,8 @@ int MPI_Type_commit(MPI_Datatype *datatype)
             bool found=TRUE;
             for(j=0;j<lt->N_comp;j++)
             {
-                if ( (lt->comps[i].type  != dt->comps[i].type) ||
-                     (lt->comps[i].count != dt->comps[i].count) )
+                if ( (lt->comps[j].type  != dt->comps[j].type) ||
+                     (lt->comps[j].count != dt->comps[j].count) )
                 {
                     found=FALSE;
                     break;
@@ -1177,7 +1234,11 @@ int MPI_Type_commit(MPI_Datatype *datatype)
         /* it was the first one of its type */
         dt->committed=TRUE;
     }
-    gmx_thread_mutex_unlock(&(mpi_global->datatype_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_unlock(&(mpi_global->datatype_lock));
+#else
+    gmx_thread_mutex_unlock(&(mpi_global->datatype_lock));
+#endif
     return MPI_SUCCESS;
 }
 
@@ -1331,9 +1392,7 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     smalloc(ret->grp.peers, sizeof(struct mpi_thread_*)*Nthreads);
     ret->grp.N=N;
 
-    gmx_thread_mutex_init( &(ret->multicast_mutex) );
-    gmx_thread_cond_init( &(ret->multicast_cond) );
-    gmx_thread_mutex_init( &(ret->comm_create_mutex) );
+    gmx_thread_mutex_init( &(ret->comm_create_lock) );
     gmx_thread_cond_init( &(ret->comm_create_prep) );
     gmx_thread_cond_init( &(ret->comm_create_finish) );
 
@@ -1352,13 +1411,22 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
+#ifdef TMPI_ATOMIC
+    smalloc(ret->multicast_barrier, 
+            sizeof(gmx_spinlock_barrier_t)*(Nbarriers+1));
+#else
     smalloc(ret->multicast_barrier, 
             sizeof(gmx_thread_barrier_t)*(Nbarriers+1));
+#endif
     smalloc(ret->N_multicast_barrier, sizeof(int)*(Nbarriers+1));
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
+#ifdef TMPI_ATOMIC
+        gmx_spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
+#else
         gmx_thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
+#endif
         ret->N_multicast_barrier[i]=Nred;
         /* Nred is now Nred/2 + a rest term because solitary 
            process at the end of the list must still be accounter for */
@@ -1381,6 +1449,9 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
 
 int MPI_Comm_free(MPI_Comm *comm)
 {
+#ifndef TMPI_ATOMIC
+    int i;
+#endif
 #ifndef TMPI_STRICT
     int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     if (! *comm)
@@ -1389,15 +1460,19 @@ int MPI_Comm_free(MPI_Comm *comm)
     if ((*comm)->grp.N > 1)
     {
         /* we remove ourselves from the comm. */
-        gmx_thread_mutex_lock(&((*comm)->comm_create_mutex));
+        gmx_thread_mutex_lock(&((*comm)->comm_create_lock));
         (*comm)->grp.peers[myrank] = (*comm)->grp.peers[(*comm)->grp.N-1];
         (*comm)->grp.N--;
-        gmx_thread_mutex_unlock(&((*comm)->comm_create_mutex));
+        gmx_thread_mutex_unlock(&((*comm)->comm_create_lock));
     }
     else
     {
         /* we're the last one so we can safely destroy it */
         sfree((*comm)->grp.peers);
+#ifndef TMPI_ATOMIC
+        for(i=0;i<(*comm)->Nbarriers;i++)
+            gmx_thread_barrier_destroy( &( (*comm)->multicast_barrier[i] ) );
+#endif
         sfree((*comm)->multicast_barrier);
         sfree((*comm)->sendbuf);
         sfree((*comm)->recvbuf);
@@ -1422,6 +1497,10 @@ int MPI_Comm_free(MPI_Comm *comm)
     if (myrank==0)
     {
         sfree((*comm)->grp.peers);
+#ifndef TMPI_ATOMIC
+        for(i=0;i<(*comm)->Nbarriers;i++)
+            gmx_thread_barrier_destroy( &( (*comm)->multicast_barrier[i] ) );
+#endif
         sfree((*comm)->multicast_barrier);
         sfree((*comm)->sendbuf);
         sfree((*comm)->recvbuf);
@@ -1527,7 +1606,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     }
     /*printf("**Calling MPI_Comm_split with color %d, key %d\n",color, key);*/
 
-    gmx_thread_mutex_lock(&(comm->comm_create_mutex));    
+    gmx_thread_mutex_lock(&(comm->comm_create_lock));    
     /* first get the colors */
     if (!comm->new_comm)
     {
@@ -1562,7 +1641,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
         /* all other threads can just wait until the creator thread is 
            finished */
         gmx_thread_cond_wait( &(comm->comm_create_finish) ,
-                              &(comm->comm_create_mutex) );
+                              &(comm->comm_create_lock) );
     }
     else
     {
@@ -1579,7 +1658,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
         if (N>1)
         {
             gmx_thread_cond_wait( &(comm->comm_create_prep), 
-                                  &(comm->comm_create_mutex));
+                                  &(comm->comm_create_lock));
         }
 
         /* reset the state so that a new comm creating function can run */
@@ -1669,7 +1748,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
         sfree(spl);
     }
 
-    gmx_thread_mutex_unlock(&(comm->comm_create_mutex));    
+    gmx_thread_mutex_unlock(&(comm->comm_create_lock));
 
     return MPI_SUCCESS;    
 }
@@ -1912,7 +1991,11 @@ int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims, int *periods,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
+#ifdef TMPI_ATOMIC
+        gmx_spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
+#else
         gmx_thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
+#endif
     }
 
 
@@ -2034,7 +2117,11 @@ static void tMPI_Try_put_send_envelope(struct mpi_send_envelope_ *ev)
     fflush(0);
 #endif
 
-    gmx_thread_mutex_lock(&(ev->dest->envelope_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_lock(&(ev->dest->envelope_lock));
+#else
+    gmx_thread_mutex_lock(&(ev->dest->envelope_lock));
+#endif
     /* search for matching receive envelopes */
     for(i=0;i<ev->dest->N_evr;i++)
     {
@@ -2094,7 +2181,11 @@ static void tMPI_Try_put_send_envelope(struct mpi_send_envelope_ *ev)
         ev->counterpart->send_ready=TRUE;
     }
     /* now we let other threads do their thing */
-    gmx_thread_mutex_unlock(&(ev->dest->envelope_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_unlock(&(ev->dest->envelope_lock));
+#else
+    gmx_thread_mutex_unlock(&(ev->dest->envelope_lock));
+#endif
 }
 
 static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev)
@@ -2108,7 +2199,11 @@ static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev)
     fflush(0);
 #endif
 
-    gmx_thread_mutex_lock(&(ev->dest->envelope_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_lock(&(ev->dest->envelope_lock));
+#else
+    gmx_thread_mutex_lock(&(ev->dest->envelope_lock));
+#endif
     /* search for matching envelopes */
     for(i=0;i<ev->dest->N_evs;i++)
     {
@@ -2169,7 +2264,11 @@ static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev)
         ev->counterpart->recv_ready=TRUE;
     }
     /* we let other threads do their thing */
-    gmx_thread_mutex_unlock(&(ev->dest->envelope_mutex));
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_unlock(&(ev->dest->envelope_lock));
+#else
+    gmx_thread_mutex_unlock(&(ev->dest->envelope_lock));
+#endif
 }
 
 static void tMPI_Wait_recv(struct mpi_recv_envelope_ *ev)
@@ -2204,7 +2303,7 @@ static void tMPI_Wait_send(struct mpi_send_envelope_ *ev)
 }
 
 static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status, 
-                         bool try_lock)
+                          bool try_lock)
 {
     bool locked=FALSE;
     size_t transferred;
@@ -2219,13 +2318,23 @@ static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status,
     {
         if (try_lock)
         {
-            int ret=gmx_thread_mutex_trylock(&(evr->dest->xmit_mutex));
+#ifdef TMPI_ATOMIC
+            int ret=gmx_spinlock_trylock(&(evr->dest->xmit_lock));
+            if (ret!=0)
+                return MPI_SUCCESS;
+#else
+            int ret=gmx_thread_mutex_trylock(&(evr->dest->xmit_lock));
             if (ret==EBUSY)
                 return MPI_SUCCESS;
+#endif
         }
         else
         {
-            gmx_thread_mutex_lock(&(evr->dest->xmit_mutex));
+#ifdef TMPI_ATOMIC
+            gmx_spinlock_lock(&(evr->dest->xmit_lock));
+#else
+            gmx_thread_mutex_lock(&(evr->dest->xmit_lock));
+#endif
         }
         locked=TRUE;
     }
@@ -2287,7 +2396,13 @@ end:
     if (status)
         status->MPI_ERROR=rets;
     if (locked)
-        gmx_thread_mutex_unlock(&(evr->dest->xmit_mutex));
+    {
+#ifdef TMPI_ATOMIC
+        gmx_spinlock_unlock(&(evr->dest->xmit_lock));
+#else
+        gmx_thread_mutex_unlock(&(evr->dest->xmit_lock));
+#endif
+    }
     return ret;
 }
 
@@ -2308,13 +2423,23 @@ static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs,
     {
         if (try_lock)
         {
-            int ret=gmx_thread_mutex_trylock(&(evs->dest->xmit_mutex));
+#ifdef TMPI_ATOMIC
+            int ret=gmx_spinlock_trylock(&(evs->dest->xmit_lock));
+            if (ret!=0)
+                return MPI_SUCCESS;
+#else
+            int ret=gmx_thread_mutex_trylock(&(evs->dest->xmit_lock));
             if (ret==EBUSY)
                 return MPI_SUCCESS;
+#endif
         }
         else
         {
-            gmx_thread_mutex_lock(&(evs->dest->xmit_mutex));
+#ifdef TMPI_ATOMIC
+            gmx_spinlock_lock(&(evs->dest->xmit_lock));
+#else
+            gmx_thread_mutex_lock(&(evs->dest->xmit_lock));
+#endif
         }
         locked=TRUE;
     }
@@ -2375,7 +2500,13 @@ end:
     if (status)
         status->MPI_ERROR=ret;
     if (locked)
-        gmx_thread_mutex_unlock(&(evs->dest->xmit_mutex));
+    {
+#ifdef TMPI_ATOMIC
+        gmx_spinlock_unlock(&(evs->dest->xmit_lock));
+#else
+        gmx_thread_mutex_unlock(&(evs->dest->xmit_lock));
+#endif
+    }
     return ret;
 }
 
@@ -2895,7 +3026,13 @@ int MPI_Barrier(MPI_Comm comm)
     }
 
     if (comm->grp.N>1)
+    {
+#ifdef TMPI_ATOMIC
+        gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
+#else
         gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
+#endif
+    }
     return MPI_SUCCESS;
 }
 
@@ -3444,7 +3581,11 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     comm->recvbuf[myrank]=recvbuf;
     /* there's a barrier to wait for all the processes to put their 
        send/recvbuf in the global list */
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
+#else
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
+#endif
 
     /* check the buffers */
     for(i=0;i<N;i++)
@@ -3501,7 +3642,11 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                     memcpy(recvbuf, sendbuf, datatype->size*count);
             }
             /* split barrier */
+#ifdef TMPI_ATOMIC
+            gmx_spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
+#else
             gmx_thread_barrier_wait( &(comm->multicast_barrier[iteration]));
+#endif
         }
         else 
         {
@@ -3512,7 +3657,11 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             printf("%d: barrier waiting, iteration=%d\n", myrank,  iteration);
             fflush(0);
 #endif
+#ifdef TMPI_ATOMIC
+            gmx_spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
+#else
             gmx_thread_barrier_wait( &(comm->multicast_barrier[iteration]));
+#endif
             break;
         }
 #ifdef TMPI_DEBUG
@@ -3574,7 +3723,11 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     /* distribute rootbuf */
     rootbuf=(void*)comm->recvbuf[0];
 
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
+#else
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
+#endif
     /* and now we just copy things back inefficiently. We should make
        a better MPI_Scatter, and use that. */
     if (myrank != 0)
@@ -3585,7 +3738,11 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
         }
         memcpy(recvbuf, rootbuf, datatype->size*count );
     }
+#ifdef TMPI_ATOMIC
+    gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
+#else
     gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
+#endif
 
     return MPI_SUCCESS;
 }

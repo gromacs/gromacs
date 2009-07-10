@@ -1531,7 +1531,7 @@ gmx_spinlock_barrier_wait(gmx_spinlock_barrier_t *   barrier)
 {
   int    cycle;
   int    status;
-  int    i;
+  /*int    i;*/
   
   /* We don't need to lock or use atomic ops here, since the cycle index 
 	* cannot change until after the last thread has performed the check
@@ -1546,7 +1546,7 @@ gmx_spinlock_barrier_wait(gmx_spinlock_barrier_t *   barrier)
   /* Decrement the count atomically and check if it is zero.
 	* This will only be true for the last thread calling us.
 	*/
-  if( gmx_atomic_add_return( &(barrier->count), -1 ) == 0)
+  if( gmx_atomic_add_return( &(barrier->count), -1 ) <= 0)
   { 
 	gmx_atomic_set(&(barrier->count), barrier->threshold);
 	barrier->cycle = !barrier->cycle;

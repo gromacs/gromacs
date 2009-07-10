@@ -210,6 +210,7 @@ int mdrunner_threads(int nthreads,
     else
     {
 #ifndef GMX_THREADS
+        ret=-1;
         gmx_comm("Multiple threads requested but not compiled with threads");
 #else
         struct mdrunner_arglist mda;
@@ -241,6 +242,8 @@ int mdrunner_threads(int nthreads,
         mda.max_hours=max_hours;
         mda.Flags=Flags;
 
+        fprintf(stderr, "Starting %d threads\n",nthreads);
+        fflush(stderr);
         tMPI_Init_fn(nthreads, mdrunner_start_fn, (void*)(&mda) );
         ret=mda.ret;
 #endif
