@@ -90,7 +90,7 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 {
 	rvec *sendbuf;
 	rvec *recvbuf;
-	int i,ia;
+	int i,ia,cnt;
 	int sendsize,recvsize;
 	
 	sendbuf = vsitecomm->send_buf;
@@ -98,8 +98,9 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 	
 	sendsize = 3*vsitecomm->right_nvsite;
 	recvsize = 3*vsitecomm->left_nvsite;
-	
-	for(i=0;i<vsitecomm->right_nvsite;i++)
+
+	cnt = vsitecomm->right_nvsite;
+	for(i=0;i<cnt;i++)
 	{
 		ia = vsitecomm->right_vsite[i];
 		copy_rvec(x[ia],sendbuf[i]);
@@ -107,10 +108,10 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 
 	if(v!=NULL)
 	{
-		for(i=0;i<vsitecomm->right_nvsite;i++)
+		for(i=0;i<cnt;i++)
 		{
 			ia = vsitecomm->right_vsite[i];
-			copy_rvec(v[ia],sendbuf[i]);
+			copy_rvec(v[ia],sendbuf[cnt+i]);
 		}
 		sendsize *= 2;
 		recvsize *= 2;
@@ -119,7 +120,8 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 	/* Pulse coordinates and velocities of actual vsites to the right */
 	gmx_tx_rx_real(cr,GMX_RIGHT,(real *)sendbuf,sendsize,GMX_LEFT,(real *)recvbuf,recvsize);
 	
-	for(i=0;i<vsitecomm->left_nvsite;i++)
+	cnt = vsitecomm->left_nvsite;
+	for(i=0;i<cnt;i++)
 	{
 		ia = vsitecomm->left_vsite[i];
 		copy_rvec(recvbuf[i],x[ia]);
@@ -127,10 +129,10 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
 	
 	if(v!=NULL)
 	{
-		for(i=0;i<vsitecomm->left_nvsite;i++)
+		for(i=0;i<cnt;i++)
 		{
 			ia = vsitecomm->left_vsite[i];
-			copy_rvec(recvbuf[i],v[ia]);
+			copy_rvec(recvbuf[cnt+i],v[ia]);
 		}
 	}
 	/* All coordinates are in place on the respective home node now */
@@ -194,8 +196,16 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 	for(i=0;i<vsitecomm->left_nconstruct;i++)
 	{
 		ia = vsitecomm->left_construct[i];
-		copy_rvec(recvbuf[i],f[ia]);
+		rvec_inc(f[ia],recvbuf[i]);
 	}
+	
+	/* Zero non-local vsite forces */
+	for(i=0;i<vsitecomm->left_nvsite;i++)
+	{
+		ia = vsitecomm->left_vsite[i];
+		clear_rvec(f[ia]);
+	}
+	/* All forces are now on the home processors */
 }
 
 
@@ -1345,7 +1355,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
       }
     }
   }
-  
+	
   inc_nrnb(nrnb,eNR_VSITE2,   nd2     );
   inc_nrnb(nrnb,eNR_VSITE3,   nd3     );
   inc_nrnb(nrnb,eNR_VSITE3FD, nd3FD   );
