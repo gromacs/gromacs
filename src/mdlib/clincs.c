@@ -478,7 +478,11 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
         {
             /* Communicate the corrected non-local coordinates */
             dd_move_x_constraints(cr->dd,box,xp,NULL);
-        }
+        } 
+		else if (PARTDECOMP(cr))
+		{
+			pd_move_x_constraints(cr,xp,NULL);
+		}	
         
         for(b=0; b<ncons; b++)
         {

@@ -317,70 +317,22 @@ pd_move_x_constraints(t_commrec *  cr,
 	
 	rvec *     sendptr;
 	rvec *     recvptr;
-	int        leftnode,rightnode,thisnode;
+	int        thisnode;
 	int        i;
 	int        cnt;
 	int        sendcnt,recvcnt;
-	MPI_Status stat;
 	
 	pd  = cr->pd;
 	pdc = pd->constraints;
 	
 	thisnode  = cr->nodeid;
-	leftnode  = (thisnode + cr->nnodes - 1) % cr->nnodes;
-	rightnode = (thisnode + 1) % cr->nnodes;
-
-#if 1
+	
+	/* First pulse to right */
+	
 	recvcnt = 3*(pd->index[thisnode]-pdc->left_range_receive);
 	sendcnt = 3*(cr->pd->index[thisnode+1]-cr->pd->constraints->right_range_send);
 
-	recvptr = x0 + pdc->left_range_receive;
-	sendptr = x0 + pdc->right_range_send;
-	
-	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,rightnode,0,
-				 recvptr,recvcnt,GMX_MPI_REAL,leftnode, 0,
-				 cr->mpi_comm_mygroup,&stat);
-
-	if(x1 != NULL)
-	{
-		recvptr = x1 + pdc->left_range_receive;
-		sendptr = x1 + pdc->right_range_send;
-		
-		MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,rightnode,0,
-					 recvptr,recvcnt,GMX_MPI_REAL,leftnode, 0,
-					 cr->mpi_comm_mygroup,&stat);
-	}
-	
-	sendcnt = 3*(pdc->left_range_send-pd->index[thisnode]);	
-	recvcnt = 3*(pdc->right_range_receive-pd->index[thisnode+1]);
-	sendptr = x0 + pd->index[thisnode];
-	recvptr = x0 + pd->index[thisnode+1];
-
-	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,leftnode, 0,
-				 recvptr,recvcnt,GMX_MPI_REAL,rightnode,0,
-				 cr->mpi_comm_mygroup,&stat);
-
-	if(x1!= NULL)
-	{
-		sendptr = x1 + pd->index[thisnode];
-		recvptr = x1 + pd->index[thisnode+1];
-		
-		MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,leftnode, 0,
-					 recvptr,recvcnt,GMX_MPI_REAL,rightnode,0,
-					 cr->mpi_comm_mygroup,&stat);
-	}
-	
-#else
-	/* First pulse to the right, i.e. send to right and receive from left */
-	recvcnt = 3*(pd->index[thisnode]-pdc->left_range_receive);
-	sendcnt = 3*(cr->pd->index[thisnode+1]-cr->pd->constraints->right_range_send);
-	
-	if(x1 == NULL)
-	{
-		recvptr = x0 + pdc->left_range_receive;
-		sendptr = x0 + pdc->right_range_send;
-	}
-	else
+	if(x1!=NULL)
 	{
 		/* Assemble temporary array with both x0 & x1 */
 		recvptr = pdc->recvbuf;
@@ -398,25 +350,19 @@ pd_move_x_constraints(t_commrec *  cr,
 		recvcnt *= 2;
 		sendcnt *= 2;		
 	}
-	
-	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,rightnode,0,
-				 recvptr,recvcnt,GMX_MPI_REAL,leftnode, 0,
-				 cr->mpi_comm_mygroup,&stat);
-	
-	/* Copy from buffer below if necessary, while preparing left pulse */
-
-	
-	sendcnt = 3*(pdc->left_range_send-pd->index[thisnode]);	
-	recvcnt = 3*(pdc->right_range_receive-pd->index[thisnode+1]);
-	
-	if(x1 == NULL)
-	{
-		sendptr = x0 + pd->index[thisnode];
-		recvptr = x0 + pd->index[thisnode+1];
-	}
 	else
 	{
-		/* First copy received data back into x0 & x1 */
+		recvptr = x0 + pdc->left_range_receive;
+		sendptr = x0 + pdc->right_range_send;
+	}
+		
+	gmx_tx_rx_real(cr,
+				   GMX_RIGHT,(real *)sendptr,sendcnt,
+				   GMX_LEFT, (real *)recvptr,recvcnt);
+				
+	if(x1 != NULL)
+	{
+		/* copy back to x0/x1 */
 		cnt = 0;
 		for(i=pdc->left_range_receive;i<pd->index[thisnode];i++)
 		{
@@ -426,10 +372,14 @@ pd_move_x_constraints(t_commrec *  cr,
 		{
 			copy_rvec(recvptr[cnt++],x1[i]);
 		}
+	}
+	
+	/* And pulse to left */
+	sendcnt = 3*(pdc->left_range_send-pd->index[thisnode]);	
+	recvcnt = 3*(pdc->right_range_receive-pd->index[thisnode+1]);
 
-		/* Then copy new data for pulse to the left into buffers */
-		
-		
+	if(x1 != NULL)
+	{	
 		cnt = 0;
 		for(i=cr->pd->index[thisnode];i<pdc->left_range_send;i++)
 		{
@@ -442,11 +392,16 @@ pd_move_x_constraints(t_commrec *  cr,
 		recvcnt *= 2;
 		sendcnt *= 2;		
 	}
+	else
+	{
+		sendptr = x0 + pd->index[thisnode];
+		recvptr = x0 + pd->index[thisnode+1];
+	}
 	
-	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,leftnode, 0,
-				 recvptr,recvcnt,GMX_MPI_REAL,rightnode,0,
-				 cr->mpi_comm_mygroup,&stat);
-	
+	gmx_tx_rx_real(cr,
+				   GMX_LEFT ,(real *)sendptr,sendcnt,
+				   GMX_RIGHT,(real *)recvptr,recvcnt);
+
 	/* Final copy back from buffers */
 	if(x1 != NULL)
 	{
@@ -461,8 +416,6 @@ pd_move_x_constraints(t_commrec *  cr,
 			copy_rvec(recvptr[cnt++],x1[i]);
 		}
 	}		
-#endif
-	
 #endif
 }
 
