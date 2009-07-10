@@ -518,7 +518,8 @@ static void set_grpfnm(t_filenm *fnm,const char *name,bool bCanNotOverride)
   add_filenm(fnm, buf);
 }
 
-static void set_filenm(t_filenm *fnm,const char *name,bool bCanNotOverride)
+static void set_filenm(t_filenm *fnm,const char *name,bool bCanNotOverride,
+                       bool bReadNode)
 {
   /* Set the default filename, extension and option for those fields that 
    * are not already set. An extension is added if not present, if fn = NULL
@@ -526,6 +527,11 @@ static void set_filenm(t_filenm *fnm,const char *name,bool bCanNotOverride)
    */
   char buf[256];
   int  i,len,extlen;
+  
+  if ((fnm->flag & ffREAD) && !bReadNode)
+  {
+      return;
+  }
 
   if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
     gmx_fatal(FARGS,"file type out of range (%d)",fnm->ftp);
@@ -556,17 +562,17 @@ static void set_filenm(t_filenm *fnm,const char *name,bool bCanNotOverride)
   }
 }
 
-static void set_filenms(int nf,t_filenm fnm[])
+static void set_filenms(int nf,t_filenm fnm[],bool bReadNode)
 {
   int i;
 
   for(i=0; (i<nf); i++)
     if (!IS_SET(fnm[i]))
-      set_filenm(&(fnm[i]),fnm[i].fn,FALSE);
+      set_filenm(&(fnm[i]),fnm[i].fn,FALSE,bReadNode);
 }
 
 void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
-		     bool bKeep)
+		     bool bKeep,bool bReadNode)
 {
   int  i,j;
   bool *bRemove;
@@ -587,10 +593,10 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	  i++;
 	  /* check if we are out of arguments for this option */
 	  if ( (i >= *argc) || (argv[i][0] == '-') )
-	    set_filenm(&fnm[j],fnm[j].fn,FALSE);
+	    set_filenm(&fnm[j],fnm[j].fn,FALSE,bReadNode);
 	  /* sweep up all file arguments for this option */
 	  while ((i < *argc) && (argv[i][0] != '-')) {
-	    set_filenm(&fnm[j],argv[i],TRUE);
+	    set_filenm(&fnm[j],argv[i],TRUE,bReadNode);
 	    bRemove[i]=TRUE;
 	    i++;
 	    /* only repeat for 'multiple' file options: */
@@ -617,7 +623,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
     sfree(bRemove);
   }
   
-  set_filenms(nf,fnm);
+  set_filenms(nf,fnm,bReadNode);
 	
 }
 
@@ -633,6 +639,11 @@ char *opt2fn(const char *opt,int nfile,t_filenm fnm[])
   fprintf(stderr,"No option %s\n",opt);
   
   return NULL;
+}
+
+char *opt2fn_master(const char *opt, int nfile, t_filenm fnm[], t_commrec *cr ) 
+{
+    return SIMMASTER(cr)?opt2fn(opt,nfile,fnm):NULL;
 }
 
 int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[])

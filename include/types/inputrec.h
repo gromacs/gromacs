@@ -32,9 +32,16 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _inputrec_h_
+#define _inputrec_h_
+
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+
+#include "types/simple.h"
 
 typedef struct {
   int  n;		/* Number of terms				*/
@@ -268,3 +275,5 @@ typedef struct {
 #define PRESERVE_SHAPE(ir) ((ir).epc != epcNO && (ir).deform[XX][XX] == 0 && ((ir).epct == epctISOTROPIC || (ir).epct == epctSEMIISOTROPIC))
 
 #define NEED_MUTOT(ir) (((ir).coulombtype==eelEWALD || EEL_PME((ir).coulombtype)) && ((ir).ewald_geometry==eewg3DC || (ir).epsilon_surface!=0))
+
+#endif

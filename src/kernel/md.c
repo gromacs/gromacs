@@ -180,7 +180,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
         
         snew(state,1);
-        init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
+        init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
                       inputrec,mtop,state,list);
         
     }
@@ -251,9 +251,9 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         /* Check if checkpoint file exists before doing continuation.
          * This way we can use identical input options for the first and subsequent runs...
          */
-        if( gmx_fexist(opt2fn("-cpi",nfile,fnm)) )
+        if( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
         {
-            load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
+            load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
                             (Flags & MD_APPENDFILES));
@@ -359,9 +359,16 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         
         /* Initiate forcerecord */
         fr = mk_forcerec();
+        
         init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-                      opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
+                      opt2fn("-table",nfile,fnm),
+                      opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
+                      
+        /* version for PCA_NOT_READ_NODE (see md.c) */
+        /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
+                              "nofile","nofile","nofile",FALSE,pforce);
+        */        
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
         
         /* Initialize QM-MM */
@@ -880,7 +887,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initialize constraints */
   if (constr) {
     if (!DOMAINDECOMP(cr))
-      set_constraints(constr,top,ir,mdatoms,NULL);
+		set_constraints(constr,top,ir,mdatoms,cr);
   }
 
   /* Check whether we have to GCT stuff */

@@ -762,7 +762,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         set_default_file_name(deffnm);
     
     /* Parse the file args */
-    parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
+    parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS),!FF(PCA_NOT_READ_NODE));
     
     /* Open the debug file */
     if (debug_level > 0) {

@@ -303,6 +303,8 @@ extern bool bPrintXvgrCodes(void);
 /* does something for non-master mdrun nodes */
 #define PCA_BE_NICE        (1<<13)
 /* Default to low priority, unless configured with --disable-nice */
+#define PCA_NOT_READ_NODE  (1<<16)
+/* Is this node not reading: for parallel all nodes but the master */
 
 extern int iscan(int argc,char *argv[],int *i);
 /* Scan an int from the argument at *i. If the argument length

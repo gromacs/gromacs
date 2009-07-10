@@ -394,7 +394,20 @@ int main(int argc,char *argv[])
   /* Only run niced when not running in parallel */
   if (!gmx_parallel_env)
     PCA_Flags |= PCA_BE_NICE;
-
+  
+  
+  /* Comment this in to do fexist calls only on master
+   * works not with rerun or tables at the moment
+   * also comment out the version of init_forcerec in md.c 
+   * with NULL instead of opt2fn
+   */
+  /*
+  if (!MASTER(cr))
+  {
+      PCA_Flags |= PCA_NOT_READ_NODE;
+  }
+  */
+  
   parse_common_args(&argc,argv,PCA_Flags,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
     
@@ -418,7 +431,7 @@ int main(int argc,char *argv[])
   sim_part = 1;
   if(opt2bSet("-cpi",NFILE,fnm))
   {
-	  sim_part = read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm)) + 1;
+	  sim_part = read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),cr) + 1;
 	  /* sim_part will now be 1 if no checkpoint file was found */
 	  if (sim_part==1 && MASTER(cr))
 	  {

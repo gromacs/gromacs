@@ -1569,7 +1569,7 @@ void read_tpr_pullxf_files(char **fnTprs,char **fnPull,int nfiles,
     real mintmp,maxtmp;
 
 
-    printf("Reading %d tpr and pullf files\n",nfiles/2);
+    printf("Reading %d tpr and pullf files\n",nfiles);
 
     /* min and max not given? */
     if (opt->bAuto)

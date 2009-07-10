@@ -241,8 +241,8 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estV:       nblock_abc(cr,state->natoms,state->v); break;
       case estSDX:     nblock_abc(cr,state->natoms,state->sd_X); break;
       case estCGP:     nblock_abc(cr,state->natoms,state->cg_p); break;
-      case estLD_RNG:  if (state->nrngi == 1) nblock_abc(cr,state->natoms,state->ld_rng); break;
-      case estLD_RNGI: if (state->nrngi == 1) nblock_abc(cr,state->natoms,state->ld_rngi); break;
+	  case estLD_RNG:  if(state->nrngi == 1) nblock_abc(cr,state->nrng,state->ld_rng); break;
+	  case estLD_RNGI: if(state->nrngi == 1) nblock_abc(cr,state->nrngi,state->ld_rngi); break;
       case estDISRE_INITF: block_bc(cr,state->hist.disre_initf); break;
       case estDISRE_RM3TAV:
 	block_bc(cr,state->hist.ndisrepairs);

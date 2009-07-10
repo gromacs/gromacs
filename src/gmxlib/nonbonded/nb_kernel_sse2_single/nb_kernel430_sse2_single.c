@@ -22,6 +22,10 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
+
 /* to extract single integers from a __m128i datatype */
 #define _mm_extract_epi32(x, imm) \
 _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
@@ -76,7 +80,9 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	int			  offset,nti;
 	int           jnr,jnr2,jnr3,jnr4,j3,j23,j33,j43;
 	int           tj,tj2,tj3,tj4;
-	
+	gmx_gbdata_t *gbdata;
+	float *        gpol;
+
 	__m128   iq,qq,q,isai;
 	__m128   ix,iy,iz;
 	__m128   jx,jy,jz;
@@ -112,6 +118,9 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	mask0011 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
 	mask0111 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
 
+	gbdata     = (gmx_gbdata_t *)work;
+	gpol       = gbdata->gpol;
+
 	/* Keep the compiler happy */
 	Vvdwtmp = _mm_setzero_ps();
 	dvdatmp = _mm_setzero_ps();
@@ -130,7 +139,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 	nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
+    facel      = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
@@ -961,7 +970,7 @@ void nb_kernel430_sse2_single(int *           p_nri,
 		vgbtot  = _mm_add_ss(vgbtot,vgb);
 		
 		_mm_store_ss(&vgbt,vgbtot);
-		work[ggid] = work[ggid] + vgbt;
+		gpol[ggid] = gpol[ggid] + vgbt;
     }
 	
 	*outeriter       = nri;            

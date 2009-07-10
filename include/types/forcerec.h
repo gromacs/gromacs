@@ -267,6 +267,7 @@ typedef struct {
   /* Generalized born implicit solvent */
   bool bGB;
   /* Generalized born stuff */
+  real gb_epsilon_solvent;
   /* Table data for GB */
   t_forcetable gbtab;
   /* VdW radius for each atomtype (dim is thus ntype) */

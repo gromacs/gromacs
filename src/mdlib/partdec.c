@@ -11,7 +11,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -51,23 +51,39 @@
 #include "gmx_random.h"
 #include "mtop_util.h"
 #include "mvdata.h"
+#include "vec.h"
+
+typedef struct gmx_partdec_constraint
+{
+	int                  left_range_receive;
+	int                  right_range_receive;
+	int                  left_range_send;
+	int                  right_range_send;
+	int                  nconstraints;
+	int *                nlocalatoms;
+	rvec *               sendbuf;
+	rvec *               recvbuf;
+} 
+gmx_partdec_constraint_t;
+
 
 typedef struct gmx_partdec {
   int  neighbor[2];             /* The nodeids of left and right neighb */
   int  *cgindex;                /* The charge group boundaries,         */
-				/* size nnodes+1,                       */
+	                            /* size nnodes+1,                       */
                                 /* only allocated with particle decomp. */
   int  *index;                  /* The home particle boundaries,        */
-				/* size nnodes+1,                       */
+				                /* size nnodes+1,                       */
                                 /* only allocated with particle decomp. */
-  int  shift,bshift;		/* Coordinates are shifted left for     */
+  int  shift,bshift;		    /* Coordinates are shifted left for     */
                                 /* 'shift' systolic pulses, and right   */
-				/* for 'bshift' pulses. Forces are      */
-				/* shifted right for 'shift' pulses     */
-				/* and left for 'bshift' pulses         */
-				/* This way is not necessary to shift   */
-				/* the coordinates over the entire ring */
+				                /* for 'bshift' pulses. Forces are      */
+				                /* shifted right for 'shift' pulses     */
+				                /* and left for 'bshift' pulses         */
+				                /* This way is not necessary to shift   */
+				                /* the coordinates over the entire ring */
   rvec *vbuf;                   /* Buffer for summing the forces        */
+ gmx_partdec_constraint_t *     constraints;	
 } gmx_partdec_t;
 
 #ifdef GMX_MPI
@@ -164,7 +180,7 @@ void gmx_tx_rx_real(const t_commrec *cr,
 
   send_nodeid = cr->pd->neighbor[send_dir];
   recv_nodeid = cr->pd->neighbor[recv_dir];
-
+		   
 #ifdef GMX_DOUBLE
 #define mpi_type MPI_DOUBLE
 #else
@@ -177,7 +193,31 @@ void gmx_tx_rx_real(const t_commrec *cr,
 #undef mpi_type
 #endif
 }
-		 
+
+
+void gmx_tx_rx_void(const t_commrec *cr,
+					int send_dir,void *send_buf,int send_bufsize,
+					int recv_dir,void *recv_buf,int recv_bufsize)
+{
+#ifndef GMX_MPI
+	gmx_call("gmx_tx_rx_void");
+#else
+	int send_nodeid,recv_nodeid;
+	int tx_tag = 0,rx_tag = 0;
+	MPI_Status stat;
+	
+	send_nodeid = cr->pd->neighbor[send_dir];
+	recv_nodeid = cr->pd->neighbor[recv_dir];
+	
+	
+	MPI_Sendrecv(send_buf,send_bufsize,MPI_BYTE,RANK(cr,send_nodeid),tx_tag,
+				 recv_buf,recv_bufsize,MPI_BYTE,RANK(cr,recv_nodeid),rx_tag,
+				 cr->mpi_comm_mygroup,&stat);
+
+#endif
+}
+
+
 void gmx_wait(int dir_send,int dir_recv)
 {
 #ifndef GMX_MPI
@@ -229,6 +269,201 @@ void pd_at_range(const t_commrec *cr,int *at0,int *at1)
 {
   *at0 = cr->pd->index[cr->nodeid];
   *at1 = cr->pd->index[cr->nodeid+1];
+}
+
+void
+pd_get_constraint_range(gmx_partdec_p_t pd,int *start,int *natoms)
+{
+	*start  = pd->constraints->left_range_receive;
+	*natoms = pd->constraints->right_range_receive-pd->constraints->left_range_receive;
+}
+
+int *
+pd_constraints_nlocalatoms(gmx_partdec_p_t pd)
+{
+	int *rc;
+	
+	if(NULL != pd && NULL != pd->constraints)
+	{
+		rc = pd->constraints->nlocalatoms;
+	}
+	else
+	{
+		rc = NULL;
+	}
+	return rc;
+}
+
+
+
+
+/* This routine is used to communicate the non-home-atoms needed for constrains.
+ * We have already calculated this range of atoms during setup, and stored in the
+ * partdec constraints structure.
+ *
+ * When called, we send/receive left_range_send/receive atoms to our left (lower) 
+ * node neighbor, and similar to the right (higher) node.
+ *
+ * This has not been tested for periodic molecules...
+ */
+void
+pd_move_x_constraints(t_commrec *  cr,
+					  rvec *       x0,
+					  rvec *       x1)
+{
+#ifdef GMX_MPI
+	gmx_partdec_t *pd;
+	gmx_partdec_constraint_t *pdc;
+	
+	rvec *     sendptr;
+	rvec *     recvptr;
+	int        leftnode,rightnode,thisnode;
+	int        i;
+	int        cnt;
+	int        sendcnt,recvcnt;
+	MPI_Status stat;
+	
+	pd  = cr->pd;
+	pdc = pd->constraints;
+	
+	thisnode  = cr->nodeid;
+	leftnode  = (thisnode + cr->nnodes - 1) % cr->nnodes;
+	rightnode = (thisnode + 1) % cr->nnodes;
+
+#if 1
+	recvcnt = 3*(pd->index[thisnode]-pdc->left_range_receive);
+	sendcnt = 3*(cr->pd->index[thisnode+1]-cr->pd->constraints->right_range_send);
+
+	recvptr = x0 + pdc->left_range_receive;
+	sendptr = x0 + pdc->right_range_send;
+	
+	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,rightnode,0,
+				 recvptr,recvcnt,GMX_MPI_REAL,leftnode, 0,
+				 cr->mpi_comm_mygroup,&stat);
+
+	if(x1 != NULL)
+	{
+		recvptr = x1 + pdc->left_range_receive;
+		sendptr = x1 + pdc->right_range_send;
+		
+		MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,rightnode,0,
+					 recvptr,recvcnt,GMX_MPI_REAL,leftnode, 0,
+					 cr->mpi_comm_mygroup,&stat);
+	}
+	
+	sendcnt = 3*(pdc->left_range_send-pd->index[thisnode]);	
+	recvcnt = 3*(pdc->right_range_receive-pd->index[thisnode+1]);
+	sendptr = x0 + pd->index[thisnode];
+	recvptr = x0 + pd->index[thisnode+1];
+
+	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,leftnode, 0,
+				 recvptr,recvcnt,GMX_MPI_REAL,rightnode,0,
+				 cr->mpi_comm_mygroup,&stat);
+
+	if(x1!= NULL)
+	{
+		sendptr = x1 + pd->index[thisnode];
+		recvptr = x1 + pd->index[thisnode+1];
+		
+		MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,leftnode, 0,
+					 recvptr,recvcnt,GMX_MPI_REAL,rightnode,0,
+					 cr->mpi_comm_mygroup,&stat);
+	}
+	
+#else
+	/* First pulse to the right, i.e. send to right and receive from left */
+	recvcnt = 3*(pd->index[thisnode]-pdc->left_range_receive);
+	sendcnt = 3*(cr->pd->index[thisnode+1]-cr->pd->constraints->right_range_send);
+	
+	if(x1 == NULL)
+	{
+		recvptr = x0 + pdc->left_range_receive;
+		sendptr = x0 + pdc->right_range_send;
+	}
+	else
+	{
+		/* Assemble temporary array with both x0 & x1 */
+		recvptr = pdc->recvbuf;
+		sendptr = pdc->sendbuf;
+		
+		cnt = 0;
+		for(i=pdc->right_range_send;i<pd->index[thisnode+1];i++)
+		{
+			copy_rvec(x0[i],sendptr[cnt++]);
+		}
+		for(i=pdc->right_range_send;i<pd->index[thisnode+1];i++)
+		{
+			copy_rvec(x1[i],sendptr[cnt++]);
+		}
+		recvcnt *= 2;
+		sendcnt *= 2;		
+	}
+	
+	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,rightnode,0,
+				 recvptr,recvcnt,GMX_MPI_REAL,leftnode, 0,
+				 cr->mpi_comm_mygroup,&stat);
+	
+	/* Copy from buffer below if necessary, while preparing left pulse */
+
+	
+	sendcnt = 3*(pdc->left_range_send-pd->index[thisnode]);	
+	recvcnt = 3*(pdc->right_range_receive-pd->index[thisnode+1]);
+	
+	if(x1 == NULL)
+	{
+		sendptr = x0 + pd->index[thisnode];
+		recvptr = x0 + pd->index[thisnode+1];
+	}
+	else
+	{
+		/* First copy received data back into x0 & x1 */
+		cnt = 0;
+		for(i=pdc->left_range_receive;i<pd->index[thisnode];i++)
+		{
+			copy_rvec(recvptr[cnt++],x0[i]);
+		}
+		for(i=pdc->left_range_receive;i<pd->index[thisnode];i++)
+		{
+			copy_rvec(recvptr[cnt++],x1[i]);
+		}
+
+		/* Then copy new data for pulse to the left into buffers */
+		
+		
+		cnt = 0;
+		for(i=cr->pd->index[thisnode];i<pdc->left_range_send;i++)
+		{
+			copy_rvec(x0[i],sendptr[cnt++]);
+		}
+		for(i=cr->pd->index[thisnode];i<pdc->left_range_send;i++)
+		{
+			copy_rvec(x1[i],sendptr[cnt++]);
+		}
+		recvcnt *= 2;
+		sendcnt *= 2;		
+	}
+	
+	MPI_Sendrecv(sendptr,sendcnt,GMX_MPI_REAL,leftnode, 0,
+				 recvptr,recvcnt,GMX_MPI_REAL,rightnode,0,
+				 cr->mpi_comm_mygroup,&stat);
+	
+	/* Final copy back from buffers */
+	if(x1 != NULL)
+	{
+		/* First copy received data back into x0 & x1 */
+		cnt = 0;
+		for(i=pd->index[thisnode+1];i<pdc->right_range_receive;i++)
+		{
+			copy_rvec(recvptr[cnt++],x0[i]);
+		}
+		for(i=pd->index[thisnode+1];i<pdc->right_range_receive;i++)
+		{
+			copy_rvec(recvptr[cnt++],x1[i]);
+		}
+	}		
+#endif
+	
+#endif
 }
 
 static int home_cpu(int nnodes,gmx_partdec_t *pd,int atomid)
@@ -297,12 +532,74 @@ static void calc_nsbshift(FILE *fp,int nnodes,gmx_partdec_t *pd,t_idef *idef)
 	    pd->shift,pd->bshift);
 }
 
-static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
-			 t_idef *idef)
-{
-  int  i;
-  gmx_partdec_t *pd;
 
+static void
+init_partdec_constraint(t_commrec *cr,
+                        t_idef *   idef,
+						int *left_range, 
+						int *right_range)
+{
+	gmx_partdec_t *            pd = cr->pd;
+	gmx_partdec_constraint_t *pdc;
+	int i,cnt,k;
+	int ai,aj,nodei,nodej;
+	int nratoms;
+	int nodeid;
+	
+	snew(pdc,1);
+	cr->pd->constraints = pdc;
+
+	
+	/* Who am I? */
+    nodeid = cr->nodeid;
+	
+    /* Setup LINCS communication ranges */
+    pdc->left_range_receive   = left_range[nodeid];
+    pdc->right_range_receive  = right_range[nodeid]+1;
+    pdc->left_range_send      = (nodeid > 0) ? right_range[nodeid-1]+1 : 0;
+    pdc->right_range_send     = (nodeid < cr->nnodes-1) ? left_range[nodeid+1] : pd->index[cr->nnodes];
+	
+	snew(pdc->nlocalatoms,idef->il[F_CONSTR].nr);
+	nratoms = interaction_function[F_CONSTR].nratoms;
+
+	for(i=0,cnt=0;i<idef->il[F_CONSTR].nr;i+=nratoms+1,cnt++)
+	{
+		ai = idef->il[F_CONSTR].iatoms[i+1];
+		aj = idef->il[F_CONSTR].iatoms[i+2];
+		nodei = 0;
+		while(ai>=pd->index[nodei+1]) 
+		{
+			nodei++;
+		}
+		nodej = 0;
+		while(aj>=pd->index[nodej+1]) 
+		{
+			nodej++;
+		}
+		pdc->nlocalatoms[cnt] = 0;
+		if(nodei==nodeid)
+		{
+			pdc->nlocalatoms[cnt]++;
+		}
+		if(nodej==nodeid)
+		{
+			pdc->nlocalatoms[cnt]++;
+		}
+	}
+	pdc->nconstraints = cnt;
+	
+	/* This should really be calculated, but 1000 is a _lot_ for overlapping constraints... */
+	snew(pdc->sendbuf,1000);
+	snew(pdc->recvbuf,1000);
+	
+}
+
+static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
+						 t_idef *idef)
+{
+  int  i,nodeid;
+  gmx_partdec_t *pd;
+	
   snew(pd,1);
   cr->pd = pd;
 
@@ -328,6 +625,7 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
      * for summing the forces over the nodes.
      */
     snew(pd->vbuf,cgs->index[cgs->nr]);
+    pd->constraints = NULL;
   }
 }
 
@@ -422,7 +720,9 @@ gmx_localtop_t *split_system(FILE *log,
   int    *multinr_cgs,**multinr_nre;
   char   *cap_env;
   gmx_localtop_t *top;
-
+  int    *left_range;
+  int    *right_range;
+	
   /* Time to setup the division of charge groups over processors */
   npp = cr->nnodes-cr->npmenodes;
   snew(capacity,npp);
@@ -458,16 +758,26 @@ gmx_localtop_t *split_system(FILE *log,
   for(i=0; i<F_NRE; i++)
     snew(multinr_nre[i],npp);
   
+
+  snew(left_range,cr->nnodes);
+  snew(right_range,cr->nnodes);
+	
   /* This computes which entities can be placed on processors */
-  split_top(log,npp,top,&mtop->mols,capacity,multinr_cgs,multinr_nre);
+  split_top(log,npp,top,inputrec,&mtop->mols,capacity,multinr_cgs,multinr_nre,left_range,right_range);
+	
   sfree(capacity);
   init_partdec(log,cr,&(top->cgs),multinr_cgs,&(top->idef));
-
+	
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/
   
   select_my_idef(log,&(top->idef),multinr_nre,cr);
-  
+
+  if(top->idef.il[F_CONSTR].nr>0)
+  {
+	  init_partdec_constraint(cr,&(top->idef),left_range,right_range);
+  }
+
   if (log)
     pr_idef_division(log,&(top->idef),npp,multinr_nre);
 
@@ -475,7 +785,10 @@ gmx_localtop_t *split_system(FILE *log,
     sfree(multinr_nre[i]);
   sfree(multinr_nre);
   sfree(multinr_cgs);
-  
+
+  sfree(left_range);
+  sfree(right_range);
+	
   if (log)
     print_partdec(log,"Workload division",cr->nnodes,cr->pd);
 
@@ -516,133 +829,122 @@ static void create_vsitelist(int nindex, int *list,
   *listptr=newlist;
 }
   
+static void
+add_to_vsitelist(int **list, int *nitem, int *nalloc,int newitem)
+{
+	int  i,idx;
+	bool found;
+	
+	found = FALSE;
+	idx = *nitem;
+	for(i=0; i<idx && !found;i++)
+	{
+		found = (newitem ==(*list)[i]);
+	}
+	if(!found)
+	{
+		*nalloc+=100;
+		srenew(*list,*nalloc);
+		(*list)[idx++] = newitem;
+		*nitem = idx;
+	}
+}
 
 bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
-			   t_comm_vsites *vsitecomm)
+						   t_comm_vsites *vsitecomm)
 {
-  int i,inr,j,k,ftype;
-  int minidx,minhome,ihome;
-  int nra,nrd,nconstr;
-  bool found=FALSE;
-  t_iatom   *ia;
-  int *idxprevvsite;
-  int *idxnextvsite;
-  int *idxprevconstr;
-  int *idxnextconstr;
-  int  nprevvsite=0,nnextvsite=0;
-  int  nprevconstr=0,nnextconstr=0;
-  gmx_partdec_t *pd;
-
-#define BUFLEN 100
-
-  pd = cr->pd;
-
-  snew(idxprevvsite,BUFLEN);
-  snew(idxnextvsite,BUFLEN);
-  snew(idxprevconstr,BUFLEN);
-  snew(idxnextconstr,BUFLEN);  
-
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_VSITE) {
-      nra    = interaction_function[ftype].nratoms;
-      nrd    = idef->il[ftype].nr;
-      ia     = idef->il[ftype].iatoms;
-      
-      for(i=0; (i<nrd); ) {
+	int i,j,ftype;
+	int nra;
+	bool do_comm;
+	t_iatom   *ia;
+	gmx_partdec_t *pd;
+	int  ivsite,iconstruct;
+	int  i0,i1;
+	int  nalloc_right_vsite,nalloc_right_construct;
+	int  sendbuf[2],recvbuf[2];
+	int  bufsize,leftbuf,rightbuf;
 	
-	/* The vsite and constructing atoms */
-	if (ftype==F_VSITE2)
-	  nconstr=2;
-	else if(ftype==F_VSITE4FDN || ftype==F_VSITE4FD)
-	  nconstr=4;
-	else
-	  nconstr=3;
+	pd = cr->pd;
 	
-	minidx=ia[1];
-	for(j=2;j<nconstr+2;j++) 
-	  if(ia[j]<minidx)
-	    minidx=ia[j];
-
-	minhome=0;
-	while(minidx>=(pd->index[minhome+1]))
-          minhome++;
-
-	if(minhome==cr->nodeid) {
-	  /* This is my vsite interaction - but is the vsite local?
-	   * If not, he must be on the next node (error otherwise)
-	   * (but we do account for the cyclic ring structure)
-	   */
-	  if(ia[1]<pd->index[cr->nodeid] ||
-	     ia[1]>=(pd->index[cr->nodeid+1])) {
-	    if((nnextvsite%BUFLEN)==0 && nnextvsite>0)
-	      srenew(idxnextvsite,nnextvsite+BUFLEN);
-	    idxnextvsite[nnextvsite++]=ia[1];
-	    found=TRUE;
-	  }
-	  for(j=2;j<nconstr+2;j++) {
-	    inr=ia[j];
-	    ihome=0;
-	    while(inr>=(pd->index[ihome+1]))
-	      ihome++;
-	    if( ihome>(cr->nodeid+1))
-	      gmx_fatal(FARGS,"Vsite particle %d and its constructing"
-			  " atoms are not on the same or adjacent\n" 
-			  " nodes. This is necessary to avoid a lot\n"
-			  " of extra communication. The easiest way"
-			  " to ensure this is to place vsites\n"
-			  " close to the constructing atoms.\n"
-			  " Sorry, but you will have to rework your topology!\n",
-			  ia[1]);
-	    else if(ihome==((cr->nodeid+1)%cr->nnodes)) {
-	      if((nnextconstr%BUFLEN)==0 && nnextconstr>0)
-		srenew(idxnextconstr,nnextconstr+BUFLEN);
-	      idxnextconstr[nnextconstr++]=ia[j];
-	      found=TRUE;
-	    }
-	  }
-	} else if(minhome==((cr->nodeid-1+cr->nnodes)%cr->nnodes)) {
-	  /* Not our vsite, but we might be involved */
-	  if(ia[1]>=pd->index[cr->nodeid] &&
-	     (ia[1]<(pd->index[cr->nodeid+1]))) {
-	    if((nprevvsite%BUFLEN)==0 && nprevvsite>0)
-	      srenew(idxprevvsite,nprevvsite+BUFLEN);
-	    idxprevvsite[nprevvsite++]=ia[1];
-	    found=TRUE;
-	  }
-	  for(j=2;j<nconstr+2;j++) {
-	    inr=ia[j];
-	    if(ia[j]>=pd->index[cr->nodeid] &&
-	       (ia[1]<(pd->index[cr->nodeid+1]))) {
-	      if((nprevconstr%BUFLEN)==0 && nprevconstr>0)
-		srenew(idxprevconstr,nprevconstr+BUFLEN);
-	      idxprevconstr[nprevconstr++]=ia[j];
-	      found=TRUE;
-	    }
-	  }
-	}
-	/* Increment loop variables */
-	i  += nra+1;
-	ia += nra+1;
-      }
+	i0 = pd->index[cr->nodeid];
+	i1 = pd->index[cr->nodeid+1];
+	
+	nalloc_right_vsite     = 0;
+	nalloc_right_construct = 0;
+	vsitecomm->right_vsite      = NULL;	
+	vsitecomm->right_nvsite     = 0;
+	vsitecomm->right_construct  = NULL;	
+	vsitecomm->right_nconstruct = 0;
+	
+	for(ftype=0; (ftype<F_NRE); ftype++) 
+	{
+		if ( !(interaction_function[ftype].flags & IF_VSITE) )
+		{
+			continue;
+		}
+		
+		nra    = interaction_function[ftype].nratoms;
+		ia     = idef->il[ftype].iatoms;
+				
+		for(i=0; i<idef->il[ftype].nr;i+=nra+1) 
+		{	
+			ivsite = ia[i+1];
+			
+			if(ivsite>=i1)
+			{
+				add_to_vsitelist(&vsitecomm->right_vsite,
+								 &vsitecomm->right_nvsite,
+								 &nalloc_right_vsite,ivsite);
+			}
+			
+			for(j=2;j<1+nra;j++)
+			{
+				iconstruct = ia[i+j];
+				if(iconstruct>=i1)
+				{
+					add_to_vsitelist(&vsitecomm->right_construct,
+									 &vsitecomm->right_nconstruct,
+									 &nalloc_right_construct,iconstruct);
+				}
+			}
+		}
     }
-  }
 
-  create_vsitelist(nprevvsite,idxprevvsite,
-		   &(vsitecomm->nprevvsite),&(vsitecomm->idxprevvsite));
-  create_vsitelist(nnextvsite,idxnextvsite,
-		   &(vsitecomm->nnextvsite),&(vsitecomm->idxnextvsite));
-  create_vsitelist(nprevconstr,idxprevconstr,
-		   &(vsitecomm->nprevconstr),&(vsitecomm->idxprevconstr));
-  create_vsitelist(nnextconstr,idxnextconstr,
-		   &(vsitecomm->nnextconstr),&(vsitecomm->idxnextconstr));
+	/* Pre-communicate the array lengths */
+	sendbuf[0] = vsitecomm->right_nvsite;
+	sendbuf[1] = vsitecomm->right_nconstruct;
+	
+	gmx_tx_rx_void(cr,
+				   GMX_RIGHT,(void *)sendbuf,2*sizeof(int),
+				   GMX_LEFT, (void *)recvbuf,2*sizeof(int));
 
-  sfree(idxprevvsite);
-  sfree(idxnextvsite);
-  sfree(idxprevconstr);
-  sfree(idxnextconstr);
+	vsitecomm->left_nvsite     = recvbuf[0];
+	vsitecomm->left_nconstruct = recvbuf[1];
 
-  return found;
-#undef BUFLEN
+	snew(vsitecomm->left_vsite,vsitecomm->left_nvsite);
+	snew(vsitecomm->left_construct,vsitecomm->left_nconstruct);
+	
+	/* Communicate the vsite array */
+	gmx_tx_rx_void(cr,
+				   GMX_RIGHT,(void *)vsitecomm->right_vsite,vsitecomm->right_nvsite*sizeof(int),
+				   GMX_LEFT, (void *)vsitecomm->left_vsite, vsitecomm->left_nvsite*sizeof(int));
+	
+	/* Communicate the constructing atom array */
+	gmx_tx_rx_void(cr,
+				   GMX_RIGHT,(void *)vsitecomm->right_construct,vsitecomm->right_nconstruct*sizeof(int),
+				   GMX_LEFT, (void *)vsitecomm->left_construct, vsitecomm->left_nconstruct*sizeof(int));
+	
+	leftbuf  = vsitecomm->left_nvsite + vsitecomm->left_nconstruct;
+	rightbuf = vsitecomm->right_nvsite + vsitecomm->right_nconstruct;
+
+	bufsize  = max(leftbuf,rightbuf);
+	
+	do_comm = (bufsize>0);
+			   	
+	snew(vsitecomm->send_buf,bufsize);
+	snew(vsitecomm->recv_buf,bufsize);
+
+	return do_comm;
 }
 
 t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global)

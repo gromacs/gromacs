@@ -225,6 +225,22 @@ bool gmx_fexist(const char *fname)
   }
 }
 
+
+bool gmx_fexist_master(const char *fname, t_commrec *cr)
+{
+  bool bExist;
+  
+  if (SIMMASTER(cr)) 
+  {
+      bExist = gmx_fexist(fname);
+  }
+  if (PAR(cr)) 
+  {
+      gmx_bcast(sizeof(bExist),&bExist,cr);
+  }
+  return bExist;
+}
+
 bool gmx_eof(FILE *fp)
 {
   char data[4];

@@ -36,8 +36,12 @@
 #ifndef _splitter_h
 #define _splitter_h
 
-extern void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
-		      real *capacity,int *mulitnr_cgs,int **multinr_nre);
+#include "types/inputrec.h"
+
+extern void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
+		      t_inputrec *ir,t_block *mols,
+		      real *capacity,int *mulitnr_cgs,int **multinr_nre,
+		      int *left_range, int *right_range);
 /* Split the topology (blocks and forces, based on charge groups 
  * and shake blocks.
  * The capacity is releated to the capacity of each node. If all numbers are 

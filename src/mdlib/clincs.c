@@ -49,6 +49,7 @@
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
+#include "partdec.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
 
@@ -340,7 +341,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 
 static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
                      struct gmx_lincsdata *lincsd,real *invmass,
-                     gmx_domdec_t *dd,
+					 t_commrec *cr,
                      real wangle,int *warn,
                      real invdt,rvec *v,
                      bool bCalcVir,tensor rmdr)
@@ -367,9 +368,13 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     sol    = lincsd->tmp3;
     lambda = lincsd->lambda;
     
-    if (dd && dd->constraints)
+    if (DOMAINDECOMP(cr) && cr->dd->constraints)
     {
-        nlocat = dd_constraints_nlocalatoms(dd);
+        nlocat = dd_constraints_nlocalatoms(cr->dd);
+    }
+    else if (PARTDECOMP(cr))
+    {
+        nlocat = pd_constraints_nlocalatoms(cr->pd);
     }
     else
     {
@@ -377,7 +382,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     }
     
     *warn = 0;
-    
+
     if (pbc)
     {
         /* Compute normalized i-j vectors */
@@ -466,13 +471,13 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
   
     wfac = cos(DEG2RAD*wangle);
     wfac = wfac*wfac;
-    
+	
     for(iter=0; iter<lincsd->nIter; iter++)
     {
-        if (dd && dd->constraints)
+        if (DOMAINDECOMP(cr) && cr->dd->constraints)
         {
             /* Communicate the corrected non-local coordinates */
-            dd_move_x_constraints(dd,box,xp,NULL);
+            dd_move_x_constraints(cr->dd,box,xp,NULL);
         }
         
         for(b=0; b<ncons; b++)
@@ -804,7 +809,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 }
 
 void set_lincs(t_idef *idef,t_mdatoms *md,
-               bool bDynamics,gmx_domdec_t *dd,
+               bool bDynamics,t_commrec *cr,
                struct gmx_lincsdata *li)
 {
     int      start,natoms,nflexcon;
@@ -817,7 +822,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
 
     li->nc = 0;
     li->ncc = 0;
-    
+		
     /* This is the local topology, so there are only F_CONSTR constraints */
     if (idef->il[F_CONSTR].nr == 0)
     {
@@ -832,19 +837,23 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
         fprintf(debug,"Building the LINCS connectivity\n");
     }
     
-    if (dd)
+    if (DOMAINDECOMP(cr))
     {
-        if (dd->constraints)
+        if (cr->dd->constraints)
         {
-            dd_get_constraint_range(dd,&start,&natoms);
+            dd_get_constraint_range(cr->dd,&start,&natoms);
         }
         else
         {
-            natoms = dd->nat_home;
+            natoms = cr->dd->nat_home;
         }
         start = 0;
     }
-    else
+    else if(PARTDECOMP(cr))
+	{
+		pd_get_constraint_range(cr->pd,&start,&natoms);
+	}
+	else
     {
         start  = md->start;
         natoms = md->homenr;
@@ -852,6 +861,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     at2con = make_at2con(start,natoms,idef->il,idef->iparams,bDynamics,
                          &nflexcon);
 
+	
     if (idef->il[F_CONSTR].nr/3 > li->nc_alloc || li->nc_alloc == 0)
     {
         li->nc_alloc = over_alloc_dd(idef->il[F_CONSTR].nr/3);
@@ -881,6 +891,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     li->blnr[0] = 0;
     
     ni = idef->il[F_CONSTR].nr/3;
+
     con = 0;
     nconnect = 0;
     li->blnr[con] = nconnect;
@@ -930,7 +941,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
             }
             li->blnr[con+1] = nconnect;
             
-            if (dd == NULL)
+            if (cr->dd == NULL)
             {
                 /* Order the blbnb matrix to optimize memory access */
                 qsort(&(li->blbnb[li->blnr[con]]),li->blnr[con+1]-li->blnr[con],
@@ -949,7 +960,7 @@ void set_lincs(t_idef *idef,t_mdatoms *md,
     li->nc = con;
     
     li->ncc = li->blnr[con];
-    if (dd == NULL)
+    if (cr->dd == NULL)
     {
         /* Since the matrix is static, we can free some memory */
         ncc_alloc = li->ncc;
@@ -1127,7 +1138,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                      t_inputrec *ir,
                      gmx_step_t step,
                      struct gmx_lincsdata *lincsd,t_mdatoms *md,
-                     gmx_domdec_t *dd,
+                     t_commrec *cr, 
                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                      real lambda,real *dvdlambda,
                      real invdt,rvec *v,
@@ -1145,7 +1156,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     
     bOK = TRUE;
     
-    if (lincsd->nc == 0 && dd == NULL)
+    if (lincsd->nc == 0 && cr->dd == NULL)
     {
         if (bLog || bEner)
         {
@@ -1167,24 +1178,29 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     /* We do not need full pbc when constraints do not cross charge groups,
      * i.e. when dd->constraint_comm==NULL
      */
-    if ((dd || ir->bPeriodicMols) && !(dd && dd->constraint_comm==NULL))
+    if ((cr->dd || ir->bPeriodicMols) && !(cr->dd && cr->dd->constraint_comm==NULL))
     {
         /* With pbc=screw the screw has been changed to a shift
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc,ir->ePBC,dd,FALSE,box);
+        pbc_null = set_pbc_dd(&pbc,ir->ePBC,cr->dd,FALSE,box);
     }
     else
     {
         pbc_null = NULL;
     }
-    if (dd)
+    if (cr->dd)
     {
         /* Communicate the coordinates required for the non-local constraints */
-        dd_move_x_constraints(dd,box,x,xprime);
+        dd_move_x_constraints(cr->dd,box,x,xprime);
         /* dump_conf(dd,lincsd,NULL,"con",TRUE,xprime,box); */
     }
+	else if (PARTDECOMP(cr))
+	{
+		pd_move_x_constraints(cr,x,xprime);
+	}	
+	
     if (econq == econqCoord)
     {
         if (ir->efep != efepNO)
@@ -1229,11 +1245,11 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
         
         if (bLog && fplog)
         {
-            cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+            cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
         }
         
-        do_lincs(x,xprime,box,pbc_null,lincsd,md->invmass,dd,
+        do_lincs(x,xprime,box,pbc_null,lincsd,md->invmass,cr,
                  ir->LincsWarnAngle,&warn,
                  invdt,v,bCalcVir,rmdr);
         
@@ -1247,19 +1263,19 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                 dvdl += lincsd->lambda[i]*dt_2*lincsd->ddist[i];
             }
             *dvdlambda += dvdl;
-    }
+		}
         
         if (bLog && fplog && lincsd->nc > 0)
         {
             fprintf(fplog,"   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
             fprintf(fplog,"       Before LINCS          %.6f    %.6f %6d %6d\n",
                     sqrt(p_ssd/ncons_loc),p_max,
-                    ddglatnr(dd,lincsd->bla[2*p_imax]),
-                    ddglatnr(dd,lincsd->bla[2*p_imax+1]));
+                    ddglatnr(cr->dd,lincsd->bla[2*p_imax]),
+                    ddglatnr(cr->dd,lincsd->bla[2*p_imax+1]));
         }
         if (bLog || bEner)
         {
-            cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+            cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                     &ncons_loc,&p_ssd,&p_max,&p_imax);
             lincsd->rmsd_data[0] = ncons_loc;
             /* Check if we are doing the second part of SD */
@@ -1279,29 +1295,29 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
             fprintf(fplog,
                     "        After LINCS          %.6f    %.6f %6d %6d\n\n",
                     sqrt(p_ssd/ncons_loc),p_max,
-                    ddglatnr(dd,lincsd->bla[2*p_imax]),
-                    ddglatnr(dd,lincsd->bla[2*p_imax+1]));
+                    ddglatnr(cr->dd,lincsd->bla[2*p_imax]),
+                    ddglatnr(cr->dd,lincsd->bla[2*p_imax+1]));
         }
         
         if (warn > 0)
         {
             if (maxwarn >= 0)
             {
-                cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+                cconerr(cr->dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
                         &ncons_loc,&p_ssd,&p_max,&p_imax);
                 sprintf(buf,"\nStep %s, time %g (ps)  LINCS WARNING\n"
                         "relative constraint deviation after LINCS:\n"
                         "rms %.6f, max %.6f (between atoms %d and %d)\n",
                         gmx_step_str(step,buf2),ir->init_t+step*ir->delta_t,
                         sqrt(p_ssd/ncons_loc),p_max,
-                        ddglatnr(dd,lincsd->bla[2*p_imax]),
-                        ddglatnr(dd,lincsd->bla[2*p_imax+1]));
+                        ddglatnr(cr->dd,lincsd->bla[2*p_imax]),
+                        ddglatnr(cr->dd,lincsd->bla[2*p_imax+1]));
                 if (fplog)
                 {
                     fprintf(fplog,"%s",buf);
                 }
                 fprintf(stderr,"%s",buf);
-                lincs_warning(fplog,dd,x,xprime,pbc_null,
+                lincs_warning(fplog,cr->dd,x,xprime,pbc_null,
                               lincsd->nc,lincsd->bla,lincsd->bllen,
                               ir->LincsWarnAngle,maxwarn,warncount);
             }

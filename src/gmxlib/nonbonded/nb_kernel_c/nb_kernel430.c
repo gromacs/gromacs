@@ -36,6 +36,9 @@
 #include "vec.h"
 #include "gmx_thread.h"
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
 #include "nb_kernel430.h"
 
 /*
@@ -102,11 +105,18 @@ void nb_kernel430(
     real          jx1,jy1,jz1;
     real          dx11,dy11,dz11,rsq11,rinv11;
     real          c6,c12;
-
+	gmx_gbdata_t *gbdata;
+	real *        gpol;
+	real          scale_gb;
+	
+	gbdata           = (gmx_gbdata_t *)work;
+	gpol             = gbdata->gpol;
+	
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
+    facel            = *p_facel;   
+    scale_gb         = 1.0 - (1.0/gbdata->gb_epsilon_solvent);
     krf              = *p_krf;         
     crf              = *p_crf;         
     tabscale         = *p_tabscale;    
@@ -200,7 +210,7 @@ void nb_kernel430(
                 qq               = iq*charge[jnr]; 
                 vcoul            = qq*rinv11;      
                 fscal            = vcoul*rinv11;   
-                qq               = isaprod*(-qq);  
+                qq               = isaprod*(-qq)*scale_gb;  
                 gbscale          = isaprod*gbtabscale;
                 tj               = nti+2*type[jnr];
                 c6               = vdwparam[tj];   
@@ -297,8 +307,8 @@ void nb_kernel430(
             ggid             = gid[n];         
             Vc[ggid]         = Vc[ggid] + vctot;
             Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
+			gpol[ggid]       = gpol[ggid] + vgbtot;
             dvda[ii]         = dvda[ii] + dvdasum*isai*isai;
-            work[ggid]       = work[ggid] + vgbtot;
 
             /* Increment number of inner iterations */
             ninner           = ninner + nj1 - nj0;

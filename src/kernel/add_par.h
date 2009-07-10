@@ -48,7 +48,7 @@ extern void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,
 			  real c0, real c1, real c2, char *s);
 
 extern void add_cmap_param(t_params *ps,int ai,int aj,int ak,int al,int am,
-						   real c0, real c1, char *s);
+						   char *s);
 
 extern void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
 

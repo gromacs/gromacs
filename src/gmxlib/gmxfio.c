@@ -590,10 +590,10 @@ static bool do_xdr(void *item,int nitem,int eio,
     if (item) *(gmx_step_t *)item = sdum;
     break;
   case eioUCHAR:
-    if (item && !curfio->bRead) idum = *(unsigned char *)item;
-    res = xdr_u_char(curfio->xdr,&ucdum);
+    if (item && !curfio->bRead) ucdum = *(unsigned char *)item;
+		  res = xdr_u_char(curfio->xdr,&ucdum);
     if (item) *(unsigned char *)item = ucdum;
-    break;
+	break;
   case eioNUCHAR:
     ucptr = (unsigned char *)item;
     res   = 1;

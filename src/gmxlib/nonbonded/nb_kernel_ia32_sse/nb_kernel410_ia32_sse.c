@@ -21,6 +21,9 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
 #include "nb_kernel410_ia32_sse.h"
 
 /* to extract single integers from a __m128i datatype */
@@ -71,22 +74,14 @@ void nb_kernel410_ia32_sse(int *           p_nri,
                     float *         work)
 {
     int           nri,ntype,nthreads;
-    float         facel,krf,crf,tabscale,gbtabscale;
+    float         facel,krf,crf,tabscale,gbtabscale,scl_gb;
     int           n,ii,is3,ii3,k,nj0,nj1,ggid;
     float         shX,shY,shZ;
 	int			  offset,nti;
 	int           jnr,jnr2,jnr3,jnr4,j3,j23,j33,j43;
 	int           tj,tj2,tj3,tj4;
-	
-	nri              = *p_nri;         
-    ntype            = *p_ntype;       
-    nthreads         = *p_nthreads;    
-    facel            = *p_facel;       
-    krf              = *p_krf;         
-    crf              = *p_crf;         
-    tabscale         = *p_tabscale;    
-    gbtabscale       = *p_gbtabscale;  
-    nj1              = 0;
+	gmx_gbdata_t *gbdata;
+	float *        gpol;
 	
 	__m128   iq,qq,q,isai;
 	__m128   ix,iy,iz;
@@ -103,16 +98,15 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 	__m128   Fp,VV,FF,vgb,fijC,dvdatmp;
 	__m128   rinvsix,Vvdw6,Vvdw12,Vvdwtmp,n0f;
 	__m128   fac_sse,tabscale_sse,gbtabscale_sse;
+	__m128   scale_gb;
+	
+	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);     
+	__m128i mask        = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);   
 	
 	__m128i  n0, nnn;
 	
 	float vct,vdwt,dva,isai_f,vgbt;
-		
-	/* Splat variables */
-	fac_sse        = _mm_load1_ps(&facel);
-	tabscale_sse   = _mm_load1_ps(&tabscale);
-	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
-		
+
 	const __m128 neg    = {-1.0f,-1.0f,-1.0f,-1.0f};
 	const __m128 zero   = {0.0f,0.0f,0.0f,0.0f};
 	const __m128 half   = {0.5f,0.5f,0.5f,0.5f};
@@ -121,8 +115,26 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 	const __m128 six    = {6.0f,6.0f,6.0f,6.0f};
 	const __m128 twelwe = {12.0f,12.0f,12.0f,12.0f};  
 	
-	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);     
-	__m128i mask        = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);   
+	gbdata          = (gmx_gbdata_t *)work;
+	gpol            = gbdata->gpol;
+	
+	nri              = *p_nri;         
+    ntype            = *p_ntype;       
+    nthreads         = *p_nthreads;    
+    facel            = *p_facel;       
+	scl_gb           = 1.0 - (1.0/gbdata->gb_epsilon_solvent);
+    krf              = *p_krf;         
+    crf              = *p_crf;         
+    tabscale         = *p_tabscale;    
+    gbtabscale       = *p_gbtabscale;  
+    nj1              = 0;
+
+	/* Splat variables */
+	fac_sse        = _mm_load1_ps(&facel);
+	tabscale_sse   = _mm_load1_ps(&tabscale);
+	gbtabscale_sse = _mm_load1_ps(&gbtabscale);
+	scale_gb       = _mm_load1_ps(&scl_gb);
+		
 
 	/* Keep the compiler happy */
 	Vvdwtmp = _mm_setzero_ps();
@@ -240,6 +252,7 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 			vcoul   = _mm_mul_ps(qq,rinv);
 			fscal   = _mm_mul_ps(vcoul,rinv);
 			qq      = _mm_mul_ps(qq,neg);
+			qq      = _mm_mul_ps(qq,scale_gb);
 			qq      = _mm_mul_ps(isaprod,qq);
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
 						
@@ -336,7 +349,6 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 		
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
-			//vctot   = _mm_add_ps(vctot,vgb);
 			
 			rinvsix = _mm_mul_ps(rinvsq,rinvsq);
 			rinvsix = _mm_mul_ps(rinvsix,rinvsq);
@@ -578,6 +590,7 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 			fscal   = _mm_mul_ps(vcoul,rinv);
 		
 			qq      = _mm_mul_ps(qq,neg);
+			qq      = _mm_mul_ps(qq,scale_gb);
 			qq      = _mm_mul_ps(isaprod,qq);
 		
 			gbscale = _mm_mul_ps(isaprod,gbtabscale_sse);
@@ -639,7 +652,6 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 			
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
-			//vctot   = _mm_add_ps(vctot,vgb);
 	
 			rinvsix = _mm_mul_ps(rinvsq,rinvsq);
 			rinvsix = _mm_mul_ps(rinvsix,rinvsq);
@@ -826,7 +838,7 @@ void nb_kernel410_ia32_sse(int *           p_nri,
 		vgbtot  = _mm_add_ss(vgbtot,vgb);
 		
 		_mm_store_ss(&vgbt,vgbtot);
-		work[ggid] = work[ggid] + vgbt;
+		gpol[ggid] = gpol[ggid] + vgbt;
 				
 		/* dvda */
 		dvdatmp = _mm_movehl_ps(dvdatmp,dvdasum);

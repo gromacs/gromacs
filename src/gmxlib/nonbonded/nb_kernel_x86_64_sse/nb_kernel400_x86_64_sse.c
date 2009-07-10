@@ -21,6 +21,9 @@
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
+/* get gmx_gbdata_t */
+#include "../nb_kerneltype.h"
+
 #include "nb_kernel400_x86_64_sse.h"
 
 /* to extract single integers from a __m128i datatype */
@@ -74,7 +77,9 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 	float         krf,facel,crf,tabscl,gbtabscl,vct,vgbt;
 	int           n,ii,is3,ii3,k,nj0,nj1,jnr1,jnr2,jnr3,jnr4,j13,j23,j33,j43,ggid;
 	float         shX,shY,shZ,isai_f,dva;
-	
+	gmx_gbdata_t *gbdata;
+	float *        gpol;
+		
 	__m128        ix,iy,iz,jx,jy,jz;
 	__m128		  dx,dy,dz,t1,t2,t3;
 	__m128		  fix,fiy,fiz,rsq11,rinv,r,fscal,rt,eps,eps2;
@@ -93,10 +98,13 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 	__m128i mask        = _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff);
 	__m128i maski       = _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff);
 	
+	gbdata     = (gmx_gbdata_t *)work;
+	gpol       = gbdata->gpol;
+
 	nri        = *p_nri;
 	ntype      = *p_ntype;
 	nthreads   = *p_nthreads; 
-	facel      = *p_facel;
+    facel      = (*p_facel) * (1.0 - (1.0/gbdata->gb_epsilon_solvent));       
 	krf        = *p_krf;
 	crf        = *p_crf;
 	tabscl     = *p_tabscale;
@@ -728,7 +736,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 		vgbtot  = _mm_add_ss(vgbtot,vgb);
 		
 		_mm_store_ss(&vgbt,vgbtot);
-		work[ggid] = work[ggid] + vgbt;
+		gpol[ggid] = gpol[ggid] + vgbt;
 	}
 	
 	*outeriter       = nri;            

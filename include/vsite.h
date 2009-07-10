@@ -44,16 +44,16 @@
 #include "typedefs.h"
 
 typedef struct {
-  int nprevvsite; /* how many virtual sites are nonlocal */     
-  int nnextvsite;
-  int *idxprevvsite; /* index of nonlocal vsite particles */
-  int *idxnextvsite;
-  int nprevconstr; /* how many constr. atoms are nonlocal */
-  int nnextconstr;
-  int *idxprevconstr; /* indices of nonlocal constructing atoms */
-  int *idxnextconstr;
-  rvec *prevbuf;
-  rvec *nextbuf;
+        int *      left_vsite;
+        int        left_nvsite;
+        int *      left_construct;
+        int        left_nconstruct;
+        int *      right_vsite;
+        int        right_nvsite;
+        int *      right_construct;
+        int        right_nconstruct;
+        rvec *     send_buf;
+        rvec *     recv_buf;
 } t_comm_vsites;
 
 typedef struct {

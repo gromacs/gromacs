@@ -162,10 +162,10 @@ extern gmx_constr_t init_constraints(FILE *log,
 /* Initialize constraints stuff */
 
 extern void set_constraints(gmx_constr_t constr,
-			    gmx_localtop_t *top,
-			    t_inputrec *ir,
-			    t_mdatoms *md,
-			    gmx_domdec_t *dd);
+							gmx_localtop_t *top,
+							t_inputrec *ir,
+							t_mdatoms *md,
+							t_commrec *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
@@ -211,7 +211,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 /* Initializes and returns the lincs data struct */
 
 extern void set_lincs(t_idef *idef,t_mdatoms *md,
-		      bool bDynamics,gmx_domdec_t *dd,
+		      bool bDynamics,t_commrec *cr,
 		      gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
@@ -227,7 +227,7 @@ extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    t_inputrec *ir,
 			    gmx_step_t step,
 			    gmx_lincsdata_t lincsd,t_mdatoms *md,
-			    gmx_domdec_t *dd,
+			    t_commrec *cr,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			    real lambda,real *dvdlambda,
 			    real invdt,rvec *v,

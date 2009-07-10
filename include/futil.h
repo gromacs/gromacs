@@ -66,6 +66,9 @@ extern void no_buffers(void);
 extern bool gmx_fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
+bool gmx_fexist_master(const char *fname, t_commrec *cr);
+/* Return TRUE when fname exists, FALSE otherwise, bcast from master to others */
+
 extern bool gmx_eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
