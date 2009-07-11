@@ -811,9 +811,9 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 	bool do_comm;
 	t_iatom   *ia;
 	gmx_partdec_t *pd;
-	int  ivsite,iconstruct;
+	int  iconstruct;
 	int  i0,i1;
-	int  nalloc_right_vsite,nalloc_right_construct;
+	int  nalloc_left_construct,nalloc_right_construct;
 	int  sendbuf[2],recvbuf[2];
 	int  bufsize,leftbuf,rightbuf;
 	
@@ -822,12 +822,13 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 	i0 = pd->index[cr->nodeid];
 	i1 = pd->index[cr->nodeid+1];
 	
-	nalloc_right_vsite     = 0;
-	nalloc_right_construct = 0;
-	vsitecomm->right_vsite      = NULL;	
-	vsitecomm->right_nvsite     = 0;
-	vsitecomm->right_construct  = NULL;	
-	vsitecomm->right_nconstruct = 0;
+	vsitecomm->left_import_construct  = NULL;	
+	vsitecomm->left_import_nconstruct = 0;
+	nalloc_left_construct      = 0;
+
+	vsitecomm->right_import_construct  = NULL;	
+	vsitecomm->right_import_nconstruct = 0;
+	nalloc_right_construct      = 0;
 	
 	for(ftype=0; (ftype<F_NRE); ftype++) 
 	{
@@ -840,62 +841,56 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 		ia     = idef->il[ftype].iatoms;
 				
 		for(i=0; i<idef->il[ftype].nr;i+=nra+1) 
-		{	
-			ivsite = ia[i+1];
-			
-			if(ivsite>=i1)
-			{
-				add_to_vsitelist(&vsitecomm->right_vsite,
-								 &vsitecomm->right_nvsite,
-								 &nalloc_right_vsite,ivsite);
-			}
-			
+		{				
 			for(j=2;j<1+nra;j++)
 			{
 				iconstruct = ia[i+j];
-				if(iconstruct>=i1)
+				if(iconstruct<i0)
 				{
-					add_to_vsitelist(&vsitecomm->right_construct,
-									 &vsitecomm->right_nconstruct,
-									 &nalloc_right_construct,iconstruct);
+					add_to_vsitelist(&vsitecomm->left_import_construct,
+									 &vsitecomm->left_import_nconstruct,
+									 &nalloc_left_construct,iconstruct);
 				}
+				else if(iconstruct>=i1)
+				{
+					add_to_vsitelist(&vsitecomm->right_import_construct,
+									 &vsitecomm->right_import_nconstruct,
+									 &nalloc_right_construct,iconstruct);
+				}				
 			}
 		}
     }
-
+	
 	/* Pre-communicate the array lengths */
-	sendbuf[0] = vsitecomm->right_nvsite;
-	sendbuf[1] = vsitecomm->right_nconstruct;
-	
 	gmx_tx_rx_void(cr,
-				   GMX_RIGHT,(void *)sendbuf,2*sizeof(int),
-				   GMX_LEFT, (void *)recvbuf,2*sizeof(int));
-
-	vsitecomm->left_nvsite     = recvbuf[0];
-	vsitecomm->left_nconstruct = recvbuf[1];
-
-	snew(vsitecomm->left_vsite,vsitecomm->left_nvsite);
-	snew(vsitecomm->left_construct,vsitecomm->left_nconstruct);
-	
-	/* Communicate the vsite array */
+				   GMX_RIGHT,(void *)&vsitecomm->right_import_nconstruct,sizeof(int),
+				   GMX_LEFT, (void *)&vsitecomm->left_export_nconstruct, sizeof(int));
 	gmx_tx_rx_void(cr,
-				   GMX_RIGHT,(void *)vsitecomm->right_vsite,vsitecomm->right_nvsite*sizeof(int),
-				   GMX_LEFT, (void *)vsitecomm->left_vsite, vsitecomm->left_nvsite*sizeof(int));
+				   GMX_LEFT, (void *)&vsitecomm->left_import_nconstruct, sizeof(int),
+				   GMX_RIGHT,(void *)&vsitecomm->right_export_nconstruct,sizeof(int));
 	
-	/* Communicate the constructing atom array */
+	snew(vsitecomm->left_export_construct, vsitecomm->left_export_nconstruct);
+	snew(vsitecomm->right_export_construct,vsitecomm->right_export_nconstruct);
+	
+	/* Communicate the construcing atom index arrays */
 	gmx_tx_rx_void(cr,
-				   GMX_RIGHT,(void *)vsitecomm->right_construct,vsitecomm->right_nconstruct*sizeof(int),
-				   GMX_LEFT, (void *)vsitecomm->left_construct, vsitecomm->left_nconstruct*sizeof(int));
+				   GMX_RIGHT,(void *)vsitecomm->right_import_construct,vsitecomm->right_import_nconstruct*sizeof(int),
+				   GMX_LEFT, (void *)vsitecomm->left_export_construct, vsitecomm->left_export_nconstruct*sizeof(int));
 	
-	leftbuf  = vsitecomm->left_nvsite + vsitecomm->left_nconstruct;
-	rightbuf = vsitecomm->right_nvsite + vsitecomm->right_nconstruct;
+	/* Communicate the construcing atom index arrays */
+	gmx_tx_rx_void(cr,
+				   GMX_LEFT ,(void *)vsitecomm->left_import_construct, vsitecomm->left_import_nconstruct*sizeof(int),
+				   GMX_RIGHT,(void *)vsitecomm->right_export_construct,vsitecomm->right_export_nconstruct*sizeof(int));
 
+	leftbuf  = max(vsitecomm->left_export_nconstruct,vsitecomm->left_import_nconstruct);
+	rightbuf = max(vsitecomm->right_export_nconstruct,vsitecomm->right_import_nconstruct);
+	
 	bufsize  = max(leftbuf,rightbuf);
 	
 	do_comm = (bufsize>0);
 			   	
-	snew(vsitecomm->send_buf,bufsize);
-	snew(vsitecomm->recv_buf,bufsize);
+	snew(vsitecomm->send_buf,2*bufsize);
+	snew(vsitecomm->recv_buf,2*bufsize);
 
 	return do_comm;
 }

@@ -44,14 +44,14 @@
 #include "typedefs.h"
 
 typedef struct {
-        int *      left_vsite;
-        int        left_nvsite;
-        int *      left_construct;
-        int        left_nconstruct;
-        int *      right_vsite;
-        int        right_nvsite;
-        int *      right_construct;
-        int        right_nconstruct;
+        int *      left_import_construct;
+        int        left_import_nconstruct;
+        int *      left_export_construct;
+        int        left_export_nconstruct;
+        int *      right_import_construct;
+        int        right_import_nconstruct;
+        int *      right_export_construct;
+        int        right_export_nconstruct;
         rvec *     send_buf;
         rvec *     recv_buf;
 } t_comm_vsites;

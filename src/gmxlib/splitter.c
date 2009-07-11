@@ -112,7 +112,7 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 						 int *left_range, int *right_range)
 {
   int     i,j,k,type,nodeid,nratoms,tnr;
-  int     nvsite_constr,tmpid;
+  int     nvsite_constr;
   t_iatom ai,aj;
   int     node_low_ai,node_low_aj,node_high_ai,node_high_aj;
   int     node_low,node_high;
@@ -194,23 +194,20 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 	{
       /* Virtual sites are special, since we need to pre-communicate
 	   * their coordinates to construct vsites before then main
-	   * coordinate communication. In particular, imagine you have
-	   * 20 atoms (0..19), and two nodes responsible for atoms 0..9 and 10..19.
-	   * Further imagine that atom 8 is a vsite, with constructing atoms
-	   * 7,9,10. 
-	   * This means we first have to send atom 10 to the lower node, construct
-	   * the vsite there, so that we finally can send atom 8 to the upper node.
+	   * coordinate communication. 
+	   * Vsites can have constructing atoms both larger and smaller than themselves.
+	   * To minimize communication and book-keeping, each vsite is constructed on
+	   * the home node of the atomnr of the vsite.
+	   * Since the vsite coordinates too have to be communicated to the next node,
+	   * we need to
 	   *
-	   * Vsites can have constructing atoms both larger and smaller than themselves,
-	   * so to avoid two steps of precommunication (left+right), we use a slightly
-	   * different node assignment standard with particle decomposition, 
-	   * and always construct the vsites on the home node of the atom with the lowest
-	   * index of the vsite itself and all constructing atoms.
-	   * This way we only need to pulse (a few) coordinates to the left in the 
-	   * pre-communication.
+	   * 1. Pre-communicate coordinates of constructing atoms
+	   * 2. Construct the vsite
+	   * 3. Perform main coordinate communication
 	   *
-	   * (for normal interactions this is never an issue, since they are typicall sorted 
-	   * so the first atom is the lowest index).
+	   * Note that this has change from gromacs 4.0 and earlier, where the vsite
+	   * was constructed on the home node of the lowest index of any of the constructing
+	   * atoms and the vsite itself.
 	   */
 		
 		if (ftype==F_VSITE2)
@@ -220,12 +217,15 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 		else
 			nvsite_constr=3;
 		
-		tmpid=hid[ilist->iatoms[i+1]];
+		/* Vsites are constructed on the home node of the actual site to save communication 
+		 * and simplify the book-keeping.
+		 */
+		nodeid=hid[ilist->iatoms[i+1]];
 		
 		for(k=2;k<nvsite_constr+2;k++) 
 		{
-			if(hid[ilist->iatoms[i+k]]<(tmpid-1) ||
-			   hid[ilist->iatoms[i+k]]>(tmpid+1))
+			if(hid[ilist->iatoms[i+k]]<(nodeid-1) ||
+			   hid[ilist->iatoms[i+k]]>(nodeid+1))
 				gmx_fatal(FARGS,"Virtual site %d and its constructing"
 						  " atoms are not on the same or adjacent\n" 
 						  " nodes. This is necessary to avoid a lot\n"
@@ -235,7 +235,6 @@ static void split_force2(t_inputrec *ir, int nnodes,int hid[],int ftype,t_ilist 
 						  " Sorry, but you will have to rework your topology!\n",
 						  ilist->iatoms[i+1]);
 		}
-		nodeid=min_nodeid(nratoms,&ilist->iatoms[i+1],hid);
     } 
 	else
     {

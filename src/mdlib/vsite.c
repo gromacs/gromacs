@@ -52,12 +52,8 @@
 #include "mtop_util.h"
 
 /* Routines to send/recieve coordinates and force
- * of constructing atoms and vsites. 
- *
- * To save copying (and complex book-keeping), we communicate the 
- * entire overlapping region, since it is typically only 3-5 atoms anyway.
+ * of constructing atoms. 
  */ 
-
 
 static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 {
@@ -68,112 +64,48 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 	sendbuf = vsitecomm->send_buf;
 	recvbuf = vsitecomm->recv_buf;
 	
-	for(i=0;i<vsitecomm->left_nconstruct;i++)
+	if(vsitecomm->left_export_nconstruct > 0 || vsitecomm->right_import_nconstruct > 0)
 	{
-		ia = vsitecomm->left_construct[i];
-		copy_rvec(x[ia],sendbuf[i]);
-	}
-	
-	/* Pulse coordinates left */
-	gmx_tx_rx_real(cr,GMX_LEFT,(real *)sendbuf,3*vsitecomm->left_nconstruct,GMX_RIGHT,(real *)recvbuf,3*vsitecomm->right_nconstruct);
-	
-	for(i=0;i<vsitecomm->right_nconstruct;i++)
-	{
-		ia = vsitecomm->right_construct[i];
-		copy_rvec(recvbuf[i],x[ia]);
-	}
-	/* Now we are ready to do the constructing business ! */
-}
-
-
-static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec *cr)
-{
-	rvec *sendbuf;
-	rvec *recvbuf;
-	int i,ia,cnt;
-	int sendsize,recvsize;
-	
-	sendbuf = vsitecomm->send_buf;
-	recvbuf = vsitecomm->recv_buf;
-	
-	sendsize = 3*vsitecomm->right_nvsite;
-	recvsize = 3*vsitecomm->left_nvsite;
-
-	cnt = vsitecomm->right_nvsite;
-	for(i=0;i<cnt;i++)
-	{
-		ia = vsitecomm->right_vsite[i];
-		copy_rvec(x[ia],sendbuf[i]);
-	}
-
-	if(v!=NULL)
-	{
-		for(i=0;i<cnt;i++)
+		/* Prepare pulse left by copying to send buffer */
+		for(i=0;i<vsitecomm->left_export_nconstruct;i++)
 		{
-			ia = vsitecomm->right_vsite[i];
-			copy_rvec(v[ia],sendbuf[cnt+i]);
+			ia = vsitecomm->left_export_construct[i];
+			copy_rvec(x[ia],sendbuf[i]);
 		}
-		sendsize *= 2;
-		recvsize *= 2;
-	}
 	
-	/* Pulse coordinates and velocities of actual vsites to the right */
-	gmx_tx_rx_real(cr,GMX_RIGHT,(real *)sendbuf,sendsize,GMX_LEFT,(real *)recvbuf,recvsize);
-	
-	cnt = vsitecomm->left_nvsite;
-	for(i=0;i<cnt;i++)
-	{
-		ia = vsitecomm->left_vsite[i];
-		copy_rvec(recvbuf[i],x[ia]);
-	}
-	
-	if(v!=NULL)
-	{
-		for(i=0;i<cnt;i++)
+		/* Pulse coordinates left */
+		gmx_tx_rx_real(cr,GMX_LEFT,(real *)sendbuf,3*vsitecomm->left_export_nconstruct,GMX_RIGHT,(real *)recvbuf,3*vsitecomm->right_import_nconstruct);
+		
+		/* Copy from receive buffer to coordinate array */
+		for(i=0;i<vsitecomm->right_import_nconstruct;i++)
 		{
-			ia = vsitecomm->left_vsite[i];
-			copy_rvec(recvbuf[cnt+i],v[ia]);
+			ia = vsitecomm->right_import_construct[i];
+			copy_rvec(recvbuf[i],x[ia]);
 		}
 	}
-	/* All coordinates are in place on the respective home node now */
+
+	
+	if(vsitecomm->right_export_nconstruct > 0 || vsitecomm->left_import_nconstruct > 0)
+	{
+		/* Prepare pulse right by copying to send buffer */
+		for(i=0;i<vsitecomm->right_export_nconstruct;i++)
+		{
+			ia = vsitecomm->right_export_construct[i];
+			copy_rvec(x[ia],sendbuf[i]);
+		}
+		
+		/* Pulse coordinates right */
+		gmx_tx_rx_real(cr,GMX_RIGHT,(real *)sendbuf,3*vsitecomm->right_export_nconstruct,GMX_LEFT,(real *)recvbuf,3*vsitecomm->left_import_nconstruct);
+		
+		/* Copy from receive buffer to coordinate array */
+		for(i=0;i<vsitecomm->left_import_nconstruct;i++)
+		{
+			ia = vsitecomm->left_import_construct[i];
+			copy_rvec(recvbuf[i],x[ia]);
+		}
+	}
 }
 
-static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
-{
-	rvec *sendbuf;
-	rvec *recvbuf;
-	int i,ia;
-	
-	sendbuf = vsitecomm->send_buf;
-	recvbuf = vsitecomm->recv_buf;
-	
-	for(i=0;i<vsitecomm->left_nvsite;i++)
-	{
-		ia = vsitecomm->left_vsite[i];
-		copy_rvec(f[ia],sendbuf[i]);
-	}
-	
-	/* Pulse vsite forces left */
-	gmx_tx_rx_real(cr,GMX_LEFT,(real *)sendbuf,3*vsitecomm->left_nvsite,GMX_RIGHT,(real *)recvbuf,3*vsitecomm->right_nvsite);
-	
-	for(i=0;i<vsitecomm->right_nvsite;i++)
-	{
-		ia = vsitecomm->right_vsite[i];
-		copy_rvec(recvbuf[i],f[ia]);
-	}
-	
-	/* Zero forces on nonlocal constructing atoms.                                                                           
-	 * This is necessary since vsite force spreading is done                                                                 
-	 * after the normal force addition, and we don't want                                                                    
-	 * to include them twice.                                                                                                
-	 * (They have already been added on the home node).                                                                      
-	 */
-	for(i=0;i<vsitecomm->right_nconstruct;i++)
-	{
-		ia = vsitecomm->right_construct[i];
-		clear_rvec(f[ia]);
-	}
-}
 
 static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 {
@@ -184,29 +116,68 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 	sendbuf = vsitecomm->send_buf;
 	recvbuf = vsitecomm->recv_buf;
 	
-	for(i=0;i<vsitecomm->right_nconstruct;i++)
+	if(vsitecomm->right_import_nconstruct > 0 || vsitecomm->left_export_nconstruct > 0)
 	{
-		ia = vsitecomm->right_construct[i];
-		copy_rvec(f[ia],sendbuf[i]);
+		/* Prepare pulse right by copying to send buffer */
+		for(i=0;i<vsitecomm->right_import_nconstruct;i++)
+		{
+			ia = vsitecomm->right_import_construct[i];
+			copy_rvec(f[ia],sendbuf[i]);
+			clear_rvec(f[ia]); /* Zero it here after moving, just to simplify debug book-keeping... */
+		}
+		
+		/* Pulse forces right */
+		gmx_tx_rx_real(cr,GMX_RIGHT,(real *)sendbuf,3*vsitecomm->right_import_nconstruct,GMX_LEFT,(real *)recvbuf,3*vsitecomm->left_export_nconstruct);
+		
+		/* Copy from receive buffer to coordinate array */
+		for(i=0;i<vsitecomm->left_export_nconstruct;i++)
+		{
+			ia = vsitecomm->left_export_construct[i];
+			rvec_inc(f[ia],recvbuf[i]);
+		}
 	}
 	
-	/* Pulse forces on constructing atoms right */
-	gmx_tx_rx_real(cr,GMX_RIGHT,(real *)sendbuf,3*vsitecomm->right_nconstruct,GMX_LEFT,(real *)recvbuf,3*vsitecomm->left_nconstruct);
-	
-	for(i=0;i<vsitecomm->left_nconstruct;i++)
+	if(vsitecomm->left_import_nconstruct > 0 || vsitecomm->right_export_nconstruct > 0)
 	{
-		ia = vsitecomm->left_construct[i];
-		rvec_inc(f[ia],recvbuf[i]);
-	}
-	
-	/* Zero non-local vsite forces */
-	for(i=0;i<vsitecomm->left_nvsite;i++)
-	{
-		ia = vsitecomm->left_vsite[i];
-		clear_rvec(f[ia]);
-	}
+		/* Prepare pulse left by copying to send buffer */
+		for(i=0;i<vsitecomm->left_import_nconstruct;i++)
+		{
+			ia = vsitecomm->left_import_construct[i];
+			copy_rvec(f[ia],sendbuf[i]);
+			clear_rvec(f[ia]); /* Zero it here after moving, just to simplify debug book-keeping... */
+		}
+		
+		/* Pulse coordinates left */
+		gmx_tx_rx_real(cr,GMX_LEFT,(real *)sendbuf,3*vsitecomm->left_import_nconstruct,GMX_RIGHT,(real *)recvbuf,3*vsitecomm->right_export_nconstruct);
+		
+		/* Copy from receive buffer to coordinate array */
+		for(i=0;i<vsitecomm->right_export_nconstruct;i++)
+		{
+			ia = vsitecomm->right_export_construct[i];
+			rvec_inc(f[ia],recvbuf[i]);
+		}
+	}	
 	/* All forces are now on the home processors */
 }
+
+	
+static void
+pd_clear_nonlocal_constructs(t_comm_vsites *vsitecomm, rvec f[])
+{
+	int i,ia;
+	
+	for(i=0;i<vsitecomm->left_import_nconstruct;i++)
+	{
+		ia = vsitecomm->left_import_construct[i];
+		clear_rvec(f[ia]); 
+	}
+	for(i=0;i<vsitecomm->right_import_nconstruct;i++)
+	{
+		ia = vsitecomm->right_import_construct[i];
+		clear_rvec(f[ia]); 
+	}
+}
+
 
 
 static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
@@ -615,15 +586,6 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	ia += inc;
       }
     }
-  }
-	
-  if (vsite->bPDvsitecomm) {
-    if (graph)
-      unshift_self(graph,box,x);
-    move_vsite_xv(vsite->vsitecomm,x,NULL,cr);
-
-    if (graph)
-      shift_self(graph,box,x); /* maybe not necessary */
   }
 }
 
@@ -1251,13 +1213,15 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
     pbc_null = NULL;
   }
   
-  if (DOMAINDECOMP(cr)) {
+  if (DOMAINDECOMP(cr)) 
+  {
     dd_clear_f_vsites(cr->dd,f);
-  } else if (vsite->bPDvsitecomm) {
-  /* We only move forces here, and they are independent of shifts */
-    move_vsite_f(vsite->vsitecomm,f,cr);
+  } 
+  else if(PARTDECOMP(cr))
+  {
+    pd_clear_nonlocal_constructs(vsite->vsitecomm,f);
   }
-
+	
   ip     = idef->iparams;
 
   nd2        = 0;
