@@ -64,8 +64,7 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 	sendbuf = vsitecomm->send_buf;
 	recvbuf = vsitecomm->recv_buf;
 	
-	if(vsitecomm->left_export_nconstruct > 0 || vsitecomm->right_import_nconstruct > 0)
-	{
+
 		/* Prepare pulse left by copying to send buffer */
 		for(i=0;i<vsitecomm->left_export_nconstruct;i++)
 		{
@@ -82,11 +81,7 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 			ia = vsitecomm->right_import_construct[i];
 			copy_rvec(recvbuf[i],x[ia]);
 		}
-	}
 
-	
-	if(vsitecomm->right_export_nconstruct > 0 || vsitecomm->left_import_nconstruct > 0)
-	{
 		/* Prepare pulse right by copying to send buffer */
 		for(i=0;i<vsitecomm->right_export_nconstruct;i++)
 		{
@@ -103,7 +98,6 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 			ia = vsitecomm->left_import_construct[i];
 			copy_rvec(recvbuf[i],x[ia]);
 		}
-	}
 }
 
 
@@ -112,12 +106,10 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 	rvec *sendbuf;
 	rvec *recvbuf;
 	int i,ia;
-	
+
 	sendbuf = vsitecomm->send_buf;
-	recvbuf = vsitecomm->recv_buf;
-	
-	if(vsitecomm->right_import_nconstruct > 0 || vsitecomm->left_export_nconstruct > 0)
-	{
+	recvbuf = vsitecomm->recv_buf;	
+
 		/* Prepare pulse right by copying to send buffer */
 		for(i=0;i<vsitecomm->right_import_nconstruct;i++)
 		{
@@ -135,10 +127,7 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 			ia = vsitecomm->left_export_construct[i];
 			rvec_inc(f[ia],recvbuf[i]);
 		}
-	}
-	
-	if(vsitecomm->left_import_nconstruct > 0 || vsitecomm->right_export_nconstruct > 0)
-	{
+
 		/* Prepare pulse left by copying to send buffer */
 		for(i=0;i<vsitecomm->left_import_nconstruct;i++)
 		{
@@ -156,7 +145,7 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 			ia = vsitecomm->right_export_construct[i];
 			rvec_inc(f[ia],recvbuf[i]);
 		}
-	}	
+		
 	/* All forces are now on the home processors */
 }
 
