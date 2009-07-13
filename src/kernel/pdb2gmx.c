@@ -972,27 +972,27 @@ int main(int argc, char *argv[])
     init_t_atoms(chains[i].pdba,pdb_ch[si].natom,TRUE);
     snew(chains[i].x,chains[i].pdba->nr);
     for (j=0; j<chains[i].pdba->nr; j++) {
-      chains[i].pdba->atom[j]=pdba_all.atom[pdb_ch[si].start+j];
+      chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start+j];
       snew(chains[i].pdba->atomname[j],1);
       *chains[i].pdba->atomname[j] = 
 	strdup(*pdba_all.atomname[pdb_ch[si].start+j]);
-      /* make all chain identifiers equal to that off the chain */
-      chains[i].pdba->resinfo[chains[i].pdba->atom[j].resind].chain =
-	pdb_ch[si].chain;
-      chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[pdb_ch[si].start+j];
+      chains[i].pdba->pdbinfo[j] = pdba_all.pdbinfo[pdb_ch[si].start+j];
       copy_rvec(pdbx[pdb_ch[si].start+j],chains[i].x[j]);
     }
-    /* Renumber the residues assuming that the numbers are continuous */
+    /* Re-index the residues assuming that the indices are continuous */
     k    = chains[i].pdba->atom[0].resind;
     nres = chains[i].pdba->atom[chains[i].pdba->nr-1].resind - k + 1;
     chains[i].pdba->nres = nres;
-    for(j=0; j < chains[i].pdba->nr; j++)
+    for(j=0; j < chains[i].pdba->nr; j++) {
       chains[i].pdba->atom[j].resind -= k;
+    }
     srenew(chains[i].pdba->resinfo,nres);
     for(j=0; j<nres; j++) {
       chains[i].pdba->resinfo[j] = pdba_all.resinfo[k+j];
       snew(chains[i].pdba->resinfo[j].name,1);
       *chains[i].pdba->resinfo[j].name = strdup(*pdba_all.resinfo[k+j].name);
+      /* make all chain identifiers equal to that of the chain */
+      chains[i].pdba->resinfo[j].chain = pdb_ch[si].chain;
     }
   }
 
