@@ -329,6 +329,9 @@ typedef struct gmx_domdec_comm
     double load_mdf;
     double load_pme;
 
+    /* The last partition step */
+    gmx_step_t partition_step;
+
     /* Debugging */
     int  nstDDDump;
     int  nstDDDumpGrid;
@@ -6101,17 +6104,17 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     
     dd->bInterCGcons = inter_charge_group_constraints(mtop);
 
-    if (ir->rvdw == 0 || ir->rcoulomb == 0)
+    if (ir->rlistlong == 0)
     {
         /* Set the cut-off to some very large value,
          * so we don't need if statements everywhere in the code.
          * We use sqrt, since the cut-off is squared in some places.
          */
-        comm->cutoff   = 0.5*sqrt(GMX_FLOAT_MAX);
+        comm->cutoff   = GMX_CUTOFF_INF;
     }
     else
     {
-        comm->cutoff   = max(ir->rlist,max(ir->rvdw,ir->rcoulomb));
+        comm->cutoff   = ir->rlistlong;
     }
     comm->cutoff_mbody = 0;
     
@@ -6376,6 +6379,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     {
         check_dd_restrictions(cr,dd,ir,fplog);
     }
+
+    comm->partition_step = ir->init_step - 1;
+    dd->ddp_count = 0;
 
     return dd;
 }
@@ -7930,6 +7936,7 @@ void dd_partition_system(FILE            *fplog,
                          gmx_step_t      step,
                          t_commrec       *cr,
                          bool            bMasterState,
+                         int             nstglobalcomm,
                          t_state         *state_global,
                          gmx_mtop_t      *top_global,
                          t_inputrec      *ir,
@@ -7949,9 +7956,11 @@ void dd_partition_system(FILE            *fplog,
     gmx_domdec_comm_t *comm;
     gmx_ddbox_t ddbox;
     t_block *cgs_gl;
+    gmx_step_t step_pcoupl;
     rvec cell_ns_x0,cell_ns_x1;
     int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
-    bool bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG,bResortAll;
+    bool bBoxChanged,bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad;
+    bool bRedist,bSortCG,bResortAll;
     ivec ncells_old,np;
     real grid_density;
     char sbuf[22];
@@ -7959,11 +7968,51 @@ void dd_partition_system(FILE            *fplog,
     dd = cr->dd;
     comm = dd->comm;
 
-    /* Should we do dynamic load balacing this step?
-     * Since it requires (possibly expensive) global communication,
-     * we might want to do DLB less frequently.
-     */
-    bDoDLB = comm->bDynLoadBal;
+    bBoxChanged = (bMasterState || DEFORM(*ir));
+    if (ir->epc != epcNO)
+    {
+        /* With nstcalcenery > 1 pressure coupling happens.
+         * one step after calculating the energies.
+         * Box scaling happens at the end of the MD step,
+         * after the DD partitioning.
+         * We therefore have to do DLB in the first partitioning
+         * after an MD step where P-coupling occured.
+         * We need to determine the last step in which p-coupling occurred.
+         */
+        n = ir->nstcalcenergy;
+        if (n == 1)
+        {
+            step_pcoupl = step - 1;
+        }
+        else
+        {
+            step_pcoupl = ((step - 1)/n)*n + 1;
+        }
+        if (step_pcoupl >= comm->partition_step)
+        {
+            bBoxChanged = TRUE;
+        }
+    }
+
+    if (!comm->bDynLoadBal)
+    {
+        bDoDLB = FALSE;
+    }
+    else
+    {
+        /* Should we do dynamic load balacing this step?
+         * Since it requires (possibly expensive) global communication,
+         * we might want to do DLB less frequently.
+         */
+        if (bBoxChanged || ir->epc != epcNO)
+        {
+            bDoDLB = bBoxChanged;
+        }
+        else
+        {
+            bDoDLB = (step % nstglobalcomm == 0);
+        }
+    }
 
     /* Check if we have recorded loads on the nodes */
     if (comm->bRecordLoad && dd_load_count(comm))
@@ -8095,6 +8144,7 @@ void dd_partition_system(FILE            *fplog,
         set_ddbox(dd,bMasterState,cr,ir,state_local->box,
                   TRUE,&top_local->cgs,state_local->x,&ddbox);
 
+        bBoxChanged = TRUE;
         bRedist = TRUE;
     }
     
@@ -8131,7 +8181,10 @@ void dd_partition_system(FILE            *fplog,
                           dd->ncg_home,fr->cg_cm,
                           cell_ns_x0,cell_ns_x1,&grid_density);
 
-    comm_dd_ns_cell_sizes(dd,&ddbox,cell_ns_x0,cell_ns_x1,step);
+    if (bBoxChanged)
+    {
+        comm_dd_ns_cell_sizes(dd,&ddbox,cell_ns_x0,cell_ns_x1,step);
+    }
 
     copy_ivec(fr->ns.grid->n,ncells_old);
     grid_first(fplog,fr->ns.grid,dd,&ddbox,fr->ePBC,
@@ -8316,6 +8369,9 @@ void dd_partition_system(FILE            *fplog,
                      -1,state_local->x,state_local->box);
     }
 
+    /* Store the partitioning step */
+    comm->partition_step = step;
+    
     /* Increase the DD partitioning counter */
     dd->ddp_count++;
     /* The state currently matches this DD partitioning count, store it */

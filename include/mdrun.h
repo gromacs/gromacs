@@ -65,7 +65,6 @@
 #define MD_DDBONDCHECK  (1<<10)
 #define MD_DDBONDCOMM   (1<<11)
 #define MD_CONFOUT      (1<<12)
-#define MD_NOGSTAT      (1<<13)
 #define MD_REPRODUCIBLE (1<<14)
 #define MD_READ_RNG     (1<<15)
 #define MD_APPENDFILES  (1<<16)
@@ -94,6 +93,7 @@ typedef struct {
 typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				int nfile,t_filenm fnm[],
 				bool bVerbose,bool bCompact,
+				int nstglobalcomm,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
 				int stepout,
 				t_inputrec *inputrec,
@@ -268,6 +268,7 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
+	     int nstglobalcomm,
 	     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 	     const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,

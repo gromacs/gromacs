@@ -110,6 +110,44 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 #define CHECK(b) _low_check(b,err_buf,nerror)
   char err_buf[256];
   int  ns_type=0;
+  real dt_coupl;
+
+  /* BASIC CUT-OFF STUFF */
+  if (ir->rlist == 0 ||
+      !(( EEL_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
+	(EVDW_ZERO_AT_CUTOFF(ir->vdwtype)     && ir->rvdw     > ir->rlist))) {
+    /* No switched potential and/or no twin-range:
+     * we can set the long-range cut-off to the maximum of the other cut-offs.
+     */
+    ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+  } else if (ir->rlistlong < 0) {
+    ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+    sprintf(warn_buf,"rlistlong was not set, setting it to %g (no buffer)",
+	    ir->rlistlong);
+    warning(NULL);
+  }
+  if (ir->rlistlong == 0 && ir->ePBC != epbcNONE) {
+    warning_error("Can not have an infinite cut-off with PBC");
+  }
+  if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist)) {
+    warning_error("rlistlong can not be shorter than rlist");
+  }
+
+  /* GENERAL INTEGRATOR STUFF */
+  if (ir->eI != eiMD) {
+    ir->etc = etcNO;
+  }
+  if (!EI_DYNAMICS(ir->eI)) {
+    ir->epc = epcNO;
+    ir->nstcalcenergy = 1;
+  }
+  if (ir->nstcalcenergy < 0) {
+    gmx_fatal(FARGS,"Can not have nstcalcenergy < 0");
+  }
+  if ((ir->etc != etcNO || ir->epc != epcNO) && ir->nstcalcenergy == 0) {
+    gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
+  }
+  dt_coupl = ir->nstcalcenergy*ir->delta_t;
 
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
@@ -184,21 +222,30 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   /* COMM STUFF */
-  if (ir->nstcomm < 0) {
-    warning("If you want to remove the rotation around the center of mass, you should set comm_mode = Angular instead of setting nstcomm < 0. nstcomm is modified to its absolute value");
-    ir->nstcomm = abs(ir->nstcomm);
+  if (ir->nstcomm == 0) {
+    ir->comm_mode = ecmNO;
   }
+  if (ir->comm_mode != ecmNO) {
+    if (ir->nstcomm < 0) {
+      warning("If you want to remove the rotation around the center of mass, you should set comm_mode = Angular instead of setting nstcomm < 0. nstcomm is modified to its absolute value");
+      ir->nstcomm = abs(ir->nstcomm);
+    }
+    
+    if (ir->nstcalcenergy > 0 && ir->nstcomm < ir->nstcalcenergy) {
+      warning_note("nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, setting nstcomm to nstenergy");
+      ir->nstcomm = ir->nstenergy;
+    }
 
-  if (ir->comm_mode == ecmANGULAR) {
-    sprintf(err_buf,"Can not remove the rotation around the center of mass with periodic molecules");
-    CHECK(ir->bPeriodicMols);
-    if (ir->ePBC != epbcNONE)
-      warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
+    if (ir->comm_mode == ecmANGULAR) {
+      sprintf(err_buf,"Can not remove the rotation around the center of mass with periodic molecules");
+      CHECK(ir->bPeriodicMols);
+      if (ir->ePBC != epbcNONE)
+	warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
+    }
   }
-
-  if ((ir->eI == eiMD) && (ir->ePBC == epbcNONE)) {
-    if ((ir->nstcomm == 0) || (ir->comm_mode != ecmANGULAR))
-      warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
+    
+  if (ir->eI == eiMD && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
+    warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
   sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
@@ -210,10 +257,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
 	&& (ir->ns_type == ensSIMPLE));
   
-  if (ir->eI != eiMD) {
-    ir->etc = etcNO;
-  }
-
   /* TEMPERATURE COUPLING */
   if(ir->etc == etcYES) {
     ir->etc = etcBERENDSEN;
@@ -240,14 +283,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning_note("Old option for pressure coupling given: "
 		 "changing \"Isotropic\" to \"Berendsen\"\n"); 
   }
-  
+
   if (ir->epc != epcNO) {
     sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
     CHECK(ir->tau_p <= 0);
 
-    if (ir->tau_p < 100*ir->delta_t) {
-      sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than delta_t (%g)",
-	      ir->tau_p,ir->delta_t);
+    if (ir->tau_p < 100*dt_coupl) {
+      sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than nstcalcenergy*dt (%g)",
+	      ir->tau_p,dt_coupl);
       warning(NULL);
     }	
        
@@ -576,10 +619,12 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("dt",		ir->delta_t,	0.001);
   STEPTYPE ("nsteps",   ir->nsteps,     0);
   CTYPE ("For exact run continuation or redoing part of a run");
+  STEPTYPE ("init_step",ir->init_step,  0);
   CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
   ITYPE ("simulation_part", ir->simulation_part, 1);
-  STEPTYPE ("init_step",ir->init_step,  0);
   CTYPE ("mode for center of mass motion removal");
+  CTYPE ("energy calculation and T/P-coupling frequency");
+  ITYPE ("nstcalcenergy",ir->nstcalcenergy,	1);
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names, nerror, TRUE);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
@@ -639,6 +684,8 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
+  CTYPE ("long-range cut-off for switched potentials");
+  RTYPE ("rlistlong",	ir->rlistlong,	-1);
 
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
@@ -1533,9 +1580,10 @@ void do_index(char* mdparin, char *ndx,
        * V-rescale works correctly, even for tau_t=0.
        */
       if ((ir->etc == etcBERENDSEN || ir->etc == etcNOSEHOOVER) &&
-	  ir->opts.tau_t[i] != 0 && ir->opts.tau_t[i] < 10*ir->delta_t) {
-	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than delta_t (%g)",
-		ir->opts.tau_t[i],ir->delta_t);
+	  ir->opts.tau_t[i] != 0 &&
+	  ir->opts.tau_t[i] < 10*ir->nstcalcenergy*ir->delta_t) {
+	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than nstcalcenergy*dt (%g)",
+		ir->opts.tau_t[i],ir->nstcalcenergy*ir->delta_t);
 	warning(NULL);
       }
     }
@@ -2025,7 +2073,7 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 
 void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
 {
-  real min_size,rlong;
+  real min_size;
   bool bTWIN;
   const char *ptr;
   
@@ -2066,17 +2114,16 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
     if (ir->nstlist == 0) {
       warning("With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
     }
-    rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
-    bTWIN = (rlong > ir->rlist);
-    if (ir->ns_type==ensGRID) {
-      if (sqr(rlong) >= max_cutoff2(ir->ePBC,box)) {
+    bTWIN = (ir->rlistlong > ir->rlist);
+    if (ir->ns_type == ensGRID) {
+      if (sqr(ir->rlistlong) >= max_cutoff2(ir->ePBC,box)) {
 	fprintf(stderr,"ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
-		bTWIN ? (ir->rcoulomb==rlong ? "rcoulomb" : "rvdw"):"rlist");
+		bTWIN ? (ir->rcoulomb==ir->rlistlong ? "rcoulomb" : "rvdw"):"rlist");
 	(*nerror)++;
       }
     } else {
       min_size = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
-      if (2*rlong >= min_size) {
+      if (2*ir->rlistlong >= min_size) {
 	fprintf(stderr,"ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
 	(*nerror)++;
 	if (TRICLINIC(box))

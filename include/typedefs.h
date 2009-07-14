@@ -182,6 +182,9 @@ void free_t_atoms(t_atoms *atoms,bool bFreeNames);
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */ 
 
+real max_cutoff(real cutoff1,real cutoff2);
+/* Returns the maximum of the cut-off's, taking into account that 0=inf. */
+
 #ifdef CPLUSPLUS
 }
 #endif

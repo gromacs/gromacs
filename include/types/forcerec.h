@@ -84,6 +84,14 @@ typedef struct {
 #define SET_CGINFO_NATOMS(cgi,opt)   (cgi) = (((cgi)  & ~(255<<23)) | ((opt)<<23))
 #define GET_CGINFO_NATOMS(cgi)     (((cgi)>>23)       &   255)
 
+
+/* Value to be used in mdrun for an infinite cut-off.
+ * Since we need to compare with the cut-off squared,
+ * this value should be slighlty smaller than sqrt(GMX_FLOAT_MAX).
+ */
+#define GMX_CUTOFF_INF 1E+18
+
+
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egGB, egNR };
 
@@ -125,7 +133,9 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
-  /* Cut-Off stuff */
+  /* Cut-Off stuff.
+   * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
+   */
   real rlist,rlistlong;
   
   /* Dielectric constant resp. multiplication factor for charges */

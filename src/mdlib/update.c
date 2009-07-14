@@ -812,77 +812,93 @@ void update(FILE         *fplog,
             bool         bNEMD,
             bool         bInitStep)
 {
-  bool             bNH,bPR,bLastStep,bLog=FALSE,bEner=FALSE;
-  double           dt,eph;
-  real             dt_1;
-  int              start,homenr,i,n,m,g;
-  matrix           pcoupl_mu,M;
-  tensor           vir_con;
-  rvec             *xprime;
-
-  start  = md->start;
-  homenr = md->homenr;
-  
-  if (state->nalloc > upd->xp_nalloc)
-  {
-      upd->xp_nalloc = state->nalloc;
-      srenew(upd->xp,upd->xp_nalloc);
-  }
-  xprime = upd->xp;
-
-  /* We need to update the NMR restraint history when time averaging is used */
-  if (state->flags & (1<<estDISRE_RM3TAV)) {
-    update_disres_history(fcd,&state->hist);
-  }
-  if (state->flags & (1<<estORIRE_DTAV)) {
-    update_orires_history(fcd,&state->hist);
-  }
-
-  bNH = (inputrec->etc == etcNOSEHOOVER);
-  bPR = (inputrec->epc == epcPARRINELLORAHMAN);
-
-  dt   = inputrec->delta_t;
-  dt_1 = 1.0/dt;
-
-  clear_mat(pcoupl_mu);
-  for(i=0; i<DIM; i++) {
-    pcoupl_mu[i][i] = 1.0;
-  }
-  clear_mat(M);
-
-    /* We can always tcoupl, even if we did not sum the energies
-     * the previous step, since ekind->tcstat[i].Th is only updated
-     * when the energies have been summed.
-     */
-    switch (inputrec->etc) {
-    case etcNO:
-        break;
-    case etcBERENDSEN:
-        berendsen_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t);
-        break;
-    case etcNOSEHOOVER:
-        nosehoover_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
-                          state->nosehoover_xi,state->therm_integral);
-        break;
-    case etcVRESCALE:
-        vrescale_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
-                        state->therm_integral,upd->sd->gaussrand);
-        break;
+    bool             bCouple,bNH,bPR,bLastStep,bLog=FALSE,bEner=FALSE;
+    double           dt,eph;
+    real             dt_1,dtc;
+    int              start,homenr,i,n,m,g;
+    matrix           pcoupl_mu,M;
+    tensor           vir_con;
+    rvec             *xprime;
+    
+    start  = md->start;
+    homenr = md->homenr;
+    
+    if (state->nalloc > upd->xp_nalloc)
+    {
+        upd->xp_nalloc = state->nalloc;
+        srenew(upd->xp,upd->xp_nalloc);
     }
-  /* We can always pcoupl, even if we did not sum the energies
-   * the previous step, since state->pres_prev is only updated
-   * when the energies have been summed.
-   */
-  if (inputrec->epc == epcBERENDSEN && !bInitStep) {
-    berendsen_pcoupl(fplog,step,inputrec,state->pres_prev,state->box,
-		     pcoupl_mu);
-  }
-  if (inputrec->epc == epcPARRINELLORAHMAN) {
-    parrinellorahman_pcoupl(fplog,step,inputrec,state->pres_prev,
-			    state->box,state->box_rel,state->boxv,
-			    M,pcoupl_mu,bInitStep);
-  }
-  
+    xprime = upd->xp;
+    
+    /* We need to update the NMR restraint history when time averaging is used */
+    if (state->flags & (1<<estDISRE_RM3TAV)) {
+        update_disres_history(fcd,&state->hist);
+    }
+    if (state->flags & (1<<estORIRE_DTAV)) {
+        update_orires_history(fcd,&state->hist);
+    }
+    
+    /* We should only couple after a step where energies were determined */
+    bCouple = (inputrec->nstcalcenergy == 1 ||
+               do_per_step(step+inputrec->nstcalcenergy-1,
+                           inputrec->nstcalcenergy));
+    dtc = inputrec->nstcalcenergy*inputrec->delta_t;
+    
+    bNH = (inputrec->etc == etcNOSEHOOVER);
+    bPR = (inputrec->epc == epcPARRINELLORAHMAN);
+    
+    dt   = inputrec->delta_t;
+    dt_1 = 1.0/dt;
+    
+    clear_mat(pcoupl_mu);
+    for(i=0; i<DIM; i++)
+    {
+        pcoupl_mu[i][i] = 1.0;
+    }
+    clear_mat(M);
+
+    if (bCouple)
+    {
+        switch (inputrec->etc)
+        {
+        case etcNO:
+            break;
+        case etcBERENDSEN:
+            berendsen_tcoupl(&(inputrec->opts),ekind,dtc);
+            break;
+        case etcNOSEHOOVER:
+            nosehoover_tcoupl(&(inputrec->opts),ekind,dtc,
+                              state->nosehoover_xi,state->therm_integral);
+            break;
+        case etcVRESCALE:
+            vrescale_tcoupl(&(inputrec->opts),ekind,dtc,
+                            state->therm_integral,upd->sd->gaussrand);
+        break;
+        }
+
+        
+        if (inputrec->epc == epcBERENDSEN && !bInitStep)
+        {
+            berendsen_pcoupl(fplog,step,inputrec,dtc,
+                             state->pres_prev,state->box,
+                             pcoupl_mu);
+        }
+        if (inputrec->epc == epcPARRINELLORAHMAN)
+        {
+            parrinellorahman_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,
+                                    state->box,state->box_rel,state->boxv,
+                                    M,pcoupl_mu,bInitStep);
+        }
+    }
+    else
+    {
+        /* Set the T scaling lambda to 1 to have no scaling */
+        for(i=0; (i<inputrec->opts.ngtc); i++)
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+    }
+        
   /* Now do the actual update of velocities and positions */
   where();
   dump_it_all(fplog,"Before update",
@@ -1041,10 +1057,10 @@ void update(FILE         *fplog,
   update_ekindata(start,homenr,ekind,&(inputrec->opts),state->v,md,
 		  state->lambda,bNEMD);
 
-  if (inputrec->epc != epcNO) {
+  if (bCouple && inputrec->epc != epcNO) {
     if (inputrec->epc == epcBERENDSEN) {
-      berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,
-		       start,homenr,state->x,md->cFREEZE,nrnb);
+        berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,
+                         start,homenr,state->x,md->cFREEZE,nrnb);
     } else if (inputrec->epc == epcPARRINELLORAHMAN) {
       /* The box velocities were updated in do_pr_pcoupl in the update
        * iteration, but we dont change the box vectors until we get here

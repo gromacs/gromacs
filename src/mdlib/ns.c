@@ -1747,21 +1747,6 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
     }
 }
 
-static real cutoff2(real cutoff)
-{
-    if (cutoff == 0)
-    {
-        /* For convenience we use a large value,
-         * so we don't need more conditionals.
-         */
-        return 0.5*sqrt(GMX_FLOAT_MAX);
-    }
-    else
-    {
-        return sqr(cutoff);
-    }
-}
-
 static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        matrix box,rvec box_size,int ngid,
                        gmx_localtop_t *top,
@@ -1817,11 +1802,28 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     (!bDomDec || dd->nc[ZZ]==1) && box[ZZ][YY] != 0);
     
     cgsnr    = cgs->nr;
-    rs2      = cutoff2(fr->rlist);
+    rs2      = sqr(fr->rlist);
     if (fr->bTwinRange)
     {
-        rvdw2  = cutoff2(fr->rvdw);
-        rcoul2 = cutoff2(fr->rcoulomb);
+        /* The VdW and elec. LR cut-off's could be different,
+         * so we can not simply set them to rlistlong.
+         */
+        if (EVDW_ZERO_AT_CUTOFF(fr->vdwtype) && fr->rvdw > fr->rlist)
+        {
+            rvdw2  = sqr(fr->rlistlong);
+        }
+        else
+        {
+            rvdw2  = sqr(fr->rvdw);
+        }
+        if (EEL_ZERO_AT_CUTOFF(fr->eeltype) && fr->rcoulomb > fr->rlist)
+        {
+            rcoul2 = sqr(fr->rlistlong);
+        }
+        else
+        {
+            rcoul2 = sqr(fr->rcoulomb);
+        }
     }
     else
     {

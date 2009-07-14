@@ -29,13 +29,13 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#general"><b>General remarks</b></A>
 <p> </p>
 <li><A HREF="#pp"><b>preprocessing</b></A> (include, define)
-<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, comm_mode, nstcomm, comm_grps)
+<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, nstcalcenergy, comm_mode, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, periodic_molecules, rlist)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, periodic_molecules, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r, epsilon_rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
@@ -230,6 +230,15 @@ Thus for exact restarts or redoing part of a run it might be necessary to
 set <tt>init_step</tt> to the step number of the restart frame.
 <tt>tpbconv</tt> does this automatically.
 </dd>
+<dt><h4>nstcalcenergy: (1)</h4></dt>
+<dd>The frequency for calculating the energies, including the temperature
+and the pressure, 0 is never.
+This option affects the performance in parallel simulations,
+because calculating energies requires global communication between all
+processes which can become a bottleneck at high parallelization.
+With global temperature and/or pressure coupling the time step for
+the coupling algorithm is <b>nstcalcenergy</b>*<b>dt</b>.
+Take this into account when setting <b>tau_t</b> and/or <b>tau_p</b>.</dd>
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -427,6 +436,13 @@ and molecules are not made whole in the output</dd>
 
 <dt><h4>rlist: (1) [nm]</h4></dt>
 <dd>cut-off distance for the short-range neighbor list</dd>
+
+<dt><h4>rlistlong: (-1) [nm]</h4></dt>
+<dd>Cut-off distance for the long-range neighbor list.
+This parameter is only relevant for a twin-range cut-off setup
+with switched potentials. In that case a buffer region is required to account
+for the size of charge groups. In all other cases this parameter
+is automatically set to the longest cut-off distance.</dd>
 </dl>
 
 
@@ -1649,6 +1665,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#em">nbfgscorr</A><br>
 <A HREF="#xmdrun">niter</A><br>
 <A HREF="#em">nstcgsteep</A><br>
+<A HREF="#run">nstcalcenergy</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
 <A HREF="#out">nstenergy</A><br>
@@ -1679,6 +1696,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#el2">rcoulomb_switch</A><br>
 <A HREF="#el2">rcoulomb</A><br>
 <A HREF="#nl">rlist</A><br>
+<A HREF="#nl">rlistlong</A><br>
 <A HREF="#tpi">rtpi</A><br>
 <A HREF="#vdw">rvdw_switch</A><br>
 <A HREF="#vdw">rvdw</A><br>

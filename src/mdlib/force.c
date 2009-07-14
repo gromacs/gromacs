@@ -1156,7 +1156,17 @@ void forcerec_set_ranges(t_forcerec *fr,
         fr->f_novirsum_n = 0;
     }
 }
-    
+
+static real cutoff_inf(real cutoff)
+{
+    if (cutoff == 0)
+    {
+        cutoff = GMX_CUTOFF_INF;
+    }
+
+    return cutoff;
+}
+
 void init_forcerec(FILE *fp,
                    t_forcerec *fr,
                    t_fcdata   *fcd,
@@ -1229,8 +1239,8 @@ void init_forcerec(FILE *fp,
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com,fr->posres_com);
     copy_rvec(ir->posres_comB,fr->posres_comB);
-    fr->rlist      = ir->rlist;
-    fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
+    fr->rlist      = cutoff_inf(ir->rlist);
+    fr->rlistlong  = cutoff_inf(ir->rlistlong);
     fr->eeltype    = ir->coulombtype;
     fr->vdwtype    = ir->vdwtype;
     
@@ -1239,8 +1249,7 @@ void init_forcerec(FILE *fp,
     
     fr->reppow     = mtop->ffparams.reppow;
     fr->bvdwtab    = (fr->vdwtype != evdwCUT ||
-                      !gmx_within_tol(mtop->ffparams.reppow,12.0,
-                                      10*GMX_DOUBLE_EPS));
+                      !gmx_within_tol(fr->reppow,12.0,10*GMX_DOUBLE_EPS));
     fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
                       fr->eeltype == eelRF_ZERO);
     
@@ -1286,7 +1295,7 @@ void init_forcerec(FILE *fp,
     fr->epsilon_rf = ir->epsilon_rf;
     fr->fudgeQQ    = mtop->ffparams.fudgeQQ;
     fr->rcoulomb_switch = ir->rcoulomb_switch;
-    fr->rcoulomb        = ir->rcoulomb;
+    fr->rcoulomb        = cutoff_inf(ir->rcoulomb);
     
     /* Parameters for generalized RF */
     fr->zsquare = 0.0;
@@ -1358,7 +1367,7 @@ void init_forcerec(FILE *fp,
     fr->egp_flags = ir->opts.egp_flags;
     
     /* Van der Waals stuff */
-    fr->rvdw        = ir->rvdw;
+    fr->rvdw        = cutoff_inf(ir->rvdw);
     fr->rvdw_switch = ir->rvdw_switch;
     if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM) {
         if (fr->rvdw_switch >= fr->rvdw)
@@ -1491,7 +1500,12 @@ void init_forcerec(FILE *fp,
     }
     snew(fr->nblists,fr->nnblists);
     
-    rtab = fr->rlistlong + ir->tabext;
+    /* This code automatically gives table length tabext without cut-off's,
+     * in that case grompp should already have checked that we do not need
+     * normal tables and we only generate tables for 1-4 interactions.
+     */
+    rtab = ir->rlistlong + ir->tabext;
+
     if (bTab) {
         /* make tables for ordinary interactions */
         if (bNormalnblists) {

@@ -151,12 +151,13 @@ int main(int argc,char *argv[])
     "the value of [TT]-dds[tt] might need to be adjusted to account for",
     "high or low spatial inhomogeneity of the system.",
     "[PAR]",
-    "The option [TT]-nosum[tt] can be used to only sum the energies",
-    "at every neighbor search step and energy output step.",
+    "The option [TT]-gcom[tt] can be used to only do global communication",
+    "every n steps."
     "This can improve performance for highly parallel simulations",
     "where this global communication step becomes the bottleneck.",
     "For a global thermostat and/or barostat the temperature",
     "and/or pressure will also only be updated every nstlist steps.",
+    "By default it is set to the minimum of nstcalcenergy and nstlist.",
     "With this option the energy file will not contain averages and",
     "fluctuations over all integration steps.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
@@ -284,7 +285,6 @@ int main(int argc,char *argv[])
   bool bPartDec     = FALSE;
   bool bDDBondCheck = TRUE;
   bool bDDBondComm  = TRUE;
-  bool bSumEner     = TRUE;
   bool bVerbose     = FALSE;
   bool bCompact     = TRUE;
   bool bSepPot      = FALSE;
@@ -295,6 +295,7 @@ int main(int argc,char *argv[])
     
   int  npme=-1;
   int  nmultisim=0;
+  int  nstglobalcomm=-1;
   int  repl_ex_nst=0;
   int  repl_ex_seed=-1;
   int  nstepout=100;
@@ -339,8 +340,8 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in y" },
     { "-ddcsz",   FALSE, etSTR, {&ddcsz},
       "HIDDENThe DD cell sizes in z" },
-    { "-sum",     FALSE, etBOOL,{&bSumEner},
-      "Sum the energies at every step" },
+    { "-gcom",    FALSE, etINT,{&nstglobalcomm},
+      "Global communication frequency" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -468,7 +469,6 @@ int main(int argc,char *argv[])
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
   Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
-  Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
   Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
@@ -503,7 +503,7 @@ int main(int argc,char *argv[])
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
-  rc = mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
+  rc = mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,nstglobalcomm,
 		ddxyz,dd_node_order,rdd,rconstr,
 		dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
 		nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,

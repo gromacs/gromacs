@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -556,3 +557,15 @@ void free_t_atoms(t_atoms *atoms,bool bFreeNames)
   atoms->nr=0; 
   atoms->nres=0;
 }     
+
+real max_cutoff(real cutoff1,real cutoff2)
+{
+    if (cutoff1 == 0 || cutoff2 == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return max(cutoff1,cutoff2);
+    }
+}

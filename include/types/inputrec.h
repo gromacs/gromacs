@@ -143,6 +143,7 @@ typedef struct {
   gmx_step_t nsteps;	/* number of steps to be taken			*/
   int  simulation_part; /* Used in checkpointing to separate chunks */
   gmx_step_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
+  int  nstcalcenergy;	/* fequency of energy calc. and T/P coupl. upd.	*/
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/
@@ -181,6 +182,7 @@ typedef struct {
   rvec posres_comB;     /* The B-state COM of the posres atoms          */
   int  andersen_seed;   /* Random seed for Andersen thermostat.         */
   real rlist;		/* short range pairlist cut-off (nm)		*/
+  real rlistlong;	/* long range pairlist cut-off (nm)		*/
   real rtpi;            /* Radius for test particle insertion           */
   int  coulombtype;	/* Type of electrostatics treatment             */
   real rcoulomb_switch; /* Coulomb switch range start (nm)		*/

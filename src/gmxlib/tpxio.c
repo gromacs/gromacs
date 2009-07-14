@@ -61,7 +61,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 66;
+static const int tpx_version = 67;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -284,6 +284,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
 	else
 	  ir->simulation_part=1;
 	  
+    if (file_version >= 67) {
+      do_int(ir->nstcalcenergy);
+    } else {
+      ir->nstcalcenergy = 1;
+    }
     if (file_version < 53) {
       /* The pbc info has been moved out of do_inputrec,
        * since we always want it, also without reading the inputrec.
@@ -357,6 +362,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     if(file_version < 18)
       do_int(idum); 
     do_real(ir->rlist); 
+    if (file_version >= 67) {
+      do_int(ir->rlistlong);
+    }
     do_int(ir->coulombtype); 
     if (file_version < 32 && ir->coulombtype == eelRF)
       ir->coulombtype = eelRF_NEC;      
@@ -365,6 +373,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     do_int(ir->vdwtype);
     do_real(ir->rvdw_switch); 
     do_real(ir->rvdw); 
+    if (file_version < 67) {
+      ir->rlistlong = max_cutoff(ir->rlist,max_cutoff(ir->rvdw,ir->rcoulomb));
+    }
     do_int(ir->eDispCorr); 
     do_real(ir->epsilon_r);
     if (file_version >= 37) {

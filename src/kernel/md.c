@@ -125,7 +125,7 @@ static int    init_step_tpx;
 static matrix box_tpx;
 
 int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-             bool bVerbose,bool bCompact,
+             bool bVerbose,bool bCompact,int nstglobalcomm,
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
@@ -521,6 +521,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         /* Now do whatever the user wants us to do (how flexible...) */
         integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
                                       bVerbose,bCompact,
+                                      nstglobalcomm,
                                       vsite,constr,
                                       nstepout,inputrec,mtop,
                                       fcd,state,f,
@@ -623,8 +624,72 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
     print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
 }
     
+static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
+                               int nstglobalcomm,t_inputrec *ir)
+{
+    if (!EI_DYNAMICS(ir->eI))
+    {
+        nstglobalcomm = 1;
+    }
+
+    if (nstglobalcomm == -1)
+    {
+        if (ir->nstcalcenergy == 0 && ir->nstlist == 0)
+        {
+            nstglobalcomm = 10;
+        }
+        else
+        {
+            /* We assume that if nstcalcenergy > nstlist,
+             * nstcalcenergy is a multiple of nstlist.
+             */
+            if (ir->nstcalcenergy == 0 ||
+                (ir->nstlist > 0 && ir->nstlist < ir->nstcalcenergy))
+            {
+                nstglobalcomm = ir->nstlist;
+            }
+            else
+            {
+                nstglobalcomm = ir->nstcalcenergy;
+            }
+        }
+    }
+    else
+    {
+        if (ir->nstlist > 0 &&
+            nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
+        {
+            nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
+            if (MASTER(cr))
+            {
+                fprintf(stderr,"\nWARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n\n",nstglobalcomm);
+            }
+        }
+        if (ir->nstcalcenergy > 0 &&
+            (nstglobalcomm > ir->nstcalcenergy ||
+             ir->nstcalcenergy % nstglobalcomm != 0))
+        {
+            if (MASTER(cr))
+            {
+                fprintf(stderr,
+                        "\nNOTE: -gcom changes nstcalcenergy from %d to %d\n\n",
+                        ir->nstcalcenergy,nstglobalcomm);
+            }
+            if (fplog)
+            {
+                fprintf(fplog,
+                        "\nNOTE: -gcom changes nstcalcenergy from %d to %d\n\n",
+                        ir->nstcalcenergy,nstglobalcomm);
+            }
+            ir->nstcalcenergy = nstglobalcomm;
+        }
+    }
+    
+    return nstglobalcomm;
+}
+
 double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-             bool bVerbose,bool bCompact,
+             bool bVerbose,bool bCompact,int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,t_inputrec *ir,
              gmx_mtop_t *top_global,
@@ -644,7 +709,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dhdl=NULL,*fp_field=NULL;
   double     run_time;
   double     t,t0,lam0;
-  bool       bGStatEveryStep,bGStat,bCalcPres;
+  bool       bGStatEveryStep,bGStat,bNstEner,bCalcEner;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep,bBornRadii;
   bool       bDoDHDL=FALSE;
@@ -712,23 +777,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bRerunMD = (Flags & MD_RERUN);
   bIonize  = (Flags & MD_IONIZE);
   bFFscan  = (Flags & MD_FFSCAN);
-  bGStatEveryStep = !(Flags & MD_NOGSTAT);
   bAppend  = (Flags & MD_APPENDFILES);
 
-  if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
-    const char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
-    fprintf(stderr,"%s\n",warn);
-    if (fplog)
-      fprintf(fplog,"%s\n",warn);
-    bGStatEveryStep = TRUE;
-  }
+  nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
+  bGStatEveryStep = (nstglobalcomm == 1);
+
   if (!bGStatEveryStep) {
     if (fplog) {
       fprintf(fplog,"\nWill not sum the energies at every step,\n"
 	      "therefore the energy file does not contain exact averages and fluctuations.\n\n");
-      if (ir->etc != etcNO || ir->epc != epcNO) {
-	fprintf(fplog,"WARNING:\nThe temperature and/or pressure for scaling will only be updated every nstlist (%d) steps\n\n",ir->nstlist);
-      }
       if (ir->nstlist == -1) {
 	fprintf(fplog,
 		"To reduce the energy communication with nstlist = -1\n"
@@ -741,21 +798,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		"If you want less energy communication, set nstlist > 3.\n\n");
       }
     }
-    if (ir->comm_mode != ecmNO && ir->nstcomm == 1) {
-      if (fplog) {
-	fprintf(fplog,"WARNING:\nWe should not remove the COM motion every step with option -nosum,\n");
-      }
-      if (ir->nstlist > 0) {
-	ir->nstcomm = ir->nstlist;
-	if (fplog) {
-	  fprintf(fplog,"setting nstcomm to nstlist (%d)\n\n",ir->nstcomm);
-	}
-      } else {
-	ir->nstcomm = 100;
-	if (fplog) {
-	  fprintf(fplog,"setting nstcomm to %d\n\n",ir->nstcomm);
-	}
-      }
+    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm) {
+        if (MASTER(cr)) {
+            printf("\nWARNING: Changing nstcomm from %d to %d\n\n",
+                   ir->nstcomm,nstglobalcomm);
+        }
+        if (fplog) {
+            fprintf(fplog,"\nWARNING: Changing nstcomm from %d to %d\n\n",
+                    ir->nstcomm,nstglobalcomm);
+        }
+        ir->nstcomm = nstglobalcomm;
     }
   }
 
@@ -852,7 +904,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (DOMAINDECOMP(cr))
     {
         /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog,ir->init_step,cr,TRUE,
+        dd_partition_system(fplog,ir->init_step,cr,TRUE,1,
                             state_global,top_global,ir,
                             state,&f,mdatoms,top,fr,
                             vsite,shellfc,constr,
@@ -1274,7 +1326,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                         }
                         if (debug)
                         {
-                            fprintf(debug,"nlist life time %s run av. %4.1f sig %3.1f check %s check with -nosum %d\n",
+                            fprintf(debug,"nlist life time %s run av. %4.1f sig %3.1f check %s check with -gcom %d\n",
                                     gmx_step_str(ns_lt,sbuf),ns_lt_runav,sqrt(ns_lt_runav2),
                                     gmx_step_str(step_nscheck-step+1,sbuf2),
                                     (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)));
@@ -1334,7 +1386,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             {
                 /* Repartition the domain decomposition */
                 wallcycle_start(wcycle,ewcDOMDEC);
-                dd_partition_system(fplog,step,cr,bMasterState,
+                dd_partition_system(fplog,step,cr,
+                                    bMasterState,nstglobalcomm,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,
@@ -1411,17 +1464,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
          * at ns steps when we have pressure coupling,
          * otherwise only at energy output steps (set below).
          */
-        bCalcPres = (bGStatEveryStep || (ir->epc != epcNO && bNS));
+        bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
+        bCalcEner = bNstEner;
         
         /* Do we need global communication ? */
-        bGStat = (bGStatEveryStep || bStopCM || bNS ||
+        bGStat = (bCalcEner || bStopCM ||
                   (ir->nstlist == -1 && !bRerunMD && step >= step_nscheck));
         
         do_ene = (do_per_step(step,ir->nstenergy) || bLastStep);
         
         if (do_ene || do_log)
         {
-            bCalcPres = TRUE;
+            bCalcEner = TRUE;
             bGStat    = TRUE;
         }
         
@@ -1457,7 +1511,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                      state->lambda,graph,
                      fr,vsite,mu_tot,t,fp_field,ed,bBornRadii,
                      GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
-                     GMX_FORCE_ALLFORCES | (bCalcPres ? GMX_FORCE_VIRIAL : 0) |
+                     GMX_FORCE_ALLFORCES | (bCalcEner ? GMX_FORCE_VIRIAL : 0) |
                      (bDoDHDL ? GMX_FORCE_DHDL : 0));
         }
         
@@ -1573,7 +1627,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              */
             update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,fcd,
                    &top->idef,ekind,scale_tot,
-                   cr,nrnb,wcycle,upd,constr,bCalcPres,shake_vir,
+                   cr,nrnb,wcycle,upd,constr,bCalcEner,shake_vir,
                    bNEMD,bFirstStep && bStateFromTPX);
             if (fr->bSepDVDL && fplog && do_log)
             {
@@ -1836,12 +1890,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                 break;
             }
             
-            /* Complicated conditional when bGStatEveryStep=FALSE.
-             * We can not just use bCalcPres, since then the simulation results
+            /* We can not just use bCalcEner, since then the simulation results
              * would depend on nstenergy and nstlog or step_nscheck.
              */
-            if ((state->flags & (1<<estPRES_PREV)) &&
-                (bGStatEveryStep || bNS || (ir->nstlist == 0 && bCalcPres)))
+            if ((state->flags & (1<<estPRES_PREV)) && bNstEner)
             {
                 /* Store the pressure in t_state for pressure coupling
                  * at the next MD step.
@@ -1965,7 +2017,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         {
             if (DOMAINDECOMP(cr))
             {
-                dd_partition_system(fplog,step,cr,TRUE,
+                dd_partition_system(fplog,step,cr,TRUE,1,
                                     state_global,top_global,ir,
                                     state,&f,mdatoms,top,fr,
                                     vsite,shellfc,constr,

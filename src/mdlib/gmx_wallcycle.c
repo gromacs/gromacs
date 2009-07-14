@@ -405,7 +405,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     {
         sprintf(buf,
                 "NOTE: %d %% of the run time was spent communicating energies,\n"
-                "      you might want to use the -nosum option of mdrun\n",
+                "      you might want to use the -gcom option of mdrun\n",
                 (int)(100*cycles[ewcMoveE]/tot+0.5));
         if (fplog)
         {

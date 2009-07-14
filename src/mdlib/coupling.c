@@ -105,7 +105,7 @@ real calc_temp(real ekin,real nrdf)
 }
 
 void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
-			     t_inputrec *ir,tensor pres,
+			     t_inputrec *ir,real dt,tensor pres,
 			     tensor box,tensor box_rel,tensor boxv,
 			     tensor M,matrix mu,bool bFirstStep)
 {
@@ -221,7 +221,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
     maxchange=0;
     for(d=0;d<DIM;d++)
       for(n=0;n<=d;n++) {
-	boxv[d][n] += ir->delta_t*t1[d][n];
+	boxv[d][n] += dt*t1[d][n];
 	/* We do NOT update the box vectors themselves here, since
 	 * we need them for shifting later. It is instead done last
 	 * in the update() routine.
@@ -232,7 +232,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
 	 * be zero it doesn't make sense to check the change relative
 	 * to its current size.
 	 */
-	change=fabs(ir->delta_t*boxv[d][n]/box[d][d]);
+	change=fabs(dt*boxv[d][n]/box[d][d]);
 	if(change>maxchange)
 	  maxchange=change;
       }
@@ -253,14 +253,14 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
   /* Determine the scaling matrix mu for the coordinates */
   for(d=0;d<DIM;d++)
     for(n=0;n<=d;n++)
-      t1[d][n] = box[d][n] + ir->delta_t*boxv[d][n];
+      t1[d][n] = box[d][n] + dt*boxv[d][n];
   preserve_box_shape(ir,box_rel,t1);
   /* t1 is the box at t+dt, determine mu as the relative change */
   mmul_ur0(invbox,t1,mu);
 }
 
 void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
-		      t_inputrec *ir,tensor pres,matrix box,
+		      t_inputrec *ir,real dt,tensor pres,matrix box,
 		      matrix mu)
 {
   int    d,n;
@@ -278,7 +278,7 @@ void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
       xy_pressure += pres[d][d]/(DIM-1);
   }
   /* Pressure is now in bar, everywhere. */
-#define factor(d,m) (ir->compress[d][m]*ir->delta_t/ir->tau_p)
+#define factor(d,m) (ir->compress[d][m]*dt/ir->tau_p)
   
   /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
    * necessary for triclinic scaling
@@ -305,7 +305,7 @@ void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
     /* ir->ref_p[0/1] is the reference surface-tension times *
      * the number of surfaces                                */
     if (ir->compress[ZZ][ZZ])
-      p_corr_z = ir->delta_t/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
+      p_corr_z = dt/ir->tau_p*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]);
     else
       /* when the compressibity is zero, set the pressure correction   *
        * in the z-direction to zero to get the correct surface tension */

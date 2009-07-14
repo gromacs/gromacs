@@ -262,50 +262,64 @@ void init_em(FILE *fplog,const char *title,
 
   init_nrnb(nrnb);
 
-  if (DOMAINDECOMP(cr)) {
-    *top = dd_init_local_top(top_global);
-
-    dd_init_local_state(cr->dd,state_global,&ems->s);
-
-    /* Distribute the charge groups over the nodes from the master node */
-    dd_partition_system(fplog,ir->init_step,cr,TRUE,
-			state_global,top_global,ir,
-			&ems->s,&ems->f,mdatoms,*top,
-			fr,vsite,NULL,constr,
-			nrnb,NULL,FALSE);
-    dd_store_state(cr->dd,&ems->s);
-    
-    if (ir->nstfout) {
-      snew(*f_global,top_global->natoms);
-    } else {
-      *f_global = NULL;
+    if (DOMAINDECOMP(cr))
+    {
+        *top = dd_init_local_top(top_global);
+        
+        dd_init_local_state(cr->dd,state_global,&ems->s);
+        
+        /* Distribute the charge groups over the nodes from the master node */
+        dd_partition_system(fplog,ir->init_step,cr,TRUE,1,
+                            state_global,top_global,ir,
+                            &ems->s,&ems->f,mdatoms,*top,
+                            fr,vsite,NULL,constr,
+                            nrnb,NULL,FALSE);
+        dd_store_state(cr->dd,&ems->s);
+        
+        if (ir->nstfout)
+        {
+            snew(*f_global,top_global->natoms);
+        }
+        else
+        {
+            *f_global = NULL;
+        }
+        *graph = NULL;
     }
-    *graph = NULL;
-  } else {
-    /* Just copy the state */
-    ems->s = *state_global;
-    snew(ems->s.x,ems->s.nalloc);
-    snew(ems->f,ems->s.nalloc);
-    for(i=0; i<state_global->natoms; i++)
-      copy_rvec(state_global->x[i],ems->s.x[i]);
-    copy_mat(state_global->box,ems->s.box);
-
-    if (PAR(cr)) {
-      /* Initialize the particle decomposition and split the topology */
-      *top = split_system(fplog,top_global,ir,cr);
-      
-      pd_cg_range(cr,&fr->cg0,&fr->hcg);
-    } else {
-      *top = gmx_mtop_generate_local_top(top_global,ir);
+    else
+    {
+        /* Just copy the state */
+        ems->s = *state_global;
+        snew(ems->s.x,ems->s.nalloc);
+        snew(ems->f,ems->s.nalloc);
+        for(i=0; i<state_global->natoms; i++)
+        {
+            copy_rvec(state_global->x[i],ems->s.x[i]);
+        }
+        copy_mat(state_global->box,ems->s.box);
+        
+        if (PAR(cr))
+        {
+            /* Initialize the particle decomposition and split the topology */
+            *top = split_system(fplog,top_global,ir,cr);
+            
+            pd_cg_range(cr,&fr->cg0,&fr->hcg);
+        }
+        else
+        {
+            *top = gmx_mtop_generate_local_top(top_global,ir);
+        }
+        *f_global = f;
+        
+        if (ir->ePBC != epbcNONE && !ir->bPeriodicMols)
+        {
+            *graph = mk_graph(fplog,&((*top)->idef),0,top_global->natoms,FALSE,FALSE);
+        }
+        else
+        {
+            *graph = NULL;
+        }
     }
-    *f_global = f;
-
-    if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
-      *graph = mk_graph(fplog,&((*top)->idef),0,top_global->natoms,FALSE,FALSE);
-    } else {
-      *graph = NULL;
-    }
-  }
 
   clear_rvec(mu_tot);
   calc_shifts(ems->s.box,fr->shift_vec);
@@ -557,21 +571,21 @@ static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
 }
 
 static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
-				   gmx_mtop_t *top_global,t_inputrec *ir,
-				   em_state_t *ems,gmx_localtop_t *top,
-				   t_mdatoms *mdatoms,t_forcerec *fr,
-				   gmx_vsite_t *vsite,gmx_constr_t constr,
-				   t_nrnb *nrnb,gmx_wallcycle_t wcycle)
+                                   gmx_mtop_t *top_global,t_inputrec *ir,
+                                   em_state_t *ems,gmx_localtop_t *top,
+                                   t_mdatoms *mdatoms,t_forcerec *fr,
+                                   gmx_vsite_t *vsite,gmx_constr_t constr,
+                                   t_nrnb *nrnb,gmx_wallcycle_t wcycle)
 {
-  /* Repartition the domain decomposition */
-  wallcycle_start(wcycle,ewcDOMDEC);
-  dd_partition_system(fplog,step,cr,FALSE,
-		      NULL,top_global,ir,
-		      &ems->s,&ems->f,
-		      mdatoms,top,fr,vsite,NULL,constr,
-		      nrnb,wcycle,FALSE);
-  dd_store_state(cr->dd,&ems->s);
-  wallcycle_stop(wcycle,ewcDOMDEC);
+    /* Repartition the domain decomposition */
+    wallcycle_start(wcycle,ewcDOMDEC);
+    dd_partition_system(fplog,step,cr,FALSE,1,
+                        NULL,top_global,ir,
+                        &ems->s,&ems->f,
+                        mdatoms,top,fr,vsite,NULL,constr,
+                        nrnb,wcycle,FALSE);
+    dd_store_state(cr->dd,&ems->s);
+    wallcycle_stop(wcycle,ewcDOMDEC);
 }
     
 static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
@@ -798,7 +812,7 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 
 double do_cg(FILE *fplog,t_commrec *cr,
 	     int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,
+	     bool bVerbose,bool bCompact,int nstglobalcomm,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
 	     t_inputrec *inputrec,
@@ -1314,7 +1328,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
 double do_lbfgs(FILE *fplog,t_commrec *cr,
                 int nfile,t_filenm fnm[],
-                bool bVerbose,bool bCompact,
+                bool bVerbose,bool bCompact,int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
                 t_inputrec *inputrec,
@@ -1946,7 +1960,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 
 double do_steep(FILE *fplog,t_commrec *cr,
 		int nfile,t_filenm fnm[],
-		bool bVerbose,bool bCompact,
+		bool bVerbose,bool bCompact,int nstglobalcomm,
 		gmx_vsite_t *vsite,gmx_constr_t constr,
 		int stepout,
 		t_inputrec *inputrec,
@@ -2147,7 +2161,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
 double do_nm(FILE *fplog,t_commrec *cr,
 	     int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,
+	     bool bVerbose,bool bCompact,int nstglobalcomm,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
 	     t_inputrec *inputrec,
@@ -2409,7 +2423,7 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 
 double do_tpi(FILE *fplog,t_commrec *cr,
 	      int nfile,t_filenm fnm[],
-	      bool bVerbose,bool bCompact,
+	      bool bVerbose,bool bCompact,int nstglobalcomm,
 	      gmx_vsite_t *vsite,gmx_constr_t constr,
 	      int stepout,
 	      t_inputrec *inputrec,

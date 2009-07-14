@@ -517,6 +517,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PS("integrator",EI(ir->eI));
     PSTEP("nsteps",ir->nsteps);
     PSTEP("init_step",ir->init_step);
+    PI("nstcalcenergy",ir->nstcalcenergy);
     PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
@@ -563,6 +564,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
       pr_rvec(fp,indent,"posres_comB",ir->posres_comB,DIM,TRUE);
     PI("andersen_seed",ir->andersen_seed);
     PR("rlist",ir->rlist);
+    PR("rlistlong",ir->rlistlong);
     PR("rtpi",ir->rtpi);
     PS("coulombtype",EELTYPE(ir->coulombtype));
     PR("rcoulomb_switch",ir->rcoulomb_switch);

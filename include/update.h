@@ -149,13 +149,13 @@ extern real calc_pres(int ePBC,int nwall,matrix box,
  */
 
 extern void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
-				    t_inputrec *ir,tensor pres,
+				    t_inputrec *ir,real dt,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
 				    tensor M,matrix mu,
 				    bool bFirstStep);
   
 extern void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
-			     t_inputrec *ir,tensor pres,matrix box,
+			     t_inputrec *ir,real dt,tensor pres,matrix box,
 			     matrix mu);
 
 
