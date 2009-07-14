@@ -1194,9 +1194,9 @@ $\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
 $\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
 \end{enumerate}
 \item generate pairs = no
-(the default, get 1-4 interactions from the pair list, when parameters
-are not present in the list give a warning and use zeros)
-or yes (generate 1-4 interactions which are not present in the pair list
+(the default, get 1-4 parameters from the pairtypes list, when parameters
+are not present in the list stop with a fatal error)
+or yes (generate 1-4 parameters which are not present in the pair list
 from normal Lennard-Jones parameters using FudgeLJ)
 \item FudgeLJ = factor to multiply Lennard-Jones 1-4 interactions with, default 1
 \item FudgeQQ = factor to multiply electrostatic 1-4 interactions with, default 1
