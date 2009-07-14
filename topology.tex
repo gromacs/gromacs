@@ -408,9 +408,9 @@ are excluded from the non-bonded interactions (see \secref{excl}).
 
 The pair interaction parameters for the atom types
 in {\tt ff???nb.itp} are listed in the {\tt [~pairtypes~]} section.
-The {\gromos} force fields list all these interactions 
+The {\gromos} force fields list all these interaction parameters
 explicitly, but this section might be empty for force fields like
-OPLS that calculate the 1-4 interactions by scaling.
+OPLS that calculate the 1-4 interactions by uniformly scaling the parameters.
 Pair parameters which are not present in the {\tt [~pairtypes~]} section
 are only generated when generate pairs is set to yes in the topology
 (see \ssecref{topfile}). When generate pairs is set to no, {\tt grompp}
