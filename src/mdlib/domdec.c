@@ -8010,26 +8010,38 @@ void dd_partition_system(FILE            *fplog,
         }
         else
         {
-            bDoDLB = (step % nstglobalcomm == 0);
+            bDoDLB = (step >= comm->partition_step + nstglobalcomm);
         }
     }
 
     /* Check if we have recorded loads on the nodes */
     if (comm->bRecordLoad && dd_load_count(comm))
     {
-        /* Check if we should use DLB at the second partitioning
-         * and every 100 partitionings,
-         * so the extra communication cost is negligible.
-         */
-        bCheckDLB = (comm->eDLB == edlbAUTO && !comm->bDynLoadBal &&
-                     (comm->n_load_collect == 0 ||
-                      comm->n_load_have % 100 == 99));
-
+        if (comm->eDLB == edlbAUTO && !comm->bDynLoadBal)
+        {
+            /* Check if we should use DLB at the second partitioning
+             * and every 100 partitionings,
+             * so the extra communication cost is negligible.
+             */
+            n = max(100,nstglobalcomm);
+            bCheckDLB = (comm->n_load_collect == 0 ||
+                         comm->n_load_have % n == n-1);
+        }
+        else
+        {
+            bCheckDLB = FALSE;
+        }
+        
         /* Print load every nstlog, first and last step to the log file */
         bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
                     comm->n_load_collect == 0 ||
                     (step + ir->nstlist > ir->init_step + ir->nsteps));
-        if (bDoDLB || bLogLoad || bVerbose || bCheckDLB)
+
+        /* Avoid extra communication due to verbose screen output
+         * when nstglobalcomm is set.
+         */
+        if (bDoDLB || bLogLoad || bCheckDLB ||
+            (bVerbose && (ir->nstlist == 0 || nstglobalcomm <= ir->nstlist)))
         {
             get_load_distribution(dd,wcycle);
             if (DDMASTER(dd))
