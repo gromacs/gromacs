@@ -1559,29 +1559,29 @@ void list_checkpoint(char *fn,FILE *out)
 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-int
-read_checkpoint_simulation_part(char *filename, t_commrec *cr)
+void
+read_checkpoint_simulation_part(char *filename,int *simulation_part,gmx_step_t *cpt_step,t_commrec *cr)
 {
     int  fp;
 	int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
     int  eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
-    gmx_step_t step;
+    gmx_step_t step=0;
 	double t;
-    int  natoms,ngtc,fflags,flags_eks,flags_enh,simulation_part;
+    int  natoms,ngtc,fflags,flags_eks,flags_enh;
 		
     if (SIMMASTER(cr)) {
         if(!gmx_fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
         {
-            simulation_part = 0;
+            *simulation_part = 0;
         }
         else 
         {
             do_cpt_header(gmx_fio_getxdr(fp),
                           TRUE,&file_version,
                           &version,&btime,&buser,&bmach,&fprog,&ftime,
-                          &eIntegrator_f,&simulation_part,
+                          &eIntegrator_f,simulation_part,
                           &step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
                           &natoms,&ngtc,
                           &fflags,&flags_eks,&flags_enh,NULL);
@@ -1599,9 +1599,10 @@ read_checkpoint_simulation_part(char *filename, t_commrec *cr)
         }
     }
     if (PAR(cr)) {
-        gmx_bcast(sizeof(simulation_part),&simulation_part,cr);
+        gmx_bcast(sizeof(*simulation_part),simulation_part,cr);
     }
-        
-    return simulation_part;
+    if (NULL != cpt_step)
+    {
+        *cpt_step = step;
+    }
 }
-

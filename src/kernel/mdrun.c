@@ -432,7 +432,8 @@ int main(int argc,char *argv[])
   sim_part = 1;
   if(opt2bSet("-cpi",NFILE,fnm))
   {
-	  sim_part = read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),cr) + 1;
+	  read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),&sim_part,NULL,cr);
+	  sim_part++;
 	  /* sim_part will now be 1 if no checkpoint file was found */
 	  if (sim_part==1 && MASTER(cr))
 	  {

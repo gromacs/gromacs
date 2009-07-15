@@ -78,8 +78,8 @@ extern void list_checkpoint(char *fn,FILE *out);
 /* Read just the simulation 'generation'. This is necessary already at the beginning of mdrun,
  * to be able to rename the logfile correctly.
  */
-int
-read_checkpoint_simulation_part(char *filename, t_commrec *cr);
-
+void
+read_checkpoint_simulation_part(char *filename,int *simulation_part,
+                                gmx_step_t *step,t_commrec *cr);
 
 #endif
