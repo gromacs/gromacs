@@ -624,24 +624,35 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     }
 }
 
+void upd_mdebin_step(t_mdebin *md)
+{
+   ebin_increase_count(md->ebin,FALSE); 
+}
+
 static void npr(FILE *log,int n,char c)
 {
   for(; (n>0); n--) fprintf(log,"%c",c);
 }
 
-static void pprint(FILE *log,const char *s)
+static void pprint(FILE *log,const char *s,t_mdebin *md)
 {
-  char   CHAR='#';
-  int slen;
+    char CHAR='#';
+    int  slen;
+    char buf1[22],buf2[22];
+    
+    slen = strlen(s);
+    fprintf(log,"\t<======  ");
+    npr(log,slen,CHAR);
+    fprintf(log,"  ==>\n");
+    fprintf(log,"\t<====  %s  ====>\n",s);
+    fprintf(log,"\t<==  ");
+    npr(log,slen,CHAR);
+    fprintf(log,"  ======>\n\n");
 
-  slen=strlen(s);
-  fprintf(log,"\t<======  "); 
-  npr(log,slen,CHAR); 
-  fprintf(log,"  ==>\n");
-  fprintf(log,"\t<====  %s  ====>\n",s); 
-  fprintf(log,"\t<==  "); 
-  npr(log,slen,CHAR); 
-  fprintf(log,"  ======>\n\n");
+    fprintf(log,"\tStatistics over %s steps using %s frames\n",
+            gmx_step_str(md->ebin->nsteps_sim,buf1),
+            gmx_step_str(md->ebin->nsum_sim,buf2));
+    fprintf(log,"\n");
 }
 
 void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb)
@@ -660,137 +671,174 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
                 t_mdebin *md,t_fcdata *fcd,
                 gmx_groups_t *groups,t_grpopts *opts)
 {
-  static char **grpnms=NULL;
-  char        buf[246];
-  int         i,j,n,ni,nj,ndr,nor;
-  int         nr[enxNR];
-  real        *block[enxNR];
-  t_enxframe  fr;
+    static char **grpnms=NULL;
+    char        buf[246];
+    int         i,j,n,ni,nj,ndr,nor;
+    int         nr[enxNR];
+    real        *block[enxNR];
+    t_enxframe  fr;
 	
-  switch (mode) {
-  case eprNORMAL:
-    fr.t            = time;
-    fr.step         = step;
-    fr.nsum         = md->ebin->nsum;
-    fr.nre          = (bEne) ? md->ebin->nener : 0;
-    fr.ener         = md->ebin->e;
-    fr.ndisre       = bDR ? fcd->disres.npair : 0;
-    fr.disre_rm3tav = fcd->disres.rm3tav;
-    fr.disre_rt     = fcd->disres.rt;
-    /* Optional additional blocks */
-    for(i=0; i<enxNR; i++)
-      nr[i] = 0;
-    if (fcd->orires.nr > 0 && bOR) {
-      diagonalize_orires_tensors(&(fcd->orires));
-      nr[enxOR]     = fcd->orires.nr;
-      block[enxOR]  = fcd->orires.otav;
-      nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ? 
-	fcd->orires.nr : 0;
-      block[enxORI] = fcd->orires.oinsl;
-      nr[enxORT]    = fcd->orires.nex*12;
-      block[enxORT] = fcd->orires.eig;
+    switch (mode)
+    {
+    case eprNORMAL:
+        fr.t            = time;
+        fr.step         = step;
+        fr.nsteps       = md->ebin->nsteps;
+        fr.nsum         = md->ebin->nsum;
+        fr.nre          = (bEne) ? md->ebin->nener : 0;
+        fr.ener         = md->ebin->e;
+        fr.ndisre       = bDR ? fcd->disres.npair : 0;
+        fr.disre_rm3tav = fcd->disres.rm3tav;
+        fr.disre_rt     = fcd->disres.rt;
+        /* Optional additional blocks */
+        for(i=0; i<enxNR; i++)
+        {
+            nr[i] = 0;
+        }
+        if (fcd->orires.nr > 0 && bOR)
+        {
+            diagonalize_orires_tensors(&(fcd->orires));
+            nr[enxOR]     = fcd->orires.nr;
+            block[enxOR]  = fcd->orires.otav;
+            nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ? 
+                fcd->orires.nr : 0;
+            block[enxORI] = fcd->orires.oinsl;
+            nr[enxORT]    = fcd->orires.nex*12;
+            block[enxORT] = fcd->orires.eig;
+        }
+        fr.nblock = 0;
+        for(i=0; i<enxNR; i++)
+        {
+            if (nr[i] > 0)
+            {
+                fr.nblock = i + 1;
+            }
+        }
+        fr.nr         = nr;
+        fr.block      = block;
+        if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
+        {
+            do_enx(fp_ene,&fr);
+            if (fr.nre)
+            {
+                /* We have stored the sums, so reset the sum history */
+                reset_ebin_sums(md->ebin);
+            }
+        }
+        break;
+    case eprAVER:
+        if (log)
+        {
+            pprint(log,"A V E R A G E S",md);
+        }
+        break;
+    case eprRMS:
+        if (log)
+        {
+            pprint(log,"R M S - F L U C T U A T I O N S",md);
+        }
+        break;
+    default:
+        gmx_fatal(FARGS,"Invalid print mode (%d)",mode);
     }
-    fr.nblock = 0;
-    for(i=0; i<enxNR; i++)
-      if (nr[i] > 0)
-	fr.nblock = i+1;
-    fr.nr         = nr;
-    fr.block      = block;
-    if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI]) {
-      do_enx(fp_ene,&fr);
-      if (fr.nre) {
-          /* We have stored the sums, so reset the sum history */
-          reset_ebin_sums(md->ebin);
-      }
+    
+    if (log)
+    {
+        for(i=0;i<opts->ngtc;i++)
+        {
+            if(opts->annealing[i]!=eannNO)
+            {
+                fprintf(log,"Current ref_t for group %s: %8.1f\n",
+                        *(groups->grpname[groups->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
+            }
+        }
+        if (mode==eprNORMAL && fcd->orires.nr>0)
+        {
+            print_orires_log(log,&(fcd->orires));
+        }
+        fprintf(log,"   Energies (%s)\n",unit_energy);
+        pr_ebin(log,md->ebin,md->ie,f_nre+nCrmsd,5,mode,TRUE);  
+        fprintf(log,"\n");
+        
+        if (!bCompact)
+        {
+            if (bDynBox)
+            {
+                pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,TRUE);      
+                fprintf(log,"\n");
+            }
+            if (bConstrVir)
+            {
+                fprintf(log,"   Constraint Virial (%s)\n",unit_energy);
+                pr_ebin(log,md->ebin,md->isvir,9,3,mode,FALSE);  
+                fprintf(log,"\n");
+                fprintf(log,"   Force Virial (%s)\n",unit_energy);
+                pr_ebin(log,md->ebin,md->ifvir,9,3,mode,FALSE);  
+                fprintf(log,"\n");
+            }
+            fprintf(log,"   Total Virial (%s)\n",unit_energy);
+            pr_ebin(log,md->ebin,md->ivir,9,3,mode,FALSE);   
+            fprintf(log,"\n");
+            fprintf(log,"   Pressure (%s)\n",unit_pres_bar);
+            pr_ebin(log,md->ebin,md->ipres,9,3,mode,FALSE);  
+            fprintf(log,"\n");
+            fprintf(log,"   Total Dipole (%s)\n",unit_dipole_D);
+            pr_ebin(log,md->ebin,md->imu,3,3,mode,FALSE);    
+            fprintf(log,"\n");
+            
+            if (md->nE > 1)
+            {
+                if (grpnms==NULL)
+                {
+                    snew(grpnms,md->nE);
+                    n=0;
+                    for(i=0; (i<md->nEg); i++)
+                    {
+                        ni=groups->grps[egcENER].nm_ind[i];
+                        for(j=i; (j<md->nEg); j++)
+                        {
+                            nj=groups->grps[egcENER].nm_ind[j];
+                            sprintf(buf,"%s-%s",*(groups->grpname[ni]),*(groups->grpname[nj]));
+                            grpnms[n++]=strdup(buf);
+                        }
+                    }
+                }
+                sprintf(buf,"Epot (%s)",unit_energy);
+                fprintf(log,"%15s   ",buf);
+                for(i=0; (i<egNR); i++)
+                {
+                    if (bEInd[i])
+                    {
+                        fprintf(log,"%12s   ",egrp_nm[i]);
+                    }
+                }
+                fprintf(log,"\n");
+                for(i=0; (i<md->nE); i++)
+                {
+                    fprintf(log,"%15s",grpnms[i]);
+                    pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,FALSE);
+                }
+                fprintf(log,"\n");
+            }
+            if (md->nTC > 1)
+            {
+                pr_ebin(log,md->ebin,md->itemp,md->nTC,4,mode,TRUE);
+                fprintf(log,"\n");
+            }
+            if (md->nU > 1)
+            {
+                fprintf(log,"%15s   %12s   %12s   %12s\n",
+                        "Group","Ux","Uy","Uz");
+                for(i=0; (i<md->nU); i++)
+                {
+                    ni=groups->grps[egcACC].nm_ind[i];
+                    fprintf(log,"%15s",*groups->grpname[ni]);
+                    pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,FALSE);
+                }
+                fprintf(log,"\n");
+            }
+        }
     }
-    break;
-  case eprAVER:
-    if (log) pprint(log,"A V E R A G E S");
-    break;
-  case eprRMS:
-    if (log) pprint(log,"R M S - F L U C T U A T I O N S");
-    break;
-  default:
-    gmx_fatal(FARGS,"Invalid print mode (%d)",mode);
-  }
-  
-  if (log) {
-    for(i=0;i<opts->ngtc;i++)
-		if(opts->annealing[i]!=eannNO)
-			fprintf(log,"Current ref_t for group %s: %8.1f\n",
-		*(groups->grpname[groups->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
-  
-	  if (mode==eprNORMAL && fcd->orires.nr>0)
-		  print_orires_log(log,&(fcd->orires));
-
-      fprintf(log,"   Energies (%s)\n",unit_energy);
-    pr_ebin(log,md->ebin,md->ie,f_nre+nCrmsd,5,mode,TRUE);  
-    fprintf(log,"\n");
-
-    if (!bCompact) {
-      if (bDynBox) {
-	pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,TRUE);      
-	fprintf(log,"\n");
-      }
-      if (bConstrVir) {
-	fprintf(log,"   Constraint Virial (%s)\n",unit_energy);
-	pr_ebin(log,md->ebin,md->isvir,9,3,mode,FALSE);  
-	fprintf(log,"\n");
-	fprintf(log,"   Force Virial (%s)\n",unit_energy);
-	pr_ebin(log,md->ebin,md->ifvir,9,3,mode,FALSE);  
-	fprintf(log,"\n");
-      }
-      fprintf(log,"   Total Virial (%s)\n",unit_energy);
-      pr_ebin(log,md->ebin,md->ivir,9,3,mode,FALSE);   
-      fprintf(log,"\n");
-      fprintf(log,"   Pressure (%s)\n",unit_pres_bar);
-      pr_ebin(log,md->ebin,md->ipres,9,3,mode,FALSE);  
-      fprintf(log,"\n");
-      fprintf(log,"   Total Dipole (%s)\n",unit_dipole_D);
-      pr_ebin(log,md->ebin,md->imu,3,3,mode,FALSE);    
-      fprintf(log,"\n");
-      
-      if (md->nE > 1) {
-	if (grpnms==NULL) {
-	  snew(grpnms,md->nE);
-	  n=0;
-	  for(i=0; (i<md->nEg); i++) {
-	    ni=groups->grps[egcENER].nm_ind[i];
-	    for(j=i; (j<md->nEg); j++) {
-	      nj=groups->grps[egcENER].nm_ind[j];
-	      sprintf(buf,"%s-%s",*(groups->grpname[ni]),*(groups->grpname[nj]));
-	      grpnms[n++]=strdup(buf);
-	    }
-	  }
-	}
-	sprintf(buf,"Epot (%s)",unit_energy);
-	fprintf(log,"%15s   ",buf);
-	for(i=0; (i<egNR); i++) 
-	  if (bEInd[i])
-	    fprintf(log,"%12s   ",egrp_nm[i]);
-	fprintf(log,"\n");
-	for(i=0; (i<md->nE); i++) {
-	  fprintf(log,"%15s",grpnms[i]);
-	  pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,FALSE);
-	}
-	fprintf(log,"\n");
-      }
-      if (md->nTC > 1) {
-	pr_ebin(log,md->ebin,md->itemp,md->nTC,4,mode,TRUE);
-	fprintf(log,"\n");
-      }
-      if (md->nU > 1) {
-	fprintf(log,"%15s   %12s   %12s   %12s\n",
-		"Group","Ux","Uy","Uz");
-	for(i=0; (i<md->nU); i++) {
-	  ni=groups->grps[egcACC].nm_ind[i];
-	  fprintf(log,"%15s",*groups->grpname[ni]);
-	  pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,FALSE);
-	}
-	fprintf(log,"\n");
-      }
-    }
-  }
 }
 
 void 
@@ -802,8 +850,10 @@ init_energyhistory(energyhistory_t * enerhist)
     enerhist->ener_sum     = NULL;
     enerhist->ener_sum_sim = NULL;
 
-    enerhist->nsum     = 0;
-    enerhist->nsum_sim = 0;
+    enerhist->nsteps     = 0;
+    enerhist->nsum       = 0;
+    enerhist->nsteps_sim = 0;
+    enerhist->nsum_sim   = 0;
 }
 
 void
@@ -811,9 +861,11 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
 {
     int i;
     
-    enerhist->nsum     = mdebin->ebin->nsum;
-    enerhist->nsum_sim = mdebin->ebin->nsum_sim;
-    enerhist->nener    = mdebin->ebin->nener;
+    enerhist->nsteps     = mdebin->ebin->nsteps;
+    enerhist->nsum       = mdebin->ebin->nsum;
+    enerhist->nsteps_sim = mdebin->ebin->nsteps_sim;
+    enerhist->nsum_sim   = mdebin->ebin->nsum_sim;
+    enerhist->nener      = mdebin->ebin->nener;
 
     if (mdebin->ebin->nsum > 0)
     {
@@ -841,7 +893,7 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
         
         for(i=0;i<enerhist->nener;i++)
         {
-            enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].eav;
+            enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].esum;
         }
     }
 }
@@ -858,8 +910,10 @@ restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist)
                   mdebin->ebin->nener,enerhist->nener);
 	}
 
-    mdebin->ebin->nsum     = enerhist->nsum;
-    mdebin->ebin->nsum_sim = enerhist->nsum_sim;
+    mdebin->ebin->nsteps     = enerhist->nsteps;
+    mdebin->ebin->nsum       = enerhist->nsum;
+    mdebin->ebin->nsteps_sim = enerhist->nsteps_sim;
+    mdebin->ebin->nsum_sim   = enerhist->nsum_sim;
 
 	for(i=0; i<mdebin->ebin->nener; i++)
 	{

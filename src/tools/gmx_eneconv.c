@@ -147,13 +147,14 @@ static int scan_ene_files(char **fnms, int nfiles,
   int        f,i,in,nre,nremin=0,nresav=0;
   real       t1,t2;
   char       inputstring[STRLEN];
-  gmx_enxnm_t *enm=NULL;
+  gmx_enxnm_t *enm;
   t_enxframe *fr;
   
   snew(fr,1);
 
   for(f=0; f<nfiles; f++) {
     in = open_enx(fnms[f],"r");
+    enm = NULL;
     do_enxnms(in,&nre,&enm);
 
     if (f == 0) {
@@ -391,21 +392,24 @@ static void update_last_ee(t_energy *lastee, gmx_step_t laststep,
 }
 
 static void update_ee_sum(int nre,
-			  gmx_step_t *ee_sum_step,gmx_step_t *ee_sum_nsum,
+			  gmx_step_t *ee_sum_step,
+			  gmx_step_t *ee_sum_nsteps,
+			  gmx_step_t *ee_sum_nsum,
 			  t_energy *ee_sum,
 			  t_enxframe *fr,int out_step)
 {
-  gmx_step_t ns,fr_nsum;
+  gmx_step_t nsteps,nsum,fr_nsum;
   int i;
  
-  ns = *ee_sum_nsum;
+  nsteps = *ee_sum_nsteps;
+  nsum   = *ee_sum_nsum;
 
   fr_nsum = fr->nsum;
   if (fr_nsum == 0) {
     fr_nsum = 1;
   }
 
-  if (ns == 0) {
+  if (nsteps == 0) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
 	ee_sum[i].esum = fr->ener[i].e;
@@ -417,34 +421,39 @@ static void update_ee_sum(int nre,
 	ee_sum[i].eav  = fr->ener[i].eav;
       }
     }
-    ns = fr_nsum;
-  } else if (out_step - *ee_sum_step == ns + fr_nsum) {
+    nsteps = fr->nsteps;
+    nsum   = fr_nsum;
+  } else if (out_step - *ee_sum_step == nsteps + fr->nsteps) {
     if (fr_nsum == 1) {
       for(i=0;i<nre;i++) {
 	ee_sum[i].eav  +=
-	  dsqr(ee_sum[i].esum/ns - (ee_sum[i].esum + fr->ener[i].e)/(ns + 1))*
-	  ns*(ns + 1);
+	  dsqr(ee_sum[i].esum/nsum
+	       - (ee_sum[i].esum + fr->ener[i].e)/(nsum + 1))*nsum*(nsum + 1);
 	ee_sum[i].esum += fr->ener[i].e;
       }
     } else {
       for(i=0; i<fr->nre; i++) {
 	ee_sum[i].eav  +=
 	  fr->ener[i].eav +
-	  dsqr(ee_sum[i].esum/ns - (ee_sum[i].esum + fr->ener[i].esum)/(ns + fr->nsum))*
-	  ns*(ns + fr->nsum)/(double)fr->nsum;
+	  dsqr(ee_sum[i].esum/nsum
+	       - (ee_sum[i].esum + fr->ener[i].esum)/(nsum + fr->nsum))*
+	  nsum*(nsum + fr->nsum)/(double)fr->nsum;
 	ee_sum[i].esum += fr->ener[i].esum;
       }
     }
-    ns += fr_nsum;
+    nsteps += fr->nsteps;
+    nsum   += fr_nsum;
   } else {
     if (fr->nsum != 0) {
       fprintf(stderr,"\nWARNING: missing energy sums at time %f\n",fr->t);
     }
-    ns = 0;
+    nsteps = 0;
+    nsum   = 0;
   }
 
-  *ee_sum_step = out_step;
-  *ee_sum_nsum = ns;
+  *ee_sum_step   = out_step;
+  *ee_sum_nsteps = nsteps;
+  *ee_sum_nsum   = nsum;
 }
  
 int gmx_eneconv(int argc,char *argv[])
@@ -470,9 +479,9 @@ int gmx_eneconv(int argc,char *argv[])
     "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
   };
   int        in,out=0;
-  gmx_enxnm_t *enm=NULL;
+  gmx_enxnm_t *enm;
   t_enxframe *fr,*fro;
-  gmx_step_t ee_sum_step=0,ee_sum_nsum;
+  gmx_step_t ee_sum_step=0,ee_sum_nsteps,ee_sum_nsum;
   t_energy   *ee_sum;
   gmx_step_t laststep,startstep,startstep_file=0;
   int        noutfr;
@@ -480,7 +489,7 @@ int gmx_eneconv(int argc,char *argv[])
   real       t; 
   char       **fnms;
   real       *readtime,*settime,timestep,t1,tadjust;
-  char       inputstring[STRLEN],*chptr,buf[22],buf2[22];
+  char       inputstring[STRLEN],*chptr,buf[22],buf2[22],buf3[22];
   bool       ok;
   int        *cont_type;
   bool       bNewFile,bFirst,bNewOutput;
@@ -540,7 +549,8 @@ int gmx_eneconv(int argc,char *argv[])
   nre=scan_ene_files(fnms,nfile,readtime,&timestep,&nremax);   
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);     
 
-  ee_sum_nsum = 0;
+  ee_sum_nsteps = 0;
+  ee_sum_nsum   = 0;
   snew(ee_sum,nremax);
 
   snew(fr,1);
@@ -557,6 +567,7 @@ int gmx_eneconv(int argc,char *argv[])
     bNewFile=TRUE;
     bNewOutput=TRUE;
     in=open_enx(fnms[f],"r");
+    enm = NULL;
     do_enxnms(in,&this_nre,&enm);
     if (f == 0) {
       if (scalefac != 1)
@@ -581,8 +592,10 @@ int gmx_eneconv(int argc,char *argv[])
       }
       
       if (debug) {
-	fprintf(debug,"fr->step %s, ee_sum_nsum %s\n",
-		gmx_step_str(fr->step,buf),gmx_step_str(ee_sum_nsum,buf2));
+	fprintf(debug,"fr->step %s, ee_sum_nsteps %s, ee_sum_nsum %s\n",
+		gmx_step_str(fr->step,buf),
+		gmx_step_str(ee_sum_nsteps,buf2),
+		gmx_step_str(ee_sum_nsum,buf3));
       }
 
       if (tadjust + fr->t <= t) {
@@ -611,7 +624,8 @@ int gmx_eneconv(int argc,char *argv[])
 	  bFirst = FALSE;
 	  startstep = fr->step;	
 	}
-	update_ee_sum(nre,&ee_sum_step,&ee_sum_nsum,ee_sum,fr,fro->step);
+	update_ee_sum(nre,&ee_sum_step,&ee_sum_nsteps,&ee_sum_nsum,ee_sum,
+		      fr,fro->step);
       }	  
       
       /* determine if we should write it */
@@ -628,6 +642,8 @@ int gmx_eneconv(int argc,char *argv[])
 	  fro->ener[i].e = fr->ener[i].e;
 	}
 
+	fro->nsteps = ee_sum_nsteps;
+
 	if (ee_sum_nsum <= 1) {
 	  fro->nsum = 0;
 	} else {
@@ -638,8 +654,9 @@ int gmx_eneconv(int argc,char *argv[])
 	    fro->ener[i].eav  = ee_sum[i].eav;
 	  }
 	}
-	/* We wrote the sums, so reset the sum count */
-	ee_sum_nsum = 0;
+	/* We wrote the energies, so reset the counts */
+	ee_sum_nsteps = 0;
+	ee_sum_nsum   = 0;
 	
 	if (scalefac != 1) {
 	  for(kkk=0; kkk<nset; kkk++) {

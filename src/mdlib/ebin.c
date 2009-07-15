@@ -175,6 +175,9 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum)
 
 void ebin_increase_count(t_ebin *eb,bool bSum)
 {
+    eb->nsteps++;
+    eb->nsteps_sim++;
+
     if (bSum)
     {
         eb->nsum++;
@@ -184,7 +187,8 @@ void ebin_increase_count(t_ebin *eb,bool bSum)
 
 void reset_ebin_sums(t_ebin *eb)
 {
-    eb->nsum = 0;
+    eb->nsteps = 0;
+    eb->nsum   = 0;
     /* The actual sums are cleared when the next frame is stored */
 }
 

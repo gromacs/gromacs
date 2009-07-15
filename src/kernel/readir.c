@@ -148,6 +148,22 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
   }
   dt_coupl = ir->nstcalcenergy*ir->delta_t;
+  
+  if (ir->nstcalcenergy > 1) {
+    /* Energy and log file writing trigger energy calculation,
+     * so we need some checks.
+     */
+    if (ir->nstenergy > 0 && ir->nstenergy % ir->nstcalcenergy != 0) {
+      ir->nstenergy = (ir->nstenergy/ir->nstcalcenergy + 1)*ir->nstcalcenergy;
+      sprintf(warn_buf,"nstenergy is not a multiple of nstcalcenergy, setting nstenergy to %d\n",ir->nstenergy);
+      warning(NULL);
+    }
+    if (ir->nstlog > 0 && ir->nstlog % ir->nstcalcenergy != 0) {
+      ir->nstlog = (ir->nstlog/ir->nstcalcenergy + 1)*ir->nstcalcenergy;
+      sprintf(warn_buf,"nstlog is not a multiple of nstcalcenergy, setting nstlog to %d\n",ir->nstlog);
+      warning(NULL);
+    }
+  }
 
   /* LD STUFF */
   if ((EI_SD(ir->eI) || ir->eI == eiBD) &&
@@ -232,8 +248,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
     
     if (ir->nstcalcenergy > 0 && ir->nstcomm < ir->nstcalcenergy) {
-      warning_note("nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, setting nstcomm to nstenergy");
-      ir->nstcomm = ir->nstenergy;
+      warning_note("nstcomm < nstcalcenergy defeats the purpose of nstcalcenergy, setting nstcomm to nstcalcenergy");
+      ir->nstcomm = ir->nstcalcenergy;
     }
 
     if (ir->comm_mode == ecmANGULAR) {
