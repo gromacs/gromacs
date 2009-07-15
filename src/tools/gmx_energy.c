@@ -564,9 +564,9 @@ static void analyse_ener(bool bCorr,char *corrfn,
     }
     
     if (nnotexact == 0) {
-      fprintf(stdout,"All averages are exact over %s steps\n",
-	      gmx_step_str(nsteps,buf));
-    } else if (nexact == 0) {
+      fprintf(stdout,"All averages are over %s frames\n",
+	      gmx_step_str(ee_nsum,buf));
+    } else if (nexact == 0 || ee_nsum == enersum->nframes) {
       fprintf(stdout,"All averages are over %d frames\n",enersum->nframes);
     } else {
       fprintf(stdout,"The term%s",nnotexact==1 ? "" : "s");
@@ -577,8 +577,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
       }
       fprintf(stdout," %s averaged over %d frames\n",
 	      nnotexact==1 ? "is" : "are",enersum->nframes);
-      fprintf(stdout,"All other averages are exact over %s steps\n",
-	      gmx_step_str(nsteps,buf));
+      fprintf(stdout,"All other averages are over %s frames\n",
+	      gmx_step_str(ee_nsum,buf));
     }
     fprintf(stdout,"\n");
 
@@ -975,7 +975,7 @@ int gmx_energy(int argc,char *argv[])
   int        cur=0;
 #define NEXT (1-cur)
   int        nre,teller,teller_disre;
-  gmx_step_t start_step,ee_nsum;
+  gmx_step_t start_step,ee_nsteps,ee_nsum;
   int        nor=0,nex=0,norfr=0,enx_i=0;
   real       start_t;
   real       *bounds=NULL,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
@@ -1218,6 +1218,7 @@ int gmx_energy(int argc,char *argv[])
   bFoundStart  = FALSE;
   start_step   = 0;
   start_t      = 0;
+  ee_nsteps    = 0;
   ee_nsum      = 0;
   do {
     /* This loop searches for the first frame (when -b option is given), 
@@ -1249,38 +1250,40 @@ int gmx_energy(int argc,char *argv[])
 	    ee_sum[i].esum = fr->ener[i].e;
 	    ee_sum[i].eav  = 0;
 	  }
-	  ee_nsum = 1;
+	  ee_nsteps = 1;
+	  ee_nsum   = 1;
 	} else {
 	  if (ee_nsum > 0) {
-	    if (fr->step - start_step + 1 == ee_nsum + 1) {
-	      /* We have an interval of a single frame:
-	       * add the energy to the sums.
-	       */
-	      for(i=0; i<fr->nre; i++) {
-		ee_sum[i].eav  +=
-		  dsqr(ee_sum[i].esum/ee_nsum - (ee_sum[i].esum + fr->ener[i].e)/(ee_nsum + 1))*
-		  ee_nsum*(ee_nsum + 1);
-		ee_sum[i].esum += fr->ener[i].e;
-	      }
-	      ee_nsum += 1;
-	    } else if (fr->step - start_step + 1 == ee_nsum + fr->nsum) {
-	      /* The interval matches fr->nsum:
-	       * add the sums to the total.
-	       */
-	      for(i=0; i<fr->nre; i++) {
-		ee_sum[i].eav  +=
-		  fr->ener[i].eav +
-		  dsqr(ee_sum[i].esum/ee_nsum - (ee_sum[i].esum + fr->ener[i].esum)/(ee_nsum + fr->nsum))*
-		  ee_nsum*(ee_nsum + fr->nsum)/(double)fr->nsum;
+	    if (fr->step - start_step + 1 == ee_nsteps + fr->nsteps) {
+	      if (fr->nsum <= 1) {
+		/* We have a sum of a single frame:
+		 * add the energy to the sums.
+		 */
+		for(i=0; i<fr->nre; i++) {
+		  ee_sum[i].eav  +=
+		    dsqr(ee_sum[i].esum/ee_nsum - (ee_sum[i].esum + fr->ener[i].e)/(ee_nsum + 1))*
+		    ee_nsum*(ee_nsum + 1);
+		  ee_sum[i].esum += fr->ener[i].e;
+		}
+		ee_nsum += 1;
+	      } else {
+		/* Add the sums to the total */
+		for(i=0; i<fr->nre; i++) {
+		  ee_sum[i].eav  +=
+		    fr->ener[i].eav +
+		    dsqr(ee_sum[i].esum/ee_nsum - (ee_sum[i].esum + fr->ener[i].esum)/(ee_nsum + fr->nsum))*
+		    ee_nsum*(ee_nsum + fr->nsum)/(double)fr->nsum;
 		ee_sum[i].esum += fr->ener[i].esum;
+		}
+		ee_nsum += fr->nsum;
 	      }
-	      ee_nsum += fr->nsum;
 	    } else {
-	      /* The interval does not match fr->nsum:
+	      /* The interval does not match fr->nsteps:
 	       * can not do exact averages.
 	       */
 	      ee_nsum = 0;
 	    }
+	    ee_nsteps = fr->step - start_step + 1;
 	  }
 	}
       }

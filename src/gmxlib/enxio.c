@@ -46,7 +46,7 @@
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int enx_version = 2;
+static const int enx_version = 3;
 
 
 /* Stuff for reading pre 4.1 energy files */
@@ -249,6 +249,14 @@ static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool bTest,
         } else {
             if (!do_int (fr->nsum))  *bOK = FALSE;
         }
+        if (*file_version >= 3)
+        {
+            do_gmx_step_t(fr->nsteps);
+        }
+        else
+        {
+            fr->nsteps = max(1,fr->nsum);
+        }
     }
     if (!do_int (fr->nre))     *bOK = FALSE;
     if (!do_int (fr->ndisre))  *bOK = FALSE;
@@ -293,6 +301,7 @@ static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool bTest,
         }
         
         fr->nsum = fr->step - ener_old[fp].first_step + 1;
+        fr->nsteps = fr->nsum;
     }
 	
     return *bOK;

@@ -592,23 +592,45 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     return rc;
 }
 
+static void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
+{
+    if (MASTER(cr))
+    {
+        fprintf(stderr,"\n%s\n",buf);
+    }
+    if (fplog)
+    {
+        fprintf(fplog,"\n%s\n",buf);
+    }
+}
+
+static void check_gcom_param(FILE *fplog,t_commrec *cr,
+                             int nstglobalcomm,const char *desc,int *p)
+{
+    char buf[STRLEN];
+
+    if (*p > 0 && *p % nstglobalcomm != 0)
+    {
+        /* Round up to the next multiple of nstglobalcomm */
+        *p = ((*p)/nstglobalcomm + 1)*nstglobalcomm;
+        sprintf(buf,"NOTE: -gcom changes %s to %d\n",desc,*p);
+        md_print_warning(cr,fplog,buf);
+    }
+}
+
 static void reset_all_counters(FILE *fplog,t_commrec *cr,
                                gmx_step_t step,
                                gmx_step_t *step_rel,t_inputrec *ir,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                                gmx_runtime_t *runtime)
 {
-    char sbuf[22];
+    char buf[STRLEN],sbuf[22];
 
     /* Reset all the counters related to performance over the run */
-    if (fplog)
-    {
-        fprintf(fplog,"\nStep %s: resetting all time and cycle counters\n",gmx_step_str(step,sbuf));
-    }
-    if (MASTER(cr))
-    {
-        fprintf(stderr,"\nStep %s: resetting all time and cycle counters\n\n",gmx_step_str(step,sbuf));
-    }
+    sprintf(buf,"Step %s: resetting all time and cycle counters\n",
+            gmx_step_str(step,sbuf));
+    md_print_warning(cr,fplog,buf);
+
     wallcycle_stop(wcycle,ewcRUN);
     wallcycle_reset_all(wcycle);
     if (DOMAINDECOMP(cr))
@@ -627,6 +649,8 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
 static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
                                int nstglobalcomm,t_inputrec *ir)
 {
+    char buf[STRLEN];
+
     if (!EI_DYNAMICS(ir->eI))
     {
         nstglobalcomm = 1;
@@ -637,6 +661,10 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
         if (ir->nstcalcenergy == 0 && ir->nstlist == 0)
         {
             nstglobalcomm = 10;
+            if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
+            {
+                nstglobalcomm = ir->nstenergy;
+            }
         }
         else
         {
@@ -660,29 +688,28 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
             nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
         {
             nstglobalcomm = (nstglobalcomm / ir->nstlist)*ir->nstlist;
-            if (MASTER(cr))
-            {
-                fprintf(stderr,"\nWARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n\n",nstglobalcomm);
-            }
+            sprintf(buf,"WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d\n",nstglobalcomm);
+            md_print_warning(cr,fplog,buf);
         }
-        if (ir->nstcalcenergy > 0 &&
-            (nstglobalcomm > ir->nstcalcenergy ||
-             ir->nstcalcenergy % nstglobalcomm != 0))
+        if (nstglobalcomm > ir->nstcalcenergy)
         {
-            if (MASTER(cr))
-            {
-                fprintf(stderr,
-                        "\nNOTE: -gcom changes nstcalcenergy from %d to %d\n\n",
-                        ir->nstcalcenergy,nstglobalcomm);
-            }
-            if (fplog)
-            {
-                fprintf(fplog,
-                        "\nNOTE: -gcom changes nstcalcenergy from %d to %d\n\n",
-                        ir->nstcalcenergy,nstglobalcomm);
-            }
-            ir->nstcalcenergy = nstglobalcomm;
+            check_gcom_param(fplog,cr,nstglobalcomm,
+                             "nstcalcenergy",&ir->nstcalcenergy);
         }
+
+        check_gcom_param(fplog,cr,nstglobalcomm,
+                         "nstenergy",&ir->nstenergy);
+
+        check_gcom_param(fplog,cr,nstglobalcomm,
+                         "nstlog",&ir->nstlog);
+    }
+
+    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
+    {
+        sprintf(buf,"WARNING: Changing nstcomm from %d to %d\n",
+                ir->nstcomm,nstglobalcomm);
+        md_print_warning(cr,fplog,buf);
+        ir->nstcomm = nstglobalcomm;
     }
     
     return nstglobalcomm;
@@ -759,7 +786,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   double      cycles;
-  int         reset_counters=0;
+  int         reset_counters=-1;
   char        *env_ptr;
   char        sbuf[22],sbuf2[22];
   bool        bHandledSignal=FALSE;
@@ -773,43 +800,37 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         sscanf(env_ptr,"%d",&reset_counters);
     }
 
-  /* Check for special mdrun options */
-  bRerunMD = (Flags & MD_RERUN);
-  bIonize  = (Flags & MD_IONIZE);
-  bFFscan  = (Flags & MD_FFSCAN);
-  bAppend  = (Flags & MD_APPENDFILES);
+    /* Check for special mdrun options */
+    bRerunMD = (Flags & MD_RERUN);
+    bIonize  = (Flags & MD_IONIZE);
+    bFFscan  = (Flags & MD_FFSCAN);
+    bAppend  = (Flags & MD_APPENDFILES);
 
-  nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
-  bGStatEveryStep = (nstglobalcomm == 1);
+    if (bRerunMD)
+    {
+        /* Since we don't know if the frames read are related in any way,
+         * rebuild the neighborlist at every step.
+         */
+        ir->nstlist       = 1;
+        ir->nstcalcenergy = 1;
+        nstglobalcomm     = 1;
+    }
 
-  if (!bGStatEveryStep) {
-    if (fplog) {
-      fprintf(fplog,"\nWill not sum the energies at every step,\n"
-	      "therefore the energy file does not contain exact averages and fluctuations.\n\n");
-      if (ir->nstlist == -1) {
-	fprintf(fplog,
-		"To reduce the energy communication with nstlist = -1\n"
-		"the neighbor list validity should not be checked at every step,\n"
-		"this means that exact integration is not guaranteed.\n"
-		"The neighbor list validity is checked after:\n"
-		"  <n.list life time> - 2*std.dev.(n.list life time)  steps.\n"
-		"In most cases this will result in exact integration.\n"
-		"This reduces the energy communication by a factor of 2 to 3.\n"
-		"If you want less energy communication, set nstlist > 3.\n\n");
-      }
+    nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
+    bGStatEveryStep = (nstglobalcomm == 1);
+
+    if (!bGStatEveryStep && ir->nstlist == -1 && fplog != NULL)
+    {
+        fprintf(fplog,
+                "To reduce the energy communication with nstlist = -1\n"
+                "the neighbor list validity should not be checked at every step,\n"
+                "this means that exact integration is not guaranteed.\n"
+                "The neighbor list validity is checked after:\n"
+                "  <n.list life time> - 2*std.dev.(n.list life time)  steps.\n"
+                "In most cases this will result in exact integration.\n"
+                "This reduces the energy communication by a factor of 2 to 3.\n"
+                "If you want less energy communication, set nstlist > 3.\n\n");
     }
-    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm) {
-        if (MASTER(cr)) {
-            printf("\nWARNING: Changing nstcomm from %d to %d\n\n",
-                   ir->nstcomm,nstglobalcomm);
-        }
-        if (fplog) {
-            fprintf(fplog,"\nWARNING: Changing nstcomm from %d to %d\n\n",
-                    ir->nstcomm,nstglobalcomm);
-        }
-        ir->nstcomm = nstglobalcomm;
-    }
-  }
 
   if (bRerunMD || bFFscan)
     ir->nstxtcout = 0;
@@ -1963,15 +1984,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         {
             bool do_dr,do_or;
             
-            /* If we do reruns, the step numbers in the output energy frames
-             * cannot be used for averages (since energies are only calculated
-             * for trajectory frames).
-             */
-            upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,
-                       bGStatEveryStep && !bRerunMD,
-                       t,mdatoms->tmass,enerd,state,lastbox,
-                       shake_vir,force_vir,total_vir,pres,
-                       ekind,mu_tot,constr);
+            if (bNstEner)
+            {
+                upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,TRUE,
+                           t,mdatoms->tmass,enerd,state,lastbox,
+                           shake_vir,force_vir,total_vir,pres,
+                           ekind,mu_tot,constr);
+            }
+            else
+            {
+                upd_mdebin_step(mdebin);
+            }
             
             do_dr  = do_per_step(step,ir->nstdisreout);
             do_or  = do_per_step(step,ir->nstorireout);
@@ -2074,11 +2097,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
         gmx_pme_finish(cr);
     }
     
-    if (MASTER(cr)) {
-        if (bGStatEveryStep && !bRerunMD) {
-            print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
-                       eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
-        }
+    if (MASTER(cr))
+    {
+        print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
+                   eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
+
         close_enx(fp_ene);
         if (ir->nstxtcout)
         {

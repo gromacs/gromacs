@@ -339,14 +339,16 @@ the last velocities are always written</dd>
 <dd>frequency to write forces to output trajectory.</dd>
 <dt><h4>nstlog: (100) [steps]</h4></dt>
 <dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
-the last energies are always written</dd>
+the last energies are always written,
+should be a multiple of <b>nstcalcenergy</b></dd>
 <dt><h4>nstenergy: (100) [steps]</h4></dt>
 <dd>frequency to write energies to energy file,
 the last energies are always written,
+should be a multiple of <b>nstcalcenergy</b></dd>,
 note that the exact sums and fluctuations over all MD steps
-are stored in the energy file, so <tt>g_energy</tt> can report exact
-energy averages and fluctuations also when <b>nstenergy</b> &gt 1
-(unless the <tt>-nosum</tt> option of <tt>mdrun</tt> is used)</dd>
+modulo <b>nstcalcenergy</b> are stored in the energy file,
+so <tt>g_energy</tt> can report exact
+energy averages and fluctuations also when <b>nstenergy</b> &gt 1</dd>
 <dt><h4>nstxtcout: (0) [steps]</h4></dt>
 <dd>frequency to write coordinates to xtc trajectory</dd>
 <dt><h4>xtc_precision: (1000) [real]</h4></dt>
