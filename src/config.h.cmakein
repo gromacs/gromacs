@@ -278,6 +278,12 @@
 #define inline ${INLINE_KEYWORD}
 #endif
 
+#ifndef CPLUSPLUS
+#ifdef __cplusplus
+#define CPLUSPLUS
+#endif
+#endif  
+
 /* Define to long int if <sys/types.h> does not define. */                    
 #cmakedefine off_t int                                                                
                                                                                 
