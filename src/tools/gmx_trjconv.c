@@ -625,12 +625,15 @@ int gmx_trjconv(int argc,char *argv[])
   static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
   static char  *exec_command=NULL;
   static real  dropunder=0,dropover=0;
+  static bool  bRound=FALSE;
 
   t_pargs pa[] = {
     { "-skip", FALSE,  etINT, {&skip_nr},
       "Only write every nr-th frame" },
     { "-dt", FALSE,  etTIME, {&delta_t},
       "Only write frame when t MOD dt = first time (%t)" },
+    { "-round", FALSE,  etBOOL, {&bRound},
+      "Round measurements to nearest picosecond" },
     { "-dump", FALSE, etTIME, {&tdump},
       "Dump frame nearest specified time (%t)" },
     { "-t0", FALSE,  etTIME, {&tzero},
@@ -1196,7 +1199,10 @@ int gmx_trjconv(int argc,char *argv[])
 	/* check for writing at each delta_t */
 	  bDoIt=(delta_t == 0);
 	  if (!bDoIt)
-	    bDoIt=bRmod(fr.time,tzero, delta_t);
+            if (!bRound)
+	      bDoIt=bRmod(fr.time,tzero, delta_t);
+            else
+              bDoIt=bRmod(round(fr.time),round(tzero), round(delta_t));
 	
 	  if (bDoIt || bTDump) {
 	    /* print sometimes */
@@ -1282,7 +1288,10 @@ int gmx_trjconv(int argc,char *argv[])
 		for (d=0; d<DIM; d++)
 		  frout.x[i][d] += outframe*shift[d];
 	  
-	    bSplitHere = bSplit && bRmod(fr.time,tzero, split_t);
+            if (!bRound)
+	      bSplitHere = bSplit && bRmod(fr.time,tzero, split_t);
+	    else
+              bSplitHere = bSplit && bRmod(round(fr.time),round(tzero), round(split_t));
 	    if (bSeparate || bSplitHere) 
 	      mk_filenm(outf_base,ftp2ext(ftp),nzero,file_nr,out_file2);
 	    
