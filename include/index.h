@@ -42,7 +42,7 @@
 
 #include <typedefs.h>
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
 
@@ -123,7 +123,7 @@ extern void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
 extern int find_group(char s[], int ngrps, char **grpname);
 
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

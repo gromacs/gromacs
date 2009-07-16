@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -79,7 +79,7 @@ extern t_ifunc orires;
 extern void update_orires_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_orires_dev */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

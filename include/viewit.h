@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -55,7 +55,7 @@ extern void do_view(const char *fn, const char *opts);
 extern void view_all(int nf, t_filenm fnm[]);
 /* calls do_view for all viewable output files in fnm[] */
  
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

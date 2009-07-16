@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -70,7 +70,7 @@ extern t_ifunc ta_disres;
 extern void update_disres_history(t_fcdata *fcd,history_t *hist);
 /* Copy the new time averages that have been calculated in calc_disres_R_6 */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -78,7 +78,7 @@ extern int xtc_check(const char *str,bool bResult,const char *file,int line);
 extern void xtc_check_fat_err(const char *str,bool bResult,const char *file,int line);
 #define XTC_CHECK_FAT_ERR(s,b) xtc_check_fat_err(s,b,__FILE__,__LINE__)
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

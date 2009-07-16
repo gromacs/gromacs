@@ -43,7 +43,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
 
@@ -232,7 +232,7 @@ extern "C" {
    * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
   
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

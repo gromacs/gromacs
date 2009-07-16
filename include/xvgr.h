@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -137,7 +137,7 @@ extern real **read_xvg_time(char *fn,
 			    bool bTE,real te,
 			    int nsets_in,int *nset,int *nval,
 			    real *dt,real **t);
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

@@ -52,7 +52,12 @@ enum {
 
 /* Enum for situations that can occur during log file parsing */
 enum {
-    eParselogOK, eParselogNotFound, eParselogNoPerfData, eParselogTerm, eParselogNr
+    eParselogOK,
+    eParselogNotFound,
+    eParselogNoPerfData,
+    eParselogTerm,
+    eParselogResetProblem,
+    eParselogNr
 };
 
 
@@ -116,19 +121,25 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
+enum {eFoundNothing, eFoundDDStr, eFoundPMEfStr, eFoundCycleStr};
+
+static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr, int presteps, gmx_step_t cpt_steps)
 {
     FILE  *fp;
-    char  line[STRLEN], dumstring[STRLEN];
-    char  matchstrdd[]="Domain decomposition grid";
-    char  matchstrbal[]="Average PME mesh/force load:";
-    char  matchstring[]="R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G";
-    char  errTERM[]="Received the TERM signal, stopping at the next step";
-    char  errUSR1[]="Received the USR1 signal, stopping at the next NS step";
+    char  line[STRLEN], dumstring[STRLEN], dumstring2[STRLEN];
+    const char matchstrdd[]="Domain decomposition grid";
+    const char matchstrcr[]="resetting all time and cycle counters";
+    const char matchstrbal[]="Average PME mesh/force load:";
+    const char matchstring[]="R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G";
+    const char errTERM[]="Received the TERM signal, stopping at the next step";
+    const char errUSR1[]="Received the USR1 signal, stopping at the next NS step";
     int   iFound;
     int   procs;
     real  dum1,dum2,dum3;
     int   npme;
+    gmx_step_t resetsteps=-1;
+    bool  bFoundResetStr = FALSE;
+    bool  bResetChecked  = FALSE;
 
 
     if (!gmx_fexist(logfile))
@@ -141,7 +152,7 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
     fp = fopen(logfile, "r");
     perfdata->PME_f_load[test_nr] = -1.0;
     perfdata->guessPME            = -1;
-    iFound = 0;
+    iFound = eFoundNothing;
 
     while (fgets(line, STRLEN, fp) != NULL)
     {
@@ -155,11 +166,35 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
             cleandata(perfdata, test_nr);
             return eParselogTerm;
         }
+        
+        /* Check whether cycle resetting  worked */
+        if (presteps > 0 && !bFoundResetStr)
+        {
+            if (strstr(line, matchstrcr) != NULL)
+            {
+                sprintf(dumstring, "Step %s", gmx_step_pfmt);
+                sscanf(line, dumstring, &resetsteps);
+                bFoundResetStr = TRUE;
+                if (resetsteps == presteps+cpt_steps)
+                {
+                    bResetChecked = TRUE;
+                }
+                else
+                {
+                    sprintf(dumstring , gmx_step_pfmt, resetsteps);
+                    sprintf(dumstring2, gmx_step_pfmt, presteps+cpt_steps);
+                    fprintf(stderr, "WARNING: Time step counters were reset at step %s,\n"
+                                    "         though they were supposed to be reset at step %s!\n", 
+                            dumstring, dumstring2);
+                }
+            }
+        }
 
         /* Look for strings that appear in a certain order in the log file: */
         switch(iFound)
         {
-            case 0: /* Look for domain decomp grid and separate PME nodes: */
+            case eFoundNothing:
+                /* Look for domain decomp grid and separate PME nodes: */
                 if (str_starts(line, matchstrdd))
                 {
                     sscanf(line, "Domain decomposition grid %d x %d x %d, separate PME nodes %d",
@@ -168,29 +203,35 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
                         perfdata->guessPME = npme;
                     else if (perfdata->nPMEnodes != npme)
                         gmx_fatal(FARGS, "PME nodes from command line and output file are not identical");
-                    iFound = 1;
+                    iFound = eFoundDDStr;
                 }
                 break;
-            case 1: /* Look for PME mesh/force balance (not necessarily present, though) */
+            case eFoundDDStr:
+                /* Look for PME mesh/force balance (not necessarily present, though) */
                 if (str_starts(line, matchstrbal))
                     sscanf(&line[strlen(matchstrbal)], "%f", &(perfdata->PME_f_load[test_nr]));
                 /* Look for matchstring */
                 if (str_starts(line, matchstring))
-                    iFound = 2;
+                    iFound = eFoundPMEfStr;
                 break;
-            case 2: /* Already found matchstring - look for cycle data */
+            case eFoundPMEfStr:
+                /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
                     sscanf(line,"Total %d %f",&procs,&(perfdata->Gcycles[test_nr]));
-                    iFound = 3;
+                    iFound = eFoundCycleStr;
                 }
                 break;
-            case 3: /* Already found cycle data - look for remaining performance info and return */
+            case eFoundCycleStr:
+                /* Already found cycle data - look for remaining performance info and return */
                 if (str_starts(line, "Performance:"))
                 {
                     sscanf(line,"%s %f %f %f %f", dumstring, &dum1, &dum2, &(perfdata->ns_per_day[test_nr]), &dum3);
                     fclose(fp);
-                    return eParselogOK;
+                    if (bResetChecked || presteps == 0)
+                        return eParselogOK;
+                    else 
+                        return eParselogResetProblem;
                 }
                 break;
         }
@@ -198,6 +239,7 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr)
     fprintf(stdout, "No performance data in log file.\n");
     fclose(fp);
     cleandata(perfdata, test_nr);
+    
     return eParselogNoPerfData;
 }
 
@@ -397,7 +439,7 @@ static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], char *cmd_e
     const char def_mpirun[] = "mpirun";
     const char def_mdrun[]  = "mdrun";
     const char def_export[] = "-x GMX_RESET_COUNTERS ";
-    const char filename[]   = "tune.test";
+    const char filename[]   = "testrun.log";
     const char match_mdrun[]= "NNODES=";
     bool  bFound = FALSE;
     int   i;
@@ -667,7 +709,7 @@ static void make_benchmark_tprs(
 
         /* Write the benchmark tpr file */
         strncpy(fn_bench_tprs[j],fn_sim_tpr,strlen(fn_sim_tpr)-strlen(".tpr"));
-        sprintf(buf, "_tune%.2d.tpr", j);
+        sprintf(buf, "_bench%.2d.tpr", j);
         strcat(fn_bench_tprs[j], buf);
         fprintf(stdout,"Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
         fprintf(stdout, gmx_step_pfmt, ir->nsteps);
@@ -724,8 +766,11 @@ static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, 
         else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) )
         {
             fn = opt2fn(opt, nfile, fnm);
-            fprintf(stdout, "Deleting %s\n", fn);
-            remove(fn);
+            if (gmx_fexist(fn))
+            {
+                fprintf(stdout, "Deleting %s\n", fn);
+                remove(fn);
+            }
         }
     }
 }
@@ -733,8 +778,8 @@ static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, 
 
 static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPMEnodes,
         int datasets, t_perf **perfdata, int repeats, int nnodes, int nr_tprs,
-        char *cmd_mpirun, char *cmd_export, char *cmd_mdrun, char *args_for_mdrun, t_filenm *fnm, int nfile,
-        int sim_part)
+        char *cmd_mpirun, char *cmd_export, char *cmd_mdrun, char *args_for_mdrun,
+        t_filenm *fnm, int nfile, int sim_part, int presteps, gmx_step_t cpt_steps)
 {
     int     i,nr,k,ret;
     int     nPMEnodes;
@@ -743,10 +788,15 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPME
     char    *command;
     char    buf[STRLEN];
     char    *opt_noaddpart;
+    bool    bResetProblem=FALSE;
     
 
     /* This string array corresponds to the eParselog enum type from above */
-    const char* ParseLog[] = {"OK", "Logfile not found", "No timings in log file", "Run was terminated"};
+    const char* ParseLog[] = {"OK",
+                              "Logfile not found", 
+                              "No timings in log file",
+                              "Run was terminated",
+                              "Counters were not reset properly"};
     char    str_PME_f_load[13];
 
     /* The -noaddpart option is needed so that the md.log files do not
@@ -801,7 +851,9 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPME
                 gmx_system_call(command);
 
                 /* Collect the performance data from the log file */
-                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr);
+                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr, presteps, cpt_steps);
+                if ((presteps > 0) && (ret == eParselogResetProblem))
+                    bResetProblem = TRUE;
 
                 if (nPMEnodes == -1)
                     sprintf(buf, "(%3d)", pd->guessPME);
@@ -839,6 +891,17 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPME
                 nPMEnodes--;
         }
     }
+    if (bResetProblem)
+    {
+        sep_line(fp);
+        fprintf(fp, "WARNING: The cycle and time step counters could not be reset\n"
+                    "properly. The reason could be that mpirun did not manage to\n"
+                    "export the environment variable GMX_RESET_COUNTER. You might\n"
+                    "have to give a special switch to mpirun for that.\n"
+                    "Alternatively, you can manually set GMX_RESET_COUNTER to the\n"
+                    "value normally provided by -presteps.");
+        sep_line(fp);
+    }
 }
 
 
@@ -869,7 +932,8 @@ static void check_input(
         gmx_step_t bench_nsteps,
         t_filenm *fnm,
         int nfile,
-        int sim_part)
+        int sim_part,
+        int presteps)
 {
     /* Make shure the input file exists */
     if (!gmx_fexist(opt2fn("-s",nfile,fnm)))
@@ -880,24 +944,33 @@ static void check_input(
         gmx_fatal(FARGS, "Checkpoint input and output file must not be identical,\nbecause then the input file might change during the benchmarks.");
     
     /* Make shure that repeats is >= 0 (if == 0, only write tpr files) */
-    if (repeats < 1)
-        gmx_fatal(FARGS, "Number of repeats < 1. Need at least one test for each configuration.");
+    if (repeats < 0)
+        gmx_fatal(FARGS, "Number of repeats < 0!");
 
-    /* We need at least one topology to test */
-    if (ntprs <= 0)
-        gmx_fatal(FARGS, "-ntpr must be larger than zero.");
+    /* Check whether we have enough nodes */
+    if (nnodes < 3)
+        gmx_fatal(FARGS, "Can not have separate PME nodes with 2 or less nodes, so there is nothing to optimize here.");
 
-    if ( (1 == *ntprs) && !is_equal(maxfac,1.0) )
-        fprintf(stderr, "Note: Choose ntpr>1 to shift PME load to real space.\n");
+    /* Automatically choose -ntpr if not set */
+    if (*ntprs < 1)
+    {
+        if (nnodes < 16)
+            *ntprs = 1;
+        else 
+            *ntprs = 3;
+        fprintf(stderr, "Will test %d tpr file%s.\n", *ntprs, *ntprs==1?"":"s");
+    }
+    else
+    {
+        if ( (1 == *ntprs) && !is_equal(maxfac,1.0) )
+            fprintf(stderr, "Note: Choose ntpr>1 to shift PME load to real space.\n");
+    }
     
     if ( is_equal(1.0,maxfac) && (*ntprs > 1) )
     {
         fprintf(stderr, "WARNING: Resetting -ntpr to 1 since upscaling factor equals unity.\n  Please select -fac>1 if you want to test various PME grid settings\n");
         *ntprs = 1;
     }
-    /* Check whether we have enough nodes */
-    if (nnodes < 3)
-        gmx_fatal(FARGS, "Can not have separate PME nodes with 2 or less nodes, so there is nothing to optimize here.");
 
     /* Check whether max and min fraction are within required values */
     if (maxPMEfraction > 0.5 || maxPMEfraction < 0)
@@ -916,6 +989,11 @@ static void check_input(
         fprintf(stderr, "WARNING: steps=");
         fprintf(stderr, gmx_step_pfmt, bench_nsteps);
         fprintf(stderr, ". Are you shure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100)? "few" : "many");
+    }
+    
+    if (presteps < 0)
+    {
+        gmx_fatal(FARGS, "Cannot have a negative number of presteps.\n");
     }
     
     if (maxfac <= 0.0)
@@ -1151,10 +1229,16 @@ static void couple_files_options(int nfile, t_filenm fnm[])
         bBench = (0 == strncmp(opt,"-b", 2));
 
         /* Check optional files */
-        /* if -eo is set, then -beo also needs to be set */
+        /* If e.g. -eo is set, then -beo also needs to be set */
         if (is_optional(&fnm[i]) && bSet && !bBench)
         {
             sprintf(buf, "-b%s", &opt[1]);
+            setopt(buf,nfile,fnm);
+        }
+        /* If -beo is set, then -eo also needs to be! */
+        if (is_optional(&fnm[i]) && bSet && bBench)
+        {
+            sprintf(buf, "-%s", &opt[2]);
             setopt(buf,nfile,fnm);
         }
     }
@@ -1207,12 +1291,12 @@ int gmx_tune_pme(int argc,char *argv[])
     };
 
     int        nnodes =3;
-    int        repeats=1;
+    int        repeats=2;
     real       maxPMEfraction=0.50;
     real       minPMEfraction=0.25;
     int        maxPMEnodes, minPMEnodes;
     real       maxfac=1.2;
-    int        ntprs=3;
+    int        ntprs=0;
     real       fs=0.0;             /* 0 indicates: not set by the user */
     gmx_step_t bench_nsteps=BENCHSTEPS;
     gmx_step_t new_sim_nsteps=-1;  /* -1 indicates: not set by the user */
@@ -1339,7 +1423,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-fac",      FALSE, etREAL, {&maxfac},
         "Max upscaling factor for rcoulomb (= downscaling factor for the fourier grid)" },
       { "-ntpr",     FALSE, etINT,  {&ntprs},
-        "Number of tpr files to benchmark. If >1, create files with scaling factors ranging from 1.0 to fac" },
+        "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
       { "-four",     FALSE, etREAL, {&fs},
           "Fourierspacing that was chosen to create the input tpr file" },        
       { "-steps",    FALSE, etGMX_STEP_T, {&bench_nsteps},
@@ -1446,7 +1530,8 @@ int gmx_tune_pme(int argc,char *argv[])
     fp = ffopen(opt2fn("-p",NFILE,fnm),"w");
     
     /* Make a quick consistency check of command line parameters */
-    check_input(nnodes, repeats, &ntprs, maxfac, maxPMEfraction, minPMEfraction, fs, bench_nsteps, fnm, NFILE, sim_part);
+    check_input(nnodes, repeats, &ntprs, maxfac, maxPMEfraction, minPMEfraction, 
+                fs, bench_nsteps, fnm, NFILE, sim_part, presteps);
     
     /* Determine max and min number of PME nodes to test: */
     maxPMEnodes = floor(maxPMEfraction*nnodes);
@@ -1460,7 +1545,8 @@ int gmx_tune_pme(int argc,char *argv[])
     get_program_paths(&cmd_mpirun, &cmd_mdrun, &cmd_export, repeats);
 
     /* Set the GMX_RESET_COUNTERS environment variable */
-    counters_set_env(presteps, &resetcount_orig, &bHaveResetCounter);
+    if (presteps > 0)
+        counters_set_env(presteps, &resetcount_orig, &bHaveResetCounter);
     
     /* Print some header info to file */
     sep_line(fp);
@@ -1472,22 +1558,21 @@ int gmx_tune_pme(int argc,char *argv[])
     fprintf(fp, "Exporting env with      : %s\n", cmd_export);
     fprintf(fp, "The mdrun  command is   : %s\n", cmd_mdrun);
     fprintf(fp, "Input file is           : %s\n", opt2fn("-s",NFILE,fnm));
+    if (fs > 0.0)
+        fprintf(fp, "Basic fourierspacing    : %f\n", fs);
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
-    if (bLaunch)
-        fprintf(fp, "mdrun args at launchtime: %s\n", cmd_args_launch);
-    fprintf(fp, "Counter reset at step   : %d\n", presteps);
-
+    fprintf(fp, "Benchmark steps         : ");
+    fprintf(fp, gmx_step_pfmt, bench_nsteps);
+    fprintf(fp, "\n");
+    fprintf(fp, "     + presteps         : %d\n", presteps);
     if (sim_part > 1)
     {
         fprintf(fp, "Checkpoint time step    : ");
         fprintf(fp, gmx_step_pfmt, cpt_steps);
         fprintf(fp, "\n");
     }
-    if (fs > 0.0)
-        fprintf(fp, "Basic fourierspacing    : %f\n", fs);
-    fprintf(fp, "Benchmark steps         : ");
-    fprintf(fp, gmx_step_pfmt, bench_nsteps);
-    fprintf(fp, "\n");
+    if (bLaunch)
+        fprintf(fp, "mdrun args at launchtime: %s\n", cmd_args_launch);
     if (new_sim_nsteps >= 0)
     {
         bOverwrite = TRUE;
@@ -1520,6 +1605,14 @@ int gmx_tune_pme(int argc,char *argv[])
 
     make_benchmark_tprs(opt2fn("-s",NFILE,fnm), tpr_names, bench_nsteps+presteps, cpt_steps, maxfac, ntprs, fs, info, fp);
 
+    if (repeats == 0)
+    {
+        fprintf(stderr, "Nothing more to do.\n");
+        fprintf(fp, "\nNo benchmarks done since number of repeats (-r) is 0.\n");
+        thanx(stderr);
+        return 0;
+    }
+    
     /* Memory allocation for performance data */
     datasets = maxPMEnodes - minPMEnodes + 3;
     if (0 == minPMEnodes)
@@ -1546,11 +1639,12 @@ int gmx_tune_pme(int argc,char *argv[])
     /********************************************************************************/
     /* Main loop over all scenarios we need to test: tpr files, PME nodes, repeats  */
     /********************************************************************************/
-    do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, datasets, perfdata, repeats,
-            nnodes, ntprs, cmd_mpirun, cmd_export, cmd_mdrun, cmd_args_bench, fnm, NFILE, sim_part);
+    do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, datasets, perfdata, repeats, nnodes, ntprs,
+            cmd_mpirun, cmd_export, cmd_mdrun, cmd_args_bench, fnm, NFILE, sim_part, presteps, cpt_steps);
 
     /* Restore original environment */
-    counters_restore_env(resetcount_orig, bHaveResetCounter);
+    if (presteps > 0)
+        counters_restore_env(resetcount_orig, bHaveResetCounter);
 
     /* Analyse the results and give a suggestion for optimal settings: */
     analyze_data(fp, perfdata, ntprs, datasets, repeats, info, &best_tpr, &best_npme);

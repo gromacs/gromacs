@@ -39,7 +39,7 @@
 
 #include <typedefs.h>
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -109,7 +109,7 @@ _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
 extern int
 _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

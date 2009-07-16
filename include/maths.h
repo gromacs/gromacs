@@ -61,7 +61,7 @@
 #define M_SQRT2 sqrt(2.0)
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -138,7 +138,7 @@ gmx_log2(real x)
 }
 
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

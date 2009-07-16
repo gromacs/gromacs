@@ -48,7 +48,7 @@
  * and to a status file should use this functions to be independent of the
  * actual file layout (text versus binary file).
  */
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
 
@@ -111,7 +111,7 @@ extern void read_status_header(char *fn,t_statheader *header);
  * it returns a version string from the statusio module.
  */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 
