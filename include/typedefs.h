@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -185,7 +185,7 @@ t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 real max_cutoff(real cutoff1,real cutoff2);
 /* Returns the maximum of the cut-off's, taking into account that 0=inf. */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 #if 0 /* avoid screwing up indentation */
@@ -357,7 +357,7 @@ extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,
  * appropriate or not!
  */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

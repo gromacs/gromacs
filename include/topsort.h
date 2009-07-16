@@ -5,7 +5,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS 
+#ifdef __cplusplus 
 extern "C" {
 #endif
 
@@ -19,7 +19,7 @@ extern "C" {
    */
   extern void gmx_sort_ilist_fe(t_idef *idef);
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

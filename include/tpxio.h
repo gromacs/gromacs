@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS 
+#ifdef __cplusplus 
 extern "C" {
 #endif
 
@@ -139,7 +139,7 @@ extern bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
 void
 tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols);
 	
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

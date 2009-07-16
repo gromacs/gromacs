@@ -41,7 +41,7 @@
 #endif
 
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -147,7 +147,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
   extern t_ifunc tab_bonds,tab_angles,tab_dihs;
   extern t_ifunc polarize,water_pol,thole_pol,angres,angresz,unimplemented;
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

@@ -47,7 +47,7 @@
  *
  */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -125,7 +125,7 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
 gmx_step_t
 str_to_gmx_step_t(const char *str, char **endptr);
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

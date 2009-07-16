@@ -45,7 +45,7 @@
 #include "mshift.h"
 #include "rmpbc.h"
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -420,7 +420,7 @@ extern void print_one (const char *base,const char *name,const char *title,
 			   
   extern void compute_derivative(int nn,real x[],real y[],real dydx[]);
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 	     }
 #endif
  

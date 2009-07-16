@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
   
@@ -227,7 +227,7 @@ set_gmx_error_handler(void (*func)(const char *msg));
    * The string may be a multi-line string.
    */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 	   }
 #endif
 

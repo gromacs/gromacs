@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -147,7 +147,7 @@ typedef long long int gmx_step_t;
 #define SIZEOF_GMX_STEP_T SIZEOF_LONG_LONG_INT
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

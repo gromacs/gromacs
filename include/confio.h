@@ -45,7 +45,7 @@
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.
  */
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
   
@@ -106,7 +106,7 @@ extern void read_stx_conf(const char *infile,char *title,
  * If ePBC!=NULL return the type of pbc in *ePBC or -1 if unknown.
  */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

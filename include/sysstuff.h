@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
 
@@ -56,7 +56,7 @@ extern "C" {
 #include <limits.h>
 #include <time.h>
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

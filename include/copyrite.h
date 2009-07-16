@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
   
@@ -93,7 +93,7 @@ enum { eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR,
 extern void please_cite(FILE *fp, const char *key);
 /* Print a message asking to cite something... */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

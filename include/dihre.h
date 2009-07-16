@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -53,7 +53,7 @@ extern "C" {
 extern t_ifunc ta_dihres;
 /* Calculate the distance restraint forces, return the potential */
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

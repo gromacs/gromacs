@@ -41,7 +41,7 @@
 #endif
 
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" {
 #endif
   
@@ -146,7 +146,7 @@ extern bool is_set(t_filenm *fnm);
 int
 add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix);
 	
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

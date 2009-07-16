@@ -41,7 +41,7 @@
 #endif
 
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 external "C" {
 #endif
 
@@ -140,7 +140,7 @@ external "C" {
    * Currently pcoupl and tcoupl state are read from enx.
    */
   
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

@@ -56,7 +56,7 @@
 #define PATH_SEPARATOR ":"
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
   
@@ -123,7 +123,7 @@ extern void gmx_tmpnam(char *buf);
 int
 gmx_truncatefile(char *path, off_t length);
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

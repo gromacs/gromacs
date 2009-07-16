@@ -42,7 +42,7 @@
 
 #include <typedefs.h>
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
 
@@ -79,7 +79,7 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
  * for the atoms in *atoms.
  */ 
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 

@@ -40,7 +40,7 @@
 #include <config.h>
 #endif
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 extern "C" { 
 #endif
 
@@ -89,7 +89,7 @@ extern const real SIX;
 extern const real TEN;
 extern const real TWELVE;
 
-#ifdef CPLUSPLUS
+#ifdef __cplusplus
 }
 #endif
 
