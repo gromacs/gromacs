@@ -66,6 +66,7 @@ extern real LegendreP(real x,unsigned long m);
 #define eacP2     (1<<6  | eacVector)
 #define eacP3     (1<<7  | eacVector)
 #define eacP4     (1<<8  | eacVector)
+#define eacIden   (1<<9)
 
 enum {
   effnNONE, effnEXP1, effnEXP2, effnEXP3,   effnVAC, 
@@ -144,6 +145,9 @@ extern void low_do_autocorr(const char *fn,const char *title,
  * }
  * else if (mode == eacCos) {
  *   C(t) = < cos (X(tau) - X(tau+t)) >
+ * }
+ * else if (mode == eacIden) { **not fully supported yet**
+ *   C(t) = < (X(tau) == X(tau+t)) >
  * }
  * else if (mode == eacVector) {
  *   C(t) = < X(tau) * X(tau+t)

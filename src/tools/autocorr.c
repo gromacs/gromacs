@@ -164,6 +164,10 @@ static void do_ac_core(int nframes,int nout,
 	/* Compute the cos (phi(t)-phi(t+dt)) */
 	corr[k] += cos(c1[j]-c1[j+k]);
       }
+      else if (MODE(eacIden)) {
+	/* Check equality (phi(t)==phi(t+dt)) */
+	corr[k] += (c1[j]==c1[j+k])? 1 : 0;
+      }
       else if (MODE(eacP1) || MODE(eacP2) || MODE(eacP3)) {
 	for(m=0; (m<DIM); m++) {
 	  xj[m] = c1[j3+m];
