@@ -37,7 +37,6 @@ futil.h \
 gbutil.h \
 gen_ad.h \
 genborn.h \
-genborn.h \
 gmxcpp.h \
 gmx_fatal.h \
 gmx_ana.h \
@@ -54,7 +53,6 @@ gmx_parallel_3dfft.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
 gmx_thread.h \
-gmx_parallel_3dfft.h \
 gmx_wallcycle.h \
 gpp_atomtype.h \
 gpp_nextnb.h \
@@ -128,7 +126,6 @@ struc2.h \
 symtab.h \
 sysstuff.h \
 tags.h \
-tgroup.h \
 tgroup.h \
 topsort.h \
 toputil.h \
