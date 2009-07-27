@@ -160,6 +160,9 @@ static void quit_gmx(const char *msg)
     if (log_file) 
       fprintf(log_file,"%s\n",msg);
     fprintf(stderr,"%s\n",msg);
+    /* we set it to no-zero because if this function is called, something 
+       has gone wrong */
+    fatal_errno=255;
   }
   else {
     if (fatal_errno != -1)
