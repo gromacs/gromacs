@@ -40,6 +40,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #include "typedefs.h"
 	
@@ -59,5 +63,9 @@ extern void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);
 /* Simple routine for use in analysis tools that just have a pdb or 
  * similar file.
  */
+
+#ifdef __cplusplus
+}
+#endif
  
 #endif	/* _rmpbc_h */
