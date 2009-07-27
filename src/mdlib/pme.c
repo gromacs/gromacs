@@ -1879,10 +1879,23 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
     *V = gather_energy_bsplines(pme,grid,atc);
 }
 
+
+static void reset_pmeonly_counters(t_commrec *cr,gmx_wallcycle_t wcycle,
+        t_nrnb *nrnb,gmx_step_t step)
+{
+    /* Reset all the counters related to performance over the run */
+    wallcycle_stop(wcycle,ewcRUN);
+    wallcycle_reset_all(wcycle);
+    init_nrnb(nrnb);
+    wallcycle_start(wcycle,ewcRUN);
+}
+
+
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
-                real ewaldcoeff,  bool bGatherOnly)
+                real ewaldcoeff,  bool bGatherOnly,
+                gmx_step_t init_step)
 {
     gmx_pme_pp_t pme_pp;
     int  natoms;
@@ -1895,6 +1908,8 @@ int gmx_pmeonly(gmx_pme_t pme,
     matrix vir;
     float cycles;
     int  count;
+    gmx_step_t step;
+    
     
     pme_pp = gmx_pme_pp_init(cr);
     
@@ -1907,7 +1922,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         natoms = gmx_pme_recv_q_x(pme_pp,
                                   &chargeA,&chargeB,box,&x_pp,&f_pp,
                                   &maxshift0,&maxshift1,
-                                  &pme->bFEP,&lambda);
+                                  &pme->bFEP,&lambda,&step);
         
         if (natoms == -1) {
             /* We should stop: break out of the loop */
@@ -1933,6 +1948,14 @@ int gmx_pmeonly(gmx_pme_t pme,
                                     cycles,bGotTermSignal,bGotUsr1Signal);
         
         count++;
+        
+        if ((step-init_step) == wcycle_get_reset_counters(wcycle))
+        {
+            /* Reset all the counters related to performance over the run */
+            reset_pmeonly_counters(cr,wcycle,nrnb,step);
+            wcycle_set_reset_counters(wcycle, 0);
+        }
+
         
         /* MPI_Barrier(cr->mpi_comm_mysim); */ /* 100 */
     } /***** end of quasi-loop, we stop with the break above */

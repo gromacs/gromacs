@@ -65,4 +65,10 @@ extern void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 			    gmx_wallcycle_t wc, double cycles[]);
 /* Print the cycle and time accounting */
 
+extern gmx_step_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
+/* Return reset_counters from wc struct */
+
+extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_step_t reset_counters);
+/* Set reset_counters */
+
 #endif /* _gmx_wallcycle_h */

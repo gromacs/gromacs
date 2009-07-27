@@ -67,6 +67,7 @@ typedef struct gmx_wallcycle
     int          wc_depth;
     int          ewc_prev;
     gmx_cycles_t cycle_prev;
+    gmx_step_t   reset_counters;
 #ifdef GMX_MPI
     MPI_Comm     mpi_comm_mygroup;
 #endif
@@ -84,6 +85,8 @@ bool wallcycle_have_counter(void)
 gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
 {
     gmx_wallcycle_t wc;
+    char *env_ptr;
+    
     
     if (!wallcycle_have_counter())
     {
@@ -118,7 +121,14 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
         }
         snew(wc->wcc_all,ewcNR*ewcNR);
     }
-
+    
+    /* Read variable GMX_RESET_COUNTER from environment */ 
+    wc->reset_counters = -1;
+    if ((env_ptr=getenv("GMX_RESET_COUNTERS")) != NULL)
+    {
+        sscanf(env_ptr,gmx_step_pfmt,&wc->reset_counters);
+    }
+    
     return wc;
 }
 
@@ -414,4 +424,14 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         /* Only the sim master calls this function, so always print to stderr */
         fprintf(stderr,"\n%s\n",buf);
     }
+}
+
+extern gmx_step_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
+{
+    return wc->reset_counters;
+}
+
+extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_step_t reset_counters)
+{
+    wc->reset_counters = reset_counters;
 }

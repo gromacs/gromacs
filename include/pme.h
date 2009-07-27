@@ -89,7 +89,8 @@ extern int gmx_pme_do(gmx_pme_t pme,
 extern int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
-		       real ewaldcoeff,   bool bGatherOnly);
+		       real ewaldcoeff,   bool bGatherOnly,
+		       gmx_step_t init_step);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
 
@@ -118,7 +119,7 @@ extern void gmx_pme_send_q(t_commrec *cr,
 /* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-			   bool bFreeEnergy, real lambda);
+			   bool bFreeEnergy, real lambda, gmx_step_t step);
 /* Send the coordinates to our PME-only node and request a PME calculation */
 
 extern void gmx_pme_finish(t_commrec *cr);
@@ -134,7 +135,8 @@ extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
 			    real **chargeA, real **chargeB,
 			    matrix box, rvec **x,rvec **f,
 			    int *maxshift0,int *maxshift1,
-			    bool *bFreeEnergy,real *lambda);
+			    bool *bFreeEnergy,real *lambda,
+			    gmx_step_t *step);
 /* Receive charges and/or coordinates from the PP-only nodes.
  * Returns the number of atoms, or -1 when the run is finished.
  */

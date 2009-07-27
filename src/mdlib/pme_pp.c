@@ -94,6 +94,7 @@ typedef struct gmx_pme_comm_n_box {
   int    maxshift1;
   real   lambda;
   int    flags;
+  gmx_step_t step;
 } gmx_pme_comm_n_box_t;
 
 typedef struct {
@@ -149,7 +150,8 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 			     real *chargeA, real *chargeB,
 			     matrix box, rvec *x,
 			     real lambda,
-			     int maxshift0, int maxshift1)
+			     int maxshift0, int maxshift1,
+			     gmx_step_t step)
 {
   gmx_domdec_t *dd;
   gmx_pme_comm_n_box_t *cnb;
@@ -180,6 +182,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
     cnb->maxshift0 = maxshift0;
     cnb->maxshift1 = maxshift1;
     cnb->lambda    = lambda;
+    cnb->step      = step;
     if (flags & PP_PME_COORD)
       copy_mat(box,cnb->box);
 #ifdef GMX_MPI
@@ -233,11 +236,11 @@ void gmx_pme_send_q(t_commrec *cr,
   if (bFreeEnergy)
     flags |= PP_PME_CHARGEB;
 
-  gmx_pme_send_q_x(cr,flags,chargeA,chargeB,NULL,NULL,0,maxshift0,maxshift1);
+  gmx_pme_send_q_x(cr,flags,chargeA,chargeB,NULL,NULL,0,maxshift0,maxshift1,-1);
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda)
+		    bool bFreeEnergy, real lambda,gmx_step_t step)
 {
   int flags;
 
@@ -245,7 +248,7 @@ void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
   if (bFreeEnergy)
     flags |= PP_PME_FEP;
 
-  gmx_pme_send_q_x(cr,flags,NULL,NULL,box,x,lambda,0,0);
+  gmx_pme_send_q_x(cr,flags,NULL,NULL,box,x,lambda,0,0,step);
 }
 
 void gmx_pme_finish(t_commrec *cr)
@@ -254,14 +257,15 @@ void gmx_pme_finish(t_commrec *cr)
 
   flags = PP_PME_FINISH;
 
-  gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,0,0,0);
+  gmx_pme_send_q_x(cr,flags,NULL,NULL,NULL,NULL,0,0,0,-1);
 }
 
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 		     real **chargeA, real **chargeB,
 		     matrix box, rvec **x,rvec **f,
 		     int *maxshift0, int *maxshift1,
-		     bool *bFreeEnergy,real *lambda)
+		     bool *bFreeEnergy,real *lambda,
+		     gmx_step_t *step)
 {
   gmx_pme_comm_n_box_t cnb;
   int  nat=0,q,messages,sender;
@@ -273,7 +277,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
   cnb.flags = 0;	
 #ifdef GMX_MPI
   do {
-    /* Receive the send count and box from the peer PP node */
+    /* Receive the send count, box and time step from the peer PP node */
     MPI_Recv(&cnb,sizeof(cnb),MPI_BYTE,
 	      pme_pp->node_peer,0,
 	      pme_pp->mpi_comm_mysim,MPI_STATUS_IGNORE);
@@ -375,6 +379,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
   *chargeB = pme_pp->chargeB;
   *x       = pme_pp->x;
   *f       = pme_pp->f;
+  
+  *step = cnb.step;
 
   return ((cnb.flags & PP_PME_FINISH) ? -1 : nat);
 }

@@ -157,6 +157,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     int        list;
     gmx_runtime_t runtime;
     int        rc;
+    gmx_step_t reset_counters;
+
     
     snew(inputrec,1);
     snew(mtop,1);
@@ -326,6 +328,15 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 	
     wcycle = wallcycle_init(fplog,cr);
+    if (PAR(cr))
+    {
+        /* Master synchronizes its value of reset_counters with all nodes 
+         * including PME only nodes */
+        reset_counters = wcycle_get_reset_counters(wcycle);
+        gmx_bcast_sim(sizeof(reset_counters),&reset_counters,cr);
+        wcycle_set_reset_counters(wcycle, reset_counters);
+    }
+        
     
     snew(nrnb,1);
     if (cr->duty & DUTY_PP)
@@ -539,7 +550,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
+        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE,inputrec->init_step);
     }
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
@@ -787,7 +798,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   matrix      boxcopy,lastbox;
   double      cycles;
   int         reset_counters=-1;
-  char        *env_ptr;
   char        sbuf[22],sbuf2[22];
   bool        bHandledSignal=FALSE;
 #ifdef GMX_FAHCORE
@@ -795,11 +805,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int chkpt_ret;
 #endif
 
-    if ((env_ptr=getenv("GMX_RESET_COUNTERS")) != NULL)
-    {
-        sscanf(env_ptr,"%d",&reset_counters);
-    }
-
+  
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
     bIonize  = (Flags & MD_IONIZE);
@@ -2073,11 +2079,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
         }
 
-        if (step_rel == reset_counters)
+        if (step_rel == wcycle_get_reset_counters(wcycle))
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
-            reset_counters = 0;
+            wcycle_set_reset_counters(wcycle, 0);
         }
     }
     /* End of main MD loop */
