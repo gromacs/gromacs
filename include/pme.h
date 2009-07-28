@@ -90,7 +90,7 @@ extern int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
 		       real ewaldcoeff,   bool bGatherOnly,
-		       gmx_step_t init_step);
+		       t_inputrec *ir);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */
 

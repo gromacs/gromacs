@@ -428,10 +428,18 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 
 extern gmx_step_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
 {
+    if (wc == NULL)
+    {
+        return -1;
+    }
+    
     return wc->reset_counters;
 }
 
 extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_step_t reset_counters)
 {
+    if (wc == NULL)
+        return;
+
     wc->reset_counters = reset_counters;
 }

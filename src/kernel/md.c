@@ -550,7 +550,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE,inputrec->init_step);
+        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE,inputrec);
     }
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
