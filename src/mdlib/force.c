@@ -1945,7 +1945,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                 dvdl_dum = 0;
                 reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
                 calc_bonds_lambda(fplog,
-                                  idef,x,fr,&pbc,graph,&ed_lam,nrnb,lambda,md,
+                                  idef,x,fr,&pbc,graph,&ed_lam,nrnb,lam_i,md,
                                   fcd,
                                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&ir->opts,&ed_lam);
