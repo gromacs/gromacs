@@ -67,6 +67,7 @@ int gmx_densmap(int argc,char *argv[])
     "It can make planar and axial-radial density maps.",
     "The output [TT].xpm[tt] file can be visualized with for instance xv",
     "and can be converted to postscript with xpm2ps.",
+	"Optionally, output can be in text form to a .dat file.",
     "[PAR]",
     "The default analysis is a 2-D number-density map for a selected",
     "group of atoms in the x-y plane.",
@@ -150,6 +151,7 @@ int gmx_densmap(int argc,char *argv[])
     { efTRX, "-f",   NULL,       ffREAD }, 
     { efTPS, NULL,   NULL,       ffOPTRD }, 
     { efNDX, NULL,   NULL,       ffOPTRD }, 
+    { efDAT, "-od",  "densmap",   ffOPTWR }, 
     { efXPM, "-o",   "densmap",   ffWRITE } 
   }; 
 #define NFILE asize(fnm) 
@@ -367,11 +369,32 @@ int gmx_densmap(int argc,char *argv[])
     else
       sprintf(buf+strlen(buf),", %c: %g - %g nm",eaver[0][0],xmin,xmax);
   }
+  if (ftp2bSet(efDAT,NFILE,fnm))
+  {
+  fp = ffopen(ftp2fn(efDAT,NFILE,fnm),"w");
+  /*optional text form output:  first row is tickz; first col is tickx */
+  fprintf(fp,"0\t");
+  for(j=0;j<n2;++j)
+	fprintf(fp,"%g\t",tickz[j]);
+  fprintf(fp,"\n");
+  
+  for (i=0;i<n1;++i)
+  {
+    fprintf(fp,"%g\t",tickx[i]);
+    for (j=0;j<n2;++j)
+	  fprintf(fp,"%g\t",grid[i][j]);
+	fprintf(fp,"\n");
+  }
+  ffclose(fp);
+  }
+  else
+  {
   fp = ffopen(ftp2fn(efXPM,NFILE,fnm),"w");
   write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,buf,unit,
 	    bRadial ? "axial (nm)" : label[c1],bRadial ? "r (nm)" : label[c2],
 	    n1,n2,tickx,tickz,grid,dmin,maxgrid,rlo,rhi,&nlev);     
   ffclose(fp);
+  }
   
   thanx(stderr);
 
