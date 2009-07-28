@@ -98,7 +98,7 @@ int gmx_densmap(int argc,char *argv[])
   };
   static int n1=0,n2=0;
   static real xmin=-1,xmax=-1,bin=0.02,dmin=0,dmax=0,amax=0,rmax=0;
-  static bool bMirror=FALSE;
+  static bool bMirror=FALSE, bSums=FALSE;
   static const char *eaver[]={ NULL, "z", "y", "x", NULL };
   static const char *eunit[]={ NULL, "nm-3", "nm-2", "count", NULL };
 
@@ -121,6 +121,8 @@ int gmx_densmap(int argc,char *argv[])
       "Maximum radial distance" },
     { "-mirror", FALSE, etBOOL, {&bMirror},
       "Add the mirror image below the axial axis" },
+    { "-sums", FALSE, etBOOL, {&bSums},
+      "Print density sums (1D map) to stdout" },
     { "-unit", FALSE, etENUM, {eunit},
       "Unit for the output" },
     { "-dmin", FALSE, etREAL, {&dmin},
@@ -143,7 +145,7 @@ int gmx_densmap(int argc,char *argv[])
   int        i,j,k,l,ngrps,anagrp,*gnx=NULL,nindex,nradial=0,nfr,nmpower;
   atom_id    **ind=NULL,*index;
   real       **grid,maxgrid,m1,m2,box1,box2,*tickx,*tickz,invcellvol;
-  real       invspa=0,invspz=0,axial,r,vol_old,vol;
+  real       invspa=0,invspz=0,axial,r,vol_old,vol,rowsum;
   int        nlev=51;
   t_rgb rlo={1,1,1}, rhi={0,0,0};
   const char *label[]={ "x (nm)", "y (nm)", "z (nm)" };
@@ -358,6 +360,19 @@ int gmx_densmap(int argc,char *argv[])
       for (i=0; i<=n2; i++)
 	tickz[i] = i/invspz;
     }
+  }
+  
+  if (bSums)
+  {
+    for (i=0;i<n1;++i)
+    {
+	fprintf(stdout,"Density sums:\n");
+    rowsum=0;
+    for (j=0;j<n2;++j)
+	  rowsum+=grid[i][j];
+	fprintf(stdout,"%g\t",rowsum);
+    }
+	fprintf(stdout,"\n");
   }
   
   sprintf(buf,"%s number density",grpname[anagrp]);
