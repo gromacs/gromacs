@@ -41,6 +41,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "index.h"
 
 /* Abstract type for the atom property database */
@@ -67,5 +71,10 @@ extern bool gmx_atomprop_query(gmx_atomprop_t aps,
  * The first time this function is called for this property
  * the database will be read.
  */
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

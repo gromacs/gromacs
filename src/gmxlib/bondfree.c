@@ -2529,8 +2529,8 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	}
 	if (ind != -1)
 	  inc_nrnb(nrnb,ind,nbonds/nat);
-	epot[ftype]  += v;
-	epot[F_DVDL] += dvdl;
+	epot[ftype]        += v;
+	enerd->dvdl_nonlin += dvdl;
       }
     }
   }
@@ -2597,8 +2597,7 @@ void calc_bonds_lambda(FILE *fplog,
 	  }
 	  if (ind != -1)
 	    inc_nrnb(nrnb,ind,nbonds/nat);
-	  epot[ftype]  += v;
-	  epot[F_DVDL] += dvdl;
+	  epot[ftype] += v;
 	}
       }
     }

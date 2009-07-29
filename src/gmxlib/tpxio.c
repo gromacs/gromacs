@@ -363,7 +363,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(idum); 
     do_real(ir->rlist); 
     if (file_version >= 67) {
-      do_int(ir->rlistlong);
+      do_real(ir->rlistlong);
     }
     do_int(ir->coulombtype); 
     if (file_version < 32 && ir->coulombtype == eelRF)
