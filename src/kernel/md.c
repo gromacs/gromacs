@@ -222,7 +222,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		    inputrec->bOptFFT,inputrec->ewald_geometry);
 
   /* Make molecules whole at start of run */
-  if (fr->ePBC != epbcNONE)  {
+  if ((fr->ePBC != epbcNONE) && !bRerunMD)
+  {
     do_pbc_first(stdlog,state->box,fr,graph,state->x);
   }
   
@@ -491,6 +492,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
       if (max_cutoff2(rerun_fr.box) < sqr(fr->rlistlong))
 	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+      do_pbc_first(log,rerun_fr.box,fr,graph,rerun_fr.x);
     }
   }
 
