@@ -1181,11 +1181,11 @@ Here follows the explanatory text.
 \item \normindex{combination rule} = 
 \begin{enumerate}
 \item For Lennard Jones: supply $C^{(6)}$ and $C^{(N)}$,
-$C^{M}_{ij}=\sqrt{C^M_i\,C^M_j}$ (M = 6,N). 
-Default value for N = 12, but it can be
+$C^{M}_{ij}=\sqrt{C^M_i\,C^M_j}$ ($M$ = 6,$N$).
+Default value for $N$ = 12, but it can be
 overridden using the last parameter on this line.
 For Buckingham potentials the combination rule is such that you give the
-A, B and C parameters. $A_{ij} = \sqrt{A_i\, A_j}$ and similar for 
+$A$, $B$ and $C$ parameters. $A_{ij} = \sqrt{A_i\, A_j}$ and similar for 
 $C_{ij}$, $B_{ij} = 2/(1/B_i + 1/B_j)$.
 \item supply $\sigma$ and $\epsilon$,
 $\sigma_{ij}=\frac{1}{2}(\sigma_i+\sigma_j)$ and 
@@ -1200,11 +1200,15 @@ or yes (generate 1-4 parameters which are not present in the pair list
 from normal Lennard-Jones parameters using FudgeLJ)
 \item FudgeLJ = factor to multiply Lennard-Jones 1-4 interactions with, default 1
 \item FudgeQQ = factor to multiply electrostatic 1-4 interactions with, default 1
-\item N = power for the repulsion term in a 6-N potential (with 
-nonbonded-type Lennard Jones only)
+\item $N$ = power for the repulsion term in a 6-$N$ potential (with 
+nonbonded-type Lennard Jones only), starting with {\gromacs} version 4.1
+{\bf mdrun} also reads and applies $N$, for values not equal to 12 tabulated
+interaction functions are used
+(in older version you would have to use user tabulated interactions).
 \end{itemize}
 {\bf note:} generate pairs, FudgeLJ, FudgeQQ and N are optional,
-FudgeLJ is only used when generate pairs is set to 'yes'. However if you
+FudgeLJ is only used when generate pairs is set to 'yes',
+FudgeQQ is always used. However if you
 want to specify N you need to give a value for the other parameters as well.
 
 % move these figures so they end up on facing pages 
