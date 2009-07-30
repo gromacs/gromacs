@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -288,222 +289,285 @@ static real anal_ee(real *parm,real T,real t)
 }
 
 static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
-			   double *av,double *sig,real **val,real dt,
-			   bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr)
+                           double *av,double *sig,real **val,real dt,
+                           bool bFitAc,bool bSingleExpFit,bool bAllowNegLTCorr)
 {
-  FILE   *fp;
-  int    bs,prev_bs,nbs,nb;
-  real   spacing,nbr;
-  int    s,i,j;
-  double blav,var;
-  char   **leg;
-  real   *tbs,*ybs,rtmp,dens,*fitsig,twooe,tau1_est,tau_sig;
-  real   fitparm[4];
-
-  if (n < 4) {
-    fprintf(stdout,"The number of points is smaller than 4, can not make an error estimate\n");
-
-    return;
-  }
-
-  fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
-  if (bPrintXvgrCodes())
-    fprintf(fp,
-	    "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
-	    (n-1)*dt,n);
-  snew(leg,2*nset);
-  xvgr_legend(fp,2*nset,leg);
-  sfree(leg);
-
-  spacing = pow(2,1.0/resol);
-  snew(tbs,n);
-  snew(ybs,n);
-  snew(fitsig,n);
-  for(s=0; s<nset; s++) {
-    nbs = 0;
-    prev_bs = 0;
-    nbr = nb_min;
-    while (nbr <= n) {
-      bs = n/(int)nbr;
-      if (bs != prev_bs) {
-	nb = n/bs;
-	var = 0;
-	for(i=0; i<nb; i++) {
-	  blav=0;
-	  for (j=0; j<bs; j++)
-	    blav += val[s][bs*i+j];
-	  var += sqr(av[s] - blav/bs);
-	}
-	tbs[nbs] = bs*dt;
-	ybs[nbs] = var/(nb*(nb-1.0))*(n*dt)/(sig[s]*sig[s]);
-	nbs++;
-      }
-      nbr *= spacing;
-      nb = (int)(nbr+0.5);
-      prev_bs = bs;
-    }
-
-    for(i=0; i<nbs/2; i++) {
-      rtmp         = tbs[i];
-      tbs[i]       = tbs[nbs-1-i];
-      tbs[nbs-1-i] = rtmp;
-      rtmp         = ybs[i];
-      ybs[i]       = ybs[nbs-1-i];
-      ybs[nbs-1-i] = rtmp;
-    }
-    /* The initial slope of the normalized ybs^2 is 1.
-     * For a single exponential autocorrelation: ybs(tau1) = 2/e tau1
-     * From this we take our initial guess for tau1.
-     */
-    twooe = 2/exp(1);
-    i = -1;
-    do {
-      i++;
-      tau1_est = tbs[i];
-    } while (i < nbs - 1 && (ybs[i] > ybs[i+1] || ybs[i] > twooe*tau1_est));
-
-    if (ybs[0] > ybs[1]) {
-      fprintf(stdout,"Data set %d has strange time correlations:\n"
-	      "the std. error using single points is larger than that of blocks of 2 points\n"
-	      "The error estimate might be inaccurate, check the fit\n",
-	      s+1);
-      /* Use the total time as tau for the fitting weights */
-      tau_sig = (n - 1)*dt;
-    } else {
-      tau_sig = tau1_est;
-    }
-
-    if (debug)
-      fprintf(debug,"set %d tau1 estimate %f\n",s+1,tau1_est);
-
-    /* Generate more or less appropriate sigma's,
-     * also taking the density of points into account.
-     */
-    for(i=0; i<nbs; i++) {
-      if (i == 0) {
-	dens = tbs[1]/tbs[0] - 1;
-      } else if (i == nbs-1) {
-	dens = tbs[nbs-1]/tbs[nbs-2] - 1;
-      } else {
-	dens = 0.5*(tbs[i+1]/tbs[i-1] - 1);
-      }
-      fitsig[i] = sqrt((tau_sig + tbs[i])/dens);
-    }
-
-    if (!bSingleExpFit) {
-      fitparm[0] = tau1_est;
-      fitparm[1] = 0.95;
-      /* We set the initial guess for tau2
-       * to halfway between tau1_est and the total time (on log scale).
-       */
-      fitparm[2] = sqrt(tau1_est*(n-1)*dt);
-      do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
-      fitparm[3] = 1-fitparm[1];
-    }
-    if (bSingleExpFit || fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0
-	|| (fitparm[1]>1 && !bAllowNegLTCorr) || fitparm[2]>(n-1)*dt) {
-      if (!bSingleExpFit) {
-	if (fitparm[2] > (n-1)*dt) {
-	  fprintf(stdout,
-		  "Warning: tau2 is longer than the length of the data (%g)\n"
-		  "         the statistics might be bad\n",
-		  (n-1)*dt);
-	} else {
-	  fprintf(stdout,"a fitted parameter is negative\n");
-	}
-	fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
-		sig[s]*anal_ee_inf(fitparm,n*dt),
-		fitparm[1],fitparm[0],fitparm[2]);
-	/* Do a fit with tau2 fixed at the total time.
-	 * One could also choose any other large value for tau2.
-	 */
-	fitparm[0] = tau1_est;
-	fitparm[1] = 0.95;
-	fitparm[2] = (n-1)*dt;
-	fprintf(stderr,"Will fix tau2 at the total time: %g\n",fitparm[2]);
-	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,4);
-	fitparm[3] = 1-fitparm[1];
-      }
-      if (bSingleExpFit || fitparm[0]<0 || fitparm[1]<0
-	  || (fitparm[1]>1 && !bAllowNegLTCorr)) {
-	if (!bSingleExpFit) {
-	  fprintf(stdout,"a fitted parameter is negative\n");
-	  fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
-		  sig[s]*anal_ee_inf(fitparm,n*dt),
-		  fitparm[1],fitparm[0],fitparm[2]);
-	}
-	/* Do a single exponential fit */
-	fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
-	fitparm[0] = tau1_est;
-	fitparm[1] = 1.0;
-	fitparm[2] = 0.0;
-	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
-	fitparm[3] = 1-fitparm[1];
-      }
-    }
-    fprintf(stdout,"Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
-	    s+1,sig[s]*anal_ee_inf(fitparm,n*dt),
-	    fitparm[1],fitparm[0],fitparm[2]);
-    fprintf(fp,"@ legend string %d \"av %f\"\n",2*s,av[s]);
-    fprintf(fp,"@ legend string %d \"ee %6g\"\n",
-	    2*s+1,sig[s]*anal_ee_inf(fitparm,n*dt));
-    for(i=0; i<nbs; i++)
-      fprintf(fp,"%g %g %g\n",tbs[i],sig[s]*sqrt(ybs[i]/(n*dt)),
-	      sig[s]*sqrt(fit_function(effnERREST,fitparm,tbs[i])/(n*dt)));
-
-    if (bFitAc) {
-      int fitlen;
-      real *ac,acint,ac_fit[4];
+    FILE   *fp;
+    int    bs,prev_bs,nbs,nb;
+    real   spacing,nbr;
+    int    s,i,j;
+    double blav,var;
+    char   **leg;
+    real   *tbs,*ybs,rtmp,dens,*fitsig,twooe,tau1_est,tau_sig;
+    real   fitparm[4];
+    real   ee,a,tau1,tau2;
+    
+    if (n < 4)
+    {
+      fprintf(stdout,"The number of points is smaller than 4, can not make an error estimate\n");
       
-      snew(ac,n);
-      for(i=0; i<n; i++) {
-	ac[i] = val[s][i] - av[s];
-	if (i > 0)
-	  fitsig[i] = sqrt(i);
-	else
-	  fitsig[i] = 1;
-      }
-      low_do_autocorr(NULL,NULL,n,1,-1,&ac,
-		      dt,eacNormal,1,FALSE,TRUE,
-		      FALSE,0,0,effnNONE,0);
-      
-      fitlen = n/nb_min;
-
-      /* Integrate ACF only up to fitlen/2 to avoid integrating noise */ 
-      acint = 0.5*ac[0];
-      for(i=1; i<=fitlen/2; i++)
-	acint += ac[i];
-      acint *= dt;
-
-      /* Generate more or less appropriate sigma's */
-      for(i=0; i<=fitlen; i++)
-	fitsig[i] = sqrt(acint + dt*i);
-
-      ac_fit[0] = 0.5*acint;
-      ac_fit[1] = 0.95;
-      ac_fit[2] = 10*acint;
-      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,fitlen*dt,
-              bDebugMode(),effnEXP3,ac_fit,0);
-      ac_fit[3] = 1 - ac_fit[1];
-
-      fprintf(stdout,"Set %3d:  ac erest %g  a %g  tau1 %g  tau2 %g\n",
-	    s+1,sig[s]*anal_ee_inf(ac_fit,n*dt),
-	    ac_fit[1],ac_fit[0],ac_fit[2]);
-
-      fprintf(fp,"&\n");
-      for(i=0; i<nbs; i++)
-	fprintf(fp,"%g %g\n",tbs[i],
-		sig[s]*sqrt(fit_function(effnERREST,ac_fit,tbs[i]))/(n*dt));
-
-      sfree(ac);
+      return;
     }
-    if (s < nset-1)
-      fprintf(fp,"&\n");
-  }
-  sfree(fitsig);
-  sfree(ybs);
-  sfree(tbs);
-  fclose(fp);
+    
+    fp = xvgropen(eefile,"Error estimates",
+                  "Block size (time)","Error estimate");
+    if (bPrintXvgrCodes())
+    {
+        fprintf(fp,
+                "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
+                (n-1)*dt,n);
+    }
+    snew(leg,2*nset);
+    xvgr_legend(fp,2*nset,leg);
+    sfree(leg);
+
+    spacing = pow(2,1.0/resol);
+    snew(tbs,n);
+    snew(ybs,n);
+    snew(fitsig,n);
+    for(s=0; s<nset; s++)
+    {
+        nbs = 0;
+        prev_bs = 0;
+        nbr = nb_min;
+        while (nbr <= n)
+        {
+            bs = n/(int)nbr;
+            if (bs != prev_bs)
+            {
+                nb = n/bs;
+                var = 0;
+                for(i=0; i<nb; i++)
+                {
+                    blav=0;
+                    for (j=0; j<bs; j++)
+                    {
+                        blav += val[s][bs*i+j];
+                    }
+                    var += sqr(av[s] - blav/bs);
+                }
+                tbs[nbs] = bs*dt;
+                if (sig[s] == 0)
+                {
+                    ybs[nbs] = 0;
+                }
+                else
+                {
+                    ybs[nbs] = var/(nb*(nb-1.0))*(n*dt)/(sig[s]*sig[s]);
+                }
+                nbs++;
+            }
+            nbr *= spacing;
+            nb = (int)(nbr+0.5);
+            prev_bs = bs;
+        }
+
+        if (sig[s] == 0)
+        {
+            ee   = 0;
+            a    = 1;
+            tau1 = 0;
+            tau2 = 0;
+        }
+        else
+        {
+            for(i=0; i<nbs/2; i++)
+            {
+                rtmp         = tbs[i];
+                tbs[i]       = tbs[nbs-1-i];
+                tbs[nbs-1-i] = rtmp;
+                rtmp         = ybs[i];
+                ybs[i]       = ybs[nbs-1-i];
+                ybs[nbs-1-i] = rtmp;
+            }
+            /* The initial slope of the normalized ybs^2 is 1.
+             * For a single exponential autocorrelation: ybs(tau1) = 2/e tau1
+             * From this we take our initial guess for tau1.
+             */
+            twooe = 2/exp(1);
+            i = -1;
+            do
+            {
+                i++;
+                tau1_est = tbs[i];
+            } while (i < nbs - 1 &&
+                     (ybs[i] > ybs[i+1] || ybs[i] > twooe*tau1_est));
+            
+            if (ybs[0] > ybs[1])
+            {
+                fprintf(stdout,"Data set %d has strange time correlations:\n"
+                        "the std. error using single points is larger than that of blocks of 2 points\n"
+                        "The error estimate might be inaccurate, check the fit\n",
+                        s+1);
+                /* Use the total time as tau for the fitting weights */
+                tau_sig = (n - 1)*dt;
+            }
+            else
+            {
+                tau_sig = tau1_est;
+            }
+            
+            if (debug)
+            {
+                fprintf(debug,"set %d tau1 estimate %f\n",s+1,tau1_est);
+            }
+            
+            /* Generate more or less appropriate sigma's,
+             * also taking the density of points into account.
+             */
+            for(i=0; i<nbs; i++)
+            {
+                if (i == 0)
+                {
+                    dens = tbs[1]/tbs[0] - 1;
+                }
+                else if (i == nbs-1)
+                {
+                    dens = tbs[nbs-1]/tbs[nbs-2] - 1;
+                }
+                else
+                {
+                    dens = 0.5*(tbs[i+1]/tbs[i-1] - 1);
+                }
+                fitsig[i] = sqrt((tau_sig + tbs[i])/dens);
+            }
+            
+            if (!bSingleExpFit)
+            {
+                fitparm[0] = tau1_est;
+                fitparm[1] = 0.95;
+                /* We set the initial guess for tau2
+                 * to halfway between tau1_est and the total time (on log scale).
+                 */
+                fitparm[2] = sqrt(tau1_est*(n-1)*dt);
+                do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
+                fitparm[3] = 1-fitparm[1];
+            }
+            if (bSingleExpFit || fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0
+                || (fitparm[1]>1 && !bAllowNegLTCorr) || fitparm[2]>(n-1)*dt)
+            {
+                if (!bSingleExpFit)
+                {
+                    if (fitparm[2] > (n-1)*dt)
+                    {
+                        fprintf(stdout,
+                                "Warning: tau2 is longer than the length of the data (%g)\n"
+                                "         the statistics might be bad\n",
+                                (n-1)*dt);
+                    }
+                    else
+                    {
+                        fprintf(stdout,"a fitted parameter is negative\n");
+                    }
+                    fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+                            sig[s]*anal_ee_inf(fitparm,n*dt),
+                            fitparm[1],fitparm[0],fitparm[2]);
+                    /* Do a fit with tau2 fixed at the total time.
+                     * One could also choose any other large value for tau2.
+                     */
+                    fitparm[0] = tau1_est;
+                    fitparm[1] = 0.95;
+                    fitparm[2] = (n-1)*dt;
+                    fprintf(stderr,"Will fix tau2 at the total time: %g\n",fitparm[2]);
+                    do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,4);
+                    fitparm[3] = 1-fitparm[1];
+                }
+                if (bSingleExpFit || fitparm[0]<0 || fitparm[1]<0
+                    || (fitparm[1]>1 && !bAllowNegLTCorr))
+                {
+                    if (!bSingleExpFit) {
+                        fprintf(stdout,"a fitted parameter is negative\n");
+                        fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+                                sig[s]*anal_ee_inf(fitparm,n*dt),
+                                fitparm[1],fitparm[0],fitparm[2]);
+                    }
+                    /* Do a single exponential fit */
+                    fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+                    fitparm[0] = tau1_est;
+                    fitparm[1] = 1.0;
+                    fitparm[2] = 0.0;
+                    do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
+                    fitparm[3] = 1-fitparm[1];
+                }
+            }
+            ee   = sig[s]*anal_ee_inf(fitparm,n*dt);
+            a    = fitparm[1];
+            tau1 = fitparm[0];
+            tau2 = fitparm[2];
+        }
+        fprintf(stdout,"Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
+                s+1,ee,a,tau1,tau2);
+        fprintf(fp,"@ legend string %d \"av %f\"\n",2*s,av[s]);
+        fprintf(fp,"@ legend string %d \"ee %6g\"\n",
+                2*s+1,sig[s]*anal_ee_inf(fitparm,n*dt));
+        for(i=0; i<nbs; i++)
+        {
+            fprintf(fp,"%g %g %g\n",tbs[i],sig[s]*sqrt(ybs[i]/(n*dt)),
+                    sig[s]*sqrt(fit_function(effnERREST,fitparm,tbs[i])/(n*dt)));
+        }
+        
+        if (bFitAc)
+        {
+            int fitlen;
+            real *ac,acint,ac_fit[4];
+            
+            snew(ac,n);
+            for(i=0; i<n; i++) {
+                ac[i] = val[s][i] - av[s];
+                if (i > 0)
+                    fitsig[i] = sqrt(i);
+                else
+                    fitsig[i] = 1;
+            }
+            low_do_autocorr(NULL,NULL,n,1,-1,&ac,
+                            dt,eacNormal,1,FALSE,TRUE,
+                            FALSE,0,0,effnNONE,0);
+            
+            fitlen = n/nb_min;
+            
+            /* Integrate ACF only up to fitlen/2 to avoid integrating noise */ 
+            acint = 0.5*ac[0];
+            for(i=1; i<=fitlen/2; i++)
+            {
+                acint += ac[i];
+            }
+            acint *= dt;
+            
+            /* Generate more or less appropriate sigma's */
+            for(i=0; i<=fitlen; i++)
+            {
+                fitsig[i] = sqrt(acint + dt*i);
+            }
+            
+            ac_fit[0] = 0.5*acint;
+            ac_fit[1] = 0.95;
+            ac_fit[2] = 10*acint;
+            do_lmfit(n/nb_min,ac,fitsig,dt,0,0,fitlen*dt,
+                     bDebugMode(),effnEXP3,ac_fit,0);
+            ac_fit[3] = 1 - ac_fit[1];
+            
+            fprintf(stdout,"Set %3d:  ac erest %g  a %g  tau1 %g  tau2 %g\n",
+                    s+1,sig[s]*anal_ee_inf(ac_fit,n*dt),
+                    ac_fit[1],ac_fit[0],ac_fit[2]);
+            
+            fprintf(fp,"&\n");
+            for(i=0; i<nbs; i++)
+            {
+                fprintf(fp,"%g %g\n",tbs[i],
+                        sig[s]*sqrt(fit_function(effnERREST,ac_fit,tbs[i]))/(n*dt));
+            }
+            
+            sfree(ac);
+        }
+        if (s < nset-1)
+        {
+            fprintf(fp,"&\n");
+        }
+    }
+    sfree(fitsig);
+    sfree(ybs);
+    sfree(tbs);
+    fclose(fp);
 }
 
 static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
