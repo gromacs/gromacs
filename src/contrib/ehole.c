@@ -558,7 +558,20 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
-    "ehole performs a molecular dynamics simulation of electrons and holes"
+    "ehole performs a molecular dynamics simulation of electrons and holes",
+    "in an implicit lattice. The lattice is modeled through scattering cross",
+    "sections, for elastic and inelastic scattering.",
+    "A detailed description of the scatterning processes simulated in ehole",
+    "can be found in Timneanu et al. Chemical Physics 299 (2004) 277-283",
+    "The paper also includes a description how to calculate the input files.[PAR]",
+    "Description of the input files for ehole:[BR]",
+    "[TT]-sigel.dat[tt]: elastic cross section (per atom). Two columns: Impact electron energy (eV) vs Elastic cross section (A2).[BR]",
+    "[TT]-siginel.dat[tt]: inelastic cross section (per atom). Two columns: Impact electron energy (eV) vs Inelastic cross section (A2).[BR]",
+    "[TT]-band-ener.dat[tt]: Probability of finding an electron in the valence band.",
+    "Two columns: Impact electron energy (eV) vs Probability[BR]",
+    "[TT]-eloss.dat[tt]: Probability of energy loss due to inelastic scattering. Three columns: Impact electron energy (eV) vs  Integrated probability vs Energy loss in inelastic scattering (eV).[BR]",
+    "[TT]-theta-el.dat[tt]: Probability of elastic scattering angle. Three columns: Impact electron energy (eV) vs Integrated probability vs Scattering angle (rad).[BR]",
+    "[TT]-qtrans.dat[tt]: Four columns: Impact electron energy (eV) vs Inelastic energy loss (eV) vs Integrated probability vs Scattering angle (rad)."
   };
   static t_eh_params ehp = {
     100,    /* Max number of particles. Is a parameter but should be dynamic */
@@ -649,7 +662,8 @@ int main(int argc,char *argv[])
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,
 		    NPA,pa,asize(desc),desc,0,NULL);
-
+  please_cite(stdout,"Timneanu2004a");
+  
   if (ehp.deltax <= 0)
     gmx_fatal(FARGS,"Delta X should be > 0");
   ehp.Alj = FACEL*pow(ehp.deltax,5);
