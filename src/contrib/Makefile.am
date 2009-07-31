@@ -16,12 +16,12 @@ EXTRA_DIST              = README
 EXTRA_PROGRAMS 	=  	copyrgt 	\
 			options 	hrefify 	\
 			addquote 	compnl	\
-			gen_table
+			gen_table	ehole
 
 compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
-
+ehole_SOURCES = ehdata.c ehdata.h ehanal.c ehole.c
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
