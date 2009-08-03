@@ -657,13 +657,14 @@ velocities $\ve{v}$ at time $t-\hDt$; it updates positions and
 velocities using the forces
 $\ve{F}(t)$ determined by the positions at time $t$: 
 \bea
-\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{\ve{F}(t)}{m}\Dt   \\
+\label{eqn:leapfrogv}
+\ve{v}(t+\hDt)  &~=~&   \ve{v}(t-\hDt)+\frac{1}{m}\ve{F}(t)\Dt   \\
 \ve{r}(t+\Dt)   &~=~&   \ve{r}(t)+\ve{v}(t+\hDt)\Dt
 \eea
 The algorithm is visualized in \figref{leapfrog}.
 It is equivalent to the Verlet~\cite{Verlet67} algorithm:
 \beq
-\ve{r}(t+\Dt)~=~2\ve{r}(t) - \ve{r}(t-\Dt) + \frac{\ve{F}(t)}{m}\Dt^2+O(\Dt^4)
+\ve{r}(t+\Dt)~=~2\ve{r}(t) - \ve{r}(t-\Dt) + \frac{1}{m}\ve{F}(t)\Dt^2+O(\Dt^4)
 \eeq
 The algorithm is of third order in $\ve{r}$ and is time-reversible.
 See ref.~\cite{Berendsen86b} for the merits of this algorithm and comparison
@@ -672,6 +673,66 @@ with other time integration algorithms.
 The \swapindex{equations of}{motion} are modified for temperature coupling
  and pressure coupling, and extended to include the conservation of
 constraints, all of which are described below.
+
+\subsection{\normindex{Twin-range cut-off's}}
+To save computation time, slowly varying forces can be calculated
+less often than rapidly varying forces. In {\gromacs}
+such a \normindex{multiple time step} splitting is possible between
+short and long range non-bonded interactions.
+In {\gromacs} versions up to 4.0 an irreversible integration scheme
+was used which is also used by the {\gromos} simulation package:
+every $n$ steps the long range forces are determined and these are
+then also used (without modification) for the next $n-1$ integration steps
+in \eqnref{leapfrogv}. Such an irreversible scheme can result in bad energy
+conservation and, possibly, bad sampling.
+Since version 4.1 a leap-frog version of the reversible, symplectic
+Trotter decomposition scheme\cite{Tuckerman1990a} is used.
+In this integrator the long-range forces are determined every $n$ steps
+and are then integrated into the velocity in \eqnref{leapfrogv} using
+a time step of $\Dt_\mathrm{LR} = n \Dt$:
+\beq
+\ve{v}(t+\hDt) =
+\left\{ \begin{array}{lll} \displaystyle
+  \ve{v}(t-\hDt) + \frac{1}{m}\left[\ve{F}_\mathrm{SR}(t) + n \ve{F}_\mathrm{LR}(t)\right] \Dt &,& \mathrm{step} ~\%~ n = 0  \\ \noalign{\medskip} \displaystyle
+  \ve{v}(t-\hDt) + \frac{1}{m}\ve{F}_\mathrm{SR}(t)\Dt &,& \mathrm{step} ~\%~ n \neq 0  \\
+\end{array} \right.
+\eeq
+The parameter $n$ is equal to the neighbor list update frequency.
+
+Several other simulation packages uses multiple time stepping for
+bonds and/or the PME mesh forces. In {\gromacs} we have not implemented
+this, since we use a different philosophy. Bonds can be constrained
+(which is also a physically more sound approximation of a quantum
+oscillator), which allows the smallest time step to be increased
+to the larger one. This not only halves the number of force calculations,
+but also the update calculations. For even larger time steps, angle vibrations
+involving hydrogen atoms can be removed using virtual interaction sites
+(see \secref{rmfast}), which brings the shortest time step up to
+PME mesh update frequency of a multiple time stepping scheme.
+
+As an example we show the energy conservation for integrating
+the equations of motion for SPC/E water at 300 K. To avoid cut-off
+effects, reaction field electrostatics with $\epsilon_{RF}=\infty$ and
+shifted Lennard-Jones interactions are used, both with a buffer region.
+The long-range interactions were evaluated between 1.0 and 1.4 nm.
+In \figref{leapfrog} one can see that for electrostatics the Trotter scheme
+does an order of magnitude better up to  $\Dt_{LR}$ = 16 fs.
+The electrostatics depends strongly on the orientation of the water molecules,
+which changes rapidly.
+For Lennard-Jones interactions the energy drift is linear in $\Dt_{LR}$
+and roughly two orders of magnitude smaller than for the electrostatics.
+Lennard-Jones forces are smaller than Coulomb forces and
+they are mainly affected by translation of water molecules, not rotation.
+
+\begin{figure}
+\centerline{\includegraphics[width=12cm]{plots/drift_all}}
+\caption{Energy drift per degree of freedom in SPC/E water
+with twin-range cut-off's
+for reaction field (left) and Lennard Jones interaction (right)
+as a function of the long-range time step length for the irreversible
+``\gromos'' scheme and a symplectic Trotter scheme.}
+\label{fig:twinrangeener}
+\end{figure}
 
 \subsection{\swapindex{Temperature}{coupling}}
 \index{temperature coupling}
