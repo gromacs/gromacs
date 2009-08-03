@@ -100,7 +100,22 @@ static void _low_check(bool b,char *s,int *n)
   }
 }
 
-void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
+static void check_nst(const char *desc_nst,int nst,
+		      const char *desc_p,int *p)
+{
+    char buf[STRLEN];
+
+    if (*p > 0 && *p % nst != 0)
+    {
+        /* Round up to the next multiple of nst */
+        *p = ((*p)/nst + 1)*nst;
+        sprintf(buf,"%s should be a multiple of %s, changing %s to %d\n",
+		desc_p,desc_nst,desc_p,*p);
+	warning(buf);
+    }
+}
+
+void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,int *nerror)
 /* Check internal consistency */
 {
   /* Strange macro: first one fills the err_buf, and then one can check 
@@ -110,7 +125,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 #define CHECK(b) _low_check(b,err_buf,nerror)
   char err_buf[256];
   int  ns_type=0;
-  real dt_coupl;
+  real dt_coupl=0;
+
+  set_warning_line(mdparin,-1);
 
   /* BASIC CUT-OFF STUFF */
   if (ir->rlist == 0 ||
@@ -132,6 +149,9 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->rlistlong > 0 && (ir->rlist == 0 || ir->rlistlong < ir->rlist)) {
     warning_error("rlistlong can not be shorter than rlist");
   }
+  if (IR_TWINRANGE(*ir) && ir->nstlist <= 0) {
+    warning_error("Can not have nstlist<=0 with twin-range interactions");
+  }
 
   /* GENERAL INTEGRATOR STUFF */
   if (ir->eI != eiMD) {
@@ -139,29 +159,28 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
   if (!EI_DYNAMICS(ir->eI)) {
     ir->epc = epcNO;
-    ir->nstcalcenergy = 1;
   }
-  if (ir->nstcalcenergy < 0) {
-    gmx_fatal(FARGS,"Can not have nstcalcenergy < 0");
-  }
-  if ((ir->etc != etcNO || ir->epc != epcNO) && ir->nstcalcenergy == 0) {
-    gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
-  }
-  dt_coupl = ir->nstcalcenergy*ir->delta_t;
-  
-  if (ir->nstcalcenergy > 1) {
-    /* Energy and log file writing trigger energy calculation,
-     * so we need some checks.
-     */
-    if (ir->nstenergy > 0 && ir->nstenergy % ir->nstcalcenergy != 0) {
-      ir->nstenergy = (ir->nstenergy/ir->nstcalcenergy + 1)*ir->nstcalcenergy;
-      sprintf(warn_buf,"nstenergy is not a multiple of nstcalcenergy, setting nstenergy to %d\n",ir->nstenergy);
-      warning(NULL);
+  if (EI_DYNAMICS(ir->eI)) {
+    if (ir->nstcalcenergy < 0) {
+      gmx_fatal(FARGS,"Can not have nstcalcenergy < 0");
     }
-    if (ir->nstlog > 0 && ir->nstlog % ir->nstcalcenergy != 0) {
-      ir->nstlog = (ir->nstlog/ir->nstcalcenergy + 1)*ir->nstcalcenergy;
-      sprintf(warn_buf,"nstlog is not a multiple of nstcalcenergy, setting nstlog to %d\n",ir->nstlog);
-      warning(NULL);
+    if ((ir->etc != etcNO || ir->epc != epcNO) && ir->nstcalcenergy == 0) {
+      gmx_fatal(FARGS,"Can not have nstcalcenergy=0 with global T/P-coupling");
+    }
+    if (IR_TWINRANGE(*ir)) {
+      check_nst("nstlist",ir->nstlist,"nstcalcenergy",&ir->nstcalcenergy);
+    }
+    dt_coupl = ir->nstcalcenergy*ir->delta_t;
+  
+    if (ir->nstcalcenergy > 1) {
+      /* Energy and log file writing trigger energy calculation,
+       * so we need some checks.
+       */
+      check_nst("nstcalcenergy",ir->nstcalcenergy,"nstenergy",&ir->nstenergy);
+      check_nst("nstcalcenergy",ir->nstcalcenergy,"nstlog",&ir->nstlog);
+      if (ir->efep != efepNO) {
+	check_nst("nstcalcenergy",ir->nstcalcenergy,"nstdhdl",&ir->nstdhdl);
+      }
     }
   }
 
@@ -427,12 +446,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->rlist > ir->rvdw);
   }
   if ((EEL_SWITCHED(ir->coulombtype) || ir->coulombtype == eelRF_ZERO)
-      && (ir->rlist <= ir->rcoulomb)) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
+      && (ir->rlistlong <= ir->rcoulomb)) {
+    sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
+	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
     warning_note(NULL);
   }
-  if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlist <= ir->rvdw)) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
+  if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlistlong <= ir->rvdw)) {
+    sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rvdw.",
+	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
     warning_note(NULL);
   }
 
@@ -2100,10 +2121,22 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
     (*nerror)++;
   }  
 
-  if (ir->eConstrAlg == econtSHAKE && bConstr && ir->shake_tol <= 0.0) {
-    fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
-	    ir->shake_tol);
-    (*nerror)++;
+  if (bConstr && ir->eConstrAlg == econtSHAKE) {
+    if (ir->shake_tol <= 0.0) {
+      fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
+	      ir->shake_tol);
+      (*nerror)++;
+    }
+
+    if (IR_TWINRANGE(*ir) && ir->nstlist > 1) {
+      sprintf(warn_buf,"With twin-range cut-off's and SHAKE the virial and the pressure are incorrect.");
+      if (ir->epc == epcNO) {
+	warning(NULL);
+      } else {
+	fprintf(stderr,"ERROR: %s\n",warn_buf);
+	(*nerror)++;
+      }
+    }
   }
 
   if( (ir->eConstrAlg == econtLINCS) && bConstr) {

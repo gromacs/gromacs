@@ -78,7 +78,8 @@ typedef struct {
 extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
-extern void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror);
+extern void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,
+		     int *nerror);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
