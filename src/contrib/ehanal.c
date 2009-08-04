@@ -87,7 +87,7 @@ void add_histo(t_histo *h,real x,real y)
   
   n = (x-h->minx)*h->dx_1;
   if ((n < 0) || (n > h->np)) 
-    gmx_fatal(FARGS,"Invalid x (%f) in add_histo. SHould be in %f - %f",x,h->minx,h->maxx);
+    gmx_fatal(FARGS,"Invalid x (%f) in add_histo. Should be in %f - %f",x,h->minx,h->maxx);
   h->y[n] += y;
   h->nh[n]++;
 }
@@ -194,8 +194,8 @@ t_ana_struct *init_ana_struct(int nstep,int nsave,real timestep,
   anal->dt    = nsave*timestep;
   snew(anal->t,anal->nanal);
   snew(anal->maxdist,anal->nanal);
-  snew(anal->averdist,anal->nanal);
-  snew(anal->ad2,anal->nanal);
+  snew(anal->d2_com,anal->nanal);
+  snew(anal->d2_origin,anal->nanal);
   snew(anal->nion,anal->nanal);
   anal->nstruct   = 1;
   anal->nparticle = 1;
@@ -213,8 +213,8 @@ void done_ana_struct(t_ana_struct *anal)
   
   sfree(anal->t);
   sfree(anal->maxdist);
-  sfree(anal->averdist);
-  sfree(anal->ad2);
+  sfree(anal->d2_com);
+  sfree(anal->d2_origin);
   sfree(anal->nion);
   sfree(anal->q);
   for(i=0; (i<anal->nstruct); i++)
@@ -229,8 +229,8 @@ void reset_ana_struct(t_ana_struct *anal)
   for(i=0; (i<anal->nanal); i++) {
     anal->t[i] = 0;
     anal->maxdist[i] = 0;
-    anal->averdist[i] = 0;
-    anal->ad2[i] = 0;
+    clear_rvec(anal->d2_com[i]);
+    clear_rvec(anal->d2_origin[i]);
     anal->nion[i] = 0;
   }
   anal->index = 0;
@@ -238,7 +238,7 @@ void reset_ana_struct(t_ana_struct *anal)
 
 void add_ana_struct(t_ana_struct *total,t_ana_struct *add)
 {
-  int i;
+  int i,m;
   
   if (total->index == 0)
     total->index = add->index;
@@ -251,14 +251,17 @@ void add_ana_struct(t_ana_struct *total,t_ana_struct *add)
     else if (total->t[i] != add->t[i])
       gmx_fatal(FARGS,"Inconsistent times in analysis (%f-%f) %s, %d",
 		  total->t[i],add->t[i],__FILE__,__LINE__);
-    total->maxdist[i]  += add->maxdist[i];
-    total->averdist[i] += add->averdist[i];
-    total->ad2[i]      += add->ad2[i]/add->nion[i];
+    if (add->maxdist[i] > total->maxdist[i])
+      total->maxdist[i]  = add->maxdist[i];
+    for(m=0; (m<DIM); m++) {
+      total->d2_com[i][m]    += add->d2_com[i][m]/add->nion[i];
+      total->d2_origin[i][m] += add->d2_origin[i][m]/add->nion[i];
+    }
     total->nion[i]     += add->nion[i];
   }
 }
 
-static void do_add_str(t_ana_struct *anal,int nparticle,rvec x[])
+static void do_add_struct(t_ana_struct *anal,int nparticle,rvec x[])
 {
   int i,j;
   
@@ -279,7 +282,7 @@ static void do_add_str(t_ana_struct *anal,int nparticle,rvec x[])
 void analyse_structure(t_ana_struct *anal,real t,rvec center,
 		       rvec x[],int nparticle,real charge[])
 {
-  int  i,j,m,n=0;
+  int  i,j,m,nel,n=0;
   rvec dx,com;
   real dx2,dx1;
   
@@ -289,54 +292,72 @@ void analyse_structure(t_ana_struct *anal,real t,rvec center,
   anal->t[j]       = t;
   anal->maxdist[j] = 0;
   clear_rvec(com);
+  nel = 0;
   for(i=0; (i<nparticle); i++) {
-    if (charge[i] < 0) 
+    if (charge[i] < 0) {
       rvec_inc(com,x[i]);
+      nel++;
+    }
   }
-  for(m=0; (m<3); m++)
-    com[m] /= nparticle;
+  if (nel > 0)
+    for(m=0; (m<3); m++)
+      com[m] /= nel;
   for(i=0; (i<nparticle); i++) {
     if (charge[i] < 0) {
       rvec_sub(x[i],com,dx);
-      dx2 = iprod(dx,dx);
+      for(m=0; (m<DIM); m++) {
+	anal->d2_com[j][m]    += sqr(dx[m]);
+	anal->d2_origin[j][m] += sqr(x[i][m]);
+      }
+      dx2 = iprod(x[i],x[i]);
       dx1 = sqrt(dx2);
-      anal->ad2[j] += dx2;
-      anal->averdist[j]  += dx1;
       if (dx1 > anal->maxdist[j])
 	anal->maxdist[j] = dx1;
       n++;
     }
   }
-  do_add_str(anal,nparticle,x);
+  do_add_struct(anal,nparticle,x);
   anal->nion[j] = n;
   anal->index++;
 }
 
-void dump_ana_struct(char *rmax,char *nion,char *gyr,
+void dump_ana_struct(char *rmax,char *nion,char *gyr_com,char *gyr_origin,
 		     t_ana_struct *anal,int nsim)
 {
-  FILE *fp,*gp,*hp;
+  FILE *fp,*gp,*hp,*kp;
   int  i,j;
-  real t;
+  real t,d2;
+  char *legend[] = { "Rg", "RgX", "RgY", "RgZ" };
   
   fp = xvgropen(rmax,"rmax","Time (fs)","r (nm)");
   gp = xvgropen(nion,"N ion","Time (fs)","N ions");
-  hp = xvgropen(gyr,"Radius of gyration","Time (fs)","Rg (nm)");
+  hp = xvgropen(gyr_com,"Radius of gyration wrt. C.O.M.",
+		"Time (fs)","Rg (nm)");
+  xvgr_legend(hp,asize(legend),legend);
+  kp = xvgropen(gyr_origin,"Radius of gyration wrt. Origin",
+		"Time (fs)","Rg (nm)");
+  xvgr_legend(kp,asize(legend),legend);
   for(i=0; (i<anal->index); i++) {
     t = 1000*anal->t[i];
-    fprintf(fp,"%12g  %12.3f\n",t,anal->maxdist[i]/nsim);
-    fprintf(gp,"%12g  %12.3f\n",t,(1.0*anal->nion[i])/nsim-1);
-    if (anal->nion[i] > 0) {
-      if (anal->ad2[i] < 0)
-	gmx_fatal(FARGS,"ad2[%d] = %f",i,anal->ad2[i]);
-      fprintf(hp,"%12g  %12.3f\n",
-	      t,sqrt(anal->ad2[i]/nsim));
-    }
+    fprintf(fp,"%12g  %10.3f\n",t,anal->maxdist[i]);
+    fprintf(gp,"%12g  %10.3f\n",t,(1.0*anal->nion[i])/nsim-1);
+    d2 = anal->d2_com[i][XX] + anal->d2_com[i][YY] + anal->d2_com[i][ZZ];
+    fprintf(hp,"%12g  %10.3f  %10.3f  %10.3f  %10.3f\n",
+	    t,sqrt(d2/nsim),
+	    sqrt(anal->d2_com[i][XX]/nsim),
+	    sqrt(anal->d2_com[i][YY]/nsim),
+	    sqrt(anal->d2_com[i][ZZ]/nsim));
+    d2 = anal->d2_origin[i][XX] + anal->d2_origin[i][YY] + anal->d2_origin[i][ZZ];
+    fprintf(kp,"%12g  %10.3f  %10.3f  %10.3f  %10.3f\n",
+	    t,sqrt(d2/nsim),
+	    sqrt(anal->d2_origin[i][XX]/nsim),
+	    sqrt(anal->d2_origin[i][YY]/nsim),
+	    sqrt(anal->d2_origin[i][ZZ]/nsim));
   }
   fclose(hp);
   fclose(gp);
   fclose(fp);
-  
+  fclose(kp);
 }
 
 void dump_as_pdb(char *pdb,t_ana_struct *anal)

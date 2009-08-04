@@ -543,8 +543,9 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
   
   sfree(rptr);
   sfree(pdbbuf);
-  dump_ana_struct(opt2fn("-radius",NFILE,fnm),opt2fn("-nion",NFILE,fnm),
-		  opt2fn("-gyrate",NFILE,fnm),total,ehp->nsim);
+  dump_ana_struct(opt2fn("-maxdist",NFILE,fnm),opt2fn("-nion",NFILE,fnm),
+		  opt2fn("-gyr_com",NFILE,fnm),opt2fn("-gyr_origin",NFILE,fnm),
+		  total,ehp->nsim);
   dump_ana_ener(ae,ehp->nsim,ehp->dt*ehp->nana,
 		opt2fn("-ener",NFILE,fnm),total);
   done_ana_struct(total);
@@ -571,7 +572,19 @@ int main(int argc,char *argv[])
     "Two columns: Impact electron energy (eV) vs Probability[BR]",
     "[TT]-eloss.dat[tt]: Probability of energy loss due to inelastic scattering. Three columns: Impact electron energy (eV) vs  Integrated probability vs Energy loss in inelastic scattering (eV).[BR]",
     "[TT]-theta-el.dat[tt]: Probability of elastic scattering angle. Three columns: Impact electron energy (eV) vs Integrated probability vs Scattering angle (rad).[BR]",
-    "[TT]-qtrans.dat[tt]: Four columns: Impact electron energy (eV) vs Inelastic energy loss (eV) vs Integrated probability vs Scattering angle (rad)."
+    "[TT]-qtrans.dat[tt]: Four columns: Impact electron energy (eV) vs Inelastic energy loss (eV) vs Integrated probability vs Scattering angle (rad).[PAR]",
+    "The program produces a number of output files. It is important that",
+    "the actual content is well-defined, sucht that no misunderstanding can",
+    "occur (famous last words...). Anyway, the program does a number of",
+    "simulations, and averages results over these. Here is a list of each of",
+    "the results and how they are computed:[BR]",
+    "[TT]-histo[tt] Distribution of nuber of liberated secondary electrons per simulation.[BR]",
+    "[TT]-maxdist[tt] The maximum distance from the origin that any electron in any simulation reaches.[BR]",
+    "[TT]-gyr_com[tt] The radius of gyration of the electron cloud with respect to its center of mass (contains 4 columns).[BR]",
+    "[TT]-gyr_origin[tt] The radius of gyration of the electron cloud with respect to the origin (contains 4 columns).[BR]",
+    "[TT]-mfp[tt] The mean free path of the electrons as a function of energy. If this is not a smooth curve you need to increase the number of simulations.[BR]",
+    "[TT]-nion[tt] The number of ions as a function of time, averaged over simulations.[BR]",
+    "[TT]-ener[tt] The energy terms in the simulation (note that there are multiple columns, so use xmgrace -nxy). This shows important information about the stability of the simulation, that is the total energy should be conserved. In this figure you can also inspect the kinetic energy per electron in order to check whether the electrons have thermalized.[BR]"
   };
   static t_eh_params ehp = {
     100,    /* Max number of particles. Is a parameter but should be dynamic */
@@ -641,20 +654,21 @@ int main(int argc,char *argv[])
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
-    { efLOG, "-g",        "ehole",     ffWRITE },
-    { efDAT, "-sigel",    "sigel",     ffREAD },
-    { efDAT, "-sigin",    "siginel",   ffREAD },
-    { efDAT, "-eloss",    "eloss",     ffREAD },
-    { efDAT, "-qtrans",   "qtrans",    ffREAD },
-    { efDAT, "-band",     "band-ener", ffREAD },
-    { efDAT, "-thetael",  "theta-el",  ffREAD },
-    { efPDB, "-o", "ehole",  ffWRITE },
-    { efXVG, "-histo", "histo",  ffWRITE },
-    { efXVG, "-radius", "radius", ffWRITE },
-    { efXVG, "-gyrate", "gyrate", ffWRITE },
-    { efXVG, "-mfp", "mfp",    ffWRITE },
-    { efXVG, "-nion", "nion",   ffWRITE },
-    { efXVG, "-ener", "ener",   ffWRITE }
+    { efLOG, "-g",          "ehole",      ffWRITE },
+    { efDAT, "-sigel",      "sigel",      ffREAD },
+    { efDAT, "-sigin",      "siginel",    ffREAD },
+    { efDAT, "-eloss",      "eloss",      ffREAD },
+    { efDAT, "-qtrans",     "qtrans",     ffREAD },
+    { efDAT, "-band",       "band-ener",  ffREAD },
+    { efDAT, "-thetael",    "theta-el",   ffREAD },
+    { efPDB, "-o",          "ehole",      ffWRITE },
+    { efXVG, "-histo",      "histo",      ffWRITE },
+    { efXVG, "-maxdist",    "maxdist",    ffWRITE },
+    { efXVG, "-gyr_com",    "gyr_com",    ffWRITE },
+    { efXVG, "-gyr_origin", "gyr_origin", ffWRITE },
+    { efXVG, "-mfp",        "mfp",        ffWRITE },
+    { efXVG, "-nion",       "nion",       ffWRITE },
+    { efXVG, "-ener",       "ener",       ffWRITE }
   };
 #define NFILE asize(fnm)
   int seed;

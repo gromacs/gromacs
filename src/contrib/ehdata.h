@@ -110,7 +110,7 @@ typedef struct {
   real dt;
   real *t;
   real *maxdist;
-  real *averdist,*ad2;
+  rvec *d2_com,*d2_origin;
   int  *nion;
   int  nstruct,nparticle,maxparticle;
   rvec *q;
@@ -129,8 +129,8 @@ extern void add_ana_struct(t_ana_struct *total,t_ana_struct *add);
 extern void analyse_structure(t_ana_struct *anal,real t,rvec center,
 			      rvec x[],int nparticle,real charge[]);
 
-extern void dump_ana_struct(char *rmax,char *nion,char *gyr,
-			    t_ana_struct *anal,int nsim);
+extern void dump_ana_struct(char *rmax,char *nion,char *gyr_com,
+			    char *gyr_origin,t_ana_struct *anal,int nsim);
 
 extern void dump_as_pdb(char *pdb,t_ana_struct *anal);
 
