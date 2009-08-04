@@ -352,7 +352,9 @@ void dump_as_pdb(char *pdb,t_ana_struct *anal)
     for(j=0; (j<anal->nparticle); j++) {
       fprintf(kp,pdbformat,"ATOM",i+1,(i < anal->nion[i]) ? "O" : "N",
 	      "PLS",' ',1,
-	      anal->x[i][j][XX],anal->x[i][j][YY],anal->x[i][j][ZZ]);
+	      anal->x[i][j][XX]/100,
+	      anal->x[i][j][YY]/100,
+	      anal->x[i][j][ZZ]/100);
       fprintf(kp,"\n");
     }
     fprintf(kp,"ENDMDL\n");

@@ -525,7 +525,7 @@ void do_sims(int NFILE,t_filenm fnm[],t_eh_params *ehp)
 
   total = init_ana_struct(ehp->maxstep,ehp->nana,ehp->dt,1);
   hmfp  = init_histo((int)ehp->Eauger,0,(int)ehp->Eauger);
-  helec = init_histo(50,0,50);
+  helec = init_histo(500,0,500);
   snew(ae,1);
 
   logfp = ffopen(ftp2fn(efLOG,NFILE,fnm),"w");
