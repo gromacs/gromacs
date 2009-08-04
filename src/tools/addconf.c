@@ -297,7 +297,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   init_neighbor_list(fp,fr,md->homenr);
   search_neighbours(fp,fr,x,box,top,
 		    &mtop->groups,cr,&nrnb,md,lambda,&dvdlambda,NULL,
-		    TRUE,FALSE);
+		    TRUE,FALSE,FALSE,NULL);
 
   if (debug)
     dump_nblist(debug,cr,fr,0);

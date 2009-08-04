@@ -233,6 +233,9 @@ set <tt>init_step</tt> to the step number of the restart frame.
 <dt><h4>nstcalcenergy: (1)</h4></dt>
 <dd>The frequency for calculating the energies, including the temperature
 and the pressure, 0 is never.
+This option is only relevant with dynamics.
+With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
+or a multiple of <b>nstlist</b>.
 This option affects the performance in parallel simulations,
 because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
@@ -1364,7 +1367,7 @@ the molecule definition in the topology.</dd>
 </dl>
 <dt><h4>nstdhdl: (10)</h4></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
-0 means no ouput</dd>
+0 means no ouput, should be a multiple of <b>nstcalcenergy</b></dd>
 </dl>
 
 

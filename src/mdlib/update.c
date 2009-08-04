@@ -790,14 +790,56 @@ static void deform(gmx_update_t upd,
     }
 }
 
+static void combine_forces(int nstlist,
+                           gmx_constr_t constr,
+                           t_inputrec *ir,t_mdatoms *md,t_idef *idef,
+                           t_commrec *cr,gmx_step_t step,t_state *state,
+                           int start,int homenr,
+                           rvec f[],rvec f_lr[],
+                           t_nrnb *nrnb)
+{
+    int  i,d,nm1;
+
+    /* f contains the short-range forces + the long range forces
+     * which are stored separately in f_lr.
+     */
+
+    if (constr != NULL && !(ir->eConstrAlg == econtSHAKE && ir->epc == epcNO))
+    {
+        /* We need to constrain the LR forces separately,
+         * because due to the different pre-factor for the SR and LR
+         * forces in the update algorithm, we can not determine
+         * the constraint force for the coordinate constraining.
+         * Constrain only the additional LR part of the force.
+         */
+        constrain(NULL,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+                  state->x,f_lr,f_lr,state->box,state->lambda,NULL,
+                  NULL,NULL,nrnb,econqForce);
+    }
+    
+    /* Add nstlist-1 times the LR force to the sum of both forces
+     * and store the result in forces_lr.
+     */
+    nm1 = nstlist - 1;
+    for(i=start; i<start+homenr; i++)
+    {
+        for(d=0; d<DIM; d++)
+        {
+            f_lr[i][d] = f[i][d] + nm1*f_lr[i][d];
+        }
+    }
+}
+
 void update(FILE         *fplog,
             gmx_step_t   step,
             real         *dvdlambda,    /* FEP stuff */
-            t_inputrec   *inputrec,      /* input record and box stuff	*/
+            t_inputrec   *inputrec,     /* input record and box stuff	*/
             t_mdatoms    *md,
             t_state      *state,
             t_graph      *graph,  
-            rvec         force[],        /* forces on home particles */
+            rvec         *f,            /* forces on home particles */
+            bool         bDoLR,
+            rvec         *f_lr,
             t_fcdata     *fcd,
             t_idef       *idef,
             gmx_ekindata_t *ekind,
@@ -817,6 +859,7 @@ void update(FILE         *fplog,
     real             dt_1,dtc;
     int              start,homenr,i,n,m,g;
     matrix           pcoupl_mu,M;
+    rvec             *force;
     tensor           vir_con;
     rvec             *xprime;
     
@@ -898,11 +941,27 @@ void update(FILE         *fplog,
             ekind->tcstat[i].lambda = 1.0;
         }
     }
-        
-  /* Now do the actual update of velocities and positions */
-  where();
-  dump_it_all(fplog,"Before update",
-              state->natoms,state->x,xprime,state->v,force);
+
+    if (bDoLR && inputrec->nstlist > 1)
+    {
+        /* Store the total force + nstlist-1 times the LR force
+         * in forces_lr, so it can be used in a normal update algorithm
+         * to produce twin time stepping.
+         */
+        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,step,state,
+                       start,homenr,f,f_lr,nrnb);
+        force = f_lr;
+    }
+    else
+    {
+        force = f;
+    }
+
+    /* Now do the actual update of velocities and positions */
+    where();
+    dump_it_all(fplog,"Before update",
+                state->natoms,state->x,xprime,state->v,force);
+
   if (inputrec->eI == eiMD) {
     if (ekind->cosacc.cos_accel == 0) {
       /* use normal version of update */
@@ -1003,7 +1062,9 @@ void update(FILE         *fplog,
                 m_add(vir_part,vir_con,vir_part);
             }
             if (debug)
+            {
                 pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
+            }
         }
         where();
     }

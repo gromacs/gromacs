@@ -73,7 +73,9 @@ extern void update(FILE         *fplog,
 		   t_mdatoms    *md,
 		   t_state      *state,
 		   t_graph      *graph,	
-		   rvec         force[],    /* forces on home particles */
+		   rvec         *f,         /* forces on home particles */
+		   bool         bDoLR,
+		   rvec         *f_lr,      /* LR forces, only with dDoLR */
 		   t_fcdata     *fcd,
 		   t_idef       *idef,
 		   gmx_ekindata_t *ekind,

@@ -87,7 +87,9 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     t_nrnb *nrnb,t_mdatoms *md,
 			     real lambda,real *dvdlambda,
 			     gmx_grppairener_t *grppener,
-			     bool bFillGrid,bool bDoForces);
+			     bool bFillGrid,
+			     bool bDoLongRange,
+			     bool bDoForces,rvec *f);
  
 
 /* Debugging routines from wnblist.c */

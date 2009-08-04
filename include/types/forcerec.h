@@ -236,7 +236,6 @@ typedef struct {
   bool bTwinRange;
   int  nlr;
   rvec *f_twin;
-  rvec *fshift_twin;
 
   /* Forces that should not enter into the virial summation:
    * PPPM/PME/Ewald/posres

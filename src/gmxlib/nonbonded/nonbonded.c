@@ -362,14 +362,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 		gmx_fatal(FARGS,"gmx_setup_kernels has not been called");
     }
   
-	if (bLR)
-    {
-		fshift = fr->fshift_twin[0];
-    }
-	else
-    {
-		fshift = fr->fshift[0];
-    }
+    fshift = fr->fshift[0];
   
 	for(n=n0; (n<n1); n++) 
 	{

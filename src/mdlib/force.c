@@ -1329,11 +1329,6 @@ void init_forcerec(FILE *fp,
             set_shift_consts(fp,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
     }
     
-    /* Initiate arrays */
-    if (fr->bTwinRange) {
-        snew(fr->fshift_twin,SHIFTS);
-    }
-
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
                        gmx_mtop_ftype_count(mtop,F_POSRES) > 0);
     
@@ -1634,7 +1629,6 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
 void ns(FILE *fp,
         t_forcerec *fr,
         rvec       x[],
-        rvec       f[],
         matrix     box,
         gmx_groups_t *groups,
         t_grpopts  *opts,
@@ -1646,7 +1640,9 @@ void ns(FILE *fp,
         real       *dvdlambda,
         gmx_grppairener_t *grppener,
         bool       bFillGrid,
-        bool       bDoForces)
+        bool       bDoLongRange,
+        bool       bDoForces,
+        rvec       *f)
 {
   static bool bFirst=TRUE;
   static int  nDNL;
@@ -1673,9 +1669,10 @@ void ns(FILE *fp,
   if (fr->bTwinRange) 
     fr->nlr=0;
 
-  nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
-                              lambda,dvdlambda,grppener,
-                              bFillGrid,bDoForces);
+    nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
+                                lambda,dvdlambda,grppener,
+                                bFillGrid,bDoLongRange,
+                                bDoForces,f);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -1793,7 +1790,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 		
 		if(bBornRadii)
 		{
-			calc_gb_rad(cr,fr,ir,top,atype,x,f,&(fr->gblist),born,md);
+			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md);
 		}
 		
 		/* wallcycle_stop(wcycle, ewcGB); */

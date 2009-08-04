@@ -988,7 +988,7 @@ int main (int argc, char *argv[])
   
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
-  check_ir(ir,opts,&nerror);
+  check_ir(mdparin,ir,opts,&nerror);
 
   if (ir->ld_seed == -1) {
     ir->ld_seed = make_seed();

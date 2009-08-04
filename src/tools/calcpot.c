@@ -168,9 +168,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
 	      t_forcerec *fr,gmx_enerdata_t *enerd,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
-  static bool        bFirst=TRUE;
   static t_nrnb      nrnb;
-  static rvec        *f;
   real        lam=0,dum=0;
   rvec        box_size;
   int         i,m;
@@ -178,18 +176,9 @@ void calc_pot(FILE *logf,t_commrec *cr,
   /* Calc the force */
   fprintf(stderr,"Doing single force calculation...\n");
 
-  if (bFirst) {
-    snew(f,mtop->natoms);
-    
-    bFirst = FALSE;
-  }
-  /* Reset long range forces if necessary */
-  if (fr->bTwinRange) {
-    clear_rvecs(mtop->natoms,fr->f_twin);
-    clear_rvecs(SHIFTS,fr->fshift_twin);
-  }
   if (inputrec->ePBC != epbcNONE)
     calc_shifts(box,fr->shift_vec);
+
   put_charge_groups_in_box(logf,0,top->cgs.nr,fr->ePBC,box,&(top->cgs),
 			   x,fr->cg_cm);
   if (graph)
@@ -198,8 +187,8 @@ void calc_pot(FILE *logf,t_commrec *cr,
    * also do the calculation of long range forces and energies.
    */
   
-  ns(logf,fr,x,f,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,lam,&dum,&enerd->grpp,TRUE,FALSE);
+  ns(logf,fr,x,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
+     &nrnb,lam,&dum,&enerd->grpp,TRUE,FALSE,FALSE,NULL);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)

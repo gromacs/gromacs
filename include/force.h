@@ -171,15 +171,19 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 /* Do neighbor searching */
 #define GMX_FORCE_NS           (1<<1)
 /* Calculate bonded energies/forces */
-#define GMX_FORCE_BONDED       (1<<2)
+#define GMX_FORCE_DOLR         (1<<2)
+/* Calculate long-range energies/forces */
+#define GMX_FORCE_BONDED       (1<<3)
+/* Store long-range forces in a separate array */
+#define GMX_FORCE_SEPLRF       (1<<4)
 /* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1<<3)
+#define GMX_FORCE_NONBONDED    (1<<5)
 /* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1<<4)
+#define GMX_FORCE_FORCES       (1<<6)
 /* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1<<5)
+#define GMX_FORCE_VIRIAL       (1<<7)
 /* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1<<6)
+#define GMX_FORCE_DHDL         (1<<8)
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
@@ -211,7 +215,6 @@ extern void do_force(FILE *log,t_commrec *cr,
 extern void ns(FILE       *fplog,
 	       t_forcerec *fr,
 	       rvec       x[],
-	       rvec       f[],
 	       matrix     box,
 	       gmx_groups_t *groups,
 	       t_grpopts  *opts,
@@ -223,7 +226,9 @@ extern void ns(FILE       *fplog,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
 	       bool       bFillGrid,
-	       bool       bDoForces);
+	       bool       bDoLongRange,
+	       bool       bDoForces,
+	       rvec       *f);
 /* Call the neighborsearcher */
 
 extern void do_force_lowlevel(FILE         *fplog,  

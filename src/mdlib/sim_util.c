@@ -380,39 +380,51 @@ void do_force(FILE *fplog,t_commrec *cr,
               bool bBornRadii,
               int flags)
 {
-  int    cg0,cg1,i,j;
-  int    start,homenr;
-  double mu[2*DIM]; 
-  bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS,bDoForces;
-  matrix boxs;
-  real   e,v,dvdl;
-  t_pbc  pbc;
-  float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
+    int    cg0,cg1,i,j;
+    int    start,homenr;
+    double mu[2*DIM]; 
+    bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
+    bool   bDoLongRange,bDoForces,bSepLRF;
+    matrix boxs;
+    real   e,v,dvdl;
+    t_pbc  pbc;
+    float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
   
-  start  = mdatoms->start;
-  homenr = mdatoms->homenr;
+    start  = mdatoms->start;
+    homenr = mdatoms->homenr;
 
-  bSepDVDL = (fr->bSepDVDL && do_per_step(step,inputrec->nstlog));
+    bSepDVDL = (fr->bSepDVDL && do_per_step(step,inputrec->nstlog));
 
-  clear_mat(vir_force);
+    clear_mat(vir_force);
 
-  if (PARTDECOMP(cr)) {
-    pd_cg_range(cr,&cg0,&cg1);
-  } else {
-    cg0 = 0;
-    if (DOMAINDECOMP(cr))
-      cg1 = cr->dd->ncg_tot;
+    if (PARTDECOMP(cr))
+    {
+        pd_cg_range(cr,&cg0,&cg1);
+    }
     else
-      cg1 = top->cgs.nr;
-    if (fr->n_tpi > 0)
-      cg1--;
-  }
+    {
+        cg0 = 0;
+        if (DOMAINDECOMP(cr))
+        {
+            cg1 = cr->dd->ncg_tot;
+        }
+        else
+        {
+            cg1 = top->cgs.nr;
+        }
+        if (fr->n_tpi > 0)
+        {
+            cg1--;
+        }
+    }
 
-  bStateChanged = (flags & GMX_FORCE_STATECHANGED);
-  bNS           = (flags & GMX_FORCE_NS);
-  bFillGrid     = (bNS && bStateChanged);
-  bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
-  bDoForces     = (flags & GMX_FORCE_FORCES);
+    bStateChanged = (flags & GMX_FORCE_STATECHANGED);
+    bNS           = (flags & GMX_FORCE_NS);
+    bFillGrid     = (bNS && bStateChanged);
+    bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
+    bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
+    bDoForces     = (flags & GMX_FORCE_FORCES);
+    bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
 
     if (bStateChanged)
     {
@@ -522,148 +534,180 @@ void do_force(FILE *fplog,t_commrec *cr,
         }
     }
 
-  /* Reset energies */
-  reset_enerdata(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));    
-  if (bNS) {
-    wallcycle_start(wcycle,ewcNS);
-    
-    if (graph && bStateChanged)
-      /* Calculate intramolecular shift vectors to make molecules whole */
-      mk_mshift(fplog,graph,fr->ePBC,box,x);
+    /* Reset energies */
+    reset_enerdata(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));
+    clear_rvecs(SHIFTS,fr->fshift);
 
-    /* Reset long range forces if necessary */
-    if (fr->bTwinRange) {
-      clear_rvecs(fr->natoms_force,fr->f_twin);
-      clear_rvecs(SHIFTS,fr->fshift_twin);
-    }
-    /* Do the actual neighbour searching and if twin range electrostatics
-     * also do the calculation of long range forces and energies.
-     */
-    dvdl = 0; 
-    ns(fplog,fr,x,f,box,groups,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
-    if (bSepDVDL)
-      fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
-    enerd->dvdl_lr       = dvdl;
-
-    wallcycle_stop(wcycle,ewcNS);
-  }
-	
-  if(inputrec->implicit_solvent && bNS) 
-  {
-	  make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm, inputrec->rlist,x,fr,&top->idef,fr->born);
-  }
-	
-  if (DOMAINDECOMP(cr)) {
-    if (!(cr->duty & DUTY_PME)) {
-      wallcycle_start(wcycle,ewcPPDURINGPME);
-      dd_force_flop_start(cr->dd,nrnb);
-    }
-  }
-	
-  /* Start the force cycle counter.
-   * This counter is stopped in do_forcelow_level.
-   * No parallel communication should occur while this counter is running,
-   * since that will interfere with the dynamic load balancing.
-   */
-  wallcycle_start(wcycle,ewcFORCE);
-
-  if (bDoForces) {
-      /* Reset PME/Ewald forces if necessary */
-    if (fr->bF_NoVirSum) 
+    if (bNS)
     {
-      if (flags & GMX_FORCE_VIRIAL) {
-	fr->f_novirsum = fr->f_novirsum_alloc;
-	GMX_BARRIER(cr->mpi_comm_mygroup);
-	if (fr->bDomDec)
-	  clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
-	else
-	  clear_rvecs(homenr,fr->f_novirsum+start);
-	GMX_BARRIER(cr->mpi_comm_mygroup);
-      } else {
-	/* We are not calculating the pressure so we do not need
-	 * a separate array for forces that do not contribute to the pressure.
-	 */
-	fr->f_novirsum = f;
-      }
+        wallcycle_start(wcycle,ewcNS);
+        
+        if (graph && bStateChanged)
+        {
+            /* Calculate intramolecular shift vectors to make molecules whole */
+            mk_mshift(fplog,graph,fr->ePBC,box,x);
+        }
+
+        /* Reset long range forces if necessary */
+        if (fr->bTwinRange)
+        {
+            /* Reset the (long-range) forces if necessary */
+            clear_rvecs(fr->natoms_force,bSepLRF ? fr->f_twin : f);
+        }
+
+        /* Do the actual neighbour searching and if twin range electrostatics
+         * also do the calculation of long range forces and energies.
+         */
+        dvdl = 0; 
+        ns(fplog,fr,x,box,
+           groups,&(inputrec->opts),top,mdatoms,
+           cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
+           bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
+        if (bSepDVDL)
+        {
+            fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
+        }
+        enerd->dvdl_lr       = dvdl;
+        
+        wallcycle_stop(wcycle,ewcNS);
     }
-    /* Copy long range forces into normal buffers */
-    if (fr->bTwinRange) {
-      for(i=0; i<fr->natoms_force; i++)
-	copy_rvec(fr->f_twin[i],f[i]);
-      for(i=0; i<SHIFTS; i++)
-	copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
-    } 
-    else {
-      if (DOMAINDECOMP(cr))
-	clear_rvecs(cr->dd->nat_tot,f);
-      else
-	clear_rvecs(mdatoms->nr,f);
-      clear_rvecs(SHIFTS,fr->fshift);
-    }
-    clear_rvec(fr->vir_diag_posres);
-    GMX_BARRIER(cr->mpi_comm_mygroup);
-  }
-  if (inputrec->ePull == epullCONSTRAINT)
-    clear_pull_forces(inputrec->pull);
-
-  /* update QMMMrec, if necessary */
-  if(fr->bQMMM)
-    update_QMMMrec(cr,fr,x,mdatoms,box,top);
-
-  if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0) {
-    /* Position restraints always require full pbc */
-    set_pbc(&pbc,inputrec->ePBC,box);
-    v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
-	       top->idef.iparams_posres,
-	       (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-	       inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
-	       fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
-    if (bSepDVDL) {
-      fprintf(fplog,sepdvdlformat,
-	      interaction_function[F_POSRES].longname,v,dvdl);
-    }
-    enerd->term[F_POSRES] += v;
-    /* This linear lambda dependence assumption is only correct
-     * when only k depends on lambda,
-     * not when the reference position depends on lambda.
-     * grompp checks for this.
-     */
-    enerd->dvdl_lin += dvdl;
-    inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
-  }
-  /* Compute the bonded and non-bonded forces */    
-  do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
-                    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
-                    x,hist,f,enerd,fcd,mtop,top,fr->born,
-                    &(top->atomtypes),bBornRadii,box,
-                    lambda,graph,&(top->excls),fr->mu_tot,
-                    flags,&cycles_pme);
-
-  cycles_force = wallcycle_stop(wcycle,ewcFORCE);
-  GMX_BARRIER(cr->mpi_comm_mygroup);
-
-  if (ed) {
-    do_flood(fplog,cr,x,f,ed,box,step);
-  }
 	
-  if (DOMAINDECOMP(cr)) {
-    dd_force_flop_stop(cr->dd,nrnb);
-    if (wcycle)
-      dd_cycles_add(cr->dd,cycles_force-cycles_pme,ddCyclF);
-  }
-  
+    if (inputrec->implicit_solvent && bNS) 
+    {
+        make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm,inputrec->rlist,
+                       x,fr,&top->idef,fr->born);
+    }
+	
+    if (DOMAINDECOMP(cr))
+    {
+        if (!(cr->duty & DUTY_PME))
+        {
+            wallcycle_start(wcycle,ewcPPDURINGPME);
+            dd_force_flop_start(cr->dd,nrnb);
+        }
+    }
+	
+    /* Start the force cycle counter.
+     * This counter is stopped in do_forcelow_level.
+     * No parallel communication should occur while this counter is running,
+     * since that will interfere with the dynamic load balancing.
+     */
+    wallcycle_start(wcycle,ewcFORCE);
+    
+    if (bDoForces)
+    {
+        /* Reset forces for which the virial is calculated separately:
+         * PME/Ewald forces if necessary */
+        if (fr->bF_NoVirSum) 
+        {
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                fr->f_novirsum = fr->f_novirsum_alloc;
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                if (fr->bDomDec)
+                {
+                    clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
+                }
+                else
+                {
+                    clear_rvecs(homenr,fr->f_novirsum+start);
+                }
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+            }
+            else
+            {
+                /* We are not calculating the pressure so we do not need
+                 * a separate array for forces that do not contribute
+                 * to the pressure.
+                 */
+                fr->f_novirsum = f;
+            }
+        }
+
+        if (bSepLRF)
+        {
+            /* Add the long range forces to the short range forces */
+            for(i=0; i<fr->natoms_force; i++)
+            {
+                copy_rvec(fr->f_twin[i],f[i]);
+            }
+        }
+        else if (!(fr->bTwinRange && bNS))
+        {
+            /* Clear the short-range forces */
+            clear_rvecs(fr->natoms_force,f);
+        }
+
+        clear_rvec(fr->vir_diag_posres);
+
+        GMX_BARRIER(cr->mpi_comm_mygroup);
+    }
+    if (inputrec->ePull == epullCONSTRAINT)
+    {
+        clear_pull_forces(inputrec->pull);
+    }
+
+    /* update QMMMrec, if necessary */
+    if(fr->bQMMM)
+    {
+        update_QMMMrec(cr,fr,x,mdatoms,box,top);
+    }
+
+    if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
+    {
+        /* Position restraints always require full pbc */
+        set_pbc(&pbc,inputrec->ePBC,box);
+        v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
+                   top->idef.iparams_posres,
+                   (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
+                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
+                   fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
+        if (bSepDVDL)
+        {
+            fprintf(fplog,sepdvdlformat,
+                    interaction_function[F_POSRES].longname,v,dvdl);
+        }
+        enerd->term[F_POSRES] += v;
+        /* This linear lambda dependence assumption is only correct
+         * when only k depends on lambda,
+         * not when the reference position depends on lambda.
+         * grompp checks for this.
+         */
+        enerd->dvdl_lin += dvdl;
+        inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
+    }
+
+    /* Compute the bonded and non-bonded energies and optionally forces */    
+    do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
+                      cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
+                      x,hist,f,enerd,fcd,mtop,top,fr->born,
+                      &(top->atomtypes),bBornRadii,box,
+                      lambda,graph,&(top->excls),fr->mu_tot,
+                      flags,&cycles_pme);
+    
+    cycles_force = wallcycle_stop(wcycle,ewcFORCE);
+    GMX_BARRIER(cr->mpi_comm_mygroup);
+    
+    if (ed)
+    {
+        do_flood(fplog,cr,x,f,ed,box,step);
+    }
+	
+    if (DOMAINDECOMP(cr))
+    {
+        dd_force_flop_stop(cr->dd,nrnb);
+        if (wcycle)
+        {
+            dd_cycles_add(cr->dd,cycles_force-cycles_pme,ddCyclF);
+        }
+    }
+    
     if (bDoForces)
     {
         /* Compute forces due to electric field */
         calc_f_el(MASTER(cr) ? field : NULL,
                   start,homenr,mdatoms->chargeA,x,f,
                   inputrec->ex,inputrec->et,t);
-        
-        /* When using PME/Ewald we compute the long range virial there.
-         * otherwise we do it based on long range forces from twin range
-         * cut-off based calculation (or not at all).
-         */
         
         /* Communicate the forces */
         if (PAR(cr))
@@ -680,48 +724,71 @@ void do_force(FILE *fplog,t_commrec *cr,
                 {
                     dd_move_f(cr->dd,fr->f_novirsum,NULL);
                 }
+                if (bSepLRF)
+                {
+                    /* We should not update the shift forces here,
+                     * since f_twin is already included in f.
+                     */
+                    dd_move_f(cr->dd,fr->f_twin,NULL);
+                }
             }
             else
             {
                 pd_move_f(cr,f,nrnb);
+                if (bSepLRF)
+                {
+                    pd_move_f(cr,fr->f_twin,nrnb);
+                }
             }
             wallcycle_stop(wcycle,ewcMOVEF);
         }
+
+        /* If we have NoVirSum forces, but we do not calculate the virial,
+         * we sum fr->f_novirum=f later.
+         */
+        if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
+        {
+            wallcycle_start(wcycle,ewcVSITESPREAD);
+            spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
+                           &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+            wallcycle_stop(wcycle,ewcVSITESPREAD);
+
+            if (bSepLRF)
+            {
+                wallcycle_start(wcycle,ewcVSITESPREAD);
+                spread_vsite_f(fplog,vsite,x,fr->f_twin,NULL,
+                               nrnb,
+                               &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+                wallcycle_stop(wcycle,ewcVSITESPREAD);
+            }
+        }
+        
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            /* Calculation of the virial must be done after vsites! */
+            calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
+                        vir_force,graph,box,nrnb,fr,inputrec->ePBC);
+        }
     }
 
-  if (bDoForces) {
-    /* If we have NoVirSum forces, but we do not calculate the virial,
-     * we sum fr->f_novirum=f later.
-     */
-    if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL))) {
-      wallcycle_start(wcycle,ewcVSITESPREAD);
-      spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
-      wallcycle_stop(wcycle,ewcVSITESPREAD);
+    if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F)
+    {
+        /* Calculate the center of mass forces, this requires communication,
+         * which is why pull_potential is called close to other communication.
+         * The virial contribution is calculated directly,
+         * which is why we call pull_potential after calc_virial.
+         */
+        set_pbc(&pbc,inputrec->ePBC,box);
+        dvdl = 0; 
+        enerd->term[F_COM_PULL] =
+            pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
+                           cr,t,lambda,x,f,vir_force,&dvdl);
+        if (bSepDVDL)
+        {
+            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
+        }
+        enerd->dvdl_lin += dvdl;
     }
-
-    if (flags & GMX_FORCE_VIRIAL) {
-      /* Calculation of the virial must be done after vsites! */
-      calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
-		  vir_force,graph,box,nrnb,fr,inputrec->ePBC);
-    }
-  }
-
-  if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F) {
-    /* Calculate the center of mass forces, this requires communication,
-     * which is why pull_potential is called close to other communication.
-     * The virial contribution is calculated directly,
-     * which is why we call pull_potential after calc_virial.
-     */
-    set_pbc(&pbc,inputrec->ePBC,box);
-    dvdl = 0; 
-    enerd->term[F_COM_PULL] =
-      pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-		     cr,t,lambda,x,f,vir_force,&dvdl);
-    if (bSepDVDL)
-      fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
-    enerd->dvdl_lin += dvdl;
-  }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
@@ -748,38 +815,49 @@ void do_force(FILE *fplog,t_commrec *cr,
         wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
     }
 
-  if (bDoForces && fr->bF_NoVirSum) {
-    if (vsite) {
-      /* Spread the mesh force on virtual sites to the other particles... 
-       * This is parallellized. MPI communication is performed
-       * if the constructing atoms aren't local.
-       */
-      wallcycle_start(wcycle,ewcVSITESPREAD);
-      spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
-      wallcycle_stop(wcycle,ewcVSITESPREAD);
+    if (bDoForces && fr->bF_NoVirSum)
+    {
+        if (vsite)
+        {
+            /* Spread the mesh force on virtual sites to the other particles... 
+             * This is parallellized. MPI communication is performed
+             * if the constructing atoms aren't local.
+             */
+            wallcycle_start(wcycle,ewcVSITESPREAD);
+            spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
+                           &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+            wallcycle_stop(wcycle,ewcVSITESPREAD);
+        }
+        if (flags & GMX_FORCE_VIRIAL)
+        {
+            /* Now add the forces, this is local */
+            if (fr->bDomDec)
+            {
+                sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
+            }
+            else
+            {
+                sum_forces(start,start+homenr,f,fr->f_novirsum);
+            }
+            if (EEL_FULL(fr->eeltype))
+            {
+                /* Add the mesh contribution to the virial */
+                m_add(vir_force,fr->vir_el_recip,vir_force);
+            }
+            if (debug)
+            {
+                pr_rvecs(debug,0,"vir_force",vir_force,DIM);
+            }
+        }
     }
-    if (flags & GMX_FORCE_VIRIAL) {
-      /* Now add the forces, this is local */
-      if (fr->bDomDec) {
-	sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
-      } else {
-	sum_forces(start,start+homenr,f,fr->f_novirsum);
-      }
-      if (EEL_FULL(fr->eeltype)) {
-	/* Add the mesh contribution to the virial */
-	m_add(vir_force,fr->vir_el_recip,vir_force);
-      }
-      if (debug)
-	pr_rvecs(debug,0,"vir_force",vir_force,DIM);
+    
+    /* Sum the potential energy terms from group contributions */
+    sum_epot(&(inputrec->opts),enerd);
+    
+    if (fr->print_force >= 0 && bDoForces)
+    {
+        print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
     }
-  }
-
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),enerd);
-
-  if (fr->print_force >= 0 && bDoForces)
-    print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
 }
 
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,

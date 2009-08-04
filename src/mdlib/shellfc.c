@@ -750,7 +750,8 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			gmx_step_t mdstep,t_inputrec *inputrec,
-			bool bDoNS,bool bStopCM,
+			bool bDoNS,int force_flags,
+			bool bStopCM,
 			gmx_localtop_t *top,
 			gmx_mtop_t* mtop,
 			gmx_constr_t constr,
@@ -782,7 +783,6 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   int    nat,dd_ac0,dd_ac1=0,i;
   int    start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
   int    nflexcon,g,number_steps,d,Min=0,count=0;
-  int    force_flags;
 #define  Try (1-Min)             /* At start Try = 1 */
 
   bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
@@ -864,11 +864,6 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 		   md->massT,NULL,bInit);
   }
 
-  force_flags =
-    (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL |
-     (inputrec->efep != efepNO &&
-      do_per_step(mdstep,inputrec->nstdhdl) ? GMX_FORCE_DHDL : 0));
-
   /* do_force expected the charge groups to be in the box */
   if (graph)
     unshift_self(graph,state->box,state->x);
@@ -882,7 +877,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	   force[Min],force_vir,md,enerd,fcd,
 	   state->lambda,graph,
 	   fr,vsite,mu_tot,t,fp_field,NULL,bBornRadii,
-	   force_flags | (bDoNS ? GMX_FORCE_NS : 0));
+	   (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
   sf_dir = 0;
   if (nflexcon) {
