@@ -238,6 +238,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   
   ffp->ntypes = 1;
   ffp->atnr   = 1;
+  ffp->reppow = 12;
   snew(ffp->functype,1);
   snew(ffp->iparams,1);
   ffp->iparams[0].lj.c6  = 1;
@@ -281,7 +282,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   init_nrnb(&nrnb);
   
   /* Init things dependent on parameters */  
-  ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
+  ir->rlistlong = ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
   init_forcerec(stdout,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,TRUE,-1);
   if (debug)
