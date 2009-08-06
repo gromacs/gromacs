@@ -2240,16 +2240,12 @@ void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
     int i;
     double dlam,dhdl_lin;
 
-    /* dvdl_lr is also non-linear,
-     * but currently LR is not supported with foreign lambda FE.
-     */
-    enerd->term[F_DVDL] = enerd->dvdl_lin + enerd->dvdl_nonlin + enerd->dvdl_lr;
+    enerd->term[F_DVDL] = enerd->dvdl_lin + enerd->dvdl_nonlin;
 
     if (debug)
     {
-        fprintf(debug,"dvdl: %f, non-linear %f + linear %f + LR %f\n",
-                enerd->term[F_DVDL],
-                enerd->dvdl_nonlin,enerd->dvdl_lin,enerd->dvdl_lr);
+        fprintf(debug,"dvdl: %f, non-linear %f + linear %f\n",
+                enerd->term[F_DVDL],enerd->dvdl_nonlin,enerd->dvdl_lin);
     }
 
     /* Notes on the foreign lambda free energy difference evaluation:
@@ -2264,8 +2260,7 @@ void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
     {
         dlam = (ir->flambda[i-1] - lambda);
         dhdl_lin =
-            (enerd->dvdl_lin + enerd->dvdl_lr +
-             enerd->term[F_DKDL] + enerd->term[F_DHDL_CON]);
+            enerd->dvdl_lin + enerd->term[F_DKDL] + enerd->term[F_DHDL_CON];
         if (debug)
         {
             fprintf(debug,"enerdiff lam %g: non-linear %f linear %f*%f\n",
@@ -2296,9 +2291,6 @@ void reset_enerdata(t_grpopts *opts,
       for(j=0; (j<enerd->grpp.nener); j++)
 	enerd->grpp.ener[i][j] = 0.0;
     }
-  }
-  if (!bKeepLR) {
-    enerd->dvdl_lr = 0.0;
   }
   enerd->dvdl_lin    = 0.0;
   enerd->dvdl_nonlin = 0.0;
