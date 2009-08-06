@@ -94,7 +94,7 @@ extern MPI_Datatype MPI_FLOAT;
 extern MPI_Datatype MPI_DOUBLE;
 extern MPI_Datatype MPI_LONG_DOUBLE;
 
-/*extern MPI_Datatype MPI_UNSIGNED_WCHAR, we don't want this right now, anyway */
+/*extern MPI_Datatype MPI_UNSIGNED_WCHAR */
 extern MPI_Datatype MPI_BYTE;
 
 
@@ -116,17 +116,17 @@ extern MPI_Datatype MPI_BYTE;
 #define MPI_ERR_RECV_SRC                14
 #define MPI_ERR_BUF                     15
 #define MPI_ERR_OP_FN                   16
-#define MPI_ERR_UNKNOWN                 17
-#define MPI_ERR_ENVELOPES               18
+#define MPI_ERR_ENVELOPES               17
+#define MPI_ERR_REQUESTS                18
 #define MPI_FAILURE                     19
+#define MPI_ERR_UNKNOWN                 20
 
-#define N_MPI_ERR                       20
+#define N_MPI_ERR                       21
 
 #define MPI_MAX_ERROR_STRING            256
 
 #define MPI_UNDEFINED -1
 
-#if 1
 /* error handling */
 typedef void (*MPI_Errhandler_fn)(MPI_Comm*, int*);
 typedef struct mpi_errhandler_ *MPI_Errhandler;
@@ -134,7 +134,6 @@ typedef struct mpi_errhandler_ *MPI_Errhandler;
 extern MPI_Errhandler MPI_ERRORS_ARE_FATAL;
 extern MPI_Errhandler MPI_ERRORS_RETURN;
 
-#endif
 
 /* miscelaneous defines */
 #define MPI_ANY_SOURCE -1
@@ -220,10 +219,10 @@ int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg);
 int tMPI_Get_N(int *argc, char ***argv);
 
 
-/** mostly for debugging: gives current thread if thr==0*/
-struct mpi_thread_;
-int tMPI_Threadnr(struct mpi_thread_ *thr);
-
+/** mostly for debugging */
+struct mpi_thread;
+unsigned int tMPI_Threadnr(struct mpi_thread *thr);
+unsigned int tMPI_This_threadnr(void);
 
 
 /** waits for all threads to join() */

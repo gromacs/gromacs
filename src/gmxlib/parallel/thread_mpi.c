@@ -1,4 +1,4 @@
- /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-s
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-s
 tyle: "stroustrup"; -*- 
 *
 * $Id: 
@@ -19,7 +19,7 @@ tyle: "stroustrup"; -*-
 */
 
 /* Include the defines that determine which thread library to use.  
-   */
+      */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -62,18 +62,22 @@ typedef int bool;
 
 
 
+
 /*#define TMPI_DEBUG*/
 
-/* if this is define, all mutexes will be implemented using atomic operations  
-   instead of the mutexes provided by the OS. This will cause the CPU time 
-   to be spent busy-waiting, but will increase performance because no time 
-   is wasted on unneccesary (and very costly) context switches. */
-#define TMPI_ATOMIC
 
 /* if this is defined, MPI will warn/hang/crash on practices that don't conform
    to the MPI standard (such as not calling MPI_Comm_free on all threads that
    are part of the comm being freed). */
 #define TMPI_STRICT 
+
+
+
+/* whether to warn if there are mallocs at critical sections (due to 
+    preallocations being too small) */
+#define TMPI_WARN_MALLOC
+
+
 
 
 /* the max. number of envelopes waiting to be read at thread */
@@ -85,45 +89,257 @@ typedef int bool;
 #define MAX_PREALLOC_THREADS 32
 
 
+
+
+/* POINT-TO-POINT COMMUNICATION DATA STRUCTURES */
+
+/* the message envelopes (as described in the MPI standard). 
+   These fully describes the message, and make each message unique (enough).
+
+   Transmitting data works by having the sender put a pointer to an envelope 
+   onto the receiver's new envelope list corresponding to the originating 
+   thread. 
+   The sender then waits until the receiver finishes the transmission, while
+   matching all incoming new envelopes against its own list of receive 
+   envelopes.
+
+   The receiver either directly matches its receiving envelope against
+   all previously un-matched sending envelopes, or, if no suitable envelope
+   is found, it puts the receive envelope on a receive list. 
+   Once waiting for completion, the receiver matches against all incoming 
+   new envelopes.  */
+
+/* the state of an individual point-to-point transmission */
+enum envelope_state
+{
+    env_unmatched       = 0, /* the envelope has not had a match yet */
+    env_finished        = 1  /* the transmission has finished */
+};
+
+
+/* the send envelope. Held in mpi_thread->evs[src_thread]  */
+struct send_envelope
+{
+    int tag; /* the tag */
+    /* transmission type flags */
+    struct 
+    {
+        unsigned int nonblock : 1; /* whether the sender is non-blocking */ 
+        unsigned int multicast :1; /* whether the message is multicast
+                                      (instead of point-to-point) */
+    } type;
+    MPI_Comm comm; /* this is a structure shared across threads, so we
+                      can test easily whether two threads are talking
+                      about the same comm. */
+
+    struct mpi_thread *src, *dest; /* these are pretty obvious */
+
+    void *buf; /* buffer to be sent  */
+    size_t bufsize; /* the size of the data to be transmitted */
+    MPI_Datatype datatype; /* the data type */
+
+     /* state, values from enum_envelope_state .  
+        this is volatile because it's probably read by a thread 
+        while another one is writing to them (there's a few busy-waits 
+        relying on these flags). 
+        status=env_unmatched  is the initial state.*/
+    gmx_atomic_t state;
+
+    /* the error condition */
+    int error;
+
+    /* the message status */
+    MPI_Status *status;
+    /* prev and next envelopes in the linked list  */
+    volatile struct send_envelope *prev,*next;
+    /* the list I'm in */
+    struct send_envelope_list *list;
+};
+
+/* the receive envelope. Held in mpi_thread->evl  */
+struct recv_envelope
+{
+    int tag; /* the tag */
+    /* transmission type flags */
+    struct 
+    {
+        unsigned int nonblock : 1; /* whether the receiver is non-blocking */ 
+        unsigned int multicast :1; /* whether the message is multicast
+                                      (instead of point-to-point)*/
+    } type;
+    MPI_Comm comm; /* this is a structure shared across threads, so we
+                      can test easily whether two threads are talking
+                      about the same comm. */
+
+    struct mpi_thread *src, *dest; /* these are pretty obvious */
+
+    void *buf; /* buffer to be sent  */
+    size_t bufsize; /* the size of the data to be transmitted, or the
+                       size of the actually transmitted data after Xfer. */
+    MPI_Datatype datatype; /* the data type */
+
+     /* state, values from enum_envelope_state .  
+        this is volatile because it's probably read by a thread 
+        while another one is writing to them (there's a few busy-waits 
+        relying on these flags). 
+        status=env_unmatched  is the initial state.*/
+    gmx_atomic_t state;
+
+    /* the error condition */
+    int error;
+
+    /* prev and next envelopes in the linked list  */
+    struct recv_envelope *prev,*next;
+    /* the list I'm in */
+    struct recv_envelope_list *list;
+};
+
+
+/* singly linked lists of free send & receive envelopes belonging to 
+   a thread. */
+struct free_envelope_list 
+{
+    struct send_envelope *head_send; /* the first element in the 
+                                             linked list */
+    struct recv_envelope *head_recv; /* the first element in the 
+                                             linked list */
+
+    struct send_envelope *send_alloc_head;  /* the allocated send list */
+    struct recv_envelope *recv_alloc_head;  /* the allocated recv list */
+};
+
+/* collection of send envelopes to a specific thread */
+struct send_envelope_list
+{
+    volatile struct send_envelope *head_new; /* singly linked list with 
+                                                the new send envelopes 
+                                                (i.e. those that are put 
+                                                there by the sending thread,
+                                                but not yet checked by the
+                                                receiving thread). */
+    volatile struct send_envelope *head_old; /* the old send envelopes,
+                                                in a circular doubly linked 
+                                                list. These have been checked
+                                                by the receiving thread 
+                                                against the existing 
+                                                recv_envelope_list. */
+
+    gmx_spinlock_t lock; /* this locks head_new */
+
+    struct send_envelope old_dummy; /* the dummy element for the head_old
+                                       list */
+};
+
+struct recv_envelope_list
+{
+    struct recv_envelope *head; /* first envelope in this list */
+    struct recv_envelope dummy; /* the dummy element for the list */
+};
+
+
+/* the request object for asynchronious operations. */
+struct mpi_req_
+{
+    bool recv; /* whether it's a receive request. */
+    bool finished; /* whether it's finished */
+
+    struct send_envelope *evs; /* the envelope */
+    struct recv_envelope *evr; /* the envelope */
+
+    struct mpi_status_ st;
+
+    struct mpi_req_ *next,*prev; /* next,prev request in linked list */
+};
+
+/* pre-allocated  request object list */
+struct req_list
+{
+    struct mpi_req_ *head; /* pre-allocated singly linked list of requests. 
+                              (i.e. reqs->prev is undefined). */
+    struct mpi_req_ *alloc_head; /* the allocated block */
+};
+
+
+
+
+
+
+
+
+
+/* MULTICAST COMMUNICATION DATA STRUCTURES */
+
+
+/* unique tags for multicast */
+#define TMPI_BCAST_TAG      1
+#define TMPI_GATHER_TAG     2
+#define TMPI_SCATTER_TAG    3
+#define TMPI_REDUCE_TAG     4
+#define TMPI_ALLTOALL_TAG   5
+#define TMPI_ALLTOALLV_TAG  6
+
+/* multicast synchronization data structure. A number of these are there for 
+   each thread in the MPI_Comm structure */
+struct multi_sync
+{
+    gmx_atomic_t finished_count; /* finished count for root thread */
+    gmx_atomic_t tag; /* multicast communication type */
+    void **buf; /* array of send/recv buffer values */
+    size_t *bufsize; /* array of number of bytes to send/recv */
+};
+
+struct multi_sync_list
+{
+#define N_MULTI_SYNC 2
+    struct multi_sync *msc[N_MULTI_SYNC]; /* the mult_sync objects */
+    int counter; /* counter */
+    gmx_atomic_t current_counter; /* counter value for the current
+                                     communication */
+    int N; /* the number of threads */
+};
+
+/* pre-allocated buffer structures for multicast communication */
+#if 0
+struct multi_buf
+{
+    
+};
+#endif
+
+
+
+
+
+
+
+
+/* GLOBALLY AVAILABLE DATA STRUCTURES */
+
 /* information about a running thread. This structure is put in a 
-   globally available array.*/
-struct mpi_thread_
+   globally available array; the envelope exchange, etc. are all done through
+   the elements of this array.*/
+struct mpi_thread
 {
     gmx_thread_t thread_id;
 
-    int N_evr; /* the number of receive envelopes currently waiting */
-    /* the receive envelopes pending for this thread: */
-    struct mpi_recv_envelope_ *evr[MAX_ENVELOPES]; 
+    /* the receive envelopes posted for other threads to check */
+    struct recv_envelope_list evr;
 
-    int N_evs; /* the number of send envelopes currently waiting */
-    /* the send envelopes pending for this thread: */
-    struct mpi_send_envelope_ *evs[MAX_ENVELOPES]; 
+    /* the send envelopes posted by other threadas */
+    struct send_envelope_list *evs;
 
+    /* change indicator */
+    gmx_atomic_t evs_check_id;
 
-    /* mutex for exchanging envelopes. Either the sending or the receiving
-       process put an envelope pointer on the envelope list of the receiving 
-       thread. This list is protected by mutexes; if there already is
-       a matching envelope, the other process will complete the data
-       structure, allowing the receiving end (in nonblocking communication
-       also the sending end) to transfer the data. */
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_t envelope_lock;
-#else
-    gmx_thread_mutex_t envelope_lock;
-#endif
-    /* mutex for transmitting data in the case of non-blocking receives.
-       If receives are non-blocking, the sender may need to initiate transfer
-       so this mutex is used for locking out one or the other party. */
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_t xmit_lock;
-#else
-    gmx_thread_mutex_t xmit_lock;
-#endif
+    struct req_list rql;  /* the requests */
+
+    /* the free envelopes */
+    struct free_envelope_list envelopes; 
 
     MPI_Comm self_comm;
 
     void (*start_fn)(void*); /* The start function (or NULL, if main() is to be
-                               called */
+                                called) */
     void *start_arg; /* the argument to the start function (if it's not main()*/
 
     /* we copy these for each thread (this is not required by the 
@@ -134,11 +350,57 @@ struct mpi_thread_
 };
 
 
+/* the error handler  */
+struct mpi_errhandler_
+{
+    int err;
+    MPI_Errhandler_fn fn;
+};
+
+/* standard error handler functions */
+static void mpi_errors_are_fatal_fn(MPI_Comm *comm, int *err);
+static void mpi_errors_return_fn(MPI_Comm *comm, int *err);
+
+
+/* global MPI information */
+struct mpi_global
+{
+    /* list of pointers to all user-defined types */
+    struct mpi_datatype_ **usertypes;
+    int N_usertypes;
+    int Nalloc_usertypes;
+
+    /* spinlock/mutex for manipulating mpi_user_types */
+    gmx_spinlock_t  datatype_lock;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* COMMUNICATOR DATA STRUCTURES */
+
+
+
 /* TODO: make this reference counting */
 struct mpi_group_
 {
     int N; /* the number of threads */
-    struct mpi_thread_ **peers; /* the list of peers to communicate with */
+    struct mpi_thread **peers; /* the list of peers to communicate with */
 #if 0
     int Nrefs; /* the number of references to this structure */
 #endif
@@ -158,29 +420,28 @@ struct mpi_comm_
        multicast_barrier[3] contains a barrier for N/8 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for MPI_Reduce, etc.  */
-#ifdef TMPI_ATOMIC
     gmx_spinlock_barrier_t *multicast_barrier;   
-#else
-    gmx_thread_barrier_t *multicast_barrier;   
-#endif
     int *N_multicast_barrier;
     int Nbarriers;
+
+
+    struct multi_sync_list msl; /* list of multicast sync objecs */
 
     /* lists of globally shared send/receive buffers for MPI_Reduce, etc. */
     volatile void **sendbuf, **recvbuf; 
     
     /* mutex for communication object creation. Traditional mutexes are 
-       better here because communicator creation should not be doen in 
-       time-critical sections of code anyway.   */ 
+       better here because communicator creation should not be done in 
+       time-critical sections of code.   */ 
     gmx_thread_mutex_t comm_create_lock;
     gmx_thread_cond_t comm_create_prep; 
     gmx_thread_cond_t comm_create_finish;
 
     MPI_Comm *new_comm; /* newly created communicators */
-    struct mpi_split_ *split;
+    struct mpi_split *split;
 
     /* the topologies (only cartesian topology is currently implemented */
-    struct mpi_cart_topol_ *cart;
+    struct cart_topol *cart;
     /*struct mpi_graph_topol_ *graph;*/
 
     MPI_Errhandler erh;
@@ -188,7 +449,7 @@ struct mpi_comm_
 
 
 /* specific for MPI_Split: */
-struct mpi_split_
+struct mpi_split
 { 
     int Ncol_init;
     int Ncol_destroy;
@@ -197,7 +458,7 @@ struct mpi_split_
 };
 
 /* cartesian topology */
-struct mpi_cart_topol_
+struct cart_topol
 {
     int ndims; /* number of dimensions */
     int *dims; /* procs per coordinate */
@@ -211,160 +472,17 @@ struct mpi_graph_topol_
 };
 #endif
 
-/* to be able to separate the types of transfer */
-enum xfertype_
-{
-    point_to_point,
-    multicast
-};
-
-/* the message envelopes (as described in the MPI standard). 
-   These fully describes the message, and make each message unique (enough).
-  
-   Transmitting data works by either the transmitting or receiving process
-   putting a pointer to an envelope on the envelope list (the envelope
-   list is protected by mutexes/spinlocks). The other end then puts a pointer 
-   in the 'counterpart' field. If it's the sending side, it then waits 
-   for the receiver to complete the transfer. The receiving side starts
-   the transfer as soon as the data is available from the sender. 
-
-   If the receiver is non-blocking, the sender may also initiate transfers,
-   and transfers become excluded by mutexes/spinlocks.  */
-struct mpi_send_envelope_
-{
-    MPI_Comm comm;  /* this is a structure shared across threads, so we
-                       can test easily whether two threads are talking
-                       about the same comm. */
-
-    struct mpi_thread_ *src, *dest; /* these are pretty obvious */
-    int tag; /* the tag */
-    enum xfertype_ xt; /* the type of transfer (to make sure we're not 
-                          mixing up point-to-point messages with 
-                          multicast messages)*/
-
-    void *buf; /* buffer to be sent  */
-    size_t bufsize; /* the size of the data to be sent  */
-    MPI_Datatype datatype; /* the data type */
-
-    /* these are volatile because they're probably read by a thread while
-       another one is writing to them (there's a few busy-waits relying on
-       these flags). There are also flags for the receiver (which are 
-       set by the receiver), that make waiting for conditions a lot easier */
-    volatile bool ready; /* whether the data is ready to be sent */
-    volatile bool nonblock; /* whether the sender is non-blocking */
-    volatile bool finished; /* whether the data transmission is finished */
-    volatile bool recv_ready; /* whether the data is ready to be received */
-    volatile bool recv_nonblock; /* whether the receiver is non-blocking */
-
-    /* A link to the other envelope (the sending envelope for the receiver,
-       or the receiving envelope for the sender). Status updates are
-       done for both the envelope itself, and for its counterpart. 
-       This way, we can throw away the local data structure if we're
-       finished with it, but the other side still has a valid status.
-
-       The counterpart can be relied on to exist until finished is true.  */
-    volatile struct mpi_recv_envelope_ *counterpart; 
-};
-/* the corresponding receive envelope */
-struct mpi_recv_envelope_
-{
-    MPI_Comm comm;  /* this is a structure shared across threads, so we
-                       can test easily whether two threads are talking
-                       about the same comm. */
-
-    struct mpi_thread_ *src, *dest; /* these are pretty obvious */
-    int tag; /* the tag */
-    enum xfertype_ xt; /* the type of transfer (to make sure we're not 
-                          mixing up point-to-point messages with 
-                          multicast messages)*/
-
-    void *buf; /* buffer to be received  */
-    size_t bufsize; /* the size of the data to be received  */
-    MPI_Datatype datatype; /* the data type */
-    size_t transferred; /* the size of data actually transferred */
-
-    /* these are volatile because they're probably read by a thread while
-       another one is writing to them (there's a few busy-waits relying on
-       these flags). There are also flags for the sender (which are 
-       set by the sender), that make waiting for conditions a lot easier. */
-    volatile bool ready; /* whether the data is ready to be received */
-    volatile bool nonblock; /* whether the receiver is non-blocking */
-    volatile bool finished; /* whether the data transmission is finished */
-    volatile bool send_ready; /* whether the data is ready to be sent  */
-    volatile bool send_nonblock; /* whether the sender is non-blocking */
-
-    /* A link to the other envelope. Status updates are
-       done for both the envelope itself, and for its counterpart. 
-       This way, we can throw away the local data structure if we're
-       finished with it, but the other side still has a valid status.
-
-       The counterpart can be relied on to exist until finished is true.  */
-    volatile struct mpi_send_envelope_ *counterpart; 
-
-    /* mutex/spinlock for transmitting data in the case of non-blocking 
-       receives.  If receives are non-blocking, the sender may need to 
-       initiate transfer so this lock is used for locking out one or the 
-       other party. */
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_t xmit_lock;
-#else
-    gmx_thread_mutex_t xmit_lock;
-#endif
-};
-
-
-/* the error handler  */
-struct mpi_errhandler_
-{
-    int err;
-    MPI_Errhandler_fn fn;
-};
-
-/* standard error handler functions */
-static void mpi_errors_are_fatal_fn(MPI_Comm *comm, int *err);
-static void mpi_errors_return_fn(MPI_Comm *comm, int *err);
-
-struct mpi_errhandler_ mpi_errors_are_fatal = { 0, mpi_errors_are_fatal_fn };
-struct mpi_errhandler_ mpi_errors_return = { 0, mpi_errors_return_fn };
-
-MPI_Errhandler MPI_ERRORS_ARE_FATAL=&mpi_errors_are_fatal;
-MPI_Errhandler MPI_ERRORS_RETURN=&mpi_errors_return;
 
 
 
-/* global MPI information */
-struct mpi_global_
-{
-    /* list of pointers to all user-defined types */
-    struct mpi_datatype_ **usertypes;
-    int N_usertypes;
-    int Nalloc_usertypes;
 
-    /* spinlock/mutex for manipulating mpi_user_types */
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_t  datatype_lock;
-#else
-    gmx_thread_mutex_t datatype_lock;
-#endif
-};
 
 
 /* MPI_Reduce Op functions */
 typedef void (*tMPI_Op_fn)(void*, void*, void*, int);
 
 
-/* the request object for asynchronious operations. */
-struct mpi_req_
-{
-    bool recv; /* whether it's a receive request. */
-    bool finished; /* whether it's finished */
-
-    struct mpi_recv_envelope_ evr; /* receive envelope */
-    struct mpi_send_envelope_ evs; /* send envelope */
-};
-
-
-struct mpi_datatype_component_
+struct mpi_datatype_component
 {
     struct mpi_datatype_ *type;
     unsigned int count;
@@ -376,11 +494,213 @@ struct mpi_datatype_
     size_t size; /* full extent of type. */   
     tMPI_Op_fn *op_functions; /* array of op functions for this datatype */
     int N_comp; /* number of components */
-    struct mpi_datatype_component_ *comps; /* the components */
+    struct mpi_datatype_component *comps; /* the components */
     bool committed; /* whether the data type is committed */
 };
 /* just as a shorthand:  */
 typedef struct mpi_datatype_ mpi_dt_;
+
+
+
+/* error messages */
+static const char *mpi_errmsg[] = 
+{
+    "No error",
+    "MPI Initialization error",
+    "MPI Finalize error",
+    "Invalid MPI_Group",
+    "Invalid MPI_Comm",
+    "Invalid MPI_Status",
+    "Invalid MPI_Group rank",
+    "Invalid Cartesian topology dimensions",
+    "Invalid Cartesian topology coordinates",
+    "Insufficient number processes for Cartesian topology",
+    "Invalid counterpart for MPI transfer",
+    "Receive buffer size too small for transmission",
+    "Overlapping send/receive buffers: probably due to thread-unsafe code.",
+    "Invalid send destination",
+    "Invalid receive source",
+    "Invalid buffer (null pointer in send or receive buffer)",
+    "Invalid reduce operator",
+    "Out of receive envelopes: this shouldn't happen (probably a bug).",
+    "Out of receive requests: this shouldn't happen (probably a bug).",
+    "Transmission failure",
+    "Unknown MPI error"
+};
+
+
+
+/* get the current thread structure pointer */
+static struct mpi_thread *tMPI_Get_current(void);
+
+/* handle an error, returning the errorcode */
+static int tMPI_Error(MPI_Comm comm, int mpi_errno);
+
+
+/* check whether we're the main thread */
+static bool tMPI_Is_master(void);
+/* check whether the current process is in a group */
+static bool tMPI_In_group(MPI_Group group);
+
+/* find the rank of a thread in a comm */
+static int tMPI_Comm_seek_rank(MPI_Comm comm, struct mpi_thread *th);
+/* find the size of a comm */
+static int tMPI_Comm_N(MPI_Comm comm);
+
+/* start N threads with argc, argv (used by MPI_Init)*/
+static void tMPI_Start_threads(int N, int *argc, char ***argv, 
+                               void (*start_fn)(void*), void *start_arg);
+/* starter function for threads; takes a void pointer to a
+   struct mpi_starter_, which calls main() if mpi_start_.fn == NULL */
+static void* tMPI_Thread_starter(void *arg);
+
+/* allocate a comm object, making space for N threads */
+static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N);
+/* allocate a group object */
+static MPI_Group tMPI_Group_alloc(void);
+
+/* helper function for MPI_Comm_split. Splits N entities with color and key
+   out so that the output contains Ngroups groups each with elements
+   of the same color. The group array contains the entities in each group. */
+static void tMPI_split_colors(int N, const int *color, const int *key, 
+                              int *Ngroups, int *grp_N, int *grp_color, 
+                              int *group);
+
+
+/* get the thread belonging to comm with rank rank */
+static struct mpi_thread *tMPI_Get_thread(MPI_Comm comm, int rank);
+
+
+/* initialize a free envelope list with N envelopes */
+static void tMPI_Free_env_list_init(struct free_envelope_list *evl, int N);
+/* destroy a free envelope list */
+static void tMPI_Free_env_list_destroy(struct free_envelope_list *evl);
+
+
+/* get a free send envelope from the top of a list */
+static struct send_envelope *tMPI_Free_env_list_fetch_send(
+                                      struct free_envelope_list *evl);
+static struct recv_envelope *tMPI_Free_env_list_fetch_recv(
+                                      struct free_envelope_list *evl);
+
+/* return an envelope to the free envelopes list */
+static void tMPI_Free_env_list_return_send(struct free_envelope_list *evl,
+                                           struct send_envelope *ev);
+static void tMPI_Free_env_list_return_recv(struct free_envelope_list *evl,
+                                           struct recv_envelope *ev);
+
+
+
+
+/* initialize a send envelope list */
+static void tMPI_Send_env_list_init(struct send_envelope_list *evl);
+/* destroy a send envelope list */
+static void tMPI_Send_env_list_destroy(struct send_envelope_list *evl);
+
+/* remove a send envelope from its list. Does not lock */
+static void tMPI_Send_env_list_remove(struct send_envelope *ev);
+
+/* add a send envelope to the new envelopes queue in a list */
+static void tMPI_Send_env_list_add_new(struct send_envelope_list *evl,
+                                       struct send_envelope *ev);
+/* move a send envelope to the old envelopes queue in a list. Does not
+   lock. */
+static void tMPI_Send_env_list_move_to_old(struct send_envelope *ev);
+
+
+
+
+
+
+
+/* initialize a recv envelope list */
+static void tMPI_Recv_env_list_init(struct recv_envelope_list *evl);
+/* destroy a recv envelope list */
+static void tMPI_Recv_env_list_destroy(struct recv_envelope_list *evl);
+
+/* add a receive envelope to a list */
+static void tMPI_Recv_env_list_add(struct recv_envelope_list *evl,
+                                           struct recv_envelope *ev);
+/* remove a receive envelope from its list */
+static void tMPI_Recv_env_list_remove(struct recv_envelope *ev);
+
+
+
+
+
+/* do the actual transfer */
+static void tMPI_Xfer(struct send_envelope *evs, struct recv_envelope *evr);
+
+
+/* initialize request list */
+static void tMPI_Req_list_init(struct req_list *rl, int N_reqs);
+/* destroy request list */
+static void tMPI_Req_list_destroy(struct req_list *rl);
+/* get a request from the thread's pre-allocated request list */
+static struct mpi_req_ *tMPI_Get_req(struct req_list *rl);
+/* return a request to the thread's pre-allocated request list */
+static void tMPI_Return_req(struct req_list *rl, struct mpi_req_ *req);
+
+
+
+
+
+
+
+/* these are the internal versions of MPI_Isend/Irecv, etc that use 
+   pre-allocated mpi_reqs, and can be used for multicast messages. 
+   They are used by the regular MPI_Isend/Irecv, etc.  */
+static int tMPI_Recv_r(void* buf, int count, MPI_Datatype datatype, 
+                      int source, int tag, MPI_Comm comm, 
+                      MPI_Status *status, bool multicast);
+static int tMPI_Isend_r(void* buf, int count, MPI_Datatype datatype, 
+                        int dest, int tag, MPI_Comm comm, 
+                        struct mpi_req_ *rq, bool multicast);
+static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype, 
+                        int source, int tag, MPI_Comm comm, 
+                        struct mpi_req_ *rq, bool multicast);
+static int tMPI_Test_r(struct mpi_req_ *rq, int *flag, MPI_Status *status);
+static int tMPI_Wait_r(struct mpi_req_ *rq, MPI_Status *status);
+/* wait all on an array of pointers to requests, that progressively get 
+   assigned NULL once they're done. If may_free, the pointers also
+   get free()d */
+static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
+                          MPI_Status *array_of_statuses, bool may_free);
+
+
+/* multicast functions */
+/* initialize a multi sync list structure */
+void tMPI_Multi_sync_list_init(struct multi_sync_list *msl, int N);
+
+/* destroy a multi sync list structure */
+void tMPI_Multi_sync_list_destroy(struct multi_sync_list *msl);
+
+
+
+/* run a single binary reduce operation on src_a and src_b, producing dest. 
+   dest and src_a may be identical */
+static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
+                        MPI_Datatype datatype, int count, MPI_Op op, 
+                        MPI_Comm comm);
+
+
+/* and we need this prototype */
+int main(int argc, char **argv);
+
+
+
+
+
+
+
+struct mpi_errhandler_ mpi_errors_are_fatal = { 0, mpi_errors_are_fatal_fn };
+struct mpi_errhandler_ mpi_errors_return = { 0, mpi_errors_return_fn };
+
+
+MPI_Errhandler MPI_ERRORS_ARE_FATAL=&mpi_errors_are_fatal;
+MPI_Errhandler MPI_ERRORS_RETURN=&mpi_errors_return;
+
+
 
 
 /* there are a few global variables that maintain information about the
@@ -389,32 +709,19 @@ MPI_Comm MPI_COMM_WORLD=NULL;
 MPI_Group MPI_GROUP_EMPTY=NULL;
 
 /* the threads themselves (mpi_comm only contains lists of pointers to this
-   structure */
-static struct mpi_thread_ *threads=NULL;
+      structure */
+static struct mpi_thread *threads=NULL;
 static int Nthreads=0;
 
 /* thread info */
 static gmx_thread_key_t id_key; /* the key to get the thread id */
 
 /* whether MPI has finalized (we need this to distinguish pre-inited from
-    post-finalized states */
+       post-finalized states */
 static bool mpi_finalized=FALSE;
 
 /* misc. global information about MPI */
-static struct mpi_global_ *mpi_global=NULL;
-
-
-
-
-/* unique tags for multicast */
-#define TMPI_BCAST_TAG      1
-#define TMPI_GATHER_TAG     2
-#define TMPI_SCATTER_TAG    3
-#define TMPI_REDUCE_TAG     4
-#define TMPI_ALLTOALL_TAG   5
-#define TMPI_ALLTOALLV_TAG  6
-
-
+static struct mpi_global *mpi_global=NULL;
 
 /* this is where all the MPI_Reduce ops are included from thread_mpi_ops.c */
 #define THREAD_MPI_OPS 1
@@ -557,173 +864,37 @@ MPI_Datatype MPI_LONG_DOUBLE        = &mpi_l_double_;
 MPI_Datatype MPI_BYTE               = &mpi_byte_;
 
 
-/* error messages */
-static const char *mpi_errmsg[] = 
-{
-    "No error",
-    "MPI Initialization error",
-    "MPI Finalize error",
-    "Invalid MPI_Group",
-    "Invalid MPI_Comm",
-    "Invalid MPI_Status",
-    "Invalid MPI_Group rank",
-    "Invalid Cartesian topology dimensions",
-    "Invalid Cartesian topology coordinates",
-    "Insufficient number processes for Cartesian topology",
-    "Invalid counterpart for MPI transfer",
-    "Receive buffer size too small for transmission",
-    "Overlapping send/receive buffers: probably due to thread-unsafe code.",
-    "Invalid send destination",
-    "Invalid receive source",
-    "Invalid buffer",
-    "Invalid reduce operator",
-    "Out of receive envelopes: this shouldn't happen (probably a bug).",
-    "Unknown MPI error",
-    "Transmission failure"
-};
 
-
-
-/* get the current thread structure pointer */
-static struct mpi_thread_ *tMPI_Get_current(void);
-
-/* handle an error, returning the errorcode */
-static int tMPI_Error(MPI_Comm comm, int mpi_errno);
-
-
-/* check whether we're the main thread */
-static bool tMPI_Is_master(void);
-/* check whether the current process is in a group */
-static bool tMPI_In_group(MPI_Group group);
-
-/* find the rank of a thread in a comm */
-static int tMPI_Comm_seek_rank(MPI_Comm comm, struct mpi_thread_ *th);
-/* find the size of a comm */
-static int tMPI_Comm_N(MPI_Comm comm);
-
-/* start N threads with argc, argv (used by MPI_Init)*/
-static void tMPI_Start_threads(int N, int *argc, char ***argv, 
-                               void (*start_fn)(void*), void *start_arg);
-/* starter function for threads; takes a void pointer to a
-   struct mpi_starter_, which calls main() if mpi_start_.fn == NULL */
-static void* tMPI_Thread_starter(void *arg);
-
-/* allocate a comm object, making space for N threads */
-static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N);
-/* allocate a group object */
-static MPI_Group tMPI_Group_alloc(void);
-
-/* helper function for MPI_Comm_split. Splits N entities with color and key
-   out so that the output contains Ngroups groups each with elements
-   of the same color. The group array contains the entities in each group. */
-static void tMPI_split_colors(int N, const int *color, const int *key, 
-                              int *Ngroups, int *grp_N, int *grp_color, 
-                              int *group);
-
-
-/* get the thread belonging to comm with rank rank */
-static struct mpi_thread_ *tMPI_Get_thread(MPI_Comm comm, int rank);
-
-/* fill the pre-allocated envelope sd with the right values */
-static void tMPI_Prep_send_envelope(struct mpi_send_envelope_ *ev, 
-                                    MPI_Comm comm, struct mpi_thread_ *dest,
-                                    void *send_buf, int send_count, 
-                                    MPI_Datatype datatype, int tag,
-                                    enum xfertype_ xt);
-
-/* fill the pre-allocated envelope sd with the right values */
-static void tMPI_Prep_recv_envelope(struct mpi_recv_envelope_ *ev, 
-                                    MPI_Comm comm, struct mpi_thread_ *src, 
-                                    void *recv_buf, int recv_count,
-                                    MPI_Datatype datatype, int tag,
-                                    enum xfertype_ xt);
-
-
-
-/* check whether a send and receive envelope match (same dest, tag, etc.) */
-static bool tMPI_Envelope_matches(const struct mpi_send_envelope_ *send, 
-                                  const struct mpi_recv_envelope_ *recv);
-
-/* try to post an envelope as a sender */
-static void tMPI_Try_put_send_envelope(struct mpi_send_envelope_ *ev);
-
-/* try to post an envelope as a receiver (indicating readiness to receive)*/
-static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev);
-
-
-
-/* wait for a specific envelope's data to be come ready */
-static void tMPI_Wait_recv(struct mpi_recv_envelope_ *ev);
-/* wait for a specific envelope transfer finish */
-static void tMPI_Wait_send(struct mpi_send_envelope_ *ev);
-
-
-/* do a transfer from an envelope send to recv buffer, updating status. 
-   This function will lock a mutex if the envelope says that there's a
-   non-blocking receiver (in that case, the sender may have to initiate
-   transer). If try_lock=true, it will just try_lock to lock (and return if 
-   it doesn't get a lock), if try_lock=false, it will wait until it gets 
-   a lock. 
-   
-   There are two versions of Xfer: one for recv-initiated transfers (Xfer_recv)
-   and one for sender-initiated transfers (Xfer-send). */
-static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status, 
-                          bool try_lock);
-static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs, MPI_Status *status, 
-                          bool try_lock);
-
-
-
-/* these are the internal versions of MPI_Isend/Irecv, etc that use 
-   pre-allocated mpi_reqs so as not to incur the overhead of allocations. 
-   They are used by the regular MPI_Isend/Irecv, etc.  */
-static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype, 
-                      int source, int tag, MPI_Comm comm, 
-                      MPI_Status *status, enum xfertype_ xt);
-static int tMPI_Isend_r(void* buf, int count, MPI_Datatype datatype, 
-                        int dest, int tag, MPI_Comm comm, 
-                        struct mpi_req_ *rq, enum xfertype_ xt);
-static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype, 
-                        int source, int tag, MPI_Comm comm, 
-                        struct mpi_req_ *rq, enum xfertype_ xt);
-static int tMPI_Test_r(struct mpi_req_ *rq, int *flag, MPI_Status *status);
-static int tMPI_Wait_r(struct mpi_req_ *rq, MPI_Status *status);
-/* wait all on an array of pointers to requests, that progressively get 
-   assigned NULL once they're done. If may_free, the pointers also
-   get free()d */
-static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
-                          MPI_Status *array_of_statuses, bool may_free);
-
-/* run a single binary reduce operation on src_a and src_b, producing dest. 
-   dest and src_a may be identical */
-static int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b, 
-                        MPI_Datatype datatype, int count, MPI_Op op, 
-                        MPI_Comm comm);
-
-
-/* and we need this prototype */
-int main(int argc, char **argv);
-
-
-
-
-
-static struct mpi_thread_ *tMPI_Get_current(void)
+struct mpi_thread *tMPI_Get_current(void)
 {
     if (!threads)
         return NULL;
 
-    return (struct mpi_thread_*)gmx_thread_getspecific(id_key);
+    return (struct mpi_thread*)gmx_thread_getspecific(id_key);
 } 
 
 
-int tMPI_Threadnr(struct mpi_thread_ *thr)
+unsigned int tMPI_Threadnr(struct mpi_thread *thr)
 {
-    if (thr)
-        return tMPI_Comm_seek_rank(MPI_COMM_WORLD, thr);
-
-    return tMPI_Comm_seek_rank(MPI_COMM_WORLD, tMPI_Get_current());
+    return thr-threads;
 }
+
+unsigned int tMPI_This_threadnr(void)
+{
+    return tMPI_Get_current()-threads;
+}
+
+static struct mpi_thread *tMPI_Get_thread(MPI_Comm comm, int rank)
+{
+    /* check destination */
+    if ( (rank < 0) || (rank > comm->grp.N) )
+    {
+        tMPI_Error(comm, MPI_ERR_GROUP_RANK);
+        return NULL;
+    }
+    return comm->grp.peers[rank];
+}
+
 
 static bool tMPI_Is_master(void)
 {
@@ -738,7 +909,7 @@ static bool tMPI_Is_master(void)
 
 MPI_Comm tMPI_Get_comm_self(void)
 {
-    struct mpi_thread_* th=tMPI_Get_current();
+    struct mpi_thread* th=tMPI_Get_current();
     return th->self_comm;
 }
 
@@ -844,9 +1015,36 @@ int tMPI_Get_N(int *argc, char ***argv)
 
 static void* tMPI_Thread_starter(void *arg)
 {
-    struct mpi_thread_ *th=(struct mpi_thread_*)arg;
+    struct mpi_thread *th=(struct mpi_thread*)arg;
+    int N_envelopes=(Nthreads+1)*(Nthreads+1)*8;  /*AARGH arbitrary number*/
+    int N_reqs=(Nthreads+1)*(Nthreads+1)*2;  /*AARGH arbitrary number*/
+    int i;
 
     gmx_thread_setspecific(id_key, arg);
+
+
+    /* allocate comm.self */
+    th->self_comm=tMPI_Comm_alloc(MPI_COMM_WORLD, 1);
+    th->self_comm->grp.peers[0]=th;
+
+    /* allocate envelopes */
+    tMPI_Free_env_list_init( &(th->envelopes), N_envelopes );
+    /* recv list */
+    tMPI_Recv_env_list_init( &(th->evr));
+    /* send lists */
+    smalloc(th->evs, sizeof(struct send_envelope_list)*Nthreads);
+    for(i=0;i<Nthreads;i++)
+    {
+        tMPI_Send_env_list_init( &(th->evs[i]));
+    }
+    gmx_atomic_set( &(th->evs_check_id), 0);
+
+    /* allocate requests */
+    tMPI_Req_list_init(&(th->rql), N_reqs);
+
+    /* now wait for all other threads to come on line, before we
+       start the MPI program */
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (! th->start_fn )
         main(th->argc, th->argv);
@@ -872,19 +1070,14 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         Nthreads=N;
 
         /* allocate global data */
-        smalloc(mpi_global, sizeof(struct mpi_global_));
+        smalloc(mpi_global, sizeof(struct mpi_global));
         mpi_global->usertypes=NULL;
         mpi_global->N_usertypes=0;
         mpi_global->Nalloc_usertypes=0;
-#ifdef TMPI_ATOMIC
-/*#if 0*/
         gmx_spinlock_init(&(mpi_global->datatype_lock));
-#else
-        gmx_thread_mutex_init(&(mpi_global->datatype_lock));
-#endif
 
         /* allocate world and thread data */
-        smalloc(threads, sizeof(struct mpi_thread_)*N);
+        smalloc(threads, sizeof(struct mpi_thread)*N);
         MPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
         MPI_GROUP_EMPTY=tMPI_Group_alloc();
 
@@ -897,22 +1090,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         /*printf("thread keys created\n"); fflush(NULL);*/
         for(i=0;i<N;i++)
         {
-            threads[i].N_evr=0;
-            threads[i].N_evs=0;
             MPI_COMM_WORLD->grp.peers[i]=&(threads[i]);
-
-            /* create the per-thread send/recv mutexes and conditions */
-#ifdef TMPI_ATOMIC
-            gmx_spinlock_init(&(threads[i].envelope_lock));
-            gmx_spinlock_init(&(threads[i].xmit_lock));
-#else
-            gmx_thread_mutex_init(&(threads[i].envelope_lock));
-            gmx_thread_mutex_init(&(threads[i].xmit_lock));
-#endif
-
-            /* allocate comm.self */
-            threads[i].self_comm=tMPI_Comm_alloc(MPI_COMM_WORLD, 1);
-            threads[i].self_comm->grp.peers[0]=&(threads[i]);
 
             /* copy argc, argv */
             if (argc && argv)
@@ -947,10 +1125,8 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
             }
         }
         /* the main thread now also runs start_fn */
-        if (start_fn)
-            start_fn(start_arg);
-        if (!mpi_finalized)
-            MPI_Finalize();
+        threads[0].thread_id=NULL;
+        tMPI_Thread_starter((void*)&(threads[0]));
     }
 }
 
@@ -990,30 +1166,30 @@ int MPI_Initialized(int *flag)
 int MPI_Finalize(void)
 {
     int i;
+    struct mpi_thread *th=tMPI_Get_current();
 
 #ifdef TMPI_DEBUG
-    printf("%d: MPI_Finalize called\n", tMPI_Threadnr(0));
-    fflush(0);
+    printf("%5d: MPI_Finalize called\n", tMPI_This_threadnr());
+    fflush(stdout);
 #endif
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    for(i=0;i<(Nthreads+1);i++)
+    {
+        tMPI_Recv_env_list_destroy( &(th->evr));
+    }
+    for(i=0;i<Nthreads;i++)
+    {
+        tMPI_Send_env_list_destroy( &(th->evs[i]));
+    }
+    tMPI_Free_env_list_destroy( &(th->envelopes) );
+
+    tMPI_Req_list_destroy( &(th->rql) );
+
+
     if (tMPI_Is_master())
     {
-#ifdef TMPI_DEBUG
-        for(i=0;i<Nthreads;i++)
-        {
-            if (threads[i].N_evs)
-            {
-                printf(
-                    "MPI_Finalize: %d open send envelopes in thread %d\n",
-                    threads[i].N_evs, i);
-            }
-            if (threads[i].N_evr)
-            {
-                printf(
-                    "MPI_Finalize: %d open recv envelopes in thread %d\n",
-                    threads[i].N_evr, i);
-            }
-        }
-#endif
         /* we just wait for all threads to finish; the order isn't very 
            relevant, as all threads should arrive at their endpoints soon. */
         for(i=1;i<Nthreads;i++)
@@ -1022,13 +1198,6 @@ int MPI_Finalize(void)
             {
                 tMPI_Error(MPI_COMM_WORLD, MPI_ERR_FINALIZE);
             }
-        }
-        for(i=0;i<Nthreads;i++)
-        {
-#ifndef TMPI_ATOMIC
-            gmx_thread_mutex_destroy(&(threads[i].envelope_lock));
-            gmx_thread_mutex_destroy(&(threads[i].xmit_lock));
-#endif
         }
         sfree(threads);
         sfree(MPI_COMM_WORLD);
@@ -1068,7 +1237,7 @@ int MPI_Abort(MPI_Comm comm, int errorcode)
 #if 0
     /* we just kill all threads, but not the main process */
     int i;
-    struct mpi_thread_ *me=tMPI_Get_current();
+    struct mpi_thread *me=tMPI_Get_current();
     /* kill all threads */
     for(i=0;i<comm->grp.N;i++)
     {
@@ -1085,8 +1254,46 @@ int MPI_Abort(MPI_Comm comm, int errorcode)
 
 int MPI_Get_processor_name(char *name, int *resultlen)
 {
-    snprintf(name, MPI_MAX_PROCESSOR_NAME, "thread #%d", tMPI_Threadnr(0));
-    *resultlen=strlen(name);
+    unsigned int nr=tMPI_Threadnr(tMPI_Get_current());
+    unsigned int digits=0;
+    const unsigned int base=10;
+
+    /* we don't want to call sprintf here (it turns out to be not entirely
+       thread-safe on Mac OS X, for example), so we do it our own way: */
+
+    /* first determine number of digits */
+    {
+        unsigned int rest=nr;
+        while(rest > 0)
+        {
+            rest /= base;
+            digits++;
+        }
+        if (digits==0)
+            digits=1;
+    }
+    strcpy(name, "thread #");
+    /* now construct the number */
+    {
+        unsigned int len=strlen(name);
+        unsigned int i;
+        unsigned int rest=nr;
+
+        for(i=0;i<digits;i++)
+        {
+            int pos=len + (digits-i-1);
+            if (pos < (MPI_MAX_PROCESSOR_NAME -1) )
+                name[ pos ]='0' + rest%base;
+            rest /= base;
+        }
+        if ( (digits+len) < MPI_MAX_PROCESSOR_NAME)
+            name[digits + len]='\0';
+        else
+            name[MPI_MAX_PROCESSOR_NAME]='\0';
+
+    }
+    if (resultlen)
+        *resultlen=strlen(name);
     return MPI_SUCCESS;
 }
 
@@ -1132,17 +1339,13 @@ int MPI_Type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
 
     /* establish components */
     ntp->N_comp=1;
-    smalloc(ntp->comps, sizeof(struct mpi_datatype_component_)*1);
+    smalloc(ntp->comps, sizeof(struct mpi_datatype_component)*1);
     ntp->comps[0].type=oldtype;
     ntp->comps[0].count=1;
     ntp->committed=FALSE;
 
     /* now add it to the list.  */
-#ifdef TMPI_ATOMIC
     gmx_spinlock_lock(&(mpi_global->datatype_lock));
-#else
-    gmx_thread_mutex_lock(&(mpi_global->datatype_lock));
-#endif
     /* check whether there's space */
     if (mpi_global->N_usertypes + 1 >= mpi_global->Nalloc_usertypes)
     {
@@ -1155,12 +1358,7 @@ int MPI_Type_contiguous(int count, MPI_Datatype oldtype, MPI_Datatype *newtype)
     mpi_global->usertypes[mpi_global->N_usertypes]=ntp;
     mpi_global->N_usertypes++;
     *newtype=ntp;
-#ifdef TMPI_ATOMIC
     gmx_spinlock_unlock(&(mpi_global->datatype_lock));
-#else
-    gmx_thread_mutex_unlock(&(mpi_global->datatype_lock));
-#endif
-
 
     return MPI_SUCCESS;
 }
@@ -1178,11 +1376,7 @@ int MPI_Type_commit(MPI_Datatype *datatype)
        already a committed type that has the same composition, we just 
        make the datatype pointer point to it, ensuring we share datatype 
        information across threads. */
-#ifdef TMPI_ATOMIC
     gmx_spinlock_lock(&(mpi_global->datatype_lock));
-#else
-    gmx_thread_mutex_lock(&(mpi_global->datatype_lock));
-#endif
     for(i=0;i<mpi_global->N_usertypes;i++)
     {
         struct mpi_datatype_ *lt=mpi_global->usertypes[i];
@@ -1234,14 +1428,9 @@ int MPI_Type_commit(MPI_Datatype *datatype)
         /* it was the first one of its type */
         dt->committed=TRUE;
     }
-#ifdef TMPI_ATOMIC
     gmx_spinlock_unlock(&(mpi_global->datatype_lock));
-#else
-    gmx_thread_mutex_unlock(&(mpi_global->datatype_lock));
-#endif
     return MPI_SUCCESS;
 }
-
 
 
 /* Group query & manipulation functions */
@@ -1249,7 +1438,7 @@ int MPI_Type_commit(MPI_Datatype *datatype)
 static bool tMPI_In_group(MPI_Group group)
 {
     int i;
-    struct mpi_thread_ *cur;
+    struct mpi_thread *cur;
 
     cur=tMPI_Get_current();
     for(i=0;i<group->N;i++)
@@ -1272,7 +1461,7 @@ int MPI_Group_size(MPI_Group group, int *size)
 int MPI_Group_rank(MPI_Group group, int *rank)
 {    
     int i;
-    struct mpi_thread_ *cur;
+    struct mpi_thread *cur;
 
     if (!group)
         return MPI_UNDEFINED;
@@ -1297,7 +1486,7 @@ static MPI_Group tMPI_Group_alloc(void)
     struct mpi_group_ *ret;
 
     smalloc(ret, sizeof(struct mpi_group_));
-    smalloc(ret->peers, sizeof(struct mpi_thread_*)*Nthreads);
+    smalloc(ret->peers, sizeof(struct mpi_thread*)*Nthreads);
     ret->N=0;
 #if 0
     ret->Nrefs=1;
@@ -1389,7 +1578,7 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     int i,Nbarriers,Nred;
 
     smalloc(ret, sizeof(struct mpi_comm_));
-    smalloc(ret->grp.peers, sizeof(struct mpi_thread_*)*Nthreads);
+    smalloc(ret->grp.peers, sizeof(struct mpi_thread*)*Nthreads);
     ret->grp.N=N;
 
     gmx_thread_mutex_init( &(ret->comm_create_lock) );
@@ -1411,22 +1600,13 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
-#ifdef TMPI_ATOMIC
     smalloc(ret->multicast_barrier, 
             sizeof(gmx_spinlock_barrier_t)*(Nbarriers+1));
-#else
-    smalloc(ret->multicast_barrier, 
-            sizeof(gmx_thread_barrier_t)*(Nbarriers+1));
-#endif
     smalloc(ret->N_multicast_barrier, sizeof(int)*(Nbarriers+1));
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
-#ifdef TMPI_ATOMIC
         gmx_spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
-#else
-        gmx_thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
-#endif
         ret->N_multicast_barrier[i]=Nred;
         /* Nred is now Nred/2 + a rest term because solitary 
            process at the end of the list must still be accounter for */
@@ -1444,14 +1624,15 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     {
         ret->erh=MPI_ERRORS_ARE_FATAL;
     }
+
+    /* multi_sync objects */
+    tMPI_Multi_sync_list_init( &(ret->msl), N);
+
     return ret;
 }
 
 int MPI_Comm_free(MPI_Comm *comm)
 {
-#ifndef TMPI_ATOMIC
-    int i;
-#endif
 #ifndef TMPI_STRICT
     int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     if (! *comm)
@@ -1469,10 +1650,6 @@ int MPI_Comm_free(MPI_Comm *comm)
     {
         /* we're the last one so we can safely destroy it */
         sfree((*comm)->grp.peers);
-#ifndef TMPI_ATOMIC
-        for(i=0;i<(*comm)->Nbarriers;i++)
-            gmx_thread_barrier_destroy( &( (*comm)->multicast_barrier[i] ) );
-#endif
         sfree((*comm)->multicast_barrier);
         sfree((*comm)->sendbuf);
         sfree((*comm)->recvbuf);
@@ -1497,10 +1674,6 @@ int MPI_Comm_free(MPI_Comm *comm)
     if (myrank==0)
     {
         sfree((*comm)->grp.peers);
-#ifndef TMPI_ATOMIC
-        for(i=0;i<(*comm)->Nbarriers;i++)
-            gmx_thread_barrier_destroy( &( (*comm)->multicast_barrier[i] ) );
-#endif
         sfree((*comm)->multicast_barrier);
         sfree((*comm)->sendbuf);
         sfree((*comm)->recvbuf);
@@ -1597,7 +1770,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
                                                 structure) */
     bool i_am_first=FALSE;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-    struct mpi_split_ *spl;
+    struct mpi_split *spl;
 
     if (!comm)
     {
@@ -1610,7 +1783,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     /* first get the colors */
     if (!comm->new_comm)
     {
-        smalloc(comm->split, sizeof(struct mpi_split_));
+        smalloc(comm->split, sizeof(struct mpi_split));
         smalloc(comm->new_comm, N*sizeof(MPI_Comm));
         if (N<=MAX_PREALLOC_THREADS)
         {
@@ -1753,7 +1926,7 @@ int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
     return MPI_SUCCESS;    
 }
 
-static int tMPI_Comm_seek_rank(MPI_Comm comm, struct mpi_thread_ *th)
+static int tMPI_Comm_seek_rank(MPI_Comm comm, struct mpi_thread *th)
 {
     int i;
     if (!comm)
@@ -1976,7 +2149,7 @@ int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims, int *periods,
 
     if (newrank==0)
     {
-        smalloc((*comm_cart)->cart, sizeof(struct mpi_cart_topol_));
+        smalloc((*comm_cart)->cart, sizeof(struct cart_topol));
         smalloc((*comm_cart)->cart->dims, ndims*sizeof(int));
         smalloc((*comm_cart)->cart->periods, ndims*sizeof(int));
         (*comm_cart)->cart->ndims=ndims;
@@ -1991,114 +2164,356 @@ int MPI_Cart_create(MPI_Comm comm_old, int ndims, int *dims, int *periods,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
-#ifdef TMPI_ATOMIC
         gmx_spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#else
-        gmx_thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#endif
     }
 
 
     return MPI_SUCCESS;
 }
 
+/* Point-to-point communication protocol functions */
+
+
+static void tMPI_Free_env_list_init(struct free_envelope_list *evl, int N)
+{
+    int i;
+
+    /* allocate the head element */
+    smalloc(evl->send_alloc_head, sizeof(struct send_envelope)*N );
+    smalloc(evl->recv_alloc_head, sizeof(struct recv_envelope)*N );
+    evl->head_send=evl->send_alloc_head;
+    evl->head_recv=evl->recv_alloc_head;
+
+    for(i=0;i<N;i++)
+    {
+        if (i < N-1)
+        {
+            evl->head_send[i].next=&(evl->head_send[i+1]);
+            evl->head_recv[i].next=&(evl->head_recv[i+1]);
+        }
+        else
+        {
+            evl->head_send[i].next=NULL;
+            evl->head_recv[i].next=NULL;
+        }
+        evl->head_send[i].list=NULL;
+        evl->head_recv[i].list=NULL;
+    }
+}
+
+static void tMPI_Free_env_list_destroy(struct free_envelope_list *evl)
+{
+    sfree(evl->send_alloc_head);
+    sfree(evl->recv_alloc_head);
+    evl->head_send=NULL;
+    evl->head_recv=NULL;
+    evl->send_alloc_head=NULL;
+    evl->recv_alloc_head=NULL;
+}
+
+static struct send_envelope *tMPI_Free_env_list_fetch_send(
+                                            struct free_envelope_list *evl)
+{
+    struct send_envelope *ret;
+    if (! evl->head_send )
+    {
+        /* TODO: make this do something better than crash */
+        fprintf(stderr, "Ran out of envelopes!!!!\n");
+        abort();
+    }
+
+    ret=evl->head_send;
+    evl->head_send=(struct send_envelope*)ret->next;
+    ret->next=NULL;
+    ret->prev=NULL;
+    return ret;
+}
+
+static struct recv_envelope *tMPI_Free_env_list_fetch_recv(
+                                            struct free_envelope_list *evl)
+{
+    struct recv_envelope *ret;
+    if (! evl->head_recv )
+    {
+        /* TODO: make this do something better than crash */
+        fprintf(stderr, "Ran out of envelopes!!!!\n");
+        abort();
+    }
+
+    ret=evl->head_recv;
+    evl->head_recv=(struct recv_envelope*)ret->next;
+    ret->next=NULL;
+    ret->prev=NULL;
+    /*evl->N--;*/
+
+    return ret;
+}
+
+
+static void tMPI_Free_env_list_return_send(struct free_envelope_list *evl,
+                                           struct send_envelope *ev)
+{
+    ev->list=NULL;
+    ev->prev=NULL;
+    ev->next=evl->head_send;
+    evl->head_send=ev;
+}
+
+static void tMPI_Free_env_list_return_recv(struct free_envelope_list *evl,
+                                           struct recv_envelope *ev)
+{
+    ev->list=NULL;
+    ev->prev=NULL;
+    ev->next=evl->head_recv;
+    evl->head_recv=ev;
+}
+
+
+
+
+
+
+/* mpi_send_envelope_list functions */
+
+static void tMPI_Send_env_list_init(struct send_envelope_list *evl)
+{
+    gmx_spinlock_init( &(evl->lock) );
+    evl->head_new = NULL;
+    evl->head_old = &(evl->old_dummy);
+    evl->head_old->next = evl->head_old;
+    evl->head_old->prev = evl->head_old;
+}
+
+static void tMPI_Send_env_list_destroy(struct send_envelope_list *evl)
+{
+    evl->head_new=NULL; 
+    evl->head_old=NULL; /* make it crash if used after MPI_Finalize */
+}
+
+static void tMPI_Send_env_list_remove(struct send_envelope *ev)
+{
+    if (ev->next)
+        ev->next->prev=ev->prev; 
+    if (ev->prev)
+        ev->prev->next=ev->next; 
+    ev->prev=NULL;
+    ev->next=NULL;
+    ev->list=NULL;
+}
+
+
+static void tMPI_Send_env_list_add_new(struct send_envelope_list *evl, 
+                                       struct send_envelope *ev)
+{
+    ev->prev=NULL;
+    ev->list=evl;
+
+    /* we could replace this with a compare-and-swap, once that's working 
+       for pointers. */
+    gmx_spinlock_lock( &(evl->lock) );
+    /* we add to the start of the list */
+    ev->next=evl->head_new;
+    /* actually attach it to the list */
+    evl->head_new=ev;
+    gmx_spinlock_unlock( &(evl->lock) );
+
+    /* signal to the thread that there is a new envelope */
+    gmx_atomic_fetch_add( &(ev->dest->evs_check_id) ,1);
+}
+
+static void tMPI_Send_env_list_move_to_old(struct send_envelope *ev)
+{
+    struct send_envelope_list *evl=ev->list;
+
+    /* remove from old list */
+    if (ev->next)
+        ev->next->prev=ev->prev; 
+    if (ev->prev)
+        ev->prev->next=ev->next; 
+
+    /* we add to the end of the list */
+    ev->next=evl->head_old;
+    ev->prev=evl->head_old->prev;
+
+    ev->next->prev=ev;
+    ev->prev->next=ev;
+}
+
+
+
+
+
+
+
+
+/* mpi_recv_envelope_list functions */
+
+static void tMPI_Recv_env_list_init(struct recv_envelope_list *evl)
+{
+    evl->head = &(evl->dummy);
+    evl->head->prev=evl->head;
+    evl->head->next=evl->head;
+}
+
+static void tMPI_Recv_env_list_destroy(struct recv_envelope_list *evl)
+{
+    evl->head=NULL;
+}
+
+static void tMPI_Recv_env_list_add(struct recv_envelope_list *evl, 
+                                   struct recv_envelope *ev)
+{
+    ev->list=evl;
+    /* we add to the end of the list */
+    ev->next=evl->head;
+    ev->prev=evl->head->prev;
+
+    ev->next->prev=ev;
+    ev->prev->next=ev;
+}
+
+static void tMPI_Recv_env_list_remove(struct recv_envelope *ev)
+{
+    if (ev->next)
+        ev->next->prev=ev->prev; 
+    if (ev->prev)
+        ev->prev->next=ev->next; 
+    ev->prev=NULL;
+    ev->next=NULL;
+    ev->list=NULL;
+}
+
+
+
+
+
+
+
+
+/* mpi_req functions */
+
+static void tMPI_Req_list_init(struct req_list *rl, int N_reqs)
+{
+    int i;
+
+    smalloc(rl->alloc_head, sizeof(struct mpi_req_)*N_reqs);
+    rl->head=rl->alloc_head;
+    for(i=0;i<N_reqs;i++)
+    {
+        if (i==0)
+            rl->head[i].prev=NULL;
+        else
+            rl->head[i].prev=&(rl->head[i-1]);
+
+        if (i >= (N_reqs-1))
+            rl->head[i].next=NULL;
+        else
+            rl->head[i].next=&(rl->head[i+1]);
+    }
+}
+
+static void tMPI_Req_list_destroy(struct req_list *rl)
+{
+    sfree(rl->alloc_head);
+    rl->head=NULL;
+    rl->alloc_head=NULL;
+}
+
+static struct mpi_req_ *tMPI_Get_req(struct req_list *rl)
+{
+    struct mpi_req_ *req=rl->head;
+    
+
+    /* we don't need locks here because requests are a per-thread
+       property */
+    if (!req)
+    {
+        /* this could be fixed */
+        tMPI_Error(MPI_COMM_WORLD, MPI_ERR_REQUESTS);
+        return NULL;
+    }
+    rl->head=req->next;
+    req->next=NULL;
+
+    return req;
+}
+
+static void tMPI_Return_req(struct req_list *rl, struct mpi_req_ *req)
+{
+    req->next=rl->head;
+    req->prev=NULL;
+    rl->head=req;
+}
+
+
+
+
+
 
 /* Point-to-point communication protocol functions */
 
-static struct mpi_thread_ *tMPI_Get_thread(MPI_Comm comm, int rank)
+
+
+static void tMPI_Set_recv_status(struct recv_envelope *ev, MPI_Status *status)
 {
-    /* check destination */
-    if ( (rank < 0) || (rank > comm->grp.N) )
+    if (status)
     {
-        tMPI_Error(comm, MPI_ERR_GROUP_RANK);
-        return NULL;
+        status->MPI_SOURCE = tMPI_Comm_seek_rank(ev->comm, ev->src);
+        status->MPI_TAG = ev->tag;
+        status->MPI_ERROR = ev->error;
+        if (gmx_atomic_read(&(ev->state))==env_finished)
+            status->transferred = ev->bufsize/ev->datatype->size;
+        else
+            status->transferred = 0;
     }
-    return comm->grp.peers[rank];
 }
 
-
-static void tMPI_Prep_send_envelope(struct mpi_send_envelope_ *ev, 
-                                    MPI_Comm comm, struct mpi_thread_ *dest,
-                                    void *send_buf, int send_count,
-                                    MPI_Datatype datatype, int tag, 
-                                    enum xfertype_ xt)
+static void tMPI_Set_send_status(struct send_envelope *ev, MPI_Status *status)
 {
-    ev->comm=comm;
-    ev->src=tMPI_Get_current();;
-    ev->dest=dest;
-
-    ev->tag=tag;
-    ev->xt=xt;
-
-    ev->buf=send_buf;
-    ev->bufsize=send_count*datatype->size;
-    ev->datatype=datatype;
-
-    ev->ready=FALSE; 
-    ev->nonblock=FALSE;
-    ev->finished=FALSE;
-    ev->recv_ready=FALSE;
-    ev->recv_nonblock=FALSE;
-
-    ev->counterpart=NULL;
-}
-
-
-static void tMPI_Prep_recv_envelope(struct mpi_recv_envelope_ *ev, 
-                                    MPI_Comm comm, struct mpi_thread_ *src, 
-                                    void *recv_buf, int recv_count,
-                                    MPI_Datatype datatype, int tag, 
-                                    enum xfertype_ xt)
-{
-    ev->comm=comm;
-    ev->src=src;
-    ev->dest=tMPI_Get_current();
-
-    ev->tag=tag;
-    ev->xt=xt;
-
-    ev->buf=recv_buf;
-    ev->bufsize=recv_count*datatype->size; 
-    ev->datatype=datatype;
-
-    ev->ready=FALSE; 
-    ev->nonblock=FALSE;
-    ev->finished=FALSE;
-    ev->send_ready=FALSE;
-    ev->send_nonblock=FALSE;
-
-    ev->counterpart=NULL;
+    if (status)
+    {
+        status->MPI_SOURCE = tMPI_Comm_seek_rank(ev->comm, ev->src);
+        status->MPI_TAG = ev->tag;
+        status->MPI_ERROR = ev->error;
+        if (gmx_atomic_read(&(ev->state))==env_finished)
+            status->transferred = ev->bufsize/ev->datatype->size;
+        else
+            status->transferred = 0;
+    }
 }
 
 
 
-static bool tMPI_Envelope_matches(const struct mpi_send_envelope_ *send, 
-                                  const struct mpi_recv_envelope_ *recv)
+static bool tMPI_Envelope_matches(const struct send_envelope *send,
+                                  const struct recv_envelope *recv)
 {
 #ifdef TMPI_DEBUG
-    printf("%d: (%d->%d)==(%d->%d),  tag=(%d==%d), xfertype=(%d==%d), datatype=(%d==%d), finished=(%d==%d)\n",
-            tMPI_Threadnr(0),
+    printf("%5d: tMPI_Envelope_matches (%d->%d)==(%d->%d),  tag=(%d==%d),       \n       xfertype=(%d==%d), datatype=(%ld==%ld), comm=(%ld,%ld),\n              finished=(%d==%d)\n",
+            tMPI_This_threadnr(),
             tMPI_Threadnr(send->src), tMPI_Threadnr(send->dest),
             tMPI_Threadnr(recv->src), tMPI_Threadnr(recv->dest),
-            (int)(send->tag), (int)(recv->tag), 
-            (int)(send->xt), (int)(recv->xt), 
-            (int)recv->datatype, (int)send->datatype,
-            recv->finished, send->finished);
+            (int)(send->tag), (int)(recv->tag),
+            (send->type.multicast), (recv->type.multicast),
+            (long int)send->datatype, (long int)recv->datatype,
+            (long int)send->comm, (long int)recv->comm,
+            (int)send->state.value, (int)recv->state.value);
+    fflush(stdout);
 #endif
-
-    if ( (send->comm == recv->comm) &&
-         (send->dest == recv->dest) &&
-         ( recv->xt == send->xt ) &&
-         ( (!recv->src)  || (recv->src == send->src) ) &&
-         ( (recv->tag == MPI_ANY_TAG) || (recv->tag == send->tag) ) &&
-         ( recv->datatype == send->datatype ) &&
-         ( ! (recv->finished || send->finished) ) ) 
+    if ( ( (recv->tag == MPI_ANY_TAG) || (recv->tag == send->tag) ) &&
+            ( send->type.multicast == recv->type.multicast ) &&
+            ( send->comm == recv->comm ) &&
+            ( (!recv->src)  || (recv->src == send->src) ) &&
+            ( send->dest == recv->dest ) &&
+            ( send->datatype == recv->datatype ) &&
+            ( send->state.value == env_unmatched &&
+              recv->state.value == env_unmatched ) )
     {
 #ifdef TMPI_DEBUG
-        printf("%d: (%d->%d) tag=%d found match\n",
-            tMPI_Threadnr(0),
-            tMPI_Threadnr(send->src), tMPI_Threadnr(send->dest),
-            (int)(send->tag));
+        printf("%5d: (%d->%d) tag=%d found match\n",
+                tMPI_This_threadnr(),
+                tMPI_Threadnr(send->src), tMPI_Threadnr(send->dest),
+                (int)(send->tag));
+        fflush(stdout);
 #endif
         return TRUE;
     }
@@ -2106,419 +2521,460 @@ static bool tMPI_Envelope_matches(const struct mpi_send_envelope_ *send,
 }
 
 
-static void tMPI_Try_put_send_envelope(struct mpi_send_envelope_ *ev)
+
+
+static struct send_envelope *tMPI_Send_env_list_search_old(
+                                    struct send_envelope_list *evl,
+                                    struct recv_envelope *evr)
+{
+    struct send_envelope *evs;
+
+    /*gmx_spinlock_lock( &(evl->lock) );*/
+    evs=(struct send_envelope*)evl->head_old->next;
+    while(evs != evl->head_old)
+    {
+        if (tMPI_Envelope_matches(evs, evr))
+        {
+            /* remove the envelope */
+            tMPI_Send_env_list_remove(evs);
+            /*gmx_spinlock_unlock( &(evl->lock) );*/
+            return evs;
+        }
+        evs=(struct send_envelope*)evs->next;
+    }
+    /*gmx_spinlock_unlock( &(evl->lock) );*/
+    return NULL;
+}
+
+
+static struct recv_envelope *tMPI_Recv_env_list_search_new(
+                                    struct recv_envelope_list *evl,
+                                    struct send_envelope *evs)
+{
+    struct recv_envelope *evr;
+
+    /*gmx_spinlock_lock( &(evs->send_list->lock) );*/
+    evr=evl->head->next;
+    while(evr != evl->head)
+    {
+        if (tMPI_Envelope_matches(evs, evr))
+        {
+            /*gmx_spinlock_unlock( &(evs->send_list->lock) );*/
+            return evr;
+        }
+        evr=evr->next;
+    }
+    /*gmx_spinlock_unlock( &(evs->send_list->lock) );*/
+    return NULL;
+}
+
+
+
+
+static struct send_envelope *tMPI_Prep_send_envelope(struct mpi_thread *cur,
+                                                     MPI_Comm comm, 
+                                                     struct mpi_thread *src, 
+                                                     struct mpi_thread *dest, 
+                                                     void *buf, int count, 
+                                                     MPI_Datatype datatype, 
+                                                     int tag, bool multicast, 
+                                                     bool nonblock)
+{
+    /* get an envelope from the stack */
+    struct send_envelope *ev=tMPI_Free_env_list_fetch_send( &(cur->envelopes) );
+
+    ev->tag=tag;
+    ev->type.multicast=multicast;
+    ev->type.nonblock=nonblock;
+
+    ev->comm=comm;
+
+    ev->src=src;
+    ev->dest=dest;
+
+    ev->buf=buf;
+    ev->bufsize=count*datatype->size;
+    ev->datatype=datatype;
+
+    ev->list=NULL;
+
+    gmx_atomic_set(&(ev->state), env_unmatched);
+    ev->error=MPI_SUCCESS;
+
+    return ev;
+}
+
+static struct recv_envelope *tMPI_Prep_recv_envelope(struct mpi_thread *cur,
+                                                     MPI_Comm comm, 
+                                                     struct mpi_thread *src, 
+                                                     struct mpi_thread *dest, 
+                                                     void *buf, int count, 
+                                                     MPI_Datatype datatype, 
+                                                     int tag, bool multicast, 
+                                                     bool nonblock)
+{
+    /* get an envelope from the stack */
+    struct recv_envelope *ev=tMPI_Free_env_list_fetch_recv( &(cur->envelopes) );
+
+    ev->tag=tag;
+    ev->type.multicast=multicast;
+    ev->type.nonblock=nonblock;
+
+    ev->comm=comm;
+
+    ev->src=src;
+    ev->dest=dest;
+
+    ev->buf=buf;
+    ev->bufsize=count*datatype->size;
+    ev->datatype=datatype;
+    
+    ev->list=NULL;
+
+    gmx_atomic_set(&(ev->state), env_unmatched);
+    ev->error=MPI_SUCCESS;
+
+    return ev;
+}
+
+
+
+
+
+
+
+
+
+static struct recv_envelope *tMPI_Post_match_recv(MPI_Comm comm, 
+                                           struct mpi_thread *src, 
+                                           void *recv_buf, int recv_count,
+                                           MPI_Datatype datatype, int tag, 
+                                           bool multicast, bool nonblock)
+{
+    struct mpi_thread *cur=tMPI_Get_current();
+    struct mpi_thread *dest=cur;
+    struct recv_envelope *evr;
+    struct send_envelope *evs=NULL;
+    int src_threadnr=src ? tMPI_Threadnr(src) : Nthreads;
+    int i;
+
+    /* reserve an envelope to post */
+    evr=tMPI_Prep_recv_envelope(cur, comm, src, dest, recv_buf, recv_count, 
+                                datatype, tag, multicast, nonblock);
+
+#ifdef TMPI_DEBUG
+    printf("%5d: tMPI_Post_match_recv (%d->%d, tag=%d) started\n", 
+            tMPI_This_threadnr(), 
+            tMPI_Threadnr(evr->src), tMPI_Threadnr(evr->dest), (int)(evr->tag));
+    fflush(stdout);
+#endif
+    /* we now check the entire exisiting send queue */
+    if (src)
+    {
+        evs=tMPI_Send_env_list_search_old( &(dest->evs[src_threadnr]), evr);
+    }
+    else
+    {
+        /* if we don't know the source, we look at all possible sources */
+        for(i=0;i<Nthreads;i++)
+        {
+            evs=tMPI_Send_env_list_search_old(&(dest->evs[i]), evr);
+            if (evs)
+                break;
+        } 
+    }
+
+    if (evs)
+    {
+#ifdef TMPI_DEBUG
+        printf("%5d: tMPI_Post_match_recv (%d->%d, tag=%d) found match\n", 
+                tMPI_This_threadnr(), 
+                tMPI_Threadnr(evr->src), tMPI_Threadnr(evr->dest), 
+                (int)(evr->tag));
+        fflush(stdout);
+#endif
+        /* we found a matching send */
+        tMPI_Xfer(evs, evr);
+    }
+    else
+    {
+#ifdef TMPI_DEBUG
+        printf("%5d: tMPI_Post_match_recv (%d->%d, tag=%d) no match\n", 
+                tMPI_This_threadnr(), 
+                tMPI_Threadnr(evr->src), tMPI_Threadnr(evr->dest), 
+                (int)(evr->tag));
+        fflush(stdout);
+#endif
+        /* we post the envelope in the right list */
+        tMPI_Recv_env_list_add( &(dest->evr), evr);
+    }
+    return evr;
+}
+
+
+
+
+static struct send_envelope *tMPI_Post_send(MPI_Comm comm, 
+                                            struct mpi_thread *dest, 
+                                            void *send_buf, int send_count,
+                                            MPI_Datatype datatype, int tag, 
+                                            bool multicast, bool nonblock)
+{
+    struct mpi_thread *cur=tMPI_Get_current();
+    struct mpi_thread *src=cur;
+    struct send_envelope *evs;
+    int src_threadnr=tMPI_Threadnr(src);
+
+    /* reserve an envelope to post */
+    evs=tMPI_Prep_send_envelope(cur, comm, src, dest, send_buf, send_count, 
+                                datatype, tag, multicast, nonblock);
+
+#ifdef TMPI_DEBUG
+    printf("%5d: tMPI_Post_send (%d->%d, tag=%d)\n", 
+           tMPI_This_threadnr(), 
+           tMPI_Threadnr(evs->src), tMPI_Threadnr(evs->dest), 
+           (int)(evs->tag));
+    fflush(stdout);
+#endif
+    /* we post the envelope in the right list */
+    tMPI_Send_env_list_add_new( &(dest->evs[src_threadnr]), evs);
+    
+    return evs;
+}
+
+
+
+
+static void tMPI_Test_incoming(struct mpi_thread *th)
 {
     int i;
-    bool add=TRUE;
-#ifdef TMPI_DEBUG
-    printf("%d: Entering try_put_send_envelope: (%d->%d), tag=%d\n",
-            tMPI_Threadnr(0), tMPI_Threadnr(ev->src), tMPI_Threadnr(ev->dest),
-            ev->tag); 
-    fflush(0);
-#endif
+    int check_id;
 
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_lock(&(ev->dest->envelope_lock));
-#else
-    gmx_thread_mutex_lock(&(ev->dest->envelope_lock));
-#endif
-    /* search for matching receive envelopes */
-    for(i=0;i<ev->dest->N_evr;i++)
+    /* we check for newly arrived send envelopes */
+    check_id=gmx_atomic_read( &(th->evs_check_id));
+    while( check_id > 0)
     {
-        struct mpi_recv_envelope_ *evr=ev->dest->evr[i];
-        if (tMPI_Envelope_matches(ev, evr))
+        /*int repl=check_id;*/
+        int n=0;
+        /* there were new send envelopes. Let's check them all */
+        for(i=0;i<Nthreads;i++)
         {
-#ifdef TMPI_DEBUG
-            printf("%d: Send: found envelope\n", tMPI_Threadnr(0)); fflush(0);
-#endif
-            add=FALSE;
-            /* establish reciprocity */
-            ev->counterpart=evr;
-            evr->counterpart=ev;
+            volatile struct send_envelope *evs_head;
+           
+            /* we could replace this with a compare-and-swap, once that's working for pointers */
+            gmx_spinlock_lock( &(th->evs[i].lock) );
+            evs_head=th->evs[i].head_new;
+            th->evs[i].head_new=NULL; /* detach the list */
+            gmx_spinlock_unlock( &(th->evs[i].lock) );
 
-            /* the receiving end doesn't neccesarily know these */
-            evr->src=ev->src; 
-            evr->tag=ev->tag; 
+            if (evs_head) /* there's a newly arrived send envelope from this 
+                             thread*/
+            {
+                struct send_envelope *evs=NULL;
+                struct send_envelope *prev=NULL;
+                struct recv_envelope *evr;
 
-            /* get flags from the other end*/
-            ev->recv_ready=evr->ready;
-            ev->recv_nonblock=evr->nonblock;
-            /* set flags on the other end */
-            evr->send_nonblock=ev->nonblock;
-            evr->send_ready=ev->ready;
-
-            /* now remove the envelope from the list, it's not intended
-               to be found anymore. 
-               We just put the last one in our slot:*/
-            ev->dest->evr[i] = ev->dest->evr[ev->dest->N_evr-1];
-            ev->dest->N_evr--;
-            break;
+                /* first enable reversing order by creating prev links */
+                evs=(struct send_envelope *)evs_head;
+                while(evs) 
+                {
+                    evs->prev=prev;
+                    prev=evs;
+                    evs=(struct send_envelope*)evs->next;
+                }
+                /* now walk through it backwards (in order of addition) */ 
+                evs=prev;
+                while(evs)
+                {
+                    struct send_envelope *evsp=(struct send_envelope*)evs->prev;
+                    n++;
+                    evr=tMPI_Recv_env_list_search_new(&(th->evr), evs);
+                    if (evr)
+                    {
+                        tMPI_Xfer(evs, evr);
+                    }
+                    else
+                    {
+                        tMPI_Send_env_list_move_to_old( evs );
+                    }
+                    evs=evsp;
+                }
+            }
         }
+        /* we count down with the number of send envelopes we thought we had
+           in the beginning */
+        check_id=gmx_atomic_fetch_add( &(th->evs_check_id), -n);
     }
-
-    if (add)
-    {
-#ifdef TMPI_DEBUG
-        printf("%d: Send: adding envelope\n", tMPI_Threadnr(0)); fflush(0);
-#endif
-        /* we add the envelope to the receiver's list */
-        if (ev->dest->N_evs >= MAX_ENVELOPES)
-        {
-            tMPI_Error(ev->comm, MPI_ERR_ENVELOPES);
-            fprintf(stderr, "A receive thread has reached the maximum number of send envelopes. This is probably a bug\n");
-            exit(1);
-        }
-        ev->dest->evs[ev->dest->N_evs]=ev;
-        ev->dest->N_evs++;
-    }
-    ev->ready=TRUE;
-    if (ev->counterpart)
-    {
-#ifdef TMPI_DEBUG
-        printf("%d: Send: signaling send_ready to %d\n", tMPI_Threadnr(0),
-                    tMPI_Threadnr(ev->dest));
-#endif
-        ev->counterpart->send_ready=TRUE;
-    }
-    /* now we let other threads do their thing */
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_unlock(&(ev->dest->envelope_lock));
-#else
-    gmx_thread_mutex_unlock(&(ev->dest->envelope_lock));
-#endif
 }
 
-static void tMPI_Try_put_recv_envelope(struct mpi_recv_envelope_ *ev)
+
+
+
+
+
+
+
+static bool tMPI_Test_recv(struct recv_envelope *ev, bool blocking, 
+                           MPI_Status *status)
 {
-    int i;
-    bool add=TRUE;
+    struct mpi_thread *cur=tMPI_Get_current();
+
 #ifdef TMPI_DEBUG
-    printf("%d: Entering try_put_recv_envelope: %d->%d, tag=%d\n",
-            tMPI_Threadnr(0),tMPI_Threadnr(ev->src),tMPI_Threadnr(ev->dest),
-            ev->tag); 
-    fflush(0);
+    printf("%5d: tMPI_Test_recv (%d->%d, tag=%d)\n", 
+                tMPI_This_threadnr(), 
+                tMPI_Threadnr(ev->src), tMPI_Threadnr(ev->dest), 
+                (int)(ev->tag));
+    fflush(stdout);
 #endif
 
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_lock(&(ev->dest->envelope_lock));
-#else
-    gmx_thread_mutex_lock(&(ev->dest->envelope_lock));
-#endif
-    /* search for matching envelopes */
-    for(i=0;i<ev->dest->N_evs;i++)
+    /* we check for new send envelopes */
+    tMPI_Test_incoming(cur);
+    
+    /* and check whether the envelope we're waiting for has finished */
+    if (blocking)
     {
-        struct mpi_send_envelope_ *evs=ev->dest->evs[i];
-        if (tMPI_Envelope_matches(evs, ev))
+        while( gmx_atomic_read( &(ev->state) ) <  env_finished ) 
         {
-#ifdef TMPI_DEBUG
-            printf("%d: Recv: found envelope\n", tMPI_Threadnr(0)); fflush(0);
-#endif            
-            add=FALSE;
-            /* establish reciprocity */
-            ev->counterpart=evs;
-            evs->counterpart=ev;
-
-            /* the receiving end doesn't neccesarily know these */
-            ev->src=evs->src; 
-            ev->tag=evs->tag; 
-
-            /* get flags from the other end */
-            ev->send_ready=evs->ready;
-            ev->send_nonblock=evs->nonblock;
-            /* set flags on the other end */
-            evs->recv_nonblock=ev->nonblock;
-            evs->recv_ready=ev->ready;
-
-            /* now remove the envelope from the list, it's not intended
-               to be found anymore. 
-               We just put the last one in our slot:*/
-            ev->dest->evs[i] = ev->dest->evs[ev->dest->N_evs-1];
-            ev->dest->N_evs--;
-
-            break;
+            /* while blocking, we wait for incoming send envelopes */
+            tMPI_Test_incoming(cur);
+        }
+    }
+    else
+    {
+        if ( gmx_atomic_read( &(ev->state) ) <  env_finished ) 
+        {
+            return FALSE;
         }
     }
 
-    if (add)
-    {
-        /* we add the envelope to the receiver's list */
+    tMPI_Set_recv_status(ev, status);
+    tMPI_Free_env_list_return_recv( &(cur->envelopes), ev);
+
 #ifdef TMPI_DEBUG
-        printf("%d: Recv: adding envelope\n", tMPI_Threadnr(0)); fflush(0);
+    printf("%5d: tMPI_Test_recv (%d->%d, tag=%d) env_finished\n", 
+            tMPI_This_threadnr(), 
+            tMPI_Threadnr(ev->src), tMPI_Threadnr(ev->dest), (int)(ev->tag));
+    fflush(stdout);
 #endif
-        if (ev->dest->N_evr >= MAX_ENVELOPES)
-        {
-            tMPI_Error(ev->comm, MPI_ERR_ENVELOPES);
-            fprintf(stderr, "A receive thread has reached the maximum number of receive envelopes. This is probably a bug\n");
-            exit(1);
-        }
-        ev->dest->evr[ev->dest->N_evr]=ev;
-        ev->dest->N_evr++;
-    }
-    ev->ready=TRUE;
-    if (ev->counterpart)
-    {
-#ifdef TMPI_DEBUG
-        printf("%d: Send: signaling recv_ready to %d\n", tMPI_Threadnr(0),
-                tMPI_Threadnr(ev->src));
-#endif
-        ev->counterpart->recv_ready=TRUE;
-    }
-    /* we let other threads do their thing */
-#ifdef TMPI_ATOMIC
-    gmx_spinlock_unlock(&(ev->dest->envelope_lock));
-#else
-    gmx_thread_mutex_unlock(&(ev->dest->envelope_lock));
-#endif
+    return TRUE;
 }
 
-static void tMPI_Wait_recv(struct mpi_recv_envelope_ *ev)
+
+static bool tMPI_Test_send(struct send_envelope *ev, bool blocking, 
+                           MPI_Status *status)
 {
+    struct mpi_thread *cur=tMPI_Get_current();
+
 #ifdef TMPI_DEBUG
-    printf("%d: Recv: waiting (%d->%d, tag=%d)\n", tMPI_Threadnr(0),
-           tMPI_Threadnr(ev->src), tMPI_Threadnr(ev->dest), ev->tag); 
-    fflush(0);
+    printf("%5d: tMPI_Test_send (%d->%d, tag=%d)\n", 
+            tMPI_This_threadnr(), 
+            tMPI_Threadnr(ev->src), tMPI_Threadnr(ev->dest), 
+            (int)(ev->tag));
+    fflush(stdout);
 #endif
-    /* busy-wait until the data is ready. Busy waiting is not
-       so bad in this case because we need low latency, and 
-       all threads scheduled. */
-    while( ! (ev->send_ready || ev->finished ) )
+ 
+    /* we do a check to service all incoming sends; this won't affect the
+       current wait, of course */
+    tMPI_Test_incoming(cur);
+    if (blocking)
     {
+        while( gmx_atomic_read( &(ev->state) ) <  env_finished ) 
+        {
+            /* while blocking, we wait for incoming send envelopes. That's
+               all we can do at this moment. */
+            tMPI_Test_incoming(cur);
+        }
     }
+    else
+    {
+        if ( gmx_atomic_read( &(ev->state) ) <  env_finished ) 
+        {
+            return FALSE;
+        }
+    }
+
+    tMPI_Set_send_status(ev, status);
+    tMPI_Free_env_list_return_send( &(cur->envelopes), ev);
+ 
+#ifdef TMPI_DEBUG
+    printf("%5d: tMPI_Test_send (%d->%d, tag=%d) env_finished\n", 
+            tMPI_This_threadnr(), 
+            tMPI_Threadnr(ev->src), tMPI_Threadnr(ev->dest), (int)(ev->tag));
+    fflush(stdout);
+#endif
+    return TRUE;
 }
 
-static void tMPI_Wait_send(struct mpi_send_envelope_ *ev)
+
+
+
+
+
+
+
+
+static void tMPI_Xfer(struct send_envelope *evs, struct recv_envelope *evr)
 {
 #ifdef TMPI_DEBUG
-    printf("%d: Send: waiting (%d->%d, tag=%d)\n", tMPI_Threadnr(0),
-                                                   tMPI_Threadnr(ev->src), 
-                                                   tMPI_Threadnr(ev->dest), 
-                                                   ev->tag);
-    fflush(0);
+    printf("%5d: tMPI_Xfer (%d->%d, tag=%d) started\n", 
+            tMPI_This_threadnr(), 
+            tMPI_Threadnr(evs->src), tMPI_Threadnr(evr->dest), (int)(evs->tag));
+    fflush(stdout);
 #endif
-    /* we busy wait until the data is either picked up, or we might
-       need ot send it ourselves.  */
-    while( ! (ev->finished || ( ev->recv_nonblock && ev->recv_ready) ) )
-    {
-    }
-}
+    /* first set data on the receiving end so status can be updated */
+    evr->src = evs->src;
+    evr->tag = evs->tag;
 
-static int tMPI_Xfer_recv(struct mpi_recv_envelope_ *evr, MPI_Status *status, 
-                          bool try_lock)
-{
-    bool locked=FALSE;
-    size_t transferred;
-    int ret=MPI_SUCCESS;
-    int rets=MPI_SUCCESS;
+    if (evs->bufsize) /* do the actual transfer */
+    {
+        if (evs->bufsize > evr->bufsize)
+        {
+            tMPI_Error((evr->comm), MPI_ERR_XFER_BUFSIZE);
+            gmx_atomic_set(&(evr->state), env_finished);
+            gmx_atomic_set(&(evs->state), env_finished);
+            evr->error = MPI_ERR_XFER_BUFSIZE;
+            evs->error = MPI_ERR_XFER_BUFSIZE;
+            return;
+        }
+
+        if (!evr->buf || !evs->buf)
+        {
+            tMPI_Error((evr->comm), MPI_ERR_BUF);
+            gmx_atomic_set(&(evr->state), env_finished);
+            gmx_atomic_set(&(evs->state), env_finished);
+            evr->error = MPI_ERR_BUF;
+            evs->error = MPI_ERR_BUF;
+            return;
+        }
+        memcpy(evr->buf, evs->buf, evs->bufsize);
+        /* for status update */
+    }
+    evr->bufsize=evs->bufsize;
+    /* and mark that we're finished */
+    gmx_atomic_set( &(evr->state), env_finished);
+    gmx_atomic_set( &(evs->state), env_finished);
+    /* remove the receiving envelope if it's in a list */
+    tMPI_Recv_env_list_remove(evr);
+
 #ifdef TMPI_DEBUG
-    printf("%d: Xfering data from %d -> %d (tag=%d), recv\n", tMPI_Threadnr(0), 
-            tMPI_Threadnr(evr->src), tMPI_Threadnr(evr->dest), evr->tag );
-    fflush(0);
+    printf("%5d: tMPI_Xfer (%d->%d, tag=%d) done\n", 
+            tMPI_This_threadnr(), 
+            tMPI_Threadnr(evs->src), tMPI_Threadnr(evr->dest), (int)(evs->tag));
+    fflush(stdout);
 #endif
-    if (evr->nonblock)
-    {
-        if (try_lock)
-        {
-#ifdef TMPI_ATOMIC
-            int ret=gmx_spinlock_trylock(&(evr->dest->xmit_lock));
-            if (ret!=0)
-                return MPI_SUCCESS;
-#else
-            int ret=gmx_thread_mutex_trylock(&(evr->dest->xmit_lock));
-            if (ret==EBUSY)
-                return MPI_SUCCESS;
-#endif
-        }
-        else
-        {
-#ifdef TMPI_ATOMIC
-            gmx_spinlock_lock(&(evr->dest->xmit_lock));
-#else
-            gmx_thread_mutex_lock(&(evr->dest->xmit_lock));
-#endif
-        }
-        locked=TRUE;
-    }
-
-    /* we wait with this check until we either have a lock, or we know
-       we don't need one */
-    if (evr->finished ) 
-    {
-        goto end;
-    }
-
-    if (!evr->counterpart)
-    {
-        ret=tMPI_Error((evr->comm), MPI_ERR_XFER_COUNTERPART);
-        rets=MPI_FAILURE;
-        goto end;
-    }
-
-    transferred=evr->counterpart->bufsize;
-    if (evr->bufsize < transferred)
-    {
-        ret=tMPI_Error((evr->comm), MPI_ERR_XFER_BUFSIZE);
-        rets=MPI_FAILURE;
-        evr->finished=TRUE;
-        evr->counterpart->finished=TRUE;
-        goto end;
-    }
-    if ( evr->counterpart->buf == evr->buf && transferred!=0 )
-    {
-        ret=tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
-        rets=MPI_FAILURE;
-        goto end;
-    }
-    if (transferred>0)
-    {
-        if (!evr->counterpart->buf || !evr->buf)
-        {
-            ret=tMPI_Error(evr->comm, MPI_ERR_BUF);
-            rets=MPI_FAILURE;
-            goto end;
-        }
-        /* we do the actual transfer */
-        memcpy(evr->buf, evr->counterpart->buf, transferred);
-    }
-    evr->transferred=transferred;
-    if(status)
-    {
-        status->MPI_SOURCE=tMPI_Comm_seek_rank(evr->comm, evr->src);
-        status->MPI_TAG=evr->tag;
-        status->MPI_ERROR=MPI_SUCCESS;
-        status->transferred=transferred;
-    }
-
-    /* and we set the finished flag. This makes the blocking MPI_Send/MPI_Wait,
-       etc. exit., and the counterpart structure invalid.*/
-    evr->finished=TRUE;
-    evr->counterpart->finished=TRUE;
-end:
-    if (status)
-        status->MPI_ERROR=rets;
-    if (locked)
-    {
-#ifdef TMPI_ATOMIC
-        gmx_spinlock_unlock(&(evr->dest->xmit_lock));
-#else
-        gmx_thread_mutex_unlock(&(evr->dest->xmit_lock));
-#endif
-    }
-    return ret;
+    return;
 }
 
-static int tMPI_Xfer_send(struct mpi_send_envelope_ *evs, 
-                          MPI_Status *status, bool try_lock)
-{
-    bool locked=FALSE;
-    size_t transferred;
-    int ret=MPI_SUCCESS;
-    int rets=MPI_SUCCESS;
-#ifdef TMPI_DEBUG
-    printf("%d: Xfering data from %d -> %d (tag=%d), send (wrong direction)\n", 
-            tMPI_Threadnr(0), 
-            tMPI_Threadnr(evs->src), tMPI_Threadnr(evs->dest), evs->tag );
-    fflush(0);
-#endif
-    if (evs->recv_nonblock)
-    {
-        if (try_lock)
-        {
-#ifdef TMPI_ATOMIC
-            int ret=gmx_spinlock_trylock(&(evs->dest->xmit_lock));
-            if (ret!=0)
-                return MPI_SUCCESS;
-#else
-            int ret=gmx_thread_mutex_trylock(&(evs->dest->xmit_lock));
-            if (ret==EBUSY)
-                return MPI_SUCCESS;
-#endif
-        }
-        else
-        {
-#ifdef TMPI_ATOMIC
-            gmx_spinlock_lock(&(evs->dest->xmit_lock));
-#else
-            gmx_thread_mutex_lock(&(evs->dest->xmit_lock));
-#endif
-        }
-        locked=TRUE;
-    }
-    /* we wait with this check until we either have a lock, or we know
-       we don't need one */
-    if (evs->finished) 
-    {
-        ret=MPI_SUCCESS;
-        goto end;
-    }
-    if (!evs->counterpart)
-    {
-        ret=tMPI_Error((evs->comm), MPI_ERR_XFER_COUNTERPART);
-        rets=MPI_FAILURE;
-        goto end;
-    }
-    transferred=evs->bufsize;
-    if (evs->counterpart->bufsize < transferred)
-    {
-        ret=tMPI_Error((evs->comm), MPI_ERR_XFER_BUFSIZE);
-        rets=MPI_FAILURE;
-        evs->finished=TRUE;
-        evs->counterpart->finished=TRUE;
-        goto end;
-    }
-    if ( evs->counterpart->buf == evs->buf && transferred!=0 )
-    {
-        ret=tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
-        rets=MPI_FAILURE;
-        goto end;
-    }
 
-    if (transferred>0)
-    {
-        if (!evs->counterpart->buf || !evs->buf)
-        {
-            ret=tMPI_Error(evs->comm, MPI_ERR_BUF);
-            rets=MPI_FAILURE;
-            goto end;
-        }
-        /* we do the actual transfer */
-        memcpy(evs->counterpart->buf, evs->buf, transferred);
-    }
-    evs->counterpart->transferred=transferred;
-    if(status)
-    {
-        status->MPI_SOURCE=tMPI_Comm_seek_rank(evs->comm, evs->src);
-        status->MPI_TAG=evs->tag;
-        status->MPI_ERROR=MPI_SUCCESS;
-        status->transferred=transferred;
-    }
-
-    /* and we set the finished flag. This makes the blocking MPI_Send/MPI_Wait,
-       etc. exit., and the counterpart structure invalid.*/
-    evs->finished=TRUE;
-    evs->counterpart->finished=TRUE;
-end:
-    if (status)
-        status->MPI_ERROR=ret;
-    if (locked)
-    {
-#ifdef TMPI_ATOMIC
-        gmx_spinlock_unlock(&(evs->dest->xmit_lock));
-#else
-        gmx_thread_mutex_unlock(&(evs->dest->xmit_lock));
-#endif
-    }
-    return ret;
-}
 
 /* point-to-point communication */
 
 
-static int MPI_Send_r(void* buf, int count, MPI_Datatype datatype, int dest,
-                      int tag, MPI_Comm comm, enum xfertype_ xt)
+static int tMPI_Send_r(void* buf, int count, MPI_Datatype datatype, int dest,
+                      int tag, MPI_Comm comm, bool multicast)
 {
-    struct mpi_send_envelope_ sd;
-    struct mpi_thread_ *send_dst=tMPI_Get_thread(comm, dest);
-    int ret=MPI_SUCCESS;
+    struct send_envelope *sd;
+    struct mpi_thread *send_dst=tMPI_Get_thread(comm, dest);
 
     if (!comm)
     {
@@ -2529,35 +2985,23 @@ static int MPI_Send_r(void* buf, int count, MPI_Datatype datatype, int dest,
         return tMPI_Error(comm, MPI_ERR_SEND_DEST);
     }
 
-    tMPI_Prep_send_envelope(&sd, comm, send_dst, buf, count, datatype, tag, xt);
-    tMPI_Try_put_send_envelope(&sd);
-    tMPI_Wait_send(&sd);
+    sd=tMPI_Post_send(comm, send_dst, buf, count, datatype, tag, 
+                      multicast, FALSE);
+    tMPI_Test_send(sd, TRUE, NULL);
 
-    /* this xfer will only happen if there is a non-blocking receive on the
-       other end. */
-    if (!sd.finished)
-    {
-        ret=tMPI_Xfer_send(&sd, 0, FALSE);
-    }
-    return ret;    
+    return sd->error;
 }
 
-static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype, 
+static int tMPI_Recv_r(void* buf, int count, MPI_Datatype datatype, 
                       int source, int tag, MPI_Comm comm, 
-                      MPI_Status *status, enum xfertype_ xt)
+                      MPI_Status *status, bool multicast)
 {
-    struct mpi_recv_envelope_ rc;
-    struct mpi_thread_ *recv_src=0;
-    int ret;
+    struct recv_envelope *rc;
+    struct mpi_thread *recv_src=0;
 
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
-    }
-
-    if(status)
-    {
-        status->MPI_ERROR=MPI_FAILURE; /* assume we fail */
     }
 
     if (source!=MPI_ANY_SOURCE)
@@ -2569,13 +3013,11 @@ static int MPI_Recv_r(void* buf, int count, MPI_Datatype datatype,
         }
     }
 
-    tMPI_Prep_recv_envelope(&rc, comm, recv_src, buf, count, datatype, tag, xt);
-    tMPI_Try_put_recv_envelope(&rc);
-    tMPI_Wait_recv(&rc);
+    rc=tMPI_Post_match_recv(comm, recv_src, buf, count, datatype, tag, 
+                            multicast, FALSE);
+    tMPI_Test_recv(rc, TRUE, status);
 
-    /* now we copy the data to our side */
-    ret=tMPI_Xfer_recv(&rc, status, FALSE);
-    return ret;
+    return rc->error;
 }
 
 
@@ -2584,13 +3026,14 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
                  MPI_Datatype recvtype, int source, int recvtag, 
                  MPI_Comm comm, MPI_Status *status)
 {
-    struct mpi_recv_envelope_ rc;
-    struct mpi_send_envelope_ sd;
+    struct recv_envelope *rc;
+    struct send_envelope *sd;
 
-    struct mpi_thread_ *recv_src=0;
-    struct mpi_thread_ *send_dst=tMPI_Get_thread(comm, dest);
-    int ret=MPI_SUCCESS;
-    int ret2=MPI_SUCCESS;
+    struct mpi_thread *recv_src=0;
+    struct mpi_thread *send_dst=tMPI_Get_thread(comm, dest);
+    bool send_finished=FALSE; 
+    bool recv_finished=FALSE;
+
 
     if (!comm)
     {
@@ -2599,10 +3042,6 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     if (!send_dst)
     {
         return tMPI_Error(comm, MPI_ERR_SEND_DEST); 
-    }
-    if (status)
-    {
-        status->MPI_ERROR=MPI_FAILURE; /* assume we fail */
     }
     if (source!=MPI_ANY_SOURCE)
     {
@@ -2613,42 +3052,41 @@ int MPI_Sendrecv(void *sendbuf, int sendcount, MPI_Datatype sendtype,
         }
     }
     /* we first prepare to send */
-    tMPI_Prep_send_envelope(&sd, comm, send_dst, sendbuf, sendcount, 
-                            sendtype, sendtag, point_to_point);
-    tMPI_Try_put_send_envelope(&sd);
-
+    sd=tMPI_Post_send(comm, send_dst, sendbuf, sendcount, 
+                            sendtype, sendtag, FALSE, FALSE);
     /* then we prepare to receive */
-    tMPI_Prep_recv_envelope(&rc, comm, recv_src, recvbuf, recvcount, 
-                            recvtype, recvtag, point_to_point);
-    tMPI_Try_put_recv_envelope(&rc);
+    rc=tMPI_Post_match_recv(comm, recv_src, recvbuf, recvcount, 
+                            recvtype, recvtag, FALSE, FALSE);
 
-    /* now we wait to receive */
-    tMPI_Wait_recv(&rc);
-    /* we actually receive */
-    ret=tMPI_Xfer_recv(&rc, status, FALSE);
-
-    /* we wait until the send completes */
-    tMPI_Wait_send(&sd);
-    /* this xfer will only happen if there is a non-blocking receive on the
-       other end. */
-    if (!sd.finished)
+    do 
     {
-        ret2=tMPI_Xfer_send(&sd, 0, FALSE);
+        /* now we wait to receive */
+        if (!recv_finished)
+        {
+            recv_finished=tMPI_Test_recv(rc, FALSE, status);
+            if (rc->error != MPI_SUCCESS)
+                return rc->error;
+        }   
+        /* we wait until the send completes */
+        if (!send_finished)
+        {
+            send_finished=tMPI_Test_send(sd, FALSE, NULL);
+            if (rc->error != MPI_SUCCESS)
+                return rc->error;
+        }
     }
+    while (! (send_finished && recv_finished) );
 
-    if (ret2!=MPI_SUCCESS)
-        ret=ret2;
-
-    return ret;
+    return MPI_SUCCESS;
 }
 
 
 /* async */
 static int tMPI_Isend_r(void* buf, int count, MPI_Datatype datatype, int dest,
                         int tag, MPI_Comm comm, struct mpi_req_ *rq, 
-                        enum xfertype_ xt)
+                        bool multicast)
 {
-    struct mpi_thread_ *send_dst=tMPI_Get_thread(comm, dest);
+    struct mpi_thread *send_dst=tMPI_Get_thread(comm, dest);
 
     if (!comm)
     {
@@ -2662,23 +3100,18 @@ static int tMPI_Isend_r(void* buf, int count, MPI_Datatype datatype, int dest,
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
-
     rq->recv=FALSE;
     rq->finished=FALSE;
-    tMPI_Prep_send_envelope(&(rq->evs), comm, send_dst, buf, count, 
-                            datatype, tag, xt);
-    rq->evs.nonblock=TRUE;
-    tMPI_Try_put_send_envelope(&(rq->evs));
-    /* now we don't wait and assume that data isn't touched until MPI_WAIT */
+    rq->evs=tMPI_Post_send(comm, send_dst, buf, count, datatype, tag,
+                           multicast, TRUE);
     return MPI_SUCCESS;    
 }
 
 static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype, 
                         int source, int tag, MPI_Comm comm, 
-                        struct mpi_req_ *rq, enum xfertype_ xt)
+                        struct mpi_req_ *rq, bool multicast)
 {
-    struct mpi_thread_ *recv_src=0;
-    int ret=MPI_SUCCESS;
+    struct mpi_thread *recv_src=0;
 
     if (!comm)
     {
@@ -2695,19 +3128,8 @@ static int tMPI_Irecv_r(void* buf, int count, MPI_Datatype datatype,
     }
     rq->recv=TRUE;
     rq->finished=FALSE;
-
-    tMPI_Prep_recv_envelope(&(rq->evr), comm, recv_src, buf, count, 
-                            datatype, tag, xt);
-    rq->evr.nonblock=TRUE;
-    tMPI_Try_put_recv_envelope(&(rq->evr));
-    /* if there's already data waiting, we just xfer */
-    if (rq->evr.send_ready)
-    {
-        ret=tMPI_Xfer_recv(&rq->evr, 0, TRUE); 
-    }
-
-    /* we're probably going to do the actual transfers during Wait or Waitall, 
-        so this one is non-blocking. */
+    rq->evr=tMPI_Post_match_recv(comm, recv_src, buf, count, datatype, tag,
+                                 multicast, TRUE);
     return MPI_SUCCESS;    
 }
 
@@ -2717,65 +3139,35 @@ static int tMPI_Wait_r(struct mpi_req_ *rq, MPI_Status *status)
     if (!rq)
         return MPI_SUCCESS;
 
-#ifdef TMPI_DEBUG
-    printf("%d: MPI_Wait on (%d -> %d, tag=%d)\n", 
-           tMPI_Threadnr(NULL),
-           tMPI_Threadnr( rq->recv ? rq->evr.src : rq->evs.src),
-           tMPI_Threadnr( rq->recv ? rq->evr.dest : rq->evs.dest ),
-           rq->recv ? rq->evr.tag : rq->evs.tag);
-    fflush(0);
-#endif
-
-
-    if ( ! ( rq->finished || ( (( rq->recv) && rq->evr.finished)  ||
-                               ((!rq->recv) && rq->evs.finished) ) ) )
+    if ( ! ( rq->finished || 
+           ( 
+            ( rq->recv && gmx_atomic_read( &(rq->evr->state)) == env_finished )
+                    ||
+            ( !rq->recv && gmx_atomic_read( &(rq->evs->state)) == env_finished )
+            )
+           )
+       )
     {
-#ifdef TMPI_DEBUG
-        printf("%d: MPI_Wait request was not finished\n", tMPI_Threadnr(0));
-        fflush(0);
-#endif
         if (rq->recv)
         {
             /* the receiving end just waits until the data is ready */
-            tMPI_Wait_recv(&(rq->evr));
-            ret=tMPI_Xfer_recv(&(rq->evr), status, FALSE);
+            tMPI_Test_recv(rq->evr, TRUE, status);
         }
         else
         {
-            /* we are now the waiting party: we need to initiate sending data.
-               We do need to wait until sending is OK, though */
-#ifdef TMPI_DEBUG
-            printf(
-            "%d: Active send waiting for recv_waiting to (%d->%d, tag %d)\n",
-                    tMPI_Threadnr(0), 
-                    tMPI_Threadnr(rq->recv ? rq->evr.src : rq->evs.src),
-                    tMPI_Threadnr(rq->recv ? rq->evr.dest : rq->evs.dest),
-                    rq->recv ? rq->evr.tag : rq->evs.tag);
-            fflush(0);
-#endif
-            tMPI_Wait_send( &(rq->evs) );
-#ifdef TMPI_DEBUG
-            printf("%d: Sending data in the wrong direction (%d->%d) %d\n",
-                    tMPI_Threadnr(0),
-                    tMPI_Threadnr(rq->recv ? rq->evr.src : rq->evs.src),
-                    tMPI_Threadnr(rq->recv ? rq->evr.dest : rq->evs.dest), 
-                    rq->recv ? rq->evr.tag : rq->evs.tag);
-#endif
-            if (! rq->evs.finished)
-            {
-                ret=tMPI_Xfer_send(&(rq->evs), status, FALSE);
-            }
+            /* the sending end also just waits until the data is ready */
+            tMPI_Test_send(rq->evs, TRUE, status);
         }
         rq->finished=TRUE;
     }
 
-    if (status && rq->recv)
-    {
-        status->MPI_SOURCE=tMPI_Comm_seek_rank(rq->evr.comm, rq->evr.src);
-        status->MPI_TAG=rq->evr.tag;
-        status->MPI_ERROR=MPI_SUCCESS;
-        status->transferred=rq->evr.transferred;
-    }
+    if (rq->recv)
+        tMPI_Set_recv_status(rq->evr, status);
+    else
+        tMPI_Set_send_status(rq->evs, status);
+
+    rq->evr=NULL; /* we won't be using that envelope any more */
+    rq->evs=NULL; /* we won't be using that envelope any more */
 
     return ret;
 }
@@ -2783,49 +3175,35 @@ static int tMPI_Wait_r(struct mpi_req_ *rq, MPI_Status *status)
 static int tMPI_Test_r(struct mpi_req_ *rq, int *flag, MPI_Status *status)
 {    
     int ret=MPI_SUCCESS;
+    bool finished=FALSE;
+
     if (!rq)
         return MPI_SUCCESS;
 
-    if ( ! ( rq->finished || ( (( rq->recv) && rq->evr.finished)  ||
-                               ((!rq->recv) && rq->evs.finished) ) ) )
+    if ( !rq->finished ) 
     {
-       if (rq->recv)
-       {
-           /* the receiving end just checks  until the data is ready */
-           if ( rq->evr.send_ready ) 
-           {
-               ret=tMPI_Xfer_recv(&(rq->evr), status, TRUE);
-           }
-       }
-       else
-       {
-           /* only transfer if we really need to */
-           if ( rq->evs.recv_nonblock && rq->evs.recv_ready )
-           {
-               ret=tMPI_Xfer_send(&(rq->evs), status, TRUE);
-           }
-
-       }
-    }
-    if (( rq->recv && rq->evr.finished) || ((!rq->recv) && rq->evs.finished) )
-    {
-        rq->finished=TRUE;
+        if (rq->recv)
+        {
+            ret=tMPI_Test_recv(rq->evr, FALSE, status);
+        }
+        else
+        {
+            ret=tMPI_Test_send(rq->evs, FALSE, status);
+        }
+        if (finished)
+            rq->finished=TRUE;
     }
 
-    
-    if  ( rq->finished )     
+    if (rq->finished)
     {
         *flag=TRUE;
-        if (status && rq->recv)
-        {
-            status->MPI_SOURCE=tMPI_Comm_seek_rank(rq->evr.comm, rq->evr.src);
-            status->MPI_TAG=rq->evr.tag;
-            status->MPI_ERROR=MPI_SUCCESS;
-            status->transferred=rq->evr.transferred;
-        }
+        /* get rid of the envelope link */
+        rq->evr=NULL;
+        rq->evs=NULL;
     }
     else
         *flag=FALSE;
+
     return ret;
 }
 
@@ -2836,9 +3214,13 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
     int flags_[MAX_PREALLOC_THREADS];
     int *flags=flags_;
     int i;
+    struct req_list *rql=&(tMPI_Get_current()->rql);
 
     if (count > MAX_PREALLOC_THREADS)
     {
+#ifdef TMPI_WARN_MALLOC
+        fprintf(stderr, "Warning: malloc during MPI_Waitall_r\n");
+#endif
         smalloc(flags, sizeof(int)*count);
     }
 
@@ -2852,7 +3234,7 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
         /* first take care of duds */
         for(i=0;i<count;i++)
         {
-            if (!array_of_requests[i])
+            if (!array_of_requests[i] || array_of_requests[i]->finished)
                 flags[i]=TRUE;
         }
         /* do receives */
@@ -2860,15 +3242,21 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
         {
             if (!flags[i] && array_of_requests[i]->recv)
             {
-                MPI_Status *st=0; 
-                if (array_of_statuses) 
-                    st=&(array_of_statuses[i]);
-                tMPI_Test_r(array_of_requests[i], &(flags[i]), st);
+                struct mpi_req_ *rq=array_of_requests[i];
+                MPI_Status *status=NULL;
+                if (array_of_statuses)
+                    status=&(array_of_statuses[i]);
+
+                flags[i]=tMPI_Test_recv(rq->evr, FALSE, status);
+
+                if (rq->evr->error!=MPI_SUCCESS)
+                    return rq->evr->error;
                 if (flags[i])
                 {
+                    rq->evr=NULL;
                     if (may_free)
                     {
-                        sfree(array_of_requests[i]);
+                        tMPI_Return_req(rql,rq);
                         array_of_requests[i]=MPI_REQUEST_NULL;
                     }
                 }
@@ -2879,15 +3267,21 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
         {
             if (!flags[i] && !(array_of_requests[i]->recv))
             {
-                MPI_Status *st=0; 
-                if (array_of_statuses) 
-                    st=&(array_of_statuses[i]);
-                tMPI_Test_r(array_of_requests[i], &(flags[i]), st);
+                struct mpi_req_ *rq=array_of_requests[i];
+                MPI_Status *status=NULL;
+                if (array_of_statuses)
+                    status=&(array_of_statuses[i]);
+
+                flags[i]=tMPI_Test_send(rq->evs, FALSE, status);
+                                    
+                if (rq->evs->error!=MPI_SUCCESS)
+                    return rq->evs->error;
                 if (flags[i])
                 {
+                    rq->evs=NULL;
                     if (may_free)
                     {
-                        sfree(array_of_requests[i]);
+                        tMPI_Return_req(rql,rq);
                         array_of_requests[i]=MPI_REQUEST_NULL;
                     }
                 }
@@ -2916,33 +3310,33 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
 int MPI_Send(void* buf, int count, MPI_Datatype datatype, int dest,
              int tag, MPI_Comm comm)
 {
-    return MPI_Send_r(buf, count, datatype, dest, tag, comm, point_to_point);
+    return tMPI_Send_r(buf, count, datatype, dest, tag, comm, FALSE);
 }
 
 
 int MPI_Recv(void* buf, int count, MPI_Datatype datatype, int source,
              int tag, MPI_Comm comm, MPI_Status *status)
 {
-    return MPI_Recv_r(buf, count, datatype, source, tag, comm, status, 
-                      point_to_point);
+    return tMPI_Recv_r(buf, count, datatype, source, tag, comm, status, FALSE);
 }
 
 
 int MPI_Isend(void* buf, int count, MPI_Datatype datatype, int dest,
               int tag, MPI_Comm comm, MPI_Request *request)
 {
-    struct mpi_req_ *rq;
     int ret;
-    smalloc(rq, sizeof(struct mpi_req_));
-    if ( (ret=tMPI_Isend_r(buf, count, datatype, dest, tag, comm, rq,
-                           point_to_point)) != 
-            MPI_SUCCESS)
+    struct req_list *rql=&(tMPI_Get_current()->rql);
+    struct mpi_req_ *rq=tMPI_Get_req(rql);
+
+    if ( (ret=tMPI_Isend_r(buf, count, datatype, dest, tag, comm, rq, FALSE)) 
+                != MPI_SUCCESS)
     {
 #ifdef TMPI_DEBUG
-        printf("%d Freeing isend request after error\n", tMPI_Threadnr(0)); 
+        printf("%5d Freeing isend request after error\n", 
+               tMPI_This_threadnr()); 
         fflush(0);
 #endif
-        sfree(rq);
+        tMPI_Return_req(rql,rq);
         *request=NULL;
     }
     else
@@ -2955,18 +3349,19 @@ int MPI_Isend(void* buf, int count, MPI_Datatype datatype, int dest,
 int MPI_Irecv(void* buf, int count, MPI_Datatype datatype, int source,
               int tag, MPI_Comm comm, MPI_Request *request)
 {
-    struct mpi_req_ *rq;
     int ret;
-    smalloc(rq, sizeof(struct mpi_req_));
-    if ( (ret=tMPI_Irecv_r(buf, count, datatype, source, tag, comm, rq,
-                           point_to_point)) != 
-            MPI_SUCCESS)
+    struct req_list *rql=&(tMPI_Get_current()->rql);
+    struct mpi_req_ *rq=tMPI_Get_req(rql);
+
+    if ( (ret=tMPI_Irecv_r(buf, count, datatype, source, tag, comm, rq, FALSE))
+            != MPI_SUCCESS)
     {
 #ifdef TMPI_DEBUG
-        printf("%d Freeing irecv request after error\n", tMPI_Threadnr(0)); 
+        printf("%5d Freeing irecv request after error\n", 
+                tMPI_This_threadnr()); 
         fflush(0);
 #endif
-        sfree(rq);
+        tMPI_Return_req(rql,rq);
         *request=NULL;
     }
     else
@@ -2979,13 +3374,14 @@ int MPI_Irecv(void* buf, int count, MPI_Datatype datatype, int source,
 int MPI_Wait(MPI_Request *request, MPI_Status *status)
 {
     int ret=MPI_SUCCESS;
+    struct req_list *rql=&(tMPI_Get_current()->rql);
     if (!request || !(*request))
         return MPI_SUCCESS;
 
     ret=tMPI_Wait_r(*request, status);
 
     /* deallocate if needed */
-    sfree(*request);
+    tMPI_Return_req(rql, *request);
     *request=MPI_REQUEST_NULL;
     return ret;
 }
@@ -2993,6 +3389,7 @@ int MPI_Wait(MPI_Request *request, MPI_Status *status)
 int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status)
 {
     int ret=MPI_SUCCESS;
+    struct req_list *rql=&(tMPI_Get_current()->rql);
     if (!request || !(*request))
         return MPI_SUCCESS;
 
@@ -3001,10 +3398,9 @@ int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status)
     if ((*request)->finished)
     {
         /* deallocate if needed */
-        sfree(*request);
+        tMPI_Return_req(rql, *request);
         *request=MPI_REQUEST_NULL;
     }
-
     return ret;
 }
 
@@ -3016,6 +3412,40 @@ int MPI_Waitall(int count, MPI_Request *array_of_requests,
 }
 
 
+void tMPI_Multi_sync_list_init(struct multi_sync_list *msl, int N)
+{
+    int i,j;
+
+    msl->N=N;
+    for(i=0;i<N_MULTI_SYNC;i++)
+    {
+        smalloc(msl->msc[i], sizeof(struct multi_sync)*N);
+        msl->counter=0;
+        gmx_atomic_set( &(msl->current_counter), 0);
+        for(j=0;j<N;j++)
+        {
+            gmx_atomic_set( &(msl->msc[i][j].finished_count), 0);
+            gmx_atomic_set( &(msl->msc[i][j].tag), 0);
+            smalloc(msl->msc[i][j].buf, sizeof(void*)*N);
+            smalloc(msl->msc[i][j].bufsize, sizeof(int)*N);
+        }
+    }
+}
+
+void tMPI_Multi_sync_destroy(struct multi_sync_list *msl)
+{
+    int i,j;
+
+    for(i=0;i<N_MULTI_SYNC;i++)
+    {
+        for(j=0;j<msl->N;j++)
+        {
+            sfree(msl->msc[i][j].buf);    
+            sfree(msl->msc[i][j].bufsize);    
+        }
+        sfree(msl->msc[i]);
+    }
+}
 
 
 int MPI_Barrier(MPI_Comm comm) 
@@ -3027,11 +3457,7 @@ int MPI_Barrier(MPI_Comm comm)
 
     if (comm->grp.N>1)
     {
-#ifdef TMPI_ATOMIC
         gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-        gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
     }
     return MPI_SUCCESS;
 }
@@ -3048,6 +3474,16 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
     }
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
+
+#if 0
+    if (myrank==root)
+    {
+    }
+    else
+    {
+        
+    }
+#else
     if (myrank==root)
     {
         int i;
@@ -3059,6 +3495,9 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
 
         if (N>MAX_PREALLOC_THREADS)
         {
+#ifdef TMPI_WARN_MALLOC
+            fprintf(stderr, "Warning: malloc during MPI_Bcast\n");
+#endif
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
         }
@@ -3070,7 +3509,7 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
                 int ret2;
                 if ((ret2=tMPI_Isend_r(buffer, count, datatype, i, 
                                        TMPI_BCAST_TAG, comm, 
-                                       &(rqr[i]), multicast)) !=
+                                       &(rqr[i]), TRUE)) !=
                         MPI_SUCCESS)
                 {
                     if (N>MAX_PREALLOC_THREADS)
@@ -3097,9 +3536,10 @@ int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
     }
     else
     {
-        ret=MPI_Recv_r(buffer, count, datatype, root, TMPI_BCAST_TAG, comm, 0,
-                       multicast);
+        ret=tMPI_Recv_r(buffer, count, datatype, root, TMPI_BCAST_TAG, comm, 0,
+                        TRUE);
     }
+#endif
     return ret;
 }
 
@@ -3124,6 +3564,9 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
     if (N>MAX_PREALLOC_THREADS)
     {
+#ifdef TMPI_WARN_MALLOC
+        fprintf(stderr, "Warning: malloc during MPI_Gather\n");
+#endif
         smalloc(displs, sizeof(int)*N);
         smalloc(recvcounts, sizeof(int)*N);
     }
@@ -3173,6 +3616,9 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
         if (N>MAX_PREALLOC_THREADS)
         {
+#ifdef TMPI_WARN_MALLOC
+            fprintf(stderr, "Warning: malloc during MPI_Gatherv\n");
+#endif
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
         }
@@ -3186,7 +3632,7 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                                        displs[i]*recvtype->size, 
                                        recvcounts[i], recvtype, i, 
                                        TMPI_GATHER_TAG, comm, &(rqr[i]),
-                                       multicast)) !=
+                                       TRUE)) !=
                         MPI_SUCCESS)
                 {
                     if (N>MAX_PREALLOC_THREADS)
@@ -3233,8 +3679,8 @@ int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
     else
     {
-        ret=MPI_Send_r(sendbuf, sendcount, sendtype, root, TMPI_GATHER_TAG, 
-                       comm, multicast);
+        ret=tMPI_Send_r(sendbuf, sendcount, sendtype, root, TMPI_GATHER_TAG, 
+                       comm, TRUE);
     }
  
     return ret;
@@ -3254,6 +3700,9 @@ int MPI_Scatter(void* sendbuf, int sendcount, MPI_Datatype sendtype,
 
     if (N>MAX_PREALLOC_THREADS)
     {
+#ifdef TMPI_WARN_MALLOC
+        fprintf(stderr, "Warning: malloc during MPI_Scatter\n");
+#endif
         smalloc(displs, sizeof(struct mpi_req_)*N);
         smalloc(sendcounts, sizeof(MPI_Request)*N);
     }
@@ -3307,6 +3756,9 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 
         if (N>MAX_PREALLOC_THREADS)
         {
+#ifdef TMPI_WARN_MALLOC
+            fprintf(stderr, "Warning: malloc during MPI_Scatterv\n");
+#endif
             smalloc(rqr, sizeof(struct mpi_req_)*N);
             smalloc(rq, sizeof(MPI_Request)*N);
         }
@@ -3317,7 +3769,7 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
                 int ret2;
                 if ((ret2=tMPI_Isend_r((char*)sendbuf+ displs[i]*sendtype->size,
                                 sendcounts[i], sendtype, i, 
-                                TMPI_SCATTER_TAG, comm, &(rqr[i]), multicast))
+                                TMPI_SCATTER_TAG, comm, &(rqr[i]), TRUE))
                         != MPI_SUCCESS)
                 {
                     if (N>MAX_PREALLOC_THREADS)
@@ -3364,8 +3816,8 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
         {
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
-        ret=MPI_Recv_r(recvbuf, recvcount, recvtype, root, TMPI_SCATTER_TAG, 
-                       comm, 0, multicast);
+        ret=tMPI_Recv_r(recvbuf, recvcount, recvtype, root, TMPI_SCATTER_TAG, 
+                        comm, 0, TRUE);
     }
  
     return ret;
@@ -3397,6 +3849,9 @@ int MPI_Alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype,
     }
     if (N>MAX_PREALLOC_THREADS)
     {
+#ifdef TMPI_WARN_MALLOC
+        fprintf(stderr, "Warning: malloc during MPI_Alltoall\n");
+#endif
         smalloc(sdispls, N*sizeof(int));
         smalloc(rdispls, N*sizeof(int));
         smalloc(sendcounts, N*sizeof(int));
@@ -3453,6 +3908,9 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
 
     if (N>MAX_PREALLOC_THREADS)
     {
+#ifdef TMPI_WARN_MALLOC
+        fprintf(stderr, "Warning: malloc during MPI_Alltoallv\n");
+#endif
         smalloc(rqs, sizeof(struct mpi_req_)*N);
         smalloc(rqr, sizeof(struct mpi_req_)*N);
         smalloc(rq, sizeof(MPI_Request)*N*2);
@@ -3466,7 +3924,7 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
             int ret2;
             if ( (ret2=tMPI_Isend_r((char*)sendbuf+ sdispls[i]*sendtype->size, 
                             sendcounts[i], sendtype, i, 
-                            TMPI_ALLTOALL_TAG, comm, &(rqs[i]), multicast))
+                            TMPI_ALLTOALL_TAG, comm, &(rqs[i]), TRUE))
                     != MPI_SUCCESS)
             {
                 return ret2;
@@ -3505,7 +3963,7 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
             int ret2;
             if ((ret2=tMPI_Irecv_r((char*)recvbuf+ rdispls[i]*recvtype->size, 
                             recvcounts[i], recvtype, i, TMPI_ALLTOALL_TAG, 
-                            comm, &(rqr[i]), multicast)) !=
+                            comm, &(rqr[i]), TRUE)) !=
                     MPI_SUCCESS)
             {
                 return ret2;
@@ -3581,11 +4039,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     comm->recvbuf[myrank]=recvbuf;
     /* there's a barrier to wait for all the processes to put their 
        send/recvbuf in the global list */
-#ifdef TMPI_ATOMIC
     gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
 
     /* check the buffers */
     for(i=0;i<N;i++)
@@ -3642,11 +4096,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                     memcpy(recvbuf, sendbuf, datatype->size*count);
             }
             /* split barrier */
-#ifdef TMPI_ATOMIC
             gmx_spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
-#else
-            gmx_thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-#endif
         }
         else 
         {
@@ -3657,11 +4107,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             printf("%d: barrier waiting, iteration=%d\n", myrank,  iteration);
             fflush(0);
 #endif
-#ifdef TMPI_ATOMIC
             gmx_spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
-#else
-            gmx_thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-#endif
             break;
         }
 #ifdef TMPI_DEBUG
@@ -3691,6 +4137,9 @@ int MPI_Reduce(void* sendbuf, void* recvbuf, int count,
     }
     else
     {
+#ifdef TMPI_WARN_MALLOC
+        fprintf(stderr, "Warning: malloc during MPI_Reduce\n");
+#endif
         smalloc(recvbuf, datatype->size*count);
     }
     ret=tMPI_Reduce_fast(sendbuf, recvbuf, count, datatype, op, root, comm);
@@ -3723,11 +4172,7 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     /* distribute rootbuf */
     rootbuf=(void*)comm->recvbuf[0];
 
-#ifdef TMPI_ATOMIC
     gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
     /* and now we just copy things back inefficiently. We should make
        a better MPI_Scatter, and use that. */
     if (myrank != 0)
@@ -3738,13 +4183,12 @@ int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
         }
         memcpy(recvbuf, rootbuf, datatype->size*count );
     }
-#ifdef TMPI_ATOMIC
     gmx_spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    gmx_thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
 
     return MPI_SUCCESS;
 }
 
+
+
 #endif /* GMX_THREAD_MPI */
+
