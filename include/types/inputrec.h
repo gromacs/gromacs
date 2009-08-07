@@ -132,6 +132,7 @@ typedef struct {
   int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
   bool       bRefAt;      /* do we need reference atoms for a group COM ? */
   int        cosdim;      /* dimension for cosine weighting, -1 if none */
+  bool       bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
   FILE       *out_x;      /* output file for pull data */
