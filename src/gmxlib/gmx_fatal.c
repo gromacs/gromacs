@@ -504,6 +504,13 @@ void _too_few(const char *fn,int line)
   warning(NULL);
 }
 
+void _incorrect_n_param(const char *fn,int line)
+{
+  sprintf(warn_buf,"Incorrect number of parameters on line (source file %s, line %d)",
+	  fn,line);
+  warning(NULL);
+}
+
 void _invalid_case(const char *fn,int line)
 {
   gmx_fatal(FARGS,"Invalid case in switch statement, file %s, line %d",
