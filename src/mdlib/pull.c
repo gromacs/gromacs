@@ -416,7 +416,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
       case epullgPOS:
 	for(m=0; m<DIM; m++) {
 	  if (pull->dim[m]) {
-	    lambda = r_ij[g][m] - pgrp->vec[m];
+	    lambda = r_ij[g][m] - ref[m];
 	    /* The position corrections dr due to the constraints */
 	    dr[g][m]  = -lambda*rm*pull->grp[g].invtm;
 	    ref_dr[m] =  lambda*rm*pref->invtm;
@@ -489,7 +489,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 	bConverged = TRUE;
 	for(m=0; m<DIM; m++) {
 	  if (pull->dim[m] && 
-	      fabs(unc_ij[m] - pgrp->vec[m]) >= pull->constr_tol)
+	      fabs(unc_ij[m] - ref[m]) >= pull->constr_tol)
 	    bConverged = FALSE;
 	}
 	break;
