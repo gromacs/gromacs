@@ -273,38 +273,39 @@ struct req_list
 /* unique tags for multicast */
 #define TMPI_BCAST_TAG      1
 #define TMPI_GATHER_TAG     2
-#define TMPI_SCATTER_TAG    3
-#define TMPI_REDUCE_TAG     4
-#define TMPI_ALLTOALL_TAG   5
-#define TMPI_ALLTOALLV_TAG  6
+#define TMPI_GATHERV_TAG    3
+#define TMPI_SCATTER_TAG    4
+#define TMPI_SCATTERV_TAG   5
+#define TMPI_REDUCE_TAG     6
+#define TMPI_ALLTOALL_TAG   7
+#define TMPI_ALLTOALLV_TAG  8
 
-/* multicast synchronization data structure. A number of these are there for 
-   each thread in the MPI_Comm structure */
-struct multi_sync
-{
-    gmx_atomic_t finished_count; /* finished count for root thread */
-    gmx_atomic_t tag; /* multicast communication type */
-    void **buf; /* array of send/recv buffer values */
-    size_t *bufsize; /* array of number of bytes to send/recv */
-};
 
-struct multi_sync_list
+
+/* the multicast envelope. There's a few of these for each 
+   multi_sync structure */
+struct multi_env
 {
-#define N_MULTI_SYNC 2
-    struct multi_sync *msc[N_MULTI_SYNC]; /* the mult_sync objects */
-    int counter; /* counter */
     gmx_atomic_t current_counter; /* counter value for the current
                                      communication */
-    int N; /* the number of threads */
+    gmx_atomic_t n_remaining; /* remaining count for root thread */
+
+
+    int tag; /* multicast communication type */
+    volatile void **buf; /* array of send/recv buffer values */
+    volatile size_t *bufsize; /* array of number of bytes to send/recv */
+    bool *read_data; /* whether we read data from a specific thread*/
+    MPI_Datatype datatype;
 };
 
-/* pre-allocated buffer structures for multicast communication */
-#if 0
-struct multi_buf
+/* multicast synchronization data structure. There's one of these for 
+   each thread in each MPI_Comm structure */
+struct multi_sync
 {
-    
+    int counter;
+#define N_MULTI_SYNC 2
+    struct multi_env mev[N_MULTI_SYNC];
 };
-#endif
 
 
 
@@ -425,7 +426,7 @@ struct mpi_comm_
     int Nbarriers;
 
 
-    struct multi_sync_list msl; /* list of multicast sync objecs */
+    struct multi_sync *msc; /* list of multicast sync objecs */
 
     /* lists of globally shared send/receive buffers for MPI_Reduce, etc. */
     volatile void **sendbuf, **recvbuf; 
@@ -521,6 +522,7 @@ static const char *mpi_errmsg[] =
     "Invalid send destination",
     "Invalid receive source",
     "Invalid buffer (null pointer in send or receive buffer)",
+    "Multicast operation mismatch (multicast not collective across comm)",
     "Invalid reduce operator",
     "Out of receive envelopes: this shouldn't happen (probably a bug).",
     "Out of receive requests: this shouldn't happen (probably a bug).",
@@ -669,11 +671,17 @@ static int tMPI_Waitall_r(int count, struct mpi_req_ *array_of_requests[],
 
 
 /* multicast functions */
-/* initialize a multi sync list structure */
-void tMPI_Multi_sync_list_init(struct multi_sync_list *msl, int N);
+/* initialize a multi sync structure */
+void tMPI_Multi_sync_init(struct multi_sync *msc, int N);
 
-/* destroy a multi sync list structure */
-void tMPI_Multi_sync_list_destroy(struct multi_sync_list *msl);
+/* destroy a multi sync structure */
+void tMPI_Multi_sync_destroy(struct multi_sync *msc);
+
+/* do a mulitcast transfer, with checks */
+int tMPI_Mult_xfer(MPI_Comm comm, int rank, struct multi_env *rmev,
+                   void *recvbuf, size_t recvsize, MPI_Datatype recvtype,
+                   int expected_tag, int *ret);
+
 
 
 
@@ -1626,7 +1634,9 @@ static MPI_Comm tMPI_Comm_alloc(MPI_Comm parent, int N)
     }
 
     /* multi_sync objects */
-    tMPI_Multi_sync_list_init( &(ret->msl), N);
+    smalloc( ret->msc, sizeof(struct multi_sync)*N);
+    for(i=0;i<N;i++)
+        tMPI_Multi_sync_init( &(ret->msc[i]), N);
 
     return ret;
 }
@@ -2761,7 +2771,8 @@ static void tMPI_Test_incoming(struct mpi_thread *th)
         {
             volatile struct send_envelope *evs_head;
            
-            /* we could replace this with a compare-and-swap, once that's working for pointers */
+            /* we could replace this with a compare-and-swap, once that's 
+               working for pointers */
             gmx_spinlock_lock( &(th->evs[i].lock) );
             evs_head=th->evs[i].head_new;
             th->evs[i].head_new=NULL; /* detach the list */
@@ -3412,39 +3423,55 @@ int MPI_Waitall(int count, MPI_Request *array_of_requests,
 }
 
 
-void tMPI_Multi_sync_list_init(struct multi_sync_list *msl, int N)
+void tMPI_Multi_sync_init(struct multi_sync *msc, int N)
 {
-    int i,j;
+    int i;
 
-    msl->N=N;
+    msc->counter=0;
     for(i=0;i<N_MULTI_SYNC;i++)
     {
-        smalloc(msl->msc[i], sizeof(struct multi_sync)*N);
-        msl->counter=0;
-        gmx_atomic_set( &(msl->current_counter), 0);
-        for(j=0;j<N;j++)
-        {
-            gmx_atomic_set( &(msl->msc[i][j].finished_count), 0);
-            gmx_atomic_set( &(msl->msc[i][j].tag), 0);
-            smalloc(msl->msc[i][j].buf, sizeof(void*)*N);
-            smalloc(msl->msc[i][j].bufsize, sizeof(int)*N);
-        }
+        gmx_atomic_set( &(msc->mev[i].current_counter), 0);
+        gmx_atomic_set( &(msc->mev[i].n_remaining), 0);
+        smalloc(msc->mev[i].buf, sizeof(void*)*N);
+        smalloc(msc->mev[i].bufsize, sizeof(size_t)*N);
+        smalloc(msc->mev[i].read_data, sizeof(bool)*N);
     }
 }
 
-void tMPI_Multi_sync_destroy(struct multi_sync_list *msl)
+void tMPI_Multi_sync_destroy(struct multi_sync *msc)
 {
-    int i,j;
+    int i;
 
     for(i=0;i<N_MULTI_SYNC;i++)
     {
-        for(j=0;j<msl->N;j++)
-        {
-            sfree(msl->msc[i][j].buf);    
-            sfree(msl->msc[i][j].bufsize);    
-        }
-        sfree(msl->msc[i]);
+        sfree((void*)msc->mev[i].buf);
+        sfree((void*)msc->mev[i].bufsize);
+        sfree((void*)msc->mev[i].read_data);
     }
+}
+
+int tMPI_Mult_xfer(MPI_Comm comm, int rank, struct multi_env *rmev, 
+                   void *recvbuf, size_t recvsize, MPI_Datatype recvtype, 
+                   int expected_tag, int *ret)
+{
+    /* check tags, types */
+    if ( (rmev->datatype != recvtype ) || (rmev->tag != expected_tag) )
+    {
+        return tMPI_Error(comm, MPI_ERR_MULTI_MISMATCH);
+    }
+    if (rmev->bufsize[rank] > recvsize ) 
+    {
+        return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
+    }
+    if ( rmev->buf[rank] == recvbuf )
+    {
+        return tMPI_Error(MPI_COMM_WORLD,MPI_ERR_XFER_BUF_OVERLAP);
+    }
+    /* copy data */
+    memcpy((char*)recvbuf, (void*)(rmev->buf[rank]), rmev->bufsize[rank]);
+    /* signal one thread ready */
+    gmx_atomic_fetch_add( &(rmev->n_remaining), -1);
+    return MPI_SUCCESS;
 }
 
 
@@ -3467,81 +3494,55 @@ int MPI_Barrier(MPI_Comm comm)
 int MPI_Bcast(void* buffer, int count, MPI_Datatype datatype, int root,
               MPI_Comm comm)
 {
-    int myrank,ret=MPI_SUCCESS;
+    struct multi_sync *msc;
+    int mevi;
+    int myrank;
+    int ret=MPI_SUCCESS;
+
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
-
-#if 0
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
     if (myrank==root)
     {
-    }
-    else
-    {
-        
-    }
-#else
-    if (myrank==root)
-    {
-        int i;
-        int N=tMPI_Comm_N(comm);
-        struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; 
-        MPI_Request rq_[MAX_PREALLOC_THREADS]; 
-        struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
-        MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
+        struct multi_env *mev=&(msc->mev[mevi]);
 
-        if (N>MAX_PREALLOC_THREADS)
+        /* first set up the data */
+        mev->tag=TMPI_BCAST_TAG;
+        mev->datatype=datatype;
+        mev->buf[0]=buffer;
+        mev->bufsize[0]=count*datatype->size;
+        gmx_atomic_set(&(mev->n_remaining), comm->grp.N-1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
+        /* and wait until everybody is done copying */
+        while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
         {
-#ifdef TMPI_WARN_MALLOC
-            fprintf(stderr, "Warning: malloc during MPI_Bcast\n");
-#endif
-            smalloc(rqr, sizeof(struct mpi_req_)*N);
-            smalloc(rq, sizeof(MPI_Request)*N);
-        }
-
-        for(i=0;i<N;i++)
-        {
-            if (i != myrank)
-            {
-                int ret2;
-                if ((ret2=tMPI_Isend_r(buffer, count, datatype, i, 
-                                       TMPI_BCAST_TAG, comm, 
-                                       &(rqr[i]), TRUE)) !=
-                        MPI_SUCCESS)
-                {
-                    if (N>MAX_PREALLOC_THREADS)
-                    {
-                        sfree(rqr);
-                        sfree(rq);
-                    }
-                    return ret2;
-                }
-                rq[i]=&(rqr[i]);
-            }
-            else
-            {
-                rq[i]=0;
-            }
-        }
-        ret=tMPI_Waitall_r(N, rq, 0, FALSE);
-
-        if (N>MAX_PREALLOC_THREADS)
-        {
-            sfree(rqr);
-            sfree(rq);
         }
     }
     else
     {
-        ret=tMPI_Recv_r(buffer, count, datatype, root, TMPI_BCAST_TAG, comm, 0,
-                        TRUE);
+        /* get the root mev */
+        struct multi_env *rmev = &(comm->msc[root].mev[mevi]);
+        size_t bufsize=count*datatype->size;
+        /* wait until root becomes available */
+        while( gmx_atomic_read( &(rmev->current_counter)) != msc->counter)
+        {
+        }
+
+        tMPI_Mult_xfer(comm, 0, rmev, buffer, bufsize, datatype, 
+                       TMPI_BCAST_TAG, &ret);
     }
-#endif
     return ret;
 }
+
+
 
 
 
@@ -3549,179 +3550,269 @@ int MPI_Gather(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                void* recvbuf, int recvcount, MPI_Datatype recvtype, int root,
                MPI_Comm comm)
 {
-    int i;
-    int N=tMPI_Comm_N(comm);
-    int displs_[MAX_PREALLOC_THREADS];
-    int recvcounts_[MAX_PREALLOC_THREADS];
-    int *displs=displs_;
-    int *recvcounts=recvcounts_;
-    int ret;
-
+    struct multi_sync *msc;
+    int mevi;
+    int myrank;
+    int ret=MPI_SUCCESS;
+    struct multi_env *mev;
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
-    if (N>MAX_PREALLOC_THREADS)
+
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
+    mev=&(msc->mev[mevi]);
+    if (myrank==root)
     {
-#ifdef TMPI_WARN_MALLOC
-        fprintf(stderr, "Warning: malloc during MPI_Gather\n");
-#endif
-        smalloc(displs, sizeof(int)*N);
-        smalloc(recvcounts, sizeof(int)*N);
+        int i;
+        int n_remaining=comm->grp.N-1;
+        /* do root transfer */
+        {
+            int recvsize=recvtype->size*recvcount;
+            int sendsize=sendtype->size*sendcount;
+            if (recvsize < sendsize)
+            {
+                return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
+            }
+            if (recvtype != sendtype)
+            {
+                return tMPI_Error(comm, MPI_ERR_MULTI_MISMATCH);
+            }
+            if ( sendbuf == (char*)recvbuf+myrank*recvcount*recvtype->size )
+            {
+                return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
+            }
+
+            memcpy((char*)recvbuf+myrank*recvcount*recvtype->size, sendbuf, 
+                   sendsize);
+        }
+        /* poll data availability */
+        while(n_remaining>0)
+        {
+            for(i=0;i<comm->grp.N;i++)
+            {
+                struct multi_env *rmev=&(comm->msc[i].mev[mevi]);
+                if ((i!=myrank) && 
+                    (gmx_atomic_read(&(rmev->current_counter))==msc->counter)&& 
+                    (gmx_atomic_read(&(rmev->n_remaining)) > 0) )
+                {
+                    ret=tMPI_Mult_xfer(comm, 0, rmev,
+                                       (char*)recvbuf+i*recvcount*recvtype->size,
+                                       recvcount*recvtype->size,
+                                       recvtype, TMPI_GATHERV_TAG,&ret);
+                    if (ret!=MPI_SUCCESS)
+                        return ret;
+                    n_remaining--;
+                }
+            }
+        }
+    }
+    else
+    {
+        size_t bufsize = sendcount*sendtype->size;
+
+        if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
+        {
+            return tMPI_Error(comm, MPI_ERR_BUF);
+        }
+
+        /* first set up the data */
+        mev->tag=TMPI_GATHERV_TAG;
+        mev->datatype=sendtype;
+        mev->buf[0]=sendbuf;
+        mev->bufsize[0]=bufsize;
+
+        gmx_atomic_set(&(mev->n_remaining), 1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
+
+        /* and wait until root is done copying */
+        while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
+        {
+        }
     }
 
-    for(i=0;i<N;i++)
-    {
-        recvcounts[i]=recvcount;
-        displs[i]=recvcount*i;
-    }
-    ret=MPI_Gatherv(sendbuf, sendcount, sendtype,
-                       recvbuf, recvcounts, displs, recvtype, root, comm);
-
-    if (N>MAX_PREALLOC_THREADS)
-    {
-        sfree(displs);
-        sfree(recvcounts);
-    }
     return ret;
 }
-
 
 
 int MPI_Gatherv(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                 void* recvbuf, int *recvcounts, int *displs,
                 MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-    int myrank,ret=MPI_SUCCESS;
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-
+    struct multi_sync *msc;
+    int mevi;
+    int myrank;
+    int ret=MPI_SUCCESS;
+    struct multi_env *mev;
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
+    mev=&(msc->mev[mevi]);
     if (myrank==root)
     {
         int i;
-        int N=tMPI_Comm_N(comm);
-        struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; 
-        MPI_Request rq_[MAX_PREALLOC_THREADS]; 
-        struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
-        MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
-
-        if (!recvbuf) /* don't do pointer arithmetic on a NULL ptr */
+        int n_remaining=comm->grp.N-1;
+        /* do root transfer */
         {
-            return tMPI_Error(comm, MPI_ERR_BUF);
-        }
-
-        if (N>MAX_PREALLOC_THREADS)
-        {
-#ifdef TMPI_WARN_MALLOC
-            fprintf(stderr, "Warning: malloc during MPI_Gatherv\n");
-#endif
-            smalloc(rqr, sizeof(struct mpi_req_)*N);
-            smalloc(rq, sizeof(MPI_Request)*N);
-        }
-
-        for(i=0;i<N;i++)
-        {
-            if (i!=myrank)
-            {
-                int ret2;
-                if ((ret2=tMPI_Irecv_r((char*)recvbuf+ 
-                                       displs[i]*recvtype->size, 
-                                       recvcounts[i], recvtype, i, 
-                                       TMPI_GATHER_TAG, comm, &(rqr[i]),
-                                       TRUE)) !=
-                        MPI_SUCCESS)
-                {
-                    if (N>MAX_PREALLOC_THREADS)
-                    {
-                        sfree(rqr);
-                        sfree(rq);
-                    }
-                    return ret2;
-                }
-                rq[i]=&(rqr[i]);
-            }
-            else
-            {
-                rq[i]=0;
-            }
-        }
-        if (sendbuf) /* i.e.  ( sendbuf!=MPI_IN_PLACE) */
-        {
-            /* do the root transfer */
             int recvsize=recvtype->size*recvcounts[myrank];
             int sendsize=sendtype->size*sendcount;
             if (recvsize < sendsize)
             {
-                if (N>MAX_PREALLOC_THREADS)
-                {
-                    sfree(rqr);
-                    sfree(rq);
-                }
                 return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
             }
-            if ( (char*)recvbuf + displs[myrank]*recvtype->size == sendbuf )
+            if (recvtype != sendtype)
+            {
+                return tMPI_Error(comm, MPI_ERR_MULTI_MISMATCH);
+            }
+            if ( sendbuf == (char*)recvbuf+displs[myrank]*recvtype->size )
             {
                 return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
             }
-            memcpy((char*)recvbuf + displs[myrank]*recvtype->size,
+
+            memcpy((char*)recvbuf+displs[myrank]*recvtype->size, 
                    sendbuf, sendsize);
         }
-        ret=tMPI_Waitall_r(N, rq, 0, FALSE);
-        if (N>MAX_PREALLOC_THREADS)
+        /* poll data availability */
+        while(n_remaining>0)
         {
-            sfree(rqr);
-            sfree(rq);
+            for(i=0;i<comm->grp.N;i++)
+            {
+                struct multi_env *rmev=&(comm->msc[i].mev[mevi]);
+                if ((i!=myrank) && 
+                    (gmx_atomic_read(&(rmev->current_counter))==msc->counter)&& 
+                    (gmx_atomic_read(&(rmev->n_remaining)) > 0) )
+                {
+                    ret=tMPI_Mult_xfer(comm, 0, rmev,
+                                       (char*)recvbuf+displs[i]*recvtype->size,
+                                       recvcounts[i]*recvtype->size,
+                                       recvtype, TMPI_GATHERV_TAG,&ret);
+                    if (ret!=MPI_SUCCESS)
+                        return ret;
+                    n_remaining--;
+                }
+            }
         }
     }
     else
     {
-        ret=tMPI_Send_r(sendbuf, sendcount, sendtype, root, TMPI_GATHER_TAG, 
-                       comm, TRUE);
+        size_t bufsize = sendcount*sendtype->size;
+
+        if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
+        {
+            return tMPI_Error(comm, MPI_ERR_BUF);
+        }
+
+        /* first set up the data */
+        mev->tag=TMPI_GATHERV_TAG;
+        mev->datatype=sendtype;
+        mev->buf[0]=sendbuf;
+        mev->bufsize[0]=bufsize;
+
+        gmx_atomic_set(&(mev->n_remaining), 1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
+
+        /* and wait until root is done copying */
+        while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
+        {
+        }
     }
- 
+
     return ret;
 }
+
 
 int MPI_Scatter(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                 void* recvbuf, int recvcount, MPI_Datatype recvtype, int root, 
                 MPI_Comm comm)
 {
-    int i;
-    int N=tMPI_Comm_N(comm);
-    int displs_[MAX_PREALLOC_THREADS];
-    int sendcounts_[MAX_PREALLOC_THREADS];
-    int *displs=displs_;
-    int *sendcounts=sendcounts_;
-    int ret;
-
-    if (N>MAX_PREALLOC_THREADS)
+    struct multi_sync *msc;
+    int mevi;
+    int myrank;
+    int ret=MPI_SUCCESS;
+    if (!comm)
     {
-#ifdef TMPI_WARN_MALLOC
-        fprintf(stderr, "Warning: malloc during MPI_Scatter\n");
-#endif
-        smalloc(displs, sizeof(struct mpi_req_)*N);
-        smalloc(sendcounts, sizeof(MPI_Request)*N);
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
-    for(i=0;i<N;i++)
+
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
+    if (myrank==root)
     {
-        sendcounts[i]=sendcount;
-        displs[i]=sendcount*i;
-    }
-    ret=MPI_Scatterv(sendbuf, sendcounts, displs, sendtype,
-                        recvbuf, recvcount, recvtype, root, comm);
+        int i;
+        struct multi_env *mev=&(msc->mev[mevi]);
+        size_t bufsize = sendcount*sendtype->size;
 
-    if (N>MAX_PREALLOC_THREADS)
+        if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
+        {
+            return tMPI_Error(comm, MPI_ERR_BUF);
+        }
+        /* first set up the data */
+        mev->tag=TMPI_SCATTER_TAG;
+        mev->datatype=sendtype;
+        for(i=0;i<comm->grp.N;i++)
+        {
+            mev->buf[i]=(char*)sendbuf + bufsize*i;
+            mev->bufsize[i]=bufsize;
+        }
+        gmx_atomic_set(&(mev->n_remaining), comm->grp.N-1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
+
+        /* do the root transfer */
+        {
+            int recvsize=recvtype->size*recvcount;
+            if (recvsize < bufsize)
+            {
+                return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
+            }
+            if (recvtype != sendtype)
+            {
+                return tMPI_Error(comm, MPI_ERR_MULTI_MISMATCH);
+            }
+            if ( recvbuf == mev->buf[myrank] )
+            {
+                return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
+            }
+
+            memcpy(recvbuf, (void*)(mev->buf[myrank]), bufsize);
+        }
+
+        /* and wait until everybody is done copying */
+        while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
+        {
+        }
+    }
+    else
     {
-        sfree(displs);
-        sfree(sendcounts);
+        /* get the root mev */
+        struct multi_env *rmev = &(comm->msc[root].mev[mevi]);
+        size_t bufsize=recvcount*recvtype->size;
+        /* wait until root becomes available */
+        while( gmx_atomic_read( &(rmev->current_counter)) != msc->counter)
+        {
+        }
+        tMPI_Mult_xfer(comm, myrank, rmev, recvbuf, bufsize, recvtype,
+                       TMPI_SCATTER_TAG, &ret);
     }
-
-
     return ret;
 }
 
@@ -3731,171 +3822,96 @@ int MPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
                  MPI_Datatype sendtype, void* recvbuf, int recvcount,
                  MPI_Datatype recvtype, int root, MPI_Comm comm)
 {
-    /* TODO: make a better version of this function. This 
-       should probably be binary tree-based */
-    int myrank,ret=MPI_SUCCESS;
+    struct multi_sync *msc;
+    int mevi;
+    int myrank;
+    int ret=MPI_SUCCESS;
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
     }
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
+
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
     if (myrank==root)
     {
         int i;
-        int N=tMPI_Comm_N(comm);
-        struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; 
-        MPI_Request rq_[MAX_PREALLOC_THREADS]; 
-        struct mpi_req_ *rqr=rqr_; /* this is where we allocate the requests */
-        MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
+        struct multi_env *mev=&(msc->mev[mevi]);
 
         if (!sendbuf) /* don't do pointer arithmetic on a NULL ptr */
         {
             return tMPI_Error(comm, MPI_ERR_BUF);
         }
+        /* first set up the data */
+        mev->tag=TMPI_SCATTERV_TAG;
+        mev->datatype=sendtype;
+        for(i=0;i<comm->grp.N;i++)
+        {
+            mev->buf[i]=(char*)sendbuf + displs[i]*sendtype->size;
+            mev->bufsize[i]=sendtype->size*sendcounts[i];
+        }
+        gmx_atomic_set(&(mev->n_remaining), comm->grp.N-1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
 
-        if (N>MAX_PREALLOC_THREADS)
+        /* do the root transfer */
         {
-#ifdef TMPI_WARN_MALLOC
-            fprintf(stderr, "Warning: malloc during MPI_Scatterv\n");
-#endif
-            smalloc(rqr, sizeof(struct mpi_req_)*N);
-            smalloc(rq, sizeof(MPI_Request)*N);
-        }
-        for(i=0;i<N;i++)
-        {
-            if (i!=myrank)
-            {
-                int ret2;
-                if ((ret2=tMPI_Isend_r((char*)sendbuf+ displs[i]*sendtype->size,
-                                sendcounts[i], sendtype, i, 
-                                TMPI_SCATTER_TAG, comm, &(rqr[i]), TRUE))
-                        != MPI_SUCCESS)
-                {
-                    if (N>MAX_PREALLOC_THREADS)
-                    {
-                        smalloc(rqr, sizeof(struct mpi_req_)*N);
-                        smalloc(rq, sizeof(MPI_Request)*N);
-                    }
-                    return ret2;
-                }
-                rq[i]=&(rqr[i]);
-            }
-            else
-            {
-                rq[i]=0;
-            }
-        }
-        if (recvbuf) /* i.e.  ( recvbuf!=MPI_IN_PLACE) */
-        {
-            /* do the root transfer */
             int recvsize=recvtype->size*recvcount;
-            int sendsize=sendtype->size*sendcounts[myrank];
-            if (recvsize < sendsize)
+            if (recvsize < mev->bufsize[myrank])
             {
                 return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
             }
-            if ( recvbuf == (char*)sendbuf+displs[myrank]*sendtype->size )
+            if (recvtype != sendtype)
+            {
+                return tMPI_Error(comm, MPI_ERR_MULTI_MISMATCH);
+            }
+            if ( recvbuf == mev->buf[myrank] )
             {
                 return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
             }
 
-            memcpy(recvbuf, (char*)sendbuf+displs[myrank]*sendtype->size,
-                   sendsize);
+            memcpy(recvbuf, (void*)(mev->buf[myrank]), mev->bufsize[myrank]);
         }
-        ret=tMPI_Waitall_r(N, rq, 0, FALSE);
-        if (N>MAX_PREALLOC_THREADS)
+
+        /* and wait until everybody is done copying */
+        while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
         {
-            smalloc(rqr, sizeof(struct mpi_req_)*N);
-            smalloc(rq, sizeof(MPI_Request)*N);
         }
     }
     else
     {
-        if (!recvbuf && recvcount!=0)
+        /* get the root mev */
+        struct multi_env *rmev = &(comm->msc[root].mev[mevi]);
+        size_t bufsize=recvcount*recvtype->size;
+        /* wait until root becomes available */
+        while( gmx_atomic_read( &(rmev->current_counter)) != msc->counter)
         {
-            return tMPI_Error(comm, MPI_ERR_BUF);
         }
-        ret=tMPI_Recv_r(recvbuf, recvcount, recvtype, root, TMPI_SCATTER_TAG, 
-                        comm, 0, TRUE);
+        tMPI_Mult_xfer(comm, myrank, rmev, recvbuf, bufsize, recvtype,
+                       TMPI_SCATTERV_TAG, &ret);
     }
- 
     return ret;
-}
 
+}
 
 
 
 int MPI_Alltoall(void* sendbuf, int sendcount, MPI_Datatype sendtype,
                  void* recvbuf, int recvcount, MPI_Datatype recvtype,
                  MPI_Comm comm)
-
 {
+    struct multi_sync *msc;
+    struct multi_env *mev;
+    int mevi;
     int i;
-    int N=tMPI_Comm_N(comm);
-    int sdispls_[MAX_PREALLOC_THREADS];
-    int rdispls_[MAX_PREALLOC_THREADS];
-    int sendcounts_[MAX_PREALLOC_THREADS];
-    int recvcounts_[MAX_PREALLOC_THREADS];
-    int *sdispls=sdispls_;
-    int *rdispls=rdispls_;
-    int *sendcounts=sendcounts_;
-    int *recvcounts=recvcounts_;
-    int ret;
+    int myrank;
+    int n_remaining;
+    int ret=MPI_SUCCESS;
 
-    if (!comm)
-    {
-        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
-    }
-    if (N>MAX_PREALLOC_THREADS)
-    {
-#ifdef TMPI_WARN_MALLOC
-        fprintf(stderr, "Warning: malloc during MPI_Alltoall\n");
-#endif
-        smalloc(sdispls, N*sizeof(int));
-        smalloc(rdispls, N*sizeof(int));
-        smalloc(sendcounts, N*sizeof(int));
-        smalloc(recvcounts, N*sizeof(int));
-    }
- 
-
-    for(i=0;i<N;i++)
-    {
-        sendcounts[i]=sendcount;
-        recvcounts[i]=recvcount;
-        sdispls[i]=sendcount*i;
-        rdispls[i]=recvcount*i;
-    }
-    ret= MPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype,
-                       recvbuf, recvcounts, rdispls, recvtype, 
-                       comm);
-    if (N>MAX_PREALLOC_THREADS)
-    {
-        sfree(sdispls);
-        sfree(rdispls);
-        sfree(sendcounts);
-        sfree(recvcounts);
-    }
-    return ret;
-}
-
-
-int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
-                  MPI_Datatype sendtype, void* recvbuf, int *recvcounts,
-                  int *rdispls, MPI_Datatype recvtype, MPI_Comm comm)
-
-{
-    int i,myrank,ret=MPI_SUCCESS;
-    int N=tMPI_Comm_N(comm);
-
-    struct mpi_req_ rqs_[MAX_PREALLOC_THREADS]; /* send requests */
-    struct mpi_req_ rqr_[MAX_PREALLOC_THREADS]; /* receive requests */
-    /* pointers to the requests for tMPI_Waitall */
-    MPI_Request rq_[2*MAX_PREALLOC_THREADS]; 
-
-    struct mpi_req_ *rqs=rqs_; /* send requests */
-    struct mpi_req_ *rqr=rqr_; /* receive requests */
-    MPI_Request *rq=rq_; /* pointers to the requests for tMPI_Waitall */
     if (!comm)
     {
         return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
@@ -3904,79 +3920,161 @@ int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     {
         return tMPI_Error(comm, MPI_ERR_BUF);
     }
+
     myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
-    if (N>MAX_PREALLOC_THREADS)
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
+    mev=&(msc->mev[mevi]);
+
+    /* post our pointers */
     {
-#ifdef TMPI_WARN_MALLOC
-        fprintf(stderr, "Warning: malloc during MPI_Alltoallv\n");
-#endif
-        smalloc(rqs, sizeof(struct mpi_req_)*N);
-        smalloc(rqr, sizeof(struct mpi_req_)*N);
-        smalloc(rq, sizeof(MPI_Request)*N*2);
+        /* first set up the data */
+        mev->tag=TMPI_ALLTOALLV_TAG;
+        mev->datatype=sendtype;
+        for(i=0;i<comm->grp.N;i++)
+        {
+            mev->buf[i]=(char*)sendbuf+i*sendcount*sendtype->size;
+            mev->bufsize[i]=sendcount*sendtype->size;
+            mev->read_data[i]=FALSE;
+        }
+
+        gmx_atomic_set(&(mev->n_remaining), comm->grp.N-1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
+    }
+    /* do root transfer */
+    {
+        int recvsize=recvtype->size*recvcount;
+        tMPI_Mult_xfer(comm, myrank, mev,
+                       (char*)recvbuf+myrank*recvcount*recvtype->size, 
+                       recvsize, recvtype, TMPI_ALLTOALLV_TAG, &ret);
+        if (ret!=MPI_SUCCESS)
+            return ret;
+                    
+        mev->read_data[myrank]=TRUE;
     }
 
-    /* first post async sends */
-    for(i=0;i<N;i++)
+    n_remaining=comm->grp.N-1;
+    /* poll data availability */
+    while(n_remaining>0)
     {
-        if (i!=myrank ) /*&& sendcounts[i]>0)*/
+        for(i=0;i<comm->grp.N;i++)
         {
-            int ret2;
-            if ( (ret2=tMPI_Isend_r((char*)sendbuf+ sdispls[i]*sendtype->size, 
-                            sendcounts[i], sendtype, i, 
-                            TMPI_ALLTOALL_TAG, comm, &(rqs[i]), TRUE))
-                    != MPI_SUCCESS)
+            struct multi_env *rmev=&(comm->msc[i].mev[mevi]);
+            if ((!mev->read_data[i]) &&
+                (gmx_atomic_read(&(rmev->current_counter))==msc->counter) )
             {
-                return ret2;
+                ret=tMPI_Mult_xfer(comm, myrank, rmev, 
+                                  (char*)recvbuf+i*recvcount*recvtype->size,
+                                  recvcount*recvtype->size, 
+                                  recvtype, TMPI_ALLTOALLV_TAG,&ret);
+                if (ret!=MPI_SUCCESS)
+                    return ret;
+
+                mev->read_data[i]=TRUE;
+                n_remaining--;
             }
-            rq[0*N+i]=&(rqs[i]);
-        }
-        else
-        {
-            rq[0*N+i]=0;
         }
     }
+    /* and wait until everybody is done copying our data */
+    while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
+    {
+    }
 
-    /* do local transfer */
+    return ret;
+}
+
+
+int MPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
+                  MPI_Datatype sendtype, 
+                  void* recvbuf, int *recvcounts, int *rdispls, 
+                  MPI_Datatype recvtype, 
+                  MPI_Comm comm)
+
+{
+    struct multi_sync *msc;
+    struct multi_env *mev;
+    int mevi;
+    int i;
+    int myrank;
+    int n_remaining;
+    int ret=MPI_SUCCESS;
+
+    if (!comm)
+    {
+        return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_COMM);
+    }
+    if (!sendbuf || !recvbuf) /* don't do pointer arithmetic on a NULL ptr */
+    {
+        return tMPI_Error(comm, MPI_ERR_BUF);
+    }
+
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+    msc=&(comm->msc[myrank]);
+    /* we increase our counter. */
+    msc->counter++;
+    mevi=msc->counter % N_MULTI_SYNC;
+    mev=&(msc->mev[mevi]);
+
+    /* post our pointers */
+    {
+        /* first set up the data */
+        mev->tag=TMPI_ALLTOALLV_TAG;
+        mev->datatype=sendtype;
+        for(i=0;i<comm->grp.N;i++)
+        {
+            mev->buf[i]=(char*)sendbuf+sdispls[i]*sendtype->size;
+            mev->bufsize[i]=sendcounts[i]*sendtype->size;
+            mev->read_data[i]=FALSE;
+        }
+
+        gmx_atomic_set(&(mev->n_remaining), comm->grp.N-1);
+        /* we now publish our counter */
+        gmx_atomic_set(&(mev->current_counter), msc->counter);
+    }
+    /* do root transfer */
     {
         int recvsize=recvtype->size*recvcounts[myrank];
-        int sendsize=sendtype->size*sendcounts[myrank];
-        if (recvsize < sendsize)
-        {
-            return tMPI_Error(comm, MPI_ERR_XFER_BUFSIZE);
-        }
-        if ( (char*)recvbuf+rdispls[myrank]*recvtype->size == 
-             (char*)sendbuf+sdispls[myrank]*sendtype->size )
-        {
-            return tMPI_Error(MPI_COMM_WORLD, MPI_ERR_XFER_BUF_OVERLAP);
-        }
-        memcpy((char*)recvbuf + rdispls[myrank]*recvtype->size, 
-               (char*)sendbuf + sdispls[myrank]*sendtype->size,
-               sendsize);
+        tMPI_Mult_xfer(comm, myrank, mev,
+                       (char*)recvbuf+rdispls[myrank]*recvtype->size, 
+                       recvsize, recvtype, TMPI_ALLTOALLV_TAG, &ret);
+        if (ret!=MPI_SUCCESS)
+            return ret;
+                    
+        mev->read_data[myrank]=TRUE;
     }
 
-    /* now post async recvs */
-    for(i=0;i<N;i++)
+    n_remaining=comm->grp.N-1;
+    /* poll data availability */
+    while(n_remaining>0)
     {
-        if (i!=myrank ) /*&& recvcounts[i]>0 )*/
+        for(i=0;i<comm->grp.N;i++)
         {
-            int ret2;
-            if ((ret2=tMPI_Irecv_r((char*)recvbuf+ rdispls[i]*recvtype->size, 
-                            recvcounts[i], recvtype, i, TMPI_ALLTOALL_TAG, 
-                            comm, &(rqr[i]), TRUE)) !=
-                    MPI_SUCCESS)
+            struct multi_env *rmev=&(comm->msc[i].mev[mevi]);
+            if ((!mev->read_data[i]) &&
+                (gmx_atomic_read(&(rmev->current_counter))==msc->counter) )
             {
-                return ret2;
+                ret=tMPI_Mult_xfer(comm, myrank, rmev, 
+                                  (char*)recvbuf+rdispls[i]*recvtype->size,
+                                  recvcounts[i]*recvtype->size, 
+                                  recvtype, TMPI_ALLTOALLV_TAG,&ret);
+                if (ret!=MPI_SUCCESS)
+                    return ret;
+
+                mev->read_data[i]=TRUE;
+                n_remaining--;
             }
-            rq[1*N + i]=&(rqr[i]);
-        }
-        else
-        {
-            rq[1*N + i]=0;
         }
     }
-    /* and wait for everything to complete */
-    ret=tMPI_Waitall_r(2*N, rq, 0, FALSE);
+    /* and wait until everybody is done copying our data */
+    while (gmx_atomic_read( &(mev->n_remaining) ) > 0)
+    {
+    }
+
     return ret;
 }
 

@@ -115,13 +115,14 @@ extern MPI_Datatype MPI_BYTE;
 #define MPI_ERR_SEND_DEST               13
 #define MPI_ERR_RECV_SRC                14
 #define MPI_ERR_BUF                     15
-#define MPI_ERR_OP_FN                   16
-#define MPI_ERR_ENVELOPES               17
-#define MPI_ERR_REQUESTS                18
-#define MPI_FAILURE                     19
-#define MPI_ERR_UNKNOWN                 20
+#define MPI_ERR_MULTI_MISMATCH          16
+#define MPI_ERR_OP_FN                   17
+#define MPI_ERR_ENVELOPES               18
+#define MPI_ERR_REQUESTS                19
+#define MPI_FAILURE                     20
+#define MPI_ERR_UNKNOWN                 21
 
-#define N_MPI_ERR                       21
+#define N_MPI_ERR                       22
 
 #define MPI_MAX_ERROR_STRING            256
 
