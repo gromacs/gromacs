@@ -849,7 +849,7 @@ do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfil
 				return -1;
 			}
 #if (SIZEOF_OFF_T > SIZEOF_INT)
-			outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low );
+			outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
 #else
 			outputfiles[i].offset = offset_low;
 #endif
