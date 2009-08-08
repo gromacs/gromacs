@@ -106,6 +106,7 @@ check_type_size("int"           SIZEOF_INT)
 check_type_size("long int"      SIZEOF_LONG_INT) 
 check_type_size("long long int" SIZEOF_LONG_LONG_INT) 
 check_type_size("off_t"         SIZEOF_OFF_T)
+check_type_size("void *"        SIZEOF_VOIDP)
 
 # Check for some basic types that we *need*, so set these to int if they are not present 
 check_type_size(uid_t uid_t)

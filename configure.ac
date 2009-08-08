@@ -625,6 +625,7 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long int)
 AC_CHECK_SIZEOF(long long int)
 AC_CHECK_SIZEOF(off_t)
+AC_CHECK_SIZEOF(void*)
 
 
 

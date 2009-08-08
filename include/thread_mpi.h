@@ -293,7 +293,7 @@ int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 
 /* topology functions */
 /** check what type of topology the comm has */
-int MPI_Topo_test(MPI_Comm comm, int status);
+int MPI_Topo_test(MPI_Comm comm, int *status);
 /** check which dimensionality a topology has */
 int MPI_Cartdim_get(MPI_Comm comm, int *ndims);
 /** check which size and pbc a Cartesian topology has */

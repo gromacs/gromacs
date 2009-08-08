@@ -260,6 +260,9 @@
 /* The size of off_t, as computed by sizeof. */
 #cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
 
+/* The size of void*, as computed by sizeof. */
+#cmakedefine SIZEOF_VOIDP @SIZEOF_VOIDP@
+
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #cmakedefine _LARGEFILE_SOURCE
 

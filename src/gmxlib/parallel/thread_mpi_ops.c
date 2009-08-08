@@ -21,8 +21,6 @@ user-defined ops */
 
 /* macros to define functions and prototypes based on a name and an operation */
 #define FNr(tp,fname,fn) \
-static void tMPI_##tp##_##fname (void *dest, void *src_a, void *src_b, \
-                                 int count); \
 static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
                                   int count) \
 { \
@@ -32,14 +30,12 @@ static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
     TYPE *d=(TYPE*)dest; \
     int i; \
     for(i=0;i<count;i++) \
-        d[i]=fn(a[i],b[i]); \
+        d[i]=(TYPE)(fn(a[i],b[i])); \
 }  
 
 #define FN(tp,fname,fn) FNr(tp,fname,fn)
 
 #define OPFNr(tp,fname,operator)  \
-static void tMPI_##tp##_##fname (void *dest, void *src_a, void *src_b, \
-                                 int count); \
 static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
                                   int count) \
 { \
@@ -49,7 +45,7 @@ static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
     TYPE *d=(TYPE*)dest; \
     int i; \
     for(i=0;i<count;i++) \
-        d[i]=a[i] operator b[i]; \
+        d[i]=(TYPE)(a[i] operator b[i]); \
 }  
 
 #define OPFN(tp,fname,operator) OPFNr(tp,fname,operator)

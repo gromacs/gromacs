@@ -48,8 +48,12 @@
  */
 
 
-
 #include <stdio.h>
+
+#if !defined(SIZEOF_VOIDP) && defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 
 #include "gmx_thread.h"
 
@@ -64,9 +68,13 @@ extern "C"
 
 
 
-#if ( ( (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__)) && \
-        (defined(i386) || defined(__x86_64__)) )                                      \
+#if ( ( (defined(__GNUC__) || defined(__INTEL_COMPILER) ||  \
+       defined(__PATHSCALE__)) && (defined(i386) || defined(__x86_64__)) ) \
       || defined (DOXYGEN) )
+
+
+#include <limits.h>
+#include <stdint.h>
 /* This code is executed for x86 and x86-64, with these compilers:
  * GNU
  * Intel 
@@ -143,10 +151,23 @@ extern "C"
  */
 typedef struct gmx_atomic
 {
-	volatile int	   value;      /*!< Volatile, to avoid compiler aliasing */
+        volatile int       value;   /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
 
+/*! \brief Atomic pointer type equivalent to gmx_atomic_t
+ *
+ * Useful for lock-free and wait-free data structures.
+ * The only operations available for this type are
+ * gmx_atomic_ptr_get
+ * gmx_atomic_ptr_set
+ * gmx_atomic_ptr_cmpxch
+*/
+typedef struct gmx_atomic_ptr
+{
+        volatile void*     value;   /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
 
 
 /*! \brief Gromacs spinlock
@@ -164,7 +185,7 @@ gmx_atomic_t;
  */
 typedef struct gmx_spinlock
 {
-    volatile unsigned int   lock;      /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int   lock;   /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_spinlock_t;
 
@@ -193,7 +214,7 @@ gmx_spinlock_t;
  *  \param  a   Atomic variable to read
  *  \return     Integer value of the atomic variable
  */
-#define gmx_atomic_read(a)  ((a)->value) 
+#define gmx_atomic_get(a)  ((a)->value) 
 
  
 /*! \brief Write value to an atomic integer 
@@ -206,6 +227,29 @@ gmx_spinlock_t;
  */
 #define gmx_atomic_set(a,i)  (((a)->value) = (i))
 
+
+/*! \brief Return value of an atomic pointer 
+ *
+ *  Also implements proper memory barriers when necessary.
+ *  The actual implementation is system-dependent.
+ *
+ *  \param  a   Atomic variable to read
+ *  \return     Pointer value of the atomic variable
+ */
+#define gmx_atomic_ptr_get(a)  ((a)->value) 
+
+ 
+/*! \brief Write value to an atomic pointer 
+ *
+ *  Also implements proper memory barriers when necessary.
+ *  The actual implementation is system-dependent.
+ *
+ *  \param  a   Atomic variable
+ *  \param  i   Pointer value to set the atomic variable to.
+ */
+#define gmx_atomic_ptr_set(a,i)  (((a)->value) = (i))
+
+
  
 /*! \brief Add integer to atomic variable
  *
@@ -217,9 +261,8 @@ gmx_spinlock_t;
  *
  *  \return The new value (after summation).
  */
-static inline int
-gmx_atomic_add_return(gmx_atomic_t *     a, 
-                      volatile int       i)
+static inline int gmx_atomic_add_return(gmx_atomic_t *     a, 
+                                        volatile int       i)
 {
     int __i;
     
@@ -245,13 +288,14 @@ gmx_atomic_add_return(gmx_atomic_t *     a,
  *
  *  \return    The value of the atomic variable before addition.
  */
-static inline int
-gmx_atomic_fetch_add(gmx_atomic_t *     a,
-                     volatile int       i)
+static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+                                       volatile int       i)
 {
+#if 0
     int __i;
 
     __i = i;
+#endif
     __asm__ __volatile__("lock ; xaddl %0, %1;"
                          :"=r"(i) :"m"(a->value), "0"(i));
     return i;
@@ -283,10 +327,9 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *    a, 
-                   int               oldval,
-                   int               newval)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *    a, 
+                                     int               oldval,
+                                     int               newval)
 {
     volatile unsigned long prev;
     
@@ -299,6 +342,51 @@ gmx_atomic_cmpxchg(gmx_atomic_t *    a,
 }
 
 
+/*! \brief Atomic pointer compare-exchange operation
+ *
+ *   The \a old value is compared with the memory value in the atomic datatype.
+ *   If the are identical, the atomic type is updated to the new value, 
+ *   and otherwise left unchanged. 
+ *  
+ *   This is essential for implementing wait-free lists and other data
+ *   structures. 
+ *
+ *   \param a        Atomic datatype ('memory' value)
+ *   \param oldval   Pointer value read from the atomic type at an earlier point
+ *   \param newval   New value to write to the atomic type if it currently is
+ *                   identical to the old value.
+ *
+ *   \return The value of the atomic pointer in memory when this 
+ *           instruction was executed. This, if the operation succeeded the
+ *           return value was identical to the \a old parameter, and if not
+ *           it returns the updated value in memory so you can repeat your
+ *           operations on it. 
+ *
+ *   \note   The exchange occured if the return value is identical to \a old.
+ */
+static inline volatile void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t* a, 
+                                                    void*             oldval,
+                                                    void*             newval)
+{
+    volatile void *prev;
+#if ( SIZEOF_VOIDP == 4 )
+    __asm__ __volatile__("lock ; cmpxchgl %1,%2"
+                         : "=a"(prev)
+                         : "q"(newval), "m"(a->value), "0"(oldval)
+                         : "memory");
+#elif ( SIZEOF_VOIDP == 8 )
+    __asm__ __volatile__("lock ; cmpxchgq %1,%2"
+                         : "=a"(prev)
+                         : "q"(newval), "m"(a->value), "0"(oldval)
+                         : "memory");
+#else
+#error Unknown pointer size 
+#endif
+    return prev;
+}
+
+
+
 /*! \brief Initialize spinlock
  *
  *  In theory you can call this from multiple threads, but remember
@@ -308,8 +396,7 @@ gmx_atomic_cmpxchg(gmx_atomic_t *    a,
  *
  *  \param x      Gromacs spinlock pointer.
  */
-static inline void
-gmx_spinlock_init(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_init(gmx_spinlock_t *   x)
 {
     x->lock = 1;
 }
@@ -323,19 +410,18 @@ gmx_spinlock_init(gmx_spinlock_t *   x)
  *
  *  \param x     Gromacs spinlock pointer
  */
-static inline void
-gmx_spinlock_lock(gmx_spinlock_t *  x)
+static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
 {
-	__asm__ __volatile__("\n1:\t" 
-						 "lock ; decb %0\n\t" 
-						 "jns 3f\n" 
-						 "2:\t" 
-						 "rep;nop\n\t" 
-						 "cmpb $0,%0\n\t" 
-						 "jle 2b\n\t" 
-						 "jmp 1b\n" 
-						 "3:\n\t" 
-						 :"=m" (x->lock) : : "memory"); 
+        __asm__ __volatile__("\n1:\t" 
+                             "lock ; decb %0\n\t" 
+                             "jns 3f\n" 
+                             "2:\t" 
+                             "rep;nop\n\t" 
+                             "cmpb $0,%0\n\t" 
+                             "jle 2b\n\t" 
+                             "jmp 1b\n" 
+                             "3:\n\t" 
+                             :"=m" (x->lock) : : "memory"); 
 }
 
 
@@ -349,14 +435,13 @@ gmx_spinlock_lock(gmx_spinlock_t *  x)
  * \return 0 if the mutex was available so we could lock it,
  *         otherwise a non-zero integer (1) if the lock is busy.
  */
-static inline int
-gmx_spinlock_trylock(gmx_spinlock_t *  x)
+static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
 {
-	char old_value;
-	
+        char old_value;
+        
     __asm__ __volatile__("xchgb %b0,%1"
                          :"=q" (old_value), "=m" (x->lock)
-						 :"0" (0) : "memory");
+                         :"0" (0) : "memory");
     return (old_value <= 0);
 }
 
@@ -367,12 +452,11 @@ gmx_spinlock_trylock(gmx_spinlock_t *  x)
  *
  *  Unlocks the spinlock, regardless if which thread locked it.
  */
-static inline void
-gmx_spinlock_unlock(gmx_spinlock_t *  x)
+static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
 {
-	char old_value = 1;
-	
-	__asm__ __volatile__(
+        char old_value = 1;
+        
+        __asm__ __volatile__(
                          "xchgb %b0, %1" 
                          :"=q" (old_value), "=m" (x->lock) 
                          :"0" (old_value) : "memory"
@@ -388,8 +472,7 @@ gmx_spinlock_unlock(gmx_spinlock_t *  x)
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
-static inline int
-gmx_spinlock_islocked(gmx_spinlock_t *  x)
+static inline int gmx_spinlock_islocked(gmx_spinlock_t *  x)
 {
     return (*(volatile signed char *)(&(x)->lock) <= 0);
 }
@@ -403,8 +486,7 @@ gmx_spinlock_islocked(gmx_spinlock_t *  x)
  *
  *  \param x  Gromacs spinlock pointer
  */
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 {
     do 
     {
@@ -428,14 +510,20 @@ gmx_spinlock_wait(gmx_spinlock_t *   x)
 
 typedef struct gmx_atomic
 {
-	volatile int	   value;      /*!< Volatile, to avoid compiler aliasing */
+        volatile int       value;   /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
+
+typedef struct gmx_atomic_ptr
+{
+        volatile void*     value;   /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
 
 
 typedef struct gmx_spinlock
 {
-    volatile unsigned int   lock;      /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int   lock;   /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_spinlock_t;
 
@@ -443,32 +531,32 @@ gmx_spinlock_t;
 #define GMX_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_read(a)   ((a)->value) 
-#define gmx_atomic_set(a,i)  (((a)->value) = (i))
+#define gmx_atomic_get(a)        ((a)->value) 
+#define gmx_atomic_set(a,i)     (((a)->value) = (i))
 
+#define gmx_atomic_ptr_get(a)    ((a)->value) 
+#define gmx_atomic_ptr_set(a,i) (((a)->value) = (i))
 
-static inline int
-gmx_atomic_add_return(gmx_atomic_t *    a, 
-                      int               i)
+static inline int gmx_atomic_add_return(gmx_atomic_t *    a, 
+                                        int               i)
 {
     int t;
     
-	__asm__ __volatile__("1:     lwarx   %0,0,%2\n"
+    __asm__ __volatile__("1:     lwarx   %0,0,%2\n"
                          "\tadd     %0,%1,%0\n"
                          "\tstwcx.  %0,0,%2 \n"
                          "\tbne-    1b"
                          "\tisync\n"
                          : "=&r" (t)
-						 : "r" (i), "r" (&a->value)
-						 : "cc" , "memory");
+                         : "r" (i), "r" (&a->value)
+                         : "cc" , "memory");
     return t;
 }
 
 
 
-static inline int
-gmx_atomic_fetch_add(gmx_atomic_t *     a,
-                     int                i)
+static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+                                       int                i)
 {
     int t;
     
@@ -486,10 +574,9 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
 }
 
 
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *       a,
-                   int                  oldval,
-                   int                  newval)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *       a,
+                                     int                  oldval,
+                                     int                  newval)
 {
     int prev;
     
@@ -501,22 +588,61 @@ gmx_atomic_cmpxchg(gmx_atomic_t *       a,
                           "\tsync\n"
                           "2:\n"
                           : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), "m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval), 
+                            "m" (a->value)
                           : "cc", "memory");
     
     return prev;
 }
 
-static inline void
-gmx_spinlock_init(gmx_spinlock_t *x)
+
+static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
+                                           void *               oldval,
+                                           void *               newval)
+{
+    void *prev;
+   
+#if ( SIZEOF_VOIDP == 4 )
+    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
+                          "\tcmpw    0,%0,%3 \n"
+                          "\tbne     2f \n"
+                          "\tstwcx.  %4,0,%2 \n"
+                          "bne-    1b\n"
+                          "\tsync\n"
+                          "2:\n"
+                          : "=&r" (prev), "=m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval), 
+                            "m" (a->value)
+                          : "cc", "memory");
+#elif ( SIZEOF_VOIDP == 8 )
+    __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
+                          "\tcmpd    0,%0,%3 \n"
+                          "\tbne     2f \n"
+                          "\tstdcx.  %4,0,%2 \n"
+                          "bne-    1b\n"
+                          "\tsync\n"
+                          "2:\n"
+                          : "=&r" (prev), "=m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval), 
+                            "m" (a->value)
+                          : "cc", "memory");
+#else
+#error Unknown pointer size
+#endif
+    return prev;
+}
+
+
+
+
+static inline void gmx_spinlock_init(gmx_spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
 
-static inline void
-gmx_spinlock_lock(gmx_spinlock_t *  x)
+static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
 {
     unsigned int tmp;
     
@@ -536,8 +662,7 @@ gmx_spinlock_lock(gmx_spinlock_t *  x)
 }
 
 
-static inline int
-gmx_spinlock_trylock(gmx_spinlock_t *  x)
+static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
 {
     unsigned int old, t;
     unsigned int mask = 1;
@@ -557,23 +682,20 @@ gmx_spinlock_trylock(gmx_spinlock_t *  x)
 }
 
 
-static inline void
-gmx_spinlock_unlock(gmx_spinlock_t *  x)
+static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
 {
     __asm__ __volatile__("\teieio\n": : :"memory");
     x->lock = 0;
 }
 
 
-static inline int
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     return ( x->lock != 0);
 }
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *x)
 {
     do 
     {
@@ -601,14 +723,22 @@ gmx_spinlock_wait(gmx_spinlock_t *x)
 
 typedef struct gmx_atomic
 {
-	volatile int	   value;      /*!< Volatile, to avoid compiler aliasing */
+        volatile int       value;  /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
 
 
+typedef struct gmx_atomic_ptr
+{
+        volatile void*     value;  /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
+
+
+
 typedef struct gmx_spinlock
 {
-    volatile unsigned int   lock;      /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int   lock;  /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_spinlock_t;
 
@@ -616,31 +746,29 @@ gmx_spinlock_t;
 #define GMX_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_read(a)   ((a)->value) 
+#define gmx_atomic_get(a)   ((a)->value) 
 #define gmx_atomic_set(a,i)  (((a)->value) = (i))
 
 
-static inline int
-gmx_atomic_add_return(gmx_atomic_t *    a, 
-                      int               i)
+static inline int gmx_atomic_add_return(gmx_atomic_t *    a, 
+                                        int               i)
 {
     int t;
     
-	__asm__ __volatile__("1:     lwarx   %0,0,%2 \n"
+    __asm__ __volatile__("1:     lwarx   %0,0,%2 \n"
                          "\t add     %0,%1,%0 \n"
                          "\t stwcx.  %0,0,%2 \n"
                          "\t bne-    1b \n"
                          "\t isync \n"
                          : "=&r" (t)
-						 : "r" (i), "r" (&a->value) );
+                         : "r" (i), "r" (&a->value) );
     return t;
 }
 
 
 
-static inline int
-gmx_atomic_fetch_add(gmx_atomic_t *     a,
-                     int                i)
+static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+                                       int                i)
 {
     int t;
     
@@ -657,10 +785,9 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
 }
 
 
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *       a,
-                   int                  oldval,
-                   int                  newval)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *       a,
+                                     int                  oldval,
+                                     int                  newval)
 {
     int prev;
     
@@ -672,21 +799,57 @@ gmx_atomic_cmpxchg(gmx_atomic_t *       a,
                           "\t sync \n"
                           "2: \n"
                           : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), "m" (a->value));
+                          : "r" (&a->value), "r" (oldval), "r" (newval), 
+                            "m" (a->value));
     
     return prev;
 }
 
-static inline void
-gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
+                                           void*                oldval,
+                                           void*                newval)
+{
+    void* prev;
+   
+
+#if ( SIZEOF_VOIDP == 4 )
+    __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
+                          "\t cmpw    0,%0,%3 \n"
+                          "\t bne     2f \n"
+                          "\t stwcx.  %4,0,%2 \n"
+                          "\t bne-    1b \n"
+                          "\t sync \n"
+                          "2: \n"
+                          : "=&r" (prev), "=m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval), 
+                            "m" (a->value));
+    
+#elif ( SIZEOF_VOIDP == 8 )
+    __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
+                          "\t cmpd    0,%0,%3 \n"
+                          "\t bne     2f \n"
+                          "\t stdcx.  %4,0,%2 \n"
+                          "\t bne-    1b \n"
+                          "\t sync \n"
+                          "2: \n"
+                          : "=&r" (prev), "=m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval), 
+                            "m" (a->value));
+#else
+#error Unknown pointer size
+#endif
+    return prev;
+}
+
+
+static inline void gmx_spinlock_init(gmx_spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
 
-static inline void
-gmx_spinlock_lock(gmx_spinlock_t *  x)
+static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
 {
     unsigned int tmp;
     
@@ -705,8 +868,7 @@ gmx_spinlock_lock(gmx_spinlock_t *  x)
 }
 
 
-static inline int
-gmx_spinlock_trylock(gmx_spinlock_t *  x)
+static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
 {
     unsigned int old, t;
     unsigned int mask = 1;
@@ -725,23 +887,20 @@ gmx_spinlock_trylock(gmx_spinlock_t *  x)
 }
 
 
-static inline void
-gmx_spinlock_unlock(gmx_spinlock_t *  x)
+static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
 {
     __asm__ __volatile__("\t eieio \n");
     x->lock = 0;
 }
 
 
-static inline void
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     return ( x->lock != 0);
 }
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 {
     
     do 
@@ -756,22 +915,28 @@ gmx_spinlock_wait(gmx_spinlock_t *   x)
 
 #elif (defined(__ia64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER)))
 /* ia64 with GCC or Intel compilers. Since we need to define everything through
-* cmpxchg and fetchadd on ia64, we merge the different compilers and only provide 
-* different implementations for that single function. 
+* cmpxchg and fetchadd on ia64, we merge the different compilers and only 
+* provide different implementations for that single function. 
 * Documentation? Check the gcc/x86 section.
 */
 
 
 typedef struct gmx_atomic
 {
-	volatile int	   value;      /*!< Volatile, to avoid compiler aliasing */
+        volatile int       value; /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
+
+typedef struct gmx_atomic_ptr
+{
+        volatile void*     value; /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
 
 
 typedef struct gmx_spinlock
 {
-    volatile unsigned int   lock;      /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_spinlock_t;
 
@@ -779,7 +944,7 @@ gmx_spinlock_t;
 #define GMX_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_read(a)   ((a)->value) 
+#define gmx_atomic_get(a)   ((a)->value) 
 #define gmx_atomic_set(a,i)  (((a)->value) = (i))
 
 
@@ -793,6 +958,8 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 #  define gmx_atomic_memory_barrier() __memory_barrier()
 /* ia64 cmpxchg */
 #  define gmx_atomic_cmpxchg(a, oldval, newval) _InterlockedCompareExchange(&a->value,newval,oldval)
+/* ia64 cmpxchg */
+#  define gmx_atomic_ptr_cmpxchg(a, oldval, newval) _InterlockedCompareExchange64(&a->value,newval,oldval)
 /* ia64 fetchadd, but it only works with increments +/- 1,4,8,16 */
 #  define gmx_ia64_fetchadd(a, inc)  __fetchadd4_rel(a, inc)
 
@@ -800,14 +967,26 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 memory barrier */
 #  define gmx_atomic_memory_barrier() asm volatile ("":::"memory")
 /* ia64 cmpxchg */
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *   a,
-                   int              oldval,
-                   int              newval)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *   a,
+                                     int              oldval,
+                                     int              newval)
 {
     volatile int res;
     asm volatile ("mov ar.ccv=%0;;" :: "rO"(oldval));
     asm volatile ("cmpxchg4.acq %0=[%1],%2,ar.ccv":                    
+                  "=r"(res) : "r"(&a->value), "r"(newval) : "memory"); 
+                          
+    return res;
+}
+
+/* ia64 ptr cmpxchg */
+static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t * a,
+                                           void*              oldval,
+                                           void*              newval)
+{
+    volatile void* res;
+    asm volatile ("mov ar.ccv=%0;;" :: "rO"(oldval));
+    asm volatile ("cmpxchg8.acq %0=[%1],%2,ar.ccv":                    
                   "=r"(res) : "r"(&a->value), "r"(newval) : "memory"); 
                           
     return res;
@@ -829,9 +1008,8 @@ gmx_atomic_cmpxchg(gmx_atomic_t *   a,
 
 
 
-static inline int
-gmx_atomic_add_return(gmx_atomic_t *       a, 
-                      volatile int         i)
+static inline int gmx_atomic_add_return(gmx_atomic_t *       a, 
+                                        volatile int         i)
 {
     volatile int oldval,newval;    
     volatile int __i = i;
@@ -841,7 +1019,7 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
      * a value supported by fetchadd (1,4,8,16,-1,-4,-8,-16).
      */                         
     if (__builtin_constant_p(i) &&
-        ( (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||         
+        ( (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) || 
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) ) )
     {
         oldval = gmx_ia64_fetchadd(a,__i);
@@ -852,7 +1030,7 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_read(a);
+            oldval = gmx_atomic_get(a);
             newval = oldval + i;
         }
         while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
@@ -862,9 +1040,8 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
 
 
 
-static inline int
-gmx_atomic_fetch_add(gmx_atomic_t *     a,
-                     volatile int       i)
+static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+                                       volatile int       i)
 {
     volatile int oldval,newval;    
     volatile int __i = i;
@@ -874,7 +1051,7 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
      * a value supported by fetchadd (1,4,8,16,-1,-4,-8,-16).
      */                         
     if (__builtin_constant_p(i) &&
-        ( (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||         
+        ( (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) || 
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) ) )
     {
         oldval = gmx_ia64_fetchadd(a,__i);
@@ -885,7 +1062,7 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_read(a);
+            oldval = gmx_atomic_get(a);
             newval = oldval + i;
         }
         while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
@@ -894,15 +1071,13 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
 }
 
 
-static inline void
-gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void gmx_spinlock_init(gmx_spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
-static inline void
-gmx_spinlock_lock(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_lock(gmx_spinlock_t *   x)
 {
     gmx_atomic_t *a = (gmx_atomic_t *) x;
     unsigned long value;                                                 
@@ -911,7 +1086,7 @@ gmx_spinlock_lock(gmx_spinlock_t *   x)
     {                                                                    
         do                                                               
         {                                                                
-            while (a->value != 0)                                                 
+            while (a->value != 0)   
             {                                                            
                 gmx_atomic_memory_barrier();                             
             }                                                            
@@ -922,15 +1097,13 @@ gmx_spinlock_lock(gmx_spinlock_t *   x)
 } 
 
 
-static inline int
-gmx_spinlock_trylock(gmx_spinlock_t *   x)
+static inline int gmx_spinlock_trylock(gmx_spinlock_t *   x)
 {
     return (gmx_atomic_cmpxchg((gmx_atomic_t *)x, 0, 1) != 0);
 }
 
 
-static inline void
-gmx_spinlock_unlock(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
 {
     do
     {
@@ -941,15 +1114,13 @@ gmx_spinlock_unlock(gmx_spinlock_t *   x)
 }
 
 
-static inline int
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     return (x->lock != 0);
 }
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 {
     
     do 
@@ -978,22 +1149,28 @@ gmx_spinlock_wait(gmx_spinlock_t *   x)
 
 typedef struct gmx_atomic
 {
-	volatile int	   value;      /*!< Volatile, to avoid compiler aliasing */
+        volatile int       value; /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
+
+typedef struct gmx_atomic_ptr
+{
+        volatile void*     value; /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
+
 
 
 typedef struct gmx_spinlock
 {
-    volatile unsigned int   lock;      /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_spinlock_t;
 
 
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *   a,
-                   int              oldval,
-                   int              newval)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *   a,
+                                     int              oldval,
+                                     int              newval)
 {
     int ret;
     
@@ -1009,16 +1186,36 @@ gmx_atomic_cmpxchg(gmx_atomic_t *   a,
 
 
 
+static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *  a,
+                                           void*               oldval,
+                                           void*               newval)
+{
+    void *ret;
+
+    /* todo: fix this */
+    
+    _Asm_mov_to_ar((_Asm_app_reg)_AREG_CCV,(Uint64)oldval,                  
+                   (_Asm_fence)(_UP_CALL_FENCE | _UP_SYS_FENCE |         
+                                _DOWN_CALL_FENCE | _DOWN_SYS_FENCE));
+                   
+    ret = _Asm_cmpxchg((_Asm_sz)SZ_W,(_Asm_sem)_SEM_ACQ,(Uint64)a,    
+                       (Uint64)newval,(_Asm_ldhint)_LDHINT_NONE);
+                   
+    return ret;
+}
+
+
+
+
 #define GMX_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_read(a)   ((a)->value) 
+#define gmx_atomic_get(a)   ((a)->value) 
 #define gmx_atomic_set(a,i)  (((a)->value) = (i))
 
 
-static inline void 
-gmx_atomic_add_return(gmx_atomic_t *       a, 
-                      int                  i)
+static inline void gmx_atomic_add_return(gmx_atomic_t *       a, 
+                                         int                  i)
 {
     int old,new;    
     int __i = i;
@@ -1027,7 +1224,7 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
      * is known at compile time, but hopefully the call uses something simple
      * like a constant, and then the optimizer should be able to do the job.
      */                         
-    if (  (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||         
+    if (  (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||  
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) )
     {
         oldval = gmx_hpia64_fetchadd(a,__i);
@@ -1038,7 +1235,7 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_read(a);
+            oldval = gmx_atomic_get(a);
             newval = oldval + i;
         }
         while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
@@ -1048,9 +1245,8 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
 
 
 
-static inline int
-gmx_atomic_fetch_add(gmx_atomic_t *     a,
-                     int                i)
+static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+                                       int                i)
 {
     int oldval,newval;    
     int __i = i;
@@ -1059,7 +1255,7 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
      * is known at compile time, but hopefully the call uses something simple
      * like a constant, and then the optimizer should be able to do the job.
      */                         
-    if (  (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||         
+    if (  (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) )
     {
         oldval = gmx_hpia64_fetchadd(a,__i);
@@ -1070,7 +1266,7 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_read(a);
+            oldval = gmx_atomic_get(a);
             newval = oldval + i;
         }
         while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
@@ -1079,8 +1275,7 @@ gmx_atomic_fetch_add(gmx_atomic_t *     a,
 }
 
 
-static inline void
-gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void gmx_spinlock_init(gmx_spinlock_t *x)
 {
     x->lock = 0;
 }
@@ -1089,8 +1284,7 @@ gmx_spinlock_init(gmx_spinlock_t *x)
 
 
 
-static inline void
-gmx_spinlock_trylock(gmx_spinlock_t *x)
+static inline void gmx_spinlock_trylock(gmx_spinlock_t *x)
 {
     int rc;
 
@@ -1101,8 +1295,7 @@ gmx_spinlock_trylock(gmx_spinlock_t *x)
 }
 
 
-static inline void
-gmx_spinlock_lock(gmx_spinlock_t *x)
+static inline void gmx_spinlock_lock(gmx_spinlock_t *x)
 {
     int      status = 1;
     
@@ -1116,8 +1309,7 @@ gmx_spinlock_lock(gmx_spinlock_t *x)
 }
 
 
-static inline void
-gmx_spinlock_unlock(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
 {
     _Asm_fetchadd((_Asm_fasz)_SZ_W,(_Asm_sem)_SEM_REL,                  
                   (unsigned int *)x,-1,(_Asm_ldhint)_LDHINT_NONE);
@@ -1125,16 +1317,14 @@ gmx_spinlock_unlock(gmx_spinlock_t *   x)
 
 
 
-static inline void
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     return ( x->lock != 0 );
 }
 
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 {
     do
     {
@@ -1158,9 +1348,16 @@ gmx_spinlock_wait(gmx_spinlock_t *   x)
 
 typedef struct gmx_atomic
 {
-	LONG volatile	   value;      /*!< Volatile, to avoid compiler aliasing */
+        LONG volatile      value; /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
+
+typedef struct gmx_atomic_ptr
+{
+        void* volatile      value; /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
+
 
 
 typedef struct gmx_spinlock
@@ -1175,7 +1372,7 @@ gmx_spinlock_t;
 
 
 
-#define gmx_atomic_read(a)  ((a)->value) 
+#define gmx_atomic_get(a)  ((a)->value) 
 #define gmx_atomic_set(a,i)  (((a)->value) = (i))
 
 
@@ -1190,6 +1387,11 @@ gmx_spinlock_t;
 #define gmx_atomic_cmpxchg(a, oldval, newval) \
     InterlockedCompareExchange((LONG volatile *)a, (LONG) newval, (LONG) oldval)
 
+#define gmx_atomic_ptr_cmpxchg(a, oldval, newval) \
+    InterlockedCompareExchangePointer((LONG volatile *)a, (PVOID) newval,  \
+                                      (PVOID) oldval)
+
+
 
 # define gmx_spinlock_lock(x)   \
     while((InterlockedCompareExchange((LONG volatile *)&x, 1, 0))!=0)
@@ -1199,22 +1401,19 @@ gmx_spinlock_t;
     InterlockedCompareExchange((LONG volatile *)&x, 1, 0)
 
 
-statix inline void
-gmx_spinlock_unlock(gmx_spinlock_t *   x)
+statix inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
 {
     x->lock = 0;
 }
 
 
-static inline int
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     return (*(volatile signed char *)(&(x)->lock) != 0);
 }
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 {
     while(spin_is_locked(x))
     {
@@ -1234,22 +1433,30 @@ gmx_spinlock_wait(gmx_spinlock_t *   x)
 
 typedef struct gmx_atomic
 {
-	volatile int	   value;      /*!< Volatile, to avoid compiler aliasing */
+        volatile int       value;  /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_atomic_t;
 
 
+typedef struct gmx_atomic_ptr
+{
+        volatile void*     value;  /*!< Volatile, to avoid compiler aliasing */
+}
+gmx_atomic_ptr_t;
+
+
+
+
 typedef struct gmx_spinlock
 {
-    volatile unsigned int      lock;      /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int   lock;  /*!< Volatile, to avoid compiler aliasing */
 }
 gmx_spinlock_t;
 
 
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *    a,
-                   int               oldval,
-                   int               newval)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *    a,
+                                     int               oldval,
+                                     int               newval)
 {
     int t;
     
@@ -1267,15 +1474,36 @@ gmx_atomic_cmpxchg(gmx_atomic_t *    a,
 }
 
 
-static inline void 
-gmx_atomic_add_return(gmx_atomic_t *       a, 
-                      int                  i)
+static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *a,
+                                           void*             oldval,
+                                           void*             newval)
+{
+    void *t;
+    
+    if(__check_lock((atomic_p)&a->value, oldval, newval))
+    {
+        /* Not successful - value had changed in memory. Reload value. */
+        t = a->value;
+    }
+    else
+    {
+        /* replacement suceeded */
+        t = oldval;
+    }
+    return t;        
+}
+
+
+
+
+static inline void gmx_atomic_add_return(gmx_atomic_t *       a, 
+                                         int                  i)
 {
     int oldval,newval;    
     
     do
     {
-        oldval = gmx_atomic_read(a);
+        oldval = gmx_atomic_get(a);
         newval = oldval + i;
     }
     while(__check_lock((atomic_p)&a->value, oldval, newval));
@@ -1285,15 +1513,14 @@ gmx_atomic_add_return(gmx_atomic_t *       a,
 
 
 
-static inline void 
-gmx_atomic_fetch_add(gmx_atomic_t *       a, 
-                     int                  i)
+static inline void gmx_atomic_fetch_add(gmx_atomic_t *       a, 
+                                        int                  i)
 {
     int oldval,newval;    
     
     do
     {
-        oldval = gmx_atomic_read(a);
+        oldval = gmx_atomic_get(a);
         newval = oldval + i;
     }
     while(__check_lock((atomic_p)&a->value, oldval, newval));
@@ -1302,15 +1529,13 @@ gmx_atomic_fetch_add(gmx_atomic_t *       a,
 }
 
 
-static inline void
-gmx_spinlock_init(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_init(gmx_spinlock_t *   x)
 {
     __clear_lock((atomic_p)x,0);
 }
 
 
-static inline void
-gmx_spinlock_lock(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_lock(gmx_spinlock_t *   x)
 {
     do
     {
@@ -1320,30 +1545,26 @@ gmx_spinlock_lock(gmx_spinlock_t *   x)
 }
 
 
-static inline void
-gmx_spinlock_trylock(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_trylock(gmx_spinlock_t *   x)
 {
     /* Return 0 if we got the lock */
     return (__check_lock((atomic_p)x, 0, 1) != 0)
 }
 
 
-static inline void
-gmx_spinlock_unlock(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
 {
     __clear_lock((atomic_p)x,0);
 }
 
 
-static inline void
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     return (*((atomic_p)x) != 0);
 }
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *    x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *    x)
 {
     while(spin_is_locked(x)) { ; } 
 }
@@ -1362,9 +1583,17 @@ gmx_atomic_mutex = GMX_THREAD_MUTEX_INITIALIZER;
 
 typedef struct gmx_atomic
 {
-	int	   value;
+        int        value;
 }
 gmx_atomic_t;
+
+typedef struct gmx_atomic_ptr
+{
+        void*      value;
+}
+gmx_atomic_ptr_t;
+
+
 
 #define gmx_spinlock_t     gmx_thread_mutex_t
 
@@ -1372,12 +1601,12 @@ gmx_atomic_t;
 #  define GMX_SPINLOCK_INITIALIZER   GMX_THREAD_MUTEX_INITIALIZER
 
 /* Since mutexes guarantee memory barriers this works fine */
-#define gmx_atomic_read(a)   ((a)->value)
+#define gmx_atomic_get(a)   ((a)->value)
+#define gmx_atomic_ptr_get(a)   ((a)->value)
 
 
-static inline void
-gmx_atomic_set(gmx_atomic_t *   a, 
-               int              i)
+static inline void gmx_atomic_set(gmx_atomic_t *   a, 
+                                  int              i)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
     gmx_thread_mutex_lock(&gmx_atomic_mutex);
@@ -1385,10 +1614,19 @@ gmx_atomic_set(gmx_atomic_t *   a,
     gmx_thread_mutex_unlock(&gmx_atomic_mutex);
 }
 
+static inline void gmx_atomic_ptr_set(gmx_atomic_t *   a, 
+                                      void*            p)
+{
+    /* Mutexes here are necessary to guarantee memory visibility */
+    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    a->value = p;
+    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+}
 
-static inline int
-gmx_atomic_add_return(gmx_atomic_t *   a, 
-                      int              i)
+
+
+static inline int gmx_atomic_add_return(gmx_atomic_t *   a, 
+                                        int              i)
 {
     int t;
     gmx_thread_mutex_lock(&gmx_atomic_mutex);
@@ -1399,9 +1637,8 @@ gmx_atomic_add_return(gmx_atomic_t *   a,
 }
 
 
-static inline int
-gmx_atomic_fetch_add(gmx_atomic_t *   a,
-                     int              i)
+static inline int gmx_atomic_fetch_add(gmx_atomic_t *   a,
+                                       int              i)
 {
     int old_value;
     
@@ -1413,21 +1650,38 @@ gmx_atomic_fetch_add(gmx_atomic_t *   a,
 }
 
 
-static inline int
-gmx_atomic_cmpxchg(gmx_atomic_t *           a, 
-                   int                      old,
-                   int                      new)
+static inline int gmx_atomic_cmpxchg(gmx_atomic_t *           a, 
+                                     int                      old_val,
+                                     int                      new_val)
 {
     int t;
     
     gmx_thread_mutex_lock(&gmx_atomic_mutex);
-    t = (a->value != old);
-    if (t == 0)
+    t=old_val;
+    if (a->value == old_val)
     {
-        a->value = new;
+        a->value = new_val;
     }
     gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    return t;
 }
+
+static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t * a, 
+                                           void*              old_val,
+                                           void*              new_val)
+{
+    void *t;
+    
+    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    t=old_val;
+    if (a->value == old_val)
+    {
+        a->value = new_val;
+    }
+    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    return t;
+}
+
 
 
 #define gmx_spinlock_init(lock)       gmx_thread_mutex_init(lock)
@@ -1435,8 +1689,7 @@ gmx_atomic_cmpxchg(gmx_atomic_t *           a,
 #define gmx_spinlock_trylock(lock)    gmx_thread_mutex_trylock(lock)
 #define gmx_spinlock_unlock(lock)     gmx_thread_mutex_unlock(lock)
 
-static inline int
-gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
 {
     int rc;
     
@@ -1454,8 +1707,7 @@ gmx_spinlock_islocked(gmx_spinlock_t *   x)
 }
 
 
-static inline void
-gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 {
     int rc;
     
@@ -1482,9 +1734,9 @@ gmx_spinlock_wait(gmx_spinlock_t *   x)
  */
 typedef struct gmx_spinlock_barrier
 {
-	gmx_atomic_t            count;     /*!< Number of threads remaining     */
-	int                     threshold; /*!< Total number of threads         */
-	volatile int            cycle;     /*!< Current cycle (alternating 0/1) */
+        gmx_atomic_t      count;     /*!< Number of threads remaining     */
+        int               threshold; /*!< Total number of threads         */
+        volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
 }
 gmx_spinlock_barrier_t;
  
@@ -1499,13 +1751,13 @@ gmx_spinlock_barrier_t;
  *                  will be released after \a count calls to 
  *                  gmx_spinlock_barrier_wait().  
  */
-static inline void 
-gmx_spinlock_barrier_init(gmx_spinlock_barrier_t *         barrier,
-                          int                              count)
+static inline void gmx_spinlock_barrier_init(
+                                    gmx_spinlock_barrier_t *       barrier,
+                                    int                              count)
 {
-	barrier->threshold = count;
-	barrier->cycle     = 0;
-	gmx_atomic_set(&(barrier->count),count);
+        barrier->threshold = count;
+        barrier->cycle     = 0;
+        gmx_atomic_set(&(barrier->count),count);
 }
 
 
@@ -1526,47 +1778,46 @@ gmx_spinlock_barrier_init(gmx_spinlock_barrier_t *         barrier,
 *
 *  \return The last thread returns -1, all the others 0.
 */
-static inline int
-gmx_spinlock_barrier_wait(gmx_spinlock_barrier_t *   barrier)
+static inline int gmx_spinlock_barrier_wait(gmx_spinlock_barrier_t *   barrier)
 {
   int    cycle;
   int    status;
   /*int    i;*/
   
   /* We don't need to lock or use atomic ops here, since the cycle index 
-	* cannot change until after the last thread has performed the check
-	* further down. Further, they cannot reach this point in the next 
-	* barrier iteration until all of them have been released, and that 
-	* happens after the cycle value has been updated.
-	*
-	* No synchronization == fast synchronization.
-	*/
+        * cannot change until after the last thread has performed the check
+        * further down. Further, they cannot reach this point in the next 
+        * barrier iteration until all of them have been released, and that 
+        * happens after the cycle value has been updated.
+        *
+        * No synchronization == fast synchronization.
+        */
   cycle = barrier->cycle;
   
   /* Decrement the count atomically and check if it is zero.
-	* This will only be true for the last thread calling us.
-	*/
+        * This will only be true for the last thread calling us.
+        */
   if( gmx_atomic_add_return( &(barrier->count), -1 ) <= 0)
   { 
-	gmx_atomic_set(&(barrier->count), barrier->threshold);
-	barrier->cycle = !barrier->cycle;
+        gmx_atomic_set(&(barrier->count), barrier->threshold);
+        barrier->cycle = !barrier->cycle;
     
-	status = -1;
+        status = -1;
   }
   else
   {
-	/* Wait until the last thread changes the cycle index.
-	* We are both using a memory barrier, and explicit
-	* volatile pointer cast to make sure the compiler
-	* doesn't try to be smart and cache the contents.
-	*/
-	do
-	{ 
-	  gmx_atomic_memory_barrier();
-	} 
-	while( *(volatile int *)(&(barrier->cycle)) == cycle);
-	
-	status = 0;
+        /* Wait until the last thread changes the cycle index.
+        * We are both using a memory barrier, and explicit
+        * volatile pointer cast to make sure the compiler
+        * doesn't try to be smart and cache the contents.
+        */
+        do
+        { 
+          gmx_atomic_memory_barrier();
+        } 
+        while( *(volatile int *)(&(barrier->cycle)) == cycle);
+        
+        status = 0;
   }
   return status;
 }
