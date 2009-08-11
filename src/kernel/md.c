@@ -1989,6 +1989,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             sum_dhdl(enerd,state->lambda,ir);
             
             enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
+ 	    if (isnan(enerd->term[F_ETOT]))
+ 		gmx_fatal(FARGS, "NaN detected at step %d\n",step);
             
             switch (ir->etc) {
             case etcNO:
