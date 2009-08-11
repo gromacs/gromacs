@@ -1036,7 +1036,6 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 	int offset;
 	float ri,rr,sum,sum_tmp,min_rad,rad;
 	float doff;
-	float *sum_mpi;
 	
 	__m128 ix,iy,iz,jx,jy,jz;
 	__m128 dx,dy,dz,t1,t2,t3;
@@ -1098,7 +1097,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 		rr      = 1.0/rr;
 		rai_inv = _mm_load1_ps(&rr);
 				
-		/* Zero out sums */
+		/* Zero out sums for polarisation energies */
 		sum_ai  = _mm_setzero_ps();
 		
 		/* Load ai coordinates*/
@@ -1587,8 +1586,6 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 			
 			r         = _mm_mul_ps(rinv,rsq11);
 			
-				   
-			
 			/* OFFSET INTERACTION aj->ai starts here */
 			/* conditional mask for rai<dr+sk */
 			xmm1      = _mm_add_ps(r,sk); /*dr+sk		*/		
@@ -1642,7 +1639,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 			xmm1    = _mm_add_ps(xmm1,xmm2); /*lij-uij+0.25*dr*diff2+0.5*rinv*log_term */
 			xmm9    = _mm_mul_ps(neg,diff2); /*(-1)*diff2 */
 			xmm2    = _mm_mul_ps(xmm9,prod); /*(-1)*diff2*prod */
-			tmp_ai     = _mm_add_ps(xmm1,xmm2); /* done tmp-term */
+			tmp_ai  = _mm_add_ps(xmm1,xmm2); /* done tmp-term */
 			
 			/* contitional for rai<sk-dr */					
 			xmm3    = _mm_sub_ps(sk,r);
@@ -1652,18 +1649,18 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 			xmm4    = _mm_mul_ps(two,xmm4);
 			xmm4    = _mm_add_ps(xmm1,xmm4);
 					
-			tmp_ai     = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp_ai)); /*conditional as a mask*/
+			tmp_ai  = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 		
 			/* tmp will now contain four partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask.*/ 
-			tmp_ai     = _mm_mul_ps(half,tmp_ai); /*0.5*tmp*/
-			tmp_ai     = _mm_or_ps(_mm_and_ps(mask_cmp,tmp_ai)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
-			sum_ai  = _mm_add_ps(sum_ai,tmp_ai);
+			tmp_ai   = _mm_mul_ps(half,tmp_ai); /*0.5*tmp*/
+			tmp_ai   = _mm_or_ps(_mm_and_ps(mask_cmp,tmp_ai)  ,_mm_andnot_ps(mask_cmp,zero)); /*conditional as a mask*/
+			sum_ai   = _mm_add_ps(sum_ai,tmp_ai);
 					
 			/* start t1 */
-			xmm2   = _mm_mul_ps(half,lij2); /*0.5*lij2 */
-			xmm3   = _mm_mul_ps(prod,lij3); /*prod*lij3;*/
-			xmm2   = _mm_add_ps(xmm2,xmm3); /*0.5*lij2+prod*lij3 */
+			xmm2     = _mm_mul_ps(half,lij2); /*0.5*lij2 */
+			xmm3     = _mm_mul_ps(prod,lij3); /*prod*lij3;*/
+			xmm2     = _mm_add_ps(xmm2,xmm3); /*0.5*lij2+prod*lij3 */
 			xmm3   = _mm_mul_ps(lij,rinv); /*lij*rinv */
 			xmm4   = _mm_mul_ps(lij3,r); /*lij3*dr; */
 			xmm3   = _mm_add_ps(xmm3,xmm4); /*lij*rinv+lij3*dr */
@@ -1962,10 +1959,10 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 	doff = born->gb_doffset;
 	doffset = _mm_load1_ps(&doff);
 	
-	aj1=aj2=aj3=aj4=0;
-	aj13=aj23=aj33=aj43=0;
-	p1=p2=p3=0;
-	n=0;
+	aj1  = aj2  = aj3  = aj4  = 0;
+	aj13 = aj23 = aj33 = aj43 = 0;
+	p1   = p2   = p3   = 0;
+	n    = 0;
 	
 	for(i=0;i<born->nr;i++)
 	{
@@ -2081,7 +2078,6 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			xmm1 = _mm_shuffle_ps(xmm1,xmm2,_MM_SHUFFLE(0,0,0,0)); /*j1 j1 j2 j2*/
 			xmm3 = _mm_shuffle_ps(xmm3,xmm4,_MM_SHUFFLE(0,0,0,0)); /*j3 j3 j4 j4*/
 			sk   = _mm_shuffle_ps(xmm1,xmm3,_MM_SHUFFLE(2,0,2,0));
-						   
 						   
 			/* INTERACTION aj->ai STARTS HERE */
 			/* conditional mask for rai<dr+sk */
@@ -2254,7 +2250,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			xmm2    = _mm_mul_ps(xmm9,prod); /* (-1)*diff2*prod */
 			tmp     = _mm_add_ps(xmm1,xmm2); /* done tmp-term */
 			
-			/* contitional for rai<sk-dr */
+			/* contitional for raj<sk-dr */
 			xmm3    = _mm_sub_ps(sk_ai,r);
 			mask_cmp3 = _mm_cmplt_ps(raj,xmm3); /* rai<sk-dr */
 			
@@ -2543,7 +2539,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			
 			xmm4    = _mm_sub_ps(rai_inv,lij);
 			xmm4    = _mm_mul_ps(two,xmm4);
-			xmm4    = _mm_add_ps(xmm1,xmm4);
+			xmm4    = _mm_add_ps(tmp_ai,xmm4);
 					
 			tmp_ai  = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 				
@@ -2592,8 +2588,6 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			xmm2   = _mm_add_ps(xmm2,t3); 
 			xmm2   = _mm_mul_ps(xmm2,rinv);
 			chrule   = _mm_and_ps( maski,xmm2);
-			
-			
 			
 			/* OFFSET INTERACTION ai->aj starts here */
 			/* conditional mask for raj<dr+sk */
@@ -2844,7 +2838,6 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 	__m128 maski  = gmx_castsi128_ps( _mm_set_epi32(0, 0xffffffff,0xffffffff,0xffffffff) );
 	
 	const __m128 two = {2.0f , 2.0f , 2.0f , 2.0f };
-	float z = 0;
 	rb     = born->work; 
 			
 	/* Loop to get the proper form for the Born radius term, sse style */
