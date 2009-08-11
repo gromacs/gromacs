@@ -1360,8 +1360,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 #ifdef GMX_DOUBLE
 	
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
-	/* Currently, the double-precision sse code is disabled, since I have yet to implement
-	 * double precision sse versions of sin/cos/log/exp-functions
+	/* Currently, the double-precision Still-sse code is disabled, since I have yet to implement
+	 * double precision sse versions of sin/cos-functions
 	 */
 	switch(ir->gb_algorithm)
 	{
@@ -1371,11 +1371,9 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 			break;
 		case egbHCT:
 			 calc_gb_rad_hct_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
-			//calc_gb_rad_hct(cr,fr,born->nr,top, atype, x, nl, born, md); 
 			break;
 		case egbOBC:
 			calc_gb_rad_obc_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
-			// calc_gb_rad_obc(cr,fr,born->nr,top, atype, x, nl, born, md); 
 			break;
 			
 		default:
