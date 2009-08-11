@@ -225,7 +225,7 @@ _gmx_selelem_free_values(t_selelem *sel)
     {
         sfree(sel->v.u.ptr);
     }
-    _gmx_selvalue_clear(&sel->v);
+    _gmx_selvalue_setstore(&sel->v, NULL);
 }
 
 /*!

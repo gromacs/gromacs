@@ -1961,7 +1961,7 @@ static void check_disre(gmx_mtop_t *mtop)
   }
 }
 
-static void absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
+static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
 {
   int d,g,i;
   gmx_mtop_ilistloop_t iloop;
@@ -1995,6 +1995,8 @@ static void absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
       }
     }
   }
+
+  return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
 void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
@@ -2008,6 +2010,11 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
   gmx_mtop_atomloop_all_t aloop;
   t_atom *atom;
   ivec AbsRef;
+
+  if (EI_DYNAMICS(ir->eI) && ir->comm_mode == ecmNO &&
+      !(absolute_reference(ir,sys,AbsRef) || ir->nsteps <= 10)) {
+    warning("You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
+  }
 
   if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
     bCharge = FALSE;

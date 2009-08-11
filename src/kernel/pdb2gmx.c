@@ -896,15 +896,16 @@ int main(int argc, char *argv[])
 	  pdb_ch[nch-1].natom=i-pdb_ch[nch-1].start;
 	if (bWat) {
 	  nwaterchain++;
-	  ri->chain = '\0';
+	  ri->chain = ' ';
 	}
 	/* check if chain identifier was used before */
-	for (j=0; (j<nch); j++)
-	  if ((pdb_ch[j].chain != '\0') && (pdb_ch[j].chain != ' ') &&
-	      (pdb_ch[j].chain == ri->chain))
+	for (j=0; (j<nch); j++) {
+	  if (pdb_ch[j].chain != ' ' && pdb_ch[j].chain == ri->chain) {
 	    gmx_fatal(FARGS,"Chain identifier '%c' was used "
 		      "in two non-sequential blocks (residue %d, atom %d)",
 		      ri->chain,ri->nr,i+1);
+	  }
+	}
 	if (nch == maxch) {
 	  maxch += 16;
 	  srenew(pdb_ch,maxch);
@@ -955,8 +956,7 @@ int main(int argc, char *argv[])
     snew(chains[i].rN,pdb_ch[si].nterpairs);
     snew(chains[i].rC,pdb_ch[si].nterpairs);
     /* check for empty chain identifiers */
-    if ((nch-nwaterchain>1) && !pdb_ch[si].bAllWat && 
-	((chains[i].chain=='\0') || (chains[i].chain==' '))) {
+    if (nch-nwaterchain > 1 && !pdb_ch[si].bAllWat && chains[i].chain==' ') {
       bUsed=TRUE;
       for(k='A'; (k<='Z') && bUsed; k++) {
 	bUsed=FALSE;
@@ -1093,10 +1093,11 @@ int main(int argc, char *argv[])
     rename_pdbres(pdba,"CYM","CYN",TRUE,&symtab); /* amber */
 
     if (debug) {
-      if ( cc->chain == '\0' || cc->chain == ' ')
+      if (cc->chain == ' ') {
 	sprintf(fn,"chain.pdb");
-      else
+      } else {
 	sprintf(fn,"chain_%c.pdb",cc->chain);
+      }
       write_sto_conf(fn,title,pdba,x,NULL,ePBC,box);
     }
 
@@ -1164,7 +1165,7 @@ int main(int argc, char *argv[])
     if (cc->bAllWat) {
       sprintf(molname,"Water");
     } else {
-      if ( cc->chain != '\0' && cc->chain != ' ' ) {
+      if (cc->chain != ' ') {
 	if (cc->chain <= 'Z') {
 	  sprintf(suffix,"_%c",cc->chain);
 	} else {
@@ -1235,7 +1236,7 @@ int main(int argc, char *argv[])
     cc->x = x;
     
     if (debug) {
-      if ( cc->chain == '\0' || cc->chain == ' ' )
+      if (cc->chain == ' ')
 	sprintf(fn,"chain.pdb");
       else
 	sprintf(fn,"chain_%c.pdb",cc->chain);

@@ -416,7 +416,7 @@ init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
     for (i = 0; i < nparams; ++i)
     {
         param[i].flags &= ~SPAR_SET;
-        _gmx_selvalue_clear(&param[i].val);
+        _gmx_selvalue_setstore(&param[i].val, NULL);
         if (param[i].flags & SPAR_VARNUM)
         {
             param[i].val.nr = -1;

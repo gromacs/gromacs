@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -142,37 +143,52 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
   }
 
-  re->type = -1;
-  for(i=0; i<ereNR; i++) {
-    switch (i) {
-    case ereTEMP:
-      repl_quantity(fplog,ms,re,i,re->temp);
-      break;
-    case ereLAMBDA:
-      if (ir->efep != efepNO)
-	repl_quantity(fplog,ms,re,i,ir->init_lambda);
-      break;
-    default:
-      gmx_incons("Unknown replica exchange quantity");
+    re->type = -1;
+    for(i=0; i<ereNR; i++)
+    {
+        switch (i)
+        {
+        case ereTEMP:
+            repl_quantity(fplog,ms,re,i,re->temp);
+            break;
+        case ereLAMBDA:
+            if (ir->efep != efepNO)
+            {
+                repl_quantity(fplog,ms,re,i,ir->init_lambda);
+            }
+            break;
+        default:
+            gmx_incons("Unknown replica exchange quantity");
+        }
     }
-  }
-  if (re->type == -1)
-    gmx_fatal(FARGS,"The properties of the %d systems are all the same, there is nothing to exchange",re->nrepl);
+    if (re->type == -1)
+    {
+        gmx_fatal(FARGS,"The properties of the %d systems are all the same, there is nothing to exchange",re->nrepl);
+    }
 
-  switch (re->type) {
-  case ereTEMP:
-    please_cite(fplog,"Hukushima96a");
-    if (ir->epc != epcNO) {
-      re->bNPT = TRUE;
-      fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
-      please_cite(fplog,"Okabe2001a");
+    switch (re->type)
+    {
+    case ereTEMP:
+        please_cite(fplog,"Hukushima96a");
+        if (ir->epc != epcNO)
+        {
+            re->bNPT = TRUE;
+            fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
+            please_cite(fplog,"Okabe2001a");
+        }
+        if (ir->etc == etcBERENDSEN)
+        {
+            gmx_fatal(FARGS,"REMD with the %s thermostat does not produce correct potential energy distributions, consider using the %s thermostat instead",
+                      ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
+        }
+        break;
+    case ereLAMBDA:
+        if (ir->delta_lambda != 0)
+        {
+            gmx_fatal(FARGS,"delta_lambda is not zero");
+        }
+        break;
     }
-    break;
-  case ereLAMBDA:
-    if (ir->delta_lambda != 0)
-      gmx_fatal(FARGS,"delta_lambda is not zero");
-    break;
-  }
 
   if (re->bNPT) {
     snew(re->pres,re->nrepl);

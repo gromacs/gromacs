@@ -565,9 +565,9 @@ void do_force(FILE *fplog,t_commrec *cr,
            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
+            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
         }
-        enerd->dvdl_lr       = dvdl;
+        enerd->dvdl_lin += dvdl;
         
         wallcycle_stop(wcycle,ewcNS);
     }
