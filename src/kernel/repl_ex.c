@@ -168,6 +168,10 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
       fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
       please_cite(fplog,"Okabe2001a");
     }
+    if (ir->etc == etcBERENDSEN) {
+      gmx_fatal(FARGS,"REMD with the %s thermostat does not produce correct potential energy distributions, consider using the %s thermostat instead",
+		ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
+    }
     break;
   case ereLAMBDA:
     if (ir->delta_lambda != 0)
