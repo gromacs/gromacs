@@ -90,11 +90,11 @@ int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,const char *warn)
 {
   /* This routine stores values compatible with xdr_int64_t */
 
-  static const unsigned int two_p32_m1 = 4294967295U;
   int ia,ib;
   int ret;
 
 #if ((defined SIZEOF_GMX_STEP_T) && SIZEOF_GMX_STEP_T == 8)
+  static const gmx_step_t two_p32_m1 = 0xFFFFFFFF;
   gmx_step_t ia64,ib64;
 
   ia64 = ((*i)>>32) & two_p32_m1;
