@@ -202,9 +202,9 @@ void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,
   for(i=0; (i<n_bfac); i++) {
     if (bfac_nr[i]-1>=atoms->nres)
       peratom=TRUE;
-    if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
+    /*    if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
       gmx_fatal(FARGS,"Index of B-Factor %d is out of range: %d (%g)",
-		  i+1,bfac_nr[i],bfac[i]);
+      i+1,bfac_nr[i],bfac[i]); */
     if (bfac[i] > bfac_max) 
       bfac_max = bfac[i];
     if (bfac[i] < bfac_min) 
@@ -257,6 +257,7 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 {
   real bfac_min,bfac_max,xmin,ymin,zmin;
   int  i;
+  int  space = ' ';
   
   bfac_max=-1e10;
   bfac_min=1e10;
@@ -272,12 +273,13 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
   }
   fprintf(stderr,"B-factors range from %g to %g\n",bfac_min,bfac_max);
   for (i=1; (i<12); i++) {
-    fprintf(out,pdbformat,
-	    "ATOM  ",natoms+1+i,"CA","LEG",' ',nres+1,
-	    (xmin+(i*0.12))*10,ymin*10,zmin*10,1.0,
+    fprintf(out,"%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+	    "ATOM  ",natoms+1+i,"CA","LEG",space,nres+1,space,
+	    (xmin+(i*0.12))*10,ymin*10,zmin*10,1.0,0,
 	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
 }
+
 void visualize_images(const char *fn,int ePBC,matrix box)
 {
   t_atoms atoms;
