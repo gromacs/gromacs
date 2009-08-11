@@ -1647,7 +1647,7 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 			
 			xmm4    = _mm_sub_ps(rai_inv,lij);
 			xmm4    = _mm_mul_ps(two,xmm4);
-			xmm4    = _mm_add_ps(xmm1,xmm4);
+			xmm4    = _mm_add_ps(tmp_ai,xmm4);
 					
 			tmp_ai  = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 		
