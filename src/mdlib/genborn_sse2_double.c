@@ -43,8 +43,6 @@ static __m128d gmx_castsi128_pd(__m128i a) { return *(__m128d *) &a; }
 static __m128i gmx_castpd_si128(__m128d a) { return *(__m128i *) &a; } 
 #endif
 
-
-
 /* Still parameters - make sure to edit in genborn.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
 #define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
@@ -55,33 +53,124 @@ static __m128i gmx_castpd_si128(__m128d a) { return *(__m128i *) &a; }
 #define STILL_P5INV (1.0/STILL_P5)
 #define STILL_PIP5  (M_PI*STILL_P5)
 
-#ifdef _MSC_VER /* visual c++ */
-# define ALIGN16_BEG __declspec(align(16))
-# define ALIGN16_END 
-#else /* gcc or icc */
-# define ALIGN16_BEG
-# define ALIGN16_END __attribute__((aligned(16)))
-#endif
-
-#define _PS_CONST(Name, Val)                                            \
-static const ALIGN16_BEG float _ps_##Name[4] ALIGN16_END = { Val, Val, Val, Val }
-#define _PI32_CONST(Name, Val)                                            \
-static const ALIGN16_BEG int _pi32_##Name[4] ALIGN16_END = { Val, Val, Val, Val }
-#define _PS_CONST_TYPE(Name, Type, Val)                                 \
-static const ALIGN16_BEG Type _ps_##Name[4] ALIGN16_END = { Val, Val, Val, Val }
-
-typedef
-union 
+static inline void
+sincos_sse2double(__m128d x, __m128d *sinval, __m128d *cosval)
 {
-	__m128 sse;
-	float  f[4];
-} my_sse_t;
-
-typedef union xmm_mm_union {
-	__m128 xmm;
-	__m64 mm[2];
-} xmm_mm_union;
-
+    const __m128d two_over_pi = {2.0/M_PI,2.0/M_PI};
+    const __m128d half        = {0.5,0.5};
+    const __m128d one         = {1.0,1.0};
+    const __m128i izero       = _mm_set1_epi32(0);
+    const __m128i ione        = _mm_set1_epi32(1);
+    const __m128i itwo        = _mm_set1_epi32(2);
+    const __m128i ithree      = _mm_set1_epi32(3);
+    const __m128d sincosd_kc1 = {(13176794.0 / 8388608.0),(13176794.0 / 8388608.0)};
+    const __m128d sincosd_kc2 = {7.5497899548918821691639751442098584e-8,7.5497899548918821691639751442098584e-8};
+    const __m128d sincosd_cc0 = {0.00000000206374484196,0.00000000206374484196};
+    const __m128d sincosd_cc1 = {-0.00000027555365134677,-0.00000027555365134677};
+    const __m128d sincosd_cc2 = {0.00002480157946764225,0.00002480157946764225};
+    const __m128d sincosd_cc3 = {-0.00138888888730525966,-0.00138888888730525966};
+    const __m128d sincosd_cc4 = {0.04166666666651986722,0.04166666666651986722};
+    const __m128d sincosd_cc5 = {-0.49999999999999547304,-0.49999999999999547304};
+    const __m128d sincosd_sc0 = {0.00000000015893606014,0.00000000015893606014};
+    const __m128d sincosd_sc1 = {-0.00000002505069049138,-0.00000002505069049138};
+    const __m128d sincosd_sc2 = {0.00000275573131527032,0.00000275573131527032};
+    const __m128d sincosd_sc3 = {-0.00019841269827816117,-0.00019841269827816117};
+    const __m128d sincosd_sc4 = {0.00833333333331908278,0.00833333333331908278};
+    const __m128d sincosd_sc5 = {-0.16666666666666612594,-0.16666666666666612594};
+    
+    __m128d signbit           = (__m128d) _mm_set1_epi64x(0x8000000000000000ULL);
+    __m128d tiny              = (__m128d) _mm_set1_epi64x(0x3e40000000000000ULL);
+    
+    __m128d xl,xl2,xl3,qd,absxl,p1,cx,sx,ts,tc,tsn,tcn;
+    __m128i q;
+    __m128i offsetSin,offsetCos;
+    __m128d sinMask,cosMask,isTiny;
+    __m128d ct0,ct1,ct2,ct3,ct4,ct5,ct6,st1,st2,st3,st4,st6;
+    
+    /* Rescale the angle to the range 0..4, and find which quadrant it is in */
+    xl        = _mm_mul_pd(x,two_over_pi);
+    
+    /* q=integer part of xl, rounded _away_ from 0.0 */
+    /* Add 0.5 away from 0.0 */
+    xl        = _mm_add_pd(xl,_mm_or_pd(_mm_and_pd(xl,signbit),half));
+	
+    q         = _mm_cvttpd_epi32(xl);
+    qd        = _mm_cvtepi32_pd(q);
+    q         = _mm_shuffle_epi32(q,_MM_SHUFFLE(1,1,0,0));
+	
+    /* Compute offset based on quadrant the arg falls in */
+    offsetSin   = _mm_and_si128(q,ithree);
+    offsetCos   = _mm_add_epi32(offsetSin,ione);
+    
+    /* Remainder in range [-pi/4..pi/4] */
+    p1 = _mm_mul_pd(qd,sincosd_kc1);
+    xl = _mm_mul_pd(qd,sincosd_kc2);
+    p1 = _mm_sub_pd(x,p1);    
+    xl = _mm_sub_pd(p1,xl);
+    
+    absxl  = _mm_andnot_pd(signbit,xl);
+    isTiny = _mm_cmpgt_pd(tiny,absxl);
+    
+    xl2    = _mm_mul_pd(xl,xl);
+    xl3    = _mm_mul_pd(xl2,xl);
+    
+    ct0    = _mm_mul_pd(xl2,xl2);
+    ct1    = _mm_mul_pd(sincosd_cc0,xl2);
+    ct2    = _mm_mul_pd(sincosd_cc2,xl2);
+    ct3    = _mm_mul_pd(sincosd_cc4,xl2);
+    st1    = _mm_mul_pd(sincosd_sc0,xl2);
+    st2    = _mm_mul_pd(sincosd_sc2,xl2);
+    st3    = _mm_mul_pd(sincosd_sc4,xl2);
+    ct1    = _mm_add_pd(ct1,sincosd_cc1);
+    ct2    = _mm_add_pd(ct2,sincosd_cc3);
+    ct3    = _mm_add_pd(ct3,sincosd_cc5);
+    st1    = _mm_add_pd(st1,sincosd_sc1);
+    st2    = _mm_add_pd(st2,sincosd_sc3);
+    st3    = _mm_add_pd(st3,sincosd_sc5);
+	
+    ct4    = _mm_mul_pd(ct2,ct0);
+    ct4    = _mm_add_pd(ct4,ct3);
+    
+    st4    = _mm_mul_pd(st2,ct0);
+    st4    = _mm_add_pd(st4,st3);
+    ct5    = _mm_mul_pd(ct0,ct0);
+    
+    ct6    = _mm_mul_pd(ct5,ct1);
+    ct6    = _mm_add_pd(ct6,ct4);
+    
+    st6    = _mm_mul_pd(ct5,st1);
+    st6    = _mm_add_pd(st6,st4);
+    
+    cx     = _mm_mul_pd(ct6,xl2);
+    cx     = _mm_add_pd(cx,one);
+    
+    sx     = _mm_mul_pd(st6,xl3);
+    sx     = _mm_add_pd(sx,xl);
+    
+    /* Small angle approximation, sin(tiny)=tiny, cos(tiny)=1.0 */
+    sx     = _mm_or_pd( _mm_and_pd(isTiny,xl) , _mm_andnot_pd(isTiny,sx) );
+    cx     = _mm_or_pd( _mm_and_pd(isTiny,one) , _mm_andnot_pd(isTiny,cx) );
+	
+    sinMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetSin,ione), izero);
+    cosMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetCos,ione), izero);
+    
+    ts     = _mm_or_pd( _mm_and_pd(sinMask,sx) , _mm_andnot_pd(sinMask,cx) );
+    tc     = _mm_or_pd( _mm_and_pd(cosMask,sx) , _mm_andnot_pd(cosMask,cx) );
+	
+    /* Flip the sign of the result when (offset mod 4) = 1 or 2 */
+    sinMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetSin,itwo), izero);
+    tsn    = _mm_xor_pd(signbit,ts);
+    ts     = _mm_or_pd( _mm_and_pd(sinMask,ts) , _mm_andnot_pd(sinMask,tsn) );
+	
+    cosMask = (__m128d) _mm_cmpeq_epi32( _mm_and_si128(offsetCos,itwo), izero);
+    tcn    = _mm_xor_pd(signbit,tc);
+    tc     = _mm_or_pd( _mm_and_pd(cosMask,tc) , _mm_andnot_pd(cosMask,tcn) );
+	
+    *sinval = ts;
+    *cosval = tc;
+    
+    return;
+}
 
 __m128d log_pd(__m128d x)
 {
@@ -91,6 +180,7 @@ __m128d log_pd(__m128d x)
 	const __m128d const_loge = _mm_set1_pd(0.69314718055994529);
 	const __m128d const_one  = _mm_set1_pd(1.0);
 	const __m128d const_two  = _mm_set1_pd(2.0);
+	
 	/* Almost full single precision accuracy (~20 bits worst case) */
 	const __m128d P0      = _mm_set1_pd(6.108179944792157749153050);
 	const __m128d P1      = _mm_set1_pd(52.43691313715523327631139);
@@ -208,7 +298,6 @@ __m128d exp_pd(__m128d x)
     return xmm1;
 }
 
-
 static inline __m128d
 my_invrsq_pd(__m128d x)
 {
@@ -252,7 +341,6 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	__m128d ratio,gpi,rai,raj,vaj,rvdw,mask_cmp;
 	__m128d ccf,dccf,theta,cosq,term,sinq,res,prod;
 	__m128d xmm1,xmm2,xmm3,xmm4,xmm7,vai,prod_ai,icf4,icf6;
-	__m128  tmp,sinq_single,cosq_single;
 	
 	const __m128d half  = {0.5, 0.5};
 	const __m128d three = {3.0, 3.0};
@@ -269,8 +357,6 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	n                   = 0;
 	
 	/* Keep the compiler happy */
-	sinq_single = _mm_setzero_ps();
-	cosq_single = _mm_setzero_ps();
 	raj         = _mm_setzero_pd();
 	vaj         = _mm_setzero_pd();
 	jx          = _mm_setzero_pd();
@@ -317,7 +403,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			taj1     = md->typeA[aj1];
 			taj2     = md->typeA[aj2];
 			
-			/* Load particle aj1-2 coordinates */
+			/* Load particle aj1-2 coordinates and compute ai->aj distances */
 			xmm1     = _mm_loadu_pd(x+aj13);
 			xmm2     = _mm_loadu_pd(x+aj23);
 			jx       = _mm_shuffle_pd(xmm1,xmm2,_MM_SHUFFLE2(0,0));
@@ -357,10 +443,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 					break;
 				default:
 					theta = _mm_mul_pd(ratio,pip5);
-				
-					//sincos_ps(_mm_cvtpd_ps(theta),&sinq_single,&cosq_single);
-					sinq  = _mm_cvtps_pd(sinq_single);
-					cosq  = _mm_cvtps_pd(cosq_single);
+					sincos_sse2double(theta,&sinq,&cosq);
 					
 					term  = _mm_sub_pd(one,cosq);
 					term  = _mm_mul_pd(half,term);
@@ -448,11 +531,8 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 					break;
 				default:
 					theta = _mm_mul_sd(ratio,pip5);
-					
-					//sincos_ps(_mm_cvtpd_ps(theta),&sinq_single,&cosq_single);
-					sinq  = _mm_cvtps_pd(sinq_single);
-					cosq  = _mm_cvtps_pd(cosq_single);
-					
+					sincos_sse2double(theta,&sinq,&cosq);
+										
 					term  = _mm_sub_sd(one,cosq);
 					term  = _mm_mul_sd(half,term);
 					ccf   = _mm_mul_sd(term,term);
@@ -534,7 +614,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj13,aj23,nj0,nj1,at0,at1,offset;
 	int p1, p2;
-	double ri,rr,sum,sum_tmp,min_rad,rad,doff;
+	double rr,sum,sum_tmp,min_rad,rad,doff;
 	
 	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz;
 	__m128d t1,t2,t3,rsq11,rinv,r,rai;
@@ -693,7 +773,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			
 			tmp_ai	    = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp_ai     = _mm_mul_pd(half,tmp_ai); 
 			tmp_ai     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp_ai)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
@@ -788,7 +868,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			
 			tmp	    = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp     = _mm_mul_pd(half,tmp); 
 			tmp     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
@@ -926,7 +1006,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			
 			tmp_ai	    = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp_ai     = _mm_mul_pd(half,tmp_ai); 
 			tmp_ai     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp_ai)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
@@ -1123,7 +1203,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj13,aj23,nj0,nj1,at0,at1,offset;
 	int p1,p2,p3,p4;
-	double ri,rr,sum,sum_tmp,sum2,sum3,min_rad,rad,doff;
+	double rr,sum,sum_tmp,sum2,sum3,min_rad,rad,doff;
 	double tsum,tchain,rr_inv,rr_inv2,gbr;
 	
 	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz;
@@ -1155,7 +1235,6 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 	jz          = _mm_setzero_pd();
 	xmm7        = _mm_setzero_pd();
 	xmm8        = _mm_setzero_pd();
-	ri          = 0;
 	
 	/* Set the dielectric offset */
 	doff = born->gb_doffset;
@@ -1284,7 +1363,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			
 			tmp_ai	    = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp_ai     = _mm_mul_pd(half,tmp_ai); 
 			tmp_ai     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp_ai)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
@@ -1380,7 +1459,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			
 			tmp	    = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp     = _mm_mul_pd(half,tmp); 
 			tmp     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
@@ -1517,7 +1596,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			
 			tmp_ai  = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp_ai)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp_ai = _mm_mul_pd(half,tmp_ai); 
 			tmp_ai = _mm_or_pd(_mm_and_pd(mask_cmp,tmp_ai)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
@@ -1609,7 +1688,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			
 			tmp	    = _mm_or_pd(_mm_and_pd(mask_cmp3,xmm4)  ,_mm_andnot_pd(mask_cmp3,tmp)); /*conditional as a mask*/
 			
-			/* the tmp will now contain four partial values, that not all are to be used. Which */
+			/* the tmp will now contain two partial values, that not all are to be used. Which */
 			/* ones are governed by the mask_cmp mask. */
 			tmp     = _mm_mul_pd(half,tmp); 
 			tmp     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
