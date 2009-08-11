@@ -1302,7 +1302,7 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_step_t new_sim_nsteps=-1;  /* -1 indicates: not set by the user */
     gmx_step_t cpt_steps=0;        /* Step counter in .cpt input file */
     int        presteps=100;       /* Do a full cycle reset after presteps steps */
-    bool       bHaveResetCounter;  /* Was the GMX_RESET_COUNTER env set by user? */
+    bool       bHaveResetCounter=FALSE; /* Was the GMX_RESET_COUNTER env set by user? */
     int        resetcount_orig;    /* The value of GMX_RESET_COUNTER if set */
 
     bool        bOverwrite=FALSE;
