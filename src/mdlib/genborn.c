@@ -1527,7 +1527,6 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 		}
 	}
 	
-	printf("vctot=%g\n",vctot);
 	return vctot;
 }
 
