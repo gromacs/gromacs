@@ -653,9 +653,9 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
     m_inv(box,box_1);
     for(i=0; (i<nat); i++) {
       mvmul(box_1,x[i],x_1);
-      ix = ((int)floor(x_1[XX]*nxbox) + nxbox) % nxbox;
-      iy = ((int)floor(x_1[YY]*nybox) + nybox) % nybox;
-      iz = ((int)floor(x_1[ZZ]*nzbox) + nzbox) % nzbox;
+      ix = ((int)floor(x_1[XX]*nxbox) + 2*nxbox) % nxbox;
+      iy = ((int)floor(x_1[YY]*nybox) + 2*nybox) % nybox;
+      iz = ((int)floor(x_1[ZZ]*nzbox) + 2*nzbox) % nzbox;
       j =  ix + iy*nxbox + iz*nxbox*nybox;
       if (debug)
 	fprintf(debug,"Atom %d cell index %d. x = (%8.3f,%8.3f,%8.3f) fc = (%8.3f,%8.3f,%8.3f)\n",
@@ -793,7 +793,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	      xxi[YY] = yi;
 	      xxi[ZZ] = zi;
 	      pbc_dx(&pbc,pco,xxi,ddx);*/
-	      pbc_dx(&pbc,coords[i_at],coords[j_at],ddx);
+	      pbc_dx(&pbc,coords[j_at],coords[i_at],ddx);
 	      dx = ddx[XX];
 	      dy = ddx[YY];
 	      dz = ddx[ZZ];
@@ -805,8 +805,9 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	    }
 	    dd = dx*dx+dy*dy+dz*dz;
 	    as = ai+aj; 
-	    if (dd > as*as) 
+	    if (dd > as*as) {
 	      continue;
+	    }
 	    nnei++;
 	    ctnb->x = dx; 
 	    ctnb->y = dy; 
