@@ -68,8 +68,7 @@
 #else
 #include "genborn_sse2_single.h"
 #endif /* GMX_DOUBLE */
-#endif
-
+#endif /* GMX_SSE */
 
 /* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
@@ -1357,17 +1356,15 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         srenew(fr->dadx,fr->nalloc_dadx);
     }
 		
+	/* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
 	
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
-	/* Currently, the double-precision Still-sse code is disabled, since I have yet to implement
-	 * double precision sse versions of sin/cos-functions
-	 */
+	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
-			/* calc_gb_rad_still_sse2_double(cr,fr,md->nr,mtop, atype, x[0], nl, born, md); */
-			calc_gb_rad_still(cr,fr,born->nr,top, atype, x, nl, born, md); 
+			 calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
 			break;
 		case egbHCT:
 			 calc_gb_rad_hct_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
@@ -1381,7 +1378,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 	}
 	
 #else
-	/* Switch for determining which algorithm to use for Born radii calculation */
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
@@ -1421,8 +1417,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 	}
 	
 #else
-	
-	/* Switch for determining which algorithm to use for Born radii calculation */
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
@@ -1474,7 +1468,10 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 		
 		for(i=0;i<idef->il[j].nr; )
 		{
-			type          = forceatoms[i++];
+			/* To avoid reading in the interaction type, we just increment i to pass over
+			 * the types in the forceatoms array, this saves some memory accesses
+			 */
+			i++;
 			ai            = forceatoms[i++];
 			aj            = forceatoms[i++];
 			ai3           = ai*3;
@@ -1530,9 +1527,9 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 		}
 	}
 	
+	printf("vctot=%g\n",vctot);
 	return vctot;
 }
-
 
 real calc_gb_selfcorrections(t_commrec *cr, int natoms, 
 			     real *charge, gmx_genborn_t *born, real *dvda, t_mdatoms *md, double facel)
@@ -1755,10 +1752,19 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 
 	/* Do a simple ACE type approximation for the non-polar solvation */
 	v += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
-	
-	/* Calculate the bonded GB-interactions */
+		
+	/* Calculate the bonded GB-interactions using either table or analytical formula */
+#ifdef GMX_DOUBLE	
 	v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
 					  fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
+#else	
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )	
+	v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->gb_epsilon_solvent,fr->epsfac);
+#else
+	v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
+					  fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
+#endif
+#endif
 	
 	/* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
 	v += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac); 		
