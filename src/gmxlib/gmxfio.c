@@ -48,7 +48,7 @@
 #include "gmxfio.h"
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 
@@ -137,7 +137,7 @@ static const char *eioNames[eioNR] = { "REAL", "INT", "GMX_STE_T",
 static char *add_comment = NULL;
 
 #ifdef GMX_THREADS
-static gmx_thread_mutex_t fio_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t fio_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
@@ -157,25 +157,25 @@ static const char *dbgstr(const char *desc)
 void set_comment(const char *comment)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     if (comment)
         add_comment = strdup(comment);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
 void unset_comment(void)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     if (add_comment)
         sfree(add_comment);
     add_comment = NULL;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
@@ -243,7 +243,7 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   unsigned char *ucptr;
   
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
+  tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
   check_nitem();
   switch (eio) {
@@ -299,7 +299,7 @@ static bool do_ascwrite(void *item,int nitem,int eio,
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&fio_mutex);
+  tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
   return (res > 0);
 }
@@ -435,13 +435,13 @@ static bool do_ascread(void *item,int nitem,int eio,
   }
 
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
+  tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
   if ((res <= 0) && curfio->bDebug)
     fprintf(stderr,"Error reading %s %s from file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&fio_mutex);
+  tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
   return (res > 0);
 }
@@ -495,7 +495,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
   wsize = fwrite(item,size,nitem,curfio->fp);
 
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
+  tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
   if ((wsize != nitem) && curfio->bDebug) {
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
@@ -504,7 +504,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
 	    (unsigned int)wsize,(unsigned int)size);
   }
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&fio_mutex);
+  tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
   return (wsize == nitem);
 }
@@ -560,7 +560,7 @@ static bool do_binread(void *item,int nitem,int eio,
   }
 
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
+  tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
   if (item)
       rsize = fread(item,size,nitem,curfio->fp);
@@ -578,7 +578,7 @@ static bool do_binread(void *item,int nitem,int eio,
               eioNames[eio],desc,curfio->fn,srcfile,line);
 
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&fio_mutex);
+  tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
   return (rsize == nitem);
 }
@@ -599,7 +599,7 @@ static bool do_xdr(void *item,int nitem,int eio,
   float  f=0;
   
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
+  tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
   check_nitem();
   switch (eio) {
@@ -679,11 +679,11 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item)
 	ptr = ((rvec *)item)[j];
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&fio_mutex);
+  tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
       res = do_xdr(ptr,1,eioRVEC,desc,srcfile,line);
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&fio_mutex);
+  tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     }
     break;
@@ -732,7 +732,7 @@ static bool do_xdr(void *item,int nitem,int eio,
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
 
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&fio_mutex);
+  tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
   return (res != 0);
 }
@@ -788,7 +788,7 @@ int gmx_fio_open(const char *fn,const char *mode)
     }
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     /* Determine whether we have to make a new one */
     for(i=0; (i<nFIO); i++)
@@ -885,7 +885,7 @@ int gmx_fio_open(const char *fn,const char *mode)
     fio->bOpen  = TRUE;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return nfio;
 }
@@ -896,7 +896,7 @@ int gmx_fio_close(int fio)
     int rc = 0;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
 
@@ -916,7 +916,7 @@ int gmx_fio_close(int fio)
     do_read  = do_dummy;
     do_write = do_dummy;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 
     return rc;
@@ -929,11 +929,11 @@ FILE * gmx_fio_fopen(const char *fn,const char *mode)
 
     fd = gmx_fio_open(fn,mode);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     ret=FIO[fd].fp;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
@@ -944,7 +944,7 @@ int gmx_fio_fclose(FILE *fp)
     int i,rc,found;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     found = 0;
     rc = -1;
@@ -954,17 +954,17 @@ int gmx_fio_fclose(FILE *fp)
         if(fp == FIO[i].fp)
         {
 #ifdef GMX_THREADS
-            gmx_thread_mutex_unlock(&fio_mutex);
+            tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
             rc = gmx_fio_close(i);
 #ifdef GMX_THREADS
-            gmx_thread_mutex_lock(&fio_mutex);
+            tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
             found=1;
         }
     }
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return rc;
 }
@@ -980,7 +980,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     char                     buf[STRLEN];
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     nfiles = 0;
 
@@ -1003,11 +1003,11 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
 
             strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
 #ifdef GMX_THREADS
-            gmx_thread_mutex_unlock(&fio_mutex);
+            tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
             ret=gmx_fio_flush(i);
 #ifdef GMX_THREADS
-            gmx_thread_mutex_lock(&fio_mutex);
+            tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
             /* Flush the file, so we are sure it is written */
             if (ret != 0)
@@ -1033,7 +1033,7 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     *p_nfiles = nfiles;
     *p_outputfiles = outputfiles;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 
     return 0;
@@ -1049,7 +1049,7 @@ void gmx_fio_select(int fio)
 #endif
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
@@ -1079,7 +1079,7 @@ void gmx_fio_select(int fio)
                 ftp2ext(curfio->iFTP));
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     curfio = &(FIO[fio]);
 }
@@ -1087,12 +1087,12 @@ void gmx_fio_select(int fio)
 void gmx_fio_setprecision(int fio,bool bDouble)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     FIO[fio].bDouble = bDouble;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
@@ -1100,12 +1100,12 @@ bool gmx_fio_getdebug(int fio)
 {
     bool ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     ret=FIO[fio].bDebug;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return FIO[fio].bDebug;
 }
@@ -1113,12 +1113,12 @@ bool gmx_fio_getdebug(int fio)
 void gmx_fio_setdebug(int fio,bool bDebug)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     FIO[fio].bDebug = bDebug;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
@@ -1126,12 +1126,12 @@ char *gmx_fio_getname(int fio)
 {
     char *ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     ret=curfio->fn;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
@@ -1139,12 +1139,12 @@ char *gmx_fio_getname(int fio)
 void gmx_fio_setftp(int fio,int ftp)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     FIO[fio].iFTP = ftp;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
@@ -1152,12 +1152,12 @@ int gmx_fio_getftp(int fio)
 {
     int ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     ret=FIO[fio].iFTP;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
@@ -1165,7 +1165,7 @@ int gmx_fio_getftp(int fio)
 void gmx_fio_rewind(int fio)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].xdr) {
@@ -1176,7 +1176,7 @@ void gmx_fio_rewind(int fio)
     else
         frewind(FIO[fio].fp);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
@@ -1185,7 +1185,7 @@ int gmx_fio_flush(int fio)
     int rc=0;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
@@ -1193,7 +1193,7 @@ int gmx_fio_flush(int fio)
     else if (FIO[fio].xdr)
         rc = fflush ((FILE *) FIO[fio].xdr->x_private);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 
     return rc;
@@ -1203,13 +1203,13 @@ off_t gmx_fio_ftell(int fio)
 {
     off_t ret=0;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
         ret=ftell(FIO[fio].fp);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
@@ -1217,7 +1217,7 @@ off_t gmx_fio_ftell(int fio)
 void gmx_fio_seek(int fio, off_t fpos)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
@@ -1231,7 +1231,7 @@ void gmx_fio_seek(int fio, off_t fpos)
     else
         gmx_file(FIO[fio].fn);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 }
 
@@ -1239,13 +1239,13 @@ FILE *gmx_fio_getfp(int fio)
 {
     FILE *ret=NULL;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
         ret=FIO[fio].fp;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
@@ -1254,14 +1254,14 @@ XDR *gmx_fio_getxdr(int fio)
 {
     XDR *ret=NULL;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].xdr) 
         ret= FIO[fio].xdr;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }
@@ -1270,12 +1270,12 @@ bool gmx_fio_getread(int fio)
 {
     bool ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&fio_mutex);
+    tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     ret=FIO[fio].bRead;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&fio_mutex);
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
     return ret;
 }

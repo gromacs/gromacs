@@ -14,11 +14,12 @@ if !GMX_EXTERNAL_LAPACK
 endif
 
 if THREAD_PARALLEL
-    PARALLEL_LIBOBJS = parallel/libparallel.la 
+    THREAD_MPI_LIBOBJS = thread_mpi/libthread_mpi.la 
+    THREAD_MPI_DIR     = thread_mpi
 endif
 
 
-SUBDIRS = nonbonded selection statistics trajana parallel \
+SUBDIRS = nonbonded selection statistics trajana $(THREAD_MPI_DIR) \
 	  $(BLAS_DIR) $(LAPACK_DIR)
 
 AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
@@ -32,14 +33,14 @@ libgmx@LIBSUFFIX@_la_LIBADD =       nonbonded/libnonbonded.la         \
 				    selection/libselection.la \
 				    statistics/libstatistics.la \
 				    trajana/libtrajana.la \
-				    $(PARALLEL_LIBOBJS) \
+				    $(THREAD_MPI_LIBOBJS) \
 	                            $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
 
 libgmx@LIBSUFFIX@_la_DEPENDENCIES = nonbonded/libnonbonded.la         \
 				    selection/libselection.la \
 				    statistics/libstatistics.la \
 				    trajana/libtrajana.la \
-				    $(PARALLEL_LIBOBJS) \
+				    $(THREAD_MPI_LIBOBJS) \
 				    $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
 
 #	

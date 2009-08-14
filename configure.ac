@@ -209,12 +209,13 @@ AC_ARG_ENABLE(fftw-measure,
 			     enable_fftw_measure=yes)
 
 
-AC_ARG_WITH(threads,
-              [AC_HELP_STRING([--with-threads=@<:@pthreads@:>@],
-                              [Compile for parallel runs using threads])],,with_threads=no)
-if test "$with_threads" = "yes"; then
-   with_threads=pthreads;
-fi
+AC_ARG_ENABLE(threads,
+              [AC_HELP_STRING([--enable-threads],    
+                              [Compile for parallel runs using threads])],,enable_threads=no)
+
+# if test "$enable_threads" = "yes"; then
+#   with_threads=pthreads;
+#fi
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -350,20 +351,21 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
 # end of "$enable_mpi" = "yes"
 fi
 
-if test "$with_threads" = "pthreads"; then
-  AC_CHECK_HEADER([pthread.h],,[AC_MSG_ERROR([Cannot find pthread.h - required for pthread support!])])
+if test "$enable_threads" = "yes"; then 
+  # for now we assume pthreads
+  AC_CHECK_HEADER([pthread.h],,[AC_MSG_ERROR([Cannot find pthread.h - required for thread support!])])
   if test "$enable_mpi" = "yes"; then
     AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
   fi
-  AC_DEFINE(GMX_THREAD_PTHREADS,,[Use pthreads for Gromacs multithreading])
-  AC_DEFINE(GMX_THREAD_MPI,,[Use internal thread_mpi library])
+  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+  AC_DEFINE(GMX_THREAD_MPI,,[Use thread_mpi library])
   AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AM_CONDITIONAL(THREAD_PARALLEL,true)
   AM_CONDITIONAL(THREAD_PTHREADS,true)
 else
-  AM_CONDITIONAL(THREAD_PARALLEL,false)
-  AM_CONDITIONAL(THREAD_PTHREADS,false)
+    AM_CONDITIONAL(THREAD_PARALLEL,false)
+    AM_CONDITIONAL(THREAD_PTHREADS,false)
 fi
 
 
@@ -983,7 +985,7 @@ AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/statistics/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/trajana/Makefile ])
-AC_CONFIG_FILES([ src/gmxlib/parallel/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/thread_mpi/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])

@@ -20,7 +20,7 @@
 #endif
 
 /* Must come directly after config.h */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 
 #include "ppc_altivec_util.h"
@@ -89,17 +89,17 @@ nb_kernel310_ppc_altivec  (int *             p_nri,
 #ifdef GMX_THREAD_SHM_FDECOMP
     nthreads = *p_nthreads;
 	do {
-		gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
 		nn0              = *count;
 		nn1              = nn0+(nri-nn0)/(2*nthreads)+3;
 		*count           = nn1;
-		gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
 		if(nn1>nri) nn1=nri;
 		for(n=nn0; (n<nn1); n++) {
 #if 0
 		} /* maintain correct indentation even with conditional left braces */
 #endif
-#else /* without gmx_threads */
+#else /* without tMPI_Threads */
 		for(n=0;n<nri;n++) {
 #endif  
 			is3        = 3*shift[n];
@@ -350,17 +350,17 @@ nb_kernel310nf_ppc_altivec(int *             p_nri,
 #ifdef GMX_THREAD_SHM_FDECOMP
     nthreads = *p_nthreads;
 	do {
-		gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
 		nn0              = *count;
 		nn1              = nn0+(nri-nn0)/(2*nthreads)+3;
 		*count           = nn1;
-		gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
 		if(nn1>nri) nn1=nri;
 		for(n=nn0; (n<nn1); n++) {
 #if 0
 		} /* maintain correct indentation even with conditional left braces */
 #endif
-#else /* without gmx_threads */
+#else /* without tMPI_Threads */
 		for(n=0;n<nri;n++) {
 #endif  
 			is3        = 3*shift[n];

@@ -41,7 +41,7 @@
 #include "gmx_fatal.h"
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 /* The source code in this file should be thread-safe. 
@@ -60,7 +60,7 @@ static t_timecontrol timecontrol[TNR] = {
 };
 
 #ifdef GMX_THREADS
-static gmx_thread_mutex_t tc_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t tc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 typedef struct {
@@ -86,12 +86,12 @@ bool bTimeSet(int tcontrol)
     bool ret;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&tc_mutex);
+    tMPI_Thread_mutex_lock(&tc_mutex);
 #endif
     range_check(tcontrol,0,TNR);
     ret=timecontrol[tcontrol].bSet;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&tc_mutex);
+    tMPI_Thread_mutex_unlock(&tc_mutex);
 #endif
 
     return ret;
@@ -102,12 +102,12 @@ real rTimeValue(int tcontrol)
     real ret;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&tc_mutex);
+    tMPI_Thread_mutex_lock(&tc_mutex);
 #endif
     range_check(tcontrol,0,TNR);
     ret=timecontrol[tcontrol].t;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&tc_mutex);
+    tMPI_Thread_mutex_unlock(&tc_mutex);
 #endif
     return ret;
 }
@@ -115,13 +115,13 @@ real rTimeValue(int tcontrol)
 void setTimeValue(int tcontrol,real value)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&tc_mutex);
+    tMPI_Thread_mutex_lock(&tc_mutex);
 #endif
     range_check(tcontrol,0,TNR);
     timecontrol[tcontrol].t = value;
     timecontrol[tcontrol].bSet = TRUE;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&tc_mutex);
+    tMPI_Thread_mutex_unlock(&tc_mutex);
 #endif
 }
 

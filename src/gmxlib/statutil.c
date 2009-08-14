@@ -56,7 +56,7 @@
 #include "gmxfio.h"
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 /* used for npri */
@@ -102,7 +102,7 @@ static char *cmd_line=NULL;
 #ifdef GMX_THREADS
 /* For now, some things here are simply not re-entrant, so
    we have to actively lock them. */
-static gmx_thread_mutex_t init_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t init_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
@@ -146,11 +146,11 @@ const char *ShortProgram(void)
 {
     const char *pr,*ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     pr=ret=program_name; 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&init_mutex);
+    tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     if ((pr=strrchr(ret,'/')) != NULL)
         ret=pr+1;
@@ -163,11 +163,11 @@ const char *Program(void)
 {
     const char *ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     ret=program_name; 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&init_mutex);
+    tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     return ret;
 }
@@ -176,11 +176,11 @@ const char *command_line(void)
 {
     const char *ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     ret=cmd_line; 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&init_mutex);
+    tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     return ret;
 }
@@ -188,7 +188,7 @@ const char *command_line(void)
 void set_program_name(const char *argvzero)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     /* When you run a dynamically linked program before installing
      * it, libtool uses wrapper scripts and prefixes the name with "lt-".
@@ -204,7 +204,7 @@ void set_program_name(const char *argvzero)
     if (program_name == NULL)
         program_name="GROMACS";
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&init_mutex);
+    tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
 }
 
@@ -215,7 +215,7 @@ void set_command_line(int argc, char *argv[])
     size_t cmdlength;
 
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&init_mutex);
+    tMPI_Thread_mutex_lock(&init_mutex);
 #endif
     if (cmd_line==NULL)
     {
@@ -234,7 +234,7 @@ void set_command_line(int argc, char *argv[])
         }
     }
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&init_mutex);
+    tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
 
 }
@@ -783,7 +783,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     {
 #ifdef GMX_THREADS
         static bool nice_set=FALSE; /* only set it once */
-        gmx_thread_mutex_lock(&init_mutex);
+        tMPI_Thread_mutex_lock(&init_mutex);
         if (!nice_set)
         {
 #endif
@@ -791,7 +791,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifdef GMX_THREADS
             nice_set=TRUE;
         }
-        gmx_thread_mutex_unlock(&init_mutex);
+        tMPI_Thread_mutex_unlock(&init_mutex);
 #endif
     }
 #endif

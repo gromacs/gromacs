@@ -143,8 +143,8 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
-/* Use pthreads for Gromacs multithreading */
-#cmakedefine GMX_THREAD_PTHREADS
+/* Use pthreads for thread_mpi multithreading */
+#cmakedefine THREAD_PTHREADS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H

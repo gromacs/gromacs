@@ -38,7 +38,7 @@
 #endif
 
 
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 
 #include <stdio.h>

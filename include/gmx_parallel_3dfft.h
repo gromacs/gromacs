@@ -34,7 +34,7 @@
 #include <mpi.h>
 #endif
 #ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#include "tmpi.h"
 #endif
 
 typedef struct gmx_parallel_3dfft *

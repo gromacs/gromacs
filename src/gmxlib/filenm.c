@@ -49,7 +49,7 @@
 #include "macros.h"
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 /* NOTE: this was a cesspool of thread-unsafe code, has now been 
@@ -185,7 +185,7 @@ static const t_deffile deffile[efNR] = {
 static char *default_file_name=NULL;
 
 #ifdef GMX_THREADS
-static gmx_thread_mutex_t filenm_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t filenm_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 #define NZEXT 2
@@ -195,11 +195,11 @@ void set_default_file_name(const char *name)
 {
   int i;
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&filenm_mutex);
+  tMPI_Thread_mutex_lock(&filenm_mutex);
 #endif
   default_file_name = strdup(name);
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&filenm_mutex);
+  tMPI_Thread_mutex_unlock(&filenm_mutex);
 #endif
 
 #if 0
@@ -273,7 +273,7 @@ const char *ftp2defnm(int ftp)
   const char *buf=NULL;
 
 #ifdef GMX_THREADS
-  gmx_thread_mutex_lock(&filenm_mutex);
+  tMPI_Thread_mutex_lock(&filenm_mutex);
 #endif
 
   if (default_file_name)
@@ -288,7 +288,7 @@ const char *ftp2defnm(int ftp)
       }
   }
 #ifdef GMX_THREADS
-  gmx_thread_mutex_unlock(&filenm_mutex);
+  tMPI_Thread_mutex_unlock(&filenm_mutex);
 #endif
 
   return buf;

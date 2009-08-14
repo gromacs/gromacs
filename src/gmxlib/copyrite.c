@@ -37,7 +37,7 @@
 #endif
 
 
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 /* This file is completely threadsafe - keep it that way! */
 

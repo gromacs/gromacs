@@ -57,7 +57,7 @@
 #include "statutil.h"
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 /* Windows file stuff, only necessary for visual studio */
@@ -82,7 +82,7 @@ static bool     bUnbuffered=FALSE;
 #ifdef GMX_THREADS
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
-static gmx_thread_mutex_t pstack_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t pstack_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 void no_buffers(void)
@@ -93,7 +93,7 @@ void no_buffers(void)
 void push_ps(FILE *fp)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&pstack_mutex);
+    tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
     t_pstack *ps;
 
@@ -102,7 +102,7 @@ void push_ps(FILE *fp)
     ps->prev = pstack;
     pstack   = ps;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&pstack_mutex);
+    tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
 }
 
@@ -137,7 +137,7 @@ static int pclose(FILE *fp)
 void ffclose(FILE *fp)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&pstack_mutex);
+    tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
     t_pstack *ps,*tmp;
 
@@ -168,7 +168,7 @@ void ffclose(FILE *fp)
         }
     }
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&pstack_mutex);
+    tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
 }
 
@@ -179,7 +179,7 @@ void ffclose(FILE *fp)
 void frewind(FILE *fp)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&pstack_mutex);
+    tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
     t_pstack *ps;
 
@@ -188,7 +188,7 @@ void frewind(FILE *fp)
         if (ps->fp == fp) {
             fprintf(stderr,"Cannot rewind compressed file!\n");
 #ifdef GMX_THREADS
-            gmx_thread_mutex_unlock(&pstack_mutex);
+            tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
             return;
         }
@@ -196,14 +196,14 @@ void frewind(FILE *fp)
     }
     rewind(fp);
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&pstack_mutex);
+    tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
 }
 
 bool is_pipe(FILE *fp)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&pstack_mutex);
+    tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
     t_pstack *ps;
 
@@ -211,14 +211,14 @@ bool is_pipe(FILE *fp)
     while (ps != NULL) {
         if (ps->fp == fp) {
 #ifdef GMX_THREADS
-            gmx_thread_mutex_unlock(&pstack_mutex);
+            tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
             return TRUE;
         }
         ps=ps->prev;
     }
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&pstack_mutex);
+    tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
     return FALSE;
 }

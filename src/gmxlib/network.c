@@ -50,7 +50,7 @@
 #endif
 
 #ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#include "tmpi.h"
 #endif
 
 #include "mpelogging.h"
@@ -77,7 +77,7 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   return 0;
 #else
   char   buf[256];
-  int    resultlen;               /* actual length of node name      */
+  size_t    resultlen;               /* actual length of node name      */
   int    i,flag;
   int  mpi_num_nodes;
   int  mpi_my_rank;

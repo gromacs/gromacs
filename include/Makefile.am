@@ -3,10 +3,11 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SUBDIRS = . types
+SUBDIRS = . types 
 
 pkginclude_HEADERS = \
-gmx_thread.h \
+thread_mpi.h \
+tmpi.h \
 3dview.h \
 assert.h \
 atomprop.h \
@@ -53,7 +54,6 @@ gmx_random.h \
 gmx_parallel_3dfft.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
-gmx_thread.h \
 gmx_parallel_3dfft.h \
 gmx_wallcycle.h \
 gpp_atomtype.h \

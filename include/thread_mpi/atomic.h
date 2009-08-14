@@ -1,32 +1,56 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- 
-*
-* 
-* This file is part of Gromacs        Copyright (c) 1991-2004
-* David van der Spoel, Erik Lindahl, University of Groningen.
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
-*
-* To help us fund GROMACS development, we humbly ask that you cite
-* the research papers on the package. Check out http://www.gromacs.org
-* 
-* And Hey:
-* Gnomes, ROck Monsters And Chili Sauce
-*/
-#ifndef _GMX_ATOMIC_H_
-#define _GMX_ATOMIC_H_
+/*
+This source code file is part of thread_mpi.  
+Written by Sander Pronk, Erik Lindahl, and possibly others. 
 
-/*! \file gmx_atomic.h
+Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1) Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2) Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3) Neither the name of the copyright holders nor the
+   names of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+If you want to redistribute modifications, please consider that
+scientific software is very special. Version control is crucial -
+bugs must be traceable. We will be happy to consider code for
+inclusion in the official distribution, but derived work should not
+be called official thread_mpi. Details are found in the README & COPYING
+files.
+
+To help us fund development, we humbly ask that you cite
+any papers on the package - you can find them in the top README file.
+
+*/
+
+#ifndef _TMPI_ATOMIC_H_
+#define _TMPI_ATOMIC_H_
+
+/*! \file tmpi_atomic.h
  *
  *  @brief Atomic operations for fast SMP synchronization
  *
  *  This file defines atomic integer operations and spinlocks for 
- *  fast synchronization in performance-critical regions of gromacs.
+ *  fast synchronization in performance-critical regions.
  *
  *  In general, the best option is to use functions without explicit 
- *  locking, e.g. gmx_atomic_fetch_add() or gmx_atomic_cmpxchg().
+ *  locking, e.g. tMPI_Atomic_fetch_add() or tMPI_Atomic_cmpxchg().
  *
  *  Not all architecture support atomic operations though inline assembly,
  *  and even if they do it might not be implemented here. In that case
@@ -43,19 +67,14 @@
  *  as used for pthread mutexes. So, if e.g. are trying to lock a spinlock,
  *  you will have gotten the lock if the return value is 0.
  * 
- *  gmx_spinlock_islocked(x) obviously still returns 1 if the lock is locked,
+ *  tMPI_Spinlock_islocked(x) obviously still returns 1 if the lock is locked,
  *  and 0 if it is available, though...
  */
 
 
 #include <stdio.h>
 
-#if !defined(SIZEOF_VOIDP) && defined(HAVE_CONFIG_H)
-#include "config.h"
-#endif
 
-
-#include "gmx_thread.h"
 
 #ifdef __cplusplus
 extern "C" 
@@ -65,7 +84,11 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
-
+#ifdef __GNUC__
+#define GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+#endif
 
 
 #if ( ( (defined(__GNUC__) || defined(__INTEL_COMPILER) ||  \
@@ -94,7 +117,7 @@ extern "C"
  *  it in the code should be visible to all memory operations after it - the
  *  CPU cannot propagate load/stores across it.
  */
-#define gmx_atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
+#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
 
 /* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
 #if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
@@ -149,25 +172,25 @@ extern "C"
  *  - PowerPC, using IBM AIX compilers 
  *  - PowerPC, using IBM compilers >=7.0 under Linux or Mac OS X.
  */
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
         volatile int       value;   /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
-/*! \brief Atomic pointer type equivalent to gmx_atomic_t
+/*! \brief Atomic pointer type equivalent to tMPI_Atomic_t
  *
  * Useful for lock-free and wait-free data structures.
  * The only operations available for this type are
- * gmx_atomic_ptr_get
- * gmx_atomic_ptr_set
- * gmx_atomic_ptr_cmpxch
+ * tMPI_Atomic_ptr_get
+ * tMPI_Atomic_ptr_set
+ * tMPI_Atomic_ptr_cmpxch
 */
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        volatile void*     value;   /*!< Volatile, to avoid compiler aliasing */
+        void* volatile*    value;   /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
 /*! \brief Gromacs spinlock
@@ -183,11 +206,11 @@ gmx_atomic_ptr_t;
  *  else has locked - performance is the primary goal of spinlocks.
  *
  */
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
-    volatile unsigned int   lock;   /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int  lock;   /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
 
@@ -196,13 +219,13 @@ gmx_spinlock_t;
 /*! \brief Spinlock static initializer
  *
  *  This is used for static spinlock initialization, and has the same
- *  properties as GMX_THREAD_MUTEX_INITIALIZER has for mutexes.
- *  This is only for inlining in the gmx_thread.h header file. Whether
+ *  properties as TMPI_THREAD_MUTEX_INITIALIZER has for mutexes.
+ *  This is only for inlining in the tMPI_Thread.h header file. Whether
  *  it is 0, 1, or something else when unlocked depends on the platform.
  *  Don't assume anything about it. It might even be a mutex when using the
  * fallback implementation!
  */
-#define GMX_SPINLOCK_INITIALIZER   { 1 }
+#define TMPI_SPINLOCK_INITIALIZER   { 1 }
 
 
 
@@ -214,7 +237,7 @@ gmx_spinlock_t;
  *  \param  a   Atomic variable to read
  *  \return     Integer value of the atomic variable
  */
-#define gmx_atomic_get(a)  ((a)->value) 
+#define tMPI_Atomic_get(a)  ((a)->value) 
 
  
 /*! \brief Write value to an atomic integer 
@@ -225,7 +248,7 @@ gmx_spinlock_t;
  *  \param  a   Atomic variable
  *  \param  i   Integer to set the atomic variable to.
  */
-#define gmx_atomic_set(a,i)  (((a)->value) = (i))
+#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
 
 /*! \brief Return value of an atomic pointer 
@@ -236,7 +259,7 @@ gmx_spinlock_t;
  *  \param  a   Atomic variable to read
  *  \return     Pointer value of the atomic variable
  */
-#define gmx_atomic_ptr_get(a)  ((a)->value) 
+#define tMPI_Atomic_ptr_get(a)  ((a)->value) 
 
  
 /*! \brief Write value to an atomic pointer 
@@ -247,7 +270,7 @@ gmx_spinlock_t;
  *  \param  a   Atomic variable
  *  \param  i   Pointer value to set the atomic variable to.
  */
-#define gmx_atomic_ptr_set(a,i)  (((a)->value) = (i))
+#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
  
@@ -261,7 +284,7 @@ gmx_spinlock_t;
  *
  *  \return The new value (after summation).
  */
-static inline int gmx_atomic_add_return(gmx_atomic_t *     a, 
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *     a, 
                                         volatile int       i)
 {
     int __i;
@@ -288,7 +311,7 @@ static inline int gmx_atomic_add_return(gmx_atomic_t *     a,
  *
  *  \return    The value of the atomic variable before addition.
  */
-static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
                                        volatile int       i)
 {
 #if 0
@@ -327,7 +350,7 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *    a, 
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a, 
                                      int               oldval,
                                      int               newval)
 {
@@ -364,23 +387,21 @@ static inline int gmx_atomic_cmpxchg(gmx_atomic_t *    a,
  *
  *   \note   The exchange occured if the return value is identical to \a old.
  */
-static inline volatile void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t* a, 
+static inline void* volatile* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t* a, 
                                                     void*             oldval,
                                                     void*             newval)
 {
-    volatile void *prev;
-#if ( SIZEOF_VOIDP == 4 )
+    void* volatile *prev;
+#ifndef __x86_64__ 
     __asm__ __volatile__("lock ; cmpxchgl %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
-#elif ( SIZEOF_VOIDP == 8 )
+#else 
     __asm__ __volatile__("lock ; cmpxchgq %1,%2"
                          : "=a"(prev)
                          : "q"(newval), "m"(a->value), "0"(oldval)
                          : "memory");
-#else
-#error Unknown pointer size 
 #endif
     return prev;
 }
@@ -396,7 +417,7 @@ static inline volatile void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t* a,
  *
  *  \param x      Gromacs spinlock pointer.
  */
-static inline void gmx_spinlock_init(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
 {
     x->lock = 1;
 }
@@ -410,7 +431,7 @@ static inline void gmx_spinlock_init(gmx_spinlock_t *   x)
  *
  *  \param x     Gromacs spinlock pointer
  */
-static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 {
         __asm__ __volatile__("\n1:\t" 
                              "lock ; decb %0\n\t" 
@@ -435,7 +456,7 @@ static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
  * \return 0 if the mutex was available so we could lock it,
  *         otherwise a non-zero integer (1) if the lock is busy.
  */
-static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 {
         char old_value;
         
@@ -452,7 +473,7 @@ static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
  *
  *  Unlocks the spinlock, regardless if which thread locked it.
  */
-static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
         char old_value = 1;
         
@@ -472,7 +493,7 @@ static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
-static inline int gmx_spinlock_islocked(gmx_spinlock_t *  x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
 {
     return (*(volatile signed char *)(&(x)->lock) <= 0);
 }
@@ -481,18 +502,18 @@ static inline int gmx_spinlock_islocked(gmx_spinlock_t *  x)
 /*! \brief Wait for a spinlock to become available
  *
  *  This routine blocks until the spinlock is unlocked, 
- *  but in contrast to gmx_spinlock_lock() it returns without 
+ *  but in contrast to tMPI_Spinlock_lock() it returns without 
  *  trying to lock the spinlock.
  *
  *  \param x  Gromacs spinlock pointer
  */
-static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     do 
     {
-        gmx_atomic_memory_barrier(); 
+        tMPI_Atomic_memory_barrier(); 
     } 
-    while(gmx_spinlock_islocked(x));
+    while(tMPI_Spinlock_islocked(x));
 }
 
 
@@ -504,40 +525,40 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
  */
 
 /* Compiler-dependent stuff: GCC memory barrier */
-#define gmx_atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
+#define tMPI_Atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
 
 
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
         volatile int       value;   /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        volatile void*     value;   /*!< Volatile, to avoid compiler aliasing */
+        void* volatile*     value;   /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
     volatile unsigned int   lock;   /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
-#define GMX_SPINLOCK_INITIALIZER   { 0 }
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_get(a)        ((a)->value) 
-#define gmx_atomic_set(a,i)     (((a)->value) = (i))
+#define tMPI_Atomic_get(a)        ((a)->value) 
+#define tMPI_Atomic_set(a,i)     (((a)->value) = (i))
 
-#define gmx_atomic_ptr_get(a)    ((a)->value) 
-#define gmx_atomic_ptr_set(a,i) (((a)->value) = (i))
+#define tMPI_Atomic_ptr_get(a)    ((a)->value) 
+#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
-static inline int gmx_atomic_add_return(gmx_atomic_t *    a, 
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *    a, 
                                         int               i)
 {
     int t;
@@ -545,7 +566,7 @@ static inline int gmx_atomic_add_return(gmx_atomic_t *    a,
     __asm__ __volatile__("1:     lwarx   %0,0,%2\n"
                          "\tadd     %0,%1,%0\n"
                          "\tstwcx.  %0,0,%2 \n"
-                         "\tbne-    1b"
+                         "\tbne-    1b\n"
                          "\tisync\n"
                          : "=&r" (t)
                          : "r" (i), "r" (&a->value)
@@ -555,7 +576,7 @@ static inline int gmx_atomic_add_return(gmx_atomic_t *    a,
 
 
 
-static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
                                        int                i)
 {
     int t;
@@ -574,7 +595,7 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
 }
 
 
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *       a,
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
                                      int                  oldval,
                                      int                  newval)
 {
@@ -596,13 +617,13 @@ static inline int gmx_atomic_cmpxchg(gmx_atomic_t *       a,
 }
 
 
-static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
+static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
                                            void *               oldval,
                                            void *               newval)
 {
     void *prev;
    
-#if ( SIZEOF_VOIDP == 4 )
+#if (!defined(__PPC64__)) && (!defined(__ppc64))
     __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
                           "\tcmpw    0,%0,%3 \n"
                           "\tbne     2f \n"
@@ -614,7 +635,7 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
                           : "r" (&a->value), "r" (oldval), "r" (newval), 
                             "m" (a->value)
                           : "cc", "memory");
-#elif ( SIZEOF_VOIDP == 8 )
+#else
     __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
                           "\tcmpd    0,%0,%3 \n"
                           "\tbne     2f \n"
@@ -626,8 +647,6 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
                           : "r" (&a->value), "r" (oldval), "r" (newval), 
                             "m" (a->value)
                           : "cc", "memory");
-#else
-#error Unknown pointer size
 #endif
     return prev;
 }
@@ -635,14 +654,14 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
 
 
 
-static inline void gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
 
-static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 {
     unsigned int tmp;
     
@@ -662,7 +681,7 @@ static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
 }
 
 
-static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 {
     unsigned int old, t;
     unsigned int mask = 1;
@@ -682,26 +701,26 @@ static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
 }
 
 
-static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
     __asm__ __volatile__("\teieio\n": : :"memory");
     x->lock = 0;
 }
 
 
-static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     return ( x->lock != 0);
 }
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     do 
     {
-        gmx_atomic_memory_barrier(); 
+        tMPI_Atomic_memory_barrier(); 
     }
-    while(gmx_spinlock_islocked(x));
+    while(tMPI_Spinlock_islocked(x));
 }
 
 
@@ -717,40 +736,42 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *x)
  */
 
 /* memory barrier - no idea how to create one with xlc! */
-#define gmx_atomic_memory_barrier()
+#define tMPI_Atomic_memory_barrier()
 
 
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
         volatile int       value;  /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        volatile void*     value;  /*!< Volatile, to avoid compiler aliasing */
+        void* volatile*     value;  /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
 
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
     volatile unsigned int   lock;  /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
-#define GMX_SPINLOCK_INITIALIZER   { 0 }
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_get(a)   ((a)->value) 
-#define gmx_atomic_set(a,i)  (((a)->value) = (i))
+#define tMPI_Atomic_get(a)   ((a)->value) 
+#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
+#define tMPI_Atomic_ptr_get(a)   ((a)->value) 
+#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-static inline int gmx_atomic_add_return(gmx_atomic_t *    a, 
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *    a, 
                                         int               i)
 {
     int t;
@@ -767,7 +788,7 @@ static inline int gmx_atomic_add_return(gmx_atomic_t *    a,
 
 
 
-static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
                                        int                i)
 {
     int t;
@@ -785,7 +806,7 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
 }
 
 
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *       a,
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
                                      int                  oldval,
                                      int                  newval)
 {
@@ -805,14 +826,14 @@ static inline int gmx_atomic_cmpxchg(gmx_atomic_t *       a,
     return prev;
 }
 
-static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
+static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
                                            void*                oldval,
                                            void*                newval)
 {
     void* prev;
    
 
-#if ( SIZEOF_VOIDP == 4 )
+#if (!defined(__PPC64__)) && (!defined(__ppc64))
     __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
                           "\t cmpw    0,%0,%3 \n"
                           "\t bne     2f \n"
@@ -824,7 +845,7 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
                           : "r" (&a->value), "r" (oldval), "r" (newval), 
                             "m" (a->value));
     
-#elif ( SIZEOF_VOIDP == 8 )
+#else
     __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
                           "\t cmpd    0,%0,%3 \n"
                           "\t bne     2f \n"
@@ -835,21 +856,19 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *   a,
                           : "=&r" (prev), "=m" (a->value)
                           : "r" (&a->value), "r" (oldval), "r" (newval), 
                             "m" (a->value));
-#else
-#error Unknown pointer size
 #endif
     return prev;
 }
 
 
-static inline void gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
 
-static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 {
     unsigned int tmp;
     
@@ -868,7 +887,7 @@ static inline void gmx_spinlock_lock(gmx_spinlock_t *  x)
 }
 
 
-static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 {
     unsigned int old, t;
     unsigned int mask = 1;
@@ -887,27 +906,27 @@ static inline int gmx_spinlock_trylock(gmx_spinlock_t *  x)
 }
 
 
-static inline void gmx_spinlock_unlock(gmx_spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
     __asm__ __volatile__("\t eieio \n");
     x->lock = 0;
 }
 
 
-static inline void gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     return ( x->lock != 0);
 }
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     
     do 
     {
-        gmx_atomic_memory_barrier();
+        tMPI_Atomic_memory_barrier();
     }
-    while(spin_is_locked(x));
+    while(spin_islocked(x));
 }
 
 
@@ -921,80 +940,98 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 */
 
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
-        volatile int       value; /*!< Volatile, to avoid compiler aliasing */
+    volatile int       value; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        volatile void*     value; /*!< Volatile, to avoid compiler aliasing */
+    void* volatile    value; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
     volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
-#define GMX_SPINLOCK_INITIALIZER   { 0 }
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_get(a)   ((a)->value) 
-#define gmx_atomic_set(a,i)  (((a)->value) = (i))
+#define tMPI_Atomic_get(a)   ((a)->value) 
+#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
+#define tMPI_Atomic_ptr_get(a)   ((a)->value) 
+#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (i))
 
 
 /* Compiler thingies */
 #ifdef __INTEL_COMPILER
+/* prototypes are neccessary for these intrisics: */
+#include <ia64intrin.h>
 void __memory_barrier(void);
 int _InterlockedCompareExchange(volatile int *dest, int xchg, int comp);
+/*void* _InterlockedCompareExchangePointer(void* volatile **dest, void* xchg, 
+                                         void* comp);*/
 unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 memory barrier */
-#  define gmx_atomic_memory_barrier() __memory_barrier()
+#define tMPI_Atomic_memory_barrier() __memory_barrier()
 /* ia64 cmpxchg */
-#  define gmx_atomic_cmpxchg(a, oldval, newval) _InterlockedCompareExchange(&a->value,newval,oldval)
-/* ia64 cmpxchg */
-#  define gmx_atomic_ptr_cmpxchg(a, oldval, newval) _InterlockedCompareExchange64(&a->value,newval,oldval)
+#define tMPI_Atomic_cmpxchg(a, oldval, newval) _InterlockedCompareExchange(&((a)->value),newval,oldval)
+/* ia64 pointer cmpxchg */
+#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) _InterlockedCompareExchangePointer(&((a)->value),newval,oldval)
+
+/*#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) __sync_val_compare_and_swap(&((a)->value),newval,oldval)*/
+
+
 /* ia64 fetchadd, but it only works with increments +/- 1,4,8,16 */
-#  define gmx_ia64_fetchadd(a, inc)  __fetchadd4_rel(a, inc)
+#define tMPI_ia64_fetchadd(a, inc)  __fetchadd4_rel(a, inc)
 
 #elif defined __GNUC__  
 /* ia64 memory barrier */
-#  define gmx_atomic_memory_barrier() asm volatile ("":::"memory")
+#  define tMPI_Atomic_memory_barrier() asm volatile ("":::"memory")
 /* ia64 cmpxchg */
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *   a,
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
                                      int              oldval,
                                      int              newval)
 {
+#if GCC_VERSION < 40200
     volatile int res;
     asm volatile ("mov ar.ccv=%0;;" :: "rO"(oldval));
     asm volatile ("cmpxchg4.acq %0=[%1],%2,ar.ccv":                    
                   "=r"(res) : "r"(&a->value), "r"(newval) : "memory"); 
                           
     return res;
+#else
+    return __sync_val_compare_and_swap( &(a->value), oldval, newval);
+#endif
 }
 
 /* ia64 ptr cmpxchg */
-static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t * a,
+static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a,
                                            void*              oldval,
                                            void*              newval)
 {
-    volatile void* res;
+#if GCC_VERSION < 40200
+    void* volatile* res;
     asm volatile ("mov ar.ccv=%0;;" :: "rO"(oldval));
     asm volatile ("cmpxchg8.acq %0=[%1],%2,ar.ccv":                    
                   "=r"(res) : "r"(&a->value), "r"(newval) : "memory"); 
                           
-    return res;
+    return (void*)res;
+#else
+    return (void*)__sync_val_compare_and_swap( &(a->value), oldval, newval);
+#endif
 }
 
 
 /* fetchadd, but on ia64 it only works with increments +/- 1,4,8,16 */
-#define gmx_ia64_fetchadd(a, inc)                                             \
+#define tMPI_ia64_fetchadd(a, inc)                                             \
 ({  unsigned long res;                                                        \
     asm volatile ("fetchadd4.rel %0=[%1],%2"                                  \
                   : "=r"(res) : "r"(a), "i" (inc) : "memory");                \
@@ -1003,12 +1040,12 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t * a,
 
 
 #else /* Unknown compiler */
-#  error Unknown ia64 compiler (not GCC or ICC) - modify gmx_thread.h!
+#  error Unknown ia64 compiler (not GCC or ICC) - modify tMPI_Thread.h!
 #endif
 
 
 
-static inline int gmx_atomic_add_return(gmx_atomic_t *       a, 
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *       a, 
                                         volatile int         i)
 {
     volatile int oldval,newval;    
@@ -1022,7 +1059,7 @@ static inline int gmx_atomic_add_return(gmx_atomic_t *       a,
         ( (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) || 
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) ) )
     {
-        oldval = gmx_ia64_fetchadd(a,__i);
+        oldval = tMPI_ia64_fetchadd((unsigned int*)&(a->value),__i);
         newval = oldval + i;
     }
     else
@@ -1030,17 +1067,17 @@ static inline int gmx_atomic_add_return(gmx_atomic_t *       a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_get(a);
+            oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
     }
     return newval;
 }
 
 
 
-static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
                                        volatile int       i)
 {
     volatile int oldval,newval;    
@@ -1054,7 +1091,7 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
         ( (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) || 
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) ) )
     {
-        oldval = gmx_ia64_fetchadd(a,__i);
+        oldval = tMPI_ia64_fetchadd((unsigned int*)&(a->value),__i);
         newval = oldval + i;
     }
     else
@@ -1062,76 +1099,76 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_get(a);
+            oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
     }
     return oldval;
 }
 
 
-static inline void gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
-static inline void gmx_spinlock_lock(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
 {
-    gmx_atomic_t *a = (gmx_atomic_t *) x;
+    tMPI_Atomic_t *a = (tMPI_Atomic_t *) x;
     unsigned long value;                                                 
-    value = gmx_atomic_cmpxchg(a, 0, 1);                             
+    value = tMPI_Atomic_cmpxchg(a, 0, 1);                             
     if (value)                                                           
     {                                                                    
         do                                                               
         {                                                                
             while (a->value != 0)   
             {                                                            
-                gmx_atomic_memory_barrier();                             
+                tMPI_Atomic_memory_barrier();                             
             }                                                            
-            value = gmx_atomic_cmpxchg(a, 0, 1);                       
+            value = tMPI_Atomic_cmpxchg(a, 0, 1);                       
         }                                                                
         while (value);                                                   
     }                                                                    
 } 
 
 
-static inline int gmx_spinlock_trylock(gmx_spinlock_t *   x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *   x)
 {
-    return (gmx_atomic_cmpxchg((gmx_atomic_t *)x, 0, 1) != 0);
+    return (tMPI_Atomic_cmpxchg( ((tMPI_Atomic_t *)x), 0, 1) != 0);
 }
 
 
-static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
 {
     do
     {
-        gmx_atomic_memory_barrier(); 
+        tMPI_Atomic_memory_barrier(); 
         x->lock = 0;
     } 
     while (0);
 }
 
 
-static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     return (x->lock != 0);
 }
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     
     do 
     {
-        gmx_atomic_memory_barrier();
+        tMPI_Atomic_memory_barrier();
     }
-    while(gmx_spinlock_islocked(x));
+    while(tMPI_Spinlock_islocked(x));
 }
 
 
-#undef gmx_ia64_fetchadd
+#undef tMPI_ia64_fetchadd
 
 
 
@@ -1139,36 +1176,36 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 /* HP compiler on ia64 */
 #include <machine/sys/inline.h>
 
-#define gmx_atomic_memory_barrier() _Asm_mf()
+#define tMPI_Atomic_memory_barrier() _Asm_mf()
 
-#define gmx_hpia64_fetchadd(a, i)                           \
+#define tMPI_hpia64_fetchadd(a, i)                           \
     _Asm_fetchadd((_Asm_fasz)_FASZ_W,(_Asm_sem)_SEM_REL,    \
                   (UInt32*)a,(unsigned int) i,              \
                   (_Asm_ldhint)LDHINT_NONE)
  
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
         volatile int       value; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        volatile void*     value; /*!< Volatile, to avoid compiler aliasing */
+        void* volatile*     value; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
 
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
     volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *   a,
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
                                      int              oldval,
                                      int              newval)
 {
@@ -1186,7 +1223,7 @@ static inline int gmx_atomic_cmpxchg(gmx_atomic_t *   a,
 
 
 
-static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *  a,
+static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *  a,
                                            void*               oldval,
                                            void*               newval)
 {
@@ -1207,14 +1244,14 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *  a,
 
 
 
-#define GMX_SPINLOCK_INITIALIZER   { 0 }
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define gmx_atomic_get(a)   ((a)->value) 
-#define gmx_atomic_set(a,i)  (((a)->value) = (i))
+#define tMPI_Atomic_get(a)   ((a)->value) 
+#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
 
-static inline void gmx_atomic_add_return(gmx_atomic_t *       a, 
+static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a, 
                                          int                  i)
 {
     int old,new;    
@@ -1227,7 +1264,7 @@ static inline void gmx_atomic_add_return(gmx_atomic_t *       a,
     if (  (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||  
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) )
     {
-        oldval = gmx_hpia64_fetchadd(a,__i);
+        oldval = tMPI_hpia64_fetchadd(a,__i);
         newval = oldval + i;
     }
     else
@@ -1235,17 +1272,17 @@ static inline void gmx_atomic_add_return(gmx_atomic_t *       a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_get(a);
+            oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
     }
     return newval;
 }
 
 
 
-static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
                                        int                i)
 {
     int oldval,newval;    
@@ -1258,7 +1295,7 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
     if (  (__i ==   1) || (__i ==   4)  || (__i ==   8) || (__i ==  16) ||
           (__i ==  -1) || (__i ==  -4)  || (__i ==  -8) || (__i == -16) )
     {
-        oldval = gmx_hpia64_fetchadd(a,__i);
+        oldval = tMPI_hpia64_fetchadd(a,__i);
         newval = oldval + i;
     }
     else
@@ -1266,16 +1303,16 @@ static inline int gmx_atomic_fetch_add(gmx_atomic_t *     a,
         /* Use compare-exchange addition that works with any value */
         do
         {
-            oldval = gmx_atomic_get(a);
+            oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(gmx_atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
     }
     return oldval;
 }
 
 
-static inline void gmx_spinlock_init(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
@@ -1284,7 +1321,7 @@ static inline void gmx_spinlock_init(gmx_spinlock_t *x)
 
 
 
-static inline void gmx_spinlock_trylock(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
     int rc;
 
@@ -1295,7 +1332,7 @@ static inline void gmx_spinlock_trylock(gmx_spinlock_t *x)
 }
 
 
-static inline void gmx_spinlock_lock(gmx_spinlock_t *x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     int      status = 1;
     
@@ -1303,13 +1340,13 @@ static inline void gmx_spinlock_lock(gmx_spinlock_t *x)
     {
         if( *((unsigned int *)x->lock) == 0 ) 
         {
-            status = gmx_spinlock_trylock(x);
+            status = tMPI_Spinlock_trylock(x);
         }
     } while( status != 0);
 }
 
 
-static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
 {
     _Asm_fetchadd((_Asm_fasz)_SZ_W,(_Asm_sem)_SEM_REL,                  
                   (unsigned int *)x,-1,(_Asm_ldhint)_LDHINT_NONE);
@@ -1317,24 +1354,24 @@ static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
 
 
 
-static inline void gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     return ( x->lock != 0 );
 }
 
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     do
     {
-        gmx_atomic_memory_barrier(); 
+        tMPI_Atomic_memory_barrier(); 
     } 
-    while(spin_is_locked(x));
+    while(spin_islocked(x));
 }
 
 
-#undef gmx_hpia64_fetchadd
+#undef tMPI_hpia64_fetchadd
 
 
 
@@ -1343,81 +1380,92 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 
 #include <windows.h>
 
-#define gmx_atomic_memory_barrier()
+#if (!defined(inline)) && (!defined(__cplusplus))
+#define inline_defined_in_atomic 1
+#define inline __inline
+#endif
+
+#define tMPI_Atomic_memory_barrier()
 
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
         LONG volatile      value; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
         void* volatile      value; /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
 
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
     LONG volatile      lock;      /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
-#define GMX_SPINLOCK_INITIALIZER   { 0 }
-
-
-
-
-#define gmx_atomic_get(a)  ((a)->value) 
-#define gmx_atomic_set(a,i)  (((a)->value) = (i))
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
 
 
-#define gmx_atomic_fetch_add(a, i)  \
-    InterlockedExchangeAdd((LONG volatile *)a, (LONG) i)
-
-#define gmx_atomic_add_return(a, i)  \
-    ( i + InterlockedExchangeAdd((LONG volatile *)a, (LONG) i) )
-
-#define gmx_atomic_cmpxchg(a, oldval, newval) \
-    InterlockedCompareExchange((LONG volatile *)a, (LONG) newval, (LONG) oldval)
-
-#define gmx_atomic_ptr_cmpxchg(a, oldval, newval) \
-    InterlockedCompareExchangePointer((LONG volatile *)a, (PVOID) newval,  \
-                                      (PVOID) oldval)
+#define tMPI_Atomic_get(a)  ((a)->value) 
+#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
 
-
-# define gmx_spinlock_lock(x)   \
-    while((InterlockedCompareExchange((LONG volatile *)&x, 1, 0))!=0)
-
-
-#define gmx_spinlock_trylock(x)   \
-    InterlockedCompareExchange((LONG volatile *)&x, 1, 0)
+#define tMPI_Atomic_ptr_get(a)    ((a)->value) 
+#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-statix inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
+#define tMPI_Atomic_fetch_add(a, i)  \
+    InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i))
+
+#define tMPI_Atomic_add_return(a, i)  \
+    ( (i) + InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i)) )
+
+#define tMPI_Atomic_cmpxchg(a, oldval, newval) \
+    InterlockedCompareExchange((LONG volatile *)(a), (LONG) (newval), (LONG) (oldval))
+
+#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) \
+    InterlockedCompareExchangePointer(&((a)->value), (PVOID) (newval),  \
+                                      (PVOID) (oldval))
+
+
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
+{
+    x->lock = 0;
+}
+
+# define tMPI_Spinlock_lock(x)   \
+    while((InterlockedCompareExchange((LONG volatile *)(x), 1, 0))!=0)
+
+
+#define tMPI_Spinlock_trylock(x)   \
+    InterlockedCompareExchange((LONG volatile *)(x), 1, 0)
+
+
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
 {
     x->lock = 0;
 }
 
 
-static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     return (*(volatile signed char *)(&(x)->lock) != 0);
 }
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
-    while(spin_is_locked(x))
+    while(tMPI_Spinlock_islocked(x))
     {
-        Sleep(0);
+        /*Sleep(0);*/
     }
 }
 
@@ -1428,33 +1476,33 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 #include <sys/atomic_op.h>
 
 
-#define gmx_atomic_memory_barrier()
+#define tMPI_Atomic_memory_barrier()
 
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
         volatile int       value;  /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        volatile void*     value;  /*!< Volatile, to avoid compiler aliasing */
+        void* volatile*     value;  /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
 
 
-typedef struct gmx_spinlock
+typedef struct tMPI_Spinlock
 {
     volatile unsigned int   lock;  /*!< Volatile, to avoid compiler aliasing */
 }
-gmx_spinlock_t;
+tMPI_Spinlock_t;
 
 
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *    a,
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a,
                                      int               oldval,
                                      int               newval)
 {
@@ -1474,7 +1522,7 @@ static inline int gmx_atomic_cmpxchg(gmx_atomic_t *    a,
 }
 
 
-static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *a,
+static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *a,
                                            void*             oldval,
                                            void*             newval)
 {
@@ -1496,14 +1544,14 @@ static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t *a,
 
 
 
-static inline void gmx_atomic_add_return(gmx_atomic_t *       a, 
+static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a, 
                                          int                  i)
 {
     int oldval,newval;    
     
     do
     {
-        oldval = gmx_atomic_get(a);
+        oldval = tMPI_Atomic_get(a);
         newval = oldval + i;
     }
     while(__check_lock((atomic_p)&a->value, oldval, newval));
@@ -1513,14 +1561,14 @@ static inline void gmx_atomic_add_return(gmx_atomic_t *       a,
 
 
 
-static inline void gmx_atomic_fetch_add(gmx_atomic_t *       a, 
+static inline void tMPI_Atomic_fetch_add(tMPI_Atomic_t *       a, 
                                         int                  i)
 {
     int oldval,newval;    
     
     do
     {
-        oldval = gmx_atomic_get(a);
+        oldval = tMPI_Atomic_get(a);
         newval = oldval + i;
     }
     while(__check_lock((atomic_p)&a->value, oldval, newval));
@@ -1529,13 +1577,13 @@ static inline void gmx_atomic_fetch_add(gmx_atomic_t *       a,
 }
 
 
-static inline void gmx_spinlock_init(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
 {
     __clear_lock((atomic_p)x,0);
 }
 
 
-static inline void gmx_spinlock_lock(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
 {
     do
     {
@@ -1545,28 +1593,28 @@ static inline void gmx_spinlock_lock(gmx_spinlock_t *   x)
 }
 
 
-static inline void gmx_spinlock_trylock(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_trylock(tMPI_Spinlock_t *   x)
 {
     /* Return 0 if we got the lock */
     return (__check_lock((atomic_p)x, 0, 1) != 0)
 }
 
 
-static inline void gmx_spinlock_unlock(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
 {
     __clear_lock((atomic_p)x,0);
 }
 
 
-static inline void gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     return (*((atomic_p)x) != 0);
 }
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *    x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *    x)
 {
-    while(spin_is_locked(x)) { ; } 
+    while(spin_islocked(x)) { ; } 
 }
 
 
@@ -1574,126 +1622,125 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *    x)
 /* No atomic operations, use mutex fallback. Documentation is in x86 section */
 
 
-#define gmx_atomic_memory_barrier()
+#define tMPI_Atomic_memory_barrier()
 
 /* System mutex used for locking to guarantee atomicity */
-static gmx_thread_mutex_t
-gmx_atomic_mutex = GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 
-typedef struct gmx_atomic
+typedef struct tMPI_Atomic
 {
-        int        value;
+        volatile int value;
 }
-gmx_atomic_t;
+tMPI_Atomic_t;
 
-typedef struct gmx_atomic_ptr
+typedef struct tMPI_Atomic_ptr
 {
-        void*      value;
+        void* volatile value;
 }
-gmx_atomic_ptr_t;
+tMPI_Atomic_ptr_t;
 
 
 
-#define gmx_spinlock_t     gmx_thread_mutex_t
+#define tMPI_Spinlock_t     tMPI_Thread_mutex_t
 
  
-#  define GMX_SPINLOCK_INITIALIZER   GMX_THREAD_MUTEX_INITIALIZER
+#  define TMPI_SPINLOCK_INITIALIZER   TMPI_THREAD_MUTEX_INITIALIZER
 
 /* Since mutexes guarantee memory barriers this works fine */
-#define gmx_atomic_get(a)   ((a)->value)
-#define gmx_atomic_ptr_get(a)   ((a)->value)
+#define tMPI_Atomic_get(a)   ((a)->value)
+#define tMPI_Atomic_ptr_get(a)   ((a)->value)
 
 
-static inline void gmx_atomic_set(gmx_atomic_t *   a, 
+static inline void tMPI_Atomic_set(tMPI_Atomic_t *   a, 
                                   int              i)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
-    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
     a->value = i;
-    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
 }
 
-static inline void gmx_atomic_ptr_set(gmx_atomic_t *   a, 
+static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *   a, 
                                       void*            p)
 {
     /* Mutexes here are necessary to guarantee memory visibility */
-    gmx_thread_mutex_lock(&gmx_atomic_mutex);
-    a->value = p;
-    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
+    a->value = (void*)p;
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
 }
 
 
 
-static inline int gmx_atomic_add_return(gmx_atomic_t *   a, 
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *   a, 
                                         int              i)
 {
     int t;
-    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
     t = a->value + i;
     a->value = t;
-    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
 }
 
 
-static inline int gmx_atomic_fetch_add(gmx_atomic_t *   a,
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *   a,
                                        int              i)
 {
     int old_value;
     
-    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
     old_value  = a->value;
     a->value   = old_value + i;
-    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return old_value;
 }
 
 
-static inline int gmx_atomic_cmpxchg(gmx_atomic_t *           a, 
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *           a, 
                                      int                      old_val,
                                      int                      new_val)
 {
     int t;
     
-    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
     t=old_val;
     if (a->value == old_val)
     {
         a->value = new_val;
     }
-    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
 }
 
-static inline void* gmx_atomic_ptr_cmpxchg(gmx_atomic_ptr_t * a, 
+static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a, 
                                            void*              old_val,
                                            void*              new_val)
 {
     void *t;
     
-    gmx_thread_mutex_lock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
     t=old_val;
     if (a->value == old_val)
     {
         a->value = new_val;
     }
-    gmx_thread_mutex_unlock(&gmx_atomic_mutex);
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
 }
 
 
 
-#define gmx_spinlock_init(lock)       gmx_thread_mutex_init(lock)
-#define gmx_spinlock_lock(lock)       gmx_thread_mutex_lock(lock)
-#define gmx_spinlock_trylock(lock)    gmx_thread_mutex_trylock(lock)
-#define gmx_spinlock_unlock(lock)     gmx_thread_mutex_unlock(lock)
+#define tMPI_Spinlock_init(lock)       tMPI_Thread_mutex_init(lock)
+#define tMPI_Spinlock_lock(lock)       tMPI_Thread_mutex_lock(lock)
+#define tMPI_Spinlock_trylock(lock)    tMPI_Thread_mutex_trylock(lock)
+#define tMPI_Spinlock_unlock(lock)     tMPI_Thread_mutex_unlock(lock)
 
-static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
 {
     int rc;
     
-    if(gmx_spinlock_trylock(x) != 0)
+    if(tMPI_Spinlock_trylock(x) != 0)
     {
         /* It was locked */
         return 1;
@@ -1701,19 +1748,19 @@ static inline int gmx_spinlock_islocked(gmx_spinlock_t *   x)
     else
     {
         /* We just locked it */
-        gmx_spinlock_unlock(x);
+        tMPI_Spinlock_unlock(x);
         return 0;
     }
 }
 
 
-static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     int rc;
     
-    gmx_spinlock_lock(x);
+    tMPI_Spinlock_lock(x);
     /* Got the lock now, so the waiting is over */
-    gmx_spinlock_unlock(x);
+    tMPI_Spinlock_unlock(x);
 }
 
 
@@ -1725,20 +1772,20 @@ static inline void gmx_spinlock_wait(gmx_spinlock_t *   x)
 /*! \brief Spinlock-based barrier type
  *
  *  This barrier has the same functionality as the standard
- *  gmx_thread_barrier_t, but since it is based on spinlocks
+ *  tMPI_Thread_barrier_t, but since it is based on spinlocks
  *  it provides faster synchronization at the cost of busy-waiting.
  *
  *  Variables of this type should be initialized by calling
- *  gmx_spinlock_barrier_init() to set the number of threads
+ *  tMPI_Spinlock_barrier_init() to set the number of threads
  *  that should be synchronized.
  */
-typedef struct gmx_spinlock_barrier
+typedef struct tMPI_Spinlock_barrier
 {
-        gmx_atomic_t      count;     /*!< Number of threads remaining     */
+        tMPI_Atomic_t      count;     /*!< Number of threads remaining     */
         int               threshold; /*!< Total number of threads         */
         volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
 }
-gmx_spinlock_barrier_t;
+tMPI_Spinlock_barrier_t;
  
 
 
@@ -1749,15 +1796,15 @@ gmx_spinlock_barrier_t;
  *                  the same datatype as the full, thread based, barrier.
  *  \param count    Number of threads to synchronize. All threads
  *                  will be released after \a count calls to 
- *                  gmx_spinlock_barrier_wait().  
+ *                  tMPI_Spinlock_barrier_wait().  
  */
-static inline void gmx_spinlock_barrier_init(
-                                    gmx_spinlock_barrier_t *       barrier,
+static inline void tMPI_Spinlock_barrier_init(
+                                    tMPI_Spinlock_barrier_t *       barrier,
                                     int                              count)
 {
         barrier->threshold = count;
         barrier->cycle     = 0;
-        gmx_atomic_set(&(barrier->count),count);
+        tMPI_Atomic_set(&(barrier->count),count);
 }
 
 
@@ -1778,51 +1825,54 @@ static inline void gmx_spinlock_barrier_init(
 *
 *  \return The last thread returns -1, all the others 0.
 */
-static inline int gmx_spinlock_barrier_wait(gmx_spinlock_barrier_t *   barrier)
+static inline int tMPI_Spinlock_barrier_wait(
+                                tMPI_Spinlock_barrier_t *barrier)
 {
-  int    cycle;
-  int    status;
-  /*int    i;*/
-  
-  /* We don't need to lock or use atomic ops here, since the cycle index 
-        * cannot change until after the last thread has performed the check
-        * further down. Further, they cannot reach this point in the next 
-        * barrier iteration until all of them have been released, and that 
-        * happens after the cycle value has been updated.
-        *
-        * No synchronization == fast synchronization.
-        */
-  cycle = barrier->cycle;
-  
-  /* Decrement the count atomically and check if it is zero.
-        * This will only be true for the last thread calling us.
-        */
-  if( gmx_atomic_add_return( &(barrier->count), -1 ) <= 0)
-  { 
-        gmx_atomic_set(&(barrier->count), barrier->threshold);
+    int    cycle;
+    int    status;
+    /*int    i;*/
+
+    /* We don't need to lock or use atomic ops here, since the cycle index 
+     * cannot change until after the last thread has performed the check
+     * further down. Further, they cannot reach this point in the next 
+     * barrier iteration until all of them have been released, and that 
+     * happens after the cycle value has been updated.
+     *
+     * No synchronization == fast synchronization.
+     */
+    cycle = barrier->cycle;
+
+    /* Decrement the count atomically and check if it is zero.
+     * This will only be true for the last thread calling us.
+     */
+    if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
+    { 
+        tMPI_Atomic_set(&(barrier->count), barrier->threshold);
         barrier->cycle = !barrier->cycle;
-    
+
         status = -1;
-  }
-  else
-  {
+    }
+    else
+    {
         /* Wait until the last thread changes the cycle index.
-        * We are both using a memory barrier, and explicit
-        * volatile pointer cast to make sure the compiler
-        * doesn't try to be smart and cache the contents.
-        */
+         * We are both using a memory barrier, and explicit
+         * volatile pointer cast to make sure the compiler
+         * doesn't try to be smart and cache the contents.
+         */
         do
         { 
-          gmx_atomic_memory_barrier();
+            tMPI_Atomic_memory_barrier();
         } 
         while( *(volatile int *)(&(barrier->cycle)) == cycle);
-        
+
         status = 0;
-  }
-  return status;
+    }
+    return status;
 }
 
-
+#ifdef inline_defined_in_atomic
+#undef inline
+#endif
 
 
 #ifdef __cplusplus
@@ -1830,4 +1880,4 @@ static inline int gmx_spinlock_barrier_wait(gmx_spinlock_barrier_t *   barrier)
 #endif
 
 
-#endif /* _GMX_ATOMIC_H_ */
+#endif /* _TMPI_ATOMIC_H_ */

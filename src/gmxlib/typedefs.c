@@ -44,7 +44,7 @@
 #include <string.h>
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 /* The source code in this file should be thread-safe. 
@@ -54,20 +54,20 @@
 
 static bool bOverAllocDD=FALSE;
 #ifdef GMX_THREADS
-static gmx_thread_mutex_t over_alloc_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t over_alloc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
 void set_over_alloc_dd(bool set)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&over_alloc_mutex);
+    tMPI_Thread_mutex_lock(&over_alloc_mutex);
     /* we just make sure that we don't set this at the same time. 
        We don't worry too much about reading this rarely-set variable */
 #endif    
     bOverAllocDD = set;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&over_alloc_mutex);
+    tMPI_Thread_mutex_unlock(&over_alloc_mutex);
 #endif    
 }
 

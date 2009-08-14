@@ -51,6 +51,15 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+<<<<<<< HEAD:src/gmxlib/string2.c
+=======
+
+#ifdef GMX_THREADS
+#include <stdarg.h>
+#include "thread_mpi.h"
+#endif
+
+>>>>>>> Added full thread_mpi library, it may even compile in Windows...:src/gmxlib/string2.c
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -62,6 +71,16 @@
 #include "macros.h"
 #include "string2.h"
 
+<<<<<<< HEAD:src/gmxlib/string2.c
+=======
+
+#ifdef GMX_THREADS
+/* the big sprintf lock */
+static tMPI_Thread_mutex_t sprintf_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
+
+
+>>>>>>> Added full thread_mpi library, it may even compile in Windows...:src/gmxlib/string2.c
 int continuing(char *s)
 /* strip trailing spaces and if s ends with a CONTINUE remove that too.
  * returns TRUE if s ends with a CONTINUE, FALSE otherwise.

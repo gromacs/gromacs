@@ -87,8 +87,7 @@
 #include <mpi.h>
 #endif
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
-#include "thread_mpi.h"
+#include "tmpi.h"
 #endif
 
 #ifdef GMX_FAHCORE
@@ -125,11 +124,11 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 static int    init_step_tpx;
 static matrix box_tpx;
 #ifdef GMX_THREADS
-static gmx_thread_mutex_t box_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 struct mdrunner_arglist
 {
     FILE *fplog;
@@ -209,10 +208,7 @@ int mdrunner_threads(int nthreads,
     }
     else
     {
-#ifndef GMX_THREADS
-        ret=-1;
-        gmx_comm("Multiple threads requested but not compiled with threads");
-#else
+#ifdef GMX_THREADS
         struct mdrunner_arglist mda;
         /* fill the data structure to pass as void pointer to thread start fn */
         mda.fplog=fplog;
@@ -246,6 +242,9 @@ int mdrunner_threads(int nthreads,
         fflush(stderr);
         tMPI_Init_fn(nthreads, mdrunner_start_fn, (void*)(&mda) );
         ret=mda.ret;
+#else
+        ret=-1;
+        gmx_comm("Multiple threads requested but not compiled with threads");
 #endif
     }
     return ret;
@@ -388,12 +387,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * and with identical values.
          */
 #ifdef GMX_THREADS
-	gmx_thread_mutex_lock(&box_mutex);
+	tMPI_Thread_mutex_lock(&box_mutex);
 #endif
         init_step_tpx = inputrec->init_step;
         copy_mat(box,box_tpx);
 #ifdef GMX_THREADS
-	gmx_thread_mutex_unlock(&box_mutex);
+	tMPI_Thread_mutex_unlock(&box_mutex);
 #endif
     }
     
@@ -900,11 +899,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (DEFORM(*ir))
     {
 #ifdef GMX_THREADS
-	gmx_thread_mutex_lock(&box_mutex);
+	tMPI_Thread_mutex_lock(&box_mutex);
 #endif
         set_deform_reference_box(upd,init_step_tpx,box_tpx);
 #ifdef GMX_THREADS
-	gmx_thread_mutex_unlock(&box_mutex);
+	tMPI_Thread_mutex_unlock(&box_mutex);
 #endif
     }
 

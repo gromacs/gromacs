@@ -20,7 +20,7 @@
 #endif
 
 /* Must come directly after config.h */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 #include <types/simple.h>
 #include <types/nrnb.h>
@@ -167,8 +167,8 @@ kernellist_ia32_sse[eNR_NBKERNEL_NR] =
 };
 
 #ifdef GMX_THREAD_SHM_FDECOMP
-static gmx_thread_mutex_t 
-nb_kernel_ia32_sse_test_mutex = GMX_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t 
+nb_kernel_ia32_sse_test_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 /*! Posix long jump label */
@@ -203,7 +203,7 @@ nb_kernel_ia32_sse_test(FILE *                log)
 	 * but just in case you still try to do it...
 	 */
 #ifdef GMX_THREAD_SHM_FDECOMP
-	gmx_thread_mutex_lock(&nb_kernel_ia32_sse_test_mutex);
+	tMPI_Thread_mutex_lock(&nb_kernel_ia32_sse_test_mutex);
 #endif
     
     if(log)
@@ -229,7 +229,7 @@ nb_kernel_ia32_sse_test(FILE *                log)
 				nb_kernel_ia32_sse_present ? "":"not ");
         
 #ifdef GMX_THREAD_SHM_FDECOMP
-	gmx_thread_mutex_unlock(&nb_kernel_ia32_sse_test_mutex);
+	tMPI_Thread_mutex_unlock(&nb_kernel_ia32_sse_test_mutex);
 #endif	
 	return ((nb_kernel_ia32_sse_present) ? 0 : -1);
 }

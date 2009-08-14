@@ -159,26 +159,32 @@ if(X11_FOUND)
     set(HAVE_X11 1)
 endif(X11_FOUND)
 
+if(GMX_THREADS)
+    include(ThreadMPI)
+    set(THREAD_MPI_LIB thread_mpi)
+    set(GMX_THREAD_MPI 1)
+    set(GMX_MPI 1)
+endif(GMX_THREADS)
 
-find_package(Pthreads)
-if(PTHREADS_FOUND)
-    include_directories(${PTHREADS_INCLUDE_DIR})
-    list(APPEND	GMX_EXTRA_LIBRARIES ${PTHREADS_LIBRARIES})
-    set(HAVE_PTHREADS 1)
-    set(GMX_THREAD_PTHREADS 1)
-    if (GMX_THREADS)
-        set(GMX_THREAD_MPI 1)
-        set(GMX_MPI 1)
-    endif (GMX_THREADS)
-# note that there is already some old threaded code that is enabled if 
-# GMX_THREAD_SHM_FDECOMP is defined. This is not actually defined 
-# by this option and is therefore not enabled here; that code is now 
-# superceeded by the thread_mpi library, so it could be removed.
-else(PTHREADS_FOUND)
-    if(GMX_THREADS)
-        message(FATAL_ERROR "Thread-based parallelization requested, but no threads library found.")
-    endif(GMX_THREADS)
-endif(PTHREADS_FOUND)
+#find_package(Pthreads)
+#if(PTHREADS_FOUND)
+#    include_directories(${PTHREADS_INCLUDE_DIR})
+#    list(APPEND	GMX_EXTRA_LIBRARIES ${PTHREADS_LIBRARIES})
+#    set(HAVE_PTHREADS 1)
+#    set(GMX_THREAD_PTHREADS 1)
+#    if (GMX_THREADS)
+#        set(GMX_THREAD_MPI 1)
+#        set(GMX_MPI 1)
+#    endif (GMX_THREADS)
+## note that there is already some old threaded code that is enabled if 
+## GMX_THREAD_SHM_FDECOMP is defined. This is not actually defined 
+## by this option and is therefore not enabled here; that code is now 
+## superceeded by the thread_mpi library, so it could be removed.
+#else(PTHREADS_FOUND)
+#    if(GMX_THREADS)
+#        message(FATAL_ERROR "Thread-based parallelization requested, but no #threads library found.")
+#    endif(GMX_THREADS)
+#endif(PTHREADS_FOUND)
 
 if(APPLE)
    find_library(ACCELERATE_FRAMEWORK Accelerate)

@@ -52,7 +52,7 @@
 #include "gmxfio.h"
 
 #ifdef GMX_THREADS
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 #endif
 
 /* The source code in this file should be thread-safe. 
@@ -75,18 +75,18 @@
    that writing to an int is atomic.*/
 static bool parallel_env_val;
 #ifdef GMX_THREADS
-gmx_thread_mutex_t parallel_env_mutex=GMX_THREAD_MUTEX_INITIALIZER;
+tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 bool gmx_parallel_env(void)
 {
     bool ret;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&parallel_env_mutex);
+    tMPI_Thread_mutex_lock(&parallel_env_mutex);
 #endif
     ret=parallel_env_val;
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&parallel_env_mutex);
+    tMPI_Thread_mutex_unlock(&parallel_env_mutex);
 #endif
     return ret;
 }
@@ -94,7 +94,7 @@ bool gmx_parallel_env(void)
 static void set_parallel_env(bool val)
 {
 #ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&parallel_env_mutex);
+    tMPI_Thread_mutex_lock(&parallel_env_mutex);
 #endif
     if (!parallel_env_val)
     {
@@ -102,7 +102,7 @@ static void set_parallel_env(bool val)
         parallel_env_val=val;
     }
 #ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&parallel_env_mutex);
+    tMPI_Thread_mutex_unlock(&parallel_env_mutex);
 #endif
 }
 
