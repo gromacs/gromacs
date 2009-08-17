@@ -109,9 +109,6 @@
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
 
-/* Use threads (thread_mpi) for parallelization */
-#cmakedefine GMX_THREAD_MPI
-
 /* Make a parallel version of GROMACS using message passing 
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI

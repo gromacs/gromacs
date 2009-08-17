@@ -351,24 +351,6 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
 # end of "$enable_mpi" = "yes"
 fi
 
-if test "$enable_threads" = "yes"; then 
-  # for now we assume pthreads
-  AC_CHECK_HEADER([pthread.h],,[AC_MSG_ERROR([Cannot find pthread.h - required for thread support!])])
-  if test "$enable_mpi" = "yes"; then
-    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
-  fi
-  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
-  AC_DEFINE(GMX_THREAD_MPI,,[Use thread_mpi library])
-  AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
-  AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
-  AM_CONDITIONAL(THREAD_PARALLEL,true)
-  AM_CONDITIONAL(THREAD_PTHREADS,true)
-else
-    AM_CONDITIONAL(THREAD_PARALLEL,false)
-    AM_CONDITIONAL(THREAD_PTHREADS,false)
-fi
-
-
 
 AH_TEMPLATE([F77_OR_C_FUNC],
             [Set to F77_FUNC(name,NAME) if Fortran used, otherwise 'name' for C.])
@@ -400,6 +382,26 @@ else
 fi
 ACX_COMPILER_MAXOPT
 
+
+# We've postponed the threads check because we need to check with the right
+# compilers/flags 
+if test "$enable_threads" = "yes"; then 
+  if test "$enable_mpi" = "yes"; then
+    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
+  fi
+  # for now we just assume pthreads
+  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
+  LIBS="$PTHREAD_LIBS $LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+  CC="$PTHREAD_CC "
+  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+  AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
+  AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+  AM_CONDITIONAL(THREAD_PARALLEL,true)
+else
+  AM_CONDITIONAL(THREAD_PARALLEL,false)
+fi
 
 
 

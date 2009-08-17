@@ -33,7 +33,7 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 #include "tmpi.h"
 #endif
 

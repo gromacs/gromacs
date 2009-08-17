@@ -372,12 +372,12 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
 #ifdef GMX_MPI
 #if 0
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
     if (tMPI_Get_N(argc, argv_ptr)>1)
         pe=TRUE;
     else
         pe=FALSE;
-#endif /* GMX_THREAD_MPI */
+#endif /* GMX_THREADS */
 #endif
 #ifdef GMX_LIB_MPI
     pe = TRUE;
@@ -425,7 +425,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
 t_commrec *init_par_threads(t_commrec *cro)
 {
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
     int initialized;
     t_commrec *cr;
 

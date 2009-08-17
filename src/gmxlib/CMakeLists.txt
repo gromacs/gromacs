@@ -21,17 +21,9 @@ if(NOT GMX_EXTERNAL_LAPACK)
   file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
 endif(NOT GMX_EXTERNAL_LAPACK)
 
-if(GMX_THREAD_MPI)
-  file(GLOB THREAD_MPI_SOURCES parallel/thread_mpi.c)
-endif(GMX_THREAD_MPI)
-
 if(GMX_THREADS)
     add_subdirectory(thread_mpi)
 endif(GMX_THREADS)
-#  file(GLOB THREAD_SOURCES parallel/gmx_thread_pthreads.c)
-#else(GMX_THREAD_PTHREADS)
-#  file(GLOB THREAD_SOURCES parallel/gmx_thread_no.c)
-#endif(GMX_THREAD_PTHREADS)
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library

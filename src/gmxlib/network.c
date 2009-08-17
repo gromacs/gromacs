@@ -49,7 +49,7 @@
 #include <mpi.h>
 #endif
 
-#ifdef GMX_THREAD_MPI
+#ifdef GMX_THREADS
 #include "tmpi.h"
 #endif
 
@@ -273,7 +273,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
   nc = &cr->nc;
 
   nc->bUse = FALSE;
-#ifndef GMX_THREAD_MPI
+#ifndef GMX_THREADS
   if (getenv("GMX_NO_NODECOMM") == NULL) {
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
