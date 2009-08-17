@@ -147,6 +147,7 @@ static void rvec2sprvec(rvec dipcart,rvec dipsp)
 }
 
 
+
 void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
 	    int mindex[],rvec x[],rvec mu[],
 	    int ePBC,matrix box,t_atom *atom,int *nAtom)

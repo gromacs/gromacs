@@ -62,6 +62,7 @@ any papers on the package - you can find them in the top README file.
 
 
 #include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
 
 /*! \brief System mutex for all one-time initialization 
  *
@@ -69,10 +70,12 @@ any papers on the package - you can find them in the top README file.
  *  independent of the thread library implementation. Anyway, it
  *  will only be locked a handful of times at the start of program execution.
  */
+/*
 enum tMPI_Thread_once_status tMPI_Thread_system_lock_state=
                              TMPI_THREAD_ONCE_STATUS_NOTCALLED;
 static CRITICAL_SECTION tMPI_Thread_system_lock;
-
+*/
+tMPI_Spinlock_t tMPI_Thread_system_lock=TMPI_SPINLOCK_INITIALIZER;
 
 
 void tMPI_Fatal_error(const char *file, int line, const char *message, ...)
@@ -236,7 +239,8 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
      */ 
 
     /* Lock the common one-time init mutex so we can check carefully */
-    EnterCriticalSection( &tMPI_Thread_system_lock );
+    /*EnterCriticalSection( &tMPI_Thread_system_lock );*/
+    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
 
 
 #if 0
@@ -268,7 +272,8 @@ static int tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
         ret = 0;
     }
     
-    LeaveCriticalSection( &tMPI_Thread_system_lock );
+    /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
+    tMPI_Spinlock_unlock( &tMPI_Thread_system_lock );
 
     return ret;
 }
@@ -447,7 +452,8 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
     * the memory barriers right. Trust me, you don't want a deadlock here...
     */ 
     /* Lock the common one-time init mutex so we can check carefully */
-    EnterCriticalSection( &tMPI_Thread_system_lock );
+    /*EnterCriticalSection( &tMPI_Thread_system_lock );*/
+    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
     /* Do the actual (locked) check - system mutex is locked if we get here */
 	if (cond->init_state != TMPI_THREAD_ONCE_STATUS_READY)
     {
@@ -457,8 +463,8 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
     {
         ret = 0;
     }
-    LeaveCriticalSection( &tMPI_Thread_system_lock );
-    
+    /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
+    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
     return ret;
 }
 
@@ -583,7 +589,8 @@ static int tMPI_Thread_barrier_init_once(tMPI_Thread_barrier_t *barrier, int n)
     * the memory barriers right. Trust me, you don't want a deadlock here...
     */ 
     /* Lock the common one-time init mutex so we can check carefully */
-    EnterCriticalSection( &tMPI_Thread_system_lock );
+    /*EnterCriticalSection( &tMPI_Thread_system_lock );*/
+    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
     /* Do the actual (locked) check - system mutex is locked if we get here */
     if (barrier->init_state != TMPI_THREAD_ONCE_STATUS_READY)
     {
@@ -593,7 +600,8 @@ static int tMPI_Thread_barrier_init_once(tMPI_Thread_barrier_t *barrier, int n)
     {
         ret = 0;
     }
-    LeaveCriticalSection( &tMPI_Thread_system_lock );
+    /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
+    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
     
     return ret;
 }

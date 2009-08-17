@@ -92,10 +92,11 @@ void no_buffers(void)
 
 void push_ps(FILE *fp)
 {
+    t_pstack *ps;
+
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
-    t_pstack *ps;
 
     snew(ps,1);
     ps->fp   = fp;
@@ -136,10 +137,10 @@ static int pclose(FILE *fp)
 
 void ffclose(FILE *fp)
 {
+    t_pstack *ps,*tmp;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
-    t_pstack *ps,*tmp;
 
     ps=pstack;
     if (ps == NULL) {
@@ -178,10 +179,10 @@ void ffclose(FILE *fp)
 
 void frewind(FILE *fp)
 {
+    t_pstack *ps;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
-    t_pstack *ps;
 
     ps=pstack;
     while (ps != NULL) {
@@ -202,10 +203,10 @@ void frewind(FILE *fp)
 
 bool is_pipe(FILE *fp)
 {
+    t_pstack *ps;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
-    t_pstack *ps;
 
     ps=pstack;
     while (ps != NULL) {

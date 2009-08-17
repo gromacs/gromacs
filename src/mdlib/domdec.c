@@ -3098,6 +3098,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     real change_limit = 0.1;
     real relax = 0.5;
     bool bPBC;
+    int range[] = { 0, 0 };
 
     comm = dd->comm;
 
@@ -3193,7 +3194,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             }
         }
     }
-    int range[] = { 0, ncd };
+    range[1]=ncd;
     root->cell_f[0] = 0;
     root->cell_f[ncd] = 1;
     dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, range);

@@ -242,8 +242,8 @@ const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[])
 
 char *pa_val(t_pargs *pa, char buf[], int sz)
 {
-  char buf_str[1256]; buf_str[0]='\0';
   real r;
+  char buf_str[1256]; buf_str[0]='\0';
 
   buf[0]='\0';
 
@@ -268,7 +268,7 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
     break;
   case etSTR:
     if (*(pa->u.c)) {
-      if (strlen(*(pa->u.c)) >= sz)
+      if (strlen(*(pa->u.c)) >= (size_t)sz)
 	gmx_fatal(FARGS,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));

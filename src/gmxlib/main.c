@@ -114,7 +114,7 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
 {
   int n;
   
-  if(bufsize<(strlen(base)+4))
+  if((size_t)bufsize<(strlen(base)+4))
      gmx_mem("Character buffer too small!");
 
   /* Copy to buf, and strip extension */

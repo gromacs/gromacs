@@ -527,7 +527,7 @@ print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
       temp=NWR(desc[i]);
     else
       temp=check_tty(desc[i]);
-    if (strlen(buf) + strlen(temp) >= buflen-2) {
+    if (strlen(buf) + strlen(temp) >= (size_t)(buflen-2)) {
       buflen += strlen(temp);
       srenew(buf,buflen);
     }

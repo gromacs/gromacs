@@ -48,8 +48,11 @@ any papers on the package - you can find them in the top README file.
  */
 
 
-/* we need this for all the data types */
+/* we need this for all the data types. We use WIN32_LEAN_AND_MEAN to avoid 
+   polluting the global namespace. */
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
 
 /*! \brief Status for one-time initialization of thread stuff.
  *
