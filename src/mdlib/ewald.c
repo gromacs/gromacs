@@ -106,6 +106,7 @@ real do_ewald(FILE *log,       bool bVerbose,
   static    cvec      **eir;
   static    t_complex  *tab_xy,*tab_qxyz;
   real factor=-1.0/(4*ewaldcoeff*ewaldcoeff);
+  real scaleRecip =4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r; // 1/(Vol*e0) //
   real *charge,energy_AB[2],energy;
   rvec lll;
   int  lowiy,lowiz,ix,iy,iz,n,q;
@@ -191,9 +192,9 @@ real do_ewald(FILE *log,       bool bVerbose,
 	  lrvir[ZZ][ZZ]-=tmp*mz*mz;
 	  for(n=0;n<natoms;n++) {
 	    tmp=scale*ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
-	    f[n][XX]+=tmp*mx;
-	    f[n][YY]+=tmp*my;
-	    f[n][ZZ]+=tmp*mz;
+	    f[n][XX]+=tmp*mx*2*scaleRecip;
+	    f[n][YY]+=tmp*my*2*scaleRecip;
+	    f[n][ZZ]+=tmp*mz*2*scaleRecip;
 	  }
 	  lowiz=1-nz;
 	}
@@ -201,32 +202,26 @@ real do_ewald(FILE *log,       bool bVerbose,
       }
     }
   }
-  
-  tmp=4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r;
 
   if (!bFreeEnergy) {
     energy = energy_AB[0];
   } else {
     energy = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
-    *dvdlambda += tmp*(energy_AB[1] - energy_AB[0]);
+    *dvdlambda += scaleRecip*(energy_AB[1] - energy_AB[0]);
   }
-  for(n=0;n<natoms;n++) {
-    f[n][XX]*=2*tmp;
-    f[n][YY]*=2*tmp;
-    f[n][ZZ]*=2*tmp;
-  }
-  lrvir[XX][XX]=-0.5*tmp*(lrvir[XX][XX]+energy);
-  lrvir[XX][YY]=-0.5*tmp*(lrvir[XX][YY]);
-  lrvir[XX][ZZ]=-0.5*tmp*(lrvir[XX][ZZ]);
-  lrvir[YY][YY]=-0.5*tmp*(lrvir[YY][YY]+energy);
-  lrvir[YY][ZZ]=-0.5*tmp*(lrvir[YY][ZZ]);
-  lrvir[ZZ][ZZ]=-0.5*tmp*(lrvir[ZZ][ZZ]+energy);
+
+  lrvir[XX][XX]=-0.5*scaleRecip*(lrvir[XX][XX]+energy);
+  lrvir[XX][YY]=-0.5*scaleRecip*(lrvir[XX][YY]);
+  lrvir[XX][ZZ]=-0.5*scaleRecip*(lrvir[XX][ZZ]);
+  lrvir[YY][YY]=-0.5*scaleRecip*(lrvir[YY][YY]+energy);
+  lrvir[YY][ZZ]=-0.5*scaleRecip*(lrvir[YY][ZZ]);
+  lrvir[ZZ][ZZ]=-0.5*scaleRecip*(lrvir[ZZ][ZZ]+energy);
   
   lrvir[YY][XX]=lrvir[XX][YY];
   lrvir[ZZ][XX]=lrvir[XX][ZZ];
   lrvir[ZZ][YY]=lrvir[YY][ZZ];
   
-  energy*=tmp;
+  energy*=scaleRecip;
   
   return energy;
 }
