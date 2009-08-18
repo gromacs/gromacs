@@ -85,7 +85,8 @@ libnonbonded_la_SOURCES = \
 	nb_kerneltype.h			nonbonded.c	\
 	nb_free_energy.c		nb_free_energy.h \
 	nb_generic.c			nb_generic.h	\
-	nb_generic_cg.c			nb_generic_cg.h
+	nb_generic_cg.c			nb_generic_cg.h \
+	adress.c			adress.h
 
 
 

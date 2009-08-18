@@ -70,7 +70,7 @@
  * There can be no perturbed LJ types or charges.
  * mdrun currently does NOT check for this.
  */
-/* #define GMX_CG_INNERLOOP */
+#define GMX_CG_INNERLOOP
 
 
 /* 

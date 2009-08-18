@@ -37,6 +37,13 @@
 #include <config.h>
 #endif
 
+/*This enables the experimental AdResS feature */
+#define ADRESS
+
+#ifdef ADRESS
+#include "adress.h"
+#endif
+
 #include <math.h>
 
 #include "types/simple.h"
@@ -82,6 +89,13 @@
      real *        vdwparam;
      int *         shift;
      int *         type;
+     
+     #ifdef ADRESS
+        real weight_cg1;
+        real weight_cg2;
+        real weight_product;
+        int mixed;
+     #endif
        
      icoul               = nlist->icoul;
      ivdw                = nlist->ivdw;
@@ -120,10 +134,48 @@
          fiy              = 0;
          fiz              = 0;
          
+         #ifdef ADRESS
+            i3 = nlist->iinr_end[n]*3;
+            /* weight=0 coarse-grained
+               weight=1 explicit
+               else: double identity */
+            weight_cg1 = adress_weight(x[i3+0],x[i3+1],x[i3+2]);
+         #endif
+         
          for(k=nj0; (k<nj1); k++)
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
+             
+             #ifdef ADRESS
+               j3 = nlist->jjnr_end[k]*3;
+               /* weight=0 coarse-grained
+                  weight=1 explicit
+                  else: double identity */
+               weight_cg2 = adress_weight(x[j3+0],x[j3+1],x[j3+2]);
+               
+               weight_product=weight_cg1*weight_cg2;
+               /* at least one of the groups is coarse grained */
+               if (weight_product == 0 ) 
+               {
+                  /* only calc interaction between coarse-grained particles */
+                  ai0=ai1;
+                  aj0=aj1;
+                  mixed=0;
+               }
+               /* both are explicit */
+               else if (weight_product == 1 )
+               {
+                  /* only calc interaction between explicit particles */
+                  ai1--;
+                  aj1--;
+                  mixed=0;
+               }
+               /* double identity -- calc all*/
+               else {
+                  mixed=1;
+               }
+             #endif
              
              for(ai=ai0; (ai<ai1); ai++)
              {
@@ -139,6 +191,24 @@
                   * even if the LJ parameters or charges are zero.
                   * If required, this can be optimized.
                   */
+
+                  #ifdef ADRESS
+                  if (mixed==1) {
+                     /*do not calc interactions between coarse grained and explicit */
+                     /* ai is explicit particles */
+                     if (ai!=ai1)
+                     {
+                        aj0=nlist->jjnr[k];
+                        aj1=nlist->jjnr_end[k]-1;
+                     }
+                     /*ai is coarse grained particle */
+                     else 
+                     {
+                        aj0=nlist->jjnr_end[k]-1;
+                        aj1=nlist->jjnr_end[k];
+                     }
+                  }
+                  #endif
 
                  for(aj=aj0; (aj<aj1); aj++)
                  {
@@ -277,6 +347,24 @@
                              break;
                          }
                      } /* end VdW interactions */
+
+
+                     #ifdef ADRESS
+                     /* force weight is one anyway */
+                     if (mixed == 1 )
+                     {
+                        /* force weight of the coarse grained - coarse grained interation */
+                        if ( (ai == nlist->iinr_end[n] ) && ( aj == nlist->jjnr_end[k] ) )
+                        {
+                           fscal*=1-weight_product;
+                        }
+                        /* force weight of the explicit - explicit interation */
+                        else
+                        {
+                           fscal*=weight_product;
+                        }
+                     }
+                     #endif
                      
                      
                      tx               = fscal*dx;     
