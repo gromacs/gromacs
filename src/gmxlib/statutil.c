@@ -56,7 +56,8 @@
 #include "gmxfio.h"
 
 #ifdef GMX_THREADS
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
 #endif
 
 /* used for npri */

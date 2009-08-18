@@ -40,8 +40,7 @@ any papers on the package - you can find them in the top README file.
 */
 
 
-
-/*! \file tmpi_thread.h
+/*! \file nothreads.h
  *
  *  @brief dummy-threads specific data structures
  *  
@@ -173,7 +172,6 @@ typedef void* tMPI_Thread_barrier_t;
  * \param count  Threshold for barrier
  */
 #define TMPI_THREAD_BARRIER_INITIALIZER(count)   NULL
-
 
 
 

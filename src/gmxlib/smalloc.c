@@ -39,7 +39,7 @@
 /* This file is completely threadsafe - keep it that way! */
 
 #ifdef GMX_THREADS
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
 #endif 
 
 

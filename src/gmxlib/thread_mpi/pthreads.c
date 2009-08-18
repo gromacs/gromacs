@@ -40,6 +40,15 @@ any papers on the package - you can find them in the top README file.
 */
 
 
+
+/* Include the defines that determine which thread library to use.
+* We do not use HAVE_PTHREAD_H directly, since we might want to
+* turn off thread support explicity (e.g. for debugging).
+*/
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef THREAD_PTHREADS 
 
 /* pthread.h must be the first header, apart from the defines in config.h */
@@ -214,7 +223,7 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *       key,
     }
 
 
-    ret = pthread_key_create(key,NULL);
+    ret = pthread_key_create(key, destructor);
     if(ret!=0)
     {
         tMPI_Fatal_error(TMPI_FARGS,"Failed to create thread key, rc=%d.",ret);
@@ -462,13 +471,13 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier)
 
 
 
-void tMPI_lockfile(FILE *stream)
+void tMPI_Lockfile(FILE *stream)
 {
     flockfile(stream);
 }
 
 
-void tMPI_unlockfile(FILE *stream)
+void tMPI_Unlockfile(FILE *stream)
 {
     funlockfile(stream);
 }

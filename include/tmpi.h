@@ -38,28 +38,41 @@ To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
 */
 
-
-/** \file thread_mpi.h
+/*! \mainpage thread_mpi
  *
- * \brief Partial implementation of MPI using only threads. 
+ * \section intro_sec 
+ *
+ * Threading library for cross-platform high-performance computing. 
+ * Contains an implementation of MPI for use with threads, threading
+ * basics, as well as atomic operations, collective shared-memory allocators 
+ * and lock-free data structures. 
  * 
- * See the MPI specification at
- * http://www.mpi-forum.org/docs/docs.html
- * for an explanation of what these functions do.
+ * Although MPI-style message passing isn't neccesarily optimal for 
+ * performance on shared-memory systems, the MPI communicator concept and 
+ * its emphasis on collective operations make sense even when computing on
+ * one machine with multiple cores. 
  *
- * Because this is a thread-based library, be very careful with global
- * variables and static variables in functions: they will be shared across
- * all threads an lead to conflicts if not properly mutex-ed or barrier-ed
- * out.
+ * \section install_sec Installation
  *
- * This file contains the true MPI-style bindings. There is another include
- * file 'thread_tmpi.h' that contains all MPI-functions prefixed with
- * 'tMPI' instead of 'MPI' (i.e. tMPI_Send instead of MPI_Send). This
- * allows the thread_mpi library to be used in conjunction with a real
- * MPI library.
+ * \subsection step1 Step 1: Opening the box
+ *  
+ * etc...
  */
 
-#include "thread_mpi.h"
-#include "thread_mpi/mpi_bindings.h"
+/** \file 
+ *
+ * \brief Convenience header file for MPI compatibility.
+ * 
+ * This file includes the tMPI header file thread_mpi/tmpi.h and the true
+ * MPI-style bindings of thread_mpi/mpi.h, as well as thread_mpi/threads.h and
+ * thread_mpi/atomic.h header files. If you'd like to use the components
+ * individually, or be able to use a networked MPI together with thread_mpi,
+ * include the relevant header files directly. 
+ */
+
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
+#include "thread_mpi/tmpi.h"
+#include "thread_mpi/mpi.h"
 
 

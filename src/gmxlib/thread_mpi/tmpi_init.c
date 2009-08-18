@@ -39,13 +39,6 @@ any papers on the package - you can find them in the top README file.
 
 */
 
-/* Include the defines that determine which thread library to use. 
- * Note that this could also be controlled using preprocessor flags,
- * which is the method used for cmake */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -59,7 +52,9 @@ any papers on the package - you can find them in the top README file.
 #include <sys/time.h>
 #endif
 
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
+#include "thread_mpi/tmpi.h"
 #include "tmpi_impl.h"
 
 
@@ -216,29 +211,29 @@ tmpi_dt tmpi_byte    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
 
 
 
-tMPI_Datatype TMPI_CHAR               = &tmpi_char;
-tMPI_Datatype TMPI_SHORT              = &tmpi_short;
-tMPI_Datatype TMPI_INT                = &tmpi_int;
-tMPI_Datatype TMPI_LONG               = &tmpi_long;
+const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
+const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
+const tMPI_Datatype TMPI_INT                = &tmpi_int;
+const tMPI_Datatype TMPI_LONG               = &tmpi_long;
 #ifdef SIZEOF_LONG_LONG_INT
-tMPI_Datatype TMPI_LONG_LONG          = &tmpi_l_long;
-tMPI_Datatype TMPI_LONG_LONG_INT      = &tmpi_l_l_int;
+const tMPI_Datatype TMPI_LONG_LONG          = &tmpi_l_long;
+const tMPI_Datatype TMPI_LONG_LONG_INT      = &tmpi_l_l_int;
 #endif
-tMPI_Datatype TMPI_SIGNED_CHAR        = &tmpi_s_char;
-tMPI_Datatype TMPI_UNSIGNED_CHAR      = &tmpi_u_char;
-tMPI_Datatype TMPI_UNSIGNED_SHORT     = &tmpi_u_short;
-tMPI_Datatype TMPI_UNSIGNED           = &tmpi_unsigned;
-tMPI_Datatype TMPI_UNSIGNED_LONG      = &tmpi_u_long;
+const tMPI_Datatype TMPI_SIGNED_CHAR        = &tmpi_s_char;
+const tMPI_Datatype TMPI_UNSIGNED_CHAR      = &tmpi_u_char;
+const tMPI_Datatype TMPI_UNSIGNED_SHORT     = &tmpi_u_short;
+const tMPI_Datatype TMPI_UNSIGNED           = &tmpi_unsigned;
+const tMPI_Datatype TMPI_UNSIGNED_LONG      = &tmpi_u_long;
 #ifdef SIZEOF_LONG_LONG_INT
-tMPI_Datatype TMPI_UNSIGNED_LONG_LONG = &tmpi_u_l_long;
+const tMPI_Datatype TMPI_UNSIGNED_LONG_LONG = &tmpi_u_l_long;
 #endif
 
-tMPI_Datatype TMPI_FLOAT              = &tmpi_float;
-tMPI_Datatype TMPI_DOUBLE             = &tmpi_double;
-tMPI_Datatype TMPI_LONG_DOUBLE        = &tmpi_l_double;
+const tMPI_Datatype TMPI_FLOAT              = &tmpi_float;
+const tMPI_Datatype TMPI_DOUBLE             = &tmpi_double;
+const tMPI_Datatype TMPI_LONG_DOUBLE        = &tmpi_l_double;
 
 /*extern tMPI_Datatype tMPI_UNSIGNED_WCHAR*/
-tMPI_Datatype TMPI_BYTE               = &tmpi_byte;
+const tMPI_Datatype TMPI_BYTE               = &tmpi_byte;
 
 
 
@@ -811,7 +806,7 @@ int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_STATUS);
     }
-    *count = status->transferred;
+    *count = (int)(status->transferred/datatype->size);
     return TMPI_SUCCESS;
 }
 

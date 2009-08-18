@@ -40,15 +40,6 @@ any papers on the package - you can find them in the top README file.
 */
 
 
-
-/* Include the defines that determine which thread library to use. 
- * Note that this could also be controlled using preprocessor flags,
- * which is the method used for cmake */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -60,7 +51,9 @@ any papers on the package - you can find them in the top README file.
 #include <string.h>
 
 
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
+#include "thread_mpi/tmpi.h"
 #include "tmpi_impl.h"
 
 /* helper function for tMPI_Comm_split. Splits N entities with color and key

@@ -39,13 +39,6 @@ any papers on the package - you can find them in the top README file.
 
 */
 
-/* Include the defines that determine which thread library to use. 
- * Note that this could also be controlled using preprocessor flags,
- * which is the method used for cmake */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -58,7 +51,9 @@ any papers on the package - you can find them in the top README file.
 #include <string.h>
 
 
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
+#include "thread_mpi/tmpi.h"
 #include "tmpi_impl.h"
 
 
@@ -491,7 +486,7 @@ static void tMPI_Set_recv_status(struct recv_envelope *ev, tMPI_Status *status)
         status->TMPI_TAG = ev->tag;
         status->TMPI_ERROR = ev->error;
         if (tMPI_Atomic_get(&(ev->state))==env_finished)
-            status->transferred = (int)(ev->bufsize/ev->datatype->size);
+            status->transferred = ev->bufsize;
         else
             status->transferred = 0;
     }
@@ -505,7 +500,7 @@ static void tMPI_Set_send_status(struct send_envelope *ev, tMPI_Status *status)
         status->TMPI_TAG = ev->tag;
         status->TMPI_ERROR = ev->error;
         if (tMPI_Atomic_get(&(ev->state))==env_finished)
-            status->transferred = (int)(ev->bufsize/ev->datatype->size);
+            status->transferred = ev->bufsize;
         else
             status->transferred = 0;
     }

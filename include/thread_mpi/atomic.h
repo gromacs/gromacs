@@ -42,7 +42,7 @@ any papers on the package - you can find them in the top README file.
 #ifndef _TMPI_ATOMIC_H_
 #define _TMPI_ATOMIC_H_
 
-/*! \file tmpi_atomic.h
+/*! \file atomic.h
  *
  *  @brief Atomic operations for fast SMP synchronization
  *
@@ -51,11 +51,17 @@ any papers on the package - you can find them in the top README file.
  *
  *  In general, the best option is to use functions without explicit 
  *  locking, e.g. tMPI_Atomic_fetch_add() or tMPI_Atomic_cmpxchg().
+ *  
+ *  Depending on the architecture/compiler, these operations may either
+ *  be provided as functions or macros; be aware that those macros may
+ *  reference their arguments repeatedly, possibly leading to multiply 
+ *  evaluated code with side effects: be careful with what you use as 
+ *  arguments.
  *
- *  Not all architecture support atomic operations though inline assembly,
+ *  Not all architectures support atomic operations though inline assembly,
  *  and even if they do it might not be implemented here. In that case
  *  we use a fallback mutex implementation, so you can always count on
- *  the function interfaces working in Gromacs.
+ *  the function interfaces working.
  *
  *  Don't use spinlocks in non-performance-critical regions like file I/O.
  *  Since they always spin busy they would waste CPU cycles instead of 
@@ -107,15 +113,17 @@ extern "C"
  */
 
 /*! \brief Memory barrier operation
- *
- *  Modern CPUs rely heavily on out-of-order execution, and one common feature
- *  is that load/stores might be reordered. Also, when using inline assembly
- *  the compiler might already have loaded the variable we are changing into
- *  a register, so any update to memory won't be visible.
- *
- *  This command creates a memory barrier, i.e. all memory results before
- *  it in the code should be visible to all memory operations after it - the
- *  CPU cannot propagate load/stores across it.
+
+ Modern CPUs rely heavily on out-of-order execution, and one common feature
+ is that load/stores might be reordered. Also, when using inline assembly
+ the compiler might already have loaded the variable we are changing into
+ a register, so any update to memory won't be visible.
+ 
+ This command creates a memory barrier, i.e. all memory results before
+ it in the code should be visible to all memory operations after it - the
+ CPU cannot propagate load/stores across it.
+
+ \hideinitializer
  */
 #define tMPI_Atomic_memory_barrier() __asm__ __volatile__("": : :"memory")
 
@@ -125,7 +133,7 @@ extern "C"
 #endif
 
 
-/*! \brief Gromacs atomic operations datatype
+/*! \brief Atomic operations datatype
  *
  *  Portable synchronization primitives like mutexes are effective for
  *  many purposes, but usually not very high performance.
@@ -193,7 +201,7 @@ typedef struct tMPI_Atomic_ptr
 tMPI_Atomic_ptr_t;
 
 
-/*! \brief Gromacs spinlock
+/*! \brief Spinlock
  *
  *  Spinlocks provide a faster synchronization than mutexes,
  *  although they consume CPU-cycles while waiting. They are implemented
@@ -216,14 +224,17 @@ tMPI_Spinlock_t;
 
 
 
-/*! \brief Spinlock static initializer
+/*! \def TMPI_SPINLOCK_INITIALIZER
+ * \brief Spinlock static initializer
  *
  *  This is used for static spinlock initialization, and has the same
  *  properties as TMPI_THREAD_MUTEX_INITIALIZER has for mutexes.
  *  This is only for inlining in the tMPI_Thread.h header file. Whether
  *  it is 0, 1, or something else when unlocked depends on the platform.
  *  Don't assume anything about it. It might even be a mutex when using the
- * fallback implementation!
+ *  fallback implementation!
+ *
+ *  \hideinitializer
  */
 #define TMPI_SPINLOCK_INITIALIZER   { 1 }
 
@@ -236,6 +247,8 @@ tMPI_Spinlock_t;
  *
  *  \param  a   Atomic variable to read
  *  \return     Integer value of the atomic variable
+ *
+ *  \hideinitializer
  */
 #define tMPI_Atomic_get(a)  ((a)->value) 
 
@@ -247,6 +260,8 @@ tMPI_Spinlock_t;
  *
  *  \param  a   Atomic variable
  *  \param  i   Integer to set the atomic variable to.
+ *
+ *  \hideinitializer
  */
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
 
@@ -258,6 +273,8 @@ tMPI_Spinlock_t;
  *
  *  \param  a   Atomic variable to read
  *  \return     Pointer value of the atomic variable
+ *
+ *  \hideinitializer
  */
 #define tMPI_Atomic_ptr_get(a)  ((a)->value) 
 
@@ -269,6 +286,8 @@ tMPI_Spinlock_t;
  *
  *  \param  a   Atomic variable
  *  \param  i   Pointer value to set the atomic variable to.
+ *
+ *  \hideinitializer
  */
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
@@ -415,7 +434,7 @@ static inline void* volatile* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t* a,
  *  lock the spinlock after initialization, the second will happily
  *  overwrite the contents and unlock it without warning you.
  *
- *  \param x      Gromacs spinlock pointer.
+ *  \param x      Spinlock pointer.
  */
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
 {
@@ -429,7 +448,7 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
  *  This routine blocks until the spinlock is available, and
  *  the locks it again before returning.
  *
- *  \param x     Gromacs spinlock pointer
+ *  \param x     Spinlock pointer
  */
 static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
 {
@@ -451,7 +470,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *  x)
  * This routine acquires the spinlock if possible, but if 
  * already locked it return an error code immediately.
  *
- *  \param x     Gromacs spinlock pointer
+ *  \param x     Spinlock pointer
  *
  * \return 0 if the mutex was available so we could lock it,
  *         otherwise a non-zero integer (1) if the lock is busy.
@@ -469,7 +488,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *  x)
 
 /*! \brief Release spinlock
  *
- *  \param x     Gromacs spinlock pointer
+ *  \param x     Spinlock pointer
  *
  *  Unlocks the spinlock, regardless if which thread locked it.
  */
@@ -489,7 +508,7 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
  *
  *  This routine returns immediately with the lock status.
  *
- *  \param x  Gromacs spinlock pointer
+ *  \param x  Spinlock pointer
  *
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
@@ -505,7 +524,7 @@ static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
  *  but in contrast to tMPI_Spinlock_lock() it returns without 
  *  trying to lock the spinlock.
  *
- *  \param x  Gromacs spinlock pointer
+ *  \param x  Spinlock pointer
  */
 static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
@@ -1618,7 +1637,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *    x)
 }
 
 
-#elif 
+#else
 /* No atomic operations, use mutex fallback. Documentation is in x86 section */
 
 

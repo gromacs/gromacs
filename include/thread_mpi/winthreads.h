@@ -41,18 +41,24 @@ any papers on the package - you can find them in the top README file.
 
 
 
-/*! \file tmpi_thread.h
+/*! \file winthreads.h
  *
- *  @brief Windows threads specific data structures
- *  
+ *  @brief Windows threads specific data structures 
+ *
+ *  For use of Windows threads in thread_mpi/threads.h
+ * 
+ *  \sa thread_mpi/threads.h for documentation.
  */
 
+
+#ifndef DOXYGEN
 
 /* we need this for all the data types. We use WIN32_LEAN_AND_MEAN to avoid 
    polluting the global namespace. */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #undef WIN32_LEAN_AND_MEAN
+
 
 /*! \brief Status for one-time initialization of thread stuff.
  *
@@ -201,6 +207,5 @@ typedef struct tMPI_Thread_pthread_barrier
 
 
 
-
-
+#endif
 

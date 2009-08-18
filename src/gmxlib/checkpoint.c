@@ -1000,10 +1000,9 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 	sfree(outputfiles);
 	#ifdef GMX_FAHCORE
     /*code for alternate checkpointing scheme.  moved from top of loop over steps */
-      if ( fcCheckPointParallel( (MASTER(cr)==0), NULL,0) == 0 ) {
+      if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
       }
-
 	#endif /* end FAHCORE block */
 
 }

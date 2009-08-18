@@ -41,7 +41,7 @@ any papers on the package - you can find them in the top README file.
 
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- 
 *
-* $Id: gmx_thread_no.c,v 1.2 2009/05/11 16:41:23 lindahl Exp $
+* $Id: tMPI_Thread_no.c,v 1.2 2009/05/11 16:41:23 lindahl Exp $
 * 
 * This file is part of Gromacs        Copyright (c) 1991-2004
 * David van der Spoel, Erik Lindahl, University of Groningen.
@@ -66,22 +66,13 @@ any papers on the package - you can find them in the top README file.
 #include <config.h>
 #endif
 
-#if ( !defined(GMX_THREAD_PTHREADS) && !defined(GMX_THREADS_WINDOWS) )
+#if ( !defined(TMPI_THREAD_PTHREADS) && !defined(TMPI_THREADS_WINDOWS) )
 /* Hide this implementation from Doxygen, since it conflicts with pthreads */
 #ifndef DOXYGEN
 
 
 
-
-/*  IMPORTANT:
- *  The Gromacs thread implementation is used to guarantee threadsafe 
- *  operation for the gmx_message.h functions, which in turn is used by
- *  the gmx_memory.h allocation stuff.
- *  This means we cannot use gmx_message() or gmx_new() memory calls 
- *  in the implementation.
- */
-
-#include "gmx_thread.h"
+#include "thread_mpi/thread.h"
 
 
 #ifdef HAVE_UNISTD_H
@@ -100,7 +91,7 @@ any papers on the package - you can find them in the top README file.
  * but e.g. the Pthreads standard only guarantees 128 key entries, so for
  * portability we shouldn't use more.
  */ 
-#define GMX_THREAD_NOTHREADS_NSPECIFICDATA 128
+#define TMPI_THREAD_NOTHREADS_NSPECIFICDATA 128
 
 
 /*
@@ -116,18 +107,18 @@ static struct
     void *         value;                /*!< Pointer to the specific data for key n     */
     void          (*destructor)(void *); /*!< Pointer to destructor function for key n   */
 } 
-gmx_thread_nothreads_specificdata[GMX_THREAD_NOTHREADS_NSPECIFICDATA];
+tMPI_Thread_nothreads_specificdata[TMPI_THREAD_NOTHREADS_NSPECIFICDATA];
 
 
 /*! \brief flag to determine if static key storage has been initialized.
 */
 static int            
-gmx_thread_nothreads_specific_init_done = 0;
+tMPI_Thread_nothreads_specific_init_done = 0;
 
 
 
 /* Dummy implementation of abstract Gromacs thread datatype */
-struct gmx_thread
+struct tMPI_Thread
 {
     int      locked; /* Just useful for debugging */
 };
@@ -136,7 +127,7 @@ struct gmx_thread
 
 
 /* Dummy implementation of abstract Gromacs thread-specific data key type */
-struct gmx_thread_key
+struct tMPI_Thread_key
 {
     int      index;  /*!< Index into our static list of private data */
 };
@@ -144,16 +135,16 @@ struct gmx_thread_key
 
 
 
-enum gmx_thread_support
-gmx_thread_support(void)
+enum tMPI_Thread_support
+tMPI_Thread_support(void)
 {
-    return GMX_THREAD_SUPPORT_NO;
+    return TMPI_THREAD_SUPPORT_NO;
 }
 
 
 
 int
-gmx_thread_create   (gmx_thread_t *    thread,
+tMPI_Thread_create   (tMPI_Thread_t *    thread,
                      void *            (*start_routine)(void *),
                      void *            arg)
 {
@@ -165,7 +156,7 @@ gmx_thread_create   (gmx_thread_t *    thread,
 
 
 int
-gmx_thread_join     (gmx_thread_t     thread,
+tMPI_Thread_join     (tMPI_Thread_t     thread,
                      void **          value_ptr)
 {
     gmx_fatal(FARGS,"Cannot join threads without thread support.\n");
@@ -177,7 +168,7 @@ gmx_thread_join     (gmx_thread_t     thread,
 
 
 int
-gmx_thread_mutex_init(gmx_thread_mutex_t *mtx) 
+tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx) 
 {
     if(mtx==NULL)
     {
@@ -199,7 +190,7 @@ gmx_thread_mutex_init(gmx_thread_mutex_t *mtx)
     
     * ( (int *) (mtx->actual_mutex) ) = 0;  /* Unlocked */
         
-    mtx->status = GMX_THREAD_ONCE_STATUS_READY;
+    mtx->status = TMPI_THREAD_ONCE_STATUS_READY;
 
     return 0;
 }
@@ -207,7 +198,7 @@ gmx_thread_mutex_init(gmx_thread_mutex_t *mtx)
 
 
 int
-gmx_thread_mutex_destroy(gmx_thread_mutex_t *mtx) 
+tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx) 
 {
     if(mtx == NULL)
     {
@@ -226,12 +217,12 @@ gmx_thread_mutex_destroy(gmx_thread_mutex_t *mtx)
 
 
 static int
-gmx_thread_mutex_init_once(gmx_thread_mutex_t *mtx)
+tMPI_Thread_mutex_init_once(tMPI_Thread_mutex_t *mtx)
 {
     int rc;
     /* No threads = nothing to worry about */
-    if(mtx->status != GMX_THREAD_ONCE_STATUS_READY)
-        rc = gmx_thread_mutex_init(mtx);
+    if(mtx->status != TMPI_THREAD_ONCE_STATUS_READY)
+        rc = tMPI_Thread_mutex_init(mtx);
     else
         rc = 0;
 
@@ -241,12 +232,12 @@ gmx_thread_mutex_init_once(gmx_thread_mutex_t *mtx)
 
 
 int
-gmx_thread_mutex_lock(gmx_thread_mutex_t *mtx)
+tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx)
 {
     /* Ccheck whether this mutex is initialized */
-    if(mtx->status != GMX_THREAD_ONCE_STATUS_READY)
+    if(mtx->status != TMPI_THREAD_ONCE_STATUS_READY)
     {
-        gmx_thread_mutex_init_once(mtx);
+        tMPI_Thread_mutex_init_once(mtx);
     }
     
     /* The mutex is now guaranteed to be valid. */
@@ -259,15 +250,15 @@ gmx_thread_mutex_lock(gmx_thread_mutex_t *mtx)
 
 
 int
-gmx_thread_mutex_trylock(gmx_thread_mutex_t *mtx)
+tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx)
 {
     int ret;
     int *p;
 
     /* Ccheck whether this mutex is initialized */
-    if(mtx->status != GMX_THREAD_ONCE_STATUS_READY)
+    if(mtx->status != TMPI_THREAD_ONCE_STATUS_READY)
     {
-        gmx_thread_mutex_init_once(mtx);
+        tMPI_Thread_mutex_init_once(mtx);
     }
     
     p = (int *) (mtx->actual_mutex);
@@ -288,7 +279,7 @@ gmx_thread_mutex_trylock(gmx_thread_mutex_t *mtx)
 
 
 int
-gmx_thread_mutex_unlock(gmx_thread_mutex_t *mtx)
+tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx)
 {    
     * ( (int *) (mtx->actual_mutex) ) = 0;  /* Unlocked */
     
@@ -298,7 +289,7 @@ gmx_thread_mutex_unlock(gmx_thread_mutex_t *mtx)
 
 
 int
-gmx_thread_key_create(gmx_thread_key_t *       key,
+tMPI_Thread_key_create(tMPI_Thread_key_t *       key,
                       void                   (*destructor)(void *))
 {
     int i;
@@ -314,9 +305,9 @@ gmx_thread_key_create(gmx_thread_key_t *       key,
     
     /*
      * Allocate memory for the pthread key. We must use the system malloc
-     * here since the gromacs memory allocation depends on gmx_message.h and gmx_thread.h.
+     * here since the gromacs memory allocation depends on gmx_message.h and tMPI_Thread.h.
      */
-    *key = malloc(sizeof(struct gmx_thread_key));
+    *key = malloc(sizeof(struct tMPI_Thread_key));
     
     if(*key==NULL)
     {
@@ -328,33 +319,33 @@ gmx_thread_key_create(gmx_thread_key_t *       key,
         return ENOMEM;
     }
 
-    if( gmx_thread_nothreads_specific_init_done == 0)
+    if( tMPI_Thread_nothreads_specific_init_done == 0)
     {
 
-        for(i=0;i<GMX_THREAD_NOTHREADS_NSPECIFICDATA;i++)
+        for(i=0;i<TMPI_THREAD_NOTHREADS_NSPECIFICDATA;i++)
         {
-            gmx_thread_nothreads_specificdata[i].used       = 0;
-            gmx_thread_nothreads_specificdata[i].value      = NULL;
-            gmx_thread_nothreads_specificdata[i].destructor = NULL;
+            tMPI_Thread_nothreads_specificdata[i].used       = 0;
+            tMPI_Thread_nothreads_specificdata[i].value      = NULL;
+            tMPI_Thread_nothreads_specificdata[i].destructor = NULL;
         }
         
-        gmx_thread_nothreads_specific_init_done = 1;   
+        tMPI_Thread_nothreads_specific_init_done = 1;   
     }
         
     /* Try to find an empty spot */
-    for(i=0;i<GMX_THREAD_NOTHREADS_NSPECIFICDATA;i++)
+    for(i=0;i<TMPI_THREAD_NOTHREADS_NSPECIFICDATA;i++)
     {
-        if(gmx_thread_nothreads_specificdata[i].used == 0)
+        if(tMPI_Thread_nothreads_specificdata[i].used == 0)
             break;
     }
 
-    if(i==GMX_THREAD_NOTHREADS_NSPECIFICDATA)
+    if(i==TMPI_THREAD_NOTHREADS_NSPECIFICDATA)
     {
         gmx_fatal(FARGS,"Already used all %d private data keys.\n");
         return -1;
     }
     
-    gmx_thread_nothreads_specificdata[i].used = 1;
+    tMPI_Thread_nothreads_specificdata[i].used = 1;
     (*key)->index = i;    
     
 	return 0;
@@ -362,23 +353,23 @@ gmx_thread_key_create(gmx_thread_key_t *       key,
 
 
 int
-gmx_thread_key_delete(gmx_thread_key_t        key)
+tMPI_Thread_key_delete(tMPI_Thread_key_t        key)
 {
     int      i;
     void *   value;             
     void    (*destructor)(void *);    
 
-    if ( gmx_thread_nothreads_specific_init_done == 0 || key == NULL)
+    if ( tMPI_Thread_nothreads_specific_init_done == 0 || key == NULL)
     {
         return EINVAL;
     }
     
     i = key->index;
     
-    if(gmx_thread_nothreads_specificdata[i].value != NULL)
+    if(tMPI_Thread_nothreads_specificdata[i].value != NULL)
     {
-        destructor = gmx_thread_nothreads_specificdata[i].destructor;
-        value      = gmx_thread_nothreads_specificdata[i].value;
+        destructor = tMPI_Thread_nothreads_specificdata[i].destructor;
+        value      = tMPI_Thread_nothreads_specificdata[i].value;
         (*destructor)(value);
     }
     
@@ -390,28 +381,28 @@ gmx_thread_key_delete(gmx_thread_key_t        key)
 
 
 void *
-gmx_thread_getspecific(gmx_thread_key_t  key)
+tMPI_Thread_getspecific(tMPI_Thread_key_t  key)
 {
-    if ( gmx_thread_nothreads_specific_init_done == 0 || key == NULL)
+    if ( tMPI_Thread_nothreads_specific_init_done == 0 || key == NULL)
     {
         return NULL;
     }
 
-    return gmx_thread_nothreads_specificdata[key->index].value;
+    return tMPI_Thread_nothreads_specificdata[key->index].value;
 }
 
 
 int
-gmx_thread_setspecific(gmx_thread_key_t    key, 
+tMPI_Thread_setspecific(tMPI_Thread_key_t    key, 
                        void *              value)
 {
     
-    if ( gmx_thread_nothreads_specific_init_done == 0 || key == NULL)
+    if ( tMPI_Thread_nothreads_specific_init_done == 0 || key == NULL)
     {
         return EINVAL;
     }
     
-    gmx_thread_nothreads_specificdata[key->index].value = value;
+    tMPI_Thread_nothreads_specificdata[key->index].value = value;
 
     return 0;
 }
@@ -419,13 +410,13 @@ gmx_thread_setspecific(gmx_thread_key_t    key,
 
 
 int
-gmx_thread_once(gmx_thread_once_t *     once_control,
+tMPI_Thread_once(tMPI_Thread_once_t *     once_control,
                 void                    (*init_routine)(void))
 {
-    if(once_control->status != GMX_THREAD_ONCE_STATUS_READY)
+    if(once_control->status != TMPI_THREAD_ONCE_STATUS_READY)
     {
         (*init_routine)();
-        once_control->status = GMX_THREAD_ONCE_STATUS_READY;
+        once_control->status = TMPI_THREAD_ONCE_STATUS_READY;
     }
     
     return 0;
@@ -436,7 +427,7 @@ gmx_thread_once(gmx_thread_once_t *     once_control,
 
 
 int
-gmx_thread_cond_init(gmx_thread_cond_t *   cond) 
+tMPI_Thread_cond_init(tMPI_Thread_cond_t *   cond) 
 {
     int ret;
     
@@ -448,14 +439,14 @@ gmx_thread_cond_init(gmx_thread_cond_t *   cond)
      * and we want the contents to be clean for debugging.
      */
     cond->actual_cond = NULL;
-    cond->status = GMX_THREAD_ONCE_STATUS_READY;
+    cond->status = TMPI_THREAD_ONCE_STATUS_READY;
     
     return 0;
 }
 
 
 int
-gmx_thread_cond_destroy(gmx_thread_cond_t *   cond) 
+tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *   cond) 
 {
     if(cond == NULL)
     {
@@ -469,20 +460,20 @@ gmx_thread_cond_destroy(gmx_thread_cond_t *   cond)
 
 
 static int
-gmx_thread_cond_init_once(gmx_thread_cond_t *     cond)
+tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *     cond)
 {
     /* No threads = nothing to worry about */
-    if(cond->status != GMX_THREAD_ONCE_STATUS_READY)
-        return gmx_thread_cond_init(cond);
+    if(cond->status != TMPI_THREAD_ONCE_STATUS_READY)
+        return tMPI_Thread_cond_init(cond);
 }
 
 
 
 int
-gmx_thread_cond_wait(gmx_thread_cond_t *   cond,
-                     gmx_thread_mutex_t *  mtx)
+tMPI_Thread_cond_wait(tMPI_Thread_cond_t *   cond,
+                     tMPI_Thread_mutex_t *  mtx)
 {
-    gmx_fatal(FARGS,"Called gmx_thread_cond_wait() without thread support. This is a major\n"
+    gmx_fatal(FARGS,"Called tMPI_Thread_cond_wait() without thread support. This is a major\n"
               "error, since nobody else can signal the condition variable - exiting.\n");
     
     return 0;
@@ -492,9 +483,9 @@ gmx_thread_cond_wait(gmx_thread_cond_t *   cond,
 
 
 int
-gmx_thread_cond_broadcast(gmx_thread_cond_t *   cond)
+tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *   cond)
 {
-    gmx_fatal(FARGS,"Called gmx_thread_broadcast() without thread support.\n");
+    gmx_fatal(FARGS,"Called tMPI_Thread_broadcast() without thread support.\n");
     
     return 0;
 }
@@ -503,18 +494,18 @@ gmx_thread_cond_broadcast(gmx_thread_cond_t *   cond)
 
 
 void
-gmx_thread_exit(void *      value_ptr)
+tMPI_Thread_exit(void *      value_ptr)
 {
-    gmx_fatal(FARGS,"Called gmx_thread_exit() without thread support.\n");
+    gmx_fatal(FARGS,"Called tMPI_Thread_exit() without thread support.\n");
 }
 
 
 
 
 int
-gmx_thread_cancel(gmx_thread_t    thread)
+tMPI_Thread_cancel(tMPI_Thread_t    thread)
 {
-    gmx_fatal(FARGS,"Called gmx_thread_cancel() without thread support.\n");
+    gmx_fatal(FARGS,"Called tMPI_Thread_cancel() without thread support.\n");
     
     return 0;
 }
@@ -522,7 +513,7 @@ gmx_thread_cancel(gmx_thread_t    thread)
 
 
 int
-gmx_thread_barrier_init(gmx_thread_barrier_t *    barrier,
+tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *    barrier,
                         int                       n)
 {
     /* Barriers don't do anything without multiple threads */
@@ -531,7 +522,7 @@ gmx_thread_barrier_init(gmx_thread_barrier_t *    barrier,
 
 
 int
-gmx_thread_barrier_destroy(gmx_thread_barrier_t *    barrier)
+tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *    barrier)
 {
     /* Barriers don't do anything without multiple threads */
     return 0;
@@ -539,7 +530,7 @@ gmx_thread_barrier_destroy(gmx_thread_barrier_t *    barrier)
 
 
 int
-gmx_thread_barrier_wait(gmx_thread_barrier_t *    barrier)
+tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *    barrier)
 {
     /* Barriers don't do anything without multiple threads.
      * Since we are the only thread we're the master!
@@ -551,7 +542,7 @@ gmx_thread_barrier_wait(gmx_thread_barrier_t *    barrier)
 
 
 void
-gmx_lockfile(FILE *    stream)
+tMPI_lockfile(FILE *    stream)
 {
     /* Nothing to worry about without threads */
     return;
@@ -559,7 +550,7 @@ gmx_lockfile(FILE *    stream)
 
 
 void
-gmx_unlockfile(FILE *   stream)
+tMPI_unlockfile(FILE *   stream)
 {
     /* Nothing to worry about without threads */
     return;

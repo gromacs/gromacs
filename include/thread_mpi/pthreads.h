@@ -42,14 +42,18 @@ any papers on the package - you can find them in the top README file.
 
 
 
-/*! \file tmpi_thread.h
+/*! \file 
  *
- *  @brief Pthreads-specific data structures
+ *  \brief POSIX threads specific data structures
  *  
- *  Most data structures used in thread.h map directly onto POSIX threads 
- *  structures. 
+ *  Most data structures used in thread_mpi/threads.h map directly onto 
+ *  POSIX threads structures. This file contains typedefs for these data 
+ *  types for use with POSIX threads.
+ *
+ *  \sa thread_mpi/threads.h for documentation.
  */
 
+#ifndef DOXYGEN
 
 /* we need this for all the data types */
 #include <pthread.h>
@@ -190,7 +194,7 @@ tMPI_Thread_barrier_t;
         }
 
 
-
+#endif
 
 
 

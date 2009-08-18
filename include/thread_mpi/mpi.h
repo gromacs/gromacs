@@ -41,11 +41,25 @@ any papers on the package - you can find them in the top README file.
 #ifndef _MPI_BINDINGS_H_
 #define _MPI_BINDINGS_H_
 
+/** \file
+  \brief MPI bindings for thread_mpi/tmpi.h
+
+  This file contains only macros and redefinitions to expose the standard 
+  MPI API with thread_mpi calls. 
+  
+  This is different from the API exposed through thread_mpi/tmpi.h, which 
+  uses names like \a tMPI_Send() instead of \a MPI_Send()
+
+  \sa thread_mpi/tmpi.h for documentation of the available data types and 
+      functions
+  \sa http://www.mpi-forum.org/docs/docs.html for MPI documentation.
+*/
+
+#ifndef DOXYGEN
 #ifdef __cplusplus
 extern "C" 
 {  
 #endif
-
 
 
 
@@ -232,6 +246,8 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 
 #ifdef __cplusplus
 } /* closing extern "C" */
+#endif
+
 #endif
 
 #endif /* _MPI_BINDINGS_H_ */

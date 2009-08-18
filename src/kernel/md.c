@@ -1147,7 +1147,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
   /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
   #ifdef GMX_FAHCORE
-	chkpt_ret=fcCheckPointParallel( (MASTER(cr)==0),
+	chkpt_ret=fcCheckPointParallel( cr->nodeid,
              NULL,0);
   if ( chkpt_ret == 0 ) 
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", 0 );
@@ -1601,14 +1601,25 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bXTC = do_per_step(step,ir->nstxtcout);
         
 #ifdef GMX_FAHCORE
-        bX = bX || bLastStep; /*enforce writing positions and velocities at end of run */
-        bV = bV || bLastStep;
-        bCPT = bCPT || fcCheckPointPending();  
-        if (bCPT)
-            fcRequestCheckPoint(); /* sync bCPT and fc record-keeping */
-        
+#if 0
         if (MASTER(cr))
             fcReportProgress( ir->nsteps, step );
+
+        bX = bX || bLastStep; /*enforce writing positions and velocities at end of run */
+        bV = bV || bLastStep;
+	{
+		int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
+		int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
+
+        	bCPT = bCPT; 
+			/*Gromacs drives checkpointing; no ||  fcCheckPointPendingThreads(cr->nodeid,
+							  nthreads*nnodes);
+		/* sync bCPT and fc record-keeping */
+        	if (bCPT ) 
+            		fcRequestCheckPointSingleThread(cr->nodeid, 
+							nthreads*nnodes); 
+	}
+#endif
 #endif
         
         if (bX || bV || bF || bXTC || bCPT)

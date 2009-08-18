@@ -43,7 +43,7 @@ any papers on the package - you can find them in the top README file.
 #ifndef _TMPI_THREAD_H_
 #define _TMPI_THREAD_H_
 
-/*! \file thread.h
+/*! \file threads.h
  *
  *  @brief Platform-independent multithreading support.
  *
@@ -447,6 +447,7 @@ void tMPI_Lockfile(FILE *   stream);
  *  threads can use it again.
  */
 void tMPI_Unlockfile(FILE *   stream);
+
 
 #ifdef __cplusplus
 }

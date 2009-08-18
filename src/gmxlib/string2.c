@@ -56,7 +56,7 @@
 
 #ifdef GMX_THREADS
 #include <stdarg.h>
-#include "thread_mpi.h"
+#include "thread_mpi/threads.h"
 #endif
 
 >>>>>>> Added full thread_mpi library, it may even compile in Windows...:src/gmxlib/string2.c

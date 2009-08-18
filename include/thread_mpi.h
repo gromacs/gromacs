@@ -38,31 +38,18 @@ To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
 */
 
-#ifndef _THREAD_MPI_H_
-#define _THREAD_MPI_H_
-
-/** \file thread_mpi.h
+/** \file 
  *
- * \brief Partial implementation of MPI using only threads. 
+ * \brief Convenience header file for non-MPI compatibility.
  * 
- * See the MPI specification at
- * http://www.mpi-forum.org/docs/docs.html
- * for an explanation of what these functions do.
- *
- * Because this is a thread-based library, be very careful with global
- * variables and static variables in functions: they will be shared across
- * all threads an lead to conflicts if not properly mutex-ed or barrier-ed
- * out.
- *
- * This file contains the non-MPI-style bindings. There is another include
- * file 'thread_mpi.h' that contains all true MPI-functions prefixed with
- * 'MPI' instead of 'tMPI' (i.e. MPI_Send instead of tMPI_Send). 
- * 
- * This include file allows the thread_mpi library to be used in 
- * conjunction with a real MPI library.
+ * This file includes the tMPI header file thread_mpi/tmpi.h, as well 
+ * as thread_mpi/threads.h and thread_mpi/atomic.h header files. If you'd 
+ * like to use the components individually, include the relevant header 
+ * files directly. 
  */
 
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
 #include "thread_mpi/tmpi.h"
 
-#endif /* _THREAD_MPI_H_ */
 
