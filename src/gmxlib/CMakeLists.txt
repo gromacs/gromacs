@@ -21,17 +21,20 @@ if(NOT GMX_EXTERNAL_LAPACK)
   file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
 endif(NOT GMX_EXTERNAL_LAPACK)
 
-if(GMX_THREADS)
-    add_subdirectory(thread_mpi)
-endif(GMX_THREADS)
+# This would be the standard way to include thread_mpi, but we want libgmx
+# to link the functions directly
+#if(GMX_THREADS)
+#    add_subdirectory(thread_mpi)
+#endif(GMX_THREADS)
+#target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
 
 # Files called xxx_test.c are test drivers with a main() function for module xxx.c,
 # so they should not be included in the library
 file(GLOB_RECURSE NOT_GMXLIB_SOURCES *_test.c *\#*)
 list(REMOVE_ITEM GMXLIB_SOURCES ${NOT_GMXLIB_SOURCES})  
 
-add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSE2_SOURCES} ${THREAD_SOURCES} ${THREAD_MPI_SOURCES})
-target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
+add_library(gmx ${GMXLIB_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES} ${GMX_SSE2_SOURCES} ${THREAD_MPI_SRC})
+target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} )
 
 install(TARGETS gmx DESTINATION ${LIB_INSTALL_DIR})
 
