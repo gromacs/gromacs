@@ -53,6 +53,7 @@
 #include "statutil.h"
 #include "index.h"
 #include "tpxio.h"
+#include "confio.h"
 #include "cmat.h"
 
 /****************************************************************************/
@@ -324,8 +325,11 @@ static void check_length(real length, int a, int b)
 
 void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
-		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis)
+		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis, 
+		bool permolecule, bool radial, char *radfn)
 { 
+  /* if permolecule = TRUE, order parameters will be calculed per molecule 
+   * and stored in slOrder with #slices = # molecules */
   rvec *x0,          /* coordinates with pbc                           */
     *x1,             /* coordinates without pbc                        */
     dist;            /* vector between two atoms                       */
@@ -348,9 +352,42 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
     *slCount;        /* nr. of atoms in one slice                      */
    real dbangle = 0, /* angle between double bond and  axis            */ 
         sdbangle = 0;/* sum of these angles                            */
+   bool use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
+   rvec direction, com;
+   int comsize;
+   atom_id *comidx=NULL;
+   char *grpname=NULL;
+   t_pbc pbc;
+
+  /* PBC added for center-of-mass vector*/
+  /* Initiate the pbc structure */
+  memset(&pbc,0,sizeof(pbc));
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) 
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
+
+  nr_tails = index[1] - index[0];
+  fprintf(stderr,"Number of elements in first group: %d\n",nr_tails);
+  /* take first group as standard. Not rocksolid, but might catch error in index*/
+
+  if (permolecule)
+  {
+	  nslices=nr_tails;
+	  bSliced=FALSE;  /*force slices off */
+      fprintf(stderr,"Calculating order parameters for each of %d molecules\n",
+	    nslices);
+
+  }
+  
+  if (radial)
+  {
+	use_unitvector=TRUE;
+	fprintf(stderr,"Select an index group to calculate the radial membrane normal\n");
+	get_index(&top->atoms,radfn,1,&comsize,&comidx,&grpname);
+  }
+
+  if (use_unitvector && bSliced)
+	fprintf(stderr,"Warning:  slicing and specified unit vectors are not currently compatible\n");
 
   snew(slCount, nslices);
   snew(*slOrder, nslices);
@@ -366,10 +403,6 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 	    nslices, *slWidth);
   } 
 
-  nr_tails = index[1] - index[0];
-  fprintf(stderr,"Number of elements in first group: %d\n",nr_tails);
-  /* take first group as standard. Not rocksolid, but might catch error in index*/
-
   teller = 0; 
 
   /*********** Start processing trajectory ***********/
@@ -378,6 +411,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
       *slWidth = box[axis][axis]/nslices;
     teller++;
     
+	set_pbc(&pbc,ePBC,box);
     rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x1);
 
     /* Now loop over all groups. There are ngrps groups, the order parameter can
@@ -388,6 +422,15 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
        so for DPPC ngrps = 16 and i runs from 1 to 14, including 14
      */
     
+	  if (radial)
+	  {
+		/*center-of-mass determination*/
+		com[XX]=0.0; com[YY]=0.0; com[ZZ]=0.0;
+		for (j=0;j<comsize;j++)
+			rvec_inc(com,x1[comidx[j]]);
+		svmul(1.0/comsize,com,com);
+	  }
+		        
     for (i = 1; i < ngrps - 1; i++) {
       clear_rvec(frameorder);
       
@@ -395,8 +438,19 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
       if (size != nr_tails)
 	gmx_fatal(FARGS,"grp %d does not have same number of"
 		" elements as grp 1\n",i); 
-      
+ 
       for (j = 0; j < size; j++) {
+	  if (radial)
+	  /*create unit vector*/
+	  {
+		pbc_dx(&pbc,x1[a[index[i]+j]],com,direction);
+		unitv(direction,direction);
+		//DEBUG
+		/*if (j==0)
+			fprintf(stderr,"X %f %f %f\tcom %f %f %f\tdirection %f %f %f\n",x1[a[index[i]+j]][0],x1[a[index[i]+j]][1],x1[a[index[i]+j]][2],com[0],com[1],com[2],
+				direction[0],direction[1],direction[2]);*/
+	  }
+
 	if (bUnsat) {
 	  /* Using convention for unsaturated carbons */
 	  /* first get Sz, the vector from Cn to Cn+1 */
@@ -408,7 +462,12 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 	  /* this is actually the cosine of the angle between the double bond
 	     and axis, because Sz is normalized and the two other components of
 	     the axis on the bilayer are zero */
-	  sdbangle += acos(Sz[axis]);  
+	  if (use_unitvector)
+	  {
+	    sdbangle += acos(iprod(direction,Sz));  /*this can probably be optimized*/
+	  }
+	  else
+	    sdbangle += acos(Sz[axis]);  
 	} else {
 	  /* get vector dist(Cn-1,Cn+1) for tail atoms */
 	  rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i-1]+j]], dist);
@@ -434,9 +493,18 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 	   Using the innerproduct, but two of the three elements are zero
 	   Determine the sum of the orderparameter of all atoms in group 
 	   */
+	if (use_unitvector)
+	{
+	cossum[XX] = sqr(iprod(Sx,direction)); /* this is allowed, since Sa is normalized */
+	cossum[YY] = sqr(iprod(Sy,direction));
+	cossum[ZZ] = sqr(iprod(Sz,direction));
+	}
+	else
+	{
 	cossum[XX] = sqr(Sx[axis]); /* this is allowed, since Sa is normalized */
 	cossum[YY] = sqr(Sy[axis]);
 	cossum[ZZ] = sqr(Sz[axis]);
+    }
 
 	for (m = 0; m < DIM; m++)
           frameorder[m] += 0.5 * (3 * cossum[m] - 1);
@@ -462,16 +530,26 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 
 	  slFrameorder[slice] += 0.5 * (3 * cossum[axis] - 1);
 	}
+	if (permolecule)
+	{
+		/*  store per-molecule order parameter
+		 *  To just track single-axis order: (*slOrder)[j][i] += 0.5 * (3 * iprod(cossum,direction) - 1);
+		 *  following is for Scd order: */
+		 (*slOrder)[j][i] += -1* (0.3333 * (3 * cossum[XX] - 1) + 0.3333 * 0.5 * (3 * cossum[YY] - 1));
+	}
       }   /* end loop j, over all atoms in group */
       
       for (m = 0; m < DIM; m++)
 	(*order)[i][m] += (frameorder[m]/size);
       
-      for (k = 0; k < nslices; k++) {
-	if (slCount[k]) {     /* if no elements, nothing has to be added */
-	  (*slOrder)[k][i] += slFrameorder[k]/slCount[k];
-	  slFrameorder[k] = 0; slCount[k] = 0;
-	}
+	  if (!permolecule)
+	  {  /*Skip following if doing per-molecule*/
+         for (k = 0; k < nslices; k++) {
+	       if (slCount[k]) {     /* if no elements, nothing has to be added */
+	          (*slOrder)[k][i] += slFrameorder[k]/slCount[k];
+	          slFrameorder[k] = 0; slCount[k] = 0;
+	       }
+	  }
       }   /* end loop i, over all groups in indexfile */
     }
     nr_frames++;
@@ -486,7 +564,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
     svmul(1.0/nr_frames, (*order)[i], (*order)[i]);
     fprintf(stderr,"Atom %d Tensor: x=%g , y=%g, z=%g\n",i,(*order)[i][XX],
 	    (*order)[i][YY], (*order)[i][ZZ]);
-    if (bSliced) {
+    if (bSliced || permolecule) {
       for (k = 0; k < nslices; k++)
 	(*slOrder)[k][i] /= nr_frames;
     }
@@ -498,18 +576,42 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 
   sfree(x0);  /* free memory used by coordinate arrays */
   sfree(x1);
+  if (comidx!=NULL)
+	sfree(comidx);
+  if (grpname!=NULL)
+    sfree(grpname);
 }
 
 
 void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile, 
-		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly)
+		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
+		bool permolecule)
 {
   FILE       *ord, *slOrd;           /* xvgr files with order parameters  */
   int        atom, slice;            /* atom corresponding to order para.*/
   char       buf[256];               /* for xvgr title */
   real      S;                      /* order parameter averaged over all atoms */
 
-  if (bSzonly) {
+  if (permolecule)
+  {
+    sprintf(buf,"Scd order parameters");
+    ord = xvgropen(afile,buf,"Atom","S");
+    sprintf(buf, "Orderparameters per atom per slice");
+    slOrd = xvgropen(bfile, buf, "Molecule", "S");
+    for (atom = 1; atom < ngrps - 1; atom++) {
+      fprintf(ord,"%12d   %12g\n", atom, -1 * (0.6667 * order[atom][XX] + 
+						 0.333 * order[atom][YY]));
+    }
+
+    for (slice = 0; slice < nslices; slice++) {
+	  fprintf(slOrd,"%12d\t",slice);
+      for (atom = 1; atom < ngrps - 1; atom++)
+	    fprintf(slOrd,"%12g\t", slOrder[slice][atom]);
+	  fprintf(slOrd,"\n");
+    }
+
+  }
+  else if (bSzonly) {
     sprintf(buf,"Orderparameters Sz per atom");
     ord = xvgropen(afile,buf,"Atom","S");
     fprintf(stderr,"ngrps = %d, nslices = %d",ngrps, nslices);
@@ -545,6 +647,56 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
   }
 }
 
+void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top)
+{
+	/*function to write order parameters as B factors in PDB file using first frame of trajectory*/
+	int status;
+	int natoms;
+	t_trxframe fr, frout;
+	t_atoms useatoms;
+	int i,j,ctr,nout;
+
+	ngrps-=2;  /*we don't have an order parameter for the first or last atom in each chain*/
+	nout=nslices*ngrps;
+	natoms=read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_NEED_X);
+	close_trj(status);
+	frout = fr;
+	frout.natoms=nout;
+	frout.bF=FALSE;
+	frout.bV=FALSE;
+	frout.x=0;
+	snew(frout.x,nout);
+	
+	init_t_atoms(&useatoms,nout,TRUE);
+	useatoms.nr=nout;
+
+	/*initialize PDBinfo*/
+	for (i=0;i<useatoms.nr;++i)
+	{
+		useatoms.pdbinfo[i].type=0;
+		useatoms.pdbinfo[i].occup=0.0;
+		useatoms.pdbinfo[i].bfac=0.0;
+		useatoms.pdbinfo[i].bAnisotropic=FALSE;
+	}
+
+	for (j=0,ctr=0;j<nslices;j++)
+		for (i=0;i<ngrps;i++,ctr++)
+		{
+			/*iterate along each chain*/
+			useatoms.pdbinfo[ctr].bfac=order[j][i+1];
+			copy_rvec(fr.x[a[index[i+1]+j]],frout.x[ctr]);
+			useatoms.atomname[ctr]=top->atoms.atomname[a[index[i+1]+j]];
+			useatoms.atom[ctr]=top->atoms.atom[a[index[i+1]+j]];
+			useatoms.nres=max(useatoms.nres,useatoms.atom[ctr].resind+1);
+			useatoms.resinfo[useatoms.atom[ctr].resind]=top->atoms.resinfo[useatoms.atom[ctr].resind]; /*copy resinfo*/
+		}
+
+	write_sto_conf(opt2fn("-ob",nfile,fnm),"Order parameters",&useatoms,frout.x,NULL,frout.ePBC,frout.box);
+	
+	sfree(frout.x);
+	free_t_atoms(&useatoms,FALSE);
+}
+
 int gmx_order(int argc,char *argv[])
 {
   const char *desc[] = {
@@ -573,6 +725,8 @@ int gmx_order(int argc,char *argv[])
   static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
   static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
   static const char *normal_axis[] = { NULL, "z", "x", "y", NULL };
+  static bool permolecule = FALSE;  /*compute on a per-molecule basis */
+  static bool radial = FALSE; /*compute a radial membrane normal */
   t_pargs pa[] = {
     { "-d",      FALSE, etENUM, {normal_axis}, 
       "Direction of the normal on the membrane" },
@@ -583,7 +737,11 @@ int gmx_order(int argc,char *argv[])
       "Only give Sz element of order tensor. (axis can be specified with -d)" },
     { "-unsat",  FALSE, etBOOL,{&bUnsat},
       "Calculate order parameters for unsaturated carbons. Note that this can"
-      "not be mixed with normal order parameters." }
+      "not be mixed with normal order parameters." },
+	{ "-permolecule", FALSE, etBOOL,{&permolecule},
+      "Compute per-molecule Scd order parameters" },
+	{ "-radial", FALSE, etBOOL,{&radial},
+      "Compute a radial membrane normal" },
   };
 
   rvec      *order;                         /* order par. for each atom   */
@@ -600,10 +758,12 @@ int gmx_order(int argc,char *argv[])
   t_blocka  *block;                         /* data from index file       */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
-    { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
+    { efNDX, "-n", NULL,  ffREAD },    	    /* index file 		  */
+    { efNDX, "-nr", NULL,  ffREAD },    	/* index for radial axis calculation	  */
     { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
     { efXVG,"-o","order", ffWRITE }, 	    /* xvgr output file 	  */
     { efXVG,"-od","deuter", ffWRITE },      /* xvgr output file           */
+    { efPDB,"-ob",NULL, ffWRITE },          /* write Scd as B factors to PDB if permolecule           */
     { efXVG,"-os","sliced", ffWRITE },      /* xvgr output file           */
     { efXVG,"-Sg","sg-ang", ffOPTWR },      /* xvgr output file           */
     { efXVG,"-Sk","sk-dist", ffOPTWR },     /* xvgr output file           */
@@ -622,7 +782,7 @@ int gmx_order(int argc,char *argv[])
     gmx_fatal(FARGS,"Can not have nslices < 1");
   sgfnm = opt2fn_null("-Sg",NFILE,fnm);
   skfnm = opt2fn_null("-Sk",NFILE,fnm);
-  ndxfnm = ftp2fn(efNDX,NFILE,fnm);
+  ndxfnm = opt2fn_null("-n",NFILE,fnm);
   tpsfnm = ftp2fn(efTPX,NFILE,fnm);
   trxfnm = ftp2fn(efTRX,NFILE,fnm);
   
@@ -679,15 +839,33 @@ int gmx_order(int argc,char *argv[])
     a = block->a;                               /* see block.h                    */
     ngrps = block->nr;           
     
-    /* show atomtypes, to check if index file is correct */
+  if (permolecule)
+  {
+	  nslices = index[1] - index[0];  //I think this assumes contiguous lipids in topology
+	  fprintf(stderr,"Calculating Scd order parameters for each of %d molecules\n",nslices);
+  }
+  
+	/* show atomtypes, to check if index file is correct */
     print_types(index, a, ngrps, grpname, top);
     
     calc_order(ftp2fn(efTRX,NFILE,fnm), index, a, &order, 
 	       &slOrder, &slWidth, nslices, bSliced, bUnsat,
-	       top, ePBC, ngrps, axis); 
+	       top, ePBC, ngrps, axis,permolecule,radial,opt2fn_null("-nr",NFILE,fnm)); 
+	
+	if (radial)
+		ngrps--; /*don't print the last group--was used for center-of-mass determination*/
     
     order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
-	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);
+	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly,permolecule);
+
+	if (opt2bSet("-ob",NFILE,fnm))
+	{
+		if (!permolecule)
+			fprintf(stderr,"Won't write B-factors with averaged order parameters; use -permolecule\n");
+		else
+			write_bfactors(fnm,NFILE,index,a,nslices,ngrps,slOrder,top);
+	}
+
     
     do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
     do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
