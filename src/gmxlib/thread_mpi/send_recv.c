@@ -38,7 +38,9 @@ To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
 
 */
-
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

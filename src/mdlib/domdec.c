@@ -2859,8 +2859,11 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                           dd->nc[d],dd->nc[d],
                           dd->nnodes > dd->nc[d] ? "cells" : "processors");
             }
-
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
     }
     
@@ -6210,8 +6213,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
             }
-            
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
     }
     else
@@ -6238,8 +6244,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                           "Look in the log file for details on the domain decomposition",
                           cr->nnodes-cr->npmenodes,limit,buf);
             }
-            
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
         set_dd_dim(fplog,dd);
     }

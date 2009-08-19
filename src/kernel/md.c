@@ -1605,20 +1605,22 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (MASTER(cr))
             fcReportProgress( ir->nsteps, step );
 
-        bX = bX || bLastStep; /*enforce writing positions and velocities at end of run */
+        bX = bX || bLastStep; /*enforce writing positions and velocities 
+                                at end of run */
         bV = bV || bLastStep;
-	{
-		int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
-		int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
+        {
+            int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
+            int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
 
-        	bCPT = bCPT; 
-			/*Gromacs drives checkpointing; no ||  fcCheckPointPendingThreads(cr->nodeid,
-							  nthreads*nnodes);
-		/* sync bCPT and fc record-keeping */
-        	if (bCPT ) 
-            		fcRequestCheckPointSingleThread(cr->nodeid, 
-							nthreads*nnodes); 
-	}
+            bCPT = bCPT; 
+            /*Gromacs drives checkpointing; no ||  
+                            fcCheckPointPendingThreads(cr->nodeid,
+                            nthreads*nnodes);*/
+            /* sync bCPT and fc record-keeping */
+            if (bCPT ) 
+                fcRequestCheckPointSingleThread(cr->nodeid, 
+                        nthreads*nnodes); 
+        }
 #endif
 #endif
         

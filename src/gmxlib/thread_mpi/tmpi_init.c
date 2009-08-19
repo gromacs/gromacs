@@ -39,6 +39,9 @@ any papers on the package - you can find them in the top README file.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -700,6 +703,7 @@ int tMPI_Finalized(int *flag)
 
 int tMPI_Abort(tMPI_Comm comm, int errorcode)
 {
+#if 0
     /* we abort(). This way we can run a debugger on it */
     fprintf(stderr, "tMPI_Abort called with error code %d",errorcode);
     if (comm==TMPI_COMM_WORLD)
@@ -708,19 +712,28 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
     fflush(0);
 
     abort();
-#if 0
+#else
     /* we just kill all threads, but not the main process */
     int i;
     struct tmpi_thread *me=tMPI_Get_current();
-    /* kill all threads */
-    for(i=0;i<comm->grp.N;i++)
+    
+    if (tMPI_Is_master())
     {
-        if (comm->grp.peers[i] != me && threads[i].thread_id)
-            tMPI_thread_cancel(threads[i].thread_id);
+        fprintf(stderr, "tMPI_Abort called on main thread\n");
+        fflush(stderr);
+        /*sleep(1);*/
+        abort();
     }
-    /* kill myself */
-    if (me->thread_id)
-        tMPI_thread_cancel(me->thread_id);
+    else
+    {
+        int *ret;
+        /* kill myself */
+        fprintf(stderr, "tMPI_Abort called on thread %ld\n", 
+                        tMPI_This_threadnr());
+        fflush(stderr);
+        ret=(int*)malloc(sizeof(int));
+        tMPI_Thread_exit(ret);
+    }
 #endif
     return TMPI_SUCCESS;
 }

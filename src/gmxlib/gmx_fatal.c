@@ -67,11 +67,13 @@ static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 bool bDebugMode(void)
 {
     bool ret;
-#ifdef GMX_THREADS
+/*#ifdef GMX_THREADS*/
+#if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     ret=bDebug;
-#ifdef GMX_THREADS
+/*#ifdef GMX_THREADS*/
+#if 0
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
     return bDebug;
@@ -90,13 +92,21 @@ void _where(const char *file,int line)
   FILE *fp;
   char *temp; 
   
+  if ( bFirst ) {
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&debug_mutex);
+    if (bFirst) /* we repeat the check in the locked section because things
+                   might have changed */
+    {
 #endif
-  if ( bFirst ) {
-    if ((temp=getenv("WHERE")) != NULL)
-      nskip = strtol(temp, NULL, 0); 
-    bFirst = FALSE;
+        if ((temp=getenv("WHERE")) != NULL)
+            nskip = strtol(temp, NULL, 0); 
+        bFirst = FALSE;
+#ifdef GMX_THREADS
+    }
+    tMPI_Thread_mutex_unlock(&debug_mutex);
+#endif
+
   } 
 
   if (nskip >= 0) {
@@ -110,9 +120,6 @@ void _where(const char *file,int line)
     }
     nwhere++;
   }
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 }
 
 static void bputc(char *msg,int *len,char ch)
