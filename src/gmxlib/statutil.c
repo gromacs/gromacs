@@ -770,7 +770,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #endif
     
     /* Set the nice level */
-#ifdef __sgi*
+#ifdef __sgi
     if (npri != 0 && !bExit) {
         schedctl(MPTS_RTPRI,0,npri);
     }
