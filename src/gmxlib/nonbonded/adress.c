@@ -39,32 +39,58 @@
 #include <math.h>
 
 real 
-adress_weight(real x,
-              real y,
-              real z)
+adress_weight(real            x,
+              real            y,
+              real            z,
+              int             adresstype,
+              real            adressr,
+              real            adressw,
+              real            refx,
+              real            refy,
+              real            refz)
 {
-   real middle=5;
-   real l1=1;
-   real l2=2;
-   real sqr_dl,dl;
-   real tmp;
-
-   sqr_dl=(x-middle)*(x-middle);
-   dl=sqrt(sqr_dl);
-   /*molcule is coarse grained */
-   if (dl> l2)
-   {
-      return 0;
-   }
-   /* molcule is explicit */
-   else if (dl < l1 )
-   {
-      return 1;
-   }
-   /* hybrid region */
-   else
-   {
-      tmp=M_PI/2/l2*(dl-l1);
-      return cos(tmp)*cos(tmp);
-   }
+    real l2=adressr+adressw;
+    real sqr_dl,dl;
+    real tmp;
+    
+    switch(adresstype)
+    {
+    case 1:              
+        /* constant value for weighting function = adressw */
+        return adressw;
+    case 2:              
+        /* plane through center of box, varies in x direction */
+        sqr_dl=(x-refx)*(x-refx);
+        break;
+    case 3:
+        /* point at center of box, assuming cubic geometry */
+        sqr_dl=(x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
+        break;
+    case 4:
+        /* get reference from reference solute, still need to figure out how to read from index */
+        sqr_dl=(x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
+        break;
+    default:
+        /* default to explicit simulation */
+        return 1;
+    }
+    
+    dl=sqrt(sqr_dl);
+    
+    /* molecule is coarse grained */
+    if (dl > l2)
+    {
+        return 0;
+    }
+    /* molecule is explicit */
+    else if (dl < adressr)
+    {
+        return 1;
+    }
+    /* hybrid region */
+    else
+    {
+        tmp=cos((dl-adressr)*M_PI/2/l2);
+        return tmp*tmp;
+    }
 }

@@ -41,8 +41,14 @@
 #include "types/simple.h"
 
 real 
-adress_weight(real x,
-              real y,
-              real z);
+adress_weight(real             x,
+              real             y,
+              real             z,
+              int              adresstype,
+              real             adressr,
+              real             adressw,
+              real             refx,
+              real             refy,
+              real             refz);
 
 #endif

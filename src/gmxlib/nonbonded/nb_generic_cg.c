@@ -91,10 +91,31 @@
      int *         type;
      
      #ifdef ADRESS
-        real weight_cg1;
-        real weight_cg2;
-        real weight_product;
-        int mixed;
+        real       weight_cg1;
+        real       weight_cg2;
+        real       weight_product;
+        int        mixed;
+        int        adresstype;
+        real       adressr;
+        real       adressw;
+        real       refx;
+        real       refy;
+        real       refz;
+        adresstype       = fr->userint1;
+        adressr          = fr->userreal1;
+        adressw          = fr->userreal2;
+        if (adresstype==4)
+        {
+            /* need to read reference from com of solute, marked by index */
+            
+        }
+        else
+        {
+            /* reference for AdResS is middle of box */
+            refx         = fr->box[XX][XX]/2.0;
+            refy         = fr->box[YY][YY]/2.0;
+            refz         = fr->box[ZZ][ZZ]/2.0;
+        }
      #endif
        
      icoul               = nlist->icoul;
@@ -139,7 +160,7 @@
             /* weight=0 coarse-grained
                weight=1 explicit
                else: double identity */
-            weight_cg1 = adress_weight(x[i3+0],x[i3+1],x[i3+2]);
+            weight_cg1 = adress_weight(x[i3+0],x[i3+1],x[i3+2],adresstype,adressr,adressw,refx,refy,refz);
          #endif
          
          for(k=nj0; (k<nj1); k++)
@@ -152,7 +173,7 @@
                /* weight=0 coarse-grained
                   weight=1 explicit
                   else: double identity */
-               weight_cg2 = adress_weight(x[j3+0],x[j3+1],x[j3+2]);
+               weight_cg2 = adress_weight(x[j3+0],x[j3+1],x[j3+2],adresstype,adressr,adressw,refx,refy,refz);
                
                weight_product=weight_cg1*weight_cg2;
                /* at least one of the groups is coarse grained */
