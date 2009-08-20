@@ -107,6 +107,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
         for (g=0; g < rot->ngrp; g++)
         {
             rotg = &rot->grp[g];
+            nslabs = 2*rotg->slab_max_nr+1;
             rot->inbuf[count++] = rotg->V;
             switch (rotg->eType)
             {
@@ -117,7 +118,6 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
                 break;
             case erotgFLEX:
             case erotgFLEX2:
-                nslabs = 2*rotg->slab_max_nr+1;
                 /* (Re-)allocate memory for MPI buffer: */
                 if (rot->bufsize < count+nslabs)
                 {
@@ -142,6 +142,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
             for (g=0; g < rot->ngrp; g++)
             {
                 rotg = &rot->grp[g];
+                nslabs = 2*rotg->slab_max_nr+1;
                 rotg->V = rot->outbuf[count++];
                 switch (rotg->eType)
                 {
@@ -510,7 +511,7 @@ static FILE *open_slab_out(t_rot *rot)
         {
             if (NULL == fp)
                 fp = ffopen("slabCOGs.log", "w");                
-            fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[g], rotg->slab_dist);
+            fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
         }
     }
     
@@ -555,7 +556,7 @@ static FILE *open_rot_out(t_rot *rot)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        fprintf(fp, "%% Rotation group %d (%s):\n", g, erotg_names[g]);
+        fprintf(fp, "%% Rotation group %d (%s):\n", g, erotg_names[rotg->eType]);
         fprintf(fp, "%% rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
         fprintf(fp, "%% rot_rate%d           %10.3e degree/ps\n",     g, rotg->rate);
         fprintf(fp, "%% rot_k%d              %10.3e kJ/(mol*nm^2)\n", g, rotg->k);
@@ -618,7 +619,7 @@ static FILE *open_angles_out(t_rot *rot, char filename[])
     {
         rotg = &rot->grp[g];
         if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
-            fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[g], rotg->slab_dist);
+            fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
     }
     fprintf(fp, "%% The following columns will have the syntax:\n");
     fprintf(fp, "%%     ");
@@ -654,7 +655,7 @@ static FILE *open_torque_out(t_rot *rot)
         rotg = &rot->grp[g];
         if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
         {
-            fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[g], rotg->slab_dist);
+            fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
             fprintf(fp, "%% The scalar tau is the torque [kJ/mol] in the direction of the rotation vector.\n");
             fprintf(fp, "%% To obtain the vectorial torque, multiply tau with\n");
             fprintf(fp, "%% rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
@@ -1936,7 +1937,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
     {
         /* Save the reference coordinates to trr */
         /* Make a trr for each rotation group */
-        sprintf(filename, "ref_%d_%s.trr", g, erotg_names[g]);
+        sprintf(filename, "ref_%d_%s.trr", g, erotg_names[rotg->eType]);
         if (gmx_fexist(filename)) /* Read rotation reference coordinates from file */
         {
             fprintf(fplog, "Enforced rotation: found reference coordinate file %s.\n", filename);
@@ -2003,7 +2004,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
     if (bFlex)
     {
         /* Flexible rotation: determine the reference COGs for the rest of the simulation */
-        get_slab_centers(rotg,rotg->xc_ref,box,cr,g,0,-1,out_slabs,1,TRUE);
+        get_slab_centers(rotg,rotg->xc_ref,box,cr,g,TRUE,-1,out_slabs,1,TRUE);
 
         /* Also save the center of coordinates for the reference structure: */
         get_center(rotg->xc_ref, NULL, rotg->nat, rotg->xc_ref_center);
@@ -2088,7 +2089,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,
     if (bRerun)
     {
         if (fplog)
-            fprintf(fplog, "Enforce rotation: rerun - will write rotation output every available step.\n");
+            fprintf(fplog, "Enforced rotation: rerun - will write rotation output every available step.\n");
         rot->nstrout = 1;
         rot->nsttout = 1;
     }
