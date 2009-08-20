@@ -371,7 +371,7 @@ static void get_slab_centers(
     /* Output on the master */
     if (MASTER(cr) && bOutStep)
     {
-        fprintf(out_slabs, "%12.3e", time);
+        fprintf(out_slabs, "%12.3e%6d", time, g);
         for (j = rotg->slab_first; j <= rotg->slab_last; j++)
         {
             islab = j+rotg->slab_max_nr; /* slab index */
@@ -496,6 +496,19 @@ static void print_aligned_group(FILE *fp, char *str, int g)
 }
 
 
+static FILE *open_output_file(char *fn, int steps)
+{
+    FILE *fp;
+    
+    
+    fp = ffopen(fn, "w");
+
+    fprintf(fp, "%% Output is written every %d time steps.\n\n", steps);
+    
+    return fp;
+}
+
+
 /* Open output file for slab COG data. Call on master only */
 static FILE *open_slab_out(t_rot *rot)
 {
@@ -510,7 +523,7 @@ static FILE *open_slab_out(t_rot *rot)
         if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
         {
             if (NULL == fp)
-                fp = ffopen("slabCOGs.log", "w");                
+                fp = open_output_file("slabCOGs.log", rot->nsttout);
             fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
         }
     }
@@ -520,6 +533,7 @@ static FILE *open_slab_out(t_rot *rot)
         fprintf(fp, "%% The following columns will have the syntax: (COG = center of geometry, gaussian weighted)\n");
         fprintf(fp, "%%     ");
         print_aligned_short(fp, "t");
+        print_aligned_short(fp, "grp");
         print_aligned_short(fp, "slab");
         print_aligned(fp, "COG-X");
         print_aligned(fp, "COG-Y");
@@ -546,9 +560,7 @@ static FILE *open_rot_out(t_rot *rot)
     t_rotgrp  *rotg;
 
 
-    fp = ffopen("rotation.log", "w");
-    fprintf(fp, "%% Output is written every %d time steps.\n", rot->nsttout);
-    fprintf(fp, "%%\n");
+    fp = open_output_file("rotation.log", rot->nsttout);
     fprintf(fp, "%% The scalar tau is the torque in the direction of the rotation vector v.\n");
     fprintf(fp, "%% To obtain the vectorial torque, multiply tau with the group's rot_vec.\n");
     fprintf(fp, "%% Torques are given in [kJ/mol], anlges in degrees, time in ps.\n");
@@ -609,12 +621,8 @@ static FILE *open_angles_out(t_rot *rot, char filename[])
 
 
     /* Open output file and write some information about it's structure: */
-    fp = ffopen(filename, "w");
-
-    fprintf(fp, "%% Output will be written every %d steps\n", rot->nstrout);
+    fp = open_output_file(filename, rot->nstrout);
     fprintf(fp, "%% All angles given in degrees, time in ps\n");
-    fprintf(fp, "%% If more than one rotation group is present, each will appear in a separate line.\n");
-    fprintf(fp, "%% n rotation groups will result in n lines of output all with the same time.\n");
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
@@ -624,6 +632,7 @@ static FILE *open_angles_out(t_rot *rot, char filename[])
     fprintf(fp, "%% The following columns will have the syntax:\n");
     fprintf(fp, "%%     ");
     print_aligned_short(fp, "t");
+    print_aligned_short(fp, "grp");
     print_aligned(fp, "theta_ref");
     print_aligned(fp, "theta_fit");
     print_aligned_short(fp, "slab");
@@ -647,8 +656,7 @@ static FILE *open_torque_out(t_rot *rot)
     t_rotgrp  *rotg;
 
 
-    fp = ffopen("torque.log", "w");
-    fprintf(fp, "%% Output will be written every %d steps\n", rot->nsttout);
+    fp = open_output_file("torque.log", rot->nsttout);
 
     for (g=0; g<rot->ngrp; g++)
     {
@@ -1011,6 +1019,7 @@ static double opt_angle_analytic(
 /* Determine actual angle of this slab by RMSD fit */
 /* Not parallelized, call this routine only on the master */
 static void flex_fit_angle(
+        int  g,
         t_rotgrp *rotg,
         double t,
         real degangle,
@@ -1081,7 +1090,7 @@ static void flex_fit_angle(
     /* Note that from the point of view of the current coordinates, the reference has rotated backwards,
      * but we want to output the angle relative to the fixed reference, therefore the minus sign. */
     fitangle = -opt_angle_analytic(rotg->xc_ref, rotg->xc, NULL, rotg->nat, rotg->xc_ref_center, act_center, rotg->vec);
-    fprintf(fp, "%12.3e%12.3f%12.3lf", t, degangle, fitangle);
+    fprintf(fp, "%12.3e%6d%12.3f%12.3lf", t, g, degangle, fitangle);
 
     /* METHOD 2 - now with normalization of every coordinate to it's reference coordinate length */
     for (i=0; i<rotg->nat; i++)
@@ -1094,7 +1103,7 @@ static void flex_fit_angle(
         svmul(scal, coord, rotg->xc_norm[i]);
     }
     fitangle = -opt_angle_analytic(rotg->xc_ref, rotg->xc_norm, NULL, rotg->nat, rotg->xc_ref_center, act_center, rotg->vec);
-    fprintf(fp_ref, "%12.3e%12.3f%12.3lf", t, degangle, fitangle);
+    fprintf(fp_ref, "%12.3e%6d%12.3f%12.3lf", t, g, degangle, fitangle);
 
 
     /* === Now do RMSD fitting with the 2 methods from above for each slab === */
@@ -1727,7 +1736,7 @@ static void do_flexible(
     /* Determine actual angle of this slab by RMSD fit and output to file - Let's hope */
     /* this only happens once in a while, since this is not parallelized! */
     if (bOutstep && MASTER(cr))
-        flex_fit_angle(rotg, t, degangle, fp_angles, fp_nangles);
+        flex_fit_angle(g, rotg, t, degangle, fp_angles, fp_nangles);
 }
 
 
@@ -2009,7 +2018,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
         /* Also save the center of coordinates for the reference structure: */
         get_center(rotg->xc_ref, NULL, rotg->nat, rotg->xc_ref_center);
         if (MASTER(cr))
-            fprintf(fplog, "Enforced rotation: center of reference coordinates of group %d is at %f %f %f", g,
+            fprintf(fplog, "Enforced rotation: center of reference coordinates of group %d is at %f %f %f\n", g,
                     rotg->xc_ref_center[XX], rotg->xc_ref_center[YY], rotg->xc_ref_center[ZZ]);
 
         /* Length of each x_rotref vector from center (needed for later RMSD fit routines): */
