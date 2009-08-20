@@ -1601,7 +1601,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bXTC = do_per_step(step,ir->nstxtcout);
         
 #ifdef GMX_FAHCORE
-#if 0
         if (MASTER(cr))
             fcReportProgress( ir->nsteps, step );
 
@@ -1612,16 +1611,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
 
-            bCPT = bCPT; 
+            bCPT = bCPT;
             /*Gromacs drives checkpointing; no ||  
                             fcCheckPointPendingThreads(cr->nodeid,
                             nthreads*nnodes);*/
             /* sync bCPT and fc record-keeping */
-            if (bCPT ) 
-                fcRequestCheckPointSingleThread(cr->nodeid, 
-                        nthreads*nnodes); 
+            if (bCPT && MASTER(cr))
+                fcRequestCheckPoint();
         }
-#endif
 #endif
         
         if (bX || bV || bF || bXTC || bCPT)
