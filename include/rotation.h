@@ -1,4 +1,4 @@
- /*
+/*
  * 
  *                This source code is part of
  * 
@@ -6,12 +6,11 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -30,36 +29,33 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-#ifndef _edsam_h
-#define _edsam_h
+#ifndef _rotation_h
+#define _rotation_h
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+  #include <config.h>
 #endif
 
+#include "vec.h"
+#include "typedefs.h"
 
-extern void do_edsam(t_inputrec *ir,int step,t_mdatoms *md,
-                     t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
-/* Essential dynamics constraints, called from constrain() */
+/* This file contains function declarations necessary 
+   for mdrun to interface with the enforced rotation code */
 
-extern gmx_edsam_t ed_open(int nfile,t_filenm fnm[],t_commrec *cr);
-/* Sets the ED input/output filenames, opens output (.edo) file */
+extern void init_rot(FILE *fplog,t_inputrec *ir,
+        t_commrec *cr, matrix box, rvec *x, unsigned long Flags);
 
-extern void init_edsam(gmx_mtop_t *mtop,t_inputrec *ir,t_commrec *cr,
-                       gmx_edsam_t ed, rvec x[], matrix box);
-/* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle 
- * contained in the input file, creates a NULL terminated list of t_edpar structures */
+extern void do_rotation(
+        t_commrec *cr,
+        t_inputrec *ir,
+        matrix box,
+        rvec x[],
+        real t,
+        int step,
+        gmx_wallcycle_t wcycle);
 
-extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed,t_mdatoms *md);
-/* Make a selection of the home atoms for the ED groups. 
- * Should be called at every domain decomposition. */
- 
-extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed, matrix box, int step);
-/* Flooding - called from do_force() */
+extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, int step, real t);
 
-extern void ed_shift_coords(matrix box, rvec x[], ivec *is, int nr);
-
-#endif	/* _edsam_h */
+#endif

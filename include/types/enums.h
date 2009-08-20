@@ -193,6 +193,11 @@ enum {
 
 #define PULL_CYL(pull) ((pull)->eGeom == epullgCYL)
 
+/* Enforced rotation */
+enum {
+  erotgFIXED, erotgFLEX, erotgFLEX2, erotgNR
+};
+
 /* QMMM */
 enum {
   eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 

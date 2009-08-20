@@ -58,6 +58,7 @@
 #include "confio.h"
 #include "network.h"
 #include "pull.h"
+#include "rotation.h"
 #include "xvgr.h"
 #include "physics.h"
 #include "names.h"
@@ -514,6 +515,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
         
+        if (inputrec->bRot)
+        {
+           /* Initialize enforced rotation code */
+           init_rot(fplog,inputrec,cr,box,state->x,Flags);
+        }
+
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
         
         if (DOMAINDECOMP(cr))

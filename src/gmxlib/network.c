@@ -109,6 +109,16 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   ev_virial_start            = MPE_Log_get_event_number( );
   ev_virial_finish           = MPE_Log_get_event_number( );
   
+  /* Enforced rotation */
+  ev_flexll_start            = MPE_Log_get_event_number( );
+  ev_flexll_finish           = MPE_Log_get_event_number( );
+  ev_add_rot_forces_start    = MPE_Log_get_event_number( );
+  ev_add_rot_forces_finish   = MPE_Log_get_event_number( );
+  ev_rotcycles_start         = MPE_Log_get_event_number( );
+  ev_rotcycles_finish        = MPE_Log_get_event_number( );
+  ev_forcecycles_start       = MPE_Log_get_event_number( );
+  ev_forcecycles_finish      = MPE_Log_get_event_number( );
+
   /* Shift related events */
   ev_shift_start             = MPE_Log_get_event_number( );
   ev_shift_finish            = MPE_Log_get_event_number( );
@@ -183,6 +193,12 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
     MPE_Describe_state(ev_output_start,            ev_output_finish,            "output",          "black");
     MPE_Describe_state(ev_virial_start,            ev_virial_finish,            "calc_virial",     "thistle4");
     
+    /* Enforced rotation */
+    MPE_Describe_state(ev_flexll_start,            ev_flexll_finish,            "flex lowlevel",   "navajo white");
+    MPE_Describe_state(ev_add_rot_forces_start,    ev_add_rot_forces_finish,    "add rot forces",  "green");
+    MPE_Describe_state(ev_rotcycles_start,         ev_rotcycles_finish,         "count rot cyc",   "moccasin");
+    MPE_Describe_state(ev_forcecycles_start,       ev_forcecycles_finish,       "count force cyc", "powder blue");
+
     /* PME related events */
     MPE_Describe_state(ev_pme_start,               ev_pme_finish,               "doing PME",       "grey" );
     MPE_Describe_state(ev_spread_on_grid_start,    ev_spread_on_grid_finish,    "spread",          "dark orange" );   

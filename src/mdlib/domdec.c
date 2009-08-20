@@ -8362,6 +8362,13 @@ void dd_partition_system(FILE            *fplog,
         /* Update the local pull groups */
         dd_make_local_pull_groups(dd,ir->pull,mdatoms);
     }
+    
+    if (ir->bRot)
+    {
+        /* Update the local rotation groups */
+        dd_make_local_rotation_groups(dd,ir->rot,mdatoms);
+    }
+
 
     add_dd_statistics(dd);
     

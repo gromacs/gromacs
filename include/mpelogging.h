@@ -69,6 +69,13 @@
      int ev_update_start,            ev_update_finish;     
      int ev_force_start,             ev_force_finish;
      int ev_do_fnbf_start,           ev_do_fnbf_finish;
+     int ev_test_start,              ev_test_finish;
+     
+     /* COM and enforced rotation pulling */
+     int ev_flexll_start,            ev_flexll_finish;
+     int ev_add_rot_forces_start,    ev_add_rot_forces_finish;
+     int ev_forcecycles_start,       ev_forcecycles_finish;
+     int ev_rotcycles_start,         ev_rotcycles_finish;
      
      /* Shift related events*/
      int ev_shift_start,             ev_shift_finish;     

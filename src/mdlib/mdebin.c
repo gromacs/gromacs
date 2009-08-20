@@ -193,7 +193,7 @@ t_mdebin *init_mdebin(int fp_ene,
     else if (i == F_CONNBONDS)
       bEner[i] = FALSE;
     else if (i == F_COM_PULL)
-      bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
+      bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F || ir->bRot);
     else if (i == F_ECONSERVED)
       bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
 		  ir->epc == epcNO);

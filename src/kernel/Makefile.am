@@ -26,7 +26,7 @@ hizzie.c	hizzie.h	\
 pdb2top.h	pdb2top.c	\
 pgutil.c	pgutil.h	\
 readir.c	readir.h	\
-readpull.c	\
+readpull.c	readrot.c	\
 resall.c	\
 sorting.c 	sorting.h	\
 specbond.c	specbond.h	\

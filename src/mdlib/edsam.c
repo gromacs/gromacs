@@ -1731,7 +1731,7 @@ static void ed_get_shifts(int npbcdim, matrix box,
 }
 
 
-static void ed_shift_coords(matrix box, rvec x[], ivec *is, int nr)
+extern void ed_shift_coords(matrix box, rvec x[], ivec *is, int nr)
 {
     int      i,tx,ty,tz;
 

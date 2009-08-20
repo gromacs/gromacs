@@ -61,7 +61,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 67;
+static const int tpx_version = 68;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -238,6 +238,37 @@ static void do_pull(t_pull *pull,bool bRead, int file_version)
     snew(pull->grp,pull->ngrp+1);
   for(g=0; g<pull->ngrp+1; g++)
     do_pullgrp(&pull->grp[g],bRead,file_version);
+}
+
+static void do_rotgrp(t_rotgrp *rotg,bool bRead, int file_version)
+{
+  bool bDum=TRUE;
+  int  i;
+
+  do_int(rotg->eType);
+  do_int(rotg->nat);
+  if (bRead)
+    snew(rotg->ind,rotg->nat);
+  ndo_int(rotg->ind,rotg->nat,bDum);
+  do_rvec(rotg->vec);
+  do_rvec(rotg->offset);
+  do_real(rotg->rate);
+  do_real(rotg->k);
+  do_real(rotg->slab_dist);
+  do_real(rotg->min_gaussian);
+}
+
+static void do_rot(t_rot *rot,bool bRead, int file_version)
+{
+  int g;
+
+  do_int(rot->ngrp);
+  do_int(rot->nstrout);
+  do_int(rot->nsttout);
+  if (bRead)
+    snew(rot->grp,rot->ngrp);
+  for(g=0; g<rot->ngrp; g++)
+    do_rotgrp(&rot->grp[g],bRead,file_version);
 }
 
 static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
@@ -666,6 +697,18 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       }
     } else {
       ir->ePull = epullNO;
+    }
+    
+    /* Enforced rotation */
+    if (file_version >= 68) {
+        do_int(ir->bRot);
+        if (ir->bRot == TRUE) {
+            if (bRead)
+                snew(ir->rot,1);
+            do_rot(ir->rot,bRead,file_version);
+        }
+    } else {
+        ir->bRot = FALSE;
     }
     
     /* grpopts stuff */

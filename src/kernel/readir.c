@@ -75,6 +75,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
+static char **rot_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
 static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
@@ -896,6 +897,15 @@ void get_ir(char *mdparin,char *mdparout,
   if (ir->ePull != epullNO) {
     snew(ir->pull,1);
     pull_grp = read_pullparams(&ninp,&inp,ir->pull,&opts->pull_start,nerror);
+  }
+  
+  /* Enforced rotation */
+  CCTYPE("ENFORCED ROTATION");
+  CTYPE("Enforced rotation: No or Yes");
+  EETYPE("rotation",       ir->bRot, yesno_names, nerror, TRUE);
+  if (ir->bRot) {
+    snew(ir->rot,1);
+    rot_grp = read_rotparams(&ninp,&inp,ir->rot);
   }
 
   /* Refinement */
@@ -1730,6 +1740,10 @@ void do_index(char* mdparin, char *ndx,
 
   if (ir->ePull != epullNO) {
     make_pull_groups(ir->pull,pull_grp,grps,gnames);
+  }
+  
+  if (ir->bRot) {
+    make_rotation_groups(ir->rot,rot_grp,grps,gnames);
   }
 
   nacc = str_nelem(acc,MAXPTR,ptr1);

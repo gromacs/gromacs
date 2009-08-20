@@ -139,6 +139,76 @@ typedef struct {
   FILE       *out_f;      /* output file for pull data */
 } t_pull;
 
+
+/* Enforced rotation data types */
+
+/* Abstract type defined only in rotation.c */
+typedef struct gmx_slabdata *gmx_slabdata_t;
+
+typedef struct {
+  int        eType;            /* Rotation type for this group */
+  int        nat;              /* Number of atoms in the group */
+  atom_id    *ind;             /* The global atoms numbers */
+  int        nat_loc;          /* Number of local group atoms */
+  int        nalloc_loc;       /* Allocation size for ind_loc and weight_loc */
+  atom_id    *ind_loc;         /* Local rotation indices */
+  rvec       vec;              /* The rotation vector */
+  real       rate;             /* Rate of motion (nm/ps) */
+  real       k;                /* force constant */
+  real       V;                /* Rotation potential for this rotation group */
+  
+  /* Collective coordinates for the whole rotation group */
+  rvec       *xc_ref;          /* Reference (unrotated) coordinates */
+  real       *xc_ref_length;   /* Length of each x_rotref vector after x_rotref has been put into origin */
+  int        *xc_ref_ind;      /* Local indices to the reference coordinates */
+  rvec       xc_ref_center;    /* Geometrical center of the reference coordinates */
+  rvec       *xc;              /* Current coordinates */
+  ivec       *xc_shifts;       /* Current shifts */
+  ivec       *xc_eshifts;      /* Extra shifts since last DD step */
+  rvec       *xc_old;          /* Old coordinates */
+  rvec       *xc_norm;         /* Some normalized form of the current coordinates */
+  
+  /* Flexible rotation only */
+  real       slab_dist;        /* Slab distance (nm) */
+  int        slab_max_nr;      /* The maximum number of slabs in the box */
+  int        slab_first;       /* Lowermost slab for that the calculation needs to be performed */
+  int        slab_last;        /* Uppermost slab ... */
+  rvec       *slab_center;     /* Gaussian-weighted slab center of geometry (COG) */
+  rvec       *slab_center_ref; /* Gaussian-weighted slab COG for the reference coordinates */
+  real       *slab_weights;    /* Sum of gaussian weights in a slab for parallel COM calculation */
+  real       *slab_torque_v;   /* Torque T = r x f for each slab. */
+                               /* torque_v = m.v = angular momentum in the direction of v */
+  real       min_gaussian;     /* Minimum value the gaussian must have so that the force
+                                  is actually evaluated */
+  gmx_slabdata_t slab_data;    /* Holds atom coordinates and gaussian weights of atoms belonging to a slab */
+  rvec       *f_rot_loc;       /* Array to store the forces on the local atoms resulting
+                                * from enforced rotation potential */
+  /* Fixed rotation only */
+  rvec       offset;           /* Initial reference displacement */
+  real       fix_torque_v;     /* Torque in the direction of rotation vector */
+  real       fix_angles_v;
+  real       fix_weight_v;
+
+} t_rotgrp;
+
+typedef struct {
+  int      ngrp;          /* number of groups */
+  int      nstrout;       /* Main output frequency for rotation angle and potential */
+  int      nsttout;       /* Output frequency for torque, fitangles, slab centers */
+  t_rotgrp *grp;          /* groups to rotate */
+  FILE     *out_rot;      /*  "  */
+  FILE     *out_torque;   /* torque */
+  FILE     *out_angles;   /* slab angles for flexible rotation */
+  FILE     *out_nangles;  /* see above, but each current structure's coordinate is normalized
+                           * such that it has the same length as its reference structure counterpart */
+  FILE     *out_slabs;    /* For outputting COG per slab information */
+  bool     bUpdateShifts; /* After NS steps the shifts of the rotaion groups have to be updated */
+  real     Vrot;          /* (Local) part of the enforced rotation potential */
+  real     *inbuf;        /* MPI buffer */
+  real     *outbuf;       /* MPI buffer */
+  int      bufsize;       /* Allocation size of in & outbufs */
+} t_rot;
+
 typedef struct {
   int  eI;              /* Integration method 				*/
   gmx_step_t nsteps;	/* number of steps to be taken			*/
@@ -252,6 +322,8 @@ typedef struct {
   real wall_ewald_zfac; /* Scaling factor for the box for Ewald         */
   int  ePull;           /* Type of pulling: no, umbrella or constraint  */
   t_pull *pull;         /* The data for center of mass pulling          */
+  bool bRot;            /* Calculate enforced rotation potential(s)?    */
+  t_rot *rot;           /* The data for enforced rotation potentials    */
   real cos_accel;       /* Acceleration for viscosity calculation       */
   tensor deform;        /* Triclinic deformation velocities (nm/ps)     */
   int  userint1;        /* User determined parameters                   */

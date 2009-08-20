@@ -128,4 +128,11 @@ extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
  * If bStart adds the distance to the initial reference location.
  */
 
+extern char **read_rotparams(int *ninp_p,t_inpfile **inp,t_rot *rot);
+/* Reads enforced rotation parameters, returns a list of the rot group names */
+
+extern void make_rotation_groups(t_rot *rot,char **rotgnames,
+                 t_blocka *grps,char **gnames);
+/* Process the rotation parameters after reading the index groups */
+
 #endif	/* _readir_h */

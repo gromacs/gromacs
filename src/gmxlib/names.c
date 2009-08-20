@@ -180,6 +180,10 @@ const char *epullg_names[epullgNR+1] = {
   "distance", "direction", "cylinder", "position", NULL
 };
 
+const char *erotg_names[erotgNR+1] = { 
+  "fixed", "flexible", "flexible2", NULL
+};
+
 const char *eQMmethod_names[eQMmethodNR+1] = {
   "AM1", "PM3", "RHF",
   "UHF", "DFT", "B3LYP", "MP2", "CASSCF","B3LYPLAN",
