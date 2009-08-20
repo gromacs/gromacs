@@ -355,7 +355,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	
 	factor              = 0.5 * ONE_4PI_EPS0;
 	n                   = 0;
-	
+		
 	/* Keep the compiler happy */
 	raj         = _mm_setzero_pd();
 	vaj         = _mm_setzero_pd();
@@ -476,7 +476,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			ccf       = _mm_mul_pd(four,ccf);
 			xmm3      = _mm_sub_pd(ccf,dccf);
 			icf6      = _mm_mul_pd(xmm3,rinv6);
-			xmm1      = _mm_mul_pd(xmm3,prod);
+			xmm1      = _mm_mul_pd(icf6,prod);
 			xmm2      = _mm_mul_pd(icf6,prod_ai);
 			
 			/* As with single precision, we need to shift stuff around, to change the order of
@@ -547,7 +547,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			
 			prod      = _mm_mul_sd(p4,vaj);
 			icf4      = _mm_mul_sd(ccf,rinv4);
-			xmm2      = _mm_mul_sd(xmm2,prod);
+			xmm2      = _mm_mul_sd(icf4,prod);
 			xmm3      = _mm_mul_sd(icf4,prod_ai);
 			gpi       = _mm_add_sd(gpi,xmm2);
 			
@@ -564,8 +564,9 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			xmm2      = _mm_mul_sd(icf6,prod_ai);
 			
 			/* Here we only have ai->aj1 and aj1->ai, so we can store directly */
-			_mm_store_sd(fr->dadx+n,xmm1);
-			
+			_mm_storel_pd(fr->dadx+n,xmm1);
+			n         = n + 1;
+			_mm_storel_pd(fr->dadx+n,xmm2);
 			n         = n + 1;
 		} /* End offset */
 
@@ -574,6 +575,9 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 		gpi   = _mm_add_pd(gpi,xmm2);
 		gpi   = _mm_shuffle_pd(gpi,gpi,_MM_SHUFFLE2(1,1));
 			
+		/* Load, add and store atom ai polarisation energy */
+		xmm2 = _mm_load_sd(born->gpol_still_work+ai);
+		gpi = _mm_add_sd(gpi,xmm2);
 		_mm_store_sd(born->gpol_still_work+ai,gpi);
 	}
 	
