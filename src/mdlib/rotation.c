@@ -66,8 +66,6 @@ typedef struct gmx_slabdata
     real *weight; /* The weight for each atom */
 } t_gmx_slabdata;
 
-/* Abstract type defined only in the file that uses it */
-//typedef struct gmx_slabdata *gmx_slabdata_t;
 
 static double**  allocate_square_matrix(int dim)
 {
@@ -353,7 +351,6 @@ static void get_slab_centers(
         } /* END of loop over rotation group atoms */
 
         /* Do the calculations ONLY if there is enough weight in the slab! */
-        //if (rotg->slab_weights[islab] > GMX_REAL_EPS)
         if (rotg->slab_weights[islab] > rotg->min_gaussian)
         {
             svmul(1.0/rotg->slab_weights[islab], rotg->slab_center[islab], rotg->slab_center[islab]);
@@ -1042,7 +1039,6 @@ static void flex_fit_angle(
     /* Loop over ALL rotation group atoms in all slabs */
     for(l=0; l<rotg->nat; l++)
     {
-        //for(n = -rotg->slab_max_nr; n <= rotg->slab_max_nr; n++)
         for(n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
             islab = n+rotg->slab_max_nr; /* slab index */
@@ -1105,7 +1101,6 @@ static void flex_fit_angle(
 #define SLAB_MIN_ATOMS 9
 
     /* METHOD 1 for each slab */
-    //for (n = -rotg->slab_max_nr; n <= rotg->slab_max_nr; n++)
     for(n = -rotg->slab_first; n <= rotg->slab_last; n++)
     {
         islab = n+rotg->slab_max_nr; /* slab index */
@@ -1121,7 +1116,6 @@ static void flex_fit_angle(
     }
 
     /* METHOD 2 for each slab */
-    //for (n = -rotg->slab_max_nr; n <= rotg->slab_max_nr; n++)
     for(n = -rotg->slab_first; n <= rotg->slab_last; n++)
     {
         islab = n+rotg->slab_max_nr; /* slab index */
@@ -1336,7 +1330,6 @@ static real do_flex2_lowlevel(
         /* For each atom, loop over all slabs. We could have contributions from any slab */
         clear_rvec(sum_f_ii);
 
-        //for (n = -rotg->slab_max_nr; n <= rotg->slab_max_nr; n++)
         for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
             clear_rvec(force_n);
@@ -1508,7 +1501,6 @@ static real do_flex_lowlevel(
         /* For each atom, loop over all slabs. We could have contributions from any slab */
         clear_rvec(sum_n1);
         clear_rvec(sum_n2);
-        //for (n = -rotg->slab_max_nr; n <= rotg->slab_max_nr; n++)
         for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
             islab = n+rotg->slab_max_nr; /* slab index */
@@ -1605,7 +1597,6 @@ static real do_flex_lowlevel(
                         /* tmp2 = xi - x0 - ri */
                         rvec_sub(tmp2, r, tmp2);
                         /* fac = gn * s*(xi - x0 - ri) */
-                        //                    gaussian_xi = gaussian_weight(xi,rotg,n);
                         fac = gaussian_xi*iprod(s, tmp2);
                         /* tmp2 = gn * s*(xi - x0 - ri) * [beta/sigma^2 * (s*(x_0 - x_l)) * a] */
                         svmul(fac, tmp, tmp2);

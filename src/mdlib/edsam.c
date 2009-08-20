@@ -422,7 +422,6 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING"  , edpars->sav.nr);
 
     /* Dump ed local buffer */
-    //fprintf(out, "buf->fitit            =%p\n", edpars->buf->fitit            );
     fprintf(out, "buf->do_edfit         =%p\n", edpars->buf->do_edfit         );
     fprintf(out, "buf->do_edsam         =%p\n", edpars->buf->do_edsam         );
     fprintf(out, "buf->do_radcon        =%p\n", edpars->buf->do_radcon        );
