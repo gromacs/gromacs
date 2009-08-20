@@ -52,7 +52,7 @@ any papers on the package - you can find them in the top README file.
 #ifdef THREAD_PTHREADS 
 #include "pthreads.c"
 #else
-#ifdef THREAD_WIN32
+#ifdef THREAD_WINDOWS
 #include "winthreads.c"
 #else
 #include "nothreads.c"

@@ -39,38 +39,14 @@ any papers on the package - you can find them in the top README file.
 
 */
 
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- 
-*
-* $Id: tMPI_Thread_no.c,v 1.2 2009/05/11 16:41:23 lindahl Exp $
-* 
-* This file is part of Gromacs        Copyright (c) 1991-2004
-* David van der Spoel, Erik Lindahl, University of Groningen.
-*
-* This program is free software; you can redistribute it and/or
-* modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
-*
-* To help us fund GROMACS development, we humbly ask that you cite
-* the research papers on the package. Check out http://www.gromacs.org
-* 
-* And Hey:
-* Gnomes, ROck Monsters And Chili Sauce
-*/
-
-/* Include the defines that determine which thread library to use.
-* We do not use HAVE_PTHREAD_H directly, since we might want to
-* turn off thread support explicity (e.g. for debugging).
-*/
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#if ( !defined(TMPI_THREAD_PTHREADS) && !defined(TMPI_THREADS_WINDOWS) )
 /* Hide this implementation from Doxygen, since it conflicts with pthreads */
 #ifndef DOXYGEN
 
-
+#if ! (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
 
 #include "thread_mpi/thread.h"
 
@@ -83,7 +59,7 @@ any papers on the package - you can find them in the top README file.
 #include <stdio.h>
 #include <errno.h>
 
-#include "gmx_fatal.h"
+#include "tMPI_Fatal_error.h"
 
 /* Number of thread-specific storage elements.
  *
@@ -117,7 +93,7 @@ tMPI_Thread_nothreads_specific_init_done = 0;
 
 
 
-/* Dummy implementation of abstract Gromacs thread datatype */
+/* Dummy implementation of abstract thread datatype */
 struct tMPI_Thread
 {
     int      locked; /* Just useful for debugging */
@@ -126,7 +102,7 @@ struct tMPI_Thread
 
 
 
-/* Dummy implementation of abstract Gromacs thread-specific data key type */
+/* Dummy implementation of abstract thread-specific data key type */
 struct tMPI_Thread_key
 {
     int      index;  /*!< Index into our static list of private data */
@@ -148,7 +124,7 @@ tMPI_Thread_create   (tMPI_Thread_t *    thread,
                      void *            (*start_routine)(void *),
                      void *            arg)
 {
-    gmx_fatal(FARGS,"Cannot start threads without thread support.\n");
+    tMPI_Fatal_error(FARGS,"Cannot start threads without thread support.\n");
     
     return 0;
 }
@@ -159,7 +135,7 @@ int
 tMPI_Thread_join     (tMPI_Thread_t     thread,
                      void **          value_ptr)
 {
-    gmx_fatal(FARGS,"Cannot join threads without thread support.\n");
+    tMPI_Fatal_error(FARGS,"Cannot join threads without thread support.\n");
     
     return 0;
 }
@@ -180,9 +156,8 @@ tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx)
     
     if(mtx->actual_mutex==NULL)
     {
-        /* Write to stderr since we cannot use gromacs messages. */
         fprintf(stderr,
-                "Gromacs error [%s, line %d]: Failed to allocate mutex memory.\n",
+                "error [%s, line %d]: Failed to allocate mutex memory.\n",
                 __FILE__,__LINE__);
         fflush(stderr);
         return ENOMEM;
@@ -205,7 +180,7 @@ tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx)
         return EINVAL;
     }
     
-    /* Must use system free() since Gromacs memory allocation depends on
+    /* Must use system free() since memory allocation depends on
      * messages and threads working.
      */
     free(mtx->actual_mutex);
@@ -297,7 +272,7 @@ tMPI_Thread_key_create(tMPI_Thread_key_t *       key,
     if(key==NULL)
     {
         fprintf(stderr,
-                "Gromacs error [%s, line %d]: Invalid key pointer.\n",
+                "error [%s, line %d]: Invalid key pointer.\n",
                 __FILE__,__LINE__);
         fflush(stderr);
         return EINVAL;
@@ -305,15 +280,14 @@ tMPI_Thread_key_create(tMPI_Thread_key_t *       key,
     
     /*
      * Allocate memory for the pthread key. We must use the system malloc
-     * here since the gromacs memory allocation depends on gmx_message.h and tMPI_Thread.h.
+     * here since the other memory allocation depends on tMPI_Thread.h.
      */
     *key = malloc(sizeof(struct tMPI_Thread_key));
     
     if(*key==NULL)
     {
-        /* Write to stderr since we cannot use gromacs messages. */
         fprintf(stderr,
-                "Gromacs error [%s, line %d]: Failed to allocate thread key memory.\n",
+                "error [%s, line %d]: Failed to allocate thread key memory.\n",
                 __FILE__,__LINE__);
         fflush(stderr);
         return ENOMEM;
@@ -341,7 +315,7 @@ tMPI_Thread_key_create(tMPI_Thread_key_t *       key,
 
     if(i==TMPI_THREAD_NOTHREADS_NSPECIFICDATA)
     {
-        gmx_fatal(FARGS,"Already used all %d private data keys.\n");
+        tMPI_Fatal_error(FARGS,"Already used all %d private data keys.\n");
         return -1;
     }
     
@@ -473,7 +447,7 @@ int
 tMPI_Thread_cond_wait(tMPI_Thread_cond_t *   cond,
                      tMPI_Thread_mutex_t *  mtx)
 {
-    gmx_fatal(FARGS,"Called tMPI_Thread_cond_wait() without thread support. This is a major\n"
+    tMPI_Fatal_error(FARGS,"Called tMPI_Thread_cond_wait() without thread support. This is a major\n"
               "error, since nobody else can signal the condition variable - exiting.\n");
     
     return 0;
@@ -485,7 +459,7 @@ tMPI_Thread_cond_wait(tMPI_Thread_cond_t *   cond,
 int
 tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *   cond)
 {
-    gmx_fatal(FARGS,"Called tMPI_Thread_broadcast() without thread support.\n");
+    tMPI_Fatal_error(FARGS,"Called tMPI_Thread_broadcast() without thread support.\n");
     
     return 0;
 }
@@ -496,7 +470,7 @@ tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *   cond)
 void
 tMPI_Thread_exit(void *      value_ptr)
 {
-    gmx_fatal(FARGS,"Called tMPI_Thread_exit() without thread support.\n");
+    tMPI_Fatal_error(FARGS,"Called tMPI_Thread_exit() without thread support.\n");
 }
 
 
@@ -505,7 +479,7 @@ tMPI_Thread_exit(void *      value_ptr)
 int
 tMPI_Thread_cancel(tMPI_Thread_t    thread)
 {
-    gmx_fatal(FARGS,"Called tMPI_Thread_cancel() without thread support.\n");
+    tMPI_Fatal_error(FARGS,"Called tMPI_Thread_cancel() without thread support.\n");
     
     return 0;
 }
@@ -561,5 +535,4 @@ tMPI_unlockfile(FILE *   stream)
  
 #endif /* ifndef DOXYGEN */
  
-
-#endif /* PTHREADS OR WINDOWS */
+#endif /* no threads */

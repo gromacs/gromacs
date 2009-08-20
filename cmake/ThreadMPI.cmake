@@ -15,8 +15,8 @@ if (CMAKE_USE_PTHREADS_INIT)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
-        set(THREAD_WIN32 1)
-        add_definitions(-DTHREAD_WIN32)
+        set(THREAD_WINDOWS 1)
+        add_definitions(-DTHREAD_WINDOWS)
         set(THREAD_MPI_SRC thread_mpi/threads.c thread_mpi/tmpi_init.c 
                            thread_mpi/comm.c thread_mpi/send_recv.c 
                            thread_mpi/multicast.c)

@@ -434,9 +434,12 @@ t_commrec *init_par_threads(t_commrec *cro)
     if (!initialized)
         gmx_comm("Initializing threads without comm");
     set_parallel_env(TRUE);
-    /* once threads will be getting along with MPI, we'll
-       fill the cr structure with more sensible data here */
+    /* once threads will be used together with MPI, we'll
+       fill the cr structure with distinct data here. This might even work: */
     cr->sim_nodeid = gmx_setup(0,NULL, &cr->nnodes);
+    /* note that we're explicitly using tMPI */
+    tMPI_Comm_size(TMPI_COMM_WORLD, &cr->nthreads);
+    tMPI_Comm_rank(TMPI_COMM_WORLD, &cr->threadid);
 
     cr->mpi_comm_mysim = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;

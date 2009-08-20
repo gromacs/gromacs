@@ -88,7 +88,7 @@ extern "C"
 #ifdef THREAD_PTHREADS
 #include "thread_mpi/pthreads.h"
 #else
-#ifdef THREAD_WIN32
+#ifdef THREAD_WINDOWS
 #include "thread_mpi/winthreads.h"
 #else
 #include "thread_mpi/nothreads.h"

@@ -88,7 +88,7 @@ void tMPI_Multi_sync_init(struct multi_sync *msc, int N)
     {
         tMPI_Atomic_set( &(msc->mev[i].current_counter), 0);
         tMPI_Atomic_set( &(msc->mev[i].n_remaining), 0);
-        msc->mev[i].buf=(void*)tMPI_Malloc(sizeof(void*)*N);
+        msc->mev[i].buf=(volatile void**)tMPI_Malloc(sizeof(void*)*N);
         msc->mev[i].bufsize=(size_t*)tMPI_Malloc(sizeof(size_t)*N);
         msc->mev[i].read_data=(bool*)tMPI_Malloc(sizeof(bool)*N);
     }

@@ -143,8 +143,10 @@ void tMPI_Free_env_list_init(struct free_envelope_list *evl, int N)
     int i;
 
     /* allocate the head element */
-    evl->send_alloc_head=tMPI_Malloc(sizeof(struct send_envelope)*N );
-    evl->recv_alloc_head=tMPI_Malloc(sizeof(struct recv_envelope)*N );
+    evl->send_alloc_head=(struct send_envelope*)
+                                tMPI_Malloc(sizeof(struct send_envelope)*N );
+    evl->recv_alloc_head=(struct recv_envelope*)
+                                tMPI_Malloc(sizeof(struct recv_envelope)*N );
     evl->head_send=evl->send_alloc_head;
     evl->head_recv=evl->recv_alloc_head;
 
@@ -422,7 +424,8 @@ void tMPI_Req_list_init(struct req_list *rl, int N_reqs)
 {
     int i;
 
-    rl->alloc_head=tMPI_Malloc(sizeof(struct tmpi_req_)*N_reqs);
+    rl->alloc_head=(struct tmpi_req_*)tMPI_Malloc(
+                                        sizeof(struct tmpi_req_)*N_reqs);
     rl->head=rl->alloc_head;
     for(i=0;i<N_reqs;i++)
     {
@@ -669,7 +672,7 @@ static struct recv_envelope *tMPI_Post_match_recv(tMPI_Comm comm,
     struct tmpi_thread *dest=cur;
     struct recv_envelope *evr;
     struct send_envelope *evs=NULL;
-    threadnr_t src_threadnr=src ? tMPI_Threadnr(src) : Nthreads;
+    int src_threadnr=src ? tMPI_Threadnr(src) : Nthreads;
     int i;
 
     /* reserve an envelope to post */
@@ -737,7 +740,7 @@ static struct send_envelope *tMPI_Post_send(tMPI_Comm comm,
     struct tmpi_thread *cur=tMPI_Get_current();
     struct tmpi_thread *src=cur;
     struct send_envelope *evs;
-    threadnr_t src_threadnr=tMPI_Threadnr(src);
+    int src_threadnr=tMPI_Threadnr(src);
 
     /* reserve an envelope to post */
     evs=tMPI_Prep_send_envelope(cur, comm, src, dest, send_buf, send_count, 

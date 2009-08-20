@@ -325,7 +325,9 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond)
    
     if(ret!=0)
     {
-        tMPI_Fatal_error(TMPI_FARGS,"Error destroying POSIX condition variable. rc=%d",ret);
+        tMPI_Fatal_error(TMPI_FARGS,
+                         "Error destroying POSIX condition variable. rc=%d",
+                         ret);
         fflush(stderr);
     }
     return ret;
@@ -396,7 +398,8 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier,
         
     if(ret!=0)
     {
-        tMPI_Fatal_error(TMPI_FARGS,"Error initializing POSIX mutex. rc=%d",ret);
+        tMPI_Fatal_error(TMPI_FARGS,"Error initializing POSIX mutex. rc=%d",
+                         ret);
         return ret;
     }
     
@@ -404,7 +407,9 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier,
     
     if(ret!=0)
     {
-        tMPI_Fatal_error(TMPI_FARGS,"Error initializing POSIX condition variable. rc=%d",ret);
+        tMPI_Fatal_error(TMPI_FARGS,
+                         "Error initializing POSIX condition variable. rc=%d",
+                         ret);
         return ret;
     }
         

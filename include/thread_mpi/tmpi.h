@@ -431,7 +431,7 @@ double tMPI_Wtick(void);
 #endif
 
 #ifndef DOXYGEN
-#define tMPI_This_threadnr() (tMPI_Get_current() - threads)
+#define tMPI_This_threadnr() (int)(tMPI_Get_current() - threads)
 #else
 /** \brief Get the thread number of this thread. 
     Mostly for debugging.

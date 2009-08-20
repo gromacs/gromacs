@@ -77,13 +77,17 @@ any papers on the package - you can find them in the top README file.
 /* BASIC DEFINITIONS */
 
 
-#ifndef cplusplus__
+#ifndef __cplusplus
 typedef int bool;
 #define TRUE 1
 #define FALSE 0
 #else
+#ifndef TRUE
 #define TRUE true
+#endif
+#ifndef FALSE
 #define FALSE false
+#endif
 #endif
 
 
@@ -384,8 +388,6 @@ struct tmpi_global
     tMPI_Spinlock_t  datatype_lock;
 };
 
-/* we need this because it's strictly speaking size_t */
-typedef size_t threadnr_t;
 
 
 
@@ -542,8 +544,9 @@ void *tMPI_Realloc(void *p, size_t size);
 /* get the number of this thread */
 /*#define tMPI_This_threadnr() (tMPI_Get_current() - threads)*/
 
-/* get the number of a specific thread */
-#define tMPI_Threadnr(th) (th - threads)
+/* get the number of a specific thread. We convert to the resulting size_t to
+   int, which is unlikely to cause problems in the foreseeable future. */
+#define tMPI_Threadnr(th) (int)(th - threads)
 
 /* get thread associated with rank  */
 #define tMPI_Get_thread(comm, rank) (comm->grp.peers[rank])

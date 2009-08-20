@@ -51,7 +51,7 @@ any papers on the package - you can find them in the top README file.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifndef _WIN32
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
 #include <sys/time.h>
 #endif
 
@@ -382,7 +382,7 @@ int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
     if (errorcode<0 || errorcode>=N_TMPI_ERR)
         errorcode=TMPI_ERR_UNKNOWN;
 
-#ifndef _WIN32
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
 #else
     strncpy_s(strn, TMPI_MAX_ERROR_STRING, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
@@ -577,7 +577,7 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
                                                    sizeof(char*));
                 for(j=0;j<threads[i].argc;j++)
                 {
-#ifndef _WIN32
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
                     threads[i].argv[j]=strdup( (*argv)[j] );
 #else
                     threads[i].argv[j]=_strdup( (*argv)[j] );
@@ -714,12 +714,16 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
     abort();
 #else
     /* we just kill all threads, but not the main process */
-    int i;
-    struct tmpi_thread *me=tMPI_Get_current();
     
     if (tMPI_Is_master())
     {
-        fprintf(stderr, "tMPI_Abort called on main thread\n");
+        if (comm==TMPI_COMM_WORLD)
+            fprintf(stderr, 
+               "tMPI_Abort called on TMPI_COMM_WORLD main with errorcode=%d\n",
+               errorcode);
+        else
+        fprintf(stderr, "tMPI_Abort called on main thread with errorcode=%d\n",
+                errorcode);
         fflush(stderr);
         /*sleep(1);*/
         abort();
@@ -728,8 +732,8 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
     {
         int *ret;
         /* kill myself */
-        fprintf(stderr, "tMPI_Abort called on thread %ld\n", 
-                        tMPI_This_threadnr());
+        fprintf(stderr, "tMPI_Abort called wiht error code %d on thread %d\n", 
+                        errorcode, tMPI_This_threadnr());
         fflush(stderr);
         ret=(int*)malloc(sizeof(int));
         tMPI_Thread_exit(ret);
@@ -741,7 +745,7 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
 
 int tMPI_Get_processor_name(char *name, size_t *resultlen)
 {
-    threadnr_t nr=tMPI_Threadnr(tMPI_Get_current());
+    int nr=tMPI_Threadnr(tMPI_Get_current());
     unsigned int digits=0;
     const unsigned int base=10;
 
@@ -750,7 +754,7 @@ int tMPI_Get_processor_name(char *name, size_t *resultlen)
 
     /* first determine number of digits */
     {
-        threadnr_t rest=nr;
+        int rest=nr;
         while(rest > 0)
         {
             rest /= base;
@@ -759,7 +763,7 @@ int tMPI_Get_processor_name(char *name, size_t *resultlen)
         if (digits==0)
             digits=1;
     }
-#ifndef _WIN32
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     strcpy(name, "thread #");
 #else
     strncpy_s(name, TMPI_MAX_PROCESSOR_NAME, "thread #", TMPI_MAX_PROCESSOR_NAME);
@@ -768,7 +772,7 @@ int tMPI_Get_processor_name(char *name, size_t *resultlen)
     {
         size_t len=strlen(name);
         unsigned int i;
-        threadnr_t rest=nr;
+        int rest=nr;
 
         for(i=0;i<digits;i++)
         {
@@ -792,7 +796,7 @@ int tMPI_Get_processor_name(char *name, size_t *resultlen)
 double tMPI_Wtime(void)
 {
     double ret=0;
-#ifndef _WIN32
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     struct timeval tv;
         
     gettimeofday(&tv, NULL);
@@ -849,8 +853,11 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
     {
         /* make space */
         tmpi_global->Nalloc_usertypes=Nthreads*(tmpi_global->N_usertypes) + 1;
-        tmpi_global->usertypes=tMPI_Realloc(tmpi_global->usertypes, 
-                 (sizeof(struct tmpi_datatype_ *)*tmpi_global->Nalloc_usertypes));
+        tmpi_global->usertypes=(struct tmpi_datatype_**)
+                                    tMPI_Realloc(tmpi_global->usertypes, 
+                                        (sizeof(struct tmpi_datatype_ *)*
+                                         tmpi_global->Nalloc_usertypes)
+                                    );
 
     }
     /* add to the list */
