@@ -1,2 +1,11 @@
 .deps
 .libs
+gmxcheck
+gmxdump
+grompp
+luck
+mdrun
+pdb2gmx
+protonate
+tpbconv
+x2top
