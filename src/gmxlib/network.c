@@ -49,11 +49,14 @@
 #include <mpi.h>
 #endif
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #include "mpelogging.h"
+
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
 
 bool gmx_mpi_initialized(void)
 {
@@ -74,17 +77,19 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   return 0;
 #else
   char   buf[256];
-  int    resultlen;               /* actual length of node name      */
+  size_t    resultlen;               /* actual length of node name      */
   int    i,flag;
   int  mpi_num_nodes;
   int  mpi_my_rank;
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
   /* Call the MPI routines */
+#ifdef GMX_LIB_MPI
 #ifdef GMX_FAHCORE
   (void) fah_MPI_Init(argc,&argv);
 #else
   (void) MPI_Init(argc,&argv);
+#endif
 #endif
   (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
@@ -268,6 +273,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
   nc = &cr->nc;
 
   nc->bUse = FALSE;
+#ifndef GMX_THREADS
   if (getenv("GMX_NO_NODECOMM") == NULL) {
 #ifdef GMX_MPI
     MPI_Comm_size(cr->mpi_comm_mygroup,&n);
@@ -280,7 +286,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     while(i > 0 && isdigit(mpi_hostname[i-1]))
       i--;
     if (isdigit(mpi_hostname[i])) {
-      hostnum = atoi(mpi_hostname+i);
+      hostnum = strtol(mpi_hostname+i, NULL, 0); 
     } else {
       hostnum = 0;
     }
@@ -320,8 +326,8 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
       MPI_Comm_free(&nc->comm_intra);
     }
 #endif
-    
   }
+#endif
 }
 
 void gmx_barrier(const t_commrec *cr)
@@ -371,121 +377,80 @@ void gmx_bcast_sim(int nbytes,void *b,const t_commrec *cr)
 void gmx_sumd(int nr,double r[],const t_commrec *cr)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_sumd");
+    gmx_call("gmx_sumd");
 #else
-  static double *buf=NULL;
-  static int nalloc=0;
-  int i;
-  
-  if (nr > nalloc) {
-    nalloc = nr;
-    srenew(buf,nalloc);
-  }
-  if (cr->nc.bUse) {
-    /* Use two step summing */
-    MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_intra);
-    if (cr->nc.rank_intra == 0) {
-      /* Sum with the buffers reversed */
-      MPI_Allreduce(buf,r,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_inter);
+    if (cr->nc.bUse) {
+        /* Use two step summing. This should be MPI_Reduce, right? */
+        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,0,cr->nc.comm_intra);
+        if (cr->nc.rank_intra == 0) {
+            /* Sum the roots of the internal (intra) buffers. */
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,
+                          cr->nc.comm_inter);
+        }
+        MPI_Bcast(r,nr,MPI_DOUBLE,0,cr->nc.comm_intra);
+    } 
+    else 
+    {
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM, 
+                      cr->mpi_comm_mygroup);
     }
-    MPI_Bcast(r,nr,MPI_DOUBLE,0,cr->nc.comm_intra);
-  } else {
-    MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mygroup);
-    for(i=0; i<nr; i++)
-      r[i] = buf[i];
-  }
 #endif
 }
 
 void gmx_sumf(int nr,float r[],const t_commrec *cr)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_sumf");
+    gmx_call("gmx_sumf");
 #else
-  static float *buf=NULL;
-  static int nalloc=0;
-  int i;
-  
-  if (nr > nalloc) {
-    nalloc = nr;
-    srenew(buf,nalloc);
-  }
-  if (cr->nc.bUse) {
-    /* Use two step summing */
-    MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_intra);
-    if (cr->nc.rank_intra == 0) {
-      /* Sum with the buffers reversed */
-      MPI_Allreduce(buf,r,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_inter);
+    if (cr->nc.bUse) {
+        /* Use two step summing. This should be MPI_Reduce, right? */
+        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,0,cr->nc.comm_intra);
+        if (cr->nc.rank_intra == 0) {
+            /* Sum the roots of the internal (intra) buffers */
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,
+                          cr->nc.comm_inter);
+        }
+        MPI_Bcast(r,nr,MPI_FLOAT,0,cr->nc.comm_intra);
+    } 
+    else 
+    {
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
     }
-    MPI_Bcast(r,nr,MPI_FLOAT,0,cr->nc.comm_intra);
-  } else {
-    MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
-    for(i=0; i<nr; i++)
-      r[i] = buf[i];
-  }
 #endif
 }
 
 void gmx_sumi(int nr,int r[],const t_commrec *cr)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_sumi");
+    gmx_call("gmx_sumi");
 #else
-  static int *buf=NULL;
-  static int nalloc=0;
-  int i;
-  
-  if (nr > nalloc) {
-    nalloc = nr;
-    srenew(buf,nalloc);
-  }
-  if (cr->nc.bUse) {
-    /* Use two step summing */
-    MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->nc.comm_intra);
-    if (cr->nc.rank_intra == 0) {
-      /* Sum with the buffers reversed */
-      MPI_Allreduce(buf,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
+    if (cr->nc.bUse) {
+        /* Use two step summing */
+        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,0,cr->nc.comm_intra);
+        if (cr->nc.rank_intra == 0) {
+            /* Sum with the buffers reversed */
+            MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
+        }
+        MPI_Bcast(r,nr,MPI_INT,0,cr->nc.comm_intra);
+    } 
+    else 
+    {
+        MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
     }
-    MPI_Bcast(r,nr,MPI_INT,0,cr->nc.comm_intra);
-  } else {
-    MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
-    for(i=0; i<nr; i++)
-      r[i] = buf[i];
-  }
 #endif
 }
 
 #ifdef GMX_MPI
 void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 {
-  static double *buf=NULL;
-  static int nalloc=0;
-  int i;
-  
-  if (nr > nalloc) {
-    nalloc = nr;
-    srenew(buf,nalloc);
-  }
-  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
-  for(i=0; i<nr; i++)
-    r[i] = buf[i];
+  MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
 }
 #endif
 
 #ifdef GMX_MPI
 void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
 {
-  static float *buf=NULL;
-  static int nalloc=0;
-  int i;
-  
-  if (nr > nalloc) {
-    nalloc = nr;
-    srenew(buf,nalloc);
-  }
-  MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
-  for(i=0; i<nr; i++)
-    r[i] = buf[i];
+  MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
 }
 #endif
 
@@ -512,26 +477,23 @@ void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-  static int *buf=NULL;
-  static int nalloc=0;
-  int i;
-  
-  if (nr > nalloc) {
-    nalloc = nr;
-    srenew(buf,nalloc);
-  }
-  MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
-  for(i=0; i<nr; i++)
-    r[i] = buf[i];
+  MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
 #endif
 }
 
 void gmx_finalize(void)
 {
-  int ret;
 #ifndef GMX_MPI
   gmx_call("gmx_finalize");
 #else
+  int ret;
+
+  /* just as a check; we don't want to finalize twice */
+  int finalized;
+  MPI_Finalized(&finalized);
+  if (finalized)
+      return;
+
   /* We sync the processes here to try to avoid problems
    * with buggy MPI implementations that could cause
    * unfinished processes to terminate.

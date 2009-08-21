@@ -112,16 +112,16 @@ typedef struct {
   int        combrule;
 } t_coupl_rec;
 
-extern void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef);
+extern void write_gct(const char *fn,t_coupl_rec *tcr,t_idef *idef);
 
-extern void read_gct(char *fn,t_coupl_rec *tcr);
+extern void read_gct(const char *fn,t_coupl_rec *tcr);
 
 extern void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr);
 
 extern void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,
 		    t_idef *idef);
 
-extern t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
+extern t_coupl_rec *init_coupling(FILE *log,int nfile, const t_filenm fnm[],
 				  t_commrec *cr,t_forcerec *fr,t_mdatoms *md,
 				  t_idef *idef);
 				  
@@ -130,7 +130,8 @@ extern void calc_force(int natom,rvec f[],rvec fff[]);
 extern void calc_f_dev(int natoms,real charge[],rvec x[],rvec f[],
 		       t_idef *idef,real *xiH,real *xiS);
 
-extern void do_coupling(FILE *log,int nfile,t_filenm fnm[],
+extern void do_coupling(FILE *log,const output_env_t oenv,int nfile,
+                        const t_filenm fnm[],
 			t_coupl_rec *tcr,real t,int step,real ener[],
 			t_forcerec *fr,t_inputrec *ir,bool bMaster,
 			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
@@ -160,7 +161,7 @@ typedef struct {
 
 
 extern bool update_forcefield(FILE *fplog,
-			      int nfile,t_filenm fnm[],t_forcerec *fr,
+			      int nfile,const t_filenm fnm[],t_forcerec *fr,
 			      int natoms,rvec x[],matrix box);
 /* Modify the parameters. Return TRUE when the scan is finished. */
 

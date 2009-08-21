@@ -47,42 +47,42 @@
  */
 typedef struct
 {
-    //! Positions to permute.
+    /*! Positions to permute.*/
     gmx_ana_pos_t    p;
-    //! Group to receive the output permutation.
+    /*! Group to receive the output permutation.*/
     gmx_ana_index_t  g;
-    //! Number of elements in the permutation.
+    /*! Number of elements in the permutation.*/
     int              n;
-    //! Array describing the permutation.
+    /*! Array describing the permutation.*/
     int             *perm;
-    //! Array that has the permutation reversed.
+    /*! Array that has the permutation reversed.*/
     int             *rperm;
 } t_methoddata_permute;
 
-//! Allocates data for the \p permute selection modifier.
+/*! Allocates data for the \p permute selection modifier.*/
 static void *
 init_data_permute(int npar, gmx_ana_selparam_t *param);
-//! Initializes data for the \p permute selection modifier.
+/*! Initializes data for the \p permute selection modifier.*/
 static int
 init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-//! Initializes output for the \p permute selection modifier.
+/*! Initializes output for the \p permute selection modifier.*/
 static int
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
-//! Frees the memory allocated for the \p permute selection modifier.
+/*! Frees the memory allocated for the \p permute selection modifier.*/
 static void
 free_data_permute(void *data);
-//! Evaluates the \p permute selection modifier.
+/*! Evaluates the \p permute selection modifier.*/
 static int
 evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
-//! Parameters for the \p permute selection modifier.
+/*! Parameters for the \p permute selection modifier.*/
 static gmx_ana_selparam_t smparams_permute[] = {
     {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {NULL,       {INT_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
-//! \internal Selection method data for the \p permute modifier.
+/*! \internal Selection method data for the \p permute modifier.*/
 gmx_ana_selmethod_t sm_permute = {
     "permute", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_permute), smparams_permute,

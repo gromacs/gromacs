@@ -160,7 +160,8 @@ int gmx_spol(int argc,char *argv[])
     "by the vector from the first atom in the selected solvent group",
     "to the midpoint between the second and the third atom."
   };
-  
+ 
+  output_env_t oenv;
   static bool bCom = FALSE,bPBC = FALSE;
   static int  srefat=1;
   static real rmin=0.0,rmax=0.32,refdip=0,bw=0.01;
@@ -185,7 +186,7 @@ int gmx_spol(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   snew(top,1);
   snew(ir,1);
@@ -211,7 +212,7 @@ int gmx_spol(int argc,char *argv[])
   srefat--;
 
   /* initialize reading trajectory:                         */
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
   rcut  = 0.99*sqrt(max_cutoff2(ir->ePBC,box));
   if (rcut == 0)
@@ -292,7 +293,7 @@ int gmx_spol(int argc,char *argv[])
     }
     nf++;
 
-  }  while (read_next_x(status,&t,natoms,x,box));
+  }  while (read_next_x(oenv,status,&t,natoms,x,box));
 
   /* clean up */
   sfree(x);
@@ -314,7 +315,7 @@ int gmx_spol(int argc,char *argv[])
   }
 
   fp = xvgropen(opt2fn("-o",NFILE,fnm),
-		"Cumulative solvent distribution","r (nm)","molecules");
+		"Cumulative solvent distribution","r (nm)","molecules",oenv);
   nmol = 0;
   for(i=0; i<=nbin; i++) {
     nmol += hist[i];
@@ -322,7 +323,7 @@ int gmx_spol(int argc,char *argv[])
   }
   fclose(fp);
 
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn("-o",NFILE,fnm),NULL);
 
   thanx(stderr);
   

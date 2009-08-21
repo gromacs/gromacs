@@ -138,6 +138,7 @@ int gmx_polystat(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   t_topology *top;
+  output_env_t oenv;
   int    ePBC;
   int    isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
@@ -163,7 +164,7 @@ int gmx_polystat(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
 		    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 		    
   snew(top,1);
   ePBC = read_tpx_top(ftp2fn(efTPX,NFILE,fnm),
@@ -196,12 +197,13 @@ int gmx_polystat(int argc,char *argv[])
 	  nat_min,nat_max);
 
   sprintf(title,"Size of %d polymers",nmol);
-  out = xvgropen(opt2fn("-o",NFILE,fnm),title,xvgr_tlabel(),"(nm)");
-  xvgr_legend(out,bPC ? 8 : 5,leg);
+  out = xvgropen(opt2fn("-o",NFILE,fnm),title,get_xvgr_tlabel(oenv),"(nm)",
+                oenv);
+  xvgr_legend(out,bPC ? 8 : 5,leg,oenv);
 
   if (opt2bSet("-v",NFILE,fnm)) {
     outv = xvgropen(opt2fn("-v",NFILE,fnm),"Principal components",
-		    xvgr_tlabel(),"(nm)");
+		    get_xvgr_tlabel(oenv),"(nm)",oenv);
     snew(legp,DIM*DIM);
     for(d=0; d<DIM; d++) {
       for(d2=0; d2<DIM; d2++) {
@@ -209,14 +211,14 @@ int gmx_polystat(int argc,char *argv[])
 	legp[d*DIM+d2] = strdup(buf);
       }
     }
-    xvgr_legend(outv,DIM*DIM,legp);
+    xvgr_legend(outv,DIM*DIM,legp,oenv);
   } else {
     outv = NULL;
   }
 
   if (opt2bSet("-p",NFILE,fnm)) {
     outp = xvgropen(opt2fn("-p",NFILE,fnm),"Persistence length",
-		    xvgr_tlabel(),"bonds");
+		    get_xvgr_tlabel(oenv),"bonds",oenv);
     snew(bond,nat_max-1);
     snew(sum_inp,nat_min/2);
     snew(ninp,nat_min/2);
@@ -226,7 +228,7 @@ int gmx_polystat(int argc,char *argv[])
 
   if (opt2bSet("-i", NFILE, fnm)) {
     outi = xvgropen(opt2fn("-i", NFILE, fnm), "Internal distances",
-                    "n", "<R\\S2\\N(n)>/n (nm\\S2\\N)");
+                    "n", "<R\\S2\\N(n)>/n (nm\\S2\\N)",oenv);
     i = index[molind[1]-1] - index[molind[0]]; /* Length of polymer -1 */
     snew(intd, i);
   } else {
@@ -234,7 +236,7 @@ int gmx_polystat(int argc,char *argv[])
     outi = NULL;
   }
 
-  natoms = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
   snew(gyr,DIM);
   snew(gyr_all,DIM);
@@ -334,7 +336,7 @@ int gmx_polystat(int argc,char *argv[])
     gyro_eigen(gyr_all,eig,eigv,ord);
 
     fprintf(out,"%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f",
-	    t*time_factor(),
+	    t*get_time_factor(oenv),
 	    sqrt(sum_eed2),sqrt(sum_gyro),
 	    sqrt(eig[ord[0]]),sqrt(eig[ord[1]]),sqrt(eig[ord[2]]));
     if (bPC) {
@@ -344,7 +346,7 @@ int gmx_polystat(int argc,char *argv[])
     fprintf(out,"\n");
 
     if (outv) {
-      fprintf(outv,"%10.3f",t*time_factor());
+      fprintf(outv,"%10.3f",t*get_time_factor(oenv));
       for(d=0; d<DIM; d++) {
 	for(d2=0; d2<DIM; d2++)
 	  fprintf(outv," %6.3f",eigv[ord[d]][d2]);
@@ -369,12 +371,12 @@ int gmx_polystat(int argc,char *argv[])
 	pers = i - 2
 	  + 2*(log(sum_inp[i-2]) + 1)/(log(sum_inp[i-2]) - log(sum_inp[i]));
       }
-      fprintf(outp,"%10.3f %8.4f\n",t*time_factor(),pers);
+      fprintf(outp,"%10.3f %8.4f\n",t*get_time_factor(oenv),pers);
       sum_pers_tot += pers;
     }
 
     frame++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
 
   close_trx(status);
 
@@ -408,18 +410,18 @@ int gmx_polystat(int argc,char *argv[])
       if (intd[i] < ymin)
         ymin = intd[i];
     }
-    xvgr_world(outi, 1, ymin, j, ymax);
+    xvgr_world(outi, 1, ymin, j, ymax,oenv);
     for (i = 0; i < j; i++) {
       fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
     }
     fclose(outi);
   }
 
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
   if (opt2bSet("-v",NFILE,fnm))
-    do_view(opt2fn("-v",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-v",NFILE,fnm),"-nxy");
   if (opt2bSet("-p",NFILE,fnm))
-    do_view(opt2fn("-p",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-p",NFILE,fnm),"-nxy");
     
   thanx(stderr);
     

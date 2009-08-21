@@ -44,11 +44,32 @@
 #include "pbc.h"
 #include <string.h>
 
+#ifdef GMX_THREADS
+#include "thread_mpi.h"
+#endif
+
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
+
+
+
 static bool bOverAllocDD=FALSE;
+#ifdef GMX_THREADS
+static tMPI_Thread_mutex_t over_alloc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
+
 
 void set_over_alloc_dd(bool set)
 {
-  bOverAllocDD = set;
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&over_alloc_mutex);
+    /* we just make sure that we don't set this at the same time. 
+       We don't worry too much about reading this rarely-set variable */
+#endif    
+    bOverAllocDD = set;
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&over_alloc_mutex);
+#endif    
 }
 
 int over_alloc_dd(int n)

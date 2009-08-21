@@ -59,29 +59,31 @@ bool use_xmgr()
   return (env!=NULL && strcmp(env,"xmgr")==0);
 } 
 
-FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *yaxis)
+FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
+               const char *yaxis,const output_env_t oenv)
 {
-  FILE *xvgr;
-  char pukestr[100];
-  time_t t;
-  
-  xvgr=gmx_fio_fopen(fn,"w");
-  if (bPrintXvgrCodes()) {
-    time(&t);
-    fprintf(xvgr,"# This file was created %s",ctime(&t));
-    fprintf(xvgr,"# by the following command:\n# %s\n#\n",command_line());
-    fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",Program());
-    bromacs(pukestr,99);
-    fprintf(xvgr,"# %s\n#\n",pukestr);
-    fprintf(xvgr,"@    title \"%s\"\n",title);
-    fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
-    fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
-    if (use_xmgr())
-      fprintf(xvgr,"@TYPE nxy\n");
-    else
-      fprintf(xvgr,"@TYPE xy\n");
-  }
-  return xvgr;
+    FILE *xvgr;
+    char pukestr[100];
+    time_t t;
+
+    xvgr=gmx_fio_fopen(fn,"w");
+    if (get_print_xvgr_codes(oenv)) 
+    {
+        time(&t);
+        fprintf(xvgr,"# This file was created %s",ctime(&t));
+        fprintf(xvgr,"# by the following command:\n# %s\n#\n",command_line());
+        fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",Program());
+        bromacs(pukestr,99);
+        fprintf(xvgr,"# %s\n#\n",pukestr);
+        fprintf(xvgr,"@    title \"%s\"\n",title);
+        fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
+        fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
+        if (use_xmgr())
+            fprintf(xvgr,"@TYPE nxy\n");
+        else
+            fprintf(xvgr,"@TYPE xy\n");
+    }
+    return xvgr;
 }
 
 void
@@ -90,55 +92,66 @@ xvgrclose(FILE *fp)
 	gmx_fio_fclose(fp);
 }
 
-void xvgr_subtitle(FILE *out,const char *subtitle)
+void xvgr_subtitle(FILE *out,const char *subtitle,const output_env_t oenv)
 {
-  if (bPrintXvgrCodes()) 
-    fprintf(out,"@ subtitle \"%s\"\n",subtitle);
+    if (get_print_xvgr_codes(oenv))
+    {
+        fprintf(out,"@ subtitle \"%s\"\n",subtitle);
+    }
 }
 
-void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax)
+void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,
+               const output_env_t oenv)
 {
-  if (bPrintXvgrCodes()) 
-    fprintf(out,"@ view %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
+    if (get_print_xvgr_codes(oenv))
+    {
+        fprintf(out,"@ view %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
+    }
 }
 
-void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax)
+void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
+                const output_env_t oenv)
 {
-  if (bPrintXvgrCodes()) 
-    fprintf(out,"@ world xmin %g\n"
-	    "@ world ymin %g\n"
-	    "@ world xmax %g\n"
-	    "@ world ymax %g\n",xmin,ymin,xmax,ymax);
+    if (get_print_xvgr_codes(oenv))
+    {
+        fprintf(out,"@ world xmin %g\n"
+                "@ world ymin %g\n"
+                "@ world xmax %g\n"
+                "@ world ymax %g\n",xmin,ymin,xmax,ymax);
+    }
 }
 
-void xvgr_legend(FILE *out,int nsets,char **setname)
+void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
 {
   int i;
   
-  if (bPrintXvgrCodes()) {
-    xvgr_view(out,0.15,0.15,0.75,0.85);
-    fprintf(out,"@ legend on\n");
-    fprintf(out,"@ legend box on\n");
-    fprintf(out,"@ legend loctype view\n");
-    fprintf(out,"@ legend %g, %g\n",0.78,0.8);
-    fprintf(out,"@ legend length %d\n",2);
-    for(i=0; (i<nsets); i++)
-      if (setname[i]) {
-	if (use_xmgr())
-	  fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
-	else
-	  fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
-      }
+  if (get_print_xvgr_codes(oenv))
+  {
+      xvgr_view(out,0.15,0.15,0.75,0.85,oenv);
+      fprintf(out,"@ legend on\n");
+      fprintf(out,"@ legend box on\n");
+      fprintf(out,"@ legend loctype view\n");
+      fprintf(out,"@ legend %g, %g\n",0.78,0.8);
+      fprintf(out,"@ legend length %d\n",2);
+      for(i=0; (i<nsets); i++)
+          if (setname[i]) {
+              if (use_xmgr())
+                  fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
+              else
+                  fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
+          }
   }
 }
 
-void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor)
+void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
+                     const output_env_t oenv)
 {
-  if (bPrintXvgrCodes()) {
-    fprintf(out, "@    with g0\n");
-    fprintf(out, "@    s%d linestyle %d\n", NrSet, LineStyle);
-    fprintf(out, "@    s%d color %d\n", NrSet, LineColor);
-  }
+    if (get_print_xvgr_codes(oenv))
+    {
+        fprintf(out, "@    with g0\n");
+        fprintf(out, "@    s%d linestyle %d\n", NrSet, LineStyle);
+        fprintf(out, "@    s%d color %d\n", NrSet, LineColor);
+    }
 }
 
 static const char *LocTypeStr[] = { "view", "world" };
@@ -148,21 +161,22 @@ void xvgr_box(FILE *out,
 	      int LocType,
 	      real xmin,real ymin,real xmax,real ymax,
 	      int LineStyle,int LineWidth,int LineColor,
-	      int BoxFill,int BoxColor,int BoxPattern)
+	      int BoxFill,int BoxColor,int BoxPattern,const output_env_t oenv)
 {
-  if (bPrintXvgrCodes()) {
-    fprintf(out,"@with box\n");
-    fprintf(out,"@    box on\n");
-    fprintf(out,"@    box loctype %s\n",LocTypeStr[LocType]);
-    fprintf(out,"@    box %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
-    fprintf(out,"@    box linestyle %d\n",LineStyle);
-    fprintf(out,"@    box linewidth %d\n",LineWidth);
-    fprintf(out,"@    box color %d\n",LineColor);
-    fprintf(out,"@    box fill %s\n",BoxFillStr[BoxFill]);
-    fprintf(out,"@    box fill color %d\n",BoxColor);
-    fprintf(out,"@    box fill pattern %d\n",BoxPattern);
-    fprintf(out,"@box def\n");
-  }
+    if (get_print_xvgr_codes(oenv))
+    {
+        fprintf(out,"@with box\n");
+        fprintf(out,"@    box on\n");
+        fprintf(out,"@    box loctype %s\n",LocTypeStr[LocType]);
+        fprintf(out,"@    box %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
+        fprintf(out,"@    box linestyle %d\n",LineStyle);
+        fprintf(out,"@    box linewidth %d\n",LineWidth);
+        fprintf(out,"@    box color %d\n",LineColor);
+        fprintf(out,"@    box fill %s\n",BoxFillStr[BoxFill]);
+        fprintf(out,"@    box fill color %d\n",BoxColor);
+        fprintf(out,"@    box fill pattern %d\n",BoxPattern);
+        fprintf(out,"@box def\n");
+    }
 }
 
 static char *fgets3(FILE *fp,char ptr[],int *len)
@@ -334,24 +348,24 @@ int read_xvg(const char *fn,double ***y,int *ny)
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-               char ** leg)
+               char **leg,const output_env_t oenv)
 {
-  FILE *fp;
-  int  i,j;
-  
-  fp=xvgropen(fn,title,"X","Y");
-  if (leg)
-    xvgr_legend(fp,ny-1,leg);
-  for(i=0; (i<nx); i++) {
-    for(j=0; (j<ny); j++) {
-      fprintf(fp,"  %12.5e",y[j][i]);
+    FILE *fp;
+    int  i,j;
+
+    fp=xvgropen(fn,title,"X","Y",oenv);
+    if (leg)
+        xvgr_legend(fp,ny-1,leg,oenv);
+    for(i=0; (i<nx); i++) {
+        for(j=0; (j<ny); j++) {
+            fprintf(fp,"  %12.5e",y[j][i]);
+        }
+        fprintf(fp,"\n");
     }
-    fprintf(fp,"\n");
-  }
-  xvgrclose(fp);
+    xvgrclose(fp);
 }
 
-real **read_xvg_time(char *fn,
+real **read_xvg_time(const char *fn,
 		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
 		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {

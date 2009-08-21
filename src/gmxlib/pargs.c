@@ -49,6 +49,9 @@
 #include "string2.h"
 #include "vec.h"
 
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
+
 bool is_hidden(t_pargs *pa)
 {
   return ((strstr(pa->desc,"HIDDEN") != NULL) || 
@@ -57,97 +60,106 @@ bool is_hidden(t_pargs *pa)
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 {
-  int  i,j,k,match;
-  bool *bKeep;
-  char buf[32];
-  char *ptr;
-  
-  snew(bKeep,*argc+1);
-  bKeep[0]     = TRUE;
-  bKeep[*argc] = TRUE;
-  
-  for(i=1; (i<*argc); i++) {
-    bKeep[i] = TRUE;
-    for(j=0; (j<nparg); j++) {
-      if (pa[j].type == etBOOL) {
-	sprintf(buf,"-no%s",pa[j].option+1);
-	if (strcmp(pa[j].option,argv[i])== 0) {
-	  *pa[j].u.b = TRUE;
-	  pa[j].bSet = TRUE;
-	  bKeep[i] = FALSE;
-	}
-	else if (strcmp(buf,argv[i])== 0) {
-	  *pa[j].u.b = FALSE;
-	  pa[j].bSet = TRUE;
-	  bKeep[i] = FALSE;
-	}
-      } else if (strcmp(pa[j].option,argv[i])== 0) {
-	if (pa[j].bSet)
-	  fprintf(stderr,"Setting option %s more than once!\n",pa[j].option);
-	pa[j].bSet = TRUE;
-	bKeep[i] = FALSE;
-	switch(pa[j].type) {
-	case etINT:
-	  *pa[j].u.i = iscan(*argc,argv,&i);
-	  break;
-    case etGMX_STEP_T: 
-      *pa[j].u.is = istepscan(*argc,argv,&i);
-      break;	  
-	case etTIME:
-	case etREAL:
-	  *pa[j].u.r = dscan(*argc,argv,&i);
-	  break;
-	case etSTR:
-	  *(pa[j].u.c) = sscan(*argc,argv,&i);
-	  break;
-	case etENUM:
-	  match=NOTSET;
-	  ptr = sscan(*argc,argv,&i);
-	  for(k=1; (pa[j].u.c[k] != NULL); k++)
-	    /* only check ptr against beginning of pa[j].u.c[k] */
-	    if (strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
-	      if ( ( match == NOTSET ) || 
-		   ( strlen(pa[j].u.c[k]) < strlen(pa[j].u.c[match]) ) )
-		     match = k;
-	  if (match!=NOTSET)
-	    pa[j].u.c[0] = pa[j].u.c[match];
-	  else 
-	    gmx_fatal(FARGS,"Invalid argument %s for option %s",
-			ptr,pa[j].option);
-	  break;
-	case etRVEC:
-	  (*pa[j].u.rv)[0] = dscan(*argc,argv,&i);
-	  if ( (i+1 == *argc) || 
-	       ( (argv[i+1][0]=='-') && !isdigit(argv[i+1][1]) ) )
-	    (*pa[j].u.rv)[1] = (*pa[j].u.rv)[2] = (*pa[j].u.rv)[0];
-	  else {
-	    bKeep[i] = FALSE;
-	    (*pa[j].u.rv)[1] = dscan(*argc,argv,&i);
-	    if ( (i+1 == *argc) || 
-		 ( (argv[i+1][0]=='-') && !isdigit(argv[i+1][1]) ) )
-	      gmx_fatal(FARGS,"%s: vector must have 1 or 3 real parameters",
-			  pa[j].option);
-	    bKeep[i] = FALSE;
-	    (*pa[j].u.rv)[2] = dscan(*argc,argv,&i);
-	  }
-	  break;
-	default:
-	  gmx_fatal(FARGS,"Invalid type %d in pargs",pa[j].type);
-	}
-	/* i may be incremented, so set it to not keep */
-	bKeep[i] = FALSE;
-      }
+    int  i,j,k,match;
+    bool *bKeep;
+    char buf[32];
+    char *ptr;
+
+    snew(bKeep,*argc+1);
+    bKeep[0]     = TRUE;
+    bKeep[*argc] = TRUE;
+
+    for(i=1; (i<*argc); i++) {
+        bKeep[i] = TRUE;
+        for(j=0; (j<nparg); j++) {
+            if (pa[j].type == etBOOL) {
+                sprintf(buf,"-no%s",pa[j].option+1);
+                if (strcmp(pa[j].option,argv[i])== 0) {
+                    *pa[j].u.b = TRUE;
+                    pa[j].bSet = TRUE;
+                    bKeep[i] = FALSE;
+                }
+                else if (strcmp(buf,argv[i])== 0) {
+                    *pa[j].u.b = FALSE;
+                    pa[j].bSet = TRUE;
+                    bKeep[i] = FALSE;
+                }
+            } 
+            else if (strcmp(pa[j].option,argv[i])== 0) {
+                if (pa[j].bSet)
+                    fprintf(stderr,"Setting option %s more than once!\n",
+                            pa[j].option);
+                pa[j].bSet = TRUE;
+                bKeep[i] = FALSE;
+                switch(pa[j].type) {
+                    case etINT:
+                        *pa[j].u.i = iscan(*argc,argv,&i);
+                        break;
+                    case etGMX_STEP_T: 
+                        *pa[j].u.is = istepscan(*argc,argv,&i);
+                        break;	  
+                    case etTIME:
+                    case etREAL:
+                        *pa[j].u.r = dscan(*argc,argv,&i);
+                        break;
+                    case etSTR:
+                        *(pa[j].u.c) = sscan(*argc,argv,&i);
+                        break;
+                    case etENUM:
+                        match=NOTSET;
+                        ptr = sscan(*argc,argv,&i);
+                        for(k=1; (pa[j].u.c[k] != NULL); k++)
+                            /* only check ptr against beginning of 
+                               pa[j].u.c[k] */
+                            if (strncasecmp(ptr,pa[j].u.c[k],strlen(ptr)) == 0)
+                                if ( ( match == NOTSET ) || 
+                                        ( strlen(pa[j].u.c[k]) < 
+                                          strlen(pa[j].u.c[match]) ) )
+                                    match = k;
+                        if (match!=NOTSET)
+                            pa[j].u.c[0] = pa[j].u.c[match];
+                        else 
+                            gmx_fatal(FARGS,"Invalid argument %s for option %s",
+                                    ptr,pa[j].option);
+                        break;
+                    case etRVEC:
+                        (*pa[j].u.rv)[0] = dscan(*argc,argv,&i);
+                        if ( (i+1 == *argc) || 
+                                ( (argv[i+1][0]=='-') && 
+                                  !isdigit(argv[i+1][1]) ) )
+                            (*pa[j].u.rv)[1] = 
+                            (*pa[j].u.rv)[2] = 
+                            (*pa[j].u.rv)[0];
+                        else {
+                            bKeep[i] = FALSE;
+                            (*pa[j].u.rv)[1] = dscan(*argc,argv,&i);
+                            if ( (i+1 == *argc) || 
+                                    ( (argv[i+1][0]=='-') && 
+                                      !isdigit(argv[i+1][1]) ) )
+                                gmx_fatal(FARGS,
+                                  "%s: vector must have 1 or 3 real parameters",
+                                        pa[j].option);
+                            bKeep[i] = FALSE;
+                            (*pa[j].u.rv)[2] = dscan(*argc,argv,&i);
+                        }
+                        break;
+                    default:
+                        gmx_fatal(FARGS,"Invalid type %d in pargs",pa[j].type);
+                }
+                /* i may be incremented, so set it to not keep */
+                bKeep[i] = FALSE;
+            }
+        }
     }
-  }
-  if (!bKeepArgs) {
-    /* Remove used entries */
-    for(i=j=0; (i<=*argc); i++) {
-      if (bKeep[i])
-	argv[j++]=argv[i];
+    if (!bKeepArgs) {
+        /* Remove used entries */
+        for(i=j=0; (i<=*argc); i++) {
+            if (bKeep[i])
+                argv[j++]=argv[i];
+        }
+        (*argc)=j-1;
     }
-    (*argc)=j-1;
-  }
-  sfree(bKeep);
+    sfree(bKeep);
 }
 
 int opt2parg_int(const char *option,int nparg,t_pargs pa[])
@@ -230,7 +242,9 @@ const char *opt2parg_enum(const char *option,int nparg,t_pargs pa[])
 
 char *pa_val(t_pargs *pa, char buf[], int sz)
 {
-  
+  real r;
+  char buf_str[1256]; buf_str[0]='\0';
+
   buf[0]='\0';
 
   if(sz<255)
@@ -245,24 +259,28 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
     break;      
   case etTIME:
   case etREAL:
-    sprintf(buf,"%-6g",*(pa->u.r));
+    r=*(pa->u.r);
+    sprintf(buf_str,"%-6g",r);
+    strcpy(buf, buf_str);
     break;
   case etBOOL:
     sprintf(buf,"%-6s",*(pa->u.b) ? "yes" : "no");
     break;
   case etSTR:
     if (*(pa->u.c)) {
-      if (strlen(*(pa->u.c)) >= sz)
+      if (strlen(*(pa->u.c)) >= (size_t)sz)
 	gmx_fatal(FARGS,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));
     }
     break;
   case etENUM:
-    strcpy(buf,pa->u.c[0]);
+    strcpy(buf,*(pa->u.c));
     break;
   case etRVEC:
-    sprintf(buf,"%g %g %g",(*pa->u.rv)[0],(*pa->u.rv)[1],(*pa->u.rv)[2]);
+    sprintf(buf,"%g %g %g",(*pa->u.rv)[0],
+                           (*pa->u.rv)[1],
+                           (*pa->u.rv)[2]);
     break;
   }
   return buf;

@@ -144,6 +144,7 @@ int gmx_spatial(int argc,char *argv[])
   long numfr, numcu;
   long tot,max,min;
   double norm;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efTPS,  NULL,  NULL, ffREAD },   /* this is for the topology */
@@ -158,7 +159,7 @@ int gmx_spatial(int argc,char *argv[])
   /* This is the routine responsible for adding default options,
    * calling the X/motif interface, etc. */
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,TRUE);
   sfree(xtop);
@@ -170,7 +171,7 @@ int gmx_spatial(int argc,char *argv[])
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nidxp,&indexp,&grpnmp);
 
   /* The first time we read data is a little special */
-  natoms=read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
+  natoms=read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
 
   /* Memory Allocation */
   MINBIN[XX]=MAXBIN[XX]=fr.x[0][XX];
@@ -237,7 +238,7 @@ int gmx_spatial(int argc,char *argv[])
     numfr++;
     /* printf("%f\t%f\t%f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]); */
 
-  } while(read_next_frame(status,&fr));
+  } while(read_next_frame(oenv,status,&fr));
 
   if(!bCUTDOWN){
     minx=miny=minz=0;

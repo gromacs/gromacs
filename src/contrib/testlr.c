@@ -56,8 +56,8 @@
 #include "poisson.h"
 #include "mdatoms.h"
 
-static real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,rvec box,
-		   real phi[],t_block *excl,rvec f_sr[],bool bOld)
+static real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,
+                   rvec box, real phi[],t_block *excl,rvec f_sr[],bool bOld)
 {
   int  i,j,k,m,ni,i1,i2;
   real pp,r2,R,R_1,R_2,rc2;
@@ -373,11 +373,14 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 {
   int  i;
   real energy;
+  ewald_tab_t et;
+
+  init_ewald_tab(&et, NULL, ir, log);
 
   if (bOldEwald)  
-    energy = do_ewald(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld);
+    energy = do_ewald(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld,et);
   else
-    energy = do_ewald_new(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld);
+    energy = do_ewald_new(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld,et);
   
   /*symmetrize_phi(log,atoms->nr,phi_f,bVerbose);*/
     
@@ -454,6 +457,7 @@ int main(int argc,char *argv[])
   rvec         *x,*f_sr,*f_excl,*f_four,*f_pppm,*f_pois,box_size,hbox;
   matrix       box;
   real         t,lambda,vsr,*charge,*phi_f,*phi_pois,*phi_s,*phi_p3m,*rho;
+  output_env_t oenv;
   
   static bool bFour=FALSE,bVerbose=FALSE,bGGhat=FALSE,bPPPM=TRUE,
     bPoisson=FALSE,bOld=FALSE,bOldEwald=TRUE;
@@ -470,8 +474,8 @@ int main(int argc,char *argv[])
   };
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+  parse_common_args_r(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,
+		      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   if (nprocs > 1) {
     cr = init_par(&argc,argv);
@@ -555,7 +559,7 @@ int main(int argc,char *argv[])
 		 phi_s,nmol,cr,bFour,f_four,phi_f,bOld);
 	        
   if (bPPPM && bFour) 
-    analyse_diff(log,"PPPM",
+    analyse_diff(log,"PPPM",oenv,
 		 top.atoms.nr,f_four,f_pppm,phi_f,phi_p3m,phi_s,
 		 opt2fn("-fcorr",NFILE,fnm),
 		 opt2fn("-pcorr",NFILE,fnm),
@@ -563,7 +567,7 @@ int main(int argc,char *argv[])
 		 opt2fn("-ptotcorr",NFILE,fnm));
   
   if (bPoisson && bFour) 
-    analyse_diff(log,"Poisson",
+    analyse_diff(log,"Poisson",oenv,
 		 top.atoms.nr,f_four,f_pois,phi_f,phi_pois,phi_s,
 		 opt2fn("-fcorr",NFILE,fnm),
 		 opt2fn("-pcorr",NFILE,fnm),

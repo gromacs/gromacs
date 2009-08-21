@@ -403,14 +403,14 @@ static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
   strcat(out_file,ext);
 }
 
-void check_trn(char *fn)
+void check_trn(const char *fn)
 {
   if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
     gmx_fatal(FARGS,"%s is not a trj file, exiting\n",fn);
 }
 
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
-void do_trunc(char *fn, real t0)
+void do_trunc(const char *fn, real t0)
 {
   int          in;
   FILE         *fp;
@@ -725,12 +725,14 @@ int gmx_trjconv(int argc,char *argv[])
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
   bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
   bool         bWriteFrame,bSplitHere;
-  char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
+  const char   *top_file,*in_file,*out_file=NULL;
+  char         out_file2[256],*charpt;
   char         *outf_base=NULL,*outf_ext=NULL;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
   bool         bWarnCompact=FALSE;
   const char  *warn;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD  },
@@ -745,9 +747,10 @@ int gmx_trjconv(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,
-		    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE,
+                    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | 
+                            PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,
-		    0,NULL);
+		    0,NULL,&oenv);
 
   top_file = ftp2fn(efTPS,NFILE,fnm);
   init_top(&top);
@@ -928,7 +931,7 @@ int gmx_trjconv(int argc,char *argv[])
 		1,&nout,&index,&grpnm);
     } else {
       /* no index file, so read natoms from TRX */
-      if (!read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP))
+      if (!read_first_frame(oenv,&status,in_file,&fr,TRX_DONT_SKIP))
 	gmx_fatal(FARGS,"Could not read a frame from %s",in_file);
       natoms = fr.natoms;
       close_trj(status);
@@ -994,7 +997,7 @@ int gmx_trjconv(int argc,char *argv[])
       flags = flags | TRX_READ_F;
 
     /* open trx file for reading */
-    bHaveFirstFrame = read_first_frame(&status,in_file,&fr,flags);
+    bHaveFirstFrame = read_first_frame(oenv,&status,in_file,&fr,flags);
     if (fr.bPrec)
       fprintf(stderr,"\nPrecision of %s is %g (nm)\n",in_file,1/fr.prec);
     if (bNeedPrec) {
@@ -1194,21 +1197,23 @@ int gmx_trjconv(int argc,char *argv[])
 
 	  if (bTDump)
 	    fprintf(stderr,"\nDumping frame at t= %g %s\n",
-		    convert_time(fr.time),time_unit());
+		    conv_time(oenv,fr.time),get_time_unit(oenv));
 
 	/* check for writing at each delta_t */
 	  bDoIt=(delta_t == 0);
 	  if (!bDoIt)
+          {
             if (!bRound)
 	      bDoIt=bRmod(fr.time,tzero, delta_t);
             else
               bDoIt=bRmod(round(fr.time),round(tzero), round(delta_t));
+          }
 	
 	  if (bDoIt || bTDump) {
 	    /* print sometimes */
 	    if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	      fprintf(stderr," ->  frame %6d time %8.3f      \r",
-		      outframe,convert_time(fr.time));
+		      outframe,conv_time(oenv,fr.time));
 	  
 	    if (!bPFit) {
 	      /* Now modify the coords according to the flags,
@@ -1405,7 +1410,7 @@ int gmx_trjconv(int argc,char *argv[])
 	  }
 	}
 	frame++;
-	bHaveNextFrame=read_next_frame(status,&fr);
+	bHaveNextFrame=read_next_frame(oenv,status,&fr);
       } while (!(bTDump && bDumpFrame) && bHaveNextFrame);
     }
     
@@ -1427,7 +1432,7 @@ int gmx_trjconv(int argc,char *argv[])
     }
   }
   
-  do_view(out_file,NULL);
+  do_view(oenv,out_file,NULL);
   
   thanx(stderr);
   

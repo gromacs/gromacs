@@ -115,7 +115,8 @@ static void check_nst(const char *desc_nst,int nst,
     }
 }
 
-void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,int *nerror)
+void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
+              int *nerror)
 /* Check internal consistency */
 {
   /* Strange macro: first one fills the err_buf, and then one can check 
@@ -559,7 +560,7 @@ static void parse_n_double(char *str,int *n,double **r)
 
   snew(*r,*n);
   for(i=0; i<*n; i++) {
-    (*r)[i] = atof(ptr[i]);
+    (*r)[i] = strtod(ptr[i],NULL);
   }
 }
 
@@ -620,7 +621,7 @@ static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
   }
 }
 
-void get_ir(char *mdparin,char *mdparout,
+void get_ir(const char *mdparin,const char *mdparout,
 	    t_inputrec *ir,t_gromppopts *opts, int *nerror)
 {
   char      *dumstr[2];
@@ -1536,7 +1537,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   return bSet;
 }
 
-void do_index(char* mdparin, char *ndx,
+void do_index(const char* mdparin, const char *ndx,
 	      gmx_mtop_t *mtop,
 	      bool bVerbose,
 	      t_inputrec *ir,rvec *v)
@@ -1609,7 +1610,7 @@ void do_index(char* mdparin, char *ndx,
     if (nr != nref_t)
       gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
     for(i=0; (i<nr); i++) {
-      ir->opts.tau_t[i]=atof(ptr1[i]);
+      ir->opts.tau_t[i]=strtod(ptr1[i],NULL);
       if (ir->opts.tau_t[i] < 0) {
 	gmx_fatal(FARGS,"tau_t for group %d negative",i);
       }
@@ -1625,7 +1626,7 @@ void do_index(char* mdparin, char *ndx,
       }
     }
     for(i=0; (i<nr); i++) {
-      ir->opts.ref_t[i]=atof(ptr2[i]);
+      ir->opts.ref_t[i]=strtod(ptr2[i],NULL);
       if (ir->opts.ref_t[i] < 0)
 	gmx_fatal(FARGS,"ref_t for group %d negative",i);
     }
@@ -1685,8 +1686,8 @@ void do_index(char* mdparin, char *ndx,
 	for(i=0,k=0;i<nr;i++) {
 	  
 	  for(j=0;j<ir->opts.anneal_npoints[i];j++) {
-	    ir->opts.anneal_time[i][j]=atof(ptr1[k]);
-	    ir->opts.anneal_temp[i][j]=atof(ptr2[k]);
+	    ir->opts.anneal_time[i][j]=strtod(ptr1[k],NULL);
+	    ir->opts.anneal_temp[i][j]=strtod(ptr2[k],NULL);
 	    if(j==0) {
 	      if(ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
 		gmx_fatal(FARGS,"First time point for annealing > init_t.\n");      
@@ -1745,7 +1746,7 @@ void do_index(char* mdparin, char *ndx,
   
   for(i=k=0; (i<nacg); i++)
     for(j=0; (j<DIM); j++,k++)
-      ir->opts.acc[i][j]=atof(ptr1[k]);
+      ir->opts.acc[i][j]=strtod(ptr1[k],NULL);
   for( ;(i<nr); i++)
     for(j=0; (j<DIM); j++)
       ir->opts.acc[i][j]=0;
@@ -1855,8 +1856,8 @@ void do_index(char* mdparin, char *ndx,
   snew(ir->opts.bSH,nr);
 
   for(i=0;i<nr;i++){
-    ir->opts.QMmult[i]   = atoi(ptr1[i]);
-    ir->opts.QMcharge[i] = atoi(ptr2[i]);
+    ir->opts.QMmult[i]   = strtol(ptr1[i],NULL,0);
+    ir->opts.QMcharge[i] = strtol(ptr2[i],NULL,0);
     ir->opts.bSH[i]      = (strncasecmp(ptr3[i],"Y",1)==0);
   }
 
@@ -1865,8 +1866,8 @@ void do_index(char* mdparin, char *ndx,
   snew(ir->opts.CASelectrons,nr);
   snew(ir->opts.CASorbitals,nr);
   for(i=0;i<nr;i++){
-    ir->opts.CASelectrons[i]= atoi(ptr1[i]);
-    ir->opts.CASorbitals[i] = atoi(ptr2[i]);
+    ir->opts.CASelectrons[i]= strtol(ptr1[i],NULL,0);
+    ir->opts.CASorbitals[i] = strtol(ptr2[i],NULL,0);
   }
   /* special optimization options */
 
@@ -1886,9 +1887,9 @@ void do_index(char* mdparin, char *ndx,
   snew(ir->opts.SAsteps,nr);
 
   for(i=0;i<nr;i++){
-    ir->opts.SAon[i]    = atof(ptr1[i]);
-    ir->opts.SAoff[i]   = atof(ptr2[i]);
-    ir->opts.SAsteps[i] = atoi(ptr3[i]);
+    ir->opts.SAon[i]    = strtod(ptr1[i],NULL);
+    ir->opts.SAoff[i]   = strtod(ptr2[i],NULL);
+    ir->opts.SAsteps[i] = strtol(ptr3[i],NULL,0);
   }
   /* end of QMMM input */
 
@@ -1999,7 +2000,7 @@ static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
   return (AbsRef[XX] != 0 && AbsRef[YY] != 0 && AbsRef[ZZ] != 0);
 }
 
-void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
+void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
   int  i,m,nmol,npct;

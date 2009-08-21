@@ -121,6 +121,10 @@ typedef struct {
   int *cginfo;
 } cginfo_mb_t;
 
+
+/* ewald table type */
+typedef struct ewald_tab *ewald_tab_t; 
+
 typedef struct {
   /* Domain Decomposition */
   bool bDomDec;
@@ -255,6 +259,7 @@ typedef struct {
   /* PME/Ewald stuff */
   bool bEwald;
   real ewaldcoeff;
+  ewald_tab_t ewald_table;
 
   /* Virial Stuff */
   rvec *fshift;
@@ -331,6 +336,11 @@ typedef struct {
 
   /* Limit for printing large forces, negative is don't print */
   real print_force;
+
+  /* coarse load balancing time measurement */
+  double t_fnbf;
+  double t_wait;
+  int timesteps;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

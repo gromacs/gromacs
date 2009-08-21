@@ -1008,7 +1008,7 @@ gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
  * multiple times, this function returns the total count).
  */
 int
-gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, char *fnm,
+gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
                                  gmx_ana_indexgrps_t *grps)
 {
     gmx_sel_lexer_t *scanner;
@@ -1034,7 +1034,7 @@ gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, char *fnm,
  * multiple times, this function returns the total count).
  */
 int
-gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, char *str,
+gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
                                 gmx_ana_indexgrps_t *grps)
 {
     gmx_sel_lexer_t *scanner;

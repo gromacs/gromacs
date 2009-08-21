@@ -109,12 +109,15 @@
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
 
-/* Use threads (thread_mpi) for parallelization */
-#cmakedefine GMX_THREAD_MPI
-
 /* Make a parallel version of GROMACS using message passing 
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
+
+/* Use threads for parallelization */
+#cmakedefine GMX_THREADS
+
+/* Use old threading (domain decomp force calc) code */
+#cmakedefine GMX_THREAD_SHM_FDECOMP 
 
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
@@ -137,11 +140,8 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
-/* Use threads for parallelization */
-#cmakedefine GMX_THREADED
-
-/* Use pthreads for Gromacs multithreading */
-#cmakedefine GMX_THREAD_PTHREADS
+/* Use pthreads for thread_mpi multithreading */
+#cmakedefine THREAD_PTHREADS
 
 /* Have pthread.h */
 #cmakedefine HAVE_PTHREAD_H
@@ -256,6 +256,9 @@
 
 /* The size of off_t, as computed by sizeof. */
 #cmakedefine SIZEOF_OFF_T @SIZEOF_OFF_T@
+
+/* The size of void*, as computed by sizeof. */
+#cmakedefine SIZEOF_VOIDP @SIZEOF_VOIDP@
 
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #cmakedefine _LARGEFILE_SOURCE

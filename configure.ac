@@ -80,6 +80,7 @@ if test "$enable_mpi_environment" != "no"; then
   AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
+
 AC_ARG_ENABLE(apple_64bit,
               [AC_HELP_STRING([--enable-apple-64bit],
                               [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
@@ -208,12 +209,13 @@ AC_ARG_ENABLE(fftw-measure,
 			     enable_fftw_measure=yes)
 
 
-AC_ARG_WITH(threads,
-              [AC_HELP_STRING([--with-threads=@<:@pthreads@:>@],
-                              [Use threads instead of MPI for decomposition])],,with_threads=no)
-if test "$with_threads" = "yes"; then
-   with_threads=pthreads;
-fi
+AC_ARG_ENABLE(threads,
+              [AC_HELP_STRING([--enable-threads],    
+                              [Compile for parallel runs using threads])],,enable_threads=no)
+
+# if test "$enable_threads" = "yes"; then
+#   with_threads=pthreads;
+#fi
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -349,15 +351,6 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
 # end of "$enable_mpi" = "yes"
 fi
 
-if test "$with_threads" = "pthreads"; then
-  AC_CHECK_HEADER([pthread.h],,[AC_MSG_ERROR([Cannot find pthread.h - required for pthread support!])])
-  if test "$enable_mpi" = "yes"; then
-    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
-  fi
-  AC_DEFINE([GMX_THREAD_PTHREADS],,[Use pthreads for Gromacs multithreading])
-fi
-
-
 
 AH_TEMPLATE([F77_OR_C_FUNC],
             [Set to F77_FUNC(name,NAME) if Fortran used, otherwise 'name' for C.])
@@ -389,6 +382,26 @@ else
 fi
 ACX_COMPILER_MAXOPT
 
+
+# We've postponed the threads check because we need to check with the right
+# compilers/flags 
+if test "$enable_threads" = "yes"; then 
+  if test "$enable_mpi" = "yes"; then
+    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
+  fi
+  # for now we just assume pthreads
+  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
+  LIBS="$PTHREAD_LIBS $LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+  CC="$PTHREAD_CC "
+  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+  AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
+  AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+  AM_CONDITIONAL(THREAD_PARALLEL,true)
+else
+  AM_CONDITIONAL(THREAD_PARALLEL,false)
+fi
 
 
 
@@ -619,6 +632,7 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long int)
 AC_CHECK_SIZEOF(long long int)
 AC_CHECK_SIZEOF(off_t)
+AC_CHECK_SIZEOF(void*)
 
 
 
@@ -976,6 +990,7 @@ AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/statistics/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/trajana/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/thread_mpi/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])

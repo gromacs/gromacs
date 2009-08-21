@@ -64,6 +64,7 @@ typedef struct {
 #endif
 } t_disresdata;
 
+
 /* Orientation restraining stuff */
 typedef struct {
   real   fc;          /* Force constant for the restraints                  */

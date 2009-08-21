@@ -87,7 +87,7 @@ static void calc_dihs(t_xrama *xr)
 
 bool new_data(t_xrama *xr)
 {
-  if (!read_next_x(xr->traj,&xr->t,xr->natoms,xr->x,xr->box))
+  if (!read_next_x(xr->oenv,xr->traj,&xr->t,xr->natoms,xr->x,xr->box))
     return FALSE;
 
   calc_dihs(xr);
@@ -302,7 +302,8 @@ static void get_dih_props(t_xrama *xr,t_idef *idef,int mult)
 
 
 
-t_topology *init_rama(char *infile,char *topfile,t_xrama *xr,int mult)
+t_topology *init_rama(const output_env_t oenv,const char *infile,
+                      const char *topfile, t_xrama *xr,int mult)
 {
   t_topology *top;
   int    ePBC;
@@ -313,8 +314,9 @@ t_topology *init_rama(char *infile,char *topfile,t_xrama *xr,int mult)
   /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
   get_dih(xr,&(top->atoms));
   get_dih_props(xr,&(top->idef),mult);
-  xr->natoms=read_first_x(&xr->traj,infile,&t,&(xr->x),xr->box);
+  xr->natoms=read_first_x(oenv,&xr->traj,infile,&t,&(xr->x),xr->box);
   xr->idef=&(top->idef);
+  xr->oenv=oenv;
   
   min_max(xr);
   calc_dihs(xr);

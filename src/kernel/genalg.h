@@ -63,7 +63,7 @@ enum { eseSIGMA, eseEPSILON, eseBHAMA, eseBHAMB, eseBHAMC,
 
 extern real value_rand(t_range *r,int *seed);
 
-extern t_genalg *init_ga(FILE *fplog,char *infile,int D,t_range range[]);
+extern t_genalg *init_ga(FILE *fplog,const char *infile,int D,t_range range[]);
 
 extern void update_ga(FILE *fpout_ptr,t_range range[],t_genalg *ga);
 

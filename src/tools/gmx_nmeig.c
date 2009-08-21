@@ -230,6 +230,7 @@ int gmx_nmeig(int argc,char *argv[])
   real       factor_gmx_to_omega2;
   real       factor_omega_to_wavenumber;
   t_commrec  *cr;
+  output_env_t oenv;
   
   real *                 full_hessian   = NULL;
   gmx_sparsematrix_t *   sparse_hessian = NULL;
@@ -249,7 +250,7 @@ int gmx_nmeig(int argc,char *argv[])
 		CopyRight(stderr,argv[0]); 
 	
   parse_common_args(&argc,argv,PCA_BE_NICE | (MASTER(cr) ? 0 : PCA_QUIET),
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&top_x,NULL,box,bM);
 
@@ -335,8 +336,9 @@ int gmx_nmeig(int argc,char *argv[])
   /* now write the output */
   fprintf (stderr,"Writing eigenvalues...\n");
   out=xvgropen(opt2fn("-ol",NFILE,fnm), 
-               "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]");
-  if (bPrintXvgrCodes()) {
+               "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]",
+               oenv);
+  if (get_print_xvgr_codes(oenv)) {
     if (bM)
       fprintf(out,"@ subtitle \"mass weighted\"\n");
     else 
@@ -352,8 +354,9 @@ int gmx_nmeig(int argc,char *argv[])
   fprintf(stderr,"Writing eigenfrequencies - negative eigenvalues will be set to zero.\n");
 
   out=xvgropen(opt2fn("-of",NFILE,fnm), 
-               "Eigenfrequencies","Eigenvector index","Wavenumber [cm\\S-1\\N]");
-  if (bPrintXvgrCodes()) { 
+               "Eigenfrequencies","Eigenvector index","Wavenumber [cm\\S-1\\N]",
+               oenv);
+  if (get_print_xvgr_codes(oenv)) { 
     if (bM)
       fprintf(out,"@ subtitle \"mass weighted\"\n");
     else 

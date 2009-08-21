@@ -27,6 +27,7 @@
 
 #include "types/simple.h"
 #include "gmxcomplex.h"
+#include "gmx_fft.h"
 
 #include "gmx_fatal.h"
 
@@ -36,11 +37,10 @@
  * files like gmx_fft_fftw3.c or gmx_fft_intel_mkl.c for that.
  */
 
-int
-gmx_fft_transpose_2d(t_complex *          in_data,
-                     t_complex *          out_data,
-                     int                  nx,
-                     int                  ny)
+int gmx_fft_transpose_2d(t_complex *          in_data,
+                         t_complex *          out_data,
+                         int                  nx,
+                         int                  ny)
 {
     int i,j,k,im,n,ncount,done1,done2;
     int i1,i1c,i2,i2c,kmi,max;

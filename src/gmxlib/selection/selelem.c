@@ -394,7 +394,7 @@ print_evaluation_func(FILE *fp, t_selelem *sel)
     else if (sel->evaluate == &_gmx_sel_evaluate_or)
         fprintf(fp, "or");
     else
-        fprintf(fp, "%p", sel->evaluate);
+        fprintf(fp, "%p", (void*)(sel->evaluate));
 }
 
 /*!

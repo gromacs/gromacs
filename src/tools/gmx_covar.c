@@ -123,9 +123,9 @@ int gmx_covar(int argc,char *argv[])
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes0,nframes,nlevels;
   int        WriteXref;
-  char       *fitfile,*trxfile,*ndxfile;
-  char       *eigvalfile,*eigvecfile,*averfile,*logfile;
-  char       *asciifile,*xpmfile,*xpmafile;
+  const char *fitfile,*trxfile,*ndxfile;
+  const char *eigvalfile,*eigvecfile,*averfile,*logfile;
+  const char *asciifile,*xpmfile,*xpmafile;
   char       str[STRLEN],*fitname,*ananame,*pcwd;
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*ifit;
@@ -133,6 +133,7 @@ int gmx_covar(int argc,char *argv[])
   time_t     now;
   t_rgb      rlo,rmi,rhi;
   real       *tmp;
+  output_env_t oenv;
 
   t_filenm fnm[] = { 
     { efTRX, "-f",  NULL, ffREAD }, 
@@ -150,7 +151,7 @@ int gmx_covar(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   clear_mat(zerobox);
 
@@ -226,7 +227,7 @@ int gmx_covar(int argc,char *argv[])
 
   fprintf(stderr,"Calculating the average structure ...\n");
   nframes0 = 0;
-  nat=read_first_x(&status,trxfile,&t,&xread,box);
+  nat=read_first_x(oenv,&status,trxfile,&t,&xread,box);
   if (nat != atoms->nr)
     fprintf(stderr,"\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",natoms,nat);
   do {
@@ -240,7 +241,7 @@ int gmx_covar(int argc,char *argv[])
     }
     for (i=0; i<natoms; i++)
       rvec_inc(xav[i],xread[index[i]]);
-  } while (read_next_x(status,&t,nat,xread,box));
+  } while (read_next_x(oenv,status,&t,nat,xread,box));
   close_trj(status);
   
   inv_nframes = 1.0/nframes0;
@@ -255,7 +256,7 @@ int gmx_covar(int argc,char *argv[])
 
   fprintf(stderr,"Constructing covariance matrix (%dx%d) ...\n",ndim,ndim);
   nframes=0;
-  nat=read_first_x(&status,trxfile,&t,&xread,box);
+  nat=read_first_x(oenv,&status,trxfile,&t,&xread,box);
   tstart = t;
   do {
     nframes++;
@@ -285,7 +286,7 @@ int gmx_covar(int argc,char *argv[])
 	}
       }
     }
-  } while (read_next_x(status,&t,nat,xread,box) && 
+  } while (read_next_x(oenv,status,&t,nat,xread,box) && 
 	   (bRef || nframes < nframes0));
   close_trj(status);
 
@@ -423,7 +424,7 @@ int gmx_covar(int argc,char *argv[])
   sprintf(str,"(%snm\\S2\\N)",bM ? "u " : "");
   out=xvgropen(eigvalfile, 
 	       "Eigenvalues of the covariance matrix",
-	       "Eigenvector index",str);  
+	       "Eigenvector index",str,oenv);  
   for (i=0; (i<ndim); i++)
     fprintf (out,"%10d %g\n",i+1,eigval[ndim-1-i]);
   fclose(out);  
@@ -469,7 +470,7 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Working directory: %s\n\n",str);
 
   fprintf(out,"Read %d frames from %s (time %g to %g %s)\n",nframes,trxfile,
-	  convert_time(tstart),convert_time(tend),time_unit());
+	  conv_time(oenv,tstart),conv_time(oenv,tend),get_time_unit(oenv));
   if (bFit)
     fprintf(out,"Read reference structure for fit from %s\n",fitfile);
   if (ndxfile)

@@ -92,7 +92,7 @@ static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
   return n;
 }
 
-static int check_atom_names(char *fn1, char *fn2, 
+static int check_atom_names(const char *fn1, const char *fn2, 
 			    gmx_mtop_t *mtop, t_atoms *at)
 {
   int mb,m,i,j,nmismatch;
@@ -157,7 +157,7 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
   }  
 }
 
-static void check_cg_sizes(char *topfn,t_block *cgs)
+static void check_cg_sizes(const char *topfn,t_block *cgs)
 {
   int maxsize,cg;
 
@@ -271,7 +271,7 @@ static void molinfo2mtop(int nmi,t_molinfo *mi,gmx_mtop_t *mtop)
 }
 
 static void
-new_status(char *topfile,char *topppfile,char *confin,
+new_status(const char *topfile,const char *topppfile,const char *confin,
 	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
 	   gpp_atomtype_t atype,gmx_mtop_t *sys,
@@ -418,10 +418,11 @@ new_status(char *topfile,char *topppfile,char *confin,
   *mi  = molinfo;
 }
 
-static void cont_status(char *slog,char *ener,
+static void cont_status(const char *slog,const char *ener,
 			bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
-			gmx_mtop_t *sys)
+			gmx_mtop_t *sys,
+                        const output_env_t oenv)
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;
@@ -438,9 +439,9 @@ static void cont_status(char *slog,char *ener,
     if (bGenVel)
       fprintf(stderr,"Velocities generated: "
 	      "ignoring velocities in input trajectory\n");
-    read_first_frame(&fp,slog,&fr,TRX_NEED_X);
+    read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X);
   } else
-    read_first_frame(&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
+    read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
   
   state->natoms = fr.natoms;
 
@@ -449,7 +450,7 @@ static void cont_status(char *slog,char *ener,
 		"is not the same as in Trajectory");
 
   /* Find the appropriate frame */
-  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(fp,&fr));
+  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(oenv,fp,&fr));
   
   close_trj(fp);
 
@@ -923,7 +924,8 @@ int main (int argc, char *argv[])
   matrix       box;
   real         max_spacing,fudgeQQ;
   double       reppow;
-  char         fn[STRLEN],fnB[STRLEN],*mdparin;
+  char         fn[STRLEN],fnB[STRLEN];
+  const char   *mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;
   bool         have_radius,have_vol,have_surftens,have_gb_radius,have_S_hct;
@@ -931,6 +933,7 @@ int main (int argc, char *argv[])
   int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -977,7 +980,7 @@ int main (int argc, char *argv[])
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+                    asize(desc),desc,0,NULL,&oenv);
   
   init_warning(maxwarn);
   
@@ -1220,7 +1223,7 @@ int main (int argc, char *argv[])
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
     cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efEDR,NFILE,fnm),
-		bNeedVel,bGenVel,fr_time,ir,&state,sys);
+		bNeedVel,bGenVel,fr_time,ir,&state,sys,oenv);
   }
 
   if (ir->ePBC==epbcXY && ir->nwall!=2)
@@ -1241,7 +1244,7 @@ int main (int argc, char *argv[])
   }
 
   if (ir->ePull != epullNO)
-    set_pull_init(ir,sys,state.x,state.box,opts->pull_start);
+    set_pull_init(ir,sys,state.x,state.box,oenv,opts->pull_start);
 
   /*  reset_multinr(sys); */
   

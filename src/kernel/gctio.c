@@ -189,7 +189,7 @@ void copy_ff(t_coupl_rec *tcr,t_forcerec *fr,t_mdatoms *md,t_idef *idef)
   }
 }
 
-void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
+void write_gct(const char *fn,t_coupl_rec *tcr,t_idef *idef)
 {
   FILE *fp;
   int  i,ftype;
@@ -425,7 +425,7 @@ static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,bool bObsUsed[])
   return FALSE;
 }
 
-void read_gct(char *fn,t_coupl_rec *tcr)
+void read_gct(const char *fn,t_coupl_rec *tcr)
 {
   t_inpfile *inp;
   int       i,j,ninp,nQ,nLJ,nBU,nIP;

@@ -208,31 +208,35 @@ int bin(real chi,int mult)
 }
 
 
-static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
+static void do_dihcorr(const char *fn,int nf,int ndih,real **dih,real dt,
 		       int nlist,t_dlist dlist[],real time[],int maxchi,
-		       bool bPhi,bool bPsi,bool bChi,bool bOmega)
+		       bool bPhi,bool bPsi,bool bChi,bool bOmega,
+                       const output_env_t oenv)
 {
   char name1[256],name2[256];
   int  i,j,Xi;
   
-  do_autocorr(fn,"Dihedral Autocorrelation Function",
+  do_autocorr(fn,oenv,"Dihedral Autocorrelation Function",
 	      nf,ndih,dih,dt,eacCos,FALSE);
   /* Dump em all */
   j=0;
   for(i=0; (i<nlist); i++) {
     if (bPhi)
-      print_one("corrphi",dlist[i].name,"Phi ACF for", "C(t)", nf/2,time,dih[j]);
+      print_one(oenv,"corrphi",dlist[i].name,"Phi ACF for", "C(t)", nf/2,time,
+                          dih[j]);
     j++;
   }
   for(i=0; (i<nlist); i++) {
     if (bPsi)
-      print_one("corrpsi",dlist[i].name,"Psi ACF for","C(t)",nf/2,time,dih[j]);
+      print_one(oenv,"corrpsi",dlist[i].name,"Psi ACF for","C(t)",nf/2,time,
+                dih[j]);
     j++;
   }
   for(i=0; (i<nlist); i++) {
     if (has_dihedral(edOmega,&dlist[i])) {
       if (bOmega)
-	print_one("corromega",dlist[i].name,"Omega ACF for","C(t)",nf/2,time,dih[j]);
+	print_one(oenv,"corromega",dlist[i].name,"Omega ACF for","C(t)",
+                  nf/2,time,dih[j]);
       j++;
     }
   }
@@ -242,7 +246,7 @@ static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
     for(i=0; (i<nlist); i++) {
       if (dlist[i].atm.Cn[Xi+3] != -1) {
 	if (bChi)
-	  print_one(name1,dlist[i].name,name2,"C(t)",nf/2,time,dih[j]);
+	  print_one(oenv,name1,dlist[i].name,name2,"C(t)",nf/2,time,dih[j]);
 	j++;
       }
     }
@@ -267,7 +271,8 @@ static void copy_dih_data(real in[], real out[], int nf, bool bLEAVE)
 
 static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
 			real **dih,int maxchi,
-			bool bPhi,bool bPsi,bool bChi,bool bOmega, bool bRAD)
+			bool bPhi,bool bPsi,bool bChi,bool bOmega, bool bRAD,
+                        const output_env_t oenv)
 {
   char name[256], titlestr[256], ystr[256]; 
   real *data ; 
@@ -285,14 +290,14 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
       /* grs debug  printf("OK i %d j %d\n", i, j) ; */
     if (bPhi) {
       copy_dih_data(dih[j],data,nf,bRAD); 
-      print_one("phi",dlist[i].name,"\\xf\\f{}",ystr, nf,time,data); 
+      print_one(oenv,"phi",dlist[i].name,"\\xf\\f{}",ystr, nf,time,data); 
     }
     j++;
   }
   for(i=0; (i<nlist); i++) {
     if (bPsi) {
       copy_dih_data(dih[j],data,nf,bRAD); 
-      print_one("psi",dlist[i].name,"\\xy\\f{}",ystr, nf,time,data);
+      print_one(oenv,"psi",dlist[i].name,"\\xy\\f{}",ystr, nf,time,data);
     }
     j++;
   }  
@@ -300,7 +305,7 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
     if (has_dihedral(edOmega,&(dlist[i]))) {
       if (bOmega){
 	copy_dih_data(dih[j],data,nf,bRAD); 
-	print_one("omega",dlist[i].name,"\\xw\\f{}",ystr,nf,time,data);
+	print_one(oenv,"omega",dlist[i].name,"\\xw\\f{}",ystr,nf,time,data);
       }
       j++;
     }
@@ -312,7 +317,7 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
 	  sprintf(name,"chi%d",Xi+1);
 	  sprintf(titlestr,"\\xc\\f{}\\s%d\\N",Xi+1);
 	  copy_dih_data(dih[j],data,nf,bRAD); 
-	  print_one(name,dlist[i].name,titlestr,ystr, nf,time,data);
+	  print_one(oenv,name,dlist[i].name,titlestr,ystr, nf,time,data);
 	}
 	j++; 
       }
@@ -384,9 +389,10 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 			  int nlist,t_dlist dlist[],
 			  atom_id index[],
 			  bool bPhi,bool bPsi,bool bOmega,bool bChi,
-			  bool bNormalize,bool bSSHisto,char *ssdump,
+			  bool bNormalize,bool bSSHisto,const char *ssdump,
 			  real bfac_max,t_atoms *atoms, 
-			  bool bDo_jc, char *fn)
+			  bool bDo_jc, const char *fn,
+                          const output_env_t oenv)
 {
   /* also gets 3J couplings and order parameters S2 */ 
   t_karplus kkkphi[] = {
@@ -574,7 +580,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 
   /* and to -jc file... */ 
   if (bDo_jc) {
-    fp=xvgropen(fn,"\\S3\\NJ-Couplings from Karplus Equation","Residue","Coupling"); 
+    fp=xvgropen(fn,"\\S3\\NJ-Couplings from Karplus Equation","Residue",
+                "Coupling",oenv); 
     snew(leg,NJC); 
     for(i=0; (i<NKKKPHI); i++){
 		leg[i] = strdup(kkkphi[i].name); 
@@ -585,7 +592,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
     for(i=0; (i<NKKKCHI); i++){
       leg[i+NKKKPHI+NKKKPSI]=strdup(kkkchi1[i].name); 
     }      
-    xvgr_legend(fp,NJC,leg);
+    xvgr_legend(fp,NJC,leg,oenv);
     fprintf(fp,"%5s ","#Res.");
     for(i=0; (i<NJC); i++)
       fprintf(fp,"%10s ",leg[i]); 
@@ -637,9 +644,9 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 	}
 	strcpy(hhisfile,hisfile);
 	strcat(hhisfile,".xvg");
-	fp=xvgropen(hhisfile,title,"Degrees","");
+	fp=xvgropen(hhisfile,title,"Degrees","",oenv);
 	fprintf(fp,"@ with g0\n");
-	xvgr_world(fp,-180,0,180,0.1);
+	xvgr_world(fp,-180,0,180,0.1,oenv);
 	fprintf(fp,"# this effort to set graph size fails unless you run with -autoscale none or -autoscale y flags\n"); 
 	fprintf(fp,"@ xaxis tick on\n");
 	fprintf(fp,"@ xaxis tick major 90\n");
@@ -694,13 +701,13 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 }
 
 static FILE *rama_file(const char *fn,const char *title,const char *xaxis,
-                       const char *yaxis)
+                       const char *yaxis,const output_env_t oenv)
 {
   FILE *fp;
 
-  fp = xvgropen(fn,title,xaxis,yaxis);  
+  fp = xvgropen(fn,title,xaxis,yaxis,oenv);  
   fprintf(fp,"@ with g0\n");
-  xvgr_world(fp,-180,-180,180,180);
+  xvgr_world(fp,-180,-180,180,180,oenv);
   fprintf(fp,"@ xaxis tick on\n");
   fprintf(fp,"@ xaxis tick major 90\n");
   fprintf(fp,"@ xaxis tick minor 30\n");
@@ -727,7 +734,7 @@ static FILE *rama_file(const char *fn,const char *title,const char *xaxis,
 }
 
 static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
-		    bool bViol,bool bRamOmega)
+		    bool bViol,bool bRamOmega,const output_env_t oenv)
 {
   FILE *fp,*gp=NULL;
   bool bOm;
@@ -744,7 +751,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	(has_dihedral(edPsi,&(dlist[i])))) {
       sprintf(fn,"ramaPhiPsi%s.xvg",dlist[i].name);
       fp = rama_file(fn,"Ramachandran Plot",
-		     "\\8f\\4 (deg)","\\8y\\4 (deg)");
+		     "\\8f\\4 (deg)","\\8y\\4 (deg)",oenv);
       bOm = bRamOmega && has_dihedral(edOmega,&(dlist[i]));
       if (bOm) {
 	Om = dlist[i].j0[edOmega];
@@ -809,7 +816,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	(has_dihedral(edChi2,&(dlist[i])))) {
       sprintf(fn,"ramaX1X2%s.xvg",dlist[i].name);
       fp = rama_file(fn,"\\8c\\4\\s1\\N-\\8c\\4\\s2\\N Ramachandran Plot",
-		     "\\8c\\4\\s1\\N (deg)","\\8c\\4\\s2\\N (deg)");
+		     "\\8c\\4\\s1\\N (deg)","\\8c\\4\\s2\\N (deg)",oenv);
       Xi1 = dlist[i].j0[edChi1];
       Xi2 = dlist[i].j0[edChi2];
       for(j=0; (j<nf); j++)
@@ -822,9 +829,10 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 }
 
 
-static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
-			     t_atoms *atoms,rvec x[],matrix box,
-			     bool bPhi,bool bPsi,bool bChi,real dt)
+static void print_transitions(const char *fn,int maxchi,int nlist,
+                              t_dlist dlist[], t_atoms *atoms,rvec x[],
+                              matrix box, bool bPhi,bool bPsi,bool bChi,real dt,
+                              const output_env_t oenv)
 {
   /* based on order_params below */ 
   FILE *fp;
@@ -846,8 +854,9 @@ static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
   leg[8] = strdup("Chi6");
   
   /* Print order parameters */
-  fp=xvgropen(fn,"Dihedral Rotamer Transitions","Residue","Transitions/ns");
-  xvgr_legend(fp,NONCHI+maxchi,leg);
+  fp=xvgropen(fn,"Dihedral Rotamer Transitions","Residue","Transitions/ns",
+                oenv);
+  xvgr_legend(fp,NONCHI+maxchi,leg,oenv);
   
   for (Dih=0; (Dih<edMax); Dih++)
     nh[Dih]=0;
@@ -869,10 +878,10 @@ static void print_transitions(char *fn,int maxchi,int nlist,t_dlist dlist[],
 }
 
 static void order_params(FILE *log,
-			 char *fn,int maxchi,int nlist,t_dlist dlist[],
-			 char *pdbfn,real bfac_init,
+			 const char *fn,int maxchi,int nlist,t_dlist dlist[],
+			 const char *pdbfn,real bfac_init,
 			 t_atoms *atoms,rvec x[],int ePBC,matrix box,
-			 bool bPhi,bool bPsi,bool bChi)
+			 bool bPhi,bool bPsi,bool bChi,const output_env_t oenv)
 {
   FILE *fp;
   int  nh[edMax];
@@ -880,7 +889,9 @@ static void order_params(FILE *log,
   real S2Max, S2Min;
 
   /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */  
-  const char *const_leg[2+edMax]= { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  const char *const_leg[2+edMax]= { "S2Min","S2Max","Phi","Psi","Omega", 
+                                    "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", 
+                                    "Chi6" };
 #define NLEG asize(leg) 
   
   char *leg[2+edMax];	
@@ -889,8 +900,8 @@ static void order_params(FILE *log,
 		leg[i]=strdup(const_leg[i]);
 	
   /* Print order parameters */
-  fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2");
-  xvgr_legend(fp,2+NONCHI+maxchi,leg);
+  fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2",oenv);
+  xvgr_legend(fp,2+NONCHI+maxchi,leg,oenv);
   
   for (Dih=0; (Dih<edMax); Dih++)
     nh[Dih]=0;
@@ -1107,6 +1118,7 @@ int gmx_chi(int argc,char *argv[])
   bool       bChi,bCorr,bSSHisto;
   bool       bDo_rt, bDo_oh, bDo_ot, bDo_jc ; 
   real       dt=0, traj_t_ns;
+  output_env_t oenv;
   
   atom_id    isize,*index;
   int        ndih,nactdih,nf;
@@ -1136,7 +1148,8 @@ int gmx_chi(int argc,char *argv[])
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,asize(bugs),bugs,
+                    &oenv);
 
   /* Handle result from enumerated type */
   sscanf(maxchistr[0],"%d",&maxchi);
@@ -1200,7 +1213,7 @@ int gmx_chi(int argc,char *argv[])
 
   /* COMPUTE ALL DIHEDRALS! */
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),FALSE,TRUE,FALSE,bPBC,1,&idum,
-	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih);
+	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih,oenv);
   
   dt=(time[nf-1]-time[0])/(nf-1); /* might want this for corr or n. transit*/ 
   if (bCorr) 
@@ -1217,13 +1230,13 @@ int gmx_chi(int argc,char *argv[])
   nactdih = reset_em_all(nlist,dlist,nf,dih,maxchi);
   
   if (bAll)
-    dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega,bRAD);
+    dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega,bRAD,oenv);
   
   /* Histogramming & J coupling constants & calc of S2 order params */
   histogramming(log,nbin,naa,aa,nf,maxchi,dih,nlist,dlist,index,
 		bPhi,bPsi,bOmega,bChi,
 		bNormHisto,bSSHisto,ftp2fn(efDAT,NFILE,fnm),bfac_max,&atoms,
-		bDo_jc,opt2fn("-jc",NFILE,fnm));
+		bDo_jc,opt2fn("-jc",NFILE,fnm),oenv);
 
   /* transitions 
    *
@@ -1248,16 +1261,16 @@ int gmx_chi(int argc,char *argv[])
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
 		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
-		    *time,  dt, FALSE, core_frac) ; 
+		    *time,  dt, FALSE, core_frac,oenv) ; 
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,
 	       ftp2fn_null(efPDB,NFILE,fnm),bfac_init,
-	       &atoms,x,ePBC,box,bPhi,bPsi,bChi);
+	       &atoms,x,ePBC,box,bPhi,bPsi,bChi,oenv);
   
   /* Print ramachandran maps! */
   if (bRama)
-    do_rama(nf,nlist,dlist,dih,bViol,bRamOmega);
+    do_rama(nf,nlist,dlist,dih,bViol,bRamOmega,oenv);
   
   if (bShift)
     do_pp2shifts(log,nf,nlist,dlist,dih);
@@ -1270,7 +1283,7 @@ int gmx_chi(int argc,char *argv[])
   /* transitions to xvg */
   if (bDo_rt)
     print_transitions(opt2fn("-rt",NFILE,fnm),maxchi,nlist,dlist,
-		      &atoms,x,box,bPhi,bPsi,bChi,traj_t_ns); 
+		      &atoms,x,box,bPhi,bPsi,bChi,traj_t_ns,oenv); 
   
   /* chi_product trajectories (ie one "rotamer number" for each residue) */
   if (bChiProduct && bChi ) {
@@ -1282,7 +1295,7 @@ int gmx_chi(int argc,char *argv[])
     get_chi_product_traj(dih,nf,nactdih,nlist,
 			 maxchi,dlist,time,chi_lookup,xity,
 			 FALSE,bNormHisto, core_frac,bAll,
-			 opt2fn("-cp",NFILE,fnm)); 
+			 opt2fn("-cp",NFILE,fnm),oenv); 
 
     for (i=0;i<nlist;i++)
       sfree(chi_lookup[i]); 
@@ -1291,13 +1304,13 @@ int gmx_chi(int argc,char *argv[])
   /* Correlation comes last because it fucks up the angles */
   if (bCorr)
     do_dihcorr(opt2fn("-corr",NFILE,fnm),nf,ndih,dih,dt,nlist,dlist,time,
-	       maxchi,bPhi,bPsi,bChi,bOmega);
+	       maxchi,bPhi,bPsi,bChi,bOmega,oenv);
   
   
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-jc",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-jc",NFILE,fnm),"-nxy");
   if (bCorr)
-    do_view(opt2fn("-corr",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-corr",NFILE,fnm),"-nxy");
     
   thanx(stderr);
     

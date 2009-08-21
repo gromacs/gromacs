@@ -122,8 +122,10 @@ int main(int argc,char *argv[])
   cr = init_par(&argc,&argv);
   
   ff.bVerbose = ff.bVerbose && MASTER(cr);
+#if 0
   snew(ed,1);
   ed->eEDtype=eEDnone;
+#endif
   
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
@@ -150,8 +152,8 @@ int main(int argc,char *argv[])
 
   mdrunner(fplog,cr,NFILE,fnm,ff.bVerbose,FALSE,
 	   ddxyz,0,0,0,loadx,loady,loadz,1,
-	   ed,0,0,Flags);
-  if (gmx_parallel_env)
+	   0,0,Flags);
+  if (gmx_parallel_env())
     gmx_finalize(cr);
 
   gmx_log_close(fplog);

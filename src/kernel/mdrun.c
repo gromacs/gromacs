@@ -302,12 +302,13 @@ int main(int argc,char *argv[])
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-  const char *dddlb_opt[] =
+    const char *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
   bool bAppendFiles=FALSE,bAddPart=TRUE;
+  output_env_t oenv=NULL;
 	
   t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
@@ -385,80 +386,69 @@ int main(int argc,char *argv[])
 
   cr = init_par(&argc,&argv);
 
-  if (MASTER(cr))
-    CopyRight(stderr,argv[0]);
-
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   /* Only run niced when not running in parallel */
-  if (!gmx_parallel_env)
+  if (!gmx_parallel_env())
     PCA_Flags |= PCA_BE_NICE;
   
-  
+
   /* Comment this in to do fexist calls only on master
    * works not with rerun or tables at the moment
    * also comment out the version of init_forcerec in md.c 
    * with NULL instead of opt2fn
    */
   /*
-  if (!MASTER(cr))
-  {
-      PCA_Flags |= PCA_NOT_READ_NODE;
-  }
-  */
-  
-  parse_common_args(&argc,argv,PCA_Flags,
-                    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-    
+     if (!MASTER(cr))
+     {
+     PCA_Flags |= PCA_NOT_READ_NODE;
+     }
+     */
+
+  parse_common_args(&argc,argv,PCA_Flags, NFILE,fnm,asize(pa),pa,
+                    asize(desc),desc,0,NULL, &oenv);
 
 
   dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
-    
-#ifndef GMX_THREADS
-  if (nthreads > 1)
-    gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
-#endif
 
   if (repl_ex_nst != 0 && nmultisim < 2)
-    gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
-
-  if (nmultisim > 1 && PAR(cr))
-    init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+      gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
   /* Check if there is ANY checkpoint file available */	
   sim_part = 1;
   if(opt2bSet("-cpi",NFILE,fnm))
   {
-	  read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),&sim_part,NULL,cr);
-	  sim_part++;
-	  /* sim_part will now be 1 if no checkpoint file was found */
-	  if (sim_part==1 && MASTER(cr))
-	  {
-		  fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
-	  }
+      read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),&sim_part,NULL,cr);
+      sim_part++;
+      /* sim_part will now be 1 if no checkpoint file was found */
+      if (sim_part==1 && MASTER(cr))
+      {
+          fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+      }
   } 
-	
+
   if (sim_part<=1)
   { 
-	  bAppendFiles = FALSE;
+      bAppendFiles = FALSE;
   }
-	
+
   if(!bAppendFiles && bAddPart && sim_part > 1)
   {
-	  /* This is a continuation run, rename trajectory output files (except checkpoint files) */
-	  /* create new part name first (zero-filled) */
-	  if(sim_part<10)
-		  sprintf(suffix,"part000%d",sim_part);
-	  else if(sim_part<100)
-		  sprintf(suffix,"part00%d",sim_part);
-	  else if(sim_part<1000)
-		  sprintf(suffix,"part0%d",sim_part);
-	  else
-		  sprintf(suffix,"part%d",sim_part);
-	  
-	  add_suffix_to_output_names(fnm,NFILE,suffix);
-	  fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed %s.\n",sim_part-1,suffix);
+      /* This is a continuation run, rename trajectory output files 
+         (except checkpoint files) */
+      /* create new part name first (zero-filled) */
+      if(sim_part<10)
+          sprintf(suffix,"part000%d",sim_part);
+      else if(sim_part<100)
+          sprintf(suffix,"part00%d",sim_part);
+      else if(sim_part<1000)
+          sprintf(suffix,"part0%d",sim_part);
+      else
+          sprintf(suffix,"part%d",sim_part);
+
+      add_suffix_to_output_names(fnm,NFILE,suffix);
+      fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed %s.\n",sim_part-1,suffix);
   }	
 
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
@@ -473,54 +463,59 @@ int main(int argc,char *argv[])
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
 
-  
-  /* We postpone opening the log file if we are appending, so we can first truncate
-   * the old log file and append to the correct position there instead.
-   */
+
+  /* We postpone opening the log file if we are appending, so we can 
+     first truncate the old log file and append to the correct position 
+     there instead.  */
   if (MASTER(cr) && !bAppendFiles) 
   {
-    fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
-    CopyRight(fplog,argv[0]);
-    please_cite(fplog,"Hess2008b");
-    please_cite(fplog,"Spoel2005a");
-    please_cite(fplog,"Lindahl2001a");
-    please_cite(fplog,"Berendsen95a");
+      fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
+      CopyRight(fplog,argv[0]);
+      please_cite(fplog,"Hess2008b");
+      please_cite(fplog,"Spoel2005a");
+      please_cite(fplog,"Lindahl2001a");
+      please_cite(fplog,"Berendsen95a");
   }
   else
   {
-  	fplog = NULL;
+      fplog = NULL;
   }
-  
+
+#if 0
+  /* this is now done in mdrunner: */
   /* Essential dynamics */
   if (opt2bSet("-ei",NFILE,fnm)) {
-    /* Open input and output files, allocate space for ED data structure */
-    ed = ed_open(NFILE,fnm,cr);
+      /* Open input and output files, allocate space for ED data structure */
+      ed = ed_open(NFILE,fnm,cr);
   } else
-    ed=NULL;
-    
+      ed=NULL;
+#endif
+
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
-  
-  rc = mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,nstglobalcomm,
-		ddxyz,dd_node_order,rdd,rconstr,
-		dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-		nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
-		cpt_period,max_hours,Flags);
-  
-  if (gmx_parallel_env)
-    gmx_finalize();
+
+  /* even if nthreads = 1, we still call this one */
+  rc = mdrunner_threads(nthreads,
+                        fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
+                        ddxyz,dd_node_order,rdd,rconstr,
+                        dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+                        nstepout,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
+                        cpt_period,max_hours,Flags);
+
+  if (gmx_parallel_env())
+      gmx_finalize();
 
   if (MULTIMASTER(cr)) {
-    thanx(stderr);
+      thanx(stderr);
   }
 
-	/* Log file has to be closed in mdrunner if we are appending to it (fplog not set here) */
-	if (MASTER(cr) && !bAppendFiles) 
-	{
-		gmx_log_close(fplog);
-	}
-	
+  /* Log file has to be closed in mdrunner if we are appending to it 
+     (fplog not set here) */
+  if (MASTER(cr) && !bAppendFiles) 
+  {
+      gmx_log_close(fplog);
+  }
 
   return rc;
 }

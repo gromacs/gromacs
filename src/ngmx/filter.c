@@ -46,7 +46,7 @@
 #include "dialogs.h"
 #include "index.h"
 
-t_filter *init_filter(t_atoms *atoms, char *fn, int natom_trx)
+t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {
   t_filter *f;
   int      g,i;

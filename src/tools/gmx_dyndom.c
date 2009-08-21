@@ -172,6 +172,7 @@ int gmx_dyndom(int argc,char *argv[])
   real    angle,trans;
   rvec    *x,*v,*xout,*vout;
   matrix  box;
+  output_env_t oenv;
   
   t_filenm fnm[] = {
     { efPDB, "-f", "dyndom",  ffREAD },
@@ -183,7 +184,7 @@ int gmx_dyndom(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
   get_stx_coordnum (opt2fn("-f",NFILE,fnm),&natoms);
   init_t_atoms(&atoms,natoms,TRUE);
