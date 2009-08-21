@@ -1397,7 +1397,11 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 #elif (defined(_MSC_VER) && (_MSC_VER >= 1200))
 /* Microsoft Visual C on x86, define taken from FFTW who got it from Morten Nissov */
 
+/* we need this for all the data types. We use WIN32_LEAN_AND_MEAN to avoid 
+      polluting the global namespace. */
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
 
 #if (!defined(inline)) && (!defined(__cplusplus))
 #define inline_defined_in_atomic 1
