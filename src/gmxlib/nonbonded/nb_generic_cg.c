@@ -96,8 +96,6 @@
      real       weight_cg2;
      real       weight_product;
      int        mixed;
-     int        adresstype;
-     adresstype       = fr->userint1;
      wf               = mdatoms->wf;
 #endif
        
@@ -139,7 +137,6 @@
          fiz              = 0;
          
          #ifdef ADRESS
-            i3 = nlist->iinr_end[n]*3;
             /* weight=0 coarse-grained
                weight=1 explicit
                else: double identity */
@@ -152,7 +149,6 @@
              aj1              = nlist->jjnr_end[k];
              
              #ifdef ADRESS
-               j3 = nlist->jjnr_end[k]*3;
                /* weight=0 coarse-grained
                   weight=1 explicit
                   else: double identity */
@@ -160,22 +156,22 @@
                
                weight_product=weight_cg1*weight_cg2;
                /* at least one of the groups is coarse grained */
-               if (weight_product == 0 ) 
+               if (weight_product == 0) 
                {
                   /* only calc interaction between coarse-grained particles */
                   ai0=ai1;
                   aj0=aj1;
                   mixed=0;
                }
-               /* both are explicit */
-               else if (weight_product == 1 )
+               /* at least one of the groups is explicit */
+               else if (weight_cg1 == 1 || weight_cg2 == 1)
                {
                   /* only calc interaction between explicit particles */
                   ai1--;
                   aj1--;
                   mixed=0;
                }
-               /* double identity -- calc all*/
+               /* both have double identity -- calc all*/
                else {
                   mixed=1;
                }

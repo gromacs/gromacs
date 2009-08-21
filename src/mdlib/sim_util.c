@@ -429,7 +429,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (bStateChanged)
     {
         update_forcerec(fplog,fr,box);
-        
+#define ADRESS        
 #ifdef ADRESS
         /* update adress weight beforehand */
         update_adress_weights(fr,mdatoms,box);

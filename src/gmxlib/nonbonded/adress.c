@@ -129,11 +129,14 @@ update_adress_weights(t_forcerec *         fr,
 
     for(i=0;i<nr;i++)
     {
-        i3             = 3*i;
-        ix             = x[i3+0];
-        iy             = x[i3+1];
-        iz             = x[i3+2];
+        if(mdatoms->ptype[i] == eptVSite)
+        {
+            i3             = 3*i;
+            ix             = x[i3+0];
+            iy             = x[i3+1];
+            iz             = x[i3+2];
         
         mdatoms->wf[i] = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
+        }
     }
 }
