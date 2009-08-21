@@ -143,7 +143,7 @@
             /* weight=0 coarse-grained
                weight=1 explicit
                else: double identity */
-            weight_cg1 = wf[n];
+            weight_cg1 = wf[ai1];
          #endif
          
          for(k=nj0; (k<nj1); k++)
@@ -156,7 +156,7 @@
                /* weight=0 coarse-grained
                   weight=1 explicit
                   else: double identity */
-               weight_cg2 = wf[k];
+               weight_cg2 = wf[aj1];
                
                weight_product=weight_cg1*weight_cg2;
                /* at least one of the groups is coarse grained */
