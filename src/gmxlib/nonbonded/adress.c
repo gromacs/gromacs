@@ -37,6 +37,8 @@
  
 #include "adress.h"
 #include <math.h>
+#include "types/simple.h"
+#include "typedefs.h"
 
 real 
 adress_weight(real            x,
@@ -49,7 +51,7 @@ adress_weight(real            x,
               real            refy,
               real            refz)
 {
-    real l2=adressr+adressw;
+    real l2 = adressr+adressw;
     real sqr_dl,dl;
     real tmp;
     
@@ -60,15 +62,15 @@ adress_weight(real            x,
         return adressw;
     case 2:              
         /* plane through center of box, varies in x direction */
-        sqr_dl=(x-refx)*(x-refx);
+        sqr_dl = (x-refx)*(x-refx);
         break;
     case 3:
         /* point at center of box, assuming cubic geometry */
-        sqr_dl=(x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
+        sqr_dl = (x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
         break;
     case 4:
         /* get reference from reference solute, still need to figure out how to read from index */
-        sqr_dl=(x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
+        sqr_dl = (x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
         break;
     default:
         /* default to explicit simulation */
@@ -92,5 +94,46 @@ adress_weight(real            x,
     {
         tmp=cos((dl-adressr)*M_PI/2/l2);
         return tmp*tmp;
+    }
+}
+
+void
+update_adress_weights(t_forcerec *         fr,
+                      t_mdatoms *          mdatoms,
+                      real *               x,
+                      matrix               box)
+{
+    int            i,i3,nr;
+    int            adresstype;
+    real           adressr;
+    real           adressw;
+    real           ix,iy,iz;
+    real           refx,refy,refz;
+
+    nr                 = mdatoms->nr;
+    adresstype         = fr->userint1;
+    adressr            = fr->userreal1;
+    adressw            = fr->userreal2;
+
+    if(adresstype == 4)
+    {
+        /* get refx,refy,refz from reference solute */
+    }
+    else
+    {
+        /* reference is the center of the box */
+        refx           = box[XX][XX]/2.0;
+        refy           = box[YY][YY]/2.0;
+        refz           = box[ZZ][ZZ]/2.0;
+    }
+
+    for(i=0;i<nr;i++)
+    {
+        i3             = 3*i;
+        ix             = x[i3+0];
+        iy             = x[i3+1];
+        iz             = x[i3+2];
+        
+        mdatoms->wf[i] = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
     }
 }

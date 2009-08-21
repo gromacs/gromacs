@@ -257,6 +257,8 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
+    /* Initialize AdResS weighting functions to explicit */
+    md->wf[i]           = 1.0;
   }
 
   md->start  = start;

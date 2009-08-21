@@ -39,6 +39,7 @@
 #define _adress_h_
 
 #include "types/simple.h"
+#include "typedefs.h"
 
 real 
 adress_weight(real             x,
@@ -50,5 +51,11 @@ adress_weight(real             x,
               real             refx,
               real             refy,
               real             refz);
+
+void
+update_adress_weights(t_forcerec *         fr,
+                      t_mdatoms *          mdatoms,
+                      real *               x,
+                      matrix               box);
 
 #endif
