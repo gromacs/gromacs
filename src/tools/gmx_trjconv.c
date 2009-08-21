@@ -1206,7 +1206,9 @@ int gmx_trjconv(int argc,char *argv[])
             if (!bRound)
 	      bDoIt=bRmod(fr.time,tzero, delta_t);
             else
-              bDoIt=bRmod(round(fr.time),round(tzero), round(delta_t));
+                /* round() is not C89 compatible, so we do this:  */
+              bDoIt=bRmod(floor(fr.time+0.5),floor(tzero+0.5), 
+                          floor(delta_t+0.5));
           }
 	
 	  if (bDoIt || bTDump) {
@@ -1296,7 +1298,12 @@ int gmx_trjconv(int argc,char *argv[])
             if (!bRound)
 	      bSplitHere = bSplit && bRmod(fr.time,tzero, split_t);
 	    else
-              bSplitHere = bSplit && bRmod(round(fr.time),round(tzero), round(split_t));
+            {
+                /* round() is not C89 compatible, so we do this: */
+              bSplitHere = bSplit && bRmod(floor(fr.time+0.5),
+                                           floor(tzero+0.5), 
+                                           floor(split_t+0.5));
+            }
 	    if (bSeparate || bSplitHere) 
 	      mk_filenm(outf_base,ftp2ext(ftp),nzero,file_nr,out_file2);
 	    

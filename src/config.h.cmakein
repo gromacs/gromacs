@@ -215,6 +215,21 @@
 /* Define to 1 if you have the strdup() function. */
 #cmakedefine HAVE_STRDUP
 
+/* Define to 1 if you have the vfprintf() function. */
+#cmakedefine HAVE_VFPRINTF
+
+/* Define to 1 if you have the memcmp() function. */
+#cmakedefine HAVE_MEMCMP
+
+/* Define to 1 if you have the gettimeofday() function. */
+#cmakedefine HAVE_GETTIMEOFDAY
+
+/* Define to 1 if you have the isnan() function. */
+#cmakedefine HAVE_ISNAN
+
+/* Define to 1 if you have the _isnan() function. */
+#cmakedefine HAVE__ISNAN
+
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 
@@ -223,6 +238,9 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#cmakedefine HAVE_SYS_TIME_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H

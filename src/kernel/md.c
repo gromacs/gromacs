@@ -2160,8 +2160,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             sum_dhdl(enerd,state->lambda,ir);
 
             enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
+            
+
+#ifdef HAVE_ISNAN
             if (isnan(enerd->term[F_ETOT]))
                 gmx_fatal(FARGS, "NaN detected at step %d\n",step);
+#else
+#ifdef HAVE__ISNAN
+            if (_isnan(enerd->term[F_ETOT]))
+                gmx_fatal(FARGS, "NaN detected at step %d\n",step);
+#endif
+#endif
 
             switch (ir->etc) {
                 case etcNO:
