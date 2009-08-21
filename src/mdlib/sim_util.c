@@ -432,7 +432,9 @@ void do_force(FILE *fplog,t_commrec *cr,
 #define ADRESS        
 #ifdef ADRESS
         /* update adress weight beforehand */
-        update_adress_weights(fr,mdatoms,box);
+        if(fr->userint1 > 1) {
+            update_adress_weights(fr,mdatoms,x,box);
+        }
 #endif
      
         /* Calculate total (local) dipole moment in a temporary common array. 

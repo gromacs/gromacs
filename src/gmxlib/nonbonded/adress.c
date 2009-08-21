@@ -109,11 +109,15 @@ update_adress_weights(t_forcerec *         fr,
     real           adressw;
     real           ix,iy,iz;
     real           refx,refy,refz;
-
-    nr                 = mdatoms->nr;
+    real           tmp;
+    real *         wf;
+    unsigned short * ptype;
+    nr                 = mdatoms->homenr;
     adresstype         = fr->userint1;
     adressr            = fr->userreal1;
     adressw            = fr->userreal2;
+    wf                 = mdatoms->wf;
+    ptype              = mdatoms->ptype;
 
     if(adresstype == 4)
     {
@@ -129,14 +133,13 @@ update_adress_weights(t_forcerec *         fr,
 
     for(i=0;i<nr;i++)
     {
-        if(mdatoms->ptype[i] == eptVSite)
+        if(ptype[i] == eptVSite)
         {
             i3             = 3*i;
             ix             = x[i3+0];
             iy             = x[i3+1];
             iz             = x[i3+2];
-        
-        mdatoms->wf[i] = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
+            wf[i]          = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
         }
     }
 }
