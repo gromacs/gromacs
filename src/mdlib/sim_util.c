@@ -93,6 +93,10 @@
 #include "thread_mpi.h"
 #endif
 
+#define ADRESS
+#ifdef ADRESS
+#include "adress.h"
+#endif
 
 #include "qmmm.h"
 
@@ -429,7 +433,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (bStateChanged)
     {
         update_forcerec(fplog,fr,box);
-#define ADRESS        
+
 #ifdef ADRESS
         /* update adress weight beforehand */
         if(fr->userint1 > 1) {

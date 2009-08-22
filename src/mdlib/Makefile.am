@@ -11,6 +11,7 @@ libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
 libmd@LIBSUFFIX@_la_SOURCES = \
+	adress.c	adress.h	\
 	calcmu.c	calcvir.c	constr.c	\
 	coupling.c	\
 	domdec.c	domdec_box.c	domdec_con.c	\

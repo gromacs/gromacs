@@ -109,7 +109,6 @@ update_adress_weights(t_forcerec *         fr,
     real           adressw;
     real           ix,iy,iz;
     real           refx,refy,refz;
-    real           tmp;
     real *         wf;
     unsigned short * ptype;
     nr                 = mdatoms->homenr;
