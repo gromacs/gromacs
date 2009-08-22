@@ -39,6 +39,7 @@
 #include <math.h>
 #include "types/simple.h"
 #include "typedefs.h"
+#include "vec.h"
 
 real 
 adress_weight(real            x,
@@ -100,10 +101,10 @@ adress_weight(real            x,
 void
 update_adress_weights(t_forcerec *         fr,
                       t_mdatoms *          mdatoms,
-                      real *               x,
+                      rvec                 x[],
                       matrix               box)
 {
-    int            i,i3,nr;
+    int            i,nr;
     int            adresstype;
     real           adressr;
     real           adressw;
@@ -134,10 +135,9 @@ update_adress_weights(t_forcerec *         fr,
     {
         if(ptype[i] == eptVSite)
         {
-            i3             = 3*i;
-            ix             = x[i3+0];
-            iy             = x[i3+1];
-            iz             = x[i3+2];
+            ix             = x[i][0];
+            iy             = x[i][1];
+            iz             = x[i][2];
             wf[i]          = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
         }
     }

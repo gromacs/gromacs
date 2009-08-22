@@ -55,7 +55,7 @@ adress_weight(real             x,
 void
 update_adress_weights(t_forcerec *         fr,
                       t_mdatoms *          mdatoms,
-                      real *               x,
+                      rvec                 x[],
                       matrix               box);
 
 #endif
