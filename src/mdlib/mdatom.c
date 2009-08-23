@@ -164,8 +164,10 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     
     if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
+#ifdef ADRESS
     if (ir->userint1>0)
       srenew(md->wf,md->nalloc);
+#endif
   }
 
   for(i=0; (i<md->nr); i++) {
@@ -259,8 +261,10 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
+#ifdef ADRESS
     /* Initialize AdResS weighting functions to adressw */
     md->wf[i]           = ir->userreal2;
+#endif
   }
 
   md->start  = start;

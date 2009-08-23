@@ -93,7 +93,6 @@
 #include "thread_mpi.h"
 #endif
 
-#define ADRESS
 #ifdef ADRESS
 #include "adress.h"
 #endif

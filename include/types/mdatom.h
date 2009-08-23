@@ -64,8 +64,10 @@ typedef struct {
   int           homenr;
   /* The lambda value used to create the contents of the struct */
   real          lambda;
+#ifdef ADRESS
   /* The AdResS weighting function */
   real          *wf;
+#endif
 } t_mdatoms;
 
 #endif
