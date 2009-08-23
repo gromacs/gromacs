@@ -42,20 +42,22 @@
 #include "vec.h"
 
 real 
-adress_weight(real            x,
-              real            y,
-              real            z,
+adress_weight(rvec            x,
               int             adresstype,
               real            adressr,
               real            adressw,
-              real            refx,
-              real            refy,
-              real            refz)
+              rvec            ref,
+              rvec            box2,
+              matrix          box)
 {
+    int  i;
     real l2 = adressr+adressw;
+    real dx,dx2;
     real sqr_dl,dl;
     real tmp;
-    
+
+    sqr_dl = 0.0;
+
     switch(adresstype)
     {
     case 1:              
@@ -63,15 +65,34 @@ adress_weight(real            x,
         return adressw;
     case 2:              
         /* plane through center of box, varies in x direction */
-        sqr_dl = (x-refx)*(x-refx);
+        dx             = x[0]-ref[0];
+        sqr_dl         = dx*dx;
         break;
     case 3:
         /* point at center of box, assuming cubic geometry */
-        sqr_dl = (x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
+        for(i=0;i<3;i++){
+            dx         = x[i]-ref[i];
+            sqr_dl    += dx*dx;
+        }
         break;
     case 4:
-        /* get reference from reference solute, still need to figure out how to read from index */
-        sqr_dl = (x-refx)*(x-refx)+(y-refy)*(y-refy)+(z-refz)*(z-refz);
+        /* get reference from shortest distance to reference solute */
+        for(i=0;i<3;i++){
+            dx         = x[i]-ref[i];
+            dx2        = dx*dx;
+            if(dx2 > box2[i]){
+                while(dx2 > box2[i]){
+                    if(dx<0){
+                        dx += box[i][i];
+                    }
+                    else{
+                        dx -= box[i][i];
+                    }
+                    dx2    = dx*dx;
+                }
+            }
+            sqr_dl    += dx2;
+        }
         break;
     default:
         /* default to explicit simulation */
@@ -104,12 +125,13 @@ update_adress_weights(t_forcerec *         fr,
                       rvec                 x[],
                       matrix               box)
 {
-    int            i,nr;
+    int            i,j,nr;
     int            adresstype;
     real           adressr;
     real           adressw;
-    real           ix,iy,iz;
-    real           refx,refy,refz;
+    rvec           ix;
+    rvec           ref;
+    rvec           box2;
     real *         wf;
     unsigned short * ptype;
     nr                 = mdatoms->homenr;
@@ -121,15 +143,26 @@ update_adress_weights(t_forcerec *         fr,
 
     if(adresstype == 4)
     {
-        /* get refx,refy,refz from reference solute */
-        refx = 0; refy = 0; refz = 0;
+        /* get refx,refy,refz from reference solute 
+         * for now, assume its the last molecule */  
+        j              = nr-1;
+        for(i=0;i<3;i++) {
+            /* need square of half the box length for shortest distance to solute */
+            box2[i]    = box[i][i]/2.0;
+            box2[i]   *= box2[i];
+            ref[i]     = x[j][i];
+        }
     }
     else
     {
         /* reference is the center of the box */
-        refx           = box[XX][XX]/2.0;
-        refy           = box[YY][YY]/2.0;
-        refz           = box[ZZ][ZZ]/2.0;
+        for(i=0;i<3;i++){
+            ref[i]     = box[i][i]/2.0;
+        }
+        /* avoid compiler warning */
+        for(i=0;i<3;i++){
+            box2[i]    = 0.0;
+        }
     }
 
     for(i=0;i<nr;i++)
@@ -137,10 +170,10 @@ update_adress_weights(t_forcerec *         fr,
         /* only calculate wf for virtual particles */
 //        if(ptype[i] == 4) 
 //        {
-            ix             = x[i][0];
-            iy             = x[i][1];
-            iz             = x[i][2];
-            wf[i]          = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
+        for(j=0;j<3;j++){
+            ix[j]      = x[i][j];
+        }
+        wf[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
 //            fprintf(stderr,"i=%d,wf=%f\n",(i+1),wf[i]);
 //        }
     }

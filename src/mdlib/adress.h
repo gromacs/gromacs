@@ -42,15 +42,13 @@
 #include "typedefs.h"
 
 real 
-adress_weight(real             x,
-              real             y,
-              real             z,
+adress_weight(rvec             x,
               int              adresstype,
               real             adressr,
               real             adressw,
-              real             refx,
-              real             refy,
-              real             refz);
+              rvec             ref,
+              rvec             box2,
+              matrix           box);
 
 void
 update_adress_weights(t_forcerec *         fr,
