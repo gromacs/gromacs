@@ -70,7 +70,13 @@
  * There can be no perturbed LJ types or charges.
  * mdrun currently does NOT check for this.
  */
+/* #define GMX_CG_INNERLOOP */
+
+
+/* experimental AdResS innerloop uses GMX_CG_INNERLOOP */
+#ifdef ADRESS
 #define GMX_CG_INNERLOOP
+#endif
 
 
 /* 

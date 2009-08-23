@@ -156,6 +156,12 @@ AC_ARG_ENABLE(bluegene,
               [AC_HELP_STRING([--enable-bluegene],
                               [Build assembly intrinsics kernels on bluegene])],,enable_bluegene=no)
 
+### Enable adress code, this implies GMX_CG_INNERLOOP
+AC_ARG_ENABLE(adress,
+	      [AC_HELP_STRING([--enable-adress],
+			      [Build EXPERIMENTAL AdResS code, based on charged group innerloop])],
+	      [AC_DEFINE(ADRESS,,[Enable experimental AdResS innerloop])],)
+
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     

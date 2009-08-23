@@ -37,9 +37,6 @@
 #include <config.h>
 #endif
 
-/*This enables the experimental AdResS feature */
-#define ADRESS
-
 #include <math.h>
 
 #include "types/simple.h"
