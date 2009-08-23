@@ -343,6 +343,26 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                             c6               = vdwparam[tj];   
                             c12              = vdwparam[tj+1]; 
                             
+#ifdef ADRESS
+                            /* Interface pressure correction
+                             * c6 = HYB potential, c12 = CG potential */ 
+                            if(bMixed)
+                            {
+                                /* could use a temporary variable here, but this should work */
+                                c12 = sqrt(weight_product);
+                                if(c12<=0.5)
+                                {
+                                    c12 = cos(M_PI*c12);
+                                    c12*= c12;
+                                }
+                                else
+                                { 
+                                    c12 = (c12-0.5);
+                                    c12*= 4.0*c12;
+                                }
+                                c6 = 1.0-c12;
+                            }
+#endif
                             Y                = VFtab[nnn];     
                             F                = VFtab[nnn+1];   
                             Geps             = eps*VFtab[nnn+2];
