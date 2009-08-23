@@ -162,10 +162,13 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             if (weight_product == 0) 
             {
                 /* only calc interaction between coarse-grained particles */
-                ai0 = aic;
-                ai1 = aic+1;
-                aj0 = ajc;
-                aj1 = ajc+1;
+                ai0 = aic-1;
+                ai1 = aic;
+                aj0 = ajc-1;
+                aj1 = ajc;
+                /* turn off coulomb, turn on table for effective potential */
+                icoul = 0;
+                ivdw = 3;
                 bMixed = FALSE;
             }
             /* at least one of the groups is explicit */
@@ -173,16 +176,19 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             {
                 /* only calc interaction between explicit particles */
                 ai0 = aib;
-                ai1 = aic;
+                ai1 = aic-1;
                 aj0 = ajb;
-                aj1 = ajc;
+                aj1 = ajc-1;
+                /* use requested coulomb and standard cutoff LJ */
+                icoul = nlist->icoul;
+                ivdw = 1;
                 bMixed = FALSE;
             }
             /* both have double identity -- calc all*/
             else {
                 ai0 = aib;
-                ai1 = aic+1;
-                /* get aj0,aj1 later, depends on ai */
+                ai1 = aic;
+                /* get aj0,aj1 and icoul,ivdw later, they depend on ai */
                 bMixed = TRUE;
             }
 #endif
@@ -204,18 +210,26 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                 
 #ifdef ADRESS
                 if (bMixed) {
-                    /*do not calc interactions between coarse grained and explicit */
+                    /* do not calc interactions between coarse grained and explicit */
                     /* ai is explicit particles */
-                    if (ai != aic)
+                    if (ai != (aic-1))
                     {
+                        /* only calc interaction between explicit particles */
                         aj0 = ajb;
-                        aj1 = ajc;
+                        aj1 = ajc-1;
+                        /* requested coulomb, cutoff LJ */
+                        icoul = nlist->icoul;
+                        ivdw = 1;
                     }
-                    /*ai is coarse grained particle */
+                    /* ai is coarse grained particle */
                     else 
                     {
-                        aj0 = ajc;
-                        aj1 = ajc+1;
+                        /* only calc interaction between coarse grained particles */
+                        aj0 = ajc-1;
+                        aj1 = ajc;
+                        /* turn off coulomb, turn on table for effective potential */
+                        icoul = 0;
+                        ivdw = 3;
                     }
                 }
 #endif
@@ -241,7 +255,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                         n0               = rt;             
                         eps              = rt-n0;          
                         eps2             = eps*eps;        
-                        nnn              = table_nelements*n0;           				
+                        nnn              = table_nelements*n0;
                     }
                     
                     /* Coulomb interaction. icoul==0 means no interaction */
@@ -364,7 +378,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     if (bMixed)
                     {
                         /* force weight of the coarse grained - coarse grained interation */
-                        if ( ( ai == aic ) && ( aj == ajc ) )
+                        if ( ( ai == (aic-1) ) && ( aj == (ajc-1) ) )
                         {
                             fscal*=(1-weight_product);
                         }
@@ -377,7 +391,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
 #endif
                     
                     
-                    tx               = fscal*dx;     
+                    tx               = fscal*dx;
                     ty               = fscal*dy;     
                     tz               = fscal*dz;     
                     f[i3+0]         += tx;

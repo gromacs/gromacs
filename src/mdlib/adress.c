@@ -135,12 +135,13 @@ update_adress_weights(t_forcerec *         fr,
     for(i=0;i<nr;i++)
     {
         /* only calculate wf for virtual particles */
-        if(ptype[i] == 4) 
-        {
+//        if(ptype[i] == 4) 
+//        {
             ix             = x[i][0];
             iy             = x[i][1];
             iz             = x[i][2];
             wf[i]          = adress_weight(ix,iy,iz,adresstype,adressr,adressw,refx,refy,refz);
-        }
+//            fprintf(stderr,"i=%d,wf=%f\n",(i+1),wf[i]);
+//        }
     }
 }
