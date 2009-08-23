@@ -212,7 +212,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                 if (bMixed) {
                     /* do not calc interactions between coarse grained and explicit */
                     /* ai is explicit particles */
-                    if (ai != (aic-1))
+                    if (ai != aic)
                     {
                         /* only calc interaction between explicit particles */
                         aj0 = ajb;
