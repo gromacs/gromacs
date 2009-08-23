@@ -122,6 +122,7 @@ update_adress_weights(t_forcerec *         fr,
     if(adresstype == 4)
     {
         /* get refx,refy,refz from reference solute */
+        refx = 0; refy = 0; refz = 0;
     }
     else
     {
@@ -133,7 +134,8 @@ update_adress_weights(t_forcerec *         fr,
 
     for(i=0;i<nr;i++)
     {
-        if(ptype[i] == eptVSite)
+        /* only calculate wf for virtual particles */
+        if(ptype[i] == 4) 
         {
             ix             = x[i][0];
             iy             = x[i][1];

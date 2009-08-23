@@ -87,12 +87,15 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
     int *         type;
     
 #ifdef ADRESS
+    /* aib,ajb => beginning of molecule 
+     * aic,ajc => com of molecule */ 
+    int        aib,aic,ajb,ajc;
     real *     wf;
     real       weight_cg1;
     real       weight_cg2;
     real       weight_product;
-    int        mixed;
-    wf               = mdatoms->wf;
+    bool       bMixed;
+    wf                  = mdatoms->wf;
 #endif
     
     icoul               = nlist->icoul;
@@ -133,10 +136,12 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
         fiz              = 0;
         
 #ifdef ADRESS
+        aib = ai0;
+        aic = ai1;
         /* weight=0 coarse-grained
-           weight=1 explicit
-           else: double identity */
-        weight_cg1 = wf[ai1];
+         * weight=1 explicit
+         * else: double identity */
+        weight_cg1 = wf[aic];
 #endif
         
         for(k=nj0; (k<nj1); k++)
@@ -145,31 +150,40 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             aj1              = nlist->jjnr_end[k];
             
 #ifdef ADRESS
+            ajb = aj0;
+            ajc = aj1;
             /* weight=0 coarse-grained
                weight=1 explicit
                else: double identity */
-            weight_cg2 = wf[aj1];
+            weight_cg2 = wf[ajc];
             
-            weight_product=weight_cg1*weight_cg2;
+            weight_product = weight_cg1*weight_cg2;
             /* at least one of the groups is coarse grained */
             if (weight_product == 0) 
             {
                 /* only calc interaction between coarse-grained particles */
-                ai0=ai1;
-                aj0=aj1;
-                mixed=0;
+                ai0 = aic;
+                ai1 = aic+1;
+                aj0 = ajc;
+                aj1 = ajc+1;
+                bMixed = FALSE;
             }
             /* at least one of the groups is explicit */
             else if (weight_cg1 == 1 || weight_cg2 == 1)
             {
                 /* only calc interaction between explicit particles */
-                ai1--;
-                aj1--;
-                mixed=0;
+                ai0 = aib;
+                ai1 = aic;
+                aj0 = ajb;
+                aj1 = ajc;
+                bMixed = FALSE;
             }
             /* both have double identity -- calc all*/
             else {
-                mixed=1;
+                ai0 = aib;
+                ai1 = aic+1;
+                /* get aj0,aj1 later, depends on ai */
+                bMixed = TRUE;
             }
 #endif
             
@@ -189,19 +203,19 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                  */
                 
 #ifdef ADRESS
-                if (mixed==1) {
+                if (bMixed) {
                     /*do not calc interactions between coarse grained and explicit */
                     /* ai is explicit particles */
-                    if (ai!=ai1)
+                    if (ai != aic)
                     {
-                        aj0=nlist->jjnr[k];
-                        aj1=nlist->jjnr_end[k]-1;
+                        aj0 = ajb;
+                        aj1 = ajc;
                     }
                     /*ai is coarse grained particle */
                     else 
                     {
-                        aj0=nlist->jjnr_end[k]-1;
-                        aj1=nlist->jjnr_end[k];
+                        aj0 = ajc;
+                        aj1 = ajc+1;
                     }
                 }
 #endif
@@ -347,12 +361,12 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     
 #ifdef ADRESS
                     /* force weight is one anyway */
-                    if (mixed == 1 )
+                    if (bMixed)
                     {
                         /* force weight of the coarse grained - coarse grained interation */
-                        if ( (ai == nlist->iinr_end[n] ) && ( aj == nlist->jjnr_end[k] ) )
+                        if ( ( ai == aic ) && ( aj == ajc ) )
                         {
-                            fscal*=1-weight_product;
+                            fscal*=(1-weight_product);
                         }
                         /* force weight of the explicit - explicit interation */
                         else
