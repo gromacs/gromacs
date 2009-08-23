@@ -137,7 +137,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
         
 #ifdef ADRESS
         aib = ai0;
-        aic = ai1;
+        aic = ai1-1;
         /* weight=0 coarse-grained
          * weight=1 explicit
          * else: double identity */
@@ -151,7 +151,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             
 #ifdef ADRESS
             ajb = aj0;
-            ajc = aj1;
+            ajc = aj1-1;
             /* weight=0 coarse-grained
                weight=1 explicit
                else: double identity */
@@ -162,10 +162,10 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             if (weight_product == 0) 
             {
                 /* only calc interaction between coarse-grained particles */
-                ai0 = aic-1;
-                ai1 = aic;
-                aj0 = ajc-1;
-                aj1 = ajc;
+                ai0 = aic;
+                ai1 = aic+1;
+                aj0 = ajc;
+                aj1 = ajc+1;
                 /* turn off coulomb, turn on table for effective potential */
                 icoul = 0;
                 ivdw = 3;
@@ -176,9 +176,9 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             {
                 /* only calc interaction between explicit particles */
                 ai0 = aib;
-                ai1 = aic-1;
+                ai1 = aic;
                 aj0 = ajb;
-                aj1 = ajc-1;
+                aj1 = ajc;
                 /* use requested coulomb and standard cutoff LJ */
                 icoul = nlist->icoul;
                 ivdw = 1;
@@ -187,7 +187,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
             /* both have double identity -- calc all*/
             else {
                 ai0 = aib;
-                ai1 = aic;
+                ai1 = aic+1;
                 /* get aj0,aj1 and icoul,ivdw later, they depend on ai */
                 bMixed = TRUE;
             }
@@ -216,7 +216,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     {
                         /* only calc interaction between explicit particles */
                         aj0 = ajb;
-                        aj1 = ajc-1;
+                        aj1 = ajc;
                         /* requested coulomb, cutoff LJ */
                         icoul = nlist->icoul;
                         ivdw = 1;
@@ -225,8 +225,8 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     else 
                     {
                         /* only calc interaction between coarse grained particles */
-                        aj0 = ajc-1;
-                        aj1 = ajc;
+                        aj0 = ajc;
+                        aj1 = ajc+1;
                         /* turn off coulomb, turn on table for effective potential */
                         icoul = 0;
                         ivdw = 3;
@@ -378,7 +378,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     if (bMixed)
                     {
                         /* force weight of the coarse grained - coarse grained interation */
-                        if ( ( ai == (aic-1) ) && ( aj == (ajc-1) ) )
+                        if ( ( ai == aic ) && ( aj == ajc ) )
                         {
                             fscal*=(1-weight_product);
                         }
