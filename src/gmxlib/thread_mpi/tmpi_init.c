@@ -743,7 +743,7 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
 }
 
 
-int tMPI_Get_processor_name(char *name, size_t *resultlen)
+int tMPI_Get_processor_name(char *name, int *resultlen)
 {
     int nr=tMPI_Threadnr(tMPI_Get_current());
     unsigned int digits=0;
@@ -788,7 +788,9 @@ int tMPI_Get_processor_name(char *name, size_t *resultlen)
 
     }
     if (resultlen)
-        *resultlen=strlen(name);
+        *resultlen=(int)strlen(name); /* For some reason the MPI standard
+                                         uses ints instead of size_ts for
+                                         sizes. */
     return TMPI_SUCCESS;
 }
 

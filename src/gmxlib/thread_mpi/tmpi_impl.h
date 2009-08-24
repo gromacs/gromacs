@@ -313,7 +313,7 @@ struct multi_env
    each thread in each tMPI_Comm structure */
 struct multi_sync
 {
-    int counter;
+    int counter; /* sync counter for list in mev */
 #define N_MULTI_SYNC 2
     struct multi_env mev[N_MULTI_SYNC];
 };

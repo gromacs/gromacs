@@ -415,10 +415,12 @@ int tMPI_Error_string(int errorcode, char *string, size_t *resultlen);
 
     \param[out] name        Pre-allocated string to output name to (will not 
                             be longer than TMPI_MAX_PROCESSOR_NAME). 
-    \param[out] resultlen   The length of the output.
+    \param[out] resultlen   The length of the output. Note that this is an
+                            int instead of a size_t because the MPI standard
+                            for some reason defines all sizes as int
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
-int tMPI_Get_processor_name(char *name, size_t *resultlen);
+int tMPI_Get_processor_name(char *name, int *resultlen);
 
 /** \brief get a time value as a double, in seconds.
 

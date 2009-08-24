@@ -327,6 +327,22 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AC_DEFINE(GMX_LIB_MPI,,[Use a real MPI library])
 
+# not all MPIs support MPI_IN_PLACE:
+  AC_MSG_CHECKING([for MPI_IN_PLACE in collective operations])
+  AC_TRY_COMPILE([
+#include <mpi.h>
+void test(void)
+{
+    void *buf;
+    MPI_Allreduce(MPI_IN_PLACE, buf, 10, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+}
+],,[
+  AC_MSG_RESULT([yes])
+  AC_DEFINE(MPI_IN_PLACE_EXISTS,[],[MPI_IN_PLACE available for collective operations])
+],[
+  AC_MSG_RESULT([no])
+]) 
+
 # on the cray xt3 we have to tell autoconf that we 
 # are actually cross-compiling even if the architecture
 # of host and target are the same. so we enforce 

@@ -93,6 +93,12 @@ any papers on the package - you can find them in the top README file.
    - Intel compilers on x86, x86_64 and Itanium. 
    - xlc on PowerPC.
    - (partial) HP/UX compilers on Itanium.
+
+   Detailed descriptions of the parts of the API can be found in:
+   - thread_mpi/threads.h for the threading fundamentals.
+   - thread_mpi/atomic.h for the atomic operations.
+   - thread_mpi/tmpi.h for the MPI functions as tMPI_-prefixed functions.
+   - thread_mpi/mpi.h for the MPI bindings.
 */
 
 

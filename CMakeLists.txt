@@ -55,6 +55,8 @@ if(GMX_MPI)
         include_directories(${MPI_INCLUDE_PATH})
         list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
         add_definitions( -DMPI ) #for FAHCORE
+        include(gmxTestMPI_IN_PLACE)
+        gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)
