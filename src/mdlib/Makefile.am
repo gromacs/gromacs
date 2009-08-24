@@ -31,7 +31,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
-	shellfc.c	stat.c 		rotation.c	\
+	shellfc.c	stat.c 		pull_rotation.c	\
 	tables.c	tgroup.c	\
 	update.c	vcm.c		vsite.c	\
 	wall.c		wnblist.c	\

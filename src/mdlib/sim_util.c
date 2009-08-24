@@ -79,7 +79,7 @@
 #include "trnio.h"
 #include "xtcio.h"
 #include "copyrite.h"
-#include "rotation.h"
+#include "pull_rotation.h"
 #include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
