@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -450,3 +451,38 @@ str_to_gmx_step_t(const char *str, char **endptr)
 	
 	return val;
 }
+
+char *gmx_strsep(char **stringp, const char *delim)
+{
+    char *ret;
+    int len=strlen(delim);
+    int i,j=0;
+    int found=0;
+
+    if (! *stringp)
+        return NULL;
+    ret=*stringp;
+    do
+    {
+        if ( (*stringp)[j] == '\0')
+        {
+            found=1;
+            *stringp=NULL;
+            break;
+        }
+        for (i=0;i<len;i++)
+        {
+            if ( (*stringp)[j]==delim[i])
+            {
+                (*stringp)[j]='\0';
+                *stringp=*stringp+j+1;
+                found=1;
+                break;
+            }
+        }
+        j++;
+    } while (!found);
+
+    return ret;
+}
+

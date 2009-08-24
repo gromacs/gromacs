@@ -54,7 +54,7 @@ extern void gmx_tx(const t_commrec *cr,int dir,void *buf,int bufsize);
       * available after a successful call of gmx_tx_wait(dir).
       */
 
-extern void gmx_tx_wait(int dir);
+extern void gmx_tx_wait(const t_commrec *cr, int dir);
      /*
       * Waits until the asynchronous send operation associated with chan has 
       * succeeded. This makes the buffer of the send operation available to 
@@ -68,7 +68,7 @@ extern void gmx_rx(const t_commrec *cr,int dir,void *buf,int bufsize);
       * available after a successful call of gmx_rx_wait(chan).
       */
 
-extern void gmx_rx_wait(int dir);
+extern void gmx_rx_wait(const t_commrec *cr, int dir);
      /*
       * Waits until the asynchronous receive operation, associated with chan, 
       * has succeeded. This makes the buffer of the receive operation 
@@ -89,7 +89,7 @@ extern void gmx_tx_rx_real(const t_commrec *cr,
 			   int recv_dir,real *recv_buf,int recv_bufsize);
 /* Communicate simultaneously left and right, reals only */
 
-extern void gmx_wait(int dir_send,int dir_recv);
+extern void gmx_wait(const t_commrec *cr, int dir_send, int dir_recv);
 /* Wait for communication to finish */
 
 extern void pd_move_f(const t_commrec *cr,rvec f[],t_nrnb *nrnb);

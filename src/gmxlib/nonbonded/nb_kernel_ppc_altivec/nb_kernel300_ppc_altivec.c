@@ -20,7 +20,7 @@
 #endif
 
 /* Must come directly after config.h */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 
 #include "ppc_altivec_util.h"
@@ -72,7 +72,7 @@ nb_kernel300_ppc_altivec  (int *             p_nri,
 	int jnra,jnrb,jnrc,jnrd;
 	int j3a,j3b,j3c,j3d;
 	int nri, ntype, nouter, ninner;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 	int nn0, nn1;
 #endif
 
@@ -84,20 +84,20 @@ nb_kernel300_ppc_altivec  (int *             p_nri,
 	vfacel=load_float_and_splat(p_facel);
 	tsc=load_float_and_splat(p_tabscale);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
     nthreads = *p_nthreads;
 	do {
-		gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
 		nn0              = *count;
 		nn1              = nn0+(nri-nn0)/(2*nthreads)+3;
 		*count           = nn1;
-		gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
 		if(nn1>nri) nn1=nri;
 		for(n=nn0; (n<nn1); n++) {
 #if 0
 		} /* maintain correct indentation even with conditional left braces */
 #endif
-#else /* without gmx_threads */
+#else /* without tMPI_Threads */
 		for(n=0;n<nri;n++) {
 #endif  
 			is3        = 3*shift[n];
@@ -232,7 +232,7 @@ nb_kernel300_ppc_altivec  (int *             p_nri,
 			add_vector_to_float(Vc+gid[n],vctot);
 			ninner += nj1 - nj0;
 		}
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 		nouter += nn1 - nn0;
 	} while (nn1<nri);
 #else
@@ -288,7 +288,7 @@ nb_kernel300nf_ppc_altivec(int *             p_nri,
 	int jnra,jnrb,jnrc,jnrd;
 	int j3a,j3b,j3c,j3d;
 	int nri, ntype, nouter, ninner;
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 	int nn0, nn1;
 #endif
 
@@ -300,20 +300,20 @@ nb_kernel300nf_ppc_altivec(int *             p_nri,
 	vfacel=load_float_and_splat(p_facel);
 	tsc=load_float_and_splat(p_tabscale);
 
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
     nthreads = *p_nthreads;
 	do {
-		gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
 		nn0              = *count;
 		nn1              = nn0+(nri-nn0)/(2*nthreads)+3;
 		*count           = nn1;
-		gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+		tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
 		if(nn1>nri) nn1=nri;
 		for(n=nn0; (n<nn1); n++) {
 #if 0
 		} /* maintain correct indentation even with conditional left braces */
 #endif
-#else /* without gmx_threads */
+#else /* without tMPI_Threads */
 		for(n=0;n<nri;n++) {
 #endif  
 			is3        = 3*shift[n];
@@ -401,7 +401,7 @@ nb_kernel300nf_ppc_altivec(int *             p_nri,
 			add_vector_to_float(Vc+gid[n],vctot);
 			ninner += nj1 - nj0;
 		}
-#ifdef GMX_THREADS
+#ifdef GMX_THREAD_SHM_FDECOMP
 		nouter += nn1 - nn0;
 	} while (nn1<nri);
 #else

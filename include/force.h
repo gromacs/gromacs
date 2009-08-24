@@ -81,7 +81,7 @@ extern void init_generalized_rf(FILE *fplog,
 
 
 /* In wall.c */
-extern void make_wall_tables(FILE *fplog,
+extern void make_wall_tables(FILE *fplog,const output_env_t oenv,
 			     const t_inputrec *ir,const char *tabfn,
 			     const gmx_groups_t *groups,
 			     t_forcerec *fr);
@@ -96,9 +96,9 @@ extern t_forcerec *mk_forcerec(void);
 #define GMX_MAKETABLES_FORCEUSER  (1<<0)
 #define GMX_MAKETABLES_14ONLY     (1<<1)
 
-extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
-				bool bVerbose,const char *fn,
-				real rtab,int flags);
+extern t_forcetable make_tables(FILE *fp,const output_env_t oenv,
+                                const t_forcerec *fr, bool bVerbose,
+                                const char *fn, real rtab,int flags);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */
@@ -109,9 +109,10 @@ extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle);
  */
 
 /* Return a table for GB calculations */
-extern t_forcetable make_gb_table(FILE *out,const t_forcerec *fr,
-								  const char *fn,
-								  real rtab);
+extern t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
+                                  const t_forcerec *fr,
+                                  const char *fn,
+                                  real rtab);
 
 extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
@@ -122,6 +123,7 @@ forcerec_set_ranges(t_forcerec *fr,
 /* Set the number of cg's and atoms for the force calculation */
 
 extern void init_forcerec(FILE       *fplog,     
+                          const output_env_t oenv,
 			  t_forcerec *fr,   
 			  t_fcdata   *fcd,
 			  const t_inputrec *ir,   

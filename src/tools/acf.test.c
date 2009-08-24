@@ -54,6 +54,7 @@ int main(int argc,char *argv[])
   static int nframes = 1024;
   static int datatp  = 0;
   static real a=0.02*M_PI;
+  output_env_t oenv;
   t_pargs pa[] = {
     { "-np", FALSE, etINT, &nframes,
       "Number of data points" },
@@ -82,12 +83,12 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
+  parse_common_args_r(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+		      NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
   snew(data,nframes);
   snew(data2,nframes);
   
-  fp = xvgropen(opt2fn("-d",NFILE,fnm),"testac","x","y");
+  fp = xvgropen(opt2fn("-d",NFILE,fnm),"testac","x","y",oenv);
   for(i=0; (i<nframes); i++) {
     x = a*i;
     switch (datatp) {
@@ -117,11 +118,11 @@ int main(int argc,char *argv[])
   }
   fclose(fp);
   
-  do_autocorr(opt2fn("-c",NFILE,fnm),str[datatp],
+  do_autocorr(opt2fn("-c",NFILE,fnm),oenv,str[datatp],
 	      nframes,1,&data,a,eacNormal,FALSE);
 	      
   nlag = get_acfnout();
-  fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y");
+  fp = xvgropen(opt2fn("-comb",NFILE,fnm),"testac","x","y",oenv);
   for(i=0; (i<nlag); i++) {
     fprintf(fp,"%10g  %10g  %10g\n",a*i,data2[i],data[i]);
   }

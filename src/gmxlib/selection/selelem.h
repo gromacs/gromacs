@@ -58,41 +58,41 @@ struct t_selelem;
  ********************************************************************/
 /*@{*/
 
-//! Defines the type of a \c t_selelem object.
+/*! Defines the type of a \c t_selelem object.*/
 typedef enum
 {
-    //! Constant-valued expression.
+    /*! Constant-valued expression.*/
     SEL_CONST,
-    //! Method expression that requires evaluation.
+    /*! Method expression that requires evaluation.*/
     SEL_EXPRESSION,
-    //! Boolean expression.
+    /*! Boolean expression.*/
     SEL_BOOLEAN,
-    //! Root node of the evaluation tree.
+    /*! Root node of the evaluation tree.*/
     SEL_ROOT,
-    //! Subexpression that may be referenced several times.
+    /*! Subexpression that may be referenced several times.*/
     SEL_SUBEXPR,
-    //! Reference to a subexpression.
+    /*! Reference to a subexpression.*/
     SEL_SUBEXPRREF,
-    //! Post-processing of selection value.
-    SEL_MODIFIER,
+    /*! Post-processing of selection value.*/
+    SEL_MODIFIER
 } e_selelem_t;
 
-//! Defines the boolean operation of \c t_selelem objects with type \ref SEL_BOOLEAN.
+/*! Defines the boolean operation of \c t_selelem objects with type \ref SEL_BOOLEAN.*/
 typedef enum
 {
-    BOOL_NOT,           //!< Not
-    BOOL_AND,           //!< And
-    BOOL_OR,            //!< Or
-    BOOL_XOR,           //!< Xor (not implemented).
+    BOOL_NOT,           /*!< Not*/
+    BOOL_AND,           /*!< And*/
+    BOOL_OR,            /*!< Or*/
+    BOOL_XOR           /*!< Xor (not implemented).*/
 } e_boolean_t;
 
-//! Returns a string representation of the type of a \c t_selelem.
+/*! Returns a string representation of the type of a \c t_selelem.*/
 extern const char *
 _gmx_selelem_type_str(struct t_selelem *sel);
-//! Returns a string representation of the boolean type of a \ref SEL_BOOLEAN \c t_selelem.
+/*! Returns a string representation of the boolean type of a \ref SEL_BOOLEAN \c t_selelem.*/
 extern const char *
 _gmx_selelem_boolean_type_str(struct t_selelem *sel);
-//! Returns a string representation of the type of a \c gmx_ana_selvalue_t.
+/*! Returns a string representation of the type of a \c gmx_ana_selvalue_t.*/
 extern const char *
 _gmx_sel_value_type_str(gmx_ana_selvalue_t *val);
 
@@ -210,7 +210,7 @@ typedef struct t_selelem
      * Memory is never allocated for it directly.
      */
     const char                         *name;
-    //! Type of the element.
+    /*! Type of the element.*/
     e_selelem_t                         type;
     /*! \brief
      * Value storage of the element.
@@ -233,7 +233,7 @@ typedef struct t_selelem
      * \ref selelem_flags "flags for \c t_selelem".
      */
     int                                 flags;
-    //! Data required by the evaluation function.
+    /*! Data required by the evaluation function.*/
     union {
         /*! \brief Index group data for several element types.
          *
@@ -245,23 +245,23 @@ typedef struct t_selelem
          *    has been evaluated.
          */
         gmx_ana_index_t                 cgrp;
-        //! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.
+        /*! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.*/
         struct {
-            //! Pointer the the method used in this expression.
+            /*! Pointer the the method used in this expression.*/
             struct gmx_ana_selmethod_t *method;
-            //! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).
+            /*! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).*/
             void                       *mdata;
-            //! Pointer to the position data passed to the method.
+            /*! Pointer to the position data passed to the method.*/
             struct gmx_ana_pos_t       *pos;
-            //! Pointer to the evaluation data for \p pos.
+            /*! Pointer to the evaluation data for \p pos.*/
             struct gmx_ana_poscalc_t   *pc;
         }                               expr;
-        //! Operation type for \ref SEL_BOOLEAN elements.
+        /*! Operation type for \ref SEL_BOOLEAN elements.*/
         e_boolean_t                     boolt;
-        //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
+        /*! Associated selection parameter for \ref SEL_SUBEXPRREF elements.*/
         struct gmx_ana_selparam_t      *param;
     }                                   u;
-    //! Internal data for the selection compiler.
+    /*! Internal data for the selection compiler.*/
     struct t_compiler_data             *cdata;
     
     /*! \brief The first child element.
@@ -269,7 +269,7 @@ typedef struct t_selelem
      * Other children can be accessed through the \p next field of \p child.
      */
     struct t_selelem                    *child;
-    //! The next sibling element.
+    /*! The next sibling element.*/
     struct t_selelem                    *next;
     /*! \brief Number of references to this element.
      *
@@ -278,43 +278,43 @@ typedef struct t_selelem
     int                                  refcount;
 } t_selelem;
 
-//! Allocates memory and performs some common initialization for a \c t_selelem.
+/*! Allocates memory and performs some common initialization for a \c t_selelem.*/
 extern t_selelem *
 _gmx_selelem_create(e_selelem_t type);
-//! Sets the value type of a \c t_selelem.
+/*! Sets the value type of a \c t_selelem.*/
 extern int
 _gmx_selelem_set_vtype(t_selelem *sel, e_selvalue_t vtype);
-//! Frees the memory allocated for a \c t_selelem structure and all its children.
+/*! Frees the memory allocated for a \c t_selelem structure and all its children.*/
 extern void
 _gmx_selelem_free(t_selelem *sel);
-//! Frees the memory allocated for a \c t_selelem structure, all its children, and also all structures referenced through t_selelem::next fields.
+/*! Frees the memory allocated for a \c t_selelem structure, all its children, and also all structures referenced through t_selelem::next fields.*/
 extern void
 _gmx_selelem_free_chain(t_selelem *first);
 
-//! Frees the memory allocated for the \c t_selelem::d union.
+/*! Frees the memory allocated for the \c t_selelem::d union.*/
 extern void
 _gmx_selelem_free_values(t_selelem *sel);
-//! Frees the memory allocated for the \c t_selelem::u.expr field.
+/*! Frees the memory allocated for the \c t_selelem::u.expr field.*/
 extern void
 _gmx_selelem_free_exprdata(t_selelem *sel);
 /* In compiler.c */
-//! Frees the memory allocated for the selection compiler.
+/*! Frees the memory allocated for the selection compiler.*/
 extern void
 _gmx_selelem_free_compiler_data(t_selelem *sel);
 
-//! Prints a human-readable version of a selection element subtree.
+/*! Prints a human-readable version of a selection element subtree.*/
 extern void
 _gmx_selelem_print_tree(FILE *fp, t_selelem *root, bool bValues, int level);
 
-//! Returns TRUE if the selection element subtree requires topology information for evaluation.
+/*! Returns TRUE if the selection element subtree requires topology information for evaluation.*/
 extern bool
 _gmx_selelem_requires_top(t_selelem *root);
 
 /* In sm_insolidangle.c */
-//! Returns TRUE if the covered fraction of the selection can be calculated.
+/*! Returns TRUE if the covered fraction of the selection can be calculated.*/
 extern bool
 _gmx_selelem_can_estimate_cover(t_selelem *sel);
-//! Returns the covered fraction of the selection for the current frame.
+/*! Returns the covered fraction of the selection for the current frame.*/
 extern real
 _gmx_selelem_estimate_coverfrac(t_selelem *sel);
 

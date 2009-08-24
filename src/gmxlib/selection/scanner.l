@@ -177,8 +177,8 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = atoi(yytext);                return INT; }
-{REAL}          { yylval->r   = atof(yytext);                return REAL; }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 0);     return INT; }
+{REAL}          { yylval->r   = strtod(yytext,NULL);         return REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
 
 \\\n            { if (state->prompt) state->prompt = CONTINUE_PROMPT; }

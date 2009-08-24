@@ -144,7 +144,8 @@ static int scan_ene_files(char **fnms, int nfiles,
 			  real *readtime, real *timestep, int *nremax)
 {
   /* Check number of energy terms and start time of all files */
-  int        f,i,in,nre,nremin=0,nresav=0;
+  int        f,i,nre,nremin=0,nresav=0;
+  ener_file_t in;
   real       t1,t2;
   char       inputstring[STRLEN];
   gmx_enxnm_t *enm;
@@ -478,8 +479,12 @@ int gmx_eneconv(int argc,char *argv[])
   const char *bugs[] = {
     "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
   };
-  int        in,out=0;
-  gmx_enxnm_t *enm;
+  ener_file_t in=NULL, out=NULL;
+  gmx_enxnm_t *enm=NULL;
+#if 0
+  ener_file_t in,out=NULL;
+  gmx_enxnm_t *enm=NULL;
+#endif
   t_enxframe *fr,*fro;
   gmx_step_t ee_sum_step=0,ee_sum_nsteps,ee_sum_nsum;
   t_energy   *ee_sum;
@@ -493,6 +498,7 @@ int gmx_eneconv(int argc,char *argv[])
   bool       ok;
   int        *cont_type;
   bool       bNewFile,bFirst,bNewOutput;
+  output_env_t oenv;
   
   t_filenm fnm[] = {
     { efEDR, "-f", NULL,    ffRDMULT },
@@ -527,8 +533,8 @@ int gmx_eneconv(int argc,char *argv[])
   };
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_BE_NICE ,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+  parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),
+                    pa,asize(desc),desc,asize(bugs),bugs,&oenv);
   tadjust  = 0;
   nremax   = 0;
   nset     = 0;

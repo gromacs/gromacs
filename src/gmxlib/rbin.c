@@ -153,8 +153,8 @@ int main(int argc,char *argv[])
   int       k,i,ni,mi,n,m;
 
   cr=init_par(&argc,argv);
-  n=atoi(argv[1]);
-  m=atoi(argv[2]);
+  n=strtol(argv[1],NULL,0);
+  m=strtol(argv[2],NULL,0);
   fprintf(stdlog,"n=%d\n",n);
   rb=mk_bin();
   snew(r,n);

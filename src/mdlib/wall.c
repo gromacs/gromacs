@@ -48,7 +48,7 @@
 #include "nrnb.h"
 #include "vec.h"
 
-void make_wall_tables(FILE *fplog,
+void make_wall_tables(FILE *fplog,const output_env_t oenv,
 		      const t_inputrec *ir,const char *tabfn,
 		      const gmx_groups_t *groups,
 		      t_forcerec *fr)
@@ -78,7 +78,7 @@ void make_wall_tables(FILE *fplog,
 		*groups->grpname[nm_ind[egp]],
 		*groups->grpname[nm_ind[negp_pp+w]],
 		ftp2ext(efXVG));
-	*tab = make_tables(fplog,fr,FALSE,buf,0,GMX_MAKETABLES_FORCEUSER);
+	*tab = make_tables(fplog,oenv,fr,FALSE,buf,0,GMX_MAKETABLES_FORCEUSER);
 	/* Since wall have no charge, we can compress the table */
 	for(i=0; i<=tab->n; i++)
 	  for(j=0; j<8; j++)

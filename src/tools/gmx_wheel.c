@@ -75,7 +75,7 @@ bool *bPhobics(int nres,char *resnm[])
   return bb;
 }
  
-void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
+void wheel(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
 {
   const real fontsize  = 16;
   const real gray      = 0.9;
@@ -144,7 +144,7 @@ void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   ps_close(out);
 }
 
-void wheel2(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
+void wheel2(const char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
 {
   const real fontsize  = 14;
   const real gray      = 0.9;
@@ -207,6 +207,7 @@ int gmx_wheel(int argc,char *argv[])
     "the number of residues and each consecutive line contains a residue"
     "name."
   };
+  output_env_t oenv;
   static real rot0=0;
   static bool bNum=TRUE;
   static char *title=NULL;
@@ -232,15 +233,15 @@ int gmx_wheel(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
   
   for(i=1; (i<argc); i++) {
     if (strcmp(argv[i],"-r0") == 0) {
-      r0=atoi(argv[++i]);
+      r0=strtol(argv[++i],NULL,0);
       fprintf(stderr,"First residue is %d\n",r0);
     }
     else if (strcmp(argv[i],"-rot0") == 0) {
-      rot0=atof(argv[++i]);
+      rot0=strtod(argv[++i],NULL);
       fprintf(stderr,"Initial rotation is %g\n",rot0);
     }
     else if (strcmp(argv[i],"-T") == 0) {

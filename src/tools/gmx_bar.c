@@ -408,11 +408,12 @@ int gmx_bar(int argc,char *argv[])
     double   prec,dg_tot,var_tot,dg,sig;
     FILE     *fp;
     char     dgformat[20],xvgformat[STRLEN],buf[STRLEN];
+    output_env_t oenv;
     
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
                       PCA_CAN_VIEW,
-                      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+                      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
     
     nfile = opt2fns(&fnms,"-f",NFILE,fnm);
     if (nfile == 0)
@@ -487,8 +488,8 @@ int gmx_bar(int argc,char *argv[])
     {
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fp = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
-                      "\\8l\\4",unit_energy);
-        if (bPrintXvgrCodes())
+                      "\\8l\\4",unit_energy,oenv);
+        if (get_print_xvgr_codes(oenv))
         {
             fprintf(fp,"@TYPE xydy\n");
         }
@@ -532,7 +533,7 @@ int gmx_bar(int argc,char *argv[])
         fclose(fp);
     }
 
-    do_view(opt2fn_null("-o",NFILE,fnm),"-xydy");
+    do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");
     
     thanx(stderr);
     

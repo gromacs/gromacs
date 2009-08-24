@@ -19,7 +19,7 @@
 #endif
 
 /* Must come directly after config.h */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 #include <types/simple.h>
 #include <types/nrnb.h>

@@ -20,7 +20,7 @@
 #endif
 
 /* Must come directly after config.h */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 #include <types/simple.h>
 #include <types/nrnb.h>
@@ -164,9 +164,9 @@ kernellist_x86_64_sse2[eNR_NBKERNEL_NR] =
     nb_kernel430_x86_64_sse2
 };
 
-#ifdef GMX_THREADS
-static gmx_thread_mutex_t 
-nb_kernel_x86_64_sse2_test_mutex = GMX_THREAD_MUTEX_INITIALIZER;
+#ifdef GMX_THREAD_SHM_FDECOMP
+static tMPI_Thread_mutex_t 
+nb_kernel_x86_64_sse2_test_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 /*! Posix long jump label */
@@ -198,8 +198,8 @@ nb_kernel_x86_64_sse2_test(FILE *                log)
 	 * This should NOT be called from threads, 
 	 * but just in case you still try to do it...
 	 */
-#ifdef GMX_THREADS
-	gmx_thread_mutex_lock(&nb_kernel_x86_64_sse2_test_mutex);
+#ifdef GMX_THREAD_SHM_FDECOMP
+	tMPI_Thread_mutex_lock(&nb_kernel_x86_64_sse2_test_mutex);
 #endif
     
     if(log)
@@ -224,8 +224,8 @@ nb_kernel_x86_64_sse2_test(FILE *                log)
 		fprintf(log," %spresent.\n", 
 				nb_kernel_x86_64_sse2_present ? "":"not ");
 	
-#ifdef GMX_THREADS
-	gmx_thread_mutex_unlock(&nb_kernel_x86_64_sse2_test_mutex);
+#ifdef GMX_THREAD_SHM_FDECOMP
+	tMPI_Thread_mutex_unlock(&nb_kernel_x86_64_sse2_test_mutex);
 #endif
     
 	return ((nb_kernel_x86_64_sse2_present) ? 0 : -1);

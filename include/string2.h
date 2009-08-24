@@ -103,6 +103,12 @@ extern char *gmx_strndup(const char *src, int n);
 
 #define strndup gmx_strndup
 
+
+/* this is our implementation of strsep, the thread-safe replacement for
+   strtok */
+extern char *gmx_strsep(char **stringp, const char *delim);
+
+
 extern char *wrap_lines(const char *buf,int line_width, int indent,
 			bool bIndentFirst);
 /* wraps lines at 'linewidth', indenting all following

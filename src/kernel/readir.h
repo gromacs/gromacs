@@ -78,7 +78,7 @@ typedef struct {
 extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
-extern void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,
+extern void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		     int *nerror);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
@@ -89,11 +89,11 @@ extern int search_string(char *s,int ng,char *gn[]);
 extern void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror);
 /* Do more checks */
 
-extern void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
+extern void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 			 int *nerror);
 /* Do even more checks */
 
-extern void get_ir(char *mdparin,char *mdparout,
+extern void get_ir(const char *mdparin,const char *mdparout,
 		   t_inputrec *ir,t_gromppopts *opts, int *nerror);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
@@ -101,8 +101,8 @@ extern void get_ir(char *mdparin,char *mdparout,
  * Add errors no nerror.
  */
  
-extern void do_index(char* mdparin, 
-		     char *ndx,
+extern void do_index(const char* mdparin, 
+		     const char *ndx,
 		     gmx_mtop_t *mtop,
 		     bool bVerbose,
 		     t_inputrec *ir,
@@ -123,7 +123,7 @@ extern void make_pull_groups(t_pull *pull,char **pgnames,
 /* Process the pull parameters after reading the index groups */
 
 extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
-			  bool bStart);
+			  const output_env_t oenv, bool bStart);
 /* Prints the initial pull group distances in x.
  * If bStart adds the distance to the initial reference location.
  */

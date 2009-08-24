@@ -910,12 +910,12 @@ YY_RULE_SETUP
 case 2:
 YY_RULE_SETUP
 #line 180 "scanner.l"
-{ yylval->i   = atoi(yytext);                return INT; }
+{ yylval->i   = strtol(yytext,NULL,0);        return INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
 #line 181 "scanner.l"
-{ yylval->r   = atof(yytext);                return REAL; }
+{ yylval->r   = strtod(yytext,NULL);          return REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP

@@ -37,7 +37,10 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
-#include <gmx_thread.h>
+
+#ifdef GMX_THREADS
+#include "thread_mpi/threads.h"
+#endif 
 
 
 #include <stdio.h>
@@ -60,8 +63,8 @@ static void log_action(int bMal,const char *what,const char *file,int line,
   if (!bMal)
     bytes=-bytes;
   
-#ifdef GMX_THREAD_PTHREAD
-  pthread_mutex_lock(&gmx_logfile_mtx);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_lock(&gmx_logfile_mtx);
 #endif
 
   /* This total memory count is not correct, since with realloc
@@ -91,8 +94,8 @@ static void log_action(int bMal,const char *what,const char *file,int line,
 	   what ? what  : NN,bytes/1024.0,
 	   file ? fname : NN,line,nelem,size);
   }
-#ifdef GMX_THREAD_PTHREAD
-  pthread_mutex_unlock(&gmx_logfile_mtx);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
 #endif
 }
 #endif

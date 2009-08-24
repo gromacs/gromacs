@@ -212,10 +212,11 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
 
 void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL)
 {
+#if 0
   static FILE *fp=NULL;
   char buf[STRLEN];
   int  n,i;
-  
+
   if (fp == NULL) {
     if (PAR(cr)) {
       sprintf(buf,"nlist_n%d.txt",cr->nodeid);
@@ -229,5 +230,15 @@ void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL)
   for(n=0; (n<fr->nnblists); n++)
     for(i=0; (i<eNL_NR); i++) 
       write_nblist(fp,cr->dd,&fr->nblists[n].nlist_sr[i],nDNL);
+#endif
+  char buf[STRLEN];
+  int  n,i;
+
+  fprintf(out,"%s\n",header);
+
+  for(n=0; (n<fr->nnblists); n++)
+    for(i=0; (i<eNL_NR); i++) 
+      write_nblist(out,cr->dd,&fr->nblists[n].nlist_sr[i],nDNL);
+
 }
 

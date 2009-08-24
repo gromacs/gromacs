@@ -128,6 +128,7 @@ int gmx_nmtraj(int argc,char *argv[])
   real       dum;
   const char       *p;
   char *pe;  
+  output_env_t oenv;
     
   t_filenm fnm[] = 
   { 
@@ -140,7 +141,7 @@ int gmx_nmtraj(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit,
 		    &xref,&bDMR,&xav,&bDMA,&nvec,&eignr,&eigvec,&eigval);

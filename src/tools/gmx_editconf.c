@@ -170,7 +170,7 @@ void scale_conf(int natom,rvec x[],matrix box,rvec scale)
       box[i][j] *= scale[j];
 }
 
-void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
+void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
 {
   int  i;
   char **bfac_lines;
@@ -274,9 +274,9 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
   fprintf(stderr,"B-factors range from %g to %g\n",bfac_min,bfac_max);
   for (i=1; (i<12); i++) {
     fprintf(out,"%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-	    "ATOM  ",natoms+1+i,"CA","LEG",space,nres+1,space,
-	    (xmin+(i*0.12))*10,ymin*10,zmin*10,1.0,0,
-	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
+            "ATOM  ",natoms+1+i,"CA","LEG",space,nres+1,space,
+            (xmin+(i*0.12))*10,ymin*10,zmin*10,1.0,
+            bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
 }
 
@@ -505,7 +505,8 @@ int gmx_editconf(int argc, char *argv[])
 #define NPA asize(pa)
 
   FILE       *out;
-  char       *infile,*outfile,title[STRLEN];
+  const char *infile,*outfile;
+  char       title[STRLEN];
   int        outftp,inftp,natom,i,j,n_bfac,itype,ntype;
   double     *bfac=NULL,c6,c12;
   int        *bfac_nr=NULL;
@@ -522,6 +523,7 @@ int gmx_editconf(int argc, char *argv[])
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
   gmx_atomprop_t aps;
   gmx_conect conect;
+  output_env_t oenv;
   t_filenm fnm[] = {
     { efSTX, "-f",    NULL,    ffREAD },
     { efNDX, "-n",    NULL,    ffOPTRD },
@@ -533,7 +535,7 @@ int gmx_editconf(int argc, char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,NFILE,fnm,NPA,pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,asize(bugs),bugs,&oenv);
 
   bIndex    = opt2bSet("-n",NFILE,fnm) || bNDEF;
   bMead     = opt2bSet("-mead",NFILE,fnm);
@@ -926,7 +928,7 @@ int gmx_editconf(int argc, char *argv[])
   }
   gmx_atomprop_destroy(aps);
 
-  do_view(outfile,NULL);
+  do_view(oenv,outfile,NULL);
     
   thanx(stderr);
   

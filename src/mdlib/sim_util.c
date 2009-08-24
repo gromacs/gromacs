@@ -89,8 +89,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #ifdef ADRESS
@@ -99,9 +99,11 @@
 
 #include "qmmm.h"
 
+#if 0
 typedef struct gmx_timeprint {
     
 } t_gmx_timeprint;
+#endif
 
 
 double
@@ -136,7 +138,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
   double dt;
   char buf[48];
 
-  if (!gmx_parallel_env)
+  if (!gmx_parallel_env())
     fprintf(out,"\r");
   fprintf(out,"step %s",gmx_step_str(step,buf));
   if ((step >= ir->nstlist)) {
@@ -157,7 +159,7 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
     else
       fprintf(out,", remaining runtime: %5d s          ",(int)dt);
   }
-  if (gmx_parallel_env)
+  if (gmx_parallel_env())
     fprintf(out,"\n");
 
   fflush(out);
@@ -197,6 +199,7 @@ static double set_proctime(gmx_runtime_t *runtime)
 void runtime_start(gmx_runtime_t *runtime)
 {
     runtime->real = gmx_gettime();
+    runtime->proc          = 0;
     set_proctime(runtime);
     runtime->realtime      = 0;
     runtime->proctime      = 0;
@@ -1291,7 +1294,7 @@ void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
   low_do_pbc_mtop(fplog,ePBC,box,mtop,x,FALSE);
 }
 
-void finish_run(FILE *fplog,t_commrec *cr,char *confout,
+void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[],gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
@@ -1372,13 +1375,13 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 }
 
 void init_md(FILE *fplog,
-             t_commrec *cr,t_inputrec *ir,
+             t_commrec *cr,t_inputrec *ir,const output_env_t oenv,
              double *t,double *t0,
              real *lambda,double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
-             int nfile,t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
+             int nfile,const t_filenm fnm[],
+             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,const char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
@@ -1445,7 +1448,7 @@ void init_md(FILE *fplog,
     if (nfile != -1)
     {
         *fp_trn = -1;
-        *fp_ene = -1;
+        *fp_ene = NULL;
         *fp_xtc = -1;
         
         if (MASTER(cr)) 
@@ -1466,7 +1469,7 @@ void init_md(FILE *fplog,
                 }
                 else
                 {
-                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir);
+                    *fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
                 }
             }
             
@@ -1481,11 +1484,12 @@ void init_md(FILE *fplog,
                 {				  
                     *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
                                          "Applied electric field","Time (ps)",
-                                         "E (V/nm)");
+                                         "E (V/nm)",oenv);
                 }
             }
         }
-        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? -1 : *fp_ene,mtop,ir);
+        *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? NULL : *fp_ene,
+                                mtop,ir);
     }
     
     /* Initiate variables */  
