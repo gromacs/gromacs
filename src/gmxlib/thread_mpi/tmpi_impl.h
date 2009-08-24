@@ -53,7 +53,7 @@ any papers on the package - you can find them in the top README file.
 
 /* whether to warn if there are mallocs at performance-critical sections 
    (due to preallocations being too small) */
-#define TMPI_WARN_MALLOC
+/*#define TMPI_WARN_MALLOC*/
 
 
 
