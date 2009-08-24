@@ -313,12 +313,19 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                             /* Vanilla Lennard-Jones cutoff */
                             c6               = vdwparam[tj];   
                             c12              = vdwparam[tj+1]; 
-                            
+#ifdef ADRESS
+                            /* don't calculate Lennard-Jones for non-interacting hydrogen */
+                            if((c12 > 0) && (c6 > 0))
+                            {
+#endif
                             rinvsix          = rinvsq*rinvsq*rinvsq;
                             Vvdw_disp        = c6*rinvsix;     
                             Vvdw_rep         = c12*rinvsix*rinvsix;
                             fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
                             Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
+#ifdef ADRESS
+                            }
+#endif
                             break;
                             
                         case 2:

@@ -133,13 +133,11 @@ update_adress_weights(t_forcerec *         fr,
     rvec           ref;
     rvec           box2;
     real *         wf;
-    unsigned short * ptype;
     nr                 = mdatoms->homenr;
     adresstype         = fr->userint1;
     adressr            = fr->userreal1;
     adressw            = fr->userreal2;
     wf                 = mdatoms->wf;
-    ptype              = mdatoms->ptype;
 
     if(adresstype == 4)
     {
@@ -168,13 +166,12 @@ update_adress_weights(t_forcerec *         fr,
     for(i=0;i<nr;i++)
     {
         /* only calculate wf for virtual particles */
-//        if(ptype[i] == 4) 
-//        {
-        for(j=0;j<3;j++){
-            ix[j]      = x[i][j];
+        if(mdatoms->ptype[i] == eptVSite) 
+        {
+            for(j=0;j<3;j++){
+                ix[j]      = x[i][j];
+            }
+            wf[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
         }
-        wf[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
-//            fprintf(stderr,"i=%d,wf=%f\n",(i+1),wf[i]);
-//        }
     }
 }
