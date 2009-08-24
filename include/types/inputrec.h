@@ -135,6 +135,10 @@ typedef struct {
   bool       bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
+  rvec       *rbuf;       /* COM calculation buffer */
+  dvec       *dbuf;       /* COM calculation buffer */
+  double     *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */
+
   FILE       *out_x;      /* output file for pull data */
   FILE       *out_f;      /* output file for pull data */
 } t_pull;

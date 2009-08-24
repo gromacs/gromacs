@@ -283,12 +283,14 @@ static void calc_mjdsp(FILE *fmjdsp,real vol,real temp,real prefactor,rvec mjdsp
 }
 
 
-static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,FILE *fmjdsp,\
-		bool bNoJump,bool bACF,bool bINT,int ePBC,t_topology top,\
-		t_trxframe fr,real temp,real trust,real bfit,real efit,real bvit,real evit,\
-		int status,int isize,int nmols, int nshift,atom_id *index0,int indexm[],real mass2[],real qmol[], real eps_rf){
-
-
+static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,
+                       FILE *fmjdsp, bool bNoJump,bool bACF,bool bINT,
+                       int ePBC,t_topology top, t_trxframe fr,real temp,
+                       real trust,real bfit,real efit,real bvit,real evit,
+		       int status,int isize,int nmols, int nshift,
+                       atom_id *index0,int indexm[],real mass2[],
+                       real qmol[], real eps_rf, const output_env_t oenv)
+{
   int   i,j,k,l,f;
   int		valloc,nalloc,nfr,nvfr,m,itrust=0;
   int		vshfr;
@@ -500,7 +502,7 @@ static void dielectric(FILE *fmj,FILE *fmd,FILE *outf,FILE *fcur,FILE *mcor,FILE
 
     nfr++;
     
-  }while(read_next_frame(status,&fr));
+  }while(read_next_frame(oenv,status,&fr));
   
   volume_av/=refr;
   
@@ -690,10 +692,11 @@ int gmx_current(int argc,char *argv[])
     }
   };
 
+  output_env_t oenv;
   t_topology top;
   char       title[STRLEN];
   char       **grpname=NULL;
-  char	     *indexfn;
+  const char *indexfn;
   t_trxframe fr;
   real       *mass2=NULL;
   rvec       *xtop,*vtop;
@@ -779,7 +782,7 @@ int gmx_current(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
   bACF = opt2bSet("-caf",NFILE,fnm);
   bINT = opt2bSet("-mc",NFILE,fnm);
@@ -797,7 +800,7 @@ int gmx_current(int argc,char *argv[])
 
   flags = flags | TRX_READ_X | TRX_READ_V;
 
-  read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
+  read_first_frame(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
 
   snew(mass2,top.atoms.nr);
   snew(qmol,top.atoms.nr);
@@ -816,39 +819,46 @@ int gmx_current(int argc,char *argv[])
   index_atom2mol(&nmols,indexm,&top.mols);
 
   if (fr.bV){
-  	if(bACF){
-  		outf =xvgropen(opt2fn("-caf",NFILE,fnm),
-		    "Current autocorrelation function",xvgr_tlabel(),"ACF (e nm/ps)\\S2");
-    fprintf(outf,"# time\t acf\t average \t std.dev\n");
-  	}
-	  fcur =xvgropen(opt2fn("-o",NFILE,fnm),
-	  		  "Current",xvgr_tlabel(),"J(t) (e nm/ps)");
-		fprintf(fcur,"# time\t Jx\t Jy \t J_z \n");
-		if(bINT){
-      mcor = xvgropen(opt2fn("-mc",NFILE,fnm),
-		      "M\\sD\\N - current  autocorrelation function",xvgr_tlabel(),
-		      "< M\\sD\\N (0)\\c7\\CJ(t) >  (e nm/ps)\\S2");
-			fprintf(mcor,"# time\t M_D(0) J(t) acf \t Integral acf\n");
+      if(bACF){
+          outf =xvgropen(opt2fn("-caf",NFILE,fnm),
+                  "Current autocorrelation function",get_xvgr_tlabel(oenv),
+                  "ACF (e nm/ps)\\S2",oenv);
+          fprintf(outf,"# time\t acf\t average \t std.dev\n");
+      }
+      fcur =xvgropen(opt2fn("-o",NFILE,fnm),
+              "Current",get_xvgr_tlabel(oenv),"J(t) (e nm/ps)",oenv);
+      fprintf(fcur,"# time\t Jx\t Jy \t J_z \n");
+      if(bINT){
+          mcor = xvgropen(opt2fn("-mc",NFILE,fnm),
+                  "M\\sD\\N - current  autocorrelation function",
+                  get_xvgr_tlabel(oenv),
+                  "< M\\sD\\N (0)\\c7\\CJ(t) >  (e nm/ps)\\S2",oenv);
+          fprintf(mcor,"# time\t M_D(0) J(t) acf \t Integral acf\n");
     }
   }
   
   fmj = xvgropen(opt2fn("-mj",NFILE,fnm),
-		 "Averaged translational part of M",xvgr_tlabel(),"< M\\sJ\\N > (enm)");
+		 "Averaged translational part of M",get_xvgr_tlabel(oenv),
+                 "< M\\sJ\\N > (enm)",oenv);
   fprintf(fmj,"# time\t x\t y \t z \t average of M_J^2 \t std.dev\n");
   fmd = xvgropen(opt2fn("-md",NFILE,fnm),
-		 "Averaged rotational part of M",xvgr_tlabel(),"< M\\sD\\N > (enm)");
+		 "Averaged rotational part of M",get_xvgr_tlabel(oenv),
+                 "< M\\sD\\N > (enm)",oenv);
   fprintf(fmd,"# time\t x\t y \t z \t average of M_D^2 \t std.dev\n");
 
 	fmjdsp = xvgropen(opt2fn("-dsp",NFILE,fnm),
-		 "MSD of the squared translational dipole moment M",xvgr_tlabel(),\
-		 "<|M\\sJ\\N(t)-M\\sJ\\N(0)|\\S2\\N > / 6.0*V*k\\sB\\N*T / Sm\\S-1\\Nps\\S-1\\N");
+		 "MSD of the squared translational dipole moment M",
+                 get_xvgr_tlabel(oenv),
+		 "<|M\\sJ\\N(t)-M\\sJ\\N(0)|\\S2\\N > / 6.0*V*k\\sB\\N*T / Sm\\S-1\\Nps\\S-1\\N",
+                 oenv);
 
 
   /* System information is read and prepared, dielectric() processes the frames
    * and calculates the requested quantities */
 
-  dielectric(fmj,fmd,outf,fcur,mcor,fmjdsp,bNoJump,bACF,bINT,ePBC,top,fr,temp,trust,\
-  		bfit,efit,bvit,evit,status,isize,nmols,nshift,index0,indexm,mass2,qmol,eps_rf);
+  dielectric(fmj,fmd,outf,fcur,mcor,fmjdsp,bNoJump,bACF,bINT,ePBC,top,fr,
+             temp,trust, bfit,efit,bvit,evit,status,isize,nmols,nshift,
+             index0,indexm,mass2,qmol,eps_rf,oenv);
 
   fclose(fmj);
   fclose(fmd);

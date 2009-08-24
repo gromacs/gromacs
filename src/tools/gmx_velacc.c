@@ -139,6 +139,7 @@ int gmx_velacc(int argc,char *argv[])
   rvec       mv_mol;
   real       **c1;
   real	     *normm=NULL;
+  output_env_t oenv;
   
 #define NHISTO 360
     
@@ -156,7 +157,7 @@ int gmx_velacc(int argc,char *argv[])
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
 
   if (bMol)
     bTPS = bM || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
@@ -181,7 +182,7 @@ int gmx_velacc(int argc,char *argv[])
   for(i=0; (i<gnx); i++)
     c1[i]=NULL;
   
-  read_first_frame(&status,ftp2fn(efTRN,NFILE,fnm),&fr,TRX_NEED_V);
+  read_first_frame(oenv,&status,ftp2fn(efTRN,NFILE,fnm),&fr,TRX_NEED_V);
   t0=fr.time;
       
   n_alloc=0;
@@ -225,17 +226,17 @@ int gmx_velacc(int argc,char *argv[])
     t1=fr.time;
 
     teller ++;
-  } while (read_next_frame(status,&fr));
+  } while (read_next_frame(oenv,status,&fr));
   
 	close_trj(status);
 
-  do_autocorr(ftp2fn(efXVG,NFILE,fnm),
+  do_autocorr(ftp2fn(efXVG,NFILE,fnm), oenv,
 	      bM ? 
 	      "Momentum Autocorrelation Function" :
 	      "Velocity Autocorrelation Function",
 	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,TRUE);
   
-  do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
+  do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
   thanx(stderr);
   

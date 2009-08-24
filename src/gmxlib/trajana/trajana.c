@@ -127,17 +127,17 @@ struct gmx_ana_traj_t
     bool                      bPBC;
 
     //! Name of the trajectory file.
-    char                     *trjfile;
+    const char               *trjfile;
     //! Name of the topology file (NULL if no topology loaded).
-    char                     *topfile;
+    const char               *topfile;
     //! Non-NULL name of the topology file.
-    char                     *topfile_notnull;
+    const char               *topfile_notnull;
     //! Name of the index file (NULL if no index file provided).
-    char                     *ndxfile;
+    const char               *ndxfile;
     //! Name of the selection file (NULL if no file provided).
-    char                     *selfile;
+    const char               *selfile;
     //! The selection string (NULL if not provided).
-    char                     *selection;
+    const char               *selection;
 
     //! The topology structure, or \p NULL if no topology loaded.
     t_topology               *top;
@@ -183,14 +183,11 @@ struct gmx_ana_traj_t
 };
 
 //! Loads the topology.
-static int
-load_topology(gmx_ana_traj_t *d, bool bReq);
+static int load_topology(gmx_ana_traj_t *d, bool bReq);
 //! Loads the first frame and does some checks.
-static int
-init_first_frame(gmx_ana_traj_t *d);
+static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv);
 
-static int
-add_fnmarg(int nfile, t_filenm *fnm, t_filenm *fnm_add)
+static int add_fnmarg(int nfile, t_filenm *fnm, t_filenm *fnm_add)
 {
     memcpy(&(fnm[nfile]), fnm_add, sizeof(*fnm_add));
     return nfile + 1;
@@ -615,7 +612,8 @@ parse_trjana_args(gmx_ana_traj_t *d,
                   int *argc, char *argv[], unsigned long pca_flags,
                   int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                   int ndesc, const char **desc,
-		  int nbugs, const char **bugs)
+		  int nbugs, const char **bugs,
+                  output_env_t *oenv)
 {
     t_filenm           *all_fnm = NULL;
     int                 max_fnm, nfall;
@@ -778,7 +776,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
 
     pca_flags |= PCA_CAN_TIME | PCA_BE_NICE;
     parse_common_args(argc, argv, pca_flags, nfall, all_fnm, npall, all_pa,
-                      ndesc, desc, nbugs, bugs);
+                      ndesc, desc, nbugs, bugs,oenv);
 
     /* Copy the results back */
     for (k = 0; k < nfile; ++k)
@@ -847,7 +845,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
     /* Initialize the selections/index groups */
     if (!(d->flags & ANA_USER_SELINIT))
     {
-        rc = gmx_ana_init_selections(d);
+        rc = gmx_ana_init_selections(d,*oenv);
     }
 
     return rc;
@@ -867,8 +865,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
  * The function can be called multiple times safely; extra calls are
  * ignored.
  */
-static int
-load_topology(gmx_ana_traj_t *d, bool bReq)
+static int load_topology(gmx_ana_traj_t *d, bool bReq)
 {
     char                title[STRLEN];
 
@@ -976,8 +973,7 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
  *
  * \see ANA_USER_SELINIT
  */
-int
-gmx_ana_init_selections(gmx_ana_traj_t *d)
+int gmx_ana_init_selections(gmx_ana_traj_t *d, const output_env_t oenv)
 {
     int                  rc;
     int                  i;
@@ -1119,7 +1115,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     }
     else
     {
-        rc = init_first_frame(d);
+        rc = init_first_frame(d,oenv);
         if (rc != 0)
         {
             return rc;
@@ -1259,10 +1255,9 @@ gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type)
  * \param[in] d    Trajectory analysis data structure.
  * \returns   0 on success, a non-zero error code on error.
  */
-int
-xvgr_selections(FILE *out, gmx_ana_traj_t *d)
+int xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv)
 {
-    xvgr_selcollection(out, d->sc);
+    xvgr_selcollection(out, d->sc, oenv);
     return 0;
 }
 
@@ -1270,8 +1265,7 @@ xvgr_selections(FILE *out, gmx_ana_traj_t *d)
  * \param[in,out] d       Trajectory analysis data structure.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int
-init_first_frame(gmx_ana_traj_t *d)
+static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
 {
     int                 i;
 
@@ -1284,7 +1278,7 @@ init_first_frame(gmx_ana_traj_t *d)
     d->frflags |= TRX_NEED_X;
 
     snew(d->fr, 1);
-    if (!read_first_frame(&d->status, d->trjfile, d->fr, d->frflags))
+    if (!read_first_frame(oenv,&d->status, d->trjfile, d->fr, d->frflags))
     {
         gmx_input("could not read coordinates from trajectory");
         return EIO;
@@ -1319,12 +1313,12 @@ init_first_frame(gmx_ana_traj_t *d)
  *
  * \see gmx_ana_do()
  */
-int
-gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr)
+int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr, 
+                            const output_env_t oenv)
 {
     int rc;
 
-    rc = init_first_frame(d);
+    rc = init_first_frame(d,oenv);
     if (rc != 0)
     {
         *fr = NULL;
@@ -1350,14 +1344,14 @@ gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr)
  *
  * This function also calculates the number of frames during the run.
  */
-int
-gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data)
+int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, 
+               void *data, const output_env_t oenv)
 {
     t_pbc               pbc;
     t_pbc              *ppbc;
     int                 rc;
 
-    rc = init_first_frame(d);
+    rc = init_first_frame(d,oenv);
     if (rc != 0)
     {
         return rc;
@@ -1399,7 +1393,7 @@ gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data)
 
         d->nframes++;
     }
-    while (read_next_frame(d->status, d->fr));
+    while (read_next_frame(oenv,d->status, d->fr));
 
     close_trj(d->status);
 

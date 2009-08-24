@@ -148,6 +148,7 @@ int gmx_densmap(int argc,char *argv[])
   real       invspa=0,invspz=0,axial,r,vol_old,vol,rowsum;
   int        nlev=51;
   t_rgb rlo={1,1,1}, rhi={0,0,0};
+  output_env_t oenv;
   const char *label[]={ "x (nm)", "y (nm)", "z (nm)" };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
@@ -163,7 +164,7 @@ int gmx_densmap(int argc,char *argv[])
   npargs = asize(pa);
 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL,&oenv); 
    
   bXmin = opt2parg_bSet("-xmin",npargs,pa);
   bXmax = opt2parg_bSet("-xmax",npargs,pa);
@@ -213,7 +214,7 @@ int gmx_densmap(int argc,char *argv[])
   case 'z': cav = ZZ; c1 = XX; c2 = YY; break;
   }
 
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
 
   if (!bRadial) {
     if (n1 == 0)
@@ -301,7 +302,7 @@ int gmx_densmap(int argc,char *argv[])
       }
     }
     nfr++;
-  } while(read_next_x(status,&t,natoms,x,box));
+  } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
 
   /* normalize gridpoints */
@@ -413,7 +414,7 @@ int gmx_densmap(int argc,char *argv[])
   
   thanx(stderr);
 
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn("-o",NFILE,fnm),NULL);
 
   return 0;
 }

@@ -216,7 +216,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
     if (strcasecmp(nb_str,enbf_names[i]) == 0)
       *nb = i;
   if (*nb == -1)
-    *nb = atoi(nb_str);
+    *nb = strtol(nb_str,NULL,0);
   if ((*nb < 1) || (*nb >= eNBF_NR)) {
     sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
 	    nb_str,enbf_names[1]);
@@ -228,7 +228,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
     if (strcasecmp(comb_str,ecomb_names[i]) == 0)
       *comb = i;
   if (*comb == -1)
-    *comb = atoi(comb_str);
+    *comb = strtol(comb_str,NULL,0);
   if ((*comb < 1) || (*comb >= eCOMB_NR)) {
     sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
 	    comb_str,ecomb_names[1]);
@@ -237,16 +237,18 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   }
 }
 
-char **
-cpp_opts(char *define,char *include,char *infile)
+char ** cpp_opts(const char *define,const char *include,
+                       const char *infile)
 {
   int  n,len;
   int  ncppopts=0;
-  char *cppadds[2];
+  const char *cppadds[2];
   char **cppopts  = NULL;
   const char *option[2] = { "-D","-I" };
   const char *nopt[2]   = { "define", "include" };
-  char *ptr,*rptr,*buf;
+  const char *ptr;
+  const char *rptr;
+  char *buf;
   
   cppadds[0] = define;
   cppadds[1] = include;
@@ -278,12 +280,12 @@ cpp_opts(char *define,char *include,char *infile)
     }
   }
   if ((rptr=strrchr(infile,'/')) != NULL) {
-    ptr = strdup(infile);
-    ptr[(int)(rptr-infile)] = '\0';
+    buf = strdup(infile);
+    buf[(int)(rptr-infile)] = '\0';
     srenew(cppopts,++ncppopts);
-    snew(cppopts[ncppopts-1],strlen(ptr)+4);
-    sprintf(cppopts[ncppopts-1],"-I%s",ptr);
-    sfree(ptr);
+    snew(cppopts[ncppopts-1],strlen(buf)+4);
+    sprintf(cppopts[ncppopts-1],"-I%s",buf);
+    sfree(buf);
   }
   srenew(cppopts,++ncppopts);
   cppopts[ncppopts-1] = NULL;
@@ -291,8 +293,8 @@ cpp_opts(char *define,char *include,char *infile)
   return cppopts;  
 }
 
-static char **read_topol(char *infile,char *outfile,
-			 char *define,char *include,
+static char **read_topol(const char *infile,const char *outfile,
+			 const char *define,const char *include,
 			 t_symtab    *symtab,
 			 gpp_atomtype_t atype,
 			 int         *nrmols,
@@ -715,8 +717,8 @@ static char **read_topol(char *infile,char *outfile,
 }
 
 char **do_top(bool         bVerbose,
-	      char         *topfile,
-	      char         *topppfile,
+	      const char   *topfile,
+	      const char   *topppfile,
 	      t_gromppopts *opts,
 	      bool         bZero,
 	      t_symtab     *symtab,
@@ -733,7 +735,7 @@ char **do_top(bool         bVerbose,
 	      bool          bGB)
 {
   /* Tmpfile might contain a long path */
-  char *tmpfile;
+  const char *tmpfile;
   char **title;
   
   if (topppfile)

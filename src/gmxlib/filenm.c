@@ -48,6 +48,14 @@
 #include "xdrf.h"
 #include "macros.h"
 
+#ifdef GMX_THREADS
+#include "thread_mpi.h"
+#endif
+
+/* NOTE: this was a cesspool of thread-unsafe code, has now been 
+         properly proteced by mutexes (hopefully). */
+
+
 /* XDR should be available on all platforms now, 
  * but we keep the possibility of turning it off...
  */
@@ -123,7 +131,7 @@ typedef struct {
  
 
 /* this array should correspond to the enum in include/types/filenm.h */
-static t_deffile deffile[efNR] = {
+static const t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
   { eftASC, ".gct", "gct",    "-f", "General coupling stuff"                 },
   { eftGEN, ".???", "traj",   "-f", "Trajectory: xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
@@ -173,7 +181,12 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".xpm", "root",   NULL, "X PixMap compatible matrix file"        }
 };
 
+
 static char *default_file_name=NULL;
+
+#ifdef GMX_THREADS
+static tMPI_Thread_mutex_t filenm_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
 
 #define NZEXT 2
 const char *z_ext[NZEXT] = { ".gz", ".Z" };
@@ -181,11 +194,18 @@ const char *z_ext[NZEXT] = { ".gz", ".Z" };
 void set_default_file_name(const char *name)
 {
   int i;
-
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_lock(&filenm_mutex);
+#endif
   default_file_name = strdup(name);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_unlock(&filenm_mutex);
+#endif
 
+#if 0
   for(i=0; i<efNR; i++)
     deffile[i].defnm = default_file_name;
+#endif
 }
 
 const char *ftp2ext(int ftp)
@@ -250,66 +270,83 @@ const char *ftp2ftype(int ftp)
 
 const char *ftp2defnm(int ftp)
 {
-  static char buf[256];
-  
-  if ((0 <= ftp) && (ftp < efNR)) {
-    sprintf(buf,"%s",deffile[ftp].defnm);
-    return buf;
-  } 
+  const char *buf=NULL;
+
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_lock(&filenm_mutex);
+#endif
+
+  if (default_file_name)
+  {
+      buf=default_file_name;
+  }
   else
-    return NULL;
+  {
+      if ((0 <= ftp) && (ftp < efNR)) 
+      {
+          buf=deffile[ftp].defnm;
+      }
+  }
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_unlock(&filenm_mutex);
+#endif
+
+  return buf;
 }
 
 void pr_def(FILE *fp,int ftp)
 {
-  t_deffile *df;
+  const t_deffile *df;
   const char *s=NULL;
   char *flst, *tmp;
   const char *ext,*desc;
-  
+  const char *defnm;
+
   df=&(deffile[ftp]);
+  defnm=ftp2defnm(ftp);
   /* find default file extension and \tt-ify description */
   /* FIXME: The constness should not be cast away */
   flst=(char *)"";
   if (df->ntps) {
-    ext = deffile[df->tps[0]].ext;
-    desc= strdup(df->descr);
-    tmp = strstr(desc,": ")+1;
-    if (tmp) {
-      tmp[0] = '\0';
-      tmp++;
-      snew(flst,strlen(tmp)+6);
-      strcpy(flst, " \\tt ");
-      strcat(flst, tmp);
-    }
+      ext = deffile[df->tps[0]].ext;
+      desc= strdup(df->descr);
+      tmp = strstr(desc,": ")+1;
+      if (tmp) {
+          tmp[0] = '\0';
+          tmp++;
+          snew(flst,strlen(tmp)+6);
+          strcpy(flst, " \\tt ");
+          strcat(flst, tmp);
+      }
   } else {
-    ext = df->ext;
-    desc= df->descr;
+      ext = df->ext;
+      desc= df->descr;
   }
   /* now skip dot */
   if (ext[0])
-    ext++;
+      ext++;
   else
-    ext="";
+      ext="";
   /* set file contents type */
   switch (df->ftype) {
-  case eftASC: s="Asc";
-    break;
-  case eftBIN: s="Bin";
-    break;
-  case eftXDR: s="xdr";
-    break;
-  case eftGEN: s="";
-    break;
-  default: 
-    gmx_fatal(FARGS,"Unimplemented filetype %d %d",ftp,df->ftype);
+      case eftASC: s="Asc";
+                   break;
+      case eftBIN: s="Bin";
+                   break;
+      case eftXDR: s="xdr";
+                   break;
+      case eftGEN: s="";
+                   break;
+      default: 
+                   gmx_fatal(FARGS,"Unimplemented filetype %d %d",ftp,
+                             df->ftype);
   }
   fprintf(fp,"\\tt %8s & \\tt %3s & %3s & \\tt %2s & %s%s \\\\[-0.1ex]\n",
-	  df->defnm, ext, s, df->defopt ? df->defopt : "", 
-	  check_tex(desc),check_tex(flst));
+          defnm, ext, s, df->defopt ? df->defopt : "", 
+          check_tex(desc),check_tex(flst));
 }
 
-void pr_fns(FILE *fp,int nf,t_filenm tfn[])
+void pr_fns(FILE *fp,int nf,const t_filenm tfn[])
 {
   int  i,f;
   size_t j;
@@ -331,7 +368,8 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
       strcat(buf, deffile[tfn[i].ftp].descr);
       if ( (strlen(tfn[i].opt)>OPTLEN) && 
 	   (strlen(tfn[i].opt)<=
-	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nfiles-1]))) ) {
+	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nfiles-1]))) ) 
+      {
 	for(j=strlen(tfn[i].opt); 
 	    j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
 	  buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
@@ -345,7 +383,7 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   fflush(fp);
 }
 
-void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell)
+void pr_fopts(FILE *fp,int nf,const t_filenm tfn[], int shell)
 {
   int i,j;
   
@@ -416,7 +454,7 @@ void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell)
 static void check_opts(int nf,t_filenm fnm[])
 {
   int       i;
-  t_deffile *df;
+  const t_deffile *df;
   
   for(i=0; (i<nf); i++) {
     df=&(deffile[fnm[i].ftp]);
@@ -432,31 +470,31 @@ static void check_opts(int nf,t_filenm fnm[])
 
 int fn2ftp(const char *fn)
 {
-	int  i,len;
-	const char *feptr;
-	const char *eptr;
-  
-  if (!fn)
-    return efNR;
+    int  i,len;
+    const char *feptr;
+    const char *eptr;
 
-  len=strlen(fn);
-  if ((len >= 4) && (fn[len-4] == '.'))
-    feptr=&(fn[len-4]);
-  else
-    return efNR;
-  
-  for(i=0; (i<efNR); i++)
-    if ((eptr=deffile[i].ext) != NULL)
-      if (strcasecmp(feptr,eptr)==0)
-	break;
-      
-  return i;
+    if (!fn)
+        return efNR;
+
+    len=strlen(fn);
+    if ((len >= 4) && (fn[len-4] == '.'))
+        feptr=&(fn[len-4]);
+    else
+        return efNR;
+
+    for(i=0; (i<efNR); i++)
+        if ((eptr=deffile[i].ext) != NULL)
+            if (strcasecmp(feptr,eptr)==0)
+                break;
+
+    return i;
 }
 
 static void set_extension(char *buf,int ftp)
 {
   int len,extlen;
-  t_deffile *df;
+  const t_deffile *df;
 
   /* check if extension is already at end of filename */
   df=&(deffile[ftp]);
@@ -555,7 +593,10 @@ static void set_filenm(t_filenm *fnm,const char *name,bool bCanNotOverride,
     set_grpfnm(fnm,name ? buf : NULL,bCanNotOverride);
   else {
     if ((name == NULL) || !(bCanNotOverride || (default_file_name == NULL)))
-      strcpy(buf,deffile[fnm->ftp].defnm);
+    {
+        const char *defnm=ftp2defnm(fnm->ftp);
+        strcpy(buf,defnm);
+    }
     set_extension(buf,fnm->ftp);
     
     add_filenm(fnm, buf);
@@ -627,7 +668,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	
 }
 
-char *opt2fn(const char *opt,int nfile,t_filenm fnm[])
+const char *opt2fn(const char *opt,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -641,12 +682,13 @@ char *opt2fn(const char *opt,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-char *opt2fn_master(const char *opt, int nfile, t_filenm fnm[], t_commrec *cr ) 
+const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[], 
+                          t_commrec *cr ) 
 {
     return SIMMASTER(cr)?opt2fn(opt,nfile,fnm):NULL;
 }
 
-int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[])
+int opt2fns(char **fns[], const char *opt,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -660,7 +702,7 @@ int opt2fns(char **fns[], const char *opt,int nfile,t_filenm fnm[])
   return 0;
 }
 
-char *ftp2fn(int ftp,int nfile,t_filenm fnm[])
+const char *ftp2fn(int ftp,int nfile,const t_filenm fnm[])
 {
   int i;
   
@@ -672,7 +714,7 @@ char *ftp2fn(int ftp,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[])
+int ftp2fns(char **fns[], int ftp,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -686,7 +728,7 @@ int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[])
   return 0;
 }
 
-bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
+bool ftp2bSet(int ftp,int nfile,const t_filenm fnm[])
 {
   int i;
   
@@ -699,7 +741,7 @@ bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
   return FALSE;
 }
 
-bool opt2bSet(const char *opt,int nfile,t_filenm fnm[])
+bool opt2bSet(const char *opt,int nfile,const t_filenm fnm[])
 {
   int i;
   
@@ -712,7 +754,7 @@ bool opt2bSet(const char *opt,int nfile,t_filenm fnm[])
   return FALSE;
 }
 
-char *opt2fn_null(const char *opt,int nfile,t_filenm fnm[])
+const char *opt2fn_null(const char *opt,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -727,7 +769,7 @@ char *opt2fn_null(const char *opt,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
+const char *ftp2fn_null(int ftp,int nfile, const t_filenm fnm[])
 {
   int i;
   
@@ -742,6 +784,7 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   return NULL;
 }
 
+#if 0
 static void add_filters(char *filter,int *n,int nf,const int ftp[])
 {
   char buf[8];
@@ -787,47 +830,80 @@ char *ftp2filter(int ftp)
   }
   return filter;
 }
+#endif
 
-bool is_optional(t_filenm *fnm)
+
+bool is_optional(const t_filenm *fnm)
 {
   return ((fnm->flag & ffOPT) == ffOPT);
 }
 
-bool is_output(t_filenm *fnm)
+bool is_output(const t_filenm *fnm)
 {
   return ((fnm->flag & ffWRITE) == ffWRITE);
 }
 
-bool is_set(t_filenm *fnm)
+bool is_set(const t_filenm *fnm)
 {
   return ((fnm->flag & ffSET) == ffSET);
 }  
 
  
 
-int
-add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix)
+int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
 {
-	int   i,j,pos;
-	char  buf[STRLEN],newname[STRLEN];
-	char  *extpos;
-	
-	for( i=0 ; i<nfile ; i++)
-	{
-		if( is_output(&fnm[i]) && fnm[i].ftp != efCPT )
-		{
-			/* We never use multiple _outputs_, but we might as well check for it, just in case... */
-			for( j=0 ; j<fnm[i].nfiles ; j++)
-			{
-				strncpy(buf,fnm[i].fns[j],STRLEN-1);
-				extpos = strrchr(buf,'.');
-				*extpos = '\0';
-				sprintf(newname,"%s.%s.%s",buf,suffix,extpos+1);
-				free(fnm[i].fns[j]);
-				fnm[i].fns[j]=strdup(newname);
-			}
-		}
-	}
-	return 0;
+    int   i,j,pos;
+    char  buf[STRLEN],newname[STRLEN];
+    char  *extpos;
+
+    for( i=0 ; i<nfile ; i++)
+    {
+        if( is_output(&fnm[i]) && fnm[i].ftp != efCPT )
+        {
+            /* We never use multiple _outputs_, but we might as well check 
+               for it, just in case... */
+            for( j=0 ; j<fnm[i].nfiles ; j++)
+            {
+                strncpy(buf,fnm[i].fns[j],STRLEN-1);
+                extpos = strrchr(buf,'.');
+                *extpos = '\0';
+                sprintf(newname,"%s.%s.%s",buf,suffix,extpos+1);
+                free(fnm[i].fns[j]);
+                fnm[i].fns[j]=strdup(newname);
+            }
+        }
+    }
+    return 0;
+}
+
+t_filenm *dup_tfn(int nf, const t_filenm tfn[])
+{
+    int i,j;
+    t_filenm *ret;
+
+    snew(ret, nf);
+    for(i=0;i<nf;i++)
+    {
+        ret[i] = tfn[i]; /* just directly copy all non-string fields */
+        if (tfn[i].opt)
+            ret[i].opt = strdup(tfn[i].opt);
+        else
+            ret[i].opt = NULL;
+
+        if (tfn[i].fn)
+            ret[i].fn = strdup(tfn[i].fn);
+        else
+            ret[i].fn = NULL;
+
+        if (tfn[i].nfiles > 0)
+        {
+            snew(ret[i].fns,tfn[i].nfiles);
+            for(j=0;j<tfn[i].nfiles;j++)
+            {
+                ret[i].fns[j] = strdup(tfn[i].fns[j]);
+            }
+        }
+    }
+    return ret;
 }
 

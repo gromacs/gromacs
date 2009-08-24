@@ -172,8 +172,8 @@ typedef struct edpar
 typedef struct gmx_edsam
 {
     int           eEDtype;        /* Type of ED: see enums above          */
-    char          *edinam;        /* name of ED sampling input file       */
-    char          *edonam;        /*                     output           */
+    const char    *edinam;        /* name of ED sampling input file       */
+    const char    *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
     bool          bFirst;
@@ -185,15 +185,18 @@ struct t_do_edsam
     matrix old_rotmat;
     real oldrad;
     rvec old_transvec,older_transvec,transvec_compact;
-    rvec *xcoll;         /* Coordinates from all nodes, this is the collective set of coords we work on.
-                          * These are the coordinates of atoms with average structure indices */
+    rvec *xcoll;         /* Coordinates from all nodes, this is the 
+                            collective set of coords we work on.
+                            These are the coordinates of atoms with 
+                            average structure indices */
     rvec *xc_ref;        /* same but with reference structure indices */
     ivec *shifts_xcoll;        /* Shifts for xcoll  */
     ivec *extra_shifts_xcoll;  /* xcoll shift changes since last NS step */
     ivec *shifts_xc_ref;       /* Shifts for xc_ref */
     ivec *extra_shifts_xc_ref; /* xc_ref shift changes since last NS step */
-    bool bUpdateShifts;        /* TRUE in NS steps to indicate that the ED shifts 
-                                * for this ED dataset need to be updated */
+    bool bUpdateShifts;        /* TRUE in NS steps to indicate that the 
+                                  ED shifts for this ED dataset need to 
+                                  be updated */
 };
 
 
@@ -316,7 +319,8 @@ static real calc_radius(t_eigvec *vec)
 
 
 /* Debug helper */
-static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int step)
+static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, 
+                       int step)
 {
     int i;
     FILE *fp;
@@ -336,7 +340,8 @@ static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int 
     fp = fopen(fn, "w");
     
     for (i=0; i<edi->sav.nr; i++)
-        fprintf(fp, "%d %9.5f %9.5f %9.5f   %d %d %d   %d %d %d\n", edi->sav.anrs[i]+1, 
+        fprintf(fp, "%d %9.5f %9.5f %9.5f   %d %d %d   %d %d %d\n", 
+                edi->sav.anrs[i]+1, 
                 xcoll[i][XX]  , xcoll[i][YY]  , xcoll[i][ZZ],
                 shifts[i][XX] , shifts[i][YY] , shifts[i][ZZ], 
                 eshifts[i][XX], eshifts[i][YY], eshifts[i][ZZ]);
@@ -402,7 +407,8 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     fprintf(out,"#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
             edpars->outfrq,edpars->maxedsteps,edpars->slope);
     fprintf(out,"#PRESTEPS\n %d\n#DELTA_F0\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n",
-            edpars->presteps,edpars->flood.deltaF0,edpars->flood.tau,edpars->flood.constEfl,edpars->flood.alpha2);
+            edpars->presteps,edpars->flood.deltaF0,edpars->flood.tau,
+            edpars->flood.constEfl,edpars->flood.alpha2);
 
     /* Dump reference, average, target, origin positions */
     dump_edi_positions(out, &edpars->sref, "REFERENCE");
@@ -422,9 +428,9 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING"  , edpars->sav.nr);
 
     /* Dump ed local buffer */
-    fprintf(out, "buf->do_edfit         =%p\n", edpars->buf->do_edfit         );
-    fprintf(out, "buf->do_edsam         =%p\n", edpars->buf->do_edsam         );
-    fprintf(out, "buf->do_radcon        =%p\n", edpars->buf->do_radcon        );
+    fprintf(out, "buf->do_edfit         =%p\n", (void*)edpars->buf->do_edfit  );
+    fprintf(out, "buf->do_edsam         =%p\n", (void*)edpars->buf->do_edsam  );
+    fprintf(out, "buf->do_radcon        =%p\n", (void*)edpars->buf->do_radcon );
 
     ffclose(out);
 }
@@ -1035,7 +1041,7 @@ static void subtract_COM(int   nat,  /* number of atoms in the coordinate buffer
 }
 
 
-gmx_edsam_t ed_open(int nfile,t_filenm fnm[],t_commrec *cr)
+gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
 {   
     gmx_edsam_t ed;
     

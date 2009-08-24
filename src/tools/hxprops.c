@@ -301,7 +301,7 @@ static void set_ahcity(int nbb,t_bb bb[])
   }
 }
 
-t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
+t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
 	      int *nall,atom_id **index,
 	      char ***atomname,t_atom atom[],
 	      t_resinfo *resinfo)

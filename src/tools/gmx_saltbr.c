@@ -165,11 +165,12 @@ int gmx_saltbr(int argc,char *argv[])
   t_pbc      pbc;
   rvec       *x;
   matrix     box;
+  output_env_t oenv;
   
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
   cg=mk_charge(&top->atoms,&(top->cgs),&ncg);
@@ -180,7 +181,7 @@ int gmx_saltbr(int argc,char *argv[])
     snew(nWithin[i],ncg);
   }
   
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   teller=0;
   time=NULL;
@@ -201,7 +202,7 @@ int gmx_saltbr(int argc,char *argv[])
     }
           
     teller++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   close_trj(status);
 
@@ -211,7 +212,7 @@ int gmx_saltbr(int argc,char *argv[])
       for(j=i+1; (j<ncg); j++) {
 	if (nWithin[i][j]) {
 	  sprintf(buf,"sb-%s:%s.xvg",cg[i].label,cg[j].label);
-	  fp=xvgropen(buf,buf,"Time (ps)","Distance (nm)");
+	  fp=xvgropen(buf,buf,"Time (ps)","Distance (nm)",oenv);
 	  for(k=0; (k<teller); k++) 
 	    fprintf(fp,"%10g  %10g\n",time[k],cgdist[i][j][k]);
 	  fclose(fp);
@@ -222,7 +223,7 @@ int gmx_saltbr(int argc,char *argv[])
   else {
   
     for(m=0; (m<3); m++)
-      out[m]=xvgropen(fn[m],title[m],"Time (ps)","Distance (nm)");
+      out[m]=xvgropen(fn[m],title[m],"Time (ps)","Distance (nm)",oenv);
 
     snew(buf,256);
     for(i=0; (i<ncg); i++) {
@@ -239,7 +240,7 @@ int gmx_saltbr(int argc,char *argv[])
 	    nnn=1;
 	  
 	  if (nset[nnn] == 0) 
-	    xvgr_legend(out[nnn],1,&buf);
+	    xvgr_legend(out[nnn],1,&buf,oenv);
 	  else {
 	    if (use_xmgr())
 	      fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);

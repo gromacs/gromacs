@@ -197,15 +197,17 @@ gmx_select(int argc, char *argv[])
     gmx_ana_selection_t **sel;
     char                **grpnames;
     t_dsdata              d;
-    char                 *fnSize, *fnFrac, *fnIndex, *fnMask;
+    const char            *fnSize, *fnFrac, *fnIndex, *fnMask;
     int                   g;
     int                   rc;
+    output_env_t          oenv;
 
     CopyRight(stderr, argv[0]);
     gmx_ana_traj_create(&trj, 0);
     gmx_ana_set_nanagrps(trj, -1);
     parse_trjana_args(trj, &argc, argv, 0,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL);
+                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
+                      &oenv);
     gmx_ana_get_nanagrps(trj, &ngrps);
     gmx_ana_get_anagrps(trj, &sel);
     gmx_ana_init_coverfrac(trj, CFRAC_SOLIDANGLE);
@@ -257,29 +259,30 @@ gmx_select(int argc, char *argv[])
     gmx_ana_get_grpnames(trj, &grpnames);
     if (fnSize)
     {
-        d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number");
-        xvgr_selections(d.sfp, trj);
-        xvgr_legend(d.sfp, ngrps, grpnames);
+        d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number",oenv);
+        xvgr_selections(d.sfp, trj, oenv);
+        xvgr_legend(d.sfp, ngrps, grpnames, oenv);
     }
     if (fnFrac)
     {
-        d.cfp = xvgropen(fnFrac, "Covered fraction", "Time (ps)", "Fraction");
-        xvgr_selections(d.cfp, trj);
-        xvgr_legend(d.cfp, ngrps, grpnames);
+        d.cfp = xvgropen(fnFrac, "Covered fraction", "Time (ps)", "Fraction",
+                         oenv);
+        xvgr_selections(d.cfp, trj, oenv);
+        xvgr_legend(d.cfp, ngrps, grpnames, oenv);
     }
     if (fnIndex)
     {
         d.ifp = ffopen(fnIndex, "w");
-        xvgr_selections(d.ifp, trj);
+        xvgr_selections(d.ifp, trj, oenv);
     }
     if (fnMask)
     {
         d.mfp = ffopen(fnMask, "w");
-        xvgr_selections(d.mfp, trj);
+        xvgr_selections(d.mfp, trj, oenv);
     }
 
     /* Do the analysis and write out results */
-    gmx_ana_do(trj, 0, &print_data, &d);
+    gmx_ana_do(trj, 0, &print_data, &d, oenv);
 
     /* Close the files */
     if (d.sfp)

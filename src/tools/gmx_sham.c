@@ -195,7 +195,7 @@ static int comp_minima(const void *a,const void *b)
     return 0;
 }
 
-static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
+static void pick_minima(const char *logfile,int *ibox,int ndim,int len,real W[])
 {
   FILE *fp;
   int  i,j,k,ijk,nmin;
@@ -261,9 +261,10 @@ static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
   sfree(mm);
 }
 
-static void do_sham(char *fn,char *ndx,
-		    char *xpmP,char *xpm,char *xpm2,
-		    char *xpm3,char *xpm4,char *pdb,char *logf,
+static void do_sham(const char *fn,const char *ndx,
+		    const char *xpmP,const char *xpm,const char *xpm2,
+		    const char *xpm3,const char *xpm4,const char *pdb,
+                    const char *logf,
 		    int n,int neig,real **eig,
 		    bool bGE,int nenerT,real **enerT,
 		    int nmap,real *mapindex,real **map,
@@ -624,7 +625,7 @@ static void do_sham(char *fn,char *ndx,
   }
 }
 
-static void ehisto(char *fh,int n,real **enerT)
+static void ehisto(const char *fh,int n,real **enerT, const output_env_t oenv)
 {
   FILE *fp;
   int  i,j,k,nbin,blength;
@@ -662,7 +663,7 @@ static void ehisto(char *fh,int n,real **enerT)
     k = (enerT[0][j]-bmin)/bwidth;
     histo[bindex[j]][k]++;
   }
-  fp = xvgropen(fh,"Energy distribution","E (kJ/mol)","");
+  fp = xvgropen(fh,"Energy distribution","E (kJ/mol)","",oenv);
   for(j=0; (j<blength); j++) {
     fprintf(fp,"%8.3f",bmin+j*bwidth);
     for(k=0; (k<nbin); k++) {
@@ -775,7 +776,8 @@ int gmx_sham(int argc,char *argv[])
   real     **val,**et_val,**dt_val,*t,*e_t,e_dt,d_dt,*d_t,dt,tot,error;
   real     *rmin,*rmax;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
-  char     *fn_ge,*fn_ene;
+  const char     *fn_ge,*fn_ene;
+  output_env_t oenv;
     
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
@@ -801,7 +803,7 @@ int gmx_sham(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE ,
-		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL,&oenv); 
 
   val=read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
 		    opt2parg_bSet("-b",npargs,pa),tb-ttol,
@@ -847,7 +849,7 @@ int gmx_sham(int argc,char *argv[])
     dt_val = NULL;
 
   if (fn_ene && et_val)
-    ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val);
+    ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val,oenv);
 
   snew(idim,nset);
   snew(ibox,nset);

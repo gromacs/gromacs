@@ -51,8 +51,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #define DDRANK(dd,rank)    (rank)
@@ -2872,8 +2872,11 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                           dd->nc[d],dd->nc[d],
                           dd->nnodes > dd->nc[d] ? "cells" : "processors");
             }
-
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
     }
     
@@ -3111,6 +3114,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     real change_limit = 0.1;
     real relax = 0.5;
     bool bPBC;
+    int range[] = { 0, 0 };
 
     comm = dd->comm;
 
@@ -3206,7 +3210,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             }
         }
     }
-    int range[] = { 0, ncd };
+    range[1]=ncd;
     root->cell_f[0] = 0;
     root->cell_f[ncd] = 1;
     dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, range);
@@ -6240,8 +6244,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
             }
-            
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
     }
     else
@@ -6268,8 +6275,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                           "Look in the log file for details on the domain decomposition",
                           cr->nnodes-cr->npmenodes,limit,buf);
             }
-            
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
         set_dd_dim(fplog,dd);
     }

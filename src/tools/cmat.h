@@ -77,9 +77,10 @@ extern real mat_energy(t_mat *mat);
 
 extern void swap_mat(t_mat *m);
 
-extern void low_rmsd_dist(char *fn,real maxrms,int nn,real **mat);
+extern void low_rmsd_dist(const char *fn,real maxrms,int nn,real **mat,
+                          const output_env_t oenv);
 
-extern void rmsd_distribution(char *fn,t_mat *m);
+extern void rmsd_distribution(const char *fn,t_mat *m,const output_env_t oenv);
 
 extern t_clustid *new_clustid(int n1);
 

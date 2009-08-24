@@ -46,8 +46,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 typedef struct
@@ -115,11 +115,15 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
     snew(wc->wcc,ewcNR);
     if (getenv("GMX_CYCLE_ALL") != NULL)
     {
+/*#ifndef GMX_THREADS*/
         if (fplog) 
         {
             fprintf(fplog,"\nWill time all the code during the run\n\n");
         }
         snew(wc->wcc_all,ewcNR*ewcNR);
+/*#else*/
+        gmx_fatal(FARGS, "GMX_CYCLE_ALL is incompatible with threaded code");
+/*#endif*/
     }
     
     /* Read variable GMX_RESET_COUNTER from environment */ 

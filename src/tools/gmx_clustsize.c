@@ -63,12 +63,13 @@
 #include "matio.h"
 #include "mtop_util.h"
 
-static void clust_size(char *ndx,char *trx,char *xpm,
-		       char *xpmw,char *ncl,char *acl, 
-		       char *mcl,char *histo,char *tempf,
-		       char *mcn,bool bMol,bool bPBC,char *tpr,
+static void clust_size(const char *ndx,const char *trx,const char *xpm,
+		       const char *xpmw,const char *ncl,const char *acl, 
+		       const char *mcl,const char *histo,const char *tempf,
+		       const char *mcn,bool bMol,bool bPBC,const char *tpr,
 		       real cut,int nskip,int nlevels,
-		       t_rgb rmid,t_rgb rhi,int ndf)
+		       t_rgb rmid,t_rgb rhi,int ndf,
+                       const output_env_t oenv)
 {
   FILE    *fp,*gp,*hp,*tp;
   atom_id *index=NULL;
@@ -95,14 +96,15 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
   clear_trxframe(&fr,TRUE);
-  sprintf(timebuf,"Time (%s)",time_unit());
-  tf     = time_factor();
-  fp     = xvgropen(ncl,"Number of clusters",timebuf,"N");
-  gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
-  hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
-  tp     = xvgropen(tempf,"Temperature of largest cluster",timebuf,"T (K)");
+  sprintf(timebuf,"Time (%s)",get_time_unit(oenv));
+  tf     = get_time_factor(oenv);
+  fp     = xvgropen(ncl,"Number of clusters",timebuf,"N",oenv);
+  gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules",oenv);
+  hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules",oenv);
+  tp     = xvgropen(tempf,"Temperature of largest cluster",timebuf,"T (K)",
+                    oenv);
   
-  if (!read_first_frame(&status,trx,&fr,TRX_NEED_X | TRX_READ_V))
+  if (!read_first_frame(oenv,&status,trx,&fr,TRX_NEED_X | TRX_READ_V))
     gmx_file(trx);
     
   natoms = fr.natoms;
@@ -270,7 +272,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
       }
     }
     nframe++;
-  } while (read_next_frame(status,&fr));
+  } while (read_next_frame(oenv,status,&fr));
   close_trx(status);
   fclose(fp);
   fclose(gp);
@@ -318,12 +320,12 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     }
   fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   fp = ffopen(xpmw,"w");
-  write_xpm3(fp,0,"Weighted cluster size distribution","Fraction",timebuf,"Size",
-	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
+  write_xpm3(fp,0,"Weighted cluster size distribution","Fraction",timebuf,
+             "Size", n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
 
-  fp = xvgropen(histo,"Cluster size distribution","Cluster size","()");
+  fp = xvgropen(histo,"Cluster size distribution","Cluster size","()",oenv);
   nhisto = 0;
   fprintf(fp,"%5d  %8.3f\n",0,0.0);
   for(j=0; (j<max_size); j++) {
@@ -372,6 +374,9 @@ int gmx_clustsize(int argc,char *argv[])
   static bool bPBC     = TRUE;
   static rvec rlo      = { 1.0, 1.0, 0.0 };
   static rvec rhi      = { 0.0, 0.0, 1.0 };
+
+  output_env_t oenv;
+
   t_pargs pa[] = {
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Largest distance (nm) to be considered in a cluster" },
@@ -391,7 +396,7 @@ int gmx_clustsize(int argc,char *argv[])
       "RGB values for the color of the highest occupied cluster size" }
   };
 #define NPA asize(pa)
-  char       *fnNDX,*fnTPR;
+  const char *fnNDX,*fnTPR;
   bool       bSQ,bRDF;
   t_rgb      rgblo,rgbhi;
   
@@ -411,8 +416,9 @@ int gmx_clustsize(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,
+                    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
 
   fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
   rgblo.r = rlo[XX],rgblo.g = rlo[YY],rgblo.b = rlo[ZZ];
@@ -428,7 +434,7 @@ int gmx_clustsize(int argc,char *argv[])
 	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
 	     opt2fn("-temp",NFILE,fnm),opt2fn("-mcn",NFILE,fnm),
 	     bMol,bPBC,fnTPR,
-	     cutoff,nskip,nlevels,rgblo,rgbhi,ndf);
+	     cutoff,nskip,nlevels,rgblo,rgbhi,ndf,oenv);
 
   thanx(stderr);
   

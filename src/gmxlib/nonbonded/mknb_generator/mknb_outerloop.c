@@ -271,13 +271,13 @@ mknb_outerloop(void) {
 			mknb_code("do");
 			mknb_code("{");
 			mknb_indent_level++;
-			mknb_code("gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);");
+			mknb_code("tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);");
 			mknb_assign("nn0","*count");
 			mknb_comment("Take successively smaller chunks (at least 10 lists)");
 			mknb_assign("nn1","nn0+(nri-nn0)/(2*nthreads)+10");
 			/* take sucessively smaller chunks */
 			mknb_assign("*count","nn1");
-			mknb_code("gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);");
+			mknb_code("tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);");
 			mknb_code("if(nn1>nri) nn1=nri;");
 			mknb_comment("Start outer loop over neighborlists");
 			mknb_start_loop("n", "nn0", "nn1");

@@ -52,7 +52,8 @@
 #include "gmx_statistics.h"
 #include "tpxio.h"
 
-static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
+static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
+                          const output_env_t oenv)
 {
   char **leg;
   int  i;
@@ -68,16 +69,17 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
 	    *(atoms->resinfo[atoms->atom[index[i+1]].resind].name),
             atoms->resinfo[atoms->atom[index[i+1]].resind].nr);
   }
-  xvgr_legend(fp,gnx/2,leg);
+  xvgr_legend(fp,gnx/2,leg,oenv);
   for(i=0; i<gnx/2; i++)
     sfree(leg[i]);
   sfree(leg);
 }
 
-static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
-		     int gnx,atom_id index[],
-		     real blen,real tol,bool bAver,
-		     t_topology *top,int ePBC,bool bAverDist)
+static void do_bonds(FILE *log,const char *fn,const char *fbond,
+                     const char *fdist, int gnx,atom_id index[],
+                     real blen,real tol,bool bAver,
+                     t_topology *top,int ePBC,bool bAverDist,
+                     const output_env_t oenv)
 {
 #define MAXTAB 1000
   FILE   *out,*outd=NULL;
@@ -107,15 +109,15 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
     snew(btab,MAXTAB+1);
   }
   
-  natoms=read_first_x(&status,fn,&t,&x,box);
+  natoms=read_first_x(oenv,&status,fn,&t,&x,box);
   if (natoms == 0) 
     gmx_fatal(FARGS,"No atoms in trajectory!");
   
   if (fdist) {
     outd = xvgropen(fdist,bAverDist ? "Average distance" : "Distances",
-		    "Time (ps)","Distance (nm)");
+		    "Time (ps)","Distance (nm)",oenv);
     if (!bAverDist) 
-      make_dist_leg(outd,gnx,index,&(top->atoms));
+      make_dist_leg(outd,gnx,index,&(top->atoms),oenv);
   }
   
   nframes=0;
@@ -164,7 +166,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
       fprintf(outd," %.5f",bav*2.0/gnx);
     if (fdist)
       fprintf(outd,"\n");
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
 
   if (fdist)
@@ -189,7 +191,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
     sfree(b_one);
     	    
     out=xvgropen(fbond,"Bond Stretching Distribution",
-		 "Bond Length (nm)","");
+		 "Bond Length (nm)","",oenv);
     
     for(i0=0;      ((i0 < MAXTAB) && (btab[i0]==0)); i0++)
       ;
@@ -250,7 +252,8 @@ int gmx_bond(int argc,char *argv[])
       "Average distances (turns on -d)" }
   };
   FILE      *fp;
-  char      *grpname,*fdist;
+  char      *grpname;
+  const char *fdist;
   int       gnx;
   atom_id   *index;
   char      title[STRLEN];
@@ -258,6 +261,7 @@ int gmx_bond(int argc,char *argv[])
   int       ePBC=-1;
   rvec      *x;
   matrix    box;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD  },
@@ -271,7 +275,8 @@ int gmx_bond(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE ,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs,
+                    &oenv);
   
   if (bAverDist)
     fdist = opt2fn("-d",NFILE,fnm);
@@ -293,10 +298,10 @@ int gmx_bond(int argc,char *argv[])
     fp = NULL;
   
   do_bonds(fp,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),fdist,gnx,index,
-	   blen,tol,bAver,&top,ePBC,bAverDist);
+	   blen,tol,bAver,&top,ePBC,bAverDist,oenv);
   
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn_null("-d",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn_null("-d",NFILE,fnm),"-nxy");
   
   thanx(stderr);
   

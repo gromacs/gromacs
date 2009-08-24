@@ -111,7 +111,8 @@ gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
  * If both are null, the index group structure is initialized empty.
  */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm)
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
+                       const char *fnm)
 {
     t_blocka *block = NULL;
     char    **names = NULL;
@@ -168,7 +169,8 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm)
  * topology (uses Gromacs routine get_index()).
  */
 void
-gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm, int ngrps)
+gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, 
+                      const char *fnm, int ngrps)
 {
     int      *isize;
     atom_id **index;
@@ -198,7 +200,7 @@ gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, char *fnm, int n
  * rd_index().
  */
 void
-gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, char *fnm, int ngrps)
+gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, const char *fnm, int ngrps)
 {
     gmx_ana_indexgrps_get(g, NULL, fnm, ngrps);
 }

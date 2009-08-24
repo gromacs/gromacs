@@ -90,7 +90,7 @@ int gmx_filter(int argc,char *argv[])
     { "-fit", FALSE, etBOOL, {&bFit},
       "Fit all frames to a reference structure" }
   };
-  char       *topfile,*lowfile,*highfile;
+  const char *topfile,*lowfile,*highfile;
   bool       bTop=FALSE;
   t_topology top;
   int        ePBC=-1;
@@ -105,6 +105,7 @@ int gmx_filter(int argc,char *argv[])
   atom_id    *ind;
   real       flen,*filt,sum,*t;
   rvec       xcmtop,xcm,**x,*ptr,*xf,*xn,*xp,hbox;
+  output_env_t oenv;
 
 #define NLEG asize(leg)
   t_filenm fnm[] = { 
@@ -118,7 +119,7 @@ int gmx_filter(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   highfile = opt2fn_null("-oh",NFILE,fnm);
   if (highfile) {
@@ -171,7 +172,7 @@ int gmx_filter(int argc,char *argv[])
   snew(x,nffr);
   snew(box,nffr);
 
-  nat = read_first_x(&in,opt2fn("-f",NFILE,fnm),
+  nat = read_first_x(oenv,&in,opt2fn("-f",NFILE,fnm),
 		     &(t[nffr - 1]),&(x[nffr - 1]),box[nffr - 1]);
   snew(ind,nat);
   for(i=0; i<nat; i++)
@@ -259,7 +260,7 @@ int gmx_filter(int argc,char *argv[])
     }
     x[nffr - 1] = ptr;
     fr++;
-  } while (read_next_x(in,&(t[nffr - 1]),nat,x[nffr - 1],box[nffr - 1]));
+  } while (read_next_x(oenv,in,&(t[nffr - 1]),nat,x[nffr - 1],box[nffr - 1]));
   
   if (outh)
     close_trx(outh);

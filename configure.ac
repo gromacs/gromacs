@@ -80,6 +80,7 @@ if test "$enable_mpi_environment" != "no"; then
   AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
+
 AC_ARG_ENABLE(apple_64bit,
               [AC_HELP_STRING([--enable-apple-64bit],
                               [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
@@ -208,12 +209,13 @@ AC_ARG_ENABLE(fftw-measure,
 			     enable_fftw_measure=yes)
 
 
-AC_ARG_WITH(threads,
-              [AC_HELP_STRING([--with-threads=@<:@pthreads@:>@],
-                              [Use threads instead of MPI for decomposition])],,with_threads=no)
-if test "$with_threads" = "yes"; then
-   with_threads=pthreads;
-fi
+AC_ARG_ENABLE(threads,
+              [AC_HELP_STRING([--enable-threads],    
+                              [Compile for parallel runs using threads])],,enable_threads=no)
+
+# if test "$enable_threads" = "yes"; then
+#   with_threads=pthreads;
+#fi
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -325,6 +327,22 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AC_DEFINE(GMX_LIB_MPI,,[Use a real MPI library])
 
+# not all MPIs support MPI_IN_PLACE:
+  AC_MSG_CHECKING([for MPI_IN_PLACE in collective operations])
+  AC_TRY_COMPILE([
+#include <mpi.h>
+void test(void)
+{
+    void *buf;
+    MPI_Allreduce(MPI_IN_PLACE, buf, 10, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
+}
+],,[
+  AC_MSG_RESULT([yes])
+  AC_DEFINE(MPI_IN_PLACE_EXISTS,[],[MPI_IN_PLACE available for collective operations])
+],[
+  AC_MSG_RESULT([no])
+]) 
+
 # on the cray xt3 we have to tell autoconf that we 
 # are actually cross-compiling even if the architecture
 # of host and target are the same. so we enforce 
@@ -348,15 +366,6 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
 ])
 # end of "$enable_mpi" = "yes"
 fi
-
-if test "$with_threads" = "pthreads"; then
-  AC_CHECK_HEADER([pthread.h],,[AC_MSG_ERROR([Cannot find pthread.h - required for pthread support!])])
-  if test "$enable_mpi" = "yes"; then
-    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
-  fi
-  AC_DEFINE([GMX_THREAD_PTHREADS],,[Use pthreads for Gromacs multithreading])
-fi
-
 
 
 AH_TEMPLATE([F77_OR_C_FUNC],
@@ -389,6 +398,26 @@ else
 fi
 ACX_COMPILER_MAXOPT
 
+
+# We've postponed the threads check because we need to check with the right
+# compilers/flags 
+if test "$enable_threads" = "yes"; then 
+  if test "$enable_mpi" = "yes"; then
+    AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
+  fi
+  # for now we just assume pthreads
+  ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
+  LIBS="$PTHREAD_LIBS $LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+  CC="$PTHREAD_CC "
+  AC_DEFINE(THREAD_PTHREADS,,[Use pthreads for thread_mpi multithreading])
+  AC_DEFINE(GMX_THREADS,,[Use threads for parallelization])
+  AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+  AM_CONDITIONAL(THREAD_PARALLEL,true)
+else
+  AM_CONDITIONAL(THREAD_PARALLEL,false)
+fi
 
 
 
@@ -603,6 +632,8 @@ AM_WITH_DMALLOC
 AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(gettimeofday)
+AC_CHECK_FUNCS(isnan)
+AC_CHECK_FUNCS(_isnan)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
@@ -619,6 +650,7 @@ AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long int)
 AC_CHECK_SIZEOF(long long int)
 AC_CHECK_SIZEOF(off_t)
+AC_CHECK_SIZEOF(void*)
 
 
 
@@ -976,6 +1008,7 @@ AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/statistics/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/trajana/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/thread_mpi/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_c/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_sse/Makefile ])

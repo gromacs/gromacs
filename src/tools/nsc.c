@@ -71,6 +71,9 @@ int    last_cubus=0;
 const char * __file__;   /* declared versions of macros */
 int  __line__;           /* __FILE__  and __LINE__ */
 
+#ifdef ERROR
+#undef ERROR
+#endif
 #define ERROR UPDATE_FL,error
 void error(const char *fmt, ...) {
   va_list args;

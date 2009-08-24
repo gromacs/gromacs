@@ -99,6 +99,7 @@ int gmx_principal(int argc,char *argv[])
   FILE *     axis3;
   FILE *     fmoi;
   matrix     axes,box;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
@@ -111,10 +112,10 @@ int gmx_principal(int argc,char *argv[])
   }; 
 #define NFILE asize(fnm) 
 	
-	CopyRight(stderr,argv[0]);
-	parse_common_args(&argc,argv,
-					  PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
-					  NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  CopyRight(stderr,argv[0]);
+  parse_common_args(&argc,argv,
+                    PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 	
   axis1=fopen(opt2fn("-a1",NFILE,fnm),"w");
   axis2=fopen(opt2fn("-a2",NFILE,fnm),"w");
@@ -125,7 +126,7 @@ int gmx_principal(int argc,char *argv[])
 	
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
 
   do
   {
@@ -137,7 +138,7 @@ int gmx_principal(int argc,char *argv[])
 	  fprintf(axis3,"%15.10f     %15.10f  %15.10f  %15.10f\n",t,axes[XX][ZZ],axes[YY][ZZ],axes[ZZ][ZZ]);
 	  fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n",t,moi[XX],moi[YY],moi[ZZ]);
   } 	
-  while(read_next_x(status,&t,natoms,x,box));
+  while(read_next_x(oenv,status,&t,natoms,x,box));
 	
   close_trj(status);
   fclose(axis1);

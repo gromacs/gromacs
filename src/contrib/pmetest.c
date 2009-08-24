@@ -60,8 +60,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #include "block_tx.h"
@@ -287,7 +287,7 @@ int main(int argc,char *argv[])
   if (nnodes > 1) 
     gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
 #endif
-#ifndef GMX_THREADS
+#ifndef GMX_THREAD_SHM_FDECOMP
   if(nthreads > 1)
     gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif
@@ -476,7 +476,7 @@ int main(int argc,char *argv[])
   }
   
   /* Finish the parallel stuff */  
-  if (gmx_parallel_env)
+  if (gmx_parallel_env())
     gmx_finalize(cr);
 
   /* Thank the audience, as usual */

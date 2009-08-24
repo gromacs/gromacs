@@ -225,10 +225,12 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 }
 
 
-static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
-				  char *sgfn,char *skfn,
+static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
+                                  const char *fnTRX, const char *sgfn,
+                                  const char *skfn,
 				  int nslice,int slice_dim,
-				  char *sgslfn,char *skslfn)
+                                  const char *sgslfn,const char *skslfn,
+                                  const output_env_t oenv)
 {
   FILE       *fpsg=NULL,*fpsk=NULL;
   t_topology top;
@@ -260,14 +262,16 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   get_index(&top.atoms,fnNDX,ng,isize,index,grpname);
 
   /* Analyze trajectory */
-  natoms=read_first_x(&status,fnTRX,&t,&x,box);
+  natoms=read_first_x(oenv,&status,fnTRX,&t,&x,box);
   if ( natoms > top.atoms.nr )
     gmx_fatal(FARGS,"Topology (%d atoms) does not match trajectory (%d atoms)",
 	      top.atoms.nr,natoms);
   check_index(NULL,ng,index[0],NULL,natoms);
 
-  fpsg=xvgropen(sgfn,"S\\sg\\N Angle Order Parameter","Time (ps)","S\\sg\\N");
-  fpsk=xvgropen(skfn,"S\\sk\\N Distance Order Parameter","Time (ps)","S\\sk\\N");
+  fpsg=xvgropen(sgfn,"S\\sg\\N Angle Order Parameter","Time (ps)","S\\sg\\N",
+                oenv);
+  fpsk=xvgropen(skfn,"S\\sk\\N Distance Order Parameter","Time (ps)","S\\sk\\N",
+                oenv);
 
   /* loop over frames */
   nframes = 0;
@@ -281,7 +285,7 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
     fprintf(fpsg,"%f %f\n", t, sg);
     fprintf(fpsk,"%f %f\n", t, sk);
     nframes++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
  
   sfree(grpname);
@@ -291,11 +295,17 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   fclose(fpsg);
   fclose(fpsk);
   
-  fpsg = xvgropen(sgslfn,"S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N");
-  fpsk = xvgropen(skslfn,"S\\sk\\N Distance Order Parameter / Slab","(nm)","S\\sk\\N");
+  fpsg = xvgropen(sgslfn,
+                  "S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N",
+                   oenv);
+  fpsk = xvgropen(skslfn,
+                  "S\\sk\\N Distance Order Parameter / Slab","(nm)","S\\sk\\N",
+                  oenv);
   for(i=0; (i<nslice); i++) {
-    fprintf(fpsg,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,sg_slice_tot[i]/nframes);
-    fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,sk_slice_tot[i]/nframes);
+    fprintf(fpsg,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,
+            sg_slice_tot[i]/nframes);
+    fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,
+            sk_slice_tot[i]/nframes);
   }
   fclose(fpsg);
   fclose(fpsk);
@@ -323,10 +333,11 @@ static void check_length(real length, int a, int b)
 	    a, b, length);
 }
 
-void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
+void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
 		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis, 
-		bool permolecule, bool radial, char *radfn)
+		bool permolecule, bool radial, const char *radfn, 
+                const output_env_t oenv)
 { 
   /* if permolecule = TRUE, order parameters will be calculed per molecule 
    * and stored in slOrder with #slices = # molecules */
@@ -363,7 +374,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
   /* Initiate the pbc structure */
   memset(&pbc,0,sizeof(pbc));
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) 
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0) 
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   nr_tails = index[1] - index[0];
@@ -402,6 +413,13 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
     fprintf(stderr,"Box divided in %d slices. Initial width of slice: %f\n",
 	    nslices, *slWidth);
   } 
+
+#if 0
+  nr_tails = index[1] - index[0];
+  fprintf(stderr,"Number of elements in first group: %d\n",nr_tails);
+  /* take first group as standard. Not rocksolid, but might catch error 
+     in index*/
+#endif
 
   teller = 0; 
 
@@ -554,7 +572,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
     }
     nr_frames++;
     
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
   /*********** done with status file **********/
   
   fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
@@ -583,21 +601,22 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 }
 
 
-void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile, 
-		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
-		bool permolecule)
+void order_plot(rvec order[], real *slOrder[], const char *afile, 
+                const char *bfile, const char *cfile, int ngrps, 
+                int nslices, real slWidth, bool bSzonly,
+		bool permolecule,const output_env_t oenv)
 {
-  FILE       *ord, *slOrd;           /* xvgr files with order parameters  */
-  int        atom, slice;            /* atom corresponding to order para.*/
-  char       buf[256];               /* for xvgr title */
-  real      S;                      /* order parameter averaged over all atoms */
+  FILE       *ord, *slOrd;        /* xvgr files with order parameters  */
+  int        atom, slice;         /* atom corresponding to order para.*/
+  char       buf[256];            /* for xvgr title */
+  real      S;                    /* order parameter averaged over all atoms */
 
   if (permolecule)
   {
     sprintf(buf,"Scd order parameters");
-    ord = xvgropen(afile,buf,"Atom","S");
+    ord = xvgropen(afile,buf,"Atom","S",oenv);
     sprintf(buf, "Orderparameters per atom per slice");
-    slOrd = xvgropen(bfile, buf, "Molecule", "S");
+    slOrd = xvgropen(bfile, buf, "Molecule", "S",oenv);
     for (atom = 1; atom < ngrps - 1; atom++) {
       fprintf(ord,"%12d   %12g\n", atom, -1 * (0.6667 * order[atom][XX] + 
 						 0.333 * order[atom][YY]));
@@ -613,11 +632,11 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
   }
   else if (bSzonly) {
     sprintf(buf,"Orderparameters Sz per atom");
-    ord = xvgropen(afile,buf,"Atom","S");
+    ord = xvgropen(afile,buf,"Atom","S",oenv);
     fprintf(stderr,"ngrps = %d, nslices = %d",ngrps, nslices);
 
     sprintf(buf, "Orderparameters per atom per slice");
-    slOrd = xvgropen(bfile, buf, "Slice", "S");
+    slOrd = xvgropen(bfile, buf, "Slice", "S",oenv);
     
     for (atom = 1; atom < ngrps - 1; atom++)
       fprintf(ord,"%12d       %12g\n", atom, order[atom][ZZ]);
@@ -631,9 +650,9 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
 
   } else {
     sprintf(buf,"Order tensor diagonal elements");
-    ord = xvgropen(afile,buf,"Atom","S");
+    ord = xvgropen(afile,buf,"Atom","S",oenv);
     sprintf(buf,"Deuterium order parameters");
-    slOrd = xvgropen(cfile,buf, "Atom", "Scd");
+    slOrd = xvgropen(cfile,buf, "Atom", "Scd",oenv);
 
     for (atom = 1; atom < ngrps - 1; atom++) {
       fprintf(ord,"%12d   %12g   %12g   %12g\n", atom, order[atom][XX],
@@ -647,18 +666,23 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
   }
 }
 
-void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top)
+void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, 
+                    int nslices, int ngrps, real **order, t_topology *top,
+                    output_env_t oenv)
 {
-	/*function to write order parameters as B factors in PDB file using first frame of trajectory*/
+	/*function to write order parameters as B factors in PDB file using 
+          first frame of trajectory*/
 	int status;
 	int natoms;
 	t_trxframe fr, frout;
 	t_atoms useatoms;
 	int i,j,ctr,nout;
 
-	ngrps-=2;  /*we don't have an order parameter for the first or last atom in each chain*/
+	ngrps-=2;  /*we don't have an order parameter for the first or 
+                     last atom in each chain*/
 	nout=nslices*ngrps;
-	natoms=read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_NEED_X);
+	natoms=read_first_frame(oenv,&status,ftp2fn(efTRX,nfile,fnm),&fr,
+                                TRX_NEED_X);
 	close_trj(status);
 	frout = fr;
 	frout.natoms=nout;
@@ -772,12 +796,13 @@ int gmx_order(int argc,char *argv[])
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-  char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
+  const char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
+  output_env_t oenv;
 
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL,&oenv);
   if (nslices < 1)
     gmx_fatal(FARGS,"Can not have nslices < 1");
   sgfnm = opt2fn_null("-Sg",NFILE,fnm);
@@ -810,13 +835,14 @@ int gmx_order(int argc,char *argv[])
     sgfnm = opt2fn("-Sg",NFILE,fnm);
     skfnm = opt2fn("-Sk",NFILE,fnm);
     calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm,nslices,axis,
-			  opt2fn("-Sgsl",NFILE,fnm),opt2fn("-Sksl",NFILE,fnm));
+			  opt2fn("-Sgsl",NFILE,fnm),opt2fn("-Sksl",NFILE,fnm),
+                          oenv);
     /* view xvgr files */
-    do_view(opt2fn("-Sg",NFILE,fnm), NULL);
-    do_view(opt2fn("-Sk",NFILE,fnm), NULL);
+    do_view(oenv,opt2fn("-Sg",NFILE,fnm), NULL);
+    do_view(oenv,opt2fn("-Sk",NFILE,fnm), NULL);
     if (nslices > 1) {
-      do_view(opt2fn("-Sgsl",NFILE,fnm), NULL);
-      do_view(opt2fn("-Sksl",NFILE,fnm), NULL);
+      do_view(oenv,opt2fn("-Sgsl",NFILE,fnm), NULL);
+      do_view(oenv,opt2fn("-Sksl",NFILE,fnm), NULL);
     }
   } 
   else {  
@@ -847,29 +873,34 @@ int gmx_order(int argc,char *argv[])
   
 	/* show atomtypes, to check if index file is correct */
     print_types(index, a, ngrps, grpname, top);
-    
+
     calc_order(ftp2fn(efTRX,NFILE,fnm), index, a, &order, 
 	       &slOrder, &slWidth, nslices, bSliced, bUnsat,
-	       top, ePBC, ngrps, axis,permolecule,radial,opt2fn_null("-nr",NFILE,fnm)); 
+	       top, ePBC, ngrps, axis,permolecule,radial,
+               opt2fn_null("-nr",NFILE,fnm), oenv); 
 	
 	if (radial)
-		ngrps--; /*don't print the last group--was used for center-of-mass determination*/
+		ngrps--; /*don't print the last group--was used for 
+                           center-of-mass determination*/
     
     order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
-	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly,permolecule);
+	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly,
+               permolecule, oenv);
 
 	if (opt2bSet("-ob",NFILE,fnm))
 	{
 		if (!permolecule)
-			fprintf(stderr,"Won't write B-factors with averaged order parameters; use -permolecule\n");
+			fprintf(stderr,
+                                "Won't write B-factors with averaged order parameters; use -permolecule\n");
 		else
-			write_bfactors(fnm,NFILE,index,a,nslices,ngrps,slOrder,top);
+			write_bfactors(fnm,NFILE,index,a,nslices,ngrps,
+                                       slOrder,top,oenv);
 	}
 
     
-    do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
-    do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
-    do_view(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
+    do_view(oenv,opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
+    do_view(oenv,opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
+    do_view(oenv,opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
   }
   
   thanx(stderr);

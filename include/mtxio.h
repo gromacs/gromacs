@@ -54,7 +54,7 @@
  * matrix. If both pointers are non-NULL a fatal error will occur.
  */
 void
-gmx_mtxio_write(char *                   filename,
+gmx_mtxio_write(const char *             filename,
                 int                      nrow,
                 int                      ncol,
                 real *                   full_matrix,
@@ -73,7 +73,7 @@ gmx_mtxio_write(char *                   filename,
  * before calling this routine, and check which one is non-NULL on return.
  */
 void
-gmx_mtxio_read (char *                  filename,
+gmx_mtxio_read (const char *            filename,
                 int *                   nrow,
                 int *                   ncol,
                 real **                 full_matrix,
