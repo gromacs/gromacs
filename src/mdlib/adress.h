@@ -1,6 +1,5 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * $Id: nonbonded.c,v 1.36 2008/12/03 16:07:05 hess Exp $
  * 
  *                This source code is part of
  * 
@@ -8,11 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
+ *                        VERSION 4.0.5
+ * Written by Christoph Junghans, Brad Lambeth, and possibly others.
+ * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
+ * All rights reserved.
 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -38,9 +36,39 @@
 #ifndef _adress_h_
 #define _adress_h_
 
+/** \file adress.h
+ *
+ * \brief Implementation of the AdResS method
+ *
+ */
+
 #include "types/simple.h"
 #include "typedefs.h"
 
+/** \brief calculates the AdResS weight of a particle
+ *
+ * \param[in] x position of the particle
+ * \param[in] adresstype type of address weight function
+ *                       1 - constant weight all over the box
+ *                       2 - split in x direction with ref as center
+ *                       3 - spherical splitting with ref as center
+ *                       4 - sphere moving along the last charge group
+ *                       else - weight = 1 - explicit simulation
+ * \param[in] adressr radius/size of the explicit zone
+ * \param[in] adressw size of the hybrid zone 
+ *                    for adresstype 1, the value of the weight
+ * \param[in] ref center of the explicit zone
+ *                for adresstype 1 - unused
+ *                for adresstype 2 - only ref[0] is used
+ * \param[in] box2 array[3] containing half lengths of the rectangular box
+ *                 only used by adresstype 4
+ * \param[in] box matrix containing lengths of the box
+ *                 only used by adresstype 4
+ * \return weight of the particle
+ *
+ * \todo calc AdResS weight for non-rectangular boxes 
+ */
+		     
 real 
 adress_weight(rvec             x,
               int              adresstype,
@@ -50,6 +78,13 @@ adress_weight(rvec             x,
               rvec             box2,
               matrix           box);
 
+/** \brief update the weight of all coarse-grained particles
+ *
+ * \param[in] fr the frocerec containing all the parameters
+ * \param[in,out] mdatoms the struct containing all the atoms properties
+ * \param[in] x array with all the particle positions  
+ * \param[in] box matrix containing lengths of the box
+ */
 void
 update_adress_weights(t_forcerec *         fr,
                       t_mdatoms *          mdatoms,

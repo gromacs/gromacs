@@ -1,6 +1,5 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * $Id: nonbonded.c,v 1.36 2008/12/03 16:07:05 hess Exp $
  * 
  *                This source code is part of
  * 
@@ -8,11 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
+ *                        VERSION 4.0.5
+ * Written by Christoph Junghans, Brad Lambeth, and possibly others.
+ * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
+ * All rights reserved.
 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
