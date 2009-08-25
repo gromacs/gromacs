@@ -163,22 +163,20 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                 ai1 = aic+1;
                 aj0 = ajc;
                 aj1 = ajc+1;
-                /* turn off coulomb, turn on table for effective potential */
+                /* turn off coulomb */
                 icoul = 0;
-                ivdw = 3;
                 bMixed = FALSE;
             }
-            /* at least one of the groups is explicit */
-            else if (weight_cg1 == 1 || weight_cg2 == 1)
+            /* both groups are explicit */
+            else if (weight_product == 1)
             {
                 /* only calc interaction between explicit particles */
                 ai0 = aib;
                 ai1 = aic;
                 aj0 = ajb;
                 aj1 = ajc;
-                /* use requested coulomb and standard cutoff LJ */
+                /* use requested coulomb */
                 icoul = nlist->icoul;
-                ivdw = 1;
                 bMixed = FALSE;
             }
             /* both have double identity -- calc all*/
@@ -208,6 +206,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
 #ifdef ADRESS
                 if (bMixed) {
                     /* do not calc interactions between coarse grained and explicit */
+
                     /* ai is explicit particles */
                     if (ai != aic)
                     {
@@ -216,17 +215,15 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                         aj1 = ajc;
                         /* requested coulomb, cutoff LJ */
                         icoul = nlist->icoul;
-                        ivdw = 1;
                     }
                     /* ai is coarse grained particle */
-                    else 
+                    else /* (ai == aic) */
                     {
                         /* only calc interaction between coarse grained particles */
                         aj0 = ajc;
                         aj1 = ajc+1;
-                        /* turn off coulomb, turn on table for effective potential */
+                        /* turn off coulomb */
                         icoul = 0;
-                        ivdw = 3;
                     }
                 }
 #endif
@@ -315,7 +312,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                             c12              = vdwparam[tj+1]; 
 #ifdef ADRESS
                             /* don't calculate Lennard-Jones for non-interacting hydrogen */
-                            if((c12 > 0) && (c6 > 0))
+                            if((c12 > 0) || (c6 > 0))
                             {
 #endif
                             rinvsix          = rinvsq*rinvsq*rinvsq;
@@ -398,7 +395,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     
                     
 #ifdef ADRESS
-                    /* force weight is one anyway */
+                    /* fscal factor is one for purely coarse-grained or purely hybrid interactions */
                     if (bMixed)
                     {
                         /* force weight of the coarse grained - coarse grained interation */
