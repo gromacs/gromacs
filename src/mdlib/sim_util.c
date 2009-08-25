@@ -287,36 +287,48 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
  * Solution: implement a self-consitent electric field into PME.
  */
 static void calc_f_el(FILE *fp,int  start,int homenr,
-		      real charge[],rvec x[],rvec f[],
-		      t_cosines Ex[],t_cosines Et[],double t)
+                      real charge[],rvec x[],rvec f[],
+                      t_cosines Ex[],t_cosines Et[],double t)
 {
-  rvec Ext;
-  real t0;
-  int  i,m;
-  
-  for(m=0; (m<DIM); m++) {
-    if (Et[m].n) {
-      if (Et[m].n == 3) {
-	t0 = Et[m].a[1];
-	Ext[m] = cos(Et[m].a[0]*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(Et[m].a[2])));
-      }
-      else
-	Ext[m] = cos(Et[m].a[0]*t);
+    rvec Ext;
+    real t0;
+    int  i,m;
+    
+    for(m=0; (m<DIM); m++)
+    {
+        if (Et[m].n > 0)
+        {
+            if (Et[m].n == 3)
+            {
+                t0 = Et[m].a[1];
+                Ext[m] = cos(Et[m].a[0]*(t-t0))*exp(-sqr(t-t0)/(2.0*sqr(Et[m].a[2])));
+            }
+            else
+            {
+                Ext[m] = cos(Et[m].a[0]*t);
+            }
+        }
+        else
+        {
+            Ext[m] = 1.0;
+        }
+        if (Ex[m].n > 0)
+        {
+            /* Convert the field strength from V/nm to MD-units */
+            Ext[m] *= Ex[m].a[0]*FIELDFAC;
+            for(i=start; (i<start+homenr); i++)
+                f[i][m] += charge[i]*Ext[m];
+        }
+        else
+        {
+            Ext[m] = 0;
+        }
     }
-    else
-      Ext[m] = 1.0;
-    if (Ex[m].n) {
-      /* Convert the field strength from V/nm to MD-units */
-      Ext[m] *= Ex[m].a[0]*FIELDFAC;
-      for(i=start; (i<start+homenr); i++)
-	f[i][m] += charge[i]*Ext[m];
+    if (fp != NULL)
+    {
+        fprintf(fp,"%10g  %10g  %10g  %10g #FIELD\n",t,
+                Ext[XX]/FIELDFAC,Ext[YY]/FIELDFAC,Ext[ZZ]/FIELDFAC);
     }
-    else
-      Ext[m] = 0;
-  }
-  if (fp) 
-    fprintf(fp,"%10g  %10g  %10g  %10g #FIELD\n",t,
-	    Ext[XX]/FIELDFAC,Ext[YY]/FIELDFAC,Ext[ZZ]/FIELDFAC);
 }
 
 static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
@@ -717,10 +729,13 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     if (bDoForces)
     {
-        /* Compute forces due to electric field */
-        calc_f_el(MASTER(cr) ? field : NULL,
-                  start,homenr,mdatoms->chargeA,x,f,
-                  inputrec->ex,inputrec->et,t);
+        if (IR_ELEC_FIELD(*inputrec))
+        {
+            /* Compute forces due to electric field */
+            calc_f_el(MASTER(cr) ? field : NULL,
+                      start,homenr,mdatoms->chargeA,x,fr->f_novirsum,
+                      inputrec->ex,inputrec->et,t);
+        }
         
         /* Communicate the forces */
         if (PAR(cr))
@@ -729,8 +744,12 @@ void do_force(FILE *fplog,t_commrec *cr,
             if (DOMAINDECOMP(cr))
             {
                 dd_move_f(cr->dd,f,fr->fshift);
-                /* Position restraint do not introduce inter-cg forces.
-                 * When we do not calculate the virial, fr->f_novirsum = f.
+                /* Do we need to communicate the separate force array
+                 * for terms that do not contribute to the single sum virial?
+                 * Position restraints and electric fields do not introduce
+                 * inter-cg forces, only full electrostatics methods do.
+                 * When we do not calculate the virial, fr->f_novirsum = f,
+                 * so we have already communicated these forces.
                  */
                 if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
                     (flags & GMX_FORCE_VIRIAL))
