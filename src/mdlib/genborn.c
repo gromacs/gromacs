@@ -80,6 +80,19 @@
 #define STILL_P5INV (1.0/STILL_P5)
 #define STILL_PIP5  (M_PI*STILL_P5)
 
+typedef struct {
+    int shift;
+    int naj;
+    int *aj;
+    int aj_nalloc;
+} gbtmpnbl_t;
+
+typedef struct gbtmpnbls {
+    int nlist;
+    gbtmpnbl_t *list;
+    int list_nalloc;
+} t_gbtmpnbls;
+
 int init_gb_nblist(int natoms, t_nblist *nl)
 {
 	nl->maxnri      = natoms*4;
@@ -386,7 +399,7 @@ int init_gb_still(const t_commrec *cr, t_forcerec  *fr, const t_atomtypes *atype
 	/* Self */
 	for(j=0;j<natoms;j++)
 	{
-		if(born->vs_globalindex[j]==1)
+		if(born->use_globalindex[j]==1)
 		{
 			born->gpol_globalindex[j]=-0.5*ONE_4PI_EPS0/(atype->gb_radius[atoms->atom[j].type]-doffset+STILL_P1);
 		}
@@ -487,7 +500,7 @@ int init_gb(gmx_genborn_t **p_born,
 	snew(born->param_globalindex, natoms+3);
 	snew(born->gpol_globalindex,  natoms+3);
 	snew(born->vsolv_globalindex, natoms+3);
-	snew(born->vs_globalindex,    natoms+3);
+	snew(born->use_globalindex,    natoms+3);
 	
 	snew(fr->invsqrta, natoms);
 	snew(fr->dvda,     natoms);
@@ -507,12 +520,21 @@ int init_gb(gmx_genborn_t **p_born,
 	for(i=0;i<natoms;i++)
 	{
 		jj = atoms.atom[i].type;
-		born->vs_globalindex[i]=1;																							
+        if (mtop->atomtypes.gb_radius[atoms.atom[i].type] > 0)
+        {
+            born->use_globalindex[i] = 1;
+        }
+        else
+        {
+            born->use_globalindex[i] = 0;
+        }
 				
 		/* If we have a Vsite, put vs_globalindex[i]=0 */
-	    if(C6(fr->nbfp,fr->ntype,jj,jj)==0 && C12(fr->nbfp,fr->ntype,jj,jj)==0 && atoms.atom[i].q==0)
+	    if (C6 (fr->nbfp,fr->ntype,jj,jj) == 0 &&
+            C12(fr->nbfp,fr->ntype,jj,jj) == 0 &&
+            atoms.atom[i].q == 0)
 		{
-			born->vs_globalindex[i]=0;
+			born->use_globalindex[i]=0;
 		}
 	}
 	
@@ -538,7 +560,7 @@ int init_gb(gmx_genborn_t **p_born,
 		
 		for(i=0;i<natoms;i++)
 		{	
-			if(born->vs_globalindex[i]==1)
+			if(born->use_globalindex[i]==1)
 			{
 				rai            = mtop->atomtypes.gb_radius[atoms.atom[i].type]-doffset; 
 				sk             = rai * mtop->atomtypes.S_hct[atoms.atom[i].type];
@@ -561,22 +583,6 @@ int init_gb(gmx_genborn_t **p_born,
 	snew(born->work,natoms+4);
 	snew(born->count,natoms);
 	snew(born->nblist_work,natoms);
-	
-	/* If less than 500 atoms (completely arbitrary number), allocate exact */
-	if(natoms<500)
-	{
-		born->nblist_work_nalloc = natoms;
-	}
-	else
-	{
-		born->nblist_work_nalloc = 500;
-	}
-	
-	/* Allocate memory for the second dimension in the array used to setup the gb neighbourlist */
-	for(i=0;i<natoms;i++)
-	{
-		snew(born->nblist_work[i],born->nblist_work_nalloc);
-	}
 	
 	/* Domain decomposition specific stuff */
 	if(DOMAINDECOMP(cr))
@@ -847,8 +853,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 	{
 		ai      = nl->iinr[i];
 		
-		nj0     = nl->jindex[ai];			
-		nj1     = nl->jindex[ai+1];
+		nj0     = nl->jindex[i];			
+		nj1     = nl->jindex[i+1];
 	
 		gpi     = 0;
 		
@@ -1398,7 +1404,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 						
 #else				
 			
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+//#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if 0
 	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	switch(ir->gb_algorithm)
 	{
@@ -1562,7 +1569,7 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
 	{
 		ai       = i;
 		
-		if(born->vs[ai]==1)
+		if(born->use[ai]==1)
 		{
 			rai      = born->bRad[ai];
 			rai_inv  = 1.0/rai;
@@ -1625,7 +1632,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr,int natoms,gmx_genborn_t *bo
 	{
 		ai        = i;
 		
-		if(born->vs[ai]==1)
+		if(born->use[ai]==1)
 		{
 			rai		  = top->atomtypes.gb_radius[md->typeA[ai]];
 			rbi_inv   = fr->invsqrta[ai];
@@ -1802,79 +1809,143 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 
 }
 
-int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], 
-				   t_forcerec *fr, t_idef *idef, gmx_genborn_t *born)
+static void add_j_to_gblist(gbtmpnbl_t *list,int aj)
 {
-	int i,l,ii,j,k,n,nj0,nj1,ai,aj,idx,ii_idx,nalloc,at0,at1,found;
+    if (list->naj >= list->aj_nalloc)
+    {
+        list->aj_nalloc = over_alloc_large(list->naj+1);
+        srenew(list->aj,list->aj_nalloc);
+    }
+
+    list->aj[list->naj++] = aj;
+}
+
+static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists,int shift)
+{
+    int ind;
+
+    /* Search the list with the same shift, if there is one */
+    ind = 0;
+    while (ind < lists->nlist && shift != lists->list[ind].shift)
+    {
+        ind++;
+    }
+    if (ind == lists->nlist)
+    {
+        if (lists->nlist >= lists->list_nalloc)
+        {
+            lists->list_nalloc++;
+            srenew(lists->list,lists->list_nalloc);
+        }
+        
+        lists->list[lists->nlist].shift = shift;
+        lists->list[lists->nlist].naj   = 0;
+        lists->list[lists->nlist].aj    = NULL;
+        lists->list[lists->nlist].aj_nalloc = 0;
+        lists->nlist++;
+    }
+
+    return &lists->list[ind];
+}
+
+static void add_bondeds_to_gblist(t_ilist *il,
+                                  bool bMolPBC,t_pbc *pbc,t_graph *g,rvec *x,
+                                  struct gbtmpnbls *nls)
+{
+    int  ind,j,ai,aj,shift,found;
+    rvec dx;
+    ivec dt;
+    gbtmpnbl_t *list;
+
+    shift = CENTRAL;
+    for(ind=0; ind<il->nr; ind+=3)
+    {
+        ai = il->iatoms[ind+1];
+        aj = il->iatoms[ind+2];
+				
+        shift = CENTRAL;
+        if (g != NULL)
+        {
+	      rvec_sub(x[ai],x[aj],dx);
+	      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	      shift = IVEC2IS(dt);
+	    }
+        else if (bMolPBC)
+        {
+	      shift = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
+        }
+
+        /* Find the list for this shift or create one */
+        list = find_gbtmplist(&nls[ai],shift);
+        
+        found=0;
+		
+        /* So that we do not add the same bond twice.
+         * This happens with some constraints between 1-3 atoms
+         * that are in the bond-list but should not be in the GB nb-list */
+        for(j=0;j<list->naj;j++)
+        {
+            if (list->aj[j] == aj)
+            {
+                found = 1;
+            }
+        }	
+		
+        if (found == 0)
+        {
+            add_j_to_gblist(list,aj);
+        }
+    }
+}
+/*
+if (g) {
+	      rvec_sub(x[i],x[k],dx);
+	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
+	      ki=IVEC2IS(dt);
+	    } else if (bMolPBC) {
+	      ki = pbc_dx_aiuc(pbc,x[i],x[k],dx);
+*/
+
+int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
+                   rvec x[], matrix box,
+				   t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born)
+{
+	int i,l,ii,j,k,n,nj0,nj1,ai,aj,ii_idx,nalloc,at0,at1,found,shift,s;
 	int apa;
 	t_nblist *nblist;
+    t_pbc pbc;
 
-	int *count;
-	int **atoms;
+	struct gbtmpnbls *nls;
+    gbtmpnbl_t *list;
 	
-	count = born->count;
-	atoms = born->nblist_work;
+	nls   = born->nblist_work;
 	
 	for(i=0;i<born->nr;i++)
 	{
-		count[i] = 0;
+        nls[i].nlist = 0;
 	}
-		
-	if(gb_algorithm==egbHCT || gb_algorithm==egbOBC)
-	{
+
+    if (fr->bMolPBC)
+    {
+        set_pbc_dd(&pbc,fr->ePBC,cr->dd,TRUE,box);
+    }
+
+    switch (gb_algorithm)
+    {
+    case egbHCT:
+    case egbOBC:
 		/* Loop over 1-2, 1-3 and 1-4 interactions */
 		for(j=F_GB12;j<=F_GB14;j++)
 		{
-			for(k=0;k<idef->il[j].nr;k+=3)
-			{
-				ai=idef->il[j].iatoms[k+1];
-				aj=idef->il[j].iatoms[k+2];
-				
-				found=0;
-				
-				/* So that we do not add the same bond twice. This happens with some constraints between 1-3 atoms
-				 * that are in the bond-list but should not be in the GB nb-list */
-				for(i=0;i<count[ai];i++)
-				{
-					if(atoms[ai][i]==aj)
-					{
-						found=1;
-					}
-				}	
-			 
-				if(found==0)
-				{
-					atoms[ai][count[ai]]=aj;
-					count[ai]++;
-				}
-			}
+            add_bondeds_to_gblist(&idef->il[j],fr->bMolPBC,&pbc,graph,x,nls);
 		}
-	}
-	
-	if(gb_algorithm==egbSTILL)
-	{
+        break;
+    case egbSTILL:
 		/* Loop over 1-4 interactions */
-		for(k=0;k<idef->il[F_GB14].nr;k+=3)
-		{
-			ai=idef->il[F_GB14].iatoms[k+1];
-			aj=idef->il[F_GB14].iatoms[k+2];
-		
-			found=0;
-			
-			for(i=0;i<count[ai];i++)
-			{
-				if(atoms[ai][i]==aj)
-				{
-					found=1;
-				}
-			}	
-			 
-			if(found==0)
-			{
-				atoms[ai][count[ai]]=aj;
-				count[ai]++;
-			}
-		}
+        add_bondeds_to_gblist(&idef->il[F_GB14],fr->bMolPBC,&pbc,graph,x,nls);
+        break;
+    default:
+        gmx_incons("Unknown GB algorithm");
 	}
 	
 	/* Loop over the VDWQQ and VDW nblists to set up the nonbonded part of the GB list */
@@ -1884,39 +1955,23 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		{
 			nblist=&(fr->nblists[n].nlist_sr[i]);
 			
-			if(nblist->nri>0 && (i==eNL_VDWQQ || i==eNL_QQ))
+			if (nblist->nri > 0 && (i==eNL_VDWQQ || i==eNL_QQ))
 			{
 				for(j=0;j<nblist->nri;j++)
 				{
-					ai  = nblist->iinr[j];
-			
+					ai    = nblist->iinr[j];
+                    shift = nblist->shift[j];
+
+                    /* Find the list for this shift or create one */
+                    list = find_gbtmplist(&nls[ai],shift);
+
 					nj0 = nblist->jindex[j];
 					nj1 = nblist->jindex[j+1];
 					
+                    /* Add all the j-atoms in the non-bonded list to the GB list */
 					for(k=nj0;k<nj1;k++)
 					{
-						aj = nblist->jjnr[k];
-						
-						/* Allocate extra memory if needed */
-						if(count[ai]>=born->nblist_work_nalloc || count[aj]>=born->nblist_work_nalloc)
-						{
-							born->nblist_work_nalloc += 500;
-							for(apa=0;apa<natoms;apa++)
-							{
-								srenew(born->nblist_work[apa],born->nblist_work_nalloc);
-							}
-						}
-												
-						if(ai>aj)
-						{
-							atoms[aj][count[aj]]=ai;
-							count[aj]++;
-						}
-						else
-						{
-							atoms[ai][count[ai]]=aj;
-							count[ai]++;
-						}
+                        add_j_to_gblist(list,nblist->jjnr[k]);
 					}
 				}
 			}
@@ -1924,7 +1979,6 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	}
 		
 	/* Zero out some counters */
-	idx=0;
 	ii_idx=0;
 	fr->gblist.nri=0;
 	fr->gblist.nrj=0;
@@ -1934,38 +1988,53 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		natoms = cr->dd->nat_home;
 	}
 	
-	for(i=0;i<natoms;i++)
+    fr->gblist.jindex[0] = ii_idx;
+    for(i=0;i<natoms;i++)
 	{
-		/* Only add those atoms that actually have neighbours (ie. all except vsites) */
-		if(born->vs[i]!=0)
-		{
-			fr->gblist.iinr[fr->gblist.nri]=i;
-			fr->gblist.nri++;
-		}
-		
-		for(k=0;k<count[i];k++)
-		{
-			/* Memory allocation for jjnr */
-			if(fr->gblist.nrj>=fr->gblist.maxnrj)
-			{
-				fr->gblist.maxnrj += over_alloc_small(fr->gblist.maxnrj);
-				
-				if(debug)
-				{
-					fprintf(debug,"Increasing GB neighbourlist j size to %d\n",fr->gblist.maxnrj);
-				}
-				
-				srenew(fr->gblist.jjnr,fr->gblist.maxnrj);
+        for(s=0; s<nls[i].nlist; s++)
+        {
+            list = &nls[i].list[s];
+
+            /* Only add those atoms that actually have neighbours */
+            if (born->use[i] != 0)
+            {
+                fr->gblist.iinr[fr->gblist.nri]  = i;
+                fr->gblist.shift[fr->gblist.nri] = list->shift;
+                fr->gblist.nri++;
+            
+                for(k=0; k<list->naj; k++)
+                {
+                    /* Memory allocation for jjnr */
+                    if(fr->gblist.nrj >= fr->gblist.maxnrj)
+                    {
+                        fr->gblist.maxnrj += over_alloc_large(fr->gblist.maxnrj);
+                        
+                        if (debug)
+                        {
+                            fprintf(debug,"Increasing GB neighbourlist j size to %d\n",fr->gblist.maxnrj);
+                        }
+                        
+                        srenew(fr->gblist.jjnr,fr->gblist.maxnrj);
+                    }
 			
-			}
-			
-			/* Put in list */
-			fr->gblist.jjnr[idx++]=atoms[i][k];
-			fr->gblist.nrj++;
-		}
-		
-		fr->gblist.jindex[ii_idx+1]=idx;	
-		ii_idx++;
+                    /* Put in list */
+                    fr->gblist.jjnr[fr->gblist.nrj++] = list->aj[k];
+                }
+            }
+            
+            ii_idx++;
+            fr->gblist.jindex[ii_idx] = fr->gblist.nrj;	
+        }
+        if (nls[i].nlist == 0)
+        {
+            /* Temporary code adding an empty list to make loops work */
+            fr->gblist.iinr[fr->gblist.nri]  = i;
+            fr->gblist.shift[fr->gblist.nri] = list->shift;
+            fr->gblist.nri++;
+
+            ii_idx++;
+            fr->gblist.jindex[ii_idx] = fr->gblist.nrj;	
+        }
 	}
 	
 	return 0;
@@ -1995,7 +2064,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 			born->param = born->param_globalindex;
 		}
 		
-		born->vs = born->vs_globalindex;
+		born->use = born->use_globalindex;
 		
 		return;
 	}
@@ -2017,7 +2086,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		}
 		
 		/* All gb-algorithms use the array for vsites exclusions */
-		srenew(born->vs,    born->nlocal+3);
+		srenew(born->use,    born->nlocal+3);
 	}
 	
 	/* With dd, copy algorithm specific arrays */
@@ -2027,7 +2096,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		{
 			born->gpol[i]  = born->gpol_globalindex[dd->gatindex[i]];
 			born->vsolv[i] = born->vsolv_globalindex[dd->gatindex[i]];
-			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			born->use[i]   = born->use_globalindex[dd->gatindex[i]];
 		}
 	}
 	else
@@ -2035,7 +2104,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		for(i=at0;i<at1;i++)
 		{
 			born->param[i] = born->param_globalindex[dd->gatindex[i]];
-			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			born->use[i]   = born->use_globalindex[dd->gatindex[i]];
 		}
 	}
 }

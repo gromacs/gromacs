@@ -262,11 +262,11 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
   
   /* optional fields */
   surftens  = -1;
-  vol       =  0;
-  radius    =  0;
-  gb_radius =  0;
+  vol       = -1;
+  radius    = -1;
+  gb_radius = -1;
   atomnr    = -1;
-  S_hct     =  0;
+  S_hct     = -1;
 	
   switch (nb_funct) {
       
