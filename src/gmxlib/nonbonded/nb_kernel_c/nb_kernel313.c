@@ -228,9 +228,9 @@ void nb_kernel313(
 
                 /* Calculate 1/r and 1/r2 */
                 rinvsq           = 1.0/rsq11;      
-                rinv21           = invsqrt(rsq21);
-                rinv31           = invsqrt(rsq31);
-                rinv41           = invsqrt(rsq41);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv31           = gmx_invsqrt(rsq31);
+                rinv41           = gmx_invsqrt(rsq41);
 
                 /* Load parameters for j atom */
                 tj               = nti+2*type[jnr];
@@ -605,9 +605,9 @@ void nb_kernel313nf(
 
                 /* Calculate 1/r and 1/r2 */
                 rinvsq           = 1.0/rsq11;      
-                rinv21           = invsqrt(rsq21);
-                rinv31           = invsqrt(rsq31);
-                rinv41           = invsqrt(rsq41);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv31           = gmx_invsqrt(rsq31);
+                rinv41           = gmx_invsqrt(rsq41);
 
                 /* Load parameters for j atom */
                 tj               = nti+2*type[jnr];

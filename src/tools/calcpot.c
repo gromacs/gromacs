@@ -121,8 +121,8 @@ static void c_tabpot(real tabscale,   real VFtab[],
       dzO               = izO - jz;
       rsqO              = dxO*dxO + dyO*dyO + dzO*dzO;
 
-      /* Doing fast invsqrt */
-      rinv1O            = invsqrt(rsqO);
+      /* Doing fast gmx_invsqrt */
+      rinv1O            = gmx_invsqrt(rsqO);
 
       /* O block */
       r1                = one/rinv1O;
