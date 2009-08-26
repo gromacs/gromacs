@@ -44,6 +44,7 @@ typedef struct
 	real length[10];
 } genborn_bonds_t;
 
+typedef struct gbtmpnbls *gbtmpnbls_t;
 
 /* Struct to hold all the information for GB */
 typedef struct
@@ -70,8 +71,8 @@ typedef struct
 	real  *vsolv;             /* Atomic solvation volumes */
 	real  *vsolv_globalindex; /*  */
 	
-	int *vs;                  /* Array for vsites-exclusions */   
-	int *vs_globalindex;      /*  */
+	int  *use;                 /* Array that till if this atom does GB */   
+	int  *use_globalindex;     /* Global array for parallelization */
 		
 	real es;                  /* Solvation energy and derivatives */
 	real *asurf;              /* Atomic surface area */
@@ -93,7 +94,7 @@ typedef struct
 	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
 	real *dd_work;            /* Used for domain decomposition parallel runs, length natoms              */
 	int  *count;              /* Used for setting up the special gb nblist, length natoms                 */
-	int  **nblist_work;       /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */
+	gbtmpnbls_t nblist_work;  /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */
 	int  nblist_work_nalloc;  /* Length of second dimension of nblist_work                                */
 } 
 gmx_genborn_t;
