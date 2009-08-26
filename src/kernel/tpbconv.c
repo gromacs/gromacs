@@ -350,7 +350,7 @@ int main (int argc, char *argv[])
   static int  nsteps_req_int = -1;
   static real runtime_req = -1;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
-  static bool bContinuation = TRUE,bZeroQ = FALSE;
+  static bool bContinuation = TRUE,bZeroQ = FALSE,bVel=TRUE;
   static t_pargs pa[] = {
     { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
       "Change the number of steps" },
@@ -364,8 +364,10 @@ int main (int argc, char *argv[])
       "Extend runtime until this ending time (ps)" },
     { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
       "Set the charges of a group (from the index) to zero" },
+    { "-vel",           FALSE, etBOOL, {&bVel},
+      "Require velocities from trajectory" },
     { "-cont",          FALSE, etBOOL, {&bContinuation},
-      "For exact continuation, the constraints should not be solved before the first step" }
+      "For exact continuation, the constraints should not be applied before the first step" }
   };
   int nerror = 0;
   
@@ -390,6 +392,10 @@ int main (int argc, char *argv[])
   read_tpx_state(top_fn,ir,&state,NULL,&mtop);
   run_step = ir->init_step;
   run_t    = ir->init_step*ir->delta_t + ir->init_t;
+  
+  if (!EI_STATE_VELOCITY(ir->eI)) {
+    bVel = FALSE;
+  }
 
   if (bTraj) {
     fprintf(stderr,"\n"
@@ -458,7 +464,7 @@ int main (int argc, char *argv[])
       bFrame = bFrame && bOK;
       bUse = FALSE;
       if (bFrame &&
-	  (head.x_size) && (head.v_size || !EI_STATE_VELOCITY(ir->eI))) {
+	  (head.x_size) && (head.v_size || !bVel)) {
 	bUse = TRUE;
 	if (bScanEner) {
 	  /* Read until the energy time is >= the trajectory time */
