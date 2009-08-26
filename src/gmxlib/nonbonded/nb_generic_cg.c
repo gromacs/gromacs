@@ -309,20 +309,12 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                         case 1:
                             /* Vanilla Lennard-Jones cutoff */
                             c6               = vdwparam[tj];   
-                            c12              = vdwparam[tj+1]; 
-#ifdef ADRESS
-                            /* don't calculate Lennard-Jones for non-interacting hydrogen */
-                            if((c12 > 0) || (c6 > 0))
-                            {
-#endif
+                            c12              = vdwparam[tj+1];
                             rinvsix          = rinvsq*rinvsq*rinvsq;
                             Vvdw_disp        = c6*rinvsix;     
                             Vvdw_rep         = c12*rinvsix*rinvsix;
                             fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
                             Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
-#ifdef ADRESS
-                            }
-#endif
                             break;
                             
                         case 2:
@@ -342,8 +334,8 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                         case 3:
                             /* Tabulated VdW */
                             c6               = vdwparam[tj];   
-                            c12              = vdwparam[tj+1]; 
-                            
+                            c12              = vdwparam[tj+1];
+
 #ifdef ADRESS
                             /* Interface pressure correction
                              * c6 = HYB potential, c12 = CG potential */ 
@@ -363,6 +355,14 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                                 }
                                 c6 = 1.0-c12;
                             }
+			    /* if we are calculating CG-CG interactions */
+			    else if (aj == ajc)
+			    {
+			        /* do not use the c6 table */
+			        c6               = 0;
+				/* c12 table is normal CG potential */
+			        c12              = vdwparam[tj+1];
+			    }
 #endif
                             Y                = VFtab[nnn];     
                             F                = VFtab[nnn+1];   
