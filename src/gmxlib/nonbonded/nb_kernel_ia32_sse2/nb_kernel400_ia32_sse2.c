@@ -82,7 +82,7 @@ void nb_kernel400_ia32_sse2(int *           p_nri,
 	double        facel,krf,crf,tabscl,gbtabscl,vct,vgbt;
 	double        shX,shY,shZ,isai_d,dva;
 	gmx_gbdata_t *gbdata;
-	float *        gpol;
+	double *        gpol;
 	
 	__m128d       ix,iy,iz,jx,jy,jz;
 	__m128d		  dx,dy,dz,t1,t2,t3;
