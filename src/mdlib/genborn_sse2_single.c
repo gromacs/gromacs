@@ -303,11 +303,14 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,offset;
 	int aj13,aj23,aj33,aj43;
+	int shift;
+	real shX,shY,shZ;
 
 	float gpi_ai,gpi2;
 	float factor;
 	
 	__m128 ix,iy,iz;
+	__m128 sX,sY,sZ;
 	__m128 jx,jy,jz;
 	__m128 dx,dy,dz;
 	__m128 t1,t2,t3;
@@ -354,18 +357,33 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 		
 		ai3	    = ai*3;
 		
-		nj0     = nl->jindex[ai];
-		nj1     = nl->jindex[ai+1];
+		nj0     = nl->jindex[i];
+		nj1     = nl->jindex[i+1];
 	 	
+		/* Load shifts for this list */
+		shift   = nl->shift[i];
+		shX     = fr->shift_vec[shift][0];
+		shY     = fr->shift_vec[shift][1];
+		shZ     = fr->shift_vec[shift][2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_ps(&shX);
+		sY = _mm_load1_ps(&shY);
+		sZ = _mm_load1_ps(&shZ);
+		
 		offset  = (nj1-nj0)%4;
 		
 		/* Polarization energy for atom ai */
 		gpi     = _mm_setzero_ps();
 		
-		/* Load particle ai coordinates */
-		ix      = _mm_set1_ps(x[ai3]);
-		iy      = _mm_set1_ps(x[ai3+1]);
-		iz      = _mm_set1_ps(x[ai3+2]);
+		/* Load particle ai coordinates and add shifts */
+		ix      = _mm_load1_ps(x+ai3);
+		iy      = _mm_load1_ps(x+ai3+1);
+		iz      = _mm_load1_ps(x+ai3+2);
+		
+		ix      = _mm_add_ps(sX,ix);
+		iy      = _mm_add_ps(sY,iy);
+		iz      = _mm_add_ps(sZ,iz);
 		
 		/* Load particle ai gb_radius */
 		rai     = _mm_set1_ps(top->atomtypes.gb_radius[md->typeA[ai]]);
@@ -457,7 +475,6 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 				default:
 					
 					theta	  = _mm_mul_ps(ratio,pip5);
-					//sincos_ps(theta,&sinq,&cosq); /* sine and cosine	*/			
 					sincos_sse2single(theta,&sinq,&cosq);
 					term      = _mm_sub_ps(one,cosq); /*1-cosq*/
 					term      = _mm_mul_ps(half,term); /*0.5*(1.0-cosq)*/
@@ -811,11 +828,12 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,at0,at1;
 	int aj13,aj23,aj33,aj43,p1,p2,p3,p4;
-	int offset;
+	int offset,shift;
+	float shX,shY,shZ;
 	float ri,rr,sum,sum_tmp,min_rad,rad;
 	float doff;
 	
-	__m128 ix,iy,iz,jx,jy,jz;
+	__m128 ix,iy,iz,jx,jy,jz,sX,sY,sZ;
 	__m128 dx,dy,dz,t1,t2,t3;
 	__m128 rsq11,rinv,r,rai;
 	__m128 rai_inv,sk,sk2,lij,dlij,duij;
@@ -864,8 +882,19 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 		ai  = nl->iinr[i];
 		ai3 = ai*3;
 		
-		nj0 = nl->jindex[ai];
-		nj1 = nl->jindex[ai+1];
+		nj0 = nl->jindex[i];
+		nj1 = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = nl->shift[i];
+		shX     = fr->shift_vec[shift][0];
+		shY     = fr->shift_vec[shift][1];
+		shZ     = fr->shift_vec[shift][2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_ps(&shX);
+		sY = _mm_load1_ps(&shY);
+		sZ = _mm_load1_ps(&shZ);
 		
 		offset = (nj1-nj0)%4;
 	
@@ -878,10 +907,14 @@ calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *t
 		/* Zero out sums for polarisation energies */
 		sum_ai  = _mm_setzero_ps();
 		
-		/* Load ai coordinates*/
+		/* Load ai coordinates and add shifts */
 		ix = _mm_load1_ps(x+ai3);
 		iy = _mm_load1_ps(x+ai3+1);
 		iz = _mm_load1_ps(x+ai3+2);
+		
+		ix      = _mm_add_ps(sX,ix);
+		iy      = _mm_add_ps(sY,iy);
+		iz      = _mm_add_ps(sZ,iz);
 		
 		sk_ai  = _mm_load1_ps(born->param+ai);
 		sk2_ai = _mm_mul_ps(sk_ai,sk_ai);
@@ -1696,12 +1729,13 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj3,aj4,nj0,nj1,at0,at1;
 	int p1,p2,p3,p4;
-	int aj13,aj23,aj33,aj43,offset;
+	int aj13,aj23,aj33,aj43,offset,shift;
+	float shX,shY,shZ;
 	float doff;
 	float rr,rr_inv,rr_inv2,sum_tmp,sum,sum2,sum3,gbr;
 	float sum_ai2, sum_ai3,tsum,tchain;
 	
-	__m128 ix,iy,iz,jx,jy,jz;
+	__m128 ix,iy,iz,jx,jy,jz,sX,sY,sZ;
 	__m128 dx,dy,dz,t1,t2,t3;
 	__m128 rsq11,rinv,r;
 	__m128 rai,rai_inv,raj, raj_inv,rai_inv2,sk,sk2,lij,dlij,duij;
@@ -1752,8 +1786,19 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 		ai       = nl->iinr[i];
 		ai3      = ai*3;
 		
-		nj0      = nl->jindex[ai];
-		nj1      = nl->jindex[ai+1];
+		nj0      = nl->jindex[i];
+		nj1      = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = nl->shift[i];
+		shX     = fr->shift_vec[shift][0];
+		shY     = fr->shift_vec[shift][1];
+		shZ     = fr->shift_vec[shift][2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_ps(&shX);
+		sY = _mm_load1_ps(&shY);
+		sZ = _mm_load1_ps(&shZ);
 		
 		offset   = (nj1-nj0)%4;
 		
@@ -1762,10 +1807,14 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 		rr       = 1.0/rr;
 		rai_inv  = _mm_load1_ps(&rr);
 		
-		/* Load ai coordinates */
+		/* Load ai coordinates and add the shifts */
 		ix		 = _mm_load1_ps(x+ai3);
 		iy		 = _mm_load1_ps(x+ai3+1);
 		iz	     = _mm_load1_ps(x+ai3+2);
+		
+		ix      = _mm_add_ps(sX,ix);
+		iy      = _mm_add_ps(sY,iy);
+		iz      = _mm_add_ps(sZ,iz);
 		
 		sum_ai   = _mm_setzero_ps();
 		
@@ -2428,7 +2477,7 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 			
 			xmm4    = _mm_sub_ps(raj_inv,lij);
 			xmm4    = _mm_mul_ps(two,xmm4);
-			xmm4    = _mm_add_ps(xmm1,xmm4);
+			xmm4    = _mm_add_ps(tmp,xmm4);
 			
 			tmp     = _mm_or_ps(_mm_and_ps(mask_cmp3,xmm4)  ,_mm_andnot_ps(mask_cmp3,tmp)); /*conditional as a mask*/
 			
@@ -2595,16 +2644,19 @@ calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *
 
 
 
-float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, float *xd, float *f, int gb_algorithm, gmx_genborn_t *born)						
+float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+							float *xd, float *f, float *fshift, float *shift_vec,
+							int gb_algorithm, gmx_genborn_t *born)						
 {
 	int    i,k,n,ai,aj,ai3,nj0,nj1,offset;
-	int	   aj1,aj2,aj3,aj4; 
+	int	   aj1,aj2,aj3,aj4,shift;
 	
-	float   rbi;
+	float   rbi,shX,shY,shZ;
 	float   *rb;
 	
 	__m128 ix,iy,iz;
 	__m128 jx,jy,jz;
+	__m128 sX,sY,sZ;
 	__m128 fix,fiy,fiz;
 	__m128 dx,dy,dz;
 	__m128 t1,t2,t3;
@@ -2740,15 +2792,30 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 		ai     = nl->iinr[i];
 		ai3	   = ai*3;
 	
-		nj0    = nl->jindex[ai];
-		nj1    = nl->jindex[ai+1];
+		nj0    = nl->jindex[i];
+		nj1    = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = 3*nl->shift[i];
+		shX     = shift_vec[shift];
+		shY     = shift_vec[shift+1];
+		shZ     = shift_vec[shift+2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_ps(&shX);
+		sY = _mm_load1_ps(&shY);
+		sZ = _mm_load1_ps(&shZ);
 		
 		offset = (nj1-nj0)%4;
 		
-		/* Load particle ai coordinates */
+		/* Load particle ai coordinates and add shifts */
 		ix  = _mm_load1_ps(xd+ai3);
 		iy  = _mm_load1_ps(xd+ai3+1);
 		iz  = _mm_load1_ps(xd+ai3+2);
+		
+		ix      = _mm_add_ps(sX,ix);
+		iy      = _mm_add_ps(sY,iy);
+		iz      = _mm_add_ps(sZ,iz);
 		
 		/* Load particle ai dvda */
 		dva = _mm_load1_ps(rb+ai);
@@ -3110,7 +3177,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 		} /*end offset!=0*/
 	 
 		/* fix/fiy/fiz now contain four partial force terms, that all should be
-		* added to the i particle forces. 
+		* added to the i particle forces and shift forces. 
 		*/
 		t1 = _mm_movehl_ps(t1,fix);
 		t2 = _mm_movehl_ps(t2,fiy);
@@ -3132,18 +3199,27 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
 		xmm2 = _mm_movelh_ps(xmm2,fiz);
 		xmm2 = _mm_and_ps(maski, xmm2);
 		
-		/* load i force from memory */
+		/* load, add and store i forces */
 		xmm4 = _mm_loadl_pi(xmm4,(__m64 *) (f+ai3)); /*fx fy - -  */
 		xmm5 = _mm_load1_ps(f+ai3+2); /* fz fz fz fz */
 		xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0)); /*fx fy fz fz*/
 		
-		/* add to i force */
 		xmm4 = _mm_add_ps(xmm4,xmm2);
 		
-		/* store i force to memory */
 		_mm_storel_pi( (__m64 *) (f+ai3),xmm4); /* fx fy - - */
 		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2)); /* only the third term will be correct for fz */
 		_mm_store_ss(f+ai3+2,xmm4); /*fz*/
+		
+		/* Load, add and store i shift forces */
+		xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+ai3));
+		xmm5 = _mm_load1_ps(fshift+ai3+2);
+		xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
+		
+		xmm4 = _mm_add_ps(xmm4,xmm2);
+		
+		_mm_storel_pi( (__m64 *) (fshift+ai3),xmm4);
+		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
+		_mm_store_ss(fshift+ai3+2,xmm4);
 	}	
 
 	return 0;	
@@ -3160,7 +3236,6 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 	int offset;
 	
 	float vctot;
-	real apa[4];
 	
 	__m128 ix,iy,iz,jx,jy,jz,dx,dy,dz;
 	__m128 rsq11,rinv,r,t1,t2,t3;
