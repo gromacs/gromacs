@@ -616,8 +616,8 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 		gpi_ai = born->gpol[ai] + born->gpol_still_work[ai];
 		gpi2   = gpi_ai*gpi_ai;
 		
-		born->bRad[ai]=factor*invsqrt(gpi2);
-		fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+		born->bRad[ai]=factor*gmx_invsqrt(gpi2);
+		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
 	}
 	
 	/* Extra (local) communication reqiured for DD */
@@ -1222,7 +1222,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 		rad     = 1.0/sum;  
 		
 		born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-		fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
 	}
 	
 	/* Extra (local) communication required for DD */
@@ -1832,7 +1832,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 		born->bRad[ai] = rr_inv - tsum*rr_inv2;
 		born->bRad[ai] = 1.0 / born->bRad[ai];
 		
-		fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
 		
 		tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
 		born->drobc[ai] = (1.0-tsum*tsum)*tchain*rr_inv2;

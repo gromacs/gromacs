@@ -256,15 +256,15 @@ void nb_kernel312(
                 rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv12           = invsqrt(rsq12);
-                rinv13           = invsqrt(rsq13);
-                rinv21           = invsqrt(rsq21);
-                rinv22           = invsqrt(rsq22);
-                rinv23           = invsqrt(rsq23);
-                rinv31           = invsqrt(rsq31);
-                rinv32           = invsqrt(rsq32);
-                rinv33           = invsqrt(rsq33);
+                rinv11           = gmx_invsqrt(rsq11);
+                rinv12           = gmx_invsqrt(rsq12);
+                rinv13           = gmx_invsqrt(rsq13);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv22           = gmx_invsqrt(rsq22);
+                rinv23           = gmx_invsqrt(rsq23);
+                rinv31           = gmx_invsqrt(rsq31);
+                rinv32           = gmx_invsqrt(rsq32);
+                rinv33           = gmx_invsqrt(rsq33);
 
                 /* Load parameters for j atom */
                 qq               = qqOO;           
@@ -893,15 +893,15 @@ void nb_kernel312nf(
                 rsq33            = dx33*dx33+dy33*dy33+dz33*dz33;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv12           = invsqrt(rsq12);
-                rinv13           = invsqrt(rsq13);
-                rinv21           = invsqrt(rsq21);
-                rinv22           = invsqrt(rsq22);
-                rinv23           = invsqrt(rsq23);
-                rinv31           = invsqrt(rsq31);
-                rinv32           = invsqrt(rsq32);
-                rinv33           = invsqrt(rsq33);
+                rinv11           = gmx_invsqrt(rsq11);
+                rinv12           = gmx_invsqrt(rsq12);
+                rinv13           = gmx_invsqrt(rsq13);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv22           = gmx_invsqrt(rsq22);
+                rinv23           = gmx_invsqrt(rsq23);
+                rinv31           = gmx_invsqrt(rsq31);
+                rinv32           = gmx_invsqrt(rsq32);
+                rinv33           = gmx_invsqrt(rsq33);
 
                 /* Load parameters for j atom */
                 qq               = qqOO;           

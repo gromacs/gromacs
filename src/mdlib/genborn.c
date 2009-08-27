@@ -888,7 +888,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 			dz11  = iz1-jz1;
 			
 			dr2   = dx11*dx11+dy11*dy11+dz11*dz11; 
-			rinv  = invsqrt(dr2);
+			rinv  = gmx_invsqrt(dr2);
 			idr2  = rinv*rinv;
 			idr4  = idr2*idr2;
 			idr6  = idr4*idr2;
@@ -912,7 +912,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 				term  = 0.5*(1.0-cosq);
 				ccf   = term*term;
 				sinq  = 1.0 - cosq*cosq;
-				dccf  = 2.0*term*sinq*invsqrt(sinq)*theta;
+				dccf  = 2.0*term*sinq*gmx_invsqrt(sinq)*theta;
 			}
 			
 			prod          = STILL_P4*vaj;
@@ -947,8 +947,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 		ai   = nl->iinr[i];
 		gpi  = born->gpol[ai]+born->gpol_still_work[ai];
 		gpi2 = gpi * gpi;
-		born->bRad[ai]   = factor*invsqrt(gpi2);
-		fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		born->bRad[ai]   = factor*gmx_invsqrt(gpi2);
+		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
 	}
 	
 	/* Extra communication required for DD */
@@ -1027,7 +1027,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 			dz11  = iz1 - jz1;
 			
 			dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-			rinv  = invsqrt(dr2);
+			rinv  = gmx_invsqrt(dr2);
 			dr    = rinv*dr2;
 			
 			sk    = born->param[aj];
@@ -1054,7 +1054,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      = sk*sk;
 				sk2_rinv = sk2*rinv;
 				prod     = 0.25*sk2_rinv;
@@ -1101,7 +1101,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
 				sk2_rinv = sk2*rinv;
 				prod     = 0.25 * sk2_rinv;
@@ -1150,7 +1150,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 		rad     = 1.0/sum_ai; 
 		
 		born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-		fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
 	}
 	
 	/* Extra communication required for DD */
@@ -1230,7 +1230,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 			dz11  = iz1 - jz1;
 			
 			dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-			rinv  = invsqrt(dr2);
+			rinv  = gmx_invsqrt(dr2);
 			dr    = dr2*rinv;
 		
 			/* sk is precalculated in init_gb() */
@@ -1257,7 +1257,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      = sk*sk;
 				sk2_rinv = sk2*rinv;	
 				prod     = 0.25*sk2_rinv;
@@ -1303,7 +1303,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
 				sk2_rinv = sk2*rinv;
 				prod     = 0.25 * sk2_rinv;
@@ -1357,7 +1357,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 		born->bRad[ai] = rai_inv - tsum*rai_inv2;
 		born->bRad[ai] = 1.0 / born->bRad[ai];
 		
-		fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
 		
 		tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
 		born->drobc[ai] = (1.0-tsum*tsum)*tchain*rai_inv2;
@@ -1519,7 +1519,7 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 			dy11          = iy1 - jy1;
 			dz11          = iz1 - jz1;
 			rsq11         = dx11*dx11+dy11*dy11+dz11*dz11;
-			rinv11        = invsqrt(rsq11);
+			rinv11        = gmx_invsqrt(rsq11);
 			isaj          = invsqrta[aj];
 			isaprod       = isai*isaj;
 			qq            = isaprod*iq*charge[aj];

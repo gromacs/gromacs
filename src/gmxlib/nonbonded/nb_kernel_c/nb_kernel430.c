@@ -202,7 +202,7 @@ void nb_kernel430(
                 rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
+                rinv11           = gmx_invsqrt(rsq11);
 
                 /* Load parameters for j atom */
                 isaj             = invsqrta[jnr];  
@@ -476,7 +476,7 @@ void nb_kernel430nf(
                 rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
+                rinv11           = gmx_invsqrt(rsq11);
 
                 /* Load parameters for j atom */
                 isaj             = invsqrta[jnr];  

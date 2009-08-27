@@ -142,7 +142,7 @@ real morse_bonds(int nbonds,
 
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);            /*   3          */
     dr2  = iprod(dx,dx);                            /*   5          */
-    dr   = dr2*invsqrt(dr2);                        /*  10          */
+    dr   = dr2*gmx_invsqrt(dr2);                        /*  10          */
     temp = exp(-be*(dr-b0));                        /*  12          */
     
     if (temp == one)
@@ -151,7 +151,7 @@ real morse_bonds(int nbonds,
     omtemp   = one-temp;                               /*   1          */
     cbomtemp = cb*omtemp;                              /*   1          */
     vbond    = cbomtemp*omtemp;                        /*   1          */
-    fbond    = -two*be*temp*cbomtemp*invsqrt(dr2);      /*   9          */
+    fbond    = -two*be*temp*cbomtemp*gmx_invsqrt(dr2);      /*   9          */
     vtot    += vbond;       /* 1 */
     
     if (g) {
@@ -202,7 +202,7 @@ real cubic_bonds(int nbonds,
     if (dr2 == 0.0)
       continue;
       
-    dr         = dr2*invsqrt(dr2);                      /*  10          */
+    dr         = dr2*gmx_invsqrt(dr2);                      /*  10          */
     dist       = dr-b0;
     kdist      = kb*dist;
     kdist2     = kdist*dist;
@@ -337,7 +337,7 @@ real bonds(int nbonds,
   
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
-    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+    dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
@@ -350,7 +350,7 @@ real bonds(int nbonds,
 
     
     vtot  += vbond;/* 1*/
-    fbond *= invsqrt(dr2);			/*   6		*/
+    fbond *= gmx_invsqrt(dr2);			/*   6		*/
 #ifdef DEBUG
     if (debug)
       fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
@@ -395,7 +395,7 @@ real polarize(int nbonds,
   
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
-    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+    dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
     *dvdlambda += harmonic(ksh,ksh,0,0,dr,lambda,&vbond,&fbond);  /*  19  */
 
@@ -403,7 +403,7 @@ real polarize(int nbonds,
       continue;
     
     vtot  += vbond;/* 1*/
-    fbond *= invsqrt(dr2);			/*   6		*/
+    fbond *= gmx_invsqrt(dr2);			/*   6		*/
 
     if (g) {
       ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
@@ -480,11 +480,11 @@ real water_pol(int nbonds,
       /* Compute inverse length of normal vector 
        * (this one could be precomputed, but I'm too lazy now)
        */
-      r_nW = invsqrt(iprod(nW,nW));
+      r_nW = gmx_invsqrt(iprod(nW,nW));
       /* This is for precision, but does not make a big difference,
        * it can go later.
        */
-      r_OD = invsqrt(iprod(dOD,dOD)); 
+      r_OD = gmx_invsqrt(iprod(dOD,dOD)); 
       
       /* Normalize the vectors in the water frame */
       svmul(r_nW,nW,nW);
@@ -558,7 +558,7 @@ static real do_1_thole(const rvec xi,const rvec xj,rvec fi,rvec fj,
   t      = pbc_rvec_sub(pbc,xi,xj,r12); /*  3 */
   
   r12sq  = iprod(r12,r12);              /*  5 */
-  r12_1  = invsqrt(r12sq);              /*  5 */
+  r12_1  = gmx_invsqrt(r12sq);              /*  5 */
   r12bar = afac/r12_1;                  /*  5 */
   v0     = qq*ONE_4PI_EPS0*r12_1;       /*  2 */
   ebar   = exp(-r12bar);                /*  5 */
@@ -669,7 +669,7 @@ real angles(int nbonds,
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      st  = dVdt*invsqrt(1 - cos_theta2);	/*  12		*/
+      st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -679,7 +679,7 @@ real angles(int nbonds,
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);
       
-      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
       cii=sth/nrij2;				/*  10		*/
       ckk=sth/nrkj2;				/*  10		*/
       
@@ -740,7 +740,7 @@ real urey_bradley(int nbonds,
     
     ki   = pbc_rvec_sub(pbc,x[ai],x[ak],r_ik);	/*   3 		*/
     dr2  = iprod(r_ik,r_ik);			/*   5		*/
-    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+    dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
     *dvdlambda += harmonic(kUB,kUB,r13,r13,dr,lambda,&vbond,&fbond); /*  19  */
 
@@ -751,7 +751,7 @@ real urey_bradley(int nbonds,
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      st  = dVdt*invsqrt(1 - cos_theta2);	/*  12		*/
+      st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -761,7 +761,7 @@ real urey_bradley(int nbonds,
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);
       
-      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
       cii=sth/nrij2;				/*  10		*/
       ckk=sth/nrkj2;				/*  10		*/
       
@@ -790,7 +790,7 @@ real urey_bradley(int nbonds,
       continue;
 
     vtot  += vbond;  /* 1*/
-    fbond *= invsqrt(dr2);			/*   6		*/
+    fbond *= gmx_invsqrt(dr2);			/*   6		*/
     
     if (g) {
       ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,ak),dt_ik);
@@ -853,7 +853,7 @@ real quartic_angles(int nbonds,
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      st  = dVdt*invsqrt(1 - cos_theta2);    	/*  12		*/
+      st  = dVdt*gmx_invsqrt(1 - cos_theta2);    	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -863,7 +863,7 @@ real quartic_angles(int nbonds,
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);
       
-      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
       cii=sth/nrij2;				/*  10		*/
       ckk=sth/nrkj2;				/*  10		*/
       
@@ -931,7 +931,7 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
   toler = nrkj2*GMX_REAL_EPS;
   if ((iprm > toler) && (iprn > toler)) {
-    nrkj  = nrkj2*invsqrt(nrkj2);	/* 10	*/
+    nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
     a     = -ddphi*nrkj/iprm;	/* 11	*/
     svmul(a,m,f_i);		/*  3	*/
     a     = ddphi*nrkj/iprn;	/* 11	*/
@@ -1285,12 +1285,12 @@ static real low_angres(int nbonds,
 
     cos_phi2 = sqr(cos_phi);                    /*   1		*/
     if (cos_phi2 < 1) {
-      st  = -dVdphi*invsqrt(1 - cos_phi2);      /*  12		*/
+      st  = -dVdphi*gmx_invsqrt(1 - cos_phi2);      /*  12		*/
       sth = st*cos_phi;				/*   1		*/
       nrij2 = iprod(r_ij,r_ij);			/*   5		*/
       nrkl2 = iprod(r_kl,r_kl);                 /*   5          */
       
-      c   = st*invsqrt(nrij2*nrkl2);		/*  11		*/ 
+      c   = st*gmx_invsqrt(nrij2*nrkl2);		/*  11		*/ 
       cij = sth/nrij2;				/*  10		*/
       ckl = sth/nrkl2;				/*  10		*/
       
@@ -2027,8 +2027,8 @@ real g96angles(int nbonds,
 			      cos_theta,lambda,&va,&dVdt);
     vtot    += va;
     
-    rij_1    = invsqrt(iprod(r_ij,r_ij));
-    rkj_1    = invsqrt(iprod(r_kj,r_kj));
+    rij_1    = gmx_invsqrt(iprod(r_ij,r_ij));
+    rkj_1    = gmx_invsqrt(iprod(r_kj,r_kj));
     rij_2    = rij_1*rij_1;
     rkj_2    = rkj_1*rkj_1;
     rijrkj_1 = rij_1*rkj_1;                     /* 23 */
@@ -2274,7 +2274,7 @@ real tab_bonds(int nbonds,
   
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
-    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+    dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
     table = forceparams[type].tab.table;
 
@@ -2289,7 +2289,7 @@ real tab_bonds(int nbonds,
 
     
     vtot  += vbond;/* 1*/
-    fbond *= invsqrt(dr2);			/*   6		*/
+    fbond *= gmx_invsqrt(dr2);			/*   6		*/
 #ifdef DEBUG
     if (debug)
       fprintf(debug,"TABBONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
@@ -2350,7 +2350,7 @@ real tab_angles(int nbonds,
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      st  = dVdt*invsqrt(1 - cos_theta2);	/*  12		*/
+      st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -2360,7 +2360,7 @@ real tab_angles(int nbonds,
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);
       
-      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
       cii=sth/nrij2;				/*  10		*/
       ckk=sth/nrkj2;				/*  10		*/
       
