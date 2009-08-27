@@ -595,6 +595,21 @@ void nb_kernel430_ia32_sse2(int *           p_nri,
 		_mm_store_sd(faction+ii3+1,fiy);
 		_mm_store_sd(faction+ii3+2,fiz);
 		
+		/* Load i shift forces from memory */
+		xmm1     = _mm_load_sd(fshift+ii3);
+		xmm2     = _mm_load_sd(fshift+ii3+1);
+		xmm3     = _mm_load_sd(fshift+ii3+2);
+		
+		/* Add to i force */
+		fix      = _mm_add_sd(fix,xmm1);
+		fiy      = _mm_add_sd(fiy,xmm2);
+		fiz      = _mm_add_sd(fiz,xmm3);
+		
+		/* store i forces to memory */
+		_mm_store_sd(fshift+ii3,fix);
+		_mm_store_sd(fshift+ii3+1,fiy);
+		_mm_store_sd(fshift+ii3+2,fiz);
+		
 		/* now do dvda */
 		dvdatmp  = _mm_unpacklo_pd(dvdatmp,dvdasum);
 		dvdasum  = _mm_add_pd(dvdasum,dvdatmp);

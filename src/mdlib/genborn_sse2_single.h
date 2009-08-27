@@ -43,7 +43,8 @@
 
 
 float 
-calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, float *xd, float *f, int gb_algorithm, gmx_genborn_t *born);						
+calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+					  float *xd, float *f, float *fshift, float *shift_vec, int gb_algorithm, gmx_genborn_t *born);						
 
 
 int 
