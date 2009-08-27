@@ -562,8 +562,9 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 	  i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
 	/* next function */
 	if (func_type != top->idef.functype[interaction->iatoms[i]]) {
-	  gmx_fatal(FARGS,"Error in func_type %s",
-		      interaction_function[func_type].longname);
+	  fprintf(stderr,"Error in func_type %s",
+		  interaction_function[func_type].longname);
+	  continue;
 	}
 	
 	/* check out this functype */
