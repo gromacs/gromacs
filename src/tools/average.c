@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	my_usage(argv[0],argv[i]);
       }
     else
-      nav=atoi(argv[i]);
+      nav=strtol(argv[i],NULL,0);
   }
   if (!bSilent)
     fprintf(stderr,"Will average stdin with %d columns, over %d points\n",

@@ -58,4 +58,7 @@ int
 calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
 					const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
 
+float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
+					   t_idef *idef, real gb_epsilon_solvent, real epsfac);
+
 #endif /* _genborn_sse_h */

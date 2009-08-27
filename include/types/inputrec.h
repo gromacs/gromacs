@@ -135,6 +135,10 @@ typedef struct {
   bool       bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
+  rvec       *rbuf;       /* COM calculation buffer */
+  dvec       *dbuf;       /* COM calculation buffer */
+  double     *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */
+
   FILE       *out_x;      /* output file for pull data */
   FILE       *out_f;      /* output file for pull data */
 } t_pull;
@@ -280,5 +284,7 @@ typedef struct {
 #define NEED_MUTOT(ir) (((ir).coulombtype==eelEWALD || EEL_PME((ir).coulombtype)) && ((ir).ewald_geometry==eewg3DC || (ir).epsilon_surface!=0))
 
 #define IR_TWINRANGE(ir) ((ir).rlist > 0 && ((ir).rlistlong == 0 || (ir).rlistlong > (ir).rlist))
+
+#define IR_ELEC_FIELD(ir) ((ir).ex[XX].n > 0 || (ir).ex[YY].n > 0 || (ir).ex[ZZ].n > 0)
 
 #endif

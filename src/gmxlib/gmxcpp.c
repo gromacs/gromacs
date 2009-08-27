@@ -149,11 +149,12 @@ static void add_define(const char *define)
 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
-int cpp_open_file(char *filenm,gmx_cpp_t *handle, char **cppopts)
+int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
   char *buf;
   int i;
+  unsigned int i1;
   
   /* First process options, they might be necessary for opening files
      (especially include statements). */  
@@ -213,6 +214,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 {
   gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   int  i,i0,nn,len,status;
+  unsigned int i1;
   char *inc_fn,*ptr,*ptr2,*name;
   int  bIfdef,bIfndef;
   
@@ -303,10 +305,10 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   if (strstrw(buf,"#include") != NULL) {
     len = -1;
     i0  = 0;
-    for(i=0; (i<strlen(buf)); i++) {
-      if ((buf[i] == '"') || (buf[i] == '<') || (buf[i] == '>'))  {
+    for(i1=0; (i1<strlen(buf)); i1++) {
+      if ((buf[i1] == '"') || (buf[i1] == '<') || (buf[i1] == '>'))  {
 	if (len == -1) {
-	  i0 = i+1;
+	  i0 = i1+1;
 	  len = 0;
 	}
 	else

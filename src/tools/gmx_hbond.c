@@ -1101,7 +1101,8 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
 /* Changed the contact code slightly.
  * - Erik Marklund, June 29, 2006
  */
-static void do_hblife(char *fn,t_hbdata *hb,bool bMerge,bool bContact)
+static void do_hblife(const char *fn,t_hbdata *hb,bool bMerge,bool bContact,
+                      const output_env_t oenv)
 {
   FILE *fp;
   char *leg[] = { "p(t)", "t p(t)" };
@@ -1164,11 +1165,12 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge,bool bContact)
   }
   fprintf(stderr,"\n");
   if (bContact)
-    fp = xvgropen(fn,"Uninterrupted contact lifetime","Time (ps)","()");
+    fp = xvgropen(fn,"Uninterrupted contact lifetime","Time (ps)","()",oenv);
   else
-    fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()");
+    fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()",
+                  oenv);
 
-  xvgr_legend(fp,asize(leg),leg);
+  xvgr_legend(fp,asize(leg),leg,oenv);
   j0 = nframes-1;
   while ((j0 > 0) && (histo[j0] == 0))
     j0--;
@@ -1435,7 +1437,8 @@ static real compute_weighted_rates(int n,real t[],real ct[],real nt[],
   return chi2;
 }
 
-static void smooth_tail(int n,real t[],real c[],real sigma_c[],real start)
+static void smooth_tail(int n,real t[],real c[],real sigma_c[],real start,
+                        const output_env_t oenv)
 {
   FILE *fp;
   real e_1,fitparm[4];
@@ -1450,12 +1453,13 @@ static void smooth_tail(int n,real t[],real c[],real sigma_c[],real start)
   else
     fitparm[0] = 10;
   fitparm[1] = 0.95;
-  do_lmfit(n,c,sigma_c,0,t,start,t[n-1],bDebugMode(),effnEXP2,fitparm,0);
+  do_lmfit(n,c,sigma_c,0,t,start,t[n-1],oenv,bDebugMode(),effnEXP2,fitparm,0);
 }
 
 void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 		  real sigma_ct[],real sigma_nt[],real sigma_kt[],
-		  real fit_start,real temp,real smooth_tail_start)
+		  real fit_start,real temp,real smooth_tail_start,
+                  const output_env_t oenv)
 {
   int    i0,i;
   real   k=1,kp=1,kow=1;
@@ -1464,9 +1468,9 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
   bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
   
   if (smooth_tail_start >= 0) {
-    smooth_tail(n,t,ct,sigma_ct,smooth_tail_start);
-    smooth_tail(n,t,nt,sigma_nt,smooth_tail_start);
-    smooth_tail(n,t,kt,sigma_kt,smooth_tail_start);
+    smooth_tail(n,t,ct,sigma_ct,smooth_tail_start,oenv);
+    smooth_tail(n,t,nt,sigma_nt,smooth_tail_start,oenv);
+    smooth_tail(n,t,kt,sigma_kt,smooth_tail_start,oenv);
   }
   for(i0=0; (i0<n-2) && ((t[i0]-t[0]) < fit_start); i0++)
     ;
@@ -1569,9 +1573,10 @@ void compute_derivative(int nn,real x[],real y[],real dydx[])
 /* Changed contact code and added argument R2 
  * - Erik Marklund, June 29, 2006
  */
-static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
+static void do_hbac(const char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 		    int nDump,bool bMerge,bool bContact,real fit_start,
-                    real temp,bool R2,real smooth_tail_start)
+                    real temp,bool R2,real smooth_tail_start,
+                    const output_env_t oenv)
 {
   FILE *fp;
   char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
@@ -1660,7 +1665,8 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	  }
 	  
 	  /* The autocorrelation function is normalized after summation only */
-	  low_do_autocorr(NULL,NULL,nframes,1,-1,&rhbex,hb->time[1]-hb->time[0],
+	  low_do_autocorr(NULL,oenv,NULL,nframes,1,-1,&rhbex,
+                          hb->time[1]-hb->time[0],
 			  eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
 	  
 	  /* Cross correlation analysis for thermodynamics */
@@ -1719,10 +1725,10 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     kt[j] = -kt[j];
 
   if (bContact)
-    fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)");
+    fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)",oenv);
   else
-    fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
-  xvgr_legend(fp,asize(leg),leg);
+    fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)",oenv);
+  xvgr_legend(fp,asize(leg),leg,oenv);
 
   for(j=0; (j<nn); j++)
     fprintf(fp,"%10g  %10g  %10g  %10g  %10g\n",
@@ -1730,9 +1736,9 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   fclose(fp);
   
   analyse_corr(nn,hb->time,ct,ght,kt,NULL,NULL,NULL,
-	       fit_start,temp,smooth_tail_start);
+	       fit_start,temp,smooth_tail_start,oenv);
   
-  do_view(fn,NULL);
+  do_view(oenv,fn,NULL);
   sfree(rhbex);
   sfree(ct);
   sfree(gt);
@@ -1764,7 +1770,8 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
   /*set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);*/
 }
 
-static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
+static void analyse_donor_props(const char *fn,t_hbdata *hb,int nframes,real t,
+                                const output_env_t oenv)
 {
   static FILE *fp = NULL;
   char *leg[] = { "Nbound", "Nfree" };
@@ -1773,8 +1780,8 @@ static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
   if (!fn)
     return;
   if (!fp) {
-    fp = xvgropen(fn,"Donor properties","Time (ps)","Number");
-    xvgr_legend(fp,asize(leg),leg);
+    fp = xvgropen(fn,"Donor properties","Time (ps)","Number",oenv);
+    xvgr_legend(fp,asize(leg),leg,oenv);
   }
   nbound = 0;
   nhtot  = 0;
@@ -2057,6 +2064,7 @@ int gmx_hbond(int argc,char *argv[])
   t_ncell    *icell,*jcell,*kcell;
   ivec       ngrid;
   unsigned char        *datable;
+  output_env_t oenv;
     
   CopyRight(stdout,argv[0]);
 
@@ -2064,7 +2072,7 @@ int gmx_hbond(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,npargs,
-		    ppa,asize(desc),desc,asize(bugs),bugs);
+		    ppa,asize(desc),desc,asize(bugs),bugs,&oenv);
 
   /* process input */
   bSelected = opt2bSet("-sel",NFILE,fnm);
@@ -2089,8 +2097,8 @@ int gmx_hbond(int argc,char *argv[])
   if (opt2bSet("-nhbdist",NFILE,fnm)) {
     char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
     fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
-		     "Number of donor-H with N HBs","Time (ps)","N");
-    xvgr_legend(fpnhb,asize(leg),leg);
+		     "Number of donor-H with N HBs","Time (ps)","N",oenv);
+    xvgr_legend(fpnhb,asize(leg),leg,oenv);
   }
   
   hb = mk_hbdata(bHBmap,opt2bSet("-dan",NFILE,fnm),bMerge || bContact);
@@ -2253,7 +2261,7 @@ int gmx_hbond(int argc,char *argv[])
   }
 
   /* Analyze trajectory */
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   if ( natoms > top.atoms.nr )
     gmx_fatal(FARGS,"Topology (%d atoms) does not match trajectory (%d atoms)",
 	      top.atoms.nr,natoms);
@@ -2267,7 +2275,8 @@ int gmx_hbond(int argc,char *argv[])
   
   do {
     bTric = bBox && TRICLINIC(box);
-    build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, rshell, ngrid,grid);
+    build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, 
+               rshell, ngrid,grid);
     
     reset_nhbonds(&(hb->d));
 
@@ -2450,12 +2459,12 @@ int gmx_hbond(int argc,char *argv[])
 	    } /* for grp */
 	  } /* for xi,yi,zi */
     }
-    analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t);
+    analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t,oenv);
     if (fpnhb)
       do_nhb_dist(fpnhb,hb,t);
     
     nframes++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   
   free_grid(ngrid,&grid);
   
@@ -2499,13 +2508,13 @@ int gmx_hbond(int argc,char *argv[])
   aver_nhb  = 0;    
   aver_dist = 0;
   fp = xvgropen(opt2fn("-num",NFILE,fnm),bContact ? "Contacts" :
-		"Hydrogen Bonds","Time","Number");
+		"Hydrogen Bonds","Time","Number",oenv);
   snew(leg,2);
   snew(leg[0],STRLEN);
   snew(leg[1],STRLEN);
   sprintf(leg[0],"%s",bContact?"Contacts":"Hydrogen bonds");
   sprintf(leg[1],"Pairs within %g nm",(r2cut>0)?r2cut:rcut);
-  xvgr_legend(fp,2,leg);
+  xvgr_legend(fp,2,leg,oenv);
   sfree(leg[1]);
   sfree(leg[0]);
   sfree(leg);
@@ -2527,7 +2536,7 @@ int gmx_hbond(int argc,char *argv[])
     
     fp = xvgropen(opt2fn("-dist",NFILE,fnm),
 		  "Hydrogen Bond Distribution",
-		  "Hydrogen - Acceptor Distance (nm)","");
+		  "Hydrogen - Acceptor Distance (nm)","",oenv);
     for(i=0; i<nrbin; i++)
       fprintf(fp,"%10g %10g\n",(i+0.5)*rbin,rdist[i]/(rbin*(real)sum));
     fclose(fp);
@@ -2543,7 +2552,7 @@ int gmx_hbond(int argc,char *argv[])
     
     fp = xvgropen(opt2fn("-ang",NFILE,fnm),
 		  "Hydrogen Bond Distribution",
-		  "Donor - Hydrogen - Acceptor Angle (\\SO\\N)","");
+		  "Donor - Hydrogen - Acceptor Angle (\\SO\\N)","",oenv);
     for(i=0; i<nabin; i++)
       fprintf(fp,"%10g %10g\n",(i+0.5)*abin,adist[i]/(abin*(real)sum));
     fclose(fp);
@@ -2552,8 +2561,8 @@ int gmx_hbond(int argc,char *argv[])
   /* Print HB in alpha-helix */
   if (opt2bSet("-hx",NFILE,fnm)) {
     fp = xvgropen(opt2fn("-hx",NFILE,fnm),
-		  "Hydrogen Bonds","Time(ps)","Count");
-    xvgr_legend(fp,NRHXTYPES,hxtypenames);
+		  "Hydrogen Bonds","Time(ps)","Count",oenv);
+    xvgr_legend(fp,NRHXTYPES,hxtypenames,oenv);
     for(i=0; i<nframes; i++) {
       fprintf(fp,"%10g",hb->time[i]);
       for (j=0; j<max_hx; j++)
@@ -2577,9 +2586,9 @@ int gmx_hbond(int argc,char *argv[])
       please_cite(stdout,"Spoel2006b");
     if (opt2bSet("-ac",NFILE,fnm)) 
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
-	      bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start);
+	      bMerge,bContact,fit_start,temp,r2cut>0,smooth_tail_start,oenv);
     if (opt2bSet("-life",NFILE,fnm))
-      do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge,bContact);
+      do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge,bContact,oenv);
     if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;
       int id,ia,hh,x,y;
@@ -2652,7 +2661,7 @@ int gmx_hbond(int argc,char *argv[])
 #define USE_THIS_GROUP(j) ( (j == gr0) || (bTwo && (j == gr1)) || (bInsert && (j == grI)) )
     
     fp = xvgropen(opt2fn("-dan",NFILE,fnm),
-		  "Donors and Acceptors","Time(ps)","Count");
+		  "Donors and Acceptors","Time(ps)","Count",oenv);
     nleg = (bTwo?2:1)*2 + (bInsert?2:0);
     snew(legnames,nleg);
     i=0;
@@ -2665,7 +2674,7 @@ int gmx_hbond(int argc,char *argv[])
       }
     if (i != nleg)
       gmx_incons("number of legend entries");
-    xvgr_legend(fp,nleg,legnames);
+    xvgr_legend(fp,nleg,legnames,oenv);
     for(i=0; i<nframes; i++) {
       fprintf(fp,"%10g",hb->time[i]);
       for (j=0; (j<grNR); j++)

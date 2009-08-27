@@ -111,11 +111,12 @@ int gmx_morph(int argc,char *argv[])
   real     rms1,rms2,fac,*mass;
   char     title[STRLEN],*grpname;
   bool     bRMS;
+  output_env_t oenv;
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
-		    0,NULL);
+		    0,NULL,&oenv);
   get_stx_coordnum (opt2fn("-f1",NFILE,fnm),&nat1);
   get_stx_coordnum (opt2fn("-f2",NFILE,fnm),&nat2);
   if (nat1 != nat2)
@@ -148,8 +149,8 @@ int gmx_morph(int argc,char *argv[])
   
   bRMS = opt2bSet("-or",NFILE,fnm);
   if (bRMS) {
-    fp = xvgropen(opt2fn("-or",NFILE,fnm),"RMSD","Conf","(nm)");
-    xvgr_legend(fp,asize(leg),leg);
+    fp = xvgropen(opt2fn("-or",NFILE,fnm),"RMSD","Conf","(nm)",oenv);
+    xvgr_legend(fp,asize(leg),leg,oenv);
     printf("Select group for RMSD calculation:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),1,&isize,&index,&grpname);
     printf("You selected group %s, containing %d atoms\n",grpname,isize);
@@ -176,7 +177,7 @@ int gmx_morph(int argc,char *argv[])
   
   if (bRMS) {
     fclose(fp);
-    do_view(opt2fn("-or",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-or",NFILE,fnm),"-nxy");
   }
   
   thanx(stderr);

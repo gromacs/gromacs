@@ -177,11 +177,11 @@ static void calc_angle(int ePBC,matrix box,rvec x[], atom_id index1[],
   } 
 }
 
-void sgangle_plot(char *fn,char *afile,char *dfile, 
-		  char *d1file, char *d2file,
+void sgangle_plot(const char *fn,const char *afile,const char *dfile, 
+		  const char *d1file, const char *d2file,
 		  atom_id index1[], int gnx1, char *grpn1,
 		  atom_id index2[], int gnx2, char *grpn2,
-		  t_topology *top,int ePBC)
+		  t_topology *top,int ePBC,const output_env_t oenv)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
@@ -199,25 +199,25 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
   matrix     box;        
   char       buf[256];   /* for xvgr title */
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
-  sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");
+  sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ",oenv);
 
   if (dfile) {
     sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
-    sg_distance = xvgropen(dfile,buf,"Time (ps)","Distance (nm)");
+    sg_distance = xvgropen(dfile,buf,"Time (ps)","Distance (nm)",oenv);
   }
 
   if (d1file) {
     sprintf(buf,"Distance between plane and first atom of vector");
-    sg_distance1 = xvgropen(d1file,buf,"Time (ps)","Distance (nm)");
+    sg_distance1 = xvgropen(d1file,buf,"Time (ps)","Distance (nm)",oenv);
   }
 
   if (d2file) {
     sprintf(buf,"Distance between plane and second atom of vector");
-    sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)");
+    sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)",oenv);
   }
 
   do 
@@ -237,7 +237,7 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
       if (d2file)
 	fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
 
-    } while (read_next_x(status,&t,natoms,x0,box));
+    } while (read_next_x(oenv,status,&t,natoms,x0,box));
   
   fprintf(stderr,"\n");
   close_trj(status);
@@ -336,11 +336,11 @@ static void calc_angle_single(int ePBC,
 }
  
  
-void sgangle_plot_single(char *fn,char *afile,char *dfile, 
-			 char *d1file, char *d2file,
+void sgangle_plot_single(const char *fn,const char *afile,const char *dfile, 
+			 const char *d1file, const char *d2file,
 			 atom_id index1[], int gnx1, char *grpn1,
 			 atom_id index2[], int gnx2, char *grpn2,
-			 t_topology *top,int ePBC)
+			 t_topology *top,int ePBC, const output_env_t oenv)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
@@ -360,25 +360,25 @@ void sgangle_plot_single(char *fn,char *afile,char *dfile,
   matrix     box;        
   char       buf[256];   /* for xvgr title */
   
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
-  sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");
+  sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ",oenv);
   
   if (dfile) {
     sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
-    sg_distance = xvgropen(dfile,buf,"Time (ps)","Distance (nm)");
+    sg_distance = xvgropen(dfile,buf,"Time (ps)","Distance (nm)",oenv);
   }
   
   if (d1file) {
     sprintf(buf,"Distance between plane and first atom of vector");
-    sg_distance1 = xvgropen(d1file,buf,"Time (ps)","Distance (nm)");
+    sg_distance1 = xvgropen(d1file,buf,"Time (ps)","Distance (nm)",oenv);
   }
   
   if (d2file) {
     sprintf(buf,"Distance between plane and second atom of vector");
-    sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)");
+    sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)",oenv);
   }
   
   snew(xzero,natoms);
@@ -405,7 +405,7 @@ void sgangle_plot_single(char *fn,char *afile,char *dfile,
     if (d2file)
       fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
     
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
   
   fprintf(stderr,"\n");
   close_trj(status);
@@ -444,7 +444,8 @@ int gmx_sgangle(int argc,char *argv[])
     "-od2: For two planes this option has no meaning."
   };
 
-  char	     *fna, *fnd, *fnd1, *fnd2;		
+  output_env_t oenv;
+  const char *fna, *fnd, *fnd1, *fnd2;		
   char *      grpname[2];          		/* name of the two groups */
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 
@@ -473,7 +474,7 @@ int gmx_sgangle(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
   
 
   top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);     /* read topology file */
@@ -492,7 +493,7 @@ int gmx_sgangle(int argc,char *argv[])
     sgangle_plot_single(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 			index[0],gnx[0],grpname[0],
 			index[0],gnx[0],grpname[0],
-			top,ePBC);
+			top,ePBC,oenv);
   }  else {
     rd_index(ftp2fn(efNDX,NFILE,fnm),bZ ? 1 : 2,gnx,index,grpname);
     if (!bZ)
@@ -505,13 +506,13 @@ int gmx_sgangle(int argc,char *argv[])
     sgangle_plot(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 		 index[0],gnx[0],grpname[0],
 		 index[1],gnx[1],grpname[1],
-		 top,ePBC);
+		 top,ePBC,oenv);
   }
 
-  do_view(fna,"-nxy");     /* view xvgr file */
-  do_view(fnd,"-nxy");     /* view xvgr file */
-  do_view(fnd1,"-nxy");     /* view xvgr file */
-  do_view(fnd2,"-nxy");     /* view xvgr file */
+  do_view(oenv,fna,"-nxy");     /* view xvgr file */
+  do_view(oenv,fnd,"-nxy");     /* view xvgr file */
+  do_view(oenv,fnd1,"-nxy");     /* view xvgr file */
+  do_view(oenv,fnd2,"-nxy");     /* view xvgr file */
 
   thanx(stderr);
   return 0;

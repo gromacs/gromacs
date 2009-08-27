@@ -71,8 +71,7 @@ extern const char *comment_str[eitemNR];
  * Open and Close 
  ********************************************************/
 
-int 
-gmx_fio_open(const char *fn,const char *mode);
+int gmx_fio_open(const char *fn,const char *mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
@@ -82,15 +81,13 @@ gmx_fio_open(const char *fn,const char *mode);
  * unix, but is important on windows.
  */
  
-int
-gmx_fio_close(int fp);
+int gmx_fio_close(int fp);
 /* Close the file corresponding to fp (if not stdio)
  * The routine will exit when an invalid fio is handled.
  * Returns 0 on success.
  */
 
-void 
-gmx_fio_select(int fp);
+void gmx_fio_select(int fp);
 /* This routine sets the global variables do_read and do_write
  * to point to the correct routines for fp.
  */
@@ -127,8 +124,7 @@ extern bool gmx_fio_getread(int fio);
 extern void gmx_fio_rewind(int fio);
 /* Rewind the tpa file in fio */
 
-int
-gmx_fio_flush(int fio);
+int gmx_fio_flush(int fio);
 /* Flush the fio, returns 0 on success */
 
 extern off_t gmx_fio_ftell(int fio);
@@ -144,15 +140,13 @@ extern XDR *gmx_fio_getxdr(int fio);
 /* Return the file pointer itself */
 
 /* Open a file, return a stream, record the entry in internal FIO object */
-FILE *
-gmx_fio_fopen(const char *fn,const char *mode);
+FILE * gmx_fio_fopen(const char *fn,const char *mode);
 
 /* Close a file previously opened with gmx_fio_fopen. 
  * Do not mix these calls with standard fopen/fclose ones!
  * Returns 0 on success.
  */
-int
-gmx_fio_fclose(FILE *fp);
+int gmx_fio_fclose(FILE *fp);
 
 /* Element with information about position in a currently open file.
  * off_t should be defined by autoconf if your system does not have it.
@@ -178,14 +172,12 @@ gmx_file_position_t;
  */
 int
 gmx_fio_get_output_file_positions (gmx_file_position_t ** outputfiles,
- 								   int *                  nfiles );
+                                   int *nfiles );
 
 
-extern int
-xtc_seek_frame(int frame, int fio, int natoms);
+extern int xtc_seek_frame(int frame, int fio, int natoms);
 
-extern int 
-xtc_seek_time(real time, int fio, int natoms);
+extern int xtc_seek_time(real time, int fio, int natoms);
 
 	
 extern void set_comment(const char *comment);

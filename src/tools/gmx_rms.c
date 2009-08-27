@@ -218,6 +218,7 @@ int gmx_rms (int argc,char *argv[])
   atom_id    *ind_fit,**ind_rms,*ind_m=NULL,*rev_ind_m=NULL,*ind_rms_m=NULL;
   char       *gn_fit,**gn_rms;
   t_rgb      rlo,rhi;
+  output_env_t oenv;
   t_filenm fnm[] = {
     { efTPS, NULL,  NULL,    ffREAD  },
     { efTRX, "-f",  NULL,    ffREAD  },
@@ -234,8 +235,9 @@ int gmx_rms (int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,
+                    PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   /* parse enumerated options: */
   ewhat=nenum(what);
   if (ewhat==ewRho || ewhat==ewRhoSc)
@@ -392,7 +394,7 @@ int gmx_rms (int argc,char *argv[])
     norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
   
   /* read first frame */
-  natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
   if (natoms != top.atoms.nr) 
     fprintf(stderr,
 	    "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
@@ -529,7 +531,7 @@ int gmx_rms (int argc,char *argv[])
 	rlsm[j][teller] = 
 	  calc_similar_ind(ewhat!=ewRMSD,irms[j],ind_rms[j],w_rms,x,xm);
     }
-    time[teller]=convert_time(t);
+    time[teller]=conv_time(oenv,t);
     
     teller++;
     if (teller >= maxframe) {
@@ -541,7 +543,7 @@ int gmx_rms (int argc,char *argv[])
 	for(j=0; (j<nrms); j++) 
 	  srenew(rlsm[j],maxframe);
     }
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
 
   if (bFile2) {
@@ -549,10 +551,11 @@ int gmx_rms (int argc,char *argv[])
     
     fprintf(stderr,"\nWill read second trajectory file\n");
     snew(mat_x2,NFRAME);
-    natoms2=read_first_x(&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
+    natoms2=read_first_x(oenv,&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
     if ( natoms2 != natoms )
-      gmx_fatal(FARGS,"Second trajectory (%d atoms) does not match the first one"
-		  " (%d atoms)", natoms2, natoms);
+      gmx_fatal(FARGS,
+                "Second trajectory (%d atoms) does not match the first one"
+		" (%d atoms)", natoms2, natoms);
     tel_mat2 = 0;
     teller2 = 0;
     do {
@@ -580,14 +583,14 @@ int gmx_rms (int argc,char *argv[])
 	tel_mat2++;
       }
       
-      time2[teller2]=convert_time(t);
+      time2[teller2]=conv_time(oenv,t);
 
       teller2++;
       if (teller2 >= maxframe2) {
 	maxframe2 +=NFRAME;
 	srenew(time2,maxframe2);
       }
-    } while (read_next_x(status,&t,natoms,x,box));
+    } while (read_next_x(oenv,status,&t,natoms,x,box));
     close_trj(status);
   } else {
     mat_x2=mat_x;
@@ -726,11 +729,11 @@ int gmx_rms (int argc,char *argv[])
 		rmsd_min,rmsd_max);
       sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
       write_xpm(opt2FILE("-m",NFILE,fnm,"w"),0,buf,whatlabel[ewhat],
-		time_label(),time_label(),tel_mat,tel_mat2,axis,axis2,
-		rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
+		get_time_label(oenv),get_time_label(oenv),tel_mat,tel_mat2,
+                axis,axis2, rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
       if (opt2bSet("-dist",NFILE,fnm)) 
-	low_rmsd_dist(opt2fn("-dist",NFILE,fnm),rmsd_max,tel_mat,rmsd_mat);
+	low_rmsd_dist(opt2fn("-dist",NFILE,fnm),rmsd_max,tel_mat,rmsd_mat,oenv);
       
       if (bDelta) {
 	snew(delta_tot,delta_xsize);
@@ -767,7 +770,7 @@ int gmx_rms (int argc,char *argv[])
 	  del_yaxis[i]=delta_maxy*i/del_lev;
 	sprintf(buf,"%s %s vs. delta t",gn_rms[0],whatname[ewhat]);
 	fp = ffopen("delta.xpm","w");
-	write_xpm(fp,0,buf,"density",time_label(),whatlabel[ewhat],
+	write_xpm(fp,0,buf,"density",get_time_label(oenv),whatlabel[ewhat],
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
 	fclose(fp);
@@ -794,8 +797,8 @@ int gmx_rms (int argc,char *argv[])
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       sprintf(buf,"%s av. bond angle deviation",gn_rms[0]);
       write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),0,buf,"degrees",
-		time_label(),time_label(),tel_mat,tel_mat2,axis,axis2,
-		bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
+		get_time_label(oenv),get_time_label(oenv),tel_mat,tel_mat2,
+                axis,axis2, bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
     }
   }
     
@@ -806,17 +809,21 @@ int gmx_rms (int argc,char *argv[])
     sprintf(buf,"%s",whatxvgname[ewhat]);
   else
     sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
-	    time[prev*freq]-time[0], time_label());
-  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,xvgr_tlabel(),whatxvglabel[ewhat]);
-  if (bPrintXvgrCodes())
+	    time[prev*freq]-time[0], get_time_label(oenv));
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,get_xvgr_tlabel(oenv),
+              whatxvglabel[ewhat], oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"%s%s after %s%s%s\"\n",
 	    (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
 	    bFit     ?" to ":""   , bFit?gn_fit:"");
   if (nrms != 1)
-    xvgr_legend(fp,nrms,gn_rms);
+    xvgr_legend(fp,nrms,gn_rms,oenv);
   for(i=0; (i<teller); i++) {
-    if ( bSplit && i>0 && abs(time[bPrev ? freq*i : i]/time_factor())<1e-5 ) 
-      fprintf(fp,"&\n");
+    if ( bSplit && i>0 && 
+          abs(time[bPrev ? freq*i : i]/get_time_factor(oenv))<1e-5 ) 
+    {
+        fprintf(fp,"&\n");
+    }
     fprintf(fp,"%12.7f",time[bPrev ? freq*i : i]);
     for(j=0; (j<nrms); j++) {
       fprintf(fp," %12.7f",rls[j][i]);
@@ -830,16 +837,17 @@ int gmx_rms (int argc,char *argv[])
     /* Write the mirror RMSD's to file */
     sprintf(buf,"%s with Mirror",whatxvgname[ewhat]);
     sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
-    fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, xvgr_tlabel(), buf2);
+    fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, get_xvgr_tlabel(oenv), 
+                buf2,oenv);
     if (nrms == 1) {
-      if (bPrintXvgrCodes())
+      if (get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
 		gn_rms[0],gn_fit);
     }
     else {
-      if (bPrintXvgrCodes())
+      if (get_print_xvgr_codes(oenv))
 	fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
-      xvgr_legend(fp,nrms,gn_rms);
+      xvgr_legend(fp,nrms,gn_rms,oenv);
     }
     for(i=0; (i<teller); i++) {
       if ( bSplit && i>0 && abs(time[i])<1e-5 ) 
@@ -854,24 +862,24 @@ int gmx_rms (int argc,char *argv[])
   if (bAv) {
     sprintf(buf,"Average %s",whatxvgname[ewhat]);
     sprintf(buf2,"Average %s",whatxvglabel[ewhat]);
-    fp = xvgropen(opt2fn("-a",NFILE,fnm), buf, "Residue", buf2);
+    fp = xvgropen(opt2fn("-a",NFILE,fnm), buf, "Residue", buf2,oenv);
     for(j=0; (j<nrms); j++)
       fprintf(fp,"%10d  %10g\n",j,rlstot/teller);
     fclose(fp);
   }
 
   if (bNorm) {
-    fp = xvgropen("aver.xvg",gn_rms[0],"Residue",whatxvglabel[ewhat]);
+    fp = xvgropen("aver.xvg",gn_rms[0],"Residue",whatxvglabel[ewhat],oenv);
     for(j=0; (j<irms[0]); j++)
       fprintf(fp,"%10d  %10g\n",j,rlsnorm[j]/teller);
     fclose(fp);
   }
-  do_view(opt2fn_null("-a",NFILE,fnm),"-graphtype bar");
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-mir",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-m",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-bm",NFILE,fnm),NULL);
-  do_view(opt2fn_null("-dist",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn_null("-a",NFILE,fnm),"-graphtype bar");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn_null("-mir",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn_null("-m",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn_null("-bm",NFILE,fnm),NULL);
+  do_view(oenv,opt2fn_null("-dist",NFILE,fnm),NULL);
   
   thanx(stderr);
   

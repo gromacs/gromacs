@@ -52,8 +52,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #include "mpelogging.h"
@@ -373,6 +373,8 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
     MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
     messages = 0;
   } while (!(cnb.flags & (PP_PME_COORD | PP_PME_FINISH)));
+
+  *step = cnb.step;
 #endif
 
   *chargeA = pme_pp->chargeA;
@@ -380,7 +382,6 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
   *x       = pme_pp->x;
   *f       = pme_pp->f;
   
-  *step = cnb.step;
 
   return ((cnb.flags & PP_PME_FINISH) ? -1 : nat);
 }

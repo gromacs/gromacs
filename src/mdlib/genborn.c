@@ -58,8 +58,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
@@ -68,8 +68,7 @@
 #else
 #include "genborn_sse2_single.h"
 #endif /* GMX_DOUBLE */
-#endif
-
+#endif /* GMX_SSE */
 
 /* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
@@ -80,6 +79,19 @@
 
 #define STILL_P5INV (1.0/STILL_P5)
 #define STILL_PIP5  (M_PI*STILL_P5)
+
+typedef struct {
+    int shift;
+    int naj;
+    int *aj;
+    int aj_nalloc;
+} gbtmpnbl_t;
+
+typedef struct gbtmpnbls {
+    int nlist;
+    gbtmpnbl_t *list;
+    int list_nalloc;
+} t_gbtmpnbls;
 
 int init_gb_nblist(int natoms, t_nblist *nl)
 {
@@ -387,7 +399,7 @@ int init_gb_still(const t_commrec *cr, t_forcerec  *fr, const t_atomtypes *atype
 	/* Self */
 	for(j=0;j<natoms;j++)
 	{
-		if(born->vs_globalindex[j]==1)
+		if(born->use_globalindex[j]==1)
 		{
 			born->gpol_globalindex[j]=-0.5*ONE_4PI_EPS0/(atype->gb_radius[atoms->atom[j].type]-doffset+STILL_P1);
 		}
@@ -488,7 +500,7 @@ int init_gb(gmx_genborn_t **p_born,
 	snew(born->param_globalindex, natoms+3);
 	snew(born->gpol_globalindex,  natoms+3);
 	snew(born->vsolv_globalindex, natoms+3);
-	snew(born->vs_globalindex,    natoms+3);
+	snew(born->use_globalindex,    natoms+3);
 	
 	snew(fr->invsqrta, natoms);
 	snew(fr->dvda,     natoms);
@@ -508,12 +520,21 @@ int init_gb(gmx_genborn_t **p_born,
 	for(i=0;i<natoms;i++)
 	{
 		jj = atoms.atom[i].type;
-		born->vs_globalindex[i]=1;																							
+        if (mtop->atomtypes.gb_radius[atoms.atom[i].type] > 0)
+        {
+            born->use_globalindex[i] = 1;
+        }
+        else
+        {
+            born->use_globalindex[i] = 0;
+        }
 				
 		/* If we have a Vsite, put vs_globalindex[i]=0 */
-	    if(C6(fr->nbfp,fr->ntype,jj,jj)==0 && C12(fr->nbfp,fr->ntype,jj,jj)==0 && atoms.atom[i].q==0)
+	    if (C6 (fr->nbfp,fr->ntype,jj,jj) == 0 &&
+            C12(fr->nbfp,fr->ntype,jj,jj) == 0 &&
+            atoms.atom[i].q == 0)
 		{
-			born->vs_globalindex[i]=0;
+			born->use_globalindex[i]=0;
 		}
 	}
 	
@@ -539,7 +560,7 @@ int init_gb(gmx_genborn_t **p_born,
 		
 		for(i=0;i<natoms;i++)
 		{	
-			if(born->vs_globalindex[i]==1)
+			if(born->use_globalindex[i]==1)
 			{
 				rai            = mtop->atomtypes.gb_radius[atoms.atom[i].type]-doffset; 
 				sk             = rai * mtop->atomtypes.S_hct[atoms.atom[i].type];
@@ -562,22 +583,6 @@ int init_gb(gmx_genborn_t **p_born,
 	snew(born->work,natoms+4);
 	snew(born->count,natoms);
 	snew(born->nblist_work,natoms);
-	
-	/* If less than 500 atoms (completely arbitrary number), allocate exact */
-	if(natoms<500)
-	{
-		born->nblist_work_nalloc = natoms;
-	}
-	else
-	{
-		born->nblist_work_nalloc = 500;
-	}
-	
-	/* Allocate memory for the second dimension in the array used to setup the gb neighbourlist */
-	for(i=0;i<natoms;i++)
-	{
-		snew(born->nblist_work[i],born->nblist_work_nalloc);
-	}
 	
 	/* Domain decomposition specific stuff */
 	if(DOMAINDECOMP(cr))
@@ -848,8 +853,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 	{
 		ai      = nl->iinr[i];
 		
-		nj0     = nl->jindex[ai];			
-		nj1     = nl->jindex[ai+1];
+		nj0     = nl->jindex[i];			
+		nj1     = nl->jindex[i+1];
 	
 		gpi     = 0;
 		
@@ -874,7 +879,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 			dz11  = iz1-jz1;
 			
 			dr2   = dx11*dx11+dy11*dy11+dz11*dz11; 
-			rinv  = invsqrt(dr2);
+			rinv  = gmx_invsqrt(dr2);
 			idr2  = rinv*rinv;
 			idr4  = idr2*idr2;
 			idr6  = idr4*idr2;
@@ -898,7 +903,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 				term  = 0.5*(1.0-cosq);
 				ccf   = term*term;
 				sinq  = 1.0 - cosq*cosq;
-				dccf  = 2.0*term*sinq*invsqrt(sinq)*theta;
+				dccf  = 2.0*term*sinq*gmx_invsqrt(sinq)*theta;
 			}
 			
 			prod          = STILL_P4*vaj;
@@ -933,8 +938,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 		ai   = nl->iinr[i];
 		gpi  = born->gpol[ai]+born->gpol_still_work[ai];
 		gpi2 = gpi * gpi;
-		born->bRad[ai]   = factor*invsqrt(gpi2);
-		fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		born->bRad[ai]   = factor*gmx_invsqrt(gpi2);
+		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
 	}
 	
 	/* Extra communication required for DD */
@@ -1004,7 +1009,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 			dz11  = iz1 - jz1;
 			
 			dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-			rinv  = invsqrt(dr2);
+			rinv  = gmx_invsqrt(dr2);
 			dr    = rinv*dr2;
 			
 			sk    = born->param[aj];
@@ -1031,7 +1036,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      = sk*sk;
 				sk2_rinv = sk2*rinv;
 				prod     = 0.25*sk2_rinv;
@@ -1078,7 +1083,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
 				sk2_rinv = sk2*rinv;
 				prod     = 0.25 * sk2_rinv;
@@ -1127,7 +1132,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 		rad     = 1.0/sum_ai; 
 		
 		born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-		fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
 	}
 	
 	/* Extra communication required for DD */
@@ -1198,7 +1203,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 			dz11  = iz1 - jz1;
 			
 			dr2   = dx11*dx11+dy11*dy11+dz11*dz11;
-			rinv  = invsqrt(dr2);
+			rinv  = gmx_invsqrt(dr2);
 			dr    = dr2*rinv;
 		
 			/* sk is precalculated in init_gb() */
@@ -1225,7 +1230,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      = sk*sk;
 				sk2_rinv = sk2*rinv;	
 				prod     = 0.25*sk2_rinv;
@@ -1272,7 +1277,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 				
 				diff2    = uij2-lij2;
 				
-				lij_inv  = invsqrt(lij2);
+				lij_inv  = gmx_invsqrt(lij2);
 				sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
 				sk2_rinv = sk2*rinv;
 				prod     = 0.25 * sk2_rinv;
@@ -1327,7 +1332,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 		born->bRad[ai] = rai_inv - tsum*rai_inv2;
 		born->bRad[ai] = 1.0 / born->bRad[ai];
 		
-		fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
 		
 		tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
 		born->drobc[ai] = (1.0-tsum*tsum)*tchain*rai_inv2;
@@ -1357,17 +1362,15 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
         srenew(fr->dadx,fr->nalloc_dadx);
     }
 		
+	/* Switch for determining which algorithm to use for Born radii calculation */
 #ifdef GMX_DOUBLE
 	
 #if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )
-	/* Currently, the double-precision Still-sse code is disabled, since I have yet to implement
-	 * double precision sse versions of sin/cos-functions
-	 */
+	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
-			/* calc_gb_rad_still_sse2_double(cr,fr,md->nr,mtop, atype, x[0], nl, born, md); */
-			calc_gb_rad_still(cr,fr,born->nr,top, atype, x, nl, born, md); 
+			 calc_gb_rad_still_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
 			break;
 		case egbHCT:
 			 calc_gb_rad_hct_sse2_double(cr,fr,md->nr,top, atype, x[0], nl, born, md); 
@@ -1381,7 +1384,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 	}
 	
 #else
-	/* Switch for determining which algorithm to use for Born radii calculation */
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
@@ -1402,7 +1404,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 						
 #else				
 			
-#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+//#if ( defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2) )
+#if 0
 	/* x86 or x86-64 with GCC inline assembly and/or SSE intrinsics */
 	switch(ir->gb_algorithm)
 	{
@@ -1421,8 +1424,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 	}
 	
 #else
-	
-	/* Switch for determining which algorithm to use for Born radii calculation */
 	switch(ir->gb_algorithm)
 	{
 		case egbSTILL:
@@ -1474,7 +1475,10 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 		
 		for(i=0;i<idef->il[j].nr; )
 		{
-			type          = forceatoms[i++];
+			/* To avoid reading in the interaction type, we just increment i to pass over
+			 * the types in the forceatoms array, this saves some memory accesses
+			 */
+			i++;
 			ai            = forceatoms[i++];
 			aj            = forceatoms[i++];
 			ai3           = ai*3;
@@ -1491,7 +1495,7 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 			dy11          = iy1 - jy1;
 			dz11          = iz1 - jz1;
 			rsq11         = dx11*dx11+dy11*dy11+dz11*dz11;
-			rinv11        = invsqrt(rsq11);
+			rinv11        = gmx_invsqrt(rsq11);
 			isaj          = invsqrta[aj];
 			isaprod       = isai*isaj;
 			qq            = isaprod*iq*charge[aj];
@@ -1533,7 +1537,6 @@ real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
 	return vctot;
 }
 
-
 real calc_gb_selfcorrections(t_commrec *cr, int natoms, 
 			     real *charge, gmx_genborn_t *born, real *dvda, t_mdatoms *md, double facel)
 {	
@@ -1566,7 +1569,7 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
 	{
 		ai       = i;
 		
-		if(born->vs[ai]==1)
+		if(born->use[ai]==1)
 		{
 			rai      = born->bRad[ai];
 			rai_inv  = 1.0/rai;
@@ -1629,7 +1632,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr,int natoms,gmx_genborn_t *bo
 	{
 		ai        = i;
 		
-		if(born->vs[ai]==1)
+		if(born->use[ai]==1)
 		{
 			rai		  = top->atomtypes.gb_radius[md->typeA[ai]];
 			rbi_inv   = fr->invsqrta[ai];
@@ -1755,10 +1758,19 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 
 	/* Do a simple ACE type approximation for the non-polar solvation */
 	v += calc_gb_nonpolar(cr, fr,born->nr, born, top, atype, fr->dvda, gb_algorithm,md);
-	
-	/* Calculate the bonded GB-interactions */
+		
+	/* Calculate the bonded GB-interactions using either table or analytical formula */
+#ifdef GMX_DOUBLE	
 	v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
 					  fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
+#else	
+#if ( defined(GMX_IA32_SSE2) || defined(GMX_X86_64_SSE2) || defined(GMX_SSE2) )	
+	v += gb_bonds_analytic(x[0],f[0],md->chargeA,born->bRad,fr->dvda,idef,born->gb_epsilon_solvent,fr->epsfac);
+#else
+	v += gb_bonds_tab(x[0],f[0],md->chargeA,&(fr->gbtabscale),
+					  fr->invsqrta,fr->dvda,fr->gbtab.tab,idef,born->gb_epsilon_solvent, fr->epsfac);
+#endif
+#endif
 	
 	/* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
 	v += calc_gb_selfcorrections(cr,born->nr,md->chargeA, born, fr->dvda, md, fr->epsfac); 		
@@ -1797,527 +1809,143 @@ real calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_local
 
 }
 
-/* Skriv om den här rutinen så att den får samma format som Charmm SASA
- * Antagligen kan man då beräkna derivatan i samma loop som ytan,
- * vilket är snabbare (görs inte i Charmm, men det borde gå :-) )
- */
-int calc_surfStill(t_inputrec *ir,
-		  t_idef     *idef,
-		  t_atoms    *atoms,
-		  rvec       x[],
-			rvec       f[],						 
-			gmx_genborn_t     *born,
-		  t_atomtypes *atype,
-			double     *faction,
-			int        natoms,
-			t_nblist   *nl,
-			t_iparams  forceparams[],
-			t_iatom    forceatoms[],
-			int        nbonds)
+static void add_j_to_gblist(gbtmpnbl_t *list,int aj)
 {
-  int i,j,n,ia,ib,ic;
-  
-  real pc[3],radp,probd,radnp,s,prob,bmlt;
-  real dx,dy,dz,d,rni,dist,bee,ri,rn,asurf,t1ij,t2ij,bij,bji,dbijp;
-  real dbjip,tip,tmp,tij,tji,t3ij,t4ij,t5ij,t3ji,t4ji,t5ji,dbij,dbji;
-  real dpf,dpx,dpy,dpz,pi,pn,si,sn;
-  real *aprob;
-
-  int factor=1;
-  
-	int k,type,ai,aj,nj0,nj1;
-	real dr2,sar,rai,raj,fij;
-	rvec dxx;
-	
-	aprob = born->work;
-  /*bonds_t *bonds,*bonds13;*/
-  
-  /*snew(bonds,natoms);*/
-  /*snew(bonds13,natoms);*/
-   
-  /* Zero out the forces to compare only surface area contribution */
-  /*
-  printf("Zeroing out forces before surface area..\n");
- 
-   for(i=0;i<natoms;i++)
+    if (list->naj >= list->aj_nalloc)
     {
-      
-		if(!(is_hydrogen(*atoms->atomname[i])))
-		{
-			printf("x=%g, s=%g, p=%g, r=%g\n",
-				x[i][0],
-				atype->vol[atoms->atom[i].type],
-				atype->surftens[atoms->atom[i].type],			
-				factor*atype->radius[atoms->atom[i].type]);
-	
-		}
- 
-      printf("faction[i]=%g\n",faction[i*3]);
-      faction[i*3]=0;
-      faction[i*3+1]=0;
-      faction[i*3+2]=0;
-			
-			f[i][0]=f[i][1]=f[i][2]=0;
-    }
-   exit(1);
-	*/
-  /* Radius of probe */
-  radp=0.14;
-  probd=2*radp;
-  	
-	/*********************************************************
-	 *********************************************************
-	 *********************************************************
-	 *********************************************************
-	 *********************************************************
-	 Begin SA calculation Gromacs-style
-	 *********************************************************
-	 *********************************************************
-	 *********************************************************
-	 *********************************************************
-	 *********************************************************/
-	
-	/* First set up the individual areas */
-	for(n=0;n<natoms;n++)
-	{	
-		rn=atype->radius[atoms->atom[n].type];
-		born->asurf[n]=(4*M_PI*(rn+radp)*(rn+radp));
-	}
-	
-	/* Then loop over the bonded interactions */
-	for(i=0;i<nbonds; )
-	{
-		type = forceatoms[i++];
-		ai   = forceatoms[i++];
-		aj   = forceatoms[i++];
-		
-		if(!is_hydrogen(*(atoms->atomname[ai])) &&
-			 !is_hydrogen(*(atoms->atomname[aj])))
-		{
-		
-			/*printf("genborn.c: xi=%g, xj=%g\n",factor*x[ai][0],factor*x[aj][0]);	*/
-		
-			rvec_sub(x[ai],x[aj],dxx);	
-			dr2  = iprod(dxx,dxx);	
-			
-			sar  = forceparams[type].gb.sar;
-			bmlt = forceparams[type].gb.bmlt;
-			rni  = sar+probd;
-			
-			rn   = atype->radius[atoms->atom[ai].type];
-			ri   = atype->radius[atoms->atom[aj].type];
-			pn   = atype->surftens[atoms->atom[ai].type];
-			pi   = atype->surftens[atoms->atom[aj].type];			
-			/*sn   = atype->vol[atoms->atom[ai].type]; */
-			/*si   = atype->vol[atoms->atom[aj].type]; */
-			
-			/*rni  = rn + ri +probd; */
-			/*printf("genborn.c: rn=%g, ri=%g\n",ri,rn); */
-			if(dr2<rni*rni)
-			{
-				/*printf("d=%g, s=%g\n",dr2,rni*rni);*/
-				dist = dr2*invsqrt(dr2);
-				t1ij = M_PI*(rni-dist);
-				t2ij = (rn-ri)/dist;
-				bij  = (rn+radp)*t1ij*(1-t2ij);
-				bji  = (ri+radp)*t1ij*(1+t2ij);
-				tij  = pn*bmlt*bij/(4*M_PI*(rn+radp)*(rn+radp));
-				tji  = pi*bmlt*bji/(4*M_PI*(ri+radp)*(ri+radp));
-				
-				born->asurf[ai] = born->asurf[ai]*(1-tij);
-				born->asurf[aj] = born->asurf[aj]*(1-tji);
-			}
-		}
-	}
-	
-	/* Now loop over interactions >= 1-4 */
-	bmlt=0.3516;
-	
-	/*printf("NONBONDED INTERACTIONS\n");*/
-	
-	for(i=0;i<natoms;i++)
-	{
-		ai    = i;
-		nj0   = nl->jindex[ai];
-		nj1   = nl->jindex[ai+1];
-		
-		rai   = factor*atype->radius[atoms->atom[ai].type];
-		pn    = atype->surftens[atoms->atom[ai].type];
-		/*sn    = atype->vol[atoms->atom[ai].type];*/
-		
-		for(k=nj0;k<nj1;k++)
-		{
-			aj  = nl->jjnr[k];
-			
-			if(!is_hydrogen(*(atoms->atomname[ai])) &&
-					!is_hydrogen(*(atoms->atomname[aj])))
-			{
-				raj = factor*atype->radius[atoms->atom[aj].type];
-				pi  = atype->surftens[atoms->atom[aj].type];
-				/*si  = atype->vol[atoms->atom[aj].type];*/
-				rvec_sub(x[ai],x[aj],dxx);
-			
-				dr2 = factor*factor*iprod(dxx,dxx);
-				rni = rai + raj + probd;
-				/*printf("genborn.c: rn=%g, ri=%g, sar=%g, dr2=%g\n",rai,raj,sar,dr2);	*/
-				/*printf("genborn.c: xi=%g, xj=%g\n",factor*x[ai][0],factor*x[aj][0]); */
-				
-				if(dr2<rni*rni)
-				{
-					/*printf("d=%g, s=%g\n",dr2,rni*rni);	*/
-					dist = dr2*invsqrt(dr2);
-					t1ij = M_PI*(rni-dist);
-					t2ij = (rai-raj)/dist;
-					bij  = (rai+radp)*t1ij*(1-t2ij);
-					bji  = (raj+radp)*t1ij*(1+t2ij);
-					tij  = pn*bmlt*bij/(4*M_PI*(rai+radp)*(rai+radp));
-					tji  = pi*bmlt*bji/(4*M_PI*(raj+radp)*(raj+radp));
-									
-					born->asurf[ai]=born->asurf[ai]*(1-tij);
-					born->asurf[aj]=born->asurf[aj]*(1-tji);
-				}
-			}
-		}
-	}
-	/*
-	printf("AFTER BOTH AREA CALCULATIONS\n");
-	n=0;
-	for(i=0;i<natoms;i++)
-	{
-      if(!is_hydrogen(*atoms->atomname[i]))
-			{	
-				printf("%d, Still=%g, gromacs=%g\n",n,born->asurf[i], born->asurf[i]);
-				
-				born->as=born->as+born->asurf[i];
-				born->as=born->as+born->asurf[i];
-			}
-		n++;
-	}
-	*/
-	/*printf("Total Still area=%g, Total new area=%g\n",born->as, born->as);*/
-	 /*printf("nbonds=%d\n",nbonds);*/
-	/* Start to calculate the forces */
-	for(i=0;i<nbonds; )
-	{
-		type = forceatoms[i++];
-		ai   = forceatoms[i++];
-		aj   = forceatoms[i++];
-		
-		if(!is_hydrogen(*(atoms->atomname[ai])) &&
-			 !is_hydrogen(*(atoms->atomname[aj])))
-		{
-			rvec_sub(x[ai],x[aj],dxx);	
-			
-			dr2  = factor*factor*iprod(dxx,dxx);	
-		
-			sar  = factor*forceparams[type].gb.sar;
-			bmlt = forceparams[type].gb.bmlt;
-			rni  = sar+probd;
-			
-			rn   = factor*atype->radius[atoms->atom[ai].type];
-			ri   = factor*atype->radius[atoms->atom[aj].type];
-			pn   = atype->surftens[atoms->atom[ai].type];
-			pi   = atype->surftens[atoms->atom[aj].type];			
-			sn   = atype->vol[atoms->atom[ai].type];
-			si   = atype->vol[atoms->atom[aj].type];
-			
-			if(dr2<rni*rni)
-			{
-				dist = dr2*invsqrt(dr2);
-				t1ij = M_PI*(rni-dist);
-				t2ij = (rn-ri)/dist;
-				bij  = (rn+radp)*t1ij*(1-t2ij);
-				bji  = (ri+radp)*t1ij*(1+t2ij);
-				
-				dbij = M_PI*(rn+radp)*(dr2-(rni*(rn-ri)));
-				dbji = M_PI*(ri+radp)*(dr2+(rni*(rn-ri)));
-				
-				t3ij = sn*born->asurf[ai]*dbij;
-				t4ij = (4*M_PI*(rn+radp)*(rn+radp))/(pn*bmlt)-bij;
-				t5ij = t3ij/t4ij;
-				
-				t3ji = si*born->asurf[aj]*dbji;
-				t4ji = (4*M_PI*(ri+radp)*(ri+radp))/(pi*bmlt)-bji;
-				t5ji = t3ji/t4ji;
-				
-				dpf  = (t5ij+t5ji)/(dr2*dist);
-				/*printf("deriv_cut: ai=%d, xi=%g aj=%d, xj=%g\n",ai,x[ai][0], aj,x[aj][0]);*/
-				for(k=0;k<DIM;k++)
-				{
-					fij = factor*(-dpf)*dxx[k];
-					f[ai][k]+=fij;
-					f[aj][k]-=fij;
-				}
-			}
-		}
-	}
-	
-	/* Now calculate forces for all interactions >= 1-4 */
-	bmlt = 0.3516;
-	
-	for(i=0;i<natoms;i++)
-	{
-		ai  = i;
-		nj0 = nl->jindex[ai];
-		nj1 = nl->jindex[ai+1];
-		
-		rai   = factor*atype->radius[atoms->atom[ai].type];
-		pn    = atype->surftens[atoms->atom[ai].type];
-		sn    = atype->vol[atoms->atom[ai].type];
-		
-		for(k=nj0;k<nj1;k++)
-		{
-			aj = nl->jjnr[k];
-			
-			if(!is_hydrogen(*(atoms->atomname[ai])) &&
-				 !is_hydrogen(*(atoms->atomname[aj])))
-			{
-				raj = factor*atype->radius[atoms->atom[aj].type];
-				pi  = atype->surftens[atoms->atom[aj].type];
-				si  = atype->vol[atoms->atom[aj].type];
-				
-				rvec_sub(x[ai],x[aj],dxx);
-				
-				dr2 = factor*factor*iprod(dxx,dxx);
-				rni = rai + raj + probd;
-				
-				if(dr2<rni*rni)
-				{
-					dist = dr2*invsqrt(dr2);
-					t1ij = M_PI*(rni-dist);
-					t2ij = (rai-raj)/dist;
-					bij  = (rai+radp)*t1ij*(1-t2ij);
-					bji  = (raj+radp)*t1ij*(1+t2ij);
-					
-					dbij = M_PI*(rai+radp)*(dr2-(rni*(rai-raj)));
-					dbji = M_PI*(raj+radp)*(dr2+(rni*(rai-raj)));
-					
-					t3ij = sn*born->asurf[ai]*dbij;
-					t4ij = (4*M_PI*(rai+radp)*(rai+radp))/(pn*bmlt)-bij;
-					t5ij = t3ij/t4ij;
-					
-					t3ji = si*born->asurf[aj]*dbji;
-					t4ji = (4*M_PI*(raj+radp)*(raj+radp))/(pi*bmlt)-bji;
-					t5ji = t3ji/t4ji;
-					
-					dpf  = (t5ij+t5ji)/(dr2*dist);
-					/*printf("deriv_cut: ai=%d, xi=%g aj=%d, xj=%g\n",ai,x[ai][0], aj,x[aj][0]);*/
-					for(n=0;n<DIM;n++)
-					{
-						fij = factor*(-dpf)*dxx[n];
-						f[ai][n]+=fij;
-						f[aj][n]-=fij;
-					}
-				}
-			}
-		}
-	}
-	/*
-	printf("AFTER BOTH FORCES CALCULATIONS\n");
-	n=0;
-	for(i=0;i<natoms;i++)
-	{
-		if(!is_hydrogen(*atoms->atomname[i]))
-		{	
-			printf("%d, gx=%g, gy=%g, gz=%g\n",
-						 n,
-						 faction[i*3], 
-						 faction[i*3+1],
-						 faction[i*3+2],
-						 f[i][0],
-						 f[i][1],
-						 f[i][2]);
-		}
-		n++;
-	}
-	*/
-  return 0;
-}
-
-int calc_surfBrooks(t_inputrec *ir,
-		    t_idef     *idef,
-		    t_atoms    *atoms,
-		    rvec       x[],
-		    gmx_genborn_t     *born,
-		    t_atomtypes *atype,
-		    double      *faction,
-		    int natoms)
-{
-  int i,j,k;
-  real xi,yi,zi,dx,dy,dz,ri,rj;
-  real rho,rho2,rho6,r2,r,aij,aijsum,daij;
-  real kappa,sassum,tx,ty,tz,fix1,fiy1,fiz1;
-
-  real ck[5];
-  real *Aij;
-  real *sasi;
-	
-	Aij  = born->work;
-	sasi = born->work;
-
-  /* Brooks parameter for cutoff between atom pairs
-   * Increasing kappa will increase the number of atom pairs
-   * included in the calculation, which will also slow the calculation
-   */
-  kappa=0;
-
-  sassum=0;
-
-  /* Hydrogen atoms are included in via the ck parameters for the
-   * heavy atoms
-   */
-  for(i=0;i<natoms;i++)
-    {
-      /*if(strncmp(*atoms->atomname[i],"H",1)!=0) */
-      /*{ */
-	  xi=x[i][0];
-	  yi=x[i][1];
-	  zi=x[i][2];
-	  
-	  fix1=0;
-	  fiy1=0;
-	  fiz1=0;
-
-	  ri=atype->radius[atoms->atom[i].type];
-	  aijsum=0;
-	  
-	  for(j=0;j<natoms;j++)
-	    {
-	      /*if(strncmp(*atoms->atomname[j],"H",1)!=0 && i!=j) */
-	      if(i!=j)
-	      {
-		  dx=xi-x[j][0];
-		  dy=yi-x[j][1];
-		  dz=zi-x[j][2];
-		  
-		  r2=dx*dx+dy*dy+dz*dz;
-		  r=sqrt(r2);
-		  rj=atype->radius[atoms->atom[j].type];
-		  
-		  rho=ri+rj+kappa;
-		  rho2=rho*rho;
-		  rho6=rho2*rho2*rho2;
-
-		    /* Cutoff test */
-		    if(r<=rho)
-		      {
-			aij=pow((rho2-r2)*(rho2+2*r2),2)/rho6;
-			daij=((4*r*(rho2-r2)*(rho2-r2))/rho6)-((4*r*(rho2-r2)*(2*r2+rho2))/rho6);
-			tx=daij*dx;
-			ty=daij*dy;
-			tz=daij*dz;
-			
-			fix1=fix1+tx;
-			fiy1=fiy1+ty;
-			fiz1=fiz1+tz;
-
-			faction[j*3]=faction[j*3]-tx;
-			faction[j*3+1]=faction[j*3+1]-ty;
-			faction[j*3+2]=faction[j*3+2]-tz;
-			
-			aijsum=aijsum+aij;
-			printf("xi=%g, xj=%g, fscal=%g\n",xi,x[j][0],daij);
-		      }
-		}
-	    }
-	  
-	  faction[i*3]=faction[i*3]+fix1;
-	  faction[i*3+1]=faction[i*3+1]+fiy1;
-	  faction[i*3+2]=faction[i*3+2]+fiz1;
-	  
-	  /* Calculate surface area coefficient */
-	  Aij[i]=pow(aijsum,1/4);
-	  
-	  for(k=0;k<5;k++)
-	    {
-	      sasi[i]=sasi[i]+ck[k]*(pow(Aij[i],k));
-	    }
-	  
-	  /* Increase total surface area */
-	  sassum=sassum+sasi[i];
-	  
-	  /*}*/
+        list->aj_nalloc = over_alloc_large(list->naj+1);
+        srenew(list->aj,list->aj_nalloc);
     }
 
-  printf("Brooks total surface area is: %g\n", sassum);
-
-
-  return 0;
+    list->aj[list->naj++] = aj;
 }
 
-int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec x[], 
-				   t_forcerec *fr, t_idef *idef, gmx_genborn_t *born)
+static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists,int shift)
 {
-	int i,l,ii,j,k,n,nj0,nj1,ai,aj,idx,ii_idx,nalloc,at0,at1,found;
+    int ind;
+
+    /* Search the list with the same shift, if there is one */
+    ind = 0;
+    while (ind < lists->nlist && shift != lists->list[ind].shift)
+    {
+        ind++;
+    }
+    if (ind == lists->nlist)
+    {
+        if (lists->nlist >= lists->list_nalloc)
+        {
+            lists->list_nalloc++;
+            srenew(lists->list,lists->list_nalloc);
+        }
+        
+        lists->list[lists->nlist].shift = shift;
+        lists->list[lists->nlist].naj   = 0;
+        lists->list[lists->nlist].aj    = NULL;
+        lists->list[lists->nlist].aj_nalloc = 0;
+        lists->nlist++;
+    }
+
+    return &lists->list[ind];
+}
+
+static void add_bondeds_to_gblist(t_ilist *il,
+                                  bool bMolPBC,t_pbc *pbc,t_graph *g,rvec *x,
+                                  struct gbtmpnbls *nls)
+{
+    int  ind,j,ai,aj,shift,found;
+    rvec dx;
+    ivec dt;
+    gbtmpnbl_t *list;
+
+    shift = CENTRAL;
+    for(ind=0; ind<il->nr; ind+=3)
+    {
+        ai = il->iatoms[ind+1];
+        aj = il->iatoms[ind+2];
+				
+        shift = CENTRAL;
+        if (g != NULL)
+        {
+	      rvec_sub(x[ai],x[aj],dx);
+	      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	      shift = IVEC2IS(dt);
+	    }
+        else if (bMolPBC)
+        {
+	      shift = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
+        }
+
+        /* Find the list for this shift or create one */
+        list = find_gbtmplist(&nls[ai],shift);
+        
+        found=0;
+		
+        /* So that we do not add the same bond twice.
+         * This happens with some constraints between 1-3 atoms
+         * that are in the bond-list but should not be in the GB nb-list */
+        for(j=0;j<list->naj;j++)
+        {
+            if (list->aj[j] == aj)
+            {
+                found = 1;
+            }
+        }	
+		
+        if (found == 0)
+        {
+            add_j_to_gblist(list,aj);
+        }
+    }
+}
+/*
+if (g) {
+	      rvec_sub(x[i],x[k],dx);
+	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
+	      ki=IVEC2IS(dt);
+	    } else if (bMolPBC) {
+	      ki = pbc_dx_aiuc(pbc,x[i],x[k],dx);
+*/
+
+int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
+                   rvec x[], matrix box,
+				   t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born)
+{
+	int i,l,ii,j,k,n,nj0,nj1,ai,aj,ii_idx,nalloc,at0,at1,found,shift,s;
 	int apa;
 	t_nblist *nblist;
+    t_pbc pbc;
 
-	int *count;
-	int **atoms;
+	struct gbtmpnbls *nls;
+    gbtmpnbl_t *list;
 	
-	count = born->count;
-	atoms = born->nblist_work;
+	nls   = born->nblist_work;
 	
 	for(i=0;i<born->nr;i++)
 	{
-		count[i] = 0;
+        nls[i].nlist = 0;
 	}
-		
-	if(gb_algorithm==egbHCT || gb_algorithm==egbOBC)
-	{
+
+    if (fr->bMolPBC)
+    {
+        set_pbc_dd(&pbc,fr->ePBC,cr->dd,TRUE,box);
+    }
+
+    switch (gb_algorithm)
+    {
+    case egbHCT:
+    case egbOBC:
 		/* Loop over 1-2, 1-3 and 1-4 interactions */
 		for(j=F_GB12;j<=F_GB14;j++)
 		{
-			for(k=0;k<idef->il[j].nr;k+=3)
-			{
-				ai=idef->il[j].iatoms[k+1];
-				aj=idef->il[j].iatoms[k+2];
-				
-				found=0;
-				
-				/* So that we do not add the same bond twice. This happens with some constraints between 1-3 atoms
-				 * that are in the bond-list but should not be in the GB nb-list */
-				for(i=0;i<count[ai];i++)
-				{
-					if(atoms[ai][i]==aj)
-					{
-						found=1;
-					}
-				}	
-			 
-				if(found==0)
-				{
-					atoms[ai][count[ai]]=aj;
-					count[ai]++;
-				}
-			}
+            add_bondeds_to_gblist(&idef->il[j],fr->bMolPBC,&pbc,graph,x,nls);
 		}
-	}
-	
-	if(gb_algorithm==egbSTILL)
-	{
+        break;
+    case egbSTILL:
 		/* Loop over 1-4 interactions */
-		for(k=0;k<idef->il[F_GB14].nr;k+=3)
-		{
-			ai=idef->il[F_GB14].iatoms[k+1];
-			aj=idef->il[F_GB14].iatoms[k+2];
-		
-			found=0;
-			
-			for(i=0;i<count[ai];i++)
-			{
-				if(atoms[ai][i]==aj)
-				{
-					found=1;
-				}
-			}	
-			 
-			if(found==0)
-			{
-				atoms[ai][count[ai]]=aj;
-				count[ai]++;
-			}
-		}
+        add_bondeds_to_gblist(&idef->il[F_GB14],fr->bMolPBC,&pbc,graph,x,nls);
+        break;
+    default:
+        gmx_incons("Unknown GB algorithm");
 	}
 	
 	/* Loop over the VDWQQ and VDW nblists to set up the nonbonded part of the GB list */
@@ -2327,39 +1955,23 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		{
 			nblist=&(fr->nblists[n].nlist_sr[i]);
 			
-			if(nblist->nri>0 && (i==eNL_VDWQQ || i==eNL_QQ))
+			if (nblist->nri > 0 && (i==eNL_VDWQQ || i==eNL_QQ))
 			{
 				for(j=0;j<nblist->nri;j++)
 				{
-					ai  = nblist->iinr[j];
-			
+					ai    = nblist->iinr[j];
+                    shift = nblist->shift[j];
+
+                    /* Find the list for this shift or create one */
+                    list = find_gbtmplist(&nls[ai],shift);
+
 					nj0 = nblist->jindex[j];
 					nj1 = nblist->jindex[j+1];
 					
+                    /* Add all the j-atoms in the non-bonded list to the GB list */
 					for(k=nj0;k<nj1;k++)
 					{
-						aj = nblist->jjnr[k];
-						
-						/* Allocate extra memory if needed */
-						if(count[ai]>=born->nblist_work_nalloc || count[aj]>=born->nblist_work_nalloc)
-						{
-							born->nblist_work_nalloc += 500;
-							for(apa=0;apa<natoms;apa++)
-							{
-								srenew(born->nblist_work[apa],born->nblist_work_nalloc);
-							}
-						}
-												
-						if(ai>aj)
-						{
-							atoms[aj][count[aj]]=ai;
-							count[aj]++;
-						}
-						else
-						{
-							atoms[ai][count[ai]]=aj;
-							count[ai]++;
-						}
+                        add_j_to_gblist(list,nblist->jjnr[k]);
 					}
 				}
 			}
@@ -2367,7 +1979,6 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 	}
 		
 	/* Zero out some counters */
-	idx=0;
 	ii_idx=0;
 	fr->gblist.nri=0;
 	fr->gblist.nrj=0;
@@ -2377,38 +1988,53 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut, rvec
 		natoms = cr->dd->nat_home;
 	}
 	
-	for(i=0;i<natoms;i++)
+    fr->gblist.jindex[0] = ii_idx;
+    for(i=0;i<natoms;i++)
 	{
-		/* Only add those atoms that actually have neighbours (ie. all except vsites) */
-		if(born->vs[i]!=0)
-		{
-			fr->gblist.iinr[fr->gblist.nri]=i;
-			fr->gblist.nri++;
-		}
-		
-		for(k=0;k<count[i];k++)
-		{
-			/* Memory allocation for jjnr */
-			if(fr->gblist.nrj>=fr->gblist.maxnrj)
-			{
-				fr->gblist.maxnrj += over_alloc_small(fr->gblist.maxnrj);
-				
-				if(debug)
-				{
-					fprintf(debug,"Increasing GB neighbourlist j size to %d\n",fr->gblist.maxnrj);
-				}
-				
-				srenew(fr->gblist.jjnr,fr->gblist.maxnrj);
+        for(s=0; s<nls[i].nlist; s++)
+        {
+            list = &nls[i].list[s];
+
+            /* Only add those atoms that actually have neighbours */
+            if (born->use[i] != 0)
+            {
+                fr->gblist.iinr[fr->gblist.nri]  = i;
+                fr->gblist.shift[fr->gblist.nri] = list->shift;
+                fr->gblist.nri++;
+            
+                for(k=0; k<list->naj; k++)
+                {
+                    /* Memory allocation for jjnr */
+                    if(fr->gblist.nrj >= fr->gblist.maxnrj)
+                    {
+                        fr->gblist.maxnrj += over_alloc_large(fr->gblist.maxnrj);
+                        
+                        if (debug)
+                        {
+                            fprintf(debug,"Increasing GB neighbourlist j size to %d\n",fr->gblist.maxnrj);
+                        }
+                        
+                        srenew(fr->gblist.jjnr,fr->gblist.maxnrj);
+                    }
 			
-			}
-			
-			/* Put in list */
-			fr->gblist.jjnr[idx++]=atoms[i][k];
-			fr->gblist.nrj++;
-		}
-		
-		fr->gblist.jindex[ii_idx+1]=idx;	
-		ii_idx++;
+                    /* Put in list */
+                    fr->gblist.jjnr[fr->gblist.nrj++] = list->aj[k];
+                }
+            }
+            
+            ii_idx++;
+            fr->gblist.jindex[ii_idx] = fr->gblist.nrj;	
+        }
+        if (nls[i].nlist == 0)
+        {
+            /* Temporary code adding an empty list to make loops work */
+            fr->gblist.iinr[fr->gblist.nri]  = i;
+            fr->gblist.shift[fr->gblist.nri] = list->shift;
+            fr->gblist.nri++;
+
+            ii_idx++;
+            fr->gblist.jindex[ii_idx] = fr->gblist.nrj;	
+        }
 	}
 	
 	return 0;
@@ -2438,7 +2064,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 			born->param = born->param_globalindex;
 		}
 		
-		born->vs = born->vs_globalindex;
+		born->use = born->use_globalindex;
 		
 		return;
 	}
@@ -2460,7 +2086,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		}
 		
 		/* All gb-algorithms use the array for vsites exclusions */
-		srenew(born->vs,    born->nlocal+3);
+		srenew(born->use,    born->nlocal+3);
 	}
 	
 	/* With dd, copy algorithm specific arrays */
@@ -2470,7 +2096,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		{
 			born->gpol[i]  = born->gpol_globalindex[dd->gatindex[i]];
 			born->vsolv[i] = born->vsolv_globalindex[dd->gatindex[i]];
-			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			born->use[i]   = born->use_globalindex[dd->gatindex[i]];
 		}
 	}
 	else
@@ -2478,7 +2104,7 @@ void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 		for(i=at0;i<at1;i++)
 		{
 			born->param[i] = born->param_globalindex[dd->gatindex[i]];
-			born->vs[i]    = born->vs_globalindex[dd->gatindex[i]];
+			born->use[i]   = born->use_globalindex[dd->gatindex[i]];
 		}
 	}
 }

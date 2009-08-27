@@ -102,6 +102,7 @@ int gmx_dist(int argc,char *argv[])
   t_pbc   *pbc;
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
+  output_env_t oenv;
   
   char *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
@@ -126,7 +127,7 @@ int gmx_dist(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv);
   
   bCutoff = opt2parg_bSet("-dist",NPA,pa);
   cut2 = cut*cut;
@@ -157,7 +158,7 @@ int gmx_dist(int argc,char *argv[])
     }
   }
 
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   t0 = t;
 
   if (max>=natoms)
@@ -166,8 +167,8 @@ int gmx_dist(int argc,char *argv[])
   if (!bCutoff) {
     /* open output file */
     fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
-		  "Distance","Time (ps)","Distance (nm)");
-    xvgr_legend(fp,4,leg);
+		  "Distance","Time (ps)","Distance (nm)",oenv);
+    xvgr_legend(fp,4,leg,oenv);
   } else {
     ngrps = 1;
     if (bLifeTime)
@@ -239,7 +240,7 @@ int gmx_dist(int argc,char *argv[])
     }
     
     teller++;
-  } while (read_next_x(status,&t,natoms,x,box));
+  } while (read_next_x(oenv,status,&t,natoms,x,box));
 
   if (!bCutoff)
     fclose(fp);
@@ -255,7 +256,7 @@ int gmx_dist(int argc,char *argv[])
     sprintf(buf,"%s - %s within %g nm",
 	    grpname[0],grpname[1],cut);
     fp = xvgropen(opt2fn("-lt",NFILE,fnm),
-		  buf,"Time (ps)","Number of contacts");
+		  buf,"Time (ps)","Number of contacts",oenv);
     for(i=0; i<min(ccount_nalloc,teller-1); i++) {
       /* Account for all subintervals of longer intervals */
       sum = 0;

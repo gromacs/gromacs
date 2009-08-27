@@ -43,6 +43,9 @@
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+/* The source code in this file should be thread-safe. 
+   Please keep it that way. */
+
 /* cpt_version should normally only be changed
  * when the header of footer format changes.
  * The state data format itself is backward and forward compatible.
@@ -82,6 +85,9 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim" 
 };
+
+
+enum { ecprREAL, ecprRVEC, ecprMATRIX };
 
 static const char *st_names(int cptp,int ecpt)
 {
@@ -181,7 +187,6 @@ static void do_cpt_double_err(XDR *xd,const char *desc,double *f,FILE *list)
     }
 }
 
-enum { ecprREAL, ecprRVEC, ecprMATRIX };
 
 static int do_cpte_reals_low(XDR *xd,int cptp,int ecpt,int sflags,
                              int n,real **v,
@@ -806,8 +811,9 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
     return ret;
 }
 
-static int
-do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfiles, FILE *list)
+static int do_cpt_files(XDR *xd, bool bRead, 
+                        gmx_file_position_t **p_outputfiles, int *nfiles, 
+                        FILE *list)
 {
 	int    i;
 	off_t  offset;
@@ -881,7 +887,7 @@ do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfil
 }
 
 
-void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
+void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
                       gmx_step_t step,double t,t_state *state)
 {
@@ -1016,10 +1022,9 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 	sfree(outputfiles);
 	#ifdef GMX_FAHCORE
     /*code for alternate checkpointing scheme.  moved from top of loop over steps */
-      if ( fcCheckPointParallel( (MASTER(cr)==0), NULL,0) == 0 ) {
+      if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
       }
-
 	#endif /* end FAHCORE block */
 
 }
@@ -1124,12 +1129,11 @@ static void check_match(FILE *fplog,
     }
 }
 
-static void 
-read_checkpoint(char *fn,FILE *fplog,
-                t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-                int eIntegrator,gmx_step_t *step,double *t,
-                t_state *state,bool *bReadRNG,bool *bReadEkin,
-                int *simulation_part,bool bAppendOutputFiles)
+static void read_checkpoint(const char *fn,FILE *fplog,
+                            t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+                            int eIntegrator,gmx_step_t *step,double *t,
+                            t_state *state,bool *bReadRNG,bool *bReadEkin,
+                            int *simulation_part,bool bAppendOutputFiles)
 {
     int  fp,i,j;
     int  file_version;
@@ -1375,7 +1379,7 @@ read_checkpoint(char *fn,FILE *fplog,
 }
 
 
-void load_checkpoint(char *fn,FILE *fplog,
+void load_checkpoint(const char *fn,FILE *fplog,
                      t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
                      bool *bReadRNG,bool *bReadEkin,bool bAppend)
@@ -1463,7 +1467,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
 }
 
 void 
-read_checkpoint_state(char *fn,int *simulation_part,
+read_checkpoint_state(const char *fn,int *simulation_part,
                       gmx_step_t *step,double *t,t_state *state)
 {
     int  fp;
@@ -1518,7 +1522,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     done_state(&state);
 }
 
-void list_checkpoint(char *fn,FILE *out)
+void list_checkpoint(const char *fn,FILE *out)
 {
     int  fp;
     int  file_version;
@@ -1581,8 +1585,8 @@ void list_checkpoint(char *fn,FILE *out)
 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-void
-read_checkpoint_simulation_part(char *filename,int *simulation_part,gmx_step_t *cpt_step,t_commrec *cr)
+void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
+                                     gmx_step_t *cpt_step,t_commrec *cr)
 {
     int  fp;
 	int  file_version;

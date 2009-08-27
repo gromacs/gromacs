@@ -143,7 +143,8 @@ int gmx_sorient(int argc,char *argv[])
     "of cos(theta1) and 3cos^2(theta2)-1 as a function of r.[PAR]",
     "[TT]-rc[tt]: the distribution of the solvent molecules as a function of r"
   };
-  
+ 
+  output_env_t oenv;
   static bool bCom = FALSE,bVec23=FALSE,bPBC = FALSE;
   static real rmin=0.0,rmax=0.5,binwidth=0.02,rbinw=0.02;
   t_pargs pa[] = {
@@ -172,7 +173,7 @@ int gmx_sorient(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
   
   two_pi = 2/M_PI;
 
@@ -206,7 +207,7 @@ int gmx_sorient(int argc,char *argv[])
 		isize[1]);
 
   /* initialize reading trajectory:                         */
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
   rmin2 = sqr(rmin);
   rmax2 = sqr(rmax);
@@ -293,7 +294,7 @@ int gmx_sorient(int argc,char *argv[])
     ntot += n;
     nf++;
 
-  }  while (read_next_x(status,&t,natoms,x,box));
+  }  while (read_next_x(oenv,status,&t,natoms,x,box));
 
   /* clean up */
   sfree(x);
@@ -318,9 +319,8 @@ int gmx_sorient(int argc,char *argv[])
   }
   
   sprintf(str,"Solvent orientation between %g and %g nm",rmin,rmax);
-  fp=xvgropen(opt2fn("-o",NFILE,fnm), 
-	      str,"cos(\\8q\\4\\s1\\N)",""); 
-  if (bPrintXvgrCodes())
+  fp=xvgropen(opt2fn("-o",NFILE,fnm), str,"cos(\\8q\\4\\s1\\N)","",oenv); 
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
   for(i=0; i<nbin1; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*binwidth-1,2*normfac*hist1[i]);
@@ -328,9 +328,8 @@ int gmx_sorient(int argc,char *argv[])
   fclose(fp);
   
   sprintf(str,"Solvent normal orientation between %g and %g nm",rmin,rmax);
-  fp=xvgropen(opt2fn("-no",NFILE,fnm), 
-	      str,"cos(\\8q\\4\\s2\\N)","");
-  if (bPrintXvgrCodes())
+  fp=xvgropen(opt2fn("-no",NFILE,fnm), str,"cos(\\8q\\4\\s2\\N)","",oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
   for(i=0; i<nbin2; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*binwidth,normfac*hist2[i]);
@@ -339,10 +338,10 @@ int gmx_sorient(int argc,char *argv[])
 
   
   sprintf(str,"Solvent orientation");
-  fp=xvgropen(opt2fn("-ro",NFILE,fnm),str,"r (nm)","");
-  if (bPrintXvgrCodes())
+  fp=xvgropen(opt2fn("-ro",NFILE,fnm),str,"r (nm)","",oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
-  xvgr_legend(fp,2,legr);
+  xvgr_legend(fp,2,legr,oenv);
   for(i=0; i<nrbin; i++)
     fprintf(fp,"%g %g %g\n",(i+0.5)*rbinw,
 	    histn[i] ? histi1[i]/histn[i] : 0,
@@ -350,10 +349,10 @@ int gmx_sorient(int argc,char *argv[])
   fclose(fp);
   
   sprintf(str,"Cumulative solvent orientation");
-  fp=xvgropen(opt2fn("-co",NFILE,fnm),str,"r (nm)","");
-  if (bPrintXvgrCodes())
+  fp=xvgropen(opt2fn("-co",NFILE,fnm),str,"r (nm)","",oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
-  xvgr_legend(fp,2,legc);
+  xvgr_legend(fp,2,legc,oenv);
   normfac = 1.0/(nrefgrp*nf);
   c1 = 0;
   c2 = 0;
@@ -366,8 +365,8 @@ int gmx_sorient(int argc,char *argv[])
   fclose(fp);
 
   sprintf(str,"Solvent distribution");
-  fp=xvgropen(opt2fn("-rc",NFILE,fnm),str,"r (nm)","molecules/nm");
-  if (bPrintXvgrCodes())
+  fp=xvgropen(opt2fn("-rc",NFILE,fnm),str,"r (nm)","molecules/nm",oenv);
+  if (get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"as a function of distance\"\n");
   normfac = 1.0/(rbinw*nf);
   for(i=0; i<nrbin; i++) {
@@ -375,10 +374,10 @@ int gmx_sorient(int argc,char *argv[])
   }
   fclose(fp);
 
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(opt2fn("-no",NFILE,fnm),NULL);
-  do_view(opt2fn("-ro",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-co",NFILE,fnm),"-nxy");
+  do_view(oenv, opt2fn("-o",NFILE,fnm),NULL);
+  do_view(oenv, opt2fn("-no",NFILE,fnm),NULL);
+  do_view(oenv, opt2fn("-ro",NFILE,fnm),"-nxy");
+  do_view(oenv, opt2fn("-co",NFILE,fnm),"-nxy");
 
   thanx(stderr);
   

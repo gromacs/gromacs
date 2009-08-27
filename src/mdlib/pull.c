@@ -118,7 +118,8 @@ void pull_print_output(t_pull *pull, gmx_step_t step, double time)
     pull_print_f(pull->out_f,pull,time);
 }
 
-static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flags)
+static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv, 
+                           bool bCoord, unsigned long Flags)
 {
   FILE *fp;
   int  nsets,g,m;
@@ -128,9 +129,9 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
     fp = gmx_fio_fopen(fn,"a");
   } else {
     if (bCoord)
-      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
+      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)",oenv);
     else
-      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)");
+      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)",oenv);
     
     snew(setname,(1+pull->ngrp)*DIM);
     nsets = 0;
@@ -161,7 +162,7 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
       }
     }
     if (bCoord || nsets > 1)
-      xvgr_legend(fp,nsets,setname);
+      xvgr_legend(fp,nsets,setname,oenv);
     for(g=0; g<nsets; g++)
       sfree(setname[g]);
     sfree(setname);
@@ -217,7 +218,8 @@ static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
 void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 			  dvec dr,dvec dev)
 {
-  static bool bWarned=FALSE;
+  static bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety, 
+                                but is fairly benign */
   t_pullgrp *pref,*pgrp;
   int       m;
   dvec      ref;
@@ -919,8 +921,9 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   }
 }
 
-void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       gmx_mtop_t *mtop,t_commrec *cr,bool bOutFile, unsigned long Flags)
+void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
+	       gmx_mtop_t *mtop,t_commrec *cr,const output_env_t oenv,
+               bool bOutFile, unsigned long Flags)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
@@ -957,6 +960,9 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   if (cr && PARTDECOMP(cr)) {
     pd_at_range(cr,&start,&end);
   }
+  pull->rbuf=NULL;
+  pull->dbuf=NULL;
+  pull->dbuf_cyl=NULL;
   pull->bRefAt = FALSE;
   pull->cosdim = -1;
   for(g=0; g<pull->ngrp+1; g++) {
@@ -1007,10 +1013,11 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   pull->out_f = NULL;
   if (bOutFile) {
     if (pull->nstxout > 0) {
-      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE,Flags);
+      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,oenv,TRUE,Flags);
     }
     if (pull->nstfout > 0) {
-      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,FALSE,Flags);
+      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,oenv,
+                                  FALSE,Flags);
     }
   }
 }

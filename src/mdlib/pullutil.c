@@ -148,15 +148,14 @@ static real get_weight(real x, real r1, real r0)
 static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 			     t_pbc *pbc,double t,rvec *x,rvec *xp) 
 {
-  static double *dbuf=NULL;
   int g,i,ii,m,start,end;
   rvec g_x,dx,dir;
   double r0_2,sum_a,sum_ap,dr2,mass,weight,wmass,wwmass,inp;
   t_pullgrp *pref,*pgrp,*pdyna;
   gmx_ga2la_t ga2la=NULL;
 
-  if (dbuf == NULL) {
-    snew(dbuf,pull->ngrp*4);
+  if (pull->dbuf_cyl == NULL) {
+    snew(pull->dbuf_cyl,pull->ngrp*4);
   }
 
   if (cr && DOMAINDECOMP(cr))
@@ -222,31 +221,31 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 	}
       }
     }
-    dbuf[(g-1)*4+0] = wmass;
-    dbuf[(g-1)*4+1] = wwmass;
-    dbuf[(g-1)*4+2] = sum_a;
-    dbuf[(g-1)*4+3] = sum_ap;
+    pull->dbuf_cyl[(g-1)*4+0] = wmass;
+    pull->dbuf_cyl[(g-1)*4+1] = wwmass;
+    pull->dbuf_cyl[(g-1)*4+2] = sum_a;
+    pull->dbuf_cyl[(g-1)*4+3] = sum_ap;
   }
 
   if (cr && PAR(cr)) {
     /* Sum the contributions over the nodes */
-    gmx_sumd(pull->ngrp*4,dbuf,cr);
+    gmx_sumd(pull->ngrp*4,pull->dbuf_cyl,cr);
   }
 
   for(g=1; g<1+pull->ngrp; g++) {
     pgrp  = &pull->grp[g];
     pdyna = &pull->dyna[g];
 
-    wmass        = dbuf[(g-1)*4+0];
-    wwmass       = dbuf[(g-1)*4+1];
+    wmass        = pull->dbuf_cyl[(g-1)*4+0];
+    wwmass       = pull->dbuf_cyl[(g-1)*4+1];
     pdyna->wscale = wmass/wwmass;
     pdyna->invtm = 1.0/(pdyna->wscale*wmass);
 
     for(m=0; m<DIM; m++) {
       g_x[m] = pgrp->x[m] - pgrp->vec[m]*(pgrp->init[0] + pgrp->rate*t);
-      pdyna->x[m]    = g_x[m] + pgrp->vec[m]*dbuf[(g-1)*4+2]/wmass;
+      pdyna->x[m]    = g_x[m] + pgrp->vec[m]*pull->dbuf_cyl[(g-1)*4+2]/wmass;
       if (xp) {
-	pdyna->xp[m] = g_x[m] + pgrp->vec[m]*dbuf[(g-1)*4+3]/wmass;
+	pdyna->xp[m] = g_x[m] + pgrp->vec[m]*pull->dbuf_cyl[(g-1)*4+3]/wmass;
       }
     }
 
@@ -274,8 +273,6 @@ void pull_calc_coms(t_commrec *cr,
 		    t_pull *pull, t_mdatoms *md, t_pbc *pbc,double t,
 		    rvec x[], rvec *xp)
 {
-  static rvec *rbuf=NULL;
-  static dvec *dbuf=NULL;
   int  g,i,ii,m;
   real mass,w,wm,twopi_box=0;
   double wmass,wwmass,invwmass;
@@ -284,15 +281,15 @@ void pull_calc_coms(t_commrec *cr,
   rvec *xx[2],x_pbc={0,0,0},dx;
   t_pullgrp *pgrp;
 
-  if (rbuf == NULL) {
-    snew(rbuf,1+pull->ngrp);
+  if (pull->rbuf == NULL) {
+    snew(pull->rbuf,1+pull->ngrp);
   }
-  if (dbuf == NULL) {
-    snew(dbuf,3*(1+pull->ngrp));
+  if (pull->dbuf == NULL) {
+    snew(pull->dbuf,3*(1+pull->ngrp));
   }
 
   if (pull->bRefAt) {
-    pull_set_pbcatoms(cr,pull,md,x,rbuf);
+    pull_set_pbcatoms(cr,pull,md,x,pull->rbuf);
   }
 
   if (pull->cosdim >= 0) {
@@ -320,7 +317,7 @@ void pull_calc_coms(t_commrec *cr,
     if (!(g==0 && PULL_CYL(pull))) {
       if (pgrp->epgrppbc == epgrppbcREFAT) {
 	/* Set the pbc atom */
-	copy_rvec(rbuf[g],x_pbc);
+	copy_rvec(pull->rbuf[g],x_pbc);
       }
       w = 1;
       for(i=0; i<pgrp->nat_loc; i++) {
@@ -376,29 +373,29 @@ void pull_calc_coms(t_commrec *cr,
     switch (pgrp->epgrppbc) {
     case epgrppbcNONE:
     case epgrppbcREFAT:
-      copy_dvec(com,dbuf[g*3]);
-      copy_dvec(comp,dbuf[g*3+1]);
-      dbuf[g*3+2][0] = wmass;
-      dbuf[g*3+2][1] = wwmass;
-      dbuf[g*3+2][2] = 0;
+      copy_dvec(com,pull->dbuf[g*3]);
+      copy_dvec(comp,pull->dbuf[g*3+1]);
+      pull->dbuf[g*3+2][0] = wmass;
+      pull->dbuf[g*3+2][1] = wwmass;
+      pull->dbuf[g*3+2][2] = 0;
       break;
     case epgrppbcCOS:
-      dbuf[g*3  ][0] = cm;
-      dbuf[g*3  ][1] = sm;
-      dbuf[g*3  ][2] = 0;
-      dbuf[g*3+1][0] = ccm;
-      dbuf[g*3+1][1] = csm;
-      dbuf[g*3+1][2] = ssm;
-      dbuf[g*3+2][0] = cmp;
-      dbuf[g*3+2][1] = smp;
-      dbuf[g*3+2][2] = 0;
+      pull->dbuf[g*3  ][0] = cm;
+      pull->dbuf[g*3  ][1] = sm;
+      pull->dbuf[g*3  ][2] = 0;
+      pull->dbuf[g*3+1][0] = ccm;
+      pull->dbuf[g*3+1][1] = csm;
+      pull->dbuf[g*3+1][2] = ssm;
+      pull->dbuf[g*3+2][0] = cmp;
+      pull->dbuf[g*3+2][1] = smp;
+      pull->dbuf[g*3+2][2] = 0;
       break;
     }
   }
 
   if (cr && PAR(cr)) {
     /* Sum the contributions over the nodes */
-    gmx_sumd((1+pull->ngrp)*3*DIM,dbuf[0],cr);
+    gmx_sumd((1+pull->ngrp)*3*DIM,pull->dbuf[0],cr);
   }
   
   for (g=0; g<1+pull->ngrp; g++) {
@@ -406,8 +403,8 @@ void pull_calc_coms(t_commrec *cr,
     if (pgrp->nat > 0 && !(g==0 && PULL_CYL(pull))) {
       if (pgrp->epgrppbc != epgrppbcCOS) {
 	/* Determine the inverse mass */
-	wmass  = dbuf[g*3+2][0];
-	wwmass = dbuf[g*3+2][1];
+	wmass  = pull->dbuf[g*3+2][0];
+	wwmass = pull->dbuf[g*3+2][1];
 	invwmass = 1/wmass;
 	/* invtm==0 signals a frozen group, so then we should keep it zero */
 	if (pgrp->invtm > 0) {
@@ -416,25 +413,27 @@ void pull_calc_coms(t_commrec *cr,
 	}
 	/* Divide by the total mass */
 	for(m=0; m<DIM; m++) {
-	  pgrp->x[m]    = dbuf[g*3  ][m]*invwmass;
+	  pgrp->x[m]    = pull->dbuf[g*3  ][m]*invwmass;
 	  if (xp) {
-	    pgrp->xp[m] = dbuf[g*3+1][m]*invwmass;
+	    pgrp->xp[m] = pull->dbuf[g*3+1][m]*invwmass;
 	  }
 	  if (pgrp->epgrppbc == epgrppbcREFAT) {
-	    pgrp->x[m]    += rbuf[g][m];
+	    pgrp->x[m]    += pull->rbuf[g][m];
 	    if (xp) {
-	      pgrp->xp[m] += rbuf[g][m];
+	      pgrp->xp[m] += pull->rbuf[g][m];
 	    }
 	  }
 	}
       } else {
 	/* Determine the optimal location of the cosine weight */
-	csw = dbuf[g*3][0];
-	snw = dbuf[g*3][1];
+	csw = pull->dbuf[g*3][0];
+	snw = pull->dbuf[g*3][1];
 	pgrp->x[pull->cosdim] = atan2_0_2pi(snw,csw)/twopi_box;
 	/* Set the weights for the local atoms */
 	wmass = sqrt(csw*csw + snw*snw);
-	wwmass = (dbuf[g*3+1][0]*csw*csw + dbuf[g*3+1][1]*csw*snw + dbuf[g*3+1][2]*snw*snw)/(wmass*wmass);
+	wwmass = (pull->dbuf[g*3+1][0]*csw*csw + 
+                  pull->dbuf[g*3+1][1]*csw*snw + 
+                  pull->dbuf[g*3+1][2]*snw*snw)/(wmass*wmass);
 	pgrp->wscale = wmass/wwmass;
 	pgrp->invtm  = 1.0/(pgrp->wscale*wmass);
 	/* Set the weights for the local atoms */
@@ -446,8 +445,8 @@ void pull_calc_coms(t_commrec *cr,
 				snw*sin(twopi_box*x[ii][pull->cosdim]);
 	}
 	if (xp) {
-	  csw = dbuf[g*3+2][0];
-	  snw = dbuf[g*3+2][1];
+	  csw = pull->dbuf[g*3+2][0];
+	  snw = pull->dbuf[g*3+2][1];
 	  pgrp->xp[pull->cosdim] = atan2_0_2pi(snw,csw)/twopi_box;
 	}
       }

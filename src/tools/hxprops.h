@@ -95,7 +95,7 @@ extern void av_hblen(FILE *fp3,FILE *fp3a,
 extern void av_phipsi(FILE *fphi,FILE *fpsi,FILE *fphi2,FILE *fpsi2,
 		      real t,int nres,t_bb bb[]);
 
-extern t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
+extern t_bb *mkbbind(const char *fn,int *nres,int *nbb,int res0,
 		     int *nall,atom_id **index,
 		     char ***atomname,t_atom atom[],
 		     t_resinfo *resinfo);

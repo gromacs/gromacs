@@ -92,12 +92,13 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
   return;
 }
 
-void calc_potential(char *fn, atom_id **index, int gnx[], 
+void calc_potential(const char *fn, atom_id **index, int gnx[], 
 		    double ***slPotential, double ***slCharge, 
 		    double ***slField, int *nslices, 
 		    t_topology *top, int ePBC,
 		    int axis, int nr_grps, double *slWidth,
-		    double fudge_z, bool bSpherical, bool bCorrect)
+		    double fudge_z, bool bSpherical, bool bCorrect,
+                    const output_env_t oenv)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -130,7 +131,7 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
     gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   if (! *nslices)
@@ -196,7 +197,7 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
       }
     }
     nr_frames++;
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
 
   /*********** done with status file **********/
   close_trj(status);
@@ -326,8 +327,9 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
 }
 
 void plot_potential(double *potential[], double *charge[], double *field[], 
-		    char *afile, char *bfile, char *cfile, int nslices,
-		    int nr_grps, char *grpname[], double slWidth)
+		    const char *afile, const char *bfile, const char *cfile, 
+                    int nslices, int nr_grps, char *grpname[], double slWidth,
+                    const output_env_t oenv)
 {
   FILE       *pot,     /* xvgr file with potential */
              *cha,     /* xvgr file with charges   */
@@ -336,16 +338,16 @@ void plot_potential(double *potential[], double *charge[], double *field[],
   int        slice, n;
 
   sprintf(buf,"Electrostatic Potential");
-  pot = xvgropen(afile, buf, "Box (nm)","Potential (V)");
-  xvgr_legend(pot,nr_grps,grpname);
+  pot = xvgropen(afile, buf, "Box (nm)","Potential (V)",oenv);
+  xvgr_legend(pot,nr_grps,grpname,oenv);
 
   sprintf(buf,"Charge Distribution");
-  cha = xvgropen(bfile, buf, "Box (nm)", "Charge density (q/nm\\S3\\N)");
-  xvgr_legend(cha,nr_grps,grpname);
+  cha = xvgropen(bfile, buf, "Box (nm)", "Charge density (q/nm\\S3\\N)",oenv);
+  xvgr_legend(cha,nr_grps,grpname,oenv);
 
   sprintf(buf, "Electric Field");
-  fie = xvgropen(cfile, buf, "Box (nm)", "Field (V/nm)");
-  xvgr_legend(fie,nr_grps,grpname);
+  fie = xvgropen(cfile, buf, "Box (nm)", "Field (V/nm)",oenv);
+  xvgr_legend(fie,nr_grps,grpname,oenv);
 
   for (slice = cb; slice < (nslices - ce); slice++)
   { 
@@ -380,6 +382,7 @@ int gmx_potential(int argc,char *argv[])
     "spherical slices and twice integrating them. epsilon_r is taken as 1,"
     "2 is more appropriate in many cases"
   };
+  output_env_t oenv;
   static int  axis = 2;                      /* normal to memb. default z  */
   static const char *axtitle="Z"; 
   static int  nslices = 10;                  /* nr of slices defined       */
@@ -432,7 +435,8 @@ int gmx_potential(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs,
+                    &oenv);
 
   /* Calculate axis */
   axis = toupper(axtitle[0]) - 'X';
@@ -449,15 +453,15 @@ int gmx_potential(int argc,char *argv[])
   calc_potential(ftp2fn(efTRX,NFILE,fnm), index, ngx, 
 		 &potential, &charge, &field,
 		 &nslices, top, ePBC, axis, ngrps, &slWidth, fudge_z,
-		 bSpherical, bCorrect); 
+		 bSpherical, bCorrect,oenv); 
 
   plot_potential(potential, charge, field, opt2fn("-o",NFILE,fnm),
 		 opt2fn("-oc",NFILE,fnm), opt2fn("-of",NFILE,fnm),
-		 nslices, ngrps, grpname, slWidth);
+		 nslices, ngrps, grpname, slWidth,oenv);
 
-  do_view(opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
-  do_view(opt2fn("-oc",NFILE,fnm), NULL);      /* view xvgr file */  
-  do_view(opt2fn("-of",NFILE,fnm), NULL);      /* view xvgr file */
+  do_view(oenv,opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
+  do_view(oenv,opt2fn("-oc",NFILE,fnm), NULL);      /* view xvgr file */  
+  do_view(oenv,opt2fn("-of",NFILE,fnm), NULL);      /* view xvgr file */
 
   thanx(stderr);
   return 0;

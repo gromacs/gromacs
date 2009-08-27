@@ -853,7 +853,7 @@ void main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,&targ,PCA_NEED_INOUT,NULL);
   if (argc > 1)
-    pid=atoi(argv[1]);
+    pid=strtol(argv[1], NULL, 0);
   else
     pid=0;
   

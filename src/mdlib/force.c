@@ -1005,7 +1005,8 @@ static void set_bham_b_max(FILE *fplog,t_forcerec *fr,
     }
 }
 
-static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
+static void make_nbf_tables(FILE *fp,const output_env_t oenv,
+                            t_forcerec *fr,real rtab,
 			    const t_commrec *cr,
 			    const char *tabfn,char *eg1,char *eg2,
 			    t_nblists *nbl)
@@ -1025,7 +1026,7 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
     /* Append the two energy group names */
     sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
 	    eg1,eg2,ftp2ext(efXVG));
-  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,0);
+  nbl->tab = make_tables(fp,oenv,fr,MASTER(cr),buf,rtab,0);
   /* Copy the contents of the table to separate coulomb and LJ tables too,
    * to improve cache performance.
    */
@@ -1168,6 +1169,7 @@ static real cutoff_inf(real cutoff)
 }
 
 void init_forcerec(FILE *fp,
+                   const output_env_t oenv,
                    t_forcerec *fr,
                    t_fcdata   *fcd,
                    const t_inputrec *ir,
@@ -1283,6 +1285,7 @@ void init_forcerec(FILE *fp,
             }
         }
         fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+        init_ewald_tab(&(fr->ewald_table), cr, ir, fp);
         if (fp)
         {
             fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
@@ -1330,7 +1333,8 @@ void init_forcerec(FILE *fp,
     }
     
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
-                       gmx_mtop_ftype_count(mtop,F_POSRES) > 0);
+                       gmx_mtop_ftype_count(mtop,F_POSRES) > 0 ||
+                       IR_ELEC_FIELD(*ir));
     
     /* Mask that says whether or not this NBF list should be computed */
     /*  if (fr->bMask == NULL) {
@@ -1428,7 +1432,7 @@ void init_forcerec(FILE *fp,
 #endif
 		
 		fr->gbtabr=50;
-		fr->gbtab=make_gb_table(fp,fr,tabpfn,fr->gbtabscale);
+		fr->gbtab=make_gb_table(fp,oenv,fr,tabpfn,fr->gbtabscale);
 
         init_gb(&fr->born,cr,fr,ir,mtop,ir->rgbradii,ir->gb_algorithm);
     }
@@ -1504,7 +1508,7 @@ void init_forcerec(FILE *fp,
     if (bTab) {
         /* make tables for ordinary interactions */
         if (bNormalnblists) {
-            make_nbf_tables(fp,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
+            make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
             if (!bSep14tab)
                 fr->tab14 = fr->nblists[0].tab;
             m = 1;
@@ -1523,7 +1527,7 @@ void init_forcerec(FILE *fp,
                             fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = m;
                         }
                         /* Read the table file with the two energy groups names appended */
-                        make_nbf_tables(fp,fr,rtab,cr,tabfn,
+                        make_nbf_tables(fp,oenv,fr,rtab,cr,tabfn,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
@@ -1538,7 +1542,7 @@ void init_forcerec(FILE *fp,
     if (bSep14tab)
     {
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
-        fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,rtab,
+        fr->tab14 = make_tables(fp,oenv,fr,MASTER(cr),tabpfn,rtab,
                                 GMX_MAKETABLES_14ONLY);
     }
     
@@ -1546,7 +1550,7 @@ void init_forcerec(FILE *fp,
     fr->nwall = ir->nwall;
     if (ir->nwall && ir->wall_type==ewtTABLE)
     {
-        make_wall_tables(fp,ir,tabfn,&mtop->groups,fr);
+        make_wall_tables(fp,oenv,ir,tabfn,&mtop->groups,fr);
     }
     
     if (fcd && tabbfn) {
@@ -1595,6 +1599,12 @@ void init_forcerec(FILE *fp,
     }
     
     fr->print_force = print_force;
+
+
+    /* coarse load balancing vars */
+    fr->t_fnbf=0.;
+    fr->t_wait=0.;
+    fr->timesteps=0;
     
     /* Initialize neighbor search */
     init_ns(fp,cr,&fr->ns,fr,mtop,box);
@@ -1644,26 +1654,13 @@ void ns(FILE *fp,
         bool       bDoForces,
         rvec       *f)
 {
-  static bool bFirst=TRUE;
-  static int  nDNL;
   char   *ptr;
   int    nsearch;
 
   GMX_MPE_LOG(ev_ns_start);
-
-  if (bFirst) {
-    ptr=getenv("DUMPNL");
-    if (ptr) {
-      nDNL = atoi(ptr);
-      if (fp) {
-	fprintf(fp,"nDNL = %d\n",nDNL);  
-      }
-    } else
-      nDNL=0;
-    /* Allocate memory for the neighbor lists */
-    init_neighbor_list(fp,fr,md->homenr);
-      
-    bFirst=FALSE;
+  if (!fr->ns.nblist_initialized)
+  {
+      init_neighbor_list(fp, fr, md->homenr);
   }
     
   if (fr->bTwinRange) 
@@ -1681,8 +1678,8 @@ void ns(FILE *fp,
     count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
     &(top->idef),opts->ngener);
   */
-  if (nDNL > 0)
-    dump_nblist(fp,cr,fr,nDNL);
+  if (fr->ns.dump_nl > 0)
+    dump_nblist(fp,cr,fr,fr->ns.dump_nl);
 
   GMX_MPE_LOG(ev_ns_finish);
 }
@@ -1727,8 +1724,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
-    static double  t_fnbf=0.0, t_wait=0.0;
-    static int     timesteps=0;
     
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
@@ -1761,7 +1756,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     dvdlambda = 0;
     
 #ifdef GMX_MPI
-    /*#define TAKETIME ((cr->npmenodes) && (timesteps < 12))*/
+    /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
 #define TAKETIME FALSE
     if (TAKETIME)
     {
@@ -1850,7 +1845,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     if (TAKETIME)
     {
         t1=MPI_Wtime();
-        t_fnbf += t1-t0;
+        fr->t_fnbf += t1-t0;
     }
 #endif
     
@@ -2073,7 +2068,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
                            md->chargeA,md->chargeB,
                            box_size,cr,md->homenr,
                            fr->vir_el_recip,fr->ewaldcoeff,
-                           lambda,&dvdlambda);
+                           lambda,&dvdlambda,fr->ewald_table);
             PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
             break;
         default:
@@ -2129,14 +2124,15 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
         t2=MPI_Wtime();
         MPI_Barrier(cr->mpi_comm_mygroup);
         t3=MPI_Wtime();
-        t_wait += t3-t2;
-        if (timesteps == 11)
+        fr->t_wait += t3-t2;
+        if (fr->timesteps == 11)
         {
             fprintf(stderr,"* PP load balancing info: node %d, step %s, rel wait time=%3.0f%% , load string value: %7.2f\n", 
-                    cr->nodeid, gmx_step_str(timesteps,buf), 
-                    100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
+                    cr->nodeid, gmx_step_str(fr->timesteps,buf), 
+                    100*fr->t_wait/(fr->t_wait+fr->t_fnbf), 
+                    (fr->t_fnbf+fr->t_wait)/fr->t_fnbf);
         }	  
-        timesteps++;
+        fr->timesteps++;
     }
 #endif
     

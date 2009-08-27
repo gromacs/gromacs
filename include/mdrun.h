@@ -91,9 +91,9 @@ typedef struct {
 } gmx_runtime_t;
 
 typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
-				int nfile,t_filenm fnm[],
-				bool bVerbose,bool bCompact,
-				int nstglobalcomm,
+				int nfile,const t_filenm fnm[],
+				const output_env_t oenv, bool bVerbose,
+                                bool bCompact, int nstglobalcomm,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
 				int stepout,
 				t_inputrec *inputrec,
@@ -161,7 +161,7 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
-		char *fn_cpt,bool bCPT,
+		const char *fn_cpt,bool bCPT,
 		gmx_mtop_t *top_global,
 		int eIntegrator,int simulation_part,gmx_step_t step,double t,
 		t_state *state_local,t_state *state_global,
@@ -196,7 +196,7 @@ extern void print_date_and_time(FILE *log,int pid,const char *title,
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
-extern void finish_run(FILE *log,t_commrec *cr,char *confout,
+extern void finish_run(FILE *log,t_commrec *cr,const char *confout,
 		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		       gmx_runtime_t *runtime,
@@ -223,19 +223,17 @@ typedef enum
 extern void check_nnodes_top(char *fn,t_topology *top);
 /* Reset the tpr file to work with one node if necessary */
 
-extern void init_single(FILE *log,
-                        t_inputrec *inputrec, char *tpbfile, gmx_mtop_t *mtop,
-			t_state *state);
+extern void init_single(FILE *log, t_inputrec *inputrec, const char *tpbfile, 
+                        gmx_mtop_t *mtop, t_state *state);
      /*
       * Allocates space for the topology (top), the coordinates x, the
       * velocities v, masses mass. Reads the parameters, topology,
       * coordinates and velocities from the file specified in tpbfile
       */
 
-extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
+extern void init_parallel(FILE *log,const char *tpxfile, t_commrec *cr,
 			  t_inputrec *inputrec,gmx_mtop_t *mtop,
-			  t_state *state,
-			  int list);
+			  t_state *state, int list);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology
       * coordinates, velocities, and masses are initialised equal to using
@@ -244,9 +242,9 @@ extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       * array specifies in which part of the x and f array the subsystems
       * of the other processors are located. Homenr0, homenr1, nparts0 and
       * nparts1 are necessary to calculate the non bonded interaction using
-      * the symmetry and thus calculating every force only once. List is a facility
-      * for logging (and debugging). One can decide to print none or a set of
-      * selected parameters to the file specified by log. Parameters are
+      * the symmetry and thus calculating every force only once. List is a 
+      * facility for logging (and debugging). One can decide to print none or a 
+      * set of * selected parameters to the file specified by log. Parameters are
       * printed by or-ing the corresponding items from t_listitem. A 0 (zero)
       * specifies that nothing is to be printed on the file. The function
       * returns the number of shifts over the ring to perform to calculate
@@ -266,26 +264,39 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
-int mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,
-	     int nstglobalcomm,
-	     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-	     const char *dddlb_opt,real dlb_scale,
+int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
+	     const output_env_t oenv, bool bVerbose,bool bCompact,
+	     int nstglobalcomm, ivec ddxyz,int dd_node_order,real rdd,
+             real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-	     int nstepout,
-	     gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
+	     int nstepout, int nmultisim, int repl_ex_nst,int repl_ex_seed,
 	     real pforce,real cpt_period,real max_hours,
 	     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
+int mdrunner_threads(int nthreads,
+                     FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
+                     const output_env_t oenv, bool bVerbose,bool bCompact,
+                     int nstglobalcomm, 
+                     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+                     const char *dddlb_opt,real dlb_scale,
+                     const char *ddcsx,const char *ddcsy,const char *ddcsz,
+                     int nstepout,int nmultisim, int repl_ex_nst,
+                     int repl_ex_seed, real pforce,real cpt_period,
+                     real max_hours, unsigned long Flags);
+/* initializes nthread threads before running mdrunner: is the preferred
+   way to start a simulation (even if nthreads=1 and no threads are started) */
+
+
 extern void init_md(FILE *fplog,
-		    t_commrec *cr,t_inputrec *ir,
-		    double *t,double *t0,
+		    t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 
+                    double *t,double *t0,
 		    real *lambda,double *lam0,
 		    t_nrnb *nrnb,gmx_mtop_t *mtop,
 		    gmx_update_t *upd,
-		    int nfile,t_filenm fnm[],
-		    int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
+		    int nfile,const t_filenm fnm[],
+		    int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
+                    const char **fn_cpt,
 		    FILE **fp_dhdl,FILE **fp_field,
 		    t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,

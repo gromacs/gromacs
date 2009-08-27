@@ -34,7 +34,7 @@
 #include <math.h>
 
 #include "vec.h"
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 
 #include "nb_kernel233.h"
 
@@ -132,14 +132,14 @@ void nb_kernel233(
     
     do
     {
-#ifdef GMX_THREADS
-        gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+#ifdef GMX_THREAD_SHM_FDECOMP
+        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
         nn0              = *count;         
 		
         /* Take successively smaller chunks (at least 10 lists) */
         nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
         *count           = nn1;            
-        gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
         if(nn1>nri) nn1=nri;
 #else
 	    nn0 = 0;
@@ -227,10 +227,10 @@ void nb_kernel233(
                 rsq41            = dx41*dx41+dy41*dy41+dz41*dz41;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv21           = invsqrt(rsq21);
-                rinv31           = invsqrt(rsq31);
-                rinv41           = invsqrt(rsq41);
+                rinv11           = gmx_invsqrt(rsq11);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv31           = gmx_invsqrt(rsq31);
+                rinv41           = gmx_invsqrt(rsq41);
 
                 /* Load parameters for j atom */
                 tj               = nti+2*type[jnr];
@@ -500,14 +500,14 @@ void nb_kernel233nf(
     
     do
     {
-#ifdef GMX_THREADS
-        gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+#ifdef GMX_THREAD_SHM_FDECOMP
+        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
         nn0              = *count;         
 		
         /* Take successively smaller chunks (at least 10 lists) */
         nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
         *count           = nn1;            
-        gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
         if(nn1>nri) nn1=nri;
 #else
 	    nn0 = 0;
@@ -583,10 +583,10 @@ void nb_kernel233nf(
                 rsq41            = dx41*dx41+dy41*dy41+dz41*dz41;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv21           = invsqrt(rsq21);
-                rinv31           = invsqrt(rsq31);
-                rinv41           = invsqrt(rsq41);
+                rinv11           = gmx_invsqrt(rsq11);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv31           = gmx_invsqrt(rsq31);
+                rinv41           = gmx_invsqrt(rsq41);
 
                 /* Load parameters for j atom */
                 tj               = nti+2*type[jnr];
