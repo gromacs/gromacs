@@ -123,7 +123,7 @@ update_adress_weights(t_forcerec *         fr,
                       rvec                 x[],
                       matrix               box)
 {
-    int            i,j,nr;
+    int            i,j,k,nr;
     int            adresstype;
     real           adressr;
     real           adressw;
@@ -161,6 +161,7 @@ update_adress_weights(t_forcerec *         fr,
         }
     }
 
+    k=0;
     for(i=0;i<nr;i++)
     {
         /* only calculate wf for virtual particles */
@@ -170,6 +171,16 @@ update_adress_weights(t_forcerec *         fr,
                 ix[j]      = x[i][j];
             }
             wf[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
+            /* Assign wf value to explicit atoms of the molecule 
+             * this requires that every molecule end in a virtual 
+             * site which determines the weight of the molecule. 
+             * The molecule may contain other virtual sites, in 
+             * that case we'll need to be smarter about assigning
+             * the weights. This will work for now. */
+            for(j=k;j<i;j++){
+                wf[j]      = wf[i];
+            }
+            k=i+1;
         }
     }
 }
