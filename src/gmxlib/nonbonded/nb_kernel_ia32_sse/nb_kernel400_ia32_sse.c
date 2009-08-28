@@ -303,8 +303,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
 			
-			fscal = fijC;
-			//fscal   = _mm_sub_ps(fijC,fscal);
+			fscal   = _mm_sub_ps(fijC,fscal);
 			fscal   = _mm_mul_ps(neg,fscal);
 			fscal   = _mm_mul_ps(fscal,rinv);
 			
@@ -563,8 +562,7 @@ void nb_kernel400_ia32_sse(int *           p_nri,
 			vctot   = _mm_add_ps(vctot,vcoul);
 			vgbtot  = _mm_add_ps(vgbtot,vgb);
 					
-			fscal = fijC;
-			//fscal   = _mm_sub_ps(fijC,fscal);
+			fscal   = _mm_sub_ps(fijC,fscal);
 			fscal   = _mm_mul_ps(neg,fscal);
 			fscal   = _mm_mul_ps(fscal,rinv);
 			
