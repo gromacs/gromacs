@@ -1483,7 +1483,6 @@ static real do_flex_lowlevel(
     rvec  sum_i;             /* Inner part of sum_n2 */
     rvec  dummy1,tmp_f,s,tmp2;
     real  u;                 /* direction*dr */
-    rvec  dr;                /* difference vector between actual and reference coordinate */
     real  V;                 /* The rotation potential energy */
     real  gaussian;          /* Gaussian weight */
     real  gaussian_xi;
@@ -1544,14 +1543,10 @@ static real do_flex_lowlevel(
                 /* Now subtract the slab COG from current coordinate i */
                 rvec_sub(curr_x, curr_COG, curr_x_rel); /* curr_x_rel = x_ii-x_0 */
 
-                /* Force on atom i is based on difference vector between current coordinate and rotated reference coordinate */
-                /* Difference vector between current and reference coordinate: */
-                rvec_sub(curr_x_rel, ref_x, dr); /* dr=(x_ii-x_0)-Omega.(y_ii-y_0) */
-
                 /* Calculate the direction of the actual force */
                 cprod(rotg->vec, ref_x, direction);
                 unitv(direction,direction);
-                u = iprod(direction,dr);
+                u = iprod(direction, curr_x_rel);
 
                 /*********************************/
                 /* Add to the rotation potential */
@@ -1585,7 +1580,7 @@ static real do_flex_lowlevel(
                     
                     if (gaussian_xi > rotg->min_gaussian)
                     {
-                        /* Calculate r_i for atom i and slab n: */
+                        /* Calculate r=Omega*(y_i-y_0) for atom i and slab n: */
                         /* Unrotated reference coordinate y_i: */
                         copy_rvec(rotg->xc_ref[i],yi);
                         
@@ -1593,22 +1588,20 @@ static real do_flex_lowlevel(
                         /* The reference COG of this slab is still in ref_COG */
                         rvec_sub(yi, ref_COG, tmp);   /* tmp = y_i - y_0             */
                         mvmul(rotmat, tmp, r);        /* r   = Omega*(y_i - y_0)     */
-                        cprod(rotg->vec, r, tmp);     /* tmp = a x Omega*(y_i - y_0) */
-                        unitv(tmp, s);                /* s   = a x Omega*(y_i - y_0) / |a x Omega*(y_i - y_0)| */
-                        /* Now that we have ri and si, let's calculate the i-sum: */
+                        cprod(rotg->vec, r, tmp);     /* tmp = v x Omega*(y_i - y_0) */
+                        unitv(tmp, s);                /* s   = v x Omega*(y_i - y_0) / |s x Omega*(y_i - y_0)| */
+                        /* Now that we have si, let's calculate the i-sum: */
                         /* tmp = x_0 - x_l */
                         rvec_sub(curr_COG, curr_x, tmp);
-                        /* tmp2 = beta/sigma^2 * (s*(x_0 - x_l)) * a   */
+                        /* tmp2 = beta/sigma^2 * (s*(x_0 - x_l)) * v   */
                         svmul(beta*iprod(tmp, s)/sqr(sigma), rotg->vec, tmp2);
                         /* tmp = s + tmp2 */
                         rvec_add(tmp2, s, tmp);
                         /* tmp2 = xi - x0 */
                         rvec_sub(xi, curr_COG, tmp2);
-                        /* tmp2 = xi - x0 - ri */
-                        rvec_sub(tmp2, r, tmp2);
                         /* fac = gn * s*(xi - x0 - ri) */
                         fac = gaussian_xi*iprod(s, tmp2);
-                        /* tmp2 = gn * s*(xi - x0 - ri) * [beta/sigma^2 * (s*(x_0 - x_l)) * a] */
+                        /* tmp2 = gn * s*(xi - x0) * [beta/sigma^2 * (s*(x_0 - x_l)) * v] */
                         svmul(fac, tmp, tmp2);
                         rvec_add(sum_i, tmp2, sum_i);
                     }
@@ -1634,7 +1627,6 @@ static real do_flex_lowlevel(
          * array after the normal forces have been evaluated */
         for(m=0; m<DIM; m++)
             rotg->f_rot_loc[l][m] = rotg->k*tmp_f[m];
-
 
 #ifdef INFOF
         static bool bFirst=1;
