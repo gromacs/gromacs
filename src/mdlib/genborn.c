@@ -945,10 +945,14 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 	for(i=0;i<nl->nri;i++)
 	{
 		ai   = nl->iinr[i];
-		gpi  = born->gpol[ai]+born->gpol_still_work[ai];
-		gpi2 = gpi * gpi;
-		born->bRad[ai]   = factor*gmx_invsqrt(gpi2);
-		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		
+		if(born->use[ai] != 0)
+		{
+			gpi  = born->gpol[ai]+born->gpol_still_work[ai];
+			gpi2 = gpi * gpi;
+			born->bRad[ai]   = factor*gmx_invsqrt(gpi2);
+			fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		}
 	}
 	
 	/* Extra communication required for DD */
@@ -1144,13 +1148,17 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
 	for(i=0;i<nl->nri;i++)
 	{
 		ai      = nl->iinr[i];
-		rai     = top->atomtypes.gb_radius[md->typeA[ai]]-doffset; 
-		sum_ai  = 1.0/rai - born->gpol_hct_work[ai];
-		min_rad = rai + doffset;
-		rad     = 1.0/sum_ai; 
 		
-		born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		if(born->use[ai] != 0)
+		{
+			rai     = top->atomtypes.gb_radius[md->typeA[ai]]-doffset; 
+			sum_ai  = 1.0/rai - born->gpol_hct_work[ai];
+			min_rad = rai + doffset;
+			rad     = 1.0/sum_ai; 
+			
+			born->bRad[ai]   = rad > min_rad ? rad : min_rad;
+			fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		}
 	}
 	
 	/* Extra communication required for DD */
@@ -1345,22 +1353,26 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 	for(i=0;i<nl->nri;i++)
 	{
 		ai         = nl->iinr[i];
-		rai        = top->atomtypes.gb_radius[md->typeA[ai]];
-		rai_inv2   = 1.0/rai;
-		rai        = rai-doffset; 
-		rai_inv    = 1.0/rai;
-		sum_ai     = rai * born->gpol_hct_work[ai];
-		sum_ai2    = sum_ai  * sum_ai;
-		sum_ai3    = sum_ai2 * sum_ai;
 		
-		tsum    = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
-		born->bRad[ai] = rai_inv - tsum*rai_inv2;
-		born->bRad[ai] = 1.0 / born->bRad[ai];
-		
-		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
-		
-		tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
-		born->drobc[ai] = (1.0-tsum*tsum)*tchain*rai_inv2;
+		if(born->use[ai] != 0)
+		{
+			rai        = top->atomtypes.gb_radius[md->typeA[ai]];
+			rai_inv2   = 1.0/rai;
+			rai        = rai-doffset; 
+			rai_inv    = 1.0/rai;
+			sum_ai     = rai * born->gpol_hct_work[ai];
+			sum_ai2    = sum_ai  * sum_ai;
+			sum_ai3    = sum_ai2 * sum_ai;
+			
+			tsum    = tanh(born->obc_alpha*sum_ai-born->obc_beta*sum_ai2+born->obc_gamma*sum_ai3);
+			born->bRad[ai] = rai_inv - tsum*rai_inv2;
+			born->bRad[ai] = 1.0 / born->bRad[ai];
+			
+			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+			
+			tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
+			born->drobc[ai] = (1.0-tsum*tsum)*tchain*rai_inv2;
+		}
 	}
 	
 	/* Extra (local) communication required for DD */

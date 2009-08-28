@@ -613,11 +613,15 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	for(i=0;i<nl->nri;i++)
 	{
 		ai = nl->iinr[i];
-		gpi_ai = born->gpol[ai] + born->gpol_still_work[ai];
-		gpi2   = gpi_ai*gpi_ai;
 		
-		born->bRad[ai]=factor*gmx_invsqrt(gpi2);
-		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+		if(born->use[ai] != 0)
+		{
+			gpi_ai = born->gpol[ai] + born->gpol_still_work[ai];
+			gpi2   = gpi_ai*gpi_ai;
+			
+			born->bRad[ai]=factor*gmx_invsqrt(gpi2);
+			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+		}
 	}
 	
 	/* Extra (local) communication reqiured for DD */
@@ -1216,13 +1220,17 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 	for(i=0;i<nl->nri;i++)
 	{
 		ai      = nl->iinr[i];
-		rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doff; 
-		sum     = 1.0/rr - born->gpol_hct_work[ai];
-		min_rad = rr + doff;
-		rad     = 1.0/sum;  
 		
-		born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-		fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		if(born->use[ai] != 0)
+		{
+			rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doff; 
+			sum     = 1.0/rr - born->gpol_hct_work[ai];
+			min_rad = rr + doff;
+			rad     = 1.0/sum;  
+			
+			born->bRad[ai]   = rad > min_rad ? rad : min_rad;
+			fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		}
 	}
 	
 	/* Extra (local) communication required for DD */
@@ -1820,22 +1828,26 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 	for(i=0;i<nl->nri;i++)
 	{
 		ai      = nl->iinr[i];
-		rr      = top->atomtypes.gb_radius[md->typeA[ai]];
-		rr_inv2 = 1.0/rr;
-		rr      = rr-doff; 
-		rr_inv  = 1.0/rr;
-		sum     = rr * born->gpol_hct_work[ai];
-		sum2    = sum  * sum;
-		sum3    = sum2 * sum;
 		
-		tsum    = tanh(born->obc_alpha*sum-born->obc_beta*sum2+born->obc_gamma*sum3);
-		born->bRad[ai] = rr_inv - tsum*rr_inv2;
-		born->bRad[ai] = 1.0 / born->bRad[ai];
-		
-		fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
-		
-		tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
-		born->drobc[ai] = (1.0-tsum*tsum)*tchain*rr_inv2;
+		if(born->use[ai] != 0)
+		{
+			rr      = top->atomtypes.gb_radius[md->typeA[ai]];
+			rr_inv2 = 1.0/rr;
+			rr      = rr-doff; 
+			rr_inv  = 1.0/rr;
+			sum     = rr * born->gpol_hct_work[ai];
+			sum2    = sum  * sum;
+			sum3    = sum2 * sum;
+			
+			tsum    = tanh(born->obc_alpha*sum-born->obc_beta*sum2+born->obc_gamma*sum3);
+			born->bRad[ai] = rr_inv - tsum*rr_inv2;
+			born->bRad[ai] = 1.0 / born->bRad[ai];
+			
+			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+			
+			tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
+			born->drobc[ai] = (1.0-tsum*tsum)*tchain*rr_inv2;
+		}
 	}
 	
 	/* Extra (local) communication required for DD */
@@ -2091,17 +2103,17 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 		_mm_store_sd(f+ai3+2,fiz);
 		
 		/* load, add and store i shift forces */
-		xmm1     = _mm_load_sd(fshift+ai3);
-		xmm2     = _mm_load_sd(fshift+ai3+1);
-		xmm3     = _mm_load_sd(fshift+ai3+2);
+		xmm1     = _mm_load_sd(fshift+shift);
+		xmm2     = _mm_load_sd(fshift+shift+1);
+		xmm3     = _mm_load_sd(fshift+shift+2);
 		
 		fix      = _mm_add_sd(fix,xmm1);
 		fiy      = _mm_add_sd(fiy,xmm2);
 		fiz      = _mm_add_sd(fiz,xmm3);
 		
-		_mm_store_sd(fshift+ai3,fix);
-		_mm_store_sd(fshift+ai3+1,fiy);
-		_mm_store_sd(fshift+ai3+2,fiz);
+		_mm_store_sd(fshift+shift,fix);
+		_mm_store_sd(fshift+shift+1,fiy);
+		_mm_store_sd(fshift+shift+2,fiz);
 
 	}
 	

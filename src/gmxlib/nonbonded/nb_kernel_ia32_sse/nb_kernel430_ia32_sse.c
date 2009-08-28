@@ -938,15 +938,15 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 		_mm_store_ss(faction+ii3+2,xmm4);
 		
 		/* Load, add and store i shift forces */
-		xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+ii3));
-		xmm5 = _mm_load1_ps(fshift+ii3+2);
+		xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
+		xmm5 = _mm_load1_ps(fshift+is3+2);
 		xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
 		
 		xmm4 = _mm_add_ps(xmm4,xmm2);
 		
-		_mm_storel_pi( (__m64 *) (fshift+ii3),xmm4);
+		_mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
 		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
-		_mm_store_ss(fshift+ii3+2,xmm4);
+		_mm_store_ss(fshift+is3+2,xmm4);
 		
 		/* Coulomb potential */
         ggid             = gid[n];         
