@@ -193,6 +193,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                 /* both have double identity, get hybrid scaling factor */
                 else 
                 {
+                    /* IMPORTANT: If you change the scaling function, change the return value in src/mdlib/adress.c too */
                     /* this is the old function */
                     /* hybscal = weight_product; */
                     
