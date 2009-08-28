@@ -336,7 +336,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
 #ifdef ADRESS
                                 /* Interface pressure correction
                                  * c6 = HYB potential, c12 = CG potential */
-                                if(bMixed && bIntPres)
+                                if(bMixed && bIntPres && bCG1)
                                 {
                                     /* could use a temporary variable here, but this should work */
                                     c12 = sqrt(weight_product);
