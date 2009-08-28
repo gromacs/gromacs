@@ -116,6 +116,6 @@ any papers on the package - you can find them in the top README file.
 #include "thread_mpi/threads.h"
 #include "thread_mpi/atomic.h"
 #include "thread_mpi/tmpi.h"
-#include "thread_mpi/mpi.h"
+#include "thread_mpi/mpi_bindings.h"
 
 
