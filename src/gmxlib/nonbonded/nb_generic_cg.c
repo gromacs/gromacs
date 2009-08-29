@@ -112,7 +112,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
         else
         {
             icoul           = nlist->icoul;
-            ivdw            = nlist->ivdw;
+            ivdw            = fr->userint3;
         }
 #else
         icoul               = nlist->icoul;
@@ -195,13 +195,14 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                 {
                     /* IMPORTANT: If you change the scaling function, change the return value in src/mdlib/adress.c too */
                     /* this is the old function */
-                    /* hybscal = weight_product; */
+                    //hybscal = weight_product;
                     
                     /* this is the unstretched new function */
-                    /* hybscal = exp(-0.6931472*weight_product_cg*weight_product_cg/(weight_product*weight_product)); */
+                    //hybscal = exp(-0.6931472*weight_product_cg*weight_product_cg/(weight_product*weight_product));
+                    hybscal = exp(-0.6931472*weight_product_cg/(weight_product));
                     
                     /* this is the stretched new function to look like the old cos^2 function */
-                    hybscal = exp(-6.2383246*weight_product_cg/(weight_product));
+                    //hybscal = exp(-6.2383246*weight_product_cg/(weight_product));
                     if(bCG1)
                     {
                         hybscal = 1.0 - hybscal;
@@ -347,7 +348,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                                     }
                                     else
                                     {
-                                        c12 = (c12-0.25);
+                                        c12 = (c12-0.5);
                                         c12*= 4.0*c12;
                                     }
                                     c6 = 1.0-c12;
