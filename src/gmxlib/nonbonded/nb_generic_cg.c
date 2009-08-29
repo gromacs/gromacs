@@ -128,7 +128,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
         nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
         table_nelements     = (icoul==3) ? 4 : 0;
         table_nelements    += (ivdw==3) ? 8 : 0;
-
+        
         charge              = mdatoms->chargeA;
         type                = mdatoms->typeA;
         facel               = fr->epsfac;
@@ -199,7 +199,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     
                     /* this is the unstretched new function */
                     /* hybscal = exp(-0.6931472*weight_product_cg*weight_product_cg/(weight_product*weight_product)); */
-
+                    
                     /* this is the stretched new function to look like the old cos^2 function */
                     hybscal = exp(-6.2383246*weight_product_cg/(weight_product));
                     if(bCG1)
@@ -235,7 +235,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                         dy               = iy - jy;      
                         dz               = iz - jz;      
                         rsq              = dx*dx+dy*dy+dz*dz;
-                        rinv             = invsqrt(rsq);
+                        rinv             = gmx_invsqrt(rsq);
                         rinvsq           = rinv*rinv;  
                         fscal            = 0;
                         
@@ -383,7 +383,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                             }
                         } /* end VdW interactions */
                         
-
+                        
 #ifdef ADRESS
                         /* force weight is one anyway */
                         if (bMixed)
@@ -407,6 +407,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     }
                 }
             }
+            
             
             fshift[is3]     += fix;
             fshift[is3+1]   += fiy;

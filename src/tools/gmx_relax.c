@@ -420,7 +420,7 @@ void spectrum(bool bVerbose,
       
       r2  = iprod(dx,dx);
       r6  = r2*r2*r2;
-      r_3 = invsqrt(r6);
+      r_3 = gmx_invsqrt(r6);
       r_6 = r_3*r_3;
       spec[i].rij_3 += r_3;
       spec[i].rij_6 += r_6;

@@ -236,7 +236,7 @@ int gmx_nmtraj(int argc,char *argv[])
   if (bDMA) 
   {
       for(i=0; (i<natoms); i++)
-          invsqrtm[i] = invsqrt(atoms->atom[i].m);
+          invsqrtm[i] = gmx_invsqrt(atoms->atom[i].m);
   }
   else 
   {

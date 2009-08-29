@@ -186,7 +186,7 @@ void nb_kernel130(
                 rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
+                rinv11           = gmx_invsqrt(rsq11);
 
                 /* Load parameters for j atom */
                 qq               = iq*charge[jnr]; 
@@ -429,7 +429,7 @@ void nb_kernel130nf(
                 rsq11            = dx11*dx11+dy11*dy11+dz11*dz11;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
+                rinv11           = gmx_invsqrt(rsq11);
 
                 /* Load parameters for j atom */
                 qq               = iq*charge[jnr]; 

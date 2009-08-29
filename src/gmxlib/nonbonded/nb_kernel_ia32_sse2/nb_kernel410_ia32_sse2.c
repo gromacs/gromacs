@@ -82,7 +82,7 @@ void nb_kernel410_ia32_sse2(int *           p_nri,
 	double        facel,krf,crf,tabscl,gbtabscl,vct,vdwt,nt1,nt2;
 	double        shX,shY,shZ,isai_d,dva,vgbt;
 	gmx_gbdata_t *gbdata;
-	float *        gpol;
+	double *        gpol;
 
 	__m128d       ix,iy,iz,jx,jy,jz;
 	__m128d		  dx,dy,dz,t1,t2,t3;
@@ -335,7 +335,7 @@ void nb_kernel410_ia32_sse2(int *           p_nri,
 			
 			/* .. then fz */
 			_mm_storel_pd(faction+j13+2,xmm7);
-			_mm_storel_pd(faction+j23+2,xmm7);
+			_mm_storeh_pd(faction+j23+2,xmm7);
 		}
 		
 		/* In double precision, offset can only be either 0 or 1 */
@@ -498,6 +498,21 @@ void nb_kernel410_ia32_sse2(int *           p_nri,
 		_mm_store_sd(faction+ii3,fix);
 		_mm_store_sd(faction+ii3+1,fiy);
 		_mm_store_sd(faction+ii3+2,fiz);
+		
+		/* Load i shift forces from memory */
+		xmm1     = _mm_load_sd(fshift+is3);
+		xmm2     = _mm_load_sd(fshift+is3+1);
+		xmm3     = _mm_load_sd(fshift+is3+2);
+		
+		/* Add to i force */
+		fix      = _mm_add_sd(fix,xmm1);
+		fiy      = _mm_add_sd(fiy,xmm2);
+		fiz      = _mm_add_sd(fiz,xmm3);
+		
+		/* store i shift forces to memory */
+		_mm_store_sd(fshift+is3,fix);
+		_mm_store_sd(fshift+is3+1,fiy);
+		_mm_store_sd(fshift+is3+2,fiz);
 		
 		/* now do dvda */
 		dvdatmp  = _mm_unpacklo_pd(dvdatmp,dvdasum);

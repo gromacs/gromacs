@@ -87,7 +87,7 @@ nma_full_hessian(real *           hess,
             {
                 for (k=0; (k<natoms); k++) 
                 {
-                    mass_fac=invsqrt(top->atoms.atom[i].m*top->atoms.atom[k].m);
+                    mass_fac=gmx_invsqrt(top->atoms.atom[i].m*top->atoms.atom[k].m);
                     for (l=0; (l<DIM); l++)
                         hess[(i*DIM+j)*ndim+k*DIM+l]*=mass_fac;
                 }
@@ -109,7 +109,7 @@ nma_full_hessian(real *           hess,
         {
             for(j=0;j<natoms;j++)
             {
-                mass_fac = invsqrt(top->atoms.atom[j].m);
+                mass_fac = gmx_invsqrt(top->atoms.atom[j].m);
                 for (k=0; (k<DIM); k++) 
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
@@ -153,7 +153,7 @@ nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
                 {
                     col = sparse_hessian->data[row][k].col;
                     katom = col/3;
-                    mass_fac=invsqrt(top->atoms.atom[iatom].m*top->atoms.atom[katom].m);
+                    mass_fac=gmx_invsqrt(top->atoms.atom[iatom].m*top->atoms.atom[katom].m);
                     sparse_hessian->data[row][k].value *=mass_fac;
                 }
             }
@@ -171,7 +171,7 @@ nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
         {
             for(j=0;j<natoms;j++)
             {
-                mass_fac = invsqrt(top->atoms.atom[j].m);
+                mass_fac = gmx_invsqrt(top->atoms.atom[j].m);
                 for (k=0; (k<DIM); k++) 
                 {
                     eigenvectors[i*ndim+j*DIM+k] *= mass_fac;

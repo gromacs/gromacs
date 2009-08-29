@@ -600,7 +600,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (inputrec->implicit_solvent && bNS) 
     {
         make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm,inputrec->rlist,
-                       x,fr,&top->idef,fr->born);
+                       x,box,fr,&top->idef,graph,fr->born);
     }
 	
     if (DOMAINDECOMP(cr))

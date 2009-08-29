@@ -142,7 +142,7 @@ int gmx_nmens(int argc,char *argv[])
   snew(invsqrtm,natoms);
   if (bDMA) {
     for(i=0; (i<natoms); i++)
-      invsqrtm[i] = invsqrt(atoms->atom[index[i]].m);
+      invsqrtm[i] = gmx_invsqrt(atoms->atom[index[i]].m);
   } else {
     for(i=0; (i<natoms); i++)
       invsqrtm[i]=1.0;

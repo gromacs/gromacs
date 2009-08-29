@@ -399,7 +399,7 @@ static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
   snew(d->fcalt,d->nreplica);
   snew(d->icalt,d->nreplica);
   
-  convert_times(d->nframe,d->time);
+  /* convert_times(d->nframe,d->time); */
   
   if (t0 < 0)
     d->j0 = 0;
@@ -550,8 +550,10 @@ static void print_tau(FILE *gp,t_remd_data *d,real tref)
   }
 }
 
-static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char *rfn,
-			  char *efn,char *mfn,int skip,real tref)
+static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
+				 const char *fn2,const char *rfn,
+				 const char *efn,const char *mfn,int skip,real tref,
+				 output_env_t oenv)
 {
   FILE *fp,*hp;
   int  i,j,np=d->nparams;
@@ -570,8 +572,8 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char
   norm = (d->bDiscrete ? 1.0/d->nmask : 1.0);
   
   if (fn) {
-    fp = xvgropen(fn,"Optimized fit to data","Time (ps)","Fraction Folded");
-    xvgr_legend(fp,asize(leg),leg);
+    fp = xvgropen(fn,"Optimized fit to data","Time (ps)","Fraction Folded",oenv);
+    xvgr_legend(fp,asize(leg),leg,oenv);
     for(i=0; (i<d->nframe); i++) {
       if ((skip <= 0) || ((i % skip) == 0)) {
 	fprintf(fp,"%12.5e  %12.5e  %12.5e  %12.5e\n",d->time[i],
@@ -589,8 +591,8 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char
       sprintf(rleg[2*i],"\\f{4}F(t) %d",i);
       sprintf(rleg[2*i+1],"\\f{12}F \\f{4}(t) %d",i);
     }
-    fp = xvgropen(rfn,"Optimized fit to data","Time (ps)","Fraction Folded");
-    xvgr_legend(fp,d->nreplica*2,rleg);
+    fp = xvgropen(rfn,"Optimized fit to data","Time (ps)","Fraction Folded",oenv);
+    xvgr_legend(fp,d->nreplica*2,rleg,oenv);
     for(j=0; (j<d->nframe); j++) {
       if ((skip <= 0) || ((j % skip) == 0)) {
 	fprintf(fp,"%12.5e",d->time[j]);
@@ -604,8 +606,8 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char
 
   if (fn2 && (d->nstate > 2)) {
     fp = xvgropen(fn2,"Optimized fit to data","Time (ps)",
-		  "Fraction Intermediate");
-    xvgr_legend(fp,asize(leg),leg);
+		  "Fraction Intermediate",oenv);
+    xvgr_legend(fp,asize(leg),leg,oenv);
     for(i=0; (i<d->nframe); i++) {
       if ((skip <= 0) || ((i % skip) == 0))
 	fprintf(fp,"%12.5e  %12.5e  %12.5e  %12.5e\n",d->time[i],
@@ -616,8 +618,8 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char
   }
   if (mfn) {
     if (bBack(d)) {
-      fp = xvgropen(mfn,"Melting curve","T (K)","");
-      xvgr_legend(fp,asize(mleg),mleg);
+      fp = xvgropen(mfn,"Melting curve","T (K)","",oenv);
+      xvgr_legend(fp,asize(mleg),mleg,oenv);
       for(i=260; (i<=420); i++) {
 	tauf = tau(d->params[epAuf],d->params[epEuf],1.0*i);
 	taub = tau(d->params[epAfu],d->params[epEfu],1.0*i);
@@ -635,7 +637,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char
       params[i] = d->params[i];
     
     hp = xvgropen(efn,"Chi2 as a function of relative parameter",
-		  "Fraction","Chi2");
+		  "Fraction","Chi2",oenv);
     for(j=0; (j<d->nparams); j++) {
       /* Reset all parameters to optimized values */
       fprintf(hp,"@type xy\n");
@@ -754,8 +756,9 @@ int gmx_kinetics(int argc,char *argv[])
   FILE        *fp;
   real        dt_t,dt_d,dt_d2;
   int         nset_t,nset_d,nset_d2,n_t,n_d,n_d2,i;
-  char        *tfile,*dfile,*dfile2;
-  t_remd_data remd;  
+  const char  *tfile,*dfile,*dfile2;
+  t_remd_data remd; 
+  output_env_t oenv; 
   
   t_filenm fnm[] = { 
     { efXVG, "-f",    "temp",    ffREAD   },
@@ -772,7 +775,7 @@ int gmx_kinetics(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE | PCA_TIME_UNIT,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
 
   please_cite(stdout,"Spoel2006d");
   if (cutoff < 0)
@@ -828,7 +831,7 @@ int gmx_kinetics(int argc,char *argv[])
 		       opt2fn_null("-o2",NFILE,fnm),
 		       opt2fn_null("-o3",NFILE,fnm),
 		       opt2fn_null("-ee",NFILE,fnm),
-		       opt2fn("-m",NFILE,fnm),skip,tref);
+		       opt2fn("-m",NFILE,fnm),skip,tref,oenv);
 
   if (bSplit) {
     printf("Splitting set of replicas in two halves\n");
@@ -841,7 +844,7 @@ int gmx_kinetics(int argc,char *argv[])
     }
     sum_ft(&remd);
     optimize_remd_parameters(fp,&remd,maxiter,tol);
-    dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref);
+    dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref,oenv);
     
     for(i=0; (i<remd.nreplica); i++) 
       remd.bMask[i] = !remd.bMask[i];
@@ -849,7 +852,7 @@ int gmx_kinetics(int argc,char *argv[])
     
     sum_ft(&remd);
     optimize_remd_parameters(fp,&remd,maxiter,tol);
-    dump_remd_parameters(fp,&remd,"test2.xvg",NULL,NULL,NULL,NULL,skip,tref);
+    dump_remd_parameters(fp,&remd,"test2.xvg",NULL,NULL,NULL,NULL,skip,tref,oenv);
     
     for(i=0; (i<remd.nreplica); i++) 
       remd.bMask[i] = FALSE;
@@ -860,7 +863,7 @@ int gmx_kinetics(int argc,char *argv[])
     }
     sum_ft(&remd);
     optimize_remd_parameters(fp,&remd,maxiter,tol);
-    dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref);
+    dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref,oenv);
     
     for(i=0; (i<remd.nreplica); i++) 
       remd.bMask[i] = FALSE;
@@ -871,11 +874,11 @@ int gmx_kinetics(int argc,char *argv[])
     }
     sum_ft(&remd);
     optimize_remd_parameters(fp,&remd,maxiter,tol);
-    dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref);
+    dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref,oenv);
   }
   fclose(fp);
   
-  view_all(NFILE, fnm);
+  view_all(NFILE, fnm, oenv);
   
   thanx(stderr);
   
