@@ -29,6 +29,7 @@
 #include <types/simple.h>
 
 #include "../nb_kerneltype.h"
+#include "nb_kernel_allvsall_sse2_single.h"
 
 #ifdef __cplusplus
 extern "C" {

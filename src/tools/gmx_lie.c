@@ -144,13 +144,15 @@ int gmx_lie(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE      *out;
-  int       fp,nre,nframes=0,ct=0;
+  int       nre,nframes=0,ct=0;
+  ener_file_t fp;
   bool      bCont;
   t_liedata *ld;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
   real      lie;
   double    lieaver=0,lieav2=0;
+  output_env_t oenv;
     
   t_filenm fnm[] = { 
     { efEDR, "-f",    "ener",     ffREAD   },
@@ -160,7 +162,7 @@ int gmx_lie(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL,&oenv); 
     
   fp = open_enx(ftp2fn(efEDR,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
@@ -168,7 +170,7 @@ int gmx_lie(int argc,char *argv[])
   ld = analyze_names(nre,enm,ligand);
   snew(fr,1);
   out = xvgropen(ftp2fn(efXVG,NFILE,fnm),"LIE free energy estimate",
-		 "Time (ps)","DGbind (kJ/mol)");
+		 "Time (ps)","DGbind (kJ/mol)",oenv);
   do {
     bCont = do_enx(fp,fr);
     ct    = check_times(fr->t);
@@ -188,7 +190,7 @@ int gmx_lie(int argc,char *argv[])
     printf("DGbind = %.3f (%.3f)\n",lieaver/nframes,
 	   sqrt(lieav2/nframes-sqr(lieaver/nframes)));
   
-  do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
+  do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
     
   thanx(stderr);
 

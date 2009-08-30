@@ -286,7 +286,7 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[],
 static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 			 bool bMissing)
 {
-  int i, j, ii, jj, m, ia, d, rnr;
+  int i, j, ii, jj, m, ia, d, rnr,l=0;
 #define MAXH 4
   rvec xa[4];     /* control atoms for calc_h_pos */
   rvec xh[MAXH]; /* hydrogen positions from calc_h_pos */
@@ -320,7 +320,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
 	      xh[m][d] = 0;
 	    else
 	      xh[m][d] = NOTSET;
-	calc_h_pos(ab[i][j].tp, xa, xh);
+	calc_h_pos(ab[i][j].tp, xa, xh,&l);
 	for(m=0; m<ab[i][j].nr; m++)
 	  copy_rvec(xh[m],ab[i][j+m].newx);
       }

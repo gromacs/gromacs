@@ -857,8 +857,8 @@ void mv_grid(t_commrec *cr,t_grid *grid)
     nr    = cgindex[next+1] - start;
     gmx_rx(cr,GMX_RIGHT,&(ci[start]),nr*sizeof(*ci));
     
-    gmx_tx_wait(GMX_LEFT);
-    gmx_rx_wait(GMX_RIGHT);
+    gmx_tx_wait(cr, GMX_LEFT);
+    gmx_rx_wait(cr, GMX_RIGHT);
     
     cur=next;
   }

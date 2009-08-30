@@ -46,13 +46,13 @@ extern "C" {
 
 #include "typedefs.h"
 
-extern void do_view(const char *fn, const char *opts);
+extern void do_view(const output_env_t oenv,const char *fn, const char *opts);
 /* forks off appropriate command to view file.
  * currently eps, xpm, xvg and pdb are supported 
  * defaults are provided, can be overriden with environment vars 
  */
 
-extern void view_all(int nf, t_filenm fnm[]);
+extern void view_all(const output_env_t oenv,int nf, t_filenm fnm[]);
 /* calls do_view for all viewable output files in fnm[] */
  
 #ifdef __cplusplus

@@ -73,23 +73,23 @@ int nframes_read(void)
   return __frame;
 }
 
-static void printcount_(const char *l,real t)
+static void printcount_(const output_env_t oenv,const char *l,real t)
 {
   if ((__frame < 2*SKIP1 || __frame % SKIP1 == 0) &&
       (__frame < 2*SKIP2 || __frame % SKIP2 == 0) &&
       (__frame < 2*SKIP3 || __frame % SKIP3 == 0))
-    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,convert_time(t));
+    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,conv_time(oenv,t));
 }
 
-static void printcount(real t,bool bSkip)
+static void printcount(const output_env_t oenv,real t,bool bSkip)
 {
   __frame++;
-  printcount_(bSkip ? "Skipping frame" : "Reading frame",t);
+  printcount_(oenv,bSkip ? "Skipping frame" : "Reading frame",t);
 }
 
-static void printlast(real t)
+static void printlast(const output_env_t oenv,real t)
 {
-  printcount_("Last frame",t);
+  printcount_(oenv,"Last frame",t);
   fprintf(stderr,"\n");
 }
 
@@ -504,7 +504,8 @@ static bool do_read_xyz(FILE *status,int natoms,rvec x[],matrix box)
   return TRUE;
 }
 
-static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
+static bool xyz_next_x(FILE *status, const output_env_t oenv,
+                       real *t, int natoms, rvec x[], matrix box)
      /* Reads until a new x can be found (return TRUE)
       * or eof (return FALSE)
       */
@@ -515,25 +516,26 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
   while (!bTimeSet(TBEGIN) || (*t < rTimeValue(TBEGIN))) {
     if (!do_read_xyz(status,natoms,x,box))
       return FALSE;
-    printcount(*t,FALSE);
+    printcount(oenv,*t,FALSE);
     *t+=DT;
     pt=*t;
   }
   if (!bTimeSet(TEND) || (*t <= rTimeValue(TEND))) {
     if (!do_read_xyz(status,natoms,x,box)) {
-      printlast(*t);
+      printlast(oenv,*t);
       return FALSE;
     }
-    printcount(*t,FALSE);
+    printcount(oenv,*t,FALSE);
     pt=*t;
     *t+=DT;
     return TRUE;
   }
-  printlast(pt);
+  printlast(oenv,pt);
   return FALSE;
 }
 
-static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
+static int xyz_first_x(FILE *status, const output_env_t oenv, 
+                       real *t, rvec **x, matrix box)
 /* Reads status, mallocs x, and returns x and box
  * Returns natoms when succesful, FALSE otherwise
  */
@@ -550,7 +552,7 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 
   snew(*x,NATOMS);
   *t=DT;
-  if (!xyz_next_x(status,t,NATOMS,*x,box)) 
+  if (!xyz_next_x(status,oenv,t,NATOMS,*x,box)) 
     return 0;
   *t=0.0;
   
@@ -626,7 +628,7 @@ static int pdb_first_x(FILE *status, t_trxframe *fr)
   return fr->natoms;
 }
 
-bool read_next_frame(int status,t_trxframe *fr)
+bool read_next_frame(const output_env_t oenv,int status,t_trxframe *fr)
 {
   real pt;
   int  ct;
@@ -653,7 +655,8 @@ bool read_next_frame(int status,t_trxframe *fr)
       bRet = (fr->natoms > 0);
       break;
     case efG87:
-      bRet = xyz_next_x(gmx_fio_getfp(status),&fr->time,fr->natoms,fr->x,fr->box);
+      bRet = xyz_next_x(gmx_fio_getfp(status),oenv,&fr->time,fr->natoms,
+                        fr->x,fr->box);
       fr->bTime = bRet;
       fr->bX    = bRet;
       fr->bBox  = bRet;
@@ -704,11 +707,11 @@ bool read_next_frame(int status,t_trxframe *fr)
       if (!bMissingData) {
 	ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf,fr->bDouble);
 	if (ct == 0 || (fr->flags & TRX_DONT_SKIP && ct<0)) {
-	  printcount(fr->time,FALSE);
+	  printcount(oenv,fr->time,FALSE);
 	} else if (ct > 0)
 	  bRet = FALSE;
 	else {
-	  printcount(fr->time,TRUE);
+	  printcount(oenv,fr->time,TRUE);
 	  bSkip = TRUE;
 	}
       }
@@ -717,7 +720,7 @@ bool read_next_frame(int status,t_trxframe *fr)
   } while (bRet && (bMissingData || bSkip));
   
   if (!bRet) {
-    printlast(pt);
+    printlast(oenv,pt);
     if (fr->not_ok)
       printincomp(fr);
   }
@@ -725,7 +728,8 @@ bool read_next_frame(int status,t_trxframe *fr)
   return bRet;
 }
 
-int read_first_frame(int *status,const char *fn,t_trxframe *fr,int flags)
+int read_first_frame(const output_env_t oenv,int *status,
+                     const char *fn,t_trxframe *fr,int flags)
 {
   int  fp;
   bool bFirst,bOK;
@@ -758,12 +762,12 @@ int read_first_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     fp = *status =gmx_fio_open(fn,"r");
     break;
   case efG87:
-    fr->natoms=xyz_first_x(gmx_fio_getfp(fp),&fr->time,&fr->x,fr->box);
+    fr->natoms=xyz_first_x(gmx_fio_getfp(fp),oenv,&fr->time,&fr->x,fr->box);
     if (fr->natoms) {
       fr->bTime = TRUE;
       fr->bX    = TRUE;
       fr->bBox  = TRUE;
-      printcount(fr->time,FALSE);
+      printcount(oenv,fr->time,FALSE);
     }
     bFirst = FALSE;
     break;
@@ -785,19 +789,19 @@ int read_first_frame(int *status,const char *fn,t_trxframe *fr,int flags)
       fr->bTime = TRUE;
       fr->bX    = TRUE;
       fr->bBox  = TRUE;
-      printcount(fr->time,FALSE);
+      printcount(oenv,fr->time,FALSE);
     }
     bFirst = FALSE;
     break;
   case efPDB:
     pdb_first_x(gmx_fio_getfp(fp),fr);
     if (fr->natoms)
-      printcount(fr->time,FALSE);
+      printcount(oenv,fr->time,FALSE);
     bFirst = FALSE;
     break;
   case efGRO:
     if (gro_first_x_or_v(gmx_fio_getfp(fp),fr))
-      printcount(fr->time,FALSE);
+      printcount(oenv,fr->time,FALSE);
     bFirst = FALSE;
     break;
   default:
@@ -808,7 +812,7 @@ int read_first_frame(int *status,const char *fn,t_trxframe *fr,int flags)
   if (bFirst || 
       (!(fr->flags & TRX_DONT_SKIP) && check_times(fr->time) < 0))
     /* Read a frame when no frame was read or the first was skipped */
-    if (!read_next_frame(*status,fr))
+    if (!read_next_frame(oenv,*status,fr))
       return FALSE;
   fr->t0 = fr->time;
   
@@ -817,12 +821,12 @@ int read_first_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 
 /***** C O O R D I N A T E   S T U F F *****/
 
-int read_first_x(int *status,const char *fn,
+int read_first_x(const output_env_t oenv,int *status,const char *fn,
 		 real *t,rvec **x,matrix box)
 {
   t_trxframe fr;
 
-  read_first_frame(status,fn,&fr,TRX_NEED_X);
+  read_first_frame(oenv,status,fn,&fr,TRX_NEED_X);
   if (*status >= nxframe) {
     nxframe = *status+1;
     srenew(xframe,nxframe);
@@ -835,12 +839,13 @@ int read_first_x(int *status,const char *fn,
   return xframe[*status].natoms;
 }
 
-bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
+bool read_next_x(const output_env_t oenv, int status,real *t, int natoms, 
+                 rvec x[], matrix box)
 {
   bool bRet;
   
   xframe[status].x = x;
-  bRet = read_next_frame(status,&xframe[status]);
+  bRet = read_next_frame(oenv,status,&xframe[status]);
   *t = xframe[status].time;
   copy_mat(xframe[status].box,box);
   
@@ -870,11 +875,12 @@ static void clear_v(t_trxframe *fr)
       clear_rvec(fr->v[i]);
 }
 
-int read_first_v(int *status,const char *fn,real *t,rvec **v,matrix box)
+int read_first_v(const output_env_t oenv, int *status,const char *fn,real *t,
+                 rvec **v,matrix box)
 {
   t_trxframe fr;
 
-  read_first_frame(status,fn,&fr,TRX_NEED_V);
+  read_first_frame(oenv,status,fn,&fr,TRX_NEED_V);
   *t = fr.time;
   clear_v(&fr);
   *v = fr.v;
@@ -883,7 +889,8 @@ int read_first_v(int *status,const char *fn,real *t,rvec **v,matrix box)
   return fr.natoms;
 }
 
-bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
+bool read_next_v(const output_env_t oenv,int status,real *t,int natoms,rvec v[],
+                 matrix box)
 {
   t_trxframe fr;
   bool bRet;
@@ -893,7 +900,7 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
   fr.natoms = natoms;
   fr.time = *t;
   fr.v = v;
-  bRet = read_next_frame(status,&fr);
+  bRet = read_next_frame(oenv,status,&fr);
   *t = fr.time;
   clear_v(&fr);
   copy_mat(fr.box,box);

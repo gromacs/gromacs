@@ -122,7 +122,7 @@ static void copy2range(int D,real c[],t_range r[])
   }
 }
 
-t_genalg *init_ga(FILE *fplog,char *infile,int D,t_range range[])
+t_genalg *init_ga(FILE *fplog,const char *infile,int D,t_range range[])
 {
   FILE     *fpin_ptr;
   t_genalg *ga;

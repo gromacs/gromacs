@@ -168,7 +168,7 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
     symc  = 0;
     sscanf(sg,"%c %d %d %d",&ident,&syma,&symb,&symc);
     if (ident == 'P' && syma ==  1 && symb <= 1 && symc <= 1) {
-      fc = atof(sc)*0.1;
+      fc = strtod(sc,NULL)*0.1;
       ePBC_file = (fc > 0 ? epbcXYZ : epbcXY);
     }
     if (ident == 'P' && syma == 21 && symb == 1 && symc == 1) {
@@ -180,9 +180,9 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
   }
 
   if (box) {
-    fa = atof(sa)*0.1;
-    fb = atof(sb)*0.1;
-    fc = atof(sc)*0.1;
+    fa = strtod(sa,NULL)*0.1;
+    fb = strtod(sb,NULL)*0.1;
+    fc = strtod(sc,NULL)*0.1;
     if (ePBC_file == epbcSCREW) {
       fa *= 0.5;
     }
@@ -380,7 +380,7 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   trim(anm);
   
   /* Search backwards for number and name only */
-  atomnr = atoi(anr);
+  atomnr = strtol(anr, NULL, 0); 
   for(i=natom-1; (i>=0); i--)
     if ((strcmp(anm,*(atoms->atomname[i])) == 0) && 
 	(atomnr == atoms->pdbinfo[i].atomnr))
@@ -486,7 +486,7 @@ static int read_atom(t_symtab *symtab,
   }
   rnr[k] = nc;
   trim(rnr);
-  resnr = atoi(rnr);
+  resnr = strtol(rnr, NULL, 0); 
   resic = line[j];
   j+=4;
 
@@ -534,16 +534,16 @@ static int read_atom(t_symtab *symtab,
     atomn->atomnumber = atomnumber;
     atomn->elem[0] = '\0';
   }
-  x[natom][XX]=atof(xc)*0.1;
-  x[natom][YY]=atof(yc)*0.1;
-  x[natom][ZZ]=atof(zc)*0.1;
+  x[natom][XX]=strtod(xc,NULL)*0.1;
+  x[natom][YY]=strtod(yc,NULL)*0.1;
+  x[natom][ZZ]=strtod(zc,NULL)*0.1;
   if (atoms->pdbinfo) {
     atoms->pdbinfo[natom].type=type;
-    atoms->pdbinfo[natom].atomnr=atoi(anr);
+    atoms->pdbinfo[natom].atomnr=strtol(anr, NULL, 0); 
     atoms->pdbinfo[natom].altloc=altloc;
     strcpy(atoms->pdbinfo[natom].atomnm,anm_copy);
-    atoms->pdbinfo[natom].bfac=atof(bfac);
-    atoms->pdbinfo[natom].occup=atof(occup);
+    atoms->pdbinfo[natom].bfac=strtod(bfac,NULL);
+    atoms->pdbinfo[natom].occup=strtod(occup,NULL);
   }
   natom++;
   

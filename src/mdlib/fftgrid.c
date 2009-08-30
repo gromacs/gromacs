@@ -178,7 +178,7 @@ t_fftgrid *mk_fftgrid(int          nx,
     else
     {
         grid->workspace =
-            gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+            (real*)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
     }
 #else /* no MPI */
     grid->workspace = (real *)gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));

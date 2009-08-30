@@ -87,7 +87,7 @@ typedef struct {
   t_windata but[NBUT];
 } t_xhighway;
 
-int read_input(t_x11 *x11,char *fn,t_car **cars,t_input *ir)
+int read_input(t_x11 *x11,const char *fn,t_car **cars,t_input *ir)
 {
   FILE   *in;
   int    i,n;
@@ -421,7 +421,7 @@ static bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   return FALSE;
 }
 
-t_xhighway *GetXHW(t_x11 *x11,char *infile)
+t_xhighway *GetXHW(t_x11 *x11,const char *infile)
 {
   t_xhighway *xhw;
   int        i,h,dh,w;
@@ -478,6 +478,7 @@ int main(int argc,char *argv[])
     "number of crashes. Nice for a background CPU-eater. A sample",
     "input file is in $GMXDATA/top/highway.dat"
   };
+  output_env_t oenv;
   t_x11      *x11;
   t_xhighway *xhw;
   t_filenm fnm[] = {
@@ -487,7 +488,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,
-		    0,NULL,asize(desc),desc,0,NULL);
+		    0,NULL,asize(desc),desc,0,NULL,&oenv);
   
   if ((x11=GetX11(&argc,argv))==NULL) {
     fprintf(stderr,"Can't connect to X Server.\n"

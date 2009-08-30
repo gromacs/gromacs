@@ -59,7 +59,7 @@ static char *trim_string(const char *s,char *out, int maxlen)
 {
   int len,i;
  
-  if(strlen(s)>maxlen-1)
+  if(strlen(s)>(size_t)(maxlen-1))
     gmx_fatal(FARGS,"Character buffer size too small\n");
   
   for (; (*s)&&((*s)==' '); s++);

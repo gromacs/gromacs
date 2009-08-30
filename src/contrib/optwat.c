@@ -73,7 +73,7 @@ void do_sim(char *enx,
 
 void get_results(char *enx,real P[],real *epot,int pindex,int eindex)
 {
-  int      fp_ene;
+  ener_file_t fp_ene;
   int      nre,step,ndr,i;
   real     t;
   gmx_enxnm_t *nms=NULL;

@@ -62,10 +62,11 @@
 /* directions.                                                              */
 /****************************************************************************/
 
-void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
+void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 		  real **slOrder, real *slWidth, int *nslices, 
 		  t_topology *top, int ePBC,
-		  int axis, bool bMicel, atom_id micel[], int nmic)
+		  int axis, bool bMicel, atom_id micel[], int nmic,
+                  const output_env_t oenv)
 {
   rvec *x0,              /* coordinates with pbc */
        dipole,           /* dipole moment due to one molecules */
@@ -82,7 +83,7 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
       slice=0,           /* current slice number */
       *count;            /* nr. of atoms in one slice */
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+  if ((natoms = read_first_x(oenv,&status,fn,&t,&x0,box)) == 0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   if (! *nslices)
@@ -190,7 +191,7 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
       }
     }
 
-  } while (read_next_x(status,&t,natoms,x0,box));
+  } while (read_next_x(oenv,status,&t,natoms,x0,box));
   /*********** done with status file **********/
  
   fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
@@ -214,8 +215,8 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
   sfree(x0);  /* free memory used by coordinate arrays */
 }
 
-void h2order_plot(rvec dipole[], real order[], char *afile, 
-		  int nslices, real slWidth)
+void h2order_plot(rvec dipole[], real order[], const char *afile, 
+		  int nslices, real slWidth, const output_env_t oenv)
 {
   FILE       *ord;                /* xvgr files with order parameters  */
   int        slice;               /* loop index     */
@@ -226,7 +227,8 @@ void h2order_plot(rvec dipole[], real order[], char *afile,
   factor = 1.60217733/3.336e-2; 
   fprintf(stderr,"%d slices\n",nslices);
   sprintf(buf,"Water orientation with respect to normal");
-  ord = xvgropen(afile,buf,"box (nm)","mu_x, mu_y, mu_z (D), cosine with normal");
+  ord = xvgropen(afile,buf,
+                 "box (nm)","mu_x, mu_y, mu_z (D), cosine with normal",oenv);
  
   for (slice = 0; slice < nslices; slice++)
     fprintf(ord,"%8.3f %8.3f %8.3f %8.3f %e\n", slWidth*slice, 
@@ -265,6 +267,7 @@ int gmx_h2order(int argc,char *argv[])
     "assigning molecules to slices is different."
   };
 
+  output_env_t oenv;
   real      *slOrder,                       /* av. cosine, per slice      */
             slWidth = 0.0;                  /* width of a slice           */
   rvec      *slDipole;                      
@@ -288,8 +291,9 @@ int gmx_h2order(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE, NFILE,
-		    fnm, asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+  parse_common_args(&argc, argv, 
+                    PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE, NFILE,
+		    fnm, asize(pa),pa,asize(desc),desc,asize(bugs),bugs,&oenv);
   bMicel = opt2bSet("-nm",NFILE,fnm);
 
   top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);   /* read topology file */
@@ -300,12 +304,13 @@ int gmx_h2order(int argc,char *argv[])
     rd_index(opt2fn("-nm",NFILE,fnm), 1, &nmic, &micelle, &micname);
 
   calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder, 
-	       &slWidth, &nslices, top, ePBC, axis, bMicel, micelle, nmic); 
+	       &slWidth, &nslices, top, ePBC, axis, bMicel, micelle, nmic,
+               oenv); 
 
   h2order_plot(slDipole, slOrder, opt2fn("-o",NFILE,fnm), nslices, 
-	       slWidth);
+	       slWidth, oenv);
 
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");      /* view xvgr file */
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");      /* view xvgr file */
   thanx(stderr);
   
   return 0;

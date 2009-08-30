@@ -246,7 +246,7 @@ static void constr_vsite3FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,
   temp[ZZ] = xij[ZZ] + a*xjk[ZZ];
   /* 6 flops */
   
-  c=b*invsqrt(iprod(temp,temp));
+  c=b*gmx_invsqrt(iprod(temp,temp));
   /* 6 + 10 flops */
   
   x[XX] = xi[XX] + c*temp[XX];
@@ -266,13 +266,13 @@ static void constr_vsite3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b, t_pbc
   pbc_rvec_sub(pbc,xk,xj,xjk);
   /* 6 flops */
 
-  invdij = invsqrt(iprod(xij,xij));
+  invdij = gmx_invsqrt(iprod(xij,xij));
   c1 = invdij * invdij * iprod(xij,xjk);
   xp[XX] = xjk[XX] - c1*xij[XX];
   xp[YY] = xjk[YY] - c1*xij[YY];
   xp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
   a1 = a*invdij;
-  b1 = b*invsqrt(iprod(xp,xp));
+  b1 = b*gmx_invsqrt(iprod(xp,xp));
   /* 45 */
   
   x[XX] = xi[XX] + a1*xij[XX] + b1*xp[XX];
@@ -318,7 +318,7 @@ static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
   temp[ZZ] = xij[ZZ] + a*xjk[ZZ] + b*xjl[ZZ];
   /* 12 flops */
   
-  d=c*invsqrt(iprod(temp,temp));
+  d=c*gmx_invsqrt(iprod(temp,temp));
   /* 6 + 10 flops */
   
   x[XX] = xi[XX] + d*temp[XX];
@@ -358,7 +358,7 @@ static void constr_vsite4FDN(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
     cprod(rja,rjb,rm);
     /* 9 flops */
     
-    d=c*invsqrt(norm2(rm));
+    d=c*gmx_invsqrt(norm2(rm));
     /* 5+5+1 flops */
     
     x[XX] = xi[XX] + d*rm[XX];
@@ -719,7 +719,7 @@ static void spread_vsite3FD(t_iatom ia[],real a,real b,
   xix[ZZ]=xij[ZZ]+a*xjk[ZZ];
   /* 6 flops */
   
-  invl=invsqrt(iprod(xix,xix));
+  invl=gmx_invsqrt(iprod(xix,xix));
   c=b*invl;
   /* 4 + ?10? flops */
   
@@ -794,14 +794,14 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
   skj = pbc_rvec_sub(pbc,x[ak],x[aj],xjk);
   /* 6 flops */
   
-  invdij = invsqrt(iprod(xij,xij));
+  invdij = gmx_invsqrt(iprod(xij,xij));
   invdij2 = invdij * invdij;
   c1 = iprod(xij,xjk) * invdij2;
   xperp[XX] = xjk[XX] - c1*xij[XX];
   xperp[YY] = xjk[YY] - c1*xij[YY];
   xperp[ZZ] = xjk[ZZ] - c1*xij[ZZ];
   /* xperp in plane ijk, perp. to ij */
-  invdp = invsqrt(iprod(xperp,xperp));
+  invdp = gmx_invsqrt(iprod(xperp,xperp));
   a1 = a*invdij;
   b1 = b*invdp;
   /* 45 flops */
@@ -957,7 +957,7 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
     xix[m] = xij[m] + a*xjk[m] + b*xjl[m];
   /* 12 flops */
   
-  invl=invsqrt(iprod(xix,xix));
+  invl=gmx_invsqrt(iprod(xix,xix));
   d=c*invl;
   /* 4 + ?10? flops */
 
@@ -1055,7 +1055,7 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     cprod(rja,rjb,rm);
     /* 9 flops */
 
-    invrm=invsqrt(norm2(rm));
+    invrm=gmx_invsqrt(norm2(rm));
     denom=invrm*invrm;
     /* 5+5+2 flops */
     

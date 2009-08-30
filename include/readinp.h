@@ -55,14 +55,14 @@ typedef struct {
 
 
 
-extern t_inpfile *read_inpfile(char *fn,int *ninp,
+extern t_inpfile *read_inpfile(const char *fn,int *ninp,
 			       char **cppopts);
 /* Create & populate a t_inpfile struct from values in file fn. 
    fn = the file name
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
 
-extern void write_inpfile(char *fn,int ninp,t_inpfile inp[],
+extern void write_inpfile(const char *fn,int ninp,t_inpfile inp[],
 			  bool bHaltOnUnknown);
 
 extern void replace_inp_entry(int ninp,t_inpfile *inp,

@@ -138,6 +138,7 @@ int gmx_genconf(int argc, char *argv[])
   int     nres;         /* number of molecules? */
   int     i,j,k,l,m,ndx,nrdx,nx,ny,nz,status=-1;
   bool    bTRX;
+  output_env_t oenv;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
@@ -174,7 +175,7 @@ int gmx_genconf(int argc, char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,asize(bugs),bugs,&oenv);
 
   if (bRandom && (seed == 0))
     seed = make_seed();
@@ -209,7 +210,7 @@ int gmx_genconf(int argc, char *argv[])
   nres=atoms->nres;                /* nr of residues in one element? */
 
   if (bTRX) {
-    if (!read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,boxx))
+    if (!read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,boxx))
       gmx_fatal(FARGS,"No atoms in trajectory %s",ftp2fn(efTRX,NFILE,fnm));
   } else {
     snew(xx,natoms);
@@ -266,7 +267,7 @@ int gmx_genconf(int argc, char *argv[])
 	    atoms->resinfo[nrdx+l].nr += nrdx;
 	}
 	if (bTRX)
-	  if (!read_next_x(status,&t,natoms,xx,boxx) && 
+	  if (!read_next_x(oenv,status,&t,natoms,xx,boxx) && 
 	      ((i+1)*(j+1)*(k+1) < vol))
 	    gmx_fatal(FARGS,"Not enough frames in trajectory");
       }

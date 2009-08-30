@@ -32,10 +32,11 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
-#include "math.h"
-#include "string.h"
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
+
 #include "copyrite.h"
-#include "stdio.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "vec.h"

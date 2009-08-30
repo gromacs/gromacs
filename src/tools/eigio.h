@@ -40,7 +40,7 @@
 
 enum { eWXR_NO, eWXR_YES, eWXR_NOFIT };
 
-extern void read_eigenvectors(char *file,int *natoms,bool *bFit,
+extern void read_eigenvectors(const char *file,int *natoms,bool *bFit,
 			      rvec **xref,bool *bDMR,
 			      rvec **xav,bool *bDMA,
 			      int *nvec, int **eignr, rvec ***eigvec, real **eigval);
@@ -52,7 +52,7 @@ extern void read_eigenvectors(char *file,int *natoms,bool *bFit,
 /* xav is the average/minimum structure is written (t=0).             */
 /* bDMA indicates mass weighted analysis/eigenvectors.                */ 
 
-extern void write_eigenvectors(char *trnname,int natoms,real mat[],
+extern void write_eigenvectors(const char *trnname,int natoms,real mat[],
 			       bool bReverse,int begin,int end,
 			       int WriteXref,rvec *xref,bool bDMR,
 			       rvec xav[],bool bDMA, real *eigval);
@@ -72,10 +72,9 @@ extern void write_eigenvectors(char *trnname,int natoms,real mat[],
  * and the corresponding indices (start counting on 0) in eigvalnr[].
  * Returns the number of values read.
  */
-int 
-read_eigval  (char *          fn,
-              int             nmax,
-              int             eigvalnr[],
-              real            eigval[]);
+int read_eigval  (const char *          fn,
+                  int             nmax,
+                  int             eigvalnr[],
+                  real            eigval[]);
 
 #endif

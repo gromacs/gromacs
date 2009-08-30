@@ -23,8 +23,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 /* Only compile this file if SSE2 intrinsics are available */
@@ -333,10 +333,12 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj13,aj23;
 	int at0,at1,nj0,nj1,offset,taj1,taj2;
+	int shift;
 
 	double factor,gpi_ai,gpi_tmp,gpi2;
+	double shX,shY,shZ;
 	
-	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz;
+	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz,sX,sY,sZ;
 	__m128d t1,t2,t3,rsq11,rinv,rinv2,rinv4,rinv6;
 	__m128d ratio,gpi,rai,raj,vaj,rvdw,mask_cmp;
 	__m128d ccf,dccf,theta,cosq,term,sinq,res,prod;
@@ -355,7 +357,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	
 	factor              = 0.5 * ONE_4PI_EPS0;
 	n                   = 0;
-	
+		
 	/* Keep the compiler happy */
 	raj         = _mm_setzero_pd();
 	vaj         = _mm_setzero_pd();
@@ -374,18 +376,34 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	{
 		ai      = nl->iinr[i];
 		ai3     = ai * 3;
-		nj0     = nl->jindex[ai];
-		nj1     = nl->jindex[ai+1];
+		
+		nj0     = nl->jindex[i];
+		nj1     = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = nl->shift[i];
+		shX     = fr->shift_vec[shift][0];
+		shY     = fr->shift_vec[shift][1];
+		shZ     = fr->shift_vec[shift][2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_pd(&shX);
+		sY = _mm_load1_pd(&shY);
+		sZ = _mm_load1_pd(&shZ);
 		
 		offset  = (nj1-nj0)%2;
 		
 		/* Polarization energy for atom ai */
 		gpi     = _mm_setzero_pd();
 	
-		/* Load particle ai coordinates */
+		/* Load particle ai coordinates and add shifts */
 		ix      = _mm_load1_pd(x+ai3);
 		iy      = _mm_load1_pd(x+ai3+1);
 		iz      = _mm_load1_pd(x+ai3+2);
+		
+		ix      = _mm_add_pd(sX,ix);
+		iy      = _mm_add_pd(sY,iy);
+		iz      = _mm_add_pd(sZ,iz);
 		
 		/* Load particle ai gb_radius */
 		rai     = _mm_set1_pd(top->atomtypes.gb_radius[md->typeA[ai]]);
@@ -476,7 +494,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			ccf       = _mm_mul_pd(four,ccf);
 			xmm3      = _mm_sub_pd(ccf,dccf);
 			icf6      = _mm_mul_pd(xmm3,rinv6);
-			xmm1      = _mm_mul_pd(xmm3,prod);
+			xmm1      = _mm_mul_pd(icf6,prod);
 			xmm2      = _mm_mul_pd(icf6,prod_ai);
 			
 			/* As with single precision, we need to shift stuff around, to change the order of
@@ -547,7 +565,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			
 			prod      = _mm_mul_sd(p4,vaj);
 			icf4      = _mm_mul_sd(ccf,rinv4);
-			xmm2      = _mm_mul_sd(xmm2,prod);
+			xmm2      = _mm_mul_sd(icf4,prod);
 			xmm3      = _mm_mul_sd(icf4,prod_ai);
 			gpi       = _mm_add_sd(gpi,xmm2);
 			
@@ -564,8 +582,9 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 			xmm2      = _mm_mul_sd(icf6,prod_ai);
 			
 			/* Here we only have ai->aj1 and aj1->ai, so we can store directly */
-			_mm_store_sd(fr->dadx+n,xmm1);
-			
+			_mm_storel_pd(fr->dadx+n,xmm1);
+			n         = n + 1;
+			_mm_storel_pd(fr->dadx+n,xmm2);
 			n         = n + 1;
 		} /* End offset */
 
@@ -574,6 +593,9 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 		gpi   = _mm_add_pd(gpi,xmm2);
 		gpi   = _mm_shuffle_pd(gpi,gpi,_MM_SHUFFLE2(1,1));
 			
+		/* Load, add and store atom ai polarisation energy */
+		xmm2 = _mm_load_sd(born->gpol_still_work+ai);
+		gpi = _mm_add_sd(gpi,xmm2);
 		_mm_store_sd(born->gpol_still_work+ai,gpi);
 	}
 	
@@ -591,11 +613,15 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	for(i=0;i<nl->nri;i++)
 	{
 		ai = nl->iinr[i];
-		gpi_ai = born->gpol[ai] + born->gpol_still_work[ai];
-		gpi2   = gpi_ai*gpi_ai;
 		
-		born->bRad[ai]=factor*invsqrt(gpi2);
-		fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
+		if(born->use[ai] != 0)
+		{
+			gpi_ai = born->gpol[ai] + born->gpol_still_work[ai];
+			gpi2   = gpi_ai*gpi_ai;
+			
+			born->bRad[ai]=factor*gmx_invsqrt(gpi2);
+			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+		}
 	}
 	
 	/* Extra (local) communication reqiured for DD */
@@ -613,10 +639,11 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 							const t_atomtypes *atype, double *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj13,aj23,nj0,nj1,at0,at1,offset;
-	int p1, p2;
+	int p1, p2, shift;
 	double rr,sum,sum_tmp,min_rad,rad,doff;
+	double shX,shY,shZ;
 	
-	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz;
+	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz,sX,sY,sZ;
 	__m128d t1,t2,t3,rsq11,rinv,r,rai;
 	__m128d rai_inv,sk,sk2,lij,dlij,duij;
 	__m128d uij,lij2,uij2,lij3,uij3,diff2;
@@ -662,8 +689,19 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 		ai      = nl->iinr[i];
 		ai3     = ai * 3;
 		
-		nj0     = nl->jindex[ai];
-		nj1     = nl->jindex[ai+1];
+		nj0     = nl->jindex[i];
+		nj1     = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = nl->shift[i];
+		shX     = fr->shift_vec[shift][0];
+		shY     = fr->shift_vec[shift][1];
+		shZ     = fr->shift_vec[shift][2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_pd(&shX);
+		sY = _mm_load1_pd(&shY);
+		sZ = _mm_load1_pd(&shZ);
 		
 		offset  = (nj1-nj0)%2;
 		
@@ -676,10 +714,14 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 		/* Zero out sums for polarisation energies */
 		sum_ai  = _mm_setzero_pd();
 		
-		/* Load ai coordinates */
+		/* Load ai coordinates and add shifts */
 		ix       = _mm_load1_pd(x+ai3);
 		iy       = _mm_load1_pd(x+ai3+1);
 		iz       = _mm_load1_pd(x+ai3+2);
+		
+		ix      = _mm_add_pd(sX,ix);
+		iy      = _mm_add_pd(sY,iy);
+		iz      = _mm_add_pd(sZ,iz);
 		
 		sk_ai    = _mm_load1_pd(born->param+ai);
 		sk2_ai   = _mm_mul_pd(sk_ai,sk_ai);
@@ -802,7 +844,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			xmm2   = _mm_mul_pd(sk2_inv,rinv);
 			xmm2   = _mm_add_pd(one,xmm2); 
 			xmm2   = _mm_mul_pd(eigth,xmm2);
-			xmm2   = _mm_mul_pd(xmm2,xmm8); 
+			xmm2   = _mm_mul_pd(xmm2,xmm9); 
 			xmm3   = _mm_mul_pd(log_term, rinv);
 			xmm3   = _mm_mul_pd(xmm3,rinv); 
 			xmm3   = _mm_mul_pd(qrtr,xmm3); 
@@ -906,7 +948,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			xmm2   = _mm_mul_pd(sk2_inv,rinv);
 			xmm2   = _mm_add_pd(one,xmm2); 
 			xmm2   = _mm_mul_pd(eigth,xmm2);
-			xmm2   = _mm_mul_pd(xmm2,xmm8); 
+			xmm2   = _mm_mul_pd(xmm2,xmm9); 
 			xmm3   = _mm_mul_pd(log_term, rinv);
 			xmm3   = _mm_mul_pd(xmm3,rinv); 
 			xmm3   = _mm_mul_pd(qrtr,xmm3); 
@@ -1035,7 +1077,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			xmm2   = _mm_mul_sd(sk2_inv,rinv);
 			xmm2   = _mm_add_sd(one,xmm2); 
 			xmm2   = _mm_mul_sd(eigth,xmm2);
-			xmm2   = _mm_mul_sd(xmm2,xmm8); 
+			xmm2   = _mm_mul_sd(xmm2,xmm9); 
 			xmm3   = _mm_mul_sd(log_term, rinv);
 			xmm3   = _mm_mul_sd(xmm3,rinv); 
 			xmm3   = _mm_mul_sd(qrtr,xmm3); 
@@ -1087,8 +1129,8 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			xmm2      = _mm_mul_sd(half,rinv); 
 			xmm2      = _mm_mul_sd(xmm2,log_term); 
 			xmm1      = _mm_add_sd(xmm1,xmm2); 
-			xmm8      = _mm_mul_sd(neg,diff2); 
-			xmm2      = _mm_mul_sd(xmm8,prod); 
+			xmm9      = _mm_mul_sd(neg,diff2); 
+			xmm2      = _mm_mul_sd(xmm9,prod); 
 			tmp       = _mm_add_sd(xmm1,xmm2); 
 			
 			/* contitional for rai<sk-dr */
@@ -1135,7 +1177,7 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 			xmm2   = _mm_mul_sd(sk2_inv,rinv);
 			xmm2   = _mm_add_sd(one,xmm2); 
 			xmm2   = _mm_mul_sd(eigth,xmm2);
-			xmm2   = _mm_mul_sd(xmm2,xmm8); 
+			xmm2   = _mm_mul_sd(xmm2,xmm9); 
 			xmm3   = _mm_mul_sd(log_term, rinv);
 			xmm3   = _mm_mul_sd(xmm3,rinv); 
 			xmm3   = _mm_mul_sd(qrtr,xmm3); 
@@ -1178,13 +1220,17 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 	for(i=0;i<nl->nri;i++)
 	{
 		ai      = nl->iinr[i];
-		rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doff; 
-		sum     = 1.0/rr - born->gpol_hct_work[ai];
-		min_rad = rr + doff;
-		rad     = 1.0/sum;  
 		
-		born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-		fr->invsqrta[ai] = invsqrt(born->bRad[ai]);
+		if(born->use[ai] != 0)
+		{
+			rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doff; 
+			sum     = 1.0/rr - born->gpol_hct_work[ai];
+			min_rad = rr + doff;
+			rad     = 1.0/sum;  
+			
+			born->bRad[ai]   = rad > min_rad ? rad : min_rad;
+			fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+		}
 	}
 	
 	/* Extra (local) communication required for DD */
@@ -1202,11 +1248,12 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 							const t_atomtypes *atype, double *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md)
 {
 	int i,k,n,ai,ai3,aj1,aj2,aj13,aj23,nj0,nj1,at0,at1,offset;
-	int p1,p2,p3,p4;
+	int p1,p2,p3,p4,shift;
 	double rr,sum,sum_tmp,sum2,sum3,min_rad,rad,doff;
 	double tsum,tchain,rr_inv,rr_inv2,gbr;
+	double shX,shY,shZ;
 	
-	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz;
+	__m128d ix,iy,iz,jx,jy,jz,dx,dy,dz,sX,sY,sZ;
 	__m128d t1,t2,t3,rsq11,rinv,r,rai;
 	__m128d rai_inv,sk,sk2,lij,dlij,duij;
 	__m128d uij,lij2,uij2,lij3,uij3,diff2;
@@ -1246,14 +1293,25 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 	{
 		born->gpol_hct_work[i] = 0;
 	}
-
+	
 	for(i=0;i<nl->nri;i++)
 	{
 		ai      = nl->iinr[i];
 		ai3     = ai * 3;
 		
-		nj0     = nl->jindex[ai];
-		nj1     = nl->jindex[ai+1];
+		nj0     = nl->jindex[i];
+		nj1     = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = nl->shift[i];
+		shX     = fr->shift_vec[shift][0];
+		shY     = fr->shift_vec[shift][1];
+		shZ     = fr->shift_vec[shift][2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_pd(&shX);
+		sY = _mm_load1_pd(&shY);
+		sZ = _mm_load1_pd(&shZ);
 		
 		offset  = (nj1-nj0)%2;
 		
@@ -1263,10 +1321,14 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 		rr      = 1.0/rr;
 		rai_inv = _mm_load1_pd(&rr);
 		
-		/* Load ai coordinates */
+		/* Load ai coordinates and add shifts */
 		ix       = _mm_load1_pd(x+ai3);
 		iy       = _mm_load1_pd(x+ai3+1);
 		iz       = _mm_load1_pd(x+ai3+2);
+		
+		ix      = _mm_add_pd(sX,ix);
+		iy      = _mm_add_pd(sY,iy);
+		iz      = _mm_add_pd(sZ,iz);
 		
 		/* Zero out sums for polarisation energies */
 		sum_ai = _mm_setzero_pd();
@@ -1278,7 +1340,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 		{
 			aj1  = nl->jjnr[k];
 			aj2  = nl->jjnr[k+1];
-			
+		
 			aj13 = aj1 * 3;
 			aj23 = aj2 * 3;
 			
@@ -1393,12 +1455,12 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			xmm2   = _mm_mul_pd(sk2_inv,rinv);
 			xmm2   = _mm_add_pd(one,xmm2); 
 			xmm2   = _mm_mul_pd(eigth,xmm2);
-			xmm2   = _mm_mul_pd(xmm2,xmm8); 
+			xmm2   = _mm_mul_pd(xmm2,xmm9); 
 			xmm3   = _mm_mul_pd(log_term, rinv);
 			xmm3   = _mm_mul_pd(xmm3,rinv); 
 			xmm3   = _mm_mul_pd(qrtr,xmm3); 
 			t3     = _mm_add_pd(xmm2,xmm3); 
-			
+		
 			/* chain rule terms */
 			xmm2   = _mm_mul_pd(dlij,t1); 
 			xmm2   = _mm_add_pd(xmm2,t2);
@@ -1463,7 +1525,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			/* ones are governed by the mask_cmp mask. */
 			tmp     = _mm_mul_pd(half,tmp); 
 			tmp     = _mm_or_pd(_mm_and_pd(mask_cmp,tmp)  ,_mm_andnot_pd(mask_cmp,zero)); /*conditional as a mask*/
-			
+		
 			/* Load, add and store ai->aj pol energy */
 			xmm7    = _mm_loadl_pd(xmm7,born->gpol_hct_work+aj1);
 			xmm7    = _mm_loadh_pd(xmm7,born->gpol_hct_work+aj2);
@@ -1497,12 +1559,12 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			xmm2   = _mm_mul_pd(sk2_inv,rinv);
 			xmm2   = _mm_add_pd(one,xmm2); 
 			xmm2   = _mm_mul_pd(eigth,xmm2);
-			xmm2   = _mm_mul_pd(xmm2,xmm8); 
+			xmm2   = _mm_mul_pd(xmm2,xmm9); 
 			xmm3   = _mm_mul_pd(log_term, rinv);
 			xmm3   = _mm_mul_pd(xmm3,rinv); 
 			xmm3   = _mm_mul_pd(qrtr,xmm3); 
 			t3     = _mm_add_pd(xmm2,xmm3); 
-			
+						
 			/* chain rule terms */
 			xmm2   = _mm_mul_pd(dlij,t1); 
 			xmm2   = _mm_add_pd(xmm2,t2);
@@ -1526,7 +1588,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			aj1       = nl->jjnr[k];
 			aj13      = aj1 * 3;
 			p1        = md->typeA[aj1];
-			
+		
 			jx        = _mm_load_sd(x+aj13);
 			jy        = _mm_load_sd(x+aj13+1);
 			jz        = _mm_load_sd(x+aj13+2);
@@ -1584,6 +1646,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			xmm1      = _mm_add_sd(xmm1,xmm2); 
 			xmm9      = _mm_mul_sd(neg,diff2); 
 			xmm2      = _mm_mul_sd(xmm9,prod); 
+			
 			tmp_ai    = _mm_add_sd(xmm1,xmm2); 
 			
 			/* contitional for rai<sk-dr */
@@ -1625,7 +1688,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			xmm2   = _mm_mul_sd(sk2_inv,rinv);
 			xmm2   = _mm_add_sd(one,xmm2); 
 			xmm2   = _mm_mul_sd(eigth,xmm2);
-			xmm2   = _mm_mul_sd(xmm2,xmm8); 
+			xmm2   = _mm_mul_sd(xmm2,xmm9); 
 			xmm3   = _mm_mul_sd(log_term, rinv);
 			xmm3   = _mm_mul_sd(xmm3,rinv); 
 			xmm3   = _mm_mul_sd(qrtr,xmm3); 
@@ -1674,8 +1737,8 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			xmm2      = _mm_mul_sd(half,rinv); 
 			xmm2      = _mm_mul_sd(xmm2,log_term); 
 			xmm1      = _mm_add_sd(xmm1,xmm2); 
-			xmm8      = _mm_mul_sd(neg,diff2); 
-			xmm2      = _mm_mul_sd(xmm8,prod); 
+			xmm9      = _mm_mul_sd(neg,diff2); 
+			xmm2      = _mm_mul_sd(xmm9,prod); 
 			tmp       = _mm_add_sd(xmm1,xmm2); 
 			
 			/* contitional for raj<sk_ai-dr */
@@ -1722,7 +1785,7 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 			xmm2   = _mm_mul_sd(sk2_inv,rinv);
 			xmm2   = _mm_add_sd(one,xmm2); 
 			xmm2   = _mm_mul_sd(eigth,xmm2);
-			xmm2   = _mm_mul_sd(xmm2,xmm8); 
+			xmm2   = _mm_mul_sd(xmm2,xmm9); 
 			xmm3   = _mm_mul_sd(log_term, rinv);
 			xmm3   = _mm_mul_sd(xmm3,rinv); 
 			xmm3   = _mm_mul_sd(qrtr,xmm3); 
@@ -1765,22 +1828,26 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 	for(i=0;i<nl->nri;i++)
 	{
 		ai      = nl->iinr[i];
-		rr      = top->atomtypes.gb_radius[md->typeA[ai]];
-		rr_inv2 = 1.0/rr;
-		rr      = rr-doff; 
-		rr_inv  = 1.0/rr;
-		sum     = rr * born->gpol_hct_work[ai];
-		sum2    = sum  * sum;
-		sum3    = sum2 * sum;
 		
-		tsum    = tanh(born->obc_alpha*sum-born->obc_beta*sum2+born->obc_gamma*sum3);
-		born->bRad[ai] = rr_inv - tsum*rr_inv2;
-		born->bRad[ai] = 1.0 / born->bRad[ai];
-		
-		fr->invsqrta[ai]=invsqrt(born->bRad[ai]);
-		
-		tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
-		born->drobc[ai] = (1.0-tsum*tsum)*tchain*rr_inv2;
+		if(born->use[ai] != 0)
+		{
+			rr      = top->atomtypes.gb_radius[md->typeA[ai]];
+			rr_inv2 = 1.0/rr;
+			rr      = rr-doff; 
+			rr_inv  = 1.0/rr;
+			sum     = rr * born->gpol_hct_work[ai];
+			sum2    = sum  * sum;
+			sum3    = sum2 * sum;
+			
+			tsum    = tanh(born->obc_alpha*sum-born->obc_beta*sum2+born->obc_gamma*sum3);
+			born->bRad[ai] = rr_inv - tsum*rr_inv2;
+			born->bRad[ai] = 1.0 / born->bRad[ai];
+			
+			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+			
+			tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
+			born->drobc[ai] = (1.0-tsum*tsum)*tchain*rr_inv2;
+		}
 	}
 	
 	/* Extra (local) communication required for DD */
@@ -1791,20 +1858,21 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 		dd_atom_spread_real(cr->dd, born->drobc);
 	}
 	
-	
 	return 0;
 
 }
 
 
 int
-calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dvda, double *xd, double *f, int gb_algorithm, gmx_genborn_t *born)
+calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dvda, double *xd, double *f, 
+							  double *fshift, double *shift_vec, int gb_algorithm, gmx_genborn_t *born)
 {
 	int i,k,n,ai,aj,ai3,aj1,aj2,aj13,aj23,aj4,nj0,nj1,offset;
-	double rbi;
+	int shift;
+	double rbi,shX,shY,shZ;
 	double *rb;
 	
-	__m128d ix,iy,iz,jx,jy,jz,fix,fiy,fiz;
+	__m128d ix,iy,iz,jx,jy,jz,fix,fiy,fiz,sX,sY,sZ;
 	__m128d dx,dy,dz,t1,t2,t3,dva,dvaj,dax,dax_ai,fgb,fgb_ai;
 	__m128d xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8;
 	
@@ -1843,15 +1911,30 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 		ai     = nl->iinr[i];
 		ai3    = ai * 3;
 		
-		nj0    = nl->jindex[ai];
-		nj1    = nl->jindex[ai+1];
+		nj0    = nl->jindex[i];
+		nj1    = nl->jindex[i+1];
+		
+		/* Load shifts for this list */
+		shift   = 3*nl->shift[i];
+		shX     = shift_vec[shift+0];
+		shY     = shift_vec[shift+1];
+		shZ     = shift_vec[shift+2];
+		
+		/* Splat the shifts */
+		sX = _mm_load1_pd(&shX);
+		sY = _mm_load1_pd(&shY);
+		sZ = _mm_load1_pd(&shZ);
 		
 		offset = (nj1-nj0)%2;
 		
-		/* Load particle ai coordinates */
+		/* Load particle ai coordinates and add shifts */
 		ix  = _mm_load1_pd(xd+ai3);
 		iy  = _mm_load1_pd(xd+ai3+1);
 		iz  = _mm_load1_pd(xd+ai3+2);
+		
+		ix      = _mm_add_pd(sX,ix);
+		iy      = _mm_add_pd(sY,iy);
+		iz      = _mm_add_pd(sZ,iz);
 		
 		/* Load particle ai dvda */
 		dva = _mm_load1_pd(rb+ai);
@@ -2006,20 +2089,31 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 		fiy      = _mm_shuffle_pd(fiy,fiy,_MM_SHUFFLE2(1,1));
 		fiz      = _mm_shuffle_pd(fiz,fiz,_MM_SHUFFLE2(1,1));
 		
-		/* Load i forces from memory */
+		/* load, add and store i forces */
 		xmm1     = _mm_load_sd(f+ai3);
 		xmm2     = _mm_load_sd(f+ai3+1);
 		xmm3     = _mm_load_sd(f+ai3+2);
 		
-		/* Add to i force */
 		fix      = _mm_add_sd(fix,xmm1);
 		fiy      = _mm_add_sd(fiy,xmm2);
 		fiz      = _mm_add_sd(fiz,xmm3);
 		
-		/* store i forces to memory */
 		_mm_store_sd(f+ai3,fix);
 		_mm_store_sd(f+ai3+1,fiy);
 		_mm_store_sd(f+ai3+2,fiz);
+		
+		/* load, add and store i shift forces */
+		xmm1     = _mm_load_sd(fshift+shift);
+		xmm2     = _mm_load_sd(fshift+shift+1);
+		xmm3     = _mm_load_sd(fshift+shift+2);
+		
+		fix      = _mm_add_sd(fix,xmm1);
+		fiy      = _mm_add_sd(fiy,xmm2);
+		fiz      = _mm_add_sd(fiz,xmm3);
+		
+		_mm_store_sd(fshift+shift,fix);
+		_mm_store_sd(fshift+shift+1,fiy);
+		_mm_store_sd(fshift+shift+2,fiz);
 
 	}
 	

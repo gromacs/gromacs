@@ -83,8 +83,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #include "mpelogging.h"
@@ -104,6 +104,8 @@
 #ifdef GMX_MPI
 MPI_Datatype  rvec_mpi;
 #endif
+
+/* TODO: fix thread-safety */
 
 /* Internal datastructures */
 typedef struct {
@@ -1550,7 +1552,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
     atc->nslab  = 1;
     atc->nodeid = 0;
 #ifdef GMX_MPI
-    if (gmx_parallel_env)
+    if (gmx_parallel_env())
     {
         atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
@@ -1674,7 +1676,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     pme->nnodes  = 1;
     pme->bPPnode = TRUE;
 #ifdef GMX_MPI
-    if (gmx_parallel_env)
+    if (gmx_parallel_env())
     {
         pme->mpi_comm = cr->mpi_comm_mygroup;
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
@@ -2011,7 +2013,7 @@ int gmx_pme_do(gmx_pme_t pme,
         if (debug) {
             fprintf(debug,"PME: nnodes = %d, nodeid = %d\n",
                     cr->nnodes,cr->nodeid);
-            fprintf(debug,"Grid = %p\n",grid);
+            fprintf(debug,"Grid = %p\n",(void*)grid);
             if (grid == NULL)
                 gmx_fatal(FARGS,"No grid!");
         }

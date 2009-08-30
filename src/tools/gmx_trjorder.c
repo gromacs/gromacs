@@ -125,6 +125,7 @@ int gmx_trjorder(int argc,char *argv[])
   char       **grpname,title[256];
   int        i,j,*isize;
   atom_id    sa,sr,*swi,**index;
+  output_env_t oenv;
 #define REF 0
 #define SOL 1
   t_filenm fnm[] = { 
@@ -138,7 +139,7 @@ int gmx_trjorder(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv); 
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x,NULL,box,TRUE);
   sfree(x);
@@ -150,7 +151,7 @@ int gmx_trjorder(int argc,char *argv[])
   snew(isize,2);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),2,isize,index,grpname);
 
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   if (natoms > top.atoms.nr)
     gmx_fatal(FARGS,"Number of atoms in the run input file is larger than in the trjactory");
   for(i=0; (i<2); i++)
@@ -179,7 +180,7 @@ int gmx_trjorder(int argc,char *argv[])
   if (bNShell) {
     rcut2   = rcut*rcut;
     fp = xvgropen(opt2fn("-nshell",NFILE,fnm),"Number of molecules",
-		  "Time (ps)","N");
+		  "Time (ps)","N",oenv);
     printf("Will compute the number of molecules within a radius of %g\n",
 	   rcut);
   }
@@ -254,7 +255,7 @@ int gmx_trjorder(int argc,char *argv[])
       }
       write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL,NULL);
     }
-  } while(read_next_x(status,&t,natoms,x,box));
+  } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
   if (out != -1)
     close_trx(out);

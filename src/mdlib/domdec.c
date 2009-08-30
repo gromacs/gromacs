@@ -51,8 +51,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #define DDRANK(dd,rank)    (rank)
@@ -241,6 +241,9 @@ typedef struct gmx_domdec_comm
 
     /* tric_dir is only stored here because dd_get_ns_ranges needs it */
     ivec tric_dir;
+    /* box0 and box_size are required with dim's without pbc and -gcom */
+    rvec box0;
+    rvec box_size;
     
     /* The cell boundaries */
     rvec cell_x0;
@@ -2872,8 +2875,11 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
                           dd->nc[d],dd->nc[d],
                           dd->nnodes > dd->nc[d] ? "cells" : "processors");
             }
-
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
     }
     
@@ -3111,6 +3117,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     real change_limit = 0.1;
     real relax = 0.5;
     bool bPBC;
+    int range[] = { 0, 0 };
 
     comm = dd->comm;
 
@@ -3206,7 +3213,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
             }
         }
     }
-    int range[] = { 0, ncd };
+    range[1]=ncd;
     root->cell_f[0] = 0;
     root->cell_f[ncd] = 1;
     dd_cell_sizes_dlb_root_enforce_limits(dd, d, dim, root, ddbox, bUniform, step, cellsize_limit_f, range);
@@ -6240,8 +6247,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
             }
-            
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
     }
     else
@@ -6268,8 +6278,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                           "Look in the log file for details on the domain decomposition",
                           cr->nnodes-cr->npmenodes,limit,buf);
             }
-            
+#ifdef GMX_MPI
+            MPI_Abort(MPI_COMM_WORLD, 0);
+#else
             exit(0);
+#endif
         }
         set_dd_dim(fplog,dd);
     }
@@ -6380,7 +6393,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         check_dd_restrictions(cr,dd,ir,fplog);
     }
 
-    comm->partition_step = ir->init_step - 1;
+    comm->partition_step = INT_MIN;
     dd->ddp_count = 0;
 
     return dd;
@@ -7959,7 +7972,7 @@ void dd_partition_system(FILE            *fplog,
     gmx_step_t step_pcoupl;
     rvec cell_ns_x0,cell_ns_x1;
     int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
-    bool bBoxChanged,bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad;
+    bool bBoxChanged,bNStGlobalComm,bDoDLB,bCheckDLB,bTurnOnDLB,bLogLoad;
     bool bRedist,bSortCG,bResortAll;
     ivec ncells_old,np;
     real grid_density;
@@ -7994,6 +8007,8 @@ void dd_partition_system(FILE            *fplog,
         }
     }
 
+    bNStGlobalComm = (step >= comm->partition_step + nstglobalcomm);
+
     if (!comm->bDynLoadBal)
     {
         bDoDLB = FALSE;
@@ -8010,7 +8025,7 @@ void dd_partition_system(FILE            *fplog,
         }
         else
         {
-            bDoDLB = (step >= comm->partition_step + nstglobalcomm);
+            bDoDLB = bNStGlobalComm;
         }
     }
 
@@ -8139,7 +8154,10 @@ void dd_partition_system(FILE            *fplog,
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
         dd_set_cginfo(dd->index_gl,0,dd->ncg_home,fr,comm->bLocalCG);
-        
+
+        set_ddbox(dd,bMasterState,cr,ir,state_local->box,
+                  TRUE,&top_local->cgs,state_local->x,&ddbox);
+
         bRedist = comm->bDynLoadBal;
     }
     else
@@ -8149,16 +8167,21 @@ void dd_partition_system(FILE            *fplog,
         /* Clear the non-home indices */
         clear_dd_indices(dd,dd->ncg_home,dd->nat_home);
 
-        /* With DLB we should not call mpi_reduceall
+        /* Avoid global communication for dim's without pbc and -gcom */
+        if (!bNStGlobalComm)
+        {
+            copy_rvec(comm->box0    ,ddbox.box0    );
+            copy_rvec(comm->box_size,ddbox.box_size);
+        }
         set_ddbox(dd,bMasterState,cr,ir,state_local->box,
-                  !comm->bDynLoadBal,&top_local->cgs,state_local->x,&ddbox);
-        */
-        set_ddbox(dd,bMasterState,cr,ir,state_local->box,
-                  TRUE,&top_local->cgs,state_local->x,&ddbox);
+                  bNStGlobalComm,&top_local->cgs,state_local->x,&ddbox);
 
         bBoxChanged = TRUE;
         bRedist = TRUE;
     }
+    /* For dim's without pbc and -gcom */
+    copy_rvec(ddbox.box0    ,comm->box0    );
+    copy_rvec(ddbox.box_size,comm->box_size);
     
     set_dd_cell_sizes(dd,&ddbox,dynamic_dd_box(&ddbox,ir),bMasterState,bDoDLB,
                       step,wcycle);

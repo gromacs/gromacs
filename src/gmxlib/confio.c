@@ -513,7 +513,7 @@ static void read_espresso_conf(const char *infile,
 	      break;
 	    case espTYPE:
 	      r = get_espresso_word(fp,word);
-	      atoms->atom[i].type = atoi(word);
+	      atoms->atom[i].type = strtol(word, NULL, 0);  
 	      break;
 	    case espQ:
 	      r = get_espresso_word(fp,word);
@@ -535,7 +535,7 @@ static void read_espresso_conf(const char *infile,
 	      break;
 	    case espMOLECULE:
 	      r = get_espresso_word(fp,word);
-	      molnr = atoi(word);
+	      molnr = strtol(word, NULL, 0);
 	      if (i == 0 ||
 		  atoms->resinfo[atoms->atom[i-1].resind].nr != molnr) {
 		atoms->atom[i].resind =

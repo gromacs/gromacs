@@ -129,9 +129,9 @@
  */
 typedef struct
 {
-    //! Left edge of the partition.
+    /*! Left edge of the partition.*/
     real                left;
-    //! Bin index corresponding to this partition.
+    /*! Bin index corresponding to this partition.*/
     int                 bin;
 } t_partition_item;
 
@@ -144,9 +144,9 @@ typedef struct
  */
 typedef struct
 {
-    //! Number of partition items (\p p contains \p n+1 items).
+    /*! Number of partition items (\p p contains \p n+1 items).*/
     int                 n;
-    //! Array of partition edges and corresponding bins.
+    /*! Array of partition edges and corresponding bins.*/
     t_partition_item   *p;
 } t_partition;
 
@@ -159,11 +159,11 @@ typedef struct
  */
 typedef struct
 {
-    //! Number of points in the array \p x, -1 if whole bin covered.
+    /*! Number of points in the array \p x, -1 if whole bin covered.*/
     int   n;
-    //! Number of elements allocated for \p x.
+    /*! Number of elements allocated for \p x.*/
     int   n_alloc;
-    //! Array of points that partially cover the bin.
+    /*! Array of points that partially cover the bin.*/
     rvec *x;
 } t_spheresurfacebin;
 
@@ -174,104 +174,104 @@ typedef struct
  */
 typedef struct
 {
-    //! Center of the solid angle.
+    /*! Center of the solid angle.*/
     gmx_ana_pos_t       center;
-    //! Positions that span the solid angle.
+    /*! Positions that span the solid angle.*/
     gmx_ana_pos_t       span;
-    //! Cutoff angle.
+    /*! Cutoff angle.*/
     real                angcut;
-    //! Estimate of the covered fraction.
+    /*! Estimate of the covered fraction.*/
     real                cfrac;
 
-    //! Cutoff for the cosine (equals cos(angcut)).
+    /*! Cutoff for the cosine (equals cos(angcut)).*/
     real                distccut;
-    //! Bin size to be used as the target bin size when constructing the bins.
+    /*! Bin size to be used as the target bin size when constructing the bins.*/
     real                targetbinsize;
 
-    //! Number of bins in the \p tbin array.
+    /*! Number of bins in the \p tbin array.*/
     int                 ntbins;
-    //! Size of one bin in the zenith angle direction.
+    /*! Size of one bin in the zenith angle direction.*/
     real                tbinsize;
-    //! Array of zenith angle slices.
+    /*! Array of zenith angle slices.*/
     t_partition        *tbin;
-    //! Number of elements allocated for the \p bin array.
+    /*! Number of elements allocated for the \p bin array.*/
     int                 maxbins;
-    //! Number of elements used in the \p bin array.
+    /*! Number of elements used in the \p bin array.*/
     int                 nbins;
-    //! Array of individual bins.
+    /*! Array of individual bins.*/
     t_spheresurfacebin *bin;
 } t_methoddata_insolidangle;
 
-//! Allocates data for the \p insolidangle selection method.
+/*! Allocates data for the \p insolidangle selection method.*/
 static void *
 init_data_insolidangle(int npar, gmx_ana_selparam_t *param);
-//! Initializes the \p insolidangle selection method.
+/*! Initializes the \p insolidangle selection method.*/
 static int
 init_insolidangle(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-//! Sets the COM/COG data for the \p insolidangle selection method.
+/*! Sets the COM/COG data for the \p insolidangle selection method.*/
 static void
 set_comg_insolidangle(gmx_ana_pos_t *pos, void *data);
-//! Frees the data allocated for the \p insolidangle selection method.
+/*! Frees the data allocated for the \p insolidangle selection method.*/
 static void
 free_data_insolidangle(void *data);
-//! Initializes the evaluation of the \p insolidangle selection method for a frame.
+/*! Initializes the evaluation of the \p insolidangle selection method for a frame.*/
 static int
 init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
-//! Internal helper function for evaluate_insolidangle().
+/*! Internal helper function for evaluate_insolidangle().*/
 static bool
 accept_insolidangle(rvec x, t_pbc *pbc, void *data);
-//! Evaluates the \p insolidangle selection method.
+/*! Evaluates the \p insolidangle selection method.*/
 static int
 evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
-//! Calculates the distance between unit vectors.
+/*! Calculates the distance between unit vectors.*/
 static real
 sph_distc(rvec x1, rvec x2);
-//! Does a binary search on a \p t_partition to find a bin for a value.
+/*! Does a binary search on a \p t_partition to find a bin for a value.*/
 static int
 find_partition_bin(t_partition *p, real value);
-//! Finds a bin that corresponds to a location on the unit sphere surface.
+/*! Finds a bin that corresponds to a location on the unit sphere surface.*/
 static int
 find_surface_bin(t_methoddata_insolidangle *surf, rvec x);
-//! Clears/initializes the bins on the unit sphere surface.
+/*! Clears/initializes the bins on the unit sphere surface.*/
 static void
 clear_surface_points(t_methoddata_insolidangle *surf);
-//! Frees memory allocated for storing the reference points in the surface bins.
+/*! Frees memory allocated for storing the reference points in the surface bins.*/
 static void
 free_surface_points(t_methoddata_insolidangle *surf);
-//! Adds a reference point to a given bin.
+/*! Adds a reference point to a given bin.*/
 static void
 add_surface_point(t_methoddata_insolidangle *surf, int tbin, int pbin, rvec x);
-//! Marks a bin as completely covered.
+/*! Marks a bin as completely covered.*/
 static void
 mark_surface_covered(t_methoddata_insolidangle *surf, int tbin, int pbin);
-//! Helper function for store_surface_point() to update a single zenith angle bin.
+/*! Helper function for store_surface_point() to update a single zenith angle bin.*/
 static void
 update_surface_bin(t_methoddata_insolidangle *surf, int tbin,
                    real phi, real pdelta1, real pdelta2, real pdeltamax,
                    rvec x);
-//! Adds a single reference point and updates the surface bins.
+/*! Adds a single reference point and updates the surface bins.*/
 static void
 store_surface_point(t_methoddata_insolidangle *surf, rvec x);
-//! Optimizes the surface bins for faster searching.
+/*! Optimizes the surface bins for faster searching.*/
 static void
 optimize_surface_points(t_methoddata_insolidangle *surf);
-//! Estimates the area covered by the reference cones.
+/*! Estimates the area covered by the reference cones.*/
 static real
 estimate_covered_fraction(t_methoddata_insolidangle *surf);
-//! Checks whether a point lies within a solid angle.
+/*! Checks whether a point lies within a solid angle.*/
 static bool
 is_surface_covered(t_methoddata_insolidangle *surf, rvec x);
 
-//! Parameters for the \p insolidangle selection method.
+/*! Parameters for the \p insolidangle selection method.*/
 static gmx_ana_selparam_t smparams_insolidangle[] = {
     {"center", {POS_VALUE,   1, {NULL}}, NULL, SPAR_DYNAMIC},
     {"span",   {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {"cutoff", {REAL_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
 };
 
-//! \internal Selection method data for the \p insolidangle method.
+/*! \internal Selection method data for the \p insolidangle method.*/
 gmx_ana_selmethod_t sm_insolidangle = {
     "insolidangle", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_insolidangle), smparams_insolidangle,

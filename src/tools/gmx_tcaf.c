@@ -70,9 +70,10 @@ rvec v1[NK]={{0,1,0},{0,0,1},{1,0,0}, {0, 0,1},{0, 0,1},{0,1,0}, {0,1, 0},{1,0, 
 rvec v2[NK]={{0,0,1},{1,0,0},{0,1,0}, {1,-1,0},{1, 1,0},{1,0,-1},{1,0, 1},{0,1,-1},{0,1, 1}, {1, 1,-2},{1, 1, 2},{1, 2, 1},{ 2,1, 1}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}, {0,0,1},{1,0,0},{0,1,0}};
 
 static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
-			 real rho,real wt,char *fn_trans,
-			 char *fn_tca,char *fn_tc,char *fn_tcf,char *fn_cub,
-			 char *fn_vk)
+			 real rho,real wt,const char *fn_trans,
+			 const char *fn_tca,const char *fn_tc,
+                         const char *fn_tcf,const char *fn_cub,
+			 const char *fn_vk, const output_env_t oenv)
 {
   FILE *fp,*fp_vk,*fp_cub=NULL;
   int  nk,ntc;
@@ -85,7 +86,8 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   ntc = nk*NPK;
 
   if (fn_trans) {
-    fp = xvgropen(fn_trans,"Transverse Current","Time (ps)","TC (nm/ps)"); 
+    fp = xvgropen(fn_trans,"Transverse Current","Time (ps)","TC (nm/ps)",
+                  oenv); 
     for(i=0; i<nframes; i++) {
       fprintf(fp,"%g",i*dt);
       for(j=0; j<ntc; j++)
@@ -93,7 +95,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fprintf(fp,"\n");
     }
     fclose(fp);
-    do_view(fn_trans,"-nxy");
+    do_view(oenv,fn_trans,"-nxy");
   }
   
   ncorr = (nframes+1)/2;
@@ -111,13 +113,13 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   for(i=0; i<ncorr; i++)
     sig[i]=exp(0.5*i*dt/wt);
   
-  low_do_autocorr(fn_tca,"Transverse Current Autocorrelation Functions",
+  low_do_autocorr(fn_tca,oenv,"Transverse Current Autocorrelation Functions",
 		  nframes,ntc,ncorr,tc,dt,eacNormal,
 		  1,FALSE,FALSE,FALSE,0,0,0,0);
-  do_view(fn_tca,"-nxy");
+  do_view(oenv,fn_tca,"-nxy");
   
   fp = xvgropen(fn_tc,"Transverse Current Autocorrelation Functions",
-		"Time (ps)","TCAF");
+		"Time (ps)","TCAF",oenv);
   for(i=0; i<ncorr; i++) {
     kc = 0;
     fprintf(fp,"%g",i*dt);
@@ -139,11 +141,10 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     fprintf(fp,"\n");
   }
   fclose(fp);
-  do_view(fn_tc,"-nxy");
+  do_view(oenv,fn_tc,"-nxy");
   
   if (fn_cub) {
-    fp_cub = xvgropen(fn_cub,"TCAF's and fits",
-		      "Time (ps)","TCAF");
+    fp_cub = xvgropen(fn_cub,"TCAF's and fits", "Time (ps)","TCAF",oenv);
     for(kc=0; kc<nkc; kc++) {
       fprintf(fp_cub,"%g %g\n",0.0,1.0);
       for(i=1; i<ncorr; i++) {
@@ -156,7 +157,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   }
   
   fp_vk = xvgropen(fn_vk,"Fits","k (nm\\S-1\\N)",
-		   "\\8h\\4 (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)");
+		   "\\8h\\4 (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)",oenv);
   fprintf(fp_vk,"@    s0 symbol 2\n");
   fprintf(fp_vk,"@    s0 symbol color 1\n");
   fprintf(fp_vk,"@    s0 linestyle 0\n");
@@ -164,13 +165,13 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     fprintf(fp_vk,"@    s1 symbol 3\n");
     fprintf(fp_vk,"@    s1 symbol color 2\n");
   }
-  fp = xvgropen(fn_tcf,"TCAF Fits","Time (ps)","");
+  fp = xvgropen(fn_tcf,"TCAF Fits","Time (ps)","",oenv);
   for(k=0; k<nk; k++) {
     tcaf[k][0] = 1.0;
     fitparms[0]  = 1;
     fitparms[1]  = 1;
     do_lmfit(ncorr,tcaf[k],sig,dt,0,0,ncorr*dt,
-	     bDebugMode(),effnVAC,fitparms,0);
+	     oenv,bDebugMode(),effnVAC,fitparms,0);
     eta = 1000*fitparms[1]*rho/
       (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
     fprintf(stdout,"k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
@@ -181,7 +182,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     fprintf(fp,"&\n");
   }
   fclose(fp);
-  do_view(fn_tcf,"-nxy");
+  do_view(oenv,fn_tcf,"-nxy");
 
   if (fn_cub) {
     fprintf(stdout,"Averaged over k-vectors:\n");
@@ -191,10 +192,11 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fitparms[0]  = 1;
       fitparms[1]  = 1;
       do_lmfit(ncorr,tcafc[k],sig,dt,0,0,ncorr*dt,
-	       bDebugMode(),effnVAC,fitparms,0);
+	       oenv,bDebugMode(),effnVAC,fitparms,0);
       eta = 1000*fitparms[1]*rho/
 	(4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
-      fprintf(stdout,"k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
+      fprintf(stdout,
+              "k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
 	      norm(kfac[kset_c[k]]),fitparms[0],fitparms[1],eta);
       fprintf(fp_vk,"%6.3f %g\n",norm(kfac[kset_c[k]]),eta);
       for(i=0; i<ncorr; i++)
@@ -203,10 +205,10 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     }
     fprintf(fp_vk,"&\n");
     fclose(fp_cub);
-    do_view(fn_cub,"-nxy");
+    do_view(oenv,fn_cub,"-nxy");
   }
   fclose(fp_vk);
-  do_view(fn_vk,"-nxy");
+  do_view(oenv,fn_vk,"-nxy");
 }
 
 
@@ -271,6 +273,7 @@ int gmx_tcaf(int argc,char *argv[])
   rvec       mv_mol,cm_mol,kfac[NK];
   int        nkc,nk,ntc;
   real       **c1,**tc;
+  output_env_t oenv;
   
 #define NHISTO 360
     
@@ -294,7 +297,7 @@ int gmx_tcaf(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
     
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
 
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,
 		     TRUE);
@@ -330,7 +333,7 @@ int gmx_tcaf(int argc,char *argv[])
     for(i=0; i<top.atoms.nr; i++)
       sysmass += top.atoms.atom[i].m;
 
-  read_first_frame(&status,ftp2fn(efTRN,NFILE,fnm),&fr,
+  read_first_frame(oenv,&status,ftp2fn(efTRN,NFILE,fnm),&fr,
 		   TRX_NEED_X | TRX_NEED_V);
   t0=fr.time;
   
@@ -397,7 +400,7 @@ int gmx_tcaf(int argc,char *argv[])
     
     t1=fr.time;
     nframes ++;
-  } while (read_next_frame(status,&fr));
+  } while (read_next_frame(oenv,status,&fr));
   close_trj(status);
 
   dt = (t1-t0)/(nframes-1);
@@ -408,7 +411,7 @@ int gmx_tcaf(int argc,char *argv[])
 	       opt2fn_null("-ot",NFILE,fnm),
 	       opt2fn("-oa",NFILE,fnm),opt2fn("-o",NFILE,fnm),
 	       opt2fn("-of",NFILE,fnm),opt2fn_null("-oc",NFILE,fnm),
-	       opt2fn("-ov",NFILE,fnm));
+	       opt2fn("-ov",NFILE,fnm),oenv);
   
   thanx(stderr);
   

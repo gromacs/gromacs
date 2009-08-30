@@ -38,83 +38,83 @@
 #include <position.h>
 #include <selmethod.h>
 
-//! Evaluates the \p all selection keyword.
+/*! Evaluates the \p all selection keyword.*/
 static int
 evaluate_all(t_topology *top, t_trxframe *fr, t_pbc *pbc,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p none selection keyword.
+/*! Evaluates the \p none selection keyword.*/
 static int
 evaluate_none(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p atomnr selection keyword.
+/*! Evaluates the \p atomnr selection keyword.*/
 static int
 evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p resnr selection keyword.
+/*! Evaluates the \p resnr selection keyword.*/
 static int
 evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p name selection keyword.
+/*! Evaluates the \p name selection keyword.*/
 static int
 evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Checks whether atom types are present in the topology.
+/*! Checks whether atom types are present in the topology.*/
 static int
 check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-//! Evaluates the \p type selection keyword.
+/*! Evaluates the \p type selection keyword.*/
 static int
 evaluate_atomtype(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p insertcode selection keyword.
+/*! Evaluates the \p insertcode selection keyword.*/
 static int
 evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p chain selection keyword.
+/*! Evaluates the \p chain selection keyword.*/
 static int
 evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p mass selection keyword.
+/*! Evaluates the \p mass selection keyword.*/
 static int
 evaluate_mass(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p charge selection keyword.
+/*! Evaluates the \p charge selection keyword.*/
 static int
 evaluate_charge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Checks whether PDB info is present in the topology.
+/*! Checks whether PDB info is present in the topology.*/
 static int
 check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-//! Evaluates the \p altloc selection keyword.
+/*! Evaluates the \p altloc selection keyword.*/
 static int
 evaluate_altloc(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p occupancy selection keyword.
+/*! Evaluates the \p occupancy selection keyword.*/
 static int
 evaluate_occupancy(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p betafactor selection keyword.
+/*! Evaluates the \p betafactor selection keyword.*/
 static int
 evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p resname selection keyword.
+/*! Evaluates the \p resname selection keyword.*/
 static int
 evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
-//! Evaluates the \p x selection keyword.
+/*! Evaluates the \p x selection keyword.*/
 static int
 evaluate_x(t_topology *top, t_trxframe *fr, t_pbc *pbc,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p y selection keyword.
+/*! Evaluates the \p y selection keyword.*/
 static int
 evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
-//! Evaluates the \p z selection keyword.
+/*! Evaluates the \p z selection keyword.*/
 static int
 evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
-//! \internal Selection method data for \p all selection keyword.
+/*! \internal Selection method data for \p all selection keyword.*/
 gmx_ana_selmethod_t sm_all = {
     "all", GROUP_VALUE, 0,
     0, NULL,
@@ -128,7 +128,7 @@ gmx_ana_selmethod_t sm_all = {
     NULL,
 };
 
-//! \internal Selection method data for \p none selection keyword.
+/*! \internal Selection method data for \p none selection keyword.*/
 gmx_ana_selmethod_t sm_none = {
     "none", GROUP_VALUE, 0,
     0, NULL,
@@ -142,7 +142,7 @@ gmx_ana_selmethod_t sm_none = {
     NULL,
 };
 
-//! \internal Selection method data for \p atomnr selection keyword.
+/*! \internal Selection method data for \p atomnr selection keyword.*/
 gmx_ana_selmethod_t sm_atomnr = {
     "atomnr", INT_VALUE, 0,
     0, NULL,
@@ -156,7 +156,7 @@ gmx_ana_selmethod_t sm_atomnr = {
     NULL,
 };
 
-//! \internal Selection method data for \p resnr selection keyword.
+/*! \internal Selection method data for \p resnr selection keyword.*/
 gmx_ana_selmethod_t sm_resnr = {
     "resnr", INT_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -170,7 +170,7 @@ gmx_ana_selmethod_t sm_resnr = {
     NULL,
 };
 
-//! \internal Selection method data for \p name selection keyword.
+/*! \internal Selection method data for \p name selection keyword.*/
 gmx_ana_selmethod_t sm_atomname = {
     "name", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -184,7 +184,7 @@ gmx_ana_selmethod_t sm_atomname = {
     NULL,
 };
 
-//! \internal Selection method data for \p type selection keyword.
+/*! \internal Selection method data for \p type selection keyword.*/
 gmx_ana_selmethod_t sm_atomtype = {
     "type", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -198,7 +198,7 @@ gmx_ana_selmethod_t sm_atomtype = {
     NULL,
 };
 
-//! \internal Selection method data for \p resname selection keyword.
+/*! \internal Selection method data for \p resname selection keyword.*/
 gmx_ana_selmethod_t sm_resname = {
     "resname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -212,7 +212,7 @@ gmx_ana_selmethod_t sm_resname = {
     NULL,
 };
 
-//! \internal Selection method data for \p chain selection keyword.
+/*! \internal Selection method data for \p chain selection keyword.*/
 gmx_ana_selmethod_t sm_insertcode = {
     "insertcode", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
@@ -226,7 +226,7 @@ gmx_ana_selmethod_t sm_insertcode = {
     NULL,
 };
 
-//! \internal Selection method data for \p chain selection keyword.
+/*! \internal Selection method data for \p chain selection keyword.*/
 gmx_ana_selmethod_t sm_chain = {
     "chain", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
@@ -240,7 +240,7 @@ gmx_ana_selmethod_t sm_chain = {
     NULL,
 };
 
-//! \internal Selection method data for \p mass selection keyword.
+/*! \internal Selection method data for \p mass selection keyword.*/
 gmx_ana_selmethod_t sm_mass = {
     "mass", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -254,7 +254,7 @@ gmx_ana_selmethod_t sm_mass = {
     NULL,
 };
 
-//! \internal Selection method data for \p charge selection keyword.
+/*! \internal Selection method data for \p charge selection keyword.*/
 gmx_ana_selmethod_t sm_charge = {
     "charge", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -268,7 +268,7 @@ gmx_ana_selmethod_t sm_charge = {
     NULL,
 };
 
-//! \internal Selection method data for \p chain selection keyword.
+/*! \internal Selection method data for \p chain selection keyword.*/
 gmx_ana_selmethod_t sm_altloc = {
     "altloc", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
@@ -282,7 +282,7 @@ gmx_ana_selmethod_t sm_altloc = {
     NULL,
 };
 
-//! \internal Selection method data for \p occupancy selection keyword.
+/*! \internal Selection method data for \p occupancy selection keyword.*/
 gmx_ana_selmethod_t sm_occupancy = {
     "occupancy", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -296,7 +296,7 @@ gmx_ana_selmethod_t sm_occupancy = {
     NULL,
 };
 
-//! \internal Selection method data for \p betafactor selection keyword.
+/*! \internal Selection method data for \p betafactor selection keyword.*/
 gmx_ana_selmethod_t sm_betafactor = {
     "betafactor", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
@@ -310,7 +310,7 @@ gmx_ana_selmethod_t sm_betafactor = {
     NULL,
 };
 
-//! \internal Selection method data for \p x selection keyword.
+/*! \internal Selection method data for \p x selection keyword.*/
 gmx_ana_selmethod_t sm_x = {
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
@@ -324,7 +324,7 @@ gmx_ana_selmethod_t sm_x = {
     &evaluate_x,
 };
 
-//! \internal Selection method data for \p y selection keyword.
+/*! \internal Selection method data for \p y selection keyword.*/
 gmx_ana_selmethod_t sm_y = {
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
@@ -338,7 +338,7 @@ gmx_ana_selmethod_t sm_y = {
     &evaluate_y,
 };
 
-//! \internal Selection method data for \p z selection keyword.
+/*! \internal Selection method data for \p z selection keyword.*/
 gmx_ana_selmethod_t sm_z = {
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,

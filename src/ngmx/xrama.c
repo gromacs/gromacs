@@ -314,6 +314,7 @@ int main(int argc,char *argv[])
     "-bg, -fg change colors, -font fontname, changes the font."
   };
 
+  output_env_t oenv;
   t_x11     *x11;
   t_topology *ramatop;
   t_app     *app;
@@ -325,7 +326,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,0,NULL,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
 		      
   if ((x11=GetX11(&argc,argv)) == NULL) {
@@ -335,7 +336,7 @@ int main(int argc,char *argv[])
   XSetForeground(x11->disp,x11->gc,x11->fg);
   app=init_app(x11,argc,argv);
 
-  ramatop = init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
+  ramatop = init_rama(oenv,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 		      app->xr,3);
   mk_gly(app);
   

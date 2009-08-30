@@ -83,7 +83,7 @@ int gmx_qhop_get_value(gmx_qhop_t gqh,char *name,double *x)
   
   for(i=0; (i<gqh->nparam); i++) 
     if (gmx_strcasecmp(gqh->name[i],name) == 0) {
-      *x = atof(gqh->value[i]);
+      *x = strtod(gqh->value[i],NULL);
       return 1;
     }
     

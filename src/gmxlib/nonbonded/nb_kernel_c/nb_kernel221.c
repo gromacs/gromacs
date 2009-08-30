@@ -34,7 +34,7 @@
 #include <math.h>
 
 #include "vec.h"
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 
 #include "nb_kernel221.h"
 
@@ -126,14 +126,14 @@ void nb_kernel221(
     
     do
     {
-#ifdef GMX_THREADS
-        gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+#ifdef GMX_THREAD_SHM_FDECOMP
+        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
         nn0              = *count;         
 		
         /* Take successively smaller chunks (at least 10 lists) */
         nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
         *count           = nn1;            
-        gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
         if(nn1>nri) nn1=nri;
 #else
 	    nn0 = 0;
@@ -211,9 +211,9 @@ void nb_kernel221(
                 rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv21           = invsqrt(rsq21);
-                rinv31           = invsqrt(rsq31);
+                rinv11           = gmx_invsqrt(rsq11);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv31           = gmx_invsqrt(rsq31);
 
                 /* Load parameters for j atom */
                 jq               = charge[jnr+0];  
@@ -433,14 +433,14 @@ void nb_kernel221nf(
     
     do
     {
-#ifdef GMX_THREADS
-        gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+#ifdef GMX_THREAD_SHM_FDECOMP
+        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
         nn0              = *count;         
 		
         /* Take successively smaller chunks (at least 10 lists) */
         nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
         *count           = nn1;            
-        gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
         if(nn1>nri) nn1=nri;
 #else
 	    nn0 = 0;
@@ -509,9 +509,9 @@ void nb_kernel221nf(
                 rsq31            = dx31*dx31+dy31*dy31+dz31*dz31;
 
                 /* Calculate 1/r and 1/r2 */
-                rinv11           = invsqrt(rsq11);
-                rinv21           = invsqrt(rsq21);
-                rinv31           = invsqrt(rsq31);
+                rinv11           = gmx_invsqrt(rsq11);
+                rinv21           = gmx_invsqrt(rsq21);
+                rinv31           = gmx_invsqrt(rsq31);
 
                 /* Load parameters for j atom */
                 jq               = charge[jnr+0];  

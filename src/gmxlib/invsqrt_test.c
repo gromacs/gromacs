@@ -44,7 +44,7 @@ int main(int argc,char *argv[])
   printf("%12s  %12s  %12s  %12s  %12s\n","X","invsqrt(X)","1/sqrt(X)","Abs. Diff.","Rel. Diff.");
   for(i=1; (i<1000); i++) {
     x = i*1.0;
-    y = invsqrt(x);
+    y = gmx_invsqrt(x);
     z = 1.0/sqrt(x);
     diff = y-z;
     av   = 0.5*(y+z);

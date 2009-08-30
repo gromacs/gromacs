@@ -1,0 +1,457 @@
+/*
+This source code file is part of thread_mpi.  
+Written by Sander Pronk, Erik Lindahl, and possibly others. 
+
+Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+1) Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+2) Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3) Neither the name of the copyright holders nor the
+   names of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+If you want to redistribute modifications, please consider that
+scientific software is very special. Version control is crucial -
+bugs must be traceable. We will be happy to consider code for
+inclusion in the official distribution, but derived work should not
+be called official thread_mpi. Details are found in the README & COPYING
+files.
+
+To help us fund development, we humbly ask that you cite
+any papers on the package - you can find them in the top README file.
+
+*/
+
+
+#ifndef _TMPI_THREAD_H_
+#define _TMPI_THREAD_H_
+
+/*! \file threads.h
+ *
+ *  @brief Platform-independent multithreading support.
+ *
+ *  This file provides an portable thread interface very similar to POSIX 
+ *  threads, as a thin wrapper around the threads provided operating system 
+ *  (whether they be POSIX threads or something else).
+ *
+ *  In other words, while the naming conventions are very similar to 
+ *  pthreads, you should NOT assume that a thread_mpi thread type
+ *  (thread,mutex,key, etc) is the same as the Pthreads equivalent,
+ *  even on platforms where we are using pthreads. 
+ *
+ *  Because the synchronization functions here are similar to the basic 
+ *  mutexes/conditions/barriers provided by the operating system, 
+ *  performance will most likely be worse than when using the atomic 
+ *  synchronization functions of atomic.h. On the other hand, because the
+ *  operating system can schedule out waiting threads using these functions,
+ *  they are the appropriate ones for I/O and initialization. 
+ *
+ *  Since this module is merely intended to be a transparent wrapper around
+ *  a system-dependent thread implementation, we simply echo errors to stderr.
+ *  The user should check the return codes\] and take appropriate action 
+ *  when using these functions (fat chance, but errors are rare).
+ */
+
+
+
+#include <stdio.h>
+
+
+
+#ifdef __cplusplus
+extern "C" 
+{  
+#endif
+#if 0
+} /* Avoids screwing up auto-indentation */
+#endif
+
+
+/* the data types are defined in the thread platform-specific include files */
+#ifdef THREAD_PTHREADS
+#include "thread_mpi/pthreads.h"
+#else
+#ifdef THREAD_WINDOWS
+#include "thread_mpi/winthreads.h"
+#else
+#include "thread_mpi/nothreads.h"
+#endif
+#endif
+
+
+
+
+/*! \brief Thread support status enumeration */
+enum tMPI_Thread_support
+{
+    TMPI_THREAD_SUPPORT_NO = 0,  /*!< Starting threads will fail */
+    TMPI_THREAD_SUPPORT_YES = 1  /*!< Thread support available   */
+};
+
+
+/** handle a fatal error.
+
+  \param file     source code file name of error.
+  \param line     source code line number of error.
+  \param message  format string for error message.
+*/
+void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
+#define TMPI_FARGS __FILE__,__LINE__
+
+
+
+/*! \brief Check if threads are supported
+ *
+ *  This routine provides a cleaner way to check if threads are supported
+ *  instead of sprinkling your code with preprocessor conditionals.
+ *
+ *  All thread functions are still available even without thread support,
+ *  but some of them might return failure error codes, for instance if you try
+ *  to start a thread.
+ * 
+ *  \return 1 if threads are supported, 0 if not.
+ */
+enum tMPI_Thread_support tMPI_Thread_support(void);
+
+
+
+/*! \brief Create a new thread
+ *
+ *  The new thread will call start_routine() with the argument arg.
+ *  Please be careful not to change arg after calling this function.
+ * 
+ *  \param thread          Pointer to opaque thread datatype
+ *  \param start_routine   The function to call in the new thread
+ *  \param arg             Argument to call with
+ *  
+ *  \return Status - 0 on success, or an error code.
+ */
+int tMPI_Thread_create   (tMPI_Thread_t *   thread,
+                          void *            (*start_routine)(void *),
+                          void *            arg);
+
+
+
+
+/*! \brief Wait for a specific thread to finish executing
+ *
+ *  If the thread has already finished the routine returns immediately.
+ *
+ *  \param thread      Opaque thread datatype to wait for.
+ *  \param value_ptr   Pointer to location where to store pointer to exit value
+ *                     from threads that called tMPI_Thread_exit().
+ *  
+ *  \return 0 if the join went ok, or a non-zero error code.
+ */
+int tMPI_Thread_join     (tMPI_Thread_t     thread,
+                          void **           value_ptr);
+
+
+
+/*! \brief Initialize a new mutex
+ *
+ *  This routine must be called before using any mutex not initialized
+ *  with static storage class and TMPI_THREAD_MUTEX_INITIALIZER.
+ *
+ *  \param mtx   Pointer to a mutex opaque type.
+ *  \return      0 or an error code.
+ */
+int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx);
+
+
+
+
+/*! \brief Kill a mutex you no longer need
+*
+*  Note that this call only frees resources allocated inside the mutex. It
+*  does not free the tMPI_Thread_mutex_t memory area itself if you created it
+*  with dynamic memory allocation.
+* 
+*  \param mtx  Pointer to a mutex variable to get rid of.
+*  \return 0 or a non-zero error code.
+*/
+int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx);
+
+
+
+
+/*! \brief Wait for exclusive access to a mutex
+*
+*  This routine does not return until the mutex has been acquired.
+*
+*  \param mtx  Pointer to the mutex to lock
+*  \return 0 or a non-zero error code.
+*/
+int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
+
+
+
+
+/*! \brief Try to lock a mutex, return if busy
+ *
+ *  This routine always return directly. If the mutex was available and
+ *  we successfully locked it we return 0, otherwise a non-zero
+ *  error code (usually meaning the mutex was already locked).
+ *
+ *  \param mtx  Pointer to the mutex to try and lock
+ *  \return 0 or a non-zero error code.
+ */
+int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
+
+
+
+
+/*! \brief Release the exclusive access to a mutex
+ *
+ *  \param mtx  Pointer to the mutex to release
+ *  \return 0 or a non-zero error code.
+ */
+int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
+
+
+
+
+/*! \brief Initialize thread-specific-storage handle
+ *
+ *  The tMPI_Thread_key_t handle must always be initialized dynamically with
+ *  this routine. If you need to initialize it statically in a file, use the
+ *  tMPI_Thread_once() routine and corresponding data to initialize the 
+ *  thread-specific-storage key the first time you access it.
+ *
+ *  \param  key          Pointer to opaque thread key type.
+ *  \param  destructor   Routine to call (to free memory of key) when we quit
+ *
+ *  \return status - 0 on sucess or a standard error code.
+ *
+ */
+int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *));
+
+
+
+
+/*! \brief Delete thread-specific-storage handle
+ *
+ *  Calling this routine will kill the handle, and invoke the automatic 
+ *  destructor routine for each non-NULL value pointed to by key.
+ *
+ *  \param  key  Opaque key type to destroy
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_key_delete(tMPI_Thread_key_t key);
+
+
+
+
+/*! \brief Get value for thread-specific-storage in this thread
+ *
+ *  If it has not yet been set, NULL is returned.
+ *  
+ *  \param key   Thread-specific-storage handle.
+ *  \return Pointer-to-void, the value of the data in this thread.
+*/
+void * tMPI_Thread_getspecific(tMPI_Thread_key_t key);
+
+
+
+/*! \brief Set value for thread-specific-storage in this thread
+ *
+ *  \param key     Thread-specific-storage handle.
+ *  \param value   What to set the data to (pointer-to-void).
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value);
+
+
+
+/*! \brief Run the provided routine exactly once
+ *
+ *  The control data must have been initialized before calling this routine,
+ *  but you can do it with the static initialzer TMPI_THREAD_ONCE_INIT.
+ *
+ *  tMPI_Thread_once() will not return to any of the calling routines until
+ *  the initialization function has been completed.
+ *
+ *  \param once_data     Initialized one-time execution data
+ *  \param init_routine  Function to call exactly once
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_once(tMPI_Thread_once_t *once_data, 
+                     void (*init_routine)(void));    
+
+
+
+/*! \brief Initialize condition variable
+ *
+ *  This routine must be called before using any condition variable
+ *  not initialized with static storage class and TMPI_THREAD_COND_INITIALIZER.
+ *
+ *  \param cond  Pointer to previously allocated condition variable
+ *  \return      0 or a non-zero error message.
+ */
+int tMPI_Thread_cond_init(tMPI_Thread_cond_t *     cond);
+
+
+
+/*! \brief Destroy condition variable
+ *
+ *  This routine should be called when you are done with a condition variable.
+ *  Note that it only releases memory allocated internally, not the 
+ *  tMPI_Thread_cond_t structure you provide a pointer to.
+ *
+ *  \param cond Pointer to condition variable.
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *    cond);
+
+
+
+/*! \brief Wait for a condition to be signaled
+ *
+ *  This routine releases the mutex, and waits for the condition to be 
+ *  signaled by another thread before it returns. 
+ * 
+ *  Note that threads waiting for conditions with tMPI_Thread_cond_wait 
+ *  may be subject to spurious wakeups: use this function in a while loop 
+ *  and check the state of a predicate associated with the wakeup 
+ *  before leaving the loop. 
+ *
+ * \param cond  condition variable
+ *  \param mtx  Mutex protecting the condition variable
+ *
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
+                          tMPI_Thread_mutex_t *   mtx);
+
+
+
+
+/*! \brief Unblock one waiting thread
+ *
+ *  This routine signals a condition variable to one
+ *  thread (if any) waiting for it after calling
+ *  tMPI_Thread_cond_wait().
+ * 
+ * \param cond  condition variable
+ *
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *  cond);
+
+
+/*! \brief Unblock all waiting threads
+*
+*  This routine signals a condition variable to all
+*  (if any) threads that are waiting for it after calling
+*  tMPI_Thread_cond_wait().
+* 
+* \param cond  condition variable
+*
+*  \return 0 or a non-zero error message.
+*/
+int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *  cond);
+
+
+
+
+/*! \brief Terminate calling thread
+ *
+ *  Die voluntarily.
+ *
+ *  \param value_ptr   Pointer to a return value. Threads waiting for us to
+ *                     join them can read this value if they try.
+ *  \return 
+ */
+void tMPI_Thread_exit(void *      value_ptr);
+
+
+
+/*! \brief Ask a thread to exit
+ *
+ *  This routine tries to end the execution of another thread, but there are
+ *  no guarantees it will succeed.
+ *
+ *  \param thread     Handle to thread we want to see dead.
+ *  \return 0 or a non-zero error message.
+ */
+int tMPI_Thread_cancel(tMPI_Thread_t      thread);
+
+
+/*! \brief Initialize a synchronization barrier type
+ *
+ *  You only need to initialize a barrier once. They cycle 
+ *  automatically, so after release it is immediately ready
+ *  to accept waiting threads again.
+ *
+ *  \param barrier  Pointer to previously allocated barrier type
+ *  \param count    Number of threads to synchronize. All threads
+ *                  will be released after \a count calls to 
+ *                  tMPI_Thread_barrier_wait(). 
+ */
+int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *      barrier,
+                        int                         count);
+
+
+
+/*! \brief Release data in a barrier datatype
+ *
+ *  \param barrier  Pointer to previously 
+ *                  initialized barrier.
+ */
+int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *   barrier);
+
+
+/*! \brief Perform barrier synchronization
+ *
+ *  This routine blocks until it has been called N times,
+ *  where N is the count value the barrier was initialized with.
+ *  After N total calls all threads return. The barrier automatically
+ *  cycles, and thus requires another N calls to unblock another time.
+ *
+ *  \param barrier  Pointer to previously create barrier.
+ *
+ *  \return The last thread returns -1, all the others 0.
+ */
+int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier);
+
+
+
+/*! \brief Lock a file so only one thread can use it
+ *
+ *  Call this routine before writing to logfiles or standard out, in order
+ *  to avoid mixing output from multiple threads.
+ */
+void tMPI_Lockfile(FILE *   stream);
+
+
+/*! \brief Unlock a file (allow other threads to use it)
+ *
+ *  Call this routine when you finish a write statement to a file, so other
+ *  threads can use it again.
+ */
+void tMPI_Unlockfile(FILE *   stream);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _TMPI_THREAD_H_ */
+
