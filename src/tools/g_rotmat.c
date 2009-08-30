@@ -6,11 +6,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
+ *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
+ * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- 
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -29,37 +30,25 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#ifndef _genborn_sse_h
-#define _genborn_sse_h
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "grompp.h"
+#include <gmx_ana.h>
 
 
-float 
-calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda, 
-					  float *xd, float *f, float *fshift, float *shift_vec, int gb_algorithm, gmx_genborn_t *born);						
+/* This is just a wrapper binary.
+* The code that used to be in g_fitmat.c is now in gmx_fitmat.c,
+* where the old main function is called gmx_fitmat().
+*/
+int
+main(int argc, char *argv[])
+{
+  gmx_rotmat(argc,argv);
+  return 0;
+}
 
 
-int 
-calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
-					  const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
-
-int 
-calc_gb_rad_hct_sse(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top, const t_atomtypes *atype, float *x,
-					t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md);
-
-int 
-calc_gb_rad_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-					const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
-
-float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda, 
-					   t_idef *idef, real gb_epsilon_solvent, real epsfac);
-
-#endif /* _genborn_sse_h */
+  

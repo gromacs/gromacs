@@ -435,7 +435,7 @@ static real optimize_ncells(FILE *fplog,
     {
         /* For Ewald exclusions pbc_dx is not called */
         bExcl_pbcdx =
-            (EEL_EXCL_FORCES(ir->coulombtype) && !EEL_FULL(ir->coulombtype));
+            (IR_EXCL_FORCES(*ir) && !EEL_FULL(ir->coulombtype));
         pbcdxr = (double)n_bonded_dx(mtop,bExcl_pbcdx)/(double)mtop->natoms;
     }
     else

@@ -78,6 +78,7 @@ g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
 g_polystat|calculates static properties of polymers
 g_rotacf|calculates the rotational correlation function for molecules
+g_rotmat|plots the rotation matrix for fitting to a reference structure
 g_vanhove|calculates Van Hove displacement functions
 END
 

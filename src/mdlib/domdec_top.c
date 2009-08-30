@@ -654,7 +654,7 @@ void dd_make_reverse_top(FILE *fplog,
         }
     }
     
-    dd->reverse_top->bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
+    dd->reverse_top->bExclRequired = IR_EXCL_FORCES(*ir);
     
     nexcl = 0;
     dd->n_intercg_excl = 0;
@@ -1929,7 +1929,7 @@ void dd_bonded_cg_distance(FILE *fplog,
     int ft2b=-1,a_2b_1=-1,a_2b_2=-1,ftmb=-1,a_mb_1=-1,a_mb_2=-1;
     int ftm2b=-1,amol_2b_1=-1,amol_2b_2=-1,ftmmb=-1,amol_mb_1=-1,amol_mb_2=-1;
     
-    bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
+    bExclRequired = IR_EXCL_FORCES(*ir);
     
     /* For gmx_vsite_t everything 0 should work (without pbc) */
     snew(vsite,1);

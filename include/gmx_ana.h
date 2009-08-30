@@ -177,6 +177,9 @@ int
 gmx_rdf(int argc,char *argv[]);
 
 int 
+gmx_rotmat(int argc,char *argv[]);
+
+int 
 gmx_rms(int argc,char *argv[]);
 
 int 
