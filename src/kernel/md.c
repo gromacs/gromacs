@@ -731,7 +731,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (!ir->bContinuation && !bRerunMD) {
     if (mdatoms->cFREEZE && (state->flags & (1<<estV))) {
       /* Set the velocities of frozen particles to zero */
-      for(i=mdatoms->start; i<mdatoms->homenr; i++) {
+      for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++) {
 	for(m=0; m<DIM; m++) {
 	  if (ir->opts.nFreeze[mdatoms->cFREEZE[i]][m]) {
 	    state->v[i][m] = 0;
