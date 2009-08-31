@@ -926,19 +926,29 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 		xmm2    = _mm_movelh_ps(xmm2,fiz); 
 		xmm2    = _mm_and_ps( (__m128) maski, xmm2);
 		
-		/* load i force from memory */
+		/* load, add and store i forces */
 		xmm4    = _mm_loadl_pi(xmm4, (__m64 *) (faction+ii3));
 		xmm5    = _mm_load1_ps(faction+ii3+2);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
 		
-		/* add to i force */
 		xmm4    = _mm_add_ps(xmm4,xmm2);
 		
-		/* store i force to memory */
 		_mm_storel_pi( (__m64 *) (faction+ii3),xmm4);
 		xmm4    = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
 		_mm_store_ss(faction+ii3+2,xmm4);
 		
+		/* Load, add and store i shift forces */
+		xmm4 = _mm_loadl_pi(xmm4, (__m64 *) (fshift+is3));
+		xmm5 = _mm_load1_ps(fshift+is3+2);
+		xmm4 = _mm_shuffle_ps(xmm4,xmm5,_MM_SHUFFLE(3,2,1,0));
+		
+		xmm4 = _mm_add_ps(xmm4,xmm2);
+		
+		_mm_storel_pi( (__m64 *) (fshift+is3),xmm4);
+		xmm4 = _mm_shuffle_ps(xmm4,xmm4,_MM_SHUFFLE(2,2,2,2));
+		_mm_store_ss(fshift+is3+2,xmm4);
+		
+		/* Coulomb potential */
         ggid             = gid[n];         
 		
 		vcoul   = _mm_movehl_ps(vcoul,vctot);
@@ -949,6 +959,7 @@ void nb_kernel430_ia32_sse(int *           p_nri,
 		_mm_store_ss(&vct,vctot);
 		Vc[ggid] = Vc[ggid] + vct;
 		
+		/* LJ potential */
 		Vvdwtmp  = _mm_movehl_ps(Vvdwtmp,Vvdwtot);
 		Vvdwtot  = _mm_add_ps(Vvdwtot,Vvdwtmp);
 		Vvdwtmp  = _mm_shuffle_ps(Vvdwtot,Vvdwtot,_MM_SHUFFLE(1,1,1,1));

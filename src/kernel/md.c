@@ -1293,12 +1293,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
 
+    
     if (!ir->bContinuation && !bRerunMD)
     {
         if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
         {
             /* Set the velocities of frozen particles to zero */
-            for(i=mdatoms->start; i<mdatoms->homenr; i++)
+            for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++)
             {
                 for(m=0; m<DIM; m++)
                 {
@@ -1309,6 +1310,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
         }
+
         if (constr)
         {
             /* Constrain the initial coordinates and velocities */
@@ -1625,7 +1627,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             bBornRadii=TRUE;
         }
-
+        
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
                   (step % stepout == 0 || bFirstStep || bLastStep);
@@ -1691,7 +1693,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             sum_ekin(FALSE,&(ir->opts),ekind,ekin,NULL);
         }
-
         clear_mat(force_vir);
 
         /* Ionize the atoms if necessary */
@@ -1749,7 +1750,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bCalcEner = TRUE;
             bGStat    = TRUE;
         }
-
+        
         force_flags = (GMX_FORCE_STATECHANGED |
                        GMX_FORCE_ALLFORCES |
                        (bNStList ? GMX_FORCE_DOLR : 0) |
@@ -1806,7 +1807,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,"Done init_coupling\n"); 
             fflush(fplog);
         }
-
+        
         /* Now we have the energies and forces corresponding to the 
          * coordinates at time t. We must output all of this before
          * the update.
@@ -1840,6 +1841,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 #endif
 
+        
         if (bX || bV || bF || bXTC || bCPT)
         {
             wallcycle_start(wcycle,ewcTRAJ);
@@ -1865,7 +1867,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
                        fn_cpt,bCPT,top_global,ir->eI,ir->simulation_part,
-                       step,t,state, state_global,f,f_global,&n_xtc,&x_xtc);
+                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&

@@ -186,6 +186,8 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "GB Coulomb + LJ NF",             37 }, /* nb_kernel410nf */
     { "GB Coulomb + VdW(T) NF",         49 }, /* nb_kernel430nf */
     { "Free energy innerloop",         150 }, /* free energy, estimate */  
+    { "All-vs-All, Coul + LJ",          38 },
+    { "All-vs-All, GB + LJ",            61 },
     { "Outer nonbonded loop",           10 },
     { "1,4 nonbonded interactions",     90 },
     { "Calc Weights",                   36 },

@@ -381,12 +381,20 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 #else
 #if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
     if (cr->nc.bUse) {
-        /* Use two step summing. This should be MPI_Reduce, right? */
-        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,0,cr->nc.comm_intra);
-        if (cr->nc.rank_intra == 0) {
+        if (cr->nc.rank_intra == 0)
+        {
+            /* Use two step summing. */
+            MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,0,
+                       cr->nc.comm_intra);
             /* Sum the roots of the internal (intra) buffers. */
             MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,
                           cr->nc.comm_inter);
+        }
+        else
+        {
+            /* This is here because of the silly MPI specification
+                that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
+            MPI_Reduce(r,NULL,nr,MPI_DOUBLE,MPI_SUM,0,cr->nc.comm_intra);
         }
         MPI_Bcast(r,nr,MPI_DOUBLE,0,cr->nc.comm_intra);
     } 
@@ -429,12 +437,20 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 #else
 #if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
     if (cr->nc.bUse) {
-        /* Use two step summing. This should be MPI_Reduce, right? */
-        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,0,cr->nc.comm_intra);
-        if (cr->nc.rank_intra == 0) {
+        /* Use two step summing.  */
+        if (cr->nc.rank_intra == 0)
+        {
+            MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,0,
+                       cr->nc.comm_intra);
             /* Sum the roots of the internal (intra) buffers */
             MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,
                           cr->nc.comm_inter);
+        }
+        else
+        {
+            /* This is here because of the silly MPI specification
+                that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
+            MPI_Reduce(r,NULL,nr,MPI_FLOAT,MPI_SUM,0,cr->nc.comm_intra);
         }
         MPI_Bcast(r,nr,MPI_FLOAT,0,cr->nc.comm_intra);
     } 
@@ -477,10 +493,17 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,0,cr->nc.comm_intra);
-        if (cr->nc.rank_intra == 0) {
+        if (cr->nc.rank_intra == 0) 
+        {
+            MPI_Reduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,0,cr->nc.comm_intra);
             /* Sum with the buffers reversed */
             MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
+        }
+        else
+        {
+            /* This is here because of the silly MPI specification
+                that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
+            MPI_Reduce(r,NULL,nr,MPI_INT,MPI_SUM,0,cr->nc.comm_intra);
         }
         MPI_Bcast(r,nr,MPI_INT,0,cr->nc.comm_intra);
     } 

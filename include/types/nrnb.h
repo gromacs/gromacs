@@ -32,6 +32,9 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _types_nrnb_h
+#define _types_nrnb_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -83,6 +86,8 @@ enum
     eNR_NBKERNEL400NF, eNR_NBKERNEL410NF, eNR_NBKERNEL430NF, 
     eNR_NBKERNEL_NR,
     eNR_NBKERNEL_FREE_ENERGY = eNR_NBKERNEL_NR,
+    eNR_NBKERNEL_ALLVSALL,
+    eNR_NBKERNEL_ALLVSALLGB,
     eNR_NBKERNEL_OUTER,
     eNR_NB14,
     eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
@@ -116,3 +121,6 @@ typedef struct {
 
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
+
+
+#endif
