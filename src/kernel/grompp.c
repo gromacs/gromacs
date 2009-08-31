@@ -859,13 +859,7 @@ static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
         gmx_fatal(FARGS,"Can't do GB electrostatics; the forcefield is missing %d values for\n"
                   "atomtype radii, or they might be negative\n.",nmiss);
     }
-    /*
-      if(!have_surftens && ir->implicit_solvent!=eisNO) {
-      fprintf(stderr,"Can't do implicit solvent; the forcefield is missing values\n"
-      " for atomtype surface tension\n.");
-      nerror++;
-      }
-    */
+  
 }
 
 int main (int argc, char *argv[])
@@ -1166,20 +1160,6 @@ int main (int argc, char *argv[])
 	
   ntype = get_atomtype_ntypes(atype);
   convert_params(ntype, plist, mi, comb, reppow, fudgeQQ, sys);
-  	
-	if (ir->implicit_solvent != eisNO)
-	{
-		printf("Constructing Generalized Born topology...\n");
-
-		/* Check for -normvsbds switch to grompp, necessary for gb together with vsites */
-		if(bRmVSBds && nvsite)
-		{
-			gmx_fatal(FARGS,"ERROR: Must use -normvsbds switch to grompp when doing Generalized Born\n"
-					"together with virtual sites\n");
-		}
-		
-		generate_gb_topology(sys,mi);
-	}
 	
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);

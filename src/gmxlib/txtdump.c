@@ -879,7 +879,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_GB12:
   case F_GB13:
   case F_GB14:
-    fprintf(fp, "c6A=%15.8e, c12A=%15.8e, c6B=%15.8e, c12B=%15.8e, sar=%15.8e, st=%15.8e, pi=%15.8e, gbr=%15.8e, bmlt=%15.8e\n",iparams->gb.c6A,iparams->gb.c12A,iparams->gb.c6B,iparams->gb.c12B,iparams->gb.sar,iparams->gb.st,iparams->gb.pi,iparams->gb.gbr,iparams->gb.bmlt);
+    fprintf(fp, "sar=%15.8e, st=%15.8e, pi=%15.8e, gbr=%15.8e, bmlt=%15.8e\n",iparams->gb.sar,iparams->gb.st,iparams->gb.pi,iparams->gb.gbr,iparams->gb.bmlt);
     break;		  
   case F_CMAP:
     fprintf(fp, "cmapA=%1d, cmapB=%1d\n",iparams->cmap.cmapA, iparams->cmap.cmapB);

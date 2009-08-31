@@ -39,10 +39,20 @@
 #include "typedefs.h"
 #include "grompp.h"
 
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+
+/* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
+#define STILL_P1  0.073*0.1              /* length        */
+#define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
+#define STILL_P3  6.211*0.1*CAL2JOULE    /* energy*length */
+#define STILL_P4  15.236*0.1*CAL2JOULE
+#define STILL_P5  1.254 
+
+#define STILL_P5INV (1.0/STILL_P5)
+#define STILL_PIP5  (M_PI*STILL_P5)
 
 
 /* Initialise GB stuff */
@@ -73,10 +83,6 @@ init_gb_plist(t_params *p_list);
 
 int 
 convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist, t_ilist *il);
-
-int 
-generate_gb_topology(gmx_mtop_t *mtop, t_molinfo *mi);
-						 
 
 
 
