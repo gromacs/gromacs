@@ -291,8 +291,8 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   if (bEachResEachTime)
   {
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
-    respertime=xvgropen(rfile,buf,time_label(),"Distance (nm)");
-    xvgr_legend(respertime,ng-1,leg);
+    respertime=xvgropen(rfile,buf,get_time_label(oenv),"Distance (nm)",oenv);
+    xvgr_legend(respertime,ng-1,leg,oenv);
 	if (bPrintResName) 
 	  fprintf(respertime,"# ");
 	    for (j=0; j<nres; j++)
@@ -376,7 +376,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	/*dmin should be minimum distance for residue and group*/
 	if (bEachResEachTime)
 	{
-	    fprintf(respertime,"%12e",convert_time(t));
+	    fprintf(respertime,"%12e",t);
 	    for(i=1; i<ng; i++) 
 			for(j=0; j<nres; j++)
 			{
@@ -496,10 +496,9 @@ int gmx_mindist(int argc,char *argv[])
     { "-respertime",  FALSE, etBOOL, {&bEachResEachTime},
       "When writing per-residue distances, write distance for each time point" },
     { "-printresname",  FALSE, etBOOL, {&bPrintResName},
-      "Write residue names" }  };
+      "Write residue names" }
   };
   output_env_t oenv;
->>>>>>> 040fd67ffdec398fa17c682f07b67205ad472aa2:src/tools/gmx_mindist.c
   t_topology *top=NULL;
   int        ePBC=-1;
   char       title[256];
