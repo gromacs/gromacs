@@ -1155,6 +1155,9 @@ put_in_list(bool              bHaveVdW[],
     int          igid,gid,nbl_ind;
     t_nblist *   vdwc;
     int          j,jcg;
+#ifdef ADRESS
+    bool         bNotEx;
+#endif
 
     igid = GET_CGINFO_GID(fr->cginfo[icg]);
     gid  = GID(igid,jgid,ngid);
@@ -1192,8 +1195,16 @@ put_in_list(bool              bHaveVdW[],
         {
             /* Here we simply add the j charge group jcg to the list
              * without checking exclusions, LJ interactions or charges.
-             */
-            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bLR);
+             * Exclude energy group exclusions for AdResS */
+#ifdef ADRESS
+            bNotEx = NOTEXCL(bExcl,index[icg],index[jcg]);
+            if (bNotEx)
+            {
+#endif
+                add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bLR);
+#ifdef ADRESS
+            }
+#endif
         }
     }
 
