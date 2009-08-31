@@ -177,8 +177,13 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                         aj1 = -1;
                     }
                 }
+#ifndef ADRESS_SWITCHFCT_NEW
+		/* both groups are explicit */
+		else if (weight_product == 1)
+#else
                 /* at least one of the groups is explicit */
                 else if (weight_product_cg == 0)
+#endif		  
                 {
                     /* if it's a coarse grained loop, skip this molecule */
                     if(bCG1)
@@ -193,10 +198,10 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                 /* both have double identity, get hybrid scaling factor */
                 else 
                 {
-                    /* IMPORTANT: If you change the scaling function, change the return value in src/mdlib/adress.c too */
+#ifndef ADRESS_SWITCHFCT_NEW		  
                     /* this is the old function */
-                    //hybscal = weight_product;
-                    
+                    hybscal = weight_product;
+#else
                     /* this is the unstretched new function */
                     //hybscal = exp(-0.6931472*weight_product_cg*weight_product_cg/(weight_product*weight_product));
                     hybscal = exp(-0.6931472*weight_product_cg/(weight_product));
@@ -207,6 +212,7 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     {
                         hybscal = 1.0 - hybscal;
                     }
+#endif
                     bMixed = TRUE;
                 }
 #endif

@@ -164,6 +164,13 @@ AC_ARG_ENABLE(adress,
 	      [AC_DEFINE(ADRESS,,[Enable experimental AdResS innerloop])],)
 
 
+### Enable adress code, this implies GMX_CG_INNERLOOP
+AC_ARG_ENABLE(new-adresswf,
+	      [AC_HELP_STRING([--enable-new-adresswf],
+			      [Enable new adress switching function])],
+	      [AC_DEFINE(ADRESS_SWITCHFCT_NEW,,[Enable new adress switching function])],)
+
+
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
               [AC_HELP_STRING([--disable-cpu-optimization],
