@@ -208,11 +208,11 @@ gmx_nb_generic_cg_kernel(t_nblist *           nlist,
                     
                     /* this is the stretched new function to look like the old cos^2 function */
                     //hybscal = exp(-6.2383246*weight_product_cg/(weight_product));
+#endif
                     if(bCG1)
                     {
                         hybscal = 1.0 - hybscal;
                     }
-#endif
                     bMixed = TRUE;
                 }
 #endif
