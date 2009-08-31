@@ -40,6 +40,7 @@
 #include <stdio.h>
 
 #include "../nb_kerneltype.h"
+#include "nb_kernel_allvsall.h"
 
 void
 nb_kernel_setup(FILE *fplog,nb_kernel_t **list);

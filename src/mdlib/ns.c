@@ -1734,7 +1734,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
             {
                 close_neighbor_list(fr,TRUE,n,i,FALSE);
                 /* Evaluate the energies and forces */
-                do_nonbonded(cr,fr,x,f,md,
+                do_nonbonded(cr,fr,x,f,md,NULL,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
                              grppener->ener[egCOULLR],
 							 grppener->ener[egGB],box_size,
