@@ -1790,9 +1790,9 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 		t[ai][1] = t[ai][1] + fiy1;
 		t[ai][2] = t[ai][2] + fiz1;
 		
-		fshift[ai][0] = fshift[ai][0] + fix1;
-		fshift[ai][1] = fshift[ai][1] + fiy1;
-		fshift[ai][2] = fshift[ai][2] + fiz1;
+		fshift[shift][0] = fshift[shift][0] + fix1;
+		fshift[shift][1] = fshift[shift][1] + fiy1;
+		fshift[shift][2] = fshift[shift][2] + fiz1;
 		
 	}
 
