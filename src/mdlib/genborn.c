@@ -1472,9 +1472,9 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 		t[ai][1] = t[ai][1] + fiy1;
 		t[ai][2] = t[ai][2] + fiz1;
 		
-		fshift[ai][0] = fshift[ai][0] + fix1;
-		fshift[ai][1] = fshift[ai][1] + fiy1;
-		fshift[ai][2] = fshift[ai][2] + fiz1;
+		fshift[shift][0] = fshift[shift][0] + fix1;
+		fshift[shift][1] = fshift[shift][1] + fiy1;
+		fshift[shift][2] = fshift[shift][2] + fiz1;
 		
 	}
 
@@ -1561,7 +1561,7 @@ static void add_j_to_gblist(gbtmpnbl_t *list,int aj)
 
 static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists,int shift)
 {
-    int ind;
+    int ind,i;
 
     /* Search the list with the same shift, if there is one */
     ind = 0;
@@ -1571,16 +1571,20 @@ static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists,int shift)
     }
     if (ind == lists->nlist)
     {
-        if (lists->nlist >= lists->list_nalloc)
+        if (lists->nlist == lists->list_nalloc)
         {
             lists->list_nalloc++;
             srenew(lists->list,lists->list_nalloc);
+            for(i=lists->nlist; i<lists->list_nalloc; i++)
+            {
+                lists->list[i].aj        = NULL;
+                lists->list[i].aj_nalloc = 0;
+            }
+
         }
         
         lists->list[lists->nlist].shift = shift;
         lists->list[lists->nlist].naj   = 0;
-        lists->list[lists->nlist].aj    = NULL;
-        lists->list[lists->nlist].aj_nalloc = 0;
         lists->nlist++;
     }
 
