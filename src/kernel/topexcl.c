@@ -48,7 +48,8 @@ typedef struct {
   int ai,aj;
 } sortable;
 
-int bond_sort (const void *a, const void *b)
+static int 
+bond_sort (const void *a, const void *b)
 {
   sortable *sa,*sb;
   
@@ -60,6 +61,13 @@ int bond_sort (const void *a, const void *b)
   else
     return (sa->ai-sb->ai);
 }
+
+static int 
+compare_int (const void * a, const void * b)
+{
+    return ( *(int*)a - *(int*)b );
+}
+
 
 #ifdef DEBUG
 #define prints(str, n, s) __prints(str, n, s)
@@ -207,37 +215,51 @@ static void do_gen(int nrbonds,	       /* total number of bonds in s	*/
 		   t_nextnb *nnb)      /* the tmp storage for excl     */
 /* Assume excl is initalised and s[] contains all bonds bidirectional */
 {
-  int i,j,k,n,nb;
+    int i,j,k,n,nb;
+    
+    /* exclude self */
+    for(i=0; (i<nnb->nr); i++) 
+    {
+        add_nnb(nnb,0,i,i);
+    }
+    print_nnb(nnb,"After exclude self");
 
-  /* exclude self */
-  for(i=0; (i<nnb->nr); i++) 
-    add_nnb(nnb,0,i,i);
-  print_nnb(nnb,"After exclude self");
-
-  /* exclude all the bonded atoms */
-  if (nnb->nrex > 0)
-    for (i=0; (i < nrbonds); i++)
-      add_nnb(nnb,1,s[i].ai,s[i].aj);
-  print_nnb(nnb,"After exclude bonds");
+    /* exclude all the bonded atoms */
+    if (nnb->nrex > 0)
+    {
+        for (i=0; (i < nrbonds); i++)
+        {
+            add_nnb(nnb,1,s[i].ai,s[i].aj);
+        }
+    }
+    print_nnb(nnb,"After exclude bonds");
 
   /* for the nr of exclusions per atom */
-  for (n=1; (n < nnb->nrex); n++) 
+    for (n=1; (n < nnb->nrex); n++) 
+    {
+        /* now for all atoms */
+        for (i=0; (i < nnb->nr); i++)
+        {
+            /* for all directly bonded atoms of atom i */
+            for (j=0; (j < nnb->nrexcl[i][1]); j++) 
+            {
 
-    /* now for all atoms */
-    for (i=0; (i < nnb->nr); i++)
-
-      /* for all directly bonded atoms of atom i */
-      for (j=0; (j < nnb->nrexcl[i][1]); j++) {
-
-	/* store the 1st neighbour in nb */
-	nb = nnb->a[i][1][j];
-
-	/* store all atoms in nb's n-th list into i's n+1-th list */
-	for (k=0; (k < nnb->nrexcl[nb][n]); k++)
-	  if (i != nnb->a[nb][n][k])
-	    add_nnb(nnb,n+1,i,nnb->a[nb][n][k]);
+                /* store the 1st neighbour in nb */
+                nb = nnb->a[i][1][j];
+                
+                /* store all atoms in nb's n-th list into i's n+1-th list */
+                for (k=0; (k < nnb->nrexcl[nb][n]); k++)
+                {	  
+                    if (i != nnb->a[nb][n][k])
+                    {
+                        add_nnb(nnb,n+1,i,nnb->a[nb][n][k]);
+                    }
+                }
+            }
+        }
       }
   print_nnb(nnb,"After exclude rest");
+    
 }
 
 static void add_b(t_params *bonds, int *nrf, sortable *s)
@@ -288,16 +310,58 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
   sfree(s);
 }
 
-void generate_excl (int nrexcl,int nratoms,t_params plist[],t_blocka *excl)
+static void
+sort_and_purge_nnb(t_nextnb *nnb)
 {
-  t_nextnb nnb;
+    int i,j,k,m,n,cnt,found,prev,idx;
+    
+    for (i=0; (i < nnb->nr); i++)
+    {
+        for (n=0; (n <= nnb->nrex); n++) 
+        {
+            /* Sort atoms in this list */
+            qsort(nnb->a[i][n],nnb->nrexcl[i][n],sizeof(int),compare_int);
+            
+            cnt=0;
+            prev=-1;
+            for(j=0;j<nnb->nrexcl[i][n];j++)
+            {
+                idx = nnb->a[i][n][j];
+                
+                found=0;
+                for(m=0;m<n && !found;m++)
+                {
+                    for(k=0;k<nnb->nrexcl[i][m] && !found;k++)
+                    {
+                        found = (idx==nnb->a[i][m][k]);
+                    }
+                }
+                
+                if(!found && nnb->a[i][n][j]!=prev)
+                {
+                    nnb->a[i][n][cnt]=nnb->a[i][n][j];
+                    prev = nnb->a[i][n][cnt];
+                    cnt++;
+                }
+            }
+            nnb->nrexcl[i][n]=cnt;
+        }
+    }
+}
 
-  if (nrexcl < 0)
-    gmx_fatal(FARGS,"Can't have %d exclusions...",nrexcl);
-  init_nnb(&nnb,nratoms,nrexcl);
-  gen_nnb(&nnb,plist);
-  excl->nr=nratoms;
-  nnb2excl (&nnb,excl);
-  done_nnb (&nnb);
+
+void generate_excl (int nrexcl,int nratoms,t_params plist[],t_nextnb *nnb,t_blocka *excl)
+{
+    int i,j,k;
+    
+    if (nrexcl < 0)
+    {
+        gmx_fatal(FARGS,"Can't have %d exclusions...",nrexcl);
+    }
+    init_nnb(nnb,nratoms,nrexcl);
+    gen_nnb(nnb,plist);
+    excl->nr=nratoms;
+    sort_and_purge_nnb(nnb);
+    nnb2excl (nnb,excl);
 }
 

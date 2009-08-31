@@ -68,7 +68,6 @@
 #include "nb_generic_cg.h"
 
 
-
 /* 1,4 interactions uses kernel 330 directly */
 #include "nb_kernel_c/nb_kernel330.h" 
 
@@ -83,7 +82,7 @@
 #if defined(GMX_IA32_SSE2) 
 #include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
 #endif
-
+ 
 #if defined(GMX_X86_64_SSE)
 #include "nb_kernel_x86_64_sse/nb_kernel_x86_64_sse.h"
 #endif
@@ -338,7 +337,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.gpol               = egpol;
 
-    if(fr->bAllvsAll)
+    if(fr->bAllvsAll) 
     {
         if(fr->bGB)
         {
@@ -347,7 +346,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
             /* double not done yet */
             nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                              &outeriter,&inneriter,&fr->AllvsAll_work);
-            gmx_fatal(FARGS,"Death horror.");
+            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
 #  else
             nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                              &outeriter,&inneriter,&fr->AllvsAll_work);
@@ -357,19 +356,19 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
         nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                  &outeriter,&inneriter,&fr->AllvsAll_work);
         */
-            gmx_fatal(FARGS,"Death horror.");
+            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
 #endif     
             inc_nrnb(nrnb,eNR_NBKERNEL_ALLVSALLGB,inneriter);
         }
         else
-        {
+        { 
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
 #  if 0
             /* double not done yet */
             nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                            &outeriter,&inneriter,&fr->AllvsAll_work);
 #  else
-           nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+            nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                            &outeriter,&inneriter,&fr->AllvsAll_work);
 #  endif
 #else

@@ -325,6 +325,15 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
 	newparam->cmap.cmapA=old[0];
 	newparam->cmap.cmapB=old[1];
 	break;
+      case F_GB12:
+      case F_GB13:
+      case F_GB14:
+          newparam->gb.sar  = old[0];
+          newparam->gb.st   = old[1];
+          newparam->gb.pi   = old[2];
+          newparam->gb.gbr  = old[3];
+          newparam->gb.bmlt = old[4];
+          break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
 		ftype,__FILE__,__LINE__);
