@@ -1322,7 +1322,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Construct the virtual sites for the initial configuration */
             construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
                              top->idef.iparams,top->idef.il,
-                             fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+                             fr->ePBC,fr->bMolPBC,graph,cr,state->box
+#ifdef ADRESS
+                             ,mdatoms
+#endif
+                );
         }
     }
 
@@ -1574,7 +1578,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
                 construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,state->v,
                                  top->idef.iparams,top->idef.il,
-                                 fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+                                 fr->ePBC,fr->bMolPBC,graph,cr,state->box
+#ifdef ADRESS
+                                 ,mdatoms
+#endif
+                    );
                 if (graph)
                 {
                     unshift_self(graph,state->box,state->x);
@@ -1950,7 +1958,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,state->v,
                              top->idef.iparams,top->idef.il,
-                             fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+                             fr->ePBC,fr->bMolPBC,graph,cr,state->box
+#ifdef ADRESS
+                             ,mdatoms
+#endif
+                );
 
             if (graph != NULL)
             {

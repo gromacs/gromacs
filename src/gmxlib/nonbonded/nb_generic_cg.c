@@ -84,7 +84,7 @@
      int *         type;
        
 #ifdef ADRESS
-     real *     wf;
+     real **    wf;
      real       weight_cg1;
      real       weight_cg2;
      real       weight_product;
@@ -154,7 +154,8 @@
          fiz              = 0;
          
 #ifdef ADRESS
-         weight_cg1       = wf[ai0];
+         fprintf(stderr,"i = %d, wfi = %f\n",ai0,*wf[ai0]);
+         weight_cg1       = *wf[ai0];
 #endif
           
          for(k=nj0; (k<nj1); k++)
@@ -163,7 +164,7 @@
              aj1              = nlist->jjnr_end[k];
              
 #ifdef ADRESS
-            weight_cg2       = wf[aj0];
+            weight_cg2       = *wf[aj0];
             weight_product   = weight_cg1*weight_cg2;
             weight_product_cg   = (1.0-weight_cg1)*(1.0-weight_cg2);
             /* at least one of the groups is coarse grained */
