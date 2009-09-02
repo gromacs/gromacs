@@ -292,11 +292,6 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_step_t reset_counters;
     gmx_edsam_t ed;
 
-
-    if (nmultisim > 1 && PAR(cr))
-        init_multisystem(cr,nmultisim,nfile,fnm,TRUE);
-
-
     /* Essential dynamics */
     if (opt2bSet("-ei",nfile,fnm)) 
     {
