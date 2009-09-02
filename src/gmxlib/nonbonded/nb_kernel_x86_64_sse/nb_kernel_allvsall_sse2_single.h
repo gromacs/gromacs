@@ -1,6 +1,6 @@
 
-#ifndef _NB_KERNEL_ALLVSALL_H
-#define _NB_KERNEL_ALLVSALL_H
+#ifndef _NB_KERNEL_ALLVSALL_SSE2_SINGLE_H
+#define _NB_KERNEL_ALLVSALL_SSE2_SINGLE_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

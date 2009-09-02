@@ -109,12 +109,6 @@ void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
     if (fp)
         fprintf(fp,"Will do ordinary reciprocal space Ewald sum.\n");
 
-    if (cr != NULL) 
-    {
-        if (cr->nnodes > 1 || cr->nthreads>1)
-            gmx_fatal(FARGS,"No parallel Ewald. Use PME instead.\n");
-    }
-
     (*et)->nx = ir->nkx+1;
     (*et)->ny = ir->nky+1;
     (*et)->nz = ir->nkz+1;
@@ -143,6 +137,12 @@ real do_ewald(FILE *log,       bool bVerbose,
   int  lowiy,lowiz,ix,iy,iz,n,q;
   real tmp,cs,ss,ak,akv,mx,my,mz,m2,scale;
   bool bFreeEnergy;
+
+    if (cr != NULL) 
+    {
+        if (cr->nnodes > 1 || cr->nthreads>1)
+            gmx_fatal(FARGS,"No parallel Ewald. Use PME instead.\n");
+    }
 
 
   if (!et->eir) /* allocate if we need to */

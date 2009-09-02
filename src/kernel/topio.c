@@ -66,6 +66,7 @@
 #include "topshake.h"
 #include "gmxcpp.h"
 #include "gpp_bond_atomtype.h"
+#include "genborn.h"
 
 #define CPPMARK  	'#'	/* mark from cpp			*/
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -293,6 +294,186 @@ char ** cpp_opts(const char *define,const char *include,
   return cppopts;  
 }
 
+
+int
+find_gb_bondlength(t_params *plist,int ai,int aj, real *length)
+{
+    int i,j,a1,a2;
+    
+    int found=0;
+    int status;
+    
+    for(i=0;i<F_NRE && !found;i++)
+    {
+        if(IS_CHEMBOND(i))
+        {
+            for(j=0;j<plist[i].nr; j++)
+            {
+                a1=plist[i].param[j].a[0];
+                a2=plist[i].param[j].a[1];
+                
+                if( (a1==ai && a2==aj) || (a1==aj && a2==ai))
+                {
+                    /* Equilibrium bond distance */
+                    *length=plist[i].param[j].c[0];
+                    found=1;
+                }
+            }
+        }
+    }
+    status = !found;
+    
+    return status;
+}
+
+
+int
+find_gb_anglelength(t_params *plist,int ai,int ak, real *length)
+{
+    int i,j,a1,a2,a3;
+    real r12,r23,a123;
+    int found=0;
+    int status,status1,status2;
+    
+    r12 = r23 = 0;
+    
+    for(i=0;i<F_NRE && !found;i++)
+    {
+        if(IS_ANGLE(i))
+        {
+            for(j=0;j<plist[i].nr; j++)
+            {
+                a1=plist[i].param[j].a[0];
+                a2=plist[i].param[j].a[1];
+                a3=plist[i].param[j].a[2];
+
+                /* We dont care what the middle atom is, but use it below */
+                if( (a1==ai && a3==ak) || (a1==ak && a3==ai) )
+                {                    
+                    /* Equilibrium bond distance */
+                    a123 = plist[i].param[j].c[0];
+                    /* Use middle atom to find reference distances r12 and r23 */
+                    status1 = find_gb_bondlength(plist,a1,a2,&r12);
+                    status2 = find_gb_bondlength(plist,a2,a3,&r23);
+                    
+                    if(status1==0 && status2==0)
+                    {
+                        /* cosine theorem to get r13 */
+                        *length=sqrt(r12*r12+r23*r23-(2*r12*r23*cos(a123/RAD2DEG)));
+                        found=1;
+                    }
+                }
+            }
+        }
+    }
+    status = !found;
+    
+    return status;
+}
+
+int 
+generate_gb_exclusion_interactions(t_molinfo *mi,gpp_atomtype_t atype,t_nextnb *nnb)
+{
+	int          i,j,k,n,ai,aj,ti,tj;
+    int          n12,n13,n14;
+    int          ftype;
+    t_param      param;
+    t_params *   plist;
+    t_atoms *    at;
+    real         radiusi,radiusj;
+    real         gb_radiusi,gb_radiusj;
+    real         param_c2,param_c4;
+    real         distance;
+    
+    plist = mi->plist;
+    at    = &mi->atoms;
+    
+    for(n=1;n<=nnb->nrex;n++)
+    {
+        switch(n)
+        {
+            case 1: 
+                ftype=F_GB12;
+                param_c2 = STILL_P2;
+                param_c4 = 0.8875;
+                break;
+            case 2:
+                ftype=F_GB13;
+                param_c2 = STILL_P3;
+                param_c4 = 0.3516;
+                break;
+            default:
+                /* Put all higher-order exclusions into 1,4 list so we dont miss them */
+                ftype=F_GB14;
+                param_c2 = STILL_P3;
+                param_c4 = 0.3516;
+                break;
+        }
+        
+        for(ai=0;ai<nnb->nr;ai++)
+        {
+            ti         = at->atom[ai].type;
+            radiusi    = get_atomtype_radius(ti,atype);
+            gb_radiusi = get_atomtype_gb_radius(ti,atype);
+            
+            for(j=0;j<nnb->nrexcl[ai][n];j++)
+            {
+                aj = nnb->a[ai][n][j];
+                
+                /* Only add the interactions once */
+                if(aj>ai)
+                {
+                    tj = at->atom[aj].type;
+                    radiusj    = get_atomtype_radius(tj,atype);
+                    gb_radiusj = get_atomtype_gb_radius(tj,atype);
+                    
+                   /* There is an exclusion of type "ftype" between atoms ai and aj */
+                    param.a[0] = ai;
+                    param.a[1] = aj;
+
+                    /* Reference distance, not used for 1-4 interactions */
+                    switch(ftype)
+                    {
+                        case F_GB12:
+                            if(find_gb_bondlength(plist,ai,aj,&distance)!=0)
+                            {
+                                gmx_fatal(FARGS,"Cannot find bond length for atoms %d-%d",ai,aj);
+                            }
+                            break;
+                        case F_GB13:
+                            if(find_gb_anglelength(plist,ai,aj,&distance)!=0)
+                            {
+                                gmx_fatal(FARGS,"Cannot find length for atoms %d-%d involved in angle",ai,aj);
+                            }                            
+                            break;
+                        default:
+                            distance=-1;
+                            break;
+                    }
+                    /* Assign GB parameters */
+                    /* Sum of radii */
+                    param.c[0] = radiusi+radiusj;
+                    /* Reference distance distance */
+                    param.c[1] = distance;
+                    /* Still parameter */
+                    param.c[2] = param_c2;
+                    /* GB radius */
+                    param.c[3] = gb_radiusi+gb_radiusj;
+                    /* Parameter */
+                    param.c[4] = param_c4;
+                    
+                    /* Add it to the parameter list */
+                    add_param_to_list(&plist[ftype],&param);
+                }
+            }
+        }
+	}
+	return 0;
+}
+
+
+
+
 static char **read_topol(const char *infile,const char *outfile,
 			 const char *define,const char *include,
 			 t_symtab    *symtab,
@@ -307,7 +488,7 @@ static char **read_topol(const char *infile,const char *outfile,
 			 int         *nmolblock,
 			 gmx_molblock_t **molblock,
 			 bool        bFEP,
-			 bool        bGB,
+			 bool        bGenborn,
 			 bool        bZero,
 			 bool        bVerbose)
 {
@@ -645,22 +826,39 @@ static char **read_topol(const char *infile,const char *outfile,
 		    "Excluding %d bonded neighbours molecule type '%s'\n",
 		    mi0->nrexcl,*mi0->name);
 	    sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
-	    if (!mi0->bProcessed) {
-	      generate_excl(mi0->nrexcl,
-			    mi0->atoms.nr,
-			    mi0->plist,
-			    &(mi0->excls));
-	      merge_excl(&(mi0->excls),&(block2[whichmol]));
-	      done_block2(&(block2[whichmol]));
-	      make_shake(mi0->plist,&mi0->atoms,atype,opts->nshake);
-	      if (bCouple) {
-		convert_moltype_couple(mi0,dcatt,*fudgeQQ,
-				       opts->couple_lam0,opts->couple_lam1,
-				       opts->bCoupleIntra,
-				       nb_funct,&(plist[nb_funct]));
-	      }
-	      stupid_fill_block(&mi0->mols,mi0->atoms.nr,TRUE);
-	      mi0->bProcessed=TRUE;
+	    if (!mi0->bProcessed) 
+        {
+            t_nextnb nnb;
+            generate_excl(mi0->nrexcl,
+                          mi0->atoms.nr,
+                          mi0->plist,
+                          &nnb,
+                          &(mi0->excls));
+            merge_excl(&(mi0->excls),&(block2[whichmol]));
+            done_block2(&(block2[whichmol]));
+            make_shake(mi0->plist,&mi0->atoms,atype,opts->nshake);
+         
+            
+            
+            /* nnb contains information about first,2nd,3rd bonded neighbors.
+             * Use this to generate GB 1-2,1-3,1-4 interactions when necessary.
+             */
+            if (bGenborn==TRUE)
+            {
+                generate_gb_exclusion_interactions(mi0,atype,&nnb);
+            }
+            
+            done_nnb(&nnb);
+            
+            if (bCouple)
+            {
+                convert_moltype_couple(mi0,dcatt,*fudgeQQ,
+                                       opts->couple_lam0,opts->couple_lam1,
+                                       opts->bCoupleIntra,
+                                       nb_funct,&(plist[nb_funct]));
+            }
+            stupid_fill_block(&mi0->mols,mi0->atoms.nr,TRUE);
+            mi0->bProcessed=TRUE;
 	    }
 	    break;
 	  }
@@ -732,7 +930,7 @@ char **do_top(bool         bVerbose,
 	      t_inputrec   *ir,
 	      int          *nmolblock,
 	      gmx_molblock_t **molblock,
-	      bool          bGB)
+	      bool          bGenborn)
 {
   /* Tmpfile might contain a long path */
   const char *tmpfile;
@@ -748,7 +946,7 @@ char **do_top(bool         bVerbose,
 		   symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
 		   opts,fudgeQQ,nmolblock,molblock,
-		   ir->efep!=efepNO,bGB,bZero,bVerbose);
+		   ir->efep!=efepNO,bGenborn,bZero,bVerbose);
   if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
     warning("Using sigma/epsilon based combination rules with"

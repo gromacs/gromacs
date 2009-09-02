@@ -76,15 +76,6 @@ static __m128 gmx_castsi128_ps(__m128i a) { return *(__m128 *) &a; }
 static __m128i gmx_castps_si128(__m128 a) { return *(__m128i *) &a; } 
 #endif
 
-/* Still parameters - make sure to edit in genborn.c too if you change these! */
-#define STILL_P1  0.073*0.1              /* length        */
-#define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
-#define STILL_P3  6.211*0.1*CAL2JOULE    /* energy*length */
-#define STILL_P4  15.236*0.1*CAL2JOULE
-#define STILL_P5  1.254 
-
-#define STILL_P5INV (1.0/STILL_P5)
-#define STILL_PIP5  (M_PI*STILL_P5)
 
 static inline void
 sincos_sse2single(__m128 x, __m128 *sinval, __m128 *cosval)

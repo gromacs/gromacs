@@ -70,15 +70,7 @@
 #endif /* GMX_DOUBLE */
 #endif /* GMX_SSE */
 
-/* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
-#define STILL_P1  0.073*0.1              /* length        */
-#define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
-#define STILL_P3  6.211*0.1*CAL2JOULE    /* energy*length */
-#define STILL_P4  15.236*0.1*CAL2JOULE
-#define STILL_P5  1.254 
 
-#define STILL_P5INV (1.0/STILL_P5)
-#define STILL_PIP5  (M_PI*STILL_P5)
 
 typedef struct {
     int shift;
@@ -209,84 +201,6 @@ int init_gb_plist(t_params *p_list)
 }
 
 
-static void assign_gb_param(t_functype ftype,t_iparams *new_par,
-                            real old[MAXFORCEPARAM],int comb,real reppow)
-{
-    int  i,j;
-    
-    /* Set to zero */
-    for(j=0; (j<MAXFORCEPARAM); j++)
-    {
-        new_par->generic.buf[j] = 0.0;
-    }
-  
-    switch (ftype)
-    {
-    case F_GB12:
-    case F_GB13:
-    case F_GB14:
-        new_par->gb.c6A=old[0];
-        new_par->gb.c12A=old[1];
-        new_par->gb.c6B=old[2];
-        new_par->gb.c12B=old[3];
-        new_par->gb.sar=old[4];
-        new_par->gb.st=old[5];
-        new_par->gb.pi=old[6];
-        new_par->gb.gbr=old[7];
-        new_par->gb.bmlt=old[8];
-        break;
-    default:
-        gmx_fatal(FARGS,"unknown function type %d in %s line %d",
-                  ftype,__FILE__,__LINE__);		
-	}
-}
-
-static void 
-append_gb_interaction(t_ilist *ilist,
-					  int type,int nral,atom_id a[MAXATOMLIST])
-{
-  int i,where1;
-  
-  where1     = ilist->nr;
-  ilist->nr += nral+1;
-	
-  ilist->iatoms[where1++]=type;
-  for (i=0; (i<nral); i++) 
-  {
-    ilist->iatoms[where1++]=a[i];
-  }
-}
-
-
-static int 
-enter_gb_params(gmx_ffparams_t *ffparams, t_functype ftype,
-				real forceparams[MAXFORCEPARAM],int comb,real reppow,
-				int start,bool bAppend)
-{
-  t_iparams new_par;
-  int       type;
-	
-	assign_gb_param(ftype,&new_par,forceparams,comb,reppow);
-  if (!bAppend) {
-		for (type=start; (type<ffparams->ntypes); type++) {
-      if (ffparams->functype[type]==ftype) {
-					if (memcmp(&new_par,&ffparams->iparams[type],(size_t)sizeof(new_par)) == 0)
-					return type;
-      }
-    }
-  }
-  else
-    type=ffparams->ntypes;
-  if (debug)
-    fprintf(debug,"copying new_par to idef->iparams[%d] (ntypes=%d)\n",
-						type,ffparams->ntypes);
-  memcpy(&ffparams->iparams[type],&new_par,(size_t)sizeof(new_par));
-  
-  ffparams->ntypes++;
-  ffparams->functype[type]=ftype;
-	
-  return type;
-}
 
 int init_gb_still(const t_commrec *cr, t_forcerec  *fr, const t_atomtypes *atype, t_idef *idef, t_atoms *atoms, gmx_genborn_t *born,int natoms)
 {
@@ -596,239 +510,7 @@ int init_gb(gmx_genborn_t **p_born,
 	return 0;
 }
 
-int generate_gb_topology(gmx_mtop_t *mtop, t_molinfo *mi)
-{
-	int i,j,k,type,m,a1,a2,a3,a4,nral,maxtypes,start,comb,mt;
-	int natoms,n12,n13,n14,a1type,a2type,a3type;
-	double p1,p2,p3,cosine,r2,rab,rbc;
-	
-	t_params *plist;
-	t_params plist_gb12;
-	t_params plist_gb13;
-	t_params plist_gb14;
-	genborn_bonds_t *bonds;
 
-	gmx_ffparams_t *ffp;
-	gmx_moltype_t *molt;
-	
-	/* To keep the compiler happy */
-	rab=rbc=0;
-
-	p1=STILL_P1;
-	p2=STILL_P2;
-	p3=STILL_P3;
-	
-	plist_gb12.param = NULL;
-	plist_gb13.param = NULL;
-	plist_gb14.param = NULL;
-	bonds             = NULL;
-	
-	for(mt=0;mt<mtop->nmoltype;mt++)
-	{
-		plist = mi[mt].plist;
-		plist_gb12.nr = plist_gb13.nr = plist_gb14.nr = 0;
-		n12 = n13 = n14 = 0;
-		
-		for(i=0;i<F_NRE;i++)
-		{
-			if(IS_CHEMBOND(i))
-			{
-				n12 += plist[i].nr;
-			}
-			else if(IS_ANGLE(i))
-			{
-				n13 += plist[i].nr;
-			}
-			else if(i==F_LJ14)
-			{
-				n14 += plist[i].nr;
-			}
-		}
-		
-		srenew(plist_gb12.param,n12);
-		srenew(plist_gb13.param,n13);
-		srenew(plist_gb14.param,n14);
-		srenew(bonds,mi[mt].atoms.nr);
-		
-		for(i=0;i<mi[mt].atoms.nr;i++)
-		{
-			bonds[i].nbonds=0;
-		}
-			
-		/* We need to find all bonds lengths first */
-		for(i=0;i<F_NRE;i++)
-		{
-			if(IS_CHEMBOND(i))
-			{
-				for(j=0;j<plist[i].nr; j++)
-				{
-					a1=plist[i].param[j].a[0];
-					a2=plist[i].param[j].a[1];
-
-					if(mi[mt].atoms.atom[a1].q!=0 && mi[mt].atoms.atom[a2].q!=0)
-					{
-						bonds[a1].bond[bonds[a1].nbonds]=a2;
-						bonds[a1].length[bonds[a1].nbonds]=plist[i].param[j].c[0];
-						bonds[a1].nbonds++;
-						bonds[a2].bond[bonds[a2].nbonds]=a1;
-						bonds[a2].length[bonds[a2].nbonds]=plist[i].param[j].c[0];
-						bonds[a2].nbonds++;
-						
-						plist_gb12.param[plist_gb12.nr].a[0]=a1;
-						plist_gb12.param[plist_gb12.nr].a[1]=a2;
-						
-						/* LJ parameters */
-						plist_gb12.param[plist_gb12.nr].c[0]=-1;
-						plist_gb12.param[plist_gb12.nr].c[1]=-1;
-						plist_gb12.param[plist_gb12.nr].c[2]=-1;
-						plist_gb12.param[plist_gb12.nr].c[3]=-1;
-						
-						/* GBSA parameters */
-						a1type = mi[mt].atoms.atom[a1].type;
-						a2type = mi[mt].atoms.atom[a2].type;
-						
-						plist_gb12.param[plist_gb12.nr].c[4]=mtop->atomtypes.radius[a1type]+mtop->atomtypes.radius[a2type];	
-						plist_gb12.param[plist_gb12.nr].c[5]=plist[i].param[j].c[0]; /* bond length */
-						plist_gb12.param[plist_gb12.nr].c[6]=p2;
-						plist_gb12.param[plist_gb12.nr].c[7]=mtop->atomtypes.gb_radius[a1type]+mtop->atomtypes.gb_radius[a2type];
-						plist_gb12.param[plist_gb12.nr].c[8]=0.8875;
-						plist_gb12.nr++;
-					}
-				}
-			}
-		}
-		
-		/* Now we detect angles and 1,4 pairs in parallel */
-		for(i=0;i<F_NRE;i++)
-		{
-			if(IS_ANGLE(i))
-			{
-				if(F_G96ANGLES==i && plist[i].nr>0)
-				{
-					gmx_fatal(FARGS,"Cannot do GB with Gromos96 angles - yet\n");
-				}
-				
-				for(j=0;j<plist[i].nr; j++)
-				{
-					a1=plist[i].param[j].a[0];
-					a2=plist[i].param[j].a[1];
-					a3=plist[i].param[j].a[2];	
-					
-					plist_gb13.param[plist_gb13.nr].a[0]=a1;
-					plist_gb13.param[plist_gb13.nr].a[1]=a3;
-					
-					/* LJ parameters */	
-					plist_gb13.param[plist_gb13.nr].c[0]=-1;
-					plist_gb13.param[plist_gb13.nr].c[1]=-1;
-					plist_gb13.param[plist_gb13.nr].c[2]=-1;
-					plist_gb13.param[plist_gb13.nr].c[3]=-1;
-					
-					/* GBSA parameters */
-					a1type = mi[mt].atoms.atom[a1].type;
-					a3type = mi[mt].atoms.atom[a3].type;
-					
-					plist_gb13.param[plist_gb13.nr].c[4]=mtop->atomtypes.radius[a1type]+mtop->atomtypes.radius[a3type];	
-					
-					for(k=0;k<bonds[a2].nbonds;k++)
-					{
-						if(bonds[a2].bond[k]==a1)
-						{
-							rab = bonds[a2].length[k];
-						}
-						else if(bonds[a2].bond[k]==a3)
-						{
-							rbc=bonds[a2].length[k];
-						}
-					}
-					
-					cosine=cos(plist[i].param[j].c[0]/RAD2DEG);
-					r2=rab*rab+rbc*rbc-(2*rab*rbc*cosine);
-					plist_gb13.param[plist_gb13.nr].c[5]=sqrt(r2);
-					plist_gb13.param[plist_gb13.nr].c[6]=p3;
-					plist_gb13.param[plist_gb13.nr].c[7]=mtop->atomtypes.gb_radius[a1type]+mtop->atomtypes.gb_radius[a3type];
-					plist_gb13.param[plist_gb13.nr].c[8]=0.3516;
-					plist_gb13.nr++;
-				}	
-			}
-			
-			if(F_LJ14 == i)
-			{
-				for(j=0;j<plist[F_LJ14].nr; j++)
-				{
-					a1=plist[F_LJ14].param[j].a[0];
-					a2=plist[F_LJ14].param[j].a[1];
-					
-					plist_gb14.param[plist_gb14.nr].a[0]=a1;
-					plist_gb14.param[plist_gb14.nr].a[1]=a2;
-					
-					plist_gb14.param[plist_gb14.nr].c[0]=-1;
-					plist_gb14.param[plist_gb14.nr].c[1]=-1;
-					plist_gb14.param[plist_gb14.nr].c[2]=-1;
-					plist_gb14.param[plist_gb14.nr].c[3]=-1;
-					
-					/* GBSA parameters */
-					a1type = mi[mt].atoms.atom[a1].type;
-					a2type = mi[mt].atoms.atom[a2].type;
-					
-					plist_gb14.param[plist_gb14.nr].c[4]=mtop->atomtypes.radius[a1type]+mtop->atomtypes.radius[a2type];	
-					plist_gb14.param[plist_gb14.nr].c[5]=-1;
-					plist_gb14.param[plist_gb14.nr].c[6]=p3;
-					plist_gb14.param[plist_gb14.nr].c[7]=mtop->atomtypes.gb_radius[a1type]+mtop->atomtypes.gb_radius[a2type];
-					plist_gb14.param[plist_gb14.nr].c[8]=0.3516;
-					plist_gb14.nr++;
-				}	
-			}
-		}
-
-		/* Put GB 1-2, 1-3, and 1-4 interactions into topology, per moleculetype */
-		ffp  = &mtop->ffparams;
-		molt = &mtop->moltype[mt];
-	
-		convert_gb_params(ffp, F_GB12, &plist_gb12,&molt->ilist[F_GB12]);
-		convert_gb_params(ffp, F_GB13, &plist_gb13,&molt->ilist[F_GB13]);
-		convert_gb_params(ffp, F_GB14, &plist_gb14,&molt->ilist[F_GB14]); 
-	}
-	
-	return 0;
-	
-}
-
-int convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist, t_ilist *il)
-{
-	int k,nr,nral,delta,maxtypes,comb,type,start;
-	real reppow;
-	
-	nral     = NRAL(ftype);
-	start    = ffparams->ntypes;
-	maxtypes = ffparams->ntypes; 
-	nr	     = gb_plist->nr;
-	comb     = 3;
-	reppow   = 12;
-	
-	for (k=0; k<nr; k++) 
-	{
-		if (maxtypes <= ffparams->ntypes) 
-		{
-			maxtypes += 1000;
-			srenew(ffparams->functype,maxtypes);
-			srenew(ffparams->iparams, maxtypes);
-			
-			if (debug) 
-				fprintf(debug,"%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
-						__FILE__,__LINE__,maxtypes);
-		}
-	
-		type=enter_gb_params(ffparams,ftype,gb_plist->param[k].c,comb,reppow,start,0);
-		
-		delta = nr*(nral+1);
-		srenew(il->iatoms,il->nr+delta);
-		
-		append_gb_interaction(il,type,nral,gb_plist->param[k].a);
-	}
-	
-	return 0;
-
-}
 
 static int
 calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
@@ -1790,9 +1472,9 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 		t[ai][1] = t[ai][1] + fiy1;
 		t[ai][2] = t[ai][2] + fiz1;
 		
-		fshift[ai][0] = fshift[ai][0] + fix1;
-		fshift[ai][1] = fshift[ai][1] + fiy1;
-		fshift[ai][2] = fshift[ai][2] + fiz1;
+		fshift[shift][0] = fshift[shift][0] + fix1;
+		fshift[shift][1] = fshift[shift][1] + fiy1;
+		fshift[shift][2] = fshift[shift][2] + fiz1;
 		
 	}
 
@@ -1969,7 +1651,7 @@ int make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
     t_pbc pbc;
 
 	struct gbtmpnbls *nls;
-    gbtmpnbl_t *list;
+    gbtmpnbl_t *list =NULL;
 	
 	nls   = born->nblist_work;
 	
