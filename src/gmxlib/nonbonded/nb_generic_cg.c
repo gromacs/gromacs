@@ -154,7 +154,6 @@
          fiz              = 0;
          
 #ifdef ADRESS
-         fprintf(stderr,"i = %d, wfi = %f\n",ai0,*wf[ai0]);
          weight_cg1       = *wf[ai0];
 #endif
           
