@@ -195,7 +195,7 @@ enum {
 
 /* Enforced rotation */
 enum {
-  erotgFIXED, erotgFLEX, erotgFLEX2, erotgNR
+  erotgFIXED, erotgFIXED_PLANE, erotgFLEX1, erotgFLEX2, erotgNR
 };
 
 /* QMMM */

@@ -83,7 +83,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         sprintf(buf,"rot_group%d",g);
         STYPE(buf,              grpbuf[g], "");
         
-        CTYPE("Rotation type can be Fixed, Flexible or Flexible2");
+        CTYPE("Rotation type can be Fixed, FixedPlane, Flexible1 or Flexible2");
         sprintf(buf,"rot_type%d",g);
         ETYPE(buf,              rotg->eType, erotg_names);
         
@@ -96,7 +96,8 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
             dsvmul(1.0/dnorm(vec),vec,vec);
         else
             gmx_fatal(FARGS,"rot_vec%d must not be 0!", g);
-        fprintf(stderr, "Rotation vector %d after normalisation: %f %f %f\n", g, vec[0], vec[1], vec[2]);
+        fprintf(stderr, "Enforced rotation: Group %d (%s) normalized rot. vector: %f %f %f\n", 
+                g, erotg_names[rotg->eType], vec[0], vec[1], vec[2]);
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         

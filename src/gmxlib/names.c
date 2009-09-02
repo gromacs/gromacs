@@ -181,7 +181,7 @@ const char *epullg_names[epullgNR+1] = {
 };
 
 const char *erotg_names[erotgNR+1] = { 
-  "fixed", "flexible", "flexible2", NULL
+  "fixed", "fixedplane", "flexible1", "flexible2", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {

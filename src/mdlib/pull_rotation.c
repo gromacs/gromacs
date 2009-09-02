@@ -112,11 +112,12 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
             switch (rotg->eType)
             {
             case erotgFIXED:
+            case erotgFIXED_PLANE:
                 rot->inbuf[count++] = rotg->fix_torque_v;
                 rot->inbuf[count++] = rotg->fix_angles_v;
                 rot->inbuf[count++] = rotg->fix_weight_v;
                 break;
-            case erotgFLEX:
+            case erotgFLEX1:
             case erotgFLEX2:
                 /* (Re-)allocate memory for MPI buffer: */
                 if (rot->bufsize < count+nslabs)
@@ -147,11 +148,12 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
                 switch (rotg->eType)
                 {
                 case erotgFIXED:
+                case erotgFIXED_PLANE:
                     rotg->fix_torque_v = rot->outbuf[count++];
                     rotg->fix_angles_v = rot->outbuf[count++];
                     rotg->fix_weight_v = rot->outbuf[count++];
                     break;
-                case erotgFLEX:
+                case erotgFLEX1:
                 case erotgFLEX2:
                     for (i=0; i<nslabs; i++)
                         rotg->slab_torque_v[i] = rot->outbuf[count++];
@@ -172,7 +174,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
             rotg=&rot->grp[g];
             
             /* Output to main rotation log file: */
-            if (rotg->eType == erotgFIXED)
+            if (rotg->eType == erotgFIXED || rotg->eType == erotgFIXED_PLANE)
             {
                 fprintf(rot->out_rot, "%12.4f%12.3e", 
                         (rotg->fix_angles_v/rotg->fix_weight_v)*180.0*M_1_PI,
@@ -181,7 +183,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
             fprintf(rot->out_rot, "%12.3e", rotg->V);
                         
             /* Output to torque log file: */
-            if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+            if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
             {
                 fprintf(rot->out_torque, "%12.3e%6d", t, g);
                 k = rotg->slab_max_nr;
@@ -435,39 +437,26 @@ static void calc_rotmat(
 }
 
 
-/* Calculates torque m = r x f_perp */
-static inline real torque(rvec v,  /* IN:  axis of rotation */
-        rvec f,  /* IN:  force */
-        rvec x,  /* IN:  coordinate of atom on which the force acts */
-        rvec c)  /* IN:  center of mass of the slab (through this point
-                                                     the axis of rotation goes */
+/* Calculates torque on the rotation axis 
+ * tau = coord x force */
+static inline real torque(
+        rvec rotvec,  /* rotation vector; MUST be normalized! */
+        rvec force,   /* force */
+        rvec x,       /* coordinate of atom on which the force acts */
+        rvec offset)  /* piercing point of rotation axis 
+                       * (COG of the slab for the flexible types) */
 {
-    rvec f_perp,r,e;
-    real alpha;
-    rvec m, vectmp;
+    rvec vectmp, tau;
 
-
-    /* Calculate alpha = v(x-c)/(v*v) */
-    rvec_sub(x, c, vectmp);
-    alpha = iprod(v, vectmp)/norm2(v); /* Actually v should be a unit vector anyway */
-
-    /* Calculate r = x-a = x-(c+alpha*v) */
-    svmul(alpha, v, vectmp);  /*  vectmp = alpha*v      */
-    rvec_inc(vectmp, c);      /*  vectmp = alpha*v + c  */
-    rvec_sub(x, vectmp, r);   /*  r      = x - a        */
-
-    /* Calculate e, which is a unit vector in the direction of f_perp: */
-    cprod(v, r, vectmp);
-    unitv(vectmp, e);
-
-    /* Calculate f_perp: */
-    svmul(iprod(f,e),e,f_perp);
-
-    /* Calculate torque m: */
-    cprod(r, f_perp, m);
-
-    /* Return the scalar value of m which is in the direction of the rotation axis v: */
-    return iprod(m, v);
+    
+    /* Subtract offset */
+    rvec_sub(x,offset,vectmp);
+    
+    /* coord x force */
+    cprod(vectmp, force, tau);
+    
+    /* Return the part of the torque which is parallel to the rotation vector */
+    return iprod(tau, rotvec);
 }
 
 
@@ -520,7 +509,7 @@ static FILE *open_slab_out(t_rot *rot)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
         {
             if (NULL == fp)
                 fp = open_output_file("slabCOGs.log", rot->nsttout);
@@ -576,9 +565,10 @@ static FILE *open_rot_out(t_rot *rot)
         switch (rotg->eType)
         {
         case erotgFIXED:
+        case erotgFIXED_PLANE:
             fprintf(fp, "%% rot_offset%d         %10.3e %10.3e %10.3e\n", g, rotg->offset[XX], rotg->offset[YY], rotg->offset[ZZ]);
             break;
-        case erotgFLEX:
+        case erotgFLEX1:
         case erotgFLEX2:
             fprintf(fp, "%% rot_slab_distance%d   %f nm\n", g, rotg->slab_dist);
             fprintf(fp, "%% rot_min_gaussian%d   %10.3e\n", g, rotg->min_gaussian);
@@ -598,7 +588,7 @@ static FILE *open_rot_out(t_rot *rot)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFIXED)
+        if (rotg->eType==erotgFIXED || rotg->eType==erotgFIXED_PLANE)
         {
             print_aligned_group(fp, "theta_av", g);
             print_aligned_group(fp, "tau", g);
@@ -626,7 +616,7 @@ static FILE *open_angles_out(t_rot *rot, char filename[])
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
             fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
     }
     fprintf(fp, "%% The following columns will have the syntax:\n");
@@ -661,7 +651,7 @@ static FILE *open_torque_out(t_rot *rot)
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
         {
             fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
             fprintf(fp, "%% The scalar tau is the torque [kJ/mol] in the direction of the rotation vector.\n");
@@ -1717,7 +1707,7 @@ static void do_flexible(
     
     /* Call the rotational forces kernel */
     GMX_MPE_LOG(ev_flexll_start);
-    if (rotg->eType == erotgFLEX)
+    if (rotg->eType == erotgFLEX1)
         rotg->V = do_flex_lowlevel(rotg, rotmat, sigma, x, bOutstep, box, cr);
     else if (rotg->eType == erotgFLEX2)
         rotg->V = do_flex2_lowlevel(rotg, rotmat, sigma, x, bOutstep, box, cr);
@@ -1733,7 +1723,6 @@ static void do_flexible(
 
 
 /* Calculate the angle between reference and actual rotation group atom: */
-/* This routine assumes that rot_vec is a unit vector! */
 static void angle(t_rotgrp *rotg,
         rvec x_act,
         rvec x_ref,
@@ -1753,11 +1742,11 @@ static void angle(t_rotgrp *rotg,
     rvec_sub(x_ref, rotg->offset, xr);
 
     /* Project xr and x into a plane through the origin perpendicular to rot_vec: */
-    /* Project xr: xrp = xr - (rot_vec * xr) * rot_vec */
-    svmul(iprod(rotg->vec, xr), rotg->vec, dum);    /* only works if pg->vec is a unit vector! */
+    /* Project xr: xrp = xr - (vec * xr) * vec */
+    svmul(iprod(rotg->vec, xr), rotg->vec, dum);
     rvec_sub(xr, dum, xrp);
     /* Project x: */
-    svmul(iprod(rotg->vec, x), rotg->vec, dum);    /* only works if pg->vec is a unit vector! */
+    svmul(iprod(rotg->vec, x), rotg->vec, dum);
     rvec_sub(x, dum, xp);
 
     /* Calculate the angle between the projected coordinates: */
@@ -1767,7 +1756,7 @@ static void angle(t_rotgrp *rotg,
     if (cosalpha >  1.0) cosalpha =  1.0;
 
     /* Retrieve some information about which vector precedes */
-    cprod(xp, xrp, dum); /* if reference precedes, this is pointing into the same direction as pg->vec */
+    cprod(xp, xrp, dum); /* if reference precedes, this is pointing into the same direction as vec */
 
     if (iprod(rotg->vec, dum) >= 0)
         /* This will be the case when the reference group runs ahead. Thus the sign for the
@@ -1780,6 +1769,19 @@ static void angle(t_rotgrp *rotg,
     *alpha = sign * acos(cosalpha);
     /* Also return the weight */
     *weight = normxp;
+}
+
+
+/* Project first vector onto a plane perpendicular to the second vector 
+ * dr = dr - (dr.v)v
+ */
+static inline void project_onto_plane(rvec dr, const rvec v)
+{
+    rvec tmp;
+    
+    
+    svmul(iprod(dr,v),v,tmp);  /* tmp = (dr.v)v */
+    rvec_dec(dr, tmp);         /* dr = dr - (dr.v)v */
 }
 
 
@@ -1835,6 +1837,9 @@ static void do_fixed(
         /* Difference vector between reference and actual coordinate: */
         pbc_dx(pbc,xr,x1, dr);
         
+        if (rotg->eType==erotgFIXED_PLANE)
+            project_onto_plane(dr, rotg->vec);
+            
         /* Store the additional force so that it can be added to the force
          * array after the normal forces have been evaluated */
         for (m=0; m<DIM; m++)
@@ -1870,6 +1875,10 @@ static void do_fixed(
                   vir[j][m] += 0.5*f[ii][j]*dr[m];
             }
          */
+#ifdef INFOF
+        fprintf(stderr," FORCE on ATOM %d = (%15.8f %15.8f %15.8f)  torque=%15.8f\n",
+                ii,rotg->f_rot_loc[i][XX], rotg->f_rot_loc[i][YY], rotg->f_rot_loc[i][ZZ],rotg->fix_torque_v);
+#endif
     } /* end of loop over local rotation group atoms */
 }
 
@@ -1892,7 +1901,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
     bool        bFlex;
 
     /* Enforced rotation with fixed/flexible axis */    
-    bFlex = (rot_type == erotgFLEX || rot_type == erotgFLEX2);
+    bFlex = (rot_type == erotgFLEX1 || rot_type == erotgFLEX2);
     
     snew(rotg->xc_ref       , rotg->nat);
     snew(rotg->xc_ref_length, rotg->nat);
@@ -2106,7 +2115,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,
         if (fplog)
             fprintf(fplog,"Enforced rotation: group %d type '%s'\n", g, erotg_names[rotg->eType]);
 
-        if (rotg->eType == erotgFLEX || rotg->eType == erotgFLEX2)
+        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
             bFlex = TRUE;
         
         if (rotg->nat > 0)
@@ -2191,7 +2200,7 @@ extern void do_rotation(
         /* Transfer the rotation group's coordinates such that every node has all of them.
          * Every node contributes its local coordinates x and stores it in
          * the collective pg->xc array. */
-        if (rotg->eType != erotgFIXED)
+        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
             get_coordinates(cr, rotg, x, rot->bUpdateShifts, box);
     }
     
@@ -2208,15 +2217,20 @@ extern void do_rotation(
         /* Calculate the rotation matrix for this angle: */
         calc_rotmat(rotg->vec,degangle,rotmat);
 
-        if (rotg->eType == erotgFIXED)
+        switch(rotg->eType)
         {
+        case erotgFIXED:
+        case erotgFIXED_PLANE:
             set_pbc(&pbc,ir->ePBC,box);
             do_fixed(cr,rotg,rotmat,x,&pbc,t,step,outstep_torque);
-        }
-        else
-        {
+            break;
+        case erotgFLEX1:
+        case erotgFLEX2:
             do_flexible(cr,rotg,g,degangle,rotmat,x,box,t,DYNAMIC_BOX(*ir),step,outstep_torque,
                     rot->out_slabs,rot->out_torque,rot->out_angles,rot->out_nangles);
+            break;
+        default:
+            break;
         }
     }
     /* If bUpdateShifts was TRUE then the shifts have just been updated in get_coordinates.
