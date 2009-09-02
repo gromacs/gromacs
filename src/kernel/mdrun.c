@@ -415,6 +415,14 @@ int main(int argc,char *argv[])
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
+  if (nmultisim > 1) {
+#ifndef GMX_THREADS
+    init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+#else
+    gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library, you need to compile GROMACS with a standard MPI library");
+#endif
+  }
+
   /* Check if there is ANY checkpoint file available */	
   sim_part = 1;
   if(opt2bSet("-cpi",NFILE,fnm))
