@@ -164,7 +164,7 @@
 #include "scanner.h"
 
 static void
-yyerror(gmx_sel_lexer_t *, int, gmx_ana_indexgrps_t *, char const *s);
+yyerror(yyscan_t, int, gmx_ana_indexgrps_t *, char const *s);
 
 static t_selelem *
 get_group_by_name(gmx_ana_indexgrps_t *grps, char *name);
@@ -843,14 +843,14 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yy_symbol_value_print (yyoutput, yytype, yyvaluep, scanner, nexp, grps)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -881,14 +881,14 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, scanner, nexp, grps)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yy_symbol_print (yyoutput, yytype, yyvaluep, scanner, nexp, grps)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -938,13 +938,13 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, int yyrule, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yy_reduce_print (YYSTYPE *yyvsp, int yyrule, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yy_reduce_print (yyvsp, yyrule, scanner, nexp, grps)
     YYSTYPE *yyvsp;
     int yyrule;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -1219,14 +1219,14 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yydestruct (yymsg, yytype, yyvaluep, scanner, nexp, grps)
     const char *yymsg;
     int yytype;
     YYSTYPE *yyvaluep;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -1344,7 +1344,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps);
+int yyparse (yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps);
 #else
 int yyparse ();
 #endif
@@ -1373,11 +1373,11 @@ yyparse (YYPARSE_PARAM)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 int
-yyparse (gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yyparse (yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 int
 yyparse (scanner, nexp, grps)
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -2326,7 +2326,7 @@ yyreturn:
  * \returns       0 on success, -1 on error.
  */
 int
-_gmx_sel_run_parser(gmx_sel_lexer_t *scanner, gmx_ana_selcollection_t *sc,
+_gmx_sel_run_parser(yyscan_t scanner, gmx_ana_selcollection_t *sc,
                     gmx_ana_indexgrps_t *grps, int maxnr)
 {
     bool bOk;
@@ -2446,7 +2446,7 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 }
 
 static void
-yyerror(gmx_sel_lexer_t *scanner, int nexp, gmx_ana_indexgrps_t *grps,
+yyerror(yyscan_t scanner, int nexp, gmx_ana_indexgrps_t *grps,
         char const *s)
 {
     _gmx_selparser_error("%s", s);

@@ -60,7 +60,7 @@
 #include "scanner.h"
 
 static void
-yyerror(gmx_sel_lexer_t *, int, gmx_ana_indexgrps_t *, char const *s);
+yyerror(yyscan_t, int, gmx_ana_indexgrps_t *, char const *s);
 
 static t_selelem *
 get_group_by_name(gmx_ana_indexgrps_t *grps, char *name);
@@ -159,8 +159,8 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 %debug
 %pure-parser
 
-%parse-param { gmx_sel_lexer_t         *scanner }
-%lex-param   { gmx_sel_lexer_t         *scanner }
+%parse-param { yyscan_t                 scanner }
+%lex-param   { yyscan_t                 scanner }
 %parse-param { int                      nexp    }
 %parse-param { gmx_ana_indexgrps_t     *grps    }
 
@@ -504,7 +504,7 @@ method_param:
  * \returns       0 on success, -1 on error.
  */
 int
-_gmx_sel_run_parser(gmx_sel_lexer_t *scanner, gmx_ana_selcollection_t *sc,
+_gmx_sel_run_parser(yyscan_t scanner, gmx_ana_selcollection_t *sc,
                     gmx_ana_indexgrps_t *grps, int maxnr)
 {
     bool bOk;
@@ -624,7 +624,7 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 }
 
 static void
-yyerror(gmx_sel_lexer_t *scanner, int nexp, gmx_ana_indexgrps_t *grps,
+yyerror(yyscan_t scanner, int nexp, gmx_ana_indexgrps_t *grps,
         char const *s)
 {
     _gmx_selparser_error("%s", s);
