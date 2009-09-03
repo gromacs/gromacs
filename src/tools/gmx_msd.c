@@ -33,10 +33,6 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
- 
-/*Modified version of gromacs msd code to calculate msd per molecule, 
-also time-weighted rdf*/
- 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -681,11 +677,11 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 	     int nrgrp, t_topology *top,int ePBC,
 	     bool bTen,bool bMW,bool bRmCOMM,
 	     int type,real dim_factor,int axis,
-	     real dt,real beginfit,real endfit, bool eachatom)
+	     real dt,real beginfit,real endfit)
 {
   t_corr       *msd;
   int          *gnx;
-  atom_id      **index,**idx2;
+  atom_id      **index;
   char         **grpname;
   int          i,i0,i1,j,N,nat_trx;
   real         *DD,*SigmaD,a,a2,b,r;
@@ -700,27 +696,6 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 
   if (mol_file)
     index_atom2mol(&gnx[0],index[0],&top->mols);
-
-  if (eachatom)
-  {
-	  //code added here
-	  nrgrp=*gnx;  
-	  idx2=index;
-	  snew(index,nrgrp);
-	  sfree(grpname);
-	  snew(grpname,nrgrp);
-	  sfree(gnx);
-	  snew(gnx,nrgrp);
-	  for (i=0;i<nrgrp;++i)
-	  {
-		  snew(index[i],1);
-		  index[i][0]=idx2[0][i];  //assign each atom in group to a separate index
-		  snew(grpname[i],10);
-		  sprintf(grpname[i],"%d\0",i);
-		  gnx[i]=1;
-	  }
-
-  }
 
   msd = init_corr(nrgrp,type,axis,dim_factor,
 		  mol_file==NULL ? 0 : gnx[0],bTen,bMW,dt,top,
@@ -848,8 +823,7 @@ int gmx_msd(int argc,char *argv[])
   static bool bTen       = FALSE;
   static bool bMW        = TRUE;
   static bool bRmCOMM    = FALSE;
-  static bool bEach		 = FALSE;
-    t_pargs pa[] = {
+  t_pargs pa[] = {
     { "-type",    FALSE, etENUM, {normtype},
       "Compute diffusion coefficient in one direction" },
     { "-lateral", FALSE, etENUM, {axtitle}, 
@@ -869,9 +843,7 @@ int gmx_msd(int argc,char *argv[])
     { "-beginfit",FALSE, etTIME, {&beginfit},
       "Start time for fitting the MSD (%t), -1 is 10%" },
     { "-endfit",FALSE, etTIME, {&endfit},
-      "End time for fitting the MSD (%t), -1 is 90%" },
-	{ "-each", FALSE, etBOOL, {&bEach},
-	"Calculate diffusion for each atom in selected group"}
+      "End time for fitting the MSD (%t), -1 is 90%" }
   };
 
   t_filenm fnm[] = { 
@@ -945,7 +917,7 @@ int gmx_msd(int argc,char *argv[])
 		tps_file);
     
   do_corr(trx_file,ndx_file,msd_file,mol_file,pdb_file,t_pdb,ngroup,
-	  &top,ePBC,bTen,bMW,bRmCOMM,type,dim_factor,axis,dt,beginfit,endfit,bEach);
+	  &top,ePBC,bTen,bMW,bRmCOMM,type,dim_factor,axis,dt,beginfit,endfit);
   
   view_all(NFILE, fnm);
   
