@@ -59,6 +59,7 @@ typedef struct {
   char *fn;
   FILE *fp;
   XDR  *xdr;
+  bool bLargerThan_off_t;
 } t_fileio;
 
 
@@ -765,6 +766,7 @@ int gmx_fio_open(const char *fn,char *mode)
 	fio->bDouble= (sizeof(real) == sizeof(double));
 	fio->bDebug = FALSE;
 	fio->bOpen  = TRUE;
+	fio->bLargerThan_off_t = FALSE;
 	
 	return nfio;
 }
@@ -827,6 +829,51 @@ gmx_fio_fclose(FILE *fp)
 }
 
 
+static int
+gmx_fio_get_file_position(int fio,off_t *offset)
+{
+    char buf[STRLEN];
+
+    /* Flush the file, so we are sure it is written */
+    if (gmx_fio_flush(fio) != 0)
+    {
+	sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[fio].fn);
+	gmx_file(buf);
+    }
+  
+    /* We cannot count on XDR being able to write 64-bit integers, so separate into high/low 32-bit values.
+     * In case the filesystem has 128-bit offsets we only care about the first 64 bits - we'll have to fix
+     * this when exabyte-size output files are common...
+     */
+#ifdef HAVE_FSEEKO
+    *offset = ftello(FIO[fio].fp);
+#else
+    *offset = ftell(FIO[fio].fp);
+#endif
+
+    return 0;
+}
+
+
+int gmx_fio_check_file_position(int fio)
+{
+#if (SIZEOF_OFF_T == 4)
+    off_t offset;
+    
+    gmx_fio_get_file_position(fio,&offset);
+    /* We have a 4 byte offset,
+     * make sure that we will detect out of range for all possible cases.
+     */
+    if (offset < 0 || offset > 2147483647)
+    {
+        FIO[fio].bLargerThan_off_t = TRUE;
+    }
+#endif
+
+    return 0;
+}
+
+
 int
 gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nfiles)
 {
@@ -834,7 +881,6 @@ gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nf
 	int                      pos_hi,pos_lo;
 	long                     pos;	
 	gmx_file_position_t *    outputfiles;
-	char                     buf[STRLEN];
 
 	nfiles = 0;
 	
@@ -855,22 +901,17 @@ gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nf
 			
 			strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
 			
-			/* Flush the file, so we are sure it is written */
-			if (gmx_fio_flush(i) != 0)
+			/* Get the file position */
+			if (FIO[i].bLargerThan_off_t)
 			{
-			    sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
-			    gmx_file(buf);
+			    /* -1 signals out of range */
+			    outputfiles[nfiles].offset = -1;
+			}
+			else
+			{
+			    gmx_fio_get_file_position(i,&outputfiles[nfiles].offset);
 			}
 
-			/* We cannot count on XDR being able to write 64-bit integers, so separate into high/low 32-bit values.
-			 * In case the filesystem has 128-bit offsets we only care about the first 64 bits - we'll have to fix
-			 * this when exabyte-size output files are common...
-			 */
-#ifdef HAVE_FSEEKO
-			outputfiles[nfiles].offset = ftello(FIO[i].fp);
-#else
-			outputfiles[nfiles].offset = ftell(FIO[i].fp);
-#endif
 			nfiles++;
 		}
 	}	

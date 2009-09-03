@@ -167,6 +167,12 @@ typedef struct
 gmx_file_position_t;
 
 
+/*
+ * Check if the file position is out of the range of off_t.
+ * The result is stored along with the other file data of fio.
+ */
+int
+gmx_fio_check_file_position(int fio);
 
 /*
  * Return the name and file pointer positions for all currently open

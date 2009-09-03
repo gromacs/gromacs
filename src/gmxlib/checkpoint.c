@@ -777,7 +777,7 @@ do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfil
 			{
 				return -1;
 			}
-#if (SIZEOF_OFF_T > SIZEOF_INT)
+#if (SIZEOF_OFF_T > 4)
 			outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
 #else
 			outputfiles[i].offset = offset_low;
@@ -789,13 +789,21 @@ do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfil
 			do_cpt_string_err(xd,bRead,"output filename",&buf,list);
 			/* writing */
 			offset      = outputfiles[i].offset;
-#if (SIZEOF_OFF_T > SIZEOF_INT)
-			offset_low  = (int) (offset & mask);
-			offset_high = (int) ((offset >> 32) & mask);
+            if (offset == -1)
+            {
+                offset_low  = -1;
+                offset_high = -1;
+            }
+            else
+            {
+#if (SIZEOF_OFF_T > 4)
+                offset_low  = (int) (offset & mask);
+                offset_high = (int) ((offset >> 32) & mask);
 #else
-			offset_low  = offset;
-			offset_high = 0;
+                offset_low  = offset;
+                offset_high = 0;
 #endif
+            }
 			if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
 			{
 				return -1;
@@ -1243,6 +1251,11 @@ read_checkpoint(char *fn,FILE *fplog,
 	{
 		for(i=0;i<nfiles;i++)
 		{
+            if (outputfiles[i].filename,outputfiles[i].offset < 0)
+            {
+                gmx_fatal(FARGS,"The original run wrote a file called '%s' which is larger than 2 GB, but mdrun did not support large file offsets. Can not append. Run mdrun without -append",outputfiles[i].filename);
+            }
+
 			if(0 != truncate(outputfiles[i].filename,outputfiles[i].offset) )
             {
                 gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
