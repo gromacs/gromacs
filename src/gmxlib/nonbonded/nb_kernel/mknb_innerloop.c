@@ -24,6 +24,7 @@
 #include <mknb_common.h>
 #include <mknb_interactions.h>
 #include <mknb_metacode.h>
+#include <config.h>
 
 int
 ppc_invsqrt(char *rsq, char *rinv)
@@ -41,12 +42,20 @@ ppc_invsqrt(char *rsq, char *rinv)
 			mknb_assign (rinv,"__frsqrte(%s)",rsq);
 		}
 	} else {
+#ifndef GMX_BLUEGENE
 		/* note that frsqrtes is only supported on Power5 and higher! */
 		if (mknb_fortran) {
 			mknb_assign (rinv,"frsqrtes(dble(%s))",rsq);
 		} else {
 			mknb_assign (rinv,"__frsqrtes(%s)",rsq);
 		}
+#else
+		if (mknb_fortran) {
+            mknb_assign (rinv,"frsqrte(dble(%s))",rsq);
+        } else {
+            mknb_assign (rinv,"__frsqrte((double)%s)",rsq);
+        }
+#endif
 	}
 
 	/* Newton-Rhapson iteration step */    
