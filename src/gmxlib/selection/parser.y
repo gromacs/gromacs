@@ -31,13 +31,13 @@
 /*! \internal \file
  * \brief Grammar description and parser for the selection language.
  */
+%{
 /*! \internal \file parser.c
  * \brief Generated (from parser.y by Bison) parser for the selection language.
  */
 /*! \internal \file parser.h
  * \brief Generated (from parser.y by Bison) parser include file.
  */
-%{
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -74,7 +74,6 @@ process_param_list(t_selexpr_param *params);
 static t_selelem *
 init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
                   t_selexpr_value *values, char *rpost);
-/*! \cond */
 %}
 
 %union{
@@ -493,7 +492,6 @@ method_param:
 ;
 
 %%
-/*! \endcond */
 
 /*!
  * \param[in,out] scanner Scanner data structure.

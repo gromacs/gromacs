@@ -28,9 +28,10 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file scanner.l
+/*! \cond \internal \file scanner.l
  * \brief
  * Tokenizer for the selection language.
+ * \endcond
  */
 /*! \internal \file scanner.c
  * \brief
@@ -135,7 +136,6 @@ process_identifier(YYSTYPE *, char *, int,
             } \
         } \
     }
-/*! \cond */
 %}
 
 INTEGER    [[:digit:]]+
@@ -198,8 +198,6 @@ not|"!"         { return NOT; }
 .               { return yytext[0]; }
 
 %%
-/*! \endcond */
-
 /* Undefine the macros so that we can have them as variable names in the
  * subroutines.
  * There are other ways of doing this, but this is probably the easiest. */

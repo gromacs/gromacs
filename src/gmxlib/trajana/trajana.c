@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \mainpage
+/*! \page libtrajana Library for trajectory analysis
  *
  * This is a trajectory analysis library for Gromacs.
  *
@@ -606,6 +606,7 @@ gmx_ana_get_selcollection(gmx_ana_traj_t *d, gmx_ana_selcollection_t **sc)
  * \param      desc
  * \param      nbugs
  * \param      bugs
+ * \param      oenv
  */
 int
 parse_trjana_args(gmx_ana_traj_t *d,
@@ -963,6 +964,7 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
 
 /*!
  * \param[in,out] d     Trajectory analysis data structure.
+ * \param[in]     oenv  Output options structure.
  * \returns       0 on success, a non-zero error code on error.
  *
  * Initializes the selection data in \c gmx_ana_traj_t based on
@@ -1253,6 +1255,7 @@ gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type)
 /*!
  * \param[in] out  Output file.
  * \param[in] d    Trajectory analysis data structure.
+ * \param[in] oenv Output options structure.
  * \returns   0 on success, a non-zero error code on error.
  */
 int xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv)
@@ -1263,6 +1266,7 @@ int xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv)
 
 /*!
  * \param[in,out] d       Trajectory analysis data structure.
+ * \param[in]     oenv    Output options structure.
  * \returns       0 on success, a non-zero error code on error.
  */
 static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
@@ -1304,6 +1308,7 @@ static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
 /*!
  * \param[in,out] d       Trajectory analysis data structure.
  * \param[out]    fr      First frame in the trajectory.
+ * \param[in]     oenv    Output options structure.
  * \returns       0 on success, a non-zero error code on error.
  *
  * The pointer stored in \p *fr should not be freed by the caller.
@@ -1334,6 +1339,7 @@ int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr,
  *      (currently, there are no flags defined).
  * \param[in] analyze Pointer to frame analysis function.
  * \param     data    User data to be passed to \p analyze.
+ * \param[in] oenv    Output options structure.
  * \returns   0 on success, a non-zero error code on error.
  *
  * This function performs the actual analysis of the trajectory.
