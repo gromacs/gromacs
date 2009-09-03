@@ -1234,6 +1234,21 @@ void init_forcerec(FILE *fp,
     fr->sc_power   = ir->sc_power;
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
+    /* Check if we can/should do all-vs-all kernels */
+#ifdef DOUBLE
+    /* double not done yet */
+    fr->bAllvsAll = FALSE;
+#else
+    fr->bAllvsAll = (ir->rlist==0            &&
+                     ir->rcoulomb==0         &&
+                     ir->rvdw==0             &&
+                     ir->ePBC==epbcNONE      &&
+                     ir->vdwtype==evdwCUT    &&
+                     ir->coulombtype==eelCUT &&
+                     ir->efep==efepNO);
+#endif
+    fr->AllvsAll_work = NULL;
+
     /* Neighbour searching stuff */
     fr->bGrid      = (ir->ns_type == ensGRID);
     fr->ePBC       = ir->ePBC;
@@ -1333,7 +1348,8 @@ void init_forcerec(FILE *fp,
     }
     
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
-                       gmx_mtop_ftype_count(mtop,F_POSRES) > 0);
+                       gmx_mtop_ftype_count(mtop,F_POSRES) > 0 ||
+                       IR_ELEC_FIELD(*ir));
     
     /* Mask that says whether or not this NBF list should be computed */
     /*  if (fr->bMask == NULL) {
@@ -1796,7 +1812,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     {
         donb_flags |= GMX_DONB_FORCES;
     }
-    do_nonbonded(cr,fr,x,f,md,
+    do_nonbonded(cr,fr,x,f,md,excl,
                  fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR] :
                  enerd->grpp.ener[egLJSR],
@@ -1815,7 +1831,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
             lam_i = (i==0 ? lambda : ir->flambda[i-1]);
             dvdl_dum = 0;
             reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
-            do_nonbonded(cr,fr,x,f,md,
+            do_nonbonded(cr,fr,x,f,md,excl,
                          fr->bBHAM ?
                          ed_lam.grpp.ener[egBHAMSR] :
                          ed_lam.grpp.ener[egLJSR],

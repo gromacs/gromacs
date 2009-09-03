@@ -136,6 +136,11 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
+  /* Use special N*N kernels? */
+  bool bAllvsAll;
+  /* Private work data */
+  void *AllvsAll_work;
+
   /* Cut-Off stuff.
    * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
    */

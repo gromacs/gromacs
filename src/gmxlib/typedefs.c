@@ -90,7 +90,7 @@ int gmx_step_t_to_int(gmx_step_t step,const char *warn)
     fprintf(stderr,"\nWARNING during %s:\n",warn);
     fprintf(stderr,"step value ");
     fprintf(stderr,gmx_step_pfmt,step);
-    fprintf(stderr,"does not fit in int, converted to %d\n\n",i);
+    fprintf(stderr," does not fit in int, converted to %d\n\n",i);
   }
 
   return i;
@@ -417,9 +417,10 @@ static void init_ekinstate(ekinstate_t *eks)
 
 static void init_energyhistory(energyhistory_t *enh)
 {
-  enh->ener_ave = NULL;
-  enh->ener_sum = NULL;
-  enh->nener    = 0;
+  enh->ener_ave     = NULL;
+  enh->ener_sum     = NULL;
+  enh->ener_sum_sim = NULL;
+  enh->nener        = 0;
 }
 
 void init_gtc_state(t_state *state,int ngtc)

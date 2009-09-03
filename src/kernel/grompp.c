@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -829,6 +830,38 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
   return count;
 }
 
+static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
+{
+    int  nmiss,i;
+
+    /* If we are doing GBSA, check that we got the parameters we need
+     * This checking is to see if there are GBSA paratmeters for all
+     * atoms in the force field. To go around this for testing purposes
+     * comment out the nerror++ counter temporarily
+     */
+    nmiss = 0;
+    for(i=0;i<get_atomtype_ntypes(atype);i++)
+    {
+        if (get_atomtype_radius(i,atype)    < 0 ||
+            get_atomtype_vol(i,atype)       < 0 ||
+            get_atomtype_surftens(i,atype)  < 0 ||
+            get_atomtype_gb_radius(i,atype) < 0 ||
+            get_atomtype_S_hct(i,atype)     < 0)
+        {
+            fprintf(stderr,"GB parameter(s) missing or negative for atom type '%s'\n",
+                    get_atomtype_name(i,atype));
+            nmiss++;
+        }
+    }
+    
+    if (nmiss > 0)
+    {
+        gmx_fatal(FARGS,"Can't do GB electrostatics; the forcefield is missing %d values for\n"
+                  "atomtype radii, or they might be negative\n.",nmiss);
+    }
+  
+}
+
 int main (int argc, char *argv[])
 {
   static const char *desc[] = {
@@ -928,7 +961,6 @@ int main (int argc, char *argv[])
   const char   *mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;
-  bool         have_radius,have_vol,have_surftens,have_gb_radius,have_S_hct;
   bool         have_atomnumber;
   int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
@@ -1035,32 +1067,6 @@ int main (int argc, char *argv[])
     }
   }
 
-  /* If we are doing GBSA, check that we got the parameters we need                                                            
-   * This checking is to see if there are GBSA paratmeters for all                                                             
-   * atoms in the force field. To go around this for testing purposes                                                          
-   * comment out the nerror++ counter temporarliy                                                                              
-   */
-  have_radius=have_vol=have_surftens=have_gb_radius=have_S_hct=TRUE;
-  for(i=0;i<get_atomtype_ntypes(atype);i++) {
-    have_radius=have_radius       && (get_atomtype_radius(i,atype) > 0);
-    have_vol=have_vol             && (get_atomtype_vol(i,atype) > 0);
-    have_surftens=have_surftens   && (get_atomtype_surftens(i,atype) > 0);
-    have_gb_radius=have_gb_radius && (get_atomtype_gb_radius(i,atype) > 0);
-    have_S_hct=have_S_hct         && (get_atomtype_S_hct(i,atype) > 0);
-  }
-  if(!have_radius && ir->implicit_solvent==eisGBSA) {
-    fprintf(stderr,"Can't do GB electrostatics; the forcefield is missing values for\n"
-	    "atomtype radii, or they might be zero\n.");
-    /* nerror++; */
-  }
-  /*
-  if(!have_surftens && ir->implicit_solvent!=eisNO) {
-    fprintf(stderr,"Can't do implicit solvent; the forcefield is missing values\n"
-	    " for atomtype surface tension\n.");
-    nerror++;                                                                                                                
-  }
-  */
-  
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;
   for (i=0; i<get_atomtype_ntypes(atype); i++) {
@@ -1136,7 +1142,13 @@ int main (int argc, char *argv[])
     renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
     ntype = get_atomtype_ntypes(atype);
   }
-  
+
+    if (ir->implicit_solvent != eisNO)
+    {
+        /* Now we have renumbered the atom types, we can check the GBSA params */
+        check_gbsa_params(ir,atype);
+    }
+
 	/* PELA: Copy the atomtype data to the topology atomtype list */
 	copy_atomtype_atomtypes(atype,&(sys->atomtypes));
 
@@ -1148,27 +1160,6 @@ int main (int argc, char *argv[])
 	
   ntype = get_atomtype_ntypes(atype);
   convert_params(ntype, plist, mi, comb, reppow, fudgeQQ, sys);
-  	
-	if(ir->implicit_solvent)
-	{
-		printf("Constructing Generalized Born topology...\n");
-
-		/* Check for -normvsbds switch to grompp, necessary for gb together with vsites */
-		if(bRmVSBds && nvsite)
-		{
-			fprintf(stderr, "ERROR: Must use -normvsbds switch to grompp when doing Generalized Born\n"
-					"together with virtual sites\n");
-			nerror++;
-		}
-		
-		if (nerror)
-		{
-			print_warn_num(FALSE);
-			gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
-		}
-		
-		generate_gb_topology(sys,mi);
-	}
 	
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);

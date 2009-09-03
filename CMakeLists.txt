@@ -52,6 +52,7 @@ if(GMX_MPI)
     if(MPI_FOUND)
         set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${MPI_COMPILE_FLAGS})
 	set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${MPI_LINK_FLAGS})
+        
         include_directories(${MPI_INCLUDE_PATH})
         list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
         add_definitions( -DMPI ) #for FAHCORE
@@ -370,6 +371,7 @@ endif(HAVE_MKL OR ACCELERATE_FRAMEWORK)
 if(HAVE_LIBM)
     list(APPEND	GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
+
 
 
 if(GMX_FAHCORE)

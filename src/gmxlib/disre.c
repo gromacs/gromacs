@@ -308,7 +308,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
                 rvec_sub(x[ai],x[aj],dx);
             }
             rt2  = iprod(dx,dx);
-            rt_1 = invsqrt(rt2);
+            rt_1 = gmx_invsqrt(rt2);
             rt_3 = rt_1*rt_1*rt_1;
             
             rt[pair]         = sqrt(rt2);
@@ -545,7 +545,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
                 }
                 rt2 = iprod(dx,dx);
                 
-                weight_rt_1 = invsqrt(rt2);
+                weight_rt_1 = gmx_invsqrt(rt2);
                 
                 if (bConservative)
                 {

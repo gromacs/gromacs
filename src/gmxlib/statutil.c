@@ -668,6 +668,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         }
     }
     debug_gmx();
+    set_program_name(argv[0]);
     
     /* Handle the flags argument, which is a bit field 
      * The FF macro returns whether or not the bit is set

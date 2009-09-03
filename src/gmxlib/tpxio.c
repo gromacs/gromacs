@@ -878,6 +878,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
 {
   int i;
   bool bDum;
+  real rdum;
   real VA[4],VB[4];
   
   if (!bRead)
@@ -1084,10 +1085,14 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_GB12:
   case F_GB13:
   case F_GB14:
-    do_real(iparams->gb.c6A);	
-	do_real(iparams->gb.c12A);	
-	do_real(iparams->gb.c6B);	
-	do_real(iparams->gb.c12B);	
+    /* We got rid of some parameters in version 68 */
+    if(bRead && file_version<68)
+    {
+        do_real(rdum);	
+        do_real(rdum);	
+        do_real(rdum);	
+        do_real(rdum);	
+    }
 	do_real(iparams->gb.sar);	
 	do_real(iparams->gb.st);
 	do_real(iparams->gb.pi);

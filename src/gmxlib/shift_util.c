@@ -307,7 +307,7 @@ real shift_LRcorrection(FILE *fp,int start,int natoms,
 	    
 	    dr2  += dx[m]*dx[m];
 	  }
-	  dr_1    = invsqrt(dr2);
+	  dr_1    = gmx_invsqrt(dr2);
 	  dr      = 1.0/dr_1;
 	  dr_3    = dr_1*dr_1*dr_1;
 	  /* Compute exclusion energy and scalar force */
