@@ -513,20 +513,16 @@ static yyconst flex_int16_t yy_chk[136] =
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file scanner.l
+/*! \cond \internal \file scanner.l
  * \brief
  * Tokenizer for the selection language.
- *
- * \todo
- * With a recent version of Flex, it should be straightforward to make the
- * scanner reentrant (it is the only component of the selection parser that
- * still uses global variables).
+ * \endcond
  */
 /*! \internal \file scanner.c
  * \brief
  * Generated (from scanner.l by Flex) tokenizer for the selection language.
  */
-#line 45 "scanner.l"
+#line 41 "scanner.l"
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -625,9 +621,8 @@ process_identifier(YYSTYPE *, char *, int,
             } \
         } \
     }
-/*! \cond */
 
-#line 631 "<stdout>"
+#line 626 "<stdout>"
 
 #define INITIAL 0
 #define matchof 1
@@ -845,7 +840,7 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 162 "scanner.l"
+#line 157 "scanner.l"
 
 
 
@@ -867,7 +862,7 @@ YY_DECL
     }
 
 
-#line 871 "<stdout>"
+#line 866 "<stdout>"
 
 	if ( !yyg->yy_init )
 		{
@@ -952,102 +947,102 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 183 "scanner.l"
+#line 178 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 184 "scanner.l"
+#line 179 "scanner.l"
 { yylval->i   = strtol(yytext, NULL, 0);     return INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 185 "scanner.l"
+#line 180 "scanner.l"
 { yylval->r   = strtod(yytext,NULL);         return REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 186 "scanner.l"
+#line 181 "scanner.l"
 { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 188 "scanner.l"
+#line 183 "scanner.l"
 { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 189 "scanner.l"
+#line 184 "scanner.l"
 { if (yytext[0] == ';' || state->prompt) return CMD_SEP; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 190 "scanner.l"
+#line 185 "scanner.l"
 { return GROUP; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 191 "scanner.l"
+#line 186 "scanner.l"
 { return TO; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 192 "scanner.l"
+#line 187 "scanner.l"
 { BEGIN(0); return OF; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 193 "scanner.l"
+#line 188 "scanner.l"
 { return AND; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 194 "scanner.l"
+#line 189 "scanner.l"
 { return OR; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 195 "scanner.l"
+#line 190 "scanner.l"
 { return XOR; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 196 "scanner.l"
+#line 191 "scanner.l"
 { return NOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 197 "scanner.l"
+#line 192 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); return CMP_OP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 199 "scanner.l"
+#line 194 "scanner.l"
 { return process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 201 "scanner.l"
+#line 196 "scanner.l"
 
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 202 "scanner.l"
+#line 197 "scanner.l"
 { yylval->str = strndup(yytext, yyleng);     return STR; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 203 "scanner.l"
+#line 198 "scanner.l"
 { return yytext[0]; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 205 "scanner.l"
+#line 200 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1051 "<stdout>"
+#line 1046 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(matchof):
 	yyterminate();
@@ -2155,10 +2150,8 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 205 "scanner.l"
+#line 200 "scanner.l"
 
-
-/*! \endcond */
 
 /* Undefine the macros so that we can have them as variable names in the
  * subroutines.
