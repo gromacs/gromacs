@@ -53,6 +53,8 @@
 #include "vec.h"
 #include "gmx_ga2la.h"
 #include "edsam.h"
+#include "xvgr.h"
+#include "gmxfio.h"
 
 
 /* Enforce rotation / flexible: determine the angle of each slab */
@@ -485,7 +487,7 @@ static void print_aligned_group(FILE *fp, char *str, int g)
 }
 
 
-static FILE *open_output_file(char *fn, int steps)
+static FILE *open_output_file(const char *fn, int steps)
 {
     FILE *fp;
     
@@ -499,7 +501,7 @@ static FILE *open_output_file(char *fn, int steps)
 
 
 /* Open output file for slab COG data. Call on master only */
-static FILE *open_slab_out(t_rot *rot)
+static FILE *open_slab_out(t_rot *rot, const char *fn)
 {
     FILE      *fp=NULL;
     int       g;
@@ -512,7 +514,7 @@ static FILE *open_slab_out(t_rot *rot)
         if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
         {
             if (NULL == fp)
-                fp = open_output_file("slabCOGs.log", rot->nsttout);
+                fp = open_output_file(fn, rot->nsttout);
             fprintf(fp, "%% Rotation group %d (%s), slab distance %f nm\n", g, erotg_names[rotg->eType], rotg->slab_dist);
         }
     }
@@ -542,68 +544,99 @@ static FILE *open_slab_out(t_rot *rot)
 
 /* Open output file and print some general information about the rotation groups.
  * Call on master only */
-static FILE *open_rot_out(t_rot *rot)
+static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv, 
+                          unsigned long Flags)
 {
     FILE      *fp;
-    int       g;
+    int       g,nsets;
     t_rotgrp  *rotg;
+    char      **setname,buf[50];
 
 
-    fp = open_output_file("rotation.log", rot->nsttout);
-    fprintf(fp, "%% The scalar tau is the torque in the direction of the rotation vector v.\n");
-    fprintf(fp, "%% To obtain the vectorial torque, multiply tau with the group's rot_vec.\n");
-    fprintf(fp, "%% Torques are given in [kJ/mol], anlges in degrees, time in ps.\n");
-
-    for (g=0; g<rot->ngrp; g++)
+    if (Flags & MD_APPENDFILES)
     {
-        rotg = &rot->grp[g];
-        fprintf(fp, "%% Rotation group %d (%s):\n", g, erotg_names[rotg->eType]);
-        fprintf(fp, "%% rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
-        fprintf(fp, "%% rot_rate%d           %10.3e degree/ps\n",     g, rotg->rate);
-        fprintf(fp, "%% rot_k%d              %10.3e kJ/(mol*nm^2)\n", g, rotg->k);
-
-        switch (rotg->eType)
+        fp = gmx_fio_fopen(fn,"a");
+    }
+    else
+    {
+        fp = xvgropen(fn, "Rotation angles and energy", "Time (ps)", "angles and energies", oenv);
+        fprintf(fp, "# The scalar tau is the torque in the direction of the rotation vector v.\n");
+        fprintf(fp, "# To obtain the vectorial torque, multiply tau with the group's rot_vec.\n");
+        fprintf(fp, "# Torques are given in [kJ/mol], anlges in degrees, time in ps.\n");
+        
+        for (g=0; g<rot->ngrp; g++)
         {
-        case erotgFIXED:
-        case erotgFIXED_PLANE:
-            fprintf(fp, "%% rot_offset%d         %10.3e %10.3e %10.3e\n", g, rotg->offset[XX], rotg->offset[YY], rotg->offset[ZZ]);
-            break;
-        case erotgFLEX1:
-        case erotgFLEX2:
-            fprintf(fp, "%% rot_slab_distance%d   %f nm\n", g, rotg->slab_dist);
-            fprintf(fp, "%% rot_min_gaussian%d   %10.3e\n", g, rotg->min_gaussian);
-            break;
-        default:
-            break;
+            rotg = &rot->grp[g];
+            fprintf(fp, "# Rotation group %d (%s):\n", g, erotg_names[rotg->eType]);
+            fprintf(fp, "# rot_vec%d            %10.3e %10.3e %10.3e\n", g, rotg->vec[XX], rotg->vec[YY], rotg->vec[ZZ]);
+            fprintf(fp, "# rot_rate%d           %10.3e degree/ps\n",     g, rotg->rate);
+            fprintf(fp, "# rot_k%d              %10.3e kJ/(mol*nm^2)\n", g, rotg->k);
+            
+            switch (rotg->eType)
+            {
+            case erotgFIXED:
+            case erotgFIXED_PLANE:
+                fprintf(fp, "# rot_offset%d         %10.3e %10.3e %10.3e\n", g, rotg->offset[XX], rotg->offset[YY], rotg->offset[ZZ]);
+                break;
+            case erotgFLEX1:
+            case erotgFLEX2:
+                fprintf(fp, "# rot_slab_distance%d   %f nm\n", g, rotg->slab_dist);
+                fprintf(fp, "# rot_min_gaussian%d   %10.3e\n", g, rotg->min_gaussian);
+                break;
+            default:
+                break;
+            }
         }
+        
+        fprintf(fp, "#     ");
+        print_aligned_short(fp, "t");
+        nsets = 0;
+        snew(setname, 4*rot->ngrp);
+        
+        for (g=0; g<rot->ngrp; g++)
+        {
+            rotg = &rot->grp[g];
+            sprintf(buf, "theta_ref%d (degree)", g);
+            print_aligned_group(fp, "theta_ref", g);
+            setname[nsets] = strdup(buf);
+            nsets++;
+        }
+        for (g=0; g<rot->ngrp; g++)
+        {
+            rotg = &rot->grp[g];
+            if (rotg->eType==erotgFIXED || rotg->eType==erotgFIXED_PLANE)
+            {
+                sprintf(buf, "theta-av%d (degree)", g);
+                print_aligned_group(fp, "theta_av", g);
+                setname[nsets] = strdup(buf);
+                nsets++;
+                sprintf(buf, "tau%d (kJ/mol)", g);
+                print_aligned_group(fp, "tau", g);
+                setname[nsets] = strdup(buf);
+                nsets++;
+            }
+            sprintf(buf, "energy%d (kJ/mol)", g);
+            print_aligned_group(fp, "energy", g);
+            setname[nsets] = strdup(buf);
+            nsets++;
+        }
+        fprintf(fp, "\n");
+        
+        if (nsets > 1)
+            xvgr_legend(fp, nsets, setname, oenv);
+        for(g=0; g<nsets; g++)
+            sfree(setname[g]);
+        sfree(setname);
+        
+        fflush(fp);
     }
     
-    fprintf(fp, "%%     ");
-    print_aligned_short(fp, "t");
-    for (g=0; g<rot->ngrp; g++)
-    {
-        rotg = &rot->grp[g];
-        print_aligned_group(fp, "theta_ref", g);
-    }
-    for (g=0; g<rot->ngrp; g++)
-    {
-        rotg = &rot->grp[g];
-        if (rotg->eType==erotgFIXED || rotg->eType==erotgFIXED_PLANE)
-        {
-            print_aligned_group(fp, "theta_av", g);
-            print_aligned_group(fp, "tau", g);
-        }
-        print_aligned_group(fp, "energy", g);
-    }
-    fprintf(fp, "\n");
-    fflush(fp);
-
     return fp;
 }
 
 
 /* Call on master only */
-static FILE *open_angles_out(t_rot *rot, char filename[])
+static FILE *open_angles_out(t_rot *rot, const char *fn)
 {
     int      g;
     FILE     *fp=NULL;
@@ -611,7 +644,7 @@ static FILE *open_angles_out(t_rot *rot, char filename[])
 
 
     /* Open output file and write some information about it's structure: */
-    fp = open_output_file(filename, rot->nstrout);
+    fp = open_output_file(fn, rot->nstrout);
     fprintf(fp, "%% All angles given in degrees, time in ps\n");
     for (g=0; g<rot->ngrp; g++)
     {
@@ -639,14 +672,14 @@ static FILE *open_angles_out(t_rot *rot, char filename[])
 
 /* Open torque output file and write some information about it's structure.
  * Call on master only */
-static FILE *open_torque_out(t_rot *rot)
+static FILE *open_torque_out(t_rot *rot, const char *fn)
 {
     FILE      *fp;
     int       g;
     t_rotgrp  *rotg;
 
 
-    fp = open_output_file("torque.log", rot->nsttout);
+    fp = open_output_file(fn, rot->nsttout);
 
     for (g=0; g<rot->ngrp; g++)
     {
@@ -2082,8 +2115,8 @@ void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md)
 }
 
 
-void init_rot(FILE *fplog,t_inputrec *ir,
-        t_commrec *cr, matrix box, rvec *x, unsigned long Flags)
+void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
+        t_commrec *cr, matrix box, rvec *x, const output_env_t oenv, unsigned long Flags)
 {
     t_rot    *rot;
     t_rotgrp *rotg;
@@ -2106,7 +2139,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,
 
     rot->out_slabs = NULL;
     if (MASTER(cr))
-        rot->out_slabs = open_slab_out(rot);
+        rot->out_slabs = open_slab_out(rot, opt2fn("-rs",nfile,fnm));
 
     for(g=0; g<rot->ngrp; g++)
     {
@@ -2147,16 +2180,16 @@ void init_rot(FILE *fplog,t_inputrec *ir,
     rot->out_torque  = NULL;
     if (MASTER(cr))
     {
-        rot->out_rot = open_rot_out(rot);
+        rot->out_rot = open_rot_out(opt2fn("-r",nfile,fnm), rot, oenv, Flags);
         if (bFlex)
         {
             if (rot->nstrout > 0)
             {
-                rot->out_angles  = open_angles_out(rot, "angles.log");
+                rot->out_angles  = open_angles_out(rot, opt2fn("-ra",nfile,fnm));
                 rot->out_nangles = open_angles_out(rot, "angles_n.log");
             }
             if (rot->nsttout > 0)
-                rot->out_torque  = open_torque_out(rot);
+                rot->out_torque  = open_torque_out(rot, opt2fn("-rt",nfile,fnm));
         }
     }
 }

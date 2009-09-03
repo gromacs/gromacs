@@ -44,8 +44,8 @@
 /* This file contains function declarations necessary 
    for mdrun to interface with the enforced rotation code */
 
-extern void init_rot(FILE *fplog,t_inputrec *ir,
-        t_commrec *cr, matrix box, rvec *x, unsigned long Flags);
+extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
+        t_commrec *cr, matrix box, rvec *x, const output_env_t oenv, unsigned long Flags);
 
 extern void do_rotation(
         t_commrec *cr,
