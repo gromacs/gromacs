@@ -53,6 +53,7 @@
 #include "orires.h"
 #include "constr.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
 

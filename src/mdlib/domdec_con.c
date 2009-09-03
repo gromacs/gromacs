@@ -208,7 +208,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     rvec *x,*vbuf,*rbuf;
     int  nvec,v,n,nn,ns0,ns1,nr0,nr1,nr,d,dim,dir,i;
     bool bPBC,bScrew=FALSE;
-    rvec shift;
+    rvec shift={0,0,0};
     
     nvec = 1;
     if (x1)

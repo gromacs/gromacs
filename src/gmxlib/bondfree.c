@@ -1227,7 +1227,7 @@ static real low_angres(int nbonds,
   int  i,m,type,ai,aj,ak,al;
   int  t1,t2;
   real phi,cos_phi,cos_phi2,vid,vtot,dVdphi;
-  rvec r_ij,r_kl,f_i,f_k;
+  rvec r_ij,r_kl,f_i,f_k={0,0,0};
   real st,sth,nrij2,nrkl2,c,cij,ckl;
 
   ivec dt;  

@@ -409,7 +409,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 #define NKKKCHI asize(kkkchi1)
 #define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
   
-  FILE    *fp,*ssfp[3];
+  FILE    *fp,*ssfp[3]={NULL,NULL,NULL};
   char    *sss[3] = { "sheet", "helix", "coil" };
   real    S2;
   real    *normhisto;
