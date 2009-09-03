@@ -518,6 +518,7 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   PR("k",rotg->k);
   PR("slab_dist",rotg->slab_dist);
   PR("min_gaussian",rotg->min_gaussian);
+  PS("fit_method",EROTFIT(rotg->eFittype));
 }
 
 static void pr_rot(FILE *fp,int indent,t_rot *rot)

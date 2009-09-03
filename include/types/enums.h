@@ -196,6 +196,10 @@ enum {
   erotgFIXED, erotgFIXED_PLANE, erotgFLEX1, erotgFLEX2, erotgNR
 };
 
+enum {
+    erotgFitRMSD, erotgFitNORM, erotgFitNR
+};
+
 /* QMMM */
 enum {
   eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 

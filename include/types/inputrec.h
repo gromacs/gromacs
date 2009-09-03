@@ -173,6 +173,7 @@ typedef struct {
   rvec       *xc_norm;         /* Some normalized form of the current coordinates */
   
   /* Flexible rotation only */
+  int        eFittype;         /* Type of fit to determine actual angle of group */
   real       slab_dist;        /* Slab distance (nm) */
   int        slab_max_nr;      /* The maximum number of slabs in the box */
   int        slab_first;       /* Lowermost slab for that the calculation needs to be performed */
@@ -203,8 +204,6 @@ typedef struct {
   FILE     *out_rot;      /*  "  */
   FILE     *out_torque;   /* torque */
   FILE     *out_angles;   /* slab angles for flexible rotation */
-  FILE     *out_nangles;  /* see above, but each current structure's coordinate is normalized
-                           * such that it has the same length as its reference structure counterpart */
   FILE     *out_slabs;    /* For outputting COG per slab information */
   bool     bUpdateShifts; /* After NS steps the shifts of the rotaion groups have to be updated */
   real     Vrot;          /* (Local) part of the enforced rotation potential */

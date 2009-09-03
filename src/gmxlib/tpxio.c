@@ -256,6 +256,7 @@ static void do_rotgrp(t_rotgrp *rotg,bool bRead, int file_version)
   do_real(rotg->k);
   do_real(rotg->slab_dist);
   do_real(rotg->min_gaussian);
+  do_int(rotg->eFittype);
 }
 
 static void do_rot(t_rot *rot,bool bRead, int file_version)

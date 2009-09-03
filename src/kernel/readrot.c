@@ -119,6 +119,9 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         CTYPE("Minimum value of Gaussian for the force to be evaluated");
         sprintf(buf,"rot_min_gaussian%d",g);
         RTYPE(buf,              rotg->min_gaussian, 1e-3);
+        CTYPE("Fitting method to determine actual angle of flexible groups (rmsd or norm)");
+        sprintf(buf,"rot_fit_method%d",g);
+        ETYPE(buf,              rotg->eFittype, erotg_fitnames);
     }
     
     *ninp_p   = ninp;

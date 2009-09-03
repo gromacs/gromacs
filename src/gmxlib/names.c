@@ -184,6 +184,10 @@ const char *erotg_names[erotgNR+1] = {
   "fixed", "fixedplane", "flexible1", "flexible2", NULL
 };
 
+const char *erotg_fitnames[erotgFitNR+1] = { 
+  "rmsd", "norm", NULL
+};
+
 const char *eQMmethod_names[eQMmethodNR+1] = {
   "AM1", "PM3", "RHF",
   "UHF", "DFT", "B3LYP", "MP2", "CASSCF","B3LYPLAN",
