@@ -1062,44 +1062,36 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     return 0;
 }
 
-int gmx_fio_get_output_file_position(int fio, gmx_file_position_t *p_outputfile)
+static int gmx_fio_get_file_position(int fio, off_t *offset)
 {
     t_fileio *myfio;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     myfio=&FIO[fio]; 
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&fio_mutex);
-#endif
 
-
-    /* check whether it's the right type */
-    if(myfio->bOpen && !myfio->bRead && !myfio->bStdio && myfio->iFTP!=efCPT)
+    /* Flush the file, so we are sure it is written */
+    if (gmx_fio_flush_lock(fio,TRUE))
     {
-        int ret;
-        strncpy(p_outputfile->filename,myfio->fn,STRLEN-1);
-        /* Flush the file, so we are sure it is written */
-        ret=gmx_fio_flush_lock(fio,TRUE);
-        if (ret != 0)
-        {
-            char buf[STRLEN];
-            sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",myfio->fn);
-            gmx_file(buf);
-        }
-
-        /* We cannot count on XDR being able to write 64-bit integers, 
-           so separate into high/low 32-bit values.
-           In case the filesystem has 128-bit offsets we only care 
-           about the first 64 bits - we'll have to fix
-           this when exabyte-size output files are common...
-           */
-#ifdef HAVE_FSEEKO
-        p_outputfile->offset = ftello(myfio->fp);
-#else
-        p_outputfile->offset = ftell(myfio->fp);
+        char buf[STRLEN];
+        sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",myfio->fn);
+        gmx_file(buf);
+    }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
-    }	
+
+    /* We cannot count on XDR being able to write 64-bit integers, 
+       so separate into high/low 32-bit values.
+       In case the filesystem has 128-bit offsets we only care 
+       about the first 64 bits - we'll have to fix
+       this when exabyte-size output files are common...
+       */
+#ifdef HAVE_FSEEKO
+    *offset = ftello(myfio->fp);
+#else
+    *offset = ftell(myfio->fp);
+#endif
     return 0;
 }
 
