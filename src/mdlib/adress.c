@@ -128,35 +128,24 @@ adress_weight(rvec            x,
 }
 
 void
-update_adress_weights(t_forcerec *         fr,
-                      t_mdatoms *          mdatoms,
-                      rvec                 x[],
-                      matrix               box)
+get_adress_ref(int             adresstype,
+               matrix          box,
+               rvec            box2,
+               rvec            ref)
 {
-    int            i,j,k,nr;
-    int            adresstype;
-    real           adressr;
-    real           adressw;
-    rvec           ix;
-    rvec           ref;
-    rvec           box2;
-    real *         wf;
-    nr                 = mdatoms->homenr;
-    adresstype         = fr->userint1;
-    adressr            = fr->userreal1;
-    adressw            = fr->userreal2;
-    wf                 = mdatoms->wf;
+    int i;
 
     if(adresstype == 4)
     {
         /* get refx,refy,refz from reference solute 
          * for now, assume its the last molecule */  
-        j              = nr-1;
+//        j              = nr-1;
         for(i=0;i<3;i++) {
             /* need square of half the box length for shortest distance to solute */
             box2[i]    = box[i][i]/2.0;
             box2[i]   *= box2[i];
-            ref[i]     = x[j][i];
+//            ref[i]     = x[j][i];
+            ref[i]     = box[i][i]/2.0;
         }
     }
     else
@@ -170,27 +159,223 @@ update_adress_weights(t_forcerec *         fr,
             box2[i]    = 0.0;
         }
     }
+}
 
-    k=0;
-    for(i=0;i<nr;i++)
+void
+update_adress_weights_com(FILE *               fplog,
+                          int                  cg0,
+                          int                  cg1,
+                          t_block *            cgs,
+                          rvec                 x[],
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          matrix               box)
+{
+    int            icg,k,k0,k1,d;
+    real           nrcg,inv_ncg,mtot,inv_mtot;
+    atom_id *      cgindex;
+    int            adresstype;
+    real           adressr,adressw;
+    rvec           ix,ref,box2;
+    real *         massA;
+    real *         wf;
+
+    adresstype         = fr->userint1;
+    adressr            = fr->userreal1;
+    adressw            = fr->userreal2;
+    massA              = mdatoms->massA;
+    wf                 = mdatoms->wf;
+
+    get_adress_ref(adresstype,box,box2,ref);
+
+    /* Since this is center of mass AdResS, the vsite is not guaranteed
+     * to be on the same node as the constructing atoms.  Therefore we 
+     * loop over the charge groups, calculate their center of mass,
+     * then use this to calculate wf for each atom.  This wastes vsite
+     * construction, but it's the only way to assure that the explicit
+     * atoms have the same wf as their vsite. */
+
+#ifdef DEBUG
+    fprintf(fplog,"Calculating center of mass for charge groups %d to %d\n",
+            cg0,cg1);
+#endif
+    cgindex = cgs->index;
+    
+    /* Compute the center of mass for all charge groups */
+    for(icg=cg0; (icg<cg1); icg++) 
     {
-        /* only calculate wf for virtual particles */
-        if(mdatoms->ptype[i] == eptVSite) 
+        k0      = cgindex[icg];
+        k1      = cgindex[icg+1];
+        nrcg    = k1-k0;
+        if (nrcg == 1)
         {
-            for(j=0;j<3;j++){
-                ix[j]      = x[i][j];
+            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,box2,box);
+        }
+        else
+        {
+            mtot = 0.0;
+            for(k=k0; (k<k1); k++)
+            {
+                mtot += massA[k];
             }
-            wf[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
-            /* Assign wf value to explicit atoms of the molecule 
-             * this requires that every molecule end in a virtual 
-             * site which determines the weight of the molecule. 
-             * The molecule may contain other virtual sites, in 
-             * that case we'll need to be smarter about assigning
-             * the weights. This will work for now. */
-            for(j=k;j<i;j++){
-                wf[j]      = wf[i];
+            if (mtot > 0.0)
+            {
+                inv_mtot = 1.0/mtot;
+                
+                clear_rvec(ix);
+                for(k=k0; (k<k1); k++)
+                {
+                    for(d=0; (d<DIM); d++)
+                    {
+                        ix[d] += x[k][d]*massA[k];
+                    }
+                }
+                for(d=0; (d<DIM); d++)
+                {
+                    ix[d] *= inv_mtot;
+                }
             }
-            k=i+1;
+            /* Calculate the center of gravity if the charge group mtot=0 (only vsites) */
+            else
+            {
+                inv_ncg = 1.0/nrcg;
+
+                clear_rvec(ix);
+                for(k=k0; (k<k1); k++)
+                {
+                    for(d=0; (d<DIM); d++)
+                    {
+                        ix[d] += x[k][d];
+                    }
+                }
+                for(d=0; (d<DIM); d++)
+                {
+                    ix[d] *= inv_ncg;
+                }
+            }
+
+            /* Set wf of all atoms in charge group equal to wf of com */
+            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
+            for(k=(k0+1); (k<k1); k++)
+            {
+                wf[k] = wf[k0];
+            }
         }
     }
 }
+        
+void
+update_adress_weights_cog(t_iparams            ip[],
+                          t_ilist              ilist[],
+                          rvec                 x[],
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          matrix               box)
+{
+    int            i,j,k,nr,nra,inc;
+    int            ftype,adresstype;
+    t_iatom        avsite,ai,aj,ak,al;
+    t_iatom *      ia;
+    real           adressr,adressw;
+    rvec           ref,box2;
+    real *         wf;
+
+    adresstype         = fr->userint1;
+    adressr            = fr->userreal1;
+    adressw            = fr->userreal2;
+    wf                 = mdatoms->wf;
+
+    get_adress_ref(adresstype,box,box2,ref);
+
+    /* Since this is center of gravity AdResS, we know the vsite
+     * is in the same charge group as the constructing atoms.
+     * Loop over vsite types, calculate the weight of the vsite,
+     * then assign that weight to the constructing atoms.  We
+     * shouldn't need to worry about pbc since this was taken
+     * care of during vsite construction, which necessarily comes
+     * before this. */
+
+    for(ftype=0; (ftype<F_NRE); ftype++) 
+    {
+        if (interaction_function[ftype].flags & IF_VSITE) 
+        {
+            nra    = interaction_function[ftype].nratoms;
+            nr     = ilist[ftype].nr;
+            ia     = ilist[ftype].iatoms;
+            
+            for(i=0; (i<nr); ) 
+            {
+                /* The vsite and first constructing atom */
+                avsite     = ia[1];
+                ai         = ia[2];
+                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,ref,box2,box);
+                wf[ai]     = wf[avsite];
+
+                /* Assign the vsite wf to rest of constructing atoms depending on type */
+                inc = nra+1;
+                switch (ftype) {
+                case F_VSITE2:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    break;
+                case F_VSITE3:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    ak     = ia[4];
+                    wf[ak] = wf[avsite];
+                    break;
+                case F_VSITE3FD:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    ak     = ia[4];
+                    wf[ak] = wf[avsite];
+                    break;
+                case F_VSITE3FAD:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    ak     = ia[4];
+                    wf[ak] = wf[avsite];
+                    break;
+                case F_VSITE3OUT:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    ak     = ia[4];
+                    wf[ak] = wf[avsite];
+                    break;
+                case F_VSITE4FD:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    ak     = ia[4];
+                    wf[ak] = wf[avsite];
+                    al     = ia[5];
+                    wf[al] = wf[avsite];
+                    break;
+                case F_VSITE4FDN:
+                    aj     = ia[3];
+                    wf[aj] = wf[avsite];
+                    ak     = ia[4];
+                    wf[ak] = wf[avsite];
+                    al     = ia[5];
+                    wf[al] = wf[avsite];
+                    break;
+                case F_VSITEN:
+                    inc    = 3*ip[ia[0]].vsiten.n;
+                    for(j=3; j<inc; j+=3) 
+                    {
+                        ai = ia[j+2];
+                        wf[ai] = wf[avsite];
+                    }
+                    break;
+                default:
+                    gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
+                              ftype,__FILE__,__LINE__);
+                }
+
+                /* Increment loop variables */
+                i  += inc;
+                ia += inc;
+            }
+        }
+    }
+}
+
