@@ -384,6 +384,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 gmx_file("Cannot write trajectory; maybe you are out of quota?");
             }
+            gmx_fio_check_file_position(fp_trn);
         }      
         if (bXTC) {
             groups = &top_global->groups;
@@ -423,6 +424,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
             }
+            gmx_fio_check_file_position(fp_xtc);
         }
     }
 }

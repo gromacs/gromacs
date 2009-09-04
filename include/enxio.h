@@ -123,7 +123,9 @@ external "C" {
   /* Frees all allocated memory in fr */
 
   extern ener_file_t open_enx(const char *fn,const char *mode);
-  
+
+  extern int enx_file_pointer(const ener_file_t ef);
+
   extern void close_enx(ener_file_t ef);
   
   extern void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);

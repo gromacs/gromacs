@@ -414,6 +414,11 @@ ener_file_t open_enx(const char *fn,const char *mode)
     return ef;
 }
 
+int enx_file_pointer(const ener_file_t ef)
+{
+    return ef->fp;
+}
+
 static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
 {
     int nstep_all;

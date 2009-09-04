@@ -53,6 +53,7 @@
 #include "constr.h"
 #include "mtop_util.h"
 #include "xvgr.h"
+#include "gmxfio.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -726,6 +727,7 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
         if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
         {
             do_enx(fp_ene,&fr);
+            gmx_fio_check_file_position(enx_file_pointer(fp_ene));
             if (fr.nre)
             {
                 /* We have stored the sums, so reset the sum history */

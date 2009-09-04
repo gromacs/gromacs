@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -53,7 +54,10 @@
 
 
 /* The source code in this file should be thread-safe. 
-   Please keep it that way. */
+ * But some functions are NOT THREADSAFE when multiple threads
+ * use the same file pointer.
+ * Please keep it that way.
+ */
 
 /* XDR should be available on all platforms now, 
  * but we keep the possibility of turning it off...
@@ -66,6 +70,7 @@ typedef struct {
   char *fn;
   FILE *fp;
   XDR  *xdr;
+  bool bLargerThan_off_t;
 } t_fileio;
 
 
@@ -909,6 +914,7 @@ int gmx_fio_open(const char *fn,const char *mode)
     fio->bDouble= (sizeof(real) == sizeof(double));
     fio->bDebug = FALSE;
     fio->bOpen  = TRUE;
+    fio->bLargerThan_off_t = FALSE;
 
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
@@ -999,6 +1005,63 @@ int gmx_fio_fclose(FILE *fp)
 }
 
 
+/* The fio_mutex should ALWAYS be locked when this function is called */
+static int gmx_fio_get_file_position(int fio, off_t *offset)
+{
+    char buf[STRLEN];
+
+    /* Flush the file, so we are sure it is written */
+    if (gmx_fio_flush_lock(fio,TRUE))
+    {
+        char buf[STRLEN];
+        sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[fio].fn);
+        gmx_file(buf);
+    }
+
+    /* We cannot count on XDR being able to write 64-bit integers, 
+       so separate into high/low 32-bit values.
+       In case the filesystem has 128-bit offsets we only care 
+       about the first 64 bits - we'll have to fix
+       this when exabyte-size output files are common...
+       */
+#ifdef HAVE_FSEEKO
+    *offset = ftello(FIO[fio].fp);
+#else
+    *offset = ftell(FIO[fio].fp);
+#endif
+
+    return 0;
+}
+
+
+int gmx_fio_check_file_position(int fio)
+{
+    /* If off_t is 4 bytes we can not store file offset > 2 GB.
+     * If we do not have ftello, we will play it safe.
+     */
+#if (SIZEOF_OFF_T == 4 || !defined HAVE_FSEEKO)
+    off_t offset;
+    
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_get_file_position(fio,&offset);
+    /* We have a 4 byte offset,
+     * make sure that we will detect out of range for all possible cases.
+     */
+    if (offset < 0 || offset > 2147483647)
+    {
+        FIO[fio].bLargerThan_off_t = TRUE;
+    }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+#endif
+
+    return 0;
+}
+
+
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, 
                                       int *p_nfiles)
 {
@@ -1031,28 +1094,21 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             }
 
             strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
-            ret=gmx_fio_flush_lock(i,FALSE);
-            /* Flush the file, so we are sure it is written */
-            if (ret != 0)
-            {
-                sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
-                gmx_file(buf);
-            }
 
-            /* We cannot count on XDR being able to write 64-bit integers, 
-               so separate into high/low 32-bit values.
-               In case the filesystem has 128-bit offsets we only care 
-               about the first 64 bits - we'll have to fix
-               this when exabyte-size output files are common...
-             */
-#ifdef HAVE_FSEEKO
-            outputfiles[nfiles].offset = ftello(FIO[i].fp);
-#else
-            outputfiles[nfiles].offset = ftell(FIO[i].fp);
-#endif
+            /* Get the file position */
+            if (FIO[i].bLargerThan_off_t)
+            {
+                /* -1 signals out of range */
+                outputfiles[nfiles].offset = -1;
+            }
+            else
+            {
+                gmx_fio_get_file_position(i,&outputfiles[nfiles].offset);
+            }
+            
             nfiles++;
         }
-    }	
+    }
     *p_nfiles = nfiles;
     *p_outputfiles = outputfiles;
 #ifdef GMX_THREADS
@@ -1061,41 +1117,6 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
 
     return 0;
 }
-
-static int gmx_fio_get_file_position(int fio, off_t *offset)
-{
-    t_fileio *myfio;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&fio_mutex);
-#endif
-    myfio=&FIO[fio]; 
-
-    /* Flush the file, so we are sure it is written */
-    if (gmx_fio_flush_lock(fio,TRUE))
-    {
-        char buf[STRLEN];
-        sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",myfio->fn);
-        gmx_file(buf);
-    }
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&fio_mutex);
-#endif
-
-    /* We cannot count on XDR being able to write 64-bit integers, 
-       so separate into high/low 32-bit values.
-       In case the filesystem has 128-bit offsets we only care 
-       about the first 64 bits - we'll have to fix
-       this when exabyte-size output files are common...
-       */
-#ifdef HAVE_FSEEKO
-    *offset = ftello(myfio->fp);
-#else
-    *offset = ftell(myfio->fp);
-#endif
-    return 0;
-}
-
-
 
 
 void gmx_fio_select(int fio)
