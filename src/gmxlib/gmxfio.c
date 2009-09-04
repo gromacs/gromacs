@@ -1011,7 +1011,7 @@ static int gmx_fio_get_file_position(int fio, off_t *offset)
     char buf[STRLEN];
 
     /* Flush the file, so we are sure it is written */
-    if (gmx_fio_flush_lock(fio,TRUE))
+    if (gmx_fio_flush_lock(fio,FALSE))
     {
         char buf[STRLEN];
         sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[fio].fn);
