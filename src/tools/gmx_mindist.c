@@ -389,7 +389,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
   
   /* build index of first atom numbers for each residue */  
   presnr = NOTSET;
-  snew(residx, atoms->nres);
+  snew(residx, atoms->nres+1);
   for(i=0; i<n; i++) {
     resnr = atoms->atom[index[i]].resnr;
     if (resnr != presnr) {
@@ -402,7 +402,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
 		    nres, atoms->nres, atoms->nr, n);
   srenew(residx, nres+1);
   /* mark end of last residue */
-  residx[nres]=n+1;
+  residx[nres] = n;
   *resindex = residx;
   return nres;
 }
