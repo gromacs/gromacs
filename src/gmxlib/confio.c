@@ -1077,7 +1077,7 @@ static void write_hconf_mtop(FILE *out,const char *title,gmx_mtop_t *mtop,
     gmx_mtop_atomloop_all_names(aloop,&atomname,&resnr,&resname);
 
     fprintf(out,"%5d%-5.5s%5.5s%5d",
-	    (resnr+1)%100000,resname,atomname,(i+1)%100000);
+	    resnr%100000,resname,atomname,(i+1)%100000);
     /* next fprintf uses built format string */
     if (v)
       fprintf(out,format,
