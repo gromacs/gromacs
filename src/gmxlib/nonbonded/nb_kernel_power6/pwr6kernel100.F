@@ -163,7 +163,11 @@ C          Calculate distance
 C          Calculate 1/r and 1/r2
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv11           = frsqrtes(rsq11) 
+#else
+            rinv11           = frsqrte(dble(rsq11)) 
+#endif
             rinv11           = (0.5*rinv11*(3.0-((rsq11*rinv11)
      &  *rinv11)))
 #ifdef GMX_DOUBLE
@@ -351,7 +355,11 @@ C          Calculate distance
 C          Calculate 1/r and 1/r2
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv11           = frsqrtes(rsq11) 
+#else
+            rinv11           = frsqrte(dble(rsq11)) 
+#endif
             rinv11           = (0.5*rinv11*(3.0-((rsq11*rinv11)
      &  *rinv11)))
 #ifdef GMX_DOUBLE

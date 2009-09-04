@@ -200,7 +200,11 @@ C          Calculate distance
 C          Calculate 1/r and 1/r2
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv11           = frsqrtes(rsq11) 
+#else
+            rinv11           = frsqrte(dble(rsq11)) 
+#endif
             rinv11           = (0.5*rinv11*(3.0-((rsq11*rinv11)
      &  *rinv11)))
 #ifdef GMX_DOUBLE
@@ -209,7 +213,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv21           = frsqrtes(rsq21) 
+#else
+            rinv21           = frsqrte(dble(rsq21)) 
+#endif
             rinv21           = (0.5*rinv21*(3.0-((rsq21*rinv21)
      &  *rinv21)))
 #ifdef GMX_DOUBLE
@@ -218,7 +226,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv31           = frsqrtes(rsq31) 
+#else
+            rinv31           = frsqrte(dble(rsq31)) 
+#endif
             rinv31           = (0.5*rinv31*(3.0-((rsq31*rinv31)
      &  *rinv31)))
 #ifdef GMX_DOUBLE
@@ -508,7 +520,11 @@ C          Calculate distance
 C          Calculate 1/r and 1/r2
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv11           = frsqrtes(rsq11) 
+#else
+            rinv11           = frsqrte(dble(rsq11)) 
+#endif
             rinv11           = (0.5*rinv11*(3.0-((rsq11*rinv11)
      &  *rinv11)))
 #ifdef GMX_DOUBLE
@@ -517,7 +533,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv21           = frsqrtes(rsq21) 
+#else
+            rinv21           = frsqrte(dble(rsq21)) 
+#endif
             rinv21           = (0.5*rinv21*(3.0-((rsq21*rinv21)
      &  *rinv21)))
 #ifdef GMX_DOUBLE
@@ -526,7 +546,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv31           = frsqrtes(rsq31) 
+#else
+            rinv31           = frsqrte(dble(rsq31)) 
+#endif
             rinv31           = (0.5*rinv31*(3.0-((rsq31*rinv31)
      &  *rinv31)))
 #ifdef GMX_DOUBLE
