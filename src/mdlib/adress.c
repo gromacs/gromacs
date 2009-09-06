@@ -177,13 +177,13 @@ update_adress_weights_com(FILE *               fplog,
     int            adresstype;
     real           adressr,adressw;
     rvec           ix,ref,box2;
-    real *         massA;
+    real *         massT;
     real *         wf;
 
     adresstype         = fr->userint1;
     adressr            = fr->userreal1;
     adressw            = fr->userreal2;
-    massA              = mdatoms->massA;
+    massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
 
     get_adress_ref(adresstype,box,box2,ref);
@@ -216,7 +216,7 @@ update_adress_weights_com(FILE *               fplog,
             mtot = 0.0;
             for(k=k0; (k<k1); k++)
             {
-                mtot += massA[k];
+                mtot += massT[k];
             }
             if (mtot > 0.0)
             {
@@ -227,7 +227,7 @@ update_adress_weights_com(FILE *               fplog,
                 {
                     for(d=0; (d<DIM); d++)
                     {
-                        ix[d] += x[k][d]*massA[k];
+                        ix[d] += x[k][d]*massT[k];
                     }
                 }
                 for(d=0; (d<DIM); d++)

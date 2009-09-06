@@ -448,6 +448,21 @@ void do_force(FILE *fplog,t_commrec *cr,
     {
         update_forcerec(fplog,fr,box);
 
+#ifdef ADRESS
+        /* update adress weight beforehand */
+        if(fr->userint1 > 1) 
+        {
+            if(fr->userint4 > 0)
+            {
+                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,box);
+            }
+            else
+            {
+                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,box);
+            }
+        }
+#endif
+
         /* Calculate total (local) dipole moment in a temporary common array. 
          * This makes it possible to sum them over nodes faster.
          */
@@ -485,24 +500,6 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (gmx_debug_at)
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
   }
-
-#ifdef ADRESS
-  if (bStateChanged)
-  {
-      /* update adress weight beforehand */
-      if(fr->userint1 > 1) 
-      {
-          if(fr->userint4 > 0)
-          {
-              update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,box);
-          }
-          else
-          {
-              update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,box);
-          }
-      }
-  }
-#endif
 
 #ifdef GMX_MPI
   if (!(cr->duty & DUTY_PME)) {
