@@ -78,6 +78,12 @@ adress_weight(rvec             x,
               rvec             box2,
               matrix           box);
 
+void
+get_adress_ref(int             adresstype,
+               matrix          box,
+               rvec            box2,
+               rvec            ref);
+
 /** \brief update the weight of all coarse-grained particles
  *
  * \param[in] fr the frocerec containing all the parameters
@@ -85,10 +91,23 @@ adress_weight(rvec             x,
  * \param[in] x array with all the particle positions  
  * \param[in] box matrix containing lengths of the box
  */
+
 void
-update_adress_weights(t_forcerec *         fr,
-                      t_mdatoms *          mdatoms,
-                      rvec                 x[],
-                      matrix               box);
+update_adress_weights_com(FILE *               fplog,
+                          int                  cg0,
+                          int                  cg1,
+                          t_block *            cgs,
+                          rvec                 x[],
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          matrix               box);
+
+void
+update_adress_weights_cog(t_iparams            ip[],
+                          t_ilist              ilist[],
+                          rvec                 x[],
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          matrix               box);
 
 #endif
