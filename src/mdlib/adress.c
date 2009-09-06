@@ -133,19 +133,19 @@ update_adress_weights(t_forcerec *         fr,
                       rvec                 x[],
                       matrix               box)
 {
-    int            i,j,nr;
+    int            i,j,k,nr;
     int            adresstype;
     real           adressr;
     real           adressw;
     rvec           ix;
     rvec           ref;
     rvec           box2;
-    real *         wfv;
+    real *         wf;
     nr                 = mdatoms->homenr;
     adresstype         = fr->userint1;
     adressr            = fr->userreal1;
     adressw            = fr->userreal2;
-    wfv                = mdatoms->wfv;
+    wf                 = mdatoms->wf;
 
     if(adresstype == 4)
     {
@@ -171,16 +171,26 @@ update_adress_weights(t_forcerec *         fr,
         }
     }
 
+    k=0;
     for(i=0;i<nr;i++)
     {
         /* only calculate wf for virtual particles */
         if(mdatoms->ptype[i] == eptVSite) 
         {
-            for(j=0;j<3;j++)
-            {
+            for(j=0;j<3;j++){
                 ix[j]      = x[i][j];
             }
-            wfv[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
+            wf[i]          = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
+            /* Assign wf value to explicit atoms of the molecule 
+             * this requires that every molecule end in a virtual 
+             * site which determines the weight of the molecule. 
+             * The molecule may contain other virtual sites, in 
+             * that case we'll need to be smarter about assigning
+             * the weights. This will work for now. */
+            for(j=k;j<i;j++){
+                wf[j]      = wf[i];
+            }
+            k=i+1;
         }
     }
 }

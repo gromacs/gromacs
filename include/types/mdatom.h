@@ -66,8 +66,7 @@ typedef struct {
   real          lambda;
 #ifdef ADRESS
   /* The AdResS weighting function */
-  real          *wfv;
-  real          **wf;
+  real          *wf;
 #endif
 } t_mdatoms;
 

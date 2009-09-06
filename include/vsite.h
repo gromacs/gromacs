@@ -71,11 +71,7 @@ extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     real dt,rvec v[],
 			     t_iparams ip[],t_ilist ilist[],
 			     int ePBC,bool bMolPBC,t_graph *graph,
-			     t_commrec *cr,matrix box
-#ifdef ADRESS
-			     ,t_mdatoms *md
-#endif
-			     );
+			     t_commrec *cr,matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
  * If v is passed, the velocities of the vsites will be calculated

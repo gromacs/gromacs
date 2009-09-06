@@ -410,11 +410,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      real dt,rvec *v,
 		      t_iparams ip[],t_ilist ilist[],
 		      int ePBC,bool bMolPBC,t_graph *graph,
-		      t_commrec *cr,matrix box
-#ifdef ADRESS
-		      ,t_mdatoms *md
-#endif
-		      )
+		      t_commrec *cr,matrix box)
 {
   rvec      xpbc,xv,vv,dx;
   real      a1,b1,c1,inv_dt;
@@ -425,16 +421,6 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   bool      bDomDec;
   int       *vsite_pbc,ishift;
   rvec      reftmp,vtmp,rtmp;
-#ifdef ADRESS
-  int       n3,j;
-  real      *wfv;
-  real      **wf;
-  if (md)
-    {
-      wfv = md->wfv;
-      wf  = md->wf;
-    }
-#endif
 	
   bDomDec = cr && DOMAINDECOMP(cr);
 		
@@ -572,57 +558,6 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      ftype,__FILE__,__LINE__);
 	}
 
-#ifdef ADRESS
-	/* Point wf of all the constructing atoms, as well as the vsite itself,
-	 * at the weighting function of the vsite */
-	if(md)
-	  {
-	    wf[avsite] = &wfv[avsite];	  
-	    wf[ai]     = &wfv[avsite];
-	    switch (ftype) {
-	    case F_VSITE2:
-	      wf[aj]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITE3:
-	      wf[aj]     = &wfv[avsite];	  
-	      wf[ak]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITE3FD:
-	      wf[aj]     = &wfv[avsite];	  
-	      wf[ak]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITE3FAD:
-	      wf[aj]     = &wfv[avsite];	  
-	      wf[ak]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITE3OUT:
-	      wf[aj]     = &wfv[avsite];	  
-	      wf[ak]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITE4FD:
-	      wf[aj]     = &wfv[avsite];	  
-	      wf[ak]     = &wfv[avsite];	  
-	      wf[al]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITE4FDN:
-	      wf[aj]     = &wfv[avsite];	  
-	      wf[ak]     = &wfv[avsite];	  
-	      wf[al]     = &wfv[avsite];	  
-	      break;
-	    case F_VSITEN:
-	      n3 = 3*ip[ia[0]].vsiten.n;
-	      for(j=3; j<n3; j+=3) 
-		{
-		  wf[ia[j+2]] = &wfv[avsite];
-		}
-	      break;
-	    default:
-	      gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
-			ftype,__FILE__,__LINE__);
-	    }
-	  }
-#endif
-
 	if (pbc_atom >= 0) {
 	  /* Match the pbc of this vsite to the rest of its charge group */
 	  ishift = pbc_dx_aiuc(pbc_null,x[avsite],xpbc,dx);
@@ -701,11 +636,7 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
     for(mol=0; mol<molb->nmol; mol++) {
       construct_vsites(log,vsite,x+as,NULL,0.0,NULL,
 		       mtop->ffparams.iparams,molt->ilist,
-		       epbcNONE,TRUE,NULL,NULL,NULL
-#ifdef ADRESS
-		       ,NULL
-#endif
-		       );
+		       epbcNONE,TRUE,NULL,NULL,NULL);
       as += molt->atoms.nr;
     }
   }
