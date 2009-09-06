@@ -122,7 +122,7 @@ void *save_malloc(const char *name,const char *file,int line,size_t size)
 }
 
 void *save_calloc(const char *name,const char *file,int line,
-                  unsigned nelem,size_t elsize)
+                  size_t nelem,size_t elsize)
 {
   void *p;
   
@@ -162,7 +162,7 @@ void *save_calloc(const char *name,const char *file,int line,
 }
 
 void *save_realloc(const char *name,const char *file,int line,void *ptr,
-		   unsigned nelem,size_t elsize)
+		   size_t nelem,size_t elsize)
 {
   void *p;
   size_t size = nelem*elsize;

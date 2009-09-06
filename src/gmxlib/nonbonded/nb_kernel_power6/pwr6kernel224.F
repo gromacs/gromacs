@@ -258,7 +258,11 @@ C          Calculate distance
 C          Calculate 1/r and 1/r2
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv11           = frsqrtes(rsq11) 
+#else
+            rinv11           = frsqrte(dble(rsq11)) 
+#endif
             rinv11           = (0.5*rinv11*(3.0-((rsq11*rinv11)
      &  *rinv11)))
 #ifdef GMX_DOUBLE
@@ -267,7 +271,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv22           = frsqrtes(rsq22) 
+#else
+            rinv22           = frsqrte(dble(rsq22)) 
+#endif
             rinv22           = (0.5*rinv22*(3.0-((rsq22*rinv22)
      &  *rinv22)))
 #ifdef GMX_DOUBLE
@@ -276,7 +284,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv23           = frsqrtes(rsq23) 
+#else
+            rinv23           = frsqrte(dble(rsq23)) 
+#endif
             rinv23           = (0.5*rinv23*(3.0-((rsq23*rinv23)
      &  *rinv23)))
 #ifdef GMX_DOUBLE
@@ -285,7 +297,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv24           = frsqrtes(rsq24) 
+#else
+            rinv24           = frsqrte(dble(rsq24)) 
+#endif
             rinv24           = (0.5*rinv24*(3.0-((rsq24*rinv24)
      &  *rinv24)))
 #ifdef GMX_DOUBLE
@@ -294,7 +310,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv32           = frsqrtes(rsq32) 
+#else
+            rinv32           = frsqrte(dble(rsq32)) 
+#endif
             rinv32           = (0.5*rinv32*(3.0-((rsq32*rinv32)
      &  *rinv32)))
 #ifdef GMX_DOUBLE
@@ -303,7 +323,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv33           = frsqrtes(rsq33) 
+#else
+            rinv33           = frsqrte(dble(rsq33)) 
+#endif
             rinv33           = (0.5*rinv33*(3.0-((rsq33*rinv33)
      &  *rinv33)))
 #ifdef GMX_DOUBLE
@@ -312,7 +336,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv34           = frsqrtes(rsq34) 
+#else
+            rinv34           = frsqrte(dble(rsq34)) 
+#endif
             rinv34           = (0.5*rinv34*(3.0-((rsq34*rinv34)
      &  *rinv34)))
 #ifdef GMX_DOUBLE
@@ -321,7 +349,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv42           = frsqrtes(rsq42) 
+#else
+            rinv42           = frsqrte(dble(rsq42)) 
+#endif
             rinv42           = (0.5*rinv42*(3.0-((rsq42*rinv42)
      &  *rinv42)))
 #ifdef GMX_DOUBLE
@@ -330,7 +362,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv43           = frsqrtes(rsq43) 
+#else
+            rinv43           = frsqrte(dble(rsq43)) 
+#endif
             rinv43           = (0.5*rinv43*(3.0-((rsq43*rinv43)
      &  *rinv43)))
 #ifdef GMX_DOUBLE
@@ -339,7 +375,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv44           = frsqrtes(rsq44) 
+#else
+            rinv44           = frsqrte(dble(rsq44)) 
+#endif
             rinv44           = (0.5*rinv44*(3.0-((rsq44*rinv44)
      &  *rinv44)))
 #ifdef GMX_DOUBLE
@@ -851,7 +891,11 @@ C          Calculate distance
 C          Calculate 1/r and 1/r2
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv11           = frsqrtes(rsq11) 
+#else
+            rinv11           = frsqrte(dble(rsq11)) 
+#endif
             rinv11           = (0.5*rinv11*(3.0-((rsq11*rinv11)
      &  *rinv11)))
 #ifdef GMX_DOUBLE
@@ -860,7 +904,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv22           = frsqrtes(rsq22) 
+#else
+            rinv22           = frsqrte(dble(rsq22)) 
+#endif
             rinv22           = (0.5*rinv22*(3.0-((rsq22*rinv22)
      &  *rinv22)))
 #ifdef GMX_DOUBLE
@@ -869,7 +917,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv23           = frsqrtes(rsq23) 
+#else
+            rinv23           = frsqrte(dble(rsq23)) 
+#endif
             rinv23           = (0.5*rinv23*(3.0-((rsq23*rinv23)
      &  *rinv23)))
 #ifdef GMX_DOUBLE
@@ -878,7 +930,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv24           = frsqrtes(rsq24) 
+#else
+            rinv24           = frsqrte(dble(rsq24)) 
+#endif
             rinv24           = (0.5*rinv24*(3.0-((rsq24*rinv24)
      &  *rinv24)))
 #ifdef GMX_DOUBLE
@@ -887,7 +943,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv32           = frsqrtes(rsq32) 
+#else
+            rinv32           = frsqrte(dble(rsq32)) 
+#endif
             rinv32           = (0.5*rinv32*(3.0-((rsq32*rinv32)
      &  *rinv32)))
 #ifdef GMX_DOUBLE
@@ -896,7 +956,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv33           = frsqrtes(rsq33) 
+#else
+            rinv33           = frsqrte(dble(rsq33)) 
+#endif
             rinv33           = (0.5*rinv33*(3.0-((rsq33*rinv33)
      &  *rinv33)))
 #ifdef GMX_DOUBLE
@@ -905,7 +969,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv34           = frsqrtes(rsq34) 
+#else
+            rinv34           = frsqrte(dble(rsq34)) 
+#endif
             rinv34           = (0.5*rinv34*(3.0-((rsq34*rinv34)
      &  *rinv34)))
 #ifdef GMX_DOUBLE
@@ -914,7 +982,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv42           = frsqrtes(rsq42) 
+#else
+            rinv42           = frsqrte(dble(rsq42)) 
+#endif
             rinv42           = (0.5*rinv42*(3.0-((rsq42*rinv42)
      &  *rinv42)))
 #ifdef GMX_DOUBLE
@@ -923,7 +995,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv43           = frsqrtes(rsq43) 
+#else
+            rinv43           = frsqrte(dble(rsq43)) 
+#endif
             rinv43           = (0.5*rinv43*(3.0-((rsq43*rinv43)
      &  *rinv43)))
 #ifdef GMX_DOUBLE
@@ -932,7 +1008,11 @@ C          PowerPC intrinsics 1/sqrt lookup table
 #endif
 
 C          PowerPC intrinsics 1/sqrt lookup table
+#ifndef GMX_BLUEGENE
             rinv44           = frsqrtes(rsq44) 
+#else
+            rinv44           = frsqrte(dble(rsq44)) 
+#endif
             rinv44           = (0.5*rinv44*(3.0-((rsq44*rinv44)
      &  *rinv44)))
 #ifdef GMX_DOUBLE

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -53,7 +54,10 @@
 
 
 /* The source code in this file should be thread-safe. 
-   Please keep it that way. */
+ * But some functions are NOT THREADSAFE when multiple threads
+ * use the same file pointer.
+ * Please keep it that way.
+ */
 
 /* XDR should be available on all platforms now, 
  * but we keep the possibility of turning it off...
@@ -66,6 +70,7 @@ typedef struct {
   char *fn;
   FILE *fp;
   XDR  *xdr;
+  bool bLargerThan_off_t;
 } t_fileio;
 
 
@@ -138,7 +143,23 @@ static char *add_comment = NULL;
 
 #ifdef GMX_THREADS
 static tMPI_Thread_mutex_t fio_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+/* this mutex locks concurrent access to the FIO and curfio arrays, the
+   nFIO counter, and the add_comment string.  For now this is 
+   the easiest way to make this all thread-safe. Because I/O is mostly
+   done by the master node, this won't cause any performance issues 
+   (locking/unlocking mutexes is very cheap as long as no thread get 
+   scheduled out). */
 #endif
+
+/* these functions are all called from functions that lock the fio_mutex
+   themselves, and need to make sure that the called function doesn't 
+   try to lock that mutex again. */
+static int gmx_fio_flush_lock(int fio, bool do_lock);
+static int gmx_fio_close_lock(int fio, bool do_lock);
+static bool do_xdr_lock(void *item,int nitem,int eio,
+                        const char *desc,const char *srcfile,int line, 
+                        bool do_lock);
+
 
 
 static const char *dbgstr(const char *desc)
@@ -584,8 +605,13 @@ static bool do_binread(void *item,int nitem,int eio,
 }
 
 #ifdef USE_XDR
-static bool do_xdr(void *item,int nitem,int eio,
-		   const char *desc,const char *srcfile,int line)
+
+/* this is a recursive function that does mutex locking, so
+   there is an a function that locks (do_xdr) and the real function
+   that calls itself without locking.  */
+static bool do_xdr_lock(void *item,int nitem,int eio,
+                        const char *desc,const char *srcfile,int line, 
+                        bool do_lock)
 {
   unsigned char ucdum,*ucptr;
   bool_t res=0;
@@ -599,7 +625,8 @@ static bool do_xdr(void *item,int nitem,int eio,
   float  f=0;
   
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&fio_mutex);
+  if (do_lock)
+      tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
   check_nitem();
   switch (eio) {
@@ -678,13 +705,7 @@ static bool do_xdr(void *item,int nitem,int eio,
     for(j=0; (j<nitem) && res; j++) {
       if (item)
 	ptr = ((rvec *)item)[j];
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&fio_mutex);
-#endif
-      res = do_xdr(ptr,1,eioRVEC,desc,srcfile,line);
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&fio_mutex);
-#endif
+      res = do_xdr_lock(ptr,1,eioRVEC,desc,srcfile,line, FALSE);
     }
     break;
   case eioIVEC:
@@ -732,9 +753,19 @@ static bool do_xdr(void *item,int nitem,int eio,
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
 
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&fio_mutex);
+  if (do_lock)
+      tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
   return (res != 0);
+}
+
+static bool do_xdr(void *item,int nitem,int eio,
+		   const char *desc,const char *srcfile,int line)
+{
+    /* this is a recursive function that does mutex locking, so
+       it needs to be called with locking here, but without locking
+       from itself */
+    return do_xdr_lock(item, nitem, eio, desc, srcfile, line, TRUE);
 }
 #endif
 
@@ -883,6 +914,7 @@ int gmx_fio_open(const char *fn,const char *mode)
     fio->bDouble= (sizeof(real) == sizeof(double));
     fio->bDebug = FALSE;
     fio->bOpen  = TRUE;
+    fio->bLargerThan_off_t = FALSE;
 
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
@@ -891,12 +923,15 @@ int gmx_fio_open(const char *fn,const char *mode)
 }
 
 
-int gmx_fio_close(int fio)
+/* this function may be called from a function that locks the fio_mutex, 
+   which is why it exists in the first place. */
+static int gmx_fio_close_lock(int fio, bool do_lock)
 {
     int rc = 0;
 
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&fio_mutex);
+    if (do_lock)
+        tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
 
@@ -916,10 +951,16 @@ int gmx_fio_close(int fio)
     do_read  = do_dummy;
     do_write = do_dummy;
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&fio_mutex);
+    if (do_lock)
+        tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 
     return rc;
+}
+
+int gmx_fio_close(int fio)
+{
+    return gmx_fio_close_lock(fio, TRUE);
 }
 
 FILE * gmx_fio_fopen(const char *fn,const char *mode)
@@ -953,13 +994,7 @@ int gmx_fio_fclose(FILE *fp)
     {
         if(fp == FIO[i].fp)
         {
-#ifdef GMX_THREADS
-            tMPI_Thread_mutex_unlock(&fio_mutex);
-#endif
-            rc = gmx_fio_close(i);
-#ifdef GMX_THREADS
-            tMPI_Thread_mutex_lock(&fio_mutex);
-#endif
+            rc = gmx_fio_close_lock(i,FALSE);
             found=1;
         }
     }
@@ -970,8 +1005,65 @@ int gmx_fio_fclose(FILE *fp)
 }
 
 
+/* The fio_mutex should ALWAYS be locked when this function is called */
+static int gmx_fio_get_file_position(int fio, off_t *offset)
+{
+    char buf[STRLEN];
+
+    /* Flush the file, so we are sure it is written */
+    if (gmx_fio_flush_lock(fio,FALSE))
+    {
+        char buf[STRLEN];
+        sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[fio].fn);
+        gmx_file(buf);
+    }
+
+    /* We cannot count on XDR being able to write 64-bit integers, 
+       so separate into high/low 32-bit values.
+       In case the filesystem has 128-bit offsets we only care 
+       about the first 64 bits - we'll have to fix
+       this when exabyte-size output files are common...
+       */
+#ifdef HAVE_FSEEKO
+    *offset = ftello(FIO[fio].fp);
+#else
+    *offset = ftell(FIO[fio].fp);
+#endif
+
+    return 0;
+}
+
+
+int gmx_fio_check_file_position(int fio)
+{
+    /* If off_t is 4 bytes we can not store file offset > 2 GB.
+     * If we do not have ftello, we will play it safe.
+     */
+#if (SIZEOF_OFF_T == 4 || !defined HAVE_FSEEKO)
+    off_t offset;
+    
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_get_file_position(fio,&offset);
+    /* We have a 4 byte offset,
+     * make sure that we will detect out of range for all possible cases.
+     */
+    if (offset < 0 || offset > 2147483647)
+    {
+        FIO[fio].bLargerThan_off_t = TRUE;
+    }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+#endif
+
+    return 0;
+}
+
+
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, 
-        int *p_nfiles)
+                                      int *p_nfiles)
 {
     int                      i,nfiles,rc,nalloc;
     int                      pos_hi,pos_lo;
@@ -1002,34 +1094,21 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             }
 
             strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
-#ifdef GMX_THREADS
-            tMPI_Thread_mutex_unlock(&fio_mutex);
-#endif
-            ret=gmx_fio_flush(i);
-#ifdef GMX_THREADS
-            tMPI_Thread_mutex_lock(&fio_mutex);
-#endif
-            /* Flush the file, so we are sure it is written */
-            if (ret != 0)
-            {
-                sprintf(buf,"Cannot write file '%s'; maybe you are out of disk space or quota?",FIO[i].fn);
-                gmx_file(buf);
-            }
 
-            /* We cannot count on XDR being able to write 64-bit integers, 
-               so separate into high/low 32-bit values.
-               In case the filesystem has 128-bit offsets we only care 
-               about the first 64 bits - we'll have to fix
-               this when exabyte-size output files are common...
-             */
-#ifdef HAVE_FSEEKO
-            outputfiles[nfiles].offset = ftello(FIO[i].fp);
-#else
-            outputfiles[nfiles].offset = ftell(FIO[i].fp);
-#endif
+            /* Get the file position */
+            if (FIO[i].bLargerThan_off_t)
+            {
+                /* -1 signals out of range */
+                outputfiles[nfiles].offset = -1;
+            }
+            else
+            {
+                gmx_fio_get_file_position(i,&outputfiles[nfiles].offset);
+            }
+            
             nfiles++;
         }
-    }	
+    }
     *p_nfiles = nfiles;
     *p_outputfiles = outputfiles;
 #ifdef GMX_THREADS
@@ -1038,7 +1117,6 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
 
     return 0;
 }
-
 
 
 void gmx_fio_select(int fio)
@@ -1180,12 +1258,13 @@ void gmx_fio_rewind(int fio)
 #endif
 }
 
-int gmx_fio_flush(int fio)
+static int gmx_fio_flush_lock(int fio, bool do_lock)
 {
     int rc=0;
 
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&fio_mutex);
+    if (do_lock)
+        tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
     gmx_fio_check(fio);
     if (FIO[fio].fp)
@@ -1193,10 +1272,16 @@ int gmx_fio_flush(int fio)
     else if (FIO[fio].xdr)
         rc = fflush ((FILE *) FIO[fio].xdr->x_private);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&fio_mutex);
+    if (do_lock)
+        tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
 
     return rc;
+}
+
+int gmx_fio_flush(int fio)
+{
+    return gmx_fio_flush_lock(fio, TRUE);
 }
 
 off_t gmx_fio_ftell(int fio)
