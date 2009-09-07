@@ -336,7 +336,7 @@ static void check_length(real length, int a, int b)
 void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
 		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis, 
-		bool permolecule, bool radial, bool distcalc, char *radfn,
+		bool permolecule, bool radial, bool distcalc, const char *radfn,
 		real ***distvals,
                 const output_env_t oenv)
 { 
@@ -636,8 +636,8 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 }
 
 
-void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile, 
-		char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
+void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bfile, 
+		const char *cfile, int ngrps, int nslices, real slWidth, bool bSzonly,
 		bool permolecule, real **distvals, const output_env_t oenv)
 {
   FILE       *ord, *slOrd;        /* xvgr files with order parameters  */
