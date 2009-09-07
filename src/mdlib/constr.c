@@ -205,7 +205,9 @@ static void dump_confs(FILE *fplog,gmx_step_t step,gmx_mtop_t *mtop,
   write_constr_pdb(buf,"coordinates after constraining",
 		   mtop,start,homenr,cr,xprime,box);
   if (fplog)
-    fprintf(fplog,"Wrote pdb files with previous and current coordinates\n");
+  {
+      fprintf(fplog,"Wrote pdb files with previous and current coordinates\n");
+  }
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
 
@@ -229,14 +231,16 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq)
+               t_nrnb *nrnb,int econq,bool bPscal,real veta)
 {
     bool    bOK;
-    int     start,homenr;
-    int     i,j;
+    int     start,homenr,nrend;
+    int     i,j,d;
     int     ncons,error;
     tensor  rmdr;
+    rvec    *vstor;
     real    invdt,vir_fac,t;
+    real    scale1, scale2;
     t_ilist *settle;
     int     nsettle;
     t_pbc   pbc;
@@ -251,6 +255,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     
     start  = md->start;
     homenr = md->homenr;
+    nrend = start+homenr;
+
     if (ir->delta_t == 0)
     {
         invdt = 0;
@@ -268,6 +274,33 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         lambda += delta_step*ir->delta_lambda;
     }
     
+    if (bPscal) {
+        snew(vstor,homenr);
+        switch (econq) {
+        case econqVeloc:
+            for (i=start;i<nrend;i++) {
+                for (d=0;d<DIM;d++) {
+                    /* use modified velocity equal to \dot{x} = v + veta*x.  We need to constrain this
+                       since \dot(x) * x is zero, not v(x) * x */
+                    vstor[i][d] = xprime[i][d];
+                    xprime[i][d] += veta * x[i][d];
+                }	  
+            }
+            break;
+        case econqCoord:
+            if (v) {
+                for (i=start;i<nrend;i++) {
+                    for (d=0;d<DIM;d++) {
+                        vstor[i][d] = v[i][d];
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
     if (vir != NULL)
     {
         clear_mat(rmdr);
@@ -290,23 +323,32 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     
     if (constr->nblocks > 0)
     {
-        if (econq != econqCoord)
-        {
+        switch (econq) {
+        case (econqCoord):
+            bOK = bshakef(fplog,constr->shaked,
+                          homenr,md->invmass,constr->nblocks,constr->sblock,
+                          idef,ir,box,x,xprime,nrnb,
+                          constr->lagr,lambda,dvdlambda,
+                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq);
+            break;
+        case (econqVeloc):
+            bOK = bshakef(fplog,constr->shaked,
+                          homenr,md->invmass,constr->nblocks,constr->sblock,
+                          idef,ir,box,x,min_proj,nrnb,
+                          constr->lagr,lambda,dvdlambda,
+                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq);
+            break;
+        default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+            break;
         }
-        
-        bOK = bshakef(fplog,constr->shaked,
-                      homenr,md->invmass,constr->nblocks,constr->sblock,
-                      idef,ir,box,x,xprime,nrnb,
-                      constr->lagr,lambda,dvdlambda,
-                      invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
-        if (!bOK && constr->maxwarn >= 0 && fplog)
+        if (!bOK && constr->maxwarn >= 0 && fplog) 
         {
             fprintf(fplog,"Constraint error in algorithm %s at step %s\n",
                     econstr_names[econtSHAKE],gmx_step_str(step,buf));
         }
     }
-    
+        
     settle  = &idef->il[F_SETTLE];
     if (settle->nr > 0)
     {
@@ -368,6 +410,62 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         }
     }
 
+    if (bPscal) {
+        double g,alpha,rbuf;
+        g = 0.5*ir->delta_t*veta;
+        scale1 = exp(g)*series_sinhx(g);
+        alpha = 1 + DIM/(((double)ir->opts.nrdf[0])-3);
+        g = -0.25*alpha*ir->delta_t*veta;
+        scale2 = exp(g)*series_sinhx(g);
+        
+        switch (econq) {
+        case econqVeloc:
+            /* reconstruct the velocity from the constrained quantity. (x should not be changing.) */
+            for (i=start;i<nrend;i++) 
+            {
+                for (d=0;d<DIM;d++) 
+                {
+                    min_proj[i][d] -= veta * x[i][d];
+                }
+            }
+            if (xprime != min_proj) {  /* restore xprime unless it's the same array as min_proj */
+                for (i=start;i<nrend;i++) 
+                {
+                    for (d=0;d<DIM;d++) 
+                    {
+                        xprime[i][d] = vstor[i][d];
+                    }
+                }
+            }
+            break;
+            
+        case econqCoord:
+            /* What is computed in constrain() is F_cons * scale1 * scale2, not F_cons. 
+               So F_cons = (dr * 2*m / (dt)^2) / (scale1*scale2).
+               
+               With pressure scaling, v_cons = v_uncons + dt/2m * F_cons * scale2.  
+               In the standard constraint algorithm,  v_cons = v_uncons + dt/2m * F_cons.
+               In order to get the correct constrained velocity at v(t+dt/2), we need to compute 
+               rbuf = (v_cons - v_uncons), divide by scale1, and add rbuf to v_uncons. 
+            */
+            if (v) 
+            {
+                for (i=start;i<nrend;i++) 
+                {
+                    for (d=0;d<DIM;d++) 
+                    {
+                        rbuf = (v[i][d]-vstor[i][d])/scale1;
+                        v[i][d] = vstor[i][d] + rbuf;
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+        }
+        sfree(vstor);
+    }
+
     if (vir != NULL)
     {
         switch (econq)
@@ -387,6 +485,31 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             vir_fac = 0;
             gmx_incons("Unsupported constraint quantity for virial");
         }
+        /* We need to rescale the virial contribution from the constraints.  In the first case, 
+           constraint of velocity for second half of step.  vir is actually computed from 
+           R_{Fv}\sum_k \mu_k F^{(k)}_{c,i} (see Tuckerman, 6.14.3),
+           not \sum_k \mu_k F^{(k)}_{c,i}, as it should be.  So we need to rescale. 
+           
+           In the case of position constraints, vir is actually computed from 
+           R_{Fx}\sum_k \lambda_k F^{(k)}_{c,i} (see Tuckerman, 6.14.3),
+           not \sum_k \lambda_k F^{(k)}_{c,i}, as it should be. 
+           
+           These effects are quite small, but probably should still be taken into account.
+        */
+        
+        if (bPscal) {
+            switch (econq) {
+            case econqVeloc:
+                vir_fac /= (real)(scale2);
+                break;
+            case econqCoord:
+                vir_fac /= (real)(scale1*scale2);
+                break;
+            default:
+                break;
+            }
+        }
+        
         for(i=0; i<DIM; i++)
         {
             for(j=0; j<DIM; j++)

@@ -234,6 +234,18 @@ static inline double dsqr(double x)
   return (x*x);
 }
 
+/* Maclaurin series for sinh(x)/x, useful for NH chains and MTTK pressure control 
+   Here, we compute it to 10th order, which might be overkill, 8th is probably enough, 
+   but it's not very much more expensive. */
+
+static inline real series_sinhx(real x) 
+{
+  real x2 = x*x;
+  return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
+}
+
+
+
 extern void vecinvsqrt(real in[],real out[],int n);
 /* Perform out[i]=1.0/sqrt(in[i]) for n elements */
 
@@ -363,6 +375,16 @@ static inline void copy_rvec(const rvec a,rvec b)
   b[XX]=a[XX];
   b[YY]=a[YY];
   b[ZZ]=a[ZZ];
+}
+
+static inline void copy_rvecn(rvec *a,rvec *b,int startn, int endn)
+{
+  int i;
+  for (i=startn;i<endn;i++) {
+    b[i][XX]=a[i][XX];
+    b[i][YY]=a[i][YY];
+    b[i][ZZ]=a[i][ZZ];
+  }
 }
 
 static inline void copy_dvec(const dvec a,dvec b)

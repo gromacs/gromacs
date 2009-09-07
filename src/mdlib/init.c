@@ -112,20 +112,23 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     if (PRESERVE_SHAPE(*ir)) {
       state->flags |= (1<<estBOX_REL);
     }
-    if (ir->epc == epcPARRINELLORAHMAN) {
+    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcTROTTER)) {
       state->flags |= (1<<estBOXV);
     }
     if (ir->epc != epcNO) {
       state->flags |= (1<<estPRES_PREV);
     }
-    if (ir->etc == etcNOSEHOOVER) {
-      state->flags |= (1<<estNH_XI);
-    }
-  }
-  if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
-    state->flags |= (1<<estTC_INT);
   }
 
+  if ((ir->etc == etcNOSEHOOVER) || (ir->etc == etcTROTTER)) {
+    state->flags |= (1<<estNH_XI);
+    state->flags |= (1<<estNH_VXI);
+  }
+  
+  if (ir->etc == etcVRESCALE) {
+    state->flags |= (1<<estTC_INT);
+  }
+  
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);

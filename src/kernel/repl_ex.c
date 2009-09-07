@@ -354,12 +354,19 @@ static void exchange_rvecs(const gmx_multisim_t *ms,int b,rvec *v,int n)
 
 static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
 {
+
   /* When t_state changes, this code should be updated. */
+  int ngtch;
+  ngtch = (state->ngtc) * NNHCHAIN;
+
   exchange_rvecs(ms,b,state->box,DIM);
   exchange_rvecs(ms,b,state->box_rel,DIM);
   exchange_rvecs(ms,b,state->boxv,DIM);
+  exchange_reals(ms,b,&(state->veta),1);
+  exchange_reals(ms,b,&(state->vol0),1);
   exchange_rvecs(ms,b,state->pres_prev,DIM);
-  exchange_reals(ms,b,state->nosehoover_xi,state->ngtc);
+  exchange_doubles(ms,b,state->nosehoover_xi,ngtch);
+  exchange_doubles(ms,b,state->therm_integral,ngtch);  
   exchange_doubles(ms,b,state->therm_integral,state->ngtc);
   exchange_rvecs(ms,b,state->x,state->natoms);
   exchange_rvecs(ms,b,state->v,state->natoms);

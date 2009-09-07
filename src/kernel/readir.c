@@ -154,7 +154,7 @@ void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   /* GENERAL INTEGRATOR STUFF */
-  if (ir->eI != eiMD) {
+  if (!(ir->eI == eiMD || ir->eI == eiVV)) {
     ir->etc = etcNO;
   }
   if (!EI_DYNAMICS(ir->eI)) {
@@ -279,7 +279,7 @@ void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
   }
     
-  if (ir->eI == eiMD && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
+  if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
     warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
@@ -342,6 +342,19 @@ void check_ir(char *mdparin,t_inputrec *ir, t_gromppopts *opts,int *nerror)
   } else if (ir->coulombtype == eelPPPM) {
     sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
     warning(NULL);
+  }
+
+  if (ir->eI==eiVV) {
+    if (ir->etc==etcNOSEHOOVER) {
+      ir->etc=etcTROTTER;
+      sprintf(warn_buf,"Using NVT-Trotter methods (using Nose-Hoover equations) with Velocity Verlet");
+      warning(NULL);	
+    }
+    if (ir->epc==epcPARRINELLORAHMAN) {
+      ir->epc=epcTROTTER;
+      sprintf(warn_buf,"Using NPT-Trotter methods (using Martyna-Tuckerman-Tobias-Klein equations) with Velocity Verlet");
+      warning(NULL);	      
+    }
   }
   
   /* ELECTROSTATICS */

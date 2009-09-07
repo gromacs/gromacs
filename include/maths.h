@@ -54,7 +54,7 @@
 #endif
 
 #ifndef M_2PI
-#define	M_2PI		6.28318530718
+#define	M_2PI		6.28318530717958647692
 #endif
 
 #ifndef M_SQRT2
@@ -65,11 +65,18 @@
 extern "C" {
 #endif
 
-extern	int		gmx_nint(real a);
-extern  real            sign(real x,real y);
+/* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
+/* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
+/* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
+ 
+static const double sy3_const[] = {0.828981543588751,-0.657963087177502,0.828981543588751};
+static const double sy5_const[] = {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065};
 
-extern  real            gmx_erf(real x);
-extern  real            gmx_erfc(real x);
+extern	int		gmx_nint(real a);
+extern  real    sign(real x,real y);
+extern  real    cuberoot (real a);
+extern  real    gmx_erf(real x);
+extern  real    gmx_erfc(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *

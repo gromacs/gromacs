@@ -43,11 +43,12 @@ enum {
 };
 
 enum {
-  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, etcVRESCALE, etcNR
+  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, 
+  etcVRESCALE, etcTROTTER, etcTROTTEREKINH, etcNR
 }; /* yes is an alias for berendsen */
 
 enum {
-  epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcNR
+  epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcTROTTER, epcNR
 }; /* isotropic is an alias for berendsen */
 
 enum {
@@ -99,17 +100,17 @@ enum {
 };
 
 enum {
-  eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiNR
+  eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiNR
 };
 
 #define EI_SD(e) ((e) == eiSD1 || (e) == eiSD2)
 #define EI_RANDOM(e) (EI_SD(e) || (e) == eiBD)
 /*above integrators may not conserve momenta*/
-#define EI_DYNAMICS(e) ((e) == eiMD || EI_SD(e) || (e) == eiBD)
+#define EI_DYNAMICS(e) ((e) == eiMD || EI_SD(e) || (e) == eiBD || (e) == eiVV)
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 
-#define EI_STATE_VELOCITY(e) ((e) == eiMD || EI_SD(e))
+#define EI_STATE_VELOCITY(e) ((e) == eiMD || (e) == eiVV || EI_SD(e))
 
 enum {
   econtLINCS, econtSHAKE, econtNR

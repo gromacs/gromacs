@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -53,12 +53,12 @@
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
-  int i,j;
-  
-  for(i=0; (i<ngtc); i++) {
-    tcstat[i].T = 0;
-    clear_mat(tcstat[i].ekin);
-  }
+    int i,j;
+    
+    for(i=0; (i<ngtc); i++) {
+        tcstat[i].T = 0;
+        clear_mat(tcstat[i].ekin);
+    }
 }
 
 static void init_grpstat(FILE *log,
@@ -171,65 +171,86 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 
 real sum_ekin(bool bFirstStep,
 	      t_grpopts *opts,gmx_ekindata_t *ekind,
-	      tensor ekin,real *dekindlambda)
+	      tensor ekin,real *dekindlambda,bool bEkinFullStep)
 {
-  int          i,j,m,ngtc;
-  real         T,ek;
-  t_grp_tcstat *tcstat;
-  real         nrdf,nd,*ndf;
-  
-  ngtc = opts->ngtc;
-  ndf  = opts->nrdf;
-  
-  clear_mat(ekin);
-  
-  T = 0; 
-  nrdf = 0;
-
-  for(i=0; (i<ngtc); i++) {
-    tcstat = &ekind->tcstat[i];
-    nd = ndf[i];
-    /* Sometimes a group does not have degrees of freedom, e.g.
-     * when it consists of shells and virtual sites, then we just
-     * set the temperatue to 0 and also neglect the kinetic
-     * energy, which should be  zero anyway.
-     */
-    if (nd > 0) {
-      if (bFirstStep) {
-	/* This Ekin is only used for reporting the initial temperature
-	 * or when doing mdrun -rerun.
-	 */
-	copy_mat(tcstat->ekinh,tcstat->ekin);
-      } else {
-	/* Calculate the full step Ekin as the average of the half steps */
-	for(j=0; (j<DIM); j++)
-	  for(m=0; (m<DIM); m++)
-	    tcstat->ekin[j][m] =
-	      0.5*(tcstat->ekinh[j][m] + tcstat->ekinh_old[j][m]);
-      }
-      m_add(tcstat->ekin,ekin,ekin);
-      ek = 0;
-      for(m=0; (m<DIM); m++)
-	ek += tcstat->ekinh[m][m];
-      tcstat->Th = calc_temp(ek,nd);
-      ek = 0;
-      for(m=0; (m<DIM); m++) 
-	ek += tcstat->ekin[m][m];
-      tcstat->T = calc_temp(ek,nd);
-    }
-    else {
-      tcstat->T  = 0;
-      tcstat->Th = 0;
-    }
+    int          i,j,m,ngtc;
+    real         T,ek;
+    t_grp_tcstat *tcstat;
+    real         nrdf,nd,*ndf;
     
-    T    += nd*tcstat->T;
-    nrdf += nd;
-  }
-  if (nrdf > 0)
-    T/=nrdf;
-
-  if (dekindlambda)
-    *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
-
-  return T;
+    ngtc = opts->ngtc;
+    ndf  = opts->nrdf;
+    
+    clear_mat(ekin);
+    
+    T = 0; 
+    nrdf = 0;
+    
+    for(i=0; (i<ngtc); i++) 
+    {
+        tcstat = &ekind->tcstat[i];
+        nd = ndf[i];
+        /* Sometimes a group does not have degrees of freedom, e.g.
+         * when it consists of shells and virtual sites, then we just
+         * set the temperatue to 0 and also neglect the kinetic
+         * energy, which should be  zero anyway.
+         */
+        if (nd > 0) {
+            if (bFirstStep) 
+            {
+                /* This Ekin is only used for reporting the initial temperature
+                 * or when doing mdrun -rerun.
+                 */
+                copy_mat(tcstat->ekinh,tcstat->ekin);
+            } 
+            else 
+            {
+                if (bEkinFullStep) 
+                {
+                    /* in some cases, kinetic energy is from the current velocities already */
+                } 
+                else 
+                {
+                    /* Calculate the full step Ekin as the average of the half steps */
+                    for(j=0; (j<DIM); j++)
+                    {
+                        for(m=0; (m<DIM); m++)
+                        {
+                            tcstat->ekin[j][m] =
+                                0.5*(tcstat->ekinh[j][m] + tcstat->ekinh_old[j][m]);
+                        }
+                    }
+                }
+            }
+            m_add(tcstat->ekin,ekin,ekin);
+            ek = 0;
+            for(m=0; (m<DIM); m++) 
+            {
+                ek += tcstat->ekinh[m][m];
+            }
+            tcstat->Th = calc_temp(ek,nd);
+            ek = 0;
+            for(m=0; (m<DIM); m++)
+            { 
+                ek += tcstat->ekin[m][m];
+            }
+            tcstat->T = calc_temp(ek,nd);
+        }
+        else 
+        {
+            tcstat->T  = 0;
+            tcstat->Th = 0;
+        }
+        T    += nd*tcstat->T;
+        nrdf += nd;
+    }
+    if (nrdf > 0)
+    {
+        T/=nrdf;
+    }
+    if (dekindlambda) 
+    {
+        *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
+    }
+    return T;
 }

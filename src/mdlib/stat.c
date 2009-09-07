@@ -99,7 +99,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
 		 t_commrec *cr,gmx_enerdata_t *enerd,
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,
-		 gmx_ekindata_t *ekind,bool bSumEkinhOld,
+         gmx_ekindata_t *ekind,bool bSumEkinhOld, bool bFullStepV,
 		 gmx_constr_t constr,
 		 t_vcm *vcm,int *nabnsb,
 		 real *chkpt,real *terminate,
@@ -144,17 +144,21 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
     where();
   }
   if (ekind) {
-    for(j=0; (j<inputrec->opts.ngtc); j++) {
-      if (bSumEkinhOld) {
-	itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+      for(j=0; (j<inputrec->opts.ngtc); j++) {
+          if (bSumEkinhOld) {
+              itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+          }
+          if (bFullStepV) {
+              itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekin[0]);
+          } else {
+              itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
+          }
       }
-      itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
-    }
-    where();
-    idedl = add_binr(rb,1,&(ekind->dekindl));
-    where();
-    ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
-    where();
+      where();
+      idedl = add_binr(rb,1,&(ekind->dekindl));
+      where();
+      ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
+      where();
   }
   for(j=0; (j<egNR); j++)
     inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
@@ -291,8 +295,16 @@ void write_traj(FILE *fplog,t_commrec *cr,
     int     i,j;
     gmx_groups_t *groups;
     rvec    *xxtc;
+    rvec *local_v;
+    rvec *global_v;
     
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
+
+    /* MRS -- defining these variables is to manage the difference
+     * between half step and full step velocities, but there must be a better way . . . */
+
+    local_v  = state_local->v;
+    global_v = state_global->v;
     
     if (DOMAINDECOMP(cr))
     {
@@ -309,8 +321,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             if (bV)
             {
-                dd_collect_vec(cr->dd,state_local,state_local->v,
-                               state_global->v);
+                dd_collect_vec(cr->dd,state_local,local_v,
+                               global_v);
             }
         }
         if (bF)
@@ -326,6 +338,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
              * but we need to copy the non-pointer entries.
              */
             state_global->lambda = state_local->lambda;
+            state_global->veta = state_local->veta;
+            state_global->vol0 = state_local->vol0;
             copy_mat(state_local->box,state_global->box);
             copy_mat(state_local->boxv,state_global->boxv);
             copy_mat(state_local->pres_prev,state_global->pres_prev);
@@ -363,7 +377,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             else
             {
                 if (bX || bXTC) MX(state_global->x);
-                if (bV)         MX(state_global->v);
+                if (bV)         MX(global_v);
             }
             if (bF)         MX(f_global);
         }
@@ -378,7 +392,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             fwrite_trn(fp_trn,step,t,state_local->lambda,
                        state_local->box,top_global->natoms,
                        bX ? state_global->x : NULL,
-                       bV ? state_global->v : NULL,
+                       bV ? global_v : NULL,
                        bF ? f_global : NULL);
             if(gmx_fio_flush(fp_trn) != 0)
             {

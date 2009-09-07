@@ -152,7 +152,7 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			t_commrec *cr,gmx_enerdata_t *enerd,
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,
-			gmx_ekindata_t *ekind,bool bSumEkinhOld,
+			gmx_ekindata_t *ekind,bool bSumEkinhOld, bool bFullStepV,
 			gmx_constr_t constr,t_vcm *vcm,
 			int *nabnsb,real *chkpt,real *terminate,
 			gmx_mtop_t *top_global, t_state *state_local);
@@ -205,8 +205,9 @@ extern void finish_run(FILE *log,t_commrec *cr,char *confout,
 extern void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_step_t step,int natoms,matrix box,real lambda,
-			  tensor pres,tensor virial,gmx_enerdata_t *enerd);
+			  gmx_step_t step,gmx_mtop_t *top_global,matrix box,real lambda,
+			  tensor pres,tensor virial,
+			  real *prescorr, real *enercorr, real *dvdlcorr);
      
 
 typedef enum
@@ -255,9 +256,14 @@ extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
 
 extern void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_inputrec *inputrec,t_mdatoms *md,
-			       t_state *state,
+			       t_state *state,rvec *f,
 			       t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			       t_forcerec *fr,t_idef *idef);
+			       t_forcerec *fr, gmx_localtop_t *top, 
+			       gmx_mtop_t *mtop, t_fcdata *fcd, 
+			       gmx_wallcycle_t wcycle, gmx_enerdata_t *enerd, 
+			       tensor vir_part, gmx_groups_t *groups, 
+			       history_t *hist, gmx_vsite_t *vsite, 
+			       FILE *fp_field,gmx_edsam_t ed,int flags);
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,

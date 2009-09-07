@@ -227,7 +227,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0; 
   
   /* Print to log file  */
-  start_t=print_date_and_time(log,cr->pid,"Started Steepest Descents"); 
+  print_date_and_time(log,cr->pid,"Started Steepest Descents"); 
   
   /* We need two coordinate arrays and two force arrays  */
   for(i=0; (i<2); i++) { 
@@ -275,7 +275,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   if (MASTER(cr)) { 
     /* Print to the screen  */
-    start_t=print_date_and_time(log,cr->pid,"Started EM"); 
+    print_date_and_time(log,cr->pid,"Started EM"); 
     fprintf(stderr,"STEEPEST DESCENTS:\n");
     fprintf(log,"STEEPEST DESCENTS:\n");
     fprintf(stderr,"   Tolerance         = %12.5g\n",ftol); 

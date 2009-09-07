@@ -861,124 +861,160 @@ void do_force(FILE *fplog,t_commrec *cr,
 }
 
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,
-                        t_inputrec *inputrec,t_mdatoms *md,
-                        t_state *state,
+                        t_inputrec *ir,t_mdatoms *md,
+                        t_state *state,rvec *f,
                         t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-                        t_forcerec *fr,t_idef *idef)
+                        t_forcerec *fr, gmx_localtop_t *top,  
+                        gmx_mtop_t *mtop, t_fcdata *fcd, 
+                        gmx_wallcycle_t wcycle, gmx_enerdata_t *enerd, 
+                        tensor vir_part, gmx_groups_t *groups, 
+                        history_t *hist, gmx_vsite_t *vsite, 
+                        FILE *fp_field, gmx_edsam_t ed,int flags)
 {
-    int    i,m,start,end;
-    gmx_step_t step;
+    int    i,m,start,end,step;
     double mass,tmass,vcm[4];
-    real   dt=inputrec->delta_t;
+    real   dt=ir->delta_t;
     real   dvdlambda;
-    rvec   *xcon;
-    char   buf[22];
+    rvec   *savev,*savex;
+    tensor forcevir_dum,vir_con;
+    rvec   mu_tot_dum;
     
+    snew(savev,state->natoms);
+    snew(savex,state->natoms);
+
     start = md->start;
     end   = md->homenr + start;
+    
     if (debug)
-    {
         fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
                 start,md->homenr,end);
-    }
-    snew(xcon,state->nalloc);
-
-    /* Do a first constraining to reset particles... */
-    step = inputrec->init_step;
+    /* Do a first constrain to reset particles... */
+    step = ir->init_step;
     if (fplog)
-    {
-        fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
-                gmx_step_str(step,buf));
-    }
+        fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
     dvdlambda = 0;
-    constrain(NULL,TRUE,FALSE,constr,idef,
-              inputrec,cr,step,0,md,
+    
+    /* constrain the current position */
+    constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+              ir,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord);
-    
-    if (EI_STATE_VELOCITY(inputrec->eI)) {
-        for(i=start; (i<end); i++) {
-            for(m=0; (m<DIM); m++) {
-                /* Reverse the velocity */
-                state->v[i][m] = -state->v[i][m];
-                /* Store the position at t-dt in xcon */
-                xcon[i][m] = state->x[i][m] + dt*state->v[i][m];
-            }
-        }
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta);
+    if (ir->eI==eiVV) {
+        /* huge kludge */
+        /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         
-        /* Constrain the positions at t=-dt with the positions at t=0
-         * as reference coordinates.
-         */
-        if (fplog)
-        {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
-                    gmx_step_str(step,buf));
-        }
-        dvdlambda = 0;
-        constrain(NULL,TRUE,FALSE,constr,idef,
-                  inputrec,cr,step,-1,md,
-                  state->x,xcon,NULL,
+        /* constrain the inital velocity, and save it */
+        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                  ir,cr,step,0,md,
+                  state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
-                  state->v,NULL,nrnb,econqCoord);
-    
-        sfree(xcon);
-
-        for(m=0; (m<4); m++)
-        {
-            vcm[m] = 0;
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcTROTTER,state->veta);
+        
+        /* in the velocity verlet case, we need an extra force evaluation to get the virial right. */
+        do_force(fplog,cr,ir,-1,nrnb,wcycle,top,mtop,groups,
+                 state->box,state->x,&state->hist,
+                 f,forcevir_dum,md,enerd,fcd,
+                 state->lambda,graph,
+                 fr,vsite,mu_tot_dum,0,fp_field,ed,ir->implicit_solvent,flags);
+        
+        for(m=0; (m<DIM); m++) {
+            for(i=start; (i<end); i++) {
+                /* Store the position at t-dt, and velocity at t-dt/2 in buf 
+                   note that we may need to do scaling to backtrack correctly 
+                   with pressure control and temperature control, which means that this might
+                   be better done with an update call. 
+                   Now partially fixed (includes state->veta) but doesn't include veta integration */
+	
+                savex[i][m] = state->x[i][m];
+                savev[i][m] = state->v[i][m];
+                state->v[i][m] -= 0.5*dt*f[i][m]*md->invmass[i];
+                state->x[i][m] -= dt*state->v[i][m];
+            }
+            
         }
-        for(i=start; i<end; i++)
-        {
-            mass = md->massT[i];
-            for(m=0; m<DIM; m++)
-            {
+        /* Constrain the positions at t=-dt with the positions at t=0                        
+         * as reference coordinates.                                                     
+         */
+        dvdlambda = 0;
+        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                  ir,cr,step,-1,md,
+                  savex,state->x,state->x,
+                  state->box,state->lambda,&dvdlambda,
+                  NULL,&(vir_con),nrnb,econqCoord, ir->epc==epcTROTTER,state->veta);
+        /* add the virial for this half step to contribute to the force 
+           at the end of the step */
+        m_add(vir_part,vir_con,vir_part);
+        
+        /* now we should have the full virial. Copy data back. */
+        copy_rvecn(savex,state->x,start,end);
+        copy_rvecn(savev,state->v,start,end);
+    
+    } else {
+        if (EI_STATE_VELOCITY(ir->eI)) {
+            for(i=start; (i<end); i++) {
+                for(m=0; (m<DIM); m++) {
+                    /* Reverse the velocity */
+                    state->v[i][m] = -state->v[i][m];
+                    /* Store the position at t-dt in buf */
+                    savex[i][m] = state->x[i][m] + dt*state->v[i][m];
+                }
+            }
+            /* Shake the positions at t=-dt with the positions at t=0                        
+             * as reference coordinates.                                                     
+             */
+            if (fplog)
+                fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+                        step);
+            dvdlambda = 0;
+            constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                      ir,cr,step,-1,md,
+                      state->x,savex,NULL,
+                      state->box,state->lambda,&dvdlambda,
+                      state->v,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta);
+        }
+        for(i=start; i<end; i++) {
+            for(m=0; m<DIM; m++) {
                 /* Re-reverse the velocities */
                 state->v[i][m] = -state->v[i][m];
-                vcm[m] += state->v[i][m]*mass;
-            }
-            vcm[3] += mass;
-        }
-        
-        if (inputrec->nstcomm != 0 || debug)
-        {
-            /* Compute the global sum of vcm */
-            if (debug)
-            {
-                fprintf(debug,
-                        "vcm: %8.3f  %8.3f  %8.3f,"
-                        " total mass = %12.5e\n",
-                        vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-            }
-            if (PAR(cr))
-            {
-                gmx_sumd(4,vcm,cr);
-            }
-            tmass = vcm[3];
-            for(m=0; (m<DIM); m++)
-            {
-                vcm[m] /= tmass;
-            }
-            if (debug)
-            {
-                fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                        " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-            }
-            if (inputrec->nstcomm != 0)
-            {
-                /* Now we have the velocity of center of mass,
-                 * let's remove it.
-                 */
-                for(i=start; (i<end); i++)
-                {
-                    for(m=0; (m<DIM); m++)
-                    {
-                        state->v[i][m] -= vcm[m];
-                    }
-                }
             }
         }
     }
+    
+    for(m=0; (m<4); m++)
+        vcm[m] = 0;
+    for(i=start; i<end; i++) {
+        mass = md->massT[i];
+        for(m=0; m<DIM; m++) {
+            vcm[m] += state->v[i][m]*mass;
+        }
+        vcm[3] += mass;
+    }
+    
+    if (ir->nstcomm != 0 || debug) {
+        /* Compute the global sum of vcm */
+        if (debug)
+            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
+        if (PAR(cr))
+            gmx_sumd(4,vcm,cr);
+        tmass = vcm[3];
+        for(m=0; (m<DIM); m++)
+            vcm[m] /= tmass;
+        if (debug) 
+            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
+        if (ir->nstcomm != 0) {
+            /* Now we have the velocity of center of mass, let's remove it */
+            for(i=start; (i<end); i++) {
+                for(m=0; (m<DIM); m++)
+                    state->v[i][m] -= vcm[m];
+            }
+
+        }
+    }
+    sfree(savev);
+    sfree(savex);
 }
 
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
@@ -1112,97 +1148,134 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-                   gmx_step_t step,int natoms,matrix box,real lambda,
-                   tensor pres,tensor virial,gmx_enerdata_t *enerd)
+                   gmx_step_t step, gmx_mtop_t *top_global,matrix box,real lambda,
+                   tensor pres,tensor virial,
+                   real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    bool bCorrAll,bCorrPres;
-    real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
-    int  m;
-    
-    enerd->term[F_DISPCORR] = 0.0;
-    enerd->term[F_PDISPCORR] = 0.0;
-    
-    if (ir->eDispCorr != edispcNO)
+  static bool bFirst=TRUE;
+  bool bCorrAll,bCorrPres;
+  real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
+  int  m;
+  
+  *prescorr = 0;
+  *enercorr = 0;
+  *dvdlcorr = 0;
+  
+  clear_mat(virial);
+  clear_mat(pres);
+
+  /* first, set average if the variables have changes */
+  
+  if (top_global)
+    set_avcsixtwelve(fplog,fr,top_global);
+  
+  if (ir->eDispCorr != edispcNO) {
+      bCorrAll  = (ir->eDispCorr == edispcAllEner ||
+                   ir->eDispCorr == edispcAllEnerPres);
+      bCorrPres = (ir->eDispCorr == edispcEnerPres ||
+                   ir->eDispCorr == edispcAllEnerPres);
+      
+      if (bFirst) 
+      {
+          calc_enervirdiff(fplog,ir->eDispCorr,fr);
+      }
+
+      invvol = 1/det(box);
+      if (fr->n_tpi) 
+      {
+          /* Only correct for the interactions with the inserted molecule */
+          dens = (top_global->natoms - fr->n_tpi)*invvol;
+          ninter = fr->n_tpi;
+      } 
+      else 
+      {
+          dens = top_global->natoms*invvol;
+          ninter = 0.5*top_global->natoms;
+      }
+
+    if (ir->efep == efepNO) 
     {
-        bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-                     ir->eDispCorr == edispcAllEnerPres);
-        bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-                     ir->eDispCorr == edispcAllEnerPres);
-        
-        invvol = 1/det(box);
-        if (fr->n_tpi)
-        {
-            /* Only correct for the interactions with the inserted molecule */
-            dens = (natoms - fr->n_tpi)*invvol;
-            ninter = fr->n_tpi;
-        }
-        else
-        {
-            dens = natoms*invvol;
-            ninter = 0.5*natoms;
-        }
-        
-        if (ir->efep == efepNO)
-        {
-            avcsix    = fr->avcsix[0];
-            avctwelve = fr->avctwelve[0];
-        }
-        else
-        {
-            avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
-            avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
-        }
+        avcsix    = fr->avcsix[0];
+        avctwelve = fr->avctwelve[0];
+    } 
+    else 
+    {
+        avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
+        avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
+    }
     
-        enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        enerd->term[F_DISPCORR] += avcsix*enerdiff;
-        dvdlambda = 0.0;
-        if (ir->efep != efepNO)
+    enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
+    *enercorr += avcsix*enerdiff;
+    dvdlambda = 0.0;
+    if (ir->efep != efepNO) 
+    {
+      dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+    }
+    if (bCorrAll) 
+    {
+        enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
+        *enercorr += avctwelve*enerdiff;
+        if (fr->efep != efepNO) 
         {
-            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
-        }
-        
-        if (bCorrAll)
-        {
-            enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            enerd->term[F_DISPCORR] += avctwelve*enerdiff;
-            if (fr->efep != efepNO)
-            {
-                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
-            }
-        }
-        
-        if (bCorrPres)
-        {
-            svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
-            if (ir->eDispCorr == edispcAllEnerPres)
-            {
-                svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
-            }
-            /* The factor 2 is because of the Gromacs virial definition */
-            spres = -2.0*invvol*svir*PRESFAC;
-            
-            for(m=0; m<DIM; m++) {
-                virial[m][m] += svir;
-                pres[m][m] += spres;
-            }
-            enerd->term[F_PDISPCORR] = spres;
-            enerd->term[F_PRES]     += spres;
-        }
-        
-        if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-        {
-            fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    enerd->term[F_DISPCORR],dvdlambda);
-        }
-        
-        enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
-        if (fr->efep != efepNO)
-        {
-            enerd->dvdl_lin += dvdlambda;
+            dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
         }
     }
-}
 
+    if (bCorrPres) 
+    {
+        svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
+        if (ir->eDispCorr == edispcAllEnerPres)
+        {
+            svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
+        }
+        /* The factor 2 is because of the Gromacs virial definition */
+        spres = -2.0*invvol*svir*PRESFAC;
+        
+        for(m=0; m<DIM; m++) {
+            virial[m][m] += svir;
+            pres[m][m] += spres;
+        }
+        *prescorr += spres;
+    }
+
+    if (bFirst && fplog) {
+        if (bCorrAll) {
+            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                    avcsix,avctwelve);
+        }
+        else
+        {
+            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e\n",avcsix);
+        }
+        if (bCorrPres) 
+        {
+            fprintf(fplog,
+                    "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
+                    *enercorr,spres,svir);
+        }
+        else
+        {
+            fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",*enercorr);
+        }
+        bFirst = FALSE;
+    }
+    /* This output is not really necessary, and requires the step, 
+       which it really shouldn't.  To simplify the calls, I'm dropping 
+       this out. */
+    //if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+    //  fprintf(fplog,sepdvdlformat,"Dispersion correction",
+    //	      *enercorr,dvdlambda);
+    
+    if (fr->efep != efepNO) 
+    {
+        *dvdlcorr += dvdlambda;
+    }
+//    if (fr->efep != efepNO) {     
+//      enerd->dvdl_lin += dvdlambda;    //do I need to add these lines back in?
+//    }
+    
+  }
+}
 
 void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 		  t_graph *graph,rvec x[])

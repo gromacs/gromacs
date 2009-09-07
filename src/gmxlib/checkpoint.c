@@ -59,7 +59,8 @@ const char *est_names[estNR]=
 {
     "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
-    "nosehoover-xi", "thermostat-integral",
+    "nosehoover-xi", "nosehoover-vxi", 
+    "thermostat-integral", "v_eta", "vol0",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
@@ -661,8 +662,11 @@ static int do_cpt_state(XDR *xd,bool bRead,
     int  **rng_p,**rngi_p;
     int  i;
     int  ret;
-    
+    int  ngtch;
+
     ret = 0;
+
+    ngtch = (state->ngtc+1)*(NNHCHAIN);
 
     if (bReadRNG)
     {
@@ -689,7 +693,10 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
             case estNH_XI:   ret = do_cpte_reals (xd,0,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
+            case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,ngtch,&state->nosehoover_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
+            case estVETA:    ret = do_cpte_real  (xd,0,i,sflags,&state->veta,list); break;
+            case estVOL0:    ret = do_cpte_real(xd,0,i,sflags,&state->vol0,list); break;
             case estX:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->x,list); break;
             case estV:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->v,list); break;
             case estSDX:     ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->sd_X,list); break;

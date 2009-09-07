@@ -216,7 +216,7 @@ static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool bTest,
     /* The original energy frame started with a real,
      * so we have to use a real for compatibility.
      */
-    r = -2e10;
+    r = -2.1e10;
     if (!do_real(r))           return FALSE;
     if (r > -1e10)
     {
@@ -228,7 +228,7 @@ static bool do_eheader(int fp,int *file_version,t_enxframe *fr,bool bTest,
     }
     else
     {
-        if (!do_int (magic))       *bOK = FALSE;
+        if (!do_int(magic))       *bOK = FALSE;
         if (magic != -7777777)
         {
             gmx_fatal(FARGS,"Energy header magic number mismatch, this is not a GROMACS edr file");
@@ -676,7 +676,7 @@ void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
   int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
   int ind1[] = { XX,YY,ZZ,XX,XX,YY };
 
-  int in,nre,nfr,i,ni,npcoupl;
+  int in,nre,nfr,i,ni,npcoupl,ngctch;
   char       buf[STRLEN];
   gmx_enxnm_t *enm;
   t_enxframe *fr;
@@ -704,6 +704,8 @@ void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
     fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
   }
 
+  // Might need to add something here? MRS
+
   if (ir->etc == etcNOSEHOOVER) {
     for(i=0; i<state->ngtc; i++) {
       ni = groups->grps[egcTC].nm_ind[i];
@@ -713,6 +715,20 @@ void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
     fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
   }
   
+  if ((ir->etc == etcTROTTER) || (ir->etc == etcTROTTEREKINH)) {
+      ngctch = state->ngtc;
+      if (ir->epc == epcTROTTER) {
+          ngctch += 1; /* an extra state is needed for the barostat */
+      }
+      for(i=0; i<ngctch; i++) {
+          ni = groups->grps[egcTC].nm_ind[i];
+          sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
+          state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
+          state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
+      }
+      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
+  }
+
   free_enxnms(nre,enm);
   free_enxframe(fr);
   sfree(fr);

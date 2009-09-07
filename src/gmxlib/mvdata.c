@@ -217,7 +217,9 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 
 void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
-  int i;
+  int i,ngtch;
+
+  ngtch = (state->ngtc+1)*(NNHCHAIN); /* need an extra state for the barostat */
 
   bcast_state_setup(cr,state);
 
@@ -236,7 +238,10 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estBOXV:    block_bc(cr,state->boxv); break;
       case estPRES_PREV: block_bc(cr,state->pres_prev); break;
       case estNH_XI:   nblock_abc(cr,state->ngtc,state->nosehoover_xi); break;
+      case estNH_VXI:  nblock_abc(cr,ngtch,state->nosehoover_vxi); break;
       case estTC_INT:  nblock_abc(cr,state->ngtc,state->therm_integral); break;
+      case estVETA:    block_bc(cr,state->veta); break;
+      case estVOL0:    block_bc(cr,state->vol0); break;
       case estX:       nblock_abc(cr,state->natoms,state->x); break;
       case estV:       nblock_abc(cr,state->natoms,state->v); break;
       case estSDX:     nblock_abc(cr,state->natoms,state->sd_X); break;

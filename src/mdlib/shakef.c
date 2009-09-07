@@ -101,7 +101,8 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
    *     june 1992
    *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
    */
-  const   real mytol=1e-6;
+  // default should be increased! MRS 8/4/2009  
+  const   real mytol=1e-10;
   
   int     ll,i,j,i3,j3,l3;
   int     ix,iy,iz,jx,jy,jz;
@@ -170,12 +171,12 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 }
 
 int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
-	       int natoms,real invmass[],int ncon,
-	       t_iparams ip[],t_iatom *iatom,
-	       real tol,rvec x[],rvec xp[],real omega,
-	       bool bFEP,real lambda,real lagr[],
-	       real invdt,rvec *v,
-	       bool bCalcVir,tensor rmdr)
+               int natoms,real invmass[],int ncon,
+               t_iparams ip[],t_iatom *iatom,
+               real tol,rvec x[],rvec prime[],real omega,
+               bool bFEP,real lambda,real lagr[],
+               real invdt,rvec *v,
+               bool bCalcVir,tensor rmdr,int econq)
 {
     rvec *rij;
     real *M2,*tt,*dist2;
@@ -221,91 +222,125 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     tt[ll] = 1.0/(toler*tol2);
   }
 
-  cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,omega,invmass,tt,lagr,&error);
-
-  if (nit >= maxnit) {
-    if (fplog)
-      fprintf(fplog,"Shake did not converge in %d steps\n",maxnit);
-    fprintf(stderr,"Shake did not converge in %d steps\n",maxnit);
-    nit=0;
+  switch (econq) {
+  case econqCoord:
+      cshake(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error);
+      break;
+  case econqVeloc:
+      crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt);
+      break;
   }
-  else if (error != 0) {
-    if (fplog)
-      fprintf(fplog,"Inner product between old and new vector <= 0.0!\n"
-	      "constraint #%d atoms %u and %u\n",
-	      error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
-    fprintf(stderr,"Inner product between old and new vector <= 0.0!\n"
-	    "constraint #%d atoms %u and %u\n",
-	    error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
-    nit=0;
+  
+  if (nit >= maxnit) {
+      if (fplog) {
+          fprintf(fplog,"Shake did not converge in %d steps\n",maxnit);
+      }
+      fprintf(stderr,"Shake did not converge in %d steps\n",maxnit);
+      nit=0;
+  }
+  else if (error != 0) 
+  {
+      if (fplog)
+          fprintf(fplog,"Inner product between old and new vector <= 0.0!\n"
+                  "constraint #%d atoms %u and %u\n",
+                  error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
+      fprintf(stderr,"Inner product between old and new vector <= 0.0!\n"
+              "constraint #%d atoms %u and %u\n",
+              error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
+      nit=0;
   }
 
   /* Constraint virial and correct the lagrange multipliers for the length */
   ia=iatom;
   for(ll=0; (ll<ncon); ll++,ia+=3) {
-    if (v) {
-      /* Correct the velocities */
-      mm = lagr[ll]*invmass[ia[1]]*invdt;
-      for(i=0; i<DIM; i++)
-	v[ia[1]][i] += mm*rij[ll][i];
-      mm = lagr[ll]*invmass[ia[2]]*invdt;
-      for(i=0; i<DIM; i++)
-	v[ia[2]][i] -= mm*rij[ll][i];
-      /* 16 flops */
-    }
-
-    if (bCalcVir) {
-      mm = lagr[ll];
-      for(i=0; i<DIM; i++) {
-	tmp = mm*rij[ll][i];
-	for(j=0; j<DIM; j++)
-	  rmdr[i][j] -= tmp*rij[ll][j];
+      if (econq == econqCoord && v!=NULL) 
+      {
+          /* Correct the velocities */
+          mm = lagr[ll]*invmass[ia[1]]*invdt;
+          for(i=0; i<DIM; i++)
+              v[ia[1]][i] += mm*rij[ll][i];
+          mm = lagr[ll]*invmass[ia[2]]*invdt;
+          for(i=0; i<DIM; i++)
+              v[ia[2]][i] -= mm*rij[ll][i];
+          /* 16 flops */
       }
-      /* 21 flops */
-    }
+      
+      /* constraint virial */
+      if (bCalcVir) 
+      {
+          mm = lagr[ll];
+          for(i=0; i<DIM; i++) 
+          {
+              tmp = mm*rij[ll][i];
+              for(j=0; j<DIM; j++)
+                  rmdr[i][j] -= tmp*rij[ll][j];
+          }
+          /* 21 flops */
+      }
+      
+      /* Correct the lagrange multipliers for the length  */
+      /* (more details would be useful here . . . )*/
 
-    type  = ia[0];
-    if (bFEP) 
-      toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
-    else
-      toler = ip[type].constr.dA;
-    lagr[ll] *= toler;
+      type  = ia[0];
+      if (bFEP) 
+      {
+          toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
+      }
+      else
+      {
+          toler = ip[type].constr.dA;
+          lagr[ll] *= toler;
+      }
   }
   
   return nit;
 }
 
-static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
-		       t_iparams ip[],t_iatom *iatom,
-		       real invmass[])
+static void check_cons(FILE *log,int nc,rvec x[],rvec prime[], rvec v[],
+                       t_iparams ip[],t_iatom *iatom,
+                       real invmass[], int econq)
 {
   t_iatom *ia;
   int     ai,aj;
   int     i;
   real    d,dp;
-  rvec    dx;
-
+  rvec    dx,dv;
+  
   fprintf(log,
-	  "    i     mi      j     mj      before       after   should be\n");
+          "    i     mi      j     mj      before       after   should be\n");
   ia=iatom;
   for(i=0; (i<nc); i++,ia+=3) {
     ai=ia[1];
     aj=ia[2];
     rvec_sub(x[ai],x[aj],dx);
     d=norm(dx);
-    rvec_sub(xp[ai],xp[aj],dx);
-    dp=norm(dx);
-    fprintf(log,"%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
-	    ai+1,1.0/invmass[ai],
-	    aj+1,1.0/invmass[aj],d,dp,ip[ia[0]].constr.dA);
+    
+    switch (econq) {
+    case econqCoord:
+        rvec_sub(prime[ai],prime[aj],dx);
+        dp=norm(dx);
+        fprintf(log,"%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
+                ai+1,1.0/invmass[ai],
+                aj+1,1.0/invmass[aj],d,dp,ip[ia[0]].constr.dA);
+        break;
+    case econqVeloc:
+        rvec_sub(v[ai],v[aj],dv);
+        d=iprod(dx,dv);
+        rvec_sub(prime[ai],prime[aj],dv);
+        dp=iprod(dx,dv);
+        fprintf(log,"%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
+                ai+1,1.0/invmass[ai],
+                aj+1,1.0/invmass[aj],d,dp,0);
+        break;
+    }
   }
 }
 
 bool bshakef(FILE *log,gmx_shakedata_t shaked,
              int natoms,real invmass[],int nblocks,int sblock[],
-             t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
+             t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec prime[],
              t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
+             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,int econq)
 {
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
@@ -327,16 +362,20 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
     blen  = (sblock[i+1]-sblock[i]);
     blen /= 3;
     n0 = vec_shakef(log,shaked,natoms,invmass,blen,idef->iparams,
-		    iatoms,ir->shake_tol,x_s,xp,shaked->omega,
-		    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr);
+                    iatoms,ir->shake_tol,x_s,prime,shaked->omega,
+                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq);
 #ifdef DEBUGSHAKE
-    check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
+    check_cons(log,blen,x_s,prime,v,idef->iparams,iatoms,invmass,econq);
 #endif
     
     if (n0 == 0) {
-      if (bDumpOnError && log)
-	check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
-      return FALSE;
+        if (bDumpOnError && log) 
+        {
+            {
+                check_cons(log,blen,x_s,prime,v,idef->iparams,iatoms,invmass,econq);
+            }
+        }
+        return FALSE;
     }
     tnit   += n0*blen;
     trij   += blen;
@@ -344,15 +383,18 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
     lam    += blen;
     i++;
   }
-  if (ir->efep != efepNO) {
-    dt_2 = 1/sqr(ir->delta_t);
-    dvdl = 0;
-    for(i=0; i<ncons; i++) {
-      type = idef->il[F_CONSTR].iatoms[3*i];
-      dvdl += lagr[i]*dt_2*
-	(idef->iparams[type].constr.dB-idef->iparams[type].constr.dA);
-    }
-    *dvdlambda += dvdl;
+  /* only for position part? */
+  if (econq == econqCoord) {
+      if (ir->efep != efepNO) {
+          dt_2 = 1/sqr(ir->delta_t);
+          dvdl = 0;
+          for(i=0; i<ncons; i++) {
+              type = idef->il[F_CONSTR].iatoms[3*i];
+              dvdl += lagr[i]*dt_2*
+                  (idef->iparams[type].constr.dB-idef->iparams[type].constr.dA);
+          }
+          *dvdlambda += dvdl;
+      }
   }
 #ifdef DEBUG
   fprintf(log,"tnit: %5d  omega: %10.5f\n",tnit,omega);
@@ -374,3 +416,82 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
   return TRUE;
 }
 
+void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
+	      real dist2[],real vp[],real rij[],real m2[],real omega,
+	      real invmass[],real tt[],real lagr[],int *nerror,real invdt)
+{
+  /*
+   *     r.c. van schaik and w.f. van gunsteren
+   *     eth zuerich
+   *     june 1992
+   *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
+   *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER 
+   *     second part of rattle algorithm
+   */
+  
+  const   real mytol=1e-10;
+  
+  int     ll,i,j,i3,j3,l3;
+  int     ix,iy,iz,jx,jy,jz;
+  real    toler,rpij2,vpijd,vx,vy,vz,diff,acor,im,jm,imdt,jmdt;
+  real    xh,yh,zh,rijx,rijy,rijz;
+  real    tix,tiy,tiz;
+  real    tjx,tjy,tjz;
+  int     nit,error,iconv,nconv;
+
+  error=0;
+  nconv=1;
+  for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
+    nconv=0;
+    for(ll=0; (ll<ncon) && (error == 0); ll++) {
+      l3    = 3*ll;
+      rijx  = rij[l3+XX];
+      rijy  = rij[l3+YY];
+      rijz  = rij[l3+ZZ];
+      i     = iatom[l3+1];
+      j     = iatom[l3+2];
+      i3    = 3*i;
+      j3    = 3*j;
+      ix    = i3+XX;
+      iy    = i3+YY;
+      iz    = i3+ZZ;
+      jx    = j3+XX;
+      jy    = j3+YY;
+      jz    = j3+ZZ;
+      vx      = vp[ix]-vp[jx];
+      vy      = vp[iy]-vp[jy];
+      vz      = vp[iz]-vp[jz];
+
+      vpijd   = vx*rijx+vy*rijy+vz*rijz;
+      toler   = dist2[ll];
+      diff    = vpijd;
+      
+      /* iconv is zero when the error is smaller than a bound */
+      iconv   = fabs(diff)*(tt[ll]/invdt);
+      
+      if (iconv != 0) {
+	nconv   = nconv + iconv;
+	
+	acor      = omega*vpijd*2.0*m2[ll]/toler;
+	lagr[ll] -= acor;    /* it's a subtraction here, instead of addition */
+
+	xh        = rijx*acor;
+	yh        = rijy*acor;
+	zh        = rijz*acor;
+	
+	im        = invmass[i];
+	jm        = invmass[j];
+
+	vp[ix] -= xh*im;
+	vp[iy] -= yh*im;
+	vp[iz] -= zh*im;
+	vp[jx] += xh*jm;
+	vp[jy] += yh*jm;
+	vp[jz] += zh*jm;
+      }
+    }
+  }
+  
+  *nnit=nit;
+  *nerror=error;
+}

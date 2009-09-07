@@ -70,7 +70,7 @@ extern bool bshakef(FILE *log,		/* Log file			*/
 		    t_inputrec *ir,	/* Input record		        */
 		    matrix box,		/* The box			*/
 		    rvec x_s[],		/* Coords before update		*/
-		    rvec xp[],		/* Output coords		*/
+		    rvec prime[],		/* Output coords		*/
 		    t_nrnb *nrnb,       /* Performance measure          */
 		    real *lagr,         /* The Lagrange multipliers     */
 		    real lambda,        /* FEP lambda                   */
@@ -79,7 +79,8 @@ extern bool bshakef(FILE *log,		/* Log file			*/
 		    rvec *v,            /* Also constrain v if v!=NULL  */
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
-		    bool bDumpOnError); /* Dump debugging stuff on error*/
+            bool bDumpOnError,  /* Dump debugging stuff on error*/
+		    int econq);         /* which type of constrainint is occurring */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 
@@ -118,17 +119,21 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
+extern void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
+		    real dist2[],real vp[],real rij[],real m2[],real omega,
+		    real invmass[],real tt[],real lagr[],int *nerror,real invdt);
+
 extern bool constrain(FILE *log,bool bLog,bool bEner,
-		      gmx_constr_t constr,
-		      t_idef *idef,
-		      t_inputrec *ir,
-		      t_commrec *cr,
-		      gmx_step_t step,int delta_step,
-		      t_mdatoms *md,
-		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-		      real lambda,real *dvdlambda,
-		      rvec *v,tensor *vir,
-		      t_nrnb *nrnb,int econq);
+                      gmx_constr_t constr,
+                      t_idef *idef,
+                      t_inputrec *ir,
+                      t_commrec *cr,
+                      gmx_step_t step,int delta_step,
+                      t_mdatoms *md,
+                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+                      real lambda,real *dvdlambda,
+                      rvec *v,tensor *vir,
+                      t_nrnb *nrnb,int econq, bool bPscal, real veta);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -148,6 +153,9 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
  * If vir!=NULL calculate the constraint virial.
+ *
+ * if veta != NULL, constraints are done assuming isotropic pressure control 
+ * (i.e. constraining rdot.r = (v + veta*r).r = 0 instead of v 
  *
  * Init_constraints must have be called once, before calling constrain.
  *
