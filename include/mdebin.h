@@ -96,11 +96,11 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
 extern void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
   
-extern void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb);
+extern void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
 
 extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 		       FILE *log,
-		       gmx_step_t step,double time,
+		       gmx_large_int_t step,double time,
 		       int mode,bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);

@@ -275,9 +275,9 @@ static bool do_ascwrite(void *item,int nitem,int eio,
   case eioINT:
     res = fprintf(curfio->fp,"%18d%s\n",*((int *)item),dbgstr(desc));
     break;
-  case eioGMX_STEP_T:
-    sprintf(strbuf,"%s%s%s","%",gmx_step_fmt,"\n");
-    res = fprintf(curfio->fp,strbuf,*((gmx_step_t *)item),dbgstr(desc));
+  case eioGMX_LARGE_INT:
+    sprintf(strbuf,"%s%s%s","%",gmx_large_int_fmt,"\n");
+    res = fprintf(curfio->fp,strbuf,*((gmx_large_int_t *)item),dbgstr(desc));
     break;
   case eioUCHAR:
     res = fprintf(curfio->fp,"%4d%s\n",*((unsigned char *)item),dbgstr(desc));
@@ -382,7 +382,7 @@ static bool do_ascread(void *item,int nitem,int eio,
 {
   FILE   *fp = curfio->fp;
   int    i,m,res=0,*iptr,ix;
-  gmx_step_t s;
+  gmx_large_int_t s;
   double d,x;
   real   *ptr;
   unsigned char uc,*ucptr;
@@ -401,9 +401,9 @@ static bool do_ascread(void *item,int nitem,int eio,
     res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%d",&i);
     if (item) *((int *)item) = i;
     break;
-  case eioGMX_STEP_T:
-    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),gmx_step_pfmt,&s);
-    if (item) *((gmx_step_t *)item) = s;
+  case eioGMX_LARGE_INT:
+    res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),gmx_large_int_pfmt,&s);
+    if (item) *((gmx_large_int_t *)item) = s;
     break;
   case eioUCHAR:
     res = sscanf(next_item(fp,ni_buf,NEXT_ITEM_BUF_LEN),"%c",&uc);
@@ -484,8 +484,8 @@ static bool do_binwrite(void *item,int nitem,int eio,
   case eioINT:
     size = sizeof(int);
     break;
-  case eioGMX_STEP_T:
-    size = sizeof(gmx_step_t);
+  case eioGMX_LARGE_INT:
+    size = sizeof(gmx_large_int_t);
     break;
   case eioUCHAR:
     size = sizeof(unsigned char);
@@ -550,8 +550,8 @@ static bool do_binread(void *item,int nitem,int eio,
   case eioINT:
     size = sizeof(int);
     break;
-  case eioGMX_STEP_T:
-    size = sizeof(gmx_step_t);
+  case eioGMX_LARGE_INT:
+    size = sizeof(gmx_large_int_t);
     break;
   case eioUCHAR:
     size = sizeof(unsigned char);
@@ -618,7 +618,7 @@ static bool do_xdr_lock(void *item,int nitem,int eio,
   float  fvec[DIM];
   double dvec[DIM];
   int    j,m,*iptr,idum;
-  gmx_step_t sdum;
+  gmx_large_int_t sdum;
   real   *ptr;
   unsigned short us;
   double d=0;
@@ -652,13 +652,13 @@ static bool do_xdr_lock(void *item,int nitem,int eio,
     res = xdr_int(curfio->xdr,&idum);
     if (item) *(int *)item = idum;
     break;
-  case eioGMX_STEP_T:
-    /* do_xdr will not generate a warning when a 64bit gmx_step_t
-     * value that is out of 32bit range is read into a 32bit gmx_step_t.
+  case eioGMX_LARGE_INT:
+    /* do_xdr will not generate a warning when a 64bit gmx_large_int_t
+     * value that is out of 32bit range is read into a 32bit gmx_large_int_t.
      */
-    if (item && !curfio->bRead) sdum = *(gmx_step_t *)item;
-    res = xdr_gmx_step_t(curfio->xdr,&sdum,NULL);
-    if (item) *(gmx_step_t *)item = sdum;
+    if (item && !curfio->bRead) sdum = *(gmx_large_int_t *)item;
+    res = xdr_gmx_large_int(curfio->xdr,&sdum,NULL);
+    if (item) *(gmx_large_int_t *)item = sdum;
     break;
   case eioUCHAR:
     if (item && !curfio->bRead) ucdum = *(unsigned char *)item;

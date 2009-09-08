@@ -1883,7 +1883,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme,int n,rvec *x,real *q,real *V)
 
 
 static void reset_pmeonly_counters(t_commrec *cr,gmx_wallcycle_t wcycle,
-        t_nrnb *nrnb,t_inputrec *ir, gmx_step_t step_rel)
+        t_nrnb *nrnb,t_inputrec *ir, gmx_large_int_t step_rel)
 {
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle,ewcRUN);
@@ -1912,7 +1912,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     matrix vir;
     float cycles;
     int  count;
-    gmx_step_t step,step_rel;
+    gmx_large_int_t step,step_rel;
     
     
     pme_pp = gmx_pme_pp_init(cr);

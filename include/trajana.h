@@ -213,7 +213,7 @@ parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   output_env_t *oenv);
 //! Initializes selection information.
 extern int
-gmx_ana_init_selections(gmx_ana_traj_t *d, const output_env_t oenv);
+gmx_ana_init_selections(gmx_ana_traj_t *d);
 //! Initializes calculation of covered fractions for selections.
 extern int
 gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
@@ -229,8 +229,7 @@ extern int
 gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC);
 //! Gets the first frame to be analyzed.
 extern int
-gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr, 
-                        const output_env_t oenv);
+gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr);
 
 //! Gets the total number of selections provided by the user.
 extern int
@@ -252,7 +251,7 @@ extern int
 gmx_ana_get_selcollection(gmx_ana_traj_t *d, gmx_ana_selcollection_t **sc);
 //! Prints the selection strings into an XVGR file as comments.
 extern int
-xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv);
+xvgr_selections(FILE *out, gmx_ana_traj_t *d);
 
 /*@}*/
 
@@ -285,8 +284,7 @@ typedef int (*gmx_analysisfunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
 //! Loops through all frames in the trajectory.
 extern int
-gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze,
-           void *data, const output_env_t oenv);
+gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data);
 //! Gets the total number of frames analyzed.
 extern int
 gmx_ana_get_nframes(gmx_ana_traj_t *d, int *nframes);

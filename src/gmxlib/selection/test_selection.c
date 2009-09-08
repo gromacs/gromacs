@@ -175,14 +175,14 @@ gmx_test_selection(int argc, char *argv[])
         gmx_ana_selcollection_set_outpostype(d.sc, NULL, TRUE);
     }
     gmx_ana_set_nrefgrps(trj, nref);
-    gmx_ana_init_selections(trj, oenv);
+    gmx_ana_init_selections(trj);
     gmx_ana_get_ngrps(trj, &ngrps);
     gmx_ana_get_anagrps(trj, &sel);
 
     print_selections(ngrps, sel);
 
     d.bFrameTree = bFrameTree;
-    gmx_ana_do(trj, 0, &dump_frame, &d, oenv);
+    gmx_ana_do(trj, 0, &dump_frame, &d);
 
     print_selections(ngrps, sel);
 

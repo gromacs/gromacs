@@ -663,7 +663,7 @@ static void pprint(FILE *log,const char *s,t_mdebin *md)
     fprintf(log,"\n");
 }
 
-void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb)
+void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb)
 {
     char buf[22];
 
@@ -674,7 +674,7 @@ void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb)
 
 void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 FILE *log,
-                gmx_step_t step,double time,
+                gmx_large_int_t step,double time,
                 int mode,bool bCompact,
                 t_mdebin *md,t_fcdata *fcd,
                 gmx_groups_t *groups,t_grpopts *opts)

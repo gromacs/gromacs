@@ -57,7 +57,7 @@ enum { eitemHEADER, eitemIR, eitemBOX,
        eitemTOP, eitemX, eitemV, eitemF, eitemNR };
        
 /* Enumerated for data types in files */
-enum { eioREAL, eioDOUBLE, eioINT, eioGMX_STEP_T,
+enum { eioREAL, eioDOUBLE, eioINT, eioGMX_LARGE_INT,
        eioUCHAR, eioNUCHAR, eioUSHORT,
        eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR };
 
@@ -213,9 +213,9 @@ extern void unset_comment(void);
   do_read ((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__) :\
   do_write((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__))
 
-#define do_gmx_step_t(item)          (bRead ?			\
-  do_read ((void *)&(item),1,eioGMX_STEP_T,(#item),__FILE__,__LINE__) :\
-  do_write((void *)&(item),1,eioGMX_STEP_T,(#item),__FILE__,__LINE__))
+#define do_gmx_large_int(item)          (bRead ?			\
+  do_read ((void *)&(item),1,eioGMX_LARGE_INT,(#item),__FILE__,__LINE__) :\
+  do_write((void *)&(item),1,eioGMX_LARGE_INT,(#item),__FILE__,__LINE__))
  
 #define do_uchar(item)        (bRead ?\
   do_read ((void *)&(item),1,eioUCHAR,(#item),__FILE__,__LINE__) :\

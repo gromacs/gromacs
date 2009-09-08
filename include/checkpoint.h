@@ -46,7 +46,7 @@
 /* Write a checkpoint to fn */
 extern void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
-			     gmx_step_t step,double t,
+			     gmx_large_int_t step,double t,
 			     t_state *state);
 
 /* Loads a checkpoint from fn for run continuation.
@@ -67,7 +67,7 @@ extern void load_checkpoint(const char *fn,FILE *fplog,
  * number of nodes was read.
  */
 extern void read_checkpoint_state(const char *fn,int *simulation_part,
-				  gmx_step_t *step,double *t,t_state *state);
+				  gmx_large_int_t *step,double *t,t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 extern void read_checkpoint_trxframe(int fp,t_trxframe *fr);
@@ -79,6 +79,6 @@ extern void list_checkpoint(const char *fn,FILE *out);
  * to be able to rename the logfile correctly.
  */
 void read_checkpoint_simulation_part(const char *filename,int *simulation_part,
-                                     gmx_step_t *step,t_commrec *cr);
+                                     gmx_large_int_t *step,t_commrec *cr);
 
 #endif

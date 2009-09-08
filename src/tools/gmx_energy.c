@@ -514,10 +514,10 @@ static void einstein_visco(const char *fn,const char *fni,int nsets,
 static void analyse_ener(bool bCorr,const char *corrfn,
 			 bool bFee,bool bSum,bool bFluct,
 			 bool bVisco,const char *visfn,int  nmol,int ndf,
-			 gmx_step_t start_step,double start_t,
-			 gmx_step_t step,double t,
+			 gmx_large_int_t start_step,double start_t,
+			 gmx_large_int_t step,double t,
 			 double time[], real reftemp,
-			 gmx_step_t ee_nsum,
+			 gmx_large_int_t ee_nsum,
 			 t_energy ee_sum[],enersum_t *enersum,
 			 int nset,int set[],int nenergy,real **eneset,
 			 real **enesum,
@@ -531,7 +531,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
   real xxx,integral,intBulk;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta=0,expE,expEtot,*fee=NULL;
-  gmx_step_t nsteps;
+  gmx_large_int_t nsteps;
   int  nexact,nnotexact,iset;
   double x1m,x1mk;
   real Temp=-1,Pres=-1,VarV=-1,VarT=-1;
@@ -980,7 +980,7 @@ int gmx_energy(int argc,char *argv[])
   int        cur=0;
 #define NEXT (1-cur)
   int        nre,teller,teller_disre;
-  gmx_step_t start_step,ee_nsteps,ee_nsum;
+  gmx_large_int_t start_step,ee_nsteps,ee_nsum;
   int        nor=0,nex=0,norfr=0,enx_i=0;
   real       start_t;
   real       *bounds=NULL,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;

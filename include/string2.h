@@ -128,8 +128,8 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
 #include <ctype.h>
 #include "errno.h"
 
-gmx_step_t
-str_to_gmx_step_t(const char *str, char **endptr);
+gmx_large_int_t
+str_to_large_int_t(const char *str, char **endptr);
 
 #ifdef __cplusplus
 }
