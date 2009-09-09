@@ -124,7 +124,7 @@ static void warn_step(FILE *fp,real ftol,bool bConstrain)
 
 
 static void print_converged(FILE *fp,const char *alg,real ftol,
-			    gmx_step_t count,bool bDone,gmx_step_t nsteps,
+			    gmx_large_int_t count,bool bDone,gmx_large_int_t nsteps,
 			    real epot,real fmax, int nfmax, real fnorm)
 {
   char buf[22];
@@ -238,7 +238,7 @@ void init_em(FILE *fplog,const char *title,
              t_forcerec *fr,gmx_enerdata_t **enerd,
              t_graph **graph,t_mdatoms *mdatoms,gmx_global_stat_t *gstat,
              gmx_vsite_t *vsite,gmx_constr_t constr,
-             int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene,
+             int nfile,const t_filenm fnm[],int *fp_trn,ener_file_t *fp_ene,
              t_mdebin **mdebin)
 {
     int  start,homenr,i;
@@ -380,7 +380,7 @@ void init_em(FILE *fplog,const char *title,
     if (fp_trn)
       *fp_trn = -1;
     if (fp_ene)
-      *fp_ene = -1;
+      *fp_ene = NULL;
   }
 
   snew(*enerd,1);
@@ -399,7 +399,7 @@ void init_em(FILE *fplog,const char *title,
 }
 
 static void finish_em(FILE *fplog,t_commrec *cr,
-		      int fp_traj,int fp_ene)
+		      int fp_traj,ener_file_t fp_ene)
 {
   if (!(cr->duty & DUTY_PME)) {
     /* Tell the PME only node to finish */
@@ -432,9 +432,9 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
 }
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
-                          int fp_trn,bool bX,bool bF,char *confout,
+                          int fp_trn,bool bX,bool bF,const char *confout,
                           gmx_mtop_t *top_global,
-                          t_inputrec *ir,gmx_step_t step,
+                          t_inputrec *ir,gmx_large_int_t step,
                           em_state_t *state,
                           t_state *state_global,rvec *f_global)
 {
@@ -460,7 +460,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
 		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
 		       gmx_constr_t constr,gmx_localtop_t *top,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       gmx_step_t count)
+		       gmx_large_int_t count)
 
 {
   t_state *s1,*s2;
@@ -609,7 +609,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
                             t_graph *graph,t_mdatoms *mdatoms,
                             t_forcerec *fr,rvec mu_tot,
                             gmx_enerdata_t *enerd,tensor vir,tensor pres,
-                            gmx_step_t count,bool bFirst)
+                            gmx_large_int_t count,bool bFirst)
 {
   real t;
   bool bNS;
@@ -827,8 +827,9 @@ static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
 }
 
 double do_cg(FILE *fplog,t_commrec *cr,
-             int nfile,t_filenm fnm[],
-             bool bVerbose,bool bCompact,int nstglobalcomm,
+             int nfile,const t_filenm fnm[],
+             const output_env_t oenv, bool bVerbose,bool bCompact,
+             int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,
              t_inputrec *inputrec,
@@ -864,7 +865,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
   bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
   tensor vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
-  int    fp_trn,fp_ene;
+  int    fp_trn;
+  ener_file_t fp_ene;
   int    i,m,gf,step,nminstep;
   real   terminate=0;  
 
@@ -1344,8 +1346,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
 
 
 double do_lbfgs(FILE *fplog,t_commrec *cr,
-                int nfile,t_filenm fnm[],
-                bool bVerbose,bool bCompact,int nstglobalcomm,
+                int nfile,const t_filenm fnm[],
+                const output_env_t oenv, bool bVerbose,bool bCompact,
+                int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
                 t_inputrec *inputrec,
@@ -1381,7 +1384,8 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   real   fnorm,fmax;
   bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
   tensor vir,pres;
-  int    fp_trn,fp_ene,start,end,number_steps;
+  int    fp_trn,start,end,number_steps;
+  ener_file_t fp_ene;
   int    i,k,m,n,nfmax,gf,step;
   /* not used */
   real   terminate;
@@ -1975,8 +1979,9 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 
 
 double do_steep(FILE *fplog,t_commrec *cr,
-                int nfile,t_filenm fnm[],
-                bool bVerbose,bool bCompact,int nstglobalcomm,
+                int nfile, const t_filenm fnm[],
+                const output_env_t oenv, bool bVerbose,bool bCompact,
+                int nstglobalcomm,
                 gmx_vsite_t *vsite,gmx_constr_t constr,
                 int stepout,
                 t_inputrec *inputrec,
@@ -2001,7 +2006,8 @@ double do_steep(FILE *fplog,t_commrec *cr,
   t_graph    *graph;
   real   stepsize,constepsize;
   real   ustep,dvdlambda,fnormn;
-  int        fp_trn,fp_ene; 
+  int        fp_trn; 
+  ener_file_t fp_ene;
   t_mdebin   *mdebin; 
   bool   bDone,bAbort,do_x,do_f; 
   tensor vir,pres; 
@@ -2177,8 +2183,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
 
 
 double do_nm(FILE *fplog,t_commrec *cr,
-             int nfile,t_filenm fnm[],
-             bool bVerbose,bool bCompact,int nstglobalcomm,
+             int nfile,const t_filenm fnm[],
+             const output_env_t oenv, bool bVerbose,bool bCompact,
+             int nstglobalcomm,
              gmx_vsite_t *vsite,gmx_constr_t constr,
              int stepout,
              t_inputrec *inputrec,
@@ -2194,8 +2201,9 @@ double do_nm(FILE *fplog,t_commrec *cr,
              gmx_runtime_t *runtime)
 {
     t_mdebin   *mdebin;
-	const char *NM = "Normal Mode Analysis";
-    int        fp_ene,step,i;
+    const char *NM = "Normal Mode Analysis";
+    ener_file_t fp_ene;
+    int        step,i;
     rvec       *f_global;
     gmx_localtop_t *top;
     gmx_enerdata_t *enerd;
@@ -2212,7 +2220,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
     size_t     sz;
     gmx_sparsematrix_t * sparse_matrix = NULL;
     real *     full_matrix             = NULL;
-	em_state_t *   state_work;
+    em_state_t *   state_work;
 	
     /* added with respect to mdrun */
     int        idum,jdum,kdum,row,col;
@@ -2401,7 +2409,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr)) 
     {
-        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,t,eprAVER,
+        print_ebin(NULL,FALSE,FALSE,FALSE,fplog,step,t,eprAVER,
                    FALSE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
       
@@ -2440,8 +2448,9 @@ static void realloc_bins(double **bin,int *nbin,int nbin_new)
 }
 
 double do_tpi(FILE *fplog,t_commrec *cr,
-              int nfile,t_filenm fnm[],
-              bool bVerbose,bool bCompact,int nstglobalcomm,
+              int nfile, const t_filenm fnm[],
+              const output_env_t oenv, bool bVerbose,bool bCompact,
+              int nstglobalcomm,
               gmx_vsite_t *vsite,gmx_constr_t constr,
               int stepout,
               t_inputrec *inputrec,
@@ -2659,8 +2668,8 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) {
     fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
 		      "TPI energies","Time (ps)",
-		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
-    xvgr_subtitle(fp_tpi,"f. are averages over one frame");
+		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)",oenv);
+    xvgr_subtitle(fp_tpi,"f. are averages over one frame",oenv);
     snew(leg,4+nener);
     e = 0;
     sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
@@ -2697,7 +2706,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
 	leg[e++] = strdup(str);
       }
     }
-    xvgr_legend(fp_tpi,4+nener,leg);
+    xvgr_legend(fp_tpi,4+nener,leg,oenv);
     for(i=0; i<4+nener; i++)
       sfree(leg[i]);
     sfree(leg);
@@ -2710,7 +2719,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   nbin = 10;
   snew(bin,nbin);
 
-  bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
+  bNotLastFrame = read_first_frame(oenv,&status,opt2fn("-rerun",nfile,fnm),
 				   &rerun_fr,TRX_NEED_X);
   frame = 0;
 
@@ -3036,9 +3045,8 @@ double do_tpi(FILE *fplog,t_commrec *cr,
             fflush(fp_tpi);
         }
         
-        bNotLastFrame = read_next_frame(status,&rerun_fr);
+        bNotLastFrame = read_next_frame(oenv, status,&rerun_fr);
     } /* End of the loop  */
-
   runtime_end(runtime);
 
   close_trj(status);
@@ -3062,10 +3070,10 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   }
   fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
 		    "TPI energy distribution",
-		    "\\8b\\4U - log(V/<V>)","count");
+		    "\\8b\\4U - log(V/<V>)","count",oenv);
   sprintf(str,"number \\8b\\4U > %g: %9.3e",bU_bin_limit,bin[0]);
-  xvgr_subtitle(fp_tpi,str);
-  xvgr_legend(fp_tpi,2,(char **)tpid_leg);
+  xvgr_subtitle(fp_tpi,str,oenv);
+  xvgr_legend(fp_tpi,2,(char **)tpid_leg,oenv);
   for(i=nbin-1; i>0; i--) {
     bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);
     fprintf(fp_tpi,"%6.2f %10d %12.5e\n",

@@ -186,6 +186,8 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "GB Coulomb + LJ NF",             37 }, /* nb_kernel410nf */
     { "GB Coulomb + VdW(T) NF",         49 }, /* nb_kernel430nf */
     { "Free energy innerloop",         150 }, /* free energy, estimate */  
+    { "All-vs-All, Coul + LJ",          38 },
+    { "All-vs-All, GB + LJ",            61 },
     { "Outer nonbonded loop",           10 },
     { "1,4 nonbonded interactions",     90 },
     { "Calc Weights",                   36 },
@@ -352,7 +354,7 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 }
 
 void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
-		gmx_step_t nsteps,real delta_t,
+		gmx_large_int_t nsteps,real delta_t,
 		double nbfs,double mflop)
 {
   real runtime;

@@ -233,7 +233,7 @@ extern real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
 
 extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    t_inputrec *ir,
-			    gmx_step_t step,
+			    gmx_large_int_t step,
 			    gmx_lincsdata_t lincsd,t_mdatoms *md,
 			    t_commrec *cr,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,

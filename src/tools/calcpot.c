@@ -121,8 +121,8 @@ static void c_tabpot(real tabscale,   real VFtab[],
       dzO               = izO - jz;
       rsqO              = dxO*dxO + dyO*dyO + dzO*dzO;
 
-      /* Doing fast invsqrt */
-      rinv1O            = invsqrt(rsqO);
+      /* Doing fast gmx_invsqrt */
+      rinv1O            = gmx_invsqrt(rsqO);
 
       /* O block */
       r1                = one/rinv1O;
@@ -205,14 +205,14 @@ void calc_pot(FILE *logf,t_commrec *cr,
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
 }
 
-FILE *init_calcpot(char *log,char *tpx,char *table,
+FILE *init_calcpot(const char *log,const char *tpx,const char *table,
 		   gmx_mtop_t *mtop,gmx_localtop_t *top,
 		   t_inputrec *inputrec,t_commrec **cr,
 		   t_graph **graph,t_mdatoms **mdatoms,
 		   t_forcerec **fr,
 		   gmx_enerdata_t *enerd,
 		   real **pot,
-		   matrix box,rvec **x)
+		   matrix box,rvec **x, const output_env_t oenv)
 {
   gmx_localtop_t *ltop;
   double   t,t0,lam0;
@@ -223,7 +223,8 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   rvec     mutot;
   t_nrnb   nrnb;
   t_mdebin *mdebin;
-  int      fp_ene,m;
+  ener_file_t fp_ene;
+  int      m;
   rvec     box_size;
   tensor   force_vir,shake_vir;
   FILE     *fplog;
@@ -241,7 +242,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   snew(state,1);
   init_single(fplog,inputrec,tpx,mtop,state);
   clear_rvec(mutot);
-  init_md(fplog,*cr,inputrec,&t,&t0,&lam,&lam0,
+  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
 	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL,0);
@@ -277,7 +278,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(fplog,*fr,NULL,inputrec,mtop,*cr,
+  init_forcerec(fplog,oenv,*fr,NULL,inputrec,mtop,*cr,
 		state->box,FALSE,table,table,NULL,TRUE,-1);
 
   /* Remove periodicity */  

@@ -40,57 +40,57 @@
 struct t_selelem;
 struct gmx_ana_selmethod_t;
 
-//! Defines the type of the symbol.
+/*! Defines the type of the symbol.*/
 typedef enum
 {
-    SYMBOL_RESERVED,    //!< The symbol is a reserved keyword.
-    SYMBOL_VARIABLE,    //!< The symbol is a variable.
-    SYMBOL_METHOD,      //!< The symbol is a selection method.
-    SYMBOL_POS,         //!< The symbol is a position keyword.
+    SYMBOL_RESERVED,    /*!< The symbol is a reserved keyword.*/
+    SYMBOL_VARIABLE,    /*!< The symbol is a variable.*/
+    SYMBOL_METHOD,      /*!< The symbol is a selection method.*/
+    SYMBOL_POS,         /*!< The symbol is a position keyword.*/
 } e_symbol_t;
 
-//! Symbol table for the selection parser.
+/*! Symbol table for the selection parser.*/
 typedef struct gmx_sel_symtab_t gmx_sel_symtab_t;
-//! Single symbol for the selection parser.
+/*! Single symbol for the selection parser.*/
 typedef struct gmx_sel_symrec_t gmx_sel_symrec_t;
 
-//! Returns the name of a symbol.
+/*! Returns the name of a symbol.*/
 char *
 _gmx_sel_sym_name(gmx_sel_symrec_t *sym);
-//! Returns the type of a symbol.
+/*! Returns the type of a symbol.*/
 e_symbol_t
 _gmx_sel_sym_type(gmx_sel_symrec_t *sym);
-//! Returns the method associated with a \ref SYMBOL_METHOD symbol.
+/*! Returns the method associated with a \ref SYMBOL_METHOD symbol.*/
 struct gmx_ana_selmethod_t *
 _gmx_sel_sym_value_method(gmx_sel_symrec_t *sym);
-//! Returns the method associated with a \ref SYMBOL_VARIABLE symbol.
+/*! Returns the method associated with a \ref SYMBOL_VARIABLE symbol.*/
 struct t_selelem *
 _gmx_sel_sym_value_var(gmx_sel_symrec_t *sym);
 
-//! Creates a new symbol table.
+/*! Creates a new symbol table.*/
 int
 _gmx_sel_symtab_create(gmx_sel_symtab_t **tabp);
-//! Frees all memory allocated for a symbol table.
+/*! Frees all memory allocated for a symbol table.*/
 void
 _gmx_sel_symtab_free(gmx_sel_symtab_t *tab);
-//! Finds a symbol by name.
+/*! Finds a symbol by name.*/
 gmx_sel_symrec_t *
 _gmx_sel_find_symbol(gmx_sel_symtab_t *tab, const char *name, bool bExact);
-//! Finds a symbol by name.
+/*! Finds a symbol by name.*/
 gmx_sel_symrec_t *
 _gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
                          bool bExact);
-//! Returns the first symbol of a given type.
+/*! Returns the first symbol of a given type.*/
 gmx_sel_symrec_t *
 _gmx_sel_first_symbol(gmx_sel_symtab_t *tab, e_symbol_t type);
-//! Returns the next symbol of a given type.
+/*! Returns the next symbol of a given type.*/
 gmx_sel_symrec_t *
 _gmx_sel_next_symbol(gmx_sel_symrec_t *after, e_symbol_t type);
-//! Adds a new variable symbol.
+/*! Adds a new variable symbol.*/
 gmx_sel_symrec_t *
 _gmx_sel_add_var_symbol(gmx_sel_symtab_t *tab, const char *name,
                         struct t_selelem *sel);
-//! Adds a new method symbol.
+/*! Adds a new method symbol.*/
 gmx_sel_symrec_t *
 _gmx_sel_add_method_symbol(gmx_sel_symtab_t *tab, const char *name,
                            struct gmx_ana_selmethod_t *method);

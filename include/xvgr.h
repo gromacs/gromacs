@@ -82,32 +82,39 @@ enum {
 extern bool use_xmgr(void);
 /* Returns if we use xmgr instead of xmgrace */
 
-extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *yaxis);
+extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
+                      const char *yaxis,const output_env_t oenv);
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 
 /* Close xvgr file, and clean up internal file buffers correctly */
 extern void xvgrclose(FILE *fp);
 
-extern void xvgr_subtitle(FILE *out,const char *subtitle);
+extern void xvgr_subtitle(FILE *out,const char *subtitle,
+                          const output_env_t oenv);
 /* Set the subtitle in xvgr */
 
-extern void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax);
+extern void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,        
+                      const output_env_t oenv);
 /* Set the view in xvgr */
 
-extern void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax);
+extern void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
+                       const output_env_t oenv);
 /* Set the world in xvgr */
 
-extern void xvgr_legend(FILE *out,int nsets,char **setnames);
+extern void xvgr_legend(FILE *out,int nsets,char **setnames,
+                        const output_env_t oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
-extern void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor);
+extern void xvgr_line_props(FILE *out,int NrSet,int LineStyle,int LineColor,
+                            const output_env_t oenv);
 /* Set xvgr line styles and colors */
 
 extern void xvgr_box(FILE *out,
 		     int LocType,
 		     real xmin,real ymin,real xmax,real ymax,
 		     int LineStyle,int LineWidth,int LineColor,
-		     int BoxFill,int BoxColor,int BoxPattern);
+		     int BoxFill,int BoxColor,int BoxPattern,
+                     const output_env_t oenv);
 /* Make a box */
 
 extern int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend);
@@ -122,7 +129,7 @@ extern int read_xvg(const char *fn,double ***y,int *ny);
 /* As read_xvg_legend, but does not read legends. */
  
 extern void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
-                     char ** leg);
+                      char **leg, const output_env_t oenv);
 /* Write a two D array (y) of dimensions nx rows times
  * ny columns to a file. If leg != NULL it will be written too.
  */
@@ -131,7 +138,7 @@ extern void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,
 /* This function reads ascii (xvg) files and extracts the data sets to a 
  * two dimensional array which is returned.
  */
-extern real **read_xvg_time(char *fn,
+extern real **read_xvg_time(const char *fn,
 			    bool bHaveT,
 			    bool bTB,real tb,
 			    bool bTE,real te,

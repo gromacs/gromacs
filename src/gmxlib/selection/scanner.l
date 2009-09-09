@@ -28,14 +28,10 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \internal \file scanner.l
+/*! \cond \internal \file scanner.l
  * \brief
  * Tokenizer for the selection language.
- *
- * \todo
- * With a recent version of Flex, it should be straightforward to make the
- * scanner reentrant (it is the only component of the selection parser that
- * still uses global variables).
+ * \endcond
  */
 /*! \internal \file scanner.c
  * \brief
@@ -65,7 +61,7 @@
 #define CONTINUE_PROMPT    "..."
 #define STRSTORE_ALLOCSTEP 1000
 
-struct gmx_sel_lexer_t
+typedef struct gmx_sel_lexer_t
 {
     struct gmx_ana_selcollection_t *sc;
     bool                  bPrompt;
@@ -85,19 +81,21 @@ struct gmx_sel_lexer_t
 
     bool                  bBuffer;
     YY_BUFFER_STATE       buffer;
-};
+} gmx_sel_lexer_t;
 
-static gmx_sel_lexer_t *gstate;
+#define YY_EXTRA_TYPE gmx_sel_lexer_t *
 
+/* Because Flex defines yylval, yytext, and yyleng as macros,
+ * we cannot have them here as parameter names... */
 static int
-process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state);
+process_next_param(YYSTYPE *, gmx_sel_lexer_t *state);
 static int
-process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+process_identifier(YYSTYPE *, char *, int,
                    gmx_sel_lexer_t *state);
 
 #define YY_INPUT(buf,result,max_size) \
     { \
-        gmx_sel_lexer_t *state = gstate; \
+        gmx_sel_lexer_t *state = yyget_extra(yyscanner); \
         int c = '*', n; \
         if (state->bPrompt) \
         { \
@@ -138,7 +136,6 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             } \
         } \
     }
-/*! \cond */
 %}
 
 INTEGER    [[:digit:]]+
@@ -153,12 +150,14 @@ COMMENT    (#.*)
 
 %option nodefault
 %option noyywrap
+%option reentrant
 
 %s matchof
 
 %%
 
 %{
+    gmx_sel_lexer_t *state = yyget_extra(yyscanner);
     /* Return END_OF_METHOD/PARAM_* immediately if necessary */
     if (state->nextparam)
     {
@@ -177,8 +176,8 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = atoi(yytext);                return INT; }
-{REAL}          { yylval->r   = atof(yytext);                return REAL; }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 0);     return INT; }
+{REAL}          { yylval->r   = strtod(yytext,NULL);         return REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
 
 \\\n            { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
@@ -199,7 +198,12 @@ not|"!"         { return NOT; }
 .               { return yytext[0]; }
 
 %%
-/*! \endcond */
+/* Undefine the macros so that we can have them as variable names in the
+ * subroutines.
+ * There are other ways of doing this, but this is probably the easiest. */
+#undef yylval
+#undef yytext
+#undef yyleng
 
 static int
 process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
@@ -400,11 +404,18 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     return INVALID;
 }
 
-void
-_gmx_sel_init_lexer(gmx_sel_lexer_t **statep, struct gmx_ana_selcollection_t *sc,
+int
+_gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
                     bool bInteractive)
 {
     gmx_sel_lexer_t *state;
+    int              rc;
+
+    rc = yylex_init(scannerp);
+    if (rc != 0)
+    {
+        return rc;
+    }
 
     snew(state, 1);
     state->sc        = sc;
@@ -431,37 +442,43 @@ _gmx_sel_init_lexer(gmx_sel_lexer_t **statep, struct gmx_ana_selcollection_t *sc
     state->bMatchOf     = FALSE;
     state->bBuffer      = FALSE;
 
-    *statep = state;
-    gstate  = state;
+    yyset_extra(state, *scannerp);
+    return 0;
 }
 
 void
-_gmx_sel_free_lexer(gmx_sel_lexer_t *state)
+_gmx_sel_free_lexer(yyscan_t scanner)
 {
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
+
     sfree(state->mstack);
     if (state->bBuffer)
     {
-        yy_delete_buffer(state->buffer);
+        yy_delete_buffer(state->buffer, scanner);
     }
     sfree(state);
-    gstate  = NULL;
+    yylex_destroy(scanner);
 }
 
 bool
-_gmx_sel_is_lexer_interactive(gmx_sel_lexer_t *state)
+_gmx_sel_is_lexer_interactive(yyscan_t scanner)
 {
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
     return state->bPrompt;
 }
 
 struct gmx_ana_selcollection_t *
-_gmx_sel_lexer_selcollection(gmx_sel_lexer_t *state)
+_gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
     return state->sc;
 }
 
 void
-_gmx_sel_finish_method(gmx_sel_lexer_t *state)
+_gmx_sel_finish_method(yyscan_t scanner)
 {
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
+
     if (state->msp >= 0)
     {
         --state->msp;
@@ -469,19 +486,22 @@ _gmx_sel_finish_method(gmx_sel_lexer_t *state)
 }
 
 void
-_gmx_sel_set_lex_input_file(gmx_sel_lexer_t *state, FILE *fp)
+_gmx_sel_set_lex_input_file(yyscan_t scanner, FILE *fp)
 {
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
+
     state->bBuffer = TRUE;
-    state->buffer  = yy_create_buffer(fp, YY_BUF_SIZE);
-    yy_switch_to_buffer(state->buffer);
+    state->buffer  = yy_create_buffer(fp, YY_BUF_SIZE, scanner);
+    yy_switch_to_buffer(state->buffer, scanner);
 }
 
 void
-_gmx_sel_set_lex_input_str(gmx_sel_lexer_t *state, const char *str)
+_gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
 {
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
 
     state->bBuffer = TRUE;
-    state->buffer  = yy_scan_string(str);
+    state->buffer  = yy_scan_string(str, scanner);
     /* Append the buffer to the string store as YY_INPUT is not called */
     if (state->strstore)
     {

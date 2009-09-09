@@ -79,7 +79,7 @@ typedef struct
 typedef struct
 {
     int  nr_inputfiles;         /* The number of tpr and mdp input files */
-    gmx_step_t orig_sim_steps;  /* Number of steps to be done in the real simulation */
+    gmx_large_int_t orig_sim_steps;  /* Number of steps to be done in the real simulation */
     real *r_coulomb;            /* The coulomb radii [0...nr_inputfiles] */
     real *r_vdW;                /* The vdW radii */
     int  *fourier_nx, *fourier_ny, *fourier_nz;
@@ -123,7 +123,8 @@ static void cleandata(t_perf *perfdata, int test_nr)
 
 enum {eFoundNothing, eFoundDDStr, eFoundPMEfStr, eFoundCycleStr};
 
-static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr, int presteps, gmx_step_t cpt_steps)
+static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr, 
+                         int presteps, gmx_large_int_t cpt_steps)
 {
     FILE  *fp;
     char  line[STRLEN], dumstring[STRLEN], dumstring2[STRLEN];
@@ -137,7 +138,7 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr, int prest
     int   procs;
     real  dum1,dum2,dum3;
     int   npme;
-    gmx_step_t resetsteps=-1;
+    gmx_large_int_t resetsteps=-1;
     bool  bFoundResetStr = FALSE;
     bool  bResetChecked  = FALSE;
 
@@ -172,7 +173,7 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr, int prest
         {
             if (strstr(line, matchstrcr) != NULL)
             {
-                sprintf(dumstring, "Step %s", gmx_step_pfmt);
+                sprintf(dumstring, "Step %s", gmx_large_int_pfmt);
                 sscanf(line, dumstring, &resetsteps);
                 bFoundResetStr = TRUE;
                 if (resetsteps == presteps+cpt_steps)
@@ -181,8 +182,8 @@ static int parse_logfile(char *logfile, t_perf *perfdata, int test_nr, int prest
                 }
                 else
                 {
-                    sprintf(dumstring , gmx_step_pfmt, resetsteps);
-                    sprintf(dumstring2, gmx_step_pfmt, presteps+cpt_steps);
+                    sprintf(dumstring , gmx_large_int_pfmt, resetsteps);
+                    sprintf(dumstring2, gmx_large_int_pfmt, presteps+cpt_steps);
                     fprintf(stderr, "WARNING: Time step counters were reset at step %s,\n"
                                     "         though they were supposed to be reset at step %s!\n", 
                             dumstring, dumstring2);
@@ -429,7 +430,8 @@ static void counters_set_env(int presteps, int *resetcount_orig, bool *bHaveRese
 
 
 /* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], char *cmd_export[], int repeats)
+static void get_program_paths(char *cmd_mpirun[], char *cmd_mdrun[], 
+                              char *cmd_export[], int repeats)
 {
     char *command=NULL;
     char *cp;
@@ -506,7 +508,7 @@ static void launch_simulation(
         char *cmd_mpirun,       /* Command for mpirun */
         char *cmd_mdrun,        /* Command for mdrun */
         char *args_for_mdrun,   /* Arguments for mdrun */
-        char *simulation_tpr,   /* This tpr will be simulated */
+        const char *simulation_tpr,   /* This tpr will be simulated */
         int  nnodes,            /* Number of nodes to run on */
         int  nPMEnodes)         /* Number of PME nodes to use */
 {
@@ -537,9 +539,9 @@ static void launch_simulation(
 
 
 static void modify_PMEsettings(
-        gmx_step_t simsteps, /* Set this value as number of time steps */
-        char *fn_best_tpr,   /* tpr file with the best performance */
-        char *fn_sim_tpr)    /* name of tpr file to be launched */
+        gmx_large_int_t simsteps, /* Set this value as number of time steps */
+        const char *fn_best_tpr,   /* tpr file with the best performance */
+        const char *fn_sim_tpr)    /* name of tpr file to be launched */
 {
     t_inputrec   *ir;
     t_state      state;
@@ -553,7 +555,7 @@ static void modify_PMEsettings(
     ir->nsteps = simsteps;
     
     /* Write the tpr file which will be launched */
-    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, gmx_step_pfmt);
+    sprintf(buf, "Writing optimized simulation file %s with nsteps=%s.\n", fn_sim_tpr, gmx_large_int_pfmt);
     fprintf(stdout,buf,ir->nsteps);
     fflush(stdout);
     write_tpx_state(fn_sim_tpr,ir,&state,&mtop);
@@ -565,10 +567,10 @@ static void modify_PMEsettings(
 /* Make additional TPR files with more computational load for the
  * direct space processors: */
 static void make_benchmark_tprs(
-        char *fn_sim_tpr,       /* READ : User-provided tpr file */
+        const char *fn_sim_tpr,       /* READ : User-provided tpr file */
         char *fn_bench_tprs[],  /* WRITE: Names of benchmark tpr files */
-        gmx_step_t benchsteps,  /* Number of time steps for benchmark runs */
-        gmx_step_t statesteps,  /* Step counter in checkpoint file */
+        gmx_large_int_t benchsteps,  /* Number of time steps for benchmark runs */
+        gmx_large_int_t statesteps,  /* Step counter in checkpoint file */
         real maxfac,            /* Max scaling factor for rcoulomb and fourierspacing */
         int ntprs,              /* No. of TPRs to write, each with a different rcoulomb and fourierspacing */
         real fourierspacing,    /* Basic fourierspacing from tpr input file */
@@ -588,11 +590,11 @@ static void make_benchmark_tprs(
     rvec         box_size;
     
 
-    sprintf(buf, "Making benchmark tpr files with %s time steps", gmx_step_pfmt);
+    sprintf(buf, "Making benchmark tpr files with %s time steps", gmx_large_int_pfmt);
     fprintf(stdout, buf, benchsteps);
     if (statesteps > 0)
     {
-        sprintf(buf, " (adding %s steps from checkpoint file)", gmx_step_pfmt);
+        sprintf(buf, " (adding %s steps from checkpoint file)", gmx_large_int_pfmt);
         fprintf(stdout, buf, statesteps);
         benchsteps += statesteps;
     }
@@ -712,7 +714,7 @@ static void make_benchmark_tprs(
         sprintf(buf, "_bench%.2d.tpr", j);
         strcat(fn_bench_tprs[j], buf);
         fprintf(stdout,"Writing benchmark tpr %s with nsteps=", fn_bench_tprs[j]);
-        fprintf(stdout, gmx_step_pfmt, ir->nsteps);
+        fprintf(stdout, gmx_large_int_pfmt, ir->nsteps);
         fprintf(stdout,", scaling factor %f\n", fac);
         write_tpx_state(fn_bench_tprs[j],ir,&state,&mtop);
         
@@ -729,11 +731,12 @@ static void make_benchmark_tprs(
 
 /* Rename the files we want to keep to some meaningful filename and
  * delete the rest */
-static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, int nr)
+static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes, 
+                    int nPMEnodes, int nr)
 {
     char numstring[STRLEN];
     char newfilename[STRLEN];
-    char *fn=NULL;
+    const char *fn=NULL;
     int i;
     const char *opt;
 
@@ -776,10 +779,13 @@ static void cleanup(t_filenm *fnm, int nfile, int k, int nnodes, int nPMEnodes, 
 }
 
 
-static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, int minPMEnodes,
+static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes, 
+        int minPMEnodes,
         int datasets, t_perf **perfdata, int repeats, int nnodes, int nr_tprs,
-        char *cmd_mpirun, char *cmd_export, char *cmd_mdrun, char *args_for_mdrun,
-        t_filenm *fnm, int nfile, int sim_part, int presteps, gmx_step_t cpt_steps)
+        char *cmd_mpirun, char *cmd_export, char *cmd_mdrun, 
+        char *args_for_mdrun,
+        const t_filenm *fnm, int nfile, int sim_part, int presteps, 
+        gmx_large_int_t cpt_steps)
 {
     int     i,nr,k,ret;
     int     nPMEnodes;
@@ -929,8 +935,8 @@ static void check_input(
         real maxPMEfraction,
         real minPMEfraction,
         real fourierspacing,
-        gmx_step_t bench_nsteps,
-        t_filenm *fnm,
+        gmx_large_int_t bench_nsteps,
+        const t_filenm *fnm,
         int nfile,
         int sim_part,
         int presteps)
@@ -987,7 +993,7 @@ static void check_input(
     if (bench_nsteps > 10000 || bench_nsteps < 100)
     {
         fprintf(stderr, "WARNING: steps=");
-        fprintf(stderr, gmx_step_pfmt, bench_nsteps);
+        fprintf(stderr, gmx_large_int_pfmt, bench_nsteps);
         fprintf(stderr, ". Are you shure you want to perform so %s steps for each benchmark?\n", (bench_nsteps < 100)? "few" : "many");
     }
     
@@ -1124,7 +1130,7 @@ static void create_command_line_snippets(
 {
     int        i;
     char       *opt;
-    char       *name;
+    const char *name;
 #define BUFLENGTH 255
     char       buf[BUFLENGTH];
     char       strbuf[BUFLENGTH];
@@ -1298,17 +1304,17 @@ int gmx_tune_pme(int argc,char *argv[])
     real       maxfac=1.2;
     int        ntprs=0;
     real       fs=0.0;             /* 0 indicates: not set by the user */
-    gmx_step_t bench_nsteps=BENCHSTEPS;
-    gmx_step_t new_sim_nsteps=-1;  /* -1 indicates: not set by the user */
-    gmx_step_t cpt_steps=0;        /* Step counter in .cpt input file */
+    gmx_large_int_t bench_nsteps=BENCHSTEPS;
+    gmx_large_int_t new_sim_nsteps=-1;  /* -1 indicates: not set by the user */
+    gmx_large_int_t cpt_steps=0;        /* Step counter in .cpt input file */
     int        presteps=100;       /* Do a full cycle reset after presteps steps */
-    bool       bHaveResetCounter;  /* Was the GMX_RESET_COUNTER env set by user? */
+    bool       bHaveResetCounter=FALSE; /* Was the GMX_RESET_COUNTER env set by user? */
     int        resetcount_orig;    /* The value of GMX_RESET_COUNTER if set */
 
     bool        bOverwrite=FALSE;
     bool        bLaunch=FALSE;
     char        **tpr_names=NULL;
-    char        *simulation_tpr=NULL;
+    const char  *simulation_tpr=NULL;
     int         best_npme, best_tpr;
     int         sim_part = 1;     /* For benchmarks with checkpoint files */
     
@@ -1406,7 +1412,7 @@ int gmx_tune_pme(int argc,char *argv[])
 #define STD_CPT_PERIOD (15.0)
     real cpt_period=STD_CPT_PERIOD,max_hours=-1;
     bool bAppendFiles=FALSE,bAddPart=TRUE;
-
+    output_env_t oenv;
 
     t_pargs pa[] = {
       /***********************/
@@ -1426,11 +1432,11 @@ int gmx_tune_pme(int argc,char *argv[])
         "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
       { "-four",     FALSE, etREAL, {&fs},
           "Fourierspacing that was chosen to create the input tpr file" },        
-      { "-steps",    FALSE, etGMX_STEP_T, {&bench_nsteps},
+      { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
         "Use these many steps for the benchmarks" }, 
       { "-presteps", FALSE, etINT,  {&presteps},
         "Let dlb equilibrate these many steps before timings are taken" },         
-      { "-simsteps", FALSE, etGMX_STEP_T, {&new_sim_nsteps},
+      { "-simsteps", FALSE, etGMX_LARGE_INT, {&new_sim_nsteps},
           "If non-negative, perform these many steps in the real run (overwrite nsteps from tpr, add cpt steps)" }, 
       { "-launch",   FALSE, etBOOL, {&bLaunch},
         "Lauch the real simulation after optimization" },
@@ -1501,7 +1507,8 @@ int gmx_tune_pme(int argc,char *argv[])
     CopyRight(stderr,argv[0]);
 
     parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,
-              NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);        
+                      NFILE,fnm,asize(pa),pa,asize(desc),desc,
+                      0,NULL,&oenv);        
 
     /* Automatically set -beo options if -eo is set etc. */
     couple_files_options(NFILE,fnm);
@@ -1562,13 +1569,13 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "Basic fourierspacing    : %f\n", fs);
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
     fprintf(fp, "Benchmark steps         : ");
-    fprintf(fp, gmx_step_pfmt, bench_nsteps);
+    fprintf(fp, gmx_large_int_pfmt, bench_nsteps);
     fprintf(fp, "\n");
     fprintf(fp, "     + presteps         : %d\n", presteps);
     if (sim_part > 1)
     {
         fprintf(fp, "Checkpoint time step    : ");
-        fprintf(fp, gmx_step_pfmt, cpt_steps);
+        fprintf(fp, gmx_large_int_pfmt, cpt_steps);
         fprintf(fp, "\n");
     }
     if (bLaunch)
@@ -1577,10 +1584,10 @@ int gmx_tune_pme(int argc,char *argv[])
     {
         bOverwrite = TRUE;
         fprintf(stderr, "Note: Simulation input file %s will have ", opt2fn("-so",NFILE,fnm));
-        fprintf(stderr, gmx_step_pfmt, new_sim_nsteps+cpt_steps);
+        fprintf(stderr, gmx_large_int_pfmt, new_sim_nsteps+cpt_steps);
         fprintf(stderr, " steps.\n");
         fprintf(fp, "Simulation steps        : ");
-        fprintf(fp, gmx_step_pfmt, new_sim_nsteps);
+        fprintf(fp, gmx_large_int_pfmt, new_sim_nsteps);
         fprintf(fp, "\n");
     }   
     if (repeats > 1)
@@ -1659,7 +1666,8 @@ int gmx_tune_pme(int argc,char *argv[])
         simulation_tpr = opt2fn("-s",NFILE,fnm);
             
     /* Now start the real simulation if the user requested it ... */
-    launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, cmd_args_launch, simulation_tpr, nnodes, best_npme);
+    launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, cmd_args_launch, 
+                      simulation_tpr, nnodes, best_npme);
     fclose(fp);
         
     /* ... or simply print the performance results to screen: */

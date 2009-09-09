@@ -51,7 +51,7 @@
 #define round(a) (int)(a+0.5)
 
 static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
-#define NMAP strlen(mapper)
+#define NMAP (long int)strlen(mapper)
 
 #define MAX_XPM_LINELENGTH 4096
 

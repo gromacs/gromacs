@@ -118,13 +118,13 @@ _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
  * \param[in]     ptr    Pointer where the values should be stored.
  * \returns       Zero on success.
  *
- * Automatic memory management is disabled for \p ptr.
+ * Automatic memory management is disabled for \p ptr, unless \p ptr is NULL.
  */
 int
 _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr)
 {
     val->u.ptr  = ptr;
-    val->nalloc = -1;
+    val->nalloc = (ptr ? -1 : 0);
     return 0;
 }
 

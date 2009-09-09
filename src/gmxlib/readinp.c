@@ -55,7 +55,7 @@ static int inp_count = 1;
 static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
 
-t_inpfile *read_inpfile(char *fn,int *ninp, 
+t_inpfile *read_inpfile(const char *fn,int *ninp, 
 			char **cppopts)
 {
   /*FILE      *in;*/
@@ -239,7 +239,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
   qsort(inp,ninp,(size_t)sizeof(inp[0]),inp_comp);
 }
 
-void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
+void write_inpfile(const char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
 {
   FILE *out;
   int  i;
@@ -357,23 +357,23 @@ int get_eint(int *ninp,t_inpfile **inp,const char *name,int def)
   }
 }
 
-gmx_step_t get_egmx_step_t(int *ninp,t_inpfile **inp,
-			   const char *name,gmx_step_t def)
+gmx_large_int_t get_egmx_large_int(int *ninp,t_inpfile **inp,
+			   const char *name,gmx_large_int_t def)
 {
   char buf[32],*ptr;
   int  ii;
-  gmx_step_t ret;
+  gmx_large_int_t ret;
   
   ii=get_einp(ninp,inp,name);
   
   if (ii == -1) {
-    sprintf(buf,gmx_step_pfmt,def);
+    sprintf(buf,gmx_large_int_pfmt,def);
     (*inp)[(*ninp)-1].value=strdup(buf);
     
     return def;
   }
   else {
-    ret = str_to_gmx_step_t((*inp)[ii].value,&ptr);
+    ret = str_to_large_int_t((*inp)[ii].value,&ptr);
     if (ptr == (*inp)[ii].value) {
       sprintf(warn_buf,"Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n",(*inp)[ii].value,(*inp)[ii].name);
       warning_error(NULL);

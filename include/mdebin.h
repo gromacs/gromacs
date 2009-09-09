@@ -57,15 +57,26 @@ typedef struct {
   int    mde_n;
   real   *tmp_r;
   rvec   *tmp_v;
+  bool	 bConstr;
+  bool   bConstrVir;
+  bool   bTricl;
+  bool   bDynBox;
+  int    f_nre;
+  int    epc;
+  int	 etc;
+  int    nCrmsd;
+  bool   bEner[F_NRE];
+  bool   bEInd[egNR];
+  char   **print_grpnms;
 } t_mdebin;
 
 extern t_mdebin
-*init_mdebin(int fp_ene,
+*init_mdebin(ener_file_t fp_ene,
 	     const gmx_mtop_t *mtop,
 	     const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir);
+FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv);
 /* Open the dhdl file for output */
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
@@ -86,11 +97,11 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
 extern void upd_mdebin_step(t_mdebin *md);
 /* Updates only the step count in md */
   
-extern void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb);
+extern void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb);
 
-extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
+extern void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
 		       FILE *log,
-		       gmx_step_t step,double time,
+		       gmx_large_int_t step,double time,
 		       int mode,bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);

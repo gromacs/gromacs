@@ -416,6 +416,7 @@ int main(int argc, char *argv[])
   bool       bRTP,bTOP,bOPLS;
   t_symtab   symtab;
   real       cutoff,qtot,mtot;
+  output_env_t oenv;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
@@ -467,7 +468,7 @@ int main(int argc, char *argv[])
   CopyRight(stdout,argv[0]);
 
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,asize(bugs),bugs,&oenv);
   bRTP = opt2bSet("-r",NFILE,fnm);
   bTOP = opt2bSet("-o",NFILE,fnm);
   

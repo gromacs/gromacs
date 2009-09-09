@@ -101,7 +101,7 @@ typedef struct
 typedef struct
 { 
     real deltaF0;
-    bool bHarmonic;
+    bool bHarmonic;       /* Use flooding for harmonic restraint on eigenvector */
     real tau;
     real deltaF;
     real Efl;
@@ -172,8 +172,8 @@ typedef struct edpar
 typedef struct gmx_edsam
 {
     int           eEDtype;        /* Type of ED: see enums above          */
-    char          *edinam;        /* name of ED sampling input file       */
-    char          *edonam;        /*                     output           */
+    const char    *edinam;        /* name of ED sampling input file       */
+    const char    *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
     bool          bFirst;
@@ -185,15 +185,18 @@ struct t_do_edsam
     matrix old_rotmat;
     real oldrad;
     rvec old_transvec,older_transvec,transvec_compact;
-    rvec *xcoll;         /* Coordinates from all nodes, this is the collective set of coords we work on.
-                          * These are the coordinates of atoms with average structure indices */
+    rvec *xcoll;         /* Coordinates from all nodes, this is the 
+                            collective set of coords we work on.
+                            These are the coordinates of atoms with 
+                            average structure indices */
     rvec *xc_ref;        /* same but with reference structure indices */
     ivec *shifts_xcoll;        /* Shifts for xcoll  */
     ivec *extra_shifts_xcoll;  /* xcoll shift changes since last NS step */
     ivec *shifts_xc_ref;       /* Shifts for xc_ref */
     ivec *extra_shifts_xc_ref; /* xc_ref shift changes since last NS step */
-    bool bUpdateShifts;        /* TRUE in NS steps to indicate that the ED shifts 
-                                * for this ED dataset need to be updated */
+    bool bUpdateShifts;        /* TRUE in NS steps to indicate that the 
+                                  ED shifts for this ED dataset need to 
+                                  be updated */
 };
 
 
@@ -316,7 +319,8 @@ static real calc_radius(t_eigvec *vec)
 
 
 /* Debug helper */
-static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int step)
+static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, 
+                       int step)
 {
     int i;
     FILE *fp;
@@ -336,7 +340,8 @@ static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, int 
     fp = fopen(fn, "w");
     
     for (i=0; i<edi->sav.nr; i++)
-        fprintf(fp, "%d %9.5f %9.5f %9.5f   %d %d %d   %d %d %d\n", edi->sav.anrs[i]+1, 
+        fprintf(fp, "%d %9.5f %9.5f %9.5f   %d %d %d   %d %d %d\n", 
+                edi->sav.anrs[i]+1, 
                 xcoll[i][XX]  , xcoll[i][YY]  , xcoll[i][ZZ],
                 shifts[i][XX] , shifts[i][YY] , shifts[i][ZZ], 
                 eshifts[i][XX], eshifts[i][YY], eshifts[i][ZZ]);
@@ -402,7 +407,8 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     fprintf(out,"#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
             edpars->outfrq,edpars->maxedsteps,edpars->slope);
     fprintf(out,"#PRESTEPS\n %d\n#DELTA_F0\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n",
-            edpars->presteps,edpars->flood.deltaF0,edpars->flood.tau,edpars->flood.constEfl,edpars->flood.alpha2);
+            edpars->presteps,edpars->flood.deltaF0,edpars->flood.tau,
+            edpars->flood.constEfl,edpars->flood.alpha2);
 
     /* Dump reference, average, target, origin positions */
     dump_edi_positions(out, &edpars->sref, "REFERENCE");
@@ -422,10 +428,9 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING"  , edpars->sav.nr);
 
     /* Dump ed local buffer */
-    //fprintf(out, "buf->fitit            =%p\n", edpars->buf->fitit            );
-    fprintf(out, "buf->do_edfit         =%p\n", edpars->buf->do_edfit         );
-    fprintf(out, "buf->do_edsam         =%p\n", edpars->buf->do_edsam         );
-    fprintf(out, "buf->do_radcon        =%p\n", edpars->buf->do_radcon        );
+    fprintf(out, "buf->do_edfit         =%p\n", (void*)edpars->buf->do_edfit  );
+    fprintf(out, "buf->do_edsam         =%p\n", (void*)edpars->buf->do_edsam  );
+    fprintf(out, "buf->do_radcon        =%p\n", (void*)edpars->buf->do_radcon );
 
     ffclose(out);
 }
@@ -732,21 +737,21 @@ static real flood_energy(t_edpar *edi)
      bHarmonic:
        Vfl = - Efl * 1/2(sum _i {\frac 1{\lambda_i} c_i^2})
      */
-    real summe;
+    real sum;
     real Vfl;
     int i;
 
     
-    summe=0.0;
+    sum=0.0;
     /* Compute sum which will be the exponent of the exponential */
     for (i=0; i<edi->flood.vecs.neig; i++)
-        summe += edi->flood.vecs.stpsz[i]*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i])*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i]);
+        sum += edi->flood.vecs.stpsz[i]*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i])*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i]);
     
     /* Compute the Gauss function*/
     if (edi->flood.bHarmonic)
-        Vfl = -0.5*edi->flood.Efl*summe;  /* minus sign because Efl is negativ, if restrain is on. */
+        Vfl = -0.5*edi->flood.Efl*sum;  /* minus sign because Efl is negative, if restrain is on. */
     else
-        Vfl = edi->flood.Efl!=0 ? edi->flood.Efl*exp(-edi->flood.kT/2/edi->flood.Efl/edi->flood.alpha2*summe) :0;
+        Vfl = edi->flood.Efl!=0 ? edi->flood.Efl*exp(-edi->flood.kT/2/edi->flood.Efl/edi->flood.alpha2*sum) :0;
 
     return Vfl;
 }
@@ -909,7 +914,7 @@ static void do_single_flood(FILE *edo,
 
 
 /* Main flooding routine, called from do_force */
-extern void do_flood(FILE       *log,     /* md.log file */
+extern void do_flood(FILE       *log,      /* md.log file */
                      t_commrec   *cr,      /* Communication record */
                      rvec        x[],      /* Coordinates on the local processor */
                      rvec        force[],  /* forcefield forces, to these the flooding forces are added */
@@ -1036,7 +1041,7 @@ static void subtract_COM(int   nat,  /* number of atoms in the coordinate buffer
 }
 
 
-gmx_edsam_t ed_open(int nfile,t_filenm fnm[],t_commrec *cr)
+gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
 {   
     gmx_edsam_t ed;
     
@@ -1328,10 +1333,10 @@ static void scan_edvec(FILE *in,int nr,rvec *vec)
 }
 
 
-static void read_edvec(FILE *in,int nr,t_eigvec *tvec)
+static void read_edvec(FILE *in,int nr,t_eigvec *tvec,bool bReadRefproj)
 {
-    int i,idum;
-    double rdum;
+    int i,idum,nscan;
+    double rdum,refproj_dum=0.0;
     char line[STRLEN+1];
 
     
@@ -1347,9 +1352,23 @@ static void read_edvec(FILE *in,int nr,t_eigvec *tvec)
         for(i=0; (i < tvec->neig); i++)
         {
             fgets2 (line,STRLEN,in);
-            sscanf (line,"%d%lf",&idum,&rdum);
-            tvec->ieig[i]=idum;
-            tvec->stpsz[i]=rdum;
+            if (bReadRefproj) /* only when using flooding as harmonic restraint */
+            {
+                nscan = sscanf(line,"%d%lf%lf",&idum,&rdum,&refproj_dum);
+                if (nscan != 3)
+                    gmx_fatal(FARGS,"Expected 3 values for flooding vec: <nr> <spring const> <refproj> \n");
+                tvec->ieig[i]=idum;
+                tvec->stpsz[i]=rdum;
+                tvec->refproj[i]=refproj_dum;
+            }
+            else
+            {
+                nscan = sscanf(line,"%d%lf",&idum,&rdum);
+                if (nscan != 2)
+                    gmx_fatal(FARGS,"Expected 2 values for flooding vec: <nr> <stpsz>\n");
+                tvec->ieig[i]=idum;
+                tvec->stpsz[i]=rdum;
+            }
         }
         for(i=0; (i < tvec->neig); i++)
         {
@@ -1363,12 +1382,12 @@ static void read_edvec(FILE *in,int nr,t_eigvec *tvec)
 /* calls read_edvec for the vector groups, only for flooding there is an extra call */
 static void read_edvecs(FILE *in,int nr,t_edvecs *vecs)
 {
-    read_edvec(in,nr,&vecs->mon   );
-    read_edvec(in,nr,&vecs->linfix);
-    read_edvec(in,nr,&vecs->linacc);
-    read_edvec(in,nr,&vecs->radfix);
-    read_edvec(in,nr,&vecs->radacc);
-    read_edvec(in,nr,&vecs->radcon);
+    read_edvec(in,nr,&vecs->mon   ,FALSE);
+    read_edvec(in,nr,&vecs->linfix,FALSE);
+    read_edvec(in,nr,&vecs->linacc,FALSE);
+    read_edvec(in,nr,&vecs->radfix,FALSE);
+    read_edvec(in,nr,&vecs->radacc,FALSE);
+    read_edvec(in,nr,&vecs->radcon,FALSE);
 }
 
 
@@ -1464,7 +1483,7 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
 
     /* eigenvectors */
     read_edvecs(in,edi->sav.nr,&edi->vecs);
-    read_edvec(in,edi->sav.nr,&edi->flood.vecs);
+    read_edvec(in,edi->sav.nr,&edi->flood.vecs,edi->flood.bHarmonic);
 
     /* target positions */
     edi->star.nr=read_edint(in,&bEOF);
@@ -2350,7 +2369,10 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                     /* Set center of flooding potential to the center of the covariance matrix,
                      * i.e. the average structure, i.e. zero in the projected system */
                     for (i=0; i<edi->flood.vecs.neig; i++)
-                        edi->flood.vecs.refproj[i] = 0.0;
+                    {
+                        if (!edi->flood.bHarmonic)
+                            edi->flood.vecs.refproj[i] = 0.0;
+                    }
                 }
             }
 

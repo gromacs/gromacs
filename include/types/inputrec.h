@@ -133,17 +133,22 @@ typedef struct {
   int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
   bool       bRefAt;      /* do we need reference atoms for a group COM ? */
   int        cosdim;      /* dimension for cosine weighting, -1 if none */
+  bool       bVirial;     /* do we need to add the pull virial? */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
+  rvec       *rbuf;       /* COM calculation buffer */
+  dvec       *dbuf;       /* COM calculation buffer */
+  double     *dbuf_cyl;   /* cylinder ref. groups COM calculation buffer */
+
   FILE       *out_x;      /* output file for pull data */
   FILE       *out_f;      /* output file for pull data */
 } t_pull;
 
 typedef struct {
   int  eI;              /* Integration method 				*/
-  gmx_step_t nsteps;	/* number of steps to be taken			*/
+  gmx_large_int_t nsteps;	/* number of steps to be taken			*/
   int  simulation_part; /* Used in checkpointing to separate chunks */
-  gmx_step_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
+  gmx_large_int_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  nstcalcenergy;	/* fequency of energy calc. and T/P coupl. upd.	*/
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
@@ -280,5 +285,9 @@ typedef struct {
 #define NEED_MUTOT(ir) (((ir).coulombtype==eelEWALD || EEL_PME((ir).coulombtype)) && ((ir).ewald_geometry==eewg3DC || (ir).epsilon_surface!=0))
 
 #define IR_TWINRANGE(ir) ((ir).rlist > 0 && ((ir).rlistlong == 0 || (ir).rlistlong > (ir).rlist))
+
+#define IR_ELEC_FIELD(ir) ((ir).ex[XX].n > 0 || (ir).ex[YY].n > 0 || (ir).ex[ZZ].n > 0)
+
+#define IR_EXCL_FORCES(ir) (EEL_FULL((ir).coulombtype) || (EEL_RF((ir).coulombtype) && (ir).coulombtype != eelRF_NEC) || (ir).implicit_solvent != eisNO)
 
 #endif

@@ -34,7 +34,7 @@
 #include <math.h>
 
 #include "vec.h"
-#include "gmx_thread.h"
+#include "thread_mpi.h"
 
 #include "nb_kernel214.h"
 
@@ -140,14 +140,14 @@ void nb_kernel214(
     
     do
     {
-#ifdef GMX_THREADS
-        gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+#ifdef GMX_THREAD_SHM_FDECOMP
+        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
         nn0              = *count;         
 		
         /* Take successively smaller chunks (at least 10 lists) */
         nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
         *count           = nn1;            
-        gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
         if(nn1>nri) nn1=nri;
 #else
 	    nn0 = 0;
@@ -269,15 +269,15 @@ void nb_kernel214(
 
                 /* Calculate 1/r and 1/r2 */
                 rinvsq           = 1.0/rsq11;      
-                rinv22           = invsqrt(rsq22);
-                rinv23           = invsqrt(rsq23);
-                rinv24           = invsqrt(rsq24);
-                rinv32           = invsqrt(rsq32);
-                rinv33           = invsqrt(rsq33);
-                rinv34           = invsqrt(rsq34);
-                rinv42           = invsqrt(rsq42);
-                rinv43           = invsqrt(rsq43);
-                rinv44           = invsqrt(rsq44);
+                rinv22           = gmx_invsqrt(rsq22);
+                rinv23           = gmx_invsqrt(rsq23);
+                rinv24           = gmx_invsqrt(rsq24);
+                rinv32           = gmx_invsqrt(rsq32);
+                rinv33           = gmx_invsqrt(rsq33);
+                rinv34           = gmx_invsqrt(rsq34);
+                rinv42           = gmx_invsqrt(rsq42);
+                rinv43           = gmx_invsqrt(rsq43);
+                rinv44           = gmx_invsqrt(rsq44);
 
                 /* Load parameters for j atom */
 
@@ -677,14 +677,14 @@ void nb_kernel214nf(
     
     do
     {
-#ifdef GMX_THREADS
-        gmx_thread_mutex_lock((gmx_thread_mutex_t *)mtx);
+#ifdef GMX_THREAD_SHM_FDECOMP
+        tMPI_Thread_mutex_lock((tMPI_Thread_mutex_t *)mtx);
         nn0              = *count;         
 		
         /* Take successively smaller chunks (at least 10 lists) */
         nn1              = nn0+(nri-nn0)/(2*nthreads)+10;
         *count           = nn1;            
-        gmx_thread_mutex_unlock((gmx_thread_mutex_t *)mtx);
+        tMPI_Thread_mutex_unlock((tMPI_Thread_mutex_t *)mtx);
         if(nn1>nri) nn1=nri;
 #else
 	    nn0 = 0;
@@ -794,15 +794,15 @@ void nb_kernel214nf(
 
                 /* Calculate 1/r and 1/r2 */
                 rinvsq           = 1.0/rsq11;      
-                rinv22           = invsqrt(rsq22);
-                rinv23           = invsqrt(rsq23);
-                rinv24           = invsqrt(rsq24);
-                rinv32           = invsqrt(rsq32);
-                rinv33           = invsqrt(rsq33);
-                rinv34           = invsqrt(rsq34);
-                rinv42           = invsqrt(rsq42);
-                rinv43           = invsqrt(rsq43);
-                rinv44           = invsqrt(rsq44);
+                rinv22           = gmx_invsqrt(rsq22);
+                rinv23           = gmx_invsqrt(rsq23);
+                rinv24           = gmx_invsqrt(rsq24);
+                rinv32           = gmx_invsqrt(rsq32);
+                rinv33           = gmx_invsqrt(rsq33);
+                rinv34           = gmx_invsqrt(rsq34);
+                rinv42           = gmx_invsqrt(rsq42);
+                rinv43           = gmx_invsqrt(rsq43);
+                rinv44           = gmx_invsqrt(rsq44);
 
                 /* Load parameters for j atom */
 

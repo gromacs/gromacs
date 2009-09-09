@@ -63,13 +63,13 @@ static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
   }
 }
 
-static void cmp_gmx_step_t(FILE *fp,const char *s,gmx_step_t i1,gmx_step_t i2)
+static void cmp_gmx_large_int(FILE *fp,const char *s,gmx_large_int_t i1,gmx_large_int_t i2)
 {
   if (i1 != i2) {
     fprintf(fp,"%s (",s);
-    fprintf(fp,gmx_step_pfmt,i1);
+    fprintf(fp,gmx_large_int_pfmt,i1);
     fprintf(fp," - ");
-    fprintf(fp,gmx_step_pfmt,i2);
+    fprintf(fp,gmx_large_int_pfmt,i2);
     fprintf(fp,")\n");
   }
 }
@@ -422,8 +422,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
    * #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s,ftol)
    */
   cmp_int(fp,"inputrec->eI",-1,ir1->eI,ir2->eI);
-  cmp_gmx_step_t(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
-  cmp_gmx_step_t(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
+  cmp_gmx_large_int(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
+  cmp_gmx_large_int(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
   cmp_int(fp,"inputrec->simulation_part",-1,ir1->simulation_part,ir2->simulation_part);
   cmp_int(fp,"inputrec->nstcalcenergy",-1,ir1->nstcalcenergy,ir2->nstcalcenergy);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
@@ -670,7 +670,8 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
     cmp_rvecs(fp,"box",3,fr1->box,fr2->box,ftol);
 }
 
-void comp_trx(const char *fn1, const char *fn2, real ftol)
+void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2, 
+              real ftol)
 {
   int i;
   const char *fn[2];
@@ -682,14 +683,14 @@ void comp_trx(const char *fn1, const char *fn2, real ftol)
   fn[1]=fn2;
   fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
   for (i=0; i<2; i++)
-    b[i] = read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
+    b[i] = read_first_frame(oenv,&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
   
   if (b[0] && b[1]) { 
     do {
       comp_frame(stdout, &(fr[0]), &(fr[1]), ftol);
       
       for (i=0; i<2; i++)
-	b[i] = read_next_frame(status[i],&fr[i]);
+	b[i] = read_next_frame(oenv,status[i],&fr[i]);
     } while (b[0] && b[1]);
     
     for (i=0; i<2; i++) {
@@ -756,7 +757,8 @@ static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol)
 
 void comp_enx(const char *fn1,const char *fn2,real ftol,const char *lastener)
 {
-  int        in1,in2,nre,nre1,nre2,block;
+  int        nre,nre1,nre2,block;
+  ener_file_t in1, in2;
   int        i,maxener;
   char       buf[256];
   gmx_enxnm_t *enm1=NULL,*enm2=NULL;

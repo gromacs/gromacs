@@ -39,8 +39,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 #include "idef.h"
@@ -187,7 +187,8 @@ typedef struct {
   gmx_domdec_comm_p_t comm;
 
   /* The partioning count, to keep track of the state */
-  gmx_step_t ddp_count;
+  gmx_large_int_t ddp_count;
+
 } gmx_domdec_t;
 
 typedef struct gmx_partdec *gmx_partdec_p_t;
@@ -232,7 +233,7 @@ typedef struct {
   MPI_Comm mpi_comm_mygroup;
 #endif
 
-#ifdef GMX_THREAD
+#ifdef GMX_THREAD_SHM_FDECOMP
   gmx_commrec_thread_t thread;
 #endif
 

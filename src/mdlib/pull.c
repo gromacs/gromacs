@@ -109,7 +109,7 @@ static void pull_print_f(FILE *out,t_pull *pull,double t)
   fprintf(out,"\n");
 }
 
-void pull_print_output(t_pull *pull, gmx_step_t step, double time)
+void pull_print_output(t_pull *pull, gmx_large_int_t step, double time)
 {
   if ((pull->nstxout != 0) && (step % pull->nstxout == 0))
     pull_print_x(pull->out_x,pull,time);
@@ -118,7 +118,8 @@ void pull_print_output(t_pull *pull, gmx_step_t step, double time)
     pull_print_f(pull->out_f,pull,time);
 }
 
-static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flags)
+static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv, 
+                           bool bCoord, unsigned long Flags)
 {
   FILE *fp;
   int  nsets,g,m;
@@ -128,9 +129,9 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
     fp = gmx_fio_fopen(fn,"a");
   } else {
     if (bCoord)
-      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
+      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)",oenv);
     else
-      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)");
+      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)",oenv);
     
     snew(setname,(1+pull->ngrp)*DIM);
     nsets = 0;
@@ -161,7 +162,7 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
       }
     }
     if (bCoord || nsets > 1)
-      xvgr_legend(fp,nsets,setname);
+      xvgr_legend(fp,nsets,setname,oenv);
     for(g=0; g<nsets; g++)
       sfree(setname[g]);
     sfree(setname);
@@ -217,7 +218,8 @@ static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
 void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 			  dvec dr,dvec dev)
 {
-  static bool bWarned=FALSE;
+  static bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety, 
+                                but is fairly benign */
   t_pullgrp *pref,*pgrp;
   int       m;
   dvec      ref;
@@ -439,7 +441,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
       case epullgPOS:
 	for(m=0; m<DIM; m++) {
 	  if (pull->dim[m]) {
-	    lambda = r_ij[g][m] - pgrp->vec[m];
+	    lambda = r_ij[g][m] - ref[m];
 	    /* The position corrections dr due to the constraints */
 	    dr[g][m]  = -lambda*rm*pull->grp[g].invtm;
 	    ref_dr[m] =  lambda*rm*pref->invtm;
@@ -512,7 +514,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 	bConverged = TRUE;
 	for(m=0; m<DIM; m++) {
 	  if (pull->dim[m] && 
-	      fabs(unc_ij[m] - pgrp->vec[m]) >= pull->constr_tol)
+	      fabs(unc_ij[m] - ref[m]) >= pull->constr_tol)
 	    bConverged = FALSE;
 	}
 	break;
@@ -720,7 +722,8 @@ real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 
   pull_calc_coms(cr,pull,md,pbc,t,x,NULL);
 
-  do_pull_pot(ePull,pull,pbc,t,lambda,&V,MASTER(cr) ? vir : NULL,&dVdl);
+  do_pull_pot(ePull,pull,pbc,t,lambda,
+	      &V,pull->bVirial && MASTER(cr) ? vir : NULL,&dVdl);
 
   /* Distribute forces over pulled groups */
   apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
@@ -738,7 +741,7 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 {
   pull_calc_coms(cr,pull,md,pbc,t,x,xp);
 
-  do_constraint(pull,md,pbc,xp,v,MASTER(cr),vir,dt,t);
+  do_constraint(pull,md,pbc,xp,v,pull->bVirial && MASTER(cr),vir,dt,t);
 }
 
 static void make_local_pull_group(gmx_ga2la_t ga2la,
@@ -918,8 +921,9 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   }
 }
 
-void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       gmx_mtop_t *mtop,t_commrec *cr,bool bOutFile, unsigned long Flags)
+void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
+	       gmx_mtop_t *mtop,t_commrec *cr,const output_env_t oenv,
+               bool bOutFile, unsigned long Flags)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
@@ -945,10 +949,20 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
 	      pull->ngrp,pull->ngrp==1 ? "" : "s");
   }
 
+  pull->bVirial = TRUE;
+  if (getenv("GMX_NO_PULLVIR") != NULL)      {
+    if (fplog) {
+      fprintf(fplog,"Found env. var., will not add the virial contribution of the COM pull forces\n");
+    }
+    pull->bVirial = FALSE;
+  }
 
   if (cr && PARTDECOMP(cr)) {
     pd_at_range(cr,&start,&end);
   }
+  pull->rbuf=NULL;
+  pull->dbuf=NULL;
+  pull->dbuf_cyl=NULL;
   pull->bRefAt = FALSE;
   pull->cosdim = -1;
   for(g=0; g<pull->ngrp+1; g++) {
@@ -999,10 +1013,11 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   pull->out_f = NULL;
   if (bOutFile) {
     if (pull->nstxout > 0) {
-      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE,Flags);
+      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,oenv,TRUE,Flags);
     }
     if (pull->nstfout > 0) {
-      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,FALSE,Flags);
+      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,oenv,
+                                  FALSE,Flags);
     }
   }
 }

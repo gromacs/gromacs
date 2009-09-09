@@ -204,7 +204,7 @@ real ewald_LRcorrection(FILE *fplog,
 	     * case of shells
 	     */
 	    if (dr2 != 0) {
-	      rinv              = invsqrt(dr2);
+	      rinv              = gmx_invsqrt(dr2);
 	      rinv2             = rinv*rinv;
 	      dr                = 1.0/rinv;      
 #ifdef TABLES
@@ -303,7 +303,7 @@ real ewald_LRcorrection(FILE *fplog,
 	    }
 	    dr2 = norm2(dx);
 	    if (dr2 != 0) {
-	      rinv   = invsqrt(dr2);
+	      rinv   = gmx_invsqrt(dr2);
 	      rinv2  = rinv*rinv;
 	      dr     = 1.0/rinv;      
 	      v      = gmx_erf(ewc*dr)*rinv;

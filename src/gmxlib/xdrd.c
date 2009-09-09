@@ -86,16 +86,16 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 #endif
 }
 
-int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,const char *warn)
+int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn)
 {
   /* This routine stores values compatible with xdr_int64_t */
 
-  static const unsigned int two_p32_m1 = 4294967295U;
   int ia,ib;
   int ret;
 
-#if ((defined SIZEOF_GMX_STEP_T) && SIZEOF_GMX_STEP_T == 8)
-  gmx_step_t ia64,ib64;
+#if ((defined SIZEOF_LARGE_INT) && SIZEOF_LARGE_INT == 8)
+  static const gmx_large_int_t two_p32_m1 = 0xFFFFFFFF;
+  gmx_large_int_t ia64,ib64;
 
   ia64 = ((*i)>>32) & two_p32_m1;
   ib64 = (*i) & two_p32_m1;
@@ -115,8 +115,8 @@ int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,const char *warn)
   ret = xdr_int(xdrs,&ia);
   ret = xdr_int(xdrs,&ib);
 
-#if ((defined SIZEOF_GMX_STEP_T) && SIZEOF_GMX_STEP_T == 8)
-  *i = (((gmx_step_t)ia << 32) | ((gmx_step_t)ib & two_p32_m1));
+#if ((defined SIZEOF_LARGE_INT) && SIZEOF_LARGE_INT == 8)
+  *i = (((gmx_large_int_t)ia << 32) | ((gmx_large_int_t)ib & two_p32_m1));
 #else
   *i = ib;
   

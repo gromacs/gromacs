@@ -155,6 +155,11 @@ void
 _too_few(const char *fn,int line);
 #define too_few() _too_few(__FILE__,__LINE__)
 /* Issue a warning stating 'Too few parameters' */
+
+void 
+_incorrect_n_param(const char *fn,int line);
+#define incorrect_n_param() _incorrect_n_param(__FILE__,__LINE__)
+/* Issue a warning stating 'Incorrect number of parameters' */
   
 void 
 _invalid_case(const char *fn,int line);

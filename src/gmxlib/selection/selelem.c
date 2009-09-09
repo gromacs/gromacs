@@ -225,7 +225,7 @@ _gmx_selelem_free_values(t_selelem *sel)
     {
         sfree(sel->v.u.ptr);
     }
-    _gmx_selvalue_clear(&sel->v);
+    _gmx_selvalue_setstore(&sel->v, NULL);
 }
 
 /*!
@@ -394,7 +394,7 @@ print_evaluation_func(FILE *fp, t_selelem *sel)
     else if (sel->evaluate == &_gmx_sel_evaluate_or)
         fprintf(fp, "or");
     else
-        fprintf(fp, "%p", sel->evaluate);
+        fprintf(fp, "%p", (void*)(sel->evaluate));
 }
 
 /*!

@@ -104,7 +104,7 @@ real calc_temp(real ekin,real nrdf)
     return 0;
 }
 
-void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
+void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,tensor pres,
 			     tensor box,tensor box_rel,tensor boxv,
 			     tensor M,matrix mu,bool bFirstStep)
@@ -214,7 +214,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
       break;
     default:
       gmx_fatal(FARGS,"Parrinello-Rahman pressure coupling type %s "
-		"not supported yet\n",EPCOUPLTYPETYPE(ir->epct));
+		  "not supported yet\n",EPCOUPLTYPETYPE(ir->epct));
       break;
     }
     
@@ -248,7 +248,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
   }
   
   preserve_box_shape(ir,box_rel,boxv);
-  
+
   mtmul(boxv,box,t1);       /* t1=boxv * b' */
   mmul(invbox,t1,t2);
   mtmul(t2,invbox,M);
@@ -262,7 +262,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
   mmul_ur0(invbox,t1,mu);
 }
 
-void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
+void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
 		      t_inputrec *ir,tensor pres,matrix box,
 		      matrix mu)
 {
@@ -283,16 +283,15 @@ void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
   /* Pressure is now in bar, everywhere. */
 #define factor(d,m) (ir->compress[d][m]*ir->delta_t/ir->tau_p)
   
-  /*mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
-   necessary for triclinic scaling
-  */
-
+  /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
+   * necessary for triclinic scaling
+   */
   clear_mat(mu);
   switch (ir->epct) {
   case epctISOTROPIC:
     for(d=0; d<DIM; d++) 
       {
-	mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d] - scalar_pressure) /DIM;
+	 	mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d] - scalar_pressure) /DIM;
       }
     break;
   case epctSEMIISOTROPIC:

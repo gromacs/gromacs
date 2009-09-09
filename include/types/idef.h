@@ -173,7 +173,7 @@ typedef union
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
-  struct {real c6A,c12A,c6B,c12B,sar,st,pi,gbr,bmlt;      } gb;
+  struct {real sar,st,pi,gbr,bmlt;                        } gb;
   struct {int cmapA,cmapB;                                } cmap;
   struct {real buf[MAXFORCEPARAM];	  	          } generic; /* Conversion */
 } t_iparams;

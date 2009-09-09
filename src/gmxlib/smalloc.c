@@ -37,7 +37,10 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
-#include <gmx_thread.h>
+
+#ifdef GMX_THREADS
+#include "thread_mpi/threads.h"
+#endif 
 
 
 #include <stdio.h>
@@ -60,8 +63,8 @@ static void log_action(int bMal,const char *what,const char *file,int line,
   if (!bMal)
     bytes=-bytes;
   
-#ifdef GMX_THREAD_PTHREAD
-  pthread_mutex_lock(&gmx_logfile_mtx);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_lock(&gmx_logfile_mtx);
 #endif
 
   /* This total memory count is not correct, since with realloc
@@ -91,8 +94,8 @@ static void log_action(int bMal,const char *what,const char *file,int line,
 	   what ? what  : NN,bytes/1024.0,
 	   file ? fname : NN,line,nelem,size);
   }
-#ifdef GMX_THREAD_PTHREAD
-  pthread_mutex_unlock(&gmx_logfile_mtx);
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
 #endif
 }
 #endif
@@ -108,8 +111,8 @@ void *save_malloc(const char *name,const char *file,int line,size_t size)
     {
       if ((p=malloc(size))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "Not enough memory. Failed to malloc %u bytes for %s\n(called from file %s, line %d)",
-		  name,size,file,line);
+		  "Not enough memory. Failed to malloc %s bytes for %" gmx_large_int_fmt "\n(called from file %s, line %d)",
+		  name,(gmx_large_int_t)size,file,line);
       (void) memset(p,0,size);
     }
 #ifdef DEBUG
@@ -119,7 +122,7 @@ void *save_malloc(const char *name,const char *file,int line,size_t size)
 }
 
 void *save_calloc(const char *name,const char *file,int line,
-                  unsigned nelem,size_t elsize)
+                  size_t nelem,size_t elsize)
 {
   void *p;
   
@@ -144,12 +147,19 @@ void *save_calloc(const char *name,const char *file,int line,
          a broken calloc, e.g. in -lgmalloc on cray xt3. */
       if ((p=malloc((size_t)nelem*(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "Not enough memory. Failed to calloc %u elements of size %u for %s\n(called from file %s, line %d)",nelem,elsize,name,file,line);
+		  "Not enough memory. Failed to calloc %"gmx_large_int_fmt
+		  " elements of size %"gmx_large_int_fmt
+		  " for %s\n(called from file %s, line %d)",
+		  (gmx_large_int_t)nelem,(gmx_large_int_t)elsize,
+		  name,file,line);
       memset(p, 0,(size_t) (nelem * elsize));
 #else
       if ((p=calloc((size_t)nelem,(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "Not enough memory. Failed to calloc %u elements of size %u for %s\n(called from file %s, line %d)",nelem,elsize,name,file,line);
+		  "Not enough memory. Failed to calloc %"gmx_large_int_fmt
+		  " elements of size %"gmx_large_int_fmt
+		  " for %s\n(called from file %s, line %d)",
+		  (gmx_large_int_t)nelem,(gmx_large_int_t)elsize,name,file,line);
 #endif
     }
 #ifdef DEBUG
@@ -159,7 +169,7 @@ void *save_calloc(const char *name,const char *file,int line,
 }
 
 void *save_realloc(const char *name,const char *file,int line,void *ptr,
-		   unsigned nelem,size_t elsize)
+		   size_t nelem,size_t elsize)
 {
   void *p;
   size_t size = nelem*elsize;
@@ -186,8 +196,9 @@ void *save_realloc(const char *name,const char *file,int line,void *ptr,
 	p=realloc(ptr,(size_t)size);
       if (p == NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "Not enough memory. Failed to realloc %u bytes for %s, %s=%x\n(called from file %s, line %d)",
-		  size,name,name,ptr,file,line);
+		  "Not enough memory. Failed to realloc %"gmx_large_int_fmt
+		  " bytes for %s, %s=%x\n(called from file %s, line %d)",
+		  (gmx_large_int_t)size,name,name,ptr,file,line);
     }
 #ifdef DEBUG
   log_action(1,name,file,line,1,size,p);

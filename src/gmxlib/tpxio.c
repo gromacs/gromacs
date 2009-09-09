@@ -37,7 +37,7 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 
 #include <ctype.h>
@@ -61,7 +61,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 67;
+static const int tpx_version = 68;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -263,14 +263,14 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
     if (file_version >= 62) {
-      do_gmx_step_t(ir->nsteps);
+      do_gmx_large_int(ir->nsteps);
     } else {
       do_int(idum);
       ir->nsteps = idum;
     }
     if(file_version > 25) {
       if (file_version >= 62) {
-	do_gmx_step_t(ir->init_step);
+	do_gmx_large_int(ir->init_step);
       } else {
 	do_int(idum);
 	ir->init_step = idum;
@@ -835,6 +835,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
 {
   int i;
   bool bDum;
+  real rdum;
   real VA[4],VB[4];
   
   if (!bRead)
@@ -1041,10 +1042,14 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_GB12:
   case F_GB13:
   case F_GB14:
-    do_real(iparams->gb.c6A);	
-	do_real(iparams->gb.c12A);	
-	do_real(iparams->gb.c6B);	
-	do_real(iparams->gb.c12B);	
+    /* We got rid of some parameters in version 68 */
+    if(bRead && file_version<68)
+    {
+        do_real(rdum);	
+        do_real(rdum);	
+        do_real(rdum);	
+        do_real(rdum);	
+    }
 	do_real(iparams->gb.sar);	
 	do_real(iparams->gb.st);
 	do_real(iparams->gb.pi);
@@ -2148,7 +2153,7 @@ int read_tpx_top(const char *fn,
   return ePBC;
 }
 
-bool fn2bTPX(char *file)
+bool fn2bTPX(const char *file)
 {
   switch (fn2ftp(file)) {
   case efTPR:
@@ -2160,7 +2165,7 @@ bool fn2bTPX(char *file)
   }
 }
 
-bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
+bool read_tps_conf(const char *infile,char *title,t_topology *top,int *ePBC,
 		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;

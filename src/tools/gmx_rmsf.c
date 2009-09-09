@@ -80,12 +80,14 @@ static real find_pdb_bfac(t_atoms *atoms,t_resinfo *ri,char *atomnm)
   return atoms->pdbinfo[i].bfac;
 }
 
-void correlate_aniso(char *fn,t_atoms *ref,t_atoms *calc)
+void correlate_aniso(const char *fn,t_atoms *ref,t_atoms *calc,
+                     const output_env_t oenv)
 {
   FILE *fp;
   int  i,j;
   
-  fp = xvgropen(fn,"Correlation between X-Ray and Computed Uij","X-Ray","Computed");
+  fp = xvgropen(fn,"Correlation between X-Ray and Computed Uij","X-Ray",
+                "Computed",oenv);
   for(i=0; (i<ref->nr); i++) {
     if (ref->pdbinfo[i].bAnisotropic) {
       for(j=U11; (j<=U23); j++)
@@ -207,7 +209,7 @@ int gmx_rmsf(int argc,char *argv[])
   char         title[STRLEN];
   
   FILE         *fp;               /* the graphics file */
-  char         *devfn,*dirfn;
+  const char   *devfn,*dirfn;
   int          resind;
 
   bool         bReadPDB;  
@@ -223,6 +225,8 @@ int gmx_rmsf(int argc,char *argv[])
   int          d;
   real         count=0;
   rvec         xcm;
+
+  output_env_t oenv;
 
   char  *leg[2] = { "MD", "X-Ray" };
 
@@ -242,7 +246,8 @@ int gmx_rmsf(int argc,char *argv[])
  
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE ,
-		    NFILE,fnm,asize(pargs),pargs,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pargs),pargs,asize(desc),desc,0,NULL,
+                    &oenv);
 
   bReadPDB = ftp2bSet(efPDB,NFILE,fnm);
   devfn    = opt2fn_null("-od",NFILE,fnm);
@@ -289,7 +294,7 @@ int gmx_rmsf(int argc,char *argv[])
   if (bFit)
     sub_xcm(xref,isize,index,top.atoms.atom,xcm,FALSE);
   
-  natom = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natom = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
     
   /* Now read the trj again to compute fluctuations */
   teller = 0;
@@ -326,7 +331,7 @@ int gmx_rmsf(int argc,char *argv[])
     } 
     count += 1.0;
     teller++;
-  } while(read_next_x(status,&t,natom,x,box));
+  } while(read_next_x(oenv,status,&t,natom,x,box));
   close_trj(status);
   
   invcount = 1.0/count;
@@ -383,8 +388,8 @@ int gmx_rmsf(int argc,char *argv[])
   if (bReadPDB) {
     bfac = 8.0*M_PI*M_PI/3.0*100;
     fp   = xvgropen(ftp2fn(efXVG,NFILE,fnm),"B-Factors",
-		    label,"(A\\b\\S\\So\\N\\S2\\N)");
-    xvgr_legend(fp,2,leg);
+		    label,"(A\\b\\S\\So\\N\\S2\\N)",oenv);
+    xvgr_legend(fp,2,leg,oenv);
     for(i=0;(i<isize);i++) {
       if (!bRes || i+1==isize ||
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind) {
@@ -399,7 +404,7 @@ int gmx_rmsf(int argc,char *argv[])
     }
     fclose(fp);
   } else {
-    fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation",label,"(nm)");
+    fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation",label,"(nm)",oenv);
     for(i=0; i<isize; i++)
       if (!bRes || i+1==isize ||
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
@@ -417,7 +422,7 @@ int gmx_rmsf(int argc,char *argv[])
     if (bRes)
       average_residues(rmsf,isize,index,w_rls,&top.atoms); 
     /* Write RMSD output */
-    fp = xvgropen(devfn,"RMS Deviation",label,"(nm)");
+    fp = xvgropen(devfn,"RMS Deviation",label,"(nm)",oenv);
     for(i=0; i<isize; i++)
       if (!bRes || i+1==isize ||
 	  top.atoms.atom[index[i]].resind!=top.atoms.atom[index[i+1]].resind)
@@ -443,12 +448,12 @@ int gmx_rmsf(int argc,char *argv[])
 			   ePBC,pdbbox,isize,index);
   }
   if (bAniso) { 
-    correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms);
-    do_view(opt2fn("-oc",NFILE,fnm),"-nxy");
+    correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms,oenv);
+    do_view(oenv,opt2fn("-oc",NFILE,fnm),"-nxy");
   }
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
   if (devfn)
-    do_view(opt2fn("-od",NFILE,fnm),"-nxy");
+    do_view(oenv,opt2fn("-od",NFILE,fnm),"-nxy");
     
   thanx(stderr);
   

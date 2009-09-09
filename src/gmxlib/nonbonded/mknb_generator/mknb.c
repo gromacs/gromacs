@@ -201,8 +201,8 @@ mknb_write_file_header(void)
 		fprintf(mknb_output,"#ifdef HAVE_CONFIG_H\n#include<config.h>\n#endif\n");
 
 		if(mknb_options.threads)
-			/* gmx_thread.h must come before all other includes (except config.h) */
-			fprintf(mknb_output,"#include<gmx_thread.h>\n"); 
+			/* thread_mpi.h must come before all other includes (except config.h) */
+			fprintf(mknb_output,"#include<thread_mpi.h>\n"); 
 
 		fprintf(mknb_output,"#include<math.h>\n");
 

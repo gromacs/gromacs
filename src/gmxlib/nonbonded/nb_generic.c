@@ -134,7 +134,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
             dy               = iy - jy;      
             dz               = iz - jz;      
             rsq              = dx*dx+dy*dy+dz*dz;
-            rinv             = invsqrt(rsq);
+            rinv             = gmx_invsqrt(rsq);
             rinvsq           = rinv*rinv;  
 			fscal            = 0;
 			

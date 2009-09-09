@@ -135,7 +135,7 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 }
 
 void init_single(FILE *fplog,t_inputrec *inputrec,
-		 char *tpxfile,gmx_mtop_t *mtop, 
+		 const char *tpxfile,gmx_mtop_t *mtop, 
                  t_state *state)
 {
   read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
@@ -145,7 +145,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
     pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
 }
 
-void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
+void init_parallel(FILE *log,const char *tpxfile,t_commrec *cr,
 		   t_inputrec *inputrec,gmx_mtop_t *mtop,
 		   t_state *state,
 		   int list)

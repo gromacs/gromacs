@@ -621,14 +621,15 @@ gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)
 /*!
  * \param[in] out  Output file.
  * \param[in] sc   Selection collection which should be written.
+ * \param[in] oenv Output options structure.
  */
-void
-xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc)
+void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
+                        const output_env_t oenv)
 {
     char  *buf;
     char  *p, *nl;
 
-    if (bPrintXvgrCodes() && sc && sc->selstr)
+    if (get_print_xvgr_codes(oenv) && sc && sc->selstr)
     {
         fprintf(out, "# Selections:\n");
         buf = strdup(sc->selstr);

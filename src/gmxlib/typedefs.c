@@ -44,11 +44,32 @@
 #include "pbc.h"
 #include <string.h>
 
+#ifdef GMX_THREADS
+#include "thread_mpi.h"
+#endif
+
+/* The source code in this file should be thread-safe. 
+      Please keep it that way. */
+
+
+
 static bool bOverAllocDD=FALSE;
+#ifdef GMX_THREADS
+static tMPI_Thread_mutex_t over_alloc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
+
 
 void set_over_alloc_dd(bool set)
 {
-  bOverAllocDD = set;
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&over_alloc_mutex);
+    /* we just make sure that we don't set this at the same time. 
+       We don't worry too much about reading this rarely-set variable */
+#endif    
+    bOverAllocDD = set;
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&over_alloc_mutex);
+#endif    
 }
 
 int over_alloc_dd(int n)
@@ -59,7 +80,7 @@ int over_alloc_dd(int n)
     return n;
 }
 
-int gmx_step_t_to_int(gmx_step_t step,const char *warn)
+int gmx_large_int_to_int(gmx_large_int_t step,const char *warn)
 {
   int i;
 
@@ -68,16 +89,16 @@ int gmx_step_t_to_int(gmx_step_t step,const char *warn)
   if (warn != NULL && (step < INT_MIN || step > INT_MAX)) {
     fprintf(stderr,"\nWARNING during %s:\n",warn);
     fprintf(stderr,"step value ");
-    fprintf(stderr,gmx_step_pfmt,step);
-    fprintf(stderr,"does not fit in int, converted to %d\n\n",i);
+    fprintf(stderr,gmx_large_int_pfmt,step);
+    fprintf(stderr," does not fit in int, converted to %d\n\n",i);
   }
 
   return i;
 }
 
-char *gmx_step_str(gmx_step_t i,char *buf)
+char *gmx_step_str(gmx_large_int_t i,char *buf)
 {
-  sprintf(buf,gmx_step_pfmt,i);
+  sprintf(buf,gmx_large_int_pfmt,i);
 
   return buf;
 }
@@ -396,9 +417,10 @@ static void init_ekinstate(ekinstate_t *eks)
 
 static void init_energyhistory(energyhistory_t *enh)
 {
-  enh->ener_ave = NULL;
-  enh->ener_sum = NULL;
-  enh->nener    = 0;
+  enh->ener_ave     = NULL;
+  enh->ener_sum     = NULL;
+  enh->ener_sum_sim = NULL;
+  enh->nener        = 0;
 }
 
 void init_gtc_state(t_state *state,int ngtc)

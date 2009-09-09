@@ -125,7 +125,7 @@ void rename_atoms(t_atoms *atoms,t_symtab *symtab,t_aa_names *aan)
     strcpy(atombuf,*(atoms->atomname[a]));
     if (isdigit(atombuf[0])) {
       c = atombuf[0];
-      for (i=0; (i<strlen(atombuf)-1); i++)
+      for (i=0; ((size_t)i<strlen(atombuf)-1); i++)
 	atombuf[i]=atombuf[i+1];
       atombuf[i]=c;
     }

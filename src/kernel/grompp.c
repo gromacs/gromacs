@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -92,7 +93,7 @@ static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
   return n;
 }
 
-static int check_atom_names(char *fn1, char *fn2, 
+static int check_atom_names(const char *fn1, const char *fn2, 
 			    gmx_mtop_t *mtop, t_atoms *at)
 {
   int mb,m,i,j,nmismatch;
@@ -157,7 +158,7 @@ static void check_eg_vs_cg(gmx_mtop_t *mtop)
   }  
 }
 
-static void check_cg_sizes(char *topfn,t_block *cgs)
+static void check_cg_sizes(const char *topfn,t_block *cgs)
 {
   int maxsize,cg;
 
@@ -271,7 +272,7 @@ static void molinfo2mtop(int nmi,t_molinfo *mi,gmx_mtop_t *mtop)
 }
 
 static void
-new_status(char *topfile,char *topppfile,char *confin,
+new_status(const char *topfile,const char *topppfile,const char *confin,
 	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
 	   gpp_atomtype_t atype,gmx_mtop_t *sys,
@@ -418,10 +419,11 @@ new_status(char *topfile,char *topppfile,char *confin,
   *mi  = molinfo;
 }
 
-static void cont_status(char *slog,char *ener,
+static void cont_status(const char *slog,const char *ener,
 			bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,t_state *state,
-			gmx_mtop_t *sys)
+			gmx_mtop_t *sys,
+                        const output_env_t oenv)
      /* If fr_time == -1 read the last frame available which is complete */
 {
   t_trxframe  fr;
@@ -438,9 +440,9 @@ static void cont_status(char *slog,char *ener,
     if (bGenVel)
       fprintf(stderr,"Velocities generated: "
 	      "ignoring velocities in input trajectory\n");
-    read_first_frame(&fp,slog,&fr,TRX_NEED_X);
+    read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X);
   } else
-    read_first_frame(&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
+    read_first_frame(oenv,&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
   
   state->natoms = fr.natoms;
 
@@ -449,7 +451,7 @@ static void cont_status(char *slog,char *ener,
 		"is not the same as in Trajectory");
 
   /* Find the appropriate frame */
-  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(fp,&fr));
+  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(oenv,fp,&fr));
   
   close_trj(fp);
 
@@ -828,6 +830,38 @@ static int count_constraints(gmx_mtop_t *mtop,t_molinfo *mi)
   return count;
 }
 
+static void check_gbsa_params(t_inputrec *ir,gpp_atomtype_t atype)
+{
+    int  nmiss,i;
+
+    /* If we are doing GBSA, check that we got the parameters we need
+     * This checking is to see if there are GBSA paratmeters for all
+     * atoms in the force field. To go around this for testing purposes
+     * comment out the nerror++ counter temporarily
+     */
+    nmiss = 0;
+    for(i=0;i<get_atomtype_ntypes(atype);i++)
+    {
+        if (get_atomtype_radius(i,atype)    < 0 ||
+            get_atomtype_vol(i,atype)       < 0 ||
+            get_atomtype_surftens(i,atype)  < 0 ||
+            get_atomtype_gb_radius(i,atype) < 0 ||
+            get_atomtype_S_hct(i,atype)     < 0)
+        {
+            fprintf(stderr,"GB parameter(s) missing or negative for atom type '%s'\n",
+                    get_atomtype_name(i,atype));
+            nmiss++;
+        }
+    }
+    
+    if (nmiss > 0)
+    {
+        gmx_fatal(FARGS,"Can't do GB electrostatics; the forcefield is missing %d values for\n"
+                  "atomtype radii, or they might be negative\n.",nmiss);
+    }
+  
+}
+
 int main (int argc, char *argv[])
 {
   static const char *desc[] = {
@@ -923,14 +957,15 @@ int main (int argc, char *argv[])
   matrix       box;
   real         max_spacing,fudgeQQ;
   double       reppow;
-  char         fn[STRLEN],fnB[STRLEN],*mdparin;
+  char         fn[STRLEN],fnB[STRLEN];
+  const char   *mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;
-  bool         have_radius,have_vol,have_surftens,have_gb_radius,have_S_hct;
   bool         have_atomnumber;
   int		   n12,n13,n14;
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
+  output_env_t oenv;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -977,7 +1012,7 @@ int main (int argc, char *argv[])
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+                    asize(desc),desc,0,NULL,&oenv);
   
   init_warning(maxwarn);
   
@@ -1032,32 +1067,6 @@ int main (int argc, char *argv[])
     }
   }
 
-  /* If we are doing GBSA, check that we got the parameters we need                                                            
-   * This checking is to see if there are GBSA paratmeters for all                                                             
-   * atoms in the force field. To go around this for testing purposes                                                          
-   * comment out the nerror++ counter temporarliy                                                                              
-   */
-  have_radius=have_vol=have_surftens=have_gb_radius=have_S_hct=TRUE;
-  for(i=0;i<get_atomtype_ntypes(atype);i++) {
-    have_radius=have_radius       && (get_atomtype_radius(i,atype) > 0);
-    have_vol=have_vol             && (get_atomtype_vol(i,atype) > 0);
-    have_surftens=have_surftens   && (get_atomtype_surftens(i,atype) > 0);
-    have_gb_radius=have_gb_radius && (get_atomtype_gb_radius(i,atype) > 0);
-    have_S_hct=have_S_hct         && (get_atomtype_S_hct(i,atype) > 0);
-  }
-  if(!have_radius && ir->implicit_solvent==eisGBSA) {
-    fprintf(stderr,"Can't do GB electrostatics; the forcefield is missing values for\n"
-	    "atomtype radii, or they might be zero\n.");
-    /* nerror++; */
-  }
-  /*
-  if(!have_surftens && ir->implicit_solvent!=eisNO) {
-    fprintf(stderr,"Can't do implicit solvent; the forcefield is missing values\n"
-	    " for atomtype surface tension\n.");
-    nerror++;                                                                                                                
-  }
-  */
-  
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;
   for (i=0; i<get_atomtype_ntypes(atype); i++) {
@@ -1133,7 +1142,13 @@ int main (int argc, char *argv[])
     renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
     ntype = get_atomtype_ntypes(atype);
   }
-  
+
+    if (ir->implicit_solvent != eisNO)
+    {
+        /* Now we have renumbered the atom types, we can check the GBSA params */
+        check_gbsa_params(ir,atype);
+    }
+
 	/* PELA: Copy the atomtype data to the topology atomtype list */
 	copy_atomtype_atomtypes(atype,&(sys->atomtypes));
 
@@ -1145,27 +1160,6 @@ int main (int argc, char *argv[])
 	
   ntype = get_atomtype_ntypes(atype);
   convert_params(ntype, plist, mi, comb, reppow, fudgeQQ, sys);
-  	
-	if(ir->implicit_solvent)
-	{
-		printf("Constructing Generalized Born topology...\n");
-
-		/* Check for -normvsbds switch to grompp, necessary for gb together with vsites */
-		if(bRmVSBds && nvsite)
-		{
-			fprintf(stderr, "ERROR: Must use -normvsbds switch to grompp when doing Generalized Born\n"
-					"together with virtual sites\n");
-			nerror++;
-		}
-		
-		if (nerror)
-		{
-			print_warn_num(FALSE);
-			gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
-		}
-		
-		generate_gb_topology(sys,mi);
-	}
 	
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
@@ -1220,7 +1214,7 @@ int main (int argc, char *argv[])
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
     cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efEDR,NFILE,fnm),
-		bNeedVel,bGenVel,fr_time,ir,&state,sys);
+		bNeedVel,bGenVel,fr_time,ir,&state,sys,oenv);
   }
 
   if (ir->ePBC==epbcXY && ir->nwall!=2)
@@ -1241,7 +1235,7 @@ int main (int argc, char *argv[])
   }
 
   if (ir->ePull != epullNO)
-    set_pull_init(ir,sys,state.x,state.box,opts->pull_start);
+    set_pull_init(ir,sys,state.x,state.box,oenv,opts->pull_start);
 
   /*  reset_multinr(sys); */
   

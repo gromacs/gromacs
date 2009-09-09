@@ -264,7 +264,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
 }
 
-int do_per_step(gmx_step_t step,gmx_step_t nstep)
+int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep)
 {
   if (nstep != 0) 
     return ((step % nstep)==0); 
@@ -285,9 +285,9 @@ static void moveit(t_commrec *cr,
 void write_traj(FILE *fplog,t_commrec *cr,
                 int fp_trn,bool bX,bool bV,bool bF,
                 int fp_xtc,bool bXTC,int xtc_prec,
-                char *fn_cpt,bool bCPT,
+                const char *fn_cpt,bool bCPT,
                 gmx_mtop_t *top_global,
-                int eIntegrator,int simulation_part,gmx_step_t step,double t,
+                int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc)
@@ -398,6 +398,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 gmx_file("Cannot write trajectory; maybe you are out of quota?");
             }
+            gmx_fio_check_file_position(fp_trn);
         }      
         if (bXTC) {
             groups = &top_global->groups;
@@ -437,6 +438,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             {
                 gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
             }
+            gmx_fio_check_file_position(fp_xtc);
         }
     }
 }

@@ -10,12 +10,15 @@ int main(int argc,char *argv[])
 {
   int n = -3;
   int choice;
+  char *end;
   
   /* set_gmx_error_handler(my_func);*/
   
   if (argc <= 1)
     gmx_fatal(FARGS,"Expected an integer argument to %s",argv[0]);
-  choice = atoi(argv[1]);
+  choice = strtol(argv[1], &end, 0); 
+  if (end!='\0')
+    gmx_fatal(FARGS,"Expected an integer argument to %s",argv[0]);
   
   
   switch (choice) {

@@ -457,9 +457,9 @@ void csettle(gmx_settledata_t settled,
     zaksyd = xakszd * yaksxd - yakszd * xaksxd;
     /* 27 flops */
     
-    axlng = invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
-    aylng = invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
-    azlng = invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
+    axlng = gmx_invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
+    aylng = gmx_invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
+    azlng = gmx_invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
       
     trns11 = xaksxd * axlng;
     trns21 = yaksxd * axlng;
@@ -497,7 +497,7 @@ void csettle(gmx_settledata_t settled,
       cosphi = 0;
     }
     else
-      cosphi = tmp*invsqrt(tmp);
+      cosphi = tmp*gmx_invsqrt(tmp);
     sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
     tmp2   = 1.0 - sinpsi * sinpsi;
     if (tmp2 <= 0) {
@@ -506,7 +506,7 @@ void csettle(gmx_settledata_t settled,
       cospsi = 0;
     }
     else
-      cospsi = tmp2*invsqrt(tmp2);
+      cospsi = tmp2*gmx_invsqrt(tmp2);
     /* 46 flops */
     
     if(!doshake) {
@@ -524,12 +524,12 @@ void csettle(gmx_settledata_t settled,
       gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
       al2be2 = alpa * alpa + beta * beta;
       tmp2   = (al2be2 - gama * gama);
-      sinthe = (alpa * gama - beta * tmp2*invsqrt(tmp2)) / al2be2;
+      sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) / al2be2;
       /* 47 flops */
       
       /*  --- Step4  A3' --- */
       tmp2  = 1.0 - sinthe *sinthe;
-      costhe = tmp2*invsqrt(tmp2);
+      costhe = tmp2*gmx_invsqrt(tmp2);
       xa3d = -ya2d * sinthe;
       ya3d = ya2d * costhe;
       za3d = za1d;

@@ -83,7 +83,7 @@ void set_pot_bools(t_inputrec *ir,t_topology *top,
 }
 
 void finish_run(FILE *log,t_commrec *cr,
-		char *confout,
+		const char *confout,
                 t_nsborder *nsb,
 		t_topology *top,
 		t_parm *parm,
@@ -249,7 +249,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     
     /* Finish up, write some stuff */
     { 
-      char *gro=ftp2fn(efSTO,nfile,fnm);
+      const char *gro=ftp2fn(efSTO,nfile,fnm);
       
       /* if rerunMD, don't write last frame again */
       finish_run(stdlog,cr,gro,nsb,top,parm,
@@ -269,8 +269,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,real *SAfactor,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
-	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
-	     t_mdebin **mdebin,t_groups *grps,rvec vcm,
+	     int nfile,const t_filenm fnm[],char **traj,char **xtc_traj,
+             ener_file_t *fp_ene, t_mdebin **mdebin,t_groups *grps,rvec vcm,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
 {
   bool bBHAM,b14,bLR,bLJLR;
@@ -307,7 +307,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 			  ir->bDispCorr);
   }
   else {
-    *fp_ene = -1;
+    *fp_ene = NULL;
     *mdebin = NULL;
   }
   

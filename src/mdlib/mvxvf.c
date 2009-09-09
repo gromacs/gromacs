@@ -98,7 +98,7 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 		       GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
 		       GMX_LEFT, vecs[index[prev]],HOMENRI(index,prev)*DIM);
       /* Wait for communication to end */
-      gmx_wait(right,left);
+      gmx_wait(cr, right,left);
     }
     
     /* Backward pulse around the ring, to decreasing NODE number */
@@ -112,7 +112,7 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 		       GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
 		       GMX_RIGHT,vecs[index[next]],HOMENRI(index,next)*DIM);
       /* Wait for communication to end */
-      gmx_wait(left,right);
+      gmx_wait(cr, left,right);
     }
 
     /* Actual summation */
@@ -178,8 +178,8 @@ void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[])
 #ifdef DEBUG
     fprintf(log,"move_cgcm: RX start=%d, nr=%d\n",start,nr);
 #endif    
-    gmx_tx_wait(GMX_LEFT);
-    gmx_rx_wait(GMX_RIGHT);
+    gmx_tx_wait(cr,GMX_LEFT);
+    gmx_rx_wait(cr,GMX_RIGHT);
 
     if (debug)
       fprintf(debug,"cgcm[0][XX] %f\n",cg_cm[0][XX]);

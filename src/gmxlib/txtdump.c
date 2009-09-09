@@ -38,7 +38,7 @@
 #endif
 
 /* This file is completely threadsafe - please keep it that way! */
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 
 #include <stdio.h>
@@ -307,7 +307,7 @@ static void pr_int(FILE *fp,int indent,const char *title,int i)
   fprintf(fp,"%-20s = %d\n",title,i);
 }
 
-static void pr_gmx_step_t(FILE *fp,int indent,const char *title,gmx_step_t i)
+static void pr_gmx_large_int(FILE *fp,int indent,const char *title,gmx_large_int_t i)
 {
   char buf[22];
 
@@ -471,7 +471,7 @@ static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos,
 
 #define PS(t,s) pr_str(fp,indent,t,s)
 #define PI(t,s) pr_int(fp,indent,t,s)
-#define PSTEP(t,s) pr_gmx_step_t(fp,indent,t,s)
+#define PSTEP(t,s) pr_gmx_large_int(fp,indent,t,s)
 #define PR(t,s) pr_real(fp,indent,t,s)
 
 static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
@@ -879,7 +879,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_GB12:
   case F_GB13:
   case F_GB14:
-    fprintf(fp, "c6A=%15.8e, c12A=%15.8e, c6B=%15.8e, c12B=%15.8e, sar=%15.8e, st=%15.8e, pi=%15.8e, gbr=%15.8e, bmlt=%15.8e\n",iparams->gb.c6A,iparams->gb.c12A,iparams->gb.c6B,iparams->gb.c12B,iparams->gb.sar,iparams->gb.st,iparams->gb.pi,iparams->gb.gbr,iparams->gb.bmlt);
+    fprintf(fp, "sar=%15.8e, st=%15.8e, pi=%15.8e, gbr=%15.8e, bmlt=%15.8e\n",iparams->gb.sar,iparams->gb.st,iparams->gb.pi,iparams->gb.gbr,iparams->gb.bmlt);
     break;		  
   case F_CMAP:
     fprintf(fp, "cmapA=%1d, cmapB=%1d\n",iparams->cmap.cmapA, iparams->cmap.cmapB);

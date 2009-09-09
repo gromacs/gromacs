@@ -64,11 +64,10 @@ extern void set_stochd_state(gmx_update_t sd,t_state *state);
  * as a reference state for simulations with box deformation.
  */
 extern void set_deform_reference_box(gmx_update_t upd,
-				     gmx_step_t step,matrix box);
-
+				     gmx_large_int_t step,matrix box);
 
 extern void update_extended(FILE         *fplog,
-		   gmx_step_t   step,
+		   gmx_large_int_t   step,
 		   t_inputrec   *inputrec,  
 		   t_mdatoms    *md,
 		   t_state      *state,
@@ -85,7 +84,7 @@ extern void update_extended(FILE         *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern void update_coords(FILE         *fplog,
-			  gmx_step_t   step,
+			  gmx_large_int_t   step,
 			  t_inputrec   *inputrec,  /* input record and box stuff	*/
 			  t_mdatoms    *md,
 			  t_state      *state,
@@ -106,7 +105,7 @@ extern void update_coords(FILE         *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern void update_constraints(FILE         *fplog,
-			       gmx_step_t   step,
+			       gmx_large_int_t   step,
 			       real         *dvdlambda, /* FEP stuff */
 			       t_inputrec   *inputrec,  /* input record and box stuff	*/
 			       t_mdatoms    *md,
@@ -128,7 +127,7 @@ extern void update_constraints(FILE         *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern void update_box(FILE         *fplog,
-		       gmx_step_t   step,
+		       gmx_large_int_t   step,
 		       t_inputrec   *inputrec,  /* input record and box stuff	*/
 		       t_mdatoms    *md,
 		       t_state      *state,
@@ -220,13 +219,13 @@ extern real calc_pres(int ePBC,int nwall,matrix box,
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
 
-extern void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
+extern void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 				    t_inputrec *ir,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
 				    tensor M,matrix mu,
 				    bool bFirstStep);
   
-extern void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
+extern void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,tensor pres,matrix box,
 			     matrix mu);
 

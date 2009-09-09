@@ -80,7 +80,7 @@
  *    and line to generate an error message when allocation failed.
  *
  * extern void *save_calloc(char *name,char *file,int line, 
- *                          unsigned nelem,size_t elsize);
+ *                          size_t nelem,size_t elsize);
  *    Like calloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
  *
@@ -115,9 +115,9 @@ extern "C" {
 
 void *save_malloc(const char *name,const char *file,int line,size_t size); 
 void *save_calloc(const char *name,const char *file,int line,
-		  unsigned nelem,size_t elsize); 
+		  size_t nelem,size_t elsize); 
 void *save_realloc(const char *name,const char *file,int line,
-		   void *ptr,unsigned nelem,size_t elsize);
+		   void *ptr,size_t nelem,size_t elsize);
 void save_free(const char *name,const char *file,int line, void *ptr);
 size_t maxavail(void);
 size_t memavail(void);
@@ -135,9 +135,23 @@ void _srenew(const char *name, T *&ptr, int nelem)
 {
     ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, nelem, sizeof(T));
 }
+template <typename T>
+void _smalloc(const char *name, T *&ptr, size_t size)
+{
+    ptr = (T *)save_malloc(name, __FILE__, __LINE__, size);
+}
+template <typename T>
+void _srealloc(const char *name, T *&ptr, size_t size)
+{
+    ptr = (T *)save_realloc(name, __FILE__, __LINE__, ptr, size, sizeof(char));
+}
+
+
 
 #define snew(ptr,nelem) _snew(#ptr,(ptr),(nelem))
 #define srenew(ptr,nelem) _srenew(#ptr,(ptr),(nelem))
+#define smalloc(ptr, size) _smalloc(#ptr,(ptr),(size))
+#define srealloc(ptr, size) _srealloc(#ptr,(ptr),(size))
 
 #else
 

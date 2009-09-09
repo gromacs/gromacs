@@ -106,13 +106,15 @@ int gmx_rotacf(int argc,char *argv[])
 #define NFILE asize(fnm)
   int     npargs;
   t_pargs *ppa;
+
+  output_env_t oenv;
   
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
   
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   
@@ -135,7 +137,7 @@ int gmx_rotacf(int argc,char *argv[])
     c1[i]=NULL;
   n_alloc=0;
 
-  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(x_s,natoms);
   
   /* Start the loop over frames */
@@ -178,7 +180,7 @@ int gmx_rotacf(int argc,char *argv[])
     }
     /* Increment loop counter */
     teller++;
-  } while (read_next_x(status,&t,natoms,x,box));  
+  } while (read_next_x(oenv,status,&t,natoms,x,box));  
   close_trj(status); 
   fprintf(stderr,"\nDone with trajectory\n");
   
@@ -190,11 +192,11 @@ int gmx_rotacf(int argc,char *argv[])
     
     mode = eacVector;
     
-    do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Rotational Correlation Function",
+    do_autocorr(ftp2fn(efXVG,NFILE,fnm),oenv,"Rotational Correlation Function",
 		teller,nvec,c1,dt,mode,bAver);
   }
 
-  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(oenv,ftp2fn(efXVG,NFILE,fnm),NULL);
     
   thanx(stderr);
     

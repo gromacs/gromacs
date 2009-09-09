@@ -30,8 +30,8 @@
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
+#ifdef GMX_THREADS
+#include "tmpi.h"
 #endif
 
 extern int ddglatnr(gmx_domdec_t *dd,int i);
@@ -142,7 +142,7 @@ extern void dd_atom_sum_real(gmx_domdec_t *dd,real v[]);
 /* Sum the contributions to a real for each atom over the neighboring cells. */
 
 extern void dd_partition_system(FILE            *fplog,
-                                gmx_step_t      step,
+                                gmx_large_int_t      step,
                                 t_commrec       *cr,
                                 bool            bMasterState,
                                 int             nstglobalcomm,
@@ -237,7 +237,7 @@ extern void dd_bonded_cg_distance(FILE *fplog,
                                   bool bBCheck,
                                   real *r_2b,real *r_mb);
 
-extern void write_dd_pdb(const char *fn,gmx_step_t step,const char *title,
+extern void write_dd_pdb(const char *fn,gmx_large_int_t step,const char *title,
                          gmx_mtop_t *mtop,
                          t_commrec *cr,
                          int natoms,rvec x[],matrix box);

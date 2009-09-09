@@ -96,14 +96,14 @@ typedef struct {
   int  sd_V_nalloc;
 } gmx_stochd_t;
 
-typedef struct gmx_update {
+typedef struct gmx_update
+{
     gmx_stochd_t *sd;
     rvec *xp;
     int  xp_nalloc;
     /* Variables for the deform algorithm */
-    gmx_step_t deformref_step;
+    gmx_large_int_t deformref_step;
     matrix     deformref_box;
-
 } t_gmx_update;
 
 
@@ -373,57 +373,77 @@ static void do_update_visc(int start,int nrend,double dt,
                            cos_accel,real vcos,
                            bool bNH,bool bPR)
 {
-    double imass,w_dt;
-    int    gt=0;
-    real   vn,vc;
-    real   lg,vxi=0,vv;
-    real   fac,cosz;
-    rvec   vrel;
-    int    n,d;
-    
-    fac = 2*M_PI/(box[ZZ][ZZ]);
-    
-    if(bNH || bPR) 
-    {
-        /* Update with coupling to extended ensembles, used for
-         * Nose-Hoover and Parrinello-Rahman coupling
-         */
-        for(n=start; n<nrend; n++) 
-        {
-            imass = invmass[n];
-            if (cTC) 
-            {
-                gt   = cTC[n];
-            }
-            lg   = tcstat[gt].lambda;
-            cosz = cos(fac*x[n][ZZ]);
-            
-            copy_rvec(v[n],vrel);
-            
-            vc            = cosz*vcos;
-            vrel[XX]     -= vc;
-            if (bNH) 
-            {
-                vxi           = nh_vxi[gt];
-            }
-            for(d=0; d<DIM; d++) 
-            {
-                vn             = v[n][d];
-                
-                if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) 
-                {
-                    vn    = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                              - iprod(M[d],vrel)))/(1 + 0.5*vxi*dt);
-                    if(d == XX)
-                        vn += vc + dt*cosz*cos_accel;
-                    
-                    v[n][d]        = vn;
-                    xprime[n][d]   = x[n][d]+vn*dt;
-                } 
-                else {
-                    xprime[n][d]   = x[n][d];
-                }
-            }
+  double imass,w_dt;
+  int    gt=0;
+  real   vn,vc;
+  real   lg,xi=0,vv;
+  real   fac,cosz;
+  rvec   vrel;
+  int    n,d;
+
+  fac = 2*M_PI/(box[ZZ][ZZ]);
+
+  if (bNH || bPR) {
+    /* Update with coupling to extended ensembles, used for
+     * Nose-Hoover and Parrinello-Rahman coupling
+     */
+    for(n=start; n<start+homenr; n++) {
+      imass = invmass[n];
+      if (cTC)
+	gt   = cTC[n];
+      lg   = tcstat[gt].lambda;
+      cosz = cos(fac*x[n][ZZ]);
+
+      copy_rvec(v[n],vrel);
+
+      vc            = cosz*vcos;
+      vrel[XX]     -= vc;
+      if (bNH)
+          xi        = nh_xi[gt];
+
+      for(d=0; d<DIM; d++) {
+        vn             = v[n][d];
+
+        if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
+            vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
+				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);
+          if(d == XX)
+            vn += vc + dt*cosz*cos_accel;
+
+          v[n][d]        = vn;
+          xprime[n][d]   = x[n][d]+vn*dt;
+        } else
+          xprime[n][d]   = x[n][d];
+      }
+    }
+
+  } else {
+    /* Classic version of update, used with berendsen coupling */
+    for(n=start; n<start+homenr; n++) {
+      w_dt = invmass[n]*dt;
+      if (cTC)
+        gt   = cTC[n];
+      lg   = tcstat[gt].lambda;
+      cosz = cos(fac*x[n][ZZ]);
+
+      for(d=0; d<DIM; d++) {
+        vn             = v[n][d];
+
+        if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
+          if(d == XX) {
+            vc           = cosz*vcos;
+            /* Do not scale the cosine velocity profile */
+            vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
+            /* Add the cosine accelaration profile */
+            vv          += dt*cosz*cos_accel;
+          } else
+            vv           = lg*vn + f[n][d]*w_dt;
+
+          v[n][d]        = vv;
+          xprime[n][d]   = x[n][d]+vv*dt;
+        } else {
+          v[n][d]        = 0.0;
+          xprime[n][d]   = x[n][d];
         }
     } 
     else 
@@ -477,56 +497,48 @@ static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
     int  ngtc,n;
     real y;
     
-    snew(sd,1);
-    
-    /* Initiate random number generator for langevin type dynamics,
-     * for BD, SD or velocity rescaling temperature coupling.
-     */
-    sd->gaussrand = gmx_rng_init(ir->ld_seed);
-    
-    ngtc = ir->opts.ngtc;
-    
-    if (ir->eI == eiBD) 
-    {
-        snew(sd->bd_rf,ngtc);
-    } 
-    else if (EI_SD(ir->eI)) 
-    {
-        snew(sd->sdc,ngtc);
-        snew(sd->sdsig,ngtc);
+  snew(sd,1);
 
-        sdc = sd->sdc;
-        for(n=0; n<ngtc; n++) 
-        {
-            sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
-            sdc[n].eph = exp(sdc[n].gdt/2);
-            sdc[n].emh = exp(-sdc[n].gdt/2);
-            sdc[n].em  = exp(-sdc[n].gdt);
-            if (sdc[n].gdt >= 0.05) 
-            {
-                sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1) 
-                    - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
-                sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
-                sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
-            } 
-            else 
-            {
-                y = sdc[n].gdt/2;
-                /* Seventh order expansions for small y */
-                sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
-                sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
-                sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
-            }
-            if (debug)
-            {
-                fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
-                        n,sdc[n].b,sdc[n].c,sdc[n].d);
-            }
-        }
-    }        
-    return sd;
-}
+  /* Initiate random number generator for langevin type dynamics,
+   * for BD, SD or velocity rescaling temperature coupling.
+   */
+  sd->gaussrand = gmx_rng_init(ir->ld_seed);
+
+  ngtc = ir->opts.ngtc;
+
+  if (ir->eI == eiBD) {
+    snew(sd->bd_rf,ngtc);
+  } else if (EI_SD(ir->eI)) {
+    snew(sd->sdc,ngtc);
+    snew(sd->sdsig,ngtc);
     
+    sdc = sd->sdc;
+    for(n=0; n<ngtc; n++) {
+      sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
+      sdc[n].eph = exp(sdc[n].gdt/2);
+      sdc[n].emh = exp(-sdc[n].gdt/2);
+      sdc[n].em  = exp(-sdc[n].gdt);
+      if (sdc[n].gdt >= 0.05) {
+	sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1) 
+	  - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
+	sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
+	sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
+      } else {
+	y = sdc[n].gdt/2;
+	/* Seventh order expansions for small y */
+	sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
+	sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
+	sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
+      }
+      if(debug)
+	fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
+		n,sdc[n].b,sdc[n].c,sdc[n].d);
+    }
+  }
+
+  return sd;
+}
+
 void get_stochd_state(gmx_update_t upd,t_state *state)
 {
     gmx_rng_get_state(upd->sd->gaussrand,state->ld_rng,state->ld_rngi);
@@ -1024,7 +1036,7 @@ void restore_ekinstate_from_state(t_commrec *cr,
   }
 }
 
-void set_deform_reference_box(gmx_update_t upd, gmx_step_t step,matrix box)
+void set_deform_reference_box(gmx_update_t upd,gmx_large_int_t step,matrix box)
 {
     upd->deformref_step = step;
     copy_mat(box,upd->deformref_box);
@@ -1032,7 +1044,7 @@ void set_deform_reference_box(gmx_update_t upd, gmx_step_t step,matrix box)
 
 static void deform(gmx_update_t upd,
                    int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
-                   const t_inputrec *ir,gmx_step_t step)
+                   const t_inputrec *ir,gmx_large_int_t step)
 {
     matrix bnew,invbox,mu;
     real   elapsed_time;
@@ -1091,7 +1103,7 @@ static void deform(gmx_update_t upd,
 static void combine_forces(int nstlist,
                            gmx_constr_t constr,
                            t_inputrec *ir,t_mdatoms *md,t_idef *idef,
-                           t_commrec *cr,gmx_step_t step,t_state *state,
+                           t_commrec *cr,gmx_large_int_t step,t_state *state,
                            int start,int homenr,
                            rvec f[],rvec f_lr[],
                            t_nrnb *nrnb)

@@ -69,4 +69,7 @@ typedef struct {
   atom_id  **nl_lr_one;
   int      *nlr_ljc;
   int      *nlr_one;
+  /* the nblists should probably go in here */
+  bool     nblist_initialized; /* has the nblist been initialized?  */
+  int      dump_nl; /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
 } gmx_ns_t;

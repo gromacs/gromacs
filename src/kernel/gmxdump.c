@@ -92,7 +92,8 @@ static void dump_top(FILE *fp,t_topology *top,char *tpr)
   sfree(types);
 }
 
-static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,bool bSysTop)
+static void list_tpx(const char *fn, bool bShowNumbers,const char *mdpfn,
+                     bool bSysTop)
 {
   FILE *gp;
   int         fp,indent,i,j,**gcount,atot;
@@ -173,7 +174,7 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,bool bSysTop)
   sfree(f);
 }
 
-static void list_top(char *fn)
+static void list_top(const char *fn)
 {
   int status,done;
 #define BUFLEN 256
@@ -199,7 +200,7 @@ static void list_top(char *fn)
     gmx_fatal(FARGS,cpp_error(&handle,status));
 }
 
-static void list_trn(char *fn)
+static void list_trn(const char *fn)
 {
   int         fpread,fpwrite,nframe,indent;
   char        buf[256];
@@ -253,7 +254,7 @@ static void list_trn(char *fn)
   close_trn(fpread);
 }
 
-void list_xtc(char *fn, bool bXVG)
+void list_xtc(const char *fn, bool bXVG)
 {
   int    xd,indent;
   char   buf[256];
@@ -293,7 +294,7 @@ void list_xtc(char *fn, bool bXVG)
   close_xtc(xd);
 }
 
-void list_trx(char *fn,bool bXVG)
+void list_trx(const char *fn,bool bXVG)
 {
   int ftp;
   
@@ -307,9 +308,10 @@ void list_trx(char *fn,bool bXVG)
 	    fn,fn);
 }
 
-void list_ene(char *fn)
+void list_ene(const char *fn)
 {
-  int        in,ndr;
+  int        ndr;
+  ener_file_t in;
   bool       bCont;
   gmx_enxnm_t *enm=NULL;
   t_enxframe *fr;
@@ -373,7 +375,7 @@ void list_ene(char *fn)
   sfree(enm);
 }
 
-static void list_mtx(char *fn)
+static void list_mtx(const char *fn)
 {
   int  nrow,ncol,i,j,k;
   real *full=NULL,value;
@@ -431,6 +433,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  output_env_t oenv;
   /* Command line options */
   static bool bXVG=FALSE;
   static bool bShowNumbers=TRUE;
@@ -443,7 +446,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,0,NULL,&oenv);
 
 
   if (ftp2bSet(efTPX,NFILE,fnm))

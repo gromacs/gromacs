@@ -38,7 +38,7 @@
 #endif
 
 
-#include <gmx_thread.h>
+#include <thread_mpi.h>
 
 
 #include <stdio.h>
@@ -66,6 +66,8 @@
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
+
+
 /* 1,4 interactions uses kernel 330 directly */
 #include "nb_kernel_c/nb_kernel330.h" 
 
@@ -80,7 +82,7 @@
 #if defined(GMX_IA32_SSE2) 
 #include "nb_kernel_ia32_sse2/nb_kernel_ia32_sse2.h"
 #endif
-
+ 
 #if defined(GMX_X86_64_SSE)
 #include "nb_kernel_x86_64_sse/nb_kernel_x86_64_sse.h"
 #endif
@@ -222,7 +224,7 @@ gmx_setup_kernels(FILE *fplog)
         {
             fprintf(fplog,
                     "Found environment variable GMX_NB_GENERIC.\n"
-                    "Disabling all interaction-specific nonbonded kernels.\n\n");
+                    "Disabling interaction-specific nonbonded kernels.\n\n");
         }
         return;
     }
@@ -239,7 +241,7 @@ gmx_setup_kernels(FILE *fplog)
         if(fplog)
             fprintf(fplog,
                     "Found environment variable GMX_NOOPTIMIZEDKERNELS.\n"
-                    "Disabling all SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
+                    "Disabling SSE/SSE2/Altivec/ia64/Power6/Bluegene specific kernels.\n\n");
         return;
     }
     
@@ -308,7 +310,7 @@ gmx_setup_kernels(FILE *fplog)
 
 
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
-                  rvec x[],rvec f[],t_mdatoms *mdatoms,
+                  rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
                   real egnb[],real egcoul[],real egpol[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   int nls,int eNL,int flags)
@@ -334,6 +336,51 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.gpol               = egpol;
+
+    if(fr->bAllvsAll) 
+    {
+        if(fr->bGB)
+        {
+#if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
+#  if 0
+            /* double not done yet */
+            nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                             &outeriter,&inneriter,&fr->AllvsAll_work);
+            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
+#  else
+            nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                             &outeriter,&inneriter,&fr->AllvsAll_work);
+#  endif
+#else
+       /*
+        nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                 &outeriter,&inneriter,&fr->AllvsAll_work);
+        */
+            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
+#endif     
+            inc_nrnb(nrnb,eNR_NBKERNEL_ALLVSALLGB,inneriter);
+        }
+        else
+        { 
+#if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
+#  if 0
+            /* double not done yet */
+            nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                           &outeriter,&inneriter,&fr->AllvsAll_work);
+#  else
+            nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                                           &outeriter,&inneriter,&fr->AllvsAll_work);
+#  endif
+#else
+            nb_kernel_allvsall(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
+                               &outeriter,&inneriter,&fr->AllvsAll_work);
+#endif            
+            
+            inc_nrnb(nrnb,eNR_NBKERNEL_ALLVSALL,inneriter);
+        }
+        inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
+        return;
+    }
 	
     if (eNL >= 0) 
     {
@@ -600,14 +647,14 @@ do_listed_vdw_q(int ftype,int nbonds,
     int       icoul,ivdw;
     bool      bMolPBC,bFreeEnergy;
     
-#if GMX_THREADS
+#if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_t mtx;
 #else
     void *    mtx = NULL;
 #endif
 
     
-#if GMX_THREADS
+#if GMX_THREAD_SHM_FDECOMP
     pthread_mutex_initialize(&mtx);
 #endif
 

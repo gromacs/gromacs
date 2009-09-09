@@ -132,7 +132,7 @@ static void init_range(t_range *r,int np,int atype,int ptype,
   r->dr    = r->rmax - r->rmin;
 }
 
-static t_range *read_range(char *db,int *nrange)
+static t_range *read_range(const char *db,int *nrange)
 {
   int     nlines,nr,np,i;
   char    **lines=NULL;
@@ -326,7 +326,7 @@ static void scale_box(int natoms,rvec x[],matrix box)
 }
 
 bool update_forcefield(FILE *fplog,
-		       int nfile,t_filenm fnm[],t_forcerec *fr,
+		       int nfile,const t_filenm fnm[],t_forcerec *fr,
 		       int natoms,rvec x[],matrix box)
 {
   static int ntry,ntried;

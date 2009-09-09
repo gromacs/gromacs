@@ -43,7 +43,7 @@
 #include "types/simple.h"
 
 
-/** @file blas.h
+/** @file
  *
  *  @brief Header definitions for the standard BLAS library.
  *

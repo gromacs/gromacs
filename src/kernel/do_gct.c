@@ -54,7 +54,7 @@
 #include "txtdump.h"
 
 /*#define DEBUGGCT*/
-t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
+t_coupl_rec *init_coupling(FILE *log,int nfile, const t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
 			   t_mdatoms *md,t_idef *idef)
 {
@@ -86,7 +86,7 @@ static real Ecouple(t_coupl_rec *tcr,real ener[])
     return ener[F_EPOT];
 }
 
-static char *mk_gct_nm(char *fn,int ftp,int ati,int atj)
+static char *mk_gct_nm(const char *fn,int ftp,int ati,int atj)
 {
   static char buf[256];
   
@@ -100,7 +100,8 @@ static char *mk_gct_nm(char *fn,int ftp,int ati,int atj)
 }
 
 static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
-		  t_commrec *cr,int nfile,t_filenm fnm[])
+		  t_commrec *cr,int nfile,const t_filenm fnm[],
+                  const output_env_t oenv)
 {
   static FILE *prop;
   static FILE **out=NULL;
@@ -117,7 +118,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   
   if ((prop == NULL) && (out == NULL) && (qq == NULL) && (ip == NULL)) {
     prop=xvgropen(opt2fn("-runav",nfile,fnm),
-		  "Properties and Running Averages","Time (ps)","");
+		  "Properties and Running Averages","Time (ps)","",oenv);
     snew(raleg,2*eoObsNR);
     for(i=j=0; (i<eoObsNR); i++) {
       if (tcr->bObsUsed[i]) {
@@ -126,7 +127,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 	raleg[j++] = strdup(buf);
       }
     }
-    xvgr_legend(prop,j,raleg);
+    xvgr_legend(prop,j,raleg,oenv);
     for(i=0; (i<j); i++) 
       sfree(raleg[i]);
     sfree(raleg);
@@ -140,13 +141,13 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 	    xvgropen(mk_gct_nm(opt2fn("-ffout",nfile,fnm),
 			       efXVG,tclj->at_i,tclj->at_j),
 		     "General Coupling Lennard Jones","Time (ps)",
-		     "Force constant (units)");
+		     "Force constant (units)",oenv);
 	  fprintf(out[i],"@ subtitle \"Interaction between types %d and %d\"\n",
 		  tclj->at_i,tclj->at_j);
 	  if (tcr->combrule == 1)
-	    xvgr_legend(out[i],asize(leg),leg);
+	    xvgr_legend(out[i],asize(leg),leg,oenv);
 	  else
-	    xvgr_legend(out[i],asize(eleg),eleg);
+	    xvgr_legend(out[i],asize(eleg),eleg,oenv);
 	  fflush(out[i]);
 	}
       }
@@ -160,10 +161,10 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 	    xvgropen(mk_gct_nm(opt2fn("-ffout",nfile,fnm),efXVG,
 			       tcbu->at_i,tcbu->at_j),
 		     "General Coupling Buckingham","Time (ps)",
-		     "Force constant (units)");
+		     "Force constant (units)",oenv);
 	  fprintf(out[i],"@ subtitle \"Interaction between types %d and %d\"\n",
 		  tcbu->at_i,tcbu->at_j);
-	  xvgr_legend(out[i],asize(bleg),bleg);
+	  xvgr_legend(out[i],asize(bleg),bleg,oenv);
 	  fflush(out[i]);
 	}
       }
@@ -172,8 +173,9 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
     for(i=0; (i<tcr->nQ); i++) {
       if (tcr->tcQ[i].bPrint) {
 	qq[i] = xvgropen(mk_gct_nm(opt2fn("-ffout",nfile,fnm),efXVG,
-				   tcr->tcQ[i].at_i,-1),
-			 "General Coupling Charge","Time (ps)","Charge (e)");
+                                   tcr->tcQ[i].at_i,-1),
+                         "General Coupling Charge","Time (ps)","Charge (e)",
+                         oenv);
 	fprintf(qq[i],"@ subtitle \"Type %d\"\n",tcr->tcQ[i].at_i);
 	fflush(qq[i]);
       }
@@ -182,7 +184,7 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
     for(i=0; (i<tcr->nIP); i++) {
       sprintf(buf,"gctIP%d",tcr->tIP[i].type);
       ip[i]=xvgropen(mk_gct_nm(opt2fn("-ffout",nfile,fnm),efXVG,0,-1),
-		     "General Coupling iparams","Time (ps)","ip ()");
+		     "General Coupling iparams","Time (ps)","ip ()",oenv);
       index=tcr->tIP[i].type;
       fprintf(ip[i],"@ subtitle \"Coupling to %s\"\n",
 	      interaction_function[idef->functype[index]].longname);
@@ -242,7 +244,8 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 }
 
 static void pr_dev(t_coupl_rec *tcr,
-		   real t,real dev[eoObsNR],t_commrec *cr,int nfile,t_filenm fnm[])
+		   real t,real dev[eoObsNR],t_commrec *cr,int nfile,
+                   const t_filenm fnm[],const output_env_t oenv)
 {
   static FILE *fp=NULL;
   char   **ptr;
@@ -250,12 +253,12 @@ static void pr_dev(t_coupl_rec *tcr,
   
   if (!fp) {
     fp=xvgropen(opt2fn("-devout",nfile,fnm),
-		"Deviations from target value","Time (ps)","");
+		"Deviations from target value","Time (ps)","",oenv);
     snew(ptr,eoObsNR);
     for(i=j=0; (i<eoObsNR); i++)
       if (tcr->bObsUsed[i])
 		  ptr[j++] = strdup(eoNames[i]);
-	  xvgr_legend(fp,j,ptr);
+	  xvgr_legend(fp,j,ptr,oenv);
 	  for(i=0;i<j;i++)
 		  sfree(ptr[i]);
     sfree(ptr);
@@ -467,10 +470,10 @@ static void dump_fm(FILE *fp,int n,real f[],char *s)
   }
 }
 
-void do_coupling(FILE *log,int nfile,t_filenm fnm[],
-		 t_coupl_rec *tcr,real t,int step,real ener[],
-		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
-		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
+void do_coupling(FILE *log,const output_env_t oenv,int nfile,
+                 const t_filenm fnm[], t_coupl_rec *tcr,real t,
+                 int step,real ener[], t_forcerec *fr,t_inputrec *ir,
+                 bool bMaster, t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
 		 t_commrec *cr,matrix box,tensor virial,
 		 tensor pres,rvec mu_tot,
 		 rvec x[],rvec f[],bool bDoIt)
@@ -594,7 +597,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   }
 
   if (bPrint) {
-    pr_ff(tcr,t,idef,cr,nfile,fnm);
+    pr_ff(tcr,t,idef,cr,nfile,fnm,oenv);
   }
   /* Calculate the deviation of average value from the target value */
   for(i=0; (i<eoObsNR); i++) {
@@ -607,7 +610,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   prdev[eoEpot]     = epot0 - tcr->act_value[eoEpot];
   
   if (bPrint)
-    pr_dev(tcr,t,prdev,cr,nfile,fnm);
+    pr_dev(tcr,t,prdev,cr,nfile,fnm,oenv);
   
   /* First set all factors to 1 */
   for(i=0; (i<atnr2); i++) {

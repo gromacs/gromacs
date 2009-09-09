@@ -44,8 +44,14 @@
 #include "typedefs.h"
 
 /* Ewald related stuff */
+
+void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
+                    FILE *fp);
+/* initialize the ewald table (as found in the t_forcerec) */
+
 extern real calc_ewaldcoeff(real rc,real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
+
 
 extern real do_ewald(FILE *log,       bool bVerbose,
 		     t_inputrec *ir,
@@ -54,7 +60,8 @@ extern real do_ewald(FILE *log,       bool bVerbose,
                      rvec box,
 		     t_commrec *cr,  int natoms,
 		     matrix lrvir,   real ewaldcoeff,
-		     real lambda,    real *dvdlambda);
+		     real lambda,    real *dvdlambda,
+                     ewald_tab_t et);
 /* Do an Ewald calculation for the long range electrostatics. */
  
 extern real ewald_LRcorrection(FILE *fp,

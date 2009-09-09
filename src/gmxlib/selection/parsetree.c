@@ -416,7 +416,7 @@ init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
     for (i = 0; i < nparams; ++i)
     {
         param[i].flags &= ~SPAR_SET;
-        _gmx_selvalue_clear(&param[i].val);
+        _gmx_selvalue_setstore(&param[i].val, NULL);
         if (param[i].flags & SPAR_VARNUM)
         {
             param[i].val.nr = -1;
@@ -766,7 +766,7 @@ _gmx_sel_init_modifier(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
  * objects for selections.
  */
 t_selelem *
-_gmx_sel_init_selection(gmx_sel_lexer_t *scanner, t_selelem *sel)
+_gmx_sel_init_selection(yyscan_t scanner, t_selelem *sel)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem               *root;
@@ -812,7 +812,7 @@ _gmx_sel_init_selection(gmx_sel_lexer_t *scanner, t_selelem *sel)
  * element are both created.
  */
 t_selelem *
-_gmx_sel_assign_variable(gmx_sel_lexer_t *scanner, char *name, t_selelem *expr)
+_gmx_sel_assign_variable(yyscan_t scanner, char *name, t_selelem *expr)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem               *root;
@@ -990,9 +990,14 @@ int
 gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
                                   gmx_ana_indexgrps_t *grps, bool bInteractive)
 {
-    gmx_sel_lexer_t *scanner;
+    yyscan_t scanner;
+    int      rc;
 
-    _gmx_sel_init_lexer(&scanner, sc, bInteractive);
+    rc = _gmx_sel_init_lexer(&scanner, sc, bInteractive);
+    if (rc != 0)
+    {
+        return rc;
+    }
     _gmx_sel_set_lex_input_file(scanner, stdin);
     return _gmx_sel_run_parser(scanner, sc, grps, nr);
 }
@@ -1008,14 +1013,18 @@ gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
  * multiple times, this function returns the total count).
  */
 int
-gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, char *fnm,
+gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
                                  gmx_ana_indexgrps_t *grps)
 {
-    gmx_sel_lexer_t *scanner;
+    yyscan_t scanner;
     FILE *fp;
     int   rc;
 
-    _gmx_sel_init_lexer(&scanner, sc, FALSE);
+    rc = _gmx_sel_init_lexer(&scanner, sc, FALSE);
+    if (rc != 0)
+    {
+        return rc;
+    }
     fp = ffopen(fnm, "r");
     _gmx_sel_set_lex_input_file(scanner, fp);
     rc = _gmx_sel_run_parser(scanner, sc, grps, -1);
@@ -1034,12 +1043,17 @@ gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, char *fnm,
  * multiple times, this function returns the total count).
  */
 int
-gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, char *str,
+gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
                                 gmx_ana_indexgrps_t *grps)
 {
-    gmx_sel_lexer_t *scanner;
+    yyscan_t scanner;
+    int      rc;
 
-    _gmx_sel_init_lexer(&scanner, sc, FALSE);
+    rc = _gmx_sel_init_lexer(&scanner, sc, FALSE);
+    if (rc != 0)
+    {
+        return rc;
+    }
     _gmx_sel_set_lex_input_str(scanner, str);
     return _gmx_sel_run_parser(scanner, sc, grps, -1);
 }
