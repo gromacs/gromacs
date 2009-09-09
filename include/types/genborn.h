@@ -70,6 +70,8 @@ typedef struct
 	real  *bRad;              /* Atomic Born radii */
 	real  *vsolv;             /* Atomic solvation volumes */
 	real  *vsolv_globalindex; /*  */
+	real  *gb_radius;          /* Radius info, copied from atomtypes */
+	real  *gb_radius_globalindex; 
 	
 	int  *use;                 /* Array that till if this atom does GB */   
 	int  *use_globalindex;     /* Global array for parallelization */
@@ -92,6 +94,7 @@ typedef struct
 	real gb_epsilon_solvent;  /*   */
 	
 	real *work;               /* Used for parallel summation and in the chain rule, length natoms         */
+	real *buf;                /* Used for parallel summation and in the chain rule, length natoms         */
 	real *dd_work;            /* Used for domain decomposition parallel runs, length natoms              */
 	int  *count;              /* Used for setting up the special gb nblist, length natoms                 */
 	gbtmpnbls_t nblist_work;  /* Used for setting up the special gb nblist, dim natoms*nblist_work_nalloc */

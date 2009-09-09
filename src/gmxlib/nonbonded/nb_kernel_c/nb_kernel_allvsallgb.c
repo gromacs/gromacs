@@ -38,7 +38,7 @@
 #include "vec.h"
 #include "smalloc.h"
 
-#include "nb_kernel_allvsall.h"
+#include "nb_kernel_allvsallgb.h"
 
 typedef struct 
 {
@@ -106,10 +106,11 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
                              t_blocka *              excl, 
                              int                     natoms)
 {
-    int i,j,k,iexcl;
+    int i,j,k;
     int nj0,nj1;
     int max_offset;
     int max_excl_offset;
+    int iexcl;
     int nj;
     
     /* This routine can appear to be a bit complex, but it is mostly book-keeping.
@@ -134,7 +135,7 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
         /* Start */
         aadata->jindex[3*i]   = i+1;
         max_offset = calc_maxoffset(i,natoms);
-        
+
         /* Exclusions */
         nj0   = excl->index[i];
         nj1   = excl->index[i+1];
@@ -145,21 +146,20 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
         for(j=nj0; j<nj1; j++)
         {
             iexcl = excl->a[j];
-                        
+            
             k = iexcl - i;
             
             if( k+natoms <= max_offset )
             {
                 k+=natoms;
             }
-               
+            
             max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
         }
         
         max_excl_offset = (max_offset < max_excl_offset) ? max_offset : max_excl_offset;
         
         aadata->jindex[3*i+1] = i+1+max_excl_offset;        
-
         
         snew(aadata->exclusion_mask[i],max_excl_offset);
         /* Include everything by default */
@@ -192,6 +192,7 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
         aadata->jindex[3*i+2] = i+1+max_offset;        
     }
 }
+
 
 static void
 setup_aadata(gmx_allvsall_data_t **  p_aadata,
@@ -231,16 +232,17 @@ setup_aadata(gmx_allvsall_data_t **  p_aadata,
 
 
 void
-nb_kernel_allvsall(t_forcerec *           fr,
-				   t_mdatoms *            mdatoms,
-				   t_blocka *             excl,    
-				   real *                 x,
-				   real *                 f,
-				   real *                 Vc,
-				   real *                 Vvdw,
-				   int *                  outeriter,
-				   int *                  inneriter,
-				   void *                 work)
+nb_kernel_allvsallgb(t_forcerec *           fr,
+                     t_mdatoms *            mdatoms,
+                     t_blocka *             excl,    
+                     real *                 x,
+                     real *                 f,
+                     real *                 Vc,
+                     real *                 Vvdw,
+                     real *                 vpol,
+                     int *                  outeriter,
+                     int *                  inneriter,
+                     void *                 work)
 {
 	gmx_allvsall_data_t *aadata;
 	int        natoms;
@@ -253,6 +255,12 @@ nb_kernel_allvsall(t_forcerec *           fr,
 	real *     pvdw;
 	int        ggid;
     int *      mask;
+    real *     GBtab;
+    real       gbfactor;
+    real *     invsqrta;
+    real *     dvda;
+    real       vgbtot,dvdasum;
+    int        nnn,n0;
     
     real       ix,iy,iz,iq;
     real       fix,fiy,fiz;
@@ -262,11 +270,19 @@ nb_kernel_allvsall(t_forcerec *           fr,
     real       rsq,rinv,rinvsq,rinvsix;
     real       vcoul,vctot;
     real       c6,c12,Vvdw6,Vvdw12,Vvdwtot;
-    real       fscal;
+    real       fscal,dvdatmp,fijC,vgb;
+    real       Y,F,Fp,Geps,Heps2,VV,FF,eps,eps2,r,rt;
+    real       dvdaj,gbscale,isaprod,isai,isaj,gbtabscale;
     
 	charge              = mdatoms->chargeA;
 	type                = mdatoms->typeA;
+    gbfactor            = (1.0 - (1.0/fr->gb_epsilon_solvent));
 	facel               = fr->epsfac;
+    GBtab               = fr->gbtab.tab;
+    gbtabscale          = fr->gbtab.scale;
+    invsqrta            = fr->invsqrta;
+    dvda                = fr->dvda;
+    
     natoms              = mdatoms->nr;
 	ni0                 = mdatoms->start;
 	ni1                 = mdatoms->start+mdatoms->homenr;
@@ -278,7 +294,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
 		setup_aadata(&aadata,excl,natoms,type,fr->ntype,fr->nbfp);
         *((gmx_allvsall_data_t **)work) = aadata;
 	}
-        
+
 	for(i=ni0; i<ni1; i++)
 	{
 		/* We assume shifts are NOT used for all-vs-all interactions */
@@ -288,12 +304,16 @@ nb_kernel_allvsall(t_forcerec *           fr,
         iy                = x[3*i+1];
         iz                = x[3*i+2];
         iq                = facel*charge[i];
+        
+        isai              = invsqrta[i];
 
         pvdw              = aadata->pvdwparam[type[i]];
         
 		/* Zero the potential energy for this list */
 		Vvdwtot           = 0.0;
         vctot             = 0.0;
+        vgbtot            = 0.0;
+        dvdasum           = 0.0;              
 
 		/* Clear i atom forces */
         fix               = 0.0;
@@ -326,25 +346,52 @@ nb_kernel_allvsall(t_forcerec *           fr,
                 rsq               = dx*dx+dy*dy+dz*dz;
                 
                 /* Calculate 1/r and 1/r2 */
-                rinv              = gmx_invsqrt(rsq);
-                rinvsq            = rinv*rinv;  
+                rinv             = gmx_invsqrt(rsq);
                 
                 /* Load parameters for j atom */
-                qq                = iq*charge[k]; 
+                isaj             = invsqrta[k];  
+                isaprod          = isai*isaj;      
+                qq               = iq*charge[k]; 
+                vcoul            = qq*rinv;      
+                fscal            = vcoul*rinv;   
+                qq               = isaprod*(-qq)*gbfactor;  
+                gbscale          = isaprod*gbtabscale;
                 c6                = pvdw[2*k];
                 c12               = pvdw[2*k+1];
+                rinvsq           = rinv*rinv;  
                 
-                /* Coulomb interaction */
-                vcoul             = qq*rinv;      
-                vctot             = vctot+vcoul;    
+                /* Tabulated Generalized-Born interaction */
+                dvdaj            = dvda[k];      
+                r                = rsq*rinv;   
+                
+                /* Calculate table index */
+                rt               = r*gbscale;      
+                n0               = rt;             
+                eps              = rt-n0;          
+                eps2             = eps*eps;        
+                nnn              = 4*n0;           
+                Y                = GBtab[nnn];     
+                F                = GBtab[nnn+1];   
+                Geps             = eps*GBtab[nnn+2];
+                Heps2            = eps2*GBtab[nnn+3];
+                Fp               = F+Geps+Heps2;   
+                VV               = Y+eps*Fp;       
+                FF               = Fp+Geps+2.0*Heps2;
+                vgb              = qq*VV;          
+                fijC             = qq*FF*gbscale;  
+                dvdatmp          = -0.5*(vgb+fijC*r);
+                dvdasum          = dvdasum + dvdatmp;
+                dvda[k]          = dvdaj+dvdatmp*isaj*isaj;
+                vctot            = vctot + vcoul;  
+                vgbtot           = vgbtot + vgb;
                 
                 /* Lennard-Jones interaction */
-                rinvsix           = rinvsq*rinvsq*rinvsq;
-                Vvdw6             = c6*rinvsix;     
-                Vvdw12            = c12*rinvsix*rinvsix;
-                Vvdwtot           = Vvdwtot+Vvdw12-Vvdw6;
-                fscal             = (vcoul+12.0*Vvdw12-6.0*Vvdw6)*rinvsq;
-                
+                rinvsix          = rinvsq*rinvsq*rinvsq;
+                Vvdw6            = c6*rinvsix;     
+                Vvdw12           = c12*rinvsix*rinvsix;
+                Vvdwtot          = Vvdwtot+Vvdw12-Vvdw6;
+                fscal            = (12.0*Vvdw12-6.0*Vvdw6)*rinvsq-(fijC-fscal)*rinv;
+                                
                 /* Calculate temporary vectorial force */
                 tx                = fscal*dx;     
                 ty                = fscal*dy;     
@@ -380,25 +427,52 @@ nb_kernel_allvsall(t_forcerec *           fr,
             rsq               = dx*dx+dy*dy+dz*dz;
             
             /* Calculate 1/r and 1/r2 */
-            rinv              = gmx_invsqrt(rsq);
-            rinvsq            = rinv*rinv;  
+            rinv             = gmx_invsqrt(rsq);
             
             /* Load parameters for j atom */
-            qq                = iq*charge[k]; 
+            isaj             = invsqrta[k];  
+            isaprod          = isai*isaj;      
+            qq               = iq*charge[k]; 
+            vcoul            = qq*rinv;      
+            fscal            = vcoul*rinv;   
+            qq               = isaprod*(-qq)*gbfactor;  
+            gbscale          = isaprod*gbtabscale;
             c6                = pvdw[2*k];
             c12               = pvdw[2*k+1];
+            rinvsq           = rinv*rinv;  
             
-            /* Coulomb interaction */
-            vcoul             = qq*rinv;      
-            vctot             = vctot+vcoul;    
+            /* Tabulated Generalized-Born interaction */
+            dvdaj            = dvda[k];      
+            r                = rsq*rinv;   
             
+            /* Calculate table index */
+            rt               = r*gbscale;      
+            n0               = rt;             
+            eps              = rt-n0;          
+            eps2             = eps*eps;        
+            nnn              = 4*n0;           
+            Y                = GBtab[nnn];     
+            F                = GBtab[nnn+1];   
+            Geps             = eps*GBtab[nnn+2];
+            Heps2            = eps2*GBtab[nnn+3];
+            Fp               = F+Geps+Heps2;   
+            VV               = Y+eps*Fp;       
+            FF               = Fp+Geps+2.0*Heps2;
+            vgb              = qq*VV;          
+            fijC             = qq*FF*gbscale;  
+            dvdatmp          = -0.5*(vgb+fijC*r);
+            dvdasum          = dvdasum + dvdatmp;
+            dvda[k]          = dvdaj+dvdatmp*isaj*isaj;
+            vctot            = vctot + vcoul;  
+            vgbtot           = vgbtot + vgb;
+
             /* Lennard-Jones interaction */
-            rinvsix           = rinvsq*rinvsq*rinvsq;
-            Vvdw6             = c6*rinvsix;     
-            Vvdw12            = c12*rinvsix*rinvsix;
-            Vvdwtot           = Vvdwtot+Vvdw12-Vvdw6;
-            fscal             = (vcoul+12.0*Vvdw12-6.0*Vvdw6)*rinvsq;
-                        
+            rinvsix          = rinvsq*rinvsq*rinvsq;
+            Vvdw6            = c6*rinvsix;     
+            Vvdw12           = c12*rinvsix*rinvsix;
+            Vvdwtot          = Vvdwtot+Vvdw12-Vvdw6;
+            fscal            = (12.0*Vvdw12-6.0*Vvdw6)*rinvsq-(fijC-fscal)*rinv;
+            
             /* Calculate temporary vectorial force */
             tx                = fscal*dx;     
             ty                = fscal*dy;     
@@ -408,7 +482,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
             fix               = fix + tx;      
             fiy               = fiy + ty;      
             fiz               = fiz + tz;      
-
+            
             /* Decrement j atom force */
             f[3*k]            = f[3*k]   - tx;
             f[3*k+1]          = f[3*k+1] - ty;
@@ -426,10 +500,12 @@ nb_kernel_allvsall(t_forcerec *           fr,
         
 		Vc[ggid]         = Vc[ggid] + vctot;
         Vvdw[ggid]       = Vvdw[ggid] + Vvdwtot;
-		
+        vpol[ggid]       = vpol[ggid] + vgbtot;
+        dvda[i]          = dvda[i] + dvdasum*isai*isai;
+
 		/* Outer loop uses 6 flops/iteration */
 	}    
-      
+
     /* Write outer/inner iteration count to pointers */
     *outeriter       = ni1-ni0;         
     *inneriter       = (ni1-ni0)*natoms/2;         
