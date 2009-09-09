@@ -44,6 +44,7 @@
 #include "copyrite.h"
 #include "statutil.h"
 #include "ctype.h"
+#include "macros.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -254,9 +255,9 @@ int gmx_node_rank(void)
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 {
   gmx_nodecomm_t *nc;
-  int  n,rank,resultlen,hostnum,i,ng,ni;
+  int  n,rank,resultlen,hostnum,i,j,ng,ni;
 #ifdef GMX_MPI
-  char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+  char mpi_hostname[MPI_MAX_PROCESSOR_NAME],num[MPI_MAX_PROCESSOR_NAME];
 #endif
 
   /* Many MPI implementations do not optimize MPI_Allreduce
@@ -282,13 +283,21 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     /* This procedure can only differentiate nodes with host names
      * that end on unique numbers.
      */
-    i = resultlen - 1;
-    while(i > 0 && isdigit(mpi_hostname[i-1]))
-      i--;
-    if (isdigit(mpi_hostname[i])) {
-      hostnum = strtol(mpi_hostname+i, NULL, 0); 
-    } else {
+    i = 0;
+    j = 0;
+    /* Only parse the host name up to the first dot */
+    while(i < resultlen && mpi_hostname[i] != '.') {
+      if (isdigit(mpi_hostname[i])) {
+	num[j++] = mpi_hostname[i];
+      }
+      i++;
+    }
+    num[j] = '\0';
+    if (j == 0) {
       hostnum = 0;
+    } else {
+      /* Use only the last 9 decimals, so we don't overflow an int */
+      hostnum = strtol(num + max(0,j-9), NULL, 10); 
     }
 
     if (debug) {
@@ -314,7 +323,11 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     /* Check if this really created two step communication */
     MPI_Comm_size(nc->comm_inter,&ng);
     MPI_Comm_size(nc->comm_intra,&ni);
-    if ((ng > 1 && ng < n) || (ni > 1 && ni < n) ) {
+    if (debug) {
+      fprintf(debug,"In gmx_setup_nodecomm: groups %d, my group size %d\n",
+	      ng,ni);
+    }
+    if ((ng > 1 && ng < n) || (ni > 1 && ni < n)) {
       nc->bUse = TRUE;
       if (fplog)
 	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
