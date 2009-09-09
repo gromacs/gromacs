@@ -176,7 +176,7 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = strtol(yytext, NULL, 0);     return INT; }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);     return INT; }
 {REAL}          { yylval->r   = strtod(yytext,NULL);         return REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
 

@@ -595,7 +595,7 @@ void push_bt(directive d,t_params bt[],int nral,
     return;
   }
   
-  ft    = strtol(alc[nral],NULL,0);
+  ft    = strtol(alc[nral],NULL,10);
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
   nrfpA = interaction_function[ftype].nrfpA;
@@ -683,7 +683,7 @@ void push_dihedraltype(directive d,t_params bt[],
   nn=sscanf(line,formal[4],alc[0],alc[1],alc[2],alc[3],alc[4]);
   if(nn>=3 && strlen(alc[2])==1 && isdigit(alc[2][0])) {
     nral=2;
-    ft    = strtol(alc[nral],NULL,0);
+    ft    = strtol(alc[nral],NULL,10);
     /* Move atom types around a bit and use 'X' for wildcard atoms
      * to create a 4-atom dihedral definition with arbitrary atoms in
      * position 1 and 4.
@@ -703,7 +703,7 @@ void push_dihedraltype(directive d,t_params bt[],
     }
   } else if(nn==5 && strlen(alc[4])==1 && isdigit(alc[4][0])) {
     nral=4;
-    ft    = strtol(alc[nral],NULL,0);
+    ft    = strtol(alc[nral],NULL,10);
   } else {
     sprintf(errbuf,"Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)",nn-1);
     warning_error(errbuf);
@@ -943,9 +943,9 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	/* start is the position on the line where we start to read the actual cmap grid data from the itp file */
 	start = start + nn -1; 
 	
-	ft     = strtol(alc[nral],NULL,0);
-	nxcmap = strtol(alc[nral+1],NULL,0);
-	nycmap = strtol(alc[nral+2],NULL,0);
+	ft     = strtol(alc[nral],NULL,10);
+	nxcmap = strtol(alc[nral+1],NULL,10);
+	nycmap = strtol(alc[nral+2],NULL,10);
 	
 	/* Check for equal grid spacing in x and y dims */
 	if(nxcmap!=nycmap)
@@ -955,8 +955,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 	
 	ncmap  = nxcmap*nycmap;
 	ftype = ifunc_index(d,ft);
-	nrfpA = strtol(alc[6],NULL,0)*strtol(alc[6],NULL,0);
-	nrfpB = strtol(alc[7],NULL,0)*strtol(alc[7],NULL,0);
+	nrfpA = strtol(alc[6],NULL,10)*strtol(alc[6],NULL,10);
+	nrfpB = strtol(alc[7],NULL,10)*strtol(alc[7],NULL,10);
 	nrfp  = nrfpA+nrfpB;
 	
 	/* Allocate memory for the CMAP grid */
@@ -1076,7 +1076,7 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
 		resnumberic,atomnr);
     }
   }
-  resnr = strtol(resnumberic,NULL,0);
+  resnr = strtol(resnumberic,NULL,10);
 
   if (nr > 0) {
     resind = at->atom[nr-1].resind;

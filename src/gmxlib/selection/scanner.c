@@ -953,7 +953,7 @@ YY_RULE_SETUP
 case 2:
 YY_RULE_SETUP
 #line 179 "scanner.l"
-{ yylval->i   = strtol(yytext, NULL, 0);     return INT; }
+{ yylval->i   = strtol(yytext, NULL, 10);     return INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
