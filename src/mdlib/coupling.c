@@ -104,7 +104,7 @@ real calc_temp(real ekin,real nrdf)
     return 0;
 }
 
-void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
+void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
 			     t_inputrec *ir,real dt,tensor pres,
 			     tensor box,tensor box_rel,tensor boxv,
 			     tensor M,matrix mu,bool bFirstStep)
@@ -259,7 +259,7 @@ void parrinellorahman_pcoupl(FILE *fplog,gmx_step_t step,
   mmul_ur0(invbox,t1,mu);
 }
 
-void berendsen_pcoupl(FILE *fplog,gmx_step_t step,
+void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
 		      t_inputrec *ir,real dt,tensor pres,matrix box,
 		      matrix mu)
 {

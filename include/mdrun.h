@@ -87,7 +87,7 @@ typedef struct {
   double proctime;
   double time_per_step;
   double last;
-  gmx_step_t nsteps_done;
+  gmx_large_int_t nsteps_done;
 } gmx_runtime_t;
 
 typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
@@ -163,7 +163,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_xtc,bool bXTC,int xtc_prec,
 		const char *fn_cpt,bool bCPT,
 		gmx_mtop_t *top_global,
-		int eIntegrator,int simulation_part,gmx_step_t step,double t,
+		int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global,
 		int *n_xtc,rvec **x_xtc);
@@ -171,7 +171,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
  * Data is collected to the master node only when necessary.
  */
 
-extern int do_per_step(gmx_step_t step,gmx_step_t nstep);
+extern int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep);
 /* Return TRUE if io should be done */
 
 extern int do_any_io(int step, t_inputrec *ir);
@@ -179,7 +179,7 @@ extern int do_any_io(int step, t_inputrec *ir);
 /* ROUTINES from sim_util.c */
 
 extern void print_time(FILE *out,
-		       gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir);
+		       gmx_runtime_t *runtime,gmx_large_int_t step,t_inputrec *ir);
 
 extern void runtime_start(gmx_runtime_t *runtime);
 
@@ -205,7 +205,7 @@ extern void finish_run(FILE *log,t_commrec *cr,const char *confout,
 extern void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_step_t step,int natoms,matrix box,real lambda,
+			  gmx_large_int_t step,int natoms,matrix box,real lambda,
 			  tensor pres,tensor virial,gmx_enerdata_t *enerd);
      
 

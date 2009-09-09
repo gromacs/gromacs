@@ -94,7 +94,7 @@ typedef struct gmx_pme_comm_n_box {
   int    maxshift1;
   real   lambda;
   int    flags;
-  gmx_step_t step;
+  gmx_large_int_t step;
 } gmx_pme_comm_n_box_t;
 
 typedef struct {
@@ -151,7 +151,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 			     matrix box, rvec *x,
 			     real lambda,
 			     int maxshift0, int maxshift1,
-			     gmx_step_t step)
+			     gmx_large_int_t step)
 {
   gmx_domdec_t *dd;
   gmx_pme_comm_n_box_t *cnb;
@@ -240,7 +240,7 @@ void gmx_pme_send_q(t_commrec *cr,
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda,gmx_step_t step)
+		    bool bFreeEnergy, real lambda,gmx_large_int_t step)
 {
   int flags;
 
@@ -265,7 +265,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 		     matrix box, rvec **x,rvec **f,
 		     int *maxshift0, int *maxshift1,
 		     bool *bFreeEnergy,real *lambda,
-		     gmx_step_t *step)
+		     gmx_large_int_t *step)
 {
   gmx_pme_comm_n_box_t cnb;
   int  nat=0,q,messages,sender;

@@ -360,7 +360,7 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 }
 
 void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
-		gmx_step_t nsteps,real delta_t,
+		gmx_large_int_t nsteps,real delta_t,
 		double nbfs,double mflop)
 {
   real runtime;

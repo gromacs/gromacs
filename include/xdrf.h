@@ -80,9 +80,9 @@ int
 xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
-extern int xdr_gmx_step_t(XDR *xdrs,gmx_step_t *i,const char *warn);
-/* Read or write a gmx_step_t value.
- * 32bit code reading a 64bit gmx_step_t value from xdrs could
+extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
+/* Read or write a gmx_large_int_t value.
+ * 32bit code reading a 64bit gmx_large_int_t value from xdrs could
  * lead to values out of int range.
  * When warn!=NULL a warning will be written to stderr
  * when a value does not fit,

@@ -260,29 +260,29 @@ gmx_select(int argc, char *argv[])
     if (fnSize)
     {
         d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number",oenv);
-        xvgr_selections(d.sfp, trj, oenv);
+        xvgr_selections(d.sfp, trj);
         xvgr_legend(d.sfp, ngrps, grpnames, oenv);
     }
     if (fnFrac)
     {
         d.cfp = xvgropen(fnFrac, "Covered fraction", "Time (ps)", "Fraction",
                          oenv);
-        xvgr_selections(d.cfp, trj, oenv);
+        xvgr_selections(d.cfp, trj);
         xvgr_legend(d.cfp, ngrps, grpnames, oenv);
     }
     if (fnIndex)
     {
         d.ifp = ffopen(fnIndex, "w");
-        xvgr_selections(d.ifp, trj, oenv);
+        xvgr_selections(d.ifp, trj);
     }
     if (fnMask)
     {
         d.mfp = ffopen(fnMask, "w");
-        xvgr_selections(d.mfp, trj, oenv);
+        xvgr_selections(d.mfp, trj);
     }
 
     /* Do the analysis and write out results */
-    gmx_ana_do(trj, 0, &print_data, &d, oenv);
+    gmx_ana_do(trj, 0, &print_data, &d);
 
     /* Close the files */
     if (d.sfp)

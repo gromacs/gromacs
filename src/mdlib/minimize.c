@@ -124,7 +124,7 @@ static void warn_step(FILE *fp,real ftol,bool bConstrain)
 
 
 static void print_converged(FILE *fp,const char *alg,real ftol,
-			    gmx_step_t count,bool bDone,gmx_step_t nsteps,
+			    gmx_large_int_t count,bool bDone,gmx_large_int_t nsteps,
 			    real epot,real fmax, int nfmax, real fnorm)
 {
   char buf[22];
@@ -434,7 +434,7 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
 static void write_em_traj(FILE *fplog,t_commrec *cr,
                           int fp_trn,bool bX,bool bF,const char *confout,
                           gmx_mtop_t *top_global,
-                          t_inputrec *ir,gmx_step_t step,
+                          t_inputrec *ir,gmx_large_int_t step,
                           em_state_t *state,
                           t_state *state_global,rvec *f_global)
 {
@@ -460,7 +460,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
 		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
 		       gmx_constr_t constr,gmx_localtop_t *top,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       gmx_step_t count)
+		       gmx_large_int_t count)
 
 {
   t_state *s1,*s2;
@@ -609,7 +609,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
                             t_graph *graph,t_mdatoms *mdatoms,
                             t_forcerec *fr,rvec mu_tot,
                             gmx_enerdata_t *enerd,tensor vir,tensor pres,
-                            gmx_step_t count,bool bFirst)
+                            gmx_large_int_t count,bool bFirst)
 {
   real t;
   bool bNS;

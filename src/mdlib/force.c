@@ -1705,7 +1705,7 @@ void ns(FILE *fp,
   GMX_MPE_LOG(ev_ns_finish);
 }
 
-void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
+void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,

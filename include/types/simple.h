@@ -132,20 +132,23 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
-/* For the step count type gmx_step_t we aim for 8 bytes (64bit),
+/* For the step count type gmx_large_int_t we aim for 8 bytes (64bit),
  * but we might only be able to get 4 bytes (32bit).
  */
 #if (!(defined SIZEOF_LONG_LONG_INT) || SIZEOF_LONG_INT == 8)
-typedef long int gmx_step_t;
-#define gmx_step_fmt   "ld"
-#define gmx_step_pfmt "%ld"
-#define SIZEOF_GMX_STEP_T SIZEOF_LONG_INT
+typedef long int gmx_large_int_t;
+#define gmx_large_int_fmt   "ld"
+#define gmx_large_int_pfmt "%ld"
+#define SIZEOF_LARGE_INT SIZEOF_LONG_INT
+#define LARGE_INT_MAX LONG_MAX
 #else
-typedef long long int gmx_step_t;
-#define gmx_step_fmt   "lld"
-#define gmx_step_pfmt "%lld"
-#define SIZEOF_GMX_STEP_T SIZEOF_LONG_LONG_INT
+typedef long long int gmx_large_int_t;
+#define gmx_large_int_fmt   "lld"
+#define gmx_large_int_pfmt "%lld"
+#define SIZEOF_LARGE_INT SIZEOF_LONG_LONG_INT
+#define LARGE_INT_MAX LLONG_MAX
 #endif
+
 
 #ifdef __cplusplus
 }

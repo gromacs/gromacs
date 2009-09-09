@@ -18,7 +18,7 @@
 
 
 
-/*! \file  nb_kernel_x86_64_sse2_test_asm.h
+/*! \file
  *  \brief Assembly routine to test x86-64 SSE instructions
  *  \internal
  */

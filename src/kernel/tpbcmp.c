@@ -63,13 +63,13 @@ static void cmp_int(FILE *fp,const char *s,int index,int i1,int i2)
   }
 }
 
-static void cmp_gmx_step_t(FILE *fp,const char *s,gmx_step_t i1,gmx_step_t i2)
+static void cmp_gmx_large_int(FILE *fp,const char *s,gmx_large_int_t i1,gmx_large_int_t i2)
 {
   if (i1 != i2) {
     fprintf(fp,"%s (",s);
-    fprintf(fp,gmx_step_pfmt,i1);
+    fprintf(fp,gmx_large_int_pfmt,i1);
     fprintf(fp," - ");
-    fprintf(fp,gmx_step_pfmt,i2);
+    fprintf(fp,gmx_large_int_pfmt,i2);
     fprintf(fp,")\n");
   }
 }
@@ -425,8 +425,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
    * #define CIR(s) cmp_real(fp,"inputrec->"#s,0,ir1->##s,ir2->##s,ftol)
    */
   cmp_int(fp,"inputrec->eI",-1,ir1->eI,ir2->eI);
-  cmp_gmx_step_t(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
-  cmp_gmx_step_t(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
+  cmp_gmx_large_int(fp,"inputrec->nsteps",ir1->nsteps,ir2->nsteps);
+  cmp_gmx_large_int(fp,"inputrec->init_step",ir1->init_step,ir2->init_step);
   cmp_int(fp,"inputrec->simulation_part",-1,ir1->simulation_part,ir2->simulation_part);
   cmp_int(fp,"inputrec->nstcalcenergy",-1,ir1->nstcalcenergy,ir2->nstcalcenergy);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);

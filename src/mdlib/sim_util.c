@@ -128,7 +128,7 @@ gmx_gettime()
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
-void print_time(FILE *out,gmx_runtime_t *runtime,gmx_step_t step,t_inputrec *ir)
+void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,t_inputrec *ir)
 {
   time_t finish;
 
@@ -361,7 +361,7 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
 }
 
 static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
-			       gmx_step_t step,real pforce,rvec *x,rvec *f)
+			       gmx_large_int_t step,real pforce,rvec *x,rvec *f)
 {
   int  i;
   real pf2,fn2;
@@ -380,7 +380,7 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 
 void do_force(FILE *fplog,t_commrec *cr,
               t_inputrec *inputrec,
-              gmx_step_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
               gmx_mtop_t *mtop,
               gmx_groups_t *groups,
@@ -889,7 +889,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                         t_forcerec *fr,t_idef *idef)
 {
     int    i,m,start,end;
-    gmx_step_t step;
+    gmx_large_int_t step;
     double mass,tmass,vcm[4];
     real   dt=inputrec->delta_t;
     real   dvdlambda;
@@ -1134,7 +1134,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-                   gmx_step_t step,int natoms,matrix box,real lambda,
+                   gmx_large_int_t step,int natoms,matrix box,real lambda,
                    tensor pres,tensor virial,gmx_enerdata_t *enerd)
 {
     bool bCorrAll,bCorrPres;

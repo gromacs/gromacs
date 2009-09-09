@@ -156,12 +156,12 @@ static void do_cpt_int_err(XDR *xd,const char *desc,int *i,FILE *list)
     }
 }
 
-static void do_cpt_step_err(XDR *xd,const char *desc,gmx_step_t *i,FILE *list)
+static void do_cpt_step_err(XDR *xd,const char *desc,gmx_large_int_t *i,FILE *list)
 {
     bool_t res=0;
     char   buf[22];
 
-    res = xdr_gmx_step_t(xd,i,"reading checkpoint file");
+    res = xdr_gmx_large_int(xd,i,"reading checkpoint file");
     if (res == 0)
     {
         cp_error();
@@ -551,7 +551,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                           char **version,char **btime,char **buser,char **bmach,
                           char **fprog,char **ftime,
                           int *eIntegrator,int *simulation_part,
-                          gmx_step_t *step,double *t,
+                          gmx_large_int_t *step,double *t,
                           int *nnodes,int *dd_nc,int *npme,
                           int *natoms,int *ngtc,
                           int *flags_state,int *flags_eks,int *flags_enh,
@@ -854,7 +854,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
 			{
 				return -1;
 			}
-#if (SIZEOF_OFF_T > SIZEOF_INT)
+#if (SIZEOF_OFF_T > 4)
 			outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low & mask );
 #else
 			outputfiles[i].offset = offset_low;
@@ -866,13 +866,21 @@ static int do_cpt_files(XDR *xd, bool bRead,
 			do_cpt_string_err(xd,bRead,"output filename",&buf,list);
 			/* writing */
 			offset      = outputfiles[i].offset;
-#if (SIZEOF_OFF_T > SIZEOF_INT)
-			offset_low  = (int) (offset & mask);
-			offset_high = (int) ((offset >> 32) & mask);
+            if (offset == -1)
+            {
+                offset_low  = -1;
+                offset_high = -1;
+            }
+            else
+            {
+#if (SIZEOF_OFF_T > 4)
+                offset_low  = (int) (offset & mask);
+                offset_high = (int) ((offset >> 32) & mask);
 #else
-			offset_low  = offset;
-			offset_high = 0;
+                offset_low  = offset;
+                offset_high = 0;
 #endif
+            }
 			if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
 			{
 				return -1;
@@ -889,7 +897,7 @@ static int do_cpt_files(XDR *xd, bool bRead,
 
 void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                       int eIntegrator,int simulation_part,
-                      gmx_step_t step,double t,t_state *state)
+                      gmx_large_int_t step,double t,t_state *state)
 {
     int  fp;
     int  file_version;
@@ -1131,7 +1139,7 @@ static void check_match(FILE *fplog,
 
 static void read_checkpoint(const char *fn,FILE *fplog,
                             t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-                            int eIntegrator,gmx_step_t *step,double *t,
+                            int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,bool *bReadRNG,bool *bReadEkin,
                             int *simulation_part,bool bAppendOutputFiles)
 {
@@ -1364,18 +1372,23 @@ static void read_checkpoint(const char *fn,FILE *fplog,
 	 * You will get REALLY fun problems if you use the -append option by provide
 	 * mdrun with other input files (in-frame truncation in the wrong places). Suit yourself!
 	 */
-	if(bAppendOutputFiles)
-	{
-		for(i=0;i<nfiles;i++)
-		{
-			if(0 != gmx_truncatefile(outputfiles[i].filename,outputfiles[i].offset) )
+    if (bAppendOutputFiles)
+    {
+        for(i=0;i<nfiles;i++)
+        {
+            if (outputfiles[i].filename,outputfiles[i].offset < 0)
+            {
+                gmx_fatal(FARGS,"The original run wrote a file called '%s' which is larger than 2 GB, but mdrun did not support large file offsets. Can not append. Run mdrun without -append",outputfiles[i].filename);
+            }
+
+            if (0 != truncate(outputfiles[i].filename,outputfiles[i].offset))
             {
                 gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
             }
-		}
-	}
-	
-	sfree(outputfiles);
+        }
+    }
+
+    sfree(outputfiles);
 }
 
 
@@ -1384,7 +1397,7 @@ void load_checkpoint(const char *fn,FILE *fplog,
                      t_inputrec *ir,t_state *state,
                      bool *bReadRNG,bool *bReadEkin,bool bAppend)
 {
-    gmx_step_t step;
+    gmx_large_int_t step;
     double t;
 
     if (SIMMASTER(cr)) {
@@ -1408,7 +1421,7 @@ void load_checkpoint(const char *fn,FILE *fplog,
 }
 
 static void low_read_checkpoint_state(int fp,int *simulation_part,
-                                      gmx_step_t *step,double *t,t_state *state,
+                                      gmx_large_int_t *step,double *t,t_state *state,
                                       bool bReadRNG)
 {
     int  file_version;
@@ -1468,7 +1481,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
 
 void 
 read_checkpoint_state(const char *fn,int *simulation_part,
-                      gmx_step_t *step,double *t,t_state *state)
+                      gmx_large_int_t *step,double *t,t_state *state)
 {
     int  fp;
     
@@ -1484,7 +1497,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
 {
     t_state state;
     int simulation_part;
-    gmx_step_t step;
+    gmx_large_int_t step;
     double t;
     
     init_state(&state,0,0);
@@ -1494,7 +1507,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
     fr->bStep   = TRUE;
-    fr->step    = gmx_step_t_to_int(step,
+    fr->step    = gmx_large_int_to_int(step,
                                     "conversion of checkpoint to trajectory");
     fr->bTime   = TRUE;
     fr->time    = t;
@@ -1528,7 +1541,7 @@ void list_checkpoint(const char *fn,FILE *out)
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
     int  eIntegrator,simulation_part,nppnodes,npme;
-    gmx_step_t step;
+    gmx_large_int_t step;
     double t;
     ivec dd_nc;
     t_state state;
@@ -1586,14 +1599,14 @@ void list_checkpoint(const char *fn,FILE *out)
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
 void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                     gmx_step_t *cpt_step,t_commrec *cr)
+                                     gmx_large_int_t *cpt_step,t_commrec *cr)
 {
     int  fp;
 	int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
     int  eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
-    gmx_step_t step=0;
+    gmx_large_int_t step=0;
 	double t;
     int  natoms,ngtc,fflags,flags_eks,flags_enh;
 		
