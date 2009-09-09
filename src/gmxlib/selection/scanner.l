@@ -151,6 +151,7 @@ COMMENT    (#.*)
 %option nodefault
 %option noyywrap
 %option reentrant
+%option prefix="_gmx_sel_yy"
 
 %s matchof
 
