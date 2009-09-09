@@ -43,6 +43,8 @@
 #include "genborn.h"
 #include "genborn_allvsall.h"
 
+#if ( (defined(GMX_IA32_SSE) || defined(GMX_X86_64_SSE) || defined(GMX_SSE2)) && !defined(GMX_DOUBLE) )
+
 #include <xmmintrin.h>
 #include <emmintrin.h>
 #include <pmmintrin.h>
@@ -3357,5 +3359,10 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
 	return 0;
 }
 
+#else
+/* dummy variable when not using SSE */
+int genborn_allvsall_sse2_single_dummy;
 
+
+#endif
 
