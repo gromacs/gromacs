@@ -272,7 +272,7 @@ typedef struct {
 
   gmx_multisim_t *ms;
 
-#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+#if defined(GMX_MPI) && !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
   mpi_in_place_buf_t *mpb;
