@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -725,7 +726,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     bool bVsites, bool bVsiteAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
-	     bool bDeuterate, bool bChargeGroups, bool bNoCmap)
+	     bool bDeuterate, bool bChargeGroups, bool bCmap)
 {
   t_hackblock *hb;
   t_restp  *restp;
@@ -793,12 +794,17 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih,bRemoveDih,bMissing);
   done_nnb(&nnb);
   
-  /* Make CMAP */
-	if(FALSE == bNoCmap)
-	{
+    /* Make CMAP */
+    if (TRUE == bCmap)
+    {
 		gen_cmap(&(plist[F_CMAP]), restp, atoms->nr, atoms->atom, atoms->atomname, atoms->nres);
-		fprintf(stderr, "there are %4d cmap torsions\n",plist[F_CMAP].nr);
-	}
+        if (plist[F_CMAP].nr > 0)
+        {
+            fprintf(stderr, "There are %4d cmap torsion pairs\n",
+                    plist[F_CMAP].nr);
+        }
+    }
+
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
     do_h_mass(&(plist[F_BONDS]),vsite_type,atoms,mHmult,bDeuterate);
