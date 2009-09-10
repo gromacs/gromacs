@@ -1048,6 +1048,7 @@ AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])
 AC_CONFIG_FILES([ man/Makefile man/man1/Makefile man/man7/Makefile ])
+AC_CONFIG_FILES([ Doxyfile ])
 AC_OUTPUT
 
 
