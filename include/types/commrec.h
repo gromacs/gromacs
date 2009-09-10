@@ -99,6 +99,23 @@ typedef struct {
   rvec normal[DIM];
 } gmx_ddbox_t;
 
+
+#if defined(GMX_MPI) && !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+typedef struct {
+  /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
+     supported.*/
+  float *ibuf; /* for ints */
+  int ibuf_alloc;
+
+  float *fbuf; /* for floats */
+  int fbuf_alloc;
+
+  double *dbuf; /* for doubles */
+  int dbuf_alloc;
+} mpi_in_place_buf_t;
+#endif
+
+
 typedef struct {
   /* The DD particle-particle nodes only */
   /* The communication setup within the communicator all
@@ -202,14 +219,7 @@ typedef struct {
 #if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
   /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
      supported.*/
-  float *ibuf; /* for ints */
-  int ibuf_alloc;
-
-  float *fbuf; /* for floats */
-  int fbuf_alloc;
-
-  double *dbuf; /* for doubles */
-  int dbuf_alloc;
+  mpi_in_place_buf_t *mpb;
 #endif
 #endif
 } gmx_multisim_t;
@@ -261,6 +271,12 @@ typedef struct {
   int duty;
 
   gmx_multisim_t *ms;
+
+#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+  /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
+     supported.*/
+  mpi_in_place_buf_t *mpb;
+#endif
 } t_commrec;
 
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
