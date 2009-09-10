@@ -725,7 +725,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     bool bVsites, bool bVsiteAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
-	     bool bDeuterate, bool bChargeGroups)
+	     bool bDeuterate, bool bChargeGroups, bool bNoCmap)
 {
   t_hackblock *hb;
   t_restp  *restp;
@@ -794,9 +794,11 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   done_nnb(&nnb);
   
   /* Make CMAP */
-  gen_cmap(&(plist[F_CMAP]), restp, atoms->nr, atoms->atom, atoms->atomname, atoms->nres);
-  fprintf(stderr, "there are %4d cmap torsions\n",plist[F_CMAP].nr);
-	
+	if(FALSE == bNoCmap)
+	{
+		gen_cmap(&(plist[F_CMAP]), restp, atoms->nr, atoms->atom, atoms->atomname, atoms->nres);
+		fprintf(stderr, "there are %4d cmap torsions\n",plist[F_CMAP].nr);
+	}
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
     do_h_mass(&(plist[F_BONDS]),vsite_type,atoms,mHmult,bDeuterate);
