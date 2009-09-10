@@ -417,27 +417,26 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
                       cr->mpi_comm_mygroup);
     }
 #else
-    /* this is thread-unsafe, but it will do for now: */
-    static double *buf=NULL;
-    static int nalloc=0;
     int i;
 
-    if (nr > nalloc) {
-        nalloc = nr;
-        srenew(buf,nalloc);
+    if (nr > cr->ms->dbuf_alloc) {
+        cr->ms->dbuf_nalloc = nr;
+        srenew(cr->ms->dbuf,cr->ms->dbuf_alloc);
     }
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_intra);
+        MPI_Allreduce(r,cr->ms->dbuf,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(buf,r,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_inter);
+            MPI_Allreduce(cr->ms->dbuf,r,nr,MPI_DOUBLE,MPI_SUM,
+                          cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,MPI_DOUBLE,0,cr->nc.comm_intra);
     } else {
-        MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mygroup);
+        MPI_Allreduce(r,cr->ms->dbuf,nr,MPI_DOUBLE,MPI_SUM,
+                      cr->mpi_comm_mygroup);
         for(i=0; i<nr; i++)
-            r[i] = buf[i];
+            r[i] = cr->ms->dbuf[i];
     }
 #endif
 #endif
@@ -472,27 +471,25 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
         MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
     }
 #else
-    /* this is thread-unsafe, but it will do for now: */
-    static float *buf=NULL;
-    static int nalloc=0;
     int i;
 
-    if (nr > nalloc) {
-        nalloc = nr;
-        srenew(buf,nalloc);
+    if (nr > cr->ms->fbuf_alloc) {
+        cr->ms->fbuf_nalloc = nr;
+        srenew(cr->ms->fbuf,cr->ms->fbuf_alloc);
     }
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_intra);
+        MPI_Allreduce(r,cr->ms->fbuf,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(buf,r,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_inter);
+            MPI_Allreduce(cr->ms->fbuf,r,nr,MPI_FLOAT,MPI_SUM,
+                          cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,MPI_FLOAT,0,cr->nc.comm_intra);
     } else {
-        MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
+        MPI_Allreduce(r,cr->ms->fbuf,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
         for(i=0; i<nr; i++)
-            r[i] = buf[i];
+            r[i] = cr->ms->fbuf[i];
     }
 #endif
 #endif
@@ -525,27 +522,24 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
         MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
     }
 #else
-    /* this is thread-unsafe, but it will do for now: */
-    static int *buf=NULL;
-    static int nalloc=0;
     int i;
 
-    if (nr > nalloc) {
-        nalloc = nr;
-        srenew(buf,nalloc);
+    if (nr > cr->ibuf_alloc) {
+        cr->ms->ibuf_nalloc = nr;
+        srenew(cr->ms->ibuf,cr->ms->ibuf_alloc);
     }
     if (cr->nc.bUse) {
         /* Use two step summing */
-        MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->nc.comm_intra);
+        MPI_Allreduce(r,cr->ms->ibuf,nr,MPI_INT,MPI_SUM,cr->nc.comm_intra);
         if (cr->nc.rank_intra == 0) {
             /* Sum with the buffers reversed */
-            MPI_Allreduce(buf,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
+            MPI_Allreduce(cr->ms->ibuf,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
         }
         MPI_Bcast(r,nr,MPI_INT,0,cr->nc.comm_intra);
     } else {
-        MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
+        MPI_Allreduce(r,cr->ms->ibuf,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
         for(i=0; i<nr; i++)
-            r[i] = buf[i];
+            r[i] = cr->ms->ibuf[i];
     }
 #endif
 #endif
@@ -557,18 +551,17 @@ void gmx_sumd_comm(int nr,double r[],MPI_Comm mpi_comm)
 #if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
 #else
-    /* this is thread-unsafe, but it will do for now: */
-    static double *buf=NULL;
-    static int nalloc=0;
+    /* this function is only used in code that is not performance critical,
+       (during setup, when comm_rec is not the appropriate communication  
+       structure), so this isn't as bad as it looks. */
+    double *buf;
     int i;
 
-    if (nr > nalloc) {
-        nalloc = nr;
-        srenew(buf,nalloc);
-    }
+    snew(buf, nr);
     MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,mpi_comm);
     for(i=0; i<nr; i++)
         r[i] = buf[i];
+    sfree(buf);
 #endif
 }
 #endif
@@ -579,18 +572,17 @@ void gmx_sumf_comm(int nr,float r[],MPI_Comm mpi_comm)
 #if defined(MPI_IN_PLACE_EXISTS) || defined(GMX_THREADS)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
 #else
-    /* this is thread-unsafe, but it will do for now: */
-    static float *buf=NULL;
-    static int nalloc=0;
+    /* this function is only used in code that is not performance critical,
+       (during setup, when comm_rec is not the appropriate communication  
+       structure), so this isn't as bad as it looks. */
+    double *buf;
     int i;
 
-    if (nr > nalloc) {
-        nalloc = nr;
-        srenew(buf,nalloc);
-    }
+    snew(buf, nr);
     MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,mpi_comm);
     for(i=0; i<nr; i++)
         r[i] = buf[i];
+    sfree(buf);
 #endif
 }
 #endif
@@ -622,17 +614,15 @@ void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms)
     MPI_Allreduce(MPI_IN_PLACE,r,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
 #else
     /* this is thread-unsafe, but it will do for now: */
-    static int *buf=NULL;
-    static int nalloc=0;
     int i;
 
-    if (nr > nalloc) {
-        nalloc = nr;
-        srenew(buf,nalloc);
+    if (nr > ms->ibuf_alloc) {
+        ms->ibuf_alloc = nr;
+        srenew(ms->ibuf,ms->ibuf_alloc);
     }
-    MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
+    MPI_Allreduce(r,ms->buf,nr,MPI_INT,MPI_SUM,ms->mpi_comm_masters);
     for(i=0; i<nr; i++)
-        r[i] = buf[i];
+        r[i] = ms->buf[i];
 #endif
 #endif
 }

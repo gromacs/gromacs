@@ -199,6 +199,18 @@ typedef struct {
 #ifdef GMX_MPI
   MPI_Group mpi_group_masters;
   MPI_Comm mpi_comm_masters;
+#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+  /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
+     supported.*/
+  float *ibuf; /* for ints */
+  int ibuf_alloc;
+
+  float *fbuf; /* for floats */
+  int fbuf_alloc;
+
+  double *dbuf; /* for doubles */
+  int dbuf_alloc;
+#endif
 #endif
 } gmx_multisim_t;
 
