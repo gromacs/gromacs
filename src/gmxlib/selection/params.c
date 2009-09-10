@@ -45,6 +45,7 @@
 #include <selparam.h>
 
 #include "parsetree.h"
+#include "position.h"
 #include "selelem.h"
 
 /*!
@@ -250,13 +251,25 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
         }
     }
 
+    /* Check that the value type is actually implemented */
     if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE
-        && param->val.type != STR_VALUE)
+        && param->val.type != STR_VALUE && param->val.type != POS_VALUE)
     {
         gmx_bug("internal error");
         return FALSE;
     }
-    _gmx_selvalue_reserve(&param->val, nval);
+
+    /* Reserve appropriate amount of memory */
+    if (param->val.type == POS_VALUE)
+    {
+        gmx_ana_pos_reserve(param->val.u.p, nval, 0);
+        gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
+    }
+    else
+    {
+        _gmx_selvalue_reserve(&param->val, nval);
+    }
+
     value = values;
     i     = 0;
     while (value)
@@ -291,6 +304,7 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
                 break;
             case REAL_VALUE: param->val.u.r[i++] = value->u.r;         break;
             case STR_VALUE:  param->val.u.s[i++] = strdup(value->u.s); break;
+            case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
                 gmx_bug("internal error");
                 return FALSE;
