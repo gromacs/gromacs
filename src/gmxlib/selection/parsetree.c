@@ -421,6 +421,21 @@ init_method_params(gmx_ana_selcollection_t *sc, t_selelem *sel)
         {
             param[i].val.nr = -1;
         }
+        /* Duplicate the enum value array if it is given statically */
+        if ((param[i].flags & SPAR_ENUMVAL) && orgparam[i].val.u.ptr != NULL)
+        {
+            int n;
+
+            /* Count the values */
+            n = 1;
+            while (orgparam[i].val.u.s[n] != NULL)
+            {
+                ++n;
+            }
+            _gmx_selvalue_reserve(&param[i].val, n+1);
+            memcpy(param[i].val.u.s, orgparam[i].val.u.s,
+                   (n+1)*sizeof(param[i].val.u.s[0]));
+        }
     }
     mdata = NULL;
     if (sel->u.expr.method->init_data)

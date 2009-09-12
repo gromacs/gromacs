@@ -237,7 +237,7 @@ int gmx_wheel(int argc,char *argv[])
   
   for(i=1; (i<argc); i++) {
     if (strcmp(argv[i],"-r0") == 0) {
-      r0=strtol(argv[++i],NULL,0);
+      r0=strtol(argv[++i],NULL,10);
       fprintf(stderr,"First residue is %d\n",r0);
     }
     else if (strcmp(argv[i],"-rot0") == 0) {

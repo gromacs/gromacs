@@ -337,37 +337,39 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 
 	gbdata.gb_epsilon_solvent = fr->gb_epsilon_solvent;
 	gbdata.gpol               = egpol;
-
+    
     if(fr->bAllvsAll) 
     {
         if(fr->bGB)
         {
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
-#  if 0
+# ifdef GMX_DOUBLE
             /* double not done yet */
-            nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                             &outeriter,&inneriter,&fr->AllvsAll_work);
             gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
+/*
+ nb_kernel_allvsallgb_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                             &outeriter,&inneriter,&fr->AllvsAll_work);
+ */
 #  else
             nb_kernel_allvsallgb_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
                                              &outeriter,&inneriter,&fr->AllvsAll_work);
 #  endif
 #else
-       /*
-        nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
-                                 &outeriter,&inneriter,&fr->AllvsAll_work);
-        */
-            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
+            nb_kernel_allvsallgb(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,egpol,
+                                 &outeriter,&inneriter,&fr->AllvsAll_work);        
 #endif     
             inc_nrnb(nrnb,eNR_NBKERNEL_ALLVSALLGB,inneriter);
         }
         else
         { 
 #if (defined GMX_SSE2 || defined GMX_X86_64_SSE || defined GMX_X86_64_SSE2 || defined GMX_IA32_SSE || defined GMX_IA32_SSE2)
-#  if 0
+# ifdef GMX_DOUBLE
             /* double not done yet */
+            gmx_fatal(FARGS,"Death horror - allvsall double precision kernel not done yet!");
+/*
             nb_kernel_allvsall_sse2_double(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                            &outeriter,&inneriter,&fr->AllvsAll_work);
+ */
 #  else
             nb_kernel_allvsall_sse2_single(fr,mdatoms,excl,x[0],f[0],egcoul,egnb,
                                            &outeriter,&inneriter,&fr->AllvsAll_work);

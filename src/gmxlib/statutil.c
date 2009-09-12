@@ -685,11 +685,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifdef __sgi
     envstr = getenv("GMXNPRIALL");
     if (envstr)
-        npri=strtol(envstr,NULL,0);
+        npri=strtol(envstr,NULL,10);
     if (FF(PCA_BE_NICE)) {
         envstr = getenv("GMXNPRI");
         if (envstr)
-            npri=strtol(envstr,NULL,0);
+            npri=strtol(envstr,NULL,10);
     }
     npall = add_parg(npall,all_pa,&npri_pa);
 #endif

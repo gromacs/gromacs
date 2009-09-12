@@ -640,6 +640,7 @@ int main(int argc,char *argv[])
   static real bon_lo=0.4;
   static real bon_hi=0.7;
   static real ftol=0.001;
+  static real abstol=0.001;
   static bool bCompAB=FALSE;
   static char *lastener=NULL;
   static t_pargs pa[] = {
@@ -649,8 +650,10 @@ int main(int argc,char *argv[])
       "Min. fract. of sum of VdW radii for bonded atoms" },
     { "-bonhi",  FALSE, etREAL, {&bon_hi},
       "Max. fract. of sum of VdW radii for bonded atoms" },
-     { "-tol",    FALSE, etREAL, {&ftol},
+    { "-tol",    FALSE, etREAL, {&ftol},
       "Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)" },
+    { "-abstol",    FALSE, etREAL, {&abstol},
+      "Absolute tolerance, useful when sums are close to zero." },
     { "-ab",     FALSE, etBOOL, {&bCompAB},
       "Compare the A and B topology from one file" }, 
     { "-lastener",FALSE, etSTR,  {&lastener},
@@ -665,7 +668,7 @@ int main(int argc,char *argv[])
   fn2 = opt2fn_null("-f2",NFILE,fnm);
   tex = opt2fn_null("-m",NFILE,fnm);
   if (fn1 && fn2)
-    comp_trx(oenv,fn1,fn2,ftol);
+    comp_trx(oenv,fn1,fn2,ftol,abstol);
   else if (fn1)
     chk_trj(oenv,fn1,opt2fn_null("-s1",NFILE,fnm),ftol);
   else if (fn2)
@@ -679,7 +682,7 @@ int main(int argc,char *argv[])
 	gmx_fatal(FARGS,"With -ab you need to set the -s1 option");
       fn2 = NULL;
     }
-    comp_tpx(fn1,fn2,ftol);
+    comp_tpx(fn1,fn2,ftol,abstol);
   } else if (fn1 && tex)
     tpx2methods(fn1,tex);
   else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2)) {
@@ -690,7 +693,7 @@ int main(int argc,char *argv[])
   fn1 = opt2fn_null("-e",NFILE,fnm);
   fn2 = opt2fn_null("-e2",NFILE,fnm);
   if (fn1 && fn2)
-    comp_enx(fn1,fn2,ftol,lastener);
+    comp_enx(fn1,fn2,ftol,abstol,lastener);
   else if (fn1)
     chk_enx(ftp2fn(efEDR,NFILE,fnm));
   else if (fn2)

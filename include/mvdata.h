@@ -67,11 +67,22 @@ extern void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 		       int left,int right,rvec vecs[],rvec buf[],
 		       int shift,t_nrnb *nrnb);
 
+extern void move_reals(const t_commrec *cr,bool bForward,bool bSum,
+                       int left,int right,real reals[],real buf[],
+                       int shift,t_nrnb *nrnb);
+
 extern void move_x(FILE *log,const t_commrec *cr,
 		   int left,int right,rvec x[],t_nrnb *nrnb);
 		    
+extern void move_rborn(FILE *log,const t_commrec *cr,
+                       int left,int right,real rborn[],t_nrnb *nrnb);
+
 extern void move_f(FILE *log,const t_commrec *cr,
 		   int left,int right,rvec f[],rvec fadd[],
 		   t_nrnb *nrnb);
-		    
+
+extern void move_gpol(FILE *log,const t_commrec *cr,
+                      int left,int right,real gpol[],real gpol_add[],
+                      t_nrnb *nrnb);
+
 #endif	/* _mvdata_h */

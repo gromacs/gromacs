@@ -51,6 +51,7 @@ typedef struct
 {
     bool                bDump;
     bool                bFracNorm;
+    const char         *routt;
     int                *size;
     FILE               *sfp;
     FILE               *cfp;
@@ -105,7 +106,14 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             }
             for (i = 0; i < sel[g]->p.nr; ++i)
             {
-                fprintf(d->ifp, " %d", sel[g]->p.m.mapid[i]+1);
+                if (sel[g]->p.m.type == INDEX_RES && d->routt[0] == 'n')
+                {
+                    fprintf(d->ifp, " %d", top->atoms.resinfo[sel[g]->p.m.mapid[i]].nr);
+                }
+                else
+                {
+                    fprintf(d->ifp, " %d", sel[g]->p.m.mapid[i]+1);
+                }
             }
         }
         fprintf(d->ifp, "\n");
@@ -163,6 +171,13 @@ gmx_select(int argc, char *argv[])
         "and so on. With [TT]-dump[tt], the frame time and the number",
         "of positions is omitted from the output. In this case, only one",
         "selection can be given.[PAR]",
+        "For residue numbers, the output of [TT]-oi[tt] can be controlled",
+        "with [TT]-resnr[tt]: [TT]number[tt] (default) prints the residue",
+        "numbers as they appear in the input file, while [TT]index[tt] prints",
+        "unique numbers assigned to the residues in the order they appear",
+        "in the input file, starting with 1. The former is more intuitive,",
+        "but if the input contains multiple residues with the same number,",
+        "the output can be less useful.[PAR]",
         "With [TT]-om[tt], a mask is printed for the first selection",
         "as a function of time. Each line in the output corresponds to",
         "one frame, and contains either 0/1 for each atom/residue/molecule",
@@ -174,6 +189,7 @@ gmx_select(int argc, char *argv[])
     bool                bDump     = FALSE;
     bool                bFracNorm = FALSE;
     bool                bTotNorm  = FALSE;
+    const char         *routt[] = {NULL, "number", "index", NULL};
     t_pargs             pa[] = {
         {"-dump",   FALSE, etBOOL, {&bDump},
          "Do not print the frame time (-om, -oi) or the index size (-oi)"},
@@ -181,6 +197,8 @@ gmx_select(int argc, char *argv[])
          "Normalize by total number of positions with -os"},
         {"-cfnorm", FALSE, etBOOL, {&bFracNorm},
          "Normalize by covered fraction with -os"},
+        {"-resnr",  FALSE, etENUM, {routt},
+         "Residue number output type"},
     };
 
     t_filenm            fnm[] = {
@@ -248,6 +266,7 @@ gmx_select(int argc, char *argv[])
     /* Initialize calculation data */
     d.bDump     = bDump;
     d.bFracNorm = bFracNorm;
+    d.routt     = routt[0];
     snew(d.size,  ngrps);
     for (g = 0; g < ngrps; ++g)
     {
@@ -260,29 +279,29 @@ gmx_select(int argc, char *argv[])
     if (fnSize)
     {
         d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number",oenv);
-        xvgr_selections(d.sfp, trj, oenv);
+        xvgr_selections(d.sfp, trj);
         xvgr_legend(d.sfp, ngrps, grpnames, oenv);
     }
     if (fnFrac)
     {
         d.cfp = xvgropen(fnFrac, "Covered fraction", "Time (ps)", "Fraction",
                          oenv);
-        xvgr_selections(d.cfp, trj, oenv);
+        xvgr_selections(d.cfp, trj);
         xvgr_legend(d.cfp, ngrps, grpnames, oenv);
     }
     if (fnIndex)
     {
         d.ifp = ffopen(fnIndex, "w");
-        xvgr_selections(d.ifp, trj, oenv);
+        xvgr_selections(d.ifp, trj);
     }
     if (fnMask)
     {
         d.mfp = ffopen(fnMask, "w");
-        xvgr_selections(d.mfp, trj, oenv);
+        xvgr_selections(d.mfp, trj);
     }
 
     /* Do the analysis and write out results */
-    gmx_ana_do(trj, 0, &print_data, &d, oenv);
+    gmx_ana_do(trj, 0, &print_data, &d);
 
     /* Close the files */
     if (d.sfp)

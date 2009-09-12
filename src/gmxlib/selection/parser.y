@@ -158,6 +158,8 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 %debug
 %pure-parser
 
+%name-prefix="_gmx_sel_yy"
+
 %parse-param { yyscan_t                 scanner }
 %lex-param   { yyscan_t                 scanner }
 %parse-param { int                      nexp    }
@@ -511,7 +513,7 @@ _gmx_sel_run_parser(yyscan_t scanner, gmx_ana_selcollection_t *sc,
 
     nr        = sc->nr;
     nexp      = (maxnr > 0) ? (sc->nr + maxnr) : -1;
-    bOk = !yyparse(scanner, nexp, grps);
+    bOk = !_gmx_sel_yyparse(scanner, nexp, grps);
     _gmx_sel_free_lexer(scanner);
     if (sc->selstr)
     {
