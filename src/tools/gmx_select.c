@@ -44,7 +44,8 @@
 #include <smalloc.h>
 #include <statutil.h>
 #include <xvgr.h>
-
+#include <string2.h>
+#include <selection.h>
 #include <trajana.h>
 
 typedef struct
@@ -56,6 +57,9 @@ typedef struct
     FILE               *sfp;
     FILE               *cfp;
     FILE               *ifp;
+    t_blocka           *block;
+    char              **gnames;
+    char               *selstr;
     FILE               *mfp;
     gmx_ana_indexmap_t *mmap;
 } t_dsdata;
@@ -67,6 +71,7 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_dsdata           *d = (t_dsdata *)data;
     int                 g, i, b, mask;
     real                normfac;
+    char                buf2[100];
 
     /* Write the sizes of the groups, possibly normalized */
     if (d->sfp)
@@ -117,6 +122,12 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             }
         }
         fprintf(d->ifp, "\n");
+    }
+    
+    if (d->block)
+    {
+        snprintf(buf2,sizeof(buf2)/sizeof(char),"%s_%.3f",d->selstr,fr->time);
+        add_grp(d->block,&d->gnames,sel[0]->p.nr,sel[0]->p.m.mapid,buf2);
     }
 
     /* Write masks */
@@ -206,6 +217,7 @@ gmx_select(int argc, char *argv[])
         {efXVG, "-oc", "cfrac.xvg", ffOPTWR},
         {efDAT, "-oi", "index.dat", ffOPTWR},
         {efDAT, "-om", "mask.dat",  ffOPTWR},
+        {efNDX, "-on", "index.ndx", ffOPTWR},
     };
 #define NFILE asize(fnm)
 
@@ -213,12 +225,14 @@ gmx_select(int argc, char *argv[])
     t_topology           *top;
     int                   ngrps;
     gmx_ana_selection_t **sel;
+    gmx_ana_selcollection_t *sc;
     char                **grpnames;
     t_dsdata              d;
-    const char            *fnSize, *fnFrac, *fnIndex, *fnMask;
+    const char            *fnSize, *fnFrac, *fnIndex, *fnNdx, *fnMask;
     int                   g;
     int                   rc;
     output_env_t          oenv;
+    char*                 nl;
 
     CopyRight(stderr, argv[0]);
     gmx_ana_traj_create(&trj, 0);
@@ -234,16 +248,21 @@ gmx_select(int argc, char *argv[])
     fnSize  = opt2fn_null("-os", NFILE, fnm);
     fnFrac  = opt2fn_null("-oc", NFILE, fnm);
     fnIndex = opt2fn_null("-oi", NFILE, fnm);
+    fnNdx   = opt2fn_null("-on", NFILE, fnm);
     fnMask  = opt2fn_null("-om", NFILE, fnm);
     /* Write out sizes if nothing specified */
-    if (!fnFrac && !fnIndex && !fnMask)
+    if (!fnFrac && !fnIndex && !fnMask && !fnNdx)
     {
         fnSize = opt2fn("-os", NFILE, fnm);
     }
 
-    if (bDump && ngrps > 1)
+    if (( bDump || fnNdx ) && ngrps > 1)
     {
-        gmx_fatal(FARGS, "Only one index group allowed with -dump");
+        gmx_fatal(FARGS, "Only one index group allowed with -dump and -on");
+    }
+    if (fnNdx && sel[0]->p.m.type != INDEX_ATOM)
+    {
+        gmx_fatal(FARGS, "Only atom selection allowed with -on");
     }
     if (fnMask && ngrps > 1)
     {
@@ -294,6 +313,22 @@ gmx_select(int argc, char *argv[])
         d.ifp = ffopen(fnIndex, "w");
         xvgr_selections(d.ifp, trj);
     }
+    if (fnNdx)
+    {
+        d.block = new_blocka();
+        d.gnames = NULL;
+        gmx_ana_get_selcollection(trj,&sc);
+        d.selstr = strdup(gmx_ana_selcollection_get_selstr(sc));
+        while ((nl = strchr(d.selstr, ' ')) != NULL)
+        {
+            *nl = '_';
+        }
+        nl = strchr(d.selstr, '\n');
+        if (nl)
+        {
+            *nl = 0;
+        }
+    }
     if (fnMask)
     {
         d.mfp = ffopen(fnMask, "w");
@@ -315,6 +350,11 @@ gmx_select(int argc, char *argv[])
     if (d.ifp)
     {
         fclose(d.ifp);
+    }
+    if (d.block)
+    {
+        write_index(fnNdx, d.block, d.gnames);
+        sfree(d.selstr);
     }
     if (d.mfp)
     {
