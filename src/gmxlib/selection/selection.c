@@ -479,16 +479,6 @@ gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i)
 
 /*!
  * \param[in]  sc  Selection collection to query.
- * \returns    Pointer to selection string.
- */
-char *
-gmx_ana_selcollection_get_selstr(gmx_ana_selcollection_t *sc)
-{
-    return sc->selstr;
-}
-
-/*!
- * \param[in]  sc  Selection collection to query.
  * \returns    TRUE if any selection in \p sc requires topology information,
  *   FALSE otherwise.
  *
