@@ -343,8 +343,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   if (EEL_PME(ir->coulombtype)) {
-    if ((ir->pme_order < 4) || (ir->pme_order % 2 == 1)) {
-      warning_error("pme_order should be even and at least 4");
+    if (ir->pme_order < 3) {
+      warning_error("pme_order can not be smaller than 3");
     }
   }
 
