@@ -706,8 +706,8 @@ parse_trjana_args(gmx_ana_traj_t *d,
     {
         for (k = 0; k < nfile; ++k)
         {
-            if (fnm_map[k] == -1 && def_fnm[i].opt == NULL &&
-                fnm[k].ftp == def_fnm[i].ftp)
+            if (fnm_map[k] == -1 && def_fnm[i].opt == NULL
+                && fnm[k].opt == NULL && fnm[k].ftp == def_fnm[i].ftp)
             {
                 break;
             }
