@@ -122,7 +122,8 @@
  * semicolons. Each selection defines a set of positions for the analysis.
  * Each selection can also be preceded by a string that gives a name for
  * the selection for use in, e.g., graph legends.
- * If no name is provided, a name like "Selection 3" is generated automatically.
+ * If no name is provided, a the string used for the selection is used
+ * automatically.
  * It is also possible to use variables to store selection expressions.
  * A variable is defined with the following syntax:
 \verbatim

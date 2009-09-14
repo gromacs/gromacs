@@ -175,6 +175,7 @@ commands:    command
                  $$ = _gmx_sel_append_selection(sc, $1, NULL);
                  if (sc->nr == nexp)
                      YYACCEPT;
+                 _gmx_sel_lexer_clear_pselstr(scanner);
              }
            | commands CMD_SEP command
              {
@@ -183,6 +184,7 @@ commands:    command
                  $$ = _gmx_sel_append_selection(sc, $3, $1);
                  if (sc->nr == nexp)
                      YYACCEPT;
+                 _gmx_sel_lexer_clear_pselstr(scanner);
              }
 ;
 
@@ -210,17 +212,16 @@ command:     /* empty */        { $$ = NULL;                            }
                  if (s == NULL) YYABORT;
                  p = _gmx_sel_init_position(sc, s, sc->spost, TRUE);
                  if (p == NULL) YYABORT;
-                 $$ = _gmx_sel_init_selection(scanner, p);
+                 $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
              }
-           | selection          { $$ = _gmx_sel_init_selection(scanner, $1); }
-           | string selection   { $$ = _gmx_sel_init_selection(scanner, $2);
-                                  $$->name = $1; $$->u.cgrp.name = $1;   }
+           | selection          { $$ = _gmx_sel_init_selection(NULL, $1, scanner); }
+           | string selection   { $$ = _gmx_sel_init_selection($1, $2, scanner);  }
            | IDENTIFIER '=' sel_expr
-                                { $$ = _gmx_sel_assign_variable(scanner, $1, $3); }
+                                { $$ = _gmx_sel_assign_variable($1, $3, scanner); }
            | IDENTIFIER '=' numeric_expr
-                                { $$ = _gmx_sel_assign_variable(scanner, $1, $3); }
+                                { $$ = _gmx_sel_assign_variable($1, $3, scanner); }
            | IDENTIFIER '=' pos_expr_nosel
-                                { $$ = _gmx_sel_assign_variable(scanner, $1, $3); }
+                                { $$ = _gmx_sel_assign_variable($1, $3, scanner); }
 ;
 
 /* Selection is made of an expression and zero or more modifiers */

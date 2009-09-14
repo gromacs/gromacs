@@ -71,6 +71,10 @@ typedef struct gmx_sel_lexer_t
     int                   slen;
     int                   nalloc_str;
 
+    char                 *pselstr;
+    int                   pslen;
+    int                   nalloc_psel;
+
     gmx_ana_selmethod_t **mstack;
     int                   msp;
     int                   mstack_alloc;
@@ -92,6 +96,10 @@ process_next_param(YYSTYPE *, gmx_sel_lexer_t *state);
 static int
 process_identifier(YYSTYPE *, char *, int,
                    gmx_sel_lexer_t *state);
+static void
+add_token(const char *str, int len, gmx_sel_lexer_t *state);
+
+#define ADD_TOKEN add_token(yytext, yyleng, state)
 
 #define YY_INPUT(buf,result,max_size) \
     { \
@@ -177,26 +185,26 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);     return INT; }
-{REAL}          { yylval->r   = strtod(yytext,NULL);         return REAL; }
-{STRING}        { yylval->str = strndup(yytext+1, yyleng-2); return STR; }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INT;  }
+{REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return REAL; }
+{STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
 \\\n            { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
 ";"|\n          { if (yytext[0] == ';' || state->prompt) return CMD_SEP; }
-group           { return GROUP; }
-to              { return TO; }
-<matchof>of     { BEGIN(0); return OF; }
-and|"&&"        { return AND; }
-or|"||"         { return OR; }
-xor             { return XOR; }
-not|"!"         { return NOT; }
-{CMPOP}         { yylval->str = strndup(yytext, yyleng); return CMP_OP; }
+group           { ADD_TOKEN; return GROUP; }
+to              { ADD_TOKEN; return TO; }
+<matchof>of     { ADD_TOKEN; BEGIN(0); return OF; }
+and|"&&"        { ADD_TOKEN; return AND; }
+or|"||"         { ADD_TOKEN; return OR; }
+xor             { ADD_TOKEN; return XOR; }
+not|"!"         { ADD_TOKEN; return NOT; }
+{CMPOP}         { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 
 {IDENTIFIER}    { return process_identifier(yylval, yytext, yyleng, state); }
 
-[[:blank:]]+
-[_[:alnum:]]+   { yylval->str = strndup(yytext, yyleng);     return STR; }
-.               { return yytext[0]; }
+[[:blank:]]+    { add_token(" ", 1, state); }
+[_[:alnum:]]+   { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
+.               { add_token(yytext, 1, state); return yytext[0]; }
 
 %%
 /* Undefine the macros so that we can have them as variable names in the
@@ -219,6 +227,7 @@ process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
     state->nextparam = NULL;
     /* FIXME: The constness should not be cast away */
     yylval->str = (char *)param->name;
+    add_token(param->name, -1, state);
     switch (param->val.type)
     {
         case NO_VALUE:    return PARAM_BOOL;
@@ -273,6 +282,7 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             }
             /* FIXME: The constness should not be cast away */
             yylval->str = (char *)param->name;
+            add_token(param->name, -1, state);
             switch (param->val.type)
             {
                 case NO_VALUE:    return PARAM_BOOL;
@@ -292,8 +302,10 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     if (!symbol)
     {
         yylval->str = strndup(yytext, yyleng);
+        ADD_TOKEN;
         return IDENTIFIER;
     }
+    add_token(_gmx_sel_sym_name(symbol), -1, state);
     symtype = _gmx_sel_sym_type(symbol);
     /* Reserved symbols should have been caught earlier */
     if (symtype == SYMBOL_RESERVED)
@@ -405,6 +417,30 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     return INVALID;
 }
 
+static void
+add_token(const char *str, int len, gmx_sel_lexer_t *state)
+{
+    if (!str || len == 0 || strlen(str) == 0)
+    {
+        return;
+    }
+    if (len < 0)
+    {
+        len = strlen(str);
+    }
+    /* Allocate more memory if necessary */
+    if (state->nalloc_psel - state->pslen < len)
+    {
+        int incr = STRSTORE_ALLOCSTEP < len ? len : STRSTORE_ALLOCSTEP;
+        state->nalloc_psel += incr;
+        srenew(state->pselstr, state->nalloc_psel);
+    }
+    /* Append the token to the stored string */
+    strncpy(state->pselstr + state->pslen, str, len);
+    state->pslen += len;
+    state->pselstr[state->pslen] = 0;
+}
+
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
                     bool bInteractive)
@@ -435,6 +471,11 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
         state->nalloc_str = 0;
     }
 
+    snew(state->pselstr, STRSTORE_ALLOCSTEP);
+    state->pselstr[0]   = 0;
+    state->pslen        = 0;
+    state->nalloc_psel  = STRSTORE_ALLOCSTEP;
+
     snew(state->mstack, 20);
     state->mstack_alloc = 20;
     state->msp          = -1;
@@ -452,6 +493,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = yyget_extra(scanner);
 
+    sfree(state->pselstr);
     sfree(state->mstack);
     if (state->bBuffer)
     {
@@ -473,6 +515,21 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = yyget_extra(scanner);
     return state->sc;
+}
+
+const char *
+_gmx_sel_lexer_pselstr(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
+    return state->pselstr;
+}
+
+void
+_gmx_sel_lexer_clear_pselstr(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = yyget_extra(scanner);
+    state->pselstr[0] = 0;
+    state->pslen      = 0;
 }
 
 void

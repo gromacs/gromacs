@@ -559,6 +559,10 @@ typedef struct gmx_sel_lexer_t
     int                   slen;
     int                   nalloc_str;
 
+    char                 *pselstr;
+    int                   pslen;
+    int                   nalloc_psel;
+
     gmx_ana_selmethod_t **mstack;
     int                   msp;
     int                   mstack_alloc;
@@ -580,6 +584,10 @@ process_next_param(YYSTYPE *, gmx_sel_lexer_t *state);
 static int
 process_identifier(YYSTYPE *, char *, int,
                    gmx_sel_lexer_t *state);
+static void
+add_token(const char *str, int len, gmx_sel_lexer_t *state);
+
+#define ADD_TOKEN add_token(yytext, yyleng, state)
 
 #define YY_INPUT(buf,result,max_size) \
     { \
@@ -625,7 +633,7 @@ process_identifier(YYSTYPE *, char *, int,
         } \
     }
 
-#line 629 "<stdout>"
+#line 637 "<stdout>"
 
 #define INITIAL 0
 #define matchof 1
@@ -852,7 +860,7 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 158 "scanner.l"
+#line 166 "scanner.l"
 
 
 
@@ -874,7 +882,7 @@ YY_DECL
     }
 
 
-#line 878 "<stdout>"
+#line 886 "<stdout>"
 
 	if ( !yyg->yy_init )
 		{
@@ -959,102 +967,102 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 179 "scanner.l"
+#line 187 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 180 "scanner.l"
-{ yylval->i   = strtol(yytext, NULL, 10);     return INT; }
+#line 188 "scanner.l"
+{ yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INT;  }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 181 "scanner.l"
-{ yylval->r   = strtod(yytext,NULL);         return REAL; }
+#line 189 "scanner.l"
+{ yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 182 "scanner.l"
-{ yylval->str = strndup(yytext+1, yyleng-2); return STR; }
+#line 190 "scanner.l"
+{ yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 184 "scanner.l"
+#line 192 "scanner.l"
 { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 185 "scanner.l"
+#line 193 "scanner.l"
 { if (yytext[0] == ';' || state->prompt) return CMD_SEP; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 186 "scanner.l"
-{ return GROUP; }
+#line 194 "scanner.l"
+{ ADD_TOKEN; return GROUP; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 187 "scanner.l"
-{ return TO; }
+#line 195 "scanner.l"
+{ ADD_TOKEN; return TO; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 188 "scanner.l"
-{ BEGIN(0); return OF; }
+#line 196 "scanner.l"
+{ ADD_TOKEN; BEGIN(0); return OF; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 189 "scanner.l"
-{ return AND; }
+#line 197 "scanner.l"
+{ ADD_TOKEN; return AND; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 190 "scanner.l"
-{ return OR; }
+#line 198 "scanner.l"
+{ ADD_TOKEN; return OR; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 191 "scanner.l"
-{ return XOR; }
+#line 199 "scanner.l"
+{ ADD_TOKEN; return XOR; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 192 "scanner.l"
-{ return NOT; }
+#line 200 "scanner.l"
+{ ADD_TOKEN; return NOT; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 193 "scanner.l"
-{ yylval->str = strndup(yytext, yyleng); return CMP_OP; }
+#line 201 "scanner.l"
+{ yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 195 "scanner.l"
+#line 203 "scanner.l"
 { return process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 197 "scanner.l"
-
+#line 205 "scanner.l"
+{ add_token(" ", 1, state); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 198 "scanner.l"
-{ yylval->str = strndup(yytext, yyleng);     return STR; }
+#line 206 "scanner.l"
+{ yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 199 "scanner.l"
-{ return yytext[0]; }
+#line 207 "scanner.l"
+{ add_token(yytext, 1, state); return yytext[0]; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 201 "scanner.l"
+#line 209 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1058 "<stdout>"
+#line 1066 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(matchof):
 	yyterminate();
@@ -2210,7 +2218,7 @@ void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 201 "scanner.l"
+#line 209 "scanner.l"
 
 
 /* Undefine the macros so that we can have them as variable names in the
@@ -2233,6 +2241,7 @@ process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
     state->nextparam = NULL;
     /* FIXME: The constness should not be cast away */
     yylval->str = (char *)param->name;
+    add_token(param->name, -1, state);
     switch (param->val.type)
     {
         case NO_VALUE:    return PARAM_BOOL;
@@ -2287,6 +2296,7 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             }
             /* FIXME: The constness should not be cast away */
             yylval->str = (char *)param->name;
+            add_token(param->name, -1, state);
             switch (param->val.type)
             {
                 case NO_VALUE:    return PARAM_BOOL;
@@ -2306,8 +2316,10 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     if (!symbol)
     {
         yylval->str = strndup(yytext, yyleng);
+        ADD_TOKEN;
         return IDENTIFIER;
     }
+    add_token(_gmx_sel_sym_name(symbol), -1, state);
     symtype = _gmx_sel_sym_type(symbol);
     /* Reserved symbols should have been caught earlier */
     if (symtype == SYMBOL_RESERVED)
@@ -2419,6 +2431,30 @@ process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     return INVALID;
 }
 
+static void
+add_token(const char *str, int len, gmx_sel_lexer_t *state)
+{
+    if (!str || len == 0 || strlen(str) == 0)
+    {
+        return;
+    }
+    if (len < 0)
+    {
+        len = strlen(str);
+    }
+    /* Allocate more memory if necessary */
+    if (state->nalloc_psel - state->pslen < len)
+    {
+        int incr = STRSTORE_ALLOCSTEP < len ? len : STRSTORE_ALLOCSTEP;
+        state->nalloc_psel += incr;
+        srenew(state->pselstr, state->nalloc_psel);
+    }
+    /* Append the token to the stored string */
+    strncpy(state->pselstr + state->pslen, str, len);
+    state->pslen += len;
+    state->pselstr[state->pslen] = 0;
+}
+
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
                     bool bInteractive)
@@ -2449,6 +2485,11 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
         state->nalloc_str = 0;
     }
 
+    snew(state->pselstr, STRSTORE_ALLOCSTEP);
+    state->pselstr[0]   = 0;
+    state->pslen        = 0;
+    state->nalloc_psel  = STRSTORE_ALLOCSTEP;
+
     snew(state->mstack, 20);
     state->mstack_alloc = 20;
     state->msp          = -1;
@@ -2466,6 +2507,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
+    sfree(state->pselstr);
     sfree(state->mstack);
     if (state->bBuffer)
     {
@@ -2487,6 +2529,21 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->sc;
+}
+
+const char *
+_gmx_sel_lexer_pselstr(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->pselstr;
+}
+
+void
+_gmx_sel_lexer_clear_pselstr(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    state->pselstr[0] = 0;
+    state->pslen      = 0;
 }
 
 void
