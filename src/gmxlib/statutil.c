@@ -417,12 +417,12 @@ int iscan(int argc,char *argv[],int *i)
     return var;
 }
 
-gmx_step_t istepscan(int argc,char *argv[],int *i)
+gmx_large_int_t istepscan(int argc,char *argv[],int *i)
 {
-    gmx_step_t var;
+    gmx_large_int_t var;
     
     if (argc > (*i)+1) {
-        if (!sscanf(argv[++(*i)],gmx_step_pfmt,&var))
+        if (!sscanf(argv[++(*i)],gmx_large_int_pfmt,&var))
             usage("an integer",argv[(*i)-1]);
     } else
         usage("an integer",argv[*i]);
@@ -685,11 +685,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifdef __sgi
     envstr = getenv("GMXNPRIALL");
     if (envstr)
-        npri=strtol(envstr,NULL,0);
+        npri=strtol(envstr,NULL,10);
     if (FF(PCA_BE_NICE)) {
         envstr = getenv("GMXNPRI");
         if (envstr)
-            npri=strtol(envstr,NULL,0);
+            npri=strtol(envstr,NULL,10);
     }
     npall = add_parg(npall,all_pa,&npri_pa);
 #endif

@@ -157,6 +157,7 @@ gmx_test_selection(int argc, char *argv[])
     t_dumpdata            d;
     int                   ngrps;
     gmx_ana_selection_t **sel;
+    output_env_t          oenv;
 
 #define NFILE asize(fnm)
 
@@ -166,7 +167,8 @@ gmx_test_selection(int argc, char *argv[])
     gmx_ana_get_selcollection(trj, &d.sc);
     gmx_ana_set_nanagrps(trj, -1);
     parse_trjana_args(trj, &argc, argv, 0,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL);
+                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
+                      &oenv);
     if (bMaskOnly)
     {
         gmx_ana_add_flags(trj, ANA_USE_POSMASK);

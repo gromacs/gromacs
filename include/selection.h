@@ -135,6 +135,9 @@ gmx_ana_selcollection_get_count(gmx_ana_selcollection_t *sc);
 /*! Returns a selection by index.*/
 extern gmx_ana_selection_t *
 gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i);
+/*! Returns selection string.*/
+extern char *
+gmx_ana_selcollection_get_selstr(gmx_ana_selcollection_t *sc);
 /*! Returns TRUE if the collection requires topology information for evaluation.*/
 extern bool
 gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc);

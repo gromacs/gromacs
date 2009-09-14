@@ -136,6 +136,12 @@ typedef struct {
   rvec posres_com;
   rvec posres_comB;
 
+  /* Use special N*N kernels? */
+  bool bAllvsAll;
+  /* Private work data */
+  void *AllvsAll_work;
+  void *AllvsAll_workgb;
+
   /* Cut-Off stuff.
    * Infinite cut-off's will be GMX_CUTOFF_INF (unlike in t_inputrec: 0).
    */
@@ -314,6 +320,7 @@ typedef struct {
   real *dvda;
   /* Derivatives of the Born radii with respect to coordinates */
   real *dadx;
+  real *dadx_rawptr;
   int   nalloc_dadx; /* Allocated size of dadx */
 	
   /* If > 0 signals Test Particle Insertion,

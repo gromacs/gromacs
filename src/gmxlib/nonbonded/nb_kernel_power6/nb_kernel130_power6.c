@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#include <types/simple.h>
+
 #ifndef F77_FUNC
 #define F77_FUNC(name,NAME) name ## _
 #endif

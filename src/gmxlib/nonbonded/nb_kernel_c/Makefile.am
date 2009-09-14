@@ -20,7 +20,8 @@ libnb_kernel_c_la_SOURCES = \
 	nb_kernel314.c nb_kernel320.c nb_kernel321.c nb_kernel322.c \
 	nb_kernel323.c nb_kernel324.c nb_kernel330.c nb_kernel331.c \
 	nb_kernel332.c nb_kernel333.c nb_kernel334.c nb_kernel400.c \
-	nb_kernel410.c nb_kernel420.c nb_kernel430.c               \
+	nb_kernel410.c nb_kernel420.c nb_kernel430.c                \
+	nb_kernel_allvsall.c          nb_kernel_allvsallgb.c        \
 	nb_kernel010.h nb_kernel020.h nb_kernel030.h nb_kernel100.h \
 	nb_kernel101.h nb_kernel102.h nb_kernel103.h nb_kernel104.h \
 	nb_kernel110.h nb_kernel111.h nb_kernel112.h nb_kernel113.h \
@@ -37,7 +38,8 @@ libnb_kernel_c_la_SOURCES = \
 	nb_kernel314.h nb_kernel320.h nb_kernel321.h nb_kernel322.h \
 	nb_kernel323.h nb_kernel324.h nb_kernel330.h nb_kernel331.h \
 	nb_kernel332.h nb_kernel333.h nb_kernel334.h nb_kernel400.h \
-	nb_kernel410.h nb_kernel420.h nb_kernel430.h               \
+	nb_kernel410.h nb_kernel420.h nb_kernel430.h                \
+	nb_kernel_allvsall.h	      nb_kernel_allvsallgb.h	    \
 	nb_kernel_c.c    nb_kernel_c.h
 
 

@@ -1728,7 +1728,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
             {
                 close_neighbor_list(fr,TRUE,n,i,FALSE);
                 /* Evaluate the energies and forces */
-                do_nonbonded(cr,fr,x,f,md,
+                do_nonbonded(cr,fr,x,f,md,NULL,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
                              grppener->ener[egCOULLR],
 							 grppener->ener[egGB],box_size,
@@ -2389,7 +2389,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
         char *ptr=getenv("GMX_DUMP_NL");
         if (ptr)
         {
-            ns->dump_nl=strtol(ptr,NULL,0);
+            ns->dump_nl=strtol(ptr,NULL,10);
             if (fplog)
             {
                 fprintf(fplog, "GMX_DUMP_NL = %d", ns->dump_nl);

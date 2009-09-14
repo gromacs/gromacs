@@ -48,11 +48,11 @@
 typedef struct {
   int        nener;
   gmx_enxnm_t *enm;
-  gmx_step_t nsteps;
-  gmx_step_t nsum;
+  gmx_large_int_t nsteps;
+  gmx_large_int_t nsum;
   t_energy   *e;
-  gmx_step_t nsteps_sim;
-  gmx_step_t nsum_sim;
+  gmx_large_int_t nsteps_sim;
+  gmx_large_int_t nsum_sim;
   t_energy   *e_sim;
 } t_ebin;
 

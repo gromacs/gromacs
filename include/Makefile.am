@@ -3,12 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SUBDIRS = . types 
-
-if THREAD_PARALLEL
-	THREAD_HEADERS = thread_mpi.h 	thread_mpi/atomic.h 	thread_mpi/mpi.h 	thread_mpi/nothreads.h \
-			thread_mpi/pthreads.h thread_mpi/threads.h thread_mpi/tmpi.h thread_mpi/winthreads.h tmpi.h 
-endif
+SUBDIRS = . types thread_mpi
 
 
 pkginclude_HEADERS = \
@@ -151,4 +146,6 @@ writeps.h \
 xdrf.h \
 xtcio.h \
 xvgr.h \
-$(THREAD_HEADERS)
+thread_mpi.h \
+tmpi.h
+

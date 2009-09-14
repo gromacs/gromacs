@@ -188,7 +188,7 @@ static void write_constr_pdb(const char *fn,const char *title,
   gmx_fio_fclose(out);
 }
 			     
-static void dump_confs(FILE *fplog,gmx_step_t step,gmx_mtop_t *mtop,
+static void dump_confs(FILE *fplog,gmx_large_int_t step,gmx_mtop_t *mtop,
 		       int start,int homenr,t_commrec *cr,
 		       rvec x[],rvec xprime[],matrix box)
 {
@@ -224,7 +224,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                struct gmx_constr *constr,
                t_idef *idef,t_inputrec *ir,
                t_commrec *cr,
-               gmx_step_t step,int delta_step,
+               gmx_large_int_t step,int delta_step,
                t_mdatoms *md,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,

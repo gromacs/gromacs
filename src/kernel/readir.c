@@ -1856,8 +1856,8 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.bSH,nr);
 
   for(i=0;i<nr;i++){
-    ir->opts.QMmult[i]   = strtol(ptr1[i],NULL,0);
-    ir->opts.QMcharge[i] = strtol(ptr2[i],NULL,0);
+    ir->opts.QMmult[i]   = strtol(ptr1[i],NULL,10);
+    ir->opts.QMcharge[i] = strtol(ptr2[i],NULL,10);
     ir->opts.bSH[i]      = (strncasecmp(ptr3[i],"Y",1)==0);
   }
 
@@ -1866,8 +1866,8 @@ void do_index(const char* mdparin, const char *ndx,
   snew(ir->opts.CASelectrons,nr);
   snew(ir->opts.CASorbitals,nr);
   for(i=0;i<nr;i++){
-    ir->opts.CASelectrons[i]= strtol(ptr1[i],NULL,0);
-    ir->opts.CASorbitals[i] = strtol(ptr2[i],NULL,0);
+    ir->opts.CASelectrons[i]= strtol(ptr1[i],NULL,10);
+    ir->opts.CASorbitals[i] = strtol(ptr2[i],NULL,10);
   }
   /* special optimization options */
 
@@ -1889,7 +1889,7 @@ void do_index(const char* mdparin, const char *ndx,
   for(i=0;i<nr;i++){
     ir->opts.SAon[i]    = strtod(ptr1[i],NULL);
     ir->opts.SAoff[i]   = strtod(ptr2[i],NULL);
-    ir->opts.SAsteps[i] = strtol(ptr3[i],NULL,0);
+    ir->opts.SAsteps[i] = strtol(ptr3[i],NULL,10);
   }
   /* end of QMMM input */
 

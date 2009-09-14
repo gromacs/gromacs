@@ -321,6 +321,18 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
   sfree(rank);
   MPI_Comm_create(MPI_COMM_WORLD,ms->mpi_group_masters,
 		  &ms->mpi_comm_masters);
+
+#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+  /* initialize the MPI_IN_PLACE replacement buffers */
+  snew(ms->mpb, 1);
+  ms->mpb->ibuf=NULL;
+  ms->mpb->fbuf=NULL;
+  ms->mpb->dbuf=NULL;
+  ms->mpb->ibuf_alloc=0;
+  ms->mpb->fbuf_alloc=0;
+  ms->mpb->dbuf_alloc=0;
+#endif
+
 #endif
 
   /* Reduce the intra-simulation communication */
@@ -420,6 +432,19 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     if (PAR(cr))
         comm_args(cr,argc,argv_ptr);
 #endif /* GMX_THREADS */
+
+#ifdef GMX_MPI
+#if !defined(GMX_THREADS) && !defined(MPI_IN_PLACE_EXISTS)
+  /* initialize the MPI_IN_PLACE replacement buffers */
+  snew(cr->mpb, 1);
+  cr->mpb->ibuf=NULL;
+  cr->mpb->fbuf=NULL;
+  cr->mpb->dbuf=NULL;
+  cr->mpb->ibuf_alloc=0;
+  cr->mpb->fbuf_alloc=0;
+  cr->mpb->dbuf_alloc=0;
+#endif
+#endif
 
     return cr;
 }

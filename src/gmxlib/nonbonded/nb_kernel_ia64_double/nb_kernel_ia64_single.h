@@ -18,7 +18,7 @@
 #ifndef _NB_KERNEL_IA64_SINGLE_H_
 #define _NB_KERNEL_IA64_SINGLE_H_
 
-/*! \file  nb_kernel_ia64_single.h
+/*! \file
  *  \brief ia64 single precision assembly nonbonded kernels.
  *
  *  \internal

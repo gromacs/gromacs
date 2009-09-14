@@ -230,6 +230,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
 	       real rcut,bool bMat,t_atoms *atoms,
 	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
 	       bool bMin, int nres, atom_id *residue,bool bPBC,int ePBC,
+	       bool bEachResEachTime, bool bPrintResName,
                const output_env_t oenv)
 {
   FILE         *atm,*dist,*num;
@@ -245,6 +246,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   matrix       box;
   t_trxframe   frout;
   bool         bFirst;
+  FILE *respertime=NULL;
   
   if ((natoms=read_first_x(oenv,&status,fn,&t,&x0,box))==0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
@@ -285,6 +287,20 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
     xvgr_legend(dist,ng-1,leg,oenv);
     if (num) xvgr_legend(num,ng-1,leg,oenv);
   }
+  
+  if (bEachResEachTime)
+  {
+    sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
+    respertime=xvgropen(rfile,buf,get_time_label(oenv),"Distance (nm)",oenv);
+    xvgr_legend(respertime,ng-1,leg,oenv);
+	if (bPrintResName) 
+	  fprintf(respertime,"# ");
+	    for (j=0; j<nres; j++)
+		  fprintf(respertime,"%s%d ",*(atoms->resinfo[atoms->atom[index[0][residue[j]]].resind].name),atoms->atom[index[0][residue[j]]].resind);
+		fprintf(respertime,"\n");
+
+  }
+  
   j=0;
   if (nres) {
     snew(mindres, ng-1);
@@ -357,6 +373,20 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
       write_trx(trxout,2,oindex,atoms,i,t,box,x0,NULL,NULL);
     }
     bFirst=FALSE;
+	/*dmin should be minimum distance for residue and group*/
+	if (bEachResEachTime)
+	{
+	    fprintf(respertime,"%12e",t);
+	    for(i=1; i<ng; i++) 
+			for(j=0; j<nres; j++)
+			{
+				fprintf(respertime, " %7g", bMin ? mindres[i-1][j] : maxdres[i-1][j]);
+				/*reset distances for next time point*/
+				mindres[i-1][j]=1e6;
+				maxdres[i-1][j]=0;
+			}	
+		fprintf(respertime, "\n");
+	}
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   
   close_trj(status);
@@ -365,7 +395,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   if (atm) fclose(atm);
   if (trxout>=0) close_xtc(trxout);
   
-  if(nres) {
+  if(nres && !bEachResEachTime) {
     FILE *res;
     
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
@@ -391,7 +421,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
   
   /* build index of first atom numbers for each residue */  
   presnr = NOTSET;
-  snew(residx, atoms->nres);
+  snew(residx, atoms->nres+1);
   for(i=0; i<n; i++) {
     resnr = atoms->atom[index[i]].resind;
     if (resnr != presnr) {
@@ -404,7 +434,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
 		    nres, atoms->nres, atoms->nr, n);
   srenew(residx, nres+1);
   /* mark end of last residue */
-  residx[nres]=n+1;
+  residx[nres] = n;
   *resindex = residx;
   return nres;
 }
@@ -447,6 +477,7 @@ int gmx_mindist(int argc,char *argv[])
   static bool bMat=FALSE,bPI=FALSE,bSplit=FALSE,bMax=FALSE,bPBC=TRUE;
   static real rcutoff=0.6;
   static int  ng=1;
+  static bool bEachResEachTime=FALSE,bPrintResName=FALSE;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
@@ -461,7 +492,11 @@ int gmx_mindist(int argc,char *argv[])
     { "-ng",       FALSE, etINT, {&ng},
       "Number of secondary groups to compute distance to a central group" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
-      "Take periodic boundary conditions into account" }
+      "Take periodic boundary conditions into account" },
+    { "-respertime",  FALSE, etBOOL, {&bEachResEachTime},
+      "When writing per-residue distances, write distance for each time point" },
+    { "-printresname",  FALSE, etBOOL, {&bPrintResName},
+      "Write residue names" }
   };
   output_env_t oenv;
   t_topology *top=NULL;
@@ -558,7 +593,7 @@ int gmx_mindist(int argc,char *argv[])
   else
     dist_plot(trxfnm,atmfnm,distfnm,numfnm,resfnm,oxfnm,
 	      rcutoff,bMat,top ? &(top->atoms) : NULL,
-	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues,bPBC,ePBC,oenv);
+	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues,bPBC,ePBC,bEachResEachTime,bPrintResName,oenv);
 
   do_view(oenv,distfnm,"-nxy");
   if (!bPBC)

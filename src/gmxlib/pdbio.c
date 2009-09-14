@@ -380,7 +380,7 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   trim(anm);
   
   /* Search backwards for number and name only */
-  atomnr = strtol(anr, NULL, 0); 
+  atomnr = strtol(anr, NULL, 10); 
   for(i=natom-1; (i>=0); i--)
     if ((strcmp(anm,*(atoms->atomname[i])) == 0) && 
 	(atomnr == atoms->pdbinfo[i].atomnr))
@@ -486,7 +486,7 @@ static int read_atom(t_symtab *symtab,
   }
   rnr[k] = nc;
   trim(rnr);
-  resnr = strtol(rnr, NULL, 0); 
+  resnr = strtol(rnr, NULL, 10); 
   resic = line[j];
   j+=4;
 
@@ -539,7 +539,7 @@ static int read_atom(t_symtab *symtab,
   x[natom][ZZ]=strtod(zc,NULL)*0.1;
   if (atoms->pdbinfo) {
     atoms->pdbinfo[natom].type=type;
-    atoms->pdbinfo[natom].atomnr=strtol(anr, NULL, 0); 
+    atoms->pdbinfo[natom].atomnr=strtol(anr, NULL, 10); 
     atoms->pdbinfo[natom].altloc=altloc;
     strcpy(atoms->pdbinfo[natom].atomnm,anm_copy);
     atoms->pdbinfo[natom].bfac=strtod(bfac,NULL);

@@ -1234,6 +1234,27 @@ void init_forcerec(FILE *fp,
     fr->sc_power   = ir->sc_power;
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
+    /* Check if we can/should do all-vs-all kernels */
+#ifdef DOUBLE
+    /* double not done yet */
+    fr->bAllvsAll = FALSE;
+#else
+    fr->bAllvsAll = (ir->rlist==0            &&
+                     ir->rcoulomb==0         &&
+                     ir->rvdw==0             &&
+                     ir->ePBC==epbcNONE      &&
+                     ir->vdwtype==evdwCUT    &&
+                     ir->coulombtype==eelCUT &&
+                     ir->efep==efepNO        &&
+                     (ir->implicit_solvent == eisNO || 
+                      (ir->implicit_solvent==eisGBSA && (ir->gb_algorithm==egbSTILL || 
+                                                         ir->gb_algorithm==egbHCT   || 
+                                                         ir->gb_algorithm==egbOBC)))
+                     );
+#endif
+    fr->AllvsAll_work   = NULL;
+    fr->AllvsAll_workgb = NULL;
+
     /* Neighbour searching stuff */
     fr->bGrid      = (ir->ns_type == ensGRID);
     fr->ePBC       = ir->ePBC;
@@ -1684,7 +1705,7 @@ void ns(FILE *fp,
   GMX_MPE_LOG(ev_ns_finish);
 }
 
-void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
+void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
@@ -1785,7 +1806,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 		
 		if(bBornRadii)
 		{
-			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md);
+			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md,nrnb);
 		}
 		
 		/* wallcycle_stop(wcycle, ewcGB); */
@@ -1797,7 +1818,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
     {
         donb_flags |= GMX_DONB_FORCES;
     }
-    do_nonbonded(cr,fr,x,f,md,
+    do_nonbonded(cr,fr,x,f,md,excl,
                  fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR] :
                  enerd->grpp.ener[egLJSR],
@@ -1816,7 +1837,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
             lam_i = (i==0 ? lambda : ir->flambda[i-1]);
             dvdl_dum = 0;
             reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
-            do_nonbonded(cr,fr,x,f,md,
+            do_nonbonded(cr,fr,x,f,md,excl,
                          fr->bBHAM ?
                          ed_lam.grpp.ener[egBHAMSR] :
                          ed_lam.grpp.ener[egLJSR],
@@ -1834,7 +1855,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_step_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
+		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm,nrnb,bBornRadii);
 		enerd->term[F_GB12]+=dvdgb;	
 		
 		/* Also add the nonbonded GB potential energy (only from one energy group currently) */

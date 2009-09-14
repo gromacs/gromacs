@@ -80,7 +80,7 @@
  *    and line to generate an error message when allocation failed.
  *
  * extern void *save_calloc(char *name,char *file,int line, 
- *                          unsigned nelem,size_t elsize);
+ *                          size_t nelem,size_t elsize);
  *    Like calloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
  *
@@ -115,9 +115,9 @@ extern "C" {
 
 void *save_malloc(const char *name,const char *file,int line,size_t size); 
 void *save_calloc(const char *name,const char *file,int line,
-		  unsigned nelem,size_t elsize); 
+		  size_t nelem,size_t elsize); 
 void *save_realloc(const char *name,const char *file,int line,
-		   void *ptr,unsigned nelem,size_t elsize);
+		   void *ptr,size_t nelem,size_t elsize);
 void save_free(const char *name,const char *file,int line, void *ptr);
 size_t maxavail(void);
 size_t memavail(void);

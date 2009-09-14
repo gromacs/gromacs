@@ -162,7 +162,8 @@
  * should be 1.
  *
  * The nest two pointers should always be NULL (they should be initialized in
- * the callbacks).
+ * the callbacks), except the first pointer in the case of \ref SPAR_ENUMVAL
+ * (see below).
  *
  * The final value gives additional information about the acceptable values
  * for the parameter using a combination of flags.
@@ -187,6 +188,11 @@
  *    The single input value is treated as if the same value was returned for
  *    each atom.
  *    Cannot be combined with \ref SPAR_RANGES or \ref SPAR_VARNUM.
+ *  - \ref SPAR_ENUMVAL : Can only be set for \ref STR_VALUE parameters that
+ *    take a single value, and cannot be combined with any other flag than
+ *    \ref SPAR_OPTIONAL. If set, the parameter only accepts one of predefined
+ *    string values. See \ref SPAR_ENUMVAL documentation for details on how
+ *    to specify the acceptable values.
  *
  *
  * \section selmethods_callbacks Implementing callbacks
@@ -349,6 +355,8 @@ struct gmx_ana_selcollection_t;
  * with the exception of parameters that specify the \ref SPAR_VARNUM or
  * the \ref SPAR_ATOMVAL flag (these should be handled in sel_initfunc()).
  * However, parameters with a position value should be initialized.
+ * It is also possible to initialize \ref SPAR_ENUMVAL statically outside
+ * this function (see \ref SPAR_ENUMVAL).
  * The \c gmx_ana_selparam_t::nvalptr should also be initialized for
  * non-position-valued parameters that have both \ref SPAR_VARNUM and
  * \ref SPAR_DYNAMIC set (it can also be initialized for other parameters if
@@ -468,6 +476,8 @@ typedef int   (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
  * this function is not needed.
  * The value pointers for \ref SPAR_VARNUM and \ref SPAR_ATOMVAL parameters
  * stored in sel_initfunc() should also be freed.
+ * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not
+ * be freed.
  */
 typedef void  (*sel_freefunc)(void *data);
 

@@ -58,6 +58,14 @@
 /* Using locations.  */
 #define YYLSP_NEEDED 0
 
+/* Substitute the variable and function names.  */
+#define yyparse _gmx_sel_yyparse
+#define yylex   _gmx_sel_yylex
+#define yyerror _gmx_sel_yyerror
+#define yylval  _gmx_sel_yylval
+#define yychar  _gmx_sel_yychar
+#define yydebug _gmx_sel_yydebug
+#define yynerrs _gmx_sel_yynerrs
 
 
 /* Tokens.  */
@@ -140,8 +148,14 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 40 "parser.y"
+#line 34 "parser.y"
 
+/*! \internal \file parser.c
+ * \brief Generated (from parser.y by Bison) parser for the selection language.
+ */
+/*! \internal \file parser.h
+ * \brief Generated (from parser.y by Bison) parser include file.
+ */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -164,7 +178,7 @@
 #include "scanner.h"
 
 static void
-yyerror(gmx_sel_lexer_t *, int, gmx_ana_indexgrps_t *, char const *s);
+yyerror(yyscan_t, int, gmx_ana_indexgrps_t *, char const *s);
 
 static t_selelem *
 get_group_by_name(gmx_ana_indexgrps_t *grps, char *name);
@@ -178,7 +192,6 @@ process_param_list(t_selexpr_param *params);
 static t_selelem *
 init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
                   t_selexpr_value *values, char *rpost);
-/*! \cond */
 
 
 /* Enabling traces.  */
@@ -201,7 +214,7 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 80 "parser.y"
+#line 79 "parser.y"
 {
     int                  i;
     real                 r;
@@ -213,8 +226,8 @@ typedef union YYSTYPE
     t_selexpr_value  *val;
     t_selexpr_param  *param;
 }
-/* Line 193 of yacc.c.  */
-#line 218 "parser.c"
+/* Line 187 of yacc.c.  */
+#line 231 "parser.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -227,7 +240,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 231 "parser.c"
+#line 244 "parser.c"
 
 #ifdef short
 # undef short
@@ -277,7 +290,7 @@ typedef short int yytype_int16;
 #define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
 
 #ifndef YY_
-# if defined YYENABLE_NLS && YYENABLE_NLS
+# if YYENABLE_NLS
 #  if ENABLE_NLS
 #   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
 #   define YY_(msgid) dgettext ("bison-runtime", msgid)
@@ -536,13 +549,13 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   170,   170,   178,   189,   190,   193,   194,   197,   198,
-     202,   203,   214,   215,   217,   219,   221,   226,   227,   234,
-     238,   241,   245,   253,   257,   260,   265,   273,   280,   292,
-     299,   306,   316,   327,   338,   342,   346,   353,   360,   372,
-     377,   389,   390,   397,   408,   409,   420,   421,   431,   441,
-     445,   447,   452,   453,   458,   460,   465,   466,   471,   472,
-     477,   478,   481,   484,   487,   490
+       0,   171,   171,   179,   190,   191,   194,   195,   198,   199,
+     203,   204,   215,   216,   218,   220,   222,   227,   228,   235,
+     239,   242,   246,   254,   258,   261,   266,   274,   281,   293,
+     300,   307,   317,   328,   339,   343,   347,   354,   361,   373,
+     378,   390,   391,   398,   409,   410,   421,   422,   432,   442,
+     446,   448,   453,   454,   459,   461,   466,   467,   472,   473,
+     478,   479,   482,   485,   488,   491
 };
 #endif
 
@@ -790,7 +803,7 @@ while (YYID (0))
    we won't break user code: when these are the locations we know.  */
 
 #ifndef YY_LOCATION_PRINT
-# if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+# if YYLTYPE_IS_TRIVIAL
 #  define YY_LOCATION_PRINT(File, Loc)			\
      fprintf (File, "%d.%d-%d.%d",			\
 	      (Loc).first_line, (Loc).first_column,	\
@@ -843,14 +856,14 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yy_symbol_value_print (yyoutput, yytype, yyvaluep, scanner, nexp, grps)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -881,14 +894,14 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, scanner, nexp, grps)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yy_symbol_print (yyoutput, yytype, yyvaluep, scanner, nexp, grps)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -938,13 +951,13 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, int yyrule, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yy_reduce_print (YYSTYPE *yyvsp, int yyrule, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yy_reduce_print (yyvsp, yyrule, scanner, nexp, grps)
     YYSTYPE *yyvsp;
     int yyrule;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -1219,14 +1232,14 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 static void
 yydestruct (yymsg, yytype, yyvaluep, scanner, nexp, grps)
     const char *yymsg;
     int yytype;
     YYSTYPE *yyvaluep;
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -1243,89 +1256,89 @@ yydestruct (yymsg, yytype, yyvaluep, scanner, nexp, grps)
   switch (yytype)
     {
       case 6: /* "STR" */
-#line 150 "parser.y"
+#line 149 "parser.y"
 	{ free((yyvaluep->str));                     };
-#line 1249 "parser.c"
+#line 1262 "parser.c"
 	break;
       case 7: /* "IDENTIFIER" */
-#line 150 "parser.y"
+#line 149 "parser.y"
 	{ free((yyvaluep->str));                     };
-#line 1254 "parser.c"
+#line 1267 "parser.c"
 	break;
       case 43: /* "string" */
-#line 150 "parser.y"
+#line 149 "parser.y"
 	{ free((yyvaluep->str));                     };
-#line 1259 "parser.c"
+#line 1272 "parser.c"
 	break;
       case 45: /* "command" */
-#line 151 "parser.y"
+#line 150 "parser.y"
 	{ if((yyvaluep->sel)) _gmx_selelem_free((yyvaluep->sel)); };
-#line 1264 "parser.c"
+#line 1277 "parser.c"
 	break;
       case 46: /* "selection" */
-#line 152 "parser.y"
+#line 151 "parser.y"
 	{ _gmx_selelem_free_chain((yyvaluep->sel));  };
-#line 1269 "parser.c"
+#line 1282 "parser.c"
 	break;
       case 47: /* "sel_expr" */
-#line 153 "parser.y"
+#line 152 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1274 "parser.c"
+#line 1287 "parser.c"
 	break;
       case 48: /* "numeric_expr" */
-#line 153 "parser.y"
+#line 152 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1279 "parser.c"
+#line 1292 "parser.c"
 	break;
       case 49: /* "pos_expr" */
-#line 154 "parser.y"
+#line 153 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1284 "parser.c"
+#line 1297 "parser.c"
 	break;
       case 50: /* "pos_expr_sel" */
-#line 154 "parser.y"
+#line 153 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1289 "parser.c"
+#line 1302 "parser.c"
 	break;
       case 51: /* "pos_expr_nosel" */
-#line 154 "parser.y"
+#line 153 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1294 "parser.c"
+#line 1307 "parser.c"
 	break;
       case 52: /* "pos_expr_nosel_impl" */
-#line 154 "parser.y"
+#line 153 "parser.y"
 	{ _gmx_selelem_free((yyvaluep->sel));        };
-#line 1299 "parser.c"
+#line 1312 "parser.c"
 	break;
       case 53: /* "string_list" */
-#line 155 "parser.y"
+#line 154 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
-#line 1304 "parser.c"
+#line 1317 "parser.c"
 	break;
       case 54: /* "int_list" */
-#line 155 "parser.y"
+#line 154 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
-#line 1309 "parser.c"
+#line 1322 "parser.c"
 	break;
       case 55: /* "int_list_item" */
-#line 155 "parser.y"
+#line 154 "parser.y"
 	{ _gmx_selexpr_free_values((yyvaluep->val)); };
-#line 1314 "parser.c"
+#line 1327 "parser.c"
 	break;
       case 56: /* "method_params" */
-#line 156 "parser.y"
+#line 155 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
-#line 1319 "parser.c"
+#line 1332 "parser.c"
 	break;
       case 57: /* "method_param_list" */
-#line 156 "parser.y"
+#line 155 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
-#line 1324 "parser.c"
+#line 1337 "parser.c"
 	break;
       case 58: /* "method_param" */
-#line 156 "parser.y"
+#line 155 "parser.y"
 	{ _gmx_selexpr_free_params((yyvaluep->param)); };
-#line 1329 "parser.c"
+#line 1342 "parser.c"
 	break;
 
       default:
@@ -1344,7 +1357,7 @@ int yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int yyparse (gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps);
+int yyparse (yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps);
 #else
 int yyparse ();
 #endif
@@ -1373,11 +1386,11 @@ yyparse (YYPARSE_PARAM)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 int
-yyparse (gmx_sel_lexer_t         *scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
+yyparse (yyscan_t                 scanner, int                      nexp, gmx_ana_indexgrps_t     *grps)
 #else
 int
 yyparse (scanner, nexp, grps)
-    gmx_sel_lexer_t         *scanner;
+    yyscan_t                 scanner;
     int                      nexp;
     gmx_ana_indexgrps_t     *grps;
 #endif
@@ -1636,7 +1649,7 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 171 "parser.y"
+#line 172 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1647,7 +1660,7 @@ yyreduce:
     break;
 
   case 3:
-#line 179 "parser.y"
+#line 180 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1658,42 +1671,42 @@ yyreduce:
     break;
 
   case 4:
-#line 189 "parser.y"
+#line 190 "parser.y"
     { (yyval.r) = (yyvsp[(1) - (1)].i); ;}
     break;
 
   case 5:
-#line 190 "parser.y"
+#line 191 "parser.y"
     { (yyval.r) = (yyvsp[(1) - (1)].r); ;}
     break;
 
   case 6:
-#line 193 "parser.y"
-    { (yyval.str) = (yyvsp[(1) - (1)].str); ;}
-    break;
-
-  case 7:
 #line 194 "parser.y"
     { (yyval.str) = (yyvsp[(1) - (1)].str); ;}
     break;
 
+  case 7:
+#line 195 "parser.y"
+    { (yyval.str) = (yyvsp[(1) - (1)].str); ;}
+    break;
+
   case 8:
-#line 197 "parser.y"
+#line 198 "parser.y"
     { (yyval.str) = NULL; ;}
     break;
 
   case 9:
-#line 198 "parser.y"
+#line 199 "parser.y"
     { (yyval.str) = (yyvsp[(1) - (1)].str);   ;}
     break;
 
   case 10:
-#line 202 "parser.y"
+#line 203 "parser.y"
     { (yyval.sel) = NULL;                            ;}
     break;
 
   case 11:
-#line 204 "parser.y"
+#line 205 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  t_selelem               *s, *p;
@@ -1707,38 +1720,38 @@ yyreduce:
     break;
 
   case 12:
-#line 214 "parser.y"
+#line 215 "parser.y"
     { (yyval.sel) = _gmx_sel_init_selection(scanner, (yyvsp[(1) - (1)].sel)); ;}
     break;
 
   case 13:
-#line 215 "parser.y"
+#line 216 "parser.y"
     { (yyval.sel) = _gmx_sel_init_selection(scanner, (yyvsp[(2) - (2)].sel));
                                   (yyval.sel)->name = (yyvsp[(1) - (2)].str); (yyval.sel)->u.cgrp.name = (yyvsp[(1) - (2)].str);   ;}
     break;
 
   case 14:
-#line 218 "parser.y"
+#line 219 "parser.y"
     { (yyval.sel) = _gmx_sel_assign_variable(scanner, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].sel)); ;}
     break;
 
   case 15:
-#line 220 "parser.y"
+#line 221 "parser.y"
     { (yyval.sel) = _gmx_sel_assign_variable(scanner, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].sel)); ;}
     break;
 
   case 16:
-#line 222 "parser.y"
+#line 223 "parser.y"
     { (yyval.sel) = _gmx_sel_assign_variable(scanner, (yyvsp[(1) - (3)].str), (yyvsp[(3) - (3)].sel)); ;}
     break;
 
   case 17:
-#line 226 "parser.y"
+#line 227 "parser.y"
     { (yyval.sel) = (yyvsp[(1) - (1)].sel); ;}
     break;
 
   case 18:
-#line 228 "parser.y"
+#line 229 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1748,51 +1761,51 @@ yyreduce:
     break;
 
   case 19:
-#line 234 "parser.y"
+#line 235 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel);                              ;}
     break;
 
   case 20:
-#line 238 "parser.y"
+#line 239 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_BOOLEAN);
                                   (yyval.sel)->u.boolt = BOOL_NOT;
                                   (yyval.sel)->child = (yyvsp[(2) - (2)].sel);                       ;}
     break;
 
   case 21:
-#line 242 "parser.y"
+#line 243 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_BOOLEAN);
                                   (yyval.sel)->u.boolt = BOOL_AND;
                                   (yyval.sel)->child = (yyvsp[(1) - (3)].sel); (yyval.sel)->child->next = (yyvsp[(3) - (3)].sel); ;}
     break;
 
   case 22:
-#line 246 "parser.y"
+#line 247 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_BOOLEAN);
                                   (yyval.sel)->u.boolt = BOOL_OR;
                                   (yyval.sel)->child = (yyvsp[(1) - (3)].sel); (yyval.sel)->child->next = (yyvsp[(3) - (3)].sel); ;}
     break;
 
   case 23:
-#line 253 "parser.y"
+#line 254 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel);                               ;}
     break;
 
   case 24:
-#line 257 "parser.y"
+#line 258 "parser.y"
     { (yyval.sel) = get_group_by_name(grps, (yyvsp[(2) - (2)].str));
                                   sfree((yyvsp[(2) - (2)].str));
                                   if ((yyval.sel) == NULL) YYABORT;               ;}
     break;
 
   case 25:
-#line 260 "parser.y"
+#line 261 "parser.y"
     { (yyval.sel) = get_group_by_id(grps, (yyvsp[(2) - (2)].i));
                                   if ((yyval.sel) == NULL) YYABORT;               ;}
     break;
 
   case 26:
-#line 265 "parser.y"
+#line 266 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_SUBEXPRREF);
                                   _gmx_selelem_set_vtype((yyval.sel), (yyvsp[(1) - (1)].sel)->v.type);
                                   (yyval.sel)->name   = (yyvsp[(1) - (1)].sel)->name;
@@ -1801,7 +1814,7 @@ yyreduce:
     break;
 
   case 27:
-#line 273 "parser.y"
+#line 274 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_SUBEXPRREF);
                                   _gmx_selelem_set_vtype((yyval.sel), (yyvsp[(1) - (1)].sel)->v.type);
                                   (yyval.sel)->name   = (yyvsp[(1) - (1)].sel)->name;
@@ -1810,7 +1823,7 @@ yyreduce:
     break;
 
   case 28:
-#line 280 "parser.y"
+#line 281 "parser.y"
     { if ((yyvsp[(1) - (1)].sel)->type == SEL_CONST) {
                                       (yyval.sel) = (yyvsp[(1) - (1)].sel);
                                   } else {
@@ -1823,7 +1836,7 @@ yyreduce:
     break;
 
   case 29:
-#line 293 "parser.y"
+#line 294 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1833,7 +1846,7 @@ yyreduce:
     break;
 
   case 30:
-#line 300 "parser.y"
+#line 301 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1843,7 +1856,7 @@ yyreduce:
     break;
 
   case 31:
-#line 307 "parser.y"
+#line 308 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1853,7 +1866,7 @@ yyreduce:
     break;
 
   case 32:
-#line 317 "parser.y"
+#line 318 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1864,7 +1877,7 @@ yyreduce:
     break;
 
   case 33:
-#line 328 "parser.y"
+#line 329 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1874,7 +1887,7 @@ yyreduce:
     break;
 
   case 34:
-#line 338 "parser.y"
+#line 339 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_CONST);
                                   _gmx_selelem_set_vtype((yyval.sel), INT_VALUE);
                                   _gmx_selvalue_reserve(&(yyval.sel)->v, 1);
@@ -1882,7 +1895,7 @@ yyreduce:
     break;
 
   case 35:
-#line 342 "parser.y"
+#line 343 "parser.y"
     { (yyval.sel) = _gmx_selelem_create(SEL_CONST);
                                   _gmx_selelem_set_vtype((yyval.sel), REAL_VALUE);
                                   _gmx_selvalue_reserve(&(yyval.sel)->v, 1);
@@ -1890,7 +1903,7 @@ yyreduce:
     break;
 
   case 36:
-#line 347 "parser.y"
+#line 348 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1900,7 +1913,7 @@ yyreduce:
     break;
 
   case 37:
-#line 354 "parser.y"
+#line 355 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1910,7 +1923,7 @@ yyreduce:
     break;
 
   case 38:
-#line 361 "parser.y"
+#line 362 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1921,12 +1934,12 @@ yyreduce:
     break;
 
   case 39:
-#line 373 "parser.y"
+#line 374 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel);                               ;}
     break;
 
   case 40:
-#line 378 "parser.y"
+#line 379 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1937,12 +1950,12 @@ yyreduce:
     break;
 
   case 41:
-#line 389 "parser.y"
+#line 390 "parser.y"
     { (yyval.sel) = (yyvsp[(1) - (1)].sel); ;}
     break;
 
   case 42:
-#line 391 "parser.y"
+#line 392 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1952,7 +1965,7 @@ yyreduce:
     break;
 
   case 43:
-#line 398 "parser.y"
+#line 399 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1962,12 +1975,12 @@ yyreduce:
     break;
 
   case 44:
-#line 408 "parser.y"
+#line 409 "parser.y"
     { (yyval.sel) = (yyvsp[(1) - (1)].sel); ;}
     break;
 
   case 45:
-#line 410 "parser.y"
+#line 411 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1977,12 +1990,12 @@ yyreduce:
     break;
 
   case 46:
-#line 420 "parser.y"
+#line 421 "parser.y"
     { (yyval.sel) = (yyvsp[(1) - (1)].sel); ;}
     break;
 
   case 47:
-#line 422 "parser.y"
+#line 423 "parser.y"
     {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
@@ -1992,7 +2005,7 @@ yyreduce:
     break;
 
   case 48:
-#line 432 "parser.y"
+#line 433 "parser.y"
     { rvec x;
                                   (yyval.sel) = _gmx_selelem_create(SEL_CONST);
                                   _gmx_selelem_set_vtype((yyval.sel), POS_VALUE);
@@ -2002,104 +2015,104 @@ yyreduce:
     break;
 
   case 49:
-#line 441 "parser.y"
+#line 442 "parser.y"
     { (yyval.sel) = (yyvsp[(2) - (3)].sel);                               ;}
     break;
 
   case 50:
-#line 445 "parser.y"
+#line 446 "parser.y"
     { (yyval.val) = _gmx_selexpr_create_value(STR_VALUE);
                                   (yyval.val)->u.s = (yyvsp[(1) - (1)].str);                          ;}
     break;
 
   case 51:
-#line 447 "parser.y"
+#line 448 "parser.y"
     { (yyval.val) = _gmx_selexpr_create_value(STR_VALUE);
                                   (yyval.val)->u.s = (yyvsp[(2) - (2)].str); (yyval.val)->next = (yyvsp[(1) - (2)].val);           ;}
     break;
 
   case 52:
-#line 452 "parser.y"
+#line 453 "parser.y"
     { (yyval.val) = (yyvsp[(1) - (1)].val);                               ;}
     break;
 
   case 53:
-#line 454 "parser.y"
+#line 455 "parser.y"
     { (yyvsp[(2) - (2)].val)->next = (yyvsp[(1) - (2)].val); (yyval.val) = (yyvsp[(2) - (2)].val);                ;}
     break;
 
   case 54:
-#line 458 "parser.y"
+#line 459 "parser.y"
     { (yyval.val) = _gmx_selexpr_create_value(INT_VALUE);
                                   (yyval.val)->u.i.i1 = (yyval.val)->u.i.i2 = (yyvsp[(1) - (1)].i);          ;}
     break;
 
   case 55:
-#line 460 "parser.y"
+#line 461 "parser.y"
     { (yyval.val) = _gmx_selexpr_create_value(INT_VALUE);
                                   (yyval.val)->u.i.i1 = (yyvsp[(1) - (3)].i); (yyval.val)->u.i.i2 = (yyvsp[(3) - (3)].i);      ;}
     break;
 
   case 56:
-#line 465 "parser.y"
+#line 466 "parser.y"
     { (yyval.param) = (yyvsp[(1) - (1)].param); ;}
     break;
 
   case 57:
-#line 467 "parser.y"
+#line 468 "parser.y"
     { (yyval.param) = (yyvsp[(1) - (2)].param); ;}
     break;
 
   case 58:
-#line 471 "parser.y"
+#line 472 "parser.y"
     { (yyval.param) = NULL;              ;}
     break;
 
   case 59:
-#line 473 "parser.y"
+#line 474 "parser.y"
     { (yyvsp[(2) - (2)].param)->next = (yyvsp[(1) - (2)].param); (yyval.param) = (yyvsp[(2) - (2)].param); ;}
     break;
 
   case 60:
-#line 477 "parser.y"
+#line 478 "parser.y"
     { (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (1)].str));    ;}
     break;
 
   case 61:
-#line 479 "parser.y"
+#line 480 "parser.y"
     { (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (2)].str));
                                   (yyval.param)->value = (yyvsp[(2) - (2)].val);                        ;}
     break;
 
   case 62:
-#line 481 "parser.y"
+#line 482 "parser.y"
     { (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (2)].str));
                                   (yyval.param)->value = _gmx_selexpr_create_value(REAL_VALUE);
                                   (yyval.param)->value->u.r = (yyvsp[(2) - (2)].r);                   ;}
     break;
 
   case 63:
-#line 484 "parser.y"
+#line 485 "parser.y"
     { (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (2)].str));
                                   (yyval.param)->value = _gmx_selexpr_create_value(STR_VALUE);
                                   (yyval.param)->value->u.s = (yyvsp[(2) - (2)].str);                   ;}
     break;
 
   case 64:
-#line 488 "parser.y"
+#line 489 "parser.y"
     { (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (2)].str));
                                   (yyval.param)->value = _gmx_selexpr_create_value_expr((yyvsp[(2) - (2)].sel)); ;}
     break;
 
   case 65:
-#line 491 "parser.y"
+#line 492 "parser.y"
     { (yyval.param) = _gmx_selexpr_create_param((yyvsp[(1) - (2)].str));
                                   (yyval.param)->value = _gmx_selexpr_create_value_expr((yyvsp[(2) - (2)].sel)); ;}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 2103 "parser.c"
+#line 2116 "parser.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2313,9 +2326,8 @@ yyreturn:
 }
 
 
-#line 495 "parser.y"
+#line 496 "parser.y"
 
-/*! \endcond */
 
 /*!
  * \param[in,out] scanner Scanner data structure.
@@ -2326,7 +2338,7 @@ yyreturn:
  * \returns       0 on success, -1 on error.
  */
 int
-_gmx_sel_run_parser(gmx_sel_lexer_t *scanner, gmx_ana_selcollection_t *sc,
+_gmx_sel_run_parser(yyscan_t scanner, gmx_ana_selcollection_t *sc,
                     gmx_ana_indexgrps_t *grps, int maxnr)
 {
     bool bOk;
@@ -2335,7 +2347,7 @@ _gmx_sel_run_parser(gmx_sel_lexer_t *scanner, gmx_ana_selcollection_t *sc,
 
     nr        = sc->nr;
     nexp      = (maxnr > 0) ? (sc->nr + maxnr) : -1;
-    bOk = !yyparse(scanner, nexp, grps);
+    bOk = !_gmx_sel_yyparse(scanner, nexp, grps);
     _gmx_sel_free_lexer(scanner);
     if (sc->selstr)
     {
@@ -2446,7 +2458,7 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 }
 
 static void
-yyerror(gmx_sel_lexer_t *scanner, int nexp, gmx_ana_indexgrps_t *grps,
+yyerror(yyscan_t scanner, int nexp, gmx_ana_indexgrps_t *grps,
         char const *s)
 {
     _gmx_selparser_error("%s", s);

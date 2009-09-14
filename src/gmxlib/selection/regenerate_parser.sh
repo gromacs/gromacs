@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # This script runs Bison and/or Flex to regenerate the files
 # parser.c and parser.h from parser.y and scanner.c from scanner.l.

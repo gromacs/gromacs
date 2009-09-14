@@ -513,7 +513,7 @@ static void read_espresso_conf(const char *infile,
 	      break;
 	    case espTYPE:
 	      r = get_espresso_word(fp,word);
-	      atoms->atom[i].type = strtol(word, NULL, 0);  
+	      atoms->atom[i].type = strtol(word, NULL, 10);  
 	      break;
 	    case espQ:
 	      r = get_espresso_word(fp,word);
@@ -535,7 +535,7 @@ static void read_espresso_conf(const char *infile,
 	      break;
 	    case espMOLECULE:
 	      r = get_espresso_word(fp,word);
-	      molnr = strtol(word, NULL, 0);
+	      molnr = strtol(word, NULL, 10);
 	      if (i == 0 ||
 		  atoms->resinfo[atoms->atom[i-1].resind].nr != molnr) {
 		atoms->atom[i].resind =
@@ -1077,7 +1077,7 @@ static void write_hconf_mtop(FILE *out,const char *title,gmx_mtop_t *mtop,
     gmx_mtop_atomloop_all_names(aloop,&atomname,&resnr,&resname);
 
     fprintf(out,"%5d%-5.5s%5.5s%5d",
-	    (resnr+1)%100000,resname,atomname,(i+1)%100000);
+	    resnr%100000,resname,atomname,(i+1)%100000);
     /* next fprintf uses built format string */
     if (v)
       fprintf(out,format,

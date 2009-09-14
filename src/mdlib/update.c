@@ -102,7 +102,7 @@ typedef struct gmx_update
     rvec *xp;
     int  xp_nalloc;
     /* Variables for the deform algorithm */
-    gmx_step_t deformref_step;
+    gmx_large_int_t deformref_step;
     matrix     deformref_box;
 } t_gmx_update;
 
@@ -726,7 +726,7 @@ restore_ekinstate_from_state(t_commrec *cr,
   }
 }
 
-void set_deform_reference_box(gmx_update_t upd,gmx_step_t step,matrix box)
+void set_deform_reference_box(gmx_update_t upd,gmx_large_int_t step,matrix box)
 {
     upd->deformref_step = step;
     copy_mat(box,upd->deformref_box);
@@ -734,7 +734,7 @@ void set_deform_reference_box(gmx_update_t upd,gmx_step_t step,matrix box)
 
 static void deform(gmx_update_t upd,
                    int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
-                   const t_inputrec *ir,gmx_step_t step)
+                   const t_inputrec *ir,gmx_large_int_t step)
 {
     matrix bnew,invbox,mu;
     real   elapsed_time;
@@ -793,7 +793,7 @@ static void deform(gmx_update_t upd,
 static void combine_forces(int nstlist,
                            gmx_constr_t constr,
                            t_inputrec *ir,t_mdatoms *md,t_idef *idef,
-                           t_commrec *cr,gmx_step_t step,t_state *state,
+                           t_commrec *cr,gmx_large_int_t step,t_state *state,
                            int start,int homenr,
                            rvec f[],rvec f_lr[],
                            t_nrnb *nrnb)
@@ -831,7 +831,7 @@ static void combine_forces(int nstlist,
 }
 
 void update(FILE         *fplog,
-            gmx_step_t   step,
+            gmx_large_int_t   step,
             real         *dvdlambda,    /* FEP stuff */
             t_inputrec   *inputrec,     /* input record and box stuff	*/
             t_mdatoms    *md,

@@ -563,7 +563,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
 	    maxentries+=1024;
 	    srenew(b->a,maxentries);
 	  }
-	  b->a[i]=strtol(str, NULL, 0)-1;
+	  b->a[i]=strtol(str, NULL, 10)-1;
 	  b->index[b->nr]++;
 	  (b->nra)++;
 	  pt=strstr(pt,str)+strlen(str);
@@ -673,10 +673,10 @@ static int qgroup(int *a, int ngrps, char **grpname)
                 gmx_fatal(FARGS,"Cannot read from input");
             trim(s); /* remove spaces */
         } while (strlen(s)==0);
-        aa = strtol(s, &end, 0);
-        if (aa==0 && end != '\0') /* string entered */
+        aa = strtol(s, &end, 10);
+        if (aa==0 && end[0] != '\0') /* string entered */
             aa = find_group(s, ngrps, grpname);
-        bInRange = aa>=0 && aa<ngrps;
+        bInRange = (aa >= 0 && aa < ngrps);
         if (!bInRange)
             printf("Error: No such group '%s'\n", s);
     } while (!bInRange);

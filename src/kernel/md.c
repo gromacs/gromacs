@@ -289,13 +289,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        list;
     gmx_runtime_t runtime;
     int        rc;
-    gmx_step_t reset_counters;
+    gmx_large_int_t reset_counters;
     gmx_edsam_t ed;
-
-
-    if (nmultisim > 1 && PAR(cr))
-        init_multisystem(cr,nmultisim,nfile,fnm,TRUE);
-
 
     /* Essential dynamics */
     if (opt2bSet("-ei",nfile,fnm)) 
@@ -780,8 +775,8 @@ static void check_nst_param(FILE *fplog,t_commrec *cr,
 }
 
 static void reset_all_counters(FILE *fplog,t_commrec *cr,
-                               gmx_step_t step,
-                               gmx_step_t *step_rel,t_inputrec *ir,
+                               gmx_large_int_t step,
+                               gmx_large_int_t *step_rel,t_inputrec *ir,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                                gmx_runtime_t *runtime)
 {
@@ -911,9 +906,9 @@ static void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
 
 typedef struct {
     bool       bGStatEveryStep;
-    gmx_step_t step_ns;
-    gmx_step_t step_nscheck;
-    gmx_step_t nns;
+    gmx_large_int_t step_ns;
+    gmx_large_int_t step_nscheck;
+    gmx_large_int_t nns;
     matrix     scale_tot;
     int        nabnsb;
     double     s1;
@@ -923,7 +918,7 @@ typedef struct {
     double     lt_runav2;
 } gmx_nlheur_t;
 
-static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_step_t step)
+static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 {
     nlh->lt_runav  = 0;
     nlh->lt_runav2 = 0;
@@ -931,7 +926,7 @@ static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_step_t step)
 }
 
 static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 bool bGStatEveryStep,gmx_step_t step)
+                                 bool bGStatEveryStep,gmx_large_int_t step)
 {
     nlh->bGStatEveryStep = bGStatEveryStep;
     nlh->nns       = 0;
@@ -943,9 +938,9 @@ static void init_nlistheuristics(gmx_nlheur_t *nlh,
     reset_nlistheuristics(nlh,step);
 }
 
-static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_step_t step)
+static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 {
-    gmx_step_t nl_lt;
+    gmx_large_int_t nl_lt;
     char sbuf[22],sbuf2[22];
 
     /* Determine the neighbor list life time */
@@ -993,7 +988,7 @@ static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_step_t step)
     }
 }
 
-static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_step_t step)
+static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t step)
 {
     int d;
 
@@ -1033,7 +1028,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 {
     int        fp_trn=0,fp_xtc=0;
     ener_file_t fp_ene=NULL;
-    gmx_step_t step,step_rel;
+    gmx_large_int_t step,step_rel;
     const char *fn_cpt;
     FILE       *fp_dhdl=NULL,*fp_field=NULL;
     double     run_time;
@@ -1293,12 +1288,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
 
+    
     if (!ir->bContinuation && !bRerunMD)
     {
         if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
         {
             /* Set the velocities of frozen particles to zero */
-            for(i=mdatoms->start; i<mdatoms->homenr; i++)
+            for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++)
             {
                 for(m=0; m<DIM; m++)
                 {
@@ -1309,6 +1305,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 }
             }
         }
+
         if (constr)
         {
             /* Constrain the initial coordinates and velocities */
@@ -1625,7 +1622,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             bBornRadii=TRUE;
         }
-
+        
         do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
         do_verbose = bVerbose &&
                   (step % stepout == 0 || bFirstStep || bLastStep);
@@ -1691,7 +1688,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             sum_ekin(FALSE,&(ir->opts),ekind,ekin,NULL);
         }
-
         clear_mat(force_vir);
 
         /* Ionize the atoms if necessary */
@@ -1749,7 +1745,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bCalcEner = TRUE;
             bGStat    = TRUE;
         }
-
+        
         force_flags = (GMX_FORCE_STATECHANGED |
                        GMX_FORCE_ALLFORCES |
                        (bNStList ? GMX_FORCE_DOLR : 0) |
@@ -1806,7 +1802,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(fplog,"Done init_coupling\n"); 
             fflush(fplog);
         }
-
+        
         /* Now we have the energies and forces corresponding to the 
          * coordinates at time t. We must output all of this before
          * the update.
@@ -1840,6 +1836,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 #endif
 
+        
         if (bX || bV || bF || bXTC || bCPT)
         {
             wallcycle_start(wcycle,ewcTRAJ);
@@ -1865,7 +1862,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
                        fn_cpt,bCPT,top_global,ir->eI,ir->simulation_part,
-                       step,t,state, state_global,f,f_global,&n_xtc,&x_xtc);
+                       step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
