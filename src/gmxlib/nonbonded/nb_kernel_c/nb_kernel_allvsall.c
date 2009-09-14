@@ -48,15 +48,68 @@ typedef struct
 } 
 gmx_allvsall_data_t;
 		
+static int 
+calc_maxoffset(int i,int natoms)
+{
+    int maxoffset;
+    
+    if ((natoms % 2) == 1)
+    {
+        /* Odd number of atoms, easy */
+        maxoffset = natoms/2;
+    }
+    else if ((natoms % 4) == 0)
+    {
+        /* Multiple of four is hard */
+        if (i < natoms/2)
+        {
+            if ((i % 2) == 0)
+            {
+                maxoffset=natoms/2;
+            }
+            else
+            {
+                maxoffset=natoms/2-1;
+            }
+        }
+        else
+        {
+            if ((i % 2) == 1)
+            {
+                maxoffset=natoms/2;
+            }
+            else
+            {
+                maxoffset=natoms/2-1;
+            }
+        }
+    }
+    else
+    {
+        /* natoms/2 = odd */
+        if ((i % 2) == 0)
+        {
+            maxoffset=natoms/2;
+        }
+        else
+        {
+            maxoffset=natoms/2-1;
+        }
+    }
+    
+    return maxoffset;
+}
 
-void
+
+static void
 setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
                              t_blocka *              excl, 
                              int                     natoms)
 {
-    int i,j,k;
+    int i,j,k,iexcl;
     int nj0,nj1;
-    int maxoffset;
+    int max_offset;
+    int max_excl_offset;
     int nj;
     
     /* This routine can appear to be a bit complex, but it is mostly book-keeping.
@@ -80,23 +133,37 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
     {
         /* Start */
         aadata->jindex[3*i]   = i+1;
+        max_offset = calc_maxoffset(i,natoms);
         
         /* Exclusions */
         nj0   = excl->index[i];
         nj1   = excl->index[i+1];
 
         /* first check the max range */
-        maxoffset = -1;
+        max_excl_offset = -1;
+        
         for(j=nj0; j<nj1; j++)
         {
-            k = excl->a[j] - i;
-            maxoffset = (k > maxoffset) ? k : maxoffset;
+            iexcl = excl->a[j];
+                        
+            k = iexcl - i;
+            
+            if( k+natoms <= max_offset )
+            {
+                k+=natoms;
+            }
+               
+            max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
         }
-        aadata->jindex[3*i+1] = i+1+maxoffset;        
+        
+        max_excl_offset = (max_offset < max_excl_offset) ? max_offset : max_excl_offset;
+        
+        aadata->jindex[3*i+1] = i+1+max_excl_offset;        
 
-        snew(aadata->exclusion_mask[i],maxoffset);
+        
+        snew(aadata->exclusion_mask[i],max_excl_offset);
         /* Include everything by default */
-        for(j=0;j<maxoffset;j++)
+        for(j=0;j<max_excl_offset;j++)
         {
             /* Use all-ones to mark interactions that should be present, compatible with SSE */
             aadata->exclusion_mask[i][j] = 0xFFFFFFFF;
@@ -105,25 +172,28 @@ setup_exclusions_and_indices(gmx_allvsall_data_t *   aadata,
         /* Go through exclusions again */
         for(j=nj0; j<nj1; j++)
         {
-            k = excl->a[j] - i - 1;
-            if(k>=0)
+            iexcl = excl->a[j];
+            
+            k = iexcl - i;
+            
+            if( k+natoms <= max_offset )
+            {
+                k+=natoms;
+            }
+            
+            if(k>0 && k<=max_excl_offset)
             {
                 /* Excluded, kill it! */
-                aadata->exclusion_mask[i][k] = 0;
+                aadata->exclusion_mask[i][k-1] = 0;
             }
         }
         
         /* End */
-        maxoffset = natoms/2;
-        if(natoms%2==0 && i>=natoms/2)
-        {
-            maxoffset--;
-        }
-        aadata->jindex[3*i+2] = i+1+maxoffset;        
+        aadata->jindex[3*i+2] = i+1+max_offset;        
     }
 }
 
-void
+static void
 setup_aadata(gmx_allvsall_data_t **  p_aadata,
 			 t_blocka *              excl, 
              int                     natoms,
@@ -199,7 +269,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
 	facel               = fr->epsfac;
     natoms              = mdatoms->nr;
 	ni0                 = mdatoms->start;
-	ni1                 = mdatoms->homenr;
+	ni1                 = mdatoms->start+mdatoms->homenr;
     
     aadata = *((gmx_allvsall_data_t **)work);
 
@@ -236,7 +306,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
 		nj2              = aadata->jindex[3*i+2];
 
         mask             = aadata->exclusion_mask[i];
-        
+                
         /* Prologue part, including exclusion mask */
         for(j=nj0; j<nj1; j++,mask++)
         {          
@@ -328,7 +398,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
             Vvdw12            = c12*rinvsix*rinvsix;
             Vvdwtot           = Vvdwtot+Vvdw12-Vvdw6;
             fscal             = (vcoul+12.0*Vvdw12-6.0*Vvdw6)*rinvsq;
-            
+                        
             /* Calculate temporary vectorial force */
             tx                = fscal*dx;     
             ty                = fscal*dy;     
@@ -338,7 +408,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
             fix               = fix + tx;      
             fiy               = fiy + ty;      
             fiz               = fiz + tz;      
-            
+
             /* Decrement j atom force */
             f[3*k]            = f[3*k]   - tx;
             f[3*k+1]          = f[3*k+1] - ty;
@@ -359,7 +429,7 @@ nb_kernel_allvsall(t_forcerec *           fr,
 		
 		/* Outer loop uses 6 flops/iteration */
 	}    
-
+      
     /* Write outer/inner iteration count to pointers */
     *outeriter       = ni1-ni0;         
     *inneriter       = (ni1-ni0)*natoms/2;         

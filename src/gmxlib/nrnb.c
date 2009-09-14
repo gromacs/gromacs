@@ -190,6 +190,12 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "All-vs-All, GB + LJ",            61 },
     { "Outer nonbonded loop",           10 },
     { "1,4 nonbonded interactions",     90 },
+    { "Born radii (Still)",             47 },
+    { "Born radii (HCT/OBC)",          183 },
+    { "Born force chain rule",          15 },
+    { "All-vs-All Still radii",         47 },
+    { "All-vs-All HCT/OBC radii",      183 },
+    { "All-vs-All Born chain rule",     15 },
     { "Calc Weights",                   36 },
     { "Spread Q",                        6 },
     { "Spread Q Bspline",                2 }, 
@@ -298,7 +304,7 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 {
   int    i;
   double mni,frac,tfrac,tflop;
-  const char   *myline = "-----------------------------------------------------------------------";
+  const char   *myline = "-----------------------------------------------------------------------------";
   
   *nbfs = 0.0;
   for(i=0; (i<eNR_NBKERNEL_NR); i++) {
@@ -330,7 +336,7 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
     fprintf(out,"   T=Tabulated        W3=SPC/TIP3p    W4=TIP4p (single or pairs)\n");
     fprintf(out,"   NF=No Forces\n\n");
     
-    fprintf(out," %-26s %16s %15s  %7s\n",
+    fprintf(out," %-32s %16s %15s  %7s\n",
 	    "Computing:","M-Number","M-Flops","% Flops");
     fprintf(out,"%s\n",myline);
   }
@@ -342,19 +348,19 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
     frac    = 100.0*mni*nbdata[i].flop/tflop;
     tfrac  += frac;
     if (out && mni != 0)
-      fprintf(out," %-26s %16.6f %15.3f  %6.1f\n",
+      fprintf(out," %-32s %16.6f %15.3f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
   }
   if (out) {
     fprintf(out,"%s\n",myline);
-    fprintf(out," %-26s %16s %15.3f  %6.1f\n",
+    fprintf(out," %-32s %16s %15.3f  %6.1f\n",
 	    "Total","",*mflop,tfrac);
     fprintf(out,"%s\n\n",myline);
   }
 }
 
 void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
-		gmx_step_t nsteps,real delta_t,
+		gmx_large_int_t nsteps,real delta_t,
 		double nbfs,double mflop)
 {
   real runtime;

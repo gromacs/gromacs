@@ -80,9 +80,9 @@ external "C" {
 
   typedef struct {
     double   t;	            /* Timestamp of this frame	                     */
-    gmx_step_t step;        /* MD step	   		                     */
-    gmx_step_t nsteps;      /* The number of steps between frames            */
-    gmx_step_t nsum;        /* The number of terms for the sums in ener      */
+    gmx_large_int_t step;        /* MD step	   		                     */
+    gmx_large_int_t nsteps;      /* The number of steps between frames            */
+    gmx_large_int_t nsum;        /* The number of terms for the sums in ener      */
     int      nre;           /* Number of energies			     */
     int      ndisre;        /* Number of distance restraints	             */
     int      nblock;        /* Number of following energy blocks              */
@@ -123,7 +123,9 @@ external "C" {
   /* Frees all allocated memory in fr */
 
   extern ener_file_t open_enx(const char *fn,const char *mode);
-  
+
+  extern int enx_file_pointer(const ener_file_t ef);
+
   extern void close_enx(ener_file_t ef);
   
   extern void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **enms);

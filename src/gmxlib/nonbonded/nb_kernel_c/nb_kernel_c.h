@@ -30,17 +30,17 @@
 #ifndef _NBKERNEL_H_
 #define _NBKERNEL_H_
 
-/** The vanilla nonbonded Gromacs kernels (portable, written in C).
- * 
- *  \file  nb_kernel.h
+/** \file
+ * \brief The vanilla nonbonded Gromacs kernels (portable, written in C).
  *
- *  \internal
+ * \internal
  */
 
 #include <stdio.h>
 
 #include "../nb_kerneltype.h"
 #include "nb_kernel_allvsall.h"
+#include "nb_kernel_allvsallgb.h"
 
 void
 nb_kernel_setup(FILE *fplog,nb_kernel_t **list);

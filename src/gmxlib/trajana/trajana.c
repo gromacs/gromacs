@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \mainpage
+/*! \page libtrajana Library for trajectory analysis
  *
  * This is a trajectory analysis library for Gromacs.
  *
@@ -180,12 +180,15 @@ struct gmx_ana_traj_t
     gmx_ana_poscalc_coll_t   *pcc;
     //! Selection data.
     gmx_ana_selcollection_t  *sc;
+
+    //! Data for statutil.c utilities.
+    output_env_t              oenv;
 };
 
 //! Loads the topology.
 static int load_topology(gmx_ana_traj_t *d, bool bReq);
 //! Loads the first frame and does some checks.
-static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv);
+static int init_first_frame(gmx_ana_traj_t *d);
 
 static int add_fnmarg(int nfile, t_filenm *fnm, t_filenm *fnm_add)
 {
@@ -255,6 +258,7 @@ gmx_ana_traj_create(gmx_ana_traj_t **data, unsigned long flags)
         return rc;
     }
     d->status          = -1;
+    d->oenv            = NULL;
 
     *data              = d;
     return 0;
@@ -606,6 +610,7 @@ gmx_ana_get_selcollection(gmx_ana_traj_t *d, gmx_ana_selcollection_t **sc)
  * \param      desc
  * \param      nbugs
  * \param      bugs
+ * \param      oenv
  */
 int
 parse_trjana_args(gmx_ana_traj_t *d,
@@ -777,6 +782,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
     pca_flags |= PCA_CAN_TIME | PCA_BE_NICE;
     parse_common_args(argc, argv, pca_flags, nfall, all_fnm, npall, all_pa,
                       ndesc, desc, nbugs, bugs,oenv);
+    d->oenv = *oenv;
 
     /* Copy the results back */
     for (k = 0; k < nfile; ++k)
@@ -845,7 +851,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
     /* Initialize the selections/index groups */
     if (!(d->flags & ANA_USER_SELINIT))
     {
-        rc = gmx_ana_init_selections(d,*oenv);
+        rc = gmx_ana_init_selections(d);
     }
 
     return rc;
@@ -973,7 +979,7 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
  *
  * \see ANA_USER_SELINIT
  */
-int gmx_ana_init_selections(gmx_ana_traj_t *d, const output_env_t oenv)
+int gmx_ana_init_selections(gmx_ana_traj_t *d)
 {
     int                  rc;
     int                  i;
@@ -1115,7 +1121,7 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d, const output_env_t oenv)
     }
     else
     {
-        rc = init_first_frame(d,oenv);
+        rc = init_first_frame(d);
         if (rc != 0)
         {
             return rc;
@@ -1255,9 +1261,9 @@ gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type)
  * \param[in] d    Trajectory analysis data structure.
  * \returns   0 on success, a non-zero error code on error.
  */
-int xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv)
+int xvgr_selections(FILE *out, gmx_ana_traj_t *d)
 {
-    xvgr_selcollection(out, d->sc, oenv);
+    xvgr_selcollection(out, d->sc, d->oenv);
     return 0;
 }
 
@@ -1265,7 +1271,7 @@ int xvgr_selections(FILE *out, gmx_ana_traj_t *d, const output_env_t oenv)
  * \param[in,out] d       Trajectory analysis data structure.
  * \returns       0 on success, a non-zero error code on error.
  */
-static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
+static int init_first_frame(gmx_ana_traj_t *d)
 {
     int                 i;
 
@@ -1278,7 +1284,7 @@ static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
     d->frflags |= TRX_NEED_X;
 
     snew(d->fr, 1);
-    if (!read_first_frame(oenv,&d->status, d->trjfile, d->fr, d->frflags))
+    if (!read_first_frame(d->oenv, &d->status, d->trjfile, d->fr, d->frflags))
     {
         gmx_input("could not read coordinates from trajectory");
         return EIO;
@@ -1313,12 +1319,11 @@ static int init_first_frame(gmx_ana_traj_t *d, const output_env_t oenv)
  *
  * \see gmx_ana_do()
  */
-int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr, 
-                            const output_env_t oenv)
+int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr)
 {
     int rc;
 
-    rc = init_first_frame(d,oenv);
+    rc = init_first_frame(d);
     if (rc != 0)
     {
         *fr = NULL;
@@ -1344,14 +1349,13 @@ int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr,
  *
  * This function also calculates the number of frames during the run.
  */
-int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, 
-               void *data, const output_env_t oenv)
+int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data)
 {
     t_pbc               pbc;
     t_pbc              *ppbc;
     int                 rc;
 
-    rc = init_first_frame(d,oenv);
+    rc = init_first_frame(d);
     if (rc != 0)
     {
         return rc;
@@ -1393,7 +1397,7 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze,
 
         d->nframes++;
     }
-    while (read_next_frame(oenv,d->status, d->fr));
+    while (read_next_frame(d->oenv, d->status, d->fr));
 
     close_trj(d->status);
 

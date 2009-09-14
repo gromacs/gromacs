@@ -180,6 +180,8 @@ VARNAME = EXPR ;
  *    a single position), i.e., atoms in the solid angle spanned by the
  *    positions in POS_EXPR and centered at POS
  *    (see \subpage sm_insolidangle "detailed explanation").
+ *  - <tt>same residue as ATOM_EXPR</tt>:
+ *    Selects any atoms that are in a same residue with any atom in ATOM_EXPR.
  *
  * For string-based selection keywords, it is possible to use wildcards
  * (e.g., <tt>name "C*"</tt>) or regular expressions
@@ -192,7 +194,7 @@ VARNAME = EXPR ;
  *
  * In addition, the following keywords yield numeric values that can
  * be compared with each other or constant values to select a subset of
- * the particles (\p resnr can also be used in this way):
+ * the particles (\p resnr and similar keywords can also be used in this way):
  *  - <tt>distance from POS [cutoff REAL]</tt>: calculates the distance from
  *    POS
  *  - <tt>mindistance from POS_EXPR [cutoff REAL]</tt>: calculates the minimum
@@ -476,6 +478,16 @@ gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i)
 
 /*!
  * \param[in]  sc  Selection collection to query.
+ * \returns    Pointer to selection string.
+ */
+char *
+gmx_ana_selcollection_get_selstr(gmx_ana_selcollection_t *sc)
+{
+    return sc->selstr;
+}
+
+/*!
+ * \param[in]  sc  Selection collection to query.
  * \returns    TRUE if any selection in \p sc requires topology information,
  *   FALSE otherwise.
  *
@@ -621,6 +633,7 @@ gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)
 /*!
  * \param[in] out  Output file.
  * \param[in] sc   Selection collection which should be written.
+ * \param[in] oenv Output options structure.
  */
 void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
                         const output_env_t oenv)

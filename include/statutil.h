@@ -307,7 +307,7 @@ extern int iscan(int argc,char *argv[],int *i);
  * argument *i is incremented. You typically would want to pass
  * a loop variable to this routine.
  */
-extern gmx_step_t istepscan(int argc,char *argv[],int *i);
+extern gmx_large_int_t istepscan(int argc,char *argv[],int *i);
 /* Same as above, but for large integer values */
 
 extern double dscan(int argc,char *argv[],int *i);

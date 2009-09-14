@@ -199,7 +199,7 @@ int gmx_nmens(int argc,char *argv[])
 
   snew(xout1,natoms);
   snew(xout2,atoms->nr);
-  out=open_trx(ftp2fn(efTRX,NFILE,fnm),"w");
+  out=open_trx(ftp2fn(efTRO,NFILE,fnm),"w");
   jran = (unsigned long)((real)im*rando(&seed));
   for(s=0; s<nstruct; s++) {
     for(i=0; i<natoms; i++)

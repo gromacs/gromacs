@@ -878,7 +878,7 @@ int gmx_kinetics(int argc,char *argv[])
   }
   fclose(fp);
   
-  view_all(NFILE, fnm, oenv);
+  view_all(oenv, NFILE, fnm);
   
   thanx(stderr);
   

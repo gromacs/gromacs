@@ -26,6 +26,8 @@ set(GMX_QMMM_PROGRAM "none"
     CACHE STRING "QM package choices: none,gaussian,mopac,gamess")
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
+option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
+mark_as_advanced(GMX_MPI_IN_PLACE)
 
 enable_language(C)
 
@@ -57,7 +59,9 @@ if(GMX_MPI)
         list(APPEND GMX_EXTRA_LIBRARIES ${MPI_LIBRARIES})
         add_definitions( -DMPI ) #for FAHCORE
         include(gmxTestMPI_IN_PLACE)
-        gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
+        if (GMX_MPI_IN_PLACE)
+            gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
+        endif (GMX_MPI_IN_PLACE)
     else(MPI_FOUND)
         message(FATAL_ERROR "MPI support requested, but no MPI compiler found.")
     endif(MPI_FOUND)

@@ -100,7 +100,7 @@ void _where(const char *file,int line)
     {
 #endif
         if ((temp=getenv("WHERE")) != NULL)
-            nskip = strtol(temp, NULL, 0); 
+            nskip = strtol(temp, NULL, 10); 
         bFirst = FALSE;
 #ifdef GMX_THREADS
     }

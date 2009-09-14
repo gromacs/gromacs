@@ -235,7 +235,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             gmx_fatal(FARGS,"reading tpx file (%s) version %d with version %d program",gmx_fio_getname(ef->fp),file_version,enx_version);
         }
         if (!do_double(fr->t))       *bOK = FALSE;
-        if (!do_gmx_step_t(fr->step)) *bOK = FALSE;
+        if (!do_gmx_large_int(fr->step)) *bOK = FALSE;
         if (!bRead && fr->nsum == 1) {
             /* Do not store sums of length 1,
              * since this does not add information.
@@ -246,7 +246,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
         if (*file_version >= 3)
         {
-            do_gmx_step_t(fr->nsteps);
+            do_gmx_large_int(fr->nsteps);
         }
         else
         {
@@ -412,6 +412,11 @@ ener_file_t open_enx(const char *fn,const char *mode)
     ef->frametime=0;
 
     return ef;
+}
+
+int enx_file_pointer(const ener_file_t ef)
+{
+    return ef->fp;
 }
 
 static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)

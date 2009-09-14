@@ -234,6 +234,8 @@ _gmx_selelem_free_values(t_selelem *sel)
 void
 _gmx_selelem_free_exprdata(t_selelem *sel)
 {
+    int i;
+
     if (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
     {
         /* Free method data */
@@ -253,7 +255,6 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
              * memory allocated for parameter values here. */
             if (!(sel->flags & SEL_METHODINIT))
             {
-                int i;
                 for (i = 0; i < sel->u.expr.method->nparams; ++i)
                 {
                     gmx_ana_selparam_t *param = &sel->u.expr.method->param[i];
@@ -262,6 +263,12 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
                         && param->val.type != GROUP_VALUE
                         && param->val.type != POS_VALUE)
                     {
+                        /* We don't need to check for enum values here, because
+                         * SPAR_ENUMVAL cannot be combined with the flags
+                         * required above. If it ever will be, this results
+                         * in a double free within this function, which should
+                         * be relatively easy to debug.
+                         */
                         if (param->val.type == STR_VALUE)
                         {
                             int j;
@@ -274,6 +281,18 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
                         sfree(param->val.u.ptr);
                     }
                 }
+            }
+            /* And even if it is, the arrays allocated for enum values need
+             * to be freed. */
+            for (i = 0; i < sel->u.expr.method->nparams; ++i)
+            {
+                gmx_ana_selparam_t *param = &sel->u.expr.method->param[i];
+
+                if (param->flags & SPAR_ENUMVAL)
+                {
+                    sfree(param->val.u.ptr);
+                }
+
             }
             sfree(sel->u.expr.method->param);
             sfree(sel->u.expr.method);

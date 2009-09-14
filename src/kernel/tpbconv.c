@@ -318,7 +318,7 @@ int main (int argc, char *argv[])
   ener_file_t  fp_ener=NULL;
   t_trnheader head;
   int          i;
-  gmx_step_t   nsteps_req,run_step,frame;
+  gmx_large_int_t   nsteps_req,run_step,frame;
   double       run_t,state_t;
   bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
   bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
@@ -377,7 +377,7 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL,&oenv);
 
-  /* Convert int to gmx_step_t */
+  /* Convert int to gmx_large_int_t */
   nsteps_req = nsteps_req_int;
   bNsteps = (nsteps_req >= 0 || runtime_req >= 0);
   bExtend = opt2parg_bSet("-extend",asize(pa),pa);
@@ -486,7 +486,7 @@ int main (int argc, char *argv[])
       }
       if (bFrame || !bOK) {
 	sprintf(buf,"\r%s %s frame %s%s: step %s%s time %s",
-		"%s","%s","%6",gmx_step_fmt,"%6",gmx_step_fmt," %8.3f");
+		"%s","%s","%6",gmx_large_int_fmt,"%6",gmx_large_int_fmt," %8.3f");
 	fprintf(stderr,buf,
 		bUse ? "Read   " : "Skipped",ftp2ext(fn2ftp(frame_fn)),
 		frame,head.step,head.t);
@@ -544,7 +544,7 @@ int main (int argc, char *argv[])
 	     gmx_step_str(ir->nsteps,buf),
 	     gmx_step_str(run_step,buf2),
 	     run_t,until_t);
-      ir->nsteps = (gmx_step_t)((until_t - run_t)/ir->delta_t + 0.5);
+      ir->nsteps = (gmx_large_int_t)((until_t - run_t)/ir->delta_t + 0.5);
       printf("Extending remaining runtime until %g ps (now %s steps)\n",
 	     until_t,gmx_step_str(ir->nsteps,buf));
     }
@@ -587,7 +587,7 @@ int main (int argc, char *argv[])
     }    
 
     state_t = ir->init_t + ir->init_step*ir->delta_t;
-    sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n","%10",gmx_step_fmt,"%10",gmx_step_fmt);
+    sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n","%10",gmx_large_int_fmt,"%10",gmx_large_int_fmt);
     fprintf(stderr,buf,ir->init_step,ir->nsteps);
     fprintf(stderr,"                                 time %10.3f and length %10.3f ps\n",
 	    state_t,ir->nsteps*ir->delta_t);
