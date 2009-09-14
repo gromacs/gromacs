@@ -37,7 +37,7 @@
 #include "smalloc.h"
 
 #include "nb_kernel_allvsallgb_sse2_single.h"
-
+#include "gmx_sse2_single.h"
 
 #include <xmmintrin.h>
 #include <emmintrin.h>
@@ -46,29 +46,6 @@
 #define UNROLLI    4
 #define UNROLLJ    4
 
-#ifdef GMX_SSE4
-#  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
-#else
-#  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
-#endif
-
-static void
-printxmm(const char *s,__m128 xmm)
-{
-    float f[4];
-    
-    _mm_storeu_ps(f,xmm);
-    printf("%s: %g %g %g %g\n",s,f[0],f[1],f[2],f[3]);      
-}
-
-static void
-printxmmi(const char *s,__m128i xmmi)
-{
-    int i[4];
-    
-    _mm_storeu_si128((__m128i *)i,xmmi);
-    printf("%s: %d %d %d %d\n",s,i[0],i[1],i[2],i[3]);      
-}
 
 
 typedef struct 
@@ -93,6 +70,59 @@ typedef struct
 gmx_allvsall_data_t;
 		
 
+static int 
+calc_maxoffset(int i,int natoms)
+{
+    int maxoffset;
+    
+    if ((natoms % 2) == 1)
+    {
+        /* Odd number of atoms, easy */
+        maxoffset = natoms/2;
+    }
+    else if ((natoms % 4) == 0)
+    {
+        /* Multiple of four is hard */
+        if (i < natoms/2)
+        {
+            if ((i % 2) == 0)
+            {
+                maxoffset=natoms/2;
+            }
+            else
+            {
+                maxoffset=natoms/2-1;
+            }
+        }
+        else
+        {
+            if ((i % 2) == 1)
+            {
+                maxoffset=natoms/2;
+            }
+            else
+            {
+                maxoffset=natoms/2-1;
+            }
+        }
+    }
+    else
+    {
+        /* natoms/2 = odd */
+        if ((i % 2) == 0)
+        {
+            maxoffset=natoms/2;
+        }
+        else
+        {
+            maxoffset=natoms/2-1;
+        }
+    }
+    
+    return maxoffset;
+}
+
+
 static void
 setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                                    t_blocka *              excl,  
@@ -102,9 +132,12 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
 {
     int i,j,k;
     int ni0,ni1,nj0,nj1,nj;
-    int imin,imax,maxoffset;
+    int imin,imax;
     int firstinteraction[UNROLLI];
     int ibase;
+    int max_offset;
+    int max_excl_offset;
+    int iexcl;
     int  *pi;
     
     /* This routine can appear to be a bit complex, but it is mostly book-keeping.
@@ -182,7 +215,7 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     /* Calculate the largest exclusion range we need for each UNROLLI-tuplet of i atoms. */
     for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
 	{
-        maxoffset = -1;
+        max_excl_offset = -1;
         
         /* First find maxoffset for the next 4 atoms (or fewer if we are close to end) */
         imax = ((ibase+UNROLLI) < end) ? (ibase+UNROLLI) : end;
@@ -191,16 +224,26 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
         {
             /* Before exclusions, which atom is the first we (might) interact with? */
             firstinteraction[i-ibase] = i+1;
+            max_offset = calc_maxoffset(i,natoms);
             
             nj0   = excl->index[i];
             nj1   = excl->index[i+1];
             for(j=nj0; j<nj1; j++)
             {
-                k = excl->a[j] - ibase;
-                if(k>maxoffset)
+                if(excl->a[j]>i+max_offset)
                 {
-                    maxoffset=k;                    
+                    continue;
                 }
+                
+                k = excl->a[j] - ibase;
+                
+                if( k+natoms <= max_offset )
+                {
+                    k+=natoms;
+                }
+                
+                max_excl_offset = (k > max_excl_offset) ? k : max_excl_offset;
+                
                 /* Exclusions are sorted, so this can be done iteratively */
                 if(excl->a[j] == firstinteraction[i-ibase])
                 {
@@ -208,8 +251,9 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                 }
             }
         }
+        
         /* round up to j unrolling factor */
-        maxoffset = (maxoffset/UNROLLJ+1)*UNROLLJ;
+        max_excl_offset = (max_excl_offset/UNROLLJ+1)*UNROLLJ;
         
         imin = firstinteraction[0];
         for(i=ibase;i<imax;i++)
@@ -222,7 +266,7 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
         for(i=ibase;i<ibase+UNROLLI;i++)
         {
             aadata->jindex[4*i]   = imin;
-            aadata->jindex[4*i+1] = ibase+maxoffset;
+            aadata->jindex[4*i+1] = ibase+max_excl_offset;
         }        
     }
     
@@ -241,18 +285,14 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
             /* If natoms is odd, maxoffset=natoms/2 
              * If natoms is even, maxoffset=natoms/2 for even atoms, natoms/2-1 for odd atoms.
              */
-            maxoffset = natoms/2;
-            if(natoms%2==0 && i%2==1)
-            {
-                maxoffset--;
-            }
+            max_offset = calc_maxoffset(i,natoms);
             
             /* Include interactions i+1 <= j < i+maxoffset */
             for(k=0;k<nj;k++)
             {
                 j = imin + k;
                 
-                if( (j>i) && (j<=i+maxoffset) )
+                if( (j>i) && (j<=i+max_offset) )
                 {
                     aadata->prologue_mask[i][k] = 0xFFFFFFFF;
                 }
@@ -269,9 +309,20 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
                 nj1   = excl->index[i+1];
                 for(j=nj0; j<nj1; j++)
                 {
-                    k = excl->a[j] - imin;
-                    if(k>=0)
+                    if(excl->a[j]>i+max_offset)
                     {
+                        continue;
+                    }
+                    
+                    k = excl->a[j] - i;
+                    if( k+natoms <= max_offset )
+                    {
+                        k+=natoms;
+                    }
+                    
+                    if(k>0)
+                    {
+                        k = k+i-imin;
                         aadata->prologue_mask[i][k] = 0;
                     }
                 }
@@ -293,27 +344,19 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
     for(ibase=ni0;ibase<ni1;ibase+=UNROLLI)
     {      
         /* Find the lowest index for which we need to use the epilogue */
-        imin = ibase;
-        maxoffset = natoms/2;
+        imin = ibase;        
+        max_offset = calc_maxoffset(imin,natoms);
         
-        /* If natoms is odd, maxoffset=natoms/2 
-         * If natoms is even, maxoffset=natoms/2 for even atoms, natoms/2-1 for odd atoms.
-         * imin will always be even, so maxoffset is always natoms/2 here.
-         */
-        maxoffset = natoms/2;
-        imin = imin + 1 + maxoffset;
+        imin = imin + 1 + max_offset;
         
         /* Find largest index for which we need to use the epilogue */
         imax = ibase + UNROLLI-1;
         imax = (imax < end) ? imax : end; 
         
         /* imax can be either odd or even */
-        maxoffset = natoms/2;
-        if(natoms%2==0 && imax%2==1)
-        {
-            maxoffset--;
-        }
-        imax = imax + 1 + maxoffset + UNROLLJ - 1;
+        max_offset = calc_maxoffset(imax,natoms);
+        
+        imax = imax + 1 + max_offset + UNROLLJ - 1;
         
         for(i=ibase;i<ibase+UNROLLI;i++)
         {
@@ -341,16 +384,12 @@ setup_exclusions_and_indices_float(gmx_allvsall_data_t *   aadata,
             snew(pi,nj+2*SIMD_WIDTH);
             aadata->epilogue_mask[i] = (int *) (((size_t) pi + 16) & (~((size_t) 15)));
             
-            maxoffset = natoms/2;
-            if(natoms%2==0 && i%2==1)
-            {
-                maxoffset--;
-            }
+            max_offset = calc_maxoffset(i,natoms);
             
             for(k=0;k<nj;k++)
             {
                 j = aadata->jindex[4*i+2] + k;
-                aadata->epilogue_mask[i][k] = (j <= i+maxoffset) ? 0xFFFFFFFF : 0;
+                aadata->epilogue_mask[i][k] = (j <= i+max_offset) ? 0xFFFFFFFF : 0;
             }
         }
     }
@@ -462,37 +501,6 @@ setup_aadata(gmx_allvsall_data_t **  p_aadata,
 }
 
 
-
-static inline __m128
-gmx_mm_invsqrt_ps(__m128 x)
-{
-    const __m128 half  = {0.5,0.5,0.5,0.5};
-    const __m128 three = {3.0,3.0,3.0,3.0};
-    
-    __m128 lu = _mm_rsqrt_ps(x);
-    
-    return _mm_mul_ps(half,_mm_mul_ps(_mm_sub_ps(three,_mm_mul_ps(_mm_mul_ps(lu,lu),x)),lu));
-}
-
-static inline __m128
-gmx_mm_calc_rsq(__m128 dx, __m128 dy, __m128 dz)
-{
-    return _mm_add_ps( _mm_add_ps( _mm_mul_ps(dx,dx), _mm_mul_ps(dy,dy) ), _mm_mul_ps(dz,dz) );
-}
-
-static inline __m128
-gmx_mm_sum4(__m128 t0, __m128 t1, __m128 t2, __m128 t3)
-{
-    t0 = _mm_add_ps(t0,t1);
-    t2 = _mm_add_ps(t2,t3);
-    return _mm_add_ps(t0,t2);
-}
-
-static inline void
-gmx_mm_update_j_force(float *fptr, __m128 f0)
-{
-    _mm_store_ps( fptr, _mm_sub_ps( _mm_load_ps(fptr) , f0 ));
-}
 
 
 void
@@ -612,10 +620,9 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
 	facel               = fr->epsfac;
     GBtab               = fr->gbtab.tab;
     
-    
-	natoms            = mdatoms->nr;
-	ni0               = mdatoms->start;
-	ni1               = mdatoms->homenr;
+	natoms              = mdatoms->nr;
+	ni0                 = (mdatoms->start/SIMD_WIDTH)*SIMD_WIDTH;
+	ni1                 = mdatoms->start+mdatoms->homenr;
     
     half_SSE       = _mm_set1_ps(0.5);
     two_SSE        = _mm_set1_ps(2.0);
@@ -648,32 +655,20 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
     jindex        = aadata->jindex;
     imask         = aadata->imask;
     
-	for(i=0;i<natoms;i++)
-	{
-		x_align[i]       = x[3*i];
-		y_align[i]       = x[3*i+1];
-		z_align[i]       = x[3*i+2];
-		q_align[i]       = charge[i];
-        invsqrta_align[i] = fr->invsqrta[i];
+	for(i=ni0;i<ni1+1+natoms/2;i++)
+    {
+        k = i%natoms;
+		x_align[i]       = x[3*k];
+		y_align[i]       = x[3*k+1];
+		z_align[i]       = x[3*k+2];
+		q_align[i]       = charge[k];
+        invsqrta_align[i] = fr->invsqrta[k];
 		fx_align[i]       = 0;
 		fy_align[i]       = 0;
 		fz_align[i]       = 0;
         dvda_align[i]     = 0;
 	}
     
-    /* Copy again */
-	for(i=0;i<natoms;i++)
-	{
-		x_align[natoms+i] = x_align[i];
-		y_align[natoms+i] = y_align[i];
-		z_align[natoms+i] = z_align[i];
-		q_align[natoms+i] = q_align[i];
-        invsqrta_align[natoms+i] = invsqrta_align[i];
-		fx_align[natoms+i]   = 0;
-		fy_align[natoms+i]   = 0;
-		fz_align[natoms+i]   = 0;
-        dvda_align[natoms+i] = 0;
-    }        
     
 	for(i=ni0; i<ni1; i+=UNROLLI)
 	{
@@ -750,7 +745,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
         imask_SSE2        = _mm_load1_ps((real *)(imask+i+2));
         imask_SSE3        = _mm_load1_ps((real *)(imask+i+3));
         
-        for(j=nj0; j<nj1; j+=UNROLLJ)
+         for(j=nj0; j<nj1; j+=UNROLLJ)
         {            
             jmask_SSE0 = _mm_load_ps((real *)pmask0);
             jmask_SSE1 = _mm_load_ps((real *)pmask1);
@@ -760,7 +755,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             pmask1 += UNROLLJ;
             pmask2 += UNROLLJ;
             pmask3 += UNROLLJ;
-            
+         
             /* load j atom coordinates */
             jx_SSE           = _mm_load_ps(x_align+j);
             jy_SSE           = _mm_load_ps(y_align+j);
@@ -845,7 +840,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             fscal_SSE1         = _mm_mul_ps(vcoul_SSE1,rinv_SSE1);
             fscal_SSE2         = _mm_mul_ps(vcoul_SSE2,rinv_SSE2);
             fscal_SSE3         = _mm_mul_ps(vcoul_SSE3,rinv_SSE3);
-            
+                        
             vctot_SSE          = _mm_add_ps(vctot_SSE, gmx_mm_sum4(vcoul_SSE0,vcoul_SSE1,vcoul_SSE2,vcoul_SSE3));
             
             /* Polarization interaction */
@@ -989,6 +984,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
                                                                      _mm_sub_ps(vvdw12_SSE2,vvdw6_SSE2),
                                                                      _mm_sub_ps(vvdw12_SSE3,vvdw6_SSE3)));
             
+
             fscal_SSE0         = _mm_sub_ps(_mm_mul_ps(rinvsq_SSE0, 
                                                        _mm_sub_ps(_mm_mul_ps(twelve_SSE,vvdw12_SSE0),
                                                                   _mm_mul_ps(six_SSE,vvdw6_SSE0))),
@@ -1335,7 +1331,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
             emask1 += UNROLLJ;
             emask2 += UNROLLJ;
             emask3 += UNROLLJ;
-            
+
             /* load j atom coordinates */
             jx_SSE           = _mm_load_ps(x_align+j);
             jy_SSE           = _mm_load_ps(y_align+j);
@@ -1584,7 +1580,7 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
                                                                   _mm_mul_ps(six_SSE,vvdw6_SSE3))),
                                             _mm_mul_ps( _mm_sub_ps( fijGB_SSE3,fscal_SSE3),rinv_SSE3 ));
 
-            /* Calculate temporary vectorial force */
+             /* Calculate temporary vectorial force */
             tx_SSE0            = _mm_mul_ps(fscal_SSE0,dx_SSE0);
             tx_SSE1            = _mm_mul_ps(fscal_SSE1,dx_SSE1);
             tx_SSE2            = _mm_mul_ps(fscal_SSE2,dx_SSE2);
@@ -1661,14 +1657,14 @@ nb_kernel_allvsallgb_sse2_single(t_forcerec *           fr,
 		/* Outer loop uses 6 flops/iteration */
 	}    
 
-	for(i=0;i<natoms;i++)
+	for(i=ni0;i<ni1+1+natoms/2;i++)
 	{
-		f[3*i]       += fx_align[i] + fx_align[natoms+i];
-		f[3*i+1]     += fy_align[i] + fy_align[natoms+i];
-		f[3*i+2]     += fz_align[i] + fz_align[natoms+i];
-        fr->dvda[i]  += dvda_align[i] + dvda_align[natoms+i];
+        k = i%natoms;
+		f[3*k]   += fx_align[i];
+		f[3*k+1] += fy_align[i];
+		f[3*k+2] += fz_align[i];
+        fr->dvda[k] += dvda_align[i];
 	}
-
     
     /* Write outer/inner iteration count to pointers */
     *outeriter       = ni1-ni0;         

@@ -16,7 +16,7 @@ int main(int argc,char *argv[])
   
   if (argc <= 1)
     gmx_fatal(FARGS,"Expected an integer argument to %s",argv[0]);
-  choice = strtol(argv[1], &end, 0); 
+  choice = strtol(argv[1], &end, 10); 
   if (end!='\0')
     gmx_fatal(FARGS,"Expected an integer argument to %s",argv[0]);
   

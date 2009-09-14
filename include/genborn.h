@@ -63,7 +63,7 @@ int init_gb(gmx_genborn_t **p_born,
 
 /* Born radii calculations, both with and without SSE acceleration */
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *top,
-				const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md);
+				const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md, t_nrnb     *nrnb);
 
 
 
@@ -89,7 +89,7 @@ convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist
 /* Functions for calculating adjustments due to ie chain rule terms */
 real 
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, bool bRad);
+			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, t_nrnb *nrnb, bool bRad);
 
 
 int

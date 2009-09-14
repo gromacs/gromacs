@@ -217,7 +217,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
     if (strcasecmp(nb_str,enbf_names[i]) == 0)
       *nb = i;
   if (*nb == -1)
-    *nb = strtol(nb_str,NULL,0);
+    *nb = strtol(nb_str,NULL,10);
   if ((*nb < 1) || (*nb >= eNBF_NR)) {
     sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
 	    nb_str,enbf_names[1]);
@@ -229,7 +229,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
     if (strcasecmp(comb_str,ecomb_names[i]) == 0)
       *comb = i;
   if (*comb == -1)
-    *comb = strtol(comb_str,NULL,0);
+    *comb = strtol(comb_str,NULL,10);
   if ((*comb < 1) || (*comb >= eCOMB_NR)) {
     sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
 	    comb_str,ecomb_names[1]);

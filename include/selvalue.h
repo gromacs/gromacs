@@ -76,6 +76,12 @@ typedef struct gmx_ana_selvalue_t
     int                         nr;
     /*! Pointer to the value.*/
     union {
+        /*! \brief
+         * Generic pointer for operations that do not need type information.
+         *
+         * Needs to be the first member to be able to use initialized arrays.
+         */
+        void                   *ptr;
         /*! Integer value(s) (type \ref INT_VALUE).*/
         int                    *i;
         /*! Real value(s) (type \ref REAL_VALUE).*/
@@ -88,8 +94,6 @@ typedef struct gmx_ana_selvalue_t
         struct gmx_ana_index_t *g;
         /*! Boolean value (only parameters of type \ref NO_VALUE);*/
         bool                   *b;
-        /*! Generic pointer for operations that do not need type information.*/
-        void                   *ptr;
     }                           u;
     /*! \brief
      * Number of elements allocated for the value array.
