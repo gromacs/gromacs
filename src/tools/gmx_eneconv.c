@@ -314,11 +314,11 @@ static void copy_ee(t_energy *src, t_energy *dst, int nre)
 }
 
 
-static void remove_last_eeframe(t_energy *lastee, gmx_step_t laststep,
+static void remove_last_eeframe(t_energy *lastee, gmx_large_int_t laststep,
 				t_energy *ee, int nre)
 {
     int i;
-    gmx_step_t p=laststep+1;
+    gmx_large_int_t p=laststep+1;
     double sigmacorr;
     
     for(i=0;i<nre;i++) {
@@ -330,8 +330,8 @@ static void remove_last_eeframe(t_energy *lastee, gmx_step_t laststep,
 
 
 
-static void update_ee(t_energy *lastee,gmx_step_t laststep,
-		      t_energy *startee,gmx_step_t startstep,
+static void update_ee(t_energy *lastee,gmx_large_int_t laststep,
+		      t_energy *startee,gmx_large_int_t startstep,
 		      t_energy *ee, int step,
 		      t_energy *outee, int nre)
 {
@@ -362,8 +362,8 @@ static void update_ee(t_energy *lastee,gmx_step_t laststep,
        * and step+1 frames in this one.
        */
     if(startstep>0) {
-      gmx_step_t q=laststep+step; 
-      gmx_step_t p=startstep+1;
+      gmx_large_int_t q=laststep+step; 
+      gmx_large_int_t p=startstep+1;
       prestart_esum=startee[i].esum-startee[i].e;
       sigmacorr=prestart_esum-(p-1)*startee[i].e;
       prestart_sigma=startee[i].eav-
@@ -382,8 +382,8 @@ static void update_ee(t_energy *lastee,gmx_step_t laststep,
 }
 
 
-static void update_last_ee(t_energy *lastee, gmx_step_t laststep,
-			   t_energy *ee,gmx_step_t step,int nre)
+static void update_last_ee(t_energy *lastee, gmx_large_int_t laststep,
+			   t_energy *ee,gmx_large_int_t step,int nre)
 {
     t_energy *tmp;
     snew(tmp,nre);
@@ -393,13 +393,13 @@ static void update_last_ee(t_energy *lastee, gmx_step_t laststep,
 }
 
 static void update_ee_sum(int nre,
-			  gmx_step_t *ee_sum_step,
-			  gmx_step_t *ee_sum_nsteps,
-			  gmx_step_t *ee_sum_nsum,
+			  gmx_large_int_t *ee_sum_step,
+			  gmx_large_int_t *ee_sum_nsteps,
+			  gmx_large_int_t *ee_sum_nsum,
 			  t_energy *ee_sum,
 			  t_enxframe *fr,int out_step)
 {
-  gmx_step_t nsteps,nsum,fr_nsum;
+  gmx_large_int_t nsteps,nsum,fr_nsum;
   int i;
  
   nsteps = *ee_sum_nsteps;
@@ -486,9 +486,9 @@ int gmx_eneconv(int argc,char *argv[])
   gmx_enxnm_t *enm=NULL;
 #endif
   t_enxframe *fr,*fro;
-  gmx_step_t ee_sum_step=0,ee_sum_nsteps,ee_sum_nsum;
+  gmx_large_int_t ee_sum_step=0,ee_sum_nsteps,ee_sum_nsum;
   t_energy   *ee_sum;
-  gmx_step_t laststep,startstep,startstep_file=0;
+  gmx_large_int_t laststep,startstep,startstep_file=0;
   int        noutfr;
   int        nre,nremax,this_nre,nfile,f,i,j,kkk,nset,*set=NULL;
   real       t; 

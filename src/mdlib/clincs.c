@@ -1140,7 +1140,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 
 bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                      t_inputrec *ir,
-                     gmx_step_t step,
+                     gmx_large_int_t step,
                      struct gmx_lincsdata *lincsd,t_mdatoms *md,
                      t_commrec *cr, 
                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,

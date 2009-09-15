@@ -2444,7 +2444,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
-		bool bPrintSepPot,gmx_step_t step)
+		bool bPrintSepPot,gmx_large_int_t step)
 {
   int    ftype,nbonds,ind,nat;
   real   *epot,v,dvdl;

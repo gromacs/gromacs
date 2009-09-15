@@ -400,11 +400,11 @@ char **split(char sep,char *str)
 }
 
 
-gmx_step_t
-str_to_gmx_step_t(const char *str, char **endptr)
+gmx_large_int_t
+str_to_large_int_t(const char *str, char **endptr)
 {
 	int         sign = 1;
-	gmx_step_t  val  = 0;
+	gmx_large_int_t  val  = 0;
 	char        ch;
 	const char  *p;
 	

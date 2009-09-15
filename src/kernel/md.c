@@ -290,7 +290,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        list;
     gmx_runtime_t runtime;
     int        rc;
-    gmx_step_t reset_counters;
+    gmx_large_int_t reset_counters;
     gmx_edsam_t ed;
 
     /* Essential dynamics */
@@ -782,8 +782,8 @@ static void check_nst_param(FILE *fplog,t_commrec *cr,
 }
 
 static void reset_all_counters(FILE *fplog,t_commrec *cr,
-                               gmx_step_t step,
-                               gmx_step_t *step_rel,t_inputrec *ir,
+                               gmx_large_int_t step,
+                               gmx_large_int_t *step_rel,t_inputrec *ir,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                                gmx_runtime_t *runtime)
 {
@@ -913,9 +913,9 @@ static void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
 
 typedef struct {
     bool       bGStatEveryStep;
-    gmx_step_t step_ns;
-    gmx_step_t step_nscheck;
-    gmx_step_t nns;
+    gmx_large_int_t step_ns;
+    gmx_large_int_t step_nscheck;
+    gmx_large_int_t nns;
     matrix     scale_tot;
     int        nabnsb;
     double     s1;
@@ -925,7 +925,7 @@ typedef struct {
     double     lt_runav2;
 } gmx_nlheur_t;
 
-static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_step_t step)
+static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 {
     nlh->lt_runav  = 0;
     nlh->lt_runav2 = 0;
@@ -933,7 +933,7 @@ static void reset_nlistheuristics(gmx_nlheur_t *nlh,gmx_step_t step)
 }
 
 static void init_nlistheuristics(gmx_nlheur_t *nlh,
-                                 bool bGStatEveryStep,gmx_step_t step)
+                                 bool bGStatEveryStep,gmx_large_int_t step)
 {
     nlh->bGStatEveryStep = bGStatEveryStep;
     nlh->nns       = 0;
@@ -945,9 +945,9 @@ static void init_nlistheuristics(gmx_nlheur_t *nlh,
     reset_nlistheuristics(nlh,step);
 }
 
-static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_step_t step)
+static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 {
-    gmx_step_t nl_lt;
+    gmx_large_int_t nl_lt;
     char sbuf[22],sbuf2[22];
 
     /* Determine the neighbor list life time */
@@ -995,7 +995,7 @@ static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_step_t step)
     }
 }
 
-static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_step_t step)
+static void set_nlistheuristics(gmx_nlheur_t *nlh,bool bReset,gmx_large_int_t step)
 {
     int d;
 
@@ -1035,7 +1035,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 {
     int        fp_trn=0,fp_xtc=0;
     ener_file_t fp_ene=NULL;
-    gmx_step_t step,step_rel;
+    gmx_large_int_t step,step_rel;
     const char *fn_cpt;
     FILE       *fp_dhdl=NULL,*fp_field=NULL;
     double     run_time;

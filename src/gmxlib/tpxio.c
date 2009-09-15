@@ -295,14 +295,14 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
     if (file_version >= 62) {
-      do_gmx_step_t(ir->nsteps);
+      do_gmx_large_int(ir->nsteps);
     } else {
       do_int(idum);
       ir->nsteps = idum;
     }
     if(file_version > 25) {
       if (file_version >= 62) {
-	do_gmx_step_t(ir->init_step);
+	do_gmx_large_int(ir->init_step);
       } else {
 	do_int(idum);
 	ir->init_step = idum;

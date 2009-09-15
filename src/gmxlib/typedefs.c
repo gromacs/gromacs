@@ -80,7 +80,7 @@ int over_alloc_dd(int n)
     return n;
 }
 
-int gmx_step_t_to_int(gmx_step_t step,const char *warn)
+int gmx_large_int_to_int(gmx_large_int_t step,const char *warn)
 {
   int i;
 
@@ -89,16 +89,16 @@ int gmx_step_t_to_int(gmx_step_t step,const char *warn)
   if (warn != NULL && (step < INT_MIN || step > INT_MAX)) {
     fprintf(stderr,"\nWARNING during %s:\n",warn);
     fprintf(stderr,"step value ");
-    fprintf(stderr,gmx_step_pfmt,step);
+    fprintf(stderr,gmx_large_int_pfmt,step);
     fprintf(stderr," does not fit in int, converted to %d\n\n",i);
   }
 
   return i;
 }
 
-char *gmx_step_str(gmx_step_t i,char *buf)
+char *gmx_step_str(gmx_large_int_t i,char *buf)
 {
-  sprintf(buf,gmx_step_pfmt,i);
+  sprintf(buf,gmx_large_int_pfmt,i);
 
   return buf;
 }

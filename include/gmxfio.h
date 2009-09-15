@@ -45,6 +45,10 @@
 #include "typedefs.h"
 #include "xdrf.h"
 
+/* Note that some functions list beow are NOT THREADSAFE
+ * when multiple threads use the same file pointer.
+ */
+
 /* Highest number of open input/output files. This is usually limited to 1024 by the OS, anyway. */
 #define GMX_MAXFILES    1024
 
@@ -53,7 +57,7 @@ enum { eitemHEADER, eitemIR, eitemBOX,
        eitemTOP, eitemX, eitemV, eitemF, eitemNR };
        
 /* Enumerated for data types in files */
-enum { eioREAL, eioDOUBLE, eioINT, eioGMX_STEP_T,
+enum { eioREAL, eioDOUBLE, eioINT, eioGMX_LARGE_INT,
        eioUCHAR, eioNUCHAR, eioUSHORT,
        eioRVEC, eioNRVEC, eioIVEC, eioSTRING, eioNR };
 
@@ -161,6 +165,12 @@ typedef struct
 gmx_file_position_t;
 
 
+/*
+ * Check if the file position is out of the range of off_t.
+ * The result is stored along with the other file data of fio.
+ */
+int
+gmx_fio_check_file_position(int fio);
 
 /*
  * Return the name and file pointer positions for all currently open
@@ -203,9 +213,9 @@ extern void unset_comment(void);
   do_read ((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__) :\
   do_write((void *)&(item),1,eioINT,(#item),__FILE__,__LINE__))
 
-#define do_gmx_step_t(item)          (bRead ?			\
-  do_read ((void *)&(item),1,eioGMX_STEP_T,(#item),__FILE__,__LINE__) :\
-  do_write((void *)&(item),1,eioGMX_STEP_T,(#item),__FILE__,__LINE__))
+#define do_gmx_large_int(item)          (bRead ?			\
+  do_read ((void *)&(item),1,eioGMX_LARGE_INT,(#item),__FILE__,__LINE__) :\
+  do_write((void *)&(item),1,eioGMX_LARGE_INT,(#item),__FILE__,__LINE__))
  
 #define do_uchar(item)        (bRead ?\
   do_read ((void *)&(item),1,eioUCHAR,(#item),__FILE__,__LINE__) :\

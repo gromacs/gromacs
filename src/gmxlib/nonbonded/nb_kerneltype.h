@@ -20,9 +20,8 @@
 
 #include <types/simple.h>
 
-/** Function interfaces and nonbonded kernel meta-data.
- * 
- *  \file nb_kernel.h
+/** \file
+ *  \brief Function interfaces and nonbonded kernel meta-data.
  *
  *  \internal
  *

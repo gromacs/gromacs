@@ -53,6 +53,7 @@
 #include "constr.h"
 #include "mtop_util.h"
 #include "xvgr.h"
+#include "gmxfio.h"
 
 static const char *conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
 
@@ -662,7 +663,7 @@ static void pprint(FILE *log,const char *s,t_mdebin *md)
     fprintf(log,"\n");
 }
 
-void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb)
+void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb)
 {
     char buf[22];
 
@@ -673,7 +674,7 @@ void print_ebin_header(FILE *log,gmx_step_t steps,double time,real lamb)
 
 void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
                 FILE *log,
-                gmx_step_t step,double time,
+                gmx_large_int_t step,double time,
                 int mode,bool bCompact,
                 t_mdebin *md,t_fcdata *fcd,
                 gmx_groups_t *groups,t_grpopts *opts)
@@ -726,6 +727,7 @@ void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,
         if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
         {
             do_enx(fp_ene,&fr);
+            gmx_fio_check_file_position(enx_file_pointer(fp_ene));
             if (fr.nre)
             {
                 /* We have stored the sums, so reset the sum history */
