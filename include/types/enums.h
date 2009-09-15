@@ -193,7 +193,7 @@ enum {
 
 /* Enforced rotation */
 enum {
-  erotgFIXED, erotgFIXED_PLANE, erotgFLEX1, erotgFLEX2, erotgNR
+  erotgFIXED, erotgFIXED_PLANE, erotgFOLLOW_PLANE, erotgFLEX1, erotgFLEX2, erotgNR
 };
 
 enum {

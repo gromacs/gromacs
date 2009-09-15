@@ -45,7 +45,8 @@
    for mdrun to interface with the enforced rotation code */
 
 extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
-        t_commrec *cr, matrix box, rvec *x, const output_env_t oenv, unsigned long Flags);
+        t_commrec *cr, matrix box, rvec *x, gmx_mtop_t *mtop, 
+        const output_env_t oenv, unsigned long Flags);
 
 extern void do_rotation(
         t_commrec *cr,
@@ -54,7 +55,8 @@ extern void do_rotation(
         rvec x[],
         real t,
         int step,
-        gmx_wallcycle_t wcycle);
+        gmx_wallcycle_t wcycle,
+        bool bNS);
 
 extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, int step, real t);
 

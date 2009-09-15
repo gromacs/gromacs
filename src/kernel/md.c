@@ -665,7 +665,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (inputrec->bRot)
         {
            /* Initialize enforced rotation code */
-           init_rot(fplog,inputrec,nfile,fnm,cr,box,state->x,oenv,Flags);
+           init_rot(fplog,inputrec,nfile,fnm,cr,box,state->x,mtop,oenv,Flags);
         }
 
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);

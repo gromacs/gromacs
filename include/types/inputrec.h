@@ -165,12 +165,14 @@ typedef struct {
   rvec       *xc_ref;          /* Reference (unrotated) coordinates */
   real       *xc_ref_length;   /* Length of each x_rotref vector after x_rotref has been put into origin */
   int        *xc_ref_ind;      /* Local indices to the reference coordinates */
-  rvec       xc_ref_center;    /* Geometrical center of the reference coordinates */
+  rvec       xc_ref_center;    /* Center of the reference coordinates. Can be mass-weighted */
   rvec       *xc;              /* Current coordinates */
   ivec       *xc_shifts;       /* Current shifts */
   ivec       *xc_eshifts;      /* Extra shifts since last DD step */
   rvec       *xc_old;          /* Old coordinates */
   rvec       *xc_norm;         /* Some normalized form of the current coordinates */
+  real       *mc;              /* Collective masses */
+  real       totalmass;        
   
   /* Flexible rotation only */
   int        eFittype;         /* Type of fit to determine actual angle of group */
@@ -205,7 +207,6 @@ typedef struct {
   FILE     *out_torque;   /* torque */
   FILE     *out_angles;   /* slab angles for flexible rotation */
   FILE     *out_slabs;    /* For outputting COG per slab information */
-  bool     bUpdateShifts; /* After NS steps the shifts of the rotaion groups have to be updated */
   real     Vrot;          /* (Local) part of the enforced rotation potential */
   real     *inbuf;        /* MPI buffer */
   real     *outbuf;       /* MPI buffer */

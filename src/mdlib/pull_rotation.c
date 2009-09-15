@@ -115,6 +115,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
             {
             case erotgFIXED:
             case erotgFIXED_PLANE:
+            case erotgFOLLOW_PLANE:
                 rot->inbuf[count++] = rotg->fix_torque_v;
                 rot->inbuf[count++] = rotg->fix_angles_v;
                 rot->inbuf[count++] = rotg->fix_weight_v;
@@ -151,6 +152,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
                 {
                 case erotgFIXED:
                 case erotgFIXED_PLANE:
+                case erotgFOLLOW_PLANE:
                     rotg->fix_torque_v = rot->outbuf[count++];
                     rotg->fix_angles_v = rot->outbuf[count++];
                     rotg->fix_weight_v = rot->outbuf[count++];
@@ -176,7 +178,7 @@ static void reduce_output(t_commrec *cr, t_rot *rot, real t)
             rotg=&rot->grp[g];
             
             /* Output to main rotation log file: */
-            if (rotg->eType == erotgFIXED || rotg->eType == erotgFIXED_PLANE)
+            if (rotg->eType == erotgFIXED || rotg->eType == erotgFIXED_PLANE || rotg->eType == erotgFOLLOW_PLANE)
             {
                 fprintf(rot->out_rot, "%12.4f%12.3e", 
                         (rotg->fix_angles_v/rotg->fix_weight_v)*180.0*M_1_PI,
@@ -578,16 +580,22 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
             case erotgFIXED_PLANE:
                 fprintf(fp, "# rot_offset%d         %10.3e %10.3e %10.3e\n", g, rotg->offset[XX], rotg->offset[YY], rotg->offset[ZZ]);
                 break;
+            case erotgFOLLOW_PLANE:
+                fprintf(fp, "# COM of ref. grp. %d  %10.3e %10.3e %10.3e\n", g, rotg->xc_ref_center[XX], rotg->xc_ref_center[YY], rotg->xc_ref_center[ZZ]);
+               break;                
             case erotgFLEX1:
             case erotgFLEX2:
                 fprintf(fp, "# rot_slab_distance%d   %f nm\n", g, rotg->slab_dist);
                 fprintf(fp, "# rot_min_gaussian%d   %10.3e\n", g, rotg->min_gaussian);
+                fprintf(fp, "# COG of ref. grp. %d  %10.3e %10.3e %10.3e  (only needed for fit)\n", 
+                        g, rotg->xc_ref_center[XX], rotg->xc_ref_center[YY], rotg->xc_ref_center[ZZ]);
                 break;
             default:
                 break;
             }
         }
         
+        fprintf(fp, "#\n# Legend for the following data columns:\n");
         fprintf(fp, "#     ");
         print_aligned_short(fp, "t");
         nsets = 0;
@@ -604,7 +612,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
         for (g=0; g<rot->ngrp; g++)
         {
             rotg = &rot->grp[g];
-            if (rotg->eType==erotgFIXED || rotg->eType==erotgFIXED_PLANE)
+            if (rotg->eType==erotgFIXED || rotg->eType==erotgFIXED_PLANE || rotg->eType==erotgFOLLOW_PLANE)
             {
                 sprintf(buf, "theta-av%d (degree)", g);
                 print_aligned_group(fp, "theta_av", g);
@@ -620,7 +628,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv,
             setname[nsets] = strdup(buf);
             nsets++;
         }
-        fprintf(fp, "\n");
+        fprintf(fp, "\n#\n");
         
         if (nsets > 1)
             xvgr_legend(fp, nsets, setname, oenv);
@@ -709,12 +717,12 @@ static FILE *open_torque_out(t_rot *rot, const char *fn)
 }
 
 
-/* Determine geometrical center of structure with coordinates x */
+/* Determine center of structure with coordinates x */
 static void get_center(rvec x[], real weight[], int nat, rvec center)
 {
     int i;
     rvec coord;
-    real weight_sum = 0.0;
+    double weight_sum = 0.0;
 
 
     /* Zero out the center of mass */
@@ -1241,39 +1249,37 @@ static void get_coordinates(
         /* Sort the current x-coordinates into the right place of the array: */
         copy_rvec(x[ii], rotg->xc[j]);
     }
+    /* Add the arrays from all nodes together */
     if (PAR(cr))
-    {
-        /* Add the arrays from all nodes together */
         gmx_sum(DIM*rotg->nat, rotg->xc[0], cr);
-
-        /* To make the molecule whole, start with a whole structure and each
-         * step move the assembled coordinates at closest distance to the positions
-         * from the last step. First shift the coordinates with the saved shift
-         * vectors (these are 0 when this routine is called for the first time!) */
-        ed_shift_coords(box, rotg->xc, rotg->xc_shifts, rotg->nat);
-
-        /* Now check if some shifts changed since the last step.
-         * This only needs to be done when the shifts are expected to have changed,
-         * i.e. after neighboursearching */
-        if (bNeedShiftsUpdate)
+    
+    /* To make the molecule whole, start with a whole structure and each
+     * step move the assembled coordinates at closest distance to the positions
+     * from the last step. First shift the coordinates with the saved shift
+     * vectors (these are 0 when this routine is called for the first time!) */
+    ed_shift_coords(box, rotg->xc, rotg->xc_shifts, rotg->nat);
+    
+    /* Now check if some shifts changed since the last step.
+     * This only needs to be done when the shifts are expected to have changed,
+     * i.e. after neighboursearching */
+    if (bNeedShiftsUpdate)
+    {
+        get_extra_shifts(rotg, 3, box, rotg->xc);
+        
+        /* Shift with the additional shifts such that we get a whole molecule now */
+        ed_shift_coords(box, rotg->xc, rotg->xc_eshifts, rotg->nat);
+        
+        /* Add the shift vectors together for the next time step */
+        for (i=0; i<rotg->nat; i++)
         {
-            get_extra_shifts(rotg, 3, box, rotg->xc);
-
-            /* Shift with the additional shifts such that we get a whole molecule now */
-            ed_shift_coords(box, rotg->xc, rotg->xc_eshifts, rotg->nat);
-
-            /* Add the shift vectors together for the next time step */
-            for (i=0; i<rotg->nat; i++)
-            {
-                rotg->xc_shifts[i][XX] += rotg->xc_eshifts[i][XX];
-                rotg->xc_shifts[i][YY] += rotg->xc_eshifts[i][YY];
-                rotg->xc_shifts[i][ZZ] += rotg->xc_eshifts[i][ZZ];
-            }
-
-            /* Store current correctly-shifted coordinates for comparison in the next NS time step */
-            for (i=0; i<rotg->nat; i++)
-                copy_rvec(rotg->xc[i],rotg->xc_old[i]);
+            rotg->xc_shifts[i][XX] += rotg->xc_eshifts[i][XX];
+            rotg->xc_shifts[i][YY] += rotg->xc_eshifts[i][YY];
+            rotg->xc_shifts[i][ZZ] += rotg->xc_eshifts[i][ZZ];
         }
+        
+        /* Store current correctly-shifted coordinates for comparison in the next NS time step */
+        for (i=0; i<rotg->nat; i++)
+            copy_rvec(rotg->xc[i],rotg->xc_old[i]);
     }
 
     GMX_MPE_LOG(ev_get_coords_finish);
@@ -1750,7 +1756,8 @@ static void angle(t_rotgrp *rotg,
         rvec x_act,
         rvec x_ref,
         real *alpha,
-        real *weight)  /* atoms near the rotation axis should count less than atoms far away */
+        real *weight,  /* atoms near the rotation axis should count less than atoms far away */
+        rvec offset)
 {
     rvec x , xr ;  /* actual and reference coordinate in new coordinate system */
     rvec xp, xrp;  /* dito, but projected on a plane perpendicular to pg->vec */
@@ -1761,8 +1768,8 @@ static void angle(t_rotgrp *rotg,
 
 
     /* Move the center of coordinates to rot_offset: */
-    rvec_sub(x_act, rotg->offset, x);
-    rvec_sub(x_ref, rotg->offset, xr);
+    rvec_sub(x_act, offset, x);
+    rvec_sub(x_ref, offset, xr);
 
     /* Project xr and x into a plane through the origin perpendicular to rot_vec: */
     /* Project xr: xrp = xr - (vec * xr) * vec */
@@ -1823,7 +1830,9 @@ static void do_fixed(
 {
     int       i,ii,m,iigrp;
     rvec      dr;
-    rvec      x1;              /* particle coordinate */
+    rvec      curr_x;          /* particle coordinate */
+    rvec      curr_x_pbc;      /* particle coordinate with the right pbc representation 
+                                * w.r.t. the reference coordinate xr */
     rvec      tmp_f;           /* Force */
     rvec      xr, xrcpy;       /* rotated (reference) particle coordinate */
     real      alpha;           /* a single angle between an actual and a reference coordinate */
@@ -1842,7 +1851,7 @@ static void do_fixed(
         /* Index of a rotation group atom  */
         ii = rotg->ind_loc[i];
         /* Actual coordinate of this atom: x[ii][XX/YY/ZZ] */
-        copy_rvec(x[ii], x1);
+        copy_rvec(x[ii], curr_x);
         
         /* Index of this rotation group atom with respect to the whole rotation group */
         iigrp = rotg->xc_ref_ind[i];
@@ -1858,8 +1867,12 @@ static void do_fixed(
         /* And move back: */
         rvec_add(xr, rotg->offset, xr);
         /* Difference vector between reference and actual coordinate: */
-        pbc_dx(pbc,xr,x1, dr);
+        pbc_dx(pbc,xr,curr_x, dr);
         
+        /* The reference coords are whole, therefore we can construct the
+         * needed pbc image of curr_x from xr and dr: */
+        rvec_sub(xr, dr, curr_x_pbc);
+
         if (rotg->eType==erotgFIXED_PLANE)
             project_onto_plane(dr, rotg->vec);
             
@@ -1869,16 +1882,16 @@ static void do_fixed(
         {
             tmp_f[m]              = rotg->k*dr[m];
             rotg->f_rot_loc[i][m] = tmp_f[m];
-            rotg->V              +=  0.5*rotg->k*sqr(dr[m]);
+            rotg->V              += 0.5*rotg->k*sqr(dr[m]);
         }
         
         if (bTorque)
         {
             /* Add to the torque of this rotation group */
-            rotg->fix_torque_v += torque(rotg->vec, tmp_f, x1, rotg->offset);
+            rotg->fix_torque_v += torque(rotg->vec, tmp_f, curr_x_pbc, rotg->offset);
             
             /* Calculate the angle between reference and actual rotation group atom: */
-            angle(rotg, x1, xr, &alpha, &weight);  /* angle in rad, weighted */
+            angle(rotg, curr_x_pbc, xr, &alpha, &weight, rotg->offset);  /* angle in rad, weighted */
             rotg->fix_angles_v += alpha * weight;
             rotg->fix_weight_v += weight;
             /* Use the next two lines instead if you don't want weighting: */
@@ -1906,9 +1919,99 @@ static void do_fixed(
 }
 
 
-extern void init_rot_group(FILE *fplog,t_commrec *cr,
+/* Fixed rotation, subtype follow_plane: Similar to fixed_plane, however
+ * the centers of mass of the reference and current group are subtracted
+ * from reference and current coordinates, respectively. This way the rotation 
+ * group can move around in the box and does not stick to its reference location */
+static void do_follow_plane(
+        t_commrec *cr,
+        t_rotgrp *rotg,         /* The rotation group       */
+        matrix    rotmat,       /* rotary matrix            */
+        rvec     x[],           /* The coordinates (natoms) */
+        matrix   box,
+        double   t,             /* Time in picoseconds      */
+        int      step,          /* The time step            */
+        bool     bTorque)
+{
+    int       l,ii,m,iigrp;
+    rvec      dr;
+    rvec      curr_x;          /* particle coordinate */
+    rvec      tmp_f;           /* Force */
+    rvec      xr, xrcpy;       /* rotated (reference) particle coordinate */
+    real      alpha;           /* a single angle between an actual and a reference coordinate */
+    real      weight;          /* single weight for a single angle */
+    rvec      zerovec;
+    clear_rvec(zerovec);
+    
+    
+    /* Clear values from last time step */
+    rotg->V            = 0.0;
+    rotg->fix_torque_v = 0.0;
+    rotg->fix_angles_v = 0.0;
+    rotg->fix_weight_v = 0.0;
+
+    /* Loop over all local atoms of the rotation group */
+    for (l=0; l<rotg->nat_loc; l++)
+    {
+        /* Index of a rotation group atom  */
+        ii = rotg->ind_loc[l];
+
+        /* Index of this rotation group atom with respect to the whole rotation group */
+        iigrp = rotg->xc_ref_ind[l];
+
+        /* Actual coordinate of this atom: x[ii][XX/YY/ZZ] */
+        copy_rvec(x[ii], curr_x);
+        
+        /* Shift this atom such that it is near its reference */
+        shift_single_coord(box, curr_x, rotg->xc_shifts[iigrp]);
+
+        /* Subtract center of mass */
+        rvec_sub(curr_x, rotg->offset, curr_x);
+       
+        /* Copy the (unrotated) reference coordinate of this atom: */
+        rvec_sub(rotg->xc_ref[iigrp], rotg->xc_ref_center, xr);  
+        
+        /* Rotate this atom around COM: */
+        copy_rvec(xr, xrcpy);
+        mvmul(rotmat, xrcpy, xr);
+        /* Difference vector between reference and actual coordinate: */
+        rvec_sub(xr, curr_x, dr);
+            
+        project_onto_plane(dr, rotg->vec);
+        
+        /* Store the additional force so that it can be added to the force
+         * array after the normal forces have been evaluated */
+        for (m=0; m<DIM; m++)
+        {
+            tmp_f[m]              = rotg->k*dr[m];
+            rotg->f_rot_loc[l][m] = tmp_f[m];
+            rotg->V              += 0.5*rotg->k*sqr(dr[m]);
+        }
+        
+        if (bTorque)
+        {
+            /* Add to the torque of this rotation group */
+            rotg->fix_torque_v += torque(rotg->vec, tmp_f, curr_x, zerovec);
+            
+            /* Calculate the angle between reference and actual rotation group atom: */
+            angle(rotg, curr_x, xr, &alpha, &weight, zerovec);  /* angle in rad, weighted */
+            rotg->fix_angles_v += alpha * weight;
+            rotg->fix_weight_v += weight;
+            /* Use the next two lines instead if you don't want weighting: */
+            /*
+                angles_v[g] += alpha;
+                weight_v[g] += 1;
+             */
+        }
+    } /* end of loop over local rotation group atoms */
+}
+
+
+extern void init_rot_group(
+        FILE *fplog,t_commrec *cr,
         int g,t_rotgrp *rotg,
         rvec *x,       /* the coordinates */
+        gmx_mtop_t *mtop,
         int rot_type,
         FILE *out_slabs,
         matrix box)
@@ -1921,30 +2024,40 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
     t_trnheader header;       /* Header information of reference file */
     bool        bSame;        /* Used for a check if box sizes agree */
     int         nslabs;       /* Maximum number of slabs that fit into simulation box */
-    bool        bFlex;
-
-    /* Enforced rotation with fixed/flexible axis */    
+    bool        bFlex;        /* Flexible rotation? */
+    bool        bColl;        /* Use collective coordinates? */
+    t_atom      *atom;
+    
+    
     bFlex = (rot_type == erotgFLEX1 || rot_type == erotgFLEX2);
+    bColl = (bFlex || (rot_type==erotgFOLLOW_PLANE));    
     
     snew(rotg->xc_ref       , rotg->nat);
-    snew(rotg->xc_ref_length, rotg->nat);
     snew(rotg->xc_ref_ind   , rotg->nat);
     snew(rotg->f_rot_loc    , rotg->nat);
+    if (bFlex && rotg->eFittype == erotgFitNORM)
+        snew(rotg->xc_ref_length, rotg->nat); /* in case fit type NORM is chosen */
+    if (rot_type == erotgFOLLOW_PLANE)
+        snew(rotg->mc, rotg->nat);
 
     /* xc_ref_ind needs to be set to identity in the serial case */
     if (!PAR(cr))
         for (i=0; i<rotg->nat; i++)
             rotg->xc_ref_ind[i] = i;
 
-    /* Enforced rotation with flexible axis */
-    if (bFlex)
+    /* Allocate space for collective coordinates if used */
+    if (bColl)
     {
         snew(rotg->xc        , rotg->nat);
         snew(rotg->xc_norm   , rotg->nat);
         snew(rotg->xc_old    , rotg->nat);
         snew(rotg->xc_shifts , rotg->nat);
         snew(rotg->xc_eshifts, rotg->nat);
-
+    }
+    
+    /* Enforced rotation with flexible axis */
+    if (bFlex)
+    {
         /* A maximum of (box diagonal)/(slab distance) slabs are possible */
         box_d = diagonal_length(box);
         rotg->slab_max_nr = (int) ceil(box_d/rotg->slab_dist);
@@ -2013,10 +2126,10 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
             fprintf(fplog, "Enforced rotation: saved %d coordinates of group %d to %s.\n",
                     rotg->nat, g, filename);
         }
-        if (bFlex)
+        if (bColl)
         {
-            /* Save the original (whole) coordinates such that in the next time step
-             * the molecule can be made whole again (in the parallel case) */
+            /* Save the original (whole) coordinates such that later the
+             * molecule can always be made whole again */
             for (i=0; i<rotg->nat; i++)
             {
                 ii = rotg->ind[i];
@@ -2029,7 +2142,7 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
     if (PAR(cr))
     {
         gmx_bcast(rotg->nat*sizeof(rotg->xc_ref[0]), rotg->xc_ref, cr);
-        if (bFlex)
+        if (bColl)
             gmx_bcast(rotg->nat*sizeof(rotg->xc_old[0]),rotg->xc_old, cr);
     }
 #endif
@@ -2039,18 +2152,31 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,
         /* Flexible rotation: determine the reference COGs for the rest of the simulation */
         get_slab_centers(rotg,rotg->xc_ref,box,cr,g,TRUE,-1,out_slabs,1,TRUE);
 
-        /* Also save the center of coordinates for the reference structure: */
+        /* Also save the center of geometry of the reference structure (needed for fitting): */
         get_center(rotg->xc_ref, NULL, rotg->nat, rotg->xc_ref_center);
-        if (MASTER(cr))
-            fprintf(fplog, "Enforced rotation: center of reference coordinates of group %d is at %f %f %f\n", g,
-                    rotg->xc_ref_center[XX], rotg->xc_ref_center[YY], rotg->xc_ref_center[ZZ]);
 
-        /* Length of each x_rotref vector from center (needed for later RMSD fit routines): */
+        /* Length of each x_rotref vector from center (needed if fit routine NORM is chosen): */
+        if (rotg->eFittype == erotgFitNORM)
+        {
+            for (i=0; i<rotg->nat; i++)
+            {
+                rvec_sub(rotg->xc_ref[i], rotg->xc_ref_center, coord);
+                rotg->xc_ref_length[i] = norm(coord);
+            }
+        }
+    }
+    
+    if (rot_type == erotgFOLLOW_PLANE)
+    {
+        /* We need to copy the masses for later usage */
         for (i=0; i<rotg->nat; i++)
         {
-            rvec_sub(rotg->xc_ref[i], rotg->xc_ref_center, coord);
-            rotg->xc_ref_length[i] = norm(coord);
+            gmx_mtop_atomnr_to_atom(mtop,rotg->ind[i],&atom);
+            rotg->mc[i] = atom->m;
         }
+        /* Save the center of mass of the reference structure: */
+        get_center(rotg->xc_ref, rotg->mc, rotg->nat, rotg->xc_ref_center);
+
     }
 }
 
@@ -2097,16 +2223,12 @@ void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md)
 
     for(g=0; g<rot->ngrp; g++)
         make_local_rotation_group(ga2la,&rot->grp[g],md->start,md->start+md->homenr);
-
-    /* Indicate that the shift vectors for this structure need to be updated
-     * at the next call to get_coordinates, since obviously we are in a NS step */
-    rot->bUpdateShifts = TRUE;
-
 }
 
 
 void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
-        t_commrec *cr, matrix box, rvec *x, const output_env_t oenv, unsigned long Flags)
+        t_commrec *cr, matrix box, rvec *x, gmx_mtop_t *mtop,
+        const output_env_t oenv, unsigned long Flags)
 {
     t_rot    *rot;
     t_rotgrp *rotg;
@@ -2114,6 +2236,9 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     bool     bRerun;
     bool     bFlex=FALSE;
 
+
+    if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
+        gmx_fatal(FARGS, "Enforced rotation is only implemented for domain decomposition!");
 
     rot = ir->rot;
 
@@ -2154,7 +2279,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 rotg->nat_loc = rotg->nat;
                 rotg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog,cr,g,rotg,x,rotg->eType,rot->out_slabs,box);
+            init_rot_group(fplog,cr,g,rotg,x,mtop,rotg->eType,rot->out_slabs,box);
         }
     }
     
@@ -2188,7 +2313,8 @@ extern void do_rotation(
         rvec x[],
         real t,
         int step,
-        gmx_wallcycle_t wcycle)
+        gmx_wallcycle_t wcycle,
+        bool bNS)
 {
     int      g;
     t_pbc    pbc;
@@ -2200,9 +2326,6 @@ extern void do_rotation(
     matrix   rotmat;
 
     
-    if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
-        gmx_fatal(FARGS, "Enforced rotation is only implemented for domain decomposition!");
-
     rot=ir->rot;
     
     /* At which time steps do we want to output the torque */
@@ -2211,16 +2334,21 @@ extern void do_rotation(
     /* Output time into rotation output file */
     if (outstep_torque && MASTER(cr))
         fprintf(rot->out_rot, "%12.3e",t);
-    
-    /* Let's first do ALL the communication! */
+
+    /* First do ALL the communication! */
     for(g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
         /* Transfer the rotation group's coordinates such that every node has all of them.
          * Every node contributes its local coordinates x and stores it in
          * the collective pg->xc array. */
-        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2)
-            get_coordinates(cr, rotg, x, rot->bUpdateShifts, box);
+        if (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2 || rotg->eType == erotgFOLLOW_PLANE)
+            get_coordinates(cr, rotg, x, bNS, box);
+        if (rotg->eType == erotgFOLLOW_PLANE)
+        {
+            /* Get the center of mass of the rotation group and store in rotg->offset */
+            get_center(rotg->xc, rotg->mc, rotg->nat, rotg->offset);
+        }
     }
     
     /* Done communicating, we can start to count cycles now ... */
@@ -2243,6 +2371,9 @@ extern void do_rotation(
             set_pbc(&pbc,ir->ePBC,box);
             do_fixed(cr,rotg,rotmat,x,&pbc,t,step,outstep_torque);
             break;
+        case erotgFOLLOW_PLANE:
+            do_follow_plane(cr,rotg,rotmat,x,box,t,step,outstep_torque);
+            break;
         case erotgFLEX1:
         case erotgFLEX2:
             do_flexible(cr,rotg,g,degangle,rotmat,x,box,t,DYNAMIC_BOX(*ir),step,outstep_torque,
@@ -2252,9 +2383,6 @@ extern void do_rotation(
             break;
         }
     }
-    /* If bUpdateShifts was TRUE then the shifts have just been updated in get_coordinates.
-     * We do not need to update the shifts until the next NS step */
-    rot->bUpdateShifts = FALSE;
 
     /* Stop the cycle counter and add to the force cycles for load balancing */
     cycles_rot = wallcycle_stop(wcycle,ewcROT);

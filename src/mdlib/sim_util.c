@@ -604,9 +604,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     if (inputrec->bRot)
     {
-        /* Enforced rotaion has its own cycle counter that starts after the collective
+        /* Enforced rotation has its own cycle counter that starts after the collective
          * coordinates have been communicated. It is added to ddCyclF */
-        do_rotation(cr,inputrec,box,x,t,step,wcycle);
+        do_rotation(cr,inputrec,box,x,t,step,wcycle,bNS);
     }
 
     /* Start the force cycle counter.

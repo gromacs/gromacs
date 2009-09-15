@@ -83,7 +83,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         sprintf(buf,"rot_group%d",g);
         STYPE(buf,              grpbuf[g], "");
         
-        CTYPE("Rotation type can be Fixed, FixedPlane, Flexible1 or Flexible2");
+        CTYPE("Rotation type can be Fixed, FixedPlane, FollowPlane, Flexible1 or Flexible2");
         sprintf(buf,"rot_type%d",g);
         ETYPE(buf,              rotg->eType, erotg_names);
         
