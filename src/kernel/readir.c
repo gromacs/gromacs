@@ -2003,7 +2003,7 @@ static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
 void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
-  int  i,m,nmol,npct;
+  int  i,m,g,nmol,npct;
   bool bCharge,bAcc;
   real gdt_max,*mgrp,mt;
   rvec acc;
@@ -2103,13 +2103,30 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
     gmx_fatal(FARGS,"Soft-core interactions are only supported with VdW repulsion power 12");
   }
 
-  if (ir->ePull != epullNO && ir->pull->grp[0].nat == 0) {
-    absolute_reference(ir,sys,AbsRef);
-    for(m=0; m<DIM; m++) {
-      if (ir->pull->dim[m] && !AbsRef[m]) {
-	set_warning_line(mdparin,-1);
-	warning("You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
-	break;
+  if (ir->ePull != epullNO) {
+    if (ir->pull->grp[0].nat == 0) {
+      absolute_reference(ir,sys,AbsRef);
+      for(m=0; m<DIM; m++) {
+	if (ir->pull->dim[m] && !AbsRef[m]) {
+	  set_warning_line(mdparin,-1);
+	  warning("You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
+	  break;
+	}
+      }
+    }
+
+    if (ir->pull->eGeom == epullgDIRPBC) {
+      for(i=0; i<3; i++) {
+	for(m=0; m<=i; m++) {
+	  if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
+	      ir->deform[i][m] != 0) {
+	    for(g=1; g<ir->pull->ngrp; g++) {
+	      if (ir->pull->grp[g].vec[m] != 0) {
+		gmx_fatal(FARGS,"Can not have dynamic box while using pull geometry '%s' (dim %c)",EPULLGEOM(ir->pull->eGeom),'x'+m);
+	      }
+	    }
+	  }
+	}
       }
     }
   }

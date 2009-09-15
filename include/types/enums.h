@@ -186,7 +186,7 @@ enum {
 };
 
 enum {
-  epullgDIST, epullgDIR, epullgCYL, epullgPOS, epullgNR
+  epullgDIST, epullgDIR, epullgCYL, epullgPOS, epullgDIRPBC, epullgNR
 };
 
 #define PULL_CYL(pull) ((pull)->eGeom == epullgCYL)
