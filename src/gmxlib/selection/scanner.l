@@ -82,6 +82,7 @@ typedef struct gmx_sel_lexer_t
     gmx_ana_selparam_t   *nextparam;
 
     bool                  bMatchOf;
+    bool                  bCmdStart;
 
     bool                  bBuffer;
     YY_BUFFER_STATE       buffer;
@@ -162,6 +163,8 @@ COMMENT    (#.*)
 %option prefix="_gmx_sel_yy"
 
 %s matchof
+%s cmdstart
+%x help
 
 %%
 
@@ -178,7 +181,12 @@ COMMENT    (#.*)
         BEGIN(matchof);
         state->bMatchOf = FALSE;
     }
-    else
+    else if (state->bCmdStart)
+    {
+        BEGIN(cmdstart);
+        state->bCmdStart = FALSE;
+    }
+    else if (YYSTATE != help)
     {
         BEGIN(0);
     }
@@ -190,7 +198,20 @@ COMMENT    (#.*)
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
 \\\n            { if (state->prompt) state->prompt = CONTINUE_PROMPT; }
-";"|\n          { if (yytext[0] == ';' || state->prompt) return CMD_SEP; }
+";"|\n          {
+                    if (yytext[0] == ';' || state->prompt)
+                    {
+                        state->bCmdStart = TRUE;
+                        return CMD_SEP;
+                    }
+                }
+<cmdstart>help  { BEGIN(help); return HELP; }
+<help>{
+[[:blank:]]+
+{IDENTIFIER}    { yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
+";"|\n          { state->bCmdStart = TRUE; return CMD_SEP; }
+.               { return INVALID; }
+}
 group           { ADD_TOKEN; return GROUP; }
 to              { ADD_TOKEN; return TO; }
 <matchof>of     { ADD_TOKEN; BEGIN(0); return OF; }
@@ -482,6 +503,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->neom         = 0;
     state->nextparam    = NULL;
     state->bMatchOf     = FALSE;
+    state->bCmdStart    = TRUE;
     state->bBuffer      = FALSE;
 
     yyset_extra(state, *scannerp);

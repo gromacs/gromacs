@@ -650,7 +650,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
     bool                bSelDump  = FALSE;
     t_pargs             sel_pa[] = {
         {"-select",   FALSE, etSTR,  {&selection},
-         "Selection string"},
+         "Selection string (use 'help' for help)"},
         {"-seldebug", FALSE, etBOOL, {&bSelDump},
          "HIDDENPrint out the parsed and compiled selection trees"},
     };
@@ -840,6 +840,13 @@ parse_trjana_args(gmx_ana_traj_t *d,
         gmx_ana_selcollection_set_outpostype(d->sc, spost[1], d->flags & ANA_USE_POSMASK);
     }
     sfree(spost);
+
+    /* Check if the user requested help on selections.
+     * If so, call gmx_ana_init_selections() to print the help and exit. */
+    if (selection && strncmp(selection, "help", 4) == 0)
+    {
+        gmx_ana_init_selections(d);
+    }
 
     /* Load the topology if so requested. */
     rc = load_topology(d, (d->flags & ANA_REQUIRE_TOP));
@@ -1088,6 +1095,15 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
 
     /* Check the number of groups */
     nr = gmx_ana_selcollection_get_count(d->sc);
+    if (nr == 0)
+    {
+        /* TODO: Don't print this if the user has requested help */
+        fprintf(stderr, "Nothing selected, finishing up.\n");
+        gmx_ana_traj_free(d);
+        /* TODO: It would be better to return some code that tells the caller
+         * that one should exit. */
+        exit(0);
+    }
     if (nr <= d->nrefgrps)
     {
         gmx_input("selection does not specify enough index groups");
