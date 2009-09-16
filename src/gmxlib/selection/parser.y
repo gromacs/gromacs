@@ -238,7 +238,16 @@ help_request:
                  sc = _gmx_sel_lexer_selcollection(scanner);
                  _gmx_sel_print_help(sc, NULL);
              }
-           | help_request HELP_TOPIC
+           | help_topic
+
+help_topic:  HELP HELP_TOPIC
+             {
+                 gmx_ana_selcollection_t *sc;
+                 sc = _gmx_sel_lexer_selcollection(scanner);
+                 _gmx_sel_print_help(sc, $2);
+                 sfree($2);
+             }
+           | help_topic HELP_TOPIC
              {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);

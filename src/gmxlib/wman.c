@@ -198,7 +198,7 @@ static char *mydate(char buf[], int maxsize,bool bWiki)
 }
 
 /* Data structure for saved HTML links */
-typedef struct {
+typedef struct t_linkdata {
   int     nsr;
   t_sandr *sr;
 } t_linkdata;
@@ -509,7 +509,7 @@ char *check_tty(const char *s)
   return repall(s,NSRTTY,sandrTty);
 }
 
-static void
+void
 print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
                     t_linkdata *links,const char *program,bool bWiki)
 {
