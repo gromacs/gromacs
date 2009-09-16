@@ -538,7 +538,7 @@ print_tty_formatted(FILE *out, int nldesc, const char **desc,int indent,
   temp = wrap_lines(buf,78,indent,FALSE);
   fprintf(out,"%s\n",temp);
   sfree(temp);
-  /* sfree(buf);*/
+  sfree(buf);
 }
 
 static void write_ttyman(FILE *out,
