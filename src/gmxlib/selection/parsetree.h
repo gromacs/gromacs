@@ -146,10 +146,10 @@ _gmx_sel_init_modifier(struct gmx_ana_selcollection_t *sc,
                        t_selexpr_param *params, struct t_selelem *sel);
 /*! Creates a root \c t_selelem for a selection.*/
 struct t_selelem *
-_gmx_sel_init_selection(void *scanner, struct t_selelem *sel);
+_gmx_sel_init_selection(char *name, struct t_selelem *sel, void *scanner);
 /*! Creates a root \c t_selelem elements for a variable assignment.*/
 struct t_selelem *
-_gmx_sel_assign_variable(void *scanner, char *name, struct t_selelem *expr);
+_gmx_sel_assign_variable(char *name, struct t_selelem *expr, void *scanner);
 /*! Appends a root \c t_selelem to a selection collection.*/
 struct t_selelem *
 _gmx_sel_append_selection(struct gmx_ana_selcollection_t *sc,

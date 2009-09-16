@@ -773,15 +773,17 @@ _gmx_sel_init_modifier(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 }
 
 /*!
- * \param      scanner  Scanner data structure.
+ * \param[in]  name     Name for the selection
+ *     (if NULL, a default name is constructed).
  * \param[in]  sel      The selection element that evaluates the selection.
+ * \param      scanner  Scanner data structure.
  * \returns    The created root selection element.
  *
  * This function handles the creation of root (\ref SEL_ROOT) \c t_selelem
  * objects for selections.
  */
 t_selelem *
-_gmx_sel_init_selection(yyscan_t scanner, t_selelem *sel)
+_gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem               *root;
@@ -791,11 +793,18 @@ _gmx_sel_init_selection(yyscan_t scanner, t_selelem *sel)
     {
         gmx_bug("each selection must evaluate to a position");
         /* FIXME: Better handling of this error */
+        sfree(name);
         return NULL;
     }
 
     root = _gmx_selelem_create(SEL_ROOT);
     root->child = sel;
+    /* Assign the name (this is done here to free it automatically in the case
+     * of an error below). */
+    if (name)
+    {
+        root->name = root->u.cgrp.name = name;
+    }
     /* Update the flags */
     rc = _gmx_selelem_update_flags(root);
     if (rc != 0)
@@ -804,11 +813,18 @@ _gmx_sel_init_selection(yyscan_t scanner, t_selelem *sel)
         return NULL;
     }
 
+    /* If there is no name provided by the user, take the selection string. */
+    if (!name)
+    {
+        root->name = root->u.cgrp.name
+            = strdup(_gmx_sel_lexer_pselstr(scanner));
+    }
+
     /* Print out some information if the parser is interactive */
     if (_gmx_sel_is_lexer_interactive(scanner))
     {
-        /* TODO: It would be nice to print the whole selection here */
-        fprintf(stderr, "Selection parsed\n");
+        fprintf(stderr, "Selection '%s' parsed\n",
+                _gmx_sel_lexer_pselstr(scanner));
     }
 
     return root;
@@ -816,10 +832,10 @@ _gmx_sel_init_selection(yyscan_t scanner, t_selelem *sel)
 
 
 /*!
- * \param      scanner  Scanner data structure.
  * \param[in]  name     Name of the variable (should not be freed after this
  *   function).
  * \param[in]  expr     The selection element that evaluates the variable.
+ * \param      scanner  Scanner data structure.
  * \returns    The created root selection element.
  *
  * This function handles the creation of root \c t_selelem objects for
@@ -827,7 +843,7 @@ _gmx_sel_init_selection(yyscan_t scanner, t_selelem *sel)
  * element are both created.
  */
 t_selelem *
-_gmx_sel_assign_variable(yyscan_t scanner, char *name, t_selelem *expr)
+_gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem               *root;
@@ -853,7 +869,8 @@ _gmx_sel_assign_variable(yyscan_t scanner, char *name, t_selelem *expr)
         _gmx_selelem_free(expr);
         if (_gmx_sel_is_lexer_interactive(scanner))
         {
-            fprintf(stderr, "Variable '%s' parsed\n", name);
+            fprintf(stderr, "Variable '%s' parsed\n",
+                    _gmx_sel_lexer_pselstr(scanner));
         }
         sfree(name);
         return NULL;
@@ -871,7 +888,8 @@ _gmx_sel_assign_variable(yyscan_t scanner, char *name, t_selelem *expr)
         _gmx_selelem_free(expr);
         if (_gmx_sel_is_lexer_interactive(scanner))
         {
-            fprintf(stderr, "Variable '%s' parsed\n", name);
+            fprintf(stderr, "Variable '%s' parsed\n",
+                    _gmx_sel_lexer_pselstr(scanner));
         }
         sfree(name);
         return NULL;
@@ -900,7 +918,8 @@ _gmx_sel_assign_variable(yyscan_t scanner, char *name, t_selelem *expr)
     }
     if (_gmx_sel_is_lexer_interactive(scanner))
     {
-        fprintf(stderr, "Variable '%s' parsed\n", name);
+        fprintf(stderr, "Variable '%s' parsed\n",
+                _gmx_sel_lexer_pselstr(scanner));
     }
     return root;
 }

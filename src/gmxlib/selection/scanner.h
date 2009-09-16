@@ -59,6 +59,12 @@ _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 /*! Returns the selection collection for the scanner.*/
 struct gmx_ana_selcollection_t *
 _gmx_sel_lexer_selcollection(yyscan_t scanner);
+/*! Returns a pretty string of the current selection. */
+const char *
+_gmx_sel_lexer_pselstr(yyscan_t scanner);
+/*! Clears the current selection string. */
+void
+_gmx_sel_lexer_clear_pselstr(yyscan_t scanner);
 /*! Notifies the scanner that a complete method expression has been parsed.*/
 void
 _gmx_sel_finish_method(yyscan_t scanner);
