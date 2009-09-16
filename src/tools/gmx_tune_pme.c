@@ -66,12 +66,12 @@ typedef struct
     int  nPMEnodes;       /* number of PME only nodes used in this test */
     int  nx, ny, nz;      /* DD grid */
     int  guessPME;        /* if nPMEnodes == -1, this is the guessed number of PME nodes */
-    real *Gcycles;        /* This can contain more than one value if doing multiple tests */
-    real Gcycles_Av;
-    real *ns_per_day;
-    real ns_per_day_Av;
-    real *PME_f_load;     /* PME mesh/force load average*/
-    real PME_f_load_Av;   /* Average average ;) ... */
+    double *Gcycles;      /* This can contain more than one value if doing multiple tests */
+    double Gcycles_Av;
+    float *ns_per_day;
+    float ns_per_day_Av;
+    float *PME_f_load;    /* PME mesh/force load average*/
+    float PME_f_load_Av;  /* Average average ;) ... */
     char *mdrun_cmd_line; /* Mdrun command line used for this test */
 } t_perf;
 
@@ -136,7 +136,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
     const char errUSR1[]="Received the USR1 signal, stopping at the next NS step";
     int   iFound;
     int   procs;
-    real  dum1,dum2,dum3;
+    float  dum1,dum2,dum3;
     int   npme;
     gmx_large_int_t resetsteps=-1;
     bool  bFoundResetStr = FALSE;
@@ -219,7 +219,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
-                    sscanf(line,"Total %d %f",&procs,&(perfdata->Gcycles[test_nr]));
+                    sscanf(line,"Total %d %lf",&procs,&(perfdata->Gcycles[test_nr]));
                     iFound = eFoundCycleStr;
                 }
                 break;
@@ -258,7 +258,7 @@ static int analyze_data(
     int  i,j,k;
     int line=0, line_win=-1;
     int  k_win=-1, i_win=-1, winPME;
-    real s=0.0;  /* standard deviation */
+    double s=0.0;  /* standard deviation */
     t_perf *pd;
     char strbuf[STRLEN];
     char str_PME_f_load[13];
@@ -586,7 +586,6 @@ static void make_benchmark_tprs(
     rvec         orig_fs;      /* original fourierspacing per dimension */
     ivec         orig_nk;      /* original number of grid points per dimension */
     char         buf[200];
-    real         max_spacing;
     rvec         box_size;
     
 
@@ -671,7 +670,7 @@ static void make_benchmark_tprs(
             ir->nkx = 0;
             ir->nky = 0;
             ir->nkz = 0;
-            max_spacing = calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+            calc_grid(stdout,state.box,info->fourier_sp[j],&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             /* Check consistency */
             if (0 == j)
                 if ((ir->nkx != orig_nk[XX]) || (ir->nky != orig_nk[YY]) || (ir->nkz != orig_nk[ZZ]))
@@ -689,11 +688,11 @@ static void make_benchmark_tprs(
             {
                 /* Reconstruct fourierspacing for each dimension from the input file */
                 ir->nkx=0;
-                max_spacing = calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
                 ir->nky=0;
-                max_spacing = calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
                 ir->nkz=0;
-                max_spacing = calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             }
         }
         /* r_vdw should only grow if necessary! */
@@ -1049,7 +1048,7 @@ static bool is_launch_option(char *opt, bool bSet)
 
 
 /* Returns TRUE when "opt" is needed at launch time */
-static bool is_launch_file(char *opt, bool bSet, bool bOptional)
+static bool is_launch_file(char *opt, bool bSet)
 {
     /* We need all options that were set on the command line 
      * and that do not start with -b */
@@ -1201,7 +1200,7 @@ static void create_command_line_snippets(
                 add_to_command_line(cmd_args_bench, strbuf);
             }
             
-            if ( is_launch_file(opt,opt2bSet(opt,nfile,fnm),is_optional(&fnm[i])) )
+            if ( is_launch_file(opt,opt2bSet(opt,nfile,fnm)) )
                 add_to_command_line(cmd_args_launch, strbuf);
         }
     }
@@ -1210,7 +1209,7 @@ static void create_command_line_snippets(
 
 
 /* Set option opt */
-void setopt(const char *opt,int nfile,t_filenm fnm[])
+static void setopt(const char *opt,int nfile,t_filenm fnm[])
 {
   int i;
   
@@ -1673,7 +1672,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)
     {
-		FILE *fp = fopen(opt2fn("-p", NFILE, fnm),"r");
+		fp = fopen(opt2fn("-p", NFILE, fnm),"r");
 		char buf[STRLEN];
         fprintf(stdout,"\n\n");
 		
