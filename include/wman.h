@@ -67,6 +67,13 @@ extern char *check_tex(const char *s);
 
 extern char *check_tty(const char *s);
 
+/* FIXME: It should not be necessary to expose the struct */
+struct t_linkdata;
+
+extern void
+print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
+                    struct t_linkdata *links, const char *program, bool bWiki);
+
 #endif	/* _wman_h */
 
 
