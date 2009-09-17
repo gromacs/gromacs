@@ -45,7 +45,6 @@
 #include <statutil.h>
 #include <xvgr.h>
 #include <string2.h>
-#include <selection.h>
 #include <trajana.h>
 
 typedef struct
@@ -59,7 +58,6 @@ typedef struct
     FILE               *ifp;
     t_blocka           *block;
     char              **gnames;
-    char               *selstr;
     FILE               *mfp;
     gmx_ana_indexmap_t *mmap;
 } t_dsdata;
@@ -71,7 +69,8 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_dsdata           *d = (t_dsdata *)data;
     int                 g, i, b, mask;
     real                normfac;
-    char                buf2[100];
+    char                buf2[100],*buf,*nl;
+    static int          bFirstFrame=1;
 
     /* Write the sizes of the groups, possibly normalized */
     if (d->sfp)
@@ -124,10 +123,28 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         fprintf(d->ifp, "\n");
     }
     
-    if (d->block)
+    if (d->block) 
     {
-        snprintf(buf2,sizeof(buf2)/sizeof(char),"%s_%.3f",d->selstr,fr->time);
-        add_grp(d->block,&d->gnames,sel[0]->p.nr,sel[0]->p.m.mapid,buf2);
+        for (g = 0; g < nr; ++g) 
+        {        
+            if (sel[g]->bDynamic || bFirstFrame) 
+            {
+                buf = strdup(sel[g]->name);
+                while ((nl = strchr(buf, ' ')) != NULL)
+                {
+                    *nl = '_';
+                }
+                if (sel[g]->bDynamic)
+                {
+                    snprintf(buf2,sizeof(buf2)/sizeof(char),"%s_%.3f",buf,fr->time);
+                }
+                else {
+                    snprintf(buf2,sizeof(buf2)/sizeof(char),"%s",buf);
+                }
+                sfree(buf);
+                add_grp(d->block,&d->gnames,sel[g]->p.nr,sel[g]->p.m.mapid,buf2);
+            }
+        }
     }
 
     /* Write masks */
@@ -148,7 +165,7 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             fprintf(d->mfp, "\n");
         }
     }
-
+    bFirstFrame = 0;
     return 0;
 }
 
@@ -182,6 +199,10 @@ gmx_select(int argc, char *argv[])
         "and so on. With [TT]-dump[tt], the frame time and the number",
         "of positions is omitted from the output. In this case, only one",
         "selection can be given.[PAR]",
+        "With [TT]-on[tt], the selected atoms are written as a index file",
+        "compatible with make_ndx and the analyzing tools. Each selection",
+        "is written as a selection group and for dynamic selections a",
+        "group is written for each frame.[PAR]",
         "For residue numbers, the output of [TT]-oi[tt] can be controlled",
         "with [TT]-resnr[tt]: [TT]number[tt] (default) prints the residue",
         "numbers as they appear in the input file, while [TT]index[tt] prints",
@@ -225,14 +246,12 @@ gmx_select(int argc, char *argv[])
     t_topology           *top;
     int                   ngrps;
     gmx_ana_selection_t **sel;
-    gmx_ana_selcollection_t *sc;
     char                **grpnames;
     t_dsdata              d;
     const char            *fnSize, *fnFrac, *fnIndex, *fnNdx, *fnMask;
     int                   g;
     int                   rc;
     output_env_t          oenv;
-    char*                 nl;
 
     CopyRight(stderr, argv[0]);
     gmx_ana_traj_create(&trj, 0);
@@ -256,9 +275,9 @@ gmx_select(int argc, char *argv[])
         fnSize = opt2fn("-os", NFILE, fnm);
     }
 
-    if (( bDump || fnNdx ) && ngrps > 1)
+    if ( bDump && ngrps > 1)
     {
-        gmx_fatal(FARGS, "Only one index group allowed with -dump and -on");
+        gmx_fatal(FARGS, "Only one index group allowed with -dump");
     }
     if (fnNdx && sel[0]->p.m.type != INDEX_ATOM)
     {
@@ -293,7 +312,7 @@ gmx_select(int argc, char *argv[])
     }
 
     /* Open output files */
-    d.sfp = d.cfp = d.ifp = d.mfp = NULL;
+    d.sfp = d.cfp = d.ifp = d.mfp = d.block = NULL;
     gmx_ana_get_grpnames(trj, &grpnames);
     if (fnSize)
     {
@@ -317,17 +336,6 @@ gmx_select(int argc, char *argv[])
     {
         d.block = new_blocka();
         d.gnames = NULL;
-        gmx_ana_get_selcollection(trj,&sc);
-        d.selstr = strdup(gmx_ana_selcollection_get_selstr(sc));
-        while ((nl = strchr(d.selstr, ' ')) != NULL)
-        {
-            *nl = '_';
-        }
-        nl = strchr(d.selstr, '\n');
-        if (nl)
-        {
-            *nl = 0;
-        }
     }
     if (fnMask)
     {
@@ -354,7 +362,6 @@ gmx_select(int argc, char *argv[])
     if (d.block)
     {
         write_index(fnNdx, d.block, d.gnames);
-        sfree(d.selstr);
     }
     if (d.mfp)
     {

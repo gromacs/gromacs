@@ -56,6 +56,7 @@
 #include "parsetree.h"
 #include "selcollection.h"
 #include "selelem.h"
+#include "selhelp.h"
 
 #include "scanner.h"
 
@@ -90,6 +91,10 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 
 /* Invalid token to report lexer errors */
 %token INVALID
+
+/* Tokens for help requests */
+%token         HELP
+%token <str>   HELP_TOPIC
 
 /* Simple input tokens */
 %token <i>     INT
@@ -146,7 +151,7 @@ init_keyword_expr(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 %type <val>   int_list     int_list_item
 %type <param> method_params method_param_list method_param
 
-%destructor { free($$);                     } STR IDENTIFIER string
+%destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
 %destructor { if($$) _gmx_selelem_free($$); } command
 %destructor { _gmx_selelem_free_chain($$);  } selection
 %destructor { _gmx_selelem_free($$);        } sel_expr numeric_expr
@@ -175,6 +180,7 @@ commands:    command
                  $$ = _gmx_sel_append_selection(sc, $1, NULL);
                  if (sc->nr == nexp)
                      YYACCEPT;
+                 _gmx_sel_lexer_clear_pselstr(scanner);
              }
            | commands CMD_SEP command
              {
@@ -183,6 +189,7 @@ commands:    command
                  $$ = _gmx_sel_append_selection(sc, $3, $1);
                  if (sc->nr == nexp)
                      YYACCEPT;
+                 _gmx_sel_lexer_clear_pselstr(scanner);
              }
 ;
 
@@ -210,18 +217,43 @@ command:     /* empty */        { $$ = NULL;                            }
                  if (s == NULL) YYABORT;
                  p = _gmx_sel_init_position(sc, s, sc->spost, TRUE);
                  if (p == NULL) YYABORT;
-                 $$ = _gmx_sel_init_selection(scanner, p);
+                 $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
              }
-           | selection          { $$ = _gmx_sel_init_selection(scanner, $1); }
-           | string selection   { $$ = _gmx_sel_init_selection(scanner, $2);
-                                  $$->name = $1; $$->u.cgrp.name = $1;   }
+           | selection          { $$ = _gmx_sel_init_selection(NULL, $1, scanner); }
+           | string selection   { $$ = _gmx_sel_init_selection($1, $2, scanner);  }
            | IDENTIFIER '=' sel_expr
-                                { $$ = _gmx_sel_assign_variable(scanner, $1, $3); }
+                                { $$ = _gmx_sel_assign_variable($1, $3, scanner); }
            | IDENTIFIER '=' numeric_expr
-                                { $$ = _gmx_sel_assign_variable(scanner, $1, $3); }
+                                { $$ = _gmx_sel_assign_variable($1, $3, scanner); }
            | IDENTIFIER '=' pos_expr_nosel
-                                { $$ = _gmx_sel_assign_variable(scanner, $1, $3); }
+                                { $$ = _gmx_sel_assign_variable($1, $3, scanner); }
+           | help_request       { $$ = NULL; }
 ;
+
+/* Help requests */
+help_request:
+             HELP
+             {
+                 gmx_ana_selcollection_t *sc;
+                 sc = _gmx_sel_lexer_selcollection(scanner);
+                 _gmx_sel_print_help(sc, NULL);
+             }
+           | help_topic
+
+help_topic:  HELP HELP_TOPIC
+             {
+                 gmx_ana_selcollection_t *sc;
+                 sc = _gmx_sel_lexer_selcollection(scanner);
+                 _gmx_sel_print_help(sc, $2);
+                 sfree($2);
+             }
+           | help_topic HELP_TOPIC
+             {
+                 gmx_ana_selcollection_t *sc;
+                 sc = _gmx_sel_lexer_selcollection(scanner);
+                 _gmx_sel_print_help(sc, $2);
+                 sfree($2);
+             }
 
 /* Selection is made of an expression and zero or more modifiers */
 selection:   pos_expr_sel       { $$ = $1; }

@@ -96,8 +96,16 @@ static void cmp_uc(FILE *fp,const char *s,int index,unsigned char i1,unsigned ch
 
 static bool cmp_bool(FILE *fp, const char *s, int index, bool b1, bool b2)
 {
-  b1 = b1 & TRUE;
-  b2 = b2 & TRUE;
+  if (b1) {
+    b1 = 1;
+  } else {
+    b1 = 0;
+  }
+  if (b2) {
+    b2 = 1;
+  } else {
+    b2 = 0;
+  }
   if (b1 != b2) {
     if (index != -1)
       fprintf(fp,"%s[%d] (%s - %s)\n",s,index,
@@ -343,12 +351,26 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol, real absto
   }
 }
 
-static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],real ftol,real abstol)
+static void cmp_rvecs(FILE *fp,const char *title,int n,rvec x1[],rvec x2[],
+		      bool bRMSD,real ftol,real abstol)
 {
-  int i;
-  
-  for(i=0; (i<n); i++)
-    cmp_rvec(fp,title,i,x1[i],x2[i],ftol,abstol);
+  int i,m;
+  double d,ssd;
+
+  if (bRMSD) {
+    ssd = 0;
+    for(i=0; (i<n); i++) {
+      for(m=0; m<DIM; m++) {
+	d = x1[i][m] - x2[i][m];
+	ssd += d*d;
+      }
+    }
+    fprintf(fp,"%s RMSD %f\n",title,sqrt(ssd/n));
+  } else {
+    for(i=0; (i<n); i++) {
+      cmp_rvec(fp,title,i,x1[i],x2[i],ftol,abstol);
+    }
+  }
 }
 
 static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol, real abstol)
@@ -570,21 +592,22 @@ static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol,real abstol)
   }
 }
 
-static void comp_state(t_state *st1, t_state *st2,real ftol,real abstol)
+static void comp_state(t_state *st1, t_state *st2,
+		       bool bRMSD,real ftol,real abstol)
 {
   int i;
 
   fprintf(stdout,"comparing flags\n");
   cmp_int(stdout,"flags",-1,st1->flags,st2->flags);
   fprintf(stdout,"comparing box\n");
-  cmp_rvecs(stdout,"box",DIM,st1->box,st2->box,ftol,abstol);
+  cmp_rvecs(stdout,"box",DIM,st1->box,st2->box,FALSE,ftol,abstol);
   fprintf(stdout,"comparing box_rel\n");
-  cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,ftol,abstol);
+  cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,FALSE,ftol,abstol);
   fprintf(stdout,"comparing boxv\n");
-  cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,ftol,abstol);
+  cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,FALSE,ftol,abstol);
   if (st1->flags & (1<<estPRES_PREV)) {
     fprintf(stdout,"comparing prev_pres\n");
-    cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,ftol,abstol);
+    cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);
   }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
   if (st1->ngtc == st2->ngtc) {
@@ -594,14 +617,19 @@ static void comp_state(t_state *st1, t_state *st2,real ftol,real abstol)
   }
   cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
   if (st1->natoms == st2->natoms) {
-    fprintf(stdout,"comparing x\n");
-    cmp_rvecs(stdout,"x",st1->natoms,st1->x,st2->x,ftol,abstol);
-    fprintf(stdout,"comparing v\n");
-    cmp_rvecs(stdout,"v",st1->natoms,st1->v,st2->v,ftol,abstol);
+    if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX))) {
+      fprintf(stdout,"comparing x\n");
+      cmp_rvecs(stdout,"x",st1->natoms,st1->x,st2->x,bRMSD,ftol,abstol);
+    }
+    if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV))) {
+      fprintf(stdout,"comparing v\n");
+      cmp_rvecs(stdout,"v",st1->natoms,st1->v,st2->v,bRMSD,ftol,abstol);
+    }
   }
 }
 
-void comp_tpx(const char *fn1,const char *fn2,real ftol,real abstol)
+void comp_tpx(const char *fn1,const char *fn2,
+	      bool bRMSD,real ftol,real abstol)
 {
   const char  *ff[2];
   t_tpxheader sh[2];
@@ -625,7 +653,7 @@ void comp_tpx(const char *fn1,const char *fn2,real ftol,real abstol)
     top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
     top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
     cmp_top(stdout,&top[0],&top[1],ftol,abstol);
-    comp_state(&state[0],&state[1],ftol,abstol);
+    comp_state(&state[0],&state[1],bRMSD,ftol,abstol);
   } else {
     if (ir[0].efep == efepNO) {
       fprintf(stdout,"inputrec->efep = %s\n",efep_names[ir[0].efep]);
@@ -643,7 +671,8 @@ void comp_tpx(const char *fn1,const char *fn2,real ftol,real abstol)
   }
 }
 
-void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol,real abstol)
+void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
+		bool bRMSD, real ftol,real abstol)
 {
   fprintf(fp,"\n");
   cmp_int(fp,"flags",-1,fr1->flags,fr2->flags);
@@ -664,17 +693,17 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol,real absto
   if (cmp_bool(fp,"bPrec",-1,fr1->bPrec,fr2->bPrec))
     cmp_real(fp,"prec",-1,fr1->prec,fr2->prec,ftol,abstol);
   if (cmp_bool(fp,"bX",-1,fr1->bX,fr2->bX))
-    cmp_rvecs(fp,"x",min(fr1->natoms,fr2->natoms),fr1->x,fr2->x,ftol,abstol);
+    cmp_rvecs(fp,"x",min(fr1->natoms,fr2->natoms),fr1->x,fr2->x,bRMSD,ftol,abstol);
   if (cmp_bool(fp,"bV",-1,fr1->bV,fr2->bV))
-    cmp_rvecs(fp,"v",min(fr1->natoms,fr2->natoms),fr1->v,fr2->v,ftol,abstol);
+    cmp_rvecs(fp,"v",min(fr1->natoms,fr2->natoms),fr1->v,fr2->v,bRMSD,ftol,abstol);
   if (cmp_bool(fp,"bF",-1,fr1->bF,fr2->bF))
-    cmp_rvecs(fp,"f",min(fr1->natoms,fr2->natoms),fr1->f,fr2->f,ftol,abstol);
+    cmp_rvecs(fp,"f",min(fr1->natoms,fr2->natoms),fr1->f,fr2->f,bRMSD,ftol,abstol);
   if (cmp_bool(fp,"bBox",-1,fr1->bBox,fr2->bBox))
-    cmp_rvecs(fp,"box",3,fr1->box,fr2->box,ftol,abstol);
+    cmp_rvecs(fp,"box",3,fr1->box,fr2->box,FALSE,ftol,abstol);
 }
 
 void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2, 
-              real ftol,real abstol)
+              bool bRMSD,real ftol,real abstol)
 {
   int i;
   const char *fn[2];
@@ -690,7 +719,7 @@ void comp_trx(const output_env_t oenv,const char *fn1, const char *fn2,
   
   if (b[0] && b[1]) { 
     do {
-      comp_frame(stdout, &(fr[0]), &(fr[1]), ftol,abstol);
+      comp_frame(stdout, &(fr[0]), &(fr[1]), bRMSD, ftol, abstol);
       
       for (i=0; i<2; i++)
 	b[i] = read_next_frame(oenv,status[i],&fr[i]);

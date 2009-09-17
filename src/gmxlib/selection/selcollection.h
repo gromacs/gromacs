@@ -39,6 +39,8 @@
 
 #include <typedefs.h>
 
+#include <indexutil.h>
+
 /*! \internal
  * \brief
  * Information for a collection of selections.

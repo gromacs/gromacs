@@ -199,7 +199,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
 }
 
 static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
-                       bool bTest, bool *bOK)
+                       int nre_test,bool *bWrongPrecision,bool *bOK)
 {
     int  magic=-7777777;
     real r;
@@ -207,12 +207,27 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     bool bRead = gmx_fio_getread(ef->fp);
     int  tempfix_nr=0;
     
+    if (nre_test >= 0)
+    {
+        *bWrongPrecision = FALSE;
+    }
+
     *bOK=TRUE;
     /* The original energy frame started with a real,
      * so we have to use a real for compatibility.
+     * This is VERY DIRTY code, since do_eheader can be called
+     * with the wrong precision set and then we could read r > -1e10,
+     * while actually the intention was r < -1e10.
+     * When nre_test >= 0, do_eheader should therefore terminate
+     * before the number of i/o calls starts depending on what has been read
+     * (which is the case for for instance the block sizes for variable
+     * number of blocks, where this number is read before).
      */
     r = -2e10;
-    if (!do_real(r))           return FALSE;
+    if (!do_real(r))
+    {
+        return FALSE;
+    }
     if (r > -1e10)
     {
         /* Assume we are reading an old format */
@@ -254,6 +269,11 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
     }
     if (!do_int (fr->nre))     *bOK = FALSE;
+    if (bRead && nre_test >= 0 && fr->nre != nre_test)
+    {
+        *bWrongPrecision = TRUE;
+        return *bOK;
+    }
     if (!do_int (fr->ndisre))  *bOK = FALSE;
     if (!do_int (fr->nblock))  *bOK = FALSE;
 	
@@ -280,8 +300,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     /* Do a dummy int to keep the format compatible with the old code */
     if (!do_int (dum))         *bOK = FALSE;
     
-    
-    if (*bOK && *file_version == 1 && !bTest)
+    if (*bOK && *file_version == 1 && nre_test < 0)
     {
 #if 0
         if (fp >= ener_old_nalloc)
@@ -347,7 +366,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    bool       bDum=TRUE;
+    bool       bWrongPrecision,bDum=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
@@ -358,27 +377,30 @@ ener_file_t open_enx(const char *fn,const char *mode)
         gmx_fio_setprecision(ef->fp,FALSE);
         do_enxnms(ef,&nre,&nms);
         snew(fr,1);
-        do_eheader(ef,&file_version,fr,TRUE,&bDum);
+        do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
         if(!bDum)
         {
             gmx_file("Cannot read energy file header. Corrupt file?");
         }
 
         /* Now check whether this file is in single precision */
-        if (((fr->e_size && (fr->nre == nre) && 
-                        (nre*4*(long int)sizeof(float) == fr->e_size)) ||
-                    (fr->d_size && 
-                     (fr->ndisre*(long int)sizeof(float)*2+(long int)sizeof(int) 
-                            == fr->d_size)))){
+        if (!bWrongPrecision &&
+            ((fr->e_size && (fr->nre == nre) && 
+              (nre*4*(long int)sizeof(float) == fr->e_size)) ||
+             (fr->d_size && 
+              (fr->ndisre*(long int)sizeof(float)*2+(long int)sizeof(int) 
+               == fr->d_size))))
+        {
             fprintf(stderr,"Opened %s as single precision energy file\n",fn);
             free_enxnms(nre,nms);
         }
-        else {
+        else
+        {
             gmx_fio_rewind(ef->fp);
             gmx_fio_select(ef->fp);
             gmx_fio_setprecision(ef->fp,TRUE);
             do_enxnms(ef,&nre,&nms);
-            do_eheader(ef,&file_version,fr,TRUE,&bDum);
+            do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
             if(!bDum)
             {
                 gmx_file("Cannot write energy file header; maybe you are out of quota?");
@@ -501,7 +523,7 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
     }
     gmx_fio_select(ef->fp);
     
-    if (!do_eheader(ef,&file_version,fr,FALSE,&bOK))
+    if (!do_eheader(ef,&file_version,fr,-1,NULL,&bOK))
     {
         if (bRead)
         {
