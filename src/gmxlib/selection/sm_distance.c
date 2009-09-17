@@ -101,6 +101,29 @@ static gmx_ana_selparam_t smparams_within[] = {
     {"of", {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
+/** Help text for the distance selection methods. */
+static const char *help_distance[] = {
+    "DISTANCE-BASED SELECTION KEYWORDS[PAR]",
+
+    "[TT]distance from POS [cutoff REAL][tt][BR]",
+    "[TT]mindistance from POS_EXPR [cutoff REAL][tt][BR]",
+    "[TT]within REAL of POS_EXPR[tt][PAR]",
+
+    "[TT]distance[tt] and [TT]mindistance[tt] calculate the distance from the",
+    "given position(s), the only difference being in that [TT]distance[tt]",
+    "only accepts a single position, while any number of positions can be",
+    "given for [TT]mindistance[tt], which then calculates the distance to the",
+    "closest position.",
+    "[TT]within[tt] directly selects atoms that are within [TT]REAL[tt] of",
+    "[TT]POS_EXPR[tt].[PAR]",
+
+    "For the first two keywords, it is possible to specify a cutoff to speed",
+    "up the evaluation: all distances above the specified cutoff are",
+    "returned as equal to the cutoff.",
+    "Currently, this does nothing, but in the future, it allows the use of",
+    "grid-based neighborhood search techniques.",
+};
+
 /*! \internal Selection method data for the \p distance method.*/
 gmx_ana_selmethod_t sm_distance = {
     "distance", REAL_VALUE, SMETH_DYNAMIC,
@@ -113,6 +136,7 @@ gmx_ana_selmethod_t sm_distance = {
     &init_frame_common,
     NULL,
     &evaluate_distance,
+    {"distance from POS [cutoff REAL]", asize(help_distance), help_distance},
 };
 
 /*! \internal Selection method data for the \p distance method.*/
@@ -127,6 +151,7 @@ gmx_ana_selmethod_t sm_mindistance = {
     &init_frame_common,
     NULL,
     &evaluate_distance,
+    {"mindistance from POS_EXPR [cutoff REAL]", asize(help_distance), help_distance},
 };
 
 /*! \internal Selection method data for the \p within method.*/
@@ -141,6 +166,7 @@ gmx_ana_selmethod_t sm_within = {
     &init_frame_common,
     NULL,
     &evaluate_within,
+    {"within REAL of POS_EXPR", asize(help_distance), help_distance},
 };
 
 /*!

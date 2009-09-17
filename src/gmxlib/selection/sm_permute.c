@@ -82,6 +82,24 @@ static gmx_ana_selparam_t smparams_permute[] = {
     {NULL,       {INT_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
+static const char *help_permute[] = {
+    "PERMUTING SELECTIONS[PAR]",
+
+    "[TT]permute P1 ... PN[tt][PAR]",
+
+    "By default, all selections are evaluated such that the atom indices are",
+    "returned in ascending order. This can be changed by appending",
+    "[TT]permute P1 P2 ... PN[tt] to an expression.",
+    "The [TT]Pi[tt] should form a permutation of the numbers 1 to N.",
+    "This keyword permutes each N-position block in the selection such that",
+    "the i'th position in the block becomes Pi'th.",
+    "Note that it is the positions that are permuted, not individual atoms.",
+    "A fatal error occurs if the size of the selection is not a multiple of n.",
+    "It is only possible to permute the whole selection expression, not any",
+    "subexpressions, i.e., the [TT]permute[tt] keyword should appear last in",
+    "a selection.",
+};
+
 /*! \internal Selection method data for the \p permute modifier.*/
 gmx_ana_selmethod_t sm_permute = {
     "permute", POS_VALUE, SMETH_MODIFIER,
@@ -94,6 +112,7 @@ gmx_ana_selmethod_t sm_permute = {
     NULL,
     NULL,
     &evaluate_permute,
+    {"permute P1 ... PN", asize(help_permute), help_permute},
 };
 
 /*!

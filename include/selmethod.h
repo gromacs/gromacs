@@ -55,6 +55,7 @@
  *   &init_frame_example,
  *   &evaluate_example,
  *    NULL,
+ *   {"example from POS_EXPR [cutoff REAL]", 0, NULL},
  * };
  * \endcode
  *
@@ -113,12 +114,14 @@
  * Currently, \ref STR_VALUE methods cannot take parameters, but this limitation
  * should be easy to lift if required.
  *
- * The remaining values define the function callbacks that determine the
+ * These are followed by function callbacks that determine the
  * actual behavior of the method. Any of these except the evaluation callback
  * can be NULL (the evaluation callback can also be NULL if \ref NO_VALUE is
  * specified for a selection modifier). However, the presence of parameters
  * can require some of the callbacks to be implemented.
  * The details are described in \ref selmethods_callbacks.
+ *
+ * Finally, there is a data structure that gives help texts for the method.
  *
  * The \c gmx_ana_selmethod_t variable should be declared as a global variable
  * or it should be otherwise ensured that the structure is not freed: only a
@@ -562,6 +565,35 @@ typedef int   (*sel_updatefunc_pos)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                                     void *data);
 
 /*! \brief
+ * Help information for a selection method.
+ *
+ * If some information is not available, the corresponding field can be set to
+ * 0/NULL.
+ */
+typedef struct gmx_ana_selmethod_help_t
+{
+    /*! \brief
+     * One-line description of the syntax of the method.
+     *
+     * If NULL, the name of the method is used.
+     */
+    const char         *syntax;
+    /*! \brief
+     * Number of strings in \p help.
+     *
+     * Set to 0 if \p help is NULL.
+     */
+    int                 nlhelp;
+    /*! \brief
+     * Detailed help for the method.
+     *
+     * If there is no help available in addition to \p syntax, this can be set
+     * to NULL.
+     */
+    const char        **help;
+} gmx_ana_selmethod_help_t;
+
+/*! \brief
  * Describes a selection method.
  *
  * Any of the function pointers except the update call can be NULL if the
@@ -608,6 +640,9 @@ typedef struct gmx_ana_selmethod_t
     sel_updatefunc      update;
     /*! Function to evaluate the value using positions.*/
     sel_updatefunc_pos  pupdate;
+
+    /** Help data for the method. */
+    gmx_ana_selmethod_help_t help;
 } gmx_ana_selmethod_t;
 
 /*! Registers a selection method.*/

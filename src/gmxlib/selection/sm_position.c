@@ -112,6 +112,7 @@ gmx_ana_selmethod_t sm_keyword_pos = {
      NULL,
     &evaluate_pos,
      NULL,
+    {NULL, 0, NULL},
 };
 
 /*! \internal Selection method data for the \p cog method.*/
@@ -126,6 +127,7 @@ gmx_ana_selmethod_t sm_cog = {
      NULL,
     &evaluate_pos,
      NULL,
+    {"cog of ATOM_EXPR [pbc]", 0, NULL},
 };
 
 /*! \internal Selection method data for the \p com method.*/
@@ -140,6 +142,7 @@ gmx_ana_selmethod_t sm_com = {
      NULL,
     &evaluate_pos,
      NULL,
+    {"com of ATOM_EXPR [pbc]", 0, NULL},
 };
 
 /*!

@@ -139,6 +139,7 @@ gmx_ana_selmethod_t sm_keyword_int = {
      NULL,
     &evaluate_keyword_int,
      NULL,
+    {NULL, 0, NULL},
 };
 
 /*! \internal Selection method data for string keyword evaluation.*/
@@ -153,6 +154,7 @@ gmx_ana_selmethod_t sm_keyword_str = {
      NULL,
     &evaluate_keyword_str,
      NULL,
+    {NULL, 0, NULL},
 };
 
 

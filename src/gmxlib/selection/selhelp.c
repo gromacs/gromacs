@@ -117,6 +117,8 @@ static const char *help_keywords[] = {
     "SELECTION KEYWORDS[PAR]",
 
     "The following selection keywords are currently available.",
+    "For keywords marked with a star, additional help is available through",
+    "\"help KEYWORD\", where KEYWORD is the name of the keyword.",
 };
 
 static const char *help_limits[] = {
@@ -265,7 +267,16 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
                 || (!bMod && !(method->flags & SMETH_MODIFIER)));
         if (bShow)
         {
-            fprintf(stderr, "  %s\n", _gmx_sel_sym_name(symbol));
+            fprintf(stderr, " %c ",
+                    (method->help.nlhelp > 0 && method->help.help) ? '*' : ' ');
+            if (method->help.syntax)
+            {
+                fprintf(stderr, "%s\n", method->help.syntax);
+            }
+            else
+            {
+                fprintf(stderr, "%s\n", method->name);
+            }
         }
         symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
     }
@@ -299,9 +310,26 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
             }
         }
     }
-    /* If the topic is not found, tell the user and exit. */
+    /* If the topic is not found, check the available methods.
+     * If they don't provide any help either, tell the user and exit. */
     if (!item)
     {
+        gmx_sel_symrec_t *symbol;
+
+        symbol = _gmx_sel_first_symbol(sc->symtab, SYMBOL_METHOD);
+        while (symbol)
+        {
+            gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
+            if (method->help.nlhelp > 0 && method->help.help
+                && strncmp(method->name, topic, strlen(topic)) == 0)
+            {
+                print_tty_formatted(stderr, method->help.nlhelp,
+                        method->help.help, 0, NULL, NULL, FALSE);
+                return;
+            }
+            symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);
+        }
+
         fprintf(stderr, "No help available for '%s'.\n", topic);
         return;
     }

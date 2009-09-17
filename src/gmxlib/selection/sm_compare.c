@@ -128,6 +128,7 @@ gmx_ana_selmethod_t sm_compare = {
     NULL,
     &evaluate_compare,
     NULL,
+    {NULL, 0, NULL},
 };
 
 /*! \brief

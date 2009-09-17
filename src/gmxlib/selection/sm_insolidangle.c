@@ -271,6 +271,24 @@ static gmx_ana_selparam_t smparams_insolidangle[] = {
     {"cutoff", {REAL_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
 };
 
+static const char *help_insolidangle[] = {
+    "SELECTING ATOMS IN A SOLID ANGLE[PAR]",
+
+    "[TT]insolidangle center POS span POS_EXPR [cutoff REAL][tt][PAR]",
+
+    "This keyword selects atoms that are within [TT]REAL[tt] degrees",
+    "(default=5) of any position in [TT]POS_EXPR[tt] as seen from [TT]POS[tt]",
+    "a position expression that evaluates to a single position), i.e., atoms",
+    "in the solid angle spanned by the positions in [TT]POS_EXPR[tt] and",
+    "centered at [TT]POS[tt].[PAR]"
+
+    "Technically, the solid angle is constructed as a union of small cones",
+    "whose tip is at [TT]POS[tt] and the axis goes through a point in",
+    "[TT]POS_EXPR[tt]. There is such a cone for each position in",
+    "[TT]POS_EXPR[tt], and point is in the solid angle if it lies within any",
+    "of these cones. The cutoff determines the width of the cones.",
+};
+
 /*! \internal Selection method data for the \p insolidangle method.*/
 gmx_ana_selmethod_t sm_insolidangle = {
     "insolidangle", GROUP_VALUE, SMETH_DYNAMIC,
@@ -283,6 +301,8 @@ gmx_ana_selmethod_t sm_insolidangle = {
     &init_frame_insolidangle,
     NULL,
     &evaluate_insolidangle,
+    {"insolidangle center POS span POS_EXPR [cutoff REAL]",
+     asize(help_insolidangle), help_insolidangle},
 };
 
 /*!
