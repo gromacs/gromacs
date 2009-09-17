@@ -97,7 +97,7 @@ extern gmx_ana_selmethod_t sm_same;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
-//! Array of selection methods defined in the library.
+/** Array of selection methods defined in the library. */
 static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_cog,
     &sm_com,

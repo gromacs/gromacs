@@ -101,7 +101,7 @@ struct gmx_ana_traj_t
      * in the other functions.
      */
     unsigned long             flags;
-    //! Number of input reference groups.
+    /** Number of input reference groups. */
     int                       nrefgrps;
     /*! \brief
      * Number of input analysis groups.
@@ -116,7 +116,7 @@ struct gmx_ana_traj_t
      * trajectory.
      */
     int                       frflags;
-    //! TRUE if molecules should be made whole for each frame.
+    /** TRUE if molecules should be made whole for each frame. */
     bool                      bRmPBC;
     /*! \brief
      * TRUE if periodic boundary conditions should be used.
@@ -126,38 +126,38 @@ struct gmx_ana_traj_t
      */
     bool                      bPBC;
 
-    //! Name of the trajectory file.
+    /** Name of the trajectory file. */
     const char               *trjfile;
-    //! Name of the topology file (NULL if no topology loaded).
+    /** Name of the topology file (NULL if no topology loaded). */
     const char               *topfile;
-    //! Non-NULL name of the topology file.
+    /** Non-NULL name of the topology file. */
     const char               *topfile_notnull;
-    //! Name of the index file (NULL if no index file provided).
+    /** Name of the index file (NULL if no index file provided). */
     const char               *ndxfile;
-    //! Name of the selection file (NULL if no file provided).
+    /** Name of the selection file (NULL if no file provided). */
     const char               *selfile;
-    //! The selection string (NULL if not provided).
+    /** The selection string (NULL if not provided). */
     const char               *selection;
 
-    //! The topology structure, or \p NULL if no topology loaded.
+    /** The topology structure, or \p NULL if no topology loaded. */
     t_topology               *top;
-    //! TRUE if full tpx file was loaded, FALSE otherwise.
+    /** TRUE if full tpx file was loaded, FALSE otherwise. */
     bool                      bTop;
-    //! Coordinates from the topology (see \p bTopX).
+    /** Coordinates from the topology (see \p bTopX). */
     rvec                     *xtop;
-    //! The box loaded from the topology file.
+    /** The box loaded from the topology file. */
     matrix                    boxTop;
-    //! The ePBC field loaded from the topology file.
+    /** The ePBC field loaded from the topology file. */
     int                       ePBC;
 
-    //! The current frame, or \p NULL if no frame loaded yet.
+    /** The current frame, or \p NULL if no frame loaded yet. */
     t_trxframe               *fr;
-    //! Used to store the status variable from read_first_frame().
+    /** Used to store the status variable from read_first_frame(). */
     int                       status;
-    //! The number of frames read.
+    /** The number of frames read. */
     int                       nframes;
 
-    //! Number of elements in the \p sel array.
+    /** Number of elements in the \p sel array. */
     int                       ngrps;
     /*! \brief
      * Array of selection information (one element for each index group).
@@ -174,20 +174,20 @@ struct gmx_ana_traj_t
      * After gmx_ana_do(), the same groups can be used in post-processing.
      */
     gmx_ana_selection_t     **sel;
-    //! Array of names of the selections for convenience.
+    /** Array of names of the selections for convenience. */
     char                    **grpnames;
-    //! Position calculation data.
+    /** Position calculation data. */
     gmx_ana_poscalc_coll_t   *pcc;
-    //! Selection data.
+    /** Selection data. */
     gmx_ana_selcollection_t  *sc;
 
-    //! Data for statutil.c utilities.
+    /** Data for statutil.c utilities. */
     output_env_t              oenv;
 };
 
-//! Loads the topology.
+/** Loads the topology. */
 static int load_topology(gmx_ana_traj_t *d, bool bReq);
-//! Loads the first frame and does some checks.
+/** Loads the first frame and does some checks. */
 static int init_first_frame(gmx_ana_traj_t *d);
 
 static int add_fnmarg(int nfile, t_filenm *fnm, t_filenm *fnm_add)

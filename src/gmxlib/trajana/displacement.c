@@ -83,9 +83,9 @@
  */
 typedef struct gmx_ana_displpos_t
 {
-    //! Stored position vector.
+    /** Stored position vector. */
     rvec                 x;
-    //! TRUE if there is something stored.
+    /** TRUE if there is something stored. */
     bool                 bPres;
 } gmx_ana_displpos_t;
 
@@ -97,29 +97,29 @@ typedef struct gmx_ana_displpos_t
  */
 struct gmx_ana_displ_t
 {
-    //! Maximum number of particles for which the displacements are calculated.
+    /** Maximum number of particles for which the displacements are calculated. */
     int                  nmax;
-    //! Maximum time for which the displacements are needed.
+    /** Maximum time for which the displacements are needed. */
     real                 tmax;
 
-    //! TRUE if no frames have been read.
+    /** TRUE if no frames have been read. */
     bool                 bFirst;
-    //! Stores the time of the first frame.
+    /** Stores the time of the first frame. */
     real                 t0;
-    //! Stores the time interval between frames.
+    /** Stores the time interval between frames. */
     real                 dt;
-    //! Stores the time of the current frame.
+    /** Stores the time of the current frame. */
     real                 t;
-    //! Stores the index in the store for the current positions.
+    /** Stores the index in the store for the current positions. */
     int                  ci;
 
-    //! Maximum number of positions to store for a particle.
+    /** Maximum number of positions to store for a particle. */
     int                  max_store;
-    //! The total number of positions ever stored (can be larger than \p max_store).
+    /** The total number of positions ever stored (can be larger than \p max_store). */
     int                  nstored;
-    //! Two-dimensional array of stored positions, second index is the particle position.
+    /** Two-dimensional array of stored positions, second index is the particle position. */
     gmx_ana_displpos_t **p;
-    //! Pointer to the memory allocated for \p p.
+    /** Pointer to the memory allocated for \p p. */
     gmx_ana_displpos_t  *palloc;
 };
 

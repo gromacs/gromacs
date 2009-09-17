@@ -68,22 +68,22 @@ typedef struct gmx_ana_pos_t
     gmx_ana_index_t    *g;
 } gmx_ana_pos_t;
 
-//! Initializes an empty position structure.
+/** Initializes an empty position structure. */
 extern void
 gmx_ana_pos_clear(gmx_ana_pos_t *pos);
-//! Ensures that enough memory has been allocated to store positions.
+/** Ensures that enough memory has been allocated to store positions. */
 extern void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize);
-//! Initializes a \c gmx_ana_pos_t to represent a constant position.
+/** Initializes a \c gmx_ana_pos_t to represent a constant position. */
 extern void
 gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x);
-//! Frees the memory allocated for position storage.
+/** Frees the memory allocated for position storage. */
 extern void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos);
-//! Frees the memory allocated for positions.
+/** Frees the memory allocated for positions. */
 extern void
 gmx_ana_pos_free(gmx_ana_pos_t *pos);
-//! Copies the evaluated positions to a preallocated data structure.
+/** Copies the evaluated positions to a preallocated data structure. */
 extern void
 gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
 

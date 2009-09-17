@@ -607,9 +607,9 @@ typedef struct gmx_ana_selmethod_help_t
  */
 typedef struct gmx_ana_selmethod_t
 {
-    /*! Name of the method.*/
+    /** Name of the method. */
     const char         *name;
-    /*! Type which the method returns.*/
+    /** Type which the method returns. */
     e_selvalue_t        type;
     /*! \brief
      * Flags to specify how the method should be handled.
@@ -617,43 +617,42 @@ typedef struct gmx_ana_selmethod_t
      * See \ref selmethod_flags for allowed values.
      */
     int                 flags;
-    /*! Number of parameters the method takes.*/
+    /** Number of parameters the method takes. */
     int                 nparams;
-    /*! Pointer to the array of parameter descriptions.*/
+    /** Pointer to the array of parameter descriptions. */
     gmx_ana_selparam_t *param;
 
-    /*! Function for allocating and initializing internal data and parameters.*/
+    /** Function for allocating and initializing internal data and parameters. */
     sel_datafunc        init_data;
-    /*! Function to set the position calculation collection.*/
+    /** Function to set the position calculation collection. */
     sel_posfunc         set_poscoll;
-    /*! Function to do initialization based on topology and/or parameter
-        values.*/
+    /** Function to do initialization based on topology and/or parameter values. */
     sel_initfunc        init;
-    /*! Function to initialize output data structure.*/
+    /** Function to initialize output data structure. */
     sel_outinitfunc     outinit;
-    /*! Function to free the internal data.*/
+    /** Function to free the internal data. */
     sel_freefunc        free;
 
-    /*! Function to initialize the calculation for a new frame.*/
+    /** Function to initialize the calculation for a new frame. */
     sel_framefunc       init_frame;
-    /*! Function to evaluate the value.*/
+    /** Function to evaluate the value. */
     sel_updatefunc      update;
-    /*! Function to evaluate the value using positions.*/
+    /** Function to evaluate the value using positions. */
     sel_updatefunc_pos  pupdate;
 
     /** Help data for the method. */
     gmx_ana_selmethod_help_t help;
 } gmx_ana_selmethod_t;
 
-/*! Registers a selection method.*/
+/** Registers a selection method. */
 extern int
 gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
                            const char *name, gmx_ana_selmethod_t *method);
-/*! Registers all selection methods in the library.*/
+/** Registers all selection methods in the library. */
 extern int
 gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc);
 
-/*! Finds a parameter from a selection method by name.*/
+/** Finds a parameter from a selection method by name. */
 extern gmx_ana_selparam_t *
 gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method);
 

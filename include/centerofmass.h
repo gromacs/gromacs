@@ -74,43 +74,43 @@ extern "C"
 {
 #endif
 
-//! Calculate a single center of geometry.
+/** Calculate a single center of geometry. */
 extern int
 gmx_calc_cog(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xref);
-//! Calculate a single center of mass.
+/** Calculate a single center of mass. */
 extern int
 gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xref);
-//! Calculate a single center of mass/geometry.
+/** Calculate a single center of mass/geometry. */
 extern int
 gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
               bool bMass, rvec xout);
 
-//! Calculate a single center of geometry iteratively, taking PBC into account.
+/** Calculate a single center of geometry iteratively, taking PBC into account. */
 extern int
 gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout);
-//! Calculate a single center of mass iteratively, taking PBC into account.
+/** Calculate a single center of mass iteratively, taking PBC into account. */
 extern int
 gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout);
-//! Calculate a single center of mass/geometry iteratively with PBC.
+/** Calculate a single center of mass/geometry iteratively with PBC. */
 extern int
 gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                   int nrefat, atom_id index[], bool bMass, rvec xout);
 
-//! Calculate centers of geometry for a blocked index.
+/** Calculate centers of geometry for a blocked index. */
 extern int
 gmx_calc_cog_block(t_topology *top, rvec x[], t_block *block,
                    atom_id index[], rvec xout[]);
-//! Calculate centers of mass for a blocked index.
+/** Calculate centers of mass for a blocked index. */
 extern int
 gmx_calc_com_block(t_topology *top, rvec x[], t_block *block,
                    atom_id index[], rvec xout[]);
-//! Calculate centers of mass/geometry for a blocked index.
+/** Calculate centers of mass/geometry for a blocked index. */
 extern int
 gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block,
                     atom_id index[], bool bMass, rvec xout[]);
-//! Calculate centers of mass/geometry for a set of blocks;
+/** Calculate centers of mass/geometry for a set of blocks; */
 extern int
 gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
                      bool bMass, rvec xout[]);

@@ -46,29 +46,29 @@
 
 #include <selmethod.h>
 
-/*! Allocates data for integer keyword evaluation.*/
+/** Allocates data for integer keyword evaluation. */
 static void *
 init_data_kwint(int npar, gmx_ana_selparam_t *param);
-/*! Allocates data for string keyword evaluation.*/
+/** Allocates data for string keyword evaluation. */
 static void *
 init_data_kwstr(int npar, gmx_ana_selparam_t *param);
-/*! Initializes data for integer keyword evaluation.*/
+/** Initializes data for integer keyword evaluation. */
 static int
 init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Initializes data for string keyword evaluation.*/
+/** Initializes data for string keyword evaluation. */
 static int
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Frees the memory allocated for integer keyword evaluation.*/
+/** Frees the memory allocated for integer keyword evaluation. */
 static void
 free_data_kwint(void *data);
-/*! Frees the memory allocated for string keyword evaluation.*/
+/** Frees the memory allocated for string keyword evaluation. */
 static void
 free_data_kwstr(void *data);
-/*! Evaluates integer selection keywords.*/
+/** Evaluates integer selection keywords. */
 static int
 evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/*! Evaluates string selection keywords.*/
+/** Evaluates string selection keywords. */
 static int
 evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
@@ -78,9 +78,9 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  */
 typedef struct t_methoddata_kwint
 {
-    /*! Array of values for the keyword.*/
+    /** Array of values for the keyword. */
     int               *v;
-    /*! Number of ranges in the \p r array.*/
+    /** Number of ranges in the \p r array. */
     int                n;
     /*! \brief
      * Array of sorted integer ranges to match against.
@@ -97,37 +97,37 @@ typedef struct t_methoddata_kwint
  */
 typedef struct t_methoddata_kwstr
 {
-    /*! Array of values for the keyword.*/
+    /** Array of values for the keyword. */
     char             **v;
-    /*! Number of elements in the \p val array.*/
+    /** Number of elements in the \p val array. */
     int                n;
-    /*! Array of strings/regular expressions to match against.*/
+    /** Array of strings/regular expressions to match against. */
     struct t_methoddata_kwstr_match {
-        /*! TRUE if the expression is a regular expression, FALSE otherwise.*/
+        /** TRUE if the expression is a regular expression, FALSE otherwise. */
         bool           bRegExp;
-        /*! The value to match against.*/
+        /** The value to match against. */
         union {
-            /*! Compiled regular expression if \p bRegExp is TRUE.*/
+            /** Compiled regular expression if \p bRegExp is TRUE. */
             regex_t    r;
-            /*! The string if \p bRegExp is FALSE;*/
+            /** The string if \p bRegExp is FALSE; */
             char      *s;
         }              u;
     }                 *m;
 } t_methoddata_kwstr;
 
-/*! Parameters for integer keyword evaluation.*/
+/** Parameters for integer keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_int[] = {
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL},
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_RANGES | SPAR_VARNUM},
 };
 
-/*! Parameters for string keyword evaluation.*/
+/** Parameters for string keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_str[] = {
     {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL},
     {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
-/*! \internal Selection method data for integer keyword evaluation.*/
+/** \internal Selection method data for integer keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_int = {
     "kw_int", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_int), smparams_keyword_int,
@@ -142,7 +142,7 @@ gmx_ana_selmethod_t sm_keyword_int = {
     {NULL, 0, NULL},
 };
 
-/*! \internal Selection method data for string keyword evaluation.*/
+/** \internal Selection method data for string keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_str = {
     "kw_str", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_str), smparams_keyword_str,

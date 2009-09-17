@@ -104,75 +104,75 @@ extern "C"
 #define POS_MASKONLY    32
 /*@}*/
 
-//! Specifies the type of positions to be calculated.
+/** Specifies the type of positions to be calculated. */
 typedef enum
 {
-    POS_ATOM,    //!< Copy atomic coordinates.
-    POS_RES,     //!< Calculate center for each residue.
-    POS_MOL,     //!< Calculate center for each molecule.
-    POS_ALL,     //!< Calculate center for the whole group.
-    POS_ALL_PBC, //!< Calculate center for the whole group with PBC.
+    POS_ATOM,    /**< Copy atomic coordinates. */
+    POS_RES,     /**< Calculate center for each residue. */
+    POS_MOL,     /**< Calculate center for each molecule. */
+    POS_ALL,     /**< Calculate center for the whole group. */
+    POS_ALL_PBC, /**< Calculate center for the whole group with PBC. */
 } e_poscalc_t;
 
-//! Collection of \c gmx_ana_poscalc_t structures for the same topology.
+/** Collection of \c gmx_ana_poscalc_t structures for the same topology. */
 typedef struct gmx_ana_poscalc_coll_t gmx_ana_poscalc_coll_t;
-//! Data structure for position calculation.
+/** Data structure for position calculation. */
 typedef struct gmx_ana_poscalc_t gmx_ana_poscalc_t;
 
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 
-//! Converts a string to parameters for gmx_ana_poscalc_create().
+/** Converts a string to parameters for gmx_ana_poscalc_create(). */
 extern int
 gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags);
-//! Creates a list of strings for position enum parameter handling.
+/** Creates a list of strings for position enum parameter handling. */
 extern const char **
 gmx_ana_poscalc_create_type_enum(bool bAtom);
 
-//! Creates a new position calculation collection object.
+/** Creates a new position calculation collection object. */
 extern int
 gmx_ana_poscalc_coll_create(gmx_ana_poscalc_coll_t **pccp);
-//! Sets the topology for a position calculation collection.
+/** Sets the topology for a position calculation collection. */
 extern void
 gmx_ana_poscalc_coll_set_topology(gmx_ana_poscalc_coll_t *pcc, t_topology *top);
-//! Frees memory allocated for a position calculation collection.
+/** Frees memory allocated for a position calculation collection. */
 extern void
 gmx_ana_poscalc_coll_free(gmx_ana_poscalc_coll_t *pcc);
-//! Prints information about calculations in a position calculation collection.
+/** Prints information about calculations in a position calculation collection. */
 extern void
 gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc);
 
-//! Creates a new position calculation.
+/** Creates a new position calculation. */
 extern int
 gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                        e_poscalc_t type, int flags);
-//! Creates a new position calculation based on an enum value.
+/** Creates a new position calculation based on an enum value. */
 extern int
 gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
                             const char *post, int flags);
-//! Sets the flags for position calculation.
+/** Sets the flags for position calculation. */
 extern void
 gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags);
-//! Sets the maximum possible input index group for position calculation.
+/** Sets the maximum possible input index group for position calculation. */
 extern void
 gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, struct gmx_ana_index_t *g);
-//! Initializes positions for position calculation output.
+/** Initializes positions for position calculation output. */
 extern void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, struct gmx_ana_pos_t *p);
-//! Frees the memory allocated for position calculation.
+/** Frees the memory allocated for position calculation. */
 extern void
 gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
-//! Returns TRUE if the position calculation requires topology information.
+/** Returns TRUE if the position calculation requires topology information. */
 extern bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc);
 
-//! Initializes evaluation for a position calculation collection.
+/** Initializes evaluation for a position calculation collection. */
 extern void
 gmx_ana_poscalc_init_eval(gmx_ana_poscalc_coll_t *pcc);
-//! Initializes a position calculation collection for a new frame.
+/** Initializes a position calculation collection for a new frame. */
 extern void
 gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc);
-//! Updates a single COM/COG structure for a frame.
+/** Updates a single COM/COG structure for a frame. */
 extern void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        struct gmx_ana_pos_t *p, struct gmx_ana_index_t *g,

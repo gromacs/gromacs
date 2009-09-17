@@ -42,23 +42,23 @@
 
 #include <selmethod.h>
 
-/*! Defines the comparison operator for comparison expressions.*/
+/** Defines the comparison operator for comparison expressions. */
 typedef enum
 {
-    CMP_INVALID,        /*!< Indicates an error*/
-    CMP_LESS,           /*!< '<'*/
-    CMP_LEQ,            /*!< '<='*/
-    CMP_GTR,            /*!< '>'*/
-    CMP_GEQ,            /*!< '>='*/
-    CMP_EQUAL,          /*!< '=='*/
-    CMP_NEQ,            /*!< '!='*/
+    CMP_INVALID,        /**< Indicates an error */
+    CMP_LESS,           /**< '<' */
+    CMP_LEQ,            /**< '<=' */
+    CMP_GTR,            /**< '>' */
+    CMP_GEQ,            /**< '>=' */
+    CMP_EQUAL,          /**< '==' */
+    CMP_NEQ,            /**< '!=' */
 } e_comparison_t;
 
-/*! The operand has a single value.*/
+/** The operand has a single value. */
 #define CMP_SINGLEVAL  1
-/*! The operand value is dynamic.*/
+/** The operand value is dynamic. */
 #define CMP_DYNAMICVAL 2
-/*! The value is real.*/
+/** The value is real. */
 #define CMP_REALVAL    4
 
 /*! \internal \brief
@@ -66,11 +66,11 @@ typedef enum
  */
 typedef struct
 {
-    /*! Flags that describe the type of the operand.*/
+    /** Flags that describe the type of the operand. */
     int             flags;
-    /*! (Array of) integer value(s).*/
+    /** (Array of) integer value(s). */
     int        *i;
-    /*! (Array of) real value(s).*/
+    /** (Array of) real value(s). */
     real       *r;
 } t_compare_value;
 
@@ -79,31 +79,31 @@ typedef struct
  */
 typedef struct
 {
-    /*! Comparison operator as a string.*/
+    /** Comparison operator as a string. */
     char            *cmpop;
-    /*! Comparison operator type.*/
+    /** Comparison operator type. */
     e_comparison_t   cmpt;
-    /*! Left value.*/
+    /** Left value. */
     t_compare_value  left;
-    /*! Right value.*/
+    /** Right value. */
     t_compare_value  right;
 } t_methoddata_compare;
 
-/*! Allocates data for comparison expression evaluation.*/
+/** Allocates data for comparison expression evaluation. */
 static void *
 init_data_compare(int npar, gmx_ana_selparam_t *param);
-/*! Initializes data for comparison expression evaluation.*/
+/** Initializes data for comparison expression evaluation. */
 static int
 init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Frees the memory allocated for comparison expression evaluation.*/
+/** Frees the memory allocated for comparison expression evaluation. */
 static void
 free_data_compare(void *data);
-/*! Evaluates comparison expressions.*/
+/** Evaluates comparison expressions. */
 static int
 evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
-/*! Parameters for comparison expression evaluation.*/
+/** Parameters for comparison expression evaluation. */
 static gmx_ana_selparam_t smparams_compare[] = {
     {"int1",  {INT_VALUE,  -1, {NULL}}, NULL,
      SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
@@ -116,7 +116,7 @@ static gmx_ana_selparam_t smparams_compare[] = {
      SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
 };
 
-/*! \internal Selection method data for comparison expression evaluation.*/
+/** \internal Selection method data for comparison expression evaluation. */
 gmx_ana_selmethod_t sm_compare = {
     "cmp", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_compare), smparams_compare,

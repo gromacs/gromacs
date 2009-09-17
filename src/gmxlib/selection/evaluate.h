@@ -53,24 +53,24 @@
  */
 typedef struct gmx_sel_evaluate_t
 {
-    /*! Index group that contains all the atoms.*/
+    /** Index group that contains all the atoms. */
     gmx_ana_index_t         *gall;
-    /*! Topology information.*/
+    /** Topology information. */
     t_topology              *top;
-    /*! Current frame.*/
+    /** Current frame. */
     t_trxframe              *fr;
-    /*! PBC data.*/
+    /** PBC data. */
     t_pbc                   *pbc;
 } gmx_sel_evaluate_t;
 
 /*! \name Utility functions
  */
 /*@{*/
-/*! Initializes an evaluation data structure.*/
+/** Initializes an evaluation data structure. */
 void
 _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data, gmx_ana_index_t *gall,
                        t_topology *top, t_trxframe *fr, t_pbc *pbc);
-/*! Evaluates the children of a \ref SEL_EXPRESSION element.*/
+/** Evaluates the children of a \ref SEL_EXPRESSION element. */
 int
 _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/
@@ -78,10 +78,10 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_an
 /*! \name Misc. evaluation functions
  */
 /*@{*/
-/*! Evaluates a root selection element.*/
+/** Evaluates a root selection element. */
 int
 _gmx_sel_evaluate_root(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a static group selection element.*/
+/** Evaluates a static group selection element. */
 int
 _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/
@@ -89,16 +89,16 @@ _gmx_sel_evaluate_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index
 /*! \name Subexpression evaluation functions
  */
 /*@{*/
-/*! Evaluates a subexpression, only handling the number of values.*/
+/** Evaluates a subexpression, only handling the number of values. */
 int
 _gmx_sel_evaluate_subexpr_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a subexpression.*/
+/** Evaluates a subexpression. */
 int
 _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a subexpression reference, only handling the number of values.*/
+/** Evaluates a subexpression reference, only handling the number of values. */
 int
 _gmx_sel_evaluate_subexprref_pass(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a subexpression reference.*/
+/** Evaluates a subexpression reference. */
 int
 _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/
@@ -107,10 +107,10 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
  */
 /*@{*/
 
-/*! Evaluates a method expression.*/
+/** Evaluates a method expression. */
 int
 _gmx_sel_evaluate_method(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a modifier expression.*/
+/** Evaluates a modifier expression. */
 int
 _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/
@@ -118,13 +118,13 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_ind
 /*! \name Boolean evaluation functions
  */
 /*@{*/
-/*! Evaluates a boolean NOT element.*/
+/** Evaluates a boolean NOT element. */
 int
 _gmx_sel_evaluate_not(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a boolean AND element with short-circuiting.*/
+/** Evaluates a boolean AND element with short-circuiting. */
 int
 _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
-/*! Evaluates a boolean OR element with short-circuiting.*/
+/** Evaluates a boolean OR element with short-circuiting. */
 int
 _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g);
 /*@}*/

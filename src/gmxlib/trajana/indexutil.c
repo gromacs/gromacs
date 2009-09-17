@@ -51,9 +51,9 @@
  */
 struct gmx_ana_indexgrps_t
 {
-    //! Number of index groups.
+    /** Number of index groups. */
     int                 nr;
-    //! Array of index groups.
+    /** Array of index groups. */
     gmx_ana_index_t    *g;
 };
 
@@ -549,7 +549,7 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
  * Set operations
  ********************************************************************/
 
-//! Helper function for gmx_ana_index_sort().
+/** Helper function for gmx_ana_index_sort(). */
 static int
 cmp_atomid(const void *a, const void *b)
 {
