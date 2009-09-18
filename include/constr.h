@@ -80,7 +80,8 @@ extern bool bshakef(FILE *log,		/* Log file			*/
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
             bool bDumpOnError,  /* Dump debugging stuff on error*/
-		    int econq);         /* which type of constrainint is occurring */
+            int econq,         /* which type of constrainint is occurring */
+		    real veta);         /* veta for pressure control */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 
@@ -106,29 +107,29 @@ extern void csettle(gmx_settledata_t settled,
 		    int *xerror);
 
 extern void settle_proj(FILE *fp,
-			gmx_settledata_t settled,int econq,
-			int nsettle, t_iatom iatoms[],rvec x[],
-			rvec *der,rvec *derp,
-			bool bCalcVir,tensor rmdder);
+                        gmx_settledata_t settled,int econq,
+                        int nsettle, t_iatom iatoms[],rvec x[],
+                        rvec *der,rvec *derp,
+                        bool bCalcVir,tensor rmdder, real veta);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
-		   real dist2[],real xp[],real rij[],real m2[],real omega,
-		   real invmass[],real tt[],real lagr[],int *nerror);
+                   real dist2[],real xp[],real rij[],real m2[],real omega,
+                   real invmass[],real tt[],real lagr[],int *nerror, real rfscale);
 /* Regular iterative shake */
 
 extern void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
-		    real dist2[],real vp[],real rij[],real m2[],real omega,
-		    real invmass[],real tt[],real lagr[],int *nerror,real invdt);
+                    real dist2[],real vp[],real rij[],real m2[],real omega,
+                    real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta,real vfscale);
 
 extern bool constrain(FILE *log,bool bLog,bool bEner,
                       gmx_constr_t constr,
                       t_idef *idef,
                       t_inputrec *ir,
                       t_commrec *cr,
-                      gmx_step_t step,int delta_step,
+                      gmx_large_int_t step,int delta_step,
                       t_mdatoms *md,
                       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                       real lambda,real *dvdlambda,

@@ -172,7 +172,7 @@ void settle_proj(FILE *fp,
                  gmx_settledata_t settled,int econq,
                  int nsettle, t_iatom iatoms[],rvec x[],
                  rvec *der,rvec *derp,
-                 bool bCalcVir,tensor rmdder)
+                 bool bCalcVir,tensor rmdder,real veta)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
@@ -184,6 +184,7 @@ void settle_proj(FILE *fp,
     matrix invmat;
     int    i,m,m2,ow1,hw2,hw3;
     rvec   roh2,roh3,rhh,dc,fc;
+    rvec   derm[3],derpm[3];
 
     if (econq == econqForce)
     {
@@ -209,17 +210,23 @@ void settle_proj(FILE *fp,
         ow1 = iatoms[i*2+1];
         hw2 = ow1 + 1;
         hw3 = ow1 + 2;
+
+        for(m=0; m<DIM; m++)
+        {
+            /* in the velocity case, these are the velocities, so we 
+               need to modify with the pressure control velocities! */
+            
+            derm[0][m]  = der[ow1][m]  + veta*x[ow1][m];
+            derm[1][m]  = der[hw2][m]  + veta*x[hw2][m];
+            derm[2][m]  = der[hw3][m]  + veta*x[hw3][m];
+            
+        }
+        /* 18 flops */
         
         for(m=0; m<DIM; m++)
         {
             roh2[m] = (x[ow1][m] - x[hw2][m])*invdOH;
-        }
-        for(m=0; m<DIM; m++)
-        {
             roh3[m] = (x[ow1][m] - x[hw3][m])*invdOH;
-        }
-        for(m=0; m<DIM; m++)
-        {
             rhh [m] = (x[hw2][m] - x[hw3][m])*invdHH;
         }
         /* 18 flops */
@@ -228,15 +235,9 @@ void settle_proj(FILE *fp,
         clear_rvec(dc);
         for(m=0; m<DIM; m++)
         {
-            dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
-        }
-        for(m=0; m<DIM; m++)
-        {
-            dc[1] += (der[ow1][m] - der[hw3][m])*roh3[m];
-        }
-        for(m=0; m<DIM; m++)
-        {
-            dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
+            dc[0] += (derm[0][m] - derm[1][m])*roh2[m];
+            dc[1] += (derm[0][m] - derm[2][m])*roh3[m];
+            dc[2] += (derm[1][m] - derm[2][m])*rhh [m];
         }
         /* 27 flops */
         
@@ -251,13 +252,36 @@ void settle_proj(FILE *fp,
             derp[hw2][m] -= imH*(-fc[0]*roh2[m] + fc[2]*rhh [m]);
             derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
         }
-        /* 45 flops */
+
+#if 0
+        /* figure out if we are actually getting the right velocities */
+
+        for(m=0; m<DIM; m++) {dc[0] = 0;dc[1]  = 0;dc[2]  = 0;}
+
+        for(m=0; m<DIM; m++)
+        {
+            dc[0] += (derp[ow1][m] - derp[hw2][m])*roh2[m]*dOH;
+            dc[1] += (derp[ow1][m] - derp[hw3][m])*roh3[m]*dOH;
+            dc[2] += (derp[hw2][m] - derp[hw3][m])*rhh [m]*dHH;
+        }
+
+        fprintf(stdout,"%10.6f%10.6f%10.6f\n", dc[0],dc[1],dc[2]);
+#endif
+
+        /* 45 flops + 18 flops = 63 flops*/
 
         if (bCalcVir)
         {
-            /* Determining r x m der is easy,
+            /* Determining r \dot m der is easy,
              * since fc contains the mass weighted corrections for der.
              */
+            
+            /* fc = 
+               
+               Determining r \dot m der + m * veta r \dot r requires;
+
+             */
+
             for(m=0; m<DIM; m++)
             {
                 for(m2=0; m2<DIM; m2++)
@@ -265,7 +289,7 @@ void settle_proj(FILE *fp,
                     rmdder[m][m2] +=
                         dOH*roh2[m]*roh2[m2]*fc[0] +
                         dOH*roh3[m]*roh3[m2]*fc[1] +
-                        dHH*rhh [m]*rhh [m2]*fc[2];
+                        dHH*rhh [m]*rhh [m2]*fc[2]; 
                 }
             }
         }
@@ -575,37 +599,37 @@ void csettle(gmx_settledata_t settled,
       /* 9 flops, counted with the virial */
 
       if (v) {
-	v[ow1]     += dax*invdt;
-	v[ow1 + 1] += day*invdt;
-	v[ow1 + 2] += daz*invdt;
-	v[hw2]     += dbx*invdt;
-	v[hw2 + 1] += dby*invdt;
-	v[hw2 + 2] += dbz*invdt;
-	v[hw3]     += dcx*invdt;
-	v[hw3 + 1] += dcy*invdt;
-	v[hw3 + 2] += dcz*invdt;
+          v[ow1]     += dax*invdt;
+          v[ow1 + 1] += day*invdt;
+          v[ow1 + 2] += daz*invdt;
+          v[hw2]     += dbx*invdt;
+          v[hw2 + 1] += dby*invdt;
+          v[hw2 + 2] += dbz*invdt;
+          v[hw3]     += dcx*invdt;
+          v[hw3 + 1] += dcy*invdt;
+          v[hw3 + 2] += dcz*invdt;
 	/* 3*6 flops */
       }
 
       if (bCalcVir) {
-	mdax = mO*dax;
-	mday = mO*day;
-	mdaz = mO*daz;
-	mdbx = mH*dbx;
-	mdby = mH*dby;
-	mdbz = mH*dbz;
-	mdcx = mH*dcx;
-	mdcy = mH*dcy;
-	mdcz = mH*dcz;
-	rmdr[XX][XX] -= b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx;
-	rmdr[XX][YY] -= b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy;
-	rmdr[XX][ZZ] -= b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz;
-	rmdr[YY][XX] -= b4[ow1+1]*mdax + b4[hw2+1]*mdbx + b4[hw3+1]*mdcx;
-	rmdr[YY][YY] -= b4[ow1+1]*mday + b4[hw2+1]*mdby + b4[hw3+1]*mdcy;
-	rmdr[YY][ZZ] -= b4[ow1+1]*mdaz + b4[hw2+1]*mdbz + b4[hw3+1]*mdcz;
-	rmdr[ZZ][XX] -= b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx;
-	rmdr[ZZ][YY] -= b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy;
-	rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz;
+          mdax = mO*dax;
+          mday = mO*day;
+          mdaz = mO*daz;
+          mdbx = mH*dbx;
+          mdby = mH*dby;
+          mdbz = mH*dbz;
+          mdcx = mH*dcx;
+          mdcy = mH*dcy;
+          mdcz = mH*dcz;
+          rmdr[XX][XX] -= b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx;
+          rmdr[XX][YY] -= b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy;
+          rmdr[XX][ZZ] -= b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz;
+          rmdr[YY][XX] -= b4[ow1+1]*mdax + b4[hw2+1]*mdbx + b4[hw3+1]*mdcx;
+          rmdr[YY][YY] -= b4[ow1+1]*mday + b4[hw2+1]*mdby + b4[hw3+1]*mdcy;
+          rmdr[YY][ZZ] -= b4[ow1+1]*mdaz + b4[hw2+1]*mdbz + b4[hw3+1]*mdcz;
+          rmdr[ZZ][XX] -= b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx;
+          rmdr[ZZ][YY] -= b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy;
+          rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz;
 	/* 3*24 - 9 flops */
       }
     } else {

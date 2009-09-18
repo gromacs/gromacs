@@ -93,7 +93,7 @@ static void pv(FILE *log,char *s,rvec x)
 
 void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	    real dist2[],real xp[],real rij[],real m2[],real omega,
-	    real invmass[],real tt[],real lagr[],int *nerror)
+            real invmass[],real tt[],real lagr[],int *nerror, real rfscale)
 {
   /*
    *     r.c. van schaik and w.f. van gunsteren
@@ -111,7 +111,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
   real    tix,tiy,tiz;
   real    tjx,tjy,tjz;
   int     nit,error,iconv,nconv;
-  
+
   error=0;
   nconv=1;
   for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
@@ -143,26 +143,26 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
       iconv   = fabs(diff)*tt[ll];
       
       if (iconv != 0) {
-	nconv   = nconv + iconv;
-	rrpr    = rijx*tx+rijy*ty+rijz*tz;
+          nconv   = nconv + iconv;
+          rrpr    = rfscale*rijx*tx+rijy*ty+rijz*tz;
 	
-	if (rrpr < toler*mytol) 
-	  error=ll;
-	else {
-	  acor      = omega*diff*m2[ll]/rrpr;
-	  lagr[ll] += acor;
-	  xh        = rijx*acor;
-	  yh        = rijy*acor;
-	  zh        = rijz*acor;
-	  im        = invmass[i];
-	  jm        = invmass[j];
-	  xp[ix] += xh*im;
-	  xp[iy] += yh*im;
-	  xp[iz] += zh*im;
-	  xp[jx] -= xh*jm;
-	  xp[jy] -= yh*jm;
-	  xp[jz] -= zh*jm;
-	}
+          if (rrpr < toler*mytol) 
+              error=ll;
+          else {
+              acor      = omega*diff*m2[ll]/rrpr;
+              lagr[ll] += acor;
+              xh        = rijx*acor;
+              yh        = rijy*acor;
+              zh        = rijz*acor;
+              im        = invmass[i];
+              jm        = invmass[j];
+              xp[ix] += xh*im;
+              xp[iy] += yh*im;
+              xp[iz] += zh*im;
+              xp[jx] -= xh*jm;
+              xp[jy] -= yh*jm;
+              xp[jz] -= zh*jm;
+          }
       }
     }
   }
@@ -176,7 +176,8 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
                real tol,rvec x[],rvec prime[],real omega,
                bool bFEP,real lambda,real lagr[],
                real invdt,rvec *v,
-               bool bCalcVir,tensor rmdr,int econq)
+               bool bCalcVir,tensor rmdr,int econq, 
+               real veta, double alpha)
 {
     rvec *rij;
     real *M2,*tt,*dist2;
@@ -186,8 +187,13 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     real    L1,tol2,toler;
     real    mm,tmp;
     int     error;
-    
-    
+    real    g,vfscale,rfscale;
+
+    g = -0.25*alpha*veta/invdt;
+    vfscale = exp(g)*series_sinhx(g);
+    g = 0.5*veta/invdt;
+    rfscale = vfscale*exp(g)*series_sinhx(g);
+
     if (ncon > shaked->nalloc)
     {
         shaked->nalloc = over_alloc_dd(ncon);
@@ -201,99 +207,122 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     tt    = shaked->tt;
     dist2 = shaked->dist2;
 
-  L1=1.0-lambda;
-  tol2=2.0*tol;
-  ia=iatom;
-  for(ll=0; (ll<ncon); ll++,ia+=3) {
-    type  = ia[0];
-    i=ia[1];
-    j=ia[2];
+    L1=1.0-lambda;
+    tol2=2.0*tol;
+    ia=iatom;
+    for(ll=0; (ll<ncon); ll++,ia+=3) {
+        type  = ia[0];
+        i=ia[1];
+        j=ia[2];
+        
+        mm=2*(invmass[i]+invmass[j]);
+        rij[ll][XX]=x[i][XX]-x[j][XX];
+        rij[ll][YY]=x[i][YY]-x[j][YY];
+        rij[ll][ZZ]=x[i][ZZ]-x[j][ZZ];
+        M2[ll]=1.0/mm;
+        if (bFEP) 
+            toler = sqr(L1*ip[type].constr.dA + lambda*ip[type].constr.dB);
+        else
+            toler = sqr(ip[type].constr.dA);
+        dist2[ll] = toler;
+        tt[ll] = 1.0/(toler*tol2);
+    }
     
-    mm=2*(invmass[i]+invmass[j]);
-    rij[ll][XX]=x[i][XX]-x[j][XX];
-    rij[ll][YY]=x[i][YY]-x[j][YY];
-    rij[ll][ZZ]=x[i][ZZ]-x[j][ZZ];
-    M2[ll]=1.0/mm;
-    if (bFEP) 
-      toler = sqr(L1*ip[type].constr.dA + lambda*ip[type].constr.dB);
-    else
-      toler = sqr(ip[type].constr.dA);
-    dist2[ll] = toler;
-    tt[ll] = 1.0/(toler*tol2);
-  }
+    switch (econq) {
+    case econqCoord:
+        cshake(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,rfscale);
+        break;
+    case econqVeloc:
+        crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt,veta,vfscale);
+        break;
+    }
+    
+    if (nit >= maxnit) {
+        if (fplog) {
+            fprintf(fplog,"Shake did not converge in %d steps\n",maxnit);
+        }
+        fprintf(stderr,"Shake did not converge in %d steps\n",maxnit);
+        nit=0;
+    }
+    else if (error != 0) 
+    {
+        if (fplog)
+            fprintf(fplog,"Inner product between old and new vector <= 0.0!\n"
+                    "constraint #%d atoms %u and %u\n",
+                    error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
+        fprintf(stderr,"Inner product between old and new vector <= 0.0!\n"
+                "constraint #%d atoms %u and %u\n",
+                error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
+        nit=0;
+    }
+    
+    /* Constraint virial and correct the lagrange multipliers for the length */
+    
+    ia=iatom;
+    for(ll=0; (ll<ncon); ll++,ia+=3) 
+    {
+        /*
+        real xt=0,yt=0,zt=0;
+        if (econq == econqVeloc) {
+            for(i=0; i<DIM; i++)
+            {
+                xt += (x[ia[1]][i]-x[ia[2]][i]) * ((prime[ia[1]][i]-prime[ia[2]][i]) + veta*(x[ia[1]][i]-x[ia[2]][i]));
+                yt += (rij[ll][i]) * (prime[ia[1]][i]-prime[ia[2]][i] + veta*(x[ia[1]][i]-x[ia[2]][i]));
+                zt += (rij[ll][i]) * (prime[ia[1]][i]-prime[ia[2]][i] + veta*(rij[ll][i]));
+            }
+            fprintf(stderr,"%5d %5d %10.3f\n",ia[1],ia[2],zt);
+            fprintf(stderr,"%5d       %10.3f\n",ll,yt);
+            fprintf(stderr,"%5d       %10.3f\n",ll,zt);
+        }
+        */
 
-  switch (econq) {
-  case econqCoord:
-      cshake(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error);
-      break;
-  case econqVeloc:
-      crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt);
-      break;
-  }
-  
-  if (nit >= maxnit) {
-      if (fplog) {
-          fprintf(fplog,"Shake did not converge in %d steps\n",maxnit);
-      }
-      fprintf(stderr,"Shake did not converge in %d steps\n",maxnit);
-      nit=0;
-  }
-  else if (error != 0) 
-  {
-      if (fplog)
-          fprintf(fplog,"Inner product between old and new vector <= 0.0!\n"
-                  "constraint #%d atoms %u and %u\n",
-                  error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
-      fprintf(stderr,"Inner product between old and new vector <= 0.0!\n"
-              "constraint #%d atoms %u and %u\n",
-              error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
-      nit=0;
-  }
-
-  /* Constraint virial and correct the lagrange multipliers for the length */
-  ia=iatom;
-  for(ll=0; (ll<ncon); ll++,ia+=3) {
-      if (econq == econqCoord && v!=NULL) 
-      {
-          /* Correct the velocities */
-          mm = lagr[ll]*invmass[ia[1]]*invdt;
-          for(i=0; i<DIM; i++)
-              v[ia[1]][i] += mm*rij[ll][i];
-          mm = lagr[ll]*invmass[ia[2]]*invdt;
-          for(i=0; i<DIM; i++)
-              v[ia[2]][i] -= mm*rij[ll][i];
-          /* 16 flops */
-      }
-      
-      /* constraint virial */
-      if (bCalcVir) 
-      {
-          mm = lagr[ll];
-          for(i=0; i<DIM; i++) 
-          {
-              tmp = mm*rij[ll][i];
-              for(j=0; j<DIM; j++)
-                  rmdr[i][j] -= tmp*rij[ll][j];
-          }
-          /* 21 flops */
-      }
-      
-      /* Correct the lagrange multipliers for the length  */
-      /* (more details would be useful here . . . )*/
-
-      type  = ia[0];
-      if (bFEP) 
-      {
-          toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
-      }
-      else
-      {
-          toler = ip[type].constr.dA;
-          lagr[ll] *= toler;
-      }
-  }
-  
-  return nit;
+        if ((econq == econqCoord) && v!=NULL) 
+        {
+            /* Correct the velocities */
+            mm = vfscale*lagr[ll]*invmass[ia[1]]*invdt;
+            for(i=0; i<DIM; i++)
+            {
+                v[ia[1]][i] += mm*rij[ll][i];
+            }
+            mm = vfscale*lagr[ll]*invmass[ia[2]]*invdt;
+            for(i=0; i<DIM; i++)
+            {
+                v[ia[2]][i] -= mm*rij[ll][i];
+            }
+            /* 16 flops */
+        }
+        
+        /* constraint virial */
+        if (bCalcVir)
+        {
+            mm = lagr[ll];
+            for(i=0; i<DIM; i++) 
+            {
+                tmp = mm*rij[ll][i];
+                for(j=0; j<DIM; j++) 
+                {
+                    rmdr[i][j] -= tmp*rij[ll][j];
+                }
+            }
+            /* 21 flops */
+        }
+        
+        /* Correct the lagrange multipliers for the length  */
+        /* (more details would be useful here . . . )*/
+        
+        type  = ia[0];
+        if (bFEP) 
+        {
+            toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
+        }
+        else
+        {
+            toler = ip[type].constr.dA;
+            lagr[ll] *= toler;
+        }
+    }
+    
+    return nit;
 }
 
 static void check_cons(FILE *log,int nc,rvec x[],rvec prime[], rvec v[],
@@ -340,7 +369,7 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
              int natoms,real invmass[],int nblocks,int sblock[],
              t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec prime[],
              t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,int econq)
+             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,int econq, real veta)
 {
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
@@ -363,7 +392,7 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
     blen /= 3;
     n0 = vec_shakef(log,shaked,natoms,invmass,blen,idef->iparams,
                     iatoms,ir->shake_tol,x_s,prime,shaked->omega,
-                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq);
+                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq,veta,ir->opts.alpha[0]);
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,prime,v,idef->iparams,iatoms,invmass,econq);
 #endif
@@ -417,81 +446,114 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
 }
 
 void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
-	      real dist2[],real vp[],real rij[],real m2[],real omega,
-	      real invmass[],real tt[],real lagr[],int *nerror,real invdt)
+             real dist2[],real vp[],real rij[],real m2[],real omega,
+             real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta,real vfscale)
 {
-  /*
-   *     r.c. van schaik and w.f. van gunsteren
-   *     eth zuerich
-   *     june 1992
-   *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
-   *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER 
-   *     second part of rattle algorithm
-   */
-  
-  const   real mytol=1e-10;
-  
-  int     ll,i,j,i3,j3,l3;
-  int     ix,iy,iz,jx,jy,jz;
-  real    toler,rpij2,vpijd,vx,vy,vz,diff,acor,im,jm,imdt,jmdt;
-  real    xh,yh,zh,rijx,rijy,rijz;
-  real    tix,tiy,tiz;
-  real    tjx,tjy,tjz;
-  int     nit,error,iconv,nconv;
+    /*
+     *     r.c. van schaik and w.f. van gunsteren
+     *     eth zuerich
+     *     june 1992
+     *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
+     *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER 
+     *     second part of rattle algorithm
+     */
+    
+    const   real mytol=1e-10;
+    
+    int     ll,i,j,i3,j3,l3,ii;
+    int     ix,iy,iz,jx,jy,jz;
+    real    toler,rijd,vpijd, vx,vy,vz,diff,acor,xdotd,fac,im,jm,imdt,jmdt;
+    real    xh,yh,zh,rijx,rijy,rijz;
+    real    tix,tiy,tiz;
+    real    tjx,tjy,tjz;
+    int     nit,error,iconv,nconv;
+    
+    error=0;
+    nconv=1;
+    for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
+        nconv=0;
+        for(ll=0; (ll<ncon) && (error == 0); ll++) {
+            l3    = 3*ll;
+            rijx  = rij[l3+XX];
+            rijy  = rij[l3+YY];
+            rijz  = rij[l3+ZZ];
+            i     = iatom[l3+1];
+            j     = iatom[l3+2];
+            i3    = 3*i;
+            j3    = 3*j;
+            ix    = i3+XX;
+            iy    = i3+YY;
+            iz    = i3+ZZ;
+            jx    = j3+XX;
+            jy    = j3+YY;
+            jz    = j3+ZZ;
+            vx      = vp[ix]-vp[jx];
+            vy      = vp[iy]-vp[jy];
+            vz      = vp[iz]-vp[jz];
+            
+            vpijd   = vx*rijx+vy*rijy+vz*rijz;
+            rijd    = rijx*rijx+rijy*rijy+rijz*rijz;
+            xdotd   = vfscale*vpijd + veta*rijd;
+            
+            toler   = dist2[ll];
+            diff    = xdotd;
+            
+            /* iconv is zero when the error is smaller than a bound */
+            iconv   = fabs(diff)*(tt[ll]/invdt);
+            
+            if (iconv != 0) {
+                nconv     = nconv + iconv;
+                fac       = omega*2.0*m2[ll]/toler;
+                acor      = -fac*xdotd;
+                lagr[ll] += acor;                
 
-  error=0;
-  nconv=1;
-  for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
-    nconv=0;
-    for(ll=0; (ll<ncon) && (error == 0); ll++) {
-      l3    = 3*ll;
-      rijx  = rij[l3+XX];
-      rijy  = rij[l3+YY];
-      rijz  = rij[l3+ZZ];
-      i     = iatom[l3+1];
-      j     = iatom[l3+2];
-      i3    = 3*i;
-      j3    = 3*j;
-      ix    = i3+XX;
-      iy    = i3+YY;
-      iz    = i3+ZZ;
-      jx    = j3+XX;
-      jy    = j3+YY;
-      jz    = j3+ZZ;
-      vx      = vp[ix]-vp[jx];
-      vy      = vp[iy]-vp[jy];
-      vz      = vp[iz]-vp[jz];
-
-      vpijd   = vx*rijx+vy*rijy+vz*rijz;
-      toler   = dist2[ll];
-      diff    = vpijd;
-      
-      /* iconv is zero when the error is smaller than a bound */
-      iconv   = fabs(diff)*(tt[ll]/invdt);
-      
-      if (iconv != 0) {
-	nconv   = nconv + iconv;
-	
-	acor      = omega*vpijd*2.0*m2[ll]/toler;
-	lagr[ll] -= acor;    /* it's a subtraction here, instead of addition */
-
-	xh        = rijx*acor;
-	yh        = rijy*acor;
-	zh        = rijz*acor;
-	
-	im        = invmass[i];
-	jm        = invmass[j];
-
-	vp[ix] -= xh*im;
-	vp[iy] -= yh*im;
-	vp[iz] -= zh*im;
-	vp[jx] += xh*jm;
-	vp[jy] += yh*jm;
-	vp[jz] += zh*jm;
-      }
+                xh        = rijx*acor;
+                yh        = rijy*acor;
+                zh        = rijz*acor;
+                
+                im        = invmass[i];
+                jm        = invmass[j];
+                
+                vp[ix] += xh*im;
+                vp[iy] += yh*im;
+                vp[iz] += zh*im;
+                vp[jx] -= xh*jm;
+                vp[jy] -= yh*jm;
+                vp[jz] -= zh*jm;
+            }
+        }
     }
-  }
-  
-  *nnit=nit;
-  *nerror=error;
+#if 0
+    for(ll=0; (ll<ncon) && (error == 0); ll++) {
+        l3    = 3*ll;
+        rijx  = rij[l3+XX];
+        rijy  = rij[l3+YY];
+        rijz  = rij[l3+ZZ];
+        i     = iatom[l3+1];
+        j     = iatom[l3+2];
+        i3    = 3*i;
+        j3    = 3*j;
+        ix    = i3+XX;
+        iy    = i3+YY;
+        iz    = i3+ZZ;
+        jx    = j3+XX;
+        jy    = j3+YY;
+        jz    = j3+ZZ;
+        vx      = vp[ix]-vp[jx];
+        vy      = vp[iy]-vp[jy];
+        vz      = vp[iz]-vp[jz];
+        
+        xdotd   = 0; 
+        for (ii=0;ii<DIM;ii++) {
+            xdotd   += rijx * (vx + veta*rijx);
+            xdotd   += rijy * (vy + veta*rijy);
+            xdotd   += rijz * (vz + veta*rijz);
+        }
+        fprintf(stderr,"b%6d %6d %10.3f\n",i,j,xdotd);
+    }
+    fprintf(stderr,"rattle: nit%6d\n",nit);
+#endif    
+
+    *nnit=nit;
+    *nerror=error;
 }

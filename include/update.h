@@ -98,9 +98,11 @@ extern void update_coords(FILE         *fplog,
 			  gmx_wallcycle_t wcycle,
 			  gmx_update_t upd,
 			  bool         bInitStep,
-			  bool         bFirstHalf
-);
-
+			  bool         bFirstHalf,
+			  t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
+			  t_nrnb       *nrnb,
+			  gmx_constr_t constr,
+			  t_idef       *idef);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -184,12 +186,9 @@ extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t 
 extern void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			double xi[],double vxi[], double scalefac[], t_extmass *MassQ, int etc);
 
-extern real nosehoover_energy(t_grpopts *opts,gmx_ekindata_t *ekind,
-			      real *xi,double *ixi);
-/* Returns the Nose-Hoover contribution to the conserved energy */
-
 extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, 
 		       tensor boxv, real veta, tensor box, t_extmass *MassQ);
+/* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
 extern void NBaroT_trotter(t_grpopts *opts, real dt,
 			   double xi[],double vxi[],real *veta, t_extmass *MassQ);
@@ -220,13 +219,13 @@ extern real calc_pres(int ePBC,int nwall,matrix box,
  */
 
 extern void parrinellorahman_pcoupl(FILE *fplog,gmx_large_int_t step,
-				    t_inputrec *ir,tensor pres,
+				    t_inputrec *ir,real dt,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
 				    tensor M,matrix mu,
 				    bool bFirstStep);
   
 extern void berendsen_pcoupl(FILE *fplog,gmx_large_int_t step,
-			     t_inputrec *ir,tensor pres,matrix box,
+			     t_inputrec *ir,real dt,tensor pres,matrix box,
 			     matrix mu);
 
 

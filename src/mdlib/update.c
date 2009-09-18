@@ -230,63 +230,63 @@ static void do_update_vv_step1(int start,int nrend,double dt,
                                rvec x[],rvec xprime[],rvec v[],
                                rvec f[],bool bExtended, real veta, double alpha)
 {
-  double imass,w_dt;
-  int    gf=0,ga=0,gt=0;
-  rvec   vrel,sumf;
-  real   vn,vv,va,vb,vnrel;
-  real   lg,u;
-  int    n,d;
-  double g,mv1,mv2;
-
-  g        = 0.25*dt*veta*alpha;
-  mv1      = exp(-g);
-  mv2      = series_sinhx(g);
-
-  for(n=start; n<nrend; n++) 
-  {
-      w_dt = invmass[n]*dt;
-      if (cFREEZE)
-      {
-          gf   = cFREEZE[n];
-      }
-      if (cACC)
-      {
-          ga   = cACC[n];
-      }
-      if (cTC)
-      {
-          gt   = cTC[n];
-      }
-      lg   = tcstat[gt].lambda;
-      rvec_sub(v[n],gstat[ga].u,vrel);
-      
-      for(d=0; d<DIM; d++) 
-      {
-          if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
-          {
-              if (bExtended) 
-              {
-                  vnrel             = mv1*(mv1*vrel[d] + 0.5*w_dt*mv2*f[n][d]);
-                  /* do not scale the mean velocities u: MRS: may not be done correctly currently? */
-                  vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
-                  v[n][d]        = vn;
-              } 
-              else 
-              {
-                  vv             = lg*v[n][d] + 0.5*f[n][d]*w_dt;
-                  /* do not scale the mean velocities u MRS: may not be done correctly currently? */
-                  u              = gstat[ga].u[d];
-                  va             = vv + 0.5*accel[ga][d]*dt;
-                  vb             = va + (1.0-lg)*u;
-                  v[n][d]        = vb;
-              }
-          } 
-          else 
-          {
-              v[n][d]        = 0.0;
-          }
-      }
-  }
+    double imass,w_dt;
+    int    gf=0,ga=0,gt=0;
+    rvec   vrel,sumf;
+    real   vn,vv,va,vb,vnrel;
+    real   lg,u;
+    int    n,d;
+    double g,mv1,mv2;
+    
+    g        = 0.25*dt*veta*alpha;
+    mv1      = exp(-g);
+    mv2      = series_sinhx(g);
+    
+    for(n=start; n<nrend; n++) 
+    {
+        w_dt = invmass[n]*dt;
+        if (cFREEZE)
+        {
+            gf   = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga   = cACC[n];
+        }
+        if (cTC)
+        {
+            gt   = cTC[n];
+        }
+        lg   = tcstat[gt].lambda;
+        rvec_sub(v[n],gstat[ga].u,vrel);
+        
+        for(d=0; d<DIM; d++) 
+        {
+            if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
+            {
+                if (bExtended) 
+                {
+                    vnrel             = mv1*(mv1*vrel[d] + 0.5*w_dt*mv2*f[n][d]);
+                    /* do not scale the mean velocities u: MRS: may not be done correctly currently? */
+                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
+                    v[n][d]        = vn;
+                } 
+                else 
+                {
+                    vv             = lg*v[n][d] + 0.5*f[n][d]*w_dt;
+                    /* do not scale the mean velocities u MRS: may not be done correctly currently? */
+                    u              = gstat[ga].u[d];
+                    va             = vv + 0.5*accel[ga][d]*dt;
+                    vb             = va + (1.0-lg)*u;
+                    v[n][d]        = vb;
+                }
+            } 
+            else 
+            {
+                v[n][d]        = 0.0;
+            }
+        }
+    }
 } /* do_update_vv_step1 */
 
 
@@ -363,7 +363,7 @@ static void do_update_vv_step2(int start,int nrend,double dt,
           }
       }
   }
-}/* do_update_vv_step1 */
+}/* do_update_vv_step2 */
 
 static void do_update_visc(int start,int nrend,double dt,
                            t_grp_tcstat *tcstat,real invmass[],real nh_vxi[],
@@ -373,77 +373,57 @@ static void do_update_visc(int start,int nrend,double dt,
                            cos_accel,real vcos,
                            bool bNH,bool bPR)
 {
-  double imass,w_dt;
-  int    gt=0;
-  real   vn,vc;
-  real   lg,xi=0,vv;
-  real   fac,cosz;
-  rvec   vrel;
-  int    n,d;
-
-  fac = 2*M_PI/(box[ZZ][ZZ]);
-
-  if (bNH || bPR) {
-    /* Update with coupling to extended ensembles, used for
-     * Nose-Hoover and Parrinello-Rahman coupling
-     */
-    for(n=start; n<start+homenr; n++) {
-      imass = invmass[n];
-      if (cTC)
-	gt   = cTC[n];
-      lg   = tcstat[gt].lambda;
-      cosz = cos(fac*x[n][ZZ]);
-
-      copy_rvec(v[n],vrel);
-
-      vc            = cosz*vcos;
-      vrel[XX]     -= vc;
-      if (bNH)
-          xi        = nh_xi[gt];
-
-      for(d=0; d<DIM; d++) {
-        vn             = v[n][d];
-
-        if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
-            vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
-				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);
-          if(d == XX)
-            vn += vc + dt*cosz*cos_accel;
-
-          v[n][d]        = vn;
-          xprime[n][d]   = x[n][d]+vn*dt;
-        } else
-          xprime[n][d]   = x[n][d];
-      }
-    }
-
-  } else {
-    /* Classic version of update, used with berendsen coupling */
-    for(n=start; n<start+homenr; n++) {
-      w_dt = invmass[n]*dt;
-      if (cTC)
-        gt   = cTC[n];
-      lg   = tcstat[gt].lambda;
-      cosz = cos(fac*x[n][ZZ]);
-
-      for(d=0; d<DIM; d++) {
-        vn             = v[n][d];
-
-        if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
-          if(d == XX) {
-            vc           = cosz*vcos;
-            /* Do not scale the cosine velocity profile */
-            vv           = vc + lg*(vn - vc + f[n][d]*w_dt);
-            /* Add the cosine accelaration profile */
-            vv          += dt*cosz*cos_accel;
-          } else
-            vv           = lg*vn + f[n][d]*w_dt;
-
-          v[n][d]        = vv;
-          xprime[n][d]   = x[n][d]+vv*dt;
-        } else {
-          v[n][d]        = 0.0;
-          xprime[n][d]   = x[n][d];
+    double imass,w_dt;
+    int    gt=0;
+    real   vn,vc;
+    real   lg,vxi=0,vv;
+    real   fac,cosz;
+    rvec   vrel;
+    int    n,d;
+    
+    fac = 2*M_PI/(box[ZZ][ZZ]);
+    
+    if (bNH || bPR) {
+        /* Update with coupling to extended ensembles, used for
+         * Nose-Hoover and Parrinello-Rahman coupling
+         */
+        for(n=start; n<nrend; n++) {
+            imass = invmass[n];
+            if (cTC) 
+            {
+                gt   = cTC[n];
+            }
+            lg   = tcstat[gt].lambda;
+            cosz = cos(fac*x[n][ZZ]);
+            
+            copy_rvec(v[n],vrel);
+            
+            vc            = cosz*vcos;
+            vrel[XX]     -= vc;
+            if (bNH) 
+            {
+                vxi        = nh_vxi[gt];
+            }
+            for(d=0; d<DIM; d++) 
+            {
+                vn             = v[n][d];
+                
+                if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) 
+                {
+                    vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
+                                            - iprod(M[d],vrel)))/(1 + 0.5*vxi*dt);
+                    if(d == XX) 
+                    {
+                        vn += vc + dt*cosz*cos_accel;
+                    }
+                    v[n][d]        = vn;
+                    xprime[n][d]   = x[n][d]+vn*dt;
+                } 
+                else 
+                {
+                    xprime[n][d]   = x[n][d];
+                }
+            }
         }
     } 
     else 
@@ -1104,7 +1084,7 @@ static void combine_forces(int nstlist,
                            gmx_constr_t constr,
                            t_inputrec *ir,t_mdatoms *md,t_idef *idef,
                            t_commrec *cr,gmx_large_int_t step,t_state *state,
-                           int start,int homenr,
+                           int start,int nrend,
                            rvec f[],rvec f_lr[],
                            t_nrnb *nrnb)
 {
@@ -1132,7 +1112,7 @@ static void combine_forces(int nstlist,
      * and store the result in forces_lr.
      */
     nm1 = nstlist - 1;
-    for(i=start; i<start+homenr; i++)
+    for(i=start; i<nrend; i++)
     {
         for(d=0; d<DIM; d++)
         {
@@ -1142,7 +1122,7 @@ static void combine_forces(int nstlist,
 }
 
 void update_extended(FILE         *fplog,
-                     gmx_step_t   step,
+                     gmx_large_int_t   step,
                      t_inputrec   *inputrec,   
                      t_mdatoms    *md,
                      t_state      *state,
@@ -1156,75 +1136,97 @@ void update_extended(FILE         *fplog,
                      bool         bFirstHalf,
                      t_extmass    *MassQ)
 {
-  bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
-  double           dt;
-  real             dt_1;
-  int              start,homenr,nrend,i,n,m,g;
+    bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bCouple;
+    double           dt;
+    real             dt_1,dtc;
+    int              start,homenr,nrend,i,n,m,g;
+    
+    start  = md->start;
+    homenr = md->homenr;
+    nrend = start+homenr;
+    
+    /* We should only couple after a step where energies were determined */
+    /* MRS -- incorporate into my code -- logic doesn't quite work right now */
 
-  start  = md->start;
-  homenr = md->homenr;
-  nrend = start+homenr;
-  
-  bNH = (inputrec->etc == etcNOSEHOOVER);
-  bPR = (inputrec->epc == epcPARRINELLORAHMAN);
-  bExtended = (bNH || bPR);
-
-  dt   = inputrec->delta_t;
-  dt_1 = 1.0/dt;
-  clear_mat(M);
-
-  if (inputrec->epc == epcTROTTER || inputrec->etc == etcTROTTER) {
-      return;
-  }
-
-  /* We can always tcoupl, even if we did not sum the energies
-   * the previous step, since ekind->tcstat[i].Th is only updated
-   * when the energies have been summed.
-   */
-  switch (inputrec->etc) 
-  {
-  case etcNO:
-    break;
-  case etcBERENDSEN:
-    berendsen_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t);
-    break;
-  case etcNOSEHOOVER:
-      nosehoover_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
-                        state->nosehoover_xi,state->nosehoover_vxi,MassQ);
-      break;
-  case etcVRESCALE:
-      vrescale_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
-                      state->therm_integral,upd->sd->gaussrand);
-      break;
-  }
-  
-  switch (inputrec->epc) 
-  {
-      /* We can always pcoupl, even if we did not sum the energies
-       * the previous step, since state->pres_prev is only updated
-       * when the energies have been summed.
-       */
-  case (epcNO):
-      break;
-  case (epcBERENDSEN):
-      if (!bInitStep) 
-      {
-          berendsen_pcoupl(fplog,step,inputrec,state->pres_prev,state->box,
-                           pcoupl_mu);
-      }
-    break;
-  case (epcPARRINELLORAHMAN):
-      parrinellorahman_pcoupl(fplog,step,inputrec,state->pres_prev,
-                              state->box,state->box_rel,state->boxv,
-                              M,pcoupl_mu,bInitStep);
-      break;
-  default:
-      break;
-  }  
-} 
+    bCouple = (inputrec->nstcalcenergy == 1 ||
+               do_per_step(step+inputrec->nstcalcenergy-1,
+                           inputrec->nstcalcenergy));
+    dtc = inputrec->nstcalcenergy*inputrec->delta_t;
+    
+    bNH = (inputrec->etc == etcNOSEHOOVER);
+    bPR = (inputrec->epc == epcPARRINELLORAHMAN);
+    bExtended = (bNH || bPR);
+    
+    dt   = inputrec->delta_t;
+    dt_1 = 1.0/dt;
+    clear_mat(pcoupl_mu);
+    for(i=0; i<DIM; i++)
+    {
+        pcoupl_mu[i][i] = 1.0;
+    }
+    
+    clear_mat(M);
+    
+    if (inputrec->epc == epcTROTTER || inputrec->etc == etcTROTTER) 
+    {
+        return;
+    }
+    
+    if (bCouple)  
+    {
+        switch (inputrec->etc) 
+        {
+        case etcNO:
+            break;
+        case etcBERENDSEN:
+            berendsen_tcoupl(&(inputrec->opts),ekind,dtc);
+            break;
+        case etcNOSEHOOVER:
+            nosehoover_tcoupl(&(inputrec->opts),ekind,dtc,
+                              state->nosehoover_xi,state->nosehoover_vxi,MassQ);
+            break;
+        case etcVRESCALE:
+            vrescale_tcoupl(&(inputrec->opts),ekind,dtc,
+                            state->therm_integral,upd->sd->gaussrand);
+            break;
+        }
+        
+        switch (inputrec->epc) 
+        {
+            /* We can always pcoupl, even if we did not sum the energies
+             * the previous step, since state->pres_prev is only updated
+             * when the energies have been summed.
+             */
+        case (epcNO):
+            break;
+        case (epcBERENDSEN):
+            if (!bInitStep) 
+            {
+                berendsen_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,state->box,
+                                 pcoupl_mu);
+            }
+            break;
+        case (epcPARRINELLORAHMAN):
+            parrinellorahman_pcoupl(fplog,step,inputrec,dtc,state->pres_prev,
+                                    state->box,state->box_rel,state->boxv,
+                                    M,pcoupl_mu,bInitStep);
+            break;
+        default:
+            break;
+        }  
+    } 
+    else 
+    {
+        /* Set the T scaling lambda to 1 to have no scaling */
+        for(i=0; (i<inputrec->opts.ngtc); i++)
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+    }
+}
 
 void update_constraints(FILE         *fplog,
-                        gmx_step_t   step,
+                        gmx_large_int_t   step,
                         real         *dvdlambda,    /* FEP stuff */
                         t_inputrec   *inputrec,      /* input record and box stuff	*/
                         t_mdatoms    *md,
@@ -1244,15 +1246,17 @@ void update_constraints(FILE         *fplog,
                         bool         bCalcVir,
                         real         vetanew)
 {
-    bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
+    bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
     rvec             *vbuf,*xprime;
     
-    if (bInitStep && bFirstHalf) return; /* already constrained on the first step with VV */
-    
+    if (constr) {bDoConstr=TRUE;}
+    if (bInitStep && bFirstHalf) {bDoConstr=FALSE;} /* already constrained on the first step with VV */
+    if (bFirstHalf && inputrec->eI != eiVV) {bDoConstr=FALSE;} /* we don't need to do this for non VV on the first half*/
+
     /* for now, SD update is here -- though it really seems like it 
        should be reformulated as a velocity verlet method, since it has two parts */
     
@@ -1263,22 +1267,22 @@ void update_constraints(FILE         *fplog,
     dt   = inputrec->delta_t;
     dt_1 = 1.0/dt;
     
-    /* clear out constraints before applying */
-    clear_mat(vir_part);
-    
     /* 
      *  Steps (7C, 8C)
      *  APPLY CONSTRAINTS:
      *  BLOCK SHAKE 
 
-    /* When doing PR pressure coupling we have to constrain the
+     * When doing PR pressure coupling we have to constrain the
      * bonds in each iteration. If we are only using Nose-Hoover tcoupling
      * it is enough to do this once though, since the relative velocities 
      * after this will be normal to the bond vector
      */
     
-    if (constr) 
+    if (bDoConstr) 
     {
+        /* clear out constraints before applying */
+        clear_mat(vir_part);
+
         xprime = upd->xp;
         bLastStep = (step == inputrec->init_step+inputrec->nsteps);
         bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
@@ -1350,7 +1354,7 @@ void update_constraints(FILE         *fplog,
                       inputrec->opts.ref_t,FALSE);
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
         
-        if (constr) 
+        if (bDoConstr) 
         {
             /* Constrain the coordinates xprime */
             wallcycle_start(wcycle,ewcCONSTR);
@@ -1362,12 +1366,40 @@ void update_constraints(FILE         *fplog,
             wallcycle_stop(wcycle,ewcCONSTR);
         }
     }    
+
+    /* We must always unshift after updating coordinates; if we did not shake
+       x was shifted in do_force */
+    
+    if (!(bFirstHalf)) // in the first half of vv, no shift. 
+    {
+        if (graph && (graph->nnodes > 0)) 
+        {
+            unshift_x(graph,state->box,state->x,upd->xp);
+            if (TRICLINIC(state->box)) 
+            {
+                inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
+            }
+        else
+        {
+            inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
+            copy_rvecn(upd->xp,state->x,start,graph->start);
+            copy_rvecn(upd->xp,state->x,graph->start+graph->nnodes,nrend);
+        }
+    } 
+    else 
+    {
+        copy_rvecn(upd->xp,state->x,start,nrend);
+    }
+    dump_it_all(fplog,"After unshift",
+                state->natoms,state->x,upd->xp,state->v,force);
+    }
+    
     /* ############# END the update of velocities and positions ######### */
     
 }
 
 void update_box(FILE         *fplog,
-                gmx_step_t   step,
+                gmx_large_int_t   step,
                 t_inputrec   *inputrec,      /* input record and box stuff	*/
                 t_mdatoms    *md,
                 t_state      *state,
@@ -1408,30 +1440,6 @@ void update_box(FILE         *fplog,
     
     dt = inputrec->delta_t;
     
-    /* We must always unshift here, also if we did not shake
-     * x was shifted in do_force */
-    /* MRS -- is this correct? */
-    
-    if (graph && (graph->nnodes > 0)) 
-    {
-        unshift_x(graph,state->box,state->x,upd->xp);
-        if (TRICLINIC(state->box)) 
-        {
-            inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
-        }
-        else
-        {
-            inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
-            copy_rvecn(upd->xp,state->x,start,graph->start);
-            copy_rvecn(upd->xp,state->x,graph->start+graph->nnodes,nrend);
-        }
-    } 
-    else 
-    {
-        copy_rvecn(upd->xp,state->x,start,nrend);
-    }
-    dump_it_all(fplog,"After unshift",
-                state->natoms,state->x,upd->xp,state->v,force);
     where();
 
     /* now update boxes */
@@ -1510,7 +1518,7 @@ void update_box(FILE         *fplog,
 }
 
 void update_coords(FILE         *fplog,
-                   gmx_step_t   step,
+                   gmx_large_int_t   step,
                    t_inputrec   *inputrec,      /* input record and box stuff	*/
                    t_mdatoms    *md,
                    t_state      *state,
@@ -1524,7 +1532,11 @@ void update_coords(FILE         *fplog,
                    gmx_wallcycle_t wcycle,
                    gmx_update_t upd,
                    bool         bInitStep,
-                   bool         bFirstHalf)
+                   bool         bFirstHalf,
+                   t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
+                   t_nrnb       *nrnb,
+                   gmx_constr_t constr,
+                   t_idef       *idef)
 {
     bool             bExtended,bNH,bPR,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt,alpha;
@@ -1550,7 +1562,6 @@ void update_coords(FILE         *fplog,
     
     dt   = inputrec->delta_t;
     dt_1 = 1.0/dt;
-    alpha = 1 + DIM/(((double)inputrec->opts.nrdf[0])-3);
 
     /* Running the first part does nothing except for velocity verlet */
     if (bFirstHalf) 
@@ -1576,17 +1587,16 @@ void update_coords(FILE         *fplog,
         (inputrec->etc == etcTROTTEREKINH) ||
         (inputrec->etc == epcTROTTER);
     
-    if (bDoLR && inputrec->nstlist > 1)
+    if (bDoLR && inputrec->nstlist > 1 && inputrec->eI != eiVV)
     {
         /* Store the total force + nstlist-1 times the LR force
          * in forces_lr, so it can be used in a normal update algorithm
          * to produce twin time stepping.
          */
-        /* MRS -- think about this a bit more -- how to incorporate this into the whole algorithm.
-           combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,step,state,
-           start,homenr,f,f_lr,nrnb);
-           force = f_lr;
-        */
+        /* is this correct in the new construction? MRS */
+        combine_forces(inputrec->nstlist,constr,inputrec,md,idef,cr,step,state,
+                       start,nrend,f,f_lr,nrnb);
+        force = f_lr;
     }
     else
     {
@@ -1656,7 +1666,7 @@ void update_coords(FILE         *fplog,
                                    md->invmass,md->ptype,
                                    md->cFREEZE,md->cACC,md->cTC,
                                    state->x,xprime,state->v,force,
-                                   bExtended,state->veta,alpha);  // assuming barostat coupled to group 0.
+                                   bExtended,state->veta,inputrec->opts.alpha[0]);  // assuming barostat coupled to group 0.
         } 
         else 
         {
@@ -1666,7 +1676,7 @@ void update_coords(FILE         *fplog,
                                md->invmass,md->ptype,
                                md->cFREEZE,md->cACC,md->cTC,
                                state->x,xprime,state->v,force,
-                               bExtended,state->veta,alpha);  // assuming barostat coupled to group 0.
+                               bExtended,state->veta,inputrec->opts.alpha[0]);  // assuming barostat coupled to group 0.
         }
         break;
     default:

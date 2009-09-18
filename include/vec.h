@@ -244,8 +244,6 @@ static inline real series_sinhx(real x)
   return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
 }
 
-
-
 extern void vecinvsqrt(real in[],real out[],int n);
 /* Perform out[i]=1.0/sqrt(in[i]) for n elements */
 

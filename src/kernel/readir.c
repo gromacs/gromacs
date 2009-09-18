@@ -1456,6 +1456,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   }
   for(i=0; (i<groups->grps[egcTC].nr); i++) {
     opts->nrdf[i] = nrdf_tc[i];
+    opts->alpha[i] = 1.0 + DIM/((double)opts->nrdf[i]);  
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;
     fprintf(stderr,
@@ -1614,6 +1615,7 @@ void do_index(const char* mdparin, const char *ndx,
   nr = groups->grps[egcTC].nr;
   ir->opts.ngtc = nr;
   snew(ir->opts.nrdf,nr);
+  snew(ir->opts.alpha,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
   if (ir->eI==eiBD && ir->bd_fric==0) {

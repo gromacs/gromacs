@@ -156,73 +156,74 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   /* Energy monitoring */
   for(i=0;i<egNR;i++)
   {
-    md->bEInd[i]=FALSE;
+      md->bEInd[i]=FALSE;
   }
-
-
+  
+  
   for(i=0; i<F_NRE; i++) {
-    md->bEner[i] = FALSE;
-    if (i == F_LJ)
-      md->bEner[i] = !bBHAM;
-    else if (i == F_BHAM)
-      md->bEner[i] = bBHAM;
-    else if (i == F_EQM)
-      md->bEner[i] = ir->bQMMM;
-    else if (i == F_COUL_LR)
-      md->bEner[i] = (ir->rcoulomb > ir->rlist);
-    else if (i == F_LJ_LR)
-      md->bEner[i] = (!bBHAM && ir->rvdw > ir->rlist);
-    else if (i == F_BHAM_LR)
-      md->bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
-    else if (i == F_RF_EXCL)
-      md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC);
-    else if (i == F_COUL_RECIP)
-      md->bEner[i] = EEL_FULL(ir->coulombtype);
-    else if (i == F_LJ14)
-      md->bEner[i] = b14;
-    else if (i == F_COUL14)
-      md->bEner[i] = b14;
-    else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
       md->bEner[i] = FALSE;
-    else if ((i == F_DVDL) || (i == F_DKDL))
-      md->bEner[i] = (ir->efep != efepNO);
-    else if (i == F_DHDL_CON)
-      md->bEner[i] = (ir->efep != efepNO && md->bConstr);
-    else if ((interaction_function[i].flags & IF_VSITE) ||
-	     (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
-      md->bEner[i] = FALSE;
-    else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
-      md->bEner[i] = TRUE;
-    else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
-      md->bEner[i] = EI_DYNAMICS(ir->eI);
-    else if (i == F_DISPCORR || i == F_PDISPCORR)
-      md->bEner[i] = (ir->eDispCorr != edispcNO);
-    else if (i == F_DISRESVIOL)
-      md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_DISRES) > 0);
-    else if (i == F_ORIRESDEV)
-      md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0);
-    else if (i == F_CONNBONDS)
-      md->bEner[i] = FALSE;
-    else if (i == F_COM_PULL)
-      md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
-    else if (i == F_ECONSERVED)
-      md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
-		  ir->epc == epcNO);
-    else
-      md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
+      if (i == F_LJ)
+          md->bEner[i] = !bBHAM;
+      else if (i == F_BHAM)
+          md->bEner[i] = bBHAM;
+      else if (i == F_EQM)
+          md->bEner[i] = ir->bQMMM;
+      else if (i == F_COUL_LR)
+          md->bEner[i] = (ir->rcoulomb > ir->rlist);
+      else if (i == F_LJ_LR)
+          md->bEner[i] = (!bBHAM && ir->rvdw > ir->rlist);
+      else if (i == F_BHAM_LR)
+          md->bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
+      else if (i == F_RF_EXCL)
+          md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC);
+      else if (i == F_COUL_RECIP)
+          md->bEner[i] = EEL_FULL(ir->coulombtype);
+      else if (i == F_LJ14)
+          md->bEner[i] = b14;
+      else if (i == F_COUL14)
+          md->bEner[i] = b14;
+      else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
+          md->bEner[i] = FALSE;
+      else if ((i == F_DVDL) || (i == F_DKDL))
+          md->bEner[i] = (ir->efep != efepNO);
+      else if (i == F_DHDL_CON)
+          md->bEner[i] = (ir->efep != efepNO && md->bConstr);
+      else if ((interaction_function[i].flags & IF_VSITE) ||
+               (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
+          md->bEner[i] = FALSE;
+      else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
+          md->bEner[i] = TRUE;
+      else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
+          md->bEner[i] = EI_DYNAMICS(ir->eI);
+      else if (i == F_DISPCORR || i == F_PDISPCORR)
+          md->bEner[i] = (ir->eDispCorr != edispcNO);
+      else if (i == F_DISRESVIOL)
+          md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_DISRES) > 0);
+      else if (i == F_ORIRESDEV)
+          md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0);
+      else if (i == F_CONNBONDS)
+          md->bEner[i] = FALSE;
+      else if (i == F_COM_PULL)
+          md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
+      else if (i == F_ECONSERVED)
+          md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE 
+                           || ir->etc == etcTROTTER || ir->etc == etcTROTTEREKINH) &&
+                          (ir->epc == epcNO || ir->epc==epcTROTTER));
+      else
+          md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
   }
-
-    md->f_nre=0;
-    for(i=0; i<F_NRE; i++)
-    {
-        if (md->bEner[i])
-        {
-            /* FIXME: The constness should not be cast away */
-            /*ener_nm[f_nre]=(char *)interaction_function[i].longname;*/
-            ener_nm[md->f_nre]=interaction_function[i].longname;
-            md->f_nre++;
-        }
-    }
+  
+  md->f_nre=0;
+  for(i=0; i<F_NRE; i++)
+  {
+      if (md->bEner[i])
+      {
+          /* FIXME: The constness should not be cast away */
+          /*ener_nm[f_nre]=(char *)interaction_function[i].longname;*/
+          ener_nm[md->f_nre]=interaction_function[i].longname;
+          md->f_nre++;
+      }
+  }
 
     md->epc = ir->epc;
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
@@ -350,7 +351,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     
     md->nTC=groups->grps[egcTC].nr;
-    if (epc == epcTROTTER) 
+    if (md->epc == epcTROTTER) 
     {
         md->nTCB = md->nTC + 1; /* for barostat temperature group */
     } 
@@ -359,10 +360,10 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->nTCB = md->nTC;
     }
     
-    if (etc == etcTROTTER || etc == etcTROTTEREKINH) 
+    if (md->etc == etcTROTTER || md->etc == etcTROTTEREKINH) 
     {
         md->mde_n = 2*NNHCHAIN*md->nTCB;
-    } else if (etc == etcNOSEHOOVER) 
+    } else if (md->etc == etcNOSEHOOVER) 
     {
         md->mde_n = 2*md->nTCB;
     } else 
@@ -395,7 +396,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         }
         md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
     }
-    else  if (md->etc == etcBERENDSEN || md->etc == etcYES || 
+    else if (md->etc == etcBERENDSEN || md->etc == etcYES || 
 	      md->etc == etcVRESCALE)
     {
         for(i=0; (i<md->nTC); i++)
@@ -406,9 +407,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         }
         md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,"");
     }
-    sfree(grpnms);
-
-    if (etc == etcTROTTER || etc == etcTROTTEREKINH) {
+    else if (md->etc == etcTROTTER || md->etc == etcTROTTEREKINH) 
+    {
         for(i=0; (i<md->nTCB); i++) 
         {
             ni=groups->grps[egcTC].nm_ind[i];
@@ -424,6 +424,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         }
         md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
     }
+    sfree(grpnms);
+
     
     md->nU=groups->grps[egcACC].nr;
     if (md->nU > 1)
@@ -644,7 +646,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
             }
             add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);
         }
-        else if (md->etc == etcTROTTER || etc == md->etcTROTTEREKINH) 
+        else if (md->etc == etcTROTTER || md->etc == etcTROTTEREKINH) 
         {
             for(i=0; (i<md->nTCB); i++) 
             {

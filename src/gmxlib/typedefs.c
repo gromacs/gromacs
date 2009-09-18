@@ -380,6 +380,7 @@ void done_inputrec(t_inputrec *ir)
   }
 
   sfree(ir->opts.nrdf);
+  sfree(ir->opts.alpha);
   sfree(ir->opts.ref_t);
   sfree(ir->opts.annealing); 
   sfree(ir->opts.anneal_npoints); 
@@ -456,6 +457,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   state->nrng   = 0;
   state->flags  = 0;
   state->lambda = 0;
+  state->veta   = 0;
   clear_mat(state->box);
   clear_mat(state->box_rel);
   clear_mat(state->boxv);

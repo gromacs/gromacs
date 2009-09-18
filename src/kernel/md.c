@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/* -*- mode: tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * 
  *                This source code is part of
@@ -84,7 +84,6 @@
 #include "mtop_util.h"
 #include "genborn.h"
 
-#ifdef GMX_MPI
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -292,7 +291,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      real *chkpt,real *terminate, real *terminate_now,
                      int *nabnsb, matrix box, gmx_mtop_t *top_global,real *pcurr, 
                      bool *bSumEkinhOld, bool bRerunMD, bool bEkinFullStep, 
-                     bool bDoCM, bool bGStat, bool bNEMD, bool bFirstHalf, 
+                     bool bStopCM, bool bGStat, bool bNEMD, bool bFirstHalf, 
                      bool bIterate, bool bFirstIterate, bool bInitialize, 
                      bool bReadEkin, int natoms) 
 {
@@ -377,10 +376,10 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
         debug_gmx();
         /* Calculate center of mass velocity if necessary, also parallellized */
-        if (bDoCM && !bRerunMD) 
+        if (bStopCM && !bRerunMD && !bFirstHalf) 
         {
-            calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
-                         state->x,state->v,vcm);
+	  calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
+		       state->x,state->v,vcm);
         }
     }
     
@@ -397,6 +396,23 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
     }
     
+            if (!bNEMD && debug && (vcm->nr > 0))
+            {
+                correct_ekin(debug,
+                             mdatoms->start,mdatoms->start+mdatoms->homenr,
+                             state->v,vcm->group_p[0],
+                             mdatoms->massT,mdatoms->tmass,ekin);
+            }
+	    
+            /* Do center of mass motion removal */
+            if (bStopCM && !bRerunMD && !bFirstHalf)
+	      {
+		check_cm_grp(fplog,vcm,ir,1);
+		do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
+                              state->x,state->v,vcm);
+                inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
+	      }
+
     if (bTemp) 
     {
         /* Sum the kinetic energies of the groups & calc temp */
@@ -418,6 +434,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL] += dvdlcorr;
+	if (fr->efep != efepNO) {
+	  enerd->dvdl_lin += dvdlcorr;
+	}
     }
     
     /* ########## Now pressure ############## */
@@ -1365,7 +1384,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
     bool       bMasterState;
     int        force_flags;
-    tensor     force_vir,shake_vir,shake_Vir_save,total_vir,total_vir_new,prev_vir,pres,ekin,ekin_save;
+    tensor     force_vir,shake_vir,shake_vir_save,shakev_vir,total_vir,total_vir_new,prev_vir,pres,ekin,ekin_save;
     int        i,m,status;
     rvec       mu_tot;
     t_vcm      *vcm;
@@ -1400,7 +1419,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bIonize=FALSE;
     bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     bool        bAppend;
-    book        bIterate,bFirstIterate,bTemp,bPres,bTrotter;
+    bool        bIterate,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
@@ -1480,7 +1499,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     /* Energy terms and groups */
     snew(enerd,1);
-	clear_mat(shakev_vir);
+    clear_mat(shakev_vir);
     init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
     if (DOMAINDECOMP(cr))
     {
@@ -2165,7 +2184,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             update_coords(fplog,step,ir,mdatoms,state,
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                          ekind,NULL,M,wcycle,upd,bInitStep,TRUE);
+                          ekind,NULL,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
         }
         
         bIterate = ((ir->epc == epcTROTTER) && (constr) && (!bInitStep));
@@ -2232,8 +2251,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shakev_vir,shake_vir,total_vir,ekin,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
-                            (bTCR && bFFscan)?top_global:NULL,&pcurr,&bSumEkinhOld,
-                            bRerunMD,bEkinFullStep,bDoCM,bGStat,bNEMD,TRUE,bIterate,
+                            top_global,&pcurr,&bSumEkinhOld,
+                            bRerunMD,bEkinFullStep,bStopCM,bGStat,bNEMD,TRUE,bIterate,
                             bFirstIterate,FALSE,FALSE,top_global->natoms);
             
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
@@ -2465,7 +2484,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 upd,bInitStep,FALSE,&MassQ);
                 
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,ekin,M,wcycle,upd,bInitStep,FALSE);
+                              ekind,ekin,M,wcycle,upd,bInitStep,FALSE,cr,nrnb,constr,&top->idef);
                 
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,force_vir,
@@ -2515,8 +2534,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,shakev_vir,total_vir,ekin,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
-                            (bTCR && bFFscan)?top_global:NULL,&pcurr,&bSumEkinhOld,
-                            bRerunMD,bEkinFullStep,bDoCM,bGStat,bNEMD,FALSE,bIterate,
+                            top_global,&pcurr,&bSumEkinhOld,
+                            bRerunMD,bEkinFullStep,bStopCM,bGStat,bNEMD,FALSE,bIterate,
                             bFirstIterate,FALSE,FALSE,top_global->natoms);
             
             /* #############  END CALC EKIN AND PRESSURE ################# */

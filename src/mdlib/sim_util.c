@@ -940,7 +940,8 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                  state->box,state->x,&state->hist,
                  f,forcevir_dum,md,enerd,fcd,
                  state->lambda,graph,
-                 fr,vsite,mu_tot_dum,0,fp_field,ed,ir->implicit_solvent,flags);
+                 fr,vsite,mu_tot_dum,0,fp_field,ed,TRUE,
+                 GMX_FORCE_STATECHANGED | GMX_FORCE_NS | GMX_FORCE_ALLFORCES);
         
         for(m=0; (m<DIM); m++) {
             for(i=start; (i<end); i++) {
@@ -1262,6 +1263,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         *prescorr += spres;
     }
 
+    /* only print the first time */
     if (bFirst && fplog) {
         if (bCorrAll) {
             fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
@@ -1294,10 +1296,6 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     {
         *dvdlcorr += dvdlambda;
     }
-//    if (fr->efep != efepNO) {     
-//      enerd->dvdl_lin += dvdlambda;    //do I need to add these lines back in?
-//    }
-    
   }
 }
 

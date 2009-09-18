@@ -934,21 +934,24 @@ void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,const gmx_mtop_t *mtop)
         fr->avcsix[q]    = csix;
         fr->avctwelve[q] = ctwelve;
     }
-    if (fplog != NULL)
+    /* this takes up way to much space! */
+   
+    if (debug) 
     {
-        if (fr->eDispCorr == edispcAllEner ||
-            fr->eDispCorr == edispcAllEnerPres)
         {
-            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
-                    fr->avcsix[0],fr->avctwelve[0]);
-        }
-        else
-        {
-            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e\n",fr->avcsix[0]);
+            if (fr->eDispCorr == edispcAllEner ||
+                fr->eDispCorr == edispcAllEnerPres)
+            {
+                fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                        fr->avcsix[0],fr->avctwelve[0]);
+            }
+            else
+            {
+                fprintf(debug,"Long Range LJ corr.: <C6> %10.4e\n",fr->avcsix[0]);
+            }
         }
     }
 }
-
 
 static void set_bham_b_max(FILE *fplog,t_forcerec *fr,
                            const gmx_mtop_t *mtop)

@@ -268,7 +268,7 @@ int ndof_com(t_inputrec *ir)
     n = 1;
     break;
   default:
-    gmx_incons("Unknown pbc in calc_nrdf");
+    gmx_incons("Unknown pbc in ndof_com");
   }
 
   return n;
