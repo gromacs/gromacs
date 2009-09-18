@@ -59,6 +59,16 @@
  * There is a \ref share/template/template.c "template" for writing
  * analysis programs, the documentation for it and links from there should
  * help getting started.
+ *
+ *
+ * \internal
+ * \section libtrajana_impl Implementation details
+ *
+ * Some internal implementation details of the library are documented on
+ * separate pages:
+ *  - \subpage poscalcengine
+ *  - \subpage selparser
+ *  - \subpage selcompiler
  */
 /*! \internal \file
  * \brief Implementation of functions in trajana.h.
