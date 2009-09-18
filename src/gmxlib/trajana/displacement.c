@@ -61,7 +61,7 @@
  * do not use the displacements for which \p pout is FALSE (the values cannot
  * be calculated based on the provided data, and are undefined).
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in displacement.h.
  */
 #ifdef HAVE_CONFIG_H
@@ -77,7 +77,7 @@
 #include <displacement.h>
 #include <position.h>
 
-/*! \brief
+/*! \internal \brief
  * Internal structure used by the displacement calculation routines in
  * displacement.h.
  */
@@ -89,7 +89,7 @@ typedef struct gmx_ana_displpos_t
     bool                 bPres;
 } gmx_ana_displpos_t;
 
-/*! \brief
+/*! \internal \brief
  * Stores displacement calculation data and parameters.
  *
  * There data can be accessed only through the functions defined in

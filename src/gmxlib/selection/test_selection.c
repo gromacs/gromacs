@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \internal \file
  * \brief Testing/debugging tool for the selection engine.
  */
 #ifdef HAVE_CONFIG_H

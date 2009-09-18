@@ -51,7 +51,7 @@
  * \todo
  * Implement exclusions.
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in nbsearch.h.
  */
 #ifdef HAVE_CONFIG_H
@@ -66,7 +66,9 @@
 #include <nbsearch.h>
 #include <position.h>
 
-/** Data structure for neighborhood searches. */
+/*! \internal \brief
+ * Data structure for neighborhood searches.
+ */
 struct gmx_ana_nbsearch_t
 {
     /** The cutoff squared. */
