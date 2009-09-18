@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -727,11 +728,15 @@ static char **read_topol(const char *infile,const char *outfile,
 	  case d_moleculetype: {
 	    if (!bReadMolType) {
 	      int ntype;
-	      if (opts->couple_moltype &&
-		  (opts->couple_lam0 == ecouplamNONE ||
-		   opts->couple_lam1 == ecouplamNONE))
-		dcatt = add_atomtype_decoupled(symtab,atype,
-					       &nbparam,bGenPairs?&pair:NULL);
+          if (opts->couple_moltype != NULL &&
+              (opts->couple_lam0 == ecouplamNONE ||
+               opts->couple_lam0 == ecouplamQ ||
+               opts->couple_lam1 == ecouplamNONE ||
+               opts->couple_lam1 == ecouplamQ))
+          {
+              dcatt = add_atomtype_decoupled(symtab,atype,
+                                             &nbparam,bGenPairs?&pair:NULL);
+          }
 	      ntype = get_atomtype_ntypes(atype);
 	      ncombs = (ntype*(ntype+1))/2;
 	      generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
@@ -813,10 +818,12 @@ static char **read_topol(const char *infile,const char *outfile,
 	    molb[nmolb].nmol = nrcopies;
 	    nmolb++;
 	    
-	    bCouple = (opts->couple_moltype &&
-		       strcmp(*(mi0->name),opts->couple_moltype) == 0);
-	    if (bCouple)
-	      nmol_couple += nrcopies;
+        bCouple = (opts->couple_moltype != NULL &&
+                   (strcmp("system"    ,opts->couple_moltype) == 0 ||
+                    strcmp(*(mi0->name),opts->couple_moltype) == 0));
+        if (bCouple) {
+            nmol_couple += nrcopies;
+        }
 
 	    if (mi0->atoms.nr == 0) {
 	      gmx_fatal(FARGS,"Molecule type '%s' contains no atoms",
@@ -827,7 +834,7 @@ static char **read_topol(const char *infile,const char *outfile,
 		    mi0->nrexcl,*mi0->name);
 	    sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
 	    if (!mi0->bProcessed) 
-        {
+	      {
             t_nextnb nnb;
             generate_excl(mi0->nrexcl,
                           mi0->atoms.nr,
@@ -882,10 +889,9 @@ static char **read_topol(const char *infile,const char *outfile,
     if (nmol_couple == 0) {
       gmx_fatal(FARGS,"Did not find any molecules of type '%s' for coupling",
 		opts->couple_moltype);
-    } else {
-      fprintf(stderr,"Found %d copies of molecule type '%s' for coupling\n",
-	      nmol_couple,opts->couple_moltype);
     }
+    fprintf(stderr,"Coupling %d copies of molecule type '%s'\n",
+            nmol_couple,opts->couple_moltype);
   }
   
   /* this is not very clean, but fixes core dump on empty system name */
