@@ -29,7 +29,7 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Help implementation for selections.
+ * \brief Implementation of functions in selhelp.c.
  */
 #include <macros.h>
 #include <string2.h>

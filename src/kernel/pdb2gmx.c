@@ -711,7 +711,7 @@ int main(int argc, char *argv[])
   static bool bGlnMan=FALSE, bArgMan=FALSE;
   static bool bRenameCys=TRUE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
+  static bool bSort=TRUE, bAllowMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE,bVerbose=FALSE,bChargeGroups=TRUE,bCmap=TRUE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
@@ -763,7 +763,7 @@ int main(int argc, char *argv[])
       "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
     { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
       "Ignore hydrogen atoms that are in the pdb file" },
-    { "-missing",FALSE, etBOOL, {&bMissing}, 
+    { "-missing",FALSE, etBOOL, {&bAllowMissing}, 
       "Continue when atoms are missing, dangerous" },
     { "-v",      FALSE, etBOOL, {&bVerbose}, 
       "Be slightly more verbose in messages" },
@@ -1151,7 +1151,7 @@ int main(int argc, char *argv[])
 
     /* Generate Hydrogen atoms (and termini) in the sequence */
     natom=add_h(&pdba,&x,nah,ah,
-		cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
+		cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bAllowMissing,
 		NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
@@ -1225,7 +1225,7 @@ int main(int argc, char *argv[])
 	top_file2=top_file;
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
-	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
+	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bAllowMissing,
 	    HH14,bAlldih,bRemoveDih,bVsites,bVsiteAromatics,forcefield,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist,short_bond_dist,bDeuterate,bChargeGroups,bCmap);

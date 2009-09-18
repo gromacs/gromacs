@@ -60,10 +60,10 @@
  * analysis programs, the documentation for it and links from there should
  * help getting started.
  */
-/*! \file 
+/*! \internal \file
  * \brief Implementation of functions in trajana.h.
  */
-/*! \dir src/gmxlib/trajana
+/*! \internal \dir src/gmxlib/trajana
  * \brief Source code for common trajectory analysis functions.
  *
  * Selection handling is found in \ref src/gmxlib/selection.

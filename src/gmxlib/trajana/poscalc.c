@@ -78,10 +78,8 @@
  * gmx_ana_poscalc_create() using gmx_ana_poscalc_type_from_enum().
  * gmx_ana_poscalc_create_enum() is also provided for convenience.
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in poscalc.h.
- *
- * \internal
  *
  * \todo
  * There is probably some room for optimization in the calculation of

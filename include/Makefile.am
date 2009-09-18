@@ -147,5 +147,6 @@ xdrf.h \
 xtcio.h \
 xvgr.h \
 thread_mpi.h \
-tmpi.h
+tmpi.h \
+mainpage.h
 
