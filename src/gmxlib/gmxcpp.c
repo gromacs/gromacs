@@ -66,6 +66,7 @@ enum { eifTRUE, eifFALSE, eifIGNORE, eifNR };
 
 typedef struct gmx_cpp {
   FILE     *fp;
+  char     *path,*cwd;
   char     *fn;
   int      line_len;
   char     *line;
@@ -152,7 +153,7 @@ static void add_define(const char *define)
 int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
-  char *buf;
+  char *buf,*ptr;
   int i;
   unsigned int i1;
   
@@ -173,7 +174,22 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   
   snew(cpp,1);
   *handle      = cpp;
-  cpp->fn      = strdup(filenm);
+  ptr = strrchr(filenm,'/');
+  if (NULL == ptr) {
+    cpp->path = NULL;
+    cpp->cwd  = NULL;
+    cpp->fn   = strdup(filenm);
+  }
+  else {
+    cpp->path = strdup(filenm);
+    cpp->path[ptr-filenm] = '\0';
+    cpp->fn   = strdup(ptr+1);
+    snew(cpp->cwd,STRLEN);
+    (void) getcwd(cpp->cwd,STRLEN);
+    if (NULL != debug)
+      fprintf(debug,"GMXCPP: chdir to %s\n",cpp->path);
+    chdir(cpp->path);
+  }
   cpp->line_len= 0;
   cpp->line    = NULL;
   cpp->line_nr = 0;
@@ -320,6 +336,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
     snew(inc_fn,len+1);
     strncpy(inc_fn,buf+i0,len);
     inc_fn[len] = '\0';
+    
     if (debug)
       fprintf(debug,"Going to open include file '%s' i0 = %d, strlen = %d\n",
 	      inc_fn,i0,len);
@@ -411,8 +428,14 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (debug)
     fprintf(debug,"Closing file %s\n",handle->fn);
   fclose(handle->fp);
+  if (NULL != handle->cwd) {
+    if (NULL != debug)
+      fprintf(debug,"GMXCPP: chdir to %s\n",handle->cwd);
+    chdir(handle->cwd);
+  }
   
-  if (0)switch(errno) {
+  if (0)
+    switch(errno) {
   case 0:
     break;
   case ENOENT:
@@ -428,18 +451,22 @@ int cpp_close_file(gmx_cpp_t *handlep)
   }
   handle->fp = NULL;
   handle->line_nr = 0;
-  if (handle->fn) {
+  if (NULL != handle->fn) {
     sfree(handle->fn);
     handle->fn = NULL;
   }
-  if (handle->line) {
+  if (NULL != handle->line) {
     sfree(handle->line);
     handle->line = NULL;
   }
-  if (handle->ifdefs) 
+  if (NULL != handle->ifdefs) 
     sfree(handle->ifdefs);
   handle->nifdef = 0;
-  
+  if (NULL != handle->path)
+    sfree(handle->path);
+  if (NULL != handle->cwd)
+    sfree(handle->cwd);
+    
   return eCPP_OK;
 }
 
