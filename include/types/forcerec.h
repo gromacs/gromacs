@@ -39,6 +39,7 @@
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
+#include "qhoprec.h"
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
@@ -341,6 +342,11 @@ typedef struct {
   t_nblist QMMMlist_sr;
   t_nblist QMMMlist_lr; /* not needed, one QMMM list suffices */
 
+  /* qhop stuff */
+  bool        bqhop;
+  t_qhoprec   *qhoprec;
+  t_nblist    qhopnblist;
+  bool        bDo_qhop;
   /* Limit for printing large forces, negative is don't print */
   real print_force;
 

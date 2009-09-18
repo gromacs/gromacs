@@ -1604,6 +1604,13 @@ void init_forcerec(FILE *fp,
     fr->bQMMM      = ir->bQMMM;   
     fr->qr         = mk_QMMMrec();
     
+    if (ir->bqhop)
+    {
+        fprintf(stderr, "qhop computation requested. Good luck....\n");
+    }
+    fr->bqhop = ir->bqhop;
+    fr->qhoprec = mk_qhoprec();
+
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt);
     if (DOMAINDECOMP(cr)) {

@@ -59,6 +59,8 @@ typedef struct {
   unsigned short        *cU1,*cU2,*cORF;
   /* for QMMM, atomnumber contains atomic number of the atoms */
   bool          *bQM;
+  /* for qhop simulations */
+  bool          *bqhopdonor,*bqhopacceptor;
   /* The range of home atoms */
   int           start;
   int           homenr;

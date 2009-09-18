@@ -401,6 +401,9 @@ void done_inputrec(t_inputrec *ir)
   sfree(ir->opts.bOPT);
   sfree(ir->opts.bTS);
 
+  /* qhop options */
+  
+
   if (ir->pull) {
     done_pull(ir->pull);
     sfree(ir->pull);

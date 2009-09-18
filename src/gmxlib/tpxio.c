@@ -819,6 +819,13 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       }
       /* end of QMMM stuff */
     }    
+    /* qhop stuff */
+    if(file_version >=62){
+      do_int(ir->bqhop);
+      do_int(ir->qhopfreq);
+      do_int(ir->opts.ngqhopdonors);
+      do_int(ir->opts.ngqhopacceptors);
+    }
   }
 }
 

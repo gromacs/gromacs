@@ -164,6 +164,11 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     
     if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
+    if (ir->bqhop){
+      srenew(md->bqhopdonor,md->nalloc);
+      srenew(md->bqhopacceptor,md->nalloc);
+    }
+    
   }
 
   for(i=0; (i<md->nr); i++) {
@@ -257,6 +262,24 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	md->bQM[i]      = FALSE;
       }
     }
+    if (ir->bqhop){
+      if (groups->grpnr[egcqhopdonors] == 0 || 
+	  groups->grpnr[egcqhopdonors][ag] < groups->grps[egcqhopdonors].nr-1){
+	fprintf(stderr,"qhop donor! (%d)\n",i);
+	md->bqhopdonor[i]      = TRUE;
+	md->bqhopacceptor[i]   = FALSE; /* want dat kan natuurlijk niet */
+      } 
+      else if (groups->grpnr[egcqhopacceptors] == 0 || 
+	       groups->grpnr[egcqhopacceptors][ag]<groups->grps[egcqhopacceptors].nr-1){
+	md->bqhopdonor[i]      = FALSE;
+	md->bqhopacceptor[i]   = TRUE;
+      }
+      else {
+	md->bqhopdonor[i]      = FALSE;
+	md->bqhopacceptor[i]   = FALSE;
+      }
+    }
+    
   }
 
   md->start  = start;

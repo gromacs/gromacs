@@ -90,7 +90,11 @@ typedef struct {
   int     *SAsteps;     /* in how many steps SA goes from 1-1 to 0.5-0.5*/
   bool    *bOPT;
   bool    *bTS;
-} t_grpopts;
+  /* qhop related stuff */
+  int     ngqhopdonors;
+  int     ngqhopacceptors;
+  
+} t_grpopts; 
 
 enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
 
@@ -273,6 +277,9 @@ typedef struct {
   int  QMconstraints;   /* constraints on QM bonds                      */
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/
+
+  bool bqhop;
+  int   qhopfreq;
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

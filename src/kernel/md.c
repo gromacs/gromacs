@@ -82,6 +82,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "qhop.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -1403,7 +1404,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         fprintf(fplog,"\n");
     }
-
+    if(fr->bqhop)
+        init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms);
+ 
     /* Set and write start time */
     runtime_start(runtime);
     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
@@ -1752,6 +1755,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        GMX_FORCE_SEPLRF |
                        (bCalcEner ? GMX_FORCE_VIRIAL : 0) |
                        (bDoDHDL ? GMX_FORCE_DHDL : 0));
+
+        if(!bFirstStep)
+        {
+            if(fr->bqhop && do_per_step(step,ir->qhopfreq)){ 
+
+                do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
+                        mdatoms,fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
+                        enerd->term[F_TEMP],step/*,f/*,buf*/,force_vir);
+            
+            }
+        }
 
         if (shellfc)
         {
