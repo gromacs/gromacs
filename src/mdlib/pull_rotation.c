@@ -1357,19 +1357,17 @@ static real do_flex2_lowlevel(
         ii = rotg->ind_loc[l];
         /* Index of this rotation group atom with respect to the whole rotation group */
         ipgrp = rotg->xc_ref_ind[l];
+        
+        /* Current coordinate of this atom: x[ii][XX/YY/ZZ] */
+        copy_rvec(x[ii], curr_x);
+        /* Shift this atom such that it is near its reference */
+        shift_single_coord(box, curr_x, rotg->xc_shifts[ipgrp]);
+
         /* For each atom, loop over all slabs. We could have contributions from any slab */
         clear_rvec(sum_f_ii);
-
         for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
-            clear_rvec(force_n);
-
             islab = n+rotg->slab_max_nr; /* slab index */
-            /* Current coordinate of this atom: x[ii][XX/YY/ZZ] */
-            copy_rvec(x[ii], curr_x);
-
-            /* Shift this atom such that it is near its reference */
-            shift_single_coord(box, curr_x, rotg->xc_shifts[ipgrp]);
 
             /* Calculate the Gaussian value of curr_slab for curr_x */
             gaussian = gaussian_weight(curr_x, rotg, n);
@@ -1527,17 +1525,18 @@ static real do_flex_lowlevel(
         ii = rotg->ind_loc[l];
         /* Index of this rotation group atom with respect to the whole rotation group */
         ipgrp = rotg->xc_ref_ind[l];
+        
+        /* Current coordinate of this atom: x[ii][XX/YY/ZZ] */
+        copy_rvec(x[ii], curr_x);
+        /* Shift this atom such that it is near its reference */
+        shift_single_coord(box, curr_x, rotg->xc_shifts[ipgrp]);
+
         /* For each atom, loop over all slabs. We could have contributions from any slab */
         clear_rvec(sum_n1);
         clear_rvec(sum_n2);
         for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
             islab = n+rotg->slab_max_nr; /* slab index */
-            /* Current coordinate of this atom: x[ii][XX/YY/ZZ] */
-            copy_rvec(x[ii], curr_x);
-
-            /* Shift this atom such that it is near its reference */
-            shift_single_coord(box, curr_x, rotg->xc_shifts[ipgrp]);
 
             /* Calculate the Gaussian value of curr_slab for curr_x */
             gaussian = gaussian_weight(curr_x, rotg, n);

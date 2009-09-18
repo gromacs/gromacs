@@ -102,7 +102,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
             rotg->vec[m] = vec[m];
         
         CTYPE("Emission point for the fixed axis");
-        sprintf(buf,"rot_offset%d",g);
+        sprintf(buf,"rot_anchor%d",g);
         STYPE(buf,              s_vec, "0.0 0.0 0.0");
         string2dvec(s_vec,vec);
         for(m=0; m<DIM; m++)
