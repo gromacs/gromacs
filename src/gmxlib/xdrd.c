@@ -95,12 +95,12 @@ int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn)
 
 #if ((defined SIZEOF_LARGE_INT) && SIZEOF_LARGE_INT == 8)
   static const gmx_large_int_t two_p32_m1 = 0xFFFFFFFF;
-  gmx_large_int_t ia64,ib64;
+  gmx_large_int_t ia_64,ib_64;
 
-  ia64 = ((*i)>>32) & two_p32_m1;
-  ib64 = (*i) & two_p32_m1;
-  ia = (int)ia64;
-  ib = (int)ib64;
+  ia_64 = ((*i)>>32) & two_p32_m1;
+  ib_64 = (*i) & two_p32_m1;
+  ia = (int)ia_64;
+  ib = (int)ib_64;
 #else
   /* Our code is 4 bits, but we should make sure that this value
    * will be correctly read by 8 bits code.
