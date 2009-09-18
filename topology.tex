@@ -617,7 +617,7 @@ indicate the interaction type for bonds, angles, dihedrals and
 improper dihedrals.  The file contains residue entries, which consist
 of atoms and optionally bonds, angles dihedrals and impropers.  The
 charge group codes denote the charge group numbers. Atoms in the same
-charge group should always be below each other. When using the
+charge group should always be ordered consecutively. When using the
 hydrogen database with {\tt pdb2gmx} for adding missing hydrogens, the
 atom names defined in the {\tt .rtp} entry should correspond exactly
 to the naming convention used in the hydrogen database,
@@ -802,7 +802,7 @@ charge and/or mass. For each atom to be replaced on line should be
 entered with the following fields:
 \begin{itemize}
 \item name of the atom to be replaced
-\item new atom name
+\item new atom name (optional)
 \item new atom type
 \item new mass
 \item new charge
@@ -831,12 +831,15 @@ the added atom(s), in the same way as for replacing atoms, {\ie}:
 \item atom type
 \item mass
 \item charge
+\item charge group (optional)
 \end{itemize}
 Like in the hydrogen database (see~\ssecref{rtp}), when more then
 one atom is connected to an existing one, a number will be appended to
 the end of the atom name. Note that, like in the hydrogen database the
 atom name is now on the same line as the control atoms, whereas it was
 at the beginning of the second line prior to {\gromacs} version 3.3.
+When the charge group field is left out, the added atom will have
+the same charge group number as the atom that it is bonded to.
 \item {\tt [~delete~]}\\
 delete existing atoms. One atom name per line.
 \item {\tt [~bonds~]}, {\tt [~angles~]}, {\tt [~dihedrals~]} and {\tt [~impropers~]}\\
