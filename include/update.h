@@ -186,14 +186,13 @@ extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t 
 extern void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			double xi[],double vxi[], double scalefac[], t_extmass *MassQ, int etc);
 
-extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, 
-		       tensor boxv, real veta, tensor box, t_extmass *MassQ);
+extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
 extern void NBaroT_trotter(t_grpopts *opts, real dt,
 			   double xi[],double vxi[],real *veta, t_extmass *MassQ);
 
-extern void boxv_trotter(t_inputrec *ir,real *veta, real dt, tensor boxv, tensor box, 
+extern void boxv_trotter(t_inputrec *ir,real *veta, real dt, tensor box, 
 			 tensor ekin, tensor vir, real pres, real ecorr, t_extmass *MassQ);
 
 extern void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,

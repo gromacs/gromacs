@@ -592,7 +592,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
       {
           if (bBaro) 
           {
-              boxv_trotter(ir,&(state->veta),ir->delta_t,state->boxv,state->box,ekin,vir,enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
+              boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekin,vir,enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
           }
       } 
       else 
@@ -654,7 +654,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
       {
           if (bBaro) 
           {
-              boxv_trotter(ir,&(state->veta),ir->delta_t,state->boxv,state->box,ekin,vir,
+              boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekin,vir,
                            enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
           }
       }
@@ -828,7 +828,7 @@ void NBaroT_trotter(t_grpopts *opts,real dtfull,
 }
 
 
-void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor boxv, tensor box, 
+void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
 		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
 {
     real  pscal;
@@ -871,16 +871,15 @@ void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor boxv, tensor box,
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   // W is in ps^2 * bar * nm^3 
     
     *veta += 0.5*dt*GW;   
+    fprintf(stderr,"GW: %14.7f\n",GW);
 }
 
-real NPT_energy(t_inputrec *ir, double *xi, double *vxi, 
-		tensor boxv, real veta, tensor box, t_extmass *MassQ)
+real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ)
 {
     int  i,j,nd,ndj,bmass,qmass,ngtcall;
     real ener_npt,reft,eta,kT,tau;
     double *ivxi, *ixi;
     real *iQinv;
-    tensor boxv2;
     real vol,dbaro,W,Q;
     
     static int k=0; /* keep track of the step in debugging */

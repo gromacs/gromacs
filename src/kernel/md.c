@@ -290,7 +290,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      tensor shakev_vir, tensor total_vir, tensor ekin, 
                      tensor pres, rvec mu_tot, gmx_constr_t constr, 
                      real *chkpt,real *terminate, real *terminate_now,
-                     int *nabnsb, matrix box, gmx_mtop_t *top_global,real *pcurr, 
+                     int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
                      bool *bSumEkinhOld, bool bRerunMD, bool bEkinFullStep, 
                      bool bStopCM, bool bGStat, bool bNEMD, bool bFirstHalf, 
                      bool bIterate, bool bFirstIterate, bool bInitialize, 
@@ -379,8 +379,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         /* Calculate center of mass velocity if necessary, also parallellized */
         if (bStopCM && !bRerunMD && !bFirstHalf) 
         {
-	  calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
-		       state->x,state->v,vcm);
+            calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
+                         state->x,state->v,vcm);
         }
     }
     
@@ -397,23 +397,23 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
     }
     
-            if (!bNEMD && debug && (vcm->nr > 0))
-            {
-                correct_ekin(debug,
-                             mdatoms->start,mdatoms->start+mdatoms->homenr,
-                             state->v,vcm->group_p[0],
-                             mdatoms->massT,mdatoms->tmass,ekin);
-            }
-	    
-            /* Do center of mass motion removal */
-            if (bStopCM && !bRerunMD && !bFirstHalf)
-	      {
+    if (!bNEMD && debug && (vcm->nr > 0))
+    {
+        correct_ekin(debug,
+                     mdatoms->start,mdatoms->start+mdatoms->homenr,
+                     state->v,vcm->group_p[0],
+                     mdatoms->massT,mdatoms->tmass,ekin);
+    }
+    
+    /* Do center of mass motion removal */
+    if (bStopCM && !bRerunMD && !bFirstHalf)
+    {
 		check_cm_grp(fplog,vcm,ir,1);
 		do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
-                              state->x,state->v,vcm);
-                inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
-	      }
-
+                      state->x,state->v,vcm);
+        inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
+    }
+    
     if (bTemp) 
     {
         /* Sum the kinetic energies of the groups & calc temp */
@@ -435,9 +435,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL] += dvdlcorr;
-	if (fr->efep != efepNO) {
-	  enerd->dvdl_lin += dvdlcorr;
-	}
+        if (fr->efep != efepNO) {
+            enerd->dvdl_lin += dvdlcorr;
+        }
     }
     
     /* ########## Now pressure ############## */
@@ -467,6 +467,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_PRES] += prescorr;
         *pcurr = enerd->term[F_PRES];
     }
+    fprintf(stderr,"%10s%20s%20s%20s%20s%20s\n","segment","pcurr","total_vir","box","ekin","shake_vir");
+    fprintf(stderr,"%10d",bFirstHalf);
+    fprintf(stderr,"%20.12f%20.12f%20.12f%20.12f%20.12f\n",*pcurr,total_vir[0][0],box[0][0],ekin[0][0],shake_vir[0][0]);
 }
 
 
@@ -2177,17 +2180,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
         
-        bOK = TRUE;
-        if ( !bRerunMD || bForceUpdate) {
-//        if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  // Why was rerun_fr.bV here?  Doesn't make sense. 
-            wallcycle_start(wcycle,ewcUPDATE);
-            dvdl = 0;
-            
-            update_coords(fplog,step,ir,mdatoms,state,
-                          f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                          ekind,NULL,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
-        }
-        
         bIterate = ((ir->epc == epcTROTTER) && (constr) && (!bInitStep));
         bFirstIterate = TRUE;
         /* for iterations, we save these vectors, as we will be self-consistently iterating
@@ -2225,9 +2217,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 } 
             } 
             
-            if ( !bRerunMD || bForceUpdate) 
-            //if ( !bRerunMD || rerun_fr.bV || bForceUpdate)  // Why was rerun_fr.bV here?  Doesn't make sense. 
-            {
+            bOK = TRUE;
+            if ( !bRerunMD || bForceUpdate) {
+//        if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  // Why was rerun_fr.bV here?  Doesn't make sense. 
+                wallcycle_start(wcycle,ewcUPDATE);
+                dvdl = 0;
+                
+                update_coords(fplog,step,ir,mdatoms,state,
+                              f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                              ekind,NULL,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
+                
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shakev_vir,NULL,
                                    cr,nrnb,wcycle,upd,constr,
@@ -2286,8 +2285,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (ir->etc == etcTROTTER || ir->etc == etcTROTTEREKINH)  
         {
             last_conserved = 
-                NPT_energy(ir,state->nosehoover_xi,state->nosehoover_vxi, 
-                           state->boxv, state->veta, state->box, &MassQ);	
+                NPT_energy(ir,state->nosehoover_xi,state->nosehoover_vxi,state->veta, state->box, &MassQ);	
             last_conserved += enerd->term[F_EKIN];
             if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
             {
@@ -2490,8 +2488,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,FALSE,bCalcPres,state->veta);  /* !!!examine this!!! */
-                
+                                   bInitStep,FALSE,bCalcPres,state->veta);  
+
                 if (!bOK && !bFFscan) 
                 {
                     gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
@@ -2697,7 +2695,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         case etcNOSEHOOVER:
             enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + 
                 NPT_energy(ir,state->nosehoover_xi,
-                           state->nosehoover_vxi,state->boxv,state->veta,state->box,&MassQ);	
+                           state->nosehoover_vxi,state->veta,state->box,&MassQ);	
             break;
         case etcVRESCALE:
             enerd->term[F_ECONSERVED] =
