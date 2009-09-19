@@ -1379,23 +1379,22 @@ void update_constraints(FILE         *fplog,
             {
                 inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
             }
-        else
-        {
-            inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
+            else
+            {
+                inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
+            }
             copy_rvecn(upd->xp,state->x,start,graph->start);
             copy_rvecn(upd->xp,state->x,graph->start+graph->nnodes,nrend);
         }
-    } 
-    else 
-    {
-        copy_rvecn(upd->xp,state->x,start,nrend);
+        else 
+        {
+            copy_rvecn(upd->xp,state->x,start,nrend);
+        }
+        
+        dump_it_all(fplog,"After unshift",
+                    state->natoms,state->x,upd->xp,state->v,force);
     }
-    dump_it_all(fplog,"After unshift",
-                state->natoms,state->x,upd->xp,state->v,force);
-    }
-    
-    /* ############# END the update of velocities and positions ######### */
-    
+/* ############# END the update of velocities and positions ######### */
 }
 
 void update_box(FILE         *fplog,

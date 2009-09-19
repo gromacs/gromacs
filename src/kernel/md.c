@@ -1,4 +1,4 @@
-/* -*- mode: tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * 
  *                This source code is part of
@@ -269,8 +269,9 @@ void copy_coupling_state (t_state *statea,t_state *stateb,
     copy_mat(statea->box,stateb->box);
     copy_mat(statea->box_rel,stateb->box_rel);
     copy_mat(statea->boxv,stateb->boxv);
+    /* need extra term for the barostat */
     ngtc_eff = stateb->ngtc+1;
-/* need extra term for the barostat */
+
     for (i = 0; i < ngtc_eff; i++) 
     { 
         for (j=0; j < NNHCHAIN; j++) 

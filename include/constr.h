@@ -117,12 +117,12 @@ extern void settle_proj(FILE *fp,
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
                    real dist2[],real xp[],real rij[],real m2[],real omega,
-                   real invmass[],real tt[],real lagr[],int *nerror, real rfscale);
+                   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
 extern void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
                     real dist2[],real vp[],real rij[],real m2[],real omega,
-                    real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta,real vfscale);
+                    real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta);
 
 extern bool constrain(FILE *log,bool bLog,bool bEner,
                       gmx_constr_t constr,

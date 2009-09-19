@@ -274,38 +274,6 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         lambda += delta_step*ir->delta_lambda;
     }
     
-    /*
-
-    if (bPscal) {
-
-        snew(vstor,homenr);
-        switch (econq) {
-        case econqVeloc:
-            for (i=start;i<nrend;i++) {
-                for (d=0;d<DIM;d++) {
-                    /* use modified velocity equal to \dot{x} = v + veta*x.  We need to constrain this
-                       since \dot(x) * x is zero, not v(x) * x 
-                    //vstor[i][d] = xprime[i][d];
-                    //xprime[i][d] += veta * x[i][d];
-                }	  
-            }
-            break;
-        case econqCoord:
-            if (v) {
-                for (i=start;i<nrend;i++) {
-                    for (d=0;d<DIM;d++) {
-                        vstor[i][d] = v[i][d];
-                    }
-                }
-            }
-            break;
-        default:
-            break;
-        }
-    }
-
-    */
-
     if (vir != NULL)
     {
         clear_mat(rmdr);
@@ -415,72 +383,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     }
 
     if (bPscal) {
-        double g,rbuf;
-        g = 0.5*ir->delta_t*veta;
-        rscale = exp(g)*series_sinhx(g);
-        g = -0.25*ir->opts.alpha[0]*ir->delta_t*veta;
-        vscale = exp(g)*series_sinhx(g);
         
-        switch (econq) {
-        case econqVeloc:
-            /* reconstruct the velocity from the constrained quantity \dot{x} 
-               (x and veta should not be changing in between!)
-            for (i=start;i<nrend;i++) 
-            {
-                for (d=0;d<DIM;d++) 
-                {
-                    //min_proj[i][d] = min_proj[i][d] - veta * x[i][d];
-                    
-                }
-            }
-            if (xprime != min_proj) {  /* restore xprime unless it's the same array as min_proj 
-                for (i=start;i<nrend;i++) 
-                {
-                    for (d=0;d<DIM;d++) 
-                    {
-                        xprime[i][d] = vstor[i][d];
-                    }
-                }
-            }
-            */
-            break;
-        case econqCoord:
-
-            /* What is computed in constrain() is F_cons * rscale *
-               vscale, not F_cons.  So F_cons = (dr * 2*m / (dt)^2) /
-               (rscale*vscale), and we must divide by this to get the
-               correct virial.
-               
-               Also, with pressure scaling and constraints,
-               v_cons(dt/2) = v_uncons(dt/2) + dt/2m * F_cons *
-               vscale.  In order to get the correct constrained
-               velocity at v(dt/2), we need to compute rbuf =
-               (v_cons(dt/2) - v_uncons(dt/2)), divide the result by
-               rscale, and then add rbuf to v_uncons to get the
-               correct v_cons(dt/2)
-               
-               This will get us the proper v_cons(dt/2) =
-               v_uncons(dt/2) + dt/2m * F_cons * vscale from the
-               modified force F_cons * rscale * vscale
-
-            */
-
-            if (v) 
-            {
-                for (i=start;i<nrend;i++) 
-                {
-                    for (d=0;d<DIM;d++) 
-                    {
-//                        rbuf = (v[i][d]-vstor[i][d])/rscale;
-//                        v[i][d] = vstor[i][d] + rbuf;
-                    }
-                }
-            }
-            break;
-        default:
-            break;
-        }
-//        sfree(vstor);
     }
 
     if (vir != NULL)
@@ -502,35 +405,6 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             gmx_incons("Unsupported constraint quantity for virial");
         }
 
-        if (bPscal) {
-            
-            /* We need to rescale the virial contribution from the
-               constraints.  In the first case, constraint of velocity for
-               second half of step.  vir up to here is actually computed
-               from R_{Fv}\sum_k \mu_k F^{(k)}_{c,i} (see Tuckerman,
-               6.14.3), not \sum_k \mu_k F^{(k)}_{c,i}, as it should be.
-               So we need to rescale.
-               
-               In the case of position constraints, up to here vir is
-               actually computed from R_{Fx}\sum_k \lambda_k F^{(k)}_{c,i}
-               (see Tuckerman, 6.14.3), not \sum_k \lambda_k
-               F^{(k)}_{c,i}, as it should be.
-               
-               These effects are quite small, but should still be taken into account.
-            */
-        
-            switch (econq) {
-            case econqCoord:
-                vir_fac /= (real)(rscale*vscale);
-                break;
-            case econqVeloc:
-                vir_fac /= (real)(vscale);
-                break;
-            default:
-                break;
-            }
-        }
-        
         for(i=0; i<DIM; i++)
         {
             for(j=0; j<DIM; j++)

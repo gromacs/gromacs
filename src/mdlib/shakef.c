@@ -93,7 +93,7 @@ static void pv(FILE *log,char *s,rvec x)
 
 void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	    real dist2[],real xp[],real rij[],real m2[],real omega,
-            real invmass[],real tt[],real lagr[],int *nerror, real rfscale)
+            real invmass[],real tt[],real lagr[],int *nerror)
 {
   /*
    *     r.c. van schaik and w.f. van gunsteren
@@ -144,7 +144,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
       
       if (iconv != 0) {
           nconv   = nconv + iconv;
-          rrpr    = rfscale*rijx*tx+rijy*ty+rijz*tz;
+          rrpr    = rijx*tx+rijy*ty+rijz*tz;
 	
           if (rrpr < toler*mytol) 
               error=ll;
@@ -187,13 +187,15 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     real    L1,tol2,toler;
     real    mm,tmp;
     int     error;
-    real    g,vfscale,rfscale;
+    real    g,vscale,rscale,rvscale;
 
+    // pressure control factors 
     g = -0.25*alpha*veta/invdt;
-    vfscale = exp(g)*series_sinhx(g);
+    vscale = exp(g)*series_sinhx(g);
     g = 0.5*veta/invdt;
-    rfscale = vfscale*exp(g)*series_sinhx(g);
-
+    rscale = exp(g)*series_sinhx(g);
+    rvscale = vscale*rscale;
+    
     if (ncon > shaked->nalloc)
     {
         shaked->nalloc = over_alloc_dd(ncon);
@@ -230,10 +232,10 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     
     switch (econq) {
     case econqCoord:
-        cshake(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,rfscale);
+        cshake(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error);
         break;
     case econqVeloc:
-        crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt,veta,vfscale);
+        crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt,veta);
         break;
     }
     
@@ -279,12 +281,12 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
         if ((econq == econqCoord) && v!=NULL) 
         {
             /* Correct the velocities */
-            mm = vfscale*lagr[ll]*invmass[ia[1]]*invdt;
+            mm = lagr[ll]*invmass[ia[1]]*invdt*(vscale/rvscale);
             for(i=0; i<DIM; i++)
             {
                 v[ia[1]][i] += mm*rij[ll][i];
             }
-            mm = vfscale*lagr[ll]*invmass[ia[2]]*invdt;
+            mm = lagr[ll]*invmass[ia[2]]*invdt*(vscale/rvscale);
             for(i=0; i<DIM; i++)
             {
                 v[ia[2]][i] -= mm*rij[ll][i];
@@ -295,7 +297,14 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
         /* constraint virial */
         if (bCalcVir)
         {
-            mm = lagr[ll];
+            if (econq == econqCoord) 
+            {
+                mm = lagr[ll]/rvscale;
+            } 
+            if (econq == econqVeloc) 
+            {
+                mm = lagr[ll]/vscale;
+            }
             for(i=0; i<DIM; i++) 
             {
                 tmp = mm*rij[ll][i];
@@ -447,7 +456,7 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
 
 void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
              real dist2[],real vp[],real rij[],real m2[],real omega,
-             real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta,real vfscale)
+             real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta)
 {
     /*
      *     r.c. van schaik and w.f. van gunsteren
@@ -493,7 +502,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
             
             vpijd   = vx*rijx+vy*rijy+vz*rijz;
             rijd    = rijx*rijx+rijy*rijy+rijz*rijz;
-            xdotd   = vfscale*vpijd + veta*rijd;
+            xdotd   = vpijd + veta*rijd;
             
             toler   = dist2[ll];
             diff    = xdotd;
