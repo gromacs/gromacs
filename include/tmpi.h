@@ -38,7 +38,12 @@ To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
 */
 
-/*! \mainpage thread_mpi
+/*! 
+  \if THREAD_MPI_MAIN
+  \mainpage thread_mpi thread_mpi threading library
+  \else
+  \page thread_mpi thread_mpi threading library
+  \endif
 
    thread_mpi is a cross-platform threading library for applications in 
    high-performance computing. It supports:

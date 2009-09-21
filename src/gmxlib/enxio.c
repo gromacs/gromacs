@@ -269,13 +269,17 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
     }
     if (!do_int (fr->nre))     *bOK = FALSE;
-    if (bRead && nre_test >= 0 && fr->nre != nre_test)
+    if (!do_int (fr->ndisre))  *bOK = FALSE;
+    if (!do_int (fr->nblock))  *bOK = FALSE;
+
+    /* Frames could have nre=0, so we can not rely only on the fr->nre check */
+    if (bRead && nre_test >= 0 &&
+        ((fr->nre > 0 && fr->nre != nre_test) ||
+         fr->nre < 0 || fr->ndisre < 0 || fr->nblock < 0))
     {
         *bWrongPrecision = TRUE;
         return *bOK;
     }
-    if (!do_int (fr->ndisre))  *bOK = FALSE;
-    if (!do_int (fr->nblock))  *bOK = FALSE;
 	
     if (*bOK && bRead && fr->nblock>fr->nr_alloc)
     {

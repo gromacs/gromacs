@@ -132,7 +132,7 @@
  * gmx_histogram_free() can be used to free memory associated with a
  * histogram when it is no longer needed.
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in histogram.h.
  */
 #ifdef HAVE_CONFIG_H
@@ -147,42 +147,42 @@
 
 #include <histogram.h>
 
-/*! \brief
+/*! \internal \brief
  * Stores data for a histogram.
  */
 struct gmx_histogram_t
 {
-    //! The left edge of the first bin.
+    /** The left edge of the first bin. */
     real                 start;
-    //! The right edge of the last bin.
+    /** The right edge of the last bin. */
     real                 end;
-    //! Bin width.
+    /** Bin width. */
     real                 binwidth;
-    //! Number of bins.
+    /** Number of bins. */
     int                  nbins;
-    //! The final histogram.
+    /** The final histogram. */
     double              *hist;
-    //! Standard deviation of each bin (calculated from block histograms).
+    /** Standard deviation of each bin (calculated from block histograms). */
     double              *histerr;
 
-    //! Histogram type.
+    /** Histogram type. */
     e_histogram_t        type;
-    //! Histogram flags;
+    /** Histogram flags; */
     int                  flags;
-    //! Block size for averaging.
+    /** Block size for averaging. */
     int                  bsize;
-    //! Output file for block histograms (can be NULL).
+    /** Output file for block histograms (can be NULL). */
     FILE                *blockfp;
 
-    //! Inverse bin width.
+    /** Inverse bin width. */
     real                 invbw;
-    //! Current histogram value.
+    /** Current histogram value. */
     double              *chist;
-    //! Current histogram count.
+    /** Current histogram count. */
     int                 *cn;
-    //! Number of frames read for the current block so far.
+    /** Number of frames read for the current block so far. */
     int                  nframes;
-    //! Number of blocks averaged so far.
+    /** Number of blocks averaged so far. */
     int                  nblocks;
 };
 

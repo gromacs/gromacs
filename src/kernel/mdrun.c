@@ -422,7 +422,7 @@ int main(int argc,char *argv[])
 #ifndef GMX_THREADS
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 #else
-    gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library, you need to compile GROMACS with a standard MPI library");
+    gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif
   }
 

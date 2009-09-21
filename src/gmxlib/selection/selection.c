@@ -278,11 +278,11 @@ resname RES and rdist < 6;
  * and fill it with the necessary information.
  * Details can be found on a separate page: \ref selmethods.
  */
-/*! \file
+/*! \internal \file
  * \brief
  * Implementation of functions in selection.h.
  */
-/*! \dir src/gmxlib/selection
+/*! \internal \dir src/gmxlib/selection
  * \brief
  * Source code for selection-related routines.
  */

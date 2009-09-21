@@ -46,16 +46,16 @@ extern "C"
 {
 #endif
 
-/*! Information for a collection of selections.*/
+/** Information for a collection of selections. */
 typedef struct gmx_ana_selcollection_t gmx_ana_selcollection_t;
 
 struct gmx_ana_poscalc_coll_t;
 
-/*! Defines the type of covered fraction.*/
+/** Defines the type of covered fraction. */
 typedef enum
 {
-    CFRAC_NONE,         /*!< No covered fraction (everything covered).*/
-    CFRAC_SOLIDANGLE,   /*!< Fraction of a solid (3D) angle covered.*/
+    CFRAC_NONE,         /**< No covered fraction (everything covered). */
+    CFRAC_SOLIDANGLE,   /**< Fraction of a solid (3D) angle covered. */
 } e_coverfrac_t;
 
 /*! \brief
@@ -63,25 +63,25 @@ typedef enum
  */
 typedef struct gmx_ana_selection_t
 {
-    /*! Name of the selection.*/
+    /** Name of the selection. */
     char                   *name;
-    /*! Selected positions.*/
+    /** Selected positions. */
     gmx_ana_pos_t           p;
-    /*! Masses associated with the positions.*/
+    /** Masses associated with the positions. */
     real                   *m;
-    /*! Charges associated with the positions.*/
+    /** Charges associated with the positions. */
     real                   *q;
-    /*! Pointer to the index group that holds the selected atoms.*/
+    /** Pointer to the index group that holds the selected atoms. */
     struct gmx_ana_index_t *g;
-    /*! TRUE if the value can change as a function of time.*/
+    /** TRUE if the value can change as a function of time. */
     bool                    bDynamic;
-    /*! Type of the covered fraction.*/
+    /** Type of the covered fraction. */
     e_coverfrac_t           cfractype;
-    /*! TRUE if the covered fraction depends on the frame.*/
+    /** TRUE if the covered fraction depends on the frame. */
     bool                    bCFracDyn;
-    /*! Covered fraction of the selection for the current frame.*/
+    /** Covered fraction of the selection for the current frame. */
     real                    cfrac;
-    /*! The average covered fraction (over the trajectory).*/
+    /** The average covered fraction (over the trajectory). */
     real                    avecfrac;
 
     /*! \brief
@@ -92,86 +92,86 @@ typedef struct gmx_ana_selection_t
      * index file.
      */
     struct t_selelem       *selelem;
-    /*! Original masses of all possible positions (internal use only).*/
+    /** Original masses of all possible positions (internal use only). */
     real                   *orgm;
-    /*! Original charges of all possible positions (internal use only).*/
+    /** Original charges of all possible positions (internal use only). */
     real                   *orgq;
 } gmx_ana_selection_t;
 
-/*! Frees the memory allocated for a selection.*/
+/** Frees the memory allocated for a selection. */
 extern void
 gmx_ana_selection_free(gmx_ana_selection_t *sel);
-/*! Returns the name of a selection.*/
+/** Returns the name of a selection. */
 extern char *
 gmx_ana_selection_name(gmx_ana_selection_t *sel);
-/*! Prints out the selection information.*/
+/** Prints out the selection information. */
 extern void
 gmx_ana_selection_print_info(gmx_ana_selection_t *sel);
-/*! Initializes the information for covered fraction.*/
+/** Initializes the information for covered fraction. */
 extern bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
 
-/*! Creates a new empty selection collection.*/
+/** Creates a new empty selection collection. */
 extern int
 gmx_ana_selcollection_create(gmx_ana_selcollection_t **sc,
                              struct gmx_ana_poscalc_coll_t *pcc);
-/*! Frees the memory allocated for a selection collection.*/
+/** Frees the memory allocated for a selection collection. */
 extern void
 gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc);
-/*! Sets the default reference position handling for a selection collection.*/
+/** Sets the default reference position handling for a selection collection. */
 extern void
 gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc, const char *type);
-/*! Sets the default output position handling for a selection collection.*/
+/** Sets the default output position handling for a selection collection. */
 extern void
 gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
                                      const char *type, bool bMaskOnly);
-/*! Sets the topology for a selection collection.*/
+/** Sets the topology for a selection collection. */
 extern int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
                                    int natoms);
-/*! Returns the number of selections specified by a selection collection.*/
+/** Returns the number of selections specified by a selection collection. */
 extern int
 gmx_ana_selcollection_get_count(gmx_ana_selcollection_t *sc);
-/*! Returns a selection by index.*/
+/** Returns a selection by index. */
 extern gmx_ana_selection_t *
 gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i);
-/*! Returns TRUE if the collection requires topology information for evaluation.*/
+/** Returns TRUE if the collection requires topology information for evaluation. */
 extern bool
 gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc);
-/*! Prints a human-readable version of the internal selection element tree.*/
+/** Prints a human-readable version of the internal selection element tree. */
 extern void
 gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, bool bValues);
-/*! Prints the selection strings into an XVGR file as comments.*/
+/** Prints the selection strings into an XVGR file as comments. */
 extern void
 xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
                    const output_env_t oenv);
 
 /* In parsetree.c */
-/*! Parses selection(s) from standard input.*/
+/** Parses selection(s) from standard input. */
 extern int
 gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
                                   gmx_ana_indexgrps_t *grps,
                                   bool bInteractive);
-/*! Parses selection(s) from a file.*/
+/** Parses selection(s) from a file. */
 extern int
 gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
                                   gmx_ana_indexgrps_t *grps);
-/*! Parses selection(s) from a string.*/
+/** Parses selection(s) from a string. */
 extern int
 gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
                                 gmx_ana_indexgrps_t *grps);
 
 /* In compiler.c */
-/*! Prepares the selections for evaluation and performs some optimizations.*/
+/** Prepares the selections for evaluation and performs some optimizations. */
 extern int
 gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc);
 
 /* In evaluate.c */
-/*! Evaluates the selection.*/
+/** Evaluates the selection. */
 extern int
 gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
                                t_trxframe *fr, t_pbc *pbc);
-/*! Evaluates the largest possible index groups from dynamic selections.*/
+/** Evaluates the largest possible index groups from dynamic selections. */
 extern int
 gmx_ana_selcollection_evaluate_fin(gmx_ana_selcollection_t *sc, int nframes);
 

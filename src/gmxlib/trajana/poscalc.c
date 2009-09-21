@@ -78,10 +78,8 @@
  * gmx_ana_poscalc_create() using gmx_ana_poscalc_type_from_enum().
  * gmx_ana_poscalc_create_enum() is also provided for convenience.
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in poscalc.h.
- *
- * \internal
  *
  * \todo
  * There is probably some room for optimization in the calculation of
@@ -135,11 +133,11 @@ struct gmx_ana_poscalc_coll_t
      * gmx_ana_poscalc_coll_set_topology() has not been called.
      */
     t_topology               *top;
-    //! Pointer to the first data structure.
+    /** Pointer to the first data structure. */
     gmx_ana_poscalc_t        *first;
-    //! Pointer to the last data structure.
+    /** Pointer to the last data structure. */
     gmx_ana_poscalc_t        *last;
-    //! Whether the collection has been initialized for evaluation.
+    /** Whether the collection has been initialized for evaluation. */
     bool                      bInit;
 };
 
@@ -188,10 +186,10 @@ struct gmx_ana_poscalc_t
      */
     gmx_ana_index_t           gmax;
 
-    //! Position storage for calculations that are used as a base.
+    /** Position storage for calculations that are used as a base. */
     gmx_ana_pos_t            *p;
 
-    //! TRUE if the positions have been evaluated for the current frame.
+    /** TRUE if the positions have been evaluated for the current frame. */
     bool                      bEval;
     /*! \brief
      * Base position data for this calculation.
@@ -201,13 +199,13 @@ struct gmx_ana_poscalc_t
      * The structure pointed by \p sbase is always a static calculation.
      */
     struct gmx_ana_poscalc_t *sbase;
-    //! Next structure in the linked list of calculations.
+    /** Next structure in the linked list of calculations. */
     struct gmx_ana_poscalc_t *next;
-    //! Previous structure in the linked list of calculations.
+    /** Previous structure in the linked list of calculations. */
     struct gmx_ana_poscalc_t *prev;
-    //! Number of references to this structure.
+    /** Number of references to this structure. */
     int                       refcount;
-    //! Collection this calculation belongs to.
+    /** Collection this calculation belongs to. */
     gmx_ana_poscalc_coll_t   *coll;
 };
     
