@@ -72,7 +72,7 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
         time(&t);
         fprintf(xvgr,"# This file was created %s",ctime(&t));
         fprintf(xvgr,"# by the following command:\n# %s\n#\n",command_line());
-        fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",Program());
+        fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
         bromacs(pukestr,99);
         fprintf(xvgr,"# %s\n#\n",pukestr);
         fprintf(xvgr,"@    title \"%s\"\n",title);

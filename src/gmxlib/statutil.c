@@ -669,6 +669,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     }
     debug_gmx();
     set_program_name(argv[0]);
+    set_command_line(*argc, argv);
     
     /* Handle the flags argument, which is a bit field 
      * The FF macro returns whether or not the bit is set
@@ -685,11 +686,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifdef __sgi
     envstr = getenv("GMXNPRIALL");
     if (envstr)
-        npri=strtol(envstr,NULL,0);
+        npri=strtol(envstr,NULL,10);
     if (FF(PCA_BE_NICE)) {
         envstr = getenv("GMXNPRI");
         if (envstr)
-            npri=strtol(envstr,NULL,0);
+            npri=strtol(envstr,NULL,10);
     }
     npall = add_parg(npall,all_pa,&npri_pa);
 #endif

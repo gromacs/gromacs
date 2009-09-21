@@ -177,7 +177,7 @@ const char *epull_names[epullNR+1] = {
 };
 
 const char *epullg_names[epullgNR+1] = { 
-  "distance", "direction", "cylinder", "position", NULL
+  "distance", "direction", "cylinder", "position", "direction_periodic", NULL
 };
 
 const char *erotg_names[erotgNR+1] = { 

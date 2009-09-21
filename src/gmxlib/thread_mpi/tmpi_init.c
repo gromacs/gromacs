@@ -475,7 +475,7 @@ int tMPI_Get_N(int *argc, char ***argv)
             {
                 /* the number of processes is an argument */
                 char *end;
-                np=strtol((*argv)[i+1], &end, 0);
+                np=strtol((*argv)[i+1], &end, 10);
                 if ( !end || (*end != 0) )
                     np=1;
             }

@@ -889,13 +889,23 @@ int main (int argc, char *argv[])
     "Note that the atom names are irrelevant for the simulation as",
     "only the atom types are used for generating interaction parameters.[PAR]",
 
-    "grompp calls a preprocessor to resolve includes, macros ",
-    "etcetera. By default we use the cpp in your path. To specify a "
-    "different macro-preprocessor (e.g. m4) or alternative location",
-
-    "you can put a line in your parameter file specifying the path",
-    "to that program. Specifying [TT]-pp[tt] will get the pre-processed",
-    "topology file written out.[PAR]",
+    "grompp uses a built-in preprocessor to resolve includes, macros ",
+    "etcetera. The preprocessor supports the following keywords:[BR]",
+    "#ifdef VARIABLE[BR]",
+    "#ifndef VARIABLE[BR]",
+    "#else[BR]",
+    "#endif[BR]",
+    "#define VARIABLE[BR]",
+    "#undef VARIABLE[BR]"
+    "#include \"filename\"[BR]",
+    "#include <filename>[BR]",
+    "The functioning of these statements in your topology may be modulated by",
+    "using the following two flags in your [TT]mdp[tt] file:[BR]",
+    "define = -DVARIABLE1 -DVARIABLE2[BR]",
+    "include = /home/john/doe[BR]",
+    "For further information a C-programming textbook may help you out.",
+    "Specifying the [TT]-pp[tt] flag will get the pre-processed",
+    "topology file written out so that you can verify its contents.[PAR]",
     
     "If your system does not have a c-preprocessor, you can still",
     "use grompp, but you do not have access to the features ",

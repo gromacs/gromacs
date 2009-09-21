@@ -51,7 +51,7 @@
  * \todo
  * Implement exclusions.
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in nbsearch.h.
  */
 #ifdef HAVE_CONFIG_H
@@ -66,18 +66,20 @@
 #include <nbsearch.h>
 #include <position.h>
 
-//! Data structure for neighborhood searches.
+/*! \internal \brief
+ * Data structure for neighborhood searches.
+ */
 struct gmx_ana_nbsearch_t
 {
-    //! The cutoff squared.
+    /** The cutoff squared. */
     real           cutoff2;
-    //! Maximum number of reference points.
+    /** Maximum number of reference points. */
     int            maxnref;
-    //! Number of reference points for the current frame.
+    /** Number of reference points for the current frame. */
     int            nref;
-    //! Reference point positions.
+    /** Reference point positions. */
     rvec          *xref;
-    //! PBC data.
+    /** PBC data. */
     t_pbc         *pbc;
 };
 

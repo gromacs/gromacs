@@ -54,81 +54,188 @@
 #include "partdec.h"
 
 void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
-		int left,int right,rvec vecs[],rvec buf[],
-		int shift,t_nrnb *nrnb)
+                int left,int right,rvec vecs[],rvec buf[],
+                int shift,t_nrnb *nrnb)
 {
-  int    i,j,j0=137,j1=391;
-  int    cur,nsum;
-  int    *index;
+    int    i,j,j0=137,j1=391;
+    int    cur,nsum;
+    int    *index;
 #define next ((cur + 1) % cr->nnodes)
 #define prev ((cur - 1 + cr->nnodes) % cr->nnodes)
-
+    
 #define HOMENRI(ind,i) ((ind)[(i)+1] - (ind)[(i)])
+    
+    index = pd_index(cr);
+    
+    if (bSum)
+        cur = (cr->nodeid + pd_shift(cr)) % cr->nnodes;
+    else
+        cur = cr->nodeid;
+    
+    nsum=0;
+    for(i=0; (i<shift); i++) {
+        if (bSum) {
+            if (bForward) {
+                j0 = index[prev];
+                j1 = index[prev+1];
+            }
+            else {
+                j0 = index[next];
+                j1 = index[next+1];
+            }
+            for(j=j0; (j<j1); j++) {
+                clear_rvec(buf[j]);
+            }
+        }
+        /* Forward pulse around the ring, to increasing NODE number */
+        if (bForward) {
+            if (bSum)
+                gmx_tx_rx_real(cr,
+                               GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+                               GMX_LEFT, buf [index[prev]],HOMENRI(index,prev)*DIM);
+            else
+                gmx_tx_rx_real(cr,
+                               GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+                               GMX_LEFT, vecs[index[prev]],HOMENRI(index,prev)*DIM);
+            /* Wait for communication to end */
+            gmx_wait(cr, right,left);
+        }
+        
+        /* Backward pulse around the ring, to decreasing NODE number */
+        else {
+            if (bSum)
+                gmx_tx_rx_real(cr,
+                               GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+                               GMX_RIGHT,buf [index[next]],HOMENRI(index,next)*DIM);
+            else
+                gmx_tx_rx_real(cr,
+                               GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+                               GMX_RIGHT,vecs[index[next]],HOMENRI(index,next)*DIM);
+            /* Wait for communication to end */
+            gmx_wait(cr, left,right);
+        }
+        
+        /* Actual summation */
+        if (bSum) {
+            for(j=j0; (j<j1); j++) {
+                rvec_inc(vecs[j],buf[j]);
+            }
+            nsum+=(j1-j0);
+        }
+        if (bForward) 
+            cur=prev;
+        else
+            cur=next;
+    }  
+    if (nsum > 0)
+        inc_nrnb(nrnb,eNR_FSUM,nsum);
+#undef next
+#undef prev
+}
 
-  index = pd_index(cr);
 
-  if (bSum)
-    cur = (cr->nodeid + pd_shift(cr)) % cr->nnodes;
-  else
-    cur = cr->nodeid;
-
-  nsum=0;
-  for(i=0; (i<shift); i++) {
-    if (bSum) {
-      if (bForward) {
-	j0 = index[prev];
-	j1 = index[prev+1];
-      }
-      else {
-	j0 = index[next];
-	j1 = index[next+1];
-      }
-      for(j=j0; (j<j1); j++) {
-	clear_rvec(buf[j]);
-      }
+void move_reals(const t_commrec *cr,bool bForward,bool bSum,
+                int left,int right,real reals[],real buf[],
+                int shift,t_nrnb *nrnb)
+{
+    int    i,j,j0=137,j1=391;
+    int    cur,nsum;
+    int    *index;
+#define next ((cur + 1) % cr->nnodes)
+#define prev ((cur - 1 + cr->nnodes) % cr->nnodes)
+    
+#define HOMENRI(ind,i) ((ind)[(i)+1] - (ind)[(i)])
+    
+    index = pd_index(cr);
+    
+    if (bSum)
+    {
+        cur = (cr->nodeid + pd_shift(cr)) % cr->nnodes;
     }
-    /* Forward pulse around the ring, to increasing NODE number */
-    if (bForward) {
-      if (bSum)
-	gmx_tx_rx_real(cr,
-		       GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       GMX_LEFT, buf [index[prev]],HOMENRI(index,prev)*DIM);
-      else
-	gmx_tx_rx_real(cr,
-		       GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       GMX_LEFT, vecs[index[prev]],HOMENRI(index,prev)*DIM);
-      /* Wait for communication to end */
-      gmx_wait(cr, right,left);
+    else
+    {
+        cur = cr->nodeid;
     }
     
-    /* Backward pulse around the ring, to decreasing NODE number */
-    else {
-      if (bSum)
-	gmx_tx_rx_real(cr,
-		       GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       GMX_RIGHT,buf [index[next]],HOMENRI(index,next)*DIM);
-      else
-	gmx_tx_rx_real(cr,
-		       GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       GMX_RIGHT,vecs[index[next]],HOMENRI(index,next)*DIM);
-      /* Wait for communication to end */
-      gmx_wait(cr, left,right);
-    }
+    nsum=0;
+    for(i=0; (i<shift); i++) 
+    {
+        if (bSum) 
+        {
+            if (bForward) 
+            {
+                j0 = index[prev];
+                j1 = index[prev+1];
+            }
+            else 
+            {
+                j0 = index[next];
+                j1 = index[next+1];
+            }
+            for(j=j0; (j<j1); j++) 
+            {
+                buf[j] = 0.0;
+            }
+        }
+        /* Forward pulse around the ring, to increasing NODE number */
+        if (bForward) 
+        {
+            if (bSum)
+            {    gmx_tx_rx_real(cr,
+                                GMX_RIGHT,reals+index[cur ],HOMENRI(index,cur ),
+                                GMX_LEFT, buf+index[prev],HOMENRI(index,prev));
+            }
+            else
+            {
+                gmx_tx_rx_real(cr,
+                               GMX_RIGHT,reals+index[cur ],HOMENRI(index,cur ),
+                               GMX_LEFT, reals+index[prev],HOMENRI(index,prev));
+            }
+            /* Wait for communication to end */
+            gmx_wait(cr, right,left);
+        }
+        else
+        {
+                 /* Backward pulse around the ring, to decreasing NODE number */
+            if (bSum)
+            {    
+                gmx_tx_rx_real(cr,
+                               GMX_LEFT, reals+index[cur ],HOMENRI(index,cur ),
+                               GMX_RIGHT,buf+index[next],HOMENRI(index,next));
+            }
+            else
+            {
+                gmx_tx_rx_real(cr,
+                               GMX_LEFT, reals+index[cur ],HOMENRI(index,cur ),
+                               GMX_RIGHT,reals+index[next],HOMENRI(index,next));
+                /* Wait for communication to end */
+            }
+            gmx_wait(cr, left,right);
+        }
 
-    /* Actual summation */
-    if (bSum) {
-      for(j=j0; (j<j1); j++) {
-	rvec_inc(vecs[j],buf[j]);
-      }
-      nsum+=(j1-j0);
+        /* Actual summation */
+        if (bSum) 
+        {
+            for(j=j0; (j<j1); j++) 
+            {
+                reals[j] += buf[j];
+            }
+            nsum+=(j1-j0);
+        }
+        if (bForward) 
+        {
+            cur=prev;
+        }
+        else
+        {
+            cur=next;
+        }
+    }  
+    
+    if (nsum > 0)
+    {
+        inc_nrnb(nrnb,eNR_FSUM,nsum/3);
     }
-    if (bForward) 
-      cur=prev;
-    else
-      cur=next;
-  }  
-  if (nsum > 0)
-    inc_nrnb(nrnb,eNR_FSUM,nsum);
 #undef next
 #undef prev
 }
@@ -143,6 +250,16 @@ void move_x(FILE *log,const t_commrec *cr,
   where();
 }
 
+void move_rborn(FILE *log,const t_commrec *cr,
+                int left,int right,real rborn[],
+                t_nrnb *nrnb)
+{
+    move_reals(cr,FALSE,FALSE,left,right,rborn,NULL,pd_shift(cr),nrnb);
+    move_reals(cr,TRUE, FALSE,left,right,rborn,NULL,pd_bshift(cr),nrnb);
+    
+    where();
+}
+
 void move_f(FILE *log,const t_commrec *cr,
 	    int left,int right,rvec f[],rvec fadd[],
 	    t_nrnb *nrnb)
@@ -152,6 +269,17 @@ void move_f(FILE *log,const t_commrec *cr,
 
   where();
 }
+
+void move_gpol(FILE *log,const t_commrec *cr,
+               int left,int right,real gpol[],real gpol_add[],
+               t_nrnb *nrnb)
+{
+    move_reals(cr,TRUE, TRUE,left,right,gpol,gpol_add,pd_shift(cr),nrnb);
+    move_reals(cr,FALSE,TRUE,left,right,gpol,gpol_add,pd_bshift(cr),nrnb);
+    
+    where();
+}
+
 
 void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[])
 {

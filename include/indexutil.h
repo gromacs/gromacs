@@ -61,7 +61,7 @@ extern "C"
 {
 #endif
 
-/*! Stores a set of index groups.*/
+/** Stores a set of index groups. */
 typedef struct gmx_ana_indexgrps_t gmx_ana_indexgrps_t;
 
 /*! \brief
@@ -71,11 +71,11 @@ typedef struct gmx_ana_indexgrps_t gmx_ana_indexgrps_t;
  */
 typedef enum
 {
-    INDEX_UNKNOWN, /*!< Unknown index type.*/
-    INDEX_ATOM,    /*!< Each atom in a separate block.*/
-    INDEX_RES,     /*!< Each residue in a separate block.*/
-    INDEX_MOL,     /*!< Each molecule in a separate block.*/
-    INDEX_ALL,     /*!< All atoms in a single block.*/
+    INDEX_UNKNOWN, /**< Unknown index type.*/
+    INDEX_ATOM,    /**< Each atom in a separate block.*/
+    INDEX_RES,     /**< Each residue in a separate block.*/
+    INDEX_MOL,     /**< Each molecule in a separate block.*/
+    INDEX_ALL,     /**< All atoms in a single block.*/
 } e_index_t;
 
 /*! \brief
@@ -83,13 +83,13 @@ typedef enum
  */
 typedef struct gmx_ana_index_t
 {
-    /*! Number of atoms.*/
+    /** Number of atoms. */
     int                 isize;
-    /*! List of atoms.*/
+    /** List of atoms. */
     atom_id            *index;
-    /*! Group name.*/
+    /** Group name. */
     char               *name;
-    /*! Number of items allocated for \p index.*/
+    /** Number of items allocated for \p index. */
     int                 nalloc_index;
 } gmx_ana_index_t;
 
@@ -98,7 +98,7 @@ typedef struct gmx_ana_index_t
  */
 typedef struct gmx_ana_indexmap_t
 {
-    /*! Type of the mapping.*/
+    /** Type of the mapping. */
     e_index_t           type;
     /*! \brief
      * Current number of mapped values.
@@ -189,46 +189,46 @@ typedef struct gmx_ana_indexmap_t
 /*! \name Functions for handling gmx_ana_indexgrps_t
  */
 /*@{*/
-/*! Allocate memory for index groups.*/
+/** Allocate memory for index groups. */
 extern void
 gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps);
-/*! Initializes index groups from arrays.*/
+/** Initializes index groups from arrays. */
 extern void
 gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
                       atom_id **index, char **name, bool bFree);
-/*! Reads index groups from a file or constructs them from topology.*/
+/** Reads index groups from a file or constructs them from topology. */
 extern void
 gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
                        const char *fnm);
-/*! Ask user to select index groups, possibly constructing groups from 
-    topology.*/
+/** Ask user to select index groups, possibly constructing groups from 
+ *  topology. */
 extern void
 gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, 
                       const char *fnm, int ngrps);
-/*! Ask user to select index groups from those specified in a file.*/
+/** Ask user to select index groups from those specified in a file. */
 extern void
 gmx_ana_indexgrps_rd(gmx_ana_indexgrps_t **g, const char *fnm, int ngrps);
-/*! Frees memory allocated for index groups.*/
+/** Frees memory allocated for index groups. */
 extern void
 gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g);
-/*! Create a deep copy of \c gmx_ana_indexgrps_t.*/
+/** Create a deep copy of \c gmx_ana_indexgrps_t. */
 extern void
 gmx_ana_indexgrps_clone(gmx_ana_indexgrps_t **dest, gmx_ana_indexgrps_t *src);
-/*! Returns TRUE if the index group structure is emtpy.*/
+/** Returns TRUE if the index group structure is emtpy. */
 extern bool
 gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g);
 
-/*! Returns a pointer to an index group.*/
+/** Returns a pointer to an index group. */
 extern gmx_ana_index_t *
 gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n);
-/*! Extracts a single index group.*/
+/** Extracts a single index group. */
 extern bool
 gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n);
-/*! Finds and extracts a single index group by name.*/
+/** Finds and extracts a single index group by name. */
 extern bool
 gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name);
 
-/*! Writes out the contents of index groups.*/
+/** Writes out the contents of index groups. */
 extern void
 gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g);
 /*@}*/
@@ -236,37 +236,37 @@ gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g);
 /*! \name Functions for handling gmx_ana_index_t
  */
 /*@{*/
-/*! Reserves memory to store an index group of size \p isize.*/
+/** Reserves memory to store an index group of size \p isize. */
 extern void
 gmx_ana_index_reserve(gmx_ana_index_t *g, int isize);
-/*! Frees any memory not necessary to hold the current contents.*/
+/** Frees any memory not necessary to hold the current contents. */
 extern void
 gmx_ana_index_squeeze(gmx_ana_index_t *g);
-/*! Initializes an empty index group.*/
+/** Initializes an empty index group. */
 extern void
 gmx_ana_index_clear(gmx_ana_index_t *g);
-/*! Constructs a \c gmx_ana_index_t from given values.*/
+/** Constructs a \c gmx_ana_index_t from given values. */
 extern void
 gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, char *name,
                   int nalloc);
-/*! Creates a simple index group from the first to the \p natoms'th atom.*/
+/** Creates a simple index group from the first to the \p natoms'th atom. */
 extern void
 gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name);
-/*! Frees memory allocated for an index group.*/
+/** Frees memory allocated for an index group. */
 extern void
 gmx_ana_index_deinit(gmx_ana_index_t *g);
-/*! Copies a \c gmx_ana_index_t.*/
+/** Copies a \c gmx_ana_index_t. */
 extern void
 gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 
-/*! Writes out the contents of a index group.*/
+/** Writes out the contents of a index group. */
 extern void
 gmx_ana_index_dump(gmx_ana_index_t *g, int i);
 
-/*! Checks whether all indices are between 0 and \p natoms.*/
+/** Checks whether all indices are between 0 and \p natoms. */
 extern void
 gmx_ana_index_check(gmx_ana_index_t *g, int natoms);
-/*! Checks whether an index group is sorted.*/
+/** Checks whether an index group is sorted. */
 extern bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g);
 /*@}*/
@@ -274,36 +274,36 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g);
 /*! \name Functions for set operations on gmx_ana_index_t
  */
 /*@{*/
-/*! Sorts the indices within an index group.*/
+/** Sorts the indices within an index group. */
 extern void
 gmx_ana_index_sort(gmx_ana_index_t *g);
-/*! Checks whether two index groups are equal.*/
+/** Checks whether two index groups are equal. */
 extern bool
 gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b);
-/*! Checks whether a sorted index group contains another sorted index group.*/
+/** Checks whether a sorted index group contains another sorted index group. */
 extern bool
 gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b);
 
-/*! Calculates the intersection between two sorted index groups.*/
+/** Calculates the intersection between two sorted index groups. */
 extern void
 gmx_ana_index_intersection(gmx_ana_index_t *dest,
                            gmx_ana_index_t *a, gmx_ana_index_t *b);
-/*! Calculates the set difference between two sorted index groups.*/
+/** Calculates the set difference between two sorted index groups. */
 extern void
 gmx_ana_index_difference(gmx_ana_index_t *dest,
                          gmx_ana_index_t *a, gmx_ana_index_t *b);
-/*! Calculates the size of the difference between two sorted index groups.*/
+/** Calculates the size of the difference between two sorted index groups. */
 extern int
 gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b);
-/*! Calculates the union of two sorted index groups.*/
+/** Calculates the union of two sorted index groups. */
 extern void
 gmx_ana_index_union(gmx_ana_index_t *dest,
                     gmx_ana_index_t *a, gmx_ana_index_t *b);
-/*! Merges two distinct sorted index groups.*/
+/** Merges two distinct sorted index groups. */
 extern void
 gmx_ana_index_merge(gmx_ana_index_t *dest,
                     gmx_ana_index_t *a, gmx_ana_index_t *b);
-/*! Calculates the intersection and the difference in one call.*/
+/** Calculates the intersection and the difference in one call. */
 extern void
 gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
                         gmx_ana_index_t *src, gmx_ana_index_t *g);
@@ -312,37 +312,37 @@ gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
 /*! \name Functions for handling gmx_ana_indexmap_t and related things
  */
 /*@{*/
-/*! Partition a group based on topology information.*/
+/** Partition a group based on topology information. */
 extern void
 gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete);
-/*! Checks whether a group consists of full blocks.*/
+/** Checks whether a group consists of full blocks. */
 extern bool
 gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b);
-/*! Checks whether a group consists of full blocks.*/
+/** Checks whether a group consists of full blocks. */
 extern bool
 gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b);
-/*! Checks whether a group consists of full residues/molecules.*/
+/** Checks whether a group consists of full residues/molecules. */
 extern bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type, t_topology *top);
 
-/*! Initializes an empty index group mapping.*/
+/** Initializes an empty index group mapping. */
 extern void
 gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m);
-/*! Reserves memory for an index group mapping.*/
+/** Reserves memory for an index group mapping. */
 extern void
 gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize);
-/*! Initialize index group mapping.*/
+/** Initialize index group mapping. */
 extern void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                       t_topology *top, e_index_t type);
-/*! Frees memory allocated for index group mapping.*/
+/** Frees memory allocated for index group mapping. */
 extern void
 gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m);
-/*! Makes a deep copy of an index group mapping.*/
+/** Makes a deep copy of an index group mapping. */
 extern void
 gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst);
-/*! Updates an index group mapping.*/
+/** Updates an index group mapping. */
 extern void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g, bool bMaskOnly);
 /*@}*/

@@ -40,81 +40,85 @@
       know about them.  */
    enum yytokentype {
      INVALID = 258,
-     INT = 259,
-     REAL = 260,
-     STR = 261,
-     IDENTIFIER = 262,
-     CMD_SEP = 263,
-     GROUP = 264,
-     TO = 265,
-     OF = 266,
-     VARIABLE_NUMERIC = 267,
-     VARIABLE_GROUP = 268,
-     VARIABLE_POS = 269,
-     KEYWORD_INT = 270,
-     KEYWORD_REAL = 271,
-     KEYWORD_STR = 272,
-     KEYWORD_POS = 273,
-     KEYWORD_GROUP = 274,
-     METHOD_NUMERIC = 275,
-     METHOD_GROUP = 276,
-     METHOD_POS = 277,
-     MODIFIER = 278,
-     PARAM_BOOL = 279,
-     PARAM_INT = 280,
-     PARAM_REAL = 281,
-     PARAM_STR = 282,
-     PARAM_POS = 283,
-     PARAM_GROUP = 284,
-     END_OF_METHOD = 285,
-     XOR = 286,
-     OR = 287,
-     AND = 288,
-     NOT = 289,
-     CMP_OP = 290
+     HELP = 259,
+     HELP_TOPIC = 260,
+     INT = 261,
+     REAL = 262,
+     STR = 263,
+     IDENTIFIER = 264,
+     CMD_SEP = 265,
+     GROUP = 266,
+     TO = 267,
+     OF = 268,
+     VARIABLE_NUMERIC = 269,
+     VARIABLE_GROUP = 270,
+     VARIABLE_POS = 271,
+     KEYWORD_INT = 272,
+     KEYWORD_REAL = 273,
+     KEYWORD_STR = 274,
+     KEYWORD_POS = 275,
+     KEYWORD_GROUP = 276,
+     METHOD_NUMERIC = 277,
+     METHOD_GROUP = 278,
+     METHOD_POS = 279,
+     MODIFIER = 280,
+     PARAM_BOOL = 281,
+     PARAM_INT = 282,
+     PARAM_REAL = 283,
+     PARAM_STR = 284,
+     PARAM_POS = 285,
+     PARAM_GROUP = 286,
+     END_OF_METHOD = 287,
+     XOR = 288,
+     OR = 289,
+     AND = 290,
+     NOT = 291,
+     CMP_OP = 292
    };
 #endif
 /* Tokens.  */
 #define INVALID 258
-#define INT 259
-#define REAL 260
-#define STR 261
-#define IDENTIFIER 262
-#define CMD_SEP 263
-#define GROUP 264
-#define TO 265
-#define OF 266
-#define VARIABLE_NUMERIC 267
-#define VARIABLE_GROUP 268
-#define VARIABLE_POS 269
-#define KEYWORD_INT 270
-#define KEYWORD_REAL 271
-#define KEYWORD_STR 272
-#define KEYWORD_POS 273
-#define KEYWORD_GROUP 274
-#define METHOD_NUMERIC 275
-#define METHOD_GROUP 276
-#define METHOD_POS 277
-#define MODIFIER 278
-#define PARAM_BOOL 279
-#define PARAM_INT 280
-#define PARAM_REAL 281
-#define PARAM_STR 282
-#define PARAM_POS 283
-#define PARAM_GROUP 284
-#define END_OF_METHOD 285
-#define XOR 286
-#define OR 287
-#define AND 288
-#define NOT 289
-#define CMP_OP 290
+#define HELP 259
+#define HELP_TOPIC 260
+#define INT 261
+#define REAL 262
+#define STR 263
+#define IDENTIFIER 264
+#define CMD_SEP 265
+#define GROUP 266
+#define TO 267
+#define OF 268
+#define VARIABLE_NUMERIC 269
+#define VARIABLE_GROUP 270
+#define VARIABLE_POS 271
+#define KEYWORD_INT 272
+#define KEYWORD_REAL 273
+#define KEYWORD_STR 274
+#define KEYWORD_POS 275
+#define KEYWORD_GROUP 276
+#define METHOD_NUMERIC 277
+#define METHOD_GROUP 278
+#define METHOD_POS 279
+#define MODIFIER 280
+#define PARAM_BOOL 281
+#define PARAM_INT 282
+#define PARAM_REAL 283
+#define PARAM_STR 284
+#define PARAM_POS 285
+#define PARAM_GROUP 286
+#define END_OF_METHOD 287
+#define XOR 288
+#define OR 289
+#define AND 290
+#define NOT 291
+#define CMP_OP 292
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 79 "parser.y"
+#line 80 "parser.y"
 {
     int                  i;
     real                 r;
@@ -126,8 +130,8 @@ typedef union YYSTYPE
     t_selexpr_value  *val;
     t_selexpr_param  *param;
 }
-/* Line 1529 of yacc.c.  */
-#line 131 "parser.h"
+/* Line 1489 of yacc.c.  */
+#line 135 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

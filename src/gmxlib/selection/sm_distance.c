@@ -54,54 +54,77 @@
  */
 typedef struct
 {
-    /*! Cutoff distance.*/
+    /** Cutoff distance. */
     real                cutoff;
-    /*! Positions of the reference points.*/
+    /** Positions of the reference points. */
     gmx_ana_pos_t       p;
-    /*! Neighborhood search data.*/
+    /** Neighborhood search data. */
     gmx_ana_nbsearch_t *nb;
 } t_methoddata_distance;
 
-/*! Allocates data for distance-based selection methods.*/
+/** Allocates data for distance-based selection methods. */
 static void *
 init_data_common(int npar, gmx_ana_selparam_t *param);
-/*! Initializes a distance-based selection method.*/
+/** Initializes a distance-based selection method. */
 static int
 init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Frees the data allocated for a distance-based selection method.*/
+/** Frees the data allocated for a distance-based selection method. */
 static void
 free_data_common(void *data);
-/*! Initializes the evaluation of a distance-based within selection method for a frame.*/
+/** Initializes the evaluation of a distance-based within selection method for a frame. */
 static int
 init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
-/*! Evaluates the \p distance selection method.*/
+/** Evaluates the \p distance selection method. */
 static int
 evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
-/*! Evaluates the \p within selection method.*/
+/** Evaluates the \p within selection method. */
 static int
 evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
-/*! Parameters for the \p distance selection method.*/
+/** Parameters for the \p distance selection method. */
 static gmx_ana_selparam_t smparams_distance[] = {
     {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
     {"from",   {POS_VALUE,  1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
-/*! Parameters for the \p mindistance selection method.*/
+/** Parameters for the \p mindistance selection method. */
 static gmx_ana_selparam_t smparams_mindistance[] = {
     {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
     {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
-/*! Parameters for the \p within selection method.*/
+/** Parameters for the \p within selection method. */
 static gmx_ana_selparam_t smparams_within[] = {
     {NULL, {REAL_VALUE,  1, {NULL}}, NULL, 0},
     {"of", {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
-/*! \internal Selection method data for the \p distance method.*/
+/** Help text for the distance selection methods. */
+static const char *help_distance[] = {
+    "DISTANCE-BASED SELECTION KEYWORDS[PAR]",
+
+    "[TT]distance from POS [cutoff REAL][tt][BR]",
+    "[TT]mindistance from POS_EXPR [cutoff REAL][tt][BR]",
+    "[TT]within REAL of POS_EXPR[tt][PAR]",
+
+    "[TT]distance[tt] and [TT]mindistance[tt] calculate the distance from the",
+    "given position(s), the only difference being in that [TT]distance[tt]",
+    "only accepts a single position, while any number of positions can be",
+    "given for [TT]mindistance[tt], which then calculates the distance to the",
+    "closest position.",
+    "[TT]within[tt] directly selects atoms that are within [TT]REAL[tt] of",
+    "[TT]POS_EXPR[tt].[PAR]",
+
+    "For the first two keywords, it is possible to specify a cutoff to speed",
+    "up the evaluation: all distances above the specified cutoff are",
+    "returned as equal to the cutoff.",
+    "Currently, this does nothing, but in the future, it allows the use of",
+    "grid-based neighborhood search techniques.",
+};
+
+/** \internal Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_distance = {
     "distance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_distance), smparams_distance,
@@ -113,9 +136,10 @@ gmx_ana_selmethod_t sm_distance = {
     &init_frame_common,
     NULL,
     &evaluate_distance,
+    {"distance from POS [cutoff REAL]", asize(help_distance), help_distance},
 };
 
-/*! \internal Selection method data for the \p distance method.*/
+/** \internal Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_mindistance = {
     "mindistance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_mindistance), smparams_mindistance,
@@ -127,9 +151,10 @@ gmx_ana_selmethod_t sm_mindistance = {
     &init_frame_common,
     NULL,
     &evaluate_distance,
+    {"mindistance from POS_EXPR [cutoff REAL]", asize(help_distance), help_distance},
 };
 
-/*! \internal Selection method data for the \p within method.*/
+/** \internal Selection method data for the \p within method. */
 gmx_ana_selmethod_t sm_within = {
     "within", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_within), smparams_within,
@@ -141,6 +166,7 @@ gmx_ana_selmethod_t sm_within = {
     &init_frame_common,
     NULL,
     &evaluate_within,
+    {"within REAL of POS_EXPR", asize(help_distance), help_distance},
 };
 
 /*!

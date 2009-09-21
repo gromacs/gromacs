@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in centerofmass.h.
  */
 #ifdef HAVE_CONFIG_H

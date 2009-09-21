@@ -78,10 +78,8 @@
  * gmx_ana_poscalc_create() using gmx_ana_poscalc_type_from_enum().
  * gmx_ana_poscalc_create_enum() is also provided for convenience.
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in poscalc.h.
- *
- * \internal
  *
  * \todo
  * There is probably some room for optimization in the calculation of
@@ -135,11 +133,11 @@ struct gmx_ana_poscalc_coll_t
      * gmx_ana_poscalc_coll_set_topology() has not been called.
      */
     t_topology               *top;
-    //! Pointer to the first data structure.
+    /** Pointer to the first data structure. */
     gmx_ana_poscalc_t        *first;
-    //! Pointer to the last data structure.
+    /** Pointer to the last data structure. */
     gmx_ana_poscalc_t        *last;
-    //! Whether the collection has been initialized for evaluation.
+    /** Whether the collection has been initialized for evaluation. */
     bool                      bInit;
 };
 
@@ -148,7 +146,16 @@ struct gmx_ana_poscalc_coll_t
  */
 struct gmx_ana_poscalc_t
 {
-    //! Type of calculation.
+    /*! \brief
+     * Type of calculation.
+     *
+     * This field may differ from the type requested by the user, because
+     * it is changed internally to the most effective calculation.
+     * For example, if the user requests a COM calculation for residues
+     * consisting of single atoms, it is simply set to POS_ATOM.
+     * To provide a consistent interface to the user, the field \p itype
+     * should be used when information should be given out.
+     */
     e_poscalc_t               type;
     /*! \brief
      * Flags for calculation options.
@@ -157,6 +164,13 @@ struct gmx_ana_poscalc_t
      */
     int                       flags;
 
+    /*! \brief
+     * Type for the created indices.
+     *
+     * This field always agrees with the type that the user requested, but
+     * may differ from \p type.
+     */
+    e_index_t                 itype;
     /*! \brief
      * Block data for the calculation.
      */
@@ -172,10 +186,10 @@ struct gmx_ana_poscalc_t
      */
     gmx_ana_index_t           gmax;
 
-    //! Position storage for calculations that are used as a base.
+    /** Position storage for calculations that are used as a base. */
     gmx_ana_pos_t            *p;
 
-    //! TRUE if the positions have been evaluated for the current frame.
+    /** TRUE if the positions have been evaluated for the current frame. */
     bool                      bEval;
     /*! \brief
      * Base position data for this calculation.
@@ -185,13 +199,13 @@ struct gmx_ana_poscalc_t
      * The structure pointed by \p sbase is always a static calculation.
      */
     struct gmx_ana_poscalc_t *sbase;
-    //! Next structure in the linked list of calculations.
+    /** Next structure in the linked list of calculations. */
     struct gmx_ana_poscalc_t *next;
-    //! Previous structure in the linked list of calculations.
+    /** Previous structure in the linked list of calculations. */
     struct gmx_ana_poscalc_t *prev;
-    //! Number of references to this structure.
+    /** Number of references to this structure. */
     int                       refcount;
-    //! Collection this calculation belongs to.
+    /** Collection this calculation belongs to. */
     gmx_ana_poscalc_coll_t   *coll;
 };
     
@@ -208,6 +222,26 @@ static const char *const poscalc_enum_strings[] = {
     NULL,
 };
 #define NENUM asize(poscalc_enum_strings)
+
+/*! \brief
+ * Returns the partition type for a given position type.
+ *
+ * \param [in] type  \c e_poscalc_t value to convert.
+ * \returns    Corresponding \c e_indet_t.
+ */
+static e_index_t
+index_type_for_poscalc(e_poscalc_t type)
+{
+    switch(type)
+    {
+        case POS_ATOM:    return INDEX_ATOM;
+        case POS_RES:     return INDEX_RES;
+        case POS_MOL:     return INDEX_MOL;
+        case POS_ALL:     return INDEX_ALL;
+        case POS_ALL_PBC: return INDEX_ALL;
+    }
+    return INDEX_UNKNOWN;
+}
 
 /*!
  * \param[in]     post  String (typically an enum command-line argument).
@@ -397,6 +431,19 @@ gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc)
             case POS_ALL:     fprintf(fp, "ALL");     break;
             case POS_ALL_PBC: fprintf(fp, "ALL_PBC"); break;
         }
+        if (pc->itype != index_type_for_poscalc(pc->type))
+        {
+            fprintf(fp, " (");
+            switch (pc->itype)
+            {
+                case INDEX_UNKNOWN: fprintf(fp, "???");  break;
+                case INDEX_ATOM:    fprintf(fp, "ATOM"); break;
+                case INDEX_RES:     fprintf(fp, "RES");  break;
+                case INDEX_MOL:     fprintf(fp, "MOL");  break;
+                case INDEX_ALL:     fprintf(fp, "ALL");  break;
+            }
+            fprintf(fp, ")");
+        }
         fprintf(fp, " flg=");
         if (pc->flags & POS_MASS)
         {
@@ -502,26 +549,6 @@ gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc)
 }
 
 /*! \brief
- * Returns the partition type for a given position type.
- *
- * \param [in] type  \c e_poscalc_t value to convert.
- * \returns    Corresponding \c e_indet_t.
- */
-static e_index_t
-index_type_for_poscalc(e_poscalc_t type)
-{
-    switch(type)
-    {
-        case POS_ATOM:    return INDEX_ATOM;
-        case POS_RES:     return INDEX_RES;
-        case POS_MOL:     return INDEX_MOL;
-        case POS_ALL:     return INDEX_ALL;
-        case POS_ALL_PBC: return INDEX_ALL;
-    }
-    return INDEX_UNKNOWN;
-}
-
-/*! \brief
  * Inserts a position calculation structure into its collection.
  *
  * \param pc     Data structure to insert.
@@ -601,10 +628,7 @@ remove_poscalc(gmx_ana_poscalc_t *pc)
 static void
 set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
-    e_index_t          ptype;
-
-    ptype = index_type_for_poscalc(pc->type);
-    gmx_ana_index_make_block(&pc->b, pc->coll->top, g, ptype, pc->flags & POS_COMPLWHOLE);
+    gmx_ana_index_make_block(&pc->b, pc->coll->top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
@@ -616,7 +640,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
     if (!(pc->flags & POS_COMPLWHOLE)
         && (!(pc->flags & POS_DYNAMIC) || (pc->flags & POS_COMPLMAX))
         && (pc->type == POS_RES || pc->type == POS_MOL)
-        && gmx_ana_index_has_complete_elems(g, ptype, pc->coll->top))
+        && gmx_ana_index_has_complete_elems(g, pc->itype, pc->coll->top))
     {
         pc->flags &= ~POS_COMPLMAX;
         pc->flags |= POS_COMPLWHOLE;
@@ -967,6 +991,7 @@ gmx_ana_poscalc_create(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc,
 
     snew(pc, 1);
     pc->type     = type;
+    pc->itype    = index_type_for_poscalc(type);
     gmx_ana_poscalc_set_flags(pc, flags);
     pc->refcount = 1;
     pc->coll     = pcc;
@@ -1067,10 +1092,7 @@ gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g)
 void
 gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
 {
-    e_index_t          ptype;
-
-    ptype = index_type_for_poscalc(pc->type);
-    gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, ptype);
+    gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, pc->itype);
     gmx_ana_pos_reserve(p, p->m.nr, 0);
     p->g = &pc->gmax;
 }
