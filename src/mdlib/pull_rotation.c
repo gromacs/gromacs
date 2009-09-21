@@ -1367,14 +1367,14 @@ static real do_flex2_lowlevel(
         clear_rvec(sum_f_ii);
         for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
-            islab = n+rotg->slab_max_nr; /* slab index */
-
             /* Calculate the Gaussian value of curr_slab for curr_x */
             gaussian = gaussian_weight(curr_x, rotg, n);
 
             /* Only do the calculation for this slab if the Gaussian is large enough: */
             if (gaussian > rotg->min_gaussian)
             {
+                islab = n+rotg->slab_max_nr; /* slab index */
+
                 /* The (unrotated) reference coordinate of this atom is copied to ref_x: */
                 copy_rvec(rotg->xc_ref[ipgrp], ref_x);
                 beta = calc_beta(curr_x, rotg,n);
@@ -1536,14 +1536,14 @@ static real do_flex_lowlevel(
         clear_rvec(sum_n2);
         for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
         {
-            islab = n+rotg->slab_max_nr; /* slab index */
-
             /* Calculate the Gaussian value of curr_slab for curr_x */
             gaussian = gaussian_weight(curr_x, rotg, n);
 
             /* Only do the calculation for this slab if the Gaussian is large enough: */
             if (gaussian > rotg->min_gaussian)
             {
+                islab = n+rotg->slab_max_nr; /* slab index */
+
                 /* The (unrotated) reference coordinate of this atom is copied to ref_x: */
                 copy_rvec(rotg->xc_ref[ipgrp], ref_x);
                 beta = calc_beta(curr_x, rotg,n);
