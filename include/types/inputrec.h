@@ -187,6 +187,9 @@ typedef struct {
                                /* torque_v = m.v = angular momentum in the direction of v */
   real       min_gaussian;     /* Minimum value the gaussian must have so that the force
                                   is actually evaluated */
+  real       *gn_atom;         /* Holds precalculated gaussians for a single atom in all relevant slabs */
+  int        *gn_slabind;      /* Tells to which slab each precalculated gaussian belongs */
+  int        gn_alloc;         /* Allocation size of gn_atom and gn_slabind */
   gmx_slabdata_t slab_data;    /* Holds atom coordinates and gaussian weights of atoms belonging to a slab */
   rvec       *f_rot_loc;       /* Array to store the forces on the local atoms resulting
                                 * from enforced rotation potential */

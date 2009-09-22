@@ -326,6 +326,10 @@ static void get_slab_centers(
             srenew(rotg->slab_weights , nslabs);
             srenew(rotg->slab_torque_v, nslabs);
             srenew(rotg->slab_data    , nslabs);
+            rotg->gn_alloc = nslabs;
+            srenew(rotg->gn_atom      , nslabs);
+            srenew(rotg->gn_slabind   , nslabs);
+
             for (i=0; i<nslabs; i++)
             {
                 srenew(rotg->slab_data[i].x     , rotg->nat);
@@ -1081,7 +1085,7 @@ static void flex_fit_angle(
     /* Loop over ALL rotation group atoms in all slabs */
     for(l=0; l<rotg->nat; l++)
     {
-        for(n = -rotg->slab_first; n <= rotg->slab_last; n++)
+        for(n = rotg->slab_first; n <= rotg->slab_last; n++)
         {
             islab = n+rotg->slab_max_nr; /* slab index */
             /* Current coordinate of this atom: x[ii][XX/YY/ZZ] */
@@ -1146,7 +1150,7 @@ static void flex_fit_angle(
     /* We require at least SLAB_MIN_ATOMS in a slab, such that the fit makes sense. */
 #define SLAB_MIN_ATOMS 9
 
-    for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
+    for (n = rotg->slab_first; n <= rotg->slab_last; n++)
     {
         islab = n+rotg->slab_max_nr; /* slab index */
         sd = &(rotg->slab_data[islab]);
@@ -1309,6 +1313,66 @@ static inline void shift_single_coord(matrix box, rvec x, const ivec is)
 }
 
 
+#define round(a) (int)(a+0.5)
+/* For a local atom determine the relevant slabs, i.e. slabs in
+ * which the gaussian is larger than min_gaussian
+ */
+static int get_single_atom_gaussians(
+        rvec      curr_x,
+        t_commrec *cr,
+        t_rotgrp  *rotg)
+{
+   int i;
+   int slab, homeslab;
+   real dist;
+   real g;
+   int count = 0;
+   
+   
+   /* The distance of the atom to the coordinate center (where the
+    * slab with index 0) is */
+   dist = iprod(rotg->vec, curr_x);
+
+   /* Determine the 'home' slab of this atom: */
+   homeslab = round(dist / rotg->slab_dist);
+
+   /* First determine the weight in the atoms home slab: */
+   g = gaussian_weight(curr_x, rotg, homeslab);
+   
+   rotg->gn_atom[count] = g;
+   rotg->gn_slabind[count] = homeslab;
+   count++;
+   
+   
+   /* Determine the max slab */
+   slab = homeslab;
+   while (g > rotg->min_gaussian)
+   {
+       slab++;
+       g = gaussian_weight(curr_x, rotg, slab);
+       rotg->gn_slabind[count]=slab;
+       rotg->gn_atom[count]=g;
+       count++;
+   }
+   count--;
+   
+   /* Determine the max slab */
+   slab = homeslab;
+   do
+   {
+       slab--;
+       g = gaussian_weight(curr_x, rotg, slab);       
+       rotg->gn_atom[count]=g;
+       rotg->gn_slabind[count]=slab;
+       count++;
+   }
+   while (g > rotg->min_gaussian);
+   count--;
+   
+   return count;
+}
+
+
 static real do_flex2_lowlevel(
         t_rotgrp  *rotg,
         matrix    rotmat,
@@ -1318,7 +1382,7 @@ static real do_flex2_lowlevel(
         matrix    box,
         t_commrec *cr)
 {
-    int  i,ii,l,m,n,islab,ipgrp;
+    int  count,i,ic,ii,l,m,n,islab,ipgrp;
     rvec dr;                /* difference vector between actual and reference coordinate */
     real V;                 /* The rotation potential energy */
     real gaussian;          /* Gaussian weight */
@@ -1363,112 +1427,120 @@ static real do_flex2_lowlevel(
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, curr_x, rotg->xc_shifts[ipgrp]);
 
-        /* For each atom, loop over all slabs. We could have contributions from any slab */
+        /* Determine the slabs to loop over, i.e. the ones with contributions
+         * larger than min_gaussian */
+        count = get_single_atom_gaussians(curr_x, cr, rotg);
+        
         clear_rvec(sum_f_ii);
-        for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
+
+        /* Loop over the relevant slabs for this atom */
+        for (ic=0; ic < count; ic++)  
         {
-            /* Calculate the Gaussian value of curr_slab for curr_x */
-            gaussian = gaussian_weight(curr_x, rotg, n);
+            n = rotg->gn_slabind[ic];
+            
+            /* Get the precomputed Gaussian value of curr_slab for curr_x */
+            gaussian = rotg->gn_atom[ic];
 
-            /* Only do the calculation for this slab if the Gaussian is large enough: */
-            if (gaussian > rotg->min_gaussian)
+            islab = n+rotg->slab_max_nr; /* slab index */
+            
+            //fprintf(fpcheck, "l=%d islab=%d, gaussian=%f, n=%d\n", l, islab, gaussian, n);
+            
+            /* The (unrotated) reference coordinate of this atom is copied to ref_x: */
+            copy_rvec(rotg->xc_ref[ipgrp], ref_x);
+            beta = calc_beta(curr_x, rotg,n);
+            /* The center of geometry (COG) of this slab is copied to curr_COG: */
+            copy_rvec(rotg->slab_center[islab], curr_COG);
+            /* The reference COG of this slab is copied to ref_COG: */
+            copy_rvec(rotg->slab_center_ref[islab], ref_COG);
+            
+            /* Rotate the reference coordinate around the rotation axis through this slab's reference COG */
+            /* 1. Subtract the reference slab COG from the reference coordinate i */
+            rvec_sub(ref_x, ref_COG, ref_x); /* ref_x =y_ii-y_0 */
+            /* 2. Rotate reference coordinate around origin: */
+            copy_rvec(ref_x, ref_x_cpy);
+            mvmul(rotmat, ref_x_cpy, ref_x); /* ref_x = r_ii = Omega.(y_ii-y_0) */
+            
+            /* Now subtract the slab COG from current coordinate i */
+            rvec_sub(curr_x, curr_COG, curr_x_rel); /* curr_x_rel = x_ii-x_0 */
+            
+            /* Force on atom i is based on difference vector between current coordinate and rotated reference coordinate */
+            /* Difference vector between current and reference coordinate: */
+            rvec_sub(curr_x_rel, ref_x, dr); /* dr=(x_ii-x_0)-Omega.(y_ii-y_0) */
+            
+            cprod(rotg->vec, curr_x_rel, s_ii); /* s_ii = v x (x_ii-x_0) */
+            inv_norm_ii=1.0/norm(s_ii);         /* inv_norm_ii = 1/|v x (x_ii-x_0)| */
+            unitv(s_ii, s_ii);                  /* s_ii = v x (x_ii-x_0)/|v x (x_ii-x_0)| */
+            sdotr_ii=iprod(s_ii,ref_x);         /* sdotr_ii = ((v x (x_ii-x_0)/|v x (x_ii-x_0)|).Omega.(y_ii-y_0) */
+            
+            /*********************************/
+            /* Add to the rotation potential */
+            /*********************************/
+            V += 0.5*rotg->k*gaussian*sqr(sdotr_ii);
+            
+            tmp_s=gaussian*sdotr_ii*inv_norm_ii;
+            svmul(sdotr_ii, s_ii, tmp_n1_v);
+            rvec_sub(ref_x, tmp_n1_v, tmp_n1_v);
+            svmul(tmp_s, tmp_n1_v, tmp_n1_v);
+            
+            clear_rvec(sum_i1);
+            sum_i2=0.0;
+            
+            for(i=0; i<rotg->nat; i++)
             {
-                islab = n+rotg->slab_max_nr; /* slab index */
-
-                /* The (unrotated) reference coordinate of this atom is copied to ref_x: */
-                copy_rvec(rotg->xc_ref[ipgrp], ref_x);
-                beta = calc_beta(curr_x, rotg,n);
-                /* The center of geometry (COG) of this slab is copied to curr_COG: */
-                copy_rvec(rotg->slab_center[islab], curr_COG);
-                /* The reference COG of this slab is copied to ref_COG: */
-                copy_rvec(rotg->slab_center_ref[islab], ref_COG);
-
-                /* Rotate the reference coordinate around the rotation axis through this slab's reference COG */
-                /* 1. Subtract the reference slab COG from the reference coordinate i */
-                rvec_sub(ref_x, ref_COG, ref_x); /* ref_x =y_ii-y_0 */
-                /* 2. Rotate reference coordinate around origin: */
-                copy_rvec(ref_x, ref_x_cpy);
-                mvmul(rotmat, ref_x_cpy, ref_x); /* ref_x = r_ii = Omega.(y_ii-y_0) */
-
-                /* Now subtract the slab COG from current coordinate i */
-                rvec_sub(curr_x, curr_COG, curr_x_rel); /* curr_x_rel = x_ii-x_0 */
-
-                /* Force on atom i is based on difference vector between current coordinate and rotated reference coordinate */
-                /* Difference vector between current and reference coordinate: */
-                rvec_sub(curr_x_rel, ref_x, dr); /* dr=(x_ii-x_0)-Omega.(y_ii-y_0) */
-
-                cprod(rotg->vec, curr_x_rel, s_ii); /* s_ii = v x (x_ii-x_0) */
-                inv_norm_ii=1.0/norm(s_ii);         /* inv_norm_ii = 1/|v x (x_ii-x_0)| */
-                unitv(s_ii, s_ii);                  /* s_ii = v x (x_ii-x_0)/|v x (x_ii-x_0)| */
-                sdotr_ii=iprod(s_ii,ref_x);         /* sdotr_ii = ((v x (x_ii-x_0)/|v x (x_ii-x_0)|).Omega.(y_ii-y_0) */
-
-                /*********************************/
-                /* Add to the rotation potential */
-                /*********************************/
-                V += 0.5*rotg->k*gaussian*sqr(sdotr_ii);
-
-                tmp_s=gaussian*sdotr_ii*inv_norm_ii;
-                svmul(sdotr_ii, s_ii, tmp_n1_v);
-                rvec_sub(ref_x, tmp_n1_v, tmp_n1_v);
-                svmul(tmp_s, tmp_n1_v, tmp_n1_v);
-
-                clear_rvec(sum_i1);
-                sum_i2=0.0;
-
-                for(i=0; i<rotg->nat; i++)
+                /* Coordinate xi of this atom */
+                copy_rvec(rotg->xc[i],xi);
+                
+                gaussian_xi = gaussian_weight(xi,rotg,n); /* g_n(xi)*/
+                /* TODO: why not first compute the distance to the layer and
+                 * only if needed the gaussian? 
+                 */
+                if (gaussian_xi > rotg->min_gaussian)
                 {
-                    /* Coordinate xi of this atom */
-                    copy_rvec(rotg->xc[i],xi);
-
-                    gaussian_xi = gaussian_weight(xi,rotg,n); /* g_n(xi)*/
-                    if (gaussian_xi > rotg->min_gaussian)
-                    {
-                        /* Calculate r_i for atom i and slab n: */
-                        /* Unrotated reference coordinate y_i: */
-                        copy_rvec(rotg->xc_ref[i],yi);
-                        
-                        /* COG y0 for this slab: */
-                        /* The reference COG of this slab is still in ref_COG */
-                        rvec_sub(yi, ref_COG, tmp);   /* tmp = y_i - y_0                       */
-                        mvmul(rotmat, tmp, r);        /* r   = Omega*(y_i - y_0)               */
-                        rvec_sub(xi, curr_COG, tmp);  /* tmp = (x_i - x_0)                     */
-                        cprod(rotg->vec, tmp, s_i);   /* s_i = v x (x_i - x_0)                 */
-                        inv_norm_i=1.0/norm(s_i);     /* 1/|v x (x_i - x_0)|                   */
-                        unitv(s_i, s_i);              /* s_i = (v x (x_i-x_0))/|v x (x_i-x_0)| */
-                        sdotr_i=iprod(s_i,r);         /* sdotr_i = (s_i.r_i)                   */
-                        
-                        tmp_s=gaussian_xi*sdotr_i*inv_norm_i;     /* tmp_s = g_n(xi)*(s_i.r_i)*1/norm */
-                        /* sum_11 */
-                        svmul(sdotr_i, s_i, tmp_v);
-                        rvec_sub(tmp_v, r, tmp_v);
-                        svmul(tmp_s, tmp_v, tmp_v); /* tmp_v = g_n(xi)*(s_i.r_i)*1/norm *(-r_i+(r_i.s_i)s_i) */
-                        rvec_add(sum_i1, tmp_v, sum_i1); /* n2 */
-                        sum_i2 += tmp_s*(iprod(r,s_ii)-(iprod(s_i,s_ii)*sdotr_i)); /* n3 */
-                    }
-                } /* now we have the sum-over-atoms (over i) for the ii-th atom in the n-th slab */
-
-                gauss_ratio=gaussian/rotg->slab_weights[islab];
-                beta_sigma=beta/sqr(sigma);
-                svmul(gauss_ratio, sum_i1, tmp_n2_v);   /* tmp_n2_v = gauss_ratio_ii*Sum_i(g_n(xi)*(s_i.r_i)*1/norm *(-r_i+(r_i.s_i)s_i)) */
-
-                rvec_add(tmp_n1_v, tmp_n2_v, force_n);  /* adding up the terms perpendicular to v and to x_ii-x0 */
-                cprod(force_n, rotg->vec, tmp_v);       /* now these are indeed perpendicular */
-                svmul((-1.0*rotg->k), tmp_v, force_n);  /* multiplying by -k* we've got the final tangent contribution */
-                /* calculating the parallel contribution */
-                svmul((-1.0)*rotg->k*gauss_ratio*beta_sigma*sum_i2,rotg->vec,tmp_n3_v);
-                svmul(0.5*rotg->k*beta_sigma*gaussian*sqr(sdotr_ii),rotg->vec,tmp_n4_v);
-                rvec_add(tmp_n3_v, tmp_n4_v, tmp_n3_v); /* tmp_n3_v contains the final parallel contribution */
-                rvec_add(tmp_n3_v, force_n, force_n);   /* force_n is the total force from slab n */
-                /* sum the forces over slabs */
-                rvec_add(sum_f_ii,force_n,sum_f_ii);
-
-                /* Calculate the torque: */
-                if (bCalcTorque)
-                {
-                    /* The force on atom ii from slab n only: */
-                    rotg->slab_torque_v[islab] += torque(rotg->vec, force_n, curr_x, curr_COG);
+                    /* Calculate r_i for atom i and slab n: */
+                    /* Unrotated reference coordinate y_i: */
+                    copy_rvec(rotg->xc_ref[i],yi);
+                    
+                    /* COG y0 for this slab: */
+                    /* The reference COG of this slab is still in ref_COG */
+                    rvec_sub(yi, ref_COG, tmp);   /* tmp = y_i - y_0                       */
+                    mvmul(rotmat, tmp, r);        /* r   = Omega*(y_i - y_0)               */
+                    rvec_sub(xi, curr_COG, tmp);  /* tmp = (x_i - x_0)                     */
+                    cprod(rotg->vec, tmp, s_i);   /* s_i = v x (x_i - x_0)                 */
+                    inv_norm_i=1.0/norm(s_i);     /* 1/|v x (x_i - x_0)|                   */
+                    unitv(s_i, s_i);              /* s_i = (v x (x_i-x_0))/|v x (x_i-x_0)| */
+                    sdotr_i=iprod(s_i,r);         /* sdotr_i = (s_i.r_i)                   */
+                    
+                    tmp_s=gaussian_xi*sdotr_i*inv_norm_i;     /* tmp_s = g_n(xi)*(s_i.r_i)*1/norm */
+                    /* sum_11 */
+                    svmul(sdotr_i, s_i, tmp_v);
+                    rvec_sub(tmp_v, r, tmp_v);
+                    svmul(tmp_s, tmp_v, tmp_v); /* tmp_v = g_n(xi)*(s_i.r_i)*1/norm *(-r_i+(r_i.s_i)s_i) */
+                    rvec_add(sum_i1, tmp_v, sum_i1); /* n2 */
+                    sum_i2 += tmp_s*(iprod(r,s_ii)-(iprod(s_i,s_ii)*sdotr_i)); /* n3 */
                 }
-            } /* END of "if gaussian > pg->min_gaussian" */
+            } /* now we have the sum-over-atoms (over i) for the ii-th atom in the n-th slab */
+            
+            gauss_ratio=gaussian/rotg->slab_weights[islab];
+            beta_sigma=beta/sqr(sigma);
+            svmul(gauss_ratio, sum_i1, tmp_n2_v);   /* tmp_n2_v = gauss_ratio_ii*Sum_i(g_n(xi)*(s_i.r_i)*1/norm *(-r_i+(r_i.s_i)s_i)) */
+            
+            rvec_add(tmp_n1_v, tmp_n2_v, force_n);  /* adding up the terms perpendicular to v and to x_ii-x0 */
+            cprod(force_n, rotg->vec, tmp_v);       /* now these are indeed perpendicular */
+            svmul((-1.0*rotg->k), tmp_v, force_n);  /* multiplying by -k* we've got the final tangent contribution */
+            /* calculating the parallel contribution */
+            svmul((-1.0)*rotg->k*gauss_ratio*beta_sigma*sum_i2,rotg->vec,tmp_n3_v);
+            svmul(0.5*rotg->k*beta_sigma*gaussian*sqr(sdotr_ii),rotg->vec,tmp_n4_v);
+            rvec_add(tmp_n3_v, tmp_n4_v, tmp_n3_v); /* tmp_n3_v contains the final parallel contribution */
+            rvec_add(tmp_n3_v, force_n, force_n);   /* force_n is the total force from slab n */
+            /* sum the forces over slabs */
+            rvec_add(sum_f_ii,force_n,sum_f_ii);
+            
+            /* Calculate the torque: */
+            if (bCalcTorque)
+            {
+                /* The force on atom ii from slab n only: */
+                rotg->slab_torque_v[islab] += torque(rotg->vec, force_n, curr_x, curr_COG);
+            }
         } /* END of loop over slabs */
 
         /* Store the additional force so that it can be added to the force
@@ -1495,7 +1567,7 @@ static real do_flex_lowlevel(
         matrix    box,
         t_commrec *cr)
 {
-    int   i,ii,iii,l,m,n,islab,ipgrp;
+    int   count,i,ic,ii,iii,l,m,n,islab,ipgrp;
     rvec  direction;         /* the direction for the force on atom i */
     rvec  sum_n1,sum_n2;     /* Two contributions to the rotation force */
     rvec  sum_i;             /* Inner part of sum_n2 */
@@ -1531,112 +1603,115 @@ static real do_flex_lowlevel(
         /* Shift this atom such that it is near its reference */
         shift_single_coord(box, curr_x, rotg->xc_shifts[ipgrp]);
 
-        /* For each atom, loop over all slabs. We could have contributions from any slab */
+        /* Determine the slabs to loop over, i.e. the ones with contributions
+         * larger than min_gaussian */
+        count = get_single_atom_gaussians(curr_x, cr, rotg);
+
         clear_rvec(sum_n1);
         clear_rvec(sum_n2);
-        for (n = -rotg->slab_first; n <= rotg->slab_last; n++)
+
+        /* Loop over the relevant slabs for this atom */
+        for (ic=0; ic < count; ic++)  
         {
-            /* Calculate the Gaussian value of curr_slab for curr_x */
-            gaussian = gaussian_weight(curr_x, rotg, n);
+            n = rotg->gn_slabind[ic];
+                
+            /* Get the precomputed Gaussian value of curr_slab for curr_x */
+            gaussian = rotg->gn_atom[ic];
 
-            /* Only do the calculation for this slab if the Gaussian is large enough: */
-            if (gaussian > rotg->min_gaussian)
+            islab = n+rotg->slab_max_nr; /* slab index */
+            
+            /* The (unrotated) reference coordinate of this atom is copied to ref_x: */
+            copy_rvec(rotg->xc_ref[ipgrp], ref_x);
+            beta = calc_beta(curr_x, rotg,n);
+            /* The center of geometry (COG) of this slab is copied to curr_COG: */
+            copy_rvec(rotg->slab_center[islab], curr_COG);
+            /* The reference COG of this slab is copied to ref_COG: */
+            copy_rvec(rotg->slab_center_ref[islab], ref_COG);
+            
+            /* Rotate the reference coordinate around the rotation axis through this slab's reference COG */
+            /* 1. Subtract the reference slab COG from the reference coordinate i */
+            rvec_sub(ref_x, ref_COG, ref_x); /* ref_x =y_ii-y_0 */
+            /* 2. Rotate reference coordinate around origin: */
+            copy_rvec(ref_x, ref_x_cpy);
+            mvmul(rotmat, ref_x_cpy, ref_x); /* ref_x = r_ii = Omega.(y_ii-y_0) */
+            
+            /* Now subtract the slab COG from current coordinate i */
+            rvec_sub(curr_x, curr_COG, curr_x_rel); /* curr_x_rel = x_ii-x_0 */
+            
+            /* Calculate the direction of the actual force */
+            cprod(rotg->vec, ref_x, direction);
+            unitv(direction,direction);
+            u = iprod(direction, curr_x_rel);
+            
+            /*********************************/
+            /* Add to the rotation potential */
+            /*********************************/
+            V += 0.5*rotg->k*gaussian*sqr(u);
+            
+            /*************************************************/
+            /* sum_n1 is the main contribution to the force: */
+            /*************************************************/
+            /* gn*u*(vec_s - 0.5*u*beta/(sigma^2)*vec_a) */
+            svmul(0.5*u*beta/sqr(sigma),rotg->vec,dummy1);
+            /* Typically 'direction' will be the largest part */
+            rvec_sub(direction,dummy1,dummy1);
+            svmul(gaussian*u,dummy1,dummy1);
+            /* Sum over n: */
+            rvec_add(sum_n1,dummy1,sum_n1);
+            
+            /*************************************************************/
+            /* For the term sum_n2 we need to loop over all atoms again: */
+            /*************************************************************/
+            clear_rvec(sum_i);
+            for (i=0; i<rotg->nat; i++)
             {
-                islab = n+rotg->slab_max_nr; /* slab index */
-
-                /* The (unrotated) reference coordinate of this atom is copied to ref_x: */
-                copy_rvec(rotg->xc_ref[ipgrp], ref_x);
-                beta = calc_beta(curr_x, rotg,n);
-                /* The center of geometry (COG) of this slab is copied to curr_COG: */
-                copy_rvec(rotg->slab_center[islab], curr_COG);
-                /* The reference COG of this slab is copied to ref_COG: */
-                copy_rvec(rotg->slab_center_ref[islab], ref_COG);
-
-                /* Rotate the reference coordinate around the rotation axis through this slab's reference COG */
-                /* 1. Subtract the reference slab COG from the reference coordinate i */
-                rvec_sub(ref_x, ref_COG, ref_x); /* ref_x =y_ii-y_0 */
-                /* 2. Rotate reference coordinate around origin: */
-                copy_rvec(ref_x, ref_x_cpy);
-                mvmul(rotmat, ref_x_cpy, ref_x); /* ref_x = r_ii = Omega.(y_ii-y_0) */
-
-                /* Now subtract the slab COG from current coordinate i */
-                rvec_sub(curr_x, curr_COG, curr_x_rel); /* curr_x_rel = x_ii-x_0 */
-
-                /* Calculate the direction of the actual force */
-                cprod(rotg->vec, ref_x, direction);
-                unitv(direction,direction);
-                u = iprod(direction, curr_x_rel);
-
-                /*********************************/
-                /* Add to the rotation potential */
-                /*********************************/
-                V += 0.5*rotg->k*gaussian*sqr(u);
-
-                /*************************************************/
-                /* sum_n1 is the main contribution to the force: */
-                /*************************************************/
-                /* gn*u*(vec_s - 0.5*u*beta/(sigma^2)*vec_a) */
-                svmul(0.5*u*beta/sqr(sigma),rotg->vec,dummy1);
-                /* Typically 'direction' will be the largest part */
-                rvec_sub(direction,dummy1,dummy1);
-                svmul(gaussian*u,dummy1,dummy1);
-                /* Sum over n: */
-                rvec_add(sum_n1,dummy1,sum_n1);
-
-                /*************************************************************/
-                /* For the term sum_n2 we need to loop over all atoms again: */
-                /*************************************************************/
-                clear_rvec(sum_i);
-                for (i=0; i<rotg->nat; i++)
+                /* Index of a rotation group atom  */
+                iii = rotg->ind[i];
+                
+                /* Coordinate xi of this atom */
+                copy_rvec(rotg->xc[i],xi);
+                
+                gaussian_xi = gaussian_weight(xi,rotg,n);
+                
+                if (gaussian_xi > rotg->min_gaussian)
                 {
-                    /* Index of a rotation group atom  */
-                    iii = rotg->ind[i];
-
-                    /* Coordinate xi of this atom */
-                    copy_rvec(rotg->xc[i],xi);
-
-                    gaussian_xi = gaussian_weight(xi,rotg,n);
+                    /* Calculate r=Omega*(y_i-y_0) for atom i and slab n: */
+                    /* Unrotated reference coordinate y_i: */
+                    copy_rvec(rotg->xc_ref[i],yi);
                     
-                    if (gaussian_xi > rotg->min_gaussian)
-                    {
-                        /* Calculate r=Omega*(y_i-y_0) for atom i and slab n: */
-                        /* Unrotated reference coordinate y_i: */
-                        copy_rvec(rotg->xc_ref[i],yi);
-                        
-                        /* COG y0 for this slab: */
-                        /* The reference COG of this slab is still in ref_COG */
-                        rvec_sub(yi, ref_COG, tmp);   /* tmp = y_i - y_0             */
-                        mvmul(rotmat, tmp, r);        /* r   = Omega*(y_i - y_0)     */
-                        cprod(rotg->vec, r, tmp);     /* tmp = v x Omega*(y_i - y_0) */
-                        unitv(tmp, s);                /* s   = v x Omega*(y_i - y_0) / |s x Omega*(y_i - y_0)| */
-                        /* Now that we have si, let's calculate the i-sum: */
-                        /* tmp = x_0 - x_l */
-                        rvec_sub(curr_COG, curr_x, tmp);
-                        /* tmp2 = beta/sigma^2 * (s*(x_0 - x_l)) * v   */
-                        svmul(beta*iprod(tmp, s)/sqr(sigma), rotg->vec, tmp2);
-                        /* tmp = s + tmp2 */
-                        rvec_add(tmp2, s, tmp);
-                        /* tmp2 = xi - x0 */
-                        rvec_sub(xi, curr_COG, tmp2);
-                        /* fac = gn * s*(xi - x0 - ri) */
-                        fac = gaussian_xi*iprod(s, tmp2);
-                        /* tmp2 = gn * s*(xi - x0) * [beta/sigma^2 * (s*(x_0 - x_l)) * v] */
-                        svmul(fac, tmp, tmp2);
-                        rvec_add(sum_i, tmp2, sum_i);
-                    }
-                } /* now we have the i-sum for this atom in this slab */
-                svmul(gaussian/rotg->slab_weights[islab], sum_i, sum_i);
-                rvec_add(sum_n2, sum_i, sum_n2);
-
-                /* Calculate the torque: */
-                if (bCalcTorque)
-                {
-                    /* The force on atom ii from slab n only: */
-                    rvec_sub(sum_i, dummy1, force_n);
-                    svmul(rotg->k, force_n, force_n);
-                    rotg->slab_torque_v[islab] += torque(rotg->vec, force_n, curr_x, curr_COG);
+                    /* COG y0 for this slab: */
+                    /* The reference COG of this slab is still in ref_COG */
+                    rvec_sub(yi, ref_COG, tmp);   /* tmp = y_i - y_0             */
+                    mvmul(rotmat, tmp, r);        /* r   = Omega*(y_i - y_0)     */
+                    cprod(rotg->vec, r, tmp);     /* tmp = v x Omega*(y_i - y_0) */
+                    unitv(tmp, s);                /* s   = v x Omega*(y_i - y_0) / |s x Omega*(y_i - y_0)| */
+                    /* Now that we have si, let's calculate the i-sum: */
+                    /* tmp = x_0 - x_l */
+                    rvec_sub(curr_COG, curr_x, tmp);
+                    /* tmp2 = beta/sigma^2 * (s*(x_0 - x_l)) * v   */
+                    svmul(beta*iprod(tmp, s)/sqr(sigma), rotg->vec, tmp2);
+                    /* tmp = s + tmp2 */
+                    rvec_add(tmp2, s, tmp);
+                    /* tmp2 = xi - x0 */
+                    rvec_sub(xi, curr_COG, tmp2);
+                    /* fac = gn * s*(xi - x0 - ri) */
+                    fac = gaussian_xi*iprod(s, tmp2);
+                    /* tmp2 = gn * s*(xi - x0) * [beta/sigma^2 * (s*(x_0 - x_l)) * v] */
+                    svmul(fac, tmp, tmp2);
+                    rvec_add(sum_i, tmp2, sum_i);
                 }
-            } /* END of "if gaussian > pg->min_gaussian" */
+            } /* now we have the i-sum for this atom in this slab */
+            svmul(gaussian/rotg->slab_weights[islab], sum_i, sum_i);
+            rvec_add(sum_n2, sum_i, sum_n2);
+            
+            /* Calculate the torque: */
+            if (bCalcTorque)
+            {
+                /* The force on atom ii from slab n only: */
+                rvec_sub(sum_i, dummy1, force_n);
+                svmul(rotg->k, force_n, force_n);
+                rotg->slab_torque_v[islab] += torque(rotg->vec, force_n, curr_x, curr_COG);
+            }
         } /* END of loop over slabs */
 
         /* Put both contributions together: */
@@ -2068,6 +2143,9 @@ extern void init_rot_group(
         snew(rotg->slab_weights   , nslabs);
         snew(rotg->slab_torque_v  , nslabs);
         snew(rotg->slab_data      , nslabs);
+        rotg->gn_alloc = nslabs;
+        snew(rotg->gn_atom        , nslabs);
+        snew(rotg->gn_slabind     , nslabs);
         for (i=0; i<nslabs; i++)
         {
             snew(rotg->slab_data[i].x     , rotg->nat);
