@@ -174,7 +174,7 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
     N = stats->np;
     if (stats->computed == 0) 
     {
-        if (N <= 2)
+        if (N < 1)
         {
             return estatsNO_POINTS;
         }
@@ -269,17 +269,29 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
             chi2aa += sqr((stats->y[i]-(stats->aa*stats->x[i]))/dy);
             chi2   += sqr((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
         }
-        stats->chi2   = sqrt(chi2/(N-2));
-        stats->chi2aa = sqrt(chi2aa/(N-2));
+        if (N > 2) 
+        {
+            stats->chi2   = sqrt(chi2/(N-2));
+            stats->chi2aa = sqrt(chi2aa/(N-2));
     
-        /* Look up equations! */
-        dx2 = (xx-sx*sx);
-        dy2 = (yy-sy*sy);
-        stats->sigma_a = sqrt(stats->chi2/((N-2)*dx2));
-        stats->sigma_b = stats->sigma_a*sqrt(xx);
-        stats->Rfit    = stats->a*sqrt(dx2/dy2);
-        stats->Rfitaa  = stats->aa*sqrt(dx2/dy2);  
-    
+            /* Look up equations! */
+            dx2 = (xx-sx*sx);
+            dy2 = (yy-sy*sy);
+            stats->sigma_a = sqrt(stats->chi2/((N-2)*dx2));
+            stats->sigma_b = stats->sigma_a*sqrt(xx);
+            stats->Rfit    = stats->a*sqrt(dx2/dy2);
+            stats->Rfitaa  = stats->aa*sqrt(dx2/dy2);  
+        }
+        else
+        {
+            stats->chi2    = 0;
+            stats->chi2aa  = 0;
+            stats->sigma_a = 0;
+            stats->sigma_b = 0;
+            stats->Rfit    = 0;
+            stats->Rfitaa  = 0;
+        }    
+
         stats->computed = 1;
     }
   

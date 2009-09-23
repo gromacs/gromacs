@@ -284,6 +284,8 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
   bool bXY,bUse;
   const char *ptr;
 
+  pbc->ndim_ePBC = ePBC2npbcdim(ePBC);
+
   copy_mat(box,pbc->box);
   pbc->bLimitDistance = FALSE;
   pbc->max_cutoff2 = 0;

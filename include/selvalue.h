@@ -44,16 +44,16 @@ extern "C"
 {
 #endif
 
-/*! Defines the value type of a different selection objects.*/
+/** Defines the value type of a different selection objects. */
 typedef enum
 {
-    NO_VALUE,           /*!< No value; either an error condition or an boolean 
-                             parameter.*/
-    INT_VALUE,          /*!< One or more integer values.*/
-    REAL_VALUE,         /*!< One or more real values.*/
-    STR_VALUE,          /*!< One or more string values.*/
-    POS_VALUE,          /*!< One or more position values.*/
-    GROUP_VALUE,        /*!< One group of atoms.*/
+    NO_VALUE,           /**< No value; either an error condition or an boolean 
+                             parameter. */
+    INT_VALUE,          /**< One or more integer values. */
+    REAL_VALUE,         /**< One or more real values. */
+    STR_VALUE,          /**< One or more string values. */
+    POS_VALUE,          /**< One or more position values. */
+    GROUP_VALUE,        /**< One group of atoms. */
 } e_selvalue_t;
 
 /*! \brief
@@ -64,7 +64,7 @@ typedef enum
  */
 typedef struct gmx_ana_selvalue_t
 {
-    /*! Type of the value.*/
+    /** Type of the value. */
     e_selvalue_t                type;
     /*! \brief
      * Number of values in the array pointed by the union.
@@ -74,22 +74,26 @@ typedef struct gmx_ana_selvalue_t
      * the number of atoms in the group.
      */
     int                         nr;
-    /*! Pointer to the value.*/
+    /** Pointer to the value. */
     union {
-        /*! Integer value(s) (type \ref INT_VALUE).*/
-        int                    *i;
-        /*! Real value(s) (type \ref REAL_VALUE).*/
-        real                   *r;
-        /*! String value(s) (type \ref STR_VALUE).*/
-        char                  **s;
-        /*! Structure for the position value(s) (type \ref POS_VALUE).*/
-        struct gmx_ana_pos_t   *p;
-        /*! Group value (type \ref GROUP_VALUE).*/
-        struct gmx_ana_index_t *g;
-        /*! Boolean value (only parameters of type \ref NO_VALUE);*/
-        bool                   *b;
-        /*! Generic pointer for operations that do not need type information.*/
+        /*! \brief
+         * Generic pointer for operations that do not need type information.
+         *
+         * Needs to be the first member to be able to use initialized arrays.
+         */
         void                   *ptr;
+        /** Integer value(s) (type \ref INT_VALUE). */
+        int                    *i;
+        /** Real value(s) (type \ref REAL_VALUE). */
+        real                   *r;
+        /** String value(s) (type \ref STR_VALUE). */
+        char                  **s;
+        /** Structure for the position value(s) (type \ref POS_VALUE). */
+        struct gmx_ana_pos_t   *p;
+        /** Group value (type \ref GROUP_VALUE). */
+        struct gmx_ana_index_t *g;
+        /** Boolean value (only parameters of type \ref NO_VALUE); */
+        bool                   *b;
     }                           u;
     /*! \brief
      * Number of elements allocated for the value array.
@@ -97,16 +101,16 @@ typedef struct gmx_ana_selvalue_t
     int                         nalloc;
 } gmx_ana_selvalue_t;
 
-/*! Initializes an empty selection value structure.*/
+/** Initializes an empty selection value structure. */
 extern void
 _gmx_selvalue_clear(gmx_ana_selvalue_t *val);
-/*! Reserve memory for storing selection values.*/
+/** Reserve memory for storing selection values. */
 extern int
 _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
-/*! Sets the memory for storing selection values.*/
+/** Sets the memory for storing selection values. */
 extern int
 _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
-/*! Sets the memory for storing selection values and marks it for automatic freeing.*/
+/** Sets the memory for storing selection values and marks it for automatic freeing. */
 extern int
 _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
 

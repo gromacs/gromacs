@@ -39,6 +39,8 @@
 
 #include <typedefs.h>
 
+#include <indexutil.h>
+
 /*! \internal
  * \brief
  * Information for a collection of selections.
@@ -74,33 +76,33 @@
  */
 struct gmx_ana_selcollection_t
 {
-    /*! Default reference position type for selections.*/
+    /** Default reference position type for selections. */
     const char                 *rpost;
-    /*! Default output position type for selections.*/
+    /** Default output position type for selections. */
     const char                 *spost;
-    /*! TRUE if \ref POS_MASKONLY should be used for output position evaluation.*/
+    /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
     bool                        bMaskOnly;
 
-    /*! Full selection string as provided by the user.*/
+    /** Full selection string as provided by the user. */
     char                       *selstr;
-    /*! Root of the selection element tree.*/
+    /** Root of the selection element tree. */
     struct t_selelem           *root;
-    /*! Number of selections in \p sel.*/
+    /** Number of selections in \p sel. */
     int                         nr;
-    /*! Array of compiled selections.*/
+    /** Array of compiled selections. */
     struct gmx_ana_selection_t **sel;
 
-    /*! Topology for the collection.*/
+    /** Topology for the collection. */
     t_topology                    *top;
-    /*! Index group that contains all the atoms.*/
+    /** Index group that contains all the atoms. */
     struct gmx_ana_index_t         gall;
-    /*! Position calculation collection used for selection position evaluation.*/
+    /** Position calculation collection used for selection position evaluation. */
     struct gmx_ana_poscalc_coll_t *pcc;
-    /*! Parser symbol table.*/
+    /** Parser symbol table. */
     struct gmx_sel_symtab_t     *symtab;
 };
 
-/*! Clears the symbol table in the collection*/
+/** Clears the symbol table in the collection */
 void
 _gmx_selcollection_clear_symtab(struct gmx_ana_selcollection_t *sc);
 

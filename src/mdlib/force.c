@@ -1248,9 +1248,15 @@ void init_forcerec(FILE *fp,
                      ir->ePBC==epbcNONE      &&
                      ir->vdwtype==evdwCUT    &&
                      ir->coulombtype==eelCUT &&
-                     ir->efep==efepNO);
+                     ir->efep==efepNO        &&
+                     (ir->implicit_solvent == eisNO || 
+                      (ir->implicit_solvent==eisGBSA && (ir->gb_algorithm==egbSTILL || 
+                                                         ir->gb_algorithm==egbHCT   || 
+                                                         ir->gb_algorithm==egbOBC)))
+                     );
 #endif
-    fr->AllvsAll_work = NULL;
+    fr->AllvsAll_work   = NULL;
+    fr->AllvsAll_workgb = NULL;
 
     /* Neighbour searching stuff */
     fr->bGrid      = (ir->ns_type == ensGRID);
@@ -1803,7 +1809,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 		
 		if(bBornRadii)
 		{
-			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md);
+			calc_gb_rad(cr,fr,ir,top,atype,x,&(fr->gblist),born,md,nrnb);
 		}
 		
 		/* wallcycle_stop(wcycle, ewcGB); */
@@ -1852,7 +1858,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm, bBornRadii);
+		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm,nrnb,bBornRadii);
 		enerd->term[F_GB12]+=dvdgb;	
 		
 		/* Also add the nonbonded GB potential energy (only from one energy group currently) */

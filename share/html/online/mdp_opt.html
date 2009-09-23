@@ -1341,6 +1341,9 @@ to zero</dd>
 <dt><h4>couple-moltype:</h4></dt>
 <dd>Here one can supply a molecule type (as defined in the topology)
 for calculating solvation or coupling free energies.
+There is a special option <b>system</b> that couples all molecule types
+in the system. This can be useful for equilibrating a system
+starting from (nearly) random coordinates.
 <b>free_energy</b> has to be turned on.
 The Van der Waals interactions and/or charges in this molecule type can be
 turned on or off between lambda=0 and lambda=1, depending on the settings
@@ -1353,6 +1356,8 @@ the molecule definition in the topology.</dd>
 <dd>all interactions are on at lambda=0
 <dt><b>vdw</b></dt>
 <dd>the charges are zero (no Coulomb interactions) at lambda=0
+<dt><b>q</b></dt>
+<dd>the Van der Waals interactions are turned at lambda=0; soft-core interactions will be required to avoid singularities
 <dt><b>none</b></dt>
 <dd>the Van der Waals interactions are turned off and the charges are zero at lambda=0; soft-core interactions will be required to avoid singularities
 </dl>

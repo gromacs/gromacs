@@ -435,7 +435,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
 
     bStateChanged = (flags & GMX_FORCE_STATECHANGED);
-    bNS           = (flags & GMX_FORCE_NS); /* && (fr->bAllvsAll==FALSE); DISABLED FOR DEBUGGING ONLY! */
+    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll==FALSE); 
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));

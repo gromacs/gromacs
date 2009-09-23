@@ -80,6 +80,12 @@ if test "$enable_mpi_environment" != "no"; then
   AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
+### MPI_IN_PLACE
+AC_ARG_ENABLE(mpi-in-place,
+              [AC_HELP_STRING([--disable-mpi-in-place],
+                              [Disable MPI_IN_PLACE. For MPI implementations that have broken support for it (some versions of MPICH, for example).])],, enable_mpi_in_place=yes)
+
+
 
 AC_ARG_ENABLE(apple_64bit,
               [AC_HELP_STRING([--enable-apple-64bit],
@@ -327,21 +333,23 @@ AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
   AC_DEFINE(GMX_LIB_MPI,,[Use a real MPI library])
 
-# not all MPIs support MPI_IN_PLACE:
-  AC_MSG_CHECKING([for MPI_IN_PLACE in collective operations])
-  AC_TRY_COMPILE([
+  if test "$enable_mpi_in_place" = "yes"; then
+    # not all MPIs support MPI_IN_PLACE:
+    AC_MSG_CHECKING([for MPI_IN_PLACE in collective operations])
+    AC_TRY_COMPILE([
 #include <mpi.h>
 void test(void)
 {
     void *buf;
     MPI_Allreduce(MPI_IN_PLACE, buf, 10, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
 }
-],,[
-  AC_MSG_RESULT([yes])
-  AC_DEFINE(MPI_IN_PLACE_EXISTS,[],[MPI_IN_PLACE available for collective operations])
-],[
-  AC_MSG_RESULT([no])
-]) 
+    ],,[
+        AC_MSG_RESULT([yes])
+        AC_DEFINE(MPI_IN_PLACE_EXISTS,[],[MPI_IN_PLACE available for collective operations])
+    ],[
+        AC_MSG_RESULT([no])
+    ]) 
+  fi
 
 # on the cray xt3 we have to tell autoconf that we 
 # are actually cross-compiling even if the architecture
@@ -1048,6 +1056,7 @@ AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])
 AC_CONFIG_FILES([ man/Makefile man/man1/Makefile man/man7/Makefile ])
+AC_CONFIG_FILES([ Doxyfile ])
 AC_OUTPUT
 
 

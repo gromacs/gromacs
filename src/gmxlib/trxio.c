@@ -389,7 +389,7 @@ static bool gmx_next_frame(int status,t_trxframe *fr)
     if (fr->flags & (TRX_READ_F | TRX_NEED_F)) {
       if (fr->f==NULL)
 	snew(fr->f,sh.natoms);
-      fr->bF = sh.f_size;
+      fr->bF = sh.f_size>0;
     }
     if (fread_htrn(status,&sh,fr->box,fr->x,fr->v,fr->f))
       bRet = TRUE;

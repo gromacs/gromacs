@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in selmethod.h.
  */
 #ifdef HAVE_CONFIG_H
@@ -91,11 +91,13 @@ extern gmx_ana_selmethod_t sm_mindistance;
 extern gmx_ana_selmethod_t sm_within;
 /* From sm_insolidangle.c */
 extern gmx_ana_selmethod_t sm_insolidangle;
+/* From sm_same.c */
+extern gmx_ana_selmethod_t sm_same;
 
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
-//! Array of selection methods defined in the library.
+/** Array of selection methods defined in the library. */
 static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_cog,
     &sm_com,
@@ -122,6 +124,7 @@ static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_mindistance,
     &sm_within,
     &sm_insolidangle,
+    &sm_same,
 
     &sm_permute,
 };
@@ -258,6 +261,24 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             report_param_error(fp, name, param[i].name, "error: SPAR_VARNUM and SPAR_ATOMVAL both set");
             bOk = FALSE;
         }
+        if (param[i].flags & SPAR_ENUMVAL)
+        {
+            if (param[i].val.type != STR_VALUE)
+            {
+                report_param_error(fp, name, param[i].name, "error: SPAR_ENUMVAL can only be set for string parameters");
+                bOk = FALSE;
+            }
+            if (param[i].val.nr != 1)
+            {
+                report_param_error(fp, name, param[i].name, "error: SPAR_ENUMVAL parameters should take exactly one value");
+                bOk = FALSE;
+            }
+            if (param[i].flags & (SPAR_DYNAMIC | SPAR_VARNUM | SPAR_ATOMVAL))
+            {
+                report_param_error(fp, name, param[i].name, "error: only SPAR_OPTIONAL supported with SPAR_ENUMVAL");
+                bOk = FALSE;
+            }
+        }
         /* Check boolean parameters */
         if (param[i].val.type == NO_VALUE)
         {
@@ -298,7 +319,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         {
             report_param_error(fp, name, param[i].name, "warning: nvalptr is set");
         }
-        if (param[i].val.u.ptr != NULL)
+        if (param[i].val.u.ptr != NULL && !(param[i].flags & SPAR_ENUMVAL))
         {
             report_param_error(fp, name, param[i].name, "warning: value pointer is set");
         }

@@ -76,19 +76,39 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(char *line, t_atom *a, gpp_atomtype_t atype, int *cgnr)
+static void read_atom(char *line, bool bAdd,
+		      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
-  int    i, n;
-  char   type[12];
+  int    nr, i, n;
+  char   buf[4][30],type[12];
   double m, q;
   
-  if ( (i=sscanf(line,"%s%lf%lf%n", type, &m, &q, &n)) != 3 ) 
-    gmx_fatal(FARGS,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 3, i, line);
-  a->m=m;
-  a->q=q;
-  a->type=get_atomtype_type(type,atype);
-  if ( sscanf(line+n,"%d", cgnr) != 1 )
+  /* This code is messy, because of support for different formats:
+   * for replace: [new name] <atom type> <m> <q>
+   * for add:                <atom type> <m> <q> [cgnr]
+   */
+  nr = sscanf(line,"%s %s %s %s %n", buf[0], buf[1], buf[2], buf[3], &n);
+  if (!(nr == 3 || nr == 4)) {
+    gmx_fatal(FARGS,"Reading Termini Database: expected %d or %d items of atom data in stead of %d on line\n%s", 3, 4, nr, line);
+  }
+  i = 0;
+  if (!bAdd) {
+    if (nr == 4) {
+      *nname = strdup(buf[i++]);
+    } else {
+      *nname = NULL;
+    }
+  }
+  a->type = get_atomtype_type(buf[i++],atype);
+  sscanf(buf[i++],"%lf",&m);
+  a->m = m;
+  sscanf(buf[i++],"%lf",&q);
+  a->q = q;
+  if (bAdd && nr == 4) {
+    sscanf(buf[3],"%d", cgnr);
+  } else {
     *cgnr = NOTSET;
+  }
 }
 
 static void print_atom(FILE *out,t_atom *a,gpp_atomtype_t atype,char *newnm)
@@ -165,7 +185,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 {
   FILE       *in;
   char       inf[STRLEN],header[STRLEN],buf[STRLEN],line[STRLEN];
- t_hackblock *tb;
+  t_hackblock *tb;
   int        i,j,n,ni,kwnr,nb,maxnb,nh;
   
   sprintf(inf,"%s-%c.tdb",FF,ter);
@@ -216,8 +236,8 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 	n=0;
 	if ( kwnr==ekwRepl || kwnr==ekwDel ) {
 	  if (sscanf(line, "%s%n", buf, &n) != 1) 
-	    gmx_fatal(FARGS,"Reading Termini Database: "
-			"expected atom name on line\n%s",line);
+	    gmx_fatal(FARGS,"Reading Termini Database '%s': "
+		      "expected atom name on line\n%s",inf,line);
 	  tb[nb].hack[nh].oname = strdup(buf);
 	  /* we only replace or delete one atom at a time */
 	  tb[nb].hack[nh].nr = 1;
@@ -229,14 +249,16 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 		      kwnr,__FILE__,__LINE__);
 	if ( kwnr==ekwRepl || kwnr==ekwAdd ) {
 	  snew(tb[nb].hack[nh].atom, 1);
-	  read_atom(line+n, tb[nb].hack[nh].atom, atype, 
+	  read_atom(line+n,kwnr==ekwAdd,
+		    &tb[nb].hack[nh].nname, tb[nb].hack[nh].atom, atype, 
 		    &tb[nb].hack[nh].cgnr);
-	  if (!tb[nb].hack[nh].nname) {
-	    if (tb[nb].hack[nh].oname)
+	  if (tb[nb].hack[nh].nname == NULL) {
+	    if (tb[nb].hack[nh].oname != NULL) {
 	      tb[nb].hack[nh].nname = strdup(tb[nb].hack[nh].oname);
-	    else
-	      gmx_fatal(FARGS,"Don't know which name the new atom should have");
+	    } else {
+	      gmx_fatal(FARGS,"Reading Termini Database '%s': don't know which name the new atom should have on line\n%s",inf,line);
 	    }
+	  }
 	}
       } else if (kwnr >= 0 && kwnr < ebtsNR) {
 	/* this is bonded data: bonds, angles, dihedrals or impropers */
@@ -246,7 +268,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 	  if ( sscanf(line+n, "%s%n", buf, &ni) == 1 )
 	    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = strdup(buf);
 	  else
-	    gmx_fatal(FARGS,"Reading Termini Database: expected %d atom names (found %d) on line\n%s", btsNiatoms[kwnr], j-1, line);
+	    gmx_fatal(FARGS,"Reading Termini Database '%s': expected %d atom names (found %d) on line\n%s", inf, btsNiatoms[kwnr], j-1, line);
 	  n+=ni;
 	}
 	for(   ; j<MAXATOMLIST; j++)

@@ -45,6 +45,7 @@
 #include <selparam.h>
 
 #include "parsetree.h"
+#include "position.h"
 #include "selelem.h"
 
 /*!
@@ -250,13 +251,25 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
         }
     }
 
+    /* Check that the value type is actually implemented */
     if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE
-        && param->val.type != STR_VALUE)
+        && param->val.type != STR_VALUE && param->val.type != POS_VALUE)
     {
         gmx_bug("internal error");
         return FALSE;
     }
-    _gmx_selvalue_reserve(&param->val, nval);
+
+    /* Reserve appropriate amount of memory */
+    if (param->val.type == POS_VALUE)
+    {
+        gmx_ana_pos_reserve(param->val.u.p, nval, 0);
+        gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
+    }
+    else
+    {
+        _gmx_selvalue_reserve(&param->val, nval);
+    }
+
     value = values;
     i     = 0;
     while (value)
@@ -291,6 +304,7 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
                 break;
             case REAL_VALUE: param->val.u.r[i++] = value->u.r;         break;
             case STR_VALUE:  param->val.u.s[i++] = strdup(value->u.s); break;
+            case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
                 gmx_bug("internal error");
                 return FALSE;
@@ -688,6 +702,61 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
 }
 
 /*! \brief
+ * Parses the values for an enumeration parameter.
+ *
+ * \param[in] nval   Number of values in \p values.
+ * \param[in] values Pointer to the list of values.
+ * \param     param  Parameter to parse.
+ * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ */
+static bool
+parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
+{
+    int  i, len, match;
+
+    if (nval != 1)
+    {
+        _gmx_selparser_error("a single value is required for parameter '%s'", param->name);
+        return FALSE;
+    }
+    if (values->type != STR_VALUE || param->val.type != STR_VALUE)
+    {
+        gmx_bug("internal error");
+        return FALSE;
+    }
+    if (values->bExpr)
+    {
+        _gmx_selparser_error("expression value for enumerated parameter '%s' not supported", param->name);
+        return FALSE;
+    }
+
+    len = strlen(values->u.s);
+    i = 1;
+    match = 0;
+    while (param->val.u.s[i] != NULL)
+    {
+        if (strncmp(values->u.s, param->val.u.s[i], len) == 0)
+        {
+            /* Check if there is a duplicate match */
+            if (match > 0)
+            {
+                _gmx_selparser_error("ambiguous value for parameter '%s'", param->name);
+                return FALSE;
+            }
+            match = i;
+        }
+        ++i;
+    }
+    if (match == 0)
+    {
+        _gmx_selparser_error("invalid value for parameter '%s'", param->name);
+        return FALSE;
+    }
+    param->val.u.s[0] = param->val.u.s[match];
+    return TRUE;
+}
+
+/*! \brief
  * Replaces constant expressions with their values.
  *
  * \param[in,out] values First element in the value list to process.
@@ -746,7 +815,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
 {
     t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
-    bool                bOk;
+    bool                bOk, rc;
     int                 i;
 
     /* Check that the value pointers of SPAR_VARNUM parameters are NULL and
@@ -835,35 +904,30 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         convert_const_values(pparam->value);
         if (oparam->flags & SPAR_RANGES)
         {
-            if (!parse_values_range(pparam->nval, pparam->value, oparam))
-            {
-                bOk = FALSE;
-            }
+            rc = parse_values_range(pparam->nval, pparam->value, oparam);
         }
         else if (oparam->flags & SPAR_VARNUM)
         {
             if (pparam->nval == 1 && pparam->value->bExpr)
             {
-                if (!parse_values_varnum_expr(pparam->nval, pparam->value, oparam,
-                                              root))
-                {
-                    bOk = FALSE;
-                }
+                rc = parse_values_varnum_expr(pparam->nval, pparam->value, oparam, root);
             }
             else
             {
-                if (!parse_values_varnum(pparam->nval, pparam->value, oparam))
-                {
-                    bOk = FALSE;
-                }
+                rc = parse_values_varnum(pparam->nval, pparam->value, oparam);
             }
+        }
+        else if (oparam->flags & SPAR_ENUMVAL)
+        {
+            rc = parse_values_enum(pparam->nval, pparam->value, oparam);
         }
         else
         {
-            if (!parse_values_std(pparam->nval, pparam->value, oparam, root))
-            {
-                bOk = FALSE;
-            }
+            rc = parse_values_std(pparam->nval, pparam->value, oparam, root);
+        }
+        if (!rc)
+        {
+            bOk = FALSE;
         }
         /* Advance to the next parameter */
         pparam = pparam->next;

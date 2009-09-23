@@ -50,7 +50,7 @@
  */
 struct gmx_sel_symtab_t
 {
-    /*! Pointer to the first symbol in the linked list of symbols.*/
+    /** Pointer to the first symbol in the linked list of symbols. */
     gmx_sel_symrec_t *first;
 };
 
@@ -59,22 +59,22 @@ struct gmx_sel_symtab_t
  */
 struct gmx_sel_symrec_t
 {
-    /*! Name of the symbol.*/
+    /** Name of the symbol. */
     char                           *name;
-    /*! Type of the symbol.*/
+    /** Type of the symbol. */
     e_symbol_t                      type;
-    /*! Value of the symbol.*/
+    /** Value of the symbol. */
     union {
-        /*! Pointer to the method structure (\ref SYMBOL_METHOD).*/
+        /** Pointer to the method structure (\ref SYMBOL_METHOD). */
         struct gmx_ana_selmethod_t *meth;
-        /*! Pointer to the variable value (\ref SYMBOL_VARIABLE).*/
+        /** Pointer to the variable value (\ref SYMBOL_VARIABLE). */
         struct t_selelem           *var;
     }                               u;
-    /*! Pointer to the next symbol.*/
+    /** Pointer to the next symbol. */
     struct gmx_sel_symrec_t        *next;
 };
 
-//! List of reserved symbols to register in add_reserved_symbols().
+/** List of reserved symbols to register in add_reserved_symbols(). */
 static const char *const sym_reserved[] = {
     "group",
     "to",

@@ -178,7 +178,7 @@ const char *epull_names[epullNR+1] = {
 };
 
 const char *epullg_names[epullgNR+1] = { 
-  "distance", "direction", "cylinder", "position", NULL
+  "distance", "direction", "cylinder", "position", "direction_periodic", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {
