@@ -887,23 +887,15 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                         t_inputrec *ir,t_mdatoms *md,
                         t_state *state,rvec *f,
                         t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top,  
-                        gmx_mtop_t *mtop, t_fcdata *fcd, 
-                        gmx_wallcycle_t wcycle, gmx_enerdata_t *enerd, 
-                        tensor vir_part, gmx_groups_t *groups, 
-                        history_t *hist, gmx_vsite_t *vsite, 
-                        FILE *fp_field, gmx_edsam_t ed,int flags)
+                        t_forcerec *fr, gmx_localtop_t *top)
 {
     int    i,m,start,end;
     gmx_large_int_t step;
     double mass,tmass,vcm[4];
     real   dt=ir->delta_t;
     real   dvdlambda;
-    rvec   *savev,*savex;
-    tensor forcevir_dum,vir_con;
-    rvec   mu_tot_dum;
+    rvec   *savex;
     
-    snew(savev,state->natoms);
     snew(savex,state->natoms);
 
     start = md->start;
@@ -923,58 +915,17 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
               ir,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta);
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,1);
     if (ir->eI==eiVV) {
-        /* huge kludge */
-        /* also may be useful if we need the ekin from the halfstep for velocity verlet */
-        
         /* constrain the inital velocity, and save it */
+        /* also may be useful if we need the ekin from the halfstep for velocity verlet */
+        /* might not yet treat veta correctly */
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
                   ir,cr,step,0,md,
                   state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
-                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcTROTTER,state->veta);
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcTROTTER,state->veta,1);
         
-        /* in the velocity verlet case, we need an extra force evaluation to get the virial right. */
-        do_force(fplog,cr,ir,-1,nrnb,wcycle,top,mtop,groups,
-                 state->box,state->x,&state->hist,
-                 f,forcevir_dum,md,enerd,fcd,
-                 state->lambda,graph,
-                 fr,vsite,mu_tot_dum,0,fp_field,ed,TRUE,
-                 GMX_FORCE_STATECHANGED | GMX_FORCE_NS | GMX_FORCE_ALLFORCES);
-        
-        for(m=0; (m<DIM); m++) {
-            for(i=start; (i<end); i++) {
-                /* Store the position at t-dt, and velocity at t-dt/2 in buf 
-                   note that we may need to do scaling to backtrack correctly 
-                   with pressure control and temperature control, which means that this might
-                   be better done with an update call. 
-                   Now partially fixed (includes state->veta) but doesn't include veta integration */
-	
-                savex[i][m] = state->x[i][m];
-                savev[i][m] = state->v[i][m];
-                state->v[i][m] -= 0.5*dt*f[i][m]*md->invmass[i];
-                state->x[i][m] -= dt*state->v[i][m];
-            }
-            
-        }
-        /* Constrain the positions at t=-dt with the positions at t=0                        
-         * as reference coordinates.                                                     
-         */
-        dvdlambda = 0;
-        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
-                  ir,cr,step,-1,md,
-                  savex,state->x,state->x,
-                  state->box,state->lambda,&dvdlambda,
-                  NULL,&(vir_con),nrnb,econqCoord, ir->epc==epcTROTTER,state->veta);
-        /* add the virial for this half step to contribute to the force 
-           at the end of the step */
-        m_add(vir_part,vir_con,vir_part);
-        
-        /* now we should have the full virial. Copy data back. */
-        copy_rvecn(savex,state->x,start,end);
-        copy_rvecn(savev,state->v,start,end);
-    
     } else {
         if (EI_STATE_VELOCITY(ir->eI)) {
             for(i=start; (i<end); i++) {
@@ -996,7 +947,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                       ir,cr,step,-1,md,
                       state->x,savex,NULL,
                       state->box,state->lambda,&dvdlambda,
-                      state->v,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta);
+                      state->v,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,1);
         }
         for(i=start; i<end; i++) {
             for(m=0; m<DIM; m++) {
@@ -1038,7 +989,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
 
         }
     }
-    sfree(savev);
     sfree(savex);
 }
 

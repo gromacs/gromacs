@@ -677,6 +677,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     if (bRead) {
       snew(ir->opts.nrdf,   ir->opts.ngtc); 
       snew(ir->opts.alpha,   ir->opts.ngtc); 
+      snew(ir->opts.vscale_nhc,   ir->opts.ngtc); 
       snew(ir->opts.ref_t,  ir->opts.ngtc); 
       snew(ir->opts.annealing, ir->opts.ngtc); 
       snew(ir->opts.anneal_npoints, ir->opts.ngtc); 
@@ -697,6 +698,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       } else {
 	ndo_real(ir->opts.nrdf, ir->opts.ngtc,bDum);
 	ndo_double(ir->opts.alpha, ir->opts.ngtc,bDum);
+	ndo_double(ir->opts.vscale_nhc, ir->opts.ngtc,bDum);
       }
       ndo_real(ir->opts.ref_t,ir->opts.ngtc,bDum); 
       ndo_real(ir->opts.tau_t,ir->opts.ngtc,bDum); 

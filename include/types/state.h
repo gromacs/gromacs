@@ -150,4 +150,16 @@ typedef struct
 } t_extmass;
 
 
+typedef struct
+{ 
+  real veta;   
+  real rscale;
+  real vscale;
+  real rvscale;
+  real vetascale_nhc;
+  double alpha;
+  double *vscale_nhc;
+} t_vetavars;
+
+
 #endif /* _state_h_ */

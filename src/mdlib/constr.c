@@ -82,6 +82,36 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
+t_vetavars *init_vetavars(real veta,real vetascale_nhc, t_inputrec *ir) 
+{
+    t_vetavars *vars;
+    real g;
+    int i;
+
+    snew(vars,1);
+    snew(vars->vscale_nhc,ir->opts.ngtc);
+    vars->veta = veta;
+    vars->alpha = ir->opts.alpha[0];
+    vars->vetascale_nhc = vetascale_nhc;
+    for (i=0;i<ir->opts.ngtc;i++)
+    {
+        vars->vscale_nhc[i] = ir->opts.vscale_nhc[i];
+    }
+    g = -0.25*vars->alpha*vars->veta*ir->delta_t;
+    vars->vscale = exp(g)*series_sinhx(g);
+    g = 0.5*vars->veta*ir->delta_t;
+    vars->rscale = exp(g)*series_sinhx(g);
+    vars->rvscale = vars->vscale*vars->rscale;
+    
+    return vars;
+}
+
+void free_vetavars(t_vetavars *vars) 
+{
+    sfree(vars->vscale_nhc);
+    sfree(vars);
+}
+
 static int pcomp(const void *p1, const void *p2)
 {
   int     db;
@@ -231,7 +261,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq,bool bPscal,real veta)
+               t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetascale_nhc)
 {
     bool    bOK;
     int     start,homenr,nrend;
@@ -240,12 +270,12 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     tensor  rmdr;
     rvec    *vstor;
     real    invdt,vir_fac,t;
-    double    rscale, vscale;
     t_ilist *settle;
     int     nsettle;
     t_pbc   pbc;
     char    buf[22];
-    
+    t_vetavars *vetavar;
+
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
     {
         gmx_incons("constrain called for forces displacements while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
@@ -256,6 +286,10 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     start  = md->start;
     homenr = md->homenr;
     nrend = start+homenr;
+
+    if (bPscal) {
+        vetavar = init_vetavars(veta,vetascale_nhc,ir);
+    }
 
     if (ir->delta_t == 0)
     {
@@ -302,14 +336,14 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,xprime,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,veta);
+                          invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,min_proj,nrnb,
                           constr->lagr,lambda,dvdlambda,
-                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,veta);
+                          invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
             break;
         default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
@@ -332,7 +366,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         case econqCoord:
             csettle(constr->settled,
                     nsettle,settle->iatoms,x[0],xprime[0],
-                    invdt,v[0],vir!=NULL,rmdr,&error);
+                    invdt,v[0],vir!=NULL,rmdr,&error,vetavar);
             inc_nrnb(nrnb,eNR_SETTLE,nsettle);
             if (v != NULL)
             {
@@ -369,7 +403,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             case econqForceDispl:
                 settle_proj(fplog,constr->settled,econq,
                             nsettle,settle->iatoms,x,
-                            xprime,min_proj,vir!=NULL,rmdr,veta);
+                            xprime,min_proj,vir!=NULL,rmdr,vetavar);
                 /* This is an overestimate */
                 inc_nrnb(nrnb,eNR_SETTLE,nsettle);
                 break;
@@ -382,10 +416,11 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         }
     }
 
-    if (bPscal) {
-        
+    if (bPscal) 
+    {
+        free_vetavars(vetavar);
     }
-
+    
     if (vir != NULL)
     {
         switch (econq)
@@ -404,7 +439,11 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             vir_fac = 0;
             gmx_incons("Unsupported constraint quantity for virial");
         }
-
+        
+        if (ir->eI == eiVV) 
+        {
+            vir_fac *= 2;  // only constraining over half the distance . . . 
+        }
         for(i=0; i<DIM; i++)
         {
             for(j=0; j<DIM; j++)
@@ -1021,6 +1060,7 @@ t_blocka *atom2constraints_moltype(gmx_constr_t constr)
 {
   return constr->at2con_mt;
 }
+
 
 bool inter_charge_group_constraints(gmx_mtop_t *mtop)
 {

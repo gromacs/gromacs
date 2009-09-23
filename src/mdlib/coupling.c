@@ -463,10 +463,10 @@ t_state *init_bufstate(int size, int ntc)
 }  
 
 void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
-		    gmx_enerdata_t *enerd, t_state *state, 
-		    tensor ekin, tensor vir, t_mdatoms *md, 
-		    t_extmass *MassQ, bool bFirstHalf, 
-		    bool bThermo, bool bBaro, bool bInitStep) 
+                    gmx_enerdata_t *enerd, t_state *state, 
+                    tensor ekin, tensor vir, t_mdatoms *md, 
+                    t_extmass *MassQ, real *vetascale_nhc, 
+                    bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep) 
 {
   
   int n,i,j,d,ntgrp,ngtc,gc=0;
@@ -476,6 +476,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
   real bmass,qmass,reft,kT,dt,ndj,nd;
   tensor dumpres,dumvir;
   double *scalefac;
+  double vetasave;
   rvec sumv,consk;
   static bool bFirstTime = TRUE;
  
@@ -579,7 +580,8 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     return; /* first time, we just initialize, not do anything else */
   }
 
-  snew(scalefac,ngtc);
+  scalefac = ir->opts.vscale_nhc;
+
   for (i=0; i<ngtc;i++) 
   {
       scalefac[i] = 1;
@@ -646,8 +648,10 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
       {
           if (bThermo) 
           { 
+              vetasave = state->veta;
               NBaroT_trotter(opts,ir->delta_t,state->nosehoover_xi,
                              state->nosehoover_vxi,&(state->veta),MassQ);      
+              *vetascale_nhc = state->veta/vetasave;
           }
       } 
       else 
@@ -672,7 +676,6 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
           fprintf(debug,"Consk: %15.8f %15.8f %15.8f\n",consk[0],consk[1],consk[2]);    
       }
   }
-  sfree(scalefac);
 }
 
 void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
@@ -871,7 +874,7 @@ void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   // W is in ps^2 * bar * nm^3 
     
     *veta += 0.5*dt*GW;   
-    fprintf(stderr,"GW: %14.7f\n",GW);
+    //fprintf(stderr,"GW: %14.7f\n",GW);
 }
 
 real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ)

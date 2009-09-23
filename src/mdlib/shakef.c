@@ -177,7 +177,7 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
                bool bFEP,real lambda,real lagr[],
                real invdt,rvec *v,
                bool bCalcVir,tensor rmdr,int econq, 
-               real veta, double alpha)
+               t_vetavars *vetavar)
 {
     rvec *rij;
     real *M2,*tt,*dist2;
@@ -189,13 +189,6 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     int     error;
     real    g,vscale,rscale,rvscale;
 
-    // pressure control factors 
-    g = -0.25*alpha*veta/invdt;
-    vscale = exp(g)*series_sinhx(g);
-    g = 0.5*veta/invdt;
-    rscale = exp(g)*series_sinhx(g);
-    rvscale = vscale*rscale;
-    
     if (ncon > shaked->nalloc)
     {
         shaked->nalloc = over_alloc_dd(ncon);
@@ -235,7 +228,7 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
         cshake(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error);
         break;
     case econqVeloc:
-        crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt,veta);
+        crattle(iatom,ncon,&nit,maxnit,dist2,prime[0],rij[0],M2,omega,invmass,tt,lagr,&error,invdt,vetavar);
         break;
     }
     
@@ -261,32 +254,19 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     /* Constraint virial and correct the lagrange multipliers for the length */
     
     ia=iatom;
+    
     for(ll=0; (ll<ncon); ll++,ia+=3) 
     {
-        /*
-        real xt=0,yt=0,zt=0;
-        if (econq == econqVeloc) {
-            for(i=0; i<DIM; i++)
-            {
-                xt += (x[ia[1]][i]-x[ia[2]][i]) * ((prime[ia[1]][i]-prime[ia[2]][i]) + veta*(x[ia[1]][i]-x[ia[2]][i]));
-                yt += (rij[ll][i]) * (prime[ia[1]][i]-prime[ia[2]][i] + veta*(x[ia[1]][i]-x[ia[2]][i]));
-                zt += (rij[ll][i]) * (prime[ia[1]][i]-prime[ia[2]][i] + veta*(rij[ll][i]));
-            }
-            fprintf(stderr,"%5d %5d %10.3f\n",ia[1],ia[2],zt);
-            fprintf(stderr,"%5d       %10.3f\n",ll,yt);
-            fprintf(stderr,"%5d       %10.3f\n",ll,zt);
-        }
-        */
 
         if ((econq == econqCoord) && v!=NULL) 
         {
             /* Correct the velocities */
-            mm = lagr[ll]*invmass[ia[1]]*invdt*(vscale/rvscale);
+            mm = lagr[ll]*invmass[ia[1]]*invdt/vetavar->rscale;
             for(i=0; i<DIM; i++)
             {
                 v[ia[1]][i] += mm*rij[ll][i];
             }
-            mm = lagr[ll]*invmass[ia[2]]*invdt*(vscale/rvscale);
+            mm = lagr[ll]*invmass[ia[2]]*invdt/vetavar->rscale;
             for(i=0; i<DIM; i++)
             {
                 v[ia[2]][i] -= mm*rij[ll][i];
@@ -299,11 +279,11 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
         {
             if (econq == econqCoord) 
             {
-                mm = lagr[ll]/rvscale;
+                mm = lagr[ll]/vetavar->rvscale;
             } 
             if (econq == econqVeloc) 
             {
-                mm = lagr[ll]/vscale;
+                mm = lagr[ll]/vetavar->vscale;
             }
             for(i=0; i<DIM; i++) 
             {
@@ -378,7 +358,7 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
              int natoms,real invmass[],int nblocks,int sblock[],
              t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec prime[],
              t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,int econq, real veta)
+             real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,int econq,t_vetavars *vetavar)
 {
   t_iatom *iatoms;
   real    *lam,dt_2,dvdl;
@@ -401,7 +381,8 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
     blen /= 3;
     n0 = vec_shakef(log,shaked,natoms,invmass,blen,idef->iparams,
                     iatoms,ir->shake_tol,x_s,prime,shaked->omega,
-                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq,veta,ir->opts.alpha[0]);
+                    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,econq,vetavar);
+
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,prime,v,idef->iparams,iatoms,invmass,econq);
 #endif
@@ -456,7 +437,7 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
 
 void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
              real dist2[],real vp[],real rij[],real m2[],real omega,
-             real invmass[],real tt[],real lagr[],int *nerror,real invdt,real veta)
+             real invmass[],real tt[],real lagr[],int *nerror,real invdt,t_vetavars *vetavar)
 {
     /*
      *     r.c. van schaik and w.f. van gunsteren
@@ -476,6 +457,10 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
     real    tix,tiy,tiz;
     real    tjx,tjy,tjz;
     int     nit,error,iconv,nconv;
+    real    veta,vscale_nhc;
+
+    veta = vetavar->veta*vetavar->vetascale_nhc;
+    vscale_nhc = vetavar->vscale_nhc[0];  // for now, just choose the first state 
     
     error=0;
     nconv=1;
@@ -502,7 +487,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
             
             vpijd   = vx*rijx+vy*rijy+vz*rijz;
             rijd    = rijx*rijx+rijy*rijy+rijz*rijz;
-            xdotd   = vpijd + veta*rijd;
+            xdotd   = vpijd*vscale_nhc + veta*rijd;
             
             toler   = dist2[ll];
             diff    = xdotd;
@@ -532,37 +517,6 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
             }
         }
     }
-#if 0
-    for(ll=0; (ll<ncon) && (error == 0); ll++) {
-        l3    = 3*ll;
-        rijx  = rij[l3+XX];
-        rijy  = rij[l3+YY];
-        rijz  = rij[l3+ZZ];
-        i     = iatom[l3+1];
-        j     = iatom[l3+2];
-        i3    = 3*i;
-        j3    = 3*j;
-        ix    = i3+XX;
-        iy    = i3+YY;
-        iz    = i3+ZZ;
-        jx    = j3+XX;
-        jy    = j3+YY;
-        jz    = j3+ZZ;
-        vx      = vp[ix]-vp[jx];
-        vy      = vp[iy]-vp[jy];
-        vz      = vp[iz]-vp[jz];
-        
-        xdotd   = 0; 
-        for (ii=0;ii<DIM;ii++) {
-            xdotd   += rijx * (vx + veta*rijx);
-            xdotd   += rijy * (vy + veta*rijy);
-            xdotd   += rijz * (vz + veta*rijz);
-        }
-        fprintf(stderr,"b%6d %6d %10.3f\n",i,j,xdotd);
-    }
-    fprintf(stderr,"rattle: nit%6d\n",nit);
-#endif    
-
     *nnit=nit;
     *nerror=error;
 }

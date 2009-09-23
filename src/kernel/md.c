@@ -445,10 +445,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bPres) 
     {
         
-        /* Add force and shake contribution to the virial */
-        m_add(shake_vir,shakev_vir,shakeall_vir);
+        copy_mat(shake_vir,shakeall_vir);
         m_add(force_vir,shakeall_vir,total_vir);
-        
+
         /* Calculate pressure and apply LR correction if PPPM is used.
          * Use the box from last timestep since we already called update().
          */
@@ -467,9 +466,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_PRES] += prescorr;
         *pcurr = enerd->term[F_PRES];
     }
-    fprintf(stderr,"%10s%20s%20s%20s%20s%20s\n","segment","pcurr","total_vir","box","ekin","shake_vir");
-    fprintf(stderr,"%10d",bFirstHalf);
-    fprintf(stderr,"%20.12f%20.12f%20.12f%20.12f%20.12f\n",*pcurr,total_vir[0][0],box[0][0],ekin[0][0],shake_vir[0][0]);
 }
 
 
@@ -1432,7 +1428,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     rvec        *xcopy=NULL,*vcopy=NULL,*xbuf=NULL;
     matrix      boxcopy,lastbox;
 	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
+	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir,vetascale_nhc=1;
 	real        vetanew = 0;
     double      cycles;
     int         reset_counters=-1;
@@ -1676,17 +1672,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (constr)
         {
             /* Constrain the initial coordinates and velocities */
-            /* added calls to force to back-construct the constraint virial */
-            force_flags = (GMX_FORCE_STATECHANGED |
-                           GMX_FORCE_ALLFORCES |
-                           GMX_FORCE_DOLR |
-                           GMX_FORCE_SEPLRF |
-                           GMX_FORCE_VIRIAL |
-                           GMX_FORCE_DHDL);
             do_constrain_first(fplog,constr,ir,mdatoms,state,f,
-                               graph,cr,nrnb,fr,top,top_global,
-                               fcd,wcycle,enerd,shakev_vir,groups, 
-                               &state->hist,vsite,fp_field,ed,force_flags);
+                               graph,cr,nrnb,fr,top);
         }
         if (vsite)
         {
@@ -1699,9 +1686,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     debug_gmx();
   
-    /* note reversed shakev_vir and shake_vir, this affects which ones are gathered in the step */
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                    wcycle,enerd,force_vir,shake_vir,shakev_vir,total_vir,ekin,pres,mu_tot,
+                    wcycle,enerd,force_vir,shakev_vir,shake_vir,total_vir,ekin,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,&bSumEkinhOld,bRerunMD,bEkinFullStep,FALSE,
                     TRUE,FALSE,FALSE,FALSE,FALSE,TRUE,Flags & MD_READ_EKIN,top_global->natoms);
@@ -1727,7 +1713,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (bTrotter) 
     {
         /* need to make an initial call to get the Trotter Mass variables set. */
-        trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,FALSE,FALSE,FALSE,FALSE);
+        trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,NULL,FALSE,FALSE,FALSE,FALSE);
     }
     
     if (MASTER(cr))
@@ -2209,11 +2195,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        trotter integration at this time. Nothing else
                        should be changed by this routine here.  If
                        !(first time), we start with the previous value
-                       of veta */
+                       of veta.  */
+                    
                     veta_save = state->veta;
-                    trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,TRUE,FALSE,TRUE,bInitStep);
+                    trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,NULL,
+                                   TRUE,FALSE,TRUE,bInitStep);
                     vetanew = state->veta;
                     state->veta = veta_save;
+                    vetascale_nhc = 1;
                 } 
             } 
             
@@ -2223,6 +2212,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 wallcycle_start(wcycle,ewcUPDATE);
                 dvdl = 0;
                 
+                /* update coords doesn't actually have to be in here */
                 update_coords(fplog,step,ir,mdatoms,state,
                               f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,NULL,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
@@ -2230,7 +2220,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shakev_vir,NULL,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,TRUE,bCalcPres,vetanew);
+                                   bInitStep,TRUE,bCalcPres,vetanew,vetascale_nhc);
                 if (!bOK && !bFFscan)
                 {
                     gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
@@ -2258,9 +2248,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
             if (bTrotter) 
             {
-                trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,TRUE,TRUE,TRUE,bInitStep);
+                trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,&vetascale_nhc,TRUE,TRUE,TRUE,bInitStep);
             }
             
+
             /* iterate until veta is converged.  This -should- be equivalent
                to self consistently solving for the Lagrange multipliers */
             if (debug) 
@@ -2268,8 +2259,38 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 fprintf(debug,"Iterating vir, ekin: %20.12f %20.12f\n",trace(total_vir),trace(ekin));
             }
             if (done_iterating(&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
+            /* Important: restarting each step, need to divide by the barostating of the box velocity for the constraints */
+            vetanew = state->veta / vetascale_nhc;
         }
         
+#if 0
+        /* checking . . . . */
+        {
+            real dx0[3],dx1[3],dx2[3];
+            real dv0[3],dv1[3],dv2[3];
+            real dot0,dot1,dot2;
+            int inc,mdim;
+            for (inc=0;inc<2700;inc+=3) {
+                dot0 = dot1 = dot2 = 0;
+                for (mdim=0;mdim<DIM;mdim++){
+                    dx0[mdim] = state->x[inc][mdim]   - state->x[inc+1][mdim];
+                    dx1[mdim] = state->x[inc][mdim]   - state->x[inc+2][mdim];
+                    dx2[mdim] = state->x[inc+1][mdim] - state->x[inc+2][mdim];
+                    dv0[mdim] = state->v[inc][mdim]   - state->v[inc+1][mdim];
+                    dv1[mdim] = state->v[inc][mdim]   - state->v[inc+2][mdim];
+                    dv2[mdim] = state->v[inc+1][mdim] - state->v[inc+2][mdim];
+                }
+                for (mdim=0;mdim<DIM;mdim++){
+                    dot0 += (dv0[mdim]+state->veta*dx0[mdim])*dx0[mdim];
+                    dot1 += (dv1[mdim]+state->veta*dx1[mdim])*dx1[mdim];
+                    dot2 += (dv2[mdim]+state->veta*dx2[mdim])*dx2[mdim];
+                }
+                printf("dot0=%18.12f\n",dot0);
+                printf("dot1=%18.12f\n",dot1);
+                printf("dot2=%18.12f\n",dot2);
+            }
+        }
+#endif    
         if (bTrotter && !bInitStep) 
         { 
             /* update temperature and kinetic energy now that step is over */
@@ -2449,13 +2470,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 {
                     if (bIterate) 
                     {
-                        m_add(shakev_vir,force_vir,total_vir);
+                        //m_add(shakev_vir,force_vir,total_vir);
                         if (bFirstIterate && bInitStep) 
                         {
                             /* Double shakevir to approximate shake_vir for a better initial guess the first time.
                                for all subsequent searches, we just start with the last virial.  Should be a better
                                way to do this . .. */
-                            m_add(shakev_vir,total_vir,total_vir);
+                            // m_add(shakev_vir,total_vir,total_vir);
                         } 
                         else 
                         {
@@ -2468,10 +2489,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 scalevir = 0;
                             }
                             msmul(shake_vir,scalevir,shake_vir); 
-                            m_add(total_vir,shake_vir,total_vir);
+                            //m_add(total_vir,shake_vir,total_vir);
+                            m_add(force_vir,shake_vir,total_vir);
                         }
                     }
-                    trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,FALSE,TRUE,TRUE,bInitStep);
+                    trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,&vetascale_nhc,FALSE,TRUE,TRUE,bInitStep);
                 }
                 
                 /* We can only do Berendsen coupling after we have summed the kinetic
@@ -2488,7 +2510,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,FALSE,bCalcPres,state->veta);  
+                                   bInitStep,FALSE,bCalcPres,state->veta,1);  
 
                 if (!bOK && !bFFscan) 
                 {

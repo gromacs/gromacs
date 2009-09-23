@@ -1105,7 +1105,7 @@ static void combine_forces(int nstlist,
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
                   state->x,f_lr,f_lr,state->box,state->lambda,NULL,
-                  NULL,NULL,nrnb,econqForce,ir->epc==epcTROTTER,state->veta);
+                  NULL,NULL,nrnb,econqForce,ir->epc==epcTROTTER,state->veta,1);
     }
     
     /* Add nstlist-1 times the LR force to the sum of both forces
@@ -1244,7 +1244,8 @@ void update_constraints(FILE         *fplog,
                         bool         bInitStep,
                         bool         bFirstHalf,
                         bool         bCalcVir,
-                        real         vetanew)
+                        real         vetanew,
+                        real         vetascale_nhc)
 {
     bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
@@ -1252,7 +1253,7 @@ void update_constraints(FILE         *fplog,
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
     rvec             *vbuf,*xprime;
-    
+
     if (constr) {bDoConstr=TRUE;}
     if (bInitStep && bFirstHalf) {bDoConstr=FALSE;} /* already constrained on the first step with VV */
     if (bFirstHalf && inputrec->eI != eiVV) {bDoConstr=FALSE;} /* we don't need to do this for non VV on the first half*/
@@ -1296,7 +1297,7 @@ void update_constraints(FILE         *fplog,
                       state->x,state->v,state->v,
                       state->box,state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
-                      inputrec->epc==epcTROTTER,vetanew);
+                      inputrec->epc==epcTROTTER,vetanew,vetascale_nhc);
         } 
         else 
         {
@@ -1305,7 +1306,7 @@ void update_constraints(FILE         *fplog,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
-                      inputrec->epc==epcTROTTER,state->veta);
+                      inputrec->epc==epcTROTTER,state->veta,1);
         }
         wallcycle_stop(wcycle,ewcCONSTR);
         
@@ -1362,7 +1363,7 @@ void update_constraints(FILE         *fplog,
                       inputrec,cr,step,1,md,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
-                      NULL,NULL,nrnb,econqCoord,FALSE,0);
+                      NULL,NULL,nrnb,econqCoord,FALSE,0,1);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
     }    

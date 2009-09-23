@@ -125,7 +125,9 @@ extern void update_constraints(FILE         *fplog,
 			       bool         bInitStep,
 			       bool         bFirstHalf,
 			       bool         bCalcVir,
-			       real         vetanew);
+			       real         vetanew,
+			       real         vetascale_nhc);
+
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 extern void update_box(FILE         *fplog,
@@ -181,7 +183,8 @@ extern t_state *init_bufstate(int size, int ntc);
 
 extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
 			   t_state *state, tensor ekin, tensor vir, t_mdatoms *md, 
-			   t_extmass *MassQ, bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
+			   t_extmass *MassQ, real *vetascale_nhc, 
+			   bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
 
 extern void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			double xi[],double vxi[], double scalefac[], t_extmass *MassQ, int etc);
