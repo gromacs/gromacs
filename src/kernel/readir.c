@@ -1457,6 +1457,7 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   for(i=0; (i<groups->grps[egcTC].nr); i++) {
     opts->nrdf[i] = nrdf_tc[i];
     opts->alpha[i] = 1.0 + DIM/((double)opts->nrdf[i]);  
+    //opts->alpha[i] = 1.0;
     opts->vscale_nhc[i] = 1.0;
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;

@@ -92,7 +92,7 @@
 #endif
 
 // Temporary definitions - MRS //
-#define CONVERGEITER  0.00000002
+#define CONVERGEITER  0.0000000002
 #define MAXITERCONST       500
 
 #ifdef GMX_FAHCORE
@@ -132,112 +132,6 @@ static matrix box_tpx;
 static tMPI_Thread_mutex_t box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-bool done_iterating(bool *bFirstIterate, bool *bIterate, real fom, real *newf, int n) 
-{
-    
-    /* monitor convergence, and use a secant search to propose new
-       values.  
-                                                                  x_{i} - x_{i-1}
-       The secant method computes x_{i+1} = x_{i} - f(x_{i}) * ---------------------
-                                                                f(x_{i}) - f(x_{i-1})
-       
-       The function we are trying to zero is fom-x, where fom is the
-       "figure of merit" which is the pressure (or the veta value) we
-       would get by putting in an old value of the pressure or veta into
-       the incrementor function for the step or half step.  I have
-       verified that this gives the same answer as self consistent
-       iteration, usually in many fewer steps, especially for small tau_p.
-       
-       We could possibly eliminate an iteration with proper use
-       of the value from the previous step, but that would take a bit
-       more bookkeeping, especially for veta, since tests indicate the
-       function of veta on the last step is not sufficiently close to
-       guarantee convergence this step. This is
-       good enough for now.  On my tests, I could use tau_p down to
-       0.02, which is smaller that would ever be necessary in
-       practice. Generally, 3-5 iterations will be sufficient */
-    
-    static real f,fprev,x,xprev;  
-    static int iter_i;
-    double relerr,xmin;
-    
-    if (*bFirstIterate) 
-    {
-        *bFirstIterate = FALSE;
-        iter_i = 0;
-        x = fom;
-        f = fom-x;
-        *newf = fom;
-    } 
-    else 
-    {
-        f = fom-x; /* we want to zero this difference */
-        if ((iter_i > 1) && (iter_i < MAXITERCONST)) 
-        {
-            if (f==fprev) 
-            {
-                *newf = f;
-            } 
-            else 
-            {
-                *newf = x - (x-xprev)*(f)/(f-fprev); 
-            }
-        } 
-        else 
-        {
-            /* just use self-consistent iteration the first step to initialize, or 
-               if it's not converging (which happens occasionally -- need to investigate why) */
-            *newf = fom; 
-        }
-    }
-    /* Consider a slight shortcut allowing us to exit one sooner -- we check the
-       difference between the closest of x and xprev to the new
-       value. To be 100% certain, we should check the difference between
-       the last result, and the previous result, or
-       
-       relerr = (fabs((x-xprev)/fom));
-       
-       but this is pretty much never necessary under typical conditions.
-       Checking numerically, it seems to lead to almost exactly the same
-       trajectories, but there are small differences out a few decimal
-       places in the pressure, and eventually in the v_eta, but it could
-       save an interation.
-       
-       if (fabs(*newf-x) < fabs(*newf - xprev)) { xmin = x;} else { xmin = xprev;}
-       relerr = (fabs((*newf-xmin) / *newf));
-    */
-    
-    relerr = (fabs((f-fprev)/fom));
-    
-    if (iter_i > 0) 
-    {
-        if (debug) 
-        {
-            fprintf(debug,"Iterating NPT constraints #%i: %6i %20.12f%14.6g%20.12f\n",n,iter_i,fom,relerr,*newf);
-        }
-        
-        if ((relerr < CONVERGEITER) || (fom==0))
-        {
-            *bIterate = FALSE;
-            if (debug) 
-            {
-                fprintf(debug,"Iterating NPT constraints #%i: CONVERGED\n",n);
-            }
-            return TRUE;
-        }
-        if (iter_i > 10*MAXITERCONST) 
-        {
-            gmx_fatal(FARGS,"Could not converge NPT constraints\n");
-        }
-    }
-    
-    xprev = x;
-    x = *newf;
-    fprev = f;
-    iter_i++;
-    
-    return FALSE;
-}
 
 void copy_coupling_state (t_state *statea,t_state *stateb, 
                           tensor shake_vira, tensor shake_virb, 
@@ -1100,6 +994,136 @@ static void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
     {
         fprintf(fplog,"\n%s\n",buf);
     }
+}
+
+bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *bIterate, real fom, real *newf, int n) 
+{
+    
+    /* monitor convergence, and use a secant search to propose new
+       values.  
+                                                                  x_{i} - x_{i-1}
+       The secant method computes x_{i+1} = x_{i} - f(x_{i}) * ---------------------
+                                                                f(x_{i}) - f(x_{i-1})
+       
+       The function we are trying to zero is fom-x, where fom is the
+       "figure of merit" which is the pressure (or the veta value) we
+       would get by putting in an old value of the pressure or veta into
+       the incrementor function for the step or half step.  I have
+       verified that this gives the same answer as self consistent
+       iteration, usually in many fewer steps, especially for small tau_p.
+       
+       We could possibly eliminate an iteration with proper use
+       of the value from the previous step, but that would take a bit
+       more bookkeeping, especially for veta, since tests indicate the
+       function of veta on the last step is not sufficiently close to
+       guarantee convergence this step. This is
+       good enough for now.  On my tests, I could use tau_p down to
+       0.02, which is smaller that would ever be necessary in
+       practice. Generally, 3-5 iterations will be sufficient */
+    
+    static real f,fprev,x,xprev;  
+    static int iter_i;
+    static real allrelerr[MAXITERCONST+2];
+    double relerr,xmin;
+    char buf[256];
+    int i;
+    bool incycle;
+
+    if (*bFirstIterate) 
+    {
+        *bFirstIterate = FALSE;
+        iter_i = 0;
+        x = fom;
+        f = fom-x;
+        *newf = fom;
+    } 
+    else 
+    {
+        f = fom-x; /* we want to zero this difference */
+        if ((iter_i > 1) && (iter_i < MAXITERCONST)) 
+        {
+            if (f==fprev) 
+            {
+                *newf = f;
+            } 
+            else 
+            {
+                *newf = x - (x-xprev)*(f)/(f-fprev); 
+            }
+        } 
+        else 
+        {
+            /* just use self-consistent iteration the first step to initialize, or 
+               if it's not converging (which happens occasionally -- need to investigate why) */
+            *newf = fom; 
+        }
+    }
+    /* Consider a slight shortcut allowing us to exit one sooner -- we check the
+       difference between the closest of x and xprev to the new
+       value. To be 100% certain, we should check the difference between
+       the last result, and the previous result, or
+       
+       relerr = (fabs((x-xprev)/fom));
+       
+       but this is pretty much never necessary under typical conditions.
+       Checking numerically, it seems to lead to almost exactly the same
+       trajectories, but there are small differences out a few decimal
+       places in the pressure, and eventually in the v_eta, but it could
+       save an interation.
+       
+       if (fabs(*newf-x) < fabs(*newf - xprev)) { xmin = x;} else { xmin = xprev;}
+       relerr = (fabs((*newf-xmin) / *newf));
+    */
+    
+    relerr = (fabs((f-fprev)/fom));
+    
+    allrelerr[iter_i] = relerr;
+
+    if (iter_i > 0) 
+    {
+        if (debug) 
+        {
+            fprintf(debug,"Iterating NPT constraints #%i: %6i %20.12f%14.6g%20.12f\n",n,iter_i,fom,relerr,*newf);
+        }
+        
+        if ((relerr < CONVERGEITER) || (fom==0))
+        {
+            *bIterate = FALSE;
+            if (debug) 
+            {
+                fprintf(debug,"Iterating NPT constraints #%i: CONVERGED\n",n);
+            }
+            return TRUE;
+        }
+        if (iter_i > MAXITERCONST) 
+        {
+            incycle = FALSE;
+            for (i=0;i<4;i++) {
+                if (allrelerr[9*(MAXITERCONST/10)-i] == allrelerr[iter_i]) {
+                    incycle = TRUE;
+                    if (relerr > CONVERGEITER*100) {incycle = FALSE;}
+                }
+            }
+            
+            if (incycle) {
+                /* we are trapped in a numerical attractor, and can't converge any more, and are close to the final result.
+                   Better to give up here and proceed with a warning than have the simulation die.
+                */
+                sprintf(buf,"numerical convergence issues with NPT, relative error only %10.5g, continuing\n",relerr);
+                md_print_warning(cr,fplog,buf);
+                return TRUE;
+            } else {
+                gmx_fatal(FARGS,"Could not converge NPT constraints\n");
+            }
+        }
+    }
+    
+    xprev = x;
+    x = *newf;
+    fprev = f;
+    iter_i++;
+    
+    return FALSE;
 }
 
 static void check_nst_param(FILE *fplog,t_commrec *cr,
@@ -2251,14 +2275,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,&vetascale_nhc,TRUE,TRUE,TRUE,bInitStep);
             }
             
-
-            /* iterate until veta is converged.  This -should- be equivalent
-               to self consistently solving for the Lagrange multipliers */
-            if (debug) 
-            {
-                fprintf(debug,"Iterating vir, ekin: %20.12f %20.12f\n",trace(total_vir),trace(ekin));
-            }
-            if (done_iterating(&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
+            if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
             /* Important: restarting each step, need to divide by the barostating of the box velocity for the constraints */
             vetanew = state->veta / vetascale_nhc;
         }
@@ -2270,6 +2287,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             real dv0[3],dv1[3],dv2[3];
             real dot0,dot1,dot2;
             int inc,mdim;
+//            for (inc=mdatoms->start;inc<(mdatoms->start+mdatoms->homenr);inc+=3) {
             for (inc=0;inc<2700;inc+=3) {
                 dot0 = dot1 = dot2 = 0;
                 for (mdim=0;mdim<DIM;mdim++){
@@ -2285,9 +2303,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     dot1 += (dv1[mdim]+state->veta*dx1[mdim])*dx1[mdim];
                     dot2 += (dv2[mdim]+state->veta*dx2[mdim])*dx2[mdim];
                 }
-                printf("dot0=%18.12f\n",dot0);
-                printf("dot1=%18.12f\n",dot1);
-                printf("dot2=%18.12f\n",dot2);
+                printf("%5d dot0=%18.12g\n",inc,dot0);
+                printf("%5d dot1=%18.12g\n",inc,dot1);
+                printf("%5d dot2=%18.12g\n",inc,dot2);
             }
         }
 #endif    
@@ -2561,7 +2579,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             /* #############  END CALC EKIN AND PRESSURE ################# */
             
-            if (done_iterating(&bFirstIterate,&bIterate,trace(shake_vir),&tracevir,1)) break;
+            if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,trace(shake_vir),&tracevir,1)) break;
         }
         
         update_box(fplog,step,ir,mdatoms,state,graph,f,

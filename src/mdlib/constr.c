@@ -82,7 +82,7 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-t_vetavars *init_vetavars(real veta,real vetascale_nhc, t_inputrec *ir) 
+t_vetavars *init_vetavars(real veta,real vetanew, real vetascale_nhc, t_inputrec *ir) 
 {
     t_vetavars *vars;
     real g;
@@ -90,18 +90,18 @@ t_vetavars *init_vetavars(real veta,real vetascale_nhc, t_inputrec *ir)
 
     snew(vars,1);
     snew(vars->vscale_nhc,ir->opts.ngtc);
-    vars->veta = veta;
+    g = 0.5*veta*ir->delta_t;
+    vars->rscale = exp(g)*series_sinhx(g);
+    g = -0.25*vars->alpha*veta*ir->delta_t;
+    vars->vscale = exp(g)*series_sinhx(g);
+    vars->rvscale = vars->vscale*vars->rscale;
+    vars->veta = vetanew;
     vars->alpha = ir->opts.alpha[0];
     vars->vetascale_nhc = vetascale_nhc;
     for (i=0;i<ir->opts.ngtc;i++)
     {
         vars->vscale_nhc[i] = ir->opts.vscale_nhc[i];
     }
-    g = -0.25*vars->alpha*vars->veta*ir->delta_t;
-    vars->vscale = exp(g)*series_sinhx(g);
-    g = 0.5*vars->veta*ir->delta_t;
-    vars->rscale = exp(g)*series_sinhx(g);
-    vars->rvscale = vars->vscale*vars->rscale;
     
     return vars;
 }
@@ -226,7 +226,7 @@ static void dump_confs(FILE *fplog,gmx_large_int_t step,gmx_mtop_t *mtop,
  
   char *env=getenv("GMX_SUPPRESS_DUMP");
   if (env)
-    return; 
+      return; 
   
   sprintf(buf,"step%sb",gmx_step_str(step,buf2));
   write_constr_pdb(buf,"initial coordinates",
@@ -261,7 +261,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetascale_nhc)
+               t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetanew,real vetascale_nhc)
 {
     bool    bOK;
     int     start,homenr,nrend;
@@ -287,9 +287,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     homenr = md->homenr;
     nrend = start+homenr;
 
-    if (bPscal) {
-        vetavar = init_vetavars(veta,vetascale_nhc,ir);
-    }
+    /* set constants for pressure control integration */ 
+    vetavar = init_vetavars(veta,vetanew,vetascale_nhc,ir);
 
     if (ir->delta_t == 0)
     {
@@ -416,10 +415,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         }
     }
 
-    if (bPscal) 
-    {
-        free_vetavars(vetavar);
-    }
+    free_vetavars(vetavar);
     
     if (vir != NULL)
     {

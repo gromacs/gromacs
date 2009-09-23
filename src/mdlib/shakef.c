@@ -283,7 +283,7 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
             } 
             if (econq == econqVeloc) 
             {
-                mm = lagr[ll]/vetavar->vscale;
+                mm = lagr[ll]/(vetavar->vscale*vetavar->vscale_nhc[0]);
             }
             for(i=0; i<DIM; i++) 
             {
@@ -461,7 +461,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
 
     veta = vetavar->veta*vetavar->vetascale_nhc;
     vscale_nhc = vetavar->vscale_nhc[0];  // for now, just choose the first state 
-    
+
     error=0;
     nconv=1;
     for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
@@ -486,14 +486,12 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
             vz      = vp[iz]-vp[jz];
             
             vpijd   = vx*rijx+vy*rijy+vz*rijz;
-            rijd    = rijx*rijx+rijy*rijy+rijz*rijz;
-            xdotd   = vpijd*vscale_nhc + veta*rijd;
-            
             toler   = dist2[ll];
-            diff    = xdotd;
+            // this is r(t+dt) \dotproduct \dot{r}(t+dt)
+            xdotd   = vpijd*vscale_nhc + veta*toler;
             
             /* iconv is zero when the error is smaller than a bound */
-            iconv   = fabs(diff)*(tt[ll]/invdt);
+            iconv   = fabs(xdotd)*(tt[ll]/invdt);
             
             if (iconv != 0) {
                 nconv     = nconv + iconv;
@@ -505,8 +503,8 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
                 yh        = rijy*acor;
                 zh        = rijz*acor;
                 
-                im        = invmass[i];
-                jm        = invmass[j];
+                im        = invmass[i]/vscale_nhc;
+                jm        = invmass[j]/vscale_nhc;
                 
                 vp[ix] += xh*im;
                 vp[iy] += yh*im;

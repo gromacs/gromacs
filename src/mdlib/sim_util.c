@@ -915,7 +915,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
               ir,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,1);
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,state->veta,1);
     if (ir->eI==eiVV) {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
@@ -924,7 +924,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   ir,cr,step,0,md,
                   state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
-                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcTROTTER,state->veta,1);
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcTROTTER,state->veta,state->veta,1);
         
     } else {
         if (EI_STATE_VELOCITY(ir->eI)) {
@@ -947,7 +947,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                       ir,cr,step,-1,md,
                       state->x,savex,NULL,
                       state->box,state->lambda,&dvdlambda,
-                      state->v,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,1);
+                      state->v,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,state->veta,1);
         }
         for(i=start; i<end; i++) {
             for(m=0; m<DIM; m++) {
