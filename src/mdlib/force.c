@@ -1235,7 +1235,7 @@ void init_forcerec(FILE *fp,
     fr->sc_sigma6  = pow(ir->sc_sigma,6);
     
     /* Check if we can/should do all-vs-all kernels */
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
     /* double not done yet */
     fr->bAllvsAll = FALSE;
 #else
