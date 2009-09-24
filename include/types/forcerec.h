@@ -349,6 +349,9 @@ typedef struct {
   double t_wait;
   int timesteps;
 
+  /* Enable CG-CG Neighborlist as defined in the inputrec */ 
+  bool  benlistCG_CG;
+
   /* User determined parameters, copied from the inputrec */
   int  userint1;
   int  userint2;

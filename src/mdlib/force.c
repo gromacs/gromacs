@@ -1214,7 +1214,10 @@ void init_forcerec(FILE *fp,
     } else {
         fr->n_tpi = 0;
     }
-    
+  
+    /* Copy CG-CG Neighborlist */
+    fr->benlistCG_CG = ir->benlistCG_CG;
+
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;
     fr->userint2 = ir->userint2;
