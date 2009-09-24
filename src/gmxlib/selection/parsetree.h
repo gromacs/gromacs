@@ -161,13 +161,8 @@ _gmx_sel_append_selection(struct t_selelem *sel, struct t_selelem *last,
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
-extern bool
+bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
                       struct gmx_ana_selparam_t *param, struct t_selelem *root);
-
-/* In parser.y */
-/** Internal helper function used by gmx_ana_selcollection_parse_*() to do the actual work. */
-int
-_gmx_sel_run_parser(int maxnr, struct gmx_ana_indexgrps_t *grps, void *scanner);
 
 #endif

@@ -2348,37 +2348,6 @@ yyreturn:
 #line 495 "parser.y"
 
 
-/*!
- * \param[in]     maxnr   Maximum number of selections to parse
- *   (if -1, parse as many as provided by the user).
- * \param[in]     grps    External index groups (can be NULL).
- * \param[in,out] scanner Scanner data structure.
- * \returns       0 on success, -1 on error.
- */
-int
-_gmx_sel_run_parser(int maxnr, gmx_ana_indexgrps_t *grps, yyscan_t scanner)
-{
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    bool bOk;
-    int  nr;
-    int  nexp;
-
-    nr        = sc->nr;
-    nexp      = (maxnr > 0) ? (sc->nr + maxnr) : -1;
-    bOk  = !_gmx_sel_yyparse(nexp, grps, scanner);
-    _gmx_sel_free_lexer(scanner);
-    if (sc->selstr)
-    {
-        srenew(sc->selstr, strlen(sc->selstr) + 1);
-    }
-    nr = sc->nr - nr;
-    if (maxnr > 0 && nr != maxnr)
-    {
-        return -1;
-    }
-    return bOk ? 0 : -1;
-}
-
 static t_selexpr_value *
 process_value_list(t_selexpr_value *values, int *nr)
 {
