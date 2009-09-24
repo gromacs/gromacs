@@ -66,6 +66,7 @@
 #include "nb_free_energy.h"
 #include "nb_generic.h"
 #include "nb_generic_cg.h"
+#include "nb_generic_adress.h"
 
 
 /* 1,4 interactions uses kernel 330 directly */
@@ -519,19 +520,37 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                 }
                 else if (nlist->enlist == enlistCG_CG)
                 {
+		    if (fr->adress_type==eAdressOff){
                     /* Call the charge group based inner loop */
-                    gmx_nb_generic_cg_kernel(nlist,
-                                             fr,
-                                             mdatoms,
-                                             x[0],
-                                             f[0],
-                                             fshift,
-                                             egcoul,
-                                             egnb,
-                                             nblists->tab.scale,
-                                             tabledata,
-                                             &outeriter,
-                                             &inneriter);
+                       gmx_nb_generic_cg_kernel(nlist,
+                                                fr,
+                                                mdatoms,
+                                                x[0],
+                                                f[0],
+                                                fshift,
+                                                egcoul,
+                                                egnb,
+                                                nblists->tab.scale,
+                                                tabledata,
+                                                &outeriter,
+                                                &inneriter);
+		    }
+		    else
+		    {
+                       gmx_nb_generic_adress_kernel(nlist,
+                                                fr,
+                                                mdatoms,
+                                                x[0],
+                                                f[0],
+                                                fshift,
+                                                egcoul,
+                                                egnb,
+                                                nblists->tab.scale,
+                                                tabledata,
+                                                &outeriter,
+                                                &inneriter);
+
+		    }
                 }
                 else
                 {

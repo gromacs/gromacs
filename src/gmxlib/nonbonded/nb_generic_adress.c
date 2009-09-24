@@ -7,11 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
+ *                        VERSION 4.0.5
+ * Written by Christoph Junghans, Brad Lambeth, and possibly others.
+ * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
+ * All rights reserved.
 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -42,10 +41,12 @@
 #include "types/simple.h"
 #include "vec.h"
 #include "typedefs.h"
-#include "nb_generic_cg.h"
+#include "nb_generic_adress.h"
+
+#define ADRESS
 
  void
- gmx_nb_generic_cg_kernel(t_nblist *           nlist,
+ gmx_nb_generic_adress_kernel(t_nblist *           nlist,
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
                           real *               x,
@@ -83,8 +84,41 @@
      int *         shift;
      int *         type;
        
+#ifdef ADRESS
+     real *     wf;
+     real       weight_cg1;
+     real       weight_cg2;
+     real       weight_product;
+     real       weight_product_cg;
+     real       hybscal;
+     real       c_tmp;
+     bool       bHybrid; /*Are we in the hybrid zone ?*/
+     bool       bIntPres; /*Is interface pressure correction enabled ?*/
+     bool       bCG; /*Are we calulating cg-cg interactions?*/
+     wf                  = mdatoms->wf;
+     /* Check if we're doing the coarse grained charge group */
+     bCG                 = (mdatoms->ptype[nlist->iinr[0]] == eptVSite);
+     bIntPres            = fr->badress_pcor;
+ 
+     /* Coarse grained - explicit interaction should be excluded via
+      * energygrp_excl in the mdp file !!!!
+      * due to that we know that if is bCG is true, we are calculating 
+      * CG-CG interactions, else EX-EX interactions */
+ 
+     if(bCG) 
+     {
+         icoul           = 0;
+         ivdw            = 3;
+     }
+     else
+     {
+         icoul           = nlist->icoul;
+         ivdw            = fr->adress_ivdw;
+     }
+#else
      icoul               = nlist->icoul;
      ivdw                = nlist->ivdw;
+#endif
      
      /* avoid compiler warnings for cases that cannot happen */
      nnn                 = 0;
@@ -120,11 +154,81 @@
          fiy              = 0;
          fiz              = 0;
          
+#ifdef ADRESS
+         weight_cg1       = wf[ai0];
+#endif
+          
          for(k=nj0; (k<nj1); k++)
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
              
+#ifdef ADRESS
+            weight_cg2       = wf[aj0];
+            weight_product   = weight_cg1*weight_cg2;
+            weight_product_cg   = (1.0-weight_cg1)*(1.0-weight_cg2);
+            /* at least one of the groups is coarse grained */
+	    /* -> we should not calculate ex-ex interactions */
+            if (weight_product == 0)
+            {
+                /* if it's a coarse grained loop, include this molecule */
+                if(bCG)
+                {
+                    bHybrid = FALSE;
+	            hybscal = 1.0;
+                }
+		/* if it's a explicit loop, goto the next molecule */
+                else
+                {
+                    continue;
+                }
+            }
+#ifndef ADRESS_SWITCHFCT_NEW
+            /* both groups are explicit */
+            else if (weight_product == 1)
+#else
+                /* at least one of the groups is explicit */
+            else if (weight_product_cg == 0)
+#endif		  
+            {
+                /* if it's a coarse grained loop, skip this molecule */
+                if(bCG)
+                {
+                    continue;
+                }
+		/* if it's a explicit loop, include this molecule */
+                else
+                {
+                    bHybrid = FALSE;
+	            hybscal = 1.0;
+                }
+            }
+            /* both have double identity, get hybrid scaling factor */
+            else 
+            {
+#ifndef ADRESS_SWITCHFCT_NEW		  
+                /* this is the old function */
+                hybscal = weight_product;
+#else
+                /* this is the unstretched new function */
+                //hybscal = exp(-0.6931472*weight_product_cg*weight_product_cg/(weight_product*weight_product));
+                hybscal = exp(-0.6931472*weight_product_cg/(weight_product));
+                
+                /* this is the stretched new function to look like the old cos^2 function */
+                //hybscal = exp(-6.2383246*weight_product_cg/(weight_product));
+#endif
+
+		/* hybscal is the scaling factor for the forces in the hybrid region
+		 * for EX-EX interactions it is just given by the above formular
+		 * for CG-CG interactions it is 1- the EX-EX scale */
+                if(bCG)
+                {
+                    hybscal = 1.0 - hybscal;
+                }
+                bHybrid = TRUE;
+            }
+#endif
+            
              for(ai=ai0; (ai<ai1); ai++)
              {
                  i3               = ai*3;
@@ -249,6 +353,39 @@
                              c6               = vdwparam[tj];   
                              c12              = vdwparam[tj+1]; 
                              
+#ifdef ADRESS
+                             /* Interface pressure correction (bIntPres)
+ 			     * it only act in the hybrid zone (bHybrid)
+ 			     * it is added to the cg-cg interaction (bCG)
+                              * c6 = HYB potential, c12 = CG potential
+ 			     * this implies that in the case of Interface 
+ 			     * pressure correction and CG-CG interaction
+ 			     * c6 = 0 otherwise */
+                             if(bIntPres && bCG)
+                             {
+ 			        if (bHybrid)
+ 				{
+                                     c_tmp = sqrt(weight_product);
+                                     if(c_tmp < 0.5)
+                                     {
+                                         c_tmp = cos(M_PI*c_tmp);
+                                         c_tmp*= c_tmp;
+                                     }
+                                     else
+                                     {
+                                         c_tmp = (c_tmp-0.5);
+                                         c_tmp*= 4.0*c_tmp;
+                                     }
+                                     c12 *= c_tmp;
+                                     c6 = 1.0-c12;
+ 				}
+ 				else
+ 			        {
+ 				  c6=0;
+ 				}
+                             }
+#endif
+                            
                              Y                = VFtab[nnn];     
                              F                = VFtab[nnn+1];   
                              Geps             = eps*VFtab[nnn+2];
@@ -279,6 +416,14 @@
                      } /* end VdW interactions */
                      
                      
+#ifdef ADRESS
+                    /* force weight is one anyway */
+                    if (bHybrid)
+                    {
+                        fscal *= hybscal;
+                    }
+#endif
+                    
                      tx               = fscal*dx;     
                      ty               = fscal*dy;     
                      tz               = fscal*dz;     
