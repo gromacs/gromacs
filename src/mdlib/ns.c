@@ -70,14 +70,8 @@
  * There can be no perturbed LJ types or charges.
  * mdrun currently does NOT check for this.
  */
+/* obsolete use add nblistCG=yes to your mdp file */
 /* #define GMX_CG_INNERLOOP */
-
-
-/* experimental AdResS innerloop uses GMX_CG_INNERLOOP */
-#ifdef ADRESS
-#define GMX_CG_INNERLOOP
-#endif
-
 
 /* 
  *    E X C L U S I O N   H A N D L I N G
@@ -207,9 +201,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
             */
             switch (enlist) {
             case enlistATOM_ATOM:
-#ifdef GMX_CG_INNERLOOP
 	        if (benlistCG_CG) nl->enlist = enlistCG_CG;
-#endif
                 break;
             case enlistSPC_ATOM:     nn += 1; break;
             case enlistSPC_SPC:      nn += 2; break;
@@ -552,9 +544,8 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
     nlist->nrj ++;
 }
 
-#ifndef GMX_CG_INNERLOOP
 static inline void 
-put_in_list(bool              bHaveVdW[],
+put_in_list_normal(bool              bHaveVdW[],
             int               ngid,
             t_mdatoms *       md,
             int               icg,
@@ -1132,11 +1123,9 @@ put_in_list(bool              bHaveVdW[],
         }
     }
 }
-#endif
 
-#ifdef GMX_CG_INNERLOOP
 static inline void 
-put_in_list(bool              bHaveVdW[],
+put_in_list_cg(bool              bHaveVdW[],
             int               ngid,
             t_mdatoms *       md,
             int               icg,
@@ -1199,8 +1188,32 @@ put_in_list(bool              bHaveVdW[],
 
     close_i_nblist(vdwc);  
 }
-#endif
-
+/** \TODO replace this by a function pointer*/
+static inline void 
+put_in_list(bool              bHaveVdW[],
+            int               ngid,
+            t_mdatoms *       md,
+            int               icg,
+            int               jgid,
+            int               nj,
+            atom_id           jjcg[],
+            atom_id           index[],
+            t_excl            bExcl[],
+            int               shift,
+            t_forcerec *      fr,
+            bool              bLR,
+            bool              bDoVdW,
+            bool              bDoCoul,
+            bool              bQMMM)
+{
+    if (fr->benlistCG_CG){
+        put_in_list_cg(bHaveVdW,ngid,md,icg,jgid,nj,jjcg,index,bExcl,shift,fr,bLR,bDoVdW,bDoCoul,bQMMM);
+    }
+    else{
+        put_in_list_normal(bHaveVdW,ngid,md,icg,jgid,nj,jjcg,index,bExcl,shift,fr,bLR,bDoVdW,bDoCoul,bQMMM);
+    }
+}
+       
 static void setexcl(atom_id start,atom_id end,t_blocka *excl,bool b,
                     t_excl bexcl[])
 {
