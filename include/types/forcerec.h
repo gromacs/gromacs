@@ -352,6 +352,14 @@ typedef struct {
   /* Enable CG-CG Neighborlist as defined in the inputrec */ 
   bool  benlistCG_CG;
 
+  /* parameter needed for AdResS simulation */
+  int  adress_type;
+  real adress_ex_width;
+  real adress_hy_width;
+  bool badress_pcor;
+  int adress_ivdw;
+  bool badress_cog;
+
   /* User determined parameters, copied from the inputrec */
   int  userint1;
   int  userint2;

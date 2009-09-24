@@ -450,15 +450,15 @@ void do_force(FILE *fplog,t_commrec *cr,
 
 #ifdef ADRESS
         /* update adress weight beforehand */
-        if(fr->userint1 > 1) 
+        if((fr->adress_type!=eAdressOff)&&(fr->adress_type!=eAdressConst))
         {
-            if(fr->userint4 > 0)
+            if(fr->badress_cog)
             {
-                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,box);
+                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,box);
             }
             else
             {
-                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,box);
+                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,box);
             }
         }
 #endif

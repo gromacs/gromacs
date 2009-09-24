@@ -1218,6 +1218,14 @@ void init_forcerec(FILE *fp,
     /* Copy CG-CG Neighborlist */
     fr->benlistCG_CG = ir->benlistCG_CG;
 
+    /* Copy AdResS parameters */
+    fr->adress_type = ir->adress_type;
+    fr->adress_ex_width = ir->adress_ex_width;
+    fr->adress_hy_width = ir->adress_hy_width;
+    fr->badress_pcor = ir->badress_pcor;
+    fr->adress_ivdw = ir->adress_ivdw;
+    fr->badress_cog = ir->badress_cog;
+
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;
     fr->userint2 = ir->userint2;

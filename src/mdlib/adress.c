@@ -58,22 +58,25 @@ adress_weight(rvec            x,
 
     switch(adresstype)
     {
-    case 1:              
+    case eAdressOff:
+        /* default to explicit simulation */
+        return 1;
+    case eAdressConst:              
         /* constant value for weighting function = adressw */
         return adressw;
-    case 2:              
+    case eAdressXSplit:              
         /* plane through center of box, varies in x direction */
         dx             = x[0]-ref[0];
         sqr_dl         = dx*dx;
         break;
-    case 3:
+    case eAdressSphere:
         /* point at center of box, assuming cubic geometry */
         for(i=0;i<3;i++){
             dx         = x[i]-ref[i];
             sqr_dl    += dx*dx;
         }
         break;
-    case 4:
+    case eAdressRefMol:
         /* get reference from shortest distance to reference solute */
         for(i=0;i<3;i++){
             dx         = x[i]-ref[i];
@@ -113,7 +116,7 @@ adress_weight(rvec            x,
     else
     {
 #ifndef ADRESS_SWITCHFCT_NEW
-        tmp=cos((dl-adressr)*M_PI/2/l2);
+        tmp=cos((dl-adressr)*M_PI/2/adressw);
         return tmp*tmp;
 #else	
         /* shift the weight past the long flat part.  this makes 
@@ -121,7 +124,7 @@ adress_weight(rvec            x,
          * is approximately correct (f(0,1)=1E-8,f'(0,1)=1E-10).
          * To use unstretched correction, change prefactor below and 
          * adjust prefactor in src/gmxlib/nonbonded/nb_generic_cg.c */
-        tmp=1.0-(dl-adressr)/l2;
+        tmp=1.0-(dl-adressr)/adressw;
         return tmp;
 #endif
     }
@@ -135,7 +138,7 @@ get_adress_ref(int             adresstype,
 {
     int i;
 
-    if(adresstype == 4)
+    if(adresstype == eAdressRefMol)
     {
         /* get refx,refy,refz from reference solute 
          * for now, assume its the last molecule */  
@@ -180,9 +183,9 @@ update_adress_weights_com(FILE *               fplog,
     real *         massT;
     real *         wf;
 
-    adresstype         = fr->userint1;
-    adressr            = fr->userreal1;
-    adressw            = fr->userreal2;
+    adresstype         = fr->adress_type;
+    adressr            = fr->adress_ex_width;
+    adressw            = fr->adress_hy_width;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
 
@@ -280,9 +283,9 @@ update_adress_weights_cog(t_iparams            ip[],
     rvec           ref,box2;
     real *         wf;
 
-    adresstype         = fr->userint1;
-    adressr            = fr->userreal1;
-    adressw            = fr->userreal2;
+    adresstype         = fr->adress_type;
+    adressr            = fr->adress_ex_width;
+    adressw            = fr->adress_hy_width;
     wf                 = mdatoms->wf;
 
     get_adress_ref(adresstype,box,box2,ref);

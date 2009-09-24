@@ -97,7 +97,7 @@
      wf                  = mdatoms->wf;
      /* Check if we're doing the coarse grained charge group */
      bCG                 = (mdatoms->ptype[nlist->iinr[0]] == eptVSite);
-     bIntPres            = (fr->userint2>0);
+     bIntPres            = fr->badress_pcor;
  
      /* Coarse grained - explicit interaction should be excluded via
       * energygrp_excl in the mdp file !!!!
@@ -112,7 +112,7 @@
      else
      {
          icoul           = nlist->icoul;
-         ivdw            = fr->userint3;
+         ivdw            = fr->adress_ivdw;
      }
 #else
      icoul               = nlist->icoul;

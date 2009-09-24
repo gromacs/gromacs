@@ -212,3 +212,8 @@ enum {
 enum {
   eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
 };
+
+enum {
+  eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressRefMol, eAdressNR
+};
+

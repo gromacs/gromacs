@@ -960,6 +960,15 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("E-z",   	efield_z,	NULL);
   STYPE ("E-zt",	efield_zt,	NULL);
   
+  /* AdResS defined thingies */
+  CCTYPE ("AdResS parameters");
+  EETYPE("adress_type",  ir->adress_type, eAdresstype_names, nerror, TRUE);
+  RTYPE ("adress_ex_width",ir->adress_ex_width, 0);
+  RTYPE ("adress_hy_width",ir->adress_hy_width, 0);
+  EETYPE("adress_interface_correction",ir->badress_pcor,yesno_names, nerror, TRUE);
+  EETYPE("adress_exvdw",ir->adress_ivdw,    evdw_names, nerror, TRUE);
+  EETYPE("adress_cog",ir->badress_cog,yesno_names, nerror, TRUE);
+  
   /* User defined thingies */
   CCTYPE ("User defined thingies");
   STYPE ("user1-grps",  user1,          NULL);
