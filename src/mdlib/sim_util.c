@@ -93,10 +93,7 @@
 #include "tmpi.h"
 #endif
 
-#ifdef ADRESS
 #include "adress.h"
-#endif
-
 #include "qmmm.h"
 
 #if 0
@@ -448,7 +445,6 @@ void do_force(FILE *fplog,t_commrec *cr,
     {
         update_forcerec(fplog,fr,box);
 
-#ifdef ADRESS
         /* update adress weight beforehand */
         if((fr->adress_type!=eAdressOff)&&(fr->adress_type!=eAdressConst))
         {
@@ -461,7 +457,6 @@ void do_force(FILE *fplog,t_commrec *cr,
                 update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,box);
             }
         }
-#endif
 
         /* Calculate total (local) dipole moment in a temporary common array. 
          * This makes it possible to sum them over nodes faster.

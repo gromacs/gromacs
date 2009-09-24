@@ -43,8 +43,6 @@
 #include "typedefs.h"
 #include "nb_generic_adress.h"
 
-#define ADRESS
-
  void
  gmx_nb_generic_adress_kernel(t_nblist *           nlist,
                           t_forcerec *         fr,
@@ -84,7 +82,6 @@
      int *         shift;
      int *         type;
        
-#ifdef ADRESS
      real *     wf;
      real       weight_cg1;
      real       weight_cg2;
@@ -115,10 +112,6 @@
          icoul           = nlist->icoul;
          ivdw            = fr->adress_ivdw;
      }
-#else
-     icoul               = nlist->icoul;
-     ivdw                = nlist->ivdw;
-#endif
      
      /* avoid compiler warnings for cases that cannot happen */
      nnn                 = 0;
@@ -154,16 +147,13 @@
          fiy              = 0;
          fiz              = 0;
          
-#ifdef ADRESS
          weight_cg1       = wf[ai0];
-#endif
           
          for(k=nj0; (k<nj1); k++)
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
              
-#ifdef ADRESS
             weight_cg2       = wf[aj0];
             weight_product   = weight_cg1*weight_cg2;
             weight_product_cg   = (1.0-weight_cg1)*(1.0-weight_cg2);
@@ -227,7 +217,6 @@
                 }
                 bHybrid = TRUE;
             }
-#endif
             
              for(ai=ai0; (ai<ai1); ai++)
              {
@@ -353,7 +342,6 @@
                              c6               = vdwparam[tj];   
                              c12              = vdwparam[tj+1]; 
                              
-#ifdef ADRESS
                              /* Interface pressure correction (bIntPres)
  			     * it only act in the hybrid zone (bHybrid)
  			     * it is added to the cg-cg interaction (bCG)
@@ -384,7 +372,6 @@
  				  c6=0;
  				}
                              }
-#endif
                             
                              Y                = VFtab[nnn];     
                              F                = VFtab[nnn+1];   
@@ -416,13 +403,11 @@
                      } /* end VdW interactions */
                      
                      
-#ifdef ADRESS
                     /* force weight is one anyway */
                     if (bHybrid)
                     {
                         fscal *= hybscal;
                     }
-#endif
                     
                      tx               = fscal*dx;     
                      ty               = fscal*dy;     

@@ -163,14 +163,7 @@ AC_ARG_ENABLE(bluegene,
               [AC_HELP_STRING([--enable-bluegene],
                               [Build assembly intrinsics kernels on bluegene])],,enable_bluegene=no)
 
-### Enable adress code, this implies GMX_CG_INNERLOOP
-AC_ARG_ENABLE(adress,
-	      [AC_HELP_STRING([--enable-adress],
-			      [Build EXPERIMENTAL AdResS code, based on charged group innerloop])],
-	      [AC_DEFINE(ADRESS,,[Enable experimental AdResS innerloop])],)
-
-
-### Enable adress code, this implies GMX_CG_INNERLOOP
+### Enable new adresswf code
 AC_ARG_ENABLE(new-adresswf,
 	      [AC_HELP_STRING([--enable-new-adresswf],
 			      [Enable new adress switching function])],
