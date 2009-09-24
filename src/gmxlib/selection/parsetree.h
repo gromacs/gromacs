@@ -129,7 +129,7 @@ _gmx_sel_init_comparison(struct gmx_ana_selcollection_t *sc,
 struct t_selelem *
 _gmx_sel_init_keyword(struct gmx_ana_selcollection_t *sc,
                       struct gmx_ana_selmethod_t *method,
-                      int nargs, t_selexpr_value *args, const char *rpost);
+                      t_selexpr_value *args, const char *rpost);
 /** Creates a \c t_selelem for evaluation of reference positions. */
 struct t_selelem *
 _gmx_sel_init_position(struct gmx_ana_selcollection_t *sc,
@@ -144,6 +144,12 @@ struct t_selelem *
 _gmx_sel_init_modifier(struct gmx_ana_selcollection_t *sc,
                        struct gmx_ana_selmethod_t *mod,
                        t_selexpr_param *params, struct t_selelem *sel);
+/** Creates a \c t_selelem for a index group expression using group name. */
+struct t_selelem *
+_gmx_sel_init_group_by_name(gmx_ana_indexgrps_t *grps, const char *name);
+/** Creates a \c t_selelem for a index group expression using group index. */
+struct t_selelem *
+_gmx_sel_init_group_by_id(gmx_ana_indexgrps_t *grps, int id);
 /** Creates a root \c t_selelem for a selection. */
 struct t_selelem *
 _gmx_sel_init_selection(char *name, struct t_selelem *sel, void *scanner);

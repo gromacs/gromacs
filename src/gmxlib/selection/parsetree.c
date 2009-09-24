@@ -561,7 +561,6 @@ _gmx_sel_init_comparison(gmx_ana_selcollection_t *sc,
 /*!
  * \param[in]  sc     Selection collection (used for position evaluation).
  * \param[in]  method Method to use.
- * \param[in]  nargs  Number of arguments for keyword matching.
  * \param[in]  args   Pointer to the first argument.
  * \param[in]  rpost  Reference position type to use (NULL = default).
  * \returns    The created selection element.
@@ -571,11 +570,13 @@ _gmx_sel_init_comparison(gmx_ana_selcollection_t *sc,
  */
 t_selelem *
 _gmx_sel_init_keyword(gmx_ana_selcollection_t *sc,
-                      gmx_ana_selmethod_t *method, int nargs,
+                      gmx_ana_selmethod_t *method,
                       t_selexpr_value *args, const char *rpost)
 {
     t_selelem         *root, *child;
     t_selexpr_param   *params, *param;
+    t_selexpr_value   *arg;
+    int                nargs;
     int                rc;
 
     if (method->nparams > 0)
@@ -589,7 +590,7 @@ _gmx_sel_init_keyword(gmx_ana_selcollection_t *sc,
     set_method(sc, child, method);
 
     /* Initialize the evaluation of keyword matching if values are provided */
-    if (nargs > 0)
+    if (args)
     {
         gmx_ana_selmethod_t *kwmethod;
         switch (method->type)
@@ -600,6 +601,15 @@ _gmx_sel_init_keyword(gmx_ana_selcollection_t *sc,
                 _gmx_selparser_error("unknown type for keyword selection");
                 goto on_error;
         }
+        /* Count the arguments */
+        nargs = 0;
+        arg   = args;
+        while (arg)
+        {
+            ++nargs;
+            arg = arg->next;
+        }
+        /* Initialize the selection element */
         root = _gmx_selelem_create(SEL_EXPRESSION);
         set_method(sc, root, kwmethod);
         params = param = _gmx_selexpr_create_param(NULL);
@@ -770,6 +780,61 @@ _gmx_sel_init_modifier(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
     }
 
     return root;
+}
+
+/*!
+ * \param[in] grps  External index groups (can be NULL).
+ * \param[in] name  Name of an index group to search for.
+ * \returns   The created constant selection element, or NULL if no matching
+ *     index group found.
+ *
+ * See gmx_ana_indexgrps_find() for information on how \p name is matched
+ * against the index groups.
+ */
+t_selelem *
+_gmx_sel_init_group_by_name(gmx_ana_indexgrps_t *grps, const char *name)
+{
+    t_selelem *sel;
+
+    if (!grps)
+    {
+        return NULL;
+    }
+    sel = _gmx_selelem_create(SEL_CONST);
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
+    if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, name))
+    {
+        _gmx_selelem_free(sel);
+        return NULL;
+    }
+    sel->name = sel->u.cgrp.name;
+    return sel;
+}
+
+/*!
+ * \param[in] grps  External index groups (can be NULL).
+ * \param[in] id    Zero-based index number of the group to extract.
+ * \returns   The created constant selection element, or NULL if no matching
+ *     index group found.
+ */
+t_selelem *
+_gmx_sel_init_group_by_id(gmx_ana_indexgrps_t *grps, int id)
+{
+    t_selelem *sel;
+
+    if (!grps)
+    {
+        return NULL;
+    }
+    sel = _gmx_selelem_create(SEL_CONST);
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
+    if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, grps, id))
+    {
+        _gmx_selelem_free(sel);
+        return NULL;
+    }
+    sel->name = sel->u.cgrp.name;
+    return sel;
 }
 
 /*!
