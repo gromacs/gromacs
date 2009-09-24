@@ -60,7 +60,7 @@
 #include "scanner.h"
 
 static void
-yyerror(yyscan_t, int, gmx_ana_indexgrps_t *, char const *s);
+yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 
 static t_selexpr_value *
 process_value_list(t_selexpr_value *values, int *nr);
@@ -156,10 +156,10 @@ process_param_list(t_selexpr_param *params);
 
 %name-prefix="_gmx_sel_yy"
 
-%parse-param { yyscan_t                 scanner }
-%lex-param   { yyscan_t                 scanner }
 %parse-param { int                      nexp    }
 %parse-param { gmx_ana_indexgrps_t     *grps    }
+%parse-param { yyscan_t                 scanner }
+%lex-param   { yyscan_t                 scanner }
 
 %%
 
@@ -168,7 +168,7 @@ commands:    command
              {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_append_selection(sc, $1, NULL);
+                 $$ = _gmx_sel_append_selection($1, NULL, scanner);
                  if (sc->nr == nexp)
                      YYACCEPT;
                  _gmx_sel_lexer_clear_pselstr(scanner);
@@ -177,7 +177,7 @@ commands:    command
              {
                  gmx_ana_selcollection_t *sc;
                  sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_append_selection(sc, $3, $1);
+                 $$ = _gmx_sel_append_selection($3, $1, scanner);
                  if (sc->nr == nexp)
                      YYACCEPT;
                  _gmx_sel_lexer_clear_pselstr(scanner);
@@ -201,12 +201,10 @@ pos_mod:     /* empty */        { $$ = NULL; }
 command:     /* empty */        { $$ = NULL;                            }
            | INT
              {
-                 gmx_ana_selcollection_t *sc;
                  t_selelem               *s, *p;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
                  s = _gmx_sel_init_group_by_id(grps, $1);
                  if (s == NULL) YYABORT;
-                 p = _gmx_sel_init_position(sc, s, sc->spost, TRUE);
+                 p = _gmx_sel_init_position(s, NULL, TRUE, scanner);
                  if (p == NULL) YYABORT;
                  $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
              }
@@ -250,9 +248,7 @@ help_topic:  HELP HELP_TOPIC
 selection:   pos_expr_sel       { $$ = $1; }
            | selection MODIFIER method_params
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_modifier(sc, $2, process_param_list($3), $1);
+                 $$ = _gmx_sel_init_modifier($2, process_param_list($3), $1, scanner);
                  _gmx_sel_finish_method(scanner);
              }
            | '(' selection ')'  { $$ = $2;                              }
@@ -321,23 +317,17 @@ pos_expr:    VARIABLE_POS       { if ($1->type == SEL_CONST) {
 /* Keyword selections */
 sel_expr:    pos_mod KEYWORD_GROUP
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_keyword(sc, $2, NULL, $1);
+                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYABORT;
              }
            | pos_mod KEYWORD_STR string_list
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_keyword(sc, $2, process_value_list($3, NULL), $1);
+                 $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYABORT;
              }
            | pos_mod KEYWORD_INT int_list
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_keyword(sc, $2, process_value_list($3, NULL), $1);
+                 $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYABORT;
              }
 ;
@@ -345,9 +335,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
 /* Custom selection methods */
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_method(sc, $2, process_param_list($3), $1);
+                 $$ = _gmx_sel_init_method($2, process_param_list($3), $1, scanner);
                  if ($$ == NULL) YYABORT;
                  _gmx_sel_finish_method(scanner);
              }
@@ -356,9 +344,7 @@ sel_expr:    pos_mod METHOD_GROUP method_params
 /* Numeric selections */
 sel_expr:    numeric_expr CMP_OP numeric_expr
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_comparison(sc, $1, $3, $2);
+                 $$ = _gmx_sel_init_comparison($1, $3, $2, scanner);
                  if ($$ == NULL) YYABORT;
              }
 ;
@@ -375,23 +361,17 @@ numeric_expr:
                                   $$->v.u.r[0] = $1;                  }
            | pos_mod KEYWORD_INT
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_keyword(sc, $2, NULL, $1);
+                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYABORT;
              }
            | pos_mod KEYWORD_REAL
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_keyword(sc, $2, NULL, $1);
+                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYABORT;
              }
            | pos_mod METHOD_NUMERIC method_params
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_method(sc, $2, process_param_list($3), $1);
+                 $$ = _gmx_sel_init_method($2, process_param_list($3), $1, scanner);
                  if ($$ == NULL) YYABORT;
                  _gmx_sel_finish_method(scanner);
              }
@@ -406,9 +386,7 @@ numeric_expr:
 /* Expressions with a position value */
 pos_expr:    METHOD_POS method_params
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_method(sc, $1, process_param_list($2), NULL);
+                 $$ = _gmx_sel_init_method($1, process_param_list($2), NULL, scanner);
                  if ($$ == NULL) YYABORT;
                  _gmx_sel_finish_method(scanner);
              }
@@ -419,16 +397,12 @@ pos_expr_sel:
              pos_expr           { $$ = $1; }
            | KEYWORD_POS OF sel_expr
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_position(sc, $3, $1, TRUE);
+                 $$ = _gmx_sel_init_position($3, $1, TRUE, scanner);
                  if ($$ == NULL) YYABORT;
              }
            | sel_expr
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_position(sc, $1, sc->spost, TRUE);
+                 $$ = _gmx_sel_init_position($1, NULL, TRUE, scanner);
                  if ($$ == NULL) YYABORT;
              }
 ;
@@ -438,9 +412,7 @@ pos_expr_nosel:
              pos_expr           { $$ = $1; }
            | KEYWORD_POS OF sel_expr
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_position(sc, $3, $1, FALSE);
+                 $$ = _gmx_sel_init_position($3, $1, FALSE, scanner);
                  if ($$ == NULL) YYABORT;
              }
 ;
@@ -450,9 +422,7 @@ pos_expr_nosel_impl:
              pos_expr_nosel     { $$ = $1; }
            | sel_expr
              {
-                 gmx_ana_selcollection_t *sc;
-                 sc = _gmx_sel_lexer_selcollection(scanner);
-                 $$ = _gmx_sel_init_position(sc, $1, sc->rpost, FALSE);
+                 $$ = _gmx_sel_init_position($1, NULL, FALSE, scanner);
                  if ($$ == NULL) YYABORT;
              }
 ;
@@ -525,24 +495,23 @@ method_param:
 %%
 
 /*!
- * \param[in,out] scanner Scanner data structure.
- * \param[in,out] sc    Selection collection to use for output.
- * \param[in]     grps  External index groups (can be NULL).
- * \param[in]     maxnr Maximum number of selections to parse
+ * \param[in]     maxnr   Maximum number of selections to parse
  *   (if -1, parse as many as provided by the user).
+ * \param[in]     grps    External index groups (can be NULL).
+ * \param[in,out] scanner Scanner data structure.
  * \returns       0 on success, -1 on error.
  */
 int
-_gmx_sel_run_parser(yyscan_t scanner, gmx_ana_selcollection_t *sc,
-                    gmx_ana_indexgrps_t *grps, int maxnr)
+_gmx_sel_run_parser(int maxnr, gmx_ana_indexgrps_t *grps, yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     bool bOk;
     int  nr;
     int  nexp;
 
     nr        = sc->nr;
     nexp      = (maxnr > 0) ? (sc->nr + maxnr) : -1;
-    bOk = !_gmx_sel_yyparse(scanner, nexp, grps);
+    bOk  = !_gmx_sel_yyparse(nexp, grps, scanner);
     _gmx_sel_free_lexer(scanner);
     if (sc->selstr)
     {
@@ -607,7 +576,7 @@ process_param_list(t_selexpr_param *params)
 }
 
 static void
-yyerror(yyscan_t scanner, int nexp, gmx_ana_indexgrps_t *grps,
+yyerror(int nexp, gmx_ana_indexgrps_t *grps, yyscan_t scanner,
         char const *s)
 {
     _gmx_selparser_error("%s", s);

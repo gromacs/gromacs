@@ -513,19 +513,20 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost)
 }
 
 /*!
- * \param[in]  sc     Selection collection.
  * \param[in]  left   Selection element for the left hand side.
  * \param[in]  right  Selection element for the right hand side.
  * \param[in]  cmpop  String representation of the comparison operator.
+ * \param[in]  scanner Scanner data structure.
  * \returns    The created selection element.
  *
  * This function handles the creation of a \c t_selelem object for
  * comparison expressions.
  */
 t_selelem *
-_gmx_sel_init_comparison(gmx_ana_selcollection_t *sc,
-                         t_selelem *left, t_selelem *right, char *cmpop)
+_gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
+                         yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
     int                rc;
@@ -559,20 +560,20 @@ _gmx_sel_init_comparison(gmx_ana_selcollection_t *sc,
 }
 
 /*!
- * \param[in]  sc     Selection collection (used for position evaluation).
  * \param[in]  method Method to use.
  * \param[in]  args   Pointer to the first argument.
  * \param[in]  rpost  Reference position type to use (NULL = default).
+ * \param[in]  scanner Scanner data structure.
  * \returns    The created selection element.
  *
  * This function handles the creation of a \c t_selelem object for
  * selection methods that do not take parameters.
  */
 t_selelem *
-_gmx_sel_init_keyword(gmx_ana_selcollection_t *sc,
-                      gmx_ana_selmethod_t *method,
-                      t_selexpr_value *args, const char *rpost)
+_gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
+                      const char *rpost, yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *root, *child;
     t_selexpr_param   *params, *param;
     t_selexpr_value   *arg;
@@ -641,20 +642,21 @@ on_error:
 }
 
 /*!
- * \param[in]  sc      Selection collection.
  * \param[in]  expr    Input selection element for the position calculation.
  * \param[in]  type    Reference position type or NULL for default.
  * \param[in]  bSelPos Whether the element evaluates the positions for a
  *   selection.
+ * \param[in]  scanner Scanner data structure.
  * \returns    The created selection element.
  *
  * This function handles the creation of a \c t_selelem object for
  * evaluation of reference positions.
  */
 t_selelem *
-_gmx_sel_init_position(gmx_ana_selcollection_t *sc, t_selelem *expr,
-                       const char *type, bool bSelPos)
+_gmx_sel_init_position(t_selelem *expr, const char *type, bool bSelPos,
+                       yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem       *root;
     t_selexpr_param *params;
     int              flags;
@@ -667,6 +669,11 @@ _gmx_sel_init_position(gmx_ana_selcollection_t *sc, t_selelem *expr,
     if (bSelPos && sc->bMaskOnly)
     {
         flags |= POS_MASKONLY;
+    }
+    /* Get the default type if needed */
+    if (!type)
+    {
+        type = bSelPos ? sc->spost : sc->rpost;
     }
     /* FIXME: It would be better not to have the string here hardcoded. */
     if (type[0] != 'a')
@@ -690,19 +697,20 @@ _gmx_sel_init_position(gmx_ana_selcollection_t *sc, t_selelem *expr,
 }
 
 /*!
- * \param[in]  sc     Selection collection (used for position evaluation).
  * \param[in]  method Method to use for initialization.
  * \param[in]  params Pointer to the first parameter.
  * \param[in]  rpost  Reference position type to use (NULL = default).
+ * \param[in]  scanner Scanner data structure.
  * \returns    The created selection element.
  *
  * This function handles the creation of a \c t_selelem object for
  * selection methods that take parameters.
  */
 t_selelem *
-_gmx_sel_init_method(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
-                     t_selexpr_param *params, const char *rpost)
+_gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
+                     const char *rpost, yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem       *root;
     int              rc;
 
@@ -726,19 +734,20 @@ _gmx_sel_init_method(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
 }
 
 /*!
- * \param[in]  sc     Selection collection.
  * \param[in]  method Modifier to use for initialization.
  * \param[in]  params Pointer to the first parameter.
  * \param[in]  sel    Selection element that the modifier should act on.
+ * \param[in]  scanner Scanner data structure.
  * \returns    The created selection element.
  *
  * This function handles the creation of a \c t_selelem object for
  * selection modifiers.
  */
 t_selelem *
-_gmx_sel_init_modifier(gmx_ana_selcollection_t *sc, gmx_ana_selmethod_t *method,
-                       t_selexpr_param *params, t_selelem *sel)
+_gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
+                       t_selelem *sel, yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *root;
     t_selelem         *mod;
     t_selexpr_param   *vparam;
@@ -801,8 +810,9 @@ _gmx_sel_init_group_by_name(gmx_ana_indexgrps_t *grps, const char *name)
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
-    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-    if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, name))
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE); 
+    /* FIXME: The constness should not be cast away */
+    if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, (char *)name))
     {
         _gmx_selelem_free(sel);
         return NULL;
@@ -1002,9 +1012,10 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
  * NULL).
  */
 t_selelem *
-_gmx_sel_append_selection(gmx_ana_selcollection_t *sc, t_selelem *sel,
-                          t_selelem *last)
+_gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
 {
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+
     if (last)
     {
         last->next = sel;
@@ -1098,7 +1109,7 @@ gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
         return rc;
     }
     _gmx_sel_set_lex_input_file(scanner, stdin);
-    return _gmx_sel_run_parser(scanner, sc, grps, nr);
+    return _gmx_sel_run_parser(nr, grps, scanner);
 }
 
 /*!
@@ -1126,7 +1137,7 @@ gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
     }
     fp = ffopen(fnm, "r");
     _gmx_sel_set_lex_input_file(scanner, fp);
-    rc = _gmx_sel_run_parser(scanner, sc, grps, -1);
+    rc = _gmx_sel_run_parser(-1, grps, scanner);
     fclose(fp);
     return rc;
 }
@@ -1154,5 +1165,5 @@ gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,
         return rc;
     }
     _gmx_sel_set_lex_input_str(scanner, str);
-    return _gmx_sel_run_parser(scanner, sc, grps, -1);
+    return _gmx_sel_run_parser(-1, grps, scanner);
 }
