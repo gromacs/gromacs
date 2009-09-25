@@ -119,11 +119,6 @@ adress_weight(rvec            x,
         tmp=cos((dl-adressr)*M_PI/2/adressw);
         return tmp*tmp;
 #else	
-        /* shift the weight past the long flat part.  this makes 
-         * the correction look like the old cos^2 function, and 
-         * is approximately correct (f(0,1)=1E-8,f'(0,1)=1E-10).
-         * To use unstretched correction, change prefactor below and 
-         * adjust prefactor in src/gmxlib/nonbonded/nb_generic_cg.c */
         tmp=1.0-(dl-adressr)/adressw;
         return tmp;
 #endif

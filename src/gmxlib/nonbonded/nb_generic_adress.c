@@ -200,12 +200,7 @@
                 /* this is the old function */
                 hybscal = weight_product;
 #else
-                /* this is the unstretched new function */
-                //hybscal = exp(-0.6931472*weight_product_cg*weight_product_cg/(weight_product*weight_product));
-                hybscal = exp(-0.6931472*weight_product_cg/(weight_product));
-                
-                /* this is the stretched new function to look like the old cos^2 function */
-                //hybscal = exp(-6.2383246*weight_product_cg/(weight_product));
+                hybscal = 1.0 - exp(-0.6931472*weight_product/(weight_product_cg));
 #endif
 
 		/* hybscal is the scaling factor for the forces in the hybrid region
