@@ -226,8 +226,9 @@ void _gmx_sel_yyfree (void * ,yyscan_t yyscanner );
 #ifdef YY_HEADER_EXPORT_START_CONDITIONS
 #define INITIAL 0
 #define matchof 1
-#define cmdstart 2
-#define help 3
+#define matchbool 2
+#define cmdstart 3
+#define help 4
 
 #endif
 
@@ -340,8 +341,8 @@ extern int _gmx_sel_yylex (yyscan_t yyscanner);
 #undef YY_DECL
 #endif
 
-#line 166 "scanner.l"
+#line 176 "scanner.l"
 
-#line 346 "scanner_flex.h"
+#line 347 "scanner_flex.h"
 #undef _gmx_sel_yyIN_HEADER
 #endif /* _gmx_sel_yyHEADER_H */

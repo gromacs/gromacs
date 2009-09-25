@@ -113,6 +113,7 @@ process_param_list(t_selexpr_param *params);
 %token <meth>  MODIFIER
 
 %token <str>   PARAM_BOOL
+%token <i>     BOOL_VALUE
 %token <str>   PARAM_INT
 %token <str>   PARAM_REAL
 %token <str>   PARAM_STR
@@ -475,6 +476,12 @@ method_param_list:
 
 method_param:
              PARAM_BOOL         { $$ = _gmx_selexpr_create_param($1);    }
+           | PARAM_BOOL BOOL_VALUE
+             {
+                 $$ = _gmx_selexpr_create_param($1);
+                 $$->value = _gmx_selexpr_create_value(INT_VALUE);
+                 $$->value->u.i.i1 = $$->value->u.i.i2 = $2;
+             }
            | PARAM_INT  int_list
                                 { $$ = _gmx_selexpr_create_param($1);
                                   $$->value = $2;                        }

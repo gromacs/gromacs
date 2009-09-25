@@ -159,6 +159,10 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
         }
         if (param)
         {
+            if (param->val.type == NO_VALUE && !bBoolNo)
+            {
+                state->bMatchBool = TRUE;
+            }
             if (sp < state->msp)
             {
                 state->neom = state->msp - sp - 1;
@@ -397,6 +401,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->nextparam    = NULL;
     state->bBoolNo      = FALSE;
     state->bMatchOf     = FALSE;
+    state->bMatchBool   = FALSE;
     state->bCmdStart    = TRUE;
     state->bBuffer      = FALSE;
 

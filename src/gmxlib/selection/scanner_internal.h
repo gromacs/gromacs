@@ -73,6 +73,7 @@ typedef struct gmx_sel_lexer_t
     bool                             bBoolNo;
 
     bool                             bMatchOf;
+    bool                             bMatchBool;
     bool                             bCmdStart;
 
     bool                             bBuffer;

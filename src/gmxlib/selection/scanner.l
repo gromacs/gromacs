@@ -100,6 +100,7 @@ COMMENT    (#.*)
 %option header-file="scanner_flex.h"
 
 %s matchof
+%s matchbool
 %s cmdstart
 %x help
 
@@ -117,6 +118,11 @@ COMMENT    (#.*)
     {
         BEGIN(matchof);
         state->bMatchOf = FALSE;
+    }
+    else if (state->bMatchBool)
+    {
+        BEGIN(matchbool);
+        state->bMatchBool = FALSE;
     }
     else if (state->bCmdStart)
     {
@@ -148,6 +154,10 @@ COMMENT    (#.*)
 {IDENTIFIER}    { yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
 ";"|\n          { state->bCmdStart = TRUE; return CMD_SEP; }
 .               { return INVALID; }
+}
+<matchbool>{
+yes|on          { ADD_TOKEN; yylval->i = 1; return BOOL_VALUE; }
+no|off          { ADD_TOKEN; yylval->i = 0; return BOOL_VALUE; }
 }
 group           { ADD_TOKEN; return GROUP; }
 to              { ADD_TOKEN; return TO; }
