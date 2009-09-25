@@ -1747,6 +1747,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         force_flags = (GMX_FORCE_STATECHANGED |
+                       ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
                        (bNStList ? GMX_FORCE_DOLR : 0) |
                        GMX_FORCE_SEPLRF |

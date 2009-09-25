@@ -457,7 +457,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Compute shift vectors every step,
      * because of pressure coupling or box deformation!
      */
-    if (DYNAMIC_BOX(*inputrec) && bStateChanged)
+    if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
       calc_shifts(box,fr->shift_vec);
     
     if (bCalcCGCM) { 
