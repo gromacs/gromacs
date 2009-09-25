@@ -369,14 +369,10 @@ struct gmx_ana_selcollection_t;
  * provided.
  *
  * For boolean parameters (type equals \ref NO_VALUE), the default value
- * should be set here. If the parameter is provided by the user, this default
- * value is negated. The parameter should be named such that this makes
- * sense.
+ * should be set here. The user can override the value by giving the parameter
+ * either as 'NAME'/'noNAME', or as 'NAME on/off/yes/no'.
  *
  * If the method takes any parameters, this function must be provided.
- *
- * \todo
- * More flexible handling of boolean parameters.
  */
 typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
 /*! \brief

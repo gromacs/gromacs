@@ -227,7 +227,7 @@ _gmx_selexpr_create_value_expr(t_selelem *expr)
  * No copy of \p name is made.
  */
 t_selexpr_param *
-_gmx_selexpr_create_param(const char *name)
+_gmx_selexpr_create_param(char *name)
 {
     t_selexpr_param *param;
     snew(param, 1);
@@ -281,6 +281,7 @@ _gmx_selexpr_free_params(t_selexpr_param *param)
         _gmx_selexpr_free_values(param->value);
         old = param;
         param = param->next;
+        sfree(old->name);
         sfree(old);
     }
 }

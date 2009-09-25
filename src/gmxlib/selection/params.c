@@ -83,6 +83,13 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
         {
             return &param[i];
         }
+        /* Check for 'no' prefix on boolean parameters */
+        if (param[i].val.type == NO_VALUE
+            && strlen(name) > 2 && name[0] == 'n' && name[1] == 'o'
+            && !strcmp(param[i].name, name+2))
+        {
+            return &param[i];
+        }
     }
     return NULL;
 }
@@ -534,18 +541,6 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     int                i, j;
     bool               bDynamic;
 
-    /* Handle boolean flags */
-    if (param->val.type == NO_VALUE)
-    {
-        if (values)
-        {
-            _gmx_selparser_error("boolean parameter '%s' should not have a value", param->name);
-            return FALSE;
-        }
-        *param->val.u.b = (*param->val.u.b ? FALSE : TRUE);
-        return TRUE;
-    }
-
     /* Handle atom-valued parameters */
     if (param->flags & SPAR_ATOMVAL)
     {
@@ -698,6 +693,56 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
     }
     param->nvalptr = NULL;
 
+    return TRUE;
+}
+
+/*! \brief
+ * Parses the values for a boolean parameter.
+ *
+ * \param[in] name   Name by which the parameter was given.
+ * \param[in] nval   Number of values in \p values.
+ * \param[in] values Pointer to the list of values.
+ * \param     param  Parameter to parse.
+ * \returns   TRUE if the values were parsed successfully, FALSE otherwise.
+ */
+static bool
+parse_values_bool(const char *name, int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
+{
+    bool bSetNo;
+    int  len;
+
+    if (param->val.type != NO_VALUE)
+    {
+        gmx_bug("internal error");
+        return FALSE;
+    }
+    if (nval > 1 || (values && values->type != INT_VALUE))
+    {
+        /* We should be here only if the parser has screwed up */
+        _gmx_selparser_error("boolean parameter '%s' should have at most one integer value", param->name);
+        return FALSE;
+    }
+
+    bSetNo = FALSE;
+    /* Check if the parameter name is given with a 'no' prefix */
+    len = strlen(name);
+    if (len > 2 && name[0] == 'n' && name[1] == 'o'
+        && strncmp(name+2, param->name, len-2) == 0)
+    {
+        bSetNo = TRUE;
+    }
+    if (bSetNo && nval > 0)
+    {
+        /* We should be here only if the parser has screwed up */
+        _gmx_selparser_error("boolean parameter 'no%s' should not have a value", param->name);
+        return FALSE;
+    }
+    if (values && values->u.i.i1 == 0)
+    {
+        bSetNo = TRUE;
+    }
+
+    *param->val.u.b = bSetNo ? FALSE : TRUE;
     return TRUE;
 }
 
@@ -902,7 +947,11 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         oparam->flags |= SPAR_SET;
         /* Process the values for the parameter */
         convert_const_values(pparam->value);
-        if (oparam->flags & SPAR_RANGES)
+        if (oparam->val.type == NO_VALUE)
+        {
+            rc = parse_values_bool(pparam->name, pparam->nval, pparam->value, oparam);
+        }
+        else if (oparam->flags & SPAR_RANGES)
         {
             rc = parse_values_range(pparam->nval, pparam->value, oparam);
         }

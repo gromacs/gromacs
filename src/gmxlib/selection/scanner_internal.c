@@ -70,20 +70,20 @@
 #undef yytext
 #undef yyleng
 
-int
-_gmx_sel_lexer_process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
+static int
+init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
-    gmx_ana_selparam_t *param = state->nextparam;
-
-    if (state->neom > 0)
+    if (bBoolNo)
     {
-        --state->neom;
-        return END_OF_METHOD;
+        snew(yylval->str, strlen(param->name) + 3);
+        yylval->str[0] = 'n';
+        yylval->str[1] = 'o';
+        strcpy(yylval->str+2, param->name);
     }
-    state->nextparam = NULL;
-    /* FIXME: The constness should not be cast away */
-    yylval->str = (char *)param->name;
-    _gmx_sel_lexer_add_token(param->name, -1, state);
+    else
+    {
+        yylval->str = strdup(param->name);
+    }
     switch (param->val.type)
     {
         case NO_VALUE:    return PARAM_BOOL;
@@ -97,6 +97,23 @@ _gmx_sel_lexer_process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
 }
 
 int
+_gmx_sel_lexer_process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
+{
+    gmx_ana_selparam_t *param = state->nextparam;
+    bool                bBoolNo = state->bBoolNo;
+
+    if (state->neom > 0)
+    {
+        --state->neom;
+        return END_OF_METHOD;
+    }
+    state->nextparam = NULL;
+    state->bBoolNo   = FALSE;
+    _gmx_sel_lexer_add_token(param->name, -1, state);
+    return init_param_token(yylval, param, bBoolNo);
+}
+
+int
 _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
                                   gmx_sel_lexer_t *state)
 {
@@ -107,19 +124,31 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     if (state->msp >= 0)
     {
         gmx_ana_selparam_t *param = NULL;
+        bool                bBoolNo = FALSE;
         int                 sp = state->msp;
         while (!param && sp >= 0)
         {
             int             i;
             for (i = 0; i < state->mstack[sp]->nparams; ++i)
             {
-                if (state->mstack[sp]->param[i].name == NULL)
+                /* Skip NULL parameters and too long parameters */
+                if (state->mstack[sp]->param[i].name == NULL
+                    || strlen(state->mstack[sp]->param[i].name) > yyleng)
                 {
                     continue;
                 }
                 if (!strncmp(state->mstack[sp]->param[i].name, yytext, yyleng))
                 {
                     param = &state->mstack[sp]->param[i];
+                    break;
+                }
+                /* Check separately for a 'no' prefix on boolean parameters */
+                if (state->mstack[sp]->param[i].val.type == NO_VALUE
+                    && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
+                    && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
+                {
+                    param = &state->mstack[sp]->param[i];
+                    bBoolNo = TRUE;
                     break;
                 }
             }
@@ -134,21 +163,11 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             {
                 state->neom = state->msp - sp - 1;
                 state->nextparam = param;
+                state->bBoolNo   = bBoolNo;
                 return END_OF_METHOD;
             }
-            /* FIXME: The constness should not be cast away */
-            yylval->str = (char *)param->name;
             _gmx_sel_lexer_add_token(param->name, -1, state);
-            switch (param->val.type)
-            {
-                case NO_VALUE:    return PARAM_BOOL;
-                case INT_VALUE:   return PARAM_INT;
-                case REAL_VALUE:  return PARAM_REAL;
-                case STR_VALUE:   return PARAM_STR;
-                case POS_VALUE:   return PARAM_POS;
-                case GROUP_VALUE: return PARAM_GROUP;
-            }
-            return INVALID; /* Should not be reached */
+            return init_param_token(yylval, param, bBoolNo);
         }
     }
 
@@ -376,6 +395,7 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->msp          = -1;
     state->neom         = 0;
     state->nextparam    = NULL;
+    state->bBoolNo      = FALSE;
     state->bMatchOf     = FALSE;
     state->bCmdStart    = TRUE;
     state->bBuffer      = FALSE;

@@ -70,6 +70,7 @@ typedef struct gmx_sel_lexer_t
     int                              mstack_alloc;
     int                              neom;
     struct gmx_ana_selparam_t       *nextparam;
+    bool                             bBoolNo;
 
     bool                             bMatchOf;
     bool                             bCmdStart;
