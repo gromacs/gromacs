@@ -123,12 +123,12 @@ typedef union YYSTYPE
     int                  i;
     real                 r;
     char                *str;
-    gmx_ana_selmethod_t *meth;
+    struct gmx_ana_selmethod_t *meth;
 
-    t_selelem        *sel;
+    struct t_selelem           *sel;
 
-    t_selexpr_value  *val;
-    t_selexpr_param  *param;
+    struct t_selexpr_value     *val;
+    struct t_selexpr_param     *param;
 }
 /* Line 1489 of yacc.c.  */
 #line 135 "parser.h"

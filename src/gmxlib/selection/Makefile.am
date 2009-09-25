@@ -9,7 +9,8 @@ libselection_la_SOURCES =	\
 	compiler.c	evaluate.c	evaluate.h	keywords.h	\
 	params.c 	parser.c	parser.h	parsetree.c	\
 	parsetree.h	\
-	scanner.c	scanner.h	selcollection.h selhelp.c	\
+	scanner.c	scanner.h	scanner_flex.h	scanner_internal.c \
+	scanner_internal.h 		selcollection.h selhelp.c	\
 	selhelp.h	selection.c	\
 	selelem.c 	selelem.h 	selmethod.c	selvalue.c	\
 	sm_compare.c	sm_distance.c 	sm_insolidangle.c	\

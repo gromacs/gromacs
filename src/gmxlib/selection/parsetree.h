@@ -48,6 +48,7 @@
 #include <selvalue.h>
 
 struct t_selelem;
+struct gmx_ana_indexgrps_t;
 struct gmx_ana_selmethod_t;
 struct gmx_ana_selparam_t;
 
@@ -144,10 +145,10 @@ _gmx_sel_init_position(struct t_selelem *expr, const char *type, bool bSelPos,
                        void *scanner);
 /** Creates a \c t_selelem for a index group expression using group name. */
 struct t_selelem *
-_gmx_sel_init_group_by_name(gmx_ana_indexgrps_t *grps, const char *name);
+_gmx_sel_init_group_by_name(struct gmx_ana_indexgrps_t *grps, const char *name);
 /** Creates a \c t_selelem for a index group expression using group index. */
 struct t_selelem *
-_gmx_sel_init_group_by_id(gmx_ana_indexgrps_t *grps, int id);
+_gmx_sel_init_group_by_id(struct gmx_ana_indexgrps_t *grps, int id);
 /** Creates a root \c t_selelem for a selection. */
 struct t_selelem *
 _gmx_sel_init_selection(char *name, struct t_selelem *sel, void *scanner);
