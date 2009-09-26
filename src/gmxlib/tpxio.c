@@ -656,6 +656,16 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     do_real(ir->userreal3); 
     do_real(ir->userreal4); 
     
+    /* AdResS stuff, probably needs to be inside a file_version check */
+    do_int(ir->benlistCG_CG);
+    do_int(ir->adress_type);
+    do_real(ir->adress_ex_width);
+    do_real(ir->adress_hy_width);
+    do_int(ir->adress_pcor);
+    do_int(ir->adress_ivdw);
+    do_int(ir->badress_cog);
+    /* End AdReS */
+
     /* pull stuff */
     if (file_version >= 48) {
       do_int(ir->ePull);

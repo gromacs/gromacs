@@ -1100,7 +1100,7 @@ int main (int argc, char *argv[])
         "ERROR: AdResS needs CG neighbour lists, enable them with nblistCG=yes");
       nerror++;
     }
-    if ((ir->adress_type==eAdressConst) && ((ir->adress_ex_width>1) || (ir->adress_ex_width<0))) {
+    if ((ir->adress_type==eAdressConst) && ((ir->adress_hy_width>1) || (ir->adress_hy_width<0))) {
       fprintf(stderr,
         "ERROR: AdResS weight at contant weighting function should be between 0 and 1");
       nerror++;

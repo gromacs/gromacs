@@ -121,5 +121,6 @@ extern const char *eAdresstype_names[eAdressNR+1];
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)
 #define EMULTENTOPT(e) ENUM_NAME(e,eMultentOptNR,eMultentOpt_names)
+#define EADDRESSTYPE(e) ENUM_NAME(e,eAdressNR,eAdresstype_names)
 
 #endif	/* _names_h */

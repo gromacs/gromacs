@@ -135,9 +135,8 @@ get_adress_ref(int             adresstype,
 
     if(adresstype == eAdressRefMol)
     {
-        /* get refx,refy,refz from reference solute 
-         * for now, assume its the last molecule */  
-//        j              = nr-1;
+        /* get refx,refy,refz from reference solute */
+
         for(i=0;i<3;i++) {
             /* need square of half the box length for shortest distance to solute */
             box2[i]    = box[i][i]/2.0;
