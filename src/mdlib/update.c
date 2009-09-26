@@ -228,7 +228,7 @@ static void do_update_vv_step1(int start,int nrend,double dt,
                                unsigned short cFREEZE[],
                                unsigned short cACC[],unsigned short cTC[],
                                rvec x[],rvec xprime[],rvec v[],
-                               rvec f[],bool bExtended, real veta, double alpha)
+                               rvec f[],bool bExtended, real veta, real alpha)
 {
     double imass,w_dt;
     int    gf=0,ga=0,gt=0;
@@ -297,8 +297,7 @@ static void do_update_vv_step2(int start,int nrend,double dt,
                                unsigned short cFREEZE[],
                                unsigned short cACC[],unsigned short cTC[],
                                rvec x[],rvec xprime[],rvec v[],
-                               rvec f[],bool bExtended, real veta, 
-                               double alpha)
+                               rvec f[],bool bExtended, real veta, real alpha)
 {
   double imass,w_dt;
   int    gf=0,ga=0,gt=0;
@@ -979,9 +978,10 @@ void update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind)
   for(i=0;i<ekinstate->ekinh_n;i++) 
   {
     copy_mat(ekind->tcstat[i].ekinh,ekinstate->ekinh[i]);
-    copy_mat(ekind->tcstat[i].ekinh,ekinstate->ekin[i]); 
+    copy_mat(ekind->tcstat[i].ekin,ekinstate->ekin[i]); 
   }
 
+  copy_mat(ekind->ekin,ekinstate->ekin_total);
   ekinstate->dekindl = ekind->dekindl;
   ekinstate->mvcos = ekind->cosacc.mvcos;
   
@@ -997,7 +997,10 @@ void restore_ekinstate_from_state(t_commrec *cr,
     for(i=0;i<ekinstate->ekinh_n;i++) 
     {
       copy_mat(ekinstate->ekinh[i],ekind->tcstat[i].ekinh);
+      copy_mat(ekinstate->ekin[i],ekind->tcstat[i].ekin);
     }
+
+    copy_mat(ekinstate->ekin_total,ekind->ekin);
     ekind->dekindl = ekinstate->dekindl;
     ekind->cosacc.mvcos = ekinstate->mvcos;
     n = ekinstate->ekinh_n;
@@ -1010,6 +1013,8 @@ void restore_ekinstate_from_state(t_commrec *cr,
       {
           gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinh[0][0]),
                     ekind->tcstat[i].ekinh[0],cr);
+          gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekin[0][0]),
+                    ekind->tcstat[i].ekin[0],cr);
       }
       gmx_bcast(sizeof(ekind->dekindl),&ekind->dekindl,cr);
       gmx_bcast(sizeof(ekind->cosacc.mvcos),&ekind->cosacc.mvcos,cr);
@@ -1105,7 +1110,7 @@ static void combine_forces(int nstlist,
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
                   state->x,f_lr,f_lr,state->box,state->lambda,NULL,
-                  NULL,NULL,nrnb,econqForce,ir->epc==epcTROTTER,state->veta,state->veta,1);
+                  NULL,NULL,nrnb,econqForce,ir->epc==epcTROTTER,state->veta,state->veta);
     }
     
     /* Add nstlist-1 times the LR force to the sum of both forces
@@ -1127,7 +1132,6 @@ void update_extended(FILE         *fplog,
                      t_mdatoms    *md,
                      t_state      *state,
                      gmx_ekindata_t *ekind,
-                     tensor       ekin,           /* NPT constants in the coupling routine             */
                      matrix       pcoupl_mu,       /* pressure coupling */
                      matrix       M,
                      gmx_wallcycle_t wcycle,
@@ -1244,8 +1248,7 @@ void update_constraints(FILE         *fplog,
                         bool         bInitStep,
                         bool         bFirstHalf,
                         bool         bCalcVir,
-                        real         vetanew,
-                        real         vetascale_nhc)
+                        real         vetanew)
 {
     bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE,bDoConstr=FALSE;
     double           dt;
@@ -1297,7 +1300,7 @@ void update_constraints(FILE         *fplog,
                       state->x,state->v,state->v,
                       state->box,state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
-                      inputrec->epc==epcTROTTER,state->veta,vetanew,vetascale_nhc);
+                      inputrec->epc==epcTROTTER,state->veta,vetanew);
         } 
         else 
         {
@@ -1306,7 +1309,7 @@ void update_constraints(FILE         *fplog,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
-                      inputrec->epc==epcTROTTER,state->veta,state->veta,1);
+                      inputrec->epc==epcTROTTER,state->veta,state->veta);
         }
         wallcycle_stop(wcycle,ewcCONSTR);
         
@@ -1363,7 +1366,7 @@ void update_constraints(FILE         *fplog,
                       inputrec,cr,step,1,md,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
-                      NULL,NULL,nrnb,econqCoord,FALSE,0,0,1);
+                      NULL,NULL,nrnb,econqCoord,FALSE,0,0);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
     }    
@@ -1527,7 +1530,6 @@ void update_coords(FILE         *fplog,
                    rvec         *f_lr,
                    t_fcdata     *fcd,
                    gmx_ekindata_t *ekind,
-                   tensor       ekin,           /* NPT constants in the coupling routine             */
                    matrix       M,
                    gmx_wallcycle_t wcycle,
                    gmx_update_t upd,

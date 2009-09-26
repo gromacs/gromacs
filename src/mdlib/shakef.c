@@ -459,9 +459,9 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
     int     nit,error,iconv,nconv;
     real    veta,vscale_nhc;
 
-    veta = vetavar->veta*vetavar->vetascale_nhc;
+    veta = vetavar->veta;
     vscale_nhc = vetavar->vscale_nhc[0];  // for now, just choose the first state 
-
+    
     error=0;
     nconv=1;
     for (nit=0; (nit<maxnit) && (nconv != 0) && (error == 0); nit++) {
@@ -498,7 +498,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
                 fac       = omega*2.0*m2[ll]/toler;
                 acor      = -fac*xdotd;
                 lagr[ll] += acor;                
-
+                
                 xh        = rijx*acor;
                 yh        = rijy*acor;
                 zh        = rijz*acor;

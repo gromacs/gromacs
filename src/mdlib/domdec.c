@@ -1442,6 +1442,7 @@ void dd_collect_state(gmx_domdec_t *dd,
         state->vol0 = state_local->vol0;
         copy_mat(state_local->box,state->box);
         copy_mat(state_local->boxv,state->boxv);
+        copy_mat(state_local->vir_prev,state->vir_prev);
         copy_mat(state_local->pres_prev,state->pres_prev);
         ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */
         for(i=0; i<ngtcp; i++)
@@ -1715,7 +1716,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
     dd_bcast(dd,ngtcp*sizeof(double),state_local->nosehoover_xi);
     dd_bcast(dd,ngtcp*sizeof(double),state_local->nosehoover_vxi);
-    dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->therm_integral);
+    dd_bcast(dd,state_local->ngtc*sizeof(double),state_local->therm_integral);
 
     if (dd->nat_home > state_local->nalloc)
     {

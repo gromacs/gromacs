@@ -342,6 +342,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             state_global->vol0 = state_local->vol0;
             copy_mat(state_local->box,state_global->box);
             copy_mat(state_local->boxv,state_global->boxv);
+            copy_mat(state_local->vir_prev,state_global->vir_prev);
             copy_mat(state_local->pres_prev,state_global->pres_prev);
         }
         if (cr->nnodes > 1)

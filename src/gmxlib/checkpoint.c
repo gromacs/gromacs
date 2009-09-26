@@ -61,7 +61,7 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 const char *est_names[estNR]=
 {
     "FE-lambda",
-    "box", "box-rel", "box-v", "pres_prev",
+    "box", "box-rel", "box-v", "vir_prev", "pres_prev",
     "nosehoover-xi", "nosehoover-vxi", 
     "thermostat-integral", "v_eta", "vol0",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
@@ -69,7 +69,7 @@ const char *est_names[estNR]=
     "orire_initf", "orire_Dtav",
 };
 
-enum { eeksEKINH_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksNR };
+enum { eeksEKINH_N, eeksEKINH, eeksEKIN, eeksDEKINDL, eeksMVCOS, eeksNR };
 
 const char *eeks_names[eeksNR]=
 {
@@ -671,7 +671,7 @@ static int do_cpt_state(XDR *xd,bool bRead,
 
     ret = 0;
 
-    ngtch = (state->ngtc+1)*(NNHCHAIN);
+    ngtch = (state->ngtc+1)*(NNHCHAIN);  /* need extra for barostat */
 
     if (bReadRNG)
     {
@@ -696,8 +696,9 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOX:     ret = do_cpte_matrix(xd,0,i,sflags,state->box,list); break;
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
+            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
-            case estNH_XI:   ret = do_cpte_reals (xd,0,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
+            case estNH_XI:   ret = do_cpte_doubles (xd,0,i,sflags,ngtch,&state->nosehoover_xi,list); break;
             case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,ngtch,&state->nosehoover_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
             case estVETA:    ret = do_cpte_real  (xd,0,i,sflags,&state->veta,list); break;
@@ -739,6 +740,8 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
 
 			case eeksEKINH_N: ret = do_cpte_int(xd,1,i,fflags,&ekins->ekinh_n,list); break;
 			case eeksEKINH:   ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekinh_n,&ekins->ekinh,list); break;
+			case eeksEKIN:    ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekinh_n,&ekins->ekin,list); 
+                              ret = do_cpte_matrix(xd,1,i,fflags,ekins->ekin_total,list); break;
  			case eeksDEKINDL: ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
             case eeksMVCOS:   ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
             default:
@@ -974,7 +977,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
-            ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksDEKINDL) |
+            ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksEKIN) | (1<<eeksDEKINDL) |
              (1<<eeksMVCOS));
     }
     else
@@ -1331,6 +1334,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
         cp_error();
     }
     *bReadEkin = (flags_eks & (1<<eeksEKINH));
+    *bReadEkin = (flags_eks & (1<<eeksEKIN));
 
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp),TRUE,
                           flags_enh,&state->enerhist,NULL);

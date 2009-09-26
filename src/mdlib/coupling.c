@@ -57,7 +57,7 @@
  */
 
 real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
-	       tensor pres,real Elr)
+               tensor pres,real Elr)
 {
     int  n,m;
     real fac,Plr;
@@ -416,7 +416,7 @@ void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt)
 }
 
 void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-		       double xi[],double vxi[], t_extmass *MassQ)
+                       double xi[],double vxi[], t_extmass *MassQ)
 {
     int   i;
     real  reft,oldvxi;
@@ -463,10 +463,9 @@ t_state *init_bufstate(int size, int ntc)
 }  
 
 void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
-                    gmx_enerdata_t *enerd, t_state *state, 
-                    tensor ekin, tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, real *vetascale_nhc, 
-                    bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep) 
+                    gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md, 
+                    t_extmass *MassQ, bool bFirstHalf, 
+                    bool bThermo, bool bBaro, bool bInitStep) 
 {
   
   int n,i,j,d,ntgrp,ngtc,gc=0;
@@ -476,7 +475,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
   real bmass,qmass,reft,kT,dt,ndj,nd;
   tensor dumpres,dumvir;
   double *scalefac;
-  double vetasave;
+  real vetasave;
   rvec sumv,consk;
   static bool bFirstTime = TRUE;
  
@@ -594,7 +593,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
       {
           if (bBaro) 
           {
-              boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekin,vir,enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
+              boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekind->ekin,vir,enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
           }
       } 
       else 
@@ -624,8 +623,8 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
               msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
               msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
           }
-          
-          /* now that we've scaled the groupwise velocities, we can add them up. */
+          sum_ekin(FALSE,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
+          /* now that we've scaled the groupwise velocities, we can add them up to get the total */
           
           for (n=md->start;n<md->start+md->homenr;n++) 
           {
@@ -636,7 +635,14 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
               for (d=0;d<DIM;d++) 
               {
                   state->v[n][d] *= scalefac[gc];
-                  sumv[d] += (state->v[n][d])/md->invmass[n];
+              }
+              
+              if (debug) 
+              {
+                  for (d=0;d<DIM;d++) 
+                  {
+                      sumv[d] += (state->v[n][d])/md->invmass[n];
+                  }
               }
           }
       }
@@ -651,14 +657,13 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
               vetasave = state->veta;
               NBaroT_trotter(opts,ir->delta_t,state->nosehoover_xi,
                              state->nosehoover_vxi,&(state->veta),MassQ);      
-              *vetascale_nhc = state->veta/vetasave;
           }
       } 
       else 
       {
           if (bBaro) 
           {
-              boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekin,vir,
+              boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekind->ekin,vir,
                            enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
           }
       }
@@ -683,10 +688,11 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
   
 {
     int   i,j,mi,mj,jmax,nd,ndj;
-    real  Ekin,Efac,reft,kT,dt,KinE;
+    double Ekin,Efac,reft,kT;
+    double dt;
     double *ivxi,*ixi;
-    real *iQinv;
-    real GQ[NNHCHAIN];
+    double *iQinv;
+    double GQ[NNHCHAIN];
     
     static int mstepsi = 5;
     static int mstepsj = 5;
@@ -725,9 +731,13 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                 
                 for (j=0;j<NNHCHAIN-1;j++) 
                 { 	
-                    /* we actually don't need to update here if we save the 
-                       state of the GQ, but it's easier to just recompute*/
-                    GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
+                    if (iQinv[j] > 0) {
+                        /* we actually don't need to update here if we save the 
+                           state of the GQ, but it's easier to just recompute*/
+                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
+                    } else {
+                        GQ[j+1] = 0;
+                    }
                 }
                 
                 ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
@@ -754,9 +764,13 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                 
                 for (j=0;j<NNHCHAIN-1;j++) 
                 { 
-                    Efac = exp(-0.125*dt*ivxi[j+1]);
-                    ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
-                    GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
+                    if (iQinv[j] > 0) {
+                        Efac = exp(-0.125*dt*ivxi[j+1]);
+                        ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
+                    } else {
+                        GQ[j+1] = 0;
+                    }
                 }
                 ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
             }
@@ -768,16 +782,17 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
    a bit differently at the start */
 
 void NBaroT_trotter(t_grpopts *opts,real dtfull,
-		    double xi[],double vxi[],real *veta, t_extmass *MassQ)  
+                    double xi[],double vxi[],real *veta, t_extmass *MassQ)  
 {
-    int   i,j,k,jmax,nd,qmass,dbaro,bmass;
-    real  Efac,reft,kT;
+    int   i,j,mi,mj,k,jmax,nd,qmass,dbaro,bmass;
+    double dt,Efac,kT;
+    double  reft;
     double *ivxi,*ixi;
-    double dt; // should this be full?
-    real *iQinv;
-    real GQ[NNHCHAIN];
+    double *iQinv;
+    double GQ[NNHCHAIN];
     
-    static int msteps = 50;
+    static int mstepsi = 5;
+    static int mstepsj = 5;
     
     /* make it easier to iterate by selecting 
        out the sub-array that corresponds to this T group */
@@ -788,48 +803,60 @@ void NBaroT_trotter(t_grpopts *opts,real dtfull,
     iQinv = &(MassQ->Qinv[i*NNHCHAIN]); 
     reft = max(0.0,opts->ref_t[0]);
     kT = BOLTZ*reft;
-    dt = dtfull/msteps; 
     
-    for (k=0;k<msteps;k++) 
+    for(mi=0;mi<mstepsi;mi++) 
     {
-        /* compute the thermal forces */
-        GQ[0] = iQinv[0]*(sqr(*veta)/MassQ->Winv - kT);
-        
-        for (j=0;j<NNHCHAIN-1;j++) 
-        { 	
-            /* we actually don't need to update here if we save the 
-               state of the GQ, but it's easier to just recompute*/
-            GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
-        }
-        
-        ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
-        for (j=NNHCHAIN-1;j>0;j--) 
+        for(mj=0;mj<mstepsj;mj++)
         { 
-            Efac = exp(-0.125*dt*ivxi[j]);
-            ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
-        }
-    
-        Efac = exp(-0.5*dt*ivxi[0]);
-        *veta *= Efac;
+            /* weighting for this step using Suzuki-Yoshida integration - fixed at 5 */
+            dt = sy5_const[mj] * dtfull / mstepsi;
+            
+            /* compute the thermal forces */
+            GQ[0] = iQinv[0]*(sqr(*veta)/MassQ->Winv - kT);
         
-        GQ[0] = iQinv[0]*(sqr(*veta)/MassQ->Winv - kT);
+            for (j=0;j<NNHCHAIN-1;j++) 
+            { 	
+                /* we actually don't need to update here if we save the 
+                   state of the GQ, but it's easier to just recompute*/
+                if (iQinv[j] > 0) {
+                    GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
+                } else {
+                    GQ[j+1] = 0;
+                }
+            }
+            
+            ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
+            for (j=NNHCHAIN-1;j>0;j--) 
+            { 
+                Efac = exp(-0.125*dt*ivxi[j]);
+                ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
+            }
+            
+            Efac = exp(-0.5*dt*ivxi[0]);
+            *veta *= Efac;
+            
+            GQ[0] = iQinv[0]*(sqr(*veta)/MassQ->Winv - kT);
         
-        /* update thermostat positions */
-        for (j=0;j<NNHCHAIN;j++) 
-        { 
-            ixi[j] += 0.5*dt*ivxi[j];
+            /* update thermostat positions */
+            for (j=0;j<NNHCHAIN;j++) 
+            { 
+                ixi[j] += 0.5*dt*ivxi[j];
+            }
+            
+            for (j=0;j<NNHCHAIN-1;j++) 
+            { 
+                if (iQinv[j] > 0) {
+                    Efac = exp(-0.125*dt*ivxi[j+1]);
+                    ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                    GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
+                } else {
+                    GQ[j+1] = 0;
+                }
+            }
+            ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
         }
-        
-        for (j=0;j<NNHCHAIN-1;j++) 
-        { 
-            Efac = exp(-0.125*dt*ivxi[j+1]);
-            ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
-            GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
-        }
-        ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
     }
 }
-
 
 void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
 		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
@@ -874,7 +901,6 @@ void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   // W is in ps^2 * bar * nm^3 
     
     *veta += 0.5*dt*GW;   
-    //fprintf(stderr,"GW: %14.7f\n",GW);
 }
 
 real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ)
@@ -882,7 +908,7 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     int  i,j,nd,ndj,bmass,qmass,ngtcall;
     real ener_npt,reft,eta,kT,tau;
     double *ivxi, *ixi;
-    real *iQinv;
+    double *iQinv;
     real vol,dbaro,W,Q;
     
     static int k=0; /* keep track of the step in debugging */
@@ -931,7 +957,7 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     
     if (ir->epc == epcTROTTER) 
     {
-        /* add the energy from the barostat therostat chain */
+        /* add the energy from the barostat themrostat chain */
         i = ir->opts.ngtc;
         ivxi = &vxi[i*NNHCHAIN];
         ixi = &xi[i*NNHCHAIN];
@@ -1083,8 +1109,7 @@ static real vrescale_resamplekin(real kk,real sigma, int ndeg, real taut,
 }
 
 void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-		     double therm_integral[],
-		     gmx_rng_t rng)
+		     double therm_integral[],gmx_rng_t rng)
 {
   int    i;
   real   Ek,Ek_ref1,Ek_ref,Ek_new; 

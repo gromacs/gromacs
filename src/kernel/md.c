@@ -92,9 +92,14 @@
 #endif
 
 // Temporary definitions - MRS //
-#define CONVERGEITER  0.0000000002
-#define MAXITERCONST       500
-
+#ifdef GMX_DOUBLE
+#define CONVERGEITER  0.00000001
+#else
+#define CONVERGEITER  0.0001
+#endif
+#define MAXITERCONST       200
+#define CYCLEMAX            20
+#define FALLBACK          1000 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -133,23 +138,20 @@ static tMPI_Thread_mutex_t box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-void copy_coupling_state (t_state *statea,t_state *stateb, 
-                          tensor shake_vira, tensor shake_virb, 
-                          tensor ekina, tensor ekinb, 
-                          gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb) 
+void copy_coupling_state(t_state *statea,t_state *stateb, 
+                         gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb) 
 {
     
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
     
     int i,j,ngtc_eff;
     
-    if (ekina) copy_mat(ekina,ekinb);
-    if (shake_vira) copy_mat(shake_vira,shake_virb);
     stateb->natoms     = statea->natoms;
     stateb->ngtc       = statea->ngtc;
     stateb->veta       = statea->veta;
     if (ekinda) 
     {
+        copy_mat(ekinda->ekin,ekindb->ekin);
         for (i=0; i<stateb->ngtc; i++) 
         {
             ekindb->tcstat[i].T = ekinda->tcstat[i].T;
@@ -180,8 +182,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      t_forcerec *fr, gmx_ekindata_t *ekind, 
                      t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
-                     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, 
-                     tensor shakev_vir, tensor total_vir, tensor ekin, 
+                     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
                      tensor pres, rvec mu_tot, gmx_constr_t constr, 
                      real *chkpt,real *terminate, real *terminate_now,
                      int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
@@ -280,14 +281,32 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     
     if (bTemp || bPres) 
     {
-        if (PAR(cr)) 
+        if (!bGStat)
         {
-            GMX_MPE_LOG(ev_global_stat_start);
+            /* We will not sum ekinh_old,                                                            
+             * so signal that we still have to do it.                                                
+             */
+            *bSumEkinhOld = TRUE;
+        }
+        else
+        {
+            if (PAR(cr)) 
+            {
+                GMX_MPE_LOG(ev_global_stat_start);
+                
+                global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
+                            ir,ekind,FALSE,bEkinFullStep,constr,vcm,
+                            NULL,NULL,terminate,top_global,state);
+                GMX_MPE_LOG(ev_global_stat_finish);
+            }
             
-            global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                        ir,ekind,FALSE,bEkinFullStep,constr,vcm,
-                        NULL,NULL,terminate,top_global,state);
-            GMX_MPE_LOG(ev_global_stat_finish);
+            if (terminate != 0)
+            {
+                terminate_now = terminate;
+                terminate = 0;
+            }
+            wallcycle_stop(wcycle,ewcMoveE);
+            *bSumEkinhOld = FALSE;
         }
     }
     
@@ -296,7 +315,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         correct_ekin(debug,
                      mdatoms->start,mdatoms->start+mdatoms->homenr,
                      state->v,vcm->group_p[0],
-                     mdatoms->massT,mdatoms->tmass,ekin);
+                     mdatoms->massT,mdatoms->tmass,ekind->ekin);
     }
     
     /* Do center of mass motion removal */
@@ -311,9 +330,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bTemp) 
     {
         /* Sum the kinetic energies of the groups & calc temp */
-        enerd->term[F_TEMP] = sum_ekin(bInitialize,&(ir->opts),ekind,ekin,
+        enerd->term[F_TEMP] = sum_ekin(bInitialize,&(ir->opts),ekind,
                                        &(enerd->term[F_DKDL]),bEkinFullStep);
-        enerd->term[F_EKIN] = trace(ekin);
+        enerd->term[F_EKIN] = trace(ekind->ekin);
     }
     
     /* ##########  Long range energy data ###### */
@@ -339,14 +358,13 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bPres) 
     {
         
-        copy_mat(shake_vir,shakeall_vir);
-        m_add(force_vir,shakeall_vir,total_vir);
+        m_add(force_vir,shake_vir,total_vir);
 
         /* Calculate pressure and apply LR correction if PPPM is used.
          * Use the box from last timestep since we already called update().
          */
         
-        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekin,total_vir,pres,
+        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
                                         (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
         
         /* Calculate long range corrections to pressure and energy */
@@ -1098,10 +1116,10 @@ bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *
         if (iter_i > MAXITERCONST) 
         {
             incycle = FALSE;
-            for (i=0;i<4;i++) {
-                if (allrelerr[9*(MAXITERCONST/10)-i] == allrelerr[iter_i]) {
+            for (i=0;i<CYCLEMAX;i++) {
+                if (allrelerr[(MAXITERCONST-2*CYCLEMAX)-i] == allrelerr[iter_i-1]) {
                     incycle = TRUE;
-                    if (relerr > CONVERGEITER*100) {incycle = FALSE;}
+                    if (relerr > CONVERGEITER*FALLBACK) {incycle = FALSE; break;}
                 }
             }
             
@@ -1408,7 +1426,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
     bool       bMasterState;
     int        force_flags;
-    tensor     force_vir,shake_vir,shake_vir_save,shakev_vir,total_vir,total_vir_new,prev_vir,pres,ekin,ekin_save;
+    tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m,status;
     rvec       mu_tot;
     t_vcm      *vcm;
@@ -1452,7 +1470,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     rvec        *xcopy=NULL,*vcopy=NULL,*xbuf=NULL;
     matrix      boxcopy,lastbox;
 	tensor      tmpvir;
-	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir,vetascale_nhc=1;
+	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
     int         reset_counters=-1;
@@ -1479,7 +1497,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
   bTrotter = ((ir->eI == eiVV) && ((ir->etc == etcTROTTER) ||
                                    (ir->etc == etcTROTTEREKINH) || (ir->etc == epcTROTTER))); 
   
-
     if (bRerunMD)
     {
         /* Since we don't know if the frames read are related in any way,
@@ -1523,7 +1540,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     /* Energy terms and groups */
     snew(enerd,1);
-    clear_mat(shakev_vir);
     init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
     if (DOMAINDECOMP(cr))
     {
@@ -1697,7 +1713,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Constrain the initial coordinates and velocities */
             do_constrain_first(fplog,constr,ir,mdatoms,state,f,
-                               graph,cr,nrnb,fr,top);
+                               graph,cr,nrnb,fr,top,shake_vir);
         }
         if (vsite)
         {
@@ -1711,7 +1727,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     debug_gmx();
   
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                    wcycle,enerd,force_vir,shakev_vir,shake_vir,total_vir,ekin,pres,mu_tot,
+                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,&bSumEkinhOld,bRerunMD,bEkinFullStep,FALSE,
                     TRUE,FALSE,FALSE,FALSE,FALSE,TRUE,Flags & MD_READ_EKIN,top_global->natoms);
@@ -1737,7 +1753,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (bTrotter) 
     {
         /* need to make an initial call to get the Trotter Mass variables set. */
-        trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,NULL,FALSE,FALSE,FALSE,FALSE);
+        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,FALSE,FALSE,FALSE);
     }
     
     if (MASTER(cr))
@@ -2064,7 +2080,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This is almost certainly not quite working correctly yet */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                            wcycle,enerd,NULL,NULL,NULL,NULL,ekin,NULL,mu_tot,
+                            wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                             top_global,&pcurr,&bSumEkinhOld,TRUE,FALSE,FALSE,
                             TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,top_global->natoms);
@@ -2198,16 +2214,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* save the state */
         if (bIterate) { 
-            copy_coupling_state(state,bufstate,NULL,NULL,
-                                ekin,ekin_save,ekind,ekind_save);
+            copy_coupling_state(state,bufstate,ekind,ekind_save);
         }
         
         while (bIterate || bFirstIterate) 
         {
             if (bIterate) 
             {
-                copy_coupling_state(bufstate,state,NULL,NULL,
-                                    ekin_save,ekin,ekind_save,ekind);
+                copy_coupling_state(bufstate,state,ekind_save,ekind);
             }
             if (bIterate) 
             {
@@ -2222,11 +2236,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        of veta.  */
                     
                     veta_save = state->veta;
-                    trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,NULL,
-                                   TRUE,FALSE,TRUE,bInitStep);
+                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,FALSE,TRUE,bInitStep);
                     vetanew = state->veta;
                     state->veta = veta_save;
-                    vetascale_nhc = 1;
                 } 
             } 
             
@@ -2239,12 +2251,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* update coords doesn't actually have to be in here */
                 update_coords(fplog,step,ir,mdatoms,state,
                               f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,NULL,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
                 
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
-                                   &top->idef,shakev_vir,NULL,
+                                   &top->idef,shake_vir,NULL,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,TRUE,bCalcPres,vetanew,vetascale_nhc);
+                                   bInitStep,TRUE,bCalcPres,vetanew);
                 if (!bOK && !bFFscan)
                 {
                     gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
@@ -2263,7 +2275,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                            wcycle,enerd,force_vir,shakev_vir,shake_vir,total_vir,ekin,pres,mu_tot,
+                            wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                             top_global,&pcurr,&bSumEkinhOld,
                             bRerunMD,bEkinFullStep,bStopCM,bGStat,bNEMD,TRUE,bIterate,
@@ -2272,12 +2284,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
             if (bTrotter) 
             {
-                trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,&vetascale_nhc,TRUE,TRUE,TRUE,bInitStep);
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,TRUE,TRUE,bInitStep);
             }
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
-            /* Important: restarting each step, need to divide by the barostating of the box velocity for the constraints */
-            vetanew = state->veta / vetascale_nhc;
         }
         
 #if 0
@@ -2312,8 +2322,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (bTrotter && !bInitStep) 
         { 
             /* update temperature and kinetic energy now that step is over */
-            enerd->term[F_TEMP] = sum_ekin(FALSE,&(ir->opts),ekind,ekin,NULL,bEkinFullStep);
-            enerd->term[F_EKIN] = trace(ekin);
+            enerd->term[F_TEMP] = sum_ekin(FALSE,&(ir->opts),ekind,NULL,bEkinFullStep);
+            enerd->term[F_EKIN] = trace(ekind->ekin);
+            copy_mat(shake_vir,state->vir_prev);
         }
         
         wallcycle_stop(wcycle,ewcUPDATE);
@@ -2420,6 +2431,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         GMX_MPE_LOG(ev_output_finish);
         
+        /* kludge #2 -- ekin was resummed differently so we need to reload the ekin again. Just to be sure
+           we'll do it with the virial as well. */        
+        if (bInitStep && (Flags & MD_STARTFROMCPT) && ir->eI==eiVV) {
+            restore_ekinstate_from_state(cr,ekind,&(state->ekinstate));
+            copy_mat(state->vir_prev,shake_vir);
+        }
+
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
         /* Determine the pressure:                                                             
@@ -2450,7 +2468,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* for iterations, we save these vectors, as we will be redoing the calculations */
         if (bIterate) 
         {
-            copy_coupling_state(state,bufstate,NULL,NULL,ekin,ekin_save,ekind,ekind_save);
+            copy_coupling_state(state,bufstate,ekind,ekind_save);
         }
         
         while (bIterate || bFirstIterate) 
@@ -2458,7 +2476,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* We now restore these vectors to redo the calculation with improved extended variables */    
             if (bIterate) 
             { 
-                copy_coupling_state(bufstate,state,NULL,NULL,ekin_save,ekin,ekind_save,ekind);
+                copy_coupling_state(bufstate,state,ekind_save,ekind);
             }
             
             /* We make the decision to break or not -after- the calculation of Ekin and Pressure,
@@ -2486,49 +2504,45 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS*/
                 if (bTrotter) 
                 {
+                    if (bFirstIterate) 
+                    {
+                        tracevir=trace(state->vir_prev);
+                        copy_mat(state->vir_prev,shake_vir);
+                    }
                     if (bIterate) 
                     {
-                        //m_add(shakev_vir,force_vir,total_vir);
-                        if (bFirstIterate && bInitStep) 
+                        if (abs(trace(shake_vir))!=0)
                         {
-                            /* Double shakevir to approximate shake_vir for a better initial guess the first time.
-                               for all subsequent searches, we just start with the last virial.  Should be a better
-                               way to do this . .. */
-                            // m_add(shakev_vir,total_vir,total_vir);
+                            scalevir = tracevir/trace(shake_vir);
                         } 
                         else 
                         {
-                            if (abs(trace(shake_vir))!=0)
-                            {
-                                scalevir = tracevir/trace(shake_vir);
-                            } 
-                            else 
-                            {
-                                scalevir = 0;
-                            }
-                            msmul(shake_vir,scalevir,shake_vir); 
-                            //m_add(total_vir,shake_vir,total_vir);
-                            m_add(force_vir,shake_vir,total_vir);
+                            scalevir = 0;
                         }
+                        msmul(shake_vir,scalevir,shake_vir); 
+                        m_add(force_vir,shake_vir,total_vir);
                     }
-                    trotter_update(ir,ekind,enerd,state,ekin,total_vir,mdatoms,&MassQ,&vetascale_nhc,FALSE,TRUE,TRUE,bInitStep);
+                    if ((!bFirstStep) || tracevir != 0) 
+                    {
+                        /* don't apply the trotter update if it's the first step. */
+                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,TRUE,TRUE,bInitStep);
+                    }
                 }
-                
-                /* We can only do Berendsen coupling after we have summed the kinetic
+            /* We can only do Berendsen coupling after we have summed the kinetic
                  * energy or virial. Since the happens in global_state after update,
                  * we should only do it at step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
                 
-                update_extended(fplog,step,ir,mdatoms,state,ekind,ekin,pcoupl_mu,M,wcycle,
+                update_extended(fplog,step,ir,mdatoms,state,ekind,pcoupl_mu,M,wcycle,
                                 upd,bInitStep,FALSE,&MassQ);
                 
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,ekin,M,wcycle,upd,bInitStep,FALSE,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,bInitStep,FALSE,cr,nrnb,constr,&top->idef);
                 
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,force_vir,
                                    cr,nrnb,wcycle,upd,constr,
-                                   bInitStep,FALSE,bCalcPres,state->veta,1);  
+                                   bInitStep,FALSE,bCalcPres,state->veta);  
 
                 if (!bOK && !bFFscan) 
                 {
@@ -2571,7 +2585,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             /* ############## IF NOT VV, CALCULATE EKIN AND PRESSURE HERE ############ */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                            wcycle,enerd,force_vir,shake_vir,shakev_vir,total_vir,ekin,pres,mu_tot,
+                            wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                             top_global,&pcurr,&bSumEkinhOld,
                             bRerunMD,bEkinFullStep,bStopCM,bGStat,bNEMD,FALSE,bIterate,
@@ -2693,6 +2707,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 fprintf(stderr,"\n");
                 exit(0);
             }
+        }
+        if (!bGStat)
+        {
+            /* We will not sum ekinh_old,                                                            
+             * so signal that we still have to do it.                                                
+             */
+            bSumEkinhOld = TRUE;
         }
 
         if (bTCR)
@@ -2850,7 +2871,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * We can not just use bGStat, since then the simulation results
          * would depend on nstenergy and nstlog or step_nscheck.
          */
-        if ((state->flags & (1<<estPRES_PREV)) &&
+        if (((state->flags & (1<<estPRES_PREV)) || (state->flags & (1<<estVIR_PREV))) &&
             (bGStatEveryStep ||
              (ir->nstlist > 0 && step % ir->nstlist == 0) ||
              (ir->nstlist < 0 && nlh.nabnsb > 0) ||
@@ -2859,7 +2880,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* Store the pressure in t_state for pressure coupling
              * at the next MD step.
              */
-            copy_mat(pres,state->pres_prev);
+            if (state->flags & (1<<estPRES_PREV))
+            {
+                copy_mat(pres,state->pres_prev);
+            }
         }
 
     /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */

@@ -170,8 +170,7 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(bool bFirstStep,
-	      t_grpopts *opts,gmx_ekindata_t *ekind,
-	      tensor ekin,real *dekindlambda,bool bEkinFullStep)
+	      t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,bool bEkinFullStep)
 {
     int          i,j,m,ngtc;
     real         T,ek;
@@ -181,7 +180,7 @@ real sum_ekin(bool bFirstStep,
     ngtc = opts->ngtc;
     ndf  = opts->nrdf;
     
-    clear_mat(ekin);
+    clear_mat(ekind->ekin);
     
     T = 0; 
     nrdf = 0;
@@ -222,7 +221,7 @@ real sum_ekin(bool bFirstStep,
                     }
                 }
             }
-            m_add(tcstat->ekin,ekin,ekin);
+            m_add(tcstat->ekin,ekind->ekin,ekind->ekin);
             ek = 0;
             for(m=0; (m<DIM); m++) 
             {

@@ -116,7 +116,13 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       state->flags |= (1<<estBOXV);
     }
     if (ir->epc != epcNO) {
-      state->flags |= (1<<estPRES_PREV);
+      if (ir->epc == epcTROTTER) {
+	state->flags |= (1<<estVIR_PREV);
+	state->flags |= (1<<estVETA);
+	state->flags |= (1<<estVOL0);
+      } else {
+	state->flags |= (1<<estPRES_PREV);
+      }
     }
   }
 

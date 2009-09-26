@@ -236,6 +236,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estBOX:     block_bc(cr,state->box); break;
       case estBOX_REL: block_bc(cr,state->box_rel); break;
       case estBOXV:    block_bc(cr,state->boxv); break;
+      case estVIR_PREV: block_bc(cr,state->pres_prev); break;
       case estPRES_PREV: block_bc(cr,state->pres_prev); break;
       case estNH_XI:   nblock_abc(cr,state->ngtc,state->nosehoover_xi); break;
       case estNH_VXI:  nblock_abc(cr,ngtch,state->nosehoover_vxi); break;

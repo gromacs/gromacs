@@ -62,6 +62,8 @@ typedef struct {
 typedef struct {
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
   t_grp_acc    *grpstat;	/* Acceleration data			*/
+  tensor       ekin;            /* overall kinetic energy               */
+  tensor       ekinh;           /* overall 1/2 step kinetic energy      */
   real         dekindl;         /* dEkin/dlambda at half step           */
   real         dekindl_old;     /* dEkin/dlambda at old half step       */
   t_cos_acc    cosacc;          /* Cosine acceleration data             */

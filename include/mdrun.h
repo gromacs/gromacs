@@ -71,7 +71,6 @@
 #define MD_READ_EKIN    (1<<17)
 #define MD_STARTFROMCPT (1<<18)
 
-
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
@@ -256,7 +255,7 @@ extern void do_constrain_first(FILE *log,gmx_constr_t constr,
 			       t_inputrec *inputrec,t_mdatoms *md,
 			       t_state *state,rvec *f,
 			       t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			       t_forcerec *fr, gmx_localtop_t *top); 
+			       t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir); 
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,

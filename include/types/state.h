@@ -53,7 +53,7 @@
  * since that affects the checkpoint (.cpt) file format.
  */
 enum { estLAMBDA,
-       estBOX, estBOX_REL, estBOXV, estPRES_PREV, 
+       estBOX, estBOX_REL, estBOXV, estVIR_PREV, estPRES_PREV, 
        estNH_XI,  estNH_VXI, estTC_INT, estVETA, estVOL0,
        estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
@@ -86,6 +86,7 @@ typedef struct
   int      ekin_n;
   tensor * ekinh;
   tensor * ekin;
+  tensor   ekin_total;
   real     dekindl;
   real     mvcos;
 } ekinstate_t;
@@ -115,7 +116,8 @@ typedef struct
   matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
-  real          *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
+  matrix        vir_prev; /* Pressure of the previous step for pcoupl  */
+  double        *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
   real          veta; /* trotter based isotropic P-coupling             */
@@ -144,19 +146,18 @@ typedef struct
 
 typedef struct 
 { 
-  real *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
-  real Winv;  /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
-  tensor Winvm; /* inverse pressure mass tensor, computed       */       
+  double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
+  double Winv;   /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
+  tensor Winvm;  /* inverse pressure mass tensor, computed       */       
 } t_extmass;
 
 
 typedef struct
 { 
   real veta;   
-  real rscale;
-  real vscale;
-  real rvscale;
-  real vetascale_nhc;
+  double rscale;
+  double vscale;
+  double rvscale;
   double alpha;
   double *vscale_nhc;
 } t_vetavars;

@@ -186,7 +186,7 @@ void settle_proj(FILE *fp,
     rvec   roh2,roh3,rhh,dc,fc,fcv;
     rvec   derm[3],derpm[3];
     real   invvscale,vscale_nhc,veta;
-    real   kfac;
+    real   kfacOH,kfacHH;
 
     if (econq == econqForce)
     {
@@ -204,29 +204,25 @@ void settle_proj(FILE *fp,
     invdOH = p->invdOH;
     invdHH = p->invdHH;
     
-    veta = vetavar->veta*vetavar->vetascale_nhc;     
+    veta = vetavar->veta;     
     vscale_nhc = vetavar->vscale_nhc[0]; // assume the first temperature control group. 
 
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
     
-    //kfac = vetavar->vetascale_nhc*0.053906067690638361*0.0016;
     for (i=0; i<nsettle; i++)
     {
         ow1 = iatoms[i*2+1];
         hw2 = ow1 + 1;
         hw3 = ow1 + 2;
-        
+
+
         for(m=0; m<DIM; m++)
         {
             /* in the velocity case, these are the velocities, so we 
                need to modify with the pressure control velocities! */
             
-            //derm[0][m]  = vscale_nhc*der[ow1][m] + (veta-kfac*pow(invdOH,-2.0))*x[ow1][m];
-            //derm[1][m]  = vscale_nhc*der[hw2][m] + (veta-kfac*pow(invdOH,-2.0))*x[hw2][m];
-            //derm[2][m]  = vscale_nhc*der[hw3][m] + (veta-kfac*pow(invdOH,-2.0))*x[hw3][m];
-
             derm[0][m]  = vscale_nhc*der[ow1][m] + veta*x[ow1][m];
             derm[1][m]  = vscale_nhc*der[hw2][m] + veta*x[hw2][m];
             derm[2][m]  = vscale_nhc*der[hw3][m] + veta*x[hw3][m];
@@ -242,7 +238,7 @@ void settle_proj(FILE *fp,
         }
         /* 18 flops */
         
-        /* Determine the projections of der on the bonds */
+        /* Determine the projections of der(modified) on the bonds */
         clear_rvec(dc);
         for(m=0; m<DIM; m++)
         {
@@ -256,10 +252,11 @@ void settle_proj(FILE *fp,
         mvmul(invmat,dc,fc);
         /* 15 flops */
         
-        /* divide velocity by vscale for pressure control*/
+        /* divide velocity by vscale_nhc for determining constrained velocities, since they 
+           have not yet been multiplied */
         svmul(1.0/vscale_nhc,fc,fcv);
         /* 7? flops */
-
+        
         /* Subtract the corrections from derp */
         for(m=0; m<DIM; m++)
         {
@@ -281,16 +278,16 @@ void settle_proj(FILE *fp,
                 for(m2=0; m2<DIM; m2++)
                 {
                     rmdder[m][m2] +=
-                        dOH*roh2[m]*roh2[m2]*fc[0] +
-                        dOH*roh3[m]*roh3[m2]*fc[1] +
-                        dHH*rhh [m]*rhh [m2]*fc[2]; 
+                        dOH*roh2[m]*roh2[m2]*fcv[0] +
+                        dOH*roh3[m]*roh3[m2]*fcv[1] +
+                        dHH*rhh [m]*rhh [m2]*fcv[2]; 
                 }
             }
         }
     }
     /* conrect rmdder, which will be used to calcualate the virial; we need to use 
        the unscaled multipliers in the virial */
-    msmul(rmdder,1/(vscale_nhc*vetavar->vscale),rmdder);
+    msmul(rmdder,1.0/vetavar->vscale,rmdder);
 }
 
 
@@ -433,11 +430,9 @@ void csettle(gmx_settledata_t settled,
     rc2  = p->rc2;
     dOH  = p->dOH;
     dHH  = p->dHH;
-
-    //mOs  = mO / vetavar->rvscale;
-    //mHs  = mH / vetavar->rvscale;
-    mOs  = mO;
-    mHs  = mH;
+    
+    mOs  = mO / vetavar->rvscale;
+    mHs  = mH / vetavar->rvscale;
     invdts = invdt/(vetavar->rscale);
     
 #ifdef PRAGMAS

@@ -72,7 +72,6 @@ extern void update_extended(FILE         *fplog,
 		   t_mdatoms    *md,
 		   t_state      *state,
 		   gmx_ekindata_t *ekind,
-		   tensor       ekin,
 		   matrix       pcoupl_mu,		    
 		   matrix       M,	    
 		   gmx_wallcycle_t wcycle,
@@ -93,7 +92,6 @@ extern void update_coords(FILE         *fplog,
 			  rvec         *f_lr,
 			  t_fcdata     *fcd,
 			  gmx_ekindata_t *ekind,
-			  tensor       ekin,
 			  matrix       M,
 			  gmx_wallcycle_t wcycle,
 			  gmx_update_t upd,
@@ -125,8 +123,7 @@ extern void update_constraints(FILE         *fplog,
 			       bool         bInitStep,
 			       bool         bFirstHalf,
 			       bool         bCalcVir,
-			       real         vetanew,
-			       real         vetascale_nhc);
+			       real         vetanew);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -182,9 +179,8 @@ extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 extern t_state *init_bufstate(int size, int ntc);
 
 extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
-			   t_state *state, tensor ekin, tensor vir, t_mdatoms *md, 
-			   t_extmass *MassQ, real *vetascale_nhc, 
-			   bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
+			   t_state *state, tensor vir, t_mdatoms *md, 
+			   t_extmass *MassQ, bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
 
 extern void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			double xi[],double vxi[], double scalefac[], t_extmass *MassQ, int etc);

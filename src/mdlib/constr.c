@@ -82,22 +82,21 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-t_vetavars *init_vetavars(real veta,real vetanew, real vetascale_nhc, t_inputrec *ir) 
+t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir) 
 {
     t_vetavars *vars;
-    real g;
+    double g;
     int i;
 
     snew(vars,1);
     snew(vars->vscale_nhc,ir->opts.ngtc);
+    vars->alpha = ir->opts.alpha[0];  // assume first state for now.
     g = 0.5*veta*ir->delta_t;
     vars->rscale = exp(g)*series_sinhx(g);
     g = -0.25*vars->alpha*veta*ir->delta_t;
     vars->vscale = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta = vetanew;
-    vars->alpha = ir->opts.alpha[0];
-    vars->vetascale_nhc = vetascale_nhc;
     for (i=0;i<ir->opts.ngtc;i++)
     {
         vars->vscale_nhc[i] = ir->opts.vscale_nhc[i];
@@ -261,7 +260,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                real lambda,real *dvdlambda,
                rvec *v,tensor *vir,
-               t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetanew,real vetascale_nhc)
+               t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetanew)
 {
     bool    bOK;
     int     start,homenr,nrend;
@@ -288,7 +287,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     nrend = start+homenr;
 
     /* set constants for pressure control integration */ 
-    vetavar = init_vetavars(veta,vetanew,vetascale_nhc,ir);
+    vetavar = init_vetavars(veta,vetanew,ir);
 
     if (ir->delta_t == 0)
     {

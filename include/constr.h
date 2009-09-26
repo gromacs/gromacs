@@ -136,7 +136,7 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
                       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
                       real lambda,real *dvdlambda,
                       rvec *v,tensor *vir,
-                      t_nrnb *nrnb,int econq, bool bPscal, real veta, real vetanew, real vetascale_nhc);
+                      t_nrnb *nrnb,int econq, bool bPscal, real veta, real vetanew);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
