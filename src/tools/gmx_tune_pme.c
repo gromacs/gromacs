@@ -387,6 +387,8 @@ static void counters_restore_env(int resetcount_orig, bool bHaveResetCounter)
 {
     char *env_ptr;
 
+#if 0    
+    /* This code is not valid ISO C, setenv and unsetenv are NOT portable */
     
     if (TRUE == bHaveResetCounter)
     {
@@ -402,6 +404,7 @@ static void counters_restore_env(int resetcount_orig, bool bHaveResetCounter)
         unsetenv("GMX_RESET_COUNTERS");
         fprintf(stdout, "\nRemoving GMX_RESET_COUNTERS from environment again.\n");
     }
+#endif
 }
 
 
@@ -409,6 +412,10 @@ static void counters_set_env(int presteps, int *resetcount_orig, bool *bHaveRese
 {
     char *env_ptr;
     char *cp;
+
+    
+#if 0    
+    /* This code is not valid ISO C, setenv and unsetenv are NOT portable */
 
     
     /* If the GMX_RESET_COUNTERS environment is present we save it
@@ -426,6 +433,8 @@ static void counters_set_env(int presteps, int *resetcount_orig, bool *bHaveRese
     sprintf(env_ptr, "%d", presteps);
     fprintf(stdout, "Setting environment variable GMX_RESET_COUNTERS to %s.\n", env_ptr);
     setenv("GMX_RESET_COUNTERS",env_ptr,TRUE);     
+    
+#endif
 }
 
 
@@ -1306,7 +1315,7 @@ int gmx_tune_pme(int argc,char *argv[])
     gmx_large_int_t bench_nsteps=BENCHSTEPS;
     gmx_large_int_t new_sim_nsteps=-1;  /* -1 indicates: not set by the user */
     gmx_large_int_t cpt_steps=0;        /* Step counter in .cpt input file */
-    int        presteps=100;       /* Do a full cycle reset after presteps steps */
+    int        presteps=0;       /* Do a full cycle reset after presteps steps */
     bool       bHaveResetCounter=FALSE; /* Was the GMX_RESET_COUNTER env set by user? */
     int        resetcount_orig;    /* The value of GMX_RESET_COUNTER if set */
 
@@ -1552,7 +1561,10 @@ int gmx_tune_pme(int argc,char *argv[])
 
     /* Set the GMX_RESET_COUNTERS environment variable */
     if (presteps > 0)
+    {
+        gmx_fatal(FARGS,"Pre-equilibration not supported for now.");
         counters_set_env(presteps, &resetcount_orig, &bHaveResetCounter);
+    }
     
     /* Print some header info to file */
     sep_line(fp);
@@ -1650,8 +1662,11 @@ int gmx_tune_pme(int argc,char *argv[])
 
     /* Restore original environment */
     if (presteps > 0)
+    {
+        gmx_fatal(FARGS,"Pre-equilibration not supported for now.");
         counters_restore_env(resetcount_orig, bHaveResetCounter);
-
+    }
+                  
     /* Analyse the results and give a suggestion for optimal settings: */
     analyze_data(fp, perfdata, ntprs, datasets, repeats, info, &best_tpr, &best_npme);
     
@@ -1672,8 +1687,9 @@ int gmx_tune_pme(int argc,char *argv[])
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)
     {
-		fp = fopen(opt2fn("-p", NFILE, fnm),"r");
 		char buf[STRLEN];
+
+		fp = fopen(opt2fn("-p", NFILE, fnm),"r");
         fprintf(stdout,"\n\n");
 		
 		while( fgets(buf,STRLEN-1,fp) != NULL )
