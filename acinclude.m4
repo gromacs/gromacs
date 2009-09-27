@@ -950,10 +950,6 @@ if test $enable_fortran = yes; then
   fi
 fi
 
-if test $enable_apple_64bit = yes; then
-  ACX_CHECK_CC_FLAGS(-m64,m64,xCFLAGS="$xCFLAGS -m64")
-fi
-
 CPU_FLAGS=""
 
 if test "$GCC" = "yes"; then

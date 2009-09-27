@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.5, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.6, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -76,10 +76,16 @@ if test "$enable_mpi_environment" != "no"; then
   AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
-AC_ARG_ENABLE(apple_64bit,
-              [AC_HELP_STRING([--enable-apple-64bit],
-                              [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
+### MPI_IN_PLACE
+AC_ARG_ENABLE(mpi-in-place,
+              [AC_HELP_STRING([--disable-mpi-in-place],
+                              [Disable MPI_IN_PLACE. For MPI implementations that have broken support for it (some versions of MPICH, for example).])],, enable_mpi_in_place=yes)
 
+
+
+AC_ARG_ENABLE(debug,
+	      [AC_HELP_STRING([--enable-debug],
+                              [Add -g to other command line arguments])],,enable_debug=no)
 
 ### IA32 assembly code
 AC_ARG_ENABLE(ia32_3dnow,    
@@ -99,13 +105,9 @@ esac
 AC_ARG_ENABLE(ia32_sse,    
               [AC_HELP_STRING([--disable-ia32-sse],
                               [Don't build SSE/SSE2 assembly loops on ia32])],,enable_ia32_sse=yes)
+
 case "${host_cpu}-${host_vendor}" in
-   i?86-apple) 
-      if test "$enable_apple_64bit" = "yes"; then
-        enable_ia32_sse=no;
-      fi
-   ;;
-   i?86-*) ;;     
+   i?86-*) ;;
    *) enable_ia32_sse=no ;;
 esac
 
@@ -115,11 +117,7 @@ AC_ARG_ENABLE(x86_64_sse,
                               [Don't build SSE assembly loops on X86_64])],,enable_x86_64_sse=yes)
 case "${host_cpu}-${host_vendor}" in
    x86_64-* | amd64-*) ;;
-   i?86-apple) 
-      if test "$enable_apple_64bit" != "yes"; then
-        enable_x86_64_sse=no;
-      fi
-   ;;
+   i?86-apple) ;;
    *) enable_x86_64_sse=no ;;
 esac
 
@@ -614,6 +612,39 @@ AC_CHECK_FUNCS(strdup)
 AC_CHECK_TYPES([bool])
 
 
+
+
+
+#############
+# Check integer sizes, set to zero if e.g. long long is not supported.
+# (Note: this must come *after* type checks for the corresponding types!)
+#############
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long int)
+AC_CHECK_SIZEOF(long long int)
+AC_CHECK_SIZEOF(off_t)
+AC_CHECK_SIZEOF(void*)
+
+
+
+# Apple OS X is a bit strange/braindead in that it always reports itself as i386, both for
+# 32 and 64 bit builds (even with the 64 bit kernel!).
+#
+# To get the SSE support right we check for the size of void * that we detected above...
+case "${host_vendor}-${host_os}" in
+  apple-darwin*)
+  if test $ac_cv_sizeof_voidp = 8; then
+     enable_ia32_sse=no;
+  else
+     enable_x86_64_sse=no;
+  fi
+  ;;
+  *) ;;
+esac
+
+
+
+
 #####
 # Look for X
 AC_PATH_XTRA
@@ -696,7 +727,6 @@ AC_STRUCT_TM
 AC_TYPE_UID_T
 AC_C_INLINE
     
-
 
 
 # Test stuff for ia32 and x86_64 assembly, and add objects/libraries.
@@ -832,6 +862,8 @@ fi
 #
 # Nothing to test right now.
 
+
+  
 
 #
 # Test altivec support.
@@ -1040,14 +1072,6 @@ if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
   echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
   echo "  installed you can issue make mdrun; make install-mdrun."
-fi
-
-if test "$host_vendor" = "apple" -a "$enable_apple_64bit" = "no"; then
-  echo ""
-  echo "* Did you know that you can compile a 64-bit version of Gromacs to improve"
-  echo "  performance on recent Intel Macs? You need to install a 64-bit version"
-  echo "  of FFTW first (add -m64 to CFLAGS, or download it from the Gromacs site)"
-  echo "  after which you can simply specify --enable-apple-64bit to this script." 
 fi
 
 if test "$enable_shared" = "no"; then
