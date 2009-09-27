@@ -45,6 +45,12 @@
 #include <limits.h>
 #include <ctype.h>
 
+/* Necessary for getcwd */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#include <direct.h>
+#include <io.h>
+#endif
+
 #include "string2.h"
 #include "smalloc.h"
 #include "futil.h"
@@ -153,7 +159,7 @@ static void add_define(const char *define)
 int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
-  char *buf,*ptr;
+  char *buf,*ptr,*pdum;
   int i;
   unsigned int i1;
   
@@ -185,10 +191,17 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     cpp->path[ptr-filenm] = '\0';
     cpp->fn   = strdup(ptr+1);
     snew(cpp->cwd,STRLEN);
-    (void) getcwd(cpp->cwd,STRLEN);
+      
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+      pdum=_getcwd(cpp->cwd,STRLEN);
+      _chdir(cpp->path);
+#else
+      pdum=getcwd(cpp->cwd,STRLEN);
+      chdir(cpp->path);
+#endif
+      
     if (NULL != debug)
       fprintf(debug,"GMXCPP: chdir to %s\n",cpp->path);
-    chdir(cpp->path);
   }
   cpp->line_len= 0;
   cpp->line    = NULL;
@@ -431,7 +444,11 @@ int cpp_close_file(gmx_cpp_t *handlep)
   if (NULL != handle->cwd) {
     if (NULL != debug)
       fprintf(debug,"GMXCPP: chdir to %s\n",handle->cwd);
-    chdir(handle->cwd);
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+      _chdir(handle->cwd);
+#else
+      chdir(handle->cwd);
+#endif
   }
   
   if (0)
