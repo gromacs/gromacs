@@ -136,7 +136,7 @@ static at2vsitebond_t *make_at2vsitebond(int natoms,t_params plist[])
 
   snew(bVSI,natoms);
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN) {
+    if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN && ftype != F_VSITEREFMOL) {
       for(i=0; (i<plist[ftype].nr); i++) {
 	for(j=0; j<NRAL(ftype); j++)
 	  bVSI[plist[ftype].param[i].a[j]] = TRUE;
@@ -187,7 +187,7 @@ static at2vsitecon_t *make_at2vsitecon(int natoms,t_params plist[])
 
   snew(bVSI,natoms);
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN) {
+    if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN && ftype != F_VSITEREFMOL) {
       for(i=0; (i<plist[ftype].nr); i++) {
 	for(j=0; j<NRAL(ftype); j++)
 	  bVSI[plist[ftype].param[i].a[j]] = TRUE;
@@ -703,7 +703,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
   at2vb = make_at2vsitebond(atoms->nr,plist);
 
   for(ftype=0; (ftype<F_NRE); ftype++)
-    if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN) {
+    if ((interaction_function[ftype].flags & IF_VSITE) && ftype != F_VSITEN && ftype != F_VSITEREFMOL) {
       nrset=0;
       nvsite+=plist[ftype].nr;
       for(i=0; (i<plist[ftype].nr); i++) {
@@ -1229,7 +1229,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
 	  vsite_type[vsite] = ftype;
 	else
 	  gmx_fatal(FARGS,"multiple vsite constructions for atom %d",vsite+1);
-	if (ftype == F_VSITEN) {
+	if (ftype == F_VSITEN || ftype == F_VSITEREFMOL) {
 	  while (i < plist[ftype].nr && plist[ftype].param[i].AI == vsite)
 	    i++;
 	} else {
@@ -1249,7 +1249,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
     snew(pindex,natoms);
     for(ftype=0; ftype<F_NRE; ftype++) {
       if ((interaction_function[ftype].flags & IF_VSITE) &&
-	  ftype != F_VSITEN) {
+	  ftype != F_VSITEN && ftype != F_VSITEREFMOL) {
 	for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
 	  k=plist[ftype].param[parnr].AI;
 	  pindex[k].ftype=ftype;

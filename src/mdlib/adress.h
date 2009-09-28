@@ -74,15 +74,10 @@ adress_weight(rvec             x,
               int              adresstype,
               real             adressr,
               real             adressw,
+              bool             bnew_wf,
               rvec             ref,
               rvec             box2,
               matrix           box);
-
-void
-get_adress_ref(int             adresstype,
-               matrix          box,
-               rvec            box2,
-               rvec            ref);
 
 /** \brief update the weight of all coarse-grained particles
  *

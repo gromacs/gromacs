@@ -72,7 +72,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
-  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
+  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],adress_refs[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -962,13 +962,16 @@ void get_ir(const char *mdparin,const char *mdparout,
   
   /* AdResS defined thingies */
   CCTYPE ("AdResS parameters");
-  EETYPE("adress_type",  ir->adress_type, eAdresstype_names, nerror, TRUE);
-  RTYPE ("adress_ex_width",ir->adress_ex_width, 0);
-  RTYPE ("adress_hy_width",ir->adress_hy_width, 0);
-  EETYPE("adress_interface_correction",ir->badress_pcor,yesno_names, nerror, TRUE);
-  EETYPE("adress_exvdw",ir->adress_ivdw,    evdw_names, nerror, TRUE);
-  EETYPE("adress_cog",ir->badress_cog,yesno_names, nerror, TRUE);
-  
+  EETYPE("adress_type",                ir->adress_type,     eAdresstype_names, nerror, TRUE);
+  EETYPE("adress_new_wf",              ir->badress_new_wf,  yesno_names,       nerror, TRUE);
+  RTYPE ("adress_const_wf",            ir->adress_const_wf, 0);
+  RTYPE ("adress_ex_width",            ir->adress_ex_width, 0);
+  RTYPE ("adress_hy_width",            ir->adress_hy_width, 0);
+  EETYPE("adress_interface_correction",ir->badress_pcor,    yesno_names,       nerror, TRUE);
+  EETYPE("adress_exvdw",               ir->adress_ivdw,     evdw_names,        nerror, TRUE);
+  EETYPE("adress_cog",                 ir->badress_cog,     yesno_names,       nerror, TRUE);
+  STYPE ("adress_reference_coords",    adress_refs,         NULL);
+
   /* User defined thingies */
   CCTYPE ("User defined thingies");
   STYPE ("user1-grps",  user1,          NULL);
@@ -1560,7 +1563,7 @@ void do_index(const char* mdparin, const char *ndx,
   t_atoms atoms_all;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
-  int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
+  int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser,nadress_refs;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
@@ -1903,6 +1906,15 @@ void do_index(const char* mdparin, const char *ndx,
     ir->opts.SAsteps[i] = strtol(ptr3[i],NULL,10);
   }
   /* end of QMMM input */
+
+  /* AdResS reference input */
+  nadress_refs = str_nelem(adress_refs,MAXPTR,ptr1);
+
+  for(i=0; (i<nadress_refs); i++)
+      ir->adress_refmol[i]=strtod(ptr1[i],NULL);
+  for( ;(i<DIM); i++)
+      ir->adress_refmol[i]=0;
+  /* End AdResS input */
 
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {

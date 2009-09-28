@@ -1219,12 +1219,15 @@ void init_forcerec(FILE *fp,
     fr->benlistCG_CG = ir->benlistCG_CG;
 
     /* Copy AdResS parameters */
-    fr->adress_type = ir->adress_type;
+    fr->adress_type     = ir->adress_type;
+    fr->badress_new_wf  = ir->badress_new_wf;
+    fr->adress_const_wf = ir->adress_const_wf;
     fr->adress_ex_width = ir->adress_ex_width;
     fr->adress_hy_width = ir->adress_hy_width;
-    fr->badress_pcor = ir->badress_pcor;
-    fr->adress_ivdw = ir->adress_ivdw;
-    fr->badress_cog = ir->badress_cog;
+    fr->badress_pcor    = ir->badress_pcor;
+    fr->adress_ivdw     = ir->adress_ivdw;
+    fr->badress_cog     = ir->badress_cog;
+    copy_rvec(ir->adress_refmol,fr->adress_refmol);
 
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;

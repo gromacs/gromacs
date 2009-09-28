@@ -83,6 +83,7 @@
      int *         type;
        
      real *     wf;
+     bool       bnew_wf;
      real       weight_cg1;
      real       weight_cg2;
      real       weight_product;
@@ -93,6 +94,7 @@
      bool       bIntPres; /*Is interface pressure correction enabled ?*/
      bool       bCG; /*Are we calulating cg-cg interactions?*/
      wf                  = mdatoms->wf;
+     bnew_wf             = fr->badress_new_wf;
      /* Check if we're doing the coarse grained charge group */
      bCG                 = (mdatoms->ptype[nlist->iinr[0]] == eptVSite);
      bIntPres            = fr->badress_pcor;
@@ -173,13 +175,7 @@
                     continue;
                 }
             }
-#ifndef ADRESS_SWITCHFCT_NEW
-            /* both groups are explicit */
-            else if (weight_product == 1)
-#else
-                /* at least one of the groups is explicit */
-            else if (weight_product_cg == 0)
-#endif		  
+            else if ((bnew_wf && (weight_product_cg == 0)) || (!bnew_wf && (weight_product == 1)))
             {
                 /* if it's a coarse grained loop, skip this molecule */
                 if(bCG)
@@ -194,24 +190,25 @@
                 }
             }
             /* both have double identity, get hybrid scaling factor */
-            else 
+            else if (bnew_wf)
             {
-#ifndef ADRESS_SWITCHFCT_NEW		  
-                /* this is the old function */
-                hybscal = weight_product;
-#else
                 hybscal = 1.0 - exp(-0.6931472*weight_product/(weight_product_cg));
-#endif
-
+            }
+            else
+            {
+            /* this is the old function */
+                hybscal = weight_product;
+            }
+         
 		/* hybscal is the scaling factor for the forces in the hybrid region
 		 * for EX-EX interactions it is just given by the above formular
 		 * for CG-CG interactions it is 1- the EX-EX scale */
-                if(bCG)
-                {
-                    hybscal = 1.0 - hybscal;
-                }
-                bHybrid = TRUE;
+            if(bCG)
+            {
+                hybscal = 1.0 - hybscal;
             }
+            bHybrid = TRUE;
+            
             
              for(ai=ai0; (ai<ai1); ai++)
              {
@@ -427,7 +424,7 @@
          Vc[ggid]        += vctot;
          Vvdw[ggid]      += Vvdwtot;
      }
-     
+    
      *outeriter       = nlist->nri;            
      *inneriter       = nlist->jindex[n];          	
 }

@@ -44,6 +44,7 @@ adress_weight(rvec            x,
               int             adresstype,
               real            adressr,
               real            adressw,
+              bool            bnew_wf,
               rvec            ref,
               rvec            box2,
               matrix          box)
@@ -113,48 +114,15 @@ adress_weight(rvec            x,
         return 1;
     }
     /* hybrid region */
-    else
+    else if (bnew_wf)
     {
-#ifndef ADRESS_SWITCHFCT_NEW
-        tmp=cos((dl-adressr)*M_PI/2/adressw);
-        return tmp*tmp;
-#else	
         tmp=1.0-(dl-adressr)/adressw;
         return tmp;
-#endif
-    }
-}
-
-void
-get_adress_ref(int             adresstype,
-               matrix          box,
-               rvec            box2,
-               rvec            ref)
-{
-    int i;
-
-    if(adresstype == eAdressRefMol)
-    {
-        /* get refx,refy,refz from reference solute */
-
-        for(i=0;i<3;i++) {
-            /* need square of half the box length for shortest distance to solute */
-            box2[i]    = box[i][i]/2.0;
-            box2[i]   *= box2[i];
-//            ref[i]     = x[j][i];
-            ref[i]     = box[i][i]/2.0;
-        }
     }
     else
     {
-        /* reference is the center of the box */
-        for(i=0;i<3;i++){
-            ref[i]     = box[i][i]/2.0;
-        }
-        /* avoid compiler warning */
-        for(i=0;i<3;i++){
-            box2[i]    = 0.0;
-        }
+        tmp=cos((dl-adressr)*M_PI/2/adressw);
+        return tmp*tmp;
     }
 }
 
@@ -171,19 +139,31 @@ update_adress_weights_com(FILE *               fplog,
     int            icg,k,k0,k1,d;
     real           nrcg,inv_ncg,mtot,inv_mtot;
     atom_id *      cgindex;
+    rvec           ix,box2;
     int            adresstype;
     real           adressr,adressw;
-    rvec           ix,ref,box2;
+    bool           bnew_wf;
+    rvec           ref;
     real *         massT;
     real *         wf;
 
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
     adressw            = fr->adress_hy_width;
+    bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
+    copy_rvec(fr->adress_refmol,ref);
 
-    get_adress_ref(adresstype,box,box2,ref);
+    if(adresstype == eAdressRefMol)
+    {
+        for(k=0;k<DIM;k++) 
+        {
+            /* need square of half the box length for shortest distance to solute */
+            box2[k]        = box[k][k]/2.0;
+            box2[k]       *= box2[k];
+        }
+    }
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
      * to be on the same node as the constructing atoms.  Therefore we 
@@ -206,7 +186,7 @@ update_adress_weights_com(FILE *               fplog,
         nrcg    = k1-k0;
         if (nrcg == 1)
         {
-            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,ref,box2,box);
+            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,bnew_wf,ref,box2,box);
         }
         else
         {
@@ -252,7 +232,7 @@ update_adress_weights_com(FILE *               fplog,
             }
 
             /* Set wf of all atoms in charge group equal to wf of com */
-            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,ref,box2,box);
+            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,bnew_wf,ref,box2,box);
             for(k=(k0+1); (k<k1); k++)
             {
                 wf[k] = wf[k0];
@@ -273,16 +253,28 @@ update_adress_weights_cog(t_iparams            ip[],
     int            ftype,adresstype;
     t_iatom        avsite,ai,aj,ak,al;
     t_iatom *      ia;
+    rvec           box2;
     real           adressr,adressw;
-    rvec           ref,box2;
+    bool           bnew_wf;
+    rvec           ref;
     real *         wf;
 
     adresstype         = fr->adress_type;
     adressr            = fr->adress_ex_width;
     adressw            = fr->adress_hy_width;
+    bnew_wf            = fr->badress_new_wf;
     wf                 = mdatoms->wf;
+    copy_rvec(fr->adress_refmol,ref);
 
-    get_adress_ref(adresstype,box,box2,ref);
+    if(adresstype == eAdressRefMol)
+    {
+        for(k=0;k<3;k++) 
+        {
+            /* need square of half the box length for shortest distance to solute */
+            box2[k]        = box[k][k]/2.0;
+            box2[k]       *= box2[k];
+        }
+    }
 
     /* Since this is center of gravity AdResS, we know the vsite
      * is in the same charge group as the constructing atoms.
@@ -305,7 +297,7 @@ update_adress_weights_cog(t_iparams            ip[],
                 /* The vsite and first constructing atom */
                 avsite     = ia[1];
                 ai         = ia[2];
-                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,ref,box2,box);
+                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,bnew_wf,ref,box2,box);
                 wf[ai]     = wf[avsite];
 
                 /* Assign the vsite wf to rest of constructing atoms depending on type */
@@ -361,6 +353,14 @@ update_adress_weights_cog(t_iparams            ip[],
                     {
                         ai = ia[j+2];
                         wf[ai] = wf[avsite];
+                    }
+                    break;
+                case F_VSITEREFMOL:
+                    inc    = 3*ip[ia[0]].vsiterefmol.n;
+                    for(j=3; j<inc; j+=3) 
+                    {
+                        ai = ia[j+2];
+                        wf[ai] = 1;
                     }
                     break;
                 default:

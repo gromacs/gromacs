@@ -163,12 +163,6 @@ AC_ARG_ENABLE(bluegene,
               [AC_HELP_STRING([--enable-bluegene],
                               [Build assembly intrinsics kernels on bluegene])],,enable_bluegene=no)
 
-### Enable new adresswf code
-AC_ARG_ENABLE(new-adresswf,
-	      [AC_HELP_STRING([--enable-new-adresswf],
-			      [Enable new adress switching function])],
-	      [AC_DEFINE(ADRESS_SWITCHFCT_NEW,,[Enable new adress switching function])],)
-
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     

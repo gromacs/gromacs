@@ -321,6 +321,10 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->vsiten.n = round_check(old[0],1,ftype,"number of atoms");
     newparam->vsiten.a = old[1];
     break;
+  case F_VSITEREFMOL:
+    newparam->vsiterefmol.n = round_check(old[0],1,ftype,"number of atoms");
+    newparam->vsiterefmol.a = old[1];
+    break;
   case F_CMAP:
 	newparam->cmap.cmapA=old[0];
 	newparam->cmap.cmapB=old[1];

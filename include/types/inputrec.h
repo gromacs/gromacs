@@ -90,6 +90,7 @@ typedef struct {
   int     *SAsteps;     /* in how many steps SA goes from 1-1 to 0.5-0.5*/
   bool    *bOPT;
   bool    *bTS;
+
 } t_grpopts;
 
 enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
@@ -274,13 +275,17 @@ typedef struct {
   int  QMconstraints;   /* constraints on QM bonds                      */
   int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
   real scalefactor;     /* factor for scaling the MM charges in QM calc.*/
-                        /* parameter needed for AdResS simulation */
-  int  adress_type;     /* type of AdResS simulation */
-  real adress_ex_width; /* center of the explicit zone */
-  real adress_hy_width; /* width of the hybrid zone */
-  bool badress_pcor;    /* enable interface pressure correction */
-  int adress_ivdw;      /* AdResS vdw switch */
-  bool badress_cog;     /* AdResS for cog switch */
+                        /* parameter needed for AdResS simulation       */
+  int  adress_type;     /* type of AdResS simulation                    */
+  bool badress_new_wf;  /* enable new AdResS weighting function         */
+  real adress_const_wf; /* constant wf for initialization/eAdressConst  */
+  real adress_ex_width; /* center of the explicit zone                  */
+  real adress_hy_width; /* width of the hybrid zone                     */
+  bool badress_pcor;    /* enable interface pressure correction         */
+  int  adress_ivdw;     /* AdResS vdw switch                            */
+  bool badress_cog;     /* AdResS for cog switch                        */
+  rvec adress_refmol;   /* Coordinates for AdResS reference             */
+
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

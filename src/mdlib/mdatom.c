@@ -261,7 +261,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     }
     /* Initialize AdResS weighting functions to adressw */
     if (ir->adress_type!=eAdressOff)
-       md->wf[i]           = ir->adress_hy_width;
+       md->wf[i]           = ir->adress_const_wf;
   }
 
   md->start  = start;

@@ -33,8 +33,8 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _nb_generic_cg_h_
-#define _nb_generic_cg_h_
+#ifndef _nb_generic_adress_h_
+#define _nb_generic_adress_h_
 
 #include "types/simple.h"
 #include "typedefs.h"

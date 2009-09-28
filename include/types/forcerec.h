@@ -354,11 +354,14 @@ typedef struct {
 
   /* parameter needed for AdResS simulation */
   int  adress_type;
+  bool badress_new_wf;
+  real adress_const_wf;
   real adress_ex_width;
   real adress_hy_width;
   bool badress_pcor;
-  int adress_ivdw;
+  int  adress_ivdw;
   bool badress_cog;
+  rvec adress_refmol;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

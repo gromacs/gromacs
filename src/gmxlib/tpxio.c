@@ -149,6 +149,7 @@ static const t_ftupd ftupd[] = {
   { 26, F_DIHRESVIOL        },
   { 49, F_VSITE4FDN         },
   { 50, F_VSITEN            },
+  { 68, F_VSITEREFMOL       },
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        },
@@ -657,13 +658,18 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     do_real(ir->userreal4); 
     
     /* AdResS stuff, probably needs to be inside a file_version check */
-    do_int(ir->benlistCG_CG);
-    do_int(ir->adress_type);
-    do_real(ir->adress_ex_width);
-    do_real(ir->adress_hy_width);
-    do_int(ir->adress_pcor);
-    do_int(ir->adress_ivdw);
-    do_int(ir->badress_cog);
+    if (file_version >= 68) {
+      do_int(ir->benlistCG_CG);
+      do_int(ir->adress_type);
+      do_int(ir->badress_new_wf);
+      do_real(ir->adress_const_wf);
+      do_real(ir->adress_ex_width);
+      do_real(ir->adress_hy_width);
+      do_int(ir->badress_pcor);
+      do_int(ir->adress_ivdw);
+      do_int(ir->badress_cog);
+      do_rvec(ir->adress_refmol);
+    }
     /* End AdReS */
 
     /* pull stuff */
@@ -1048,6 +1054,10 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_VSITEN:
     do_int (iparams->vsiten.n);
     do_real(iparams->vsiten.a);
+    break;
+  case F_VSITEREFMOL:
+    do_int (iparams->vsiterefmol.n);
+    do_real(iparams->vsiterefmol.a);
     break;
   case F_GB12:
   case F_GB13:
