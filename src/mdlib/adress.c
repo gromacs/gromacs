@@ -356,12 +356,7 @@ update_adress_weights_cog(t_iparams            ip[],
                     }
                     break;
                 case F_VSITEREFMOL:
-                    inc    = 3*ip[ia[0]].vsiterefmol.n;
-                    for(j=3; j<inc; j+=3) 
-                    {
-                        ai = ia[j+2];
-                        wf[ai] = 1;
-                    }
+                    /* Default to adress_const_wf, set during atoms2md (see src/mdlib/mdatom.c) */
                     break;
                 default:
                     gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
