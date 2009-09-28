@@ -454,6 +454,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
+  cmp_int(fp,"inputrec->benlistCG_CG",-1,ir1->benlistCG_CG,ir2->benlistCG_CG);
   cmp_int(fp,"inputrec->nstlist",-1,ir1->nstlist,ir2->nstlist);
   cmp_int(fp,"inputrec->ndelta",-1,ir1->ndelta,ir2->ndelta);
   cmp_int(fp,"inputrec->nstcomm",-1,ir1->nstcomm,ir2->nstcomm);
@@ -569,6 +570,17 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_rvec(fp,"inputrec->deform(a)",-1,ir1->deform[XX],ir2->deform[XX],ftol,abstol);
   cmp_rvec(fp,"inputrec->deform(b)",-1,ir1->deform[YY],ir2->deform[YY],ftol,abstol);
   cmp_rvec(fp,"inputrec->deform(c)",-1,ir1->deform[ZZ],ir2->deform[ZZ],ftol,abstol);
+
+  cmp_int(fp,"ir->adress_type" ,-1,ir1->adress_type,ir2->adress_type);
+  cmp_int(fp,"ir->badress_new_wf" ,-1,ir1->badress_new_wf,ir2->badress_new_wf);
+  cmp_real(fp,"ir->adress_const_wf" ,-1,ir1->adress_const_wf,ir2->adress_const_wf,ftol,abstol);
+  cmp_real(fp,"ir->adress_ex_width" ,-1,ir1->adress_ex_width,ir2->adress_ex_width,ftol,abstol);
+  cmp_real(fp,"ir->adress_hy_width" ,-1,ir1->adress_hy_width,ir2->adress_hy_width,ftol,abstol);
+  cmp_int(fp,"ir->badress_pcor" ,-1,ir1->badress_pcor,ir2->badress_pcor);
+  cmp_int(fp,"ir->adress_ivdw" ,-1,ir1->adress_ivdw,ir2->adress_ivdw);
+  cmp_int(fp,"ir->badress_cog" ,-1,ir1->badress_cog,ir2->badress_cog);
+  cmp_rvec(fp,"ir->adress_refs" ,-1,ir1->adress_refmol,ir2->adress_refmol,ftol,abstol);
+
   cmp_int(fp,"inputrec->userint1",-1,ir1->userint1,ir2->userint1);
   cmp_int(fp,"inputrec->userint2",-1,ir1->userint2,ir2->userint2);
   cmp_int(fp,"inputrec->userint3",-1,ir1->userint3,ir2->userint3);

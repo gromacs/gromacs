@@ -310,6 +310,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     }
     do_int(ir->ns_type);
     do_int(ir->nstlist);
+    if (file_version >= 68) {
+      do_int(ir->benlistCG_CG);
+    }
     do_int(ir->ndelta);
     if (file_version < 41) {
       do_int(idum);
@@ -657,9 +660,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     do_real(ir->userreal3); 
     do_real(ir->userreal4); 
     
-    /* AdResS stuff, probably needs to be inside a file_version check */
+    /* AdResS stuff */
     if (file_version >= 68) {
-      do_int(ir->benlistCG_CG);
       do_int(ir->adress_type);
       do_int(ir->badress_new_wf);
       do_real(ir->adress_const_wf);
@@ -670,7 +672,6 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(ir->badress_cog);
       do_rvec(ir->adress_refmol);
     }
-    /* End AdReS */
 
     /* pull stuff */
     if (file_version >= 48) {
