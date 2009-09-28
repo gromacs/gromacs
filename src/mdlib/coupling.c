@@ -475,7 +475,6 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
   real bmass,qmass,reft,kT,dt,ndj,nd;
   tensor dumpres,dumvir;
   double *scalefac;
-  real vetasave;
   rvec sumv,consk;
   static bool bFirstTime = TRUE;
  
@@ -623,9 +622,9 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
               msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
               msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
           }
-          sum_ekin(FALSE,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
           /* now that we've scaled the groupwise velocities, we can add them up to get the total */
-          
+          sum_ekin(FALSE,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
+
           for (n=md->start;n<md->start+md->homenr;n++) 
           {
               if (md->cTC) 
@@ -654,7 +653,6 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
       {
           if (bThermo) 
           { 
-              vetasave = state->veta;
               NBaroT_trotter(opts,ir->delta_t,state->nosehoover_xi,
                              state->nosehoover_vxi,&(state->veta),MassQ);      
           }
@@ -718,7 +716,7 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
             Ekin = 2*trace(ekind->tcstat[i].ekinh);
             dtfull *= 2;
         }
-
+        
         for(mi=0;mi<mstepsi;mi++) 
         {
             for(mj=0;mj<mstepsj;mj++)
@@ -731,7 +729,7 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                 
                 for (j=0;j<NNHCHAIN-1;j++) 
                 { 	
-                    if (iQinv[j] > 0) {
+                    if (iQinv[j+1] > 0) {
                         /* we actually don't need to update here if we save the 
                            state of the GQ, but it's easier to just recompute*/
                         GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
@@ -764,9 +762,9 @@ void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                 
                 for (j=0;j<NNHCHAIN-1;j++) 
                 { 
-                    if (iQinv[j] > 0) {
-                        Efac = exp(-0.125*dt*ivxi[j+1]);
-                        ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                    Efac = exp(-0.125*dt*ivxi[j+1]);
+                    ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                    if (iQinv[j+1] > 0) {
                         GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
                     } else {
                         GQ[j+1] = 0;
@@ -813,12 +811,12 @@ void NBaroT_trotter(t_grpopts *opts,real dtfull,
             
             /* compute the thermal forces */
             GQ[0] = iQinv[0]*(sqr(*veta)/MassQ->Winv - kT);
-        
+            
             for (j=0;j<NNHCHAIN-1;j++) 
             { 	
                 /* we actually don't need to update here if we save the 
                    state of the GQ, but it's easier to just recompute*/
-                if (iQinv[j] > 0) {
+                if (iQinv[j+1] > 0) {
                     GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
                 } else {
                     GQ[j+1] = 0;
@@ -836,7 +834,7 @@ void NBaroT_trotter(t_grpopts *opts,real dtfull,
             *veta *= Efac;
             
             GQ[0] = iQinv[0]*(sqr(*veta)/MassQ->Winv - kT);
-        
+            
             /* update thermostat positions */
             for (j=0;j<NNHCHAIN;j++) 
             { 
@@ -845,9 +843,9 @@ void NBaroT_trotter(t_grpopts *opts,real dtfull,
             
             for (j=0;j<NNHCHAIN-1;j++) 
             { 
-                if (iQinv[j] > 0) {
-                    Efac = exp(-0.125*dt*ivxi[j+1]);
-                    ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                Efac = exp(-0.125*dt*ivxi[j+1]);
+                ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                if (iQinv[j+1] > 0) {
                     GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
                 } else {
                     GQ[j+1] = 0;
@@ -957,7 +955,7 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     
     if (ir->epc == epcTROTTER) 
     {
-        /* add the energy from the barostat themrostat chain */
+        /* add the energy from the barostat thermostat chain */
         i = ir->opts.ngtc;
         ivxi = &vxi[i*NNHCHAIN];
         ixi = &xi[i*NNHCHAIN];

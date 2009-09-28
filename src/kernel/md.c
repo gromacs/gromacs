@@ -2438,7 +2438,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             restore_ekinstate_from_state(cr,ekind,&(state->ekinstate));
             copy_mat(state->vir_prev,shake_vir);
         }
-
+        
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
         /* Determine the pressure:                                                             

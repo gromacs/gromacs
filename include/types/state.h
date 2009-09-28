@@ -46,7 +46,7 @@
  */
 
 /* for now, define the number of NH chains here */
-#define NNHCHAIN 2
+#define NNHCHAIN 10
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
