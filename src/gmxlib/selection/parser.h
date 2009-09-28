@@ -63,17 +63,18 @@
      METHOD_POS = 279,
      MODIFIER = 280,
      PARAM_BOOL = 281,
-     PARAM_INT = 282,
-     PARAM_REAL = 283,
-     PARAM_STR = 284,
-     PARAM_POS = 285,
-     PARAM_GROUP = 286,
-     END_OF_METHOD = 287,
-     XOR = 288,
-     OR = 289,
-     AND = 290,
-     NOT = 291,
-     CMP_OP = 292
+     BOOL_VALUE = 282,
+     PARAM_INT = 283,
+     PARAM_REAL = 284,
+     PARAM_STR = 285,
+     PARAM_POS = 286,
+     PARAM_GROUP = 287,
+     END_OF_METHOD = 288,
+     XOR = 289,
+     OR = 290,
+     AND = 291,
+     NOT = 292,
+     CMP_OP = 293
    };
 #endif
 /* Tokens.  */
@@ -101,17 +102,18 @@
 #define METHOD_POS 279
 #define MODIFIER 280
 #define PARAM_BOOL 281
-#define PARAM_INT 282
-#define PARAM_REAL 283
-#define PARAM_STR 284
-#define PARAM_POS 285
-#define PARAM_GROUP 286
-#define END_OF_METHOD 287
-#define XOR 288
-#define OR 289
-#define AND 290
-#define NOT 291
-#define CMP_OP 292
+#define BOOL_VALUE 282
+#define PARAM_INT 283
+#define PARAM_REAL 284
+#define PARAM_STR 285
+#define PARAM_POS 286
+#define PARAM_GROUP 287
+#define END_OF_METHOD 288
+#define XOR 289
+#define OR 290
+#define AND 291
+#define NOT 292
+#define CMP_OP 293
 
 
 
@@ -123,15 +125,15 @@ typedef union YYSTYPE
     int                  i;
     real                 r;
     char                *str;
-    gmx_ana_selmethod_t *meth;
+    struct gmx_ana_selmethod_t *meth;
 
-    t_selelem        *sel;
+    struct t_selelem           *sel;
 
-    t_selexpr_value  *val;
-    t_selexpr_param  *param;
+    struct t_selexpr_value     *val;
+    struct t_selexpr_param     *param;
 }
 /* Line 1489 of yacc.c.  */
-#line 135 "parser.h"
+#line 137 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

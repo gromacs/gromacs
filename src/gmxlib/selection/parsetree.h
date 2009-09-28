@@ -48,6 +48,7 @@
 #include <selvalue.h>
 
 struct t_selelem;
+struct gmx_ana_indexgrps_t;
 struct gmx_ana_selmethod_t;
 struct gmx_ana_selparam_t;
 
@@ -87,7 +88,7 @@ typedef struct t_selexpr_value
 typedef struct t_selexpr_param
 {
     /** Name of the parameter. */
-    const char             *name;
+    char                   *name;
     /** Number of values given for this parameter. */
     int                     nval;
     /** Pointer to the first value. */
@@ -108,7 +109,7 @@ t_selexpr_value *
 _gmx_selexpr_create_value_expr(struct t_selelem *expr);
 /** Allocates and initializes a \c t_selexpr_param. */
 t_selexpr_param *
-_gmx_selexpr_create_param(const char *name);
+_gmx_selexpr_create_param(char *name);
 
 /** Frees the memory allocated for a chain of values. */
 void
@@ -144,10 +145,10 @@ _gmx_sel_init_position(struct t_selelem *expr, const char *type, bool bSelPos,
                        void *scanner);
 /** Creates a \c t_selelem for a index group expression using group name. */
 struct t_selelem *
-_gmx_sel_init_group_by_name(gmx_ana_indexgrps_t *grps, const char *name);
+_gmx_sel_init_group_by_name(struct gmx_ana_indexgrps_t *grps, const char *name);
 /** Creates a \c t_selelem for a index group expression using group index. */
 struct t_selelem *
-_gmx_sel_init_group_by_id(gmx_ana_indexgrps_t *grps, int id);
+_gmx_sel_init_group_by_id(struct gmx_ana_indexgrps_t *grps, int id);
 /** Creates a root \c t_selelem for a selection. */
 struct t_selelem *
 _gmx_sel_init_selection(char *name, struct t_selelem *sel, void *scanner);

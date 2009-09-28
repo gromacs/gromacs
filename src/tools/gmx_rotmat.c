@@ -112,15 +112,18 @@ int gmx_rotmat(int argc,char *argv[])
     rm_pbc(&top.idef,ePBC,top.atoms.nr,box,x_top,x_top);
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
-    snew(w_rls,top.atoms.nr);
+    natoms = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
+
+    snew(w_rls,natoms);
     for(i=0; i<gnx; i++)
     {
+        if (index[i] >= natoms) {
+            gmx_fatal(FARGS,"Atom index (%d) is larger than the number of atoms in the trajecory (%d)",index[i]+1,natoms);
+        }
         w_rls[index[i]] = (bMW ? top.atoms.atom[index[i]].m : 1.0);
     }
 
-    reset_x(gnx,index,top.atoms.nr,NULL,x_top,w_rls);
-    
-    natoms = read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
+    reset_x(gnx,index,natoms,NULL,x_top,w_rls);
     
     out = xvgropen(ftp2fn(efXVG,NFILE,fnm), 
                    "Fit matrix","Time (ps)","",oenv); 
@@ -130,9 +133,9 @@ int gmx_rotmat(int argc,char *argv[])
     {
         rm_pbc(&top.idef,ePBC,natoms,box,x,x);
 
-        reset_x(gnx,index,top.atoms.nr,NULL,x,w_rls);
+        reset_x(gnx,index,natoms,NULL,x,w_rls);
 
-        calc_fit_R(DIM,top.atoms.nr,w_rls,x_top,x,R);
+        calc_fit_R(DIM,natoms,w_rls,x_top,x,R);
           
         fprintf(out,
                 "%7g %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n",

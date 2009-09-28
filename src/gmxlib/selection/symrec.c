@@ -82,6 +82,11 @@ static const char *const sym_reserved[] = {
     "and",
     "or",
     "xor",
+    "yes",
+    "no",
+    "on",
+    "off",
+    "help",
 };
 
 /*!
