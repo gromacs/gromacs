@@ -190,26 +190,27 @@
                 }
             }
             /* both have double identity, get hybrid scaling factor */
-            else if (bnew_wf)
+            else 
             {
-                hybscal = 1.0 - exp(-0.6931472*weight_product/(weight_product_cg));
                 bHybrid = TRUE;
+                if (bnew_wf)
+                {
+                    hybscal = 1.0 - exp(-0.6931472*weight_product/(weight_product_cg));
+                }
+                else
+                {
+                    /* this is the old function */
+                    hybscal = weight_product;
+                }
+                
+                /* hybscal is the scaling factor for the forces in the hybrid region
+                 * for EX-EX interactions it is just given by the above formular
+                 * for CG-CG interactions it is 1- the EX-EX scale */
+                if(bCG)
+                {
+                    hybscal = 1.0 - hybscal;
+                }
             }
-            else
-            {
-            /* this is the old function */
-                hybscal = weight_product;
-                bHybrid = TRUE;
-            }
-         
-		/* hybscal is the scaling factor for the forces in the hybrid region
-		 * for EX-EX interactions it is just given by the above formular
-		 * for CG-CG interactions it is 1- the EX-EX scale */
-            if(bCG)
-            {
-                hybscal = 1.0 - hybscal;
-            }
-
             
              for(ai=ai0; (ai<ai1); ai++)
              {

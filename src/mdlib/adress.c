@@ -130,6 +130,7 @@ void
 dd_update_refmol(gmx_domdec_t *      dd,
                  t_forcerec *        fr)
 {
+#ifdef GMX_MPI
     int            to_send,root;
     if (fr->bHaveRefMol) 
     {
@@ -143,12 +144,14 @@ dd_update_refmol(gmx_domdec_t *      dd,
     MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,dd->mpi_comm_all);
     root=root-1;
     MPI_Bcast(&(fr->adress_refmol),3*(sizeof(real)),MPI_BYTE,root,dd->mpi_comm_all);
+#endif
 }
 
 void
 update_refmol(const t_commrec *      cr,
               t_forcerec *           fr)
 {
+#ifdef GMX_MPI
     int            to_send,root;
     if (fr->bHaveRefMol) 
     {
@@ -162,6 +165,7 @@ update_refmol(const t_commrec *      cr,
     MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,cr->mpi_comm_mysim);
     root=root-1;
     MPI_Bcast(&(fr->adress_refmol),3*(sizeof(real)),MPI_BYTE,root,cr->mpi_comm_mysim);
+#endif
 }
 
 void
