@@ -933,7 +933,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     if (vsite)
       construct_vsites(fplog,vsite,pos[Min],nrnb,inputrec->delta_t,state->v,
 		       idef->iparams,idef->il,
-		       fr->ePBC,fr->bMolPBC,fr->adress_refmol,graph,cr,state->box);
+		       fr->ePBC,fr->bMolPBC,fr,graph,cr,state->box);
      
     if (nflexcon) {
       init_adir(fplog,shfc,

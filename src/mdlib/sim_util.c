@@ -448,6 +448,17 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* update adress weight beforehand */
         if((fr->adress_type!=eAdressOff)&&(fr->adress_type!=eAdressConst))
         {
+            if(fr->adress_type==eAdressRefMol)
+            {
+                if (DOMAINDECOMP(cr))
+                {
+                    dd_update_refmol(cr->dd,fr);
+                }
+                else
+                {
+                    update_refmol(cr,fr);
+                }
+            }
             if(fr->badress_cog)
             {
                 update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,box);

@@ -444,7 +444,8 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      rvec x[],t_nrnb *nrnb,
 		      real dt,rvec *v,
 		      t_iparams ip[],t_ilist ilist[],
-		      int ePBC,bool bMolPBC,rvec adress_refmol,
+		      int ePBC,bool bMolPBC,
+		      t_forcerec *fr,
 		      t_graph *graph,t_commrec *cr,matrix box)
 {
   rvec      xpbc,xv,vv,dx;
@@ -456,6 +457,18 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   bool      bDomDec;
   int       *vsite_pbc,ishift;
   rvec      reftmp,vtmp,rtmp;
+  int  *    adress_type;
+  rvec *    refmol;
+
+  if(fr != NULL)
+  {
+    adress_type = fr->adress_type;
+    if(adress_type == eAdressRefMol)
+      {
+	refmol = fr->adress_refmol;
+	fr->bHaveRefMol = FALSE;
+      }
+  }
 
   bDomDec = cr && DOMAINDECOMP(cr);
 		
@@ -590,8 +603,11 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	  break;
 	case F_VSITEREFMOL:
 	  inc = constr_vsiterefmol(ia,ip,x,pbc_null2);
-	  if(adress_refmol != NULL)
-	    copy_rvec(x[avsite],adress_refmol);
+	  if(adress_type == eAdressRefMol)
+	  {
+	    copy_rvec(x[avsite],refmol);
+	    fr->bHaveRefMol = TRUE;
+	  }
 	  break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",

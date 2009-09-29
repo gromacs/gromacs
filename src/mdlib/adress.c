@@ -35,6 +35,7 @@
  
 #include "adress.h"
 #include <math.h>
+#include "smalloc.h"
 #include "types/simple.h"
 #include "typedefs.h"
 #include "vec.h"
@@ -127,6 +128,38 @@ adress_weight(rvec            x,
 }
 
 void
+dd_update_refmol(gmx_domdec_t *      dd,
+                 t_forcerec *        fr)
+{
+    int            i,to_send,root;
+    int *          mpi_id;
+    rvec *         refmol;
+    refmol         = fr->adress_refmol;
+    mpi_id         = dd->rank;
+
+    if (fr->bHaveRefMol) 
+    {
+        to_send    = mpi_id+1;
+    } 
+    else 
+    {
+        to_send    = 0;
+        snew(refmol,1);
+    }
+
+    MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,dd->mpi_comm_all);
+    root=root-1;
+    MPI_Bcast(refmol,3,MPI_REAL,root,dd->mpi_comm_all);
+}
+
+void
+update_refmol(const t_commrec *      cr,
+              t_forcerec *           fr)
+{
+    
+}
+
+void
 update_adress_weights_com(FILE *               fplog,
                           int                  cg0,
                           int                  cg1,
@@ -143,7 +176,7 @@ update_adress_weights_com(FILE *               fplog,
     int            adresstype;
     real           adressr,adressw;
     bool           bnew_wf;
-    rvec           ref;
+    rvec *         ref;
     real *         massT;
     real *         wf;
 
@@ -153,7 +186,7 @@ update_adress_weights_com(FILE *               fplog,
     bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
-    copy_rvec(fr->adress_refmol,ref);
+    ref                = fr->adress_refmol;
 
     if(adresstype == eAdressRefMol)
     {
@@ -256,7 +289,7 @@ update_adress_weights_cog(t_iparams            ip[],
     rvec           box2;
     real           adressr,adressw;
     bool           bnew_wf;
-    rvec           ref;
+    rvec *         ref;
     real *         wf;
 
     adresstype         = fr->adress_type;
@@ -264,7 +297,7 @@ update_adress_weights_cog(t_iparams            ip[],
     adressw            = fr->adress_hy_width;
     bnew_wf            = fr->badress_new_wf;
     wf                 = mdatoms->wf;
-    copy_rvec(fr->adress_refmol,ref);
+    ref                = fr->adress_refmol;
 
     if(adresstype == eAdressRefMol)
     {

@@ -88,6 +88,14 @@ adress_weight(rvec             x,
  */
 
 void
+dd_update_refmol(gmx_domdec_t *      dd,
+                 t_forcerec *        fr);
+
+void
+update_refmol(const t_commrec *      cr,
+              t_forcerec *           fr);
+
+void
 update_adress_weights_com(FILE *               fplog,
                           int                  cg0,
                           int                  cg1,

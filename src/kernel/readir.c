@@ -1911,9 +1911,9 @@ void do_index(const char* mdparin, const char *ndx,
   nadress_refs = str_nelem(adress_refs,MAXPTR,ptr1);
 
   for(i=0; (i<nadress_refs); i++)
-      ir->adress_refmol[i]=strtod(ptr1[i],NULL);
+    ir->adress_refmol[i]=strtod(ptr1[i],NULL);
   for( ;(i<DIM); i++)
-      ir->adress_refmol[i]=0;
+    ir->adress_refmol[i]=0;
   /* End AdResS input */
 
   if (bVerbose)

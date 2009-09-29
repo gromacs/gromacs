@@ -640,7 +640,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   if (vsite)
     construct_vsites(fplog,vsite,ems->s.x,nrnb,1,NULL,
                      top->idef.iparams,top->idef.il,
-                     fr->ePBC,fr->bMolPBC,fr->adress_refmol,graph,cr,ems->s.box);
+                     fr->ePBC,fr->bMolPBC,fr,graph,cr,ems->s.box);
 
   if (DOMAINDECOMP(cr)) {
     if (bNS) {
@@ -1464,7 +1464,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   if (vsite)
     construct_vsites(fplog,vsite,state->x,nrnb,1,NULL,
                      top->idef.iparams,top->idef.il,
-                     fr->ePBC,fr->bMolPBC,fr->adress_refmol,graph,cr,state->box);
+                     fr->ePBC,fr->bMolPBC,fr,graph,cr,state->box);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again

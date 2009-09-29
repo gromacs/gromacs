@@ -70,7 +70,8 @@ extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
 			     real dt,rvec v[],
 			     t_iparams ip[],t_ilist ilist[],
-			     int ePBC,bool bMolPBC,rvec adress_refmol,
+			     int ePBC,bool bMolPBC,
+			     t_forcerec *fr,
 			     t_graph *graph,t_commrec *cr,matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
