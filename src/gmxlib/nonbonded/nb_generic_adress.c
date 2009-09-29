@@ -193,11 +193,13 @@
             else if (bnew_wf)
             {
                 hybscal = 1.0 - exp(-0.6931472*weight_product/(weight_product_cg));
+                bHybrid = TRUE;
             }
             else
             {
             /* this is the old function */
                 hybscal = weight_product;
+                bHybrid = TRUE;
             }
          
 		/* hybscal is the scaling factor for the forces in the hybrid region
@@ -207,8 +209,7 @@
             {
                 hybscal = 1.0 - hybscal;
             }
-            bHybrid = TRUE;
-            
+
             
              for(ai=ai0; (ai<ai1); ai++)
              {
