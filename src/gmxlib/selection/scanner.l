@@ -98,6 +98,8 @@ COMMENT    (#.*)
 %option reentrant
 %option prefix="_gmx_sel_yy"
 %option header-file="scanner_flex.h"
+%option nounistd
+%option always-interactive
 
 %s matchof
 %s matchbool

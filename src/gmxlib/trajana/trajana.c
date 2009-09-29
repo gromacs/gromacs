@@ -1155,7 +1155,13 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
              || (d->selection && d->selection[0] == 0)
              || (!d->selfile && !d->selection);
+    /* Behavior is not very pretty if we cannot check for interactive input,
+     * but at least it should compile and work in most cases. */
+#ifdef HAVE_UNISTD_H
     bInteractive = bStdIn && isatty(fileno(stdin));
+#else
+    bInteractive = bStdIn;
+#endif
     if (bStdIn && bInteractive)
     {
         /* Parse from stdin */
