@@ -2290,6 +2290,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
         }
+#if 0
+        printf("step: %6d veta: %10.5f\n",step,vetanew); 
+#endif 
         
 #if 0
         /* checking . . . . */

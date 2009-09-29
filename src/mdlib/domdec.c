@@ -1434,7 +1434,9 @@ void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local,t_state *state)
 {
     int est,i,j,ngtcp;
-    
+
+    ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */    
+
     if (DDMASTER(dd))
     {
         state->lambda = state_local->lambda;
@@ -1444,7 +1446,7 @@ void dd_collect_state(gmx_domdec_t *dd,
         copy_mat(state_local->boxv,state->boxv);
         copy_mat(state_local->vir_prev,state->vir_prev);
         copy_mat(state_local->pres_prev,state->pres_prev);
-        ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */
+
         for(i=0; i<ngtcp; i++)
         {
             for(j=0; j<NNHCHAIN; j++) {
@@ -1687,6 +1689,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
 {
     int  i,j,ngtch,ngtcp;
     
+    ngtcp = state->ngtc+1; /* need an extra state for barostat */
+
     if (DDMASTER(dd))
     {
         state_local->lambda = state->lambda;
@@ -1695,7 +1699,6 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
         copy_mat(state->box,state_local->box);
         copy_mat(state->box_rel,state_local->box_rel);
         copy_mat(state->boxv,state_local->boxv);
-        ngtcp = state_local->ngtc+1; /* need an extra state for barostat */
         for(i=0; i<ngtcp; i++)
         {
             for(j=0; j<NNHCHAIN; j++) {
@@ -1714,8 +1717,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_bcast(dd,sizeof(state_local->box),state_local->box);
     dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
-    dd_bcast(dd,ngtcp*sizeof(double),state_local->nosehoover_xi);
-    dd_bcast(dd,ngtcp*sizeof(double),state_local->nosehoover_vxi);
+    dd_bcast(dd,((ngtcp*NNHCHAIN)*sizeof(double)),state_local->nosehoover_xi);
+    dd_bcast(dd,((ngtcp*NNHCHAIN)*sizeof(double)),state_local->nosehoover_vxi);
     dd_bcast(dd,state_local->ngtc*sizeof(double),state_local->therm_integral);
 
     if (dd->nat_home > state_local->nalloc)

@@ -572,6 +572,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
         
         /* This is pV (in kJ/mol) */  
+        /* I don't think this is correct -- it should be the external pressure */
         pv = vol*enerd->term[F_PRES]/PRESFAC;
 
         add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);

@@ -500,7 +500,8 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
 
     /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
     /* Investigate this more -- is this the right mass to make it? */
-    MassQ->Winv = (PRESFAC*trace(ir->compress))/(DIM*state->vol0*sqr(ir->tau_p/M_2PI));
+    //MassQ->Winv = (PRESFAC*trace(ir->compress)*BOLTZ*opts->ref_t[0])/(DIM*state->vol0*sqr(ir->tau_p/M_2PI));
+    MassQ->Winv = 1.0/(sqr(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); 
     for (d=0;d<DIM;d++) 
     {
         for (n=0;n<DIM;n++) 
