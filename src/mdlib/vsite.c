@@ -465,7 +465,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
     adress_type = fr->adress_type;
     if(adress_type == eAdressRefMol)
       {
-	refmol = fr->adress_refmol;
+	refmol = &(fr->adress_refmol);
 	fr->bHaveRefMol = FALSE;
       }
   }
@@ -605,7 +605,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	  inc = constr_vsiterefmol(ia,ip,x,pbc_null2);
 	  if(adress_type == eAdressRefMol)
 	  {
-	    copy_rvec(x[avsite],refmol);
+	    copy_rvec(x[avsite],(*refmol));
 	    fr->bHaveRefMol = TRUE;
 	  }
 	  break;

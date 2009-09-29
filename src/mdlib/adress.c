@@ -35,7 +35,6 @@
  
 #include "adress.h"
 #include <math.h>
-#include "smalloc.h"
 #include "types/simple.h"
 #include "typedefs.h"
 #include "vec.h"
@@ -140,17 +139,29 @@ dd_update_refmol(gmx_domdec_t *      dd,
     {
         to_send    = 0;
     }
+
     MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,dd->mpi_comm_all);
     root=root-1;
-    /** \todo make this work with double precision */
-    MPI_Bcast(fr->adress_refmol,3,MPI_FLOAT,root,dd->mpi_comm_all);
+    MPI_Bcast(&(fr->adress_refmol),3*(sizeof(real)),MPI_BYTE,root,dd->mpi_comm_all);
 }
 
 void
 update_refmol(const t_commrec *      cr,
               t_forcerec *           fr)
 {
-    
+    int            to_send,root;
+    if (fr->bHaveRefMol) 
+    {
+        to_send    = 1 + RANK(cr,cr->nodeid);
+    } 
+    else 
+    {
+        to_send    = 0;
+    }
+
+    MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,cr->mpi_comm_mysim);
+    root=root-1;
+    MPI_Bcast(&(fr->adress_refmol),3*(sizeof(real)),MPI_BYTE,root,cr->mpi_comm_mysim);
 }
 
 void

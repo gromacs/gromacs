@@ -454,7 +454,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                 {
                     dd_update_refmol(cr->dd,fr);
                 }
-                else
+                else if (PARTDECOMP(cr))
                 {
                     update_refmol(cr,fr);
                 }

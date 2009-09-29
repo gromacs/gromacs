@@ -120,8 +120,8 @@ update_adress_weights_com(FILE *               fplog,
 
 /** \brief update the weight of all coarse-grained particles for cog vsites
  *
- * \param[in] ip BRAD what is this ?
- * \param[in] ilist BRAD what is this ?
+ * \param[in] ip contains interaction parameters, in this case the number of constructing atoms n for vsitesn and vsitesrefmol 
+ * \param[in] ilist list of interaction types, in this case the virtual site types are what's important
  * \param[in] x array with all the particle positions  
  * \param[in] fr the frocerec containing all the parameters
  * \param[in,out] mdatoms the struct containing all the atoms properties
