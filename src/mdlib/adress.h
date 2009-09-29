@@ -57,6 +57,7 @@
  * \param[in] adressr radius/size of the explicit zone
  * \param[in] adressw size of the hybrid zone 
  *                    for adresstype 1, the value of the weight
+ * \param[in] bnew_wf new weighting function or not
  * \param[in] ref center of the explicit zone
  *                for adresstype 1 - unused
  *                for adresstype 2 - only ref[0] is used
@@ -68,33 +69,45 @@
  *
  * \todo calc AdResS weight for non-rectangular boxes 
  */
-		     
 real 
 adress_weight(rvec             x,
               int              adresstype,
               real             adressr,
               real             adressw,
               bool             bnew_wf,
-              rvec             ref,
+              rvec *           ref,
               rvec             box2,
               matrix           box);
 
-/** \brief update the weight of all coarse-grained particles
+/** \brief updated the position of the reference molecule in the case of domain decomp
  *
- * \param[in] fr the frocerec containing all the parameters
- * \param[in,out] mdatoms the struct containing all the atoms properties
- * \param[in] x array with all the particle positions  
- * \param[in] box matrix containing lengths of the box
+ * \param[in] dd struct with all domain decomp infos
+ * \param[in] fr forcerec
  */
-
 void
 dd_update_refmol(gmx_domdec_t *      dd,
                  t_forcerec *        fr);
 
+/** \brief updated the position of the reference molecule
+ *
+ * \param[in] cr struct with all communcation infos
+ * \param[in] fr forcerec
+ */
 void
 update_refmol(const t_commrec *      cr,
               t_forcerec *           fr);
 
+/** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
+ *
+ * \param[in,out] fplog log file in case of debug
+ * \param[in] cg0 first charge group to update
+ * \param[in] cg1 last+1 charge group to update
+ * \param[in] cgs block containing the cg index 
+ * \param[in] x array with all the particle positions  
+ * \param[in] fr the frocerec containing all the parameters
+ * \param[in,out] mdatoms the struct containing all the atoms properties
+ * \param[in] box matrix containing lengths of the box
+ */
 void
 update_adress_weights_com(FILE *               fplog,
                           int                  cg0,
@@ -105,6 +118,15 @@ update_adress_weights_com(FILE *               fplog,
                           t_mdatoms *          mdatoms,
                           matrix               box);
 
+/** \brief update the weight of all coarse-grained particles for cog vsites
+ *
+ * \param[in] ip BRAD what is this ?
+ * \param[in] ilist BRAD what is this ?
+ * \param[in] x array with all the particle positions  
+ * \param[in] fr the frocerec containing all the parameters
+ * \param[in,out] mdatoms the struct containing all the atoms properties
+ * \param[in] box matrix containing lengths of the box
+ */
 void
 update_adress_weights_cog(t_iparams            ip[],
                           t_ilist              ilist[],

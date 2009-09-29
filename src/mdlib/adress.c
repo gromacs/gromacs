@@ -46,7 +46,7 @@ adress_weight(rvec            x,
               real            adressr,
               real            adressw,
               bool            bnew_wf,
-              rvec            ref,
+              rvec *          ref,
               rvec            box2,
               matrix          box)
 {
@@ -68,20 +68,20 @@ adress_weight(rvec            x,
         return adressw;
     case eAdressXSplit:              
         /* plane through center of box, varies in x direction */
-        dx             = x[0]-ref[0];
+        dx             = x[0]-(*ref)[0];
         sqr_dl         = dx*dx;
         break;
     case eAdressSphere:
         /* point at center of box, assuming cubic geometry */
         for(i=0;i<3;i++){
-            dx         = x[i]-ref[i];
+            dx         = x[i]-(*ref)[i];
             sqr_dl    += dx*dx;
         }
         break;
     case eAdressRefMol:
         /* get reference from shortest distance to reference solute */
         for(i=0;i<3;i++){
-            dx         = x[i]-ref[i];
+            dx         = x[i]-(*ref)[i];
             dx2        = dx*dx;
             if(dx2 > box2[i]){
                 while(dx2 > box2[i]){
@@ -131,25 +131,19 @@ void
 dd_update_refmol(gmx_domdec_t *      dd,
                  t_forcerec *        fr)
 {
-    int            i,to_send,root;
-    int *          mpi_id;
-    rvec *         refmol;
-    refmol         = fr->adress_refmol;
-    mpi_id         = dd->rank;
-
+    int            to_send,root;
     if (fr->bHaveRefMol) 
     {
-        to_send    = mpi_id+1;
+        to_send    = 1+dd->rank;
     } 
     else 
     {
         to_send    = 0;
-        snew(refmol,1);
     }
-
     MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,dd->mpi_comm_all);
     root=root-1;
-    MPI_Bcast(refmol,3,MPI_REAL,root,dd->mpi_comm_all);
+    /** \todo make this work with double precision */
+    MPI_Bcast(fr->adress_refmol,3,MPI_FLOAT,root,dd->mpi_comm_all);
 }
 
 void
@@ -186,7 +180,7 @@ update_adress_weights_com(FILE *               fplog,
     bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
-    ref                = fr->adress_refmol;
+    ref                = &(fr->adress_refmol);
 
     if(adresstype == eAdressRefMol)
     {
@@ -297,7 +291,7 @@ update_adress_weights_cog(t_iparams            ip[],
     adressw            = fr->adress_hy_width;
     bnew_wf            = fr->badress_new_wf;
     wf                 = mdatoms->wf;
-    ref                = fr->adress_refmol;
+    ref                = &(fr->adress_refmol);
 
     if(adresstype == eAdressRefMol)
     {
