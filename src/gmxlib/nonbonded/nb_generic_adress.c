@@ -195,7 +195,7 @@
                 bHybrid = TRUE;
                 if (bnew_wf)
                 {
-                    hybscal = 1.0 - exp(-0.6931472*weight_product/(weight_product_cg));
+                    hybscal = 1.0 - exp(-M_LN2*weight_product/(weight_product_cg));
                 }
                 else
                 {
