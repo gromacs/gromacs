@@ -217,3 +217,6 @@ enum {
   eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
 };
 
+enum {
+  eAdressICOff,eAdressICInterpolate, eAdressICThermoForce, eAdressICNR
+};

@@ -967,7 +967,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("adress_const_wf",            ir->adress_const_wf, 1);
   RTYPE ("adress_ex_width",            ir->adress_ex_width, 0);
   RTYPE ("adress_hy_width",            ir->adress_hy_width, 0);
-  EETYPE("adress_interface_correction",ir->badress_pcor,    yesno_names,       nerror, TRUE);
+  EETYPE("adress_interface_correction",ir->adress_icor,     eAdressICtype_names,nerror, TRUE);
   EETYPE("adress_exvdw",               ir->adress_ivdw,     evdw_names,        nerror, TRUE);
   EETYPE("adress_cog",                 ir->badress_cog,     yesno_names,       nerror, TRUE);
   STYPE ("adress_reference_coords",    adress_refs,         NULL);

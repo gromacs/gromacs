@@ -84,6 +84,7 @@ extern const char *eQMbasis_names[eQMbasisNR+1];
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 extern const char *eMultentOpt_names[eMultentOptNR+1];
 extern const char *eAdresstype_names[eAdressNR+1];
+extern const char *eAdressICtype_names[eAdressICNR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
@@ -121,6 +122,7 @@ extern const char *eAdresstype_names[eAdressNR+1];
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)
 #define EMULTENTOPT(e) ENUM_NAME(e,eMultentOptNR,eMultentOpt_names)
-#define EADDRESSTYPE(e) ENUM_NAME(e,eAdressNR,eAdresstype_names)
+#define EADRESSTYPE(e) ENUM_NAME(e,eAdressNR,eAdresstype_names)
+#define EADRESSICTYPE(e) ENUM_NAME(e,eAdressICNR,eAdressICtype_names)
 
 #endif	/* _names_h */

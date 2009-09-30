@@ -358,7 +358,7 @@ typedef struct {
   real adress_const_wf;
   real adress_ex_width;
   real adress_hy_width;
-  bool badress_pcor;
+  int  adress_icor;
   int  adress_ivdw;
   bool badress_cog;
   rvec adress_refmol;

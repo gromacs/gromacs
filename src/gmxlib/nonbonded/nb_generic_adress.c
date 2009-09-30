@@ -91,13 +91,13 @@
      real       hybscal;
      real       c_tmp;
      bool       bHybrid; /*Are we in the hybrid zone ?*/
-     bool       bIntPres; /*Is interface pressure correction enabled ?*/
+     bool       bIntPres; /*Is interface interpolation correction enabled ?*/
      bool       bCG; /*Are we calulating cg-cg interactions?*/
      wf                  = mdatoms->wf;
      bnew_wf             = fr->badress_new_wf;
      /* Check if we're doing the coarse grained charge group */
      bCG                 = (mdatoms->ptype[nlist->iinr[0]] == eptVSite);
-     bIntPres            = fr->badress_pcor;
+     bIntPres            = (fr->adress_icor == eAdressICInterpolate);
  
      /* Coarse grained - explicit interaction should be excluded via
       * energygrp_excl in the mdp file !!!!
@@ -336,7 +336,7 @@
                              c6               = vdwparam[tj];   
                              c12              = vdwparam[tj+1]; 
                              
-                             /* Interface pressure correction (bIntPres)
+                             /* Interpolation Interface Correction (bIntPres)
  			     * it only act in the hybrid zone (bHybrid)
  			     * it is added to the cg-cg interaction (bCG)
                               * c6 = HYB potential, c12 = CG potential

@@ -281,7 +281,7 @@ typedef struct {
   real adress_const_wf; /* constant wf for initialization/eAdressConst  */
   real adress_ex_width; /* center of the explicit zone                  */
   real adress_hy_width; /* width of the hybrid zone                     */
-  bool badress_pcor;    /* enable interface pressure correction         */
+  int  adress_icor;     /* type of interface correction                 */
   int  adress_ivdw;     /* AdResS vdw switch                            */
   bool badress_cog;     /* AdResS for cog switch                        */
   rvec adress_refmol;   /* Coordinates for AdResS reference             */
