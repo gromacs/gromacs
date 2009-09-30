@@ -52,22 +52,18 @@
  *                       1 - constant weight all over the box
  *                       2 - split in x direction with ref as center
  *                       3 - spherical splitting with ref as center
- *                       4 - sphere moving along the last charge group
+ *                       4 - sphere moving along the refmol vsite
  *                       else - weight = 1 - explicit simulation
  * \param[in] adressr radius/size of the explicit zone
  * \param[in] adressw size of the hybrid zone 
- *                    for adresstype 1, the value of the weight
  * \param[in] bnew_wf new weighting function or not
  * \param[in] ref center of the explicit zone
  *                for adresstype 1 - unused
  *                for adresstype 2 - only ref[0] is used
- * \param[in] box2 array[3] containing half lengths of the rectangular box
- *                 only used by adresstype 4
- * \param[in] box matrix containing lengths of the box
- *                 only used by adresstype 4
+ * \param[in] pbc for calculating shortest distance to ref
+ *
  * \return weight of the particle
  *
- * \todo calc AdResS weight for non-rectangular boxes 
  */
 real 
 adress_weight(rvec             x,
@@ -76,8 +72,7 @@ adress_weight(rvec             x,
               real             adressw,
               bool             bnew_wf,
               rvec *           ref,
-              rvec             box2,
-              matrix           box);
+              t_pbc *          pbc);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
  *
@@ -86,9 +81,9 @@ adress_weight(rvec             x,
  * \param[in] cg1 last+1 charge group to update
  * \param[in] cgs block containing the cg index 
  * \param[in] x array with all the particle positions  
- * \param[in] fr the frocerec containing all the parameters
+ * \param[in] fr the forcerec containing all the parameters
  * \param[in,out] mdatoms the struct containing all the atoms properties
- * \param[in] box matrix containing lengths of the box
+ * \param[in] pbc for shortest distance in adress_weight
  */
 void
 update_adress_weights_com(FILE *               fplog,
@@ -98,16 +93,16 @@ update_adress_weights_com(FILE *               fplog,
                           rvec                 x[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
-                          matrix               box);
+                          t_pbc *              pbc);
 
 /** \brief update the weight of all coarse-grained particles for cog vsites
  *
- * \param[in] ip contains interaction parameters, in this case the number of constructing atoms n for vsitesn and vsitesrefmol 
+ * \param[in] ip contains interaction parameters, in this case the number of constructing atoms n for vsitesn
  * \param[in] ilist list of interaction types, in this case the virtual site types are what's important
  * \param[in] x array with all the particle positions  
- * \param[in] fr the frocerec containing all the parameters
+ * \param[in] fr the forcerec containing all the parameters
  * \param[in,out] mdatoms the struct containing all the atoms properties
- * \param[in] box matrix containing lengths of the box
+ * \param[in] pbc for shortest distance in adress_weight
  */
 void
 update_adress_weights_cog(t_iparams            ip[],
@@ -115,6 +110,5 @@ update_adress_weights_cog(t_iparams            ip[],
                           rvec                 x[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
-                          matrix               box);
-
+                          t_pbc *              pbc);
 #endif

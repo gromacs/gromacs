@@ -35,6 +35,7 @@
  
 #include "adress.h"
 #include <math.h>
+#include "pbc.h"
 #include "types/simple.h"
 #include "typedefs.h"
 #include "vec.h"
@@ -46,16 +47,24 @@ adress_weight(rvec            x,
               real            adressw,
               bool            bnew_wf,
               rvec *          ref,
-              rvec            box2,
-              matrix          box)
+              t_pbc *         pbc)
 {
     int  i;
     real l2 = adressr+adressw;
-    real dx,dx2;
     real sqr_dl,dl;
     real tmp;
+    rvec dx;
 
     sqr_dl = 0.0;
+
+    if (pbc) 
+    {
+        pbc_dx(pbc,(*ref),x,dx);
+    } 
+    else 
+    {
+        rvec_sub((*ref),x,dx);
+    }
 
     switch(adresstype)
     {
@@ -66,15 +75,13 @@ adress_weight(rvec            x,
         /* constant value for weighting function = adressw */
         return adressw;
     case eAdressXSplit:              
-        /* plane through center of box, varies in x direction */
-        dx             = x[0]-(*ref)[0];
-        sqr_dl         = dx*dx;
+        /* plane through center of ref, varies in x direction */
+        sqr_dl         = dx[0]*dx[0];
         break;
     case eAdressSphere:
-        /* point at center of box, assuming cubic geometry */
+        /* point at center of ref, assuming cubic geometry */
         for(i=0;i<3;i++){
-            dx         = x[i]-(*ref)[i];
-            sqr_dl    += dx*dx;
+            sqr_dl    += dx[i]*dx[i];
         }
         break;
     default:
@@ -115,12 +122,12 @@ update_adress_weights_com(FILE *               fplog,
                           rvec                 x[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
-                          matrix               box)
+                          t_pbc *              pbc)
 {
     int            icg,k,k0,k1,d;
     real           nrcg,inv_ncg,mtot,inv_mtot;
     atom_id *      cgindex;
-    rvec           ix,box2;
+    rvec           ix;
     int            adresstype;
     real           adressr,adressw;
     bool           bnew_wf;
@@ -157,7 +164,7 @@ update_adress_weights_com(FILE *               fplog,
         nrcg    = k1-k0;
         if (nrcg == 1)
         {
-            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,bnew_wf,ref,box2,box);
+            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,bnew_wf,ref,pbc);
         }
         else
         {
@@ -203,7 +210,7 @@ update_adress_weights_com(FILE *               fplog,
             }
 
             /* Set wf of all atoms in charge group equal to wf of com */
-            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,bnew_wf,ref,box2,box);
+            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,bnew_wf,ref,pbc);
             for(k=(k0+1); (k<k1); k++)
             {
                 wf[k] = wf[k0];
@@ -218,13 +225,12 @@ update_adress_weights_cog(t_iparams            ip[],
                           rvec                 x[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
-                          matrix               box)
+                          t_pbc *              pbc)
 {
     int            i,j,k,nr,nra,inc;
     int            ftype,adresstype;
     t_iatom        avsite,ai,aj,ak,al;
     t_iatom *      ia;
-    rvec           box2;
     real           adressr,adressw;
     bool           bnew_wf;
     rvec *         ref;
@@ -237,13 +243,10 @@ update_adress_weights_cog(t_iparams            ip[],
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refmol);
 
-    /* Since this is center of gravity AdResS, we know the vsite
-     * is in the same charge group as the constructing atoms.
+    /* Since this is center of geometry AdResS, we know the vsite
+     * is in the same charge group node as the constructing atoms.
      * Loop over vsite types, calculate the weight of the vsite,
-     * then assign that weight to the constructing atoms.  We
-     * shouldn't need to worry about pbc since this was taken
-     * care of during vsite construction, which necessarily comes
-     * before this. */
+     * then assign that weight to the constructing atoms. */
 
     for(ftype=0; (ftype<F_NRE); ftype++) 
     {
@@ -258,7 +261,7 @@ update_adress_weights_cog(t_iparams            ip[],
                 /* The vsite and first constructing atom */
                 avsite     = ia[1];
                 ai         = ia[2];
-                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,bnew_wf,ref,box2,box);
+                wf[avsite] = adress_weight(x[avsite],adresstype,adressr,adressw,bnew_wf,ref,pbc);
                 wf[ai]     = wf[avsite];
 
                 /* Assign the vsite wf to rest of constructing atoms depending on type */

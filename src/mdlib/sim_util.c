@@ -400,6 +400,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     double mu[2*DIM]; 
     bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     bool   bDoLongRange,bDoForces,bSepLRF;
+    bool   bDoAdressWF;
     matrix boxs;
     real   e,v,dvdl;
     t_pbc  pbc;
@@ -440,21 +441,25 @@ void do_force(FILE *fplog,t_commrec *cr,
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DOLR));
     bDoForces     = (flags & GMX_FORCE_FORCES);
     bSepLRF       = (bDoLongRange && bDoForces && (flags & GMX_FORCE_SEPLRF));
+    /* should probably move this to the forcerec since it doesn't change */
+    bDoAdressWF   = ((fr->adress_type!=eAdressOff) && (fr->adress_type!=eAdressConst));
 
     if (bStateChanged)
     {
         update_forcerec(fplog,fr,box);
 
         /* update adress weight beforehand */
-        if((fr->adress_type!=eAdressOff)&&(fr->adress_type!=eAdressConst))
+        if(bDoAdressWF)
         {
             if(fr->badress_cog)
             {
-                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,box);
+                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
             }
             else
             {
-                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,box);
+                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
             }
         }
 
@@ -683,8 +688,11 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
-        /* Position restraints always require full pbc */
-        set_pbc(&pbc,inputrec->ePBC,box);
+        /* Position restraints always require full pbc. Check if we already did it for Adress */
+        if(!(bStateChanged && bDoAdressWF))
+        {
+            set_pbc(&pbc,inputrec->ePBC,box);
+        }
         v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                    top->idef.iparams_posres,
                    (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
