@@ -278,7 +278,7 @@ typedef struct {
                         /* parameter needed for AdResS simulation       */
   int  adress_type;     /* type of AdResS simulation                    */
   bool badress_new_wf;  /* enable new AdResS weighting function         */
-  real adress_const_wf; /* constant wf for initialization/eAdressConst  */
+  real adress_const_wf; /* value of weighting function for eAdressConst */
   real adress_ex_width; /* center of the explicit zone                  */
   real adress_hy_width; /* width of the hybrid zone                     */
   int  adress_icor;     /* type of interface correction                 */
