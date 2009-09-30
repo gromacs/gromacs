@@ -798,9 +798,6 @@ static char **read_topol(const char *infile,const char *outfile,
 	  case d_vsitesn:
 	    push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline);
 	    break;
-	  case d_vsitesrefmol:
-	    push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline);
-	    break;
 	  case d_exclusions:
 	    if (!block2[nmol-1].nr)
 	      init_block2(&(block2[nmol-1]),mi0->atoms.nr);

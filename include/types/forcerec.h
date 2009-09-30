@@ -362,7 +362,6 @@ typedef struct {
   int  adress_ivdw;
   bool badress_cog;
   rvec adress_refmol;
-  bool bHaveRefMol;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

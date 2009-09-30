@@ -254,7 +254,6 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 4fd",              110 }, 
     { "Virtual Site 4fdn",             254 }, 
     { "Virtual Site N",                 15 },
-    { "Virtual Site REFMOL",            15 },
     { "Mixed Generalized Born stuff",   10 } 
 };
 

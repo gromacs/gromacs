@@ -214,6 +214,6 @@ enum {
 };
 
 enum {
-  eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressRefMol, eAdressNR
+  eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
 };
 

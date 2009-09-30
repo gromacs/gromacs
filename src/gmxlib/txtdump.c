@@ -888,9 +888,6 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_VSITEN:
     fprintf(fp,"n=%2d, a=%15.8e\n",iparams->vsiten.n,iparams->vsiten.a);
     break;
-  case F_VSITEREFMOL:
-    fprintf(fp,"n=%2d, a=%15.8e\n",iparams->vsiterefmol.n,iparams->vsiterefmol.a);
-    break;
   case F_GB12:
   case F_GB13:
   case F_GB14:

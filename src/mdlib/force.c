@@ -1228,7 +1228,6 @@ void init_forcerec(FILE *fp,
     fr->adress_ivdw     = ir->adress_ivdw;
     fr->badress_cog     = ir->badress_cog;
     copy_rvec(ir->adress_refmol,fr->adress_refmol);
-    fr->bHaveRefMol     = FALSE;
 
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;

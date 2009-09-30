@@ -77,25 +77,6 @@ adress_weight(rvec            x,
             sqr_dl    += dx*dx;
         }
         break;
-    case eAdressRefMol:
-        /* get reference from shortest distance to reference solute */
-        for(i=0;i<3;i++){
-            dx         = x[i]-(*ref)[i];
-            dx2        = dx*dx;
-            if(dx2 > box2[i]){
-                while(dx2 > box2[i]){
-                    if(dx<0){
-                        dx += box[i][i];
-                    }
-                    else{
-                        dx -= box[i][i];
-                    }
-                    dx2    = dx*dx;
-                }
-            }
-            sqr_dl    += dx2;
-        }
-        break;
     default:
         /* default to explicit simulation */
         return 1;
@@ -127,48 +108,6 @@ adress_weight(rvec            x,
 }
 
 void
-dd_update_refmol(gmx_domdec_t *      dd,
-                 t_forcerec *        fr)
-{
-#ifdef GMX_MPI
-    int            to_send,root;
-    if (fr->bHaveRefMol) 
-    {
-        to_send    = 1+dd->rank;
-    } 
-    else 
-    {
-        to_send    = 0;
-    }
-
-    MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,dd->mpi_comm_all);
-    root=root-1;
-    MPI_Bcast(&(fr->adress_refmol),3*(sizeof(real)),MPI_BYTE,root,dd->mpi_comm_all);
-#endif
-}
-
-void
-update_refmol(const t_commrec *      cr,
-              t_forcerec *           fr)
-{
-#ifdef GMX_MPI
-    int            to_send,root;
-    if (fr->bHaveRefMol) 
-    {
-        to_send    = 1 + RANK(cr,cr->nodeid);
-    } 
-    else 
-    {
-        to_send    = 0;
-    }
-
-    MPI_Allreduce(&to_send,&root,1,MPI_INT,MPI_MAX,cr->mpi_comm_mysim);
-    root=root-1;
-    MPI_Bcast(&(fr->adress_refmol),3*(sizeof(real)),MPI_BYTE,root,cr->mpi_comm_mysim);
-#endif
-}
-
-void
 update_adress_weights_com(FILE *               fplog,
                           int                  cg0,
                           int                  cg1,
@@ -196,16 +135,6 @@ update_adress_weights_com(FILE *               fplog,
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refmol);
-
-    if(adresstype == eAdressRefMol)
-    {
-        for(k=0;k<DIM;k++) 
-        {
-            /* need square of half the box length for shortest distance to solute */
-            box2[k]        = box[k][k]/2.0;
-            box2[k]       *= box2[k];
-        }
-    }
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
      * to be on the same node as the constructing atoms.  Therefore we 
@@ -308,16 +237,6 @@ update_adress_weights_cog(t_iparams            ip[],
     wf                 = mdatoms->wf;
     ref                = &(fr->adress_refmol);
 
-    if(adresstype == eAdressRefMol)
-    {
-        for(k=0;k<3;k++) 
-        {
-            /* need square of half the box length for shortest distance to solute */
-            box2[k]        = box[k][k]/2.0;
-            box2[k]       *= box2[k];
-        }
-    }
-
     /* Since this is center of gravity AdResS, we know the vsite
      * is in the same charge group as the constructing atoms.
      * Loop over vsite types, calculate the weight of the vsite,
@@ -396,9 +315,6 @@ update_adress_weights_cog(t_iparams            ip[],
                         ai = ia[j+2];
                         wf[ai] = wf[avsite];
                     }
-                    break;
-                case F_VSITEREFMOL:
-                    /* Default to adress_const_wf, set during atoms2md (see src/mdlib/mdatom.c) */
                     break;
                 default:
                     gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",

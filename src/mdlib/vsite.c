@@ -405,48 +405,12 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
 }
 
 
-static int constr_vsiterefmol(t_iatom *ia, t_iparams ip[],
-			 rvec *x, t_pbc *pbc)
-{
-  rvec xs,x1,dx;
-  dvec dsum;
-  int  n3,av,ai,i;
-  real a;
-
-  n3 = 3*ip[ia[0]].vsiterefmol.n;
-  av = ia[1];
-  ai = ia[2];
-  copy_rvec(x[ai],x1);
-  clear_dvec(dsum);
-  for(i=3; i<n3; i+=3) {
-    ai = ia[i+2];
-    a = ip[ia[i]].vsiterefmol.a;
-    if (pbc) {
-      pbc_dx_aiuc(pbc,x[ai],x1,dx);
-    } else {
-      rvec_sub(x[ai],x1,dx);
-    }
-    dsum[XX] += a*dx[XX];
-    dsum[YY] += a*dx[YY];
-    dsum[ZZ] += a*dx[ZZ];
-    /* 9 Flops */
-  }
-
-  x[av][XX] = x1[XX] + dsum[XX];
-  x[av][YY] = x1[YY] + dsum[YY];
-  x[av][ZZ] = x1[ZZ] + dsum[ZZ];
-
-  return n3;
-}
-
-
 void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      rvec x[],t_nrnb *nrnb,
 		      real dt,rvec *v,
 		      t_iparams ip[],t_ilist ilist[],
-		      int ePBC,bool bMolPBC,
-		      t_forcerec *fr,
-		      t_graph *graph,t_commrec *cr,matrix box)
+		      int ePBC,bool bMolPBC,t_graph *graph,
+		      t_commrec *cr,matrix box)
 {
   rvec      xpbc,xv,vv,dx;
   real      a1,b1,c1,inv_dt;
@@ -457,30 +421,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   bool      bDomDec;
   int       *vsite_pbc,ishift;
   rvec      reftmp,vtmp,rtmp;
-  bool      bAdressRefMol;
-  rvec *    refmol;
-
-  if(fr != NULL)
-    {
-      bAdressRefMol = (fr->adress_type == eAdressRefMol);
-      if(bAdressRefMol)
-	{
-	  refmol = &(fr->adress_refmol);
-	  fr->bHaveRefMol = FALSE;
-	}
-      else
-	{
-	  /* keep compiler happy */
-	  refmol = NULL;
-	}
-    }
-  else
-    {
-      /* keep compiler happy */
-      bAdressRefMol = FALSE;
-      refmol = NULL;
-    }
-
+	
   bDomDec = cr && DOMAINDECOMP(cr);
 		
   /* We only need to do pbc when we have inter-cg vsites */
@@ -612,14 +553,6 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	case F_VSITEN:
 	  inc = constr_vsiten(ia,ip,x,pbc_null2);
 	  break;
-	case F_VSITEREFMOL:
-	  inc = constr_vsiterefmol(ia,ip,x,pbc_null2);
-	  if(bAdressRefMol)
-	    {
-	      copy_rvec(x[avsite],(*refmol));
-	      fr->bHaveRefMol = TRUE;
-	    }
-	  break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
@@ -703,7 +636,7 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
     for(mol=0; mol<molb->nmol; mol++) {
       construct_vsites(log,vsite,x+as,NULL,0.0,NULL,
 		       mtop->ffparams.iparams,molt->ilist,
-		       epbcNONE,TRUE,NULL,NULL,NULL,NULL);
+		       epbcNONE,TRUE,NULL,NULL,NULL);
       as += molt->atoms.nr;
     }
   }
@@ -1245,44 +1178,6 @@ static int spread_vsiten(t_iatom ia[],t_iparams ip[],
 }
 
 
-static int spread_vsiterefmol(t_iatom ia[],t_iparams ip[],
-			      rvec x[],rvec f[],rvec fshift[],
-			      t_pbc *pbc,t_graph *g)
-{
-  rvec xv,dx,fi;
-  int  n3,av,i,ai;
-  real a;
-  ivec di;
-  int  siv;
-
-  n3 = 3*ip[ia[0]].vsiterefmol.n;
-  av = ia[1];
-  copy_rvec(x[av],xv);
-  
-  for(i=0; i<n3; i+=3) {
-    ai = ia[i+2];
-    if (g) {
-      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,av),di);
-      siv = IVEC2IS(di);
-    } else if (pbc) {
-      siv = pbc_dx_aiuc(pbc,x[ai],xv,dx);
-    } else {
-      siv = CENTRAL;
-    }
-    a = ip[ia[i]].vsiterefmol.a;
-    svmul(a,f[av],fi);
-    rvec_inc(f[ai],fi);
-    if (fshift && siv != CENTRAL) {
-      rvec_inc(fshift[siv],fi);
-      rvec_dec(fshift[CENTRAL],fi);
-    }
-    /* 6 Flops */
-  }
-
-  return n3;
-}
-
-
 void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 		    rvec x[],rvec f[],rvec *fshift,
 		    t_nrnb *nrnb,t_idef *idef,
@@ -1291,7 +1186,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 {
   real      a1,b1,c1;
   int       i,inc,m,nra,nr,tp,ftype;
-  int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD,nd4FDN,ndN,ndREFMOL;
+  int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD,nd4FDN,ndN;
   t_iatom   *ia;
   t_iparams *ip;
   t_pbc     pbc,*pbc_null,*pbc_null2;
@@ -1326,7 +1221,6 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   nd4FD      = 0;
   nd4FDN     = 0;
   ndN        = 0;
-  ndREFMOL   = 0;
    
   /* this loop goes backwards to be able to build *
    * higher type vsites from lower types         */
@@ -1401,9 +1295,6 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 	case F_VSITEN:
 	  inc = spread_vsiten(ia,ip,x,f,fshift,pbc_null2,g);
 	  ndN += inc;
-	case F_VSITEREFMOL:
-	  inc = spread_vsiterefmol(ia,ip,x,f,fshift,pbc_null2,g);
-	  ndREFMOL += inc;
 	  break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
@@ -1418,15 +1309,14 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
     }
   }
 	
-  inc_nrnb(nrnb,eNR_VSITE2,     nd2     );
-  inc_nrnb(nrnb,eNR_VSITE3,     nd3     );
-  inc_nrnb(nrnb,eNR_VSITE3FD,   nd3FD   );
-  inc_nrnb(nrnb,eNR_VSITE3FAD,  nd3FAD  );
-  inc_nrnb(nrnb,eNR_VSITE3OUT,  nd3OUT  );
-  inc_nrnb(nrnb,eNR_VSITE4FD,   nd4FD   );
-  inc_nrnb(nrnb,eNR_VSITE4FDN,  nd4FDN  );
-  inc_nrnb(nrnb,eNR_VSITEN,     ndN     );
-  inc_nrnb(nrnb,eNR_VSITEREFMOL,ndREFMOL);
+  inc_nrnb(nrnb,eNR_VSITE2,   nd2     );
+  inc_nrnb(nrnb,eNR_VSITE3,   nd3     );
+  inc_nrnb(nrnb,eNR_VSITE3FD, nd3FD   );
+  inc_nrnb(nrnb,eNR_VSITE3FAD,nd3FAD  );
+  inc_nrnb(nrnb,eNR_VSITE3OUT,nd3OUT  );
+  inc_nrnb(nrnb,eNR_VSITE4FD, nd4FD   );
+  inc_nrnb(nrnb,eNR_VSITE4FDN,nd4FDN  );
+  inc_nrnb(nrnb,eNR_VSITEN,   ndN     );
 
   if (DOMAINDECOMP(cr)) {
     dd_move_f_vsites(cr->dd,f,fshift);
@@ -1506,7 +1396,7 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
     }
   }
 
-  snew(vsite_pbc,F_VSITEREFMOL-F_VSITE2+1);
+  snew(vsite_pbc,F_VSITEN-F_VSITE2+1);
   
   for(ftype=0; ftype<F_NRE; ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
@@ -1534,15 +1424,7 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	    if (a2cg[ia[i+j+2]] != cg_v)
 	      vsite_pbc_f[vsi] = -1;
 	  }
-	} 
-	else if (ftype == F_VSITEREFMOL) {
-	  nc3 = 3*iparams[ia[i]].vsiterefmol.n;
-	  for(j=0; j<nc3; j+=3) {
-	    if (a2cg[ia[i+j+2]] != cg_v)
-	      vsite_pbc_f[vsi] = -1;
-	  }
-	}
-	else {
+	} else {
 	  for(a=1; a<nral; a++) {
 	    if (a2cg[ia[i+1+a]] != cg_v)
 	      vsite_pbc_f[vsi] = -1;
@@ -1578,7 +1460,7 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 		      vsite_pbc_f[vsi]+1);
 	  }
 	}
-	if ((ftype == F_VSITEN) || (ftype == F_VSITEREFMOL)) {
+	if (ftype == F_VSITEN) {
 	  /* The other entries in vsite_pbc_f are not used for center vsites */
 	  i += nc3;
 	} else {
@@ -1634,8 +1516,8 @@ gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr)
       sfree(a2cg);
     }
 
-    snew(vsite->vsite_pbc_loc_nalloc,F_VSITEREFMOL-F_VSITE2+1);
-    snew(vsite->vsite_pbc_loc       ,F_VSITEREFMOL-F_VSITE2+1);
+    snew(vsite->vsite_pbc_loc_nalloc,F_VSITEN-F_VSITE2+1);
+    snew(vsite->vsite_pbc_loc       ,F_VSITEN-F_VSITE2+1);
   }
 
 

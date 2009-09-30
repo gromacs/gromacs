@@ -79,24 +79,6 @@ adress_weight(rvec             x,
               rvec             box2,
               matrix           box);
 
-/** \brief updated the position of the reference molecule in the case of domain decomp
- *
- * \param[in] dd struct with all domain decomp infos
- * \param[in] fr forcerec
- */
-void
-dd_update_refmol(gmx_domdec_t *      dd,
-                 t_forcerec *        fr);
-
-/** \brief updated the position of the reference molecule
- *
- * \param[in] cr struct with all communcation infos
- * \param[in] fr forcerec
- */
-void
-update_refmol(const t_commrec *      cr,
-              t_forcerec *           fr);
-
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
  *
  * \param[in,out] fplog log file in case of debug
