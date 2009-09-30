@@ -312,7 +312,8 @@ gmx_select(int argc, char *argv[])
     }
 
     /* Open output files */
-    d.sfp = d.cfp = d.ifp = d.mfp = d.block = NULL;
+    d.sfp = d.cfp = d.ifp = d.mfp = NULL;
+    d.block = NULL;
     gmx_ana_get_grpnames(trj, &grpnames);
     if (fnSize)
     {
