@@ -1786,7 +1786,7 @@ static void get_cutoff2(t_forcerec *fr,bool bDoLongRange,
     *rl2 = max(*rvdw2,*rcoul2);
 }
 
-static void init_nsgrid(t_forcerec *fr,int ngid,gmx_ns_t *ns)
+static void init_nsgrid_lists(t_forcerec *fr,int ngid,gmx_ns_t *ns)
 {
     real rvdw2,rcoul2,rs2,rm2,rl2;
     int j;
@@ -1895,11 +1895,6 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     {
         rm2 = rl2;
         rs2 = rl2;
-    }
-
-    if (ns->nl_sr == NULL)
-    {
-        init_nsgrid(fr,ngid,ns);
     }
 
     nl_sr     = ns->nl_sr;
@@ -2360,8 +2355,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     if (fr->bGrid) {
         /* Grid search */
         ns->grid = init_grid(fplog,fr);
-        /* These lists are allocated in ns5_core */
-        ns->nl_sr = NULL;
+        init_nsgrid_lists(fr,ngid,ns);
     }
     else
     {
