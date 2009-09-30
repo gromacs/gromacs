@@ -296,7 +296,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                 
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,FALSE,bEkinFullStep,constr,vcm,
-                            NULL,NULL,terminate,top_global,state);
+                            NULL,NULL,terminate,top_global,state,bFirstHalf);
                 GMX_MPE_LOG(ev_global_stat_finish);
             }
             
@@ -1475,6 +1475,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double      cycles;
     int         reset_counters=-1;
 	real        last_conserved = 0;
+    real        last_ekin = 0;
 	int         iter_i;
 	t_extmass   MassQ;
 
@@ -2336,14 +2337,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* MRS -- done iterating -- compute the conserved quantity */
         
-        if (ir->etc == etcTROTTER || ir->etc == etcTROTTEREKINH)  
-        {
-            last_conserved = 
-                NPT_energy(ir,state->nosehoover_xi,state->nosehoover_vxi,state->veta, state->box, &MassQ);	
-            last_conserved += enerd->term[F_EKIN];
-            if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
+        if (ir->eI==eiVV) {
+            last_ekin = enerd->term[F_EKIN];
+            last_conserved = 0;
+            if (ir->etc == etcTROTTER || ir->etc == etcTROTTEREKINH)  
             {
-                last_conserved -= enerd->term[F_DISPCORR];
+                last_conserved = 
+                    NPT_energy(ir,state->nosehoover_xi,state->nosehoover_vxi,state->veta, state->box, &MassQ); 
+                last_conserved += enerd->term[F_EKIN];
+                if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
+                {
+                    last_conserved -= enerd->term[F_DISPCORR];
+                }
             }
         }
         
@@ -2743,6 +2748,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
         sum_dhdl(enerd,state->lambda,ir);
+        if (ir->eI==eiVV) {
+            enerd->term[F_EKIN] = last_ekin;
+        }
+
         enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
         
         switch (ir->etc) 
