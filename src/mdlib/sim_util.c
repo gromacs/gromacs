@@ -451,6 +451,9 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* update adress weight beforehand */
         if(bDoAdressWF)
         {
+            /* need pbc for adress weight calculation with pbc_dx */
+            set_pbc(&pbc,inputrec->ePBC,box);
+
             if(fr->badress_cog)
             {
                 update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
