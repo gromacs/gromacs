@@ -1385,6 +1385,7 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
   t_iatom *ia;
   int  **vsite_pbc,*vsite_pbc_f;
   char *pbc_set;
+  bool bViteOnlyCG_and_FirstAtom;
 
   /* Make an array that tells if the pbc of an atom is set */
   snew(pbc_set,cgs->index[cgs->nr]);
@@ -1431,11 +1432,19 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	  }
 	}
 	if (vsite_pbc_f[vsi] == -1) {
-	  if (cgs->index[cg_v+1] == cgs->index[cg_v]+1) {
-	  /* Single charge group cg.
-	   * The pbc of the input coordinates to construct_vsites
-	   * should be preserved.
-	   */
+	  /* Check if this is the first processed atom of a vsite only cg */
+	  bViteOnlyCG_and_FirstAtom = TRUE;
+	  for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
+	    if (atom[a].ptype != eptVSite || pbc_set[a]) {
+	      bViteOnlyCG_and_FirstAtom = FALSE;
+	      break;
+	    }
+	  }
+	  if (bViteOnlyCG_and_FirstAtom) {
+	    /* First processed atom of a vsite only charge group.
+	     * The pbc of the input coordinates to construct_vsites
+	     * should be preserved.
+	     */
 	    vsite_pbc_f[vsi] = vsite;
 	  } else if (cg_v != a2cg[ia[1+i+1]]) {
 	    /* This vsite has a different charge group index
