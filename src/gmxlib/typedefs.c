@@ -381,6 +381,7 @@ void done_inputrec(t_inputrec *ir)
 
   sfree(ir->opts.nrdf);
   sfree(ir->opts.alpha);
+  sfree(ir->opts.vscale_nhc);
   sfree(ir->opts.ref_t);
   sfree(ir->opts.annealing); 
   sfree(ir->opts.anneal_npoints); 
