@@ -659,12 +659,12 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("cos_accel",ir->cos_accel);
     pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
 
-    PS("adress_type",EADDRESSTYPE(ir->adress_type));
+    PS("adress_type",EADRESSTYPE(ir->adress_type));
     PS("adress_new_wf",BOOL(ir->badress_new_wf));
     PR("adress_const_wf",ir->adress_const_wf);
     PR("adress_ex_width",ir->adress_ex_width);
     PR("adress_hy_width",ir->adress_hy_width);
-    PS("adress_interface_correction",BOOL(ir->badress_pcor));
+    PS("adress_interface_correction",EADRESSICTYPE(ir->adress_icor));
     PS("adress_exvdw",EVDWTYPE(ir->vdwtype));
     PS("adress_cog",BOOL(ir->badress_cog));
     pr_rvecs(fp,indent,"adress_reference_coords",&(ir->adress_refmol),bMDPformat);

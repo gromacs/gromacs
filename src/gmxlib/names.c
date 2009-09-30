@@ -205,3 +205,7 @@ const char *eAdresstype_names[eAdressNR+1] = {
   "off","constant", "xsplit", "sphere", "refmol", NULL 
 };
 
+const char *eAdressICtype_names[eAdressICNR+1] = {
+  "off","interpolate", "thermoforce", NULL 
+};
+

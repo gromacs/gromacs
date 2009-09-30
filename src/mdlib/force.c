@@ -1224,7 +1224,7 @@ void init_forcerec(FILE *fp,
     fr->adress_const_wf = ir->adress_const_wf;
     fr->adress_ex_width = ir->adress_ex_width;
     fr->adress_hy_width = ir->adress_hy_width;
-    fr->badress_pcor    = ir->badress_pcor;
+    fr->adress_icor     = ir->adress_icor;
     fr->adress_ivdw     = ir->adress_ivdw;
     fr->badress_cog     = ir->badress_cog;
     copy_rvec(ir->adress_refmol,fr->adress_refmol);
