@@ -121,7 +121,7 @@ update_adress_weights_cog(t_iparams            ip[],
  * \param[in,out] f the force array pointing at f_novirsum from sim_util.c
  * \param[in] fr the forcerec containing all the parameters
  * \param[in] mdatoms the struct containing all the atoms properties
- * \param[in] pbc for shortest distance in adress_weight
+ * \param[in] pbc for shortest distance to fr->adress_refmol
  */
 void
 adress_thermo_force(int                  cg0,
