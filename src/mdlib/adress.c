@@ -34,7 +34,7 @@
  */
  
 #include "adress.h"
-#include <math.h>
+#include "maths.h"
 #include "pbc.h"
 #include "types/simple.h"
 #include "typedefs.h"
@@ -383,3 +383,105 @@ update_adress_weights_cog(t_iparams            ip[],
     }
 }
 
+void
+adress_thermo_force(int                  cg0,
+                    int                  cg1,
+                    t_block *            cgs,
+                    rvec                 x[],
+                    rvec                 f[],
+                    t_forcerec *         fr,
+                    t_mdatoms *          mdatoms,
+                    t_pbc *              pbc)
+{
+    int              icg,k0,k1,n0,nnn,nrcg;
+    int              adresstype;
+    real             adressw;
+    bool             bnew_wf;
+    atom_id *        cgindex;
+    unsigned short * ptype;
+    rvec *           ref;
+    real *           wf;
+    real *           tabscale;
+    real *           ATFtab;
+    rvec             dr;
+    real             w,wsq,wmin1,wmin1sq,wp,wt,rinv;
+    real             eps,eps2,F,Geps,Heps2,Fp,dmu_dwp,dwp_dr,fscal;
+
+    adresstype       = fr->adress_type;
+    adressw          = fr->adress_hy_width;
+    bnew_wf          = fr->badress_new_wf;
+    cgindex          = cgs->index;
+    ptype            = &(mdatoms->ptype);
+    ref              = &(fr->adress_refmol);
+    wf               = mdatoms->wf;
+    tabscale         = fr->atf_tabscale;
+    ATFtab           = fr->atf_tab;
+
+    for(icg=cg0; (icg<cg1); icg++)
+    {
+        k0           = cgindex[icg];
+        k1           = cgindex[icg+1];
+        nrcg         = k1-k0;
+        /* avoid confusing TIP4P vsite with CG vsite */
+        if (nrcg == 1)
+        {
+            if (ptype[k0] == eptVSite)
+            {
+                w    = wf[k0];
+                /* is it hybrid? */
+                if (w > 0 && w < 1)
+                {
+                    fscal            = 0;
+                    if (pbc)
+                    {
+                        pbc_dx(pbc,(*ref),x[k0],dr);
+                    }
+                    else
+                    {
+                        rvec_sub((*ref),x[k0],dr);
+                    }
+
+                    rinv             = gmx_invsqrt(dr[0]*dr[0]+dr[1]*dr[1]+dr[2]*dr[2]);
+                    wsq              = w*w;
+                    wmin1            = w - 1.0;
+                    wmin1sq          = wmin1*wmin1;
+                    dwp_dr           = 1.0/adressw;
+
+                    /* get the dwp_dr part of the force */
+                    if(bnew_wf)
+                    {
+                        wp           = 1.0-exp(-M_LN2*wsq/wmin1sq);
+                        dwp_dr      *= M_LN2*w*exp(M_LN2*(1.0-2.0*w)/wmin1sq)/(wmin1*wmin1sq);
+                    }
+                    else
+                    {
+                        wp           = wsq;
+                        dwp_dr      *= -2.0*M_PI*sqrt(wsq*w*(1.0-w));
+                    }
+
+                    /* now get the dmu/dwp part from the table */
+                    wt               = wp*tabscale;
+                    n0               = wt;
+                    eps              = wt-n0;
+                    eps2             = eps*eps;
+                    nnn              = 8*n0;
+                    F                = ATFtab[nnn+1];
+                    Geps             = eps*ATFtab[nnn+2];
+                    Heps2            = eps2*ATFtab[nnn+3];
+                    Fp               = F+Geps+Heps2;
+                    dmu_dwp          = -(Fp+Geps+2.0*Heps2)*tabscale;
+
+                    fscal            = dmu_dwp*dwp_dr*rinv;
+
+                    /* now add thermo force to f_novirsum */
+                    f[k0][0]        += fscal*dr[0];
+                    if (adress_type != eAdressXSplit)
+                    {
+                        f[k0][1]    += fscal*dr[1];
+                        f[k0][2]    += fscal*dr[2];
+                    }
+                }
+            }
+        }
+    }
+}

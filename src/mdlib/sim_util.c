@@ -762,6 +762,13 @@ void do_force(FILE *fplog,t_commrec *cr,
                       start,homenr,mdatoms->chargeA,x,fr->f_novirsum,
                       inputrec->ex,inputrec->et,t);
         }
+
+        if (bDoAdressWF && fr->adress_icor == eAdressICThermoForce)
+        {
+            /* Compute thermodynamic force in hybrid AdResS region */
+            adress_thermo_force(cg0,cg1,&(top->cgs),fr->f_novirsum,fr,mdatoms,
+                                inputrec->ePBC==epbcNONE ? NULL : &pbc);
+        }
         
         /* Communicate the forces */
         if (PAR(cr))

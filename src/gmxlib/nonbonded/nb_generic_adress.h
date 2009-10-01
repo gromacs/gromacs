@@ -36,10 +36,6 @@
 #ifndef _nb_generic_adress_h_
 #define _nb_generic_adress_h_
 
-#ifndef M_LN2
-#define M_LN2   0.69314718055995
-#endif
-
 #include "types/simple.h"
 #include "typedefs.h"
 
