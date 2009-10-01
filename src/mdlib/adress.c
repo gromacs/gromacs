@@ -401,7 +401,7 @@ adress_thermo_force(int                  cg0,
     unsigned short * ptype;
     rvec *           ref;
     real *           wf;
-    real *           tabscale;
+    real             tabscale;
     real *           ATFtab;
     rvec             dr;
     real             w,wsq,wmin1,wmin1sq,wp,wt,rinv;
@@ -411,11 +411,11 @@ adress_thermo_force(int                  cg0,
     adressw          = fr->adress_hy_width;
     bnew_wf          = fr->badress_new_wf;
     cgindex          = cgs->index;
-    ptype            = &(mdatoms->ptype);
+    ptype            = mdatoms->ptype;
     ref              = &(fr->adress_refmol);
     wf               = mdatoms->wf;
     tabscale         = fr->atf_tabscale;
-    ATFtab           = fr->atf_tab;
+    ATFtab           = fr->atf_tab.tab;
 
     for(icg=cg0; (icg<cg1); icg++)
     {
@@ -475,7 +475,7 @@ adress_thermo_force(int                  cg0,
 
                     /* now add thermo force to f_novirsum */
                     f[k0][0]        += fscal*dr[0];
-                    if (adress_type != eAdressXSplit)
+                    if (adresstype != eAdressXSplit)
                     {
                         f[k0][1]    += fscal*dr[1];
                         f[k0][2]    += fscal*dr[2];
