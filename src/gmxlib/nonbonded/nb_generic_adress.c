@@ -36,7 +36,7 @@
 #include <config.h>
 #endif
 
-#include <math.h>
+#include "maths.h"
 
 #include "types/simple.h"
 #include "vec.h"

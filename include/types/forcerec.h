@@ -362,6 +362,8 @@ typedef struct {
   int  adress_ivdw;
   bool badress_cog;
   rvec adress_refmol;
+  t_forcetab  atf_tab;
+  real atf_tabscale;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

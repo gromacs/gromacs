@@ -61,6 +61,10 @@
 #define M_SQRT2 sqrt(2.0)
 #endif
 
+#ifndef M_LN2
+#define M_LN2       0.693147180560
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

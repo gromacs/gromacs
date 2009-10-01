@@ -1566,6 +1566,7 @@ void init_forcerec(FILE *fp,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
+/* Need to point AdResS Thermo Force Table to the CG CG Table here, not sure how yet */
                         m++;
                     } else if (fr->nnblists > 1) {
                         fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = 0;
