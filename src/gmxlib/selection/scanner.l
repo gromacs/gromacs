@@ -147,6 +147,7 @@ COMMENT    (#.*)
                     if (yytext[0] == ';' || state->prompt)
                     {
                         state->bCmdStart = TRUE;
+                        rtrim(state->pselstr);
                         return CMD_SEP;
                     }
                 }
