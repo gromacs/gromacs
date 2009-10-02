@@ -1411,6 +1411,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
             }
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
             rc = gmx_wintruncate(outputfiles[i].filename,outputfiles[i].offset);
+            gmx_fatal(FARGS,"Truncation temporarily disabled");
 #else
             rc = truncate(outputfiles[i].filename,outputfiles[i].offset);
 #endif
@@ -1418,8 +1419,6 @@ static void read_checkpoint(const char *fn,FILE *fplog,
             {
                 gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
             }
-
-            gmx_fatal(FARGS,"Truncation temporary disabled");
         }
     }
 

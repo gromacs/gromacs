@@ -98,6 +98,8 @@ COMMENT    (#.*)
 %option reentrant
 %option prefix="_gmx_sel_yy"
 %option header-file="scanner_flex.h"
+%option nounistd
+%option always-interactive
 
 %s matchof
 %s matchbool
@@ -145,6 +147,7 @@ COMMENT    (#.*)
                     if (yytext[0] == ';' || state->prompt)
                     {
                         state->bCmdStart = TRUE;
+                        rtrim(state->pselstr);
                         return CMD_SEP;
                     }
                 }

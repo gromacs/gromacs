@@ -203,7 +203,7 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
-  sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ",oenv);
+  sg_angle = xvgropen(afile,buf,"Time (ps)","Angle (degrees)",oenv);
 
   if (dfile) {
     sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
