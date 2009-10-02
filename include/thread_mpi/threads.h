@@ -45,7 +45,7 @@ any papers on the package - you can find them in the top README file.
 
 /*! \file threads.h
  *
- *  @brief Platform-independent multithreading support.
+ *  \brief Platform-independent multithreading support.
  *
  *  This file provides an portable thread interface very similar to POSIX 
  *  threads, as a thin wrapper around the threads provided operating system 
@@ -98,7 +98,7 @@ extern "C"
 
 
 
-/*! \brief Thread support status enumeration */
+/** Thread support status enumeration */
 enum tMPI_Thread_support
 {
     TMPI_THREAD_SUPPORT_NO = 0,  /*!< Starting threads will fail */
@@ -117,7 +117,7 @@ void tMPI_Fatal_error(const char *file, int line, const char *message, ...);
 
 
 
-/*! \brief Check if threads are supported
+/** Check if threads are supported
  *
  *  This routine provides a cleaner way to check if threads are supported
  *  instead of sprinkling your code with preprocessor conditionals.
@@ -132,7 +132,7 @@ enum tMPI_Thread_support tMPI_Thread_support(void);
 
 
 
-/*! \brief Create a new thread
+/** Create a new thread
  *
  *  The new thread will call start_routine() with the argument arg.
  *  Please be careful not to change arg after calling this function.
@@ -150,7 +150,7 @@ int tMPI_Thread_create   (tMPI_Thread_t *   thread,
 
 
 
-/*! \brief Wait for a specific thread to finish executing
+/** Wait for a specific thread to finish executing
  *
  *  If the thread has already finished the routine returns immediately.
  *
@@ -165,7 +165,7 @@ int tMPI_Thread_join     (tMPI_Thread_t     thread,
 
 
 
-/*! \brief Initialize a new mutex
+/** Initialize a new mutex
  *
  *  This routine must be called before using any mutex not initialized
  *  with static storage class and TMPI_THREAD_MUTEX_INITIALIZER.
@@ -178,7 +178,7 @@ int tMPI_Thread_mutex_init(tMPI_Thread_mutex_t *mtx);
 
 
 
-/*! \brief Kill a mutex you no longer need
+/** Kill a mutex you no longer need
 *
 *  Note that this call only frees resources allocated inside the mutex. It
 *  does not free the tMPI_Thread_mutex_t memory area itself if you created it
@@ -192,7 +192,7 @@ int tMPI_Thread_mutex_destroy(tMPI_Thread_mutex_t *mtx);
 
 
 
-/*! \brief Wait for exclusive access to a mutex
+/** Wait for exclusive access to a mutex
 *
 *  This routine does not return until the mutex has been acquired.
 *
@@ -204,7 +204,7 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
 
 
 
-/*! \brief Try to lock a mutex, return if busy
+/** Try to lock a mutex, return if busy
  *
  *  This routine always return directly. If the mutex was available and
  *  we successfully locked it we return 0, otherwise a non-zero
@@ -218,7 +218,7 @@ int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
 
 
 
-/*! \brief Release the exclusive access to a mutex
+/** Release the exclusive access to a mutex
  *
  *  \param mtx  Pointer to the mutex to release
  *  \return 0 or a non-zero error code.
@@ -228,7 +228,7 @@ int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx);
 
 
 
-/*! \brief Initialize thread-specific-storage handle
+/** Initialize thread-specific-storage handle
  *
  *  The tMPI_Thread_key_t handle must always be initialized dynamically with
  *  this routine. If you need to initialize it statically in a file, use the
@@ -246,7 +246,7 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *));
 
 
 
-/*! \brief Delete thread-specific-storage handle
+/** Delete thread-specific-storage handle
  *
  *  Calling this routine will kill the handle, and invoke the automatic 
  *  destructor routine for each non-NULL value pointed to by key.
@@ -259,7 +259,7 @@ int tMPI_Thread_key_delete(tMPI_Thread_key_t key);
 
 
 
-/*! \brief Get value for thread-specific-storage in this thread
+/** Get value for thread-specific-storage in this thread
  *
  *  If it has not yet been set, NULL is returned.
  *  
@@ -270,7 +270,7 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t key);
 
 
 
-/*! \brief Set value for thread-specific-storage in this thread
+/** Set value for thread-specific-storage in this thread
  *
  *  \param key     Thread-specific-storage handle.
  *  \param value   What to set the data to (pointer-to-void).
@@ -280,7 +280,7 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value);
 
 
 
-/*! \brief Run the provided routine exactly once
+/** Run the provided routine exactly once
  *
  *  The control data must have been initialized before calling this routine,
  *  but you can do it with the static initialzer TMPI_THREAD_ONCE_INIT.
@@ -297,7 +297,7 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_data,
 
 
 
-/*! \brief Initialize condition variable
+/** Initialize condition variable
  *
  *  This routine must be called before using any condition variable
  *  not initialized with static storage class and TMPI_THREAD_COND_INITIALIZER.
@@ -309,7 +309,7 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *     cond);
 
 
 
-/*! \brief Destroy condition variable
+/** Destroy condition variable
  *
  *  This routine should be called when you are done with a condition variable.
  *  Note that it only releases memory allocated internally, not the 
@@ -322,7 +322,7 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *    cond);
 
 
 
-/*! \brief Wait for a condition to be signaled
+/** Wait for a condition to be signaled
  *
  *  This routine releases the mutex, and waits for the condition to be 
  *  signaled by another thread before it returns. 
@@ -343,7 +343,7 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
 
 
 
-/*! \brief Unblock one waiting thread
+/** Unblock one waiting thread
  *
  *  This routine signals a condition variable to one
  *  thread (if any) waiting for it after calling
@@ -356,7 +356,7 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *    cond,
 int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *  cond);
 
 
-/*! \brief Unblock all waiting threads
+/** Unblock all waiting threads
 *
 *  This routine signals a condition variable to all
 *  (if any) threads that are waiting for it after calling
@@ -371,7 +371,7 @@ int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *  cond);
 
 
 
-/*! \brief Terminate calling thread
+/** Terminate calling thread
  *
  *  Die voluntarily.
  *
@@ -383,7 +383,7 @@ void tMPI_Thread_exit(void *      value_ptr);
 
 
 
-/*! \brief Ask a thread to exit
+/** Ask a thread to exit
  *
  *  This routine tries to end the execution of another thread, but there are
  *  no guarantees it will succeed.
@@ -394,7 +394,123 @@ void tMPI_Thread_exit(void *      value_ptr);
 int tMPI_Thread_cancel(tMPI_Thread_t      thread);
 
 
-/*! \brief Initialize a synchronization barrier type
+#ifdef TMPI_RWLOCK
+/** Initialize a read-write lock.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  The need to be initialized only once, and there's no static initializer.
+
+  \param rwlock     Pointer to rwlock to be initialized.
+
+
+  \return 0 if successful, or a non-zero error code.
+  */
+int tMPI_Thread_rwlock_init(tMPI_Thread_rwlock_t *rwlock);
+
+/** Destroy a read-write lcok.
+
+  Release data held by a read-write lock.
+
+  \param rwlock     Pointer to the rwlock to be destroyed.
+  \return 0 if successful, nonzero otherwise.
+  */
+int tMPI_Thread_rwlock_destroy(tMPI_Thread_rwlock_t *rwlock);
+
+
+
+/** Lock a read-write lock non-exclusively, as a reader.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  This function applies a read lock, excluding any write locks, but not
+  other read locks, until the last read lock is released 
+  
+  \param rwlock     Pointer to the rwlock to be locked.
+  \return 0 if successful, nonzero otherwise.  */
+int tMPI_Thread_rwlock_rdlock(tMPI_Thread_rwlock_t *rwlock);
+
+/** Try to lock a read-write lock non-exclusively, as a reader.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  This function tries to a read lock, excluding any write locks, but not
+  other read locks, until the last read lock is released, if it succeeds 
+  immediately. If not, it will exit immediately.
+  
+  \param rwlock     Pointer to the rwlock to be locked.
+  \return 0 if locking was successful, nonzero otherwise.  */
+int tMPI_Thread_rwlock_tryrdlock(tMPI_Thread_rwlock_t *rwlock);
+
+
+
+
+/** Lock a read-write lock exclusively, as a writer.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  This function applies a write lock, excluding any read or write locks, 
+  until the owning thread releases the lock. 
+  
+  \param rwlock     Pointer to the rwlock to be locked.
+  \return 0 if successful, nonzero otherwise.  */
+int tMPI_Thread_rwlock_wrlock(tMPI_Thread_rwlock_t *rwlock);
+
+/** Try to lock a read-write lock exclusively, as a writer.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  This function tries to apply a write lock, excluding any read or write locks, 
+  until the owning thread releases the lock, if it succeeds 
+  immediately. If not, it will exit immediately.
+  
+  \param rwlock     Pointer to the rwlock to be locked.
+  \return 0 if locking was successful, nonzero otherwise.  */
+int tMPI_Thread_rwlock_trywrlock(tMPI_Thread_rwlock_t *rwlock);
+
+
+
+
+
+/** Release a read/write lock held non-exclusively, as read lock.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  This function releases a read/write lock that is locked as a read 
+  lock by the current thread. 
+
+  \note This is different from the POSIX standard, where rwlocks can
+       be unlocked with a single function, whether held as read or write 
+       locks. 
+  
+  \param rwlock     Pointer to the rwlock to be locked.
+  \return 0 if successful, nonzero otherwise.  */
+int tMPI_Thread_rwlock_rdunlock(tMPI_Thread_rwlock_t *rwlock);
+
+/** Release a read/write lock held exclusively, as write lock.
+
+  Read-write locks support multiple readers at the same time, but only one
+  writer can hold the lock at any given time, to the exclusion of readers.
+  This function releases a read/write lock that is locked as a write 
+  lock by the current thread. 
+
+  \note This is different from the POSIX standard, where rwlocks can
+       be unlocked with a single function, whether held as read or write 
+       locks. 
+  
+  \param rwlock     Pointer to the rwlock to be locked.
+  \return 0 if successful, nonzero otherwise.  */
+int tMPI_Thread_rwlock_wrunlock(tMPI_Thread_rwlock_t *rwlock);
+#endif
+
+
+
+
+
+
+
+
+/** Initialize a synchronization barrier type
  *
  *  You only need to initialize a barrier once. They cycle 
  *  automatically, so after release it is immediately ready
@@ -405,20 +521,19 @@ int tMPI_Thread_cancel(tMPI_Thread_t      thread);
  *                  will be released after \a count calls to 
  *                  tMPI_Thread_barrier_wait(). 
  */
-int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *      barrier,
-                        int                         count);
+int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int count);
 
 
 
-/*! \brief Release data in a barrier datatype
+/** Release data in a barrier datatype
  *
  *  \param barrier  Pointer to previously 
  *                  initialized barrier.
  */
-int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *   barrier);
+int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier);
 
 
-/*! \brief Perform barrier synchronization
+/** Perform barrier synchronization
  *
  *  This routine blocks until it has been called N times,
  *  where N is the count value the barrier was initialized with.
@@ -429,11 +544,11 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *   barrier);
  *
  *  \return The last thread returns -1, all the others 0.
  */
-int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier);
+int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 
 
 
-/*! \brief Lock a file so only one thread can use it
+/** Lock a file so only one thread can use it
  *
  *  Call this routine before writing to logfiles or standard out, in order
  *  to avoid mixing output from multiple threads.
@@ -441,7 +556,7 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier);
 void tMPI_Lockfile(FILE *   stream);
 
 
-/*! \brief Unlock a file (allow other threads to use it)
+/** Unlock a file (allow other threads to use it)
  *
  *  Call this routine when you finish a write statement to a file, so other
  *  threads can use it again.

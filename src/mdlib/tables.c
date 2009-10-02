@@ -350,7 +350,7 @@ static void read_tables(FILE *fp,const char *fn,
 {
   char *libfn;
   char buf[STRLEN];
-  double **yy=NULL,start,end,ssd,vm,vp,f,numf;
+  double **yy=NULL,start,end,dx0,dx1,ssd,vm,vp,f,numf;
   int  k,i,nx,nx0=0,ny,nny,ns;
   bool bAllZero,bZeroV,bZeroF;
   double tabscale;
@@ -390,6 +390,14 @@ static void read_tables(FILE *fp,const char *fn,
     bZeroV = TRUE;
     bZeroF = TRUE;
     for(i=0; (i < nx); i++) {
+      if (i >= 2) {
+	dx0 = yy[0][i-1] - yy[0][i-2];
+	dx1 = yy[0][i]   - yy[0][i-1];
+	/* Check for 1% deviation in spacing */
+	if (fabs(dx1 - dx0) >= 0.005*(fabs(dx0) + fabs(dx1))) {
+	  gmx_fatal(FARGS,"In table file '%s' the x values are not equally spaced: %f %f %f",fn,yy[0][i-2],yy[0][i-1],yy[0][i]);
+	}
+      }
       if (yy[1+k*2][i] != 0) {
 	bZeroV = FALSE;
 	if (bAllZero) {

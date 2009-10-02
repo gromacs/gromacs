@@ -44,7 +44,10 @@ struct gmx_sel_lexer_t;
 
 /* We cannot include scanner_flex.h from the scanner itself, because it
  * seems to break everything. */
+/* And we need to define YY_NO_UNISTD_H here as well, otherwise unistd.h
+ * gets included in other files than scanner.c... */
 #ifndef FLEX_SCANNER
+#define YY_NO_UNISTD_H
 #include "scanner_flex.h"
 #endif
 
