@@ -364,7 +364,6 @@ typedef struct {
   rvec adress_refmol;
   bool bHaveRefMol;
   t_forcetable  atf_tab;
-  real atf_tabscale;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

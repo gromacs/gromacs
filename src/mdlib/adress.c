@@ -414,7 +414,7 @@ adress_thermo_force(int                  cg0,
     ptype            = mdatoms->ptype;
     ref              = &(fr->adress_refmol);
     wf               = mdatoms->wf;
-    tabscale         = fr->atf_tabscale;
+    tabscale         = fr->atf_tab.scale;
     ATFtab           = fr->atf_tab.tab;
 
     for(icg=cg0; (icg<cg1); icg++)
@@ -464,7 +464,7 @@ adress_thermo_force(int                  cg0,
                     n0               = wt;
                     eps              = wt-n0;
                     eps2             = eps*eps;
-                    nnn              = 8*n0;
+                    nnn              = 4*n0;
                     F                = ATFtab[nnn+1];
                     Geps             = eps*ATFtab[nnn+2];
                     Heps2            = eps2*ATFtab[nnn+3];
