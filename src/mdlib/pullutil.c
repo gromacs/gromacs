@@ -341,12 +341,17 @@ void pull_calc_coms(t_commrec *cr,
 	  } else {
 	    /* Sum the difference with the reference atom */
 	    pbc_dx(pbc,x[ii],x_pbc,dx);
-	    for(m=0; m<DIM; m++)
+	    for(m=0; m<DIM; m++) {
 	      com[m]    += wm*dx[m];
+	    }
 	    if (xp) {
-	      pbc_dx(pbc,xp[ii],x_pbc,dx);
-	      for(m=0; m<DIM; m++)
-		comp[m] += wm*dx[m];
+	      /* For xp add the difference between xp and x to dx,
+	       * such that we use the same periodic image,
+	       * also when xp has a large displacement.
+	       */
+	      for(m=0; m<DIM; m++) {
+		comp[m] += wm*(dx[m] + xp[ii][m] - x[ii][m]);
+	      }
 	    }
 	  }
 	} else {
