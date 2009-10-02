@@ -600,7 +600,10 @@ int gmx_bar(int argc,char *argv[])
         "As a measure of phase space overlap, the relative entropy of ",
         "both states in each other's ensemble (i.e. the relative entropy s_ab ",
         "of the work samples of state b in the ensemble of state a, and vice ",
-        "versa for s_ba) can be estimated using the [TT]-s[tt] option. See ",
+        "versa for s_ba) can be estimated using the [TT]-s[tt] option. The ",
+        "shared entropy is a positive measure of the overlap of ",
+        "the Boltzmann distributions of the two states that goes to zero ",
+        "for identical distributions. See ",
         "Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information."
     };
     static real begin=0,end=-1,temp=298;

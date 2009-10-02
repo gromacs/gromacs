@@ -158,7 +158,26 @@ typedef INIT_ONCE tMPI_Thread_once_t;
 typedef struct 
 { 
     volatile enum tMPI_Thread_once_status init_state; 
+
+
+#if 0
+    /* this works since Windows Vista: */
     CONDITION_VARIABLE cv;
+#else
+    /* this data structure and its algorithms are based on 
+       'Strategies for Implementing POSIX Condition Variables on Win32'
+       by
+       Douglas C. Schmidt and Irfan Pyarali
+       Department of Computer Science
+       Washington University, St. Louis, Missouri
+       http://www.cs.wustl.edu/~schmidt/win32-cv-1.html */
+    int Nwaiters; /* number of waiting threads */
+    CRITICAL_SECTION wtr_lock; /* lock for Nwaiters */
+    int Nrelease; /* number of threads to release in broadcast/signal */
+    int cycle; /* cycle number so threads can't steal signals */
+    HANDLE ev; /* the event used to trigger WaitForSingleObject.  
+                  Is a manual reset event.  */
+#endif
 } tMPI_Thread_cond_t;
 
 /*typedef pthread_cond_t tMPI_Thread_cond_t;*/
@@ -174,7 +193,14 @@ typedef struct
 
 
 
+#ifdef TMPI_RWLOCK
+/*! \brief Read-write lock for threads
 
+  Windows implementation of the read-write lock (a lock that allows
+  multiple readers, but only a single writer). 
+*/
+typedef SRWLOCK tMPI_Thread_rwlock_t;
+#endif
 
 /*! \brief Pthread implementation of barrier type. 
  *
@@ -191,7 +217,6 @@ typedef struct tMPI_Thread_pthread_barrier
     CRITICAL_SECTION   cs;        /*!< Lock for the barrier contents          */
     CONDITION_VARIABLE cv;        /*!< Condition to signal barrier completion */
 }tMPI_Thread_barrier_t;
-
 
 /*! \brief Statical initializer for tMPI_Thread_barrier_t
  *
