@@ -1768,6 +1768,86 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
     }
 }
 
+static void get_cutoff2(t_forcerec *fr,bool bDoLongRange,
+                        real *rvdw2,real *rcoul2,
+                        real *rs2,real *rm2,real *rl2)
+{
+    *rs2 = sqr(fr->rlist);
+    if (bDoLongRange && fr->bTwinRange)
+    {
+        /* The VdW and elec. LR cut-off's could be different,
+         * so we can not simply set them to rlistlong.
+         */
+        if (EVDW_ZERO_AT_CUTOFF(fr->vdwtype) && fr->rvdw > fr->rlist)
+        {
+            *rvdw2  = sqr(fr->rlistlong);
+        }
+        else
+        {
+            *rvdw2  = sqr(fr->rvdw);
+        }
+        if (EEL_ZERO_AT_CUTOFF(fr->eeltype) && fr->rcoulomb > fr->rlist)
+        {
+            *rcoul2 = sqr(fr->rlistlong);
+        }
+        else
+        {
+            *rcoul2 = sqr(fr->rcoulomb);
+        }
+    }
+    else
+    {
+        /* Workaround for a gcc -O3 or -ffast-math problem */
+        *rvdw2  = *rs2;
+        *rcoul2 = *rs2;
+    }
+    *rm2 = min(*rvdw2,*rcoul2);
+    *rl2 = max(*rvdw2,*rcoul2);
+}
+
+static void init_nsgrid_lists(t_forcerec *fr,int ngid,gmx_ns_t *ns)
+{
+    real rvdw2,rcoul2,rs2,rm2,rl2;
+    int j;
+
+    get_cutoff2(fr,TRUE,&rvdw2,&rcoul2,&rs2,&rm2,&rl2);
+
+    /* Short range buffers */
+    snew(ns->nl_sr,ngid);
+    /* Counters */
+    snew(ns->nsr,ngid);
+    snew(ns->nlr_ljc,ngid);
+    snew(ns->nlr_one,ngid);
+    
+    if (rm2 > rs2)
+    {
+            /* Long range VdW and Coul buffers */
+        snew(ns->nl_lr_ljc,ngid);
+    }
+    if (rl2 > rm2)
+    {
+        /* Long range VdW or Coul only buffers */
+        snew(ns->nl_lr_one,ngid);
+    }
+    for(j=0; (j<ngid); j++) {
+        snew(ns->nl_sr[j],MAX_CG);
+        if (rm2 > rs2)
+        {
+            snew(ns->nl_lr_ljc[j],MAX_CG);
+        }
+        if (rl2 > rm2)
+        {
+            snew(ns->nl_lr_one[j],MAX_CG);
+        }
+    }
+    if (debug)
+    {
+        fprintf(debug,
+                "ns5_core: rs2 = %g, rm2 = %g, rl2 = %g (nm^2)\n",
+                rs2,rm2,rl2);
+    }
+}
+
 static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        matrix box,rvec box_size,int ngid,
                        gmx_localtop_t *top,
@@ -1824,37 +1904,9 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     (!bDomDec || dd->nc[ZZ]==1) && box[ZZ][YY] != 0);
     
     cgsnr    = cgs->nr;
-    rs2      = sqr(fr->rlist);
-    if (bDoLongRange && fr->bTwinRange)
-    {
-        /* The VdW and elec. LR cut-off's could be different,
-         * so we can not simply set them to rlistlong.
-         */
-        if (EVDW_ZERO_AT_CUTOFF(fr->vdwtype) && fr->rvdw > fr->rlist)
-        {
-            rvdw2  = sqr(fr->rlistlong);
-        }
-        else
-        {
-            rvdw2  = sqr(fr->rvdw);
-        }
-        if (EEL_ZERO_AT_CUTOFF(fr->eeltype) && fr->rcoulomb > fr->rlist)
-        {
-            rcoul2 = sqr(fr->rlistlong);
-        }
-        else
-        {
-            rcoul2 = sqr(fr->rcoulomb);
-        }
-    }
-    else
-    {
-        /* Workaround for a gcc -O3 or -ffast-math problem */
-        rvdw2  = rs2;
-        rcoul2 = rs2;
-    }
-    rm2 = min(rvdw2,rcoul2);
-    rl2 = max(rvdw2,rcoul2);
+
+    get_cutoff2(fr,bDoLongRange,&rvdw2,&rcoul2,&rs2,&rm2,&rl2);
+
     rvdw_lt_rcoul = (rvdw2 >= rcoul2);
     rcoul_lt_rvdw = (rcoul2 >= rvdw2);
     
@@ -1864,41 +1916,6 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
         rs2 = rl2;
     }
 
-    if (ns->nl_sr == NULL)
-    {
-        /* Short range buffers */
-        snew(ns->nl_sr,ngid);
-        /* Counters */
-        snew(ns->nsr,ngid);
-        snew(ns->nlr_ljc,ngid);
-        snew(ns->nlr_one,ngid);
-        
-        if (rm2 > rs2)
-        {
-            /* Long range VdW and Coul buffers */
-            snew(ns->nl_lr_ljc,ngid);
-        }
-        if (rl2 > rm2)
-        {
-            /* Long range VdW or Coul only buffers */
-            snew(ns->nl_lr_one,ngid);
-        }
-        for(j=0; (j<ngid); j++) {
-            snew(ns->nl_sr[j],MAX_CG);
-            if (rm2 > rs2)
-            {
-                snew(ns->nl_lr_ljc[j],MAX_CG);
-            }
-            if (rl2 > rm2)
-            {
-                snew(ns->nl_lr_one[j],MAX_CG);
-            }
-        }
-        if (debug)
-            fprintf(debug,
-                    "ns5_core: rs2 = %g, rvdw2 = %g, rcoul2 = %g (nm^2)\n",
-                    rs2,rvdw2,rcoul2);
-    }
     nl_sr     = ns->nl_sr;
     nsr       = ns->nsr;
     nl_lr_ljc = ns->nl_lr_ljc;
@@ -2357,8 +2374,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     if (fr->bGrid) {
         /* Grid search */
         ns->grid = init_grid(fplog,fr);
-        /* These lists are allocated in ns5_core */
-        ns->nl_sr = NULL;
+        init_nsgrid_lists(fr,ngid,ns);
     }
     else
     {

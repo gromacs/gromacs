@@ -419,7 +419,18 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond)
         return EINVAL;
     }
 
+#if 0
+    /* use this code once Vista is the minimum version required */
     InitializeConditionVariable( &(cond->cv) );
+#else
+    cond->Nwaiters=0;
+    InitializeCriticalSection(&(cond->wtr_lock));
+    cond->Nrelease=0;
+    cond->cycle=0;
+    /* a manual reset, unsignalled event */
+    cond->ev = CreateEvent(NULL, TRUE, FALSE, NULL); 
+#endif
+
     cond->init_state=TMPI_THREAD_ONCE_STATUS_READY;
     return 0;
 }
@@ -427,7 +438,12 @@ int tMPI_Thread_cond_init(tMPI_Thread_cond_t *cond)
 
 int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond) 
 {
+#if 0
+    /* use this code once Vista is the minimum version required */
     /* windows doesnt have this function */
+#else
+    DeleteCriticalSection(&(cond->wtr_lock));
+#endif
     return 0;
 }
 
@@ -476,7 +492,10 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
 
 int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
 {
-    BOOL ret;
+    BOOL wait_done=FALSE;
+    BOOL last_waiter=FALSE;
+    int my_cycle;
+
     /* Ccheck whether this condition variable is initialized */
     if(cond->init_state != TMPI_THREAD_ONCE_STATUS_READY)
     {
@@ -486,6 +505,8 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
     {
         tMPI_Thread_mutex_init_once(mtx);
     }
+#if 0
+    /* use this code once Vista is the minimum version required */
     ret=SleepConditionVariableCS (&(cond->cv), &(mtx->cs), INFINITE);
 
     if (!ret)
@@ -494,6 +515,57 @@ int tMPI_Thread_cond_wait(tMPI_Thread_cond_t *cond, tMPI_Thread_mutex_t *mtx)
                          GetLastError());
         return -1;
     }
+#else
+    /* serially increase waiter count */
+    EnterCriticalSection(&(cond->wtr_lock));
+    cond->Nwaiters++;
+    my_cycle = cond->cycle;
+    LeaveCriticalSection(&(cond->wtr_lock));
+
+    /* now it's safe to release the mutex from the fn call */
+    LeaveCriticalSection(&(mtx->cs));
+
+    /* Loop a wait until we found out we've waited for the right event.
+       Note that this loop is potentially a busy-wait loop in bad
+       circumstances (higher priority threads, for example). */
+    do
+    {
+        /* do the actual waiting */
+        if (WaitForSingleObject( cond->ev, INFINITE )== WAIT_FAILED)
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed event reset, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+
+        /* serially check whether we got the right event.  */
+        EnterCriticalSection(&(cond->wtr_lock));
+        wait_done = (cond->Nrelease > 0) && (cond->cycle!=my_cycle);
+        LeaveCriticalSection(&(cond->wtr_lock));
+    }
+    while(!wait_done);
+
+    /* We obtain the mutex from the function call */
+    EnterCriticalSection(&(mtx->cs));
+
+    /* we serially decrease the waiter count and release count */
+    EnterCriticalSection(&(cond->wtr_lock));
+    cond->Nwaiters--;
+    cond->Nrelease--;
+    last_waiter=(cond->Nrelease==0);
+    LeaveCriticalSection(&(cond->wtr_lock));
+
+    /* manually release the event if everybody's done with it */
+    if (last_waiter)
+    {
+        if (!ResetEvent( cond->ev ))
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed event reset, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+    }
+#endif
 
     return 0;
 }
@@ -509,7 +581,25 @@ int tMPI_Thread_cond_signal(tMPI_Thread_cond_t *cond)
         tMPI_Thread_cond_init_once(cond);
     }
     /* The condition variable is now guaranteed to be valid. */
+#if 0
+    /* use this code once Vista is the minimum version required */
     WakeConditionVariable( &(cond->cv) );
+#else
+    EnterCriticalSection(&(cond->wtr_lock));
+    /* check if we're not still busy with a release. If we are, do nothing. */
+    if (cond->Nwaiters > cond->Nrelease)
+    {
+        cond->Nrelease++;
+        cond->cycle++;
+        if (!SetEvent(cond->ev)) /* actually release the waiting threads */
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed SetEvent, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+    }
+    LeaveCriticalSection(&(cond->wtr_lock));
+#endif
 
     return 0;
 }
@@ -524,10 +614,79 @@ int tMPI_Thread_cond_broadcast(tMPI_Thread_cond_t *cond)
         tMPI_Thread_cond_init_once(cond);
     }
     /* The condition variable is now guaranteed to be valid. */
+#if 0
+    /* use this code once Vista is the minimum version required */
     WakeAllConditionVariable( &(cond->cv) );
-
+#else
+    EnterCriticalSection(&(cond->wtr_lock));
+    /* check whether there are any waiters */
+    if (cond->Nwaiters > 0)
+    {
+        cond->Nrelease=cond->Nwaiters;
+        cond->cycle++;
+        if (!SetEvent(cond->ev)) /* actually release the waiting threads */
+        {
+            tMPI_Fatal_error(TMPI_FARGS,"Failed SetEvent, error code=%d",
+                             GetLastError());
+            return -1;
+        }
+    }
+    LeaveCriticalSection(&(cond->wtr_lock));
+#endif
     return 0;
 }
+
+#ifdef TMPI_RWLOCK
+int tMPI_Thread_rwlock_init(tMPI_Thread_rwlock_t *rwlock)
+{
+    InitializeSRWLock(rwlock);
+    return 0; /* no error value returned by the above function in Windows */
+}
+
+int tMPI_Thread_rwlock_destroy(tMPI_Thread_rwlock_t *rwlock)
+{
+    /* Windows doesn't define a function for this. Presumably this means
+       that the lock's size is too small to bother with */
+    return 0;
+}   
+
+int tMPI_Thread_rwlock_rdlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    AcquireSRWLockShared(rwlock);    
+    return 0; /* no error value returned by the above function in Windows */
+}   
+
+int tMPI_Thread_rwlock_tryrdlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    /*TryAcquireSRWLockShared(rwlock);   */ 
+    return 0; /* no error value returned by the above function in Windows */
+}
+
+int tMPI_Thread_rwlock_wrlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    AcquireSRWLockExclusive(rwlock);    
+    return 0; /* no error value returned by the above function in Windows */
+}
+
+int tMPI_Thread_rwlock_trywrlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    /*TryAcquireSRWLockExclusive(rwlock); */   
+    return 0; /* no error value returned by the above function in Windows */
+}
+
+int tMPI_Thread_rwlock_rdunlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    ReleaseSRWLockShared(rwlock);    
+    return 0; /* no error value returned by the above function in Windows */
+}
+
+int tMPI_Thread_rwlock_wrunlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    ReleaseSRWLockExclusive(rwlock);    
+    return 0; /* no error value returned by the above function in Windows */
+}
+#endif
+
 
 
 

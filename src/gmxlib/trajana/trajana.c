@@ -85,6 +85,7 @@
 #include <string.h>
 
 #include <filenm.h>
+#include <futil.h>
 #include <macros.h>
 #include <pbc.h>
 #include <rmpbc.h>
@@ -984,6 +985,121 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
     return 0;
 }
 
+/*! \brief
+ * Loads default index groups from a selection file.
+ *
+ * \param[in,out] d     Trajectory analysis data structure.
+ * \param[out]    grps  Pointer to receive the default groups.
+ * \returns       0 on success, a non-zero error code on error.
+ */
+static int
+init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
+{
+    gmx_ana_selcollection_t  *sc;
+    char                     *fnm;
+    int                       nr, nr_notempty, i;
+    int                       rc;
+
+    /* If an index file is provided, just load it and exit. */
+    if (d->ndxfile)
+    {
+        gmx_ana_indexgrps_init(grps, d->top, d->ndxfile);
+        return 0;
+    }
+    /* Initialize groups to NULL if we return prematurely. */
+    *grps = NULL;
+    /* Return immediately if no topology provided. */
+    if (!d->top)
+    {
+        return 0;
+    }
+
+    /* Find the default selection file, return if none found. */
+    fnm = low_libfn("defselection.dat", FALSE);
+    if (fnm == NULL)
+    {
+        return 0;
+    }
+
+    /* Create a temporary selection collection. */
+    rc = gmx_ana_selcollection_create(&sc, d->pcc);
+    if (rc != 0)
+    {
+        sfree(fnm);
+        return rc;
+    }
+    rc = gmx_ana_selmethod_register_defaults(sc);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        sfree(fnm);
+        gmx_fatal(FARGS, "default selection method registration failed");
+        return rc;
+    }
+    /* FIXME: It would be better to not have the strings here hard-coded. */
+    gmx_ana_selcollection_set_refpostype(sc, "atom");
+    gmx_ana_selcollection_set_outpostype(sc, "atom", FALSE);
+
+    /* Parse and compile the file with no external groups. */
+    rc = gmx_ana_selcollection_parse_file(sc, fnm, NULL);
+    sfree(fnm);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        fprintf(stderr, "\nWARNING: default selection(s) could not be parsed\n");
+        return rc;
+    }
+    gmx_ana_selcollection_set_topology(sc, d->top, -1);
+    rc = gmx_ana_selcollection_compile(sc);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        fprintf(stderr, "\nWARNING: default selection(s) could not be compiled\n");
+        return rc;
+    }
+
+    /* Count the non-empty groups and check that there are no dynamic
+     * selections. */
+    nr = gmx_ana_selcollection_get_count(sc);
+    nr_notempty = 0;
+    for (i = 0; i < nr; ++i)
+    {
+        gmx_ana_selection_t  *sel;
+
+        sel = gmx_ana_selcollection_get_selection(sc, i);
+        if (sel->bDynamic)
+        {
+            fprintf(stderr, "\nWARNING: dynamic default selection ignored\n");
+        }
+        else if (sel->g->isize > 0)
+        {
+            ++nr_notempty;
+        }
+    }
+
+    /* Copy the groups to the output structure */
+    gmx_ana_indexgrps_alloc(grps, nr_notempty);
+    nr_notempty = 0;
+    for (i = 0; i < nr; ++i)
+    {
+        gmx_ana_selection_t  *sel;
+
+        sel = gmx_ana_selcollection_get_selection(sc, i);
+        if (!sel->bDynamic && sel->g->isize > 0)
+        {
+            gmx_ana_index_t  *g;
+
+            g = gmx_ana_indexgrps_get_grp(*grps, nr_notempty);
+            gmx_ana_index_copy(g, sel->g, TRUE);
+            g->name = strdup(sel->name);
+            ++nr_notempty;
+        }
+    }
+
+    gmx_ana_selcollection_free(sc);
+    return 0;
+}
+
 /*!
  * \param[in,out] d     Trajectory analysis data structure.
  * \returns       0 on success, a non-zero error code on error.
@@ -996,7 +1112,8 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
  *
  * \see ANA_USER_SELINIT
  */
-int gmx_ana_init_selections(gmx_ana_traj_t *d)
+int
+gmx_ana_init_selections(gmx_ana_traj_t *d)
 {
     int                  rc;
     int                  i;
@@ -1023,19 +1140,28 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
             return rc;
         }
     }
-    /* Load the topology and init the index groups */
-    gmx_ana_indexgrps_init(&grps, d->top, d->ndxfile);
-    /* Parse the selection */
+    /* Initialize the default selection methods */
     rc = gmx_ana_selmethod_register_defaults(d->sc);
     if (rc != 0)
     {
         gmx_fatal(FARGS, "default selection method registration failed");
         return rc;
     }
+    /* Initialize index groups.
+     * We ignore the return value to continue without the default groups if
+     * there is an error there. */
+    init_default_selections(d, &grps);
+    /* Parse the selections */
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
              || (d->selection && d->selection[0] == 0)
              || (!d->selfile && !d->selection);
+    /* Behavior is not very pretty if we cannot check for interactive input,
+     * but at least it should compile and work in most cases. */
+#ifdef HAVE_UNISTD_H
     bInteractive = bStdIn && isatty(fileno(stdin));
+#else
+    bInteractive = bStdIn;
+#endif
     if (bStdIn && bInteractive)
     {
         /* Parse from stdin */

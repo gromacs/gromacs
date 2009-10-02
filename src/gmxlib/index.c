@@ -62,6 +62,9 @@ static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
 static const char   *Sugars[]     = { "A", "T", "G", "C", "U" };
 #define  NDNA asize(Sugars)
 
+static const char *Negate[] = { "SOL" };
+#define  NNEGATE asize(Negate)
+
 static bool gmx_ask_yesno(bool bASK)
 {
   char c;
@@ -172,10 +175,16 @@ atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
   return a;
 }
 
+typedef struct {
+  char *rname;
+  bool bNeg;
+  char *gname;
+} restp_t;
+
 static void analyse_other(eRestp Restp[],t_atoms *atoms,
 			  t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 {
-  char **restp=NULL;
+  restp_t *restp=NULL;
   char **attp=NULL;
   char *rname,*aname;
   atom_id *other_ndx,*aid,*aaid;
@@ -194,11 +203,24 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       rname = *atoms->resinfo[resind].name;
       if (Restp[resind] == etOther) {
 	for(l=0; (l<nrestp); l++)
-	  if (strcmp(restp[l],rname) == 0)
+	  if (strcmp(restp[l].rname,rname) == 0)
 	    break;
 	if (l==nrestp) {
-	  srenew(restp,++nrestp);
-	  restp[nrestp-1]=strdup(rname);
+	  srenew(restp,nrestp+1);
+	  restp[nrestp].rname = strdup(rname);
+	  restp[nrestp].bNeg  = FALSE;
+	  restp[nrestp].gname = strdup(rname);
+	  nrestp++;
+	  for(i=0; i<NNEGATE; i++) {
+	    if (strcmp(rname,Negate[i]) == 0) {
+	      srenew(restp,nrestp+1);
+	      restp[nrestp].rname = strdup(rname);
+	      restp[nrestp].bNeg  = TRUE;
+	      snew(restp[nrestp].gname,4+strlen(rname)+1);
+	      sprintf(restp[nrestp].gname,"%s%s","non-",rname);
+	      nrestp++;
+	    }
+	  }
 	}
       }
     }
@@ -207,12 +229,14 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       naid=0;
       for(j=0; (j<atoms->nr); j++) {
 	rname = *atoms->resinfo[atoms->atom[j].resind].name;
-	if (strcmp(restp[i],rname) == 0) 
+	if ((strcmp(restp[i].rname,rname) == 0 && !restp[i].bNeg) ||
+	    (strcmp(restp[i].rname,rname) != 0 &&  restp[i].bNeg)) {
 	  aid[naid++] = j;
+	}
       }
-      add_grp(gb,gn,naid,aid,restp[i]);
+      add_grp(gb,gn,naid,aid,restp[i].gname);
       if (bASK) {
-	printf("split %s into atoms (y/n) ? ",restp[i]);
+	printf("split %s into atoms (y/n) ? ",restp[i].gname);
 	fflush(stdout);
 	if (gmx_ask_yesno(bASK)) {
 	  natp=0;
@@ -493,7 +517,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
   /* Non-Protein */
   aid=mk_aid(atoms,restp,etProt,&nra,FALSE);
   if ((nra > 0) && (nra < atoms->nr))
-    add_grp(gb,gn,nra,aid,"Non-Protein"); 
+    add_grp(gb,gn,nra,aid,"non-Protein"); 
   sfree(aid);
 
   /* DNA */
@@ -506,10 +530,7 @@ void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 
   /* Other */
   analyse_other(restp,atoms,gb,gn,bASK,bVerb);
-  aid=mk_aid(atoms,restp,etOther,&nra,TRUE);
-  if ((nra > 0) && (nra < atoms->nr))
-    add_grp(gb,gn,nra,aid,"Other"); 
-  sfree(aid);
+
   sfree(restp);
 }
 
