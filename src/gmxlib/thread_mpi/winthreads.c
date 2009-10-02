@@ -391,10 +391,15 @@ static BOOL CALLBACK InitHandleWrapperFunction(PINIT_ONCE InitOnce,
     return TRUE;
 }
 
+CRITICAL_SECTION tMPI_Once_cs;
+tMPI_Spinlock_t tMPI_Once_cs_lock=TMPI_SPINLOCK_INITIALIZER;
+volatile int tMPI_Once_init=0;
+
 
 int tMPI_Thread_once(tMPI_Thread_once_t *once_control, 
                      void (*init_routine)(void))
 {
+#if 0
     BOOL bStatus;
     bStatus = InitOnceExecuteOnce(once_control, InitHandleWrapperFunction, 
                                   init_routine, NULL);
@@ -404,7 +409,23 @@ int tMPI_Thread_once(tMPI_Thread_once_t *once_control,
         tMPI_Fatal_error(TMPI_FARGS,"Failed to run thread_once routine");
         return -1;
     }
-
+#else
+   /* ugly hack to initialize the critical section */
+    if (!tMPI_Once_init)
+    {
+        tMPI_Spinlock_lock( &tMPI_Once_cs_lock);
+        InitializeCriticalSection(&(tMPI_Once_cs));
+        tMPI_Once_init=1;
+        tMPI_Spinlock_unlock( &tMPI_Once_cs_lock);
+    }
+    EnterCriticalSection(&tMPI_Once_cs);
+    if (*once_control == 0)
+    {
+        (*init_routine)(); /* call the function */
+        *once_control=1; /* flag that we're done */
+    }
+    LeaveCriticalSection(&tMPI_Once_cs);
+#endif
     return 0;
 }
 
@@ -449,7 +470,6 @@ int tMPI_Thread_cond_destroy(tMPI_Thread_cond_t *cond)
 
 
 
-
 /*! \brief Static init routine for pthread barrier 
  *
  * \internal
@@ -484,7 +504,8 @@ static int tMPI_Thread_cond_init_once(tMPI_Thread_cond_t *cond)
         ret = 0;
     }
     /*LeaveCriticalSection( &tMPI_Thread_system_lock );*/
-    tMPI_Spinlock_lock( &tMPI_Thread_system_lock );
+    tMPI_Spinlock_unlock( &tMPI_Thread_system_lock );
+
     return ret;
 }
 
@@ -698,8 +719,15 @@ int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
         return EINVAL;
     }
 
+
+#if 0
+ /* use this once Vista is the oldest supported windows version: */
     InitializeCriticalSection(&(barrier->cs));
     InitializeConditionVariable(&(barrier->cv));
+#else
+    tMPI_Thread_mutex_init(&(barrier->cs));
+    tMPI_Thread_cond_init(&(barrier->cv));
+#endif
 
     barrier->threshold = n;
     barrier->count     = n;
@@ -719,8 +747,13 @@ int tMPI_Thread_barrier_destroy(tMPI_Thread_barrier_t *barrier)
         return EINVAL;
     }
 
-
+#if 0
     DeleteCriticalSection(&(barrier->cs));
+#else
+    tMPI_Thread_mutex_destroy(&(barrier->cs));
+#endif
+
+    tMPI_Thread_cond_destroy(&(barrier->cv));
 
     return 0;
 }
@@ -782,8 +815,11 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     }
 
     /*p = (tMPI_Thread_pthread_barrier_t*)barrier->actual_barrier;*/
-
+#if 0
     EnterCriticalSection( &(barrier->cs)  );
+#else
+    tMPI_Thread_mutex_lock( &(barrier->cs) );
+#endif
 
 
 
@@ -796,13 +832,17 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     { 
         barrier->cycle = !barrier->cycle;
         barrier->count = barrier->threshold;
-
+#if 0
         WakeAllConditionVariable( &(barrier->cv) );
+#else
+        tMPI_Thread_cond_broadcast( &(barrier->cv) );
+#endif
     }
     else
     {
         while(cycle == barrier->cycle)
         {
+#if 0
             rc=SleepConditionVariableCS (&(barrier->cv), &(barrier->cs), 
                                          INFINITE);
             if(!rc) 
@@ -810,10 +850,17 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
                 ret=-1;
                 break;
             }
+#else
+            rc = tMPI_Thread_cond_wait(&barrier->cv,&barrier->cs);
+            if(rc != 0) break;
+#endif
         }
     }
-
+#if 0
     LeaveCriticalSection( &(barrier->cs)  );
+#else
+    tMPI_Thread_mutex_unlock( &(barrier->cs) );
+#endif
     return ret;
 }
 
