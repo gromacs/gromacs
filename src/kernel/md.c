@@ -517,12 +517,13 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fr = mk_forcerec();
         init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
                       opt2fn("-table",nfile,fnm),
+                      opt2fn("-tablea",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
-          "nofile","nofile","nofile",FALSE,pforce);
+          "nofile","nofile","nofile","nofile",FALSE,pforce);
           */        
         fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
 

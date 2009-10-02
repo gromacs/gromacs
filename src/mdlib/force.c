@@ -1178,6 +1178,7 @@ void init_forcerec(FILE *fp,
                    matrix     box,
                    bool       bMolEpot,
                    const char *tabfn,
+                   const char *tabafn,
                    const char *tabpfn,
                    const char *tabbfn,
                    bool       bNoSolvOpt,
@@ -1566,7 +1567,6 @@ void init_forcerec(FILE *fp,
                                         *mtop->groups.grpname[nm_ind[egi]],
                                         *mtop->groups.grpname[nm_ind[egj]],
                                         &fr->nblists[m]);
-/* Need to point AdResS Thermo Force Table to the CG CG Table here, not sure how yet */
                         m++;
                     } else if (fr->nnblists > 1) {
                         fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = 0;
@@ -1582,6 +1582,12 @@ void init_forcerec(FILE *fp,
                                 GMX_MAKETABLES_14ONLY);
     }
     
+    /* Read AdResS Thermo Force table if needed */
+    if(fr->adress_icor == eAdressICThermoForce)
+    {
+        fr->atf_tab = make_atf_table(fp,oenv,fr,tabafn);
+    }
+
     /* Wall stuff */
     fr->nwall = ir->nwall;
     if (ir->nwall && ir->wall_type==ewtTABLE)

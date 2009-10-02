@@ -114,6 +114,11 @@ extern t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
                                   const char *fn,
                                   real rtab);
 
+/* Read a table for AdResS Thermo Force calculations */
+extern t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
+				   const t_forcerec *fr,
+				   const char *fn);
+
 extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
 extern void
@@ -132,6 +137,7 @@ extern void init_forcerec(FILE       *fplog,
 			  matrix     box,
 			  bool       bMolEpot,
 			  const char *tabfn,
+			  const char *tabafn,
 			  const char *tabpfn,
 			  const char *tabbfn,
 			  bool       bNoSolvOpt,
