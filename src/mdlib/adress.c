@@ -444,19 +444,19 @@ adress_thermo_force(int                  cg0,
                     rinv             = gmx_invsqrt(dr[0]*dr[0]+dr[1]*dr[1]+dr[2]*dr[2]);
                     wsq              = w*w;
                     wmin1            = w - 1.0;
-                    wmin1sq          = wmin1*wmin1;
                     dwp_dr           = 1.0/adressw;
 
                     /* get the dwp_dr part of the force */
                     if(bnew_wf)
                     {
+                        wmin1sq      = wmin1*wmin1;
                         wp           = 1.0-exp(-M_LN2*wsq/wmin1sq);
                         dwp_dr      *= M_LN2*w*exp(M_LN2*(1.0-2.0*w)/wmin1sq)/(wmin1*wmin1sq);
                     }
                     else
                     {
                         wp           = wsq;
-                        dwp_dr      *= -2.0*M_PI*sqrt(wsq*w*(1.0-w));
+                        dwp_dr      *= -2.0*M_PI*sqrt(-wsq*w*wmin1);
                     }
 
                     /* now get the dmu/dwp part from the table */
