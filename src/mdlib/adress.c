@@ -418,7 +418,7 @@ adress_thermo_force(int                  cg0,
                     Geps             = eps*ATFtab[nnn+2];
                     Heps2            = eps2*ATFtab[nnn+3];
                     Fp               = F+Geps+Heps2;
-                    dmu_dwp          = -(Fp+Geps+2.0*Heps2)*tabscale;
+                    dmu_dwp          = (Fp+Geps+2.0*Heps2)*tabscale;
 
                     fscal            = dmu_dwp*dwp_dr*rinv;
 
