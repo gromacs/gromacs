@@ -196,6 +196,21 @@ typedef struct gmx_pme {
 	real *   work_denom;
 	real *   work_tmp1;
 	real *   work_m2inv;
+    
+    /* Work data for PME_redist */
+    bool     redist_init;
+    int *    scounts; 
+    int *    rcounts;
+    int *    sdispls;
+    int *    rdispls;
+    int *    sidx;
+    real *   redist_buf;
+    int      redist_buf_nalloc;
+    
+    /* Work data for sum_qgrid */
+    real *   sum_qgrid_tmp;
+    
+    
 } t_gmx_pme;
 
 /* The following stuff is needed for signal handling on the PME nodes. 
@@ -416,24 +431,20 @@ static void pmeredist(gmx_pme_t pme, bool forw,
 /* Redistribute particle data for PME calculation */
 /* domain decomposition by x coordinate           */
 {
-    static int *scounts, *rcounts,*sdispls, *rdispls, *sidx;
-    static real *buf=NULL;
-    static int buf_nalloc=0;
     int *idxa;
     int i, ii;
-    static bool bFirst=TRUE;
     
-    if(bFirst) {
-        snew(scounts,atc->nslab);
-        snew(rcounts,atc->nslab);
-        snew(sdispls,atc->nslab);
-        snew(rdispls,atc->nslab);
-        snew(sidx,atc->nslab);
-        bFirst=FALSE;
+    if(FALSE == pme->redist_init) {
+        snew(pme->scounts,atc->nslab);
+        snew(pme->rcounts,atc->nslab);
+        snew(pme->sdispls,atc->nslab);
+        snew(pme->rdispls,atc->nslab);
+        snew(pme->sidx,atc->nslab);
+        pme->redist_init = TRUE;
     }
-    if (n > buf_nalloc) {
-        buf_nalloc = over_alloc_dd(n);
-        srenew(buf,buf_nalloc*DIM);
+    if (n > pme->redist_buf_nalloc) {
+        pme->redist_buf_nalloc = over_alloc_dd(n);
+        srenew(pme->redist_buf,pme->redist_buf_nalloc*DIM);
     }
     
     idxa = atc->pd;
@@ -443,62 +454,62 @@ static void pmeredist(gmx_pme_t pme, bool forw,
         /* forward, redistribution from pp to pme */ 
         
         /* Calculate send counts and exchange them with other nodes */
-        for(i=0; (i<atc->nslab); i++) scounts[i]=0;
-        for(i=0; (i<n); i++) scounts[idxa[i]]++;
-        MPI_Alltoall( scounts, 1, MPI_INT, rcounts, 1, MPI_INT, atc->mpi_comm);
+        for(i=0; (i<atc->nslab); i++) pme->scounts[i]=0;
+        for(i=0; (i<n); i++) pme->scounts[pme->idxa[i]]++;
+        MPI_Alltoall( pme->scounts, 1, MPI_INT, pme->rcounts, 1, MPI_INT, atc->mpi_comm);
         
         /* Calculate send and receive displacements and index into send buffer */
-        sdispls[0]=0;
-        rdispls[0]=0;
-        sidx[0]=0;
+        pme->sdispls[0]=0;
+        pme->rdispls[0]=0;
+        pme->sidx[0]=0;
         for(i=1; i<atc->nslab; i++) {
-            sdispls[i]=sdispls[i-1]+scounts[i-1];
-            rdispls[i]=rdispls[i-1]+rcounts[i-1];
-            sidx[i]=sdispls[i];
+            pme->sdispls[i]=pme->sdispls[i-1]+pme->scounts[i-1];
+            pme->rdispls[i]=pme->rdispls[i-1]+pme->rcounts[i-1];
+            pme->sidx[i]=pme->sdispls[i];
         }
         /* Total # of particles to be received */
-        atc->n = rdispls[atc->nslab-1] + rcounts[atc->nslab-1];
+        atc->n = pme->rdispls[atc->nslab-1] + pme->rcounts[atc->nslab-1];
         
         pme_realloc_atomcomm_things(atc);
         
         /* Copy particle coordinates into send buffer and exchange*/
         for(i=0; (i<n); i++) {
-            ii=DIM*sidx[idxa[i]];
-            sidx[idxa[i]]++;
-            buf[ii+XX]=x_f[i][XX];
-            buf[ii+YY]=x_f[i][YY];
-            buf[ii+ZZ]=x_f[i][ZZ];
+            ii=DIM*pme->sidx[pme->idxa[i]];
+            pme->sidx[pme->idxa[i]]++;
+            pme->redist_buf[ii+XX]=x_f[i][XX];
+            pme->redist_buf[ii+YY]=x_f[i][YY];
+            pme->redist_buf[ii+ZZ]=x_f[i][ZZ];
         }
-        MPI_Alltoallv(buf, scounts, sdispls, rvec_mpi,
-                      atc->x, rcounts, rdispls, rvec_mpi,
+        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, rvec_mpi,
+                      atc->x, rcounts, pme->rdispls, rvec_mpi,
                       atc->mpi_comm);
     }
     if (forw) {
         /* Copy charge into send buffer and exchange*/
-        for(i=0; i<atc->nslab; i++) sidx[i]=sdispls[i];
+        for(i=0; i<atc->nslab; i++) pme->sidx[i]=pme->sdispls[i];
         for(i=0; (i<n); i++) {
-            ii=sidx[idxa[i]];
-            sidx[idxa[i]]++;
-            buf[ii]=charge[i];
+            ii=pme->sidx[pme->idxa[i]];
+            pme->sidx[pme->idxa[i]]++;
+            pme->redist_buf[ii]=charge[i];
         }
-        MPI_Alltoallv(buf, scounts, sdispls, mpi_type,
-                      atc->q, rcounts, rdispls, mpi_type,
+        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, mpi_type,
+                      atc->q, pme->rcounts, pme->rdispls, mpi_type,
                       atc->mpi_comm);
     }
     else { /* backward, redistribution from pme to pp */ 
-        MPI_Alltoallv(atc->f, rcounts, rdispls, rvec_mpi,
-                      buf, scounts, sdispls, rvec_mpi,
+        MPI_Alltoallv(atc->f, pme->rcounts, pme->rdispls, rvec_mpi,
+                      pme->redist_buf, pme->scounts, pme->sdispls, rvec_mpi,
                       atc->mpi_comm);
         
         /* Copy data from receive buffer */
         for(i=0; i<atc->nslab; i++)
-            sidx[i] = sdispls[i];
+            pme->sidx[i] = pme->sdispls[i];
         for(i=0; (i<n); i++) {
-            ii = DIM*sidx[idxa[i]];
-            x_f[i][XX] += buf[ii+XX];
-            x_f[i][YY] += buf[ii+YY];
-            x_f[i][ZZ] += buf[ii+ZZ];
-            sidx[idxa[i]]++;
+            ii = DIM*pme->sidx[pme->idxa[i]];
+            x_f[i][XX] += pme->redist_buf[ii+XX];
+            x_f[i][YY] += pme->redist_buf[ii+YY];
+            x_f[i][ZZ] += pme->redist_buf[ii+ZZ];
+            pme->sidx[pme->idxa[i]]++;
         }
     }
 #endif 
@@ -696,11 +707,11 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
 
 static void gmx_sum_qgrid_dd(pme_overlap_t *ol,t_fftgrid *grid,int direction)
 {
-    static real *tmp=NULL;
     int b,i;
     int la12r,localsize;
     pme_grid_comm_t *pgc;
     real *from, *to;
+    real *tmp;
 #ifdef GMX_MPI
     MPI_Status stat;
 #endif
@@ -715,9 +726,10 @@ static void gmx_sum_qgrid_dd(pme_overlap_t *ol,t_fftgrid *grid,int direction)
     if (grid->workspace) {
         tmp = grid->workspace;
     } else {
-        if (tmp == NULL) {
-            snew(tmp,localsize);
+        if (pme->sum_qgrid_tmp == NULL) {
+            snew(pme->sum_qgrid_tmp,localsize);
         }
+        tmp = pme->sum_qgrid_tmp;
     }
     
     if (direction == GMX_SUM_QGRID_FORWARD) { 
@@ -792,29 +804,32 @@ static void gmx_sum_qgrid_dd(pme_overlap_t *ol,t_fftgrid *grid,int direction)
 
 void gmx_sum_qgrid(gmx_pme_t gmx,t_commrec *cr,t_fftgrid *grid,int direction)
 {
-    static bool bFirst=TRUE;
-    static real *tmp;
     int i;
-    static int localsize;
-    static int maxproc;
+    int localsize;
+    int maxproc;
     
 #ifdef GMX_MPI
-    if(bFirst) {
-        localsize=grid->la12r*grid->pfft.local_nx;
-        if(!grid->workspace) {
-            snew(tmp,localsize);
-        }
-        maxproc=grid->nx/grid->pfft.local_nx;
+    localsize=grid->la12r*grid->pfft.local_nx;
+    maxproc=grid->nx/grid->pfft.local_nx;
+
+    if(grid->workspace!=NULL)
+    {
+        tmp = grid->workspace;
     }
+    else 
+    {
+        if(pme->sum_qgrid_tmp==NULL)
+        {
+            snew(pme->sum_qgrid_tmp,localsize);
+        }
+        tmp = pme->sum_qgrid_tmp;
+    }
+
     /* NOTE: FFTW doesnt necessarily use all processors for the fft;
      * above I assume that the ones that do have equal amounts of data.
      * this is bad since its not guaranteed by fftw, but works for now...
      * This will be fixed in the next release.
      */
-    bFirst=FALSE;
-    if (grid->workspace) {
-        tmp=grid->workspace;
-    }
     if (direction == GMX_SUM_QGRID_FORWARD) { 
         /* sum contributions to local grid */
         
@@ -1672,6 +1687,9 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     if (debug)
         fprintf(debug,"Creating PME data structures.\n");
     snew(pme,1);
+    
+    pme->redist_init   = FALSE;
+    pme->sum_qgrid_tmp = NULL;
     
     pme->nnodes  = 1;
     pme->bPPnode = TRUE;
