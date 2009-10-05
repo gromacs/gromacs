@@ -401,6 +401,9 @@ if test "$enable_threads" = "yes"; then
   if test "$enable_mpi" = "yes"; then
     AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
   fi
+  if test "$with_fft" = "fftw2"; then
+    AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
+  fi 
   # for now we just assume pthreads
   ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
   LIBS="$PTHREAD_LIBS $LIBS"
