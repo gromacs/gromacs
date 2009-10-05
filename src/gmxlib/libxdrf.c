@@ -337,15 +337,29 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     if (xdrid == MAXID) {
 	return 0;
     }
-    if (*type == 'w' || *type == 'W') {
-            strcpy(newtype,"wb+");
-	    lmode = XDR_ENCODE;
-    } else if (*type == 'a' || *type == 'A') {
-            strcpy(newtype,"ab+");
-            lmode = XDR_ENCODE;
-    } else {
-            strcpy(newtype,"rb");
-	    lmode = XDR_DECODE;
+    if (*type == 'w' || *type == 'W')
+    {
+        xdrmodes[xdrid] = 'w';
+        strcpy(newtype, "wb+");
+        lmode = XDR_ENCODE;
+    }
+    else if (*type == 'a' || *type == 'A')
+    {
+        xdrmodes[xdrid] = 'a';
+        strcpy(newtype, "ab+");
+        lmode = XDR_ENCODE;
+    }
+    else if (strncasecmp(type, "r+", 2) == 0)
+    {
+        xdrmodes[xdrid] = 'a';
+        strcpy(newtype, "rb+");
+        lmode = XDR_ENCODE;
+    }
+    else
+    {
+        xdrmodes[xdrid] = 'r';
+        strcpy(newtype, "rb");
+        lmode = XDR_DECODE;
     }
     xdrfiles[xdrid] = fopen(filename, newtype);
 	
@@ -353,7 +367,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	xdrs = NULL;
 	return 0;
     }
-    xdrmodes[xdrid] = *type;
+    
     /* next test isn't usefull in the case of C language
      * but is used for the Fortran interface
      * (C users are expected to pass the address of an already allocated
@@ -1255,35 +1269,42 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 }
 
 
-static float 
-xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
+                                     bool * bOK)
 {
     gmx_off_t off;
     float time;
     int step;
     int ret;
     *bOK = 0;
-    
-    if((off = gmx_ftell(fp)) < 0){
-      return -1;
+
+    if ((off = gmx_ftell(fp)) < 0)
+    {
+        return -1;
     }
     /* read one int just to make sure we dont read this frame but the next */
-    xdr_int(xdrs,&step);
-    while(1){
-      ret = xtc_at_header_start(fp,xdrs,natoms,&step,&time);
-      if(ret == 1){
-	*bOK = 1;
-	if(gmx_fseek(fp,off,SEEK_SET)){
-	  *bOK = 0;
-	  return -1;
-	}
-	return time;
-      }else if(ret == -1){
-	if(gmx_fseek(fp,off,SEEK_SET)){
-	  return -1;
-	}
-	return -1;
-      }
+    xdr_int(xdrs, &step);
+    while (1)
+    {
+        ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
+        if (ret == 1)
+        {
+            *bOK = 1;
+            if (gmx_fseek(fp,off,SEEK_SET))
+            {
+                *bOK = 0;
+                return -1;
+            }
+            return time;
+        }
+        else if (ret == -1)
+        {
+            if (gmx_fseek(fp,off,SEEK_SET))
+            {
+                return -1;
+            }
+            return -1;
+        }
     }
     return -1;
 }
@@ -1298,31 +1319,40 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
     int ret;
     *bOK = 0;
 
-    if((off = gmx_ftell(fp)) < 0){
-      return -1;
+    if ((off = gmx_ftell(fp)) < 0)
+    {
+        return -1;
     }
 
-    
-    while(1){
-      ret = xtc_at_header_start(fp,xdrs,natoms,&step,&time);
-      if(ret == 1){
-	*bOK = 1;
-	if(gmx_fseek(fp,off,SEEK_SET)){
-	  *bOK = 0;
-	  return -1;
-	}
-	return time;
-      }else if(ret == -1){
-	if(gmx_fseek(fp,off,SEEK_SET)){
-	  return -1;
-	}
-	return -1;
-      }else if(ret == 0){
-	/*Go back.*/
-	if(gmx_fseek(fp,-2*XDR_INT_SIZE,SEEK_CUR)){
-	  return -1;
-	}
-      }
+    while (1)
+    {
+        ret = xtc_at_header_start(fp, xdrs, natoms, &step, &time);
+        if (ret == 1)
+        {
+            *bOK = 1;
+            if (gmx_fseek(fp,off,SEEK_SET))
+            {
+                *bOK = 0;
+                return -1;
+            }
+            return time;
+        }
+        else if (ret == -1)
+        {
+            if (gmx_fseek(fp,off,SEEK_SET))
+            {
+                return -1;
+            }
+            return -1;
+        }
+        else if (ret == 0)
+        {
+            /*Go back.*/
+            if (gmx_fseek(fp,-2*XDR_INT_SIZE,SEEK_CUR))
+            {
+                return -1;
+            }
+        }
     }
     return -1;
 }
@@ -1396,8 +1426,8 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 
 
 
-static float 
-xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+float 
+xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 {
   float  res;
   float  tinit;
@@ -1411,14 +1441,14 @@ xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
     
     *bOK = 1;
     
-    if(!bOK)
+    if(!(*bOK))
     {
         return -1;
     }
     
     res = xtc_get_next_frame_time(fp,xdrs,natoms,bOK);
     
-    if(!bOK)
+    if(!(*bOK))
     {
         return -1;
     }
@@ -1511,149 +1541,168 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 
      
 
-int 
-xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms)
 {
     float t;
     float dt;
     bool bOK;
     gmx_off_t low = 0;
-    gmx_off_t high,offset,pos;
+    gmx_off_t high, offset, pos;
     int res;
     int dt_sign = 0;
-  
-    if(gmx_fseek(fp,0,SEEK_END)){
-      return -1;
+
+    if (gmx_fseek(fp,0,SEEK_END))
+    {
+        return -1;
     }
-    
-    if((high = gmx_ftell(fp)) < 0){
-      return -1;
+
+    if ((high = gmx_ftell(fp)) < 0)
+    {
+        return -1;
     }
     /* round to int  */
     high /= XDR_INT_SIZE;
     high *= XDR_INT_SIZE;
-    offset = ((high/2)/XDR_INT_SIZE)*XDR_INT_SIZE;
+    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
-    if(gmx_fseek(fp,offset,SEEK_SET)){
-      return -1;	
-   }
-
-    dt = xtc_estimate_dt(fp,xdrs,natoms,&bOK);
-      
-      
-    
-    if(!bOK)
+    if (gmx_fseek(fp,offset,SEEK_SET))
     {
         return -1;
     }
-    
-    while(1)
-    {
-        dt = xtc_estimate_dt(fp,xdrs,natoms,&bOK);
-        if(!bOK)
-        {
-            return -1;
-        }else{
-	  if(dt > 0){
-	    if(dt_sign == -1){
-	      /* Found a place in the trajectory that has positive time step while
-		 other has negative time step */
-	      return -2;
-	    }
-	    dt_sign = 1;
-	  }else if(dt < 0){
-	    if(dt_sign == 1){
-	      /* Found a place in the trajectory that has positive time step while
-		 other has negative time step */
-	      return -2;
-	    }
-	    dt_sign = -1;
-	  }	  
-	}
-        t = xtc_get_next_frame_time(fp,xdrs,natoms,&bOK);
-        if(!bOK)
-        {
-            return -1;
-        }
 
-	/* If we are before the target time and the time step is positive or 0, or we have
-	 after the target time and the time step is negative, or the difference between 
-	the current time and the target time is bigger than dt and above all the distance between high
-	and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
-	if we reached the solution */
-        if((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) || ((t-time) >= dt && dt_sign >= 0) || ((time-t) >= -dt && dt_sign < 0))  && (abs(low-high) > header_size))
+    
+    /*
+     * No need to call xdr_xtc_estimate_dt here - since xdr_xtc_estimate_dt is called first thing in the loop
+    dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
+
+    if (!bOK)
+    {
+        return -1;
+    }
+    */
+
+    while (1)
+    {
+        dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
+        if (!bOK)
         {
-	  if(dt >= 0 && dt_sign != -1)
-            {
-                if(t < time)
-                {
-                    low = offset;      
-                }
-                else
-                {
-                    high = offset;      
-                }
-	    }
-	  else if(dt <= 0 && dt_sign == -1)
-            {
-	      if(t >= time)
-                {
-		  low = offset;      
-                }
-	      else
-                {
-		  high = offset;      
-                }
-	    }else{
-	      /* We should never reach here */
-	      return -1;
-	    }
-            /* round to 4 bytes and subtract header*/
-            offset = (((high+low)/2)/XDR_INT_SIZE)*XDR_INT_SIZE;
-            if(gmx_fseek(fp,offset,SEEK_SET)){
-	      return -1;
-	    }
+            return -1;
         }
         else
         {
-            if(abs(low-high) <= header_size)
+            if (dt > 0)
             {
-                break;
-            }
-            /* reestimate dt */
-            if(xtc_estimate_dt(fp,xdrs,natoms,&bOK) != dt)
-            {
-                if(bOK)
+                if (dt_sign == -1)
                 {
-		    dt = xtc_estimate_dt(fp,xdrs,natoms,&bOK);
+                    /* Found a place in the trajectory that has positive time step while
+                     other has negative time step */
+                    return -2;
+                }
+                dt_sign = 1;
+            }
+            else if (dt < 0)
+            {
+                if (dt_sign == 1)
+                {
+                    /* Found a place in the trajectory that has positive time step while
+                     other has negative time step */
+                    return -2;
+                }
+                dt_sign = -1;
+            }
+        }
+        t = xtc_get_next_frame_time(fp, xdrs, natoms, &bOK);
+        if (!bOK)
+        {
+            return -1;
+        }
+
+        /* If we are before the target time and the time step is positive or 0, or we have
+         after the target time and the time step is negative, or the difference between 
+         the current time and the target time is bigger than dt and above all the distance between high
+         and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
+         if we reached the solution */
+        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) || ((t
+            - time) >= dt && dt_sign >= 0)
+            || ((time - t) >= -dt && dt_sign < 0)) && (abs(low - high)
+            > header_size))
+        {
+            if (dt >= 0 && dt_sign != -1)
+            {
+                if (t < time)
+                {
+                    low = offset;
+                }
+                else
+                {
+                    high = offset;
                 }
             }
-            if(t >= time && t-time < dt)
+            else if (dt <= 0 && dt_sign == -1)
+            {
+                if (t >= time)
+                {
+                    low = offset;
+                }
+                else
+                {
+                    high = offset;
+                }
+            }
+            else
+            {
+                /* We should never reach here */
+                return -1;
+            }
+            /* round to 4 bytes and subtract header*/
+            offset = (((high + low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+            if (gmx_fseek(fp,offset,SEEK_SET))
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            if (abs(low - high) <= header_size)
             {
                 break;
             }
-        }        
+            /* re-estimate dt */
+            if (xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK) != dt)
+            {
+                if (bOK)
+                {
+                    dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
+                }
+            }
+            if (t >= time && t - time < dt)
+            {
+                break;
+            }
+        }
     }
-    
-    if(offset <= header_size)
+
+    if (offset <= header_size)
     {
         offset = low;
     }
-    
+
     gmx_fseek(fp,offset,SEEK_SET);
 
-    if((pos = xtc_get_next_frame_start(fp,xdrs,natoms)) < 0){
-      return -1;
+    if ((pos = xtc_get_next_frame_start(fp, xdrs, natoms)) < 0)
+    {
+        return -1;
     }
-    
-    if(gmx_fseek(fp,pos,SEEK_SET)){
-      return -1;
+
+    if (gmx_fseek(fp,pos,SEEK_SET))
+    {
+        return -1;
     }
     return 0;
 }
 
 float 
-xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 {
     float  time;
     gmx_off_t  off;
@@ -1684,7 +1733,7 @@ xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 
 
 int
-xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
+xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK)
 {
     int    frame;
     gmx_off_t  off;
