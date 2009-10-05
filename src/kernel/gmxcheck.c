@@ -215,7 +215,7 @@ static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
 	switch (ftype) {
 	case F_BONDS:
 	case F_G96BONDS:
-	  b0 = sqrt(idef->iparams[type].harmonic.rA);
+	  b0 = idef->iparams[type].harmonic.rA;
 	  break;
 	case F_MORSE:
 	  b0 = idef->iparams[type].morse.b0;
