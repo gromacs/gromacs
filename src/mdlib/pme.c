@@ -188,15 +188,15 @@ typedef struct gmx_pme {
     rvec *bufv;             /* Communication buffer */
     real *bufr;             /* Communication buffer */
     int  buf_nalloc;        /* The communication buffer size */
-	
-	/* work data for solve_pme */
-	int      maxkz;
-	real *   work_mhz;
-	real *   work_m2;
-	real *   work_denom;
-	real *   work_tmp1;
-	real *   work_m2inv;
-    
+
+    /* work data for solve_pme */
+    int      maxkz;
+    real *   work_mhz;
+    real *   work_m2;
+    real *   work_denom;
+    real *   work_tmp1;
+    real *   work_m2inv;
+
     /* Work data for PME_redist */
     bool     redist_init;
     int *    scounts; 
@@ -459,7 +459,8 @@ static void pmeredist(gmx_pme_t pme, bool forw,
         for(i=0; (i<n); i++) pme->scounts[pme->idxa[i]]++;
         MPI_Alltoall( pme->scounts, 1, MPI_INT, pme->rcounts, 1, MPI_INT, atc->mpi_comm);
         
-        /* Calculate send and receive displacements and index into send buffer */
+        /* Calculate send and receive displacements and index into send 
+           buffer */
         pme->sdispls[0]=0;
         pme->rdispls[0]=0;
         pme->sidx[0]=0;
@@ -1693,6 +1694,8 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     
     pme->redist_init   = FALSE;
     pme->sum_qgrid_tmp = NULL;
+    pme->buf_nalloc = 0;
+    pme->redist_buf_nalloc = 0;
     
     pme->nnodes  = 1;
     pme->bPPnode = TRUE;
