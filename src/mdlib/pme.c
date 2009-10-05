@@ -204,12 +204,13 @@ typedef struct gmx_pme {
     int *    sdispls;
     int *    rdispls;
     int *    sidx;
+    int *    idxa;    
     real *   redist_buf;
     int      redist_buf_nalloc;
     
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
-    
+
     
 } t_gmx_pme;
 
@@ -481,7 +482,7 @@ static void pmeredist(gmx_pme_t pme, bool forw,
             pme->redist_buf[ii+ZZ]=x_f[i][ZZ];
         }
         MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, rvec_mpi,
-                      atc->x, rcounts, pme->rdispls, rvec_mpi,
+                      atc->x, pme->rcounts, pme->rdispls, rvec_mpi,
                       atc->mpi_comm);
     }
     if (forw) {
@@ -705,7 +706,8 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
     }
 }
 
-static void gmx_sum_qgrid_dd(pme_overlap_t *ol,t_fftgrid *grid,int direction)
+static void gmx_sum_qgrid_dd(gmx_pme_t pme, pme_overlap_t *ol,t_fftgrid *grid,
+                             int direction)
 {
     int b,i;
     int la12r,localsize;
@@ -802,11 +804,12 @@ static void gmx_sum_qgrid_dd(pme_overlap_t *ol,t_fftgrid *grid,int direction)
     GMX_MPE_LOG(ev_sum_qgrid_finish);
 }
 
-void gmx_sum_qgrid(gmx_pme_t gmx,t_commrec *cr,t_fftgrid *grid,int direction)
+void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,int direction)
 {
     int i;
     int localsize;
     int maxproc;
+    real *tmp;
     
 #ifdef GMX_MPI
     localsize=grid->la12r*grid->pfft.local_nx;
@@ -2122,7 +2125,8 @@ int gmx_pme_do(gmx_pme_t pme,
                     pr_fftgrid(debug,"qgrid before dd sum",grid);
 #endif
                 GMX_BARRIER(cr->mpi_comm_mygroup);
-                gmx_sum_qgrid_dd(&pme->overlap[0],grid,GMX_SUM_QGRID_FORWARD);
+                gmx_sum_qgrid_dd(pme,&pme->overlap[0],grid,
+                                 GMX_SUM_QGRID_FORWARD);
                 where();
             }
 #ifdef DEBUG
@@ -2161,7 +2165,8 @@ int gmx_pme_do(gmx_pme_t pme,
             /* distribute local grid to all nodes */
             if (pme->nnodes > 1) {
                 GMX_BARRIER(cr->mpi_comm_mygroup);
-                gmx_sum_qgrid_dd(&pme->overlap[0],grid,GMX_SUM_QGRID_BACKWARD);
+                gmx_sum_qgrid_dd(pme, &pme->overlap[0],grid,
+                                 GMX_SUM_QGRID_BACKWARD);
             }
             where();
 #ifdef DEBUG
