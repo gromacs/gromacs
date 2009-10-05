@@ -997,6 +997,14 @@ make_static(t_selelem *sel)
     /* Free the children */
     _gmx_selelem_free_chain(sel->child);
     sel->child           = NULL;
+    /* Set the group value.
+     * None of the elements for which this function may be called uses
+     * the cgrp group, so we can simply overwrite the contents without
+     * worrying about memory leaks. */
+    if (sel->v.type == GROUP_VALUE)
+    {
+        gmx_ana_index_set(&sel->u.cgrp, sel->v.u.g->isize, sel->v.u.g->index, NULL, 0);
+    }
 }
 
 /*! \brief
@@ -1237,7 +1245,12 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
     else
     {
         child->cdata->evaluate = &_gmx_sel_evaluate_static;
-        if (child->u.cgrp.isize > 0)
+        /* The cgrp has only been allocated if it originated from an
+         * external index group. In that case, we need special handling
+         * to preserve the name of the group and to not leak memory.
+         * If cgrp has been set in make_static(), it is not allocated,
+         * and hence we can overwrite it safely. */
+        if (child->u.cgrp.nalloc_index > 0)
         {
             char *name = child->u.cgrp.name;
             gmx_ana_index_copy(&child->u.cgrp, child->v.u.g, FALSE);

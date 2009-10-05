@@ -1553,7 +1553,8 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	  /* Check if this is the first processed atom of a vsite only cg */
 	  bViteOnlyCG_and_FirstAtom = TRUE;
 	  for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
-	    if (atom[a].ptype != eptVSite || pbc_set[a]) {
+	    /* Non-vsites already have pbc set, so simply check for pbc_set */
+	    if (pbc_set[a]) {
 	      bViteOnlyCG_and_FirstAtom = FALSE;
 	      break;
 	    }
