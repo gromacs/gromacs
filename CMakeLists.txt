@@ -174,6 +174,10 @@ if(GMX_THREADS)
     include(ThreadMPI)
     set(THREAD_MPI_LIB thread_mpi)
     set(GMX_MPI 1)
+    string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
+    if(${GMX_FFT_LIBRARY} STREQUAL "FFTW2")
+        message(FATAL_ERROR "FFTW2 can't be used with threads. Try fftw3 or mkl.")
+    endif()
 endif(GMX_THREADS)
 
 
