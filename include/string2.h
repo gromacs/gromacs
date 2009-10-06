@@ -32,7 +32,9 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
+/*! \file
+ * \brief Generic string handling functions.
+ */
 #ifndef _string2_h
 #define _string2_h
 
@@ -102,6 +104,13 @@ extern char *gmx_strndup(const char *src, int n);
 #endif
 
 #define strndup gmx_strndup
+
+/** Pattern matcing with wildcards. */
+extern int
+gmx_wcmatch(const char *pattern, const char *src);
+
+/** Return value for gmx_wcmatch() when there is no match. */
+#define GMX_NO_WCMATCH 1
 
 
 /* this is our implementation of strsep, the thread-safe replacement for
