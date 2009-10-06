@@ -537,21 +537,24 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
+    char              *name;
     int                rc;
 
     sel = _gmx_selelem_create(SEL_EXPRESSION);
     set_method(sc, sel, &sm_compare);
     /* Create the parameter for the left expression */
-    params = param     = _gmx_selexpr_create_param(left->v.type == INT_VALUE ? "int1" : "real1");
+    name               = left->v.type == INT_VALUE ? "int1" : "real1";
+    params = param     = _gmx_selexpr_create_param(strdup(name));
     param->nval        = 1;
     param->value       = _gmx_selexpr_create_value_expr(left);
     /* Create the parameter for the right expression */
-    param              = _gmx_selexpr_create_param(right->v.type == INT_VALUE ? "int2" : "real2");
+    name               = right->v.type == INT_VALUE ? "int2" : "real2";
+    param              = _gmx_selexpr_create_param(strdup(name));
     param->nval        = 1;
     param->value       = _gmx_selexpr_create_value_expr(right);
     params->next       = param;
     /* Create the parameter for the operator */
-    param              = _gmx_selexpr_create_param("op");
+    param              = _gmx_selexpr_create_param(strdup("op"));
     param->nval        = 1;
     param->value       = _gmx_selexpr_create_value(STR_VALUE);
     param->value->u.s  = cmpop;
