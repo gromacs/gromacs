@@ -37,12 +37,11 @@
 #endif
 
 #include <ctype.h>
-#include <fnmatch.h>
 #include <regex.h>
-#include <string.h>
 
 #include <macros.h>
 #include <smalloc.h>
+#include <string2.h>
 
 #include <selmethod.h>
 
@@ -373,7 +372,6 @@ free_data_kwstr(void *data)
     sfree(d->m);
 }
 
-
 /*!
  * See sel_updatefunc() for description of the parameters.
  * \p data should point to a \c t_methoddata_kwstr.
@@ -406,7 +404,7 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             }
             else
             {
-                if (!fnmatch(d->m[j].u.s, d->v[i], 0))
+                if (gmx_wcmatch(d->m[j].u.s, d->v[i]) == 0)
                 {
                     bFound = TRUE;
                 }
