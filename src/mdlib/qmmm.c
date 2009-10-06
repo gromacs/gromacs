@@ -107,6 +107,16 @@ real
 call_gaussian(t_commrec *cr,t_forcerec *fr, t_QMrec *qm,
               t_MMrec *mm,rvec f[], rvec fshift[]);
 
+#elif defined GMX_QMMM_ORCA
+/* ORCA interface */
+
+void 
+init_orca(t_commrec *cr ,t_QMrec *qm, t_MMrec *mm);
+
+real 
+call_orca(t_commrec *cr,t_forcerec *fr, t_QMrec *qm,
+              t_MMrec *mm,rvec f[], rvec fshift[]);
+
 #endif
 
 
@@ -186,8 +196,10 @@ real call_QMroutine(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
             QMener = call_gamess(cr,fr,qm,mm,f,fshift);
 #elif defined GMX_QMMM_GAUSSIAN
             QMener = call_gaussian(cr,fr,qm,mm,f,fshift);
+#elif defined GMX_QMMM_ORCA
+            QMener = call_orca(cr,fr,qm,mm,f,fshift);
 #else
-            gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess or Gaussian.");
+            gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
         }
     }
@@ -213,8 +225,10 @@ void init_QMroutine(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         init_gamess(cr,qm,mm);
 #elif defined GMX_QMMM_GAUSSIAN
         init_gaussian(cr,qm,mm);
+#elif defined GMX_QMMM_ORCA
+        init_orca(cr,qm,mm);
 #else
-        gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess or Gaussian.");   
+        gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");   
 #endif
     }
 } /* init_QMroutine */
@@ -685,13 +699,15 @@ void init_QMMMrec(t_commrec *cr,
     }
     else 
     { 
-        /* ab initio calculation requested (gamess/gaussian) */
+        /* ab initio calculation requested (gamess/gaussian/ORCA) */
 #ifdef GMX_QMMM_GAMESS
         init_gamess(cr,qr->qm[0],qr->mm);
 #elif defined GMX_QMMM_GAUSSIAN
         init_gaussian(cr,qr->qm[0],qr->mm);
+#elif defined GMX_QMMM_ORCA
+        init_orca(cr,qr->qm[0],qr->mm);
 #else
-        gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess or Gaussian.");
+        gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
     }
   }
@@ -980,7 +996,7 @@ real calculate_QMMM(t_commrec *cr,
   real
     QMener=0.0;
   /* a selection for the QM package depending on which is requested
-   * (Gaussian, GAMESS-UK or MOPAC) needs to be implemented here. Now
+   * (Gaussian, GAMESS-UK, MOPAC or ORCA) needs to be implemented here. Now
    * it works through defines.... Not so nice yet 
    */
   t_QMMMrec

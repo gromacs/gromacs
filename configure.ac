@@ -276,7 +276,14 @@ AC_ARG_WITH(qmmm_mopac,
 if test "$with_qmmm_mopac" = "yes"; then
   AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
 fi
-   
+
+AC_ARG_WITH(qmmm_orca,
+              [AC_HELP_STRING([--without-qmmm-mopac],
+                              [Use ORCA for QM-MM])],,with_qmmm_orca=no)
+if test "$with_qmmm_orca"="yes"; then
+  AC_DEFINE(GMX_QMMM_ORCA,,[Use ORCA for QM-MM calculations])
+fi
+
 
 ############################################################
 # Add some debug info: Who is building, and on what machine?

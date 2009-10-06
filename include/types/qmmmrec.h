@@ -37,44 +37,45 @@
 #endif
 
 typedef struct {
-  int           nrQMatoms;      /* total nr of QM atoms              */
-  rvec          *xQM;           /* shifted to center of box          */  
-  int           *indexQM;       /* atom i = atom indexQM[i] in mdrun */
-  int           *atomicnumberQM;/* atomic numbers of QM atoms        */  
-  real          *QMcharges;     /* atomic charges of QM atoms(ONIOM) */
-  int           *shiftQM;
-  int           QMcharge;       /* charge of the QM system           */
-  int           multiplicity;   /* multipicity (no of unpaired eln)  */
-  int           QMmethod;       /* see enums.h for all methods       */
-  int           QMbasis;        /* see enums.h for all bases         */
-  int           nelectrons;     /* total number of elecs in QM region*/
-  bool          bTS;            /* Optimize a TS, only steep, no md  */
-  bool          bOPT;          /* Optimize QM subsys, only steep, no md  */
-  bool          *frontatoms;   /* qm atoms on the QM side of a QM-MM bond */
-  /* Gaussian specific stuff */
-  int           nQMcpus;        /* no. of CPUs used for the QM calc. */
-  int           QMmem;          /* memory for the gaussian calc.     */
-  int           accuracy;       /* convergence criterium (E(-x))     */
-  bool          cpmcscf;        /* using cpmcscf(l1003)*/
-  char          *gauss_dir;
-  char          *gauss_exe;
-  char          *devel_dir;
-  real          *c6;
-  real          *c12;
-  /* Surface hopping stuff */
-  bool          bSH;            /* surface hopping (diabatic only)   */
-  real          SAon;           /* at which energy gap the SA starts */
-  real          SAoff;          /* at which energy gap the SA stops  */
-  int           SAsteps;        /* stepwise switchinng on the SA     */
-  int           SAstep;         /* current state of SA               */
-  int           CIdim;
-  real          *CIvec1;
-  real          *CIvec2;
-  real          *CIvec1old;
-  real          *CIvec2old;
-  ivec          SHbasis;
-  int           CASelectrons;
-  int           CASorbitals;
+ int           nrQMatoms;      /* total nr of QM atoms              */
+ rvec          *xQM;           /* shifted to center of box          */  
+ int           *indexQM;       /* atom i = atom indexQM[i] in mdrun */
+ int           *atomicnumberQM;/* atomic numbers of QM atoms        */  
+ real          *QMcharges;     /* atomic charges of QM atoms(ONIOM) */
+ int           *shiftQM;
+ int           QMcharge;       /* charge of the QM system           */
+ int           multiplicity;   /* multipicity (no of unpaired eln)  */
+ int           QMmethod;       /* see enums.h for all methods       */
+ int           QMbasis;        /* see enums.h for all bases         */
+ int           nelectrons;     /* total number of elecs in QM region*/
+ bool          bTS;            /* Optimize a TS, only steep, no md  */
+ bool          bOPT;          /* Optimize QM subsys, only steep, no md  */
+ bool          *frontatoms;   /* qm atoms on the QM side of a QM-MM bond */
+ /* Gaussian specific stuff */
+ int           nQMcpus;        /* no. of CPUs used for the QM calc. */
+ int           QMmem;          /* memory for the gaussian calc.     */
+ int           accuracy;       /* convergence criterium (E(-x))     */
+ bool          cpmcscf;        /* using cpmcscf(l1003)*/
+ char          *gauss_dir;
+ char          *gauss_exe;
+ char          *devel_dir;
+ char          *orca_basename; /* basename for I/O with orca        */
+ real          *c6;
+ real          *c12;
+ /* Surface hopping stuff */
+ bool          bSH;            /* surface hopping (diabatic only)   */
+ real          SAon;           /* at which energy gap the SA starts */
+ real          SAoff;          /* at which energy gap the SA stops  */
+ int           SAsteps;        /* stepwise switchinng on the SA     */
+ int           SAstep;         /* current state of SA               */
+ int           CIdim;
+ real          *CIvec1;
+ real          *CIvec2;
+ real          *CIvec1old;
+ real          *CIvec2old;
+ ivec          SHbasis;
+ int           CASelectrons;
+ int           CASorbitals;
 } t_QMrec;
 
 typedef struct {

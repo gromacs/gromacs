@@ -44,7 +44,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_wallcycle.c \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
-	gmx_fft_mkl.c
+	gmx_fft_mkl.c	qm_orca.c
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
