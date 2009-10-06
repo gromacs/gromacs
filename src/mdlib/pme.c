@@ -210,6 +210,7 @@ typedef struct gmx_pme {
     
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
+    real *   sum_qgrid_dd_tmp;
 
     
 } t_gmx_pme;
@@ -448,7 +449,7 @@ static void pmeredist(gmx_pme_t pme, bool forw,
         srenew(pme->redist_buf,pme->redist_buf_nalloc*DIM);
     }
     
-    idxa = atc->pd;
+    pme->idxa = atc->pd;
 
 #ifdef GMX_MPI
     if (forw && bXF) {
@@ -729,10 +730,10 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme, pme_overlap_t *ol,t_fftgrid *grid,
     if (grid->workspace) {
         tmp = grid->workspace;
     } else {
-        if (pme->sum_qgrid_tmp == NULL) {
-            snew(pme->sum_qgrid_tmp,localsize);
+        if (pme->sum_qgrid_dd_tmp == NULL) {
+            snew(pme->sum_qgrid_dd_tmp,localsize);
         }
-        tmp = pme->sum_qgrid_tmp;
+        tmp = pme->sum_qgrid_dd_tmp;
     }
     
     if (direction == GMX_SUM_QGRID_FORWARD) { 
@@ -1570,6 +1571,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
     atc->dimind = dimind;
     atc->nslab  = 1;
     atc->nodeid = 0;
+    atc->pd_nalloc = 0;
 #ifdef GMX_MPI
     if (gmx_parallel_env())
     {
@@ -1692,8 +1694,10 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
         fprintf(debug,"Creating PME data structures.\n");
     snew(pme,1);
     
+   
     pme->redist_init   = FALSE;
     pme->sum_qgrid_tmp = NULL;
+    pme->sum_qgrid_dd_tmp = NULL;
     pme->buf_nalloc = 0;
     pme->redist_buf_nalloc = 0;
     
@@ -2014,6 +2018,7 @@ int gmx_pme_do(gmx_pme_t pme,
     real    energy_AB[2];
     matrix  vir_AB[2];
     bool    bClearF;
+
 
     if (pme->nnodes > 1) {
         atc = &pme->atc[0];
