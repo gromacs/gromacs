@@ -37,7 +37,10 @@
 #endif
 
 #include <ctype.h>
+#ifdef HAVE_REGEX_H
 #include <regex.h>
+#define USE_REGEX
+#endif
 
 #include <macros.h>
 #include <smalloc.h>
@@ -108,8 +111,10 @@ typedef struct t_methoddata_kwstr
         bool           bRegExp;
         /** The value to match against. */
         union {
+#ifdef USE_REGEX
             /** Compiled regular expression if \p bRegExp is TRUE. */
             regex_t    r;
+#endif
             /** The string if \p bRegExp is FALSE; */
             char      *s;
         }              u;
@@ -323,18 +328,25 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         if (bRegExp)
         {
+#ifdef USE_REGEX
             snew(buf, strlen(s) + 3);
             sprintf(buf, "^%s$", s);
             if (regcomp(&d->m[i].u.r, buf, REG_EXTENDED | REG_NOSUB))
             {
                 bRegExp = FALSE;
-                fprintf(stderr, "warning: will match '%s' as a simple string\n", s);
+                fprintf(stderr, "WARNING: error in regular expression,\n"
+                                "         will match '%s' as a simple string\n", s);
             }
             else
             {
                 sfree(s);
             }
             sfree(buf);
+#else
+            bRegExp = FALSE;
+            fprintf(stderr, "WARNING: no regular expressions support,\n"
+                            "         will match '%s' as a simple string\n", s);
+#endif
         }
         if (!bRegExp)
         {
@@ -362,7 +374,11 @@ free_data_kwstr(void *data)
     {
         if (d->m[i].bRegExp)
         {
+#ifdef USE_REGEX
+            /* This branch should only be taken if regular expressions
+             * are available, but the ifdef is still needed. */
             regfree(&d->m[i].u.r);
+#endif
         }
         else
         {
@@ -397,10 +413,14 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         {
             if (d->m[j].bRegExp)
             {
+#ifdef USE_REGEX
+                /* This branch should only be taken if regular expressions
+                 * are available, but the ifdef is still needed. */
                 if (!regexec(&d->m[j].u.r, d->v[i], 0, NULL, 0))
                 {
                     bFound = TRUE;
                 }
+#endif
             }
             else
             {
