@@ -1226,9 +1226,17 @@ void init_forcerec(FILE *fp,
     fr->adress_ex_width = ir->adress_ex_width;
     fr->adress_hy_width = ir->adress_hy_width;
     fr->adress_icor     = ir->adress_icor;
-    fr->adress_ivdw     = ir->adress_ivdw;
     fr->badress_cog     = ir->badress_cog;
     copy_rvec(ir->adress_refmol,fr->adress_refmol);
+
+    if (ir->adress_ivdw == evdwUSER)
+    {
+        fr->adress_ivdw = 1;
+    }
+    else
+    {
+        fr->adress_ivdw = 3;
+    }
 
     /* Copy the user determined parameters */
     fr->userint1 = ir->userint1;
