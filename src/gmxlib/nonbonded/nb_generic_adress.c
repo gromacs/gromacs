@@ -116,7 +116,10 @@
      else
      {
          icoul           = nlist->icoul;
-         ivdw            = fr->adress_ivdw;
+         if (fr->bBHAM && (fr->adress_ivdw == 1))
+             ivdw        = 2;
+         else
+             ivdw        = fr->adress_ivdw;
      }
      
      /* avoid compiler warnings for cases that cannot happen */

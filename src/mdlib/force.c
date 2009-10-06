@@ -1232,11 +1232,11 @@ void init_forcerec(FILE *fp,
 
     if (ir->adress_ivdw == evdwUSER)
     {
-        fr->adress_ivdw = 1;
+        fr->adress_ivdw = 3;
     }
     else
     {
-        fr->adress_ivdw = 3;
+        fr->adress_ivdw = 1;
     }
 
     /* Copy the user determined parameters */
