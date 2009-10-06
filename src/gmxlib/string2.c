@@ -37,11 +37,6 @@
 #include <config.h>
 #endif
 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H
 #endif
@@ -281,6 +276,79 @@ gmx_strndup(const char *src, int n)
     strncpy(dest, src, len);
     dest[len] = 0;
     return dest;
+}
+
+/*!
+ * \param[in] pattern  Pattern to match against.
+ * \param[in] str      String to match.
+ * \returns   0 on match, GMX_NO_WCMATCH if there is no match.
+ *
+ * Matches \p str against \p pattern, which may contain * and ? wildcards.
+ * All other characters are matched literally.
+ * Currently, it is not possible to match literal * or ?.
+ */
+int
+gmx_wcmatch(const char *pattern, const char *str)
+{
+    while (*pattern)
+    {
+        if (*pattern == '*')
+        {
+            /* Skip multiple wildcards in a sequence */
+            while (*pattern == '*' || *pattern == '?')
+            {
+                ++pattern;
+                /* For ?, we need to check that there are characters left
+                 * in str. */
+                if (*pattern == '?')
+                {
+                    if (*str == 0)
+                    {
+                        return GMX_NO_WCMATCH;
+                    }
+                    else
+                    {
+                        ++str;
+                    }
+                }
+            }
+            /* If the pattern ends after the star, we have a match */
+            if (*pattern == 0)
+            {
+                return 0;
+            }
+            /* Match the rest against each possible suffix of str */
+            while (*str)
+            {
+                /* Only do the recursive call if the first character
+                 * matches. We don't have to worry about wildcards here,
+                 * since we have processed them above. */
+                if (*pattern == *str)
+                {
+                    int rc;
+                    /* Match the suffix, and return if a match or an error */
+                    rc = gmx_wcmatch(pattern, str);
+                    if (rc != GMX_NO_WCMATCH)
+                    {
+                        return rc;
+                    }
+                }
+                ++str;
+            }
+            /* If no suffix of str matches, we don't have a match */
+            return GMX_NO_WCMATCH;
+        }
+        else if ((*pattern == '?' && *str != 0) || *pattern == *str)
+        {
+            ++str;
+        }
+        else
+        {
+            return GMX_NO_WCMATCH;
+        }
+        ++pattern;
+    }
+    return 0;
 }
 
 char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)

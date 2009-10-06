@@ -619,6 +619,12 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
+[No regex.h found.
+Regular expression matching in selections will be disabled.
+Selections still work, but the default groups can differ from
+those obtained with regular expressions enabled.
+Consider installing the regular expression library from GNU libc.])])
 
 #####
 # Checks for additional and/or optional functions or libraries.
