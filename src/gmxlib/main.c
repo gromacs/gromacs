@@ -383,14 +383,6 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     argv = *argv_ptr;
 
 #ifdef GMX_MPI
-#if 0
-#ifdef GMX_THREADS
-    if (tMPI_Get_N(argc, argv_ptr)>1)
-        pe=TRUE;
-    else
-        pe=FALSE;
-#endif /* GMX_THREADS */
-#endif
 #ifdef GMX_LIB_MPI
     pe = TRUE;
 #ifdef GMX_CHECK_MPI_ENV
@@ -456,6 +448,10 @@ t_commrec *init_par_threads(t_commrec *cro)
     t_commrec *cr;
 
     snew(cr,1);
+    /* now copy the whole thing, so settings like the number of PME nodes
+       get propagated. */
+    *cr=*cro;
+    /* and we start setting our own thread-specific values for things */
     MPI_Initialized(&initialized);
     if (!initialized)
         gmx_comm("Initializing threads without comm");
