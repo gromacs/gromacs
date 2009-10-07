@@ -40,104 +40,46 @@ any papers on the package - you can find them in the top README file.
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics,
-   on platforms not explicitly supported with inline assembly. */
+/* this file is to be #included from collective.c */
 
-#define tMPI_Atomic_memory_barrier()  __sync_synchronize()
-
-/* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
-#if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
-#define __builtin_constant_p(i) (1)
-#endif
-
-
-typedef struct tMPI_Atomic
+/* broadcast */
+int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
+               tMPI_Comm comm)
 {
-    volatile int value;   
-}
-tMPI_Atomic_t;
+    int synct;
+    struct coll_env *cev;
+    int myrank;
+    int ret=TMPI_SUCCESS;
 
-typedef struct tMPI_Atomic_ptr
-{
-    volatile void* value;   
-}
-tMPI_Atomic_ptr_t;
-
-
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
-/* for now we simply assume that int and void* assignments are atomic */
-#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
-#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-
-
-#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
-
-
-#include "gcc_intrinsics.h"
-
-#include "gcc_spinlock.h"
-
-#if 0
-/* our generic spinlocks: */
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int  lock;
-}
-tMPI_Spinlock_t;
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
-{
-    x->lock = 0;
-}
-
-
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
-{
-#if 1
-    while (__sync_lock_test_and_set(&(x->lock), 1)==1)
+    if (!comm)
     {
-        /* this is nicer on the system bus: */
-        while (x->lock == 1)
-        {
-        }
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-#else
-    do
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+    /* we increase our counter, and determine which coll_env we get */
+    cev=tMPI_Get_cev(comm, myrank, &synct);
+
+    if (myrank==root)
     {
-    } while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
-#endif
-}
-
-
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
-}
-
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-    __sync_lock_release(&(x->lock));
-}
- 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
-{
-    __sync_synchronize();
-    return ( x->lock == 1 );
-}
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do
+        /* first set up the data */
+        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
+                        count*datatype->size, buffer, comm->grp.N-1, synct);
+        /* and wait until everybody is done copying */
+        tMPI_Wait_for_others(cev, myrank);
+    }
+    else
     {
-        __sync_synchronize();
-    } while (x->lock == 1);
+        size_t bufsize=count*datatype->size;
+        /* wait until root becomes available */
+        tMPI_Wait_for_data(cev, root, synct);
+        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
+                       buffer, &ret);
+    }
+    return ret;
 }
 
-#endif
+
+
+
+

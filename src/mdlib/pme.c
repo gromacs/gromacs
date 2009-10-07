@@ -60,6 +60,13 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
+#endif
+#ifdef GMX_THREADS
+#include "tmpi.h"
+#endif
+
 
 #include <stdio.h>
 #include <string.h>
@@ -80,12 +87,6 @@
 #include "copyrite.h"
 #include "gmx_wallcycle.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
 
 #include "mpelogging.h"
 
@@ -99,10 +100,6 @@
 #define mpi_type MPI_DOUBLE
 #else
 #define mpi_type MPI_FLOAT
-#endif
-
-#ifdef GMX_MPI
-MPI_Datatype  rvec_mpi;
 #endif
 
 /* TODO: fix thread-safety */
@@ -167,6 +164,7 @@ typedef struct gmx_pme {
 #ifdef GMX_MPI
     MPI_Comm mpi_comm;
     MPI_Comm mpi_comm_d[2];
+    MPI_Datatype  rvec_mpi;  /* the pme vector's MPI type */
 #endif
 
     bool bPPnode;            /* Node also does particle-particle forces */
@@ -211,8 +209,6 @@ typedef struct gmx_pme {
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
     real *   sum_qgrid_dd_tmp;
-
-    
 } t_gmx_pme;
 
 /* The following stuff is needed for signal handling on the PME nodes. 
@@ -483,9 +479,9 @@ static void pmeredist(gmx_pme_t pme, bool forw,
             pme->redist_buf[ii+YY]=x_f[i][YY];
             pme->redist_buf[ii+ZZ]=x_f[i][ZZ];
         }
-        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, rvec_mpi,
-                      atc->x, pme->rcounts, pme->rdispls, rvec_mpi,
-                      atc->mpi_comm);
+        MPI_Alltoallv(pme->redist_buf, pme->scounts, pme->sdispls, 
+                      pme->rvec_mpi, atc->x, pme->rcounts, pme->rdispls, 
+                      pme->rvec_mpi, atc->mpi_comm);
     }
     if (forw) {
         /* Copy charge into send buffer and exchange*/
@@ -500,9 +496,9 @@ static void pmeredist(gmx_pme_t pme, bool forw,
                       atc->mpi_comm);
     }
     else { /* backward, redistribution from pme to pp */ 
-        MPI_Alltoallv(atc->f, pme->rcounts, pme->rdispls, rvec_mpi,
-                      pme->redist_buf, pme->scounts, pme->sdispls, rvec_mpi,
-                      atc->mpi_comm);
+        MPI_Alltoallv(atc->f, pme->rcounts, pme->rdispls, pme->rvec_mpi,
+                      pme->redist_buf, pme->scounts, pme->sdispls, 
+                      pme->rvec_mpi, atc->mpi_comm);
         
         /* Copy data from receive buffer */
         for(i=0; i<atc->nslab; i++)
@@ -1689,6 +1685,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     
     pme_atomcomm_t *atc;
     int nminor,b,d,i,lbnd,rbnd,maxlr;
+
     
     if (debug)
         fprintf(debug,"Creating PME data structures.\n");
@@ -1768,8 +1765,8 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     
     if (pme->nnodes > 1) {
 #ifdef GMX_MPI
-        MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
-        MPI_Type_commit(&rvec_mpi);
+        MPI_Type_contiguous(DIM, mpi_type, &(pme->rvec_mpi));
+        MPI_Type_commit(&(pme->rvec_mpi));
 #endif
         
         /* Note that the charge spreading and force gathering, which usually

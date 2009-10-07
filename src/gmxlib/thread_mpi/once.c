@@ -40,104 +40,47 @@ any papers on the package - you can find them in the top README file.
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics,
-   on platforms not explicitly supported with inline assembly. */
+/* this file is to be #included from collective.c */
 
-#define tMPI_Atomic_memory_barrier()  __sync_synchronize()
-
-/* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
-#if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
-#define __builtin_constant_p(i) (1)
-#endif
-
-
-typedef struct tMPI_Atomic
+/* once */
+int tMPI_Once(void (*function)(void*), void *param, int *was_first, 
+              tMPI_Comm comm)
 {
-    volatile int value;   
-}
-tMPI_Atomic_t;
-
-typedef struct tMPI_Atomic_ptr
-{
-    volatile void* value;   
-}
-tMPI_Atomic_ptr_t;
+    int myrank;
+    int ret=TMPI_SUCCESS;
+    struct coll_sync *csync;
+    struct coll_env *cev;
+    int syncs;
 
 
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
-/* for now we simply assume that int and void* assignments are atomic */
-#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
-#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-
-
-#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
-
-
-#include "gcc_intrinsics.h"
-
-#include "gcc_spinlock.h"
-
-#if 0
-/* our generic spinlocks: */
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int  lock;
-}
-tMPI_Spinlock_t;
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
-{
-    x->lock = 0;
-}
-
-
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
-{
-#if 1
-    while (__sync_lock_test_and_set(&(x->lock), 1)==1)
+    if (!comm)
     {
-        /* this is nicer on the system bus: */
-        while (x->lock == 1)
-        {
-        }
+        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-#else
-    do
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+    /* we increase our counter, and determine which coll_env we get */
+    csync=&(comm->csync[myrank]);
+    csync->syncs++;
+    cev=&(comm->cev[csync->syncs % N_COLL_ENV]);
+
+    /* now do a compare-and-swap on the current_syncc */
+    syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
+    if ( (csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
+                                          If it is a later number, we can't 
+                                          have been the first to arrive here. */
+         tMPI_Atomic_cmpxchg(&(cev->coll.current_sync), 
+                             syncs, csync->syncs) == syncs)
     {
-    } while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
-#endif
+        /* we're the first! */
+        function(param);
+        if (was_first)
+            *was_first=TRUE;
+    }
+    return ret;
 }
 
 
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
-}
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-    __sync_lock_release(&(x->lock));
-}
- 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
-{
-    __sync_synchronize();
-    return ( x->lock == 1 );
-}
 
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do
-    {
-        __sync_synchronize();
-    } while (x->lock == 1);
-}
-
-#endif

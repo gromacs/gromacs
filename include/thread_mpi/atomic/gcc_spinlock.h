@@ -40,54 +40,19 @@ any papers on the package - you can find them in the top README file.
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics,
-   on platforms not explicitly supported with inline assembly. */
-
-#define tMPI_Atomic_memory_barrier()  __sync_synchronize()
-
-/* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
-#if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
-#define __builtin_constant_p(i) (1)
-#endif
+/* this is for newer versions of gcc that have built-in intrinsics. 
+   These are the generic spinlocks:*/
 
 
-typedef struct tMPI_Atomic
+typedef struct tMPI_Spinlock
 {
-    volatile int value;   
-}
-tMPI_Atomic_t;
+    volatile unsigned int  lock /*__attribute__ ((aligned(64)))*/;
+} tMPI_Spinlock_t;
 
-typedef struct tMPI_Atomic_ptr
-{
-    volatile void* value;   
-}
-tMPI_Atomic_ptr_t;
 
 
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
-/* for now we simply assume that int and void* assignments are atomic */
-#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
-#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-
-
-#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
-
-
-#include "gcc_intrinsics.h"
-
-#include "gcc_spinlock.h"
-
-#if 0
-/* our generic spinlocks: */
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int  lock;
-}
-tMPI_Spinlock_t;
 
 
 
@@ -140,4 +105,4 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
     } while (x->lock == 1);
 }
 
-#endif
+

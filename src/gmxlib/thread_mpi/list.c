@@ -39,105 +39,85 @@ any papers on the package - you can find them in the top README file.
 
 */
 
-
-/* this is for newer versions of gcc that have built-in intrinsics,
-   on platforms not explicitly supported with inline assembly. */
-
-#define tMPI_Atomic_memory_barrier()  __sync_synchronize()
-
-/* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
-#if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
-#define __builtin_constant_p(i) (1)
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
+#include "thread_mpi/list.h"
 
-typedef struct tMPI_Atomic
+
+void tMPI_Stack_init(tMPI_Stack *st)
 {
-    volatile int value;   
+    tMPI_Atomic_ptr_set(&(st->head), NULL);
 }
-tMPI_Atomic_t;
 
-typedef struct tMPI_Atomic_ptr
+void tMPI_Stack_destroy(tMPI_Stack *st)
 {
-    volatile void* value;   
+    tMPI_Atomic_ptr_set(&(st->head), NULL);
 }
-tMPI_Atomic_ptr_t;
+
+void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
+{
+    tMPI_Stack_element *head;
+    do
+    {
+        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
+        el->next=head;
+    }
+    while (tMPI_Atomic_ptr_cmpxchg(&(st->head), head, el)!=(void*)head);
+}
+
+tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
+{
+    tMPI_Stack_element *head,*next;
+    do
+    {
+        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
+        if (head)
+            next=head->next;
+        else
+            next=NULL;
+    } while (tMPI_Atomic_ptr_cmpxchg(&(st->head), head, next)!=(void*)head);
+
+    return head;
+}
+
+tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
+{
+    tMPI_Stack_element *head;
+    do
+    {
+        head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
+    } while (tMPI_Atomic_ptr_cmpxchg(&(st->head), head, NULL)!=(void*)head);
+
+    return head;
+}
 
 
 
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
-
-/* for now we simply assume that int and void* assignments are atomic */
-#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
-#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-
-
-#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
-
-
-#include "gcc_intrinsics.h"
-
-#include "gcc_spinlock.h"
 
 #if 0
-/* our generic spinlocks: */
-typedef struct tMPI_Spinlock
+void tMPI_Queue_init(tMPI_Queue *q)
 {
-    volatile unsigned int  lock;
-}
-tMPI_Spinlock_t;
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
-{
-    x->lock = 0;
+    tMPI_Atomic_ptr_set( &(q->head), NULL);
+    tMPI_Atomic_ptr_set( &(q->tail), NULL);
 }
 
 
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
+void tMPI_Queue_destroy(tMPI_Queue *q)
 {
-#if 1
-    while (__sync_lock_test_and_set(&(x->lock), 1)==1)
-    {
-        /* this is nicer on the system bus: */
-        while (x->lock == 1)
-        {
-        }
-    }
-#else
+    tMPI_Atomic_ptr_set( &(q->head), NULL);
+    tMPI_Atomic_ptr_set( &(q->tail), NULL);
+}
+
+void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
+{
+    tMPI_Queue_element *head, *next;
+
     do
     {
-    } while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
+    } while (tMPI_Atomic_ptr_cmpxchg(&(q->head), head, 
+}
 #endif
-}
 
-
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
-}
-
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-    __sync_lock_release(&(x->lock));
-}
- 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
-{
-    __sync_synchronize();
-    return ( x->lock == 1 );
-}
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do
-    {
-        __sync_synchronize();
-    } while (x->lock == 1);
-}
-
-#endif
