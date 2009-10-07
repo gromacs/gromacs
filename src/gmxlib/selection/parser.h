@@ -42,7 +42,7 @@
      INVALID = 258,
      HELP = 259,
      HELP_TOPIC = 260,
-     INT = 261,
+     INTEGER = 261,
      REAL = 262,
      STR = 263,
      IDENTIFIER = 264,
@@ -81,7 +81,7 @@
 #define INVALID 258
 #define HELP 259
 #define HELP_TOPIC 260
-#define INT 261
+#define INTEGER 261
 #define REAL 262
 #define STR 263
 #define IDENTIFIER 264

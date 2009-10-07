@@ -77,7 +77,7 @@
      INVALID = 258,
      HELP = 259,
      HELP_TOPIC = 260,
-     INT = 261,
+     INTEGER = 261,
      REAL = 262,
      STR = 263,
      IDENTIFIER = 264,
@@ -116,7 +116,7 @@
 #define INVALID 258
 #define HELP 259
 #define HELP_TOPIC 260
-#define INT 261
+#define INTEGER 261
 #define REAL 262
 #define STR 263
 #define IDENTIFIER 264
@@ -566,8 +566,8 @@ static const yytype_uint16 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "INVALID", "HELP", "HELP_TOPIC", "INT",
-  "REAL", "STR", "IDENTIFIER", "CMD_SEP", "GROUP", "TO", "OF",
+  "$end", "error", "$undefined", "INVALID", "HELP", "HELP_TOPIC",
+  "INTEGER", "REAL", "STR", "IDENTIFIER", "CMD_SEP", "GROUP", "TO", "OF",
   "VARIABLE_NUMERIC", "VARIABLE_GROUP", "VARIABLE_POS", "KEYWORD_INT",
   "KEYWORD_REAL", "KEYWORD_STR", "KEYWORD_POS", "KEYWORD_GROUP",
   "METHOD_NUMERIC", "METHOD_GROUP", "METHOD_POS", "MODIFIER", "PARAM_BOOL",

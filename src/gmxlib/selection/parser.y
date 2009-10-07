@@ -88,7 +88,7 @@ process_param_list(t_selexpr_param *params);
 %token <str>   HELP_TOPIC
 
 /* Simple input tokens */
-%token <i>     INT
+%token <i>     INTEGER
 %token <r>     REAL
 %token <str>   STR
 %token <str>   IDENTIFIER
@@ -186,7 +186,7 @@ commands:    command
 ;
 
 /* Basic expressions */
-number:      INT                { $$ = $1; }
+number:      INTEGER            { $$ = $1; }
            | REAL               { $$ = $1; }
 ;
 
@@ -200,7 +200,7 @@ pos_mod:     /* empty */        { $$ = NULL; }
 
 /* Commands can be selections or variable assignments */
 command:     /* empty */        { $$ = NULL;                            }
-           | INT
+           | INTEGER
              {
                  t_selelem               *s, *p;
                  s = _gmx_sel_init_group_by_id(grps, $1);
@@ -281,7 +281,7 @@ sel_expr:    GROUP string
                  sfree($2);
                  if ($$ == NULL) YYABORT;
              }
-           | GROUP INT
+           | GROUP INTEGER
              {
                  $$ = _gmx_sel_init_group_by_id(grps, $2);
                  if ($$ == NULL) YYABORT;
@@ -352,7 +352,7 @@ sel_expr:    numeric_expr CMP_OP numeric_expr
 
 /* Expressions that can (and should) be compared numerically */
 numeric_expr:
-             INT                { $$ = _gmx_selelem_create(SEL_CONST);
+             INTEGER            { $$ = _gmx_selelem_create(SEL_CONST);
                                   _gmx_selelem_set_vtype($$, INT_VALUE);
                                   _gmx_selvalue_reserve(&$$->v, 1);
                                   $$->v.u.i[0] = $1;                  }
@@ -456,9 +456,9 @@ int_list:
 ;
 
 int_list_item:
-             INT                { $$ = _gmx_selexpr_create_value(INT_VALUE);
+             INTEGER            { $$ = _gmx_selexpr_create_value(INT_VALUE);
                                   $$->u.i.i1 = $$->u.i.i2 = $1;          }
-           | INT TO INT         { $$ = _gmx_selexpr_create_value(INT_VALUE);
+           | INTEGER TO INTEGER { $$ = _gmx_selexpr_create_value(INT_VALUE);
                                   $$->u.i.i1 = $1; $$->u.i.i2 = $3;      }
 ;
 

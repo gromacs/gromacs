@@ -138,7 +138,7 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INT;  }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INTEGER; }
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
