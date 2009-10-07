@@ -115,9 +115,11 @@ extern "C"
 /* and powerpc: */
 #include "atomic/gcc_ppc.h"
 
-#elif
+#else
 /* otherwise, there's a generic gcc intrinsics version: */
 #include "atomic/gcc.h"
+
+
 #endif /* end of check for gcc specific architectures */
 
 /* not gcc: */
