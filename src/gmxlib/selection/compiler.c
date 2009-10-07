@@ -161,6 +161,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdarg.h>
 
 #include <smalloc.h>
@@ -355,9 +356,12 @@ create_subexpression_name(t_selelem *sel, int i)
     int   len, ret;
     char *name;
 
-    len = 8 + 4;
+    len = 8 + (int)log10(abs(i)) + 3;
     snew(name, len+1);
-    ret = snprintf(name, len+1, "SubExpr %d", i);
+    /* FIXME: snprintf used to be used here for extra safety, but this
+     * requires extra checking on Windows since it only provides a
+     * non-C99-conforming implementation as _snprintf()... */
+    ret = sprintf(name, "SubExpr %d", i);
     if (ret < 0 || ret > len)
     {
         sfree(name);
@@ -2085,9 +2089,11 @@ update_info(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
  * \param[in]     ngrps Number of elements in the \p sel array.
  * \param[in,out] sel   Output selections.
  *
- * The name for the index group is either taken from the \p name field
- * of the root selection element, or set to "Selection N" (for the N'th
- * group).
+ * The name for the selection is taken from the \p name field of the root
+ * selection element, which should have been initialized by the parser
+ * either to a user-provided name or the selection string.
+ * As a fallback, this function initializes the name to a default string
+ * if it does not exists to help in debugging.
  */
 static void set_group_names(int ngrps, gmx_ana_selection_t *sel[])
 {
@@ -2101,10 +2107,11 @@ static void set_group_names(int ngrps, gmx_ana_selection_t *sel[])
         {
             name = strdup(sel[g]->selelem->name);
         }
+        /* This fallback should never be called, but may help in debugging
+         * since NULL names could cause segmentation faults. */
         if (!name)
         {
-            snew(name, 14);
-            snprintf(name, 14, "Selection %d", g+1);
+            name = strdup("UNNAMED SELECTION");
         }
         if (!sel[g]->selelem->name)
         {
