@@ -206,6 +206,11 @@ typedef struct {
   /* The partioning count, to keep track of the state */
   gmx_large_int_t ddp_count;
 
+
+  /* gmx_pme_recv_f buffer */
+  int pme_recv_f_alloc;
+  rvec *pme_recv_f_buf;
+
 } gmx_domdec_t;
 
 typedef struct gmx_partdec *gmx_partdec_p_t;

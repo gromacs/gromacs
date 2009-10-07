@@ -40,104 +40,43 @@ any papers on the package - you can find them in the top README file.
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics,
-   on platforms not explicitly supported with inline assembly. */
+/* this is for newer versions of gcc that have built-in intrinsics */
 
 #define tMPI_Atomic_memory_barrier()  __sync_synchronize()
 
-/* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
-#if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
-#define __builtin_constant_p(i) (1)
-#endif
 
-
-typedef struct tMPI_Atomic
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, volatile int i)
 {
-    volatile int value;   
+    return __sync_add_and_fetch( &(a->value), i);
 }
-tMPI_Atomic_t;
 
-typedef struct tMPI_Atomic_ptr
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, volatile int i)
 {
-    volatile void* value;   
-}
-tMPI_Atomic_ptr_t;
-
-
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
-/* for now we simply assume that int and void* assignments are atomic */
-#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
-#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-
-
-#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
-
-
-#include "gcc_intrinsics.h"
-
-#include "gcc_spinlock.h"
-
-#if 0
-/* our generic spinlocks: */
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int  lock;
-}
-tMPI_Spinlock_t;
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
-{
-    x->lock = 0;
+    return __sync_fetch_and_add( &(a->value), i);
 }
 
 
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
+static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *a, int oldval, int newval)
 {
-#if 1
-    while (__sync_lock_test_and_set(&(x->lock), 1)==1)
-    {
-        /* this is nicer on the system bus: */
-        while (x->lock == 1)
-        {
-        }
-    }
+    return __sync_val_compare_and_swap( &(a->value), oldval, newval);
+}
+
+
+static inline volatile void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t* a, 
+                                                     void *oldval, 
+                                                     void *newval)
+{
+#if !defined(__INTEL_COMPILER)
+    return __sync_val_compare_and_swap( &(a->value), oldval, newval);
 #else
-    do
-    {
-    } while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
+    /* the intel compilers need integer type arguments for compare_and_swap.
+        on the platforms supported by icc, size_t is always the size of
+        a pointer. */
+    return (void*)__sync_val_compare_and_swap( (size_t*)&(a->value), 
+                                               (size_t)oldval, 
+                                               (size_t)newval);
 #endif
 }
 
 
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
-}
 
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-    __sync_lock_release(&(x->lock));
-}
- 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
-{
-    __sync_synchronize();
-    return ( x->lock == 1 );
-}
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do
-    {
-        __sync_synchronize();
-    } while (x->lock == 1);
-}
-
-#endif

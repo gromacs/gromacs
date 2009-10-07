@@ -68,125 +68,6 @@ static void tMPI_Split_colors(int N, const int *color, const int *key,
 
 
 
-/* Group query & manipulation functions */
-
-bool tMPI_In_group(tMPI_Group group)
-{
-    int i;
-    struct tmpi_thread *cur;
-
-    cur=tMPI_Get_current();
-    for(i=0;i<group->N;i++)
-    {
-        if (group->peers[i] == cur)
-            return TRUE;
-    }
-    return FALSE;
-}
-
-int tMPI_Group_size(tMPI_Group group, int *size)
-{
-    if (group)
-        *size = group->N;
-    else
-        *size = 0;
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Group_rank(tMPI_Group group, int *rank)
-{    
-    int i;
-    struct tmpi_thread *cur;
-
-    if (!group)
-        return TMPI_UNDEFINED;
-
-    /* search for my id in the list of peers */
-    cur=tMPI_Get_current();
-    for(i=0;i<group->N;i++)
-    {
-        if (group->peers[i] == cur)
-        {
-            *rank=i;
-            return TMPI_SUCCESS;
-        }
-    }
-    return TMPI_UNDEFINED;
-}
-
-
-
-tMPI_Group tMPI_Group_alloc(void)
-{
-    struct tmpi_group_ *ret;
-
-    ret=(struct tmpi_group_*)tMPI_Malloc(sizeof(struct tmpi_group_));
-    ret->peers=(struct tmpi_thread**)tMPI_Malloc(
-                                sizeof(struct tmpi_thread*)*Nthreads);
-    ret->N=0;
-#if 0
-    ret->Nrefs=1;
-#endif
-
-    return ret;
-}
-
-int tMPI_Group_free(tMPI_Group *group)
-{
-    if (group)
-    {
-        free((*group)->peers);
-        free(*group);
-    }
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group)
-{
-    int i;
-    struct tmpi_group_ *ret=tMPI_Group_alloc();
-
-    ret->N=comm->grp.N;
-    for(i=0;i<comm->grp.N;i++)
-    {
-        ret->peers[i]=comm->grp.peers[i];
-    }
-    *group=ret;
-#if 0
-    if (comm)
-    {
-        *group=&(comm->grp);
-    }
-    else
-    {
-        *group=NULL;
-    }
-#endif
-
-    return TMPI_SUCCESS;
-}
-
-
-int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup)
-{
-    int i;
-    tMPI_Group ng;
-
-    /* just allocate and copy */
-    ng=tMPI_Group_alloc();
-    ng->N=n;
-    for(i=0;i<n;i++)
-    {
-        if (ranks[i] < 0 || !group || ranks[i] >= group->N)
-        {
-            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_GROUP_RANK);
-        }
-        ng->peers[i]=group->peers[ranks[i]];
-    }
-    *newgroup=ng;
-    return TMPI_SUCCESS;
-}
-
 
 
 
@@ -237,13 +118,22 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
+#ifdef SPIN_WAITING
     ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)tMPI_Malloc(
                       sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
+#else
+    ret->multicast_barrier=(tMPI_Thread_barrier_t*)tMPI_Malloc(
+                      sizeof(tMPI_Thread_barrier_t)*(Nbarriers+1));
+#endif
     ret->N_multicast_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
+#ifdef SPIN_WAITING
         tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
+#else
+        tMPI_Thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
+#endif
         ret->N_multicast_barrier[i]=Nred;
         /* Nred is now Nred/2 + a rest term because solitary 
            process at the end of the list must still be accounter for */
@@ -262,17 +152,21 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
         ret->erh=TMPI_ERRORS_ARE_FATAL;
     }
 
+    /* coll_env objects */
+    ret->cev=(struct coll_env*)tMPI_Malloc(sizeof(struct coll_env)*N_COLL_ENV);
+    for(i=0;i<N_COLL_ENV;i++)
+        tMPI_Coll_env_init( &(ret->cev[i]), N);
     /* multi_sync objects */
-    ret->msc=(struct multi_sync*)tMPI_Malloc(sizeof(struct multi_sync)*N);
+    ret->csync=(struct coll_sync*)tMPI_Malloc(sizeof(struct coll_sync)*N);
     for(i=0;i<N;i++)
-        tMPI_Multi_sync_init( &(ret->msc[i]), N);
+        tMPI_Coll_sync_init( &(ret->csync[i]));
 
     return ret;
 }
 
 int tMPI_Comm_free(tMPI_Comm *comm)
 {
-#ifndef TtMPI_STRICT
+#ifndef TMPI_STRICT
     int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     if (! *comm)
         return TMPI_SUCCESS;
@@ -314,8 +208,8 @@ int tMPI_Comm_free(tMPI_Comm *comm)
     {
         free((*comm)->grp.peers);
         free((*comm)->multicast_barrier);
-        free((*comm)->sendbuf);
-        free((*comm)->recvbuf);
+        free((void*)(*comm)->sendbuf);
+        free((void*)(*comm)->recvbuf);
         if ( (*comm)->cart)
         {
             free((*comm)->cart->dims);
@@ -421,6 +315,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     /* first get the colors */
     if (!comm->new_comm)
     {
+        /* i am apparently  first */
         comm->split=(struct tmpi_split*)tMPI_Malloc(sizeof(struct tmpi_split));
         comm->new_comm=(tMPI_Comm*)tMPI_Malloc(N*sizeof(tMPI_Comm));
         if (N<=MAX_PREALLOC_THREADS)
@@ -454,8 +349,8 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
            finished */
         while(! spl->can_finish )
         {
-            tMPI_Thread_cond_wait( &(comm->comm_create_finish) ,
-                                   &(comm->comm_create_lock) );
+            tMPI_Thread_cond_wait(&(comm->comm_create_finish) ,
+                                  &(comm->comm_create_lock) );
         }
     }
     else
@@ -473,7 +368,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         /*if (N>1)*/
         while(spl->Ncol_init > 0)
         {
-            tMPI_Thread_cond_wait( &(comm->comm_create_prep), 
+            tMPI_Thread_cond_wait(&(comm->comm_create_prep), 
                                   &(comm->comm_create_lock));
         }
 
@@ -585,239 +480,4 @@ int tMPI_Comm_seek_rank(tMPI_Comm comm, struct tmpi_thread *th)
 }
 
 
-
-/* topology functions */
-int tMPI_Topo_test(tMPI_Comm comm, int *status)
-{
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-
-    if (comm->cart)
-        *status=TMPI_CART;
-    /*else if (comm->graph)
-        status=MPI_GRAPH;*/
-    else 
-        *status=TMPI_UNDEFINED;
-
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims)
-{
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-    {
-        return TMPI_SUCCESS;
-    }
-    *ndims=comm->cart->ndims;
-    return TMPI_SUCCESS;
-}
-
-
-int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
-                 int *coords)
-{
-    int i;
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-        return TMPI_SUCCESS;
-
-    tMPI_Cart_coords(comm, myrank, maxdims, coords);
-
-    for(i=0;i<comm->cart->ndims;i++)
-    {
-        if (i>=maxdims)
-        {
-            return tMPI_Error(comm, TMPI_ERR_DIMS);
-        }
-        dims[i]=comm->cart->dims[i];
-        periods[i]=comm->cart->periods[i];
-    }
-
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
-{
-    int i,mul=1,ret=0;
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-        return TMPI_SUCCESS;
-
-    /* because of row-major ordering, we count the dimensions down */
-    for(i=comm->cart->ndims-1;i>=0;i--)
-    {
-        int rcoord=coords[i];
-        if (comm->cart->periods[i])
-        {
-            /* apply periodic boundary conditions */
-            rcoord = rcoord % comm->cart->dims[i];
-            if (rcoord < 0)
-                rcoord += comm->cart->dims[i];
-        }
-        else
-        {
-            if (rcoord < 0 || rcoord >= comm->cart->dims[i])
-            {
-                return tMPI_Error(comm, TMPI_ERR_DIMS);
-            }
-        }
-        ret += mul*rcoord;
-        mul *= comm->cart->dims[i];
-    }
-    *rank=ret;
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords)
-{
-    int i;
-    int rank_left=rank;
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-        return TMPI_SUCCESS;
-    if (maxdims < comm->cart->ndims)
-    {
-        return tMPI_Error(comm, TMPI_ERR_DIMS);
-    }
-
-    /* again, row-major ordering */
-    for(i=comm->cart->ndims-1;i>=0;i--)
-    {
-        coords[i]=rank_left%comm->cart->dims[i];
-        rank_left /= comm->cart->dims[i];
-    }   
-
-    return 0;
-}
-
-
-
-int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods, 
-                 int *newrank)
-{
-    /* this function doesn't actually do anything beyond returning the current 
-       rank (or TMPI_UNDEFINED if it doesn't fit in the new topology */
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-    int Ntot=1;
-    int i;
-
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!periods)
-    {
-        return tMPI_Error(comm, TMPI_ERR_DIMS);
-    }
- 
-    /* calculate the total number of procs in cartesian comm */
-    for(i=0;i<ndims;i++)
-    {
-        Ntot *= dims[i];
-    }
-
-    if (myrank >= Ntot)
-    {
-        *newrank=TMPI_UNDEFINED;
-    }
-    else
-    {
-        *newrank=myrank;
-    }
-
-    return TMPI_SUCCESS;
-}
-
-
-
-int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
-                    int reorder, tMPI_Comm *comm_cart)
-{
-    int myrank=tMPI_Comm_seek_rank(comm_old, tMPI_Get_current());
-    int key=myrank;
-    int newrank=-1;
-    int color=0;
-    int Ntot=1;
-    int i;
-    
-
-    if (!comm_old)
-    {
-        return tMPI_Error(comm_old, TMPI_ERR_COMM);
-    }
-    /* calculate the total number of procs in cartesian comm */
-    for(i=0;i<ndims;i++)
-    {
-        Ntot *= dims[i];
-    }
-    /* refuse to create if there's not enough procs */
-    if (comm_old->grp.N < Ntot)
-    {
-        *comm_cart=TMPI_COMM_NULL;
-#if 1
-        return tMPI_Error(comm_old, TMPI_ERR_CART_CREATE_NPROCS);
-#endif
-    }
-
-    if (key >= Ntot)
-        key=TMPI_UNDEFINED;
-
-    if (reorder)
-    {
-        tMPI_Cart_map(comm_old, ndims, dims, periods, &key);
-    }
-
-    if (key==TMPI_UNDEFINED)
-    {
-        color=TMPI_UNDEFINED;
-    }
-
-    tMPI_Comm_split(comm_old, color, key, comm_cart);
-
-    if (*comm_cart)
-    {
-        tMPI_Comm_rank(*comm_cart, &newrank);
-    }
-
-    if (newrank==0)
-    {
-        (*comm_cart)->cart=(struct cart_topol*)tMPI_Malloc(
-                                            sizeof(struct cart_topol));
-        (*comm_cart)->cart->dims=(int*)tMPI_Malloc(ndims*sizeof(int));
-        (*comm_cart)->cart->periods=(int*)tMPI_Malloc(ndims*sizeof(int));
-        (*comm_cart)->cart->ndims=ndims;
-        for(i=0;i<ndims;i++)
-        {
-            (*comm_cart)->cart->dims[i]=dims[i];
-            (*comm_cart)->cart->periods[i]=periods[i];
-        }
-    }
-
-    /* and we add a barrier to make sure the cart object is seen by 
-       every thread that is part of the new communicator */
-    if (*comm_cart)
-    {
-        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-    }
-
-
-    return TMPI_SUCCESS;
-}
 

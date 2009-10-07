@@ -36,108 +36,47 @@ files.
 
 To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
+*/
 
+#ifndef _THREAD_MPI_COLLECTIVE_H_
+#define _THREAD_MPI_COLLECTIVE_H_
+
+/** \file 
+ *
+ * \brief Collective functions
+ * 
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics,
-   on platforms not explicitly supported with inline assembly. */
-
-#define tMPI_Atomic_memory_barrier()  __sync_synchronize()
-
-/* Only gcc and Intel support this check, otherwise set it to true (skip doc) */
-#if (!defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined DOXYGEN)
-#define __builtin_constant_p(i) (1)
+#ifdef __cplusplus
+extern "C" 
+{  
 #endif
-
-
-typedef struct tMPI_Atomic
-{
-    volatile int value;   
-}
-tMPI_Atomic_t;
-
-typedef struct tMPI_Atomic_ptr
-{
-    volatile void* value;   
-}
-tMPI_Atomic_ptr_t;
-
-
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
-/* for now we simply assume that int and void* assignments are atomic */
-#define tMPI_Atomic_get(a)  ((int)( (a)->value) )
-#define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-
-
-#define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
-#define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
-
-
-#include "gcc_intrinsics.h"
-
-#include "gcc_spinlock.h"
-
 #if 0
-/* our generic spinlocks: */
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int  lock;
-}
-tMPI_Spinlock_t;
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
-{
-    x->lock = 0;
-}
-
-
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
-{
-#if 1
-    while (__sync_lock_test_and_set(&(x->lock), 1)==1)
-    {
-        /* this is nicer on the system bus: */
-        while (x->lock == 1)
-        {
-        }
-    }
-#else
-    do
-    {
-    } while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
+} /* Avoids screwing up auto-indentation */
 #endif
-}
+
+/** Execute function once over comm
+    
+    Executes a given function only once per collective call over comm. 
+
+    Collective function.
+
+    \param[in] function     the function to call
+    \param[in] param        the parameter to the function
+    \param[out] was_first   set to 1 if the current thread was the one to 
+                            execute the function. unchanged if current thread
+                            was not the one to execute the function; ignored
+                            if NULL.
+    \param[in] comm         The communicator.
+
+*/
+int tMPI_Once(void (*function)(void*), void *param, int *was_first,
+              tMPI_Comm comm);
 
 
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return (__sync_lock_test_and_set(&(x->lock), 1) == 1);
-}
-
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-    __sync_lock_release(&(x->lock));
-}
- 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *  x)
-{
-    __sync_synchronize();
-    return ( x->lock == 1 );
-}
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do
-    {
-        __sync_synchronize();
-    } while (x->lock == 1);
-}
-
+#ifdef __cplusplus
+} /* closing extern "C" */
 #endif
+
+#endif /* _THREAD_MPI_COLLECTIVE_H_ */

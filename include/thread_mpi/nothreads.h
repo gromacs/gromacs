@@ -38,8 +38,6 @@ To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
 
 */
-
-
 /*! \file nothreads.h
  *
  *  @brief dummy-threads specific data structures
