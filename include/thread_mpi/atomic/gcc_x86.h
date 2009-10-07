@@ -90,8 +90,8 @@ typedef struct tMPI_Spinlock
 
 
 
-/* first do the intrinsics */
-#if (TMPI_GCC_VERSION >= 40100)
+/* first do the intrinsics. icc on windows doesn't have them. */
+#if ( (TMPI_GCC_VERSION >= 40100) && (!(defined(__INTEL_COMPILER) && (defined(_WIN32) || defined(_WIN64) )  ) ) )
 
 #include "gcc_intrinsics.h"
 
