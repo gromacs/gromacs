@@ -98,8 +98,9 @@ extern "C"
 
 
 
-/* first check for gcc/icc platforms */
-#if ( defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) )
+/* first check for gcc/icc platforms. icc on linux+mac will take this path, 
+   too */
+#if ( defined(__GNUC__) || defined(__PATHSCALE__) )
 
 /* now check specifically for several architectures: */
 #if (defined(i386) || defined(__x86_64__)) 
@@ -119,13 +120,12 @@ extern "C"
 /* otherwise, there's a generic gcc intrinsics version: */
 #include "atomic/gcc.h"
 
-
 #endif /* end of check for gcc specific architectures */
 
 /* not gcc: */
 #elif (defined(_MSC_VER) && (_MSC_VER >= 1200))
 /* Microsoft Visual C on x86, define taken from FFTW who got it from 
-   Morten Nissov */
+   Morten Nissov. icc on windows will take this path.  */
 #include "atomic/msvc.h"
 
 #elif ( (defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM))  && \
