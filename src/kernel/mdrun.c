@@ -413,7 +413,11 @@ int main(int argc,char *argv[])
 
 
   dd_node_order = nenum(ddno_opt);
-  cr->npmenodes = npme;
+  if (PAR(cr)) {
+    cr->npmenodes = npme;
+  } else {
+    cr->npmenodes = 0;
+  }
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
