@@ -35,21 +35,19 @@
 #define FFTWPREFIX(name) fftwf_ ## name
 #endif
 
-#ifdef GMX_THREADS
 
+
+#ifdef GMX_THREADS
 /* none of the fftw3 calls, except execute(), are thread-safe, so 
    we need to serialize them with this mutex. */
 static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static bool gmx_fft_threads_initialized=FALSE;
 #define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex);
 #define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex);
-
-#else
-
+#else /* GMX_THREADS */
 #define FFTW_LOCK 
 #define FFTW_UNLOCK 
-
-#endif
+#endif /* GMX_THREADS */
 
 struct gmx_fft
 {
@@ -66,19 +64,6 @@ struct gmx_fft
 };
 
 
-static void gmx_fft_init(void)
-{
-#ifdef GMX_THREADS
-#if 0
-    if (!gmx_fft_threads_initialized)
-    {
-        FFTWPREFIX(init_threads)();
-        gmx_fft_threads_initialized=TRUE;
-    }
-    FFTWPREFIX(plan_with_nthreads)(1);
-#endif
-#endif
-}
 
 int
 gmx_fft_init_1d(gmx_fft_t *        pfft,
@@ -105,7 +90,6 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     *pfft = NULL;
         
     FFTW_LOCK;
-    gmx_fft_init();
     if( (fft = (gmx_fft_t)FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         FFTW_UNLOCK;
@@ -211,7 +195,6 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     *pfft = NULL;
     
     FFTW_LOCK;
-    gmx_fft_init();
     if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         FFTW_UNLOCK;
@@ -320,7 +303,6 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     *pfft = NULL;
     
     FFTW_LOCK;
-    gmx_fft_init();
     if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         FFTW_UNLOCK;
@@ -429,7 +411,6 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     *pfft = NULL;
     
     FFTW_LOCK;
-    gmx_fft_init();
     if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         FFTW_UNLOCK;
@@ -539,7 +520,6 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     *pfft = NULL;
     
     FFTW_LOCK;
-    gmx_fft_init();
     if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         FFTW_UNLOCK;
@@ -649,7 +629,6 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     *pfft = NULL;
         
     FFTW_LOCK;
-    gmx_fft_init();
     if( (fft = (gmx_fft_t) FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         FFTW_UNLOCK;

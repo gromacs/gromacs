@@ -86,7 +86,8 @@ int _InterlockedCompareExchange(volatile int *dest, int xchg, int comp);
                                          void* comp);*/
 unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 memory barrier */
-#define tMPI_Atomic_memory_barrier() __memory_barrier()
+/*#define tMPI_Atomic_memory_barrier() __memory_barrier()*/
+#define tMPI_Atomic_memory_barrier() __sync_synchronize()
 /* ia64 cmpxchg */
 #define tMPI_Atomic_cmpxchg(a, oldval, newval) _InterlockedCompareExchange(&((a)->value),newval,oldval)
 /* ia64 pointer cmpxchg */
@@ -100,7 +101,8 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 
 #elif defined __GNUC__  
 /* ia64 memory barrier */
-#  define tMPI_Atomic_memory_barrier() asm volatile ("":::"memory")
+/*#  define tMPI_Atomic_memory_barrier() asm volatile ("":::"memory")*/
+#  define tMPI_Atomic_memory_barrier() asm volatile ("mf" ::: "memory")
 /* ia64 cmpxchg */
 static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
                                      int              oldval,
