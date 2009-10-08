@@ -1169,6 +1169,7 @@ void init_forcerec(FILE *fp,
                    matrix     box,
                    bool       bMolEpot,
                    const char *tabfn,
+                   const char *tabafn,
                    const char *tabpfn,
                    const char *tabbfn,
                    bool       bNoSolvOpt,
@@ -1204,6 +1205,29 @@ void init_forcerec(FILE *fp,
         }
     } else {
         fr->n_tpi = 0;
+    }
+    
+    /* Copy CG-CG Neighborlist */
+    fr->benlistCG_CG = ir->benlistCG_CG;
+    
+    /* Copy AdResS parameters */
+    fr->adress_type     = ir->adress_type;
+    fr->badress_new_wf  = ir->badress_new_wf;
+    fr->adress_const_wf = ir->adress_const_wf;
+    fr->adress_ex_width = ir->adress_ex_width;
+    fr->adress_hy_width = ir->adress_hy_width;
+    fr->adress_icor     = ir->adress_icor;
+    fr->badress_cog     = ir->badress_cog;
+    copy_rvec(ir->adress_refmol,fr->adress_refmol);
+    fr->bHaveRefMol     = FALSE;
+    
+    if (ir->adress_ivdw == evdwUSER)
+    {
+        fr->adress_ivdw = 3;
+    }
+    else
+    {
+        fr->adress_ivdw = 1;
     }
     
     /* Copy the user determined parameters */
@@ -1569,6 +1593,12 @@ void init_forcerec(FILE *fp,
         /* generate extra tables with plain Coulomb for 1-4 interactions only */
         fr->tab14 = make_tables(fp,oenv,fr,MASTER(cr),tabpfn,rtab,
                                 GMX_MAKETABLES_14ONLY);
+    }
+
+    /* Read AdResS Thermo Force table if needed */
+    if(fr->adress_icor == eAdressICThermoForce)
+    {
+        fr->atf_tab = make_atf_table(fp,oenv,fr,tabafn);
     }
     
     /* Wall stuff */
