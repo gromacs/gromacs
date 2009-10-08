@@ -654,61 +654,6 @@ on_error:
 }
 
 /*!
- * \param[in]  expr    Input selection element for the position calculation.
- * \param[in]  type    Reference position type or NULL for default.
- * \param[in]  bSelPos Whether the element evaluates the positions for a
- *   selection.
- * \param[in]  scanner Scanner data structure.
- * \returns    The created selection element.
- *
- * This function handles the creation of a \c t_selelem object for
- * evaluation of reference positions.
- */
-t_selelem *
-_gmx_sel_init_position(t_selelem *expr, const char *type, bool bSelPos,
-                       yyscan_t scanner)
-{
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    t_selelem       *root;
-    t_selexpr_param *params;
-    int              flags;
-
-    root = _gmx_selelem_create(SEL_EXPRESSION);
-    set_method(sc, root, &sm_keyword_pos);
-    /* Selections use largest static group by default, while
-     * reference positions use the whole residue/molecule. */
-    flags = bSelPos ? POS_COMPLMAX : POS_COMPLWHOLE;
-    if (bSelPos && sc->bMaskOnly)
-    {
-        flags |= POS_MASKONLY;
-    }
-    /* Get the default type if needed */
-    if (!type)
-    {
-        type = bSelPos ? sc->spost : sc->rpost;
-    }
-    /* FIXME: It would be better not to have the string here hardcoded. */
-    if (type[0] != 'a')
-    {
-        root->u.expr.method->flags |= SMETH_REQTOP;
-    }
-    _gmx_selelem_set_kwpos_type(type, flags, root->u.expr.mdata);
-    /* Create the parameters for the parameter parser. */
-    params        = _gmx_selexpr_create_param(NULL);
-    params->nval  = 1;
-    params->value = _gmx_selexpr_create_value_expr(expr);
-    /* Parse the parameters. */
-    if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
-                               root->u.expr.method->param, root))
-    {
-        _gmx_selelem_free(root);
-        return NULL;
-    }
-
-    return root;
-}
-
-/*!
  * \param[in]  method Method to use for initialization.
  * \param[in]  params Pointer to the first parameter.
  * \param[in]  rpost  Reference position type to use (NULL = default).
@@ -804,6 +749,81 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
 }
 
 /*!
+ * \param[in]  expr    Input selection element for the position calculation.
+ * \param[in]  type    Reference position type or NULL for default.
+ * \param[in]  bSelPos Whether the element evaluates the positions for a
+ *   selection.
+ * \param[in]  scanner Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a \c t_selelem object for
+ * evaluation of reference positions.
+ */
+t_selelem *
+_gmx_sel_init_position(t_selelem *expr, const char *type, bool bSelPos,
+                       yyscan_t scanner)
+{
+    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    t_selelem       *root;
+    t_selexpr_param *params;
+    int              flags;
+
+    root = _gmx_selelem_create(SEL_EXPRESSION);
+    set_method(sc, root, &sm_keyword_pos);
+    /* Selections use largest static group by default, while
+     * reference positions use the whole residue/molecule. */
+    flags = bSelPos ? POS_COMPLMAX : POS_COMPLWHOLE;
+    if (bSelPos && sc->bMaskOnly)
+    {
+        flags |= POS_MASKONLY;
+    }
+    /* Get the default type if needed */
+    if (!type)
+    {
+        type = bSelPos ? sc->spost : sc->rpost;
+    }
+    /* FIXME: It would be better not to have the string here hardcoded. */
+    if (type[0] != 'a')
+    {
+        root->u.expr.method->flags |= SMETH_REQTOP;
+    }
+    _gmx_selelem_set_kwpos_type(type, flags, root->u.expr.mdata);
+    /* Create the parameters for the parameter parser. */
+    params        = _gmx_selexpr_create_param(NULL);
+    params->nval  = 1;
+    params->value = _gmx_selexpr_create_value_expr(expr);
+    /* Parse the parameters. */
+    if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
+                               root->u.expr.method->param, root))
+    {
+        _gmx_selelem_free(root);
+        return NULL;
+    }
+
+    return root;
+}
+
+/*!
+ * \param[in] x,y,z  Coordinates for the position.
+ * \returns   The creates selection element.
+ */
+t_selelem *
+_gmx_sel_init_const_position(real x, real y, real z)
+{
+    t_selelem *sel;
+    rvec       pos;
+
+    sel = _gmx_selelem_create(SEL_CONST);
+    _gmx_selelem_set_vtype(sel, POS_VALUE);
+    _gmx_selvalue_reserve(&sel->v, 1);
+    pos[XX] = x;
+    pos[YY] = y;
+    pos[ZZ] = z;
+    gmx_ana_pos_init_const(sel->v.u.p, pos);
+    return sel;
+}
+
+/*!
  * \param[in] grps  External index groups (can be NULL).
  * \param[in] name  Name of an index group to search for.
  * \returns   The created constant selection element, or NULL if no matching
@@ -857,6 +877,33 @@ _gmx_sel_init_group_by_id(gmx_ana_indexgrps_t *grps, int id)
     }
     sel->name = sel->u.cgrp.name;
     return sel;
+}
+
+/*!
+ * \param[in,out] sel  Value of the variable.
+ * \returns       The created selection element that references \p sel.
+ *
+ * The reference count of \p sel is updated, but no other modifications are
+ * made.
+ */
+t_selelem *
+_gmx_sel_init_variable_ref(t_selelem *sel)
+{
+    t_selelem *ref;
+
+    if (sel->v.type == POS_VALUE && sel->type == SEL_CONST)
+    {
+        ref = sel;
+    }
+    else
+    {
+        ref = _gmx_selelem_create(SEL_SUBEXPRREF);
+        _gmx_selelem_set_vtype(ref, sel->v.type);
+        ref->name  = sel->name;
+        ref->child = sel;
+    }
+    sel->refcount++;
+    return ref;
 }
 
 /*!

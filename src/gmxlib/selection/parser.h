@@ -120,11 +120,11 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 71 "parser.y"
+#line 73 "parser.y"
 {
-    int                  i;
-    real                 r;
-    char                *str;
+    int                         i;
+    real                        r;
+    char                       *str;
     struct gmx_ana_selmethod_t *meth;
 
     struct t_selelem           *sel;
