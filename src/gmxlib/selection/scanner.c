@@ -570,7 +570,8 @@ static yyconst flex_int16_t yy_chk[208] =
  * Macro to read input into a buffer for the tokenizer.
  *
  * This macro is a modified version of the standard implementation in Flex.
- * The only changes are the calls to _gmx_sel_lexer_*() functions.
+ * The only changes are the calls to _gmx_sel_lexer_*() functions to show a
+ * prompt.
  */
 #define YY_INPUT(buf,result,max_size) \
     { \
@@ -593,7 +594,6 @@ static yyconst flex_int16_t yy_chk[208] =
             YY_FATAL_ERROR("input in flex scanner failed"); \
         } \
         result = n; \
-        _gmx_sel_lexer_add_input(buf, n, state); \
     }
 #define YY_NO_UNISTD_H 1
 

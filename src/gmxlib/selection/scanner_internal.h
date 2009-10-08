@@ -60,10 +60,6 @@ typedef struct gmx_sel_lexer_t
     bool                             bPrompt;
     const char                      *prompt;
 
-    char                           **strstore;
-    int                              slen;
-    int                              nalloc_str;
-
     char                            *pselstr;
     int                              pslen;
     int                              nalloc_psel;
@@ -100,9 +96,6 @@ _gmx_sel_lexer_prompt_print(gmx_sel_lexer_t *state);
 /** Internal helper function that updates the prompt after a newline. */
 void
 _gmx_sel_lexer_prompt_newline(bool bContinue, gmx_sel_lexer_t *state);
-/** Internal helper function that appends a string to the stored input. */
-void
-_gmx_sel_lexer_add_input(const char *str, int len, gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state);

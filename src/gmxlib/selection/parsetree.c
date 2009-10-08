@@ -1026,7 +1026,9 @@ t_selelem *
 _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    const char *pselstr = _gmx_sel_lexer_pselstr(scanner);
 
+    /* Append sel after last, or the last element of sc if last is NULL */
     if (last)
     {
         last->next = sel;
@@ -1047,6 +1049,22 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             sc->root = sel;
         }
     }
+    /* Append the selection string to sc if it is not empty */
+    if (pselstr[0] != 0)
+    {
+        if (!sc->selstr)
+        {
+            snew(sc->selstr, strlen(pselstr) + 2);
+            strcpy(sc->selstr, pselstr);
+        }
+        else
+        {
+            srenew(sc->selstr, strlen(sc->selstr) + strlen(pselstr) + 2);
+            strcat(sc->selstr, pselstr);
+        }
+        strcat(sc->selstr, "\n");
+    }
+    /* Initialize a selection object if necessary */
     if (sel)
     {
         last = sel;
@@ -1059,6 +1077,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             srenew(sc->sel, sc->nr);
             i = sc->nr - 1;
             snew(sc->sel[i], 1);
+            sc->sel[i]->selstr = strdup(pselstr);
 
             if (sel->child->type == SEL_CONST)
             {
@@ -1116,10 +1135,6 @@ run_parser(int maxnr, gmx_ana_indexgrps_t *grps, yyscan_t scanner)
     nexp      = (maxnr > 0) ? (sc->nr + maxnr) : -1;
     bOk  = !_gmx_sel_yyparse(nexp, grps, scanner);
     _gmx_sel_free_lexer(scanner);
-    if (sc->selstr)
-    {
-        srenew(sc->selstr, strlen(sc->selstr) + 1);
-    }
     nr = sc->nr - nr;
     if (maxnr > 0 && nr != maxnr)
     {
