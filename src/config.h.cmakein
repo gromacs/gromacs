@@ -200,6 +200,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H
 
+/* Define to 1 if you have the <regex.h> header file. */
+#cmakedefine HAVE_REGEX_H
+
 /* Define to 1 if you have the <rpc/rpc.h> header file. */
 #cmakedefine HAVE_RPC_RPC_H
 

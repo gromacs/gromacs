@@ -82,7 +82,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     }
     else
     {
-        yylval->str = strdup(param->name);
+        yylval->str = param->name ? strdup(param->name) : NULL;
     }
     switch (param->val.type)
     {
@@ -204,7 +204,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             {
                 case INT_VALUE:
                     yylval->i = var->v.u.i[0];
-                    return INT;
+                    return INTEGER;
                 case REAL_VALUE:
                     yylval->r = var->v.u.r[0];
                     return REAL;
@@ -317,25 +317,6 @@ _gmx_sel_lexer_prompt_newline(bool bContinue, gmx_sel_lexer_t *state)
 }
 
 void
-_gmx_sel_lexer_add_input(const char *str, int len, gmx_sel_lexer_t *state)
-{
-    if (state->strstore)
-    {
-        while (len > state->nalloc_str - state->slen)
-        {
-            state->nalloc_str += STRSTORE_ALLOCSTEP;
-            srenew(*state->strstore, state->nalloc_str);
-        }
-        strncpy((*state->strstore)+state->slen, str, len);
-        state->slen += len;
-        if (state->nalloc_str > 0)
-        {
-            (*state->strstore)[state->slen] = 0;
-        }
-    }
-}
-
-void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 {
     /* Do nothing if the string is empty, or if it is a space and there is
@@ -379,18 +360,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->sc        = sc;
     state->bPrompt   = bInteractive;
     state->prompt    = bInteractive ? DEFAULT_PROMPT : NULL;
-
-    state->strstore  = &sc->selstr;
-    if (sc->selstr)
-    {
-        state->slen       = strlen(sc->selstr);
-        state->nalloc_str = state->slen + 1;
-    }
-    else
-    {
-        state->slen       = 0;
-        state->nalloc_str = 0;
-    }
 
     snew(state->pselstr, STRSTORE_ALLOCSTEP);
     state->pselstr[0]   = 0;
@@ -484,21 +453,4 @@ _gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
 
     state->bBuffer = TRUE;
     state->buffer  = _gmx_sel_yy_scan_string(str, scanner);
-    /* Append the buffer to the string store as YY_INPUT is not called */
-    if (state->strstore)
-    {
-        int len, slen;
-
-        if (*state->strstore)
-        {
-            slen = strlen(*state->strstore);
-        }
-        else
-        {
-            slen = 0;
-        }
-        len = strlen(str);
-        snew(*state->strstore, len + slen + 1);
-        strcpy((*state->strstore)+slen, str);
-    }
 }
