@@ -95,9 +95,7 @@
  * as for the parsed tree (see \ref selparser_tree_root).
  * Subexpressions are treated as if they had been provided through variables.
  *
- * Selection names are stored as after parsing (see \ref selparser_tree_root),
- * with the exception that default names have been generated for selections
- * that did not have an explicit name.
+ * Selection names are stored as after parsing (see \ref selparser_tree_root).
  *
  *
  * \subsection selcompiler_tree_const Constant elements
@@ -1738,21 +1736,6 @@ init_root_item(t_selelem *root)
     t_selelem   *expr;
     char        *name;
 
-    /* Get the name for constant expressions if it is not yet there */
-    if (!root->name)
-    {
-        if (root->child->type == SEL_CONST
-            || root->child->type == SEL_SUBEXPRREF)
-        {
-            root->name = root->child->name;
-        }
-        else if (root->child->type == SEL_EXPRESSION
-                 && root->child->child->type == SEL_CONST)
-        {
-            root->name = root->child->child->name;
-        }
-    }
-
     /* Process subexpressions */
     if (root->child->type == SEL_SUBEXPR)
     {
@@ -2080,49 +2063,6 @@ update_info(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
 
 
 /********************************************************************
- * GROUP NAME INITIALIZATION
- ********************************************************************/
-
-/*! \brief
- * Initializes the names of the output index groups.
- *
- * \param[in]     ngrps Number of elements in the \p sel array.
- * \param[in,out] sel   Output selections.
- *
- * The name for the selection is taken from the \p name field of the root
- * selection element, which should have been initialized by the parser
- * either to a user-provided name or the selection string.
- * As a fallback, this function initializes the name to a default string
- * if it does not exists to help in debugging.
- */
-static void set_group_names(int ngrps, gmx_ana_selection_t *sel[])
-{
-    int   g;
-
-    for (g = 0; g < ngrps; ++g)
-    {
-        char        *name = NULL;
-
-        if (sel[g]->selelem->name)
-        {
-            name = strdup(sel[g]->selelem->name);
-        }
-        /* This fallback should never be called, but may help in debugging
-         * since NULL names could cause segmentation faults. */
-        if (!name)
-        {
-            name = strdup("UNNAMED SELECTION");
-        }
-        if (!sel[g]->selelem->name)
-        {
-            sel[g]->selelem->name = name;
-        }
-        sel[g]->name = name;
-    }
-}
-
-
-/********************************************************************
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
 
@@ -2257,7 +2197,6 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
 
     /* Finish up by updating some information */
     update_info(sc->top, sc->nr, sc->sel, sc->bMaskOnly);
-    set_group_names(sc->nr, sc->sel);
 
     return 0;
 }
