@@ -166,8 +166,8 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 			j3H         = 3*jnrH;
             
 
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(pos+j3A,pos+j3B,pos+j3C,pos+j3D,jx,jy,jz);
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(pos+j3E,pos+j3F,pos+j3G,pos+j3H,jxB,jyB,jzB);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(pos+j3A,pos+j3B,pos+j3C,pos+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(pos+j3E,pos+j3F,pos+j3G,pos+j3H,jxB,jyB,jzB);
 
 			dx           = _mm_sub_ps(ix,jx);
 			dy           = _mm_sub_ps(iy,jy);
@@ -176,8 +176,8 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 			dyB          = _mm_sub_ps(iy,jyB);
 			dzB          = _mm_sub_ps(iz,jzB);
 			
-			rsq          = gmx_mm_calc_rsq(dx,dy,dz);
-			rsqB         = gmx_mm_calc_rsq(dxB,dyB,dzB);
+			rsq          = gmx_mm_calc_rsq_ps(dx,dy,dz);
+			rsqB         = gmx_mm_calc_rsq_ps(dxB,dyB,dzB);
 			
 			/* invsqrt */								
 			rinv         = gmx_mm_invsqrt_ps(rsq);
@@ -288,8 +288,8 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
             fiz          = _mm_add_ps(fiz,tzB);
             
             /* Store j forces back */
-			GMX_MM_DECREMENT_4JCOORD_1ATOM_PS(faction+j3A,faction+j3B,faction+j3C,faction+j3D,tx,ty,tz);
-			GMX_MM_DECREMENT_4JCOORD_1ATOM_PS(faction+j3E,faction+j3F,faction+j3G,faction+j3H,txB,tyB,tzB);
+			GMX_MM_DECREMENT_1RVEC_4POINTERS_PS(faction+j3A,faction+j3B,faction+j3C,faction+j3D,tx,ty,tz);
+			GMX_MM_DECREMENT_1RVEC_4POINTERS_PS(faction+j3E,faction+j3F,faction+j3G,faction+j3H,txB,tyB,tzB);
         }
         for(;k<nj1-3; k+=4)
 		{
@@ -303,13 +303,13 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 			j3C         = 3*jnrC;
 			j3D         = 3*jnrD;
             
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(pos+j3A,pos+j3B,pos+j3C,pos+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(pos+j3A,pos+j3B,pos+j3C,pos+j3D,jx,jy,jz);
             
 			dx           = _mm_sub_ps(ix,jx);
 			dy           = _mm_sub_ps(iy,jy);
 			dz           = _mm_sub_ps(iz,jz);
 			
-			rsq          = gmx_mm_calc_rsq(dx,dy,dz);
+			rsq          = gmx_mm_calc_rsq_ps(dx,dy,dz);
 			
 			/* invsqrt */								
 			rinv         = gmx_mm_invsqrt_ps(rsq);
@@ -379,7 +379,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
             fiz          = _mm_add_ps(fiz,tz);
             
             /* Store j forces back */
-			GMX_MM_DECREMENT_4JCOORD_1ATOM_PS(faction+j3A,faction+j3B,faction+j3C,faction+j3D,tx,ty,tz);
+			GMX_MM_DECREMENT_1RVEC_4POINTERS_PS(faction+j3A,faction+j3B,faction+j3C,faction+j3D,tx,ty,tz);
         }
         
         offset = (nj1-nj0)%4;
@@ -391,7 +391,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
             {
                 jnrA        = jjnr[k];   
                 j3A         = 3*jnrA;  
-                GMX_MM_LOAD_1JCOORD_1ATOM_PS(pos+j3A,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_1POINTER_PS(pos+j3A,jx,jy,jz);
                 GMX_MM_LOAD_1VALUE_PS(charge+jnrA,jq);
                 GMX_MM_LOAD_1VALUE_PS(invsqrta+jnrA,isaj);
                 mask        = mask1;
@@ -402,7 +402,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
                 jnrB        = jjnr[k+1];
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
-                GMX_MM_LOAD_2JCOORD_1ATOM_PS(pos+j3A,pos+j3B,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_2POINTERS_PS(pos+j3A,pos+j3B,jx,jy,jz);
                 GMX_MM_LOAD_2VALUES_PS(charge+jnrA,charge+jnrB,jq);
                 GMX_MM_LOAD_2VALUES_PS(invsqrta+jnrA,invsqrta+jnrB,isaj);
                 mask        = mask2;
@@ -416,7 +416,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
                 j3C         = 3*jnrC;
-                GMX_MM_LOAD_3JCOORD_1ATOM_PS(pos+j3A,pos+j3B,pos+j3C,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_3POINTERS_PS(pos+j3A,pos+j3B,pos+j3C,jx,jy,jz);
                 GMX_MM_LOAD_3VALUES_PS(charge+jnrA,charge+jnrB,charge+jnrC,jq);
                 GMX_MM_LOAD_3VALUES_PS(invsqrta+jnrA,invsqrta+jnrB,invsqrta+jnrC,isaj);
                 mask        = mask3;
@@ -426,7 +426,7 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
 			dy           = _mm_sub_ps(iy,jy);
 			dz           = _mm_sub_ps(iz,jz);
 			
-			rsq          = gmx_mm_calc_rsq(dx,dy,dz);
+			rsq          = gmx_mm_calc_rsq_ps(dx,dy,dz);
 			
 			/* invsqrt */								
 			rinv         = gmx_mm_invsqrt_ps(rsq);
@@ -493,18 +493,18 @@ void nb_kernel400_x86_64_sse(int *           p_nri,
             if(offset==1)
             {
                 GMX_MM_INCREMENT_1VALUE_PS(dvda+jnrA,dvdatmp);
-                GMX_MM_DECREMENT_1JCOORD_1ATOM_PS(faction+j3A,tx,ty,tz);
+                GMX_MM_DECREMENT_1RVEC_1POINTER_PS(faction+j3A,tx,ty,tz);
             } 
             else if(offset==2)
             {
                 GMX_MM_INCREMENT_2VALUES_PS(dvda+jnrA,dvda+jnrB,dvdatmp);
-                GMX_MM_DECREMENT_2JCOORD_1ATOM_PS(faction+j3A,faction+j3B,tx,ty,tz);
+                GMX_MM_DECREMENT_1RVEC_2POINTERS_PS(faction+j3A,faction+j3B,tx,ty,tz);
             }
             else
             {
                 /* offset must be 3 */
                 GMX_MM_INCREMENT_3VALUES_PS(dvda+jnrA,dvda+jnrB,dvda+jnrC,dvdatmp);
-                GMX_MM_DECREMENT_3JCOORD_1ATOM_PS(faction+j3A,faction+j3B,faction+j3C,tx,ty,tz);
+                GMX_MM_DECREMENT_1RVEC_3POINTERS_PS(faction+j3A,faction+j3B,faction+j3C,tx,ty,tz);
             }
         }
         

@@ -106,9 +106,9 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 	__m128 mask,icf4,icf6,mask_cmp;
 	__m128 icf4B,icf6B,mask_cmpB;
 	
-    __m128   mask1 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
-	__m128   mask2 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
-	__m128   mask3 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
+    __m128   mask1 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	__m128   mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	__m128   mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
     
 	const __m128 half   = {0.5f , 0.5f , 0.5f , 0.5f };
 	const __m128 three  = {3.0f , 3.0f , 3.0f , 3.0f };
@@ -188,8 +188,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			j3G         = 3*jnrG;
 			j3H         = 3*jnrH;
             
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3E,x+j3F,x+j3G,x+j3H,jxB,jyB,jzB);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3E,x+j3F,x+j3G,x+j3H,jxB,jyB,jzB);
             
             GMX_MM_LOAD_4VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,gb_radius+jnrC,gb_radius+jnrD,raj);
             GMX_MM_LOAD_4VALUES_PS(gb_radius+jnrE,gb_radius+jnrF,gb_radius+jnrG,gb_radius+jnrH,rajB);
@@ -203,8 +203,8 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			dyB         = _mm_sub_ps(iy,jyB);
 			dzB         = _mm_sub_ps(iz,jzB);
             
-            rsq         = gmx_mm_calc_rsq(dx,dy,dz);
-            rsqB        = gmx_mm_calc_rsq(dxB,dyB,dzB);
+            rsq         = gmx_mm_calc_rsq_ps(dx,dy,dz);
+            rsqB        = gmx_mm_calc_rsq_ps(dxB,dyB,dzB);
             rinv        = gmx_mm_invsqrt_ps(rsq);
             rinvB       = gmx_mm_invsqrt_ps(rsqB);
             rinv2       = _mm_mul_ps(rinv,rinv);
@@ -233,7 +233,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                gmx_mm_sincos_ps(theta,&sinq,&cosq);            
+                GMX_MM_SINCOS_PS(theta,sinq,cosq);
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -249,7 +249,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
             {
                 ratioB      = _mm_min_ps(ratioB,still_p5inv);
                 thetaB      = _mm_mul_ps(ratioB,still_pip5);
-                gmx_mm_sincos_ps(thetaB,&sinqB,&cosqB);            
+                GMX_MM_SINCOS_PS(thetaB,sinqB,cosqB);
                 termB       = _mm_mul_ps(half,_mm_sub_ps(one,cosqB));
                 ccfB        = _mm_mul_ps(termB,termB);
                 dccfB       = _mm_mul_ps(_mm_mul_ps(two,termB),
@@ -290,7 +290,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			j3C         = 3*jnrC;
 			j3D         = 3*jnrD;
             
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
             
             GMX_MM_LOAD_4VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,gb_radius+jnrC,gb_radius+jnrD,raj);
 			GMX_MM_LOAD_4VALUES_PS(vsolv+jnrA,vsolv+jnrB,vsolv+jnrC,vsolv+jnrD,vaj);
@@ -299,7 +299,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			dy          = _mm_sub_ps(iy,jy);
 			dz          = _mm_sub_ps(iz,jz);
             
-            rsq         = gmx_mm_calc_rsq(dx,dy,dz);
+            rsq         = gmx_mm_calc_rsq_ps(dx,dy,dz);
             rinv        = gmx_mm_invsqrt_ps(rsq);
             rinv2       = _mm_mul_ps(rinv,rinv);
             rinv4       = _mm_mul_ps(rinv2,rinv2);
@@ -321,7 +321,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                gmx_mm_sincos_ps(theta,&sinq,&cosq);            
+                GMX_MM_SINCOS_PS(theta,sinq,cosq);
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -349,7 +349,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
             {
                 jnrA        = jjnr[k];   
                 j3A         = 3*jnrA;  
-                GMX_MM_LOAD_1JCOORD_1ATOM_PS(x+j3A,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_1POINTER_PS(x+j3A,jx,jy,jz);
                 GMX_MM_LOAD_1VALUE_PS(gb_radius+jnrA,raj);
                 GMX_MM_LOAD_1VALUE_PS(vsolv+jnrA,vaj);
                 mask        = mask1;
@@ -360,7 +360,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
                 jnrB        = jjnr[k+1];
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
-                GMX_MM_LOAD_2JCOORD_1ATOM_PS(x+j3A,x+j3B,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_2POINTERS_PS(x+j3A,x+j3B,jx,jy,jz);
                 GMX_MM_LOAD_2VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,raj);
                 GMX_MM_LOAD_2VALUES_PS(vsolv+jnrA,vsolv+jnrB,vaj);
                 mask        = mask2;
@@ -374,7 +374,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
                 j3C         = 3*jnrC;
-                GMX_MM_LOAD_3JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_3POINTERS_PS(x+j3A,x+j3B,x+j3C,jx,jy,jz);
                 GMX_MM_LOAD_3VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,gb_radius+jnrC,raj);
                 GMX_MM_LOAD_3VALUES_PS(vsolv+jnrA,vsolv+jnrB,vsolv+jnrC,vaj);
                 mask        = mask3;
@@ -384,7 +384,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
 			dy          = _mm_sub_ps(iy,jy);
 			dz          = _mm_sub_ps(iz,jz);
             
-            rsq         = gmx_mm_calc_rsq(dx,dy,dz);
+            rsq         = gmx_mm_calc_rsq_ps(dx,dy,dz);
             rinv        = gmx_mm_invsqrt_ps(rsq);
             rinv2       = _mm_mul_ps(rinv,rinv);
             rinv4       = _mm_mul_ps(rinv2,rinv2);
@@ -405,7 +405,7 @@ calc_gb_rad_still_sse(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *
             {
                 ratio       = _mm_min_ps(ratio,still_p5inv);
                 theta       = _mm_mul_ps(ratio,still_pip5);
-                gmx_mm_sincos_ps(theta,&sinq,&cosq);            
+                GMX_MM_SINCOS_PS(theta,sinq,cosq);            
                 term        = _mm_mul_ps(half,_mm_sub_ps(one,cosq));
                 ccf         = _mm_mul_ps(term,term);
                 dccf        = _mm_mul_ps(_mm_mul_ps(two,term),
@@ -518,9 +518,9 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
     __m128 logtermB;
     __m128 obc_mask1B,obc_mask2B,obc_mask3B;
 
-    __m128   mask1 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
-	__m128   mask2 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
-	__m128   mask3 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
+    __m128   mask1 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	__m128   mask2 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	__m128   mask3 = gmx_mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
         
     __m128 oneeighth   = _mm_set1_ps(0.125);
     __m128 onefourth   = _mm_set1_ps(0.25);
@@ -597,8 +597,8 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 			j3G         = 3*jnrG;
 			j3H         = 3*jnrH;
             
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3E,x+j3F,x+j3G,x+j3H,jxB,jyB,jzB);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3E,x+j3F,x+j3G,x+j3H,jxB,jyB,jzB);
             GMX_MM_LOAD_4VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,gb_radius+jnrC,gb_radius+jnrD,raj);
             GMX_MM_LOAD_4VALUES_PS(gb_radius+jnrE,gb_radius+jnrF,gb_radius+jnrG,gb_radius+jnrH,rajB);
             GMX_MM_LOAD_4VALUES_PS(obc_param+jnrA,obc_param+jnrB,obc_param+jnrC,obc_param+jnrD,sk_aj);
@@ -611,8 +611,8 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 			dyB   = _mm_sub_ps(iy, jyB);
 			dzB   = _mm_sub_ps(iz, jzB);
 			
-            rsq         = gmx_mm_calc_rsq(dx,dy,dz);
-            rsqB        = gmx_mm_calc_rsq(dxB,dyB,dzB);
+            rsq         = gmx_mm_calc_rsq_ps(dx,dy,dz);
+            rsqB        = gmx_mm_calc_rsq_ps(dxB,dyB,dzB);
 			            
             rinv        = gmx_mm_invsqrt_ps(rsq);
             r           = _mm_mul_ps(rsq,rinv);
@@ -882,7 +882,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 			j3C         = 3*jnrC;
 			j3D         = 3*jnrD;
             
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
             GMX_MM_LOAD_4VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,gb_radius+jnrC,gb_radius+jnrD,raj);
             GMX_MM_LOAD_4VALUES_PS(obc_param+jnrA,obc_param+jnrB,obc_param+jnrC,obc_param+jnrD,sk_aj);
 			
@@ -890,7 +890,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 			dy    = _mm_sub_ps(iy, jy);
 			dz    = _mm_sub_ps(iz, jz);
 			
-            rsq         = gmx_mm_calc_rsq(dx,dy,dz);
+            rsq         = gmx_mm_calc_rsq_ps(dx,dy,dz);
             
             rinv        = gmx_mm_invsqrt_ps(rsq);
             r           = _mm_mul_ps(rsq,rinv);
@@ -1040,7 +1040,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
             {
                 jnrA        = jjnr[k];   
                 j3A         = 3*jnrA;  
-                GMX_MM_LOAD_1JCOORD_1ATOM_PS(x+j3A,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_1POINTER_PS(x+j3A,jx,jy,jz);
                 GMX_MM_LOAD_1VALUE_PS(gb_radius+jnrA,raj);
                 GMX_MM_LOAD_1VALUE_PS(obc_param+jnrA,sk_aj);
                 mask        = mask1;
@@ -1051,7 +1051,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
                 jnrB        = jjnr[k+1];
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
-                GMX_MM_LOAD_2JCOORD_1ATOM_PS(x+j3A,x+j3B,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_2POINTERS_PS(x+j3A,x+j3B,jx,jy,jz);
                 GMX_MM_LOAD_2VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,raj);
                 GMX_MM_LOAD_2VALUES_PS(obc_param+jnrA,obc_param+jnrB,sk_aj);
                 mask        = mask2;
@@ -1065,7 +1065,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
                 j3C         = 3*jnrC;
-                GMX_MM_LOAD_3JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_3POINTERS_PS(x+j3A,x+j3B,x+j3C,jx,jy,jz);
                 GMX_MM_LOAD_3VALUES_PS(gb_radius+jnrA,gb_radius+jnrB,gb_radius+jnrC,raj);
                 GMX_MM_LOAD_3VALUES_PS(obc_param+jnrA,obc_param+jnrB,obc_param+jnrC,sk_aj);
                 mask        = mask3;
@@ -1075,7 +1075,7 @@ calc_gb_rad_hct_obc_sse(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop
 			dy    = _mm_sub_ps(iy, jy);
 			dz    = _mm_sub_ps(iz, jz);
 			
-            rsq         = gmx_mm_calc_rsq(dx,dy,dz);
+            rsq         = gmx_mm_calc_rsq_ps(dx,dy,dz);
             
             rinv        = gmx_mm_invsqrt_ps(rsq);
             r           = _mm_mul_ps(rsq,rinv);
@@ -1421,7 +1421,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
 			j3C         = 3*jnrC;
 			j3D         = 3*jnrD;
             
-            GMX_MM_LOAD_4JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
+            GMX_MM_LOAD_1RVEC_4POINTERS_PS(x+j3A,x+j3B,x+j3C,x+j3D,jx,jy,jz);
             
 			dx          = _mm_sub_ps(ix,jx);
 			dy          = _mm_sub_ps(iy,jy);
@@ -1448,7 +1448,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
             fiy    = _mm_add_ps(fiy,ty);
             fiz    = _mm_add_ps(fiz,tz);
             
-            GMX_MM_DECREMENT_4JCOORD_1ATOM_PS(f+j3A,f+j3B,f+j3C,f+j3D,tx,ty,tz);
+            GMX_MM_DECREMENT_1RVEC_4POINTERS_PS(f+j3A,f+j3B,f+j3C,f+j3D,tx,ty,tz);
 		}
         
 		/*deal with odd elements */
@@ -1458,7 +1458,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
             {
                 jnrA        = jjnr[k];   
                 j3A         = 3*jnrA; 
-                GMX_MM_LOAD_1JCOORD_1ATOM_PS(x+j3A,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_1POINTER_PS(x+j3A,jx,jy,jz);
                 GMX_MM_LOAD_1VALUE_PS(rb+jnrA,rbaj);
             } 
             else if(offset==2)
@@ -1467,7 +1467,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
                 jnrB        = jjnr[k+1];
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
-                GMX_MM_LOAD_2JCOORD_1ATOM_PS(x+j3A,x+j3B,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_2POINTERS_PS(x+j3A,x+j3B,jx,jy,jz);
                 GMX_MM_LOAD_2VALUES_PS(rb+jnrA,rb+jnrB,rbaj);
             }
             else
@@ -1479,7 +1479,7 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
                 j3A         = 3*jnrA;  
                 j3B         = 3*jnrB;
                 j3C         = 3*jnrC;
-                GMX_MM_LOAD_3JCOORD_1ATOM_PS(x+j3A,x+j3B,x+j3C,jx,jy,jz);
+                GMX_MM_LOAD_1RVEC_3POINTERS_PS(x+j3A,x+j3B,x+j3C,jx,jy,jz);
                 GMX_MM_LOAD_3VALUES_PS(rb+jnrA,rb+jnrB,rb+jnrC,rbaj);
             }
             
@@ -1508,16 +1508,16 @@ float calc_gb_chainrule_sse(int natoms, t_nblist *nl, float *dadx, float *dvda,
             
             if(offset==1)
             {
-                GMX_MM_DECREMENT_1JCOORD_1ATOM_PS(f+j3A,tx,ty,tz);
+                GMX_MM_DECREMENT_1RVEC_1POINTER_PS(f+j3A,tx,ty,tz);
             } 
             else if(offset==2)
             {
-                GMX_MM_DECREMENT_2JCOORD_1ATOM_PS(f+j3A,f+j3B,tx,ty,tz);
+                GMX_MM_DECREMENT_1RVEC_2POINTERS_PS(f+j3A,f+j3B,tx,ty,tz);
             }
             else
             {
                 /* offset must be 3 */
-                GMX_MM_DECREMENT_3JCOORD_1ATOM_PS(f+j3A,f+j3B,f+j3C,tx,ty,tz);
+                GMX_MM_DECREMENT_1RVEC_3POINTERS_PS(f+j3A,f+j3B,f+j3C,tx,ty,tz);
             }
         } 
         
@@ -1958,7 +1958,7 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 				di     = _mm_set_ps(0.0f,0.0f,0.0f,dvda[ai1]);
 				dj     = _mm_set_ps(0.0f,0.0f,0.0f,dvda[aj1]);
 				
-				mask = gmx_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
+				mask = gmx_mm_castsi128_ps( _mm_set_epi32(0,0,0,0xffffffff) );
 			}
 			else if(offset==2)
 			{
@@ -2014,7 +2014,7 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 				di     = _mm_set_ps(0.0f,0.0f,dvda[ai2],dvda[ai1]);
 				dj     = _mm_set_ps(0.0f,0.0f,dvda[aj2],dvda[aj1]);
 				
-				mask   = gmx_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
+				mask   = gmx_mm_castsi128_ps( _mm_set_epi32(0,0,0xffffffff,0xffffffff) );
 			}
 			else
 			{
@@ -2085,7 +2085,7 @@ float gb_bonds_analytic(real *x, real *f, real *charge, real *bRad, real *dvda,
 				di     = _mm_set_ps(0.0f,dvda[ai3],dvda[ai2],dvda[ai1]);
 				dj     = _mm_set_ps(0.0f,dvda[aj3],dvda[aj2],dvda[aj1]);
 				
-				mask = gmx_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
+				mask = gmx_mm_castsi128_ps( _mm_set_epi32(0,0xffffffff,0xffffffff,0xffffffff) );
 			}
 			
 			ix = _mm_and_ps( mask, ix);
