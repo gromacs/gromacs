@@ -570,7 +570,8 @@ static yyconst flex_int16_t yy_chk[208] =
  * Macro to read input into a buffer for the tokenizer.
  *
  * This macro is a modified version of the standard implementation in Flex.
- * The only changes are the calls to _gmx_sel_lexer_*() functions.
+ * The only changes are the calls to _gmx_sel_lexer_*() functions to show a
+ * prompt.
  */
 #define YY_INPUT(buf,result,max_size) \
     { \
@@ -593,7 +594,6 @@ static yyconst flex_int16_t yy_chk[208] =
             YY_FATAL_ERROR("input in flex scanner failed"); \
         } \
         result = n; \
-        _gmx_sel_lexer_add_input(buf, n, state); \
     }
 #define YY_NO_UNISTD_H 1
 
@@ -953,7 +953,7 @@ YY_RULE_SETUP
 case 2:
 YY_RULE_SETUP
 #line 141 "scanner.l"
-{ yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INT;  }
+{ yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INTEGER; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
@@ -984,118 +984,123 @@ YY_RULE_SETUP
                     }
                 }
 	YY_BREAK
+case YY_STATE_EOF(cmdstart):
+#line 154 "scanner.l"
+{ yyterminate(); }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+case YY_STATE_EOF(matchof):
+case YY_STATE_EOF(matchbool):
+case YY_STATE_EOF(help):
+#line 155 "scanner.l"
+{ state->bCmdStart = TRUE; return CMD_SEP; }
+	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 154 "scanner.l"
+#line 157 "scanner.l"
 { BEGIN(help); return HELP; }
 	YY_BREAK
 
 case 8:
 YY_RULE_SETUP
-#line 156 "scanner.l"
+#line 159 "scanner.l"
 
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 157 "scanner.l"
+#line 160 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 158 "scanner.l"
+#line 161 "scanner.l"
 { state->bCmdStart = TRUE; return CMD_SEP; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 159 "scanner.l"
+#line 162 "scanner.l"
 { return INVALID; }
 	YY_BREAK
 
 
 case 12:
 YY_RULE_SETUP
-#line 162 "scanner.l"
+#line 165 "scanner.l"
 { ADD_TOKEN; yylval->i = 1; return BOOL_VALUE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 163 "scanner.l"
+#line 166 "scanner.l"
 { ADD_TOKEN; yylval->i = 0; return BOOL_VALUE; }
 	YY_BREAK
 
 case 14:
 YY_RULE_SETUP
-#line 165 "scanner.l"
+#line 168 "scanner.l"
 { ADD_TOKEN; return GROUP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 166 "scanner.l"
+#line 169 "scanner.l"
 { ADD_TOKEN; return TO; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 167 "scanner.l"
+#line 170 "scanner.l"
 { ADD_TOKEN; BEGIN(0); return OF; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 168 "scanner.l"
+#line 171 "scanner.l"
 { ADD_TOKEN; return AND; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 169 "scanner.l"
+#line 172 "scanner.l"
 { ADD_TOKEN; return OR; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 170 "scanner.l"
+#line 173 "scanner.l"
 { ADD_TOKEN; return XOR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 171 "scanner.l"
+#line 174 "scanner.l"
 { ADD_TOKEN; return NOT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 172 "scanner.l"
+#line 175 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 174 "scanner.l"
+#line 177 "scanner.l"
 { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 176 "scanner.l"
+#line 179 "scanner.l"
 { _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 177 "scanner.l"
+#line 180 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 178 "scanner.l"
+#line 181 "scanner.l"
 { _gmx_sel_lexer_add_token(yytext, 1, state); return yytext[0]; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 179 "scanner.l"
+#line 182 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1093 "scanner.c"
-case YY_STATE_EOF(INITIAL):
-case YY_STATE_EOF(matchof):
-case YY_STATE_EOF(matchbool):
-case YY_STATE_EOF(cmdstart):
-case YY_STATE_EOF(help):
-	yyterminate();
+#line 1104 "scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2244,4 +2249,4 @@ void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 179 "scanner.l"
+#line 182 "scanner.l"

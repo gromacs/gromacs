@@ -43,6 +43,7 @@
 #include <string.h>
 #include "statutil.h"
 #include "xdrf.h"
+#include "string2.h"
 
 
 

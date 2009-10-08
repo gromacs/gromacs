@@ -36,9 +36,9 @@
 #endif
 
 #include <ctype.h>
-#include <string.h>
 
 #include <macros.h>
+#include <string2.h>
 
 #include <selmethod.h>
 

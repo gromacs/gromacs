@@ -568,6 +568,28 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
     return atoms;
 }
 
+void gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,
+                                        bool bKeepSingleMolCG)
+{
+    int     mb,cg;
+    t_block *cgs_mol;
+    
+    for(mb=0; mb<mtop->nmolblock; mb++)
+    {
+        cgs_mol = &mtop->moltype[mtop->molblock[mb].type].cgs;
+        if (!(bKeepSingleMolCG && cgs_mol->nr == 1))
+        {
+            cgs_mol->nr           = mtop->molblock[mb].natoms_mol;
+            cgs_mol->nalloc_index = cgs_mol->nr + 1;
+            srenew(cgs_mol->index,cgs_mol->nalloc_index);
+            for(cg=0; cg<cgs_mol->nr+1; cg++)
+            {
+                cgs_mol->index[cg] = cg;
+            }
+        }
+    }
+}
+
 /*
  * The cat routines below are old code from src/kernel/topcat.c
  */ 
