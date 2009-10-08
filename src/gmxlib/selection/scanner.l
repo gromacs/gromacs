@@ -151,6 +151,9 @@ COMMENT    (#.*)
                         return CMD_SEP;
                     }
                 }
+<cmdstart><<EOF>> { yyterminate(); }
+<<EOF>>         { state->bCmdStart = TRUE; return CMD_SEP; }
+
 <cmdstart>help  { BEGIN(help); return HELP; }
 <help>{
 [[:blank:]]+

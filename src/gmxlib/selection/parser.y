@@ -134,7 +134,7 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 %type <str>   pos_mod
 
 /* Expression non-terminals */
-%type <sel>   commands command
+%type <sel>   commands command cmd_plain
 %type <sel>   selection
 %type <sel>   sel_expr
 %type <sel>   num_expr
@@ -146,7 +146,8 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 %type <param> method_params method_param_list method_param
 
 %destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
-%destructor { if($$) _gmx_selelem_free($$); } command
+%destructor { if($$) free($$);              } PARAM_BOOL PARAM_INT PARAM_REAL PARAM_STR PARAM_POS PARAM_GROUP
+%destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection
 %destructor { _gmx_selelem_free($$);        } sel_expr num_expr
 %destructor { _gmx_selelem_free($$);        } pos_expr pos_expr_sel pos_expr_nosel pos_expr_nosel_impl
@@ -166,31 +167,45 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 
 %%
 
-/* The start rule: allow one or more commands separated by semicolons */
-commands:    command
+/* The start rule: allow one or more commands */
+commands:    /* empty */        { $$ = NULL }
+           | commands command
              {
-                 $$ = _gmx_sel_append_selection($1, NULL, scanner);
-                 if (_gmx_sel_lexer_selcollection(scanner)->nr == nexp)
-                     YYACCEPT;
-             }
-           | commands CMD_SEP command
-             {
-                 $$ = _gmx_sel_append_selection($3, $1, scanner);
+                 $$ = _gmx_sel_append_selection($2, $1, scanner);
                  if (_gmx_sel_lexer_selcollection(scanner)->nr == nexp)
                      YYACCEPT;
              }
 ;
 
+/* A command is formed from an actual command and a separator */
+command:     cmd_plain CMD_SEP  { $$ = $1; }
+           | error CMD_SEP
+             {
+                 $$ = NULL;
+                 _gmx_selparser_error("invalid selection '%s'",
+                                      _gmx_sel_lexer_pselstr(scanner));
+                 if (_gmx_sel_is_lexer_interactive(scanner))
+                 {
+                     _gmx_sel_lexer_clear_pselstr(scanner);
+                     yyerrok;
+                 }
+                 else
+                 {
+                     YYABORT;
+                 }
+             }
+;
+
 /* Commands can be selections or variable assignments */
-command:     /* empty */        { $$ = NULL; }
+cmd_plain:   /* empty */        { $$ = NULL; }
            | help_request       { $$ = NULL; }
            | INTEGER
              {
                  t_selelem *s, *p;
                  s = _gmx_sel_init_group_by_id(grps, $1);
-                 if (s == NULL) YYABORT;
+                 if (s == NULL) YYERROR;
                  p = _gmx_sel_init_position(s, NULL, TRUE, scanner);
-                 if (p == NULL) YYABORT;
+                 if (p == NULL) YYERROR;
                  $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
              }
            | selection
@@ -273,7 +288,7 @@ sel_expr:    NOT sel_expr
 sel_expr:    num_expr CMP_OP num_expr
              {
                  $$ = _gmx_sel_init_comparison($1, $3, $2, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
@@ -282,12 +297,12 @@ sel_expr:    GROUP string
              {
                  $$ = _gmx_sel_init_group_by_name(grps, $2);
                  sfree($2);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
            | GROUP INTEGER
              {
                  $$ = _gmx_sel_init_group_by_id(grps, $2);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
@@ -300,17 +315,17 @@ pos_mod:     /* empty */        { $$ = NULL; }
 sel_expr:    pos_mod KEYWORD_GROUP
              {
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
            | pos_mod KEYWORD_STR string_list
              {
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
            | pos_mod KEYWORD_INT int_list
              {
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
@@ -318,7 +333,7 @@ sel_expr:    pos_mod KEYWORD_GROUP
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
                  $$ = _gmx_sel_init_method($2, process_param_list($3), $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
                  _gmx_sel_finish_method(scanner);
              }
 ;
@@ -348,17 +363,17 @@ num_expr:    INTEGER
 num_expr:    pos_mod KEYWORD_INT
              {
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
            | pos_mod KEYWORD_REAL
              {
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
            | pos_mod METHOD_NUMERIC method_params
              {
                  $$ = _gmx_sel_init_method($2, process_param_list($3), $1, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
                  _gmx_sel_finish_method(scanner);
              }
 ;
@@ -384,7 +399,7 @@ pos_expr:    '(' pos_expr ')'   { $$ = $2; }
 pos_expr:    METHOD_POS method_params
              {
                  $$ = _gmx_sel_init_method($1, process_param_list($2), NULL, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
                  _gmx_sel_finish_method(scanner);
              }
 ;
@@ -395,12 +410,12 @@ pos_expr_sel:
            | KEYWORD_POS OF sel_expr
              {
                  $$ = _gmx_sel_init_position($3, $1, TRUE, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
            | sel_expr
              {
                  $$ = _gmx_sel_init_position($1, NULL, TRUE, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
@@ -410,7 +425,7 @@ pos_expr_nosel:
            | KEYWORD_POS OF sel_expr
              {
                  $$ = _gmx_sel_init_position($3, $1, FALSE, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
@@ -420,7 +435,7 @@ pos_expr_nosel_impl:
            | sel_expr
              {
                  $$ = _gmx_sel_init_position($1, NULL, FALSE, scanner);
-                 if ($$ == NULL) YYABORT;
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
