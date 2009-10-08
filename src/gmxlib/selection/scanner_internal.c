@@ -82,7 +82,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     }
     else
     {
-        yylval->str = strdup(param->name);
+        yylval->str = param->name ? strdup(param->name) : NULL;
     }
     switch (param->val.type)
     {

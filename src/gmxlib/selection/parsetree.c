@@ -71,8 +71,9 @@
  *    The rest of the children are \ref SEL_MODIFIER elements with
  *    \ref NO_VALUE, in the order given by the user.
  *  .
- * The name of the selection/variable is stored in \c t_selelem::cgrp\c .name
- * (this is NULL if an explicit name has not been provided for a selection).
+ * The name of the selection/variable is stored in \c t_selelem::cgrp\c .name.
+ * It is set to either the name provided by the user or the selection string
+ * for selections not explicitly named by the user.
  * \ref SEL_ROOT or \ref SEL_SUBEXPR elements do not appear anywhere else.
  *
  *
@@ -899,8 +900,33 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
         return NULL;
     }
 
-    /* If there is no name provided by the user, take the selection string. */
-    if (!name)
+    /* If there is no name provided by the user, check whether the actual
+     * selection given was from an external group, and if so, use the name
+     * of the external group. */
+    if (!root->name)
+    {
+        t_selelem *child = root->child;
+        while (child->type == SEL_MODIFIER)
+        {
+            if (!child->child || child->child->type != SEL_SUBEXPRREF
+                || !child->child->child)
+            {
+                break;
+            }
+            child = child->child->child;
+        }
+        if (child->type == SEL_EXPRESSION
+            && child->child && child->child->type == SEL_SUBEXPRREF
+            && child->child->child
+            && child->child->child->type == SEL_CONST
+            && child->child->child->v.type == GROUP_VALUE)
+        {
+            root->name = root->u.cgrp.name =
+                strdup(child->child->child->u.cgrp.name);
+        }
+    }
+    /* If there still is no name, use the selection string */
+    if (!root->name)
     {
         root->name = root->u.cgrp.name
             = strdup(_gmx_sel_lexer_pselstr(scanner));
@@ -1077,6 +1103,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             srenew(sc->sel, sc->nr);
             i = sc->nr - 1;
             snew(sc->sel[i], 1);
+            sc->sel[i]->name   = strdup(sel->name);
             sc->sel[i]->selstr = strdup(pselstr);
 
             if (sel->child->type == SEL_CONST)
@@ -1111,6 +1138,8 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             gmx_ana_selection_init_coverfrac(sc->sel[i], CFRAC_NONE);
         }
     }
+    /* Clear the selection string now that we've saved it */
+    _gmx_sel_lexer_clear_pselstr(scanner);
     return last;
 }
 
