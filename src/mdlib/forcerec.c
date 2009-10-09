@@ -1219,7 +1219,6 @@ void init_forcerec(FILE *fp,
     fr->adress_icor     = ir->adress_icor;
     fr->badress_cog     = ir->badress_cog;
     copy_rvec(ir->adress_refmol,fr->adress_refmol);
-    fr->bHaveRefMol     = FALSE;
     
     if (ir->adress_ivdw == evdwUSER)
     {
