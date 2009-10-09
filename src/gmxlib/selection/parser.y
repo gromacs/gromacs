@@ -97,15 +97,16 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 %token         CMD_SEP
 
 /* Simple keyword tokens */
-%token GROUP
-%token TO
-%token OF
+%token         GROUP
+%token         TO
 
+/* Variable tokens */
 %token <sel>   VARIABLE_NUMERIC
 %token <sel>   VARIABLE_GROUP
 %token <sel>   VARIABLE_POS
-%token <meth>  KEYWORD_INT
-%token <meth>  KEYWORD_REAL
+
+/* Selection method tokens */
+%token <meth>  KEYWORD_NUMERIC
 %token <meth>  KEYWORD_STR
 %token <str>   KEYWORD_POS
 %token <meth>  KEYWORD_GROUP
@@ -114,14 +115,14 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 %token <meth>  METHOD_POS
 %token <meth>  MODIFIER
 
-%token <str>   PARAM_BOOL
-%token <i>     BOOL_VALUE
-%token <str>   PARAM_INT
-%token <str>   PARAM_REAL
-%token <str>   PARAM_STR
-%token <str>   PARAM_POS
-%token <str>   PARAM_GROUP
+%token <str>   PARAM_BASIC
+%token <str>   PARAM_EXPR
 %token         END_OF_METHOD
+
+/* Simple tokens with precedence */
+%nonassoc       OF
+/* A dummy token that determines the precedence of parameter reduction */
+%nonassoc       PARAM_REDUCT
 
 /* Operator tokens */
 %left           AND OR XOR
@@ -138,23 +139,22 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 %type <sel>   selection
 %type <sel>   sel_expr
 %type <sel>   num_expr
-%type <sel>   pos_expr pos_expr_sel pos_expr_nosel pos_expr_nosel_impl
+%type <sel>   pos_expr pos_expr_sel pos_expr_nosel
 
 /* Parameter/value non-terminals */
-%type <val>   string_list
-%type <val>   int_list     int_list_item
 %type <param> method_params method_param_list method_param
+%type <val>   value_list value_list_nonempty value_item
 
 %destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
-%destructor { if($$) free($$);              } PARAM_BOOL PARAM_INT PARAM_REAL PARAM_STR PARAM_POS PARAM_GROUP
+%destructor { if($$) free($$);              } PARAM_BASIC PARAM_EXPR
 %destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection
 %destructor { _gmx_selelem_free($$);        } sel_expr num_expr
-%destructor { _gmx_selelem_free($$);        } pos_expr pos_expr_sel pos_expr_nosel pos_expr_nosel_impl
-%destructor { _gmx_selexpr_free_values($$); } string_list int_list int_list_item
+%destructor { _gmx_selelem_free($$);        } pos_expr pos_expr_sel pos_expr_nosel
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
+%destructor { _gmx_selexpr_free_values($$); } value_list value_list_nonempty value_item
 
-%expect 15
+%expect 5
 %debug
 %pure-parser
 
@@ -317,12 +317,12 @@ sel_expr:    pos_mod KEYWORD_GROUP
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
              }
-           | pos_mod KEYWORD_STR string_list
+           | pos_mod KEYWORD_STR value_list_nonempty
              {
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYERROR;
              }
-           | pos_mod KEYWORD_INT int_list
+           | pos_mod KEYWORD_NUMERIC value_list_nonempty
              {
                  $$ = _gmx_sel_init_keyword($2, process_value_list($3, NULL), $1, scanner);
                  if ($$ == NULL) YYERROR;
@@ -360,12 +360,7 @@ num_expr:    INTEGER
 ;
 
 /* Numeric selection methods */
-num_expr:    pos_mod KEYWORD_INT
-             {
-                 $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
-                 if ($$ == NULL) YYERROR;
-             }
-           | pos_mod KEYWORD_REAL
+num_expr:    pos_mod KEYWORD_NUMERIC
              {
                  $$ = _gmx_sel_init_keyword($2, NULL, $1, scanner);
                  if ($$ == NULL) YYERROR;
@@ -429,16 +424,6 @@ pos_expr_nosel:
              }
 ;
 
-/* Evaluation of positions with implicit conversion from atom selections */
-pos_expr_nosel_impl:
-             pos_expr_nosel     { $$ = $1; }
-           | sel_expr
-             {
-                 $$ = _gmx_sel_init_position($1, NULL, FALSE, scanner);
-                 if ($$ == NULL) YYERROR;
-             }
-;
-
 /********************************************************************
  * VARIABLES
  ********************************************************************/
@@ -471,65 +456,35 @@ method_param_list:
 ;
 
 method_param:
-             PARAM_BOOL
+             PARAM_BASIC value_list
              {
                  $$ = _gmx_selexpr_create_param($1);
+                 $$->value = process_value_list($2, &$$->nval);
              }
-           | PARAM_BOOL BOOL_VALUE
+           | PARAM_EXPR  pos_expr_nosel %prec PARAM_REDUCT
              {
                  $$ = _gmx_selexpr_create_param($1);
-                 $$->value = _gmx_selexpr_create_value(INT_VALUE);
-                 $$->value->u.i.i1 = $$->value->u.i.i2 = $2;
-             }
-           | PARAM_INT  int_list
-             {
-                 $$ = _gmx_selexpr_create_param($1);
-                 $$->value = $2;
-             }
-           | PARAM_REAL number
-             {
-                 $$ = _gmx_selexpr_create_param($1);
-                 $$->value = _gmx_selexpr_create_value(REAL_VALUE);
-                 $$->value->u.r = $2;
-             }
-           | PARAM_STR  string
-             {
-                 $$ = _gmx_selexpr_create_param($1);
-                 $$->value = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->value->u.s = $2;
-             }
-           | PARAM_POS  pos_expr_nosel_impl
-             {
-                 $$ = _gmx_selexpr_create_param($1);
+                 $$->nval = 1;
                  $$->value = _gmx_selexpr_create_value_expr($2);
              }
-           | PARAM_GROUP sel_expr
+           | PARAM_EXPR  sel_expr       %prec PARAM_REDUCT
              {
                  $$ = _gmx_selexpr_create_param($1);
+                 $$->nval = 1;
                  $$->value = _gmx_selexpr_create_value_expr($2);
              }
 ;
 
-string_list:
-             string
-             {
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $1;
-             }
-           | string_list string
-             {
-                 $$ = _gmx_selexpr_create_value(STR_VALUE);
-                 $$->u.s = $2; $$->next = $1;
-             }
+value_list:  /* empty */         { $$ = NULL; }
+           | value_list_nonempty { $$ = $1;   }
 ;
 
-int_list:
-             int_list_item          { $$ = $1; }
-           | int_list int_list_item { $2->next = $1; $$ = $2; }
+value_list_nonempty:
+             value_item                     { $$ = $1; }
+           | value_list_nonempty value_item { $2->next = $1; $$ = $2; }
 ;
 
-int_list_item:
-             INTEGER
+value_item:  INTEGER
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $$->u.i.i2 = $1;
@@ -538,6 +493,16 @@ int_list_item:
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $1; $$->u.i.i2 = $3;
+             }
+           | REAL
+             {
+                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
+                 $$->u.r = $1;
+             }
+           | string
+             {
+                 $$ = _gmx_selexpr_create_value(STR_VALUE);
+                 $$->u.s = $1;
              }
 ;
 
@@ -589,13 +554,11 @@ process_param_list(t_selexpr_param *params)
 {
     t_selexpr_param *par, *ppar, *npar;
 
-    /* Reverse list and process values */
+    /* Reverse list */
     ppar = NULL;
     par  = params;
     while (par)
     {
-        par->value = process_value_list(par->value, &par->nval);
-
         npar = par->next;
         par->next = ppar;
         ppar = par;

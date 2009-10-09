@@ -95,6 +95,89 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
 }
 
 /*! \brief
+ * Does a type conversion on a \c t_selexpr_value.
+ *
+ * \param[in,out] value    Value to convert.
+ * \param[in]     type     Type to convert to.
+ * \param[in]     scanner  Scanner data structure.
+ * \returns       0 on success, a non-zero value on error.
+ */
+static int
+convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
+{
+    if (value->type == type || type == NO_VALUE)
+    {
+        return 0;
+    }
+    if (value->bExpr)
+    {
+        /* Conversion from atom selection to position using default
+         * reference positions. */
+        if (value->type == GROUP_VALUE && type == POS_VALUE)
+        {
+            value->u.expr =
+                _gmx_sel_init_position(value->u.expr, NULL, FALSE, scanner);
+            if (value->u.expr == NULL)
+            {
+                return -1;
+            }
+            value->type = type;
+            return 0;
+        }
+        return -1;
+    }
+    else
+    {
+        /* Integers to floating point are easy if the value is not a range */
+        if (value->type == INT_VALUE && type == REAL_VALUE
+            && value->u.i.i1 == value->u.i.i2)
+        {
+            value->u.r = (real)value->u.i.i1;
+            value->type = type;
+            return 0;
+        }
+        /* Reals that are integer-values can also be converted */
+        if (value->type == REAL_VALUE && type == INT_VALUE
+            && gmx_within_tol(value->u.r, (int)value->u.r, GMX_REAL_EPS))
+        {
+            value->u.i.i1 = value->u.i.i2 = (int)value->u.r;
+            value->type = type;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+/*! \brief
+ * Does a type conversion on a list of values.
+ *
+ * \param[in,out] value    Values to convert.
+ * \param[in]     type     Type to convert to.
+ * \param[in]     scanner  Scanner data structure.
+ * \returns       0 on success, a non-zero value on error.
+ */
+static int
+convert_values(t_selexpr_value *values, e_selvalue_t type, void *scanner)
+{
+    t_selexpr_value *value;
+    int              rc, rc1;
+
+    rc = 0;
+    value = values;
+    while (value)
+    {
+        rc1 = convert_value(value, type, scanner);
+        if (rc1 != 0 && rc == 0)
+        {
+            rc = rc1;
+        }
+        value = value->next;
+    }
+    /* FIXME: More informative error messages */
+    return rc;
+}
+
+/*! \brief
  * Comparison function for sorting integer ranges.
  * 
  * \param[in] a Pointer to the first range.
@@ -718,8 +801,7 @@ parse_values_bool(const char *name, int nval, t_selexpr_value *values, gmx_ana_s
     }
     if (nval > 1 || (values && values->type != INT_VALUE))
     {
-        /* We should be here only if the parser has screwed up */
-        _gmx_selparser_error("boolean parameter '%s' should have at most one integer value", param->name);
+        _gmx_selparser_error("boolean parameter '%s' takes only a yes/no/on/off/0/1 value", param->name);
         return FALSE;
     }
 
@@ -733,7 +815,6 @@ parse_values_bool(const char *name, int nval, t_selexpr_value *values, gmx_ana_s
     }
     if (bSetNo && nval > 0)
     {
-        /* We should be here only if the parser has screwed up */
         _gmx_selparser_error("boolean parameter 'no%s' should not have a value", param->name);
         return FALSE;
     }
@@ -845,6 +926,7 @@ convert_const_values(t_selexpr_value *values)
  * \param[in] nparam  Number of parameters in \p params.
  * \param     params  Array of parameters to parse.
  * \param     root    Selection element to which child expressions are added.
+ * \param[in] scanner Scanner data structure.
  * \returns   TRUE if the parameters were parsed successfully, FALSE otherwise.
  *
  * Initializes the \p params array based on the parameters in \p pparams.
@@ -856,7 +938,7 @@ convert_const_values(t_selexpr_value *values)
  */
 bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
-                      t_selelem *root)
+                      t_selelem *root, void *scanner)
 {
     t_selexpr_param    *pparam;
     gmx_ana_selparam_t *oparam;
@@ -897,6 +979,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
     }
     if (!bOk)
     {
+        _gmx_selexpr_free_params(pparams);
         return FALSE;
     }
     /* Parse the parameters */
@@ -918,8 +1001,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
                 oparam = NULL;
                 _gmx_selparser_error("too many NULL parameters provided");
                 bOk = FALSE;
-                pparam = pparam->next;
-                continue;
+                goto next_param;
             }
             ++i;
         }
@@ -934,19 +1016,23 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         {
             _gmx_selparser_error("unknown parameter '%s' skipped", pparam->name);
             bOk = FALSE;
-            pparam = pparam->next;
-            continue;
+            goto next_param;
         }
         if (oparam->flags & SPAR_SET)
         {
             _gmx_selparser_error("parameter '%s' set multiple times, extra values skipped", pparam->name);
             bOk = FALSE;
-            pparam = pparam->next;
-            continue;
+            goto next_param;
         }
         oparam->flags |= SPAR_SET;
         /* Process the values for the parameter */
         convert_const_values(pparam->value);
+        if (convert_values(pparam->value, oparam->val.type, scanner) != 0)
+        {
+            _gmx_selparser_error("invalid value for parameter '%s'", pparam->name);
+            bOk = FALSE;
+            goto next_param;
+        }
         if (oparam->val.type == NO_VALUE)
         {
             rc = parse_values_bool(pparam->name, pparam->nval, pparam->value, oparam);
@@ -979,6 +1065,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
             bOk = FALSE;
         }
         /* Advance to the next parameter */
+next_param:
         pparam = pparam->next;
     }
     /* Check that all required parameters are present */

@@ -172,6 +172,7 @@ _gmx_sel_append_selection(struct t_selelem *sel, struct t_selelem *last,
 /** Initializes an array of parameters based on input from the selection parser. */
 bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
-                      struct gmx_ana_selparam_t *param, struct t_selelem *root);
+                      struct gmx_ana_selparam_t *param, struct t_selelem *root,
+                      void *scanner);
 
 #endif

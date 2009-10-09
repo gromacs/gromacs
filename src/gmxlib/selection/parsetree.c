@@ -561,7 +561,7 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     param->value->u.s  = cmpop;
     params->next->next = param;
     if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
-                               sel->u.expr.method->param, sel))
+                               sel->u.expr.method->param, sel, scanner))
     {
         _gmx_selparser_error("error in comparison initialization");
         _gmx_selelem_free(sel);
@@ -609,9 +609,14 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         switch (method->type)
         {
             case INT_VALUE: kwmethod = &sm_keyword_int; break;
+            case REAL_VALUE:
+                _gmx_selparser_error("real-valued keyword matching not implemented");
+                _gmx_selexpr_free_values(args);
+                goto on_error;
             case STR_VALUE: kwmethod = &sm_keyword_str; break;
             default:
                 _gmx_selparser_error("unknown type for keyword selection");
+                _gmx_selexpr_free_values(args);
                 goto on_error;
         }
         /* Count the arguments */
@@ -633,7 +638,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         param->value   = args;
         params->next   = param;
         if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
-                                   root->u.expr.method->param, root))
+                                   root->u.expr.method->param, root, scanner))
         {
             _gmx_selparser_error("error in keyword selection initialization");
             goto on_error;
@@ -675,7 +680,7 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     set_method(sc, root, method);
     /* Process the parameters */
     if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
-                               root->u.expr.method->param, root))
+                               root->u.expr.method->param, root, scanner))
     {
         _gmx_selelem_free(root);
         return NULL;
@@ -735,7 +740,7 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     }
     /* Process the parameters */
     if (!_gmx_sel_parse_params(params, mod->u.expr.method->nparams,
-                               mod->u.expr.method->param, mod))
+                               mod->u.expr.method->param, mod, scanner))
     {
         if (mod->child != sel)
         {
@@ -794,7 +799,7 @@ _gmx_sel_init_position(t_selelem *expr, const char *type, bool bSelPos,
     params->value = _gmx_selexpr_create_value_expr(expr);
     /* Parse the parameters. */
     if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
-                               root->u.expr.method->param, root))
+                               root->u.expr.method->param, root, scanner))
     {
         _gmx_selelem_free(root);
         return NULL;
