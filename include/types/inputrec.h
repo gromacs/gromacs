@@ -283,7 +283,7 @@ typedef struct {
   real adress_hy_width; /* width of the hybrid zone                     */
   int  adress_icor;     /* type of interface correction                 */
   int  adress_ivdw;     /* AdResS vdw switch                            */
-  bool badress_cog;     /* AdResS for cog switch                        */
+  int  adress_site;     /* AdResS CG site location                      */
   rvec adress_refmol;   /* Coordinates for AdResS reference             */
 
 } t_inputrec;

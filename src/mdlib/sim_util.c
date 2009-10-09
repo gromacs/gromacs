@@ -466,12 +466,12 @@ void do_force(FILE *fplog,t_commrec *cr,
                 }
             }
 
-            if(fr->badress_cog)
+            if(fr->adress_site == eAdressSITEcog)
             {
                 update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
             }
-            else
+            else if (fr->adress_site == eAdressSITEcom)
             {
                 update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);

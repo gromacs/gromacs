@@ -669,7 +669,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_real(ir->adress_hy_width);
       do_int(ir->adress_icor);
       do_int(ir->adress_ivdw);
-      do_int(ir->badress_cog);
+      do_int(ir->adress_site);
       do_rvec(ir->adress_refmol);
     }
 

@@ -220,3 +220,7 @@ enum {
 enum {
   eAdressICOff,eAdressICInterpolate, eAdressICThermoForce, eAdressICNR
 };
+
+enum {
+  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITENR
+};

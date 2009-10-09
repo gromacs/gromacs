@@ -360,7 +360,7 @@ typedef struct {
   real adress_hy_width;
   int  adress_icor;
   int  adress_ivdw;
-  bool badress_cog;
+  int  adress_site;
   rvec adress_refmol;
   bool bHaveRefMol;
   t_forcetable  atf_tab;
