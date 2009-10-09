@@ -111,6 +111,24 @@ update_adress_weights_cog(t_iparams            ip[],
                           t_forcerec *         fr,
                           t_mdatoms *          mdatoms,
                           t_pbc *              pbc);
+/** \brief update the weight of all coarse-grained particles in several charge groups for atom vsites
+ *
+ * \param[in] cg0 first charge group to update
+ * \param[in] cg1 last+1 charge group to update
+ * \param[in] cgs block containing the cg index 
+ * \param[in] x array with all the particle positions  
+ * \param[in] fr the forcerec containing all the parameters
+ * \param[in,out] mdatoms the struct containing all the atoms properties
+ * \param[in] pbc for shortest distance in adress_weight
+ */
+void
+update_adress_weights_atom(int                  cg0,
+                           int                  cg1,
+                           t_block *            cgs,
+                           rvec                 x[],
+                           t_forcerec *         fr,
+                           t_mdatoms *          mdatoms,
+                           t_pbc *              pbc);
 
 /** \brief add AdResS IC thermodynamic force to f_novirsum
  *

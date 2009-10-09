@@ -333,6 +333,75 @@ update_adress_weights_cog(t_iparams            ip[],
 }
 
 void
+update_adress_weights_atom(int                  cg0,
+                           int                  cg1,
+                           t_block *            cgs,
+                           rvec                 x[],
+                           t_forcerec *         fr,
+                           t_mdatoms *          mdatoms,
+                           t_pbc *              pbc)
+{
+    int            icg,k,k0,k1,d;
+    real           nrcg,inv_ncg;
+    atom_id *      cgindex;
+    rvec           ix;
+    int            adresstype;
+    real           adressr,adressw;
+    bool           bnew_wf;
+    rvec *         ref;
+    real *         massT;
+    real *         wf;
+
+    adresstype         = fr->adress_type;
+    adressr            = fr->adress_ex_width;
+    adressw            = fr->adress_hy_width;
+    bnew_wf            = fr->badress_new_wf;
+    massT              = mdatoms->massT;
+    wf                 = mdatoms->wf;
+    ref                = &(fr->adress_refmol);
+    cgindex            = cgs->index;
+
+    /* Same as update_com, but only use Oxygen atom for now.
+     * We still can't be sure that the vsite and constructing
+     * atoms are on the same processor, so we must calculate
+     * in the same way as com adress. */
+    
+    /* Find coordinates of reference atom for vsite */
+    for(icg=cg0; (icg<cg1); icg++) 
+    {
+        k0      = cgindex[icg];
+        k1      = cgindex[icg+1];
+        nrcg    = k1-k0;
+        if (nrcg == 1)
+        {
+            wf[k0] = adress_weight(x[k0],adresstype,adressr,adressw,bnew_wf,ref,pbc);
+        }
+        else
+        {
+            clear_rvec(ix);
+            for(k=k0; (k<k1); k++)
+            {
+                /* Ugly check, this could be done easier with topology info */
+                if (massT[k] > 5.0)
+                {
+                    for(d=0; (d<DIM); d++)
+                    {
+                        ix[d] += x[k][d];
+                    }
+                }
+            }
+        
+            /* Set wf of all atoms in charge group equal to wf of reference atom */
+            wf[k0] = adress_weight(ix,adresstype,adressr,adressw,bnew_wf,ref,pbc);
+            for(k=(k0+1); (k<k1); k++)
+            {
+                wf[k] = wf[k0];
+            }
+        }
+    }
+}
+
+void
 adress_thermo_force(int                  cg0,
                     int                  cg1,
                     t_block *            cgs,
