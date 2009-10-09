@@ -209,3 +209,7 @@ const char *eAdressICtype_names[eAdressICNR+1] = {
   "off","interpolate", "thermoforce", NULL 
 };
 
+const char *eAdressSITEtype_names[eAdressSITENR+1] = {
+  "com","cog", "atom", NULL 
+};
+

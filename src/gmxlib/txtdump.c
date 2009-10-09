@@ -666,7 +666,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("adress_hy_width",ir->adress_hy_width);
     PS("adress_interface_correction",EADRESSICTYPE(ir->adress_icor));
     PS("adress_exvdw",EVDWTYPE(ir->adress_ivdw));
-    PS("adress_cog",BOOL(ir->badress_cog));
+    PS("adress_site",EADRESSSITETYPE(ir->adress_site));
     pr_rvecs(fp,indent,"adress_reference_coords",&(ir->adress_refmol),bMDPformat);
 
     PI("userint1",ir->userint1);
