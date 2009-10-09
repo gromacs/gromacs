@@ -69,8 +69,13 @@ typedef struct t_selexpr_value
             /** End of the range; equals \p i1 for a single integer. */
             int             i2;
         }                   i;
-        /** The real value (\p type REAL_VALUE); */
-        real                r;
+        /** The real value/range (\p type REAL_VALUE); */
+        struct {
+            /** Beginning of the range. */
+            real            r1;
+            /** End of the range; equals \p r1 for a single number. */
+            real            r2;
+        }                   r;
         /** The string value (\p type STR_VALUE); */
         char               *s;
         /** The position value (\p type POS_VALUE); */

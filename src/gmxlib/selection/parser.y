@@ -489,15 +489,25 @@ value_item:  INTEGER
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $$->u.i.i2 = $1;
              }
+           | REAL
+             {
+                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
+                 $$->u.r.r1 = $$->u.r.r2 = $1;
+             }
            | INTEGER TO INTEGER
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $1; $$->u.i.i2 = $3;
              }
-           | REAL
+           | INTEGER TO REAL
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
-                 $$->u.r = $1;
+                 $$->u.r.r1 = $1; $$->u.r.r2 = $3;
+             }
+           | REAL TO number
+             {
+                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
+                 $$->u.r.r1 = $1; $$->u.r.r2 = $3;
              }
            | string
              {

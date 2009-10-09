@@ -128,19 +128,21 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
     }
     else
     {
-        /* Integers to floating point are easy if the value is not a range */
-        if (value->type == INT_VALUE && type == REAL_VALUE
-            && value->u.i.i1 == value->u.i.i2)
+        /* Integers to floating point are easy */
+        if (value->type == INT_VALUE && type == REAL_VALUE)
         {
-            value->u.r = (real)value->u.i.i1;
+            value->u.r.r1 = (real)value->u.i.i1;
+            value->u.r.r2 = (real)value->u.i.i2;
             value->type = type;
             return 0;
         }
-        /* Reals that are integer-values can also be converted */
+        /* Reals that are integer-valued can also be converted */
         if (value->type == REAL_VALUE && type == INT_VALUE
-            && gmx_within_tol(value->u.r, (int)value->u.r, GMX_REAL_EPS))
+            && gmx_within_tol(value->u.r.r1, (int)value->u.r.r1, GMX_REAL_EPS)
+            && gmx_within_tol(value->u.r.r2, (int)value->u.r.r2, GMX_REAL_EPS))
         {
-            value->u.i.i1 = value->u.i.i2 = (int)value->u.r;
+            value->u.i.i1 = (int)value->u.r.r1;
+            value->u.i.i2 = (int)value->u.r.r2;
             value->type = type;
             return 0;
         }
@@ -206,7 +208,35 @@ cmp_int_range(const void *a, const void *b)
 }
 
 /*! \brief
- * Parses the values for a parameter that takes integer ranges.
+ * Comparison function for sorting real ranges.
+ *
+ * \param[in] a Pointer to the first range.
+ * \param[in] b Pointer to the second range.
+ * \returns   -1, 0, or 1 depending on the relative order of \p a and \p b.
+ *
+ * The ranges are primarily sorted based on their starting point, and
+ * secondarily based on length (longer ranges come first).
+ */
+static int
+cmp_real_range(const void *a, const void *b)
+{
+    if (((real *)a)[0] < ((real *)b)[0])
+    {
+        return -1;
+    }
+    if (((real *)a)[0] > ((real *)b)[0])
+    {
+        return 1;
+    }
+    if (((real *)a)[1] > ((real *)b)[1])
+    {
+        return -1;
+    }
+    return 0;
+}
+
+/*! \brief
+ * Parses the values for a parameter that takes integer or real ranges.
  * 
  * \param[in] nval   Number of values in \p values.
  * \param[in] values Pointer to the list of values.
@@ -217,16 +247,26 @@ static bool
 parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
 {
     t_selexpr_value    *value;
-    int                *data;
+    int                *idata;
+    real               *rdata;
     int                 i, j, n;
 
     param->flags &= ~SPAR_DYNAMIC;
-    if (param->val.type != INT_VALUE)
+    if (param->val.type != INT_VALUE && param->val.type != REAL_VALUE)
     {
         gmx_bug("internal error");
         return FALSE;
     }
-    snew(data, nval*2);
+    idata = NULL;
+    rdata = NULL;
+    if (param->val.type == INT_VALUE)
+    {
+        snew(idata, nval*2);
+    }
+    else
+    {
+        snew(rdata, nval*2);
+    }
     value = values;
     i = 0;
     while (value)
@@ -236,57 +276,112 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
             _gmx_selparser_error("expressions not supported within range parameters");
             return FALSE;
         }
-        if (value->type != INT_VALUE)
+        if (value->type != param->val.type)
         {
             gmx_bug("internal error");
             return FALSE;
         }
-        /* Make sure the input range is in increasing order */
-        if (value->u.i.i1 > value->u.i.i2)
+        if (param->val.type == INT_VALUE)
         {
-            int tmp       = value->u.i.i1;
-            value->u.i.i1 = value->u.i.i2;
-            value->u.i.i2 = tmp;
-        }
-        /* Check if the new range overlaps or extends the previous one */
-        if (i > 0 && value->u.i.i1 <= data[i-1]+1 && value->u.i.i2 >= data[i-2]-1)
-        {
-            data[i-2] = min(data[i-2], value->u.i.i1);
-            data[i-1] = max(data[i-1], value->u.i.i2);
+            /* Make sure the input range is in increasing order */
+            if (value->u.i.i1 > value->u.i.i2)
+            {
+                int tmp       = value->u.i.i1;
+                value->u.i.i1 = value->u.i.i2;
+                value->u.i.i2 = tmp;
+            }
+            /* Check if the new range overlaps or extends the previous one */
+            if (i > 0 && value->u.i.i1 <= idata[i-1]+1 && value->u.i.i2 >= idata[i-2]-1)
+            {
+                idata[i-2] = min(idata[i-2], value->u.i.i1);
+                idata[i-1] = max(idata[i-1], value->u.i.i2);
+            }
+            else
+            {
+                idata[i++] = value->u.i.i1;
+                idata[i++] = value->u.i.i2;
+            }
         }
         else
         {
-            data[i++] = value->u.i.i1;
-            data[i++] = value->u.i.i2;
+            /* Make sure the input range is in increasing order */
+            if (value->u.r.r1 > value->u.r.r2)
+            {
+                real tmp      = value->u.r.r1;
+                value->u.r.r1 = value->u.r.r2;
+                value->u.r.r2 = tmp;
+            }
+            /* Check if the new range overlaps or extends the previous one */
+            if (i > 0 && value->u.r.r1 <= rdata[i-1] && value->u.r.r2 >= rdata[i-2])
+            {
+                rdata[i-2] = min(rdata[i-2], value->u.r.r1);
+                rdata[i-1] = max(rdata[i-1], value->u.r.r2);
+            }
+            else
+            {
+                rdata[i++] = value->u.r.r1;
+                rdata[i++] = value->u.r.r2;
+            }
         }
         value = value->next;
     }
     n = i/2;
     /* Sort the ranges and merge consequent ones */
-    qsort(data, n, 2*sizeof(int), &cmp_int_range);
-    for (i = j = 2; i < 2*n; i += 2)
+    if (param->val.type == INT_VALUE)
     {
-        if (data[j-1]+1 >= data[i])
+        qsort(idata, n, 2*sizeof(int), &cmp_int_range);
+        for (i = j = 2; i < 2*n; i += 2)
         {
-            if (data[i+1] > data[j-1])
+            if (idata[j-1]+1 >= idata[i])
             {
-                data[j-1] = data[i+1];
+                if (idata[i+1] > idata[j-1])
+                {
+                    idata[j-1] = idata[i+1];
+                }
+            }
+            else
+            {
+                idata[j]   = idata[i];
+                idata[j+1] = idata[i+1];
+                j += 2;
             }
         }
-        else
+    }
+    else
+    {
+        qsort(rdata, n, 2*sizeof(real), &cmp_real_range);
+        for (i = j = 2; i < 2*n; i += 2)
         {
-            data[j]   = data[i];
-            data[j+1] = data[i+1];
-            j += 2;
+            if (rdata[j-1]+1 >= rdata[i])
+            {
+                if (rdata[i+1] > rdata[j-1])
+                {
+                    rdata[j-1] = rdata[i+1];
+                }
+            }
+            else
+            {
+                rdata[j]   = rdata[i];
+                rdata[j+1] = rdata[i+1];
+                j += 2;
+            }
         }
     }
     n = j/2;
     /* Store the values */
     if (param->flags & SPAR_VARNUM)
     {
-        srenew(data, j);
         param->val.nr  = n;
-        _gmx_selvalue_setstore_alloc(&param->val, data, j);
+        if (param->val.type == INT_VALUE)
+        {
+            srenew(idata, j);
+            _gmx_selvalue_setstore_alloc(&param->val, idata, j);
+        }
+        else
+        {
+            srenew(rdata, j);
+            _gmx_selvalue_setstore_alloc(&param->val, rdata, j);
+        }
     }
     else
     {
@@ -294,11 +389,20 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
         {
             _gmx_selparser_error("the value of parameter '%s' should consist of exactly one range",
                                  param->name);       
-            sfree(data);
+            sfree(idata);
+            sfree(rdata);
             return FALSE;
         }
-        memcpy(param->val.u.i, data, 2*n*sizeof(int));
-        sfree(data);
+        if (param->val.type == INT_VALUE)
+        {
+            memcpy(param->val.u.i, idata, 2*n*sizeof(int));
+            sfree(idata);
+        }
+        else
+        {
+            memcpy(param->val.u.r, rdata, 2*n*sizeof(real));
+            sfree(rdata);
+        }
     }
     if (param->nvalptr)
     {
@@ -392,7 +496,14 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
                     }
                 }
                 break;
-            case REAL_VALUE: param->val.u.r[i++] = value->u.r;         break;
+            case REAL_VALUE:
+                if (value->u.r.r1 != value->u.r.r2)
+                {
+                    _gmx_selparser_error("real ranges not supported for parameter '%s'", param->name);
+                    return FALSE;
+                }
+                param->val.u.r[i++] = value->u.r.r1;
+                break;
             case STR_VALUE:  param->val.u.s[i++] = strdup(value->u.s); break;
             case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
             default: /* Should not be reached */
@@ -454,24 +565,6 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
         _gmx_selelem_set_vtype(child, expr->v.type);
         child->child  = expr;
     }
-    /* Put the child element in the correct place */
-    if (!root->child || n < root->child->u.param - ps)
-    {
-        child->next = root->child;
-        root->child = child;
-    }
-    else
-    {
-        t_selelem *prev;
-
-        prev = root->child;
-        while (prev->next && prev->next->u.param - ps >= n)
-        {
-            prev = prev->next;
-        }
-        child->next = prev->next;
-        prev->next  = child;
-    }
     /* Setup the child element */
     child->flags &= ~SEL_ALLOCVAL;
     child->u.param = param;
@@ -495,6 +588,24 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
     if (!(child->flags & SEL_DYNAMIC))
     {
         param->flags &= ~SPAR_DYNAMIC;
+    }
+    /* Put the child element in the correct place */
+    if (!root->child || n < root->child->u.param - ps)
+    {
+        child->next = root->child;
+        root->child = child;
+    }
+    else
+    {
+        t_selelem *prev;
+
+        prev = root->child;
+        while (prev->next && prev->next->u.param - ps >= n)
+        {
+            prev = prev->next;
+        }
+        child->next = prev->next;
+        prev->next  = child;
     }
     return child;
 
@@ -739,7 +850,12 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                     --i;
                     break;
                 case REAL_VALUE:
-                    param->val.u.r[i] = value->u.r;
+                    if (value->u.r.r1 != value->u.r.r2)
+                    {
+                        _gmx_selparser_error("real ranges not supported for parameter '%s'", param->name);
+                        return FALSE;
+                    }
+                    param->val.u.r[i] = value->u.r.r1;
                     break;
                 case STR_VALUE:
                     param->val.u.s[i] = strdup(value->u.s);
@@ -906,7 +1022,7 @@ convert_const_values(t_selexpr_value *values)
                     val->u.i.i1 = val->u.i.i2 = expr->v.u.i[0];
                     break;
                 case REAL_VALUE:
-                    val->u.r = expr->v.u.r[0];
+                    val->u.r.r1 = val->u.r.r2 = expr->v.u.r[0];
                     break;
                 case POS_VALUE:
                     copy_rvec(expr->v.u.p->x[0], val->u.x);

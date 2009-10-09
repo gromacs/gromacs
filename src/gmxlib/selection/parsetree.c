@@ -608,12 +608,9 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         gmx_ana_selmethod_t *kwmethod;
         switch (method->type)
         {
-            case INT_VALUE: kwmethod = &sm_keyword_int; break;
-            case REAL_VALUE:
-                _gmx_selparser_error("real-valued keyword matching not implemented");
-                _gmx_selexpr_free_values(args);
-                goto on_error;
-            case STR_VALUE: kwmethod = &sm_keyword_str; break;
+            case INT_VALUE:  kwmethod = &sm_keyword_int;  break;
+            case REAL_VALUE: kwmethod = &sm_keyword_real; break;
+            case STR_VALUE:  kwmethod = &sm_keyword_str;  break;
             default:
                 _gmx_selparser_error("unknown type for keyword selection");
                 _gmx_selexpr_free_values(args);
