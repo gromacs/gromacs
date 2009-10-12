@@ -301,6 +301,7 @@ int main(int argc,char *argv[])
   int  repl_ex_seed=-1;
   int  nstepout=100;
   int  nthreads=1;
+  int  resetstep=-1;
   
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
@@ -375,7 +376,9 @@ int main(int argc,char *argv[])
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
     { "-stepout", FALSE, etINT, {&nstepout},
-      "HIDDENFrequency of writing the remaining runtime" }
+      "HIDDENFrequency of writing the remaining runtime" },
+    { "-resetstep", FALSE, etINT, {&resetstep},
+      "HIDDENReset cycle counters after these many time steps" }
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
@@ -515,7 +518,7 @@ int main(int argc,char *argv[])
                         fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
                         ddxyz,dd_node_order,rdd,rconstr,
                         dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                        nstepout,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
+                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
                         cpt_period,max_hours,Flags);
 
   if (gmx_parallel_env_initialized())
