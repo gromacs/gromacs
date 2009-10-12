@@ -392,7 +392,7 @@ int main(int argc,char *argv[])
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   /* Only run niced when not running in parallel */
-  if (!gmx_parallel_env())
+  if (!gmx_parallel_env_initialized())
     PCA_Flags |= PCA_BE_NICE;
   
 
@@ -518,7 +518,7 @@ int main(int argc,char *argv[])
                         nstepout,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
                         cpt_period,max_hours,Flags);
 
-  if (gmx_parallel_env())
+  if (gmx_parallel_env_initialized())
       gmx_finalize();
 
   if (MULTIMASTER(cr)) {

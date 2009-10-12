@@ -1711,7 +1711,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (update_forcefield(fplog,
                                   nfile,fnm,fr,
                                   mdatoms->nr,state->x,state->box)) {
-                if (gmx_parallel_env())
+                if (gmx_parallel_env_initialized())
                 {
                     gmx_finalize();
                 }
@@ -2232,7 +2232,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                  f,NULL,xcopy,
                                  &(top_global->mols),mdatoms->massT,pres))
             {
-                if (gmx_parallel_env())
+                if (gmx_parallel_env_initialized())
                     gmx_finalize();
                 fprintf(stderr,"\n");
                 exit(0);
@@ -2310,7 +2310,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(stderr,"\n");
             }
-            print_time(stderr,runtime,step,ir);
+            print_time(stderr,runtime,step,ir,cr);
         }
 
         /* Replica exchange */

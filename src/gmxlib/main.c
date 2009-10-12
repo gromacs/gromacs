@@ -78,7 +78,15 @@ static bool parallel_env_val;
 tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-bool gmx_parallel_env(void)
+
+/* returns 1 when running in a parallel environment, so could also be 1 if
+   mdrun was started with: mpirun -np 1.
+     
+   Use this function only to check whether a parallel environment has   
+   been initialized, for example when checking whether gmx_finalize()   
+   needs to be called. Use PAR(cr) to check whether the simulation actually
+   has more than one node/thread.  */
+bool gmx_parallel_env_initialized(void)
 {
     bool ret;
 #ifdef GMX_THREADS
