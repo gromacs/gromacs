@@ -144,77 +144,33 @@ typedef struct {
 } t_pull;
 
 
-/* Enforced rotation data types */
-
-/* Abstract type defined only in rotation.c */
-typedef struct gmx_slabdata *gmx_slabdata_t;
+/* Abstract types for enforced rotation only defined in pull_rotation.c       */
+typedef struct gmx_enfrot *gmx_enfrot_t;
+typedef struct gmx_enfrotgrp *gmx_enfrotgrp_t;
 
 typedef struct {
-  int        eType;            /* Rotation type for this group */
-  int        nat;              /* Number of atoms in the group */
-  atom_id    *ind;             /* The global atoms numbers */
-  int        nat_loc;          /* Number of local group atoms */
-  int        nalloc_loc;       /* Allocation size for ind_loc and weight_loc */
-  atom_id    *ind_loc;         /* Local rotation indices */
-  rvec       vec;              /* The rotation vector */
-  real       rate;             /* Rate of motion (nm/ps) */
-  real       k;                /* force constant */
-  real       V;                /* Rotation potential for this rotation group */
-  
-  /* Collective coordinates for the whole rotation group */
-  rvec       *xc_ref;          /* Reference (unrotated) coordinates */
-  real       *xc_ref_length;   /* Length of each x_rotref vector after x_rotref has been put into origin */
-  int        *xc_ref_ind;      /* Local indices to the reference coordinates */
-  rvec       xc_ref_center;    /* Center of the reference coordinates. Can be mass-weighted */
-  rvec       *xc;              /* Current coordinates */
-  ivec       *xc_shifts;       /* Current shifts */
-  ivec       *xc_eshifts;      /* Extra shifts since last DD step */
-  rvec       *xc_old;          /* Old coordinates */
-  rvec       *xc_norm;         /* Some normalized form of the current coordinates */
-  real       *mc;              /* Collective masses */
-  real       totalmass;        
-  
-  /* Flexible rotation only */
-  int        eFittype;         /* Type of fit to determine actual angle of group */
-  real       slab_dist;        /* Slab distance (nm) */
-  int        slab_max_nr;      /* The maximum number of slabs in the box */
-  int        slab_first;       /* Lowermost slab for that the calculation needs to be performed */
-  int        slab_last;        /* Uppermost slab ... */
-  rvec       *slab_center;     /* Gaussian-weighted slab center of geometry (COG) */
-  rvec       *slab_center_ref; /* Gaussian-weighted slab COG for the reference coordinates */
-  real       *slab_weights;    /* Sum of gaussian weights in a slab for parallel COM calculation */
-  real       *slab_torque_v;   /* Torque T = r x f for each slab. */
-                               /* torque_v = m.v = angular momentum in the direction of v */
-  real       min_gaussian;     /* Minimum value the gaussian must have so that the force
-                                  is actually evaluated */
-  real       *gn_atom;         /* Holds precalculated gaussians for a single atom in all relevant slabs */
-  int        *gn_slabind;      /* Tells to which slab each precalculated gaussian belongs */
-  int        gn_alloc;         /* Allocation size of gn_atom and gn_slabind */
-  gmx_slabdata_t slab_data;    /* Holds atom coordinates and gaussian weights of atoms belonging to a slab */
-  rvec       *f_rot_loc;       /* Array to store the forces on the local atoms resulting
-                                * from enforced rotation potential */
-  /* Fixed rotation only */
-  rvec       offset;           /* Initial reference displacement */
-  real       fix_torque_v;     /* Torque in the direction of rotation vector */
-  real       fix_angles_v;
-  real       fix_weight_v;
-
+  int        eType;          /* Rotation type for this group                  */
+  int        nat;            /* Number of atoms in the group                  */
+  atom_id    *ind;           /* The global atoms numbers                      */
+  rvec       vec;            /* The rotation vector                           */
+  real       rate;           /* Rate of rotation (degree/ps)                  */
+  real       k;              /* Force constant                                */
+  rvec       offset;         /* Initial reference displacement                */  
+  int        eFittype;       /* Type of fit to determine actual group angle   */
+  real       slab_dist;      /* Slab distance (nm)                            */
+  real       min_gaussian;   /* Minimum value the gaussian must have so that 
+                                the force is actually evaluated               */  
+  gmx_enfrotgrp_t enfrotgrp; /* Stores non-inputrec rotation data per group   */
 } t_rotgrp;
 
 typedef struct {
-  int      ngrp;          /* number of groups */
-  int      nstrout;       /* Main output frequency for rotation angle and potential */
-  int      nsttout;       /* Output frequency for torque, fitangles, slab centers */
-  t_rotgrp *grp;          /* groups to rotate */
-  FILE     *out_rot;      /*  "  */
-  FILE     *out_torque;   /* torque */
-  FILE     *out_angles;   /* slab angles for flexible rotation */
-  FILE     *out_slabs;    /* For outputting COG per slab information */
-  real     Vrot;          /* (Local) part of the enforced rotation potential */
-  real     *inbuf;        /* MPI buffer */
-  real     *outbuf;       /* MPI buffer */
-  int      bufsize;       /* Allocation size of in & outbufs */
+  int        ngrp;           /* Number of rotation groups                     */
+  int        nstrout;        /* Main output frequency for angle and potential */
+  int        nsttout;        /* Outfreq. for torque, fitangles, slab centers  */
+  t_rotgrp   *grp;           /* Groups to rotate                              */
+  gmx_enfrot_t enfrot;       /* Stores non-inputrec enforced rotation data    */
 } t_rot;
+
 
 typedef struct {
   int  eI;              /* Integration method 				*/
