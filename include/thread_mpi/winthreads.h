@@ -101,7 +101,7 @@ typedef struct
     volatile enum tMPI_Thread_once_status init_state; 
     CRITICAL_SECTION cs;
 } tMPI_Thread_mutex_t;
-/*! \brief Statical initializer for tMPI_Thread_mutex_t
+/*! \brief Static initializer for tMPI_Thread_mutex_t
  *
  *  See the description of the tMPI_Thread_mutex_t datatype for instructions
  *  on how to use this. Note that any variables initialized with this value
@@ -130,14 +130,19 @@ typedef DWORD tMPI_Thread_key_t;
  *  a non-threadsafe function, e.g. the FFTW initialization routines.
  *
  */
+#if 0
+/* use this once Vista is the oldest supported Windows version: */
 typedef INIT_ONCE tMPI_Thread_once_t;
-/*! \brief Statical initializer for tMPI_Thread_once_t
+#else
+typedef volatile int tMPI_Thread_once_t;
+#endif
+/*! \brief Static initializer for tMPI_Thread_once_t
  *
  *  See the description of the tMPI_Thread_once_t datatype for instructions
  *  on how to use this. Normally, all variables of that type should be 
  *  initialized statically to this value.
  */
-#define TMPI_THREAD_ONCE_INIT NULL
+#define TMPI_THREAD_ONCE_INIT 0
 
 
 /*! \brief Condition variable handle for threads
@@ -158,13 +163,32 @@ typedef INIT_ONCE tMPI_Thread_once_t;
 typedef struct 
 { 
     volatile enum tMPI_Thread_once_status init_state; 
+
+
+#if 0
+    /* this works since Windows Vista: */
     CONDITION_VARIABLE cv;
+#else
+    /* this data structure and its algorithms are based on 
+       'Strategies for Implementing POSIX Condition Variables on Win32'
+       by
+       Douglas C. Schmidt and Irfan Pyarali
+       Department of Computer Science
+       Washington University, St. Louis, Missouri
+       http://www.cs.wustl.edu/~schmidt/win32-cv-1.html */
+    int Nwaiters; /* number of waiting threads */
+    CRITICAL_SECTION wtr_lock; /* lock for Nwaiters */
+    int Nrelease; /* number of threads to release in broadcast/signal */
+    int cycle; /* cycle number so threads can't steal signals */
+    HANDLE ev; /* the event used to trigger WaitForSingleObject.  
+                  Is a manual reset event.  */
+#endif
 } tMPI_Thread_cond_t;
 
 /*typedef pthread_cond_t tMPI_Thread_cond_t;*/
 
 
-/*! \brief Statical initializer for tMPI_Thread_cond_t
+/*! \brief Static initializer for tMPI_Thread_cond_t
 *
 *  See the description of the tMPI_Thread_cond_t datatype for instructions
 *  on how to use this. Note that any variables initialized with this value
@@ -174,7 +198,14 @@ typedef struct
 
 
 
+#ifdef TMPI_RWLOCK
+/*! \brief Read-write lock for threads
 
+  Windows implementation of the read-write lock (a lock that allows
+  multiple readers, but only a single writer). 
+*/
+typedef SRWLOCK tMPI_Thread_rwlock_t;
+#endif
 
 /*! \brief Pthread implementation of barrier type. 
  *
@@ -188,12 +219,18 @@ typedef struct tMPI_Thread_pthread_barrier
     int                threshold; /*!< Total number of members in barrier     */
     int                count;     /*!< Remaining count before completion      */
     int                cycle;     /*!< Alternating 0/1 to indicate round      */
-    CRITICAL_SECTION   cs;        /*!< Lock for the barrier contents          */
-    CONDITION_VARIABLE cv;        /*!< Condition to signal barrier completion */
+
+#if 0
+    /* use this once Vista is the oldest supported windows version: */
+     CRITICAL_SECTION   cs;        /*!< Lock for the barrier contents          */
+     CONDITION_VARIABLE cv;        /*!< Condition to signal barrier completion */
+#else
+    tMPI_Thread_mutex_t cs;       /*!< Lock for the barrier contents          */
+    tMPI_Thread_cond_t cv;        /*!< Condition to signal barrier completion */
+#endif
 }tMPI_Thread_barrier_t;
 
-
-/*! \brief Statical initializer for tMPI_Thread_barrier_t
+/*! \brief Static initializer for tMPI_Thread_barrier_t
  *
  *  See the description of the tMPI_Thread_barrier_t datatype for instructions
  *  on how to use this. Note that variables initialized with this value

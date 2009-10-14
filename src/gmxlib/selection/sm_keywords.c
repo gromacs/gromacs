@@ -29,7 +29,7 @@
  * For more info, check our website at http://www.gromacs.org
  */
 /*! \internal \file
- * \brief Implementations of internal selection methods for integer and
+ * \brief Implementations of internal selection methods for numeric and
  * string keyword evaluation.
  */
 #ifdef HAVE_CONFIG_H
@@ -37,30 +37,41 @@
 #endif
 
 #include <ctype.h>
-#include <fnmatch.h>
+#ifdef HAVE_REGEX_H
 #include <regex.h>
-#include <string.h>
+#define USE_REGEX
+#endif
 
 #include <macros.h>
 #include <smalloc.h>
+#include <string2.h>
 
 #include <selmethod.h>
 
 /** Allocates data for integer keyword evaluation. */
 static void *
 init_data_kwint(int npar, gmx_ana_selparam_t *param);
+/** Allocates data for real keyword evaluation. */
+static void *
+init_data_kwreal(int npar, gmx_ana_selparam_t *param);
 /** Allocates data for string keyword evaluation. */
 static void *
 init_data_kwstr(int npar, gmx_ana_selparam_t *param);
 /** Initializes data for integer keyword evaluation. */
 static int
 init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+/** Initializes data for real keyword evaluation. */
+static int
+init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes data for string keyword evaluation. */
 static int
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for integer keyword evaluation. */
 static void
 free_data_kwint(void *data);
+/** Frees the memory allocated for real keyword evaluation. */
+static void
+free_data_kwreal(void *data);
 /** Frees the memory allocated for string keyword evaluation. */
 static void
 free_data_kwstr(void *data);
@@ -68,6 +79,10 @@ free_data_kwstr(void *data);
 static int
 evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+/** Evaluates real selection keywords. */
+static int
+evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates string selection keywords. */
 static int
 evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -93,6 +108,25 @@ typedef struct t_methoddata_kwint
 } t_methoddata_kwint;
 
 /*! \internal \brief
+ * Data structure for real keyword expression evaluation.
+ */
+typedef struct t_methoddata_kwreal
+{
+    /** Array of values for the keyword. */
+    real              *v;
+    /** Number of ranges in the \p r array. */
+    int                n;
+    /*! \brief
+     * Array of sorted ranges to match against.
+     *
+     * Each range is made of two values, giving the endpoints (inclusive).
+     * This field stores the pointer to the ranges allocated by the
+     * parameter parser; see \ref SPAR_RANGES for more information.
+     */
+    real              *r;
+} t_methoddata_kwreal;
+
+/*! \internal \brief
  * Data structure for string keyword expression evaluation.
  */
 typedef struct t_methoddata_kwstr
@@ -109,8 +143,10 @@ typedef struct t_methoddata_kwstr
         bool           bRegExp;
         /** The value to match against. */
         union {
+#ifdef USE_REGEX
             /** Compiled regular expression if \p bRegExp is TRUE. */
             regex_t    r;
+#endif
             /** The string if \p bRegExp is FALSE; */
             char      *s;
         }              u;
@@ -121,6 +157,12 @@ typedef struct t_methoddata_kwstr
 static gmx_ana_selparam_t smparams_keyword_int[] = {
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL},
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_RANGES | SPAR_VARNUM},
+};
+
+/** Parameters for real keyword evaluation. */
+static gmx_ana_selparam_t smparams_keyword_real[] = {
+    {NULL, {REAL_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL | SPAR_DYNAMIC},
+    {NULL, {REAL_VALUE, -1, {NULL}}, NULL, SPAR_RANGES | SPAR_VARNUM},
 };
 
 /** Parameters for string keyword evaluation. */
@@ -140,6 +182,21 @@ gmx_ana_selmethod_t sm_keyword_int = {
     &free_data_kwint,
      NULL,
     &evaluate_keyword_int,
+     NULL,
+    {NULL, 0, NULL},
+};
+
+/** \internal Selection method data for real keyword evaluation. */
+gmx_ana_selmethod_t sm_keyword_real = {
+    "kw_real", GROUP_VALUE, SMETH_SINGLEVAL,
+    asize(smparams_keyword_real), smparams_keyword_real,
+    &init_data_kwreal,
+     NULL,
+    &init_kwreal,
+     NULL,
+    &free_data_kwreal,
+     NULL,
+    &evaluate_keyword_real,
      NULL,
     {NULL, 0, NULL},
 };
@@ -266,6 +323,111 @@ evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
 
 /********************************************************************
+ * REAL KEYWORD EVALUATION
+ ********************************************************************/
+
+/*!
+ * \param[in] npar  Not used.
+ * \param     param Not used.
+ * \returns   Pointer to the allocated data (\ref t_methoddata_kwreal).
+ *
+ * Allocates memory for a \ref t_methoddata_kwreal structure.
+ */
+static void *
+init_data_kwreal(int npar, gmx_ana_selparam_t *param)
+{
+    t_methoddata_kwreal *data;
+
+    snew(data, 1);
+    return data;
+}
+
+/*!
+ * \param[in] top   Not used.
+ * \param[in] npar  Not used (should be 2).
+ * \param[in] param Method parameters (should point to \ref smparams_keyword_real).
+ * \param[in] data  Should point to \ref t_methoddata_kwreal.
+ * \returns   0 (the initialization always succeeds).
+ */
+static int
+init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+{
+    t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
+
+    d->v = param[0].val.u.r;
+    d->n = param[1].val.nr;
+    d->r = param[1].val.u.r;
+    return 0;
+}
+
+/*!
+ * \param data Data to free (should point to a \ref t_methoddata_kwreal).
+ *
+ * Frees the memory allocated for t_methoddata_kwreal::r.
+ */
+static void
+free_data_kwreal(void *data)
+{
+    t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
+
+    sfree(d->v);
+    sfree(d->r);
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data should point to a \c t_methoddata_kwreal.
+ *
+ * Does a binary search to find which atoms match the ranges in the
+ * \c t_methoddata_kwreal structure for this selection.
+ * Matching atoms are stored in \p out->u.g.
+ */
+static int
+evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
+    int                  n, i, j, jmin, jmax;
+    int                  val;
+
+    out->u.g->isize = 0;
+    n    = d->n;
+    for (i = 0; i < g->isize; ++i)
+    {
+        val = d->v[i];
+        if (d->r[0] > val || d->r[2*n-1] < val)
+        {
+            continue;
+        }
+        jmin = 0;
+        jmax = n;
+        while (jmax - jmin > 1)
+        {
+            j = jmin + (jmax - jmin) / 2;
+            if (val < d->r[2*j])
+            {
+                jmax = j;
+            }
+            else
+            {
+                jmin = j;
+                if (val <= d->r[2*j+1])
+                {
+                    break;
+                }
+                /* ++jmin;*/
+            }
+        }
+        if (val <= d->r[2*jmin+1])
+        {
+            out->u.g->index[out->u.g->isize++] = g->index[i];
+        }
+    }
+    return 0;
+}
+
+
+/********************************************************************
  * STRING KEYWORD EVALUATION
  ********************************************************************/
 
@@ -324,18 +486,25 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         }
         if (bRegExp)
         {
+#ifdef USE_REGEX
             snew(buf, strlen(s) + 3);
             sprintf(buf, "^%s$", s);
             if (regcomp(&d->m[i].u.r, buf, REG_EXTENDED | REG_NOSUB))
             {
                 bRegExp = FALSE;
-                fprintf(stderr, "warning: will match '%s' as a simple string\n", s);
+                fprintf(stderr, "WARNING: error in regular expression,\n"
+                                "         will match '%s' as a simple string\n", s);
             }
             else
             {
                 sfree(s);
             }
             sfree(buf);
+#else
+            bRegExp = FALSE;
+            fprintf(stderr, "WARNING: no regular expressions support,\n"
+                            "         will match '%s' as a simple string\n", s);
+#endif
         }
         if (!bRegExp)
         {
@@ -363,7 +532,11 @@ free_data_kwstr(void *data)
     {
         if (d->m[i].bRegExp)
         {
+#ifdef USE_REGEX
+            /* This branch should only be taken if regular expressions
+             * are available, but the ifdef is still needed. */
             regfree(&d->m[i].u.r);
+#endif
         }
         else
         {
@@ -372,7 +545,6 @@ free_data_kwstr(void *data)
     }
     sfree(d->m);
 }
-
 
 /*!
  * See sel_updatefunc() for description of the parameters.
@@ -399,14 +571,18 @@ evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         {
             if (d->m[j].bRegExp)
             {
+#ifdef USE_REGEX
+                /* This branch should only be taken if regular expressions
+                 * are available, but the ifdef is still needed. */
                 if (!regexec(&d->m[j].u.r, d->v[i], 0, NULL, 0))
                 {
                     bFound = TRUE;
                 }
+#endif
             }
             else
             {
-                if (!fnmatch(d->m[j].u.s, d->v[i], 0))
+                if (gmx_wcmatch(d->m[j].u.s, d->v[i]) == 0)
                 {
                     bFound = TRUE;
                 }

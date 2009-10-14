@@ -6044,6 +6044,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     comm->nstDDDumpGrid = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
     comm->DD_debug      = dd_nst_env(fplog,"GMX_DD_DEBUG",0);
 
+    dd->pme_recv_f_alloc = 0;
+    dd->pme_recv_f_buf = NULL;
+
     if (dd->bSendRecv2 && fplog)
     {
         fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");

@@ -170,22 +170,24 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 
 /* The state has changed */
 #define GMX_FORCE_STATECHANGED (1<<0)
+/* The box might have changed */
+#define GMX_FORCE_DYNAMICBOX   (1<<1)
 /* Do neighbor searching */
-#define GMX_FORCE_NS           (1<<1)
+#define GMX_FORCE_NS           (1<<2)
 /* Calculate bonded energies/forces */
-#define GMX_FORCE_DOLR         (1<<2)
+#define GMX_FORCE_DOLR         (1<<3)
 /* Calculate long-range energies/forces */
-#define GMX_FORCE_BONDED       (1<<3)
+#define GMX_FORCE_BONDED       (1<<4)
 /* Store long-range forces in a separate array */
-#define GMX_FORCE_SEPLRF       (1<<4)
+#define GMX_FORCE_SEPLRF       (1<<5)
 /* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1<<5)
+#define GMX_FORCE_NONBONDED    (1<<6)
 /* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1<<6)
+#define GMX_FORCE_FORCES       (1<<7)
 /* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1<<7)
+#define GMX_FORCE_VIRIAL       (1<<8)
 /* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1<<8)
+#define GMX_FORCE_DHDL         (1<<9)
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 

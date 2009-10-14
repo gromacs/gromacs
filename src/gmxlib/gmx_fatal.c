@@ -202,7 +202,7 @@ static void quit_gmx(const char *msg)
     perror(msg);
   }
   
-  if (gmx_parallel_env()) {
+  if (gmx_parallel_env_initialized()) {
     int  nnodes;
     int  noderank;
     
@@ -779,8 +779,8 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   cool_quote(tmpbuf,1023,&cqnum);
   sprintf(buf,"\n%s\nProgram %s, %s\n"
 	  "Source code file: %s, line: %d\n\n"
-	  "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS Wiki at\n"
-	  "http://wiki.gromacs.org/index.php/Errors\n%s\n\n%s\n",
+	  "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
+	  "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
 	  llines,ShortProgram(),GromacsVersion(),file,line,
 	  gmx_strerror(key),msg ? msg : warn_buf,llines,tmpbuf);
 #ifdef GMX_THREADS

@@ -327,15 +327,16 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *na
 
 /*!
  * \param[in]  g      Index groups to print.
+ * \param[in]  maxn   Maximum number of indices to print (-1 = print all).
  */
 void
-gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g)
+gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g, int maxn)
 {
     int  i;
 
     for (i = 0; i < g->nr; ++i)
     {
-        gmx_ana_index_dump(&g->g[i], i);
+        gmx_ana_index_dump(&g->g[i], i, maxn);
     }
 }
 
@@ -474,11 +475,12 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
 /*!
  * \param[in]  g      Index group to print.
  * \param[in]  i      Group number to use if the name is NULL.
+ * \param[in]  maxn   Maximum number of indices to print (-1 = print all).
  */
 void
-gmx_ana_index_dump(gmx_ana_index_t *g, int i)
+gmx_ana_index_dump(gmx_ana_index_t *g, int i, int maxn)
 {
-    int  j;
+    int  j, n;
 
     if (g->name)
     {
@@ -489,9 +491,18 @@ gmx_ana_index_dump(gmx_ana_index_t *g, int i)
         fprintf(stderr, "Group %d", i+1);
     }
     fprintf(stderr, " (%d atoms):", g->isize);
-    for (j = 0; j < g->isize; ++j)
+    n = g->isize;
+    if (maxn >= 0 && n > maxn)
+    {
+        n = maxn;
+    }
+    for (j = 0; j < n; ++j)
     {
         fprintf(stderr, " %d", g->index[j]+1);
+    }
+    if (n < g->isize)
+    {
+        fprintf(stderr, " ...");
     }
     fprintf(stderr, "\n");
 }

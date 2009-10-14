@@ -36,9 +36,9 @@
 #endif
 
 #include <ctype.h>
-#include <string.h>
 
 #include <macros.h>
+#include <string2.h>
 
 #include <selmethod.h>
 
@@ -235,9 +235,9 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         }
         if (param[i].flags & SPAR_RANGES)
         {
-            if (param[i].val.type != INT_VALUE)
+            if (param[i].val.type != INT_VALUE && param[i].val.type != REAL_VALUE)
             {
-                report_param_error(fp, name, param[i].name, "error: SPAR_RANGES cannot be set for a non-integer parameter");
+                report_param_error(fp, name, param[i].name, "error: SPAR_RANGES cannot be set for a non-numeric parameter");
                 bOk = FALSE;
             }
             if (param[i].flags & SPAR_DYNAMIC)

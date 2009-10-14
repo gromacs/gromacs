@@ -2110,6 +2110,23 @@ static int do_tpx(int fp,bool bRead,
     }
   }
 
+  if (bRead && file_version >= 57) {
+    char *env;
+    int  ienv;
+    env = getenv("GMX_NOCHARGEGROUPS");
+    if (env != NULL) {
+      sscanf(env,"%d",&ienv);
+      fprintf(stderr,"\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",ienv);
+      if (ienv > 0) {
+	fprintf(stderr,
+		"Will make single atomic charge groups in non-solvent%s\n",
+	       ienv > 1 ? " and solvent" : "");
+	gmx_mtop_make_atomic_charge_groups(mtop,ienv==1);
+      }
+      fprintf(stderr,"\n");
+    }
+  }
+
   return ePBC;
 }
 

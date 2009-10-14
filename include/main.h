@@ -44,9 +44,14 @@
 #include <stdio.h>
 #include "network.h"
 
-extern bool gmx_parallel_env(void); 
+extern bool gmx_parallel_env_initialized(void); 
 /* 1 when running in a parallel environment, so could also be 1 if
-   mdrun was started with: mpirun -np 1 */
+   mdrun was started with: mpirun -np 1.
+  
+   Use this function only to check whether a parallel environment has
+   been initialized, for example when checking whether gmx_finalize()
+   needs to be called. Use PAR(cr) to check whether the simulation actually
+   has more than one node/thread. */
 
 
 extern FILE *gmx_log_open(const char *fn,const t_commrec *cr,

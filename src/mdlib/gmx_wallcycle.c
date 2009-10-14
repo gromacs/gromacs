@@ -82,10 +82,9 @@ bool wallcycle_have_counter(void)
   return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
+gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr)
 {
     gmx_wallcycle_t wc;
-    char *env_ptr;
     
     
     if (!wallcycle_have_counter())
@@ -99,6 +98,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
     wc->wcc_all    = NULL;
     wc->wc_depth   = 0;
     wc->ewc_prev   = -1;
+    wc->reset_counters = resetstep;
 
 #ifdef GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
@@ -124,13 +124,6 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
 /*#else*/
         gmx_fatal(FARGS, "GMX_CYCLE_ALL is incompatible with threaded code");
 /*#endif*/
-    }
-    
-    /* Read variable GMX_RESET_COUNTER from environment */ 
-    wc->reset_counters = -1;
-    if ((env_ptr=getenv("GMX_RESET_COUNTERS")) != NULL)
-    {
-        sscanf(env_ptr,gmx_large_int_pfmt,&wc->reset_counters);
     }
     
     return wc;

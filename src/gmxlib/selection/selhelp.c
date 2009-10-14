@@ -350,11 +350,11 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
     {
         /* Print the list of keywords */
         fprintf(stderr, "\nKeywords that select atoms by an integer property:\n");
-        fprintf(stderr, "(use in expressions or like \"atomnr 1 to 5 7 to 9\")\n");
+        fprintf(stderr, "(use in expressions or like \"atomnr 1 to 5 7 9\")\n");
         print_keyword_list(sc, INT_VALUE, FALSE);
 
         fprintf(stderr, "\nKeywords that select atoms by a numeric property:\n");
-        fprintf(stderr, "(can only be used in expressions)\n");
+        fprintf(stderr, "(use in expressions or like \"occupancy 0.5 to 1\")\n");
         print_keyword_list(sc, REAL_VALUE, FALSE);
 
         fprintf(stderr, "\nKeywords that select atoms by a string property:\n");

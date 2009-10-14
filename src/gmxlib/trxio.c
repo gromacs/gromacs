@@ -353,7 +353,7 @@ void close_trx(int status)
 
 int open_trx(const char *outfile,const char *filemode)
 {
-  if (filemode[0]!='w' && filemode[0]!='a')
+  if (filemode[0]!='w' && filemode[0]!='a' && filemode[1]!='+')
     gmx_fatal(FARGS,"Sorry, write_trx can only write");
 
   return gmx_fio_open(outfile,filemode);

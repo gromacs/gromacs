@@ -42,6 +42,8 @@ extern struct gmx_ana_selmethod_t sm_compare;
 
 /** Selection method data for integer keyword evaluation. */
 extern struct gmx_ana_selmethod_t sm_keyword_int;
+/** Selection method data for real keyword evaluation. */
+extern struct gmx_ana_selmethod_t sm_keyword_real;
 /** Selection method data for string keyword evaluation. */
 extern struct gmx_ana_selmethod_t sm_keyword_str;
 /** Selection method data for position keyword evaluation. */

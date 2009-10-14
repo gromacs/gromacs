@@ -38,6 +38,7 @@ To help us fund development, we humbly ask that you cite
 any papers on the package - you can find them in the top README file.
 */
 
+
 /*! 
   \if THREAD_MPI_MAIN
   \mainpage thread_mpi thread_mpi threading library
@@ -100,10 +101,10 @@ any papers on the package - you can find them in the top README file.
    - (partial) HP/UX compilers on Itanium.
 
    Detailed descriptions of the parts of the API can be found in:
-   - thread_mpi/threads.h for the threading fundamentals.
-   - thread_mpi/atomic.h for the atomic operations.
+   - thread_mpi/threads.h for threading fundamentals.
+   - thread_mpi/atomic.h for atomic operations.
    - thread_mpi/tmpi.h for the MPI functions as tMPI_-prefixed functions.
-   - thread_mpi/mpi.h for the MPI bindings.
+   - thread_mpi/mpi_bindings.h for the MPI bindings.
 */
 
 
@@ -122,5 +123,6 @@ any papers on the package - you can find them in the top README file.
 #include "thread_mpi/atomic.h"
 #include "thread_mpi/tmpi.h"
 #include "thread_mpi/mpi_bindings.h"
+#include "thread_mpi/collective.h"
 
 

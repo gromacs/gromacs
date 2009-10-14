@@ -177,9 +177,10 @@
  *  - \ref SPAR_DYNAMIC : If set, the method can handle dynamic values for
  *    the parameter, i.e., the value(s) can be given by an expression that
  *    evaluates to different values for different frames.
- *  - \ref SPAR_RANGES : Can be set only for \ref INT_VALUE parameters,
+ *  - \ref SPAR_RANGES : Can be set only for \ref INT_VALUE and
+ *    \ref REAL_VALUE parameters,
  *    and cannot be combined with \ref SPAR_DYNAMIC.
- *    If set, the parameter accepts ranges of integer values.
+ *    If set, the parameter accepts ranges of values.
  *    The ranges are automatically sorted and compacted such that a minimum
  *    amount of non-overlapping ranges are given for the method.
  *  - \ref SPAR_VARNUM : If set, the parameter can have a variable number
@@ -369,14 +370,10 @@ struct gmx_ana_selcollection_t;
  * provided.
  *
  * For boolean parameters (type equals \ref NO_VALUE), the default value
- * should be set here. If the parameter is provided by the user, this default
- * value is negated. The parameter should be named such that this makes
- * sense.
+ * should be set here. The user can override the value by giving the parameter
+ * either as 'NAME'/'noNAME', or as 'NAME on/off/yes/no'.
  *
  * If the method takes any parameters, this function must be provided.
- *
- * \todo
- * More flexible handling of boolean parameters.
  */
 typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
 /*! \brief

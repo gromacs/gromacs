@@ -554,6 +554,7 @@ void
 gmx_ana_selection_free(gmx_ana_selection_t *sel)
 {
     sfree(sel->name);
+    sfree(sel->selstr);
     gmx_ana_pos_deinit(&sel->p);
     if (sel->m != sel->orgm)
     {

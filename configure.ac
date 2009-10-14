@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.99_development_20090605, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.99_development_20090927, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -87,10 +87,6 @@ AC_ARG_ENABLE(mpi-in-place,
 
 
 
-AC_ARG_ENABLE(apple_64bit,
-              [AC_HELP_STRING([--enable-apple-64bit],
-                              [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
-
 AC_ARG_ENABLE(debug,
 	      [AC_HELP_STRING([--enable-debug],
                               [Add -g to other command line arguments])],,enable_debug=no)
@@ -99,12 +95,8 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(ia32_sse,
               [AC_HELP_STRING([--disable-ia32-sse],
                               [Don't build SSE/SSE2 assembly loops on ia32])],,enable_ia32_sse=yes)
+
 case "${host_cpu}-${host_vendor}" in
-   i?86-apple)
-      if test "$enable_apple_64bit" = "yes"; then
-        enable_ia32_sse=no;
-      fi
-   ;;
    i?86-*) ;;
    *) enable_ia32_sse=no ;;
 esac
@@ -115,11 +107,7 @@ AC_ARG_ENABLE(x86_64_sse,
                               [Don't build SSE assembly loops on X86_64])],,enable_x86_64_sse=yes)
 case "${host_cpu}-${host_vendor}" in
    x86_64-* | amd64-*) ;;
-   i?86-apple)
-      if test "$enable_apple_64bit" != "yes"; then
-        enable_x86_64_sse=no;
-      fi
-   ;;
+   i?86-apple) ;;
    *) enable_x86_64_sse=no ;;
 esac
 
@@ -413,6 +401,9 @@ if test "$enable_threads" = "yes"; then
   if test "$enable_mpi" = "yes"; then
     AC_MSG_ERROR([Cannot use both threads and MPI - yet.])
   fi
+  if test "$with_fft" = "fftw2"; then
+    AC_MSG_ERROR([fftw2 can't be used with threads. Use fftw3 or mkl.])
+  fi 
   # for now we just assume pthreads
   ACX_PTHREAD(,AC_MSG_ERROR([Cannot find POSIX threads - required for thread    support using configure!]))
   LIBS="$PTHREAD_LIBS $LIBS"
@@ -628,6 +619,12 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
+[No regex.h found.
+Regular expression matching in selections will be disabled.
+Selections still work, but the default groups can differ from
+those obtained with regular expressions enabled.
+Consider installing the regular expression library from GNU libc.])])
 
 #####
 # Checks for additional and/or optional functions or libraries.
@@ -659,6 +656,24 @@ AC_CHECK_SIZEOF(long int)
 AC_CHECK_SIZEOF(long long int)
 AC_CHECK_SIZEOF(off_t)
 AC_CHECK_SIZEOF(void*)
+
+
+
+# Apple OS X is a bit strange/braindead in that it always reports itself as i386, both for
+# 32 and 64 bit builds (even with the 64 bit kernel!).
+#
+# To get the SSE support right we check for the size of void * that we detected above...
+case "${host_vendor}-${host_os}" in
+  apple-darwin*)
+  if test $ac_cv_sizeof_voidp = 8; then
+     enable_ia32_sse=no;
+  else
+     enable_x86_64_sse=no;
+  fi
+  ;;
+  *) ;;
+esac
+
 
 
 
@@ -740,6 +755,7 @@ AC_C_INLINE
 AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
 AC_CHECK_TYPES([gid_t],[],[AC_DEFINE(gid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
     
+
 
 # Test stuff for ia32 and x86_64 assembly, and add objects/libraries.
 if test "$enable_ia32_sse" = "yes" -o "$enable_x86_64_sse" = "yes"; then
@@ -857,6 +873,8 @@ fi
 #
 # Nothing to test right now.
 
+
+  
 
 #
 # Test altivec support.
@@ -1085,14 +1103,6 @@ if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
   echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
   echo "  installed you can issue make mdrun; make install-mdrun."
-fi
-
-if test "$host_vendor" = "apple" -a "$enable_apple_64bit" = "no"; then
-  echo ""
-  echo "* Did you know that you can compile a 64-bit version of Gromacs to improve"
-  echo "  performance on recent Intel Macs? You need to install a 64-bit version"
-  echo "  of FFTW first (add -m64 to CFLAGS, or download it from the Gromacs site)"
-  echo "  after which you can simply specify --enable-apple-64bit to this script." 
 fi
 
 if test "$enable_shared" = "no"; then
