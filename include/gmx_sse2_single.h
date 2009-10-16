@@ -31,10 +31,14 @@
 #include <config.h>
 #endif
 
+/* We require SSE2 now! */
+
+#include <math.h>
+
+
 #include <xmmintrin.h> /* SSE */
-#ifdef GMX_SSE2
-#  include <emmintrin.h> /* SSE2 */
-#endif
+#include <emmintrin.h> /* SSE2 */
+
 #ifdef GMX_SSE3
 #  include <pmmintrin.h> /* SSE3 */
 #endif
@@ -42,9 +46,31 @@
 #  include <smmintrin.h> /* SSE4.1 */
 #endif
 
-
 #include <stdio.h>
-  
+
+/***************************************************
+ *                                                 *
+ * COMPILER RANT WARNING:                          *
+ *                                                 *
+ * Ideally, this header would be filled with       *
+ * simple static inline functions. Unfortunately,  *
+ * many vendors provide really braindead compilers *
+ * that either cannot handle more than 1-2 SSE     *
+ * function parameters, and some cannot handle     *
+ * pointers to SSE __m128 datatypes as parameters  *
+ * at all. Thus, for portability we have had to    *
+ * implement all but the simplest routines as      *
+ * macros instead...                               *
+ *                                                 *
+ ***************************************************/
+
+
+/***************************************************
+ *                                                 *
+ *   Wrappers/replacements for some instructions   *
+ *   not available in all SSE versions.            *
+ *                                                 *
+ ***************************************************/
 
 #ifdef GMX_SSE4
 #  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
@@ -52,17 +78,26 @@
 #  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 #endif
 
+/*
+ * Some compilers require a cast to change the interpretation
+ * of a register from FP to Int and vice versa, and not all of
+ * the provide instructions to do this. Roll our own wrappers...
+ */
+
 #if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
-#define gmx_castsi128_ps(a) _mm_castsi128_ps(a)
-#define gmx_castps_si128(a) _mm_castps_si128(a)
+#  define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
+#  define gmx_mm_castps_si128(a) _mm_castps_si128(a)
 #elif defined(__GNUC__)
-#define gmx_castsi128_ps(a) ((__m128)(a))
-#define gmx_castps_si128(a) ((__m128i)(a))
+#  define gmx_mm_castsi128_ps(a) ((__m128)(a))
+#  define gmx_mm_castps_si128(a) ((__m128i)(a))
 #else
-static __m128 gmx_castsi128_ps(__m128i a) { return *(__m128 *) &a; } 
-static __m128i gmx_castps_si128(__m128 a) { return *(__m128i *) &a; } 
+static __m128  gmx_mm_castsi128_ps(__m128i a) { return *(__m128 *) &a;  } 
+static __m128i gmx_mm_castps_si128(__m128 a)  { return *(__m128i *) &a; } 
 #endif
 
+
+
+/* IO functions, just for debugging */
 
 static void
 printxmm(const char *s,__m128 xmm)
@@ -70,8 +105,9 @@ printxmm(const char *s,__m128 xmm)
 	float f[4];
 	
 	_mm_storeu_ps(f,xmm);
-	printf("%s: %15.10g %15.10g %15.10g %15.10g\n",s,f[0],f[1],f[2],f[3]);	
+	printf("%s: %8.5g %8.5g %8.5g %8.5g\n",s,f[0],f[1],f[2],f[3]);	
 }
+
 
 static void
 printxmmsum(const char *s,__m128 xmm)
@@ -79,7 +115,7 @@ printxmmsum(const char *s,__m128 xmm)
 	float f[4];
 	
 	_mm_storeu_ps(f,xmm);
-	printf("%s: %15.10g\n",s,f[0]+f[1]+f[2]+f[3]);	
+	printf("%s (sum): %15.10g\n",s,f[0]+f[1]+f[2]+f[3]);	
 }
 
 
@@ -92,6 +128,12 @@ printxmmi(const char *s,__m128i xmmi)
     printf("%10s: %2d %2d %2d %2d\n",s,i[0],i[1],i[2],i[3]);      
 }
 
+
+/************************
+ *                      *
+ * Simple math routines *
+ *                      *
+ ************************/
 
 static inline __m128
 gmx_mm_invsqrt_ps(__m128 x)
@@ -115,145 +157,45 @@ gmx_mm_inv_ps(__m128 x)
 }
 
 
-
 static inline __m128
-gmx_mm_calc_rsq(__m128 dx, __m128 dy, __m128 dz)
+gmx_mm_calc_rsq_ps(__m128 dx, __m128 dy, __m128 dz)
 {
     return _mm_add_ps( _mm_add_ps( _mm_mul_ps(dx,dx), _mm_mul_ps(dy,dy) ), _mm_mul_ps(dz,dz) );
 }
 
+/* Normal sum of four xmm registers */
 static inline __m128
-gmx_mm_sum4(__m128 t0, __m128 t1, __m128 t2, __m128 t3)
+gmx_mm_sum4_ps(__m128 t0, __m128 t1, __m128 t2, __m128 t3)
 {
     t0 = _mm_add_ps(t0,t1);
     t2 = _mm_add_ps(t2,t3);
     return _mm_add_ps(t0,t2);
 }
 
-static inline void
-gmx_mm_update_j_force(float *fptr, __m128 f0)
-{
-    _mm_store_ps( fptr, _mm_sub_ps( _mm_load_ps(fptr) , f0 ));
-}
-
-
-static inline void
-gmx_mm_sincos_ps(__m128 x, __m128 *sinval, __m128 *cosval)
-{
-	const __m128 two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};
-    const __m128 half        = {0.5,0.5,0.5,0.5};
-    const __m128 one         = {1.0,1.0,1.0,1.0};
-	
-	const __m128i izero       = _mm_set1_epi32(0);
-    const __m128i ione        = _mm_set1_epi32(1);
-    const __m128i itwo        = _mm_set1_epi32(2);
-    const __m128i ithree      = _mm_set1_epi32(3);
-	
-	const __m128 sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};
-    const __m128 sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};
-	const __m128 sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};
-    const __m128 sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};
-    const __m128 sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};
-	const __m128 sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};
-    const __m128 sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};
-    const __m128 sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};
-	
-	__m128 signbit           = gmx_castsi128_ps( _mm_set1_epi32(0x80000000) );
-    __m128 tiny              = gmx_castsi128_ps( _mm_set1_epi32(0x3e400000) );
-	
-	__m128 xl,xl2,xl3,qf,absxl,p1,cx,sx,ts,tc,tsn,tcn;
-	__m128i q;
-	__m128i offsetSin,offsetCos;
-	__m128 sinMask,cosMask,isTiny;
-    __m128 ct0,ct1,ct2,st1,st2;
-	
-	/* Rescale the angle to the range 0..4, and find which quadrant it is in */
-    xl        = _mm_mul_ps(x,two_over_pi);
-	
-	/* q=integer part of xl, rounded _away_ from 0.0 */
-    /* Add 0.5 away from 0.0 */
-    xl        = _mm_add_ps(xl,_mm_or_ps(_mm_and_ps(xl,signbit),half));
-	
-    q         = _mm_cvttps_epi32(xl);
-    qf        = _mm_cvtepi32_ps(q);
-  	
-	/* Compute offset based on quadrant the arg falls in */
-    offsetSin   = _mm_and_si128(q,ithree);
-    offsetCos   = _mm_add_epi32(offsetSin,ione);
-    
-    /* Remainder in range [-pi/4..pi/4] */
-    p1 = _mm_mul_ps(qf,sincosf_kc1);
-    xl = _mm_mul_ps(qf,sincosf_kc2);
-    p1 = _mm_sub_ps(x,p1);    
-    xl = _mm_sub_ps(p1,xl);
-    
-    absxl  = _mm_andnot_ps(signbit,xl);
-    isTiny = _mm_cmpgt_ps(tiny,absxl);
-    
-    xl2    = _mm_mul_ps(xl,xl);
-    xl3    = _mm_mul_ps(xl2,xl);
-	
-	ct1    = _mm_mul_ps(sincosf_cc0,xl2); 
-	ct1    = _mm_add_ps(ct1,sincosf_cc1); 
-	st1    = _mm_mul_ps(sincosf_sc0,xl2);
-	st1    = _mm_add_ps(st1,sincosf_sc1);
-	ct2    = _mm_mul_ps(ct1,xl2);
-	ct2    = _mm_add_ps(ct2,sincosf_cc2);
-	st2    = _mm_mul_ps(st1,xl2);
-	st2    = _mm_add_ps(st2,sincosf_sc2);
-	
-	cx     = _mm_mul_ps(ct2,xl2);
-    cx     = _mm_add_ps(cx,one);
-    
-    sx     = _mm_mul_ps(st2,xl3);
-    sx     = _mm_add_ps(sx,xl);
-	
-    sinMask = gmx_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(offsetSin,ione), izero) );
-    cosMask = gmx_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(offsetCos,ione), izero) );
-    
-    ts     = _mm_or_ps( _mm_and_ps(sinMask,sx) , _mm_andnot_ps(sinMask,cx) );
-    tc     = _mm_or_ps( _mm_and_ps(cosMask,sx) , _mm_andnot_ps(cosMask,cx) );
-	
-    /* Flip the sign of the result when (offset mod 4) = 1 or 2 */
-    sinMask = gmx_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(offsetSin,itwo), izero) );
-    tsn    = _mm_xor_ps(signbit,ts);
-    ts     = _mm_or_ps( _mm_and_ps(sinMask,ts) , _mm_andnot_ps(sinMask,tsn) );
-	
-    cosMask = gmx_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(offsetCos,itwo), izero) );
-    tcn    = _mm_xor_ps(signbit,tc);
-    tc     = _mm_or_ps( _mm_and_ps(cosMask,tc) , _mm_andnot_ps(cosMask,tcn) );
-	
-    *sinval = ts;
-    *cosval = tc;
-	
-	return;
-}
 
 static __m128 
 gmx_mm_log_ps(__m128 x)
 {
-	const __m128 exp_ps  = gmx_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
-	const __m128 one_ps  = gmx_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
-	const __m128 off_ps  = gmx_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
-	const __m128 mant_ps = gmx_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
-	const __m128 sign_ps = gmx_castsi128_ps( _mm_set_epi32(0x80000000, 0x80000000, 0x80000000, 0x80000000) );
-	const __m128 base_ps = gmx_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
-	const __m128 loge_ps = gmx_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
+	const __m128 exp_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x7F800000, 0x7F800000, 0x7F800000, 0x7F800000) );
+	const __m128 one_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000) ); 
+	const __m128 off_ps  = gmx_mm_castsi128_ps( _mm_set_epi32(0x3FBF8000, 0x3FBF8000, 0x3FBF8000, 0x3FBF8000) ); 
+	const __m128 mant_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x007FFFFF, 0x007FFFFF, 0x007FFFFF, 0x007FFFFF) );
+	const __m128 base_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x43800000, 0x43800000, 0x43800000, 0x43800000) );
+	const __m128 loge_ps = gmx_mm_castsi128_ps( _mm_set_epi32(0x3F317218, 0x3F317218, 0x3F317218, 0x3F317218) );
 	
-	const __m128 D5      = gmx_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
-	const __m128 D4      = gmx_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
-	const __m128 D3      = gmx_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
-	const __m128 D2      = gmx_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
-	const __m128 D1      = gmx_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
-	const __m128 D0      = gmx_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
+	const __m128 D5      = gmx_mm_castsi128_ps( _mm_set_epi32(0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5, 0xBD0D0CC5) );
+	const __m128 D4      = gmx_mm_castsi128_ps( _mm_set_epi32(0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD, 0x3EA2ECDD) ); 
+	const __m128 D3      = gmx_mm_castsi128_ps( _mm_set_epi32(0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9, 0xBF9dA2C9) );
+	const __m128 D2      = gmx_mm_castsi128_ps( _mm_set_epi32(0x4026537B, 0x4026537B, 0x4026537B, 0x4026537B) );
+	const __m128 D1      = gmx_mm_castsi128_ps( _mm_set_epi32(0xC054bFAD, 0xC054bFAD, 0xC054bFAD, 0xC054bFAD) ); 
+	const __m128 D0      = gmx_mm_castsi128_ps( _mm_set_epi32(0x4047691A, 0x4047691A, 0x4047691A, 0x4047691A) );
 	
 	__m128  xmm0,xmm1,xmm2;
-	__m128i xmm1i;
 	
 	xmm0  = x;
 	xmm1  = xmm0;
 	xmm1  = _mm_and_ps(xmm1, exp_ps);
-	xmm1 = gmx_castsi128_ps( _mm_srli_epi32( gmx_castps_si128(xmm1),8) ); 
+	xmm1 = gmx_mm_castsi128_ps( _mm_srli_epi32( gmx_mm_castps_si128(xmm1),8) ); 
 	
 	xmm1  = _mm_or_ps(xmm1, one_ps);
 	xmm1  = _mm_sub_ps(xmm1, off_ps);
@@ -287,22 +229,22 @@ gmx_mm_log_ps(__m128 x)
 static __m128 
 gmx_mm_exp_ps(__m128 x)
 {
-	__m128 CC    = gmx_castsi128_ps( _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B) );   // log2(e)
-    __m128 half  = gmx_castsi128_ps( _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000) );   // 0.5e+0f
-    __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   // 127
+    const __m128i half = _mm_set_epi32(0x3F000000, 0x3F000000, 0x3F000000, 0x3F000000);   // 0.5e+0f
+    const __m128i base = _mm_set_epi32(0x0000007F, 0x0000007F, 0x0000007F, 0x0000007F);   // 127
+	const __m128i CC   = _mm_set_epi32(0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B, 0x3FB8AA3B);   // log2(e)
 	
-    __m128 D5    = gmx_castsi128_ps( _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905) );   // 1.8775767e-3f
-    __m128 D4    = gmx_castsi128_ps( _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806) );   // 8.9893397e-3f
-    __m128 D3    = gmx_castsi128_ps( _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23) );   // 5.5826318e-2f
-    __m128 D2    = gmx_castsi128_ps( _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4) );   // 2.4015361e-1f
-    __m128 D1    = gmx_castsi128_ps( _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B) );   // 6.9315308e-1f
-    __m128 D0    = gmx_castsi128_ps( _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF) );   // 9.9999994e-1f
+    const __m128i D5   = _mm_set_epi32(0x3AF61905, 0x3AF61905, 0x3AF61905, 0x3AF61905);   // 1.8775767e-3f
+    const __m128i D4   = _mm_set_epi32(0x3C134806, 0x3C134806, 0x3C134806, 0x3C134806);   // 8.9893397e-3f
+    const __m128i D3   = _mm_set_epi32(0x3D64AA23, 0x3D64AA23, 0x3D64AA23, 0x3D64AA23);   // 5.5826318e-2f
+    const __m128i D2   = _mm_set_epi32(0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4, 0x3E75EAD4);   // 2.4015361e-1f
+    const __m128i D1   = _mm_set_epi32(0x3F31727B, 0x3F31727B, 0x3F31727B, 0x3F31727B);   // 6.9315308e-1f
+    const __m128i D0   = _mm_set_epi32(0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF, 0x3F7FFFFF);   // 9.9999994e-1f
 	
 	__m128 xmm0,xmm1;
 	__m128i xmm2;
 	
-	xmm0 = _mm_mul_ps(x,CC);
-	xmm1 = _mm_sub_ps(xmm0, half);
+	xmm0 = _mm_mul_ps(x,gmx_mm_castsi128_ps(CC) );
+	xmm1 = _mm_sub_ps(xmm0, gmx_mm_castsi128_ps(half));
 	xmm2 = _mm_cvtps_epi32(xmm1); 
 	xmm1 = _mm_cvtepi32_ps(xmm2); 
 	
@@ -310,17 +252,17 @@ gmx_mm_exp_ps(__m128 x)
 	xmm2 = _mm_slli_epi32(xmm2,23);
 	
 	xmm0 = _mm_sub_ps(xmm0,xmm1);
-	xmm1 = _mm_mul_ps(xmm0,D5);
-	xmm1 = _mm_add_ps(xmm1,D4);
+	xmm1 = _mm_mul_ps(xmm0,gmx_mm_castsi128_ps(D5));
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D4));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,D3);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D3));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,D2);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D2));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,D1);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D1));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,D0);
-	xmm1 = _mm_mul_ps(xmm1,gmx_castsi128_ps(xmm2));
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D0));
+	xmm1 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(xmm2));
 	
 	/* 18 instructions currently */
 	return xmm1;
@@ -328,7 +270,112 @@ gmx_mm_exp_ps(__m128 x)
 
 
 
-#define GMX_MM_LOAD_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1)  \
+#define GMX_MM_SINCOS_PS(x,sinval,cosval)                                                                    \
+{                                                                                                            \
+	const __m128 _sincosf_two_over_pi = {2.0/M_PI,2.0/M_PI,2.0/M_PI,2.0/M_PI};                               \
+    const __m128 _sincosf_half        = {0.5,0.5,0.5,0.5};                                                   \
+    const __m128 _sincosf_one         = {1.0,1.0,1.0,1.0};                                                   \
+                                                                                                             \
+	const __m128i _sincosf_izero      = _mm_set1_epi32(0);                                                   \
+    const __m128i _sincosf_ione       = _mm_set1_epi32(1);                                                   \
+    const __m128i _sincosf_itwo       = _mm_set1_epi32(2);                                                   \
+    const __m128i _sincosf_ithree     = _mm_set1_epi32(3);                                                   \
+                                                                                                             \
+	const __m128 _sincosf_kc1 = {1.57079625129,1.57079625129,1.57079625129,1.57079625129};                   \
+    const __m128 _sincosf_kc2 = {7.54978995489e-8,7.54978995489e-8,7.54978995489e-8,7.54978995489e-8};       \
+	const __m128 _sincosf_cc0 = {-0.0013602249,-0.0013602249,-0.0013602249,-0.0013602249};                   \
+    const __m128 _sincosf_cc1 = {0.0416566950,0.0416566950,0.0416566950,0.0416566950};                       \
+    const __m128 _sincosf_cc2 = {-0.4999990225,-0.4999990225,-0.4999990225,-0.4999990225};                   \
+	const __m128 _sincosf_sc0 = {-0.0001950727,-0.0001950727,-0.0001950727,-0.0001950727};                   \
+    const __m128 _sincosf_sc1 = {0.0083320758,0.0083320758,0.0083320758,0.0083320758};                       \
+    const __m128 _sincosf_sc2 = {-0.1666665247,-0.1666665247,-0.1666665247,-0.1666665247};                   \
+                                                                                                             \
+	__m128 _sincosf_signbit           = gmx_mm_castsi128_ps( _mm_set1_epi32(0x80000000) );                   \
+    __m128 _sincosf_tiny              = gmx_mm_castsi128_ps( _mm_set1_epi32(0x3e400000) );                   \
+                                                                                                             \
+	__m128 _sincosf_xl;                                                                                      \
+    __m128 _sincosf_xl2;                                                                                     \
+    __m128 _sincosf_xl3;                                                                                     \
+    __m128 _sincosf_qf;                                                                                      \
+    __m128 _sincosf_absxl;                                                                                   \
+    __m128 _sincosf_p1;                                                                                      \
+    __m128 _sincosf_cx;                                                                                      \
+    __m128 _sincosf_sx;                                                                                      \
+    __m128 _sincosf_ts;                                                                                      \
+    __m128 _sincosf_tc;                                                                                      \
+    __m128 _sincosf_tsn;                                                                                     \
+    __m128 _sincosf_tcn;                                                                                     \
+	__m128i _sincosf_q;                                                                                      \
+    __m128i _sincosf_offsetSin;                                                                              \
+    __m128i _sincosf_offsetCos;                                                                              \
+    __m128 _sincosf_sinMask;                                                                                 \
+    __m128 _sincosf_cosMask;                                                                                 \
+    __m128 _sincosf_isTiny;                                                                                  \
+    __m128 _sincosf_ct0;                                                                                     \
+    __m128 _sincosf_ct1;                                                                                     \
+    __m128 _sincosf_ct2;                                                                                     \
+    __m128 _sincosf_st1;                                                                                     \
+    __m128 _sincosf_st2;                                                                                     \
+                                                                                                             \
+    _sincosf_xl        = _mm_mul_ps(x,_sincosf_two_over_pi);                                                 \
+                                                                                                             \
+    _sincosf_xl        = _mm_add_ps(_sincosf_xl,_mm_or_ps(_mm_and_ps(_sincosf_xl,_sincosf_signbit),_sincosf_half)); \
+	                                                                                                         \
+    _sincosf_q         = _mm_cvttps_epi32(_sincosf_xl);                                                      \
+    _sincosf_qf        = _mm_cvtepi32_ps(_sincosf_q);                                                        \
+  	                                                                                                         \
+    _sincosf_offsetSin   = _mm_and_si128(_sincosf_q,_sincosf_ithree);                                        \
+    _sincosf_offsetCos   = _mm_add_epi32(_sincosf_offsetSin,_sincosf_ione);                                  \
+                                                                                                             \
+    _sincosf_p1 = _mm_mul_ps(_sincosf_qf,_sincosf_kc1);                                                      \
+    _sincosf_xl = _mm_mul_ps(_sincosf_qf,_sincosf_kc2);                                                      \
+    _sincosf_p1 = _mm_sub_ps(x,_sincosf_p1);                                                                 \
+    _sincosf_xl = _mm_sub_ps(_sincosf_p1,_sincosf_xl);                                                       \
+                                                                                                             \
+    _sincosf_absxl  = _mm_andnot_ps(_sincosf_signbit,_sincosf_xl);                                           \
+    _sincosf_isTiny = _mm_cmpgt_ps(_sincosf_tiny,_sincosf_absxl);                                            \
+                                                                                                             \
+    _sincosf_xl2    = _mm_mul_ps(_sincosf_xl,_sincosf_xl);                                                   \
+    _sincosf_xl3    = _mm_mul_ps(_sincosf_xl2,_sincosf_xl);                                                  \
+	                                                                                                         \
+	_sincosf_ct1    = _mm_mul_ps(_sincosf_cc0,_sincosf_xl2);                                                 \
+	_sincosf_ct1    = _mm_add_ps(_sincosf_ct1,_sincosf_cc1);                                                 \
+	_sincosf_st1    = _mm_mul_ps(_sincosf_sc0,_sincosf_xl2);                                                 \
+	_sincosf_st1    = _mm_add_ps(_sincosf_st1,_sincosf_sc1);                                                 \
+	_sincosf_ct2    = _mm_mul_ps(_sincosf_ct1,_sincosf_xl2);                                                 \
+	_sincosf_ct2    = _mm_add_ps(_sincosf_ct2,_sincosf_cc2);                                                 \
+	_sincosf_st2    = _mm_mul_ps(_sincosf_st1,_sincosf_xl2);                                                 \
+	_sincosf_st2    = _mm_add_ps(_sincosf_st2,_sincosf_sc2);                                                 \
+	                                                                                                         \
+	_sincosf_cx     = _mm_mul_ps(_sincosf_ct2,_sincosf_xl2);                                                 \
+    _sincosf_cx     = _mm_add_ps(_sincosf_cx,_sincosf_one);                                                  \
+                                                                                                             \
+    _sincosf_sx     = _mm_mul_ps(_sincosf_st2,_sincosf_xl3);                                                 \
+    _sincosf_sx     = _mm_add_ps(_sincosf_sx,_sincosf_xl);                                                   \
+                                                                                                             \
+    _sincosf_sinMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_ione), _sincosf_izero) ); \
+    _sincosf_cosMask = gmx_mm_castsi128_ps( _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_ione), _sincosf_izero) ); \
+                                                                                                             \
+    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_cx) ); \
+    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_sx) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_cx) ); \
+	                                                                                                         \
+    _sincosf_sinMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetSin,_sincosf_itwo), _sincosf_izero) );\
+    _sincosf_tsn    = _mm_xor_ps(_sincosf_signbit,_sincosf_ts);                                              \
+    _sincosf_ts     = _mm_or_ps( _mm_and_ps(_sincosf_sinMask,_sincosf_ts) , _mm_andnot_ps(_sincosf_sinMask,_sincosf_tsn) ); \
+	                                                                                                         \
+    _sincosf_cosMask = gmx_mm_castsi128_ps(  _mm_cmpeq_epi32( _mm_and_si128(_sincosf_offsetCos,_sincosf_itwo), _sincosf_izero) ); \
+    _sincosf_tcn    = _mm_xor_ps(_sincosf_signbit,_sincosf_tc);                                              \
+    _sincosf_tc     = _mm_or_ps( _mm_and_ps(_sincosf_cosMask,_sincosf_tc) , _mm_andnot_ps(_sincosf_cosMask,_sincosf_tcn) ); \
+	                                                                                                         \
+    sinval = _sincosf_ts;                                                                                    \
+    cosval = _sincosf_tc;                                                                                    \
+}         
+
+
+
+/* Load a single value from 1-4 places, merge into xmm register */
+
+#define GMX_MM_LOAD_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1) \
 {                                                         \
     __m128 _txmm2,_txmm3,_txmm4;                          \
     xmm1           = _mm_load_ss(ptr1);                   \
@@ -341,7 +388,7 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_LOAD_3VALUES_PS(ptr1,ptr2,ptr3,xmm1)  \
+#define GMX_MM_LOAD_3VALUES_PS(ptr1,ptr2,ptr3,xmm1) \
 {                                                    \
     __m128 _txmm2,_txmm3;                            \
     xmm1           = _mm_load_ss(ptr1);              \
@@ -352,7 +399,7 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_LOAD_2VALUES_PS(ptr1,ptr2,xmm1)     \
+#define GMX_MM_LOAD_2VALUES_PS(ptr1,ptr2,xmm1)    \
 {                                                  \
     __m128 _txmm2;                                 \
     xmm1           = _mm_load_ss(ptr1);            \
@@ -361,12 +408,13 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_LOAD_1VALUE_PS(ptr1,xmm1)  \
+#define GMX_MM_LOAD_1VALUE_PS(ptr1,xmm1) \
 {                                         \
       xmm1           = _mm_load_ss(ptr1); \
 }
 
-#define GMX_MM_STORE_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1)              \
+/* Store data in an xmm register into 1-4 different places */
+#define GMX_MM_STORE_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1)             \
 {                                                                      \
     __m128 _txmm2,_txmm3,_txmm4;                                       \
     _txmm3       = _mm_movehl_ps(_mm_setzero_ps(),xmm1);               \
@@ -379,7 +427,7 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_STORE_3VALUES_PS(ptr1,ptr2,ptr3,xmm1)               \
+#define GMX_MM_STORE_3VALUES_PS(ptr1,ptr2,ptr3,xmm1)              \
 {                                                                  \
     __m128 _txmm2,_txmm3;                                          \
     _txmm3       = _mm_movehl_ps(_mm_setzero_ps(),xmm1);           \
@@ -390,7 +438,7 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_STORE_2VALUES_PS(ptr1,ptr2,xmm1)                    \
+#define GMX_MM_STORE_2VALUES_PS(ptr1,ptr2,xmm1)                   \
 {                                                                  \
     __m128 _txmm2;                                                 \
     _txmm2       = _mm_shuffle_ps(xmm1,xmm1,_MM_SHUFFLE(1,1,1,1)); \
@@ -399,60 +447,60 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_STORE_1VALUE_PS(ptr1,xmm1)  \
+#define GMX_MM_STORE_1VALUE_PS(ptr1,xmm1) \
 {                                          \
     _mm_store_ss(ptr1,xmm1);               \
 }
 
 
-
-#define GMX_MM_INCREMENT_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1)    \
-{                                                                \
-    __m128 _tincr;                                               \
-    GMX_MM_LOAD_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,_tincr);          \
-    _tincr = _mm_add_ps(_tincr,xmm1);                            \
-    GMX_MM_STORE_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,_tincr);         \
-}
-
+/* Similar to store, but increments value in memory */
 #define GMX_MM_INCREMENT_8VALUES_PS(ptr1,ptr2,ptr3,ptr4,ptr5,ptr6,ptr7,ptr8,xmm1,xmm2)    \
-{                                                                 \
-    __m128 _tincr1,_tincr2;                                       \
+{                                                                  \
+    __m128 _tincr1,_tincr2;                                        \
     GMX_MM_LOAD_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,_tincr1);          \
     GMX_MM_LOAD_4VALUES_PS(ptr5,ptr6,ptr7,ptr8,_tincr2);          \
-     _tincr1 = _mm_add_ps(_tincr1,xmm1);                          \
-    _tincr2 = _mm_add_ps(_tincr2,xmm2);                           \
+    _tincr1 = _mm_add_ps(_tincr1,xmm1);                            \
+    _tincr2 = _mm_add_ps(_tincr2,xmm2);                            \
     GMX_MM_STORE_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,_tincr1);         \
     GMX_MM_STORE_4VALUES_PS(ptr5,ptr6,ptr7,ptr8,_tincr2);         \
 }
 
+#define GMX_MM_INCREMENT_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,xmm1)    \
+{                                                                 \
+    __m128 _tincr;                                                \
+    GMX_MM_LOAD_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,_tincr);          \
+    _tincr = _mm_add_ps(_tincr,xmm1);                             \
+    GMX_MM_STORE_4VALUES_PS(ptr1,ptr2,ptr3,ptr4,_tincr);         \
+}
+
 #define GMX_MM_INCREMENT_3VALUES_PS(ptr1,ptr2,ptr3,xmm1)         \
-{                                                                \
-    __m128 _tincr;                                               \
+{                                                                 \
+    __m128 _tincr;                                                \
     GMX_MM_LOAD_3VALUES_PS(ptr1,ptr2,ptr3,_tincr);               \
-    _tincr = _mm_add_ps(_tincr,xmm1);                            \
+    _tincr = _mm_add_ps(_tincr,xmm1);                             \
     GMX_MM_STORE_3VALUES_PS(ptr1,ptr2,ptr3,_tincr);              \
 }
 
 #define GMX_MM_INCREMENT_2VALUES_PS(ptr1,ptr2,xmm1)         \
-{                                                           \
-    __m128 _tincr;                                          \
+{                                                            \
+    __m128 _tincr;                                           \
     GMX_MM_LOAD_2VALUES_PS(ptr1,ptr2,_tincr);               \
-    _tincr = _mm_add_ps(_tincr,xmm1);                       \
+    _tincr = _mm_add_ps(_tincr,xmm1);                        \
     GMX_MM_STORE_2VALUES_PS(ptr1,ptr2,_tincr);              \
 }
 
 #define GMX_MM_INCREMENT_1VALUE_PS(ptr1,xmm1)         \
-{                                                     \
-    __m128 _tincr;                                    \
+{                                                      \
+    __m128 _tincr;                                     \
     GMX_MM_LOAD_1VALUE_PS(ptr1,_tincr);               \
-    _tincr = _mm_add_ss(_tincr,xmm1);                 \
+    _tincr = _mm_add_ss(_tincr,xmm1);                  \
     GMX_MM_STORE_1VALUE_PS(ptr1,_tincr);              \
 }
 
 
 
-
-#define GMX_MM_LOAD_4LJ_PS(ptr1,ptr2,ptr3,ptr4,c6,c12)        \
+/* Routines to load pairs from 1-4 places, put in two separate xmm registers. Useful to load LJ parameters! */
+#define GMX_MM_LOAD_4PAIRS_PS(ptr1,ptr2,ptr3,ptr4,c6,c12)    \
 {                                                             \
     __m128 _tmp1,_tmp2,_tmp3,_tmp4;                           \
     _tmp1  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));  \
@@ -465,307 +513,344 @@ gmx_mm_exp_ps(__m128 x)
     c12    = _mm_unpackhi_ps(_tmp1,_tmp2);                    \
 }
 
-#define GMX_MM_LOAD_3LJ_PS(ptr1,ptr2,ptr3,c6,c12)            \
+#define GMX_MM_LOAD_3PAIRS_PS(ptr1,ptr2,ptr3,c6,c12)        \
 {                                                            \
     __m128 _tmp1,_tmp2,_tmp3;                                \
     _tmp1  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1)); \
     _tmp2  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2)); \
     _tmp3  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3)); \
     _tmp1  = _mm_unpacklo_ps(_tmp1,_tmp3);                   \
-    _tmp2  = _mm_unpacklo_ps(_tmp2,_tmp2);                   \
+    _tmp2  = _mm_unpacklo_ps(_tmp2,_mm_setzero_ps());        \
     c6     = _mm_unpacklo_ps(_tmp1,_tmp2);                   \
     c12    = _mm_unpackhi_ps(_tmp1,_tmp2);                   \
 }
 
-#define GMX_MM_LOAD_2LJ_PS(ptr1,ptr2,c6,c12)                 \
+#define GMX_MM_LOAD_2PAIRS_PS(ptr1,ptr2,c6,c12)             \
 {                                                            \
     __m128 _tmp1,_tmp2;                                      \
     _tmp1  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1)); \
     _tmp2  = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2)); \
     c6     = _mm_unpacklo_ps(_tmp1,_tmp2);                   \
     c12    = _mm_movehl_ps(c12,c6);                          \
+    c6     = _mm_movelh_ps(c6,_mm_setzero_ps());             \
+    c12    = _mm_movelh_ps(c12,_mm_setzero_ps());            \
 }
 
-#define GMX_MM_LOAD_1LJ_PS(ptr1,c6,c12)                   \
-{                                                         \
-    c6     = _mm_load_ss(ptr1);                           \
-    c12    = _mm_load_ss(ptr1+1);                         \
+#define GMX_MM_LOAD_1PAIR_PS(ptr1,c6,c12)                   \
+{                                                            \
+    c6     = _mm_load_ss(ptr1);                              \
+    c12    = _mm_load_ss(ptr1+1);                            \
 }
 
 
+/* Routines to load 1-4 rvecs from 1-4 places. 
+ * We mainly use these to load coordinates. The extra routines
+ * are very efficient for the water-water loops, since we e.g.
+ * know that a TIP4p water has 4 atoms, so we should load 12 floats+shuffle.
+ */
+#define GMX_MM_LOAD_1RVEC_1POINTER_PS(ptr1,jx1,jy1,jz1) {             \
+	 jx1            = _mm_load_ss(ptr1);                                \
+     jy1            = _mm_load_ss((ptr1)+1);                            \
+     jz1            = _mm_load_ss((ptr1)+2);                            \
+}
 
-#define GMX_MM_LOAD_1JCOORD_1ATOM_PS(ptr1,jx1,jy1,jz1) {              \
+
+#define GMX_MM_LOAD_2RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2) {      \
+	 jx1            = _mm_load_ss(ptr1);                                      \
+     jy1            = _mm_load_ss((ptr1)+1);                                  \
+     jz1            = _mm_load_ss((ptr1)+2);                                  \
+	 jx2            = _mm_load_ss((ptr1)+3);                                  \
+     jy2            = _mm_load_ss((ptr1)+4);                                  \
+     jz2            = _mm_load_ss((ptr1)+5);                                  \
+}
+
+
+#define GMX_MM_LOAD_3RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+	 jx1            = _mm_load_ss(ptr1);                                    \
+     jy1            = _mm_load_ss((ptr1)+1);                                \
+     jz1            = _mm_load_ss((ptr1)+2);                                \
+	 jx2            = _mm_load_ss((ptr1)+3);                                \
+     jy2            = _mm_load_ss((ptr1)+4);                                \
+     jz2            = _mm_load_ss((ptr1)+5);                                \
+	 jx3            = _mm_load_ss((ptr1)+6);                                \
+     jy3            = _mm_load_ss((ptr1)+7);                                \
+     jz3            = _mm_load_ss((ptr1)+8);                                \
+}
+
+
+#define GMX_MM_LOAD_4RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+	 jx1            = _mm_load_ss(ptr1);                                    \
+     jy1            = _mm_load_ss((ptr1)+1);                                \
+     jz1            = _mm_load_ss((ptr1)+2);                                \
+	 jx2            = _mm_load_ss((ptr1)+3);                                \
+     jy2            = _mm_load_ss((ptr1)+4);                                \
+     jz2            = _mm_load_ss((ptr1)+5);                                \
+	 jx3            = _mm_load_ss((ptr1)+6);                                \
+     jy3            = _mm_load_ss((ptr1)+7);                                \
+     jz3            = _mm_load_ss((ptr1)+8);                                \
+	 jx4            = _mm_load_ss((ptr1)+9);                                \
+     jy4            = _mm_load_ss((ptr1)+10);                               \
+     jz4            = _mm_load_ss((ptr1)+11);                               \
+}
+
+
+#define GMX_MM_LOAD_1RVEC_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1) {  \
+     __m128 _tmp1,_tmp2;                                           \
+	 _tmp1           = _mm_load_ss(ptr1);                          \
+     _tmp2           = _mm_load_ss(ptr2);                          \
+	 _tmp1           = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));      \
+     _tmp2           = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));      \
+     jx1             = _mm_unpacklo_ps(_tmp1,_tmp2);               \
+     jy1             = _mm_unpackhi_ps(_tmp1,_tmp2);               \
+	 jx1             = _mm_unpacklo_ps(_tmp1,_tmp2);               \
+     jz1             = _mm_movehl_ps(jz1,jy1);                     \
+     jx1             = _mm_movelh_ps(jx1,_mm_setzero_ps());        \
+     jy1             = _mm_movelh_ps(jy1,_mm_setzero_ps());        \
+     jz1             = _mm_movelh_ps(jz1,_mm_setzero_ps());        \
+}
+
+
+#define GMX_MM_LOAD_2RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2) { \
+     __m128 _tmp1, _tmp2;                                                      \
+	 _tmp1          = _mm_loadu_ps(ptr1);                                      \
+     jy1            = _mm_loadu_ps(ptr2);                                      \
+     jy2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));        \
+     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2+4));        \
+     jx1            = _mm_unpacklo_ps(_tmp1,jy1);                              \
+     jz1            = _mm_unpackhi_ps(_tmp1,jy1);                              \
+     jy2            = _mm_unpacklo_ps(jy2,_tmp2);                              \
+     jy1            = _mm_movehl_ps(jx1,jx1);                                  \
+     jx2            = _mm_movehl_ps(jz1,jz1);                                  \
+     jz2            = _mm_movehl_ps(jy2,jy2);                                  \
+     jx1             = _mm_movelh_ps(jx1,_mm_setzero_ps());                    \
+     jy1             = _mm_movelh_ps(jy1,_mm_setzero_ps());                    \
+     jz1             = _mm_movelh_ps(jz1,_mm_setzero_ps());                    \
+     jx2             = _mm_movelh_ps(jx2,_mm_setzero_ps());                    \
+     jy2             = _mm_movelh_ps(jy2,_mm_setzero_ps());                    \
+     jz2             = _mm_movelh_ps(jz2,_mm_setzero_ps());                    \
+}
+
+
+#define GMX_MM_LOAD_3RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1, _tmp2, _tmp3;                                                           \
+	 _tmp1          = _mm_loadu_ps(ptr1);                                                  \
+     jy1            = _mm_loadu_ps(ptr2);                                                  \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                \
+     jz2            = _mm_loadu_ps(ptr2+4);                                                \
+     jz3            = _mm_load_ss(ptr1+8);                                                 \
+     _tmp3          = _mm_load_ss(ptr2+8);                                                 \
+     jx1            = _mm_unpacklo_ps(_tmp1,jy1);                                          \
+     jz1            = _mm_unpackhi_ps(_tmp1,jy1);                                          \
+     jy2            = _mm_unpacklo_ps(_tmp2,jz2);                                          \
+     jx3            = _mm_unpackhi_ps(_tmp2,jz2);                                          \
+     jy1            = _mm_movehl_ps(jx1,jx1);                                              \
+     jx2            = _mm_movehl_ps(jz1,jz1);                                              \
+     jz2            = _mm_movehl_ps(jy2,jy2);                                              \
+     jy3            = _mm_movehl_ps(jx3,jx3);                                              \
+     jz3            = _mm_unpacklo_ps(jz3,_tmp3);                                          \
+     jx1             = _mm_movelh_ps(jx1,_mm_setzero_ps());                                \
+     jy1             = _mm_movelh_ps(jy1,_mm_setzero_ps());                                \
+     jz1             = _mm_movelh_ps(jz1,_mm_setzero_ps());                                \
+     jx2             = _mm_movelh_ps(jx2,_mm_setzero_ps());                                \
+     jy2             = _mm_movelh_ps(jy2,_mm_setzero_ps());                                \
+     jz2             = _mm_movelh_ps(jz2,_mm_setzero_ps());                                \
+     jx3             = _mm_movelh_ps(jx3,_mm_setzero_ps());                                \
+     jy3             = _mm_movelh_ps(jy3,_mm_setzero_ps());                                \
+     jz3             = _mm_movelh_ps(jz3,_mm_setzero_ps());                                \
+}
+
+
+#define GMX_MM_LOAD_4RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+     __m128 _tmp1, _tmp2, _tmp3,_tmp4;                                                                 \
+	 _tmp1          = _mm_loadu_ps(ptr1);                                                              \
+     jy1            = _mm_loadu_ps(ptr2);                                                              \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                            \
+     jz2            = _mm_loadu_ps(ptr2+4);                                                            \
+     _tmp3          = _mm_loadu_ps(ptr1+8);                                                            \
+     _tmp4          = _mm_loadu_ps(ptr2+8);                                                            \
+     jx1            = _mm_unpacklo_ps(_tmp1,jy1);                                                      \
+     jz1            = _mm_unpackhi_ps(_tmp1,jy1);                                                      \
+     jy2            = _mm_unpacklo_ps(_tmp2,jz2);                                                      \
+     jx3            = _mm_unpackhi_ps(_tmp2,jz2);                                                      \
+     jz3            = _mm_unpacklo_ps(_tmp3,_tmp4);                                                    \
+     jy4            = _mm_unpackhi_ps(_tmp3,_tmp4);                                                    \
+     jy1            = _mm_movehl_ps(jx1,jx1);                                                          \
+     jx2            = _mm_movehl_ps(jz1,jz1);                                                          \
+     jz2            = _mm_movehl_ps(jy2,jy2);                                                          \
+     jy3            = _mm_movehl_ps(jx3,jx3);                                                          \
+     jx4            = _mm_movehl_ps(jz3,jz3);                                                          \
+     jz4            = _mm_movehl_ps(jy4,jy4);                                                          \
+     jx1             = _mm_movelh_ps(jx1,_mm_setzero_ps());                                            \
+     jy1             = _mm_movelh_ps(jy1,_mm_setzero_ps());                                            \
+     jz1             = _mm_movelh_ps(jz1,_mm_setzero_ps());                                            \
+     jx2             = _mm_movelh_ps(jx2,_mm_setzero_ps());                                            \
+     jy2             = _mm_movelh_ps(jy2,_mm_setzero_ps());                                            \
+     jz2             = _mm_movelh_ps(jz2,_mm_setzero_ps());                                            \
+     jx3             = _mm_movelh_ps(jx3,_mm_setzero_ps());                                            \
+     jy3             = _mm_movelh_ps(jy3,_mm_setzero_ps());                                            \
+     jz3             = _mm_movelh_ps(jz3,_mm_setzero_ps());                                            \
+     jx4             = _mm_movelh_ps(jx4,_mm_setzero_ps());                                            \
+     jy4             = _mm_movelh_ps(jy4,_mm_setzero_ps());                                            \
+     jz4             = _mm_movelh_ps(jz4,_mm_setzero_ps());                                            \
+}
+
+
+#define GMX_MM_LOAD_1RVEC_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1) { \
+     __m128 _tmp1,_tmp3,_tmp4;                                         \
 	 jx1            = _mm_load_ss(ptr1);                               \
-     jy1            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+1));\
-     jz1            = _mm_shuffle_ps(jy1,jy1,_MM_SHUFFLE(0,0,0,1));    \
+     jy1            = _mm_load_ss(ptr2);                               \
+     jz1            = _mm_load_ss(ptr3);                               \
+	 jx1            = _mm_loadh_pi(jx1,(__m64 *)(ptr1+1));             \
+     jy1            = _mm_loadh_pi(jy1,(__m64 *)(ptr2+1));             \
+     jz1            = _mm_loadh_pi(jz1,(__m64 *)(ptr3+1));             \
+     _tmp1          = _mm_unpacklo_ps(jx1,jy1);                        \
+     _tmp3          = _mm_unpackhi_ps(jx1,jy1);                        \
+     _tmp4          = _mm_unpackhi_ps(jz1,jz1);                        \
+     jx1            = _mm_movelh_ps(_tmp1,jz1);                        \
+     jy1            = _mm_movelh_ps(_tmp3,_tmp4);                      \
+     jz1            = _mm_movehl_ps(_tmp4,_tmp3);                      \
 }
 
 
-#define GMX_MM_LOAD_1JCOORD_2ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2) { \
-	 jx1            = _mm_loadu_ps(ptr1);                              \
-     jy1            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,1));    \
-     jz1            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));    \
-     jx2            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,3));    \
-     jy2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));\
-     jz2            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,1));    \
+#define GMX_MM_LOAD_2RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2) { \
+     __m128 _tmp1, _tmp2;                                                           \
+	 jx1            = _mm_loadu_ps(ptr1);                                           \
+     jy1            = _mm_loadu_ps(ptr2);                                           \
+     jz1            = _mm_loadu_ps(ptr3);                                           \
+     jx2            = _mm_setzero_ps();                                             \
+     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                            \
+     _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));             \
+     jz2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2+4));             \
+     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3+4));             \
+     _tmp1          = _mm_unpacklo_ps(_tmp1,_tmp2);                                 \
+     jz2            = _mm_unpacklo_ps(jz2,_mm_setzero_ps());                        \
+     jy2            = _mm_unpacklo_ps(_tmp1,jz2);                                   \
+     jz2            = _mm_unpackhi_ps(_tmp1,jz2);                                   \
 }
 
 
-#define GMX_MM_LOAD_1JCOORD_3ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-	 jx1            = _mm_loadu_ps(ptr1);                                          \
-     jy1            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,1));                \
-     jz1            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));                \
-     jx2            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,3));                \
-     jy2            = _mm_loadu_ps(ptr1+4);                                        \
-     jz2            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,1));                \
-     jx3            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,2));                \
-     jy3            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,3));                \
-     jz3            = _mm_load_ss(ptr1+8);                                         \
+#define GMX_MM_LOAD_3RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1, _tmp2;                                                                       \
+	 jx1            = _mm_loadu_ps(ptr1);                                                       \
+     jy1            = _mm_loadu_ps(ptr2);                                                       \
+     jz1            = _mm_loadu_ps(ptr3);                                                       \
+     jx2            = _mm_setzero_ps();                                                         \
+     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                        \
+     jy2            = _mm_loadu_ps(ptr1+4);                                                     \
+     jz2            = _mm_loadu_ps(ptr2+4);                                                     \
+     jx3            = _mm_loadu_ps(ptr3+4);                                                     \
+     jy3            = _mm_setzero_ps();                                                         \
+     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                        \
+     jz3            = _mm_load_ss(ptr1+8);                                                      \
+     _tmp1          = _mm_load_ss(ptr2+8);                                                      \
+     _tmp2          = _mm_load_ss(ptr3+8);                                                      \
+     jz3            = _mm_unpacklo_ps(jz3,_tmp2);                                               \
+     _tmp1          = _mm_unpacklo_ps(_tmp1,_mm_setzero_ps());                                  \
+     jz3            = _mm_unpacklo_ps(jz3,_tmp1);                                               \
 }
 
 
-#define GMX_MM_LOAD_1JCOORD_4ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-	 jx1            = _mm_loadu_ps(ptr1);                                                      \
-     jy1            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,1));                            \
-     jz1            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));                            \
-     jx2            = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,3));                            \
-     jy2            = _mm_loadu_ps(ptr1+4);                                                    \
-     jz2            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,1));                            \
-     jx3            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,2));                            \
-     jy3            = _mm_shuffle_ps(jy2,jy2,_MM_SHUFFLE(0,0,0,3));                            \
-     jz3            = _mm_loadu_ps(ptr1+8);                                                    \
-     jx4            = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));                            \
-     jy4            = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,2));                            \
-     jz4            = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,3));                            \
-}
-
-
-#define GMX_MM_LOAD_2JCOORD_1ATOM_PS(ptr1,ptr2,jx1,jy1,jz1) {  \
-     __m128 _tmp1,_tmp2;                                        \
-	 _tmp1           = _mm_load_ss(ptr1);                       \
-     _tmp2           = _mm_load_ss(ptr2);                       \
-	 _tmp1           = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));   \
-     _tmp2           = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));   \
-     jx1             = _mm_unpacklo_ps(_tmp1,_tmp2);            \
-     jy1             = _mm_unpackhi_ps(_tmp1,_tmp2);            \
-	 jx1             = _mm_unpacklo_ps(_tmp1,_tmp2);            \
-     jz1             = _mm_movehl_ps(jz1,jy1);                  \
-}
-
-
-#define GMX_MM_LOAD_2JCOORD_2ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2) { \
-     __m128 _tmp1, _tmp2;                                                   \
-	 _tmp1          = _mm_loadu_ps(ptr1);                                   \
-     jy1            = _mm_loadu_ps(ptr2);                                   \
-     jy2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));     \
-     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2+4));     \
-     jx1            = _mm_unpacklo_ps(_tmp1,jy1);                           \
-     jz1            = _mm_unpackhi_ps(_tmp1,jy1);                           \
-     jy2            = _mm_unpacklo_ps(jy2,_tmp2);                           \
-     jy1            = _mm_movehl_ps(jx1,jx1);                               \
-     jx2            = _mm_movehl_ps(jz1,jz1);                               \
-     jz2            = _mm_movehl_ps(jy2,jy2);                               \
-}
-
-
-#define GMX_MM_LOAD_2JCOORD_3ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-     __m128 _tmp1, _tmp2, _tmp3;                                                        \
-	 _tmp1          = _mm_loadu_ps(ptr1);                                               \
-     jy1            = _mm_loadu_ps(ptr2);                                               \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                             \
-     jz2            = _mm_loadu_ps(ptr2+4);                                             \
-     jz3            = _mm_load_ss(ptr1+8);                                              \
-     _tmp3          = _mm_load_ss(ptr2+8);                                              \
-     jx1            = _mm_unpacklo_ps(_tmp1,jy1);                                       \
-     jz1            = _mm_unpackhi_ps(_tmp1,jy1);                                       \
-     jy2            = _mm_unpacklo_ps(_tmp2,jz2);                                       \
-     jx3            = _mm_unpackhi_ps(_tmp2,jz2);                                       \
-     jy1            = _mm_movehl_ps(jx1,jx1);                                           \
-     jx2            = _mm_movehl_ps(jz1,jz1);                                           \
-     jz2            = _mm_movehl_ps(jy2,jy2);                                           \
-     jy3            = _mm_movehl_ps(jx3,jx3);                                           \
-     jz3            = _mm_unpacklo_ps(jz3,_tmp3);                                       \
-}
-
-
-#define GMX_MM_LOAD_2JCOORD_4ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-     __m128 _tmp1, _tmp2, _tmp3,_tmp4;                                                  \
-	 _tmp1          = _mm_loadu_ps(ptr1);                                               \
-     jy1            = _mm_loadu_ps(ptr2);                                               \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                             \
-     jz2            = _mm_loadu_ps(ptr2+4);                                             \
-     _tmp3          = _mm_loadu_ps(ptr1+8);                                             \
-     _tmp4          = _mm_loadu_ps(ptr2+8);                                             \
-     jx1            = _mm_unpacklo_ps(_tmp1,jy1);                                       \
-     jz1            = _mm_unpackhi_ps(_tmp1,jy1);                                       \
-     jy2            = _mm_unpacklo_ps(_tmp2,jz2);                                       \
-     jx3            = _mm_unpackhi_ps(_tmp2,jz2);                                       \
-     jz3            = _mm_unpacklo_ps(_tmp3,_tmp4);                                     \
-     jy4            = _mm_unpackhi_ps(_tmp3,_tmp4);                                     \
-     jy1            = _mm_movehl_ps(jx1,jx1);                                           \
-     jx2            = _mm_movehl_ps(jz1,jz1);                                           \
-     jz2            = _mm_movehl_ps(jy2,jy2);                                           \
-     jy3            = _mm_movehl_ps(jx3,jx3);                                           \
-     jx4            = _mm_movehl_ps(jz3,jz3);                                           \
-     jz4            = _mm_movehl_ps(jy4,jy4);                                           \
-}
-
-
-#define GMX_MM_LOAD_3JCOORD_1ATOM_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1) { \
-     __m128 _tmp1,_tmp3,_tmp4;                                      \
-	 jx1            = _mm_load_ss(ptr1);                            \
-     jy1            = _mm_load_ss(ptr2);                            \
-     jz1            = _mm_load_ss(ptr3);                            \
-	 jx1            = _mm_loadh_pi(jx1,(__m64 *)(ptr1+1));          \
-     jy1            = _mm_loadh_pi(jy1,(__m64 *)(ptr2+1));          \
-     jz1            = _mm_loadh_pi(jz1,(__m64 *)(ptr3+1));          \
-     _tmp1          = _mm_unpacklo_ps(jx1,jy1);                     \
-     _tmp3          = _mm_unpackhi_ps(jx1,jy1);                     \
-     _tmp4          = _mm_unpackhi_ps(jz1,jz1);                     \
-     jx1            = _mm_movelh_ps(_tmp1,jz1);                     \
-     jy1            = _mm_movelh_ps(_tmp3,_tmp4);                   \
-     jz1            = _mm_movehl_ps(_tmp4,_tmp3);                   \
-}
-
-
-#define GMX_MM_LOAD_3JCOORD_2ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2) { \
-     __m128 _tmp1, _tmp2;                                                        \
-	 jx1            = _mm_loadu_ps(ptr1);                                        \
-     jy1            = _mm_loadu_ps(ptr2);                                        \
-     jz1            = _mm_loadu_ps(ptr3);                                        \
-     jx2            = _mm_setzero_ps();                                          \
-     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                         \
-     jy2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));          \
-     jz2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2+4));          \
-     _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3+4));          \
-     _tmp2          = _mm_unpacklo_ps(jy2,jz2);                                  \
-     _tmp1          = _mm_unpacklo_ps(_tmp1,_tmp1);                              \
-     jy2            = _mm_movelh_ps(_tmp2,_tmp1);                                \
-     jz2            = _mm_movehl_ps(_tmp1,_tmp2);                                \
-}
-
-
-#define GMX_MM_LOAD_3JCOORD_3ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) {  \
-     __m128 _tmp1, _tmp2;                                                                     \
-	 jx1            = _mm_loadu_ps(ptr1);                                                     \
-     jy1            = _mm_loadu_ps(ptr2);                                                     \
-     jz1            = _mm_loadu_ps(ptr3);                                                     \
-     jx2            = _mm_setzero_ps();                                                       \
-     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                      \
-     jy2            = _mm_loadu_ps(ptr1+4);                                                   \
-     jz2            = _mm_loadu_ps(ptr2+4);                                                   \
-     jx3            = _mm_loadu_ps(ptr3+4);                                                   \
-     jy3            = _mm_setzero_ps();                                                       \
-     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                      \
-     jz3            = _mm_load_ss(ptr1+8);                                                    \
-     _tmp1          = _mm_load_ss(ptr2+8);                                                    \
-     _tmp2          = _mm_load_ss(ptr3+8);                                                    \
-     jz3            = _mm_unpacklo_ps(jz3,_tmp2);                                             \
-     _tmp1          = _mm_unpacklo_ps(_tmp1,_tmp1);                                           \
-     jz3            = _mm_unpacklo_ps(jz3,_tmp1);                                             \
-}
-
-
-#define GMX_MM_LOAD_3JCOORD_4ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-	 jx1            = _mm_loadu_ps(ptr1);                                                     \
-     jy1            = _mm_loadu_ps(ptr2);                                                     \
-     jz1            = _mm_loadu_ps(ptr3);                                                     \
-     jx2            = _mm_setzero_ps();                                                       \
-     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                      \
-     jy2            = _mm_loadu_ps(ptr1+4);                                                   \
-     jz2            = _mm_loadu_ps(ptr2+4);                                                   \
-     jx3            = _mm_loadu_ps(ptr3+4);                                                   \
-     jy3            = _mm_setzero_ps();                                                       \
-     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                      \
-     jz3            = _mm_loadu_ps(ptr1+8);                                                   \
-     jx4            = _mm_loadu_ps(ptr2+8);                                                   \
-     jy4            = _mm_loadu_ps(ptr3+8);                                                   \
-     jz4            = _mm_setzero_ps();                                                       \
-     _MM_TRANSPOSE4_PS(jz3,jx4,jy4,jz4);                                                      \
+#define GMX_MM_LOAD_4RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+	 jx1            = _mm_loadu_ps(ptr1);                                                                   \
+     jy1            = _mm_loadu_ps(ptr2);                                                                   \
+     jz1            = _mm_loadu_ps(ptr3);                                                                   \
+     jx2            = _mm_setzero_ps();                                                                     \
+     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                                    \
+     jy2            = _mm_loadu_ps(ptr1+4);                                                                 \
+     jz2            = _mm_loadu_ps(ptr2+4);                                                                 \
+     jx3            = _mm_loadu_ps(ptr3+4);                                                                 \
+     jy3            = _mm_setzero_ps();                                                                     \
+     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                                    \
+     jz3            = _mm_loadu_ps(ptr1+8);                                                                 \
+     jx4            = _mm_loadu_ps(ptr2+8);                                                                 \
+     jy4            = _mm_loadu_ps(ptr3+8);                                                                 \
+     jz4            = _mm_setzero_ps();                                                                     \
+     _MM_TRANSPOSE4_PS(jz3,jx4,jy4,jz4);                                                                    \
 }
 
 
 
-#define GMX_MM_LOAD_4JCOORD_1ATOM_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5;                               \
-	 jx1            = _mm_load_ss(ptr1);                                 \
-     _tmp1          = _mm_load_ss(ptr2);                                 \
-     jy1            = _mm_load_ss(ptr3);                                 \
-     jz1            = _mm_load_ss(ptr4);                                 \
-	 jx1            = _mm_loadh_pi(jx1,(__m64 *)(ptr1+1));               \
-     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr2+1));             \
-     jy1            = _mm_loadh_pi(jy1,(__m64 *)(ptr3+1));               \
-     jz1            = _mm_loadh_pi(jz1,(__m64 *)(ptr4+1));               \
-     _tmp2          = _mm_unpacklo_ps(jx1,_tmp1);                        \
-     _tmp3          = _mm_unpacklo_ps(jy1,jz1);                          \
-     _tmp4          = _mm_unpackhi_ps(jx1,_tmp1);                        \
-     _tmp5          = _mm_unpackhi_ps(jy1,jz1);                          \
-     jx1            = _mm_movelh_ps(_tmp2,_tmp3);                        \
-     jy1            = _mm_movelh_ps(_tmp4,_tmp5);                        \
-     jz1            = _mm_movehl_ps(_tmp5,_tmp4);                        \
+#define GMX_MM_LOAD_1RVEC_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1) {  \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5;                                   \
+	 jx1            = _mm_load_ss(ptr1);                                     \
+     _tmp1          = _mm_load_ss(ptr2);                                     \
+     jy1            = _mm_load_ss(ptr3);                                     \
+     jz1            = _mm_load_ss(ptr4);                                     \
+	 jx1            = _mm_loadh_pi(jx1,(__m64 *)(ptr1+1));                   \
+     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr2+1));                 \
+     jy1            = _mm_loadh_pi(jy1,(__m64 *)(ptr3+1));                   \
+     jz1            = _mm_loadh_pi(jz1,(__m64 *)(ptr4+1));                   \
+     _tmp2          = _mm_unpacklo_ps(jx1,_tmp1);                            \
+     _tmp3          = _mm_unpacklo_ps(jy1,jz1);                              \
+     _tmp4          = _mm_unpackhi_ps(jx1,_tmp1);                            \
+     _tmp5          = _mm_unpackhi_ps(jy1,jz1);                              \
+     jx1            = _mm_movelh_ps(_tmp2,_tmp3);                            \
+     jy1            = _mm_movelh_ps(_tmp4,_tmp5);                            \
+     jz1            = _mm_movehl_ps(_tmp5,_tmp4);                            \
 }
 
 
-#define GMX_MM_LOAD_4JCOORD_2ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2) { \
-     __m128 _tmp1, _tmp2;                                                             \
-	 jx1            = _mm_loadu_ps(ptr1);                                             \
-     jy1            = _mm_loadu_ps(ptr2);                                             \
-     jz1            = _mm_loadu_ps(ptr3);                                             \
-     jx2            = _mm_loadu_ps(ptr4);                                             \
-     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                              \
-     jy2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));               \
-     jz2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2+4));               \
-     _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3+4));               \
-     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr4+4));               \
-     _tmp1          = _mm_unpacklo_ps(jy2,_tmp1);                                     \
-     _tmp2          = _mm_unpacklo_ps(jz2,_tmp2);                                     \
-     jy2            = _mm_unpacklo_ps(_tmp1,_tmp2);                                   \
-     jz2            = _mm_unpackhi_ps(_tmp1,_tmp2);                                   \
+#define GMX_MM_LOAD_2RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2) { \
+     __m128 _tmp1, _tmp2;                                                                \
+	 jx1            = _mm_loadu_ps(ptr1);                                                \
+     jy1            = _mm_loadu_ps(ptr2);                                                \
+     jz1            = _mm_loadu_ps(ptr3);                                                \
+     jx2            = _mm_loadu_ps(ptr4);                                                \
+     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                 \
+     jy2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));                  \
+     jz2            = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr2+4));                  \
+     _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3+4));                  \
+     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr4+4));                  \
+     _tmp1          = _mm_unpacklo_ps(jy2,_tmp1);                                        \
+     _tmp2          = _mm_unpacklo_ps(jz2,_tmp2);                                        \
+     jy2            = _mm_unpacklo_ps(_tmp1,_tmp2);                                      \
+     jz2            = _mm_unpackhi_ps(_tmp1,_tmp2);                                      \
 }
 
 
-#define GMX_MM_LOAD_4JCOORD_3ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-     __m128 _tmp1, _tmp2, _tmp3;                                                              \
-	 jx1            = _mm_loadu_ps(ptr1);                                                     \
-     jy1            = _mm_loadu_ps(ptr2);                                                     \
-     jz1            = _mm_loadu_ps(ptr3);                                                     \
-     jx2            = _mm_loadu_ps(ptr4);                                                     \
-     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                      \
-     jy2            = _mm_loadu_ps(ptr1+4);                                                   \
-     jz2            = _mm_loadu_ps(ptr2+4);                                                   \
-     jx3            = _mm_loadu_ps(ptr3+4);                                                   \
-     jy3            = _mm_loadu_ps(ptr4+4);                                                   \
-     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                      \
-     jz3            = _mm_load_ss(ptr1+8);                                                    \
-     _tmp1          = _mm_load_ss(ptr2+8);                                                    \
-     _tmp2          = _mm_load_ss(ptr3+8);                                                    \
-     _tmp3          = _mm_load_ss(ptr4+8);                                                    \
-     jz3            = _mm_unpacklo_ps(jz3,_tmp2);                                             \
-     _tmp1          = _mm_unpacklo_ps(_tmp1,_tmp3);                                           \
-     jz3            = _mm_unpacklo_ps(jz3,_tmp1);                                             \
+#define GMX_MM_LOAD_3RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1, _tmp2, _tmp3;                                                                     \
+	 jx1            = _mm_loadu_ps(ptr1);                                                            \
+     jy1            = _mm_loadu_ps(ptr2);                                                            \
+     jz1            = _mm_loadu_ps(ptr3);                                                            \
+     jx2            = _mm_loadu_ps(ptr4);                                                            \
+     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                             \
+     jy2            = _mm_loadu_ps(ptr1+4);                                                          \
+     jz2            = _mm_loadu_ps(ptr2+4);                                                          \
+     jx3            = _mm_loadu_ps(ptr3+4);                                                          \
+     jy3            = _mm_loadu_ps(ptr4+4);                                                          \
+     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                             \
+     jz3            = _mm_load_ss(ptr1+8);                                                           \
+     _tmp1          = _mm_load_ss(ptr2+8);                                                           \
+     _tmp2          = _mm_load_ss(ptr3+8);                                                           \
+     _tmp3          = _mm_load_ss(ptr4+8);                                                           \
+     jz3            = _mm_unpacklo_ps(jz3,_tmp2);                                                    \
+     _tmp1          = _mm_unpacklo_ps(_tmp1,_tmp3);                                                  \
+     jz3            = _mm_unpacklo_ps(jz3,_tmp1);                                                    \
 }
 
 
-#define GMX_MM_LOAD_4JCOORD_4ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-	 jx1            = _mm_loadu_ps(ptr1);                                                     \
-     jy1            = _mm_loadu_ps(ptr2);                                                     \
-     jz1            = _mm_loadu_ps(ptr3);                                                     \
-     jx2            = _mm_loadu_ps(ptr4);                                                     \
-     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                      \
-     jy2            = _mm_loadu_ps(ptr1+4);                                                   \
-     jz2            = _mm_loadu_ps(ptr2+4);                                                   \
-     jx3            = _mm_loadu_ps(ptr3+4);                                                   \
-     jy3            = _mm_loadu_ps(ptr4+4);                                                   \
-     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                      \
-     jz3            = _mm_loadu_ps(ptr1+8);                                                   \
-     jx4            = _mm_loadu_ps(ptr2+8);                                                   \
-     jy4            = _mm_loadu_ps(ptr3+8);                                                   \
-     jz4            = _mm_loadu_ps(ptr4+8);                                                   \
-     _MM_TRANSPOSE4_PS(jz3,jx4,jy4,jz4);                                                      \
+#define GMX_MM_LOAD_4RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+	 jx1            = _mm_loadu_ps(ptr1);                                                                        \
+     jy1            = _mm_loadu_ps(ptr2);                                                                        \
+     jz1            = _mm_loadu_ps(ptr3);                                                                        \
+     jx2            = _mm_loadu_ps(ptr4);                                                                        \
+     _MM_TRANSPOSE4_PS(jx1,jy1,jz1,jx2);                                                                         \
+     jy2            = _mm_loadu_ps(ptr1+4);                                                                      \
+     jz2            = _mm_loadu_ps(ptr2+4);                                                                      \
+     jx3            = _mm_loadu_ps(ptr3+4);                                                                      \
+     jy3            = _mm_loadu_ps(ptr4+4);                                                                      \
+     _MM_TRANSPOSE4_PS(jy2,jz2,jx3,jy3);                                                                         \
+     jz3            = _mm_loadu_ps(ptr1+8);                                                                      \
+     jx4            = _mm_loadu_ps(ptr2+8);                                                                      \
+     jy4            = _mm_loadu_ps(ptr3+8);                                                                      \
+     jz4            = _mm_loadu_ps(ptr4+8);                                                                      \
+     _MM_TRANSPOSE4_PS(jz3,jx4,jy4,jz4);                                                                         \
 }
 
 
-#define GMX_MM_UPDATE_1JCOORD_1ATOM_PS(ptr1,jx1,jy1,jz1) {           \
+/* Routines to increment rvecs in memory, typically use for j particle force updates */
+#define GMX_MM_INCREMENT_1RVEC_1POINTER_PS(ptr1,jx1,jy1,jz1) {      \
      __m128 _tmp1;                                                    \
      jy1            = _mm_unpacklo_ps(jy1,jz1);                       \
      jx1            = _mm_movelh_ps(jx1,jy1);                         \
@@ -777,528 +862,528 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_UPDATE_1JCOORD_2ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2) { \
-     __m128 _tmp1, _tmp2;                                               \
-     _tmp1          = _mm_loadu_ps(ptr1);                               \
-     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4)); \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                         \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                         \
-     jx1            = _mm_movelh_ps(jx1,jz1);                           \
-     _tmp1          = _mm_add_ps(_tmp1,jx1);                            \
-     _tmp2          = _mm_add_ps(_tmp2,jy2);                            \
-     _mm_storeu_ps(ptr1,_tmp1);                                         \
-     _mm_storel_pi((__m64 *)(ptr1+4),_tmp2);                            \
+#define GMX_MM_INCREMENT_2RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2) { \
+     __m128 _tmp1, _tmp2;                                                     \
+     _tmp1          = _mm_loadu_ps(ptr1);                                     \
+     _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));       \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                               \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                               \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                               \
+     jx1            = _mm_movelh_ps(jx1,jz1);                                 \
+     _tmp1          = _mm_add_ps(_tmp1,jx1);                                  \
+     _tmp2          = _mm_add_ps(_tmp2,jy2);                                  \
+     _mm_storeu_ps(ptr1,_tmp1);                                               \
+     _mm_storel_pi((__m64 *)(ptr1+4),_tmp2);                                  \
 }
 
 
-#define GMX_MM_UPDATE_1JCOORD_3ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-     __m128 _tmp1, _tmp2, _tmp3;                                        \
-     _tmp1          = _mm_loadu_ps(ptr1);                               \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                             \
-     _tmp3          = _mm_load_ss(ptr1+8);                              \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                         \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                         \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                         \
-     jx1            = _mm_movelh_ps(jx1,jz1);                           \
-     jy2            = _mm_movelh_ps(jy2,jx3);                           \
-     _tmp1           = _mm_add_ps(_tmp1,jx1);                           \
-     _tmp2           = _mm_add_ps(_tmp2,jy2);                           \
-     _tmp3           = _mm_add_ss(_tmp3,jz3);                           \
-     _mm_storeu_ps(ptr1,_tmp1);                                         \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                       \
-     _mm_store_ss(ptr1+8,_tmp3);                                        \
+#define GMX_MM_INCREMENT_3RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1, _tmp2, _tmp3;                                                          \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                 \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                               \
+     _tmp3          = _mm_load_ss(ptr1+8);                                                \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                           \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                           \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                           \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                           \
+     jx1            = _mm_movelh_ps(jx1,jz1);                                             \
+     jy2            = _mm_movelh_ps(jy2,jx3);                                             \
+     _tmp1           = _mm_add_ps(_tmp1,jx1);                                             \
+     _tmp2           = _mm_add_ps(_tmp2,jy2);                                             \
+     _tmp3           = _mm_add_ss(_tmp3,jz3);                                             \
+     _mm_storeu_ps(ptr1,_tmp1);                                                           \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                         \
+     _mm_store_ss(ptr1+8,_tmp3);                                                          \
 }
 
 
-#define GMX_MM_UPDATE_1JCOORD_4ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-     __m128 _tmp1, _tmp2, _tmp3;                                        \
-     _tmp1          = _mm_loadu_ps(ptr1);                               \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                             \
-     _tmp3          = _mm_loadu_ps(ptr1+8);                             \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                         \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                         \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                         \
-     jz3            = _mm_unpacklo_ps(jz3,jx4);                         \
-     jy4            = _mm_unpacklo_ps(jy4,jz4);                         \
-     jx1            = _mm_movelh_ps(jx1,jz1);                           \
-     jy2            = _mm_movelh_ps(jy2,jx3);                           \
-     jz3            = _mm_movelh_ps(jz3,jy4);                           \
-     _tmp1          = _mm_add_ps(_tmp1,jx1);                            \
-     _tmp2          = _mm_add_ps(_tmp2,jy2);                            \
-     _tmp3          = _mm_add_ps(_tmp3,jz3);                            \
-     _mm_storeu_ps(ptr1,_tmp1);                                         \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                       \
-     _mm_storeu_ps(ptr1+8,_tmp3);                                       \
+#define GMX_MM_INCREMENT_4RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+     __m128 _tmp1, _tmp2, _tmp3;                                                                      \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                             \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                           \
+     _tmp3          = _mm_loadu_ps(ptr1+8);                                                           \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                       \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                       \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                       \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                       \
+     jz3            = _mm_unpacklo_ps(jz3,jx4);                                                       \
+     jy4            = _mm_unpacklo_ps(jy4,jz4);                                                       \
+     jx1            = _mm_movelh_ps(jx1,jz1);                                                         \
+     jy2            = _mm_movelh_ps(jy2,jx3);                                                         \
+     jz3            = _mm_movelh_ps(jz3,jy4);                                                         \
+     _tmp1          = _mm_add_ps(_tmp1,jx1);                                                          \
+     _tmp2          = _mm_add_ps(_tmp2,jy2);                                                          \
+     _tmp3          = _mm_add_ps(_tmp3,jz3);                                                          \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                       \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                                     \
+     _mm_storeu_ps(ptr1+8,_tmp3);                                                                     \
 }
 
 
-#define GMX_MM_UPDATE_2JCOORD_1ATOM_PS(ptr1,ptr2,jx1,jy1,jz1) {        \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4;                                    \
-     _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));   \
-     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr2));              \
-     _tmp2          = _mm_load_ss(ptr1+2);                              \
-     _tmp3          = _mm_load_ss(ptr2+2);                              \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-     _tmp4          = _mm_shuffle_ps(jz1,jz1,_MM_SHUFFLE(0,0,0,1));     \
-     _tmp1          = _mm_add_ps(_tmp1,jx1);                            \
-     _mm_storel_pi((__m64 *)(ptr1),_tmp1);                              \
-     _mm_storeh_pi((__m64 *)(ptr2),_tmp1);                              \
-     _mm_store_ss(ptr1+2,_mm_add_ss(_tmp2,jz1));                        \
-	 _mm_store_ss(ptr2+2,_mm_add_ss(_tmp3,_tmp4));                      \
+#define GMX_MM_INCREMENT_1RVEC_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1) {        \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4;                                          \
+     _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));         \
+     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr2));                    \
+     _tmp2          = _mm_load_ss(ptr1+2);                                    \
+     _tmp3          = _mm_load_ss(ptr2+2);                                    \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                               \
+     _tmp4          = _mm_shuffle_ps(jz1,jz1,_MM_SHUFFLE(0,0,0,1));           \
+     _tmp1          = _mm_add_ps(_tmp1,jx1);                                  \
+     _mm_storel_pi((__m64 *)(ptr1),_tmp1);                                    \
+     _mm_storeh_pi((__m64 *)(ptr2),_tmp1);                                    \
+     _mm_store_ss(ptr1+2,_mm_add_ss(_tmp2,jz1));                              \
+	 _mm_store_ss(ptr2+2,_mm_add_ss(_tmp3,_tmp4));                            \
 }
 
 
-#define GMX_MM_UPDATE_2JCOORD_2ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2) {  \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5;                                     \
-     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-     _tmp2          = _mm_loadu_ps(ptr2);                                      \
-     _tmp3          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));        \
-     _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr2+4));                   \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-     _tmp4          = _mm_movelh_ps(jx1,jz1);                                  \
-     _tmp5          = _mm_movehl_ps(jz1,jx1);                                  \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp4);                                 \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp5);                                 \
-     _tmp3          = _mm_add_ps(_tmp3,jy2);                                   \
-     _mm_storeu_ps(ptr1,_tmp1);                                                \
-     _mm_storeu_ps(ptr2,_tmp2);                                                \
-     _mm_storel_pi((__m64 *)(ptr1+4),_tmp3);                                   \
-	 _mm_storeh_pi((__m64 *)(ptr2+4),_tmp3);                                   \
+#define GMX_MM_INCREMENT_2RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2) {  \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5;                                           \
+     _tmp1          = _mm_loadu_ps(ptr1);                                            \
+     _tmp2          = _mm_loadu_ps(ptr2);                                            \
+     _tmp3          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));              \
+     _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr2+4));                         \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                      \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                      \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                      \
+     _tmp4          = _mm_movelh_ps(jx1,jz1);                                        \
+     _tmp5          = _mm_movehl_ps(jz1,jx1);                                        \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp4);                                       \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp5);                                       \
+     _tmp3          = _mm_add_ps(_tmp3,jy2);                                         \
+     _mm_storeu_ps(ptr1,_tmp1);                                                      \
+     _mm_storeu_ps(ptr2,_tmp2);                                                      \
+     _mm_storel_pi((__m64 *)(ptr1+4),_tmp3);                                         \
+	 _mm_storeh_pi((__m64 *)(ptr2+4),_tmp3);                                         \
 }
 
 
-#define GMX_MM_UPDATE_2JCOORD_3ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;         \
-     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                    \
-     _tmp3          = _mm_load_ss(ptr1+8);                                     \
-     _tmp4          = _mm_loadu_ps(ptr2);                                      \
-     _tmp5          = _mm_loadu_ps(ptr2+4);                                    \
-     _tmp6          = _mm_load_ss(ptr2+8);                                     \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                                \
-     _tmp7          = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));            \
-     _tmp8          = _mm_movelh_ps(jx1,jz1);                                  \
-     _tmp9          = _mm_movehl_ps(jz1,jx1);                                  \
-     _tmp10         = _mm_movelh_ps(jy2,jx3);                                  \
-     _tmp11         = _mm_movehl_ps(jx3,jy2);                                  \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp8);                                 \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp10);                                \
-     _tmp3          = _mm_add_ss(_tmp3,jz3);                                   \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp9);                                 \
-     _tmp5          = _mm_add_ps(_tmp5,_tmp11);                                \
-     _tmp6          = _mm_add_ss(_tmp6,_tmp7);                                 \
-     _mm_storeu_ps(ptr1,_tmp1);                                                \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                              \
-     _mm_store_ss(ptr1+8,_tmp3);                                               \
-     _mm_storeu_ps(ptr2,_tmp4);                                                \
-     _mm_storeu_ps(ptr2+4,_tmp5);                                              \
-     _mm_store_ss(ptr2+8,_tmp6);                                               \
+#define GMX_MM_INCREMENT_3RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;                \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                       \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                     \
+     _tmp3          = _mm_load_ss(ptr1+8);                                                      \
+     _tmp4          = _mm_loadu_ps(ptr2);                                                       \
+     _tmp5          = _mm_loadu_ps(ptr2+4);                                                     \
+     _tmp6          = _mm_load_ss(ptr2+8);                                                      \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                 \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                 \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                 \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                 \
+     _tmp7          = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));                             \
+     _tmp8          = _mm_movelh_ps(jx1,jz1);                                                   \
+     _tmp9          = _mm_movehl_ps(jz1,jx1);                                                   \
+     _tmp10         = _mm_movelh_ps(jy2,jx3);                                                   \
+     _tmp11         = _mm_movehl_ps(jx3,jy2);                                                   \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp8);                                                  \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp10);                                                 \
+     _tmp3          = _mm_add_ss(_tmp3,jz3);                                                    \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp9);                                                  \
+     _tmp5          = _mm_add_ps(_tmp5,_tmp11);                                                 \
+     _tmp6          = _mm_add_ss(_tmp6,_tmp7);                                                  \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                 \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                               \
+     _mm_store_ss(ptr1+8,_tmp3);                                                                \
+     _mm_storeu_ps(ptr2,_tmp4);                                                                 \
+     _mm_storeu_ps(ptr2+4,_tmp5);                                                               \
+     _mm_store_ss(ptr2+8,_tmp6);                                                                \
 }
 
 
-#define GMX_MM_UPDATE_2JCOORD_4ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+#define GMX_MM_INCREMENT_4RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13;              \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                                   \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                                 \
+     _tmp3          = _mm_loadu_ps(ptr1+8);                                                                 \
+     _tmp4          = _mm_loadu_ps(ptr2);                                                                   \
+     _tmp5          = _mm_loadu_ps(ptr2+4);                                                                 \
+     _tmp6          = _mm_loadu_ps(ptr2+8);                                                                 \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                             \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                             \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                             \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                             \
+     jz3            = _mm_unpacklo_ps(jz3,jx4);                                                             \
+     jy4            = _mm_unpacklo_ps(jy4,jz4);                                                             \
+     _tmp8          = _mm_movelh_ps(jx1,jz1);                                                               \
+     _tmp9          = _mm_movehl_ps(jz1,jx1);                                                               \
+     _tmp10         = _mm_movelh_ps(jy2,jx3);                                                               \
+     _tmp11         = _mm_movehl_ps(jx3,jy2);                                                               \
+     _tmp12         = _mm_movelh_ps(jz3,jy4);                                                               \
+     _tmp13         = _mm_movehl_ps(jy4,jz3);                                                               \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp8);                                                              \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp10);                                                             \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp12);                                                             \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp9);                                                              \
+     _tmp5          = _mm_add_ps(_tmp5,_tmp11);                                                             \
+     _tmp6          = _mm_add_ps(_tmp6,_tmp13);                                                             \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                             \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                                           \
+     _mm_storeu_ps(ptr1+8,_tmp3);                                                                           \
+     _mm_storeu_ps(ptr2,_tmp4);                                                                             \
+     _mm_storeu_ps(ptr2+4,_tmp5);                                                                           \
+     _mm_storeu_ps(ptr2+8,_tmp6);                                                                           \
+}
+
+
+#define GMX_MM_INCREMENT_1RVEC_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1) {   \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7;                        \
+     _tmp1          = _mm_load_ss(ptr1);                                      \
+     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));                  \
+     _tmp2          = _mm_load_ss(ptr2);                                      \
+     _tmp2          = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));                  \
+     _tmp3          = _mm_load_ss(ptr3);                                      \
+     _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr3+1));                  \
+     _tmp4          = _mm_unpacklo_ps(jy1,jz1);                               \
+     _tmp5          = _mm_unpackhi_ps(jy1,jz1);                               \
+     _tmp6          = _mm_shuffle_ps(jx1,_tmp4,_MM_SHUFFLE(3,2,0,1));         \
+     _tmp7          = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));           \
+     jx1            = _mm_movelh_ps(jx1,_tmp4);                               \
+     _tmp7          = _mm_movelh_ps(_tmp7,_tmp5);                             \
+     _tmp1          = _mm_add_ps(_tmp1,jx1);                                  \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp6);                                \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp7);                                \
+     _mm_store_ss(ptr1,_tmp1);                                                \
+     _mm_storeh_pi((__m64 *)(ptr1+1),_tmp1);                                  \
+     _mm_store_ss(ptr2,_tmp2);                                                \
+     _mm_storeh_pi((__m64 *)(ptr2+1),_tmp2);                                  \
+     _mm_store_ss(ptr3,_tmp3);                                                \
+     _mm_storeh_pi((__m64 *)(ptr3+1),_tmp3);                                  \
+}
+
+
+#define GMX_MM_INCREMENT_2RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;                \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                \
+     _tmp2          = _mm_loadu_ps(ptr2);                                                \
+     _tmp3          = _mm_loadu_ps(ptr3);                                                \
+     _tmp4          = _mm_loadl_pi(_tmp4,(__m64 *)(ptr1+4));                             \
+     _tmp4          = _mm_loadh_pi(_tmp4,(__m64 *)(ptr2+4));                             \
+     _tmp5          = _mm_loadl_pi(_tmp5,(__m64 *)(ptr3+4));                             \
+     _tmp6          = _mm_unpackhi_ps(jx1,jy1);                                          \
+	 jx1            = _mm_unpacklo_ps(jx1,jy1);                                          \
+     _tmp7          = _mm_unpackhi_ps(jz1,jx2);                                          \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                          \
+     _tmp8          = _mm_unpackhi_ps(jy2,jz2);                                          \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                          \
+     _tmp9          = _mm_movelh_ps(jx1,jz1);                                            \
+     _tmp10         = _mm_movehl_ps(jz1,jx1);                                            \
+     _tmp6          = _mm_movelh_ps(_tmp6,_tmp7);                                        \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp9);                                           \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp10);                                          \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp6);                                           \
+     _tmp4          = _mm_add_ps(_tmp4,jy2);                                             \
+     _tmp5          = _mm_add_ps(_tmp5,_tmp8);                                           \
+     _mm_storeu_ps(ptr1,_tmp1);                                                          \
+     _mm_storeu_ps(ptr2,_tmp2);                                                          \
+     _mm_storeu_ps(ptr3,_tmp3);                                                          \
+     _mm_storel_pi((__m64 *)(ptr1+4),_tmp4);                                             \
+     _mm_storeh_pi((__m64 *)(ptr2+4),_tmp4);                                             \
+	 _mm_storel_pi((__m64 *)(ptr3+4),_tmp5);                                             \
+}
+
+
+#define GMX_MM_INCREMENT_3RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;                            \
+     __m128 _tmp11,_tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19;                          \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                            \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                          \
+     _tmp3          = _mm_load_ss(ptr1+8);                                                           \
+     _tmp4          = _mm_loadu_ps(ptr2);                                                            \
+     _tmp5          = _mm_loadu_ps(ptr2+4);                                                          \
+     _tmp6          = _mm_load_ss(ptr2+8);                                                           \
+     _tmp7          = _mm_loadu_ps(ptr3);                                                            \
+     _tmp8          = _mm_loadu_ps(ptr3+4);                                                          \
+     _tmp9          = _mm_load_ss(ptr3+8);                                                           \
+     _tmp10         = _mm_unpackhi_ps(jx1,jy1);                                                      \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                      \
+     _tmp11         = _mm_unpackhi_ps(jz1,jx2);                                                      \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                      \
+     _tmp12         = _mm_unpackhi_ps(jy2,jz2);                                                      \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                      \
+     _tmp13         = _mm_unpackhi_ps(jx3,jy3);                                                      \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                      \
+     _tmp14         = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));                                  \
+     _tmp15         = _mm_movehl_ps(jz3,jz3);                                                        \
+     _tmp16         = _mm_movelh_ps(jx1,jz1);                                                        \
+     _tmp17         = _mm_movehl_ps(jz1,jx1);                                                        \
+     _tmp10         = _mm_movelh_ps(_tmp10,_tmp11);                                                  \
+     _tmp18         = _mm_movelh_ps(jy2,jx3);                                                        \
+     _tmp19         = _mm_movehl_ps(jx3,jy2);                                                        \
+     _tmp12         = _mm_movelh_ps(_tmp12,_tmp13);                                                  \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp16);                                                      \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp18);                                                      \
+     _tmp3          = _mm_add_ss(_tmp3,jz3);                                                         \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp17);                                                      \
+     _tmp5          = _mm_add_ps(_tmp5,_tmp19);                                                      \
+     _tmp6          = _mm_add_ss(_tmp6,_tmp14);                                                      \
+     _tmp7          = _mm_add_ps(_tmp7,_tmp10);                                                      \
+     _tmp8          = _mm_add_ps(_tmp8,_tmp12);                                                      \
+     _tmp9          = _mm_add_ss(_tmp9,_tmp15);                                                      \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                      \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                                    \
+     _mm_store_ss(ptr1+8,_tmp3);                                                                     \
+     _mm_storeu_ps(ptr2,_tmp4);                                                                      \
+     _mm_storeu_ps(ptr2+4,_tmp5);                                                                    \
+     _mm_store_ss(ptr2+8,_tmp6);                                                                     \
+     _mm_storeu_ps(ptr3,_tmp7);                                                                      \
+     _mm_storeu_ps(ptr3+4,_tmp8);                                                                    \
+     _mm_store_ss(ptr3+8,_tmp9);                                                                     \
+}
+
+
+#define GMX_MM_INCREMENT_4RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;                                 \
+     __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21;                               \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                                        \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                                      \
+     _tmp3          = _mm_loadu_ps(ptr1+8);                                                                      \
+     _tmp4          = _mm_loadu_ps(ptr2);                                                                        \
+     _tmp5          = _mm_loadu_ps(ptr2+4);                                                                      \
+     _tmp6          = _mm_loadu_ps(ptr2+8);                                                                      \
+     _tmp7          = _mm_loadu_ps(ptr3);                                                                        \
+     _tmp8          = _mm_loadu_ps(ptr3+4);                                                                      \
+     _tmp9          = _mm_loadu_ps(ptr3+8);                                                                      \
+     _tmp10         = _mm_unpackhi_ps(jx1,jy1);                                                                  \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                                  \
+     _tmp11         = _mm_unpackhi_ps(jz1,jx2);                                                                  \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                                  \
+     _tmp12         = _mm_unpackhi_ps(jy2,jz2);                                                                  \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                                  \
+     _tmp13         = _mm_unpackhi_ps(jx3,jy3);                                                                  \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                                  \
+     _tmp14         = _mm_unpackhi_ps(jz3,jx4);                                                                  \
+     jz3            = _mm_unpacklo_ps(jz3,jx4);                                                                  \
+     _tmp15         = _mm_unpackhi_ps(jy4,jz4);                                                                  \
+     jy4            = _mm_unpacklo_ps(jy4,jz4);                                                                  \
+     _tmp16         = _mm_movelh_ps(jx1,jz1);                                                                    \
+     _tmp17         = _mm_movehl_ps(jz1,jx1);                                                                    \
+     _tmp10         = _mm_movelh_ps(_tmp10,_tmp11);                                                              \
+     _tmp18         = _mm_movelh_ps(jy2,jx3);                                                                    \
+     _tmp19         = _mm_movehl_ps(jx3,jy2);                                                                    \
+     _tmp12         = _mm_movelh_ps(_tmp12,_tmp13);                                                              \
+     _tmp20         = _mm_movelh_ps(jz3,jy4);                                                                    \
+     _tmp21         = _mm_movehl_ps(jy4,jz3);                                                                    \
+     _tmp14         = _mm_movelh_ps(_tmp14,_tmp15);                                                              \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp16);                                                                  \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp18);                                                                  \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp20);                                                                  \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp17);                                                                  \
+     _tmp5          = _mm_add_ps(_tmp5,_tmp19);                                                                  \
+     _tmp6          = _mm_add_ps(_tmp6,_tmp21);                                                                  \
+     _tmp7          = _mm_add_ps(_tmp7,_tmp10);                                                                  \
+     _tmp8          = _mm_add_ps(_tmp8,_tmp12);                                                                  \
+     _tmp9          = _mm_add_ps(_tmp9,_tmp14);                                                                  \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                                  \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                                                \
+     _mm_storeu_ps(ptr1+8,_tmp3);                                                                                \
+     _mm_storeu_ps(ptr2,_tmp4);                                                                                  \
+     _mm_storeu_ps(ptr2+4,_tmp5);                                                                                \
+     _mm_storeu_ps(ptr2+8,_tmp6);                                                                                \
+     _mm_storeu_ps(ptr3,_tmp7);                                                                                  \
+     _mm_storeu_ps(ptr3+4,_tmp8);                                                                                \
+     _mm_storeu_ps(ptr3+8,_tmp9);                                                                                \
+}
+
+
+
+#define GMX_MM_INCREMENT_1RVEC_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;        \
+     _tmp1          = _mm_load_ss(ptr1);                                         \
+     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));                     \
+     _tmp2          = _mm_load_ss(ptr2);                                         \
+     _tmp2          = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));                     \
+     _tmp3          = _mm_load_ss(ptr3);                                         \
+     _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr3+1));                     \
+     _tmp4          = _mm_load_ss(ptr4);                                         \
+     _tmp4          = _mm_loadh_pi(_tmp4,(__m64 *)(ptr4+1));                     \
+     _tmp5          = _mm_unpacklo_ps(jy1,jz1);                                  \
+     _tmp6          = _mm_unpackhi_ps(jy1,jz1);                                  \
+     _tmp7          = _mm_shuffle_ps(jx1,_tmp5,_MM_SHUFFLE(1,0,0,0));            \
+     _tmp8          = _mm_shuffle_ps(jx1,_tmp5,_MM_SHUFFLE(3,2,0,1));            \
+     _tmp9          = _mm_shuffle_ps(jx1,_tmp6,_MM_SHUFFLE(1,0,0,2));            \
+     _tmp10         = _mm_shuffle_ps(jx1,_tmp6,_MM_SHUFFLE(3,2,0,3));            \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp7);                                   \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp8);                                   \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp9);                                   \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp10);                                  \
+     _mm_store_ss(ptr1,_tmp1);                                                   \
+     _mm_storeh_pi((__m64 *)(ptr1+1),_tmp1);                                     \
+     _mm_store_ss(ptr2,_tmp2);                                                   \
+     _mm_storeh_pi((__m64 *)(ptr2+1),_tmp2);                                     \
+     _mm_store_ss(ptr3,_tmp3);                                                   \
+     _mm_storeh_pi((__m64 *)(ptr3+1),_tmp3);                                     \
+     _mm_store_ss(ptr4,_tmp4);                                                   \
+     _mm_storeh_pi((__m64 *)(ptr4+1),_tmp4);                                     \
+}
+
+
+#define GMX_MM_INCREMENT_2RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2) {  \
      __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13; \
-     _tmp1          = _mm_loadu_ps(ptr1);                                       \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                     \
-     _tmp3          = _mm_loadu_ps(ptr1+8);                                     \
-     _tmp4          = _mm_loadu_ps(ptr2);                                       \
-     _tmp5          = _mm_loadu_ps(ptr2+4);                                     \
-     _tmp6          = _mm_loadu_ps(ptr2+8);                                     \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                 \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                 \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                 \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                                 \
-     jz3            = _mm_unpacklo_ps(jz3,jx4);                                 \
-     jy4            = _mm_unpacklo_ps(jy4,jz4);                                 \
-     _tmp8          = _mm_movelh_ps(jx1,jz1);                                   \
-     _tmp9          = _mm_movehl_ps(jz1,jx1);                                   \
-     _tmp10         = _mm_movelh_ps(jy2,jx3);                                   \
-     _tmp11         = _mm_movehl_ps(jx3,jy2);                                   \
-     _tmp12         = _mm_movelh_ps(jz3,jy4);                                   \
-     _tmp13         = _mm_movehl_ps(jy4,jz3);                                   \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp8);                                  \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp10);                                 \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp12);                                 \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp9);                                  \
-     _tmp5          = _mm_add_ps(_tmp5,_tmp11);                                 \
-     _tmp6          = _mm_add_ps(_tmp6,_tmp13);                                 \
-     _mm_storeu_ps(ptr1,_tmp1);                                                 \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                               \
-     _mm_storeu_ps(ptr1+8,_tmp3);                                               \
-     _mm_storeu_ps(ptr2,_tmp4);                                                 \
-     _mm_storeu_ps(ptr2+4,_tmp5);                                               \
-     _mm_storeu_ps(ptr2+8,_tmp6);                                               \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                      \
+     _tmp2          = _mm_loadu_ps(ptr2);                                                      \
+     _tmp3          = _mm_loadu_ps(ptr3);                                                      \
+     _tmp4          = _mm_loadu_ps(ptr4);                                                      \
+     _tmp5          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));                        \
+     _tmp5          = _mm_loadh_pi(_tmp5,(__m64 *)(ptr2+4));                                   \
+     _tmp6          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3+4));                        \
+     _tmp6          = _mm_loadh_pi(_tmp6,(__m64 *)(ptr4+4));                                   \
+     _tmp7          = _mm_unpackhi_ps(jx1,jy1);                                                \
+	 jx1            = _mm_unpacklo_ps(jx1,jy1);                                                \
+     _tmp8          = _mm_unpackhi_ps(jz1,jx2);                                                \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                \
+     _tmp9          = _mm_unpackhi_ps(jy2,jz2);                                                \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                \
+     _tmp10         = _mm_movelh_ps(jx1,jz1);                                                  \
+     _tmp11         = _mm_movehl_ps(jz1,jx1);                                                  \
+     _tmp12         = _mm_movelh_ps(_tmp7,_tmp8);                                              \
+     _tmp13         = _mm_movehl_ps(_tmp8,_tmp7);                                              \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp10);                                                \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp11);                                                \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp12);                                                \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp13);                                                \
+     _tmp5          = _mm_add_ps(_tmp5,jy2);                                                   \
+     _tmp6          = _mm_add_ps(_tmp6,_tmp9);                                                 \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                \
+     _mm_storeu_ps(ptr2,_tmp2);                                                                \
+     _mm_storeu_ps(ptr3,_tmp3);                                                                \
+     _mm_storeu_ps(ptr4,_tmp4);                                                                \
+     _mm_storel_pi((__m64 *)(ptr1+4),_tmp5);                                                   \
+     _mm_storeh_pi((__m64 *)(ptr2+4),_tmp5);                                                   \
+	 _mm_storel_pi((__m64 *)(ptr3+4),_tmp6);                                                   \
+	 _mm_storeh_pi((__m64 *)(ptr4+4),_tmp6);                                                   \
 }
 
 
-#define GMX_MM_UPDATE_3JCOORD_1ATOM_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7;                \
-     _tmp1          = _mm_load_ss(ptr1);                              \
-     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));          \
-     _tmp2          = _mm_load_ss(ptr2);                              \
-     _tmp2          = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));          \
-     _tmp3          = _mm_load_ss(ptr3);                              \
-     _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr3+1));          \
-     _tmp4          = _mm_unpacklo_ps(jy1,jz1);                       \
-     _tmp5          = _mm_unpackhi_ps(jy1,jz1);                       \
-     _tmp6          = _mm_shuffle_ps(jx1,_tmp4,_MM_SHUFFLE(3,2,0,1)); \
-     _tmp7          = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));   \
-     jx1            = _mm_movelh_ps(jx1,_tmp4);                       \
-     _tmp7          = _mm_movelh_ps(_tmp7,_tmp5);                     \
-     _tmp1          = _mm_add_ps(_tmp1,jx1);                          \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp6);                        \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp7);                        \
-     _mm_store_ss(ptr1,_tmp1);                                        \
-     _mm_storeh_pi((__m64 *)(ptr1+1),_tmp1);                          \
-     _mm_store_ss(ptr2,_tmp2);                                        \
-     _mm_storeh_pi((__m64 *)(ptr2+1),_tmp2);                          \
-     _mm_store_ss(ptr3,_tmp3);                                        \
-     _mm_storeh_pi((__m64 *)(ptr3+1),_tmp3);                          \
+#define GMX_MM_INCREMENT_3RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;                                 \
+     __m128 _tmp11,_tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19;                               \
+     __m128 _tmp20,_tmp21,_tmp22,_tmp23,_tmp24,_tmp25;                                                    \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                                 \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                               \
+     _tmp3          = _mm_load_ss(ptr1+8);                                                                \
+     _tmp4          = _mm_loadu_ps(ptr2);                                                                 \
+     _tmp5          = _mm_loadu_ps(ptr2+4);                                                               \
+     _tmp6          = _mm_load_ss(ptr2+8);                                                                \
+     _tmp7          = _mm_loadu_ps(ptr3);                                                                 \
+     _tmp8          = _mm_loadu_ps(ptr3+4);                                                               \
+     _tmp9          = _mm_load_ss(ptr3+8);                                                                \
+     _tmp10         = _mm_loadu_ps(ptr4);                                                                 \
+     _tmp11         = _mm_loadu_ps(ptr4+4);                                                               \
+     _tmp12         = _mm_load_ss(ptr4+8);                                                                \
+     _tmp13         = _mm_unpackhi_ps(jx1,jy1);                                                           \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                           \
+     _tmp14         = _mm_unpackhi_ps(jz1,jx2);                                                           \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                           \
+     _tmp15         = _mm_unpackhi_ps(jy2,jz2);                                                           \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                           \
+     _tmp16         = _mm_unpackhi_ps(jx3,jy3);                                                           \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                           \
+     _tmp17         = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));                                       \
+     _tmp18         = _mm_movehl_ps(jz3,jz3);                                                             \
+     _tmp19         = _mm_shuffle_ps(_tmp18,_tmp18,_MM_SHUFFLE(0,0,0,1));                                 \
+     _tmp20         = _mm_movelh_ps(jx1,jz1);                                                             \
+     _tmp21         = _mm_movehl_ps(jz1,jx1);                                                             \
+     _tmp22         = _mm_movelh_ps(_tmp13,_tmp14);                                                       \
+     _tmp14         = _mm_movehl_ps(_tmp14,_tmp13);                                                       \
+     _tmp23         = _mm_movelh_ps(jy2,jx3);                                                             \
+     _tmp24         = _mm_movehl_ps(jx3,jy2);                                                             \
+     _tmp25         = _mm_movelh_ps(_tmp15,_tmp16);                                                       \
+     _tmp16         = _mm_movehl_ps(_tmp16,_tmp15);                                                       \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp20);                                                           \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp23);                                                           \
+     _tmp3          = _mm_add_ss(_tmp3,jz3);                                                              \
+     _tmp4          = _mm_add_ps(_tmp4,_tmp21);                                                           \
+     _tmp5          = _mm_add_ps(_tmp5,_tmp24);                                                           \
+     _tmp6          = _mm_add_ss(_tmp6,_tmp17);                                                           \
+     _tmp7          = _mm_add_ps(_tmp7,_tmp22);                                                           \
+     _tmp8          = _mm_add_ps(_tmp8,_tmp25);                                                           \
+     _tmp9          = _mm_add_ss(_tmp9,_tmp18);                                                           \
+     _tmp10         = _mm_add_ps(_tmp10,_tmp14);                                                          \
+     _tmp11         = _mm_add_ps(_tmp11,_tmp16);                                                          \
+     _tmp12         = _mm_add_ss(_tmp12,_tmp19);                                                          \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                           \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                                         \
+     _mm_store_ss(ptr1+8,_tmp3);                                                                          \
+     _mm_storeu_ps(ptr2,_tmp4);                                                                           \
+     _mm_storeu_ps(ptr2+4,_tmp5);                                                                         \
+     _mm_store_ss(ptr2+8,_tmp6);                                                                          \
+     _mm_storeu_ps(ptr3,_tmp7);                                                                           \
+     _mm_storeu_ps(ptr3+4,_tmp8);                                                                         \
+     _mm_store_ss(ptr3+8,_tmp9);                                                                          \
+     _mm_storeu_ps(ptr4,_tmp10);                                                                          \
+     _mm_storeu_ps(ptr4+4,_tmp11);                                                                        \
+     _mm_store_ss(ptr4+8,_tmp12);                                                                         \
 }
 
 
-#define GMX_MM_UPDATE_3JCOORD_2ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;      \
-     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-     _tmp2          = _mm_loadu_ps(ptr2);                                      \
-     _tmp3          = _mm_loadu_ps(ptr3);                                      \
-     _tmp4          = _mm_loadl_pi(_tmp4,(__m64 *)(ptr1+4));                   \
-     _tmp4          = _mm_loadh_pi(_tmp4,(__m64 *)(ptr2+4));                   \
-     _tmp5          = _mm_loadl_pi(_tmp5,(__m64 *)(ptr3+4));                   \
-     _tmp6          = _mm_unpackhi_ps(jx1,jy1);                                \
-	 jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-     _tmp7          = _mm_unpackhi_ps(jz1,jx2);                                \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-     _tmp8          = _mm_unpackhi_ps(jy2,jz2);                                \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-     _tmp9          = _mm_movelh_ps(jx1,jz1);                                  \
-     _tmp10         = _mm_movehl_ps(jz1,jx1);                                  \
-     _tmp6          = _mm_movelh_ps(_tmp6,_tmp7);                              \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp9);                                 \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp10);                                \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp6);                                 \
-     _tmp4          = _mm_add_ps(_tmp4,jy2);                                   \
-     _tmp5          = _mm_add_ps(_tmp5,_tmp8);                                 \
-     _mm_storeu_ps(ptr1,_tmp1);                                                \
-     _mm_storeu_ps(ptr2,_tmp2);                                                \
-     _mm_storeu_ps(ptr3,_tmp3);                                                \
-     _mm_storel_pi((__m64 *)(ptr1+4),_tmp4);                                   \
-     _mm_storeh_pi((__m64 *)(ptr2+4),_tmp4);                                   \
-	 _mm_storel_pi((__m64 *)(ptr3+4),_tmp5);                                   \
-}
-
-
-#define GMX_MM_UPDATE_3JCOORD_3ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;      \
-     __m128 _tmp11,_tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19;    \
-     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                    \
-     _tmp3          = _mm_load_ss(ptr1+8);                                     \
-     _tmp4          = _mm_loadu_ps(ptr2);                                      \
-     _tmp5          = _mm_loadu_ps(ptr2+4);                                    \
-     _tmp6          = _mm_load_ss(ptr2+8);                                     \
-     _tmp7          = _mm_loadu_ps(ptr3);                                      \
-     _tmp8          = _mm_loadu_ps(ptr3+4);                                    \
-     _tmp9          = _mm_load_ss(ptr3+8);                                     \
-     _tmp10         = _mm_unpackhi_ps(jx1,jy1);                                \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-     _tmp11         = _mm_unpackhi_ps(jz1,jx2);                                \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-     _tmp12         = _mm_unpackhi_ps(jy2,jz2);                                \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-     _tmp13         = _mm_unpackhi_ps(jx3,jy3);                                \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                                \
-     _tmp14         = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));            \
-     _tmp15         = _mm_movehl_ps(jz3,jz3);                                  \
-     _tmp16         = _mm_movelh_ps(jx1,jz1);                                  \
-     _tmp17         = _mm_movehl_ps(jz1,jx1);                                  \
-     _tmp10         = _mm_movelh_ps(_tmp10,_tmp11);                            \
-     _tmp18         = _mm_movelh_ps(jy2,jx3);                                  \
-     _tmp19         = _mm_movehl_ps(jx3,jy2);                                  \
-     _tmp12         = _mm_movelh_ps(_tmp12,_tmp13);                            \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp16);                                \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp18);                                \
-     _tmp3          = _mm_add_ss(_tmp3,jz3);                                   \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp17);                                \
-     _tmp5          = _mm_add_ps(_tmp5,_tmp19);                                \
-     _tmp6          = _mm_add_ss(_tmp6,_tmp14);                                \
-     _tmp7          = _mm_add_ps(_tmp7,_tmp10);                                \
-     _tmp8          = _mm_add_ps(_tmp8,_tmp12);                                \
-     _tmp9          = _mm_add_ss(_tmp9,_tmp15);                                \
-     _mm_storeu_ps(ptr1,_tmp1);                                                \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                              \
-     _mm_store_ss(ptr1+8,_tmp3);                                               \
-     _mm_storeu_ps(ptr2,_tmp4);                                                \
-     _mm_storeu_ps(ptr2+4,_tmp5);                                              \
-     _mm_store_ss(ptr2+8,_tmp6);                                               \
-     _mm_storeu_ps(ptr3,_tmp7);                                                \
-     _mm_storeu_ps(ptr3+4,_tmp8);                                              \
-     _mm_store_ss(ptr3+8,_tmp9);                                               \
-}
-
-
-#define GMX_MM_UPDATE_3JCOORD_4ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;         \
-     __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21;      \
-     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                    \
-     _tmp3          = _mm_loadu_ps(ptr1+8);                                    \
-     _tmp4          = _mm_loadu_ps(ptr2);                                      \
-     _tmp5          = _mm_loadu_ps(ptr2+4);                                    \
-     _tmp6          = _mm_loadu_ps(ptr2+8);                                    \
-     _tmp7          = _mm_loadu_ps(ptr3);                                      \
-     _tmp8          = _mm_loadu_ps(ptr3+4);                                    \
-     _tmp9          = _mm_loadu_ps(ptr3+8);                                    \
-     _tmp10         = _mm_unpackhi_ps(jx1,jy1);                                \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-     _tmp11         = _mm_unpackhi_ps(jz1,jx2);                                \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-     _tmp12         = _mm_unpackhi_ps(jy2,jz2);                                \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-     _tmp13         = _mm_unpackhi_ps(jx3,jy3);                                \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                                \
-     _tmp14         = _mm_unpackhi_ps(jz3,jx4);                                \
-     jz3            = _mm_unpacklo_ps(jz3,jx4);                                \
-     _tmp15         = _mm_unpackhi_ps(jy4,jz4);                                \
-     jy4            = _mm_unpacklo_ps(jy4,jz4);                                \
-     _tmp16         = _mm_movelh_ps(jx1,jz1);                                  \
-     _tmp17         = _mm_movehl_ps(jz1,jx1);                                  \
-     _tmp10         = _mm_movelh_ps(_tmp10,_tmp11);                            \
-     _tmp18         = _mm_movelh_ps(jy2,jx3);                                  \
-     _tmp19         = _mm_movehl_ps(jx3,jy2);                                  \
-     _tmp12         = _mm_movelh_ps(_tmp12,_tmp13);                            \
-     _tmp20         = _mm_movelh_ps(jz3,jy4);                                  \
-     _tmp21         = _mm_movehl_ps(jy4,jz3);                                  \
-     _tmp14         = _mm_movelh_ps(_tmp14,_tmp15);                            \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp16);                                \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp18);                                \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp20);                                \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp17);                                \
-     _tmp5          = _mm_add_ps(_tmp5,_tmp19);                                \
-     _tmp6          = _mm_add_ps(_tmp6,_tmp21);                                \
-     _tmp7          = _mm_add_ps(_tmp7,_tmp10);                                \
-     _tmp8          = _mm_add_ps(_tmp8,_tmp12);                                \
-     _tmp9          = _mm_add_ps(_tmp9,_tmp14);                                \
-     _mm_storeu_ps(ptr1,_tmp1);                                                \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                              \
-     _mm_storeu_ps(ptr1+8,_tmp3);                                              \
-     _mm_storeu_ps(ptr2,_tmp4);                                                \
-     _mm_storeu_ps(ptr2+4,_tmp5);                                              \
-     _mm_storeu_ps(ptr2+8,_tmp6);                                              \
-     _mm_storeu_ps(ptr3,_tmp7);                                                \
-     _mm_storeu_ps(ptr3+4,_tmp8);                                              \
-     _mm_storeu_ps(ptr3+8,_tmp9);                                              \
+#define GMX_MM_INCREMENT_4RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;                                      \
+     __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21,_tmp22;                             \
+     __m128 _tmp23,_tmp24;                                                                                            \
+     _tmp1          = _mm_loadu_ps(ptr1);                                                                             \
+     _tmp2          = _mm_loadu_ps(ptr1+4);                                                                           \
+     _tmp3          = _mm_loadu_ps(ptr1+8);                                                                           \
+     _tmp4          = _mm_loadu_ps(ptr2);                                                                             \
+     _tmp5          = _mm_loadu_ps(ptr2+4);                                                                           \
+     _tmp6          = _mm_loadu_ps(ptr2+8);                                                                           \
+     _tmp7          = _mm_loadu_ps(ptr3);                                                                             \
+     _tmp8          = _mm_loadu_ps(ptr3+4);                                                                           \
+     _tmp9          = _mm_loadu_ps(ptr3+8);                                                                           \
+     _tmp10         = _mm_loadu_ps(ptr4);                                                                             \
+     _tmp11         = _mm_loadu_ps(ptr4+4);                                                                           \
+     _tmp12         = _mm_loadu_ps(ptr4+8);                                                                           \
+     _tmp13         = _mm_unpackhi_ps(jx1,jy1);                                                                       \
+     jx1            = _mm_unpacklo_ps(jx1,jy1);                                                                       \
+     _tmp14         = _mm_unpackhi_ps(jz1,jx2);                                                                       \
+     jz1            = _mm_unpacklo_ps(jz1,jx2);                                                                       \
+     _tmp15         = _mm_unpackhi_ps(jy2,jz2);                                                                       \
+     jy2            = _mm_unpacklo_ps(jy2,jz2);                                                                       \
+     _tmp16         = _mm_unpackhi_ps(jx3,jy3);                                                                       \
+     jx3            = _mm_unpacklo_ps(jx3,jy3);                                                                       \
+     _tmp17         = _mm_unpackhi_ps(jz3,jx4);                                                                       \
+     jz3            = _mm_unpacklo_ps(jz3,jx4);                                                                       \
+     _tmp18         = _mm_unpackhi_ps(jy4,jz4);                                                                       \
+     jy4            = _mm_unpacklo_ps(jy4,jz4);                                                                       \
+     _tmp19         = _mm_movelh_ps(jx1,jz1);                                                                         \
+     jz1            = _mm_movehl_ps(jz1,jx1);                                                                         \
+     _tmp20         = _mm_movelh_ps(_tmp13,_tmp14);                                                                   \
+     _tmp14         = _mm_movehl_ps(_tmp14,_tmp13);                                                                   \
+     _tmp21         = _mm_movelh_ps(jy2,jx3);                                                                         \
+     jx3            = _mm_movehl_ps(jx3,jy2);                                                                         \
+     _tmp22         = _mm_movelh_ps(_tmp15,_tmp16);                                                                   \
+     _tmp16         = _mm_movehl_ps(_tmp16,_tmp15);                                                                   \
+     _tmp23         = _mm_movelh_ps(jz3,jy4);                                                                         \
+     jy4            = _mm_movehl_ps(jy4,jz3);                                                                         \
+     _tmp24         = _mm_movelh_ps(_tmp17,_tmp18);                                                                   \
+     _tmp18         = _mm_movehl_ps(_tmp18,_tmp17);                                                                   \
+     _tmp1          = _mm_add_ps(_tmp1,_tmp19);                                                                       \
+     _tmp2          = _mm_add_ps(_tmp2,_tmp21);                                                                       \
+     _tmp3          = _mm_add_ps(_tmp3,_tmp23);                                                                       \
+     _tmp4          = _mm_add_ps(_tmp4,jz1);                                                                          \
+     _tmp5          = _mm_add_ps(_tmp5,jx3);                                                                          \
+     _tmp6          = _mm_add_ps(_tmp6,jy4);                                                                          \
+     _tmp7          = _mm_add_ps(_tmp7,_tmp20);                                                                       \
+     _tmp8          = _mm_add_ps(_tmp8,_tmp22);                                                                       \
+     _tmp9          = _mm_add_ps(_tmp9,_tmp24);                                                                       \
+     _tmp10         = _mm_add_ps(_tmp10,_tmp14);                                                                      \
+     _tmp11         = _mm_add_ps(_tmp11,_tmp16);                                                                      \
+     _tmp12         = _mm_add_ps(_tmp12,_tmp18);                                                                      \
+     _mm_storeu_ps(ptr1,_tmp1);                                                                                       \
+     _mm_storeu_ps(ptr1+4,_tmp2);                                                                                     \
+     _mm_storeu_ps(ptr1+8,_tmp3);                                                                                     \
+     _mm_storeu_ps(ptr2,_tmp4);                                                                                       \
+     _mm_storeu_ps(ptr2+4,_tmp5);                                                                                     \
+     _mm_storeu_ps(ptr2+8,_tmp6);                                                                                     \
+     _mm_storeu_ps(ptr3,_tmp7);                                                                                       \
+     _mm_storeu_ps(ptr3+4,_tmp8);                                                                                     \
+     _mm_storeu_ps(ptr3+8,_tmp9);                                                                                     \
+     _mm_storeu_ps(ptr4,_tmp10);                                                                                      \
+     _mm_storeu_ps(ptr4+4,_tmp11);                                                                                    \
+     _mm_storeu_ps(ptr4+8,_tmp12);                                                                                    \
 }
 
 
 
-#define GMX_MM_UPDATE_4JCOORD_1ATOM_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;      \
-     _tmp1          = _mm_load_ss(ptr1);                              \
-     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));          \
-     _tmp2          = _mm_load_ss(ptr2);                              \
-     _tmp2          = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));          \
-     _tmp3          = _mm_load_ss(ptr3);                              \
-     _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr3+1));          \
-     _tmp4          = _mm_load_ss(ptr4);                              \
-     _tmp4          = _mm_loadh_pi(_tmp4,(__m64 *)(ptr4+1));          \
-     _tmp5          = _mm_unpacklo_ps(jy1,jz1);                       \
-     _tmp6          = _mm_unpackhi_ps(jy1,jz1);                       \
-     _tmp7          = _mm_shuffle_ps(jx1,_tmp5,_MM_SHUFFLE(1,0,0,0)); \
-     _tmp8          = _mm_shuffle_ps(jx1,_tmp5,_MM_SHUFFLE(3,2,0,1)); \
-     _tmp9          = _mm_shuffle_ps(jx1,_tmp6,_MM_SHUFFLE(1,0,0,2)); \
-     _tmp10         = _mm_shuffle_ps(jx1,_tmp6,_MM_SHUFFLE(3,2,0,3)); \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp7);                        \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp8);                        \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp9);                        \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp10);                       \
-     _mm_store_ss(ptr1,_tmp1);                                        \
-     _mm_storeh_pi((__m64 *)(ptr1+1),_tmp1);                          \
-     _mm_store_ss(ptr2,_tmp2);                                        \
-     _mm_storeh_pi((__m64 *)(ptr2+1),_tmp2);                          \
-     _mm_store_ss(ptr3,_tmp3);                                        \
-     _mm_storeh_pi((__m64 *)(ptr3+1),_tmp3);                          \
-     _mm_store_ss(ptr4,_tmp4);                                        \
-     _mm_storeh_pi((__m64 *)(ptr4+1),_tmp4);                          \
-}
-
-
-#define GMX_MM_UPDATE_4JCOORD_2ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13;   \
-     _tmp1          = _mm_loadu_ps(ptr1);                                       \
-     _tmp2          = _mm_loadu_ps(ptr2);                                       \
-     _tmp3          = _mm_loadu_ps(ptr3);                                       \
-     _tmp4          = _mm_loadu_ps(ptr4);                                       \
-     _tmp5          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));         \
-     _tmp5          = _mm_loadh_pi(_tmp5,(__m64 *)(ptr2+4));                    \
-     _tmp6          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr3+4));         \
-     _tmp6          = _mm_loadh_pi(_tmp6,(__m64 *)(ptr4+4));                    \
-     _tmp7          = _mm_unpackhi_ps(jx1,jy1);                                 \
-	 jx1            = _mm_unpacklo_ps(jx1,jy1);                                 \
-     _tmp8          = _mm_unpackhi_ps(jz1,jx2);                                 \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                 \
-     _tmp9          = _mm_unpackhi_ps(jy2,jz2);                                 \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                 \
-     _tmp10         = _mm_movelh_ps(jx1,jz1);                                   \
-     _tmp11         = _mm_movehl_ps(jz1,jx1);                                   \
-     _tmp12         = _mm_movelh_ps(_tmp7,_tmp8);                               \
-     _tmp13         = _mm_movehl_ps(_tmp8,_tmp7);                               \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp10);                                 \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp11);                                 \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp12);                                 \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp13);                                 \
-     _tmp5          = _mm_add_ps(_tmp5,jy2);                                    \
-     _tmp6          = _mm_add_ps(_tmp6,_tmp9);                                  \
-     _mm_storeu_ps(ptr1,_tmp1);                                                 \
-     _mm_storeu_ps(ptr2,_tmp2);                                                 \
-     _mm_storeu_ps(ptr3,_tmp3);                                                 \
-     _mm_storeu_ps(ptr4,_tmp4);                                                 \
-     _mm_storel_pi((__m64 *)(ptr1+4),_tmp5);                                    \
-     _mm_storeh_pi((__m64 *)(ptr2+4),_tmp5);                                    \
-	 _mm_storel_pi((__m64 *)(ptr3+4),_tmp6);                                    \
-	 _mm_storeh_pi((__m64 *)(ptr4+4),_tmp6);                                    \
-}
-
-
-#define GMX_MM_UPDATE_4JCOORD_3ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;       \
-     __m128 _tmp11,_tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19;     \
-     __m128 _tmp20,_tmp21,_tmp22,_tmp23,_tmp24,_tmp25;                          \
-     _tmp1          = _mm_loadu_ps(ptr1);                                       \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                     \
-     _tmp3          = _mm_load_ss(ptr1+8);                                      \
-     _tmp4          = _mm_loadu_ps(ptr2);                                       \
-     _tmp5          = _mm_loadu_ps(ptr2+4);                                     \
-     _tmp6          = _mm_load_ss(ptr2+8);                                      \
-     _tmp7          = _mm_loadu_ps(ptr3);                                       \
-     _tmp8          = _mm_loadu_ps(ptr3+4);                                     \
-     _tmp9          = _mm_load_ss(ptr3+8);                                      \
-     _tmp10         = _mm_loadu_ps(ptr4);                                       \
-     _tmp11         = _mm_loadu_ps(ptr4+4);                                     \
-     _tmp12         = _mm_load_ss(ptr4+8);                                      \
-     _tmp13         = _mm_unpackhi_ps(jx1,jy1);                                 \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                 \
-     _tmp14         = _mm_unpackhi_ps(jz1,jx2);                                 \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                 \
-     _tmp15         = _mm_unpackhi_ps(jy2,jz2);                                 \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                 \
-     _tmp16         = _mm_unpackhi_ps(jx3,jy3);                                 \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                                 \
-     _tmp17         = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));             \
-     _tmp18         = _mm_movehl_ps(jz3,jz3);                                   \
-     _tmp19         = _mm_shuffle_ps(_tmp18,_tmp18,_MM_SHUFFLE(0,0,0,1));       \
-     _tmp20         = _mm_movelh_ps(jx1,jz1);                                   \
-     _tmp21         = _mm_movehl_ps(jz1,jx1);                                   \
-     _tmp22         = _mm_movelh_ps(_tmp13,_tmp14);                             \
-     _tmp14         = _mm_movehl_ps(_tmp14,_tmp13);                             \
-     _tmp23         = _mm_movelh_ps(jy2,jx3);                                   \
-     _tmp24         = _mm_movehl_ps(jx3,jy2);                                   \
-     _tmp25         = _mm_movelh_ps(_tmp15,_tmp16);                             \
-     _tmp16         = _mm_movehl_ps(_tmp16,_tmp15);                             \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp20);                                 \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp23);                                 \
-     _tmp3          = _mm_add_ss(_tmp3,jz3);                                    \
-     _tmp4          = _mm_add_ps(_tmp4,_tmp21);                                 \
-     _tmp5          = _mm_add_ps(_tmp5,_tmp24);                                 \
-     _tmp6          = _mm_add_ss(_tmp6,_tmp17);                                 \
-     _tmp7          = _mm_add_ps(_tmp7,_tmp22);                                 \
-     _tmp8          = _mm_add_ps(_tmp8,_tmp25);                                 \
-     _tmp9          = _mm_add_ss(_tmp9,_tmp18);                                 \
-     _tmp10         = _mm_add_ps(_tmp10,_tmp14);                                \
-     _tmp11         = _mm_add_ps(_tmp11,_tmp16);                                \
-     _tmp12         = _mm_add_ss(_tmp12,_tmp19);                                \
-     _mm_storeu_ps(ptr1,_tmp1);                                                 \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                               \
-     _mm_store_ss(ptr1+8,_tmp3);                                                \
-     _mm_storeu_ps(ptr2,_tmp4);                                                 \
-     _mm_storeu_ps(ptr2+4,_tmp5);                                               \
-     _mm_store_ss(ptr2+8,_tmp6);                                                \
-     _mm_storeu_ps(ptr3,_tmp7);                                                 \
-     _mm_storeu_ps(ptr3+4,_tmp8);                                               \
-     _mm_store_ss(ptr3+8,_tmp9);                                                \
-     _mm_storeu_ps(ptr4,_tmp10);                                                \
-     _mm_storeu_ps(ptr4+4,_tmp11);                                              \
-     _mm_store_ss(ptr4+8,_tmp12);                                               \
-}
-
-
-#define GMX_MM_UPDATE_4JCOORD_4ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;         \
-     __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21,_tmp22;\
-     __m128 _tmp23,_tmp24;                                                     \
-     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-     _tmp2          = _mm_loadu_ps(ptr1+4);                                    \
-     _tmp3          = _mm_loadu_ps(ptr1+8);                                    \
-     _tmp4          = _mm_loadu_ps(ptr2);                                      \
-     _tmp5          = _mm_loadu_ps(ptr2+4);                                    \
-     _tmp6          = _mm_loadu_ps(ptr2+8);                                    \
-     _tmp7          = _mm_loadu_ps(ptr3);                                      \
-     _tmp8          = _mm_loadu_ps(ptr3+4);                                    \
-     _tmp9          = _mm_loadu_ps(ptr3+8);                                    \
-     _tmp10         = _mm_loadu_ps(ptr4);                                      \
-     _tmp11         = _mm_loadu_ps(ptr4+4);                                    \
-     _tmp12         = _mm_loadu_ps(ptr4+8);                                    \
-     _tmp13         = _mm_unpackhi_ps(jx1,jy1);                                \
-     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-     _tmp14         = _mm_unpackhi_ps(jz1,jx2);                                \
-     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-     _tmp15         = _mm_unpackhi_ps(jy2,jz2);                                \
-     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-     _tmp16         = _mm_unpackhi_ps(jx3,jy3);                                \
-     jx3            = _mm_unpacklo_ps(jx3,jy3);                                \
-     _tmp17         = _mm_unpackhi_ps(jz3,jx4);                                \
-     jz3            = _mm_unpacklo_ps(jz3,jx4);                                \
-     _tmp18         = _mm_unpackhi_ps(jy4,jz4);                                \
-     jy4            = _mm_unpacklo_ps(jy4,jz4);                                \
-     _tmp19         = _mm_movelh_ps(jx1,jz1);                                  \
-     jz1            = _mm_movehl_ps(jz1,jx1);                                  \
-     _tmp20         = _mm_movelh_ps(_tmp13,_tmp14);                            \
-     _tmp14         = _mm_movehl_ps(_tmp14,_tmp13);                            \
-     _tmp21         = _mm_movelh_ps(jy2,jx3);                                  \
-     jx3            = _mm_movehl_ps(jx3,jy2);                                  \
-     _tmp22         = _mm_movelh_ps(_tmp15,_tmp16);                            \
-     _tmp16         = _mm_movehl_ps(_tmp16,_tmp15);                            \
-     _tmp23         = _mm_movelh_ps(jz3,jy4);                                  \
-     jy4            = _mm_movehl_ps(jy4,jz3);                                  \
-     _tmp24         = _mm_movelh_ps(_tmp17,_tmp18);                            \
-     _tmp18         = _mm_movehl_ps(_tmp18,_tmp17);                            \
-     _tmp1          = _mm_add_ps(_tmp1,_tmp19);                                \
-     _tmp2          = _mm_add_ps(_tmp2,_tmp21);                                \
-     _tmp3          = _mm_add_ps(_tmp3,_tmp23);                                \
-     _tmp4          = _mm_add_ps(_tmp4,jz1);                                   \
-     _tmp5          = _mm_add_ps(_tmp5,jx3);                                   \
-     _tmp6          = _mm_add_ps(_tmp6,jy4);                                   \
-     _tmp7          = _mm_add_ps(_tmp7,_tmp20);                                \
-     _tmp8          = _mm_add_ps(_tmp8,_tmp22);                                \
-     _tmp9          = _mm_add_ps(_tmp9,_tmp24);                                \
-     _tmp10         = _mm_add_ps(_tmp10,_tmp14);                               \
-     _tmp11         = _mm_add_ps(_tmp11,_tmp16);                               \
-     _tmp12         = _mm_add_ps(_tmp12,_tmp18);                               \
-     _mm_storeu_ps(ptr1,_tmp1);                                                \
-     _mm_storeu_ps(ptr1+4,_tmp2);                                              \
-     _mm_storeu_ps(ptr1+8,_tmp3);                                              \
-     _mm_storeu_ps(ptr2,_tmp4);                                                \
-     _mm_storeu_ps(ptr2+4,_tmp5);                                              \
-     _mm_storeu_ps(ptr2+8,_tmp6);                                              \
-     _mm_storeu_ps(ptr3,_tmp7);                                                \
-     _mm_storeu_ps(ptr3+4,_tmp8);                                              \
-     _mm_storeu_ps(ptr3+8,_tmp9);                                              \
-     _mm_storeu_ps(ptr4,_tmp10);                                               \
-     _mm_storeu_ps(ptr4+4,_tmp11);                                             \
-     _mm_storeu_ps(ptr4+8,_tmp12);                                             \
-}
-
-
-
-#define GMX_MM_DECREMENT_1JCOORD_1ATOM_PS(ptr1,jx1,jy1,jz1) {           \
+#define GMX_MM_DECREMENT_1RVEC_1POINTER_PS(ptr1,jx1,jy1,jz1) {     \
     __m128 _tmp1;                                                    \
     jy1            = _mm_unpacklo_ps(jy1,jz1);                       \
     jx1            = _mm_movelh_ps(jx1,jy1);                         \
@@ -1310,226 +1395,226 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_DECREMENT_1JCOORD_2ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2) { \
-    __m128 _tmp1, _tmp2;                                               \
-    _tmp1          = _mm_loadu_ps(ptr1);                               \
-    _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4)); \
-    jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-    jz1            = _mm_unpacklo_ps(jz1,jx2);                         \
-    jy2            = _mm_unpacklo_ps(jy2,jz2);                         \
-    jx1            = _mm_movelh_ps(jx1,jz1);                           \
-    _tmp1          = _mm_sub_ps(_tmp1,jx1);                            \
-    _tmp2          = _mm_sub_ps(_tmp2,jy2);                            \
-    _mm_storeu_ps(ptr1,_tmp1);                                         \
-    _mm_storel_pi((__m64 *)(ptr1+4),_tmp2);                            \
-}
-
-
-#define GMX_MM_DECREMENT_1JCOORD_3ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-    __m128 _tmp1, _tmp2, _tmp3;                                        \
-    _tmp1          = _mm_loadu_ps(ptr1);                               \
-    _tmp2          = _mm_loadu_ps(ptr1+4);                             \
-    _tmp3          = _mm_load_ss(ptr1+8);                              \
-    jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-    jz1            = _mm_unpacklo_ps(jz1,jx2);                         \
-    jy2            = _mm_unpacklo_ps(jy2,jz2);                         \
-    jx3            = _mm_unpacklo_ps(jx3,jy3);                         \
-    jx1            = _mm_movelh_ps(jx1,jz1);                           \
-    jy2            = _mm_movelh_ps(jy2,jx3);                           \
-    _tmp1           = _mm_sub_ps(_tmp1,jx1);                           \
-    _tmp2           = _mm_sub_ps(_tmp2,jy2);                           \
-    _tmp3           = _mm_sub_ss(_tmp3,jz3);                           \
-    _mm_storeu_ps(ptr1,_tmp1);                                         \
-    _mm_storeu_ps(ptr1+4,_tmp2);                                       \
-    _mm_store_ss(ptr1+8,_tmp3);                                        \
-}
-
-
-#define GMX_MM_DECREMENT_1JCOORD_4ATOMS_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-    __m128 _tmp1, _tmp2, _tmp3;                                        \
-    _tmp1          = _mm_loadu_ps(ptr1);                               \
-    _tmp2          = _mm_loadu_ps(ptr1+4);                             \
-    _tmp3          = _mm_loadu_ps(ptr1+8);                             \
-    jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-    jz1            = _mm_unpacklo_ps(jz1,jx2);                         \
-    jy2            = _mm_unpacklo_ps(jy2,jz2);                         \
-    jx3            = _mm_unpacklo_ps(jx3,jy3);                         \
-    jz3            = _mm_unpacklo_ps(jz3,jx4);                         \
-    jy4            = _mm_unpacklo_ps(jy4,jz4);                         \
-    jx1            = _mm_movelh_ps(jx1,jz1);                           \
-    jy2            = _mm_movelh_ps(jy2,jx3);                           \
-    jz3            = _mm_movelh_ps(jz3,jy4);                           \
-    _tmp1          = _mm_sub_ps(_tmp1,jx1);                            \
-    _tmp2          = _mm_sub_ps(_tmp2,jy2);                            \
-    _tmp3          = _mm_sub_ps(_tmp3,jz3);                            \
-    _mm_storeu_ps(ptr1,_tmp1);                                         \
-    _mm_storeu_ps(ptr1+4,_tmp2);                                       \
-    _mm_storeu_ps(ptr1+8,_tmp3);                                       \
-}
-
-
-#define GMX_MM_DECREMENT_2JCOORD_1ATOM_PS(ptr1,ptr2,jx1,jy1,jz1) {        \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4;                                    \
-    _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));   \
-    _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr2));              \
-    _tmp2          = _mm_load_ss(ptr1+2);                              \
-    _tmp3          = _mm_load_ss(ptr2+2);                              \
-    jx1            = _mm_unpacklo_ps(jx1,jy1);                         \
-    _tmp4          = _mm_shuffle_ps(jz1,jz1,_MM_SHUFFLE(0,0,0,1));     \
-    _tmp1          = _mm_sub_ps(_tmp1,jx1);                            \
-    _mm_storel_pi((__m64 *)(ptr1),_tmp1);                              \
-    _mm_storeh_pi((__m64 *)(ptr2),_tmp1);                              \
-    _mm_store_ss(ptr1+2,_mm_sub_ss(_tmp2,jz1));                        \
-    _mm_store_ss(ptr2+2,_mm_sub_ss(_tmp3,_tmp4));                      \
-}
-
-
-#define GMX_MM_DECREMENT_2JCOORD_2ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2) {  \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5;                                     \
+#define GMX_MM_DECREMENT_2RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2) { \
+    __m128 _tmp1, _tmp2;                                                      \
     _tmp1          = _mm_loadu_ps(ptr1);                                      \
-    _tmp2          = _mm_loadu_ps(ptr2);                                      \
-    _tmp3          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));        \
-    _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr2+4));                   \
+    _tmp2          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));        \
     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
     jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
     jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-    _tmp4          = _mm_movelh_ps(jx1,jz1);                                  \
-    _tmp5          = _mm_movehl_ps(jz1,jx1);                                  \
-    _tmp1          = _mm_sub_ps(_tmp1,_tmp4);                                 \
-    _tmp2          = _mm_sub_ps(_tmp2,_tmp5);                                 \
-    _tmp3          = _mm_sub_ps(_tmp3,jy2);                                   \
+    jx1            = _mm_movelh_ps(jx1,jz1);                                  \
+    _tmp1          = _mm_sub_ps(_tmp1,jx1);                                   \
+    _tmp2          = _mm_sub_ps(_tmp2,jy2);                                   \
     _mm_storeu_ps(ptr1,_tmp1);                                                \
-    _mm_storeu_ps(ptr2,_tmp2);                                                \
-    _mm_storel_pi((__m64 *)(ptr1+4),_tmp3);                                   \
-    _mm_storeh_pi((__m64 *)(ptr2+4),_tmp3);                                   \
+    _mm_storel_pi((__m64 *)(ptr1+4),_tmp2);                                   \
 }
 
 
-#define GMX_MM_DECREMENT_2JCOORD_3ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;         \
-    _tmp1          = _mm_loadu_ps(ptr1);                                      \
-    _tmp2          = _mm_loadu_ps(ptr1+4);                                    \
-    _tmp3          = _mm_load_ss(ptr1+8);                                     \
-    _tmp4          = _mm_loadu_ps(ptr2);                                      \
-    _tmp5          = _mm_loadu_ps(ptr2+4);                                    \
-    _tmp6          = _mm_load_ss(ptr2+8);                                     \
+#define GMX_MM_DECREMENT_3RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+    __m128 _tmp1, _tmp2, _tmp3;                                                           \
+    _tmp1          = _mm_loadu_ps(ptr1);                                                  \
+    _tmp2          = _mm_loadu_ps(ptr1+4);                                                \
+    _tmp3          = _mm_load_ss(ptr1+8);                                                 \
+    jx1            = _mm_unpacklo_ps(jx1,jy1);                                            \
+    jz1            = _mm_unpacklo_ps(jz1,jx2);                                            \
+    jy2            = _mm_unpacklo_ps(jy2,jz2);                                            \
+    jx3            = _mm_unpacklo_ps(jx3,jy3);                                            \
+    jx1            = _mm_movelh_ps(jx1,jz1);                                              \
+    jy2            = _mm_movelh_ps(jy2,jx3);                                              \
+    _tmp1          = _mm_sub_ps(_tmp1,jx1);                                               \
+    _tmp2          = _mm_sub_ps(_tmp2,jy2);                                               \
+    _tmp3          = _mm_sub_ss(_tmp3,jz3);                                               \
+    _mm_storeu_ps(ptr1,_tmp1);                                                            \
+    _mm_storeu_ps(ptr1+4,_tmp2);                                                          \
+    _mm_store_ss(ptr1+8,_tmp3);                                                           \
+}
+
+
+#define GMX_MM_DECREMENT_4RVECS_1POINTER_PS(ptr1,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+    __m128 _tmp1, _tmp2, _tmp3;                                                                       \
+    _tmp1          = _mm_loadu_ps(ptr1);                                                              \
+    _tmp2          = _mm_loadu_ps(ptr1+4);                                                            \
+    _tmp3          = _mm_loadu_ps(ptr1+8);                                                            \
+    jx1            = _mm_unpacklo_ps(jx1,jy1);                                                        \
+    jz1            = _mm_unpacklo_ps(jz1,jx2);                                                        \
+    jy2            = _mm_unpacklo_ps(jy2,jz2);                                                        \
+    jx3            = _mm_unpacklo_ps(jx3,jy3);                                                        \
+    jz3            = _mm_unpacklo_ps(jz3,jx4);                                                        \
+    jy4            = _mm_unpacklo_ps(jy4,jz4);                                                        \
+    jx1            = _mm_movelh_ps(jx1,jz1);                                                          \
+    jy2            = _mm_movelh_ps(jy2,jx3);                                                          \
+    jz3            = _mm_movelh_ps(jz3,jy4);                                                          \
+    _tmp1          = _mm_sub_ps(_tmp1,jx1);                                                           \
+    _tmp2          = _mm_sub_ps(_tmp2,jy2);                                                           \
+    _tmp3          = _mm_sub_ps(_tmp3,jz3);                                                           \
+    _mm_storeu_ps(ptr1,_tmp1);                                                                        \
+    _mm_storeu_ps(ptr1+4,_tmp2);                                                                      \
+    _mm_storeu_ps(ptr1+8,_tmp3);                                                                      \
+}
+
+
+#define GMX_MM_DECREMENT_1RVEC_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1) {        \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4;                                           \
+    _tmp1          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1));          \
+    _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr2));                     \
+    _tmp2          = _mm_load_ss(ptr1+2);                                     \
+    _tmp3          = _mm_load_ss(ptr2+2);                                     \
     jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-    jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-    jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-    jx3            = _mm_unpacklo_ps(jx3,jy3);                                \
-    _tmp7          = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));            \
-    _tmp8          = _mm_movelh_ps(jx1,jz1);                                  \
-    _tmp9          = _mm_movehl_ps(jz1,jx1);                                  \
-    _tmp10         = _mm_movelh_ps(jy2,jx3);                                  \
-    _tmp11         = _mm_movehl_ps(jx3,jy2);                                  \
-    _tmp1          = _mm_sub_ps(_tmp1,_tmp8);                                 \
-    _tmp2          = _mm_sub_ps(_tmp2,_tmp10);                                \
-    _tmp3          = _mm_sub_ss(_tmp3,jz3);                                   \
-    _tmp4          = _mm_sub_ps(_tmp4,_tmp9);                                 \
-    _tmp5          = _mm_sub_ps(_tmp5,_tmp11);                                \
-    _tmp6          = _mm_sub_ss(_tmp6,_tmp7);                                 \
-    _mm_storeu_ps(ptr1,_tmp1);                                                \
-    _mm_storeu_ps(ptr1+4,_tmp2);                                              \
-    _mm_store_ss(ptr1+8,_tmp3);                                               \
-    _mm_storeu_ps(ptr2,_tmp4);                                                \
-    _mm_storeu_ps(ptr2+4,_tmp5);                                              \
-    _mm_store_ss(ptr2+8,_tmp6);                                               \
+    _tmp4          = _mm_shuffle_ps(jz1,jz1,_MM_SHUFFLE(0,0,0,1));            \
+    _tmp1          = _mm_sub_ps(_tmp1,jx1);                                   \
+    _mm_storel_pi((__m64 *)(ptr1),_tmp1);                                     \
+    _mm_storeh_pi((__m64 *)(ptr2),_tmp1);                                     \
+    _mm_store_ss(ptr1+2,_mm_sub_ss(_tmp2,jz1));                               \
+    _mm_store_ss(ptr2+2,_mm_sub_ss(_tmp3,_tmp4));                             \
 }
 
 
-#define GMX_MM_DECREMENT_2JCOORD_4ATOMS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13; \
-    _tmp1          = _mm_loadu_ps(ptr1);                                       \
-    _tmp2          = _mm_loadu_ps(ptr1+4);                                     \
-    _tmp3          = _mm_loadu_ps(ptr1+8);                                     \
-    _tmp4          = _mm_loadu_ps(ptr2);                                       \
-    _tmp5          = _mm_loadu_ps(ptr2+4);                                     \
-    _tmp6          = _mm_loadu_ps(ptr2+8);                                     \
-    jx1            = _mm_unpacklo_ps(jx1,jy1);                                 \
-    jz1            = _mm_unpacklo_ps(jz1,jx2);                                 \
-    jy2            = _mm_unpacklo_ps(jy2,jz2);                                 \
-    jx3            = _mm_unpacklo_ps(jx3,jy3);                                 \
-    jz3            = _mm_unpacklo_ps(jz3,jx4);                                 \
-    jy4            = _mm_unpacklo_ps(jy4,jz4);                                 \
-    _tmp8          = _mm_movelh_ps(jx1,jz1);                                   \
-    _tmp9          = _mm_movehl_ps(jz1,jx1);                                   \
-    _tmp10         = _mm_movelh_ps(jy2,jx3);                                   \
-    _tmp11         = _mm_movehl_ps(jx3,jy2);                                   \
-    _tmp12         = _mm_movelh_ps(jz3,jy4);                                   \
-    _tmp13         = _mm_movehl_ps(jy4,jz3);                                   \
-    _tmp1          = _mm_sub_ps(_tmp1,_tmp8);                                  \
-    _tmp2          = _mm_sub_ps(_tmp2,_tmp10);                                 \
-    _tmp3          = _mm_sub_ps(_tmp3,_tmp12);                                 \
-    _tmp4          = _mm_sub_ps(_tmp4,_tmp9);                                  \
-    _tmp5          = _mm_sub_ps(_tmp5,_tmp11);                                 \
-    _tmp6          = _mm_sub_ps(_tmp6,_tmp13);                                 \
-    _mm_storeu_ps(ptr1,_tmp1);                                                 \
-    _mm_storeu_ps(ptr1+4,_tmp2);                                               \
-    _mm_storeu_ps(ptr1+8,_tmp3);                                               \
-    _mm_storeu_ps(ptr2,_tmp4);                                                 \
-    _mm_storeu_ps(ptr2+4,_tmp5);                                               \
-    _mm_storeu_ps(ptr2+8,_tmp6);                                               \
+#define GMX_MM_DECREMENT_2RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2) { \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5;                                           \
+    _tmp1          = _mm_loadu_ps(ptr1);                                            \
+    _tmp2          = _mm_loadu_ps(ptr2);                                            \
+    _tmp3          = _mm_loadl_pi(_mm_setzero_ps(),(__m64 *)(ptr1+4));              \
+    _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr2+4));                         \
+    jx1            = _mm_unpacklo_ps(jx1,jy1);                                      \
+    jz1            = _mm_unpacklo_ps(jz1,jx2);                                      \
+    jy2            = _mm_unpacklo_ps(jy2,jz2);                                      \
+    _tmp4          = _mm_movelh_ps(jx1,jz1);                                        \
+    _tmp5          = _mm_movehl_ps(jz1,jx1);                                        \
+    _tmp1          = _mm_sub_ps(_tmp1,_tmp4);                                       \
+    _tmp2          = _mm_sub_ps(_tmp2,_tmp5);                                       \
+    _tmp3          = _mm_sub_ps(_tmp3,jy2);                                         \
+    _mm_storeu_ps(ptr1,_tmp1);                                                      \
+    _mm_storeu_ps(ptr2,_tmp2);                                                      \
+    _mm_storel_pi((__m64 *)(ptr1+4),_tmp3);                                         \
+    _mm_storeh_pi((__m64 *)(ptr2+4),_tmp3);                                         \
 }
 
 
-#define GMX_MM_DECREMENT_3JCOORD_1ATOM_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7;                \
-    _tmp1          = _mm_load_ss(ptr1);                              \
-    _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));          \
-    _tmp2          = _mm_load_ss(ptr2);                              \
-    _tmp2          = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));          \
-    _tmp3          = _mm_load_ss(ptr3);                              \
-    _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr3+1));          \
-    _tmp4          = _mm_unpacklo_ps(jy1,jz1);                       \
-    _tmp5          = _mm_unpackhi_ps(jy1,jz1);                       \
-    _tmp6          = _mm_shuffle_ps(jx1,_tmp4,_MM_SHUFFLE(3,2,0,1)); \
-    _tmp7          = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));   \
-    jx1            = _mm_movelh_ps(jx1,_tmp4);                       \
-    _tmp7          = _mm_movelh_ps(_tmp7,_tmp5);                     \
-    _tmp1          = _mm_sub_ps(_tmp1,jx1);                          \
-    _tmp2          = _mm_sub_ps(_tmp2,_tmp6);                        \
-    _tmp3          = _mm_sub_ps(_tmp3,_tmp7);                        \
-    _mm_store_ss(ptr1,_tmp1);                                        \
-    _mm_storeh_pi((__m64 *)(ptr1+1),_tmp1);                          \
-    _mm_store_ss(ptr2,_tmp2);                                        \
-    _mm_storeh_pi((__m64 *)(ptr2+1),_tmp2);                          \
-    _mm_store_ss(ptr3,_tmp3);                                        \
-    _mm_storeh_pi((__m64 *)(ptr3+1),_tmp3);                          \
+#define GMX_MM_DECREMENT_3RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) {\
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;                \
+    _tmp1          = _mm_loadu_ps(ptr1);                                                       \
+    _tmp2          = _mm_loadu_ps(ptr1+4);                                                     \
+    _tmp3          = _mm_load_ss(ptr1+8);                                                      \
+    _tmp4          = _mm_loadu_ps(ptr2);                                                       \
+    _tmp5          = _mm_loadu_ps(ptr2+4);                                                     \
+    _tmp6          = _mm_load_ss(ptr2+8);                                                      \
+    jx1            = _mm_unpacklo_ps(jx1,jy1);                                                 \
+    jz1            = _mm_unpacklo_ps(jz1,jx2);                                                 \
+    jy2            = _mm_unpacklo_ps(jy2,jz2);                                                 \
+    jx3            = _mm_unpacklo_ps(jx3,jy3);                                                 \
+    _tmp7          = _mm_shuffle_ps(jz3,jz3,_MM_SHUFFLE(0,0,0,1));                             \
+    _tmp8          = _mm_movelh_ps(jx1,jz1);                                                   \
+    _tmp9          = _mm_movehl_ps(jz1,jx1);                                                   \
+    _tmp10         = _mm_movelh_ps(jy2,jx3);                                                   \
+    _tmp11         = _mm_movehl_ps(jx3,jy2);                                                   \
+    _tmp1          = _mm_sub_ps(_tmp1,_tmp8);                                                  \
+    _tmp2          = _mm_sub_ps(_tmp2,_tmp10);                                                 \
+    _tmp3          = _mm_sub_ss(_tmp3,jz3);                                                    \
+    _tmp4          = _mm_sub_ps(_tmp4,_tmp9);                                                  \
+    _tmp5          = _mm_sub_ps(_tmp5,_tmp11);                                                 \
+    _tmp6          = _mm_sub_ss(_tmp6,_tmp7);                                                  \
+    _mm_storeu_ps(ptr1,_tmp1);                                                                 \
+    _mm_storeu_ps(ptr1+4,_tmp2);                                                               \
+    _mm_store_ss(ptr1+8,_tmp3);                                                                \
+    _mm_storeu_ps(ptr2,_tmp4);                                                                 \
+    _mm_storeu_ps(ptr2+4,_tmp5);                                                               \
+    _mm_store_ss(ptr2+8,_tmp6);                                                                \
 }
 
 
-#define GMX_MM_DECREMENT_3JCOORD_2ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;      \
-    _tmp1          = _mm_loadu_ps(ptr1);                                      \
-    _tmp2          = _mm_loadu_ps(ptr2);                                      \
-    _tmp3          = _mm_loadu_ps(ptr3);                                      \
-    _tmp4          = _mm_loadl_pi(_tmp4,(__m64 *)(ptr1+4));                   \
-    _tmp4          = _mm_loadh_pi(_tmp4,(__m64 *)(ptr2+4));                   \
-    _tmp5          = _mm_loadl_pi(_tmp5,(__m64 *)(ptr3+4));                   \
-    _tmp6          = _mm_unpackhi_ps(jx1,jy1);                                \
-    jx1            = _mm_unpacklo_ps(jx1,jy1);                                \
-    _tmp7          = _mm_unpackhi_ps(jz1,jx2);                                \
-    jz1            = _mm_unpacklo_ps(jz1,jx2);                                \
-    _tmp8          = _mm_unpackhi_ps(jy2,jz2);                                \
-    jy2            = _mm_unpacklo_ps(jy2,jz2);                                \
-    _tmp9          = _mm_movelh_ps(jx1,jz1);                                  \
-    _tmp10         = _mm_movehl_ps(jz1,jx1);                                  \
-    _tmp6          = _mm_movelh_ps(_tmp6,_tmp7);                              \
-    _tmp1          = _mm_sub_ps(_tmp1,_tmp9);                                 \
-    _tmp2          = _mm_sub_ps(_tmp2,_tmp10);                                \
-    _tmp3          = _mm_sub_ps(_tmp3,_tmp6);                                 \
-    _tmp4          = _mm_sub_ps(_tmp4,jy2);                                   \
-    _tmp5          = _mm_sub_ps(_tmp5,_tmp8);                                 \
-    _mm_storeu_ps(ptr1,_tmp1);                                                \
-    _mm_storeu_ps(ptr2,_tmp2);                                                \
-    _mm_storeu_ps(ptr3,_tmp3);                                                \
-    _mm_storel_pi((__m64 *)(ptr1+4),_tmp4);                                   \
-    _mm_storeh_pi((__m64 *)(ptr2+4),_tmp4);                                   \
-    _mm_storel_pi((__m64 *)(ptr3+4),_tmp5);                                   \
+#define GMX_MM_DECREMENT_4RVECS_2POINTERS_PS(ptr1,ptr2,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) {\
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13;              \
+    _tmp1          = _mm_loadu_ps(ptr1);                                                                   \
+    _tmp2          = _mm_loadu_ps(ptr1+4);                                                                 \
+    _tmp3          = _mm_loadu_ps(ptr1+8);                                                                 \
+    _tmp4          = _mm_loadu_ps(ptr2);                                                                   \
+    _tmp5          = _mm_loadu_ps(ptr2+4);                                                                 \
+    _tmp6          = _mm_loadu_ps(ptr2+8);                                                                 \
+    jx1            = _mm_unpacklo_ps(jx1,jy1);                                                             \
+    jz1            = _mm_unpacklo_ps(jz1,jx2);                                                             \
+    jy2            = _mm_unpacklo_ps(jy2,jz2);                                                             \
+    jx3            = _mm_unpacklo_ps(jx3,jy3);                                                             \
+    jz3            = _mm_unpacklo_ps(jz3,jx4);                                                             \
+    jy4            = _mm_unpacklo_ps(jy4,jz4);                                                             \
+    _tmp8          = _mm_movelh_ps(jx1,jz1);                                                               \
+    _tmp9          = _mm_movehl_ps(jz1,jx1);                                                               \
+    _tmp10         = _mm_movelh_ps(jy2,jx3);                                                               \
+    _tmp11         = _mm_movehl_ps(jx3,jy2);                                                               \
+    _tmp12         = _mm_movelh_ps(jz3,jy4);                                                               \
+    _tmp13         = _mm_movehl_ps(jy4,jz3);                                                               \
+    _tmp1          = _mm_sub_ps(_tmp1,_tmp8);                                                              \
+    _tmp2          = _mm_sub_ps(_tmp2,_tmp10);                                                             \
+    _tmp3          = _mm_sub_ps(_tmp3,_tmp12);                                                             \
+    _tmp4          = _mm_sub_ps(_tmp4,_tmp9);                                                              \
+    _tmp5          = _mm_sub_ps(_tmp5,_tmp11);                                                             \
+    _tmp6          = _mm_sub_ps(_tmp6,_tmp13);                                                             \
+    _mm_storeu_ps(ptr1,_tmp1);                                                                             \
+    _mm_storeu_ps(ptr1+4,_tmp2);                                                                           \
+    _mm_storeu_ps(ptr1+8,_tmp3);                                                                           \
+    _mm_storeu_ps(ptr2,_tmp4);                                                                             \
+    _mm_storeu_ps(ptr2+4,_tmp5);                                                                           \
+    _mm_storeu_ps(ptr2+8,_tmp6);                                                                           \
 }
 
 
-#define GMX_MM_DECREMENT_3JCOORD_3ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+#define GMX_MM_DECREMENT_1RVEC_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1) { \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7;                       \
+    _tmp1          = _mm_load_ss(ptr1);                                     \
+    _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));                 \
+    _tmp2          = _mm_load_ss(ptr2);                                     \
+    _tmp2          = _mm_loadh_pi(_tmp2,(__m64 *)(ptr2+1));                 \
+    _tmp3          = _mm_load_ss(ptr3);                                     \
+    _tmp3          = _mm_loadh_pi(_tmp3,(__m64 *)(ptr3+1));                 \
+    _tmp4          = _mm_unpacklo_ps(jy1,jz1);                              \
+    _tmp5          = _mm_unpackhi_ps(jy1,jz1);                              \
+    _tmp6          = _mm_shuffle_ps(jx1,_tmp4,_MM_SHUFFLE(3,2,0,1));        \
+    _tmp7          = _mm_shuffle_ps(jx1,jx1,_MM_SHUFFLE(0,0,0,2));          \
+    jx1            = _mm_movelh_ps(jx1,_tmp4);                              \
+    _tmp7          = _mm_movelh_ps(_tmp7,_tmp5);                            \
+    _tmp1          = _mm_sub_ps(_tmp1,jx1);                                 \
+    _tmp2          = _mm_sub_ps(_tmp2,_tmp6);                               \
+    _tmp3          = _mm_sub_ps(_tmp3,_tmp7);                               \
+    _mm_store_ss(ptr1,_tmp1);                                               \
+    _mm_storeh_pi((__m64 *)(ptr1+1),_tmp1);                                 \
+    _mm_store_ss(ptr2,_tmp2);                                               \
+    _mm_storeh_pi((__m64 *)(ptr2+1),_tmp2);                                 \
+    _mm_store_ss(ptr3,_tmp3);                                               \
+    _mm_storeh_pi((__m64 *)(ptr3+1),_tmp3);                                 \
+}
+
+
+#define GMX_MM_DECREMENT_2RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2) { \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;                 \
+    _tmp1          = _mm_loadu_ps(ptr1);                                                 \
+    _tmp2          = _mm_loadu_ps(ptr2);                                                 \
+    _tmp3          = _mm_loadu_ps(ptr3);                                                 \
+    _tmp4          = _mm_loadl_pi(_tmp4,(__m64 *)(ptr1+4));                              \
+    _tmp4          = _mm_loadh_pi(_tmp4,(__m64 *)(ptr2+4));                              \
+    _tmp5          = _mm_loadl_pi(_tmp5,(__m64 *)(ptr3+4));                              \
+    _tmp6          = _mm_unpackhi_ps(jx1,jy1);                                           \
+    jx1            = _mm_unpacklo_ps(jx1,jy1);                                           \
+    _tmp7          = _mm_unpackhi_ps(jz1,jx2);                                           \
+    jz1            = _mm_unpacklo_ps(jz1,jx2);                                           \
+    _tmp8          = _mm_unpackhi_ps(jy2,jz2);                                           \
+    jy2            = _mm_unpacklo_ps(jy2,jz2);                                           \
+    _tmp9          = _mm_movelh_ps(jx1,jz1);                                             \
+    _tmp10         = _mm_movehl_ps(jz1,jx1);                                             \
+    _tmp6          = _mm_movelh_ps(_tmp6,_tmp7);                                         \
+    _tmp1          = _mm_sub_ps(_tmp1,_tmp9);                                            \
+    _tmp2          = _mm_sub_ps(_tmp2,_tmp10);                                           \
+    _tmp3          = _mm_sub_ps(_tmp3,_tmp6);                                            \
+    _tmp4          = _mm_sub_ps(_tmp4,jy2);                                              \
+    _tmp5          = _mm_sub_ps(_tmp5,_tmp8);                                            \
+    _mm_storeu_ps(ptr1,_tmp1);                                                           \
+    _mm_storeu_ps(ptr2,_tmp2);                                                           \
+    _mm_storeu_ps(ptr3,_tmp3);                                                           \
+    _mm_storel_pi((__m64 *)(ptr1+4),_tmp4);                                              \
+    _mm_storeh_pi((__m64 *)(ptr2+4),_tmp4);                                              \
+    _mm_storel_pi((__m64 *)(ptr3+4),_tmp5);                                              \
+}
+
+
+#define GMX_MM_DECREMENT_3RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;      \
     __m128 _tmp11,_tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19;    \
     _tmp1          = _mm_loadu_ps(ptr1);                                      \
@@ -1578,9 +1663,9 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_DECREMENT_3JCOORD_4ATOMS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;         \
-    __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21;      \
+#define GMX_MM_DECREMENT_4RVECS_3POINTERS_PS(ptr1,ptr2,ptr3,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;                                  \
+    __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21;                                \
     _tmp1          = _mm_loadu_ps(ptr1);                                      \
     _tmp2          = _mm_loadu_ps(ptr1+4);                                    \
     _tmp3          = _mm_loadu_ps(ptr1+8);                                    \
@@ -1634,8 +1719,8 @@ gmx_mm_exp_ps(__m128 x)
 
 
 
-#define GMX_MM_DECREMENT_4JCOORD_1ATOM_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;      \
+#define GMX_MM_DECREMENT_1RVEC_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1) { \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;         \
     _tmp1          = _mm_load_ss(ptr1);                              \
     _tmp1          = _mm_loadh_pi(_tmp1,(__m64 *)(ptr1+1));          \
     _tmp2          = _mm_load_ss(ptr2);                              \
@@ -1666,8 +1751,8 @@ gmx_mm_exp_ps(__m128 x)
 
 
 
-#define GMX_MM_DECREMENT_4JCOORD_2ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2) { \
-    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13;   \
+#define GMX_MM_DECREMENT_2RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2) { \
+    __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11,_tmp12,_tmp13; \
     _tmp1          = _mm_loadu_ps(ptr1);                                       \
     _tmp2          = _mm_loadu_ps(ptr2);                                       \
     _tmp3          = _mm_loadu_ps(ptr3);                                       \
@@ -1703,7 +1788,7 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_DECREMENT_4JCOORD_3ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
+#define GMX_MM_DECREMENT_3RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3) { \
     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10;       \
     __m128 _tmp11,_tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19;     \
     __m128 _tmp20,_tmp21,_tmp22,_tmp23,_tmp24,_tmp25;                          \
@@ -1765,7 +1850,7 @@ gmx_mm_exp_ps(__m128 x)
 }
 
 
-#define GMX_MM_DECREMENT_4JCOORD_4ATOMS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
+#define GMX_MM_DECREMENT_4RVECS_4POINTERS_PS(ptr1,ptr2,ptr3,ptr4,jx1,jy1,jz1,jx2,jy2,jz2,jx3,jy3,jz3,jx4,jy4,jz4) { \
     __m128 _tmp1,_tmp2,_tmp3,_tmp4,_tmp5,_tmp6,_tmp7,_tmp8,_tmp9,_tmp10,_tmp11;         \
     __m128 _tmp12,_tmp13,_tmp14,_tmp15,_tmp16,_tmp17,_tmp18,_tmp19,_tmp20,_tmp21,_tmp22;\
     __m128 _tmp23,_tmp24;                                                     \
@@ -1834,72 +1919,60 @@ gmx_mm_exp_ps(__m128 x)
 
 
 
-static inline __m128
-gmx_mm_scalarprod_ps(__m128 x, __m128 y, __m128 z)
-{
-	return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x,x),_mm_mul_ps(y,y)),_mm_mul_ps(z,z));
-}
-
-
-
 
 
 /* Routine to be called with rswitch/rcut at the beginning of a kernel
  * to set up the 7 constants used for analytic 5th order switch calculations.
  */
-static inline void
-gmx_mm_setup_switch5_constants_ps(__m128 rswitch, __m128 rcut,
-								  __m128 *switch_C3, __m128 *switch_C4, __m128 *switch_C5,
-								  __m128 *switch_D2, __m128 *switch_D3, __m128 *switch_D4)
-{
-	const __m128  cm6  = { -6.0, -6.0, -6.0, -6.0};
-	const __m128 cm10  = {-10.0,-10.0,-10.0,-10.0};
-	const __m128  c15  = { 15.0, 15.0, 15.0, 15.0};
-	const __m128 cm30  = {-30.0,-30.0,-30.0,-30.0};
-	const __m128  c60  = { 60.0, 60.0, 60.0, 60.0};
-
-	__m128 d,dinv,dinv2,dinv3,dinv4,dinv5;
-	
-	d       = _mm_sub_ps(rcut,rswitch);
-	dinv    = gmx_mm_inv_ps(d);
-	dinv2   = _mm_mul_ps(dinv,dinv);
-	dinv3   = _mm_mul_ps(dinv2,dinv);
-	dinv4   = _mm_mul_ps(dinv2,dinv2);
-	dinv5   = _mm_mul_ps(dinv3,dinv2);
-	
-	*switch_C3 = _mm_mul_ps(cm10,dinv3);
-	*switch_C4 = _mm_mul_ps(c15,dinv4);
-	*switch_C5 = _mm_mul_ps(cm6,dinv5);
-	*switch_D2 = _mm_mul_ps(cm30,dinv3);
-	*switch_D3 = _mm_mul_ps(c60,dinv4);
-	*switch_D4 = _mm_mul_ps(cm30,dinv5);
+#define GMX_MM_SETUP_SWITCH5_PS(rswitch,rcut,switch_C3,switch_C4,switch_C5,switch_D2,switch_D3,switch_D4) {  \
+	const __m128  _swsetup_cm6  = { -6.0, -6.0, -6.0, -6.0};                                                 \
+	const __m128 _swsetup_cm10  = {-10.0,-10.0,-10.0,-10.0};                                                 \
+	const __m128  _swsetup_c15  = { 15.0, 15.0, 15.0, 15.0};                                                 \
+	const __m128 _swsetup_cm30  = {-30.0,-30.0,-30.0,-30.0};                                                 \
+	const __m128  _swsetup_c60  = { 60.0, 60.0, 60.0, 60.0};                                                 \
+                                                                                                             \
+	__m128 d,dinv,dinv2,dinv3,dinv4,dinv5;                                                                   \
+	                                                                                                         \
+	d       = _mm_sub_ps(rcut,rswitch);                                                                      \
+	dinv    = gmx_mm_inv_ps(d);                                                                              \
+	dinv2   = _mm_mul_ps(dinv,dinv);                                                                         \
+	dinv3   = _mm_mul_ps(dinv2,dinv);                                                                        \
+	dinv4   = _mm_mul_ps(dinv2,dinv2);                                                                       \
+	dinv5   = _mm_mul_ps(dinv3,dinv2);                                                                       \
+	                                                                                                         \
+	switch_C3 = _mm_mul_ps(_swsetup_cm10,dinv3);                                                             \
+	switch_C4 = _mm_mul_ps(_swsetup_c15,dinv4);                                                              \
+	switch_C5 = _mm_mul_ps(_swsetup_cm6,dinv5);                                                              \
+	switch_D2 = _mm_mul_ps(_swsetup_cm30,dinv3);                                                             \
+	switch_D3 = _mm_mul_ps(_swsetup_c60,dinv4);                                                              \
+	switch_D4 = _mm_mul_ps(_swsetup_cm30,dinv5);                                                             \
 }
 
 
-#define GMX_MM_SET_SWITCH5_PS(r,rswitch,rcut,sw,dsw,sw_C3,sw_C4,sw_C5,sw_D2,sw_D3,sw_D4) {   \
-    const __m128  _sw_one  = {  1.0,  1.0,  1.0,  1.0};                                      \
-    __m128 d,d2;                                                                             \
-    d     = _mm_max_ps(r,rswitch);                                                           \
-    d     = _mm_min_ps(d,rcut);                                                              \
-    d     = _mm_sub_ps(d,rswitch);                                                           \
-    d2    = _mm_mul_ps(d,d);                                                                 \
-    sw    = _mm_mul_ps(d,sw_C5);                                                             \
-    dsw   = _mm_mul_ps(d,sw_D4);                                                             \
-    sw    = _mm_add_ps(sw,sw_C4);                                                            \
-    dsw   = _mm_add_ps(dsw,sw_D3);                                                           \
-    sw    = _mm_mul_ps(sw,d);                                                                \
-    dsw   = _mm_mul_ps(dsw,d);                                                               \
-    sw    = _mm_add_ps(sw,sw_C3);                                                            \
-    dsw   = _mm_add_ps(dsw,sw_D2);                                                           \
-    sw    = _mm_mul_ps(sw,_mm_mul_ps(d,d2));                                                 \
-    dsw   = _mm_mul_ps(dsw,d2);                                                              \
-    sw    = _mm_add_ps(sw,_sw_one);                                                          \
+#define GMX_MM_EVALUATE_SWITCH5_PS(r,rswitch,rcut,sw,dsw,sw_C3,sw_C4,sw_C5,sw_D2,sw_D3,sw_D4) { \
+    const __m128  _sw_one  = {  1.0,  1.0,  1.0,  1.0};                                         \
+    __m128 d,d2;                                                                                \
+    d     = _mm_max_ps(r,rswitch);                                                              \
+    d     = _mm_min_ps(d,rcut);                                                                 \
+    d     = _mm_sub_ps(d,rswitch);                                                              \
+    d2    = _mm_mul_ps(d,d);                                                                    \
+    sw    = _mm_mul_ps(d,sw_C5);                                                                \
+    dsw   = _mm_mul_ps(d,sw_D4);                                                                \
+    sw    = _mm_add_ps(sw,sw_C4);                                                               \
+    dsw   = _mm_add_ps(dsw,sw_D3);                                                              \
+    sw    = _mm_mul_ps(sw,d);                                                                   \
+    dsw   = _mm_mul_ps(dsw,d);                                                                  \
+    sw    = _mm_add_ps(sw,sw_C3);                                                               \
+    dsw   = _mm_add_ps(dsw,sw_D2);                                                              \
+    sw    = _mm_mul_ps(sw,_mm_mul_ps(d,d2));                                                    \
+    dsw   = _mm_mul_ps(dsw,d2);                                                                 \
+    sw    = _mm_add_ps(sw,_sw_one);                                                             \
 }
 
 
 /* Returns fscaltmp, multiply with rinvsq to get fscal! */
 static inline __m128
-gmx_mm_int_coulomb_ps(__m128 rinv, __m128 qq,__m128 *vctot)
+gmx_mm_interaction_coulomb_ps(__m128 rinv, __m128 qq,__m128 *vctot)
 {
 	__m128 vcoul = _mm_mul_ps(qq,rinv);
 	*vctot   = _mm_add_ps(*vctot,vcoul);
@@ -1908,7 +1981,7 @@ gmx_mm_int_coulomb_ps(__m128 rinv, __m128 qq,__m128 *vctot)
 
 
 static inline void
-gmx_mm_int_coulomb_noforce_ps(__m128 rinv, __m128 qq,__m128 *vctot)
+gmx_mm_interaction_coulomb_noforce_ps(__m128 rinv, __m128 qq,__m128 *vctot)
 {
 	__m128 vcoul = _mm_mul_ps(qq,rinv);
 	*vctot   = _mm_add_ps(*vctot,vcoul);
@@ -1917,7 +1990,7 @@ gmx_mm_int_coulomb_noforce_ps(__m128 rinv, __m128 qq,__m128 *vctot)
 
 /* Returns fscaltmp, multiply with rinvsq to get fscal! */
 static inline __m128
-gmx_mm_int_coulombrf_ps(const __m128 rinv, const __m128 rsq, const __m128 krf, const __m128 crf, const __m128 qq,__m128 *vctot)
+gmx_mm_interaction_coulombrf_ps(const __m128 rinv, const __m128 rsq, const __m128 krf, const __m128 crf, const __m128 qq,__m128 *vctot)
 {
 	const __m128 two  = {2.0,2.0,2.0,2.0};
 	__m128 vcoul,krsq;
@@ -1931,7 +2004,7 @@ gmx_mm_int_coulombrf_ps(const __m128 rinv, const __m128 rsq, const __m128 krf, c
 
 
 static inline void
-gmx_mm_int_coulombrf_noforce_ps(__m128 rinv, __m128 rsq, __m128 krf, __m128 crf, __m128 qq,__m128 *vctot)
+gmx_mm_interaction_coulombrf_noforce_ps(__m128 rinv, __m128 rsq, __m128 krf, __m128 crf, __m128 qq,__m128 *vctot)
 {
 	__m128 vcoul,krsq;
 	
@@ -1981,11 +2054,6 @@ gmx_mm_int_lj_potonly_ps(__m128 rinvsq, __m128 c6, __m128 c12, __m128 *vvdwtot)
 	return;
 }
 
-#ifdef GMX_SSE4
-#  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
-#else
-#  define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
-#endif
 
 
 /* Return force should be multiplied by -rinv to get fscal */
@@ -2849,8 +2917,8 @@ gmx_mm_int_1_genborn_ps(__m128 r, __m128 isai,
 
 static inline void
 gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-							  float *fptr,
-							  float *fshiftptr)
+                              float *fptr,
+                              float *fshiftptr)
 {
 	__m128 t1,t2,t3;
 	
@@ -2882,11 +2950,11 @@ gmx_mm_update_iforce_1atom_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 
 static inline void
 gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-							   __m128 fix2, __m128 fiy2, __m128 fiz2,
-							   float *fptr,
-							   float *fshiftptr)
+                               __m128 fix2, __m128 fiy2, __m128 fiz2,
+                               float *fptr,
+                               float *fshiftptr)
 {
-	__m128 t1,t2,t3,t4;
+	__m128 t1,t2,t4;
 	
 #ifdef GMX_SSE3
 	fix1 = _mm_hadd_ps(fix1,fiy1);   
@@ -2919,8 +2987,7 @@ gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	t2 = _mm_shuffle_ps(fiy2,fix1,_MM_SHUFFLE(1,0,0,1));   /* fiy1 fix1  -   fiz2 */
 
 	t1 = _mm_add_ps(t1,t2);
-	t3 = _mm_add_ps(t3,t4);
-	t1 = _mm_add_ps(t1,t3); /* y x - z */
+	t1 = _mm_add_ps(t1,t4); /* y x - z */
 	
 	_mm_store_ss(fshiftptr+2,t1);
 	_mm_storeh_pi((__m64 *)(fshiftptr),t1);
@@ -2930,10 +2997,10 @@ gmx_mm_update_iforce_2atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 
 static inline void
 gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-							   __m128 fix2, __m128 fiy2, __m128 fiz2,
-							   __m128 fix3, __m128 fiy3, __m128 fiz3,
-							   float *fptr,
-							   float *fshiftptr)
+                               __m128 fix2, __m128 fiy2, __m128 fiz2,
+                               __m128 fix3, __m128 fiy3, __m128 fiz3,
+                               float *fptr,
+                               float *fshiftptr)
 {
 	__m128 t1,t2,t3,t4;
 	
@@ -2952,7 +3019,7 @@ gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	/* transpose data */
 	_MM_TRANSPOSE4_PS(fix1,fiy1,fiz1,fix2);  
 	_MM_TRANSPOSE4_PS(fiy2,fiz2,fix3,fiy3);
-	t2   = _mm_movehl_ps(t2,fiz3);
+	t2   = _mm_movehl_ps(_mm_setzero_ps(),fiz3);
 	t1   = _mm_shuffle_ps(fiz3,fiz3,_MM_SHUFFLE(0,0,0,1));
 	t3   = _mm_shuffle_ps(t2,t2,_MM_SHUFFLE(0,0,0,1));
 	
@@ -2980,13 +3047,14 @@ gmx_mm_update_iforce_3atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	_mm_storeh_pi((__m64 *)(fshiftptr),t1);
 }
 
+
 static inline void
 gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-							   __m128 fix2, __m128 fiy2, __m128 fiz2,
-							   __m128 fix3, __m128 fiy3, __m128 fiz3,
-							   __m128 fix4, __m128 fiy4, __m128 fiz4,
-							   float *fptr,
-							   float *fshiftptr)
+                               __m128 fix2, __m128 fiy2, __m128 fiz2,
+                               __m128 fix3, __m128 fiy3, __m128 fiz3,
+                               __m128 fix4, __m128 fiy4, __m128 fiz4,
+                               float *fptr,
+                               float *fshiftptr)
 {
 	__m128 t1,t2,t3,t4,t5;
 	
@@ -3017,7 +3085,7 @@ gmx_mm_update_iforce_4atoms_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
 	_mm_storeu_ps(fptr+8,_mm_add_ps(fiz3,_mm_loadu_ps(fptr+8)));
 	
 	t5 = _mm_load_ss(fshiftptr+2);
-	t5 = _mm_loadh_pi(t4,(__m64 *)(fshiftptr));
+	t5 = _mm_loadh_pi(t5,(__m64 *)(fshiftptr));
 	
 	t1 = _mm_shuffle_ps(fix1,fix1,_MM_SHUFFLE(1,0,2,2));   /* fiy1 fix1  -   fiz1 */
 	t2 = _mm_shuffle_ps(fiy2,fiy2,_MM_SHUFFLE(3,2,1,1));   /* fiy3 fix3  -   fiz2 */
@@ -3048,13 +3116,14 @@ gmx_mm_update_1pot_ps(__m128 pot1, float *ptr1)
 #endif
 	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
 }
-				   
+
+
 static inline void
 gmx_mm_update_2pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2)
 {
 #ifdef GMX_SSE3
-	pot1 = _mm_hadd_ps(pot1,pot2); 
-	pot1 = _mm_hadd_ps(pot1,pot1); 
+	pot1 = _mm_hadd_ps(pot1,pot2);
+	pot1 = _mm_hadd_ps(pot1,pot1);
 	pot2 = _mm_shuffle_ps(pot1,pot1,_MM_SHUFFLE(0,0,0,1));
 #else
 	/* SSE2 */
@@ -3064,8 +3133,9 @@ gmx_mm_update_2pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2)
 	t1   = _mm_add_ps(t1,t2);       /* 2  2  1  1  */
 	t2   = _mm_shuffle_ps(t1,t1,_MM_SHUFFLE(3,3,1,1));
 	pot1 = _mm_add_ps(t1,t2);       /* -  2  -  1  */
-	pot2 = _mm_movehl_ps(t2,t1);    /* -  -  -  2  */
+	pot2 = _mm_movehl_ps(t2,pot1);    /* -  -  -  2  */
 #endif
+    
 	_mm_store_ss(ptr1,_mm_add_ss(pot1,_mm_load_ss(ptr1)));
 	_mm_store_ss(ptr2,_mm_add_ss(pot2,_mm_load_ss(ptr2)));
 }

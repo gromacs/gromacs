@@ -1027,12 +1027,12 @@ YY_RULE_SETUP
 case 12:
 YY_RULE_SETUP
 #line 165 "scanner.l"
-{ ADD_TOKEN; yylval->i = 1; return BOOL_VALUE; }
+{ ADD_TOKEN; yylval->i = 1; return INTEGER; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 166 "scanner.l"
-{ ADD_TOKEN; yylval->i = 0; return BOOL_VALUE; }
+{ ADD_TOKEN; yylval->i = 0; return INTEGER; }
 	YY_BREAK
 
 case 14:

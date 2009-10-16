@@ -86,12 +86,14 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     }
     switch (param->val.type)
     {
-        case NO_VALUE:    return PARAM_BOOL;
-        case INT_VALUE:   return PARAM_INT;
-        case REAL_VALUE:  return PARAM_REAL;
-        case STR_VALUE:   return PARAM_STR;
-        case POS_VALUE:   return PARAM_POS;
-        case GROUP_VALUE: return PARAM_GROUP;
+        case NO_VALUE:
+        case INT_VALUE:
+        case REAL_VALUE:
+        case STR_VALUE:
+            return PARAM_BASIC;
+        case POS_VALUE:
+        case GROUP_VALUE:
+            return PARAM_EXPR;
     }
     return INVALID; /* Should not be reached */
 }
@@ -237,8 +239,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             /* Keyword */
             switch (method->type)
             {
-                case INT_VALUE:   return KEYWORD_INT;
-                case REAL_VALUE:  return KEYWORD_REAL;
+                case INT_VALUE:   return KEYWORD_NUMERIC;
+                case REAL_VALUE:  return KEYWORD_NUMERIC;
                 case STR_VALUE:   return KEYWORD_STR;
                 case GROUP_VALUE: return KEYWORD_GROUP;
                 default:          return INVALID;

@@ -177,9 +177,10 @@
  *  - \ref SPAR_DYNAMIC : If set, the method can handle dynamic values for
  *    the parameter, i.e., the value(s) can be given by an expression that
  *    evaluates to different values for different frames.
- *  - \ref SPAR_RANGES : Can be set only for \ref INT_VALUE parameters,
+ *  - \ref SPAR_RANGES : Can be set only for \ref INT_VALUE and
+ *    \ref REAL_VALUE parameters,
  *    and cannot be combined with \ref SPAR_DYNAMIC.
- *    If set, the parameter accepts ranges of integer values.
+ *    If set, the parameter accepts ranges of values.
  *    The ranges are automatically sorted and compacted such that a minimum
  *    amount of non-overlapping ranges are given for the method.
  *  - \ref SPAR_VARNUM : If set, the parameter can have a variable number
