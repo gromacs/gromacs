@@ -37,21 +37,23 @@
 #ifndef SELECTION_KEYWORDS_H
 #define SELECTION_KEYWORDS_H
 
-/*! Selection method data for comparison expression evaluation.*/
+/** Selection method data for comparison expression evaluation. */
 extern struct gmx_ana_selmethod_t sm_compare;
 
-/*! Selection method data for integer keyword evaluation.*/
+/** Selection method data for integer keyword evaluation. */
 extern struct gmx_ana_selmethod_t sm_keyword_int;
-/*! Selection method data for string keyword evaluation.*/
+/** Selection method data for real keyword evaluation. */
+extern struct gmx_ana_selmethod_t sm_keyword_real;
+/** Selection method data for string keyword evaluation. */
 extern struct gmx_ana_selmethod_t sm_keyword_str;
-/*! Selection method data for position keyword evaluation.*/
+/** Selection method data for position keyword evaluation. */
 extern struct gmx_ana_selmethod_t sm_keyword_pos;
 
-/*! Prints information about a comparison expression.*/
+/** Prints information about a comparison expression. */
 void
 _gmx_selelem_print_compare_info(FILE *fp, void *data);
 
-/*! Sets the position type for position keyword evaluation.*/
+/** Sets the position type for position keyword evaluation. */
 void
 _gmx_selelem_set_kwpos_type(const char *type, int flags, void *data);
 

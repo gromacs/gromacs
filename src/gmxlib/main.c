@@ -78,7 +78,15 @@ static bool parallel_env_val;
 tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-bool gmx_parallel_env(void)
+
+/* returns 1 when running in a parallel environment, so could also be 1 if
+   mdrun was started with: mpirun -np 1.
+     
+   Use this function only to check whether a parallel environment has   
+   been initialized, for example when checking whether gmx_finalize()   
+   needs to be called. Use PAR(cr) to check whether the simulation actually
+   has more than one node/thread.  */
+bool gmx_parallel_env_initialized(void)
 {
     bool ret;
 #ifdef GMX_THREADS
@@ -383,14 +391,6 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     argv = *argv_ptr;
 
 #ifdef GMX_MPI
-#if 0
-#ifdef GMX_THREADS
-    if (tMPI_Get_N(argc, argv_ptr)>1)
-        pe=TRUE;
-    else
-        pe=FALSE;
-#endif /* GMX_THREADS */
-#endif
 #ifdef GMX_LIB_MPI
     pe = TRUE;
 #ifdef GMX_CHECK_MPI_ENV
@@ -456,6 +456,10 @@ t_commrec *init_par_threads(t_commrec *cro)
     t_commrec *cr;
 
     snew(cr,1);
+    /* now copy the whole thing, so settings like the number of PME nodes
+       get propagated. */
+    *cr=*cro;
+    /* and we start setting our own thread-specific values for things */
     MPI_Initialized(&initialized);
     if (!initialized)
         gmx_comm("Initializing threads without comm");

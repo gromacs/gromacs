@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -234,35 +235,65 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   do_fit_ndim(3,natoms,w_rls,xp,x);
 }
 
-void reset_x_ndim(int ndim,int ncm,atom_id ind_cm[],
-		  int nreset,atom_id *ind_reset,rvec x[],real mass[])
+void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
+                  int nreset,const atom_id *ind_reset,
+                  rvec x[],const real mass[])
 {
-  int  i,m,ai;
-  rvec xcm;
-  real tm,mm;
-  
-  tm=0.0;
-  clear_rvec(xcm);
-  for(i=0; i<ncm; i++) {
-    ai=ind_cm[i];
-    mm=mass[ai];
-    for(m=0; m<ndim; m++)
-      xcm[m]+=mm*x[ai][m];
-    tm+=mm;
-  }
-  for(m=0; m<ndim; m++)
-    xcm[m]/=tm;
+    int  i,m,ai;
+    rvec xcm;
+    real tm,mm;
     
-  if (ind_reset)
-    for(i=0; i<nreset; i++)
-      rvec_dec(x[ind_reset[i]],xcm);
-  else
-    for(i=0; i<nreset; i++)
-      rvec_dec(x[i],xcm);
+    tm = 0.0;
+    clear_rvec(xcm);
+    if (ind_cm != NULL)
+    {
+        for(i=0; i<ncm; i++)
+        {
+            ai = ind_cm[i];
+            mm = mass[ai];
+            for(m=0; m<ndim; m++)
+            {
+                xcm[m] += mm*x[ai][m];
+            }
+            tm += mm;
+        }
+    }
+    else
+    {
+        for(i=0; i<ncm; i++)
+        {
+            mm = mass[i];
+            for(m=0; m<ndim; m++)
+            {
+                xcm[m] += mm*x[i][m];
+            }
+            tm += mm;
+        }
+    } 
+    for(m=0; m<ndim; m++)
+    {
+        xcm[m] /= tm;
+    }
+    
+    if (ind_reset != NULL)
+    {
+        for(i=0; i<nreset; i++)
+        {
+            rvec_dec(x[ind_reset[i]],xcm);
+        }
+    }
+    else
+    {
+        for(i=0; i<nreset; i++)
+        {
+            rvec_dec(x[i],xcm);
+        }
+    }
 }
 
-void reset_x(int ncm,atom_id ind_cm[],
-	     int nreset,atom_id *ind_reset,rvec x[],real mass[])     
+void reset_x(int ncm,const atom_id *ind_cm,
+             int nreset,const atom_id *ind_reset,
+             rvec x[],const real mass[])     
 {
-  reset_x_ndim(3,ncm,ind_cm,nreset,ind_reset,x,mass);
+    reset_x_ndim(3,ncm,ind_cm,nreset,ind_reset,x,mass);
 }

@@ -134,7 +134,7 @@ int gmx_fio_flush(int fio);
 extern off_t gmx_fio_ftell(int fio);
 /* Return file position if possible */
 
-extern void gmx_fio_seek(int fio,off_t fpos);
+extern int gmx_fio_seek(int fio,off_t fpos);
 /* Set file position if possible, quit otherwise */
 
 extern FILE *gmx_fio_getfp(int fio);

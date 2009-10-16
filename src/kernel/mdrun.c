@@ -301,6 +301,7 @@ int main(int argc,char *argv[])
   int  repl_ex_seed=-1;
   int  nstepout=100;
   int  nthreads=1;
+  int  resetstep=-1;
   
   rvec realddxyz={0,0,0};
   const char *ddno_opt[ddnoNR+1] =
@@ -375,7 +376,9 @@ int main(int argc,char *argv[])
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with -c and force checkpointing at the last step" },
     { "-stepout", FALSE, etINT, {&nstepout},
-      "HIDDENFrequency of writing the remaining runtime" }
+      "HIDDENFrequency of writing the remaining runtime" },
+    { "-resetstep", FALSE, etINT, {&resetstep},
+      "HIDDENReset cycle counters after these many time steps" }
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
@@ -392,7 +395,7 @@ int main(int argc,char *argv[])
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   /* Only run niced when not running in parallel */
-  if (!gmx_parallel_env())
+  if (!gmx_parallel_env_initialized())
     PCA_Flags |= PCA_BE_NICE;
   
 
@@ -413,7 +416,11 @@ int main(int argc,char *argv[])
 
 
   dd_node_order = nenum(ddno_opt);
-  cr->npmenodes = npme;
+  if (PAR(cr)) {
+    cr->npmenodes = npme;
+  } else {
+    cr->npmenodes = 0;
+  }
 
   if (repl_ex_nst != 0 && nmultisim < 2)
       gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
@@ -422,7 +429,7 @@ int main(int argc,char *argv[])
 #ifndef GMX_THREADS
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 #else
-    gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library, you need to compile GROMACS with a standard MPI library");
+    gmx_fatal(FARGS,"mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
 #endif
   }
 
@@ -478,7 +485,7 @@ int main(int argc,char *argv[])
   /* We postpone opening the log file if we are appending, so we can 
      first truncate the old log file and append to the correct position 
      there instead.  */
-  if (MASTER(cr) && !bAppendFiles) 
+  if ((MASTER(cr) || bSepPot) && !bAppendFiles) 
   {
       fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
       CopyRight(fplog,argv[0]);
@@ -511,10 +518,10 @@ int main(int argc,char *argv[])
                         fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,nstglobalcomm,
                         ddxyz,dd_node_order,rdd,rconstr,
                         dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                        nstepout,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
+                        nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
                         cpt_period,max_hours,Flags);
 
-  if (gmx_parallel_env())
+  if (gmx_parallel_env_initialized())
       gmx_finalize();
 
   if (MULTIMASTER(cr)) {

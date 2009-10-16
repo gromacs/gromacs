@@ -49,13 +49,9 @@ any papers on the package - you can find them in the top README file.
    are part of the comm being freed). */
 #define TMPI_STRICT 
 
-
-
 /* whether to warn if there are mallocs at performance-critical sections 
    (due to preallocations being too small) */
 /*#define TMPI_WARN_MALLOC*/
-
-
 
 
 /* the max. number of envelopes waiting to be read at thread */
@@ -63,14 +59,45 @@ any papers on the package - you can find them in the top README file.
 
 /* the normal maximum number of threads for pre-defined arrays
    (if the actual number of threads is bigger than this, it'll
-    allocate/deallocate arrays, so no problems will arise).*/
+    allocate/deallocate arrays, so no problems will arise). */
 #define MAX_PREALLOC_THREADS 32
 
+/* Whether to use busy-waiting spinlocks instead of the OS-provided locks
+   for waits. Busy-waiting has the advantage of low latency, while the 
+   OS-provided locks are friendlier on the scheduler and CPU usage. */
+#define SPIN_WAITING 
 
-/* whether to use lock&wait-free lists using compare-and-swap (cmpxchg on x86)
-   pointer functions. Message passing using blocking Send/Recv is still
-   blocking, of course. */
+
+/* Whether to use lock&wait-free lists using compare-and-swap (cmpxchg on x86)
+   pointer functions. Message passing using blocking Send/Recv, and multicasts 
+   are is still blocking, of course. */
 #define TMPI_LOCK_FREE_LISTS
+
+
+/* The size (in bytes) of the maximum transmission size for which double 
+   copying is allowed (i.e. the sender doesn't wait for the receiver to 
+   become ready, but posts a copied buffer in its envelope) */
+/*#define USE_COPY_BUFFER*/
+#define COPY_BUFFER_SIZE 256
+
+#ifdef USE_COPY_BUFFER
+/* We can separately specify whether we want copy buffers for send/recv or
+   multicast communications: */
+#define USE_SEND_RECV_COPY_BUFFER
+#define USE_COLLECTIVE_COPY_BUFFER
+#endif
+
+
+/* The number of collective envelopes per comm object. This is the maximum
+   number of simulataneous collective communications that can 
+   take place per comm object. If USE_COPY_BUFFER is not set, simultaneous
+   collective communications don't happen and 2 is the right value.  */
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+#define N_COLL_ENV 8
+#else
+#define N_COLL_ENV 2
+#endif
+
 
 
 
@@ -89,6 +116,45 @@ typedef int bool;
 #define FALSE false
 #endif
 #endif
+
+
+
+
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+/* PRE-ALLOCATED COMMUNICATION BUFFERS */
+
+/* Buffer structure. Every thread structure has several of these ready to
+   be used when the data transmission is small enough for double copying to 
+   occur (i.e. the size of the transmission is less than N*MAX_COPY_BUFFER_SIZE,
+   where N is the number of receiving threads).
+
+   These buffers come in two sizes: one pre-allocated to MAX_COPY_BUFFER_SIZE
+   (for point-to-point transmissions, and one pre-allocated to 
+   Nthreads*MAX_COPY_BUFFE_SIZE). */
+struct copy_buffer
+{
+    void *buf; /* the actual buffer */
+    struct copy_buffer *next; /* pointer to next free buffer in buffer_list */
+    size_t size; /* allocated size of buffer */
+};
+
+/* a list of copy_buffers of a specific size. */
+struct copy_buffer_list
+{
+    struct copy_buffer *cb; /* pointer to the first copy_buffer */
+    size_t size; /* allocated size of buffers in this list */
+    struct copy_buffer *cb_alloc; /* list as allocated */
+    int Nbufs; /* number of allocated buffers */
+};
+#endif
+
+
+
+
+
+
+
+
 
 
 
@@ -114,7 +180,12 @@ typedef int bool;
 enum envelope_state
 {
     env_unmatched       = 0, /* the envelope has not had a match yet */
-    env_finished        = 1  /* the transmission has finished */
+    env_copying         = 1, /* busy copying (only used for send_envelope 
+                                by receiver if using_cpbuf is true,
+                                but cb was still NULL).  */
+    env_cb_available    = 2, /* the copy buffer is available. Set by
+                                the sender on a send_buffer. */
+    env_finished        = 3  /* the transmission has finished */
 };
 
 
@@ -134,11 +205,9 @@ struct send_envelope
 
     bool nonblock; /* whether the receiver is non-blocking */
 
-     /* state, values from enum_envelope_state .  
-        this is volatile because it's probably read by a thread 
-        while another one is writing to them (there's a few busy-waits 
-        relying on these flags). 
-        status=env_unmatched  is the initial state.*/
+    /* state, values from enum_envelope_state .  
+       (there's a few busy-waits relying on this flag). 
+       status=env_unmatched  is the initial state.*/
     tMPI_Atomic_t state;
 
     /* the error condition */
@@ -148,12 +217,9 @@ struct send_envelope
     tMPI_Status *status;
     /* prev and next envelopes in the linked list  */
     struct send_envelope *prev,*next;
-#ifdef TMPI_LOCK_FREE_LISTS
-    /* next pointer for lock-free lists */
-    tMPI_Atomic_ptr_t next_a; 
-#else
-    /* next pointer for shared lists */
-    volatile struct send_envelope *next_a; 
+#ifdef USE_SEND_RECV_COPY_BUFFER
+    bool using_cb; /* whether a copy buffer is (going to be) used */
+    void* cb;/* the allocated copy buffer pointer */
 #endif
     /* the list I'm in */
     struct send_envelope_list *list;
@@ -180,9 +246,7 @@ struct recv_envelope
     bool nonblock; /* whether the receiver is non-blocking */
 
      /* state, values from enum_envelope_state .  
-        this is volatile because it's probably read by a thread 
-        while another one is writing to them (there's a few busy-waits 
-        relying on these flags). 
+        (there's a few busy-waits relying on this flag). 
         status=env_unmatched  is the initial state.*/
     tMPI_Atomic_t state;
 
@@ -196,46 +260,47 @@ struct recv_envelope
 };
 
 
-/* singly linked lists of free send & receive envelopes belonging to 
-   a thread. */
+/* singly linked lists of free send & receive envelopes belonging to a
+   thread. */
 struct free_envelope_list 
 {
-    struct send_envelope *head_send; /* the first element in the 
-                                             linked list */
     struct recv_envelope *head_recv; /* the first element in the 
                                              linked list */
-
-    struct send_envelope *send_alloc_head;  /* the allocated send list */
     struct recv_envelope *recv_alloc_head;  /* the allocated recv list */
 };
 
 /* collection of send envelopes to a specific thread */
 struct send_envelope_list
 {
+    struct send_envelope *head_free; /* singly linked list with free send
+                                        envelopes. A single-thread LIFO.*/
 #ifdef TMPI_LOCK_FREE_LISTS
     tMPI_Atomic_ptr_t head_new; /* singly linked list with the new send 
-                                  envelopes (i.e. those that are put there 
-                                  by the sending thread, but not yet checked 
-                                  by the receiving thread). */
+                                  envelopes (i.e. those that are put there by 
+                                  the sending thread, but not yet checked by 
+                                  the receiving thread). This is a lock-free 
+                                  shared detachable list.*/
+    tMPI_Atomic_ptr_t head_rts; /* singly linked list with free send
+                                   envelopes returned by the other thread. 
+                                   This is a lock-free shared LIFO.*/
 #else
-    volatile struct send_envelope *head_new; /* singly linked list with 
-                                                the new send envelopes 
-                                                (i.e. those that are put 
-                                                there by the sending thread,
-                                                but not yet checked by the
-                                                receiving thread). */
+    struct send_envelope *head_new; /* singly linked list with the new 
+                                       send envelopes (i.e. those that 
+                                       are put there by the sending 
+                                       thread, but not yet checked by 
+                                       the receiving thread). */
+    struct send_envelope *head_rts; /* singly linked list with free 
+                                       send envelopes */
+    tMPI_Spinlock_t lock_new; /* this locks head_new */
+    tMPI_Spinlock_t lock_rts; /* this locks head_rts */
 #endif
-    struct send_envelope *head_old; /* the old send envelopes,
-                                       in a circular doubly linked 
-                                       list. These have been checked
-                                       by the receiving thread 
-                                       against the existing 
-                                       recv_envelope_list. */
+    struct send_envelope *head_old; /* the old send envelopes, in a circular 
+                                       doubly linked list. These have been 
+                                       checked by the receiving thread against 
+                                       the existing recv_envelope_list. */
 
-    tMPI_Spinlock_t lock; /* this locks head_new */
-
-    struct send_envelope old_dummy; /* the dummy element for the head_old
-                                       list */
+    struct send_envelope *alloc_head;  /* the allocated send list */
+    size_t Nalloc; /* number of allocted sends */
 };
 
 struct recv_envelope_list
@@ -263,9 +328,17 @@ struct tmpi_req_
 struct req_list
 {
     struct tmpi_req_ *head; /* pre-allocated singly linked list of requests. 
-                              (i.e. reqs->prev is undefined). */
+                               (i.e. reqs->prev is undefined). */
     struct tmpi_req_ *alloc_head; /* the allocated block */
 };
+
+
+
+
+
+
+
+
 
 
 
@@ -281,7 +354,7 @@ struct req_list
    across the comm, and are always blocking, the protocol can be much simpler
    than that for point-to-point communication through tMPI_Send/Recv, etc. */
 
-/* unique tags for multicast */
+/* unique tags for multicast & collective operations */
 #define TMPI_BCAST_TAG      1
 #define TMPI_GATHER_TAG     2
 #define TMPI_GATHERV_TAG    3
@@ -292,30 +365,62 @@ struct req_list
 #define TMPI_ALLTOALLV_TAG  8
 
 
-
-/* the multicast envelope. There's a few of these for each 
-   multi_sync structure */
-struct multi_env
+/* thread-specific part of the coll_env */
+struct coll_env_thread
 {
-    tMPI_Atomic_t current_counter; /* counter value for the current
-                                     communication */
-    tMPI_Atomic_t n_remaining; /* remaining count for root thread */
+    tMPI_Atomic_t current_sync; /* sync counter value for the current
+                                   communication */
+    tMPI_Atomic_t n_remaining;  /* remaining threads count for each thread */
 
+    int tag; /* collective communication type */
+    tMPI_Datatype datatype; /* datatype */
 
-    int tag; /* multicast communication type */
-    volatile void **buf; /* array of send/recv buffer values */
-    volatile size_t *bufsize; /* array of number of bytes to send/recv */
-    bool *read_data; /* whether we read data from a specific thread*/
-    tMPI_Datatype datatype;
+    void **buf; /* array of send/recv buffer values */
+    size_t *bufsize; /* array of number of bytes to send/recv */
+
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+    bool using_cb; /* whether a copy buffer is (going to be) used */
+    tMPI_Atomic_t buf_readcount; /* Number of threads reading from buf
+                                    while using_cpbuf is true, but cpbuf 
+                                    is still NULL.  */
+    tMPI_Atomic_ptr_t *cpbuf; /* copy_buffer pointers. */
+    struct copy_buffer *cb; /* the copy buffer cpbuf points to */
+#endif
+#ifndef SPIN_WAITING
+    tMPI_Thread_mutex_t wait_mutex; /* mutex associated with waiting */
+    tMPI_Thread_cond_t send_cond; /* condition associated with the sending */
+    tMPI_Thread_cond_t recv_cond; /* condition associated with the receiving */
+#endif
+
+    bool *read_data; /* whether we read data from a specific thread. */
+};
+
+/* Collective communications once sync. These run in parallel with
+   the collection of coll_env_threads*/
+struct coll_env_coll
+{
+    /* collective sync data */
+    tMPI_Atomic_t current_sync; /* sync counter value for the current
+                                   communication */
+    tMPI_Atomic_t n_remaining;  /* remaining threads count */
+};
+
+/* the collective communication envelope. There's a few of these per 
+   comm, and each one stands for one collective communication call.  */
+struct coll_env
+{
+    struct coll_env_thread *met; /* thread-specific collective envelope data.*/
+
+    struct coll_env_coll coll;
+    int N;
 };
 
 /* multicast synchronization data structure. There's one of these for 
    each thread in each tMPI_Comm structure */
-struct multi_sync
+struct coll_sync
 {
-    int counter; /* sync counter for list in mev */
-#define N_MULTI_SYNC 2
-    struct multi_env mev[N_MULTI_SYNC];
+    int synct; /* sync counter for coll_env_thread.  */
+    int syncs; /* sync counter for coll_env_coll.  */
 };
 
 
@@ -338,23 +443,26 @@ struct tmpi_thread
 
     /* the receive envelopes posted for other threads to check */
     struct recv_envelope_list evr;
-
     /* the send envelopes posted by other threadas */
     struct send_envelope_list *evs;
-
-    /* change indicator */
+    /* send envelope change indicator */
     tMPI_Atomic_t evs_check_id;
 
-    struct req_list rql;  /* the requests */
+    struct req_list rql;  /* list of pre-allocated requests */
 
-    /* the free envelopes */
-    struct free_envelope_list envelopes; 
+    struct free_envelope_list envelopes; /* free envelopes */
 
-    tMPI_Comm self_comm;
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+    /* copy buffer list for multicast communications */
+    struct copy_buffer_list cbl_multi; 
+#endif
+
+
+    tMPI_Comm self_comm; /* comms for MPI_COMM_SELF */
 
     void (*start_fn)(void*); /* The start function (or NULL, if main() is to be
                                 called) */
-    void *start_arg; /* the argument to the start function (if it's not main()*/
+    void *start_arg; /* the argument to the start function, if it's not main()*/
 
     /* we copy these for each thread (this is not required by the 
        MPI standard, but it's convenient). Note that we copy, because
@@ -432,12 +540,17 @@ struct tmpi_comm_
        multicast_barrier[3] contains a barrier for N/8 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
+#ifdef SPIN_WAITING
     tMPI_Spinlock_barrier_t *multicast_barrier;   
+#else
+    tMPI_Thread_barrier_t *multicast_barrier;   
+#endif
     int *N_multicast_barrier;
     int Nbarriers;
 
 
-    struct multi_sync *msc; /* list of multicast sync objecs */
+    struct coll_env *cev; /* list of multicast envelope objecs */
+    struct coll_sync *csync; /* list of multicast sync objecs */
 
     /* lists of globally shared send/receive buffers for tMPI_Reduce, etc. */
     volatile void **sendbuf, **recvbuf; 
@@ -539,7 +652,8 @@ void *tMPI_Realloc(void *p, size_t size);
 
 
 /* get the current thread structure pointer */
-#define tMPI_Get_current() ((struct tmpi_thread*)tMPI_Thread_getspecific(id_key))
+#define tMPI_Get_current() ((struct tmpi_thread*) \
+                            tMPI_Thread_getspecific(id_key))
 
 /* get the number of this thread */
 /*#define tMPI_This_threadnr() (tMPI_Get_current() - threads)*/
@@ -582,6 +696,24 @@ tMPI_Group tMPI_Group_alloc(void);
 
 
 
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+/* initialize a copy_buffer_list */
+void tMPI_Copy_buffer_list_init(struct copy_buffer_list *cbl, int Nbufs, 
+                                size_t size);
+/* initialize a copy_buffer_list */
+void tMPI_Copy_buffer_list_destroy(struct copy_buffer_list *cbl);
+/* get a copy buffer from a list */
+struct copy_buffer *tMPI_Copy_buffer_list_get(struct copy_buffer_list *cbl);
+/* return a copy buffer to a list */
+void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl, 
+                                  struct copy_buffer *cb);
+/* initialize a copy buffer */
+void tMPI_Copy_buffer_init(struct copy_buffer *cb, size_t size);
+void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
+#endif
+
+
+
 
 
 /* initialize a free envelope list with N envelopes */
@@ -591,7 +723,7 @@ void tMPI_Free_env_list_destroy(struct free_envelope_list *evl);
 
 
 /* initialize a send envelope list */
-void tMPI_Send_env_list_init(struct send_envelope_list *evl);
+void tMPI_Send_env_list_init(struct send_envelope_list *evl, int N);
 /* destroy a send envelope list */
 void tMPI_Send_env_list_destroy(struct send_envelope_list *evl);
 
@@ -617,11 +749,16 @@ void tMPI_Req_list_destroy(struct req_list *rl);
 
 
 /* multicast functions */
-/* initialize a multi sync structure */
-void tMPI_Multi_sync_init(struct multi_sync *msc, int N);
+/* initialize a coll env structure */
+void tMPI_Coll_env_init(struct coll_env *mev, int N);
+/* destroy a coll env structure */
+void tMPI_Coll_env_destroy(struct coll_env *mev);
 
-/* destroy a multi sync structure */
-void tMPI_Multi_sync_destroy(struct multi_sync *msc);
+/* initialize a coll sync structure */
+void tMPI_Coll_sync_init(struct coll_sync *msc);
+/* destroy a coll sync structure */
+void tMPI_Coll_sync_destroy(struct coll_sync *msc);
+
 
 
 

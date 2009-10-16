@@ -863,7 +863,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
         }
     } 
     if (bExit) {
-        if (gmx_parallel_env())
+        if (gmx_parallel_env_initialized())
             /*gmx_abort(gmx_node_rank(),gmx_node_num(),0);*/
             gmx_finalize();
         exit(0);

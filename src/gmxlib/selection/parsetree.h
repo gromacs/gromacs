@@ -48,6 +48,7 @@
 #include <selvalue.h>
 
 struct t_selelem;
+struct gmx_ana_indexgrps_t;
 struct gmx_ana_selmethod_t;
 struct gmx_ana_selparam_t;
 
@@ -56,28 +57,33 @@ struct gmx_ana_selparam_t;
  */
 typedef struct t_selexpr_value
 {
-    /*! Type of the value.*/
+    /** Type of the value. */
     e_selvalue_t            type;
-    /*! TRUE if the value is the result of an expression.*/
+    /** TRUE if the value is the result of an expression. */
     bool                    bExpr;
     union {
-        /*! The integer value/range (\p type INT_VALUE);*/
+        /** The integer value/range (\p type INT_VALUE); */
         struct {
-            /*! Beginning of the range.*/
+            /** Beginning of the range. */
             int             i1;
-            /*! End of the range; equals \p i1 for a single integer.*/
+            /** End of the range; equals \p i1 for a single integer. */
             int             i2;
         }                   i;
-        /*! The real value (\p type REAL_VALUE);*/
-        real                r;
-        /*! The string value (\p type STR_VALUE);*/
+        /** The real value/range (\p type REAL_VALUE); */
+        struct {
+            /** Beginning of the range. */
+            real            r1;
+            /** End of the range; equals \p r1 for a single number. */
+            real            r2;
+        }                   r;
+        /** The string value (\p type STR_VALUE); */
         char               *s;
-        /*! The position value (\p type POS_VALUE);*/
+        /** The position value (\p type POS_VALUE); */
         rvec                x;
-        /*! The expression if \p bExpr is TRUE.*/
+        /** The expression if \p bExpr is TRUE. */
         struct t_selelem   *expr;
     }                       u;
-    /*! Pointer to the next value.*/
+    /** Pointer to the next value. */
     struct t_selexpr_value *next;
 } t_selexpr_value;
 
@@ -86,85 +92,92 @@ typedef struct t_selexpr_value
  */
 typedef struct t_selexpr_param
 {
-    /*! Name of the parameter.*/
-    const char             *name;
-    /*! Number of values given for this parameter.*/
+    /** Name of the parameter. */
+    char                   *name;
+    /** Number of values given for this parameter. */
     int                     nval;
-    /*! Pointer to the first value.*/
+    /** Pointer to the first value. */
     struct t_selexpr_value *value;
-    /*! Pointer to the next parameter.*/
+    /** Pointer to the next parameter. */
     struct t_selexpr_param *next;
 } t_selexpr_param;
 
-/*! Error reporting function for the selection parser.*/
+/** Error reporting function for the selection parser. */
 void
 _gmx_selparser_error(const char *fmt, ...);
 
-/*! Allocates and initializes a constant \c t_selexpr_value.*/
+/** Allocates and initializes a constant \c t_selexpr_value. */
 t_selexpr_value *
 _gmx_selexpr_create_value(e_selvalue_t type);
-/*! Allocates and initializes an expression \c t_selexpr_value.*/
+/** Allocates and initializes an expression \c t_selexpr_value. */
 t_selexpr_value *
 _gmx_selexpr_create_value_expr(struct t_selelem *expr);
-/*! Allocates and initializes a \c t_selexpr_param.*/
+/** Allocates and initializes a \c t_selexpr_param. */
 t_selexpr_param *
-_gmx_selexpr_create_param(const char *name);
+_gmx_selexpr_create_param(char *name);
 
-/*! Frees the memory allocated for a chain of values.*/
+/** Frees the memory allocated for a chain of values. */
 void
 _gmx_selexpr_free_values(t_selexpr_value *value);
-/*! Frees the memory allocated for a chain of parameters.*/
+/** Frees the memory allocated for a chain of parameters. */
 void
 _gmx_selexpr_free_params(t_selexpr_param *param);
 
-/*! Propagates the flags for selection elements.*/
+/** Propagates the flags for selection elements. */
 int
 _gmx_selelem_update_flags(struct t_selelem *sel);
 
-/*! Creates a \c t_selelem for comparsion expression evaluation.*/
+/** Creates a \c t_selelem for comparsion expression evaluation. */
 struct t_selelem *
-_gmx_sel_init_comparison(struct gmx_ana_selcollection_t *sc,
-                         struct t_selelem *left, struct t_selelem *right, char *cmpop);
-/*! Creates a \c t_selelem for a keyword expression from the parsed data.*/
+_gmx_sel_init_comparison(struct t_selelem *left, struct t_selelem *right,
+                         char *cmpop, void *scanner);
+/** Creates a \c t_selelem for a keyword expression from the parsed data. */
 struct t_selelem *
-_gmx_sel_init_keyword(struct gmx_ana_selcollection_t *sc,
-                      struct gmx_ana_selmethod_t *method,
-                      int nargs, t_selexpr_value *args, const char *rpost);
-/*! Creates a \c t_selelem for evaluation of reference positions.*/
+_gmx_sel_init_keyword(struct gmx_ana_selmethod_t *method,
+                      t_selexpr_value *args, const char *rpost, void *scanner);
+/** Creates a \c t_selelem for a method expression from the parsed data. */
 struct t_selelem *
-_gmx_sel_init_position(struct gmx_ana_selcollection_t *sc,
-                       struct t_selelem *expr, const char *type, bool bSelPos);
-/*! Creates a \c t_selelem for a method expression from the parsed data.*/
+_gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
+                     t_selexpr_param *params, const char *rpost,
+                     void *scanner);
+/** Creates a \c t_selelem for a modifier expression from the parsed data. */
 struct t_selelem *
-_gmx_sel_init_method(struct gmx_ana_selcollection_t *sc,
-                     struct gmx_ana_selmethod_t *method,
-                     t_selexpr_param *params, const char *rpost);
-/*! Creates a \c t_selelem for a modifier expression from the parsed data.*/
+_gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod, t_selexpr_param *params,
+                       struct t_selelem *sel, void *scanner);
+/** Creates a \c t_selelem for evaluation of reference positions. */
 struct t_selelem *
-_gmx_sel_init_modifier(struct gmx_ana_selcollection_t *sc,
-                       struct gmx_ana_selmethod_t *mod,
-                       t_selexpr_param *params, struct t_selelem *sel);
-/*! Creates a root \c t_selelem for a selection.*/
+_gmx_sel_init_position(struct t_selelem *expr, const char *type, bool bSelPos,
+                       void *scanner);
+
+/** Creates a \c t_selelem for a constant position. */
+struct t_selelem *
+_gmx_sel_init_const_position(real x, real y, real z);
+/** Creates a \c t_selelem for a index group expression using group name. */
+struct t_selelem *
+_gmx_sel_init_group_by_name(struct gmx_ana_indexgrps_t *grps, const char *name);
+/** Creates a \c t_selelem for a index group expression using group index. */
+struct t_selelem *
+_gmx_sel_init_group_by_id(struct gmx_ana_indexgrps_t *grps, int id);
+/** Creates a \c t_selelem for a variable reference */
+struct t_selelem *
+_gmx_sel_init_variable_ref(struct t_selelem *sel);
+
+/** Creates a root \c t_selelem for a selection. */
 struct t_selelem *
 _gmx_sel_init_selection(char *name, struct t_selelem *sel, void *scanner);
-/*! Creates a root \c t_selelem elements for a variable assignment.*/
+/** Creates a root \c t_selelem elements for a variable assignment. */
 struct t_selelem *
 _gmx_sel_assign_variable(char *name, struct t_selelem *expr, void *scanner);
-/*! Appends a root \c t_selelem to a selection collection.*/
+/** Appends a root \c t_selelem to a selection collection. */
 struct t_selelem *
-_gmx_sel_append_selection(struct gmx_ana_selcollection_t *sc,
-                          struct t_selelem *sel, struct t_selelem *last);
+_gmx_sel_append_selection(struct t_selelem *sel, struct t_selelem *last,
+                          void *scanner);
 
 /* In params.c */
-/*! Initializes an array of parameters based on input from the selection parser.*/
-extern bool
+/** Initializes an array of parameters based on input from the selection parser. */
+bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
-                      struct gmx_ana_selparam_t *param, struct t_selelem *root);
-
-/* In parser.y */
-/*! Internal helper function used by gmx_ana_selcollection_parse_*() to do the actual work.*/
-int
-_gmx_sel_run_parser(void *scanner, struct gmx_ana_selcollection_t *sc,
-                    struct gmx_ana_indexgrps_t *grps, int maxnr);
+                      struct gmx_ana_selparam_t *param, struct t_selelem *root,
+                      void *scanner);
 
 #endif

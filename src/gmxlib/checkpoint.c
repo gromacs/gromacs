@@ -22,6 +22,13 @@
 
 #include <string.h>
 #include <time.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+/* _chsize_s */
+#include <io.h>
+#endif
+
+
 #include "filenm.h"
 #include "names.h"
 #include "typedefs.h"
@@ -35,6 +42,7 @@
 #include "gmx_random.h"
 #include "checkpoint.h"
 #include "futil.h"
+
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -85,6 +93,27 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim" 
 };
+
+
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+static int
+gmx_wintruncate(const char *filename, __int64 size)
+{
+    FILE *fp;
+    int   rc;
+    
+    fp=fopen(filename,"r+");
+    
+    if(fp==NULL)
+    {
+        return -1;
+    }
+    
+    return _chsize_s( fileno(fp), size);
+}
+#endif
+
 
 
 enum { ecprREAL, ecprRVEC, ecprMATRIX };
@@ -1143,7 +1172,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
                             t_state *state,bool *bReadRNG,bool *bReadEkin,
                             int *simulation_part,bool bAppendOutputFiles)
 {
-    int  fp,i,j;
+    int  fp,i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
 	char filename[STRLEN],buf[22];
@@ -1380,8 +1409,12 @@ static void read_checkpoint(const char *fn,FILE *fplog,
             {
                 gmx_fatal(FARGS,"The original run wrote a file called '%s' which is larger than 2 GB, but mdrun did not support large file offsets. Can not append. Run mdrun without -append",outputfiles[i].filename);
             }
-
-            if (0 != truncate(outputfiles[i].filename,outputfiles[i].offset))
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+            rc = gmx_wintruncate(outputfiles[i].filename,outputfiles[i].offset);
+#else
+            rc = truncate(outputfiles[i].filename,outputfiles[i].offset);
+#endif
+            if(rc!=0)
             {
                 gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
             }

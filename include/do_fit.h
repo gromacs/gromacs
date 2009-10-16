@@ -82,16 +82,20 @@ extern void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
 extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Calls do_fit with ndim=3, thus fitting in 3D */
 
-extern void reset_x_ndim(int ndim,int ncm,atom_id ind_cm[],
-			 int nreset,atom_id *ind_reset,rvec x[],real mass[]);
+extern void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
+			 int nreset,const atom_id *ind_reset,
+			 rvec x[],const real mass[]);
 /* Put the center of mass of atoms in the origin for dimensions 0 to ndim.
  * The center of mass is computed from the index ind_cm.
+ * When ind_cm!=NULL the COM is determined using ind_cm.
+ * When ind_cm==NULL the COM is determined for atoms 0 to ncm.
  * When ind_reset!=NULL the coordinates indexed by ind_reset are reset.
  * When ind_reset==NULL the coordinates up to nreset are reset.
  */
 
-extern void reset_x(int ncm,atom_id ind_cm[],
-		    int nreset,atom_id *ind_reset,rvec x[],real mass[]);
+extern void reset_x(int ncm,const atom_id *ind_cm,
+		    int nreset,const atom_id *ind_reset,
+		    rvec x[],const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
 
 #endif	/* _do_fit_h */

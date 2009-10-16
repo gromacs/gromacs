@@ -90,6 +90,7 @@ gmx_ana_selmethod_t sm_same = {
     NULL,
     &evaluate_same,
     NULL,
+    {"same residue as ATOM_EXPR", 0, NULL},
 };
 
 /*!

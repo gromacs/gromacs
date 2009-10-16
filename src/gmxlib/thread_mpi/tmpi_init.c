@@ -65,15 +65,6 @@ any papers on the package - you can find them in the top README file.
 
 
 
-struct tmpi_errhandler_ tmpi_errors_are_fatal = { 0, tmpi_errors_are_fatal_fn };
-struct tmpi_errhandler_ tmpi_errors_return = { 0, tmpi_errors_return_fn };
-
-
-tMPI_Errhandler TMPI_ERRORS_ARE_FATAL=&tmpi_errors_are_fatal;
-tMPI_Errhandler TMPI_ERRORS_RETURN=&tmpi_errors_return;
-
-
-
 
 /* there are a few global variables that maintain information about the
    running threads. Some are defined by the MPI standard: */
@@ -98,178 +89,7 @@ static bool tmpi_finalized=FALSE;
 /* misc. global information about MPI */
 struct tmpi_global *tmpi_global=NULL;
 
-/* this is where all the tMPI_Reduce ops are included from thread_tmpi_ops.c */
-#define THREAD_MPI_OPS 1
 
-#define TYPE char
-#define TYPENM CHAR
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE short
-#define TYPENM SHORT
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE int
-#define TYPENM INT
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE long
-#define TYPENM LONG
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#ifdef SIZEOF_LONG_LONG_INT
-
-#define TYPE long long
-#define TYPENM L_LONG
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE long long int
-#define TYPENM L_L_INT
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#endif
-
-#define TYPE signed char
-#define TYPENM S_CHAR
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE unsigned char
-#define TYPENM U_CHAR
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE unsigned short
-#define TYPENM U_SHORT
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE unsigned 
-#define TYPENM UNSIGNED
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#define TYPE unsigned long
-#define TYPENM U_LONG
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#ifdef SIZEOF_LONG_LONG_INT
-
-#define TYPE unsigned long long
-#define TYPENM U_L_LONG
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-#endif
-
-#define TYPE float
-#define TYPENM FLOAT
-#define INTTYPE 0
-#include "tmpi_ops.c"
-
-#define TYPE double
-#define TYPENM DOUBLE
-#define INTTYPE 0
-#include "tmpi_ops.c"
-
-#define TYPE long double
-#define TYPENM L_DOUBLE
-#define INTTYPE 0
-#include "tmpi_ops.c"
-
-#define TYPE char
-#define TYPENM BYTE
-#define INTTYPE 1
-#include "tmpi_ops.c"
-
-
-tmpi_dt tmpi_char    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
-tmpi_dt tmpi_short   ={sizeof(short),             oplist_SHORT,    0,NULL,TRUE};
-tmpi_dt tmpi_int     ={sizeof(int),               oplist_INT,      0,NULL,TRUE};
-tmpi_dt tmpi_long    ={sizeof(long),              oplist_LONG,     0,NULL,TRUE};
-#ifdef SIZEOF_LONG_LONG_INT
-tmpi_dt tmpi_l_long  ={sizeof(long long),         oplist_L_LONG,   0,NULL,TRUE};
-tmpi_dt tmpi_l_l_int ={sizeof(long long int),     oplist_L_L_INT,  0,NULL,TRUE};
-#endif
-tmpi_dt tmpi_s_char  ={sizeof(signed char),       oplist_S_CHAR,   0,NULL,TRUE};
-tmpi_dt tmpi_u_char  ={sizeof(unsigned char),     oplist_U_CHAR,   0,NULL,TRUE};
-tmpi_dt tmpi_u_short ={sizeof(unsigned short),    oplist_U_SHORT,  0,NULL,TRUE};
-tmpi_dt tmpi_unsigned={sizeof(unsigned),          oplist_UNSIGNED, 0,NULL,TRUE};
-tmpi_dt tmpi_u_long  ={sizeof(unsigned long),     oplist_U_LONG,   0,NULL,TRUE};
-#ifdef SIZEOF_LONG_LONG_INT
-tmpi_dt tmpi_u_l_long={sizeof(unsigned long long),oplist_U_L_LONG, 0,NULL,TRUE};
-#endif
-tmpi_dt tmpi_float   ={sizeof(float),             oplist_FLOAT,    0,NULL,TRUE};
-tmpi_dt tmpi_double  ={sizeof(double),            oplist_DOUBLE,   0,NULL,TRUE};
-tmpi_dt tmpi_l_double={sizeof(long double),       oplist_L_DOUBLE, 0,NULL,TRUE};
-tmpi_dt tmpi_byte    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
-
-
-
-
-const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
-const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
-const tMPI_Datatype TMPI_INT                = &tmpi_int;
-const tMPI_Datatype TMPI_LONG               = &tmpi_long;
-#ifdef SIZEOF_LONG_LONG_INT
-const tMPI_Datatype TMPI_LONG_LONG          = &tmpi_l_long;
-const tMPI_Datatype TMPI_LONG_LONG_INT      = &tmpi_l_l_int;
-#endif
-const tMPI_Datatype TMPI_SIGNED_CHAR        = &tmpi_s_char;
-const tMPI_Datatype TMPI_UNSIGNED_CHAR      = &tmpi_u_char;
-const tMPI_Datatype TMPI_UNSIGNED_SHORT     = &tmpi_u_short;
-const tMPI_Datatype TMPI_UNSIGNED           = &tmpi_unsigned;
-const tMPI_Datatype TMPI_UNSIGNED_LONG      = &tmpi_u_long;
-#ifdef SIZEOF_LONG_LONG_INT
-const tMPI_Datatype TMPI_UNSIGNED_LONG_LONG = &tmpi_u_l_long;
-#endif
-
-const tMPI_Datatype TMPI_FLOAT              = &tmpi_float;
-const tMPI_Datatype TMPI_DOUBLE             = &tmpi_double;
-const tMPI_Datatype TMPI_LONG_DOUBLE        = &tmpi_l_double;
-
-/*extern tMPI_Datatype tMPI_UNSIGNED_WCHAR*/
-const tMPI_Datatype TMPI_BYTE               = &tmpi_byte;
-
-
-
-
-
-
-/* error messages. Must match error codes in thread_mpi.h */
-static const char *tmpi_errmsg[] =
-{
-    "No error",
-    "malloc failure in tMPI (out of memory)",
-    "tMPI Initialization error",
-    "tMPI Finalize error",
-    "Invalid tMPI_Group",
-    "Invalid tMPI_Comm",
-    "Invalid tMPI_Status",
-    "Invalid tMPI_Group rank",
-    "Invalid Cartesian topology dimensions",
-    "Invalid Cartesian topology coordinates",
-    "Insufficient number processes for Cartesian topology",
-    "Invalid counterpart for MPI transfer",
-    "Receive buffer size too small for transmission",
-    "Overlapping send/receive buffers: probably due to thread-unsafe code.",
-    "Invalid send destination",
-    "Invalid receive source",
-    "Invalid buffer (null pointer in send or receive buffer)",
-    "Multicast operation mismatch (multicast not collective across comm)",
-    "Invalid reduce operator",
-    "Out of receive envelopes: this shouldn't happen (probably a bug).",
-    "Out of receive requests: this shouldn't happen (probably a bug).",
-    "Transmission failure",
-    "Unknown tMPI error"
-};
 
 
 
@@ -361,130 +181,44 @@ tMPI_Comm tMPI_Get_comm_self(void)
     return th->self_comm;
 }
 
-int tMPI_Error(tMPI_Comm comm, int tmpi_errno)
+
+int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
 {
-    if (comm)
+    int i;
+    int ret=TMPI_FAILURE;
+
+    *nthreads=1;
+    if (!optname)
     {
-        comm->erh->err=tmpi_errno;
-        comm->erh->fn(&comm, &tmpi_errno);
+        i=0;
     }
     else
     {
-        /* initialization errors have no comm */
-        tmpi_errors_are_fatal_fn(NULL, &tmpi_errno);
-    }
-    return tmpi_errno;
-}
-
-
-int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
-{
-    if (errorcode<0 || errorcode>=N_TMPI_ERR)
-        errorcode=TMPI_ERR_UNKNOWN;
-
-#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
-    strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
-#else
-    strncpy_s(strn, TMPI_MAX_ERROR_STRING, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
-#endif
-    *resultlen=strlen(strn);
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Create_errhandler(tMPI_Errhandler_fn *function, 
-                           tMPI_Errhandler *errhandler) 
-{
-    /* we don't use a special malloc here because this is the error handler
-       creation function. */
-    *errhandler=(tMPI_Errhandler)malloc(sizeof(struct tmpi_errhandler_));
-    if (!*errhandler)
-    {
-        fprintf(stderr, "tMPI fatal error (%s), bailing out\n", 
-                tmpi_errmsg[TMPI_ERR_MALLOC]);
-        abort();
-    }
-    (*errhandler)->err=0;
-    (*errhandler)->fn=*function;
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Errhandler_free(tMPI_Errhandler *errhandler)
-{
-    free(*errhandler);
-    return TMPI_SUCCESS;
-}
-
-
-int tMPI_Comm_set_errhandler(tMPI_Comm comm, tMPI_Errhandler errhandler)
-{
-    comm->erh = errhandler;
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler)
-{
-    *errhandler=comm->erh;
-    return TMPI_SUCCESS;
-}
-
-void tmpi_errors_are_fatal_fn(tMPI_Comm *comm, int *err)
-{
-    char errstr[TMPI_MAX_ERROR_STRING];
-    size_t len;
-
-    tMPI_Error_string(*err, errstr, &len);
-    if (comm)
-    {
-        fprintf(stderr, "MPI error: %s (in valid comm)\n", errstr);
-    }
-    else
-    {
-        fprintf(stderr, "MPI error: %s\n", errstr);
-    }
-    abort();
-    /*exit(0);*/
-}
-
-void tmpi_errors_return_fn(tMPI_Comm *comm, int *err)
-{
-    char errstr[TMPI_MAX_ERROR_STRING];
-    size_t len;
-
-    tMPI_Error_string(*err, errstr, &len);
-    if (comm)
-    {
-        fprintf(stderr, "MPI error: %s (in valid comm)\n", errstr);
-    }
-    else
-    {
-        fprintf(stderr, "MPI error: %s\n", errstr);
-    }
-    return;
-}
-
-int tMPI_Get_N(int *argc, char ***argv)
-{
-    int i=0;
-    int np=1;
-
-    for(i=1;i<*argc;i++)
-    {
-        if (strcmp("-np", (*argv)[i]) == 0)
+        for(i=1;i<*argc;i++)
         {
-            if (i+1 < (*argc))
+            if (strcmp(optname, (*argv)[i]) == 0)
             {
-                /* the number of processes is an argument */
-                char *end;
-                np=strtol((*argv)[i+1], &end, 10);
-                if ( !end || (*end != 0) )
-                    np=1;
+                break;
             }
-            break;
         }
     }
-    if (np<1)
-        np=1;
-    return np;
+    if (i+1 < (*argc))
+    {
+        /* the number of processes is an argument */
+        char *end;
+        *nthreads=strtol((*argv)[i+1], &end, 10);
+        if ( !end || (*end != 0) )
+        {
+            *nthreads=1;
+        }
+        else if (*nthreads > 0)
+        {
+            ret=TMPI_SUCCESS;
+        }
+    }
+    if (*nthreads<1)
+        *nthreads=1;
+    return ret;
 }
 
 
@@ -492,6 +226,7 @@ static void* tMPI_Thread_starter(void *arg)
 {
     struct tmpi_thread *th=(struct tmpi_thread*)arg;
     int N_envelopes=(Nthreads+1)*(Nthreads+1)*8;  /*AARGH arbitrary number*/
+    int N_send_envelopes=(Nthreads+1)*8;  /*AARGH arbitrary number*/
     int N_reqs=(Nthreads+1)*(Nthreads+1)*2;  /*AARGH arbitrary number*/
     int i;
 
@@ -511,12 +246,19 @@ static void* tMPI_Thread_starter(void *arg)
                         sizeof(struct send_envelope_list)*Nthreads);
     for(i=0;i<Nthreads;i++)
     {
-        tMPI_Send_env_list_init( &(th->evs[i]));
+        tMPI_Send_env_list_init( &(th->evs[i]), N_send_envelopes);
     }
     tMPI_Atomic_set( &(th->evs_check_id), 0);
 
     /* allocate requests */
     tMPI_Req_list_init(&(th->rql), N_reqs);
+
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+    /* allcate copy_buffer list */
+    tMPI_Copy_buffer_list_init(&(th->cbl_multi), 
+                               (Nthreads+1)*(N_COLL_ENV+1),
+                               Nthreads*COPY_BUFFER_SIZE);
+#endif
 
     /* now wait for all other threads to come on line, before we
        start the MPI program */
@@ -530,6 +272,9 @@ static void* tMPI_Thread_starter(void *arg)
         if (!tmpi_finalized)
             tMPI_Finalize();
     }
+
+    /* TODO: freeing the thread structures and the mpi_comms still needs to 
+       be implemented. */
 
     return 0;
 }
@@ -546,7 +291,8 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         Nthreads=N;
 
         /* allocate global data */
-        tmpi_global=(struct tmpi_global*)tMPI_Malloc(sizeof(struct tmpi_global));
+        tmpi_global=(struct tmpi_global*)
+                        tMPI_Malloc(sizeof(struct tmpi_global));
         tmpi_global->usertypes=NULL;
         tmpi_global->N_usertypes=0;
         tmpi_global->Nalloc_usertypes=0;
@@ -612,7 +358,8 @@ int tMPI_Init(int *argc, char ***argv)
 {
     if (TMPI_COMM_WORLD==0) /* we're the main process */
     {
-        int N=tMPI_Get_N(argc, argv);
+        int N;
+        tMPI_Get_N(argc, argv, "-np", &N);
         tMPI_Start_threads(N, argc, argv, NULL, NULL);
     }
     else
@@ -831,112 +578,4 @@ int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count)
 
 
 
-int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype, 
-                         tMPI_Datatype *newtype)
-{
-    struct tmpi_datatype_ *ntp;
-
-    ntp=(struct tmpi_datatype_*)tMPI_Malloc(sizeof(struct tmpi_datatype_));
-    ntp->size=count*oldtype->size;
-    ntp->op_functions=NULL;
-
-    /* establish components */
-    ntp->N_comp=1;
-    ntp->comps=(struct tmpi_datatype_component*)tMPI_Malloc(
-                        sizeof(struct tmpi_datatype_component)*1);
-    ntp->comps[0].type=oldtype;
-    ntp->comps[0].count=1;
-    ntp->committed=FALSE;
-
-    /* now add it to the list.  */
-    tMPI_Spinlock_lock(&(tmpi_global->datatype_lock));
-    /* check whether there's space */
-    if (tmpi_global->N_usertypes + 1 >= tmpi_global->Nalloc_usertypes)
-    {
-        /* make space */
-        tmpi_global->Nalloc_usertypes=Nthreads*(tmpi_global->N_usertypes) + 1;
-        tmpi_global->usertypes=(struct tmpi_datatype_**)
-                                    tMPI_Realloc(tmpi_global->usertypes, 
-                                        (sizeof(struct tmpi_datatype_ *)*
-                                         tmpi_global->Nalloc_usertypes)
-                                    );
-
-    }
-    /* add to the list */
-    tmpi_global->usertypes[tmpi_global->N_usertypes]=ntp;
-    tmpi_global->N_usertypes++;
-    *newtype=ntp;
-    tMPI_Spinlock_unlock(&(tmpi_global->datatype_lock));
-
-    return TMPI_SUCCESS;
-}
-
-
-int tMPI_Type_commit(tMPI_Datatype *datatype)
-{
-    int i,j;
-    struct tmpi_datatype_ *dt=*datatype;
-
-    if (dt->committed)
-        return TMPI_SUCCESS;
-
-    /* search the list for a matching committed type, because if there's
-       already a committed type that has the same composition, we just 
-       make the datatype pointer point to it, ensuring we share datatype 
-       information across threads. */
-    tMPI_Spinlock_lock(&(tmpi_global->datatype_lock));
-    for(i=0;i<tmpi_global->N_usertypes;i++)
-    {
-        struct tmpi_datatype_ *lt=tmpi_global->usertypes[i];
-        if (lt->committed && lt->N_comp==dt->N_comp)
-        {
-            bool found=TRUE;
-            for(j=0;j<lt->N_comp;j++)
-            {
-                if ( (lt->comps[j].type  != dt->comps[j].type) ||
-                     (lt->comps[j].count != dt->comps[j].count) )
-                {
-                    found=FALSE;
-                    break;
-                }
-            }
-            if (found)
-            {
-                dt=lt;
-            }
-        }
-    }
-    if (dt != *datatype)
-    {
-        bool found=FALSE;
-        /* we remove the old one from the list */
-        for(i=0;i<tmpi_global->N_usertypes;i++)
-        {
-            if (tmpi_global->usertypes[i]==*datatype)
-            {
-                found=TRUE;
-                break;
-            }
-        }
-        if (found)
-        {
-            /* we put the last one in the list in our slot */
-            tmpi_global->usertypes[i]=tmpi_global->
-                usertypes[tmpi_global->N_usertypes-1];
-            tmpi_global->N_usertypes--;
-        }
-        free( (*datatype)->comps);
-        free(  *datatype );
-
-        /* and overwrite the pointer with the new data type */
-        *datatype=dt;
-    }
-    else
-    {
-        /* it was the first one of its type */
-        dt->committed=TRUE;
-    }
-    tMPI_Spinlock_unlock(&(tmpi_global->datatype_lock));
-    return TMPI_SUCCESS;
-}
 

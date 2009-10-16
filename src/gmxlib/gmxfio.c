@@ -790,7 +790,11 @@ int gmx_fio_open(const char *fn,const char *mode)
     }
     else 
     {
-        if (mode[0]=='r')
+        if (strncmp(mode,"r+",2)==0)
+        {
+            strcpy(newmode,"r+");
+        }
+        else if (mode[0]=='r')
         {
             strcpy(newmode,"r");
         }
@@ -840,7 +844,7 @@ int gmx_fio_open(const char *fn,const char *mode)
         nfio = nFIO-1;
     }
 
-    bRead = (newmode[0]=='r');
+    bRead = (newmode[0]=='r' && newmode[1]!='+');
     fio->fp  = NULL;
     fio->xdr = NULL;
     if (fn) 
@@ -889,7 +893,7 @@ int gmx_fio_open(const char *fn,const char *mode)
             xdrid = xdropen(fio->xdr,fn,newmode); 
             if (xdrid == 0)
             {
-                if(newmode[0]=='r') 
+                if(newmode[0]=='r' && newmode[1]!='+') 
                     gmx_fatal(FARGS,"Cannot open file %s for reading\nCheck permissions if it exists.",fn); 
                 else
                     gmx_fatal(FARGS,"Cannot open file %s for writing.\nCheck your permissions, disk space and/or quota.",fn);
@@ -1299,7 +1303,7 @@ off_t gmx_fio_ftell(int fio)
     return ret;
 }
 
-void gmx_fio_seek(int fio, off_t fpos)
+int gmx_fio_seek(int fio, off_t fpos)
 {
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&fio_mutex);
@@ -1308,13 +1312,14 @@ void gmx_fio_seek(int fio, off_t fpos)
     if (FIO[fio].fp)
     {
 #ifdef HAVE_FSEEKO
-        fseeko(FIO[fio].fp,fpos,SEEK_SET);
+        return fseeko(FIO[fio].fp,fpos,SEEK_SET);
 #else
-        fseek(FIO[fio].fp,fpos,SEEK_SET);
+        return fseek(FIO[fio].fp,fpos,SEEK_SET);
 #endif
     }
     else
         gmx_file(FIO[fio].fn);
+        return -1;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif

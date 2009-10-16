@@ -59,11 +59,21 @@
  * There is a \ref share/template/template.c "template" for writing
  * analysis programs, the documentation for it and links from there should
  * help getting started.
+ *
+ *
+ * \internal
+ * \section libtrajana_impl Implementation details
+ *
+ * Some internal implementation details of the library are documented on
+ * separate pages:
+ *  - \subpage poscalcengine
+ *  - \subpage selparser
+ *  - \subpage selcompiler
  */
-/*! \file 
+/*! \internal \file
  * \brief Implementation of functions in trajana.h.
  */
-/*! \dir src/gmxlib/trajana
+/*! \internal \dir src/gmxlib/trajana
  * \brief Source code for common trajectory analysis functions.
  *
  * Selection handling is found in \ref src/gmxlib/selection.
@@ -75,6 +85,7 @@
 #include <string.h>
 
 #include <filenm.h>
+#include <futil.h>
 #include <macros.h>
 #include <pbc.h>
 #include <rmpbc.h>
@@ -101,7 +112,7 @@ struct gmx_ana_traj_t
      * in the other functions.
      */
     unsigned long             flags;
-    //! Number of input reference groups.
+    /** Number of input reference groups. */
     int                       nrefgrps;
     /*! \brief
      * Number of input analysis groups.
@@ -116,7 +127,7 @@ struct gmx_ana_traj_t
      * trajectory.
      */
     int                       frflags;
-    //! TRUE if molecules should be made whole for each frame.
+    /** TRUE if molecules should be made whole for each frame. */
     bool                      bRmPBC;
     /*! \brief
      * TRUE if periodic boundary conditions should be used.
@@ -126,38 +137,38 @@ struct gmx_ana_traj_t
      */
     bool                      bPBC;
 
-    //! Name of the trajectory file.
+    /** Name of the trajectory file. */
     const char               *trjfile;
-    //! Name of the topology file (NULL if no topology loaded).
+    /** Name of the topology file (NULL if no topology loaded). */
     const char               *topfile;
-    //! Non-NULL name of the topology file.
+    /** Non-NULL name of the topology file. */
     const char               *topfile_notnull;
-    //! Name of the index file (NULL if no index file provided).
+    /** Name of the index file (NULL if no index file provided). */
     const char               *ndxfile;
-    //! Name of the selection file (NULL if no file provided).
+    /** Name of the selection file (NULL if no file provided). */
     const char               *selfile;
-    //! The selection string (NULL if not provided).
+    /** The selection string (NULL if not provided). */
     const char               *selection;
 
-    //! The topology structure, or \p NULL if no topology loaded.
+    /** The topology structure, or \p NULL if no topology loaded. */
     t_topology               *top;
-    //! TRUE if full tpx file was loaded, FALSE otherwise.
+    /** TRUE if full tpx file was loaded, FALSE otherwise. */
     bool                      bTop;
-    //! Coordinates from the topology (see \p bTopX).
+    /** Coordinates from the topology (see \p bTopX). */
     rvec                     *xtop;
-    //! The box loaded from the topology file.
+    /** The box loaded from the topology file. */
     matrix                    boxTop;
-    //! The ePBC field loaded from the topology file.
+    /** The ePBC field loaded from the topology file. */
     int                       ePBC;
 
-    //! The current frame, or \p NULL if no frame loaded yet.
+    /** The current frame, or \p NULL if no frame loaded yet. */
     t_trxframe               *fr;
-    //! Used to store the status variable from read_first_frame().
+    /** Used to store the status variable from read_first_frame(). */
     int                       status;
-    //! The number of frames read.
+    /** The number of frames read. */
     int                       nframes;
 
-    //! Number of elements in the \p sel array.
+    /** Number of elements in the \p sel array. */
     int                       ngrps;
     /*! \brief
      * Array of selection information (one element for each index group).
@@ -174,20 +185,20 @@ struct gmx_ana_traj_t
      * After gmx_ana_do(), the same groups can be used in post-processing.
      */
     gmx_ana_selection_t     **sel;
-    //! Array of names of the selections for convenience.
+    /** Array of names of the selections for convenience. */
     char                    **grpnames;
-    //! Position calculation data.
+    /** Position calculation data. */
     gmx_ana_poscalc_coll_t   *pcc;
-    //! Selection data.
+    /** Selection data. */
     gmx_ana_selcollection_t  *sc;
 
-    //! Data for statutil.c utilities.
+    /** Data for statutil.c utilities. */
     output_env_t              oenv;
 };
 
-//! Loads the topology.
+/** Loads the topology. */
 static int load_topology(gmx_ana_traj_t *d, bool bReq);
-//! Loads the first frame and does some checks.
+/** Loads the first frame and does some checks. */
 static int init_first_frame(gmx_ana_traj_t *d);
 
 static int add_fnmarg(int nfile, t_filenm *fnm, t_filenm *fnm_add)
@@ -974,6 +985,121 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
     return 0;
 }
 
+/*! \brief
+ * Loads default index groups from a selection file.
+ *
+ * \param[in,out] d     Trajectory analysis data structure.
+ * \param[out]    grps  Pointer to receive the default groups.
+ * \returns       0 on success, a non-zero error code on error.
+ */
+static int
+init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
+{
+    gmx_ana_selcollection_t  *sc;
+    char                     *fnm;
+    int                       nr, nr_notempty, i;
+    int                       rc;
+
+    /* If an index file is provided, just load it and exit. */
+    if (d->ndxfile)
+    {
+        gmx_ana_indexgrps_init(grps, d->top, d->ndxfile);
+        return 0;
+    }
+    /* Initialize groups to NULL if we return prematurely. */
+    *grps = NULL;
+    /* Return immediately if no topology provided. */
+    if (!d->top)
+    {
+        return 0;
+    }
+
+    /* Find the default selection file, return if none found. */
+    fnm = low_libfn("defselection.dat", FALSE);
+    if (fnm == NULL)
+    {
+        return 0;
+    }
+
+    /* Create a temporary selection collection. */
+    rc = gmx_ana_selcollection_create(&sc, d->pcc);
+    if (rc != 0)
+    {
+        sfree(fnm);
+        return rc;
+    }
+    rc = gmx_ana_selmethod_register_defaults(sc);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        sfree(fnm);
+        gmx_fatal(FARGS, "default selection method registration failed");
+        return rc;
+    }
+    /* FIXME: It would be better to not have the strings here hard-coded. */
+    gmx_ana_selcollection_set_refpostype(sc, "atom");
+    gmx_ana_selcollection_set_outpostype(sc, "atom", FALSE);
+
+    /* Parse and compile the file with no external groups. */
+    rc = gmx_ana_selcollection_parse_file(sc, fnm, NULL);
+    sfree(fnm);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        fprintf(stderr, "\nWARNING: default selection(s) could not be parsed\n");
+        return rc;
+    }
+    gmx_ana_selcollection_set_topology(sc, d->top, -1);
+    rc = gmx_ana_selcollection_compile(sc);
+    if (rc != 0)
+    {
+        gmx_ana_selcollection_free(sc);
+        fprintf(stderr, "\nWARNING: default selection(s) could not be compiled\n");
+        return rc;
+    }
+
+    /* Count the non-empty groups and check that there are no dynamic
+     * selections. */
+    nr = gmx_ana_selcollection_get_count(sc);
+    nr_notempty = 0;
+    for (i = 0; i < nr; ++i)
+    {
+        gmx_ana_selection_t  *sel;
+
+        sel = gmx_ana_selcollection_get_selection(sc, i);
+        if (sel->bDynamic)
+        {
+            fprintf(stderr, "\nWARNING: dynamic default selection ignored\n");
+        }
+        else if (sel->g->isize > 0)
+        {
+            ++nr_notempty;
+        }
+    }
+
+    /* Copy the groups to the output structure */
+    gmx_ana_indexgrps_alloc(grps, nr_notempty);
+    nr_notempty = 0;
+    for (i = 0; i < nr; ++i)
+    {
+        gmx_ana_selection_t  *sel;
+
+        sel = gmx_ana_selcollection_get_selection(sc, i);
+        if (!sel->bDynamic && sel->g->isize > 0)
+        {
+            gmx_ana_index_t  *g;
+
+            g = gmx_ana_indexgrps_get_grp(*grps, nr_notempty);
+            gmx_ana_index_copy(g, sel->g, TRUE);
+            g->name = strdup(sel->name);
+            ++nr_notempty;
+        }
+    }
+
+    gmx_ana_selcollection_free(sc);
+    return 0;
+}
+
 /*!
  * \param[in,out] d     Trajectory analysis data structure.
  * \returns       0 on success, a non-zero error code on error.
@@ -986,7 +1112,8 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
  *
  * \see ANA_USER_SELINIT
  */
-int gmx_ana_init_selections(gmx_ana_traj_t *d)
+int
+gmx_ana_init_selections(gmx_ana_traj_t *d)
 {
     int                  rc;
     int                  i;
@@ -1013,19 +1140,28 @@ int gmx_ana_init_selections(gmx_ana_traj_t *d)
             return rc;
         }
     }
-    /* Load the topology and init the index groups */
-    gmx_ana_indexgrps_init(&grps, d->top, d->ndxfile);
-    /* Parse the selection */
+    /* Initialize the default selection methods */
     rc = gmx_ana_selmethod_register_defaults(d->sc);
     if (rc != 0)
     {
         gmx_fatal(FARGS, "default selection method registration failed");
         return rc;
     }
+    /* Initialize index groups.
+     * We ignore the return value to continue without the default groups if
+     * there is an error there. */
+    init_default_selections(d, &grps);
+    /* Parse the selections */
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
              || (d->selection && d->selection[0] == 0)
              || (!d->selfile && !d->selection);
+    /* Behavior is not very pretty if we cannot check for interactive input,
+     * but at least it should compile and work in most cases. */
+#ifdef HAVE_UNISTD_H
     bInteractive = bStdIn && isatty(fileno(stdin));
+#else
+    bInteractive = bStdIn;
+#endif
     if (bStdIn && bInteractive)
     {
         /* Parse from stdin */
