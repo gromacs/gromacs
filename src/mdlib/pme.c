@@ -1557,7 +1557,7 @@ int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
   return ret;
 }
 
-static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
+static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
                           int dimind,bool bSpread)
 {
     int lbnd,rbnd,maxlr,b,i;
@@ -1569,7 +1569,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
     atc->nodeid = 0;
     atc->pd_nalloc = 0;
 #ifdef GMX_MPI
-    if (gmx_parallel_env())
+    if (PAR(cr))
     {
         atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
@@ -1597,7 +1597,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
     }
 }
 
-static void init_overlap_comm(gmx_pme_t pme,pme_overlap_t *ol)
+static void init_overlap_comm(gmx_pme_t pme,pme_overlap_t *ol, t_commrec *cr)
 {
     int lbnd,rbnd,maxlr,b,i;
     int nn,nk;
@@ -1701,7 +1701,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     pme->nnodes  = 1;
     pme->bPPnode = TRUE;
 #ifdef GMX_MPI
-    if (gmx_parallel_env())
+    if (PAR(cr)) 
     {
         pme->mpi_comm = cr->mpi_comm_mygroup;
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
@@ -1752,10 +1752,10 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
     pme->epsilon_r   = ir->epsilon_r;
     
     /* Use atc[0] for spreading */
-    init_atomcomm(pme,&pme->atc[0],0,TRUE);
+    init_atomcomm(pme,&pme->atc[0],cr,0,TRUE);
     if (pme->ndecompdim >= 2)
     {
-        init_atomcomm(pme,&pme->atc[1],1,FALSE);
+        init_atomcomm(pme,&pme->atc[1],cr,1,FALSE);
     }
     
     if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
@@ -1792,7 +1792,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
                 fprintf(debug,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
         }
 
-        init_overlap_comm(pme,&pme->overlap[0]);
+        init_overlap_comm(pme,&pme->overlap[0],cr);
     } else {
         pme->overlap[0].s2g = NULL;
     }

@@ -476,7 +476,7 @@ int main(int argc,char *argv[])
   }
   
   /* Finish the parallel stuff */  
-  if (gmx_parallel_env())
+  if (gmx_parallel_env_initialized())
     gmx_finalize(cr);
 
   /* Thank the audience, as usual */

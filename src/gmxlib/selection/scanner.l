@@ -162,8 +162,8 @@ COMMENT    (#.*)
 .               { return INVALID; }
 }
 <matchbool>{
-yes|on          { ADD_TOKEN; yylval->i = 1; return BOOL_VALUE; }
-no|off          { ADD_TOKEN; yylval->i = 0; return BOOL_VALUE; }
+yes|on          { ADD_TOKEN; yylval->i = 1; return INTEGER; }
+no|off          { ADD_TOKEN; yylval->i = 0; return INTEGER; }
 }
 group           { ADD_TOKEN; return GROUP; }
 to              { ADD_TOKEN; return TO; }

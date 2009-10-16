@@ -49,32 +49,27 @@
      CMD_SEP = 265,
      GROUP = 266,
      TO = 267,
-     OF = 268,
-     VARIABLE_NUMERIC = 269,
-     VARIABLE_GROUP = 270,
-     VARIABLE_POS = 271,
-     KEYWORD_INT = 272,
-     KEYWORD_REAL = 273,
-     KEYWORD_STR = 274,
-     KEYWORD_POS = 275,
-     KEYWORD_GROUP = 276,
-     METHOD_NUMERIC = 277,
-     METHOD_GROUP = 278,
-     METHOD_POS = 279,
-     MODIFIER = 280,
-     PARAM_BOOL = 281,
-     BOOL_VALUE = 282,
-     PARAM_INT = 283,
-     PARAM_REAL = 284,
-     PARAM_STR = 285,
-     PARAM_POS = 286,
-     PARAM_GROUP = 287,
-     END_OF_METHOD = 288,
-     XOR = 289,
-     OR = 290,
-     AND = 291,
-     NOT = 292,
-     CMP_OP = 293
+     VARIABLE_NUMERIC = 268,
+     VARIABLE_GROUP = 269,
+     VARIABLE_POS = 270,
+     KEYWORD_NUMERIC = 271,
+     KEYWORD_STR = 272,
+     KEYWORD_POS = 273,
+     KEYWORD_GROUP = 274,
+     METHOD_NUMERIC = 275,
+     METHOD_GROUP = 276,
+     METHOD_POS = 277,
+     MODIFIER = 278,
+     PARAM_BASIC = 279,
+     PARAM_EXPR = 280,
+     END_OF_METHOD = 281,
+     OF = 282,
+     PARAM_REDUCT = 283,
+     XOR = 284,
+     OR = 285,
+     AND = 286,
+     NOT = 287,
+     CMP_OP = 288
    };
 #endif
 /* Tokens.  */
@@ -88,32 +83,27 @@
 #define CMD_SEP 265
 #define GROUP 266
 #define TO 267
-#define OF 268
-#define VARIABLE_NUMERIC 269
-#define VARIABLE_GROUP 270
-#define VARIABLE_POS 271
-#define KEYWORD_INT 272
-#define KEYWORD_REAL 273
-#define KEYWORD_STR 274
-#define KEYWORD_POS 275
-#define KEYWORD_GROUP 276
-#define METHOD_NUMERIC 277
-#define METHOD_GROUP 278
-#define METHOD_POS 279
-#define MODIFIER 280
-#define PARAM_BOOL 281
-#define BOOL_VALUE 282
-#define PARAM_INT 283
-#define PARAM_REAL 284
-#define PARAM_STR 285
-#define PARAM_POS 286
-#define PARAM_GROUP 287
-#define END_OF_METHOD 288
-#define XOR 289
-#define OR 290
-#define AND 291
-#define NOT 292
-#define CMP_OP 293
+#define VARIABLE_NUMERIC 268
+#define VARIABLE_GROUP 269
+#define VARIABLE_POS 270
+#define KEYWORD_NUMERIC 271
+#define KEYWORD_STR 272
+#define KEYWORD_POS 273
+#define KEYWORD_GROUP 274
+#define METHOD_NUMERIC 275
+#define METHOD_GROUP 276
+#define METHOD_POS 277
+#define MODIFIER 278
+#define PARAM_BASIC 279
+#define PARAM_EXPR 280
+#define END_OF_METHOD 281
+#define OF 282
+#define PARAM_REDUCT 283
+#define XOR 284
+#define OR 285
+#define AND 286
+#define NOT 287
+#define CMP_OP 288
 
 
 
@@ -133,7 +123,7 @@ typedef union YYSTYPE
     struct t_selexpr_param     *param;
 }
 /* Line 1489 of yacc.c.  */
-#line 137 "parser.h"
+#line 127 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
