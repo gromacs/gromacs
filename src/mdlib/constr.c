@@ -228,7 +228,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       rvec *v,tensor *vir,
 	       t_nrnb *nrnb,int econq)
 {
-  bool    bOK;
+  bool    bOK,bDump;
   int     start,homenr;
   int     i,j;
   int     ncons,error;
@@ -242,7 +242,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   if (econq == econqForce && !EI_ENERGY_MINIMIZATION(ir->eI))
     gmx_incons("constrain called for forces while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
 
-  bOK = TRUE;
+  bOK   = TRUE;
+  bDump = FALSE;
 
   start  = md->start;
   homenr = md->homenr;
@@ -268,9 +269,13 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 			  invdt,v,vir!=NULL,rmdr,
 			  econq,nrnb,
 			  constr->maxwarn,&constr->warncount_lincs);
-    if (!bOK && constr->maxwarn >= 0 && fplog)
-      fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
-	      econstr_names[econtLINCS],step);
+    if (!bOK && constr->maxwarn >= 0) {
+      if (fplog != NULL) {
+	fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
+		econstr_names[econtLINCS],step);
+      }
+      bDump = TRUE;
+    }
   }
   
   if (constr->nblocks > 0) {
@@ -281,9 +286,13 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 		  idef,ir,box,x,xprime,nrnb,
 		  constr->lagr,lambda,dvdlambda,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
-    if (!bOK && constr->maxwarn >= 0 && fplog)
-      fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
-	      econstr_names[econtSHAKE],step);
+    if (!bOK && constr->maxwarn >= 0) {
+      if (fplog != NULL) {
+	fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
+		econstr_names[econtSHAKE],step);
+      }
+      bDump = TRUE;
+    }
   }
   
   settle  = &idef->il[F_SETTLE];
@@ -318,6 +327,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	constr->warncount_settle++;
 	if (constr->warncount_settle > constr->maxwarn)
 	  too_many_constraint_warnings(-1,constr->warncount_settle);
+	bDump = TRUE;
 	break;
       case econqVeloc:
       case econqDeriv:
@@ -360,7 +370,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	(*vir)[i][j] = vir_fac*rmdr[i][j];
   }
 
-  if (!bOK && constr->maxwarn >= 0) 
+  if (bDump) 
     dump_confs(fplog,step,constr->warn_mtop,start,homenr,cr,x,xprime,box);
 
   if (econq == econqCoord) {
