@@ -625,7 +625,7 @@ int gmx_disre(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 
-  fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE,0);
+  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE,0,&fplog);
   
   if (ntop)
     init5(ntop);

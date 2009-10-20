@@ -1403,9 +1403,9 @@ void init_md(FILE *fplog,
 {
     int  i,j,n;
     real tmpt,mod;
-    char filemode[2];
+    char filemode[3];
     
-    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a" : "w");
+    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a+" : "w+");  
 	
     /* Initial values */
     *t = *t0       = ir->init_t;
