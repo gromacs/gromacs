@@ -178,8 +178,8 @@ extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
 
-extern void print_time(FILE *out,
-		       gmx_runtime_t *runtime,gmx_large_int_t step,t_inputrec *ir);
+extern void print_time(FILE *out, gmx_runtime_t *runtime,
+                       gmx_large_int_t step,t_inputrec *ir, t_commrec *cr);
 
 extern void runtime_start(gmx_runtime_t *runtime);
 
@@ -269,7 +269,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	     int nstglobalcomm, ivec ddxyz,int dd_node_order,real rdd,
              real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-	     int nstepout, int nmultisim, int repl_ex_nst,int repl_ex_seed,
+	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,int repl_ex_seed,
 	     real pforce,real cpt_period,real max_hours,
 	     unsigned long Flags);
 /* Driver routine, that calls the different methods */
@@ -281,7 +281,7 @@ int mdrunner_threads(int nthreads,
                      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
                      const char *dddlb_opt,real dlb_scale,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int nmultisim, int repl_ex_nst,
+                     int nstepout,int resetstep,int nmultisim, int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
                      real max_hours, unsigned long Flags);
 /* initializes nthread threads before running mdrunner: is the preferred

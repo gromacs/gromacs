@@ -202,7 +202,7 @@ static void quit_gmx(const char *msg)
     perror(msg);
   }
   
-  if (gmx_parallel_env()) {
+  if (gmx_parallel_env_initialized()) {
     int  nnodes;
     int  noderank;
     
@@ -655,7 +655,7 @@ void init_debug (const int dbglevel,const char *dbgfile)
     if (!bDebug) /* another thread hasn't already run this*/
     {
         no_buffers();
-        debug=gmx_fio_fopen(dbgfile,"w");
+        debug=gmx_fio_fopen(dbgfile,"w+");
         bDebug = TRUE;
         if (dbglevel >= 2)
             gmx_debug_at = TRUE;
