@@ -489,9 +489,9 @@ int main(int argc,char *argv[])
   /* We postpone opening the log file if we are appending, so we can 
      first truncate the old log file and append to the correct position 
      there instead.  */
-  if (MASTER(cr) && !bAppendFiles) 
+  if ((MASTER(cr) || bSepPot) && !bAppendFiles) 
   {
-      fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
       CopyRight(fplog,argv[0]);
       please_cite(fplog,"Hess2008b");
       please_cite(fplog,"Spoel2005a");

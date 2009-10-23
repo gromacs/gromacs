@@ -880,7 +880,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   int i;
   bool bDum;
   real rdum;
-  real VA[4],VB[4];
   
   if (!bRead)
     set_comment(interaction_function[ftype].name);
@@ -1051,8 +1050,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     /* Fourier dihedrals are internally represented
      * as Ryckaert-Bellemans since those are faster to compute.
      */
-    ndo_real(VA,NR_RBDIHS,bDum);
-    ndo_real(VB,NR_RBDIHS,bDum);
+    ndo_real(iparams->rbdihs.rbcA, NR_RBDIHS, bDum);
+    ndo_real(iparams->rbdihs.rbcB, NR_RBDIHS, bDum);
     break;
   case F_CONSTR:
   case F_CONSTRNC:

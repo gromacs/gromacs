@@ -413,7 +413,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         if( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
         {
-            load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),fplog,
+            load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
                             (Flags & MD_APPENDFILES));
@@ -429,10 +429,10 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
-    if (MASTER(cr) && (Flags & MD_APPENDFILES))
+    if ((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
     {
-        fplog = gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
-                             Flags);
+        gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
+                             Flags,&fplog);
     }
 
     if (SIMMASTER(cr)) 
