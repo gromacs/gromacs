@@ -93,7 +93,7 @@ t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir)
     /* first, set the alpha integrator variable */
     if (ir->opts.nrdf[0] > 0) 
     {
-        vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[i]);  
+        vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);  
     } else {
         vars->alpha = 1.0;
     }
