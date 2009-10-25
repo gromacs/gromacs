@@ -165,8 +165,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
 
   if (!bFirstPart) { 
       where();
-      ie  = add_binr(rb,F_NRE,enerd->term);
-        where();
+      if (bFirstIterate) {
+          ie  = add_binr(rb,F_NRE,enerd->term);
+      }
+      where();
       if (constr) {
           rmsd_data = constr_rmsd_data(constr);
           if (rmsd_data)
@@ -179,16 +181,20 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           where();
       }
       
-      for(j=0; (j<egNR); j++)
-          inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
-      where();
-      if (inputrec->efep != efepNO) {
-          idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
-          idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
-          if (enerd->n_lambda > 0) {
-              iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
+      if (bFirstIterate) 
+      {
+          for(j=0; (j<egNR); j++)
+              inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
+          where();
+          if (inputrec->efep != efepNO) {
+              idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
+              idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
+              if (enerd->n_lambda > 0) {
+                  iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
+              }
           }
       }
+
       if (vcm) {
           icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
           where();
@@ -254,19 +260,24 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   }
 
   if (!bFirstPart) {
-      extract_binr(rb,ie  ,F_NRE,enerd->term);
-
+      if (bFirstIterate) 
+      {
+          extract_binr(rb,ie  ,F_NRE,enerd->term);
+      }
       if (rmsd_data)
           extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
       if (!NEED_MUTOT(*inputrec))
           extract_binr(rb,imu,DIM,mu_tot);
-      for(j=0; (j<egNR); j++)
-          extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
-      if (inputrec->efep != efepNO) {
-          extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
-          extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
-          if (enerd->n_lambda > 0) {
-              extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
+      if (bFirstIterate) 
+      {
+          for(j=0; (j<egNR); j++)
+              extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
+          if (inputrec->efep != efepNO) {
+              extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
+              extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
+              if (enerd->n_lambda > 0) {
+                  extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
+              }
           }
       }
       if (vcm) {
