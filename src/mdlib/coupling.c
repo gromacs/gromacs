@@ -838,7 +838,7 @@ void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     { 
         gmx_fatal(FARGS,"Barostat is coupled to a T-group with no degrees of freedom\n");    
     } 
-    alpha = 1.0 + DIM/((double)ir->opts.nrdf[i]);
+    alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
     msmul(ekin,alpha,ekinmod);  
     
     /* for now, we use Elr = 0, because if you want to get it right, you
