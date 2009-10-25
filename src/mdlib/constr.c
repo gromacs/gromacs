@@ -91,7 +91,7 @@ t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir)
     snew(vars,1);
     snew(vars->vscale_nhc,ir->opts.ngtc);
     /* first, set the alpha integrator variable */
-    if (ir->opts.nrdf[i] > 0) 
+    if (ir->opts.nrdf[0] > 0) 
     {
         vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[i]);  
     } else {
