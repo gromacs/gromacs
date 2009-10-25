@@ -1436,13 +1436,6 @@ void init_md(FILE *fplog,
         *lambda = *lam0   = 0.0;
     } 
 
-    /* needed for velocity verlet integration */
-    snew(ir->opts.alpha,ir->opts.ngtc);
-    for (i=0;i<ir->opts.ngtc;i++)
-    {
-        ir->opts.alpha[i] = 1;
-    } 
-
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
     {

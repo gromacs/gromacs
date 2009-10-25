@@ -517,14 +517,6 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     /* now, set temperature variables */
     for(i=0; i<ngtc; i++) 
     {
-        /* first, set the alpha integrator variable */
-        if (opts->nrdf[i] > 0) 
-        {
-            opts->alpha[i] = 1.0 + DIM/((double)opts->nrdf[i]);  
-        } else {
-            opts->alpha[i] = 1.0;
-        }
-
         if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
         {
             reft = max(0.0,opts->ref_t[i]);
@@ -815,7 +807,9 @@ void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
 void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
 		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
 {
+
     real  pscal;
+    double alpha;
     int   i,j,d,n,nwall;
     real  T,GW,vol;
     tensor Winvm,ekinmod,localpres;
@@ -844,7 +838,8 @@ void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     { 
         gmx_fatal(FARGS,"Barostat is coupled to a T-group with no degrees of freedom\n");    
     } 
-    msmul(ekin,ir->opts.alpha[0],ekinmod);  
+    alpha = 1.0 + DIM/((double)ir->opts.nrdf[i]);
+    msmul(ekin,alpha,ekinmod);  
     
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */

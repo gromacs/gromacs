@@ -90,10 +90,12 @@ t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir)
 
     snew(vars,1);
     snew(vars->vscale_nhc,ir->opts.ngtc);
-    if (ir->opts.alpha==NULL) { 
-        vars->alpha = 1;
+    /* first, set the alpha integrator variable */
+    if (ir->opts.nrdf[i] > 0) 
+    {
+        vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[i]);  
     } else {
-        vars->alpha = ir->opts.alpha[0];  /* assume alpha for the whole system is the first state*/
+        vars->alpha = 1.0;
     }
     g = 0.5*veta*ir->delta_t;
     vars->rscale = exp(g)*series_sinhx(g);

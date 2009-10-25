@@ -66,7 +66,6 @@ typedef struct {
   int     ngfrz;                 /* # Freeze groups                         */
   int     ngener;	         /* # Ener groups			    */
   real    *nrdf;	         /* Nr of degrees of freedom in a group	    */
-  double  *alpha;                /* alpha for trotter pressure scaling      */
   double  *vscale_nhc;           /* scaling term for velocities in NHC      */
   real    *ref_t;	         /* Coupling temperature	per group   */
   int     *annealing;            /* No/simple/periodic SA for each group    */

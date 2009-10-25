@@ -359,7 +359,6 @@ static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
     block_bc(cr,g->ngfrz);
     block_bc(cr,g->ngener);
     snew_bc(cr,g->nrdf,g->ngtc);
-    snew_bc(cr,g->alpha,g->ngtc);
     snew_bc(cr,g->vscale_nhc,g->ngtc);
     snew_bc(cr,g->tau_t,g->ngtc);
     snew_bc(cr,g->ref_t,g->ngtc);
@@ -368,7 +367,6 @@ static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
     snew_bc(cr,g->egp_flags,g->ngener*g->ngener);
     
     nblock_bc(cr,g->ngtc,g->nrdf);
-    nblock_bc(cr,g->ngtc,g->alpha);
     nblock_bc(cr,g->ngtc,g->vscale_nhc);
     nblock_bc(cr,g->ngtc,g->tau_t);
     nblock_bc(cr,g->ngtc,g->ref_t);
