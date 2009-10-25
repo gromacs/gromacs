@@ -487,7 +487,7 @@ int main(int argc,char *argv[])
      there instead.  */
   if ((MASTER(cr) || bSepPot) && !bAppendFiles) 
   {
-      fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
+      gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags,&fplog);
       CopyRight(fplog,argv[0]);
       please_cite(fplog,"Hess2008b");
       please_cite(fplog,"Spoel2005a");

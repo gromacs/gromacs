@@ -160,7 +160,9 @@ int gmx_fio_fclose(FILE *fp);
 typedef struct
 {
 	char      filename[STRLEN];
-	off_t     offset;    
+	off_t     offset; 
+	unsigned char chksum[16];
+	int       chksum_size;
 } 
 gmx_file_position_t;
 
@@ -183,6 +185,8 @@ gmx_fio_check_file_position(int fio);
 int
 gmx_fio_get_output_file_positions (gmx_file_position_t ** outputfiles,
                                    int *nfiles );
+
+int gmx_fio_get_file_md5(int fio, off_t offset,  unsigned char digest[]);
 
 
 extern int xtc_seek_frame(int frame, int fio, int natoms);
