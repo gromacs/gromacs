@@ -1625,7 +1625,7 @@ void update_coords(FILE         *fplog,
                      upd->sd->bd_rf,upd->sd->gaussrand);
         break;
     case (eiVV):
-        alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[i]); /* assuming barostat coupled to group 0. */
+        alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
         if (bFirstHalf) 
         {
             if (!bInitStep) 
