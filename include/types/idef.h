@@ -121,6 +121,7 @@ enum {
   F_ETOT,
   F_ECONSERVED,
   F_TEMP,
+  F_VTEMP,
   F_PRES,
   F_PDISPCORR,
   F_DVDL,

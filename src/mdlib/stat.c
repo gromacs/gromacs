@@ -131,7 +131,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   isv = add_binr(rb,DIM*DIM,svir[0]);
   where();
   
-  // We need the force virial and the kinetic energy for the first time through with velocity verlet
+  /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
   if (bFirstPart || (inputrec->eI!=eiVV))
   {
       if (ekind) {
@@ -225,7 +225,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
 
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
 
-  // We need the force virial and the kinetic energy for the first time through with velocity verlet
+  /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
   if (bFirstPart || (inputrec->eI!=eiVV))
   {
       if (ekind) {

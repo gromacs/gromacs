@@ -915,7 +915,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
               ir,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
-              NULL,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,state->veta);
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
     if (ir->eI==eiVV) {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
@@ -924,7 +924,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   ir,cr,step,0,md,
                   state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
-                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcTROTTER,state->veta,state->veta);
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
     }
     if (EI_STATE_VELOCITY(ir->eI)) {
         for(i=start; (i<end); i++) {
@@ -946,8 +946,8 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   ir,cr,step,-1,md,
                   state->x,savex,NULL,
                   state->box,state->lambda,&dvdlambda,
-                  state->v,NULL,nrnb,econqCoord,ir->epc==epcTROTTER,state->veta,state->veta);
-
+                  state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
+        
         for(i=start; i<end; i++) {
             for(m=0; m<DIM; m++) {
                 /* Re-reverse the velocities */
@@ -1237,9 +1237,9 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     /* This output is not really necessary, and requires the step, 
        which it really shouldn't.  To simplify the calls, I'm dropping 
        this out. */
-    //if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-    //  fprintf(fplog,sepdvdlformat,"Dispersion correction",
-    //	      *enercorr,dvdlambda);
+    /*if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+       fprintf(fplog,sepdvdlformat,"Dispersion correction",
+       *enercorr,dvdlambda);*/
     
     if (fr->efep != efepNO) 
     {
@@ -1435,7 +1435,14 @@ void init_md(FILE *fplog,
     {
         *lambda = *lam0   = 0.0;
     } 
-    
+
+    /* needed for velocity verlet integration */
+    snew(ir->opts.alpha,ir->opts.ngtc);
+    for (i=0;i<ir->opts.ngtc;i++)
+    {
+        ir->opts.alpha[i] = 1;
+    } 
+
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
     {

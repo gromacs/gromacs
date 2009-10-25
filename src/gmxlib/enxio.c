@@ -737,20 +737,11 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
     fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
   }
 
-  // Might need to add something here? MRS
-
-  if (ir->etc == etcNOSEHOOVER) {
-    for(i=0; i<state->ngtc; i++) {
-      ni = groups->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
-      state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-    }
-    fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
-  }
-  
-  if ((ir->etc == etcTROTTER) || (ir->etc == etcTROTTEREKINH)) {
-      ngctch = state->ngtc;
-      if (ir->epc == epcTROTTER) {
+  if (ir->etc == etcNOSEHOOVER) 
+  {
+      ngctch = state->ngtc;  
+      if (IR_NPT_TROTTER(ir)) 
+      {
           ngctch += 1; /* an extra state is needed for the barostat */
       }
       for(i=0; i<ngctch; i++) {
@@ -759,8 +750,8 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
           state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
           state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
       }
-      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
-  }
+      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",ngctch,fn);
+  } 
 
   free_enxnms(nre,enm);
   free_enxframe(fr);

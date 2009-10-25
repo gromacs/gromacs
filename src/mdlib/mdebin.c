@@ -195,6 +195,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
           md->bEner[i] = TRUE;
       else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
           md->bEner[i] = EI_DYNAMICS(ir->eI);
+      else if (i==F_VTEMP) 
+          md->bEner[i] =  (EI_DYNAMICS(ir->eI) && getenv("GMX_VIRIAL_TEMPERATURE"));
       else if (i == F_DISPCORR || i == F_PDISPCORR)
           md->bEner[i] = (ir->eDispCorr != edispcNO);
       else if (i == F_DISRESVIOL)
@@ -206,9 +208,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
       else if (i == F_COM_PULL)
           md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
       else if (i == F_ECONSERVED)
-          md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE 
-                           || ir->etc == etcTROTTER || ir->etc == etcTROTTEREKINH) &&
-                          (ir->epc == epcNO || ir->epc==epcTROTTER));
+          md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
+                          (ir->epc == epcNO || ir->epc==epcMTTK));
       else
           md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
   }
@@ -229,6 +230,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
+    md->bNHC_trotter = IR_NVT_TROTTER(ir);
   
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
@@ -260,7 +262,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm,unit_pres_bar);
     md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm,
                                 unit_surft_bar);
-    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcTROTTER)
+    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         md->ipc = get_ebin_space(md->ebin,md->bTricl ? 6 : 3,
 				 boxvel_nm,unit_vel);
@@ -351,7 +353,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     
     md->nTC=groups->grps[egcTC].nr;
-    if (md->epc == epcTROTTER) 
+    if (md->epc == epcMTTK) 
     {
         md->nTCB = md->nTC + 1; /* for barostat temperature group */
     } 
@@ -360,14 +362,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->nTCB = md->nTC;
     }
     
-    if (md->etc == etcTROTTER || md->etc == etcTROTTEREKINH) 
-    {
-        md->mde_n = 2*NNHCHAIN*md->nTCB;
-    } else if (md->etc == etcNOSEHOOVER) 
-    {
-        md->mde_n = 2*md->nTCB;
-    } else 
-    {
+    if (md->etc == etcNOSEHOOVER) {
+        if (md->bNHC_trotter) { 
+            md->mde_n = 2*NNHCHAIN*md->nTCB;
+        }
+        else 
+        {
+            md->mde_n = 2*md->nTCB;
+        }
+    } else { 
         md->mde_n = md->nTCB;
     }
     snew(md->tmp_r,md->mde_n);
@@ -385,19 +388,39 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                              unit_temp_K);
     if (md->etc == etcNOSEHOOVER)
     {
-        for(i=0; (i<md->nTCB); i++) 
+        if (md->bNHC_trotter) 
         {
-            ni=groups->grps[egcTC].nm_ind[i];
-            bufi = *(groups->grpname[ni]);
-            sprintf(buf,"Xi-%s",bufi);
-            grpnms[2*i]=strdup(buf);
-            sprintf(buf,"vXi-%s",bufi);
-            grpnms[2*i+1]=strdup(buf);
+            for(i=0; (i<md->nTCB); i++) 
+            {
+                ni=groups->grps[egcTC].nm_ind[i];
+                /* this one is a barostat thermostat */
+                if ((i==md->nTCB-1) && (md->nTCB > md->nTC)) {bufi = bufbaro[0];} else {bufi = *(groups->grpname[ni]);}
+                for(j=0; (j<NNHCHAIN); j++) 
+                {
+                    sprintf(buf,"Xi-%d-%s",j,bufi);
+                    grpnms[2*(i*NNHCHAIN+j)]=strdup(buf);
+                    sprintf(buf,"vXi-%d-%s",j,bufi);
+                    grpnms[2*(i*NNHCHAIN+j)+1]=strdup(buf);
+                }
+            }
+            md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
+        } 
+        else
+        {
+            for(i=0; (i<md->nTCB); i++) 
+            {
+                ni=groups->grps[egcTC].nm_ind[i];
+                bufi = *(groups->grpname[ni]);
+                sprintf(buf,"Xi-%s",bufi);
+                grpnms[2*i]=strdup(buf);
+                sprintf(buf,"vXi-%s",bufi);
+                grpnms[2*i+1]=strdup(buf);
+            }
+            md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
         }
-        md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
     }
     else if (md->etc == etcBERENDSEN || md->etc == etcYES || 
-	      md->etc == etcVRESCALE)
+             md->etc == etcVRESCALE)
     {
         for(i=0; (i<md->nTC); i++)
         {
@@ -407,23 +430,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         }
         md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,"");
     }
-    else if (md->etc == etcTROTTER || md->etc == etcTROTTEREKINH) 
-    {
-        for(i=0; (i<md->nTCB); i++) 
-        {
-            ni=groups->grps[egcTC].nm_ind[i];
-            /* this one is a barostat thermostat */
-            if ((i==md->nTCB-1) && (md->nTCB > md->nTC)) {bufi = bufbaro[0];} else {bufi = *(groups->grpname[ni]);}
-            for(j=0; (j<NNHCHAIN); j++) 
-            {
-                sprintf(buf,"Xi-%d-%s",j,bufi);
-                grpnms[2*(i*NNHCHAIN+j)]=strdup(buf);
-                sprintf(buf,"vXi-%d-%s",j,bufi);
-                grpnms[2*(i*NNHCHAIN+j)+1]=strdup(buf);
-            }
-        }
-        md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
-    }
+
     sfree(grpnms);
 
     
@@ -589,7 +596,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     add_ebin(md->ebin,md->ipres,9,pres[0],bSum);
     tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
     add_ebin(md->ebin,md->isurft,1,&tmp,bSum);
-    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcTROTTER)
+    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         tmp6[0] = state->boxv[XX][XX];
         tmp6[1] = state->boxv[YY][YY];
@@ -640,26 +647,30 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         add_ebin(md->ebin,md->itemp,md->nTC,md->tmp_r,bSum);
         if (md->etc == etcNOSEHOOVER)
         {
-            for(i=0; (i<md->nTC); i++)
+            if (md->bNHC_trotter)
             {
-                 md->tmp_r[2*i] = state->nosehoover_xi[i];
-                 md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
-            }
-            add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);
-        }
-        else if (md->etc == etcTROTTER || md->etc == etcTROTTEREKINH) 
-        {
-            for(i=0; (i<md->nTCB); i++) 
-            {
-                for (j=0;j<NNHCHAIN;j++) 
+                
+                for(i=0; (i<md->nTCB); i++) 
                 {
-                    k = i*NNHCHAIN+j;
-                    md->tmp_r[2*k] = state->nosehoover_xi[k];
-                    md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                    for (j=0;j<NNHCHAIN;j++) 
+                    {
+                        k = i*NNHCHAIN+j;
+                        md->tmp_r[2*k] = state->nosehoover_xi[k];
+                        md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                    }
                 }
+                add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);      
+            } 
+            else 
+            {
+                for(i=0; (i<md->nTC); i++)
+                {
+                    md->tmp_r[2*i] = state->nosehoover_xi[i];
+                    md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
+                }
+                add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);
             }
-            add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);      
-        } 
+        }
         else if (md->etc == etcBERENDSEN || md->etc == etcYES || md->etc == etcVRESCALE)
         {
             for(i=0; (i<md->nTC); i++)

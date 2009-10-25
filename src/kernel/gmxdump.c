@@ -140,9 +140,9 @@ static void list_tpx(const char *fn, bool bShowNumbers,const char *mdpfn,
       pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
       pr_rvecs(stdout,indent,"pres_prev",tpx.bBox ? state.pres_prev : NULL,DIM);
       pr_rvecs(stdout,indent,"vir_prev",tpx.bBox ? state.vir_prev : NULL,DIM);
-      pr_doubles(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
-      pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);
-      pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);
+      /*pr_doubles(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);*/
+      /*pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);*/
+      /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
       pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
       pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
       if (state,tpx.bF) {

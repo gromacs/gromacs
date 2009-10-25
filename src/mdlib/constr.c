@@ -90,7 +90,11 @@ t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir)
 
     snew(vars,1);
     snew(vars->vscale_nhc,ir->opts.ngtc);
-    vars->alpha = ir->opts.alpha[0];  // assume first state for now.
+    if (ir->opts.alpha==NULL) { 
+        vars->alpha = 1;
+    } else {
+        vars->alpha = ir->opts.alpha[0];  /* assume alpha for the whole system is the first state*/
+    }
     g = 0.5*veta*ir->delta_t;
     vars->rscale = exp(g)*series_sinhx(g);
     g = -0.25*vars->alpha*veta*ir->delta_t;
@@ -437,7 +441,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         
         if (ir->eI == eiVV) 
         {
-            vir_fac *= 2;  // only constraining over half the distance . . . 
+            vir_fac *= 2;  /* only constraining over half the distance here */
         }
         for(i=0; i<DIM; i++)
         {

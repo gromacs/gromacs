@@ -346,18 +346,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (ir->eI==eiVV) {
-    if (ir->etc==etcNOSEHOOVER) {
-      ir->etc=etcTROTTER;
-      sprintf(warn_buf,"Using NVT-Trotter methods (using Nose-Hoover equations) with Velocity Verlet");
-      warning(NULL);	
-    }
-    if (ir->epc==epcPARRINELLORAHMAN) {
-      ir->epc=epcTROTTER;
-      sprintf(warn_buf,"Using NPT-Trotter methods (using Martyna-Tuckerman-Tobias-Klein equations) with Velocity Verlet");
-      warning(NULL);	      
+    if (ir->epc > epcNO) {
+      if (ir->epc!=epcMTTK) {
+	warning_error("NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+      }
     }
   }
-  
+
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   if (ir->coulombtype == eelSWITCH) {
@@ -1456,8 +1451,6 @@ static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
   }
   for(i=0; (i<groups->grps[egcTC].nr); i++) {
     opts->nrdf[i] = nrdf_tc[i];
-    opts->alpha[i] = 1.0 + DIM/((double)opts->nrdf[i]);  
-    //opts->alpha[i] = 1.0;
     opts->vscale_nhc[i] = 1.0;
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;
@@ -1617,7 +1610,6 @@ void do_index(const char* mdparin, const char *ndx,
   nr = groups->grps[egcTC].nr;
   ir->opts.ngtc = nr;
   snew(ir->opts.nrdf,nr);
-  snew(ir->opts.alpha,nr);
   snew(ir->opts.vscale_nhc,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);

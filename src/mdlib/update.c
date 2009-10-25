@@ -290,6 +290,75 @@ static void do_update_vv_step1(int start,int nrend,double dt,
 } /* do_update_vv_step1 */
 
 
+static void do_update_vv_vel(int start,int nrend,double dt,
+                             t_grp_tcstat *tcstat,t_grp_acc *gstat,
+                             rvec accel[],ivec nFreeze[],real invmass[],
+                             unsigned short ptype[],
+                             unsigned short cFREEZE[],
+                             unsigned short cACC[],unsigned short cTC[],
+                             rvec x[],rvec xprime[],rvec v[],
+                             rvec f[],bool bExtended, real veta, real alpha)
+{
+    double imass,w_dt;
+    int    gf=0,ga=0,gt=0;
+    rvec   vrel,sumf;
+    real   vn,vv,va,vb,vnrel;
+    real   lg,u;
+    int    n,d;
+    double g,mv1,mv2;
+    
+    g        = 0.25*dt*veta*alpha;
+    mv1      = exp(-g);
+    mv2      = series_sinhx(g);
+    
+    for(n=start; n<nrend; n++) 
+    {
+        w_dt = invmass[n]*dt;
+        if (cFREEZE)
+        {
+            gf   = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga   = cACC[n];
+        }
+        if (cTC)
+        {
+            gt   = cTC[n];
+        }
+        lg   = tcstat[gt].lambda;
+        rvec_sub(v[n],gstat[ga].u,vrel);
+        
+        for(d=0; d<DIM; d++) 
+        {
+            if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
+            {
+                if (bExtended) 
+                {
+                    vnrel             = mv1*(mv1*vrel[d] + 0.5*w_dt*mv2*f[n][d]);
+                    /* do not scale the mean velocities u: MRS: may not be done correctly currently? */
+                    vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
+                    v[n][d]        = vn;
+                } 
+                else 
+                {
+                    vv             = lg*v[n][d] + 0.5*f[n][d]*w_dt;
+                    /* do not scale the mean velocities u MRS: may not be done correctly currently? */
+                    u              = gstat[ga].u[d];
+                    va             = vv + 0.5*accel[ga][d]*dt;
+                    vb             = va + (1.0-lg)*u;
+                    v[n][d]        = vb;
+                }
+            } 
+            else 
+            {
+                v[n][d]        = 0.0;
+            }
+        }
+    }
+} /* do_update_vv_vel */
+
+
 static void do_update_vv_step2(int start,int nrend,double dt,
                                t_grp_tcstat *tcstat,t_grp_acc *gstat,
                                rvec accel[],ivec nFreeze[],real invmass[],
@@ -363,6 +432,54 @@ static void do_update_vv_step2(int start,int nrend,double dt,
       }
   }
 }/* do_update_vv_step2 */
+
+static void do_update_vv_pos(int start,int nrend,double dt,
+                               t_grp_tcstat *tcstat,t_grp_acc *gstat,
+                               rvec accel[],ivec nFreeze[],real invmass[],
+                               unsigned short ptype[],
+                               unsigned short cFREEZE[],
+                               unsigned short cACC[],unsigned short cTC[],
+                               rvec x[],rvec xprime[],rvec v[],
+                               rvec f[],bool bExtended, real veta, real alpha)
+{
+  double imass,w_dt;
+  int    gf=0,ga=0,gt=0;
+  rvec   vrel;
+  real   vn,vv,va,vb,vnrel;
+  real   lg,u,scale;
+  int    n,d;
+  double g,mr1,mr2,mv1,mv2;
+
+  if (bExtended) {
+      g        = 0.5*dt*veta;
+      mr1      = exp(g);
+      mr2      = series_sinhx(g);
+  }
+  else 
+  {
+      mr1      = 1.0;
+      mr2      = 1.0;
+  }
+  
+  for(n=start; n<nrend; n++) {
+      if (cFREEZE)
+      {
+          gf   = cFREEZE[n];
+      }
+      
+      for(d=0; d<DIM; d++) 
+      {
+          if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) 
+          {
+              xprime[n][d]   = mr1*(mr1*x[n][d]+mr2*dt*v[n][d]);
+          } 
+          else 
+          {
+              xprime[n][d]   = x[n][d];
+          }
+      }
+  }
+}/* do_update_vv_pos */
 
 static void do_update_visc(int start,int nrend,double dt,
                            t_grp_tcstat *tcstat,real invmass[],real nh_vxi[],
@@ -1110,7 +1227,7 @@ static void combine_forces(int nstlist,
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
                   state->x,f_lr,f_lr,state->box,state->lambda,NULL,
-                  NULL,NULL,nrnb,econqForce,ir->epc==epcTROTTER,state->veta,state->veta);
+                  NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
     
     /* Add nstlist-1 times the LR force to the sum of both forces
@@ -1149,9 +1266,14 @@ void update_extended(FILE         *fplog,
     homenr = md->homenr;
     nrend = start+homenr;
     
+    /* if using vv, we do this elsewhere in the code */
+    if ((IR_NVT_TROTTER(inputrec)) || (IR_NPT_TROTTER(inputrec)))
+    {
+        return;
+    }
+    
     /* We should only couple after a step where energies were determined */
-    /* MRS -- incorporate into my code -- logic doesn't quite work right now */
-
+    
     bCouple = (inputrec->nstcalcenergy == 1 ||
                do_per_step(step+inputrec->nstcalcenergy-1,
                            inputrec->nstcalcenergy));
@@ -1170,11 +1292,6 @@ void update_extended(FILE         *fplog,
     }
     
     clear_mat(M);
-    
-    if (inputrec->epc == epcTROTTER || inputrec->etc == etcTROTTER) 
-    {
-        return;
-    }
     
     if (bCouple)  
     {
@@ -1300,7 +1417,7 @@ void update_constraints(FILE         *fplog,
                       state->x,state->v,state->v,
                       state->box,state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
-                      inputrec->epc==epcTROTTER,state->veta,vetanew);
+                      inputrec->epc==epcMTTK,state->veta,vetanew);
         } 
         else 
         {
@@ -1309,7 +1426,7 @@ void update_constraints(FILE         *fplog,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
-                      inputrec->epc==epcTROTTER,state->veta,state->veta);
+                      inputrec->epc==epcMTTK,state->veta,state->veta);
         }
         wallcycle_stop(wcycle,ewcCONSTR);
         
@@ -1374,7 +1491,7 @@ void update_constraints(FILE         *fplog,
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
     
-    if (!(bFirstHalf)) // in the first half of vv, no shift. 
+    if (!(bFirstHalf)) /* in the first half of vv, no shift. */
     {
         if (graph && (graph->nnodes > 0)) 
         {
@@ -1437,9 +1554,7 @@ void update_box(FILE         *fplog,
     bExtended =
         (inputrec->etc == etcNOSEHOOVER) ||
         (inputrec->epc == epcPARRINELLORAHMAN) ||
-        (inputrec->etc == etcTROTTER) ||
-        (inputrec->etc == etcTROTTEREKINH) ||
-        (inputrec->etc == epcTROTTER);
+        (inputrec->epc == epcMTTK);
     
     dt = inputrec->delta_t;
     
@@ -1473,7 +1588,7 @@ void update_box(FILE         *fplog,
             tmvmul_ur0(pcoupl_mu,state->x[n],state->x[n]);
         }
         break;
-    case (epcTROTTER):
+    case (epcMTTK):
         switch (inputrec->epct) 
         {
         case (epctISOTROPIC):
@@ -1502,7 +1617,7 @@ void update_box(FILE         *fplog,
         break;
     }
     
-    if (!epcTROTTER && scale_tot) 
+    if ((!(IR_NPT_TROTTER(inputrec))) && scale_tot) 
     {
         /* The transposes of the scaling matrices are stored,
          * therefore we need to reverse the order in the multiplication.
@@ -1581,13 +1696,9 @@ void update_coords(FILE         *fplog,
     }
     
     bNH = inputrec->etc == etcNOSEHOOVER;
-    bPR = inputrec->epc == epcPARRINELLORAHMAN; 
+    bPR = ((inputrec->epc == epcPARRINELLORAHMAN) || (inputrec->epc == epcMTTK)); 
 
-    bExtended =
-        bNH || bPR ||
-        (inputrec->etc == etcTROTTER) ||
-        (inputrec->etc == etcTROTTEREKINH) ||
-        (inputrec->etc == epcTROTTER);
+    bExtended = bNH || bPR;
     
     if (bDoLR && inputrec->nstlist > 1 && inputrec->eI != eiVV)
     {
@@ -1662,23 +1773,44 @@ void update_coords(FILE         *fplog,
         if (bFirstHalf) 
         {
             if (!bInitStep) 
-                do_update_vv_step1(start,nrend,dt,
-                                   ekind->tcstat,ekind->grpstat,
-                                   inputrec->opts.acc,inputrec->opts.nFreeze,
-                                   md->invmass,md->ptype,
-                                   md->cFREEZE,md->cACC,md->cTC,
-                                   state->x,xprime,state->v,force,
-                                   bExtended,state->veta,inputrec->opts.alpha[0]);  // assuming barostat coupled to group 0.
+/*                do_update_vv_step1(start,nrend,dt, */
+                do_update_vv_vel(start,nrend,dt,
+                                 ekind->tcstat,ekind->grpstat,
+                                 inputrec->opts.acc,inputrec->opts.nFreeze,
+                                 md->invmass,md->ptype,
+                                 md->cFREEZE,md->cACC,md->cTC,
+                                 state->x,xprime,state->v,force,
+                                 bExtended,state->veta,inputrec->opts.alpha[0]);  /* assuming barostat coupled to group 0. */
         } 
         else 
         {
+            /*
             do_update_vv_step2(start,nrend,dt,
                                ekind->tcstat,ekind->grpstat,
                                inputrec->opts.acc,inputrec->opts.nFreeze,
                                md->invmass,md->ptype,
                                md->cFREEZE,md->cACC,md->cTC,
                                state->x,xprime,state->v,force,
-                               bExtended,state->veta,inputrec->opts.alpha[0]);  // assuming barostat coupled to group 0.
+                               bExtended,state->veta,inputrec->opts.alpha[0]);  */
+            /* assuming barostat coupled to group 0. */
+
+
+            do_update_vv_vel(start,nrend,dt,
+                             ekind->tcstat,ekind->grpstat,
+                             inputrec->opts.acc,inputrec->opts.nFreeze,
+                             md->invmass,md->ptype,
+                             md->cFREEZE,md->cACC,md->cTC,
+                             state->x,xprime,state->v,force,
+                             bExtended,state->veta,inputrec->opts.alpha[0]);  /* assuming barostat coupled to group 0. */
+
+            do_update_vv_pos(start,nrend,dt,
+                             ekind->tcstat,ekind->grpstat,
+                             inputrec->opts.acc,inputrec->opts.nFreeze,
+                             md->invmass,md->ptype,
+                             md->cFREEZE,md->cACC,md->cTC,
+                             state->x,xprime,state->v,force,
+                             bExtended,state->veta,inputrec->opts.alpha[0]);  /* assuming barostat coupled to group 0. */
+
         }
         break;
     default:

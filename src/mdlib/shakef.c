@@ -460,7 +460,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
     real    veta,vscale_nhc;
 
     veta = vetavar->veta;
-    vscale_nhc = vetavar->vscale_nhc[0];  // for now, just choose the first state 
+    vscale_nhc = vetavar->vscale_nhc[0];  /* for now, just use the first state */
     
     error=0;
     nconv=1;

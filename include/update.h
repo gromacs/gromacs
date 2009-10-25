@@ -182,8 +182,8 @@ extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t 
 			   t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
 
-extern void NVT_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-			double xi[],double vxi[], double scalefac[], t_extmass *MassQ, int etc);
+extern void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
+			double xi[],double vxi[], double scalefac[],real *veta, t_extmass *MassQ);
 
 extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */

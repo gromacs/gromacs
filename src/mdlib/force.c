@@ -1834,7 +1834,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) && ir->sc_alpha != 0)
     {
         init_enerdata(mtop->groups.grps[egcENER].nr,ir->n_flambda,&ed_lam);
-
+        
         for(i=0; i<enerd->n_lambda; i++)
         {
             lam_i = (i==0 ? lambda : ir->flambda[i-1]);
@@ -1845,7 +1845,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                          ed_lam.grpp.ener[egBHAMSR] :
                          ed_lam.grpp.ener[egLJSR],
                          ed_lam.grpp.ener[egCOULSR],
-			 enerd->grpp.ener[egGB], box_size,nrnb,
+                         enerd->grpp.ener[egGB], box_size,nrnb,
                          lam_i,&dvdl_dum,-1,-1,
                          GMX_DONB_FOREIGNLAMBDA);
             sum_epot(&ir->opts,&ed_lam);

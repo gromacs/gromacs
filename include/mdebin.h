@@ -61,6 +61,7 @@ typedef struct {
   bool   bConstrVir;
   bool   bTricl;
   bool   bDynBox;
+  bool   bNHC_trotter;
   int    f_nre;
   int    epc;
   int	 etc;

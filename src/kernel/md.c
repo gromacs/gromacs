@@ -91,15 +91,6 @@
 #include "tmpi.h"
 #endif
 
-// Temporary definitions - MRS //
-#ifdef GMX_DOUBLE
-#define CONVERGEITER  0.00000001
-#else
-#define CONVERGEITER  0.0001
-#endif
-#define MAXITERCONST       200
-#define CYCLEMAX            20
-#define FALLBACK          1000 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -186,7 +177,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      tensor pres, rvec mu_tot, gmx_constr_t constr, 
                      real *chkpt,real *terminate, real *terminate_now,
                      int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
-                     bool *bSumEkinhOld, bool bRerunMD, bool bEkinFullStep, 
+                     bool *bSumEkinhOld, bool bRerunMD, bool bEkinAveVel, 
                      bool bStopCM, bool bGStat, bool bNEMD, bool bFirstHalf, 
                      bool bIterate, bool bFirstIterate, bool bInitialize, 
                      bool bReadEkin, int natoms) 
@@ -218,11 +209,11 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         bEner = TRUE;
         if (ir->eI == eiVV) 
         {
-            if (bEkinFullStep) 
+            if (bEkinAveVel) 
             {
                 bTemp = TRUE;
             }
-            if (bIterate || (ir->epc == epcTROTTER)) 
+            if (bIterate || (IR_NPT_TROTTER(ir))) 
             {
                 bPres = TRUE;
             }
@@ -233,7 +224,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         bPres = TRUE;
         if (ir->eI == eiVV) 
         {
-            if (!bEkinFullStep) 
+            if (!bEkinAveVel) 
             {
                 bTemp = TRUE;
             }
@@ -267,7 +258,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else 
         {
-            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinFullStep);
+            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel);
         }
 
         debug_gmx();
@@ -295,7 +286,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                 GMX_MPE_LOG(ev_global_stat_start);
                 
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,FALSE,bEkinFullStep,constr,vcm,
+                            ir,ekind,FALSE,bEkinAveVel,constr,vcm,
                             NULL,NULL,terminate,top_global,state,bFirstHalf);
                 GMX_MPE_LOG(ev_global_stat_finish);
             }
@@ -331,7 +322,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     {
         /* Sum the kinetic energies of the groups & calc temp */
         enerd->term[F_TEMP] = sum_ekin(bInitialize,&(ir->opts),ekind,
-                                       &(enerd->term[F_DKDL]),bEkinFullStep);
+                                       &(enerd->term[F_DKDL]),bEkinAveVel);
+        
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
     
@@ -377,6 +369,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         enerd->term[F_PDISPCORR] = prescorr;
         enerd->term[F_PRES] += prescorr;
         *pcurr = enerd->term[F_PRES];
+        /* calculate temperature using virial */
+        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
     }
 }
 
@@ -1016,6 +1010,8 @@ static void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
 
 bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *bIterate, real fom, real *newf, int n) 
 {
+
+
     
     /* monitor convergence, and use a secant search to propose new
        values.  
@@ -1038,7 +1034,19 @@ bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *
        good enough for now.  On my tests, I could use tau_p down to
        0.02, which is smaller that would ever be necessary in
        practice. Generally, 3-5 iterations will be sufficient */
-    
+
+/* Definitions for convergence.  Could be optimized . . .  */
+#ifdef GMX_DOUBLE
+#define CONVERGEITER  0.00000001
+#else
+#define CONVERGEITER  0.0001
+#endif
+#define MAXITERCONST       200
+
+/* used to escape out of cyclic traps because of numerical errors */
+#define CYCLEMAX            20
+#define FALLBACK          1000 
+
     static real f,fprev,x,xprev;  
     static int iter_i;
     static real allrelerr[MAXITERCONST+2];
@@ -1420,7 +1428,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     double     t,t0,lam0;
     bool       bGStatEveryStep,bGStat,bNstEner,bCalcPres,bCalcEner;
     bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-               bFirstStep,bStateFromTPX,bInitStep,bLastStep,bEkinFullStep,bBornRadii;
+               bFirstStep,bStateFromTPX,bInitStep,bLastStep,bEkinAveVel,bBornRadii;
     bool       bDoDHDL=FALSE;
     bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
@@ -1492,12 +1500,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bIonize  = (Flags & MD_IONIZE);
     bFFscan  = (Flags & MD_FFSCAN);
     bAppend  = (Flags & MD_APPENDFILES);
-/* all the iteratative cases - really, only if there are constraints */ 
-  bIterate = ((ir->epc == epcTROTTER) && (constr));
-  bEkinFullStep = ((ir->eI == eiVV) && !(ir->etc==etcTROTTEREKINH));
-  bTrotter = ((ir->eI == eiVV) && ((ir->etc == etcTROTTER) ||
-                                   (ir->etc == etcTROTTEREKINH) || (ir->etc == epcTROTTER))); 
-  
+    /* md-vv uses averaged half step velocities to determine temperature unless defined otherwise by GMX_EKIN_AVE_EKIN;
+       md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
+    if (ir->eI==eiVV) {
+        bEkinAveVel = (getenv("GMX_EKIN_AVE_EKIN")==NULL);
+    } else {
+        bEkinAveVel = (getenv("GMX_EKIN_AVE_VEL")!=NULL);
+    }
+/* all the iteratative cases - only if there are constraints */ 
+    bIterate = ((IR_NPT_TROTTER(ir)) && (constr));
+    bTrotter = ((ir->eI == eiVV) && (IR_NPT_TROTTER(ir) || (IR_NVT_TROTTER(ir))));        
+    
     if (bRerunMD)
     {
         /* Since we don't know if the frames read are related in any way,
@@ -1730,7 +1743,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
-                    top_global,&pcurr,&bSumEkinhOld,bRerunMD,bEkinFullStep,FALSE,
+                    top_global,&pcurr,&bSumEkinhOld,bRerunMD,bEkinAveVel,FALSE,
                     TRUE,FALSE,FALSE,FALSE,FALSE,TRUE,Flags & MD_READ_EKIN,top_global->natoms);
     
     /* Calculate the initial half step temperature */
@@ -1753,7 +1766,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
     if (bTrotter) 
     {
-        /* need to make an initial call to get the Trotter Mass variables set. */
+        /* need to make an initial call to get the Trotter variables set. */
         trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,FALSE,FALSE,FALSE);
     }
     
@@ -2208,7 +2221,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
         
-        bIterate = ((ir->epc == epcTROTTER) && (constr) && (!bInitStep));
+        bIterate = (IR_NPT_TROTTER(ir) && (constr) && (!bInitStep));
         bFirstIterate = TRUE;
         /* for iterations, we save these vectors, as we will be self-consistently iterating
            the calculations */
@@ -2246,7 +2259,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             bOK = TRUE;
             if ( !bRerunMD || bForceUpdate) {
-//        if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  // Why was rerun_fr.bV here?  Doesn't make sense. 
+/*        if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  /* Why was rerun_fr.bV here?  Doesn't make sense. */
                 wallcycle_start(wcycle,ewcUPDATE);
                 dvdl = 0;
                 
@@ -2280,7 +2293,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                             top_global,&pcurr,&bSumEkinhOld,
-                            bRerunMD,bEkinFullStep,bStopCM,bGStat,bNEMD,TRUE,bIterate,
+                            bRerunMD,bEkinAveVel,bStopCM,bGStat,bNEMD,TRUE,bIterate,
                             bFirstIterate,FALSE,FALSE,top_global->natoms);
             
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
@@ -2291,64 +2304,33 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
         }
-#if 0
-        printf("step: %6d veta: %10.5f\n",step,vetanew); 
-#endif 
-        
-#if 0
-        /* checking . . . . */
-        {
-            real dx0[3],dx1[3],dx2[3];
-            real dv0[3],dv1[3],dv2[3];
-            real dot0,dot1,dot2;
-            int inc,mdim;
-//            for (inc=mdatoms->start;inc<(mdatoms->start+mdatoms->homenr);inc+=3) {
-            for (inc=0;inc<2700;inc+=3) {
-                dot0 = dot1 = dot2 = 0;
-                for (mdim=0;mdim<DIM;mdim++){
-                    dx0[mdim] = state->x[inc][mdim]   - state->x[inc+1][mdim];
-                    dx1[mdim] = state->x[inc][mdim]   - state->x[inc+2][mdim];
-                    dx2[mdim] = state->x[inc+1][mdim] - state->x[inc+2][mdim];
-                    dv0[mdim] = state->v[inc][mdim]   - state->v[inc+1][mdim];
-                    dv1[mdim] = state->v[inc][mdim]   - state->v[inc+2][mdim];
-                    dv2[mdim] = state->v[inc+1][mdim] - state->v[inc+2][mdim];
-                }
-                for (mdim=0;mdim<DIM;mdim++){
-                    dot0 += (dv0[mdim]+state->veta*dx0[mdim])*dx0[mdim];
-                    dot1 += (dv1[mdim]+state->veta*dx1[mdim])*dx1[mdim];
-                    dot2 += (dv2[mdim]+state->veta*dx2[mdim])*dx2[mdim];
-                }
-                printf("%5d dot0=%18.12g\n",inc,dot0);
-                printf("%5d dot1=%18.12g\n",inc,dot1);
-                printf("%5d dot2=%18.12g\n",inc,dot2);
+        if (bTrotter && !bInitStep) {
+            if (IR_NVT_TROTTER(ir)) {
+                /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
+                enerd->term[F_TEMP] = sum_ekin(FALSE,&(ir->opts),ekind,NULL,bEkinAveVel);
+                enerd->term[F_EKIN] = trace(ekind->ekin);
             }
-        }
-#endif    
-        if (bTrotter && !bInitStep) 
-        { 
-            /* update temperature and kinetic energy now that step is over */
-            enerd->term[F_TEMP] = sum_ekin(FALSE,&(ir->opts),ekind,NULL,bEkinFullStep);
-            enerd->term[F_EKIN] = trace(ekind->ekin);
             copy_mat(shake_vir,state->vir_prev);
         }
-        
+
         wallcycle_stop(wcycle,ewcUPDATE);
         GMX_MPE_LOG(ev_timestep1);
         
         /* MRS -- done iterating -- compute the conserved quantity */
         
         if (ir->eI==eiVV) {
-            last_ekin = enerd->term[F_EKIN];
             last_conserved = 0;
-            if (ir->etc == etcTROTTER || ir->etc == etcTROTTEREKINH)  
+            if (IR_NVT_TROTTER(ir) || IR_NPT_TROTTER(ir))
             {
                 last_conserved = 
                     NPT_energy(ir,state->nosehoover_xi,state->nosehoover_vxi,state->veta, state->box, &MassQ); 
-                last_conserved += enerd->term[F_EKIN];
                 if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
                 {
                     last_conserved -= enerd->term[F_DISPCORR];
                 }
+            }
+            if (bEkinAveVel) {
+                last_ekin = enerd->term[F_EKIN];
             }
         }
         
@@ -2471,7 +2453,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bGStat    = TRUE;
         }
         
-        bIterate = ((ir->epc == epcTROTTER) && (constr));
+        bIterate = (IR_NPT_TROTTER(ir) && (constr));
         bFirstIterate = TRUE;
         
         /* for iterations, we save these vectors, as we will be redoing the calculations */
@@ -2597,7 +2579,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                             top_global,&pcurr,&bSumEkinhOld,
-                            bRerunMD,bEkinFullStep,bStopCM,bGStat,bNEMD,FALSE,bIterate,
+                            bRerunMD,bEkinAveVel,bStopCM,bGStat,bNEMD,FALSE,bIterate,
                             bFirstIterate,FALSE,FALSE,top_global->natoms);
             
             /* #############  END CALC EKIN AND PRESSURE ################# */
@@ -2748,10 +2730,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
         sum_dhdl(enerd,state->lambda,ir);
-        if (ir->eI==eiVV) {
+        /* use the directly determined last velocity, not actually the averaged half steps */
+        if (bTrotter && bEkinAveVel) {
             enerd->term[F_EKIN] = last_ekin;
         }
-
         enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
         
         switch (ir->etc) 
@@ -2760,20 +2742,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             break;
         case etcBERENDSEN:
             break;
-        case etcTROTTER:
-            enerd->term[F_ECONSERVED] = enerd->term[F_EPOT] + last_conserved;
-            break;
-        case etcTROTTEREKINH:
-            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + last_conserved;
-            break;
         case etcNOSEHOOVER:
-            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + 
-                NPT_energy(ir,state->nosehoover_xi,
-                           state->nosehoover_vxi,state->veta,state->box,&MassQ);	
+            if (IR_NVT_TROTTER(ir)) {
+                enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + last_conserved;
+            } else {
+                enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + 
+                    NPT_energy(ir,state->nosehoover_xi,
+                               state->nosehoover_vxi,state->veta,state->box,&MassQ);	
+            }
             break;
         case etcVRESCALE:
             enerd->term[F_ECONSERVED] =
-                /* not the best name to be using here -- think about renaming later */
                 enerd->term[F_ETOT] + vrescale_energy(&(ir->opts),
                                                       state->therm_integral);
             break;

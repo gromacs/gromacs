@@ -205,7 +205,7 @@ void settle_proj(FILE *fp,
     invdHH = p->invdHH;
     
     veta = vetavar->veta;     
-    vscale_nhc = vetavar->vscale_nhc[0]; // assume the first temperature control group. 
+    vscale_nhc = vetavar->vscale_nhc[0]; /* assume the first temperature control group. */
 
 #ifdef PRAGMAS
 #pragma ivdep

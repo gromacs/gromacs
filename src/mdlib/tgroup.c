@@ -155,22 +155,22 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
       if (md->cACC)
 	g = md->cACC[n];
       for(d=0; (d<DIM);d++) {
-	mv = md->massT[n]*v[n][d];
-	ekind->grpstat[g].u[d] += mv;
+          mv = md->massT[n]*v[n][d];
+          ekind->grpstat[g].u[d] += mv;
       }
     }
 
     for (g=0; (g < opts->ngacc); g++) {
       for(d=0; (d<DIM);d++) {
-	ekind->grpstat[g].u[d] /=
-	  (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
+          ekind->grpstat[g].u[d] /=
+              (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
       }
     }
   }
 }
 
 real sum_ekin(bool bFirstStep,
-	      t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,bool bEkinFullStep)
+	      t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,bool bEkinAveVel)
 {
     int          i,j,m,ngtc;
     real         T,ek;
@@ -204,7 +204,7 @@ real sum_ekin(bool bFirstStep,
             } 
             else 
             {
-                if (bEkinFullStep) 
+                if (bEkinAveVel) 
                 {
                     /* in some cases, kinetic energy is from the current velocities already */
                 } 

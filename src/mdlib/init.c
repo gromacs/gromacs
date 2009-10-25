@@ -112,11 +112,11 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     if (PRESERVE_SHAPE(*ir)) {
       state->flags |= (1<<estBOX_REL);
     }
-    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcTROTTER)) {
+    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK)) {
       state->flags |= (1<<estBOXV);
     }
     if (ir->epc != epcNO) {
-      if (ir->epc == epcTROTTER) {
+      if (IR_NPT_TROTTER(ir)) {
 	state->flags |= (1<<estVIR_PREV);
 	state->flags |= (1<<estVETA);
 	state->flags |= (1<<estVOL0);
@@ -126,7 +126,7 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     }
   }
 
-  if ((ir->etc == etcNOSEHOOVER) || (ir->etc == etcTROTTER)) {
+  if (ir->etc == etcNOSEHOOVER) {
     state->flags |= (1<<estNH_XI);
     state->flags |= (1<<estNH_VXI);
   }

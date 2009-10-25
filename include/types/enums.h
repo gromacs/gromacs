@@ -43,12 +43,11 @@ enum {
 };
 
 enum {
-  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, 
-  etcVRESCALE, etcTROTTER, etcTROTTEREKINH, etcNR
+  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, etcVRESCALE, etcNR
 }; /* yes is an alias for berendsen */
 
 enum {
-  epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcTROTTER, epcNR
+  epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR
 }; /* isotropic is an alias for berendsen */
 
 enum {
