@@ -284,10 +284,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             if (PAR(cr)) 
             {
                 GMX_MPE_LOG(ev_global_stat_start);
-                
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,FALSE,bEkinAveVel,constr,vcm,
-                            NULL,NULL,terminate,top_global,state,bFirstHalf);
+                            NULL,NULL,terminate,top_global,state,bFirstHalf,bFirstIterate);
                 GMX_MPE_LOG(ev_global_stat_finish);
             }
             
@@ -2512,6 +2511,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         }
                         msmul(shake_vir,scalevir,shake_vir); 
                         m_add(force_vir,shake_vir,total_vir);
+                        clear_mat(shake_vir);
                     }
                     if ((!bFirstStep) || tracevir != 0) 
                     {

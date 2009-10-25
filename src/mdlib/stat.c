@@ -103,7 +103,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  gmx_constr_t constr,
                  t_vcm *vcm,int *nabnsb,
                  real *chkpt,real *terminate,
-                 gmx_mtop_t *top_global, t_state *state_local, bool bFirstPart)
+                 gmx_mtop_t *top_global, t_state *state_local, bool bFirstPart, bool bFirstIterate)
 {
   t_bin  *rb;
   int    *itc0,*itc1;
@@ -158,7 +158,9 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       }  
 
       where();
-      ifv = add_binr(rb,DIM*DIM,fvir[0]);
+      if (bFirstIterate) {
+          ifv = add_binr(rb,DIM*DIM,fvir[0]);
+      }
   }
 
   if (!bFirstPart) { 
@@ -246,7 +248,9 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
           where();
       }
-      extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
+      if (bFirstIterate) {
+          extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
+      }
   }
 
   if (!bFirstPart) {
