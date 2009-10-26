@@ -1220,7 +1220,10 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     {
         rc = gmx_ana_selcollection_parse_file(d->sc, d->selfile, grps);
     }
-    gmx_ana_indexgrps_free(grps);
+    if (grps)
+    {
+        gmx_ana_indexgrps_free(grps);
+    }
     if (rc != 0)
     {
         /* Free memory for memory leak checking */
