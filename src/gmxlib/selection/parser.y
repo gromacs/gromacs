@@ -42,32 +42,20 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <string.h>
-
-#include <smalloc.h>
-#include <vec.h>
-
-#include <position.h>
-#include <selection.h>
-#include <selmethod.h>
+#include <string2.h>
 
 #include "parsetree.h"
-#include "selcollection.h"
 #include "selelem.h"
-#include "selhelp.h"
 
 #include "scanner.h"
 
-static void
-show_help(char *topic, yyscan_t scanner);
 static t_selexpr_value *
 process_value_list(t_selexpr_value *values, int *nr);
 static t_selexpr_param *
 process_param_list(t_selexpr_param *params);
 
 static void
-yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
+yyerror(yyscan_t, char const *s);
 %}
 
 %union{
@@ -160,8 +148,6 @@ yyerror(int, gmx_ana_indexgrps_t *, yyscan_t, char const *s);
 
 /* If you change these, you also need to update the prototype in parsetree.c. */
 %name-prefix="_gmx_sel_yy"
-%parse-param { int                      nexp    }
-%parse-param { gmx_ana_indexgrps_t     *grps    }
 %parse-param { yyscan_t                 scanner }
 %lex-param   { yyscan_t                 scanner }
 
@@ -172,7 +158,7 @@ commands:    /* empty */        { $$ = NULL }
            | commands command
              {
                  $$ = _gmx_sel_append_selection($2, $1, scanner);
-                 if (_gmx_sel_lexer_selcollection(scanner)->nr == nexp)
+                 if (_gmx_sel_parser_should_finish(scanner))
                      YYACCEPT;
              }
 ;
@@ -197,12 +183,16 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
 ;
 
 /* Commands can be selections or variable assignments */
-cmd_plain:   /* empty */        { $$ = NULL; }
+cmd_plain:   /* empty */
+             {
+                 $$ = NULL;
+                 _gmx_sel_handle_empty_cmd(scanner);
+             }
            | help_request       { $$ = NULL; }
            | INTEGER
              {
                  t_selelem *s, *p;
-                 s = _gmx_sel_init_group_by_id(grps, $1);
+                 s = _gmx_sel_init_group_by_id($1, scanner);
                  if (s == NULL) YYERROR;
                  p = _gmx_sel_init_position(s, NULL, TRUE, scanner);
                  if (p == NULL) YYERROR;
@@ -222,12 +212,12 @@ cmd_plain:   /* empty */        { $$ = NULL; }
 
 /* Help requests */
 help_request:
-             HELP                   { show_help(NULL, scanner); }
+             HELP                   { _gmx_sel_handle_help_cmd(NULL, scanner); }
            | help_topic
 ;
 
-help_topic:  HELP HELP_TOPIC        { show_help($2, scanner); }
-           | help_topic HELP_TOPIC  { show_help($2, scanner); }
+help_topic:  HELP HELP_TOPIC        { _gmx_sel_handle_help_cmd($2, scanner); }
+           | help_topic HELP_TOPIC  { _gmx_sel_handle_help_cmd($2, scanner); }
 ;
 
 /* Selection is made of an expression and zero or more modifiers */
@@ -295,13 +285,13 @@ sel_expr:    num_expr CMP_OP num_expr
 /* External groups */
 sel_expr:    GROUP string
              {
-                 $$ = _gmx_sel_init_group_by_name(grps, $2);
-                 sfree($2);
+                 $$ = _gmx_sel_init_group_by_name($2, scanner);
+                 free($2);
                  if ($$ == NULL) YYERROR;
              }
            | GROUP INTEGER
              {
-                 $$ = _gmx_sel_init_group_by_id(grps, $2);
+                 $$ = _gmx_sel_init_group_by_id($2, scanner);
                  if ($$ == NULL) YYERROR;
              }
 ;
@@ -518,19 +508,6 @@ value_item:  INTEGER
 
 %%
 
-static void
-show_help(char *topic, yyscan_t scanner)
-{
-    gmx_ana_selcollection_t *sc;
-
-    sc = _gmx_sel_lexer_selcollection(scanner);
-    _gmx_sel_print_help(sc, topic);
-    if (topic)
-    {
-        sfree(topic);
-    }
-}
-
 static t_selexpr_value *
 process_value_list(t_selexpr_value *values, int *nr)
 {
@@ -580,8 +557,7 @@ process_param_list(t_selexpr_param *params)
 }
 
 static void
-yyerror(int nexp, gmx_ana_indexgrps_t *grps, yyscan_t scanner,
-        char const *s)
+yyerror(yyscan_t scanner, char const *s)
 {
     _gmx_selparser_error("%s", s);
 }

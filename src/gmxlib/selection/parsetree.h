@@ -154,10 +154,10 @@ struct t_selelem *
 _gmx_sel_init_const_position(real x, real y, real z);
 /** Creates a \c t_selelem for a index group expression using group name. */
 struct t_selelem *
-_gmx_sel_init_group_by_name(struct gmx_ana_indexgrps_t *grps, const char *name);
+_gmx_sel_init_group_by_name(const char *name, void *scanner);
 /** Creates a \c t_selelem for a index group expression using group index. */
 struct t_selelem *
-_gmx_sel_init_group_by_id(struct gmx_ana_indexgrps_t *grps, int id);
+_gmx_sel_init_group_by_id(int id, void *scanner);
 /** Creates a \c t_selelem for a variable reference */
 struct t_selelem *
 _gmx_sel_init_variable_ref(struct t_selelem *sel);
@@ -172,6 +172,16 @@ _gmx_sel_assign_variable(char *name, struct t_selelem *expr, void *scanner);
 struct t_selelem *
 _gmx_sel_append_selection(struct t_selelem *sel, struct t_selelem *last,
                           void *scanner);
+/** Check whether the parser should finish. */
+bool
+_gmx_sel_parser_should_finish(void *scanner);
+
+/** Handle empty commands. */
+void
+_gmx_sel_handle_empty_cmd(void *scanner);
+/** Process help commands. */
+void
+_gmx_sel_handle_help_cmd(char *topic, void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
