@@ -137,7 +137,7 @@ struct gmx_ana_traj_t
      */
     bool                      bPBC;
 
-    /** Name of the trajectory file. */
+    /** Name of the trajectory file (NULL if not provided). */
     const char               *trjfile;
     /** Name of the topology file (NULL if no topology loaded). */
     const char               *topfile;
@@ -157,7 +157,7 @@ struct gmx_ana_traj_t
     /** Coordinates from the topology (see \p bTopX). */
     rvec                     *xtop;
     /** The box loaded from the topology file. */
-    matrix                    boxTop;
+    matrix                    boxtop;
     /** The ePBC field loaded from the topology file. */
     int                       ePBC;
 
@@ -641,7 +641,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
     int                 rc;
 
     t_filenm            def_fnm[] = {
-        {efTRX, NULL,  NULL,        ffREAD},
+        {efTRX, NULL,  NULL,        ffOPTRD},
         {efTPS, NULL,  NULL,        ffREAD},
         {efDAT, "-sf", "selection", ffOPTRD},
         {efNDX, NULL,  NULL,        ffOPTRD},
@@ -805,7 +805,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
         memcpy(&(pa[i]), &(all_pa[k]), sizeof(pa[i]));
     }
 
-    d->trjfile         = ftp2fn(efTRX, nfall, all_fnm);
+    d->trjfile         = ftp2fn_null(efTRX, nfall, all_fnm);
     d->topfile         = ftp2fn_null(efTPS, nfall, all_fnm);
     d->topfile_notnull = ftp2fn(efTPS, nfall, all_fnm);
     d->ndxfile         = ftp2fn_null(efNDX, nfall, all_fnm);
@@ -859,6 +859,20 @@ parse_trjana_args(gmx_ana_traj_t *d,
         gmx_ana_init_selections(d);
     }
 
+    /* If no trajectory file is given, we need to set some flags to be able
+     * to prepare a frame from the loaded topology information. Also, check
+     * that a topology is provided. */
+    if (!d->trjfile)
+    {
+        if (!d->topfile)
+        {
+            gmx_input("No trajectory or topology provided, nothing to do!");
+            return -1;
+        }
+        d->flags |= ANA_REQUIRE_TOP;
+        d->flags |= ANA_USE_TOPX;
+    }
+
     /* Load the topology if so requested. */
     rc = load_topology(d, (d->flags & ANA_REQUIRE_TOP));
     if (rc != 0)
@@ -881,7 +895,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
  * \returns       0 on success, a non-zero error code on error.
  *
  * Initializes the \c gmx_ana_traj_t::top, \c gmx_ana_traj_t::bTop,
- * \c gmx_ana_traj_t::boxTop and \c gmx_ana_traj_t::ePBC fields of the
+ * \c gmx_ana_traj_t::boxtop and \c gmx_ana_traj_t::ePBC fields of the
  * analysis structure.
  * If \p bReq is TRUE, the topology is loaded even if it is not given on
  * the command line.
@@ -903,7 +917,7 @@ static int load_topology(gmx_ana_traj_t *d, bool bReq)
     {
         snew(d->top, 1);
         d->bTop = read_tps_conf(d->topfile_notnull, title, d->top,
-                                &d->ePBC, &d->xtop, NULL, d->boxTop, TRUE);
+                                &d->ePBC, &d->xtop, NULL, d->boxtop, TRUE);
         if (!(d->flags & ANA_USE_TOPX))
         {
             sfree(d->xtop);
@@ -966,7 +980,7 @@ gmx_ana_get_topconf(gmx_ana_traj_t *d, rvec **x, matrix box, int *ePBC)
 {
     if (box)
     {
-        copy_mat(d->boxTop, box);
+        copy_mat(d->boxtop, box);
     }
     if (ePBC)
     {
@@ -1220,7 +1234,10 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     {
         rc = gmx_ana_selcollection_parse_file(d->sc, d->selfile, grps);
     }
-    gmx_ana_indexgrps_free(grps);
+    if (grps)
+    {
+        gmx_ana_indexgrps_free(grps);
+    }
     if (rc != 0)
     {
         /* Free memory for memory leak checking */
@@ -1436,22 +1453,48 @@ static int init_first_frame(gmx_ana_traj_t *d)
     d->frflags |= TRX_NEED_X;
 
     snew(d->fr, 1);
-    if (!read_first_frame(d->oenv, &d->status, d->trjfile, d->fr, d->frflags))
-    {
-        gmx_input("could not read coordinates from trajectory");
-        return EIO;
-    }
 
-    if (d->top && d->fr->natoms > d->top->atoms.nr)
+    if (d->trjfile)
     {
-        gmx_fatal(FARGS, "Trajectory (%d atoms) does not match topology (%d atoms)",
-                  d->fr->natoms, d->top->atoms.nr);
-        return -1;
+        if (!read_first_frame(d->oenv, &d->status, d->trjfile, d->fr, d->frflags))
+        {
+            gmx_input("could not read coordinates from trajectory");
+            return EIO;
+        }
+
+        if (d->top && d->fr->natoms > d->top->atoms.nr)
+        {
+            gmx_fatal(FARGS, "Trajectory (%d atoms) does not match topology (%d atoms)",
+                      d->fr->natoms, d->top->atoms.nr);
+            return -1;
+        }
+        /* check index groups */
+        for (i = 0; i < d->ngrps; ++i)
+        {
+            gmx_ana_index_check(d->sel[i]->g, d->fr->natoms);
+        }
     }
-    /* check index groups */
-    for (i = 0; i < d->ngrps; ++i)
+    else
     {
-        gmx_ana_index_check(d->sel[i]->g, d->fr->natoms);
+        /* Prepare a frame from topology information */
+        /* TODO: Initialize more of the fields */
+        if (d->frflags & (TRX_NEED_V))
+        {
+            gmx_impl("Velocity reading from a topology not implemented");
+            return -1;
+        }
+        if (d->frflags & (TRX_NEED_F))
+        {
+            gmx_input("Forces cannot be read from a topology");
+            return -1;
+        }
+        d->fr->flags  = d->frflags;
+        d->fr->natoms = d->top->atoms.nr;
+        d->fr->bX     = TRUE;
+        snew(d->fr->x, d->fr->natoms);
+        memcpy(d->fr->x, d->xtop, sizeof(*d->fr->x)*d->fr->natoms);
+        d->fr->bBox   = TRUE;
+        copy_mat(d->boxtop, d->fr->box);
     }
 
     set_trxframe_ePBC(d->fr, d->ePBC);
@@ -1549,12 +1592,18 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
 
         d->nframes++;
     }
-    while (read_next_frame(d->oenv, d->status, d->fr));
+    while (d->trjfile && read_next_frame(d->oenv, d->status, d->fr));
 
-    close_trj(d->status);
-
-    fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
-            d->nframes, d->fr->time);
+    if (d->trjfile)
+    {
+        close_trj(d->status);
+        fprintf(stderr, "Analyzed %d frames, last time %.3f\n",
+                d->nframes, d->fr->time);
+    }
+    else
+    {
+        fprintf(stderr, "Analyzed topology coordinates\n");
+    }
 
     /* Restore the maximal groups for dynamic selections */
     rc = gmx_ana_selcollection_evaluate_fin(d->sc, d->nframes);

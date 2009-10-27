@@ -175,13 +175,13 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
-FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
-                   unsigned long Flags)
+void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
+                   unsigned long Flags, FILE** fplog)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
-  FILE *fp;
+  FILE *fp=*fplog;
   char *tmpnm;
 
   bool bAppend = Flags & MD_APPENDFILES;	
@@ -206,12 +206,15 @@ FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   
   debug_gmx();
 
-  if (PAR(cr) && !bMasterOnly) {
+  /*for bAppend the log file is opened in checkpoint.c:read_checkpoint 
+   * (for locking)
+   */
+  if (PAR(cr) && !bMasterOnly && (!bAppend || !MASTER(cr))) {
     /* Since log always ends with '.log' let's use this info */
     par_fn(tmpnm,efLOG,cr,cr->ms!=NULL,buf,255);
-	  fp = gmx_fio_fopen(buf, bAppend ? "a" : "w" );
-  } else {
-	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a" : "w" );
+	  fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
+  } else if (!bAppend) {
+	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
   }
 
   sfree(tmpnm);
@@ -261,7 +264,7 @@ FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   fflush(fp);
   debug_gmx();
 
-  return fp;
+  *fplog = fp;
 }
 
 void gmx_log_close(FILE *fp)
