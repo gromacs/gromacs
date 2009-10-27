@@ -47,6 +47,7 @@
 #include "filenm.h"
 #include "string2.h"
 #include "gmxfio.h"
+#include "md5.h"
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -798,9 +799,17 @@ int gmx_fio_open(const char *fn,const char *mode)
         {
             strcpy(newmode,"r");
         }
+        else if (strncmp(mode,"w+",2)==0)
+        {
+            strcpy(newmode,"w+");
+        }
         else if (mode[0]=='w')
         {
             strcpy(newmode,"w");
+        }
+        else if (strncmp(mode,"a+",2)==0)
+        {
+            strcpy(newmode,"a+");
         }
         else if (mode[0]=='a')
         {
@@ -1008,6 +1017,57 @@ int gmx_fio_fclose(FILE *fp)
     return rc;
 }
 
+/*
+ * fio: file to computer md5 from
+ * offset: starting pointer of region to use for md5
+ * digest: return array of md5 sum 
+ */
+int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
+{
+    /*1MB: large size important to catch almost identical files */
+    #define CPT_CHK_LEN  1048576 
+
+    md5_state_t state;
+    unsigned char buf[CPT_CHK_LEN]; 
+    off_t read_len;
+    off_t seek_offset;
+    
+    seek_offset = offset-CPT_CHK_LEN;
+    
+    if (seek_offset < 0)
+    {
+        seek_offset = 0;
+    }
+    read_len = offset-seek_offset; 
+    
+    if (gmx_fio_seek(fio, seek_offset)) 
+    {
+        return -1;
+    }
+    /* the read puts the file position back to offset */
+    if (fread(buf,1,read_len,FIO[fio].fp)!=read_len) 
+    {
+        if (ferror(FIO[fio].fp)) 
+        {
+            fprintf(stderr,"%s: %s",FIO[fio].fn,strerror(errno));
+        } 
+        fseek(FIO[fio].fp,0,SEEK_END); 
+        /*else if (feof(FIO[fio].fp))
+        {
+            gmx_fatal(FARGS,"EOF: %s",FIO[fio].fn);
+        }*/
+        return -1;
+    }
+    fseek(FIO[fio].fp,0,SEEK_END);  /*is already at end, but under windows it gives problems otherwise*/
+    if (debug)
+    {
+        fprintf(debug,"chksum %s readlen %ld\n",FIO[fio].fn,read_len);
+    }
+    md5_init(&state);
+    md5_append(&state, buf, read_len);
+    md5_finish(&state, digest);
+    return read_len;
+}
 
 /* The fio_mutex should ALWAYS be locked when this function is called */
 static int gmx_fio_get_file_position(int fio, off_t *offset)
@@ -1033,6 +1093,7 @@ static int gmx_fio_get_file_position(int fio, off_t *offset)
 #else
     *offset = ftell(FIO[fio].fp);
 #endif
+    
 
     return 0;
 }
@@ -1086,8 +1147,9 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
     for(i=0;i<nFIO;i++)
     {
         /* Skip the checkpoint files themselves, since they could be open when we call this routine... */
+        /* also skip debug files (shoud be the only iFTP==efNR) */
         if(FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && 
-                FIO[i].iFTP!=efCPT)
+                FIO[i].iFTP!=efCPT && FIO[i].iFTP!=efNR )
         {
             int ret;
             /* This is an output file currently open for writing, add it */
@@ -1104,10 +1166,14 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             {
                 /* -1 signals out of range */
                 outputfiles[nfiles].offset = -1;
+                outputfiles[nfiles].chksum_size = -1;
             }
             else
             {
                 gmx_fio_get_file_position(i,&outputfiles[nfiles].offset);
+                outputfiles[nfiles].chksum_size = 
+                    gmx_fio_get_file_md5(i,outputfiles[nfiles].offset,
+                                         outputfiles[nfiles].chksum);				 
             }
             
             nfiles++;

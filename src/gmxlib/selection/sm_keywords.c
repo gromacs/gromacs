@@ -388,7 +388,7 @@ evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
     int                  n, i, j, jmin, jmax;
-    int                  val;
+    real                 val;
 
     out->u.g->isize = 0;
     n    = d->n;

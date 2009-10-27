@@ -121,10 +121,10 @@ static void cleandata(t_perf *perfdata, int test_nr)
 }
 
 
-enum {eFoundNothing, eFoundDDStr, eFoundPMEfStr, eFoundCycleStr};
+enum {eFoundNothing, eFoundDDStr, eFoundAccountingStr, eFoundCycleStr};
 
 static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr, 
-                         int presteps, gmx_large_int_t cpt_steps)
+                         int presteps, gmx_large_int_t cpt_steps, int nnodes)
 {
     FILE  *fp;
     char  line[STRLEN], dumstring[STRLEN], dumstring2[STRLEN];
@@ -153,7 +153,10 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
     fp = fopen(logfile, "r");
     perfdata->PME_f_load[test_nr] = -1.0;
     perfdata->guessPME            = -1;
+    
     iFound = eFoundNothing;
+    if (1 == nnodes)
+        iFound = eFoundDDStr; /* Skip some case statements */
 
     while (fgets(line, STRLEN, fp) != NULL)
     {
@@ -213,9 +216,9 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
                     sscanf(&line[strlen(matchstrbal)], "%f", &(perfdata->PME_f_load[test_nr]));
                 /* Look for matchstring */
                 if (str_starts(line, matchstring))
-                    iFound = eFoundPMEfStr;
+                    iFound = eFoundAccountingStr;
                 break;
-            case eFoundPMEfStr:
+            case eFoundAccountingStr:
                 /* Already found matchstring - look for cycle data */
                 if (str_starts(line, "Total  "))
                 {
@@ -248,6 +251,7 @@ static int parse_logfile(const char *logfile, t_perf *perfdata, int test_nr,
 static int analyze_data(
         FILE        *fp,
         t_perf      **perfdata,
+        int         nnodes,
         int         ntprs,
         int         ntests,
         int         nrepeats,
@@ -268,7 +272,10 @@ static int analyze_data(
     {
         sep_line(fp);
         fprintf(fp, "Summary of successful runs:\n");
-        fprintf(fp, "Line tpr PME nodes  Gcycles Av.     Std.dev.       ns/day        PME/f    DD grid\n");
+        fprintf(fp, "Line tpr PME nodes  Gcycles Av.     Std.dev.       ns/day        PME/f");
+        if (nnodes > 1)
+            fprintf(fp, "    DD grid");
+        fprintf(fp, "\n");
     }
 
 
@@ -331,9 +338,12 @@ static int analyze_data(
                     s /= (nrepeats - 1);
                     s = sqrt(s);
 
-                    fprintf(fp, "%4d %3d %4d%s %12.3f %12.3f %12.3f %s  %3d %3d %3d\n",
+                    fprintf(fp, "%4d %3d %4d%s %12.3f %12.3f %12.3f %s",
                             line, k, pd->nPMEnodes, strbuf, pd->Gcycles_Av, s,
-                            pd->ns_per_day_Av, str_PME_f_load, pd->nx, pd->ny, pd->nz);
+                            pd->ns_per_day_Av, str_PME_f_load);
+                    if (nnodes > 1)
+                        fprintf(fp, "  %3d %3d %3d", pd->nx, pd->ny, pd->nz);
+                    fprintf(fp, "\n");
                 }
                 /* Store the index of the best run found so far in 'winner': */
                 if ( (k_win == -1) || (pd->Gcycles_Av < perfdata[k_win][i_win].Gcycles_Av) )
@@ -796,7 +806,7 @@ static void do_the_tests(FILE *fp, char **tpr_names, int maxPMEnodes,
                 gmx_system_call(command);
 
                 /* Collect the performance data from the log file */
-                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr, presteps, cpt_steps);
+                ret = parse_logfile(opt2fn("-bg",nfile,fnm), pd, nr, presteps, cpt_steps, nnodes);
                 if ((presteps > 0) && (ret == eParselogResetProblem))
                     bResetProblem = TRUE;
 
@@ -892,9 +902,9 @@ static void check_input(
     if (repeats < 0)
         gmx_fatal(FARGS, "Number of repeats < 0!");
 
-    /* Check whether we have enough nodes */
-    if (nnodes < 3)
-        gmx_fatal(FARGS, "Can not have separate PME nodes with 2 or less nodes, so there is nothing to optimize here.");
+    /* Check number of nodes */
+    if (nnodes < 1)
+        gmx_fatal(FARGS, "Number of nodes must be a positive integer.");
 
     /* Automatically choose -ntpr if not set */
     if (*ntprs < 1)
@@ -1115,9 +1125,12 @@ static void create_command_line_snippets(
             }
         }
     }
-    /* Add equilibration steps to benchmark options */
-    sprintf(strbuf, "-resetstep %d ", presteps);
-    add_to_command_line(cmd_args_bench, strbuf);
+    if (presteps > 0)
+    {
+        /* Add equilibration steps to benchmark options */
+        sprintf(strbuf, "-resetstep %d ", presteps);
+        add_to_command_line(cmd_args_bench, strbuf);
+    }
     
     /********************/
     /* 2. Process files */
@@ -1194,6 +1207,28 @@ static void couple_files_options(int nfile, t_filenm fnm[])
 }
 
 
+static double gettime()
+{
+#ifdef HAVE_GETTIMEOFDAY
+    struct timeval t;
+    struct timezone tz = { 0,0 };
+    double seconds;
+    
+    gettimeofday(&t,&tz);
+    
+    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
+    
+    return seconds;
+#else
+    double  seconds;
+    
+    seconds = time(NULL);
+    
+    return seconds;
+#endif
+}
+
+
 #define BENCHSTEPS (1000)
 
 int gmx_tune_pme(int argc,char *argv[])
@@ -1262,7 +1297,6 @@ int gmx_tune_pme(int argc,char *argv[])
     char        *cmd_mpirun=NULL, *cmd_mdrun=NULL;
     char        *cmd_args_bench, *cmd_args_launch, *cmd_np;
 
-    
     t_perf      **perfdata;
     t_inputinfo *info;
     int         datasets;
@@ -1270,6 +1304,9 @@ int gmx_tune_pme(int argc,char *argv[])
     FILE        *fp;
     t_commrec   *cr;
 
+    /* Print out how long the tuning took */
+    double      seconds;
+    
     static t_filenm fnm[] = {
       /* g_tune_pme */
       { efOUT, "-p",      "perf",     ffWRITE },
@@ -1359,7 +1396,7 @@ int gmx_tune_pme(int argc,char *argv[])
       /* g_tune_pme options: */
       /***********************/
       { "-np",       FALSE, etINT,  {&nnodes},
-        "Number of nodes to run the tests on (at least 3)" },
+        "Number of nodes to run the tests on (must be > 3 for separate PME nodes)" },
       { "-r",        FALSE, etINT,  {&repeats},
         "Repeat each test this often" },
       { "-max",      FALSE, etREAL, {&maxPMEfraction},
@@ -1446,6 +1483,8 @@ int gmx_tune_pme(int argc,char *argv[])
 
     CopyRight(stderr,argv[0]);
 
+    seconds = gettime();
+
     parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,
                       NFILE,fnm,asize(pa),pa,asize(desc),desc,
                       0,NULL,&oenv);        
@@ -1481,12 +1520,20 @@ int gmx_tune_pme(int argc,char *argv[])
                 fs, bench_nsteps, fnm, NFILE, sim_part, presteps);
     
     /* Determine max and min number of PME nodes to test: */
-    maxPMEnodes = floor(maxPMEfraction*nnodes);
-    minPMEnodes = max(floor(minPMEfraction*nnodes), 0);
-    fprintf(stdout, "Will try runs with %d ", minPMEnodes);
-    if (maxPMEnodes != minPMEnodes)
-        fprintf(stdout, "- %d ", maxPMEnodes);
-    fprintf(stdout, "PME-only nodes.\n  Note that the automatic number of PME-only nodes and no separate PME nodes are always tested.\n");
+    if (nnodes > 2)
+    {
+        maxPMEnodes = floor(maxPMEfraction*nnodes);
+        minPMEnodes = max(floor(minPMEfraction*nnodes), 0);
+        fprintf(stdout, "Will try runs with %d ", minPMEnodes);
+        if (maxPMEnodes != minPMEnodes)
+            fprintf(stdout, "- %d ", maxPMEnodes);
+        fprintf(stdout, "PME-only nodes.\n  Note that the automatic number of PME-only nodes and no separate PME nodes are always tested.\n");
+    }
+    else
+    {
+        maxPMEnodes = 0;
+        minPMEnodes = 0;
+    }   
     
     /* Get the commands we need to set up the runs from environment variables */
     get_program_paths(&cmd_mpirun, &cmd_mdrun, repeats);
@@ -1556,9 +1603,14 @@ int gmx_tune_pme(int argc,char *argv[])
     }
     
     /* Memory allocation for performance data */
-    datasets = maxPMEnodes - minPMEnodes + 3;
-    if (0 == minPMEnodes)
-        datasets--;
+    if (nnodes > 2)
+    {
+        datasets = maxPMEnodes - minPMEnodes + 3;
+        if (0 == minPMEnodes)
+            datasets--;
+    }
+    else
+        datasets = 1;
 
     /* Allocate one dataset for each tpr input file: */
     snew(perfdata, ntprs);
@@ -1583,9 +1635,11 @@ int gmx_tune_pme(int argc,char *argv[])
     /********************************************************************************/
     do_the_tests(fp, tpr_names, maxPMEnodes, minPMEnodes, datasets, perfdata, repeats, nnodes, ntprs,
             cmd_mpirun, cmd_mdrun, cmd_args_bench, fnm, NFILE, sim_part, presteps, cpt_steps);
-                  
+    
+    fprintf(fp, "\nTuning took%8.1f minutes.\n", (gettime()-seconds)/60.0);
+
     /* Analyse the results and give a suggestion for optimal settings: */
-    analyze_data(fp, perfdata, ntprs, datasets, repeats, info, &best_tpr, &best_npme);
+    analyze_data(fp, perfdata, nnodes, ntprs, datasets, repeats, info, &best_tpr, &best_npme);
     
     /* Take the best-performing tpr file and enlarge nsteps to original value */
     if ((best_tpr > 0) || bOverwrite)
@@ -1595,7 +1649,7 @@ int gmx_tune_pme(int argc,char *argv[])
     }
     else
         simulation_tpr = opt2fn("-s",NFILE,fnm);
-            
+
     /* Now start the real simulation if the user requested it ... */
     launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, cmd_args_launch, 
                       simulation_tpr, nnodes, best_npme);
