@@ -1010,7 +1010,8 @@ t_selelem *
 _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    t_selelem               *root;
+    const char              *pselstr = _gmx_sel_lexer_pselstr(scanner);
+    t_selelem               *root = NULL;
     int                      rc;
 
     rc = _gmx_selelem_update_flags(expr);
@@ -1031,13 +1032,8 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
             return NULL;
         }
         _gmx_selelem_free(expr);
-        if (_gmx_sel_is_lexer_interactive(scanner))
-        {
-            fprintf(stderr, "Variable '%s' parsed\n",
-                    _gmx_sel_lexer_pselstr(scanner));
-        }
         sfree(name);
-        return NULL;
+        goto finish;
     }
     /* Check if we are assigning a variable to another variable */
     if (expr->type == SEL_SUBEXPRREF)
@@ -1050,13 +1046,8 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
             return NULL;
         }
         _gmx_selelem_free(expr);
-        if (_gmx_sel_is_lexer_interactive(scanner))
-        {
-            fprintf(stderr, "Variable '%s' parsed\n",
-                    _gmx_sel_lexer_pselstr(scanner));
-        }
         sfree(name);
-        return NULL;
+        goto finish;
     }
     /* Create the root element */
     root = _gmx_selelem_create(SEL_ROOT);
@@ -1080,10 +1071,13 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
         _gmx_selelem_free(root);
         return NULL;
     }
+finish:
+    srenew(sc->varstrs, sc->nvars + 1);
+    sc->varstrs[sc->nvars] = strdup(pselstr);
+    ++sc->nvars;
     if (_gmx_sel_is_lexer_interactive(scanner))
     {
-        fprintf(stderr, "Variable '%s' parsed\n",
-                _gmx_sel_lexer_pselstr(scanner));
+        fprintf(stderr, "Variable '%s' parsed\n", pselstr);
     }
     return root;
 }
@@ -1104,7 +1098,6 @@ t_selelem *
 _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    const char *pselstr = _gmx_sel_lexer_pselstr(scanner);
 
     /* Append sel after last, or the last element of sc if last is NULL */
     if (last)
@@ -1127,21 +1120,6 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             sc->root = sel;
         }
     }
-    /* Append the selection string to sc if it is not empty */
-    if (pselstr[0] != 0)
-    {
-        if (!sc->selstr)
-        {
-            snew(sc->selstr, strlen(pselstr) + 2);
-            strcpy(sc->selstr, pselstr);
-        }
-        else
-        {
-            srenew(sc->selstr, strlen(sc->selstr) + strlen(pselstr) + 2);
-            strcat(sc->selstr, pselstr);
-        }
-        strcat(sc->selstr, "\n");
-    }
     /* Initialize a selection object if necessary */
     if (sel)
     {
@@ -1156,7 +1134,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             i = sc->nr - 1;
             snew(sc->sel[i], 1);
             sc->sel[i]->name   = strdup(sel->name);
-            sc->sel[i]->selstr = strdup(pselstr);
+            sc->sel[i]->selstr = strdup(_gmx_sel_lexer_pselstr(scanner));
 
             if (sel->child->type == SEL_CONST)
             {
@@ -1219,12 +1197,29 @@ void
 _gmx_sel_handle_empty_cmd(yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
+    int                      i;
 
     if (!_gmx_sel_is_lexer_interactive(scanner))
         return;
 
-    fprintf(stderr, "Currently provided selections:\n");
-    fprintf(stderr, "%s", sc->selstr);
+    if (grps)
+    {
+        fprintf(stderr, "Available index groups:\n");
+        gmx_ana_indexgrps_print(_gmx_sel_lexer_indexgrps(scanner), 0);
+    }
+    if (sc->nvars > 0 || sc->nr > 0)
+    {
+        fprintf(stderr, "Currently provided selections:\n");
+        for (i = 0; i < sc->nvars; ++i)
+        {
+            fprintf(stderr, "     %s\n", sc->varstrs[i]);
+        }
+        for (i = 0; i < sc->nr; ++i)
+        {
+            fprintf(stderr, " %2d. %s\n", i+1, sc->sel[i]->selstr);
+        }
+    }
 }
 
 /*!

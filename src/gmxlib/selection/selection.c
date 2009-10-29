@@ -68,10 +68,11 @@ gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
     snew(sc, 1);
     sc->rpost     = NULL;
     sc->spost     = NULL;
-    sc->selstr    = NULL;
     sc->root      = NULL;
     sc->nr        = 0;
     sc->sel       = NULL;
+    sc->nvars     = 0;
+    sc->varstrs   = NULL;
     sc->top       = NULL;
     gmx_ana_index_clear(&sc->gall);
     sc->pcc       = pcc;
@@ -90,7 +91,6 @@ gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc)
 {
     int  i;
 
-    sfree(sc->selstr);
     _gmx_selelem_free_chain(sc->root);
     if (sc->sel)
     {
@@ -100,6 +100,11 @@ gmx_ana_selcollection_free(gmx_ana_selcollection_t *sc)
         }
     }
     sfree(sc->sel);
+    for (i = 0; i < sc->nvars; ++i)
+    {
+        sfree(sc->varstrs[i]);
+    }
+    sfree(sc->varstrs);
     gmx_ana_index_deinit(&sc->gall);
     _gmx_selcollection_clear_symtab(sc);
     sfree(sc);
@@ -380,29 +385,19 @@ gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)
 void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
                         const output_env_t oenv)
 {
-    char  *buf;
-    char  *p, *nl;
+    int  i;
 
-    if (get_print_xvgr_codes(oenv) && sc && sc->selstr)
+    if (get_print_xvgr_codes(oenv) && sc)
     {
         fprintf(out, "# Selections:\n");
-        buf = strdup(sc->selstr);
-        p = buf;
-        while (p && p[0] != 0)
+        for (i = 0; i < sc->nvars; ++i)
         {
-            nl = strchr(p, '\n');
-            if (nl)
-            {
-                *nl = 0;
-            }
-            fprintf(out, "#   %s\n", p);
-            p  = nl;
-            if (nl)
-            {
-                ++p;
-            }
+            fprintf(out, "#   %s\n", sc->varstrs[i]);
+        }
+        for (i = 0; i < sc->nr; ++i)
+        {
+            fprintf(out, "#   %s\n", sc->sel[i]->selstr);
         }
         fprintf(out, "#\n");
-        sfree(buf);
     }
 }

@@ -1239,7 +1239,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
                 fprintf(stderr, "%d reference selections", d->nrefgrps);
             }
             fprintf(stderr, ":\n");
-            fprintf(stderr, "(one selection per line, use \\ for line continuation)\n");
+            fprintf(stderr, "(one selection per line, 'help' for help)\n");
             rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nrefgrps, grps, TRUE);
             nr = gmx_ana_selcollection_get_count(d->sc);
             if (rc != 0 || nr != d->nrefgrps)
@@ -1264,7 +1264,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
             fprintf(stderr, "%d selections", d->nanagrps);
         }
         fprintf(stderr, " for analysis:\n");
-        fprintf(stderr, "(one selection per line, use \\ for line continuation%s)\n",
+        fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
                 d->nanagrps == -1 ? ", Ctrl-D to end" : "");
         rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nanagrps, grps, TRUE);
         fprintf(stderr, "\n");

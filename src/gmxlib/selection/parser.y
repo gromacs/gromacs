@@ -198,6 +198,16 @@ cmd_plain:   /* empty */
                  if (p == NULL) YYERROR;
                  $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
              }
+           | string
+             {
+                 t_selelem *s, *p;
+                 s = _gmx_sel_init_group_by_name($1, scanner);
+                 free($1);
+                 if (s == NULL) YYERROR;
+                 p = _gmx_sel_init_position(s, NULL, TRUE, scanner);
+                 if (p == NULL) YYERROR;
+                 $$ = _gmx_sel_init_selection(strdup(s->name), p, scanner);
+             }
            | selection
              { $$ = _gmx_sel_init_selection(NULL, $1, scanner); }
            | string selection
