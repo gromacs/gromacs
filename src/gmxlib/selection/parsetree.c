@@ -34,15 +34,58 @@
 /*! \internal
  * \page selparser Selection parsing
  *
- * \todo
- * Write some more details of how the parser works.
+ * The selection parser is implemented in the following files:
+ *  - scanner.l:
+ *    Tokenizer implemented using Flex, splits the input into tokens
+ *    (scanner.c and scanner_flex.h are generated from this file).
+ *  - scanner.h, scanner_internal.h, scanner_internal.c:
+ *    Helper functions for scanner.l and for interfacing between
+ *    scanner.l and parser.y. Functions in scanner_internal.h are only
+ *    used from scanner.l, while scanner.h is used from the parser.
+ *  - symrec.h, symrec.c:
+ *    Functions used by the tokenizer to handle the symbol table, i.e.,
+ *    the recognized keywords. Some basic keywords are hardcoded into
+ *    scanner.l, but all method and variable references go through the
+ *    symbol table, as do position evaluation keywords.
+ *  - parser.y:
+ *    Semantic rules for parsing the grammar
+ *    (parser.c and parser.h are generated from this file by Bison).
+ *  - parsetree.h, parsetree.c:
+ *    Functions called from actions in parser.y to construct the
+ *    evaluation elements corresponding to different grammar elements.
+ *    parsetree.c also defines the external interface of the parser,
+ *    i.e., the \c gmx_ana_selcollection_parse_*() functions declared
+ *    in selection.h.
+ *  - params.c:
+ *    Defines a function that processes the parameters of selection
+ *    methods and initializes the children of the method element.
+ *
+ * The basic control flow in the parser is as follows: when a
+ * fmx_ana_selcollection_parse_*() gets called, it performs some
+ * initialization, and then calls the _gmx_sel_yyparse() function generated
+ * by Bison. This function then calls _gmx_sel_yylex() to repeatedly read
+ * tokens from the input (more complex tasks related to token recognition
+ * and bookkeeping are done by functions in scanner_internal.c) and uses the
+ * grammar rules to decide what to do with them. Whenever a grammar rule
+ * matches, a corresponding function in parsetree.c is called to construct
+ * either a temporary representation for the object or a \c t_selelem object
+ * (some simple rules are handled internally in parser.y).
+ * When a complete selection has been parsed, the functions in parsetree.c
+ * also take care of updating the \c gmx_ana_selcollection_t structure
+ * appropriately.
+ *
+ * The rest of this page describes the resulting \c t_selelem object tree.
+ * Before the selections can be evaluated, this tree needs to be passed to
+ * the selection compiler, which is described on a separate page:
+ * \ref selcompiler
  *
  *
  * \section selparser_tree Element tree constructed by the parser
  *
- * The parser initializes the \c t_selelem::name (for most elements),
- * \c t_selelem::type, and \c t_selelem::v\c .type fields, as well as the
- * \c t_selelem::child, \c t_selelem::next, and \c t_selelem::refcount fields.
+ * The parser initializes the following fields in all selection elements:
+ * \c t_selelem::name, \c t_selelem::type, \c t_selelem::v\c .type,
+ * \c t_selelem::flags, \c t_selelem::child, \c t_selelem::next, and
+ * \c t_selelem::refcount.
  * Some other fields are also initialized for particular element types as
  * discussed below.
  * Fields that are not initialized are set to zero, NULL, or other similar
@@ -108,6 +151,10 @@
  * non-\ref GROUP_VALUE value.
  * The children are sorted in the order in which the parameters appear in the
  * \ref gmx_ana_selmethod_t structure.
+ *
+ * In addition to actual selection keywords, \ref SEL_EXPRESSION elements
+ * are used internally to implement numerical comparisons (e.g., "x < 5")
+ * and keyword matching (e.g., "resnr 1 to 3" or "name CA").
  *
  *
  * \subsection selparser_tree_subexpr Subexpression elements
@@ -1083,16 +1130,14 @@ finish:
 }
 
 /*!
- * \param[in,out] sc    Selection collection to append to.
- * \param         sel   Selection to append to \p sc (can be NULL, in which
+ * \param         sel   Selection to append (can be NULL, in which
  *   case nothing is done).
- * \param         last  Last selection in \p sc, or NULL if not present or not
- *   known.
- * \returns       The last selection in \p sc after the append.
+ * \param         last  Last selection, or NULL if not present or not known.
+ * \param         scanner  Scanner data structure.
+ * \returns       The last selection after the append.
  *
- * Appends \p sel after the last root element in \p sc, and returns either
- * \p sel (if it was non-NULL) or the last element in \p sc (if \p sel was
- * NULL).
+ * Appends \p sel after the last root element, and returns either \p sel
+ * (if it was non-NULL) or the last element (if \p sel was NULL).
  */
 t_selelem *
 _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)

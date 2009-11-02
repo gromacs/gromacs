@@ -153,7 +153,7 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
 /*! \brief
  * Does a type conversion on a list of values.
  *
- * \param[in,out] value    Values to convert.
+ * \param[in,out] values   Values to convert.
  * \param[in]     type     Type to convert to.
  * \param[in]     scanner  Scanner data structure.
  * \returns       0 on success, a non-zero value on error.
