@@ -1021,6 +1021,8 @@ int gmx_fio_fclose(FILE *fp)
  * fio: file to computer md5 from
  * offset: starting pointer of region to use for md5
  * digest: return array of md5 sum 
+ *
+ * the fio mutex should always be locked when calling this function 
  */
 int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
 {
@@ -1031,6 +1033,7 @@ int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
     unsigned char buf[CPT_CHK_LEN]; 
     off_t read_len;
     off_t seek_offset;
+    int ret=-1;
     
     seek_offset = offset-CPT_CHK_LEN;
     
@@ -1039,11 +1042,22 @@ int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
         seek_offset = 0;
     }
     read_len = offset-seek_offset; 
-    
-    if (gmx_fio_seek(fio, seek_offset)) 
+
+
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
     {
-        return -1;
+#ifdef HAVE_FSEEKO
+        ret=fseeko(FIO[fio].fp,seek_offset,SEEK_SET);
+#else
+        ret=fseek(FIO[fio].fp,seek_offset,SEEK_SET);
+#endif
+        if (ret)
+            return -1;
     }
+    else
+        gmx_file(FIO[fio].fn);
+
     /* the read puts the file position back to offset */
     if (fread(buf,1,read_len,FIO[fio].fp)!=read_len) 
     {
@@ -1058,10 +1072,11 @@ int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
         }*/
         return -1;
     }
-    fseek(FIO[fio].fp,0,SEEK_END);  /*is already at end, but under windows it gives problems otherwise*/
+    fseek(FIO[fio].fp,0,SEEK_END);  /*is already at end, but under windows 
+                                      it gives problems otherwise*/
     if (debug)
     {
-        fprintf(debug,"chksum %s readlen %ld\n",FIO[fio].fn,read_len);
+        fprintf(debug,"chksum %s readlen %ld\n",FIO[fio].fn,(long int)read_len);
     }
     md5_init(&state);
     md5_append(&state, buf, read_len);
