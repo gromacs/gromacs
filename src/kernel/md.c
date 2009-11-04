@@ -129,8 +129,8 @@ static tMPI_Thread_mutex_t box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-void copy_coupling_state(t_state *statea,t_state *stateb, 
-                         gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb) 
+static void copy_coupling_state(t_state *statea,t_state *stateb, 
+                                gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb) 
 {
     
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
@@ -169,7 +169,7 @@ void copy_coupling_state(t_state *statea,t_state *stateb,
     }
 }
 
-void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
+static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
                      t_forcerec *fr, gmx_ekindata_t *ekind, 
                      t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
@@ -1007,7 +1007,7 @@ static void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
     }
 }
 
-bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *bIterate, real fom, real *newf, int n) 
+static bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *bIterate, real fom, real *newf, int n) 
 {
 
 
@@ -1042,7 +1042,7 @@ bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *
 #endif
 #define MAXITERCONST       200
 
-/* used to escape out of cyclic traps because of numerical errors */
+/* used to escape out of cyclic traps because of limited numberical precision  */
 #define CYCLEMAX            20
 #define FALLBACK          1000 
 

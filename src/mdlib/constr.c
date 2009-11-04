@@ -82,7 +82,7 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir) 
+static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir) 
 {
     t_vetavars *vars;
     double g;
@@ -111,7 +111,7 @@ t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir)
     return vars;
 }
 
-void free_vetavars(t_vetavars *vars) 
+static void free_vetavars(t_vetavars *vars) 
 {
     sfree(vars->vscale_nhc);
     sfree(vars);

@@ -684,8 +684,8 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
   }
 }
 
-void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
-                 double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ)
+static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
+                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -804,7 +804,7 @@ void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
     }
 }
 
-void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
+static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
 		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
 {
 
