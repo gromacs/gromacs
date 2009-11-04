@@ -1504,7 +1504,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             {
                 return rc;
             }
-            if (sel->type == SEL_MODIFIER || !(sel->flags & SEL_DYNAMIC))
+            if (!(sel->flags & SEL_DYNAMIC))
             {
                 rc = sel->cdata->evaluate(data, sel, g);
                 if (rc == 0 && sel->cdata->bStatic)
@@ -1514,6 +1514,13 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else
             {
+                /* Modifiers need to be evaluated even though they process
+                 * positions to get the modified output groups from the
+                 * maximum possible selections. */
+                if (sel->type == SEL_MODIFIER)
+                {
+                    rc = sel->cdata->evaluate(data, sel, g);
+                }
                 gmx_ana_index_copy(&gmax, g, TRUE);
             }
             break;

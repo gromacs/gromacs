@@ -99,15 +99,6 @@
  * default behavior appropriate for the most common uses where the groups
  * should consist of atoms within a single residue/molecule.
  *
- * \note
- * Currently, it is not possible to write selection expressions that would
- * evaluate to index groups where the same atom occurs more than once.
- * Such index groups may be useful with tools like \c g_angle to calculate
- * the averages over several angles.
- * It is possible to implement such a feature, but currently the best solution is to
- * write/modify the tool such that it can deal with multiple index groups,
- * each of which then defines angles that don't have overlapping atoms.
- *
  * \section selection_methods Implementing new keywords
  *
  * New selection keywords can be easily implemented, either directly into the

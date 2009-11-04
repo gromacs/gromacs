@@ -94,6 +94,9 @@ extern gmx_ana_selmethod_t sm_insolidangle;
 /* From sm_same.c */
 extern gmx_ana_selmethod_t sm_same;
 
+/* From sm_merge.c */
+extern gmx_ana_selmethod_t sm_merge;
+extern gmx_ana_selmethod_t sm_plus;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
@@ -126,6 +129,8 @@ static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_insolidangle,
     &sm_same,
 
+    &sm_merge,
+    &sm_plus,
     &sm_permute,
 };
 

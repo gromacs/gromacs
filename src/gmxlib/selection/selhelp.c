@@ -134,9 +134,6 @@ static const char *help_limits[] = {
     "of groups of three or four atoms).",
     "For such programs, it is up to the user to provide a proper selection",
     "expression that always returns such positions.[PAR]",
-
-    "Currently, it is not possible to write selection expressions that would",
-    "evaluate to index groups where the same atom occurs more than once.",
 };
 
 static const char *help_positions[] = {

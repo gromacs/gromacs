@@ -1198,6 +1198,10 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
                 while (child->type == SEL_MODIFIER)
                 {
                     child = child->child;
+                    if (child->type == SEL_SUBEXPRREF)
+                    {
+                        child = child->child->child;
+                    }
                 }
                 /* For variable references, we should skip the
                  * SEL_SUBEXPRREF and SEL_SUBEXPR elements. */

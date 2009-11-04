@@ -14,8 +14,8 @@ libselection_la_SOURCES =	\
 	selhelp.h	selection.c	\
 	selelem.c 	selelem.h 	selmethod.c	selvalue.c	\
 	sm_compare.c	sm_distance.c 	sm_insolidangle.c	\
-	sm_keywords.c	sm_permute.c	sm_position.c	sm_same.c 	\
-	sm_simple.c	\
+	sm_keywords.c	sm_merge.c	sm_permute.c	sm_position.c	\
+	sm_same.c 	sm_simple.c	\
 	symrec.c	symrec.h
 
 LDADD = ../libgmx@LIBSUFFIX@.la ../../mdlib/libmd@LIBSUFFIX@.la
