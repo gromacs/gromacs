@@ -33,17 +33,13 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 /* this file is #included from collective.c */
 
 int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
-                 void* recvbuf, int recvcount, tMPI_Datatype recvtype,
-                 tMPI_Comm comm)
+                  void* recvbuf, int recvcount, tMPI_Datatype recvtype,
+                  tMPI_Comm comm)
 {
     int synct;
     struct coll_env *cev;
@@ -53,6 +49,13 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     size_t sendsize=sendtype->size*sendcount;
     size_t recvsize=recvtype->size*recvcount;
     int n_remaining;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Alltoall(%p, %d, %p, %p, %d, %p, %p)",
+                       sendbuf, sendcount, sendtype,
+                       recvbuf, recvcount, recvtype,
+                       comm);
+#endif
 
     if (!comm)
     {
@@ -80,7 +83,7 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].read_data[i]=FALSE;
     }
     /* post availability */
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex) );
 #else
     tMPI_Atomic_memory_barrier();
@@ -88,7 +91,7 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
     tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
 
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_cond_broadcast( &(cev->met[myrank].recv_cond) );
     tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex) );
 #endif
@@ -144,6 +147,12 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     int i;
     int n_remaining;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Alltoallv(%p, %p, %p, %p, %p, %p, %p, %p, %p, %p)",
+                       sendbuf, sendcounts, sdispls, sendtype,
+                       recvbuf, recvcounts, rdispls, recvtype,
+                       comm);
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -171,7 +180,7 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
     }
 
     /* post availability */
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex) );
 #else
     tMPI_Atomic_memory_barrier();
@@ -179,7 +188,7 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
 
     tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
 
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_cond_broadcast( &(cev->met[myrank].recv_cond) );
     tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex) );
 #endif

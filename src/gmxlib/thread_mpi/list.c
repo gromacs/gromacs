@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -64,7 +60,7 @@ void tMPI_Stack_push(tMPI_Stack *st, tMPI_Stack_element *el)
         head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
         el->next=head;
     }
-    while (tMPI_Atomic_ptr_cmpxchg(&(st->head), head, el)!=(void*)head);
+    while (tMPI_Atomic_ptr_cas(&(st->head), head, el)!=(void*)head);
 }
 
 tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
@@ -77,7 +73,7 @@ tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
             next=head->next;
         else
             next=NULL;
-    } while (tMPI_Atomic_ptr_cmpxchg(&(st->head), head, next)!=(void*)head);
+    } while (tMPI_Atomic_ptr_cas(&(st->head), head, next)!=(void*)head);
 
     return head;
 }
@@ -88,7 +84,7 @@ tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
     do
     {
         head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (tMPI_Atomic_ptr_cmpxchg(&(st->head), head, NULL)!=(void*)head);
+    } while (tMPI_Atomic_ptr_cas(&(st->head), head, NULL)!=(void*)head);
 
     return head;
 }
@@ -117,7 +113,7 @@ void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
 
     do
     {
-    } while (tMPI_Atomic_ptr_cmpxchg(&(q->head), head, 
+    } while (tMPI_Atomic_ptr_cas(&(q->head), head, 
 }
 #endif
 

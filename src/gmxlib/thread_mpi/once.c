@@ -33,18 +33,34 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
-/* this file is to be #included from collective.c */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
+#include "thread_mpi/tmpi.h"
+#include "thread_mpi/collective.h"
+#include "tmpi_impl.h"
+
 
 /* once */
-int tMPI_Once(void (*function)(void*), void *param, int *was_first, 
-              tMPI_Comm comm)
+int tMPI_Once(tMPI_Comm comm, void (*function)(void*), void *param, 
+                int *was_first)
 {
     int myrank;
     int ret=TMPI_SUCCESS;
@@ -66,11 +82,10 @@ int tMPI_Once(void (*function)(void*), void *param, int *was_first,
 
     /* now do a compare-and-swap on the current_syncc */
     syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
-    if ( (csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
-                                          If it is a later number, we can't 
-                                          have been the first to arrive here. */
-         tMPI_Atomic_cmpxchg(&(cev->coll.current_sync), 
-                             syncs, csync->syncs) == syncs)
+    if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
+                                         If it is a later number, we can't 
+                                         have been the first to arrive here. */
+        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs)==syncs)
     {
         /* we're the first! */
         function(param);
@@ -80,7 +95,78 @@ int tMPI_Once(void (*function)(void*), void *param, int *was_first,
     return ret;
 }
 
+void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param, 
+                     int *was_first)
+{
+    int myrank;
+    struct coll_sync *csync;
+    struct coll_env *cev;
+    int syncs;
+    void *ret;
 
+
+    if (!comm)
+    {
+        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
+        return NULL;
+    }
+    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+    /* we increase our counter, and determine which coll_env we get */
+    csync=&(comm->csync[myrank]);
+    csync->syncs++;
+    cev=&(comm->cev[csync->syncs % N_COLL_ENV]);
+
+    /* now do a compare-and-swap on the current_syncc */
+    syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
+    if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
+                                         If it is a later number, we can't 
+                                         have been the first to arrive here. 
+                                         Calculating the difference instead
+                                         of comparing directly avoids ABA 
+                                         problems. */
+        tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs)==syncs)
+    {
+        /* we're the first! */
+        ret=function(param);
+        if (was_first)
+            *was_first=TRUE;
+
+        /* broadcast the output data */
+        cev->coll.res=ret;
+
+        tMPI_Atomic_memory_barrier();
+        /* signal that we're done */
+        tMPI_Atomic_fetch_add(&(cev->coll.current_sync), 1);
+        /* we need to keep being in sync */
+        csync->syncs++;
+    }
+    else
+    {
+        /* we need to wait until the current_syncc gets increased again */
+        csync->syncs++;
+        do
+        {
+            tMPI_Atomic_memory_barrier();
+            syncs=tMPI_Atomic_get( &(cev->coll.current_sync) );
+        } while (csync->syncs - syncs > 0); /* difference again due to ABA 
+                                               problems */
+        ret=cev->coll.res;
+    }
+    return ret;
+}
+
+
+static void *tMPI_Shmallocator(void *prm)
+{
+    size_t sz=*((size_t*)prm);
+    return malloc(sz);
+}
+
+void *tMPI_Shmalloc(tMPI_Comm comm, size_t size)
+{
+    return tMPI_Once_wait(comm, tMPI_Shmallocator, &size, NULL);
+}
 
 
 
