@@ -801,8 +801,6 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
 /*!
  * \param[in]  expr    Input selection element for the position calculation.
  * \param[in]  type    Reference position type or NULL for default.
- * \param[in]  bSelPos Whether the element evaluates the positions for a
- *   selection.
  * \param[in]  scanner Scanner data structure.
  * \returns    The created selection element.
  *
@@ -810,34 +808,15 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
  * evaluation of reference positions.
  */
 t_selelem *
-_gmx_sel_init_position(t_selelem *expr, const char *type, bool bSelPos,
-                       yyscan_t scanner)
+_gmx_sel_init_position(t_selelem *expr, const char *type, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem       *root;
     t_selexpr_param *params;
-    int              flags;
 
     root = _gmx_selelem_create(SEL_EXPRESSION);
     set_method(sc, root, &sm_keyword_pos);
-    /* Selections use largest static group by default, while
-     * reference positions use the whole residue/molecule. */
-    flags = bSelPos ? POS_COMPLMAX : POS_COMPLWHOLE;
-    if (bSelPos && sc->bMaskOnly)
-    {
-        flags |= POS_MASKONLY;
-    }
-    /* Get the default type if needed */
-    if (!type)
-    {
-        type = bSelPos ? sc->spost : sc->rpost;
-    }
-    /* FIXME: It would be better not to have the string here hardcoded. */
-    if (type[0] != 'a')
-    {
-        root->u.expr.method->flags |= SMETH_REQTOP;
-    }
-    _gmx_selelem_set_kwpos_type(type, flags, root->u.expr.mdata);
+    _gmx_selelem_set_kwpos_type(root, type);
     /* Create the parameters for the parameter parser. */
     params        = _gmx_selexpr_create_param(NULL);
     params->nval  = 1;
@@ -958,6 +937,47 @@ _gmx_sel_init_variable_ref(t_selelem *sel)
     return ref;
 }
 
+/*! \brief
+ * Initializes default values for position keyword evaluation.
+ *
+ * \param[in,out] root       Root of the element tree to initialize.
+ * \param[in]     sc         Selection collection to use defaults from.
+ * \param[in]     bSelection Whether the element evaluates the positions for a
+ *   selection.
+ */
+static void
+init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc, bool bSelection)
+{
+    t_selelem               *child;
+    int                      flags;
+
+    /* Selections use largest static group by default, while
+     * reference positions use the whole residue/molecule. */
+    if (root->type == SEL_EXPRESSION)
+    {
+        flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
+        if (bSelection && sc->bMaskOnly)
+        {
+            flags |= POS_MASKONLY;
+        }
+        _gmx_selelem_set_kwpos_type(root, bSelection ? sc->spost : sc->rpost);
+        _gmx_selelem_set_kwpos_flags(root, flags);
+    }
+    /* Change the defaults once we are no longer processing modifiers */
+    if (root->type != SEL_ROOT && root->type != SEL_MODIFIER
+        && root->type != SEL_SUBEXPRREF && root->type != SEL_SUBEXPR)
+    {
+        bSelection = FALSE;
+    }
+    /* Recurse into children */
+    child = root->child;
+    while (child)
+    {
+        init_pos_keyword_defaults(child, sc, bSelection);
+        child = child->next;
+    }
+}
+
 /*!
  * \param[in]  name     Name for the selection
  *     (if NULL, a default name is constructed).
@@ -998,6 +1018,8 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
         _gmx_selelem_free(root);
         return NULL;
     }
+    /* Initialize defaults for position keywords */
+    init_pos_keyword_defaults(sel, sc, TRUE);
 
     /* If there is no name provided by the user, check whether the actual
      * selection given was from an external group, and if so, use the name

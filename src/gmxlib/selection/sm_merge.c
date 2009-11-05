@@ -342,6 +342,7 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i, j, k;
+    int                 refid;
 
     if (d->p1.nr != d->p2.nr)
     {
@@ -358,8 +359,17 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = j = 0; i < d->p1.nr; ++i)
     {
         copy_rvec(d->p1.x[i], out->u.p->x[j]);
-        out->u.p->m.refid[j] = 2*d->p1.m.refid[i];
-        out->u.p->m.mapid[j] = d->p1.m.mapid[i];
+        refid = d->p1.m.refid[i];
+        if (refid == -1)
+        {
+            out->u.p->m.refid[j] = -1;
+        }
+        else
+        {
+            refid = 2*refid;
+            out->u.p->m.refid[j] = refid;
+            out->u.p->m.mapid[j] = out->u.p->m.orgid[refid];
+        }
         for (k = d->p1.m.mapb.index[i]; k < d->p1.m.mapb.index[i+1]; ++k)
         {
             d->g.index[d->g.isize++] = d->p1.g->index[k];
@@ -367,8 +377,17 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         out->u.p->m.mapb.index[j+1] = d->g.isize;
         ++j;
         copy_rvec(d->p2.x[i], out->u.p->x[j]);
-        out->u.p->m.refid[j] = 2*d->p2.m.refid[i] + 1;
-        out->u.p->m.mapid[j] = d->p2.m.mapid[i];
+        refid = d->p2.m.refid[i];
+        if (refid == -1)
+        {
+            out->u.p->m.refid[j] = -1;
+        }
+        else
+        {
+            refid = 2*refid + 1;
+            out->u.p->m.refid[j] = refid;
+            out->u.p->m.mapid[j] = out->u.p->m.orgid[refid];
+        }
         for (k = d->p2.m.mapb.index[i]; k < d->p2.m.mapb.index[i+1]; ++k)
         {
             d->g.index[d->g.isize++] = d->p2.g->index[k];
@@ -394,6 +413,7 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i, j, k;
+    int                 refid;
 
     out->u.p->nr              = d->p1.nr + d->p2.nr;
     out->u.p->m.nr            = out->u.p->nr;
@@ -405,8 +425,16 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = 0; i < d->p1.nr; ++i)
     {
         copy_rvec(d->p1.x[i], out->u.p->x[i]);
-        out->u.p->m.refid[i] = d->p1.m.refid[i];
-        out->u.p->m.mapid[i] = d->p1.m.mapid[i];
+        refid = d->p1.m.refid[i];
+        if (refid == -1)
+        {
+            out->u.p->m.refid[i] = -1;
+        }
+        else
+        {
+            out->u.p->m.refid[i] = refid;
+            out->u.p->m.mapid[i] = out->u.p->m.orgid[refid];
+        }
         for (k = d->p1.m.mapb.index[i]; k < d->p1.m.mapb.index[i+1]; ++k)
         {
             d->g.index[d->g.isize++] = d->p1.g->index[k];
@@ -416,7 +444,17 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = 0, j = d->p1.nr; i < d->p2.nr; ++i, ++j)
     {
         copy_rvec(d->p2.x[i], out->u.p->x[j]);
-        out->u.p->m.refid[j] = d->p2.m.refid[i] + d->p1.m.b.nr;
+        refid = d->p2.m.refid[i];
+        if (refid == -1)
+        {
+            out->u.p->m.refid[j] = -1;
+        }
+        else
+        {
+            refid += d->p1.m.b.nr;
+            out->u.p->m.refid[j] = refid;
+            out->u.p->m.mapid[j] = out->u.p->m.orgid[refid];
+        }
         out->u.p->m.mapid[j] = d->p2.m.mapid[i];
         for (k = d->p2.m.mapb.index[i]; k < d->p2.m.mapb.index[i+1]; ++k)
         {

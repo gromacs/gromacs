@@ -269,13 +269,22 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         {
             b = i + d->rperm[j];
             copy_rvec(p->x[b], out->u.p->x[i+j]);
-            /* De-permute the reference IDs. */
             refid = d->p.m.refid[b];
-            refid = refid - (refid % d->n) + d->perm[refid % d->n];
-            out->u.p->m.refid[i+j] = refid;
-            /* Use the original IDs from the output structure to correctly
-             * handle user customization. */
-            out->u.p->m.mapid[i+j] = out->u.p->m.orgid[refid];
+            if (refid == -1)
+            {
+                out->u.p->m.refid[i+j] = -1;
+                /* If we are using masks, there is no need to alter the
+                 * mapid field. */
+            }
+            else
+            {
+                /* De-permute the reference ID */
+                refid = refid - (refid % d->n) + d->perm[refid % d->n];
+                out->u.p->m.refid[i+j] = refid;
+                /* Use the original IDs from the output structure to correctly
+                 * handle user customization. */
+                out->u.p->m.mapid[i+j] = out->u.p->m.orgid[refid];
+            }
             /* Permute the index group */
             for (k = d->p.m.mapb.index[b]; k < d->p.m.mapb.index[b+1]; ++k)
             {

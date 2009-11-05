@@ -146,8 +146,7 @@ _gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod, t_selexpr_param *params,
                        struct t_selelem *sel, void *scanner);
 /** Creates a \c t_selelem for evaluation of reference positions. */
 struct t_selelem *
-_gmx_sel_init_position(struct t_selelem *expr, const char *type, bool bSelPos,
-                       void *scanner);
+_gmx_sel_init_position(struct t_selelem *expr, const char *type, void *scanner);
 
 /** Creates a \c t_selelem for a constant position. */
 struct t_selelem *
