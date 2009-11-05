@@ -104,7 +104,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_vcm *vcm,int *nabnsb,
                  real *chkpt,real *terminate,
                  gmx_mtop_t *top_global, t_state *state_local, 
-                 bool bSumEkinhOld, bool bFullStepV,
+                 bool bSumEkinhOld, bool bEkinAveVel,
                  bool bFirstPart, bool bFirstIterate)
 {
   t_bin  *rb;
@@ -144,7 +144,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               {
                   itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
-              if (bFullStepV) 
+              if (bEkinAveVel) 
               {
                   itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekin[0]);
               } 
@@ -267,7 +267,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               {
                   extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
-              if (bFullStepV) {
+              if (bEkinAveVel) {
                   extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekin[0]);
               }
               else
@@ -352,8 +352,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       }
       extract_binr(rb,iterminate,1,terminate);
       where();
-/* Small hack for temp only */
-      enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+      if (bFirstPart || (inputrec->eI!=eiVV))
+      {
+/* Small hack for temp only - not entirely clear if still needed*/
+          enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+      }
   }
 }
 
