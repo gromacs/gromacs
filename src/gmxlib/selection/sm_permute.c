@@ -192,27 +192,19 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     int                   i, j, b, k;
 
     gmx_ana_pos_copy(out->u.p, &d->p, TRUE);
+    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     d->g.isize = 0;
+    gmx_ana_pos_empty_init(out->u.p);
+    out->u.p->m.bStatic    = d->p.m.bStatic;
+    out->u.p->m.bMapStatic = d->p.m.bMapStatic;
     for (i = 0; i < d->p.nr; i += d->n)
     {
         for (j = 0; j < d->n; ++j)
         {
             b = i + d->rperm[j];
-            /* We do not permute the reference IDs to keep the mapping consistent */
-            out->u.p->m.mapid[i+j] = d->p.m.mapid[b];
-            out->u.p->m.orgid[i+j] = d->p.m.orgid[b];
-            /* Permute the index group and the mapping blocks */
-            for (k = d->p.m.b.index[b]; k < d->p.m.b.index[b+1]; ++k)
-            {
-                d->g.index[d->g.isize] = d->p.g->index[k];
-                out->u.p->m.b.a[d->g.isize] = d->p.m.b.a[k];
-                d->g.isize++;
-            }
-            out->u.p->m.mapb.index[i+j+1] = d->g.isize;
-            out->u.p->m.b.index[i+j+1] = d->g.isize;
+            gmx_ana_pos_append_init(out->u.p, &d->g, &d->p, b);
         }
     }
-    out->u.p->g = &d->g;
     return 0;
 }
 
@@ -258,39 +250,22 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 d->n);
         return -1;
     }
-    out->u.p->nr              = d->p.nr;
-    out->u.p->m.nr            = d->p.m.nr;
-    out->u.p->m.mapb.nr       = d->p.m.mapb.nr;
-    out->u.p->m.mapb.index[0] = 0;
-    d->g.isize                = 0;
+    d->g.isize = 0;
+    gmx_ana_pos_empty(out->u.p);
+    out->u.p->m.bStatic    = d->p.m.bStatic;
+    out->u.p->m.bMapStatic = d->p.m.bMapStatic;
     for (i = 0; i < d->p.nr; i += d->n)
     {
         for (j = 0; j < d->n; ++j)
         {
             b = i + d->rperm[j];
-            copy_rvec(p->x[b], out->u.p->x[i+j]);
             refid = d->p.m.refid[b];
-            if (refid == -1)
-            {
-                out->u.p->m.refid[i+j] = -1;
-                /* If we are using masks, there is no need to alter the
-                 * mapid field. */
-            }
-            else
+            if (refid != -1)
             {
                 /* De-permute the reference ID */
                 refid = refid - (refid % d->n) + d->perm[refid % d->n];
-                out->u.p->m.refid[i+j] = refid;
-                /* Use the original IDs from the output structure to correctly
-                 * handle user customization. */
-                out->u.p->m.mapid[i+j] = out->u.p->m.orgid[refid];
             }
-            /* Permute the index group */
-            for (k = d->p.m.mapb.index[b]; k < d->p.m.mapb.index[b+1]; ++k)
-            {
-                d->g.index[d->g.isize++] = d->p.g->index[k];
-            }
-            out->u.p->m.mapb.index[i+j+1] = d->g.isize;
+            gmx_ana_pos_append(out->u.p, &d->g, p, b, refid);
         }
     }
     return 0;

@@ -186,6 +186,16 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         fprintf(stderr, "error: stride for merging should be positive\n");
         return -1;
     }
+    /* If no stride given, deduce it from the input sizes */
+    if (d->stride == 0)
+    {
+        d->stride = d->p1.nr / d->p2.nr;
+    }
+    if (d->p1.nr != d->stride*d->p2.nr)
+    {
+        fprintf(stderr, "error: the number of positions to be merged are not compatible\n");
+        return -1;
+    }
     gmx_ana_index_reserve(&d->g, d->p1.g->isize + d->p2.g->isize);
     d->g.isize = d->p1.g->isize + d->p2.g->isize;
     return 0;
@@ -214,49 +224,12 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
         out->u.p->m.type = d->p1.m.type;
     }
     gmx_ana_pos_reserve(out->u.p, d->p1.nr + d->p2.nr, d->g.isize);
-    out->u.p->nr           = d->p1.nr + d->p2.nr;
-    out->u.p->m.nr         = out->u.p->nr;
-    out->u.p->m.mapb.nr    = out->u.p->nr;
-    out->u.p->m.b.nr       = out->u.p->nr;
-    out->u.p->m.b.nra      = d->g.isize;
+    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
+    gmx_ana_pos_empty_init(out->u.p);
     out->u.p->m.bStatic    = d->p1.m.bStatic && d->p2.m.bStatic;
     out->u.p->m.bMapStatic = d->p1.m.bMapStatic && d->p2.m.bMapStatic;
-    out->u.p->g = &d->g;
     d->g.isize = 0;
-    out->u.p->nr = 0;
-    out->u.p->m.mapb.index[0] = 0;
-    out->u.p->m.b.index[0]    = 0;
     return 0;
-}
-
-/*! \brief
- * Helper function to initializes a single output position.
- *
- * \param[in,out] out  Data structure to which the new position is appended.
- * \param[in,out] g    Data structure to which the new atoms are appended.
- * \param[in]     from Data structure from which the position is copied.
- * \param[in]     i    Index in \p from to copy.
- */
-static void
-init_output_append_pos(gmx_ana_pos_t *out, gmx_ana_index_t *g,
-                       gmx_ana_pos_t *from, int i)
-{
-    int  j, k;
-
-    j = out->nr;
-    copy_rvec(from->x[i], out->x[j]);
-    out->m.refid[j] = j;
-    out->m.mapid[j] = from->m.mapid[i];
-    out->m.orgid[j] = from->m.orgid[i];
-    for (k = from->m.mapb.index[i]; k < from->m.mapb.index[i+1]; ++k)
-    {
-        g->index[g->isize]   = from->g->index[k];
-        out->m.b.a[g->isize] = from->m.b.a[k];
-        g->isize++;
-    }
-    out->m.mapb.index[j+1] = g->isize;
-    out->m.b.index[j+1]    = g->isize;
-    out->nr++;
 }
 
 /*!
@@ -271,24 +244,14 @@ init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i, j;
 
-    /* If no stride given, deduce it from the input sizes */
-    if (d->stride == 0)
-    {
-        d->stride = d->p1.nr / d->p2.nr;
-    }
-    if (d->p1.nr != d->stride*d->p2.nr)
-    {
-        fprintf(stderr, "error: the number of positions to be merged are not compatible\n");
-        return -1;
-    }
     init_output_common(top, out, data);
     for (i = 0; i < d->p2.nr; ++i)
     {
         for (j = 0; j < d->stride; ++j)
         {
-            init_output_append_pos(out->u.p, &d->g, &d->p1, d->stride*i+j);
+            gmx_ana_pos_append_init(out->u.p, &d->g, &d->p1, d->stride*i+j);
         }
-        init_output_append_pos(out->u.p, &d->g, &d->p2, i);
+        gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
     }
     return 0;
 }
@@ -308,11 +271,11 @@ init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     init_output_common(top, out, data);
     for (i = 0; i < d->p1.nr; ++i)
     {
-        init_output_append_pos(out->u.p, &d->g, &d->p1, i);
+        gmx_ana_pos_append_init(out->u.p, &d->g, &d->p1, i);
     }
     for (i = 0; i < d->p2.nr; ++i)
     {
-        init_output_append_pos(out->u.p, &d->g, &d->p2, i);
+        gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
     }
     return 0;
 }
@@ -343,49 +306,10 @@ evaluate_common(gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
-    out->u.p->nr              = d->p1.nr + d->p2.nr;
-    out->u.p->m.nr            = out->u.p->nr;
-    out->u.p->m.mapb.nr       = out->u.p->nr;
+    gmx_ana_pos_empty(out->u.p);
     out->u.p->m.bStatic       = d->p1.m.bStatic && d->p2.m.bStatic;
     out->u.p->m.bMapStatic    = d->p1.m.bMapStatic && d->p2.m.bMapStatic;
     d->g.isize                = 0;
-    out->u.p->nr              = 0;
-    out->u.p->m.mapb.index[0] = 0;
-}
-
-/*! \brief
- * Helper function to evaluate a single output position.
- *
- * \param[in,out] out   Data structure to which the new position is appended.
- * \param[in,out] g     Data structure to which the new atoms are appended.
- * \param[in]     from  Data structure from which the position is copied.
- * \param[in]     i     Index in \p from to copy.
- * \param[in]     refid Reference ID in \p out
- *   (all negative values are treated as -1).
- */
-static void
-evaluate_append_pos(gmx_ana_pos_t *out, gmx_ana_index_t *g,
-                    gmx_ana_pos_t *from, int i, int refid)
-{
-    int  j, k;
-
-    j = out->nr;
-    copy_rvec(from->x[i], out->x[j]);
-    if (refid < 0)
-    {
-        out->m.refid[j] = -1;
-    }
-    else
-    {
-        out->m.refid[j] = refid;
-        out->m.mapid[j] = out->m.orgid[refid];
-    }
-    for (k = from->m.mapb.index[i]; k < from->m.mapb.index[i+1]; ++k)
-    {
-        g->index[g->isize++] = from->g->index[k];
-    }
-    out->m.mapb.index[j+1] = g->isize;
-    out->nr++;
 }
 
 /*!
@@ -420,10 +344,10 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             {
                 refid = (d->stride+1) * (refid / d->stride) + (refid % d->stride);
             }
-            evaluate_append_pos(out->u.p, &d->g, &d->p1, d->stride*i+j, refid);
+            gmx_ana_pos_append(out->u.p, &d->g, &d->p1, d->stride*i+j, refid);
         }
         refid = (d->stride+1)*d->p2.m.refid[i]+d->stride;
-        evaluate_append_pos(out->u.p, &d->g, &d->p2, i, refid);
+        gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
     return 0;
 }
@@ -449,7 +373,7 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     for (i = 0; i < d->p1.nr; ++i)
     {
         refid = d->p1.m.refid[i];
-        evaluate_append_pos(out->u.p, &d->g, &d->p1, i, refid);
+        gmx_ana_pos_append(out->u.p, &d->g, &d->p1, i, refid);
     }
     for (i = 0; i < d->p2.nr; ++i)
     {
@@ -458,7 +382,7 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         {
             refid += d->p1.m.b.nr;
         }
-        evaluate_append_pos(out->u.p, &d->g, &d->p2, i, refid);
+        gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
     return 0;
 }

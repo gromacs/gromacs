@@ -336,7 +336,7 @@ init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     gmx_ana_poscalc_init_pos(d->pc, out->u.p);
-    out->u.p->g = &d->g;
+    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     return 0;
 }
 
