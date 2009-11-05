@@ -352,7 +352,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       }
       extract_binr(rb,iterminate,1,terminate);
       where();
-      if ((bFirstPart && bFirstIterate) || (inputrec->eI!=eiVV))
+      if (bFirstIterate || (inputrec->eI!=eiVV))
       {
 /* Small hack for temp only - not entirely clear if still needed*/
           enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
