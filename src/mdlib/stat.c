@@ -99,11 +99,13 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_commrec *cr,gmx_enerdata_t *enerd,
                  tensor fvir,tensor svir,rvec mu_tot,
                  t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind,bool bSumEkinhOld, bool bFullStepV,
+                 gmx_ekindata_t *ekind,
                  gmx_constr_t constr,
                  t_vcm *vcm,int *nabnsb,
                  real *chkpt,real *terminate,
-                 gmx_mtop_t *top_global, t_state *state_local, bool bFirstPart, bool bFirstIterate)
+                 gmx_mtop_t *top_global, t_state *state_local, 
+                 bool bSumEkinhOld, bool bFullStepV,
+                 bool bFirstPart, bool bFirstIterate)
 {
   t_bin  *rb;
   int    *itc0,*itc1;
@@ -134,8 +136,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
   if (bFirstPart || (inputrec->eI!=eiVV))
   {
-      if (ekind) {
-          for(j=0; (j<inputrec->opts.ngtc); j++) {
+      if (ekind) 
+      {
+          for(j=0; (j<inputrec->opts.ngtc); j++) 
+          {
               if (bSumEkinhOld) 
               {
                   itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
@@ -158,25 +162,32 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       }  
 
       where();
-      if (bFirstIterate) {
+      if (bFirstIterate) 
+      {
           ifv = add_binr(rb,DIM*DIM,fvir[0]);
       }
   }
 
-  if (!bFirstPart) { 
+  if (!bFirstPart) 
+  { 
       where();
-      if (bFirstIterate) {
+      if (bFirstIterate) 
+      {
           ie  = add_binr(rb,F_NRE,enerd->term);
       }
       where();
-      if (constr) {
+      if (constr) 
+      {
           rmsd_data = constr_rmsd_data(constr);
-          if (rmsd_data)
+          if (rmsd_data) 
+          {
               irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+          }
       } else {
           rmsd_data = NULL;
       }
-      if (!NEED_MUTOT(*inputrec)) {
+      if (!NEED_MUTOT(*inputrec)) 
+      {
           imu = add_binr(rb,DIM,mu_tot);
           where();
       }
@@ -184,23 +195,29 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       if (bFirstIterate) 
       {
           for(j=0; (j<egNR); j++)
+          {
               inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
+          }
           where();
-          if (inputrec->efep != efepNO) {
+          if (inputrec->efep != efepNO) 
+          {
               idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
               idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
-              if (enerd->n_lambda > 0) {
+              if (enerd->n_lambda > 0) 
+              {
                   iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
               }
           }
       }
 
-      if (vcm) {
+      if (vcm) 
+      {
           icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
           where();
           imass = add_binr(rb,vcm->nr,vcm->group_mass);
           where();
-          if (vcm->mode == ecmANGULAR) {
+          if (vcm->mode == ecmANGULAR) 
+          {
               icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
               where();
               icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
@@ -209,23 +226,29 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               where();
           }
       }
-      if (DOMAINDECOMP(cr)) {
+      if (DOMAINDECOMP(cr)) 
+      {
           nb = cr->dd->nbonded_local;
           inb = add_bind(rb,1,&nb);
       }
       where();
-      if (nabnsb) {
+      if (nabnsb) 
+      {
           rbnsb = *nabnsb;
           ibnsb = add_binr(rb,1,&rbnsb);
       }
-      if (chkpt)
+      if (chkpt) 
+      {
           ichkpt   = add_binr(rb,1,chkpt);
+      }
       iterminate = add_binr(rb,1,terminate);
   }
 
   /* Global sum it all */
   if (debug)
-    fprintf(debug,"Summing %d energies\n",rb->maxreal);
+  {
+      fprintf(debug,"Summing %d energies\n",rb->maxreal);
+  }
   sum_bin(rb,cr);
   where();
 
@@ -236,8 +259,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
   if (bFirstPart || (inputrec->eI!=eiVV))
   {
-      if (ekind) {
-          for(j=0; (j<inputrec->opts.ngtc); j++) {
+      if (ekind) 
+      {
+          for(j=0; (j<inputrec->opts.ngtc); j++) 
+          {
               if (bSumEkinhOld)
               {
                   extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
@@ -254,38 +279,50 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
           where();
       }
-      if (bFirstIterate) {
+      if (bFirstIterate) 
+      {
           extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
       }
   }
 
-  if (!bFirstPart) {
+  if (!bFirstPart) 
+  {
       if (bFirstIterate) 
       {
           extract_binr(rb,ie  ,F_NRE,enerd->term);
       }
-      if (rmsd_data)
+      if (rmsd_data) 
+      {
           extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+      }
       if (!NEED_MUTOT(*inputrec))
+      {
           extract_binr(rb,imu,DIM,mu_tot);
+      }
       if (bFirstIterate) 
       {
           for(j=0; (j<egNR); j++)
+          {
               extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
-          if (inputrec->efep != efepNO) {
+          }
+          if (inputrec->efep != efepNO) 
+          {
               extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
               extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
-              if (enerd->n_lambda > 0) {
+              if (enerd->n_lambda > 0) 
+              {
                   extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
               }
           }
       }
-      if (vcm) {
+      if (vcm) 
+      {
           extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
           where();
           extract_binr(rb,imass,vcm->nr,vcm->group_mass);
           where();
-          if (vcm->mode == ecmANGULAR) {
+          if (vcm->mode == ecmANGULAR) 
+          {
               extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
               where();
               extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
@@ -294,24 +331,29 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               where();
           }
       }
-      if (DOMAINDECOMP(cr)) {
+      if (DOMAINDECOMP(cr)) 
+      {
           extract_bind(rb,inb,1,&nb);
-          if ((int)(nb + 0.5) != cr->dd->nbonded_global)
+          if ((int)(nb + 0.5) != cr->dd->nbonded_global) 
+          {
               dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
-  }
+          }
+      }
       where();
-      if (nabnsb) {
+      if (nabnsb) 
+      {
           extract_binr(rb,ibnsb,1,&rbnsb);
           *nabnsb = (int)(rbnsb + 0.5);
       }
       where();
       if (chkpt)
+      {
           extract_binr(rb,ichkpt,1,chkpt);
+      }
       extract_binr(rb,iterminate,1,terminate);
       where();
 /* Small hack for temp only */
       enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
-      
   }
 }
 

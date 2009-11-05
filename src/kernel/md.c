@@ -296,8 +296,8 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
             {
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,FALSE,bEkinAveVel,constr,vcm,
-                            NULL,NULL,terminate,top_global,state,bFirstHalf,bFirstIterate);
+                            ir,ekind,constr,vcm,NULL,NULL,terminate,top_global,state,
+                            FALSE,bEkinAveVel,bFirstHalf,bFirstIterate);
                 GMX_MPE_LOG(ev_global_stat_finish);
             }
             

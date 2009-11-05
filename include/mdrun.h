@@ -174,10 +174,12 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			t_commrec *cr,gmx_enerdata_t *enerd,
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,
-			gmx_ekindata_t *ekind,bool bSumEkinhOld, bool bFullStepV,
+			gmx_ekindata_t *ekind,
 			gmx_constr_t constr,t_vcm *vcm,
 			int *nabnsb,real *chkpt,real *terminate,
-			gmx_mtop_t *top_global, t_state *state_local, bool bFirstPart,bool bFirstIterate);
+			gmx_mtop_t *top_global, t_state *state_local, 
+			bool bSumEkinhOld, bool bFullStepV,
+			bool bFirstPart,bool bFirstIterate);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 void write_traj(FILE *fplog,t_commrec *cr,
