@@ -48,6 +48,175 @@
 #include "nrnb.h"
 #include "gmx_random.h"
 
+/* these integration routines are only references inside this file */
+static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
+                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ)
+
+{
+    /* general routine for both barostat and thermostat nose hoover chains */
+
+    int   i,j,mi,mj,jmax,nd,ndj,starti,endi;
+    double Ekin,Efac,reft,kT;
+    double dt;
+    double *ivxi,*ixi;
+    double *iQinv;
+    double GQ[NNHCHAIN];
+    bool bBarostat;
+
+    static int mstepsi = 5;
+    static int mstepsj = 5;
+
+/* if scalefac is NULL, we are doing the NHC of the barostat */
+    
+    bBarostat = FALSE;
+    if (scalefac == NULL) {
+        bBarostat = TRUE;
+    }
+
+    if (bBarostat) {
+        starti = opts->ngtc;
+        endi = opts->ngtc+1;
+    } else {
+        starti = 0;
+        endi = opts->ngtc;
+    }
+
+    for (i=starti; i<endi; i++) 
+    {
+    
+        /* make it easier to iterate by selecting 
+           out the sub-array that corresponds to this T group */
+        
+        ivxi = &vxi[i*NNHCHAIN];
+        ixi = &xi[i*NNHCHAIN];
+        iQinv = &(MassQ->Qinv[i*NNHCHAIN]); 
+        if (bBarostat) {
+            nd = 1;
+            reft = max(0.0,opts->ref_t[0]);
+            Ekin = sqr(*veta)/MassQ->Winv;
+        } else {
+            nd = opts->nrdf[i];
+            reft = max(0.0,opts->ref_t[i]);
+            Ekin = 2*trace(ekind->tcstat[i].ekin);
+            /* use this for half step kinetic energy? */
+            /*   Ekin = 2*trace(ekind->tcstat[i].ekinh);
+                 dtfull *= 2 */
+            
+        }
+        kT = BOLTZ*reft;
+
+        for(mi=0;mi<mstepsi;mi++) 
+        {
+            for(mj=0;mj<mstepsj;mj++)
+            { 
+                /* weighting for this step using Suzuki-Yoshida integration - fixed at 5 */
+                dt = sy5_const[mj] * dtfull / mstepsi;
+                
+                /* compute the thermal forces */
+                GQ[0] = iQinv[0]*(Ekin - nd*kT);
+                
+                for (j=0;j<NNHCHAIN-1;j++) 
+                { 	
+                    if (iQinv[j+1] > 0) {
+                        /* we actually don't need to update here if we save the 
+                           state of the GQ, but it's easier to just recompute*/
+                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
+                    } else {
+                        GQ[j+1] = 0;
+                    }
+                }
+                
+                ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
+                for (j=NNHCHAIN-1;j>0;j--) 
+                { 
+                    Efac = exp(-0.125*dt*ivxi[j]);
+                    ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
+                }
+                
+                Efac = exp(-0.5*dt*ivxi[0]);
+                if (bBarostat) {
+                    *veta *= Efac;                
+                } else {
+                    scalefac[i] *= Efac;
+                }
+                Ekin *= (Efac*Efac);
+                
+                /* Issue - if the KE is an average of the last and the current temperatures, then we might not be
+                   able to scale the kinetic energy directly with this factor.  Might take more bookkeeping -- have to
+                   think about this a bit more . . . */
+
+                GQ[0] = iQinv[0]*(Ekin - nd*kT);
+                
+                /* update thermostat positions */
+                for (j=0;j<NNHCHAIN;j++) 
+                { 
+                    ixi[j] += 0.5*dt*ivxi[j];
+                }
+                
+                for (j=0;j<NNHCHAIN-1;j++) 
+                { 
+                    Efac = exp(-0.125*dt*ivxi[j+1]);
+                    ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
+                    if (iQinv[j+1] > 0) {
+                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
+                    } else {
+                        GQ[j+1] = 0;
+                    }
+                }
+                ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
+            }
+        }
+    }
+}
+
+static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
+		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
+{
+
+    real  pscal;
+    double alpha;
+    int   i,j,d,n,nwall;
+    real  T,GW,vol;
+    tensor Winvm,ekinmod,localpres;
+    
+    /* The heat bath is coupled to a separate barostat, the last temperature group.  In the 
+       2006 Tuckerman et al paper., the order is iL_{T_baro} iL {T_part}
+    */
+    
+    if (ir->epct==epctSEMIISOTROPIC) 
+    {
+        nwall = 2;
+    } 
+    else 
+    {
+        nwall = 3;
+    }
+
+    /* eta is in pure units.  veta is in units of ps^-1. GW is in 
+       units of ps^-2.  However, eta has a reference of 1 nm^3, so care must be 
+       taken to use only RATIOS of eta in updating the volume. */
+    
+    /* we take the partial pressure tensors, modify the 
+       kinetic energy tensor, and recovert to pressure */
+    
+    if (ir->opts.nrdf[0]==0) 
+    { 
+        gmx_fatal(FARGS,"Barostat is coupled to a T-group with no degrees of freedom\n");    
+    } 
+    alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
+    msmul(ekin,alpha,ekinmod);  
+    
+    /* for now, we use Elr = 0, because if you want to get it right, you
+       really should be using PME. Maybe print a warning? */
+    
+    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres,0.0) + pcorr;
+    
+    vol = det(box);
+    GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
+    
+    *veta += 0.5*dt*GW;   
+}
+
 /* 
  * This file implements temperature and pressure coupling algorithms:
  * For now only the Weak coupling and the modified weak coupling.
@@ -684,173 +853,6 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
   }
 }
 
-static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
-                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ)
-
-{
-    /* general routine for both barostat and thermostat nose hoover chains */
-
-    int   i,j,mi,mj,jmax,nd,ndj,starti,endi;
-    double Ekin,Efac,reft,kT;
-    double dt;
-    double *ivxi,*ixi;
-    double *iQinv;
-    double GQ[NNHCHAIN];
-    bool bBarostat;
-
-    static int mstepsi = 5;
-    static int mstepsj = 5;
-
-/* if scalefac is NULL, we are doing the NHC of the barostat */
-    
-    bBarostat = FALSE;
-    if (scalefac == NULL) {
-        bBarostat = TRUE;
-    }
-
-    if (bBarostat) {
-        starti = opts->ngtc;
-        endi = opts->ngtc+1;
-    } else {
-        starti = 0;
-        endi = opts->ngtc;
-    }
-
-    for (i=starti; i<endi; i++) 
-    {
-    
-        /* make it easier to iterate by selecting 
-           out the sub-array that corresponds to this T group */
-        
-        ivxi = &vxi[i*NNHCHAIN];
-        ixi = &xi[i*NNHCHAIN];
-        iQinv = &(MassQ->Qinv[i*NNHCHAIN]); 
-        if (bBarostat) {
-            nd = 1;
-            reft = max(0.0,opts->ref_t[0]);
-            Ekin = sqr(*veta)/MassQ->Winv;
-        } else {
-            nd = opts->nrdf[i];
-            reft = max(0.0,opts->ref_t[i]);
-            Ekin = 2*trace(ekind->tcstat[i].ekin);
-            /* use this for half step kinetic energy? */
-            /*   Ekin = 2*trace(ekind->tcstat[i].ekinh);
-                 dtfull *= 2 */
-            
-        }
-        kT = BOLTZ*reft;
-
-        for(mi=0;mi<mstepsi;mi++) 
-        {
-            for(mj=0;mj<mstepsj;mj++)
-            { 
-                /* weighting for this step using Suzuki-Yoshida integration - fixed at 5 */
-                dt = sy5_const[mj] * dtfull / mstepsi;
-                
-                /* compute the thermal forces */
-                GQ[0] = iQinv[0]*(Ekin - nd*kT);
-                
-                for (j=0;j<NNHCHAIN-1;j++) 
-                { 	
-                    if (iQinv[j+1] > 0) {
-                        /* we actually don't need to update here if we save the 
-                           state of the GQ, but it's easier to just recompute*/
-                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  	  
-                    } else {
-                        GQ[j+1] = 0;
-                    }
-                }
-                
-                ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
-                for (j=NNHCHAIN-1;j>0;j--) 
-                { 
-                    Efac = exp(-0.125*dt*ivxi[j]);
-                    ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
-                }
-                
-                Efac = exp(-0.5*dt*ivxi[0]);
-                if (bBarostat) {
-                    *veta *= Efac;                
-                } else {
-                    scalefac[i] *= Efac;
-                }
-                Ekin *= (Efac*Efac);
-                
-                /* Issue - if the KE is an average of the last and the current temperatures, then we might not be
-                   able to scale the kinetic energy directly with this factor.  Might take more bookkeeping -- have to
-                   think about this a bit more . . . */
-
-                GQ[0] = iQinv[0]*(Ekin - nd*kT);
-                
-                /* update thermostat positions */
-                for (j=0;j<NNHCHAIN;j++) 
-                { 
-                    ixi[j] += 0.5*dt*ivxi[j];
-                }
-                
-                for (j=0;j<NNHCHAIN-1;j++) 
-                { 
-                    Efac = exp(-0.125*dt*ivxi[j+1]);
-                    ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
-                    if (iQinv[j+1] > 0) {
-                        GQ[j+1] = iQinv[j+1]*((sqr(ivxi[j])/iQinv[j])-kT);  
-                    } else {
-                        GQ[j+1] = 0;
-                    }
-                }
-                ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
-            }
-        }
-    }
-}
-
-static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
-		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
-{
-
-    real  pscal;
-    double alpha;
-    int   i,j,d,n,nwall;
-    real  T,GW,vol;
-    tensor Winvm,ekinmod,localpres;
-    
-    /* The heat bath is coupled to a separate barostat, the last temperature group.  In the 
-       2006 Tuckerman et al paper., the order is iL_{T_baro} iL {T_part}
-    */
-    
-    if (ir->epct==epctSEMIISOTROPIC) 
-    {
-        nwall = 2;
-    } 
-    else 
-    {
-        nwall = 3;
-    }
-
-    /* eta is in pure units.  veta is in units of ps^-1. GW is in 
-       units of ps^-2.  However, eta has a reference of 1 nm^3, so care must be 
-       taken to use only RATIOS of eta in updating the volume. */
-    
-    /* we take the partial pressure tensors, modify the 
-       kinetic energy tensor, and recovert to pressure */
-    
-    if (ir->opts.nrdf[0]==0) 
-    { 
-        gmx_fatal(FARGS,"Barostat is coupled to a T-group with no degrees of freedom\n");    
-    } 
-    alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
-    msmul(ekin,alpha,ekinmod);  
-    
-    /* for now, we use Elr = 0, because if you want to get it right, you
-       really should be using PME. Maybe print a warning? */
-    
-    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres,0.0) + pcorr;
-    
-    vol = det(box);
-    GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
-    
-    *veta += 0.5*dt*GW;   
-}
 
 real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ)
 {

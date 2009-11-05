@@ -170,33 +170,44 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
 }
 
 static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
-                     t_forcerec *fr, gmx_ekindata_t *ekind, 
-                     t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
-                     t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
-                     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
-                     tensor pres, rvec mu_tot, gmx_constr_t constr, 
-                     real *chkpt,real *terminate, real *terminate_now,
-                     int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
-                     bool *bSumEkinhOld, bool bRerunMD, bool bEkinAveVel, 
-                     bool bStopCM, bool bGStat, bool bNEMD, bool bFirstHalf, 
-                     bool bIterate, bool bFirstIterate, bool bInitialize, 
-                     bool bReadEkin, int natoms) 
+                            t_forcerec *fr, gmx_ekindata_t *ekind, 
+                            t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
+                            t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
+                            gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
+                            tensor pres, rvec mu_tot, gmx_constr_t constr, 
+                            real *chkpt,real *terminate, real *terminate_now,
+                            int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
+                            int natoms, bool *bSumEkinhOld, bool flags)
 {
 
     int i;
-    bool bTemp=FALSE,bPres=FALSE, bEner=FALSE;
+    bool bTemp=FALSE, bPres=FALSE, bEner=FALSE, bVV=FALSE;
     real prescorr,enercorr,dvdlcorr;
     tensor corr_vir,corr_pres,shakeall_vir;
+    bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, bFirstIterate, bInitialize, bReadEkin;
     
-    /* decide when to calculate temperature and pressure. 
-       Ener is only for calculating the dispersion correction. */
+    /* translate CGLO flags to booleans */
+    bRerunMD = flags & CGLO_RERUNMD;
+    bEkinAveVel = flags & CGLO_EKINAVEVEL;
+    bStopCM = flags & CGLO_STOPCM;
+    bGStat = flags & CGLO_GSTAT;
+    bNEMD = flags & CGLO_NEMD;
+    bFirstHalf = flags & CGLO_FIRSTHALF;
+    bIterate = flags & CGLO_ITERATE;
+    bFirstIterate = flags & CGLO_FIRSTITERATE;
+    bInitialize = flags & CGLO_INITIALIZE;
+    bReadEkin = flags & CGLO_READEKIN;
+
+    /* decide when to calculate temperature and pressure. */
     
     /* in initalization, it sums the shake virial in vv, and to 
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old for other reasons */
     
-    if (bInitialize) 
+    bVV = ir->eI == eiVV;
+
+    if (bInitialize)
     {
-        if (ir->eI == eiVV) 
+        if (bVV) 
         {
             bPres = TRUE;
         } else {
@@ -207,9 +218,9 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     if (bFirstHalf) 
     {
         bEner = TRUE;
-        if (ir->eI == eiVV) 
+        if (bVV) 
         {
-            if (bEkinAveVel) 
+            if (bEkinAveVel)
             {
                 bTemp = TRUE;
             }
@@ -222,9 +233,9 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     else 
     {
         bPres = TRUE;
-        if (ir->eI == eiVV) 
+        if (bVV) 
         {
-            if (!bEkinAveVel) 
+            if (!bEkinAveVel)
             {
                 bTemp = TRUE;
             }
@@ -247,7 +258,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
          * when there really is NEMD.
          */
         
-        if (PAR(cr) && bNEMD) 
+        if (PAR(cr) && (bNEMD)) 
         {
             accumulate_u(cr,&(ir->opts),ekind);
         }
@@ -1432,7 +1443,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
                bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
     bool       bMasterState;
-    int        force_flags;
+    int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m,status;
     rvec       mu_tot;
@@ -1742,8 +1753,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
-                    top_global,&pcurr,&bSumEkinhOld,bRerunMD,bEkinAveVel,FALSE,
-                    TRUE,FALSE,FALSE,FALSE,FALSE,TRUE,Flags & MD_READ_EKIN,top_global->natoms);
+                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                    (CGLO_INITIALIZE |
+                     (bRerunMD ? CGLO_RERUNMD:0) | 
+                     (bEkinAveVel ? CGLO_EKINAVEVEL:0) | 
+                     (bGStat ? CGLO_GSTAT:0) | 
+                     ((Flags & MD_READ_EKIN) ? CGLO_READEKIN:0)));
     
     /* Calculate the initial half step temperature */
     temp0 = enerd->term[F_TEMP];
@@ -2091,12 +2106,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
-            /* This is almost certainly not quite working correctly yet */
+            /* This may not be quite working correctly yet */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
-                            top_global,&pcurr,&bSumEkinhOld,TRUE,FALSE,FALSE,
-                            TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,top_global->natoms);
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,(CGLO_RERUNMD & CGLO_GSTAT));
         }
         clear_mat(force_vir);
 
@@ -2158,6 +2172,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bGStat    = TRUE;
         }
         
+        /* these CGLO_ options remain the same throughout the iteration */
+        cglo_flags = ((bRerunMD ? CGLO_RERUNMD : 0) |
+                      (bEkinAveVel ? CGLO_EKINAVEVEL : 0) |
+                      (bStopCM ? CGLO_STOPCM : 0) |
+                      (bGStat ? CGLO_GSTAT : 0) |
+                      (bNEMD ? CGLO_NEMD : 0));
+        
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
                        GMX_FORCE_ALLFORCES |
@@ -2165,7 +2186,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        GMX_FORCE_SEPLRF |
                        (bCalcEner ? GMX_FORCE_VIRIAL : 0) |
                        (bDoDHDL ? GMX_FORCE_DHDL : 0));
-
+        
         if (shellfc)
         {
             /* Now is the time to relax the shells */
@@ -2291,9 +2312,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
-                            top_global,&pcurr,&bSumEkinhOld,
-                            bRerunMD,bEkinAveVel,bStopCM,bGStat,bNEMD,TRUE,bIterate,
-                            bFirstIterate,FALSE,FALSE,top_global->natoms);
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                            cglo_flags | CGLO_FIRSTHALF | 
+                            (bIterate ? CGLO_ITERATE : 0) | 
+                            (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                );
             
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
             if (bTrotter) 
@@ -2575,13 +2598,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             /* ############## IF NOT VV, CALCULATE EKIN AND PRESSURE HERE ############ */
+            /* this should set bFirstHalf to false . ..  */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
-                            top_global,&pcurr,&bSumEkinhOld,
-                            bRerunMD,bEkinAveVel,bStopCM,bGStat,bNEMD,FALSE,bIterate,
-                            bFirstIterate,FALSE,FALSE,top_global->natoms);
-            
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                            cglo_flags & ~CGLO_FIRSTHALF |
+                            (bIterate ? CGLO_ITERATE : 0) |
+                            (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                );            
             /* #############  END CALC EKIN AND PRESSURE ################# */
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,trace(shake_vir),&tracevir,1)) break;

@@ -71,6 +71,29 @@
 #define MD_READ_EKIN    (1<<17)
 #define MD_STARTFROMCPT (1<<18)
 
+/* define a number of flags to better control the information passed to the compute_globals code in md.c */
+
+/* We are rerunning the simulation */
+#define CGLO_RERUNMD       (1<<0)
+/* we are computing the kinetic energy from average velocities */
+#define CGLO_EKINAVEVEL    (1<<1)
+/* we are removing the center of mass momenta */
+#define CGLO_STOPCM        (1<<2)
+/* bGStat is defined in do_md */
+#define CGLO_GSTAT         (1<<3)
+/* bNEMD is defined in do_md */
+#define CGLO_NEMD          (1<<4)
+/* We are in the first half of the verlet update step */
+#define CGLO_FIRSTHALF     (1<<5)
+/* we are using an integrator that requires iteration over some steps */
+#define CGLO_ITERATE       (1<<6)
+/* it is the first time we are iterating (or, only once through is required */
+#define CGLO_FIRSTITERATE  (1<<7)
+/* This is the first time the code is being called */
+#define CGLO_INITIALIZE    (1<<8)
+/* we are reading the Ekin from a file (such as rerunning) */
+#define CGLO_READEKIN      (1<<9)
+
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
