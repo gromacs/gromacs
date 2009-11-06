@@ -196,8 +196,11 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         fprintf(stderr, "error: the number of positions to be merged are not compatible\n");
         return -1;
     }
-    gmx_ana_index_reserve(&d->g, d->p1.g->isize + d->p2.g->isize);
-    d->g.isize = d->p1.g->isize + d->p2.g->isize;
+    /* We access the m.b.nra field instead of g->isize in the position
+     * data structures to handle cases where g is NULL
+     * (this occurs with constant positions. */
+    gmx_ana_index_reserve(&d->g, d->p1.m.b.nra + d->p2.m.b.nra);
+    d->g.isize = d->p1.m.b.nra + d->p2.m.b.nra;
     return 0;
 }
 
