@@ -413,7 +413,7 @@ int main(int argc,char *argv[])
   if (repl_ex_nst != 0 && nmultisim < 2)
     gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
-  if (nmultisim > 1 && PAR(cr))
+  if (nmultisim > 1)
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 
   /* Check if there is ANY checkpoint file available */	
