@@ -195,8 +195,6 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     d->g.isize = 0;
     gmx_ana_pos_empty_init(out->u.p);
-    out->u.p->m.bStatic    = d->p.m.bStatic;
-    out->u.p->m.bMapStatic = d->p.m.bMapStatic;
     for (i = 0; i < d->p.nr; i += d->n)
     {
         for (j = 0; j < d->n; ++j)
@@ -252,8 +250,6 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     }
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
-    out->u.p->m.bStatic    = d->p.m.bStatic;
-    out->u.p->m.bMapStatic = d->p.m.bMapStatic;
     for (i = 0; i < d->p.nr; i += d->n)
     {
         for (j = 0; j < d->n; ++j)
@@ -268,5 +264,6 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             gmx_ana_pos_append(out->u.p, &d->g, p, b, refid);
         }
     }
+    gmx_ana_pos_append_finish(out->u.p);
     return 0;
 }

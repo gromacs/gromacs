@@ -226,8 +226,6 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     gmx_ana_pos_reserve(out->u.p, d->p1.nr + d->p2.nr, d->g.isize);
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     gmx_ana_pos_empty_init(out->u.p);
-    out->u.p->m.bStatic    = d->p1.m.bStatic && d->p2.m.bStatic;
-    out->u.p->m.bMapStatic = d->p1.m.bMapStatic && d->p2.m.bMapStatic;
     d->g.isize = 0;
     return 0;
 }
@@ -295,23 +293,6 @@ free_data_merge(void *data)
     gmx_ana_index_deinit(&d->g);
 }
 
-/*! \brief
- * Helper function to perform common initialization before evaluation.
- *
- * \param[out] out   Output data structure (\p out->u.p is used).
- * \param[in]  data  Should point to a \p t_methoddata_merge.
- */
-static void
-evaluate_common(gmx_ana_selvalue_t *out, void *data)
-{
-    t_methoddata_merge *d = (t_methoddata_merge *)data;
-
-    gmx_ana_pos_empty(out->u.p);
-    out->u.p->m.bStatic       = d->p1.m.bStatic && d->p2.m.bStatic;
-    out->u.p->m.bMapStatic    = d->p1.m.bMapStatic && d->p2.m.bMapStatic;
-    d->g.isize                = 0;
-}
-
 /*!
  * \param[in]  top   Not used.
  * \param[in]  fr    Not used.
@@ -334,7 +315,8 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         fprintf(stderr, "error: the number of positions to be merged are not compatible\n");
         return -1;
     }
-    evaluate_common(out, data);
+    d->g.isize = 0;
+    gmx_ana_pos_empty(out->u.p);
     for (i = 0; i < d->p2.nr; ++i)
     {
         for (j = 0; j < d->stride; ++j)
@@ -349,6 +331,7 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         refid = (d->stride+1)*d->p2.m.refid[i]+d->stride;
         gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
+    gmx_ana_pos_append_finish(out->u.p);
     return 0;
 }
 
@@ -369,7 +352,8 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                 i;
     int                 refid;
 
-    evaluate_common(out, data);
+    d->g.isize = 0;
+    gmx_ana_pos_empty(out->u.p);
     for (i = 0; i < d->p1.nr; ++i)
     {
         refid = d->p1.m.refid[i];
@@ -384,5 +368,6 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         }
         gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
     }
+    gmx_ana_pos_append_finish(out->u.p);
     return 0;
 }
