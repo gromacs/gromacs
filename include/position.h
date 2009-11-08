@@ -105,6 +105,9 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
 extern void
 gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
                    gmx_ana_pos_t *src, int i, int refid);
+/** Updates position data structure state after appends. */
+extern void
+gmx_ana_pos_append_finish(gmx_ana_pos_t *pos);
 
 #ifdef __cplusplus
 }
