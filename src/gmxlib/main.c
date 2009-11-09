@@ -308,6 +308,12 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
 #endif  
   int *rank;
 
+#ifndef GMX_MPI
+  if (nsim > 1) {
+    gmx_fatal(FARGS,"This binary is compiled without MPI support, can not do multiple simulations.");
+  }
+#endif
+
   nnodes  = cr->nnodes;
   if (nnodes % nsim != 0)
     gmx_fatal(FARGS,"The number of nodes (%d) is not a multiple of the number of simulations (%d)",nnodes,nsim);

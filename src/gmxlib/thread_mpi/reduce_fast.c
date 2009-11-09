@@ -36,50 +36,58 @@ files.
 */
 
 
-/* this file is to be #included from collective.c */
 
-/* broadcast */
-int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
-               tMPI_Comm comm)
-{
-    int synct;
-    struct coll_env *cev;
-    int myrank;
-    int ret=TMPI_SUCCESS;
-
-#ifdef TMPI_TRACE
-    tMPI_Profile_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype,
-                       root, comm);
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
-    /* we increase our counter, and determine which coll_env we get */
-    cev=tMPI_Get_cev(comm, myrank, &synct);
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
-    if (myrank==root)
-    {
-        /* first set up the data */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
-                        count*datatype->size, buffer, comm->grp.N-1, synct);
-        /* and wait until everybody is done copying */
-        tMPI_Wait_for_others(cev, myrank);
-    }
-    else
-    {
-        size_t bufsize=count*datatype->size;
-        /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
-        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
-                       buffer, &ret);
-    }
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "thread_mpi/threads.h"
+#include "thread_mpi/atomic.h"
+#include "thread_mpi/tmpi.h"
+#include "thread_mpi/collective.h"
+#include "tmpi_impl.h"
+
+
+
+static void *tMPI_Reduce_req_allocator(void *arg)
+{
+    tMPI_Reduce_req *ret;
+    /*tMPI_Comm comm=(tMPI_Comm)arg;*/
+
+    ret=tMPI_Malloc(sizeof(tMPI_Reduce_req));
+    tMPI_Atomic_set( &(ret->n_remaining), 0);
+    ret->comm=(tMPI_Comm)arg;
+
+    return (void*)ret;
+}
+
+tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm)
+{
+    tMPI_Reduce_req *ret;
+    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator, 
+                                         comm, NULL);
     return ret;
 }
 
+#if 0
+void tMPI_Reduce_async(tMPI_Reduce_req *req, 
+                       void (*function)(int, void*, void*, void *), 
+                       size_t n, void *input, void *res)
+{
+    
+}
 
+#endif
 
 
 

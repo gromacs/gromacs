@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -138,6 +134,10 @@ int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
 int tMPI_Create_errhandler(tMPI_Errhandler_fn *function, 
                            tMPI_Errhandler *errhandler) 
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Create_errhandler(%p, %p)", function, errhandler);
+#endif
+
     /* we don't use a special malloc here because this is the error handler
        creation function. */
     *errhandler=(tMPI_Errhandler)malloc(sizeof(struct tmpi_errhandler_));
@@ -154,6 +154,10 @@ int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
 
 int tMPI_Errhandler_free(tMPI_Errhandler *errhandler)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Errhandler_free(%p)", errhandler);
+#endif
+
     free(*errhandler);
     return TMPI_SUCCESS;
 }
@@ -161,12 +165,20 @@ int tMPI_Errhandler_free(tMPI_Errhandler *errhandler)
 
 int tMPI_Comm_set_errhandler(tMPI_Comm comm, tMPI_Errhandler errhandler)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_set_errhandler(%p, %p)", comm, errhandler);
+#endif
+
     comm->erh = errhandler;
     return TMPI_SUCCESS;
 }
 
 int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_get_errhandler(%p, %p)", comm, errhandler);
+#endif
+
     *errhandler=comm->erh;
     return TMPI_SUCCESS;
 }

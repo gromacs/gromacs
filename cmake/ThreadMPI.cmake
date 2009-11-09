@@ -28,3 +28,21 @@ else (CMAKE_USE_PTHREADS_INIT)
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
 
+# the busy waiting option
+option(THREAD_MPI_BUSY_WAIT "Use busy waits for thread_mpi synchronization. Provides lower latency, but higher unneccesary CPU usage." ON)
+mark_as_advanced(THREAD_MPI_BUSY_WAIT)
+if (THREAD_MPI_BUSY_WAIT)
+    add_definitions()
+else (THREAD_MPI_BUSY_WAIT)
+    add_definitions(-DTMPI_NO_BUSY_WAIT)
+endif (THREAD_MPI_BUSY_WAIT)
+
+# the copy buffer option
+option(THREAD_MPI_COPY_BUFFER "Use an intermediate copy buffer for small message sizes, to allow blocking sends to return quickly." ON)
+mark_as_advanced(THREAD_MPI_COPY_BUFFER)
+if (THREAD_MPI_COPY_BUFFER)
+    add_definitions()
+else (THREAD_MPI_COPY_BUFFER)
+    add_definitions(-DTMPI_NO_COPY_BUFFER)
+endif (THREAD_MPI_COPY_BUFFER)
+

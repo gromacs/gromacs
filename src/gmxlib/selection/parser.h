@@ -110,7 +110,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 73 "parser.y"
+#line 61 "parser.y"
 {
     int                         i;
     real                        r;

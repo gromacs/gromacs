@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -117,6 +113,7 @@ void tMPI_Copy_buffer_list_init(struct copy_buffer_list *cbl, int Nbufs,
     cbl->cb_alloc=(struct copy_buffer*)
                   tMPI_Malloc(sizeof(struct copy_buffer)*Nbufs);
     cbl->cb=cbl->cb_alloc; /* the first one */
+    cbl->Nbufs = Nbufs;
     for(i=0;i<Nbufs;i++)
     {
         tMPI_Copy_buffer_init( &(cbl->cb_alloc[i]), size );
@@ -178,7 +175,7 @@ static void tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
     met->cb=NULL;
     met->using_cb=FALSE;
 #endif
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_init( &(met->wait_mutex) );
     tMPI_Thread_cond_init( &(met->send_cond) );
     tMPI_Thread_cond_init( &(met->recv_cond) );
@@ -251,21 +248,21 @@ static struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *counter)
     *counter=csync->synct;
     cev=&(comm->cev[csync->synct % N_COLL_ENV]);
 
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex ) );
 #endif
 
     /* wait until the thread's cev->met becomes available */
     while (tMPI_Atomic_get( &(cev->met[myrank].n_remaining) ) > 0)
     {
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_cond_wait(&(cev->met[myrank].send_cond), 
                               &(cev->met[myrank].wait_mutex) );
 #else
         tMPI_Atomic_memory_barrier();
 #endif
     }
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex ) );
 #endif
 #ifdef USE_COLLECTIVE_COPY_BUFFER
@@ -373,7 +370,7 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
 #endif
     }
     /* signal one thread ready */
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
     tMPI_Atomic_fetch_add( &(cev->met[rank].n_remaining), -1);
 #else
     tMPI_Thread_mutex_lock( &(cev->met[rank].wait_mutex ) );
@@ -416,7 +413,7 @@ static void tMPI_Post_multi(struct coll_env *cev, int rank, int index,
 {
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* decide based on the number of waiting threads */
-    bool using_cb=(bufsize < n_remaining*COPY_BUFFER_SIZE);
+    bool using_cb=(bufsize < (size_t)(n_remaining*COPY_BUFFER_SIZE));
 
     cev->met[rank].using_cb=using_cb;
     if (using_cb)
@@ -435,17 +432,17 @@ static void tMPI_Post_multi(struct coll_env *cev, int rank, int index,
     tMPI_Atomic_set(&(cev->met[rank].n_remaining), n_remaining);
 
     /* publish availability. */
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_lock( &(cev->met[rank].wait_mutex) );
 #else
     tMPI_Atomic_memory_barrier();
 #endif
     tMPI_Atomic_set(&(cev->met[rank].current_sync), synct);
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_cond_broadcast( &(cev->met[rank].recv_cond) );
     tMPI_Thread_mutex_unlock( &(cev->met[rank].wait_mutex) );
-#else
-    tMPI_Atomic_memory_barrier();
+/*#else
+    tMPI_Atomic_memory_barrier();*/
 #endif
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
@@ -479,20 +476,20 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int rank)
     if (! (cev->met[rank].using_cb) )
 #endif
     {
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_mutex_lock( &(cev->met[rank].wait_mutex ) );
 #endif
         /* wait until everybody else is done copying the buffer */
         while (tMPI_Atomic_get( &(cev->met[rank].n_remaining) ) > 0)
         {
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
             tMPI_Thread_cond_wait(&(cev->met[rank].send_cond), 
                                   &(cev->met[rank].wait_mutex) );
 #else
             tMPI_Atomic_memory_barrier();
 #endif
         }
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_mutex_unlock( &(cev->met[rank].wait_mutex ) );
 #endif
 #if 0
@@ -510,11 +507,11 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int rank)
            This wait is bound to be very short (otherwise it wouldn't 
            be double-buffering) so we always spin here. */
         tMPI_Atomic_memory_barrier();
-#if 1
-        while (tMPI_Atomic_cmpxchg( &(cev->met[rank].buf_readcount), 0,
+#if 0
+        while (tMPI_Atomic_cas( &(cev->met[rank].buf_readcount), 0,
                                     -100000) != 0)
 #endif
-#if 0
+#if 1
         while (tMPI_Atomic_fetch_add( &(cev->met[rank].buf_readcount), 0) != 0)
 #endif
 #if 0
@@ -529,20 +526,20 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int rank)
 
 static void tMPI_Wait_for_data(struct coll_env *cev, int rank, int synct)
 {
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_lock( &(cev->met[rank].wait_mutex ) );
 #endif
     /* wait until the source posts availability by updating its sync value */
     while( tMPI_Atomic_get( &(cev->met[rank].current_sync)) != synct)
     {
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_cond_wait(&(cev->met[rank].recv_cond), 
                               &(cev->met[rank].wait_mutex) );
 #else
         tMPI_Atomic_memory_barrier();
 #endif
     }
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_unlock( &(cev->met[rank].wait_mutex ) );
 #endif
 
@@ -561,6 +558,10 @@ static void tMPI_Wait_for_data(struct coll_env *cev, int rank, int synct)
 
 int tMPI_Barrier(tMPI_Comm comm) 
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Barrier(%p, %d, %p, %d, %d, %p, %p)", comm);
+#endif
+
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -568,7 +569,7 @@ int tMPI_Barrier(tMPI_Comm comm)
 
     if (comm->grp.N>1)
     {
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
         tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
 #else
         tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]) );
@@ -588,5 +589,4 @@ int tMPI_Barrier(tMPI_Comm comm)
 #include "gather.c"
 #include "alltoall.c"
 #include "reduce.c"
-#include "once.c"
 

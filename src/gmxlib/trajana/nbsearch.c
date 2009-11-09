@@ -42,14 +42,17 @@
  * gmx_ana_nbsearch_free().
  *
  * \todo
- * Implement functions for looping through all pairs within a cutoff.
- *
- * \todo
  * Implement grid-based searching
  * (currently everything is implemented using an expensive O(n^2) loop).
+ * Optimally, the MD neighborhood searching routines could be used, but
+ * currently they are quite difficult to interface flexibly.
  *
  * \todo
- * Implement exclusions.
+ * Implement a set of functions for looping through all pairs within a cutoff.
+ *
+ * \todo
+ * Implement an API that allows for excluding certain pairs of atoms from
+ * neighborhood searching.
  */
 /*! \internal \file
  * \brief Implementation of functions in nbsearch.h.
