@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -74,6 +70,9 @@ static void tMPI_Split_colors(int N, const int *color, const int *key,
 /* communicator query&manipulation functions */
 int tMPI_Comm_N(tMPI_Comm comm)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_N(%p)", comm);
+#endif
     if (!comm)
         return 0;
     return comm->grp.N;
@@ -81,11 +80,17 @@ int tMPI_Comm_N(tMPI_Comm comm)
 
 int tMPI_Comm_size(tMPI_Comm comm, int *size)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_size(%p, %p)", comm, size);
+#endif
     return tMPI_Group_size(&(comm->grp), size);
 }
 
 int tMPI_Comm_rank(tMPI_Comm comm, int *rank)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_rank(%p, %p)", comm, rank);
+#endif
     return tMPI_Group_rank(&(comm->grp), rank);
 }
 
@@ -118,7 +123,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
     ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)tMPI_Malloc(
                       sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
 #else
@@ -129,7 +134,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
         tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
 #else
         tMPI_Thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
@@ -161,13 +166,68 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     for(i=0;i<N;i++)
         tMPI_Coll_sync_init( &(ret->csync[i]));
 
+    /* we insert ourselves after TMPI_COMM_WORLD */
+    if (TMPI_COMM_WORLD)
+    {
+        ret->next=TMPI_COMM_WORLD;
+        ret->prev=TMPI_COMM_WORLD->prev;
+
+        TMPI_COMM_WORLD->prev->next = ret;
+        TMPI_COMM_WORLD->prev = ret;
+    }
+    else
+    {
+        ret->prev=ret->next=ret;
+    }
+
     return ret;
+}
+
+void tMPI_Comm_destroy(tMPI_Comm comm)
+{
+
+    free(comm->grp.peers);
+#ifndef TMPI_NO_BUSY_WAIT
+    free(comm->multicast_barrier);
+#else
+    {
+        int i;
+        for(i=0;i<comm->Nbarriers;i++)
+            tMPI_Thread_barrier_destroy(&(comm->multicast_barrier[i]));
+        free(comm->multicast_barrier);
+    }
+#endif
+    tMPI_Coll_env_destroy( comm->cev );
+    tMPI_Coll_sync_destroy( comm->csync );
+
+    tMPI_Thread_mutex_destroy( &(comm->comm_create_lock) );
+    tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
+    tMPI_Thread_cond_destroy( &(comm->comm_create_finish) );
+
+    free((void*)comm->sendbuf);
+    free((void*)comm->recvbuf);
+    if ( comm->cart )
+    {
+        free(comm->cart->dims);
+        free(comm->cart->periods);
+        free(comm->cart);
+    }
+
+    if (comm->next)
+        comm->next->prev=comm->prev;
+    if (comm->prev)
+        comm->prev->next=comm->next;
+
+    free(comm);
 }
 
 int tMPI_Comm_free(tMPI_Comm *comm)
 {
-#ifndef TMPI_STRICT
     int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_free(%p)", comm);
+#endif
+#ifndef TMPI_STRICT
     if (! *comm)
         return TMPI_SUCCESS;
 
@@ -182,20 +242,9 @@ int tMPI_Comm_free(tMPI_Comm *comm)
     else
     {
         /* we're the last one so we can safely destroy it */
-        free((*comm)->grp.peers);
-        free((*comm)->multicast_barrier);
-        free((void*)(*comm)->sendbuf);
-        free((void*)(*comm)->recvbuf);
-        if ( (*comm)->cart)
-        {
-            free((*comm)->cart->dims);
-            free((*comm)->cart->periods);
-            free((*comm)->cart);
-        }
-        free(*comm);
+        tMPI_Comm_destroy(*comm);
     }
 #else
-    int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     /* This is correct if programs actually treat Comm_free as a 
        collective call */
     /* we need to barrier because the comm is a shared structure and
@@ -206,17 +255,7 @@ int tMPI_Comm_free(tMPI_Comm *comm)
        one process (rank[0] in this case) should do anything */
     if (myrank==0)
     {
-        free((*comm)->grp.peers);
-        free((*comm)->multicast_barrier);
-        free((void*)(*comm)->sendbuf);
-        free((void*)(*comm)->recvbuf);
-        if ( (*comm)->cart)
-        {
-            free((*comm)->cart->dims);
-            free((*comm)->cart->periods);
-            free((*comm)->cart);
-        }
-        free(*comm);
+        tMPI_Comm_destroy(*comm);
     }
 #endif
     return TMPI_SUCCESS;
@@ -224,6 +263,9 @@ int tMPI_Comm_free(tMPI_Comm *comm)
 
 int tMPI_Comm_dup(tMPI_Comm comm, tMPI_Comm *newcomm)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_dup(%p, %p)", comm, newcomm);
+#endif
     /* we just call Comm_split because it already contains all the
        neccesary synchronization constructs. */
     return tMPI_Comm_split(comm, 0, tMPI_Comm_seek_rank(comm, 
@@ -235,6 +277,10 @@ int tMPI_Comm_create(tMPI_Comm comm, tMPI_Group group, tMPI_Comm *newcomm)
 {
     int color=TMPI_UNDEFINED;
     int key=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_create(%p, %p, %p)", comm, group, newcomm);
+#endif
     if (tMPI_In_group(group))
     {
         color=1;
@@ -305,6 +351,10 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct tmpi_split *spl;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_split(%p, %d, %d, %p)", comm, color, key, 
+                       newcomm);
+#endif
     if (!comm)
     {
         *newcomm=NULL;

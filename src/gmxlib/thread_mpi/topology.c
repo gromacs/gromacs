@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -64,6 +60,10 @@ any papers on the package - you can find them in the top README file.
 /* topology functions */
 int tMPI_Topo_test(tMPI_Comm comm, int *status)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Topo_test(%p, %p)", comm, status);
+#endif
+
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -81,6 +81,9 @@ int tMPI_Topo_test(tMPI_Comm comm, int *status)
 
 int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cartdim_get(%p, %p)", comm, ndims);
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -100,6 +103,10 @@ int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
     int i;
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cart_get(%p, %d, %p, %p, %p)", comm, maxdims, 
+                       dims, periods, coords);
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -125,6 +132,10 @@ int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
 int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
 {
     int i,mul=1,ret=0;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);, 
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -161,6 +172,11 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords)
 {
     int i;
     int rank_left=rank;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cart_coords(%p, %d, %d, %p)", comm, rank, maxdims, 
+                     coords);
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -193,6 +209,10 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
     int Ntot=1;
     int i;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cart_map(%p, %d, %p, %p, %p)", comm, ndims, dims, 
+                     periods, newrank);
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -233,6 +253,10 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
     int i;
     
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm, ndims, 
+                     dims, periods, reorder, comm_cart);
+#endif
     if (!comm_old)
     {
         return tMPI_Error(comm_old, TMPI_ERR_COMM);
@@ -289,7 +313,7 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
         tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
 #else
         tMPI_Thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );

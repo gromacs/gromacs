@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 /* this file is #included from collective.c */
@@ -104,7 +100,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     comm->recvbuf[myrank]=recvbuf;
     /* there's a barrier to wait for all the processes to put their 
        send/recvbuf in the global list */
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
     tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
 #else
     tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
@@ -165,7 +161,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
                     memcpy(recvbuf, sendbuf, datatype->size*count);
             }
             /* split barrier */
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
             tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
 #else
             tMPI_Thread_barrier_wait( &(comm->multicast_barrier[iteration]));
@@ -180,7 +176,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             printf("%d: barrier waiting, iteration=%d\n", myrank,  iteration);
             fflush(0);
 #endif
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
             tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
 #else
             tMPI_Thread_barrier_wait( &(comm->multicast_barrier[iteration]));
@@ -204,6 +200,11 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
 {
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     int ret;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Reduce(%p, %p, %d, %p, %p, %d, %p)",
+                       sendbuf, recvbuf, count, datatype, op, root, comm);
+#endif
 
     if (myrank==root)
     {
@@ -234,6 +235,10 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     int ret;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Allreduce(%p, %p, %d, %p, %p, %p)",
+                     sendbuf, recvbuf, count, datatype, op, comm);
+#endif
     if (count==0)
         return TMPI_SUCCESS;
     if (!recvbuf)
@@ -250,7 +255,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     rootbuf=(void*)comm->recvbuf[0];
 
 
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
     tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
 #else
     tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
@@ -266,7 +271,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
         }
         memcpy(recvbuf, rootbuf, datatype->size*count );
     }
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
     tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
 #else
     tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));

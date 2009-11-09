@@ -33,9 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
 */
 
 #ifndef _THREAD_MPI_COLLECTIVE_H_
@@ -69,10 +66,80 @@ extern "C"
                             was not the one to execute the function; ignored
                             if NULL.
     \param[in] comm         The communicator.
-
+    \returns MPI_SUCCESS on success.
 */
-int tMPI_Once(void (*function)(void*), void *param, int *was_first,
-              tMPI_Comm comm);
+int tMPI_Once(tMPI_Comm comm,void (*function)(void*), void *param, 
+              int *was_first);
+
+/** Execute function once over comm, and wait for the function to return
+    its value.
+    
+    Executes a given function only once per collective call over comm. 
+
+    Collective function.
+
+    \param[in] function     the function to call
+    \param[in] param        the parameter to the function
+    \param[out] was_first   set to 1 if the current thread was the one to 
+                            execute the function. unchanged if current thread
+                            was not the one to execute the function; ignored
+                            if NULL.
+    \param[in] comm         The communicator.
+    \returns the return value of the function
+*/
+void* tMPI_Once_wait(tMPI_Comm comm,void* (*function)(void*), void *param, 
+                     int *was_first);
+
+/** Allocate a shared block of memory as a collective call.
+    
+    Collective function.
+
+    \param[in] comm         The communicator
+    \param[in] size         The size in bytes to allocate 
+*/
+void* tMPI_Shmalloc(tMPI_Comm comm, size_t size);
+
+
+
+
+
+
+#include "thread_mpi/atomic.h" 
+
+typedef struct
+{
+    tMPI_Atomic_t n_remaining; /* number of remaining operations */
+    void *res;                 /* result pointer */
+    tMPI_Comm comm;
+} tMPI_Reduce_req;
+
+tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm);
+#if 0
+/** Execute fast a asynchronious reduce over comm. 
+
+  Reduces array input with supplied funtion. This function may return before 
+  the input array is ready to be written to again; to check for its completion,
+  use the tMPI_Reduce_wait functions.
+
+  \param[in] function   The function to reduce with (takes three arguments,
+                        a size argument, two input pointers, and an output
+                        pointer (which may be the same as one of the input
+                        arguments, if res==NULL).
+  \param[in] n          A size argument to pass to the function.
+  \param[inout] input   The array of input data.
+  \param[out] res       A temporary results array. May be NULL, in which case
+                        the input data in 'in' gets overwritten.
+*/
+void tMPI_Reduce_async(tMPI_Reduce_req *req, 
+                       void (*function)(int, void*, void*, void *), 
+                       size_t n, void *input, void *res);
+
+
+void tMPI_Reduce_wait(tMPI_Reduce_req *req);
+
+void tMPI_Reduce_wait_results(tMPI_Reduce_req *req, void *res);
+
+#endif
 
 
 #ifdef __cplusplus

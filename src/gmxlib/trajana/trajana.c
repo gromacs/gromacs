@@ -70,6 +70,44 @@
  *  - \subpage selparser
  *  - \subpage selcompiler
  */
+/*! \page selengine Text-based selections
+ *
+ * \section selection_basics Basics
+ *
+ * Selections are enabled automatically for an analysis program that uses
+ * the library. The selection syntax is described in an online help that is
+ * accessible from all tools that use the library.
+ * By default, dynamic selections are allowed, and the user can freely
+ * choose whether to analyze atoms or centers of mass/geometry of
+ * residues/molecules.
+ * These defaults, as well as some others, can be changed by specifying
+ * flags for gmx_ana_traj_create().
+ *
+ * The analysis program can then access the selected positions for each frame
+ * through a \p gmx_ana_selection_t array that is passed to the frame
+ * analysis function (see gmx_analysisfunc()).
+ * As long as the analysis program is written such that it does not assume
+ * that the number of positions or the atoms in the groups groups remain
+ * constant, any kind of selection expression can be used.
+ *
+ * Some analysis programs may require a special structure for the index groups
+ * (e.g., \c g_angle requires the index group to be made of groups of three or
+ * four atoms).
+ * For such programs, it is up to the user to provide a proper selection
+ * expression that always returns such positions.
+ * Such analysis program can define \ref ANA_REQUIRE_WHOLE to make the
+ * default behavior appropriate for the most common uses where the groups
+ * should consist of atoms within a single residue/molecule.
+ *
+ * \section selection_methods Implementing new keywords
+ *
+ * New selection keywords can be easily implemented, either directly into the
+ * library or as part of analysis programs (the latter may be useful for
+ * testing or methods very specific to some analysis).
+ * For both cases, you should first create a \c gmx_ana_selmethod_t structure
+ * and fill it with the necessary information.
+ * Details can be found on a separate page: \ref selmethods.
+ */
 /*! \internal \file
  * \brief Implementation of functions in trajana.h.
  */
@@ -1192,7 +1230,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
                 fprintf(stderr, "%d reference selections", d->nrefgrps);
             }
             fprintf(stderr, ":\n");
-            fprintf(stderr, "(one selection per line, use \\ for line continuation)\n");
+            fprintf(stderr, "(one selection per line, 'help' for help)\n");
             rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nrefgrps, grps, TRUE);
             nr = gmx_ana_selcollection_get_count(d->sc);
             if (rc != 0 || nr != d->nrefgrps)
@@ -1217,7 +1255,7 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
             fprintf(stderr, "%d selections", d->nanagrps);
         }
         fprintf(stderr, " for analysis:\n");
-        fprintf(stderr, "(one selection per line, use \\ for line continuation%s)\n",
+        fprintf(stderr, "(one selection per line, 'help' for help%s)\n",
                 d->nanagrps == -1 ? ", Ctrl-D to end" : "");
         rc = gmx_ana_selcollection_parse_stdin(d->sc, d->nanagrps, grps, TRUE);
         fprintf(stderr, "\n");
