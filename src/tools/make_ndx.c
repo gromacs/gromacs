@@ -346,6 +346,65 @@ static int select_residuenumbers(char **string,t_atoms *atoms,
   return *nr;
 }
 
+static int select_residueindices(char **string,t_atoms *atoms,
+				 atom_id n1,char c,
+				 atom_id *nr,atom_id *index,char *gname)
+{
+  /*this should be similar to select_residuenumbers except select by index (sequential numbering in file)*/
+  char    buf[STRLEN];
+  int     i,j,up;
+  t_resinfo *ri;
+
+  *nr=0;
+  while ((*string)[0]==' ')
+    (*string)++;
+  if ((*string)[0]=='-') {
+    /* Residue number range selection */
+    if (c != ' ') {
+      printf("Error: residue insertion codes can not be used with residue range selection\n");
+      return 0;
+    }
+    (*string)++;
+    parse_int(string,&up);
+
+    for(i=0; i<atoms->nr; i++) {
+      ri = &atoms->resinfo[atoms->atom[i].resind];
+      for(j=n1; (j<=up); j++) {
+	if (atoms->atom[i].resind == j && (c == ' ' || ri->ic == c)) {
+	  index[*nr]=i;
+	  (*nr)++;
+	}
+      }
+    }
+    printf("Found %u atom%s with resind. in range %u-%d\n",
+	   *nr,(*nr==1)?"":"s",n1,up);
+    if (n1==up)
+      sprintf(buf,"r_%u",n1);
+    else
+      sprintf(buf,"r_%u-%d",n1,up);
+    strcpy(gname,buf);
+  }
+  else {
+    /* Individual residue number/insertion code selection */
+    j=n1;
+    sprintf(gname,"r");
+    do {
+      for(i=0; i<atoms->nr; i++) {
+	ri = &atoms->resinfo[atoms->atom[i].resind];
+	if (atoms->atom[i].resind == j && ri->ic == c) {
+	index[*nr]=i;
+	(*nr)++;
+	}
+      }
+      sprintf(buf,"_%d",j);
+      strcat(gname,buf);
+    } while (parse_int_char(string,&j,&c));
+  }
+  
+  return *nr;
+}
+
+
 static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
 				      atom_id *nr,atom_id *index,char *gname)
 {
@@ -751,6 +810,13 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
       sprintf(gname,"atom_%s",(*gn)[sel_nr1]);
     }
   }
+  else if (strncmp(*string,"ri",2)==0) {
+    (*string)+=2;
+    if (check_have_atoms(atoms, ostring) && 
+		parse_int_char(string,&sel_nr1,&c)) {
+		bRet=select_residueindices(string,atoms,sel_nr1,c,nr,index,gname);
+    } 
+  }
   else if ((*string)[0]=='r') {
     (*string)++;
     if (check_have_atoms(atoms, ostring)) {
@@ -885,6 +951,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char 
       printf(" 'r': residue         'res' nr         'chain' char\n");
       printf(" \"name\": group        'case': case %s         'q': save and quit\n",
 	     bCase ? "insensitive" : "sensitive  "); 
+	  printf(" 'ri': residue index\n");
       bPrintOnce = FALSE;
     }
     printf("\n");
@@ -915,6 +982,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char 
       printf(" 'r' nr1[ic1] [nr2[ic2] ...] : selects residues by number and insertion code.\n");
       printf(" 'r' nr1 - nr2               : selects residues in the range from nr1 to nr2.\n");
       printf(" 'r' name1[*] [name2[*] ...] : as 'a', but for residue names.\n");
+      printf(" 'ri' nr1 - nr2              : selects residue indices (as opposed to numbers) in the range from nr1 to nr2.\n");
       printf(" 'chain' ch1 [ch2 ...]       : selects atoms by chain identifier(s),\n");
       printf("                               not available with a .gro file as input.\n");
       printf(" !                 : takes the complement of a group with respect to all\n");

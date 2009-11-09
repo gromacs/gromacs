@@ -1150,6 +1150,8 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
     m->b.a               = NULL;
     m->b.nalloc_index    = 0;
     m->b.nalloc_a        = 0;
+    m->bStatic           = TRUE;
+    m->bMapStatic        = TRUE;
 }
 
 /*!
@@ -1254,8 +1256,6 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
         dest->type       = src->type;
         dest->b.nr       = src->b.nr;
         dest->b.nra      = src->b.nra;
-        dest->bStatic    = src->bStatic;
-        dest->bMapStatic = src->bMapStatic;
         memcpy(dest->orgid,      src->orgid,      dest->b.nr*sizeof(*dest->orgid));
         memcpy(dest->b.index,    src->b.index,   (dest->b.nr+1)*sizeof(*dest->b.index));
         memcpy(dest->b.a,        src->b.a,        dest->b.nra*sizeof(*dest->b.a));
@@ -1265,6 +1265,8 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
     memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
     memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
     memcpy(dest->mapb.index, src->mapb.index,(dest->mapb.nr+1)*sizeof(*dest->mapb.index));
+    dest->bStatic    = src->bStatic;
+    dest->bMapStatic = src->bMapStatic;
 }
 
 /*!
@@ -1285,7 +1287,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     bool bStatic;
 
     /* Process the simple cases first */
-    if (m->type == INDEX_UNKNOWN)
+    if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
     {
         return;
     }

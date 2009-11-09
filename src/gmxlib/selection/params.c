@@ -116,7 +116,7 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
         if (value->type == GROUP_VALUE && type == POS_VALUE)
         {
             value->u.expr =
-                _gmx_sel_init_position(value->u.expr, NULL, FALSE, scanner);
+                _gmx_sel_init_position(value->u.expr, NULL, scanner);
             if (value->u.expr == NULL)
             {
                 return -1;
