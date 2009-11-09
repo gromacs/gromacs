@@ -1110,7 +1110,7 @@ int gmx_fio_get_file_md5_lock(int fio, off_t offset, unsigned char digest[],
  */
 int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
 {
-    gmx_fio_get_file_md5_lock(fio, offset, digest, TRUE);
+    return gmx_fio_get_file_md5_lock(fio, offset, digest, TRUE);
 }
 
 /* The fio_mutex should ALWAYS be locked when this function is called */
