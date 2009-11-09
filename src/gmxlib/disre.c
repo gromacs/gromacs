@@ -115,7 +115,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
             {
                 dd->nres += nmol;
             }
-            dd->npair++;
+            dd->npair += nmol;
         }
     }
 
