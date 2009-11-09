@@ -351,6 +351,7 @@ static int select_residueindices(char **string,t_atoms *atoms,
 				 atom_id *nr,atom_id *index,char *gname)
 {
   /*this should be similar to select_residuenumbers except select by index (sequential numbering in file)*/
+  /*resind+1 for 1-indexing*/
   char    buf[STRLEN];
   int     i,j,up;
   t_resinfo *ri;
@@ -370,13 +371,13 @@ static int select_residueindices(char **string,t_atoms *atoms,
     for(i=0; i<atoms->nr; i++) {
       ri = &atoms->resinfo[atoms->atom[i].resind];
       for(j=n1; (j<=up); j++) {
-	if (atoms->atom[i].resind == j && (c == ' ' || ri->ic == c)) {
+	if (atoms->atom[i].resind+1 == j && (c == ' ' || ri->ic == c)) {
 	  index[*nr]=i;
 	  (*nr)++;
 	}
       }
     }
-    printf("Found %u atom%s with resind. in range %u-%d\n",
+    printf("Found %u atom%s with resind.+1 in range %u-%d\n",
 	   *nr,(*nr==1)?"":"s",n1,up);
     if (n1==up)
       sprintf(buf,"r_%u",n1);
@@ -391,7 +392,7 @@ static int select_residueindices(char **string,t_atoms *atoms,
     do {
       for(i=0; i<atoms->nr; i++) {
 	ri = &atoms->resinfo[atoms->atom[i].resind];
-	if (atoms->atom[i].resind == j && ri->ic == c) {
+	if (atoms->atom[i].resind+1 == j && ri->ic == c) {
 	index[*nr]=i;
 	(*nr)++;
 	}
@@ -982,7 +983,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char 
       printf(" 'r' nr1[ic1] [nr2[ic2] ...] : selects residues by number and insertion code.\n");
       printf(" 'r' nr1 - nr2               : selects residues in the range from nr1 to nr2.\n");
       printf(" 'r' name1[*] [name2[*] ...] : as 'a', but for residue names.\n");
-      printf(" 'ri' nr1 - nr2              : selects residue indices (as opposed to numbers) in the range from nr1 to nr2.\n");
+      printf(" 'ri' nr1 - nr2              : selects residue indices, 1-indexed, (as opposed to numbers) in the range from nr1 to nr2.\n");
       printf(" 'chain' ch1 [ch2 ...]       : selects atoms by chain identifier(s),\n");
       printf("                               not available with a .gro file as input.\n");
       printf(" !                 : takes the complement of a group with respect to all\n");

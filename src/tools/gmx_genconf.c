@@ -295,7 +295,7 @@ int gmx_genconf(int argc, char *argv[])
   /*depending on how you look at it, this is either a nasty hack or the way it should work*/
   if (bRenum)
     for (i=0;i<atoms->nres;i++)
-	  atoms->resinfo[i].nr=i;
+	  atoms->resinfo[i].nr=i+1;
   
   
   if (bShuffle)
