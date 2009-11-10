@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 /* this file is #included from collective.c */
@@ -50,6 +46,13 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Scatter(%p, %d, %p, %p, %d, %p, %d, %p)", 
+                       sendbuf, sendcount, sendtype, 
+                       recvbuf, recvcount, recvtype, 
+                       root, comm);
+#endif
 
     if (!comm)
     {
@@ -102,7 +105,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 #endif
 
         /* post availability */
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex) );
 #else
         tMPI_Atomic_memory_barrier();
@@ -110,7 +113,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
         tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
 
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_cond_broadcast( &(cev->met[myrank].recv_cond) );
         tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex) );
 #endif
@@ -180,6 +183,12 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
     int myrank;
     int ret=TMPI_SUCCESS;
 
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Scatterv(%p, %p, %p, %p, %p, %d, %p, %d, %p)", 
+                       sendbuf, sendcounts, displs, sendtype, recvbuf,
+                       recvcount, recvtype, root, comm);
+#endif
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
@@ -230,7 +239,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 #endif
 
         /* post availability */
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_mutex_lock( &(cev->met[myrank].wait_mutex) );
 #else
         tMPI_Atomic_memory_barrier();
@@ -238,7 +247,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 
         tMPI_Atomic_set( &(cev->met[myrank].current_sync), synct);
 
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
         tMPI_Thread_cond_broadcast( &(cev->met[myrank].recv_cond) );
         tMPI_Thread_mutex_unlock( &(cev->met[myrank].wait_mutex) );
 #endif

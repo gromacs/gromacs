@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -60,6 +56,9 @@ any papers on the package - you can find them in the top README file.
 #include "thread_mpi/tmpi.h"
 #include "tmpi_impl.h"
 
+#ifdef TMPI_TRACE
+#include <stdarg.h>
+#endif
 
 
 
@@ -105,9 +104,26 @@ static void* tMPI_Thread_starter(void *arg);
 
 
 
+#ifdef TMPI_TRACE
+void tMPI_Trace_print(const char *fmt, ...)
+{
+    va_list argp;
+    struct tmpi_thread* th=tMPI_Get_current();
+    static tMPI_Thread_mutex_t mtx=TMPI_THREAD_MUTEX_INITIALIZER;
 
-
-
+    tMPI_Thread_mutex_lock(&mtx);
+    if (threads)
+        printf("THREAD %02d: ", (int)(th-threads));
+    else
+        printf("THREAD main: ");
+    va_start(argp, fmt);
+    vprintf(fmt, argp);
+    printf("\n");
+    fflush(stdout);
+    va_end(argp);
+    tMPI_Thread_mutex_unlock(&mtx);
+}
+#endif
 
 
 void *tMPI_Malloc(size_t size)
@@ -225,13 +241,17 @@ int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads)
 static void* tMPI_Thread_starter(void *arg)
 {
     struct tmpi_thread *th=(struct tmpi_thread*)arg;
-    int N_envelopes=(Nthreads+1)*(Nthreads+1)*8;  /*AARGH arbitrary number*/
-    int N_send_envelopes=(Nthreads+1)*8;  /*AARGH arbitrary number*/
-    int N_reqs=(Nthreads+1)*(Nthreads+1)*2;  /*AARGH arbitrary number*/
+    int N_envelopes=(Nthreads+1)*(Nthreads+1)*N_EV_ALLOC;  
+    int N_send_envelopes=(Nthreads+1)*N_EV_ALLOC;  
+    int N_reqs=(Nthreads+1)*(Nthreads+1)*N_EV_ALLOC;  
     int i;
 
     tMPI_Thread_setspecific(id_key, arg);
 
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("Created thread nr. %d", (int)(th-threads));
+#endif
 
     /* allocate comm.self */
     th->self_comm=tMPI_Comm_alloc(TMPI_COMM_WORLD, 1);
@@ -248,7 +268,14 @@ static void* tMPI_Thread_starter(void *arg)
     {
         tMPI_Send_env_list_init( &(th->evs[i]), N_send_envelopes);
     }
-    tMPI_Atomic_set( &(th->evs_check_id), 0);
+#ifndef TMPI_NO_BUSY_WAIT
+    tMPI_Atomic_set( &(th->evs_new_incoming), 0);
+#else
+    tMPI_Thread_mutex_init( &(th->ev_check_lock ) );
+    tMPI_Thread_cond_init( &(th->ev_check_cond ) );
+    th->evs_new_incoming=0;
+    th->ev_received=0;
+#endif
 
     /* allocate requests */
     tMPI_Req_list_init(&(th->rql), N_reqs);
@@ -283,6 +310,12 @@ static void* tMPI_Thread_starter(void *arg)
 void tMPI_Start_threads(int N, int *argc, char ***argv, 
                         void (*start_fn)(void*), void *start_arg)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Start_threads(%d, %p, %p, %p, %p)", N, argc,
+                       argv, start_fn, start_arg);
+#endif
+
+
     if (N>0) 
     {
         int i;
@@ -302,7 +335,6 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
         TMPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
         tMPI_GROUP_EMPTY=tMPI_Group_alloc();
-
         TMPI_COMM_WORLD->grp.N=N;
 
         if (tMPI_Thread_key_create(&id_key, NULL))
@@ -356,6 +388,11 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
 
 int tMPI_Init(int *argc, char ***argv)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Init(%p, %p)", argc, argv);
+#endif
+
+
     if (TMPI_COMM_WORLD==0) /* we're the main process */
     {
         int N;
@@ -373,6 +410,10 @@ int tMPI_Init(int *argc, char ***argv)
 
 int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Init_fn(%d, %p, %p)", N, start_function, arg);
+#endif
+
     if (TMPI_COMM_WORLD==0 && N>=1) /* we're the main process */
     {
         tMPI_Start_threads(N, 0, 0, start_function, arg);
@@ -382,6 +423,10 @@ int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg)
 
 int tMPI_Initialized(int *flag)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Initialized(%p)", flag);
+#endif
+
     *flag=(TMPI_COMM_WORLD && !tmpi_finalized);
 
     return TMPI_SUCCESS;
@@ -392,6 +437,9 @@ int tMPI_Finalize(void)
     int i;
     struct tmpi_thread *th=tMPI_Get_current();
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Finalize()");
+#endif
 #ifdef TMPI_DEBUG
     printf("%5d: tMPI_Finalize called\n", tMPI_This_threadnr());
     fflush(stdout);
@@ -399,21 +447,31 @@ int tMPI_Finalize(void)
 
     tMPI_Barrier(TMPI_COMM_WORLD);
 
-    for(i=0;i<(Nthreads+1);i++)
-    {
-        tMPI_Recv_env_list_destroy( &(th->evr));
-    }
+    tMPI_Recv_env_list_destroy( &(th->evr));
     for(i=0;i<Nthreads;i++)
     {
         tMPI_Send_env_list_destroy( &(th->evs[i]));
     }
     tMPI_Free_env_list_destroy( &(th->envelopes) );
-
     tMPI_Req_list_destroy( &(th->rql) );
+
+#ifdef TMPI_NO_BUSY_WAIT
+    tMPI_Thread_mutex_destroy(&(th->ev_check_lock));
+    tMPI_Thread_cond_destroy(&(th->ev_check_cond));
+#endif
+#ifdef USE_COLLECTIVE_COPY_BUFFER
+    tMPI_Copy_buffer_list_destroy(&(th->cbl_multi));
+#endif
+
+    for(i=0;i<th->argc;i++)
+    {
+        free(th->argv[i]);
+    }
 
 
     if (tMPI_Is_master())
     {
+        tMPI_Comm next;
         /* we just wait for all threads to finish; the order isn't very 
            relevant, as all threads should arrive at their endpoints soon. */
         for(i=1;i<Nthreads;i++)
@@ -424,7 +482,14 @@ int tMPI_Finalize(void)
             }
         }
         free(threads);
-        free(TMPI_COMM_WORLD);
+
+        do
+        {
+            next=TMPI_COMM_WORLD->next;
+            if (next)
+                tMPI_Comm_destroy(next);
+        } while (next && next!=TMPI_COMM_WORLD);
+
         free(tMPI_GROUP_EMPTY);
         threads=0;
         TMPI_COMM_WORLD=NULL;
@@ -441,6 +506,9 @@ int tMPI_Finalize(void)
 
 int tMPI_Finalized(int *flag)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Finalized(%p)", flag);
+#endif
     *flag=tmpi_finalized;
 
     return TMPI_SUCCESS;
@@ -450,6 +518,9 @@ int tMPI_Finalized(int *flag)
 
 int tMPI_Abort(tMPI_Comm comm, int errorcode)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Abort(%p, %d)", comm, errorcode);
+#endif
 #if 0
     /* we abort(). This way we can run a debugger on it */
     fprintf(stderr, "tMPI_Abort called with error code %d",errorcode);
@@ -496,6 +567,9 @@ int tMPI_Get_processor_name(char *name, int *resultlen)
     unsigned int digits=0;
     const unsigned int base=10;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Get_processor_name(%p, %p)", name, resultlen);
+#endif
     /* we don't want to call sprintf here (it turns out to be not entirely
        thread-safe on Mac OS X, for example), so we do it our own way: */
 
@@ -548,6 +622,9 @@ double tMPI_Wtime(void)
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     struct timeval tv;
         
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Wtime()");
+#endif
     gettimeofday(&tv, NULL);
     ret=tv.tv_sec + 1000000.*tv.tv_usec;
 #else
@@ -568,6 +645,9 @@ double tMPI_Wtick(void)
 
 int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Get_count(%p, %p, %p)", status, datatype, count);
+#endif
     if (!status)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_STATUS);

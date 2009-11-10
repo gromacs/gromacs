@@ -37,6 +37,8 @@
 #ifndef SELECTION_KEYWORDS_H
 #define SELECTION_KEYWORDS_H
 
+struct t_selelem;
+
 /** Selection method data for comparison expression evaluation. */
 extern struct gmx_ana_selmethod_t sm_compare;
 
@@ -55,6 +57,9 @@ _gmx_selelem_print_compare_info(FILE *fp, void *data);
 
 /** Sets the position type for position keyword evaluation. */
 void
-_gmx_selelem_set_kwpos_type(const char *type, int flags, void *data);
+_gmx_selelem_set_kwpos_type(struct t_selelem *sel, const char *type);
+/** Sets the flags for position keyword evaluation. */
+void
+_gmx_selelem_set_kwpos_flags(struct t_selelem *sel, int flags);
 
 #endif

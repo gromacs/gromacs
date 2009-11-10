@@ -33,72 +33,11 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
 
-
-/*#define TMPI_DEBUG*/
-
-/* if this is defined, MPI will warn/hang/crash on practices that don't conform
-   to the MPI standard (such as not calling tMPI_Comm_free on all threads that
-   are part of the comm being freed). */
-#define TMPI_STRICT 
-
-/* whether to warn if there are mallocs at performance-critical sections 
-   (due to preallocations being too small) */
-/*#define TMPI_WARN_MALLOC*/
-
-
-/* the max. number of envelopes waiting to be read at thread */
-#define MAX_ENVELOPES 128
-
-/* the normal maximum number of threads for pre-defined arrays
-   (if the actual number of threads is bigger than this, it'll
-    allocate/deallocate arrays, so no problems will arise). */
-#define MAX_PREALLOC_THREADS 32
-
-/* Whether to use busy-waiting spinlocks instead of the OS-provided locks
-   for waits. Busy-waiting has the advantage of low latency, while the 
-   OS-provided locks are friendlier on the scheduler and CPU usage. */
-#define SPIN_WAITING 
-
-
-/* Whether to use lock&wait-free lists using compare-and-swap (cmpxchg on x86)
-   pointer functions. Message passing using blocking Send/Recv, and multicasts 
-   are is still blocking, of course. */
-#define TMPI_LOCK_FREE_LISTS
-
-
-/* The size (in bytes) of the maximum transmission size for which double 
-   copying is allowed (i.e. the sender doesn't wait for the receiver to 
-   become ready, but posts a copied buffer in its envelope) */
-/*#define USE_COPY_BUFFER*/
-#define COPY_BUFFER_SIZE 256
-
-#ifdef USE_COPY_BUFFER
-/* We can separately specify whether we want copy buffers for send/recv or
-   multicast communications: */
-#define USE_SEND_RECV_COPY_BUFFER
-#define USE_COLLECTIVE_COPY_BUFFER
-#endif
-
-
-/* The number of collective envelopes per comm object. This is the maximum
-   number of simulataneous collective communications that can 
-   take place per comm object. If USE_COPY_BUFFER is not set, simultaneous
-   collective communications don't happen and 2 is the right value.  */
-#ifdef USE_COLLECTIVE_COPY_BUFFER
-#define N_COLL_ENV 8
-#else
-#define N_COLL_ENV 2
-#endif
-
-
+#include "settings.h"
 
 
 /* BASIC DEFINITIONS */
@@ -116,6 +55,7 @@ typedef int bool;
 #define FALSE false
 #endif
 #endif
+
 
 
 
@@ -147,6 +87,8 @@ struct copy_buffer_list
     int Nbufs; /* number of allocated buffers */
 };
 #endif
+
+
 
 
 
@@ -386,7 +328,7 @@ struct coll_env_thread
     tMPI_Atomic_ptr_t *cpbuf; /* copy_buffer pointers. */
     struct copy_buffer *cb; /* the copy buffer cpbuf points to */
 #endif
-#ifndef SPIN_WAITING
+#ifdef TMPI_NO_BUSY_WAIT
     tMPI_Thread_mutex_t wait_mutex; /* mutex associated with waiting */
     tMPI_Thread_cond_t send_cond; /* condition associated with the sending */
     tMPI_Thread_cond_t recv_cond; /* condition associated with the receiving */
@@ -403,6 +345,8 @@ struct coll_env_coll
     tMPI_Atomic_t current_sync; /* sync counter value for the current
                                    communication */
     tMPI_Atomic_t n_remaining;  /* remaining threads count */
+
+    void *res; /* result data for once calls. */
 };
 
 /* the collective communication envelope. There's a few of these per 
@@ -445,18 +389,30 @@ struct tmpi_thread
     struct recv_envelope_list evr;
     /* the send envelopes posted by other threadas */
     struct send_envelope_list *evs;
-    /* send envelope change indicator */
-    tMPI_Atomic_t evs_check_id;
+
+
+#ifndef TMPI_NO_BUSY_WAIT 
+    /* send envelope change indicator/count */
+    tMPI_Atomic_t evs_new_incoming;
+#else
+    /* lock+signal for signaling newly available send envelopes to this thread, 
+       or finished send envelopes from this thread. */
+    tMPI_Thread_mutex_t ev_check_lock;
+    tMPI_Thread_cond_t ev_check_cond;
+    /* send envelope change count */
+    int evs_new_incoming;
+    /* the number of send envelopes from this thread that have been 
+       xmitted by other threads */
+    int ev_received;
+#endif
 
     struct req_list rql;  /* list of pre-allocated requests */
 
     struct free_envelope_list envelopes; /* free envelopes */
-
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* copy buffer list for multicast communications */
     struct copy_buffer_list cbl_multi; 
 #endif
-
 
     tMPI_Comm self_comm; /* comms for MPI_COMM_SELF */
 
@@ -540,14 +496,13 @@ struct tmpi_comm_
        multicast_barrier[3] contains a barrier for N/8 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-#ifdef SPIN_WAITING
+#ifndef TMPI_NO_BUSY_WAIT
     tMPI_Spinlock_barrier_t *multicast_barrier;   
 #else
     tMPI_Thread_barrier_t *multicast_barrier;   
 #endif
     int *N_multicast_barrier;
     int Nbarriers;
-
 
     struct coll_env *cev; /* list of multicast envelope objecs */
     struct coll_sync *csync; /* list of multicast sync objecs */
@@ -570,6 +525,9 @@ struct tmpi_comm_
     /*struct tmpi_graph_topol_ *graph;*/
 
     tMPI_Errhandler erh;
+
+    /* links of a global list of all comms that starts at TMPI_COMM_WORLD */
+    struct tmpi_comm_ *next,*prev;
 };
 
 
@@ -628,6 +586,27 @@ typedef struct tmpi_datatype_ tmpi_dt;
 
 
 
+
+#ifdef TMPI_PROFILE
+/* bookkeeping structure for a single call */
+struct tmpi_profile_call_
+{
+    int Ncalls;
+    int Nbuffered; 
+}
+
+/* bookkeeping structure for profiling */
+struct tmpi_profile_
+{
+    struct tmpi_profile_call_ tMPI_Send;
+}; 
+#endif
+
+
+
+
+
+
 /* global variables */
 
 /* the threads themselves (tmpi_comm only contains lists of pointers to this
@@ -645,6 +624,9 @@ extern struct tmpi_global *tmpi_global;
 
 
 
+#ifdef TMPI_TRACE
+void tMPI_Trace_print(const char *fmt, ...);
+#endif
 
 /* error-checking malloc/realloc: */
 void *tMPI_Malloc(size_t size);
@@ -691,9 +673,10 @@ int tMPI_Comm_N(tMPI_Comm comm);
 
 /* allocate a comm object, making space for N threads */
 tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N);
+/* de-allocate a comm object */
+void tMPI_Comm_destroy(tMPI_Comm comm);
 /* allocate a group object */
 tMPI_Group tMPI_Group_alloc(void);
-
 
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER

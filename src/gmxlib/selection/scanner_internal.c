@@ -347,7 +347,8 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive)
+                    bool bInteractive, int maxnr,
+                    struct gmx_ana_indexgrps_t *grps)
 {
     gmx_sel_lexer_t *state;
     int              rc;
@@ -360,6 +361,9 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     snew(state, 1);
     state->sc        = sc;
+    state->grps      = grps;
+    state->nexpsel   = (maxnr > 0 ? sc->nr + maxnr : -1);
+
     state->bPrompt   = bInteractive;
     state->prompt    = bInteractive ? DEFAULT_PROMPT : NULL;
 
@@ -410,6 +414,20 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     return state->sc;
+}
+
+struct gmx_ana_indexgrps_t *
+_gmx_sel_lexer_indexgrps(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->grps;
+}
+
+int
+_gmx_sel_lexer_exp_selcount(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->nexpsel;
 }
 
 const char *

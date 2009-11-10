@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -88,9 +84,7 @@ typedef struct tMPI_Spinlock
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-
-
-/* first do the intrinsics. icc on windows doesn't have them. */
+/* do the intrinsics. icc on windows doesn't have them. */
 #if ( (TMPI_GCC_VERSION >= 40100) && (!(defined(__INTEL_COMPILER) && (defined(_WIN32) || defined(_WIN64) )  ) ) )
 
 #include "gcc_intrinsics.h"
@@ -118,7 +112,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
     return i;
 }
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *a, int oldval, int newval)
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
     unsigned long prev;
     
@@ -130,9 +124,9 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *a, int oldval, int newval)
     return prev;
 }
 
-static inline void* volatile* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *a, 
-                                                      void *oldval,
-                                                      void *newval)
+static inline void* volatile* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, 
+                                                  void *oldval,
+                                                  void *newval)
 {
     void* prev;
 #ifndef __x86_64__ 
@@ -151,7 +145,40 @@ static inline void* volatile* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *a,
 
 #endif /* end of check for gcc intrinsics */
 
+#define TMPI_HAVE_SWAP
+/* do the swap fns; we told the intrinsics that we have them. */
+static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
+{
+    volatile int ret=b;
+    __asm__ __volatile__("\txchgl %0, %1;" 
+                         :"=r"(ret)
+                         :"m"(a->value), "0"(ret)
+                         :"memory");
+    return (int)ret;
+}
 
+static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
+{
+    void *volatile *ret=b;
+#ifndef __x86_64__ 
+/*    __asm__ __volatile__("\txchgl %0, %1;" 
+                         :"=m"(a->value),"=q"(b) 
+                         :"q"(b)
+                         :"memory");
+*/
+    __asm__ __volatile__("\txchgl %0, %1;" 
+                         :"=r"(ret)
+                         :"m"(a->value), "0"(ret)
+                         :"memory");
+
+#else
+    __asm__ __volatile__("\txchgq %0, %1;" 
+                         :"=r"(ret)
+                         :"m"(a->value), "0"(ret)
+                         :"memory");
+#endif
+    return (void*)ret;
+}
 
 
 

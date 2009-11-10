@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 /* ia64 with GCC or Intel compilers. Since we need to define everything through
@@ -48,22 +44,15 @@ any papers on the package - you can find them in the top README file.
 
 typedef struct tMPI_Atomic
 {
-    volatile int       value; /*!< Volatile, to avoid compiler aliasing */
+    volatile int value; /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* volatile    value; /*!< Volatile, to avoid compiler aliasing */
+    void* volatile value; /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_ptr_t;
-
-
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
-}
-tMPI_Spinlock_t;
 
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
@@ -74,6 +63,43 @@ tMPI_Spinlock_t;
 
 #define tMPI_Atomic_ptr_get(a)   ((a)->value) 
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (i))
+
+
+
+#ifndef __INTEL_COMPILER
+#define TMPI_HAVE_SWAP
+/* xchg operations: */
+/* ia64 xchg */
+static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
+{
+    volatile int res;
+    asm volatile ("xchg4 %0=[%1],%2": 
+                  "=r"(res) : "r"(&a->value), "r"(b) : "memory"); 
+                          
+    return res;
+}
+/* ia64 ptr xchg */
+static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t * a, void *b)
+{
+    void* volatile* res;
+
+
+    asm volatile ("xchg8 %0=[%1],%2": 
+                  "=r"(res) : "r"(&a->value), "r"(b) : "memory"); 
+    return (void*)res;
+}
+#endif
+
+
+
+/* do the intrinsics. icc on windows doesn't have them. */
+#if ( (TMPI_GCC_VERSION >= 40100) )
+
+#include "gcc_intrinsics.h"
+
+/* our spinlock is not really any better than gcc's based on its intrinsics */
+#include "gcc_spinlock.h"
+#else
 
 
 /* Compiler thingies */
@@ -89,24 +115,29 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /*#define tMPI_Atomic_memory_barrier() __memory_barrier()*/
 #define tMPI_Atomic_memory_barrier() __sync_synchronize()
 /* ia64 cmpxchg */
-#define tMPI_Atomic_cmpxchg(a, oldval, newval) _InterlockedCompareExchange(&((a)->value),newval,oldval)
+#define tMPI_Atomic_cas(a, oldval, newval) \
+          _InterlockedCompareExchange(&((a)->value),newval,oldval)
 /* ia64 pointer cmpxchg */
-#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) _InterlockedCompareExchangePointer(&((a)->value),newval,oldval)
+#define tMPI_Atomic_ptr_cas(a, oldval, newval) \
+          _InterlockedCompareExchangePointer(&((a)->value),newval,oldval)
 
-/*#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) __sync_val_compare_and_swap(&((a)->value),newval,oldval)*/
+/*#define tMPI_Atomic_ptr_cas(a, oldval, newval) __sync_val_compare_and_swap(&((a)->value),newval,oldval)*/
 
 
 /* ia64 fetchadd, but it only works with increments +/- 1,4,8,16 */
 #define tMPI_ia64_fetchadd(a, inc)  __fetchadd4_rel(a, inc)
 
+#define TMPI_HAVE_SWAP
+#define tMPI_Atomic_swap(a, b) _InterlockedExchange( &((a)->value), (b))
+#define tMPI_Atomic_ptr_swap(a, b) _InterlockedExchangePointer( &((a)->value), (b))
+
 #elif defined __GNUC__  
+
 /* ia64 memory barrier */
-/*#  define tMPI_Atomic_memory_barrier() asm volatile ("":::"memory")*/
-#  define tMPI_Atomic_memory_barrier() asm volatile ("mf" ::: "memory")
+#define tMPI_Atomic_memory_barrier() asm volatile ("mf" ::: "memory")
+
 /* ia64 cmpxchg */
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
-                                     int              oldval,
-                                     int              newval)
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
 #if GCC_VERSION < 40200
     volatile int res;
@@ -121,9 +152,8 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *   a,
 }
 
 /* ia64 ptr cmpxchg */
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a,
-                                           void*              oldval,
-                                           void*              newval)
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *oldval, 
+                                        void *newval)
 {
 #if GCC_VERSION < 40200
     void* volatile* res;
@@ -142,19 +172,20 @@ static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t * a,
 #define tMPI_ia64_fetchadd(a, inc)                                             \
 ({  unsigned long res;                                                        \
     asm volatile ("fetchadd4.rel %0=[%1],%2"                                  \
-                  : "=r"(res) : "r"(a), "i" (inc) : "memory");                \
+                  : "=r"(res) : "r"(a), "r" (inc) : "memory");                \
                   res;                                                        \
 })
 
 
+
 #else /* Unknown compiler */
 #  error Unknown ia64 compiler (not GCC or ICC) - modify tMPI_Thread.h!
-#endif
+#endif /* end of gcc/icc specific section */
 
 
 
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *       a, 
-                                        volatile int         i)
+
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     volatile int oldval,newval;    
     volatile int __i = i;
@@ -178,15 +209,14 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *       a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return newval;
 }
 
 
 
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
-                                       volatile int       i)
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
     volatile int oldval,newval;    
     volatile int __i = i;
@@ -210,10 +240,17 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
             oldval = tMPI_Atomic_get(a);
             newval = oldval + i;
         }
-        while(tMPI_Atomic_cmpxchg(a,oldval,newval) != oldval);
+        while(tMPI_Atomic_cas(a,oldval,newval) != oldval);
     }
     return oldval;
 }
+
+typedef struct tMPI_Spinlock
+{
+    volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
+}
+tMPI_Spinlock_t;
+
 
 
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
@@ -222,11 +259,11 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 }
 
 
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     tMPI_Atomic_t *a = (tMPI_Atomic_t *) x;
     unsigned long value;                                                 
-    value = tMPI_Atomic_cmpxchg(a, 0, 1);                             
+    value = tMPI_Atomic_cas(a, 0, 1);                             
     if (value)                                                           
     {                                                                    
         do                                                               
@@ -235,20 +272,20 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
             {                                                            
                 tMPI_Atomic_memory_barrier();                             
             }                                                            
-            value = tMPI_Atomic_cmpxchg(a, 0, 1);                       
+            value = tMPI_Atomic_cas(a, 0, 1);                       
         }                                                                
         while (value);                                                   
     }                                                                    
 } 
 
 
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
-    return (tMPI_Atomic_cmpxchg( ((tMPI_Atomic_t *)x), 0, 1) != 0);
+    return (tMPI_Atomic_cas( ((tMPI_Atomic_t *)x), 0, 1) != 0);
 }
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
     do
     {
@@ -259,13 +296,13 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
 }
 
 
-static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
 {
     return (x->lock != 0);
 }
 
 
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     
     do 
@@ -275,8 +312,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
     while(tMPI_Spinlock_islocked(x));
 }
 
+#endif
 
 #undef tMPI_ia64_fetchadd
-
 
 

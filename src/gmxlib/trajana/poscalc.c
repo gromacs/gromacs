@@ -1276,7 +1276,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         g = &pc->gmax;
     }
-    p->g = g;
+    gmx_ana_pos_set_evalgrp(p, g);
 
     /* Update the index map */
     if (pc->flags & POS_DYNAMIC)

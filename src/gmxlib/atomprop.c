@@ -267,6 +267,8 @@ static void destroy_prop(aprop_t *ap)
     sfree(ap->atomnm[i]);
     sfree(ap->resnm[i]);
   }
+  sfree(ap->atomnm);
+  sfree(ap->resnm);
   sfree(ap->bAvail);
   sfree(ap->value);
 }

@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -59,27 +55,22 @@ any papers on the package - you can find them in the top README file.
 typedef struct tMPI_Atomic
 {
         LONG volatile      value; /*!< Volatile, to avoid compiler aliasing */
-}
-tMPI_Atomic_t;
+} tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
         void* volatile      value; /*!< Volatile, to avoid compiler aliasing */
-}
-tMPI_Atomic_ptr_t;
-
-
+} tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
     LONG volatile      lock;      /*!< Volatile, to avoid compiler aliasing */
-}
-tMPI_Spinlock_t;
-
+} tMPI_Spinlock_t;
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
+#define TMPI_HAVE_SWAP
 
 
 #define tMPI_Atomic_get(a)  ((a)->value) 
@@ -96,12 +87,19 @@ tMPI_Spinlock_t;
 #define tMPI_Atomic_add_return(a, i)  \
     ( (i) + InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i)) )
 
-#define tMPI_Atomic_cmpxchg(a, oldval, newval) \
+#define tMPI_Atomic_cas(a, oldval, newval) \
     InterlockedCompareExchange((LONG volatile *)(a), (LONG) (newval), (LONG) (oldval))
 
-#define tMPI_Atomic_ptr_cmpxchg(a, oldval, newval) \
+#define tMPI_Atomic_ptr_cas(a, oldval, newval) \
     InterlockedCompareExchangePointer(&((a)->value), (PVOID) (newval),  \
                                       (PVOID) (oldval))
+
+#define tMPI_Atomic_swap(a, b) \
+    InterlockedExchange((LONG volatile *)(a), (LONG) (b))
+
+#define tMPI_Atomic_ptr_swap(a, b) \
+    InterlockedExchangePointer(&((a)->value), (PVOID) (b))
+
 
 
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)

@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 /* IBM xlC compiler on AIX */
@@ -48,30 +44,26 @@ any papers on the package - you can find them in the top README file.
 
 typedef struct tMPI_Atomic
 {
-        volatile int       value;  /*!< Volatile, to avoid compiler aliasing */
+    volatile int value;  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_t;
 
 
 typedef struct tMPI_Atomic_ptr
 {
-        void* volatile*     value;  /*!< Volatile, to avoid compiler aliasing */
+    void* volatile* value;  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_ptr_t;
 
 
-
-
 typedef struct tMPI_Spinlock
 {
-    volatile unsigned int   lock;  /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int lock;  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Spinlock_t;
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a,
-                                     int               oldval,
-                                     int               newval)
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
     int t;
     
@@ -89,9 +81,8 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *    a,
 }
 
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *a,
-                                           void*             oldval,
-                                           void*             newval)
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
+                                        void* newval)
 {
     void *t;
     
@@ -111,8 +102,7 @@ static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *a,
 
 
 
-static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a, 
-                                         int                  i)
+static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     int oldval,newval;    
     
@@ -128,8 +118,7 @@ static inline void tMPI_Atomic_add_return(tMPI_Atomic_t *       a,
 
 
 
-static inline void tMPI_Atomic_fetch_add(tMPI_Atomic_t *       a, 
-                                        int                  i)
+static inline void tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
     int oldval,newval;    
     
@@ -144,13 +133,13 @@ static inline void tMPI_Atomic_fetch_add(tMPI_Atomic_t *       a,
 }
 
 
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     __clear_lock((atomic_p)x,0);
 }
 
 
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     do
     {
@@ -160,26 +149,26 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *   x)
 }
 
 
-static inline void tMPI_Spinlock_trylock(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 {
     /* Return 0 if we got the lock */
     return (__check_lock((atomic_p)x, 0, 1) != 0)
 }
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
     __clear_lock((atomic_p)x,0);
 }
 
 
-static inline void tMPI_Spinlock_islocked(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_islocked(tMPI_Spinlock_t *x)
 {
     return (*((atomic_p)x) != 0);
 }
 
 
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *    x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     while(spin_islocked(x)) { ; } 
 }

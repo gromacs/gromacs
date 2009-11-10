@@ -87,6 +87,28 @@ gmx_ana_pos_free(gmx_ana_pos_t *pos);
 extern void
 gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
 
+/** Sets the evaluation group of a position data structure. */
+extern void
+gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g);
+/** Empties a position data structure with full initialization. */
+extern void
+gmx_ana_pos_empty_init(gmx_ana_pos_t *pos);
+/** Empties a position data structure. */
+extern void
+gmx_ana_pos_empty(gmx_ana_pos_t *pos);
+/** Appends a position to a preallocated data structure with full
+ * initialization. */
+extern void
+gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
+                        gmx_ana_pos_t *src, int i);
+/** Appends a position to a preallocated data structure. */
+extern void
+gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
+                   gmx_ana_pos_t *src, int i, int refid);
+/** Updates position data structure state after appends. */
+extern void
+gmx_ana_pos_append_finish(gmx_ana_pos_t *pos);
+
 #ifdef __cplusplus
 }
 #endif
