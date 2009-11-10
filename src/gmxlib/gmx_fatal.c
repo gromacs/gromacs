@@ -770,6 +770,7 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   char buf[10240],tmpbuf[1024];
   int  cqnum;
   const char *llines = "-------------------------------------------------------";
+  char *strerr;
 
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -777,12 +778,14 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   /* protect the audience from suggestive discussions */
   
   cool_quote(tmpbuf,1023,&cqnum);
+  strerr = gmx_strerror(key);
   sprintf(buf,"\n%s\nProgram %s, %s\n"
 	  "Source code file: %s, line: %d\n\n"
 	  "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
 	  "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
 	  llines,ShortProgram(),GromacsVersion(),file,line,
-	  gmx_strerror(key),msg ? msg : warn_buf,llines,tmpbuf);
+	  strerr,msg ? msg : warn_buf,llines,tmpbuf);
+  free(strerr);
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif

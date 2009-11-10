@@ -54,6 +54,10 @@ evaluate_atomnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static int
 evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+/** Evaluates the \p resind selection keyword. */
+static int
+evaluate_resind(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p name selection keyword. */
 static int
 evaluate_atomname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -167,6 +171,20 @@ gmx_ana_selmethod_t sm_resnr = {
     NULL,
     NULL,
     &evaluate_resnr,
+    NULL,
+};
+
+/** \internal Selection method data for \p resind selection keyword. */
+gmx_ana_selmethod_t sm_resind = {
+    "resind", INT_VALUE, SMETH_REQTOP,
+    0, NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    &evaluate_resind,
     NULL,
 };
 
@@ -418,6 +436,26 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         resind = top->atoms.atom[g->index[i]].resind;
         out->u.i[i] = top->atoms.resinfo[resind].nr;
+    }
+    return 0;
+}
+
+/*!
+ * See sel_updatefunc() for description of the parameters.
+ * \p data is not used.
+ *
+ * Returns the residue indices for each atom in \p out->u.i.
+ */
+static int
+evaluate_resind(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+{
+    int  i;
+
+    out->nr = g->isize;
+    for (i = 0; i < g->isize; ++i)
+    {
+        out->u.i[i] = top->atoms.atom[g->index[i]].resind + 1;
     }
     return 0;
 }

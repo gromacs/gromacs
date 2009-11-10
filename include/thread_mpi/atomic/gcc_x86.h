@@ -152,7 +152,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
     volatile int ret=b;
     __asm__ __volatile__("\txchgl %0, %1;" 
                          :"=r"(ret)
-                         :"m"(a->value), ""(ret)
+                         :"m"(a->value), "0"(ret)
                          :"memory");
     return (int)ret;
 }
@@ -168,13 +168,13 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 */
     __asm__ __volatile__("\txchgl %0, %1;" 
                          :"=r"(ret)
-                         :"m"(a->value), ""(ret)
+                         :"m"(a->value), "0"(ret)
                          :"memory");
 
 #else
     __asm__ __volatile__("\txchgq %0, %1;" 
                          :"=r"(ret)
-                         :"m"(a->value), "r"(ret)
+                         :"m"(a->value), "0"(ret)
                          :"memory");
 #endif
     return (void*)ret;

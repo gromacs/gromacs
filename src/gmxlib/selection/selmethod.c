@@ -72,6 +72,7 @@ extern gmx_ana_selmethod_t sm_all;
 extern gmx_ana_selmethod_t sm_none;
 extern gmx_ana_selmethod_t sm_atomnr;
 extern gmx_ana_selmethod_t sm_resnr;
+extern gmx_ana_selmethod_t sm_resind;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
@@ -109,6 +110,7 @@ static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_none,
     &sm_atomnr,
     &sm_resnr,
+    &sm_resind,
     &sm_atomname,
     &sm_atomtype,
     &sm_resname,
