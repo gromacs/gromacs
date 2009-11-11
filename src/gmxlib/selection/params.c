@@ -457,6 +457,7 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
     if (param->val.type == POS_VALUE)
     {
         gmx_ana_pos_reserve(param->val.u.p, nval, 0);
+        gmx_ana_pos_set_nr(param->val.u.p, nval);
         gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
     }
     else
