@@ -821,7 +821,7 @@ int gmx_editconf(int argc, char *argv[])
         printf("    box volume  :%7.2f               (nm^3)\n",det(box));
     }
 
-    if (bRho || bOrient)
+    if (bRho || bOrient || bAlign)
         mass = calc_mass(&atoms,!fn2bTPX(infile),aps);
 
     if (bOrient) {
@@ -881,8 +881,9 @@ int gmx_editconf(int argc, char *argv[])
 		principal_comp(asize,aindex,atoms.atom,x, trans,princd);
 
 		unitv(targetvec,targetvec);
-		printf("Using %g %g %g as principal axis\n", trans[2][0],trans[2][1],trans[2][2]);
-		calc_rotmatrix(trans[2], targetvec, rotmatrix);
+		printf("Using %g %g %g as principal axis\n", trans[0][2],trans[1][2],trans[2][2]);
+		tmpvec[XX]=trans[0][2]; tmpvec[YY]=trans[1][2]; tmpvec[ZZ]=trans[2][2];
+		calc_rotmatrix(tmpvec, targetvec, rotmatrix);
 		/* rotmatrix finished */
 
 		for (i=0;i<asize;++i)
