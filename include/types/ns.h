@@ -55,6 +55,7 @@ typedef struct {
 typedef unsigned long t_excl;
 
 typedef struct {
+  bool     bCGlist;
   atom_id  *simple_aaj;
   t_grid   *grid;
   t_excl   *bexcl;
