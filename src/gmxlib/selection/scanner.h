@@ -76,6 +76,9 @@ _gmx_sel_lexer_pselstr(yyscan_t scanner);
 /** Clears the current selection string.  */
 void
 _gmx_sel_lexer_clear_pselstr(yyscan_t scanner);
+/** Clears the method stack in the scanner in error situations. */
+void
+_gmx_sel_lexer_clear_method_stack(yyscan_t scanner);
 /** Notifies the scanner that a complete method expression has been parsed. */
 void
 _gmx_sel_finish_method(yyscan_t scanner);

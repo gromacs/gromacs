@@ -110,10 +110,12 @@ COMMENT    (#.*)
 
 %{
     gmx_sel_lexer_t *state = yyget_extra(yyscanner);
-    /* Return END_OF_METHOD/PARAM_* immediately if necessary */
-    if (state->nextparam)
+    int              retval;
+    /* Return a token if one is pending */
+    retval = _gmx_sel_lexer_process_pending(yylval, state);
+    if (retval != 0)
     {
-        return _gmx_sel_lexer_process_next_param(yylval, state);
+        return retval;
     }
     /* Handle the start conditions for 'of' matching */
     if (state->bMatchOf)
@@ -161,6 +163,7 @@ COMMENT    (#.*)
 ";"|\n          { state->bCmdStart = TRUE; return CMD_SEP; }
 .               { return INVALID; }
 }
+
 <matchbool>{
 yes|on          { ADD_TOKEN; yylval->i = 1; return INTEGER; }
 no|off          { ADD_TOKEN; yylval->i = 0; return INTEGER; }
