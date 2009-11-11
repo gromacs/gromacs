@@ -837,7 +837,7 @@ int gmx_anaeig(int argc,char *argv[])
   t_topology top;
   int        ePBC=-1;
   t_atoms    *atoms=NULL;
-  rvec       *xtop,*xref1,*xref2,*xrefp;
+  rvec       *xtop,*xref1,*xref2,*xrefp=NULL;
   bool       bDMR1,bDMA1,bDMR2,bDMA2;
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;
   rvec       *x,*xread,*xav1,*xav2,**eigvec1=NULL,**eigvec2=NULL;
