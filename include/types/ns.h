@@ -52,9 +52,8 @@ typedef struct {
   atom_id jcg[MAX_CG];
 } t_ns_buf;
 
-typedef unsigned long t_excl;
-
 typedef struct {
+  bool     bCGlist;
   atom_id  *simple_aaj;
   t_grid   *grid;
   t_excl   *bexcl;

@@ -102,20 +102,29 @@ yyerror(yyscan_t, char const *s);
 %token <meth>  METHOD_GROUP
 %token <meth>  METHOD_POS
 %token <meth>  MODIFIER
+/* Empty token that should precede any non-position KEYWORD/METHOD token that
+ * is not preceded by KEYWORD_POS. This is used to work around reduce/reduce
+ * conflicts that appear when a lookahead token would require a reduction of
+ * a rule with empty RHS before shifting, and there is an alternative reduction
+ * available. Replacing the empty RHS with a dummy token makes these conflicts
+ * only shift/reduce conflicts. Another alternative would be to remove the
+ * pos_mod non-terminal completely and split each rule that uses it into two,
+ * but this would require duplicating six rules in the grammar. */
+%token         EMPTY_POSMOD
 
-%token <str>   PARAM_BASIC
-%token <str>   PARAM_EXPR
+%token <str>   PARAM
 %token         END_OF_METHOD
 
-/* Simple tokens with precedence */
-%nonassoc       OF
+%token          OF
+/* Comparison operators have lower precedence than parameter reduction
+ * to make it possible to parse, e.g., "mindist from resnr 1 < 2" without
+ * parenthesis. */
+%nonassoc <str> CMP_OP
 /* A dummy token that determines the precedence of parameter reduction */
 %nonassoc       PARAM_REDUCT
-
 /* Operator tokens */
 %left           AND OR XOR
 %left           NOT
-%nonassoc <str> CMP_OP
 
 /* Simple non-terminals */
 %type <r>     number
@@ -134,15 +143,14 @@ yyerror(yyscan_t, char const *s);
 %type <val>   value_list value_list_nonempty value_item
 
 %destructor { free($$);                     } HELP_TOPIC STR IDENTIFIER string
-%destructor { if($$) free($$);              } PARAM_BASIC PARAM_EXPR
+%destructor { if($$) free($$);              } PARAM
 %destructor { if($$) _gmx_selelem_free($$); } command cmd_plain
 %destructor { _gmx_selelem_free_chain($$);  } selection
-%destructor { _gmx_selelem_free($$);        } sel_expr num_expr
-%destructor { _gmx_selelem_free($$);        } pos_expr
+%destructor { _gmx_selelem_free($$);        } sel_expr num_expr pos_expr
 %destructor { _gmx_selexpr_free_params($$); } method_params method_param_list method_param
 %destructor { _gmx_selexpr_free_values($$); } value_list value_list_nonempty value_item
 
-%expect 5
+%expect 72
 %debug
 %pure-parser
 
@@ -170,6 +178,7 @@ command:     cmd_plain CMD_SEP  { $$ = $1; }
                  $$ = NULL;
                  _gmx_selparser_error("invalid selection '%s'",
                                       _gmx_sel_lexer_pselstr(scanner));
+                 _gmx_sel_lexer_clear_method_stack(scanner);
                  if (_gmx_sel_is_lexer_interactive(scanner))
                  {
                      _gmx_sel_lexer_clear_pselstr(scanner);
@@ -240,8 +249,8 @@ selection:   pos_expr           { $$ = $1; }
            | '(' selection ')'  { $$ = $2; }
            | selection MODIFIER method_params
              {
-                 $$ = _gmx_sel_init_modifier($2, process_param_list($3), $1, scanner);
-                 _gmx_sel_finish_method(scanner);
+                 $$ = _gmx_sel_init_modifier($2, $3, $1, scanner);
+                 if ($$ == NULL) YYERROR;
              }
 ;
 
@@ -312,7 +321,7 @@ sel_expr:    GROUP string
 ;
 
 /* Position modifiers for selection methods */
-pos_mod:     /* empty */        { $$ = NULL; }
+pos_mod:     EMPTY_POSMOD       { $$ = NULL; }
            | KEYWORD_POS        { $$ = $1;   }
 ;
 
@@ -337,9 +346,8 @@ sel_expr:    pos_mod KEYWORD_GROUP
 /* Custom selection methods */
 sel_expr:    pos_mod METHOD_GROUP method_params
              {
-                 $$ = _gmx_sel_init_method($2, process_param_list($3), $1, scanner);
+                 $$ = _gmx_sel_init_method($2, $3, $1, scanner);
                  if ($$ == NULL) YYERROR;
-                 _gmx_sel_finish_method(scanner);
              }
 ;
 
@@ -372,9 +380,8 @@ num_expr:    pos_mod KEYWORD_NUMERIC
              }
            | pos_mod METHOD_NUMERIC method_params
              {
-                 $$ = _gmx_sel_init_method($2, process_param_list($3), $1, scanner);
+                 $$ = _gmx_sel_init_method($2, $3, $1, scanner);
                  if ($$ == NULL) YYERROR;
-                 _gmx_sel_finish_method(scanner);
              }
 ;
 
@@ -398,14 +405,13 @@ pos_expr:    '(' pos_expr ')'   { $$ = $2; }
 /* Expressions with a position value */
 pos_expr:    METHOD_POS method_params
              {
-                 $$ = _gmx_sel_init_method($1, process_param_list($2), NULL, scanner);
+                 $$ = _gmx_sel_init_method($1, $2, NULL, scanner);
                  if ($$ == NULL) YYERROR;
-                 _gmx_sel_finish_method(scanner);
              }
 ;
 
 /* Evaluation of positions using a keyword */
-pos_expr:    KEYWORD_POS OF sel_expr
+pos_expr:    KEYWORD_POS OF sel_expr    %prec PARAM_REDUCT
              {
                  $$ = _gmx_sel_init_position($3, $1, scanner);
                  if ($$ == NULL) YYERROR;
@@ -433,8 +439,10 @@ pos_expr:    VARIABLE_POS
  ********************************************************************/
 
 method_params:
-             method_param_list                { $$ = $1; }
-           | method_param_list END_OF_METHOD  { $$ = $1; }
+             method_param_list
+             { $$ = process_param_list($1); }
+           | method_param_list END_OF_METHOD
+             { $$ = process_param_list($1); }
 ;
 
 method_param_list:
@@ -444,22 +452,10 @@ method_param_list:
 ;
 
 method_param:
-             PARAM_BASIC value_list
+             PARAM value_list
              {
                  $$ = _gmx_selexpr_create_param($1);
                  $$->value = process_value_list($2, &$$->nval);
-             }
-           | PARAM_EXPR  pos_expr       %prec PARAM_REDUCT
-             {
-                 $$ = _gmx_selexpr_create_param($1);
-                 $$->nval = 1;
-                 $$->value = _gmx_selexpr_create_value_expr($2);
-             }
-           | PARAM_EXPR  sel_expr       %prec PARAM_REDUCT
-             {
-                 $$ = _gmx_selexpr_create_param($1);
-                 $$->nval = 1;
-                 $$->value = _gmx_selexpr_create_value_expr($2);
              }
 ;
 
@@ -468,20 +464,19 @@ value_list:  /* empty */         { $$ = NULL; }
 ;
 
 value_list_nonempty:
-             value_item                     { $$ = $1; }
-           | value_list_nonempty value_item { $2->next = $1; $$ = $2; }
+             value_item          { $$ = $1; }
+           | value_list_nonempty value_item
+                                 { $2->next = $1; $$ = $2; }
+           | value_list_nonempty ',' value_item
+                                 { $3->next = $1; $$ = $3; }
 ;
 
-value_item:  INTEGER
-             {
-                 $$ = _gmx_selexpr_create_value(INT_VALUE);
-                 $$->u.i.i1 = $$->u.i.i2 = $1;
-             }
-           | REAL
-             {
-                 $$ = _gmx_selexpr_create_value(REAL_VALUE);
-                 $$->u.r.r1 = $$->u.r.r2 = $1;
-             }
+value_item:  sel_expr            %prec PARAM_REDUCT
+             { $$ = _gmx_selexpr_create_value_expr($1); }
+           | pos_expr            %prec PARAM_REDUCT
+             { $$ = _gmx_selexpr_create_value_expr($1); }
+           | num_expr            %prec PARAM_REDUCT
+             { $$ = _gmx_selexpr_create_value_expr($1); }
            | INTEGER TO INTEGER
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);

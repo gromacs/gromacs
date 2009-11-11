@@ -717,7 +717,7 @@ void update_QMMMrec(t_commrec *cr,
   t_QMMMrec 
     *qr; 
   t_nblist 
-    QMMMlist_sr,QMMMlist_lr;
+    QMMMlist;
   rvec
     dx,crd;
   int
@@ -745,8 +745,7 @@ void update_QMMMrec(t_commrec *cr,
   /* copy some pointers */
   qr          = fr->qr;
   mm          = qr->mm;
-  QMMMlist_sr = fr->QMMMlist_sr;
-  QMMMlist_lr = fr->QMMMlist_lr;
+  QMMMlist    = fr->QMMMlist;
 
   
 
@@ -770,15 +769,15 @@ void update_QMMMrec(t_commrec *cr,
      * the shifts are used for computing virial of the QM/MM particles.
      */
     qm = qr->qm[0]; /* in case of normal QMMM, there is only one group */
-    snew(qm_i_particles,QMMMlist_sr.nri);
-    if(QMMMlist_sr.nri){
+    snew(qm_i_particles,QMMMlist.nri);
+    if(QMMMlist.nri){
       qm_i_particles[0].shift = XYZ2IS(0,0,0);
-      for(i=0;i<QMMMlist_sr.nri;i++){
-	qm_i_particles[i].j     = QMMMlist_sr.iinr[i];
+      for(i=0;i<QMMMlist.nri;i++){
+	qm_i_particles[i].j     = QMMMlist.iinr[i];
 	
 	if(i){
-	  qm_i_particles[i].shift = pbc_dx_aiuc(&pbc,x[QMMMlist_sr.iinr[0]],
-						x[QMMMlist_sr.iinr[i]],dx);
+	  qm_i_particles[i].shift = pbc_dx_aiuc(&pbc,x[QMMMlist.iinr[0]],
+						x[QMMMlist.iinr[i]],dx);
 	  
 	}
 	/* However, since nri >= nrQMatoms, we do a quicksort, and throw
@@ -790,19 +789,19 @@ void update_QMMMrec(t_commrec *cr,
 	 * the QM i-particle and store them. 
 	 */
 	
-	crd[0] = IS2X(QMMMlist_sr.shift[i]) + IS2X(qm_i_particles[i].shift);
-	crd[1] = IS2Y(QMMMlist_sr.shift[i]) + IS2Y(qm_i_particles[i].shift);
-	crd[2] = IS2Z(QMMMlist_sr.shift[i]) + IS2Z(qm_i_particles[i].shift);
+	crd[0] = IS2X(QMMMlist.shift[i]) + IS2X(qm_i_particles[i].shift);
+	crd[1] = IS2Y(QMMMlist.shift[i]) + IS2Y(qm_i_particles[i].shift);
+	crd[2] = IS2Z(QMMMlist.shift[i]) + IS2Z(qm_i_particles[i].shift);
 	is = XYZ2IS(crd[0],crd[1],crd[2]); 
-	for(j=QMMMlist_sr.jindex[i];
-	    j<QMMMlist_sr.jindex[i+1];
+	for(j=QMMMlist.jindex[i];
+	    j<QMMMlist.jindex[i+1];
 	    j++){
 	  if(mm_nr >= mm_max){
 	    mm_max += 1000;
 	    srenew(mm_j_particles,mm_max);
 	  }	  
 	  
-	  mm_j_particles[mm_nr].j = QMMMlist_sr.jjnr[j];
+	  mm_j_particles[mm_nr].j = QMMMlist.jjnr[j];
 	  mm_j_particles[mm_nr].shift = is;
 	  mm_nr++;
 	}
@@ -812,7 +811,7 @@ void update_QMMMrec(t_commrec *cr,
       
 
 
-      qsort(qm_i_particles,QMMMlist_sr.nri,
+      qsort(qm_i_particles,QMMMlist.nri,
 	    (size_t)sizeof(qm_i_particles[0]),
 	    struct_comp);
       qsort(mm_j_particles,mm_nr,
@@ -823,7 +822,7 @@ void update_QMMMrec(t_commrec *cr,
        * here matches the one of QMindex already.
        */
       j=0;
-      for(i=0;i<QMMMlist_sr.nri;i++){
+      for(i=0;i<QMMMlist.nri;i++){
 	if (i==0 || qm_i_particles[i].j!=qm_i_particles[i-1].j){
 	  qm_i_particles[j++] = qm_i_particles[i];
 	}
