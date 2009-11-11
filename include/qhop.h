@@ -1,7 +1,5 @@
-
 #ifndef _qhop_h
 #define _qhop_h
-
 
 #ifdef HAVE_IDENT
 #ident	"@(#) qhop.h 1 28/2/01"
@@ -10,6 +8,8 @@
 #include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
+#include "gmx_qhop_db.h"
+#include "resall.h"
 
 #define DOO   0.35
 #define BOND  0.15
@@ -17,10 +17,10 @@
 #define HOPANG 120
 
 t_qhoprec *mk_qhoprec(void);
-int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, t_forcerec *fr,
-	      rvec *x,matrix box, t_mdatoms *md);
+extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, t_forcerec *fr,
+	      rvec *x,matrix box, t_mdatoms *md, gmx_qhop_db *db);
 
-void do_qhop(FILE *fplog, 
+extern void do_qhop(FILE *fplog, 
 	     t_commrec *cr,
 	     t_inputrec *ir, 
 	     t_nrnb *nrnb,
@@ -39,6 +39,7 @@ void do_qhop(FILE *fplog,
 	     bool bBornRadii,
 	     real T,
 	     int step,
-	     tensor force_vir);
+	     tensor force_vir,
+	     gmx_qhop_db db);
 
 #endif	/* _qhop_h */

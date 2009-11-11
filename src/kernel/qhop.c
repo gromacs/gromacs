@@ -33,26 +33,29 @@
 #include "random.h"
 #include "gmx_random.h"
 #include "constr.h"
+#include "gmx_qhop_db.h"
 
 /* THIS IS JUST FOR QUICK AND DIRTY TEST WORK!!! */
-typedef struct{
+/* typedef struct{ */
   
-  real alpha, beta, gamma;
-  real  k_1, k_2, k_3, m_1, m_2, m_3;
-  real  s_A, t_A, v_A, s_B, s_C, t_C, v_C;
-  real  f, g, h;
-  real  p_1, q_1, q_2, q_3, r_1, r_2, r_3;
+/*   real alpha, beta, gamma; */
+/*   real  k_1, k_2, k_3, m_1, m_2, m_3; */
+/*   real  s_A, t_A, v_A, s_B, s_C, t_C, v_C; */
+/*   real  f, g, h; */
+/*   real  p_1, q_1, q_2, q_3, r_1, r_2, r_3; */
 
 
-} t_qhop_parameters;
+/* } t_qhop_parameters; */
 
-t_qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name){
+t_qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, gmx_qhop_db db){
   /* parameters of the current donor acceptor combination are based on 
    * the residue name.
    */
   t_qhop_parameters
     *q;
   snew(q,1);
+
+#ifdef HARDCODED_QHOP_PARAMS
   /* hydroxydi ion */
   if(!strncmp(donor_name,"SOL",3) &&!strncmp(acceptor_name,"SOL",3) ){
     q->alpha = 0.0;
@@ -104,6 +107,19 @@ t_qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name){
     //q->r_3 = 3.219*pow(10.0,-7.0)/(4.1868*4.1868);
     q->r_3 =           0.000000018364;  
   }
+#else
+
+  if (db == NULL)
+    gmx_fatal(FARGS, "Qhop database not initialized.");
+  else
+    if (gmx_qhop_db_get_parameters(db,donor_name,acceptor_name,q) != 1)
+      gmx_fatal(FARGS, "Parameters not found in qhop database.");
+#ifdef VERBOSE_QHOP
+  fprintf(stderr, "--- PARAMETERS FOR DONOR %s - ACCEPTOR %s ---\n",
+	  donor_name, acceptor_name);
+  gmx_qhop_db_print(q);
+#endif /* VERBOSE_QHOP */
+#endif /* HARDCODED_QHOP_PARAMS */
   return (q);
 }
 
@@ -526,7 +542,8 @@ static void set_charges(t_commrec *cr, t_qhoprec *qhoprec, t_mdatoms *md){
 } /* set_charges */
 
 int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
-	      t_forcerec *fr, rvec *x,matrix box,t_mdatoms *md){
+	      t_forcerec *fr, rvec *x,matrix box,t_mdatoms *md,
+	      gmx_qhop_db *db){
   /* initialize qhoprec, picks out the atoms that are
      donors/acceptors, creates a bqhop donor array in mdatoms to be
      used by nbsearch, completes the qhop residues array and reads in
@@ -540,6 +557,9 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
   t_pbc
     pbc;
   
+  if ((*db = gmx_qhop_db_read("ffoplsaa")) == NULL) 
+    gmx_fatal(FARGS,"Can not read qhop database information");
+
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,box);
   
   qhoprec = fr->qhoprec; /* the mk_qhoprec is called in init_forcerec 
@@ -1052,7 +1072,8 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 			 /*gmx_genborn_t *born,*/ bool bBornRadii,
 			 t_hop *hop, real T,real *E_12,
-			 t_qhoprec *qhoprec,t_pbc pbc,int step){
+			 t_qhoprec *qhoprec,t_pbc pbc,int step,
+			 gmx_qhop_db db){
   
   /* compute the hopping probability based on the Q-hop criteria
    */
@@ -1065,7 +1086,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     *p;
   /* liever lui dan moe */
   p = get_qhop_params(qhoprec->qhop_atoms[hop->donor_id].resname,
-		      qhoprec->qhop_atoms[hop->donor_id].resname);
+		      qhoprec->qhop_atoms[hop->donor_id].resname, db);
   
   Ebefore_tot = evaluate_energy(cr,ir, nrnb, wcycle,top,mtop,groups,
 				state,md,fcd,graph,
@@ -1389,7 +1410,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	     t_mdatoms *md, t_fcdata *fcd,t_graph *graph, t_forcerec *fr,
 	     gmx_vsite_t *vsite,rvec mu_tot,/*gmx_genborn_t *born, */
 	     bool bBornRadii,real T, int step,
-	     tensor force_vir){
+	     tensor force_vir, gmx_qhop_db db){
   t_hop
     *hop;
   int
@@ -1434,7 +1455,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     DE_MM[i] = get_hop_prob(cr,ir,nrnb,wcycle,top,mtop,groups,state,md,
 			    fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
 			    &hop[i],T,&E12[i],
-			    fr->qhoprec,pbc,step);
+			    fr->qhoprec,pbc,step, db);
     /*  }*/
     /* now we have for all hops the energy difference and the
        probability. For the moment I loop over them in order given and

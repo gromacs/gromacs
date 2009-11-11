@@ -1,6 +1,10 @@
 #ifndef _GMX_QHOP_DB_H
 #define _GMX_QHOP_DB_H
 
+#include "resall.h"
+#include "gmx_qhop_parm.h"
+#include "hackblock.h"
+
 typedef struct{
   real  alpha, beta, gamma;
   real  k_1, k_2, k_3, m_1, m_2, m_3;
@@ -9,7 +13,32 @@ typedef struct{
   real  p_1, q_1, q_2, q_3, r_1, r_2, r_3;
 } t_qhop_parameters;
 	
-typedef struct gmx_qhop_db_t *gmx_qhop_db;
+typedef struct {
+  int id,charge,natom;
+  int ndonor,*donor,nacceptor,*acceptor;
+} qhop_resinfo_t;
+
+typedef gpp_atomtype_t t_atomtype;
+  
+typedef struct {
+  int               nrtp;
+  t_restp           *rtp;
+  qhop_resinfo_t    *resinfo;
+  int               bts[4];
+  int               nrexcl;
+  bool              bAllDih,bHH14,bRemoveDih;
+  t_atomtype        atype;
+  t_symtab          tab;
+  int               ngqh;
+  gmx_qhop_t        *gqh;
+  t_qhop_parameters *qhop_param;
+} gmx_qhop_db_t;
+
+//typedef struct gmx_qhop_db_t *gmx_qhop_db;
+typedef gmx_qhop_db_t *gmx_qhop_db;
+
+/*Print to stderr*/
+extern void gmx_qhop_db_print (t_qhop_parameters *qhp);
 
 /* Return database if succesfull, or NULL on failure */
 extern gmx_qhop_db gmx_qhop_db_read(char *forcefield);

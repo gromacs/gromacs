@@ -233,7 +233,7 @@ static void qhop_process_tree(FILE *fp,xmlNodePtr tree,int parent,
   }
 }
 
-gmx_qhop_t *
+gmx_qhop_t*
 gmx_qhops_read(char *fn,int *nqhop)
 {
   xmlDocPtr     doc;

@@ -1609,7 +1609,7 @@ void init_forcerec(FILE *fp,
         fprintf(stderr, "qhop computation requested. Good luck....\n");
     }
     fr->bqhop = ir->bqhop;
-    fr->qhoprec = mk_qhoprec();
+    /* fr->qhoprec = mk_qhoprec();  This need so move because of linker issues. */
 
     /* Set all the static charge group info */
     fr->cginfo_mb = init_cginfo_mb(fp,mtop,fr,bNoSolvOpt);

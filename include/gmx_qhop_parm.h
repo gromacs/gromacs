@@ -2,6 +2,12 @@
 #define _GMX_QHOP_PARM_H
 	
 typedef struct gmx_qhop *gmx_qhop_t;
+	
+typedef struct gmx_qhop {
+  char *donor,*acceptor;
+  int nparam,nparam_c;
+  char **value,**unit,**name;
+} gmx_qhop;
 
 /* Return a new gmx_qhop structure */
 extern gmx_qhop_t gmx_qhop_init();

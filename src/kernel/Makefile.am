@@ -6,7 +6,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la 
 
-LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
+LDADD =  $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       =
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
@@ -18,10 +18,14 @@ convparm.c 	convparm.h	\
 gen_ad.c 	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
+gmx_qhop_db.c\
+gmx_qhop_parm.c\
+gmx_qhop_xml.c\
+qhop.c\
 gpp_atomtype.c		\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\
-hackblock.c		\
+hackblock.c\
 hizzie.c	hizzie.h	\
 pdb2top.h	pdb2top.c	\
 pgutil.c	pgutil.h	\

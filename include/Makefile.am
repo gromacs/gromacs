@@ -46,6 +46,9 @@ gmx_fft.h \
 gmx_ga2la.h \
 gmx_lapack.h \
 gmx_parallel_3dfft.h \
+gmx_qhop_db.h \
+gmx_qhop_parm.h \
+gmx_qhop_xml.h \
 gmx_random.h \
 gmx_statistics.h \
 gmx_system_xdr.h \

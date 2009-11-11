@@ -4,8 +4,8 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-libmd@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	
-libmd@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	
+libmd@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la
+libmd@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la
 libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
@@ -29,9 +29,6 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_allvsall.h                              \
 	genborn_allvsall_sse2_single.c			\
 	genborn_allvsall_sse2_single.h			\
-	gmx_qhop_parm.c	gmx_qhop_parm.h			\
-	gmx_qhop_xml.c	gmx_qhop_xml.h			\
-	gmx_qhop_db.c	gmx_qhop_db.h			\
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
@@ -44,9 +41,9 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	gmx_wallcycle.c \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
-	gmx_fft_mkl.c	qhop.c
+	gmx_fft_mkl.c
 
-LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
+LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 EXTRA_PROGRAMS = gmx_qhop_db_test
 

@@ -83,6 +83,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "qhop.h"
+#include "gmx_qhop_db.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -520,6 +521,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       opt2fn("-table",nfile,fnm),
                       opt2fn("-tablep",nfile,fnm),
                       opt2fn("-tableb",nfile,fnm),FALSE,pforce);
+        fr->qhoprec = mk_qhoprec(); /* Now pray that this works. */
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
@@ -1086,6 +1088,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int         reset_counters=-1;
     char        sbuf[22],sbuf2[22];
     bool        bHandledSignal=FALSE;
+    gmx_qhop_db qhop_database=NULL;
+
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
@@ -1405,8 +1409,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         fprintf(fplog,"\n");
     }
     if(fr->bqhop)
-        init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms);
+    {
+        init_qhop(cr,top_global,ir,fr,state->x,state->box,mdatoms, &qhop_database);
+        if (qhop_database == NULL)
+            gmx_fatal(FARGS, "qhop_database not set");
+    }
  
+
     /* Set and write start time */
     runtime_start(runtime);
     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
@@ -1762,7 +1771,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
                 do_qhop(fplog, cr,ir,nrnb,wcycle,top,top_global, groups,state, 
                         mdatoms,fcd,graph,fr,vsite,mu_tot/*,born*/,bBornRadii,
-                        enerd->term[F_TEMP],step/*,f/*,buf*/,force_vir);
+                        enerd->term[F_TEMP],step/*,f/*,buf*/,force_vir, qhop_database);
             
             }
         }
@@ -2373,6 +2382,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
+    if (qhop_database != NULL)
+        gmx_qhop_db_done(qhop_database);
 
     /* Stop the time */
     runtime_end(runtime);

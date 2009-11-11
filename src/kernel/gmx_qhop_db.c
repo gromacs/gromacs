@@ -12,28 +12,9 @@
 #include "gmx_qhop_xml.h"
 #include "gmx_qhop_db.h"
 
-#if 0
+//#if 0
 /* These routines link to invalid dependencies in kernel/resall.c! */
-
-typedef struct {
-  int id,charge,natom;
-  int ndonor,*donor,nacceptor,*acceptor;
-} qhop_resinfo_t;
-  
-typedef struct {
-  int               nrtp;
-  t_restp           *rtp;
-  qhop_resinfo_t    *resinfo;
-  int               bts[4];
-  int               nrexcl;
-  bool              bAllDih,bHH14,bRemoveDih;
-  t_atomtype        atype;
-  t_symtab          tab;
-  int               ngqh;
-  gmx_qhop          *gqh;
-  t_qhop_parameters *qhop_param;
-} gmx_qhop_db_t;
-
+/* Not anymore they don't! */
 static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
 {
   int    j,k,m;
@@ -71,7 +52,7 @@ static void fill_resinfo(t_restp *rtp,qhop_resinfo_t *ri)
   ri->charge = qtot;
 }
 
-static void lo_fill_qhp(gmx_qhop gqh,char *name,real *xx)
+static void lo_fill_qhp(gmx_qhop_t gqh,char *name,real *xx)
 {
   double x;
   int    test;
@@ -86,7 +67,7 @@ static void lo_fill_qhp(gmx_qhop gqh,char *name,real *xx)
   }
 }
 
-static void fill_qhp(t_qhop_parameters *qhp,gmx_qhop gqh)
+static void fill_qhp(t_qhop_parameters *qhp,gmx_qhop_t gqh)
 {
   lo_fill_qhp(gqh,"alpha",&qhp->alpha);
   lo_fill_qhp(gqh,"beta",&qhp->beta);
@@ -146,6 +127,11 @@ static void dump_qhp(FILE *fp,t_qhop_parameters *qhp)
   fprintf(fp,"r_3   = %g\n",qhp->r_3);
 }
 
+void gmx_qhop_db_print (t_qhop_parameters *qhp)
+{
+  dump_qhp(stderr, qhp);
+}
+
 gmx_qhop_db gmx_qhop_db_read(char *forcefield)
 {
   gmx_qhop_db_t *qdb;
@@ -200,7 +186,19 @@ int gmx_qhop_db_write(char *fn,gmx_qhop_db qdb)
 
 int gmx_qhop_db_done(gmx_qhop_db qdb)
 {
-  fprintf(stderr,"gmx_qhop_db_done not implemented yet.\n");
+  int i;
+  /* Free a ton of structures. */
+  free_t_restp(qdb->nrtp, &(qdb->rtp));
+  for (i=0; i<qdb->nrtp; i++)
+    {
+      sfree(qdb->resinfo[i].donor);
+      sfree(qdb->resinfo[i].acceptor);
+    }
+  done_atomtype(qdb->atype);
+  free_symtab(&qdb->tab);
+  gmx_qhop_done(*qdb->gqh);
+  sfree(qdb->qhop_param);
+    /*fprintf(stderr,"gmx_qhop_db_done not implemented yet.\n");*/
 
   return 1;
 }
@@ -271,6 +269,6 @@ int gmx_qhop_db_get_parameters(gmx_qhop_db qdb,
   return 0;
 }
 
-#else
-int gmx_qhop_db_dummy=0;
-#endif
+/* #else */
+/* int gmx_qhop_db_dummy=0; */
+/* #endif */
