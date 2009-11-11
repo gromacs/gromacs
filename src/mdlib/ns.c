@@ -539,10 +539,12 @@ static inline void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,bool bLR)
 }
 
 static inline void add_j_to_nblist_cg(t_nblist *nlist,
-                                      atom_id j_start,int j_end,bool bLR)
+                                      atom_id j_start,int j_end,
+                                      t_excl *bexcl,bool bLR)
 {
     int nrj=nlist->nrj;
-    
+    int j;
+
     if (nlist->nrj >= nlist->maxnrj)
     {
         nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
@@ -552,10 +554,23 @@ static inline void add_j_to_nblist_cg(t_nblist *nlist,
         
         srenew(nlist->jjnr    ,nlist->maxnrj);
         srenew(nlist->jjnr_end,nlist->maxnrj);
+        srenew(nlist->excl    ,nlist->maxnrj*MAX_CGCGSIZE);
     }
 
     nlist->jjnr[nrj]     = j_start;
     nlist->jjnr_end[nrj] = j_end;
+
+    if (j_end - j_start > MAX_CGCGSIZE)
+    {
+        gmx_fatal(FARGS,"The charge-group - charge-group neighborlist do not support charge groups larger than %d, found a charge group of size %d",MAX_CGCGSIZE,j_end-j_start);
+    }
+
+    /* Set the exclusions */
+    for(j=j_start; j<j_end; j++)
+    {
+        nlist->excl[nrj*MAX_CGCGSIZE + j - j_start] = bexcl[j];
+    }
+
     nlist->nrj ++;
 }
 
@@ -1190,11 +1205,14 @@ put_in_list_cg(bool              bHaveVdW[],
                bool              bDoVdW,
                bool              bDoCoul)
 {
+    int          cginfo;
     int          igid,gid,nbl_ind;
     t_nblist *   vdwc;
     int          j,jcg;
 
-    igid = GET_CGINFO_GID(fr->cginfo[icg]);
+    cginfo = fr->cginfo[icg];
+
+    igid = GET_CGINFO_GID(cginfo);
     gid  = GID(igid,jgid,ngid);
 
     /* Unpack pointers to neighbourlist structs */
@@ -1217,7 +1235,7 @@ put_in_list_cg(bool              bHaveVdW[],
 
     /* Make a new neighbor list for charge group icg.
      * Currently simply one neighbor list is made with LJ and Coulomb.
-     * If required, zerp interactions could be removed here
+     * If required, zero interactions could be removed here
      * or in the force loop.
      */
     new_i_nblist(vdwc,bLR,index[icg],shift,gid);
@@ -1226,12 +1244,13 @@ put_in_list_cg(bool              bHaveVdW[],
     for(j=0; (j<nj); j++) 
     {
         jcg = jjcg[j];
-        if (jcg != icg)
+        /* Skip the icg-icg pairs if all self interactions are excluded */
+        if (!(jcg == icg && GET_CGINFO_EXCL_INTRA(cginfo)))
         {
-            /* Here we simply add the j charge group jcg to the list
-             * without checking exclusions, LJ interactions or charges.
+            /* Here we add the j charge group jcg to the list,
+             * exclusions are also added to the list.
              */
-            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bLR);
+            add_j_to_nblist_cg(vdwc,index[jcg],index[jcg+1],bExcl,bLR);
         }
     }
 
@@ -2383,7 +2402,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
      * Exclusions are stored in bits. (If the type is not large
      * enough, enlarge it, unsigned char -> unsigned short -> unsigned long)
      */
-    maxcg = sizeof(t_excl)*8;
+    maxcg = sizeof(t_excl);
     if (nr_in_cg > maxcg)
     {
         gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",
