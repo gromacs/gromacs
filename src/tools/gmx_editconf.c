@@ -414,6 +414,40 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
     }
 }
 
+void calc_rotmatrix(rvec principal_axis, rvec targetvec, matrix rotmatrix)
+{
+	rvec rotvec;
+	real ux,uy,uz,costheta,sintheta;
+	
+	costheta = cos_angle(principal_axis,targetvec);
+	sintheta=sqrt(1.0-costheta*costheta); /* sign is always positive since 0<theta<pi */
+                
+	/* Determine rotation from cross product with target vector */
+	cprod(principal_axis,targetvec,rotvec);
+	unitv(rotvec,rotvec);
+	printf("Aligning %g %g %g to %g %g %g : xprod  %g %g %g\n",
+		principal_axis[XX],principal_axis[YY],principal_axis[ZZ],targetvec[XX],targetvec[YY],targetvec[ZZ],
+		rotvec[XX],rotvec[YY],rotvec[ZZ]);
+		
+	ux=rotvec[XX]; 
+	uy=rotvec[YY]; 
+	uz=rotvec[ZZ]; 
+	rotmatrix[0][0]=ux*ux + (1.0-ux*ux)*costheta;
+	rotmatrix[0][1]=ux*uy*(1-costheta)-uz*sintheta;
+	rotmatrix[0][2]=ux*uz*(1-costheta)+uy*sintheta;
+	rotmatrix[1][0]=ux*uy*(1-costheta)+uz*sintheta;
+	rotmatrix[1][1]=uy*uy + (1.0-uy*uy)*costheta;
+	rotmatrix[1][2]=uy*uz*(1-costheta)-ux*sintheta;
+	rotmatrix[2][0]=ux*uz*(1-costheta)-uy*sintheta;
+	rotmatrix[2][1]=uy*uz*(1-costheta)+ux*sintheta;
+	rotmatrix[2][2]=uz*uz + (1.0-uz*uz)*costheta;
+	
+	printf("Rotation matrix: \n%g %g %g\n%g %g %g\n%g %g %g\n",
+		rotmatrix[0][0],rotmatrix[0][1],rotmatrix[0][2],
+		rotmatrix[1][0],rotmatrix[1][1],rotmatrix[1][2],
+		rotmatrix[2][0],rotmatrix[2][1],rotmatrix[2][2]);
+}
+
 int gmx_editconf(int argc, char *argv[])
 {
     const char
@@ -490,6 +524,10 @@ int gmx_editconf(int argc, char *argv[])
                 "The option -grasp is similar, but it puts the charges in the B-factor",
                 "and the radius in the occupancy.",
                 "[PAR]",
+                "Option [TT]-align[tt] allows alignment",
+                "of the principal axis of a specified group against the given vector, ",
+				"with an optional center of rotation specified by [TT]-aligncenter[tt].",
+                "[PAR]",
                 "Finally with option [TT]-label[tt] editconf can add a chain identifier",
                 "to a pdb file, which can be useful for analysis with e.g. rasmol."
                     "[PAR]",
@@ -514,6 +552,8 @@ int gmx_editconf(int argc, char *argv[])
     static rvec center =
         { 0, 0, 0 }, translation =
         { 0, 0, 0 }, rotangles =
+        { 0, 0, 0 }, aligncenter =
+		{ 0, 0, 0 }, targetvec =
         { 0, 0, 0 };
     static const char *btype[] =
         { NULL, "triclinic", "cubic", "dodecahedron", "octahedron", NULL },
@@ -541,6 +581,11 @@ int gmx_editconf(int argc, char *argv[])
                         "Center molecule in box (implied by -box and -d)" },
                     { "-center", FALSE, etRVEC,
                         { center }, "Coordinates of geometrical center" },
+                    { "-aligncenter", FALSE, etRVEC,
+                        { aligncenter }, "Center of rotation for alignment" },
+                    { "-align", FALSE, etRVEC,
+                        { targetvec },
+                        "Align to target vector" },
                     { "-translate", FALSE, etRVEC,
                         { translation }, "Translation" },
                     { "-rotate", FALSE, etRVEC,
@@ -591,13 +636,14 @@ int gmx_editconf(int argc, char *argv[])
     int *bfac_nr = NULL;
     t_topology *top = NULL;
     t_atoms atoms;
-    char *grpname, *sgrpname;
-    int isize, ssize, tsize;
-    atom_id *index, *sindex, *tindex;
+    char *grpname, *sgrpname, *agrpname;
+    int isize, ssize, tsize, asize;
+    atom_id *index, *sindex, *tindex, *aindex;
     rvec *x, *v, gc, min, max, size;
     int ePBC;
-    matrix box;
-    bool bIndex, bSetSize, bSetAng, bCubic, bDist, bSetCenter;
+    matrix box,rotmatrix,trans;
+	rvec princd,tmpvec;
+    bool bIndex, bSetSize, bSetAng, bCubic, bDist, bSetCenter, bAlign;
     bool bHaveV, bScale, bRho, bTranslate, bRotate, bCalcGeom, bCalcDiam;
     real xs, ys, zs, xcent, ycent, zcent, diam = 0, mass = 0, d, vdw;
     gmx_atomprop_t aps;
@@ -622,6 +668,7 @@ int gmx_editconf(int argc, char *argv[])
     bSetAng = opt2parg_bSet("-angles", NPA, pa);
     bSetCenter = opt2parg_bSet("-center", NPA, pa);
     bDist = opt2parg_bSet("-d", NPA, pa);
+	bAlign = opt2parg_bSet("-align", NPA, pa);
     /* Only automatically turn on centering without -noc */
     if ((bDist || bSetSize || bSetCenter) && !opt2parg_bSet("-c", NPA, pa))
     {
@@ -811,6 +858,45 @@ int gmx_editconf(int argc, char *argv[])
         }
         scale_conf(atoms.nr,x,box,scale);
     }
+
+	if (bAlign) {
+		if (bIndex) {
+            fprintf(stderr,"\nSelect a group that you want to align:\n");
+            get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
+                      1,&asize,&aindex,&agrpname);
+        } else {
+            asize = atoms.nr;
+            snew(aindex,asize);
+			for (i=0;i<asize;i++)
+				aindex[i]=i;
+        }
+		printf("Aligning %d atoms (out of %d) to %g %g %g, center of rotation %g %g %g\n",asize,natom,
+			targetvec[XX],targetvec[YY],targetvec[ZZ],
+			aligncenter[XX],aligncenter[YY],aligncenter[ZZ]);
+		/*subtract out pivot point*/
+		for(i=0; i<asize; i++)
+			rvec_dec(x[aindex[i]],aligncenter);
+		/*now determine transform and rotate*/
+		/*will this work?*/
+		principal_comp(asize,aindex,atoms.atom,x, trans,princd);
+
+		unitv(targetvec,targetvec);
+		printf("Using %g %g %g as principal axis\n", trans[2][0],trans[2][1],trans[2][2]);
+		calc_rotmatrix(trans[2], targetvec, rotmatrix);
+		/* rotmatrix finished */
+
+		for (i=0;i<asize;++i)
+		{
+			mvmul(rotmatrix,x[aindex[i]],tmpvec);
+			copy_rvec(tmpvec,x[aindex[i]]);
+		}
+
+		/*add pivot point back*/
+		for(i=0; i<asize; i++)
+			rvec_inc(x[aindex[i]],aligncenter);
+		if (!bIndex)
+			sfree(aindex);
+	}
 
     if (bTranslate) {
         if (bIndex) {
