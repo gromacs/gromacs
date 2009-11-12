@@ -57,6 +57,9 @@ struct gmx_sel_lexer_t;
 typedef struct gmx_sel_lexer_t
 {
     struct gmx_ana_selcollection_t  *sc;
+    struct gmx_ana_indexgrps_t      *grps;
+    int                              nexpsel;
+
     bool                             bPrompt;
     const char                      *prompt;
 

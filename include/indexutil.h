@@ -228,9 +228,9 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n
 extern bool
 gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name);
 
-/** Writes out the contents of index groups. */
+/** Writes out a list of index groups. */
 extern void
-gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g, int maxn);
+gmx_ana_indexgrps_print(gmx_ana_indexgrps_t *g, int maxn);
 /*@}*/
 
 /*! \name Functions for handling gmx_ana_index_t

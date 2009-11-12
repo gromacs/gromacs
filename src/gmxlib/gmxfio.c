@@ -1021,8 +1021,13 @@ int gmx_fio_fclose(FILE *fp)
  * fio: file to computer md5 from
  * offset: starting pointer of region to use for md5
  * digest: return array of md5 sum 
+ * do_lock: whether to lock the fio array
+ *
+ * this function may be called from a function that locks the fio_mutex, 
+   which is why it exists in the first place. 
  */
-int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
+int gmx_fio_get_file_md5_lock(int fio, off_t offset, unsigned char digest[],
+                              bool do_lock)
 {
     /*1MB: large size important to catch almost identical files */
     #define CPT_CHK_LEN  1048576 
@@ -1031,7 +1036,15 @@ int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
     unsigned char buf[CPT_CHK_LEN]; 
     off_t read_len;
     off_t seek_offset;
-    
+    int ret=-1;
+
+#ifdef GMX_THREADS 
+    if (do_lock)
+    {
+        tMPI_Thread_mutex_lock(&fio_mutex);
+    }   
+#endif
+
     seek_offset = offset-CPT_CHK_LEN;
     
     if (seek_offset < 0)
@@ -1039,11 +1052,22 @@ int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
         seek_offset = 0;
     }
     read_len = offset-seek_offset; 
-    
-    if (gmx_fio_seek(fio, seek_offset)) 
+
+
+    gmx_fio_check(fio);
+    if (FIO[fio].fp)
     {
-        return -1;
+#ifdef HAVE_FSEEKO
+        ret=fseeko(FIO[fio].fp,seek_offset,SEEK_SET);
+#else
+        ret=fseek(FIO[fio].fp,seek_offset,SEEK_SET);
+#endif
+        if (ret)
+            return -1;
     }
+    else
+        gmx_file(FIO[fio].fn);
+
     /* the read puts the file position back to offset */
     if (fread(buf,1,read_len,FIO[fio].fp)!=read_len) 
     {
@@ -1058,15 +1082,35 @@ int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
         }*/
         return -1;
     }
-    fseek(FIO[fio].fp,0,SEEK_END);  /*is already at end, but under windows it gives problems otherwise*/
+    fseek(FIO[fio].fp,0,SEEK_END);  /*is already at end, but under windows 
+                                      it gives problems otherwise*/
     if (debug)
     {
-        fprintf(debug,"chksum %s readlen %ld\n",FIO[fio].fn,read_len);
+        fprintf(debug,"chksum %s readlen %ld\n",FIO[fio].fn,(long int)read_len);
     }
+#ifdef GMX_THREADS 
+    if (do_lock)
+    {
+        tMPI_Thread_mutex_unlock(&fio_mutex);
+    }   
+#endif
+
     md5_init(&state);
     md5_append(&state, buf, read_len);
     md5_finish(&state, digest);
+
+
     return read_len;
+}
+
+/*
+ * fio: file to computer md5 from
+ * offset: starting pointer of region to use for md5
+ * digest: return array of md5 sum 
+ */
+int gmx_fio_get_file_md5(int fio, off_t offset, unsigned char digest[])
+{
+    return gmx_fio_get_file_md5_lock(fio, offset, digest, TRUE);
 }
 
 /* The fio_mutex should ALWAYS be locked when this function is called */
@@ -1172,8 +1216,8 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             {
                 gmx_fio_get_file_position(i,&outputfiles[nfiles].offset);
                 outputfiles[nfiles].chksum_size = 
-                    gmx_fio_get_file_md5(i,outputfiles[nfiles].offset,
-                                         outputfiles[nfiles].chksum);				 
+                    gmx_fio_get_file_md5_lock(i,outputfiles[nfiles].offset,
+                                              outputfiles[nfiles].chksum,FALSE);
             }
             
             nfiles++;

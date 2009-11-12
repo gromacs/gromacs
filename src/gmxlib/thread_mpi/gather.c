@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -51,6 +47,13 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+
+#ifdef TMPI_TRACE
+        tMPI_Trace_print("tMPI_Gather(%p, %d, %p, %p, %d, %p, %d, %p)",
+                           sendbuf, sendcount, sendtype, 
+                           recvbuf, recvcount, recvtype, 
+                           root, comm);
+#endif
 
     if (!comm)
     {
@@ -118,13 +121,19 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
 
 int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
-                void* recvbuf, int *recvcounts, int *displs,
-                tMPI_Datatype recvtype, int root, tMPI_Comm comm)
+                 void* recvbuf, int *recvcounts, int *displs,
+                 tMPI_Datatype recvtype, int root, tMPI_Comm comm)
 {
     int synct;
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Gatherv(%p, %d, %p, %p, %p, %p, %p, %d, %p)",
+                     sendbuf, sendcount, sendtype, recvbuf,
+                     recvcounts, displs, recvtype, root, comm);
+#endif
 
     if (!comm)
     {
