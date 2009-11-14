@@ -787,8 +787,8 @@ static void dump_it_all(FILE *fp,const char *title,
 #endif
 }
 
-static void calc_ke_part_normal(rvec v[],t_grpopts *opts,t_mdatoms *md,
-                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bFullStepV)
+static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
+                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,ga=0,gt=0;
@@ -832,7 +832,7 @@ static void calc_ke_part_normal(rvec v[],t_grpopts *opts,t_mdatoms *md,
           for (m=0;(m<DIM); m++) 
           {
               /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-              if (bFullStepV) 
+              if (bEkinAveVel) 
               {
                   tcstat[gt].ekin[m][d]+=hm*v_corrt[m]*v_corrt[d];
               } 

@@ -1047,7 +1047,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate,
 
 /* Definitions for convergence.  Could be optimized . . .  */
 #ifdef GMX_DOUBLE
-#define CONVERGEITER  0.00000001
+#define CONVERGEITER  0.000000001
 #else
 #define CONVERGEITER  0.0001
 #endif
@@ -1496,7 +1496,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     real        last_ekin = 0;
 	int         iter_i;
 	t_extmass   MassQ;
-
+    int         **trotter_seq; 
     char        sbuf[22],sbuf2[22];
     bool        bHandledSignal=FALSE;
 #ifdef GMX_FAHCORE
@@ -1781,7 +1781,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (bTrotter) 
     {
         /* need to make an initial call to get the Trotter variables set. */
-        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,FALSE,FALSE,FALSE);
+        //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,FALSE,FALSE,FALSE);
+        trotter_seq = init_trotter(ir,state,&MassQ);
     }
     
     if (MASTER(cr))
@@ -2271,7 +2272,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        of veta.  */
                     
                     veta_save = state->veta;
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,FALSE,TRUE,bInitStep);
+                    //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,FALSE,TRUE,bInitStep);
+                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                     vetanew = state->veta;
                     state->veta = veta_save;
                 } 
@@ -2319,9 +2321,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 );
             
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
-            if (bTrotter) 
+            if (bTrotter && !bInitStep) 
             {
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,TRUE,TRUE,bInitStep);
+                //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,TRUE,TRUE,bInitStep);
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
             }
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
@@ -2539,7 +2542,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     if ((!bFirstStep) || tracevir != 0) 
                     {
                         /* don't apply the trotter update if it's the first step. */
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,TRUE,TRUE,bInitStep);
+                        //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,TRUE,TRUE,bInitStep);
+                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                     }
                 }
             /* We can only do Berendsen coupling after we have summed the kinetic
@@ -2613,7 +2617,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         update_box(fplog,step,ir,mdatoms,state,graph,f,
-                   scale_tot,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
+                   ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
         
 
         /* ################# END UPDATE STEP 2 ################# */

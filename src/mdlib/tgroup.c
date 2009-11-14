@@ -64,24 +64,27 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 static void init_grpstat(FILE *log,
 			 gmx_mtop_t *mtop,int ngacc,t_grp_acc gstat[])
 {
-  gmx_groups_t *groups;
-  gmx_mtop_atomloop_all_t aloop;
-  int    i,grp;
-  t_atom *atom;
-
-  if (ngacc > 0) {
-    groups = &mtop->groups;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
-      grp = ggrpnr(groups,egcACC,i);
-      if ((grp < 0) && (grp >= ngacc))
-	gmx_incons("Input for acceleration groups wrong");
-      gstat[grp].nat++;
-      /* This will not work for integrator BD */
-      gstat[grp].mA += atom->m;
-      gstat[grp].mB += atom->mB;
+    gmx_groups_t *groups;
+    gmx_mtop_atomloop_all_t aloop;
+    int    i,grp;
+    t_atom *atom;
+    
+    if (ngacc > 0) {
+        groups = &mtop->groups;
+        aloop = gmx_mtop_atomloop_all_init(mtop);
+        while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) 
+        {
+            grp = ggrpnr(groups,egcACC,i);
+            if ((grp < 0) && (grp >= ngacc))
+            {
+                gmx_incons("Input for acceleration groups wrong");
+            }
+            gstat[grp].nat++;
+            /* This will not work for integrator BD */
+            gstat[grp].mA += atom->m;
+            gstat[grp].mB += atom->mB;
+        }
     }
-  }
 }
 
 void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,

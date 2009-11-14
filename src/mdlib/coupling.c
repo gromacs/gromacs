@@ -48,6 +48,9 @@
 #include "nrnb.h"
 #include "gmx_random.h"
 
+#define NTROTTERCALLS 5
+#define NTROTTERPARTS 3
+
 /* these integration routines are only references inside this file */
 static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                         double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ)
@@ -631,6 +634,7 @@ t_state *init_bufstate(int size, int ntc)
     return state;
 }  
 
+#if 0
 void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md, 
                     t_extmass *MassQ, bool bFirstHalf, 
@@ -749,9 +753,9 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     }    
     return; /* first time, we just initialize, not do anything else */
   }
-
+  
   scalefac = ir->opts.vscale_nhc;
-
+  
   for (i=0; i<ngtc;i++) 
   {
       scalefac[i] = 1;
@@ -852,7 +856,245 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
       }
   }
 }
+#endif
 
+void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
+                    gmx_enerdata_t *enerd, t_state *state, 
+                    tensor vir, t_mdatoms *md, 
+                    t_extmass *MassQ, int *trotter_seq) 
+{
+    
+    int n,i,j,d,ntgrp,ngtc,gc=0;
+    t_grp_tcstat *tcstat;
+    t_grpopts *opts;
+    real ecorr,pcorr,dvdlcorr;
+    real bmass,qmass,reft,kT,dt,ndj,nd;
+    tensor dumpres,dumvir;
+    double *scalefac;
+    rvec sumv,consk;
+
+    opts = &(ir->opts); /* just for ease of referencing */
+    ngtc = opts->ngtc;
+    scalefac = ir->opts.vscale_nhc;
+    for (i=0; i<ngtc;i++) 
+    {
+        scalefac[i] = 1;
+    }
+
+    /* execute the series of trotter updates specified in the trotterpart array */
+    
+    for (i=0;i<NTROTTERPARTS;i++){
+        switch (trotter_seq[i])
+        {
+        case etrtBAROSTATV:
+            boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekind->ekin,vir,
+                         enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
+            break;
+        case etrtBAROSTATNHC:
+            NHC_trotter(&(ir->opts),ekind,ir->delta_t,state->nosehoover_xi,
+                        state->nosehoover_vxi,NULL,&(state->veta),MassQ);      
+            break;
+        case etrtNHC:
+            NHC_trotter(opts,ekind,ir->delta_t,state->nosehoover_xi,
+                        state->nosehoover_vxi,scalefac,NULL,MassQ);
+            /* need to rescale the kinetic energies and velocities here.  Could 
+               scale the velocities later, but we need them scaled in order to 
+               produce the correct outputs, so we'll scale them here. */
+            
+            for (i=0; i<ngtc;i++) 
+            {
+                tcstat = &ekind->tcstat[i];
+                msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
+                msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
+            }
+            /* now that we've scaled the groupwise velocities, we can add them up to get the total */
+            sum_ekin(FALSE,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
+            
+            /* modify the velocities as well */
+            for (n=md->start;n<md->start+md->homenr;n++) 
+            {
+                if (md->cTC) 
+                { 
+                    gc = md->cTC[n];
+                }
+                for (d=0;d<DIM;d++) 
+                {
+                    state->v[n][d] *= scalefac[gc];
+                }
+                
+                if (debug) 
+                {
+                    for (d=0;d<DIM;d++) 
+                    {
+                        sumv[d] += (state->v[n][d])/md->invmass[n];
+                    }
+                }
+            }          
+            break;
+        default:
+            break;
+        }
+    }
+#if 0  
+    /* check for conserved momentum */  
+    if (debug) 
+    {
+        if (bFirstHalf) 
+        {
+            for (d=0;d<DIM;d++) 
+            {
+                consk[d] = sumv[d]*exp((1 + 1.0/opts->nrdf[0])*((1.0/DIM)*log(det(state->box)/state->vol0)) + state->nosehoover_xi[0]); 
+            }
+            fprintf(debug,"Consk: %15.8f %15.8f %15.8f\n",consk[0],consk[1],consk[2]);    
+        }
+    }
+#endif
+}
+
+int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ) 
+{
+    int n,i,j,d,ntgrp,ngtc,gc=0;
+    t_grp_tcstat *tcstat;
+    t_grpopts *opts;
+    real ecorr,pcorr,dvdlcorr;
+    real bmass,qmass,reft,kT,dt,ndj,nd;
+    tensor dumpres,dumvir;
+    int ** trotter_seq;
+
+    snew(trotter_seq,NTROTTERCALLS);
+    /* first, initialize clear all the trotter calls */
+    for (i=0;i<NTROTTERCALLS;i++) 
+    {
+        snew(trotter_seq[i],NTROTTERPARTS);
+        for (j=0;j<NTROTTERPARTS;j++) {
+            trotter_seq[i][j] = etrtNONE;
+        }
+    }
+    
+    if (IR_NPT_TROTTER(ir)) 
+    {
+        /* This is the complicated version - there are 4 possible calls, depending on ordering.
+           We start with the initial one. */
+#if 1
+        /* first, a round that estimates veta. */
+        trotter_seq[0][0] = etrtBAROSTATV; 
+
+        /* The first half trotter update */
+        trotter_seq[1][0] = etrtBAROSTATV;
+        trotter_seq[1][1] = etrtNHC;
+        trotter_seq[1][2] = etrtBAROSTATNHC;
+
+        /* The second half trotter update */
+        trotter_seq[2][0] = etrtBAROSTATNHC;
+        trotter_seq[2][1] = etrtNHC;
+        trotter_seq[2][2] = etrtBAROSTATV;
+#endif
+
+    } 
+    else 
+    {
+        if (IR_NVT_TROTTER(ir)) 
+        {
+            /* This is the easy version - there are only two calls, both the same. 
+               Otherwise, even easier -- no calls  */
+            trotter_seq[1][0] = etrtNHC;
+            trotter_seq[2][0] = etrtNHC;
+        }
+    }
+    
+    opts = &(ir->opts); /* just for ease of referencing */
+    ngtc = opts->ngtc;
+    
+    /* Set pressure variables */
+    
+    if (state->vol0 == 0) 
+    {
+        state->vol0 = det(state->box); /* because we start by defining a fixed compressibility, 
+                                          we need the volume at this compressibility to solve the problem */ 
+    }
+    
+    /* units are nm^3 * ns^2 / (nm^3 * bar / kJ/mol) = kJ/mol  */
+    /* Investigate this more -- is this the right mass to make it? */
+    MassQ->Winv = (PRESFAC*trace(ir->compress)*BOLTZ*opts->ref_t[0])/(DIM*state->vol0*sqr(ir->tau_p/M_2PI));
+    /* An alternate mass definition, from Tuckerman et al. */ 
+    /* MassQ->Winv = 1.0/(sqr(ir->tau_p/M_2PI)*(opts->nrdf[0]+DIM)*BOLTZ*opts->ref_t[0]); */
+    for (d=0;d<DIM;d++) 
+    {
+        for (n=0;n<DIM;n++) 
+        {
+            MassQ->Winvm[d][n]= PRESFAC*ir->compress[d][n]/(state->vol0*sqr(ir->tau_p/M_2PI)); 
+            /* not clear this is correct yet for the anisotropic case*/
+        } 
+    }           
+    
+    /* now, allocate space for temperature variables */
+    snew(MassQ->Qinv,(ngtc+1)*NNHCHAIN);
+    /* now, set temperature variables */
+    for(i=0; i<ngtc; i++) 
+    {
+        if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
+        {
+            reft = max(0.0,opts->ref_t[i]);
+            nd = opts->nrdf[i];
+            kT = BOLTZ*reft;
+            for (j=0;j<NNHCHAIN;j++) 
+            {
+                if (j==0) 
+                {
+                    ndj = nd;
+                } 
+                else 
+                {
+                    ndj = 1;
+              }
+                MassQ->Qinv[i*NNHCHAIN+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
+            }
+        } 
+        else 
+        {
+            reft=0.0;
+            for (j=0;j<NNHCHAIN;j++) 
+            {
+                MassQ->Qinv[i*NNHCHAIN+j] = 0.0;
+            }
+        }
+    }
+    
+    switch (ir->epct) 
+    {
+    case epctISOTROPIC:  
+    default:
+        bmass = DIM*DIM;  /* recommended mass parameters for isotropic barostat */
+    }    
+    
+    /* barostat temperature */
+    i = ngtc;  /* barostat temperature control variables are one after the last T-group */
+    
+    if ((ir->tau_p > 0) && (opts->ref_t[0] > 0)) 
+    {
+        reft = max(0.0,opts->ref_t[0]);
+        kT = BOLTZ*reft;
+        for (j=0;j<NNHCHAIN;j++) 
+        {
+            if (j==0) {
+                qmass = bmass;
+            } 
+            else 
+            {
+                qmass = 1;
+            }
+            MassQ->Qinv[i*NNHCHAIN+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
+        }
+    } 
+    else 
+    {
+        for (j=0;j<NNHCHAIN;j++) 
+        {
+            MassQ->Qinv[i*NNHCHAIN+j]=0.0;
+        }
+    }    
+    return trotter_seq;
+}
 
 real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ)
 {

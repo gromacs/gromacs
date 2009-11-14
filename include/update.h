@@ -178,9 +178,20 @@ extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 
 extern t_state *init_bufstate(int size, int ntc);
 
-extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
+
+/*
+extern trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
 			   t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
+*/
+
+
+extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
+			   t_state *state, tensor vir, t_mdatoms *md, 
+			   t_extmass *MassQ, int *trotter_seq);
+
+extern int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *Mass); 
+
 
 extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */

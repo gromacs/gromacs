@@ -50,6 +50,11 @@ enum {
   epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR
 }; /* isotropic is an alias for berendsen */
 
+/* trotter decomposition extended variable parts */
+enum {
+  etrtNONE, etrtNHC, etrtBAROSTATV, etrtBAROSTATNHC, etrtNR
+};
+
 enum {
   epctISOTROPIC, epctSEMIISOTROPIC, epctANISOTROPIC,
   epctSURFACETENSION, epctNR
