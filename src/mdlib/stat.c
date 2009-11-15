@@ -106,6 +106,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  gmx_mtop_t *top_global, t_state *state_local, 
                  bool bSumEkinhOld, bool bEkinAveVel,
                  bool bFirstPart, bool bFirstIterate)
+/* instead of current system, booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
   int    *itc0,*itc1;

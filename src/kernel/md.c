@@ -1778,12 +1778,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         copy_mat(state->box,boxcopy);
     } 
     
-    if (bTrotter) 
-    {
-        /* need to make an initial call to get the Trotter variables set. */
-        //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,FALSE,FALSE,FALSE);
-        trotter_seq = init_trotter(ir,state,&MassQ);
-    }
+    /* need to make an initial call to get the Trotter variables set. */
+    trotter_seq = init_trotter(ir,state,&MassQ,bTrotter);
     
     if (MASTER(cr))
     {
@@ -2272,13 +2268,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        of veta.  */
                     
                     veta_save = state->veta;
-                    //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,FALSE,TRUE,bInitStep);
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
                     vetanew = state->veta;
                     state->veta = veta_save;
                 } 
             } 
             
+            if (!bInitStep) 
+            {
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+            }
             bOK = TRUE;
             if ( !bRerunMD || bForceUpdate) {
 /*        if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  /* Why was rerun_fr.bV here?  Doesn't make sense. */
@@ -2288,7 +2287,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* update coords doesn't actually have to be in here */
                 update_coords(fplog,step,ir,mdatoms,state,
                               f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,TRUE,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
                 
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,NULL,
@@ -2321,10 +2320,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 );
             
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
-            if (bTrotter && !bInitStep) 
+            if (!bInitStep) 
             {
-                //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,TRUE,TRUE,TRUE,bInitStep);
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
             }
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
@@ -2542,8 +2540,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     if ((!bFirstStep) || tracevir != 0) 
                     {
                         /* don't apply the trotter update if it's the first step. */
-                        //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,FALSE,TRUE,TRUE,bInitStep);
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                     }
                 }
             /* We can only do Berendsen coupling after we have summed the kinetic
@@ -2554,8 +2551,28 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_extended(fplog,step,ir,mdatoms,state,ekind,pcoupl_mu,M,wcycle,
                                 upd,bInitStep,FALSE,&MassQ);
                 
+                /* velocity (for VV) */
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                              ekind,M,wcycle,upd,bInitStep,FALSE,cr,nrnb,constr,&top->idef);
+                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
+                
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+
+                if (ir->eI==eiVV && !bEkinAveVel) {
+                    /* Compute just ekin here. */
+                    compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                                    constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
+                                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                    cglo_flags & ~CGLO_FIRSTHALF |
+                                    (bIterate ? CGLO_ITERATE : 0) |
+                                    (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                        );            
+
+                }
+
+                /* position (for VV), and entire integrator for MD */
+                update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                              ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 
                 update_constraints(fplog,step,&dvdl,ir,mdatoms,state,graph,f,
                                    &top->idef,shake_vir,force_vir,
@@ -2602,7 +2619,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             /* ############## IF NOT VV, CALCULATE EKIN AND PRESSURE HERE ############ */
-            /* this should set bFirstHalf to false . ..  */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,

@@ -52,7 +52,8 @@ enum {
 
 /* trotter decomposition extended variable parts */
 enum {
-  etrtNONE, etrtNHC, etrtBAROSTATV, etrtBAROSTATNHC, etrtNR
+  etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2, 
+  etrtVELOCITY, etrtPOSITION, etrtSKIPALL, etrtNR
 };
 
 enum {

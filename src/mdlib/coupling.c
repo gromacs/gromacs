@@ -649,6 +649,11 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     double *scalefac;
     rvec sumv,consk;
 
+    /* signal we are returning if nothing is going to be done in this routine */
+    if (trotter_seq[0] == etrtSKIPALL) 
+    {
+        return;
+    }
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     scalefac = ir->opts.vscale_nhc;
@@ -660,18 +665,31 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     /* execute the series of trotter updates specified in the trotterpart array */
     
     for (i=0;i<NTROTTERPARTS;i++){
+        /* allow for doubled intgrators by doubling dt instead of making 2 calls */
+        if ((trotter_seq[i] == etrtBAROV2) || (trotter_seq[i] == etrtBARONHC2) || (trotter_seq[i] == etrtNHC2))
+        {
+            dt = 2 * ir->delta_t;
+        }
+        else 
+        {
+            dt = ir->delta_t;
+        }
+            
         switch (trotter_seq[i])
         {
-        case etrtBAROSTATV:
-            boxv_trotter(ir,&(state->veta),ir->delta_t,state->box,ekind->ekin,vir,
+        case etrtBAROV:
+        case etrtBAROV2:
+            boxv_trotter(ir,&(state->veta),dt,state->box,ekind->ekin,vir,
                          enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
             break;
-        case etrtBAROSTATNHC:
-            NHC_trotter(&(ir->opts),ekind,ir->delta_t,state->nosehoover_xi,
+        case etrtBARONHC:
+        case etrtBARONHC2:
+            NHC_trotter(&(ir->opts),ekind,dt,state->nosehoover_xi,
                         state->nosehoover_vxi,NULL,&(state->veta),MassQ);      
             break;
         case etrtNHC:
-            NHC_trotter(opts,ekind,ir->delta_t,state->nosehoover_xi,
+        case etrtNHC2:
+            NHC_trotter(opts,ekind,dt,state->nosehoover_xi,
                         state->nosehoover_vxi,scalefac,NULL,MassQ);
             /* need to rescale the kinetic energies and velocities here.  Could 
                scale the velocities later, but we need them scaled in order to 
@@ -727,7 +745,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
 #endif
 }
 
-int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ) 
+int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrotter) 
 {
     int n,i,j,d,ntgrp,ngtc,gc=0;
     t_grp_tcstat *tcstat;
@@ -736,6 +754,7 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ)
     real bmass,qmass,reft,kT,dt,ndj,nd;
     tensor dumpres,dumvir;
     int ** trotter_seq;
+    bool bEkinAveVel;
 
     snew(trotter_seq,NTROTTERCALLS);
     /* first, initialize clear all the trotter calls */
@@ -745,39 +764,85 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         for (j=0;j<NTROTTERPARTS;j++) {
             trotter_seq[i][j] = etrtNONE;
         }
+        trotter_seq[i][0] = etrtSKIPALL;
     }
     
-    if (IR_NPT_TROTTER(ir)) 
+    if (!(bTrotter)) 
     {
-        /* This is the complicated version - there are 4 possible calls, depending on ordering.
-           We start with the initial one. */
-#if 1
-        /* first, a round that estimates veta. */
-        trotter_seq[0][0] = etrtBAROSTATV; 
+        /* no trotter calls */
+        return;
+    }
+    /* average the half step velocities or the kinetic energies */
+    bEkinAveVel=(getenv("GMX_EKIN_AVE_EKIN")==NULL);
 
-        /* The first half trotter update */
-        trotter_seq[1][0] = etrtBAROSTATV;
-        trotter_seq[1][1] = etrtNHC;
-        trotter_seq[1][2] = etrtBAROSTATNHC;
-
-        /* The second half trotter update */
-        trotter_seq[2][0] = etrtBAROSTATNHC;
-        trotter_seq[2][1] = etrtNHC;
-        trotter_seq[2][2] = etrtBAROSTATV;
-#endif
-
-    } 
-    else 
+    if (bEkinAveVel)
     {
-        if (IR_NVT_TROTTER(ir)) 
+        if (IR_NPT_TROTTER(ir)) 
         {
-            /* This is the easy version - there are only two calls, both the same. 
-               Otherwise, even easier -- no calls  */
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV; 
+            
+            /* trotter_seq[1] is etrtNHC for 1/2 step velocities - leave zero */
+            
+            /* The first half trotter update */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtNHC;
+            trotter_seq[2][2] = etrtBARONHC;
+            
+            /* The second half trotter update */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtNHC;
+            trotter_seq[3][2] = etrtBAROV;
+
+            /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
+
+        } 
+        else 
+        {
+            if (IR_NVT_TROTTER(ir)) 
+            {
+                /* This is the easy version - there are only two calls, both the same. 
+                   Otherwise, even easier -- no calls  */
+                trotter_seq[2][0] = etrtNHC;
+                trotter_seq[3][0] = etrtNHC;
+            }
+        }
+    } else {
+        if (IR_NPT_TROTTER(ir)) 
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV; 
+            
+            /* The first half trotter update, part 1 */
             trotter_seq[1][0] = etrtNHC;
-            trotter_seq[2][0] = etrtNHC;
+
+            /* The first half trotter update, part 2 */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+            
+            /* The second half trotter update, part 1 */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* The second half trotter update, part 2 */
+            trotter_seq[4][0] = etrtNHC;
+        } 
+        else 
+        {
+            if (IR_NVT_TROTTER(ir)) 
+            {
+                /* This is the easy version - there are only two calls, both the same. 
+                   Otherwise, even easier -- no calls  */
+                trotter_seq[1][0] = etrtNHC;
+                trotter_seq[4][0] = etrtNHC;
+            }
         }
     }
-    
+
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     

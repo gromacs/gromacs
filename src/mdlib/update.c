@@ -1504,7 +1504,7 @@ void update_coords(FILE         *fplog,
                    gmx_wallcycle_t wcycle,
                    gmx_update_t upd,
                    bool         bInitStep,
-                   bool         bFirstHalf,
+                   int          UpdatePart,
                    t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
                    t_nrnb       *nrnb,
                    gmx_constr_t constr,
@@ -1535,8 +1535,8 @@ void update_coords(FILE         *fplog,
     dt   = inputrec->delta_t;
     dt_1 = 1.0/dt;
 
-    /* Running the first part does nothing except for velocity verlet */
-    if (bFirstHalf) 
+    /* Running the velocity half does nothing except for velocity verlet */
+    if (UpdatePart == etrtVELOCITY) 
     {
         if ((inputrec->eI!=eiVV) || bInitStep) {return;}
     }
@@ -1626,25 +1626,16 @@ void update_coords(FILE         *fplog,
         break;
     case (eiVV):
         alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
-        if (bFirstHalf) 
-        {
-            if (!bInitStep) 
-                do_update_vv_vel(start,nrend,dt,
-                                 ekind->tcstat,ekind->grpstat,
-                                 inputrec->opts.acc,inputrec->opts.nFreeze,
-                                 md->invmass,md->ptype,
-                                 md->cFREEZE,md->cACC,md->cTC,
-                                 state->v,force,bExtended,state->veta,alpha);  
-        } 
-        else 
-        {
+        switch (UpdatePart) {
+        case (etrtVELOCITY):
             do_update_vv_vel(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
                              md->invmass,md->ptype,
                              md->cFREEZE,md->cACC,md->cTC,
-                             state->v,force,bExtended,state->veta,alpha);
-
+                             state->v,force,bExtended,state->veta,alpha);  
+            break;
+        case (etrtPOSITION):
             do_update_vv_pos(start,nrend,dt,
                              ekind->tcstat,ekind->grpstat,
                              inputrec->opts.acc,inputrec->opts.nFreeze,
@@ -1652,7 +1643,7 @@ void update_coords(FILE         *fplog,
                              md->cFREEZE,md->cACC,md->cTC,
                              state->x,xprime,state->v,force,
                              bExtended,state->veta,alpha);
-
+            break;
         }
         break;
     default:
