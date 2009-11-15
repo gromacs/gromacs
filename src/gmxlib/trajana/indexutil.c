@@ -1293,7 +1293,10 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     }
     if (m->type == INDEX_ALL)
     {
-        m->mapb.index[1] = g->isize;
+        if (m->b.nr > 0)
+        {
+            m->mapb.index[1] = g->isize;
+        }
         return;
     }
     /* Reset the reference IDs and mapping if necessary */

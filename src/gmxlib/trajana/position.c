@@ -56,6 +56,7 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
     pos->x  = NULL;
     gmx_ana_indexmap_clear(&pos->m);
     pos->g  = NULL;
+    pos->nalloc_x = 0;
 }
 
 /*!
@@ -69,9 +70,9 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
 {
-    if (pos->nr < n)
+    if (pos->nalloc_x < n)
     {
-        pos->nr = n;
+        pos->nalloc_x = n;
         srenew(pos->x, n);
     }
     if (isize > 0)
@@ -145,6 +146,16 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
     memcpy(dest->x, src->x, dest->nr*sizeof(*dest->x));
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
     dest->g = src->g;
+}
+
+/*!
+ * \param[in,out] pos  Position data structure.
+ * \param[in]     nr   Number of positions.
+ */
+void
+gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int nr)
+{
+    pos->nr = nr;
 }
 
 /*!
