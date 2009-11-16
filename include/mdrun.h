@@ -83,16 +83,23 @@
 #define CGLO_GSTAT         (1<<3)
 /* bNEMD is defined in do_md */
 #define CGLO_NEMD          (1<<4)
-/* We are in the first half of the verlet update step */
-#define CGLO_FIRSTHALF     (1<<5)
+/* Sum the energy terms in global computation */
+#define CGLO_ENERGY        (1<<5)
+/* Sum the kinetic energy terms in global computation */
+#define CGLO_TEMPERATURE   (1<<6)
+/* Sum the kinetic energy terms in global computation */
+#define CGLO_PRESSURE      (1<<7)
+/* Sum the constraint term in global computation */
+#define CGLO_CONSTRAINT    (1<<8)
 /* we are using an integrator that requires iteration over some steps */
-#define CGLO_ITERATE       (1<<6)
+#define CGLO_ITERATE       (1<<9)
 /* it is the first time we are iterating (or, only once through is required */
-#define CGLO_FIRSTITERATE  (1<<7)
+#define CGLO_FIRSTITERATE  (1<<10)
 /* This is the first time the code is being called */
-#define CGLO_INITIALIZE    (1<<8)
+#define CGLO_INITIALIZE    (1<<11)
 /* we are reading the Ekin from a file (such as rerunning) */
-#define CGLO_READEKIN      (1<<9)
+#define CGLO_READEKIN      (1<<12)
+/* We are in the first half of the verlet update step */
 
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
@@ -178,8 +185,7 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			gmx_constr_t constr,t_vcm *vcm,
 			int *nabnsb,real *chkpt,real *terminate,
 			gmx_mtop_t *top_global, t_state *state_local, 
-			bool bSumEkinhOld, bool bFullStepV,
-			bool bFirstPart,bool bFirstIterate);
+			bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 void write_traj(FILE *fplog,t_commrec *cr,

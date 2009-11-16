@@ -767,10 +767,10 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrott
         trotter_seq[i][0] = etrtSKIPALL;
     }
     
-    if (!(bTrotter)) 
+    if (!bTrotter) 
     {
         /* no trotter calls */
-        return;
+        return trotter_seq;
     }
     /* average the half step velocities or the kinetic energies */
     bEkinAveVel=(getenv("GMX_EKIN_AVE_EKIN")==NULL);

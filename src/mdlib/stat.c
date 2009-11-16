@@ -99,13 +99,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_commrec *cr,gmx_enerdata_t *enerd,
                  tensor fvir,tensor svir,rvec mu_tot,
                  t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind,
-                 gmx_constr_t constr,
+                 gmx_ekindata_t *ekind,gmx_constr_t constr,
                  t_vcm *vcm,int *nabnsb,
                  real *chkpt,real *terminate,
                  gmx_mtop_t *top_global, t_state *state_local, 
-                 bool bSumEkinhOld, bool bEkinAveVel,
-                 bool bFirstPart, bool bFirstIterate)
+                 bool bSumEkinhOld, int flags)
 /* instead of current system, booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
@@ -118,24 +116,35 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    j;
   real   *rmsd_data,rbnsb;
   double nb;
-  
+  bool   bVV,bEkin,bEner,bForceVir,bConstrVir,bEkinAveVel,bFirstIterate;
+
+  bVV           = (inputrec->eI==eiVV);
+  bEkin         = flags & CGLO_TEMPERATURE;
+  bEner         = flags & CGLO_ENERGY;
+  bForceVir     = flags & CGLO_PRESSURE; 
+  bConstrVir    = flags & CGLO_CONSTRAINT;
+  bEkinAveVel   = flags & CGLO_EKINAVEVEL;
+  bFirstIterate = flags & CGLO_FIRSTITERATE;
+
   rb   = gs->rb;
   itc0 = gs->itc0;
   itc1 = gs->itc1;
-
+  
   reset_bin(rb);
-
+  
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 
    */
   /* First, the data that needs to be communicated with velocity verlet every time
      This is just the constraint virial.*/
-
-  isv = add_binr(rb,DIM*DIM,svir[0]);
-  where();
   
-  /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
-  if (bFirstPart || (inputrec->eI!=eiVV))
+  if (bConstrVir) {
+      isv = add_binr(rb,DIM*DIM,svir[0]);
+      where();
+  }
+  
+/* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+  if (bEkin || !bVV)
   {
       if (ekind) 
       {
@@ -154,22 +163,23 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                   itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
               }
           }
+          /* these probably need to be put into one of these categories */
           where();
           idedl = add_binr(rb,1,&(ekind->dekindl));
           where();
           ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
           where();
-          
       }  
-
-      where();
-      if (bFirstIterate) 
-      {
-          ifv = add_binr(rb,DIM*DIM,fvir[0]);
-      }
+  }      
+  where();
+  
+  if ((bForceVir || !bVV) && bFirstIterate)
+  {
+      ifv = add_binr(rb,DIM*DIM,fvir[0]);
   }
 
-  if (!bFirstPart) 
+
+  if (bEner) 
   { 
       where();
       if (bFirstIterate) 
@@ -242,8 +252,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       {
           ichkpt   = add_binr(rb,1,chkpt);
       }
-      iterminate = add_binr(rb,1,terminate);
   }
+  iterminate = add_binr(rb,1,terminate);
 
   /* Global sum it all */
   if (debug)
@@ -255,10 +265,13 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
 
   /* Extract all the data locally */
 
-  extract_binr(rb,isv ,DIM*DIM,svir[0]);
+  if (bConstrVir) 
+  {
+      extract_binr(rb,isv ,DIM*DIM,svir[0]);
+  }
 
   /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
-  if (bFirstPart || (inputrec->eI!=eiVV))
+  if (bEkin || !bVV)
   {
       if (ekind) 
       {
@@ -280,28 +293,26 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
           where();
       }
-      if (bFirstIterate) 
-      {
-          extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
-      }
+  }
+  if ((bForceVir || !bVV) && bFirstIterate)
+  {
+      extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   }
 
-  if (!bFirstPart) 
+  if (bEner) 
   {
       if (bFirstIterate) 
       {
           extract_binr(rb,ie  ,F_NRE,enerd->term);
-      }
-      if (rmsd_data) 
-      {
-          extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
-      }
-      if (!NEED_MUTOT(*inputrec))
-      {
-          extract_binr(rb,imu,DIM,mu_tot);
-      }
-      if (bFirstIterate) 
-      {
+          if (rmsd_data) 
+          {
+              extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+          }
+          if (!NEED_MUTOT(*inputrec))
+          {
+              extract_binr(rb,imu,DIM,mu_tot);
+          }
+
           for(j=0; (j<egNR); j++)
           {
               extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
@@ -315,46 +326,45 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                   extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
               }
           }
-      }
-      if (vcm) 
-      {
-          extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
-          where();
-          extract_binr(rb,imass,vcm->nr,vcm->group_mass);
-          where();
-          if (vcm->mode == ecmANGULAR) 
+          /* should this be here, or with ekin?*/
+          if (vcm) 
           {
-              extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+              extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
               where();
-              extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+              extract_binr(rb,imass,vcm->nr,vcm->group_mass);
               where();
-              extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-              where();
+              if (vcm->mode == ecmANGULAR) 
+              {
+                  extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+                  where();
+                  extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+                  where();
+                  extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+                  where();
+              }
           }
-      }
-      if (DOMAINDECOMP(cr)) 
-      {
-          extract_bind(rb,inb,1,&nb);
-          if ((int)(nb + 0.5) != cr->dd->nbonded_global) 
+          if (DOMAINDECOMP(cr)) 
           {
-              dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
+              extract_bind(rb,inb,1,&nb);
+              if ((int)(nb + 0.5) != cr->dd->nbonded_global) 
+              {
+                  dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
+              }
           }
-      }
-      where();
-      if (nabnsb) 
-      {
-          extract_binr(rb,ibnsb,1,&rbnsb);
-          *nabnsb = (int)(rbnsb + 0.5);
-      }
-      where();
-      if (chkpt)
-      {
-          extract_binr(rb,ichkpt,1,chkpt);
-      }
-      extract_binr(rb,iterminate,1,terminate);
-      where();
-      if (bFirstIterate || (inputrec->eI!=eiVV))
-      {
+          where();
+          if (nabnsb) 
+          {
+              extract_binr(rb,ibnsb,1,&rbnsb);
+              *nabnsb = (int)(rbnsb + 0.5);
+          }
+          where();
+          if (chkpt)
+          {
+              extract_binr(rb,ichkpt,1,chkpt);
+          }
+          extract_binr(rb,iterminate,1,terminate);
+          where();
+          
 /* Small hack for temp only - not entirely clear if still needed*/
           enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
       }
