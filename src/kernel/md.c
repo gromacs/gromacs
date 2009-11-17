@@ -2288,7 +2288,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                 ((bVV) ? (cglo_flags | CGLO_ENERGY):0) | 
                                 (cglo_flags | CGLO_ENERGY) | 
-                                ((bIterate || bInitStep) ? (cglo_flags | CGLO_PRESSURE):0) |
+                                (bIterate ? (cglo_flags | CGLO_PRESSURE):0) |
                                 (bEkinAveVel ? (cglo_flags | CGLO_TEMPERATURE):0) | 
                                 (bIterate ? CGLO_ITERATE : 0) | 
                                 (bFirstIterate ? CGLO_FIRSTITERATE : 0)
