@@ -1230,7 +1230,8 @@ void update_constraints(FILE         *fplog,
     rvec             *vbuf,*xprime;
 
     if (constr) {bDoConstr=TRUE;}
-    //if (bInitStep && bFirstHalf) {bDoConstr=FALSE;} /* already constrained on the first step with VV */
+    /*if (bInitStep && bFirstHalf) {bDoConstr=FALSE;} /* already constrained on the first step with VV */
+    /* commented out ^^^^^ for now, since we are starting with v(t-dt/2) */
     if (bFirstHalf && inputrec->eI != eiVV) {bDoConstr=FALSE;} /* we don't need to do this for non VV on the first half*/
 
     /* for now, SD update is here -- though it really seems like it 
@@ -1536,9 +1537,12 @@ void update_coords(FILE         *fplog,
     dt_1 = 1.0/dt;
 
     /* Running the velocity half does nothing except for velocity verlet */
+    /* if we are starting from t=0 instead of t=-dt/2, then we should not call 
+       this for the initial step.  However, then we will need to find the correct 
+       virial for the first step */ 
     if (UpdatePart == etrtVELOCITY) 
     {
-        /*if ((inputrec->eI!=eiVV) || bInitStep) {return;}*/
+        if (inputrec->eI!=eiVV) {return;}
     }
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & (1<<estDISRE_RM3TAV)) 
