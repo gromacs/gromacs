@@ -122,7 +122,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bEkin         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
   bForceVir     = flags & CGLO_PRESSURE; 
-  bConstrVir    = flags & CGLO_CONSTRAINT;
+  //bConstrVir    = flags & CGLO_CONSTRAINT;
+  bConstrVir = TRUE;
   bEkinAveVel   = flags & CGLO_EKINAVEVEL;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
 

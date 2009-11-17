@@ -2209,7 +2209,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
         
         /* if bEkinAveVel, then compute ekin, otherwise, just compute shake_vir */
-        if (bVV && !bEkinAveVel) {
+        if (bVV && IR_NVT_TROTTER(ir) && !bEkinAveVel) {
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
@@ -2538,7 +2538,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
 
-                if (bVV && !bEkinAveVel) {
+                if (bVV && IR_NPT_TROTTER(ir) && !bEkinAveVel) {
                     /* Compute just ekin here. */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
