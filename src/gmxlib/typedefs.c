@@ -428,24 +428,26 @@ void init_gtc_state(t_state *state,int ngtc)
 {
     int i,j,ngtcp;
 
-  state->ngtc = ngtc;
-  ngtcp = state->ngtc+1; /* need an extra state for the barostat */
-  if (state->ngtc > 0) {
-    snew(state->nosehoover_xi, NNHCHAIN*ngtcp); 
-    snew(state->nosehoover_vxi, NNHCHAIN*ngtcp);
-    snew(state->therm_integral, state->ngtc);
-    for(i=0; i<ngtcp; i++) {
-      for (j=0;j<NNHCHAIN;j++) {
-	state->nosehoover_xi[i*NNHCHAIN + j]  = 0.0;
-	state->nosehoover_vxi[i*NNHCHAIN + j]  = 0.0;
-      }
-      state->therm_integral[i]  = 0.0;
+    state->ngtc = ngtc;
+    ngtcp = state->ngtc+1; /* need an extra state for the barostat */
+    if (state->ngtc > 0) {
+        snew(state->nosehoover_xi, NNHCHAIN*ngtcp); 
+        snew(state->nosehoover_vxi, NNHCHAIN*ngtcp);
+        snew(state->therm_integral, state->ngtc);
+        for(i=0; i<ngtcp; i++) {
+            for (j=0;j<NNHCHAIN;j++) {
+                state->nosehoover_xi[i*NNHCHAIN + j]  = 0.0;
+                state->nosehoover_vxi[i*NNHCHAIN + j]  = 0.0;
+            }
+        }
+        for(i=0; i<ngtc; i++) {
+            state->therm_integral[i]  = 0.0;
+        }
+    } else {
+        state->nosehoover_xi  = NULL;
+        state->nosehoover_vxi = NULL;
+        state->therm_integral = NULL;
     }
-  } else {
-    state->nosehoover_xi  = NULL;
-    state->nosehoover_vxi = NULL;
-    state->therm_integral = NULL;
-  }
 }
 
 
