@@ -2088,6 +2088,7 @@ static int do_tpx(int fp,bool bRead,
 	}
       }
       set_disres_npair(mtop);
+      gmx_mtop_finalize(mtop);
     }
   }
 
