@@ -172,7 +172,7 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
   }
 }
 
-real sum_ekin(bool bFirstStep,
+real sum_ekin(bool bCopyHalf,
 	      t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,bool bEkinAveVel)
 {
     int          i,j,m,ngtc;
@@ -198,7 +198,7 @@ real sum_ekin(bool bFirstStep,
          * energy, which should be  zero anyway.
          */
         if (nd > 0) {
-            if (bFirstStep) 
+            if (bCopyHalf) 
             {
                 /* This Ekin is only used for reporting the initial temperature
                  * or when doing mdrun -rerun.

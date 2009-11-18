@@ -53,7 +53,7 @@
 
 /* these integration routines are only references inside this file */
 static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
-                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ)
+                        double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, bool bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
@@ -100,11 +100,12 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
         } else {
             nd = opts->nrdf[i];
             reft = max(0.0,opts->ref_t[i]);
-            Ekin = 2*trace(ekind->tcstat[i].ekin);
-            /* use this for half step kinetic energy? */
-            /*   Ekin = 2*trace(ekind->tcstat[i].ekinh);
-                 dtfull *= 2 */
-            
+            if (bEkinAveVel) 
+            {
+                Ekin = 2*trace(ekind->tcstat[i].ekin);
+            } else {
+                Ekin = 2*trace(ekind->tcstat[i].ekinh);
+            }
         }
         kT = BOLTZ*reft;
 
@@ -637,7 +638,7 @@ t_state *init_bufstate(int size, int ntc)
 void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, int *trotter_seq) 
+                    t_extmass *MassQ, int *trotter_seq, bool bEkinAveVel) 
 {
     
     int n,i,j,d,ntgrp,ngtc,gc=0;
@@ -685,12 +686,12 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
         case etrtBARONHC:
         case etrtBARONHC2:
             NHC_trotter(&(ir->opts),ekind,dt,state->nosehoover_xi,
-                        state->nosehoover_vxi,NULL,&(state->veta),MassQ);      
+                        state->nosehoover_vxi,NULL,&(state->veta),MassQ,FALSE);      
             break;
         case etrtNHC:
         case etrtNHC2:
             NHC_trotter(opts,ekind,dt,state->nosehoover_xi,
-                        state->nosehoover_vxi,scalefac,NULL,MassQ);
+                        state->nosehoover_vxi,scalefac,NULL,MassQ,bEkinAveVel);
             /* need to rescale the kinetic energies and velocities here.  Could 
                scale the velocities later, but we need them scaled in order to 
                produce the correct outputs, so we'll scale them here. */
@@ -702,7 +703,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
                 msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
             }
             /* now that we've scaled the groupwise velocities, we can add them up to get the total */
-            sum_ekin(FALSE,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
+            sum_ekin(!bEkinAveVel,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
             
             /* modify the velocities as well */
             for (n=md->start;n<md->start+md->homenr;n++) 

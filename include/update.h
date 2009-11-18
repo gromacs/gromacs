@@ -188,7 +188,7 @@ extern trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *ener
 
 extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
 			   t_state *state, tensor vir, t_mdatoms *md, 
-			   t_extmass *MassQ, int *trotter_seq);
+			   t_extmass *MassQ, int *trotter_seq, bool bEkinAveVel);
 
 extern int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
 

@@ -1713,13 +1713,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     debug_gmx();
   
+    /* would need to modify if vv starts with full time step */
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                     (CGLO_INITIALIZE |
                      (bVV ? CGLO_PRESSURE:0) |
-                     (!bVV ? CGLO_TEMPERATURE:0) |
+                     (!bEkinAveVel ? CGLO_TEMPERATURE:0) |  
                      (bRerunMD ? CGLO_RERUNMD:0) | 
                      (bEkinAveVel ? CGLO_EKINAVEVEL:0) | 
                      (bGStat ? CGLO_GSTAT:0) | 
@@ -2202,7 +2203,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* this is for NHC in the Ekin(t+dt/2) version of vv */
         /* make sure it's using the half step, not the average KE */
-        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
         
         update_coords(fplog,step,ir,mdatoms,state,
                       f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
@@ -2251,7 +2252,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                        of veta.  */
                     
                     veta_save = state->veta;
-                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0]);
+                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[0],FALSE);
                     vetanew = state->veta;
                     state->veta = veta_save;
                 } 
@@ -2297,7 +2298,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
             if (!bInitStep) 
             {
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2],bEkinAveVel);
             }
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
@@ -2521,7 +2522,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     if ((!bFirstStep) || tracevir != 0) 
                     {
                         /* don't apply the trotter update if it's the first step. */
-                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
+                        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3],bEkinAveVel);
                     }
                 }
             /* We can only do Berendsen coupling after we have summed the kinetic
@@ -2536,7 +2537,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
 
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4]);
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);
 
                 if (bVV && IR_NPT_TROTTER(ir) && !bEkinAveVel) {
                     /* Compute just ekin here. */
