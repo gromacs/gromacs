@@ -227,7 +227,10 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       _chdir(cpp->path);
 #else
       pdum=getcwd(cpp->cwd,STRLEN);
-      chdir(cpp->path);
+      if (-1 == chdir(cpp->path))
+	gmx_fatal(FARGS,"Can not chdir to %s when processing topology. Reason: %s",
+		  cpp->path,strerror(errno));
+
 #endif
       
     if (NULL != debug)
@@ -498,7 +501,9 @@ int cpp_close_file(gmx_cpp_t *handlep)
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
       _chdir(handle->cwd);
 #else
-      chdir(handle->cwd);
+      if (-1 == chdir(handle->cwd))
+	gmx_fatal(FARGS,"Can not chdir to %s when processing topology: %s",
+		  handle->cwd,strerror(errno));
 #endif
   }
   

@@ -84,6 +84,8 @@ typedef struct {
   int            nmolblock;
   gmx_molblock_t *molblock;
   int            natoms;
+  int            maxres_renum;  /* Parameter for residue numbering      */
+  int            maxresnr;      /* The maximum residue number in moltype */
   t_atomtypes    atomtypes;     /* Atomtype properties                  */
   t_block        mols;          /* The molecules                        */
   gmx_groups_t   groups;
