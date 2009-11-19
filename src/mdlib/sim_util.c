@@ -895,6 +895,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     real   dt=ir->delta_t;
     real   dvdlambda;
     rvec   *savex;
+    bool   bEkinAveVel = FALSE;
     
     snew(savex,state->natoms);
 
@@ -912,7 +913,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     
     /* constrain the current position */
     constrain(NULL,TRUE,FALSE,constr,&(top->idef),
-              ir,cr,step,0,md,
+              ir,NULL,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
               NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
@@ -921,12 +922,14 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         /* might not yet treat veta correctly */
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
-                  ir,cr,step,0,md,
+                  ir,NULL,cr,step,0,md,
                   state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
                   NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
+        bEkinAveVel = (getenv("GMX_EKIN_AVE_EKIN")==NULL);
     }
-    if (EI_STATE_VELOCITY(ir->eI)) {
+    /* constrain the inital velocities at t-dt/2 */
+    if (EI_STATE_VELOCITY(ir->eI) && !bEkinAveVel) {
         for(i=start; (i<end); i++) {
             for(m=0; (m<DIM); m++) {
                 /* Reverse the velocity */
@@ -943,7 +946,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                     step);
         dvdlambda = 0;
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
-                  ir,cr,step,-1,md,
+                  ir,NULL,cr,step,-1,md,
                   state->x,savex,NULL,
                   state->box,state->lambda,&dvdlambda,
                   state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);

@@ -726,10 +726,10 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
       }
     }
   }
-  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
-  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
 
@@ -743,7 +743,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }

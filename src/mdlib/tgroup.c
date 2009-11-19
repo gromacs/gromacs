@@ -100,8 +100,10 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
    /* Set Berendsen tcoupl lambda's to 1, 
    * so runs without Berendsen coupling are not affected.
    */
-  for(i=0; i<opts->ngtc; i++) {
-    ekind->tcstat[i].lambda = 1.0;
+  for(i=0; i<opts->ngtc; i++) 
+  {
+      ekind->tcstat[i].lambda = 1.0;
+      ekind->tcstat[i].vscale_nhc = 1.0;
   }
   
   snew(ekind->grpstat,opts->ngacc);

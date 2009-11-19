@@ -361,7 +361,7 @@ void init_em(FILE *fplog,const char *title,
     /* Constrain the starting coordinates */
     dvdlambda=0;
     constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
-              ir,cr,-1,0,mdatoms,
+              ir,NULL,cr,-1,0,mdatoms,
               ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
               NULL,NULL,nrnb,econqCoord,FALSE,0,0);
   }
@@ -529,7 +529,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     wallcycle_start(wcycle,ewcCONSTR);
     dvdlambda = 0;
     constrain(NULL,TRUE,TRUE,constr,&top->idef,	
-              ir,cr,count,0,md,
+              ir,NULL,cr,count,0,md,
               s1->x,s2->x,NULL,s2->box,s2->lambda,
               &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
     wallcycle_stop(wcycle,ewcCONSTR);
@@ -699,7 +699,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     wallcycle_start(wcycle,ewcCONSTR);
     dvdl = 0;
     constrain(NULL,FALSE,FALSE,constr,&top->idef,
-              inputrec,cr,count,0,mdatoms,
+              inputrec,NULL,cr,count,0,mdatoms,
               ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
               NULL,&shake_vir,nrnb,econqForceDispl,FALSE,0,0);
     if (fr->bSepDVDL && fplog)

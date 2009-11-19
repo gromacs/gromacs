@@ -108,6 +108,7 @@ extern void update_constraints(FILE         *fplog,
 			       gmx_large_int_t   step,
 			       real         *dvdlambda, /* FEP stuff */
 			       t_inputrec   *inputrec,  /* input record and box stuff	*/
+			       gmx_ekindata_t *ekind,
 			       t_mdatoms    *md,
 			       t_state      *state,
 			       t_graph      *graph,	

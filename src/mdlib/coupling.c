@@ -657,7 +657,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     }
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
-    scalefac = ir->opts.vscale_nhc;
+    snew(scalefac,opts->ngtc);
     for (i=0; i<ngtc;i++) 
     {
         scalefac[i] = 1;
@@ -701,6 +701,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
                 tcstat = &ekind->tcstat[i];
                 msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
                 msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
+                tcstat->vscale_nhc = scalefac[i]; /* need this so we can find the ekinh_old */
             }
             /* now that we've scaled the groupwise velocities, we can add them up to get the total */
             sum_ekin(!bEkinAveVel,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
@@ -818,7 +819,7 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrott
             /* first, a round that estimates veta. */
             trotter_seq[0][0] = etrtBAROV; 
             
-            /* The first half trotter update, part 1 */
+            /* The first half trotter update, part 1 -- double update, because it commutes */
             trotter_seq[1][0] = etrtNHC;
 
             /* The first half trotter update, part 2 */
@@ -829,14 +830,14 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrott
             trotter_seq[3][0] = etrtBARONHC;
             trotter_seq[3][1] = etrtBAROV;
 
-            /* The second half trotter update, part 2 */
+            /* The second half trotter update -- blank for now */
             trotter_seq[4][0] = etrtNHC;
         } 
         else 
         {
             if (IR_NVT_TROTTER(ir)) 
             {
-                /* This is the easy version - there are only two calls, both the same. 
+                /* This is the easy version - there is only one call, both the same. 
                    Otherwise, even easier -- no calls  */
                 trotter_seq[1][0] = etrtNHC;
                 trotter_seq[4][0] = etrtNHC;

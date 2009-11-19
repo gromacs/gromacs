@@ -82,7 +82,7 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir) 
+static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind) 
 {
     t_vetavars *vars;
     double g;
@@ -103,11 +103,18 @@ static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir)
     vars->vscale = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta = vetanew;
-    for (i=0;i<ir->opts.ngtc;i++)
+    if (ekind==NULL) 
     {
-        vars->vscale_nhc[i] = ir->opts.vscale_nhc[i];
+        for (i=0;i<ir->opts.ngtc;i++)
+        {
+            vars->vscale_nhc[i] = 1;
+        }
+    } else {
+        for (i=0;i<ir->opts.ngtc;i++)
+        {
+            vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
+        }
     }
-    
     return vars;
 }
 
@@ -259,7 +266,7 @@ static void pr_sortblock(FILE *fp,const char *title,int nsb,t_sortblock sb[])
 
 bool constrain(FILE *fplog,bool bLog,bool bEner,
                struct gmx_constr *constr,
-               t_idef *idef,t_inputrec *ir,
+               t_idef *idef,t_inputrec *ir,gmx_ekindata_t *ekind,
                t_commrec *cr,
                gmx_large_int_t step,int delta_step,
                t_mdatoms *md,
@@ -293,7 +300,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     nrend = start+homenr;
 
     /* set constants for pressure control integration */ 
-    vetavar = init_vetavars(veta,vetanew,ir);
+    vetavar = init_vetavars(veta,vetanew,ir,ekind);
 
     if (ir->delta_t == 0)
     {

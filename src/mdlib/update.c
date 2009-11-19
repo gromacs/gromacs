@@ -805,6 +805,10 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
   for(g=0; (g<opts->ngtc); g++) 
   {
       copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
+      /* undo the effect of NHC on ekinh_old */
+      if (!bEkinAveVel) {
+          msmul(ekind->tcstat[g].ekinh_old,(real)1.0/(ekind->tcstat[g].vscale_nhc*ekind->tcstat[g].vscale_nhc),ekind->tcstat[g].ekinh_old);
+      }
       clear_mat(ekind->tcstat[g].ekinh);
       clear_mat(ekind->tcstat[g].ekin); /* shouldn't need to save ekin matrix */
   }
@@ -1080,7 +1084,7 @@ static void combine_forces(int nstlist,
          * Constrain only the additional LR part of the force.
          */
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
-        constrain(NULL,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
+        constrain(NULL,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
                   state->x,f_lr,f_lr,state->box,state->lambda,NULL,
                   NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
@@ -1205,6 +1209,7 @@ void update_constraints(FILE         *fplog,
                         gmx_large_int_t   step,
                         real         *dvdlambda,    /* FEP stuff */
                         t_inputrec   *inputrec,      /* input record and box stuff	*/
+                        gmx_ekindata_t *ekind,
                         t_mdatoms    *md,
                         t_state      *state,
                         t_graph      *graph,  
@@ -1269,7 +1274,7 @@ void update_constraints(FILE         *fplog,
         if (inputrec->eI == eiVV && bFirstHalf) 
         {
             constrain(NULL,bLog,bEner,constr,idef,
-                      inputrec,cr,step,1,md,
+                      inputrec,ekind,cr,step,1,md,
                       state->x,state->v,state->v,
                       state->box,state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
@@ -1278,7 +1283,7 @@ void update_constraints(FILE         *fplog,
         else 
         {
             constrain(NULL,bLog,bEner,constr,idef,
-                      inputrec,cr,step,1,md,
+                      inputrec,ekind,cr,step,1,md,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
@@ -1336,7 +1341,7 @@ void update_constraints(FILE         *fplog,
             /* Constrain the coordinates xprime */
             wallcycle_start(wcycle,ewcCONSTR);
             constrain(NULL,bLog,bEner,constr,idef,
-                      inputrec,cr,step,1,md,
+                      inputrec,NULL,cr,step,1,md,
                       state->x,xprime,NULL,
                       state->box,state->lambda,dvdlambda,
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
@@ -1522,6 +1527,13 @@ void update_coords(FILE         *fplog,
     tensor           vir_con;
     rvec             *vcom,*xcom,*vall,*xall,*xin,*vin,*forcein,*fall,*xpall,*xprimein,*xprime;
     
+
+    /* Running the velocity half does nothing except for velocity verlet */
+    if (UpdatePart == etrtVELOCITY) 
+    {
+        if (inputrec->eI!=eiVV) {return;}
+    }
+
     start  = md->start;
     homenr = md->homenr;
     nrend = start+homenr;
@@ -1536,14 +1548,6 @@ void update_coords(FILE         *fplog,
     dt   = inputrec->delta_t;
     dt_1 = 1.0/dt;
 
-    /* Running the velocity half does nothing except for velocity verlet */
-    /* if we are starting from t=0 instead of t=-dt/2, then we should not call 
-       this for the initial step.  However, then we will need to find the correct 
-       virial for the first step */ 
-    if (UpdatePart == etrtVELOCITY) 
-    {
-        if (inputrec->eI!=eiVV) {return;}
-    }
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & (1<<estDISRE_RM3TAV)) 
     {
