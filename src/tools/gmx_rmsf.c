@@ -97,23 +97,29 @@ void correlate_aniso(const char *fn,t_atoms *ref,t_atoms *calc,
   fclose(fp);
 }
 
-void average_residues(real f[],int isize,atom_id index[],real w_rls[],
-		      t_atoms *atoms)
+static void average_residues(double f[],double **U,int uind,
+			     int isize,atom_id index[],real w_rls[],
+			     t_atoms *atoms)
 {
   int i,j,start;
-  real av,m;
+  double av,m;
   
   start = 0;
   av = 0;
   m = 0;
   for(i=0; i<isize; i++) {
-    av += w_rls[index[i]]*f[i];
+    av += w_rls[index[i]]*(f != NULL ? f[i] : U[i][uind]);
     m += w_rls[index[i]];
     if (i+1==isize || 
 	atoms->atom[index[i]].resind!=atoms->atom[index[i+1]].resind) {
       av /= m;
-      for(j=start; j<=i; j++)
-	f[j] = av;
+      if (f != NULL) {
+	for(j=start; j<=i; j++)
+	  f[i] = av;
+      } else {
+	for(j=start; j<=i; j++)
+	  U[j][uind] = av;
+      }
       start = i+1;
       av = 0;
       m = 0;
@@ -221,7 +227,7 @@ int gmx_rmsf(int argc,char *argv[])
   double       **U,*xav;
   atom_id      aid;
   rvec         *rmsd_x=NULL;
-  real         *rmsf,invcount,totmass;
+  double       *rmsf,invcount,totmass;
   int          d;
   real         count=0;
   rvec         xcm;
@@ -351,6 +357,12 @@ int gmx_rmsf(int argc,char *argv[])
   for(d=0; d<DIM*DIM; d++)
     Uaver[d] /= totmass;
 
+  if (bRes) {
+    for(d=0; d<DIM*DIM; d++) {
+      average_residues(NULL,U,d,isize,index,w_rls,&top.atoms);
+    }
+  }
+
   if (bAniso) {
     for(i=0; i<isize; i++) {
       aid = index[i];
@@ -364,7 +376,6 @@ int gmx_rmsf(int argc,char *argv[])
     }
   }
   if (bRes) {
-    average_residues(rmsf,isize,index,w_rls,&top.atoms);
     label = "Residue";
   } else
     label = "Atom";
@@ -420,7 +431,7 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++)
       rmsf[i] = (rmsd_x[i][XX]+rmsd_x[i][YY]+rmsd_x[i][ZZ])/count;
     if (bRes)
-      average_residues(rmsf,isize,index,w_rls,&top.atoms); 
+      average_residues(rmsf,NULL,0,isize,index,w_rls,&top.atoms); 
     /* Write RMSD output */
     fp = xvgropen(devfn,"RMS Deviation",label,"(nm)",oenv);
     for(i=0; i<isize; i++)
