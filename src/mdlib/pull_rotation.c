@@ -856,7 +856,7 @@ static void get_center(rvec x[], real weight[], int nat, rvec center)
     double weight_sum = 0.0;
 
 
-    /* Zero out the center of mass */
+    /* Zero out the center */
     clear_rvec(center);
 
     /* Loop over all atoms and add their weighted position vectors */
@@ -2365,8 +2365,6 @@ extern void init_rot_group(
     bFlex = (rot_type == erotgFLEX1 || rot_type == erotgFLEX2);
     bColl = (bFlex || (rot_type==erotgFOLLOW_PLANE));    
     
-//    /* Allocate space for the rotation group's data: */
-//    snew(rotg->enfrotgrp, 1);
     erg=rotg->enfrotgrp;
     
     snew(erg->xc_ref    , rotg->nat);

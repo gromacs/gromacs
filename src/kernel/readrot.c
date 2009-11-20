@@ -83,7 +83,7 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         sprintf(buf,"rot_group%d",g);
         STYPE(buf,              grpbuf[g], "");
         
-        CTYPE("Rotation type can be Fixed, FixedPlane, FollowPlane, Flexible1 or Flexible2");
+        CTYPE("Rotation type can be fixed, fixedplane, followplane, flexible1 or flexible2");
         sprintf(buf,"rot_type%d",g);
         ETYPE(buf,              rotg->eType, erotg_names);
         
@@ -101,8 +101,8 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         
-        CTYPE("Emission point for the fixed axis");
-        sprintf(buf,"rot_anchor%d",g);
+        CTYPE("Pivot point for the fixed axis");
+        sprintf(buf,"rot_pivot%d",g);
         STYPE(buf,              s_vec, "0.0 0.0 0.0");
         string2dvec(s_vec,vec);
         for(m=0; m<DIM; m++)
