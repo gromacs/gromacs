@@ -1650,7 +1650,8 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
  * 
  * If possible, we will read the inputrec even when TopOnlyOK is TRUE.
  */
-static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int *file_version, int *file_generation)
+static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, 
+                         int *file_version, int *file_generation)
 {
   char  buf[STRLEN];
   bool  bDouble;
@@ -1697,7 +1698,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
  
   if(file_version!=NULL)
     *file_version = fver;
-  if(file_version!=NULL)
+  if(file_generation!=NULL)
     *file_generation = fgen;
    
   
