@@ -82,7 +82,7 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind) 
+static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, bool bPscal) 
 {
     t_vetavars *vars;
     double g;
@@ -91,7 +91,7 @@ static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_eki
     snew(vars,1);
     snew(vars->vscale_nhc,ir->opts.ngtc);
     /* first, set the alpha integrator variable */
-    if (ir->opts.nrdf[0] > 0) 
+    if ((ir->opts.nrdf[0] > 0) && bPscal) 
     {
         vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);  
     } else {
@@ -103,7 +103,7 @@ static t_vetavars *init_vetavars(real veta,real vetanew, t_inputrec *ir, gmx_eki
     vars->vscale = exp(g)*series_sinhx(g);
     vars->rvscale = vars->vscale*vars->rscale;
     vars->veta = vetanew;
-    if (ekind==NULL) 
+    if ((ekind==NULL) || (!bPscal))
     {
         for (i=0;i<ir->opts.ngtc;i++)
         {
@@ -300,7 +300,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     nrend = start+homenr;
 
     /* set constants for pressure control integration */ 
-    vetavar = init_vetavars(veta,vetanew,ir,ekind);
+    vetavar = init_vetavars(veta,vetanew,ir,ekind,bPscal);
 
     if (ir->delta_t == 0)
     {

@@ -61,6 +61,7 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
     int   i,j,mi,mj,jmax,nd,ndj,starti,endi;
     double Ekin,Efac,reft,kT;
     double dt;
+    t_grp_tcstat *tcstat;
     double *ivxi,*ixi;
     double *iQinv;
     double GQ[NNHCHAIN];
@@ -98,13 +99,14 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
             reft = max(0.0,opts->ref_t[0]);
             Ekin = sqr(*veta)/MassQ->Winv;
         } else {
+            tcstat = &ekind->tcstat[i];
             nd = opts->nrdf[i];
             reft = max(0.0,opts->ref_t[i]);
             if (bEkinAveVel) 
             {
-                Ekin = 2*trace(ekind->tcstat[i].ekin);
+                Ekin = 2*trace(tcstat->ekin)*tcstat->ekinscale_nhc;
             } else {
-                Ekin = 2*trace(ekind->tcstat[i].ekinh);
+                Ekin = 2*trace(tcstat->ekinh)*tcstat->ekinscale_nhc;
             }
         }
         kT = BOLTZ*reft;
@@ -658,11 +660,10 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     snew(scalefac,opts->ngtc);
-    for (i=0; i<ngtc;i++) 
+    for (i=0;i<ngtc;i++) 
     {
         scalefac[i] = 1;
     }
-
     /* execute the series of trotter updates specified in the trotterpart array */
     
     for (i=0;i<NTROTTERPARTS;i++){
@@ -699,12 +700,14 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             for (i=0; i<ngtc;i++) 
             {
                 tcstat = &ekind->tcstat[i];
-                msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
-                msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
-                tcstat->vscale_nhc = scalefac[i]; /* need this so we can find the ekinh_old */
+                //msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
+                //msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
+                tcstat->vscale_nhc = scalefac[i]; 
+                tcstat->ekinscale_nhc *= (scalefac[i]*scalefac[i]); 
             }
             /* now that we've scaled the groupwise velocities, we can add them up to get the total */
-            sum_ekin(!bEkinAveVel,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
+            /* but do we actually need the total? */
+            //sum_ekin(!bEkinAveVel,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
             
             /* modify the velocities as well */
             for (n=md->start;n<md->start+md->homenr;n++) 
@@ -745,6 +748,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
         }
     }
 #endif
+    sfree(scalefac);
 }
 
 int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrotter) 

@@ -1528,6 +1528,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             &fp_dhdl,&fp_field,&mdebin,
             force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,Flags);
 
+    clear_mat(total_vir);
+    clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
     init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
@@ -1652,7 +1654,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         update_energyhistory(&state_global->enerhist,mdebin);
     }	
 
-
     if ((state->flags & (1<<estLD_RNG)) && (Flags & MD_READ_RNG)) {
         /* Set the random state if we read a checkpoint file */
         set_stochd_state(upd,state);
@@ -1681,7 +1682,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                         repl_ex_nst,repl_ex_seed);
 
-    
     if (!ir->bContinuation && !bRerunMD)
     {
         if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
@@ -1726,9 +1726,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      (CGLO_TEMPERATURE) |  
                      (bRerunMD ? CGLO_RERUNMD:0) | 
                      (bEkinAveVel ? CGLO_EKINAVEVEL:0) | 
-                     (bGStat ? CGLO_GSTAT:0) | 
+                     (CGLO_GSTAT) | 
                      ((Flags & MD_READ_EKIN) ? CGLO_READEKIN:0)));
-    
+    /* I'm assuming we need global communication the first time */
     /* Calculate the initial half step temperature */
     temp0 = enerd->term[F_TEMP];
     
@@ -2212,9 +2212,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_rvecn(state->v,vbuf,0,top_global->natoms); /* should make this better for parallelizing */
         }
 
-        /* this is for NHC in the Ekin(t+dt/2) version of vv - do a double step*/
-        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
-        
+        /* this is for NHC in the Ekin(t+dt/2) version of vv */
+        if (!bInitStep || !bEkinAveVel) 
+        {
+            trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
+            trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
+        }
+
         update_coords(fplog,step,ir,mdatoms,state,
                       f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                       ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
@@ -2604,14 +2608,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /* second trotter NHC step - need to resum the kinetic energies after scaling. */
 
-        trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
-#if 0        
-        if (!bEkinAveVel) {
-            enerd->term[F_TEMP] = sum_ekin(FALSE,&(ir->opts),ekind,
-                                           &(enerd->term[F_DKDL]),bEkinAveVel);
-            enerd->term[F_EKIN] = trace(ekind->ekin);
-        }
-#endif
+        //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
         update_box(fplog,step,ir,mdatoms,state,graph,f,
                    ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
 

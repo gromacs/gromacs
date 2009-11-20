@@ -804,16 +804,16 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
    */
   for(g=0; (g<opts->ngtc); g++) 
   {
-      copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
-      /* undo the effect of NHC on ekinh_old */
-      if (!bEkinAveVel) {
-          msmul(ekind->tcstat[g].ekinh_old,(real)1.0/(ekind->tcstat[g].vscale_nhc*ekind->tcstat[g].vscale_nhc),ekind->tcstat[g].ekinh_old);
+      copy_mat(tcstat[g].ekinh,tcstat[g].ekinh_old);
+      clear_mat(tcstat[g].ekinh);
+      clear_mat(tcstat[g].ekin); /* shouldn't need to save ekin matrix? */
+      if (bEkinAveVel) 
+      {
+          tcstat[g].ekinscale_nhc = 1.0; /* we don't need this anymore, since we're resumming velocities */
       }
-      clear_mat(ekind->tcstat[g].ekinh);
-      clear_mat(ekind->tcstat[g].ekin); /* shouldn't need to save ekin matrix */
   }
   ekind->dekindl_old = ekind->dekindl;
-  
+
   dekindl = 0;
   for(n=start; (n<start+homenr); n++) 
   {
@@ -852,7 +852,6 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
       }
   }
   ekind->dekindl = dekindl;
-
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 

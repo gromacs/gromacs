@@ -104,6 +104,7 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
   {
       ekind->tcstat[i].lambda = 1.0;
       ekind->tcstat[i].vscale_nhc = 1.0;
+      ekind->tcstat[i].ekinscale_nhc = 1.0;
   }
   
   snew(ekind->grpstat,opts->ngacc);
@@ -179,6 +180,7 @@ real sum_ekin(bool bCopyHalf,
 {
     int          i,j,m,ngtc;
     real         T,ek;
+    real         ekinscale;
     t_grp_tcstat *tcstat;
     real         nrdf,nd,*ndf;
     
@@ -193,12 +195,18 @@ real sum_ekin(bool bCopyHalf,
     for(i=0; (i<ngtc); i++) 
     {
         tcstat = &ekind->tcstat[i];
+        ekinscale = tcstat->ekinscale_nhc;
+        //if (!bEkinAveVel) 
+        //{
+            tcstat->ekinscale_nhc = 1.0;
+            //}
         nd = ndf[i];
         /* Sometimes a group does not have degrees of freedom, e.g.
          * when it consists of shells and virtual sites, then we just
          * set the temperatue to 0 and also neglect the kinetic
          * energy, which should be  zero anyway.
          */
+        
         if (nd > 0) {
             if (bCopyHalf) 
             {
@@ -206,12 +214,14 @@ real sum_ekin(bool bCopyHalf,
                  * or when doing mdrun -rerun.
                  */
                 copy_mat(tcstat->ekinh,tcstat->ekin);
+                msmul(tcstat->ekin,ekinscale,tcstat->ekin);
             } 
             else 
             {
                 if (bEkinAveVel) 
                 {
                     /* in some cases, kinetic energy is from the current velocities already */
+                    msmul(tcstat->ekin,ekinscale,tcstat->ekin);
                 } 
                 else 
                 {
@@ -221,24 +231,15 @@ real sum_ekin(bool bCopyHalf,
                         for(m=0; (m<DIM); m++)
                         {
                             tcstat->ekin[j][m] =
-                                0.5*(tcstat->ekinh[j][m] + tcstat->ekinh_old[j][m]);
+                                0.5*(tcstat->ekinh[j][m]*ekinscale + tcstat->ekinh_old[j][m]);
                         }
                     }
                 }
             }
             m_add(tcstat->ekin,ekind->ekin,ekind->ekin);
-            ek = 0;
-            for(m=0; (m<DIM); m++) 
-            {
-                ek += tcstat->ekinh[m][m];
-            }
-            tcstat->Th = calc_temp(ek,nd);
-            ek = 0;
-            for(m=0; (m<DIM); m++)
-            { 
-                ek += tcstat->ekin[m][m];
-            }
-            tcstat->T = calc_temp(ek,nd);
+
+            tcstat->Th = calc_temp(trace(tcstat->ekinh),nd);
+            tcstat->T  = calc_temp(trace(tcstat->ekin),nd);
         }
         else 
         {
