@@ -788,7 +788,7 @@ static void dump_it_all(FILE *fp,const char *title,
 }
 
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
-                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel)
+                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,ga=0,gt=0;
@@ -804,7 +804,10 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
    */
   for(g=0; (g<opts->ngtc); g++) 
   {
-      copy_mat(tcstat[g].ekinh,tcstat[g].ekinh_old);
+      
+      if (!bSaveEkinOld) {
+          copy_mat(tcstat[g].ekinh,tcstat[g].ekinh_old);
+      } 
       clear_mat(tcstat[g].ekinh);
       clear_mat(tcstat[g].ekin); /* shouldn't need to save ekin matrix? */
       if (bEkinAveVel) 
@@ -813,7 +816,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
       }
   }
   ekind->dekindl_old = ekind->dekindl;
-
+  
   dekindl = 0;
   for(n=start; (n<start+homenr); n++) 
   {
@@ -858,7 +861,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
 static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
                               t_grpopts *opts,t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, bool bFullStepV)
+                              t_nrnb *nrnb, bool bEkinAveVel, bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,gt=0;
@@ -902,7 +905,7 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
           for (m=0; (m<DIM); m++) 
           {
               /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-              if (bFullStepV) 
+              if (bEkinAveVel) 
               {
                   tcstat[gt].ekin[m][d]+=hm*v_corrt[m]*v_corrt[d];
               } 
@@ -924,15 +927,15 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 }
 
 void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-                  gmx_ekindata_t *ekind,t_nrnb *nrnb, bool bFullStepV)
+                  gmx_ekindata_t *ekind,t_nrnb *nrnb, bool bEkinAveVel, bool bSaveEkinOld)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v,opts,md,ekind,nrnb,bFullStepV);
+        calc_ke_part_normal(state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld);
     }
     else
     {
-        calc_ke_part_visc(state->box,state->x,state->v,opts,md,ekind,nrnb,bFullStepV);
+        calc_ke_part_visc(state->box,state->x,state->v,opts,md,ekind,nrnb,bEkinAveVel,bSaveEkinOld);
     }
 }
 

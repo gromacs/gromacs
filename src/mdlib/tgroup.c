@@ -175,8 +175,8 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
   }
 }
 
-real sum_ekin(bool bCopyHalf,
-	      t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,bool bEkinAveVel)
+real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
+              bool bEkinAveVel, bool bCopyHalf, bool bSaveEkinOld)
 {
     int          i,j,m,ngtc;
     real         T,ek;
@@ -194,13 +194,13 @@ real sum_ekin(bool bCopyHalf,
     
     for(i=0; (i<ngtc); i++) 
     {
+        nd = ndf[i];
         tcstat = &ekind->tcstat[i];
         ekinscale = tcstat->ekinscale_nhc;
-        //if (!bEkinAveVel) 
-        //{
+        if (!bSaveEkinOld) 
+        {
             tcstat->ekinscale_nhc = 1.0;
-            //}
-        nd = ndf[i];
+        }
         /* Sometimes a group does not have degrees of freedom, e.g.
          * when it consists of shells and virtual sites, then we just
          * set the temperatue to 0 and also neglect the kinetic

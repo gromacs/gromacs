@@ -58,8 +58,8 @@ extern void accumulate_u(t_commrec *cr,t_grpopts *opts,
  * and sum them up. Return them in grps.
  */
 
-extern real sum_ekin(bool bCopyHalf,t_grpopts *opts,gmx_ekindata_t *ekind,
-		     real *dekindlambda, bool bEkinFullStep);
+extern real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind, real *dekindlambda, 
+		     bool bEkinFullStep, bool bCopyHalf, bool bSaveEkinOld);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */

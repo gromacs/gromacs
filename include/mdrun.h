@@ -91,15 +91,14 @@
 #define CGLO_PRESSURE      (1<<7)
 /* Sum the constraint term in global computation */
 #define CGLO_CONSTRAINT    (1<<8)
-/* we are using an integrator that requires iteration over some steps */
+/* we are using an integrator that requires iteration over some steps - currently not used*/
 #define CGLO_ITERATE       (1<<9)
 /* it is the first time we are iterating (or, only once through is required */
 #define CGLO_FIRSTITERATE  (1<<10)
-/* This is the first time the code is being called */
-#define CGLO_INITIALIZE    (1<<11)
+/* Copy the ekinh directly into ekin */
+#define CGLO_COPYEKINH    (1<<11)
 /* we are reading the Ekin from a file (such as rerunning) */
 #define CGLO_READEKIN      (1<<12)
-/* We are in the first half of the verlet update step */
 
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR

@@ -184,7 +184,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     real prescorr,enercorr,dvdlcorr;
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
-    bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, bFirstIterate, bInitialize, bReadEkin;
+    bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, bFirstIterate, bCopyEkinh, bReadEkin;
     
     /* translate CGLO flags to booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -194,7 +194,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bNEMD = flags & CGLO_NEMD;
     bIterate = flags & CGLO_ITERATE;
     bFirstIterate = flags & CGLO_FIRSTITERATE;
-    bInitialize = flags & CGLO_INITIALIZE;
+    bCopyEkinh = flags & CGLO_COPYEKINH;
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
     bPres  = flags & CGLO_PRESSURE;
@@ -226,7 +226,8 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         }
         else 
         {
-            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel);
+            calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel,bIterate);
+            /* if we are iterating, we don't actually want to get rid of the old ekin */
         }
         
         debug_gmx();
@@ -291,8 +292,8 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     if (bTemp) 
     {
         /* Sum the kinetic energies of the groups & calc temp */
-        enerd->term[F_TEMP] = sum_ekin((bInitialize && !bEkinAveVel),&(ir->opts),ekind,
-                                       &(enerd->term[F_DKDL]),bEkinAveVel);
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
+                                       bEkinAveVel,(bCopyEkinh && !bEkinAveVel),bIterate);
         
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
@@ -1721,7 +1722,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                    (CGLO_INITIALIZE |
+                    (CGLO_COPYEKINH |
                      (bVV ? CGLO_PRESSURE:0) |
                      (CGLO_TEMPERATURE) |  
                      (bRerunMD ? CGLO_RERUNMD:0) | 
@@ -1729,7 +1730,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      (CGLO_GSTAT) | 
                      ((Flags & MD_READ_EKIN) ? CGLO_READEKIN:0)));
     /* I'm assuming we need global communication the first time */
-    /* Calculate the initial half step temperature */
+    /* Calculate the initial half step temperature, and save the ekinh_old */
+    for(i=0; (i<ir->opts.ngtc); i++) 
+    {
+        copy_mat(ekind->tcstat[i].ekinh,ekind->tcstat[i].ekinh_old);
+    } 
     temp0 = enerd->term[F_TEMP];
     
     /* Initiate data for the special cases */
@@ -2215,7 +2220,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* this is for NHC in the Ekin(t+dt/2) version of vv */
         if (!bInitStep || !bEkinAveVel) 
         {
-            trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
+            //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
             trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1],bEkinAveVel);            
         }
 
@@ -2288,7 +2293,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                 constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                 top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                ((bVV) ? (cglo_flags | CGLO_ENERGY):0) | 
                                 (cglo_flags | CGLO_ENERGY) | 
                                 ((bIterate | bInitStep) ? (cglo_flags | CGLO_PRESSURE):0) |
                                 ((bEkinAveVel &&(!bInitStep))? (cglo_flags | CGLO_TEMPERATURE):0) | 
@@ -2309,7 +2313,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             copy_mat(shake_vir,state->vir_prev);
             if (IR_NVT_TROTTER(ir) && bEkinAveVel) {
                 /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
-                enerd->term[F_TEMP] = sum_ekin(FALSE,&(ir->opts),ekind,NULL,bEkinAveVel);
+                enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,bEkinAveVel,FALSE,FALSE);
                 enerd->term[F_EKIN] = trace(ekind->ekin);
             }
         }
@@ -2542,7 +2546,22 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
 
+                if ((bVV) && (!bEkinAveVel))
+                {
+                    compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                                    constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
+                                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                    //(cglo_flags | CGLO_COPYEKINH) | 
+                                    (cglo_flags | CGLO_TEMPERATURE) | 
+                                    (cglo_flags & ~CGLO_PRESSURE) |
+                                    (cglo_flags & ~CGLO_ENERGY));
+                }
+                /* above, initialize just copies ekinh into ekin, it doesn't copy 
                 /* position (for VV), and entire integrator for MD */
+                
+                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
+                
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                 
@@ -2590,6 +2609,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 wallcycle_stop(wcycle,ewcVSITECONSTR);
             }
             
+            if (bVV && !bEkinAveVel) {
+                for(i=0; (i<ir->opts.ngtc); i++) 
+                {
+                    //copy_mat(ekind->tcstat[i].ekinh_old,ekind->tcstat[i].ekinh);
+                } 
+            }
             /* ############## IF NOT VV, CALCULATE EKIN AND PRESSURE HERE ############ */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
@@ -2597,18 +2622,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             (!(bVV) ? (cglo_flags | CGLO_ENERGY):0) | 
                             (cglo_flags | CGLO_PRESSURE) |
-                            (!(bVV && bEkinAveVel) ? (cglo_flags | CGLO_TEMPERATURE):0) | 
+                            //(!(bVV && bEkinAveVel) ? (cglo_flags | CGLO_TEMPERATURE):0) | 
+                            (!bVV ? (cglo_flags | CGLO_TEMPERATURE):0) | 
                             (bIterate ? CGLO_ITERATE : 0) |
                             (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                 );            
+            /* bIterate is set to keep it from eliminating the old ekinh */
             /* #############  END CALC EKIN AND PRESSURE ################# */
             
             if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,trace(shake_vir),&tracevir,1)) break;
         }
         
-        /* second trotter NHC step - need to resum the kinetic energies after scaling. */
-
-        //trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
         update_box(fplog,step,ir,mdatoms,state,graph,f,
                    ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
 
