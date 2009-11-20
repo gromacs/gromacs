@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -79,6 +75,10 @@ bool tMPI_In_group(tMPI_Group group)
 
 int tMPI_Group_size(tMPI_Group group, int *size)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Group_size(%p, %p)", group, size);
+#endif
+
     if (group)
         *size = group->N;
     else
@@ -91,6 +91,9 @@ int tMPI_Group_rank(tMPI_Group group, int *rank)
     int i;
     struct tmpi_thread *cur;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Group_rank(%p, %p)", group, rank);
+#endif
     if (!group)
         return TMPI_UNDEFINED;
 
@@ -126,6 +129,9 @@ tMPI_Group tMPI_Group_alloc(void)
 
 int tMPI_Group_free(tMPI_Group *group)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Group_free(%p)", group);
+#endif
     if (group)
     {
         free((*group)->peers);
@@ -139,6 +145,9 @@ int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group)
     int i;
     struct tmpi_group_ *ret=tMPI_Group_alloc();
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_group(%p, %p)", comm, group);
+#endif
     ret->N=comm->grp.N;
     for(i=0;i<comm->grp.N;i++)
     {
@@ -165,6 +174,10 @@ int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup)
     int i;
     tMPI_Group ng;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Group_incl(%p, %d, %p, %p, %p)", group, n, ranks, 
+                       newgroup);
+#endif
     /* just allocate and copy */
     ng=tMPI_Group_alloc();
     ng->N=n;

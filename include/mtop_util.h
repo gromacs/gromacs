@@ -39,6 +39,14 @@
 #include "typedefs.h"
 
 
+/* Should be called after generating or reading mtop,
+ * to set some compute intesive variables to avoid
+ * N^2 operations later on.
+ */
+extern void
+gmx_mtop_finalize(gmx_mtop_t *mtop);
+
+
 /* Returns the total number of charge groups in mtop */
 extern int
 ncg_mtop(const gmx_mtop_t *mtop);

@@ -84,35 +84,105 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     {
         yylval->str = param->name ? strdup(param->name) : NULL;
     }
-    switch (param->val.type)
+    return PARAM;
+}
+
+static int
+init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, bool bPosMod,
+                  gmx_sel_lexer_t *state)
+{
+    /* If the previous token was not KEYWORD_POS, return EMPTY_POSMOD
+     * before the actual method to work around a limitation in Bison. */
+    if (!bPosMod && method->type != POS_VALUE)
     {
-        case NO_VALUE:
-        case INT_VALUE:
-        case REAL_VALUE:
-        case STR_VALUE:
-            return PARAM_BASIC;
-        case POS_VALUE:
-        case GROUP_VALUE:
-            return PARAM_EXPR;
+        state->nextmethod = method;
+        return EMPTY_POSMOD;
+    }
+    yylval->meth = method;
+    if (!(method->flags & SMETH_MODIFIER) && method->nparams == 0)
+    {
+        /* Keyword */
+        switch (method->type)
+        {
+            case INT_VALUE:   return KEYWORD_NUMERIC;
+            case REAL_VALUE:  return KEYWORD_NUMERIC;
+            case STR_VALUE:   return KEYWORD_STR;
+            case GROUP_VALUE: return KEYWORD_GROUP;
+            default:          return INVALID;
+        }
+    } else {
+        /* Method with parameters or a modifier */
+        if (method->flags & SMETH_MODIFIER)
+        {
+            /* Remove all methods from the stack */
+            state->msp = -1;
+            if (method->param[1].name == NULL)
+            {
+                state->nextparam = &method->param[1];
+            }
+        }
+        else
+        {
+            if (method->param[0].name == NULL)
+            {
+                state->nextparam = &method->param[0];
+            }
+        }
+        ++state->msp;
+        if (state->msp >= state->mstack_alloc)
+        {
+            state->mstack_alloc += 10;
+            srenew(state->mstack, state->mstack_alloc);
+        }
+        state->mstack[state->msp] = method;
+        if (method->flags & SMETH_MODIFIER)
+        {
+            return MODIFIER;
+        }
+        switch (method->type)
+        {
+            case INT_VALUE:   return METHOD_NUMERIC;
+            case REAL_VALUE:  return METHOD_NUMERIC;
+            case POS_VALUE:   return METHOD_POS;
+            case GROUP_VALUE: return METHOD_GROUP;
+            default:
+                --state->msp;
+                return INVALID;
+        }
     }
     return INVALID; /* Should not be reached */
 }
 
 int
-_gmx_sel_lexer_process_next_param(YYSTYPE *yylval, gmx_sel_lexer_t *state)
+_gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
 {
-    gmx_ana_selparam_t *param = state->nextparam;
-    bool                bBoolNo = state->bBoolNo;
-
-    if (state->neom > 0)
+    if (state->nextparam)
     {
-        --state->neom;
-        return END_OF_METHOD;
+        gmx_ana_selparam_t *param = state->nextparam;
+        bool                bBoolNo = state->bBoolNo;
+
+        if (state->neom > 0)
+        {
+            --state->neom;
+            return END_OF_METHOD;
+        }
+        state->nextparam = NULL;
+        state->bBoolNo   = FALSE;
+        _gmx_sel_lexer_add_token(param->name, -1, state);
+        return init_param_token(yylval, param, bBoolNo);
     }
-    state->nextparam = NULL;
-    state->bBoolNo   = FALSE;
-    _gmx_sel_lexer_add_token(param->name, -1, state);
-    return init_param_token(yylval, param, bBoolNo);
+    if (state->prev_pos_kw > 0)
+    {
+        --state->prev_pos_kw;
+    }
+    if (state->nextmethod)
+    {
+        gmx_ana_selmethod_t *method = state->nextmethod;
+
+        state->nextmethod = NULL;
+        return init_method_token(yylval, method, TRUE, state);
+    }
+    return 0;
 }
 
 int
@@ -233,58 +303,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
         gmx_ana_selmethod_t *method;
 
         method = _gmx_sel_sym_value_method(symbol);
-        yylval->meth = method;
-        if (!(method->flags & SMETH_MODIFIER) && method->nparams == 0)
-        {
-            /* Keyword */
-            switch (method->type)
-            {
-                case INT_VALUE:   return KEYWORD_NUMERIC;
-                case REAL_VALUE:  return KEYWORD_NUMERIC;
-                case STR_VALUE:   return KEYWORD_STR;
-                case GROUP_VALUE: return KEYWORD_GROUP;
-                default:          return INVALID;
-            }
-        } else {
-            /* Method with parameters or a modifier */
-            if (method->flags & SMETH_MODIFIER)
-            {
-                /* Remove all methods from the stack */
-                state->msp = -1;
-                if (method->param[1].name == NULL)
-                {
-                    state->nextparam = &method->param[1];
-                }
-            }
-            else
-            {
-                if (method->param[0].name == NULL)
-                {
-                    state->nextparam = &method->param[0];
-                }
-            }
-            ++state->msp;
-            if (state->msp >= state->mstack_alloc)
-            {
-                state->mstack_alloc += 10;
-                srenew(state->mstack, state->mstack_alloc);
-            }
-            state->mstack[state->msp] = method;
-            if (method->flags & SMETH_MODIFIER)
-            {
-                return MODIFIER;
-            }
-            switch (method->type)
-            {
-                case INT_VALUE:   return METHOD_NUMERIC;
-                case REAL_VALUE:  return METHOD_NUMERIC;
-                case POS_VALUE:   return METHOD_POS;
-                case GROUP_VALUE: return METHOD_GROUP;
-                default:
-                    --state->msp;
-                    return INVALID;
-            }
-        }
+        return init_method_token(yylval, method, state->prev_pos_kw > 0, state);
     }
     /* For position symbols, we need to return KEYWORD_POS, but we also need
      * some additional handling. */
@@ -292,6 +311,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     {
         state->bMatchOf = TRUE;
         yylval->str = _gmx_sel_sym_name(symbol);
+        state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }
     /* Should not be reached */
@@ -347,7 +367,8 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
 
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive)
+                    bool bInteractive, int maxnr,
+                    struct gmx_ana_indexgrps_t *grps)
 {
     gmx_sel_lexer_t *state;
     int              rc;
@@ -360,6 +381,9 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     snew(state, 1);
     state->sc        = sc;
+    state->grps      = grps;
+    state->nexpsel   = (maxnr > 0 ? sc->nr + maxnr : -1);
+
     state->bPrompt   = bInteractive;
     state->prompt    = bInteractive ? DEFAULT_PROMPT : NULL;
 
@@ -373,6 +397,8 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->msp          = -1;
     state->neom         = 0;
     state->nextparam    = NULL;
+    state->nextmethod   = NULL;
+    state->prev_pos_kw  = 0;
     state->bBoolNo      = FALSE;
     state->bMatchOf     = FALSE;
     state->bMatchBool   = FALSE;
@@ -412,6 +438,20 @@ _gmx_sel_lexer_selcollection(yyscan_t scanner)
     return state->sc;
 }
 
+struct gmx_ana_indexgrps_t *
+_gmx_sel_lexer_indexgrps(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->grps;
+}
+
+int
+_gmx_sel_lexer_exp_selcount(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+    return state->nexpsel;
+}
+
 const char *
 _gmx_sel_lexer_pselstr(yyscan_t scanner)
 {
@@ -425,6 +465,14 @@ _gmx_sel_lexer_clear_pselstr(yyscan_t scanner)
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
     state->pselstr[0] = 0;
     state->pslen      = 0;
+}
+
+void
+_gmx_sel_lexer_clear_method_stack(yyscan_t scanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
+
+    state->msp = -1;
 }
 
 void

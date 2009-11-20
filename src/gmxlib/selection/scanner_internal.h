@@ -57,6 +57,9 @@ struct gmx_sel_lexer_t;
 typedef struct gmx_sel_lexer_t
 {
     struct gmx_ana_selcollection_t  *sc;
+    struct gmx_ana_indexgrps_t      *grps;
+    int                              nexpsel;
+
     bool                             bPrompt;
     const char                      *prompt;
 
@@ -67,9 +70,12 @@ typedef struct gmx_sel_lexer_t
     struct gmx_ana_selmethod_t     **mstack;
     int                              msp;
     int                              mstack_alloc;
+
     int                              neom;
     struct gmx_ana_selparam_t       *nextparam;
     bool                             bBoolNo;
+    struct gmx_ana_selmethod_t      *nextmethod;
+    int                              prev_pos_kw;
 
     bool                             bMatchOf;
     bool                             bMatchBool;
@@ -82,10 +88,9 @@ typedef struct gmx_sel_lexer_t
 /* Because Flex defines yylval, yytext, and yyleng as macros,
  * and this file is included from scanner.l,
  * we cannot have them here as parameter names... */
-/** Internal function for cases where several tokens need to be returned for a
- * single parameter. */
+/** Internal function for cases where several tokens need to be returned. */
 int
-_gmx_sel_lexer_process_next_param(YYSTYPE *, gmx_sel_lexer_t *state);
+_gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
 _gmx_sel_lexer_process_identifier(YYSTYPE *, char *, int,

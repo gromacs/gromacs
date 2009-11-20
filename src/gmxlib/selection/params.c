@@ -116,7 +116,7 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
         if (value->type == GROUP_VALUE && type == POS_VALUE)
         {
             value->u.expr =
-                _gmx_sel_init_position(value->u.expr, NULL, FALSE, scanner);
+                _gmx_sel_init_position(value->u.expr, NULL, scanner);
             if (value->u.expr == NULL)
             {
                 return -1;
@@ -153,7 +153,7 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
 /*! \brief
  * Does a type conversion on a list of values.
  *
- * \param[in,out] value    Values to convert.
+ * \param[in,out] values   Values to convert.
  * \param[in]     type     Type to convert to.
  * \param[in]     scanner  Scanner data structure.
  * \returns       0 on success, a non-zero value on error.
@@ -457,6 +457,7 @@ parse_values_varnum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param
     if (param->val.type == POS_VALUE)
     {
         gmx_ana_pos_reserve(param->val.u.p, nval, 0);
+        gmx_ana_pos_set_nr(param->val.u.p, nval);
         gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
     }
     else

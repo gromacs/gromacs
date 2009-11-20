@@ -415,19 +415,21 @@ int main(int argc,char *argv[])
 {
   const char *desc[] = {
     "gmxdump reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
-    "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]) or an energy",
-    "file ([TT].ene[tt]/[TT].edr[tt]) and prints that to standard",
-    "output in a readable format. This program is essential for",
-    "checking your run input file in case of problems.[PAR]",
-    "When requesting to dump a topology file the program will dump",
-    "the processed topology, since not all original information is maintained",
-    "in tpr files."
+    "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]), an energy",
+    "file ([TT].ene[tt]/[TT].edr[tt]), or a checkpoint file ([TT].cpt[tt])",
+    "and prints that to standard output in a readable format.",
+    "This program is essential for checking your run input file in case of",
+    "problems.[PAR]",
+    "The program can also preprocess a topology to help finding problems.",
+    "Note that currently setting GMXLIB is the only way to customize",
+    "directories used for searching include files.",
   };
   t_filenm fnm[] = {
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
     { efEDR, "-e", NULL, ffOPTRD },
     { efCPT, NULL, NULL, ffOPTRD },
+    { efTOP, "-p", NULL, ffOPTRD },
     { efMTX, "-mtx", "hessian", ffOPTRD }, 
     { efMDP, "-om", NULL, ffOPTWR }
   };
@@ -458,6 +460,8 @@ int main(int argc,char *argv[])
     list_ene(ftp2fn(efEDR,NFILE,fnm));
   else if (ftp2bSet(efCPT,NFILE,fnm))
     list_checkpoint(ftp2fn(efCPT,NFILE,fnm),stdout);
+  else if (ftp2bSet(efTOP,NFILE,fnm))
+    list_top(ftp2fn(efTOP,NFILE,fnm));
   else if (ftp2bSet(efMTX,NFILE,fnm))
     list_mtx(ftp2fn(efMTX,NFILE,fnm));
     

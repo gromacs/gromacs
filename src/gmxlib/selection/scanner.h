@@ -40,6 +40,7 @@
 
 #include "parser.h"
 
+struct gmx_ana_indexgrps_t;
 struct gmx_ana_selcollection_t;
 
 #ifndef YY_TYPEDEF_YY_SCANNER_T
@@ -50,22 +51,34 @@ typedef void *yyscan_t;
 /** Initializes the selection scanner. */
 int
 _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    bool bInteractive);
+                    bool bInteractive, int maxnr,
+                    struct gmx_ana_indexgrps_t *grps);
 /** Frees memory allocated for the selection scanner. */
 void
 _gmx_sel_free_lexer(yyscan_t scanner);
+
 /** Returns TRUE if the scanner is interactive. */
 bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
 struct gmx_ana_selcollection_t *
 _gmx_sel_lexer_selcollection(yyscan_t scanner);
+/** Returns the external index groups for the scanner. */
+struct gmx_ana_indexgrps_t *
+_gmx_sel_lexer_indexgrps(yyscan_t scanner);
+/** Returns the number of selections after which the parser should stop. */
+int
+_gmx_sel_lexer_exp_selcount(yyscan_t scanner);
+
 /** Returns a pretty string of the current selection.  */
 const char *
 _gmx_sel_lexer_pselstr(yyscan_t scanner);
 /** Clears the current selection string.  */
 void
 _gmx_sel_lexer_clear_pselstr(yyscan_t scanner);
+/** Clears the method stack in the scanner in error situations. */
+void
+_gmx_sel_lexer_clear_method_stack(yyscan_t scanner);
 /** Notifies the scanner that a complete method expression has been parsed. */
 void
 _gmx_sel_finish_method(yyscan_t scanner);
