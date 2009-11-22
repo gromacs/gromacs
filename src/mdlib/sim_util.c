@@ -930,6 +930,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && !bEkinAveVel) {
+    //if (EI_STATE_VELOCITY(ir->eI)) {
         for(i=start; (i<end); i++) {
             for(m=0; (m<DIM); m++) {
                 /* Reverse the velocity */

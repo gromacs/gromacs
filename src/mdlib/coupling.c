@@ -176,7 +176,7 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
 }
 
 static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
-		  tensor ekin, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
+                         gmx_ekindata_t *ekind, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
 {
 
     real  pscal;
@@ -209,8 +209,10 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     { 
         gmx_fatal(FARGS,"Barostat is coupled to a T-group with no degrees of freedom\n");    
     } 
+    /* alpha factor for phase space volume, then multiply by the ekin scaling factor.  */
     alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
-    msmul(ekin,alpha,ekinmod);  
+    alpha *= ekind->tcstat[0].ekinscale_nhc;
+    msmul(ekind->ekin,alpha,ekinmod);  
     
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
@@ -681,7 +683,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
         {
         case etrtBAROV:
         case etrtBAROV2:
-            boxv_trotter(ir,&(state->veta),dt,state->box,ekind->ekin,vir,
+            boxv_trotter(ir,&(state->veta),dt,state->box,ekind,vir,
                          enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
             break;
         case etrtBARONHC:

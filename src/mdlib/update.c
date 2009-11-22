@@ -1533,7 +1533,8 @@ void update_coords(FILE         *fplog,
     /* Running the velocity half does nothing except for velocity verlet */
     if (UpdatePart == etrtVELOCITY) 
     {
-        if (inputrec->eI!=eiVV) {return;}
+        if (inputrec->eI!=eiVV) {return;} 
+        //if ((inputrec->eI!=eiVV) || (bInitStep)) {return;}
     }
 
     start  = md->start;
