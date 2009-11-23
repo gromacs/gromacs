@@ -2228,7 +2228,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* if using velocity verlet with full time step Ekin, take the first half step only to compute the 
                virial for the first step. From there, revert back to the initial coordinates
                so that the input is actually the initial step */
-            copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing */
+            copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
         }
 
         /* this is for NHC in the Ekin(t+dt/2) version of vv */
@@ -2595,17 +2595,19 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     (cglo_flags & ~CGLO_PRESSURE) |
                                     (cglo_flags & ~CGLO_ENERGY)
                         );
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
+                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
                     copy_rvecn(cbuf,state->x,0,state->natoms);
                     update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                                   ekind,M,wcycle,upd,bInitStep,etrtPOSITION,cr,nrnb,constr,&top->idef);
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
-                    /* shouldn't V be constrained already? */
-                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
-                                       &top->idef,tmp_vir,force_vir,
-                                       cr,nrnb,wcycle,upd,constr,
-                                       bInitStep,FALSE,bCalcPres,state->veta);  
-                    m_add(shake_vir,tmp_vir,shake_vir);
+                    /* are the small terms in the shake_vir here due
+                     * to numerical errors, or are they important
+                     * physically? */ 
+                       update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                                          &top->idef,tmp_vir,force_vir,
+                                          cr,nrnb,wcycle,upd,constr,
+                                          bInitStep,FALSE,bCalcPres,state->veta);  
+                       m_add(shake_vir,tmp_vir,shake_vir);
                 }
                 
                 if (!bOK && !bFFscan) 

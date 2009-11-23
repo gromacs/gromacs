@@ -734,7 +734,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             break;
         }
     }
-#if 0  
+#if 0
     /* check for conserved momentum */  
     if (debug) 
     {
