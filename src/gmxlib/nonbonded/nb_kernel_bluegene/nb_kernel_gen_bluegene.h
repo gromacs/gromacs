@@ -211,7 +211,7 @@ void NB_KERNEL (
 
 #if COULOMB == GENERALIZED_BORN
 	    dvda[jnr11] -= __creal(dvdaj);
-	    dvda[jnr21] -= __creal(dvdaj);
+	    dvda[jnr21] -= __cimag(dvdaj);
 
 	    dvdaj = __cmplx(dvda[jnr12],dvda[jnr22]);
 #endif
@@ -236,7 +236,7 @@ void NB_KERNEL (
 			 
 #if COULOMB == GENERALIZED_BORN
 	    dvda[jnr12] -= __creal(dvdaj);
-	    dvda[jnr22] -= __creal(dvdaj);
+	    dvda[jnr22] -= __cimag(dvdaj);
 
 	    dvdaj = __cmplx(dvda[jnr13],dvda[jnr23]);
 #endif
@@ -260,7 +260,7 @@ void NB_KERNEL (
 
 #if COULOMB == GENERALIZED_BORN
 	    dvda[jnr13] -= __creal(dvdaj);
-	    dvda[jnr23] -= __creal(dvdaj);
+	    dvda[jnr23] -= __cimag(dvdaj);
 #endif
 
 #ifndef NO_FORCE
