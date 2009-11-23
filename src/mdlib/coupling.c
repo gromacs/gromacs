@@ -104,9 +104,9 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
             reft = max(0.0,opts->ref_t[i]);
             if (bEkinAveVel) 
             {
-                Ekin = 2*trace(tcstat->ekin)*tcstat->ekinscale_nhc;
+                Ekin = 2*trace(tcstat->ekinf)*tcstat->ekinscalef_nhc;
             } else {
-                Ekin = 2*trace(tcstat->ekinh)*tcstat->ekinscale_nhc;
+                Ekin = 2*trace(tcstat->ekinh)*tcstat->ekinscaleh_nhc;
             }
         }
         kT = BOLTZ*reft;
@@ -211,7 +211,7 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     } 
     /* alpha factor for phase space volume, then multiply by the ekin scaling factor.  */
     alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
-    alpha *= ekind->tcstat[0].ekinscale_nhc;
+    alpha *= ekind->tcstat[0].ekinscalef_nhc;
     msmul(ekind->ekin,alpha,ekinmod);  
     
     /* for now, we use Elr = 0, because if you want to get it right, you
@@ -702,14 +702,12 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             for (i=0; i<ngtc;i++) 
             {
                 tcstat = &ekind->tcstat[i];
-                //msmul(tcstat->ekinh, scalefac[i]*scalefac[i], tcstat->ekinh);
-                //msmul(tcstat->ekin,  scalefac[i]*scalefac[i], tcstat->ekin);
                 tcstat->vscale_nhc = scalefac[i]; 
-                tcstat->ekinscale_nhc *= (scalefac[i]*scalefac[i]); 
+                tcstat->ekinscaleh_nhc *= (scalefac[i]*scalefac[i]); 
+                tcstat->ekinscalef_nhc *= (scalefac[i]*scalefac[i]); 
             }
             /* now that we've scaled the groupwise velocities, we can add them up to get the total */
             /* but do we actually need the total? */
-            //sum_ekin(!bEkinAveVel,opts,ekind,&(enerd->term[F_DKDL]),TRUE);
             
             /* modify the velocities as well */
             for (n=md->start;n<md->start+md->homenr;n++) 

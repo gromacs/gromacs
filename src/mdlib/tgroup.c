@@ -57,7 +57,9 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
     
     for(i=0; (i<ngtc); i++) {
         tcstat[i].T = 0;
-        clear_mat(tcstat[i].ekin);
+        clear_mat(tcstat[i].ekinh);
+        clear_mat(tcstat[i].ekinh_old);
+        clear_mat(tcstat[i].ekinf);
     }
 }
 
@@ -97,14 +99,15 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 #endif
   snew(ekind->tcstat,opts->ngtc);
   init_grptcstat(opts->ngtc,ekind->tcstat);
-   /* Set Berendsen tcoupl lambda's to 1, 
+  /* Set Berendsen tcoupl lambda's to 1, 
    * so runs without Berendsen coupling are not affected.
    */
   for(i=0; i<opts->ngtc; i++) 
   {
       ekind->tcstat[i].lambda = 1.0;
       ekind->tcstat[i].vscale_nhc = 1.0;
-      ekind->tcstat[i].ekinscale_nhc = 1.0;
+      ekind->tcstat[i].ekinscaleh_nhc = 1.0;
+      ekind->tcstat[i].ekinscalef_nhc = 1.0;
   }
   
   snew(ekind->grpstat,opts->ngacc);
@@ -113,32 +116,42 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 
 void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
 {
-  /* This routine will only be called when it's necessary */
-  t_bin *rb;
-  int   g;
-
-  rb = mk_bin();
-
-  for(g=0; (g<opts->ngacc); g++) 
-    add_binr(rb,DIM,ekind->grpstat[g].u);
+    /* This routine will only be called when it's necessary */
+    t_bin *rb;
+    int   g;
     
-  sum_bin(rb,cr);
-  
-  for(g=0; (g<opts->ngacc); g++) 
-    extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
-
-  destroy_bin(rb);
+    rb = mk_bin();
+    
+    for(g=0; (g<opts->ngacc); g++) 
+    {
+        add_binr(rb,DIM,ekind->grpstat[g].u);
+    }
+    sum_bin(rb,cr);
+    
+    for(g=0; (g<opts->ngacc); g++) 
+    {
+        extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
+    }
+    destroy_bin(rb);
 }       
 
+/* I don't think accumulate_ekin is used anymore? */
+
+#if 0
 static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,
 			    gmx_ekindata_t *ekind)
 {
-  int g;
+    int g;
 
-  if(PAR(cr))
-    for(g=0; (g<opts->ngtc); g++) 
-      gmx_sum(DIM*DIM,ekind->tcstat[g].ekin[0],cr);
+    if(PAR(cr))
+    {
+        for(g=0; (g<opts->ngtc); g++) 
+        {
+            gmx_sum(DIM*DIM,ekind->tcstat[g].ekinf[0],cr);
+        }
+    }
 }       
+#endif 
 
 void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 		     t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
@@ -176,31 +189,26 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
-              bool bEkinAveVel, bool bCopyHalf, bool bSaveEkinOld)
+              bool bEkinAveVel, bool bSaveEkinOld, bool bScaleEkin)
 {
     int          i,j,m,ngtc;
     real         T,ek;
-    real         ekinscale;
     t_grp_tcstat *tcstat;
     real         nrdf,nd,*ndf;
     
     ngtc = opts->ngtc;
     ndf  = opts->nrdf;
     
-    clear_mat(ekind->ekin);
-    
     T = 0; 
     nrdf = 0;
-    
+
+    clear_mat(ekind->ekin);
+
     for(i=0; (i<ngtc); i++) 
     {
+
         nd = ndf[i];
         tcstat = &ekind->tcstat[i];
-        ekinscale = tcstat->ekinscale_nhc;
-        if (!bSaveEkinOld) 
-        {
-            tcstat->ekinscale_nhc = 1.0;
-        }
         /* Sometimes a group does not have degrees of freedom, e.g.
          * when it consists of shells and virtual sites, then we just
          * set the temperatue to 0 and also neglect the kinetic
@@ -208,38 +216,41 @@ real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
          */
         
         if (nd > 0) {
-            if (bCopyHalf) 
+            if (bEkinAveVel)
             {
-                /* This Ekin is only used for reporting the initial temperature
-                 * or when doing mdrun -rerun.
-                 */
-                copy_mat(tcstat->ekinh,tcstat->ekin);
-                msmul(tcstat->ekin,ekinscale,tcstat->ekin);
+                if (!bScaleEkin)
+                {
+                    /* in this case, kinetic energy is from the current velocities already */
+                    msmul(tcstat->ekinf,tcstat->ekinscalef_nhc,tcstat->ekinf);
+                }
             } 
             else 
+                
             {
-                if (bEkinAveVel) 
+                /* Calculate the full step Ekin as the average of the half steps */
+                for(j=0; (j<DIM); j++)
                 {
-                    /* in some cases, kinetic energy is from the current velocities already */
-                    msmul(tcstat->ekin,ekinscale,tcstat->ekin);
-                } 
-                else 
-                {
-                    /* Calculate the full step Ekin as the average of the half steps */
-                    for(j=0; (j<DIM); j++)
+                    for(m=0; (m<DIM); m++)
                     {
-                        for(m=0; (m<DIM); m++)
-                        {
-                            tcstat->ekin[j][m] =
-                                0.5*(tcstat->ekinh[j][m]*ekinscale + tcstat->ekinh_old[j][m]);
-                        }
+                        tcstat->ekinf[j][m] =
+                            0.5*(tcstat->ekinh[j][m]*tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
                     }
                 }
             }
-            m_add(tcstat->ekin,ekind->ekin,ekind->ekin);
-
+            m_add(tcstat->ekinf,ekind->ekin,ekind->ekin);
+            
             tcstat->Th = calc_temp(trace(tcstat->ekinh),nd);
-            tcstat->T  = calc_temp(trace(tcstat->ekin),nd);
+            tcstat->T  = calc_temp(trace(tcstat->ekinf),nd);
+
+            /* after the scaling factors have been multiplied in, we can remove them */
+            if (bEkinAveVel) 
+            {
+                tcstat->ekinscalef_nhc = 1.0;
+            } 
+            else 
+            {
+                tcstat->ekinscaleh_nhc = 1.0;
+            }
         }
         else 
         {

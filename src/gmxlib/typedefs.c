@@ -409,8 +409,9 @@ void done_inputrec(t_inputrec *ir)
 
 static void init_ekinstate(ekinstate_t *eks)
 {
-  eks->ekinh_n = 0;
+  eks->ekin_n = 0;
   eks->ekinh   = NULL;
+  eks->ekinf   = NULL;
   eks->dekindl = 0;
   eks->mvcos   = 0;
 }

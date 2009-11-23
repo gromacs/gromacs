@@ -67,6 +67,9 @@
 #include "orires.h"
 #include "gmx_wallcycle.h"
 
+/*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
+/*#define STARTFROMDT2*/
+
 typedef struct {
   double gdt;
   double eph;
@@ -788,7 +791,8 @@ static void dump_it_all(FILE *fp,const char *title,
 }
 
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
-                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, bool bSaveEkinOld)
+                                gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, 
+                                bool bSaveEkinOld)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,m,ga=0,gt=0;
@@ -797,6 +801,13 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
   t_grp_tcstat *tcstat=ekind->tcstat;
   t_grp_acc    *grpstat=ekind->grpstat;
   real         dekindl;
+
+  /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
+     an option, but not supported now.  Additionally, if we are doing iterations.  
+     bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
+     bSavEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't copy over the ekinh_old.  
+     If FALSE, we overrwrite it.
+  */
 
   /* group velocities are calculated in update_ekindata and
    * accumulated in acumulate_groups.
@@ -808,11 +819,13 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
       if (!bSaveEkinOld) {
           copy_mat(tcstat[g].ekinh,tcstat[g].ekinh_old);
       } 
-      clear_mat(tcstat[g].ekinh);
-      clear_mat(tcstat[g].ekin); /* shouldn't need to save ekin matrix? */
-      if (bEkinAveVel) 
-      {
-          tcstat[g].ekinscale_nhc = 1.0; /* we don't need this anymore, since we're resumming velocities */
+      if(bEkinAveVel) {
+          clear_mat(tcstat[g].ekinf);
+      } else {
+          clear_mat(tcstat[g].ekinh);
+      }
+      if (bEkinAveVel) {
+          tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
       }
   }
   ekind->dekindl_old = ekind->dekindl;
@@ -841,7 +854,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts,t_mdatoms *md,
               /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
               if (bEkinAveVel) 
               {
-                  tcstat[gt].ekin[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                  tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
               } 
               else 
               {
@@ -875,8 +888,8 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 
   for(g=0; g<opts->ngtc; g++) 
   {
-    copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
-    clear_mat(ekind->tcstat[g].ekinh);
+      copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
+      clear_mat(ekind->tcstat[g].ekinh);
   }
   ekind->dekindl_old = ekind->dekindl;
 
@@ -907,7 +920,7 @@ static void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
               /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
               if (bEkinAveVel) 
               {
-                  tcstat[gt].ekin[m][d]+=hm*v_corrt[m]*v_corrt[d];
+                  tcstat[gt].ekinf[m][d]+=hm*v_corrt[m]*v_corrt[d];
               } 
               else 
               {
@@ -941,10 +954,9 @@ void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
 
 void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
 {
-    ekinstate->ekinh_n = ir->opts.ngtc;
     ekinstate->ekin_n = ir->opts.ngtc;
-    snew(ekinstate->ekinh,ekinstate->ekinh_n);
-    snew(ekinstate->ekin, ekinstate->ekin_n);
+    snew(ekinstate->ekinh,ekinstate->ekin_n);
+    snew(ekinstate->ekinf,ekinstate->ekin_n);
     ekinstate->dekindl = 0;
     ekinstate->mvcos   = 0;
 }
@@ -953,10 +965,10 @@ void update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind)
 {
   int i;
   
-  for(i=0;i<ekinstate->ekinh_n;i++) 
+  for(i=0;i<ekinstate->ekin_n;i++) 
   {
-    copy_mat(ekind->tcstat[i].ekinh,ekinstate->ekinh[i]);
-    copy_mat(ekind->tcstat[i].ekin,ekinstate->ekin[i]); 
+      copy_mat(ekind->tcstat[i].ekinh,ekinstate->ekinh[i]);
+      copy_mat(ekind->tcstat[i].ekinf,ekinstate->ekinf[i]); 
   }
 
   copy_mat(ekind->ekin,ekinstate->ekin_total);
@@ -972,16 +984,16 @@ void restore_ekinstate_from_state(t_commrec *cr,
 
   if (MASTER(cr)) 
   {
-    for(i=0;i<ekinstate->ekinh_n;i++) 
-    {
-      copy_mat(ekinstate->ekinh[i],ekind->tcstat[i].ekinh);
-      copy_mat(ekinstate->ekin[i],ekind->tcstat[i].ekin);
-    }
-
-    copy_mat(ekinstate->ekin_total,ekind->ekin);
-    ekind->dekindl = ekinstate->dekindl;
-    ekind->cosacc.mvcos = ekinstate->mvcos;
-    n = ekinstate->ekinh_n;
+      for(i=0;i<ekinstate->ekin_n;i++) 
+      {
+          copy_mat(ekinstate->ekinh[i],ekind->tcstat[i].ekinh);
+          copy_mat(ekinstate->ekinf[i],ekind->tcstat[i].ekinf);
+      }
+      
+      copy_mat(ekinstate->ekin_total,ekind->ekin);
+      ekind->dekindl = ekinstate->dekindl;
+      ekind->cosacc.mvcos = ekinstate->mvcos;
+      n = ekinstate->ekin_n;
   }
  
   if (PAR(cr)) 
@@ -991,8 +1003,8 @@ void restore_ekinstate_from_state(t_commrec *cr,
       {
           gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinh[0][0]),
                     ekind->tcstat[i].ekinh[0],cr);
-          gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekin[0][0]),
-                    ekind->tcstat[i].ekin[0],cr);
+          gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinf[0][0]),
+                    ekind->tcstat[i].ekinf[0],cr);
       }
       gmx_bcast(sizeof(ekind->dekindl),&ekind->dekindl,cr);
       gmx_bcast(sizeof(ekind->cosacc.mvcos),&ekind->cosacc.mvcos,cr);
@@ -1237,9 +1249,11 @@ void update_constraints(FILE         *fplog,
     rvec             *vbuf,*xprime;
 
     if (constr) {bDoConstr=TRUE;}
-    /*if (bInitStep && bFirstHalf) {bDoConstr=FALSE;} /* already constrained on the first step with VV */
-    /* commented out ^^^^^ for now, since we are starting with v(t-dt/2) */
-    if (bFirstHalf && inputrec->eI != eiVV) {bDoConstr=FALSE;} /* we don't need to do this for non VV on the first half*/
+#ifdef STARTFROMDT2    
+    if (bFirstHalf && (inputrec->eI != eiVV || bInitStep)) {bDoConstr=FALSE;}  /*STARTING FROM V(t=-dt/2)*/
+#else
+    if (bFirstHalf && inputrec->eI != eiVV) {bDoConstr=FALSE;} /* STARTING FROM V(t=0) */
+#endif
 
     /* for now, SD update is here -- though it really seems like it 
        should be reformulated as a velocity verlet method, since it has two parts */
@@ -1533,8 +1547,11 @@ void update_coords(FILE         *fplog,
     /* Running the velocity half does nothing except for velocity verlet */
     if (UpdatePart == etrtVELOCITY) 
     {
-        if (inputrec->eI!=eiVV) {return;} 
-        //if ((inputrec->eI!=eiVV) || (bInitStep)) {return;}
+#ifdef STARTFROMDT2
+        if ((inputrec->eI!=eiVV) || (bInitStep)) {return;}   /*THIS IS FOR STARTING at v(t=-dt/2) */
+#else
+        if (inputrec->eI!=eiVV) {return;}   /*THIS IS FOR STARTING AT v(t=0)*/
+#endif
     }
 
     start  = md->start;

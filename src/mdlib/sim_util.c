@@ -93,6 +93,8 @@
 #include "tmpi.h"
 #endif
 
+/*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
+/*#define STARTFROMDT2*/
 
 #include "qmmm.h"
 
@@ -917,7 +919,8 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
               NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
-    if (ir->eI==eiVV) {
+    if (ir->eI==eiVV) 
+    {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         /* might not yet treat veta correctly */
@@ -929,22 +932,30 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         bEkinAveVel = (getenv("GMX_EKIN_AVE_EKIN")==NULL);
     }
     /* constrain the inital velocities at t-dt/2 */
-    if (EI_STATE_VELOCITY(ir->eI) && !bEkinAveVel) {
-    //if (EI_STATE_VELOCITY(ir->eI)) {
-        for(i=start; (i<end); i++) {
-            for(m=0; (m<DIM); m++) {
+#ifdef STARTFROMDT2
+    if (EI_STATE_VELOCITY(ir->eI)) /* IF STARTING FROM V(t=-dt/2 */
+#else
+    if (EI_STATE_VELOCITY(ir->eI) && !bEkinAveVel) /* IF STARTING FROM V(t=0) */
+#endif
+    {
+        for(i=start; (i<end); i++) 
+        {
+            for(m=0; (m<DIM); m++) 
+            {
                 /* Reverse the velocity */
                 state->v[i][m] = -state->v[i][m];
                 /* Store the position at t-dt in buf */
                 savex[i][m] = state->x[i][m] + dt*state->v[i][m];
             }
         }
-        /* Shake the positions at t=-dt with the positions at t=0                        
-         * as reference coordinates.                                                     
+    /* Shake the positions at t=-dt with the positions at t=0                        
+     * as reference coordinates.                                                     
          */
         if (fplog)
+        {
             fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
                     step);
+        }
         dvdlambda = 0;
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
                   ir,NULL,cr,step,-1,md,

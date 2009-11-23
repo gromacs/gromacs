@@ -46,7 +46,7 @@
  */
 
 /* for now, define the number of NH chains here */
-#define NNHCHAIN 1
+#define NNHCHAIN 5
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -82,10 +82,9 @@ typedef struct
 typedef struct
 {
   bool     bUpToDate;
-  int      ekinh_n;
   int      ekin_n;
-  tensor * ekinh;
-  tensor * ekin;
+  tensor  *ekinh;
+  tensor  *ekinf;
   tensor   ekin_total;
   real     dekindl;
   real     mvcos;

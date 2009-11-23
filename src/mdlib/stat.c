@@ -156,7 +156,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               }
               if (bEkinAveVel) 
               {
-                  itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekin[0]);
+                  itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinf[0]);
               } 
               else 
               {
@@ -282,7 +282,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                   extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
               if (bEkinAveVel) {
-                  extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekin[0]);
+                  extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinf[0]);
               }
               else
               {

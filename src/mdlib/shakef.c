@@ -101,7 +101,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
    *     june 1992
    *     Adapted for use with Gromacs by David van der Spoel november 92 and later.
    */
-  // default should be increased! MRS 8/4/2009  
+  /* default should be increased! MRS 8/4/2009 */
   const   real mytol=1e-10;
   
   int     ll,i,j,i3,j3,l3;
@@ -487,7 +487,7 @@ void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
             
             vpijd   = vx*rijx+vy*rijy+vz*rijz;
             toler   = dist2[ll];
-            // this is r(t+dt) \dotproduct \dot{r}(t+dt)
+            /* this is r(t+dt) \dotproduct \dot{r}(t+dt) */
             xdotd   = vpijd*vscale_nhc + veta*toler;
             
             /* iconv is zero when the error is smaller than a bound */

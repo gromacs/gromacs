@@ -42,10 +42,11 @@ typedef struct {
   real    T;		/* Temperature at full step        */
   tensor  ekinh;	/* Kinetic energy at half step     */
   tensor  ekinh_old;	/* Kinetic energy at old half step */
-  tensor  ekin; 	/* Kinetic energy at full step     */
+  tensor  ekinf; 	/* Kinetic energy at full step     */
   real    lambda;       /* Berendsen coupling lambda       */
-  double  ekinscale_nhc;/* Scaling factor for NHC-merge with lambda? */
-  double  vscale_nhc;   /* Scaling factor for NHC-merge with lambda? */
+  double  ekinscalef_nhc;/* Scaling factor for NHC- full step */
+  double  ekinscaleh_nhc;/* Scaling factor for NHC- half step */
+  double  vscale_nhc;   /* Scaling factor for NHC- velocity */
 } t_grp_tcstat;
 
 typedef struct {
