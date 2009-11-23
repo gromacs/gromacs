@@ -5,6 +5,10 @@
 #undef COUL_INTERACTION
 #undef COUL_INTERACTION_
 
+/* These defines allow us to generate kernel versions that do not
+ * calculate forces from the same source code.
+ */
+
 #ifdef NO_FORCE
 
  #define FULL_INTERACTION  nfcalc_interaction
@@ -21,6 +25,9 @@
 
 #endif
 
+/* The actual name of the kernel function was defined in the C
+ * file.
+ */
 void NB_KERNEL (
                     int *    p_nri,
                     int *    iinr,
@@ -54,32 +61,56 @@ void NB_KERNEL (
                     int *    inneriter,
                     real *   work)
 {
-    double _Complex zero  = __cmplx(0.0,0.0);
-    double _Complex rone  = __cmplx(1.0,0.0);
-    double _Complex three = __cmplx(3.0,3.0);
-    double conv1[2],conv2[2],conv3[2];
+    const double _Complex zero  = __cmplx(0.0,0.0);
+    const double _Complex rone  = __cmplx(1.0,0.0);
+    const double _Complex three = __cmplx(3.0,3.0);
+    const double _Complex lr    = __cmplx(-1.0,1.0);
+    const double _Complex rl    = __cmplx(1.0,-1.0);
+    const double _half = 0.5;
+    const double _Complex half  = __cmplx(_half,_half);
+    const double _round = pow(2,51) + pow(2,52);
+    const double _Complex round = __cmplx(_round,_round);
 
-    real   _facel,_tabscale,_gbtabscale,_krf,_crf;
+    double conv1[2],conv2[2],conv3[2];
+    double _Complex buf1, buf2, buf3, buf4;
+
+    double _facel,_tabscale,_gbtabscale,_krf,_crf;
     int    nri,ntype,nthreads,n,ii,nj0,nj1;
 
+    /* Help the SIMD compiler out. */
 #pragma disjoint(*shiftvec,*fshift,*pos,*faction,*charge,*p_facel,*p_krf,*p_crf,*Vc, \
                  *vdwparam,*Vvdw,*p_tabscale,*VFtab,*invsqrta,*dvda,*p_gbtabscale,*GBtab,*work)
+    __alignx(16, VFtab);
+    __alignx(16, GBtab);
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
     _facel           = *p_facel;       
-    _tabscale        = *p_tabscale;    
-    _gbtabscale      = *p_gbtabscale;    
-    _krf             = *p_krf;    
-    _crf             = *p_crf;    
+#if (COULOMB == COULOMB_TAB || VDW == VDW_TAB)
+    _tabscale        = *p_tabscale;
+#else
+    _tabscale        = 0.0;
+#endif
+#if COULOMB == REACTION_FIELD
+    _krf             = *p_krf;
+    _crf             = *p_crf;
+#else
+    _krf             = 0.0;
+    _crf             = 0.0;
+#endif
+#if COULOMB == GENERALIZED_BORN
+    _gbtabscale      = *p_gbtabscale;
+#else
+    _gbtabscale      = 0.0;
+#endif
     nj1              = 0;              
 
     for(n=0; (n<nri); n++)
     {
 	double _Complex ix,iy,iz;
 	
-	// initialize potential energies and forces for this paricle
+	/* initialize potential energies and forces for this particle */
 
         double _Complex vctot    = zero;              
         double _Complex Vvdwtot  = zero;
@@ -88,15 +119,15 @@ void NB_KERNEL (
 	double _Complex fiy      = zero;
 	double _Complex fiz      = zero;
 
-        // shift is the position of the n-th water group
+        /* shift is the position of the n-th water group */
 
         int is3  = 3*shift[n];
 	
-	// shiftvec is the center of a water group
+	/* shiftvec is the center of a water group */
 
-        real _shX  = shiftvec[is3];  
-        real _shY  = shiftvec[is3+1];
-        real _shZ  = shiftvec[is3+2];
+        double _shX  = shiftvec[is3];  
+        double _shY  = shiftvec[is3+1];
+        double _shZ  = shiftvec[is3+2];
 
         int ii  = iinr[n];        
         int ii3 = 3*ii;
@@ -107,14 +138,18 @@ void NB_KERNEL (
 #endif
 	int k,ggid;
 
-	real _iq   = _facel * charge[ii];
-	real _isai = invsqrta[ii];
+	double _iq   = _facel * charge[ii];
+#if COULOMB == GENERALIZED_BORN
+	double _isai = invsqrta[ii];
+#else
+	double _isai = 0.0;
+#endif
 
-	// add the shift vector to all water atoms
+	/* add the shift vector to all water atoms */
 
-        real _ix = _shX + pos[ii3+0];
-        real _iy = _shY + pos[ii3+1];
-        real _iz = _shZ + pos[ii3+2];
+        double _ix = _shX + pos[ii3+0];
+        double _iy = _shY + pos[ii3+1];
+        double _iz = _shZ + pos[ii3+2];
 	
 	ix = __cmplx(_ix,_ix);
 	iy = __cmplx(_iy,_iy);
@@ -211,7 +246,7 @@ void NB_KERNEL (
 
 #if COULOMB == GENERALIZED_BORN
 	    dvda[jnr11] -= __creal(dvdaj);
-	    dvda[jnr21] -= __creal(dvdaj);
+	    dvda[jnr21] -= __cimag(dvdaj);
 
 	    dvdaj = __cmplx(dvda[jnr12],dvda[jnr22]);
 #endif
@@ -236,7 +271,7 @@ void NB_KERNEL (
 			 
 #if COULOMB == GENERALIZED_BORN
 	    dvda[jnr12] -= __creal(dvdaj);
-	    dvda[jnr22] -= __creal(dvdaj);
+	    dvda[jnr22] -= __cimag(dvdaj);
 
 	    dvdaj = __cmplx(dvda[jnr13],dvda[jnr23]);
 #endif
@@ -260,7 +295,7 @@ void NB_KERNEL (
 
 #if COULOMB == GENERALIZED_BORN
 	    dvda[jnr13] -= __creal(dvdaj);
-	    dvda[jnr23] -= __creal(dvdaj);
+	    dvda[jnr23] -= __cimag(dvdaj);
 #endif
 
 #ifndef NO_FORCE
@@ -280,11 +315,11 @@ void NB_KERNEL (
 
         for(;(k<nj1); k++)
         {
-	    real _dx,_dy,_dz,_rsq,_rinv;
-	    real _rinvsq,_krsq,_fscal;
-	    real _r,_rt,_eps,_Y,_F,_G,_H,_GHeps,_VV,_FF,_fijC,_fijD,_n0,_qq;
-	    real _isaprod,_isaj,_iqq,_dvdatmp,_vcoul,_gbscale;
-	    real _c6,_c12,_cexp1,_cexp2,_rinvsix,_Vvdw6,_Vvdw12,_Vvdwexp;
+	    double _dx,_dy,_dz,_rsq,_rinv;
+	    double _rinvsq,_krsq,_fscal;
+	    double _r,_rt,_eps,_Y,_F,_G,_H,_GHeps,_VV,_FF,_fijC,_fijD,_n0,_qq;
+	    double _isaprod,_isaj,_iqq,_dvdatmp,_vcoul,_gbscale;
+	    double _c6,_c12,_cexp1,_cexp2,_rinvsix,_Vvdw6,_Vvdw12,_Vvdwexp;
 
 	    int nnn1;
 	    int jnr,j3,tj;

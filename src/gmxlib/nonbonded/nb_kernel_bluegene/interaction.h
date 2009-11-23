@@ -29,6 +29,11 @@
  * This include file defines some macros which help to write SIMD code on BlueGene
  */
 
+#ifndef _INTERACTION_H_
+#define _INTERACTION_H_
+
+/* Some defines to hold constants describing table dimensions. */
+
 #if COULOMB == COULOMB_TAB
 
  #define LJTAB_OFS 4
@@ -47,19 +52,51 @@
 #endif
 
 
-#ifndef _INTERACTION_H_
-#define _INTERACTION_H_
+/*****************************************************************************
+ *                        scalar interaction calculations
+ *
+ * That is, those not using SIMD dual forms. Such code can be
+ * identified by macro names that end in an underscore, and variable
+ * names that begin with a single underscore.
+ *
+ *****************************************************************************/
 
-/*****************************************************************************/
-/*                        scalar interaction calculations                    */
-/*****************************************************************************/
+/* This code takes care of calculating eps in non-dual variables.
+*/
+
+#if (! defined MAKE_EPS_FAST_SCALAR)
+
+#define make_eps_(r,r0,eps)  \
+    r0  = (double)((int) r); \
+    eps = r - r0
+
+#else
+
+/* The following fragment doesn't work at -O3 on BlueGene/L, because
+ * the compiler optimizes away the addition and subtraction of _round,
+ * even though it does not optimize away the same operations in the
+ * dual case! Depending how these compilers evolve, one or other form
+ * may be useful in the future.
+ */
+#define make_eps_(r,r0,eps) \
+    r0  = r - _half;        \
+    r0  = r0 + _round;      \
+    r0  = r0 - _round;      \
+    eps = r - r0
+
+#endif
+
+
+/* Macros that will evaluate Coulomb energies and forces for non-dual
+ * variables. The code has to change slightly in cases where there are
+ * no VDW interactions to compute.
+ */
 
 #if COULOMB == COULOMB_TAB
 
   #define calc_coulomb_pot_(_qq,_rinv,_rsq,jnr)          \
     _rt     = (_rsq * _rinv) *_tabscale;                 \
-    _n0     = (real)((int)_rt);                          \
-    _eps    = _rt-_n0;                                   \
+    make_eps_(_rt,_n0,_eps);                             \
     nnn1    = TAB_MULT*((int)_rt);                       \
     _Y      = VFtab[nnn1+0];                             \
     _F      = VFtab[nnn1+1];                             \
@@ -71,8 +108,15 @@
     _fijC   = _qq * _FF;                                 \
     vctot  += _qq * _VV
 
+  #define calc_coulomb_only_force_(_qq,_rinv,_rsq) \
+    _fscal  = _fijC * (_rinv * _tabscale)
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) calc_coulomb_only_force_(_qq,_rinv,_rsq)
+#else
   #define calc_coulomb_force_(_qq,_rinv,_rsq) \
     _fscal += _fijC * (_rinv * _tabscale)
+#endif
 
 #elif COULOMB == GENERALIZED_BORN
 
@@ -82,8 +126,7 @@
      _iqq       = _qq * _isaprod;                            \
     _gbscale    = _isaprod * _gbtabscale;                    \
     _rt         = _r * _gbscale;                             \
-    _n0         = (real)((int)_rt);                          \
-    _eps        = _rt-_n0;                                   \
+    make_eps_(_rt,_n0,_eps);                                 \
     nnn1        = 4*((int)_rt);                              \
     _Y          = GBtab[nnn1+0];                             \
     _F          = GBtab[nnn1+1];                             \
@@ -99,8 +142,15 @@
     dvdasum    -= _dvdatmp;                                  \
     dvda[jnr]  -= _dvdatmp;
 
+  #define calc_coulomb_only_force_(_qq,_rinv,_rsq) \
+    _fscal      = _fijC * (_rinv * _gbscale)
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) calc_coulomb_only_force_(_qq,_rinv,_rsq)
+#else
   #define calc_coulomb_force_(_qq,_rinv,_rsq) \
-    _fscal += _fijC * (_rinv * _gbscale)
+    _fscal     += _fijC * (_rinv * _gbscale)
+#endif
 
 #elif COULOMB == REACTION_FIELD
 
@@ -108,23 +158,52 @@
     _krsq   = _krf * _rsq;                      \
     vctot  += _qq * (_rinv + _krsq - _crf)
 
-  #define calc_coulomb_force_(_qq,_rinv,_rsq)       \
+  #define calc_coulomb_only_force_(_qq,_rinv,_rsq) \
+    _fscal  = -_qq * (_rinv - 2.0 * _krsq) * _rinvsq
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) calc_coulomb_only_force_(_qq,_rinv,_rsq)
+#else
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) \
     _fscal -= _qq * (_rinv - 2.0 * _krsq) * _rinvsq
+#endif
 
 #elif COULOMB == COULOMB_CUTOFF
 
   #define calc_coulomb_pot_(_qq,_rinv,_rsq,jnr) \
     vctot += _qq * _rinv 
 
+  #define calc_coulomb_only_force_(_qq,_rinv,_rsq) \
+    _fscal  = -_qq * _rinv * _rinvsq
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) calc_coulomb_only_force_(_qq,_rinv,_rsq)
+#else
   #define calc_coulomb_force_(_qq,_rinv,_rsq) \
     _fscal -= _qq * _rinv * _rinvsq
+#endif
 
 #else
 
   #define calc_coulomb_pot_(_qq,_rinv,_rsq,jnr) vctot = vctot
-  #define calc_coulomb_force_(_qq,_rinv,_rsq) _fscal = _fscal
+
+  #define calc_coulomb_only_force_(_qq,_rinv,_rsq) \
+    _fscal = 0.0
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) calc_coulomb_only_force_(_qq,_rinv,_rsq)
+#else
+  #define calc_coulomb_force_(_qq,_rinv,_rsq) \
+    {}
+#endif
 
 #endif
+
+
+/* Macros that will evaluate VDW energies and forces for non-dual
+ * variables. In cases where the VDW parameters are constant
+ * (e.g. water loops), different forms of these codes are faster.
+ */
 
 #if VDW == LENNARD_JONES
 
@@ -149,8 +228,10 @@
 
  #endif
 
-  #define calc_vdw_force_(_rinv,_rsq)               \
+  #define calc_vdw_only_force_(_rinv,_rsq)          \
     _fscal = (6.0 * _Vvdw6 - 12.0 * _Vvdw12) * _rinvsq
+
+  #define calc_vdw_force_(_rinv,_rsq) calc_vdw_only_force_(_rinv,_rsq)
 
 #elif VDW == BUCKINGHAM
 
@@ -176,8 +257,10 @@
 
  #endif
 
-  #define calc_vdw_force_(_rinv,_rsq)                \
+  #define calc_vdw_only_force_(_rinv,_rsq)          \
     _fscal = (6.0 * _Vvdw6 - _r * _Vvdwexp) * _rinvsq
+
+  #define calc_vdw_force_(_rinv,_rsq) calc_vdw_only_force_(_rinv,_rsq)
 
 #elif VDW == VDW_TAB
 
@@ -185,8 +268,7 @@
 
   #define calc_vdw_pot_(_rinv,_rsq,jnr)                   \
     _rt      = _rsq * (_rinv *_tabscale);                 \
-    _n0      = (real)((int)_rt);                          \
-    _eps     = _rt-_n0;                                   \
+    make_eps_(_rt,_n0,_eps);                             \
     nnn1     = TAB_MULT*((int)_rt) + LJTAB_OFS;           \
     _Y       = VFtab[nnn1+0];                             \
     _F       = VFtab[nnn1+1];                             \
@@ -214,8 +296,7 @@
     _c6      = vdwparam[tj];                              \
     _c12     = vdwparam[tj+1];                            \
     _rt      = _rsq * (_rinv *_tabscale);                 \
-    _n0      = (real)((int)_rt);                          \
-    _eps     = _rt-_n0;                                   \
+    make_eps_(_rt,_n0,_eps);                             \
     nnn1     = TAB_MULT*((int)_rt) + LJTAB_OFS;           \
     _Y       = VFtab[nnn1+0];                             \
     _F       = VFtab[nnn1+1];                             \
@@ -238,19 +319,34 @@
 
  #endif
 
-  #define calc_vdw_force_(_rinv,_rsq)     \
+  #define calc_vdw_only_force_(_rinv,_rsq)     \
     _fscal  = _fijD * (_rinv * _tabscale)
+
+  #define calc_vdw_force_(_rinv,_rsq) calc_vdw_only_force_(_rinv,_rsq)
 
 #else
 
   #define calc_vdw_pot_(_rinv,_rsq,jnr) \
     Vvdwtot  = Vvdwtot                  \
 
+  #define calc_vdw_only_force_(_rinv,_rsq) \
+    _fscal   = 0.0
+
+#if COULOMB == COULOMB_NONE
+  #define calc_vdw_force_(_rinv,_rsq) calc_vdw_only_force_(_rinv,_rsq)
+#else
   #define calc_vdw_force_(_rinv,_rsq) \
-    _fscal = 0.0
+    {}
+#endif
 
 #endif
 
+
+/* Based on the above conditionally-defined non-dual-form macros, we
+ * can now paste together other macros that will actually be useful
+ * and succinct to call from kernel functions to compute energies
+ * and/or forces for pairs of interacting atoms.
+ */
 
 #define nfcalc_interaction_(_qq,_rinv,_rsq,jnr) \
   _rinvsq = _rinv * _rinv;                      \
@@ -273,8 +369,7 @@
 #define calc_coul_interaction_(_qq,_rinv,_rsq,jnr) \
                                                    \
   nfcalc_coul_interaction_(_qq,_rinv,_rsq,jnr);    \
-  _fscal = 0.0;                                    \
-  calc_coulomb_force_(_qq,_rinv,_rsq)
+  calc_coulomb_only_force_(_qq,_rinv,_rsq)
 
 
 #define nfcalc_vdw_interaction_(_rinv,_rsq,jnr) \
@@ -285,14 +380,29 @@
 #define calc_vdw_interaction_(_rinv,_rsq,jnr) \
                                               \
   nfcalc_vdw_interaction_(_rinv,_rsq,jnr);    \
-  calc_vdw_force_(_rinv,_rsq)
+  calc_vdw_only_force_(_rinv,_rsq)
 
 
 /*****************************************************************************/
 /*             BLUE GENE double hummer interaction calculations              */
 /*****************************************************************************/
 
+/* Macros for optimized table lookups */
+#ifdef GMX_DOUBLE
+
+#define dual_load  __lfpd
+#define cross_load __lfxd
+
+#else
+
+#define dual_load  __lfps
+#define cross_load __lfxs
+
+#endif
+
 /*
+   Old comments that were left here by Mathias Puetz:
+
    trying to use quad loads for table lookups, but it's slower than
    double load version (probably because of new dependencies
    
@@ -312,49 +422,210 @@
 
 */
 
-/* The optimized version of converts2ints is disabled on BG/P
- * because of issues on BG/P reported in bugzilla 429
+/* This code takes care of calculating dual forms of eps. It requires
+ * truncating floats to ints and converting the result back to
+ * float. The int and float rounded forms have to occupy different
+ * registers in different CPU units. There are three ways to do this.
+ *
+ * By default, do the integer form in the usual way, and use a
+ * rounding trick that is known to be faster on BlueGene/L and
+ * BlueGene. Otherwise, if the user configures the slow version,
+ * because of the bug report in IssueID #429, use a different
+ * slow version according to whether we are on BlueGene/L or
+ * BlueGene/P.
  */
+
+#if defined MAKE_EPS_SLOW_DUAL
+
 #if defined __blrts__
+/* We're on BlueGene/L, use moderately fast code */
 
-#define convert2ints(x,xi,conv,i1,i2)                      \
-    xi      = __fpctiwz(x);                                \
-    __stfpd(conv,xi);                                      \
-    i1     = ((int *)conv)[1];                             \
-    i2     = ((int *)conv)[3]
+#define make_eps(r,ri,conv,i1,i2,r0,eps)                   \
+    ri      = __fpctiwz(r);                                \
+    __stfpd(conv,ri);                                      \
+    i1      = ((int *)conv)[1];                            \
+    i2      = ((int *)conv)[3];                            \
+    {};                                                    \
+    {};                                                    \
+    r0      = __cmplx((double)i1,(double)i2);              \
+    eps     = __fpsub(r,r0)
 
-#else
+#else /* We're not on BlueGene/L, use safe code */
 
-#define convert2ints(x,xi,conv,i1,i2)                     \
-    i1     = (int)__creal(x);                             \
-    i2     = (int)__cimag(x)
+#define make_eps(r,ri,conv,i1,i2,r0,eps)                   \
+    i1      = (int)__creal(r);                             \
+    i2      = (int)__cimag(r);                             \
+    r0      = __cmplx((double)i1,(double)i2);              \
+    eps     = __fpsub(r,r0)
 
 #endif
 
+#else /* use the rounding trick for speed */
+
+#define make_eps(r,ri,conv,i1,i2,r0,eps)                   \
+    ri      = __fpctiwz(r);                                \
+    __stfpd(conv,ri);                                      \
+    i1      = ((int *)conv)[1];                            \
+    i2      = ((int *)conv)[3];                            \
+    r0      = __fpsub(r,half);                             \
+    r0      = __fpadd(r0,round);                           \
+    r0      = __fpsub(r0,round);                           \
+    eps     = __fpsub(r,r0)
+
+#endif
+
+
+/* Macros that will evaluate Coulomb energies and forces for dual
+ * variables. The code has to change slightly in cases where there are
+ * no VDW interactions to compute.
+ */
+
 #if COULOMB == COULOMB_TAB
 
-  #define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)       \
-                                                             \
-    rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));        \
-    convert2ints(rt,rti,conv,nnn1,nnn2);                     \
-    n0       = __cmplx((double)nnn1,(double)nnn2);           \
-    eps      = __fpsub(rt,n0);                               \
-    nnn1    *= TAB_MULT;                                     \
-    nnn2    *= TAB_MULT;                                     \
-    Y        = __cmplx(VFtab[nnn1+0],VFtab[nnn2+0]);         \
-    F        = __cmplx(VFtab[nnn1+1],VFtab[nnn2+1]);         \
-    G        = __cmplx(VFtab[nnn1+2],VFtab[nnn2+2]);         \
-    H        = __cmplx(VFtab[nnn1+3],VFtab[nnn2+3]);         \
-    GHeps    = __fpmadd(G,eps,H);                            \
-    VV       = __fpmadd(Y,eps,__fpmadd(F,eps,GHeps));        \
-    FF       = __fpmadd(F,eps,__fpmadd(__fpadd(GHeps,GHeps),eps,H)); \
-    fijC    = __fpmul(qq,FF);                                       \
+/* Various alternative forms for this code have been developed
+ * and tested. However, the BlueGene compilers are works-in-progress,
+ * so retaining the old versions may be useful in the future.
+ */
+
+#if defined COULOMB_TAB_PUETZ
+
+#define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)                    \
+                                                                        \
+    rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));                   \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                             \
+    nnn1    *= TAB_MULT;                                                \
+    nnn2    *= TAB_MULT;                                                \
+    {};                                                                 \
+    {};                                                                 \
+    {};                                                                 \
+    {};                                                                 \
+    Y        = __cmplx(VFtab[nnn1+0],VFtab[nnn2+0]);                    \
+    F        = __cmplx(VFtab[nnn1+1],VFtab[nnn2+1]);                    \
+    G        = __cmplx(VFtab[nnn1+2],VFtab[nnn2+2]);                    \
+    H        = __cmplx(VFtab[nnn1+3],VFtab[nnn2+3]);                    \
+    {};                                                                 \
+    GHeps    = __fpmadd(G,eps,H);                                       \
+    VV       = __fpmadd(Y,eps,__fpmadd(F,eps,GHeps));                   \
+    FF       = __fpmadd(F,eps,__fpmadd(__fpadd(GHeps,GHeps),eps,H));    \
+    fijC     = __fpmul(qq,FF);                                          \
+    vctot    = __fpmadd(vctot,VV,qq)
+
+#elif defined COULOMB_TAB_FPSEL
+
+/* The dual variable H is nonlocal to the others in the code below. */
+
+#define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)                    \
+                                                                        \
+    rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));                   \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                             \
+    nnn1    *= TAB_MULT;                                                \
+    nnn2    *= TAB_MULT;                                                \
+    buf1     = dual_load(VFtab+nnn1);                                   \
+    buf2     = cross_load(VFtab+nnn2);                                  \
+    buf3     = dual_load(VFtab+nnn1+2);                                 \
+    buf4     = cross_load(VFtab+nnn2+2);                                \
+    Y        = __fpsel(lr,buf1,buf2);                                   \
+    F        = __fxmr(__fpsel(rl,buf1,buf2));                           \
+    G        = __fpsel(lr,buf3,buf4);                                   \
+    H        = __fpsel(rl,buf3,buf4);                                   \
+    {};                                                                 \
+    GHeps    = __fxmadd(G,H,eps);                                       \
+    VV       = __fpmadd(Y,__fpmadd(F,GHeps,eps),eps);                   \
+    FF       = __fpmadd(F,__fxmadd(__fpadd(GHeps,GHeps),H,eps),eps);    \
+    fijC     = __fpmul(qq,FF);                                          \
     vctot    = __fpmadd(vctot,qq,VV)
 
+#elif defined COULOMB_TAB_EPSX
 
+/* The dual variables F, H and FF are nonlocal to the others in the
+ * code below, and buf1 has an copy of eps of opposite locality.
+ */
+
+#define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)                    \
+                                                                        \
+    rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));                   \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                             \
+    nnn1    *= TAB_MULT;                                                \
+    nnn2    *= TAB_MULT;                                                \
+    buf1     = dual_load(VFtab+nnn1+0);                                 \
+    buf2     = cross_load(VFtab+nnn2+0);                                \
+    buf3     = dual_load(VFtab+nnn1+2);                                 \
+    buf4     = cross_load(VFtab+nnn2+2);                                \
+    Y        = __cmplx(__creal(buf1), __cimag(buf2));                   \
+    F        = __cmplx(__creal(buf2), __cimag(buf1));                   \
+    G        = __cmplx(__creal(buf3), __cimag(buf4));                   \
+    H        = __cmplx(__creal(buf4), __cimag(buf3));                   \
+    buf1     = __fxmr(eps);                                             \
+    GHeps    = __fxmadd(G,H,eps);                                       \
+    VV       = __fxmadd(Y,__fxmadd(F,GHeps,buf1),eps);                  \
+    FF       = __fxmadd(F,__fxmadd(__fpadd(GHeps,GHeps),H,eps),buf1);   \
+    fijC     = __fxmul(FF,qq);                                          \
+    vctot    = __fpmadd(vctot,VV,qq)
+
+#elif defined COULOMB_TAB_FX
+
+/* The dual variables F and H are nonlocal to the others in the code
+ * below, and buf1 has an copy of F of opposite locality. */
+
+/* This code breaks on BlueGene/L at -O3. */
+
+#define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)                    \
+                                                                        \
+    rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));                   \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                             \
+    nnn1    *= TAB_MULT;                                                \
+    nnn2    *= TAB_MULT;                                                \
+    buf1      = dual_load(VFtab+nnn1+0);                                \
+    buf2      = cross_load(VFtab+nnn2+0);                               \
+    buf3      = dual_load(VFtab+nnn1+2);                                \
+    buf4      = cross_load(VFtab+nnn2+2);                               \
+    Y        = __cmplx(__creal(buf1), __cimag(buf2));                   \
+    F        = __cmplx(__creal(buf2), __cimag(buf1));                   \
+    G        = __cmplx(__creal(buf3), __cimag(buf4));                   \
+    H        = __cmplx(__creal(buf4), __cimag(buf3));                   \
+    buf1     = __fxmr(F);                                               \
+    GHeps    = __fxmadd(G,H,eps);                                       \
+    VV       = __fpmadd(Y,__fpmadd(buf1,GHeps,eps),eps);                \
+    FF       = __fpmadd(buf1,__fxmadd(__fpadd(GHeps,GHeps),H,eps),eps); \
+    fijC     = __fpmulqq(qq,FF);                                        \
+    vctot    = __fpmaddqq(vctot,VV,qq)
+
+#else /* default to the fastest known code */
+
+/* The dual variable H is nonlocal to the others in the code below. */
+
+#define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)                    \
+                                                                        \
+    rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));                   \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                             \
+    nnn1    *= TAB_MULT;                                                \
+    nnn2    *= TAB_MULT;                                                \
+    {};                                                                 \
+    {};                                                                 \
+    buf3     = dual_load(VFtab+nnn1+2);                                 \
+    buf4     = cross_load(VFtab+nnn2+2);                                \
+    Y        = __cmplx(VFtab[nnn1+0],VFtab[nnn2+0]);                    \
+    F        = __cmplx(VFtab[nnn1+1],VFtab[nnn2+1]);                    \
+    G        = __cmplx(__creal(buf3), __cimag(buf4));                   \
+    H        = __cmplx(__creal(buf4), __cimag(buf3));                   \
+    {};                                                                 \
+    GHeps    = __fxmadd(G,H,eps);                                       \
+    VV       = __fpmadd(Y,eps,__fpmadd(F,eps,GHeps));                   \
+    FF       = __fpmadd(F,eps,__fxmadd(__fpadd(GHeps,GHeps),H,eps));    \
+    fijC     = __fpmul(qq,FF);                                          \
+    vctot    = __fpmadd(vctot,VV,qq)
+
+#endif
+
+  #define calc_coulomb_only_force(qq,rinv,rsq)                      \
+    fscal   = __fpmul(fijC,__fxpmul(rinv,_tabscale))
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force(qq,rinv,rsq) calc_coulomb_only_force(qq,rinv,rsq)
+#else
   #define calc_coulomb_force(qq,rinv,rsq)                           \
-                                                                    \
     fscal   = __fpmadd(fscal,fijC,__fxpmul(rinv,_tabscale))
+#endif
 
 #elif COULOMB == GENERALIZED_BORN
 
@@ -366,9 +637,7 @@
     iqq      = __fpmul(isaprod,qq);                                  \
     gbscale  = __fxpmul(isaprod,_gbtabscale);                        \
     rt       = __fpmul(r,gbscale);                                   \
-    convert2ints(rt,rti,conv,nnn1,nnn2);                             \
-    n0       = __cmplx((double)nnn1,(double)nnn2);                   \
-    eps      = __fpsub(rt,n0);                                       \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                          \
     nnn1    *= 4;                                                    \
     nnn2    *= 4;                                                    \
     Y        = __cmplx(GBtab[nnn1+0],GBtab[nnn2+0]);                 \
@@ -386,9 +655,15 @@
     dvdasum  = __fpsub(dvdasum,dvdatmp);                             \
     dvdaj    = __fpsub(dvdaj,dvdatmp)
 
-  #define calc_coulomb_force(qq,rinv,rsq) \
-                                          \
+  #define calc_coulomb_only_force(qq,rinv,rsq)                      \
+    fscal   = __fpmul(fijC,__fpmul(rinv,gbscale))
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force(qq,rinv,rsq) calc_coulomb_only_force(qq,rinv,rsq)
+#else
+  #define calc_coulomb_force(qq,rinv,rsq)                           \
     fscal   = __fpmadd(fscal,fijC,__fpmul(rinv,gbscale))
+#endif
 
 #elif COULOMB == REACTION_FIELD
 
@@ -398,9 +673,15 @@
     vctot   = __fpmadd(vctot,qq,__fpadd(rinv,krsq));              \
     vctot   = __fxcpnmsub(vctot,qq,_crf)
 
-  #define calc_coulomb_force(qq,rinv,rsq)                                  \
-                                                                           \
+  #define calc_coulomb_only_force(qq,rinv,rsq)                      \
+    fscal   = __fpmul(__fpmul(qq,__fxcpmsub(rinv,krsq,2.0)),rinvsq)
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force(qq,rinv,rsq) calc_coulomb_only_force(qq,rinv,rsq)
+#else
+  #define calc_coulomb_force(qq,rinv,rsq)                           \
     fscal   = __fpmadd(fscal,__fpmul(qq,__fxcpmsub(rinv,krsq,2.0)),rinvsq)
+#endif
 
 #elif COULOMB == COULOMB_CUTOFF
 
@@ -408,9 +689,15 @@
                                                        \
     vctot   = __fpmadd(vctot,qq,rinv)
 
-  #define calc_coulomb_force(qq,rinv,rsq)              \
-                                                       \
+  #define calc_coulomb_only_force(qq,rinv,rsq)                      \
+    fscal   = __fpneg(__fpmul(__fpmul(qq,rinv),rinvsq))
+
+#if VDW == VDW_NONE
+  #define calc_coulomb_force(qq,rinv,rsq) calc_coulomb_only_force(qq,rinv,rsq)
+#else
+  #define calc_coulomb_force(qq,rinv,rsq)                           \
     fscal   = __fpnmsub(fscal,__fpmul(qq,rinv),rinvsq)
+#endif
 
 #else
 
@@ -418,13 +705,23 @@
                                                        \
     vctot = vctot
 
-  #define calc_coulomb_force(qq,rinv,rsq) \
-                                          \
-    fscal = fscal
+  #define calc_coulomb_only_force(qq,rinv,rsq)                      \
+    fscal   = zero
 
+#if VDW == VDW_NONE
+  #define calc_coulomb_force(qq,rinv,rsq) calc_coulomb_only_force(qq,rinv,rsq)
+#else
+  #define calc_coulomb_force(qq,rinv,rsq)                           \
+    {}
+#endif
 
 #endif
 
+
+/* Macros that will evaluate VDW energies and forces for non-dual
+ * variables. In cases where the VDW parameters are constant
+ * (e.g. water loops), different forms of these codes are faster.
+ */
 
 #if VDW == LENNARD_JONES
 
@@ -452,9 +749,10 @@
 
  #endif
 
-  #define calc_vdw_force(rinv,rsq)                                        \
-                                                                          \
+  #define calc_vdw_only_force(rinv,rsq)                                   \
     fscal   = __fpmul(__fxcpmsub(__fxpmul(Vvdw12,12.0),Vvdw6,6.0),rinvsq)
+
+  #define calc_vdw_force(rinv,rsq) calc_vdw_only_force(rinv,rsq)
 
 #elif VDW == BUCKINGHAM
 
@@ -483,9 +781,10 @@
 
  #endif
 
-  #define calc_vdw_force(rinv,rsq)                                        \
-                                                                          \
+  #define calc_vdw_only_force(rinv,rsq)                                   \
     fscal   = __fpmul(__fxcpmsub(__fpmul(Vvdwexp,r),Vvdw6,6.0),rinvsq)
+
+  #define calc_vdw_force(rinv,rsq) calc_vdw_only_force(rinv,rsq)
 
 #elif VDW == VDW_TAB
 
@@ -494,9 +793,7 @@
   #define calc_vdw_pot(rinv,rsq,conv,jnr1,jnr2)              \
                                                              \
     rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));        \
-    convert2ints(rt,rti,conv,nnn1,nnn2);                     \
-    n0       = __cmplx((double)nnn1,(double)nnn2);           \
-    eps      = __fpsub(rt,n0);                               \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                  \
     nnn1     = nnn1*TAB_MULT + LJTAB_OFS;                    \
     nnn2     = nnn2*TAB_MULT + LJTAB_OFS;                    \
     Y        = __cmplx(VFtab[nnn1+0],VFtab[nnn2+0]);         \
@@ -527,9 +824,7 @@
     c6       = __cmplx(vdwparam[tj1],vdwparam[tj2]);         \
     c12      = __cmplx(vdwparam[tj1+1],vdwparam[tj2+1]);     \
     rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));        \
-    convert2ints(rt,rti,conv,nnn1,nnn2);                     \
-    n0       = __cmplx((double)nnn1,(double)nnn2);           \
-    eps      = __fpsub(rt,n0);                               \
+    make_eps(rt,rti,conv,nnn1,nnn2,n0,eps);                  \
     nnn1     = nnn1*TAB_MULT + LJTAB_OFS;                    \
     nnn2     = nnn2*TAB_MULT + LJTAB_OFS;                    \
     Y        = __cmplx(VFtab[nnn1+0],VFtab[nnn2+0]);         \
@@ -553,23 +848,35 @@
 
  #endif
 
-  #define calc_vdw_force(rinv,rsq)                   \
-                                                     \
+  #define calc_vdw_only_force(rinv,rsq)              \
     fscal   = __fpmul(fijD,__fxpmul(rinv,_tabscale))
 
-#else
+  #define calc_vdw_force(rinv,rsq) calc_vdw_only_force(rinv,rsq)
+
+#else /* VDW == VDW_NONE */
 
   #define calc_vdw_pot(rinv,rsq,conv,jnr1,jnr2) \
                                                 \
     Vvdwtot = Vvdwtot
 
-  #define calc_vdw_force(rinv,rsq) \
-                                   \
+  #define calc_vdw_only_force(rinv,rsq) \
     fscal   = zero
+
+#if COULOMB == COULOMB_NONE
+  #define calc_vdw_force(rinv,rsq) calc_vdw_only_force(rinv,rsq)
+#else
+  #define calc_vdw_force(rinv,rsq) \
+    {}
+#endif
 
 #endif
 
 
+/* Based on the above conditionally-defined dual-form macros, we can
+ * now paste together other macros that will actually be useful and
+ * succinct to call from kernel functions to compute energies and/or
+ * forces for pairs of interacting atoms.
+ */
 
 #define nfcalc_interaction(qq,rinv,rsq,conv,jnr1,jnr2) \
   rinvsq   = __fpmul(rinv,rinv);                       \
@@ -592,8 +899,7 @@
 #define calc_coul_interaction(qq,rinv,rsq,conv,jnr1,jnr2) \
                                                           \
   nfcalc_coul_interaction(qq,rinv,rsq,conv,jnr1,jnr2);    \
-  fscal = zero;                                           \
-  calc_coulomb_force(qq,rinv,rsq)
+  calc_coulomb_only_force(qq,rinv,rsq)
 
 
 #define nfcalc_vdw_interaction(rinv,rsq,conv,jnr1,jnr2) \
@@ -604,10 +910,10 @@
 #define calc_vdw_interaction(rinv,rsq,conv,jnr1,jnr2) \
                                                       \
   nfcalc_vdw_interaction(rinv,rsq,conv,jnr1,jnr2);    \
-  fscal = zero;                                       \
-  calc_vdw_force(rinv,rsq)
+  calc_vdw_only_force(rinv,rsq)
 
 
+/* Now some other helper macros. */
 
 /* calulates the sqare of the euclidian norms of a two 3-dimensional vectors in parallel
  *
@@ -625,12 +931,12 @@
 
 /* refines two reciprocal square roots rinv of rsq with one Newton-Raphson iteration in parallel
  */
-#define sqrt_newton(rinv,rsq) __fpmul(__fxpmul(rinv,0.5),__fpnmsub(three,rsq,__fpmul(rinv,rinv)))
+#define sqrt_newton(rinv,rsq) __fpmul(__fpmul(rinv,half),__fpnmsub(three,rsq,__fpmul(rinv,rinv)))
 
 
 /* refines the reciprocal square root rinv of rsq with one Newton-Raphson iteration (scalar version)
  */
-#define sqrt_newton_scalar(rinv,rsq) ((0.5 * rinv) * (3.0 - rsq * (rinv * rinv)));
+#define sqrt_newton_scalar(rinv,rsq) ((_half * rinv) * (3.0 - rsq * (rinv * rinv)));
 
 
 /* refines two reciprocal estimates rinv of r with one Newton-Raphson iteration in parallel

@@ -5,6 +5,10 @@
 #undef COUL_INTERACTION
 #undef COUL_INTERACTION_
 
+/* These defines allow us to generate kernel versions that do not
+ * calculate forces from the same source code.
+ */
+
 #ifdef NO_FORCE
 
  #define FULL_INTERACTION  nfcalc_interaction
@@ -21,7 +25,9 @@
 
 #endif
 
-
+/* The actual name of the kernel function was defined in the C
+ * file.
+ */
 void NB_KERNEL (
 
                     int *   p_nri,
@@ -57,31 +63,52 @@ void NB_KERNEL (
                     real *  work)
 {
     double _Complex qqOO_OO,qqOO_OH,qqOH_OH,qqOH_HH,qqHH_HH;
-    double _Complex zero  = __cmplx(0.0,0.0);
-    double _Complex rone  = __cmplx(1.0,0.0);
-    double _Complex two   = __cmplx(2.0,2.0);
-    double _Complex lr    = __cmplx(-1.0,1.0);
-    double _Complex rl    = __cmplx(1.0,-1.0);
-    double _Complex three = __cmplx(3.0,3.0);
+    const double _Complex zero  = __cmplx(0.0,0.0);
+    const double _Complex rone  = __cmplx(1.0,0.0);
+    const double _Complex two   = __cmplx(2.0,2.0);
+    const double _Complex lr    = __cmplx(-1.0,1.0);
+    const double _Complex rl    = __cmplx(1.0,-1.0);
+    const double _Complex three = __cmplx(3.0,3.0);
+    const double _half = 0.5;
+    const double _Complex half  = __cmplx(_half,_half);
+    const double _round = pow(2,51) + pow(2,52);
+    const double _Complex round = __cmplx(_round,_round);
 
     double conv1[2],conv2[2],conv3[2],conv4[2];
+    double _Complex buf1, buf2, buf3, buf4;
 
-    real  _qO,_qH,_qqOO,_qqOH,_qqHH;
-    real  _facel,_tabscale,_gbtabscale,_krf,_crf,_c6,_c12,_cexp1,_cexp2;
+    double _qO,_qH,_qqOO,_qqOH,_qqHH;
+    double _facel,_tabscale,_gbtabscale,_krf,_crf,_c6,_c12,_cexp1,_cexp2;
 
-    int  nri,nti,ntype,nthreads,n,ii,tj,nj0,nj1;
+    int    nri,nti,ntype,nthreads,n,ii,tj,nj0,nj1;
 
+    /* Help the SIMD compiler out. */
 #pragma disjoint(*shiftvec,*fshift,*pos,*faction,*charge,*p_facel,*p_krf,*p_crf,*Vc, \
                  *vdwparam,*Vvdw,*p_tabscale,*VFtab,*invsqrta,*dvda,*p_gbtabscale,*GBtab,*work)
+    __alignx(16, VFtab);
+    __alignx(16, GBtab);
 
     nri              = *p_nri;         
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
     _facel           = *p_facel;
+#if (COULOMB == COULOMB_TAB || VDW == VDW_TAB)
     _tabscale        = *p_tabscale;
+#else
+    _tabscale        = 0.0;
+#endif
+#if COULOMB == REACTION_FIELD
     _krf             = *p_krf;
     _crf             = *p_crf;
-    _gbtabscale      = *p_gbtabscale;    
+#else
+    _krf             = 0.0;
+    _crf             = 0.0;
+#endif
+#if COULOMB == GENERALIZED_BORN
+    _gbtabscale      = *p_gbtabscale;
+#else
+    _gbtabscale      = 0.0;
+#endif
 
     ii               = iinr[0];        
 
@@ -113,7 +140,7 @@ void NB_KERNEL (
     {
 	double _Complex ix1,ix2,ix3,iy1,iy2,iy3,iz1,iz2,iz3,ix23,iy23,iz23;
 	
-	// initialize potential energies and forces for this paricle
+	/* initialize potential energies and forces for this particle */
 
         double _Complex vctot     = zero;
         double _Complex Vvdwtot   = zero;
@@ -127,33 +154,33 @@ void NB_KERNEL (
 	double _Complex fiz2      = zero;
 	double _Complex fiz3      = zero;
 
-        // shift is the position of the n-th water group
+        /* shift is the position of the n-th water group */
 
         int is3  = 3*shift[n];
 	
-	// shiftvec is the center of a water group
+	/* shiftvec is the center of a water group */
 
-        real _shX  = shiftvec[is3];  
-        real _shY  = shiftvec[is3+1];
-        real _shZ  = shiftvec[is3+2];
+        double _shX  = shiftvec[is3];  
+        double _shY  = shiftvec[is3+1];
+        double _shZ  = shiftvec[is3+2];
 
         int ii  = iinr[n];        
         int ii3 = 3*ii;
 	int k,ggid;
 
-	// add the shift vector to all water atoms
+	/* add the shift vector to all water atoms */
 
-        real _ix1 = _shX + pos[ii3+0];
-        real _iy1 = _shY + pos[ii3+1];
-        real _iz1 = _shZ + pos[ii3+2];
-        real _ix2 = _shX + pos[ii3+3];
-        real _iy2 = _shY + pos[ii3+4];
-        real _iz2 = _shZ + pos[ii3+5];
-        real _ix3 = _shX + pos[ii3+6];
-        real _iy3 = _shY + pos[ii3+7];
-        real _iz3 = _shZ + pos[ii3+8];
+        double _ix1 = _shX + pos[ii3+0];
+        double _iy1 = _shY + pos[ii3+1];
+        double _iz1 = _shZ + pos[ii3+2];
+        double _ix2 = _shX + pos[ii3+3];
+        double _iy2 = _shY + pos[ii3+4];
+        double _iz2 = _shZ + pos[ii3+5];
+        double _ix3 = _shX + pos[ii3+6];
+        double _iy3 = _shY + pos[ii3+7];
+        double _iz3 = _shZ + pos[ii3+8];
 
-	// clone all positions in complex variables
+	/* clone all positions in complex variables */
 	
 	ix1 = __cmplx(_ix1,_ix1);
 	iy1 = __cmplx(_iy1,_iy1);
@@ -190,7 +217,7 @@ void NB_KERNEL (
             j31    = 3*jnr1;        
             j32    = 3*jnr2;
 
-	    // Coulomb and possibly VdW between i-water and Oxygens of j1- and j2-water
+	    /* Coulomb and possibly VdW between i-water and Oxygens of j1- and j2-water */
 
 	    load6_and_merge(pos,j31,j32,jx1,jy1,jz1);
 
@@ -226,7 +253,7 @@ void NB_KERNEL (
 
 #endif
 
-	    // only the oxygens will have a LJ-interaction
+	    /* only the oxygens will have a LJ-interaction */
 
 #ifndef NO_FORCE
 	    load6_and_merge(faction,j31,j32,fjx1,fjy1,fjz1);
@@ -270,7 +297,7 @@ void NB_KERNEL (
 	    split_and_store6(faction,j31,j32,fjx1,fjy1,fjz1);
 #endif
 
-	    // Coulomb between i-water and first hydrogen in j1- and j2-water
+	    /* Coulomb between i-water and first hydrogen in j1- and j2-water */
 
 	    load6_and_merge(pos,j31+3,j32+3,jx2,jy2,jz2);
 
@@ -347,7 +374,7 @@ void NB_KERNEL (
 #endif
 
 
-	    // Coulomb between i-water and second hydrogen in j1- and j2-water
+	    /* Coulomb between i-water and second hydrogen in j1- and j2-water */
 
 	    load6_and_merge(pos,j31+6,j32+6,jx3,jy3,jz3);
 
@@ -439,14 +466,14 @@ void NB_KERNEL (
 	    double _Complex rinv123,rinv223,rinv323,rinv231;
 	    double _Complex rinvsq,krsq,fscal;
 	    double _Complex rt,r,rti,eps,YF1,YF2,GH1,GH2,Y,F,G,H,GHeps,VV,FF,fijC,fijD,n0;
-	    real _dx11,_dy11,_dz11,_rsq11,_rinv11;
-	    real _rinvsq,_krsq,_fscal;
-	    real _rt,_r,_eps,_Y,_F,_G,_H,_GHeps,_VV,_FF,_fijC,_fijD,_n0;
-	    real _rinvsix,_Vvdw6,_Vvdw12,_Vvdwexp;
+	    double _dx11,_dy11,_dz11,_rsq11,_rinv11;
+	    double _rinvsq,_krsq,_fscal;
+	    double _rt,_r,_eps,_Y,_F,_G,_H,_GHeps,_VV,_FF,_fijC,_fijD,_n0;
+	    double _rinvsix,_Vvdw6,_Vvdw12,_Vvdwexp;
 
 	    int nnn1,nnn2;
 	    int jnr,j3;
-
+	    
 	    jnr    = jjnr[k];
             j3     = 3*jnr;
 

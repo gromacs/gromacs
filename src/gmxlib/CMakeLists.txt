@@ -75,7 +75,83 @@ if(GMX_POWER6)
 endif(GMX_POWER6)
 
 if(GMX_BLUEGENE)
-  file(GLOB GMX_BLUEGENE_C_SRC nonbonded/nb_kernel_bluegene/*.c)
+# This ordering speeds up parallel compilation
+# a lot, by doing the longer ones first (more or less).
+  set(GMX_BLUEGENE_C_SRC
+	nonbonded/nb_kernel_bluegene/nb_kernel334_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel332_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel333_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel331_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel330_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel324_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel322_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel323_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel321_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel320_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel314_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel312_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel313_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel311_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel310_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel304_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel302_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel303_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel301_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel300_bluegene.c
+
+	nonbonded/nb_kernel_bluegene/nb_kernel234_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel232_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel233_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel231_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel230_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel224_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel222_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel223_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel221_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel220_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel214_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel212_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel213_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel211_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel210_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel204_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel202_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel203_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel201_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel200_bluegene.c
+
+	nonbonded/nb_kernel_bluegene/nb_kernel134_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel132_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel133_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel131_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel130_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel124_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel122_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel123_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel121_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel120_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel114_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel112_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel113_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel111_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel110_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel104_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel102_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel103_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel101_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel100_bluegene.c
+
+	nonbonded/nb_kernel_bluegene/nb_kernel010_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel020_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel030_bluegene.c
+
+	nonbonded/nb_kernel_bluegene/nb_kernel400_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel410_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel420_bluegene.c
+	nonbonded/nb_kernel_bluegene/nb_kernel430_bluegene.c
+
+	nonbonded/nb_kernel_bluegene/nb_kernel_bluegene.c
+  )
 endif(GMX_BLUEGENE)
 
 if(GMX_PPC_ALTIVEC)
