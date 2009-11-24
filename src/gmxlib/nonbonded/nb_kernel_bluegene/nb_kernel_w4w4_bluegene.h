@@ -85,10 +85,23 @@ void NB_KERNEL (
     ntype            = *p_ntype;       
     nthreads         = *p_nthreads;    
     _facel           = *p_facel;
+#if (COULOMB == COULOMB_TAB || VDW == VDW_TAB)
     _tabscale        = *p_tabscale;
+#else
+    _tabscale        = 0.0;
+#endif
+#if COULOMB == REACTION_FIELD
     _krf             = *p_krf;
     _crf             = *p_crf;
-    _gbtabscale      = *p_gbtabscale;    
+#else
+    _krf             = 0.0;
+    _crf             = 0.0;
+#endif
+#if COULOMB == GENERALIZED_BORN
+    _gbtabscale      = *p_gbtabscale;
+#else
+    _gbtabscale      = 0.0;
+#endif
 
     ii               = iinr[0];        
 
