@@ -424,7 +424,8 @@ static void get_slab_centers(
     real box_d;               /* The box diagonal                        */
     bool bFirstSet;
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
-
+    bool slab_has_weight;     /* Remember whether relevant coordinates 
+                               * are found in this slab                  */
     
     erg=rotg->enfrotgrp;
 
@@ -471,6 +472,10 @@ static void get_slab_centers(
     erg->slab_last  = 0;
     for (j = -k; j <= k; j++)
     {
+        /* Remember whether at least one of the coordinates has a weight
+         * larger than the required minimum: */
+        slab_has_weight = FALSE;
+        
         islab = j+erg->slab_max_nr; /* slab index */
         /* Initialize data for this slab: */
         clear_rvec(erg->slab_center[islab]);
@@ -481,13 +486,15 @@ static void get_slab_centers(
         {
             copy_rvec(xc[i], curr_x);
             gaussian = gaussian_weight(curr_x, rotg, j);
+            if (gaussian >= rotg->min_gaussian)
+                slab_has_weight = TRUE;
             svmul(gaussian, curr_x, curr_x_weighted);
             rvec_add(erg->slab_center[islab], curr_x_weighted, erg->slab_center[islab]);
             erg->slab_weights[islab] += gaussian;
         } /* END of loop over rotation group atoms */
 
         /* Do the calculations ONLY if there is enough weight in the slab! */
-        if (erg->slab_weights[islab] > rotg->min_gaussian)
+        if (slab_has_weight)
         {
             svmul(1.0/erg->slab_weights[islab], erg->slab_center[islab], erg->slab_center[islab]);
             /* Remember which slabs to calculate for the low-level routines */
@@ -496,6 +503,7 @@ static void get_slab_centers(
                 erg->slab_first = j;
                 bFirstSet = TRUE;
             }
+            /* This get overwritten by the last slab that has enough weight: */
             erg->slab_last = j;
         }
         /* At first time step: save the COGs of the reference structure */
@@ -1985,7 +1993,7 @@ static void get_firstlast_atom_per_slab(t_rotgrp *rotg, t_commrec *cr)
         {
             beta = calc_beta(erg->xc[i], rotg, n);
             i++;
-        } while (beta < -erg->max_beta);
+        } while ((beta < -erg->max_beta) && (i < rotg->nat));
         i--;
         erg->firstatom[n] = i;
         /* Proceed to the next slab */
@@ -2001,7 +2009,7 @@ static void get_firstlast_atom_per_slab(t_rotgrp *rotg, t_commrec *cr)
          {
              beta = calc_beta(erg->xc[i], rotg, n);
              i--;
-         } while (beta > erg->max_beta);
+         } while ((beta > erg->max_beta) && (i > -1));
          i++;
          erg->lastatom[n] = i;
          /* Proceed to the next slab */
@@ -2401,7 +2409,7 @@ extern void init_rot_group(
         erg->slab_max_nr = (int) ceil(box_d/rotg->slab_dist);
         nslabs = 2*erg->slab_max_nr + 1;
         if (MASTER(cr))
-            fprintf(stdout, "Enforced rotation: allocating memory to store data for %d slabs (rotation group %d).\n",nslabs,g);
+            fprintf(fplog, "Enforced rotation: allocating memory to store data for %d slabs (rotation group %d).\n",nslabs,g);
         snew(erg->slab_center    , nslabs);
         snew(erg->slab_center_ref, nslabs);
         snew(erg->slab_weights   , nslabs);
