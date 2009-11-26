@@ -436,7 +436,7 @@ void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
                     if (j > 0)
                         fprintf(fp, ",");
                     fprintf(fp, "%s", deffile[deffile[tfn[i].ftp].tps[j]].ext
-                        + 1);
+                            + 1);
                 }
                 fprintf(fp, "}");
             }
@@ -460,7 +460,7 @@ void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
                     if (j > 0)
                         fprintf(fp, "|");
                     fprintf(fp, "%s", deffile[deffile[tfn[i].ftp].tps[j]].ext
-                        + 1);
+                            + 1);
                 }
                 fprintf(fp, ")");
             }
@@ -488,7 +488,7 @@ void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
                     if (j > 0)
                         fprintf(fp, "|");
                     fprintf(fp, "%s", deffile[deffile[tfn[i].ftp].tps[j]].ext
-                        + 1);
+                            + 1);
                 }
                 fprintf(fp, ")");
             }
@@ -582,49 +582,53 @@ static void set_grpfnm(t_filenm *fnm, const char *name, bool bCanNotOverride)
     if ((nopts == 0) || (ftps == NULL))
         gmx_fatal(FARGS, "nopts == 0 || ftps == NULL");
 
-        bValidExt = FALSE;
-        if (name && (bCanNotOverride || (default_file_name == NULL)))
+    bValidExt = FALSE;
+    if (name && (bCanNotOverride || (default_file_name == NULL)))
+    {
+        strcpy(buf,name);
+        /* First check whether we have a valid filename already */
+        type = fn2ftp(name);
+        if ((fnm->flag & ffREAD) && (fnm->ftp == efTRX))
         {
-            strcpy(buf,name);
-            /* First check whether we have a valid filename already */
-            type = fn2ftp(name);
-            for(i=0; (i<nopts) && !bValidExt; i++)
-            {
-                if (type == ftps[i])
-                {
-                    bValidExt = TRUE;
-                }
-            }
-            bValidExt |= gmx_fexist(name); /*if file exist don't add an extension */
+            /*if file exist don't add an extension for trajectory reading*/
+            bValidExt = gmx_fexist(name); 
         }
-        else
+        for(i=0; (i<nopts) && !bValidExt; i++)
+        {
+            if (type == ftps[i])
+            {
+                bValidExt = TRUE;
+            }
+        }
+    }
+    else
         /* No name given, set the default name */
         strcpy(buf,ftp2defnm(fnm->ftp));
 
-        if (!bValidExt && (fnm->flag & ffREAD))
+    if (!bValidExt && (fnm->flag & ffREAD))
+    {
+        /* for input-files only: search for filenames in the directory */
+        for(i=0; (i<nopts) && !bValidExt; i++)
         {
-            /* for input-files only: search for filenames in the directory */
-            for(i=0; (i<nopts) && !bValidExt; i++)
+            type = ftps[i];
+            strcpy(buf2,buf);
+            set_extension(buf2,type);
+            if (gmx_fexist(buf2))
             {
-                type = ftps[i];
-                strcpy(buf2,buf);
-                set_extension(buf2,type);
-                if (gmx_fexist(buf2))
-                {
-                    bValidExt = TRUE;
-                    strcpy(buf,buf2);
-                }
+                bValidExt = TRUE;
+                strcpy(buf,buf2);
             }
         }
-
-        if (!bValidExt)
-        {
-        /* Use the first extension type */
-            set_extension(buf,ftps[0]);
-        }
-
-        add_filenm(fnm, buf);
     }
+
+    if (!bValidExt)
+    {
+        /* Use the first extension type */
+        set_extension(buf,ftps[0]);
+    }
+
+    add_filenm(fnm, buf);
+}
 
 static void set_filenm(t_filenm *fnm, const char *name, bool bCanNotOverride,
                        bool bReadNode)
@@ -644,39 +648,39 @@ static void set_filenm(t_filenm *fnm, const char *name, bool bCanNotOverride,
     if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
         gmx_fatal(FARGS, "file type out of range (%d)",fnm->ftp);
 
-        if (name)
+    if (name)
         strcpy(buf, name);
-        if ((fnm->flag & ffREAD) && name && gmx_fexist(name))
+    if ((fnm->flag & ffREAD) && name && gmx_fexist(name))
+    {
+        /* check if filename ends in .gz or .Z, if so remove that: */
+        len = strlen(name);
+        for (i=0; i<NZEXT; i++)
         {
-            /* check if filename ends in .gz or .Z, if so remove that: */
-            len = strlen(name);
-            for (i=0; i<NZEXT; i++)
+            extlen = strlen(z_ext[i]);
+            if (len > extlen)
             {
-                extlen = strlen(z_ext[i]);
-                if (len > extlen)
+                if (strcasecmp(name+len-extlen,z_ext[i]) == 0)
                 {
-                    if (strcasecmp(name+len-extlen,z_ext[i]) == 0)
-                    {
-                        buf[len-extlen]='\0';
-                        break;
-                    }
+                    buf[len-extlen]='\0';
+                    break;
                 }
             }
         }
+    }
 
-        if (deffile[fnm->ftp].ntps)
+    if (deffile[fnm->ftp].ntps)
+    {
+        set_grpfnm(fnm,name ? buf : NULL,bCanNotOverride);
+    }
+    else
+    {
+        if ((name == NULL) || !(bCanNotOverride || (default_file_name ==NULL)))
         {
-            set_grpfnm(fnm,name ? buf : NULL,bCanNotOverride);
+            const char *defnm=ftp2defnm(fnm->ftp);
+            strcpy(buf,defnm);
         }
-        else
-        {
-            if ((name == NULL) || !(bCanNotOverride || (default_file_name ==NULL)))
-            {
-                const char *defnm=ftp2defnm(fnm->ftp);
-                strcpy(buf,defnm);
-            }
-            set_extension(buf,fnm->ftp);
-
+        set_extension(buf,fnm->ftp);
+        
         add_filenm(fnm, buf);
     }
 }
@@ -885,7 +889,7 @@ static void add_filters(char *filter,int *n,int nf,const int ftp[])
     {
         sprintf(buf,"%s",ftp2ext(ftp[i]));
         if (*n > 0)
-        strcat(filter,",");
+            strcat(filter,",");
         strcat(filter,buf);
         (*n) ++;
     }
@@ -901,22 +905,22 @@ char *ftp2filter(int ftp)
     n = 0;
     switch (ftp)
     {
-        case efTRX:
+    case efTRX:
         add_filters(filter,&n,NTRXS,trxs);
         break;
-        case efTRN:
+    case efTRN:
         add_filters(filter,&n,NTRNS,trns);
         break;
-        case efSTO:
+    case efSTO:
         add_filters(filter,&n,NSTOS,stos);
         break;
-        case efSTX:
+    case efSTX:
         add_filters(filter,&n,NSTXS,stxs);
         break;
-        case efTPX:
+    case efTPX:
         add_filters(filter,&n,NTPXS,tpxs);
         break;
-        default:
+    default:
         sprintf(filter,"*%s",ftp2ext(ftp));
         break;
     }
