@@ -91,6 +91,15 @@ int gmx_fio_close(int fp);
  * Returns 0 on success.
  */
 
+int gmx_fio_fp_close(int fp);
+/* Close the file corresponding to fp without closing the FIO entry
+ * Needed e.g. for trxio because the FIO entries are used to store 
+ * additional data.
+ * NOTE that the fp still needs to be properly closed with gmx_fio_close().
+ * The routine will exit when an invalid fio is handled.
+ * Returns 0 on success.
+ */
+
 void gmx_fio_select(int fp);
 /* This routine sets the global variables do_read and do_write
  * to point to the correct routines for fp.

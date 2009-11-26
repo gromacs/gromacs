@@ -264,6 +264,12 @@ AC_ARG_WITH(qmmm_mopac,
 if test "$with_qmmm_mopac" = "yes"; then
   AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
 fi
+
+AC_ARG_WITH(dlopen,
+ [  --without-dlopen        do not compile with dlopen, needed to read VMD supported file formats],,with_dlopen=yes)
+
+
+
    
 
 ############################################################
@@ -960,6 +966,17 @@ AC_DEFINE(GMX_X86_MSVC_INLINE_ASM,,[Enable x86 MSVC inline assembly])],[AC_MSG_R
 esac
 
 
+############
+# Check dlopen
+###########
+if test "$with_dlopen" = "yes"; then
+      AC_MSG_CHECKING(if dlopen supported)
+      CFLAGS_RET=$CFLAGS
+      CFLAGS="-I$srcdir/include -DGMX_DLOPEN $CFLAGS"
+      AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[AC_MSG_RESULT([yes])\
+	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])],AC_MSG_RESULT([no]))
+      CFLAGS=$CFLAGS_RET
+fi
 
 
 
