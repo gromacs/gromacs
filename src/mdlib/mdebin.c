@@ -217,6 +217,13 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
 
     md->epc = ir->epc;
+    for (i=0;i<DIM;i++) 
+    {
+        for (j=0;j<DIM;j++) 
+        {
+            md->ref_p[i][j] = ir->ref_p[i][j];
+        }
+    }
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
@@ -522,11 +529,14 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
         
-        /* This is pV (in kJ/mol).  The pressure is the reference pressure  */  
+        /* This is pV (in kJ/mol).  The pressure is the reference pressure,
+         not the instantaneous pressure */  
         pv = 0;
-        for (i=0;i<DIM;i++) {
-            for (j=0;j<DIM;j++) {
-                pv += box[i][j]*md->ref_p[i][j];
+        for (i=0;i<DIM;i++) 
+        {
+            for (j=0;j<DIM;j++) 
+            {
+                pv += box[i][j]*md->ref_p[i][j]/PRESFAC;
             }
         }
         add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);
