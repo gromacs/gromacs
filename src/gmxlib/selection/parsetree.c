@@ -586,7 +586,7 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
-    char              *name;
+    const char        *name;
     int                rc;
 
     sel = _gmx_selelem_create(SEL_EXPRESSION);

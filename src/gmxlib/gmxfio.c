@@ -1044,7 +1044,7 @@ int gmx_fio_close(int fio)
 /* close only fp but keep FIO entry. */
 int gmx_fio_fp_close(int fio)
 {
-    int rc;
+    int rc=0;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&fio_mutex);
 #endif

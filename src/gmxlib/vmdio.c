@@ -197,13 +197,13 @@ bool read_next_vmd_frame(int status,t_trxframe *fr)
 int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 {
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
-    char *pathenv;
+    const char *pathenv;
     const char *err;
-    int i,ret=0;
+    uint i,ret=0;
     molfile_timestep_metadata_t *metadata=NULL;
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     glob_t globbuf;
-    char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
+    const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
 #else
     WIN32_FIND_DATA ffd;
     HANDLE hFind = INVALID_HANDLE_VALUE;

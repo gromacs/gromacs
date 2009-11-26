@@ -46,7 +46,7 @@
 typedef struct 
 {
     molfile_plugin_t *api;
-    char* filetype;
+    const char* filetype;
     void* handle;
     bool bV;
 } t_gmxvmdplugin;
