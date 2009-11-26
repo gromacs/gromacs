@@ -522,9 +522,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
         
-        /* This is pV (in kJ/mol) */  
-        pv = vol*enerd->term[F_PRES]/PRESFAC;
-
+        /* This is pV (in kJ/mol).  The pressure is the reference pressure  */  
+        pv = 0;
+        for (i=0;i<DIM;i++) {
+            for (j=0;j<DIM;j++) {
+                pv += box[i][j]*md->ref_p[i][j];
+            }
+        }
         add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
