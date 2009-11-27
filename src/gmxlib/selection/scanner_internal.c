@@ -276,10 +276,10 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             {
                 case INT_VALUE:
                     yylval->i = var->v.u.i[0];
-                    return INTEGER;
+                    return TOK_INT;
                 case REAL_VALUE:
                     yylval->r = var->v.u.r[0];
-                    return REAL;
+                    return TOK_REAL;
                 case POS_VALUE:
                     break;
                 default:
