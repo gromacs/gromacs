@@ -51,6 +51,8 @@
 #include "statutil.h"
 #include "index.h"
 #include "nrama.h"
+#include "gmx_ana.h"
+
 
 static void plot_rama(FILE *out,t_xrama *xr)
 {

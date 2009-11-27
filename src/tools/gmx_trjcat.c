@@ -61,6 +61,7 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "xdrf.h"
+#include "gmx_ana.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -466,7 +467,8 @@ int gmx_trjcat(int argc, char *argv[])
     atom_id *index = NULL, imax;
     char *grpname;
     real **val = NULL, *t = NULL, dt_remd;
-    int n, nset,bOK;
+    int n, nset;
+    bool bOK;
     off_t fpos;
     output_env_t oenv;
     t_filenm fnm[] =

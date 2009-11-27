@@ -51,6 +51,7 @@
 #include "physics.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 typedef struct {
     int    nset;

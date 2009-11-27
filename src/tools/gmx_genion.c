@@ -58,6 +58,7 @@
 #include "random.h"
 #include "index.h"
 #include "mtop_util.h"
+#include "gmx_ana.h"
 
 static void insert_ion(int nsa,int *nwater,
 		       bool bSet[],int repl[],atom_id index[],

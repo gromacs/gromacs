@@ -57,6 +57,8 @@
 #include "txtdump.h"
 #include "tpxio.h"
 #include "gstat.h"
+#include "gmx_ana.h"
+
 
 real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
 	       rvec gvec,rvec d,bool bQ,bool bRot,bool bMOI,matrix trans)

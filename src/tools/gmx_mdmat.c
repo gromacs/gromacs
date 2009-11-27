@@ -55,6 +55,8 @@
 #include "tpxio.h"
 #include "rmpbc.h"
 #include "pbc.h"
+#include "gmx_ana.h"
+
 
 #define FARAWAY 10000
 

@@ -55,6 +55,8 @@
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
 		      real **d)

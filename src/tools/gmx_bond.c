@@ -51,6 +51,8 @@
 #include "index.h"
 #include "gmx_statistics.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms,
                           const output_env_t oenv)

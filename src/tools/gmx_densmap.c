@@ -59,6 +59,8 @@
 #include "gstat.h"
 #include "matio.h"
 #include "pbc.h"
+#include "gmx_ana.h"
+
 
 int gmx_densmap(int argc,char *argv[])
 {

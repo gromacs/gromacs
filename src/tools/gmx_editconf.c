@@ -61,6 +61,7 @@
 #include "txtdump.h"
 #include "viewit.h"
 #include "rmpbc.h"
+#include "gmx_ana.h"
 
 typedef struct
 {
