@@ -31,7 +31,7 @@
 
 
 void nb_kernel400_x86_64_sse(int *           p_nri,
-                    int *           iinr,
+                    int            iinr[],
                     int *           jindex,
                     int *           jjnr,
                     int *           shift,

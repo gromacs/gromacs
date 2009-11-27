@@ -158,11 +158,11 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
 int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 
-#endif /* GMX_MPI */
-
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* GMX_MPI */
 
 #endif /* _gmx_parallel_3dfft_h_ */
 
