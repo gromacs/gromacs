@@ -58,6 +58,7 @@
 #endif
 #include "smalloc.h"
 #include "futil.h"
+#include "vmdio.h"
 
 
 #include "types/simple.h"

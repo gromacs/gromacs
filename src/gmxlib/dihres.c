@@ -52,6 +52,7 @@
 #include "dihre.h"
 #include "main.h"
 #include "mtop_util.h"
+#include "dihre.h"
 
 void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd)
 {
