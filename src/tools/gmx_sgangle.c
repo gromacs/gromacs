@@ -50,6 +50,8 @@
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
+#include "gmx_ana.h"
+
 
 /* this version only works correctly if one of the entries in the index file
    is a plane (three atoms specified) and the other a vector. Distance

@@ -57,6 +57,8 @@
 #include "viewit.h"
 #include "mtop_util.h"
 #include "gmx_statistics.h"
+#include "gmx_ana.h"
+
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 

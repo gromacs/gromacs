@@ -43,18 +43,37 @@ extern "C" {
  *  \note All level1 and level2 nonbonded kernels use the same
  *        call sequence. Parameters are documented in nb_kernel.h
  */
-void
-nb_kernel400_x86_64_sse  (int *   nri,        int     iinr[],   int     jindex[],
-                       int     jjnr[],     int     shift[],  float   shiftvec[],
-                       float   fshift[],   int     gid[],    float   pos[],
-                       float   faction[],  float   charge[], float * facel,
-                       float * krf,        float * crf,      float   Vc[],
-                       int     type[],     int *   ntype,    float   vdwparam[],
-                       float   Vvdw[],     float * tabscale, float   VFtab[],
-                       float   invsqrta[], float   dvda[],   float * gbtabscale,
-                       float   GBtab[],    int *   nthreads, int *   count,
-                       void *  mtx,        int *   outeriter,int *   inneriter,
-                       float * work);
+void nb_kernel400_x86_64_sse (int *           p_nri,
+                              int            iinr[],
+                              int *           jindex,
+                              int *           jjnr,
+                              int *           shift,
+                              float *         shiftvec,
+                              float *         fshift,
+                              int *           gid,
+                              float *         pos,
+                              float *         faction,
+                              float *         charge,
+                              float *         p_facel,
+                              float *         p_krf,
+                              float *         p_crf,
+                              float *         vc,
+                              int *           type,
+                              int *           p_ntype,
+                              float *         vdwparam,
+                              float *         vvdw,
+                              float *         p_tabscale,
+                              float *         VFtab,
+                              float *         invsqrta,
+                              float *         dvda,
+                              float *         p_gbtabscale,
+                              float *         GBtab,
+                              int *           p_nthreads,
+                              int *           count,
+                              void *          mtx,
+                              int *           outeriter,
+                              int *           inneriter,
+                              float *         work);
 
 
 

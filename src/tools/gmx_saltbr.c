@@ -50,6 +50,8 @@
 #include "smalloc.h"
 #include "pbc.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   char *label;

@@ -53,6 +53,8 @@
 #include "physics.h"
 #include "matio.h"
 #include "strdb.h"
+#include "gmx_ana.h"
+
 
 static int search_str2(int nstr,char **str,char *key)
 {

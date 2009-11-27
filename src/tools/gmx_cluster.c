@@ -58,6 +58,7 @@
 #include "do_fit.h"
 #include "trnio.h"
 #include "viewit.h"
+#include "gmx_ana.h"
 
 /* macro's to print to two file pointers at once (i.e. stderr and log) */
 #define lo_ffprintf(fp1,fp2,buf) \

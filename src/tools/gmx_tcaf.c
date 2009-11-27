@@ -57,6 +57,8 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "pbc.h"
+#include "gmx_ana.h"
+
 
 #define NK  24
 #define NPK 4

@@ -56,6 +56,8 @@
 #include "string2.h"
 #include "pbc.h"
 #include "correl.h"
+#include "gmx_ana.h"
+
 
 #define max_hx 7
 typedef int t_hx[max_hx];

@@ -35,6 +35,8 @@
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_fatal.h"
+#include "gmx_ana.h"
+
 
 #define G_REF1      0
 #define G_REF2      1

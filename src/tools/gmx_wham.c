@@ -48,6 +48,8 @@
 #include "statutil.h"
 #include "tpxio.h"
 #include "names.h"
+#include "gmx_ana.h"
+
 
 #ifndef HAVE_STRDUP
 #define HAVE_STRDUP

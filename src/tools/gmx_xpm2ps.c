@@ -49,6 +49,7 @@
 #include "string2.h"
 #include "matio.h"
 #include "viewit.h"
+#include "gmx_ana.h"
 
 #define FUDGE 1.2
 #define DDD   2

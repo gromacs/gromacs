@@ -62,6 +62,7 @@
 #include "pbc.h"
 #include "viewit.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 enum { euSel,euRect, euTric, euCompact, euNR};
 

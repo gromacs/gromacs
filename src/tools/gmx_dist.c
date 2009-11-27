@@ -50,6 +50,8 @@
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
+#include "gmx_ana.h"
+
 
 static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
 {

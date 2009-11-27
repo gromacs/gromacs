@@ -57,6 +57,8 @@
 #include "txtdump.h"
 #include "tpxio.h"
 #include "gstat.h"
+#include "gmx_ana.h"
+
 
 void
 calc_principal_axes(t_topology *   top,
