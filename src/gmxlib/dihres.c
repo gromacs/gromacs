@@ -49,6 +49,7 @@
 #include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"
+#include "dihre.h"
 #include "main.h"
 #include "mtop_util.h"
 
