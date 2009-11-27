@@ -455,7 +455,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
 static double legend2lambda(char *fn,const char *legend,bool bdhdl)
 {
     double lambda=0;
-    char   *ptr;
+    const char   *ptr;
 
     if (legend == NULL)
     {
