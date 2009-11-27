@@ -65,6 +65,8 @@ typedef struct gmx_ana_selection_t
 {
     /** Name of the selection. */
     char                   *name;
+    /** The actual selection string. */
+    char                   *selstr;
     /** Selected positions. */
     gmx_ana_pos_t           p;
     /** Masses associated with the positions. */

@@ -39,6 +39,12 @@
 
 #include <signal.h>
 #include <stdlib.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+/* _isnan() */
+#include <float.h>
+#endif
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -93,6 +99,8 @@
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
+
+
 
 /* The following two variables and the signal_handler function
  * is used from pme.c as well 
@@ -149,6 +157,7 @@ struct mdrunner_arglist
     const char *ddcsy;
     const char *ddcsz;
     int nstepout;
+    int resetstep;
     int nmultisim;
     int repl_ex_nst;
     int repl_ex_seed;
@@ -182,7 +191,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.bCompact, mc.nstglobalcomm, 
                       mc.ddxyz, mc.dd_node_order, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
-                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.nmultisim,
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, mc.nmultisim,
                       mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
                       mc.cpt_period, mc.max_hours, mc.Flags);
 }
@@ -196,7 +205,7 @@ int mdrunner_threads(int nthreads,
                      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
                      const char *dddlb_opt,real dlb_scale,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int nmultisim,int repl_ex_nst,
+                     int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
                      real max_hours, unsigned long Flags)
 {
@@ -207,7 +216,7 @@ int mdrunner_threads(int nthreads,
         ret=mdrunner(fplog, cr, nfile, fnm, oenv, bVerbose, bCompact,
                      nstglobalcomm,
                      ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
-                     ddcsx, ddcsy, ddcsz, nstepout, nmultisim, repl_ex_nst, 
+                     ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst, 
                      repl_ex_seed, pforce, cpt_period, max_hours, Flags);
     }
     else
@@ -235,6 +244,7 @@ int mdrunner_threads(int nthreads,
         mda.ddcsy=ddcsy;
         mda.ddcsz=ddcsz;
         mda.nstepout=nstepout;
+        mda.resetstep=resetstep;
         mda.nmultisim=nmultisim;
         mda.repl_ex_nst=repl_ex_nst;
         mda.repl_ex_seed=repl_ex_seed;
@@ -262,7 +272,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              ivec ddxyz,int dd_node_order,real rdd,real rconstr,
              const char *dddlb_opt,real dlb_scale,
              const char *ddcsx,const char *ddcsy,const char *ddcsz,
-             int nstepout,int nmultisim,int repl_ex_nst,int repl_ex_seed,
+             int nstepout,int resetstep,int nmultisim,int repl_ex_nst,int repl_ex_seed,
              real pforce,real cpt_period,real max_hours,
              unsigned long Flags)
 {
@@ -402,7 +412,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         if( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
         {
-            load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),fplog,
+            load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
                             cr,Flags & MD_PARTDEC,ddxyz,
                             inputrec,state,&bReadRNG,&bReadEkin,
                             (Flags & MD_APPENDFILES));
@@ -418,10 +428,10 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
     }
 
-    if (MASTER(cr) && (Flags & MD_APPENDFILES))
+    if ((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
     {
-        fplog = gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
-                             Flags);
+        gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
+                             Flags,&fplog);
     }
 
     if (SIMMASTER(cr)) 
@@ -474,7 +484,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         gmx_setup_nodecomm(fplog,cr);
     }
 
-    wcycle = wallcycle_init(fplog,cr);
+    wcycle = wallcycle_init(fplog,resetstep,cr);
     if (PAR(cr))
     {
         /* Master synchronizes its value of reset_counters with all nodes 
@@ -1703,7 +1713,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (update_forcefield(fplog,
                                   nfile,fnm,fr,
                                   mdatoms->nr,state->x,state->box)) {
-                if (gmx_parallel_env())
+                if (gmx_parallel_env_initialized())
                 {
                     gmx_finalize();
                 }
@@ -1823,6 +1833,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bX = bX || bLastStep; /*enforce writing positions and velocities 
                                 at end of run */
         bV = bV || bLastStep;
+        bXTC = bXTC || bLastStep;
         {
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
@@ -2224,7 +2235,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                  f,NULL,xcopy,
                                  &(top_global->mols),mdatoms->massT,pres))
             {
-                if (gmx_parallel_env())
+                if (gmx_parallel_env_initialized())
                     gmx_finalize();
                 fprintf(stderr,"\n");
                 exit(0);
@@ -2302,7 +2313,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(stderr,"\n");
             }
-            print_time(stderr,runtime,step,ir);
+            print_time(stderr,runtime,step,ir,cr);
         }
 
         /* Replica exchange */

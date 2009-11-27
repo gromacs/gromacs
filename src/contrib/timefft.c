@@ -59,7 +59,7 @@ int main(int argc,char *argv[])
 		      45, 48, 50, 54, 60, 64, 72, 75, 80, 81, 90, 100 };
   int       nnn[] = { 24, 32, 48, 60, 72, 84, 96 };
 #define NNN asize(nnn)
-  FILE      *fp;
+  FILE      *fp,*fplog;
   int       *niter;
   int       i,j,n,nit,ntot,n3,rsize;
   double    t,nflop,start;
@@ -89,7 +89,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
-  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,1,0);
+  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,1,0,&fplog);
 
   snew(niter,NNN);
   snew(ct,NNN);

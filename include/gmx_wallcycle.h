@@ -44,7 +44,7 @@ enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND
 extern bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-extern gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr);
+extern gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */

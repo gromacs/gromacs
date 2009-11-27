@@ -145,13 +145,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->nCrmsd = 0;
   }
 
-  /* Energy monitoring */
-  for(i=0;i<egNR;i++)
-  {
-    md->bEInd[i]=FALSE;
-  }
-
-
   for(i=0; i<F_NRE; i++) {
     md->bEner[i] = FALSE;
     if (i == F_LJ)
@@ -270,6 +263,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->ivisc = get_ebin_space(md->ebin,asize(visc_nm),visc_nm,
                                    unit_invvisc_SI);
     }
+
+    /* Energy monitoring */
+    for(i=0;i<egNR;i++)
+    {
+        md->bEInd[i] = FALSE;
+    }
+    md->bEInd[egCOULSR] = TRUE;
+    md->bEInd[egLJSR  ] = TRUE;
+
     if (ir->rcoulomb > ir->rlist)
     {
         md->bEInd[egCOULLR] = TRUE;

@@ -78,7 +78,15 @@ static bool parallel_env_val;
 tMPI_Thread_mutex_t parallel_env_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-bool gmx_parallel_env(void)
+
+/* returns 1 when running in a parallel environment, so could also be 1 if
+   mdrun was started with: mpirun -np 1.
+     
+   Use this function only to check whether a parallel environment has   
+   been initialized, for example when checking whether gmx_finalize()   
+   needs to be called. Use PAR(cr) to check whether the simulation actually
+   has more than one node/thread.  */
+bool gmx_parallel_env_initialized(void)
 {
     bool ret;
 #ifdef GMX_THREADS
@@ -167,13 +175,13 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   sfree(ibuf);
 }
 
-FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
-                   unsigned long Flags)
+void gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly, 
+                   unsigned long Flags, FILE** fplog)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
-  FILE *fp;
+  FILE *fp=*fplog;
   char *tmpnm;
 
   bool bAppend = Flags & MD_APPENDFILES;	
@@ -198,12 +206,15 @@ FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   
   debug_gmx();
 
-  if (PAR(cr) && !bMasterOnly) {
+  /*for bAppend the log file is opened in checkpoint.c:read_checkpoint 
+   * (for locking)
+   */
+  if (PAR(cr) && !bMasterOnly && (!bAppend || !MASTER(cr))) {
     /* Since log always ends with '.log' let's use this info */
     par_fn(tmpnm,efLOG,cr,cr->ms!=NULL,buf,255);
-	  fp = gmx_fio_fopen(buf, bAppend ? "a" : "w" );
-  } else {
-	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a" : "w" );
+	  fp = gmx_fio_fopen(buf, bAppend ? "a+" : "w+" );
+  } else if (!bAppend) {
+	  fp = gmx_fio_fopen(tmpnm, bAppend ? "a+" : "w+" );
   }
 
   sfree(tmpnm);
@@ -253,7 +264,7 @@ FILE *gmx_log_open(const char *lognm,const t_commrec *cr,bool bMasterOnly,
   fflush(fp);
   debug_gmx();
 
-  return fp;
+  *fplog = fp;
 }
 
 void gmx_log_close(FILE *fp)
@@ -296,6 +307,12 @@ void init_multisystem(t_commrec *cr,int nsim, int nfile,
   MPI_Group mpi_group_world;
 #endif  
   int *rank;
+
+#ifndef GMX_MPI
+  if (nsim > 1) {
+    gmx_fatal(FARGS,"This binary is compiled without MPI support, can not do multiple simulations.");
+  }
+#endif
 
   nnodes  = cr->nnodes;
   if (nnodes % nsim != 0)
@@ -383,14 +400,6 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     argv = *argv_ptr;
 
 #ifdef GMX_MPI
-#if 0
-#ifdef GMX_THREADS
-    if (tMPI_Get_N(argc, argv_ptr)>1)
-        pe=TRUE;
-    else
-        pe=FALSE;
-#endif /* GMX_THREADS */
-#endif
 #ifdef GMX_LIB_MPI
     pe = TRUE;
 #ifdef GMX_CHECK_MPI_ENV
@@ -456,6 +465,10 @@ t_commrec *init_par_threads(t_commrec *cro)
     t_commrec *cr;
 
     snew(cr,1);
+    /* now copy the whole thing, so settings like the number of PME nodes
+       get propagated. */
+    *cr=*cro;
+    /* and we start setting our own thread-specific values for things */
     MPI_Initialized(&initialized);
     if (!initialized)
         gmx_comm("Initializing threads without comm");

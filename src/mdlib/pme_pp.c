@@ -422,8 +422,6 @@ void gmx_pme_receive_f(t_commrec *cr,
 		       real *energy, real *dvdlambda,
 		       float *pme_cycles)
 {
-  static rvec *f_rec=NULL;
-  static int  nalloc=0;
   int natoms,i;
 
 #ifdef GMX_PME_DELAYED_WAIT
@@ -433,19 +431,22 @@ void gmx_pme_receive_f(t_commrec *cr,
 
   natoms = cr->dd->nat_home;
 
-  if (natoms > nalloc) {
-    nalloc = over_alloc_dd(natoms);
-    srenew(f_rec,nalloc);
+  if (natoms > cr->dd->pme_recv_f_alloc)
+  {
+      cr->dd->pme_recv_f_alloc = over_alloc_dd(natoms);
+      srenew(cr->dd->pme_recv_f_buf, cr->dd->pme_recv_f_alloc);
   }
 
 #ifdef GMX_MPI  
-  MPI_Recv(f_rec[0],natoms*sizeof(rvec),MPI_BYTE,
+  MPI_Recv(cr->dd->pme_recv_f_buf[0], 
+           natoms*sizeof(rvec),MPI_BYTE,
 	   cr->dd->pme_nodeid,0,cr->mpi_comm_mysim,
 	   MPI_STATUS_IGNORE);
 #endif
 
   for(i=0; i<natoms; i++)
-    rvec_inc(f[i],f_rec[i]);
+      rvec_inc(f[i],cr->dd->pme_recv_f_buf[i]);
+
   
   receive_virial_energy(cr,vir,energy,dvdlambda,pme_cycles);
 }

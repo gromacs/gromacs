@@ -1,5 +1,6 @@
+#line 2 "scanner.c"
 
-#line 3 "<stdout>"
+#line 4 "scanner.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -569,7 +570,8 @@ static yyconst flex_int16_t yy_chk[208] =
  * Macro to read input into a buffer for the tokenizer.
  *
  * This macro is a modified version of the standard implementation in Flex.
- * The only changes are the calls to _gmx_sel_lexer_*() functions.
+ * The only changes are the calls to _gmx_sel_lexer_*() functions to show a
+ * prompt.
  */
 #define YY_INPUT(buf,result,max_size) \
     { \
@@ -592,13 +594,13 @@ static yyconst flex_int16_t yy_chk[208] =
             YY_FATAL_ERROR("input in flex scanner failed"); \
         } \
         result = n; \
-        _gmx_sel_lexer_add_input(buf, n, state); \
     }
+#define YY_NO_UNISTD_H 1
 
 
 
 
-#line 602 "<stdout>"
+#line 604 "scanner.c"
 
 #define INITIAL 0
 #define matchof 1
@@ -828,15 +830,17 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 107 "scanner.l"
+#line 109 "scanner.l"
 
 
 
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
-    /* Return END_OF_METHOD/PARAM_* immediately if necessary */
-    if (state->nextparam)
+    int              retval;
+    /* Return a token if one is pending */
+    retval = _gmx_sel_lexer_process_pending(yylval, state);
+    if (retval != 0)
     {
-        return _gmx_sel_lexer_process_next_param(yylval, state);
+        return retval;
     }
     /* Handle the start conditions for 'of' matching */
     if (state->bMatchOf)
@@ -860,7 +864,7 @@ YY_DECL
     }
 
 
-#line 864 "<stdout>"
+#line 868 "scanner.c"
 
 	if ( !yyg->yy_init )
 		{
@@ -945,154 +949,160 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 138 "scanner.l"
+#line 142 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 139 "scanner.l"
-{ yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INT;  }
+#line 143 "scanner.l"
+{ yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INTEGER; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 140 "scanner.l"
+#line 144 "scanner.l"
 { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 141 "scanner.l"
+#line 145 "scanner.l"
 { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 143 "scanner.l"
+#line 147 "scanner.l"
 { _gmx_sel_lexer_prompt_newline(TRUE, state); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 144 "scanner.l"
+#line 148 "scanner.l"
 {
                     if (yytext[0] == ';' || state->prompt)
                     {
                         state->bCmdStart = TRUE;
+                        rtrim(state->pselstr);
                         return CMD_SEP;
                     }
                 }
 	YY_BREAK
+case YY_STATE_EOF(cmdstart):
+#line 156 "scanner.l"
+{ yyterminate(); }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+case YY_STATE_EOF(matchof):
+case YY_STATE_EOF(matchbool):
+case YY_STATE_EOF(help):
+#line 157 "scanner.l"
+{ state->bCmdStart = TRUE; return CMD_SEP; }
+	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 151 "scanner.l"
+#line 159 "scanner.l"
 { BEGIN(help); return HELP; }
 	YY_BREAK
 
 case 8:
 YY_RULE_SETUP
-#line 153 "scanner.l"
+#line 161 "scanner.l"
 
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 154 "scanner.l"
+#line 162 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); return HELP_TOPIC; }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 155 "scanner.l"
+#line 163 "scanner.l"
 { state->bCmdStart = TRUE; return CMD_SEP; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 156 "scanner.l"
+#line 164 "scanner.l"
 { return INVALID; }
 	YY_BREAK
 
 
 case 12:
 YY_RULE_SETUP
-#line 159 "scanner.l"
-{ ADD_TOKEN; yylval->i = 1; return BOOL_VALUE; }
+#line 168 "scanner.l"
+{ ADD_TOKEN; yylval->i = 1; return INTEGER; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 160 "scanner.l"
-{ ADD_TOKEN; yylval->i = 0; return BOOL_VALUE; }
+#line 169 "scanner.l"
+{ ADD_TOKEN; yylval->i = 0; return INTEGER; }
 	YY_BREAK
 
 case 14:
 YY_RULE_SETUP
-#line 162 "scanner.l"
+#line 171 "scanner.l"
 { ADD_TOKEN; return GROUP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 163 "scanner.l"
+#line 172 "scanner.l"
 { ADD_TOKEN; return TO; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 164 "scanner.l"
+#line 173 "scanner.l"
 { ADD_TOKEN; BEGIN(0); return OF; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 165 "scanner.l"
+#line 174 "scanner.l"
 { ADD_TOKEN; return AND; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 166 "scanner.l"
+#line 175 "scanner.l"
 { ADD_TOKEN; return OR; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 167 "scanner.l"
+#line 176 "scanner.l"
 { ADD_TOKEN; return XOR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 168 "scanner.l"
+#line 177 "scanner.l"
 { ADD_TOKEN; return NOT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 169 "scanner.l"
+#line 178 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 171 "scanner.l"
+#line 180 "scanner.l"
 { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 173 "scanner.l"
+#line 182 "scanner.l"
 { _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 174 "scanner.l"
+#line 183 "scanner.l"
 { yylval->str = strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 175 "scanner.l"
+#line 184 "scanner.l"
 { _gmx_sel_lexer_add_token(yytext, 1, state); return yytext[0]; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 176 "scanner.l"
+#line 185 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1090 "<stdout>"
-case YY_STATE_EOF(INITIAL):
-case YY_STATE_EOF(matchof):
-case YY_STATE_EOF(matchbool):
-case YY_STATE_EOF(cmdstart):
-case YY_STATE_EOF(help):
-	yyterminate();
+#line 1106 "scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1649,10 +1659,6 @@ static void _gmx_sel_yy_load_buffer_state  (yyscan_t yyscanner)
 	_gmx_sel_yyfree((void *) b ,yyscanner );
 }
 
-#ifndef __cplusplus
-extern int isatty (int );
-#endif /* __cplusplus */
-    
 /* Initializes or reinitializes a buffer.
  * This function is sometimes called more than once on the same buffer,
  * such as during a _gmx_sel_yyrestart() or at EOF.
@@ -1677,8 +1683,8 @@ extern int isatty (int );
         b->yy_bs_column = 0;
     }
 
-        b->yy_is_interactive = file ? (isatty( fileno(file) ) > 0) : 0;
-    
+	b->yy_is_interactive = 1;
+
 	errno = oerrno;
 }
 
@@ -2245,4 +2251,4 @@ void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 176 "scanner.l"
+#line 185 "scanner.l"

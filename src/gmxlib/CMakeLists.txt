@@ -3,6 +3,7 @@
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 
 file(GLOB GMXLIB_SOURCES *.c 
+     selection/*.c trajana/*.c
      statistics/*.c nonbonded/*.c nonbonded/nb_kernel_c/*.c)
 
 if(GMX_SSE2)

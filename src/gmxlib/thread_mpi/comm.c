@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -68,131 +64,15 @@ static void tMPI_Split_colors(int N, const int *color, const int *key,
 
 
 
-/* Group query & manipulation functions */
-
-bool tMPI_In_group(tMPI_Group group)
-{
-    int i;
-    struct tmpi_thread *cur;
-
-    cur=tMPI_Get_current();
-    for(i=0;i<group->N;i++)
-    {
-        if (group->peers[i] == cur)
-            return TRUE;
-    }
-    return FALSE;
-}
-
-int tMPI_Group_size(tMPI_Group group, int *size)
-{
-    if (group)
-        *size = group->N;
-    else
-        *size = 0;
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Group_rank(tMPI_Group group, int *rank)
-{    
-    int i;
-    struct tmpi_thread *cur;
-
-    if (!group)
-        return TMPI_UNDEFINED;
-
-    /* search for my id in the list of peers */
-    cur=tMPI_Get_current();
-    for(i=0;i<group->N;i++)
-    {
-        if (group->peers[i] == cur)
-        {
-            *rank=i;
-            return TMPI_SUCCESS;
-        }
-    }
-    return TMPI_UNDEFINED;
-}
-
-
-
-tMPI_Group tMPI_Group_alloc(void)
-{
-    struct tmpi_group_ *ret;
-
-    ret=(struct tmpi_group_*)tMPI_Malloc(sizeof(struct tmpi_group_));
-    ret->peers=(struct tmpi_thread**)tMPI_Malloc(
-                                sizeof(struct tmpi_thread*)*Nthreads);
-    ret->N=0;
-#if 0
-    ret->Nrefs=1;
-#endif
-
-    return ret;
-}
-
-int tMPI_Group_free(tMPI_Group *group)
-{
-    if (group)
-    {
-        free((*group)->peers);
-        free(*group);
-    }
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group)
-{
-    int i;
-    struct tmpi_group_ *ret=tMPI_Group_alloc();
-
-    ret->N=comm->grp.N;
-    for(i=0;i<comm->grp.N;i++)
-    {
-        ret->peers[i]=comm->grp.peers[i];
-    }
-    *group=ret;
-#if 0
-    if (comm)
-    {
-        *group=&(comm->grp);
-    }
-    else
-    {
-        *group=NULL;
-    }
-#endif
-
-    return TMPI_SUCCESS;
-}
-
-
-int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup)
-{
-    int i;
-    tMPI_Group ng;
-
-    /* just allocate and copy */
-    ng=tMPI_Group_alloc();
-    ng->N=n;
-    for(i=0;i<n;i++)
-    {
-        if (ranks[i] < 0 || !group || ranks[i] >= group->N)
-        {
-            return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_GROUP_RANK);
-        }
-        ng->peers[i]=group->peers[ranks[i]];
-    }
-    *newgroup=ng;
-    return TMPI_SUCCESS;
-}
-
 
 
 
 /* communicator query&manipulation functions */
 int tMPI_Comm_N(tMPI_Comm comm)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_N(%p)", comm);
+#endif
     if (!comm)
         return 0;
     return comm->grp.N;
@@ -200,11 +80,17 @@ int tMPI_Comm_N(tMPI_Comm comm)
 
 int tMPI_Comm_size(tMPI_Comm comm, int *size)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_size(%p, %p)", comm, size);
+#endif
     return tMPI_Group_size(&(comm->grp), size);
 }
 
 int tMPI_Comm_rank(tMPI_Comm comm, int *rank)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_rank(%p, %p)", comm, rank);
+#endif
     return tMPI_Group_rank(&(comm->grp), rank);
 }
 
@@ -237,13 +123,22 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
+#ifndef TMPI_NO_BUSY_WAIT
     ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)tMPI_Malloc(
                       sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
+#else
+    ret->multicast_barrier=(tMPI_Thread_barrier_t*)tMPI_Malloc(
+                      sizeof(tMPI_Thread_barrier_t)*(Nbarriers+1));
+#endif
     ret->N_multicast_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
+#ifndef TMPI_NO_BUSY_WAIT
         tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
+#else
+        tMPI_Thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
+#endif
         ret->N_multicast_barrier[i]=Nred;
         /* Nred is now Nred/2 + a rest term because solitary 
            process at the end of the list must still be accounter for */
@@ -262,18 +157,77 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
         ret->erh=TMPI_ERRORS_ARE_FATAL;
     }
 
+    /* coll_env objects */
+    ret->cev=(struct coll_env*)tMPI_Malloc(sizeof(struct coll_env)*N_COLL_ENV);
+    for(i=0;i<N_COLL_ENV;i++)
+        tMPI_Coll_env_init( &(ret->cev[i]), N);
     /* multi_sync objects */
-    ret->msc=(struct multi_sync*)tMPI_Malloc(sizeof(struct multi_sync)*N);
+    ret->csync=(struct coll_sync*)tMPI_Malloc(sizeof(struct coll_sync)*N);
     for(i=0;i<N;i++)
-        tMPI_Multi_sync_init( &(ret->msc[i]), N);
+        tMPI_Coll_sync_init( &(ret->csync[i]));
+
+    /* we insert ourselves after TMPI_COMM_WORLD */
+    if (TMPI_COMM_WORLD)
+    {
+        ret->next=TMPI_COMM_WORLD;
+        ret->prev=TMPI_COMM_WORLD->prev;
+
+        TMPI_COMM_WORLD->prev->next = ret;
+        TMPI_COMM_WORLD->prev = ret;
+    }
+    else
+    {
+        ret->prev=ret->next=ret;
+    }
 
     return ret;
 }
 
+void tMPI_Comm_destroy(tMPI_Comm comm)
+{
+
+    free(comm->grp.peers);
+#ifndef TMPI_NO_BUSY_WAIT
+    free(comm->multicast_barrier);
+#else
+    {
+        int i;
+        for(i=0;i<comm->Nbarriers;i++)
+            tMPI_Thread_barrier_destroy(&(comm->multicast_barrier[i]));
+        free(comm->multicast_barrier);
+    }
+#endif
+    tMPI_Coll_env_destroy( comm->cev );
+    tMPI_Coll_sync_destroy( comm->csync );
+
+    tMPI_Thread_mutex_destroy( &(comm->comm_create_lock) );
+    tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
+    tMPI_Thread_cond_destroy( &(comm->comm_create_finish) );
+
+    free((void*)comm->sendbuf);
+    free((void*)comm->recvbuf);
+    if ( comm->cart )
+    {
+        free(comm->cart->dims);
+        free(comm->cart->periods);
+        free(comm->cart);
+    }
+
+    if (comm->next)
+        comm->next->prev=comm->prev;
+    if (comm->prev)
+        comm->prev->next=comm->next;
+
+    free(comm);
+}
+
 int tMPI_Comm_free(tMPI_Comm *comm)
 {
-#ifndef TtMPI_STRICT
     int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_free(%p)", comm);
+#endif
+#ifndef TMPI_STRICT
     if (! *comm)
         return TMPI_SUCCESS;
 
@@ -288,20 +242,9 @@ int tMPI_Comm_free(tMPI_Comm *comm)
     else
     {
         /* we're the last one so we can safely destroy it */
-        free((*comm)->grp.peers);
-        free((*comm)->multicast_barrier);
-        free((void*)(*comm)->sendbuf);
-        free((void*)(*comm)->recvbuf);
-        if ( (*comm)->cart)
-        {
-            free((*comm)->cart->dims);
-            free((*comm)->cart->periods);
-            free((*comm)->cart);
-        }
-        free(*comm);
+        tMPI_Comm_destroy(*comm);
     }
 #else
-    int myrank=tMPI_Comm_seek_rank(*comm, tMPI_Get_current());
     /* This is correct if programs actually treat Comm_free as a 
        collective call */
     /* we need to barrier because the comm is a shared structure and
@@ -312,17 +255,7 @@ int tMPI_Comm_free(tMPI_Comm *comm)
        one process (rank[0] in this case) should do anything */
     if (myrank==0)
     {
-        free((*comm)->grp.peers);
-        free((*comm)->multicast_barrier);
-        free((*comm)->sendbuf);
-        free((*comm)->recvbuf);
-        if ( (*comm)->cart)
-        {
-            free((*comm)->cart->dims);
-            free((*comm)->cart->periods);
-            free((*comm)->cart);
-        }
-        free(*comm);
+        tMPI_Comm_destroy(*comm);
     }
 #endif
     return TMPI_SUCCESS;
@@ -330,6 +263,9 @@ int tMPI_Comm_free(tMPI_Comm *comm)
 
 int tMPI_Comm_dup(tMPI_Comm comm, tMPI_Comm *newcomm)
 {
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_dup(%p, %p)", comm, newcomm);
+#endif
     /* we just call Comm_split because it already contains all the
        neccesary synchronization constructs. */
     return tMPI_Comm_split(comm, 0, tMPI_Comm_seek_rank(comm, 
@@ -341,6 +277,10 @@ int tMPI_Comm_create(tMPI_Comm comm, tMPI_Group group, tMPI_Comm *newcomm)
 {
     int color=TMPI_UNDEFINED;
     int key=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_create(%p, %p, %p)", comm, group, newcomm);
+#endif
     if (tMPI_In_group(group))
     {
         color=1;
@@ -411,6 +351,10 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
     struct tmpi_split *spl;
 
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Comm_split(%p, %d, %d, %p)", comm, color, key, 
+                       newcomm);
+#endif
     if (!comm)
     {
         *newcomm=NULL;
@@ -421,6 +365,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     /* first get the colors */
     if (!comm->new_comm)
     {
+        /* i am apparently  first */
         comm->split=(struct tmpi_split*)tMPI_Malloc(sizeof(struct tmpi_split));
         comm->new_comm=(tMPI_Comm*)tMPI_Malloc(N*sizeof(tMPI_Comm));
         if (N<=MAX_PREALLOC_THREADS)
@@ -454,8 +399,8 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
            finished */
         while(! spl->can_finish )
         {
-            tMPI_Thread_cond_wait( &(comm->comm_create_finish) ,
-                                   &(comm->comm_create_lock) );
+            tMPI_Thread_cond_wait(&(comm->comm_create_finish) ,
+                                  &(comm->comm_create_lock) );
         }
     }
     else
@@ -473,7 +418,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
         /*if (N>1)*/
         while(spl->Ncol_init > 0)
         {
-            tMPI_Thread_cond_wait( &(comm->comm_create_prep), 
+            tMPI_Thread_cond_wait(&(comm->comm_create_prep), 
                                   &(comm->comm_create_lock));
         }
 
@@ -585,239 +530,4 @@ int tMPI_Comm_seek_rank(tMPI_Comm comm, struct tmpi_thread *th)
 }
 
 
-
-/* topology functions */
-int tMPI_Topo_test(tMPI_Comm comm, int *status)
-{
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-
-    if (comm->cart)
-        *status=TMPI_CART;
-    /*else if (comm->graph)
-        status=MPI_GRAPH;*/
-    else 
-        *status=TMPI_UNDEFINED;
-
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims)
-{
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-    {
-        return TMPI_SUCCESS;
-    }
-    *ndims=comm->cart->ndims;
-    return TMPI_SUCCESS;
-}
-
-
-int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
-                 int *coords)
-{
-    int i;
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-        return TMPI_SUCCESS;
-
-    tMPI_Cart_coords(comm, myrank, maxdims, coords);
-
-    for(i=0;i<comm->cart->ndims;i++)
-    {
-        if (i>=maxdims)
-        {
-            return tMPI_Error(comm, TMPI_ERR_DIMS);
-        }
-        dims[i]=comm->cart->dims[i];
-        periods[i]=comm->cart->periods[i];
-    }
-
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
-{
-    int i,mul=1,ret=0;
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-        return TMPI_SUCCESS;
-
-    /* because of row-major ordering, we count the dimensions down */
-    for(i=comm->cart->ndims-1;i>=0;i--)
-    {
-        int rcoord=coords[i];
-        if (comm->cart->periods[i])
-        {
-            /* apply periodic boundary conditions */
-            rcoord = rcoord % comm->cart->dims[i];
-            if (rcoord < 0)
-                rcoord += comm->cart->dims[i];
-        }
-        else
-        {
-            if (rcoord < 0 || rcoord >= comm->cart->dims[i])
-            {
-                return tMPI_Error(comm, TMPI_ERR_DIMS);
-            }
-        }
-        ret += mul*rcoord;
-        mul *= comm->cart->dims[i];
-    }
-    *rank=ret;
-    return TMPI_SUCCESS;
-}
-
-int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords)
-{
-    int i;
-    int rank_left=rank;
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!comm->cart || comm->cart->ndims==0)
-        return TMPI_SUCCESS;
-    if (maxdims < comm->cart->ndims)
-    {
-        return tMPI_Error(comm, TMPI_ERR_DIMS);
-    }
-
-    /* again, row-major ordering */
-    for(i=comm->cart->ndims-1;i>=0;i--)
-    {
-        coords[i]=rank_left%comm->cart->dims[i];
-        rank_left /= comm->cart->dims[i];
-    }   
-
-    return 0;
-}
-
-
-
-int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods, 
-                 int *newrank)
-{
-    /* this function doesn't actually do anything beyond returning the current 
-       rank (or TMPI_UNDEFINED if it doesn't fit in the new topology */
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
-    int Ntot=1;
-    int i;
-
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    if (!periods)
-    {
-        return tMPI_Error(comm, TMPI_ERR_DIMS);
-    }
- 
-    /* calculate the total number of procs in cartesian comm */
-    for(i=0;i<ndims;i++)
-    {
-        Ntot *= dims[i];
-    }
-
-    if (myrank >= Ntot)
-    {
-        *newrank=TMPI_UNDEFINED;
-    }
-    else
-    {
-        *newrank=myrank;
-    }
-
-    return TMPI_SUCCESS;
-}
-
-
-
-int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
-                    int reorder, tMPI_Comm *comm_cart)
-{
-    int myrank=tMPI_Comm_seek_rank(comm_old, tMPI_Get_current());
-    int key=myrank;
-    int newrank=-1;
-    int color=0;
-    int Ntot=1;
-    int i;
-    
-
-    if (!comm_old)
-    {
-        return tMPI_Error(comm_old, TMPI_ERR_COMM);
-    }
-    /* calculate the total number of procs in cartesian comm */
-    for(i=0;i<ndims;i++)
-    {
-        Ntot *= dims[i];
-    }
-    /* refuse to create if there's not enough procs */
-    if (comm_old->grp.N < Ntot)
-    {
-        *comm_cart=TMPI_COMM_NULL;
-#if 1
-        return tMPI_Error(comm_old, TMPI_ERR_CART_CREATE_NPROCS);
-#endif
-    }
-
-    if (key >= Ntot)
-        key=TMPI_UNDEFINED;
-
-    if (reorder)
-    {
-        tMPI_Cart_map(comm_old, ndims, dims, periods, &key);
-    }
-
-    if (key==TMPI_UNDEFINED)
-    {
-        color=TMPI_UNDEFINED;
-    }
-
-    tMPI_Comm_split(comm_old, color, key, comm_cart);
-
-    if (*comm_cart)
-    {
-        tMPI_Comm_rank(*comm_cart, &newrank);
-    }
-
-    if (newrank==0)
-    {
-        (*comm_cart)->cart=(struct cart_topol*)tMPI_Malloc(
-                                            sizeof(struct cart_topol));
-        (*comm_cart)->cart->dims=(int*)tMPI_Malloc(ndims*sizeof(int));
-        (*comm_cart)->cart->periods=(int*)tMPI_Malloc(ndims*sizeof(int));
-        (*comm_cart)->cart->ndims=ndims;
-        for(i=0;i<ndims;i++)
-        {
-            (*comm_cart)->cart->dims[i]=dims[i];
-            (*comm_cart)->cart->periods[i]=periods[i];
-        }
-    }
-
-    /* and we add a barrier to make sure the cart object is seen by 
-       every thread that is part of the new communicator */
-    if (*comm_cart)
-    {
-        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-    }
-
-
-    return TMPI_SUCCESS;
-}
 

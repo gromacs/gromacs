@@ -718,7 +718,7 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index
  * to evaluate any parameter values.
  * If this is the first time this expression is evaluated for
  * the frame, sel_framefunc() callback is called if one is provided.
- * The modifier is then evaluated using sel_updatefunc().
+ * The modifier is then evaluated using sel_updatefunc_pos().
  *
  * This function is used as \c t_selelem::evaluate for \ref SEL_MODIFIER
  * elements.

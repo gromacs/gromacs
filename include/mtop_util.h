@@ -39,6 +39,14 @@
 #include "typedefs.h"
 
 
+/* Should be called after generating or reading mtop,
+ * to set some compute intesive variables to avoid
+ * N^2 operations later on.
+ */
+extern void
+gmx_mtop_finalize(gmx_mtop_t *mtop);
+
+
 /* Returns the total number of charge groups in mtop */
 extern int
 ncg_mtop(const gmx_mtop_t *mtop);
@@ -201,6 +209,14 @@ gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
 /* Returns a single t_atoms struct for the whole system */ 
 extern t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
+
+
+/* Make all charge groups the size of one atom.
+ * When bKeepSingleMolCG==TRUE keep charge groups for molecules
+ * that consist of a single charge group.
+ */
+extern void
+gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,bool bKeepSingleMolCG);
 
 
 /* Generate a 'local' topology for the whole system.

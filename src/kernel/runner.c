@@ -237,7 +237,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
     /* Some timing stats */  
     if (MASTER(cr)) {
-      print_time(stderr,start_t,parm->ir.nsteps,&parm->ir);
+      print_time(stderr,start_t,parm->ir.nsteps,&parm->ir,cr);
       realtime=difftime(time(NULL),start_t);
       if ((cputime=cpu_time()) == 0)
 	cputime=realtime;

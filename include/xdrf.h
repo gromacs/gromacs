@@ -90,6 +90,9 @@ extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
+float 
+xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+
 int 
 xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 

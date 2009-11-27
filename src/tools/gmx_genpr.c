@@ -79,6 +79,7 @@ int gmx_genpr(int argc,char *argv[])
   static real    disre_up2  = 1.0;
   static bool    bDisre=FALSE;
   static bool    bConstr=FALSE;
+  static real    cutoff = -1.0;
 	
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, {fc}, 
@@ -93,6 +94,8 @@ int gmx_genpr(int argc,char *argv[])
       "Fraction of distance to be used as interval rather than a fixed distance. If the fraction of the distance that you specify here is less than the distance given in the previous option, that one is used instead." },
     { "-disre_up2", FALSE, etREAL, {&disre_up2},
       "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" },
+    { "-cutoff", FALSE, etREAL, {&cutoff},
+      "Only generate distance restraints for atoms pairs within cutoff (nm)" },
     { "-constr", FALSE, etBOOL, {&bConstr},
       "Generate a constraint matrix rather than distance restraints" }
   };
@@ -184,15 +187,18 @@ int gmx_genpr(int argc,char *argv[])
 	if (bConstr) 
 	  fprintf(out,"%5d %5d %1d %10g\n",ind_grp[i]+1,ind_grp[j]+1,1,d);
 	else {
-	  if (disre_frac > 0) 
-	    dd = min(disre_dist,disre_frac*d);
-	  else 
-	    dd = disre_dist;
-	  lo = max(0,d-dd);
-	  hi = d+dd;
-	  fprintf(out,"%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
+	  if (cutoff < 0 || d < cutoff)
+	  {
+	    if (disre_frac > 0) 
+	      dd = min(disre_dist,disre_frac*d);
+	    else 
+	      dd = disre_dist;
+	    lo = max(0,d-dd);
+	    hi = d+dd;
+	    fprintf(out,"%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
 		  ind_grp[i]+1,ind_grp[j]+1,1,k,1,
 		  lo,hi,hi+1,1.0);
+		}
 	}
       }
     fclose(out);

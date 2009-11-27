@@ -56,6 +56,19 @@
 #define PATH_SEPARATOR ":"
 #endif
 
+
+/* Now get the maximum path size. */
+#ifdef PATH_MAX
+#define GMX_PATH_MAX PATH_MAX
+#else
+#ifdef MAX_PATH
+#define GMX_PATH_MAX MAX_PATH
+#else
+#define GMX_PATH_MAX 4096
+#endif
+#endif
+
+
 #ifdef __cplusplus
 extern "C" { 
 #endif

@@ -40,17 +40,15 @@
  */
 struct gmx_fft
 {
-    int                    ndim;     /**< Dimensions, including our subdimensions.  */
-    int                    n;        /**< Number of points in this dimension.       */
-    int                    ifac[15]; /**< 15 bytes needed for cfft and rfft         */
-    struct gmx_fft *       next;     /**< Pointer to next dimension, or NULL.       */
-    real *                 work;     /**< 1st 4n reserved for cfft, 1st 2n for rfft */
+    int            ndim;     /**< Dimensions, including our subdimensions.  */
+    int            n;        /**< Number of points in this dimension.       */
+    int            ifac[15]; /**< 15 bytes needed for cfft and rfft         */
+    struct gmx_fft *next;    /**< Pointer to next dimension, or NULL.       */
+    real *         work;     /**< 1st 4n reserved for cfft, 1st 2n for rfft */
 };
 
 #include <math.h>
 #include <stdio.h>
-
-
 
 
 
@@ -1819,7 +1817,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                flags)
 {
     gmx_fft_t    fft;
-    
+   
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid FFT opaque type pointer.");

@@ -228,9 +228,9 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n
 extern bool
 gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name);
 
-/** Writes out the contents of index groups. */
+/** Writes out a list of index groups. */
 extern void
-gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g);
+gmx_ana_indexgrps_print(gmx_ana_indexgrps_t *g, int maxn);
 /*@}*/
 
 /*! \name Functions for handling gmx_ana_index_t
@@ -261,7 +261,7 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 
 /** Writes out the contents of a index group. */
 extern void
-gmx_ana_index_dump(gmx_ana_index_t *g, int i);
+gmx_ana_index_dump(gmx_ana_index_t *g, int i, int maxn);
 
 /** Checks whether all indices are between 0 and \p natoms. */
 extern void
