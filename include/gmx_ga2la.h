@@ -40,6 +40,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     int  la;
     int  cell;
@@ -318,5 +322,9 @@ static bool ga2la_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 
     return FALSE;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _gmx_ga2la_h */

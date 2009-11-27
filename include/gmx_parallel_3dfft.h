@@ -37,6 +37,10 @@
 #include "tmpi.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct gmx_parallel_3dfft *
 gmx_parallel_3dfft_t;
 
@@ -155,6 +159,10 @@ int
 gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 
 #endif /* GMX_MPI */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _gmx_parallel_3dfft_h_ */
 

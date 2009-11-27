@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);
 
 extern t_matelmt searchcmap(int n,t_mapping map[],t_xpmelmt c);
@@ -131,5 +135,9 @@ extern real **mk_matrix(int nx, int ny, bool b1D);
 extern void done_matrix(int nx, real ***m);
 
 extern void clear_matrix(int nx, int ny, real **m);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _matio_h */

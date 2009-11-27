@@ -1,3 +1,4 @@
+
 /*
  * 
  *                This source code is part of
@@ -40,14 +41,14 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+  
 void 
 _where(const char *file,int line);
 #define where() _where(__FILE__,__LINE__)

@@ -320,8 +320,8 @@ void pr_def(FILE *fp, int ftp)
 {
     const t_deffile *df;
     const char *s = NULL;
-    char *flst, *tmp;
-    const char *ext, *desc;
+    char *flst, *tmp, *desc;
+    const char *ext;
     const char *defnm;
 
     df = &(deffile[ftp]);
@@ -329,10 +329,11 @@ void pr_def(FILE *fp, int ftp)
     /* find default file extension and \tt-ify description */
     /* FIXME: The constness should not be cast away */
     flst = (char *) "";
+    desc = strdup(df->descr);
+
     if (df->ntps)
     {
         ext = deffile[df->tps[0]].ext;
-        desc = strdup(df->descr);
         tmp = strstr(desc, ": ") + 1;
         if (tmp)
         {
@@ -346,7 +347,6 @@ void pr_def(FILE *fp, int ftp)
     else
     {
         ext = df->ext;
-        desc = df->descr;
     }
     /* now skip dot */
     if (ext[0])
@@ -375,6 +375,7 @@ void pr_def(FILE *fp, int ftp)
     fprintf(fp,"\\tt %8s & \\tt %3s & %3s & \\tt %2s & %s%s \\\\[-0.1ex]\n",
         defnm, ext, s, df->defopt ? df->defopt : "",
         check_tex(desc),check_tex(flst));
+    free(desc);
 }
 
 void pr_fns(FILE *fp, int nf, const t_filenm tfn[])

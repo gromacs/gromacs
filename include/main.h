@@ -44,6 +44,10 @@
 #include <stdio.h>
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern bool gmx_parallel_env_initialized(void); 
 /* 1 when running in a parallel environment, so could also be 1 if
    mdrun was started with: mpirun -np 1.
@@ -94,5 +98,9 @@ extern t_commrec *init_par_threads(t_commrec *cro);
 
 extern t_commrec *init_cr_nopar(void);
 /* Returns t_commrec for non-parallel functionality */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _main_h */

@@ -38,7 +38,9 @@
 #endif
 
 
-
+#ifdef __cplusplus
+}
+#endif
 
 /*! \file
  * \brief Selected routines from ARPACK
@@ -319,6 +321,9 @@ F77_FUNC(sseupd,SSEUPD)(int *     rvec,
                         int *     lworkl, 
                         int *     info);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

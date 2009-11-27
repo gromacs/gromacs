@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
  * When reading the PATH environment variable, Unix separates entries
@@ -68,10 +72,6 @@
 #endif
 #endif
 
-
-#ifdef __cplusplus
-extern "C" { 
-#endif
   
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */

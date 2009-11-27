@@ -46,6 +46,10 @@
 #include "enxio.h"
 #include "types/state.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   t_ebin *ebin;
   int    ie,iconrmsd,ib,ivol,idens,ipv;
@@ -113,6 +117,10 @@ update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
 
 extern void
 restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _mdebin_h */
 
