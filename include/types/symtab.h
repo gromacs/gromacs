@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct symbuf {
   int bufsize;
   char **buf;
@@ -47,4 +51,8 @@ typedef struct
   int      nr;
   t_symbuf *symbuf;
 } t_symtab;
+
+#ifdef __cplusplus
+}
+#endif
 

@@ -43,6 +43,10 @@
 
 #include "molfile_plugin.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct 
 {
     molfile_plugin_t *api;
@@ -88,3 +92,8 @@ typedef struct
   int  ePBC;      /* the type of pbc                  */
   t_gmxvmdplugin vmdplugin;
 } t_trxframe;
+
+#ifdef __cplusplus
+}
+#endif
+

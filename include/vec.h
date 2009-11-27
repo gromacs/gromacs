@@ -128,6 +128,10 @@
 #include "mpelogging.h"
 #include "physics.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
 #define EXP_SHIFT       23
@@ -825,5 +829,10 @@ static void matrix_convert(matrix box, rvec vec, rvec angle)
 
 #define divide(a,b) _divide((a),(b),__FILE__,__LINE__)
 #define mod(a,b)    _mod((a),(b),__FILE__,__LINE__)
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _vec_h */

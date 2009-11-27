@@ -45,6 +45,11 @@
 
 #include "idef.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define DD_MAXZONE  8
 #define DD_MAXIZONE 4
 
@@ -305,3 +310,8 @@ typedef struct {
 
 /* The master of all (the node that prints the remaining run time etc.) */
 #define MULTIMASTER(cr)    (SIMMASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
+
+#ifdef __cplusplus
+}
+#endif
+

@@ -48,6 +48,11 @@
 
 #include <math.h>
 
+/* we do it anyway. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef M_PI
 #ifdef _PI
 #define M_PI _PI
@@ -134,6 +139,11 @@
 
 #define unit_density_SI unit_mass_SI "/" unit_length_SI "^3"
 #define unit_invvisc_SI unit_length_SI " " unit_time_SI "/" unit_mass_SI
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _physics_h */
 

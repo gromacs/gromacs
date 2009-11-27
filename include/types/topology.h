@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
   egcTC,    egcENER,   egcACC, egcFREEZE, 
   egcUser1, egcUser2,  egcVCM, egcXTC,
@@ -112,3 +116,8 @@ typedef struct {
   t_blocka      excls;          /* The exclusions                       */
   t_symtab	symtab;		/* The symbol table			*/
 } t_topology;
+
+#ifdef __cplusplus
+}
+#endif
+

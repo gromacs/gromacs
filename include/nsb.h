@@ -40,6 +40,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern t_nsborder *calc_nsb(FILE *fp,t_block *cgs,int nprocs,int nodeid,
 			    int *multinr);
 /* Calculate which blocks of charge groups should be calculated,
@@ -58,5 +62,9 @@ extern void print_nsb(FILE *fp,char *title,int nnodes,t_nsborder *nsb);
 
 /*extern int  cg_index(int icg,t_nsborder *nsb);*/
 /* Perform a modulo calculation giving the correct cg index */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

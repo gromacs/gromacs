@@ -18,6 +18,16 @@
 
 #ifndef VMDIO_H_
 #define VMDIO_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
 int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags);
 bool read_next_vmd_frame(int status,t_trxframe *fr);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* VMDIO_H_ */

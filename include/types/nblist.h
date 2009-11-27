@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Neighborlist type */
 enum {
   enlistATOM_ATOM,
@@ -92,3 +96,8 @@ typedef struct
  *
  * Clear?
  */
+
+#ifdef __cplusplus
+}
+#endif
+
