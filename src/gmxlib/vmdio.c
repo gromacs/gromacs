@@ -216,7 +216,11 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 
     fr->vmdplugin.api = NULL;
     fr->vmdplugin.filetype = strrchr(fn,'.')+1;
-
+    if (fr->vmdplugin.filetype == NULL+1)
+    {
+        return 0;
+    }
+    
     pathenv = getenv("VMD_PLUGIN_PATH");
     if (pathenv==NULL) 
     {
@@ -278,6 +282,8 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
         return 0;
     }
 
+    printf("\nUsing VMD plugin: %s (%s)\n",fr->vmdplugin.api->name,fr->vmdplugin.api->prettyname);
+
     fr->vmdplugin.handle = fr->vmdplugin.api->open_file_read(fn, fr->vmdplugin.filetype, &fr->natoms);
 
     if (!fr->vmdplugin.handle) {
@@ -291,8 +297,7 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
             "Or format does not record number of atoms.\n", fn );
         return 0;
     }
-
-
+    
     snew(fr->x,fr->natoms);
 
     fr->vmdplugin.bV = 0;
