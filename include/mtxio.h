@@ -47,6 +47,10 @@
 #include "types/simple.h"
 #include "sparsematrix.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Write a full or sparse matrix to a file.
  *
  * You should provide the filename, dimensions (nrow/ncol), and
@@ -78,6 +82,10 @@ gmx_mtxio_read (const char *            filename,
                 int *                   ncol,
                 real **                 full_matrix,
                 gmx_sparsematrix_t **   sparse_matrix);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

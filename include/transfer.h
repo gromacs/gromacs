@@ -40,10 +40,17 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void linkio_write(int linkno,int nbytes);
 extern void linkio_read(int linkno,int nbytes);
 extern void linkio_put(int linkno,void *buf,int bufsize);
 extern void linkio_get(int linkno,void *buf,int bufsize);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _transfer_h */

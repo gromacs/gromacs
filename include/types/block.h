@@ -36,6 +36,11 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct {
   int nr;			/* The number of blocks			*/
   atom_id *index;		/* Array of indices (dim: nr+1) 	*/
@@ -55,3 +60,9 @@ typedef struct {
   int nalloc_index;             /* The allocation size for index        */
   int nalloc_a;                 /* The allocation size for a            */
 } t_blocka;
+
+
+#ifdef __cplusplus
+}
+#endif
+

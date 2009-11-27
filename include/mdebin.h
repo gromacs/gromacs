@@ -66,6 +66,7 @@ typedef struct {
   bool   bDynBox;
   int    f_nre;
   int    epc;
+  tensor ref_p;
   int	 etc;
   int    nCrmsd;
   bool   bEner[F_NRE];

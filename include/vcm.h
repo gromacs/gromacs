@@ -43,6 +43,11 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct {
   int    nr;                   /* Number of groups                    */
   int    mode;                 /* One of the enums above              */
@@ -69,5 +74,11 @@ extern void do_stopcm_grp(FILE *fp,int start,int homenr,
 			  rvec x[],rvec v[],t_vcm *vcm);
 
 extern void check_cm_grp(FILE *fp,t_vcm *vcm,t_inputrec *ir,real Temp_Max);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 			 
 #endif /* _vcm_h */

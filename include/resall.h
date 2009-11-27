@@ -41,6 +41,10 @@
 #include "gpp_atomtype.h"
 #include "grompp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern t_restp *search_rtp(char *key,int nrtp,t_restp rtp[]);
 /* Search for an entry in the rtp database */
 
@@ -57,5 +61,8 @@ extern void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
 			 gpp_atomtype_t atype, bool bAlldih, int nrexcl,
 			 bool HH14, bool remove_dih);
 /* write rtp database */
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _resall_h */

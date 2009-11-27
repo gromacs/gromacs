@@ -43,6 +43,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void renum_params(t_topology *top,int renum[]);
      /*
       * The atom id's in the parameters for the bonded forces will be 
@@ -60,5 +64,9 @@ extern void renumber_top(t_topology *top,rvec *x,rvec *v,rvec *f,int renum[]);
       * renum[i]=j specifies that atom i will be at postion j after 
       * renumber_top.
       */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _renum_h */

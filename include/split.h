@@ -56,6 +56,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {SPLIT_NONE,SPLIT_SORTX,SPLIT_REDUCE,SPLIT_NR} t_splitalg;
 
 typedef struct
@@ -144,6 +148,9 @@ extern void split_topology(t_splitalg algorithm,int nnodes,t_topology *top,
       * by creating a split descriptor and then putting a bonded force on the 
       * highest home node number of the paricles involved.
       */
-      
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _split_h */
