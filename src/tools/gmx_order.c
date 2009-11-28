@@ -487,7 +487,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 	  {
 		pbc_dx(&pbc,x1[a[index[i]+j]],com,direction);
 		unitv(direction,direction);
-		//DEBUG
+		/*DEBUG*/
 		/*if (j==0)
 			fprintf(stderr,"X %f %f %f\tcom %f %f %f\tdirection %f %f %f\n",x1[a[index[i]+j]][0],x1[a[index[i]+j]][1],x1[a[index[i]+j]][2],com[0],com[1],com[2],
 				direction[0],direction[1],direction[2]);*/
@@ -907,7 +907,7 @@ int gmx_order(int argc,char *argv[])
     
   if (permolecule)
   {
-	  nslices = index[1] - index[0];  //I think this assumes contiguous lipids in topology
+    nslices = index[1] - index[0];  /*I think this assumes contiguous lipids in topology*/
 	  fprintf(stderr,"Calculating Scd order parameters for each of %d molecules\n",nslices);
   }
   

@@ -297,7 +297,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     {
         /* Sum the kinetic energies of the groups & calc temp */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
-                                       bEkinAveVel,bIterate,bScaleEkin);
+                                       bEkinAveVel||bReadEkin,bIterate,bScaleEkin);
         /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
            an option, but not supported now.  Additionally, if we are doing iterations.  
            bCopyHalf: if TRUE, we simply copy the ekinh directly to ekin, multiplying be ekinscale_nhc.
