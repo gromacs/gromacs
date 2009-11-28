@@ -85,7 +85,11 @@ typedef struct
   int      ekin_n;
   tensor  *ekinh;
   tensor  *ekinf;
+  tensor  *ekinh_old;
   tensor   ekin_total;
+  double  *ekinscalef_nhc;
+  double  *ekinscaleh_nhc;
+  double  *vscale_nhc;
   real     dekindl;
   real     mvcos;
 } ekinstate_t;

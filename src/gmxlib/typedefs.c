@@ -409,11 +409,15 @@ void done_inputrec(t_inputrec *ir)
 
 static void init_ekinstate(ekinstate_t *eks)
 {
-  eks->ekin_n = 0;
-  eks->ekinh   = NULL;
-  eks->ekinf   = NULL;
-  eks->dekindl = 0;
-  eks->mvcos   = 0;
+  eks->ekin_n         = 0;
+  eks->ekinh          = NULL;
+  eks->ekinf          = NULL;
+  eks->ekinh_old      = NULL;
+  eks->ekinscalef_nhc = NULL;
+  eks->ekinscaleh_nhc = NULL;
+  eks->vscale_nhc     = NULL;
+  eks->dekindl        = 0;
+  eks->mvcos          = 0;
 }
 
 static void init_energyhistory(energyhistory_t *enh)

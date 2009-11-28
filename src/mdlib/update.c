@@ -957,6 +957,10 @@ void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
     ekinstate->ekin_n = ir->opts.ngtc;
     snew(ekinstate->ekinh,ekinstate->ekin_n);
     snew(ekinstate->ekinf,ekinstate->ekin_n);
+    snew(ekinstate->ekinh_old,ekinstate->ekin_n);
+    snew(ekinstate->ekinscalef_nhc,ekinstate->ekin_n);
+    snew(ekinstate->ekinscaleh_nhc,ekinstate->ekin_n);
+    snew(ekinstate->vscale_nhc,ekinstate->ekin_n);
     ekinstate->dekindl = 0;
     ekinstate->mvcos   = 0;
 }
@@ -969,6 +973,10 @@ void update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind)
   {
       copy_mat(ekind->tcstat[i].ekinh,ekinstate->ekinh[i]);
       copy_mat(ekind->tcstat[i].ekinf,ekinstate->ekinf[i]); 
+      copy_mat(ekind->tcstat[i].ekinh_old,ekinstate->ekinh_old[i]); 
+      ekinstate->ekinscalef_nhc[i] = ekind->tcstat[i].ekinscalef_nhc;
+      ekinstate->ekinscaleh_nhc[i] = ekind->tcstat[i].ekinscaleh_nhc;
+      ekinstate->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
   }
 
   copy_mat(ekind->ekin,ekinstate->ekin_total);
@@ -988,9 +996,14 @@ void restore_ekinstate_from_state(t_commrec *cr,
       {
           copy_mat(ekinstate->ekinh[i],ekind->tcstat[i].ekinh);
           copy_mat(ekinstate->ekinf[i],ekind->tcstat[i].ekinf);
+          copy_mat(ekinstate->ekinh_old[i],ekind->tcstat[i].ekinh_old);
+          ekind->tcstat[i].ekinscalef_nhc = ekinstate->ekinscalef_nhc[i];
+          ekind->tcstat[i].ekinscaleh_nhc = ekinstate->ekinscaleh_nhc[i];
+          ekind->tcstat[i].vscale_nhc = ekinstate->vscale_nhc[i];
       }
       
       copy_mat(ekinstate->ekin_total,ekind->ekin);
+
       ekind->dekindl = ekinstate->dekindl;
       ekind->cosacc.mvcos = ekinstate->mvcos;
       n = ekinstate->ekin_n;
@@ -1005,7 +1018,19 @@ void restore_ekinstate_from_state(t_commrec *cr,
                     ekind->tcstat[i].ekinh[0],cr);
           gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinf[0][0]),
                     ekind->tcstat[i].ekinf[0],cr);
+          gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinh_old[0][0]),
+                    ekind->tcstat[i].ekinh_old[0],cr);
+
+          gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc),
+                    &(ekind->tcstat[i].ekinscalef_nhc),cr);
+          gmx_bcast(sizeof(ekind->tcstat[i].ekinscaleh_nhc),
+                    &(ekind->tcstat[i].ekinscaleh_nhc),cr);
+          gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc),
+                    &(ekind->tcstat[i].vscale_nhc),cr);
       }
+      gmx_bcast(DIM*DIM*sizeof(ekind->ekin[0][0]),
+                ekind->ekin[0],cr);
+
       gmx_bcast(sizeof(ekind->dekindl),&ekind->dekindl,cr);
       gmx_bcast(sizeof(ekind->cosacc.mvcos),&ekind->cosacc.mvcos,cr);
   }

@@ -69,11 +69,11 @@ const char *est_names[estNR]=
     "orire_initf", "orire_Dtav",
 };
 
-enum { eeksEKIN_N, eeksEKINH, eeksEKINF, eeksEKINTOTAL, eeksDEKINDL, eeksMVCOS, eeksNR };
+enum { eeksEKIN_N, eeksEKINH, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksDEKINDL, eeksMVCOS, eeksNR };
 
 const char *eeks_names[eeksNR]=
 {
-    "Ekin_n", "Ekinh", "Ekinf", "EkinTotal", "dEkindlambda", "mv_cos"
+    "Ekin_n", "Ekinh", "Ekinf", "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC","Vscale_NHC","Ekin_Total", "dEkindlambda", "mv_cos"
 };
 
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
@@ -738,12 +738,16 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
             switch (i)
             {
                 
-			case eeksEKIN_N:    ret = do_cpte_int(xd,1,i,fflags,&ekins->ekin_n,list); break;
-			case eeksEKINH :    ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh,list); break;
-			case eeksEKINF:     ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinf,list); 
-            case eeksEKINTOTAL: ret = do_cpte_matrix(xd,1,i,fflags,ekins->ekin_total,list); break;
- 			case eeksDEKINDL :  ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
-            case eeksMVCOS:     ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
+			case eeksEKIN_N:     ret = do_cpte_int(xd,1,i,fflags,&ekins->ekin_n,list); break;
+			case eeksEKINH :     ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh,list); break;
+			case eeksEKINF:      ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinf,list); break;
+			case eeksEKINO:      ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh_old,list); break;
+            case eeksEKINTOTAL:  ret = do_cpte_matrix(xd,1,i,fflags,ekins->ekin_total,list); break;
+            case eeksEKINSCALEF: ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinscalef_nhc,list); break;
+            case eeksVSCALE:     ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->vscale_nhc,list); break;
+            case eeksEKINSCALEH: ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinscaleh_nhc,list); break;
+ 			case eeksDEKINDL :   ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
+            case eeksMVCOS:      ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
             default:
                 gmx_fatal(FARGS,"Unknown ekin data state entry %d\n"
                           "You are probably reading a new checkpoint file with old code",i);
@@ -977,8 +981,8 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
-            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | (1<<eeksEKINTOTAL) | (1<<eeksDEKINDL) |
-             (1<<eeksMVCOS));
+            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | (1<<eeksEKINO) | 
+             (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
     }
     else
     {
@@ -1333,9 +1337,9 @@ static void read_checkpoint(const char *fn,FILE *fplog,
     {
         cp_error();
     }
-    *bReadEkin = (flags_eks & (1<<eeksEKINH));
-    *bReadEkin = (flags_eks & (1<<eeksEKINF));
-
+    *bReadEkin = ((flags_eks & (1<<eeksEKINH)) || (flags_eks & (1<<eeksEKINF)) || (flags_eks & (1<<eeksEKINO)) ||
+                  (flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE)));
+    
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp),TRUE,
                           flags_enh,&state->enerhist,NULL);
     if (ret)
