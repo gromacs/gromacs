@@ -1452,7 +1452,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bIonize=FALSE;
     bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     bool        bAppend;
-    bool        bVV,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
+    bool        bVV,bIterate,bIterateFirstHalf,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
@@ -1498,7 +1498,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         snew(cbuf,top_global->natoms);
     }
     /* all the iteratative cases - only if there are constraints */ 
-    bIterate = ((IR_NPT_TROTTER(ir)) && (constr));
+    bIterate = ((IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
     bTrotter = (bVV && (IR_NPT_TROTTER(ir) || (IR_NVT_TROTTER(ir))));        
     
     if (bRerunMD)
@@ -2094,11 +2094,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
-            /* This may not be quite working correctly yet */
+            /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
-                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,(CGLO_RERUNMD & CGLO_GSTAT));
+                            top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                            (CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE) |
+                            (bEkinAveVel?CGLO_EKINAVEVEL:0));
         }
         clear_mat(force_vir);
         
@@ -2227,7 +2229,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
 
-        if (!bStartingFromCpt) {
+        if (!bStartingFromCpt && !bRerunMD) {
             if (bVVAveVel && bInitStep) {
                 /* if using velocity verlet with full time step Ekin, take the first half step only to compute the 
                    virial for the first step. From there, revert back to the initial coordinates
@@ -2245,24 +2247,24 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
             
-            bIterate = (IR_NPT_TROTTER(ir) && (constr) && (!bInitStep));
+            bIterateFirstHalf = bIterate && (!bInitStep);
             bFirstIterate = TRUE;
             /* for iterations, we save these vectors, as we will be self-consistently iterating
                the calculations */
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
-            if (bIterate) { 
+            if (bIterateFirstHalf) { 
                 copy_coupling_state(state,bufstate,ekind,ekind_save);
             }
             
-            while (bIterate || bFirstIterate) 
+            while (bIterateFirstHalf || bFirstIterate) 
             {
-                if (bIterate) 
+                if (bIterateFirstHalf) 
                 {
                     copy_coupling_state(bufstate,state,ekind_save,ekind);
                 }
-                if (bIterate) 
+                if (bIterateFirstHalf) 
                 {
                     if (bFirstIterate && bTrotter) 
                     {
@@ -2311,7 +2313,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_ENERGY) | 
-                                    ((bIterate | bInitStep | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
+                                    ((bIterateFirstHalf | bInitStep | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
                                     (((bEkinAveVel &&(!bInitStep)) || (!bEkinAveVel && IR_NPT_TROTTER(ir)))? (cglo_flags | CGLO_TEMPERATURE):0) | 
                                     ((bEkinAveVel || (!bEkinAveVel && IR_NPT_TROTTER(ir))) ? CGLO_EKINAVEVEL : 0) |
                                     (bIterate ? CGLO_ITERATE : 0) | 
@@ -2333,7 +2335,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2],bEkinAveVel);
                 }
                 
-                if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
+                if (done_iterating(cr,fplog,&bFirstIterate,&bIterateFirstHalf,state->veta,&vetanew,0)) break;
             }
             
             if (bTrotter && !bInitStep) {
@@ -2493,7 +2495,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bGStat    = TRUE;
         }
         
-        bIterate = (IR_NPT_TROTTER(ir) && (constr));
         bFirstIterate = TRUE;
         
         /* for iterations, we save these vectors, as we will be redoing the calculations */

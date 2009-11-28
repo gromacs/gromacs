@@ -74,33 +74,34 @@
 /* define a number of flags to better control the information passed to the compute_globals code in md.c */
 
 /* We are rerunning the simulation */
-#define CGLO_RERUNMD        (1<<0)
+#define CGLO_RERUNMD        (1<<1)
 /* we are computing the kinetic energy from average velocities */
-#define CGLO_EKINAVEVEL     (1<<1)
+#define CGLO_EKINAVEVEL     (1<<2)
 /* we are removing the center of mass momenta */
-#define CGLO_STOPCM         (1<<2)
+#define CGLO_STOPCM         (1<<3)
 /* bGStat is defined in do_md */
-#define CGLO_GSTAT          (1<<3)
+#define CGLO_GSTAT          (1<<4)
 /* bNEMD is defined in do_md */
-#define CGLO_NEMD           (1<<4)
+#define CGLO_NEMD           (1<<5)
 /* Sum the energy terms in global computation */
-#define CGLO_ENERGY         (1<<5)
+#define CGLO_ENERGY         (1<<6)
 /* Sum the kinetic energy terms in global computation */
-#define CGLO_TEMPERATURE    (1<<6)
+#define CGLO_TEMPERATURE    (1<<7)
 /* Sum the kinetic energy terms in global computation */
-#define CGLO_PRESSURE       (1<<7)
+#define CGLO_PRESSURE       (1<<8)
 /* Sum the constraint term in global computation */
-#define CGLO_CONSTRAINT     (1<<8)
+#define CGLO_CONSTRAINT     (1<<9)
 /* we are using an integrator that requires iteration over some steps - currently not used*/
-#define CGLO_ITERATE        (1<<9)
+#define CGLO_ITERATE        (1<<10)
 /* it is the first time we are iterating (or, only once through is required */
-#define CGLO_FIRSTITERATE   (1<<10)
+#define CGLO_FIRSTITERATE   (1<<11)
 /* Copy the ekinh directly into ekin */
-#define CGLO_COPYEKINH      (1<<11)
+#define CGLO_COPYEKINH      (1<<12)
 /* we are reading the Ekin from a file (such as rerunning) */
-#define CGLO_READEKIN       (1<<12)
+#define CGLO_READEKIN       (1<<13)
 /* we need to reset the ekin rescaling factor here */
-#define CGLO_SCALEEKIN      (1<<13)
+#define CGLO_SCALEEKIN      (1<<14)
+
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
