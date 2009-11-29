@@ -184,12 +184,12 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 {
     
     int i;
-    real prescorr,enercorr,dvdlcorr;
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
     bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, 
          bFirstIterate, bCopyEkinh, bReadEkin,bScaleEkin;
     static real ekin,temp;
+    static real prescorr,enercorr,dvdlcorr,vtemp;
     
     /* translate CGLO flags to booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -346,8 +346,11 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
          * Use the box from last timestep since we already called update().
          */
         
-        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
-                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+//        enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
+//                                        (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
+
+        *pcurr = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres,
+                           (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
         
         /* Calculate long range corrections to pressure and energy */
         /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 
@@ -355,12 +358,19 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
            total_vir and pres tesors */
         
         m_add(total_vir,corr_vir,total_vir);
+//        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
+        vtemp = calc_temp(trace(total_vir),ir->opts.nrdf[0]);        
         m_add(pres,corr_pres,pres);
-        enerd->term[F_PDISPCORR] = prescorr;
-        enerd->term[F_PRES] += prescorr;
-        *pcurr = enerd->term[F_PRES];
+//        enerd->term[F_PDISPCORR] = prescorr;
+//        enerd->term[F_PRES] += prescorr;
+//        *pcurr = enerd->term[F_PRES];
         /* calculate temperature using virial */
-        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
+//        enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
+    }
+    if (bEner) {
+        enerd->term[F_PRES] = *pcurr+prescorr;
+        enerd->term[F_PDISPCORR] = prescorr;
+        enerd->term[F_VTEMP] = vtemp;
     }
 }
 
