@@ -189,6 +189,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bool bEner,bPres,bTemp, bVV;
     bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, 
          bFirstIterate, bCopyEkinh, bReadEkin,bScaleEkin;
+    static real ekin,temp;
     
     /* translate CGLO flags to booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -244,7 +245,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         }
     }
 
-    if (bTemp || bPres | bEner) 
+    if (bTemp || bPres || bEner) 
     {
         if (!bGStat)
         {
@@ -296,8 +297,10 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     if (bTemp) 
     {
         /* Sum the kinetic energies of the groups & calc temp */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
-                                       bEkinAveVel||bReadEkin,bIterate,bScaleEkin);
+//        enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
+//                                       bEkinAveVel||bReadEkin,bIterate,bScaleEkin);
+        temp = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),                                         
+                        bEkinAveVel||bReadEkin,bIterate,bScaleEkin);
         /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
            an option, but not supported now.  Additionally, if we are doing iterations.  
            bCopyHalf: if TRUE, we simply copy the ekinh directly to ekin, multiplying be ekinscale_nhc.
@@ -306,9 +309,14 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.  
            If FALSE, we go ahead and erase.
         */
+        //enerd->term[F_EKIN] = trace(ekind->ekin);
+        ekin = trace(ekind->ekin);
+    }
+    if (bEner)
+    {
+        enerd->term[F_TEMP] = temp;
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
-    
     /* ##########  Long range energy information ###### */
     
     if (bEner || bPres) 
