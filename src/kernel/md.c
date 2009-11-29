@@ -187,7 +187,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
     bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, 
-         bFirstIterate, bCopyEkinh, bReadEkin,bScaleEkin;
+         bFirstIterate, bFirstCall, bReadEkin,bScaleEkin;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
     
     /* translate CGLO flags to booleans */
@@ -198,7 +198,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bNEMD = flags & CGLO_NEMD;
     bIterate = flags & CGLO_ITERATE;
     bFirstIterate = flags & CGLO_FIRSTITERATE;
-    bCopyEkinh = flags & CGLO_COPYEKINH;
+    bFirstCall = flags & CGLO_FIRSTCALL;
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
     bPres  = flags & CGLO_PRESSURE;
@@ -260,7 +260,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,constr,vcm,NULL,NULL,terminate,top_global,state,
-                            *bSumEkinhOld,flags);
+                            *bSumEkinhOld,flags | (!bFirstCall?CGLO_CONSTRAINT:0));
                 GMX_MPE_LOG(ev_global_stat_finish);
             }
             
@@ -1734,7 +1734,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                    (CGLO_COPYEKINH |
+                    (CGLO_FIRSTCALL |
                      (bVV ? CGLO_PRESSURE:0) |
                      (CGLO_TEMPERATURE) |  
                      (bRerunMD ? CGLO_RERUNMD:0) | 

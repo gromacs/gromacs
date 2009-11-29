@@ -154,8 +154,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bVV           = (inputrec->eI==eiVV);
   bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
-  bPres     = flags & CGLO_PRESSURE; 
-  bConstrVir    = TRUE;
+  bPres         = flags & CGLO_PRESSURE; 
+  bConstrVir    = flags & CGLO_CONSTRAINT;
   bEkinAveVel   = flags & CGLO_EKINAVEVEL;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
 
@@ -406,7 +406,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           
           filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
 /* Small hack for temp only - not entirely clear if still needed?*/
-          enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+          //enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
       }
 
   }

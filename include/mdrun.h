@@ -95,8 +95,8 @@
 #define CGLO_ITERATE        (1<<10)
 /* it is the first time we are iterating (or, only once through is required */
 #define CGLO_FIRSTITERATE   (1<<11)
-/* Copy the ekinh directly into ekin */
-#define CGLO_COPYEKINH      (1<<12)
+/* First call of compute_globals */
+#define CGLO_FIRSTCALL      (1<<12)
 /* we are reading the Ekin from a file (such as rerunning) */
 #define CGLO_READEKIN       (1<<13)
 /* we need to reset the ekin rescaling factor here */
