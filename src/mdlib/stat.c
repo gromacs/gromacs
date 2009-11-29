@@ -95,6 +95,38 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
+static void filter_enerdterm(real *afrom,real *ato, bool bTemp, bool bPres, bool bEner) {
+    int i;
+
+  for (i=0;i<F_NRE;i++)
+  {
+      switch (i) {
+      case F_EKIN:
+      case F_TEMP:
+      case F_DKDL:
+          if (bTemp)
+          {
+              ato[i] = afrom[i];
+          }
+          break;
+      case F_PRES:    
+      case F_PDISPCORR:
+      case F_VTEMP:
+          if (bPres)
+          {
+              ato[i] = afrom[i];
+          }
+          break;
+      default:
+          if (bEner)
+          {
+              ato[i] = afrom[i];
+          }
+          break;
+      }
+  }
+}
+
 void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_commrec *cr,gmx_enerdata_t *enerd,
                  tensor fvir,tensor svir,rvec mu_tot,
@@ -113,38 +145,45 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    ibnsb=-1,ichkpt=-1,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
+  real   *copyenerd;
   int    j;
   real   *rmsd_data,rbnsb;
   double nb;
-  bool   bVV,bEkin,bEner,bForceVir,bConstrVir,bEkinAveVel,bFirstIterate;
+  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate;
 
   bVV           = (inputrec->eI==eiVV);
-  bEkin         = flags & CGLO_TEMPERATURE;
+  bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
-  bForceVir     = flags & CGLO_PRESSURE; 
+  bPres     = flags & CGLO_PRESSURE; 
   bConstrVir    = TRUE;
   bEkinAveVel   = flags & CGLO_EKINAVEVEL;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
 
+  snew(copyenerd,F_NRE);
   rb   = gs->rb;
   itc0 = gs->itc0;
   itc1 = gs->itc1;
   
+
   reset_bin(rb);
-  
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 
    */
+
+  /* First, we neeed to identify which enerd->term should be communicated.  Temperature and 
+     pressure terms should only be communicated when they need to be. */
+
+  filter_enerdterm(enerd->term,copyenerd,bTemp,bPres,bEner);
+  
   /* First, the data that needs to be communicated with velocity verlet every time
      This is just the constraint virial.*/
-  
   if (bConstrVir) {
       isv = add_binr(rb,DIM*DIM,svir[0]);
       where();
   }
   
 /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
-  if (bEkin || !bVV)
+  if (bTemp || !bVV)
   {
       if (ekind) 
       {
@@ -173,7 +212,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   }      
   where();
   
-  if ((bForceVir || !bVV) && bFirstIterate)
+  if ((bPres || !bVV) && bFirstIterate)
   {
       ifv = add_binr(rb,DIM*DIM,fvir[0]);
   }
@@ -184,7 +223,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       where();
       if (bFirstIterate) 
       {
-          ie  = add_binr(rb,F_NRE,enerd->term);
+          ie  = add_binr(rb,F_NRE,copyenerd);
       }
       where();
       if (constr) 
@@ -271,7 +310,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   }
 
   /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
-  if (bEkin || !bVV)
+  if (bTemp || !bVV)
   {
       if (ekind) 
       {
@@ -294,7 +333,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           where();
       }
   }
-  if ((bForceVir || !bVV) && bFirstIterate)
+  if ((bPres || !bVV) && bFirstIterate)
   {
       extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   }
@@ -303,7 +342,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   {
       if (bFirstIterate) 
       {
-          extract_binr(rb,ie  ,F_NRE,enerd->term);
+          extract_binr(rb,ie  ,F_NRE,copyenerd);
           if (rmsd_data) 
           {
               extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
@@ -365,10 +404,13 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           extract_binr(rb,iterminate,1,terminate);
           where();
           
-/* Small hack for temp only - not entirely clear if still needed*/
+          filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
+/* Small hack for temp only - not entirely clear if still needed?*/
           enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
       }
+
   }
+  sfree(copyenerd);
 }
 
 int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep)

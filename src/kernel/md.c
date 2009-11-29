@@ -188,8 +188,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bool bEner,bPres,bTemp, bVV;
     bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, 
          bFirstIterate, bCopyEkinh, bReadEkin,bScaleEkin;
-    static real ekin,temp;
-    static real prescorr,enercorr,dvdlcorr,vtemp;
+    real ekin,temp,prescorr,enercorr,dvdlcorr;
     
     /* translate CGLO flags to booleans */
     bRerunMD = flags & CGLO_RERUNMD;
