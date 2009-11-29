@@ -1451,7 +1451,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bIonize=FALSE;
     bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     bool        bAppend;
-    bool        bVV,bIterate,bIterateFirstHalf,bFirstIterate,bTemp,bPres,bTrotter;
+    bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
     atom_id     *grpindex=NULL;
@@ -1497,7 +1497,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         snew(cbuf,top_global->natoms);
     }
     /* all the iteratative cases - only if there are constraints */ 
-    bIterate = ((IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
+    bIterations = ((IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
     bTrotter = (bVV && (IR_NPT_TROTTER(ir) || (IR_NVT_TROTTER(ir))));        
     
     if (bRerunMD)
@@ -1753,7 +1753,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     temp0 = enerd->term[F_TEMP];
     
     /* Initiate data for the special cases */
-    if (bIterate) 
+    if (bIterations) 
     {
         bufstate = init_bufstate(state->natoms,(ir->opts.ngtc+1)*NNHCHAIN); /* extra state for barostat */
     }
@@ -2246,24 +2246,24 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
             
-            bIterateFirstHalf = bIterate && (!bInitStep);
+            bIterate = bIterations && (!bInitStep);
             bFirstIterate = TRUE;
             /* for iterations, we save these vectors, as we will be self-consistently iterating
                the calculations */
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
-            if (bIterateFirstHalf) { 
+            if (bIterate) { 
                 copy_coupling_state(state,bufstate,ekind,ekind_save);
             }
             
-            while (bIterateFirstHalf || bFirstIterate) 
+            while (bIterate || bFirstIterate) 
             {
-                if (bIterateFirstHalf) 
+                if (bIterate) 
                 {
                     copy_coupling_state(bufstate,state,ekind_save,ekind);
                 }
-                if (bIterateFirstHalf) 
+                if (bIterate) 
                 {
                     if (bFirstIterate && bTrotter) 
                     {
@@ -2312,7 +2312,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_ENERGY) | 
-                                    ((bIterateFirstHalf | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
+                                    ((bIterations | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
                                     (((bEkinAveVel &&(!bInitStep)) || (!bEkinAveVel && IR_NPT_TROTTER(ir)))? (cglo_flags | CGLO_TEMPERATURE):0) | 
                                     ((bEkinAveVel || (!bEkinAveVel && IR_NPT_TROTTER(ir))) ? CGLO_EKINAVEVEL : 0) |
                                     (bIterate ? CGLO_ITERATE : 0) | 
@@ -2334,7 +2334,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2],bEkinAveVel);
                 }
                 
-                if (done_iterating(cr,fplog,&bFirstIterate,&bIterateFirstHalf,state->veta,&vetanew,0)) break;
+                if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
             }
             
             if (bTrotter && !bInitStep) {
@@ -2494,6 +2494,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bGStat    = TRUE;
         }
         
+        bIterate = bIterations;
         bFirstIterate = TRUE;
         
         /* for iterations, we save these vectors, as we will be redoing the calculations */
