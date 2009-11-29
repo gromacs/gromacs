@@ -186,7 +186,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     int i;
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
-    bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bFirstHalf, bIterate, 
+    bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bIterate, 
          bFirstIterate, bFirstCall, bReadEkin,bScaleEkin;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
     
@@ -284,7 +284,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     if (bEner) {
         /* Do center of mass motion removal */
-        if (bStopCM && !bRerunMD && !bFirstHalf) /* fix this! */
+        if (bStopCM && !bRerunMD) /* fix this! */
         {
             check_cm_grp(fplog,vcm,ir,1);
             do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
@@ -2312,7 +2312,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_ENERGY) | 
-                                    ((bIterateFirstHalf | bInitStep | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
+                                    ((bIterateFirstHalf | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
                                     (((bEkinAveVel &&(!bInitStep)) || (!bEkinAveVel && IR_NPT_TROTTER(ir)))? (cglo_flags | CGLO_TEMPERATURE):0) | 
                                     ((bEkinAveVel || (!bEkinAveVel && IR_NPT_TROTTER(ir))) ? CGLO_EKINAVEVEL : 0) |
                                     (bIterate ? CGLO_ITERATE : 0) | 
@@ -2561,7 +2561,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                               ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
 
                 /* above, initialize just copies ekinh into ekin, it doesn't copy 
-                   /* position (for VV), and entire integrator for MD */
+                   position (for VV), and entire integrator for MD */
                 
                 if (bVVAveEkin) 
                 {
@@ -2594,11 +2594,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* are the small terms in the shake_vir here due
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure. */ 
-                       update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
-                                          &top->idef,tmp_vir,force_vir,
-                                          cr,nrnb,wcycle,upd,constr,
-                                          bInitStep,FALSE,bCalcPres,state->veta);  
-                       m_add(shake_vir,tmp_vir,shake_vir);
+                    update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
+                                       &top->idef,tmp_vir,force_vir,
+                                       cr,nrnb,wcycle,upd,constr,
+                                       bInitStep,FALSE,bCalcPres,state->veta);  
+                    m_add(shake_vir,tmp_vir,shake_vir);
                 }
                 
                 if (!bOK && !bFFscan) 
