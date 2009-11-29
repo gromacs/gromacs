@@ -284,7 +284,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     if (bEner) {
         /* Do center of mass motion removal */
-        if (bStopCM && !bRerunMD) /* fix this! */
+        if (bStopCM && !bRerunMD) /* is this correct?  Does it get called too often with this logic? */
         {
             check_cm_grp(fplog,vcm,ir,1);
             do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
