@@ -44,7 +44,7 @@
 #include "statutil.h"
 #include "xdrf.h"
 #include "string2.h"
-
+#include "history.h"
 
 
 
@@ -324,19 +324,19 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     enum xdr_op lmode;
     int xdrid;
     char newtype[5];
-	
+
     if (init_done == 0) {
-	for (xdrid = 1; xdrid < MAXID; xdrid++) {
-	    xdridptr[xdrid] = NULL;
-	}
-	init_done = 1;
+        for (xdrid = 1; xdrid < MAXID; xdrid++) {
+            xdridptr[xdrid] = NULL;
+        }
+        init_done = 1;
     }
     xdrid = 1;
     while (xdrid < MAXID && xdridptr[xdrid] != NULL) {
-	xdrid++;
+        xdrid++;
     }
     if (xdrid == MAXID) {
-	return 0;
+        return 0;
     }
     if (*type == 'w' || *type == 'W')
     {
@@ -363,24 +363,26 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
         lmode = XDR_DECODE;
     }
     xdrfiles[xdrid] = fopen(filename, newtype);
-	
+
     if (xdrfiles[xdrid] == NULL) {
-	xdrs = NULL;
-	return 0;
+        xdrs = NULL;
+        return 0;
     }
-    
+
     /* next test isn't usefull in the case of C language
      * but is used for the Fortran interface
      * (C users are expected to pass the address of an already allocated
      * XDR staructure)
      */
     if (xdrs == NULL) {
-	xdridptr[xdrid] = (XDR *) malloc((size_t)sizeof(XDR));
-	xdrstdio_create(xdridptr[xdrid], xdrfiles[xdrid], lmode);
+        xdridptr[xdrid] = (XDR *) malloc((size_t)sizeof(XDR));
+        xdrstdio_create(xdridptr[xdrid], xdrfiles[xdrid], lmode);
     } else {
-	xdridptr[xdrid] = xdrs;
-	xdrstdio_create(xdrs, xdrfiles[xdrid], lmode);
+        xdridptr[xdrid] = xdrs;
+        xdrstdio_create(xdrs, xdrfiles[xdrid], lmode);
     }
+
+    histopenfile(xdrfiles[xdrid],filename, newtype);
     return xdrid;
 }
 
@@ -399,21 +401,23 @@ int xdrclose(XDR *xdrs) {
     int rc = 0;
 
     if (xdrs == NULL) {
-	fprintf(stderr, "xdrclose: passed a NULL pointer\n");
-	exit(1);
+        fprintf(stderr, "xdrclose: passed a NULL pointer\n");
+        exit(1);
     }
+
     for (xdrid = 1; xdrid < MAXID && rc==0; xdrid++) {
-	if (xdridptr[xdrid] == xdrs) {
-	    
-	    xdr_destroy(xdrs);
-	    rc = fclose(xdrfiles[xdrid]);
-	    xdridptr[xdrid] = NULL;
-	    return !rc; /* xdr routines return 0 when ok */
-	}
+        if (xdridptr[xdrid] == xdrs) {
+
+            xdr_destroy(xdrs);
+            histclosefile(&xdrfiles[xdrid]);
+            rc = fclose(xdrfiles[xdrid]);
+            xdridptr[xdrid] = NULL;
+            return !rc; /* xdr routines return 0 when ok */
+        }
     } 
     fprintf(stderr, "xdrclose: no such open xdr file\n");
     exit(1);
-    
+
     /* to make some compilers happy: */
     return 0;    
 }

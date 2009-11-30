@@ -55,6 +55,7 @@
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+#include "history.h"
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -133,21 +134,22 @@ static int pclose(FILE *fp)
 
 
 
-void ffclose(FILE *fp)
+int ffclose(FILE *fp)
 {
     t_pstack *ps,*tmp;
+    int rc=-1;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
-
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
+            rc=histclosefile(&fp);
             fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
-            pclose(fp);
+            rc=pclose(fp);
         pstack=pstack->prev;
         sfree(ps);
     }
@@ -156,19 +158,21 @@ void ffclose(FILE *fp)
             ps=ps->prev;
         if (ps->prev->fp == fp) {
             if (ps->prev->fp != NULL)
-                pclose(ps->prev->fp);
+                rc=pclose(ps->prev->fp);
             tmp=ps->prev;
             ps->prev=ps->prev->prev;
             sfree(tmp);
         }
         else {
             if (fp != NULL)
+                rc=histclosefile(&fp);
                 fclose(fp);
         }
     }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
+    return rc;
 }
 
 #ifdef rewind
@@ -414,6 +418,7 @@ FILE *ffopen(const char *file,const char *mode)
                 gmx_file(file);
         }
     }
+    histopenfile(ff,file,mode);
     return ff;
 }
 

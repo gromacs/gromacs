@@ -102,7 +102,7 @@ extern FILE *ffopen(const char *file, const char *mode);
  * the file! Therefore, files must be closed with ffclose (see below)
  */
 
-extern void ffclose(FILE *fp);
+extern int ffclose(FILE *fp);
 /* Close files or pipes */
 
 

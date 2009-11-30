@@ -54,6 +54,7 @@
 #include "vec.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
+#include "history.h"
 
 #ifdef GMX_THREADS
 #include "thread_mpi.h"
@@ -644,6 +645,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
 #define FF(arg) ((Flags & arg)==arg)
 
+    init_history(*argc,argv,nfile,fnm);
+    
     snew(*oenv, 1);
     
     cmdlength = strlen(argv[0]);

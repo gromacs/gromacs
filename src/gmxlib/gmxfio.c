@@ -1021,7 +1021,7 @@ static int gmx_fio_close_lock(int fio, bool do_lock)
     {
         /* Don't close stdin and stdout! */
         if (!FIO[fio].bStdio && FIO[fio].fp!=NULL)
-            rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+            rc = ffclose(FIO[fio].fp); /* fclose returns 0 if happy */
     }
 
     sfree(FIO[fio].fn);
@@ -1051,7 +1051,7 @@ int gmx_fio_fp_close(int fio)
     gmx_fio_check(fio);
     if (!in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR) && !FIO[fio].bStdio)
     {
-        rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+        rc = ffclose(FIO[fio].fp); /* fclose returns 0 if happy */
         FIO[fio].fp = NULL; 
     }
 #ifdef GMX_THREADS
