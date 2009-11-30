@@ -242,7 +242,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         }
     }
 
-    if (bTemp || bPres || bEner | bConstrain) 
+    if (bTemp || bPres || bEner || bConstrain) 
     {
         if (!bGStat)
         {
