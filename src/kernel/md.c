@@ -2649,8 +2649,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             (!bVV ? (cglo_flags | CGLO_ENERGY):0) | 
                             (!bVV ? (cglo_flags | CGLO_PRESSURE):0) |
                             (!bVV ? (cglo_flags | CGLO_TEMPERATURE):0) | 
-                            (bIterate ? CGLO_ITERATE : 0) |
-                            (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                            (bIterate ? (cglo_flags | CGLO_ITERATE) : 0) |
+                            (bFirstIterate ? (cglo_flags | CGLO_FIRSTITERATE) : 0)
                 );            
             /* bIterate is set to keep it from eliminating the old ekinh */
             /* #############  END CALC EKIN AND PRESSURE ################# */
