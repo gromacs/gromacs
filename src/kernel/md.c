@@ -187,7 +187,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     tensor corr_vir,corr_pres,shakeall_vir;
     bool bEner,bPres,bTemp, bVV;
     bool bRerunMD, bEkinAveVel, bStopCM, bGStat, bNEMD, bIterate, 
-         bFirstIterate, bFirstCall, bReadEkin,bScaleEkin;
+        bFirstIterate,bReadEkin,bScaleEkin, bConstrain;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
     
     /* translate CGLO flags to booleans */
@@ -196,17 +196,15 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bStopCM = flags & CGLO_STOPCM;
     bGStat = flags & CGLO_GSTAT;
     bNEMD = flags & CGLO_NEMD;
-    bIterate = flags & CGLO_ITERATE;
-    bFirstIterate = flags & CGLO_FIRSTITERATE;
-    bFirstCall = flags & CGLO_FIRSTCALL;
+    bReadEkin = flags & CGLO_READEKIN;
+    bScaleEkin = flags & CGLO_SCALEEKIN;
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
     bPres  = flags & CGLO_PRESSURE;
-    bReadEkin = flags & CGLO_READEKIN;
-    bScaleEkin = flags & CGLO_SCALEEKIN;
+    bConstrain = flags * CGLO_CONSTRAINT;
+    bIterate = flags & CGLO_ITERATE;
+    bFirstIterate = flags & CGLO_FIRSTITERATE;
 
-    /* decide when to calculate temperature and pressure. */
-    
     /* in initalization, it sums the shake virial in vv, and to 
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old for other reasons */
     
@@ -244,7 +242,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         }
     }
 
-    if (bTemp || bPres || bEner) 
+    if (bTemp || bPres || bEner | bConstrain) 
     {
         if (!bGStat)
         {
@@ -260,7 +258,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,constr,vcm,NULL,NULL,terminate,top_global,state,
-                            *bSumEkinhOld,flags | (!bFirstCall?CGLO_CONSTRAINT:0));
+                            *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
             }
             
@@ -311,7 +309,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     /* ##########  Long range energy information ###### */
     
-    if (bEner || bPres) 
+    if (bEner || bPres || bConstrain) 
     {
         calc_dispcorr(fplog,ir,fr,0,top_global,box,state->lambda,
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
@@ -328,7 +326,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     }
     
     /* ########## Now pressure ############## */
-    if (bPres) 
+    if (bPres || bConstrain) 
     {
         
         m_add(force_vir,shake_vir,total_vir);
@@ -2166,7 +2164,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                       (bEkinAveVel ? CGLO_EKINAVEVEL : 0) |
                       (bStopCM ? CGLO_STOPCM : 0) |
                       (bGStat ? CGLO_GSTAT : 0) |
-                      (bNEMD ? CGLO_NEMD : 0));
+                      (bNEMD ? CGLO_NEMD : 0) |
+                      (constr ? CGLO_CONSTRAINT : 0)
+            );
         
         force_flags = (GMX_FORCE_STATECHANGED |
                        ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
@@ -2304,7 +2304,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     unshift_self(graph,state->box,state->x);
                 }
                 
-                /* if bEkinAveVel, then compute ekin and shake_vir, otherwise, just compute shake_vir */
+                /* Note -- we don't want to compute the constraint virial again.
                 /* first step, we need to compute the virial */
                 if (bVV) {
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
@@ -2312,7 +2312,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_ENERGY) | 
-                                    ((bIterations | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
+                                    //((bIterations | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
                                     (((bEkinAveVel &&(!bInitStep)) || (!bEkinAveVel && IR_NPT_TROTTER(ir)))? (cglo_flags | CGLO_TEMPERATURE):0) | 
                                     ((bEkinAveVel || (!bEkinAveVel && IR_NPT_TROTTER(ir))) ? CGLO_EKINAVEVEL : 0) |
                                     (bIterate ? CGLO_ITERATE : 0) | 
@@ -2641,13 +2641,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 wallcycle_stop(wcycle,ewcVSITECONSTR);
             }
             
-            /* ############## IF NOT VV, CALCULATE EKIN HERE - ALWAYS CALCULATE PRESSURE ############ */
+            /* ############## IF NOT VV, Calculate globals HERE  ############ */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             (!bVV ? (cglo_flags | CGLO_ENERGY):0) | 
-                            (cglo_flags | CGLO_PRESSURE) |
+                            (CGLO_PRESSURE) |
                             (!bVV ? (cglo_flags | CGLO_TEMPERATURE):0) | 
                             (bIterate ? CGLO_ITERATE : 0) |
                             (bFirstIterate ? CGLO_FIRSTITERATE : 0)
