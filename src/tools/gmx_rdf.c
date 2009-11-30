@@ -59,6 +59,8 @@
 #include "coulomb.h"
 #include "gstat.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 typedef struct
 {

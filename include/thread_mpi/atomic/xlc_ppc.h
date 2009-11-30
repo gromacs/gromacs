@@ -43,8 +43,9 @@ files.
  * one above.
  */
 
-#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t isync\n"\
-                                                             : : : ); }
+#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
+                                                            : : :"memory" ); }
+
 
 
 

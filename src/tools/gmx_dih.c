@@ -48,6 +48,8 @@
 #include "macros.h"
 #include "xvgr.h"
 #include "vec.h"
+#include "gmx_ana.h"
+
 
 #define NOMIN 'X'
 

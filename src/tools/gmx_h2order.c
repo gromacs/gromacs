@@ -52,6 +52,8 @@
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
+#include "gmx_ana.h"
+
 
 /****************************************************************************/
 /* This program calculates the ordering of water molecules across a box, as */

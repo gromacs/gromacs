@@ -46,8 +46,7 @@
 #include <indexutil.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 struct gmx_ana_pos_t;

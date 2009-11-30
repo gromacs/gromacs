@@ -59,6 +59,7 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "matio.h"
+#include "gmx_ana.h"
 
 static bool bAllowed(real phi,real psi)
 {

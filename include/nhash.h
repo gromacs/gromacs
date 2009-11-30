@@ -40,6 +40,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAX_LJQQ 997
 
 typedef struct {
@@ -55,5 +59,9 @@ int h_enter(FILE *log,float c6, float c12, float qq);
 
 void h_stat(FILE *log);
 /* Print statistics for hashing */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _nhash_h */

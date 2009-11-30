@@ -43,6 +43,7 @@
 #include "gmx_fatal.h"
 #include "gstat.h"
 #include "pbc.h"
+#include "gbutil.h"
 
 static real dist2(t_pbc *pbc,rvec x,rvec y)
 {

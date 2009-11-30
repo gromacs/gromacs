@@ -54,6 +54,8 @@
 #include "physics.h"
 #include "pdbio.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 static int index2(int *ibox,int x,int y) 
 {

@@ -523,7 +523,8 @@ static int add_parg(int npargs,t_pargs *pa,t_pargs *pa_add)
 
 static char *mk_desc(t_pargs *pa, const char *time_unit_str)
 {
-    char *newdesc=NULL,*ndesc=NULL,*ptr=NULL;
+    char *newdesc=NULL,*ndesc=NULL,*nptr=NULL;
+    const char*ptr=NULL;
     int  len,k;
     
     /* First compute length for description */
@@ -548,14 +549,14 @@ static char *mk_desc(t_pargs *pa, const char *time_unit_str)
 #define TUNITLABEL "%t"
 #define NTUNIT strlen(TUNITLABEL)
     if (pa->type == etTIME)
-        while( (ptr=strstr(newdesc,TUNITLABEL)) != NULL ) {
-            ptr[0]='\0';
-            ptr+=NTUNIT;
+        while( (nptr=strstr(newdesc,TUNITLABEL)) != NULL ) {
+            nptr[0]='\0';
+            nptr+=NTUNIT;
             len+=strlen(time_unit_str)-NTUNIT;
             snew(ndesc,len);
             strcpy(ndesc,newdesc);
             strcat(ndesc,time_unit_str);
-            strcat(ndesc,ptr);
+            strcat(ndesc,nptr);
             sfree(newdesc);
             newdesc=ndesc;
             ndesc=NULL;

@@ -60,6 +60,8 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
+
 
 void dump_ahx(int nres,
 	      t_bb bb[],rvec x[],matrix box,int teller)

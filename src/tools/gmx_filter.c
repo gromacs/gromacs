@@ -51,6 +51,8 @@
 #include "do_fit.h"
 #include "copyrite.h"
 #include "rmpbc.h"
+#include "gmx_ana.h"
+
 
 int gmx_filter(int argc,char *argv[])
 {

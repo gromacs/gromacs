@@ -56,6 +56,8 @@
 #include "rmpbc.h"
 #include "tpxio.h"
 #include "do_fit.h"
+#include "gmx_ana.h"
+
 
 static void get_refx(output_env_t oenv,const char *trxfn,int nfitdim,int skip,
                      int gnx,int *index,

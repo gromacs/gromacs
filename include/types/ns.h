@@ -38,6 +38,10 @@
 
 #include "nsgrid.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
        eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
        eNL_VDWQQ_WATER, eNL_QQ_WATER, 
@@ -72,3 +76,8 @@ typedef struct {
   bool     nblist_initialized; /* has the nblist been initialized?  */
   int      dump_nl; /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
 } gmx_ns_t;
+
+#ifdef __cplusplus
+}
+#endif
+

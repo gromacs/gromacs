@@ -40,6 +40,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
 			     rvec x[],rvec xp[]);
@@ -97,5 +100,9 @@ extern void reset_x(int ncm,const atom_id *ind_cm,
 		    int nreset,const atom_id *ind_reset,
 		    rvec x[],const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _do_fit_h */

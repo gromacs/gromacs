@@ -40,12 +40,6 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0 /* avoid screwing up indentation */
-}
-#endif
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -53,6 +47,15 @@ extern "C" {
 #include "readinp.h"
 #include "wman.h"
 #include "pdbio.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0 /* avoid screwing up indentation */
+}
+#endif
+
 
 /* The code below is to facilitate controlled begin and end of
  trajectory reading. Corresponding routines in

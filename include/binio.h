@@ -69,6 +69,10 @@
  *    of simple types. STRUCTURES ARE DEFINITELY NOT ALLOWED.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define nblockwrite(fp,nelem,data) \
   _blockwrite(fp,nelem,sizeof(*data),(data),#data,__FILE__,__LINE__)
 #define blockwrite(fp,data) \
@@ -88,5 +92,9 @@ extern void _blockwrite(FILE *fp,int nelem,int size,void *data,
 
 extern void _blockread(FILE *fp,int nelem,int size,void *data,
                        char *what,char *file,int line);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _binio_h */

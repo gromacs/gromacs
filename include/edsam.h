@@ -40,6 +40,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void do_edsam(t_inputrec *ir,int step,t_mdatoms *md,
                      t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
@@ -61,5 +64,9 @@ extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_
 /* Flooding - called from do_force() */
 
 extern void ed_shift_coords(matrix box, rvec x[], ivec *is, int nr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _edsam_h */

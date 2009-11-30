@@ -49,6 +49,7 @@
 #include "vec.h"
 #include "index.h"
 #include "gmx_fatal.h"
+#include "gmx_ana.h"
 
 int gmx_genpr(int argc,char *argv[])
 {

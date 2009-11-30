@@ -43,6 +43,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Still parameters - make sure to edit in genborn_sse.c too if you change these! */
 #define STILL_P1  0.073*0.1              /* length        */
@@ -100,6 +103,9 @@ make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
 void 
 make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _genborn_h */
 

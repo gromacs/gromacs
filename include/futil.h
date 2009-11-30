@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
  * When reading the PATH environment variable, Unix separates entries
@@ -56,9 +60,18 @@
 #define PATH_SEPARATOR ":"
 #endif
 
-#ifdef __cplusplus
-extern "C" { 
+
+/* Now get the maximum path size. */
+#ifdef PATH_MAX
+#define GMX_PATH_MAX PATH_MAX
+#else
+#ifdef MAX_PATH
+#define GMX_PATH_MAX MAX_PATH
+#else
+#define GMX_PATH_MAX 4096
 #endif
+#endif
+
   
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */

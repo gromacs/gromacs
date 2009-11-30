@@ -40,8 +40,12 @@
 #include <config.h>
 #endif
 
-#include <sysstuff.h>
-#include <typedefs.h>
+#include "sysstuff.h"
+#include "typedefs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
   t_block *grps;	/* The group members			*/
@@ -59,5 +63,9 @@ extern t_superblock *init_grps(FILE *log,int left,int right,int nodeid,int nnode
 /* Read a superblock structure from gfile. Do communication if
  * necessary.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _superb_h */

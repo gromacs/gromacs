@@ -42,6 +42,7 @@
 #include <config.h>
 #endif
 
+
 #include <string2.h>
 
 #include "parsetree.h"
@@ -78,8 +79,8 @@ yyerror(yyscan_t, char const *s);
 %token <str>   HELP_TOPIC
 
 /* Simple input tokens */
-%token <i>     INTEGER
-%token <r>     REAL
+%token <i>     TOK_INT
+%token <r>     TOK_REAL
 %token <str>   STR
 %token <str>   IDENTIFIER
 %token         CMD_SEP
@@ -198,7 +199,7 @@ cmd_plain:   /* empty */
                  _gmx_sel_handle_empty_cmd(scanner);
              }
            | help_request       { $$ = NULL; }
-           | INTEGER
+           | TOK_INT
              {
                  t_selelem *s, *p;
                  s = _gmx_sel_init_group_by_id($1, scanner);
@@ -258,8 +259,8 @@ selection:   pos_expr           { $$ = $1; }
  * BASIC NON-TERMINAL SYMBOLS
  ********************************************************************/
 
-number:      INTEGER            { $$ = $1; }
-           | REAL               { $$ = $1; }
+number:      TOK_INT            { $$ = $1; }
+           | TOK_REAL               { $$ = $1; }
 ;
 
 string:      STR                { $$ = $1; }
@@ -313,7 +314,7 @@ sel_expr:    GROUP string
                  free($2);
                  if ($$ == NULL) YYERROR;
              }
-           | GROUP INTEGER
+           | GROUP TOK_INT
              {
                  $$ = _gmx_sel_init_group_by_id($2, scanner);
                  if ($$ == NULL) YYERROR;
@@ -356,14 +357,14 @@ sel_expr:    pos_mod METHOD_GROUP method_params
  ********************************************************************/
 
 /* Basic numerical values */
-num_expr:    INTEGER
+num_expr:    TOK_INT
              {
                  $$ = _gmx_selelem_create(SEL_CONST);
                  _gmx_selelem_set_vtype($$, INT_VALUE);
                  _gmx_selvalue_reserve(&$$->v, 1);
                  $$->v.u.i[0] = $1;
              }
-           | REAL
+           | TOK_REAL
              {
                  $$ = _gmx_selelem_create(SEL_CONST);
                  _gmx_selelem_set_vtype($$, REAL_VALUE);
@@ -477,17 +478,17 @@ value_item:  sel_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
            | num_expr            %prec PARAM_REDUCT
              { $$ = _gmx_selexpr_create_value_expr($1); }
-           | INTEGER TO INTEGER
+           | TOK_INT TO TOK_INT
              {
                  $$ = _gmx_selexpr_create_value(INT_VALUE);
                  $$->u.i.i1 = $1; $$->u.i.i2 = $3;
              }
-           | INTEGER TO REAL
+           | TOK_INT TO TOK_REAL
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
              }
-           | REAL TO number
+           | TOK_REAL TO number
              {
                  $$ = _gmx_selexpr_create_value(REAL_VALUE);
                  $$->u.r.r1 = $1; $$->u.r.r2 = $3;
@@ -554,3 +555,5 @@ yyerror(yyscan_t scanner, char const *s)
 {
     _gmx_selparser_error("%s", s);
 }
+
+

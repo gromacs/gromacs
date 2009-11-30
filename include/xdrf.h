@@ -54,30 +54,28 @@
 #include <rpc/xdr.h>
 #endif
 
-int 
-xdropen(XDR *xdrs, const char *filename, const char *type);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int xdropen(XDR *xdrs, const char *filename, const char *type);
 
 
-int 
-xdrclose(XDR *xdrs);
+int xdrclose(XDR *xdrs);
 
-FILE *
-xdr_get_fp(int xdrid);
+FILE * xdr_get_fp(int xdrid);
 
 
 /* Read or write reduced precision *float* coordinates */
-int 
-xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
 
 
 /* Read or write a *real* value (stored as float) */
-int 
-xdr_real(XDR *xdrs,real *r); 
+int xdr_real(XDR *xdrs,real *r); 
 
 
 /* Read or write reduced precision *real* coordinates */
-int 
-xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
+int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
 extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
@@ -90,29 +88,23 @@ extern int xdr_gmx_large_int(XDR *xdrs,gmx_large_int_t *i,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
-float 
-xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
 
-int 
-xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
+int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 
 
-int 
-xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
+int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
 
 
-float 
-xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
 
 
-int 
-xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
+int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
 
+#ifdef __cplusplus
+}
 #endif
 
-
-
-
-
+#endif
 
 

@@ -51,6 +51,8 @@
 #include "xvgr.h"
 #include "gmxcomplex.h"
 #include "correl.h"
+#include "gmx_ana.h"
+
 
 /* Determines at which point in the array the fit should start */
 int calc_nbegin(int nx,real x[],real tbegin)

@@ -39,9 +39,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "macros.h"
 #include "Xstuff.h"
 #include "copyrite.h"
-#include "macros.h"
 #include "xutil.h"
 #include "futil.h"
 #include "x11.h"

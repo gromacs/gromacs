@@ -140,8 +140,8 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INTEGER; }
-{REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return REAL; }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
+{REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
 \\\n            { _gmx_sel_lexer_prompt_newline(TRUE, state); }
@@ -165,8 +165,8 @@ COMMENT    (#.*)
 }
 
 <matchbool>{
-yes|on          { ADD_TOKEN; yylval->i = 1; return INTEGER; }
-no|off          { ADD_TOKEN; yylval->i = 0; return INTEGER; }
+yes|on          { ADD_TOKEN; yylval->i = 1; return TOK_INT; }
+no|off          { ADD_TOKEN; yylval->i = 0; return TOK_INT; }
 }
 group           { ADD_TOKEN; return GROUP; }
 to              { ADD_TOKEN; return TO; }

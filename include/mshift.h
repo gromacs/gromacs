@@ -42,6 +42,9 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern t_graph *mk_graph(FILE *fplog,
 			 t_idef *idef,int at_start,int at_end,
@@ -79,5 +82,9 @@ extern void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 
 extern void unshift_self(t_graph *g,matrix box,rvec x[]);
 /* Id, but in place */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _mshift_h */

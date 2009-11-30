@@ -56,6 +56,8 @@
 #include "pbc.h"
 #include "vec.h"
 #include "confio.h"
+#include "gmx_ana.h"
+
 
 #define FACTOR  1000.0	/* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion 

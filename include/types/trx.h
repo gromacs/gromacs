@@ -40,6 +40,21 @@
  * Do not try to use a pointer when its bool is FALSE, as memory might
  * not be allocated.
  */ 
+
+#include "molfile_plugin.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct 
+{
+    molfile_plugin_t *api;
+    const char* filetype;
+    void* handle;
+    bool bV;
+} t_gmxvmdplugin;
+
 typedef struct
 {
   int  flags;     /* flags for read_first/next_frame  */
@@ -75,5 +90,10 @@ typedef struct
   matrix box;     /* the 3 box vectors                */
   bool bPBC;
   int  ePBC;      /* the type of pbc                  */
+  t_gmxvmdplugin vmdplugin;
 } t_trxframe;
+
+#ifdef __cplusplus
+}
+#endif
 

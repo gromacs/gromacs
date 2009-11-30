@@ -44,6 +44,8 @@
 #include "xvgr.h"
 #include "index.h"
 #include "do_fit.h"
+#include "gmx_ana.h"
+
 
 static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],
 		    int I,int N,real first,real last)

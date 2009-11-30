@@ -52,6 +52,8 @@
 #include "gstat.h"
 #include "pbc.h"
 #include "do_fit.h"
+#include "gmx_ana.h"
+
 
 int gmx_helixorient(int argc,char *argv[])
 {

@@ -36,9 +36,16 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   real e;	/* The current energy.					*/
   double eav;     /* The running average       				*/
   double esum;	/* The sum of energies until now.			*/
 } t_energy;
 
+#ifdef __cplusplus
+}
+#endif

@@ -39,6 +39,10 @@
 #ifndef _idef_h
 #define _idef_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST	6
@@ -286,5 +290,10 @@ typedef struct {
   real scale;     /* distance between two points */
   real *tab;      /* the actual tables, per point there are  4 numbers */
 } bondedtable_t;
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

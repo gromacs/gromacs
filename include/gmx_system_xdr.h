@@ -86,6 +86,10 @@
  * Mountain View, California  94043
  */ 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Xdr operations.  XDR_ENCODE causes the type to be encoded into the
  * stream.  XDR_DECODE causes the type to be extracted from the stream.
@@ -249,6 +253,9 @@ extern void xdrstdio_create (XDR *__xdrs, FILE *__file, enum xdr_op __xop);
 /* free memory buffers for xdr */
 extern void xdr_free (xdrproc_t __proc, char *__objp);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _gmx_system_xdr_h */
 

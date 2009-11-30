@@ -32,12 +32,17 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _nsgrid_h
+#define _nsgrid_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifndef _nsgrid_h
-#define _nsgrid_h
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 typedef struct {
   int	 nr;		/* Total number of charge groups	*/
@@ -66,5 +71,9 @@ typedef struct {
   real   *dcz2;         /* Squared distance from atom to j-cell */
   int    dc_nalloc;     /* Allocation size of dcx2, dyc2, dcz2  */
 } t_grid;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

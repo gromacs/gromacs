@@ -52,6 +52,8 @@
 #include "xvgr.h"
 #include "gstat.h"
 #include "trnio.h"
+#include "gmx_ana.h"
+
 
 static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
                          real dt)

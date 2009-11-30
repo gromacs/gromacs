@@ -42,6 +42,10 @@
 
 #include "readinp.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void write_java(FILE *out,const char *program,
 		       int nldesc,const char **desc,
 		       int nfile,t_filenm *fnm,
@@ -73,6 +77,10 @@ struct t_linkdata;
 extern void
 print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
                     struct t_linkdata *links, const char *program, bool bWiki);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _wman_h */
 

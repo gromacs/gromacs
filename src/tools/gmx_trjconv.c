@@ -62,6 +62,7 @@
 #include "pbc.h"
 #include "viewit.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 enum { euSel,euRect, euTric, euCompact, euNR};
 
@@ -598,9 +599,20 @@ int gmx_trjconv(int argc,char *argv[])
 
     int pbc_enum;
     enum
-    { epSel,epNone, epComMol, epComRes, epComAtom, epNojump, epCluster, epWhole, epNR };
-    const char *pbc_opt[epNR+1] = 
-        { NULL, "none", "mol", "res", "atom", "nojump", "cluster", "whole", NULL };
+    {
+        epSel,
+        epNone,
+        epComMol,
+        epComRes,
+        epComAtom,
+        epNojump,
+        epCluster,
+        epWhole,
+        epNR
+    };
+    const char *pbc_opt[epNR + 1] =
+        { NULL, "none", "mol", "res", "atom", "nojump", "cluster", "whole",
+            NULL };
 
     int unitcell_enum;
     const char *unitcell_opt[euNR+1] = 
@@ -613,10 +625,13 @@ int gmx_trjconv(int argc,char *argv[])
     int ecenter;
 
     int fit_enum;
-    enum 
-    { efSel, efNone, efFit,       efFitXY,         efReset,       efResetXY, efPFit,       efNR };
-    const char *fit[efNR+1] = 
-        { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy", "progressive", NULL };
+    enum
+    {
+        efSel, efNone, efFit, efFitXY, efReset, efResetXY, efPFit, efNR
+    };
+    const char *fit[efNR + 1] =
+        { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy",
+            "progressive", NULL };
 
     static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE,bCONECT=FALSE;
     static bool  bCenter=FALSE,bTer=FALSE;
@@ -627,65 +642,92 @@ int gmx_trjconv(int argc,char *argv[])
     static real  dropunder=0,dropover=0;
     static bool  bRound=FALSE;
 
-    t_pargs pa[] = {
-        { "-skip", FALSE,  etINT, {&skip_nr},
-            "Only write every nr-th frame" },
-            { "-dt", FALSE,  etTIME, {&delta_t},
-                "Only write frame when t MOD dt = first time (%t)" },
-                { "-round", FALSE,  etBOOL, {&bRound},
-                    "Round measurements to nearest picosecond" },
-                    { "-dump", FALSE, etTIME, {&tdump},
-                        "Dump frame nearest specified time (%t)" },
-                        { "-t0", FALSE,  etTIME, {&tzero},
-                            "Starting time (%t) (default: don't change)"},
-                            { "-timestep", FALSE,  etTIME, {&timestep},
-                                "Change time step between input frames (%t)" },
-                                { "-pbc", FALSE,  etENUM, {pbc_opt},
-                                    "PBC treatment (see help text for full description)" },
-                                    { "-ur", FALSE,  etENUM, {unitcell_opt},
-                                        "Unit-cell representation" },
-                                        { "-center", FALSE,  etBOOL, {&bCenter},
-                                            "Center atoms in box" },
-                                            { "-boxcenter", FALSE,  etENUM, {center_opt},
-                                                "Center for -pbc and -center" },
-                                                { "-box", FALSE, etRVEC, {newbox},
-                                                    "Size for new cubic box (default: read from input)" },
-                                                    { "-trans", FALSE, etRVEC, {trans},
-                                                        "All coordinates will be translated by trans. This can advantageously be combined with -pbc mol -ur compact." },
-                                                        { "-shift", FALSE, etRVEC, {shift},
-                                                            "All coordinates will be shifted by framenr*shift" },
-                                                            { "-fit",  FALSE, etENUM, {fit}, 
-                                                                "Fit molecule to ref structure in the structure file" },
-                                                                { "-ndec", FALSE,  etINT,  {&ndec},
-                                                                    "Precision for .xtc and .gro writing in number of decimal places" },
-                                                                    { "-vel", FALSE, etBOOL, {&bVels},
-                                                                        "Read and write velocities if possible" },
-                                                                        { "-force", FALSE, etBOOL, {&bForce},
-                                                                            "Read and write forces if possible" },
+    t_pargs
+        pa[] =
+            {
+                    { "-skip", FALSE, etINT,
+                        { &skip_nr }, "Only write every nr-th frame" },
+                    { "-dt", FALSE, etTIME,
+                        { &delta_t },
+                        "Only write frame when t MOD dt = first time (%t)" },
+                    { "-round", FALSE, etBOOL,
+                        { &bRound }, "Round measurements to nearest picosecond" 
+                    },
+                    { "-dump", FALSE, etTIME,
+                        { &tdump }, "Dump frame nearest specified time (%t)" },
+                    { "-t0", FALSE, etTIME,
+                        { &tzero },
+                        "Starting time (%t) (default: don't change)" },
+                    { "-timestep", FALSE, etTIME,
+                        { &timestep },
+                        "Change time step between input frames (%t)" },
+                    { "-pbc", FALSE, etENUM,
+                        { pbc_opt },
+                        "PBC treatment (see help text for full description)" },
+                    { "-ur", FALSE, etENUM,
+                        { unitcell_opt }, "Unit-cell representation" },
+                    { "-center", FALSE, etBOOL,
+                        { &bCenter }, "Center atoms in box" },
+                    { "-boxcenter", FALSE, etENUM,
+                        { center_opt }, "Center for -pbc and -center" },
+                    { "-box", FALSE, etRVEC,
+                        { newbox },
+                        "Size for new cubic box (default: read from input)" },
+                    { "-trans", FALSE, etRVEC,
+                        { trans }, 
+                        "All coordinates will be translated by trans. This "
+                        "can advantageously be combined with -pbc mol -ur "
+                        "compact." },
+                    { "-shift", FALSE, etRVEC,
+                        { shift },
+                        "All coordinates will be shifted by framenr*shift" },
+                    { "-fit", FALSE, etENUM,
+                        { fit },
+                        "Fit molecule to ref structure in the structure file" },
+                    { "-ndec", FALSE, etINT,
+                        { &ndec },
+                        "Precision for .xtc and .gro writing in number of "
+                        "decimal places" },
+                    { "-vel", FALSE, etBOOL,
+                        { &bVels }, "Read and write velocities if possible" },
+                    { "-force", FALSE, etBOOL,
+                        { &bForce }, "Read and write forces if possible" },
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
-                                                                            { "-trunc", FALSE, etTIME, {&ttrunc},
-                                                                                "Truncate input trj file after this time (%t)" },
+                    { "-trunc", FALSE, etTIME,
+                        { &ttrunc }, 
+                        "Truncate input trj file after this time (%t)" },
 #endif
-                                                                                { "-exec", FALSE,  etSTR, {&exec_command},
-                                                                                    "Execute command for every output frame with the frame number "
-                                                                                    "as argument" },
-                                                                                    { "-app", FALSE,  etBOOL, {&bAppend},
-                                                                                        "Append output"},
-                                                                                        { "-split",FALSE, etTIME, {&split_t},
-                                                                                            "Start writing new file when t MOD split = first time (%t)" },
-                                                                                            { "-sep", FALSE,  etBOOL, {&bSeparate},
-                                                                                                "Write each frame to a separate .gro, .g96 or .pdb file"},
-                                                                                                { "-nzero", FALSE, etINT, {&nzero},
-                                                                                                    "Prepend file number in case you use the -sep flag with this number of zeroes" },
-                                                                                                    { "-ter",  FALSE, etBOOL, {&bTer},
-                                                                                                        "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" },
-                                                                                                        { "-dropunder", FALSE, etREAL, {&dropunder},
-                                                                                                            "Drop all frames below this value"},
-                                                                                                            { "-dropover", FALSE, etREAL, {&dropover},
-                                                                                                                "Drop all frames above this value"},
-                                                                                                                { "-conect", FALSE, etBOOL, {&bCONECT},
-                                                                                                                    "Add conect records when writing pdb files. Useful for visualization of non-standard molecules, e.g. coarse grained ones" }
-    };
+                    { "-exec", FALSE, etSTR,
+                        { &exec_command },
+                        "Execute command for every output frame with the "
+                        "frame number as argument" },
+                    { "-app", FALSE, etBOOL,
+                        { &bAppend }, "Append output" },
+                    { "-split", FALSE, etTIME,
+                        { &split_t },
+                        "Start writing new file when t MOD split = first "
+                        "time (%t)" },
+                    { "-sep", FALSE, etBOOL,
+                        { &bSeparate },
+                        "Write each frame to a separate .gro, .g96 or .pdb "
+                        "file" },
+                    { "-nzero", FALSE, etINT,
+                        { &nzero },
+                        "Prepend file number in case you use the -sep flag "
+                        "with this number of zeroes" },
+                    { "-ter", FALSE, etBOOL,
+                        { &bTer },
+                        "Use 'TER' in pdb file as end of frame in stead of "
+                        "default 'ENDMDL'" },
+                    { "-dropunder", FALSE, etREAL,
+                        { &dropunder }, "Drop all frames below this value" },
+                    { "-dropover", FALSE, etREAL,
+                        { &dropover }, "Drop all frames above this value" },
+                    { "-conect", FALSE, etBOOL,
+                        { &bCONECT },
+                        "Add conect records when writing pdb files. Useful "
+                        "for visualization of non-standard molecules, e.g. "
+                        "coarse grained ones" } };
 #define NPA asize(pa)
 
     FILE         *out=NULL;
@@ -727,7 +769,8 @@ int gmx_trjconv(int argc,char *argv[])
     bool         bWriteFrame,bSplitHere;
     const char   *top_file,*in_file,*out_file=NULL;
     char         out_file2[256],*charpt;
-    char         *outf_base=NULL,*outf_ext=NULL;
+    char         *outf_base=NULL;
+    const char   *outf_ext=NULL;
     char         top_title[256],title[256],command[256],filemode[5];
     int          xdr=0;
     bool         bWarnCompact=FALSE;

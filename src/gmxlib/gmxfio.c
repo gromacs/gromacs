@@ -1000,7 +1000,7 @@ int gmx_fio_open(const char *fn, const char *mode)
 }
 
 /* this function may be called from a function that locks the fio_mutex, 
-             which is why it exists in the first place. */
+   which is why it exists in the first place. */
 static int gmx_fio_close_lock(int fio, bool do_lock)
 {
     int rc = 0;
@@ -1020,7 +1020,7 @@ static int gmx_fio_close_lock(int fio, bool do_lock)
     else
     {
         /* Don't close stdin and stdout! */
-        if (!FIO[fio].bStdio)
+        if (!FIO[fio].bStdio && FIO[fio].fp!=NULL)
             rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
     }
 
@@ -1039,6 +1039,25 @@ static int gmx_fio_close_lock(int fio, bool do_lock)
 int gmx_fio_close(int fio)
 {
     return gmx_fio_close_lock(fio, TRUE);
+}
+
+/* close only fp but keep FIO entry. */
+int gmx_fio_fp_close(int fio)
+{
+    int rc=0;
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (!in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR) && !FIO[fio].bStdio)
+    {
+        rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+        FIO[fio].fp = NULL; 
+    }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+    return rc;
 }
 
 FILE * gmx_fio_fopen(const char *fn, const char *mode)
