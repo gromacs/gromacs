@@ -40,16 +40,15 @@
 #include <config.h>
 #endif
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "nrnb.h"
 #include "pbc.h"
 #include "genborn.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int glatnr(int *global_atom_index,int i);
 /* Returns the global topology atom number belonging to local atom index i.

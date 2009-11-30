@@ -43,6 +43,7 @@
 #include "gstat.h"
 #include "nrjac.h"
 #include "txtdump.h"
+#include "princ.h"
 
 static void m_op(matrix mat,rvec x)
 {

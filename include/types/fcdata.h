@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef real rvec5[5];
 
 /* Distance restraining stuff */
@@ -107,3 +111,8 @@ typedef struct {
   t_oriresdata orires;
   real         dihre_fc;
 } t_fcdata;
+
+#ifdef __cplusplus
+}
+#endif
+

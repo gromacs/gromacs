@@ -42,6 +42,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void randwater(int astart,int nwater,int nwatom,
 		      rvec x[],rvec v[],int *seed);
 /* Randomize the order of nwater molecules of length nwatom, the
@@ -58,5 +62,9 @@ extern void sortwater(int astart,int nwater,int nwatom,rvec x[],rvec v[]);
 extern void mkcompact(int astart,int nwater,int nwatom,rvec x[],rvec v[],
 		      int nnode,matrix box);
 /* Make compact subboxes */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

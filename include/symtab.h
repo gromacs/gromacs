@@ -44,6 +44,11 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * This module handles symbol table manipulation. All text strings 
  * needed by an application are allocated only once. All references
@@ -109,5 +114,9 @@ extern void pr_symtab(FILE *fp,int indent,const char *title,t_symtab *symtab);
       * number of spaces the text should be indented. Title is used
       * to print a header text.
       */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _symtab_h */

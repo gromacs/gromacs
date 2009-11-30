@@ -1,3 +1,4 @@
+
 /*
  * 
  *                This source code is part of
@@ -40,12 +41,12 @@
 #include <config.h>
 #endif
 
+#include "sysstuff.h"
+#include "typedefs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "sysstuff.h"
-#include "typedefs.h"
 
 extern void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
 			t_inputrec *ir,const t_commrec *cr,bool bPartDecomp,

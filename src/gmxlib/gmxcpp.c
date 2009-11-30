@@ -87,9 +87,9 @@ static bool is_word_end(char c)
   return !(isalnum(c) || c == '_');
 }
 
-static char *strstrw(const char *buf,const char *word)
+static const char *strstrw(const char *buf,const char *word)
 {
-  char *ptr;
+  const char *ptr;
 
   while ((ptr = strstr(buf,word)) != NULL) {
     /* Check if we did not find part of a longer word */
@@ -189,7 +189,8 @@ static void add_define(const char *define)
 int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
-  char *buf,*ptr,*pdum;
+  char *buf,*pdum;
+  const char *ptr;
   int i;
   unsigned int i1;
   
@@ -405,7 +406,8 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 {
   gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   int  i,nn,len,status;
-  char *ptr,*ptr2,*name;
+  const char *ptr, *ptr2;
+  char *name;
   char *dname, *dval;
   
   if (!handle)

@@ -54,6 +54,8 @@
 #include "tpxio.h"
 #include "vec.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 int gmx_vanhove(int argc,char *argv[])
 {

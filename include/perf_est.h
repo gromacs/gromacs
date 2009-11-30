@@ -41,6 +41,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int n_bonded_dx(gmx_mtop_t *mtop,bool bExcl);
 /* Returns the number of pbc_rvec_sub calls required for bonded interactions.
  * This number is also roughly proportional to the computational cost.
@@ -51,5 +55,9 @@ extern float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box);
  * in the total force calculation.
  * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _perf_est_h */

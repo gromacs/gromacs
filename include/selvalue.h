@@ -37,7 +37,7 @@
 #ifndef SELVALUE_H
 #define SELVALUE_H
 
-#include <typedefs.h>
+#include <types/simple.h>
 
 #ifdef __cplusplus
 extern "C"

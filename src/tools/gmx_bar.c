@@ -51,6 +51,7 @@
 #include "physics.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 typedef struct {
     int    nset;
@@ -455,7 +456,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
 static double legend2lambda(char *fn,const char *legend,bool bdhdl)
 {
     double lambda=0;
-    char   *ptr;
+    const char   *ptr;
 
     if (legend == NULL)
     {
@@ -741,24 +742,24 @@ int gmx_bar(int argc,char *argv[])
         printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
                                             results[f].lambda_b);
         printf(dgformat,results[f].dg);
-        printf(" err");
+        printf(" err ");
         printf(dgformat,results[f].dg_err);
         if (calc_s)
         {
             printf("   s_ab "); 
             printf(dgformat, results[f].sa);
-            printf(" err"); 
+            printf(" err "); 
             printf(dgformat, results[f].sa_err);
             printf("  s_ba "); 
             printf(dgformat, results[f].sb);
-            printf(" err"); 
+            printf(" err "); 
             printf(dgformat, results[f].sb_err);
         }
         if (calc_v)
         {
             printf("   var est ");
             printf(dgformat, results[f].dg_var);
-            printf(" err"); 
+            printf(" err "); 
             printf(dgformat, results[f].dg_var_err);
         }
         printf("\n");

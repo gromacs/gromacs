@@ -148,5 +148,6 @@ xtcio.h \
 xvgr.h \
 thread_mpi.h \
 tmpi.h \
-mainpage.h
-
+mainpage.h \
+molfile_plugin.h \
+vmdplugin.h

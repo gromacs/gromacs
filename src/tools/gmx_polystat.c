@@ -53,6 +53,8 @@
 #include "rmpbc.h"
 #include "tpxio.h"
 #include "nrjac.h"
+#include "gmx_ana.h"
+
 
 static void gyro_eigen(double **gyr,double *eig,double **eigv,int *ord)
 {

@@ -42,8 +42,8 @@
      INVALID = 258,
      HELP = 259,
      HELP_TOPIC = 260,
-     INTEGER = 261,
-     REAL = 262,
+     TOK_INT = 261,
+     TOK_REAL = 262,
      STR = 263,
      IDENTIFIER = 264,
      CMD_SEP = 265,
@@ -76,8 +76,8 @@
 #define INVALID 258
 #define HELP 259
 #define HELP_TOPIC 260
-#define INTEGER 261
-#define REAL 262
+#define TOK_INT 261
+#define TOK_REAL 262
 #define STR 263
 #define IDENTIFIER 264
 #define CMD_SEP 265
@@ -110,7 +110,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 61 "parser.y"
+#line 62 "parser.y"
 {
     int                         i;
     real                        r;
@@ -122,7 +122,7 @@ typedef union YYSTYPE
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
 }
-/* Line 1489 of yacc.c.  */
+/* Line 1529 of yacc.c.  */
 #line 127 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

@@ -59,6 +59,8 @@
 #include "enxio.h"
 #include "nrjac.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */

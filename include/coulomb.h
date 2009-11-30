@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Ewald related stuff */
 
 void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
@@ -94,6 +98,9 @@ extern real shift_LRcorrection(FILE *fp,int start,int natoms,
  * PBC is taken into account. (Erik L.) 
  */
 
+#ifdef __cplusplus
+}
+#endif
  
 #endif
 

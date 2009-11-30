@@ -72,6 +72,10 @@
  *                                                 *
  ***************************************************/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef GMX_SSE4
 #  define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32(x,imm)
 #else
@@ -3157,5 +3161,8 @@ gmx_mm_update_4pot_ps(__m128 pot1, float *ptr1, __m128 pot2, float *ptr2, __m128
 	_mm_store_ss(ptr4,_mm_add_ss(pot4,_mm_load_ss(ptr4)));
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 

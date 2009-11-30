@@ -48,6 +48,8 @@
 #include "nrjac.h"
 #include "copyrite.h"
 #include "index.h"
+#include "gmx_ana.h"
+
 
 #define NM2ANG 10
 #define TOLERANCE 1.0E-8

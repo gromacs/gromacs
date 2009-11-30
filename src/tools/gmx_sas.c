@@ -58,6 +58,8 @@
 #include "atomprop.h"
 #include "physics.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   atom_id  aa,ab;

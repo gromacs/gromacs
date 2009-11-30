@@ -52,6 +52,8 @@
 #include "index.h"
 #include "gstat.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   real re,im;

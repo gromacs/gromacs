@@ -55,6 +55,8 @@
 #include "tpxio.h"
 #include "confio.h"
 #include "cmat.h"
+#include "gmx_ana.h"
+
 
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */

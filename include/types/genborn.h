@@ -36,6 +36,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -101,3 +104,8 @@ typedef struct
 	int  nblist_work_nalloc;  /* Length of second dimension of nblist_work                                */
 } 
 gmx_genborn_t;
+
+#ifdef __cplusplus
+}
+#endif
+

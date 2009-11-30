@@ -26,12 +26,12 @@
 /* get gmx_gbdata_t */
 #include "../nb_kerneltype.h"
 
-#include "nb_kernel410_x86_64_sse.h"
+#include "nb_kernel400_x86_64_sse.h"
 
 
 
 void nb_kernel400_x86_64_sse(int *           p_nri,
-                    int *           iinr,
+                    int            iinr[],
                     int *           jindex,
                     int *           jjnr,
                     int *           shift,

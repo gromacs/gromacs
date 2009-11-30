@@ -78,6 +78,7 @@ typedef struct tmpi_comm_ *tMPI_Comm;
   The group structure. Contains a list of threads. */
 typedef struct tmpi_group_ *tMPI_Group;
 
+
 /** tMPI Request
   
   Request structure for holding data about non-blocking transfers. */

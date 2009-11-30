@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
   egcTC,    egcENER,   egcACC, egcFREEZE, 
   egcUser1, egcUser2,  egcVCM, egcXTC,
@@ -84,6 +88,8 @@ typedef struct {
   int            nmolblock;
   gmx_molblock_t *molblock;
   int            natoms;
+  int            maxres_renum;  /* Parameter for residue numbering      */
+  int            maxresnr;      /* The maximum residue number in moltype */
   t_atomtypes    atomtypes;     /* Atomtype properties                  */
   t_block        mols;          /* The molecules                        */
   gmx_groups_t   groups;
@@ -110,3 +116,8 @@ typedef struct {
   t_blocka      excls;          /* The exclusions                       */
   t_symtab	symtab;		/* The symbol table			*/
 } t_topology;
+
+#ifdef __cplusplus
+}
+#endif
+

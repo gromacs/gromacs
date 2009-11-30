@@ -40,13 +40,13 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "viewit.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /***************************************************
  *            XVGR   DEFINITIONS

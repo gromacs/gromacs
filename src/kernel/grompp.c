@@ -358,7 +358,9 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   
   /* Copy structures from msys to sys */
   molinfo2mtop(nrmols,molinfo,sys);
-  
+
+  gmx_mtop_finalize(sys);
+ 
   /* COORDINATE file processing */
   if (bVerbose) 
     fprintf(stderr,"processing coordinates...\n");

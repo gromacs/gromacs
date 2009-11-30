@@ -60,6 +60,8 @@
 #include "sparsematrix.h"
 #include "physics.h"
 #include "main.h"
+#include "gmx_ana.h"
+
 
 static void
 nma_full_hessian(real *           hess,

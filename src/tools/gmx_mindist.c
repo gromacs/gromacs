@@ -54,6 +54,8 @@
 #include "tpxio.h"
 #include "rmpbc.h"
 #include "xtcio.h"
+#include "gmx_ana.h"
+
 
 static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 			  real *rmin,real *rmax,int *min_ind)

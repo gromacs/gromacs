@@ -49,6 +49,7 @@
 #include "gmx_fatal.h"
 #include "enxio.h"
 #include "vec.h"
+#include "gmx_ana.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1

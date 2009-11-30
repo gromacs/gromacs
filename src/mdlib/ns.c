@@ -2402,7 +2402,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
      * Exclusions are stored in bits. (If the type is not large
      * enough, enlarge it, unsigned char -> unsigned short -> unsigned long)
      */
-    maxcg = sizeof(t_excl);
+    maxcg = sizeof(t_excl)*8;
     if (nr_in_cg > maxcg)
     {
         gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",

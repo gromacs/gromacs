@@ -60,6 +60,7 @@
 #include "txtdump.h"
 #include "eigio.h"
 #include "physics.h"
+#include "gmx_ana.h"
 
 static void calc_entropy_qh(FILE *fp,int n,real eigval[],real temp,int nskip)
 {

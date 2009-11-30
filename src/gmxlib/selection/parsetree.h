@@ -43,7 +43,9 @@
 #ifndef SELECTION_PARSETREE_H
 #define SELECTION_PARSETREE_H
 
-#include <typedefs.h>
+/*#include <typedefs.h>*/
+#include <types/simple.h>
+
 
 #include <selvalue.h>
 

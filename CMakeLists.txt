@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.6)
-
 project(Gromacs)
 set(PROJECT_VERSION "4.0.99_development_20090605"
     CACHE STRING "Gromacs version string")
@@ -27,6 +26,7 @@ set(GMX_QMMM_PROGRAM "none"
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI)" OFF)
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
+option(GMX_DLOPEN "Compile with dlopen, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 
 enable_language(C)

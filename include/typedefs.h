@@ -40,10 +40,6 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #define STRLEN 4096
 #define NOTSET -12345
 #define BIG_STRLEN 1048576
@@ -78,6 +74,10 @@ extern "C" {
 #include <types/constr.h>
 #include <types/matrix.h>
 #include <types/oenv.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* 
  * Memory (re)allocation can be VERY slow, especially with some

@@ -66,6 +66,8 @@
 #include "eigio.h"
 #include "eigensolver.h"
 #include "physics.h"
+#include "gmx_ana.h"
+
 
 int gmx_covar(int argc,char *argv[])
 {
