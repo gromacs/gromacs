@@ -1097,7 +1097,7 @@ int main (int argc, char *argv[])
   }
 
   if (ir->adress_type!=eAdressOff) {
-    if (getenv("GMX_NBLISTCG") != 0) {
+      if (!(getenv("GMX_NBLISTCG") != 0)) {
       fprintf(stderr,
         "ERROR: AdResS needs CG neighbour lists, enable them it by exporting GMX_NBLISTCG");
       nerror++;
