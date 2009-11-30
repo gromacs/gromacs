@@ -2304,9 +2304,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     unshift_self(graph,state->box,state->x);
                 }
                 
-                /* Note -- we don't want to compute the constraint virial again.
-                /* first step, we need to compute the virial */
+                
                 if (bVV) {
+                    /* if EkinAveVel, compute the pressure and constraints */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
@@ -2583,9 +2583,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                    (cglo_flags | CGLO_TEMPERATURE) | 
-                                    (cglo_flags & ~CGLO_PRESSURE) |
-                                    (cglo_flags & ~CGLO_ENERGY)
+                                    (cglo_flags | CGLO_TEMPERATURE) 
+
                         );
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
                     copy_rvecn(cbuf,state->x,0,state->natoms);
@@ -2594,12 +2593,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
                     /* are the small terms in the shake_vir here due
                      * to numerical errors, or are they important
-                     * physically? I'm thinking they are just errors, but not completely sure. */ 
+                     * physically? I'm thinking they are just errors, but not completely sure. 
+                     * For now, will call without actually constraining, constr=NULL*/
+ 
                     update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
                                        &top->idef,tmp_vir,force_vir,
-                                       cr,nrnb,wcycle,upd,constr,
+                                       cr,nrnb,wcycle,upd,NULL,
                                        bInitStep,FALSE,bCalcPres,state->veta);  
-                    m_add(shake_vir,tmp_vir,shake_vir);
                 }
                 
                 if (!bOK && !bFFscan) 
