@@ -1,6 +1,10 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ */
+
 #include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "fft5d.h"
 #include <float.h>
@@ -43,13 +47,29 @@ static int lpfactor(int z) {
 //lin is allocated by fft5d because size of array is only known after planning phase
 
 fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags flags, fft5d_type** rlin, fft5d_type** rlout, FILE* debug) {
-        int P[2],bMaster,prank[2];
+    int P[2],bMaster,prank[2];
 	//comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes)
-	MPI_Comm_size(comm[0],&P[0]);
-	MPI_Comm_size(comm[1],&P[1]);
-	MPI_Comm_rank(comm[0],&prank[0]);
-	MPI_Comm_rank(comm[1],&prank[1]);
-
+    if (gmx_parallel_env_initialized() && comm[0] != NULL)
+    {
+	    MPI_Comm_size(comm[0],&P[0]);
+	    MPI_Comm_rank(comm[0],&prank[0]);
+    }
+    else
+    {
+        P[0] = 0;
+        prank[0] = 0;
+    }
+    if (gmx_parallel_env_initialized() && comm[1] != NULL)
+    {
+	    MPI_Comm_size(comm[1],&P[1]);
+	    MPI_Comm_rank(comm[1],&prank[1]);
+    }
+    else
+    {
+        P[1] = 0;
+        prank[1] = 0;
+    }
+   
 	bMaster=(prank[0]==0&&prank[1]==0);
 	
 	if (bMaster && debug) fprintf(debug,"FFT5D: Using %dx%d processor grid\n",P[0],P[1]);
@@ -398,11 +418,20 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 		
 		//send, recv
 		time=MPI_Wtime();
-	#ifdef FFT5D_MPI_TRANSPOSE
+#ifdef GMX_MPI
+        if (gmx_parallel_env_initialized() && cart[s] != NULL)
+        {
+#ifdef FFT5D_MPI_TRANSPOSE
 			FFTW(execute)(mpip[s]);
-	#else
-	   	MPI_Alltoall(lin,N[s]*M[s]*K[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,lout,N[s]*M[s]*K[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,cart[s]);
-	#endif
+#else
+            MPI_Alltoall(lin,N[s]*M[s]*K[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,lout,N[s]*M[s]*K[s]*sizeof(fft5d_type)/sizeof(fft5d_rtype),FFT5D_MPI_RTYPE,cart[s]);
+#endif
+        }
+        else
+#endif
+        {
+            memcpy(lin,lout,N[s]*M[s]*K[s]*sizeof(fft5d_type));
+        }
 		time_mpi[s]=MPI_Wtime()-time;
 	
 		time=MPI_Wtime();

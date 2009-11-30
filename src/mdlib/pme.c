@@ -302,10 +302,10 @@ static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
         fptr[XX] = tx - tix;
         fptr[YY] = ty - tiy;
         fptr[ZZ] = tz - tiz;   
-        
-        idxptr[XX] = tix-start_ix;
-        idxptr[YY] = tiy-start_iy;
-        idxptr[ZZ] = tiz-start_iz;
+
+        idxptr[XX] = pme->nnx[tix] - start_ix;
+        idxptr[YY] = pme->nny[tiy] - start_iy;
+        idxptr[ZZ] = pme->nnz[tiz] - start_iz;       
 
 #ifdef DEBUG
         range_check(idxptr[XX],0,pme->pmegrid_nx);
@@ -1639,6 +1639,16 @@ init_overlap_comm(pme_overlap_t *  ol,
 }
 #endif
 
+static void 
+init_overlap_comm_serial(pme_overlap_t *  ol,
+                         int              ndata)
+{
+    ol->noverlap_nodes = 0;
+    snew(ol->s2g,ol->noverlap_nodes+1);
+    ol->s2g[0] = 0;
+    ol->s2g[1] = ndata;
+}
+
 int gmx_pme_init(gmx_pme_t *         pmedata,
                  t_commrec *         cr,
                  int                 nnodes_major,
@@ -1775,12 +1785,18 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
 #ifdef GMX_MPI
         init_overlap_comm(&pme->overlap[0],pme->pme_order,pme->mpi_comm_d[0],pme->nnodes_major,pme->nodeid_major,pme->nkx);
-        init_overlap_comm(&pme->overlap[1],pme->pme_order,pme->mpi_comm_d[1],pme->nnodes_minor,pme->nodeid_minor,pme->nky);
+        if (pme->ndecompdim > 1)
+        {
+            init_overlap_comm(&pme->overlap[1],pme->pme_order,pme->mpi_comm_d[1],pme->nnodes_minor,pme->nodeid_minor,pme->nky);
+        }
+        else
+        {
+            init_overlap_comm_serial(&pme->overlap[1],pme->nky);
+        }
 #endif
-        
     } else {
-        pme->overlap[0].s2g = NULL;
-        pme->overlap[1].s2g = NULL;
+        init_overlap_comm_serial(&pme->overlap[0],pme->nkx);
+        init_overlap_comm_serial(&pme->overlap[1],pme->nky);
     }
     
     /* With domain decomposition we need nnx on the PP only nodes */
@@ -1802,20 +1818,15 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     snew(pme->bsp_mod[ZZ],pme->nkz);
     
     /* Allocate data for the interpolation grid, including overlap, real-space only */
-#ifdef GMX_MPI
     nlocal_major  = pme->overlap[0].s2g[pme->nodeid_major+1]-pme->overlap[0].s2g[pme->nodeid_major];
     nlocal_minor  = pme->overlap[1].s2g[pme->nodeid_minor+1]-pme->overlap[1].s2g[pme->nodeid_minor];
-#else
-    nlocal_major  = pme->nkx;
-    nlocal_minor  = pme->nky;
-#endif
     
     pme->pmegrid_nx = nlocal_major + pme->pme_order;
     pme->pmegrid_ny = nlocal_minor + pme->pme_order;
     pme->pmegrid_nz = pme->nkz + pme->pme_order;
     
-    pme->pmegrid_start_ix = pme->overlap[0].s2g[pme->nodeid];
-    pme->pmegrid_start_iy = pme->overlap[1].s2g[pme->nodeid];
+    pme->pmegrid_start_ix = pme->overlap[0].s2g[pme->nodeid_major];
+    pme->pmegrid_start_iy = pme->overlap[1].s2g[pme->nodeid_minor];
     pme->pmegrid_start_iz = 0;
     
     snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);    
