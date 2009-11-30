@@ -190,7 +190,6 @@ typedef struct gmx_pme {
     real *fftgridB;             /* inside the interpolation grid, but separate for 2D PME decomp. */
     int   fftgrid_nx,fftgrid_ny,fftgrid_nz;
     
-    
     t_complex *cfftgridA;             /* Grids for complex FFT data */
     t_complex *cfftgridB;            
     int   cfftgrid_nx,cfftgrid_ny,cfftgrid_nz;
@@ -1706,7 +1705,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
             }
             pme->ndecompdim = 2;
             
-            printf("z0 nmajor=%d nminor=%d\n",nnodes_major,nnodes_minor);
 #ifdef GMX_MPI
             MPI_Comm_split(pme->mpi_comm,pme->nodeid % nnodes_minor,
                            pme->nodeid,&pme->mpi_comm_d[0]);  /* My communicator along major dimension */
