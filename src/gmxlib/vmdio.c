@@ -194,14 +194,12 @@ bool read_next_vmd_frame(int status,t_trxframe *fr)
     return 1;
 }
 
-
-int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
+int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 {
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
     const char *err;
     uint i,ret=0;
-    molfile_timestep_metadata_t *metadata=NULL;
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     glob_t globbuf;
     const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
@@ -213,16 +211,16 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     SHGetFolderPath(NULL,CSIDL_PROGRAM_FILES,NULL,SHGFP_TYPE_CURRENT,progfolder);
     sprintf(defpathenv,"%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile",progfolder);
 #endif
-  
 
-    fr->vmdplugin.api = NULL;
-    fr->vmdplugin.filetype = strrchr(fn,'.');
-    if (fr->vmdplugin.filetype)
+
+    vmdplugin->api = NULL;
+    vmdplugin->filetype = strrchr(fn,'.');
+    if (!vmdplugin->filetype)
     {
         return 0;
     }
-    fr->vmdplugin.filetype++;
-    
+    vmdplugin->filetype++;
+
     pathenv = getenv("VMD_PLUGIN_PATH");
     if (pathenv==NULL) 
     {
@@ -242,9 +240,9 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
             "The architecture (e.g. 32bit versus 64bit) of Gromacs and VMD has to match.\n");
         return 0;
     }
-    for (i=0; i<globbuf.gl_pathc && fr->vmdplugin.api == NULL; i++)
+    for (i=0; i<globbuf.gl_pathc && vmdplugin->api == NULL; i++)
     {
-        ret|=load_sharedlibrary_plugins(globbuf.gl_pathv[i],&fr->vmdplugin);
+        ret|=load_sharedlibrary_plugins(globbuf.gl_pathv[i],vmdplugin);
     }
     globfree(&globbuf);
 #else
@@ -258,12 +256,12 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     do
     {
         sprintf(filename,"%s\\%s",pathenv,ffd.cFileName);
-        ret|=load_sharedlibrary_plugins(filename,&fr->vmdplugin);
+        ret|=load_sharedlibrary_plugins(filename,&vmdplugin);
     }
-    while (FindNextFile(hFind, &ffd )  != 0 && fr->vmdplugin.api == NULL );
+    while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL );
     FindClose(hFind);
 #endif
-    
+
     if (!ret)
     {
         printf("\nCould not open any VMD library.\n");
@@ -278,13 +276,27 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
         }
         return 0;
     }
-    if (fr->vmdplugin.api == NULL)
+
+    if (vmdplugin->api == NULL)
     {
-        printf("\nNo plugin for %s found\n",fr->vmdplugin.filetype);
+        printf("\nNo plugin for %s found\n",vmdplugin->filetype);
         return 0;
     }
 
-    printf("\nUsing VMD plugin: %s (%s)\n",fr->vmdplugin.api->name,fr->vmdplugin.api->prettyname);
+    printf("\nUsing VMD plugin: %s (%s)\n",vmdplugin->api->name,vmdplugin->api->prettyname);
+
+    return 1;
+
+}
+
+int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
+{
+    molfile_timestep_metadata_t *metadata=NULL;
+    
+    if (!load_vmd_library(fn,&(fr->vmdplugin))) 
+    {
+        return 0;
+    }
 
     fr->vmdplugin.handle = fr->vmdplugin.api->open_file_read(fn, fr->vmdplugin.filetype, &fr->natoms);
 
