@@ -61,7 +61,8 @@ extern int pme_inconvenient_nnodes(int nkx,int nky,int nnodes);
  * 2 when using less PME nodes is expected to be faster
  */
 
-extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,int nnodes_major,
+extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
+			int nnodes_major,int nnodes_minor,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy, bool bReproducible);
 			

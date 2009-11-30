@@ -16,7 +16,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	domdec.c	domdec_box.c	domdec_con.c	\
 	domdec_network.c domdec_setup.c	domdec_top.c	\
 	ebin.c		\
-	edsam.c		ewald.c         fftgrid.c	\
+	edsam.c		ewald.c         \
 	force.c  	forcerec.c	\
 	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
@@ -42,6 +42,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	wall.c		wnblist.c	\
 	csettle.c       clincs.c	\
 	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c	\
+	fft5d.c         fft5d.h         \
 	gmx_wallcycle.c \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
 	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\

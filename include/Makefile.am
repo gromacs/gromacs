@@ -30,7 +30,6 @@ ebin.h \
 edsam.h \
 enxio.h \
 ffscanf.h \
-fftgrid.h \
 filenm.h \
 force.h \
 futil.h \

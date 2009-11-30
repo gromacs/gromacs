@@ -190,6 +190,7 @@ typedef struct gmx_domdec_comm
     /* The number of nodes doing PME (PP/PME or only PME) */
     int  npmenodes;
     int  npmenodes_major;
+    int  npmenodes_minor;
     /* The communication setup including the PME only nodes */
     bool bCartesianPP_PME;
     ivec ntot;
@@ -6011,7 +6012,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
                                         matrix box,rvec *x,
                                         gmx_ddbox_t *ddbox,
-                                        int *npme_major)
+                                        int *npme_major,int *npme_minor)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -6318,23 +6319,29 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
     if (EEL_PME(ir->coulombtype))
     {
-        if (FALSE && dd->nc[XX] > cr->npmenodes && cr->npmenodes % dd->nc[XX] == 0)
+        if (comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0)
         {
             comm->npmedecompdim   = 2;
             comm->npmenodes_major = dd->nc[XX];
+            comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
         }
         else
         {
             comm->npmedecompdim   = 1;
             comm->npmenodes_major = comm->npmenodes;
+            comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
         }
     }
     else
     {
         comm->npmedecompdim   = 0;
         comm->npmenodes_major = 0;
+        comm->npmenodes_minor = 0;
     }
+    
+    /* Technically we don't need both of these, but it simplifies code not having to recalculate it */
     *npme_major = comm->npmenodes_major;
+    *npme_minor = comm->npmenodes_minor;
         
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)

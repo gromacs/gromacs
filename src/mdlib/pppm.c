@@ -63,6 +63,14 @@
 #define ulim2  (3)
 
 
+
+/* PPPM temporarily disabled while working on 2D PME */
+#define DISABLE_PPPM
+
+
+
+#ifndef DISABLE_PPPM
+
 /* TODO: fix thread-safety */
 
 static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
@@ -444,6 +452,7 @@ static void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
   sfree(nTest);
 }
 
+
 void solve_pppm(FILE *fp,t_commrec *cr,
 		t_fftgrid *grid,real ***ghat,rvec box,
 		bool bVerbose,t_nrnb *nrnb)
@@ -483,6 +492,9 @@ static rvec      beta;
 static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
+#endif
+
+
 int gmx_pppm_init(FILE *log,      t_commrec *cr,
                   const output_env_t oenv, bool bVerbose,
                   bool bOld,      matrix box,
@@ -495,6 +507,11 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
   const real tol = 1e-5;
   rvec  box_diag,spacing;
 
+#ifdef DISABLE_PPPM
+    gmx_fatal(FARGS,"PPPM temporarily disabled while working on 2DPME\n");
+    return -1;
+#else
+    
 #ifdef GMX_WITHOUT_FFTW
   gmx_fatal(FARGS,"PPPM used, but GROMACS was compiled without FFTW support!\n");
 #endif
@@ -578,6 +595,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
   grid = mk_fftgrid(nx,ny,nz,NULL,NULL,cr,bReproducible);
   
   return 0;
+#endif
 }
 
 int gmx_pppm_do(FILE *log,       gmx_pme_t pme,
@@ -589,7 +607,12 @@ int gmx_pppm_do(FILE *log,       gmx_pme_t pme,
 		t_nrnb *nrnb,
 		int pme_order,   real *energy)
 {
-  /* Make the grid empty */
+#ifdef DISABLE_PPPM
+    gmx_fatal(FARGS,"PPPM temporarily disabled while working on 2DPME\n");
+    return -1;
+#else
+
+    /* Make the grid empty */
   clear_fftgrid(grid);
   
   /* First step: spreading the charges over the grid. */
@@ -613,8 +636,10 @@ int gmx_pppm_do(FILE *log,       gmx_pme_t pme,
 		     phi,grid,beta,nrnb);
   
   return 0;
+#endif
 }
 
+#ifndef DISABLE_PPPM
 static int gmx_pppm_opt_do(FILE *log,       gmx_pme_t pme,
 			   t_inputrec *ir,  bool bVerbose,
 			   int natoms,
@@ -659,3 +684,4 @@ static int gmx_pppm_opt_do(FILE *log,       gmx_pme_t pme,
   return 0;
 }
 
+#endif
