@@ -53,6 +53,7 @@
 #include "gstat.h"
 #include "gmx_statistics.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 /* must correspond to char *avbar_opt[] declared in main() */
 enum { avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR };

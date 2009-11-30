@@ -38,6 +38,17 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Should be called after generating or reading mtop,
+ * to set some compute intesive variables to avoid
+ * N^2 operations later on.
+ */
+extern void
+gmx_mtop_finalize(gmx_mtop_t *mtop);
+
 
 /* Returns the total number of charge groups in mtop */
 extern int
@@ -223,3 +234,8 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir);
  */
 extern t_topology
 gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+
+#ifdef __cplusplus
+}
+#endif
+

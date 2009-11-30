@@ -53,6 +53,8 @@
 #include "gstat.h"
 #include "xvgr.h"
 #include "physics.h"
+#include "gmx_ana.h"
+
 #ifdef HAVE_LIBGSL
 #include <gsl/gsl_multimin.h>
 

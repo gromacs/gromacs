@@ -55,6 +55,7 @@
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
 
 typedef struct {
   atom_id i;

@@ -45,6 +45,10 @@
 #include "types/simple.h"
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef M_PI
 #define	M_PI		3.14159265358979323846
 #endif
@@ -63,10 +67,6 @@
 
 #ifndef M_LN2
 #define M_LN2       0.693147180560
-#endif
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 extern	int		gmx_nint(real a);

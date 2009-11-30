@@ -330,7 +330,7 @@ static void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
 
             if(!srcbuf)
             { /* there was (as of yet) no copied buffer */
-                char *try_again_srcbuf;
+                void *try_again_srcbuf;
                 /* we need to try checking the pointer again after we increase
                    the read counter, signaling that one more thread
                    is reading. */

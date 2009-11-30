@@ -48,8 +48,7 @@
 #include <typedefs.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*! \name Flags for position calculation.

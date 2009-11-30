@@ -39,6 +39,10 @@
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* UTILITIES */
 
 extern int name2index(char *str, char ***typenames, int ntypes);
@@ -81,5 +85,9 @@ extern void print_bondeds(FILE *out,int natoms,directive d,
 			  int ftype,int fsubtype,t_params plist[]);
 
 extern void print_excl(FILE *out, int natoms, t_excls excls[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _toputil_h */

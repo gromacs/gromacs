@@ -82,25 +82,55 @@ typedef struct gmx_cpp {
   struct   gmx_cpp *child,*parent;
 } gmx_cpp;
 
-static bool is_blank_end(char c)
+static bool is_word_end(char c)
 {
-  return ((c == ' ') || (c == '\t') || (c == '\0') || (c == '\n'));
+  return !(isalnum(c) || c == '_');
 }
 
-static char *strstrw(const char *buf,const char *word)
+static const char *strstrw(const char *buf,const char *word)
 {
-  char *ptr;
+  const char *ptr;
 
   while ((ptr = strstr(buf,word)) != NULL) {
     /* Check if we did not find part of a longer word */
     if (ptr && 
-	is_blank_end(ptr[strlen(word)]) &&
-	(((ptr > buf) && is_blank_end(ptr[-1])) || (ptr == buf)))
+	is_word_end(ptr[strlen(word)]) &&
+	(((ptr > buf) && is_word_end(ptr[-1])) || (ptr == buf)))
       return ptr;
       
     buf = ptr + strlen(word);
   }
   return NULL;
+}
+
+static bool find_directive(char *buf, char **name, char **val)
+{
+  /* Skip initial whitespace */
+  while (isspace(*buf)) ++buf;
+  /* Check if this is a directive */
+  if (*buf != '#')
+    return FALSE;
+  /* Skip the hash and any space after it */
+  ++buf;
+  while (isspace(*buf)) ++buf;
+  /* Set the name pointer and find the next space */
+  *name = buf;
+  while (*buf != 0 && !isspace(*buf)) ++buf;
+  /* Set the end of the name here, and skip any space */
+  if (*buf != 0)
+  {
+    *buf = 0;
+    ++buf;
+    while (isspace(*buf)) ++buf;
+  }
+  /* Check if anything is remaining */
+  *val = (*buf != 0) ? buf : NULL;
+  return TRUE;
+}
+
+static bool is_ifdeffed_out(gmx_cpp_t handle)
+{
+  return ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE));
 }
 
 static void add_include(const char *include)
@@ -159,7 +189,8 @@ static void add_define(const char *define)
 int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 {
   gmx_cpp_t cpp;
-  char *buf,*ptr,*pdum;
+  char *buf,*pdum;
+  const char *ptr;
   int i;
   unsigned int i1;
   
@@ -197,7 +228,10 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
       _chdir(cpp->path);
 #else
       pdum=getcwd(cpp->cwd,STRLEN);
-      chdir(cpp->path);
+      if (-1 == chdir(cpp->path))
+	gmx_fatal(FARGS,"Can not chdir to %s when processing topology. Reason: %s",
+		  cpp->path,strerror(errno));
+
 #endif
       
     if (NULL != debug)
@@ -234,6 +268,135 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
   return eCPP_OK;
 }
 
+static int
+process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
+{
+  gmx_cpp_t handle = (gmx_cpp_t)*handlep;
+  int  i,i0,len,status;
+  unsigned int i1;
+  char *inc_fn,*name;
+  int  bIfdef,bIfndef;
+
+  /* #ifdef or ifndef statement */
+  bIfdef  = (strcmp(dname,"ifdef") == 0);
+  bIfndef = (strcmp(dname,"ifndef") == 0);
+  if (bIfdef || bIfndef) {
+    if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE)) {
+      handle->nifdef++;
+      srenew(handle->ifdefs,handle->nifdef);
+      handle->ifdefs[handle->nifdef-1] = eifIGNORE;
+    }
+    else {
+      snew(name,strlen(dval)+1);
+      sscanf(dval,"%s",name);
+      for(i=0; (i<ndef); i++) 
+	if (strcmp(defs[i].name,name) == 0) 
+	  break;
+      handle->nifdef++;
+      srenew(handle->ifdefs,handle->nifdef);
+      if ((bIfdef && (i < ndef)) || (bIfndef && (i == ndef))) 
+	handle->ifdefs[handle->nifdef-1] = eifTRUE;
+      else
+	handle->ifdefs[handle->nifdef-1] = eifFALSE;
+      sfree(name);
+    }
+    return eCPP_OK;
+  }
+  
+  /* #else statement */
+  if (strcmp(dname,"else") == 0) {
+    if (handle->nifdef <= 0)
+      return eCPP_SYNTAX;
+    if (handle->ifdefs[handle->nifdef-1] == eifTRUE)
+      handle->ifdefs[handle->nifdef-1] = eifFALSE;
+    else if (handle->ifdefs[handle->nifdef-1] == eifFALSE)
+      handle->ifdefs[handle->nifdef-1] = eifTRUE;
+    return eCPP_OK;
+  }
+  
+  /* #endif statement */
+  if (strcmp(dname,"endif") == 0) {
+    if (handle->nifdef <= 0)
+      return eCPP_SYNTAX;
+    handle->nifdef--;
+    return eCPP_OK;
+  }
+
+  /* Check whether we're not ifdeffed out. The order of this statement
+     is important. It has to come after #ifdef, #else and #endif, but
+     anything else should be ignored. */
+  if (is_ifdeffed_out(handle)) {
+    return eCPP_OK;
+  }
+  
+  /* Check for include statements */
+  if (strcmp(dname,"include") == 0) {
+    len = -1;
+    i0  = 0;
+    for(i1=0; (i1<strlen(dval)); i1++) {
+      if ((dval[i1] == '"') || (dval[i1] == '<') || (dval[i1] == '>'))  {
+	if (len == -1) {
+	  i0 = i1+1;
+	  len = 0;
+	}
+	else
+	  break;
+      }
+      else if (len >= 0)
+	len++;
+    }
+    snew(inc_fn,len+1);
+    strncpy(inc_fn,dval+i0,len);
+    inc_fn[len] = '\0';
+    
+    if (debug)
+      fprintf(debug,"Going to open include file '%s' i0 = %d, strlen = %d\n",
+	      inc_fn,i0,len);
+    /* Open include file and store it as a child in the handle structure */
+    status = cpp_open_file(inc_fn,&(handle->child),NULL);
+    sfree(inc_fn);
+    if (status != eCPP_OK) {
+      handle->child = NULL;
+      return status;
+    }
+    /* Make a linked list of open files and move on to the include file */
+    handle->child->parent = handle;
+    *handlep = handle->child;
+    handle = *handlep;
+    return eCPP_OK;
+  }
+  
+  /* #define statement */
+  if (strcmp(dname,"define") == 0) {
+    add_define(dval);
+    return eCPP_OK;
+  }
+  
+  /* #undef statement */
+  if (strcmp(dname,"undef") == 0) {
+    snew(name,strlen(dval)+1);
+    sscanf(dval,"%s",name);
+    for(i=0; (i<ndef); i++) {
+      if (strcmp(defs[i].name,name) == 0) {
+	sfree(defs[i].name);
+	sfree(defs[i].def);
+	break;
+      }
+    }
+    sfree(name);
+    for( ; (i<ndef-1); i++) {
+      defs[i].name = defs[i+1].name;
+      defs[i].def  = defs[i+1].def;
+    }
+    ndef--;
+    
+    return eCPP_OK;
+  }
+
+  /* If we haven't matched anything, this is an unknown directive */
+  return eCPP_SYNTAX;
+}
+
 /* Return one whole line from the file into buf which holds at most n
    characters, for subsequent processing. Returns integer status. This
    routine also does all the "intelligent" work like processing cpp
@@ -242,10 +405,10 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
 int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 {
   gmx_cpp_t handle = (gmx_cpp_t)*handlep;
-  int  i,i0,nn,len,status;
-  unsigned int i1;
-  char *inc_fn,*ptr,*ptr2,*name;
-  int  bIfdef,bIfndef;
+  int  i,nn,len,status;
+  const char *ptr, *ptr2;
+  char *name;
+  char *dname, *dval;
   
   if (!handle)
     return eCPP_INVALID_HANDLE;
@@ -272,128 +435,21 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   if (debug) 
     fprintf(debug,"%s : %4d : %s\n",handle->fn,handle->line_nr,buf);
   set_warning_line(handle->fn,handle->line_nr);
-    
-  /* #ifdef or ifndef statement */
-  bIfdef  = (strstrw(buf,"#ifdef") != NULL);
-  bIfndef = (strstrw(buf,"#ifndef") != NULL);
-  if (bIfdef || bIfndef) {
-    if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE)) {
-      handle->nifdef++;
-      srenew(handle->ifdefs,handle->nifdef);
-      handle->ifdefs[handle->nifdef-1] = eifIGNORE;
-    }
-    else {
-      snew(name,strlen(buf));
-      status = sscanf(buf,"%*s %s",name);
-      for(i=0; (i<ndef); i++) 
-	if (strcmp(defs[i].name,name) == 0) 
-	  break;
-      handle->nifdef++;
-      srenew(handle->ifdefs,handle->nifdef);
-      if ((bIfdef && (i < ndef)) || (bIfndef && (i == ndef))) 
-	handle->ifdefs[handle->nifdef-1] = eifTRUE;
-      else
-	handle->ifdefs[handle->nifdef-1] = eifFALSE;
-      sfree(name);
-    }
-    /* Don't print lines with ifdef or ifndef, go on to the next */
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* #else statement */
-  if (strstrw(buf,"#else") != NULL) {
-    if (handle->nifdef <= 0)
-      return eCPP_SYNTAX;
-    if (handle->ifdefs[handle->nifdef-1] == eifTRUE)
-      handle->ifdefs[handle->nifdef-1] = eifFALSE;
-    else if (handle->ifdefs[handle->nifdef-1] == eifFALSE)
-      handle->ifdefs[handle->nifdef-1] = eifTRUE;
-    
-    /* Don't print lines with else, go on to the next */
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* #endif statement */
-  if (strstrw(buf,"#endif") != NULL) {
-    if (handle->nifdef <= 0)
-      return eCPP_SYNTAX;
-    handle->nifdef--;
-    
-    /* Don't print lines with endif, go on to the next */
-    return cpp_read_line(handlep,n,buf);
+
+  /* Process directives if this line contains one */
+  if (find_directive(buf, &dname, &dval))
+  {
+      status = process_directive(handlep, dname, dval);
+      if (status != eCPP_OK)
+          return status;
+        /* Don't print lines with directives, go on to the next */
+      return cpp_read_line(handlep,n,buf);
   }
 
   /* Check whether we're not ifdeffed out. The order of this statement
      is important. It has to come after #ifdef, #else and #endif, but
      anything else should be ignored. */
-  if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE)) {
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* Check for include statements */
-  if (strstrw(buf,"#include") != NULL) {
-    len = -1;
-    i0  = 0;
-    for(i1=0; (i1<strlen(buf)); i1++) {
-      if ((buf[i1] == '"') || (buf[i1] == '<') || (buf[i1] == '>'))  {
-	if (len == -1) {
-	  i0 = i1+1;
-	  len = 0;
-	}
-	else
-	  break;
-      }
-      else if (len >= 0)
-	len++;
-    }
-    snew(inc_fn,len+1);
-    strncpy(inc_fn,buf+i0,len);
-    inc_fn[len] = '\0';
-    
-    if (debug)
-      fprintf(debug,"Going to open include file '%s' i0 = %d, strlen = %d\n",
-	      inc_fn,i0,len);
-    /* Open include file and store it as a child in the handle structure */
-    status = cpp_open_file(inc_fn,&(handle->child),NULL);
-    sfree(inc_fn);
-    if (status != eCPP_OK) {
-      handle->child = NULL;
-      return status;
-    }
-    /* Make a linked list of open files and move on to the include file */
-    handle->child->parent = handle;
-    *handlep = handle->child;
-    handle = *handlep;
-    /* Don't print lines with include, go on to the next */
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* #define statement */
-  if (strstrw(buf,"#define") != NULL) {
-    add_define(buf+8);
-  
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* #undef statement */
-  if (strstrw(buf,"#undef") != NULL) {
-    snew(name,strlen(buf));
-    status = sscanf(buf,"%*s %s",name);
-    for(i=0; (i<ndef); i++) {
-      if (strcmp(defs[i].name,name) == 0) {
-	sfree(defs[i].name);
-	sfree(defs[i].def);
-	break;
-      }
-    }
-    sfree(name);
-    for( ; (i<ndef-1); i++) {
-      defs[i].name = defs[i+1].name;
-      defs[i].def  = defs[i+1].def;
-    }
-    ndef--;
-    
-    /* Don't print lines with undef, go on to the next */
+  if (is_ifdeffed_out(handle)) {
     return cpp_read_line(handlep,n,buf);
   }
   
@@ -447,7 +503,9 @@ int cpp_close_file(gmx_cpp_t *handlep)
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
       _chdir(handle->cwd);
 #else
-      chdir(handle->cwd);
+      if (-1 == chdir(handle->cwd))
+	gmx_fatal(FARGS,"Can not chdir to %s when processing topology: %s",
+		  handle->cwd,strerror(errno));
 #endif
   }
   

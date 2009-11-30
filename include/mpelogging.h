@@ -32,6 +32,11 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* define USE_MPE if you want MPE logging 
  *
  * you then need to link with the appropriate libraries
@@ -98,4 +103,8 @@
      int ev_get_coords_start,        ev_get_coords_finish;
      int ev_ed_apply_cons_start,     ev_ed_apply_cons_finish;
      int ev_fit_to_reference_start,  ev_fit_to_reference_finish;
+#endif
+
+#ifdef __cplusplus
+}
 #endif

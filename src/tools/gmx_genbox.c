@@ -59,6 +59,7 @@
 #include "addconf.h"
 #include "pdbio.h"
 #include "pbc.h"
+#include "gmx_ana.h"
 
 #ifdef DEBUG
 void print_stat(rvec *x,int natoms,matrix box)

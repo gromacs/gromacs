@@ -55,6 +55,10 @@
 #include "pull.h"
 #include "update.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MD_POLARISE     (1<<2)
 #define MD_IONIZE       (1<<3)
 #define MD_RERUN        (1<<4)
@@ -303,5 +307,9 @@ extern void init_md(FILE *fplog,
 		    rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
+
+#ifdef __cplusplus
+}
+#endif
      
 #endif	/* _mdrun_h */

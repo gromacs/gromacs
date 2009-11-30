@@ -43,6 +43,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* All string arrays are NULL terminated, and therefore have an
  * extra argument (the +1)
  * these should correspond to names.c and include/types/enums.h
@@ -126,5 +130,9 @@ extern const char *eAdressSITEtype_names[eAdressSITENR+1];
 #define EADRESSTYPE(e) ENUM_NAME(e,eAdressNR,eAdresstype_names)
 #define EADRESSICTYPE(e) ENUM_NAME(e,eAdressICNR,eAdressICtype_names)
 #define EADRESSSITETYPE(e) ENUM_NAME(e,eAdressSITENR,eAdressSITEtype_names)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _names_h */

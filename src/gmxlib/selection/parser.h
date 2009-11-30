@@ -42,8 +42,8 @@
      INVALID = 258,
      HELP = 259,
      HELP_TOPIC = 260,
-     INTEGER = 261,
-     REAL = 262,
+     TOK_INT = 261,
+     TOK_REAL = 262,
      STR = 263,
      IDENTIFIER = 264,
      CMD_SEP = 265,
@@ -60,24 +60,24 @@
      METHOD_GROUP = 276,
      METHOD_POS = 277,
      MODIFIER = 278,
-     PARAM_BASIC = 279,
-     PARAM_EXPR = 280,
+     EMPTY_POSMOD = 279,
+     PARAM = 280,
      END_OF_METHOD = 281,
      OF = 282,
-     PARAM_REDUCT = 283,
-     XOR = 284,
-     OR = 285,
-     AND = 286,
-     NOT = 287,
-     CMP_OP = 288
+     CMP_OP = 283,
+     PARAM_REDUCT = 284,
+     XOR = 285,
+     OR = 286,
+     AND = 287,
+     NOT = 288
    };
 #endif
 /* Tokens.  */
 #define INVALID 258
 #define HELP 259
 #define HELP_TOPIC 260
-#define INTEGER 261
-#define REAL 262
+#define TOK_INT 261
+#define TOK_REAL 262
 #define STR 263
 #define IDENTIFIER 264
 #define CMD_SEP 265
@@ -94,23 +94,23 @@
 #define METHOD_GROUP 276
 #define METHOD_POS 277
 #define MODIFIER 278
-#define PARAM_BASIC 279
-#define PARAM_EXPR 280
+#define EMPTY_POSMOD 279
+#define PARAM 280
 #define END_OF_METHOD 281
 #define OF 282
-#define PARAM_REDUCT 283
-#define XOR 284
-#define OR 285
-#define AND 286
-#define NOT 287
-#define CMP_OP 288
+#define CMP_OP 283
+#define PARAM_REDUCT 284
+#define XOR 285
+#define OR 286
+#define AND 287
+#define NOT 288
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 61 "parser.y"
+#line 62 "parser.y"
 {
     int                         i;
     real                        r;
@@ -122,7 +122,7 @@ typedef union YYSTYPE
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
 }
-/* Line 1489 of yacc.c.  */
+/* Line 1529 of yacc.c.  */
 #line 127 "parser.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

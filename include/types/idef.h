@@ -39,6 +39,10 @@
 #ifndef _idef_h
 #define _idef_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST	6
@@ -169,7 +173,8 @@ typedef union
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } vsite;   
   struct {int  n; real a;                                 } vsiten;   
-  struct {real low,up1,up2,kfac;int type,label;           } disres; 
+  /* NOTE: npair is only set after reading the tpx file */
+  struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
@@ -285,5 +290,10 @@ typedef struct {
   real scale;     /* distance between two points */
   real *tab;      /* the actual tables, per point there are  4 numbers */
 } bondedtable_t;
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

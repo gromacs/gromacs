@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Neighborlist type */
 enum {
   enlistATOM_ATOM,
@@ -44,6 +48,13 @@ enum {
   enlistCG_CG,
   enlistNR
 };
+
+typedef unsigned long t_excl;
+
+/* The maximum charge group size for CG-CG nblists.
+ * The excl entry in t_nblist uses blocks of this size.
+ */
+#define MAX_CGCGSIZE 32
 
 typedef struct 
 {
@@ -64,6 +75,7 @@ typedef struct
   int *           jindex;       /* Index in jjnr                         */
   int *           jjnr;	        /* The j-atom list                       */
   int *           jjnr_end;     /* The end atom, only with enltypeCG     */
+  t_excl *        excl;         /* Exclusions, only with enltypeCG       */
   int             count;        /* counter to multithread the innerloops */
   void *          mtx;          /* mutex to lock the counter             */
 } t_nblist;
@@ -84,3 +96,8 @@ typedef struct
  *
  * Clear?
  */
+
+#ifdef __cplusplus
+}
+#endif
+

@@ -40,6 +40,9 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern void do_edsam(t_inputrec *ir,int step,t_mdatoms *md,
                      t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
@@ -59,5 +62,9 @@ extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed,t_mdatoms 
  
 extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed, matrix box, int step);
 /* Flooding - called from do_force() */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _edsam_h */

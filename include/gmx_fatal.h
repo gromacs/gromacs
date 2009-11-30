@@ -1,3 +1,4 @@
+
 /*
  * 
  *                This source code is part of
@@ -40,14 +41,17 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
 
+/* This include has now been moved upwards and the sky hasn't fallen... */
+#include "typedefs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+  
 void 
 _where(const char *file,int line);
 #define where() _where(__FILE__,__LINE__)
@@ -82,9 +86,6 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
  * call this function using the FARGS macro:
  * gmx_fatal(FARGS,fmt,...)
  */
-
-/* This include must not be moved upwards, to prevent compilation problems */  
-#include "typedefs.h"
 
 void
 gmx_fatal_set_log_file(FILE *fp);

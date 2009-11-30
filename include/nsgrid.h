@@ -39,6 +39,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define   GRID_STDDEV_FAC  sqrt(3)
 #define NSGRID_STDDEV_FAC  2.0
 /*
@@ -103,5 +107,9 @@ extern void print_grid(FILE *log,t_grid *grid);
 
 extern void mv_grid(t_commrec *cr,t_grid *grid);
 /* Move the grid over processors */
+
+#ifdef __cplusplus
+}
+#endif
 
 

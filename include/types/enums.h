@@ -36,6 +36,11 @@
 #include <config.h>
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* note: these enums should correspond to the names in gmxlib/names.c */
 
 enum {
@@ -224,3 +229,7 @@ enum {
 enum {
   eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITENR
 };
+#ifdef __cplusplus
+}
+#endif
+

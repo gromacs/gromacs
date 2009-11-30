@@ -563,7 +563,7 @@ set_refpos_type(gmx_ana_poscalc_coll_t *pcc, t_selelem *sel, const char *rpost)
     }
     else
     {
-        _gmx_selparser_error("warning: '%d' modifier for '%s' ignored",
+        _gmx_selparser_error("warning: '%s' modifier for '%s' ignored",
                              rpost, sel->u.expr.method->name);
     }
     return rc;
@@ -586,7 +586,7 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
     t_selelem         *sel;
     t_selexpr_param   *params, *param;
-    char              *name;
+    const char        *name;
     int                rc;
 
     sel = _gmx_selelem_create(SEL_EXPRESSION);
@@ -721,6 +721,7 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     t_selelem       *root;
     int              rc;
 
+    _gmx_sel_finish_method(scanner);
     root = _gmx_selelem_create(SEL_EXPRESSION);
     set_method(sc, root, method);
     /* Process the parameters */
@@ -760,6 +761,7 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method, t_selexpr_param *params,
     t_selexpr_param   *vparam;
     int                i;
 
+    _gmx_sel_finish_method(scanner);
     mod = _gmx_selelem_create(SEL_MODIFIER);
     set_method(sc, mod, method);
     if (method->type == NO_VALUE)

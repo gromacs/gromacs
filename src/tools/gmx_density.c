@@ -54,6 +54,7 @@
 #include "index.h"
 #include "tpxio.h"
 #include "physics.h"
+#include "gmx_ana.h"
 
 typedef struct {
   char *atomname;

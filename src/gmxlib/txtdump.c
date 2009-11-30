@@ -38,7 +38,9 @@
 #endif
 
 /* This file is completely threadsafe - please keep it that way! */
+#ifdef GMX_THREADS
 #include <thread_mpi.h>
+#endif
 
 
 #include <stdio.h>

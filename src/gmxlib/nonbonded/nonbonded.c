@@ -37,8 +37,9 @@
 #include <config.h>
 #endif
 
-
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include <thread_mpi.h>
+#endif
 
 
 #include <stdio.h>

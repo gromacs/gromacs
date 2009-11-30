@@ -90,7 +90,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 #ifdef USE_COLLECTIVE_COPY_BUFFER
         /* we must copy our own data too, unfortunately (otherwise there's 
            a hole) */
-        using_cb=(total_send_size < (cev->N)*COPY_BUFFER_SIZE);
+        using_cb=(total_send_size < (size_t)((cev->N)*COPY_BUFFER_SIZE));
         cev->met[myrank].using_cb=using_cb;
         if (using_cb)
         {
@@ -224,7 +224,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
 #ifdef USE_COLLECTIVE_COPY_BUFFER
         /* we must copy our own data too, unfortunately (otherwise there's 
            a hole) */
-        using_cb=(total_send_size < (cev->N)*COPY_BUFFER_SIZE);
+        using_cb=(total_send_size < (size_t)((cev->N)*COPY_BUFFER_SIZE));
         cev->met[myrank].using_cb=using_cb;
         if (using_cb)
         {

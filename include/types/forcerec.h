@@ -40,6 +40,10 @@
 #include "genborn.h"
 #include "qmmmrec.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
 
@@ -338,8 +342,7 @@ typedef struct {
   t_QMMMrec    *qr;
 
   /* QM-MM neighborlists */
-  t_nblist QMMMlist_sr;
-  t_nblist QMMMlist_lr; /* not needed, one QMMM list suffices */
+  t_nblist QMMMlist;
 
   /* Limit for printing large forces, negative is don't print */
   real print_force;
@@ -380,3 +383,8 @@ typedef struct {
 #define BHAMC(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
 #define BHAMA(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
 #define BHAMB(nbfp,ntp,ai,aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
+
+#ifdef __cplusplus
+}
+#endif
+

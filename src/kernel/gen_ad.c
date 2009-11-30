@@ -54,6 +54,7 @@
 #include "gmx_fatal.h"
 #include "pgutil.h"
 #include "resall.h"
+#include "gen_ad.h"
 
 typedef bool (*peq)(t_param *p1, t_param *p2);
 

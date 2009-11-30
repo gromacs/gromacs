@@ -56,6 +56,8 @@
 #include "physics.h"
 #include "nrjac.h"
 #include "confio.h"
+#include "gmx_ana.h"
+
 
 static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
 			   bool bDim[])

@@ -39,6 +39,9 @@
 #ifndef _mdatom_h
 #define _mdatom_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
   real          tmassA,tmassB,tmass;
@@ -67,5 +70,10 @@ typedef struct {
   /* The AdResS weighting function */
   real          *wf;
 } t_mdatoms;
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

@@ -55,6 +55,8 @@
 #include "tpxio.h"
 #include "cmat.h"
 #include "viewit.h"
+#include "gmx_ana.h"
+
 
 static void norm_princ(t_atoms *atoms, int isize, atom_id *index, int natoms,
                        rvec *x)

@@ -37,7 +37,9 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
+#ifdef GMX_THREADS
 #include <thread_mpi.h>
+#endif
 
 
 #include <ctype.h>
@@ -1690,6 +1692,31 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
   }
 }
 
+static void set_disres_npair(gmx_mtop_t *mtop)
+{
+  int mt,i,npair;
+  t_iparams *ip;
+  t_ilist *il;
+  t_iatom *a;
+
+  ip = mtop->ffparams.iparams;
+
+  for(mt=0; mt<mtop->nmoltype; mt++) {
+    il = &mtop->moltype[mt].ilist[F_DISRES];
+    if (il->nr > 0) {
+      a = il->iatoms;
+      npair = 0;
+      for(i=0; i<il->nr; i+=3) {
+	npair++;
+	if (i+3 == il->nr || ip[a[i]].disres.label != ip[a[i+3]].disres.label) {
+	  ip[a[i]].disres.npair = npair;
+	  npair = 0;
+	}
+      }
+    }
+  }
+}
+
 static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
 {
   int  mt,mb,i;
@@ -1809,7 +1836,8 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
  * 
  * If possible, we will read the inputrec even when TopOnlyOK is TRUE.
  */
-static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int *file_version, int *file_generation)
+static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, 
+                         int *file_version, int *file_generation)
 {
   char  buf[STRLEN];
   bool  bDouble;
@@ -1858,7 +1886,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
  
   if(file_version!=NULL)
     *file_version = fver;
-  if(file_version!=NULL)
+  if(file_generation!=NULL)
     *file_generation = fgen;
    
   
@@ -2070,14 +2098,16 @@ static int do_tpx(int fp,bool bRead,
       /* Reading old version without tcoupl state data: set it */
       init_gtc_state(state,ir->opts.ngtc);
     }
-    if (file_version < 57) {
-      if (tpx.bTop && mtop) {
+    if (tpx.bTop && mtop) {
+      if (file_version < 57) {
 	if (mtop->moltype[0].ilist[F_DISRES].nr > 0) {
 	  ir->eDisre = edrSimple;
 	} else {
 	  ir->eDisre = edrNone;
 	}
       }
+      set_disres_npair(mtop);
+      gmx_mtop_finalize(mtop);
     }
   }
 

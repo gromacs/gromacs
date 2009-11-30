@@ -61,6 +61,8 @@
 #include "names.h"
 #include "matio.h"
 #include "mtop_util.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   int n;

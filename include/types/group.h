@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 	
 typedef struct {
   real    Th;		/* Temperature at half step        */
@@ -68,4 +72,8 @@ typedef struct {
 } gmx_ekindata_t;
 
 #define GID(igid,jgid,gnr) ((igid < jgid) ? (igid*gnr+jgid) : (jgid*gnr+igid))
+
+#ifdef __cplusplus
+}
+#endif
 

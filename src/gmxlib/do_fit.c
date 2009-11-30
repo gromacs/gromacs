@@ -44,6 +44,7 @@
 #include "vec.h"
 #include "txtdump.h"
 #include "smalloc.h"
+#include "do_fit.h"
 
 #define EPS 1.0e-09
 

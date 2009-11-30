@@ -43,6 +43,11 @@
 
 #include "types/simple.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct {
   int  n;		/* Number of terms				*/
   real *a;		/* Coeffients (V / nm )                  	*/
@@ -301,5 +306,10 @@ typedef struct {
 #define IR_ELEC_FIELD(ir) ((ir).ex[XX].n > 0 || (ir).ex[YY].n > 0 || (ir).ex[ZZ].n > 0)
 
 #define IR_EXCL_FORCES(ir) (EEL_FULL((ir).coulombtype) || (EEL_RF((ir).coulombtype) && (ir).coulombtype != eelRF_NEC) || (ir).implicit_solvent != eisNO)
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
