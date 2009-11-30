@@ -311,9 +311,6 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     }
     do_int(ir->ns_type);
     do_int(ir->nstlist);
-    if (file_version >= 68) {
-      do_int(ir->benlistCG_CG);
-    }
     do_int(ir->ndelta);
     if (file_version < 41) {
       do_int(idum);

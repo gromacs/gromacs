@@ -1207,9 +1207,6 @@ void init_forcerec(FILE *fp,
         fr->n_tpi = 0;
     }
     
-    /* Copy CG-CG Neighborlist */
-    fr->benlistCG_CG = ir->benlistCG_CG;
-    
     /* Copy AdResS parameters */
     fr->adress_type     = ir->adress_type;
     fr->badress_new_wf  = ir->badress_new_wf;

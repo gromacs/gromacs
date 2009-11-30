@@ -72,6 +72,7 @@
  */
 /* #define GMX_CG_INNERLOOP */
 
+
 /* 
  *    E X C L U S I O N   H A N D L I N G
  */
@@ -139,7 +140,7 @@ static void reallocate_nblist(t_nblist *nl)
 static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
                         int maxsr,int maxlr,
                         int ivdw, int icoul, 
-                        bool bfree, int enlist,bool benlistCG_CG)
+                        bool bfree, int enlist)
 {
     t_nblist *nl;
     int      homenr;
@@ -346,13 +347,13 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        init_nblist(&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
                    maxsr,maxlr,0,icoul,FALSE,enlist_def);
        init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
-                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_w,fr->benlistCG_CG);
+                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_w);
        init_nblist(&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
-                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_w,fr->benlistCG_CG);
+                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_w);
        init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_ww,fr->benlistCG_CG);
+                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,enlist_ww);
        init_nblist(&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
-                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_ww,fr->benlistCG_CG);
+                   maxsr_wat,maxlr_wat,0,icoul, FALSE,enlist_ww);
        
        if (fr->efep != efepNO) 
        {
@@ -366,11 +367,11 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
            }
 
            init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
-                       maxsr,maxlr,ivdw,icoulf,TRUE,enlistATOM_ATOM,fr->benlistCG_CG);
+                       maxsr,maxlr,ivdw,icoulf,TRUE,enlistATOM_ATOM);
            init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
-                       maxsr,maxlr,ivdw,0,TRUE,enlistATOM_ATOM,fr->benlistCG_CG);
+                       maxsr,maxlr,ivdw,0,TRUE,enlistATOM_ATOM);
            init_nblist(&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
-                       maxsr,maxlr,0,icoulf,TRUE,enlistATOM_ATOM,fr->benlistCG_CG);
+                       maxsr,maxlr,0,icoulf,TRUE,enlistATOM_ATOM);
        }  
    }
    /* QMMM MM list */

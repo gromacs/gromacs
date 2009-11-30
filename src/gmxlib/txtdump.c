@@ -521,7 +521,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PSTEP("init_step",ir->init_step);
     PI("nstcalcenergy",ir->nstcalcenergy);
     PS("ns_type",ENS(ir->ns_type));
-    PS("nblistCG",BOOL(ir->benlistCG_CG));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
     PI("nstcomm",ir->nstcomm);

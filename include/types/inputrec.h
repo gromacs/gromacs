@@ -156,7 +156,6 @@ typedef struct {
   gmx_large_int_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  nstcalcenergy;	/* fequency of energy calc. and T/P coupl. upd.	*/
   int  ns_type;		/* which ns method should we use?               */
-  bool  benlistCG_CG;   /* Enable CG-CG Neighborlist */ 
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/
   int  nstcomm;		/* number of steps after which center of mass	*/

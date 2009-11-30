@@ -352,9 +352,6 @@ typedef struct {
   double t_wait;
   int timesteps;
 
-  /* Enable CG-CG Neighborlist as defined in the inputrec */ 
-  bool  benlistCG_CG;
-
   /* parameter needed for AdResS simulation */
   int  adress_type;
   bool badress_new_wf;

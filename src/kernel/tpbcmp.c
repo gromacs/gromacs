@@ -454,7 +454,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
-  cmp_int(fp,"inputrec->benlistCG_CG",-1,ir1->benlistCG_CG,ir2->benlistCG_CG);
   cmp_int(fp,"inputrec->nstlist",-1,ir1->nstlist,ir2->nstlist);
   cmp_int(fp,"inputrec->ndelta",-1,ir1->ndelta,ir2->ndelta);
   cmp_int(fp,"inputrec->nstcomm",-1,ir1->nstcomm,ir2->nstcomm);

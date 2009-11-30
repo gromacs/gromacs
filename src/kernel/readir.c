@@ -717,8 +717,6 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
   /* set ndelta to the optimal value of 2 */
   ir->ndelta = 2;
-  CTYPE ("enable Charge group-Charge group nblist");
-  EETYPE("nblistCG", ir->benlistCG_CG, yesno_names, nerror, TRUE);
   CTYPE ("Periodic boundary conditions: xyz, no, xy");
   EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
   EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names, nerror, TRUE);
