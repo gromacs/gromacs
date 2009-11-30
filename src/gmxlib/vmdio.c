@@ -217,7 +217,7 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
 
     fr->vmdplugin.api = NULL;
     fr->vmdplugin.filetype = strrchr(fn,'.');
-    if (fr->vmdplugin.filetype)
+    if (!fr->vmdplugin.filetype)
     {
         return 0;
     }
