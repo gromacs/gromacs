@@ -275,7 +275,7 @@ int main(int argc,char *argv[])
     { efXVG, "-runav",  "runaver",  ffOPTWR },
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
-    { efXVG, "-r",      "rotation", ffOPTWR },
+    { efXVG, "-ro",     "rotation", ffOPTWR },
     { efLOG, "-ra",     "rotangles",ffOPTWR },
     { efLOG, "-rs",     "rotslabs", ffOPTWR },
     { efLOG, "-rt",     "rottorque",ffOPTWR },

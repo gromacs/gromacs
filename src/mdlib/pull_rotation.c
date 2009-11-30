@@ -2666,7 +2666,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     er->out_torque  = NULL;
     if (MASTER(cr))
     {
-        er->out_rot = open_rot_out(opt2fn("-r",nfile,fnm), rot, oenv, Flags);
+        er->out_rot = open_rot_out(opt2fn("-ro",nfile,fnm), rot, oenv, Flags);
         if (bFlex)
         {
             if (rot->nstrout > 0)
