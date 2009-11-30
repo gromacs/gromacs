@@ -1733,8 +1733,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                     (CGLO_FIRSTCALL |
-                     (bVV ? CGLO_PRESSURE:0) |
                      (CGLO_TEMPERATURE) |  
+                     (bVV ? CGLO_PRESSURE:0) |
                      (bRerunMD ? CGLO_RERUNMD:0) | 
                      (bEkinAveVel ? CGLO_EKINAVEVEL:0) | 
                      (CGLO_GSTAT) | 
@@ -2307,17 +2307,20 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 if (bVV) {
                     /* if EkinAveVel, compute the pressure and constraints */
+                    /* if EkinAveEKin, the pressure and constraints only if using pressure control.*/
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_ENERGY) | 
-                                    (bFirstIterate ? (cglo_flags | CGLO_PRESSURE):0) |
                                     (((bEkinAveVel &&(!bInitStep)) || (!bEkinAveVel && IR_NPT_TROTTER(ir)))? (cglo_flags | CGLO_TEMPERATURE):0) | 
+                                    (bFirstIterate ? (cglo_flags | CGLO_PRESSURE):0) |                                    
+                                    (bEkinAveVel ? (cglo_flags | CGLO_CONSTRAINT):0) |
                                     ((bEkinAveVel || (!bEkinAveVel && IR_NPT_TROTTER(ir))) ? CGLO_EKINAVEVEL : 0) |
                                     (bIterate ? CGLO_ITERATE : 0) | 
                                     (bFirstIterate ? CGLO_FIRSTITERATE : 0) | 
                                     (cglo_flags | CGLO_SCALEEKIN)
+
                         );
                 }
                 /* explanation of above: 
@@ -2584,7 +2587,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_TEMPERATURE) 
-
                         );
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[4],bEkinAveVel);            
                     copy_rvecn(cbuf,state->x,0,state->natoms);
@@ -2595,7 +2597,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure. 
                      * For now, will call without actually constraining, constr=NULL*/
- 
+                    
                     update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
                                        &top->idef,tmp_vir,force_vir,
                                        cr,nrnb,wcycle,upd,NULL,
@@ -2647,8 +2649,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             (!bVV ? (cglo_flags | CGLO_ENERGY):0) | 
-                            (!bVV ? (cglo_flags | CGLO_PRESSURE):0) |
                             (!bVV ? (cglo_flags | CGLO_TEMPERATURE):0) | 
+                            (!bVV ? (cglo_flags | CGLO_PRESSURE):0) |
                             (bIterate ? (cglo_flags | CGLO_ITERATE) : 0) |
                             (bFirstIterate ? (cglo_flags | CGLO_FIRSTITERATE) : 0)
                 );            
