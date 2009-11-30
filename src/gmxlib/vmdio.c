@@ -212,7 +212,6 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     sprintf(defpathenv,"%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile",progfolder);
 #endif
 
-
     vmdplugin->api = NULL;
     vmdplugin->filetype = strrchr(fn,'.');
     if (!vmdplugin->filetype)
