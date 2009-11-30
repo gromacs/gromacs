@@ -201,7 +201,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     bEner = flags & CGLO_ENERGY;
     bTemp = flags & CGLO_TEMPERATURE;
     bPres  = flags & CGLO_PRESSURE;
-    bConstrain = flags * CGLO_CONSTRAINT;
+    bConstrain = flags & CGLO_CONSTRAINT;
     bIterate = flags & CGLO_ITERATE;
     bFirstIterate = flags & CGLO_FIRSTITERATE;
 
