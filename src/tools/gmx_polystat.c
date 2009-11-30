@@ -148,7 +148,7 @@ int gmx_polystat(int argc,char *argv[])
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;
-  int    natoms,i,j,frame,ind0,ind1,a,d,d2,ord[DIM];
+  int    natoms,i,j,frame,ind0,ind1,a,d,d2,ord[DIM]={0};
   dvec   cm,sum_eig={0,0,0};
   double **gyr,**gyr_all,eig[DIM],**eigv;
   double sum_eed2,sum_eed2_tot,sum_gyro,sum_gyro_tot,sum_pers_tot;

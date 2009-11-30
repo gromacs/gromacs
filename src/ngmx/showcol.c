@@ -201,7 +201,7 @@ static void read_col(t_x11 *x11,t_sc *sc,char *rgb)
       }
     }
   } while (dummy);
-  ffclose(fp);
+  fclose(fp);
   if (sc->ncol)
     qsort(sc->col,sc->ncol,sizeof(sc->col[0]),col_comp);
   /* Now filter out doubles */

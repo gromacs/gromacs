@@ -41,6 +41,7 @@
 #include "macros.h"
 #include "xvgr.h"
 #include "matio.h"
+#include "futil.h"
 
 t_mat *init_mat(int n1,bool b1D)
 {

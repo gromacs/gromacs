@@ -281,7 +281,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   ffclose(hp);
   ffclose(tp);
   if (max_clust_ind >= 0) {
-    fp = fopen(mcn,"w");
+    fp = ffopen(mcn,"w");
     fprintf(fp,"[ max_clust ]\n");
     for(i=0; (i<nindex); i++) 
       if (clust_index[i] == max_clust_ind) {
@@ -293,7 +293,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	  fprintf(fp,"%d\n",index[i]+1);
 	}
       }
-    fclose(fp);
+    ffclose(fp);
   }
   
   /* Print the real distribution cluster-size/numer, averaged over the trajectory. */

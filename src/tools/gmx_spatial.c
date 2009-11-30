@@ -250,7 +250,7 @@ int gmx_spatial(int argc,char *argv[])
   }
 
   /* OUTPUT */
-  flp=fopen("grid.cube","w");
+  flp=ffopen("grid.cube","w");
   fprintf(flp,"Spatial Distribution Function\n");
   fprintf(flp,"test\n");
   fprintf(flp,"%5d%12.6f%12.6f%12.6f\n",nidxp,(MINBIN[XX]+(minx+iIGNOREOUTER)*rBINWIDTH)*10./bohr,(MINBIN[YY]+(miny+iIGNOREOUTER)*rBINWIDTH)*10./bohr,(MINBIN[ZZ]+(minz+iIGNOREOUTER)*rBINWIDTH)*10./bohr);

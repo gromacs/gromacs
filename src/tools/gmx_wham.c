@@ -1226,7 +1226,7 @@ FILE *pdo_open_file(const char *fn)
     }
     else
 	{
-		if((fp=fopen(fn,"r"))==NULL)
+		if((fp=ffopen(fn,"r"))==NULL)
 		{
 			gmx_fatal(FARGS,"Unable to open file %s\n",fn);
 		}		

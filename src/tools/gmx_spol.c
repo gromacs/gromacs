@@ -129,7 +129,7 @@ int gmx_spol(int argc,char *argv[])
   int      status;
   int      nrefat,natoms,nf,ntot;
   real     t;
-  rvec     *xtop,*x,xref,trial,dx,dip,dir;
+  rvec     *xtop,*x,xref,trial,dx={0},dip,dir;
   matrix   box;
   
   FILE    *fp;

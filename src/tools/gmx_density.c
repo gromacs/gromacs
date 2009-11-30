@@ -85,7 +85,7 @@ int get_electrons(t_electron **eltab, const char *fn)
   int nr;            /* number of atomstypes to read */
   int i;
 
-  if ( !(in = fopen(fn,"r")))
+  if ( !(in = ffopen(fn,"r")))
     gmx_fatal(FARGS,"Couldn't open %s. Exiting.\n",fn);
 
   if(NULL==fgets(buffer, 255, in))
@@ -106,6 +106,7 @@ int get_electrons(t_electron **eltab, const char *fn)
     (*eltab)[i].nr_el = tempnr;
     (*eltab)[i].atomname = strdup(tempname);
   }
+  ffclose(in);
   
   /* sort the list */
   fprintf(stderr,"Sorting list..\n");

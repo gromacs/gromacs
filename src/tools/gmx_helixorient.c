@@ -215,16 +215,16 @@ int gmx_helixorient(int argc,char *argv[])
     
     natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
-    fpaxis=fopen(opt2fn("-oaxis",NFILE,fnm),"w");
-    fpcenter=fopen(opt2fn("-ocenter",NFILE,fnm),"w");
-    fprise=fopen(opt2fn("-orise",NFILE,fnm),"w");
-    fpradius=fopen(opt2fn("-oradius",NFILE,fnm),"w");
-    fptwist=fopen(opt2fn("-otwist",NFILE,fnm),"w");
-    fpbending=fopen(opt2fn("-obending",NFILE,fnm),"w");
+    fpaxis=ffopen(opt2fn("-oaxis",NFILE,fnm),"w");
+    fpcenter=ffopen(opt2fn("-ocenter",NFILE,fnm),"w");
+    fprise=ffopen(opt2fn("-orise",NFILE,fnm),"w");
+    fpradius=ffopen(opt2fn("-oradius",NFILE,fnm),"w");
+    fptwist=ffopen(opt2fn("-otwist",NFILE,fnm),"w");
+    fpbending=ffopen(opt2fn("-obending",NFILE,fnm),"w");
 
-    fptheta1=fopen("theta1.xvg","w");
-    fptheta2=fopen("theta2.xvg","w");
-    fptheta3=fopen("theta3.xvg","w");
+    fptheta1=ffopen("theta1.xvg","w");
+    fptheta2=ffopen("theta2.xvg","w");
+    fptheta3=ffopen("theta3.xvg","w");
 
     if(bIncremental)
     {
