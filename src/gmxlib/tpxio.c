@@ -668,7 +668,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(ir->adress_icor);
       do_int(ir->adress_ivdw);
       do_int(ir->adress_site);
-      do_rvec(ir->adress_refmol);
+      do_rvec(ir->adress_refs);
     }
 
     /* pull stuff */

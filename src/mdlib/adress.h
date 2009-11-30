@@ -49,10 +49,10 @@
  *
  * \param[in] x position of the particle
  * \param[in] adresstype type of address weight function
- *                       1 - constant weight all over the box
- *                       2 - split in x direction with ref as center
- *                       3 - spherical splitting with ref as center
- *                       4 - sphere moving along the refmol vsite
+ *                       eAdressOff - explicit simulation
+ *                       eAdressConst - constant weight all over the box
+ *                       eAdressXSplit - split in x direction with ref as center
+ *                       eAdressSphere - spherical splitting with ref as center
  *                       else - weight = 1 - explicit simulation
  * \param[in] adressr radius/size of the explicit zone
  * \param[in] adressw size of the hybrid zone 
@@ -139,7 +139,7 @@ update_adress_weights_atom(int                  cg0,
  * \param[in,out] f the force array pointing at f_novirsum from sim_util.c
  * \param[in] fr the forcerec containing all the parameters
  * \param[in] mdatoms the struct containing all the atoms properties
- * \param[in] pbc for shortest distance to fr->adress_refmol
+ * \param[in] pbc for shortest distance to fr->adress_refs
  */
 void
 adress_thermo_force(int                  cg0,

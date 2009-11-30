@@ -361,7 +361,7 @@ typedef struct {
   int  adress_icor;
   int  adress_ivdw;
   int  adress_site;
-  rvec adress_refmol;
+  rvec adress_refs;
   t_forcetable  atf_tab;
 
   /* User determined parameters, copied from the inputrec */

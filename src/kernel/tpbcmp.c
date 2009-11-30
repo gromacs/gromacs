@@ -578,7 +578,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"ir->adress_icor" ,-1,ir1->adress_icor,ir2->adress_icor);
   cmp_int(fp,"ir->adress_ivdw" ,-1,ir1->adress_ivdw,ir2->adress_ivdw);
   cmp_int(fp,"ir->adress_site" ,-1,ir1->adress_site,ir2->adress_site);
-  cmp_rvec(fp,"ir->adress_refs" ,-1,ir1->adress_refmol,ir2->adress_refmol,ftol,abstol);
+  cmp_rvec(fp,"ir->adress_refs" ,-1,ir1->adress_refs,ir2->adress_refs,ftol,abstol);
 
   cmp_int(fp,"inputrec->userint1",-1,ir1->userint1,ir2->userint1);
   cmp_int(fp,"inputrec->userint2",-1,ir1->userint2,ir2->userint2);

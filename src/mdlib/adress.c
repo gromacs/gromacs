@@ -141,7 +141,7 @@ update_adress_weights_com(FILE *               fplog,
     bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
-    ref                = &(fr->adress_refmol);
+    ref                = &(fr->adress_refs);
 
     /* Since this is center of mass AdResS, the vsite is not guaranteed
      * to be on the same node as the constructing atoms.  Therefore we 
@@ -241,7 +241,7 @@ update_adress_weights_cog(t_iparams            ip[],
     adressw            = fr->adress_hy_width;
     bnew_wf            = fr->badress_new_wf;
     wf                 = mdatoms->wf;
-    ref                = &(fr->adress_refmol);
+    ref                = &(fr->adress_refs);
 
     /* Since this is center of geometry AdResS, we know the vsite
      * is in the same charge group node as the constructing atoms.
@@ -358,7 +358,7 @@ update_adress_weights_atom(int                  cg0,
     bnew_wf            = fr->badress_new_wf;
     massT              = mdatoms->massT;
     wf                 = mdatoms->wf;
-    ref                = &(fr->adress_refmol);
+    ref                = &(fr->adress_refs);
     cgindex            = cgs->index;
 
     /* Same as update_com, but only use Oxygen atom for now.
@@ -430,7 +430,7 @@ adress_thermo_force(int                  cg0,
     bnew_wf          = fr->badress_new_wf;
     cgindex          = cgs->index;
     ptype            = mdatoms->ptype;
-    ref              = &(fr->adress_refmol);
+    ref              = &(fr->adress_refs);
     wf               = mdatoms->wf;
     tabscale         = fr->atf_tab.scale;
     ATFtab           = fr->atf_tab.tab;

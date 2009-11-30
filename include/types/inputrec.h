@@ -288,7 +288,7 @@ typedef struct {
   int  adress_icor;     /* type of interface correction                 */
   int  adress_ivdw;     /* AdResS vdw switch                            */
   int  adress_site;     /* AdResS CG site location                      */
-  rvec adress_refmol;   /* Coordinates for AdResS reference             */
+  rvec adress_refs;     /* Coordinates for AdResS reference             */
 
 } t_inputrec;
 

@@ -1215,7 +1215,7 @@ void init_forcerec(FILE *fp,
     fr->adress_hy_width = ir->adress_hy_width;
     fr->adress_icor     = ir->adress_icor;
     fr->adress_site     = ir->adress_site;
-    copy_rvec(ir->adress_refmol,fr->adress_refmol);
+    copy_rvec(ir->adress_refs,fr->adress_refs);
     
     if (ir->adress_ivdw == evdwUSER)
     {
