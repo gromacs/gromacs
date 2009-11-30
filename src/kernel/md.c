@@ -2312,7 +2312,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     (cglo_flags | CGLO_ENERGY) | 
-                                    //((bIterations | IR_NPT_TROTTER(ir)) ? (cglo_flags | CGLO_PRESSURE):0) |
+                                    (bFirstIterate ? (cglo_flags | CGLO_PRESSURE):0) |
                                     (((bEkinAveVel &&(!bInitStep)) || (!bEkinAveVel && IR_NPT_TROTTER(ir)))? (cglo_flags | CGLO_TEMPERATURE):0) | 
                                     ((bEkinAveVel || (!bEkinAveVel && IR_NPT_TROTTER(ir))) ? CGLO_EKINAVEVEL : 0) |
                                     (bIterate ? CGLO_ITERATE : 0) | 
@@ -2641,13 +2641,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 wallcycle_stop(wcycle,ewcVSITECONSTR);
             }
             
-            /* ############## IF NOT VV, Calculate globals HERE  ############ */
+            /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             (!bVV ? (cglo_flags | CGLO_ENERGY):0) | 
-                            (CGLO_PRESSURE) |
+                            (!bVV ? (cglo_flags | CGLO_PRESSURE):0) |
                             (!bVV ? (cglo_flags | CGLO_TEMPERATURE):0) | 
                             (bIterate ? CGLO_ITERATE : 0) |
                             (bFirstIterate ? CGLO_FIRSTITERATE : 0)
