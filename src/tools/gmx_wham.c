@@ -712,7 +712,7 @@ void cyclicProfByWeightedCorr(double *profile,t_UmbrellaWindow *window,
         xvgr_subtitle(fp,buf,oenv);
         for (i=0;i<bins-1;i++)
             fprintf(fp,"%g %g\n",opt->min+opt->dz*(i+1),-corr[i]);
-        fclose(fp);
+        ffclose(fp);
     }
 
     sfree(histsum);
@@ -1240,7 +1240,7 @@ pdo_close_file(FILE *fp)
 #ifdef HAVE_PIPES
 	pclose(fp);
 #else
-	fclose(fp);
+	ffclose(fp);
 #endif
 }
 

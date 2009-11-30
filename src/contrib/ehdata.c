@@ -124,7 +124,7 @@ static t_p2Ddata *read_p2Ddata(char *fn)
   }
   fprintf(stderr,"\n");
   
-  fclose(fp);
+  ffclose(fp);
   
   return p2Ddata;
 }
@@ -181,7 +181,7 @@ static t_pq_inel *read_pq(char *fn)
   }
   fprintf(stderr,"\n");
   
-  fclose(fp);
+  ffclose(fp);
   
   return pq;
 }

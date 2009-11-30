@@ -59,7 +59,7 @@ rvec **read_ev(char *fn,int natoms)
       ev[i][j][ZZ]=zz;
     }
   }
-  fclose(in);
+  ffclose(in);
   
   return ev;
 }
@@ -82,7 +82,7 @@ real **read_proj(int nev,int nframes,char *base)
       fscanf(in,"%d%lf",&d,&x);
       evprj[i][j]=x;
     }
-    fclose(in);
+    ffclose(in);
   }
   fprintf(stderr,"\rSuccesfully read eigenvector projections\n");
   

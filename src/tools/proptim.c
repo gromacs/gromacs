@@ -111,7 +111,7 @@ void mkptrj(char *prop,int nSel,
     }
     fprintf(out,"\n");
   }
-  fclose(out);
+  ffclose(out);
   fprintf(stderr,"\n");
   for(i=0; (i<nev); i++) {
     printf("ev %2d, average: %8.3f  rms: %8.3f\n",

@@ -1670,7 +1670,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* Now start the real simulation if the user requested it ... */
     launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, cmd_args_launch, 
                       simulation_tpr, nnodes, best_npme);
-    fclose(fp);
+    ffclose(fp);
         
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)

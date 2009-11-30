@@ -186,8 +186,8 @@ void do_four(const char *fn,const char *cn,int nx,real x[],real dy[],
   }
   printf("MAXEPS = %10.5e at frequency %10.5e GHz (tauD = %8.1f ps)\n",
 	  maxeps,numax,1000/(2*M_PI*numax));
-  fclose(fp);
-  fclose(cp);
+  ffclose(fp);
+  ffclose(cp);
   sfree(tmp);
 }
 

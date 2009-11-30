@@ -162,7 +162,7 @@ int gmx_genpr(int argc,char *argv[])
       if (atoms->pdbinfo[i].bfac <= freeze_level)
 	fprintf(out,"%d\n",i+1);
     }
-    fclose(out);
+    ffclose(out);
   }
   else if ((bDisre || bConstr) && x) {
     printf("Select group to generate %s matrix from\n",
@@ -202,7 +202,7 @@ int gmx_genpr(int argc,char *argv[])
 		}
 	}
       }
-    fclose(out);
+    ffclose(out);
   }
   else {
     printf("Select group to position restrain\n");
@@ -215,7 +215,7 @@ int gmx_genpr(int argc,char *argv[])
     for(i=0; i<igrp; i++) 
       fprintf(out,"%4d %4d %10g %10g %10g\n",
 	      ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
-    fclose(out);
+    ffclose(out);
   }
   if (xfn) {
     sfree(x);

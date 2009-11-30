@@ -189,7 +189,7 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
     }
     fprintf(out,"\n");
   }
-  fclose(out);
+  ffclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
@@ -503,7 +503,7 @@ void printmol(t_corr *curr,const char *fn,
 	pdbinfo[j].bfac = sqrtD;
     }
   }
-  fclose(out);
+  ffclose(out);
   do_view(oenv,fn,"-graphtype bar");
   
   /* Compute variance, stddev and error */

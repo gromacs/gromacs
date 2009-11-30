@@ -824,7 +824,7 @@ int gmx_rms(int argc, char *argv[])
                 write_xpm(fp,0,buf,"density",get_time_label(oenv),whatlabel[ewhat],
                           delta_xsize,del_lev+1,del_xaxis,del_yaxis,
                           delta,0.0,delta_max,rlo,rhi,&nlevels);
-                fclose(fp);
+                ffclose(fp);
             }
             if (opt2bSet("-bin",NFILE,fnm)) {
                 /* NB: File must be binary if we use fwrite */
@@ -834,7 +834,7 @@ int gmx_rms(int argc, char *argv[])
                     {
                         gmx_fatal(FARGS,"Error writing to output file");
                     }
-                fclose(fp);
+                ffclose(fp);
             }
         }
         if (bBond) {
@@ -883,7 +883,7 @@ int gmx_rms(int argc, char *argv[])
         }
         fprintf(fp,"\n");
     }
-    fclose(fp);
+    ffclose(fp);
     
     if (bMirror) {
         /* Write the mirror RMSD's to file */
@@ -909,7 +909,7 @@ int gmx_rms(int argc, char *argv[])
                 fprintf(fp," %12.7f",rlsm[j][i]);
             fprintf(fp,"\n");
         }
-        fclose(fp);
+        ffclose(fp);
     }
 
     if (bAv) {
@@ -918,14 +918,14 @@ int gmx_rms(int argc, char *argv[])
         fp = xvgropen(opt2fn("-a",NFILE,fnm), buf, "Residue", buf2,oenv);
         for(j=0; (j<nrms); j++)
             fprintf(fp,"%10d  %10g\n",j,rlstot/teller);
-        fclose(fp);
+        ffclose(fp);
     }
 
     if (bNorm) {
         fp = xvgropen("aver.xvg",gn_rms[0],"Residue",whatxvglabel[ewhat],oenv);
         for(j=0; (j<irms[0]); j++)
             fprintf(fp,"%10d  %10g\n",j,rlsnorm[j]/teller);
-        fclose(fp);
+        ffclose(fp);
     }
     do_view(oenv,opt2fn_null("-a",NFILE,fnm),"-graphtype bar");
     do_view(oenv,opt2fn("-o",NFILE,fnm),NULL);

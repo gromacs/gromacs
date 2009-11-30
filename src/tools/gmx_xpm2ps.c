@@ -590,7 +590,7 @@ void xpm_mat(const char *outf, int nmat,t_matrix *mat,t_matrix *mat2,
       write_xpm_m(out,mat[i]);
     }
   }
-  fclose(out);
+  ffclose(out);
 }
 
 static void tick_spacing(int n, real axis[], real offset, char axisnm, 
@@ -973,7 +973,7 @@ void write_combined_matrix(int ecombine, const char *fn,
 		mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
 		rmat1, rlo, rhi, white, black, &nlevels);	
   }
-  fclose(out);
+  ffclose(out);
 }
 
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,

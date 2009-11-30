@@ -112,7 +112,7 @@ int read_input(t_x11 *x11,const char *fn,t_car **cars,t_input *ir)
     x11->GetNamedColor(x11,buf,&(c->col));
     x11->GetNamedColor(x11,b2,&(c->roof));
   }
-  fclose(in);
+  ffclose(in);
 
   return n;
 }

@@ -500,17 +500,17 @@ int gmx_helixorient(int argc,char *argv[])
       teller++;
   } while (read_next_x(oenv,status,&t,natoms,x,box));
     
-    fclose(fpaxis);
-    fclose(fpcenter);
-    fclose(fptilt);
-    fclose(fprotation);
-    fclose(fprise);
-    fclose(fpradius);
-    fclose(fptwist);
-    fclose(fpbending);
-    fclose(fptheta1);
-    fclose(fptheta2);
-    fclose(fptheta3);
+    ffclose(fpaxis);
+    ffclose(fpcenter);
+    ffclose(fptilt);
+    ffclose(fprotation);
+    ffclose(fprise);
+    ffclose(fpradius);
+    ffclose(fptwist);
+    ffclose(fpbending);
+    ffclose(fptheta1);
+    ffclose(fptheta2);
+    ffclose(fptheta3);
 
     close_trj(status);
     

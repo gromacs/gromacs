@@ -184,7 +184,7 @@ void optim_rise(int nx,rvec *xxav,rvec **EEV,
   fp       = ffopen("rise.log","w");
   init_optim(nx,xxav,EEV,eevprj,nnatoms,nnca,cca_index,p);
   optimize(fp,nx,risefunc,p);
-  fclose(fp);
+  ffclose(fp);
 }
 
 void optim_radius(int nx,rvec *xxav,rvec **EEV,
@@ -198,6 +198,6 @@ void optim_radius(int nx,rvec *xxav,rvec **EEV,
   
   init_optim(nx,xxav,EEV,eevprj,nnatoms,nnca,cca_index,p);
   optimize(fp,nx,radfunc,p);
-  fclose(fp);
+  ffclose(fp);
 }
 

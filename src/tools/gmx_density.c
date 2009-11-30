@@ -371,7 +371,7 @@ void plot_density(real *slDensity[], const char *afile, int nslices,
     fprintf(den,"\n");
   }
 
-  fclose(den);
+  ffclose(den);
 }
  
 int gmx_density(int argc,char *argv[])

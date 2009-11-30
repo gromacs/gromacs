@@ -159,7 +159,7 @@ gmx_rng_make_seed(void)
 #endif
   if(fp!=NULL) {
     ret=fread(&data,sizeof(unsigned int),1,fp);
-    fclose(fp);
+    ffclose(fp);
   } else {
     /* No random device available, use time-of-day and process id */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)

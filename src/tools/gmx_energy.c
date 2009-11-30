@@ -509,8 +509,8 @@ static void einstein_visco(const char *fn,const char *fni,int nsets,
         }
         fprintf(fp1,"\n");
     }
-    fclose(fp0);
-    fclose(fp1);
+    ffclose(fp0);
+    ffclose(fp1);
 }
 
 static void analyse_ener(bool bCorr,const char *corrfn,
@@ -743,7 +743,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
 	fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
       }
-      fclose(fp);
+      ffclose(fp);
     }
     else if (bCorr) {
       if (bFluct)

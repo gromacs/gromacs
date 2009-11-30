@@ -108,7 +108,7 @@ int gmx_rama(int argc,char *argv[])
     j++;
   } while (new_data(xr));
   fprintf(stderr,"\n");
-  fclose(out);
+  ffclose(out);
   
   do_view(oenv,ftp2fn(efXVG,NFILE,fnm),NULL);
   

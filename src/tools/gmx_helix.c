@@ -87,7 +87,7 @@ void dump_ahx(int nres,
   for(i=0; (i<DIM); i++)
     fprintf(fp,"%10.5f",box[i][i]);
   fprintf(fp,"\n");
-  fclose(fp);
+  ffclose(fp);
 }
 
 void dump_otrj(FILE *otrj,int natoms,atom_id all_index[],rvec x[],
@@ -337,7 +337,7 @@ int gmx_helix(int argc,char *argv[])
   close_trj(status);
 
   if (otrj) {
-    fclose(otrj);
+    ffclose(otrj);
     fac=1.0/teller;
     for(i=0; (i<nall); i++) {
       ai=allindex[i];
@@ -359,9 +359,9 @@ int gmx_helix(int argc,char *argv[])
   }
   
   for(i=0; (i<efhNR); i++) {
-    fclose(xf[i].fp);
+    ffclose(xf[i].fp);
     if (xf[i].bfp2)
-      fclose(xf[i].fp2);
+      ffclose(xf[i].fp2);
     do_view(oenv,xf[i].filenm,"-nxy");
   }
   

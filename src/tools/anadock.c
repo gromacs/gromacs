@@ -167,7 +167,7 @@ static void analyse_em_all(int npdb,t_pdbfile *pdbf[], const char *edocked,
 		  etitles[bFreeSort],"()","E (kJ/mol)",oenv);
     for(i=0; (i<npdb); i++)
       fprintf(fp,"%12lf\n",bFreeSort ? pdbf[i]->efree : pdbf[i]->edocked);
-    fclose(fp);
+    ffclose(fp);
   }
 }
 
@@ -346,7 +346,7 @@ int main(int argc,char *argv[])
 		 bFree,bRMS,cutoff);
   
   thanx(fp);
-  fclose(fp);
+  ffclose(fp);
   
   thanx(stdout);
   

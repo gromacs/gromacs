@@ -317,7 +317,7 @@ int gmx_spatial(int argc,char *argv[])
     }
     fprintf(flp,"\n");
   }
-  fclose(flp);
+  ffclose(flp);
 
   /* printf("x=%d to %d\n",minx,maxx); */
   /* printf("y=%d to %d\n",miny,maxy); */

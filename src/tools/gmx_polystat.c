@@ -382,11 +382,11 @@ int gmx_polystat(int argc,char *argv[])
 
   close_trx(status);
 
-  fclose(out);
+  ffclose(out);
   if (outv)
-    fclose(outv);
+    ffclose(outv);
   if (outp)
-    fclose(outp);
+    ffclose(outp);
 
   sum_eed2_tot /= frame;
   sum_gyro_tot /= frame;
@@ -416,7 +416,7 @@ int gmx_polystat(int argc,char *argv[])
     for (i = 0; i < j; i++) {
       fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
     }
-    fclose(outi);
+    ffclose(outi);
   }
 
   do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");

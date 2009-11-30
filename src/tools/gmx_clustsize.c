@@ -276,10 +276,10 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
     nframe++;
   } while (read_next_frame(oenv,status,&fr));
   close_trx(status);
-  fclose(fp);
-  fclose(gp);
-  fclose(hp);
-  fclose(tp);
+  ffclose(fp);
+  ffclose(gp);
+  ffclose(hp);
+  ffclose(tp);
   if (max_clust_ind >= 0) {
     fp = fopen(mcn,"w");
     fprintf(fp,"[ max_clust ]\n");
@@ -308,7 +308,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
     nhisto += (int)((j+1)*nelem/n_x);
   }
   fprintf(fp,"%5d  %8.3f\n",j+1,0.0);
-  fclose(fp);
+  ffclose(fp);
 
   fprintf(stderr,"Total number of atoms in clusters =  %d\n",nhisto);
   
@@ -329,7 +329,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   write_xpm3(fp,0,"Cluster size distribution","# clusters",timebuf,"Size",
 	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
-  fclose(fp);
+  ffclose(fp);
   cmid = 100.0;
   cmax = 0.0;
   for(i=0; (i<n_x); i++)
@@ -344,7 +344,7 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   write_xpm3(fp,0,"Weighted cluster size distribution","Fraction",timebuf,
              "Size", n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
-  fclose(fp);
+  ffclose(fp);
 
   sfree(clust_index);
   sfree(clust_size);

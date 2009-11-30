@@ -143,10 +143,10 @@ int gmx_principal(int argc,char *argv[])
   while(read_next_x(oenv,status,&t,natoms,x,box));
 	
   close_trj(status);
-  fclose(axis1);
-  fclose(axis2);
-  fclose(axis3);
-  fclose(fmoi);
+  ffclose(axis1);
+  ffclose(axis2);
+  ffclose(axis3);
+  ffclose(fmoi);
 	
   thanx(stderr);
   

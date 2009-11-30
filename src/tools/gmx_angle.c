@@ -261,7 +261,7 @@ int gmx_angle(int argc,char *argv[])
       }
       fprintf(out,"\n");
     }	
-    fclose(out);
+    ffclose(out);
   }
   if (opt2bSet("-or",NFILE,fnm)) 
     dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),dt);
@@ -275,7 +275,7 @@ int gmx_angle(int argc,char *argv[])
       fprintf(out,"%10.5f  %10.3f\n",time[i],trans_frac[i]);
       tfrac += trans_frac[i];
     }
-    fclose(out);
+    ffclose(out);
     
     tfrac/=nframes;
     fprintf(stderr,"Average trans fraction: %g\n",tfrac);
@@ -375,7 +375,7 @@ int gmx_angle(int argc,char *argv[])
     /* print first bin again as last one */
     fprintf(out,"%10g  %10f\n",180.0,angstat[0]*norm_fac);
   
-  fclose(out);
+  ffclose(out);
 
   do_view(oenv,opt2fn("-od",NFILE,fnm),"-nxy");
   if (bAver)

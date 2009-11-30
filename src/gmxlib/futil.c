@@ -106,11 +106,11 @@ void push_ps(FILE *fp)
 }
 
 #ifdef GMX_FAHCORE
-/* redefine fclose */
-#define fclose fah_fclose
+/* redefine ffclose */
+#define ffclose fah_fclose
 #else
-#ifdef fclose
-#undef fclose
+#ifdef ffclose
+#undef ffclose
 #endif
 #endif
 
@@ -133,9 +133,10 @@ static int pclose(FILE *fp)
 
 
 
-void ffclose(FILE *fp)
+int ffclose(FILE *fp)
 {
     t_pstack *ps,*tmp;
+    int ret=0;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
@@ -143,11 +144,11 @@ void ffclose(FILE *fp)
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
-            fclose(fp);
+            ret = fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
-            pclose(fp);
+            ret = pclose(fp);
         pstack=pstack->prev;
         sfree(ps);
     }
@@ -156,19 +157,20 @@ void ffclose(FILE *fp)
             ps=ps->prev;
         if (ps->prev->fp == fp) {
             if (ps->prev->fp != NULL)
-                pclose(ps->prev->fp);
+                ret = pclose(ps->prev->fp);
             tmp=ps->prev;
             ps->prev=ps->prev->prev;
             sfree(tmp);
         }
         else {
             if (fp != NULL)
-                fclose(fp);
+                ret = fclose(fp);
         }
     }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
+    return ret;
 }
 
 #ifdef rewind
@@ -261,7 +263,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        fclose(test);
+        ffclose(test);
         return TRUE;
     }
 }
