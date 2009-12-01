@@ -212,7 +212,9 @@ typedef struct gmx_pme {
     int  buf_nalloc;        /* The communication buffer size */
 
     /* work data for solve_pme */
-    int      maxkz;
+    int      work_nalloc;
+    real *   work_mhx;
+    real *   work_mhy;
     real *   work_mhz;
     real *   work_m2;
     real *   work_denom;
@@ -849,6 +851,7 @@ copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
             }
         }
     }
+
     return 0;
 }
 
@@ -951,6 +954,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
     }	
 }
 
+
 real solve_pme(gmx_pme_t pme,t_complex *grid,
                real ewaldcoeff,real vol,matrix vir,t_commrec *cr)
 {
@@ -992,7 +996,7 @@ real solve_pme(gmx_pme_t pme,t_complex *grid,
     maxky = (ny+1)/2;
     maxkz = nz/2+1;
     
-	if(maxkz > pme->maxkz)
+	if (maxkz > pme->work_nalloc)
 	{
 		/* At the moment the dimensions are actually fixed, but this is for the future... */
 		srenew(pme->work_mhz,maxkz);
@@ -1000,7 +1004,7 @@ real solve_pme(gmx_pme_t pme,t_complex *grid,
 		srenew(pme->work_denom,maxkz);
 		srenew(pme->work_tmp1,maxkz);
 		srenew(pme->work_m2inv,maxkz);
-		pme->maxkz=maxkz;
+		pme->work_nalloc = maxkz;
 	}
 	
 	mhz   = pme->work_mhz;
@@ -1137,6 +1141,200 @@ real solve_pme(gmx_pme_t pme,t_complex *grid,
     return(0.5*energy);
 }
 
+
+real solve_pme_ord_yzx(gmx_pme_t pme,t_complex *grid,
+                       real ewaldcoeff,real vol,matrix vir,t_commrec *cr)
+{
+    /* do recip sum over local cells in grid */
+    /* y major, z middle, x minor or continuous */
+    t_complex *p0;
+    int     kx,ky,kz,maxkx,maxky,maxkz;
+    int     nx,ny,nz,ix,iy,iz,ixstart;
+    real    mx,my,mz;
+    real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
+    real    ets2,struct2,vfactor,ets2vf;
+    real    eterm,d1,d2,energy=0;
+    real    by,bz;
+    real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
+    real    rxx,ryx,ryy,rzx,rzy,rzz;
+	real    *mhx,*mhy,*mhz,*m2,*denom,*tmp1,*m2inv;
+    real    corner_fac;
+    ivec    complex_order;
+    ivec    local_ndata,local_offset,local_size;
+    
+    nx = pme->nkx;
+    ny = pme->nky;
+    nz = pme->nkz;
+    
+    /* Dimensions should be identical for A/B grid, so we just use A here */
+    gmx_parallel_3dfft_complex_limits(pme->pfft_setupA,
+                                      complex_order,
+                                      local_ndata,
+                                      local_offset,
+                                      local_size);
+    
+    rxx = pme->recipbox[XX][XX];
+    ryx = pme->recipbox[YY][XX];
+    ryy = pme->recipbox[YY][YY];
+    rzx = pme->recipbox[ZZ][XX];
+    rzy = pme->recipbox[ZZ][YY];
+    rzz = pme->recipbox[ZZ][ZZ];
+    
+    maxkx = (nx+1)/2;
+    maxky = (ny+1)/2;
+    maxkz = nz/2+1;
+    
+	if (nx > pme->work_nalloc)
+	{
+		/* At the moment the dimensions are actually fixed, but this is for the future... */
+        pme->work_nalloc = nx;
+		srenew(pme->work_mhx,pme->work_nalloc);
+		srenew(pme->work_mhy,pme->work_nalloc);
+		srenew(pme->work_mhz,pme->work_nalloc);
+		srenew(pme->work_m2,pme->work_nalloc);
+		srenew(pme->work_denom,pme->work_nalloc);
+		srenew(pme->work_tmp1,pme->work_nalloc);
+		srenew(pme->work_m2inv,pme->work_nalloc);
+	}
+	
+	mhx   = pme->work_mhx;
+	mhy   = pme->work_mhy;
+	mhz   = pme->work_mhz;
+	m2    = pme->work_m2;
+	denom = pme->work_denom;
+	tmp1  = pme->work_tmp1;
+	m2inv = pme->work_m2inv;	
+	
+    for(iy=0;iy<local_ndata[YY];iy++)
+    {
+        ky = iy + local_offset[YY];
+        
+        if (ky < maxky) 
+        {
+            my = ky;
+        }
+        else 
+        {
+            my = (ky - ny);
+        }
+        
+        //mhx = mx * rxx;
+        by = pme->bsp_mod[YY][ky];
+
+        for(iz=0;iz<local_ndata[ZZ];iz++)
+        {
+            kz = iz + local_offset[ZZ];
+            
+            mz = kz;
+
+            //mhy = mx * ryx + my * ryy;
+            bz = M_PI*vol*pme->bsp_mod[ZZ][kz];
+            
+            /* 0.5 correction for corner points */
+			corner_fac = 1;
+            if (iz == 0)
+                corner_fac = 0.5;
+            if (iz == (nz+1)/2)
+                corner_fac = 0.5;
+                      
+            p0 = grid + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+            
+            /* We should skip the k-space point (0,0,0) */
+            if (local_offset[XX] > 0 ||
+                local_offset[YY] > 0 || ky > 0 ||
+                kz > 0)
+            {
+                ixstart = 0;
+            }
+            else
+            {
+                ixstart = 1;
+                p0++;
+            }
+			
+            for(ix=ixstart; ix<local_ndata[XX]; ix++)
+            {
+                kx = ix + local_offset[XX];
+                if (kx < maxkx) 
+                {
+                    mx = kx;
+                }
+                else 
+                {
+                    mx = (kx - nx);
+                }
+                mhx[kx]   = mx * rxx;
+                mhy[kx]   = mx * ryx + my * ryy;
+                mhz[kx]   = mx * rzx + my * rzy + mz * rzz;
+                m2[kx]    = mhx[kx]*mhx[kx] + mhy[kx]*mhy[kx] + mhz[kx]*mhz[kx];
+                denom[kx] = m2[kx]*bz*by*pme->bsp_mod[XX][kx];
+                tmp1[kx]  = -corner_fac*factor*m2[kx];
+            }
+			
+            for(ix=ixstart; ix<local_ndata[XX]; ix++)
+            {
+                kx = ix + local_offset[XX];
+                m2inv[kx] = 1.0/m2[kx];
+            }
+            for(ix=ixstart; ix<local_ndata[XX]; ix++) 
+            {
+                kx = ix + local_offset[XX];
+                denom[kx] = 1.0/denom[kx];
+            }
+            for(ix=ixstart; ix<local_ndata[XX]; ix++) 
+            {
+                kx = ix + local_offset[XX];
+                tmp1[kx]  = exp(tmp1[kx]);
+            }
+			
+            for(ix=ixstart; ix<local_ndata[XX]; ix++,p0++)  {
+                kx = ix + local_offset[XX];
+
+                d1      = p0->re;
+                d2      = p0->im;
+				
+                eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kx]*denom[kx];
+				
+                p0->re  = d1*eterm;
+                p0->im  = d2*eterm;
+				
+                struct2 = 2.0*(d1*d1+d2*d2);
+				
+                tmp1[kx] = eterm*struct2;
+            }
+
+            for(ix=ixstart; ix<local_ndata[XX]; ix++)  {
+                kx = ix + local_offset[XX];
+                ets2     = tmp1[kx];
+                vfactor  = (factor*m2[kx]+1.0)*2.0*m2inv[kx];
+                energy  += ets2;
+				
+                ets2vf   = ets2*vfactor;
+                virxx   += ets2vf*mhx[kx]*mhx[kx] - ets2;
+                virxy   += ets2vf*mhx[kx]*mhy[kx];
+                virxz   += ets2vf*mhx[kx]*mhz[kx];
+                viryy   += ets2vf*mhy[kx]*mhy[kx] - ets2;
+                viryz   += ets2vf*mhy[kx]*mhz[kx];
+                virzz   += ets2vf*mhz[kx]*mhz[kx] - ets2;
+            }
+        }
+    }
+    
+    /* Update virial with local values. The virial is symmetric by definition.
+     * this virial seems ok for isotropic scaling, but I'm
+     * experiencing problems on semiisotropic membranes.
+     * IS THAT COMMENT STILL VALID??? (DvdS, 2001/02/07).
+     */
+    vir[XX][XX] = 0.25*virxx;
+    vir[YY][YY] = 0.25*viryy;
+    vir[ZZ][ZZ] = 0.25*virzz;
+    vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
+    vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
+    vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+	
+    /* This energy should be corrected for a charged system */
+    return(0.5*energy);
+}
 
 
 void gather_f_bsplines(gmx_pme_t pme,real *grid,
@@ -1627,7 +1825,7 @@ init_overlap_comm(pme_overlap_t *  ol,
         }
         /* Send the number of overlapping data slices, or the number of slices on the node if that is smaller */
         pgc->send_nindex = min(ol->noverlap_data,
-                              (ol->s2g[ol->send_id[b]+1] - ol->s2g[ol->send_id[b]]));
+                              (ol->s2g[nodeid+1] - ol->s2g[nodeid]));
         
 
         /* We always start receiving to the first index of our slab */
@@ -1872,12 +2070,22 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
     
     /* TODO: These work arrays should be possible to reduce further in parallel */
-	pme->maxkz = pme->nkz/2+1;
-	snew(pme->work_mhz,pme->maxkz);
-	snew(pme->work_m2,pme->maxkz);
-	snew(pme->work_denom,pme->maxkz);
-	snew(pme->work_tmp1,pme->maxkz);
-	snew(pme->work_m2inv,pme->maxkz);
+    if (FALSE)
+    {
+        pme->work_nalloc = pme->nkz/2+1;
+    }
+    else
+    {
+        /* Use fft5d, order after FFT is y major, z, x minor */
+        pme->work_nalloc = pme->nkx;
+        snew(pme->work_mhx,pme->work_nalloc);
+        snew(pme->work_mhy,pme->work_nalloc);
+    }
+	snew(pme->work_mhz,pme->work_nalloc);
+	snew(pme->work_m2,pme->work_nalloc);
+	snew(pme->work_denom,pme->work_nalloc);
+	snew(pme->work_tmp1,pme->work_nalloc);
+	snew(pme->work_m2inv,pme->work_nalloc);
 
     *pmedata = pme;
     
@@ -2177,7 +2385,8 @@ int gmx_pme_do(gmx_pme_t pme,
             vol = det(box);
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_solve_pme_start);
-            energy_AB[q]=solve_pme(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr);
+            //energy_AB[q]=solve_pme(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr);
+            energy_AB[q]=solve_pme_ord_yzx(pme,cfftgrid,ewaldcoeff,vol,vir_AB[q],cr);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);
             /* TODO: Calculate solve pme flops in parallel */

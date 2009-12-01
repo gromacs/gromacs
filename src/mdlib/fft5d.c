@@ -56,7 +56,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
     }
     else
     {
-        P[0] = 0;
+        P[0] = 1;
         prank[0] = 0;
     }
     if (gmx_parallel_env_initialized() && comm[1] != NULL)
@@ -66,7 +66,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
     }
     else
     {
-        P[1] = 0;
+        P[1] = 1;
         prank[1] = 0;
     }
    
@@ -369,8 +369,10 @@ static void print_localdata(const fft5d_type* lin, const char* txt, int N,int M,
 	int xo[3],xl[3],xc[3],NG[3];		
 	compute_offsets(plan,xo,xl,xc,NG,s);
 	int ll=(plan->flags&FFT5D_REALCOMPLEX)?1:2;
+    FFTW(print_plan)(plan->p1d[s]);
 	printf(txt,coor[0],coor[1],s);
 	//printf("xo: %d %d %d, xl: %d %d %d\n",xo[0],xo[1],xo[2],xl[0],xl[1],xl[2]);
+
 	for (z=0;z<xl[2];z++) {
 		for(y=0;y<xl[1];y++) {
 			printf("%d %d: ",coor[0],coor[1]);
