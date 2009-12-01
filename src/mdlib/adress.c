@@ -341,8 +341,7 @@ update_adress_weights_atom(int                  cg0,
                            t_mdatoms *          mdatoms,
                            t_pbc *              pbc)
 {
-    int            icg,k,k0,k1,d;
-    real           nrcg,inv_ncg;
+    int            icg,k,k0,k1,d,nrcg;
     atom_id *      cgindex;
     rvec           ix;
     int            adresstype;
@@ -390,7 +389,7 @@ update_adress_weights_atom(int                  cg0,
                     }
                 }
             }
-        
+
             /* Set wf of all atoms in charge group equal to wf of reference atom */
             wf[k0] = adress_weight(ix,adresstype,adressr,adressw,bnew_wf,ref,pbc);
             for(k=(k0+1); (k<k1); k++)

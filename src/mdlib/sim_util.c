@@ -453,29 +453,6 @@ void do_force(FILE *fplog,t_commrec *cr,
     {
         update_forcerec(fplog,fr,box);
 
-        /* update adress weight beforehand */
-        if(bDoAdressWF)
-        {
-            /* need pbc for adress weight calculation with pbc_dx */
-            set_pbc(&pbc,inputrec->ePBC,box);
-
-            if(fr->adress_site == eAdressSITEcog)
-            {
-                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
-                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
-            }
-            else if (fr->adress_site == eAdressSITEcom)
-            {
-                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
-                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
-            }
-            else
-            {
-                update_adress_weights_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
-                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
-            }
-        }
-
         /* Calculate total (local) dipole moment in a temporary common array. 
          * This makes it possible to sum them over nodes faster.
          */
@@ -559,6 +536,29 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
     if (bStateChanged)
     {
+
+        /* update adress weight beforehand */
+        if(bDoAdressWF)
+        {
+            /* need pbc for adress weight calculation with pbc_dx */
+            set_pbc(&pbc,inputrec->ePBC,box);
+            if(fr->adress_site == eAdressSITEcog)
+            {
+                update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else if (fr->adress_site == eAdressSITEcom)
+            {
+                update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                          inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+            else
+            {
+                update_adress_weights_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
+                                           inputrec->ePBC==epbcNONE ? NULL : &pbc);
+            }
+        }
+
         for(i=0; i<2; i++)
         {
             for(j=0;j<DIM;j++)
