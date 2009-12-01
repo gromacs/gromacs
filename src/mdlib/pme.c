@@ -1219,7 +1219,7 @@ real solve_pme_ord_yzx(gmx_pme_t pme,t_complex *grid,
         }
         
         //mhx = mx * rxx;
-        by = pme->bsp_mod[YY][ky];
+        by = M_PI*vol*pme->bsp_mod[YY][ky];
 
         for(iz=0;iz<local_ndata[ZZ];iz++)
         {
@@ -1228,7 +1228,7 @@ real solve_pme_ord_yzx(gmx_pme_t pme,t_complex *grid,
             mz = kz;
 
             //mhy = mx * ryx + my * ryy;
-            bz = M_PI*vol*pme->bsp_mod[ZZ][kz];
+            bz = pme->bsp_mod[ZZ][kz];
             
             /* 0.5 correction for corner points */
 			corner_fac = 1;
@@ -1268,7 +1268,7 @@ real solve_pme_ord_yzx(gmx_pme_t pme,t_complex *grid,
                 mhz[kx]   = mx * rzx + my * rzy + mz * rzz;
                 m2[kx]    = mhx[kx]*mhx[kx] + mhy[kx]*mhy[kx] + mhz[kx]*mhz[kx];
                 denom[kx] = m2[kx]*bz*by*pme->bsp_mod[XX][kx];
-                tmp1[kx]  = -corner_fac*factor*m2[kx];
+                tmp1[kx]  = -factor*m2[kx];
             }
 			
             for(ix=ixstart; ix<local_ndata[XX]; ix++)
@@ -1305,7 +1305,7 @@ real solve_pme_ord_yzx(gmx_pme_t pme,t_complex *grid,
 
             for(ix=ixstart; ix<local_ndata[XX]; ix++)  {
                 kx = ix + local_offset[XX];
-                ets2     = tmp1[kx];
+                ets2     = corner_fac*tmp1[kx];
                 vfactor  = (factor*m2[kx]+1.0)*2.0*m2inv[kx];
                 energy  += ets2;
 				
