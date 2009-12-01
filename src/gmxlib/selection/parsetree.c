@@ -1394,7 +1394,7 @@ gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
     fp = ffopen(fnm, "r");
     _gmx_sel_set_lex_input_file(scanner, fp);
     rc = run_parser(-1, scanner);
-    fclose(fp);
+    ffclose(fp);
     return rc;
 }
 

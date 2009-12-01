@@ -299,7 +299,7 @@ int gmx_rotmat(int argc,char *argv[])
 
     close_trj(status);
     
-    fclose(out);
+    ffclose(out);
     
     do_view(oenv,ftp2fn(efXVG,NFILE,fnm),"-nxy");
     

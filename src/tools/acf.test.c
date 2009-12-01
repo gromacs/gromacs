@@ -116,7 +116,7 @@ int main(int argc,char *argv[])
     fprintf(fp,"%10g  %10g\n",x,data[i]);
     data2[i] = data[i];
   }
-  fclose(fp);
+  ffclose(fp);
   
   do_autocorr(opt2fn("-c",NFILE,fnm),oenv,str[datatp],
 	      nframes,1,&data,a,eacNormal,FALSE);

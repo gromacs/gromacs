@@ -440,7 +440,7 @@ int gmx_enemat(int argc,char *argv[])
 	fprintf(out," %9.5g",edif[i]);
       fprintf(out,"\n");
     }
-    fclose(out);
+    ffclose(out);
   } else {
     fprintf(stderr,"While typing at your keyboard, suddenly...\n"
 	    "...nothing happens.\nWARNING: Not Implemented Yet\n");
@@ -456,7 +456,7 @@ int gmx_enemat(int argc,char *argv[])
       write_matrix(out,ngroups,1,ngroups,groupnr,emat,label,emin,emax,nlevels);
       n++;
     }
-    fclose(out);
+    ffclose(out);
 */
   }
   close_enx(in);

@@ -1474,7 +1474,7 @@ int gmx_trjconv(int argc,char *argv[])
         if (trxout >= 0)
             close_trx(trxout);
         else if (out != NULL)
-            fclose(out);
+            ffclose(out);
         if (bSubTraj) {
             for(i=0; (i<clust->clust->nr); i++)
                 if (clust_status[i] >= 0)

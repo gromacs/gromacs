@@ -777,7 +777,7 @@ int gmx_bar(int argc,char *argv[])
     {
         fprintf(fp,xvgformat,
                 ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
-        fclose(fp);
+        ffclose(fp);
     }
 
     do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");

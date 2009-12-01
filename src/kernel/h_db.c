@@ -165,7 +165,7 @@ int read_h_db(char *fn,t_hackblock **ah)
     }
     nah++;
   }
-  fclose(in);
+  ffclose(in);
   
   /* Sort the list (necessary to be able to use bsearch */
   qsort(aah,nah,(size_t)sizeof(**ah),compaddh);

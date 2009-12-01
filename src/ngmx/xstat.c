@@ -161,7 +161,7 @@ static void read_opts(t_data *data)
     ReadQuoteString(fn,in,buf);
     data->dlgfile[i] = strdup(buf);
   }
-  fclose(in);
+  ffclose(in);
 }
 
 static void add_opts(t_x11 *x11,t_data *data)

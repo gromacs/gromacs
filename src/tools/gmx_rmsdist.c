@@ -661,7 +661,7 @@ int gmx_rmsdist (int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,natom,x,box));
   fprintf(stderr, "\n");
 
-  fclose(fp);
+  ffclose(fp);
   close_trj(status);
 
   teller = nframes_read();

@@ -335,7 +335,7 @@ int gmx_covar(int argc,char *argv[])
 	fprintf(out,"%g %g %g\n",
 		mat[ndim*j+i],mat[ndim*j+i+1],mat[ndim*j+i+2]);
     }
-    fclose(out);
+    ffclose(out);
   }
   
   if (xpmfile) {
@@ -362,7 +362,7 @@ int gmx_covar(int argc,char *argv[])
     write_xpm3(out,0,"Covariance",bM ? "u nm^2" : "nm^2",
 	       "dim","dim",ndim,ndim,axis,axis,
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
-    fclose(out);
+    ffclose(out);
     sfree(axis);
     sfree(mat2);
   }
@@ -396,7 +396,7 @@ int gmx_covar(int argc,char *argv[])
     write_xpm3(out,0,"Covariance",bM ? "u nm^2" : "nm^2",
 	       "atom","atom",ndim/DIM,ndim/DIM,axis,axis,
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
-    fclose(out);
+    ffclose(out);
     sfree(axis);
     for (i=0; i<ndim/DIM; i++)
       sfree(mat2[i]);
@@ -433,7 +433,7 @@ int gmx_covar(int argc,char *argv[])
 	       "Eigenvector index",str,oenv);  
   for (i=0; (i<ndim); i++)
     fprintf (out,"%10d %g\n",(int)i+1,eigval[ndim-1-i]);
-  fclose(out);  
+  ffclose(out);  
 
   if (end==-1) {
     if (nframes-1 < ndim)
@@ -503,7 +503,7 @@ int gmx_covar(int argc,char *argv[])
   fprintf(out,"Wrote average structure to %s and %s\n",averfile,eigvecfile);
   fprintf(out,"Wrote eigenvectors %d to %d to %s\n",1,end,eigvecfile);
 
-  fclose(out);
+  ffclose(out);
 
   fprintf(stderr,"Wrote the log to %s\n",logfile);
 
