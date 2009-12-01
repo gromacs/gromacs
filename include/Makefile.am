@@ -139,6 +139,7 @@ utils.h \
 vcm.h \
 vec.h \
 viewit.h \
+vmdio.h \
 vsite.h \
 wgms.h \
 wman.h \
