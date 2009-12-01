@@ -367,7 +367,7 @@ static void write_pdb_bfac(const char *fname,const char *xname,
     for(i=0; i<isize; i++)
       fprintf(fp,"%-5d  %10.3f  %10.3f  %10.3f\n",i,
 	      sum[index[i]][XX],sum[index[i]][YY],sum[index[i]][ZZ]);
-    fclose(fp);
+    ffclose(fp);
     max  = 0;
     maxi = 0;
     for(i=0; i<isize; i++) {
@@ -454,7 +454,7 @@ static void print_histo(const char *fn,int nhisto,int histo[],real binwidth,
                 oenv);
   for(i=0; (i<nhisto); i++) 
     fprintf(fp,"%10.3e  %10d\n",i*binwidth,histo[i]);
-  fclose(fp);
+  ffclose(fp);
 }
 
 int gmx_traj(int argc,char *argv[])
@@ -806,14 +806,14 @@ int gmx_traj(int argc,char *argv[])
   /* clean up a bit */
   close_trj(status);
   
-  if (bOX) fclose(outx);
+  if (bOX) ffclose(outx);
   if (bOXT) close_trx(status_out);
-  if (bOV) fclose(outv);
-  if (bOF) fclose(outf);
-  if (bOB) fclose(outb);
-  if (bOT) fclose(outt);
-  if (bEKT) fclose(outekt);
-  if (bEKR) fclose(outekr);
+  if (bOV) ffclose(outv);
+  if (bOF) ffclose(outf);
+  if (bOB) ffclose(outb);
+  if (bOT) ffclose(outt);
+  if (bEKT) ffclose(outekt);
+  if (bEKR) ffclose(outekr);
 
   if (bVD)
     print_histo(opt2fn("-vd",NFILE,fnm),nvhisto,vhisto,binwidth,oenv);

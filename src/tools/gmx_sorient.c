@@ -327,7 +327,7 @@ int gmx_sorient(int argc,char *argv[])
   for(i=0; i<nbin1; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*binwidth-1,2*normfac*hist1[i]);
   }
-  fclose(fp);
+  ffclose(fp);
   
   sprintf(str,"Solvent normal orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-no",NFILE,fnm), str,"cos(\\8q\\4\\s2\\N)","",oenv);
@@ -336,7 +336,7 @@ int gmx_sorient(int argc,char *argv[])
   for(i=0; i<nbin2; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*binwidth,normfac*hist2[i]);
   }
-  fclose(fp);
+  ffclose(fp);
 
   
   sprintf(str,"Solvent orientation");
@@ -348,7 +348,7 @@ int gmx_sorient(int argc,char *argv[])
     fprintf(fp,"%g %g %g\n",(i+0.5)*rbinw,
 	    histn[i] ? histi1[i]/histn[i] : 0,
 	    histn[i] ? histi2[i]/histn[i] : 0);
-  fclose(fp);
+  ffclose(fp);
   
   sprintf(str,"Cumulative solvent orientation");
   fp=xvgropen(opt2fn("-co",NFILE,fnm),str,"r (nm)","",oenv);
@@ -364,7 +364,7 @@ int gmx_sorient(int argc,char *argv[])
     c2 += histi2[i]*normfac;
     fprintf(fp,"%g %g %g\n",(i+1)*rbinw,c1,c2);
   }
-  fclose(fp);
+  ffclose(fp);
 
   sprintf(str,"Solvent distribution");
   fp=xvgropen(opt2fn("-rc",NFILE,fnm),str,"r (nm)","molecules/nm",oenv);
@@ -374,7 +374,7 @@ int gmx_sorient(int argc,char *argv[])
   for(i=0; i<nrbin; i++) {
     fprintf(fp,"%g %g\n",(i+0.5)*rbinw,histn[i]*normfac);
   }
-  fclose(fp);
+  ffclose(fp);
 
   do_view(oenv, opt2fn("-o",NFILE,fnm),NULL);
   do_view(oenv, opt2fn("-no",NFILE,fnm),NULL);

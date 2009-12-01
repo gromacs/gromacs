@@ -189,7 +189,7 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
     }
     fprintf(out,"\n");
   }
-  fclose(out);
+  ffclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
@@ -503,7 +503,7 @@ void printmol(t_corr *curr,const char *fn,
 	pdbinfo[j].bfac = sqrtD;
     }
   }
-  fclose(out);
+  ffclose(out);
   do_view(oenv,fn,"-graphtype bar");
   
   /* Compute variance, stddev and error */
@@ -534,7 +534,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
 	      real t_pdb,rvec **x_pdb,matrix box_pdb, const output_env_t oenv)
 {
-  rvec         *x[2],*xa[2],com;
+  rvec         *x[2],*xa[2],com={0};
   real         t,t_prev=0;
   int          natoms,i,j,status,cur=0,maxframes=0;
 #define        prev (1-cur)

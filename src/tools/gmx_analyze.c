@@ -130,7 +130,7 @@ static void plot_coscont(const char *ccfile,int n,int nset,real **val,
   }
   fprintf(stdout,"\n");
 	    
-  fclose(fp);
+  ffclose(fp);
 }
 
 static void regression_analysis(int n,bool bXYdy,real *x,real **val)
@@ -202,7 +202,7 @@ void histogram(const char *distfile,real binwidth,int n, int nset, real **val,
     if (s < nset-1)
       fprintf(fp,"&\n");
   }
-  fclose(fp);
+  ffclose(fp);
 }
 
 static int real_comp(const void *a,const void *b)
@@ -264,7 +264,7 @@ static void average(const char *avfile,int avbar_opt,
     }
     fprintf(fp,"\n");
   }
-  fclose(fp);
+  ffclose(fp);
   
   if (avbar_opt == avbar90)
     sfree(tmp);
@@ -574,7 +574,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
     sfree(fitsig);
     sfree(ybs);
     sfree(tbs);
-    fclose(fp);
+    ffclose(fp);
 }
 
 static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
@@ -955,7 +955,7 @@ int gmx_analyze(int argc,char *argv[])
       for(s=0; s<nset; s++)
 	do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa,oenv);
     }
-    fclose(out_fit);
+    ffclose(out_fit);
   }
 
   printf("                                      std. dev.    relative deviation of\n");
@@ -1014,7 +1014,7 @@ int gmx_analyze(int argc,char *argv[])
       if (s<nset-1)
 	fprintf(out,"&\n");
     }
-    fclose(out);
+    ffclose(out);
     fprintf(stderr,"\r%d, time=%g\n",j-1,(j-1)*dt);
   }
   if (ccfile)

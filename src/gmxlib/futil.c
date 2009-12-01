@@ -107,11 +107,11 @@ void push_ps(FILE *fp)
 }
 
 #ifdef GMX_FAHCORE
-/* redefine fclose */
-#define fclose fah_fclose
+/* redefine ffclose */
+#define ffclose fah_fclose
 #else
-#ifdef fclose
-#undef fclose
+#ifdef ffclose
+#undef ffclose
 #endif
 #endif
 
@@ -137,42 +137,43 @@ static int pclose(FILE *fp)
 int ffclose(FILE *fp)
 {
     t_pstack *ps,*tmp;
-    int rc=-1;
+    int ret=0;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
-            rc=histclosefile(&fp);
-            fclose(fp);
+            histclosefile(&fp);
+            ret = fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
-            rc=pclose(fp);
-        pstack=pstack->prev;
-        sfree(ps);
+            ret = fclose(fp);
+    }
+    pstack=pstack->prev;
+    sfree(ps);
     }
     else {
         while ((ps->prev != NULL) && (ps->prev->fp != fp))
             ps=ps->prev;
         if (ps->prev->fp == fp) {
             if (ps->prev->fp != NULL)
-                rc=pclose(ps->prev->fp);
+                ret = pclose(ps->prev->fp);
             tmp=ps->prev;
             ps->prev=ps->prev->prev;
             sfree(tmp);
         }
         else {
             if (fp != NULL)
-                rc=histclosefile(&fp);
-                fclose(fp);
+                histclosefile(&fp);
+                ret = fclose(fp);
         }
     }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
-    return rc;
+    return ret;
 }
 
 #ifdef rewind
@@ -265,7 +266,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        fclose(test);
+        ffclose(test);
         return TRUE;
     }
 }

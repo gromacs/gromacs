@@ -301,7 +301,7 @@ int gmx_gyrate(int argc,char *argv[])
   } while(read_next_x(oenv,status,&t,natoms,x,box));
   close_trj(status);
   
-  fclose(out);
+  ffclose(out);
 
   if (bACF) {
     int mode = eacVector;
