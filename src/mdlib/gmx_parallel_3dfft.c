@@ -80,7 +80,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            bool                      bReproducible)
 {
     int rN=ndata[2],M=ndata[1],K=ndata[0];
-    int flags = FFT5D_REALCOMPLEX; /* FFT5D_DEBUG */
+    int flags = FFT5D_REALCOMPLEX | FFT5D_ORDER_YZ; /* FFT5D_DEBUG */
     snew(*pfft_setup,1);
     if (bReproducible) flags |= FFT5D_NOMEASURE; 
     
@@ -104,8 +104,8 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
 
 static int
 fft5d_limits(fft5d_plan p, 
-             ivec                      local_offset,
              ivec                      local_ndata,
+             ivec                      local_offset,
              ivec                      local_size) 
 {
     int N1,M0,K0,K1,*coor;
@@ -117,7 +117,7 @@ fft5d_limits(fft5d_plan p,
     
     local_ndata[2]=p->rC[0];
     local_ndata[1]= (M0 < p->MG-local_offset[1]) ? M0 : p->MG-local_offset[1];
-    local_ndata[0]= (K1 < p->KG-local_offset[0]) ? K1 : p->MG-local_offset[1];
+    local_ndata[0]= (K1 < p->KG-local_offset[0]) ? K1 : p->KG-local_offset[0];
     
     if ((!(p->flags&FFT5D_BACKWARD)) && (p->flags&FFT5D_REALCOMPLEX)) {
         local_size[2]=p->C[0]*2;
@@ -131,12 +131,21 @@ fft5d_limits(fft5d_plan p,
 
 int
 gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
-                               ivec                      local_offset,
                                ivec                      local_ndata,
+                               ivec                      local_offset,
                                ivec                      local_size) {
     return fft5d_limits(pfft_setup->p1,local_ndata,local_offset,local_size);
 }
 
+static reorder_ivec_yzx(ivec v)
+{
+    real tmp;
+
+    tmp   = v[0];
+    v[XX] = v[2];
+    v[ZZ] = v[1];
+    v[YY] = tmp;
+}
 
 int
 gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
@@ -145,12 +154,20 @@ gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
                                   ivec                      local_offset,
                                   ivec                      local_size) 
 {
+    int ret;
+
     /* For now everything is in-order, but prepare to save communication by avoiding transposes */
     complex_order[0] = 0;
     complex_order[1] = 1;
     complex_order[2] = 2;
-    
-    return fft5d_limits(pfft_setup->p2,local_ndata,local_offset,local_size);
+
+    ret = fft5d_limits(pfft_setup->p2,local_ndata,local_offset,local_size);
+
+    reorder_ivec_yzx(local_ndata);
+    reorder_ivec_yzx(local_offset);
+    reorder_ivec_yzx(local_size);
+
+    return ret;
 }
 
 
