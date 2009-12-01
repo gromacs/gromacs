@@ -716,4 +716,14 @@ gmx_truncatefile(char *path, off_t length)
 #else
     return truncate(path,length);
 #endif
+    
+    int gmx_scanf(const char *format, ...) 
+    {
+        va_list ap;
+        int ret
+        va_start(ap, format);  
+        ret = vscanf(format, ap);
+        va_end(ap);
+        return ret;
+    }
 }
