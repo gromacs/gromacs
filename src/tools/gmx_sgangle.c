@@ -243,13 +243,13 @@ void sgangle_plot(const char *fn,const char *afile,const char *dfile,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(sg_angle);
+  ffclose(sg_angle);
   if (dfile)
-    fclose(sg_distance);
+    ffclose(sg_distance);
   if (d1file)
-    fclose(sg_distance1);
+    ffclose(sg_distance1);
   if (d2file)
-    fclose(sg_distance2);
+    ffclose(sg_distance2);
 
   sfree(x0);
 }
@@ -411,13 +411,13 @@ void sgangle_plot_single(const char *fn,const char *afile,const char *dfile,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(sg_angle);
+  ffclose(sg_angle);
   if (dfile)
-    fclose(sg_distance);
+    ffclose(sg_distance);
   if (d1file)
-    fclose(sg_distance1);
+    ffclose(sg_distance1);
   if (d2file)
-    fclose(sg_distance2);
+    ffclose(sg_distance2);
   
   sfree(x0);
 }

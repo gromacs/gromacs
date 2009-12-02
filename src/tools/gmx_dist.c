@@ -245,7 +245,7 @@ int gmx_dist(int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,natoms,x,box));
 
   if (!bCutoff)
-    fclose(fp);
+    ffclose(fp);
 
   close_trj(status);
   
@@ -267,7 +267,7 @@ int gmx_dist(int argc,char *argv[])
 
       fprintf(fp,"%10.3f %10.3f\n",i*(t-t0)/(teller-1),sum/(double)(teller-i));
     }
-    fclose(fp);
+    ffclose(fp);
   }
   
   thanx(stderr);

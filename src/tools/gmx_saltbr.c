@@ -217,7 +217,7 @@ int gmx_saltbr(int argc,char *argv[])
 	  fp=xvgropen(buf,buf,"Time (ps)","Distance (nm)",oenv);
 	  for(k=0; (k<teller); k++) 
 	    fprintf(fp,"%10g  %10g\n",time[k],cgdist[i][j][k]);
-	  fclose(fp);
+	  ffclose(fp);
 	}
       }
     sfree(buf);
@@ -269,7 +269,7 @@ int gmx_saltbr(int argc,char *argv[])
 	fprintf(out[m],"\n");
     }
     for(m=0; (m<3); m++) {
-      fclose(out[m]);
+      ffclose(out[m]);
       if (nset[m] == 0)
 	remove(fn[m]);
     }

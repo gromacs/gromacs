@@ -193,7 +193,7 @@ int gmx_qhop_db_write(char *fn,gmx_qhop_db qdb)
   fp=ffopen(fn,"w");
   print_resall(fp,db->bts,db->nrtp,db->rtp,db->atype,db->bAllDih,
 	       db->nrexcl,db->bHH14,db->bRemoveDih);
-  fclose(fp);
+  ffclose(fp);
   
   return 1;
 }

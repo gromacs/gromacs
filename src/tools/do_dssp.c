@@ -159,7 +159,7 @@ static int strip_dssp(char *dsspfile,int nres,
   
   if (fTArea)
     fprintf(fTArea,"%10g  %10g  %10g\n",t,0.01*iaccb,0.01*iaccf);
-  fclose(tapeout);
+  ffclose(tapeout);
   
   /* Return the number of lines found in the dssp file (i.e. number
    * of redidues plus chain separator lines).
@@ -328,7 +328,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     fprintf(fp,"\n");
   }
   
-  fclose(fp);
+  ffclose(fp);
   sfree(leg);
   sfree(count);
 }
@@ -504,7 +504,7 @@ int main(int argc,char *argv[])
     rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
     tapein=ffopen(pdbfile,"w");
     write_pdbfile_indexed(tapein,NULL,atoms,x,ePBC,box,0,-1,gnx,index,NULL);
-    fclose(tapein);
+    ffclose(tapein);
 
 #ifdef GMX_NO_SYSTEM
     printf("Warning-- No calls to system(3) supported on this platform.");
@@ -548,7 +548,7 @@ int main(int argc,char *argv[])
     ss_str[i] = '\0';
     ss = opt2FILE("-ssdump",NFILE,fnm,"w");
     fprintf(ss,"%d\n%s\n",nres,ss_str);
-    fclose(ss);
+    ffclose(ss);
     sfree(ss_str);
   }
   analyse_ss(fnSCount,&mat,ss_string,oenv);

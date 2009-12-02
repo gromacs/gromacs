@@ -583,7 +583,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
 		(d->sumft[i]-d->sumfct[i])*norm);
       }
     }
-    fclose(fp);
+    ffclose(fp);
   }
   if (!d->bSum && rfn) {
     snew(rleg,d->nreplica*2);
@@ -603,7 +603,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
 	fprintf(fp,"\n");
       }
     }
-    fclose(fp);
+    ffclose(fp);
   }
 
   if (fn2 && (d->nstate > 2)) {
@@ -616,7 +616,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
 		d->sumit[i]*norm,d->sumict[i]*norm,
 		(d->sumit[i]-d->sumict[i])*norm);
     }
-    fclose(fp);
+    ffclose(fp);
   }
   if (mfn) {
     if (bBack(d)) {
@@ -629,7 +629,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
 	DG   = BOLTZ*i*log(fff/(1-fff));
 	fprintf(fp,"%5d  %8.3f  %8.3f\n",i,fff,DG);
       }
-      fclose(fp);
+      ffclose(fp);
     }
   }
   
@@ -654,7 +654,7 @@ static void dump_remd_parameters(FILE *gp,t_remd_data *d,const char *fn,
       }
       fprintf(hp,"&\n");
     }
-    fclose(hp);
+    ffclose(hp);
     for(i=0; (i<d->nparams); i++) 
       d->params[i] = params[i];
     sfree(params);
@@ -878,7 +878,7 @@ int gmx_kinetics(int argc,char *argv[])
     optimize_remd_parameters(fp,&remd,maxiter,tol);
     dump_remd_parameters(fp,&remd,"test1.xvg",NULL,NULL,NULL,NULL,skip,tref,oenv);
   }
-  fclose(fp);
+  ffclose(fp);
   
   view_all(oenv, NFILE, fnm);
   

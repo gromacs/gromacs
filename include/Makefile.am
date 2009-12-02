@@ -138,6 +138,7 @@ utils.h \
 vcm.h \
 vec.h \
 viewit.h \
+vmdio.h \
 vsite.h \
 wgms.h \
 wman.h \
@@ -147,5 +148,6 @@ xtcio.h \
 xvgr.h \
 thread_mpi.h \
 tmpi.h \
-mainpage.h
-
+mainpage.h \
+molfile_plugin.h \
+vmdplugin.h

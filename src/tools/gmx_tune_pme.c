@@ -586,6 +586,7 @@ static void make_benchmark_tprs(
     orig_fs[YY]   = box_size[YY]/ir->nky;
     orig_fs[ZZ]   = box_size[ZZ]/ir->nkz;
      
+    fprintf(fp, "Input file fourier grid : %dx%dx%d\n", orig_nk[XX], orig_nk[YY], orig_nk[ZZ]);
     fprintf(fp, "\nWill try these real/reciprocal workload settings:\n");
     fprintf(fp, " No. scaling   r_coul   (r_vdW)     nkx  nky  nkz   (spacing)   tpr file\n");
     
@@ -625,8 +626,11 @@ static void make_benchmark_tprs(
             /* Check consistency */
             if (0 == j)
                 if ((ir->nkx != orig_nk[XX]) || (ir->nky != orig_nk[YY]) || (ir->nkz != orig_nk[ZZ]))
-                    gmx_fatal(FARGS, "Wrong fourierspacing %f, actual grid = %dx%dx%d, original grid = %dx%dx%d", 
-                            fourierspacing,ir->nkx,ir->nky,ir->nkz,orig_nk[XX],orig_nk[YY],orig_nk[ZZ]);
+                {
+                    fprintf(stderr, "WARNING: Original grid was %dx%dx%d. The fourierspacing of %f nm does not reproduce the grid\n"
+                                    "         found in the tpr input file! Will use the new settings.\n", 
+                                    orig_nk[XX],orig_nk[YY],orig_nk[ZZ],fourierspacing);
+                }
         }
         else
         {
@@ -641,9 +645,9 @@ static void make_benchmark_tprs(
                 ir->nkx=0;
                 calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
                 ir->nky=0;
-                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[YY]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
                 ir->nkz=0;
-                calc_grid(stdout,state.box,orig_fs[XX]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
+                calc_grid(stdout,state.box,orig_fs[ZZ]*fac,&(ir->nkx),&(ir->nky),&(ir->nkz),1);
             }
         }
         /* r_vdw should only grow if necessary! */
@@ -676,6 +680,18 @@ static void make_benchmark_tprs(
     fflush(fp);
     
     sfree(ir);
+}
+
+
+/* Whether these files are written depends on tpr (or mdp) settings,
+ * not on mdrun command line options! */
+static bool tpr_triggers_file(const char *opt)
+{
+    if ( (0 == strcmp(opt, "-pf"))
+      || (0 == strcmp(opt, "-px")) )
+        return TRUE;
+    else
+        return FALSE;
 }
 
 
@@ -716,7 +732,8 @@ static void cleanup(const t_filenm *fnm, int nfile, int k, int nnodes,
             }
         }
         /* Delete the files which are created for each benchmark run: (options -b*) */
-        else if ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) )
+        else if ( ( (0 == strncmp(opt, "-b", 2)) && (opt2bSet(opt,nfile,fnm) || !is_optional(&fnm[i])) ) 
+                  || tpr_triggers_file(opt) )
         {
             fn = opt2fn(opt, nfile, fnm);
             if (gmx_fexist(fn))
@@ -1407,7 +1424,7 @@ int gmx_tune_pme(int argc,char *argv[])
       { "-ntpr",     FALSE, etINT,  {&ntprs},
         "Number of tpr files to benchmark. Create these many files with scaling factors ranging from 1.0 to fac. If < 1, automatically choose the number of tpr files to test" },
       { "-four",     FALSE, etREAL, {&fs},
-        "Fourierspacing that was chosen to create the input tpr file" },        
+        "Use this fourierspacing value instead of the grid found in the tpr input file" },        
       { "-steps",    FALSE, etGMX_LARGE_INT, {&bench_nsteps},
         "Take timings for these many steps in the benchmark runs" }, 
       { "-resetstep",FALSE, etINT,  {&presteps},
@@ -1546,8 +1563,6 @@ int gmx_tune_pme(int argc,char *argv[])
     fprintf(fp, "The mpirun command is   : %s\n", cmd_mpirun);
     fprintf(fp, "The mdrun  command is   : %s\n", cmd_mdrun);
     fprintf(fp, "Input file is           : %s\n", opt2fn("-s",NFILE,fnm));
-    if (fs > 0.0)
-        fprintf(fp, "Basic fourierspacing    : %f\n", fs);
     fprintf(fp, "mdrun args benchmarks   : %s\n", cmd_args_bench);
     fprintf(fp, "Benchmark steps         : ");
     fprintf(fp, gmx_large_int_pfmt, bench_nsteps);
@@ -1572,8 +1587,11 @@ int gmx_tune_pme(int argc,char *argv[])
         fprintf(fp, "\n");
     }   
     if (repeats > 1)
-        fprintf(fp, "Doing %d repeats for each test.\n", repeats);
-
+        fprintf(fp, "Repeats for each test   : %d\n", repeats);
+    
+    if (fs > 0.0)
+        fprintf(fp, "Requested grid spacing  : %f (tpr file will be changed accordingly)\n", fs);
+    
     /* Allocate memory for the inputinfo struct: */
     snew(info, 1);
     info->nr_inputfiles = ntprs;
@@ -1641,7 +1659,7 @@ int gmx_tune_pme(int argc,char *argv[])
     analyze_data(fp, perfdata, nnodes, ntprs, datasets, repeats, info, &best_tpr, &best_npme);
     
     /* Take the best-performing tpr file and enlarge nsteps to original value */
-    if ((best_tpr > 0) || bOverwrite)
+    if ((best_tpr > 0) || bOverwrite || (fs > 0.0))
     {
         simulation_tpr = opt2fn("-so",NFILE,fnm);
         modify_PMEsettings(bOverwrite? (new_sim_nsteps+cpt_steps):info->orig_sim_steps, tpr_names[best_tpr], simulation_tpr);            
@@ -1652,7 +1670,7 @@ int gmx_tune_pme(int argc,char *argv[])
     /* Now start the real simulation if the user requested it ... */
     launch_simulation(bLaunch, fp, cmd_mpirun, cmd_mdrun, cmd_args_launch, 
                       simulation_tpr, nnodes, best_npme);
-    fclose(fp);
+    ffclose(fp);
         
     /* ... or simply print the performance results to screen: */
     if (!bLaunch)

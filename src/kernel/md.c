@@ -1091,7 +1091,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     char        *grpname;
     t_coupl_rec *tcr=NULL;
     rvec        *xcopy=NULL,*vcopy=NULL;
-    matrix      boxcopy,lastbox;
+    matrix      boxcopy={{0}},lastbox;
     double      cycles;
     int         reset_counters=-1;
     char        sbuf[22],sbuf2[22];

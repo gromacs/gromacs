@@ -66,7 +66,7 @@ static void dump_dih(int nframes,char *title,real time[],real dih[])
   out=ffopen(fname,"w");
   for(i=0; (i<nframes); i++)
     fprintf(out,"%10.3f  %12.5e\n",time[i],dih[i]);
-  fclose(out);
+  ffclose(out);
 }
 
 static void ana_dih(FILE *out,char *index,int nframes,real dih[],t_dih *dd)
@@ -288,7 +288,7 @@ static void ana_trans(FILE *out, t_xrama *xr,real **dih,real time[],
       prev_psi=dih[psi][j];
       fprintf(outd,"%10g  %10g  %10g\n",time[j],prev_phi,prev_psi);
     }
-    fclose(outd);
+    ffclose(outd);
   }
 }
 
@@ -377,7 +377,7 @@ int gmx_dih(int argc,char *argv[])
     /* Analyse transitions... */
     ana_trans(out,xr,dih,time,top,nframes,oenv);
   }
-  fclose(out);
+  ffclose(out);
     
   thanx(stderr);
     

@@ -237,7 +237,7 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 	    factor*dipole[slice][XX], factor*dipole[slice][YY], 
 	    factor*dipole[slice][ZZ], order[slice]);
   
-  fclose(ord);
+  ffclose(ord);
 }
 
 int gmx_h2order(int argc,char *argv[])

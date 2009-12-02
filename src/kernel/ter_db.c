@@ -286,7 +286,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
   nb++;
   srenew(tb,nb);
   
-  fclose(in);
+  ffclose(in);
   
   if (debug) 
     print_ter_db(FF,ter,nb,tb,atype);

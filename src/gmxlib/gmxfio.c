@@ -1021,7 +1021,7 @@ static int gmx_fio_close_lock(int fio, bool do_lock)
     {
         /* Don't close stdin and stdout! */
         if (!FIO[fio].bStdio && FIO[fio].fp!=NULL)
-            rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+            rc = ffclose(FIO[fio].fp); /* fclose returns 0 if happy */
     }
 
     sfree(FIO[fio].fn);
@@ -1051,7 +1051,7 @@ int gmx_fio_fp_close(int fio)
     gmx_fio_check(fio);
     if (!in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR) && !FIO[fio].bStdio)
     {
-        rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+        rc = ffclose(FIO[fio].fp); /* fclose returns 0 if happy */
         FIO[fio].fp = NULL; 
     }
 #ifdef GMX_THREADS
@@ -1532,6 +1532,7 @@ off_t gmx_fio_ftell(int fio)
 
 int gmx_fio_seek(int fio, off_t fpos)
 {
+    int rc;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
@@ -1539,17 +1540,20 @@ int gmx_fio_seek(int fio, off_t fpos)
     if (FIO[fio].fp)
     {
 #ifdef HAVE_FSEEKO
-        return fseeko(FIO[fio].fp, fpos, SEEK_SET);
+        rc = fseeko(FIO[fio].fp, fpos, SEEK_SET);
 #else
-        return fseek(FIO[fio].fp,fpos,SEEK_SET);
+        rc = fseek(FIO[fio].fp,fpos,SEEK_SET);
 #endif
     }
     else
+    {
         gmx_file(FIO[fio].fn);
-    return -1;
+        rc = -1;
+    }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
+    return rc;
 }
 
 FILE *gmx_fio_getfp(int fio)

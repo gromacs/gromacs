@@ -861,13 +861,13 @@ int gmx_current(int argc,char *argv[])
              temp,trust, bfit,efit,bvit,evit,status,isize,nmols,nshift,
              index0,indexm,mass2,qmol,eps_rf,oenv);
 
-  fclose(fmj);
-  fclose(fmd);
-  fclose(fmjdsp);
+  ffclose(fmj);
+  ffclose(fmd);
+  ffclose(fmjdsp);
   if (bACF)
-    fclose(outf);
+    ffclose(outf);
   if(bINT)
-      fclose(mcor);
+      ffclose(mcor);
 
   thanx(stderr);
 

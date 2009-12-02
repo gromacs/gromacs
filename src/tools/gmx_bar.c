@@ -742,24 +742,24 @@ int gmx_bar(int argc,char *argv[])
         printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
                                             results[f].lambda_b);
         printf(dgformat,results[f].dg);
-        printf(" err");
+        printf(" err ");
         printf(dgformat,results[f].dg_err);
         if (calc_s)
         {
             printf("   s_ab "); 
             printf(dgformat, results[f].sa);
-            printf(" err"); 
+            printf(" err "); 
             printf(dgformat, results[f].sa_err);
             printf("  s_ba "); 
             printf(dgformat, results[f].sb);
-            printf(" err"); 
+            printf(" err "); 
             printf(dgformat, results[f].sb_err);
         }
         if (calc_v)
         {
             printf("   var est ");
             printf(dgformat, results[f].dg_var);
-            printf(" err"); 
+            printf(" err "); 
             printf(dgformat, results[f].dg_var_err);
         }
         printf("\n");
@@ -777,7 +777,7 @@ int gmx_bar(int argc,char *argv[])
     {
         fprintf(fp,xvgformat,
                 ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
-        fclose(fp);
+        ffclose(fp);
     }
 
     do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");
