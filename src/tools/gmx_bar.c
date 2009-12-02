@@ -54,6 +54,7 @@
 #include "gmx_ana.h"
 
 typedef struct {
+    char   *filename;
     int    nset;
     int    np;
     int    begin;
@@ -61,7 +62,6 @@ typedef struct {
     double *lambda;
     double *t;
     double **y;
-
 } barsim_t;
 
 /* calculated values */
@@ -301,9 +301,9 @@ static int get_lam_set(barsim_t *ba,double lambda)
     {
         i++;
     }
-    if (i == ba->nset)
+    if (i + 1 == ba->nset)
     {
-        gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file of lambda = %g",lambda,ba->lambda[0]);
+        gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file '%s' of lambda = %g",lambda,ba->filename,ba->lambda[0]);
     }
 
     return i;
@@ -511,7 +511,9 @@ static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
     int  i;
     char **legend,*ptr;
 
-    printf("'%s' ",fn);
+    ba->filename = fn;
+
+    printf("'%s' ",ba->filename);
 
     ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
     ba->t  = ba->y[0];
