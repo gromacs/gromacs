@@ -711,7 +711,10 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
     
     for(ipulse=0;ipulse<overlap->noverlap_nodes;ipulse++)
     {
-        if(direction==GMX_SUM_QGRID_FORWARD)
+        /* Since we have already (un)wrapped the overlap in the z-dimension,
+         * we only have to communicate 0 to nkz (not pmegrid_nz).
+         */
+        if (direction==GMX_SUM_QGRID_FORWARD)
         {
             send_id = overlap->send_id[ipulse];
             recv_id = overlap->recv_id[ipulse];
@@ -746,7 +749,7 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
             for(j=0;j<send_nindex;j++)
             {
                 iy = j + send_index0 - pme->pmegrid_start_iy;
-                for(k=0;k<pme->pmegrid_nz;k++)
+                for(k=0;k<pme->nkz;k++)
                 {
                     iz = k;
                     pme->pmegrid_sendbuf[icnt++] = grid[ix*(pme->pmegrid_ny*pme->pmegrid_nz)+iy*(pme->pmegrid_nz)+iz];
@@ -754,7 +757,7 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
             }
         }
             
-        datasize      = pme->pmegrid_nx * pme->pmegrid_nz;
+        datasize      = pme->pmegrid_nx * pme->nkz;
         
         MPI_Sendrecv(pme->pmegrid_sendbuf,send_nindex*datasize,GMX_MPI_REAL,
                      send_id,ipulse,
@@ -778,7 +781,7 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
             for(j=0;j<recv_nindex;j++)
             {
                 iy = j + recv_index0 - pme->pmegrid_start_iy;
-                for(k=0;k<pme->pmegrid_nz;k++)
+                for(k=0;k<pme->nkz;k++)
                 {
                     iz = k;
                     if(direction==GMX_SUM_QGRID_FORWARD)
@@ -794,7 +797,11 @@ gmx_sum_qgrid_dd(gmx_pme_t pme, real *grid, int direction)
         }
     }
     
-    /* Major dimension is easier, no copying required, but we might have to sum to separate array */
+    /* Major dimension is easier, no copying required,
+     * but we might have to sum to separate array.
+     * Since we don't copy, we have to communicate up to pmegrid_nz,
+     * not nkz as for the minor direction.
+     */
     overlap = &pme->overlap[0];
     
     for(ipulse=0;ipulse<overlap->noverlap_nodes;ipulse++)
@@ -2207,8 +2214,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     
     snew(pme->pmegridA,pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz);    
     
-    bufsizex = pme->pme_order*pme->pmegrid_ny*pme->pmegrid_nz;
-    bufsizey = pme->pmegrid_nx*pme->pme_order*pme->pmegrid_nz;
+    bufsizex = (pme->pme_order-1)*pme->pmegrid_ny*pme->pmegrid_nz;
+    bufsizey = pme->pmegrid_nx*(pme->pme_order-1)*pme->nkz;
     bufsize  = (bufsizex>bufsizey) ? bufsizex : bufsizey;
     
     snew(pme->pmegrid_sendbuf,bufsize);
