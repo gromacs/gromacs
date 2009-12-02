@@ -46,13 +46,6 @@
  * (currently everything is implemented using an expensive O(n^2) loop).
  * Optimally, the MD neighborhood searching routines could be used, but
  * currently they are quite difficult to interface flexibly.
- *
- * \todo
- * Implement a set of functions for looping through all pairs within a cutoff.
- *
- * \todo
- * Implement an API that allows for excluding certain pairs of atoms from
- * neighborhood searching.
  */
 /*! \internal \file
  * \brief Implementation of functions in nbsearch.h.
@@ -78,12 +71,27 @@ struct gmx_ana_nbsearch_t
     real           cutoff2;
     /** Maximum number of reference points. */
     int            maxnref;
+
     /** Number of reference points for the current frame. */
     int            nref;
     /** Reference point positions. */
     rvec          *xref;
+    /** Reference position ids (NULL if not available). */
+    int           *refid;
     /** PBC data. */
     t_pbc         *pbc;
+
+    /** Number of excluded reference positions for current test particle. */
+    int            nexcl;
+    /** Exclusions for current test particle. */
+    int           *excl;
+
+    /** Stores the current exclusion index during loops. */
+    int            exclind;
+    /** Stores test position during a pair loop. */
+    rvec           xtest;
+    /** Stores the previous returned position during a pair loop. */
+    int            prevj;
 };
 
 /*!
@@ -105,6 +113,8 @@ gmx_ana_nbsearch_create(gmx_ana_nbsearch_t **data, real cutoff, int maxn)
     }
     d->cutoff2 = sqr(cutoff);
     d->maxnref = maxn;
+    d->nexcl = 0;
+    d->exclind = 0;
     *data = d;
     return 0;
 }
@@ -136,6 +146,7 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[])
     d->pbc  = pbc;
     d->nref = n;
     d->xref = x;
+    d->refid = NULL;
     return 0;
 }
 
@@ -150,7 +161,56 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[])
 int
 gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, gmx_ana_pos_t *p)
 {
-    return gmx_ana_nbsearch_init(d, pbc, p->nr, p->x);
+    d->pbc  = pbc;
+    d->nref = p->nr;
+    d->xref = p->x;
+    d->refid = (p->nr < d->maxnref ? p->m.refid : NULL);
+    return 0;
+}
+
+/*!
+ * \param[in,out] d     Neighborhood search data structure.
+ * \param[in]     nexcl Number of reference positions to exclude from next
+ *      search.
+ * \param[in]     excl  Indices of reference positions to exclude.
+ * \returns       0 on success.
+ */
+int
+gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[])
+{
+
+    d->nexcl = nexcl;
+    d->excl = excl;
+    return 0;
+}
+
+/*! \brief
+ * Helper function to check whether a reference point should be excluded.
+ */
+static bool
+is_excluded(gmx_ana_nbsearch_t *d, int j)
+{
+    if (d->exclind < d->nexcl)
+    {
+        if (d->refid)
+        {
+            while (d->exclind < d->nexcl && d->refid[j] > d->excl[d->exclind])
+            {
+                ++d->exclind;
+            }
+            if (d->exclind < d->nexcl && d->refid[j] == d->excl[d->exclind])
+            {
+                ++d->exclind;
+                return TRUE;
+            }
+        }
+        else if (d->excl[d->exclind] == j)
+        {
+            ++d->exclind;
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 /*!
@@ -165,8 +225,13 @@ gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, rvec x)
     int  i;
     rvec dx;
 
+    d->exclind = 0;
     for (i = 0; i < d->nref; ++i)
     {
+        if (is_excluded(d, i))
+        {
+            continue;
+        }
         if (d->pbc)
         {
             pbc_dx(d->pbc, x, d->xref[i], dx);
@@ -209,9 +274,14 @@ gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, rvec x)
     rvec dx;
     real d2, mind2;
 
+    d->exclind = 0;
     mind2 = d->cutoff2;
     for (i = 0; i < d->nref; ++i)
     {
+        if (is_excluded(d, i))
+        {
+            continue;
+        }
         if (d->pbc)
         {
             pbc_dx(d->pbc, x, d->xref[i], dx);
@@ -240,4 +310,73 @@ real
 gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p, int i)
 {
     return gmx_ana_nbsearch_mindist(d, p->x[i]);
+}
+
+/*!
+ * \param[in]  d   Neighborhood search data structure.
+ * \param[in]  n   Number of test positions in \p x.
+ * \param[in]  x   Test positions.
+ * \param[out] jp  Index of the reference position in the first pair.
+ * \returns    TRUE if there are positions within the cutoff.
+ */
+bool
+gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, rvec x, int *jp)
+{
+    copy_rvec(x, d->xtest);
+    d->exclind = 0;
+    *jp = -1;
+    return gmx_ana_nbsearch_next_within(d, jp);
+}
+
+/*!
+ * \param[in]  d   Neighborhood search data structure.
+ * \param[in]  p   Test positions.
+ * \param[in]  i   Use the i'th position in \p p.
+ * \param[out] jp  Index of the reference position in the first pair.
+ * \returns    TRUE if there are positions within the cutoff.
+ */
+bool
+gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d, gmx_ana_pos_t *p,
+                                  int i, int *jp)
+{
+    copy_rvec(p->x[i], d->xtest);
+    d->exclind = 0;
+    *jp = -1;
+    return gmx_ana_nbsearch_next_within(d, jp);
+}
+
+/*!
+ * \param[in]  d   Neighborhood search data structure.
+ * \param[out] jp  Index of the test position in the next pair.
+ * \returns    TRUE if there are positions within the cutoff.
+ */
+bool
+gmx_ana_nbsearch_next_within(gmx_ana_nbsearch_t *d, int *jp)
+{
+    int  j;
+    rvec dx;
+
+    for (j = d->prevj + 1; j < d->nref; ++j)
+    {
+        if (is_excluded(d, j))
+        {
+            continue;
+        }
+        if (d->pbc)
+        {
+            pbc_dx(d->pbc, d->xtest, d->xref[j], dx);
+        }
+        else
+        {
+            rvec_sub(d->xtest, d->xref[j], dx);
+        }
+        if (norm2(dx) < d->cutoff2)
+        {
+            *jp = j;
+            d->prevj = j;
+            return TRUE;
+        }
+    }
+    *jp = -1;
+    return FALSE;
 }
