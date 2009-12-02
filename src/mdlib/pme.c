@@ -865,6 +865,7 @@ copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
      the offset is identical, and the PME grid always has more data (due to overlap)
      */
     {
+//#define DEBUG_PME
 #ifdef DEBUG_PME
         FILE *fp,*fp2;
         char fn[STRLEN],format[STRLEN];
@@ -943,6 +944,126 @@ copy_fftgrid_to_pmegrid(gmx_pme_t pme, real *fftgrid, real *pmegrid)
         }
     }   
     return 0;
+}
+
+
+static void
+wrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
+{
+    int     nx,ny,nz,pnx,pny,pnz,overlap,ix,iy,iz;
+
+    nx = pme->nkx;
+    ny = pme->nky;
+    nz = pme->nkz;
+
+    pnx = pme->pmegrid_nx;
+    pny = pme->pmegrid_ny;
+    pnz = pme->pmegrid_nz;
+
+    overlap = pme->pme_order - 1;
+
+    /* Add periodic overlap in z */
+    for(ix=0; ix<pnx; ix++)
+    {
+        for(iy=0; iy<pny; iy++)
+        {
+            for(iz=0; iz<overlap; iz++)
+            {
+                pmegrid[(ix*pny+iy)*pnz+iz] +=
+                    pmegrid[(ix*pny+iy)*pnz+nz+iz];
+            }
+        }
+    }
+
+    if (pme->ndecompdim < 2)
+    {
+       for(ix=0; ix<pnx; ix++)
+       {
+           for(iy=0; iy<overlap; iy++)
+           {
+               for(iz=0; iz<nz; iz++)
+               {
+                   pmegrid[(ix*pny+iy)*pnz+iz] +=
+                       pmegrid[(ix*pny+ny+iy)*pnz+iz];
+               }
+           }
+       }
+    }
+     
+    if (pme->ndecompdim < 1)
+    {
+        for(ix=0; ix<overlap; ix++)
+        {
+            for(iy=0; iy<ny; iy++)
+            {
+                for(iz=0; iz<nz; iz++)
+                {
+                    pmegrid[(ix*pny+iy)*pnz+iz] +=
+                        pmegrid[((nx+ix)*pny+iy)*pnz+iz];
+                }
+            }
+        }
+    }
+}
+
+
+static void
+unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
+{
+    int     nx,ny,nz,pnx,pny,pnz,overlap,ix,iy,iz;
+
+    nx = pme->nkx;
+    ny = pme->nky;
+    nz = pme->nkz;
+
+    pnx = pme->pmegrid_nx;
+    pny = pme->pmegrid_ny;
+    pnz = pme->pmegrid_nz;
+
+    overlap = pme->pme_order - 1;
+
+    if (pme->ndecompdim < 1)
+    {
+        for(ix=0; ix<overlap; ix++)
+        {
+            for(iy=0; iy<ny; iy++)
+            {
+                for(iz=0; iz<nz; iz++)
+                {
+                    pmegrid[((nx+ix)*pny+iy)*pnz+iz] =
+                        pmegrid[(ix*pny+iy)*pnz+iz];
+                }
+            }
+        }
+    }
+
+    if (pme->ndecompdim < 2)
+    {
+       for(ix=0; ix<pnx; ix++)
+       {
+           for(iy=0; iy<overlap; iy++)
+           {
+               for(iz=0; iz<nz; iz++)
+               {
+                   pmegrid[(ix*pny+ny+iy)*pnz+iz] =
+                       pmegrid[(ix*pny+iy)*pnz+iz];
+               }
+           }
+       }
+    }
+
+    /* Copy periodic overlap in z */
+    for(ix=0; ix<pnx; ix++)
+    {
+        for(iy=0; iy<pny; iy++)
+        {
+            for(iz=0; iz<overlap; iz++)
+            {
+                pmegrid[(ix*pny+iy)*pnz+nz+iz] =
+                    pmegrid[(ix*pny+iy)*pnz+iz];
+            }
+        }
+    }
 }
 
 static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc, 
@@ -1864,7 +1985,7 @@ init_overlap_comm(pme_overlap_t *  ol,
     }
     snew(ol->comm_data, ol->noverlap_nodes);
     
-    snew(ol->s2g,ol->noverlap_nodes+1);
+    snew(ol->s2g,ol->nnodes+1);
     for(i=0; i<nnodes+1; i++) 
     {
         /* The definition of the grid position requires rounding up here */
@@ -2418,6 +2539,8 @@ int gmx_pme_do(gmx_pme_t pme,
             inc_nrnb(nrnb,eNR_SPREADQBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
 
+            wrap_periodic_pmegrid(pme,grid);
+
             /* sum contributions to local grid from other nodes */
             if (pme->nnodes > 1) {
                 GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -2425,7 +2548,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 where();
             }
             where();
-            
+
             copy_pmegrid_to_fftgrid(pme,grid,fftgrid);
         }
          
@@ -2472,6 +2595,8 @@ int gmx_pme_do(gmx_pme_t pme,
                 gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_BACKWARD);
             }
             where();
+
+            unwrap_periodic_pmegrid(pme,grid);
             
             if(MASTER(cr))
             {
