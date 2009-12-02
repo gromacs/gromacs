@@ -3,6 +3,10 @@
 
 #include <complex.h>
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <fftw3.h>
 #ifdef FFT5D_MPI_TRANSPOSE
 #include <fftw3-mpi.h>
