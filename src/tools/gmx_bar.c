@@ -297,11 +297,11 @@ static int get_lam_set(barsim_t *ba,double lambda)
     int i;
 
     i = 1;
-    while (i + 1 < ba->nset && ba->lambda[i] != lambda)
+    while (i < ba->nset && ba->lambda[i] != lambda)
     {
         i++;
     }
-    if (i + 1 == ba->nset)
+    if (i  == ba->nset)
     {
         gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file '%s' of lambda = %g",lambda,ba->filename,ba->lambda[0]);
     }
@@ -516,6 +516,10 @@ static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
     printf("'%s' ",ba->filename);
 
     ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
+    if (!ba->y)
+    {
+        gmx_fatal(FARGS,"File %s contains no usable data.",fn);
+    }
     ba->t  = ba->y[0];
 
     get_begin_end(ba,begin,end,&ba->begin,&ba->end);
@@ -744,24 +748,24 @@ int gmx_bar(int argc,char *argv[])
         printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
                                             results[f].lambda_b);
         printf(dgformat,results[f].dg);
-        printf(" err ");
+        printf(" +/- ");
         printf(dgformat,results[f].dg_err);
         if (calc_s)
         {
             printf("   s_ab "); 
             printf(dgformat, results[f].sa);
-            printf(" err "); 
+            printf(" +/- "); 
             printf(dgformat, results[f].sa_err);
             printf("  s_ba "); 
             printf(dgformat, results[f].sb);
-            printf(" err "); 
+            printf(" +/- "); 
             printf(dgformat, results[f].sb_err);
         }
         if (calc_v)
         {
             printf("   var est ");
             printf(dgformat, results[f].dg_var);
-            printf(" err "); 
+            printf(" +/- "); 
             printf(dgformat, results[f].dg_var_err);
         }
         printf("\n");
@@ -771,7 +775,7 @@ int gmx_bar(int argc,char *argv[])
     printf("\n");
     printf("total  %4.2f - %4.2f, DG ",ba[0].lambda[0],ba[nfile-1].lambda[0]);
     printf(dgformat,dg_tot);
-    printf(" err");
+    printf(" +/- ");
     printf(dgformat,sqrt(var_tot));
     printf("\n");
 
