@@ -92,7 +92,7 @@ static double calc_bar_sum(int n,double *W,double beta_Wfac,double sbMmDG)
     
     for(i=0; i<n; i++)
     {
-        sum += 1/(1 + exp(beta_Wfac*W[i] + sbMmDG));
+        sum += 1./(1. + exp(beta_Wfac*W[i] + sbMmDG));
     }
     
     return sum;
@@ -198,9 +198,6 @@ static void calc_rel_entropy(int n1,double *W1,int n2,double *W2,
         Wfac2 =  -delta_lambda;
     }
 
-    /*printf("delta_lambda=%g, Wfac1=%g, Wfac2=%g, beta=%g\n", 
-           delta_lambda, Wfac1, Wfac2, beta);*/
- 
     /* first calculate the average work in both directions */
     for(i=0;i<n1;i++)
     {
@@ -209,7 +206,7 @@ static void calc_rel_entropy(int n1,double *W1,int n2,double *W2,
     W_ab/=n1;
     for(i=0;i<n2;i++)
     {
-        W_ba += Wfac2*W2[i];
+        W_ba += Wfac2*W2[i]; 
     }
     W_ba/=n2;
    
@@ -259,7 +256,6 @@ static void calc_dg_variance(int n1, double *W1, int n2, double *W2,
     /* Eq. 10 from 
        Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
     *var = kT*kT*((1./sigmafact) - ( (n1+n2)/n1 + (n1+n2)/n2 ));
-    /*printf("sigmafact=%g, var=%g\n",sigmafact, *var);*/
 }
 
 
@@ -736,27 +732,33 @@ int gmx_bar(int argc,char *argv[])
     var_tot = 0;
     for(f=0; f<nfile-1; f++)
     {
+        
         if (fp != NULL)
         {
-            fprintf(fp,xvgformat,
-                    ba[f].lambda[0],dg_tot,sqrt(var_tot));
+            fprintf(fp,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
 
         calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nb0, nb1,
                  &(results[f]), calc_s, calc_v);
 
-        printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
-                                            results[f].lambda_b);
+        /*printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
+                                              results[f].lambda_b);*/
+        printf("lambda ");
+        printf(dgformat, results[f].lambda_a);
+        printf(" - ");
+        printf(dgformat, results[f].lambda_b);
+        printf(", DG ");
+
         printf(dgformat,results[f].dg);
         printf(" +/- ");
         printf(dgformat,results[f].dg_err);
         if (calc_s)
         {
-            printf("   s_ab "); 
+            printf("   s_A "); 
             printf(dgformat, results[f].sa);
             printf(" +/- "); 
             printf(dgformat, results[f].sa_err);
-            printf("  s_ba "); 
+            printf("  s_B "); 
             printf(dgformat, results[f].sb);
             printf(" +/- "); 
             printf(dgformat, results[f].sb_err);
