@@ -81,6 +81,7 @@
      real *        vdwparam;
      int *         shift;
      int *         type;
+     t_excl *      excl;
        
      real *     wf;
      bool       bnew_wf;
@@ -162,6 +163,8 @@
          {
              aj0              = nlist->jjnr[k];
              aj1              = nlist->jjnr_end[k];
+
+             excl             = &nlist->excl[k*MAX_CGCGSIZE];
              
             weight_cg2       = wf[aj0];
             if(adress_type == eAdressConst)
@@ -257,6 +260,12 @@
 
                  for(aj=aj0; (aj<aj1); aj++)
                  {
+                     /* Check if this interaction is excluded */
+                     if (excl[aj-aj0] & (1<<(ai-ai0)))
+                     {
+                         continue;
+                     }
+
                      j3               = aj*3;
                      jx               = x[j3+0];
                      jy               = x[j3+1];
