@@ -523,16 +523,16 @@ int main(int argc,char *argv[])
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();
-
-  if (MULTIMASTER(cr)) {
-      thanx(stderr);
-  }
-
+  
   /* Log file has to be closed in mdrunner if we are appending to it 
      (fplog not set here) */
   if (MASTER(cr) && !bAppendFiles) 
   {
       gmx_log_close(fplog);
+  }
+
+  if (MULTIMASTER(cr)) {
+      thanx(stderr);
   }
 
   return rc;

@@ -142,7 +142,7 @@ choose_ff(char *forcefield, int maxlen)
     for(i=0; (i<nff); i++)
       printf("%2d: %s\n",i,fff[i].desc);
     do {
-      pret = fgets(buf,STRLEN,stdin);
+      pret = gmx_fgets(buf,STRLEN,stdin);
 
       if(pret != NULL)
 	sscanf(buf,"%d",&sel);

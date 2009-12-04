@@ -145,14 +145,14 @@ int ffclose(FILE *fp)
     if (ps == NULL) {
         if (fp != NULL) 
             histclosefile(&fp);
-            ret = fclose(fp);
+        ret = fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
-            ret = fclose(fp);
-    }
-    pstack=pstack->prev;
-    sfree(ps);
+            ret = pclose(fp);
+
+        pstack=pstack->prev;
+        sfree(ps);
     }
     else {
         while ((ps->prev != NULL) && (ps->prev->fp != fp))
@@ -167,7 +167,7 @@ int ffclose(FILE *fp)
         else {
             if (fp != NULL)
                 histclosefile(&fp);
-                ret = fclose(fp);
+            ret = fclose(fp);
         }
     }
 #ifdef GMX_THREADS
@@ -716,14 +716,26 @@ gmx_truncatefile(char *path, off_t length)
 #else
     return truncate(path,length);
 #endif
-    
-    int gmx_scanf(const char *format, ...) 
-    {
-        va_list ap;
-        int ret
-        va_start(ap, format);  
-        ret = vscanf(format, ap);
-        va_end(ap);
-        return ret;
-    }
 }
+    
+int gmx_scanf(const char *format, ...) 
+{
+    va_list ap;
+    int ret;
+    va_start(ap, format);  
+    ret = vscanf(format, ap);
+    va_end(ap);
+    return ret;
+}
+
+char *gmx_fgets(char *s, int size, FILE *stream)
+{
+    char* ret;
+    ret = fgets(s,size,stream);
+    if (stream==stdin)
+    {
+        histaddinput(s);
+    }
+    return ret;
+}
+

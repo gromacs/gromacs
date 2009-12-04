@@ -40,12 +40,20 @@ typedef struct {
     FILE* file;
     char* mode;
     char* fn;
+    md5_byte_t md5sum[16];
 } t_hist_file;
 
 #define MAX_FILES 200
+#define MAX_STDINPUT 200
 int _nfile=0;
 t_hist_file _files[MAX_FILES];
+int _ninput=0;
+char* _stdinput[MAX_STDINPUT];
 #endif
+
+bool startedWriting=FALSE;
+
+FILE* histfile;
 
 void histopenfile(FILE* file, const char* fn, const char* mode) {
 #ifndef USING_ARGS
@@ -56,7 +64,27 @@ void histopenfile(FILE* file, const char* fn, const char* mode) {
 #endif
 }
 
+void histaddinput(char* str)
+{
+    char* npos = rindex(str,'\n');
+    if (npos)
+    {
+        _stdinput[_ninput] = strndup(str,npos-str);
+    }
+    else
+    {
+        _stdinput[_ninput] = strdup(str);
+    }
+    _ninput++;
+}
+/*
 static FILE* print_file(const char* fnm, const char* mode, FILE* file) {
+*/
+static FILE* print_file(int i) 
+{
+    const char* fnm = _files[i].fn;
+    const char* mode = _files[i].mode;
+    FILE* file = _files[i].file;
 #define CPT_CHK_LEN  1048576 
     md5_state_t state;
     md5_byte_t digest[16];
@@ -87,20 +115,39 @@ static FILE* print_file(const char* fnm, const char* mode, FILE* file) {
     md5_append(&state, buf, read_len);
     md5_finish(&state, digest);
     
+    /* looking for earlier identical files 
+     * md5sum is only set if the file has already been printed to log*/
+    for (j=0;j<_nfile;j++) 
+    {
+        if (strcmp(_files[j].fn,fnm)==0 && _files[j].mode[0]==mode[0] 
+            && memcmp(_files[j].md5sum,digest,sizeof(digest))==0)
+        {
+            return file;
+        }
+    }
+    
+    memcpy(_files[i].md5sum,digest,sizeof(digest));
+    
+    if (!startedWriting)
+    {
+        fprintf(histfile,"\n");
+        startedWriting=TRUE;
+    }
+    
     if (mode[0]=='r')  /*TODO: what about r+? is this reading or writing (as in win_truncate, checkpoint chksum_file)*/
     {
-        printf("IN : ");
+        fprintf(histfile,"IN : ");
     }
     else 
     {
-        printf("OUT: ");
+        fprintf(histfile,"OUT: ");
     }
-    printf("%s ", fnm);
+    fprintf(histfile,"%s ", fnm);
     for (j=0; j<16; j++)
     {
-        printf("%02x",digest[j]);
+        fprintf(histfile,"%02x",digest[j]);
     }
-    printf("\n");
+    fprintf(histfile,"\n");
     
     return file;
 }
@@ -114,13 +161,12 @@ int  histclosefile(FILE** file) {
         {
             if (*file==_files[i].file)
             {
-                *file = print_file(_files[i].fn,_files[i].mode,_files[i].file);
+                *file = print_file(i);
                 _files[i].file=NULL;
-                sfree(_files[i].fn);
-                sfree(_files[i].mode);
             }
         }
     }
+    return 0;
 #endif
 }
 
@@ -168,6 +214,7 @@ void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
     {
         _argv[i]=strdup(argv[i]);
     }
+    histfile = fopen(".gmx_history","a");
 #ifdef USING_ARGS
     _nfile=nfile;
     _fnm=fnm;
@@ -256,13 +303,23 @@ void print_history() {
     sprintf(host,"unknown");
 #endif  
 
-    printf("CMD: ");
+    fprintf(histfile,"CMD: ");
+    if (_ninput>0)
+    {
+        fprintf(histfile,"echo ");
+        for (i=0;i<_ninput;i++)
+        {
+            fprintf(histfile,"%s ",_stdinput[i]);
+            sfree(_stdinput[i]);
+        }
+        fprintf(histfile,"| ");
+    }
     for (i=0;i<_argc;i++)
     {
-        printf("%s ", _argv[i]);
+        fprintf(histfile,"%s ", _argv[i]);
     }
     
-    printf("\nPWD: %s\nBY : %s@%s %s",pwd,user,host,ctime(&t));
+    fprintf(histfile,"\nPWD: %s\nBY : %s@%s %s",pwd,user,host,ctime(&t));
     sfree(user);
     
 #ifdef USING_ARGS
@@ -271,18 +328,18 @@ void print_history() {
     for (i=0;i<_nfile;i++) {
         if (_files[i].file!=NULL) {
             fprintf(stderr,"BUG: %s was not closed correctly\n",_files[i].fn);
-            print_file(_files[i].fn,_files[i].mode,_files[i].file);
+            print_file(i);
             if (_files[i].file!=NULL)
             {   
                 fclose(_files[i].file);
             }
-            sfree(_files[i].fn);
-            sfree(_files[i].mode);
         }
+        sfree(_files[i].fn);
+        sfree(_files[i].mode);
     }
 #endif
 #if (defined BUILD_TIME && defined BUILD_USER) 
-    printf("VER: %s %s %s\n",VERSION,BUILD_USER,BUILD_TIME);
+    fprintf(histfile,"VER: %s %s %s\n",VERSION,BUILD_USER,BUILD_TIME);
 #endif
-    
+    fclose(histfile);
 }

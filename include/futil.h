@@ -137,7 +137,9 @@ extern void gmx_tmpnam(char *buf);
 int
 gmx_truncatefile(char *path, off_t length);
 
-int gmx_scanf(const char *format, ...);
+extern int gmx_scanf(const char *format, ...);
+
+extern char *gmx_fgets(char *s, int size, FILE *stream);
 
 #ifdef __cplusplus
 }
