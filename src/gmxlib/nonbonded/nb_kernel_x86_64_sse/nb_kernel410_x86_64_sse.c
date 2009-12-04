@@ -94,9 +94,9 @@ void nb_kernel410_x86_64_sse(int *           p_nri,
 	__m128   rinvsixB,vvdw6B,vvdw12B;
 	__m128   facel,gbtabscale,mask,dvdaj;
     
-    __m128   mask1 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
-	__m128   mask2 = _mm_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
-	__m128   mask3 = _mm_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
+    __m128   mask1 = gmx_castsi128_ps( _mm_set_epi32(0, 0, 0, 0xffffffff) );
+	__m128   mask2 = gmx_castsi128_ps( _mm_set_epi32(0, 0, 0xffffffff, 0xffffffff) );
+	__m128   mask3 = gmx_castsi128_ps( _mm_set_epi32(0, 0xffffffff, 0xffffffff, 0xffffffff) );
     
 	__m128i  n0, nnn;
 	__m128i  n0B, nnnB;
