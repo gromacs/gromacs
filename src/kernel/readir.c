@@ -155,7 +155,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   /* GENERAL INTEGRATOR STUFF */
-  if (!(ir->eI == eiMD || ir->eI == eiVV)) {
+  if (!(ir->eI == eiMD || EI_VV(ir->eI))) {
     ir->etc = etcNO;
   }
   if (!EI_DYNAMICS(ir->eI)) {
@@ -345,7 +345,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning(NULL);
   }
 
-  if (ir->eI==eiVV) {
+  if (EI_VV(ir->eI)) {
     if (ir->epc > epcNO) {
       if (ir->epc!=epcMTTK) {
 	warning_error("NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      

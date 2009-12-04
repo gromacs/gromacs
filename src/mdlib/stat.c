@@ -151,13 +151,13 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   double nb;
   bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate;
 
-  bVV           = (inputrec->eI==eiVV);
+  bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
   bEner         = flags & CGLO_ENERGY;
   bPres         = flags & CGLO_PRESSURE; 
   bConstrVir    = flags & CGLO_CONSTRAINT;
-  bEkinAveVel   = flags & CGLO_EKINAVEVEL;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
+  bEkinAveVel = (inputrec->eI==eiVV || (inputrec->eI==eiVV2 && IR_NPT_TROTTER(inputrec) && bPres));
 
   snew(copyenerd,F_NRE);
   rb   = gs->rb;
@@ -170,8 +170,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
    * using the t_bin struct. 
    */
 
-  /* First, we neeed to identify which enerd->term should be communicated.  Temperature and 
-     pressure terms should only be communicated when they need to be. */
+  /* First, we neeed to identify which enerd->term should be
+     communicated.  Temperature and pressure terms should only be
+     communicated and summed when they need to be, to avoid repeating
+     the sums and overcounting. */
 
   filter_enerdterm(enerd->term,copyenerd,bTemp,bPres,bEner);
   

@@ -93,9 +93,6 @@
 #include "tmpi.h"
 #endif
 
-/*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
-/*#define STARTFROMDT2*/
-
 #include "qmmm.h"
 
 #if 0
@@ -897,7 +894,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     real   dt=ir->delta_t;
     real   dvdlambda;
     rvec   *savex;
-    bool   bEkinAveVel = FALSE;
     
     snew(savex,state->natoms);
 
@@ -919,7 +915,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
               state->x,state->x,NULL,
               state->box,state->lambda,&dvdlambda,
               NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
-    if (ir->eI==eiVV) 
+    if (EI_VV(ir->eI)) 
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
@@ -929,14 +925,9 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   state->x,state->v,state->v,
                   state->box,state->lambda,&dvdlambda,
                   NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
-        bEkinAveVel = (getenv("GMX_EKIN_AVE_EKIN")==NULL);
     }
     /* constrain the inital velocities at t-dt/2 */
-#ifdef STARTFROMDT2
-    if (EI_STATE_VELOCITY(ir->eI)) /* IF STARTING FROM V(t=-dt/2 */
-#else
-    if (EI_STATE_VELOCITY(ir->eI) && !bEkinAveVel) /* IF STARTING FROM V(t=0) */
-#endif
+    if (EI_STATE_VELOCITY(ir->eI) && ir->eI!=eiVV)
     {
         for(i=start; (i<end); i++) 
         {

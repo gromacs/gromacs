@@ -1272,13 +1272,9 @@ void update_constraints(FILE         *fplog,
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
     rvec             *vbuf,*xprime;
-
+    
     if (constr) {bDoConstr=TRUE;}
-#ifdef STARTFROMDT2    
-    if (bFirstHalf && (inputrec->eI != eiVV || bInitStep)) {bDoConstr=FALSE;}  /*STARTING FROM V(t=-dt/2)*/
-#else
-    if (bFirstHalf && inputrec->eI != eiVV) {bDoConstr=FALSE;} /* STARTING FROM V(t=0) */
-#endif
+    if (bFirstHalf && !EI_VV(inputrec->eI)) {bDoConstr=FALSE;} 
 
     /* for now, SD update is here -- though it really seems like it 
        should be reformulated as a velocity verlet method, since it has two parts */
@@ -1312,7 +1308,7 @@ void update_constraints(FILE         *fplog,
         bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
         /* Constrain the coordinates xprime */
         wallcycle_start(wcycle,ewcCONSTR);
-        if (inputrec->eI == eiVV && bFirstHalf) 
+        if (EI_VV(inputrec->eI) && bFirstHalf) 
         {
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
@@ -1572,11 +1568,7 @@ void update_coords(FILE         *fplog,
     /* Running the velocity half does nothing except for velocity verlet */
     if (UpdatePart == etrtVELOCITY) 
     {
-#ifdef STARTFROMDT2
-        if ((inputrec->eI!=eiVV) || (bInitStep)) {return;}   /*THIS IS FOR STARTING at v(t=-dt/2) */
-#else
-        if (inputrec->eI!=eiVV) {return;}   /*THIS IS FOR STARTING AT v(t=0)*/
-#endif
+        if (!EI_VV(inputrec->eI)) {return;}   /*THIS IS FOR STARTING AT v(t=0)*/
     }
 
     start  = md->start;
@@ -1608,7 +1600,7 @@ void update_coords(FILE         *fplog,
 
     bExtended = bNH || bPR;
     
-    if (bDoLR && inputrec->nstlist > 1 && inputrec->eI != eiVV)
+    if (bDoLR && inputrec->nstlist > 1 && !EI_VV(inputrec->eI))  /* get this working with VV? */
     {
         /* Store the total force + nstlist-1 times the LR force
          * in forces_lr, so it can be used in a normal update algorithm
@@ -1678,6 +1670,7 @@ void update_coords(FILE         *fplog,
                      upd->sd->bd_rf,upd->sd->gaussrand);
         break;
     case (eiVV):
+    case (eiVV2):
         alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
         switch (UpdatePart) {
         case (etrtVELOCITY):

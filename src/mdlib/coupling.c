@@ -642,7 +642,7 @@ t_state *init_bufstate(int size, int ntc)
 void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
-                    t_extmass *MassQ, int *trotter_seq, bool bEkinAveVel) 
+                    t_extmass *MassQ, int *trotter_seq) 
 {
     
     int n,i,j,d,ntgrp,ngtc,gc=0;
@@ -694,7 +694,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
         case etrtNHC:
         case etrtNHC2:
             NHC_trotter(opts,ekind,dt,state->nosehoover_xi,
-                        state->nosehoover_vxi,scalefac,NULL,MassQ,bEkinAveVel);
+                        state->nosehoover_vxi,scalefac,NULL,MassQ,(ir->eI==eiVV));
             /* need to rescale the kinetic energies and velocities here.  Could 
                scale the velocities later, but we need them scaled in order to 
                produce the correct outputs, so we'll scale them here. */
@@ -760,7 +760,6 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrott
     real bmass,qmass,reft,kT,dt,ndj,nd;
     tensor dumpres,dumvir;
     int ** trotter_seq;
-    bool bEkinAveVel;
 
     snew(trotter_seq,NTROTTERCALLS);
     /* first, initialize clear all the trotter calls */
@@ -779,9 +778,8 @@ int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrott
         return trotter_seq;
     }
     /* average the half step velocities or the kinetic energies */
-    bEkinAveVel=(getenv("GMX_EKIN_AVE_EKIN")==NULL);
 
-    if (bEkinAveVel)
+    if (ir->eI==eiVV)
     {
         if (IR_NPT_TROTTER(ir)) 
         {

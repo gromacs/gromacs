@@ -448,7 +448,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             gmx_incons("Unsupported constraint quantity for virial");
         }
         
-        if (ir->eI == eiVV) 
+        if (EI_VV(ir->eI))
         {
             vir_fac *= 2;  /* only constraining over half the distance here */
         }
