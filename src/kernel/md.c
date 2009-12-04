@@ -2662,7 +2662,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) 
-                            | CGLO_CONSTRAINT 
+                            | (!EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0 ) 
                             | (bIterate ? CGLO_ITERATE : 0) 
                             | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                 );            
