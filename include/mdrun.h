@@ -238,10 +238,9 @@ extern void finish_run(FILE *log,t_commrec *cr,const char *confout,
 extern void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_large_int_t step,gmx_mtop_t *top_global,matrix box,real lambda,
-			  tensor pres,tensor virial,
+			  gmx_large_int_t step,gmx_mtop_t *top_global, int natoms, 
+			  matrix box,real lambda,tensor pres,tensor virial,
 			  real *prescorr, real *enercorr, real *dvdlcorr);
-     
 
 typedef enum
 {

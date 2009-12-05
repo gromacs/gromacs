@@ -264,20 +264,20 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         {
             if (PAR(cr)) 
             {
+                wallcycle_start(wcycle,ewcMoveE);
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,constr,vcm,NULL,NULL,terminate,top_global,state,
                             *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
+                if (terminate != 0)
+                {
+                    terminate_now = terminate;
+                    terminate = 0;
+                }
+                *bSumEkinhOld = FALSE;
+                wallcycle_stop(wcycle,ewcMoveE);
             }
-            
-            if (terminate != 0)
-            {
-                terminate_now = terminate;
-                terminate = 0;
-            }
-            wallcycle_stop(wcycle,ewcMoveE);
-            *bSumEkinhOld = FALSE;
         }
     }
     
@@ -321,7 +321,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,top_global,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,NULL,top_global->natoms,box,state->lambda,
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
