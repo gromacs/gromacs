@@ -2663,7 +2663,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             cglo_flags 
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
-                            | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) 
+                            | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0 ) 
                             | (bIterate ? CGLO_ITERATE : 0) 
                             | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
