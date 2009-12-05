@@ -22,6 +22,14 @@
 
 #include <string.h>
 #include <time.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+/* _chsize_s */
+#include <io.h>
+#include <sys/locking.h>
+#endif
+
+
 #include "filenm.h"
 #include "names.h"
 #include "typedefs.h"
@@ -35,6 +43,9 @@
 #include "gmx_random.h"
 #include "checkpoint.h"
 #include "futil.h"
+#include <fcntl.h>
+
+
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -52,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 7;
+static const int cpt_version = 8;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -86,6 +97,27 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim" 
 };
+
+
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+static int
+gmx_wintruncate(const char *filename, __int64 size)
+{
+    FILE *fp;
+    int   rc;
+    
+    fp=fopen(filename,"r+");
+    
+    if(fp==NULL)
+    {
+        return -1;
+    }
+    
+    return _chsize_s( fileno(fp), size);
+}
+#endif
+
 
 
 enum { ecprREAL, ecprRVEC, ecprMATRIX };
@@ -146,6 +178,34 @@ static int do_cpt_int(XDR *xd,const char *desc,int *i,FILE *list)
     {
         fprintf(list,"%s = %d\n",desc,*i);
     }
+    return 0;
+}
+
+static int do_cpt_u_chars(XDR *xd,const char *desc,int n,unsigned char *i,FILE *list)
+{
+    bool_t res=1;
+    int j;
+    if (list)
+    {
+        fprintf(list,"%s = ",desc);
+    }
+    for (j=0; j<n && res; j++)
+    {
+        res &= xdr_u_char(xd,&i[j]);
+        if (list)
+        {
+            fprintf(list,"%02x",i[j]);
+        }
+    }
+    if (list)
+    {
+        fprintf(list,"\n");
+    }
+    if (res == 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -827,9 +887,9 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
 
 static int do_cpt_files(XDR *xd, bool bRead, 
                         gmx_file_position_t **p_outputfiles, int *nfiles, 
-                        FILE *list)
+                        FILE *list, int file_version)
 {
-	int    i;
+	int    i,j;
 	off_t  offset;
 	off_t  mask = 0xFFFFFFFFL;
 	int    offset_high,offset_low;
@@ -903,6 +963,22 @@ static int do_cpt_files(XDR *xd, bool bRead,
 			{
 				return -1;
 			}
+		}
+		if (file_version >= 8)
+		{
+            if (do_cpt_int(xd,"file_checksum_size",&(outputfiles[i].chksum_size),
+                           list) != 0)
+            {
+                return -1;
+            }
+            if (do_cpt_u_chars(xd,"file_checksum",16,outputfiles[i].chksum,list) != 0)
+            {
+                return -1;
+            }
+		} 
+		else 
+		{
+		    outputfiles[i].chksum_size = -1;
 		}
 	}
 	return 0;
@@ -1028,7 +1104,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
 		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
 		(do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)    ||
-	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL) < 0))
+	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,file_version) < 0))
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
 	}
@@ -1151,13 +1227,13 @@ static void check_match(FILE *fplog,
     }
 }
 
-static void read_checkpoint(const char *fn,FILE *fplog,
+static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,bool *bReadRNG,bool *bReadEkin,
                             int *simulation_part,bool bAppendOutputFiles)
 {
-    int  fp,i,j;
+    int  fp,i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
 	char filename[STRLEN],buf[22];
@@ -1168,6 +1244,12 @@ static void read_checkpoint(const char *fn,FILE *fplog,
     int  ret;
 	gmx_file_position_t *outputfiles;
 	int  nfiles;
+	int chksum_file;
+	FILE* fplog = *pfplog;
+	unsigned char digest[16];
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+	struct flock fl = { F_WRLCK, SEEK_SET, 0,       0,     0 }; 
+#endif
 	
     const char *int_warn=
         "WARNING: The checkpoint file was generator with integrator %s,\n"
@@ -1358,7 +1440,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
         state->enerhist.nsum_sim = *step;
     }
 
-	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);
+	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL,file_version);
 	if (ret)
 	{
 		cp_error();
@@ -1389,16 +1471,98 @@ static void read_checkpoint(const char *fn,FILE *fplog,
 	 */
     if (bAppendOutputFiles)
     {
+        if (fn2ftp(outputfiles[0].filename)!=efLOG)
+        {
+            /* make sure first file is log file so that it is OK to use it for 
+             * locking
+             */
+            gmx_fatal(FARGS,"The first output file should always be the log "
+                      "file but instead is: %s", outputfiles[0].filename);
+        }
         for(i=0;i<nfiles;i++)
         {
             if (outputfiles[i].filename,outputfiles[i].offset < 0)
             {
-                gmx_fatal(FARGS,"The original run wrote a file called '%s' which is larger than 2 GB, but mdrun did not support large file offsets. Can not append. Run mdrun without -append",outputfiles[i].filename);
+                gmx_fatal(FARGS,"The original run wrote a file called '%s' which "
+                    "is larger than 2 GB, but mdrun did not support large file"
+                    " offsets. Can not append. Run mdrun without -append",
+                    outputfiles[i].filename);
             }
 
-            if (0 != truncate(outputfiles[i].filename,outputfiles[i].offset))
+            chksum_file=gmx_fio_open(outputfiles[i].filename,"r+");
+            
+            /* lock log file */                
+            if (i==0)
             {
-                gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
+                    ==-1)
+#else
+                if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
+#endif
+                {
+                    gmx_fatal(FARGS,"Failed to lock: %s. Already running "
+                        "simulation?", outputfiles[i].filename);
+                }
+            }
+
+            
+            /* compute md5 chksum */ 
+            if (outputfiles[i].chksum_size != -1)
+            {
+                if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
+                                     digest) != outputfiles[i].chksum_size)
+                {
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute"
+                        " checksum.", outputfiles[i].chksum_size, 
+                        outputfiles[i].filename);
+                }
+            } 
+            else if (i==0)  /*log file need to be seeked even when not reading md5*/
+            {
+                gmx_fio_seek(chksum_file,outputfiles[i].offset);
+            }
+            
+            if (i==0) /*open log file here - so that lock is never lifted 
+                        after chksum is calculated */
+            {
+                *pfplog = gmx_fio_getfp(chksum_file);
+            }
+            else
+            {
+                gmx_fio_close(chksum_file);
+            }
+            
+            /* compare md5 chksum */
+            if (outputfiles[i].chksum_size != -1 &&
+                memcmp(digest,outputfiles[i].chksum,16)!=0) 
+            {
+                if (debug)
+                {
+                    fprintf(debug,"chksum for %s: ",outputfiles[i].filename);
+                    for (j=0; j<16; j++)
+                    {
+                        fprintf(debug,"%02x",digest[j]);
+                    }
+                    fprintf(debug,"\n");
+                }
+                gmx_fatal(FARGS,"Checksum wrong for '%s'.",
+                          outputfiles[i].filename);
+            }
+        
+
+              
+            if (i!=0) /*log file is already seeked to correct position */
+            {
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+                rc = gmx_wintruncate(outputfiles[i].filename,outputfiles[i].offset);
+#else            
+                rc = truncate(outputfiles[i].filename,outputfiles[i].offset);
+#endif
+                if(rc!=0)
+                {
+                    gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+                }
             }
         }
     }
@@ -1407,7 +1571,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
 }
 
 
-void load_checkpoint(const char *fn,FILE *fplog,
+void load_checkpoint(const char *fn,FILE **fplog,
                      t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
                      bool *bReadRNG,bool *bReadEkin,bool bAppend)
@@ -1473,7 +1637,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
         cp_error();
     }
 
-	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);
+	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL,file_version);
 	sfree(outputfiles);
 	
     if (ret)
@@ -1591,7 +1755,7 @@ void list_checkpoint(const char *fn,FILE *out)
 
     if (ret == 0)
     {
-		do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,out);
+		do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,out,file_version);
 	}
 	
     if (ret == 0)

@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 /* PowerPC using xlC inline assembly. 
@@ -47,21 +43,23 @@ any papers on the package - you can find them in the top README file.
  * one above.
  */
 
-/* memory barrier - no idea how to create one with xlc! */
-#define tMPI_Atomic_memory_barrier()
+#define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
+                                                            : : :"memory" ); }
+
+
 
 
 
 typedef struct tMPI_Atomic
 {
-        volatile int       value;  /*!< Volatile, to avoid compiler aliasing */
+    volatile int value;  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_t;
 
 
 typedef struct tMPI_Atomic_ptr
 {
-        void* volatile*     value;  /*!< Volatile, to avoid compiler aliasing */
+    void* volatile *value;  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_ptr_t;
 
@@ -69,7 +67,7 @@ tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
-    volatile unsigned int   lock;  /*!< Volatile, to avoid compiler aliasing */
+    volatile unsigned int lock;  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Spinlock_t;
 
@@ -77,9 +75,9 @@ tMPI_Spinlock_t;
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
 
-#define tMPI_Atomic_get(a)   ((a)->value) 
+#define tMPI_Atomic_get(a)   (int)((a)->value) 
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-#define tMPI_Atomic_ptr_get(a)   ((a)->value) 
+#define tMPI_Atomic_ptr_get(a)   (void*)((a)->value) 
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
@@ -118,7 +116,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *     a,
 }
 
 
-static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *       a,
                                      int                  oldval,
                                      int                  newval)
 {
@@ -138,7 +136,7 @@ static inline int tMPI_Atomic_cmpxchg(tMPI_Atomic_t *       a,
     return prev;
 }
 
-static inline void* tMPI_Atomic_ptr_cmpxchg(tMPI_Atomic_ptr_t *   a,
+static inline void* tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *   a,
                                            void*                oldval,
                                            void*                newval)
 {

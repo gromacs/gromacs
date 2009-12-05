@@ -207,7 +207,7 @@ gmx_template(int argc, char *argv[])
     /* For the template, we close the output file if one was opened */
     if (d.fp)
     {
-        fclose(d.fp);
+        ffclose(d.fp);
     }
 
     /* We also calculate the average distance for each group */

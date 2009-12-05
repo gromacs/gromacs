@@ -1094,6 +1094,7 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
 {
     gmx_ana_indexmap_init(&p->m, &pc->gmax, pc->coll->top, pc->itype);
     gmx_ana_pos_reserve(p, p->m.nr, 0);
+    gmx_ana_pos_set_nr(p, p->m.nr);
     p->g = &pc->gmax;
 }
 
@@ -1276,7 +1277,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         g = &pc->gmax;
     }
-    p->g = g;
+    gmx_ana_pos_set_evalgrp(p, g);
 
     /* Update the index map */
     if (pc->flags & POS_DYNAMIC)

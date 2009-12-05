@@ -135,7 +135,7 @@ choose_ff(char *forcefield, int maxlen)
     while (isspace(*c)) c++;
     fff[i].desc=strdup(c);
   }
-  fclose(in);
+  ffclose(in);
 
   if (nff > 1) {
     printf("\nSelect the Force Field:\n");

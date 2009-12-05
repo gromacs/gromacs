@@ -158,8 +158,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   {
       md->bEInd[i]=FALSE;
   }
-  
-  
+
   for(i=0; i<F_NRE; i++) {
       md->bEner[i] = FALSE;
       if (i == F_LJ)
@@ -227,6 +226,13 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   }
 
     md->epc = ir->epc;
+    for (i=0;i<DIM;i++) 
+    {
+        for (j=0;j<DIM;j++) 
+        {
+            md->ref_p[i][j] = ir->ref_p[i][j];
+        }
+    }
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
@@ -274,6 +280,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->ivisc = get_ebin_space(md->ebin,asize(visc_nm),visc_nm,
                                    unit_invvisc_SI);
     }
+
+    /* Energy monitoring */
+    for(i=0;i<egNR;i++)
+    {
+        md->bEInd[i] = FALSE;
+    }
+    md->bEInd[egCOULSR] = TRUE;
+    md->bEInd[egLJSR  ] = TRUE;
+
     if (ir->rcoulomb > ir->rlist)
     {
         md->bEInd[egCOULLR] = TRUE;
@@ -578,10 +593,23 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
         
-        /* This is pV (in kJ/mol) */  
-        /* I don't think this is correct -- it should be the external pressure */
-        pv = vol*enerd->term[F_PRES]/PRESFAC;
-
+        /* This is pV (in kJ/mol).  The pressure is the reference pressure,
+         not the instantaneous pressure */  
+        pv = 0;
+        for (i=0;i<DIM;i++) 
+        {
+            for (j=0;j<DIM;j++) 
+            {
+                if (i>j) 
+                {
+                    pv += box[i][j]*md->ref_p[i][j]/PRESFAC;
+                } 
+                else 
+                {
+                    pv += box[j][i]*md->ref_p[j][i]/PRESFAC;
+                }
+            }
+        }
         add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
@@ -704,7 +732,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         fprintf(fp_dhdl,"\n");
     }
-}
+    }
 
 void upd_mdebin_step(t_mdebin *md)
 {

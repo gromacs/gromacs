@@ -17,7 +17,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	domdec_network.c domdec_setup.c	domdec_top.c	\
 	ebin.c		\
 	edsam.c		ewald.c         fftgrid.c	\
-	force.c  	ghat.c		init.c		\
+	force.c  	forcerec.c	\
+	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
 	mvxvf.c		ns.c		nsgrid.c	\
 	perf_est.c	genborn.c			\

@@ -55,6 +55,8 @@
 #include "tpxio.h"
 #include "confio.h"
 #include "cmat.h"
+#include "gmx_ana.h"
+
 
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */
@@ -292,8 +294,8 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
   sfree(index);
   sfree(isize);
 
-  fclose(fpsg);
-  fclose(fpsk);
+  ffclose(fpsg);
+  ffclose(fpsk);
   
   fpsg = xvgropen(sgslfn,
                   "S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N",
@@ -307,8 +309,8 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
     fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,
             sk_slice_tot[i]/nframes);
   }
-  fclose(fpsg);
-  fclose(fpsk);
+  ffclose(fpsg);
+  ffclose(fpsk);
 }
 
 
@@ -697,8 +699,8 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
 						 0.333 * order[atom][YY]));
     }
     
-    fclose(ord);
-    fclose(slOrd);
+    ffclose(ord);
+    ffclose(slOrd);
   }
 }
 

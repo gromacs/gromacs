@@ -1578,8 +1578,7 @@ void do_index(const char* mdparin, const char *ndx,
   } else {
     grps = init_index(ndx,&gnames);
   }
-  
-  
+
   groups = &mtop->groups;
   natoms = mtop->natoms;
   symtab = &mtop->symtab;
@@ -1594,6 +1593,8 @@ void do_index(const char* mdparin, const char *ndx,
   srenew(gnames,grps->nr+1);
   gnames[restnm] = *(groups->grpname[i]);
   groups->ngrpname = grps->nr+1;
+
+  set_warning_line(mdparin,-1);
 
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);

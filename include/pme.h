@@ -46,6 +46,10 @@
 #include "fftgrid.h"
 #include "gmx_wallcycle.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
@@ -148,5 +152,9 @@ extern void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
 					bool bGotTermSignal,
 					bool bGotUsr1Signal);
 /* Send the PME mesh force, virial and energy to the PP-only nodes */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

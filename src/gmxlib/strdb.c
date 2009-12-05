@@ -111,7 +111,7 @@ int get_strings(const char *db,char ***strings)
   if (fscanf(in,"%d",&nstr) != 1) {
     sprintf(warn_buf,"File %s is empty",db);
     warning(NULL);
-    fclose(in);
+    ffclose(in);
     return 0;
   }
   snew(ptr,nstr);
@@ -125,7 +125,7 @@ int get_strings(const char *db,char ***strings)
 #endif
     ptr[i] = strdup(buf);
   }
-  fclose(in);
+  ffclose(in);
 
   *strings=ptr;
   
@@ -156,7 +156,7 @@ int fget_lines(FILE *in,char ***strings)
   {
     sprintf(warn_buf,"File is empty");
     warning(NULL);
-    fclose(in);
+    ffclose(in);
     
     return 0;
   }
@@ -179,7 +179,7 @@ int get_lines(const char *db,char ***strings)
   set_warning_line(db,1);
   in   = libopen(db);
   nstr = fget_lines(in,strings);
-  fclose(in);
+  ffclose(in);
 
   return nstr;
 }
@@ -203,7 +203,7 @@ int get_file(const char *db,char ***strings)
     i++;
   }
   nstr=i;
-  fclose(in);
+  ffclose(in);
   srenew(ptr,nstr);
   *strings=ptr;
   

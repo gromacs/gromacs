@@ -55,6 +55,10 @@
 #include "pull.h"
 #include "update.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MD_POLARISE     (1<<2)
 #define MD_IONIZE       (1<<3)
 #define MD_RERUN        (1<<4)
@@ -95,12 +99,10 @@
 #define CGLO_ITERATE        (1<<10)
 /* it is the first time we are iterating (or, only once through is required */
 #define CGLO_FIRSTITERATE   (1<<11)
-/* First call of compute_globals */
-#define CGLO_FIRSTCALL      (1<<12)
-/* we are reading the Ekin from a file (such as rerunning) */
-#define CGLO_READEKIN       (1<<13)
+/* Reading ekin from the trajectory */
+#define CGLO_READEKIN       (1<<12)
 /* we need to reset the ekin rescaling factor here */
-#define CGLO_SCALEEKIN      (1<<14)
+#define CGLO_SCALEEKIN      (1<<13)
 
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
@@ -209,8 +211,8 @@ extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
 
-extern void print_time(FILE *out,
-		       gmx_runtime_t *runtime,gmx_large_int_t step,t_inputrec *ir);
+extern void print_time(FILE *out, gmx_runtime_t *runtime,
+                       gmx_large_int_t step,t_inputrec *ir, t_commrec *cr);
 
 extern void runtime_start(gmx_runtime_t *runtime);
 
@@ -301,7 +303,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	     int nstglobalcomm, ivec ddxyz,int dd_node_order,real rdd,
              real rconstr, const char *dddlb_opt,real dlb_scale,
 	     const char *ddcsx,const char *ddcsy,const char *ddcsz,
-	     int nstepout, int nmultisim, int repl_ex_nst,int repl_ex_seed,
+	     int nstepout, int resetstep, int nmultisim, int repl_ex_nst,int repl_ex_seed,
 	     real pforce,real cpt_period,real max_hours,
 	     unsigned long Flags);
 /* Driver routine, that calls the different methods */
@@ -313,7 +315,7 @@ int mdrunner_threads(int nthreads,
                      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
                      const char *dddlb_opt,real dlb_scale,
                      const char *ddcsx,const char *ddcsy,const char *ddcsz,
-                     int nstepout,int nmultisim, int repl_ex_nst,
+                     int nstepout,int resetstep,int nmultisim, int repl_ex_nst,
                      int repl_ex_seed, real pforce,real cpt_period,
                      real max_hours, unsigned long Flags);
 /* initializes nthread threads before running mdrunner: is the preferred
@@ -335,5 +337,9 @@ extern void init_md(FILE *fplog,
 		    rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
+
+#ifdef __cplusplus
+}
+#endif
      
 #endif	/* _mdrun_h */

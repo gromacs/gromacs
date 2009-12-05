@@ -40,13 +40,12 @@
 #include <config.h>
 #endif
 
+#include "futil.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
   
-#include "futil.h"
-
 void set_default_file_name(const char *name);
 /* Set the default file name for all file types to name */
 

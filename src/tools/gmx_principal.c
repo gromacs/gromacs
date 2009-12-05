@@ -57,6 +57,8 @@
 #include "txtdump.h"
 #include "tpxio.h"
 #include "gstat.h"
+#include "gmx_ana.h"
+
 
 void
 calc_principal_axes(t_topology *   top,
@@ -117,10 +119,10 @@ int gmx_principal(int argc,char *argv[])
                     PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
                     NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
 	
-  axis1=fopen(opt2fn("-a1",NFILE,fnm),"w");
-  axis2=fopen(opt2fn("-a2",NFILE,fnm),"w");
-  axis3=fopen(opt2fn("-a3",NFILE,fnm),"w");
-  fmoi =fopen(opt2fn("-om",NFILE,fnm),"w");
+  axis1=ffopen(opt2fn("-a1",NFILE,fnm),"w");
+  axis2=ffopen(opt2fn("-a2",NFILE,fnm),"w");
+  axis3=ffopen(opt2fn("-a3",NFILE,fnm),"w");
+  fmoi =ffopen(opt2fn("-om",NFILE,fnm),"w");
 	
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,TRUE);
 	
@@ -141,10 +143,10 @@ int gmx_principal(int argc,char *argv[])
   while(read_next_x(oenv,status,&t,natoms,x,box));
 	
   close_trj(status);
-  fclose(axis1);
-  fclose(axis2);
-  fclose(axis3);
-  fclose(fmoi);
+  ffclose(axis1);
+  ffclose(axis2);
+  ffclose(axis3);
+  ffclose(fmoi);
 	
   thanx(stderr);
   

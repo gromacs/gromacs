@@ -231,7 +231,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   
   /* Initiate */
   *cr = init_cr_nopar();
-  fplog = gmx_log_open(log,*cr,FALSE,0);
+  gmx_log_open(log,*cr,FALSE,0,&fplog);
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");

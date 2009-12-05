@@ -57,6 +57,8 @@
 #include "do_fit.h"
 #include "viewit.h"
 #include "rmpbc.h"
+#include "gmx_ana.h"
+
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
@@ -592,7 +594,7 @@ int gmx_confrms(int argc,char *argv[])
     if (!bOne)
       write_pdbfile(fp,title1,atoms1,x1,ePBC1,box1,0,1,NULL);
     write_pdbfile(fp,title2,atoms2,x2,ePBC2,box2,0,bOne ? -1 : 2,NULL);
-    fclose(fp);
+    ffclose(fp);
     break;
   case efGRO:
     if (bBfac)
@@ -601,7 +603,7 @@ int gmx_confrms(int argc,char *argv[])
     if (!bOne)
       write_hconf_p(fp,title1,atoms1,3,x1,v1,box1);
     write_hconf_p(fp,title2,atoms2,3,x2,v2,box2);
-    fclose(fp);
+    ffclose(fp);
     break;
   default:
     if (bBfac)

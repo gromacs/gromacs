@@ -43,7 +43,9 @@
 #ifndef SELECTION_PARSETREE_H
 #define SELECTION_PARSETREE_H
 
-#include <typedefs.h>
+/*#include <typedefs.h>*/
+#include <types/simple.h>
+
 
 #include <selvalue.h>
 
@@ -69,8 +71,13 @@ typedef struct t_selexpr_value
             /** End of the range; equals \p i1 for a single integer. */
             int             i2;
         }                   i;
-        /** The real value (\p type REAL_VALUE); */
-        real                r;
+        /** The real value/range (\p type REAL_VALUE); */
+        struct {
+            /** Beginning of the range. */
+            real            r1;
+            /** End of the range; equals \p r1 for a single number. */
+            real            r2;
+        }                   r;
         /** The string value (\p type STR_VALUE); */
         char               *s;
         /** The position value (\p type POS_VALUE); */
@@ -141,14 +148,21 @@ _gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod, t_selexpr_param *params,
                        struct t_selelem *sel, void *scanner);
 /** Creates a \c t_selelem for evaluation of reference positions. */
 struct t_selelem *
-_gmx_sel_init_position(struct t_selelem *expr, const char *type, bool bSelPos,
-                       void *scanner);
+_gmx_sel_init_position(struct t_selelem *expr, const char *type, void *scanner);
+
+/** Creates a \c t_selelem for a constant position. */
+struct t_selelem *
+_gmx_sel_init_const_position(real x, real y, real z);
 /** Creates a \c t_selelem for a index group expression using group name. */
 struct t_selelem *
-_gmx_sel_init_group_by_name(struct gmx_ana_indexgrps_t *grps, const char *name);
+_gmx_sel_init_group_by_name(const char *name, void *scanner);
 /** Creates a \c t_selelem for a index group expression using group index. */
 struct t_selelem *
-_gmx_sel_init_group_by_id(struct gmx_ana_indexgrps_t *grps, int id);
+_gmx_sel_init_group_by_id(int id, void *scanner);
+/** Creates a \c t_selelem for a variable reference */
+struct t_selelem *
+_gmx_sel_init_variable_ref(struct t_selelem *sel);
+
 /** Creates a root \c t_selelem for a selection. */
 struct t_selelem *
 _gmx_sel_init_selection(char *name, struct t_selelem *sel, void *scanner);
@@ -159,11 +173,22 @@ _gmx_sel_assign_variable(char *name, struct t_selelem *expr, void *scanner);
 struct t_selelem *
 _gmx_sel_append_selection(struct t_selelem *sel, struct t_selelem *last,
                           void *scanner);
+/** Check whether the parser should finish. */
+bool
+_gmx_sel_parser_should_finish(void *scanner);
+
+/** Handle empty commands. */
+void
+_gmx_sel_handle_empty_cmd(void *scanner);
+/** Process help commands. */
+void
+_gmx_sel_handle_help_cmd(char *topic, void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
 bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam,
-                      struct gmx_ana_selparam_t *param, struct t_selelem *root);
+                      struct gmx_ana_selparam_t *param, struct t_selelem *root,
+                      void *scanner);
 
 #endif

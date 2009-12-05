@@ -60,6 +60,8 @@
 #include "magic.h"
 #include "pbc.h"
 #include "xvgr.h"
+#include "xdrf.h"
+#include "gmx_ana.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
@@ -417,6 +419,8 @@ int gmx_trjcat(int argc, char *argv[])
     static bool bCat = FALSE;
     static bool bSort = TRUE;
     static bool bKeepLast = FALSE;
+    static bool bKeepLastAppend = FALSE;
+    static bool bOverwrite = FALSE;
     static bool bSetTime = FALSE;
     static bool bDeMux;
     static real begin = -1;
@@ -442,6 +446,8 @@ int gmx_trjcat(int argc, char *argv[])
                 { &bSort }, "Sort trajectory files (not frames)" },
             { "-keeplast", FALSE, etBOOL,
                 { &bKeepLast }, "keep overlapping frames at end of trajectory" },
+            { "-overwrite", FALSE, etBOOL,
+                { &bOverwrite }, "overwrite overlapping frames during appending" },
             { "-cat", FALSE, etBOOL,
                 { &bCat }, "do not discard double time frames" } };
 #define npargs asize(pa)
@@ -456,11 +462,14 @@ int gmx_trjcat(int argc, char *argv[])
     int earliersteps, nfile_in, nfile_out, *cont_type, last_ok_step;
     real *readtime, *timest, *settime;
     real first_time = 0, lasttime = NOTSET, last_ok_t = -1, timestep;
+    real last_frame_time, searchtime;
     int isize, j;
     atom_id *index = NULL, imax;
     char *grpname;
     real **val = NULL, *t = NULL, dt_remd;
     int n, nset;
+    bool bOK;
+    off_t fpos;
     output_env_t oenv;
     t_filenm fnm[] =
         {
@@ -610,15 +619,78 @@ int gmx_trjcat(int argc, char *argv[])
         }
         else 
         {
-            /* Read file to find what is the last frame in it */
             if (!read_first_frame(oenv,&status,out_file,&fr,FLAGS))
                 gmx_fatal(FARGS,"Reading first frame from %s",out_file);
-            while (read_next_frame(oenv,status,&fr))
-                ;
-            close_trj(status);
-            lasttime = fr.time;
-            bKeepLast = TRUE;
-            trxout = open_trx(out_file,"a");
+            if (!bKeepLast && !bOverwrite)
+            {
+                fprintf(stderr, "\n\nWARNING: Appending without -overwrite implies -keeplast "
+                    "between the first two files. \n"
+                    "If the trajectories have an overlap and have not been written binary \n"
+                    "reproducible this will produce an incorrect trajectory!\n\n");
+            
+                /* Fails if last frame is incomplete
+                 * We can't do anything about it without overwriting
+                 * */
+                if (gmx_fio_getftp(status) == efXTC) 
+                {
+                    lasttime = xdr_xtc_get_last_frame_time(gmx_fio_getfp(status),gmx_fio_getxdr(status),fr.natoms,&bOK);
+                    fr.time = lasttime;
+                    if (!bOK)
+                    {
+                       gmx_fatal(FARGS,"Error reading last frame. Maybe seek not supported." );
+                    }     
+                }
+                else 
+                {
+                    while (read_next_frame(oenv,status,&fr))
+                        ;
+                    lasttime = fr.time;                    
+                }
+                bKeepLastAppend = TRUE;
+                close_trj(status);
+                trxout = open_trx(out_file,"a");
+            }
+            else if (bOverwrite)
+            {
+                if (gmx_fio_getftp(status) != efXTC) {
+                    gmx_fatal(FARGS,"Overwrite only supported for XTC." );
+                }
+                last_frame_time = xdr_xtc_get_last_frame_time(gmx_fio_getfp(status),gmx_fio_getxdr(status),fr.natoms,&bOK);
+                if (!bOK)
+                {
+                   gmx_fatal(FARGS,"Error reading last frame. Maybe seek not supported." );
+                }
+                /* xtc_seek_time broken for trajectories containing only 1 or 2 frames 
+                 *     or when seek time = 0 */
+                if (nfile_in>1 && settime[1]<last_frame_time+timest[0]*0.5)  
+                {
+                    /* Jump to one time-frame before the start of next
+                     *  trajectory file */
+                    searchtime = settime[1]-timest[0]*1.25;
+                } 
+                else 
+                {
+                    searchtime = last_frame_time;
+                }
+                if (xtc_seek_time(searchtime,status,fr.natoms))
+                {
+                    gmx_fatal(FARGS,"Error seeking to append position.");
+                }
+                read_next_frame(oenv,status,&fr);
+                if (fabs(searchtime - fr.time) > timest[0]*0.5)
+                {
+                    gmx_fatal(FARGS,"Error seeking: attempted to seek to %f but got %f.",
+                              searchtime,fr.time);
+                }
+                lasttime = fr.time;             
+                fpos = gmx_fio_ftell(status);
+                close_trj(status);
+                trxout = open_trx(out_file,"r+");
+                if (gmx_fio_seek(trxout,fpos)) {
+                    gmx_fatal(FARGS,"Error seeking to append position.");
+                }
+            }
+            printf("\n Will append after %f \n",lasttime);
             frout = fr;
         }
         /* Lets stitch up some files */
@@ -718,8 +790,9 @@ int gmx_trjcat(int argc, char *argv[])
                 {
                     bWrite = TRUE;
                 }
-                else if ( bKeepLast ) /* write till last frame of this traj
-				 and skip first frame(s) of next traj */
+                else if ( bKeepLast || (bKeepLastAppend && i==1)) 
+                    /* write till last frame of this traj
+                       and skip first frame(s) of next traj */
                 {
                     bWrite = ( frout.time > lasttime+0.5*timestep );
                 }

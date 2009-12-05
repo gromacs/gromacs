@@ -62,6 +62,7 @@ static FILE *log_file = NULL;
 
 #ifdef GMX_THREADS
 static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 bool bDebugMode(void)
@@ -94,7 +95,7 @@ void _where(const char *file,int line)
   
   if ( bFirst ) {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&where_mutex);
     if (bFirst) /* we repeat the check in the locked section because things
                    might have changed */
     {
@@ -104,7 +105,7 @@ void _where(const char *file,int line)
         bFirst = FALSE;
 #ifdef GMX_THREADS
     }
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&where_mutex);
 #endif
 
   } 
@@ -202,7 +203,7 @@ static void quit_gmx(const char *msg)
     perror(msg);
   }
   
-  if (gmx_parallel_env()) {
+  if (gmx_parallel_env_initialized()) {
     int  nnodes;
     int  noderank;
     
@@ -655,7 +656,7 @@ void init_debug (const int dbglevel,const char *dbgfile)
     if (!bDebug) /* another thread hasn't already run this*/
     {
         no_buffers();
-        debug=gmx_fio_fopen(dbgfile,"w");
+        debug=gmx_fio_fopen(dbgfile,"w+");
         bDebug = TRUE;
         if (dbglevel >= 2)
             gmx_debug_at = TRUE;
@@ -770,6 +771,7 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   char buf[10240],tmpbuf[1024];
   int  cqnum;
   const char *llines = "-------------------------------------------------------";
+  char *strerr;
 
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&debug_mutex);
@@ -777,12 +779,14 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   /* protect the audience from suggestive discussions */
   
   cool_quote(tmpbuf,1023,&cqnum);
+  strerr = gmx_strerror(key);
   sprintf(buf,"\n%s\nProgram %s, %s\n"
 	  "Source code file: %s, line: %d\n\n"
-	  "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS Wiki at\n"
-	  "http://wiki.gromacs.org/index.php/Errors\n%s\n\n%s\n",
+	  "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
+	  "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
 	  llines,ShortProgram(),GromacsVersion(),file,line,
-	  gmx_strerror(key),msg ? msg : warn_buf,llines,tmpbuf);
+	  strerr,msg ? msg : warn_buf,llines,tmpbuf);
+  free(strerr);
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif

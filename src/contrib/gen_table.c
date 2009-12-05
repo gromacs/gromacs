@@ -474,7 +474,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		  r,vc,fc,vd,fd,vr,fr);
 	  
 	}
-	fclose(fp);
+	ffclose(fp);
      
 	/* Guillot eqn 4 and 5 */
       } else if (((strcmp(atype[j],"HWd") == 0) && (strcmp(atype[k],"HW") == 0)) ||
@@ -502,7 +502,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		  r,vc,fc,vd,fd,vr,fr);
 	  
 	}
-	fclose(fp);
+	ffclose(fp);
 
 	/* Guillot2001a eqn 3 */
       } else if (((strcmp(atype[j],"HWd") == 0) && (strcmp(atype[k],"HWd") == 0)) ||
@@ -529,7 +529,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
 		  r,vc,fc,vd,fd,vr,fr);
 	  
 	}
-	fclose(fp);
+	ffclose(fp);
 
       } else 
 	gmx_fatal(FARGS,"Invalid atom type: %s %s", atype[j], atype[k]);
@@ -841,7 +841,7 @@ int main(int argc,char *argv[])
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);
   }  
   if ((m != mGuillot2001a)) 
-    fclose(fp);
+    ffclose(fp);
   
   thanx(stdout);
   

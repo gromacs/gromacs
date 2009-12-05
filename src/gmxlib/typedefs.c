@@ -171,6 +171,8 @@ void init_mtop(gmx_mtop_t *mtop)
   mtop->moltype = NULL;
   mtop->nmolblock = 0;
   mtop->molblock = NULL;
+  mtop->maxres_renum = 0;
+  mtop->maxresnr = -1;
   init_groups(&mtop->groups);
   init_block(&mtop->mols);
   open_symtab(&mtop->symtab);

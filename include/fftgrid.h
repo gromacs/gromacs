@@ -50,6 +50,10 @@
 #include "gmx_parallel_3dfft.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Use FFTW */
 
 #define INDEX(i,j,k)             ((i)*la12+(j)*la2+(k))      
@@ -142,6 +146,10 @@ extern t_complex print_cgrid(FILE *fp,char *title,int nx,int ny,int nz,
 extern void clear_cgrid(int nx,int ny,int nz,t_complex ***grid);
 
 extern void clear_rgrid(int nx,int ny,int nz,real ***grid);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

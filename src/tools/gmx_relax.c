@@ -52,6 +52,8 @@
 #include "index.h"
 #include "gstat.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   real re,im;
@@ -279,7 +281,7 @@ void calc_tauc(bool bVerbose,int npair,t_pair pair[],real dt,
 	  fprintf(fp,"%10g  %10g  %10g\n",j*dt,corr[i][j],
 		  spec[i].S2 + (1-spec[i].S2)*exp(-j*dt/spec[i].tauc));
 	}
-	fclose(fp);
+	ffclose(fp);
       }
     }
   }
@@ -341,7 +343,7 @@ void plot_spectrum(char *noefn,int npair,t_pair pair[],t_sij *spec,real taum)
     Sijmin=min(Sijmin,sij.re);
     fprintf(fp,"%5d  %10g\n",i,sij.re);
   }
-  fclose(fp);
+  ffclose(fp);
   fprintf(stderr,"Sijmin: %g, Sijmax: %g\n",Sijmin,Sijmax);
   out=ffopen("spec.out","w");
   pow6 = -1.0/6.0;
@@ -363,7 +365,7 @@ void plot_spectrum(char *noefn,int npair,t_pair pair[],t_sij *spec,real taum)
 	      pp6,pp3,ppy,pp3-pp6,ppy-pp6);
     }
   }
-  fclose(out);
+  ffclose(out);
   
   sfree(Sij);
   
@@ -437,7 +439,7 @@ void spectrum(bool bVerbose,
  
   fp=ffopen("ylm.out","w");
   calc_aver(fp,nframes,npair,pair,spec,maxdist);
-  fclose(fp);
+  ffclose(fp);
  
   /* Select out the pairs that have to be correlated */
   snew(Corr,npair);

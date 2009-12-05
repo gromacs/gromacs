@@ -58,6 +58,8 @@
 #include "atomprop.h"
 #include "physics.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   atom_id  aa,ab;
@@ -417,7 +419,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			  &area,&totvolume,&surfacedots,&nsurfacedots,
 			  index[0],ePBC,bPBC ? box : NULL);
     if (retval)
-      gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
+      gmx_fatal(FARGS,"Something wrong in nsc_dclm_pbc");
     
     if (bConnelly)
       connelly_plot(ftp2fn(efPDB,nfile,fnm),
@@ -474,9 +476,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(fp);
+  ffclose(fp);
   if (vp)
-    fclose(vp);
+    ffclose(vp);
     
   /* if necessary, print areas per atom to file too: */
   if (bResAt) {
@@ -519,11 +521,34 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
     }
     if (bITP)
-      fclose(fp3);
-    fclose(fp);
+      ffclose(fp3);
+    ffclose(fp);
   }
 
-  sfree(x);
+    /* Be a good citizen, keep our memory free! */
+    sfree(x);
+    sfree(nx);
+    for(i=0;i<2;i++)
+    {
+        sfree(index[i]);
+        sfree(grpname[i]);
+    }
+    sfree(bOut);
+    sfree(radius);
+    sfree(bPhobic);
+    
+    if(bResAt)
+    {
+        sfree(atom_area);
+        sfree(atom_area2);
+        sfree(res_a);
+        sfree(res_area);
+        sfree(res_area2);
+    }
+    if(bDGsol)
+    {
+        sfree(dgs_factor);
+    }
 }
 
 int gmx_sas(int argc,char *argv[])

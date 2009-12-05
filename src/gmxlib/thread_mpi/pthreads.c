@@ -33,10 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
-
 */
 
 
@@ -90,9 +86,8 @@ enum tMPI_Thread_support tMPI_Thread_support(void)
 
 
 
-int tMPI_Thread_create(tMPI_Thread_t *   thread,
-                       void *            (*start_routine)(void *),
-                       void *            arg)
+int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
+                       void *arg)
 {
     int ret;
 
@@ -117,8 +112,7 @@ int tMPI_Thread_create(tMPI_Thread_t *   thread,
 
 
 
-int tMPI_Thread_join     (tMPI_Thread_t     thread,
-                          void **          value_ptr)
+int tMPI_Thread_join(tMPI_Thread_t thread, void **value_ptr)
 {
     int ret;
 
@@ -211,8 +205,7 @@ int tMPI_Thread_mutex_unlock(tMPI_Thread_mutex_t *mtx)
 
 
 
-int tMPI_Thread_key_create(tMPI_Thread_key_t *       key, 
-        void                      (*destructor)(void *))
+int tMPI_Thread_key_create(tMPI_Thread_key_t *key, void (*destructor)(void *))
 {
     int ret;
 
@@ -235,7 +228,7 @@ int tMPI_Thread_key_create(tMPI_Thread_key_t *       key,
 }
 
 
-int tMPI_Thread_key_delete(tMPI_Thread_key_t       key)
+int tMPI_Thread_key_delete(tMPI_Thread_key_t key)
 {
     int ret;
 
@@ -252,7 +245,7 @@ int tMPI_Thread_key_delete(tMPI_Thread_key_t       key)
 
 
 
-void * tMPI_Thread_getspecific(tMPI_Thread_key_t   key)
+void * tMPI_Thread_getspecific(tMPI_Thread_key_t key)
 {
     void *p = NULL;
 
@@ -262,8 +255,7 @@ void * tMPI_Thread_getspecific(tMPI_Thread_key_t   key)
 }
 
 
-int tMPI_Thread_setspecific(tMPI_Thread_key_t    key, 
-                            void *              value)
+int tMPI_Thread_setspecific(tMPI_Thread_key_t key, void *value)
 {
     int ret;
     
@@ -274,8 +266,8 @@ int tMPI_Thread_setspecific(tMPI_Thread_key_t    key,
 
 
 
-int tMPI_Thread_once(tMPI_Thread_once_t *     once_control,
-                     void                    (*init_routine)(void))
+int tMPI_Thread_once(tMPI_Thread_once_t *once_control,
+                     void (*init_routine)(void))
 {
     int ret;
     ret=pthread_once(once_control, init_routine);
@@ -375,16 +367,59 @@ void tMPI_Thread_exit(void *      value_ptr)
 }
 
 
-
-
 int tMPI_Thread_cancel(tMPI_Thread_t     thread)
 {
     return pthread_cancel(thread);
 }
 
 
-int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier,
-                             int                   n)
+#ifdef TMPI_RWLOCK
+/* rwlocks are very thin wrappers. */
+int tMPI_Thread_rwlock_init(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_init(rwlock,NULL);
+}
+
+int tMPI_Thread_rwlock_destroy(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_destroy(rwlock);
+}
+
+int tMPI_Thread_rwlock_rdlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_rdlock(rwlock);
+}
+
+int tMPI_Thread_rwlock_tryrdlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_tryrdlock(rwlock);
+}
+
+int tMPI_Thread_rwlock_wrlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_wrlock(rwlock);
+}
+
+int tMPI_Thread_rwlock_trywrlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_trywrlock(rwlock);
+}
+
+int tMPI_Thread_rwlock_rdunlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_unlock(rwlock);
+}
+
+int tMPI_Thread_rwlock_wrunlock(tMPI_Thread_rwlock_t *rwlock)
+{
+    return pthread_rwlock_unlock(rwlock);
+}
+#endif
+
+
+
+
+int tMPI_Thread_barrier_init(tMPI_Thread_barrier_t *barrier, int n)
 {
     int ret;
     /*tMPI_Thread_pthread_barrier_t *p;*/

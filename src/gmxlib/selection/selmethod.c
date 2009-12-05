@@ -36,9 +36,9 @@
 #endif
 
 #include <ctype.h>
-#include <string.h>
 
 #include <macros.h>
+#include <string2.h>
 
 #include <selmethod.h>
 
@@ -72,6 +72,7 @@ extern gmx_ana_selmethod_t sm_all;
 extern gmx_ana_selmethod_t sm_none;
 extern gmx_ana_selmethod_t sm_atomnr;
 extern gmx_ana_selmethod_t sm_resnr;
+extern gmx_ana_selmethod_t sm_resind;
 extern gmx_ana_selmethod_t sm_atomname;
 extern gmx_ana_selmethod_t sm_atomtype;
 extern gmx_ana_selmethod_t sm_resname;
@@ -94,6 +95,9 @@ extern gmx_ana_selmethod_t sm_insolidangle;
 /* From sm_same.c */
 extern gmx_ana_selmethod_t sm_same;
 
+/* From sm_merge.c */
+extern gmx_ana_selmethod_t sm_merge;
+extern gmx_ana_selmethod_t sm_plus;
 /* From sm_permute.c */
 extern gmx_ana_selmethod_t sm_permute;
 
@@ -106,6 +110,7 @@ static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_none,
     &sm_atomnr,
     &sm_resnr,
+    &sm_resind,
     &sm_atomname,
     &sm_atomtype,
     &sm_resname,
@@ -126,6 +131,8 @@ static gmx_ana_selmethod_t *const smtable_def[] = {
     &sm_insolidangle,
     &sm_same,
 
+    &sm_merge,
+    &sm_plus,
     &sm_permute,
 };
 
@@ -235,9 +242,9 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         }
         if (param[i].flags & SPAR_RANGES)
         {
-            if (param[i].val.type != INT_VALUE)
+            if (param[i].val.type != INT_VALUE && param[i].val.type != REAL_VALUE)
             {
-                report_param_error(fp, name, param[i].name, "error: SPAR_RANGES cannot be set for a non-integer parameter");
+                report_param_error(fp, name, param[i].name, "error: SPAR_RANGES cannot be set for a non-numeric parameter");
                 bOk = FALSE;
             }
             if (param[i].flags & SPAR_DYNAMIC)

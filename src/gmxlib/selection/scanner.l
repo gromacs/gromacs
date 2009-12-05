@@ -56,7 +56,8 @@
  * Macro to read input into a buffer for the tokenizer.
  *
  * This macro is a modified version of the standard implementation in Flex.
- * The only changes are the calls to _gmx_sel_lexer_*() functions.
+ * The only changes are the calls to _gmx_sel_lexer_*() functions to show a
+ * prompt.
  */
 #define YY_INPUT(buf,result,max_size) \
     { \
@@ -79,7 +80,6 @@
             YY_FATAL_ERROR("input in flex scanner failed"); \
         } \
         result = n; \
-        _gmx_sel_lexer_add_input(buf, n, state); \
     }
 %}
 
@@ -98,6 +98,8 @@ COMMENT    (#.*)
 %option reentrant
 %option prefix="_gmx_sel_yy"
 %option header-file="scanner_flex.h"
+%option nounistd
+%option always-interactive
 
 %s matchof
 %s matchbool
@@ -108,10 +110,12 @@ COMMENT    (#.*)
 
 %{
     gmx_sel_lexer_t *state = yyget_extra(yyscanner);
-    /* Return END_OF_METHOD/PARAM_* immediately if necessary */
-    if (state->nextparam)
+    int              retval;
+    /* Return a token if one is pending */
+    retval = _gmx_sel_lexer_process_pending(yylval, state);
+    if (retval != 0)
     {
-        return _gmx_sel_lexer_process_next_param(yylval, state);
+        return retval;
     }
     /* Handle the start conditions for 'of' matching */
     if (state->bMatchOf)
@@ -136,8 +140,8 @@ COMMENT    (#.*)
 %}
 
 {COMMENT}
-{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return INT;  }
-{REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return REAL; }
+{INTEGER}       { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
+{REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
 \\\n            { _gmx_sel_lexer_prompt_newline(TRUE, state); }
@@ -145,9 +149,13 @@ COMMENT    (#.*)
                     if (yytext[0] == ';' || state->prompt)
                     {
                         state->bCmdStart = TRUE;
+                        rtrim(state->pselstr);
                         return CMD_SEP;
                     }
                 }
+<cmdstart><<EOF>> { yyterminate(); }
+<<EOF>>         { state->bCmdStart = TRUE; return CMD_SEP; }
+
 <cmdstart>help  { BEGIN(help); return HELP; }
 <help>{
 [[:blank:]]+
@@ -155,9 +163,10 @@ COMMENT    (#.*)
 ";"|\n          { state->bCmdStart = TRUE; return CMD_SEP; }
 .               { return INVALID; }
 }
+
 <matchbool>{
-yes|on          { ADD_TOKEN; yylval->i = 1; return BOOL_VALUE; }
-no|off          { ADD_TOKEN; yylval->i = 0; return BOOL_VALUE; }
+yes|on          { ADD_TOKEN; yylval->i = 1; return TOK_INT; }
+no|off          { ADD_TOKEN; yylval->i = 0; return TOK_INT; }
 }
 group           { ADD_TOKEN; return GROUP; }
 to              { ADD_TOKEN; return TO; }

@@ -39,6 +39,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum
 {
     econqCoord,         /* Constrain coordinates (mass weighted)           */ 
@@ -248,3 +252,7 @@ extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    t_nrnb *nrnb,
 			    int maxwarn,int *warncount);
 /* Returns if the constraining succeeded */
+
+#ifdef __cplusplus
+}
+#endif

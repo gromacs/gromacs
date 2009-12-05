@@ -58,6 +58,7 @@
 #include "random.h"
 #include "index.h"
 #include "mtop_util.h"
+#include "gmx_ana.h"
 
 static void insert_ion(int nsa,int *nwater,
 		       bool bSet[],int repl[],atom_id index[],
@@ -279,11 +280,11 @@ static void update_topol(const char *topinout,int p_num,int n_num,
     } else
       fprintf(fpout,"%s",buf);
   }
-  fclose(fpin);
-  fclose(fpout);
+  ffclose(fpin);
+  ffclose(fpout);
   /* use ffopen to generate backup of topinout */
   fpout=ffopen(topinout,"w");
-  fclose(fpout);
+  ffclose(fpout);
   rename(TEMP_FILENM,topinout);
 #undef TEMP_FILENM
 }

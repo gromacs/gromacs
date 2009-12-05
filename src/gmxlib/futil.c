@@ -65,8 +65,6 @@
 #include "windows.h"
 #endif
 
-#define MAX_PATHBUF 4096
-
 /* we keep a linked list of all files opened through pipes (i.e. 
    compressed or .gzipped files. This way we can distinguish between them
    without having to change the semantics of reading from/writing to files) 
@@ -108,11 +106,11 @@ void push_ps(FILE *fp)
 }
 
 #ifdef GMX_FAHCORE
-/* redefine fclose */
-#define fclose fah_fclose
+/* redefine ffclose */
+#define ffclose fah_fclose
 #else
-#ifdef fclose
-#undef fclose
+#ifdef ffclose
+#undef ffclose
 #endif
 #endif
 
@@ -135,9 +133,10 @@ static int pclose(FILE *fp)
 
 
 
-void ffclose(FILE *fp)
+int ffclose(FILE *fp)
 {
     t_pstack *ps,*tmp;
+    int ret=0;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&pstack_mutex);
 #endif
@@ -145,11 +144,11 @@ void ffclose(FILE *fp)
     ps=pstack;
     if (ps == NULL) {
         if (fp != NULL) 
-            fclose(fp);
+            ret = fclose(fp);
     }
     else if (ps->fp == fp) {
         if (fp != NULL)
-            pclose(fp);
+            ret = pclose(fp);
         pstack=pstack->prev;
         sfree(ps);
     }
@@ -158,19 +157,20 @@ void ffclose(FILE *fp)
             ps=ps->prev;
         if (ps->prev->fp == fp) {
             if (ps->prev->fp != NULL)
-                pclose(ps->prev->fp);
+                ret = pclose(ps->prev->fp);
             tmp=ps->prev;
             ps->prev=ps->prev->prev;
             sfree(tmp);
         }
         else {
             if (fp != NULL)
-                fclose(fp);
+                ret = fclose(fp);
         }
     }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&pstack_mutex);
 #endif
+    return ret;
 }
 
 #ifdef rewind
@@ -263,7 +263,7 @@ bool gmx_fexist(const char *fname)
     if (test == NULL) 
         return FALSE;
     else {
-        fclose(test);
+        ffclose(test);
         return TRUE;
     }
 }
@@ -309,7 +309,7 @@ char *backup_fn(const char *file)
     char        *directory,*fn;
     char        *buf;
 
-    smalloc(buf, MAX_PATHBUF);
+    smalloc(buf, GMX_PATH_MAX);
 
     for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
         ;
@@ -377,7 +377,7 @@ FILE *ffopen(const char *file,const char *mode)
     }
     where();
 
-    bRead= mode[0]=='r';
+    bRead= (mode[0]=='r'&&mode[1]!='+');
     strcpy(buf,file);
     if (gmx_fexist(buf) || !bRead) {
         if ((ff=fopen(buf,mode))==NULL)
@@ -475,9 +475,9 @@ bool get_libdir(char *libdir)
 {
     char bin_name[512];
     char buf[512];
-    char full_path[MAX_PATHBUF];
-    char test_file[MAX_PATHBUF];
-    char system_path[MAX_PATHBUF];
+    char full_path[GMX_PATH_MAX];
+    char test_file[GMX_PATH_MAX];
+    char system_path[GMX_PATH_MAX];
     char *dir,*ptr,*s,*pdum;
     bool found=FALSE;
     int i;
@@ -528,11 +528,11 @@ bool get_libdir(char *libdir)
 #else
             pdum=getcwd(buf,sizeof(buf)-1);
 #endif
-            strncpy(full_path,buf,MAX_PATHBUF);
+            strncpy(full_path,buf,GMX_PATH_MAX);
             strcat(full_path,"/");
             strcat(full_path,bin_name);
         } else {
-            strncpy(full_path,bin_name,MAX_PATHBUF);
+            strncpy(full_path,bin_name,GMX_PATH_MAX);
         }
 
         /* Now we should have a full path and name in full_path,
@@ -543,9 +543,9 @@ bool get_libdir(char *libdir)
             buf[i]='\0';
             /* If it doesn't start with "/" it is relative */
             if (buf[0]!=DIR_SEPARATOR) {
-                strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,MAX_PATHBUF);
+                strncpy(strrchr(full_path,DIR_SEPARATOR)+1,buf,GMX_PATH_MAX);
             } else
-                strncpy(full_path,buf,MAX_PATHBUF);
+                strncpy(full_path,buf,GMX_PATH_MAX);
         }
 #endif
 
@@ -582,19 +582,19 @@ char *low_libfn(const char *file, bool bFatal)
     char *ret=NULL;
     char *lib,*dir;
     char buf[1024];
-    char libpath[MAX_PATHBUF];
+    char libpath[GMX_PATH_MAX];
     bool env_is_set=FALSE;
-    char   *s,tmppath[MAX_PATHBUF];
+    char   *s,tmppath[GMX_PATH_MAX];
     bool found;
 
     /* GMXLIB can be a path now */
     lib=getenv("GMXLIB");
     if (lib != NULL) {
         env_is_set=TRUE;
-        strncpy(libpath,lib,MAX_PATHBUF);
+        strncpy(libpath,lib,GMX_PATH_MAX);
     } 
     else if (!get_libdir(libpath))
-        strncpy(libpath,GMXLIBDIR,MAX_PATHBUF);
+        strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
 
     if (gmx_fexist(file))
     {
@@ -603,7 +603,7 @@ char *low_libfn(const char *file, bool bFatal)
     else 
     {
         found=FALSE;
-        strncpy(tmppath,libpath,MAX_PATHBUF);
+        strncpy(tmppath,libpath,GMX_PATH_MAX);
         s=tmppath;
         while(!found && (dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL )
         {

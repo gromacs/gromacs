@@ -48,6 +48,10 @@
 #include "pull.h"
 #include "gmx_random.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_update *gmx_update_t;
 
@@ -242,6 +246,10 @@ extern void berendsen_pscale(t_inputrec *ir,matrix mu,
 extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);
 /* Correct ekin for vcm */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _update_h */
 

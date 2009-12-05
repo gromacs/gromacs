@@ -112,7 +112,7 @@ t_nm2type *rd_nm2type(const char *ff,int *nnm)
       line++;
     }
   } while(bCont);
-  fclose(fp);
+  ffclose(fp);
   
   *nnm = nnnm;
   

@@ -83,14 +83,16 @@ struct gmx_ana_selcollection_t
     /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
     bool                        bMaskOnly;
 
-    /** Full selection string as provided by the user. */
-    char                       *selstr;
     /** Root of the selection element tree. */
     struct t_selelem           *root;
     /** Number of selections in \p sel. */
     int                         nr;
     /** Array of compiled selections. */
     struct gmx_ana_selection_t **sel;
+    /** Number of variables defined. */
+    int                            nvars;
+    /** Selection strings for variables. */
+    char                         **varstrs;
 
     /** Topology for the collection. */
     t_topology                    *top;

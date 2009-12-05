@@ -127,14 +127,17 @@ gmx_gettime()
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
-void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,t_inputrec *ir)
+void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,   
+                t_inputrec *ir, t_commrec *cr)
 {
   time_t finish;
 
   double dt;
   char buf[48];
 
-  if (!gmx_parallel_env())
+#ifndef GMX_THREADS
+  if (!PAR(cr))
+#endif
     fprintf(out,"\r");
   fprintf(out,"step %s",gmx_step_str(step,buf));
   if ((step >= ir->nstlist)) {
@@ -155,10 +158,11 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,t_inputrec
     else
       fprintf(out,", remaining runtime: %5d s          ",(int)dt);
   }
-  if (gmx_parallel_env())
-	{
-    	fprintf(out,"\n");
-	}
+#ifndef GMX_THREADS
+  if (PAR(cr))
+    fprintf(out,"\n");
+#endif
+
   fflush(out);
 }
 
@@ -1426,9 +1430,9 @@ void init_md(FILE *fplog,
 {
     int  i,j,n;
     real tmpt,mod;
-    char filemode[2];
+    char filemode[3];
     
-    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a" : "w");
+    sprintf(filemode, (Flags & MD_APPENDFILES) ? "a+" : "w+");  
 	
     /* Initial values */
     *t = *t0       = ir->init_t;

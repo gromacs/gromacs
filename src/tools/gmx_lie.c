@@ -55,6 +55,8 @@
 #include "enxio.h"
 #include "gstat.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   int nlj,nqq;
@@ -183,7 +185,7 @@ int gmx_lie(int argc,char *argv[])
     }
   } while (bCont);
   close_enx(fp);
-  fclose(out);
+  ffclose(out);
   fprintf(stderr,"\n");
   
   if (nframes > 0)

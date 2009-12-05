@@ -43,6 +43,11 @@
 
 #include "types/simple.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct {
   int  n;		/* Number of terms				*/
   real *a;		/* Coeffients (V / nm )                  	*/
@@ -293,5 +298,10 @@ typedef struct {
 #define IR_NVT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVV2)) && ((ir)->etc == etcNOSEHOOVER))
 
 #define IR_NPT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVV2)) && ((ir)->epc == epcMTTK))
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

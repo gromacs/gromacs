@@ -39,6 +39,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * The t_state struct should contain all the (possibly) non-static
  * information required to define the state of the system.
@@ -164,6 +168,10 @@ typedef struct
   double alpha;
   double *vscale_nhc;
 } t_vetavars;
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* _state_h_ */

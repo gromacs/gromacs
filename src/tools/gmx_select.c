@@ -46,6 +46,8 @@
 #include <xvgr.h>
 #include <string2.h>
 #include <trajana.h>
+#include "gmx_ana.h"
+
 
 typedef struct
 {
@@ -136,13 +138,12 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 }
                 if (sel[g]->bDynamic)
                 {
-                    snprintf(buf2,sizeof(buf2)/sizeof(char),"%s_%.3f",buf,fr->time);
+                    sprintf(buf2, "_%.3f", fr->time);
+                    srenew(buf, strlen(buf) + strlen(buf2) + 1);
+                    strcat(buf, buf2);
                 }
-                else {
-                    snprintf(buf2,sizeof(buf2)/sizeof(char),"%s",buf);
-                }
+                add_grp(d->block, &d->gnames, sel[g]->p.nr, sel[g]->p.m.mapid, buf);
                 sfree(buf);
-                add_grp(d->block,&d->gnames,sel[g]->p.nr,sel[g]->p.m.mapid,buf2);
             }
         }
     }
@@ -312,7 +313,8 @@ gmx_select(int argc, char *argv[])
     }
 
     /* Open output files */
-    d.sfp = d.cfp = d.ifp = d.mfp = d.block = NULL;
+    d.sfp = d.cfp = d.ifp = d.mfp = NULL;
+    d.block = NULL;
     gmx_ana_get_grpnames(trj, &grpnames);
     if (fnSize)
     {
@@ -349,15 +351,15 @@ gmx_select(int argc, char *argv[])
     /* Close the files */
     if (d.sfp)
     {
-        fclose(d.sfp);
+        ffclose(d.sfp);
     }
     if (d.cfp)
     {
-        fclose(d.cfp);
+        ffclose(d.cfp);
     }
     if (d.ifp)
     {
-        fclose(d.ifp);
+        ffclose(d.ifp);
     }
     if (d.block)
     {
@@ -365,7 +367,7 @@ gmx_select(int argc, char *argv[])
     }
     if (d.mfp)
     {
-        fclose(d.mfp);
+        ffclose(d.mfp);
     }
 
     thanx(stderr);

@@ -126,6 +126,11 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "mpelogging.h"
+#include "physics.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
@@ -828,8 +833,26 @@ static void m_rveccopy(int dim, rvec *a, rvec *b)
         copy_rvec(a[i],b[i]);
 } 
 
+/*computer matrix vectors from base vectors and angles */
+static void matrix_convert(matrix box, rvec vec, rvec angle)
+{
+    svmul(DEG2RAD,angle,angle);
+    box[XX][XX] = vec[XX];
+    box[YY][XX] = vec[YY]*cos(angle[ZZ]);
+    box[YY][YY] = vec[YY]*sin(angle[ZZ]);
+    box[ZZ][XX] = vec[ZZ]*cos(angle[YY]);
+    box[ZZ][YY] = vec[ZZ]
+                         *(cos(angle[XX])-cos(angle[YY])*cos(angle[ZZ]))/sin(angle[ZZ]);
+    box[ZZ][ZZ] = sqrt(sqr(vec[ZZ])
+                       -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
+}
 
 #define divide(a,b) _divide((a),(b),__FILE__,__LINE__)
 #define mod(a,b)    _mod((a),(b),__FILE__,__LINE__)
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _vec_h */

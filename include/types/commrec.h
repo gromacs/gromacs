@@ -45,6 +45,11 @@
 
 #include "idef.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define DD_MAXZONE  8
 #define DD_MAXIZONE 4
 
@@ -206,6 +211,11 @@ typedef struct {
   /* The partioning count, to keep track of the state */
   gmx_large_int_t ddp_count;
 
+
+  /* gmx_pme_recv_f buffer */
+  int pme_recv_f_alloc;
+  rvec *pme_recv_f_buf;
+
 } gmx_domdec_t;
 
 typedef struct gmx_partdec *gmx_partdec_p_t;
@@ -300,3 +310,8 @@ typedef struct {
 
 /* The master of all (the node that prints the remaining run time etc.) */
 #define MULTIMASTER(cr)    (SIMMASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
+
+#ifdef __cplusplus
+}
+#endif
+

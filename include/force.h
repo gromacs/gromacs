@@ -48,6 +48,10 @@
 #include "vsite.h"
 #include "genborn.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static const char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
 
 extern void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir,
@@ -264,5 +268,8 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      float        *cycles_pme);
 /* Call all the force routines */
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _force_h */

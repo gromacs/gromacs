@@ -43,6 +43,10 @@
 #include "typedefs.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 			  gmx_ekindata_t *ekind);
 /* Allocate memory and set the grpnr array. */
@@ -70,5 +74,9 @@ extern void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _tgroup_h */

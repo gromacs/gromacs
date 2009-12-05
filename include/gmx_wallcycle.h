@@ -39,12 +39,16 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD, ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPMEMESH_SEP, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcTEST, ewcGB, ewcNR };
 
 extern bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-extern gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr);
+extern gmx_wallcycle_t wallcycle_init(FILE *fplog,int resetstep,t_commrec *cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
@@ -70,5 +74,9 @@ extern gmx_large_int_t wcycle_get_reset_counters(gmx_wallcycle_t wc);
 
 extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_large_int_t reset_counters);
 /* Set reset_counters */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _gmx_wallcycle_h */

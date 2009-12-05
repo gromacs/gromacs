@@ -45,6 +45,10 @@
 #include "types/simple.h"
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef M_PI
 #define	M_PI		3.14159265358979323846
 #endif
@@ -61,16 +65,15 @@
 #define M_SQRT2 sqrt(2.0)
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
 /* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
  
 static const double sy3_const[] = {0.828981543588751,-0.657963087177502,0.828981543588751};
 static const double sy5_const[] = {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065};
+
+extern	int		gmx_nint(real a);
+extern  real            sign(real x,real y);
 
 extern	int		gmx_nint(real a);
 extern  real    sign(real x,real y);
