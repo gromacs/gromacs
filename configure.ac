@@ -91,14 +91,6 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(ia32_3dnow,    
               [AC_HELP_STRING([--disable-ia32-3dnow],
                               [Don't build 3DNow! assembly loops on ia32])],,enable_ia32_3dnow=yes)
-case "${host_cpu}" in
-   i?86) 
-     if test "$enable_apple_64bit" = "yes"; then
-       enable_ia32_3dnow=no;
-     fi
-   ;;
-   *) enable_ia32_3dnow=no ;;
-esac
 
 
 ### IA32 assembly code
@@ -633,13 +625,15 @@ AC_CHECK_SIZEOF(void*)
 # To get the SSE support right we check for the size of void * that we detected above...
 case "${host_vendor}-${host_os}" in
   apple-darwin*)
-  if test $ac_cv_sizeof_voidp = 8; then
-     enable_ia32_sse=no;
-  else
-     enable_x86_64_sse=no;
-  fi
-  ;;
-  *) ;;
+    enable_ia32_3dnow=no;
+    if test $ac_cv_sizeof_voidp = 8; then
+      enable_ia32_sse=no;
+    else
+      enable_x86_64_sse=no;
+    fi
+    ;;
+  *) 
+    ;;
 esac
 
 
