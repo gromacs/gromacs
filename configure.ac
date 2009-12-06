@@ -91,6 +91,10 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(ia32_3dnow,    
               [AC_HELP_STRING([--disable-ia32-3dnow],
                               [Don't build 3DNow! assembly loops on ia32])],,enable_ia32_3dnow=yes)
+case "${host_cpu}-${host_vendor}" in
+   i?86-*) ;;
+   *) enable_ia32_3dnow=no ;;
+esac
 
 
 ### IA32 assembly code
