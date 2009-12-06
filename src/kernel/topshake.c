@@ -129,12 +129,16 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
 	      pr = &(plist[ftype_a]);
 	      
 	      for (i=0; (i < pr->nr); ) {
+		int numhydrogens;
+
 		ang=&(pr->param[i]);
 #ifdef DEBUG
 		printf("Angle: %d-%d-%d\n",ang->AI,ang->AJ,ang->AK); 
 #endif
-		if ((nshake == eshALLANGLES) || 
-		    (count_hydrogens(info,3,ang->a) > 0)) {
+		numhydrogens = count_hydrogens(info,3,ang->a);
+		if ((nshake == eshALLANGLES) ||
+		    (numhydrogens > 1) ||
+		    (numhydrogens == 1 && toupper(**(info[ang->a[1]]))=='O')) {
 		  /* Can only add hydrogen angle shake, if the two bonds
 		   * are constrained.
 		   * append this angle to the shake list 

@@ -45,7 +45,6 @@ gmx_random.h \
 gmx_parallel_3dfft.h \
 gmx_system_xdr.h \
 gmx_thread.h \
-gmx_parallel_3dfft.h \
 gmx_wallcycle.h \
 gpp_atomtype.h \
 gpp_nextnb.h \
@@ -108,7 +107,6 @@ struc2.h \
 symtab.h \
 sysstuff.h \
 tags.h \
-tgroup.h \
 tgroup.h \
 topsort.h \
 tpxio.h \

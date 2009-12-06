@@ -165,7 +165,8 @@ typedef union
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
   struct {real a,b,c,d,e,f;                               } vsite;   
   struct {int  n; real a;                                 } vsiten;   
-  struct {real low,up1,up2,kfac;int type,label;           } disres; 
+  /* NOTE: npair is only set after reading the tpx file */
+  struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;

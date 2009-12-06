@@ -58,7 +58,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
                  t_inputrec *ir,const t_commrec *cr,bool bPartDecomp,
                  t_fcdata *fcd,t_state *state)
 {
-    int          fa,nmol;
+    int          fa,nmol,i,npair,np;
     t_iparams    *ip;
     t_disresdata *dd;
     history_t    *hist;
@@ -79,6 +79,12 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         fprintf(fplog,"Initializing the distance restraints\n");
     }
     
+
+    if (ir->eDisre == edrEnsemble)
+    {
+        gmx_fatal(FARGS,"Sorry, distance restraints with ensemble averaging over multiple molecules in one system are not functional in this version of GROMACS");
+    }
+
     dd->dr_weighting = ir->eDisreWeighting;
     dd->dr_fc        = ir->dr_fc;
     if (EI_DYNAMICS(ir->eI))
@@ -107,15 +113,17 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     dd->npair = 0;
     iloop = gmx_mtop_ilistloop_init(mtop);
     while (gmx_mtop_ilistloop_next(iloop,&il,&nmol)) {
+        np = 0;
         for(fa=0; fa<il[F_DISRES].nr; fa+=3)
         {
-            if (fa==0 ||
-                ip[il[F_DISRES].iatoms[fa-3]].disres.label !=
-                ip[il[F_DISRES].iatoms[fa  ]].disres.label)
+            np++;
+            npair = mtop->ffparams.iparams[il[F_DISRES].iatoms[fa]].disres.npair;
+            if (np == npair)
             {
-                dd->nres += nmol;
+                dd->nres  += (ir->eDisre==edrEnsemble ? 1 : nmol)*npair;
+                dd->npair += nmol*npair;
+                np = 0;
             }
-            dd->npair++;
         }
     }
 
@@ -202,7 +210,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 {
     atom_id     ai,aj;
     int         fa,res,i,pair,ki,kj,m;
-    int         type,label;
+    int         type,npair,np;
     rvec        dx;
     real        *rt,*rm3tav,*Rtl_6,*Rt_6,*Rtav_6;
     real        rt_1,rt_3,rt2;
@@ -243,13 +251,14 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
     while (fa < nfa)
     {
         type  = forceatoms[fa];
-        label = ip[type].disres.label;
+        npair = ip[type].disres.npair;
         
         Rtav_6[res] = 0.0;
         Rt_6[res]   = 0.0;
         
         /* Loop over the atom pairs of 'this' restraint */
-        while (fa<nfa && ip[forceatoms[fa]].disres.label==label)
+        np = 0;
+        while (fa < nfa && np < npair)
         {
             pair = fa/3;
             ai   = forceatoms[fa+1];
@@ -287,6 +296,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
             Rtav_6[res]     += rm3tav[pair]*rm3tav[pair];
 
             fa += 3;
+            np++;
         }
         if (ms)
         {
@@ -315,8 +325,8 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     const real seven_three=7.0/3.0;
     
     atom_id     ai,aj;
-    int         fa,res,npairs,p,pair,ki=CENTRAL,m;
-    int         type,label;
+    int         fa,res,npair,p,pair,ki=CENTRAL,m;
+    int         type;
     rvec        dx;
     real        weight_rt_1;
     real        smooth_fc,Rt,Rtav,rt2,*Rtl_6,*Rt_6,*Rtav_6;
@@ -358,24 +368,16 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     {
         type  = forceatoms[fa];
         /* Take action depending on restraint, calculate scalar force */
-        label = ip[type].disres.label;
+        npair = ip[type].disres.npair;
         up1   = ip[type].disres.up1;
         up2   = ip[type].disres.up2;
         low   = ip[type].disres.low;
         k0    = smooth_fc*ip[type].disres.kfac;
         
-        /* Count the number of pairs in this restraint */
-        npairs=1;
-        while(fa + 3*npairs < nfa &&
-              ip[forceatoms[fa + 3*npairs]].disres.label == label)
-        {
-            npairs++;
-        }
-        
         /* save some flops when there is only one pair */
         if (ip[type].disres.type != 2)
         {
-            bConservative = (dr_weighting == edrwConservative) && (npairs>1);
+            bConservative = (dr_weighting == edrwConservative) && (npair > 1);
             bMixed        = dr_bMixed;
             Rt   = pow(Rt_6[res],-sixth);
             Rtav = pow(Rtav_6[res],-sixth);
@@ -383,7 +385,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
         else
         {
             /* When rtype=2 use instantaneous not ensemble avereged distance */
-            bConservative = npairs>1;
+            bConservative = (npair > 1);
             bMixed        = FALSE;
             Rt   = pow(Rtl_6[res],-sixth);
             Rtav = Rt;
@@ -476,14 +478,14 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
             }
             else
             {
-                f_scal /= (real)npairs;
+                f_scal /= (real)npair;
                 f_scal  = max(f_scal,fmax_scal);
             }    
             
             /* Exert the force ... */
             
             /* Loop over the atom pairs of 'this' restraint */
-            for(p=0; p<npairs; p++)
+            for(p=0; p<npair; p++)
             {
                 pair = fa/3;
                 ai   = forceatoms[fa+1];
@@ -537,7 +539,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
         else
         {
             /* No violation so force and potential contributions */
-            fa += 3*npairs;
+            fa += 3*npair;
         }
         res++;
     }
