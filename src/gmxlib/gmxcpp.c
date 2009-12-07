@@ -56,6 +56,7 @@
 #include "futil.h"
 #include "macros.h"
 #include "gmxcpp.h"
+#include "history.h"
 
 typedef struct {
   char *name;
@@ -253,6 +254,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     sfree(buf);
     i++;
   }
+  histopenfile(cpp->fp,cpp->fn,"r");
   if (cpp->fp == NULL) {
     sfree(cpp->fn);
     cpp->fn = strdup(filenm);
@@ -496,6 +498,7 @@ int cpp_close_file(gmx_cpp_t *handlep)
     return eCPP_FILE_NOT_OPEN;
   if (debug)
     fprintf(debug,"Closing file %s\n",handle->fn);
+  histclosefile(&handle->fp);
   fclose(handle->fp);
   if (NULL != handle->cwd) {
     if (NULL != debug)

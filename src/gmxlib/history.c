@@ -32,10 +32,6 @@ char **_argv;
  * it currently shows some input files double - would have to be filtered
  */
 
-#ifdef USING_ARGS
-int _nfile;
-t_filenm *_fnm;
-#else
 typedef struct {
     FILE* file;
     char* mode;
@@ -49,19 +45,14 @@ int _nfile=0;
 t_hist_file _files[MAX_FILES];
 int _ninput=0;
 char* _stdinput[MAX_STDINPUT];
-#endif
-
-bool startedWriting=FALSE;
 
 FILE* histfile;
 
 void histopenfile(FILE* file, const char* fn, const char* mode) {
-#ifndef USING_ARGS
     _files[_nfile].file = file;
     _files[_nfile].fn = strdup(fn);
     _files[_nfile].mode = strdup(mode);
     _nfile++;
-#endif
 }
 
 void histaddinput(char* str)
@@ -127,13 +118,7 @@ static FILE* print_file(int i)
     }
     
     memcpy(_files[i].md5sum,digest,sizeof(digest));
-    
-    if (!startedWriting)
-    {
-        fprintf(histfile,"\n");
-        startedWriting=TRUE;
-    }
-    
+        
     if (mode[0]=='r')  /*TODO: what about r+? is this reading or writing (as in win_truncate, checkpoint chksum_file)*/
     {
         fprintf(histfile,"IN : ");
@@ -153,7 +138,6 @@ static FILE* print_file(int i)
 }
 
 int  histclosefile(FILE** file) {
-#ifndef USING_ARGS
     int i;
     if (file)
     {
@@ -167,7 +151,6 @@ int  histclosefile(FILE** file) {
         }
     }
     return 0;
-#endif
 }
 
 /* return: has to be freed */
@@ -207,7 +190,13 @@ char* getuser() {
  * thus we try it just with the pointers first
  */ 
 void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
-    int i;
+    int i,j;
+    char* lfn;
+    time_t t;
+    char host[256];
+    char *user;
+    char pwd[GMX_PATH_MAX]="unknown";
+
     _argc=argc;
     snew(_argv,argc);
     for (i=0;i<argc;i++) 
@@ -215,81 +204,6 @@ void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
         _argv[i]=strdup(argv[i]);
     }
     histfile = fopen(".gmx_history","a");
-#ifdef USING_ARGS
-    _nfile=nfile;
-    _fnm=fnm;
-#endif
-}
-/*
- * data:
- * md5 each file (not 1st 1MB but 1/2 from beginning and 1/2 from end + filesize)
- * 
- * Functionality
- * file locking on history file
- * writing to history file
- * location from ENV_VARIABLE (not writing if this is "")
- * history read tool
- * 
- * write stdin to cmdline: echo ... | 
- * replace all fgets,fgetc,scanf,fscanf calls with gmx_scanf
- * use vsprintf to add it to cmdline
-*/
-
-#ifdef USING_ARGS
-void print_files() {
-    int i,j;
-    char* lfn;
-    for (i=0; i<_nfile;i++) 
-      {
-          /*if ((!(_fnm[i].flag & ffOPT)) || (_fnm[i].flag & ffSET))*/
-          /* if a file is optional it is currently unknown whether it will be read or written
-           * (usually) a ndx is only read if it is also set
-           * but e.g. in trjconv the tpx might also be read if it is not set
-           * for writing it is anyhow not known
-           * testing whether the file exists is just the best we can do at the moment without
-           * the applications notifiying the history lib which files were read or written
-           * This probably could be best done by adding a flag ffUSED which is set if an 
-           * optional file was read/written.
-           * Even for writing test file is not optimal because file might be there thus files
-           * which were not generated in this step are added as output file.
-           * 
-           * workaround: use access and modify time. But that does not work if files are changed
-           * also by other processes. This is also a problem for the md5sum
-           * to make better for md5sum: keep filehandle and seek instead of reopening. 
-           * But not clear how to do that. 
-           * Could be done by putting it in ffopen and ffclose
-           * this would also automatically get a list of really all files read/written
-           */
-          for (j=0;j<_fnm[i].nfiles;j++)
-          {
-              if (_fnm[i].flag & ffLIB)
-              {
-                  lfn = low_libfn(_fnm[i].fns[j],FALSE);
-                  if (lfn!=NULL && gmx_fexist(lfn))
-                  {
-                      print_file(lfn,(_fnm[i].flag&ffREAD)?"r":"w",NULL);
-                      sfree(lfn);
-                  }
-              }
-              else
-              {
-                  if (gmx_fexist(_fnm[i].fns[j]))
-                  {
-                      print_file(_fnm[i].fns[j],(_fnm[i].flag&ffREAD)?"r":"w",NULL);
-                  }
-              }
-          }
-      }
-}
-#endif
-
-void print_history() {
-    int i,j;
-    char* lfn;
-    time_t t;
-    char host[256];
-    char *user;
-    char pwd[GMX_PATH_MAX]="unknown";
 
     time(&t);
     user = getuser();
@@ -303,7 +217,7 @@ void print_history() {
     sprintf(host,"unknown");
 #endif  
 
-    fprintf(histfile,"CMD: ");
+    fprintf(histfile,"\nCMD: ");
     if (_ninput>0)
     {
         fprintf(histfile,"echo ");
@@ -322,9 +236,29 @@ void print_history() {
     fprintf(histfile,"\nPWD: %s\nBY : %s@%s %s",pwd,user,host,ctime(&t));
     sfree(user);
     
-#ifdef USING_ARGS
-    print_files();
-#else
+#if (defined BUILD_TIME && defined BUILD_USER) 
+    fprintf(histfile,"VER: %s %s %s\n",VERSION,BUILD_USER,BUILD_TIME);
+#endif
+
+}
+/*
+ * data:
+ * md5 each file (not 1st 1MB but 1/2 from beginning and 1/2 from end + filesize)
+ * 
+ * Functionality
+ * file locking on history file
+ * writing to history file
+ * location from ENV_VARIABLE (not writing if this is "")
+ * history read tool
+ * 
+ * write stdin to cmdline: echo ... | 
+ * replace all fgets,fgetc,scanf,fscanf calls with gmx_scanf
+ * use vsprintf to add it to cmdline
+*/
+
+
+void print_history() {
+    int i;
     for (i=0;i<_nfile;i++) {
         if (_files[i].file!=NULL) {
             fprintf(stderr,"BUG: %s was not closed correctly\n",_files[i].fn);
@@ -337,9 +271,5 @@ void print_history() {
         sfree(_files[i].fn);
         sfree(_files[i].mode);
     }
-#endif
-#if (defined BUILD_TIME && defined BUILD_USER) 
-    fprintf(histfile,"VER: %s %s %s\n",VERSION,BUILD_USER,BUILD_TIME);
-#endif
     fclose(histfile);
 }
