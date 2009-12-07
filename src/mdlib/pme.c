@@ -2078,6 +2078,31 @@ make_gridindex5_to_localindex(int n,int local_start,int local_size)
     return gtl;
 }
 
+static void
+gmx_pme_check_grid_restrictions(FILE *fplog,char dim,int nnodes,int *nk)
+{
+    int nk_new;
+
+    if (*nk % nnodes != 0)
+    {
+        nk_new = nnodes*(*nk/nnodes + 1);
+
+        if (2*nk_new >= 3*(*nk))
+        {
+            gmx_fatal(FARGS,"The PME grid size in dim %c (%d) is not divisble by the number of nodes doing PME in dim %c (%d). The grid size would have to be increased by more than 50%% to make the grid divisible. Change the total number of nodes or the number of domain decomposition cells in x or the PME grid %c dimension (and the cut-off).",
+                      dim,*nk,dim,nnodes,dim);
+        }
+        
+        if (fplog != NULL)
+        {
+            fprintf(fplog,"\nNOTE: The PME grid size in dim %c (%d) is not divisble by the number of nodes doing PME in dim %c (%d). Increasing the PME grid size in dim %c to %d. This will increase the accuracy and will not decrease the performance significantly on this number of nodes. For optimal performance change the total number of nodes or the number of domain decomposition cells in x or the PME grid %c dimension (and the cut-off).\n\n",
+                    dim,*nk,dim,nnodes,dim,nk_new,dim);
+        }
+            
+        *nk = nk_new;
+    }
+}
+
 int gmx_pme_init(gmx_pme_t *         pmedata,
                  t_commrec *         cr,
                  int                 nnodes_major,
@@ -2171,6 +2196,23 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
     
+    /* Currently pme.c supports only the fft5d FFT code.
+     * Therefore the grid always needs to be divisible by nnodes.
+     * When the old 1D code is also supported again, change this check.
+     *
+     * This check should be done before calling gmx_pme_init
+     * and fplog should be passed iso stderr.
+     *
+    if (pme->ndecompdim >= 2)
+    */
+    if (pme->ndecompdim >= 1)
+    {
+        gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
+                                        'x',nnodes_major,&pme->nkx);
+        gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
+                                        'y',nnodes_minor,&pme->nky);
+    }
+
     /* Use atc[0] for spreading */
     init_atomcomm(pme,&pme->atc[0],cr,0,TRUE);
     if (pme->ndecompdim >= 2)
