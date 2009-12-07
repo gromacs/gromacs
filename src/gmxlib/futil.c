@@ -106,8 +106,9 @@ void push_ps(FILE *fp)
 }
 
 #ifdef GMX_FAHCORE
-/* redefine ffclose */
-#define ffclose fah_fclose
+/* don't use pipes!*/
+#define popen(x,y) fah_fopen(x,y)
+#define pclose(x) fah_fclose(x)
 #else
 #ifdef ffclose
 #undef ffclose
@@ -132,7 +133,7 @@ static int pclose(FILE *fp)
 #endif
 
 
-
+#ifndef SKIP_FFOPS
 int ffclose(FILE *fp)
 {
     t_pstack *ps,*tmp;
@@ -172,6 +173,8 @@ int ffclose(FILE *fp)
 #endif
     return ret;
 }
+
+#endif
 
 #ifdef rewind
 #undef rewind
@@ -365,6 +368,7 @@ bool make_backup(const char * name)
 #endif
 }
 
+#ifndef SKIP_FFOPS
 FILE *ffopen(const char *file,const char *mode)
 {
     FILE *ff=NULL;
@@ -418,7 +422,7 @@ FILE *ffopen(const char *file,const char *mode)
     }
     return ff;
 }
-
+#endif
 
 
 bool search_subdirs(const char *parent, char *libdir)
