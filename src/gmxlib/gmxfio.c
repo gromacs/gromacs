@@ -1120,7 +1120,6 @@ int gmx_fio_get_file_md5_lock(int fio, off_t offset, unsigned char digest[],
     off_t read_len;
     off_t seek_offset;
     int ret = -1;
-
     seek_offset = offset - CPT_CHK_LEN;
 
     if (seek_offset < 0)
@@ -1327,10 +1326,12 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             else
             {
                 gmx_fio_get_file_position(i, &outputfiles[nfiles].offset);
+#ifndef GMX_FAHCORE
                 outputfiles[nfiles].chksum_size
                 = gmx_fio_get_file_md5_lock(i, outputfiles[nfiles].offset,
                                             outputfiles[nfiles].chksum,
                                             FALSE);
+#endif
             }
 
             nfiles++;
