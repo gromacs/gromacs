@@ -9,6 +9,7 @@
 #include <config.h>
 #endif
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <pwd.h>
 #include <string.h>
 #include <stdio.h>
@@ -24,13 +25,17 @@
 int _argc;
 char **_argv;
 
-//#define USING_ARGS 1  /*define for using command line arguments, undef for using ffopen, fflclose calls*/
+/*
+ * data:
+ * 
+ * Functionality
+ * file locking on history file
+ * location from ENV_VARIABLE (not writing if this is ""
+ * 
+ * replace all fgets,fgetc,scanf,fscanf calls with gmx_scanf
+ * use vsprintf to add it to cmdline
+*/
 
-/* currently does not work without USING_ARGS: segfaults 
- * mainly because at many places fclose is directly called instead of ffclose*/
-/* while it has the advantage that it doesn't show unused optional files
- * it currently shows some input files double - would have to be filtered
- */
 
 typedef struct {
     FILE* file;
@@ -43,9 +48,9 @@ typedef struct {
 #define MAX_STDINPUT 200
 int _nfile=0;
 t_hist_file _files[MAX_FILES];
-int _ninput=0;
-char* _stdinput[MAX_STDINPUT];
-
+#define MAX_LINES 200
+char* histbuf[MAX_LINES];
+int nhistbuf=0;
 FILE* histfile;
 
 void histopenfile(FILE* file, const char* fn, const char* mode) {
@@ -55,31 +60,67 @@ void histopenfile(FILE* file, const char* fn, const char* mode) {
     _nfile++;
 }
 
+char *
+make_message(const char *fmt, ...)
+{
+    /* Guess we need no more than 100 bytes. */
+    int n, size = 100;
+    char *p, *np;
+    va_list ap;
+
+    if ((p = malloc(size)) == NULL)
+        return NULL;
+
+    while (1) {
+        /* Try to print in the allocated space. */
+        va_start(ap, fmt);
+        n = vsnprintf(p, size, fmt, ap);
+        va_end(ap);
+        /* If that worked, return the string. */
+        if (n > -1 && n < size)
+            return p;
+        /* Else try again with more space. */
+        if (n > -1)    /* glibc 2.1 */
+            size = n+1; /* precisely what is needed */
+        else           /* glibc 2.0 */
+            size *= 2;  /* twice the old size */
+        if ((np = realloc (p, size)) == NULL) {
+            free(p);
+            return NULL;
+        } else {
+            p = np;
+        }
+    }
+}
+
+
 void histaddinput(char* str)
 {
     char* npos = rindex(str,'\n');
-    if (npos)
+    while(npos && strlen(str)>0)
     {
-        _stdinput[_ninput] = strndup(str,npos-str);
+        histbuf[nhistbuf++]=make_message("INP: %.*s\n",npos-str,str);
+        str=npos+1;
+        npos = rindex(str,'\n');
     }
-    else
+    if (strlen(str)>0)
     {
-        _stdinput[_ninput] = strdup(str);
+        histbuf[nhistbuf++]=make_message("INP: %s\n",str);   
     }
-    _ninput++;
 }
-/*
-static FILE* print_file(const char* fnm, const char* mode, FILE* file) {
-*/
+
 static FILE* print_file(int i) 
 {
     const char* fnm = _files[i].fn;
     const char* mode = _files[i].mode;
+    struct stat sbuf;
     FILE* file = _files[i].file;
 #define CPT_CHK_LEN  1048576 
     md5_state_t state;
     md5_byte_t digest[16];
-    md5_byte_t buf[CPT_CHK_LEN];
+    md5_byte_t buf[CPT_CHK_LEN+4];
+    const char* cmd;
+    char digest_str[33];
     bool bOpened=FALSE;
     int read_len;
     int j;
@@ -96,7 +137,21 @@ static FILE* print_file(int i)
             file = fopen(fnm,"r");
         }
     }
-    read_len = fread(buf,1,CPT_CHK_LEN,file);
+    
+    fstat(fileno(file),&sbuf);
+    
+    if (sbuf.st_size>CPT_CHK_LEN)  /*file bigger -> read more*/
+    {
+        read_len=fread(buf,1,CPT_CHK_LEN/2,file);
+        fseek(file,-CPT_CHK_LEN/2,SEEK_END);
+        read_len+=fread(buf+CPT_CHK_LEN/2,1,CPT_CHK_LEN/2,file);
+        read_len+=sizeof(off_t);
+        *((gmx_large_int_t*)(buf+CPT_CHK_LEN))=sbuf.st_size;
+    }
+    else 
+    {
+        read_len=fread(buf,1,CPT_CHK_LEN,file);
+    }
     if (bOpened)
     {
         fclose(file);
@@ -106,7 +161,7 @@ static FILE* print_file(int i)
     md5_append(&state, buf, read_len);
     md5_finish(&state, digest);
     
-    /* looking for earlier identical files 
+    /* checking for already printed identical file 
      * md5sum is only set if the file has already been printed to log*/
     for (j=0;j<_nfile;j++) 
     {
@@ -121,18 +176,17 @@ static FILE* print_file(int i)
         
     if (mode[0]=='r')  /*TODO: what about r+? is this reading or writing (as in win_truncate, checkpoint chksum_file)*/
     {
-        fprintf(histfile,"IN : ");
+        cmd="IN : ";
     }
     else 
     {
-        fprintf(histfile,"OUT: ");
+        cmd="OUT: ";
     }
-    fprintf(histfile,"%s ", fnm);
     for (j=0; j<16; j++)
     {
-        fprintf(histfile,"%02x",digest[j]);
+        sprintf(digest_str+j*2,"%02x",digest[j]);
     }
-    fprintf(histfile,"\n");
+    histbuf[nhistbuf++]=make_message("%s%s %s\n",cmd,fnm,digest_str);
     
     return file;
 }
@@ -184,12 +238,20 @@ char* getuser() {
     }
 }    
 
-/* can we pass just the copy without making a copy? 
- * we need to call init_history from parse_common_args before argc/argv is changed
- * at this point fnm is not yet filled with the correct fnms
- * thus we try it just with the pointers first
- */ 
-void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
+void init_history(int argc, char** argv) {
+    int i;
+
+    _argc=argc;
+    snew(_argv,argc);
+    for (i=0;i<argc;i++) 
+    {
+        _argv[i]=strdup(argv[i]);
+    }
+    
+}
+
+
+void print_history() {
     int i,j;
     char* lfn;
     time_t t;
@@ -197,11 +259,17 @@ void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
     char *user;
     char pwd[GMX_PATH_MAX]="unknown";
 
-    _argc=argc;
-    snew(_argv,argc);
-    for (i=0;i<argc;i++) 
-    {
-        _argv[i]=strdup(argv[i]);
+    for (i=0;i<_nfile;i++) {
+        if (_files[i].file!=NULL) {
+            fprintf(stderr,"BUG: %s was not closed correctly\n",_files[i].fn);
+            print_file(i);
+            if (_files[i].file!=NULL)
+            {   
+                fclose(_files[i].file);
+            }
+        }
+        sfree(_files[i].fn);
+        sfree(_files[i].mode);
     }
     histfile = fopen(".gmx_history","a");
 
@@ -218,16 +286,6 @@ void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
 #endif  
 
     fprintf(histfile,"\nCMD: ");
-    if (_ninput>0)
-    {
-        fprintf(histfile,"echo ");
-        for (i=0;i<_ninput;i++)
-        {
-            fprintf(histfile,"%s ",_stdinput[i]);
-            sfree(_stdinput[i]);
-        }
-        fprintf(histfile,"| ");
-    }
     for (i=0;i<_argc;i++)
     {
         fprintf(histfile,"%s ", _argv[i]);
@@ -240,36 +298,10 @@ void init_history(int argc, char** argv, int nfile, t_filenm *fnm) {
     fprintf(histfile,"VER: %s %s %s\n",VERSION,BUILD_USER,BUILD_TIME);
 #endif
 
-}
-/*
- * data:
- * md5 each file (not 1st 1MB but 1/2 from beginning and 1/2 from end + filesize)
- * 
- * Functionality
- * file locking on history file
- * writing to history file
- * location from ENV_VARIABLE (not writing if this is "")
- * history read tool
- * 
- * write stdin to cmdline: echo ... | 
- * replace all fgets,fgetc,scanf,fscanf calls with gmx_scanf
- * use vsprintf to add it to cmdline
-*/
-
-
-void print_history() {
-    int i;
-    for (i=0;i<_nfile;i++) {
-        if (_files[i].file!=NULL) {
-            fprintf(stderr,"BUG: %s was not closed correctly\n",_files[i].fn);
-            print_file(i);
-            if (_files[i].file!=NULL)
-            {   
-                fclose(_files[i].file);
-            }
-        }
-        sfree(_files[i].fn);
-        sfree(_files[i].mode);
+    for (i=0;i<nhistbuf;i++)
+    {
+        fwrite(histbuf[i],1,strlen(histbuf[i]),histfile);
+        sfree(histbuf[i]);
     }
     fclose(histfile);
 }

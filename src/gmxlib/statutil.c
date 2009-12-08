@@ -645,7 +645,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
 #define FF(arg) ((Flags & arg)==arg)
 
-    init_history(*argc,argv,nfile,fnm);
+    init_history(*argc,argv);
     
     snew(*oenv, 1);
     
