@@ -537,34 +537,38 @@ be the preferred box shape.
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Charge groups}
 \label{sec:chargegroup}
+Charge groups were originally introduced reduce cut-off artifacts
+of Coulomb interactions. When a plain cut-off is used, significant
+jumps in the potential and forces arise when atoms with (partial) charges
+move in and out of the cut-off radius. When all chemical moieties have
+a net charge of zero, these jumps can be reduced by moving groups
+of atoms with net charge zero, called \swapindex{charge}{group}s, in and
+out of the neighbor list. This reduces the cut-off effects from
+the charge-charge level to the dipole-dipole level, which decay
+much faster. With the advent of full range electrostatics methods,
+such as particle mesh Ewald (\secref{pme}), the use of charge groups is
+no longer required for accuracy. It might even have a slight negative effect
+on the accuracy or efficiency, depending on how the neighbor list is made
+and the interactions are calculated.
+
+But there is still an important reason for using ``charge groups'': efficiency.
 Where applicable, neighbor searching is carried out on the basis of
-{\em charge groups}. A \swapindex{charge}{group} is a small set of
-nearby atoms with an integer net charge. Charge groups are defined in
-the molecular topology. If the nearest image distance between the {\em
+charge groups are defined in the molecular topology.
+If the nearest image distance between the {\em
 geometrical centers} of the atoms of two charge groups is less than
 the cut-off radius, all atom pairs between the charge groups are
-included in the pair list. This procedure avoids the creation of
-charges due to the use of a cut-off (when one charge of a dipole is
-within range and the other not), which can have disastrous
-consequences for the behavior of the Coulomb interaction function at
-distances near the cut-off radius. If molecular groups have full
-charges (ions), charge groups do not avoid adverse cut-off effects,
-and you should consider using one of the lattice sum methods supplied
-by {\gromacs}~\cite{Berendsen93a}.
-
-If appropriately
-constructed \swapindex{shift}{function}s are used for the 
-\swapindex{electrostatic}{force}s, no
-charge groups are needed. Such shift functions are implemented in
-{\gromacs} (see \chref{ff}) but must be used with care: in principle,
-they should be combined with a lattice sum for long-range
-electrostatics.
-
-Charge groups also provide a speed up of the neighbor search.
+included in the pair list.
 The neighbor searching for a water system, for instance,
 is $3^2=9$ times faster when each molecule is treated as a charge group.
 Also the highly optimized water force loops (see \secref{waterloops})
 only work when all atoms in a water molecule form a single charge group.
+Currently the name {\em neighbor-search group} would be more appropriate,
+but the name charge group is retained for historical reasons.
+When developing a new force field, the advice is to use charge groups
+of 3 to 4 atoms for optimal performance. For all-atom force fields
+this is relatively easy, as one can simply put hydrogen atoms, and in some
+case oxygen atoms, in the same charge group as the heavy atom they
+are connected to; for example: CH$_3$, CH$_2$, CH, NH$_2$, NH, OH, CO$_2$, CO.
 } % Brace matches ifthenelse test for gmxlite
 
 \subsection{Compute forces}
