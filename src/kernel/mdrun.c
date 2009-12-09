@@ -320,7 +320,7 @@ int main(int argc,char *argv[])
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
     { "-nt",      FALSE, etINT, {&nthreads},
-      "HIDDENNumber of threads to start on each node" },
+      "Number of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
@@ -391,7 +391,8 @@ int main(int argc,char *argv[])
   int      rc;
 
   cr = init_par(&argc,&argv);
-
+  cr->nthreads = nthreads;
+    
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
   /* Only run niced when not running in parallel */
@@ -416,7 +417,7 @@ int main(int argc,char *argv[])
 
 
   dd_node_order = nenum(ddno_opt);
-  if (PAR(cr)) {
+  if (PAR(cr) || nthreads>1) {
     cr->npmenodes = npme;
   } else {
     cr->npmenodes = 0;

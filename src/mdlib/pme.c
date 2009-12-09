@@ -2047,8 +2047,9 @@ static void
 init_overlap_comm_serial(pme_overlap_t *  ol,
                          int              ndata)
 {
+    ol->nnodes         = 1;
     ol->noverlap_nodes = 0;
-    snew(ol->s2g,ol->noverlap_nodes+1);
+    snew(ol->s2g,ol->nnodes+1);
     ol->s2g[0] = 0;
     ol->s2g[1] = ndata;
 }
