@@ -1107,6 +1107,11 @@ int main (int argc, char *argv[])
         "ERROR: AdResS contant weighting function should be between 0 and 1");
       nerror++;
     }
+    if (ir->badress_new_wf && ir->badress_chempot_dx){
+	 fprintf(stderr,
+        "ERROR: adress_chempot_dx and adress_new_wf are currently exclusive (not implemented) ");
+      nerror++;
+    }
     /** \TODO check size of ex+hy width against box size */
   }
  
