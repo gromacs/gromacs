@@ -7,6 +7,13 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
+#endif
+#ifdef GMX_THREADS
+#include "tmpi.h"
+#endif
+
 #include <fftw3.h>
 #ifdef FFT5D_MPI_TRANSPOSE
 #include <fftw3-mpi.h>
