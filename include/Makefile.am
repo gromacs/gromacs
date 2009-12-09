@@ -154,5 +154,4 @@ tmpi.h \
 mainpage.h \
 molfile_plugin.h \
 vmddlopen.h \
-vmdio.h \
 vmdplugin.h
