@@ -410,10 +410,11 @@ adress_thermo_force(int                  cg0,
                     t_mdatoms *          mdatoms,
                     t_pbc *              pbc)
 {
-    int              icg,k0,k1,n0,nnn,nrcg;
+    int              icg,k0,k1,n0,nnn,nrcg, i;
     int              adresstype;
-    real             adressw;
+    real             adressw, adressr;
     bool             bnew_wf;
+    bool	     badress_chempot_dx;
     atom_id *        cgindex;
     unsigned short * ptype;
     rvec *           ref;
@@ -421,11 +422,12 @@ adress_thermo_force(int                  cg0,
     real             tabscale;
     real *           ATFtab;
     rvec             dr;
-    real             w,wsq,wmin1,wmin1sq,wp,wt,rinv;
+    real             w,wsq,wmin1,wmin1sq,wp,wt,rinv, sqr_dl, dl;
     real             eps,eps2,F,Geps,Heps2,Fp,dmu_dwp,dwp_dr,fscal;
 
     adresstype       = fr->adress_type;
     adressw          = fr->adress_hy_width;
+    adressr           = fr->adress_ex_width;
     bnew_wf          = fr->badress_new_wf;
     cgindex          = cgs->index;
     ptype            = mdatoms->ptype;
@@ -433,6 +435,7 @@ adress_thermo_force(int                  cg0,
     wf               = mdatoms->wf;
     tabscale         = fr->atf_tab.scale;
     ATFtab           = fr->atf_tab.tab;
+    badress_chempot_dx = fr->badress_chempot_dx;
 
     for(icg=cg0; (icg<cg1); icg++)
     {
@@ -459,37 +462,72 @@ adress_thermo_force(int                  cg0,
                     }
 
                     rinv             = gmx_invsqrt(dr[0]*dr[0]+dr[1]*dr[1]+dr[2]*dr[2]);
-                    wsq              = w*w;
-                    wmin1            = w - 1.0;
-                    dwp_dr           = 1.0/adressw;
-
-                    /* get the dwp_dr part of the force */
-                    if(bnew_wf)
-                    {
-                        wmin1sq      = wmin1*wmin1;
-                        wp           = 1.0-exp(-M_LN2*wsq/wmin1sq);
-                        dwp_dr      *= M_LN2*w*exp(M_LN2*(1.0-2.0*w)/wmin1sq)/(wmin1*wmin1sq);
+                    
+                    if (!badress_chempot_dx){
+                        wsq              = w*w;
+                        wmin1            = w - 1.0;
+                        dwp_dr           = 1.0/adressw;
+        
+                        /* get the dwp_dr part of the force */
+                        if(bnew_wf)
+                        {
+                            wmin1sq      = wmin1*wmin1;
+                            wp           = 1.0-exp(-M_LN2*wsq/wmin1sq);
+                            dwp_dr      *= M_LN2*w*exp(M_LN2*(1.0-2.0*w)/wmin1sq)/(wmin1*wmin1sq);
+                        }
+                        else
+                        {
+                            wp           = wsq;
+                            dwp_dr      *= -2.0*M_PI*sqrt(-wsq*w*wmin1);
+                        }
+        
+                        /* now get the dmu/dwp part from the table */
+                        wt               = wp*tabscale;
+                        n0               = wt;
+                        eps              = wt-n0;
+                        eps2             = eps*eps;
+                        nnn              = 4*n0;
+                        F                = ATFtab[nnn+1];
+                        Geps             = eps*ATFtab[nnn+2];
+                        Heps2            = eps2*ATFtab[nnn+3];
+                        Fp               = F+Geps+Heps2;
+                        dmu_dwp          = (Fp+Geps+2.0*Heps2)*tabscale;
+        
+                        fscal            = dmu_dwp*dwp_dr*rinv;
                     }
                     else
                     {
-                        wp           = wsq;
-                        dwp_dr      *= -2.0*M_PI*sqrt(-wsq*w*wmin1);
+                       //calculate distace to adress center again
+                        sqr_dl =0.0;
+                        switch(adresstype)
+                        {
+                        case eAdressXSplit:              
+                            /* plane through center of ref, varies in x direction */
+                            sqr_dl         = dr[0]*dr[0];
+                            break;
+                        case eAdressSphere:
+                            /* point at center of ref, assuming cubic geometry */
+                            for(i=0;i<3;i++){
+                                sqr_dl    += dr[i]*dr[i];
+                            }
+                            break;
+                        }
+
+                        dl=sqrt(sqr_dl);
+                        
+                        wt               = (dl-adressr)*tabscale;
+                        n0               = wt;
+                        eps              = wt-n0;
+                        eps2             = eps*eps;
+                        nnn              = 4*n0;
+                        F                = ATFtab[nnn+1];
+                        Geps             = eps*ATFtab[nnn+2];
+                        Heps2            = eps2*ATFtab[nnn+3];
+                        Fp               = F+Geps+Heps2;
+                        F                = (Fp+Geps+2.0*Heps2)*tabscale;
+        
+                        fscal            = F*rinv;
                     }
-
-                    /* now get the dmu/dwp part from the table */
-                    wt               = wp*tabscale;
-                    n0               = wt;
-                    eps              = wt-n0;
-                    eps2             = eps*eps;
-                    nnn              = 4*n0;
-                    F                = ATFtab[nnn+1];
-                    Geps             = eps*ATFtab[nnn+2];
-                    Heps2            = eps2*ATFtab[nnn+3];
-                    Fp               = F+Geps+Heps2;
-                    dmu_dwp          = (Fp+Geps+2.0*Heps2)*tabscale;
-
-                    fscal            = dmu_dwp*dwp_dr*rinv;
-
                     /* now add thermo force to f_novirsum */
                     f[k0][0]        += fscal*dr[0];
                     if (adresstype != eAdressXSplit)
