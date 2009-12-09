@@ -28,9 +28,8 @@ char **_argv;
 /*
  * data:
  * 
- * Functionality
- * file locking on history file
- * location from ENV_VARIABLE (not writing if this is ""
+ * Test:
+ * 
  * 
  * replace all fgets,fgetc,scanf,fscanf calls with gmx_scanf
  * use vsprintf to add it to cmdline
@@ -123,22 +122,38 @@ static FILE* print_file(int i)
     char digest_str[33];
     bool bOpened=FALSE;
     int read_len;
-    int j;
+    int j,ret;
     
     if (file==NULL)
     {
         file = fopen(fnm,"r");
+        if (file==NULL)
+        {
+            gmx_fatal(FARGS,"Failed to open file: %s.",fnm);
+        }
         bOpened = TRUE;
     } else {
         if (mode[0]!='r' || mode[1]!='+' || 
             !fseek(file, 0, SEEK_SET))
         {
-            fclose(file);  /* if can't write or seek does not work reopen */
+            ret=fclose(file);  /* if can't write or seek does not work reopen */
+            if(ret!=0) 
+            {
+                gmx_fatal(FARGS,"Failed to close file: %s.",fnm);
+            }
             file = fopen(fnm,"r");
+            if(file==NULL)
+            {
+                gmx_fatal(FARGS,"Failed to open file: %s.",fnm);
+            }
         }
     }
     
-    fstat(fileno(file),&sbuf);
+    ret=fstat(fileno(file),&sbuf);
+    if (ret!=0)
+    {
+        gmx_fatal(FARGS,"Failed to get file stat for file: %s",fnm);
+    }
     
     if (sbuf.st_size>CPT_CHK_LEN)  /*file bigger -> read more*/
     {
@@ -154,7 +169,11 @@ static FILE* print_file(int i)
     }
     if (bOpened)
     {
-        fclose(file);
+        ret=fclose(file);
+        if (ret!=0) 
+        {
+            gmx_fatal(FARGS,"Failed to close file: %s.",fnm);
+        }
     }
     
     md5_init(&state);
@@ -252,26 +271,47 @@ void init_history(int argc, char** argv) {
 
 
 void print_history() {
-    int i,j;
+    int i,j,ret;
     char* lfn;
+    const char* histfnm;
     time_t t;
     char host[256];
     char *user;
-    char pwd[GMX_PATH_MAX]="unknown";
+    char pwd[GMX_PATH_MAX];
 
     for (i=0;i<_nfile;i++) {
         if (_files[i].file!=NULL) {
             fprintf(stderr,"BUG: %s was not closed correctly\n",_files[i].fn);
             print_file(i);
-            if (_files[i].file!=NULL)
+            /*if (_files[i].file!=NULL) //don't close because it might already be
+                                       //closed without calling histclosefile   
             {   
-                fclose(_files[i].file);
-            }
+                ret = fclose(_files[i].file); 
+                if (ret!=0)  { gmx_fatal(FARGS,"Failed to close");}
+            }*/
         }
         sfree(_files[i].fn);
         sfree(_files[i].mode);
     }
-    histfile = fopen(".gmx_history","a");
+    histfnm = getenv("GMX_HISTFILE");
+    if (histfnm==NULL)
+    {
+        histfnm=".gmx_history";
+    }
+    if (strcmp(histfnm,"")==0)  /*don't write history*/
+    {
+        return;
+    }
+    histfile = fopen(histfnm,"a");  
+    if (histfile==NULL)
+    {
+        histfile = fopen(histfnm,"w");
+        if (histfile==NULL)
+        {
+            gmx_fatal(errno,__FILE__,__LINE__,"Could not open history file: %s.",histfnm);
+        }
+    }
+    gmx_lock(histfile);
 
     time(&t);
     user = getuser();
@@ -280,9 +320,13 @@ void print_history() {
     {
         sprintf(host,"unknown");
     }
-    getwd(pwd);
+    if (getcwd(pwd,sizeof(pwd))==NULL)
+    {
+        strcpy(pwd,"unknown");
+    }
 #else
     sprintf(host,"unknown");
+    strcpy(pwd,"unknown");
 #endif  
 
     fprintf(histfile,"\nCMD: ");
@@ -303,5 +347,9 @@ void print_history() {
         fwrite(histbuf[i],1,strlen(histbuf[i]),histfile);
         sfree(histbuf[i]);
     }
-    fclose(histfile);
+    ret=fclose(histfile);
+    if (ret!=0)
+    {
+        gmx_fatal(FARGS,"Failed to close file: %s.",histfnm);
+    }
 }

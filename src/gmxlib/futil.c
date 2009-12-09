@@ -739,3 +739,13 @@ char *gmx_fgets(char *s, int size, FILE *stream)
     return ret;
 }
 
+int gmx_lock(FILE* file)
+{
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+    struct flock fl = { F_WRLCK, SEEK_SET, 0,       0,     0 }; 
+    return fcntl(fileno(file), F_SETLK, &fl);
+#else
+    return _locking(fileno(chksum_file), _LK_NBLCK, LONG_MAX);
+#endif
+
+}

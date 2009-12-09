@@ -141,6 +141,9 @@ extern int gmx_scanf(const char *format, ...);
 
 extern char *gmx_fgets(char *s, int size, FILE *stream);
 
+/* Lock file. Uses fcntl on Unix and _locking on Windows. */ 
+int gmx_lock(FILE* file);
+
 #ifdef __cplusplus
 }
 #endif

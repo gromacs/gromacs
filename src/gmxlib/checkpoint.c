@@ -1233,9 +1233,6 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 	int chksum_file;
 	FILE* fplog = *pfplog;
 	unsigned char digest[16];
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-	struct flock fl = { F_WRLCK, SEEK_SET, 0,       0,     0 }; 
-#endif
 	
     const char *int_warn=
         "WARNING: The checkpoint file was generator with integrator %s,\n"
@@ -1479,12 +1476,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             /* lock log file */                
             if (i==0)
             {
-#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
-                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
-                    ==-1)
-#else
-                if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
-#endif
+                if (gmx_lock(gmx_fio_getfp(chksum_file))==-1)
                 {
                     gmx_fatal(FARGS,"Failed to lock: %s. Already running "
                         "simulation?", outputfiles[i].filename);
