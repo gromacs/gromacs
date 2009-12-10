@@ -14,9 +14,17 @@
 #include "tmpi.h"
 #endif
 
+#ifdef GMX_FFT_FFTW3
 #include <fftw3.h>
 #ifdef FFT5D_MPI_TRANSPOSE
 #include <fftw3-mpi.h>
+#endif
+#endif
+#ifdef GMX_FFT_MKL
+#include <fftw/fftw3.h>
+#ifdef FFT5D_MPI_TRANSPOSE
+#include <fftw/fftw3-mpi.h>
+#endif
 #endif
 
 #ifndef GMX_DOUBLE  //TODO how to not how have to do this GMX specific in here? can't be in gmx_parallel_3dfft.h because it has to be also be set when included from fft5d.c
