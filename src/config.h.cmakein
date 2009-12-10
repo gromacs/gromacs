@@ -92,7 +92,7 @@
 #cmakedefine GMX_FFT_ACML
 
 /* Single-precision SSE instructions on ia32 */
-#undef GMX_IA32_SSE
+#cmakedefine GMX_IA32_SSE
 
 /* Double-precision SSE2 instructions on ia32 */
 #undef GMX_IA32_SSE2
