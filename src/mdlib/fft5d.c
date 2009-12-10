@@ -17,6 +17,17 @@
 #include <math.h>
 #include <assert.h>
 
+#ifdef GMX_THREADS
+/* none of the fftw3 calls, except execute(), are thread-safe, so 
+   we need to serialize them with this mutex. */
+static tMPI_Thread_mutex_t big_fftw_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#define FFTW_LOCK tMPI_Thread_mutex_lock(&big_fftw_mutex);
+#define FFTW_UNLOCK tMPI_Thread_mutex_unlock(&big_fftw_mutex);
+#else /* GMX_THREADS */
+#define FFTW_LOCK 
+#define FFTW_UNLOCK 
+#endif /* GMX_THREADS */
+
 static double fft5d_fmax(double a, double b){
 	return (a>b)?a:b;
 }
@@ -76,10 +87,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
         prank[1] = 0;
     }
    
-	bMaster=(prank[0]==0&&prank[1]==0);
+    bMaster=(prank[0]==0&&prank[1]==0);
 	
-	if (bMaster && debug) fprintf(debug,"FFT5D: Using %dx%d processor grid\n",P[0],P[1]);
-	
+    if (debug)
+    {
+        fprintf(debug,"FFT5D: Using %dx%d processor grid, rank %d,%d\n",
+                P[0],P[1],prank[0],prank[1]);
+    }
 	
 	if (bMaster) {
    	        if (debug) 
@@ -162,10 +176,12 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	/* int lsize = fmax(C[0]*M[0]*K[0],fmax(C[1]*M[1]*K[1],C[2]*M[2]*K[2])); */
 	fft5d_type* lin,*lout;
 	if (!(flags&FFT5D_NOMALLOC)) { 
+        FFTW_LOCK;
         /* local in	*/
 		lin = (fft5d_type*)FFTW(malloc)(sizeof(fft5d_type) * lsize); 
         /* local output */
 		lout = (fft5d_type*)FFTW(malloc)(sizeof(fft5d_type) * lsize); 
+        FFTW_UNLOCK;
 	} else {
 		lin = *rlin;
 		lout = *rlout;
@@ -176,7 +192,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	fft5d_type* output=lout;
 	fft5d_plan plan = (fft5d_plan)malloc(sizeof(struct fft5d_plan_t));
 	int s;
+    FFTW_LOCK
 	for (s=0;s<3;s++) {
+        if (debug)
+        {
+            fprintf(debug,"FFT5D: Plan s %d rC %d M %d K %d C %d lsize %d\n",
+                    s,rC[s],M[s],K[s],C[s],lsize);
+        }
 		if ((flags&FFT5D_INPLACE) && s==2) {
 			output=lin;
 			fftwflags&=~FFTW_DESTROY_INPUT;
@@ -203,10 +225,11 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	}
 #ifdef FFT5D_MPI_TRANSPOSE
 	for (s=0;s<2;s++) {
+        
 		plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*K[s]*M[s]*2, 1, 1, (fft5d_rtype*)lin, (fft5d_rtype*)lout, plan->comm[s], FFTW_PATIENT);
 	}
 #endif 
-
+    FFTW_UNLOCK
 	
 	plan->lin=lin;
 	plan->lout=lout;
@@ -482,6 +505,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 
 void fft5d_destroy(fft5d_plan plan) {
 	int s;
+    FFTW_LOCK;
 	for (s=0;s<3;s++)
 		FFTW(destroy_plan)(plan->p1d[s]);
 	
@@ -494,7 +518,7 @@ void fft5d_destroy(fft5d_plan plan) {
 		FFTW(free)(plan->lout);
 	}
 	free(plan);
-	
+	FFTW_UNLOCK;
 }
 
 /*TODO better than direct access of plan? enough data?
