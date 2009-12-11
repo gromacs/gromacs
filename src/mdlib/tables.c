@@ -1179,7 +1179,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
                   {
                     gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
                                 "\tshould extend to exactly the size of the hybrid zone"
-                                "$f\n",fn,rtab, fr->adress_hy_width);
+                                "%f\n",fn,rtab, fr->adress_hy_width);
                   }
             }
 	    table.n   = td[0].nx;

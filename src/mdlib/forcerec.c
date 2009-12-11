@@ -1210,6 +1210,7 @@ void init_forcerec(FILE *fp,
     /* Copy AdResS parameters */
     fr->adress_type     = ir->adress_type;
     fr->badress_new_wf  = ir->badress_new_wf;
+    fr->badress_chempot_dx = ir->badress_chempot_dx;
     fr->adress_const_wf = ir->adress_const_wf;
     fr->adress_ex_width = ir->adress_ex_width;
     fr->adress_hy_width = ir->adress_hy_width;
