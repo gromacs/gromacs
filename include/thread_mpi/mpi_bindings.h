@@ -211,6 +211,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_Cart_coords             tMPI_Cart_coords
 #define MPI_Cart_map                tMPI_Cart_map
 #define MPI_Cart_create             tMPI_Cart_create
+#define MPI_Cart_sub                tMPI_Cart_sub
 
 #define MPI_Type_contiguous         tMPI_Type_contiguous
 #define MPI_Type_commit             tMPI_Type_commit

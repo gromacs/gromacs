@@ -156,8 +156,10 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             else
             {
                 /* we still need to put things in the right buffer for the next
-                   iteration */
-                if (iteration==0)
+                   iteration. We need to check for overlapping buffers
+                   here because MPI_IN_PLACE might cause recvbuf to be the
+                   same as sendbuf. */
+                if (iteration==0 && (recvbuf!=sendbuf))
                     memcpy(recvbuf, sendbuf, datatype->size*count);
             }
             /* split barrier */
