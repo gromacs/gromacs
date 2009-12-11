@@ -93,7 +93,7 @@ int
 _gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *, char *, int,
+_gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
                                   gmx_sel_lexer_t *state);
 /** Internal helper function that prints a prompt if appropriate. */
 void
