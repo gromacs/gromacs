@@ -1175,7 +1175,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
             }
             else
             {
-                 if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
+                 if ((rtab < fr->adress_hy_width))
                   {
                     gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
                                 "\tshould extend to exactly the size of the hybrid zone"
