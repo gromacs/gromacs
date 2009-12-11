@@ -44,9 +44,12 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <typedefs.h>
 #include <smalloc.h>
-#include <string2.h>
+#include <string.h>
+
+#include "string2.h"
 
 #include <selmethod.h>
 
@@ -186,7 +189,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
 }
 
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                                   gmx_sel_lexer_t *state)
 {
     gmx_sel_symrec_t *symbol;
