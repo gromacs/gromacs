@@ -1166,11 +1166,22 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	  {
 	    read_tables(out,fn,1,0,td);
 	    rtab      = td[0].x[td[0].nx-1];
-	    if ((rtab > 1) || (rtab < 1)) 
-	      {
-		gmx_fatal(FARGS,"AdResS Table in file %s extends to %f:\n"
-			    "\tshould extend to exactly 1\n",fn,rtab);
-	      } 
+            if (!fr->badress_chempot_dx){
+                if ((rtab > 1) || (rtab < 1))
+                  {
+                    gmx_fatal(FARGS,"AdResS Table in file %s extends to %f:\n"
+                                "\tshould extend to exactly 1\n",fn,rtab);
+                  }
+            }
+            else
+            {
+                 if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
+                  {
+                    gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
+                                "\tshould extend to exactly the size of the hybrid zone"
+                                "$f\n",fn,rtab, fr->adress_hy_width);
+                  }
+            }
 	    table.n   = td[0].nx;
 	    nx        = table.n;
 	    table.scale = td[0].tabscale;
