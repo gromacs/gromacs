@@ -243,26 +243,26 @@ gmx_mm_exp_ps(__m128 x)
 	__m128 xmm0,xmm1;
 	__m128i xmm2;
 	
-	xmm0 = _mm_mul_ps(x,(__m128) CC);
-	xmm1 = _mm_sub_ps(xmm0, (__m128) half);
+	xmm0 = _mm_mul_ps(x,gmx_mm_castsi128_ps(CC));
+	xmm1 = _mm_sub_ps(xmm0, gmx_mm_castsi128_ps(half));
 	xmm2 = _mm_cvtps_epi32(xmm1); 
 	xmm1 = _mm_cvtepi32_ps(xmm2); 
 	
-	xmm2 = _mm_add_epi32(xmm2,(__m128i) base);
+	xmm2 = _mm_add_epi32(xmm2,gmx_mm_castps_si128(base));
 	xmm2 = _mm_slli_epi32(xmm2,23);
 	
 	xmm0 = _mm_sub_ps(xmm0,xmm1);
-	xmm1 = _mm_mul_ps(xmm0,(__m128) D5);
-	xmm1 = _mm_add_ps(xmm1,(__m128) D4);
+	xmm1 = _mm_mul_ps(xmm0,gmx_mm_castsi128_ps( D5));
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D4));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,(__m128) D3);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D3));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,(__m128) D2);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D2));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,(__m128) D1);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D1));
 	xmm1 = _mm_mul_ps(xmm1,xmm0);
-	xmm1 = _mm_add_ps(xmm1,(__m128) D0);
-	xmm1 = _mm_mul_ps(xmm1,(__m128) xmm2);
+	xmm1 = _mm_add_ps(xmm1,gmx_mm_castsi128_ps(D0));
+	xmm1 = _mm_mul_ps(xmm1,gmx_mm_castsi128_ps(xmm2));
 	
 	/* 18 instructions currently */
 	return xmm1;
