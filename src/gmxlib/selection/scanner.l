@@ -52,35 +52,6 @@
  * action needs this call. */
 #define ADD_TOKEN _gmx_sel_lexer_add_token(yytext, yyleng, state)
 
-/*! \brief
- * Macro to read input into a buffer for the tokenizer.
- *
- * This macro is a modified version of the standard implementation in Flex.
- * The only changes are the calls to _gmx_sel_lexer_*() functions to show a
- * prompt.
- */
-#define YY_INPUT(buf,result,max_size) \
-    { \
-        gmx_sel_lexer_t *state = yyget_extra(yyscanner); \
-        int c = '*'; \
-        size_t n; \
-        _gmx_sel_lexer_prompt_print(state); \
-        for (n = 0; n < max_size && \
-                    (c = getc(yyin)) != EOF && c != '\n'; ++n) \
-        { \
-            buf[n] = (char)c; \
-        } \
-        if (c == '\n') \
-        { \
-            buf[n++] = (char)c; \
-            _gmx_sel_lexer_prompt_newline(FALSE, state); \
-        } \
-        if (c == EOF && ferror(yyin)) \
-        { \
-            YY_FATAL_ERROR("input in flex scanner failed"); \
-        } \
-        result = n; \
-    }
 %}
 
 INTEGER    [[:digit:]]+
@@ -99,7 +70,7 @@ COMMENT    (#.*)
 %option prefix="_gmx_sel_yy"
 %option header-file="scanner_flex.h"
 %option nounistd
-%option always-interactive
+%option never-interactive
 
 %s matchof
 %s matchbool
@@ -144,9 +115,9 @@ COMMENT    (#.*)
 {REAL}          { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 {STRING}        { yylval->str = strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 
-\\\n            { _gmx_sel_lexer_prompt_newline(TRUE, state); }
+\\\n
 ";"|\n          {
-                    if (yytext[0] == ';' || state->prompt)
+                    if (yytext[0] == ';' || state->bInteractive)
                     {
                         state->bCmdStart = TRUE;
                         rtrim(state->pselstr);

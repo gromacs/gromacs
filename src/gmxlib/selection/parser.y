@@ -156,7 +156,7 @@ yyerror(yyscan_t, char const *s);
 %pure-parser
 
 /* If you change these, you also need to update the prototype in parsetree.c. */
-%name-prefix="_gmx_sel_yy"
+%name-prefix="_gmx_sel_yyb"
 %parse-param { yyscan_t                 scanner }
 %lex-param   { yyscan_t                 scanner }
 

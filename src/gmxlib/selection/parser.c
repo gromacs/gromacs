@@ -59,13 +59,13 @@
 #define YYLSP_NEEDED 0
 
 /* Substitute the variable and function names.  */
-#define yyparse _gmx_sel_yyparse
-#define yylex   _gmx_sel_yylex
-#define yyerror _gmx_sel_yyerror
-#define yylval  _gmx_sel_yylval
-#define yychar  _gmx_sel_yychar
-#define yydebug _gmx_sel_yydebug
-#define yynerrs _gmx_sel_yynerrs
+#define yyparse _gmx_sel_yybparse
+#define yylex   _gmx_sel_yyblex
+#define yyerror _gmx_sel_yyberror
+#define yylval  _gmx_sel_yyblval
+#define yychar  _gmx_sel_yybchar
+#define yydebug _gmx_sel_yybdebug
+#define yynerrs _gmx_sel_yybnerrs
 
 
 /* Tokens.  */
@@ -205,7 +205,7 @@ typedef union YYSTYPE
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
 }
-/* Line 193 of yacc.c.  */
+/* Line 187 of yacc.c.  */
 #line 210 "parser.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -269,7 +269,7 @@ typedef short int yytype_int16;
 #define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
 
 #ifndef YY_
-# if defined YYENABLE_NLS && YYENABLE_NLS
+# if YYENABLE_NLS
 #  if ENABLE_NLS
 #   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
 #   define YY_(msgid) dgettext ("bison-runtime", msgid)
@@ -796,7 +796,7 @@ while (YYID (0))
    we won't break user code: when these are the locations we know.  */
 
 #ifndef YY_LOCATION_PRINT
-# if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+# if YYLTYPE_IS_TRIVIAL
 #  define YY_LOCATION_PRINT(File, Loc)			\
      fprintf (File, "%d.%d-%d.%d",			\
 	      (Loc).first_line, (Loc).first_column,	\
