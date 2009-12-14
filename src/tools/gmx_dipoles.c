@@ -209,7 +209,8 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
 	  rvec_add(xk,mu[gj],xl);
 	  phi = dih_angle(xi,xj,xk,xl,&pbc,
 			  r_ij,r_kj,r_kl,mm,nn, /* out */
-			  &cosa,&sign,&t1,&t2,&t3);
+			  &sign,&t1,&t2,&t3);
+      cosa = cos(phi);
 	}
 	else {
 	  cosa = cos_angle(mu[gi],mu[gj]);

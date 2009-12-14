@@ -269,7 +269,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
 {
   int    i,ai,aj,ak,al,t1,t2,t3;
   rvec   r_ij,r_kj,r_kl,m,n;
-  real   sign,th,costh,ph,cosph;
+  real   sign,th,costh,ph;
   t_pbc  pbc;
 
   if (bPBC)
@@ -293,7 +293,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
     ak = dih->param[i].AK;
     al = dih->param[i].AL;
     ph = RAD2DEG*dih_angle(x[ai],x[aj],x[ak],x[al],bPBC ? & pbc : NULL,
-			   r_ij,r_kj,r_kl,m,n,&cosph,&sign,&t1,&t2,&t3);
+			   r_ij,r_kj,r_kl,m,n,&sign,&t1,&t2,&t3);
     if (debug)
       fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
 	      ai,aj,ak,al,norm(r_ij),norm(r_kj),norm(r_kl),ph);

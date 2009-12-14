@@ -89,7 +89,7 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,const char *fn,
   sfree(x);
 }
 
-int gmx_angle(int argc,char *argv[])
+int gmx_g_angle(int argc,char *argv[])
 {
   static const char *desc[] = {
     "g_angle computes the angle distribution for a number of angles",
