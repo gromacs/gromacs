@@ -1147,7 +1147,14 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 * use etiNR (since we only have one table, but ...) 
 	 */
 	snew(td,1);
-	table.r         = 1;
+
+        if (!fr->badress_chempot_dx){
+            table.r         = 1;
+        }
+        else
+        {
+            table.r         = fr->adress_hy_width;
+        }
 	table.scale     = 0;
 	table.n         = 0;
 	table.scale_exp = 0;
@@ -1175,7 +1182,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
             }
             else
             {
-                 if ((rtab < fr->adress_hy_width))
+                 if ((rtab < fr->adress_hy_width) || (rtab > fr->adress_hy_width))
                   {
                     gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
                                 "\tshould extend to exactly the size of the hybrid zone"
@@ -1211,17 +1218,20 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	    fp=xvgropen(fns[0],fns[0],"r","V",oenv);
 	    /* plot the output 5 times denser than the table data */
 	    /* for(i=5*nx0;i<5*table.n;i++) */
-	    for(i=nx0;i<table.n;i++)
+	   
+            for(i=5*((nx0+1)/2); i<5*table.n; i++)
 	      {
 		/* x0=i*table.r/(5*table.n); */
-		x0=i*table.r/table.n;
+		x0 = i*table.r/(5*(table.n-1));
 		evaluate_table(table.tab,0,4,table.scale,x0,&y0,&yp);
 		fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 		
 	      }
 	    ffclose(fp);
 	  }
-	
+
+          printf ("nx %d, nx0 %d, tabscale %g\n", td[0].nx, td[0].nx0, td[0].tabscale);
+          printf ("r %f n %d scale %f\n", table.r, table.n, table.scale);
 	/*
 	  for(i=100*nx0;i<99.81*table.n;i++)
 	  {
