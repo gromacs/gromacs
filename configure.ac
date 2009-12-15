@@ -321,6 +321,7 @@ if test "$enable_mpi" = "yes"; then
   AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
+  CXX=$MPICC
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
 AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))

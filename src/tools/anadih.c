@@ -593,13 +593,13 @@ static void calc_dihs(FILE *log,t_pbc *pbc,
 {
   int  i,ix,t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
-  real cos_phi,sign,aaa;
+  real sign,aaa;
   
   for(i=ix=0; (ix<n4); i++,ix+=4) {
     aaa=dih_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
 		  x_s[index[ix+3]],pbc,
 		  r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign,&t1,&t2,&t3);
+		  &sign,&t1,&t2,&t3);
 	  
     ang[i]=aaa;  /* not taking into account ryckaert bellemans yet */
   }
