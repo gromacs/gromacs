@@ -115,7 +115,7 @@ void push_ps(FILE *fp)
 #endif
 #endif
 
-
+#ifndef GMX_FAHCORE
 #ifndef HAVE_PIPES
 static FILE *popen(const char *nm,const char *mode)
 {
@@ -131,8 +131,12 @@ static int pclose(FILE *fp)
     return 0;
 }
 #endif
+#endif
 
+<<<<<<< HEAD:src/gmxlib/futil.c
 
+=======
+>>>>>>> origin/master:src/gmxlib/futil.c
 #ifndef SKIP_FFOPS
 int ffclose(FILE *fp)
 {
@@ -486,6 +490,9 @@ bool get_libdir(char *libdir)
     bool found=FALSE;
     int i;
 
+    if (Program() != NULL)
+    {
+
     /* First - detect binary name */
     strncpy(bin_name,Program(),512);
 
@@ -563,6 +570,7 @@ bool get_libdir(char *libdir)
             *ptr='\0';
             found=search_subdirs(full_path,libdir);
         }
+    }
     }
     /* End of smart searching. If we didn't find it in our parent tree,
      * or if the program name wasn't set, at least try some standard 
