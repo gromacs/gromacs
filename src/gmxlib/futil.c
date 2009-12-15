@@ -107,8 +107,8 @@ void push_ps(FILE *fp)
 
 #ifdef GMX_FAHCORE
 /* don't use pipes!*/
-#define popen(x,y) fah_fopen(x,y)
-#define pclose(x) fah_fclose(x)
+#define popen fah_fopen
+#define pclose fah_fclose
 #else
 #ifdef ffclose
 #undef ffclose
@@ -133,10 +133,6 @@ static int pclose(FILE *fp)
 #endif
 #endif
 
-<<<<<<< HEAD:src/gmxlib/futil.c
-
-=======
->>>>>>> origin/master:src/gmxlib/futil.c
 #ifndef SKIP_FFOPS
 int ffclose(FILE *fp)
 {
