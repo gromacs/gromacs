@@ -248,7 +248,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
     wallcc_t *wcc;
-    double buf[ewcNR],*cyc_all,*buf_all;
+    double cycles_n[ewcNR],buf[ewcNR],*cyc_all,*buf_all;
     int    i;
 
     if (wc == NULL)
@@ -282,18 +282,13 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
             /* This must be a PME only node, calculate the Wait + Comm. time */
             wcc[ewcPMEWAITCOMM].c = wcc[ewcRUN].c - wcc[ewcPMEMESH].c;
         }
-        else
-        {
-            /* Correct the PME mesh only call count */
-            wcc[ewcPMEMESH].n     = wcc[ewcFORCE].n;
-            wcc[ewcPMEWAITCOMM].n = wcc[ewcFORCE].n;
-        }
     }
     
     /* Store the cycles in a double buffer for summing */
     for(i=0; i<ewcNR; i++)
     {
-        cycles[i] = (double)wcc[i].c;
+        cycles_n[i] = (double)wcc[i].n;
+        cycles[i]   = (double)wcc[i].c;
     }
     
     if (wcc[ewcUPDATE].n > 0)
@@ -302,15 +297,22 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
         cycles[ewcUPDATE] -= cycles[ewcCONSTR];
     }
     
-#ifdef GMX_MPI    
+#ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
+        MPI_Allreduce(cycles_n,buf,ewcNR,MPI_DOUBLE,MPI_MAX,
+                      cr->mpi_comm_mysim);
+        for(i=0; i<ewcNR; i++)
+        {
+            wcc[i].n = (int)(buf[i] + 0.5);
+        }
         MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,
                       cr->mpi_comm_mysim);
         for(i=0; i<ewcNR; i++)
         {
             cycles[i] = buf[i];
         }
+
         if (wc->wcc_all != NULL)
         {
             snew(cyc_all,ewcNR*ewcNR);
