@@ -1126,22 +1126,9 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	real        x0,y0,yp,rtab;
 	int         i,j,k,nx,nx0,tabsel[etiNR];
 	void *      p_tmp;
-	double      r,r2,Vtab,Ftab,expterm;
 	
 	t_forcetable table;
 	
-	double abs_error_r, abs_error_r2;
-	double rel_error_r, rel_error_r2;
-	double rel_error_r_old=0, rel_error_r2_old=0;
-	double x0_r_error, x0_r2_error;
-	
-	
-	/* Only set a Coulomb table for AdResS Thermo Force */
-	/* 
-	 tabsel[0]=etabATF;
-	 tabsel[1]=-1;
-	 tabsel[2]=-1;
-	*/
 	
 	/* Set the table dimensions for ATF, not really necessary to
 	 * use etiNR (since we only have one table, but ...) 
@@ -1206,12 +1193,12 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	
 	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
            to align it. */
-	p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
+        p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
 	
 	/* align it - size_t has the same same as a pointer */
-	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
+	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));
 	
-	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	//copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
 	
 	if(bDebugMode())
 	  {
@@ -1232,44 +1219,6 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 
           printf ("nx %d, nx0 %d, tabscale %g\n", td[0].nx, td[0].nx0, td[0].tabscale);
           printf ("r %f n %d scale %f\n", table.r, table.n, table.scale);
-	/*
-	  for(i=100*nx0;i<99.81*table.n;i++)
-	  {
-	  r = i*table.r/(100*table.n);
-	  r2      = r*r;
-	  expterm = exp(-0.25*r2);
-	  
-	  Vtab = 1/sqrt(r2+expterm);
-	  Ftab = (r-0.25*r*expterm)/((r2+expterm)*sqrt(r2+expterm));
-	  
-	  
-	  evaluate_table(table.tab,0,4,table.scale,r,&y0,&yp);
-	  printf("gb: i=%d, x0=%g, y0=%15.15f, Vtab=%15.15f, yp=%15.15f, Ftab=%15.15f\n",i,r, y0, Vtab, yp, Ftab);
-	  
-	  abs_error_r=fabs(y0-Vtab);
-	  abs_error_r2=fabs(yp-(-1)*Ftab);
-	  
-	  rel_error_r=abs_error_r/y0;
-	  rel_error_r2=fabs(abs_error_r2/yp);
-	  
-	  
-	  if(rel_error_r>rel_error_r_old)
-	  {
-	  rel_error_r_old=rel_error_r;
-	  x0_r_error=x0;
-	  }
-	  
-	  if(rel_error_r2>rel_error_r2_old)
-	  {
-	  rel_error_r2_old=rel_error_r2;
-	  x0_r2_error=x0;	
-	 }
-	 }
-	 
-	 printf("gb: MAX REL ERROR IN R=%15.15f, MAX REL ERROR IN R2=%15.15f\n",rel_error_r_old, rel_error_r2_old);
-	 printf("gb: XO_R=%g, X0_R2=%g\n",x0_r_error, x0_r2_error);
-	 
-	 exit(1); */
 
 	done_tabledata(&(td[0]));
 	sfree(td);
