@@ -72,7 +72,7 @@ static t_pdbfile *read_pdbf(const char *fn)
   init_t_atoms(&(pdbf->atoms),natoms,FALSE);
   snew(pdbf->x,natoms);
   read_stx_conf(fn,buf,&pdbf->atoms,pdbf->x,NULL,&pdbf->ePBC,pdbf->box);
-  fp = fopen(fn,"r");
+  fp = ffopen(fn,"r");
   do {
     ptr = fgets2(buf,255,fp);
     if (ptr) {
@@ -88,7 +88,7 @@ static t_pdbfile *read_pdbf(const char *fn)
       } 
     }
   } while (ptr != NULL);
-  fclose(fp);
+  ffclose(fp);
   
   return pdbf;
 }
@@ -167,7 +167,7 @@ static void analyse_em_all(int npdb,t_pdbfile *pdbf[], const char *edocked,
 		  etitles[bFreeSort],"()","E (kJ/mol)",oenv);
     for(i=0; (i<npdb); i++)
       fprintf(fp,"%12lf\n",bFreeSort ? pdbf[i]->efree : pdbf[i]->edocked);
-    fclose(fp);
+    ffclose(fp);
   }
 }
 
@@ -346,7 +346,7 @@ int main(int argc,char *argv[])
 		 bFree,bRMS,cutoff);
   
   thanx(fp);
-  fclose(fp);
+  ffclose(fp);
   
   thanx(stdout);
   

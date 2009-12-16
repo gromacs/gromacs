@@ -171,7 +171,7 @@ static t_shiftdata *read_shifts(const char *fn)
     }
     sd->data[i][j] = sd->data[i][0];
   }
-  fclose(fp);
+  ffclose(fp);
   
   if (bDebugMode()) 
     dump_sd(fn,sd);

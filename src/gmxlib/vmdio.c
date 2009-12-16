@@ -25,13 +25,36 @@
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
- ***************************************************************************/
+Developed by:           Theoretical and Computational Biophysics Group
+                        University of Illinois at Urbana-Champaign
+                        http://www.ks.uiuc.edu/
 
-/***************************************************************************
- * LICENSE:
- *   UIUC Open Source License
- *   http://www.ks.uiuc.edu/Research/vmd/plugins/pluginlicense.html
- *
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the Software), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to
+do so, subject to the following conditions:
+
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimers.
+
+Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimers in the documentation
+and/or other materials provided with the distribution.
+
+Neither the names of Theoretical and Computational Biophysics Group,
+University of Illinois at Urbana-Champaign, nor the names of its contributors
+may be used to endorse or promote products derived from this Software without
+specific prior written permission.
+
+THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS WITH THE SOFTWARE.
  ***************************************************************************/
 
 /* catdcd.c: Copyright: */
@@ -194,14 +217,13 @@ bool read_next_vmd_frame(int status,t_trxframe *fr)
     return 1;
 }
 
-
-int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
+int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 {
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
     const char *err;
-    uint i,ret=0;
-    molfile_timestep_metadata_t *metadata=NULL;
+    int i;
+    int ret=0;
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     glob_t globbuf;
     const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
@@ -213,16 +235,15 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     SHGetFolderPath(NULL,CSIDL_PROGRAM_FILES,NULL,SHGFP_TYPE_CURRENT,progfolder);
     sprintf(defpathenv,"%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile",progfolder);
 #endif
-  
 
-    fr->vmdplugin.api = NULL;
-    fr->vmdplugin.filetype = strrchr(fn,'.');
-    if (fr->vmdplugin.filetype)
+    vmdplugin->api = NULL;
+    vmdplugin->filetype = strrchr(fn,'.');
+    if (!vmdplugin->filetype)
     {
         return 0;
     }
-    fr->vmdplugin.filetype++;
-    
+    vmdplugin->filetype++;
+
     pathenv = getenv("VMD_PLUGIN_PATH");
     if (pathenv==NULL) 
     {
@@ -242,9 +263,9 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
             "The architecture (e.g. 32bit versus 64bit) of Gromacs and VMD has to match.\n");
         return 0;
     }
-    for (i=0; i<globbuf.gl_pathc && fr->vmdplugin.api == NULL; i++)
+    for (i=0; i<globbuf.gl_pathc && vmdplugin->api == NULL; i++)
     {
-        ret|=load_sharedlibrary_plugins(globbuf.gl_pathv[i],&fr->vmdplugin);
+        ret|=load_sharedlibrary_plugins(globbuf.gl_pathv[i],vmdplugin);
     }
     globfree(&globbuf);
 #else
@@ -258,12 +279,12 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
     do
     {
         sprintf(filename,"%s\\%s",pathenv,ffd.cFileName);
-        ret|=load_sharedlibrary_plugins(filename,&fr->vmdplugin);
+        ret|=load_sharedlibrary_plugins(filename,vmdplugin);
     }
-    while (FindNextFile(hFind, &ffd )  != 0 && fr->vmdplugin.api == NULL );
+    while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL );
     FindClose(hFind);
 #endif
-    
+
     if (!ret)
     {
         printf("\nCould not open any VMD library.\n");
@@ -278,13 +299,27 @@ int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
         }
         return 0;
     }
-    if (fr->vmdplugin.api == NULL)
+
+    if (vmdplugin->api == NULL)
     {
-        printf("\nNo plugin for %s found\n",fr->vmdplugin.filetype);
+        printf("\nNo plugin for %s found\n",vmdplugin->filetype);
         return 0;
     }
 
-    printf("\nUsing VMD plugin: %s (%s)\n",fr->vmdplugin.api->name,fr->vmdplugin.api->prettyname);
+    printf("\nUsing VMD plugin: %s (%s)\n",vmdplugin->api->name,vmdplugin->api->prettyname);
+
+    return 1;
+
+}
+
+int read_first_vmd_frame(int *status,const char *fn,t_trxframe *fr,int flags)
+{
+    molfile_timestep_metadata_t *metadata=NULL;
+    
+    if (!load_vmd_library(fn,&(fr->vmdplugin))) 
+    {
+        return 0;
+    }
 
     fr->vmdplugin.handle = fr->vmdplugin.api->open_file_read(fn, fr->vmdplugin.filetype, &fr->natoms);
 

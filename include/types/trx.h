@@ -42,20 +42,13 @@
  */ 
 
 #include "molfile_plugin.h"
+#include "vmdio.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct 
-{
-    molfile_plugin_t *api;
-    const char* filetype;
-    void* handle;
-    bool bV;
-} t_gmxvmdplugin;
-
-typedef struct
+typedef struct trxframe
 {
   int  flags;     /* flags for read_first/next_frame  */
   int  not_ok;    /* integrity flags (see statutil.h  */

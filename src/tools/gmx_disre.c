@@ -537,7 +537,7 @@ static void dump_disre_matrix(const char *fn,t_dr_result *dr,int ndr,
   fp = ffopen(fn,"w");  
   write_xpm(fp,0,"Distance Violations","<V> (nm)","Residue","Residue",
 	    n_res,n_res,t_res,t_res,matrix,0,hi,rlo,rhi,&nlevels);
-  fclose(fp);
+  ffclose(fp);
 }
 
 int gmx_disre(int argc,char *argv[])
@@ -777,12 +777,12 @@ int gmx_disre(int argc,char *argv[])
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nres,
 		      j,&top->idef,&mtop,max_dr,nlevels,bThird);
-    fclose(out);
-    fclose(aver);
-    fclose(numv);
-    fclose(maxxv);
+    ffclose(out);
+    ffclose(aver);
+    ffclose(numv);
+    ffclose(maxxv);
     if (isize > 0) {
-      fclose(xvg);
+      ffclose(xvg);
       do_view(oenv,opt2fn("-dr",NFILE,fnm),"-nxy");
     }
     do_view(oenv,opt2fn("-dn",NFILE,fnm),"-nxy");

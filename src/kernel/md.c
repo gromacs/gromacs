@@ -1091,7 +1091,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     char        *grpname;
     t_coupl_rec *tcr=NULL;
     rvec        *xcopy=NULL,*vcopy=NULL;
-    matrix      boxcopy,lastbox;
+    matrix      boxcopy={{0}},lastbox;
     double      cycles;
     int         reset_counters=-1;
     char        sbuf[22],sbuf2[22];
@@ -1834,7 +1834,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bX = bX || bLastStep; /*enforce writing positions and velocities 
                                 at end of run */
         bV = bV || bLastStep;
-        bXTC = bXTC || bLastStep;
         {
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);

@@ -1474,12 +1474,12 @@ void init_forcerec(FILE *fp,
 	if(fr->bGB)
 	{
 #ifdef GMX_DOUBLE
-		fr->gbtabscale=200;
+		fr->gbtabscale=2000;
 #else
-		fr->gbtabscale=50;
+		fr->gbtabscale=500;
 #endif
 		
-		fr->gbtabr=50;
+		fr->gbtabr=100;
 		fr->gbtab=make_gb_table(fp,oenv,fr,tabpfn,fr->gbtabscale);
 
         init_gb(&fr->born,cr,fr,ir,mtop,ir->rgbradii,ir->gb_algorithm);

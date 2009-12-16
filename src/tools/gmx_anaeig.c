@@ -218,7 +218,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             fprintf(out,"&\n");
     }
   }
-  fclose(out);
+  ffclose(out);
 }
 
 static void 
@@ -355,7 +355,7 @@ static void inprod_matrix(const char *matfile,int natoms,
   out = ffopen(matfile,"w");
   write_xpm(out,0,"Eigenvector inner-products","in.prod.","run 1","run 2",
 	    nx,ny,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
-  fclose(out);
+  ffclose(out);
 }
 
 static void overlap(const char *outfile,int natoms,
@@ -389,7 +389,7 @@ static void overlap(const char *outfile,int natoms,
     fprintf(out,"%5d  %5.3f\n",eignr2[x]+1,overlap/noutvec);
   }
 
-  fclose(out);
+  ffclose(out);
 }
 
 static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
@@ -519,7 +519,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	fprintf(xvgrout,"&\n");
       fprintf(xvgrout,"%10.5f %10.5f\n",inprod[0][i],inprod[noutvec-1][i]);
     }
-    fclose(xvgrout);
+    ffclose(xvgrout);
   }
   
   if (threedplotfile) {
@@ -595,7 +595,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
 	j++;
       }
       fprintf(out,"TER\n");
-      fclose(out);
+      ffclose(out);
     } else
       write_sto_conf(threedplotfile,str,&atoms,x,NULL,ePBC,box); 
     free_t_atoms(&atoms,FALSE);

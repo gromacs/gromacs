@@ -148,7 +148,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
     bFirst=FALSE;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
     
-  fclose(out);
+  ffclose(out);
   
   fprintf(stdout,
 	  "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
@@ -392,9 +392,9 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   } while (read_next_x(oenv,status,&t,natoms,x0,box));
   
   close_trj(status);
-  fclose(dist);
-  if (num) fclose(num);
-  if (atm) fclose(atm);
+  ffclose(dist);
+  if (num) ffclose(num);
+  if (atm) ffclose(atm);
   if (trxout>=0) close_xtc(trxout);
   
   if(nres && !bEachResEachTime) {
