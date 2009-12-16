@@ -100,12 +100,6 @@ _gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
 int
 _gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
                                   gmx_sel_lexer_t *state);
-/** Internal helper function that prints a prompt if appropriate. */
-void
-_gmx_sel_lexer_prompt_print(gmx_sel_lexer_t *state);
-/** Internal helper function that updates the prompt after a newline. */
-void
-_gmx_sel_lexer_prompt_newline(bool bContinue, gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state);
