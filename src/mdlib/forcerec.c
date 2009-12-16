@@ -1380,7 +1380,9 @@ void init_forcerec(FILE *fp,
     
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
                        gmx_mtop_ftype_count(mtop,F_POSRES) > 0 ||
-                       IR_ELEC_FIELD(*ir));
+                       IR_ELEC_FIELD(*ir) ||
+                       (fr->adress_icor != eAdressICOff)
+                      );
     
     /* Mask that says whether or not this NBF list should be computed */
     /*  if (fr->bMask == NULL) {
