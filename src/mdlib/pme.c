@@ -1349,7 +1349,7 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     /* y major, z middle, x minor or continuous */
     t_complex *p0;
     int     kx,ky,kz,maxkx,maxky,maxkz;
-    int     nx,ny,nz,ix,iy,iz,ixstart;
+    int     nx,ny,nz,iy,iz,kxstart,kxend;
     real    mx,my,mz;
     real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
     real    ets2,struct2,vfactor,ets2vf;
@@ -1404,7 +1404,7 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
 	denom = pme->work_denom;
 	tmp1  = pme->work_tmp1;
 	m2inv = pme->work_m2inv;	
-	
+
     for(iy=0;iy<local_ndata[YY];iy++)
     {
         ky = iy + local_offset[YY];
@@ -1444,17 +1444,17 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                 local_offset[YY] > 0 || ky > 0 ||
                 kz > 0)
             {
-                ixstart = 0;
+                kxstart = local_offset[XX];
             }
             else
             {
-                ixstart = 1;
+                kxstart = local_offset[XX] + 1;
                 p0++;
             }
+            kxend = local_offset[XX] + local_ndata[XX];
 			
-            for(ix=ixstart; ix<local_ndata[XX]; ix++)
+            for(kx=kxstart; kx<kxend; kx++)
             {
-                kx = ix + local_offset[XX];
                 if (kx < maxkx) 
                 {
                     mx = kx;
@@ -1471,25 +1471,21 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                 tmp1[kx]  = -factor*m2[kx];
             }
 			
-            for(ix=ixstart; ix<local_ndata[XX]; ix++)
+            for(kx=kxstart; kx<kxend; kx++)
             {
-                kx = ix + local_offset[XX];
                 m2inv[kx] = 1.0/m2[kx];
             }
-            for(ix=ixstart; ix<local_ndata[XX]; ix++) 
+            for(kx=kxstart; kx<kxend; kx++)
             {
-                kx = ix + local_offset[XX];
                 denom[kx] = 1.0/denom[kx];
             }
-            for(ix=ixstart; ix<local_ndata[XX]; ix++) 
+            for(kx=kxstart; kx<kxend; kx++)
             {
-                kx = ix + local_offset[XX];
                 tmp1[kx]  = exp(tmp1[kx]);
             }
-			
-            for(ix=ixstart; ix<local_ndata[XX]; ix++,p0++)  {
-                kx = ix + local_offset[XX];
 
+            for(kx=kxstart; kx<kxend; kx++,p0++)
+            {
                 d1      = p0->re;
                 d2      = p0->im;
 				
@@ -1503,8 +1499,8 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
                 tmp1[kx] = eterm*struct2;
             }
 
-            for(ix=ixstart; ix<local_ndata[XX]; ix++)  {
-                kx = ix + local_offset[XX];
+            for(kx=kxstart; kx<kxend; kx++)
+            {
                 ets2     = corner_fac*tmp1[kx];
                 vfactor  = (factor*m2[kx] + 1.0)*2.0*m2inv[kx];
                 energy  += ets2;
