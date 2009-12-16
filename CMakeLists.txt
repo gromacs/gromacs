@@ -32,6 +32,7 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 enable_language(C)
 
 option(GMX_IA32_ASM "Add SSE assembly files for IA32" OFF)
+option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 
 ########################################################################
 # Fix stupid flags on MSVC
@@ -266,7 +267,13 @@ elseif(${GMX_ACCELERATION} STREQUAL "SSE")
         endif(GMX_IA32_ASM)
     endif(HAVE_XMMINTRIN_H)
     if(HAVE_EMMINTRIN_H)
-        set(GMX_SSE2 1)
+        if(GMX_X86_64_ASM)
+          option(GMX_ASM_USEASM-ATT "Use ATT-style assembly" ON)
+          option(GMX_ASM_USECCOMPILER "Use C compiler for assembly" ON)
+          set(GMX_X86_64_SSE 1)
+        else(GMX_X86_64_ASM)  #only use intrinsic if not using the ASM loops
+          set(GMX_SSE2 1)
+        endif(GMX_X86_64_ASM)
     endif(HAVE_EMMINTRIN_H)
 #    if(HAVE_PMMINTRIN_H)
 #        set(GMX_SSE3 1)

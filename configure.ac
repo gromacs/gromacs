@@ -563,9 +563,21 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
 ))
 ## Check for library
 #  AC_CHECK_LIB([guide],main,,AC_MSG_ERROR([Cannot find libguide (Intel MKL)]))
-  AC_CHECK_LIB([mkl],DftiComputeForward,,
-    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
-
+#  AC_CHECK_LIB([mkl],DftiComputeForward,,
+#    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
+  # first check for older MKLs
+  AC_CHECK_LIB([mkl],DftiComputeForward,,[have_mkl="no"])
+  if test "$have_mkl" == "no"; then
+    # we assume it's a new MKL
+    LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
+    AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
+    if test "$have_mkl10_64" == "no"; then
+      AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
+      if test "$have_mkl10_32" == "no"; then
+        AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0])
+      fi
+    fi
+  fi
   AC_DEFINE(GMX_FFT_MKL,,[Use Intel MKL FFT library])
   ;;
 
