@@ -1193,12 +1193,12 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	
 	/* 4 fp entries per table point, nx+1 points, and 16 bytes extra 
            to align it. */
-        p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
+       p_tmp = malloc(4*(nx+1)*sizeof(real)+16);
 	
 	/* align it - size_t has the same same as a pointer */
 	table.tab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));
 	
-	//copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
+	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,table.tab);
 	
 	if(bDebugMode())
 	  {
@@ -1216,9 +1216,6 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	      }
 	    ffclose(fp);
 	  }
-
-          printf ("nx %d, nx0 %d, tabscale %g\n", td[0].nx, td[0].nx0, td[0].tabscale);
-          printf ("r %f n %d scale %f\n", table.r, table.n, table.scale);
 
 	done_tabledata(&(td[0]));
 	sfree(td);
