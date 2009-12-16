@@ -60,6 +60,9 @@
 #include "coulomb.h"
 #include "gstat.h"
 #include "matio.h"
+#include "gmx_ana.h"
+#include "names.h"
+
 
 typedef struct
 {
@@ -180,7 +183,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology *top=NULL;
-  int        ePBC=-1;
+  int        ePBC=-1,ePBCrdf=-1;
   t_block    *mols=NULL;
   t_blocka   *excl;
   t_atom     *atom=NULL;
@@ -292,11 +295,25 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		  index[i][j],grpname[i],isize[i],natoms);
   
   /* initialize some handy things */
+  if (ePBC == -1) {
+    ePBC = guess_ePBC(box);
+  }
   copy_mat(box,box_pbc);
   if (bXY) {
     check_box_c(box);
+    switch (ePBC) {
+    case epbcXYZ:
+    case epbcXY:   ePBCrdf = epbcXY;   break;
+    case epbcNONE: ePBCrdf = epbcNONE; break;
+    default:
+      gmx_fatal(FARGS,"xy-rdf's are not supported for pbc type'%s'",
+		EPBC(ePBC));
+      break;
+    }
     /* Make sure the z-height does not influence the cut-off */
     box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
+  } else {
+    ePBCrdf = ePBC;
   }
   if (bPBC)
     rmax2   = 0.99*0.99*max_cutoff2(bXY ? epbcXY : epbcXYZ,box_pbc);
@@ -377,7 +394,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
       }
-      set_pbc(&pbc,ePBC,box_pbc);
+      set_pbc(&pbc,ePBCrdf,box_pbc);
 
       if (bXY)
 	/* Set z-size to 1 so we get the surface iso the volume */
