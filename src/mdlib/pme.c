@@ -247,23 +247,6 @@ volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
 
 
-static void calc_recipbox(matrix box,matrix recipbox)
-{
-  /* Save some time by assuming upper right part is zero */
-
-  real tmp=1.0/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
-
-  recipbox[XX][XX]=box[YY][YY]*box[ZZ][ZZ]*tmp;
-  recipbox[XX][YY]=0;
-  recipbox[XX][ZZ]=0;
-  recipbox[YY][XX]=-box[YY][XX]*box[ZZ][ZZ]*tmp;
-  recipbox[YY][YY]=box[XX][XX]*box[ZZ][ZZ]*tmp;
-  recipbox[YY][ZZ]=0;
-  recipbox[ZZ][XX]=(box[YY][XX]*box[ZZ][YY]-box[YY][YY]*box[ZZ][XX])*tmp;
-  recipbox[ZZ][YY]=-box[ZZ][YY]*box[XX][XX]*tmp;
-  recipbox[ZZ][ZZ]=box[XX][XX]*box[YY][YY]*tmp;
-}
-
 static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
 {
     int  i;
@@ -318,29 +301,30 @@ static void calc_interpolation_idx(gmx_pme_t pme,pme_atomcomm_t *atc)
   }  
 }
 
-static void pme_calc_pidx(int natoms,matrix box, rvec x[],
+static void pme_calc_pidx(int natoms, matrix recipbox, rvec x[],
                           pme_atomcomm_t *atc)
 {
     int  nslab,i;
     int  si;
     real *xptr,s;
     real rxx,ryx,rzx,ryy,rzy;
-    matrix recipbox;
-    
+    int *pd,*count;
+
     /* Calculate PME task index (pidx) for each grid index.
      * Here we always assign equally sized slabs to each node
      * for load balancing reasons (the PME grid spacing is not used).
      */
     
     nslab = atc->nslab;
+    pd    = atc->pd;
+    count = atc->count;
 
     /* Reset the count */
     for(i=0; i<nslab; i++)
     {
-        atc->count[i] = 0;
+        count[i] = 0;
     }
     
-    calc_recipbox(box,recipbox);
     if (atc->dimind == 0)
     {
         rxx = recipbox[XX][XX];
@@ -353,8 +337,8 @@ static void pme_calc_pidx(int natoms,matrix box, rvec x[],
             /* Fractional coordinates along box vectors */
             s = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
             si = (int)(s + 2*nslab) % nslab;
-            atc->pd[i] = si;
-            atc->count[si]++;
+            pd[i] = si;
+            count[si]++;
         }
     }
     else
@@ -368,8 +352,8 @@ static void pme_calc_pidx(int natoms,matrix box, rvec x[],
             /* Fractional coordinates along box vectors */
             s = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
             si = (int)(s + 2*nslab) % nslab;
-            atc->pd[i] = si;
-            atc->count[si]++;
+            pd[i] = si;
+            count[si]++;
         }
     }
 }
@@ -875,7 +859,6 @@ copy_pmegrid_to_fftgrid(gmx_pme_t pme, real *pmegrid, real *fftgrid)
      the offset is identical, and the PME grid always has more data (due to overlap)
      */
     {
-//#define DEBUG_PME
 #ifdef DEBUG_PME
         FILE *fp,*fp2;
         char fn[STRLEN],format[STRLEN];
@@ -1416,7 +1399,6 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             my = (ky - ny);
         }
         
-        //mhx = mx * rxx;
         by = M_PI*vol*pme->bsp_mod[YY][ky];
 
         for(iz=0;iz<local_ndata[ZZ];iz++)
@@ -1425,7 +1407,6 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             
             mz = kz;
 
-            //mhy = mx * ryx + my * ryy;
             bz = pme->bsp_mod[ZZ][kz];
             
             /* 0.5 correction for corner points */
@@ -2591,6 +2572,8 @@ int gmx_pme_do(gmx_pme_t pme,
         }
         where();
         
+        m_inv_ur0(box,pme->recipbox); 
+
         if (pme->nnodes == 1) {
             atc = &pme->atc[0];
             if (DOMAINDECOMP(cr)) {
@@ -2623,7 +2606,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     srenew(atc->pd,atc->pd_nalloc);
                 }
                 atc->maxshift = (d==0 ? maxshift0 : maxshift1);
-                pme_calc_pidx(n_d,box,x_d,atc);
+                pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
                 where();
                 
                 GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -2635,15 +2618,13 @@ int gmx_pme_do(gmx_pme_t pme,
                 }
             }
             where();
-//#endif
+
             wallcycle_stop(wcycle,ewcPME_REDISTXF);
         }
         
         if (debug)
             fprintf(debug,"Node= %6d, pme local particles=%6d\n",
                     cr->nodeid,atc->n);
-
-        calc_recipbox(box,pme->recipbox); 
 
         if (flags & GMX_PME_SPREAD_Q)
         {
@@ -2792,7 +2773,6 @@ int gmx_pme_do(gmx_pme_t pme,
                 pmeredist_pd(pme, FALSE, n_d, TRUE, f_d, NULL, atc);
             }
         }
-//#endif
 
         wallcycle_stop(wcycle,ewcPME_REDISTXF);
     }
