@@ -6319,7 +6319,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
     if (EEL_PME(ir->coulombtype))
     {
-        if (comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0)
+        if (comm->npmenodes > dd->nc[XX] && comm->npmenodes % dd->nc[XX] == 0 &&
+            getenv("GMX_PMEONEDD") == NULL)
         {
             comm->npmedecompdim   = 2;
             comm->npmenodes_major = dd->nc[XX];
@@ -6330,6 +6331,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             comm->npmedecompdim   = 1;
             comm->npmenodes_major = comm->npmenodes;
             comm->npmenodes_minor = comm->npmenodes/comm->npmenodes_major;
+        }
+        if (fplog)
+        {
+            fprintf(fplog,"PME domain decomposition: %d x %d x %d\n",
+                    comm->npmenodes_major,comm->npmenodes_minor,1);
         }
     }
     else
