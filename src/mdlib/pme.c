@@ -1092,6 +1092,28 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
     }
 }
 
+
+/* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
+#define DO_BSPLINE(order)                            \
+for(ithx=0; (ithx<order); ithx++)                    \
+{                                                    \
+    index_x = (i0+ithx)*pny*pnz;                     \
+    valx    = qn*thx[ithx];                          \
+                                                     \
+    for(ithy=0; (ithy<order); ithy++)                \
+    {                                                \
+        valxy    = valx*thy[ithy];                   \
+        index_xy = index_x+(j0+ithy)*pnz;            \
+                                                     \
+        for(ithz=0; (ithz<order); ithz++)            \
+        {                                            \
+            index_xyz        = index_xy+(k0+ithz);   \
+            grid[index_xyz] += valxy*thz[ithz];      \
+        }                                            \
+    }                                                \
+}
+
+
 static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc, 
                               real *grid)
 {
@@ -1103,11 +1125,14 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
     int      order,norder,index_x,index_xy,index_xyz;
     real     valx,valxy,qn;
     real     *thx,*thy,*thz;
-    int localsize, bndsize;
+    int      localsize, bndsize;
   
-    int      ndatatot;
+    int      pnx,pny,pnz,ndatatot;
   
-    ndatatot = pme->pmegrid_nx*pme->pmegrid_ny*pme->pmegrid_nz;
+    pnx = pme->pmegrid_nx;
+    pny = pme->pmegrid_ny;
+    pnz = pme->pmegrid_nz;
+    ndatatot = pnx*pny*pnz;
     
     for(i=0;i<ndatatot;i++)
     {
@@ -1121,7 +1146,7 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
         n      = nn;
         qn     = atc->q[n];
 
-        if(qn != 0) 
+        if (qn != 0) 
         {
             idxptr = atc->idx[n];
             norder = n*order;
@@ -1133,22 +1158,10 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
             thy = atc->theta[YY] + norder;
             thz = atc->theta[ZZ] + norder;
             
-            for(ithx=0; (ithx<order); ithx++)                    
-            {                                                    
-                index_x = (i0+ithx)*pme->pmegrid_ny*pme->pmegrid_nz;                         
-                valx    = qn*thx[ithx];                          
-                
-                for(ithy=0; (ithy<order); ithy++)                
-                {                                                
-                    valxy    = valx*thy[ithy];                   
-                    index_xy = index_x+(j0+ithy)*pme->pmegrid_nz;             
-                    
-                    for(ithz=0; (ithz<order); ithz++)            
-                    {                                            
-                        index_xyz        = index_xy+(k0+ithz);     
-                        grid[index_xyz] += valxy*thz[ithz];       
-                    }                                            
-                }                                                
+            switch (order) {
+            case 4:  DO_BSPLINE(4);     break;
+            case 5:  DO_BSPLINE(5);     break;
+            default: DO_BSPLINE(order); break;
             }
         }
     }	
@@ -1358,6 +1371,7 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
     real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
     real    rxx,ryx,ryy,rzx,rzy,rzz;
 	real    *mhx,*mhy,*mhz,*m2,*denom,*tmp1,*m2inv;
+    real    mhxk,mhyk,mhzk,m2k;
     real    corner_fac;
     ivec    complex_order;
     ivec    local_ndata,local_offset,local_size;
@@ -1453,22 +1467,37 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
             }
             kxend = local_offset[XX] + local_ndata[XX];
 			
-            for(kx=kxstart; kx<kxend; kx++)
+            /* Two explicit loops to avoid a conditional inside the loop */
+            for(kx=kxstart; kx<maxkx; kx++)
             {
-                if (kx < maxkx) 
-                {
-                    mx = kx;
-                }
-                else 
-                {
-                    mx = (kx - nx);
-                }
-                mhx[kx]   = mx * rxx;
-                mhy[kx]   = mx * ryx + my * ryy;
-                mhz[kx]   = mx * rzx + my * rzy + mz * rzz;
-                m2[kx]    = mhx[kx]*mhx[kx] + mhy[kx]*mhy[kx] + mhz[kx]*mhz[kx];
-                denom[kx] = m2[kx]*bz*by*pme->bsp_mod[XX][kx];
-                tmp1[kx]  = -factor*m2[kx];
+                mx = kx;
+
+                mhxk      = mx * rxx;
+                mhyk      = mx * ryx + my * ryy;
+                mhzk      = mx * rzx + my * rzy + mz * rzz;
+                m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                mhx[kx]   = mhxk;
+                mhy[kx]   = mhyk;
+                mhz[kx]   = mhzk;
+                m2[kx]    = m2k;
+                denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
+                tmp1[kx]  = -factor*m2k;
+            }
+
+            for(kx=maxkx; kx<kxend; kx++)
+            {
+                mx = (kx - nx);
+
+                mhxk      = mx * rxx;
+                mhyk      = mx * ryx + my * ryy;
+                mhzk      = mx * rzx + my * rzy + mz * rzz;
+                m2k       = mhxk*mhxk + mhyk*mhyk + mhzk*mhzk;
+                mhx[kx]   = mhxk;
+                mhy[kx]   = mhyk;
+                mhz[kx]   = mhzk;
+                m2[kx]    = m2k;
+                denom[kx] = m2k*bz*by*pme->bsp_mod[XX][kx];
+                tmp1[kx]  = -factor*m2k;
             }
 			
             for(kx=kxstart; kx<kxend; kx++)
@@ -1533,13 +1562,40 @@ real solve_pme_yzx(gmx_pme_t pme,t_complex *grid,
 }
 
 
+#define DO_FSPLINE(order)                      \
+for(ithx=0; (ithx<order); ithx++)              \
+{           								   \
+    index_x = (i0+ithx)*pny*pnz;               \
+    tx      = thx[ithx];                       \
+    dx      = dthx[ithx];                      \
+                                               \
+    for(ithy=0; (ithy<order); ithy++)          \
+    {										   \
+        index_xy = index_x+(j0+ithy)*pnz;      \
+        ty       = thy[ithy];                  \
+        dy       = dthy[ithy];                 \
+        fxy1     = fz1 = 0;                    \
+                                               \
+        for(ithz=0; (ithz<order); ithz++)      \
+        {     								   \
+            gval  = grid[index_xy+(k0+ithz)];  \
+            fxy1 += thz[ithz]*gval;            \
+            fz1  += dthz[ithz]*gval;           \
+        }                                      \
+        fx += dx*ty*fxy1;                      \
+        fy += tx*dy*fxy1;                      \
+        fz += tx*ty*fz1;                       \
+    }                                          \
+}
+
+
 void gather_f_bsplines(gmx_pme_t pme,real *grid,
                        bool bClearF,pme_atomcomm_t *atc,real scale)
 {
     /* sum forces for local particles */  
     int     nn,n,ithx,ithy,ithz,i0,j0,k0;
     int     index_x,index_xy;
-    int     nx,ny,nz;
+    int     nx,ny,nz,pnx,pny,pnz;
     int *   idxptr;
     real    tx,ty,dx,dy,qn;
     real    fx,fy,fz,gval;
@@ -1559,6 +1615,9 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
     nx    = pme->nkx;
     ny    = pme->nky;
     nz    = pme->nkz;
+    pnx   = pme->pmegrid_nx;
+    pny   = pme->pmegrid_ny;
+    pnz   = pme->pmegrid_nz;
     
     rxx   = pme->recipbox[XX][XX];
     ryx   = pme->recipbox[YY][XX];
@@ -1598,31 +1657,12 @@ void gather_f_bsplines(gmx_pme_t pme,real *grid,
             dthy = atc->dtheta[YY] + norder;
             dthz = atc->dtheta[ZZ] + norder;
             
-            for(ithx=0; (ithx<order); ithx++)              
-            {           								   
-                index_x = (i0+ithx)*pme->pmegrid_ny*pme->pmegrid_nz;                   
-                tx      = thx[ithx];                       
-                dx      = dthx[ithx];                      
-                
-                for(ithy=0; (ithy<order); ithy++)          
-                {										   
-                    index_xy = index_x+(j0+ithy)*pme->pmegrid_nz;       
-                    ty       = thy[ithy];                  
-                    dy       = dthy[ithy];                 
-                    fxy1     = fz1 = 0;                    
-                    
-                    for(ithz=0; (ithz<order); ithz++)      
-                    {     								   
-                        gval  = grid[index_xy+(k0+ithz)];        
-                        fxy1 += thz[ithz]*gval;                
-                        fz1  += dthz[ithz]*gval;               
-                    }                                      
-                    fx += dx*ty*fxy1;                      
-                    fy += tx*dy*fxy1;                      
-                    fz += tx*ty*fz1;                       
-                }                                          
+            switch (order) {
+            case 4:  DO_FSPLINE(4);     break;
+            case 5:  DO_FSPLINE(5);     break;
+            default: DO_FSPLINE(order); break;
             }
-			
+
             atc->f[n][XX] += -qn*( fx*nx*rxx );
             atc->f[n][YY] += -qn*( fx*nx*ryx + fy*ny*ryy );
             atc->f[n][ZZ] += -qn*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
