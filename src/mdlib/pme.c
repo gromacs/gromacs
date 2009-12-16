@@ -352,15 +352,7 @@ static void pme_calc_pidx(int natoms,matrix box, rvec x[],
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
             s = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
-            si = (int)(s + nslab) - nslab;
-            if (si < 0)
-            {
-                si += nslab;
-            }
-            else if (si >= nslab)
-            {
-                si -= nslab;
-            }
+            si = (int)(s + 2*nslab) % nslab;
             atc->pd[i] = si;
             atc->count[si]++;
         }
@@ -375,15 +367,7 @@ static void pme_calc_pidx(int natoms,matrix box, rvec x[],
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
             s = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
-            si = (int)(s + nslab) - nslab;
-            if (si < 0)
-            {
-                si += nslab;
-            }
-            else if (si >= nslab)
-            {
-                si -= nslab;
-            }
+            si = (int)(s + 2*nslab) % nslab;
             atc->pd[i] = si;
             atc->count[si]++;
         }
