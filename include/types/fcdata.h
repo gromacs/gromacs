@@ -73,7 +73,7 @@ typedef struct {
 typedef struct {
   real   fc;          /* Force constant for the restraints                  */
   real   edt;         /* Multiplication factor for time averaging           */
-  real   edt1;        /* 1 - edt                                            */
+  real   edt_1;        /* 1 - edt                                            */
   real   exp_min_t_tau; /* Factor for slowly switching on the force         */
   int    nr;          /* The number of orientation restraints               */
   int    nex;         /* The number of experiments                          */
