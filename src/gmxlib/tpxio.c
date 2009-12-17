@@ -1974,7 +1974,8 @@ static int do_tpx(int fp,bool bRead,
   
   if (state->ngtc > 0 && file_version >= 28) {
     real *dumv;
-    /*ndo_double(state->nosehoover_xi,state->ngtc,bDum);*/
+    ndo_double(state->nosehoover_xi,state->ngtc,bDum); /* keeping this the same for now, to avoid compatibility issues
+							  Exact continuation is not guaranteed!x */
     /*ndo_double(state->nosehoover_vxi,state->ngtc,bDum);*/
     /*ndo_double(state->therm_integral,state->ngtc,bDum);*/
     snew(dumv,state->ngtc);
