@@ -81,7 +81,7 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      real chargeA[],  real chargeB[],
 		      matrix box,      t_commrec *cr,
 		      int  maxshift0,  int maxshift1,
-		      t_nrnb *nrnb,
+		      t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
 		      real *dvdlambda, int flags);

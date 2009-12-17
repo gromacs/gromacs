@@ -459,7 +459,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                         bSB ? boxs : box,cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
-                                        nrnb,
+                                        nrnb,wcycle,
                                         fr->vir_el_recip,fr->ewaldcoeff,
                                         &Vlr,lambda,&dvdlambda,
                                         pme_flags);

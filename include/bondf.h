@@ -124,7 +124,7 @@ extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 		      const t_pbc *pbc,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
-		      real *cos_phi,real *sign,
+		      real *sign,
 		      int *t1,int *t2,int *t3);
 /* Calculate dihedral-angle. No PBC is taken into account (use mol-shift) */
 

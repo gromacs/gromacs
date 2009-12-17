@@ -1963,16 +1963,16 @@ int gmx_pmeonly(gmx_pme_t pme,
         if (count == 0)
             wallcycle_start(wcycle,ewcRUN);
         
-        wallcycle_start(wcycle,ewcPMEMESH_SEP);
+        wallcycle_start(wcycle,ewcPMEMESH);
         
         dvdlambda = 0;
         clear_mat(vir);
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
-                   cr,maxshift0,maxshift1,nrnb,vir,ewaldcoeff,
+                   cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
                    GMX_PME_DO_ALL);
         
-        cycles = wallcycle_stop(wcycle,ewcPMEMESH_SEP);
+        cycles = wallcycle_stop(wcycle,ewcPMEMESH);
         
         gmx_pme_send_force_vir_ener(pme_pp,
                                     f_pp,vir,energy,dvdlambda,
@@ -1999,7 +1999,7 @@ int gmx_pme_do(gmx_pme_t pme,
                real *chargeA,   real *chargeB,
                matrix box,	t_commrec *cr,
                int  maxshift0,  int maxshift1,
-               t_nrnb *nrnb,    
+               t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
                matrix vir,      real ewaldcoeff,
                real *energy,    real lambda, 
                real *dvdlambda, int flags)
@@ -2066,6 +2066,7 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->q = charge;
             atc->f = f;
         } else {
+            wallcycle_start(wcycle,ewcPME_REDISTXF);
             for(d=pme->ndecompdim-1; d>=0; d--)
             {
                 if (d == pme->ndecompdim-1)
@@ -2099,6 +2100,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 }
             }
             where();
+            wallcycle_stop(wcycle,ewcPME_REDISTXF);
         }
         
         if (debug)
@@ -2109,6 +2111,8 @@ int gmx_pme_do(gmx_pme_t pme,
 
         if (flags & GMX_PME_SPREAD_Q)
         {
+            wallcycle_start(wcycle,ewcPME_SPREADGATHER);
+
             /* Spread the charges on a grid */
             GMX_MPE_LOG(ev_spread_on_grid_start);
             
@@ -2139,6 +2143,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 pr_fftgrid(debug,"qgrid",grid);
 #endif
             where();
+            wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
         }
          
         if (flags & GMX_PME_SOLVE)
@@ -2146,7 +2151,9 @@ int gmx_pme_do(gmx_pme_t pme,
             /* do 3d-fft */ 
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_gmxfft3d_start);
+            wallcycle_start(wcycle,ewcPME_FFT);
             gmxfft3D(grid,GMX_FFT_REAL_TO_COMPLEX,cr);
+            wallcycle_stop(wcycle,ewcPME_FFT);
             GMX_MPE_LOG(ev_gmxfft3d_finish);
             where();
             
@@ -2154,7 +2161,9 @@ int gmx_pme_do(gmx_pme_t pme,
             vol = det(box);
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_solve_pme_start);
+            wallcycle_start(wcycle,ewcPME_SOLVE);
             energy_AB[q]=solve_pme(pme,grid,ewaldcoeff,vol,vir_AB[q],cr);
+            wallcycle_stop(wcycle,ewcPME_SOLVE);
             where();
             GMX_MPE_LOG(ev_solve_pme_finish);
             inc_nrnb(nrnb,eNR_SOLVEPME,nx*local_ny*(nz/2+1));
@@ -2163,21 +2172,11 @@ int gmx_pme_do(gmx_pme_t pme,
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_gmxfft3d_start);
             where();
+            wallcycle_start(wcycle,ewcPME_FFT);
             gmxfft3D(grid,GMX_FFT_COMPLEX_TO_REAL,cr);
+            wallcycle_stop(wcycle,ewcPME_FFT);
             where();
             GMX_MPE_LOG(ev_gmxfft3d_finish);
-            
-            /* distribute local grid to all nodes */
-            if (pme->nnodes > 1) {
-                GMX_BARRIER(cr->mpi_comm_mygroup);
-                gmx_sum_qgrid_dd(pme, &pme->overlap[0],grid,
-                                 GMX_SUM_QGRID_BACKWARD);
-            }
-            where();
-#ifdef DEBUG
-            if (debug)
-                pr_fftgrid(debug,"potential",grid);
-#endif
             
             ntot  = grid->nxyz;  
             npme  = ntot*log((real)ntot)/log(2.0);
@@ -2190,10 +2189,24 @@ int gmx_pme_do(gmx_pme_t pme,
 
         if (flags & GMX_PME_CALC_F)
         {
+            wallcycle_start(wcycle,ewcPME_SPREADGATHER);
+
+            /* distribute local grid to all nodes */
+            if (pme->nnodes > 1) {
+                GMX_BARRIER(cr->mpi_comm_mygroup);
+                gmx_sum_qgrid_dd(pme, &pme->overlap[0],grid,
+                                 GMX_SUM_QGRID_BACKWARD);
+            }
+            where();
+#ifdef DEBUG
+            if (debug)
+                pr_fftgrid(debug,"potential",grid);
+#endif
+            
             /* interpolate forces for our local atoms */
             GMX_BARRIER(cr->mpi_comm_mygroup);
             GMX_MPE_LOG(ev_gather_f_bsplines_start);
-            
+
             where();
             
             /* If we are running without parallelization,
@@ -2209,10 +2222,12 @@ int gmx_pme_do(gmx_pme_t pme,
             
             inc_nrnb(nrnb,eNR_GATHERFBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*pme->atc[0].n);
-        }
+            wallcycle_stop(wcycle,ewcPME_SPREADGATHER);
+       }
     } /* of q-loop */
     
     if ((flags & GMX_PME_CALC_F) && pme->nnodes > 1) {
+        wallcycle_start(wcycle,ewcPME_REDISTXF);
         for(d=0; d<pme->ndecompdim; d++)
         {
             atc = &pme->atc[d];
@@ -2234,6 +2249,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 pmeredist(pme, FALSE, n_d, TRUE, f_d, NULL, atc);
             }
         }
+        wallcycle_stop(wcycle,ewcPME_REDISTXF);
     }
     where();
     

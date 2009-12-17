@@ -1120,6 +1120,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 	sfree(outputfiles);
 	#ifdef GMX_FAHCORE
     /*code for alternate checkpointing scheme.  moved from top of loop over steps */
+      fcRequestCheckPoint();
       if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
       }
@@ -1488,9 +1489,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     " offsets. Can not append. Run mdrun without -append",
                     outputfiles[i].filename);
             }
+#ifdef FAHCORE
+            chksum_file=gmx_fio_open(outputfiles[i].filename,"a");
 
+#else
             chksum_file=gmx_fio_open(outputfiles[i].filename,"r+");
-            
+
             /* lock log file */                
             if (i==0)
             {
@@ -1505,7 +1509,6 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                         "simulation?", outputfiles[i].filename);
                 }
             }
-
             
             /* compute md5 chksum */ 
             if (outputfiles[i].chksum_size != -1)
@@ -1522,6 +1525,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             {
                 gmx_fio_seek(chksum_file,outputfiles[i].offset);
             }
+#endif
             
             if (i==0) /*open log file here - so that lock is never lifted 
                         after chksum is calculated */
@@ -1532,7 +1536,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             {
                 gmx_fio_close(chksum_file);
             }
-            
+#ifndef FAHCORE            
             /* compare md5 chksum */
             if (outputfiles[i].chksum_size != -1 &&
                 memcmp(digest,outputfiles[i].chksum,16)!=0) 
@@ -1549,7 +1553,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 gmx_fatal(FARGS,"Checksum wrong for '%s'.",
                           outputfiles[i].filename);
             }
-        
+#endif        
 
               
             if (i!=0) /*log file is already seeked to correct position */

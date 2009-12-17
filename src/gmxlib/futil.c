@@ -106,15 +106,16 @@ void push_ps(FILE *fp)
 }
 
 #ifdef GMX_FAHCORE
-/* redefine ffclose */
-#define ffclose fah_fclose
+/* don't use pipes!*/
+#define popen fah_fopen
+#define pclose fah_fclose
 #else
 #ifdef ffclose
 #undef ffclose
 #endif
 #endif
 
-
+#ifndef GMX_FAHCORE
 #ifndef HAVE_PIPES
 static FILE *popen(const char *nm,const char *mode)
 {
@@ -130,9 +131,9 @@ static int pclose(FILE *fp)
     return 0;
 }
 #endif
+#endif
 
-
-
+#ifndef SKIP_FFOPS
 int ffclose(FILE *fp)
 {
     t_pstack *ps,*tmp;
@@ -172,6 +173,8 @@ int ffclose(FILE *fp)
 #endif
     return ret;
 }
+
+#endif
 
 #ifdef rewind
 #undef rewind
@@ -365,6 +368,7 @@ bool make_backup(const char * name)
 #endif
 }
 
+#ifndef SKIP_FFOPS
 FILE *ffopen(const char *file,const char *mode)
 {
     FILE *ff=NULL;
@@ -418,7 +422,7 @@ FILE *ffopen(const char *file,const char *mode)
     }
     return ff;
 }
-
+#endif
 
 
 bool search_subdirs(const char *parent, char *libdir)
@@ -481,6 +485,9 @@ bool get_libdir(char *libdir)
     char *dir,*ptr,*s,*pdum;
     bool found=FALSE;
     int i;
+
+    if (Program() != NULL)
+    {
 
     /* First - detect binary name */
     strncpy(bin_name,Program(),512);
@@ -559,6 +566,7 @@ bool get_libdir(char *libdir)
             *ptr='\0';
             found=search_subdirs(full_path,libdir);
         }
+    }
     }
     /* End of smart searching. If we didn't find it in our parent tree,
      * or if the program name wasn't set, at least try some standard 

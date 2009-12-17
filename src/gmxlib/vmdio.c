@@ -222,7 +222,8 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     char pathname[GMX_PATH_MAX],filename[GMX_PATH_MAX];
     const char *pathenv;
     const char *err;
-    uint i,ret=0;
+    int i;
+    int ret=0;
 #if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
     glob_t globbuf;
     const char *defpathenv = "/usr/local/lib/vmd/plugins/*/molfile";
@@ -278,7 +279,7 @@ int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
     do
     {
         sprintf(filename,"%s\\%s",pathenv,ffd.cFileName);
-        ret|=load_sharedlibrary_plugins(filename,&vmdplugin);
+        ret|=load_sharedlibrary_plugins(filename,vmdplugin);
     }
     while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL );
     FindClose(hFind);

@@ -78,7 +78,6 @@ typedef struct tmpi_comm_ *tMPI_Comm;
   The group structure. Contains a list of threads. */
 typedef struct tmpi_group_ *tMPI_Group;
 
-
 /** tMPI Request
   
   Request structure for holding data about non-blocking transfers. */
@@ -611,7 +610,7 @@ int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 
 int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods, 
-                 int *coords);
+                  int *coords);
 
 
 /** Get rank that a specific set of process coordinates has in 
@@ -646,7 +645,7 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods, 
-                         int *newrank);
+                  int *newrank);
 
 /** Create a comm with a Cartesian topology.
 
@@ -660,7 +659,21 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
    
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods, 
-                    int reorder, tMPI_Comm *comm_cart);
+                     int reorder, tMPI_Comm *comm_cart);
+
+/** Create a comms that are sub-spaces of the Cartesian topology communicator.
+    Works like a MPI_Comm_split() for the Cartesian dimensions specified 
+    as false in remain_dims.
+
+    \param[in]  comm        The originating comm with Cartesian topology.
+    \param[in]  remain_dims An Boolean array that decides whether a specific
+                            dimensionality should remain in newcomm (if true), 
+                            or should be split up (if false).
+    \param[out] newcomm     The new split communicator
+   
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm);
+
 /*! \} */
 
 
