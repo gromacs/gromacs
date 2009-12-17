@@ -157,7 +157,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bPres         = flags & CGLO_PRESSURE; 
   bConstrVir    = flags & CGLO_CONSTRAINT;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
-  bEkinAveVel = (inputrec->eI==eiVV || (inputrec->eI==eiVV2 && IR_NPT_TROTTER(inputrec) && bPres));
+  bEkinAveVel = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
 
   snew(copyenerd,F_NRE);
   rb   = gs->rb;

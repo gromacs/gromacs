@@ -1670,7 +1670,7 @@ void update_coords(FILE         *fplog,
                      upd->sd->bd_rf,upd->sd->gaussrand);
         break;
     case (eiVV):
-    case (eiVV2):
+    case (eiVVAK):
         alpha = 1.0 + DIM/((double)inputrec->opts.nrdf[0]); /* assuming barostat coupled to group 0. */
         switch (UpdatePart) {
         case (etrtVELOCITY):

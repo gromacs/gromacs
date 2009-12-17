@@ -213,7 +213,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
-    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVV2 && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);
+    bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir) && bPres) || bReadEkin);
 
     /* in initalization, it sums the shake virial in vv, and to 
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old for other reasons */
@@ -304,7 +304,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     {
         /* Sum the kinetic energies of the groups & calc temp */
         /* compute full step kinetic energies if vv, or if vv2 and we are computing the pressure with IR_NPT_TROTTER */
-        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv2), leap with AveEkin (md).  
+        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).  
            Leap with AveVel is also an option for the future but not supported now.  
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy. 
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
@@ -1743,7 +1743,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
-    if (ir->eI == eiVV2) {
+    if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
         /* we do the same call as above, but turn the pressure off -- internally, this 
            is recognized as a velocity verlet half-step kinetic energy calculation.
@@ -2323,7 +2323,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* if VV, compute the pressure and constraints */
                     /* if VV2, the pressure and constraints only if using pressure control.*/
                     bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); 
-                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVV2 && IR_NPT_TROTTER(ir)));
+                    bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
@@ -2576,7 +2576,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* above, initialize just copies ekinh into ekin, it doesn't copy 
                    position (for VV), and entire integrator for MD */
                 
-                if (ir->eI==eiVV2) 
+                if (ir->eI==eiVVAK) 
                 {
                     copy_rvecn(state->x,cbuf,0,state->natoms);
                 }
@@ -2589,7 +2589,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                    cr,nrnb,wcycle,upd,constr,
                                    bInitStep,FALSE,bCalcPres,state->veta);  
                 
-                if (ir->eI==eiVV2) 
+                if (ir->eI==eiVVAK) 
                 {
                     /* erase F_EKIN and F_TEMP here? */
                     /* just compute the kinetic energy at the half step to perform a trotter step */
