@@ -93,7 +93,10 @@ read_stdin_line(gmx_sel_lexer_t *state)
         totlen += len;
         if (len >= 2 && ptr[len - 1] == '\n' && ptr[len - 2] == '\\')
         {
-            fprintf(stderr, "... ");
+            if (state->bInteractive)
+            {
+                fprintf(stderr, "... ");
+            }
         }
         else if (len >= 1 && ptr[len - 1] == '\n')
         {
@@ -101,7 +104,10 @@ read_stdin_line(gmx_sel_lexer_t *state)
         }
         else if (len < max_len - 1)
         {
-            fprintf(stderr, "\n");
+            if (state->bInteractive)
+            {
+                fprintf(stderr, "\n");
+            }
             break;
         }
         ptr     += len;
@@ -128,7 +134,7 @@ _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
     int token;
 
-    if (state->bInteractive && !state->inputstr)
+    if (!state->bBuffer && !state->inputstr)
     {
         state->nalloc_input = 1024;
         snew(state->inputstr, state->nalloc_input);
@@ -136,7 +142,7 @@ _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
         _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
     }
     token = _gmx_sel_yylex(yylval, yyscanner);
-    while (state->bInteractive && token == 0 && read_stdin_line(state))
+    while (state->inputstr && token == 0 && read_stdin_line(state))
     {
         _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
         token = _gmx_sel_yylex(yylval, yyscanner);
