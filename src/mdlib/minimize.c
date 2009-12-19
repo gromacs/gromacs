@@ -615,7 +615,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   bool bNS;
   int  nabnsb;
   tensor force_vir,shake_vir,ekin;
-  real dvdl,prescorr,enercorr,dvdlcorr;;
+  real dvdl,prescorr,enercorr,dvdlcorr;
   real terminate=0;
   
   /* Set the time to the initial time, the time does not change during EM */
@@ -2494,7 +2494,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   real   *mass_cavity=NULL,mass_tot;
   int    nbin;
   double invbinw,*bin,refvolshift,logV,bUlogV;
-  real dvdl,prescorr,enercorr,dvdlcorr;;
+  real dvdl,prescorr,enercorr,dvdlcorr;
   const char *tpid_leg[2]={"direct","reweighted"};
 
   /* Since numerical problems can lead to extreme negative energies

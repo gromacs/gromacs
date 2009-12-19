@@ -60,20 +60,30 @@ extern "C" {
 #ifndef M_2PI
 #define	M_2PI		6.28318530717958647692
 #endif
-
+    
 #ifndef M_SQRT2
 #define M_SQRT2 sqrt(2.0)
 #endif
-
+    
 /* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
+/* for n=1, w0 = 1 */
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
 /* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
- 
-static const double sy3_const[] = {0.828981543588751,-0.657963087177502,0.828981543588751};
-static const double sy5_const[] = {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065};
+    
+#define MAX_SUZUKI_YOSHIDA_NUM 5
+#define SUZUKI_YOSHIDA_NUM  5
+    
+static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
+    {},
+    {1},
+    {},
+    {0.828981543588751,-0.657963087177502,0.828981543588751},
+    {},
+    {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
+};
 
 extern	int		gmx_nint(real a);
-extern  real            sign(real x,real y);
+extern  real    sign(real x,real y);
 
 extern	int		gmx_nint(real a);
 extern  real    sign(real x,real y);

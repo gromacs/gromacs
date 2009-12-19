@@ -247,6 +247,7 @@ extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);
 /* Correct ekin for vcm */
 
+
 #ifdef __cplusplus
 }
 #endif

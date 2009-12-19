@@ -999,11 +999,62 @@ static void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
     }
 }
 
-static bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate, bool *bIterate, real fom, real *newf, int n) 
+/* Definitions for convergence of iterated constraints.  Could be optimized . . .  */
+
+/* data type */
+struct gmx_iterate 
 {
+   real f,fprev,x,xprev;  
+   int iter_i;
+   bool bIterate;
+   bool bFirstIterate;
+   real *allrelerr;    
+};
+  
+/* abstract data type for iteration data */
+typedef struct gmx_iterate * 
+gmx_iterate_t;
+  
+#ifdef GMX_DOUBLE
+#define CONVERGEITER  0.000000001
+#else
+#define CONVERGEITER  0.0001
+#endif
+#define MAXITERCONST       200
+  
+  /* used to escape out of cyclic traps because of limited numberical precision  */
+#define CYCLEMAX            20
+#define FALLBACK          1000 
 
-
+gmx_iterate_t gmx_iterate_init(bool bIterate) {
     
+    gmx_iterate_t iterate;
+    int i,maxcycle;
+    
+    maxcycle = MAXITERCONST+2;
+    if((iterate=(struct gmx_iterate *)malloc(sizeof(struct gmx_iterate)))==NULL)
+    {
+        return NULL;
+    }
+    iterate->iter_i = 0;
+    iterate->bIterate = bIterate;
+    iterate->bFirstIterate = TRUE; 
+    snew(iterate->allrelerr,maxcycle);
+    for (i=0;i<maxcycle;i++) 
+    {
+        iterate->allrelerr[i] = 0;
+    }
+    return iterate;
+}
+
+void gmx_iterate_destroy(gmx_iterate_t iterate) 
+{
+    sfree(iterate->allrelerr);
+    sfree(iterate);
+}
+
+static bool done_iterating(const t_commrec *cr,FILE *fplog, gmx_iterate_t iterate, real fom, real *newf) 
+{    
     /* monitor convergence, and use a secant search to propose new
        values.  
                                                                   x_{i} - x_{i-1}
@@ -1026,46 +1077,32 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate,
        0.02, which is smaller that would ever be necessary in
        practice. Generally, 3-5 iterations will be sufficient */
 
-/* Definitions for convergence.  Could be optimized . . .  */
-#ifdef GMX_DOUBLE
-#define CONVERGEITER  0.000000001
-#else
-#define CONVERGEITER  0.0001
-#endif
-#define MAXITERCONST       200
-
-/* used to escape out of cyclic traps because of limited numberical precision  */
-#define CYCLEMAX            20
-#define FALLBACK          1000 
-
-    static real f,fprev,x,xprev;  
-    static int iter_i;
-    static real allrelerr[MAXITERCONST+2];
-    double relerr,xmin;
+    real relerr,xmin;
     char buf[256];
     int i;
     bool incycle;
-
-    if (*bFirstIterate) 
+    
+    if (iterate->bFirstIterate) 
     {
-        *bFirstIterate = FALSE;
-        iter_i = 0;
-        x = fom;
-        f = fom-x;
+        iterate->x = fom;
+        iterate->f = fom-iterate->x;
+        iterate->xprev = 0;
+        iterate->fprev = 0;
         *newf = fom;
+        iterate->bFirstIterate = FALSE;
     } 
     else 
     {
-        f = fom-x; /* we want to zero this difference */
-        if ((iter_i > 1) && (iter_i < MAXITERCONST)) 
+        iterate->f = fom-iterate->x; /* we want to zero this difference */
+        if ((iterate->iter_i > 1) && (iterate->iter_i < MAXITERCONST)) 
         {
-            if (f==fprev) 
+            if (iterate->f==iterate->fprev) 
             {
-                *newf = f;
+                *newf = iterate->f;
             } 
             else 
             {
-                *newf = x - (x-xprev)*(f)/(f-fprev); 
+                *newf = iterate->x - (iterate->x-iterate->xprev)*(iterate->f)/(iterate->f-iterate->fprev); 
             }
         } 
         else 
@@ -1092,31 +1129,33 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate,
        relerr = (fabs((*newf-xmin) / *newf));
     */
     
-    relerr = (fabs((f-fprev)/fom));
+    relerr = (fabs((iterate->f-iterate->fprev)/fom));
     
-    allrelerr[iter_i] = relerr;
-
-    if (iter_i > 0) 
+    iterate->allrelerr[iterate->iter_i] = relerr;
+    
+    if (iterate->iter_i > 0) 
     {
         if (debug) 
         {
-            fprintf(debug,"Iterating NPT constraints #%i: %6i %20.12f%14.6g%20.12f\n",n,iter_i,fom,relerr,*newf);
+            fprintf(debug,"Iterating NPT constraints: %6i %20.12f%14.6g%20.12f\n",
+                    iterate->iter_i,fom,relerr,*newf);
         }
         
         if ((relerr < CONVERGEITER) || (fom==0))
         {
-            *bIterate = FALSE;
+            iterate->bIterate = FALSE;
             if (debug) 
             {
-                fprintf(debug,"Iterating NPT constraints #%i: CONVERGED\n",n);
+                fprintf(debug,"Iterating NPT constraints: CONVERGED\n");
             }
             return TRUE;
         }
-        if (iter_i > MAXITERCONST) 
+        if (iterate->iter_i > MAXITERCONST) 
         {
+            /* test to see if we're stuck in some numerical-precision induced loop */
             incycle = FALSE;
             for (i=0;i<CYCLEMAX;i++) {
-                if (allrelerr[(MAXITERCONST-2*CYCLEMAX)-i] == allrelerr[iter_i-1]) {
+                if (iterate->allrelerr[(MAXITERCONST-2*CYCLEMAX)-i] == iterate->allrelerr[iterate->iter_i-1]) {
                     incycle = TRUE;
                     if (relerr > CONVERGEITER*FALLBACK) {incycle = FALSE; break;}
                 }
@@ -1135,10 +1174,10 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, bool *bFirstIterate,
         }
     }
     
-    xprev = x;
-    x = *newf;
-    fprev = f;
-    iter_i++;
+    iterate->xprev = iterate->x;
+    iterate->x = *newf;
+    iterate->fprev = iterate->f;
+    iterate->iter_i++;
     
     return FALSE;
 }
@@ -1481,6 +1520,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int         **trotter_seq; 
     char        sbuf[22],sbuf2[22];
     bool        bHandledSignal=FALSE;
+    gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
     int chkpt_ret;
@@ -1781,8 +1821,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         copy_mat(state->box,boxcopy);
     } 
     
-    /* need to make an initial call to get the Trotter variables set. */
-    trotter_seq = init_trotter(ir,state,&MassQ,bTrotter);
+    /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
+       temperature control */
+    trotter_seq = init_npt_vars(ir,state,&MassQ,bTrotter);
     
     if (MASTER(cr))
     {
@@ -2260,28 +2301,27 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                           f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
             
-            bIterate = bIterations && (!bInitStep);
-            bFirstIterate = TRUE;
+            iterate=gmx_iterate_init(bIterations && !bInitStep);
             /* for iterations, we save these vectors, as we will be self-consistently iterating
                the calculations */
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
-            if (bIterate) { 
+            if (iterate->bIterate) { 
                 copy_coupling_state(state,bufstate,ekind,ekind_save);
             }
             
-            while (bIterate || bFirstIterate) 
+            while (iterate->bIterate || iterate->bFirstIterate) 
             {
-                if (bIterate) 
+                if (iterate->bIterate) 
                 {
                     copy_coupling_state(bufstate,state,ekind_save,ekind);
                 }
-                if (bIterate) 
+                if (iterate->bIterate) 
                 {
-                    if (bFirstIterate && bTrotter) 
+                    if (iterate->bFirstIterate && bTrotter) 
                     {
-                        /* The first time, we need a decent first estimate
+                        /* The first time through, we need a decent first estimate
                            of veta(t+dt) to compute the constraints.  Do
                            this by computing the box volume part of the
                            trotter integration at this time. Nothing else
@@ -2333,7 +2373,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     | (bTemp ? CGLO_TEMPERATURE:0) 
                                     | (bPres ? CGLO_PRESSURE : 0) 
                                     | (bPres ? CGLO_CONSTRAINT : 0)
-                                    | (bIterate ? CGLO_ITERATE : 0)  
+                                    | (iterate->bIterate ? CGLO_ITERATE : 0)  
                                     | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                     | CGLO_SCALEEKIN 
                         );
@@ -2352,8 +2392,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
                 
-                if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,state->veta,&vetanew,0)) break;
+                if (done_iterating(cr,fplog,iterate,state->veta,&vetanew)) break;
             }
+            gmx_iterate_destroy(iterate);
+
             if (bTrotter && !bInitStep) {
                 copy_mat(shake_vir,state->vir_prev);
                 if (IR_NVT_TROTTER(ir) && ir->eI==eiVV) {
@@ -2511,18 +2553,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bGStat    = TRUE;
         }
     
-        bIterate = bIterations;
-        bFirstIterate = TRUE;        
+        iterate=gmx_iterate_init(bIterations);
     
         /* for iterations, we save these vectors, as we will be redoing the calculations */
-        if (bIterate) 
+        if (iterate->bIterate) 
         {
             copy_coupling_state(state,bufstate,ekind,ekind_save);
         }
-        while (bIterate || bFirstIterate) 
+        while (iterate->bIterate || iterate->bFirstIterate) 
         {
             /* We now restore these vectors to redo the calculation with improved extended variables */    
-            if (bIterate) 
+            if (iterate->bIterate) 
             { 
                 copy_coupling_state(bufstate,state,ekind_save,ekind);
             }
@@ -2547,11 +2588,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if (bTrotter) 
                 {
                 
-                    if (bFirstIterate) 
+                    if (iterate->bFirstIterate) 
                     {
                         tracevir = trace(shake_vir);
                     }
-                    if (bIterate) 
+                    if (iterate->bIterate) 
                     {
                         /* we use a new value of scalevir to converge the iterations faster */
                         scalevir = tracevir/trace(shake_vir);
@@ -2664,15 +2705,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0 ) 
-                            | (bIterate ? CGLO_ITERATE : 0) 
+                            | (iterate->bIterate ? CGLO_ITERATE : 0) 
                             | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                 );            
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
         
-            if (done_iterating(cr,fplog,&bFirstIterate,&bIterate,trace(shake_vir),&tracevir,1)) break;
+            if (done_iterating(cr,fplog,iterate,trace(shake_vir),&tracevir)) break;
         }
-    
+        gmx_iterate_destroy(iterate);
+
         update_box(fplog,step,ir,mdatoms,state,graph,f,
                    ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
         

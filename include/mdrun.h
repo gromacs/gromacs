@@ -103,7 +103,7 @@ extern "C" {
 #define CGLO_READEKIN       (1<<12)
 /* we need to reset the ekin rescaling factor here */
 #define CGLO_SCALEEKIN      (1<<13)
-
+  
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
@@ -222,10 +222,10 @@ extern void runtime_upd_proc(gmx_runtime_t *runtime);
 /* The processor time should be updated every once in a while,
  * since on 32-bit manchines it loops after 72 minutes.
  */
-
+  
 extern void print_date_and_time(FILE *log,int pid,const char *title,
 				const gmx_runtime_t *runtime);
-
+  
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
@@ -321,7 +321,7 @@ int mdrunner_threads(int nthreads,
    way to start a simulation (even if nthreads=1 and no threads are started) */
 
 
-extern void init_md(FILE *fplog,
+  extern void init_md(FILE *fplog,
 		    t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 
                     double *t,double *t0,
 		    real *lambda,double *lam0,
@@ -335,10 +335,10 @@ extern void init_md(FILE *fplog,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags);
-/* Routine in sim_util.c */
+  /* Routine in sim_util.c */
 
 #ifdef __cplusplus
 }
 #endif
-     
+
 #endif	/* _mdrun_h */

@@ -1151,18 +1151,15 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
   /* first, set average if the variables have changes */
   
   if (top_global)
+  {
       set_avcsixtwelve(fplog,fr,top_global);
-  
+      calc_enervirdiff(fplog,ir->eDispCorr,fr);  
+  }
   if (ir->eDispCorr != edispcNO) {
       bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                    ir->eDispCorr == edispcAllEnerPres);
       bCorrPres = (ir->eDispCorr == edispcEnerPres ||
                    ir->eDispCorr == edispcAllEnerPres);
-      
-      if (bFirst) 
-      {
-          calc_enervirdiff(fplog,ir->eDispCorr,fr);
-      }
 
       invvol = 1/det(box);
       if (fr->n_tpi) 

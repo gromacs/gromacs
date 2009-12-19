@@ -118,7 +118,7 @@ void store_rvec(rvec *from, rvec *to, int n) {
 }
 
 static void do_update_md(int start,int nrend,double dt,
-                         t_grp_tcstat *tcstat,t_grp_acc *gstat,real nh_vxi[],
+                         t_grp_tcstat *tcstat,t_grp_acc *gstat,double nh_vxi[],
                          rvec accel[],ivec nFreeze[],real invmass[],
                          unsigned short ptype[],unsigned short cFREEZE[],
                          unsigned short cACC[],unsigned short cTC[],
@@ -340,7 +340,7 @@ static void do_update_vv_pos(int start,int nrend,double dt,
 }/* do_update_vv_pos */
 
 static void do_update_visc(int start,int nrend,double dt,
-                           t_grp_tcstat *tcstat,real invmass[],real nh_vxi[],
+                           t_grp_tcstat *tcstat,real invmass[],double nh_vxi[],
                            unsigned short ptype[],unsigned short cTC[],
                            rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
@@ -1433,17 +1433,9 @@ void update_box(FILE         *fplog,
 {
     bool             bExtended,bTrotter,bLastStep,bLog=FALSE,bEner=FALSE;
     double           dt;
-    real             dt_1,vol0;
+    real             dt_1;
     int              start,homenr,nrend,i,n,m,g;
     tensor           vir_con;
-    static bool      bFirst=TRUE;
-    
-    if (bFirst) 
-    {
-        /* for now, need to choose a fixed volume, since compressibility is input */
-        vol0 = det(state->box);
-        bFirst = FALSE;
-    }
     
     start  = md->start;
     homenr = md->homenr;
@@ -1497,7 +1489,7 @@ void update_box(FILE         *fplog,
             msmul(state->box,exp(state->veta*dt),state->box);
             
             /* Relate veta to boxv.  veta = d(eta)/dT = (1/DIM)*1/V dV/dT.
-               If we assume isotropic scaling, and box length scaling
+o               If we assume isotropic scaling, and box length scaling
                factor L, then V = L^DIM (det(M)).  So dV/dt = DIM
                L^(DIM-1) dL/dt det(M), and veta = (1/L) dL/dt.  The
                determinant of B is L^DIM det(M), and the determinant
