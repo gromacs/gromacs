@@ -195,7 +195,7 @@ extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t 
 			   t_state *state, tensor vir, t_mdatoms *md, 
 			   t_extmass *MassQ, int *trotter_seq);
 
-extern int **init_trotter(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
+extern int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
 
 
 extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ);

@@ -1171,7 +1171,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
       else 
       {
           dens = top_global->natoms*invvol;
-          ninter = 0.5*natoms;
+          ninter = 0.5*top_global->natoms;
       }
 
     if (ir->efep == efepNO) 
