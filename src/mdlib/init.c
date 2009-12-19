@@ -74,7 +74,10 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
    */
   state->flags = 0;
   if (ir->efep != efepNO)
-    state->flags |= (1<<estLAMBDA);
+    {
+      state->flags |= (1<<estLAMBDA);
+      state->flags |= (1<<estFEPSTATE);
+    }
   state->flags |= (1<<estX);
   if (state->x == NULL)
     snew(state->x,state->nalloc);
@@ -137,7 +140,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
 {
   read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
   set_state_entries(state,inputrec,1);
-
+  
   if (fplog)
     pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
 }

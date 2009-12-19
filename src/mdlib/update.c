@@ -813,7 +813,7 @@ static void combine_forces(int nstlist,
          * Constrain only the additional LR part of the force.
          */
         constrain(NULL,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
-                  state->x,f_lr,f_lr,state->box,state->lambda,NULL,
+                  state->x,f_lr,f_lr,state->box,state->lambda[efptBONDED],NULL,
                   NULL,NULL,nrnb,econqForce);
     }
     
@@ -832,7 +832,7 @@ static void combine_forces(int nstlist,
 
 void update(FILE         *fplog,
             gmx_large_int_t   step,
-            real         *dvdlambda,    /* FEP stuff */
+            real         *dvdl,    /* FEP stuff */
             t_inputrec   *inputrec,     /* input record and box stuff	*/
             t_mdatoms    *md,
             t_state      *state,
@@ -1035,7 +1035,7 @@ void update(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda,dvdlambda,
+                      state->box,state->lambda[efptBONDED],&(dvdl[efptBONDED]),
                       state->v,bCalcVir ? &vir_con : NULL,nrnb,econqCoord);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
@@ -1088,7 +1088,9 @@ void update(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda,dvdlambda,
+                      state->box,
+                      state->lambda[efptBONDED],
+                      &(dvdl[efptBONDED]),
                       NULL,NULL,nrnb,econqCoord);
             wallcycle_stop(wcycle,ewcCONSTR);
         }
@@ -1116,7 +1118,7 @@ void update(FILE         *fplog,
   where();
 
   update_ekindata(start,homenr,ekind,&(inputrec->opts),state->v,md,
-		  state->lambda,bNEMD);
+		  state->lambda[efptMASS],bNEMD);
 
   if (bCouple && inputrec->epc != epcNO) {
     if (inputrec->epc == epcBERENDSEN) {

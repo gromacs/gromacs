@@ -123,9 +123,13 @@ enum {
   F_TEMP,
   F_PDISPCORR,
   F_PRES,
-  F_DVDL,
+  F_DVDL_REMAIN,
   F_DKDL,
-  F_DHDL_CON,
+  F_DVDL_COUL,
+  F_DVDL_VDW,
+  F_DVDL_BONDED,
+  F_DVDL_RESTRAINT,
+  /*F_DHDL_CON,*/
   F_NRE		/* This number is for the total number of energies	*/
 };
   

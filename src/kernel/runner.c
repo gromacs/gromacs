@@ -265,24 +265,32 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     thanx(stderr);
   }
 }
-
+#if 0
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
-	     real *lambda,real *lam0,real *SAfactor,
+	     real *lambda,int *fep_state,real *lam0,real *SAfactor,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,const t_filenm fnm[],char **traj,char **xtc_traj,
              ener_file_t *fp_ene, t_mdebin **mdebin,t_groups *grps,rvec vcm,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
 {
+  int i;
   bool bBHAM,b14,bLR,bLJLR;
   
   /* Initial values */
   *t = *t0       = ir->init_t;
-  if (ir->bPert) {
-    *lambda = *lam0 = ir->init_lambda;
-  }
-  else {
-    *lambda = *lam0   = 0.0;
-  } 
+
+  for (i=0;i<efptNR;i++) 
+    {
+      if (ir->bPert) 
+	{
+	  fep_state = ir->fepvals->init_fep_state;
+	  /* overwrite lambda state with init_lambda for now for backwards compatibility */
+	  if (ir->fepvals->init_lambda!=0) 
+	    {
+	      lambda[i] = lam0[i] = ir->feptypes->init_lambda;
+
+    }
+  
   if (ir->bSimAnn) {
     *SAfactor = 1.0 - *t0/ir->zero_temp_time;
     if (*SAfactor < 0) 
@@ -317,10 +325,11 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_mat(shake_vir);
   
   /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,*lambda,TRUE);
+  init_mdatoms(mdatoms,lambda[efptMASS],TRUE);
   
   where();
 }
+#endif
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])

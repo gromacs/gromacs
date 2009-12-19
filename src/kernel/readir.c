@@ -60,6 +60,7 @@
 
 #define MAXPTR 254
 #define NOGID  255
+#define MAXLAMBDAS 1024
 
 /* Resource parameters 
  * Do not change any of these until you read the instruction
@@ -73,7 +74,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
-static char foreign_lambda[STRLEN];
+static char fep_lambda[efptNR][STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
@@ -86,10 +87,14 @@ static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
 enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
 
 
-void init_ir(t_inputrec *ir, t_gromppopts *opts)
+void init_opts(t_gromppopts *opts) {
+    snew(opts->include,STRLEN); 
+    snew(opts->define,STRLEN);
+}
+
+void init_ir(t_inputrec *ir)
 {
-  snew(opts->include,STRLEN); 
-  snew(opts->define,STRLEN);
+  snew(ir->fepvals,1);
 }
 
 static void _low_check(bool b,char *s,int *n)
@@ -125,8 +130,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
    */
 #define CHECK(b) _low_check(b,err_buf,nerror)
   char err_buf[256];
+  int i,j;
   int  ns_type=0;
   real dt_coupl=0;
+  t_lambda *fep;
 
   set_warning_line(mdparin,-1);
 
@@ -215,6 +222,47 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   CHECK(((ir->shake_tol <= 0.0) && (opts->nshake>0) && 
 	 (ir->eConstrAlg == econtSHAKE)));
      
+  /* verify FEP options */
+
+  if (ir->efep != efepNO) {
+    fep = ir->fepvals;
+    sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
+	    fep->sc_power);
+    CHECK(fep->sc_alpha!=0 && fep->sc_power!=1 && fep->sc_power!=2);
+
+    /* check validity of options */
+    if (fep->n_lambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) 
+      {
+	warning_note("For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
+      }
+    
+    sprintf(err_buf,"Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero",fep->delta_lambda);    
+    CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state !=0) ||  (fep->init_lambda !=0))); 
+    
+    sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
+    CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM));
+    
+    /* check validty of lambda inputs */
+    for (i=0;i<fep->n_lambda;i++) 
+      {
+	for (j=0;j<efptNR;j++)
+	  {
+	    sprintf(err_buf,"fep_lambda[%d] for %s must be between 0 and 1",i);
+	    CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
+	  }
+      }
+    
+    if (fep->sc_alpha>0) {
+      for (i=0;i<fep->n_lambda;i++) 
+	{
+	  sprintf(err_buf,"For state %d, vdw-lambda is changing (%f) while coul-lambda is changing (%f): with softcore vdw, this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],fep->all_lambda[efptCOUL][i]);
+	  CHECK((fep->sc_alpha>0) && (((fep->all_lambda[efptCOUL][i] > 0.0) && (fep->all_lambda[efptCOUL][i] < 1.0)) &&
+				      ((fep->all_lambda[efptVDW][i] > 0.0) && (fep->all_lambda[efptVDW][i] < 1.0))));
+	}
+    }
+    /* other FEP checks that might need to be added . . . */
+  }
+  
   /* PBC/WALLS */
   sprintf(err_buf,"walls only work with pbc=%s",epbc_names[epbcXY]);
   CHECK(ir->nwall && ir->ePBC!=epbcXY);
@@ -283,10 +331,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (ir->eI == eiMD && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
     warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
-  
-  sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
-  CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
-	&& (ir->efep!=efepNO));
   
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
@@ -485,12 +529,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning("Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
   }
 
-  /* FREE ENERGY */
-  if (ir->efep != efepNO) {
-    sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
-	    ir->sc_power);
-    CHECK(ir->sc_alpha!=0 && ir->sc_power!=1 && ir->sc_power!=2);
-  }
 
   /* ENERGY CONSERVATION */
   if (ir->eI == eiMD && ir->etc == etcNO) {
@@ -562,6 +600,91 @@ static void parse_n_double(char *str,int *n,double **r)
   for(i=0; i<*n; i++) {
     (*r)[i] = strtod(ptr[i],NULL);
   }
+}
+
+
+static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
+
+  int i,j,max_n_lambda,nfep[efptNR];
+  t_lambda *fep = ir->fepvals;
+  real **count_fep_lambdas;
+  
+  snew(count_fep_lambdas,efptNR);
+
+  /* FEP input processing */
+  /* first, identify the number of lambda values for each type.  All that are nonzero must have the same number */
+  
+  fep->n_lambda = -1;
+  for (i=0;i<efptNR;i++) 
+    {
+      parse_n_double(fep_lambda[i],&(nfep[i]),&(count_fep_lambdas[i]));
+    }
+
+  /* now, determine the number.  All must be zero, or equal. */
+  max_n_lambda = nfep[0];
+  ir->fepvals->separate_dvdl[0] = TRUE;
+  for (i=1;i<efptNR;i++) 
+    {
+      if ((nfep[i] != 0) && (nfep[i] != nfep[0])) 
+	{
+	  gmx_fatal(FARGS,"Number of lambdas (%d) for FEP type %s not equal to number of other types (%d)",
+		    nfep[i],efpt_names[i],nfep[0]);	
+	}
+      if (nfep[i] > max_n_lambda) 
+	{
+	  max_n_lambda = nfep[i];
+	}
+      if (nfep[i] == 0) 
+	{
+	  ir->fepvals->separate_dvdl[i] = FALSE;
+	} 
+      else 
+	{
+	  ir->fepvals->separate_dvdl[i] = TRUE;
+	}
+    }
+  
+  /* the number of lambdas is the number we've read in, which is either zero or the same for all */
+  fep->n_lambda = max_n_lambda;  
+  
+  /* now allocate the space for all of the lambdas, and transfer the data */
+  snew(fep->all_lambda,efptNR);
+  for (i=0;i<efptNR;i++) 
+    {
+      snew(fep->all_lambda[i],fep->n_lambda);
+      if (nfep[i] > 0)  /* if it's zero, then the count_fep_lambda arrays are zero */
+	{
+	  for (j=0;j<fep->n_lambda;j++) 
+	    {
+	      fep->all_lambda[i][j] = count_fep_lambdas[i][j];
+	    }
+	  sfree(count_fep_lambdas[i]);
+	}
+    }
+  sfree(count_fep_lambdas);
+  
+  /* "fep-vals" is either zero or the full number. If zero, we'll need to define fep-lambda for internal
+     bookkeeping */
+
+  if (nfep[efptFEP] == 0) 
+    {
+      for (i=0;i<=fep->n_lambda;i++) 
+	{
+	  fep->all_lambda[efptFEP][i] = (real)i/fep->n_lambda;
+	}
+    }  
+
+  /* now fill in the others with the efptFEP if they are not explicitly specified. */
+  for (i=0;i<efptNR;i++) 
+    {
+      if ((nfep[i] == 0) && (i!=efptFEP)) 
+	{
+	  for (j=0;j<fep->n_lambda;j++) 
+	    {
+	      fep->all_lambda[i][j] = fep->all_lambda[efptFEP][j];
+	    }
+	}
+    }
 }
 
 static void do_wall_params(t_inputrec *ir,
@@ -926,12 +1049,18 @@ void get_ir(const char *mdparin,const char *mdparout,
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
   EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
-  RTYPE ("init-lambda",	ir->init_lambda,0.0);
-  RTYPE ("delta-lambda",ir->delta_lambda,0.0);
-  STYPE ("foreign_lambda", foreign_lambda, NULL);
-  RTYPE ("sc-alpha",ir->sc_alpha,0.0);
-  ITYPE ("sc-power",ir->sc_power,0);
-  RTYPE ("sc-sigma",ir->sc_sigma,0.3);
+  RTYPE ("init-lambda", ir->fepvals->init_lambda,-1); /* start with -1 so we can recognize if it was not entered */
+  ITYPE ("init-fep-state", ir->fepvals->init_fep_state,0);
+  RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
+  STYPE ("fep-lambda", fep_lambda[efptFEP], NULL);
+  STYPE ("mass-lambda", fep_lambda[efptMASS], NULL);
+  STYPE ("coul-lambda", fep_lambda[efptCOUL], NULL);
+  STYPE ("vdw-lambda", fep_lambda[efptVDW], NULL);
+  STYPE ("bonded-lambda", fep_lambda[efptBONDED], NULL);
+  STYPE ("restraint-lambda", fep_lambda[efptRESTRAINT], NULL);
+  RTYPE ("sc-alpha",ir->fepvals->sc_alpha,0.0);
+  ITYPE ("sc-power",ir->fepvals->sc_power,0);
+  RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam, nerror, TRUE);
@@ -1059,6 +1188,16 @@ void get_ir(const char *mdparin,const char *mdparout,
       warning("Can not couple a molecule with free_energy = no");
     }
   }
+  
+  /* FREE ENERGY OPTIONS */
+  if (ir->efep != efepNO) 
+    {
+      do_fep_params(ir,fep_lambda);
+    } 
+  else
+    {
+      ir->fepvals->n_lambda = 0;
+    }
 
   do_wall_params(ir,wall_atomtype,wall_density,opts);
   
@@ -1094,15 +1233,6 @@ void get_ir(const char *mdparin,const char *mdparout,
 	      warning(NULL);
 	    }
 	}
-  }
-
-  if (ir->efep != efepNO) {
-    parse_n_double(foreign_lambda,&ir->n_flambda,&ir->flambda);
-    if (ir->n_flambda > 0 && ir->rlist < max(ir->rvdw,ir->rcoulomb)) {
-      warning_note("For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
-    }
-  } else {
-    ir->n_flambda = 0;
   }
 
   sfree(dumstr[0]);
@@ -1555,7 +1685,7 @@ void do_index(const char* mdparin, const char *ndx,
   real    SAtime;
   bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
-    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;	
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -2099,7 +2229,7 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
     sfree(mgrp);
   }
 
-  if (ir->efep != efepNO && ir->sc_alpha != 0 &&
+  if (ir->efep != efepNO && ir->fepvals->sc_alpha != 0 &&
       !gmx_within_tol(sys->ffparams.reppow,12.0,10*GMX_DOUBLE_EPS)) {
     gmx_fatal(FARGS,"Soft-core interactions are only supported with VdW repulsion power 12");
   }

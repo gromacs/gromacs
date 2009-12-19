@@ -80,6 +80,7 @@ extern void init_pull(FILE *fplog,
                       gmx_mtop_t *mtop, /* the topology of the whole system */
                       t_commrec * cr, /* struct for communication info */
                       const output_env_t oenv,  /* output options */
+		      real lambda, /* FEP lambda */
                       bool bOutFile,   /* open output files */
                       unsigned long Flags);
 

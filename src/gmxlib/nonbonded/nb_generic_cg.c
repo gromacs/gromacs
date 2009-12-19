@@ -94,9 +94,9 @@
      eps2                = 0.0;
      
      /* 3 VdW parameters for buckingham, otherwise 2 */
-     nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
-     table_nelements     = (icoul==3) ? 4 : 0;
-     table_nelements    += (ivdw==3) ? 8 : 0;
+     nvdwparam           = (nlist->ivdw==enbvdwBHAM) ? 3 : 2;
+     table_nelements     = (icoul==enbcoulTAB) ? 4 : 0;
+     table_nelements    += (ivdw==enbvdwTAB) ? 8 : 0;
      
      charge              = mdatoms->chargeA;
      type                = mdatoms->typeA;
@@ -162,7 +162,7 @@
                      rinvsq           = rinv*rinv;  
                      fscal            = 0;
 
-                     if (icoul==3 || ivdw==3)
+                     if (icoul==enbcoulTAB || ivdw==enbvdwTAB)
                      {
                          r                = rsq*rinv;
                          rt               = r*tabscale;     
@@ -172,27 +172,27 @@
                          nnn              = table_nelements*n0;           				
                      }
                      
-                     /* Coulomb interaction. icoul==0 means no interaction */
-                     if (icoul > 0)
+                     /* Coulomb interaction. icoul==enbcoulNONE means no interaction */
+                     if (icoul != enbcoulNONE)
                      {
                          qq               = iq*charge[aj]; 
                          
                          switch(icoul)
                          {
-                         case 1:
+                         case enbcoulOOR:
                              /* Vanilla cutoff coulomb */
                              vcoul            = qq*rinv;      
                              fscal            = vcoul*rinvsq; 
                              break;
                              
-                         case 2:
+                         case enbcoulRF:
                              /* Reaction-field */
                              krsq             = fr->k_rf*rsq;      
                              vcoul            = qq*(rinv+krsq-fr->c_rf);
                              fscal            = qq*(rinv-2.0*krsq)*rinvsq;
                              break;
                              
-                         case 3:
+                         case enbcoulTAB:
                              /* Tabulated coulomb */
                              Y                = VFtab[nnn];     
                              F                = VFtab[nnn+1];   
@@ -206,7 +206,7 @@
                              fscal            = -qq*FF*tabscale*rinv;
                              break;
                              
-                         case 4:
+                         case enbcoulGB:
                              /* GB */
                            gmx_fatal(FARGS,"Death & horror! GB generic interaction not implemented.\n");
                            break;
@@ -219,14 +219,14 @@
                      } /* End of coulomb interactions */
                      
                      
-                     /* VdW interaction. ivdw==0 means no interaction */
-                     if (ivdw > 0)
+                     /* VdW interaction. ivdw==enbvdwNONE means no interaction */
+                     if (ivdw != enbvdwNONE)
                      {
                          tj               = nti+nvdwparam*type[aj];
                          
                          switch(ivdw)
                          {
-                         case 1:
+                         case enbvdwLJ:
                              /* Vanilla Lennard-Jones cutoff */
                              c6               = vdwparam[tj];   
                              c12              = vdwparam[tj+1]; 
@@ -238,7 +238,7 @@
                              Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
                              break;
                              
-                         case 2:
+                         case enbvdwBHAM:
                              /* Buckingham */
                              c6               = vdwparam[tj];   
                              cexp1            = vdwparam[tj+1]; 
@@ -252,7 +252,7 @@
                              Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
                              break;
                              
-                         case 3:
+                         case enbvdwTAB:
                              /* Tabulated VdW */
                              c6               = vdwparam[tj];   
                              c12              = vdwparam[tj+1]; 

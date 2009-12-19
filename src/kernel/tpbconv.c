@@ -480,7 +480,9 @@ int main (int argc, char *argv[])
 	  state.v = tmpv;
 	  run_t        = head.t;
 	  run_step     = head.step;
-	  state.lambda = head.lambda;
+	  /* MRS -- this needs to be resolved */
+	  state.fep_state = head.fep_state;
+	  state.lambda[efptFEP] = head.lambda;
 	  copy_mat(newbox,state.box);
 	}
       }

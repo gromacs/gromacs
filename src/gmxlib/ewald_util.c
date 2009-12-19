@@ -83,7 +83,7 @@ real ewald_LRcorrection(FILE *fplog,
 			t_blocka *excl,rvec x[],
 			matrix box,rvec mu_tot[],
 			int ewald_geometry,real epsilon_surface,
-			real lambda,real *dvdlambda,
+			real lambda,real *dvdl,
 			real *vdip,real *vcharge)
 {
   int     i,i1,i2,j,k,m,iv,jv,q;
@@ -370,7 +370,7 @@ real ewald_LRcorrection(FILE *fplog,
     *vcharge = L1*Vcharge[0] + lambda*Vcharge[1];
     *vdip    = L1*Vdipole[0] + lambda*Vdipole[1];
     enercorr = *vcharge + *vdip - (L1*VselfA + lambda*VselfB) - Vexcl;
-    *dvdlambda += Vdipole[1] + Vcharge[1] - VselfB
+    *dvdl += Vdipole[1] + Vcharge[1] - VselfB
       - (Vdipole[0] + Vcharge[0] - VselfA) - dvdl_excl;
   }
 

@@ -91,7 +91,11 @@ typedef struct {
  */
 #define GMX_CUTOFF_INF 1E+18
 
-
+/* enums for the neighborlist type */
+enum { enbvdwNONE,enbvdwLJ,enbvdwBHAM,enbvdwTAB,enbvdwNR};
+/* OOR is "one over r" -- standard coul */
+enum { enbcoulNONE,enbcoulOOR,enbcoulRF,enbcoulTAB,enbcoulGB,enbcoulFEWALD,enbcoulNR};
+ 
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egGB, egNR };
 
@@ -103,10 +107,12 @@ typedef struct {
 typedef struct {
   real term[F_NRE];    /* The energies for all different interaction types */
   gmx_grppairener_t grpp;
-  double dvdl_lin;     /* Contributions to dvdl with linear lam-dependence */
-  double dvdl_nonlin;  /* Idem, but non-linear dependence                  */
-  int    n_lambda;
-  double *enerpart_lambda; /* Partial energy for lambda and flambda[] */
+  /*double dvdl_lin;     /* Contributions to dvdl with linear lam-dependence */
+  double dvdl_lin[efptNR];       /* Contributions to dvdl with linear lam-dependence */
+  double dvdl_nonlin[efptNR];    /* Idem, but non-linear dependence                  */
+  int    n_lambda;               /* number of lambdas */
+  int    fep_state;              /*current fep state -- just for printing */
+  double *enerpart_lambda; /* Partial energy for lambda and lambda[] */
 } gmx_enerdata_t;
 /* The idea is that dvdl terms with linear lambda dependence will be added
  * automatically to enerpart_lambda. Terms with non-linear lambda dependence

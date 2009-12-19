@@ -136,6 +136,11 @@ enum {
   efepNO, efepYES, efepNR
 };
 
+/* FEP coupling types */
+enum {
+  efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptNR
+};
+
 /* Solvent model */
 enum {
   esolNO, esolSPC, esolTIP4P, esolNR

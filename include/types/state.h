@@ -49,7 +49,7 @@
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-enum { estLAMBDA,
+enum { estLAMBDA,estFEPSTATE,
        estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
        estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
@@ -104,10 +104,11 @@ typedef struct
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
-  real          lambda; /* the free energy switching parameter          */
-  matrix 	    box;    /* box vector coordinates                      	*/
+  int           fep_state; /* which FEP state we are in                 */
+  real          *lambda; /* lambda vector                        */
+  matrix 	box;    /* box vector coordinates                      	*/
   matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
-  matrix 	    boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
+  matrix        boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
   real          *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */

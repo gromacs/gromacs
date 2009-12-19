@@ -169,10 +169,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
       md->bEner[i] = b14;
     else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
       md->bEner[i] = FALSE;
-    else if ((i == F_DVDL) || (i == F_DKDL))
-      md->bEner[i] = (ir->efep != efepNO);
-    else if (i == F_DHDL_CON)
-      md->bEner[i] = (ir->efep != efepNO && md->bConstr);
+    else if ((i == F_DVDL_COUL && ir->fepvals->separate_dvdl[efptCOUL]) || 
+             (i == F_DVDL_VDW  && ir->fepvals->separate_dvdl[efptVDW]) || 
+             (i == F_DVDL_BONDED && ir->fepvals->separate_dvdl[efptBONDED]) || 
+             (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT]) || 
+             (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS]) ||
+             (i == F_DVDL_REMAIN))
+        md->bEner[i] = (ir->efep != efepNO);
+/*    else if (i == F_DHDL_CON)
+      md->bEner[i] = (ir->efep != efepNO && md->bConstr); */
     else if ((interaction_function[i].flags & IF_VSITE) ||
 	     (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
       md->bEner[i] = FALSE;
@@ -411,48 +416,71 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
 {
     FILE *fp;
-    const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";
+    const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4",*remain="remaining";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
-    int  nsets,s;
+    int  i,s,nsets,nsets1,nsets2;
     char **setname,buf[STRLEN];
 
-    sprintf(label_x,"%s (%s)","Time",unit_time);
-    if (ir->n_flambda == 0)
+    if (ir->fepvals->n_lambda == 0) 
     {
-        sprintf(title,"%s",dhdl);
+        sprintf(title,"%s-%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
                 dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
-    else
+    else 
     {
-        sprintf(title,"%s, %s",dhdl,deltag);
-        sprintf(label_y,"(%s)",unit_energy);
+        sprintf(title,"%s and %s",dhdl,deltag);
+        sprintf(label_y,"%s and %s (%s %s)",
+                dhdl,deltag,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
-    fp = xvgropen(filename,title,label_x,label_y,oenv);
+    sprintf(label_x,"%s (%s)","Time",unit_time);
 
-    if (ir->n_flambda > 0)
+
+    fp = xvgropen(filename,title,label_x,label_y,oenv);
+    
+    /* count the number of dv/dl components */
+    nsets1 = 0;
+    for (i=0;i<efptNR;i++) 
+    {
+        if (ir->fepvals->separate_dvdl[i]) {nsets1++;}
+    }
+    
+    /* count the number of delta_g states */
+    nsets2 = ir->fepvals->n_lambda;
+    
+    nsets = nsets1 + nsets2;
+    snew(setname,nsets);
+    
+    s = 0;
+    for (i=0;i<efptNR;i++) 
+    {
+        if (ir->fepvals->separate_dvdl[i]) { 
+            sprintf(buf," %s(%s)",dhdl,efpt_names[i]);
+            setname[s] = strdup(buf);
+            s+=1;
+        }
+    }
+
+    if (ir->fepvals->n_lambda > 0)
     {
         /* g_bar has to determine the lambda values used in this simulation
          * from this xvg legend.
          */
-        nsets = 1 + ir->n_flambda;
-        snew(setname,nsets);
-        sprintf(buf,"%s %s %g",dhdl,lambda,ir->init_lambda);
-        setname[0] = strdup(buf);
-        for(s=1; s<nsets; s++)
+        for(s=nsets1; s<nsets; s++)
         {
-            sprintf(buf,"%s %s %g",deltag,lambda,ir->flambda[s-1]);
+            sprintf(buf,"%s %s %g",deltag,lambda,ir->fepvals->all_lambda[efptFEP][s-nsets1]);  /* for now, put fep lambda here */
+                                                                                               /* eventually, put fep_state ? */
             setname[s] = strdup(buf);
         }
         xvgr_legend(fp,nsets,setname,oenv);
-
+        
         for(s=0; s<nsets; s++)
         {
             sfree(setname[s]);
         }
         sfree(setname);
     }
-
+    
     return fp;
 }
 
@@ -473,6 +501,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                 real tmass,
                 gmx_enerdata_t *enerd,
                 t_state *state,
+                t_lambda *fepvals,
                 matrix  box,
                 tensor svir,
                 tensor fvir,
@@ -622,9 +651,14 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     
     if (fp_dhdl)
     {
-        fprintf(fp_dhdl,"%.4f %g",
-                time,
-                enerd->term[F_DVDL]+enerd->term[F_DKDL]+enerd->term[F_DHDL_CON]);
+        fprintf(fp_dhdl,"%.4f %g", time,enerd->term[F_DVDL_REMAIN]);
+        for (i=1;i<efptNR;i++) 
+        {
+            if (fepvals->separate_dvdl[i])
+            {
+                fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]);
+            }
+        }
         for(i=1; i<enerd->n_lambda; i++)
         {
             fprintf(fp_dhdl," %g",
@@ -665,13 +699,13 @@ static void pprint(FILE *log,const char *s,t_mdebin *md)
     fprintf(log,"\n");
 }
 
-void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lamb)
+void print_ebin_header(FILE *log,gmx_large_int_t steps,double time,real lambda)
 {
     char buf[22];
 
     fprintf(log,"   %12s   %12s   %12s\n"
             "   %12s   %12.5f   %12.5f\n\n",
-            "Step","Time","Lambda",gmx_step_str(steps,buf),time,lamb);
+            "Step","Time","Lambda",gmx_step_str(steps,buf),time,lambda);
 }
 
 void print_ebin(ener_file_t fp_ene,bool bEne,bool bDR,bool bOR,

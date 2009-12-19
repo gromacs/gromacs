@@ -203,7 +203,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   ivec       *nFreeze;
   int        i,m,natoms;
   rvec       box_size;
-  real       lambda=0,dvdlambda=0;
+  real       *lambda,*dvdl;
 
   natoms = atoms->nr;
     
@@ -298,8 +298,10 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   
   /* Do the actual neighboursearching */
   init_neighbor_list(fp,fr,md->homenr);
+  snew(lambda,efptNR);
+  snew(dvdl,efptNR);
   search_neighbours(fp,fr,x,box,top,
-		    &mtop->groups,cr,&nrnb,md,lambda,&dvdlambda,NULL,
+		    &mtop->groups,cr,&nrnb,md,lambda,dvdl,NULL,
 		    TRUE,FALSE,FALSE,NULL);
 
   if (debug)

@@ -304,11 +304,11 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 bool bshakef(FILE *log,gmx_shakedata_t shaked,
              int natoms,real invmass[],int nblocks,int sblock[],
              t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-             t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
+             t_nrnb *nrnb,real *lagr,real lambda,real *dvdl,
              real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
 {
   t_iatom *iatoms;
-  real    *lam,dt_2,dvdl;
+  real    *lam,dt_2,dvdl_term;
   int     i,n0,ncons,blen,type;
   int     tnit=0,trij=0;
   
@@ -346,13 +346,13 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
   }
   if (ir->efep != efepNO) {
     dt_2 = 1/sqr(ir->delta_t);
-    dvdl = 0;
+    dvdl_term = 0;
     for(i=0; i<ncons; i++) {
       type = idef->il[F_CONSTR].iatoms[3*i];
-      dvdl += lagr[i]*dt_2*
+      dvdl_term += lagr[i]*dt_2*
 	(idef->iparams[type].constr.dB-idef->iparams[type].constr.dA);
     }
-    *dvdlambda += dvdl;
+    *dvdl += dvdl_term;
   }
 #ifdef DEBUG
   fprintf(log,"tnit: %5d  omega: %10.5f\n",tnit,omega);

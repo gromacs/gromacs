@@ -68,6 +68,7 @@ extern const char *enbf_names[eNBF_NR+1];
 extern const char *ecomb_names[eCOMB_NR+1];
 extern const char *gtypes[egcNR+1];
 extern const char *efep_names[efepNR+1];
+extern const char *efpt_names[efptNR+1];
 extern const char *esol_names[esolNR+1];
 extern const char *enlist_names[enlistNR+1];
 extern const char *edispc_names[edispcNR+1];

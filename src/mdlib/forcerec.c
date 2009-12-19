@@ -1221,9 +1221,9 @@ void init_forcerec(FILE *fp,
     
     /* Free energy */
     fr->efep       = ir->efep;
-    fr->sc_alpha   = ir->sc_alpha;
-    fr->sc_power   = ir->sc_power;
-    fr->sc_sigma6  = pow(ir->sc_sigma,6);
+    fr->sc_alpha   = ir->fepvals->sc_alpha;
+    fr->sc_power   = ir->fepvals->sc_power;
+    fr->sc_sigma6  = pow(ir->fepvals->sc_sigma,6);
     
     /* Check if we can/should do all-vs-all kernels */
 #ifdef GMX_DOUBLE

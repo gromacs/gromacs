@@ -394,7 +394,7 @@ void do_force(FILE *fplog,t_commrec *cr,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real lambda,t_graph *graph,
+              real *lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               bool bBornRadii,
@@ -406,7 +406,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
-    real   e,v,dvdl;
+    real   e,v,dvdl[efptNR];
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
   
@@ -505,7 +505,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    gmx_pme_send_x(cr,bBS ? boxs : box,x,mdatoms->nChargePerturbed,lambda,step);
+    gmx_pme_send_x(cr,bBS ? boxs : box,x,mdatoms->nChargePerturbed,lambda[efptCOUL],step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -550,7 +550,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         for(j=0; j<DIM; j++)
         {
             mu_tot[j] =
-                (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
+                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
         }
     }
 
@@ -578,16 +578,17 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* Do the actual neighbour searching and if twin range electrostatics
          * also do the calculation of long range forces and energies.
          */
-        dvdl = 0; 
+        for (i=0;i<efptNR;i++) {dvdl[i] = 0;}
         ns(fplog,fr,x,box,
            groups,&(inputrec->opts),top,mdatoms,
-           cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
+           cr,nrnb,lambda,dvdl,&enerd->grpp,bFillGrid,
            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
         if (bSepDVDL)
         {
             fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
         }
-        enerd->dvdl_lin += dvdl;
+        enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
+        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
         
         wallcycle_stop(wcycle,ewcNS);
     }
@@ -680,7 +681,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                    top->idef.iparams_posres,
                    (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
+                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda[efptRESTRAINT],&(dvdl[efptRESTRAINT]),
                    fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
         if (bSepDVDL)
         {
@@ -692,8 +693,9 @@ void do_force(FILE *fplog,t_commrec *cr,
          * when only k depends on lambda,
          * not when the reference position depends on lambda.
          * grompp checks for this.
+         * Can we generalize this? T'would be useful. MRS
          */
-        enerd->dvdl_lin += dvdl;
+        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT];
         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
     }
 
@@ -702,7 +704,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
-                      lambda,graph,&(top->excls),fr->mu_tot,
+                      inputrec->fepvals,lambda,graph,&(top->excls),fr->mu_tot,
                       flags,&cycles_pme);
     
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
@@ -806,15 +808,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          * which is why we call pull_potential after calc_virial.
          */
         set_pbc(&pbc,inputrec->ePBC,box);
-        dvdl = 0; 
+        dvdl[efptRESTRAINT] = 0; 
         enerd->term[F_COM_PULL] =
             pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-                           cr,t,lambda,x,f,vir_force,&dvdl);
+                           cr,t,lambda[efptRESTRAINT],x,f,vir_force,&(dvdl[efptRESTRAINT]));
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
+            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl[efptRESTRAINT]);
         }
-        enerd->dvdl_lin += dvdl;
+        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT];
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
@@ -826,15 +828,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          * forces, virial and energy from the PME nodes here.
          */    
         wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-        dvdl = 0;
-        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
+        dvdl[efptCOUL] = 0;
+        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&(dvdl[efptCOUL]),
                           &cycles_seppme);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
+            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl[efptCOUL]);
         }
         enerd->term[F_COUL_RECIP] += e;
-        enerd->dvdl_lin += dvdl;
+        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
         if (wcycle)
         {
             dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
@@ -897,7 +899,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     gmx_large_int_t step;
     double mass,tmass,vcm[4];
     real   dt=inputrec->delta_t;
-    real   dvdlambda;
+    real   dvdl_dum;
     rvec   *xcon;
     char   buf[22];
     
@@ -917,11 +919,11 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
                 gmx_step_str(step,buf));
     }
-    dvdlambda = 0;
+    dvdl_dum = 0;
     constrain(NULL,TRUE,FALSE,constr,idef,
               inputrec,cr,step,0,md,
               state->x,state->x,NULL,
-              state->box,state->lambda,&dvdlambda,
+              state->box,state->lambda[efptBONDED],&dvdl_dum,
               NULL,NULL,nrnb,econqCoord);
     
     if (EI_STATE_VELOCITY(inputrec->eI)) {
@@ -942,13 +944,13 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
             fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
                     gmx_step_str(step,buf));
         }
-        dvdlambda = 0;
+        dvdl_dum = 0;
         constrain(NULL,TRUE,FALSE,constr,idef,
                   inputrec,cr,step,-1,md,
                   state->x,xcon,NULL,
-                  state->box,state->lambda,&dvdlambda,
+                  state->box,state->lambda[efptBONDED],&dvdl_dum,
                   state->v,NULL,nrnb,econqCoord);
-    
+        
         sfree(xcon);
 
         for(m=0; (m<4); m++)
@@ -1143,7 +1145,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    tensor pres,tensor virial,gmx_enerdata_t *enerd)
 {
     bool bCorrAll,bCorrPres;
-    real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
+    real dvdl,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
     enerd->term[F_DISPCORR] = 0.0;
@@ -1182,10 +1184,10 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     
         enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
         enerd->term[F_DISPCORR] += avcsix*enerdiff;
-        dvdlambda = 0.0;
+        dvdl = 0.0;
         if (ir->efep != efepNO)
         {
-            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+            dvdl += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
         
         if (bCorrAll)
@@ -1194,7 +1196,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             enerd->term[F_DISPCORR] += avctwelve*enerdiff;
             if (fr->efep != efepNO)
             {
-                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+                dvdl += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
         
@@ -1219,13 +1221,13 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
         {
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    enerd->term[F_DISPCORR],dvdlambda);
+                    enerd->term[F_DISPCORR],dvdl);
         }
         
         enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
         if (fr->efep != efepNO)
         {
-            enerd->dvdl_lin += dvdlambda;
+            enerd->dvdl_lin[efptVDW] += dvdl;
         }
     }
 }
@@ -1391,14 +1393,16 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 void init_md(FILE *fplog,
              t_commrec *cr,t_inputrec *ir,const output_env_t oenv,
              double *t,double *t0,
-             real *lambda,double *lam0,
+             real *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,const t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,const char **fn_cpt,
+             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
+             const char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
-             tensor force_vir,tensor shake_vir,rvec mu_tot,
+             tensor force_vir,tensor shake_vir,
+             rvec mu_tot,
              bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
 {
     int  i,j,n;
@@ -1409,15 +1413,26 @@ void init_md(FILE *fplog,
 	
     /* Initial values */
     *t = *t0       = ir->init_t;
-    if (ir->efep != efepNO)
+    for (i=0;i<efptNR;i++) 
     {
-        *lam0 = ir->init_lambda;
-        *lambda = *lam0 + ir->init_step*ir->delta_lambda;
+        if (ir->efep != efepNO)
+        {
+            *fep_state = ir->fepvals->init_fep_state;
+            /* overwrite lambda state with init_lambda for now for backwards compatibility */
+            if (ir->fepvals->init_lambda>=0) /* if it's -1, it was never initializd */
+            {
+                lambda[i] = lam0[i] = ir->fepvals->init_lambda;
+            }
+            else 
+            {
+                lambda[i] = lam0[i] = ir->fepvals->all_lambda[i][*fep_state];
+            }
+        } 
+        else 
+        {
+            lambda[i] = lam0[i] = 0.0;
+        }
     }
-    else
-    {
-        *lambda = *lam0   = 0.0;
-    } 
     
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)

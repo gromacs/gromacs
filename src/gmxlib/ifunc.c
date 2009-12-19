@@ -160,9 +160,13 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("TEMP",     "Temperature"      ),
   def_nofc    ("PDISPCORR","Pres. DC"         ),
   def_nofc    ("PRES",     "Pressure"         ),
-  def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
-  def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
-  def_nofc    ("DH/DL_CON","dH/dl constr."    )
+  def_nofc    ("DVM/DL",   "dVremain/dl"      ),
+  def_nofc    ("DK/DL",    "dEkin/dl"         ),
+  def_nofc    ("DVC/DL",   "dVcoul/dl"        ),
+  def_nofc    ("DVV/DL",   "dVvdw/dl"         ),
+  def_nofc    ("DVB/DL",   "dVbonded/dl"      ),
+  def_nofc    ("DVR/DL",   "dVrestraint/dl"   )/*,
+  def_nofc    ("DH/DL_CON","dH/dl constr."    )*/
 };
 
 bool have_interaction(t_idef *idef,int ftype)

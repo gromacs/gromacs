@@ -69,8 +69,9 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real *               Vvdw,
                           real                 tabscale,
                           real *               VFtab,
-                          real                 lambda,
-                          real *               dvdlambda,
+                          real                 lambda_coul,
+                          real                 lambda_vdw,
+                          real *               dvdl,
                           real                 alpha,
                           int                  lam_power,
                           real                 def_sigma6,
@@ -93,7 +94,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     real          ix,iy,iz,fix,fiy,fiz;
     real          dx,dy,dz,rsq,r4,r6,rinv;
     real          c6A,c12A,c6B,c12B;
-    real          dvdl,L1,alfA,alfB,dalfA,dalfB;
+    real          dvdl_vdw,dvdl_coul,L1C,L1V,alfA,alfB,dalfA,dalfB;
     real          sigma6a,sigma6b;
     real          rA,rinvA,rinv4A,rB,rinvB,rinv4B;
     int           do_coultab,do_vdwtab,do_tab,tab_elemsize;
@@ -108,18 +109,19 @@ gmx_nb_free_energy_kernel(int                  icoul,
     eps = 0;
     eps2 = 0;
    
-    dvdl = 0;
-    L1   = 1.0 - lambda;
+    dvdl_coul = 0;
+    dvdl_vdw = 0;
+    L1C   = 1.0 - lambda_coul;
+    L1V   = 1.0 - lambda_vdw;
+    alfA  = alpha*(lam_power==2 ? lambda_vdw*lambda_vdw : lambda_vdw);
+    alfB  = alpha*(lam_power==2 ? L1V*L1V : L1V);
+    dalfA = alpha*lam_power/6.0*(lam_power==2 ? lambda_vdw : 1); 
+    dalfB = alpha*lam_power/6.0*(lam_power==2 ? L1V : 1); 
 
-    alfA  = alpha*(lam_power==2 ? lambda*lambda : lambda);
-    alfB  = alpha*(lam_power==2 ? L1*L1 : L1);
-    dalfA = alpha*lam_power/6.0*(lam_power==2 ? lambda : 1); 
-    dalfB = alpha*lam_power/6.0*(lam_power==2 ? L1 : 1); 
-
-    /* Ewald table is special (icoul==5) */
+    /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
     
-    do_coultab = (icoul==3);
-    do_vdwtab  = (ivdw==3);
+    do_coultab = (icoul==enbcoulTAB);
+    do_vdwtab  = (ivdw==enbcoulTAB);
     
     do_tab = do_coultab || do_vdwtab;
     
@@ -211,20 +213,20 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     n1         = tab_elemsize*n0;
                 }
                 
-                if(icoul==1 || icoul==5)
+                if(icoul==enbcoulOOR || icoul==enbcoulFEWALD)
                 {
                     /* simple cutoff */
                     VcoulA     = qqA*rinvA;
                     FscalA     = VcoulA*rinvA*rinvA;
                 }
-                else if(icoul==2)
+                else if(icoul==enbcoulRF)
                 {
                     /* reaction-field */
                     krsq       = krf*rA*rA;      
                     VcoulA     = qqA*(rinvA+krsq-crf);
                     FscalA     = qqA*(rinvA-2.0*krsq)*rinvA*rinvA;
                 }
-                else if(icoul==3)
+                else if(icoul==enbcoulTAB)
                 {
                     /* non-Ewald tabulated coulomb */
                     nnn        = n1;
@@ -239,7 +241,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     FscalA     = -qqA*tabscale*FF*rinvA;                    
                 }
                 
-                if(ivdw==1)
+                if(ivdw==enbvdwLJ)
                 {
                     /* cutoff LJ */
                     rinv6            = rinvA*rinvA*rinv4A;
@@ -248,7 +250,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     VvdwA            = Vvdw12-Vvdw6;
                     FscalA          += (12.0*Vvdw12-6.0*Vvdw6)*rinvA*rinvA;                    
                 }
-                else if(ivdw==3)
+                else if(ivdw==enbvdwTAB)
                 {
                     /* Table LJ */
 		    nnn = n1+4;
@@ -301,20 +303,20 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     n1         = tab_elemsize*n0;
                 }
                 
-                if(icoul==1 || icoul==5)
+                if(icoul==enbcoulOOR || icoul==enbcoulFEWALD)
                 {
                     /* simple cutoff */
                     VcoulB     = qqB*rinvB;
                     FscalB     = VcoulB*rinvB*rinvB;
                 }
-                else if(icoul==2)
+                else if(icoul==enbcoulRF)
                 {
                     /* reaction-field */
                     krsq       = krf*rB*rB;      
                     VcoulB     = qqB*(rinvB+krsq-crf);
                     FscalB     = qqB*(rinvB-2.0*krsq)*rinvB*rinvB;                    
                 }
-                else if(icoul==3)
+                else if(icoul==enbcoulTAB)
                 {
                     /* non-Ewald tabulated coulomb */
                     nnn        = n1;
@@ -329,7 +331,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     FscalB     = -qqB*tabscale*FF*rinvB;                    
                 }
                 
-                if(ivdw==1)
+                if(ivdw==enbvdwLJ)
                 {
                     /* cutoff LJ */
                     rinv6            = rinvB*rinvB*rinv4B;
@@ -338,7 +340,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     VvdwB            = Vvdw12-Vvdw6;
                     FscalB          += (12.0*Vvdw12-6.0*Vvdw6)*rinvB*rinvB;                    
                 }
-                else if(ivdw==3)
+                else if(ivdw==enbvdwTAB)
                 {
                     /* Table LJ */
                     nnn = n1+4;
@@ -370,13 +372,14 @@ gmx_nb_free_energy_kernel(int                  icoul,
 
             Fscal = 0;
             
-            if(icoul==5)
+            if(icoul==enbcoulFEWALD)
             {
                 /* Soft-core Ewald interactions are special:
                  * For the direct space interactions we effectively want the
                  * normal coulomb interaction (added above when icoul==5),
                  * but need to subtract the part added in reciprocal space.
                  */
+                /* MRS -- why soft-core for Ewald? */
                 if (r != 0) 
                 {
                     VV    = gmx_erf(ewc*r)*rinv;
@@ -387,20 +390,21 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     VV    = ewc*2.0/sqrt(M_PI);
                     FF    = 0;
                 }
-                vctot  -= (lambda*qqB + L1*qqA)*VV;
-                Fscal  -= (lambda*qqB + L1*qqA)*FF;
-                dvdl   -= (qqB - qqA)*VV;
+                vctot  -= (lambda_coul*qqB + L1C*qqA)*VV;
+                Fscal  -= (lambda_coul*qqB + L1C*qqA)*FF;
+                dvdl_coul   -= (qqB - qqA)*VV;
             }
 	    
             /* Assemble A and B states */
-            vctot         += lambda*VcoulB + L1*VcoulA;
-            Vvdwtot       += lambda*VvdwB  + L1*VvdwA;
+            vctot         += lambda_coul*VcoulB + L1C*VcoulA;
+            Vvdwtot       += lambda_vdw*VvdwB  + L1V*VvdwA;
                 
-            Fscal         += (L1*FscalA*rinv4A + lambda*FscalB*rinv4B)*r4;
-            dvdl          += (VcoulB + VvdwB) - (VcoulA + VvdwA);
-            dvdl          += lambda*dalfB*FscalB*sigma6b*rinv4B
-	                       - L1*dalfA*FscalA*sigma6a*rinv4A;
-                
+            Fscal         += (L1V*FscalA*rinv4A + lambda_vdw*FscalB*rinv4B)*r4;
+            dvdl_coul     += (VcoulB) - (VcoulA);
+            dvdl_vdw      += (VvdwB) - (VvdwA);
+            dvdl_vdw      += lambda_vdw*dalfB*FscalB*sigma6b*rinv4B
+	                       - L1V*dalfA*FscalA*sigma6a*rinv4A;
+            
             if (bDoForces)
             {
                 tx         = Fscal*dx;     
@@ -429,7 +433,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
         Vvdw[ggid]         = Vvdw[ggid] + Vvdwtot;
     }
     
-    *dvdlambda      += dvdl;
+    dvdl[efptCOUL]     += dvdl_coul;
+    dvdl[efptVDW]      += dvdl_vdw;
     *outeriter       = nri;            
     *inneriter       = nj1;            
 }
