@@ -63,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 8;
+static const int cpt_version = 9;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -72,7 +72,7 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 const char *est_names[estNR]=
 {
     "FE-lambda",
-    "box", "box-rel", "box-v", "vir_prev", "pres_prev",
+    "box", "box-rel", "box-v", "pres_prev", "vir_prev",
     "nosehoover-xi", "nosehoover-vxi", 
     "thermostat-integral", "v_eta", "vol0",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
@@ -756,8 +756,8 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOX:     ret = do_cpte_matrix(xd,0,i,sflags,state->box,list); break;
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
-            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
+            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
             case estNH_XI:   ret = do_cpte_doubles (xd,0,i,sflags,ngtch,&state->nosehoover_xi,list); break;
             case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,ngtch,&state->nosehoover_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
