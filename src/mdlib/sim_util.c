@@ -1136,7 +1136,6 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
-  static bool bFirst=TRUE;
   bool bCorrAll,bCorrPres;
   real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
   int  m;
@@ -1171,7 +1170,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
       else 
       {
           dens = top_global->natoms*invvol;
-          ninter = 0.5*natoms;
+          ninter = 0.5*top_global->natoms;
       }
 
     if (ir->efep == efepNO) 
@@ -1219,27 +1218,23 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         *prescorr += spres;
     }
 
-    /* only print the first time */
-    if (bFirst && fplog) {
+    /* Can't currently control when it prints, for now, just print when degugging */
+    if (debug)
+    {
         if (bCorrAll) {
-            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+            fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
                     avcsix,avctwelve);
-        }
-        else
-        {
-            fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e\n",avcsix);
         }
         if (bCorrPres) 
         {
-            fprintf(fplog,
+            fprintf(debug,
                     "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
                     *enercorr,spres,svir);
         }
         else
         {
-            fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",*enercorr);
+            fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
         }
-        bFirst = FALSE;
     }
     /* This output is not really necessary, and requires the step, 
        which it really shouldn't.  To simplify the calls, I'm dropping 

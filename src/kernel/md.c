@@ -321,7 +321,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,NULL,top_global->natoms,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,top_global,natoms,box,state->lambda,
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
