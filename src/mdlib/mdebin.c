@@ -127,8 +127,8 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   char     *bufi;
   t_mdebin *md;
   int      i,j,ni,nj,n,nh,k,kk,ncon,nset;
-  bool     bBHAM,b14;
- 
+  bool     bBHAM,bNoseHoover,b14;
+
   snew(md,1);
 
   groups = &mtop->groups;
@@ -378,6 +378,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     {
         md->nTCB = md->nTC;
     }
+   
     
     if (md->etc == etcNOSEHOOVER) {
         if (md->bNHC_trotter) { 
@@ -390,6 +391,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     } else { 
         md->mde_n = md->nTCB;
     }
+
     snew(md->tmp_r,md->mde_n);
     snew(md->tmp_v,md->mde_n);
     snew(md->grpnms,md->mde_n);
@@ -403,37 +405,43 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     md->itemp=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,
                              unit_temp_K);
+
+    bNoseHoover = (getenv("GMX_NOSEHOOVER_CHAINS") != NULL); /* whether to print Nose-Hoover chains */
+
     if (md->etc == etcNOSEHOOVER)
     {
-        if (md->bNHC_trotter) 
+        if (bNoseHoover) 
         {
-            for(i=0; (i<md->nTCB); i++) 
+            if (md->bNHC_trotter) 
             {
-                ni=groups->grps[egcTC].nm_ind[i];
-                /* this one is a barostat thermostat */
-                if ((i==md->nTCB-1) && (md->nTCB > md->nTC)) {bufi = bufbaro[0];} else {bufi = *(groups->grpname[ni]);}
-                for(j=0; (j<md->nNHC); j++) 
+                for(i=0; (i<md->nTCB); i++) 
                 {
-                    sprintf(buf,"Xi-%d-%s",j,bufi);
-                    grpnms[2*(i*md->nNHC+j)]=strdup(buf);
-                    sprintf(buf,"vXi-%d-%s",j,bufi);
-                    grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                    ni=groups->grps[egcTC].nm_ind[i];
+                    /* this one is a barostat thermostat */
+                    if ((i==md->nTCB-1) && (md->nTCB > md->nTC)) {bufi = bufbaro[0];} else {bufi = *(groups->grpname[ni]);}
+                    for(j=0; (j<md->nNHC); j++) 
+                    {
+                        sprintf(buf,"Xi-%d-%s",j,bufi);
+                        grpnms[2*(i*md->nNHC+j)]=strdup(buf);
+                        sprintf(buf,"vXi-%d-%s",j,bufi);
+                        grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                    }
                 }
-            }
-            md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
-        } 
-        else
-        {
-            for(i=0; (i<md->nTCB); i++) 
+                md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
+            } 
+            else
             {
-                ni=groups->grps[egcTC].nm_ind[i];
-                bufi = *(groups->grpname[ni]);
-                sprintf(buf,"Xi-%s",bufi);
-                grpnms[2*i]=strdup(buf);
-                sprintf(buf,"vXi-%s",bufi);
-                grpnms[2*i+1]=strdup(buf);
+                for(i=0; (i<md->nTCB); i++) 
+                {
+                    ni=groups->grps[egcTC].nm_ind[i];
+                    bufi = *(groups->grpname[ni]);
+                    sprintf(buf,"Xi-%s",bufi);
+                    grpnms[2*i]=strdup(buf);
+                    sprintf(buf,"vXi-%s",bufi);
+                    grpnms[2*i+1]=strdup(buf);
+                }
+                md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
             }
-            md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
         }
     }
     else if (md->etc == etcBERENDSEN || md->etc == etcYES || 
@@ -559,7 +567,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   tmp;
-    
+    bool   bNoseHoover;
+
     /* Do NOT use the box in the state variable, but the separate box provided
      * as an argument. This is because we sometimes need to write the box from
      * the last timestep to match the trajectory frames.
@@ -675,30 +684,36 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
             md->tmp_r[i] = ekind->tcstat[i].T;
         }
         add_ebin(md->ebin,md->itemp,md->nTC,md->tmp_r,bSum);
+
+        bNoseHoover = (getenv("GMX_NOSEHOOVER_CHAINS") != NULL); /* whether to print Nose-Hoover chains */
+
         if (md->etc == etcNOSEHOOVER)
         {
-            if (md->bNHC_trotter)
+            if (bNoseHoover) 
             {
-                
-                for(i=0; (i<md->nTCB); i++) 
+                if (md->bNHC_trotter)
                 {
-                    for (j=0;j<md->nNHC;j++) 
+                    
+                    for(i=0; (i<md->nTCB); i++) 
                     {
-                        k = i*md->nNHC+j;
-                        md->tmp_r[2*k] = state->nosehoover_xi[k];
-                        md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                        for (j=0;j<md->nNHC;j++) 
+                        {
+                            k = i*md->nNHC+j;
+                            md->tmp_r[2*k] = state->nosehoover_xi[k];
+                            md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                        }
                     }
-                }
-                add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);      
-            } 
-            else 
-            {
-                for(i=0; (i<md->nTC); i++)
+                    add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);      
+                } 
+                else 
                 {
-                    md->tmp_r[2*i] = state->nosehoover_xi[i];
-                    md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
+                    for(i=0; (i<md->nTC); i++)
+                    {
+                        md->tmp_r[2*i] = state->nosehoover_xi[i];
+                        md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
+                    }
+                    add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);
                 }
-                add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);
             }
         }
         else if (md->etc == etcBERENDSEN || md->etc == etcYES || md->etc == etcVRESCALE)
