@@ -55,6 +55,8 @@
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
+#include "gmx_ana.h"
+
 
 static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
 		      real **d)
@@ -659,7 +661,7 @@ int gmx_rmsdist (int argc,char *argv[])
   } while (read_next_x(oenv,status,&t,natom,x,box));
   fprintf(stderr, "\n");
 
-  fclose(fp);
+  ffclose(fp);
   close_trj(status);
 
   teller = nframes_read();

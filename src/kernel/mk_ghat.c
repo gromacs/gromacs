@@ -735,7 +735,7 @@ int main(int argc,char *argv[])
 	  fprintf(fp,"\n");
 	  }
 	  }
-	  fclose(fp);
+	  ffclose(fp);
 	  }
     */
     pr_scalar_gk("ghat.xvg",n1max,n2max,n3max,box,ghat);

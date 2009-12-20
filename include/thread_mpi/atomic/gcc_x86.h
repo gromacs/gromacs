@@ -84,9 +84,16 @@ typedef struct tMPI_Spinlock
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-/* do the intrinsics. icc on windows doesn't have them. */
-#if ( (TMPI_GCC_VERSION >= 40100) && (!(defined(__INTEL_COMPILER) && (defined(_WIN32) || defined(_WIN64) )  ) ) )
-
+/* do the intrinsics. 
+   
+   We disable this for 32-bit builds because the target may be 80386, 
+   which didn't have cmpxchg, etc (they were introduced as only as 'recently' 
+   as the 486, and gcc on some Linux versions still target 80386 by default). 
+   
+   We also specifically check for icc on windows, because that only 
+   supports the MSVC-style atomic intrinsics. */
+#if ( (TMPI_GCC_VERSION >= 40100) && defined(__x86_64__) &&  \
+     (!(defined(__INTEL_COMPILER) && (defined(_WIN32) || defined(_WIN64) ) )) ) 
 #include "gcc_intrinsics.h"
 
 #else
@@ -159,7 +166,7 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 
 static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
-    void *volatile *ret=b;
+    void *volatile *ret=(void* volatile*)b;
 #ifndef __x86_64__ 
 /*    __asm__ __volatile__("\txchgl %0, %1;" 
                          :"=m"(a->value),"=q"(b) 

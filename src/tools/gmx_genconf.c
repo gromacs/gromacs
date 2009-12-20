@@ -51,6 +51,7 @@
 #include "readinp.h"
 #include "names.h"
 #include "sortwater.h"
+#include "gmx_ana.h"
 
 static void rand_rot(int natoms,rvec x[],rvec v[],vec4 xrot[],vec4 vrot[],
                      int *seed,rvec max_rot)

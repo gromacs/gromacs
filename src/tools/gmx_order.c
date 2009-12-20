@@ -55,6 +55,8 @@
 #include "tpxio.h"
 #include "confio.h"
 #include "cmat.h"
+#include "gmx_ana.h"
+
 
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */
@@ -292,8 +294,8 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
   sfree(index);
   sfree(isize);
 
-  fclose(fpsg);
-  fclose(fpsk);
+  ffclose(fpsg);
+  ffclose(fpsk);
   
   fpsg = xvgropen(sgslfn,
                   "S\\sg\\N Angle Order Parameter / Slab","(nm)","S\\sg\\N",
@@ -307,8 +309,8 @@ static void calc_tetra_order_parm(const char *fnNDX,const char *fnTPS,
     fprintf(fpsk,"%10g  %10g\n",(i+0.5)*box[slice_dim][slice_dim]/nslice,
             sk_slice_tot[i]/nframes);
   }
-  fclose(fpsg);
-  fclose(fpsk);
+  ffclose(fpsg);
+  ffclose(fpsk);
 }
 
 
@@ -487,7 +489,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 	  {
 		pbc_dx(&pbc,x1[a[index[i]+j]],com,direction);
 		unitv(direction,direction);
-		//DEBUG
+		/*DEBUG*/
 		/*if (j==0)
 			fprintf(stderr,"X %f %f %f\tcom %f %f %f\tdirection %f %f %f\n",x1[a[index[i]+j]][0],x1[a[index[i]+j]][1],x1[a[index[i]+j]][2],com[0],com[1],com[2],
 				direction[0],direction[1],direction[2]);*/
@@ -697,8 +699,8 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
 						 0.333 * order[atom][YY]));
     }
     
-    fclose(ord);
-    fclose(slOrd);
+    ffclose(ord);
+    ffclose(slOrd);
   }
 }
 
@@ -907,7 +909,7 @@ int gmx_order(int argc,char *argv[])
     
   if (permolecule)
   {
-	  nslices = index[1] - index[0];  //I think this assumes contiguous lipids in topology
+    nslices = index[1] - index[0];  /*I think this assumes contiguous lipids in topology*/
 	  fprintf(stderr,"Calculating Scd order parameters for each of %d molecules\n",nslices);
   }
   

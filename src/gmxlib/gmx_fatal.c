@@ -62,6 +62,7 @@ static FILE *log_file = NULL;
 
 #ifdef GMX_THREADS
 static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 bool bDebugMode(void)
@@ -94,7 +95,7 @@ void _where(const char *file,int line)
   
   if ( bFirst ) {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&where_mutex);
     if (bFirst) /* we repeat the check in the locked section because things
                    might have changed */
     {
@@ -104,7 +105,7 @@ void _where(const char *file,int line)
         bFirst = FALSE;
 #ifdef GMX_THREADS
     }
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&where_mutex);
 #endif
 
   } 

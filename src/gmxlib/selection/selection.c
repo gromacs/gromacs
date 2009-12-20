@@ -68,6 +68,9 @@ gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
     snew(sc, 1);
     sc->rpost     = NULL;
     sc->spost     = NULL;
+    sc->bMaskOnly = FALSE;
+    sc->bVelocities = FALSE;
+    sc->bForces   = FALSE;
     sc->root      = NULL;
     sc->nr        = 0;
     sc->sel       = NULL;
@@ -158,6 +161,30 @@ gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
         sc->spost     = type;
     }
     sc->bMaskOnly = bMaskOnly;
+}
+
+/*!
+ * \param[in,out] sc        Selection collection to modify.
+ * \param[in]     bVelOut   If TRUE, selections will also evaluate
+ *      velocities.
+ */
+void
+gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
+                                    bool bVelOut)
+{
+    sc->bVelocities = bVelOut;
+}
+
+/*!
+ * \param[in,out] sc        Selection collection to modify.
+ * \param[in]     bForceOut If TRUE, selections will also evaluate
+ *      forces.
+ */
+void
+gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
+                                      bool bForceOut)
+{
+    sc->bForces = bForceOut;
 }
 
 /*!

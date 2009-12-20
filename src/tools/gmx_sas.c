@@ -58,6 +58,8 @@
 #include "atomprop.h"
 #include "physics.h"
 #include "tpxio.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   atom_id  aa,ab;
@@ -474,9 +476,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(fp);
+  ffclose(fp);
   if (vp)
-    fclose(vp);
+    ffclose(vp);
     
   /* if necessary, print areas per atom to file too: */
   if (bResAt) {
@@ -519,8 +521,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
     }
     if (bITP)
-      fclose(fp3);
-    fclose(fp);
+      ffclose(fp3);
+    ffclose(fp);
   }
 
     /* Be a good citizen, keep our memory free! */

@@ -41,7 +41,7 @@
 #ifndef SELECTION_ELEMENT_H
 #define SELECTION_ELEMENT_H
 
-#include <typedefs.h>
+#include <types/simple.h>
 
 #include <indexutil.h>
 #include <selvalue.h>

@@ -39,6 +39,10 @@
 #ifndef _idef_h
 #define _idef_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST	6
@@ -121,8 +125,9 @@ enum {
   F_ETOT,
   F_ECONSERVED,
   F_TEMP,
-  F_PDISPCORR,
+  F_VTEMP,
   F_PRES,
+  F_PDISPCORR,
   F_DVDL_REMAIN,
   F_DKDL,
   F_DVDL_COUL,
@@ -290,5 +295,10 @@ typedef struct {
   real scale;     /* distance between two points */
   real *tab;      /* the actual tables, per point there are  4 numbers */
 } bondedtable_t;
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

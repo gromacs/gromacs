@@ -63,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 8;
+static const int cpt_version = 9;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -72,18 +72,19 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 const char *est_names[estNR]=
 {
     "FE-lambda","FE-fep-state",
-    "box", "box-rel", "box-v", "pres_prev",
-    "nosehoover-xi", "thermostat-integral",
+    "box", "box-rel", "box-v", "vir_prev", "pres_prev",
+    "nosehoover-xi", "nosehoover-vxi", 
+    "thermostat-integral", "v_eta", "vol0",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
 };
 
-enum { eeksEKINH_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksNR };
+enum { eeksEKIN_N, eeksEKINH, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksDEKINDL, eeksMVCOS, eeksNR };
 
 const char *eeks_names[eeksNR]=
 {
-    "Ekinh_n", "Ekinh", "dEkindlambda", "mv_cos"
+    "Ekin_n", "Ekinh", "Ekinf", "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC","Vscale_NHC","Ekin_Total", "dEkindlambda", "mv_cos"
 };
 
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
@@ -726,8 +727,11 @@ static int do_cpt_state(XDR *xd,bool bRead,
     int  **rng_p,**rngi_p;
     int  i;
     int  ret;
-    
+    int  ngtch;
+
     ret = 0;
+
+    ngtch = (state->ngtc+1)*(NNHCHAIN);  /* need extra for barostat */
 
     if (bReadRNG)
     {
@@ -753,9 +757,13 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOX:     ret = do_cpte_matrix(xd,0,i,sflags,state->box,list); break;
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
+            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
-            case estNH_XI:   ret = do_cpte_reals (xd,0,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
+            case estNH_XI:   ret = do_cpte_doubles (xd,0,i,sflags,ngtch,&state->nosehoover_xi,list); break;
+            case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,ngtch,&state->nosehoover_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
+            case estVETA:    ret = do_cpte_real  (xd,0,i,sflags,&state->veta,list); break;
+            case estVOL0:    ret = do_cpte_real(xd,0,i,sflags,&state->vol0,list); break;
             case estX:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->x,list); break;
             case estV:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->v,list); break;
             case estSDX:     ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->sd_X,list); break;
@@ -790,11 +798,17 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
         {
             switch (i)
             {
-
-			case eeksEKINH_N: ret = do_cpte_int(xd,1,i,fflags,&ekins->ekinh_n,list); break;
-			case eeksEKINH:   ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekinh_n,&ekins->ekinh,list); break;
- 			case eeksDEKINDL: ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
-            case eeksMVCOS:   ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
+                
+			case eeksEKIN_N:     ret = do_cpte_int(xd,1,i,fflags,&ekins->ekin_n,list); break;
+			case eeksEKINH :     ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh,list); break;
+			case eeksEKINF:      ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinf,list); break;
+			case eeksEKINO:      ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh_old,list); break;
+            case eeksEKINTOTAL:  ret = do_cpte_matrix(xd,1,i,fflags,ekins->ekin_total,list); break;
+            case eeksEKINSCALEF: ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinscalef_nhc,list); break;
+            case eeksVSCALE:     ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->vscale_nhc,list); break;
+            case eeksEKINSCALEH: ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinscaleh_nhc,list); break;
+ 			case eeksDEKINDL :   ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
+            case eeksMVCOS:      ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
             default:
                 gmx_fatal(FARGS,"Unknown ekin data state entry %d\n"
                           "You are probably reading a new checkpoint file with old code",i);
@@ -1044,8 +1058,8 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
-            ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksDEKINDL) |
-             (1<<eeksMVCOS));
+            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | (1<<eeksEKINO) | 
+             (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
     }
     else
     {
@@ -1107,6 +1121,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 	sfree(outputfiles);
 	#ifdef GMX_FAHCORE
     /*code for alternate checkpointing scheme.  moved from top of loop over steps */
+      fcRequestCheckPoint();
       if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
       }
@@ -1406,8 +1421,9 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     {
         cp_error();
     }
-    *bReadEkin = (flags_eks & (1<<eeksEKINH));
-
+    *bReadEkin = ((flags_eks & (1<<eeksEKINH)) || (flags_eks & (1<<eeksEKINF)) || (flags_eks & (1<<eeksEKINO)) ||
+                  (flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE)));
+    
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp),TRUE,
                           flags_enh,&state->enerhist,NULL);
     if (ret)
@@ -1474,9 +1490,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                     " offsets. Can not append. Run mdrun without -append",
                     outputfiles[i].filename);
             }
+#ifdef FAHCORE
+            chksum_file=gmx_fio_open(outputfiles[i].filename,"a");
 
+#else
             chksum_file=gmx_fio_open(outputfiles[i].filename,"r+");
-            
+
             /* lock log file */                
             if (i==0)
             {
@@ -1491,7 +1510,6 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                         "simulation?", outputfiles[i].filename);
                 }
             }
-
             
             /* compute md5 chksum */ 
             if (outputfiles[i].chksum_size != -1)
@@ -1508,6 +1526,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             {
                 gmx_fio_seek(chksum_file,outputfiles[i].offset);
             }
+#endif
             
             if (i==0) /*open log file here - so that lock is never lifted 
                         after chksum is calculated */
@@ -1518,7 +1537,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
             {
                 gmx_fio_close(chksum_file);
             }
-            
+#ifndef FAHCORE            
             /* compare md5 chksum */
             if (outputfiles[i].chksum_size != -1 &&
                 memcmp(digest,outputfiles[i].chksum,16)!=0) 
@@ -1535,7 +1554,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                 gmx_fatal(FARGS,"Checksum wrong for '%s'.",
                           outputfiles[i].filename);
             }
-        
+#endif        
 
               
             if (i!=0) /*log file is already seeked to correct position */

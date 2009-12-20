@@ -36,5 +36,12 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void ffscanf(FILE *in,char *fmt, ...);
 
+#ifdef __cplusplus
+}
+#endif

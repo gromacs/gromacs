@@ -61,6 +61,7 @@
 #include "txtdump.h"
 #include "viewit.h"
 #include "rmpbc.h"
+#include "gmx_ana.h"
 
 typedef struct
 {
@@ -1044,7 +1045,7 @@ int gmx_editconf(int argc, char *argv[])
             if (outftp == efPDB) {
                 out=ffopen(outfile,"w");
                 write_pdbfile_indexed(out,title,&atoms,x,ePBC,box,' ',1,isize,index,conect);
-                fclose(out);
+                ffclose(out);
             }
             else
                 write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,
@@ -1083,7 +1084,7 @@ int gmx_editconf(int argc, char *argv[])
             if (visbox[0] > 0)
                 visualize_box(out,bLegend ? atoms.nr+12 : atoms.nr,
                     bLegend? atoms.nres=12 : atoms.nres,box,visbox);
-            fclose(out);
+            ffclose(out);
         }
         else
             write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box); 

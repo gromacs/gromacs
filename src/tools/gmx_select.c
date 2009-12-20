@@ -46,6 +46,8 @@
 #include <xvgr.h>
 #include <string2.h>
 #include <trajana.h>
+#include "gmx_ana.h"
+
 
 typedef struct
 {
@@ -349,15 +351,15 @@ gmx_select(int argc, char *argv[])
     /* Close the files */
     if (d.sfp)
     {
-        fclose(d.sfp);
+        ffclose(d.sfp);
     }
     if (d.cfp)
     {
-        fclose(d.cfp);
+        ffclose(d.cfp);
     }
     if (d.ifp)
     {
-        fclose(d.ifp);
+        ffclose(d.ifp);
     }
     if (d.block)
     {
@@ -365,7 +367,7 @@ gmx_select(int argc, char *argv[])
     }
     if (d.mfp)
     {
-        fclose(d.mfp);
+        ffclose(d.mfp);
     }
 
     thanx(stderr);

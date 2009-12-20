@@ -40,16 +40,15 @@
 #include <config.h>
 #endif
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "nrnb.h"
 #include "pbc.h"
 #include "genborn.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int glatnr(int *global_atom_index,int i);
 /* Returns the global topology atom number belonging to local atom index i.
@@ -125,7 +124,7 @@ extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 		      const t_pbc *pbc,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */
-		      real *cos_phi,real *sign,
+		      real *sign,
 		      int *t1,int *t2,int *t3);
 /* Calculate dihedral-angle. No PBC is taken into account (use mol-shift) */
 

@@ -47,6 +47,7 @@ gmx_ga2la.h \
 gmx_lapack.h \
 gmx_parallel_3dfft.h \
 gmx_random.h \
+gmx_sse2_single.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
 gmx_wallcycle.h \
@@ -67,6 +68,7 @@ magic.h \
 main.h \
 maths.h \
 matio.h \
+md5.h \
 mdatoms.h \
 mdebin.h \
 mdrun.h \
@@ -139,6 +141,7 @@ utils.h \
 vcm.h \
 vec.h \
 viewit.h \
+vmdio.h \
 vsite.h \
 wgms.h \
 wman.h \
@@ -148,5 +151,7 @@ xtcio.h \
 xvgr.h \
 thread_mpi.h \
 tmpi.h \
-mainpage.h
-
+mainpage.h \
+molfile_plugin.h \
+vmddlopen.h \
+vmdplugin.h

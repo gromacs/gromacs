@@ -49,6 +49,7 @@
 #include "physics.h"
 #include "index.h"
 #include "gmx_statistics.h"
+#include "gmx_ana.h"
 
 #define SQR(x) (pow(x,2.0))
 #define EPSI0 (EPSILON0*E_CHARGE*E_CHARGE*AVOGADRO/(KILO*NANO)) /* EPSILON0 in SI units */
@@ -860,13 +861,13 @@ int gmx_current(int argc,char *argv[])
              temp,trust, bfit,efit,bvit,evit,status,isize,nmols,nshift,
              index0,indexm,mass2,qmol,eps_rf,oenv);
 
-  fclose(fmj);
-  fclose(fmd);
-  fclose(fmjdsp);
+  ffclose(fmj);
+  ffclose(fmd);
+  ffclose(fmjdsp);
   if (bACF)
-    fclose(outf);
+    ffclose(outf);
   if(bINT)
-      fclose(mcor);
+      ffclose(mcor);
 
   thanx(stderr);
 

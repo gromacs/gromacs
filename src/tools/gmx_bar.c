@@ -51,8 +51,10 @@
 #include "physics.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 typedef struct {
+    char   *filename;
     int    nset;
     int    np;
     int    begin;
@@ -60,7 +62,6 @@ typedef struct {
     double *lambda;
     double *t;
     double **y;
-
 } barsim_t;
 
 /* calculated values */
@@ -91,7 +92,7 @@ static double calc_bar_sum(int n,double *W,double beta_Wfac,double sbMmDG)
     
     for(i=0; i<n; i++)
     {
-        sum += 1/(1 + exp(beta_Wfac*W[i] + sbMmDG));
+        sum += 1./(1. + exp(beta_Wfac*W[i] + sbMmDG));
     }
     
     return sum;
@@ -197,9 +198,6 @@ static void calc_rel_entropy(int n1,double *W1,int n2,double *W2,
         Wfac2 =  -delta_lambda;
     }
 
-    /*printf("delta_lambda=%g, Wfac1=%g, Wfac2=%g, beta=%g\n", 
-           delta_lambda, Wfac1, Wfac2, beta);*/
- 
     /* first calculate the average work in both directions */
     for(i=0;i<n1;i++)
     {
@@ -208,7 +206,7 @@ static void calc_rel_entropy(int n1,double *W1,int n2,double *W2,
     W_ab/=n1;
     for(i=0;i<n2;i++)
     {
-        W_ba += Wfac2*W2[i];
+        W_ba += Wfac2*W2[i]; 
     }
     W_ba/=n2;
    
@@ -258,7 +256,6 @@ static void calc_dg_variance(int n1, double *W1, int n2, double *W2,
     /* Eq. 10 from 
        Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
     *var = kT*kT*((1./sigmafact) - ( (n1+n2)/n1 + (n1+n2)/n2 ));
-    /*printf("sigmafact=%g, var=%g\n",sigmafact, *var);*/
 }
 
 
@@ -296,13 +293,13 @@ static int get_lam_set(barsim_t *ba,double lambda)
     int i;
 
     i = 1;
-    while (i + 1 < ba->nset && ba->lambda[i] != lambda)
+    while (i < ba->nset && ba->lambda[i] != lambda)
     {
         i++;
     }
-    if (i == ba->nset)
+    if (i  == ba->nset)
     {
-        gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file of lambda = %g",lambda,ba->lambda[0]);
+        gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file '%s' of lambda = %g",lambda,ba->filename,ba->lambda[0]);
     }
 
     return i;
@@ -455,7 +452,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
 static double legend2lambda(char *fn,const char *legend,bool bdhdl)
 {
     double lambda=0;
-    char   *ptr;
+    const char   *ptr;
 
     if (legend == NULL)
     {
@@ -510,9 +507,15 @@ static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
     int  i;
     char **legend,*ptr;
 
-    printf("'%s' ",fn);
+    ba->filename = fn;
+
+    printf("'%s' ",ba->filename);
 
     ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
+    if (!ba->y)
+    {
+        gmx_fatal(FARGS,"File %s contains no usable data.",fn);
+    }
     ba->t  = ba->y[0];
 
     get_begin_end(ba,begin,end,&ba->begin,&ba->end);
@@ -729,36 +732,42 @@ int gmx_bar(int argc,char *argv[])
     var_tot = 0;
     for(f=0; f<nfile-1; f++)
     {
+        
         if (fp != NULL)
         {
-            fprintf(fp,xvgformat,
-                    ba[f].lambda[0],dg_tot,sqrt(var_tot));
+            fprintf(fp,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
 
         calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nb0, nb1,
                  &(results[f]), calc_s, calc_v);
 
-        printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
-                                            results[f].lambda_b);
+        /*printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
+                                              results[f].lambda_b);*/
+        printf("lambda ");
+        printf(dgformat, results[f].lambda_a);
+        printf(" - ");
+        printf(dgformat, results[f].lambda_b);
+        printf(", DG ");
+
         printf(dgformat,results[f].dg);
-        printf(" err");
+        printf(" +/- ");
         printf(dgformat,results[f].dg_err);
         if (calc_s)
         {
-            printf("   s_ab "); 
+            printf("   s_A "); 
             printf(dgformat, results[f].sa);
-            printf(" err"); 
+            printf(" +/- "); 
             printf(dgformat, results[f].sa_err);
-            printf("  s_ba "); 
+            printf("  s_B "); 
             printf(dgformat, results[f].sb);
-            printf(" err"); 
+            printf(" +/- "); 
             printf(dgformat, results[f].sb_err);
         }
         if (calc_v)
         {
             printf("   var est ");
             printf(dgformat, results[f].dg_var);
-            printf(" err"); 
+            printf(" +/- "); 
             printf(dgformat, results[f].dg_var_err);
         }
         printf("\n");
@@ -768,7 +777,7 @@ int gmx_bar(int argc,char *argv[])
     printf("\n");
     printf("total  %4.2f - %4.2f, DG ",ba[0].lambda[0],ba[nfile-1].lambda[0]);
     printf(dgformat,dg_tot);
-    printf(" err");
+    printf(" +/- ");
     printf(dgformat,sqrt(var_tot));
     printf("\n");
 
@@ -776,7 +785,7 @@ int gmx_bar(int argc,char *argv[])
     {
         fprintf(fp,xvgformat,
                 ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
-        fclose(fp);
+        ffclose(fp);
     }
 
     do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");

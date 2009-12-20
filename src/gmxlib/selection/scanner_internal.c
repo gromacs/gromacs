@@ -44,9 +44,12 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
 #include <typedefs.h>
 #include <smalloc.h>
-#include <string2.h>
+#include <string.h>
+
+#include "string2.h"
 
 #include <selmethod.h>
 
@@ -59,8 +62,6 @@
 #include "scanner.h"
 #include "scanner_internal.h"
 
-#define DEFAULT_PROMPT     ">"
-#define CONTINUE_PROMPT    "..."
 #define STRSTORE_ALLOCSTEP 1000
 
 /* These are defined as macros in the generated scanner_flex.h.
@@ -69,6 +70,85 @@
 #undef yylval
 #undef yytext
 #undef yyleng
+
+static bool
+read_stdin_line(gmx_sel_lexer_t *state)
+{
+    char *ptr     = state->inputstr;
+    int   max_len = state->nalloc_input;
+    int   totlen = 0;
+
+    if (feof(stdin))
+    {
+        return FALSE;
+    }
+    if (state->bInteractive)
+    {
+        fprintf(stderr, "> ");
+    }
+    while (fgets(ptr, max_len, stdin))
+    {
+        int len = strlen(ptr);
+
+        totlen += len;
+        if (len >= 2 && ptr[len - 1] == '\n' && ptr[len - 2] == '\\')
+        {
+            if (state->bInteractive)
+            {
+                fprintf(stderr, "... ");
+            }
+        }
+        else if (len >= 1 && ptr[len - 1] == '\n')
+        {
+            return TRUE;
+        }
+        else if (len < max_len - 1)
+        {
+            if (state->bInteractive)
+            {
+                fprintf(stderr, "\n");
+            }
+            break;
+        }
+        ptr     += len;
+        max_len -= len;
+        if (max_len <= 2)
+        {
+            max_len += state->nalloc_input;
+            state->nalloc_input *= 2;
+            len = ptr - state->inputstr;
+            srenew(state->inputstr, state->nalloc_input);
+            ptr = state->inputstr + len;
+        }
+    }
+    if (ferror(stdin))
+    {
+        gmx_input("selection reading failed");
+    }
+    return totlen > 0;
+}
+
+int
+_gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
+{
+    gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
+    int token;
+
+    if (!state->bBuffer && !state->inputstr)
+    {
+        state->nalloc_input = 1024;
+        snew(state->inputstr, state->nalloc_input);
+        read_stdin_line(state);
+        _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
+    }
+    token = _gmx_sel_yylex(yylval, yyscanner);
+    while (state->inputstr && token == 0 && read_stdin_line(state))
+    {
+        _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
+        token = _gmx_sel_yylex(yylval, yyscanner);
+    }
+    return token;
+}
 
 static int
 init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
@@ -186,7 +266,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
 }
 
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
+_gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                                   gmx_sel_lexer_t *state)
 {
     gmx_sel_symrec_t *symbol;
@@ -276,10 +356,10 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
             {
                 case INT_VALUE:
                     yylval->i = var->v.u.i[0];
-                    return INTEGER;
+                    return TOK_INT;
                 case REAL_VALUE:
                     yylval->r = var->v.u.r[0];
-                    return REAL;
+                    return TOK_REAL;
                 case POS_VALUE:
                     break;
                 default:
@@ -316,26 +396,6 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, int yyleng,
     }
     /* Should not be reached */
     return INVALID;
-}
-
-void
-_gmx_sel_lexer_prompt_print(gmx_sel_lexer_t *state)
-{
-    if (state->bPrompt)
-    {
-        fprintf(stderr, "%s ", state->prompt);
-        state->bPrompt = FALSE;
-    }
-}
-
-void
-_gmx_sel_lexer_prompt_newline(bool bContinue, gmx_sel_lexer_t *state)
-{
-    if (state->prompt)
-    {
-        state->prompt  = bContinue ? CONTINUE_PROMPT : DEFAULT_PROMPT;
-        state->bPrompt = TRUE;
-    }
 }
 
 void
@@ -384,8 +444,9 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->grps      = grps;
     state->nexpsel   = (maxnr > 0 ? sc->nr + maxnr : -1);
 
-    state->bPrompt   = bInteractive;
-    state->prompt    = bInteractive ? DEFAULT_PROMPT : NULL;
+    state->bInteractive = bInteractive;
+    state->nalloc_input = 0;
+    state->inputstr     = NULL;
 
     snew(state->pselstr, STRSTORE_ALLOCSTEP);
     state->pselstr[0]   = 0;
@@ -414,6 +475,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
+    sfree(state->inputstr);
     sfree(state->pselstr);
     sfree(state->mstack);
     if (state->bBuffer)
@@ -428,7 +490,7 @@ bool
 _gmx_sel_is_lexer_interactive(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    return state->bPrompt;
+    return state->bInteractive;
 }
 
 struct gmx_ana_selcollection_t *
@@ -501,6 +563,10 @@ _gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
+    if (state->bBuffer)
+    {
+        _gmx_sel_yy_delete_buffer(state->buffer, scanner);
+    }
     state->bBuffer = TRUE;
     state->buffer  = _gmx_sel_yy_scan_string(str, scanner);
 }

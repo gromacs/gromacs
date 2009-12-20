@@ -609,6 +609,10 @@ static void comp_state(t_state *st1, t_state *st2,
   cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,FALSE,ftol,abstol);
   fprintf(stdout,"comparing boxv\n");
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,FALSE,ftol,abstol);
+  if (st1->flags & (1<<estVIR_PREV)) {
+    fprintf(stdout,"comparing vir_pres\n");
+    cmp_rvecs(stdout,"vir_prev",DIM,st1->vir_prev,st2->vir_prev,FALSE,ftol,abstol);
+  }
   if (st1->flags & (1<<estPRES_PREV)) {
     fprintf(stdout,"comparing prev_pres\n");
     cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);

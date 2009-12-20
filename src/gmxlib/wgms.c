@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include "gstat.h"
+#include "wgms.h"
 
 static int     n=0;
 #define FPL 10

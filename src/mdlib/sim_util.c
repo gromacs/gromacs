@@ -93,7 +93,6 @@
 #include "tmpi.h"
 #endif
 
-
 #include "qmmm.h"
 
 #if 0
@@ -890,124 +889,121 @@ void do_force(FILE *fplog,t_commrec *cr,
 }
 
 void do_constrain_first(FILE *fplog,gmx_constr_t constr,
-                        t_inputrec *inputrec,t_mdatoms *md,
-                        t_state *state,
+                        t_inputrec *ir,t_mdatoms *md,
+                        t_state *state,rvec *f,
                         t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-                        t_forcerec *fr,t_idef *idef)
+                        t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir)
 {
     int    i,m,start,end;
     gmx_large_int_t step;
     double mass,tmass,vcm[4];
     real   dt=inputrec->delta_t;
     real   dvdl_dum;
-    rvec   *xcon;
+    rvec   *savex;
     char   buf[22];
     
+    snew(savex,state->natoms);
+
     start = md->start;
     end   = md->homenr + start;
+    
     if (debug)
-    {
         fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
                 start,md->homenr,end);
-    }
-    snew(xcon,state->nalloc);
-
-    /* Do a first constraining to reset particles... */
-    step = inputrec->init_step;
+    /* Do a first constrain to reset particles... */
+    step = ir->init_step;
     if (fplog)
     {
-        fprintf(fplog,"\nConstraining the starting coordinates (step %s)\n",
-                gmx_step_str(step,buf));
+        fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
     }
     dvdl_dum = 0;
-    constrain(NULL,TRUE,FALSE,constr,idef,
-              inputrec,cr,step,0,md,
+    
+    /* constrain the current position */
+    constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+              ir,NULL,cr,step,0,md,
               state->x,state->x,NULL,
               state->box,state->lambda[efptBONDED],&dvdl_dum,
-              NULL,NULL,nrnb,econqCoord);
-    
-    if (EI_STATE_VELOCITY(inputrec->eI)) {
-        for(i=start; (i<end); i++) {
-            for(m=0; (m<DIM); m++) {
+              NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
+    if (EI_VV(ir->eI)) 
+    {
+        /* constrain the inital velocity, and save it */
+        /* also may be useful if we need the ekin from the halfstep for velocity verlet */
+        /* might not yet treat veta correctly */
+        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                  ir,NULL,cr,step,0,md,
+                  state->x,state->v,state->v,
+                  state->box,state->lambda[efptBONDED],&dvdl_dum,
+                  NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
+    }
+    /* constrain the inital velocities at t-dt/2 */
+    if (EI_STATE_VELOCITY(ir->eI) && ir->eI!=eiVV)
+    {
+        for(i=start; (i<end); i++) 
+        {
+            for(m=0; (m<DIM); m++) 
+            {
                 /* Reverse the velocity */
                 state->v[i][m] = -state->v[i][m];
-                /* Store the position at t-dt in xcon */
-                xcon[i][m] = state->x[i][m] + dt*state->v[i][m];
+                /* Store the position at t-dt in buf */
+                savex[i][m] = state->x[i][m] + dt*state->v[i][m];
             }
         }
-        
-        /* Constrain the positions at t=-dt with the positions at t=0
-         * as reference coordinates.
+    /* Shake the positions at t=-dt with the positions at t=0                        
+     * as reference coordinates.                                                     
          */
         if (fplog)
         {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %s)\n",
-                    gmx_step_str(step,buf));
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+                    step);
         }
         dvdl_dum = 0;
-        constrain(NULL,TRUE,FALSE,constr,idef,
-                  inputrec,cr,step,-1,md,
-                  state->x,xcon,NULL,
+        constrain(NULL,TRUE,FALSE,constr,&(top->idef),
+                  ir,NULL,cr,step,-1,md,
+                  state->x,savex,NULL,
                   state->box,state->lambda[efptBONDED],&dvdl_dum,
-                  state->v,NULL,nrnb,econqCoord);
+                  state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
         
-        sfree(xcon);
-
-        for(m=0; (m<4); m++)
-        {
-            vcm[m] = 0;
-        }
-        for(i=start; i<end; i++)
-        {
-            mass = md->massT[i];
-            for(m=0; m<DIM; m++)
-            {
+        for(i=start; i<end; i++) {
+            for(m=0; m<DIM; m++) {
                 /* Re-reverse the velocities */
                 state->v[i][m] = -state->v[i][m];
-                vcm[m] += state->v[i][m]*mass;
-            }
-            vcm[3] += mass;
-        }
-        
-        if (inputrec->nstcomm != 0 || debug)
-        {
-            /* Compute the global sum of vcm */
-            if (debug)
-            {
-                fprintf(debug,
-                        "vcm: %8.3f  %8.3f  %8.3f,"
-                        " total mass = %12.5e\n",
-                        vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-            }
-            if (PAR(cr))
-            {
-                gmx_sumd(4,vcm,cr);
-            }
-            tmass = vcm[3];
-            for(m=0; (m<DIM); m++)
-            {
-                vcm[m] /= tmass;
-            }
-            if (debug)
-            {
-                fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-                        " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-            }
-            if (inputrec->nstcomm != 0)
-            {
-                /* Now we have the velocity of center of mass,
-                 * let's remove it.
-                 */
-                for(i=start; (i<end); i++)
-                {
-                    for(m=0; (m<DIM); m++)
-                    {
-                        state->v[i][m] -= vcm[m];
-                    }
-                }
             }
         }
     }
+    
+    for(m=0; (m<4); m++)
+        vcm[m] = 0;
+    for(i=start; i<end; i++) {
+        mass = md->massT[i];
+        for(m=0; m<DIM; m++) {
+            vcm[m] += state->v[i][m]*mass;
+        }
+        vcm[3] += mass;
+    }
+    
+    if (ir->nstcomm != 0 || debug) {
+        /* Compute the global sum of vcm */
+        if (debug)
+            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
+        if (PAR(cr))
+            gmx_sumd(4,vcm,cr);
+        tmass = vcm[3];
+        for(m=0; (m<DIM); m++)
+            vcm[m] /= tmass;
+        if (debug) 
+            fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+                    " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
+        if (ir->nstcomm != 0) {
+            /* Now we have the velocity of center of mass, let's remove it */
+            for(i=start; (i<end); i++) {
+                for(m=0; (m<DIM); m++)
+                    state->v[i][m] -= vcm[m];
+            }
+
+        }
+    }
+    sfree(savex);
 }
 
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
@@ -1141,66 +1137,70 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-                   gmx_large_int_t step,int natoms,matrix box,real lambda,
-                   tensor pres,tensor virial,gmx_enerdata_t *enerd)
+                   gmx_large_int_t step, gmx_mtop_t *top_global,int natoms,
+                   matrix box,real lambda,tensor pres,tensor virial,
+                   real *prescorr, real *enercorr, real *dvdlcorr)
 {
     bool bCorrAll,bCorrPres;
     real dvdl,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
-    enerd->term[F_DISPCORR] = 0.0;
-    enerd->term[F_PDISPCORR] = 0.0;
+    *prescorr = 0;
+    *enercorr = 0;
+    *dvdlcorr = 0;
     
-    if (ir->eDispCorr != edispcNO)
-    {
+    clear_mat(virial);
+    clear_mat(pres);
+    
+    if (ir->eDispCorr != edispcNO) {
         bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                      ir->eDispCorr == edispcAllEnerPres);
         bCorrPres = (ir->eDispCorr == edispcEnerPres ||
                      ir->eDispCorr == edispcAllEnerPres);
         
         invvol = 1/det(box);
-        if (fr->n_tpi)
+        if (fr->n_tpi) 
         {
             /* Only correct for the interactions with the inserted molecule */
             dens = (natoms - fr->n_tpi)*invvol;
             ninter = fr->n_tpi;
-        }
-        else
+        } 
+        else 
         {
-            dens = natoms*invvol;
-            ninter = 0.5*natoms;
+            dens = top_global->natoms*invvol;
+            ninter = 0.5*top_global->natoms;
         }
         
-        if (ir->efep == efepNO)
+        if (ir->efep == efepNO) 
         {
             avcsix    = fr->avcsix[0];
             avctwelve = fr->avctwelve[0];
-        }
-        else
+        } 
+        else 
         {
             avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
             avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
         }
-    
-        enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        enerd->term[F_DISPCORR] += avcsix*enerdiff;
-        dvdl = 0.0;
-        if (ir->efep != efepNO)
-        {
-            dvdl += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
-        }
         
-        if (bCorrAll)
+        enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
+        *enercorr += avcsix*enerdiff;
+        dvdlambda = 0.0;
+
+        if (ir->efep != efepNO) 
+        {
+            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+        }
+        if (bCorrAll) 
         {
             enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            enerd->term[F_DISPCORR] += avctwelve*enerdiff;
-            if (fr->efep != efepNO)
+            *enercorr += avctwelve*enerdiff;
+            if (fr->efep != efepNO) 
             {
-                dvdl += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
         
-        if (bCorrPres)
+        if (bCorrPres) 
         {
             svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
             if (ir->eDispCorr == edispcAllEnerPres)
@@ -1214,24 +1214,39 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                 virial[m][m] += svir;
                 pres[m][m] += spres;
             }
-            enerd->term[F_PDISPCORR] = spres;
-            enerd->term[F_PRES]     += spres;
+            *prescorr += spres;
+        }
+
+    /* Can't currently control when it prints, for now, just print when degugging */
+        
+        if (debug)
+        {
+            if (bCorrAll) {
+                fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                        avcsix,avctwelve);
+            }
+            if (bCorrPres)
+            {
+                fprintf(debug,
+                        "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
+                        *enercorr,spres,svir);
+            }
+            else
+            {
+                fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
+            }
         }
         
         if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-        {
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    enerd->term[F_DISPCORR],dvdl);
-        }
+                    *enercorr,dvdlambda);
         
-        enerd->term[F_EPOT] += enerd->term[F_DISPCORR];
-        if (fr->efep != efepNO)
+        if (fr->efep != efepNO) 
         {
-            enerd->dvdl_lin[efptVDW] += dvdl;
+            *dvdlcorr += dvdlambda;
         }
     }
 }
-
 
 void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
@@ -1433,7 +1448,7 @@ void init_md(FILE *fplog,
             lambda[i] = lam0[i] = 0.0;
         }
     }
-    
+
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
     {

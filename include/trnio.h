@@ -57,6 +57,10 @@
 	
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct		/* This struct describes the order and the	*/
   /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
 {
@@ -129,5 +133,10 @@ extern void read_trn(const char *fn,int *step,real *t,real *lambda,
 		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a single trn frame from file fn, which is closed afterwards 
  */
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

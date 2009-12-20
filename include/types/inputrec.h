@@ -43,6 +43,11 @@
 
 #include "types/simple.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct {
   int  n;		/* Number of terms				*/
   real *a;		/* Coeffients (V / nm )                  	*/
@@ -61,6 +66,7 @@ typedef struct {
 
 typedef struct {
   int     ngtc;                  /* # T-Coupl groups                        */
+  int     nhchain_num;           /* # of nose-hoover chains per group       */
   int     ngacc;                 /* # Accelerate groups                     */
   int     ngfrz;                 /* # Freeze groups                         */
   int     ngener;	         /* # Ener groups			    */
@@ -296,5 +302,14 @@ typedef struct {
 #define IR_ELEC_FIELD(ir) ((ir).ex[XX].n > 0 || (ir).ex[YY].n > 0 || (ir).ex[ZZ].n > 0)
 
 #define IR_EXCL_FORCES(ir) (EEL_FULL((ir).coulombtype) || (EEL_RF((ir).coulombtype) && (ir).coulombtype != eelRF_NEC) || (ir).implicit_solvent != eisNO)
+/* use pointer definitions of ir here, since that's what's usually used in the code */
+#define IR_NVT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((ir)->etc == etcNOSEHOOVER))
+
+#define IR_NPT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((ir)->epc == epcMTTK))
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

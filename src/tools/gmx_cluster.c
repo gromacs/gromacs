@@ -58,6 +58,7 @@
 #include "do_fit.h"
 #include "trnio.h"
 #include "viewit.h"
+#include "gmx_ana.h"
 
 /* macro's to print to two file pointers at once (i.e. stderr and log) */
 #define lo_ffprintf(fp1,fp2,buf) \
@@ -647,7 +648,8 @@ static void mark_clusters(int nf, real **mat, real val, t_clusters *clust)
 static char *parse_filename(const char *fn, int maxnr)
 {
   int i;
-  char *fnout, *ext;
+  char *fnout;
+  const char *ext;
   char buf[STRLEN];
   
   if (strchr(fn,'%'))
@@ -658,16 +660,11 @@ static char *parse_filename(const char *fn, int maxnr)
   ext = strrchr(fn, '.');
   if (!ext)
     gmx_fatal(FARGS,"cannot separate extension in filename %s",fn);
-  /* temporarily truncate filename at the '.' */
-  ext[0] = '\0';
   ext++;
   /* insert e.g. '%03d' between fn and ext */
   sprintf(buf,"%s%%0%dd.%s",fn,i,ext);
   snew(fnout,strlen(buf)+1);
   strcpy(fnout, buf);
-  /* place '.' back into origional filename */
-  ext--;
-  ext[0] = '.';
   
   return fnout;
 }

@@ -35,6 +35,8 @@
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_fatal.h"
+#include "gmx_ana.h"
+
 
 #define G_REF1      0
 #define G_REF2      1
@@ -79,7 +81,7 @@ static void do_sdf(const char *fnNDX,const char *fnTPS,const char *fnTRX,
   int        *isize;
   int        isize_cg=0;
   int        isize_ref=3;
-  int        ref_resind[3];
+  int        ref_resind[3]={0};
   int        nrefmol=0,refc=0;
   atom_id    **index;
   atom_id    *index_cg=NULL;

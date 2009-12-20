@@ -47,6 +47,11 @@
 #include "tgroup.h"
 #include "network.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /****************************************************
  *
  *    U T I L I T I E S May be found in ns.c
@@ -100,5 +105,10 @@ extern int read_nblist(FILE *in,FILE *out,int **mat,int natoms,bool bSymm);
 extern int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 				   matrix scale_tot,rvec *x);
 /* Returns the number of atoms that moved beyond the ns buffer */
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _ns_h */

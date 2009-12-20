@@ -892,9 +892,9 @@ real quartic_angles(int nbonds,
 }
 
 real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
-	       const t_pbc *pbc,
-	       rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n,
-	       real *cos_phi,real *sign,int *t1,int *t2,int *t3)
+               const t_pbc *pbc,
+               rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n,
+               real *sign,int *t1,int *t2,int *t3)
 {
   real ipr,phi;
 
@@ -904,14 +904,15 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 
   cprod(r_ij,r_kj,m); 			/*  9 		*/
   cprod(r_kj,r_kl,n);			/*  9		*/
-  *cos_phi=cos_angle(m,n); 		/* 41 		*/
-  phi=acos(*cos_phi); 			/* 10 		*/
+  phi=gmx_angle(m,n); 			/* 49 (assuming 25 for atan2) */
   ipr=iprod(r_ij,n); 			/*  5 		*/
   (*sign)=(ipr<0.0)?-1.0:1.0;
   phi=(*sign)*phi; 			/*  1		*/
-					/* 84 TOTAL	*/
+					/* 82 TOTAL	*/
   return phi;
 }
+
+
 
 void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		rvec r_ij,rvec r_kj,rvec r_kl,
@@ -1036,7 +1037,7 @@ real pdihs(int nbonds,
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
-  real phi,cos_phi,sign,ddphi,vpd,vtot;
+  real phi,sign,ddphi,vpd,vtot;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1047,7 +1048,7 @@ real pdihs(int nbonds,
     al   = forceatoms[i++];
     
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84 		*/
+                  &sign,&t1,&t2,&t3);			/*  84 		*/
 		
     *dvdl += dopdihs(forceparams[type].pdihs.cpA,
 			  forceparams[type].pdihs.cpB,
@@ -1061,8 +1062,8 @@ real pdihs(int nbonds,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
 
 #ifdef DEBUG
-    fprintf(debug,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
-	    ai,aj,ak,al,cos_phi,phi);
+    fprintf(debug,"pdih: (%d,%d,%d,%d) phi=%g\n",
+	    ai,aj,ak,al,phi);
 #endif
   } /* 223 TOTAL 	*/
 
@@ -1081,7 +1082,7 @@ real idihs(int nbonds,
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
-  real phi,phi0,dphi0,cos_phi,ddphi,sign,vtot;
+  real phi,phi0,dphi0,ddphi,sign,vtot;
   rvec r_ij,r_kj,r_kl,m,n;
   real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl_term;
 
@@ -1097,7 +1098,7 @@ real idihs(int nbonds,
     al   = forceatoms[i++];
     
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84		*/
+                  &sign,&t1,&t2,&t3);			/*  84		*/
     
     /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
      * force changes if we just apply a normal harmonic.
@@ -1135,8 +1136,8 @@ real idihs(int nbonds,
     /* 217 TOTAL	*/
 #ifdef DEBUG
     if (debug)
-      fprintf(debug,"idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
-	      ai,aj,ak,al,cos_phi,phi);
+      fprintf(debug,"idih: (%d,%d,%d,%d) phi=%g\n",
+	      ai,aj,ak,al,phi);
 #endif
   }
   
@@ -1378,7 +1379,7 @@ real rbdihs(int nbonds,
   real parmA[NR_RBDIHS];
   real parmB[NR_RBDIHS];
   real parm[NR_RBDIHS];
-  real phi,cos_phi,rbp,rbpBA;
+  real cos_phi,phi,rbp,rbpBA;
   real v,sign,ddphi,sin_phi;
   real cosfac,vtot;
   real L1   = 1.0-lambda;
@@ -1392,17 +1393,18 @@ real rbdihs(int nbonds,
     ak   = forceatoms[i++];
     al   = forceatoms[i++];
 
-    phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84		*/
+      phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                    &sign,&t1,&t2,&t3);			/*  84		*/
 
     /* Change to polymer convention */
     if (phi < c0)
       phi += M_PI;
     else
       phi -= M_PI;			/*   1		*/
-    cos_phi = -cos_phi;					/*   1		*/
-    
-    sin_phi=sin(phi);
+      
+    cos_phi = cos(phi);		
+    /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
+    sin_phi = sin(phi);
 
     for(j=0; (j<NR_RBDIHS); j++) {
       parmA[j] = forceparams[type].rbdihs.rbcA[j];
@@ -1567,8 +1569,10 @@ real cmap_dihs(int nbonds,
 		a1l   = al;
 		
 		phi1  = dih_angle(x[a1i], x[a1j], x[a1k], x[a1l], pbc, r1_ij, r1_kj, r1_kl, m1, n1,
-						  &cos_phi1, &sign1, &t11, &t21, &t31); /* 84 */
+						   &sign1, &t11, &t21, &t31); /* 84 */
 		
+        cos_phi1 = cos(phi1);
+        
 		a1[0] = r1_ij[1]*r1_kj[2]-r1_ij[2]*r1_kj[1];
 		a1[1] = r1_ij[2]*r1_kj[0]-r1_ij[0]*r1_kj[2];
 		a1[2] = r1_ij[0]*r1_kj[1]-r1_ij[1]*r1_kj[0]; /* 9 */
@@ -1626,8 +1630,10 @@ real cmap_dihs(int nbonds,
 		a2l   = am;
 		
 		phi2  = dih_angle(x[a2i], x[a2j], x[a2k], x[a2l], pbc, r2_ij, r2_kj, r2_kl, m2, n2,
-						  &cos_phi2, &sign2, &t12, &t22, &t32); /* 84 */
+						  &sign2, &t12, &t22, &t32); /* 84 */
 		
+        cos_phi2 = cos(phi2);
+
 		a2[0] = r2_ij[1]*r2_kj[2]-r2_ij[2]*r2_kj[1];
 		a2[1] = r2_ij[2]*r2_kj[0]-r2_ij[0]*r2_kj[2];
 		a2[2] = r2_ij[0]*r2_kj[1]-r2_ij[1]*r2_kj[0]; /* 9 */
@@ -2399,7 +2405,7 @@ real tab_dihs(int nbonds,
   int  i,type,ai,aj,ak,al,table;
   int  t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
-  real phi,cos_phi,sign,ddphi,vpd,vtot;
+  real phi,sign,ddphi,vpd,vtot;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -2410,7 +2416,7 @@ real tab_dihs(int nbonds,
     al   = forceatoms[i++];
     
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84  */
+                  &sign,&t1,&t2,&t3);			/*  84  */
 
     table = forceparams[type].tab.table;
 
@@ -2426,8 +2432,8 @@ real tab_dihs(int nbonds,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112	*/
 
 #ifdef DEBUG
-    fprintf(debug,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
-	    ai,aj,ak,al,cos_phi,phi);
+    fprintf(debug,"pdih: (%d,%d,%d,%d) phi=%g\n",
+	    ai,aj,ak,al,phi);
 #endif
   } /* 227 TOTAL 	*/
 

@@ -47,6 +47,8 @@
 #include "index.h"
 #include "tpxio.h"
 #include "physics.h"
+#include "gmx_ana.h"
+
 
 static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
 			 atom_id index[],rvec xref,int ePBC,matrix box)
@@ -127,7 +129,7 @@ int gmx_spol(int argc,char *argv[])
   int      status;
   int      nrefat,natoms,nf,ntot;
   real     t;
-  rvec     *xtop,*x,xref,trial,dx,dip,dir;
+  rvec     *xtop,*x,xref,trial,dx={0},dip,dir;
   matrix   box;
   
   FILE    *fp;
@@ -321,7 +323,7 @@ int gmx_spol(int argc,char *argv[])
     nmol += hist[i];
     fprintf(fp,"%g %g\n",i*bw,nmol/nf);
   }
-  fclose(fp);
+  ffclose(fp);
 
   do_view(oenv,opt2fn("-o",NFILE,fnm),NULL);
 

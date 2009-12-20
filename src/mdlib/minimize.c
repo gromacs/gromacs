@@ -361,9 +361,9 @@ void init_em(FILE *fplog,const char *title,
     /* Constrain the starting coordinates */
     dvdl=0;
     constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
-              ir,cr,-1,0,mdatoms,
+              ir,NULL,cr,-1,0,mdatoms,
               ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda[efptFEP],&dvdl,
-              NULL,NULL,nrnb,econqCoord);
+              NULL,NULL,nrnb,econqCoord,FALSE,0,0);
   }
 
   if (PAR(cr)) {
@@ -532,9 +532,9 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     wallcycle_start(wcycle,ewcCONSTR);
     dvdl = 0;
     constrain(NULL,TRUE,TRUE,constr,&top->idef,	
-              ir,cr,count,0,md,
+              ir,NULL,cr,count,0,md,
               s1->x,s2->x,NULL,s2->box,s2->lambda[efptBONDED],
-              &dvdl,NULL,NULL,nrnb,econqCoord);
+              &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
     wallcycle_stop(wcycle,ewcCONSTR);
   }
 }
@@ -618,7 +618,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   bool bNS;
   int  nabnsb;
   tensor force_vir,shake_vir,ekin;
-  real dvdl;
+  real dvdl,prescorr,enercorr,dvdlcorr;
   real terminate=0;
   
   /* Set the time to the initial time, the time does not change during EM */
@@ -671,37 +671,50 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   clear_mat(pres);
 
   /* Calculate long range corrections to pressure and energy */
-  calc_dispcorr(fplog,inputrec,fr,count,mdatoms->nr,ems->s.box,ems->s.lambda[efptVDW],
-		pres,force_vir,enerd);
+  calc_dispcorr(fplog,inputrec,fr,count,top_global,top_global->natoms,ems->s.box,ems->s.lambda[efptVDW],
+                pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
+  /* don't think these next 4 lines  can be moved in for now, because we 
+     don't always want to write it -- figure out how to clean this up MRS 8/4/2009 */
+  enerd->term[F_DISPCORR] = enercorr;
+  enerd->term[F_EPOT] += enercorr;
+  enerd->term[F_PRES] += prescorr;
+  enerd->term[F_DVDL] += dvdlcorr;
 
   /* Communicate stuff when parallel */
   if (PAR(cr)) {
-    wallcycle_start(wcycle,ewcMoveE);
-
-    global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-		inputrec,NULL,FALSE,NULL,NULL,NULL,NULL,&terminate,
-		top_global,&ems->s);
-
-    wallcycle_stop(wcycle,ewcMoveE);
+      wallcycle_start(wcycle,ewcMoveE);
+      
+      global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
+                  inputrec,NULL,NULL,NULL,NULL,NULL,&terminate,
+                  top_global,&ems->s,FALSE,
+                  CGLO_ENERGY | 
+                  CGLO_PRESSURE | 
+                  CGLO_CONSTRAINT | 
+                  CGLO_FIRSTITERATE);
+      
+      wallcycle_stop(wcycle,ewcMoveE);
   }
-
+  
   ems->epot = enerd->term[F_EPOT];
   
-  if (constr) {
-    /* Project out the constraint components of the force */
-    wallcycle_start(wcycle,ewcCONSTR);
-    dvdl = 0;
-    constrain(NULL,FALSE,FALSE,constr,&top->idef,
-	      inputrec,cr,count,0,mdatoms,
-	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda[efptBONDED],&dvdl,
-	      NULL,&shake_vir,nrnb,econqForceDispl);
-    if (fr->bSepDVDL && fplog)
-      fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
-    enerd->term[F_DVDL_BONDED] += dvdl;
-    m_add(force_vir,shake_vir,vir);
-    wallcycle_stop(wcycle,ewcCONSTR);
+  if (constr) 
+  {
+      /* Project out the constraint components of the force */
+      wallcycle_start(wcycle,ewcCONSTR);
+      dvdl = 0;
+      constrain(NULL,FALSE,FALSE,constr,&top->idef,
+                inputrec,NULL,cr,count,0,mdatoms,
+                ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda[efptBONDED],&dvdl,
+                NULL,&shake_vir,nrnb,econqForceDispl,FALSE,0,0);
+      if (fr->bSepDVDL && fplog)
+      {
+          fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
+      }
+      enerd->term[F_DVDL_BONDED] += dvdl;
+      m_add(force_vir,shake_vir,vir);
+      wallcycle_stop(wcycle,ewcCONSTR);
   } else {
-    copy_mat(force_vir,vir);
+      copy_mat(force_vir,vir);
   }
 
   clear_mat(ekin);
@@ -2487,6 +2500,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   real   *mass_cavity=NULL,mass_tot;
   int    nbin;
   double invbinw,*bin,refvolshift,logV,bUlogV;
+  real dvdl,prescorr,enercorr,dvdlcorr;
   const char *tpid_leg[2]={"direct","reweighted"};
 
   /* Since numerical problems can lead to extreme negative energies
@@ -2904,8 +2918,13 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 bNS = FALSE;
                 
                 /* Calculate long range corrections to pressure and energy */
-                calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,
-                              lambda,pres,vir,enerd);
+                calc_dispcorr(fplog,inputrec,fr,step,top_global,top_global->natoms,rerun_fr.box,
+                              lambda,pres,vir,&prescorr,&enercorr,&dvdlcorr);
+                /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
+                enerd->term[F_DISPCORR] = enercorr;
+                enerd->term[F_EPOT] += enercorr;
+                enerd->term[F_PRES] += prescorr;
+                enerd->term[F_DVDL] += dvdlcorr;	
                 
                 /* If the compiler doesn't optimize this check away
                  * we catch the NAN energies. With tables extreme negative

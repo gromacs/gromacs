@@ -38,6 +38,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Initialization function, also predicts the initial shell postions.
  * If x!=NULL, the shells are predict for the global coordinates x.
  */
@@ -71,3 +75,9 @@ extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       int natoms,bool *bConverged,
 			       gmx_vsite_t *vsite,
 			       FILE *fp_field);
+
+
+#ifdef __cplusplus
+}
+#endif
+

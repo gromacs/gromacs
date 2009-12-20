@@ -264,6 +264,12 @@ AC_ARG_WITH(qmmm_mopac,
 if test "$with_qmmm_mopac" = "yes"; then
   AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
 fi
+
+AC_ARG_WITH(dlopen,
+ [  --without-dlopen        do not compile with dlopen, needed to read VMD supported file formats],,with_dlopen=yes)
+
+
+
    
 
 ############################################################
@@ -315,6 +321,7 @@ if test "$enable_mpi" = "yes"; then
   AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
+  CXX=$MPICC
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
 AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
@@ -556,9 +563,21 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
 ))
 ## Check for library
 #  AC_CHECK_LIB([guide],main,,AC_MSG_ERROR([Cannot find libguide (Intel MKL)]))
-  AC_CHECK_LIB([mkl],DftiComputeForward,,
-    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
-
+#  AC_CHECK_LIB([mkl],DftiComputeForward,,
+#    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
+  # first check for older MKLs
+  AC_CHECK_LIB([mkl],DftiComputeForward,,[have_mkl="no"])
+  if test "$have_mkl" == "no"; then
+    # we assume it's a new MKL
+    LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
+    AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
+    if test "$have_mkl10_64" == "no"; then
+      AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
+      if test "$have_mkl10_32" == "no"; then
+        AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0])
+      fi
+    fi
+  fi
   AC_DEFINE(GMX_FFT_MKL,,[Use Intel MKL FFT library])
   ;;
 
@@ -960,6 +979,17 @@ AC_DEFINE(GMX_X86_MSVC_INLINE_ASM,,[Enable x86 MSVC inline assembly])],[AC_MSG_R
 esac
 
 
+############
+# Check dlopen
+###########
+if test "$with_dlopen" = "yes"; then
+      AC_MSG_CHECKING(if dlopen supported)
+      CFLAGS_RET=$CFLAGS
+      CFLAGS="-I$srcdir/include -DGMX_DLOPEN $CFLAGS"
+      AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[AC_MSG_RESULT([yes])\
+	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])],AC_MSG_RESULT([no]))
+      CFLAGS=$CFLAGS_RET
+fi
 
 
 

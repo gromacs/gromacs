@@ -412,10 +412,15 @@ void done_inputrec(t_inputrec *ir)
 
 static void init_ekinstate(ekinstate_t *eks)
 {
-  eks->ekinh_n = 0;
-  eks->ekinh   = NULL;
-  eks->dekindl = 0;
-  eks->mvcos   = 0;
+  eks->ekin_n         = 0;
+  eks->ekinh          = NULL;
+  eks->ekinf          = NULL;
+  eks->ekinh_old      = NULL;
+  eks->ekinscalef_nhc = NULL;
+  eks->ekinscaleh_nhc = NULL;
+  eks->vscale_nhc     = NULL;
+  eks->dekindl        = 0;
+  eks->mvcos          = 0;
 }
 
 static void init_energyhistory(energyhistory_t *enh)
@@ -428,20 +433,28 @@ static void init_energyhistory(energyhistory_t *enh)
 
 void init_gtc_state(t_state *state,int ngtc)
 {
-  int i;
+    int i,j,ngtcp;
 
-  state->ngtc = ngtc;
-  if (state->ngtc > 0) {
-    snew(state->nosehoover_xi, state->ngtc);
-    snew(state->therm_integral,state->ngtc);
-    for(i=0; i<state->ngtc; i++) {
-      state->nosehoover_xi[i]  = 0.0;
-      state->therm_integral[i] = 0.0;
+    state->ngtc = ngtc;
+    ngtcp = state->ngtc+1; /* need an extra state for the barostat */
+    if (state->ngtc > 0) {
+        snew(state->nosehoover_xi, NNHCHAIN*ngtcp); 
+        snew(state->nosehoover_vxi, NNHCHAIN*ngtcp);
+        snew(state->therm_integral, state->ngtc);
+        for(i=0; i<ngtcp; i++) {
+            for (j=0;j<NNHCHAIN;j++) {
+                state->nosehoover_xi[i*NNHCHAIN + j]  = 0.0;
+                state->nosehoover_vxi[i*NNHCHAIN + j]  = 0.0;
+            }
+        }
+        for(i=0; i<ngtc; i++) {
+            state->therm_integral[i]  = 0.0;
+        }
+    } else {
+        state->nosehoover_xi  = NULL;
+        state->nosehoover_vxi = NULL;
+        state->therm_integral = NULL;
     }
-  } else {
-    state->nosehoover_xi  = NULL;
-    state->therm_integral = NULL;
-  }
 }
 
 
@@ -461,6 +474,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   clear_mat(state->box_rel);
   clear_mat(state->boxv);
   clear_mat(state->pres_prev);
+  clear_mat(state->vir_prev);
   init_gtc_state(state,ngtc);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {

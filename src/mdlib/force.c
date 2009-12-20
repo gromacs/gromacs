@@ -245,7 +245,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
     {
         init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
-        
         for(i=0; i<enerd->n_lambda; i++)
         {
             for (j=0;j<efptNR;j++) {
@@ -474,7 +473,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                         bSB ? boxs : box,cr,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift0(cr->dd) : 0,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
-                                        nrnb,
+                                        nrnb,wcycle,
                                         fr->vir_el_recip,fr->ewaldcoeff,
                                         &Vlr,lambda[efptCOUL],&dvdl[efptCOUL],
                                         pme_flags);

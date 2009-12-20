@@ -43,6 +43,10 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* All string arrays are NULL terminated, and therefore have an
  * extra argument (the +1)
  * these should correspond to names.c and include/types/enums.h
@@ -121,5 +125,9 @@ extern const char *eMultentOpt_names[eMultentOptNR+1];
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)
 #define EMULTENTOPT(e) ENUM_NAME(e,eMultentOptNR,eMultentOpt_names)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _names_h */

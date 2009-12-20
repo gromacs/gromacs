@@ -162,7 +162,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   /* GENERAL INTEGRATOR STUFF */
-  if (ir->eI != eiMD) {
+  if (!(ir->eI == eiMD || EI_VV(ir->eI))) {
     ir->etc = etcNO;
   }
   if (!EI_DYNAMICS(ir->eI)) {
@@ -328,7 +328,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
   }
     
-  if (ir->eI == eiMD && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
+  if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
     warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
@@ -388,7 +388,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
     warning(NULL);
   }
-  
+
+  if (EI_VV(ir->eI)) {
+    if (ir->epc > epcNO) {
+      if (ir->epc!=epcMTTK) {
+	warning_error("NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+      }
+    }
+  }
+
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   if (ir->coulombtype == eelSWITCH) {

@@ -39,8 +39,7 @@
 #include <indexutil.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*! \brief
@@ -56,6 +55,14 @@ typedef struct gmx_ana_pos_t
      * Array of positions.
      */
     rvec               *x;
+    /*! \brief
+     * Velocities (can be NULL).
+     */
+    rvec               *v;
+    /*! \brief
+     * Forces (can be NULL).
+     */
+    rvec               *f;
     /*! \brief
      * Mapping of the current positions to the original group.
      *
@@ -78,6 +85,12 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos);
 /** Ensures that enough memory has been allocated to store positions. */
 extern void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize);
+/** Request memory allocation for velocities. */
+extern void
+gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos);
+/** Request memory allocation for forces. */
+extern void
+gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos);
 /** Initializes a \c gmx_ana_pos_t to represent a constant position. */
 extern void
 gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x);

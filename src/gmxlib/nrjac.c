@@ -42,6 +42,7 @@
 #include <math.h>
 #include "gstat.h"
 #include "smalloc.h"
+#include "nrjac.h"
 
 
 #define ROTATE(a,i,j,k,l) g=a[i][j];h=a[k][l];a[i][j]=g-s*(h+g*tau);\

@@ -95,15 +95,48 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
+static void filter_enerdterm(real *afrom,real *ato, bool bTemp, bool bPres, bool bEner) {
+    int i;
+
+  for (i=0;i<F_NRE;i++)
+  {
+      switch (i) {
+      case F_EKIN:
+      case F_TEMP:
+      case F_DKDL:
+          if (bTemp)
+          {
+              ato[i] = afrom[i];
+          }
+          break;
+      case F_PRES:    
+      case F_PDISPCORR:
+      case F_VTEMP:
+          if (bPres)
+          {
+              ato[i] = afrom[i];
+          }
+          break;
+      default:
+          if (bEner)
+          {
+              ato[i] = afrom[i];
+          }
+          break;
+      }
+  }
+}
+
 void global_stat(FILE *fplog,gmx_global_stat_t gs,
-		 t_commrec *cr,gmx_enerdata_t *enerd,
-		 tensor fvir,tensor svir,rvec mu_tot,
-		 t_inputrec *inputrec,
-		 gmx_ekindata_t *ekind,bool bSumEkinhOld,
-		 gmx_constr_t constr,
-		 t_vcm *vcm,int *nabnsb,
-		 real *chkpt,real *terminate,
-		 gmx_mtop_t *top_global, t_state *state_local)
+                 t_commrec *cr,gmx_enerdata_t *enerd,
+                 tensor fvir,tensor svir,rvec mu_tot,
+                 t_inputrec *inputrec,
+                 gmx_ekindata_t *ekind,gmx_constr_t constr,
+                 t_vcm *vcm,int *nabnsb,
+                 real *chkpt,real *terminate,
+                 gmx_mtop_t *top_global, t_state *state_local, 
+                 bool bSumEkinhOld, int flags)
+/* instead of current system, booleans for summing virial, kinetic energy, and other terms */
 {
   t_bin  *rb;
   int    *itc0,*itc1;
@@ -112,152 +145,275 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    ibnsb=-1,ichkpt=-1,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
+  real   *copyenerd;
   int    j;
   real   *rmsd_data,rbnsb;
   double nb;
-  
+  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate;
+
+  bVV           = EI_VV(inputrec->eI);
+  bTemp         = flags & CGLO_TEMPERATURE;
+  bEner         = flags & CGLO_ENERGY;
+  bPres         = flags & CGLO_PRESSURE; 
+  bConstrVir    = flags & CGLO_CONSTRAINT;
+  bFirstIterate = flags & CGLO_FIRSTITERATE;
+  bEkinAveVel = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
+
+  snew(copyenerd,F_NRE);
   rb   = gs->rb;
   itc0 = gs->itc0;
   itc1 = gs->itc1;
+  
 
   reset_bin(rb);
-
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 
    */
-  where();
-  ie  = add_binr(rb,F_NRE,enerd->term);
-  where();
-  ifv = add_binr(rb,DIM*DIM,fvir[0]);
-  where();
-  isv = add_binr(rb,DIM*DIM,svir[0]);
-  where();
-  if (constr) {
-    rmsd_data = constr_rmsd_data(constr);
-    if (rmsd_data)
-      irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
-  } else {
-    rmsd_data = NULL;
-  }
-  if (!NEED_MUTOT(*inputrec)) {
-    imu = add_binr(rb,DIM,mu_tot);
-    where();
-  }
-  if (ekind) {
-    for(j=0; (j<inputrec->opts.ngtc); j++) {
-      if (bSumEkinhOld) {
-	itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
-      }
-      itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
-    }
-    where();
-    idedl = add_binr(rb,1,&(ekind->dekindl));
-    where();
-    ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
-    where();
-  }
-  for(j=0; (j<egNR); j++)
-      inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
-  where();
-  if (inputrec->efep != efepNO) {
-      idvdll  = add_bind(rb,efptNR,enerd->dvdl_lin);
-      idvdlnl = add_bind(rb,efptNR,enerd->dvdl_nonlin);
-      if (enerd->n_lambda > 0) {
-          iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
-      }
-  }
-  if (vcm) {
-    icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
-    where();
-    imass = add_binr(rb,vcm->nr,vcm->group_mass);
-    where();
-    if (vcm->mode == ecmANGULAR) {
-      icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
-      where();
-      icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
-      where();
-      ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-      where();
-    }
-  }
-  if (DOMAINDECOMP(cr)) {
-    nb = cr->dd->nbonded_local;
-    inb = add_bind(rb,1,&nb);
-  }
-  where();
-  if (nabnsb) {
-    rbnsb = *nabnsb;
-    ibnsb = add_binr(rb,1,&rbnsb);
-  }
-  if (chkpt)
-    ichkpt   = add_binr(rb,1,chkpt);
-  iterminate = add_binr(rb,1,terminate);
+
+  /* First, we neeed to identify which enerd->term should be
+     communicated.  Temperature and pressure terms should only be
+     communicated and summed when they need to be, to avoid repeating
+     the sums and overcounting. */
+
+  filter_enerdterm(enerd->term,copyenerd,bTemp,bPres,bEner);
   
+  /* First, the data that needs to be communicated with velocity verlet every time
+     This is just the constraint virial.*/
+  if (bConstrVir) {
+      isv = add_binr(rb,DIM*DIM,svir[0]);
+      where();
+  }
+  
+/* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+  if (bTemp || !bVV)
+  {
+      if (ekind) 
+      {
+          for(j=0; (j<inputrec->opts.ngtc); j++) 
+          {
+              if (bSumEkinhOld) 
+              {
+                  itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+              }
+              if (bEkinAveVel) 
+              {
+                  itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinf[0]);
+              } 
+              else 
+              {
+                  itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
+              }
+          }
+          /* these probably need to be put into one of these categories */
+          where();
+          idedl = add_binr(rb,1,&(ekind->dekindl));
+          where();
+          ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
+          where();
+      }  
+  }      
+  where();
+  
+  if ((bPres || !bVV) && bFirstIterate)
+  {
+      ifv = add_binr(rb,DIM*DIM,fvir[0]);
+>>>>>>> a40476a3e8396430deb1258407699b27f90d2065:src/mdlib/stat.c
+  }
+
+
+  if (bEner) 
+  { 
+      where();
+      if (bFirstIterate) 
+      {
+          ie  = add_binr(rb,F_NRE,copyenerd);
+      }
+      where();
+      if (constr) 
+      {
+          rmsd_data = constr_rmsd_data(constr);
+          if (rmsd_data) 
+          {
+              irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+          }
+      } else {
+          rmsd_data = NULL;
+      }
+      if (!NEED_MUTOT(*inputrec)) 
+      {
+          imu = add_binr(rb,DIM,mu_tot);
+          where();
+      }
+      
+      if (bFirstIterate) 
+      {
+          for(j=0; (j<egNR); j++)
+          {
+              inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
+          }
+          where();
+          if (inputrec->efep != efepNO) 
+          {
+              idvdll  = add_bind(rb,efptNR,&enerd->dvdl_lin);
+              idvdlnl = add_bind(rb,efptNR,&enerd->dvdl_nonlin);
+              if (enerd->n_lambda > 0) 
+              {
+                  iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
+              }
+          }
+      }
+
+      if (vcm) 
+      {
+          icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
+          where();
+          imass = add_binr(rb,vcm->nr,vcm->group_mass);
+          where();
+          if (vcm->mode == ecmANGULAR) 
+          {
+              icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
+              where();
+              icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
+              where();
+              ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+              where();
+          }
+      }
+      if (DOMAINDECOMP(cr)) 
+      {
+          nb = cr->dd->nbonded_local;
+          inb = add_bind(rb,1,&nb);
+      }
+      where();
+      if (nabnsb) 
+      {
+          rbnsb = *nabnsb;
+          ibnsb = add_binr(rb,1,&rbnsb);
+      }
+      if (chkpt) 
+      {
+          ichkpt   = add_binr(rb,1,chkpt);
+      }
+  }
+  iterminate = add_binr(rb,1,terminate);
+
   /* Global sum it all */
   if (debug)
-    fprintf(debug,"Summing %d energies\n",rb->maxreal);
+  {
+      fprintf(debug,"Summing %d energies\n",rb->maxreal);
+  }
   sum_bin(rb,cr);
   where();
-  
-  /* Extract all the data locally */
-  extract_binr(rb,ie  ,F_NRE,enerd->term);
-  extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
-  extract_binr(rb,isv ,DIM*DIM,svir[0]);
-  if (rmsd_data)
-    extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
-  if (!NEED_MUTOT(*inputrec))
-    extract_binr(rb,imu,DIM,mu_tot);
-  if (ekind) {
-    for(j=0; (j<inputrec->opts.ngtc); j++) {
-      if (bSumEkinhOld)
-	extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
-      extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);
-    }
-    extract_binr(rb,idedl,1,&(ekind->dekindl));
-    extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
-    where();
-  }
-  for(j=0; (j<egNR); j++)
-    extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
-  if (inputrec->efep != efepNO) {
-      extract_bind(rb,idvdll,efptNR,enerd->dvdl_lin);
-      extract_bind(rb,idvdlnl,efptNR,enerd->dvdl_nonlin);
-      if (enerd->n_lambda > 0) {
-          extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
-    }
-  }
-  if (vcm) {
-    extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
-    where();
-    extract_binr(rb,imass,vcm->nr,vcm->group_mass);
-    where();
-    if (vcm->mode == ecmANGULAR) {
-      extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
-      where();
-      extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
-      where();
-      extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
-      where();
-    }
-  }
-  if (DOMAINDECOMP(cr)) {
-    extract_bind(rb,inb,1,&nb);
-    if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-      dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
-  }
-  where();
-  if (nabnsb) {
-    extract_binr(rb,ibnsb,1,&rbnsb);
-    *nabnsb = (int)(rbnsb + 0.5);
-  }
-  where();
-  if (chkpt)
-    extract_binr(rb,ichkpt,1,chkpt);
-  extract_binr(rb,iterminate,1,terminate);
-  where();
 
-  /* Small hack for temp only */
-  enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+  /* Extract all the data locally */
+
+  if (bConstrVir) 
+  {
+      extract_binr(rb,isv ,DIM*DIM,svir[0]);
+  }
+
+  /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+  if (bTemp || !bVV)
+  {
+      if (ekind) 
+      {
+          for(j=0; (j<inputrec->opts.ngtc); j++) 
+          {
+              if (bSumEkinhOld)
+              {
+                  extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+              }
+              if (bEkinAveVel) {
+                  extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinf[0]);
+              }
+              else
+              {
+                  extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);              
+              }
+          }
+          extract_binr(rb,idedl,1,&(ekind->dekindl));  /* MRS take this into account! MRS */
+          extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
+          where();
+      }
+  }
+  if ((bPres || !bVV) && bFirstIterate)
+  {
+      extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
+  }
+
+  if (bEner) 
+  {
+      if (bFirstIterate) 
+      {
+          extract_binr(rb,ie  ,F_NRE,copyenerd);
+          if (rmsd_data) 
+          {
+              extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
+          }
+          if (!NEED_MUTOT(*inputrec))
+          {
+              extract_binr(rb,imu,DIM,mu_tot);
+          }
+
+          for(j=0; (j<egNR); j++)
+          {
+              extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
+          }
+          if (inputrec->efep != efepNO) 
+          {
+              extract_bind(rb,idvdll ,efptNR,&enerd->dvdl_lin);
+              extract_bind(rb,idvdlnl,efptNR,&enerd->dvdl_nonlin);
+              if (enerd->n_lambda > 0) 
+              {
+                  extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
+              }
+          }
+          /* should this be here, or with ekin?*/
+          if (vcm) 
+          {
+              extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
+              where();
+              extract_binr(rb,imass,vcm->nr,vcm->group_mass);
+              where();
+              if (vcm->mode == ecmANGULAR) 
+              {
+                  extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+                  where();
+                  extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+                  where();
+                  extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+                  where();
+              }
+          }
+          if (DOMAINDECOMP(cr)) 
+          {
+              extract_bind(rb,inb,1,&nb);
+              if ((int)(nb + 0.5) != cr->dd->nbonded_global) 
+              {
+                  dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5),top_global,state_local);
+              }
+          }
+          where();
+          if (nabnsb) 
+          {
+              extract_binr(rb,ibnsb,1,&rbnsb);
+              *nabnsb = (int)(rbnsb + 0.5);
+          }
+          where();
+          if (chkpt)
+          {
+              extract_binr(rb,ichkpt,1,chkpt);
+          }
+          extract_binr(rb,iterminate,1,terminate);
+          where();
+          
+          filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
+/* Small hack for temp only - not entirely clear if still needed?*/
+          //enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+      }
+
+  }
+  sfree(copyenerd);
 }
 
 int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep)
@@ -291,8 +447,16 @@ void write_traj(FILE *fplog,t_commrec *cr,
     int     i,j;
     gmx_groups_t *groups;
     rvec    *xxtc;
+    rvec *local_v;
+    rvec *global_v;
     
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
+
+    /* MRS -- defining these variables is to manage the difference
+     * between half step and full step velocities, but there must be a better way . . . */
+
+    local_v  = state_local->v;
+    global_v = state_global->v;
     
     if (DOMAINDECOMP(cr))
     {
@@ -309,8 +473,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             if (bV)
             {
-                dd_collect_vec(cr->dd,state_local,state_local->v,
-                               state_global->v);
+                dd_collect_vec(cr->dd,state_local,local_v,
+                               global_v);
             }
         }
         if (bF)
@@ -326,8 +490,11 @@ void write_traj(FILE *fplog,t_commrec *cr,
              * but we need to copy the non-pointer entries.
              */
             state_global->lambda = state_local->lambda;
+            state_global->veta = state_local->veta;
+            state_global->vol0 = state_local->vol0;
             copy_mat(state_local->box,state_global->box);
             copy_mat(state_local->boxv,state_global->boxv);
+            copy_mat(state_local->vir_prev,state_global->vir_prev);
             copy_mat(state_local->pres_prev,state_global->pres_prev);
         }
         if (cr->nnodes > 1)
@@ -363,7 +530,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             else
             {
                 if (bX || bXTC) MX(state_global->x);
-                if (bV)         MX(state_global->v);
+                if (bV)         MX(global_v);
             }
             if (bF)         MX(f_global);
         }
@@ -378,7 +545,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
             fwrite_trn(fp_trn,step,t,state_local->lambda[efptFEP],
                        state_local->box,top_global->natoms,
                        bX ? state_global->x : NULL,
-                       bV ? state_global->v : NULL,
+                       bV ? global_v : NULL,
                        bF ? f_global : NULL);
             if(gmx_fio_flush(fp_trn) != 0)
             {

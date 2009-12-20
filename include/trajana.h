@@ -63,8 +63,7 @@
 #include <selection.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /** Data structure for trajectory analysis tools. */

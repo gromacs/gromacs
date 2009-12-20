@@ -53,6 +53,7 @@
 #include "confio.h"
 #include "checkpoint.h"
 #include "wgms.h"
+#include "vmdio.h"
 #include <math.h>
 
 /* defines for frame counter output */
@@ -697,8 +698,12 @@ bool read_next_frame(const output_env_t oenv,int status,t_trxframe *fr)
       bRet = gro_next_x_or_v(gmx_fio_getfp(status),fr);
       break;
     default:
+#ifdef GMX_DLOPEN
+      bRet = read_next_vmd_frame(status,fr);
+#else
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%d",
-		  ftp2ext(gmx_fio_getftp(status)),status);
+                ftp2ext(gmx_fio_getftp(status)),status);
+#endif
     }
     
     if (bRet) {
@@ -807,8 +812,16 @@ int read_first_frame(const output_env_t oenv,int *status,
     bFirst = FALSE;
     break;
   default:
-    gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
-    break;
+#ifdef GMX_DLOPEN
+      gmx_fio_fp_close(fp); /*only close the file without removing FIO entry*/
+      if (!read_first_vmd_frame(status,fn,fr,flags))
+      {
+	  gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
+      }
+#else
+      gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
+#endif
+      break;
   }
   
   if (bFirst || 
@@ -856,7 +869,7 @@ bool read_next_x(const output_env_t oenv, int status,real *t, int natoms,
 
 void close_trj(int status)
 {
-  gmx_fio_close(status);
+    gmx_fio_close(status);
 }
 
 void rewind_trj(int status)

@@ -1000,7 +1000,7 @@ int gmx_fio_open(const char *fn, const char *mode)
 }
 
 /* this function may be called from a function that locks the fio_mutex, 
-             which is why it exists in the first place. */
+   which is why it exists in the first place. */
 static int gmx_fio_close_lock(int fio, bool do_lock)
 {
     int rc = 0;
@@ -1020,8 +1020,8 @@ static int gmx_fio_close_lock(int fio, bool do_lock)
     else
     {
         /* Don't close stdin and stdout! */
-        if (!FIO[fio].bStdio)
-            rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
+        if (!FIO[fio].bStdio && FIO[fio].fp!=NULL)
+            rc = ffclose(FIO[fio].fp); /* fclose returns 0 if happy */
     }
 
     sfree(FIO[fio].fn);
@@ -1039,6 +1039,25 @@ static int gmx_fio_close_lock(int fio, bool do_lock)
 int gmx_fio_close(int fio)
 {
     return gmx_fio_close_lock(fio, TRUE);
+}
+
+/* close only fp but keep FIO entry. */
+int gmx_fio_fp_close(int fio)
+{
+    int rc=0;
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&fio_mutex);
+#endif
+    gmx_fio_check(fio);
+    if (!in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR) && !FIO[fio].bStdio)
+    {
+        rc = ffclose(FIO[fio].fp); /* fclose returns 0 if happy */
+        FIO[fio].fp = NULL; 
+    }
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&fio_mutex);
+#endif
+    return rc;
 }
 
 FILE * gmx_fio_fopen(const char *fn, const char *mode)
@@ -1101,7 +1120,6 @@ int gmx_fio_get_file_md5_lock(int fio, off_t offset, unsigned char digest[],
     off_t read_len;
     off_t seek_offset;
     int ret = -1;
-
     seek_offset = offset - CPT_CHK_LEN;
 
     if (seek_offset < 0)
@@ -1308,10 +1326,12 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             else
             {
                 gmx_fio_get_file_position(i, &outputfiles[nfiles].offset);
+#ifndef GMX_FAHCORE
                 outputfiles[nfiles].chksum_size
                 = gmx_fio_get_file_md5_lock(i, outputfiles[nfiles].offset,
                                             outputfiles[nfiles].chksum,
                                             FALSE);
+#endif
             }
 
             nfiles++;
@@ -1513,6 +1533,7 @@ off_t gmx_fio_ftell(int fio)
 
 int gmx_fio_seek(int fio, off_t fpos)
 {
+    int rc;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&fio_mutex);
 #endif
@@ -1520,17 +1541,20 @@ int gmx_fio_seek(int fio, off_t fpos)
     if (FIO[fio].fp)
     {
 #ifdef HAVE_FSEEKO
-        return fseeko(FIO[fio].fp, fpos, SEEK_SET);
+        rc = fseeko(FIO[fio].fp, fpos, SEEK_SET);
 #else
-        return fseek(FIO[fio].fp,fpos,SEEK_SET);
+        rc = fseek(FIO[fio].fp,fpos,SEEK_SET);
 #endif
     }
     else
+    {
         gmx_file(FIO[fio].fn);
-    return -1;
+        rc = -1;
+    }
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&fio_mutex);
 #endif
+    return rc;
 }
 
 FILE *gmx_fio_getfp(int fio)
