@@ -126,7 +126,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   char     buf[256];
   char     *bufi;
   t_mdebin *md;
-  int      i,j,ni,nj,n,k,kk,ncon,nset;
+  int      i,j,ni,nj,n,nh,k,kk,ncon,nset;
   bool     bBHAM,b14;
  
   snew(md,1);
@@ -271,7 +271,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         md->ipc = get_ebin_space(md->ebin,md->bTricl ? 6 : 3,
-				 boxvel_nm,unit_vel);
+                                 boxvel_nm,unit_vel);
     }
     md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm,unit_dipole_D);
     if (ir->cos_accel != 0)
@@ -366,8 +366,10 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
             gmx_incons("Number of energy terms wrong");
         }
     }
+
     
     md->nTC=groups->grps[egcTC].nr;
+    md->nNHC = ir->opts.nnhchains; /* shorthand for number of NH chains */ 
     if (md->epc == epcMTTK) 
     {
         md->nTCB = md->nTC + 1; /* for barostat temperature group */
@@ -379,7 +381,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     
     if (md->etc == etcNOSEHOOVER) {
         if (md->bNHC_trotter) { 
-            md->mde_n = 2*NNHCHAIN*md->nTCB;
+            md->mde_n = 2*md->nNHC*md->nTCB;
         }
         else 
         {
@@ -410,12 +412,12 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                 ni=groups->grps[egcTC].nm_ind[i];
                 /* this one is a barostat thermostat */
                 if ((i==md->nTCB-1) && (md->nTCB > md->nTC)) {bufi = bufbaro[0];} else {bufi = *(groups->grpname[ni]);}
-                for(j=0; (j<NNHCHAIN); j++) 
+                for(j=0; (j<md->nNHC); j++) 
                 {
                     sprintf(buf,"Xi-%d-%s",j,bufi);
-                    grpnms[2*(i*NNHCHAIN+j)]=strdup(buf);
+                    grpnms[2*(i*md->nNHC+j)]=strdup(buf);
                     sprintf(buf,"vXi-%d-%s",j,bufi);
-                    grpnms[2*(i*NNHCHAIN+j)+1]=strdup(buf);
+                    grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
                 }
             }
             md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
@@ -680,9 +682,9 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                 
                 for(i=0; (i<md->nTCB); i++) 
                 {
-                    for (j=0;j<NNHCHAIN;j++) 
+                    for (j=0;j<md->nNHC;j++) 
                     {
-                        k = i*NNHCHAIN+j;
+                        k = i*md->nNHC+j;
                         md->tmp_r[2*k] = state->nosehoover_xi[k];
                         md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
                     }

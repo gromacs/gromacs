@@ -138,12 +138,12 @@ static tMPI_Thread_mutex_t box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 
 
 static void copy_coupling_state(t_state *statea,t_state *stateb, 
-                                gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb) 
+                                gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb, t_grpopts* opts) 
 {
     
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
     
-    int i,j,ngtc_eff;
+    int i,j,nc,ngtc_eff;
     
     stateb->natoms     = statea->natoms;
     stateb->ngtc       = statea->ngtc;
@@ -172,10 +172,11 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
 
     for (i = 0; i < ngtc_eff; i++) 
     { 
-        for (j=0; j < NNHCHAIN; j++) 
+        nc = i*opts->nnhchains;
+        for (j=0; j < opts->nnhchains; j++) 
         {
-            stateb->nosehoover_xi[i*NNHCHAIN + j]       = statea->nosehoover_xi[i*NNHCHAIN + j];
-            stateb->nosehoover_vxi[i*NNHCHAIN + j]      = statea->nosehoover_vxi[i*NNHCHAIN + j];
+            stateb->nosehoover_xi[nc + j]       = statea->nosehoover_xi[nc + j];
+            stateb->nosehoover_vxi[nc + j]      = statea->nosehoover_vxi[nc + j];
         }
     }
 }
@@ -360,6 +361,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         *pcurr = enerd->term[F_PRES];
         /* calculate temperature using virial */
         enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
+        
     }    
 }
 
@@ -546,7 +548,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         fprintf(stderr,"Getting Loaded...\n");
     }
-
+    
     if (Flags & MD_APPENDFILES) 
     {
         fplog = NULL;
@@ -1582,7 +1584,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             nrnb,top_global,&upd,
             nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
             &fp_dhdl,&fp_field,&mdebin,
-            force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,Flags);
+            force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -1809,7 +1811,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Initiate data for the special cases */
     if (bIterations) 
     {
-        bufstate = init_bufstate(state->natoms,(ir->opts.ngtc+1)*NNHCHAIN); /* extra state for barostat */
+        bufstate = init_bufstate(state->natoms,(ir->opts.ngtc+1)*ir->opts.nnhchains); /* extra state for barostat */
     }
     
     if (bFFscan) 
@@ -2308,14 +2310,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             
             /* save the state */
             if (iterate->bIterate) { 
-                copy_coupling_state(state,bufstate,ekind,ekind_save);
+                copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
             }
             
             while (iterate->bIterate || iterate->bFirstIterate) 
             {
                 if (iterate->bIterate) 
                 {
-                    copy_coupling_state(bufstate,state,ekind_save,ekind);
+                    copy_coupling_state(bufstate,state,ekind_save,ekind,&(ir->opts));
                 }
                 if (iterate->bIterate) 
                 {
@@ -2558,14 +2560,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* for iterations, we save these vectors, as we will be redoing the calculations */
         if (iterate->bIterate) 
         {
-            copy_coupling_state(state,bufstate,ekind,ekind_save);
+            copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
         }
         while (iterate->bIterate || iterate->bFirstIterate) 
         {
             /* We now restore these vectors to redo the calculation with improved extended variables */    
             if (iterate->bIterate) 
             { 
-                copy_coupling_state(bufstate,state,ekind_save,ekind);
+                copy_coupling_state(bufstate,state,ekind_save,ekind,&(ir->opts));
             }
 
             /* We make the decision to break or not -after- the calculation of Ekin and Pressure,
@@ -2916,29 +2918,31 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             bool do_dr,do_or;
             
-            if (bNstEner)
+            if (!(bStartingFromCpt && (EI_VV(ir->eI)))) 
             {
-                upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,TRUE,
-                           t,mdatoms->tmass,enerd,state,lastbox,
-                           shake_vir,force_vir,total_vir,pres,
-                           ekind,mu_tot,constr);
+                if (bNstEner)
+                {
+                    upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,TRUE,
+                               t,mdatoms->tmass,enerd,state,lastbox,
+                               shake_vir,force_vir,total_vir,pres,
+                               ekind,mu_tot,constr);
+                }
+                else
+                {
+                    upd_mdebin_step(mdebin);
+                }
+                
+                do_dr  = do_per_step(step,ir->nstdisreout);
+                do_or  = do_per_step(step,ir->nstorireout);
+                
+                print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,t,
+                           eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
             }
-            else
-            {
-                upd_mdebin_step(mdebin);
-            }
-
-            do_dr  = do_per_step(step,ir->nstdisreout);
-            do_or  = do_per_step(step,ir->nstorireout);
-
-            print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,t,
-                       eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
-
             if (ir->ePull != epullNO)
             {
                 pull_print_output(ir->pull,step,t);
             }
-
+            
             if (do_per_step(step,ir->nstlog))
             {
                 if(fflush(fplog) != 0)
