@@ -100,7 +100,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
         }
         else if (len >= 1 && ptr[len - 1] == '\n')
         {
-            return TRUE;
+            break;
         }
         else if (len < max_len - 1)
         {
@@ -125,6 +125,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
     {
         gmx_input("selection reading failed");
     }
+    state->bCmdStart = totlen > 0;
     return totlen > 0;
 }
 
