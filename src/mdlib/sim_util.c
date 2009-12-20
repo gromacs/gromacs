@@ -1147,15 +1147,6 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
   clear_mat(virial);
   clear_mat(pres);
 
-  /* first, set average if the variables have changes */
-
-#if 0
-  {
-      set_avcsixtwelve(fplog,fr,top_global);
-      calc_enervirdiff(fplog,ir->eDispCorr,fr);  
-  }
-#endif
-
   if (ir->eDispCorr != edispcNO) {
       bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                    ir->eDispCorr == edispcAllEnerPres);
