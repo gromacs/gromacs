@@ -1132,7 +1132,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-                   gmx_large_int_t step, gmx_mtop_t *top_global,int natoms,
+                   gmx_large_int_t step,int natoms,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
@@ -1148,12 +1148,14 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
   clear_mat(pres);
 
   /* first, set average if the variables have changes */
-  
-  if (top_global)
+
+#if 0
   {
       set_avcsixtwelve(fplog,fr,top_global);
       calc_enervirdiff(fplog,ir->eDispCorr,fr);  
   }
+#endif
+
   if (ir->eDispCorr != edispcNO) {
       bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                    ir->eDispCorr == edispcAllEnerPres);
@@ -1169,8 +1171,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
       } 
       else 
       {
-          dens = top_global->natoms*invvol;
-          ninter = 0.5*top_global->natoms;
+          dens = natoms*invvol;
+          ninter = 0.5*natoms;
       }
 
     if (ir->efep == efepNO) 
@@ -1236,12 +1238,10 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
         }
     }
-    /* This output is not really necessary, and requires the step, 
-       which it really shouldn't.  To simplify the calls, I'm dropping 
-       this out. */
-    /*if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-       fprintf(fplog,sepdvdlformat,"Dispersion correction",
-       *enercorr,dvdlambda);*/
+
+    if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+        fprintf(fplog,sepdvdlformat,"Dispersion correction",
+                *enercorr,dvdlambda);
     
     if (fr->efep != efepNO) 
     {

@@ -322,7 +322,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,top_global,natoms,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda,
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
@@ -364,7 +364,6 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
         
     }    
 }
-
 
 #ifdef GMX_THREADS
 struct mdrunner_arglist
@@ -2376,7 +2375,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     | (bPres ? CGLO_PRESSURE : 0) 
                                     | (bPres ? CGLO_CONSTRAINT : 0)
                                     | (iterate->bIterate ? CGLO_ITERATE : 0)  
-                                    | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                                    | (iterate->bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                     | CGLO_SCALEEKIN 
                         );
                 }
@@ -2708,7 +2707,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0 ) 
                             | (iterate->bIterate ? CGLO_ITERATE : 0) 
-                            | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                            | (iterate->bFirstIterate ? CGLO_FIRSTITERATE : 0)
                 );            
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
