@@ -807,7 +807,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
-  ITYPE("nhchains",     ir->opts.nnhchains, 5);
+  ITYPE("nhchains",     ir->opts.nnhchains, NNHCHAINS);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
