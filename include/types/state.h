@@ -57,11 +57,11 @@ extern "C" {
  * since that affects the checkpoint (.cpt) file format.
  */
 enum { estLAMBDA,
-       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estVIR_PREV, 
-       estNH_XI,  estNH_VXI, estTC_INT, estVETA, estVOL0,
-       estX,   estV,  estSDX,  estCGP,  estLD_RNG, estLD_RNGI,
+       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
+       estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
+       estVIR_PREV, estNH_VXI, estVETA, estVOL0,
        estNR };
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */

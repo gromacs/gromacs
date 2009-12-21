@@ -74,7 +74,7 @@ static const int tpx_version = 69;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 20;
+static const int tpx_generation = 21;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -154,6 +154,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        },
+  { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
   { 54, F_DHDL_CON          },
 };
@@ -672,7 +673,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     
     /* grpopts stuff */
     do_int(ir->opts.ngtc); 
-    do_int(ir->opts.nnhchains);
+    if (file_version >= 69) {
+      do_int(ir->opts.nnhchains);
+    } else {
+      ir->opts.nnhchains = 0;
+    }
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 
     do_int(ir->opts.ngener);
@@ -1975,11 +1980,13 @@ static int do_tpx(int fp,bool bRead,
   
   if (state->ngtc > 0 && file_version >= 28) {
     real *dumv;
-    ndo_double(state->nosehoover_xi,state->ngtc,bDum); /* keeping this the same for now, to avoid compatibility issues
-							  Exact continuation is not guaranteed!x */
+    /*ndo_double(state->nosehoover_xi,state->ngtc,bDum);*/
     /*ndo_double(state->nosehoover_vxi,state->ngtc,bDum);*/
     /*ndo_double(state->therm_integral,state->ngtc,bDum);*/
     snew(dumv,state->ngtc);
+    if (file_version < 69) {
+      ndo_real(dumv,state->ngtc,bDum);
+    }
     /* These used to be the Berendsen tcoupl_lambda's */
     ndo_real(dumv,state->ngtc,bDum);
     sfree(dumv);
