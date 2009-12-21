@@ -72,7 +72,21 @@ extern "C" {
     
 #define MAX_SUZUKI_YOSHIDA_NUM 5
 #define SUZUKI_YOSHIDA_NUM  5
-    
+
+static const double sy_const_1[] = { 1. };
+static const double sy_const_3[] = { 0.828981543588751,-0.657963087177502,0.828981543588751 };
+static const double sy_const_5[] = { 0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065 };
+
+static const double* sy_const[] = {
+    NULL,
+    sy_const_1,
+    NULL,
+    sy_const_3,
+    NULL,
+    sy_const_5
+};
+
+/*
 static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
     {},
     {1},
@@ -80,7 +94,7 @@ static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1]
     {0.828981543588751,-0.657963087177502,0.828981543588751},
     {},
     {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
-};
+};*/
 
 extern	int		gmx_nint(real a);
 extern  real    sign(real x,real y);
