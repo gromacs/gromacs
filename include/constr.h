@@ -66,24 +66,26 @@ extern gmx_shakedata_t shake_init();
 
 extern bool bshakef(FILE *log,		/* Log file			*/
                     gmx_shakedata_t shaked, /* SHAKE data */
-		    int natoms,		/* Total number of atoms	*/
-		    real invmass[],	/* Atomic masses		*/
-		    int nblocks,	/* The number of shake blocks	*/
-		    int sblock[],       /* The shake blocks             */
-		    t_idef *idef,	/* The interaction def		*/
-		    t_inputrec *ir,	/* Input record		        */
-		    matrix box,		/* The box			*/
-		    rvec x_s[],		/* Coords before update		*/
-		    rvec xp[],		/* Output coords		*/
-		    t_nrnb *nrnb,       /* Performance measure          */
-		    real *lagr,         /* The Lagrange multipliers     */
-		    real lambda,        /* FEP lambda                   */
-		    real *dvdlambda,    /* FEP force                    */
-		    real invdt,         /* 1/delta_t                    */
-		    rvec *v,            /* Also constrain v if v!=NULL  */
-		    bool bCalcVir,      /* Calculate r x m delta_r      */
-		    tensor rmdr,        /* sum r x m delta_r            */
-		    bool bDumpOnError); /* Dump debugging stuff on error*/
+                    int natoms,		/* Total number of atoms	*/
+                    real invmass[],	/* Atomic masses		*/
+                    int nblocks,	/* The number of shake blocks	*/
+                    int sblock[],       /* The shake blocks             */
+                    t_idef *idef,	/* The interaction def		*/
+                    t_inputrec *ir,	/* Input record		        */
+                    matrix box,		/* The box			*/
+                    rvec x_s[],		/* Coords before update		*/
+                    rvec prime[],		/* Output coords		*/
+                    t_nrnb *nrnb,       /* Performance measure          */
+                    real *lagr,         /* The Lagrange multipliers     */
+                    real lambda,        /* FEP lambda                   */
+                    real *dvdlambda,    /* FEP force                    */
+                    real invdt,         /* 1/delta_t                    */
+                    rvec *v,            /* Also constrain v if v!=NULL  */
+                    bool bCalcVir,      /* Calculate r x m delta_r      */
+                    tensor rmdr,        /* sum r x m delta_r            */
+                    bool bDumpOnError,  /* Dump debugging stuff on error*/
+                    int econq,         /* which type of constrainint is occurring */
+                    t_vetavars *vetavar);           /* veta for pressure control */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 
@@ -98,41 +100,48 @@ extern gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
 /* Initializes and returns a structure with SETTLE parameters */
 
 extern void csettle(gmx_settledata_t settled,
-		    int nsettle,	/* Number of settles  	        */
-		    t_iatom iatoms[],	/* The settle iatom list        */
-		    real b4[],		/* Old coordinates		*/
-		    real after[],	/* New coords, to be settled	*/
-		    real invdt,         /* 1/delta_t                    */
-		    real *v,            /* Also constrain v if v!=NULL  */
-		    bool bCalcVir,      /* Calculate r x m delta_r      */
-		    tensor rmdr,        /* sum r x m delta_r            */
-		    int *xerror);
+                    int nsettle,	/* Number of settles  	        */
+                    t_iatom iatoms[],	/* The settle iatom list        */
+                    real b4[],		/* Old coordinates		*/
+                    real after[],	/* New coords, to be settled	*/
+                    real invdt,         /* 1/delta_t                    */
+                    real *v,            /* Also constrain v if v!=NULL  */
+                    bool bCalcVir,      /* Calculate r x m delta_r      */
+                    tensor rmdr,        /* sum r x m delta_r            */
+                    int *xerror,
+                    t_vetavars *vetavar     /* variables for pressure control */   
+    );
 
 extern void settle_proj(FILE *fp,
-			gmx_settledata_t settled,int econq,
-			int nsettle, t_iatom iatoms[],rvec x[],
-			rvec *der,rvec *derp,
-			bool bCalcVir,tensor rmdder);
+                        gmx_settledata_t settled,int econq,
+                        int nsettle, t_iatom iatoms[],rvec x[],
+                        rvec *der,rvec *derp,
+                        bool bCalcVir,tensor rmdder, t_vetavars *vetavar);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
-		   real dist2[],real xp[],real rij[],real m2[],real omega,
-		   real invmass[],real tt[],real lagr[],int *nerror);
+                   real dist2[],real xp[],real rij[],real m2[],real omega,
+                   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
+extern void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
+                    real dist2[],real vp[],real rij[],real m2[],real omega,
+                    real invmass[],real tt[],real lagr[],int *nerror,real invdt,t_vetavars *vetavar);
+
 extern bool constrain(FILE *log,bool bLog,bool bEner,
-		      gmx_constr_t constr,
-		      t_idef *idef,
-		      t_inputrec *ir,
-		      t_commrec *cr,
-		      gmx_large_int_t step,int delta_step,
-		      t_mdatoms *md,
-		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-		      real lambda,real *dvdlambda,
-		      rvec *v,tensor *vir,
-		      t_nrnb *nrnb,int econq);
+                      gmx_constr_t constr,
+                      t_idef *idef,
+                      t_inputrec *ir,
+                      gmx_ekindata_t *ekind,
+                      t_commrec *cr,
+                      gmx_large_int_t step,int delta_step,
+                      t_mdatoms *md,
+                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+                      real lambda,real *dvdlambda,
+                      rvec *v,tensor *vir,
+                      t_nrnb *nrnb,int econq, bool bPscal, real veta, real vetanew);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -152,6 +161,9 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
  * If vir!=NULL calculate the constraint virial.
+ *
+ * if veta != NULL, constraints are done assuming isotropic pressure control 
+ * (i.e. constraining rdot.r = (v + veta*r).r = 0 instead of v 
  *
  * Init_constraints must have be called once, before calling constrain.
  *

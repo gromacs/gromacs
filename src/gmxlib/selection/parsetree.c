@@ -962,6 +962,14 @@ init_pos_keyword_defaults(t_selelem *root, gmx_ana_selcollection_t *sc, bool bSe
         {
             flags |= POS_MASKONLY;
         }
+        if (bSelection && sc->bVelocities)
+        {
+            flags |= POS_VELOCITIES;
+        }
+        if (bSelection && sc->bForces)
+        {
+            flags |= POS_FORCES;
+        }
         _gmx_selelem_set_kwpos_type(root, bSelection ? sc->spost : sc->rpost);
         _gmx_selelem_set_kwpos_flags(root, flags);
     }
@@ -1364,10 +1372,8 @@ gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
     {
         return rc;
     }
-    if (!bInteractive)
-    {
-        _gmx_sel_set_lex_input_file(scanner, stdin);
-    }
+    /* We don't set the lexer input here, which causes it to use a special
+     * internal implementation for reading from stdin. */
     return run_parser(nr, scanner);
 }
 

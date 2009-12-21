@@ -395,9 +395,6 @@ int main(int argc,char *argv[])
     
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
-  /* Only run niced when not running in parallel */
-  if (!gmx_parallel_env_initialized())
-    PCA_Flags |= PCA_BE_NICE;
   
 
   /* Comment this in to do fexist calls only on master

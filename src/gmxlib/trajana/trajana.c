@@ -435,6 +435,11 @@ gmx_ana_set_rmpbc(gmx_ana_traj_t *d, bool bRmPBC)
 int
 gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags)
 {
+    if (d->sel)
+    {
+        gmx_call("cannot set trajectory flags after initializing selections");
+        return -1;
+    }
     if (d->fr)
     {
         gmx_call("cannot set trajectory flags after the first frame has been read");
@@ -1183,6 +1188,10 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
         return -1;
     }
 
+    gmx_ana_selcollection_set_veloutput(d->sc,
+            d->frflags & (TRX_READ_V | TRX_NEED_V));
+    gmx_ana_selcollection_set_forceoutput(d->sc,
+            d->frflags & (TRX_READ_F | TRX_NEED_F));
     /* Check if we need some information from the topology */
     if (gmx_ana_selcollection_requires_top(d->sc))
     {

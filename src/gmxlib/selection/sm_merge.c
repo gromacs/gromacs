@@ -227,6 +227,14 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
         out->u.p->m.type = d->p1.m.type;
     }
     gmx_ana_pos_reserve(out->u.p, d->p1.nr + d->p2.nr, d->g.isize);
+    if (d->p1.v)
+    {
+        gmx_ana_pos_reserve_velocities(out->u.p);
+    }
+    if (d->p1.f)
+    {
+        gmx_ana_pos_reserve_forces(out->u.p);
+    }
     gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     gmx_ana_pos_empty_init(out->u.p);
     d->g.isize = 0;

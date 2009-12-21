@@ -245,7 +245,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
 	  &mdebin,force_vir,
-	  shake_vir,mutot,&bNEMD,&bSA,NULL,0);
+	  shake_vir,mutot,&bNEMD,&bSA,NULL,NULL,0);
 
   init_enerdata(mtop->groups.grps[egcENER].nr,0,enerd);  
 
