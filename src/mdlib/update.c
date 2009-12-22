@@ -1271,7 +1271,7 @@ void update_constraints(FILE         *fplog,
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
-    rvec             *vbuf,*xprime;
+    rvec             *vbuf,*xprime=NULL;
     
     if (constr) {bDoConstr=TRUE;}
     if (bFirstHalf && !EI_VV(inputrec->eI)) {bDoConstr=FALSE;} 

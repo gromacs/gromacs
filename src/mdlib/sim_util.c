@@ -910,7 +910,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     /* Do a first constrain to reset particles... */
     step = ir->init_step;
     if (fplog)
-        fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
+        fprintf(fplog,"\nConstraining the starting coordinates (step %ld)\n",step);
     dvdlambda = 0;
     
     /* constrain the current position */
@@ -948,7 +948,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
          */
         if (fplog)
         {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %ld)\n",
                     step);
         }
         dvdlambda = 0;
