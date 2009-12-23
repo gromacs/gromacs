@@ -159,8 +159,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("ECONS",    "Conserved En."    ),
   def_nofc    ("TEMP",     "Temperature"      ),
   def_nofc    ("VTEMP",    "Vir. Temperature" ),
-  def_nofc    ("PDISPCORR","Pres. DC"         ),
   def_nofc    ("PRES",     "Pressure"         ),
+  def_nofc    ("PDISPCORR","Pres. DC"         ),
   def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
   def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
   def_nofc    ("DH/DL_CON","dH/dl constr."    )
