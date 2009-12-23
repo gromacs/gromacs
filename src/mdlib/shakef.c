@@ -406,7 +406,7 @@ bool bshakef(FILE *log,gmx_shakedata_t shaked,
   if (econq == econqCoord) {
       if (ir->efep != efepNO) {
           dt_2 = 1/sqr(ir->delta_t);
-          dvdl = 0;
+          dvdl_term = 0;
           for(i=0; i<ncons; i++) {
               type = idef->il[F_CONSTR].iatoms[3*i];
               dvdl_term += lagr[i]*dt_2*

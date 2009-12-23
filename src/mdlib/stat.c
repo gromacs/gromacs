@@ -217,7 +217,6 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   if ((bPres || !bVV) && bFirstIterate)
   {
       ifv = add_binr(rb,DIM*DIM,fvir[0]);
->>>>>>> a40476a3e8396430deb1258407699b27f90d2065:src/mdlib/stat.c
   }
 
 
@@ -254,8 +253,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           where();
           if (inputrec->efep != efepNO) 
           {
-              idvdll  = add_bind(rb,efptNR,&enerd->dvdl_lin);
-              idvdlnl = add_bind(rb,efptNR,&enerd->dvdl_nonlin);
+              idvdll  = add_bind(rb,efptNR,enerd->dvdl_lin);
+              idvdlnl = add_bind(rb,efptNR,enerd->dvdl_nonlin);
               if (enerd->n_lambda > 0) 
               {
                   iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
@@ -361,8 +360,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           }
           if (inputrec->efep != efepNO) 
           {
-              extract_bind(rb,idvdll ,efptNR,&enerd->dvdl_lin);
-              extract_bind(rb,idvdlnl,efptNR,&enerd->dvdl_nonlin);
+              extract_bind(rb,idvdll ,efptNR,enerd->dvdl_lin);
+              extract_bind(rb,idvdlnl,efptNR,enerd->dvdl_nonlin);
               if (enerd->n_lambda > 0) 
               {
                   extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);

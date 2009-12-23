@@ -312,8 +312,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         invdt  = 1/ir->delta_t;
     }
 
-/* this should be taken care of already . . . */
 #if 0
+/* this should be taken care of already . . . */
     if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
     {
         /* Set the constraint lengths for the step at which this configuration
@@ -354,25 +354,20 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,xprime,nrnb,
-                          constr->lagr,lambda,dvdlambda,
+                          constr->lagr,lambda,dvdl,
                           invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,min_proj,nrnb,
-                          constr->lagr,lambda,dvdlambda,
+                          constr->lagr,lambda,dvdl,
                           invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
             break;
         default:
             gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
             break;
         }
-        bOK = bshakef(fplog,constr->shaked,
-                      homenr,md->invmass,constr->nblocks,constr->sblock,
-                      idef,ir,box,x,xprime,nrnb,
-                      constr->lagr,lambda,dvdl,
-                      invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
 
         if (!bOK && constr->maxwarn >= 0)
         {

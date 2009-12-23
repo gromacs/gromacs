@@ -265,6 +265,10 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     thanx(stderr);
   }
 }
+<<<<<<< HEAD:src/kernel/runner.c
+=======
+/* THIS IS NOT ACTUALLY USED */
+>>>>>>> c27218673c4cb2163f81c5ca64bacbfa848dcfe6:src/kernel/runner.c
 #if 0
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,int *fep_state,real *lam0,real *SAfactor,
@@ -298,6 +302,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   } else
     *SAfactor     = 1.0;
     
+  /* initialize nose-hoover chains, since it's not in the topology */
+  *nnhchains = ir->opts.nnhchains;
   init_nrnb(mynrnb);
   
   /* Check Environment variables & other booleans */

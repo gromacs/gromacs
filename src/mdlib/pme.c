@@ -1968,10 +1968,9 @@ int gmx_pmeonly(gmx_pme_t pme,
         dvdl = 0;
         clear_mat(vir);
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
-                   cr,maxshift0,maxshift1,nrnb,vir,ewaldcoeff,
-                   &energy,lambda,&dvdl,
-                   GMX_PME_DO_ALL);
-        
+                   cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
+                   &energy,lambda,&dvdl,GMX_PME_DO_ALL);
+                   
         cycles = wallcycle_stop(wcycle,ewcPMEMESH);
         
         gmx_pme_send_force_vir_ener(pme_pp,

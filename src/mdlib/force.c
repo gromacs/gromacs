@@ -159,8 +159,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
-    for (i=0;i<efptNR;i++) {dvdl[i] = 0;}
     GMX_MPE_LOG(ev_force_start);
+
+    /* reset free energy components */
+    for (i=0;i<efptNR;i++) 
+    {
+        dvdl[i] = 0;
+        dvdl_dum[i] = 0;
+    }
     
     /* Reset box */
     for(i=0; (i<DIM); i++)
@@ -185,9 +191,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     
     /* Call the short range functions all in one go. */
     GMX_MPE_LOG(ev_do_fnbf_start);
-    
-    dvdl[efptCOUL] = 0;
-    dvdl[efptVDW] = 0;
     
 #ifdef GMX_MPI
     /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
@@ -245,11 +248,17 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
     {
         init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
-        for(i=0; i<enerd->n_lambda; i++)
+        for(i=0; i<=enerd->n_lambda; i++)
         {
             for (j=0;j<efptNR;j++) {
-                dvdl_dum[j] = 0;
-                lambda_dum[j] = fepvals->all_lambda[j][i];
+                if (i==0) 
+                {
+                    lambda_dum[j] = lambda[j];
+                }
+                else
+                {
+                    lambda_dum[j] = fepvals->all_lambda[j][i-1];
+                }
             }
             /* currently, evaluates all energies.  Eventually, can eliminate the call to the same lambda */
             reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
@@ -371,18 +380,22 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             }
             init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
             
-            for(i=0; i<enerd->n_lambda; i++)
+            for(i=0; i<=enerd->n_lambda; i++)
             {
                 reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
-                for (j=0;j<efptNR;j++) 
-                {
-                    dvdl_dum[j] = 0;
-                    lambda_dum[j] = fepvals->all_lambda[j][i];
+                for (j=0;j<efptNR;j++) {
+                    if (i==0) 
+                    {
+                        lambda_dum[j] = lambda[j];
+                    }
+                    else
+                    {
+                        lambda_dum[j] = fepvals->all_lambda[j][i-1];
+                    }
                 }
                 calc_bonds_lambda(fplog,
                                   idef,x,fr,&pbc,graph,&ed_lam,nrnb,lambda_dum,md,
-                                  fcd,
-                                  DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                  fcd,DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&ir->opts,&ed_lam);
                 enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
             }
@@ -674,11 +687,11 @@ void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
       epot[F_EPOT] += epot[i];
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd,double *lambda,t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
 {
     int i,j,index;
-    double dlam,dlam_ekin,dhdl_lin[efptNR];
-
+    double dlam;
+    
     enerd->term[F_DVDL_REMAIN] = 0.0;
     for (i=0;i<efptNR;i++) 
     {
@@ -727,31 +740,35 @@ void sum_dhdl(gmx_enerdata_t *enerd,double *lambda,t_lambda *fepvals)
      * Adding the potential and ekin terms that depend linearly on lambda
      * as delta lam * dvdl to the energy differences is exact.
      * For the constraint dvdl this is not exact, but we have no other option 
-     * (try to remedy this MRS!!!)
+     * (try to remedy this - MRS)
      * For the non-bonded LR term we assume that the soft-core (if present)
      * no longer affects the energy beyond the short-range cut-off,
      * which is a very good approximation (except for exotic settings).
-     * (investigate how to overcome this)
+     * (investigate how to overcome this - MRS)
      */
-
-    for(i=1; i<enerd->n_lambda; i++)
+    
+    for(i=1; i<=enerd->n_lambda; i++)
     {
-        dlam_ekin = (fepvals->all_lambda[efptMASS][i] - lambda[efptMASS]);
+        
+        /* we don't need to worry about dvdl contributions to the currenta lambda, because 
+           it's automatically zero */
+        
+        /* first kinetic energy term */
+        dlam = (fepvals->all_lambda[efptMASS][i-1] - lambda[efptMASS]);
         
         /* make sure constraint terms are added on correctly here or elsewhere! MRS */
-        
-        enerd->enerpart_lambda[i] += enerd->term[F_DKDL]*dlam_ekin;;    
+        enerd->enerpart_lambda[i] += enerd->term[F_DKDL]*dlam;    
         
         for (j=0;j<efptNR;j++) 
         {
-            dlam = (fepvals->all_lambda[j][i]-lambda[j]);
-            enerd->enerpart_lambda[i] += dlam*dhdl_lin[j];
+            dlam = (fepvals->all_lambda[j][i-1]-lambda[j]);
+            enerd->enerpart_lambda[i] += dlam*enerd->dvdl_lin[j];
             if (debug)
             {
                 fprintf(debug,"enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
-                        fepvals->all_lambda[j][i],efpt_names[j],
+                        fepvals->all_lambda[j][i-1],efpt_names[j],
                         enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0],
-                        dlam,dhdl_lin[j]);
+                        dlam,enerd->dvdl_lin[j]);
             }
         }
     }

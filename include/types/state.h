@@ -50,21 +50,20 @@ extern "C" {
  */
 
 /* for now, define the number of NH chains here */
-#define NNHCHAIN 5
+#define NNHCHAINS 5
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-
 enum { estLAMBDA,estFEPSTATE,
-       estBOX, estBOX_REL, estBOXV, estVIR_PREV, estPRES_PREV, 
+       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estVIR_PREV, 
        estNH_XI,  estNH_VXI, estTC_INT, estVETA, estVOL0,
-       estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
+       estX,   estV,  estSDX,  estCGP,  estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
        estNR };
-
+  
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
 extern const char *est_names[estNR];
 
@@ -116,6 +115,7 @@ typedef struct
 {
   int           natoms;
   int           ngtc;
+  int           nnhchains; /* number of nose-hoover chains               */
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */

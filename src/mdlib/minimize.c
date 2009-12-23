@@ -534,7 +534,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     constrain(NULL,TRUE,TRUE,constr,&top->idef,	
               ir,NULL,cr,count,0,md,
               s1->x,s2->x,NULL,s2->box,s2->lambda[efptBONDED],
-              &dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+              &dvdl,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
     wallcycle_stop(wcycle,ewcCONSTR);
   }
 }
@@ -670,16 +670,15 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   clear_mat(shake_vir);
   clear_mat(pres);
 
-  /* Calculate long range corrections to pressure and energy */
-  calc_dispcorr(fplog,inputrec,fr,count,top_global,top_global->natoms,ems->s.box,ems->s.lambda[efptVDW],
+  calc_dispcorr(fplog,inputrec,fr,count,top_global->natoms,ems->s.box,ems->s.lambda[efptVDW],
                 pres,force_vir,&prescorr,&enercorr,&dvdlcorr);
   /* don't think these next 4 lines  can be moved in for now, because we 
      don't always want to write it -- figure out how to clean this up MRS 8/4/2009 */
   enerd->term[F_DISPCORR] = enercorr;
   enerd->term[F_EPOT] += enercorr;
   enerd->term[F_PRES] += prescorr;
-  enerd->term[F_DVDL] += dvdlcorr;
-
+  enerd->term[F_DVDL_VDW] += dvdlcorr;
+  
   /* Communicate stuff when parallel */
   if (PAR(cr)) {
       wallcycle_start(wcycle,ewcMoveE);
@@ -2918,13 +2917,13 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                 bNS = FALSE;
                 
                 /* Calculate long range corrections to pressure and energy */
-                calc_dispcorr(fplog,inputrec,fr,step,top_global,top_global->natoms,rerun_fr.box,
+                calc_dispcorr(fplog,inputrec,fr,step,top_global->natoms,rerun_fr.box,
                               lambda,pres,vir,&prescorr,&enercorr,&dvdlcorr);
                 /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
                 enerd->term[F_DISPCORR] = enercorr;
                 enerd->term[F_EPOT] += enercorr;
                 enerd->term[F_PRES] += prescorr;
-                enerd->term[F_DVDL] += dvdlcorr;	
+                enerd->term[F_DVDL_VDW] += dvdlcorr;	
                 
                 /* If the compiler doesn't optimize this check away
                  * we catch the NAN energies. With tables extreme negative

@@ -373,7 +373,7 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
 
   /* When t_state changes, this code should be updated. */
   int ngtcp;
-  ngtcp = (state->ngtc+1) * NNHCHAIN;
+  ngtcp = (state->ngtc+1) * state->nnhchains;
 
   exchange_rvecs(ms,b,state->box,DIM);
   exchange_rvecs(ms,b,state->box_rel,DIM);

@@ -897,7 +897,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     int    i,m,start,end;
     gmx_large_int_t step;
     double mass,tmass,vcm[4];
-    real   dt=inputrec->delta_t;
+    real   dt=ir->delta_t;
     real   dvdl_dum;
     rvec   *savex;
     char   buf[22];
@@ -1137,7 +1137,7 @@ void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-                   gmx_large_int_t step, gmx_mtop_t *top_global,int natoms,
+                   gmx_large_int_t step,int natoms,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
@@ -1167,8 +1167,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         } 
         else 
         {
-            dens = top_global->natoms*invvol;
-            ninter = 0.5*top_global->natoms;
+            dens = natoms*invvol;
+            ninter = 0.5*natoms;
         }
         
         if (ir->efep == efepNO) 
@@ -1182,13 +1182,17 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
         }
         
+        *prescorr = 0;
+        *enercorr = 0;
+        *dvdlcorr = 0;
+        
         enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
         *enercorr += avcsix*enerdiff;
-        dvdlambda = 0.0;
-
+        dvdl = 0.0;
+        
         if (ir->efep != efepNO) 
         {
-            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+            dvdl += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
         if (bCorrAll) 
         {
@@ -1196,7 +1200,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             *enercorr += avctwelve*enerdiff;
             if (fr->efep != efepNO) 
             {
-                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+                dvdl += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
         
@@ -1216,8 +1220,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             }
             *prescorr += spres;
         }
-
-    /* Can't currently control when it prints, for now, just print when degugging */
+        
+        /* Can't currently control when it prints, for now, just print when degugging */
         
         if (debug)
         {
@@ -1239,11 +1243,11 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         
         if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    *enercorr,dvdlambda);
+                    *enercorr,dvdl);
         
         if (fr->efep != efepNO) 
         {
-            *dvdlcorr += dvdlambda;
+            *dvdlcorr += dvdl;
         }
     }
 }
@@ -1416,9 +1420,8 @@ void init_md(FILE *fplog,
              const char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
-             tensor force_vir,tensor shake_vir,
-             rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
+             tensor force_vir,tensor shake_vir,rvec mu_tot,
+             bool *bNEMD,bool *bSimAnn,t_vcm **vcm, t_state *state, unsigned long Flags)
 {
     int  i,j,n;
     real tmpt,mod;

@@ -1245,7 +1245,7 @@ void update_extended(FILE         *fplog,
 
 void update_constraints(FILE         *fplog,
                         gmx_large_int_t   step,
-                        real         *dvdlambda,    /* FEP stuff */
+                        real         *dvdl,          /* FEP stuff */
                         t_inputrec   *inputrec,      /* input record and box stuff	*/
                         gmx_ekindata_t *ekind,
                         t_mdatoms    *md,
@@ -1312,7 +1312,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,state->v,state->v,
-                      state->box,state->lambda,dvdlambda,
+                      state->box,state->lambda[efptBONDED],&(dvdl[efptBONDED]),
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
                       inputrec->epc==epcMTTK,state->veta,vetanew);
         } 
@@ -1381,7 +1381,7 @@ void update_constraints(FILE         *fplog,
                       state->x,xprime,NULL,
                       state->box,
                       state->lambda[efptBONDED],
-                      &(dvdlambda[efptBONDED]),
+                      &(dvdl[efptBONDED]),
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
             wallcycle_stop(wcycle,ewcCONSTR);
         }

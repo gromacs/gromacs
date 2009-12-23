@@ -744,11 +744,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   /* Project the acceleration on the old bond directions */
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x_old,xnew-start,acc_dir,box,
-<<<<<<< HEAD:src/mdlib/shellfc.c
-	    lambda[efptBONDED],&(dvdl[efptBONDED]),NULL,NULL,nrnb,econqDeriv_FlexCon); 
-=======
-	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
->>>>>>> a40476a3e8396430deb1258407699b27f90d2065:src/mdlib/shellfc.c
+	    lambda[efptBONDED],&(dvdl[efptBONDED]),NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }
 
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,

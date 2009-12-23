@@ -431,20 +431,21 @@ static void init_energyhistory(energyhistory_t *enh)
   enh->nener        = 0;
 }
 
-void init_gtc_state(t_state *state,int ngtc)
+void init_gtc_state(t_state *state, int ngtc, int nnhchains)
 {
     int i,j,ngtcp;
 
     state->ngtc = ngtc;
+    state->nnhchains = nnhchains;
     ngtcp = state->ngtc+1; /* need an extra state for the barostat */
     if (state->ngtc > 0) {
-        snew(state->nosehoover_xi, NNHCHAIN*ngtcp); 
-        snew(state->nosehoover_vxi, NNHCHAIN*ngtcp);
+        snew(state->nosehoover_xi, state->nnhchains*ngtcp); 
+        snew(state->nosehoover_vxi, state->nnhchains*ngtcp);
         snew(state->therm_integral, state->ngtc);
         for(i=0; i<ngtcp; i++) {
-            for (j=0;j<NNHCHAIN;j++) {
-                state->nosehoover_xi[i*NNHCHAIN + j]  = 0.0;
-                state->nosehoover_vxi[i*NNHCHAIN + j]  = 0.0;
+            for (j=0;j<state->nnhchains;j++) {
+                state->nosehoover_xi[i*state->nnhchains + j]  = 0.0;
+                state->nosehoover_vxi[i*state->nnhchains + j]  = 0.0;
             }
         }
         for(i=0; i<ngtc; i++) {
@@ -458,7 +459,7 @@ void init_gtc_state(t_state *state,int ngtc)
 }
 
 
-void init_state(t_state *state,int natoms,int ngtc)
+void init_state(t_state *state,int natoms,int ngtc, int nnhchains)
 {
   int i;
 
@@ -475,7 +476,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   clear_mat(state->boxv);
   clear_mat(state->pres_prev);
   clear_mat(state->vir_prev);
-  init_gtc_state(state,ngtc);
+  init_gtc_state(state,ngtc,nnhchains);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {
     snew(state->x,state->nalloc);
