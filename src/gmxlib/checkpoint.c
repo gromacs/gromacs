@@ -72,19 +72,20 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 const char *est_names[estNR]=
 {
     "FE-lambda","FE-fep-state",
-    "box", "box-rel", "box-v", "pres_prev", "vir_prev",
-    "nosehoover-xi", "nosehoover-vxi", 
-    "thermostat-integral", "v_eta", "vol0",
+    "box", "box-rel", "box-v", "pres_prev",
+    "nosehoover-xi", "thermostat-integral",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
+    "vir_prev", "nosehoover-vxi", "v_eta", "vol0"
 };
 
-enum { eeksEKIN_N, eeksEKINH, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksDEKINDL, eeksMVCOS, eeksNR };
+enum { eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR };
 
 const char *eeks_names[eeksNR]=
 {
-    "Ekin_n", "Ekinh", "Ekinf", "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC","Vscale_NHC","Ekin_Total", "dEkindlambda", "mv_cos"
+    "Ekin_n", "Ekinh", "dEkindlambda", "mv_cos",
+    "Ekinf", "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC","Vscale_NHC","Ekin_Total"
 };
 
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,

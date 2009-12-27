@@ -248,7 +248,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
     {
         init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
-        for(i=0; i<=enerd->n_lambda; i++)
+        for(i=0; i<enerd->n_lambda; i++)
         {
             for (j=0;j<efptNR;j++) {
                 if (i==0) 
@@ -380,7 +380,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             }
             init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
             
-            for(i=0; i<=enerd->n_lambda; i++)
+            for(i=0; i<enerd->n_lambda; i++)
             {
                 reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
                 for (j=0;j<efptNR;j++) {
@@ -722,7 +722,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
             if (debug) 
             {
                 fprintf(debug,"dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
-                        i,efpt_names[i],enerd->term[index],enerd->dvdl_nonlin[i],enerd->dvdl_lin[i]);
+                        efpt_names[i],i,enerd->term[index],enerd->dvdl_nonlin[i],enerd->dvdl_lin[i]);
             }
         }
         else 
@@ -731,7 +731,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
             if (debug) 
             {
                 fprintf(debug,"dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
-                        i,efpt_names[0],enerd->term[F_DVDL_REMAIN],enerd->dvdl_nonlin[i],enerd->dvdl_lin[i]);
+                        efpt_names[0],i,enerd->term[F_DVDL_REMAIN],enerd->dvdl_nonlin[i],enerd->dvdl_lin[i]);
             }
         }
     }
@@ -747,7 +747,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
      * (investigate how to overcome this - MRS)
      */
     
-    for(i=1; i<=enerd->n_lambda; i++)
+    for(i=1; i<enerd->n_lambda; i++)
     {
         
         /* we don't need to worry about dvdl contributions to the currenta lambda, because 
@@ -761,13 +761,15 @@ void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
         
         for (j=0;j<efptNR;j++) 
         {
+            if (j==efptMASS) {continue;}
+
             dlam = (fepvals->all_lambda[j][i-1]-lambda[j]);
             enerd->enerpart_lambda[i] += dlam*enerd->dvdl_lin[j];
             if (debug)
             {
                 fprintf(debug,"enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
                         fepvals->all_lambda[j][i-1],efpt_names[j],
-                        enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0],
+                        (enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0]),
                         dlam,enerd->dvdl_lin[j]);
             }
         }

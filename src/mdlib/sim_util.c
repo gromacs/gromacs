@@ -953,7 +953,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
          */
         if (fplog)
         {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %ld)\n",
                     step);
         }
         dvdl_dum = 0;

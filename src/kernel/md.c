@@ -1471,7 +1471,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int        i,m,status;
     rvec       mu_tot;
     t_vcm      *vcm;
-	t_state    *bufstate;   
+    t_state    *bufstate=NULL;   
     matrix     *scale_tot,pcoupl_mu,M,ebox;
     gmx_nlheur_t nlh;
     t_trxframe rerun_fr;

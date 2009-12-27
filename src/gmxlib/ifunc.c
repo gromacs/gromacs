@@ -160,7 +160,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("TEMP",     "Temperature"      ),
   def_nofc    ("VTEMP",    "Vir. Temperature" ),
   def_nofc    ("PRES",     "Pressure"         ),
-  def_nofc    ("PDISPCORR","Disper. corr. (Pressure)"                             ),  
+  def_nofc    ("PDISPCORR","Pres. DC"         ),  
   def_nofc    ("DVM/DL",   "dVremain/dl"      ),
   def_nofc    ("DK/DL",    "dEkin/dl"         ),
   def_nofc    ("DVC/DL",   "dVcoul/dl"        ),

@@ -776,9 +776,10 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                 fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]);
             }
         }
-        for(i=1; i<=enerd->n_lambda; i++)
+        for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(fp_dhdl," %g",
+            fprintf(fp_dhdl," %18.8g",
+            //fprintf(fp_dhdl," %g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
         fprintf(fp_dhdl,"\n");

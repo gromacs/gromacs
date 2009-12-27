@@ -2591,7 +2591,8 @@ void calc_bonds_lambda(FILE *fplog,
 	if (nbonds > 0) {
 	  ind = interaction_function[ftype].nrnb_ind;
 	  nat = interaction_function[ftype].nratoms+1;
-	  iatom_fe = idef->il[ftype].iatoms + nbonds*nat;
+	  /* the nonperturbed ones are listed first, so we only want to run the perturbed ones through */
+	  iatom_fe = idef->il[ftype].iatoms + nbonds_np;
 	  if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
 	    v =
 	      interaction_function[ftype].ifunc(nbonds,iatom_fe,
