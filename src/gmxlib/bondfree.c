@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -2490,10 +2490,10 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
   
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {
-	  if(ftype<F_GB12 || ftype>F_GB14) {
-    if (interaction_function[ftype].flags & IF_BOND &&
-	!(ftype == F_CONNBONDS || ftype == F_POSRES)) {
-      nbonds=idef->il[ftype].nr;
+    if(ftype<F_GB12 || ftype>F_GB14) {
+      if (interaction_function[ftype].flags & IF_BOND &&
+	  !(ftype == F_CONNBONDS || ftype == F_POSRES)) {
+	nbonds=idef->il[ftype].nr;
       if (nbonds > 0) {
 	ind = interaction_function[ftype].nrnb_ind;
 	nat = interaction_function[ftype].nratoms+1;

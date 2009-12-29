@@ -778,9 +778,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(fp_dhdl," %18.8g",
-            //fprintf(fp_dhdl," %g",
+            fprintf(fp_dhdl," %20.10g",
+                    //fprintf(fp_dhdl," %g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
+        }
+        if (md->epc!=epcNO) 
+        {
+            fprintf(fp_dhdl,"%g",pv);
         }
         fprintf(fp_dhdl,"\n");
     }
