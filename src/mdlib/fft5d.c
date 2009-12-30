@@ -1,9 +1,18 @@
+
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef GMX
+FILE* debug;
+#define GMX_PARALLEL_ENV_INITIALIZED 1
+#define GMX_MPI
+#else 
+#define GMX_PARALLEL_ENV_INITIALIZED gmx_parallel_env_initialized()
+#endif
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -64,9 +73,14 @@ static int lpfactor(int z) {
  * lin is allocated by fft5d because size of array is only known after planning phase */
 
 fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags flags, fft5d_type** rlin, fft5d_type** rlout, FILE* debug) {
+                                                                                 
+    #ifndef GMX                                                                  
+    debug=stderr;                                                                
+    #endif                                                                       
+                                                                                 
     int P[2],bMaster,prank[2];
 	/* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
-    if (gmx_parallel_env_initialized() && comm[0] != NULL)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != NULL)
     {
 	    MPI_Comm_size(comm[0],&P[0]);
 	    MPI_Comm_rank(comm[0],&prank[0]);
@@ -76,7 +90,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
         P[0] = 1;
         prank[0] = 0;
     }
-    if (gmx_parallel_env_initialized() && comm[1] != NULL)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != NULL)
     {
 	    MPI_Comm_size(comm[1],&P[1]);
 	    MPI_Comm_rank(comm[1],&prank[1]);
@@ -459,7 +473,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 		/*send, recv*/
 		time=MPI_Wtime();
 #ifdef GMX_MPI
-        if (gmx_parallel_env_initialized() && cart[s] != NULL)
+        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] != NULL)
         {
 #ifdef FFT5D_MPI_TRANSPOSE
 			FFTW(execute)(mpip[s]);

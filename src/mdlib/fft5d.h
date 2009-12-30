@@ -7,6 +7,13 @@
 #include <config.h>
 #endif
 
+#define GMX
+
+#ifndef GMX
+#define GMX_LIB_MPI
+#define GMX_FFT_FFTW3
+#endif
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -27,8 +34,11 @@
 #endif
 #endif
 
+
+#ifdef GMX
 #ifndef GMX_DOUBLE  //TODO how to not how have to do this GMX specific in here? can't be in gmx_parallel_3dfft.h because it has to be also be set when included from fft5d.c
 #define FFT5D_SINGLE
+#endif
 #endif
 
 #ifdef FFT5D_SINGLE
