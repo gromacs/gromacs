@@ -406,9 +406,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
     real   e,v,dvdl[efptNR];
+    real   dvdl_dum,lambda_dum;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
-  
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
 
@@ -688,15 +688,33 @@ void do_force(FILE *fplog,t_commrec *cr,
                     interaction_function[F_POSRES].longname,v,dvdl);
         }
         enerd->term[F_POSRES] += v;
-        /* This linear lambda dependence assumption is only correct
-         * when only k depends on lambda,
-         * not when the reference position depends on lambda.
-         * grompp checks for this.
-         * Can we generalize this? T'would be useful. MRS.  Would need to add 
-         in the ability to read multiple position restraint files.
-         */
-        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT];
+        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
+                                                                  but we can't be sure w/o additional checking that is
+                                                                  hard to do at this level of code. Otherwise, 
+                                                                  the dvdl is not differentiable */
         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
+
+        if ((inputrec->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
+        {
+            for(i=0; i<enerd->n_lambda; i++)
+            {
+                if (i==0) 
+                {
+                    lambda_dum = lambda[efptRESTRAINT];
+                }
+                else
+                {
+                    lambda_dum = inputrec->fepvals->all_lambda[efptRESTRAINT][i-1];
+                }
+                
+                v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
+                           top->idef.iparams_posres,
+                           (const rvec*)x,NULL,NULL,
+                           inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda_dum,&dvdl_dum,
+                           fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
+                enerd->enerpart_lambda[i] += v;
+            }
+        }
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    

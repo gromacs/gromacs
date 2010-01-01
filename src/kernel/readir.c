@@ -260,6 +260,11 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 				      ((fep->all_lambda[efptVDW][i] > 0.0) && (fep->all_lambda[efptVDW][i] < 1.0))));
 	}
     }
+
+    if (fep->bScCoul) 
+      {
+	warning("Coulomb soft core not exact because of the reciprocal space calculation, as is not advised.  If you wish to use, decrease the reciprocal space energy, and increase the cutoff radius."); 
+      }
     /* other FEP checks that might need to be added . . . */
   }
   
@@ -1072,6 +1077,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("init-lambda", ir->fepvals->init_lambda,-1); /* start with -1 so we can recognize if it was not entered */
   ITYPE ("init-fep-state", ir->fepvals->init_fep_state,0);
   RTYPE ("delta-lambda",ir->fepvals->delta_lambda,0.0);
+  /*STYPE ("foreign-lambda", fep_lambda[efptFEP], NULL);*/  /* included for backwards compatibility -- but fep-lambda overwrites */
   STYPE ("fep-lambda", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambda", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambda", fep_lambda[efptCOUL], NULL);

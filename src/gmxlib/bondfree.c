@@ -1262,10 +1262,15 @@ real posres(int nbonds,
             *dvdl += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
                               0,dpdl[m],dx[m],lambda,&v,&fm);
             vtot += v;
-            f[ai][m] += fm;
-            
+            if (f!=NULL) 
+            {
+                f[ai][m] += fm;
+            }
             /* Here we correct for the pbc_dx which included rdist */
-            vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+            if (vir_diag != NULL) 
+            {
+                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+            }
         }
     }
     

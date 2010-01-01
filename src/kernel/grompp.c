@@ -1273,21 +1273,25 @@ int main (int argc, char *argv[])
     }
   }
 	
+
+  if (ir->efep!= efepNO)
+  {
+      state.fep_state = ir->fepvals->init_fep_state;
+      for (i=0;i<efptNR;i++) 
+      {
+          state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
+          /* overwrite with explicitly stated init_lambda */
+          if (ir->fepvals->init_lambda >= 0)
+          {
+              state.lambda[i] = ir->fepvals->init_lambda;
+          } 
+      }
+  } 
+  print_warn_num(TRUE);
+
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
-  print_warn_num(TRUE);
-  state.fep_state = ir->fepvals->init_fep_state;
-  for (i=0;i<efptNR;i++) 
-  {
-      state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
-      /* overwrite with explicitly stated init_lambda */
-      if (ir->fepvals->init_lambda >= 0)
-      {
-          state.lambda[i] = ir->fepvals->init_lambda;
-      } 
- }
- 
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   
   thanx(stderr);

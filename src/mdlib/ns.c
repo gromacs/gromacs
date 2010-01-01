@@ -368,7 +368,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
            {
                icoulf = icoul;
            }
-
+           
            init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
                        maxsr,maxlr,ivdw,icoulf,TRUE,enlistATOM_ATOM);
            init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],

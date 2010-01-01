@@ -103,7 +103,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     int           n0,n1C,n1V,nnn;
     real          Y,F,G,H,Fp,Geps,Heps2,epsC,eps2C,epsV,eps2V,VV,FF;
     double        isp=0.564189583547756;
-
+    bool          bFEWALD;
 
     /* fix compiler warnings */
     nj1   = 0;
@@ -130,6 +130,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
     
     do_tab = do_coultab || do_vdwtab;
     
+    bFEWALD = ((icoul==enbcoulFEWALD) && (alpha_coul > 0)); 
+
     /* we always use the combined table here */
     tab_elemsize = 12;
     
@@ -245,7 +247,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                         n1V        = tab_elemsize*n0;
                     }
                     
-                    if(icoul==enbcoulOOR || icoul==enbcoulFEWALD)
+                    if(icoul==enbcoulOOR || bFEWALD)
                     {
                         /* simple cutoff */
                         Vcoul[i]   = qq[i]*rinvC;
@@ -315,7 +317,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
 
             Fscal = 0;
             
-            if (icoul==enbcoulFEWALD)
+            if (bFEWALD)
             {
                 /* Soft-core Ewald interactions are special:
                  * For the direct space interactions we effectively want the
