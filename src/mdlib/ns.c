@@ -360,7 +360,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        
        if (fr->efep != efepNO) 
        {
-           if (fr->bEwald)
+           if ((fr->bEwald) && (fr->sc_alphacoul > 0))
            {
                icoulf = enbcoulFEWALD;
            }

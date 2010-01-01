@@ -305,9 +305,13 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
     }
 
-    if ((fepvals->sc_alpha!=0) && fepvals->bScCoul)
+    if (fepvals->sc_alpha!=0) 
+
+        /* even though coulomb part is linear, we already added it, beacuse we 
+           need to go through the vdw calculation anyway */
+        //if ((fepvals->sc_alpha!=0) && fepvals->bScCoul)
     {
-        enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
+            enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
     }
     else
     {

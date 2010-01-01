@@ -103,7 +103,6 @@ gmx_nb_free_energy_kernel(int                  icoul,
     int           n0,n1C,n1V,nnn;
     real          Y,F,G,H,Fp,Geps,Heps2,epsC,eps2C,epsV,eps2V,VV,FF;
     double        isp=0.564189583547756;
-    bool          bFEWALD;
 
     /* fix compiler warnings */
     nj1   = 0;
@@ -130,8 +129,6 @@ gmx_nb_free_energy_kernel(int                  icoul,
     
     do_tab = do_coultab || do_vdwtab;
     
-    bFEWALD = ((icoul==enbcoulFEWALD) && (alpha_coul > 0)); 
-
     /* we always use the combined table here */
     tab_elemsize = 12;
     
@@ -247,7 +244,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                         n1V        = tab_elemsize*n0;
                     }
                     
-                    if(icoul==enbcoulOOR || bFEWALD)
+                    if(icoul==enbcoulOOR || icoul==enbcoulFEWALD)
                     {
                         /* simple cutoff */
                         Vcoul[i]   = qq[i]*rinvC;
@@ -260,7 +257,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                         Vcoul[i]   = qq[i]*(rinvC+krsq-crf);
                         FscalC[i]  = qq[i]*(rinvC-2.0*krsq)*rinvC*rinvC;
                     }
-                    else if(icoul==enbcoulTAB)
+                    else if (icoul==enbcoulTAB)
                     {
                         /* non-Ewald tabulated coulomb */
                         nnn        = n1C;
@@ -317,13 +314,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
 
             Fscal = 0;
             
-            if (bFEWALD)
-            {
-                /* Soft-core Ewald interactions are special:
-                 * For the direct space interactions we effectively want the
-                 * normal coulomb interaction (added above when icoul==5),
-                 * but need to subtract the part added in reciprocal space.
-                 */
+            if (icoul==enbcoulFEWALD) {
                 if (r != 0) 
                 {
                     VV    = gmx_erf(ewc*r)*rinv;
@@ -334,7 +325,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     VV    = ewc*2.0/sqrt(M_PI);
                     FF    = 0;
                 }
-
+                
                 for (i=0;i<NSTATES;i++) 
                 {
                     vctot      -= LFC[i]*qq[i]*VV;
