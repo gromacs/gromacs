@@ -238,6 +238,15 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->posres.pos0B[YY] = old[10];
     newparam->posres.pos0B[ZZ] = old[11];
     break;
+  case F_SDISRES:
+    newparam->sdisres.lowA   = old[0];
+    newparam->sdisres.up1A   = old[1];
+    newparam->sdisres.up2A   = old[2];
+    newparam->sdisres.kfacA  = old[3];
+    newparam->sdisres.lowB   = old[4];
+    newparam->sdisres.up1B   = old[5];
+    newparam->sdisres.up2B   = old[6];
+    newparam->sdisres.kfacB  = old[7];
   case F_DISRES:
     newparam->disres.label = round_check(old[0],0,ftype,"label");
     newparam->disres.type  = round_check(old[1],1,ftype,"type'");
@@ -322,18 +331,18 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->vsiten.a = old[1];
     break;
   case F_CMAP:
-	newparam->cmap.cmapA=old[0];
-	newparam->cmap.cmapB=old[1];
-	break;
-      case F_GB12:
-      case F_GB13:
-      case F_GB14:
-          newparam->gb.sar  = old[0];
-          newparam->gb.st   = old[1];
-          newparam->gb.pi   = old[2];
-          newparam->gb.gbr  = old[3];
-          newparam->gb.bmlt = old[4];
-          break;
+    newparam->cmap.cmapA=old[0];
+    newparam->cmap.cmapB=old[1];
+    break;
+  case F_GB12:
+  case F_GB13:
+  case F_GB14:
+    newparam->gb.sar  = old[0];
+    newparam->gb.st   = old[1];
+    newparam->gb.pi   = old[2];
+    newparam->gb.gbr  = old[3];
+    newparam->gb.bmlt = old[4];
+    break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
 		ftype,__FILE__,__LINE__);

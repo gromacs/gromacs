@@ -145,7 +145,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
   extern t_ifunc pdihs,idihs,rbdihs;
   extern t_ifunc tab_bonds,tab_angles,tab_dihs;
   extern t_ifunc polarize,water_pol,thole_pol,angres,angresz,unimplemented;
-
+  extern t_ifunc simple_disres;
 #ifdef __cplusplus
 }
 #endif

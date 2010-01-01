@@ -296,7 +296,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
 #endif
     
-    if (fepvals->sc_alpha != 0)
+    if (fepvals->sc_alpha!=0)
     {
         enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
     }
@@ -304,6 +304,16 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     {
         enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
     }
+
+    if ((fepvals->sc_alpha!=0) && fepvals->bScCoul)
+    {
+        enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
+    }
+    else
+    {
+        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
+    }
+
     Vsr = 0;
     if (bSepDVDL)
     {

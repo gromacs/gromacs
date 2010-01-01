@@ -63,7 +63,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 69;
+static const int tpx_version = 70;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -145,6 +145,7 @@ static const t_ftupd ftupd[] = {
   { 30, F_POLARIZATION      },
   { 36, F_THOLE_POL         },
   { 22, F_DISRESVIOL        },
+  { 70, F_SDISRES           },
   { 22, F_ORIRES            },
   { 22, F_ORIRESDEV         },
   { 26, F_DIHRES            },
@@ -156,7 +157,6 @@ static const t_ftupd ftupd[] = {
   { 46, F_ECONSERVED        },
   { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
-  /*  { 54, F_DHDL_CON          }, */
 };
 #define NFTUPD asize(ftupd)
 
@@ -305,6 +305,10 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
     {
       fepvals->sc_sigma = 0.3;
     }    
+  if (file_version >= 70) 
+    {
+      do_int(fepvals->bScCoul);
+    }
 }
 
 static void do_pull(t_pull *pull,bool bRead, int file_version)
@@ -1034,6 +1038,17 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->disres.up1);
     do_real(iparams->disres.up2);
     do_real(iparams->disres.kfac);
+    break;
+  case F_SDISRES:
+    do_int (iparams->sdisres.type);
+    do_real(iparams->sdisres.lowA);
+    do_real(iparams->sdisres.up1A);
+    do_real(iparams->sdisres.up2A);
+    do_real(iparams->sdisres.kfacA);
+    do_real(iparams->sdisres.lowB);
+    do_real(iparams->sdisres.up1B);
+    do_real(iparams->sdisres.up2B);
+    do_real(iparams->sdisres.kfacB);
     break;
   case F_ORIRES:
     do_int (iparams->orires.ex);

@@ -516,6 +516,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
         }
     }
     PR("sc_alpha",fepvals->sc_alpha);
+    PS("sc_coul",BOOL(fepvals->bScCoul));
     PI("sc_power",fepvals->sc_power);
     PR("sc_sigma",fepvals->sc_sigma);
 };
@@ -812,6 +813,11 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->disres.low,iparams->disres.up1,
 	    iparams->disres.up2,iparams->disres.kfac);
     break;
+  case F_SDISRES:
+    fprintf(fp,"type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
+            iparams->disres.type,
+            iparams->disres.low,iparams->disres.up1,
+            iparams->disres.up2,iparams->disres.kfac);
   case F_ORIRES:
     fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
 	    iparams->orires.ex,iparams->orires.label,iparams->orires.power,

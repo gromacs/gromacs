@@ -135,6 +135,7 @@ typedef struct {
   real sc_alpha;         /* free energy soft-core parameter                   */
   int  sc_power;         /* lambda power for soft-core interactions           */
   real sc_sigma;         /* free energy soft-core sigma when c6 or c12=0      */
+  bool bScCoul;           /* use softcore for the coulomb portion as well (default FALSE) */ 
   bool separate_dvdl[efptNR]; /* whether to print the dvdl term associated with this 
 				term; if it is not specified as separate, is is lumped with the FEP term */  
 } t_lambda;

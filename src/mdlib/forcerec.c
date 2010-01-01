@@ -1221,7 +1221,12 @@ void init_forcerec(FILE *fp,
     
     /* Free energy */
     fr->efep       = ir->efep;
-    fr->sc_alpha   = ir->fepvals->sc_alpha;
+    fr->sc_alphavdw = ir->fepvals->sc_alpha;
+    if (ir->fepvals->bScCoul) {
+        fr->sc_alphacoul = ir->fepvals->sc_alpha;
+    } else {
+        fr->sc_alphacoul = 0;
+    }
     fr->sc_power   = ir->fepvals->sc_power;
     fr->sc_sigma6  = pow(ir->fepvals->sc_sigma,6);
     

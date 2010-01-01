@@ -497,8 +497,10 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     FILE *fp;
     const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4",*remain="remaining";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
-    int  i,s,nsets,nsets1,nsets2;
+    int  i,np,nps,nsets,nsets2;
     char **setname,buf[STRLEN];
+    int nsets1 = 0;
+    int s = 0;
 
     if (ir->fepvals->n_lambda == 0) 
     {
@@ -518,7 +520,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     fp = xvgropen(filename,title,label_x,label_y,oenv);
     
     /* count the number of dv/dl components */
-    nsets1 = 0;
+
     for (i=0;i<efptNR;i++) 
     {
         if (ir->fepvals->separate_dvdl[i]) {nsets1++;}
@@ -530,7 +532,6 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     nsets = nsets1 + nsets2;
     snew(setname,nsets);
     
-    s = 0;
     for (i=0;i<efptNR;i++) 
     {
         if (ir->fepvals->separate_dvdl[i]) { 
@@ -545,12 +546,23 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
         /* g_bar has to determine the lambda values used in this simulation
          * from this xvg legend.
          */
+
         for(s=nsets1; s<nsets; s++)
         {
-            sprintf(buf,"%s %s %g",deltag,lambda,ir->fepvals->all_lambda[efptFEP][s-nsets1]);  /* for now, put fep lambda here */
-                                                                                               /* eventually, put fep_state ? */
+            nps = 0;
+            np = sprintf(buf,"%s %s (%g",deltag,lambda,ir->fepvals->all_lambda[efptFEP][s-nsets1]);  
+            for (i=0;i<efptNR;i++) 
+            {
+                if (ir->fepvals->separate_dvdl[i] && i!=efptFEP) 
+                { 
+                    nps += np;
+                    np = sprintf(&buf[nps],",%g",ir->fepvals->all_lambda[i][s-nsets1]);
+                }
+            }
+            sprintf(&buf[nps+np],")");
             setname[s] = strdup(buf);
         }
+        
         xvgr_legend(fp,nsets,setname,oenv);
         
         for(s=0; s<nsets; s++)
@@ -779,7 +791,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         for(i=1; i<enerd->n_lambda; i++)
         {
             fprintf(fp_dhdl," %20.10g",
-                    //fprintf(fp_dhdl," %g",
+            //fprintf(fp_dhdl," %g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
         if (md->epc!=epcNO) 

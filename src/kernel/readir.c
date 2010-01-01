@@ -252,10 +252,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	  }
       }
     
-    if (fep->sc_alpha>0) {
+    if ((fep->sc_alpha>0) && (!fep->bScCoul)) {
       for (i=0;i<fep->n_lambda;i++) 
 	{
-	  sprintf(err_buf,"For state %d, vdw-lambda is changing (%f) while coul-lambda is changing (%f): with softcore vdw, this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],fep->all_lambda[efptCOUL][i]);
+	  sprintf(err_buf,"For state %d, vdw-lambda (%f) is changing with vdw softcore, while coul-lambda (%f) is nonzero without coulomb softcore: this will lead to crashes, and is not supported.",i,fep->all_lambda[efptVDW][i],fep->all_lambda[efptCOUL][i]);
 	  CHECK((fep->sc_alpha>0) && (((fep->all_lambda[efptCOUL][i] > 0.0) && (fep->all_lambda[efptCOUL][i] < 1.0)) &&
 				      ((fep->all_lambda[efptVDW][i] > 0.0) && (fep->all_lambda[efptVDW][i] < 1.0))));
 	}
@@ -1081,6 +1081,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("sc-alpha",ir->fepvals->sc_alpha,0.0);
   ITYPE ("sc-power",ir->fepvals->sc_power,0);
   RTYPE ("sc-sigma",ir->fepvals->sc_sigma,0.3);
+  EETYPE("sc-coul",ir->fepvals->bScCoul,yesno_names, nerror, FALSE);
   ITYPE ("nstdhdl",     ir->nstdhdl, 10);
   STYPE ("couple-moltype",  couple_moltype,  NULL);
   EETYPE("couple-lambda0", opts->couple_lam0, couple_lam, nerror, TRUE);

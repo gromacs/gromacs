@@ -587,7 +587,6 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
             /* No violation so force and potential contributions */
             fa += 3*npair;
         }
-        res++;
     }
     
     dd->sumviol = violtot;

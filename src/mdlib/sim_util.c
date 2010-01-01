@@ -692,7 +692,8 @@ void do_force(FILE *fplog,t_commrec *cr,
          * when only k depends on lambda,
          * not when the reference position depends on lambda.
          * grompp checks for this.
-         * Can we generalize this? T'would be useful. MRS
+         * Can we generalize this? T'would be useful. MRS.  Would need to add 
+         in the ability to read multiple position restraint files.
          */
         enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT];
         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
