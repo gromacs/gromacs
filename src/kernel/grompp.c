@@ -1118,11 +1118,12 @@ int main (int argc, char *argv[])
           fprintf(stderr,"\n");
       } else {
           fprintf(stderr," and %s\n",fnB);
-          if (ir->efep != efepNO && ir->fepvals->n_lambda > 0) {
-              fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
-              /* does this need to change? MRS*/
-              nerror++;
+          /*
+            if (ir->efep != efepNO && ir->fepvals->n_lambda > 0) {
+            fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
+            nerror++;
           }
+          */ /* testing a change to this MRS */
       }
     }
     gen_posres(sys,mi,fn,fnB,

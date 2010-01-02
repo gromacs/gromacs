@@ -409,7 +409,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 }
                 calc_bonds_lambda(fplog,
                                   idef,x,fr,&pbc,graph,&ed_lam,nrnb,lambda_dum,md,
-                                  fcd,DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                  fcd,&(mtop->cmap_grid),DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&ir->opts,&ed_lam);
                 enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
             }

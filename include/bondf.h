@@ -101,7 +101,8 @@ extern void calc_bonds_lambda(FILE *fplog,
 			      gmx_enerdata_t *enerd,t_nrnb *nrnb,
 			      real *lambda,
 			      const t_mdatoms *md,
-			      t_fcdata *fcd,int *global_atom_index);
+			      t_fcdata *fcd,gmx_cmap_t *cmap_grid,
+			      int *global_atom_index);
 /* As calc_bonds, but only determines the potential energy
  * for the perturbed interactions.
  * The shift forces in fr are not affected.

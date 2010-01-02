@@ -796,7 +796,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         if (md->epc!=epcNO) 
         {
-            fprintf(fp_dhdl,"%g",pv);
+            fprintf(fp_dhdl," %g",pv);
         }
         fprintf(fp_dhdl,"\n");
     }

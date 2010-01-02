@@ -36,6 +36,8 @@
 #include <config.h>
 #endif
 
+#define OLDBONDS 0
+
 #include <math.h>
 #include "physics.h"
 #include "vec.h"
@@ -2591,6 +2593,125 @@ real tab_dihs(int nbonds,
   return vtot;
 }
 
+real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef, 
+                         rvec x[], rvec f[], t_forcerec *fr,
+                         const t_pbc *pbc,const t_graph *g, 
+                         gmx_enerdata_t *enerd, t_nrnb *nrnb, real *lambda, real *dvdl,
+                         const t_mdatoms *md,t_fcdata *fcd,int *global_atom_index, 
+                         gmx_cmap_t *cmap_grid, bool bPrintSepPot)
+{
+    int ind,nat,nbonds,efptCURRENT,nbonds_np;
+    real v=0;
+    real *dvdl_dum,*pdvdl;
+    bool bForeign,bSep;
+    t_iatom *iatoms;
+
+    bForeign=FALSE;
+    if (dvdl==NULL) 
+    {
+        bForeign = TRUE;   /* if dvdl is NULL, we are doing foreign lambdas */
+    }
+   
+    if (bForeign) {
+        snew(dvdl_dum,efptNR);
+        pdvdl = dvdl_dum;
+    } else {
+        pdvdl = dvdl;
+    }
+    
+    if(ftype<F_GB12 || ftype>F_GB14) 
+    {
+        if (interaction_function[ftype].flags & IF_BOND &&
+            !(ftype == F_CONNBONDS || ftype == F_POSRES)) 
+        {
+            if (bForeign) 
+            {
+                nbonds_np = idef->il[ftype].nr_nonperturbed;
+                iatoms = idef->il[ftype].iatoms + nbonds_np;
+                nbonds    = idef->il[ftype].nr - nbonds_np;
+            } 
+            else
+            {
+                iatoms = idef->il[ftype].iatoms;
+                nbonds    = idef->il[ftype].nr;
+            }
+            if (nbonds > 0)
+            {
+                ind = interaction_function[ftype].nrnb_ind;
+                nat = interaction_function[ftype].nratoms+1;
+                if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) 
+                {
+                    if (IS_RESTRAINT_TYPE(ftype)) 
+                    {
+                        efptCURRENT = efptRESTRAINT;
+                    } 
+                    else 
+                    {
+                        efptCURRENT = efptBONDED;
+                    }
+
+                    if(ftype==F_CMAP)
+                    {
+                        v = cmap_dihs(nbonds,iatoms,
+                                      idef->iparams,cmap_grid,
+                                      (const rvec*)x,f,fr->fshift,
+                                      pbc,g,lambda[efptBONDED],&pdvdl[efptBONDED],md,fcd,
+                                      global_atom_index);
+                    }
+                    else
+                    {
+                        v =	    interaction_function[ftype].ifunc(nbonds,iatoms,
+                                                                  idef->iparams,
+                                                                  (const rvec*)x,f,fr->fshift,
+                                                                  pbc,g,lambda[efptCURRENT],&pdvdl[efptCURRENT],
+                                                                  md,fcd,global_atom_index);
+                    }
+                    if (!bForeign) 
+                    {
+                        enerd->dvdl_nonlin[efptCURRENT] += dvdl[efptCURRENT];
+                        if (bPrintSepPot) 
+                        {
+                            fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+                                    interaction_function[ftype].longname,nbonds/nat,v,pdvdl[efptCURRENT]);
+                        }
+                    } 
+                }
+                else 
+                {
+                    v = do_listed_vdw_q(ftype,nbonds,iatoms,
+                                        idef->iparams,
+                                        (const rvec*)x,f,fr->fshift,
+                                        pbc,g,
+                                        lambda,pdvdl,
+                                        md,fr,&enerd->grpp,global_atom_index);
+                    if (!bForeign)
+                    {
+                        enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
+                        enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
+                        
+                        if (bPrintSepPot) 
+                        {
+                            /* note -- I'm not sure this is quite right -- there are other 14 terms in idef.h */
+                            fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                                    interaction_function[ftype].longname,
+                                    interaction_function[F_COUL14].longname,nbonds/nat,pdvdl[efptCOUL]);
+                            fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                                    interaction_function[ftype].longname,
+                                    interaction_function[F_LJ14].longname,nbonds/nat,pdvdl[efptVDW]);
+                        }
+                    }
+                    
+                }
+                if (ind != -1)
+                {
+                    inc_nrnb(nrnb,ind,nbonds/nat);
+                }
+            }
+        }
+    }
+    return v;
+}
+
 void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 const t_idef *idef,
                 rvec x[],history_t *hist,
@@ -2651,6 +2772,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     /* Loop over all bonded force types to calculate the bonded forces */
     for(ftype=0; (ftype<F_NRE); ftype++) 
     {
+#if OLDBONDS
         if(ftype<F_GB12 || ftype>F_GB14) 
         {
             if (interaction_function[ftype].flags & IF_BOND &&
@@ -2676,7 +2798,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                             v = cmap_dihs(nbonds,idef->il[ftype].iatoms,
                                           idef->iparams,cmap_grid,
                                           (const rvec*)x,f,fr->fshift,
-                                          pbc_null,g,lambda[efptCURRENT],&dvdl_val[efptCURRENT],md,fcd,
+                                          pbc_null,g,lambda[efptBONDED],&dvdl_val[efptBONDED],md,fcd,
                                           global_atom_index);
                         }
                         else
@@ -2693,7 +2815,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                             fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
                                     interaction_function[ftype].longname,nbonds/nat,v,dvdl);
                         }
-                    } 
+                    }
                     else 
                     {
                         v = do_listed_vdw_q(ftype,nbonds,idef->il[ftype].iatoms,
@@ -2717,10 +2839,15 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                         inc_nrnb(nrnb,ind,nbonds/nat);
                     }
                     epot[ftype]        += v;
-                    
                 }
             }
         }
+#else
+        v = calc_one_bond(fplog,ftype,idef,x, 
+                          f,fr,pbc_null,g,enerd,nrnb,lambda,dvdl,
+                          md,fcd,global_atom_index,cmap_grid,bPrintSepPot);
+        epot[ftype]        += v;
+#endif
     }
     sfree(dvdl);
     /* Copy the sum of violations for the distance restraints from fcd */
@@ -2731,77 +2858,108 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 }
 
 void calc_bonds_lambda(FILE *fplog,
-		       const t_idef *idef,
-		       rvec x[],
-		       t_forcerec *fr,
-		       const t_pbc *pbc,const t_graph *g,
-		       gmx_enerdata_t *enerd,t_nrnb *nrnb,
-		       real *lambda,
-		       const t_mdatoms *md,
-		       t_fcdata *fcd,int *global_atom_index)
+                       const t_idef *idef,
+                       rvec x[],
+                       t_forcerec *fr,
+                       const t_pbc *pbc,const t_graph *g,
+                       gmx_enerdata_t *enerd,t_nrnb *nrnb,
+                       real *lambda,
+                       const t_mdatoms *md,
+                       t_fcdata *fcd,
+                       gmx_cmap_t *cmap_grid,
+                       int *global_atom_index)
 {
-  int    i,ftype,nbonds_np,nbonds,ind,nat;
-  real   *epot,v,dvdl[efptNR];
-  real   dr,dr2;
-  rvec   *f,*fshift_orig;
-  const  t_pbc *pbc_null;
-  t_iatom *iatom_fe;
+    int    i,ftype,nbonds_np,nbonds,ind,nat,efptCURRENT;
+    real   *epot,v,dvdl;
+    real   dr,dr2;
+    rvec   *f,*fshift_orig;
+    const  t_pbc *pbc_null;
+    t_iatom *iatom_fe;
 
-  for (i=0;i<efptNR;i++) 
+    if (fr->bMolPBC)
     {
-      dvdl[i] = 0;
+        pbc_null = pbc;
     }
-  
-  if (fr->bMolPBC)
-    pbc_null = pbc;
-  else
-    pbc_null = NULL;
-  
-  epot = enerd->term;
-  
-  snew(f,fr->natoms_force);
-  /* We want to preserve the fshift array in forcerec */
-  fshift_orig = fr->fshift;
-  snew(fr->fshift,SHIFTS);
-
-  /* Loop over all bonded force types to calculate the bonded forces */
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if(ftype<F_GB12 || ftype>F_GB14) {
-      if (interaction_function[ftype].flags & IF_BOND &&
-	  !(ftype == F_CONNBONDS || ftype == F_POSRES)) {
-	nbonds_np = idef->il[ftype].nr_nonperturbed;
-	nbonds    = idef->il[ftype].nr - nbonds_np;
-	if (nbonds > 0) {
-	  ind = interaction_function[ftype].nrnb_ind;
-	  nat = interaction_function[ftype].nratoms+1;
-	  /* the nonperturbed ones are listed first, so we only want to run the perturbed ones through */
-	  iatom_fe = idef->il[ftype].iatoms + nbonds_np;
-	  if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
-	    v =
-	      interaction_function[ftype].ifunc(nbonds,iatom_fe,
-						idef->iparams,
-						(const rvec*)x,f,fr->fshift,
-						pbc_null,g,lambda[efptBONDED],&(dvdl[efptBONDED]),md,fcd,
-						global_atom_index);
-	  } else {
-	    v = do_listed_vdw_q(ftype,nbonds,iatom_fe,
-				idef->iparams,
-				(const rvec*)x,f,fr->fshift,
-				pbc_null,g,
-				lambda,dvdl,
-				md,fr,&enerd->grpp,global_atom_index);
-	  }
-	  if (ind != -1) 
-	    {
-	      inc_nrnb(nrnb,ind,nbonds/nat);
-	    }
-	  epot[ftype] += v;
-	}
-      }
+    else
+    {
+        pbc_null = NULL;
     }
-  }
-
-  sfree(fr->fshift);
-  fr->fshift = fshift_orig;
-  sfree(f);
+    
+    epot = enerd->term;
+    
+    snew(f,fr->natoms_force);
+    /* We want to preserve the fshift array in forcerec */
+    fshift_orig = fr->fshift;
+    snew(fr->fshift,SHIFTS);
+    
+    /* Loop over all bonded force types to calculate the bonded forces */
+    for(ftype=0; (ftype<F_NRE); ftype++) 
+    {
+#if OLDBONDS                    
+        if(ftype<F_GB12 || ftype>F_GB14) 
+        {
+            if (interaction_function[ftype].flags & IF_BOND &&
+                !(ftype == F_CONNBONDS || ftype == F_POSRES)) 
+            {
+                nbonds_np = idef->il[ftype].nr_nonperturbed;
+                nbonds    = idef->il[ftype].nr - nbonds_np;
+                if (nbonds > 0) 
+                {
+                    ind = interaction_function[ftype].nrnb_ind;
+                    nat = interaction_function[ftype].nratoms+1;
+                    /* the nonperturbed ones are listed first, so we only want to run the perturbed ones through */
+                    iatom_fe = idef->il[ftype].iatoms + nbonds_np;
+                    if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) 
+                    {
+                        if (IS_RESTRAINT_TYPE(ftype)) 
+                        {
+                            efptCURRENT = efptRESTRAINT;
+                        } 
+                        else 
+                        {
+                            efptCURRENT = efptBONDED;
+                        }
+                        if(ftype==F_CMAP)
+                        {
+                            v = cmap_dihs(nbonds,idef->il[ftype].iatoms,
+                                          idef->iparams,cmap_grid,
+                                          (const rvec*)x,f,fr->fshift,
+                                          pbc_null,g,lambda[efptBONDED],&dvdl[efptBONDED],md,fcd,
+                                          global_atom_index);
+                        }
+                        v =
+                            interaction_function[ftype].ifunc(nbonds,iatom_fe,
+                                                              idef->iparams,
+                                                              (const rvec*)x,f,fr->fshift,
+                                                              pbc_null,g,lambda[efptBONDED],&dvdl[efptBONDED],md,fcd,
+                                                              global_atom_index);
+                    } 
+                    else 
+                    {
+                        v = do_listed_vdw_q(ftype,nbonds,iatom_fe,
+                                            idef->iparams,
+                                            (const rvec*)x,f,fr->fshift,
+                                            pbc_null,g,
+                                            lambda,dvdl,
+                                            md,fr,&enerd->grpp,global_atom_index);
+                    }
+                    if (ind != -1) 
+                    {
+                        inc_nrnb(nrnb,ind,nbonds/nat);
+                    }
+                    epot[ftype] += v;
+                }
+            }
+        }
+#else
+        v = calc_one_bond(fplog,ftype,idef,x, 
+                          f,fr,pbc_null,g,enerd,nrnb,lambda,NULL,
+                          md,fcd,global_atom_index,cmap_grid,FALSE);
+        epot[ftype] += v;
+#endif
+    }
+    
+    sfree(fr->fshift);
+    fr->fshift = fshift_orig;
+    sfree(f);
 }

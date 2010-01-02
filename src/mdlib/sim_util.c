@@ -688,10 +688,10 @@ void do_force(FILE *fplog,t_commrec *cr,
                     interaction_function[F_POSRES].longname,v,dvdl);
         }
         enerd->term[F_POSRES] += v;
-        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
-                                                                  but we can't be sure w/o additional checking that is
-                                                                  hard to do at this level of code. Otherwise, 
-                                                                  the dvdl is not differentiable */
+        enerd->dvdl_nonlin[efptRESTRAINT] += dvdl[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
+                                                                     but we can't be sure w/o additional checking that is
+                                                                     hard to do at this level of code. Otherwise, 
+                                                                     the dvdl is not differentiable */
         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
 
         if ((inputrec->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
