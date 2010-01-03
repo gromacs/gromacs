@@ -122,9 +122,9 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
          * the dihedral is Pi away from phiO, which is very unlikely due to
          * the potential.
          */
-        dp = phi-phi0;  
-        dp = periodic_dp(dp);
-        
+        dp = phi-phi0;
+        make_dp_periodic(&dp);
+
         if (dp > dphi) 
         {
             ddp = dp-dphi;

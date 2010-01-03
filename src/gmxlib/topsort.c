@@ -102,6 +102,11 @@ static bool ip_pert(int ftype,t_iparams *ip)
                  (ip->sdisres.up2B != ip->sdisres.up2A) ||
                  (ip->sdisres.kfacA != ip->sdisres.kfacB));
         break;
+    case F_DIHRES:
+        bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
+                 (ip->dihres.dphiA != ip->dihres.dphiB) ||
+                 (ip->dihres.kfacA != ip->dihres.kfacB));
+        break;
     case F_LJ14:
         bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
                  ip->lj14.c12A != ip->lj14.c12B);

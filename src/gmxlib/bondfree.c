@@ -1085,18 +1085,18 @@ real pdihs(int nbonds,
     return vtot;
 }
 
-real periodic_dp(real dp) 
+void make_dp_periodic(real *dp) 
 {
     /* dp cannot be outside (-pi,pi) */
-    if (dp >= M_PI)
+    if (*dp >= M_PI)
     {
-        dp -= 2*M_PI;
+        *dp -= 2*M_PI;
     }
-    else if (dp < -M_PI) 
+    else if (*dp < -M_PI) 
     {
-        dp += 2*M_PI;
+        *dp += 2*M_PI;
     }
-    return dp;
+    return;
 }
 
 real idihs(int nbonds,
@@ -1144,8 +1144,9 @@ real idihs(int nbonds,
         phi0  = (L1*pA + lambda*pB)*DEG2RAD;
         dphi0 = (pB - pA)*DEG2RAD;
 
-        dp = phi-phi0;  
-        dp = periodic_dp(dp);
+        dp = phi-phi0;
+
+        make_dp_periodic(&dp);
 
         dp2 = dp*dp;
 
@@ -2626,7 +2627,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
     if (dvdl==NULL) 
     {
         bForeign = TRUE;   /* if dvdl is NULL, we are doing foreign lambdas */
-        pdvdl = &dvdl_dum;
+        pdvdl = dvdl_dum;
     } else {
         pdvdl = dvdl;
     }
@@ -2782,7 +2783,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     for(ftype=0; (ftype<F_NRE); ftype++) 
     {
         v = calc_one_bond(fplog,ftype,idef,x, 
-                          f,fr,pbc_null,g,enerd,nrnb,lambda,&dvdl,
+                          f,fr,pbc_null,g,enerd,nrnb,lambda,dvdl,
                           md,fcd,global_atom_index,cmap_grid,bPrintSepPot);
         epot[ftype]        += v;
     }
