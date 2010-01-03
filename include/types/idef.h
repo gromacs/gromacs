@@ -164,8 +164,8 @@ typedef union
   struct {real a,alpha1,alpha2,rfac;                       } thole;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
-  struct {real fqq,qi,qj,c6,c12;	                   } ljc14;
-  struct {real qi,qj,c6,c12;		                   } ljcnb;
+  struct {real fqq,qiA,qjA,c6A,c12A,qiB,qjB,c6B,c12B;      } ljc14;
+  struct {real qiA,qjA,c6A,c12A,qiB,qjB,c6B,c12B;	   } ljcnb;
   /* Proper dihedrals can not have different multiplicity when
    * doing free energy calculations, because the potential would not
    * be periodic anymore.
@@ -185,7 +185,7 @@ typedef union
   /* NOTE: npair is only set after reading the tpx file */
   struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
   struct {real lowA,up1A,up2A,kfacA,lowB,up1B,up2B,kfacB;int type; } sdisres; 
-  struct {real phi,dphi,kfac;int label,power;             } dihres;  
+  struct {real phiA,dphiA,kfacA,phiB,dphiB,kfacB;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;
   struct {real sar,st,pi,gbr,bmlt;                        } gb;

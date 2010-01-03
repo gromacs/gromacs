@@ -1085,7 +1085,19 @@ real pdihs(int nbonds,
     return vtot;
 }
 
-
+real periodic_dp(real dp) 
+{
+    /* dp cannot be outside (-pi,pi) */
+    if (dp >= M_PI)
+    {
+        dp -= 2*M_PI;
+    }
+    else if (dp < -M_PI) 
+    {
+        dp += 2*M_PI;
+    }
+    return dp;
+}
 
 real idihs(int nbonds,
            const t_iatom forceatoms[],const t_iparams forceparams[],
@@ -1131,18 +1143,10 @@ real idihs(int nbonds,
         kk    = L1*kA + lambda*kB;
         phi0  = (L1*pA + lambda*pB)*DEG2RAD;
         dphi0 = (pB - pA)*DEG2RAD;
-        
-        /* dp = (phi-phi0), modulo (-pi,pi) */
+
         dp = phi-phi0;  
-        /* dp cannot be outside (-2*pi,2*pi) */
-        if (dp >= M_PI)
-        {
-            dp -= 2*M_PI;
-        }
-        else if(dp < -M_PI) 
-        {
-            dp += 2*M_PI;
-        }
+        dp = periodic_dp(dp);
+
         dp2 = dp*dp;
 
         vtot += 0.5*kk*dp2;
@@ -1355,7 +1359,15 @@ real simple_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
             fk_scal   = -k0*viol;                  /*  2 */
             violtot  += fabs(viol);                /*  3 */
             
-            *dvdl += 0.5*(k0B-k0A)*sqr(viol);      /*  6 */
+            *dvdl += 0.5*(k0B-k0A)*sqr(viol);      /*  6 */  
+            /* lambda dependence from changing restraint distances */
+            if (dr > up1) 
+            {
+                *dvdl -= k0*viol*(up1B-up1A);  
+            }
+            if (dr < low) {
+                *dvdl += k0*viol*(lowB-lowA);
+            }
 
             if (g) 
             {
@@ -2592,6 +2604,7 @@ real tab_dihs(int nbonds,
 
   return vtot;
 }
+
 
 real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef, 
                          rvec x[], rvec f[], t_forcerec *fr,

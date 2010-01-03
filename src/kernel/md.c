@@ -1707,6 +1707,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     update_mdatoms(mdatoms,state->lambda[efptMASS]);
 
+    /* vvvvvvvvvvvvvvvvvvvvvvv */
+    /* MRS kludge -- this really should be somewhere else! This updates the 
+       number of nonperturbed bonds in the LJ term, now that we have the charges set. */ 
+    if (ir->efep != efepNO) {
+        find_perturbed_lj14(&(top->idef),mdatoms);
+    }
+    /* ^^^^^^^^^^^^^^^^^^^^^^^ */
+
     if (MASTER(cr))
     {
         /* Update mdebin with energy history if appending to output files */

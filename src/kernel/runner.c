@@ -334,7 +334,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   init_mdatoms(mdatoms,lambda[efptMASS],TRUE);
   
   where();
-}
+	
 #endif
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,

@@ -96,9 +96,26 @@ static bool ip_pert(int ftype,t_iparams *ip)
             }
         }
         break;
+    case F_SDISRES:
+        bPert = ((ip->sdisres.lowA != ip->sdisres.lowA) ||
+                 (ip->sdisres.up1A != ip->sdisres.up1B) ||
+                 (ip->sdisres.up2B != ip->sdisres.up2A) ||
+                 (ip->sdisres.kfacA != ip->sdisres.kfacB));
+        break;
     case F_LJ14:
         bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
                  ip->lj14.c12A != ip->lj14.c12B);
+        break;
+    case F_LJC14_Q:
+        bPert = (ip->ljc14.qiA  != ip->ljc14.qiB ||
+                 ip->ljc14.qjA != ip->ljc14.qjB || 
+                 ip->ljc14.c12A != ip->ljc14.c12B || 
+                 ip->ljc14.c12A != ip->ljc14.c12B);
+    case F_LJC_PAIRS_NB:
+        bPert = (ip->ljcnb.qiA  != ip->ljcnb.qiB ||
+                 ip->ljcnb.qjA != ip->ljcnb.qjB || 
+                 ip->ljcnb.c12A != ip->ljcnb.c12B || 
+                 ip->ljcnb.c12A != ip->ljcnb.c12B);
         break;
     default:
         bPert = FALSE;
@@ -134,13 +151,80 @@ bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     return (bPert ? ilsortFE_UNSORTED : ilsortNO_FE);
 }
 
+void gmx_sort_one_type_fe(int ftype, t_idef *idef, bool *chargepert) 
+{
+    int nral,i,ic,ib,a;
+    t_ilist *ilist;
+    t_iatom *iatoms;
+    t_iparams *iparams;
+    bool bPert;
+    t_iatom *iabuf = NULL;
+    int  iabuf_nalloc = 0;
+   
+    iparams = idef->iparams;
+
+    if (interaction_function[ftype].flags & IF_BOND)
+    {
+        ilist = &idef->il[ftype];
+        iatoms = ilist->iatoms;
+        nral  = NRAL(ftype);
+        ic = 0;
+        ib = 0;
+        i  = 0;
+        while (i < ilist->nr)
+            {
+                /* The first element of ia gives the type */
+                bPert = ip_pert(ftype,&iparams[iatoms[i]]);
+                if (chargepert != NULL) {
+                    bPert = (bPert || chargepert[i]);
+                }
+                if (bPert) {
+                    /* Copy to the perturbed buffer */
+                    if (ib + 1 + nral > iabuf_nalloc)
+                    {
+                        iabuf_nalloc = over_alloc_large(ib+1+nral);
+                        srenew(iabuf,iabuf_nalloc);
+                    }
+                    for(a=0; a<1+nral; a++)
+                    {
+                        iabuf[ib++] = iatoms[i++];
+                    }
+                }
+                else
+                {
+                    /* Copy in place */
+                    for(a=0; a<1+nral; a++)
+                    {
+                        iatoms[ic++] = iatoms[i++];
+                    }
+                }
+            }
+        /* Now we now the number of non-perturbed interactions */
+        ilist->nr_nonperturbed = ic;
+        
+        /* Copy the buffer with perturbed interactions to the ilist */
+        for(a=0; a<ib; a++)
+        {
+            iatoms[ic++] = iabuf[a];
+        }
+        
+        if (debug)
+        {
+            fprintf(debug,"%s non-pert %d pert %d\n",
+                    interaction_function[ftype].longname,
+                    ilist->nr_nonperturbed,
+                    ilist->nr-ilist->nr_nonperturbed);
+        }
+    }
+    sfree(iabuf);
+}
+
 void gmx_sort_ilist_fe(t_idef *idef)
 {
     int  ftype,nral,i,ic,ib,a;
     t_iparams *iparams;
     t_ilist *ilist;
     t_iatom *iatoms;
-    bool bPert;
     t_iatom *iabuf;
     int  iabuf_nalloc;
 
@@ -151,6 +235,7 @@ void gmx_sort_ilist_fe(t_idef *idef)
 
     for(ftype=0; ftype<F_NRE; ftype++)
     {
+#if 0
         if (interaction_function[ftype].flags & IF_BOND)
         {
             ilist = &idef->il[ftype];
@@ -201,9 +286,47 @@ void gmx_sort_ilist_fe(t_idef *idef)
                         ilist->nr-ilist->nr_nonperturbed);
             }
         }
+#else
+        gmx_sort_one_type_fe(ftype,idef,NULL); 
+#endif
+    }
+    idef->ilsort = ilsortFE_SORTED;
+}
+
+void find_perturbed_lj14(t_idef *idef, t_mdatoms *md)
+{
+    int i,ftype,itype,nr_nonperturbed,nbonds,ai,aj;
+    t_iatom *iatoms;
+    bool *chargepert;
+
+    /* if no charges perturbation, then no chargeB array*/
+    if (md->nChargePerturbed == 0) 
+    {
+        return;
     }
 
-    sfree(iabuf);
+    ftype = F_LJ14;
+    nbonds = idef->il[ftype].nr;
+    iatoms = idef->il[ftype].iatoms;
+    snew(chargepert,nbonds);
 
-    idef->ilsort = ilsortFE_SORTED;
+    for (i=0;(i<nbonds);) 
+    {
+        
+        itype = iatoms[i];
+        ai    = iatoms[i+1];
+        aj    = iatoms[i+2];
+        if ((md->chargeA[ai] != md->chargeB[ai]) 
+            || (md->chargeA[aj] != md->chargeB[aj]))
+        {
+            chargepert[i] = TRUE;
+        }
+        i+=3;
+    }
+    /* now that we've generated the extra information about changing charges, we can resort the array.
+       In theory, this only need to be done once -- but I'm not sure where to put it. */
+
+    gmx_sort_one_type_fe(ftype,idef,chargepert);
+    sfree(chargepert);
+    return;
 }

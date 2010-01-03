@@ -1002,16 +1002,28 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_LJC14_Q:
     do_real(iparams->ljc14.fqq);
-    do_real(iparams->ljc14.qi);
-    do_real(iparams->ljc14.qj);
-    do_real(iparams->ljc14.c6);
-    do_real(iparams->ljc14.c12);
+    do_real(iparams->ljc14.qiA);
+    do_real(iparams->ljc14.qjA);
+    do_real(iparams->ljc14.c6A);
+    do_real(iparams->ljc14.c12A);
+    if (file_version >= 70) {
+      do_real(iparams->ljc14.qiB);
+      do_real(iparams->ljc14.qjB);
+      do_real(iparams->ljc14.c6B);
+      do_real(iparams->ljc14.c12B);
+    }
     break;
   case F_LJC_PAIRS_NB:
-    do_real(iparams->ljcnb.qi);
-    do_real(iparams->ljcnb.qj);
-    do_real(iparams->ljcnb.c6);
-    do_real(iparams->ljcnb.c12);
+    do_real(iparams->ljcnb.qiA);
+    do_real(iparams->ljcnb.qjA);
+    do_real(iparams->ljcnb.c6A);
+    do_real(iparams->ljcnb.c12A);
+    if (file_version >= 70) {
+      do_real(iparams->ljcnb.qiB);
+      do_real(iparams->ljcnb.qjB);
+      do_real(iparams->ljcnb.c6B);
+      do_real(iparams->ljcnb.c12B);
+    }
     break;
   case F_PDIHS:
   case F_PIDIHS:
@@ -1061,9 +1073,14 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_DIHRES:
     do_int (iparams->dihres.power);
     do_int (iparams->dihres.label);
-    do_real(iparams->dihres.phi);
-    do_real(iparams->dihres.dphi);
-    do_real(iparams->dihres.kfac);
+    do_real(iparams->dihres.phiA);
+    do_real(iparams->dihres.dphiA);
+    do_real(iparams->dihres.kfacA);
+    if (file_version >= 70) {
+      do_real(iparams->dihres.phiB);
+      do_real(iparams->dihres.dphiB);
+      do_real(iparams->dihres.kfacB);
+    }
     break;
   case F_POSRES:
     do_rvec(iparams->posres.pos0A);

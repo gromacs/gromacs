@@ -199,14 +199,20 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   case F_LJC14_Q:
     newparam->ljc14.fqq = old[0];
-    newparam->ljc14.qi  = old[1];
-    newparam->ljc14.qj  = old[2];
-    set_ljparams(comb,reppow,old[3],old[4],&newparam->ljc14.c6,&newparam->ljc14.c12);
+    newparam->ljc14.qiA  = old[1];
+    newparam->ljc14.qjA  = old[2];
+    set_ljparams(comb,reppow,old[3],old[4],&newparam->ljc14.c6A,&newparam->ljc14.c12A);
+    newparam->ljc14.qiB  = old[6];
+    newparam->ljc14.qjB  = old[7];
+    set_ljparams(comb,reppow,old[8],old[9],&newparam->ljc14.c6B,&newparam->ljc14.c12B);
     break;
   case F_LJC_PAIRS_NB:
-    newparam->ljcnb.qi = old[0];
-    newparam->ljcnb.qj = old[1];
-    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6,&newparam->ljcnb.c12);
+    newparam->ljcnb.qiA = old[0];
+    newparam->ljcnb.qjA = old[1];
+    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6A,&newparam->ljcnb.c12A);
+    newparam->ljcnb.qiB = old[0];
+    newparam->ljcnb.qjB = old[1];
+    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6B,&newparam->ljcnb.c12B);
     break;
   case F_LJ:
     set_ljparams(comb,reppow,old[0],old[1],&newparam->lj.c6,&newparam->lj.c12);
@@ -247,6 +253,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->sdisres.up1B   = old[5];
     newparam->sdisres.up2B   = old[6];
     newparam->sdisres.kfacB  = old[7];
+    break;
   case F_DISRES:
     newparam->disres.label = round_check(old[0],0,ftype,"label");
     newparam->disres.type  = round_check(old[1],1,ftype,"type'");
@@ -265,10 +272,13 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   case F_DIHRES:
     newparam->dihres.label = round_check(old[0],0,ftype,"label");
-    newparam->dihres.phi   = old[1];
-    newparam->dihres.dphi  = old[2];
-    newparam->dihres.kfac  = old[3];
+    newparam->dihres.phiA   = old[1];
+    newparam->dihres.dphiA  = old[2];
+    newparam->dihres.kfacA  = old[3];
     newparam->dihres.power = round_check(old[4],0,ftype,"power");
+    newparam->dihres.phiB   = old[5];
+    newparam->dihres.dphiB  = old[6];
+    newparam->dihres.kfacB  = old[7];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {

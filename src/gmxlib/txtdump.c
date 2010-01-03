@@ -789,15 +789,19 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->lj14.c6B,iparams->lj14.c12B);
     break;
   case F_LJC14_Q:
-    fprintf(fp,"fqq=%15.8e, qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
-	    iparams->ljc14.fqq,
-	    iparams->ljc14.qi,iparams->ljc14.qj,
-	    iparams->ljc14.c6,iparams->ljc14.c12);
+    fprintf(fp,"fqq=%15.8e, qiA=%15.8e, qjA=%15.8e, c6A=%15.8e, c12A=%15.8e, qiB=%15.8e, qjB=%15.8e, c6B=%15.8e, c12B=%15.8e\n",
+            iparams->ljc14.fqq,
+            iparams->ljc14.qiA,iparams->ljc14.qjA,
+            iparams->ljc14.c6A,iparams->ljc14.c12A,
+            iparams->ljc14.qiB,iparams->ljc14.qjB,
+            iparams->ljc14.c6B,iparams->ljc14.c12B);
     break;
   case F_LJC_PAIRS_NB:
-    fprintf(fp,"qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
-	    iparams->ljcnb.qi,iparams->ljcnb.qj,
-	    iparams->ljcnb.c6,iparams->ljcnb.c12);
+    fprintf(fp,"qiA=%15.8e, qjA=%15.8e, c6A=%15.8e, c12A=%15.8e, qiB=%15.8e, qjB=%15.8e, c6B=%15.8e, c12B=%15.8e\n",
+            iparams->ljcnb.qiA,iparams->ljcnb.qjA,
+            iparams->ljcnb.c6A,iparams->ljcnb.c12A,
+            iparams->ljcnb.qiB,iparams->ljcnb.qjB,
+            iparams->ljcnb.c6B,iparams->ljcnb.c12B);
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -824,9 +828,10 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_DIHRES:
-    fprintf(fp,"label=%d, power=%4d phi=%15.8e, dphi=%15.8e, kfac=%15.8e)\n",
-	    iparams->dihres.label,iparams->dihres.power,
-	    iparams->dihres.phi,iparams->dihres.dphi,iparams->dihres.kfac);
+    fprintf(fp,"label=%d, power=%4d, phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
+            iparams->dihres.label,iparams->dihres.power,
+            iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
+            iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
     break;
   case F_POSRES:
     fprintf(fp,"pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",

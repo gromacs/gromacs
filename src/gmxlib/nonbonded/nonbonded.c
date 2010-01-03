@@ -746,15 +746,35 @@ do_listed_vdw_q(int ftype,int nbonds,
             nbfp = (real *)&(iparams[itype].lj14.c6A);
             break;
         case F_LJC14_Q:
+            bFreeEnergy =
+                (fr->efep != efepNO &&
+                 ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
+                  iparams[itype].ljc14.c6A != iparams[itype].ljc14.c6B ||
+                  iparams[itype].ljc14.c12A != iparams[itype].ljc14.c12B ||
+                  iparams[itype].ljc14.qiA != iparams[itype].ljc14.qiB ||
+                  iparams[itype].ljc14.qjA != iparams[itype].ljc14.qjB));
             eps = fr->epsfac*iparams[itype].ljc14.fqq;
-            chargeA[0] = iparams[itype].ljc14.qi;
-            chargeA[1] = iparams[itype].ljc14.qj;
-            nbfp = (real *)&(iparams[itype].ljc14.c6);
+            chargeA[0] = iparams[itype].ljc14.qiA;
+            chargeA[1] = iparams[itype].ljc14.qjA;
+            nbfp = (real *)&(iparams[itype].ljc14.c6A);
+            chargeB[0] = iparams[itype].ljc14.qiB;
+            chargeB[1] = iparams[itype].ljc14.qjB;
+            nbfp = (real *)&(iparams[itype].ljc14.c6B);
             break;
         case F_LJC_PAIRS_NB:
-            chargeA[0] = iparams[itype].ljcnb.qi;
-            chargeA[1] = iparams[itype].ljcnb.qj;
-            nbfp = (real *)&(iparams[itype].ljcnb.c6);
+            bFreeEnergy =
+                (fr->efep != efepNO &&
+                 ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
+                  iparams[itype].ljcnb.c6A != iparams[itype].ljcnb.c6B ||
+                  iparams[itype].ljcnb.c12A != iparams[itype].ljcnb.c12B ||
+                  iparams[itype].ljcnb.qiA != iparams[itype].ljcnb.qiB ||
+                  iparams[itype].ljcnb.qjA != iparams[itype].ljcnb.qjB));
+            chargeA[0] = iparams[itype].ljcnb.qiA;
+            chargeA[1] = iparams[itype].ljcnb.qjA;
+            nbfp = (real *)&(iparams[itype].ljcnb.c6A);
+            chargeB[0] = iparams[itype].ljcnb.qiB;
+            chargeB[1] = iparams[itype].ljcnb.qjB;
+            nbfp = (real *)&(iparams[itype].ljcnb.c6B);
             break;
         }
         
@@ -817,6 +837,11 @@ do_listed_vdw_q(int ftype,int nbonds,
              * in the innerloops if we assign type combinations 0-0 and 0-1
              * to atom pair ai-aj in topologies A and B respectively.
              */
+
+            /* need to to a bit of a kludge here -- 
+               if the charges change, but the vdw do not, then even though bFreeEnergy is on, 
+               it won't work, because all the bonds are perturbed.
+            */
             if(ivdw==enbvdwBHAM)
             {
                 gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
