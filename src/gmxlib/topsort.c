@@ -221,74 +221,10 @@ void gmx_sort_one_type_fe(int ftype, t_idef *idef, bool *chargepert)
 
 void gmx_sort_ilist_fe(t_idef *idef)
 {
-    int  ftype,nral,i,ic,ib,a;
-    t_iparams *iparams;
-    t_ilist *ilist;
-    t_iatom *iatoms;
-    t_iatom *iabuf;
-    int  iabuf_nalloc;
-
-    iabuf_nalloc = 0;
-    iabuf        = NULL;
-    
-    iparams = idef->iparams;
-
+    int  ftype;
     for(ftype=0; ftype<F_NRE; ftype++)
     {
-#if 0
-        if (interaction_function[ftype].flags & IF_BOND)
-        {
-            ilist = &idef->il[ftype];
-            iatoms = ilist->iatoms;
-            nral  = NRAL(ftype);
-            ic = 0;
-            ib = 0;
-            i  = 0;
-            while (i < ilist->nr)
-            {
-                /* The first element of ia gives the type */
-                if (ip_pert(ftype,&iparams[iatoms[i]]))
-                {
-                    /* Copy to the perturbed buffer */
-                    if (ib + 1 + nral > iabuf_nalloc)
-                    {
-                        iabuf_nalloc = over_alloc_large(ib+1+nral);
-                        srenew(iabuf,iabuf_nalloc);
-                    }
-                    for(a=0; a<1+nral; a++)
-                    {
-                        iabuf[ib++] = iatoms[i++];
-                    }
-                }
-                else
-                {
-                    /* Copy in place */
-                    for(a=0; a<1+nral; a++)
-                    {
-                        iatoms[ic++] = iatoms[i++];
-                    }
-                }
-            }
-            /* Now we now the number of non-perturbed interactions */
-            ilist->nr_nonperturbed = ic;
-            
-            /* Copy the buffer with perturbed interactions to the ilist */
-            for(a=0; a<ib; a++)
-            {
-                iatoms[ic++] = iabuf[a];
-            }
-
-            if (debug)
-            {
-                fprintf(debug,"%s non-pert %d pert %d\n",
-                        interaction_function[ftype].longname,
-                        ilist->nr_nonperturbed,
-                        ilist->nr-ilist->nr_nonperturbed);
-            }
-        }
-#else
         gmx_sort_one_type_fe(ftype,idef,NULL); 
-#endif
     }
     idef->ilsort = ilsortFE_SORTED;
 }
