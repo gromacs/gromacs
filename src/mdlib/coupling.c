@@ -720,7 +720,8 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             break;
         }
     }
-    /* check for conserved momentum -- worth looking at this again eventually*/  
+    /* check for conserved momentum -- worth looking at this again eventually, but not working right now.*/  
+#if 0
     if (debug) 
     {
         if (bFirstHalf) 
@@ -732,6 +733,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             fprintf(debug,"Conserved kappa: %15.8f %15.8f %15.8f\n",consk[0],consk[1],consk[2]);    
         }
     }
+#endif
     sfree(scalefac);
 }
 
