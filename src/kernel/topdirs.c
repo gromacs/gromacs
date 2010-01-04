@@ -187,7 +187,7 @@ int ifunc_index(directive d,int type)
     return F_ANGRESZ;
   case d_distance_restraints:
     if (type == 3) {    /* type=3 means use the simple distance reweighting scheme, with free energies */
-      return F_SDISRES;
+      return F_DISRESTRBONDS;
     } else {
       return F_DISRES;
     }

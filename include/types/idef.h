@@ -64,6 +64,7 @@ enum {
   F_FENEBONDS,
   F_TABBONDS,
   F_TABBONDSNC,
+  F_DISRESTRBONDS,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
@@ -101,7 +102,6 @@ enum {
   F_POSRES,
   F_DISRES,
   F_DISRESVIOL,
-  F_SDISRES,
   F_ORIRES,
   F_ORIRESDEV,
   F_ANGRES,
@@ -139,7 +139,7 @@ enum {
   F_NRE		/* This number is for the total number of energies	*/
 };
 
-#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_SDISRES) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES) || (ifunc==F_DIHRESVIOL)))
+#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_DISRESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES) || (ifunc==F_DIHRESVIOL)))
 
   
 typedef union
@@ -151,7 +151,8 @@ typedef union
    * bonds, angles and improper dihedrals
    */
   struct {real a,b,c;	                                   } bham;
-  struct {real rA,krA,rB,krB;           	           } harmonic; 
+  struct {real rA,krA,rB,krB;           	           } harmonic;
+  struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } disrestraint;
   /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
   struct {real bm,kb;                                      } fene;
@@ -164,8 +165,8 @@ typedef union
   struct {real a,alpha1,alpha2,rfac;                       } thole;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
-  struct {real fqq,qiA,qjA,c6A,c12A,qiB,qjB,c6B,c12B;      } ljc14;
-  struct {real qiA,qjA,c6A,c12A,qiB,qjB,c6B,c12B;	   } ljcnb;
+  struct {real fqq,qi,qj,c6,c12;                           } ljc14;
+  struct {real qi,qj,c6,c12;	                           } ljcnb;
   /* Proper dihedrals can not have different multiplicity when
    * doing free energy calculations, because the potential would not
    * be periodic anymore.
@@ -184,7 +185,6 @@ typedef union
   struct {int  n; real a;                                 } vsiten;   
   /* NOTE: npair is only set after reading the tpx file */
   struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
-  struct {real lowA,up1A,up2A,kfacA,lowB,up1B,up2B,kfacB; } sdisres; 
   struct {real phiA,dphiA,kfacA,phiB,dphiB,kfacB;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;

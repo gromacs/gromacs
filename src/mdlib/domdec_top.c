@@ -1511,14 +1511,10 @@ void dd_make_local_top(FILE *fplog,
                                                &ltop->idef,vsite);
     }
     
-    if (dd->reverse_top->ilsort == ilsortNO_FE)
-    {
-        ltop->idef.ilsort = ilsortNO_FE;
-    }
-    else
-    {
-        gmx_sort_ilist_fe(&ltop->idef);
-    }
+    /* The ilist is not sorted yet,
+     * we can only do this when we have the charge arrays.
+     */
+    ltop->idef.ilsort = ilsortUNKNOWN;
     
     nexcl = make_local_exclusions(dd,zones,mtop,bRCheckExcl,
                                   rc,dd->la2lc,pbc_null,fr->cg_cm,
@@ -1534,6 +1530,19 @@ void dd_make_local_top(FILE *fplog,
     /* For an error message only */
     dd->reverse_top->err_top_global = mtop;
     dd->reverse_top->err_top_local  = ltop;
+}
+
+void dd_sort_local_top(gmx_domdec_t *dd,t_mdatoms *mdatoms,
+                       gmx_localtop_t *ltop)
+{
+    if (dd->reverse_top->ilsort == ilsortNO_FE)
+    {
+        ltop->idef.ilsort = ilsortNO_FE;
+    }
+    else
+    {
+        gmx_sort_ilist_fe(&ltop->idef,mdatoms->chargeA,mdatoms->chargeB);
+    }
 }
 
 gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)

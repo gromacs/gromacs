@@ -501,6 +501,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     char **setname,buf[STRLEN];
     int nsets1 = 0;
     int s = 0;
+    int nsetsextend;
 
     if (ir->fepvals->n_lambda == 0) 
     {
@@ -530,7 +531,12 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     nsets2 = ir->fepvals->n_lambda;
     
     nsets = nsets1 + nsets2;
-    snew(setname,nsets);
+    nsetsextend = nsets;
+    if (ir->epc!=epcNO) 
+    {
+        nsetsextend +=1; /* for PV term, other terms possible if required for the reduced potential */ 
+    }
+    snew(setname,nsetsextend); 
     
     for (i=0;i<efptNR;i++) 
     {
@@ -561,8 +567,12 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
             sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
             setname[s] = strdup(buf);
         }
-        
-        xvgr_legend(fp,nsets,setname,oenv);
+        if (ir->epc!=epcNO) {
+            np = sprintf(buf,"pv(%s)",unit_energy);        
+            setname[nsets+1] = strdup(buf);
+        }
+
+        xvgr_legend(fp,nsetsextend,setname,oenv);
         
         for(s=0; s<nsets; s++)
         {
@@ -779,18 +789,16 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     
     if (fp_dhdl)
     {
-        fprintf(fp_dhdl,"%.4f %g", time,enerd->term[F_DVDL_REMAIN]);
-        for (i=1;i<efptNR;i++) 
+        for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
             {
-                fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]);
+                fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]); /* assumes this is first */
             }
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(fp_dhdl," %20.10g",
-            //fprintf(fp_dhdl," %g",
+            fprintf(fp_dhdl," %g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
         if (md->epc!=epcNO) 

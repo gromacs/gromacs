@@ -117,6 +117,17 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->fene.bm=old[0];
     newparam->fene.kb=old[1];
     break;
+  case F_DISRESTRBONDS:
+    /* ignore the label and type prime fields in old[0] and old[1] */
+    newparam->disrestraint.lowA = old[2];
+    newparam->disrestraint.up1A = old[3];
+    newparam->disrestraint.up2A = old[4];
+    newparam->disrestraint.kA   = old[5];
+    newparam->disrestraint.lowB = old[6];
+    newparam->disrestraint.up1B = old[7];
+    newparam->disrestraint.up2B = old[8];
+    newparam->disrestraint.kB   = old[9];
+    break;
   case F_TABBONDS:
   case F_TABBONDSNC:
   case F_TABANGLES:
@@ -199,20 +210,14 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   case F_LJC14_Q:
     newparam->ljc14.fqq = old[0];
-    newparam->ljc14.qiA  = old[1];
-    newparam->ljc14.qjA  = old[2];
-    set_ljparams(comb,reppow,old[3],old[4],&newparam->ljc14.c6A,&newparam->ljc14.c12A);
-    newparam->ljc14.qiB  = old[6];
-    newparam->ljc14.qjB  = old[7];
-    set_ljparams(comb,reppow,old[8],old[9],&newparam->ljc14.c6B,&newparam->ljc14.c12B);
+    newparam->ljc14.qi  = old[1];
+    newparam->ljc14.qj  = old[2];
+    set_ljparams(comb,reppow,old[3],old[4],&newparam->ljc14.c6,&newparam->ljc14.c12);
     break;
   case F_LJC_PAIRS_NB:
-    newparam->ljcnb.qiA = old[0];
-    newparam->ljcnb.qjA = old[1];
-    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6A,&newparam->ljcnb.c12A);
-    newparam->ljcnb.qiB = old[0];
-    newparam->ljcnb.qjB = old[1];
-    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6B,&newparam->ljcnb.c12B);
+    newparam->ljcnb.qi = old[0];
+    newparam->ljcnb.qj = old[1];
+    set_ljparams(comb,reppow,old[2],old[3],&newparam->ljcnb.c6,&newparam->ljcnb.c12);
     break;
   case F_LJ:
     set_ljparams(comb,reppow,old[0],old[1],&newparam->lj.c6,&newparam->lj.c12);
@@ -244,6 +249,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->posres.pos0B[YY] = old[10];
     newparam->posres.pos0B[ZZ] = old[11];
     break;
+#if 0
   case F_SDISRES:
     /* ignore the label and type prime fields in old[0] and old[1] */
     newparam->sdisres.lowA   = old[2];
@@ -255,6 +261,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->sdisres.up2B   = old[8];
     newparam->sdisres.kfacB  = old[9];
     break;
+#endif
   case F_DISRES:
     newparam->disres.label = round_check(old[0],0,ftype,"label");
     newparam->disres.type  = round_check(old[1],1,ftype,"type'");

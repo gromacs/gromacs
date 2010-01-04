@@ -74,7 +74,7 @@ static const int tpx_version = 70;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 21;
+static const int tpx_generation = 22;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -124,6 +124,7 @@ static const t_ftupd ftupd[] = {
   { 34, F_FENEBONDS         },
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
+  { 70, F_DISRESTRBONDS     },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -145,7 +146,6 @@ static const t_ftupd ftupd[] = {
   { 30, F_POLARIZATION      },
   { 36, F_THOLE_POL         },
   { 22, F_DISRESVIOL        },
-  { 70, F_SDISRES           },
   { 22, F_ORIRES            },
   { 22, F_ORIRESDEV         },
   { 26, F_DIHRES            },
@@ -925,6 +925,16 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->fene.bm);
     do_real(iparams->fene.kb);
     break;
+  case F_DISRESTRBONDS:
+    do_real(iparams->disrestraint.lowA);
+    do_real(iparams->disrestraint.up1A);
+    do_real(iparams->disrestraint.up2A);
+    do_real(iparams->disrestraint.kA);
+    do_real(iparams->disrestraint.lowB);
+    do_real(iparams->disrestraint.up1B);
+    do_real(iparams->disrestraint.up2B);
+    do_real(iparams->disrestraint.kB);
+    break;
   case F_TABBONDS:
   case F_TABBONDSNC:
   case F_TABANGLES:
@@ -1002,28 +1012,16 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_LJC14_Q:
     do_real(iparams->ljc14.fqq);
-    do_real(iparams->ljc14.qiA);
-    do_real(iparams->ljc14.qjA);
-    do_real(iparams->ljc14.c6A);
-    do_real(iparams->ljc14.c12A);
-    if (file_version >= 70) {
-      do_real(iparams->ljc14.qiB);
-      do_real(iparams->ljc14.qjB);
-      do_real(iparams->ljc14.c6B);
-      do_real(iparams->ljc14.c12B);
-    }
+    do_real(iparams->ljc14.qi);
+    do_real(iparams->ljc14.qj);
+    do_real(iparams->ljc14.c6);
+    do_real(iparams->ljc14.c12);
     break;
   case F_LJC_PAIRS_NB:
-    do_real(iparams->ljcnb.qiA);
-    do_real(iparams->ljcnb.qjA);
-    do_real(iparams->ljcnb.c6A);
-    do_real(iparams->ljcnb.c12A);
-    if (file_version >= 70) {
-      do_real(iparams->ljcnb.qiB);
-      do_real(iparams->ljcnb.qjB);
-      do_real(iparams->ljcnb.c6B);
-      do_real(iparams->ljcnb.c12B);
-    }
+    do_real(iparams->ljcnb.qi);
+    do_real(iparams->ljcnb.qj);
+    do_real(iparams->ljcnb.c6);
+    do_real(iparams->ljcnb.c12);
     break;
   case F_PDIHS:
   case F_PIDIHS:
@@ -1050,16 +1048,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->disres.up1);
     do_real(iparams->disres.up2);
     do_real(iparams->disres.kfac);
-    break;
-  case F_SDISRES:
-    do_real(iparams->sdisres.lowA);
-    do_real(iparams->sdisres.up1A);
-    do_real(iparams->sdisres.up2A);
-    do_real(iparams->sdisres.kfacA);
-    do_real(iparams->sdisres.lowB);
-    do_real(iparams->sdisres.up1B);
-    do_real(iparams->sdisres.up2B);
-    do_real(iparams->sdisres.kfacB);
     break;
   case F_ORIRES:
     do_int (iparams->orires.ex);

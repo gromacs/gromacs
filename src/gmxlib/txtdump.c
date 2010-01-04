@@ -760,6 +760,13 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_FENEBONDS:
     fprintf(fp,"bm=%15.8e, kb=%15.8e\n",iparams->fene.bm,iparams->fene.kb);
     break;
+  case F_DISRESTRBONDS:
+      fprintf(fp,"lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kB=%15.8e,\n",
+              iparams->disrestraint.lowA,iparams->disrestraint.up1A,
+              iparams->disrestraint.up2A,iparams->disrestraint.kA,
+              iparams->disrestraint.lowB,iparams->disrestraint.up1B,
+              iparams->disrestraint.up2B,iparams->disrestraint.kB);
+      break;
   case F_TABBONDS:
   case F_TABBONDSNC:
   case F_TABANGLES:
@@ -789,19 +796,15 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->lj14.c6B,iparams->lj14.c12B);
     break;
   case F_LJC14_Q:
-    fprintf(fp,"fqq=%15.8e, qiA=%15.8e, qjA=%15.8e, c6A=%15.8e, c12A=%15.8e, qiB=%15.8e, qjB=%15.8e, c6B=%15.8e, c12B=%15.8e\n",
+    fprintf(fp,"fqq=%15.8e, qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
             iparams->ljc14.fqq,
-            iparams->ljc14.qiA,iparams->ljc14.qjA,
-            iparams->ljc14.c6A,iparams->ljc14.c12A,
-            iparams->ljc14.qiB,iparams->ljc14.qjB,
-            iparams->ljc14.c6B,iparams->ljc14.c12B);
+            iparams->ljc14.qi,iparams->ljc14.qj,
+            iparams->ljc14.c6,iparams->ljc14.c12);
     break;
   case F_LJC_PAIRS_NB:
-    fprintf(fp,"qiA=%15.8e, qjA=%15.8e, c6A=%15.8e, c12A=%15.8e, qiB=%15.8e, qjB=%15.8e, c6B=%15.8e, c12B=%15.8e\n",
-            iparams->ljcnb.qiA,iparams->ljcnb.qjA,
-            iparams->ljcnb.c6A,iparams->ljcnb.c12A,
-            iparams->ljcnb.qiB,iparams->ljcnb.qjB,
-            iparams->ljcnb.c6B,iparams->ljcnb.c12B);
+    fprintf(fp,"qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
+            iparams->ljcnb.qi,iparams->ljcnb.qj,
+            iparams->ljcnb.c6,iparams->ljcnb.c12);
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -816,13 +819,6 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->disres.label,iparams->disres.type,
 	    iparams->disres.low,iparams->disres.up1,
         iparams->disres.up2,iparams->disres.kfac);
-    break;
-  case F_SDISRES:
-    fprintf(fp,"lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kfacA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kfacB=%15.8e)\n",
-        iparams->sdisres.lowA,iparams->sdisres.up1A,
-        iparams->sdisres.up2A,iparams->sdisres.kfacA,
-        iparams->sdisres.lowB,iparams->sdisres.up1B,
-        iparams->sdisres.up2B,iparams->sdisres.kfacB);
     break;
   case F_ORIRES:
      fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",

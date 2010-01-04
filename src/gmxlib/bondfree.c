@@ -1,4 +1,5 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -369,6 +370,103 @@ real bonds(int nbonds,
     }
   }					/* 59 TOTAL	*/
   return vtot;
+}
+
+real disrestraint_bonds(int nbonds,
+                        const t_iatom forceatoms[],const t_iparams forceparams[],
+                        const rvec x[],rvec f[],rvec fshift[],
+                        const t_pbc *pbc,const t_graph *g,
+                        real lambda,real *dvdlambda,
+                        const t_mdatoms *md,t_fcdata *fcd,
+                        int *global_atom_index)
+{
+    int  i,m,ki,ai,aj,type;
+    real dr,dr2,fbond,vbond,fij,vtot;
+    real L1;
+    real low,dlow,up1,dup1,up2,dup2,k,dk;
+    real drh,drh2;
+    rvec dx;
+    ivec dt;
+
+    L1   = 1.0 - lambda;
+
+    vtot = 0.0;
+    for(i=0; (i<nbonds); )
+    {
+        type = forceatoms[i++];
+        ai   = forceatoms[i++];
+        aj   = forceatoms[i++];
+        
+        ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
+        dr2  = iprod(dx,dx);		             	/*   5		*/
+        dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
+
+        low  = L1*forceparams[type].disrestraint.lowA + lambda*forceparams[type].disrestraint.lowB;
+        dlow =   -forceparams[type].disrestraint.lowA +        forceparams[type].disrestraint.lowB;
+        up1  = L1*forceparams[type].disrestraint.up1A + lambda*forceparams[type].disrestraint.up1B;
+        dup1 =   -forceparams[type].disrestraint.up1A +        forceparams[type].disrestraint.up1B;
+        up2  = L1*forceparams[type].disrestraint.up2A + lambda*forceparams[type].disrestraint.up2B;
+        dup2 =   -forceparams[type].disrestraint.up2A +        forceparams[type].disrestraint.up2B;
+        k    = L1*forceparams[type].disrestraint.kA   + lambda*forceparams[type].disrestraint.kB;
+        dk   =   -forceparams[type].disrestraint.kA   +        forceparams[type].disrestraint.kB;
+        /* 24 */
+
+        if (dr < low)
+        {
+            drh   = dr - low;
+            drh2  = drh*drh;
+            vbond = 0.5*k*drh2;
+            fbond = -k*drh;
+            *dvdlambda += 0.5*dk*drh2 + k*dlow*drh; /* sign on k*dlow*drh term should 
+                                                       be positive because of the definition of drh */
+        } /* 11 */
+        else if (dr <= up1)
+        {
+            vbond = 0;
+            fbond = 0;
+        }
+        else if (dr <= up2)
+        {
+            drh   = dr - up1;
+            drh2  = drh*drh;
+            vbond = 0.5*k*drh2;
+            fbond = -k*drh;
+            *dvdlambda += 0.5*dk*drh2 - k*dup1*drh;
+        } /* 11	*/
+        else
+        {
+            drh   = dr - up2;
+            vbond = k*(up2 - up1)*(0.5*(up2 - up1) + drh);
+            fbond = -k*(up2 - up1);
+            *dvdlambda += dk*(up2 - up1)*(0.5*(up2 - up1) + drh)
+                + k*(dup2 - dup1)*(up2 - up1 + drh)
+                - k*(up2 - up1)*dup2;
+        }
+   
+        if (dr2 == 0.0)
+            continue;
+        
+        vtot  += vbond;/* 1*/
+        fbond *= gmx_invsqrt(dr2);			/*   6		*/
+#ifdef DEBUG
+        if (debug)
+            fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
+                    dr,vbond,fbond);
+#endif
+        if (g) {
+            ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+            ki=IVEC2IS(dt);
+        }
+        for (m=0; (m<DIM); m++) {			/*  15		*/
+            fij=fbond*dx[m];
+            f[ai][m]+=fij;
+            f[aj][m]-=fij;
+            fshift[ki][m]+=fij;
+            fshift[CENTRAL][m]-=fij;
+        }
+    }					/* 59 TOTAL	*/
+
+    return vtot;
 }
 
 real polarize(int nbonds,
@@ -1282,6 +1380,7 @@ real posres(int nbonds,
     return vtot;
 }
 
+#if 0
 real simple_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
                    const rvec x[],rvec f[],rvec fshift[],
                    const t_pbc *pbc,const t_graph *g,
@@ -1386,6 +1485,7 @@ real simple_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     /* Return energy */
     return vtot;
 }
+#endif
 
 static real low_angres(int nbonds,
                        const t_iatom forceatoms[],const t_iparams forceparams[],
@@ -2604,7 +2704,6 @@ real tab_dihs(int nbonds,
   return vtot;
 }
 
-
 real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef, 
                    rvec x[], rvec f[], t_forcerec *fr,
                    const t_pbc *pbc,const t_graph *g, 
@@ -2614,7 +2713,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                    int *global_atom_index, gmx_cmap_t *cmap_grid, 
                    bool bPrintSepPot)
 {
-    int ind,nat,nbonds,efptCURRENT,nbonds_np;
+    int ind,nat1,nbonds,efptCURRENT,nbonds_np;
     real v=0;
     real *pdvdl;
     real dvdl_dum[efptNR];
@@ -2635,11 +2734,14 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
         if (interaction_function[ftype].flags & IF_BOND &&
             !(ftype == F_CONNBONDS || ftype == F_POSRES)) 
         {
+            ind  = interaction_function[ftype].nrnb_ind;
+            nat1 = interaction_function[ftype].nratoms+1;
+
             if (bForeign) 
             {
                 nbonds_np = idef->il[ftype].nr_nonperturbed;
-                iatoms = idef->il[ftype].iatoms + nbonds_np;
                 nbonds    = idef->il[ftype].nr - nbonds_np;
+                iatoms    = idef->il[ftype].iatoms + nbonds_np*nat1;
             } 
             else
             {
@@ -2648,8 +2750,6 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
             }
             if (nbonds > 0)
             {
-                ind = interaction_function[ftype].nrnb_ind;
-                nat = interaction_function[ftype].nratoms+1;
                 if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) 
                 {
                     if (IS_RESTRAINT_TYPE(ftype)) 
@@ -2683,7 +2783,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                         if (bPrintSepPot) 
                         {
                             fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                                    interaction_function[ftype].longname,nbonds/nat,v,pdvdl[efptCURRENT]);
+                                    interaction_function[ftype].longname,nbonds/nat1,v,pdvdl[efptCURRENT]);
                         }
                     } 
                 }
@@ -2702,17 +2802,19 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                         
                         if (bPrintSepPot) 
                         {
-                            /* I'm not sure this is ideal -- there are other 1-4 terms in idef.h! */
                             fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
                                     interaction_function[ftype].longname,
-                                    interaction_function[F_LJ14].longname,nbonds/nat,pdvdl[efptVDW]);
+                                    interaction_function[F_LJ14].longname,nbonds/nat1,pdvdl[efptVDW]);
+                            fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+                                    interaction_function[ftype].longname,
+                                    interaction_function[F_COUL14].longname,nbonds/nat1,pdvdl[efptCOUL]);
                         }
                     }
                     
                 }
                 if (ind != -1)
                 {
-                    inc_nrnb(nrnb,ind,nbonds/nat);
+                    inc_nrnb(nrnb,ind,nbonds/nat1);
                 }
             }
         }
