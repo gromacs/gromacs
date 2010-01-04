@@ -63,6 +63,12 @@ static bool ip_pert(int ftype,const t_iparams *ip)
         bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
                  ip->harmonic.krA != ip->harmonic.krB);
         break;
+    case F_RESTRBONDS:
+        bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
+                 ip->restraint.up1A  != ip->restraint.up1B ||
+                 ip->restraint.up2A  != ip->restraint.up2B ||
+                 ip->restraint.kA    != ip->restraint.kB);
+        break;
     case F_PDIHS:
     case F_ANGRES:
     case F_ANGRESZ:

@@ -117,6 +117,16 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->fene.bm=old[0];
     newparam->fene.kb=old[1];
     break;
+  case F_RESTRBONDS:
+    newparam->restraint.lowA = old[0];
+    newparam->restraint.up1A = old[1];
+    newparam->restraint.up2A = old[2];
+    newparam->restraint.kA   = old[3];
+    newparam->restraint.lowB = old[4];
+    newparam->restraint.up1B = old[5];
+    newparam->restraint.up2B = old[6];
+    newparam->restraint.kB   = old[7];
+    break;
   case F_TABBONDS:
   case F_TABBONDSNC:
   case F_TABANGLES:

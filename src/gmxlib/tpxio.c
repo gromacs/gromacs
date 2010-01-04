@@ -63,7 +63,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 69;
+static const int tpx_version = 70;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 69;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 21;
+static const int tpx_generation = 22;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -124,6 +124,7 @@ static const t_ftupd ftupd[] = {
   { 34, F_FENEBONDS         },
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
+  { 70, F_RESTRBONDS        },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -864,6 +865,16 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_FENEBONDS:
     do_real(iparams->fene.bm);
     do_real(iparams->fene.kb);
+    break;
+  case F_RESTRBONDS:
+    do_real(iparams->restraint.lowA);
+    do_real(iparams->restraint.up1A);
+    do_real(iparams->restraint.up2A);
+    do_real(iparams->restraint.kA);
+    do_real(iparams->restraint.lowB);
+    do_real(iparams->restraint.up1B);
+    do_real(iparams->restraint.up2B);
+    do_real(iparams->restraint.kB);
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
