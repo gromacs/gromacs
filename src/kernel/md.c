@@ -2460,13 +2460,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (bInitStep && ir->eI==eiVV) {
                 copy_rvecn(cbuf,state->v,0,state->natoms);
             }
-#if 0            
-            if (fr->bSepDVDL && fplog && do_log) 
-            {
-                fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
-            }
-            enerd->term[F_DHDL_CON] += dvdl;
-#endif            
             wallcycle_stop(wcycle,ewcUPDATE);
             GMX_MPE_LOG(ev_timestep1);
             

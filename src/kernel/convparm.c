@@ -249,19 +249,6 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->posres.pos0B[YY] = old[10];
     newparam->posres.pos0B[ZZ] = old[11];
     break;
-#if 0
-  case F_SDISRES:
-    /* ignore the label and type prime fields in old[0] and old[1] */
-    newparam->sdisres.lowA   = old[2];
-    newparam->sdisres.up1A   = old[3];
-    newparam->sdisres.up2A   = old[4];
-    newparam->sdisres.kfacA  = old[5];
-    newparam->sdisres.lowB   = old[6];
-    newparam->sdisres.up1B   = old[7];
-    newparam->sdisres.up2B   = old[8];
-    newparam->sdisres.kfacB  = old[9];
-    break;
-#endif
   case F_DISRES:
     newparam->disres.label = round_check(old[0],0,ftype,"label");
     newparam->disres.type  = round_check(old[1],1,ftype,"type'");

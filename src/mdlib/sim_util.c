@@ -95,12 +95,6 @@
 
 #include "qmmm.h"
 
-#if 0
-typedef struct gmx_timeprint {
-    
-} t_gmx_timeprint;
-#endif
-
 
 double
 gmx_gettime()

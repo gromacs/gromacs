@@ -720,8 +720,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             break;
         }
     }
-#if 0
-    /* check for conserved momentum */  
+    /* check for conserved momentum -- worth looking at this again eventually*/  
     if (debug) 
     {
         if (bFirstHalf) 
@@ -730,10 +729,9 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             {
                 consk[d] = sumv[d]*exp((1 + 1.0/opts->nrdf[0])*((1.0/DIM)*log(det(state->box)/state->vol0)) + state->nosehoover_xi[0]); 
             }
-            fprintf(debug,"Consk: %15.8f %15.8f %15.8f\n",consk[0],consk[1],consk[2]);    
+            fprintf(debug,"Conserved kappa: %15.8f %15.8f %15.8f\n",consk[0],consk[1],consk[2]);    
         }
     }
-#endif
     sfree(scalefac);
 }
 

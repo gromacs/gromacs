@@ -102,14 +102,6 @@ static bool ip_pert(int ftype,const t_iparams *ip)
             }
         }
         break;
-#if 0
-    case F_SDISRES:
-        bPert = ((ip->sdisres.lowA != ip->sdisres.lowA) ||
-                 (ip->sdisres.up1A != ip->sdisres.up1B) ||
-                 (ip->sdisres.up2B != ip->sdisres.up2A) ||
-                 (ip->sdisres.kfacA != ip->sdisres.kfacB));
-#endif
-        break;
     case F_DIHRES:
         bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
                  (ip->dihres.dphiA != ip->dihres.dphiB) ||
@@ -252,52 +244,3 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
     idef->ilsort = ilsortFE_SORTED;
 }
 
-#if 0
-void gmx_sort_ilist_fe(t_idef *idef)
-{
-    int  ftype;
-    for(ftype=0; ftype<F_NRE; ftype++)
-    {
-        gmx_sort_one_type_fe(ftype,idef,NULL); 
-    }
-    idef->ilsort = ilsortFE_SORTED;
-}
-
-void find_perturbed_lj14(t_idef *idef, t_mdatoms *md)
-{
-    int i,ftype,itype,nr_nonperturbed,nbonds,ai,aj;
-    t_iatom *iatoms;
-    bool *chargepert;
-
-    /* if no charges perturbation, then no chargeB array*/
-    if (md->nChargePerturbed == 0) 
-    {
-        return;
-    }
-
-    ftype = F_LJ14;
-    nbonds = idef->il[ftype].nr;
-    iatoms = idef->il[ftype].iatoms;
-    snew(chargepert,nbonds);
-
-    for (i=0;(i<nbonds);) 
-    {
-        
-        itype = iatoms[i];
-        ai    = iatoms[i+1];
-        aj    = iatoms[i+2];
-        if ((md->chargeA[ai] != md->chargeB[ai]) 
-            || (md->chargeA[aj] != md->chargeB[aj]))
-        {
-            chargepert[i] = TRUE;
-        }
-        i+=3;
-    }
-    /* now that we've generated the extra information about changing charges, we can resort the array.
-       In theory, this only need to be done once -- but I'm not sure where to put it. */
-
-    gmx_sort_one_type_fe(ftype,idef,chargepert);
-    sfree(chargepert);
-    return;
-}
-#endif
