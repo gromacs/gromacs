@@ -111,7 +111,6 @@ typedef struct {
 typedef struct {
   real term[F_NRE];    /* The energies for all different interaction types */
   gmx_grppairener_t grpp;
-  /*double dvdl_lin;     /* Contributions to dvdl with linear lam-dependence */
   double dvdl_lin[efptNR];       /* Contributions to dvdl with linear lam-dependence */
   double dvdl_nonlin[efptNR];    /* Idem, but non-linear dependence                  */
   int    n_lambda;               /* number of lambdas */

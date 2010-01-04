@@ -475,7 +475,7 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     break;
   case ereLAMBDA:
     snew(dvdl,re->nrepl);
-    /* inprove this MRS */
+    /* inprove this MRS! */
     dvdl[re->repl] = ener[F_DVDL_REMAIN] + ener[F_DVDL_COUL] + 
         ener[F_DVDL_VDW] + ener[F_DVDL_BONDED] + ener[F_DKDL] + ener[F_DVDL_RESTRAINT];
     gmx_sum_sim(re->nrepl,dvdl,ms);

@@ -549,17 +549,16 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
 
         for(s=nsets1; s<nsets; s++)
         {
-            nps = 0;
-            np = sprintf(buf,"%s %s (%g",deltag,lambda,ir->fepvals->all_lambda[efptFEP][s-nsets1]);  
+            nps = sprintf(buf,"%s %s (",deltag,lambda);  
             for (i=0;i<efptNR;i++) 
             {
-                if (ir->fepvals->separate_dvdl[i] && i!=efptFEP) 
+                if (ir->fepvals->separate_dvdl[i]) 
                 { 
+                    np = sprintf(&buf[nps],"%g,",ir->fepvals->all_lambda[i][s-nsets1]);
                     nps += np;
-                    np = sprintf(&buf[nps],",%g",ir->fepvals->all_lambda[i][s-nsets1]);
                 }
             }
-            sprintf(&buf[nps+np],")");
+            sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
             setname[s] = strdup(buf);
         }
         

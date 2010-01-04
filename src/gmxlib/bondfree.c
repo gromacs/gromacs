@@ -36,8 +36,6 @@
 #include <config.h>
 #endif
 
-#define OLDBONDS 0
-
 #include <math.h>
 #include "physics.h"
 #include "vec.h"
@@ -2734,12 +2732,16 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
                 bool bPrintSepPot,gmx_large_int_t step)
 {
-    int    ftype,nbonds,ind,nat,efptCURRENT;
+    int    i,ftype,nbonds,ind,nat,efptCURRENT;
     real   v,dvdl[efptNR];
     real *epot;
     const  t_pbc *pbc_null;
     char   buf[22];
 
+    for (i=0;i<efptNR;i++)
+    {
+        dvdl[i] = 0.0;
+    }
     if (fr->bMolPBC)
     {
         pbc_null = pbc;

@@ -505,9 +505,9 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     if (fepvals->n_lambda > 0)
     {
         pr_indent(fp,indent);
-        fprintf(fp,"all_lambda%s",bMDPformat ? " = " : ":");
+        fprintf(fp,"all_lambda%s\n",bMDPformat ? " = " : ":");
         for(i=0; i<efptNR; i++) {
-            fprintf(fp,"%15s",efpt_names[i]);
+            fprintf(fp,"%18s",efpt_names[i]);
             for(j=0; j<fepvals->n_lambda; j++)
             {
                 fprintf(fp,"  %10g",fepvals->all_lambda[i][j]);
@@ -815,24 +815,26 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"label=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
 	    iparams->disres.label,iparams->disres.type,
 	    iparams->disres.low,iparams->disres.up1,
-	    iparams->disres.up2,iparams->disres.kfac);
+        iparams->disres.up2,iparams->disres.kfac);
     break;
   case F_SDISRES:
-    fprintf(fp,"type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
-            iparams->disres.type,
-            iparams->disres.low,iparams->disres.up1,
-            iparams->disres.up2,iparams->disres.kfac);
+    fprintf(fp,"lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kfacA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kfacB=%15.8e)\n",
+        iparams->sdisres.lowA,iparams->sdisres.up1A,
+        iparams->sdisres.up2A,iparams->sdisres.kfacA,
+        iparams->sdisres.lowB,iparams->sdisres.up1B,
+        iparams->sdisres.up2B,iparams->sdisres.kfacB);
+    break;
   case F_ORIRES:
-    fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
-	    iparams->orires.ex,iparams->orires.label,iparams->orires.power,
-	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
+     fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
+              iparams->orires.ex,iparams->orires.label,iparams->orires.power,
+              iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_DIHRES:
-    fprintf(fp,"label=%d, power=%4d, phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
-            iparams->dihres.label,iparams->dihres.power,
-            iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
-            iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
-    break;
+      fprintf(fp,"label=%d, power=%4d, phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
+              iparams->dihres.label,iparams->dihres.power,
+              iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
+              iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
+      break;
   case F_POSRES:
     fprintf(fp,"pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",
 	    iparams->posres.pos0A[XX],iparams->posres.pos0A[YY],

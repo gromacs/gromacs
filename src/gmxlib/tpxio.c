@@ -1052,7 +1052,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->disres.kfac);
     break;
   case F_SDISRES:
-    do_int (iparams->sdisres.type);
     do_real(iparams->sdisres.lowA);
     do_real(iparams->sdisres.up1A);
     do_real(iparams->sdisres.up2A);

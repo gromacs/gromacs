@@ -645,26 +645,30 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
     }
 
   /* now, determine the number.  All must be zero, or equal. */
-  max_n_lambda = nfep[0];
-  ir->fepvals->separate_dvdl[0] = TRUE;
-  for (i=1;i<efptNR;i++) 
+  max_n_lambda = 0;
+  for (i=0;i<efptNR;i++) 
     {
-      if ((nfep[i] != 0) && (nfep[i] != nfep[0])) 
-	{
-	  gmx_fatal(FARGS,"Number of lambdas (%d) for FEP type %s not equal to number of other types (%d)",
-		    nfep[i],efpt_names[i],nfep[0]);	
-	}
-      if (nfep[i] > max_n_lambda) 
-	{
-	  max_n_lambda = nfep[i];
-	}
+      if (nfep[i] > 0) {
+	max_n_lambda = nfep[i];  /* here's a nonzero one.  Everything else 
+				    must have the same number as this if it's not zero.*/
+	break;
+      }
+    }
+  
+  for (i=0;i<efptNR;i++) 
+    {
       if (nfep[i] == 0) 
 	{
 	  ir->fepvals->separate_dvdl[i] = FALSE;
-	} 
-      else 
+	}
+      else if (nfep[i] == max_n_lambda)
 	{
 	  ir->fepvals->separate_dvdl[i] = TRUE;
+	}
+      else
+	{
+	  gmx_fatal(FARGS,"Number of lambdas (%d) for FEP type %s not equal to number of other types (%d)",
+		    nfep[i],efpt_names[i],max_n_lambda);	
 	}
     }
   
@@ -686,19 +690,24 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
 	}
     }
   sfree(count_fep_lambdas);
-  
+
   /* "fep-vals" is either zero or the full number. If zero, we'll need to define fep-lambda for internal
-     bookkeeping */
+     bookkeeping -- for now, zero it out (resulting in all A state). */
 
   if (nfep[efptFEP] == 0) 
     {
       for (i=0;i<=fep->n_lambda;i++) 
 	{
-	  fep->all_lambda[efptFEP][i] = (real)i/fep->n_lambda;
+	  fep->all_lambda[efptFEP][i] = 0;
+	  /*fep->all_lambda[efptFEP][i] = (real)i/fep->n_lambda;*/
 	}
     }  
 
-  /* now fill in the others with the efptFEP if they are not explicitly specified. */
+
+  /* Fill in the others with the efptFEP if they are not explicitly
+     specified (i.e. nfep[i] == 0).  This means if fep is not defined,
+     they are all zero. */
+
   for (i=0;i<efptNR;i++) 
     {
       if ((nfep[i] == 0) && (i!=efptFEP)) 

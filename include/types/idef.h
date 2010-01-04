@@ -184,7 +184,7 @@ typedef union
   struct {int  n; real a;                                 } vsiten;   
   /* NOTE: npair is only set after reading the tpx file */
   struct {real low,up1,up2,kfac;int type,label,npair;     } disres; 
-  struct {real lowA,up1A,up2A,kfacA,lowB,up1B,up2B,kfacB;int type; } sdisres; 
+  struct {real lowA,up1A,up2A,kfacA,lowB,up1B,up2B,kfacB; } sdisres; 
   struct {real phiA,dphiA,kfacA,phiB,dphiB,kfacB;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
   struct {int  table;real kA;real kB;                     } tab;

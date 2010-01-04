@@ -2006,7 +2006,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         {
                             if (i!= efptFEP) 
                             {
-                                state_global->lambda[i] = state_global->lambda[efptFEP];
+                                state_global->lambda[i] = state_global->lambda[i];
                             }
                         }
                     }

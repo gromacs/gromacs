@@ -623,7 +623,12 @@ void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd)
     {
         enerd->term[i] = 0;
     }
-    
+
+    for(i=0; i<efptNR; i++) {
+        enerd->dvdl_lin[i]  = 0;
+        enerd->dvdl_nonlin[i]  = 0;
+    }
+
     n2=ngener*ngener;
     if (debug)
     {
@@ -776,7 +781,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
         for (j=0;j<efptNR;j++) 
         {
             if (j==efptMASS) {continue;}
-
+            
             dlam = (fepvals->all_lambda[j][i-1]-lambda[j]);
             enerd->enerpart_lambda[i] += dlam*enerd->dvdl_lin[j];
             if (debug)
