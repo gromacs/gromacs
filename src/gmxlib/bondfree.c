@@ -2515,7 +2515,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 					      pbc_null,g,lambda,&dvdl,md,fcd,
 					      global_atom_index);
 		}
-
+	
 	  if (bPrintSepPot) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
@@ -2539,7 +2539,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	enerd->dvdl_nonlin += dvdl;
       }
     }
-  }
+	  }
   }
   /* Copy the sum of violations for the distance restraints from fcd */
   if (fcd)
