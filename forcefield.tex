@@ -939,13 +939,20 @@ force constants in kJ/mol/rad$^2$.
 Distance restraints 
 add a penalty to the potential when the distance between specified
 pairs of atoms exceeds a threshold value. They are normally used to
-impose experimental restraints, as from experiments in nuclear
+impose experimental restraints, as from for instance experiments in nuclear
 magnetic resonance (NMR), on the motion of the system. Thus MD can be
 used for structure refinement using NMR data\index{nmr
 refinement}\index{refinement,nmr}.
-If one just wants to the restrain the distance between two particles
-using a harmonic potential one should use {\tt [ bonds ]}
-type 6 (see \secref{excl}).
+In {\gromacs} there are three ways to impose restraints on pairs of atoms:
+\begin{itemize}
+\item Simple harmonic restraints: use {\tt [ bonds ]} type 6
+(see \secref{excl}).
+\item Piecewise linear/harmonic restraints: {\tt [ bonds ]} type 10.
+\item Complex NMR distance restraints, optionally with pair, time and/or
+ensemble averaging.
+\end{itemize}
+The last two options will be detailed now.
+
 The potential form for distance restraints is quadratic below a specified
 lower bound and between two specified upper bounds and linear beyond the
 largest bound (see \figref{dist}).
@@ -982,6 +989,14 @@ The forces are
                 &\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array} \right.
 \eeq
+
+For restraints not derived from NMR data, this functionality
+will usually suffice and a section of {\tt [ bonds ]} type 10
+can be used to apply individual restraints between pairs of atoms,
+see \ssecref{topfile}.
+For applying restraints derived from NMR measurements more complex
+functionality might be required, which is provided through
+the {\tt [ distance\_restraints ]} section and is described below.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Time averaging}
@@ -1756,8 +1771,9 @@ by a factor of two, but in that case also the dispersion (r$^{-6}$)
 and the coulomb interaction are scaled.
 {\gromacs} can use either of these methods.
 
-\subsection{\normindex{Charge Group}s.}
+\subsection{Charge Groups}
 \label{sec:cg}
+\index{charge group}
 In principle the force calculation in MD is an $O(N^2)$ problem.
 Therefore we apply a \normindex{cut-off} for non-bonded force (NBF)
 calculations: only the particles within a certain distance of each
