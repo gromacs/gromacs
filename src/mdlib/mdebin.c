@@ -188,7 +188,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                (i == F_DVDL_BONDED && ir->fepvals->separate_dvdl[efptBONDED]) || 
                (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT]) || 
                (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS]) ||
-               (i == F_DVDL_REMAIN))
+               (i == F_DVDL_REMAIN && ir->fepvals->separate_dvdl[efptFEP]))
           md->bEner[i] = (ir->efep != efepNO);
 /*    else if (i == F_DHDL_CON)
       md->bEner[i] = (ir->efep != efepNO && md->bConstr); */
