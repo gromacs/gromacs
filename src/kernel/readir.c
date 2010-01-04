@@ -306,7 +306,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       warning(NULL);
     }
 
-  if ((!EI_VV(ir->eI)) && ir->opts.nnhchains > 1) {
+  if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nnhchains > 1) {
     warning_note("leapfrog does not yet support Nose-Hoover chains, nnhchains reset to 1");
     ir->opts.nnhchains = 1;
   }

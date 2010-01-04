@@ -140,7 +140,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
  *  Bonded force functions
  *
  *************************************************************************/
-  extern t_ifunc bonds,g96bonds,morse_bonds,cubic_bonds,FENE_bonds;
+  extern t_ifunc bonds,g96bonds,morse_bonds,cubic_bonds,FENE_bonds,restraint_bonds;
   extern t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles;
   extern t_ifunc pdihs,idihs,rbdihs;
   extern t_ifunc tab_bonds,tab_angles,tab_dihs;

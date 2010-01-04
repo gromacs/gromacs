@@ -64,6 +64,7 @@ enum {
   F_FENEBONDS,
   F_TABBONDS,
   F_TABBONDSNC,
+  F_RESTRBONDS,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
@@ -143,7 +144,8 @@ typedef union
    * bonds, angles and improper dihedrals
    */
   struct {real a,b,c;	                                   } bham;
-  struct {real rA,krA,rB,krB;           	           } harmonic; 
+  struct {real rA,krA,rB,krB;           	           } harmonic;
+  struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } restraint;
   /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
   struct {real bm,kb;                                      } fene;

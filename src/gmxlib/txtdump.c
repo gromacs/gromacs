@@ -748,6 +748,13 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_FENEBONDS:
     fprintf(fp,"bm=%15.8e, kb=%15.8e\n",iparams->fene.bm,iparams->fene.kb);
     break;
+  case F_RESTRBONDS:
+      fprintf(fp,"lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kB=%15.8e,\n",
+              iparams->restraint.lowA,iparams->restraint.up1A,
+              iparams->restraint.up2A,iparams->restraint.kA,
+              iparams->restraint.lowB,iparams->restraint.up1B,
+              iparams->restraint.up2B,iparams->restraint.kB);
+      break;
   case F_TABBONDS:
   case F_TABBONDSNC:
   case F_TABANGLES:
