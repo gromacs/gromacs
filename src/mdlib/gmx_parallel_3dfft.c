@@ -112,12 +112,12 @@ fft5d_limits(fft5d_plan p,
     fft5d_local_size(p,&N1,&M0,&K0,&K1,&coor);  /* M0=MG/P[0], K1=KG/P[1], NG,MG,KG global sizes */
     
     local_offset[2]=0;
-    local_offset[1]=p->coor[0]*M0;
-    local_offset[0]=p->coor[1]*K1;
+    local_offset[1]=p->oM[0];  //=p->coor[0]*p->MG/p->P[0];
+    local_offset[0]=p->oK[0];  //=p->coor[1]*p->KG/p->P[1];
     
     local_ndata[2]=p->rC[0];
-    local_ndata[1]= (M0 < p->MG-local_offset[1]) ? M0 : p->MG-local_offset[1];
-    local_ndata[0]= (K1 < p->KG-local_offset[0]) ? K1 : p->KG-local_offset[0];
+    local_ndata[1]=p->pM[0]; 
+    local_ndata[0]=p->pK[0]; 
     
     if ((!(p->flags&FFT5D_BACKWARD)) && (p->flags&FFT5D_REALCOMPLEX)) {
         local_size[2]=p->C[0]*2;

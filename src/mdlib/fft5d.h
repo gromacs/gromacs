@@ -79,7 +79,11 @@ struct fft5d_plan_t {
 #endif
 	MPI_Comm cart[2];
 
-	int N[3],M[3],K[3]; //local length in transposed coordinate system
+	int N[3],M[3],K[3]; //local length in transposed coordinate system (if not divisisable max)
+        int pN[3],pM[3], pK[3]; //local length - not max but length for this processor
+        int oM[3],oK[3]; //offset for current processor
+        int *iNin[3],*oNin[3],*iNout[3],*oNout[3]; /*size for each processor (if divisisable=max) for out(=split) 
+                 and in (=join) and offsets in transposed coordinate system*/
 	int C[3],rC[3]; //global length (of the one global axes) 
 	//C!=rC for real<->complex. then C=rC/2 but with potential padding
 	int P[2]; //size of processor grid

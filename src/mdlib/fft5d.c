@@ -67,18 +67,26 @@ static int lpfactor(int z) {
 }
 
 
+static int vmax(int* a, int s) {
+    int i,max=0;
+    for (i=0;i<s;i++) 
+    {
+	if (a[i]>max) max=a[i];
+    }
+    return max;
+} 
+
 /* NxMxK the size of the data
  * comm communicator to use for fft5d
  * P0 number of processor in 1st axes (can be null for automatic)
  * lin is allocated by fft5d because size of array is only known after planning phase */
-
 fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags flags, fft5d_type** rlin, fft5d_type** rlout, FILE* debug) {
                                                                                  
     #ifndef GMX                                                                  
     debug=stderr;                                                                
     #endif                                                                       
                                                                                  
-    int P[2],bMaster,prank[2];
+    int P[2],bMaster,prank[2],i;
 	/* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
     if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != NULL)
     {
@@ -135,49 +143,126 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 		}
 	}
 	
-	/* setting it to the length of the current processor would allow also other 
-       distribution than last processor less. And would not require max() in 
-       loops */
-	int N0=ceil((double)NG/P[0]),N1=ceil((double)NG/P[1]); 
-	int M0=ceil((double)MG/P[0]),M1=ceil((double)MG/P[1]); 
-	int K0=ceil((double)KG/P[0]),K1=ceil((double)KG/P[1]); 
+	
+	/*for transpose we need to know the size for each processor not only our own size*/
+
+	int *N0 = malloc(P[0]*sizeof(int)); int *N1 = malloc(P[1]*sizeof(int)); //TODO: free
+	int *M0 = malloc(P[0]*sizeof(int)); int *M1 = malloc(P[1]*sizeof(int));
+	int *K0 = malloc(P[0]*sizeof(int)); int *K1 = malloc(P[1]*sizeof(int));
+	int *oN0 = malloc(P[0]*sizeof(int));int *oN1 = malloc(P[1]*sizeof(int));
+	int *oM0 = malloc(P[0]*sizeof(int));int *oM1 = malloc(P[1]*sizeof(int));
+	int *oK0 = malloc(P[0]*sizeof(int));int *oK1 = malloc(P[1]*sizeof(int));
+	
+	for (i=0;i<P[0];i++) 
+	{
+	    /*
+	    oN0[i]=i*ceil((double)NG/P[0]);
+	    oM0[i]=i*ceil((double)MG/P[0]);
+	    oK0[i]=i*ceil((double)KG/P[0]);
+	    */
+	    oN0[i]=NG*i/P[0];
+	    oM0[i]=MG*i/P[0];
+	    oK0[i]=KG*i/P[0];
+	}
+	for (i=0;i<P[1];i++) 
+	{
+            /*
+	    oN1[i]=i*ceil((double)NG/P[1]); 
+	    oM1[i]=i*ceil((double)MG/P[1]); 
+	    oK1[i]=i*ceil((double)KG/P[1]); 
+	    */
+	    oN1[i]=NG*i/P[1]; 
+	    oM1[i]=MG*i/P[1]; 
+	    oK1[i]=KG*i/P[1]; 
+	}
+	for (i=0;i<P[0]-1;i++) 
+	{
+	    N0[i]=oN0[i+1]-oN0[i];
+	    M0[i]=oM0[i+1]-oM0[i];
+	    K0[i]=oK0[i+1]-oK0[i];
+	}
+	N0[P[0]-1]=NG-oN0[P[0]-1];
+	M0[P[0]-1]=MG-oM0[P[0]-1];
+	K0[P[0]-1]=KG-oK0[P[0]-1];
+	for (i=0;i<P[1]-1;i++) 
+	{
+	    N1[i]=oN1[i+1]-oN1[i];
+	    M1[i]=oM1[i+1]-oM1[i];
+	    K1[i]=oK1[i+1]-oK1[i];
+	}
+	N1[P[1]-1]=NG-oN1[P[1]-1];
+	M1[P[1]-1]=MG-oM1[P[1]-1];
+	K1[P[1]-1]=KG-oK1[P[1]-1];
 
 	/* for step 1-3 the local N,M,K sizes of the transposed system
 	   C: contiguous dimension, and nP: number of processor in subcommunicator 
        for that step */
-	int N[3],M[3],K[3],C[3],rC[3],nP[2];
+	int N[3],M[3],K[3],pN[3],pM[3],pK[3],oM[3],oK[3],*iNin[3],*oNin[3],*iNout[3],*oNout[3];
+	int C[3],rC[3],nP[2];
 	
 	
-	M[0] = M0;
-	K[0] = K1;
+	M[0] = vmax(M0,P[0]);
+	pM[0] = M0[prank[0]];
+	oM[0] = oM0[prank[0]];
+	K[0] = vmax(K1,P[1]);
+	pK[0] = K1[prank[1]];
+	oK[0] = oK1[prank[1]];
 	C[0] = NG;
 	rC[0] = rNG;
 	if (!(flags&FFT5D_ORDER_YZ)) {
-		N[0] = N1;
-		nP[0] = P[1];
-		C[1] = KG;
-		rC[1] =rKG;
-		N[1] = K0;
-		M[1] = M0;
-		K[1] = N1;
-		nP[1] = P[0];
-		C[2] = MG;
-		rC[2] = rMG;
-		M[2] = K0;
-		K[2] = N1;
+	    N[0] = vmax(N1,P[1]);
+	    pN[0] = N1[prank[1]];
+	    iNout[0] = N1;
+	    oNout[0] = oN1;
+	    nP[0] = P[1];
+	    C[1] = KG;
+	    rC[1] =rKG;
+	    N[1] = vmax(K0,P[0]);
+	    pN[1] = K0[prank[0]];
+	    iNin[1] = K1;
+	    oNin[1] = oK1; 
+	    iNout[1] = K0;
+	    oNout[1] = oK0;
+	    M[1] = vmax(M0,P[0]);
+	    pM[1] = M0[prank[0]];
+	    K[1] = vmax(N1,P[1]);
+	    pK[1] = N1[prank[1]];
+	    nP[1] = P[0];
+	    C[2] = MG;
+	    rC[2] = rMG;
+	    iNin[2] = M0;
+	    oNin[2] = oM0;
+	    M[2] = vmax(K0,P[0]);
+	    pM[2] = K0[prank[0]];
+	    K[2] = vmax(N1,P[1]);
+	    pK[2] = N1[prank[1]];
 	} else {
-		N[0] = N0;
-		nP[0] = P[0];
-		C[1] = MG;
-		rC[1] =rMG;
-		N[1] = M1;
-		M[1] = N0;
-		K[1] = K1;
-		nP[1] = P[1];
-		C[2] = KG;
-		rC[2] = rKG;
-		M[2] = N0;
-		K[2] = M1;
+	    N[0] = vmax(N0,P[0]);
+	    pN[0] = N[prank[0]];
+	    iNout[0] = N0;
+	    oNout[0] = oN0;
+	    nP[0] = P[0];
+	    C[1] = MG;
+	    rC[1] =rMG;
+	    N[1] = vmax(M1,P[1]);
+	    pN[1] = M1[prank[1]];
+	    iNin[1] = M0;
+	    oNin[1] = oM0;
+	    iNout[1] = M1;
+	    oNout[1] = oM1;
+	    M[1] = vmax(N0,P[0]);
+	    pM[1] = N0[prank[0]];
+	    K[1] = vmax(K1,P[1]);
+	    pK[1] = K1[prank[1]];
+	    nP[1] = P[1];
+	    C[2] = KG;
+	    rC[2] = rKG;
+	    iNin[2] = K1;
+	    oNin[2] = oK1;
+	    M[2] = vmax(N0,P[0]);
+	    pM[2] = N0[prank[0]];
+	    K[2] = vmax(M1,P[1]);
+	    pK[2] = M1[prank[1]];
 	}
 	
 	/*
@@ -251,7 +336,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	plan->NG=NG;plan->MG=MG;plan->KG=KG;
 	
 	for (s=0;s<3;s++) {
-		plan->N[s]=N[s];plan->M[s]=M[s];plan->K[s]=K[s];plan->C[s]=C[s];plan->rC[s]=rC[s];
+	        plan->N[s]=N[s];plan->M[s]=M[s];plan->K[s]=K[s];plan->pN[s]=pN[s];plan->pM[s]=pM[s];plan->pK[s]=pK[s];
+		plan->oM[s]=oM[s];plan->oK[s]=oK[s];
+		plan->C[s]=C[s];plan->rC[s]=rC[s];
+		plan->iNin[s]=iNin[s];plan->oNin[s]=oNin[s];plan->iNout[s]=iNout[s];plan->oNout[s]=oNout[s];
 	}
 	for (s=0;s<2;s++) {
 		plan->P[s]=nP[s];plan->coor[s]=prank[s];
@@ -283,17 +371,20 @@ enum order {
   x (and N) is mayor (consecutive) dimension, y (M) middle and z (K) major
   N,M,K is size of local data!
   NG, MG, KG is size of global data*/
-static void splitaxes(fft5d_type* lin,const fft5d_type* lout,int N,int M,int K,int P,int NG) {
-	int x,y,z,i;
-	for (i=0;i<P;i++) { /*index cube along long axis*/
-		for (z=0;z<K;z++) { /*3. z l*/
-			for (y=0;y<M;y++) { /*2. y k*/
-				for (x=0;x<fft5d_fmin(N,NG-N*i);x++) { /*1. x j*/
-					lin[x+y*N+z*M*N+i*M*N*K]=lout[(i*N+x)+y*NG+z*NG*M];
-				}
-			}
+static void splitaxes(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,int maxK, int pN, int pM, int pK,
+		      int P,int NG,int *N, int* oN) {
+    int x,y,z,i;
+    for (i=0;i<P;i++) { /*index cube along long axis*/
+	for (z=0;z<pK;z++) { /*3. z l*/ 
+	    for (y=0;y<pM;y++) { /*2. y k*/
+		for (x=0;x<N[i];x++) { /*1. x j*/
+		    lin[x+y*maxN+z*maxN*maxM+i*maxN*maxM*maxK]=lout[(oN[i]+x)+y*NG+z*NG*maxM];
+		    /*after split important that each processor chunk i has size maxN*maxM*maxK and thus being the same size*/
+		    /*before split data contiguos - thus if different processor get different amount oN is different*/
 		}
+	    }
 	}
+    }
 }
 
 /*make axis contiguous again (after AllToAll) and also do local transpose*/
@@ -302,13 +393,14 @@ static void splitaxes(fft5d_type* lin,const fft5d_type* lout,int N,int M,int K,i
   the major, middle, minor order is only correct for x,y,z (N,M,K) for the input
   N,M,K local dimensions
   KG global size*/
-static void joinAxesTrans13(fft5d_type* lin,const fft5d_type* lout,int N,int M,int K,int P,int KG) {
+static void joinAxesTrans13(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,int maxK,int pN, int pM, int pK, 
+			    int P,int KG, int* K, int* oK) {
 	int i,x,y,z;
 	for (i=0;i<P;i++) { /*index cube along long axis*/
-		for (x=0;x<N;x++) { /*1.j*/
-			for (z=0;z<fft5d_fmin(K,KG-K*i);z++) { /*3.l*/
-				for (y=0;y<M;y++) { /*2.k*/
-					lin[(i*K+z)+y*KG+x*KG*M]=lout[x+y*N+z*M*N+i*M*N*K];
+		for (x=0;x<pN;x++) { /*1.j*/
+			for (z=0;z<K[i];z++) { /*3.l*/
+				for (y=0;y<pM;y++) { /*2.k*/
+					lin[(oK[i]+z)+y*KG+x*KG*maxM]=lout[x+y*maxN+z*maxM*maxN+i*maxM*maxN*maxK];
 				}
 			}
 		}
@@ -321,13 +413,14 @@ static void joinAxesTrans13(fft5d_type* lin,const fft5d_type* lout,int N,int M,i
   the minor, middle, major order is only correct for x,y,z (N,M,K) for the input
   N,M,K local size
   MG, global size*/
-static void joinAxesTrans12(fft5d_type* lin,const fft5d_type* lout,int N,int M,int K,int P,int MG) {
+static void joinAxesTrans12(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,int maxK,int pN, int pM, int pK,
+			    int P,int MG, int* M, int* oM) {
 	int i,z,y,x;
 	for (i=0;i<P;i++) { /*index cube along long axis*/
-		for (z=0;z<K;z++) { 
-			for (x=0;x<N;x++) { 
-				for (y=0;y<fft5d_fmin(M,MG-M*i);y++) { 
-					lin[(i*M+y)+x*MG+z*MG*N]=lout[x+y*N+z*M*N+i*M*N*K];
+		for (z=0;z<pK;z++) { 
+		         for (x=0;x<maxN;x++) {  //why does pN not work?!?
+				for (y=0;y<M[i];y++) { 
+					lin[(oM[i]+y)+x*MG+z*MG*maxN]=lout[x+y*maxN+z*maxM*maxN+i*maxM*maxN*maxK];
 				}
 			}
 		}
@@ -383,7 +476,7 @@ static void compute_offsets(fft5d_plan plan, int xo[], int xl[], int xc[], int N
 		case ZYX:pos[0]=3;pos[1]=2;pos[2]=1;break;
 	}
 	/*if (debug) printf("pos: %d %d %d\n",pos[0],pos[1],pos[2]);*/
-	int *M=plan->M, *K=plan->K, *C=plan->C, *rC=plan->rC;
+	int *M=plan->M, *K=plan->K, *pM=plan->pM, *pK=plan->pK, *C=plan->C, *rC=plan->rC;
 	int *coor=plan->coor;
 	
 	/*xo, xl give offset and length in local transposed coordinate system
@@ -391,8 +484,8 @@ static void compute_offsets(fft5d_plan plan, int xo[], int xl[], int xc[], int N
 	for (i=0;i<3;i++) {
 		switch (pos[i]) {
 		case 1: xo[i]=1;         xc[i]=0;            xl[i]=C[s];break;
-		case 2: xo[i]=C[s];      xc[i]=coor[0]*M[s]; xl[i]=fft5d_fmin(M[s],NG[i]-coor[0]*M[s]);break;
-		case 3: xo[i]=C[s]*M[s]; xc[i]=coor[1]*K[s]; xl[i]=fft5d_fmin(K[s],NG[i]-coor[1]*K[s]);break;
+		case 2: xo[i]=C[s];      xc[i]=coor[0]*M[s]; xl[i]=pM[s];break;
+		case 3: xo[i]=C[s]*M[s]; xc[i]=coor[1]*K[s]; xl[i]=pK[s];break;
 		}
 	}
     /*input order is different for test programm to match FFTW order 
@@ -449,7 +542,8 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 	MPI_Comm *cart=plan->cart;
 #endif
 	double time_fft=0,time_local=0,time_mpi[2]={0},time;	
-	int *N=plan->N,*M=plan->M,*K=plan->K,*C=plan->C,*P=plan->P;
+	int *N=plan->N,*M=plan->M,*K=plan->K,*pN=plan->pN,*pM=plan->pM,*pK=plan->pK,
+	    *C=plan->C,*P=plan->P,**iNin=plan->iNin,**oNin=plan->oNin,**iNout=plan->iNout,**oNout=plan->oNout;
 	
 	
 
@@ -467,7 +561,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 		/*prepare for AllToAll
           1. (most outer) axes (x) is split into P[s] parts of size N[s] 
              for sending*/
-		splitaxes(lin,lout,N[s],M[s],K[s],P[s],C[s]);
+		splitaxes(lin,lout,N[s],M[s],K[s],pN[s],pM[s],pK[s],P[s],C[s],iNout[s],oNout[s]);
 		time_local+=MPI_Wtime()-time;
 		
 		/*send, recv*/
@@ -489,13 +583,13 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 		time_mpi[s]=MPI_Wtime()-time;
 	
 		time=MPI_Wtime();
-		/*bring back in matrix form (could be avoided by storing blocks as eleftheriou, really?)
-          thus make  new 1. axes contiguos
-          also local transpose 1and 2/3 */
+		/*bring back in matrix form 
+		  thus make  new 1. axes contiguos
+		  also local transpose 1 and 2/3 */
 		if ((s==0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s==1 && (plan->flags&FFT5D_ORDER_YZ))) 
-			joinAxesTrans13(lin,lout,N[s],M[s],K[s],P[s],C[s+1]);
+		    joinAxesTrans13(lin,lout,N[s],M[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1]);
 		else 
-			joinAxesTrans12(lin,lout,N[s],M[s],K[s],P[s],C[s+1]);	
+		    joinAxesTrans12(lin,lout,N[s],M[s],K[s],pN[s],pM[s],pK[s],P[s],C[s+1],iNin[s+1],oNin[s+1]);	
 		time_local+=MPI_Wtime()-time;
 	
 		if (plan->flags&FFT5D_DEBUG) print_localdata(lin, "%d %d: tranposed %d\n", C[s+1], M[s+1], K[s+1], s+1, plan);
@@ -587,8 +681,10 @@ void fft5d_compare_data(const fft5d_type* lin, const fft5d_type* in, fft5d_plan 
 	int *coor = plan->coor;
 	int ll=2; /*compare ll values per element (has to be 2 for complex)*/
 	if (plan->flags&FFT5D_REALCOMPLEX && plan->flags&FFT5D_BACKWARD) 
+	{
 		ll=1;
-		
+	}
+
 	compute_offsets(plan,xo,xl,xc,NG,2);
 	if (plan->flags&FFT5D_DEBUG) printf("Compare2\n");
 	for (z=0;z<xl[2];z++) {
