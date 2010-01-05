@@ -948,15 +948,15 @@ harmonic pot.	& {\tts bonds}		      & 2 & 6	& $b_0$ (nm); $k_b$ (\kJmolnm{-2})	&
 FENE bond	& {\tts bonds}$^{(excl)}$     & 2 & 7	& $b_m$ (nm); $k_b$ (\kJmolnm{-2})	& 	\\
 tab. bond	& {\tts bonds}$^{(excl)}$     & 2 & 8	& table number ($\geq 0$); $k$ (\kJmol) & $k$ 	\\
 tab. bond n.c.  & {\tts bonds}                & 2 & 9 	& table number ($\geq 0$); $k$ (\kJmol) & $k$ 	\\
-restraint bond	& {\tts bonds}		      & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
+restraint pot.  & {\tts bonds}		      & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
                	&                   	      &   &  	& $k_{dr}$ (\kJmolnm{-2})               & 	\\
 LJ/Coul. 1-4	& {\tts pairs}		      & 2 & 1	& $V^{(cr)}$; $W^{(cr)}$ & all \\
 LJ/Coul. 1-4	& {\tts pairs}		      & 2 & 2	& fudge QQ (); $q_i$, $q_j$ (e), $V^{(cr)}$; $W^{(cr)}$ &     \\
 LJ/C. pair NB	& {\tts pairs\_nb}	      & 2 & 1	& $q_i$, $q_j$ (e); $V^{(cr)}$; $W^{(cr)}$ &    \\
 angle		& {\tts angles}$^{(con)}$     & 3 & 1	& $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}) & all	\\
 G96 angle	& {\tts angles}$^{(con)}$     & 3 & 2	& $\theta_0$ (deg); $k_\theta$ (\kJmol) & all	\\
-Cross bond-bond	& {\tts angles}               & 3 & 3	& $r_{1e}$, $r_{2e}$ (nm); $k_{rr'}$ (\kJmolnm{-2}) & 	\\
-Cross bond-angle& {\tts angles}               & 3 & 4	&$r_{1e}$, $r_{2e}$ $r_{3e}$ (nm); $k_{r\theta}$ (\kJmolnm{-2}) & 	\\
+cross bond-bond	& {\tts angles}               & 3 & 3	& $r_{1e}$, $r_{2e}$ (nm); $k_{rr'}$ (\kJmolnm{-2}) & 	\\
+cross bond-angle& {\tts angles}               & 3 & 4	&$r_{1e}$, $r_{2e}$ $r_{3e}$ (nm); $k_{r\theta}$ (\kJmolnm{-2}) & 	\\
 Urey-Bradley    & {\tts angles}$^{(con)}$     & 3 & 5	& $\theta_0$ (deg); $k_\theta$ (\kJmol); $r_{13}$ (nm); & \\
                 &                             &   &     & $k_{UB}$ (\kJmol) & \\
 quartic angle	& {\tts angles}$^{(con)}$     & 3 & 6	& \multicolumn{2}{l|}{$\theta_0$ (deg); $C_{i=0,1,2,3,4}$ (\kJmolrad{-i})}	\\
@@ -1004,7 +1004,7 @@ vsite COM	& {\tts virtual\_sitesn}	& 1 & 2	& one or more construc. atom ind.   	
 vsite COW  	& {\tts virtual\_sitesn}	& 1 & 3	& one or more pairs consisting of	& 	\\
                 &                               &   &   & a construc. atom ind. and weight           &       \\
 position res.	& {\tts position\_restraints}   & 1 & 1	& $k_{x}$, $k_{y}$, $k_{z}$ (\kJmolnm{-2}) & all	\\
-restr. bond	& {\tts bonds}		        & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
+restr. pot.	& {\tts bonds}		        & 2 & 10	& low, up$_1$, up$_2$ (nm);             & all	\\
                	&                   	        &   &  	& $k_{dr}$ (\kJmolnm{-2})               & 	\\
 distance res.	& {\tts distance\_restraints}   & 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
                 &                               &   &   & weight () & \\
