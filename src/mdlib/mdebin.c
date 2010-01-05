@@ -503,9 +503,11 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     int s = 0;
     int nsetsextend;
 
+    /* consider adding an option for printing the full potential at each step, instead of the differences. */
+
     if (ir->fepvals->n_lambda == 0) 
     {
-        sprintf(title,"%s-%s",dhdl);
+        sprintf(title,"%s-%s",dhdl,deltag);
         sprintf(label_y,"%s (%s %s)",
                 dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
     }

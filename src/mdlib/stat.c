@@ -406,7 +406,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           
           filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
 /* Small hack for temp only - not entirely clear if still needed?*/
-          //enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+          /*enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
       }
 
   }

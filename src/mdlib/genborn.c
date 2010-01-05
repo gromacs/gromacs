@@ -74,8 +74,6 @@
 
 #include "genborn_allvsall.h"
 
-    //#define DISABLE_SSE
-
 typedef struct {
     int shift;
     int naj;

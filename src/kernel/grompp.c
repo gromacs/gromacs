@@ -285,7 +285,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   int         nmolblock;
   gmx_molblock_t *molblock,*molbs;
   t_atoms     *confat;
-  int         mb,mbs,i,nrmols,nmismatch;
+  int         mb,i,nrmols,nmismatch;
   char        buf[STRLEN];
   bool        bGB=FALSE;
 
@@ -303,7 +303,6 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
   
   sys->nmolblock = 0;
   snew(sys->molblock,nmolblock);
-  mbs;
   sys->natoms = 0;
   for(mb=0; mb<nmolblock; mb++) {
     if (sys->nmolblock > 0 &&
