@@ -1933,7 +1933,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     real *chargeA=NULL,*chargeB=NULL;
     real lambda=0;
     int  maxshift0=0,maxshift1=0;
-    real energy,dvdlambda;
+    real energy,dvdl;
     matrix vir;
     float cycles;
     int  count;
@@ -1965,17 +1965,16 @@ int gmx_pmeonly(gmx_pme_t pme,
         
         wallcycle_start(wcycle,ewcPMEMESH);
         
-        dvdlambda = 0;
+        dvdl = 0;
         clear_mat(vir);
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
                    cr,maxshift0,maxshift1,nrnb,wcycle,vir,ewaldcoeff,
-                   &energy,lambda,&dvdlambda,
-                   GMX_PME_DO_ALL);
-        
+                   &energy,lambda,&dvdl,GMX_PME_DO_ALL);
+                   
         cycles = wallcycle_stop(wcycle,ewcPMEMESH);
         
         gmx_pme_send_force_vir_ener(pme_pp,
-                                    f_pp,vir,energy,dvdlambda,
+                                    f_pp,vir,energy,dvdl,
                                     cycles,bGotTermSignal,bGotUsr1Signal);
         
         count++;
@@ -2002,7 +2001,7 @@ int gmx_pme_do(gmx_pme_t pme,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
                matrix vir,      real ewaldcoeff,
                real *energy,    real lambda, 
-               real *dvdlambda, int flags)
+               real *dvdl, int flags)
 {
     int     q,d,i,j,ntot,npme;
     int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
@@ -2258,7 +2257,7 @@ int gmx_pme_do(gmx_pme_t pme,
         m_add(vir,vir_AB[0],vir);
     } else {
         *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
-        *dvdlambda += energy_AB[1] - energy_AB[0];
+        *dvdl += energy_AB[1] - energy_AB[0];
         for(i=0; i<DIM; i++)
             for(j=0; j<DIM; j++)
                 vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];

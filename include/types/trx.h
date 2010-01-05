@@ -67,8 +67,10 @@ typedef struct trxframe
   int  step;      /* MD step number                   */
   bool bTime;
   real time;      /* time of the frame                */
-  bool bLambda;
+  bool bLambda;   /* does it contain lambda?          */
+  bool bFepState; /* does it contain fep_state?       */
   real lambda;    /* free energy perturbation lambda  */
+  int fep_state;  /* free energy perturbation state   */
   bool bAtoms;
   t_atoms *atoms; /* atoms struct (natoms)            */
   bool bPrec;

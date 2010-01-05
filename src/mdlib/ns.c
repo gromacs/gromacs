@@ -136,6 +136,8 @@ static void reallocate_nblist(t_nblist *nl)
  * ivdw=3 tabulated vdw.
  *
  * Kind of ugly, but it works.
+ *
+ * MRS -- note: updated this with enums in forcerec.h  
  */
 static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
                         int maxsr,int maxlr,
@@ -195,7 +197,8 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         else
         {
             nl->enlist = enlist;
-
+            
+            /* seems to assume no GB? Should remove the hard coding here. MRS */
             nn = inloop[4*icoul + ivdw];
             
             /* solvent loops follow directly after the corresponding
@@ -287,34 +290,34 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    /* Start with GB */
    if(fr->bGB)
    {
-       icoul=4;
+       icoul = enbcoulGB;
    }
    else if (fr->bcoultab)
    {
-       icoul = 3;
+       icoul = enbcoulTAB;
    }
    else if (EEL_RF(fr->eeltype))
    {
-       icoul = 2;
+       icoul = enbcoulRF;
    }
    else 
    {
-       icoul = 1;
+       icoul = enbcoulOOR;
    }
    
    if (fr->bvdwtab)
    {
-       ivdw = 3;
+       ivdw = enbvdwTAB;
    }
    else if (fr->bBHAM)
    {
-       ivdw = 2;
+       ivdw = enbvdwBHAM;
    }
    else 
    {
-       ivdw = 1;
+       ivdw = enbvdwLJ;
    }
-
+   
    fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
    if (!fr->ns.bCGlist)
    {
@@ -357,15 +360,15 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        
        if (fr->efep != efepNO) 
        {
-           if (fr->bEwald)
+           if ((fr->bEwald) && (fr->sc_alphacoul > 0))
            {
-               icoulf = 5;
+               icoulf = enbcoulFEWALD;
            }
            else
            {
                icoulf = icoul;
            }
-
+           
            init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
                        maxsr,maxlr,ivdw,icoulf,TRUE,enlistATOM_ATOM);
            init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
@@ -1777,7 +1780,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                          int jgid,int nlr,
                          atom_id lr[],t_excl bexcl[],int shift,
                          rvec x[],rvec box_size,t_nrnb *nrnb,
-                         real lambda,real *dvdlambda,
+                         real *lambda, real *dvdl,
                          gmx_grppairener_t *grppener,
                          bool bDoVdW,bool bDoCoul,
                          bool bEvaluateNow,put_in_list_t *put_in_list,
@@ -1800,7 +1803,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
                              grppener->ener[egCOULLR],
 							 grppener->ener[egGB],box_size,
-                             nrnb,lambda,dvdlambda,n,i,
+                             nrnb,lambda,dvdl,n,i,
                              GMX_DONB_LR | GMX_DONB_FORCES);
                 
                 reset_neighbor_list(fr,TRUE,n,i);
@@ -1903,7 +1906,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        t_grid *grid,rvec x[],
                        t_excl bexcl[],bool *bExcludeAlleg,
                        t_nrnb *nrnb,t_mdatoms *md,
-                       real lambda,real *dvdlambda,
+                       real *lambda,real *dvdl,
                        gmx_grppairener_t *grppener,
                        put_in_list_t *put_in_list,
                        bool bHaveVdW[],
@@ -2267,7 +2270,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              nlr_ljc[jgid],
                                                                              nl_lr_ljc[jgid],bexcl,shift,x,
                                                                              box_size,nrnb,
-                                                                             lambda,dvdlambda,
+                                                                             lambda,dvdl,
                                                                              grppener,
                                                                              TRUE,TRUE,FALSE,
                                                                              put_in_list,
@@ -2284,7 +2287,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              nlr_one[jgid],
                                                                              nl_lr_one[jgid],bexcl,shift,x,
                                                                              box_size,nrnb,
-                                                                             lambda,dvdlambda,
+                                                                             lambda,dvdl,
                                                                              grppener,
                                                                              rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
                                                                              put_in_list,
@@ -2318,7 +2321,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                         {
                             do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
                                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-                                         lambda,dvdlambda,grppener,TRUE,TRUE,FALSE,
+                                         lambda,dvdl,grppener,TRUE,TRUE,FALSE,
                                          put_in_list,bHaveVdW,bDoForces,f);
                         }
                         
@@ -2326,7 +2329,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                         {
                             do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
                                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
-                                         lambda,dvdlambda,grppener,
+                                         lambda,dvdl,grppener,
                                          rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
                                          put_in_list,bHaveVdW,bDoForces,f);
                         }
@@ -2344,13 +2347,13 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
         {
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-                         lambda,dvdlambda,grppener,
+                         lambda,dvdl,grppener,
                          TRUE,TRUE,TRUE,put_in_list,bHaveVdW,bDoForces,f);
         }
         if (rl2 > rm2) {
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_one[nn],
                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
-                         lambda,dvdlambda,grppener,
+                         lambda,dvdl,grppener,
                          rvdw_lt_rcoul,rcoul_lt_rvdw,
                          TRUE,put_in_list,bHaveVdW,bDoForces,f);
         }
@@ -2495,7 +2498,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,
-                      real lambda,real *dvdlambda,
+                      real *lambda,real *dvdl,
                       gmx_grppairener_t *grppener,
                       bool bFillGrid,
                       bool bDoLongRange,
@@ -2631,7 +2634,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         grid = ns->grid;
         nsearch = nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                               grid,x,ns->bexcl,ns->bExcludeAlleg,
-                              nrnb,md,lambda,dvdlambda,grppener,
+                              nrnb,md,lambda,dvdl,grppener,
                               put_in_list,ns->bHaveVdW,
                               bDoLongRange,bDoForces,f,
                               FALSE);
@@ -2649,7 +2652,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         {
             nsearch += nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                                    grid,x,ns->bexcl,ns->bExcludeAlleg,
-                                   nrnb,md,lambda,dvdlambda,grppener,
+                                   nrnb,md,lambda,dvdl,grppener,
                                    put_in_list_qmmm,ns->bHaveVdW,
                                    bDoLongRange,bDoForces,f,
                                    TRUE);

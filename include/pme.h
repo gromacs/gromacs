@@ -84,7 +84,7 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
-		      real *dvdlambda, int flags);
+		      real *dvdl,      int flags);
 /* Do a PME calculation for the long range electrostatics. 
  * flags, defined above, determine which parts of the calculation are performed.
  * Return value 0 indicates all well, non zero is an error code.

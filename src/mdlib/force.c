@@ -75,8 +75,8 @@ void ns(FILE *fp,
         t_mdatoms  *md,
         t_commrec  *cr,
         t_nrnb     *nrnb,
-        real       lambda,
-        real       *dvdlambda,
+        real       *lambda,
+        real       *dvdl,
         gmx_grppairener_t *grppener,
         bool       bFillGrid,
         bool       bDoLongRange,
@@ -95,8 +95,9 @@ void ns(FILE *fp,
   if (fr->bTwinRange) 
     fr->nlr=0;
 
+  /* no FEP possibilities?  Should this be noted in grompp? check. MRS */
     nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
-                                lambda,dvdlambda,grppener,
+                                lambda,dvdl,grppener,
                                 bFillGrid,bDoLongRange,
                                 bDoForces,f);
   if (debug)
@@ -129,27 +130,29 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_atomtypes *atype,
                        bool       bBornRadii,
                        matrix     box,
-                       real       lambda,  
+                       t_lambda   *fepvals,
+                       real       *lambda,
                        t_graph    *graph,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
                        int        flags,
                        float      *cycles_pme)
 {
-    int     i,status;
+    int     i,j,status;
     int     donb_flags;
     bool    bDoEpot,bSepDVDL,bSB;
     int     pme_flags;
     matrix  boxs;
     rvec    box_size;
-    real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
+    real    Vsr,Vlr,Vcorr=0,vdip,vcharge;
     t_pbc   pbc;
     real    dvdgb;
     char    buf[22];
     gmx_enerdata_t ed_lam;
-    double  lam_i;
-    real    dvdl_dum;
-
+    double  clam_i,vlam_i;
+    real    dvdl_dum[efptNR], dvdl[efptNR], lambda_dum[efptNR];
+    real    dvdlsum;
+    
 #ifdef GMX_MPI
     double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
@@ -157,6 +160,13 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
     
     GMX_MPE_LOG(ev_force_start);
+
+    /* reset free energy components */
+    for (i=0;i<efptNR;i++) 
+    {
+        dvdl[i] = 0;
+        dvdl_dum[i] = 0;
+    }
     
     /* Reset box */
     for(i=0; (i<DIM); i++)
@@ -182,8 +192,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     /* Call the short range functions all in one go. */
     GMX_MPE_LOG(ev_do_fnbf_start);
     
-    dvdlambda = 0;
-    
 #ifdef GMX_MPI
     /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
 #define TAKETIME FALSE
@@ -196,10 +204,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     
     if (ir->nwall)
     {
-        dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,
-                             enerd->grpp.ener[egLJSR],nrnb);
-        PRINT_SEPDVDL("Walls",0.0,dvdlambda);
-        enerd->dvdl_lin += dvdlambda;
+        /* add foreign lambda component to walls! */
+        do_walls(ir,fr,box,md,x,f,lambda[efptVDW],&dvdl[efptVDW],
+                 enerd->grpp.ener[egLJSR],nrnb);
+        PRINT_SEPDVDL("Walls",0.0,dvdl[efptVDW]);
+        enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
     }
 		
 	/* If doing GB, reset dvda and calculate the Born radii */
@@ -232,18 +241,26 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                  enerd->grpp.ener[egLJSR],
                  enerd->grpp.ener[egCOULSR],
 				 enerd->grpp.ener[egGB],box_size,nrnb,
-                 lambda,&dvdlambda,-1,-1,donb_flags);
+                 lambda,dvdl,-1,-1,donb_flags);
     /* If we do foreign lambda and we have soft-core interactions
      * we have to recalculate the (non-linear) energies contributions.
      */
-    if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) && ir->sc_alpha != 0)
+    if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) && fepvals->sc_alpha != 0)
     {
-        init_enerdata(mtop->groups.grps[egcENER].nr,ir->n_flambda,&ed_lam);
-        
+        init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
         for(i=0; i<enerd->n_lambda; i++)
         {
-            lam_i = (i==0 ? lambda : ir->flambda[i-1]);
-            dvdl_dum = 0;
+            for (j=0;j<efptNR;j++) {
+                if (i==0) 
+                {
+                    lambda_dum[j] = lambda[j];
+                }
+                else
+                {
+                    lambda_dum[j] = fepvals->all_lambda[j][i-1];
+                }
+            }
+            /* currently, evaluates all energies.  Eventually, can eliminate the call to the same lambda */
             reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
             do_nonbonded(cr,fr,x,f,md,excl,
                          fr->bBHAM ?
@@ -251,7 +268,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                          ed_lam.grpp.ener[egLJSR],
                          ed_lam.grpp.ener[egCOULSR],
                          enerd->grpp.ener[egGB], box_size,nrnb,
-                         lam_i,&dvdl_dum,-1,-1,
+                         lambda_dum,dvdl_dum,-1,-1,
                          GMX_DONB_FOREIGNLAMBDA);
             sum_epot(&ir->opts,&ed_lam);
             enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
@@ -262,6 +279,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
+    /* is there any free energy contribution here? */
 	if (ir->implicit_solvent)  {
 		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm,nrnb,bBornRadii);
 		enerd->term[F_GB12]+=dvdgb;	
@@ -278,14 +296,28 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
 #endif
     
-    if (ir->sc_alpha != 0)
+    if (fepvals->sc_alpha!=0)
     {
-        enerd->dvdl_nonlin += dvdlambda;
+        enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
     }
     else
     {
-        enerd->dvdl_lin    += dvdlambda;
+        enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
     }
+
+    if (fepvals->sc_alpha!=0) 
+
+        /* even though coulomb part is linear, we already added it, beacuse we 
+           need to go through the vdw calculation anyway */
+        //if ((fepvals->sc_alpha!=0) && fepvals->bScCoul)
+    {
+            enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
+    }
+    else
+    {
+        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
+    }
+
     Vsr = 0;
     if (bSepDVDL)
     {
@@ -297,8 +329,10 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                  enerd->grpp.ener[egLJSR][i])
                 + enerd->grpp.ener[egCOULSR][i];
         }
+        dvdlsum = dvdl[efptVDW]+dvdl[efptCOUL];
+        PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlsum);
     }
-    PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
+    
     debug_gmx();
     
     GMX_MPE_LOG(ev_do_fnbf_finish);
@@ -351,24 +385,31 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         /* Check if we have to determine energy differences
          * at foreign lambda's.
          */
-        if (ir->n_flambda > 0 && (flags & GMX_FORCE_DHDL) &&
+        if (fepvals->n_lambda > 0 && (flags & GMX_FORCE_DHDL) &&
             idef->ilsort != ilsortNO_FE)
         {
             if (idef->ilsort != ilsortFE_SORTED)
             {
                 gmx_incons("The bonded interactions are not sorted for free energy");
             }
-            init_enerdata(mtop->groups.grps[egcENER].nr,ir->n_flambda,&ed_lam);
+            init_enerdata(mtop->groups.grps[egcENER].nr,fepvals->n_lambda,&ed_lam);
             
             for(i=0; i<enerd->n_lambda; i++)
             {
-                lam_i = (i==0 ? lambda : ir->flambda[i-1]);
-                dvdl_dum = 0;
                 reset_enerdata(&ir->opts,fr,TRUE,&ed_lam,FALSE);
+                for (j=0;j<efptNR;j++) {
+                    if (i==0) 
+                    {
+                        lambda_dum[j] = lambda[j];
+                    }
+                    else
+                    {
+                        lambda_dum[j] = fepvals->all_lambda[j][i-1];
+                    }
+                }
                 calc_bonds_lambda(fplog,
-                                  idef,x,fr,&pbc,graph,&ed_lam,nrnb,lam_i,md,
-                                  fcd,
-                                  DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                  idef,x,fr,&pbc,graph,&ed_lam,nrnb,lambda_dum,md,
+                                  fcd,&(mtop->cmap_grid),DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&ir->opts,&ed_lam);
                 enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
             }
@@ -397,7 +438,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         {
             if (fr->n_tpi == 0)
             {
-                dvdlambda = 0;
+                dvdl[efptCOUL] = 0;
                 Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,
                                            cr,fr,
                                            md->chargeA,
@@ -405,9 +446,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                            excl,x,bSB ? boxs : box,mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
-                                           lambda,&dvdlambda,&vdip,&vcharge);
-                PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
-                enerd->dvdl_lin += dvdlambda;
+                                           lambda[efptCOUL],&dvdl[efptCOUL],&vdip,&vcharge);
+                PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdl);
+                enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
             }
             else
             {
@@ -429,7 +470,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                        fr->vir_el_recip);
         }
         
-        dvdlambda = 0;
+        dvdl[efptCOUL] = 0;
         status = 0;
         switch (fr->eeltype)
         {
@@ -461,7 +502,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift1(cr->dd) : 0,
                                         nrnb,wcycle,
                                         fr->vir_el_recip,fr->ewaldcoeff,
-                                        &Vlr,lambda,&dvdlambda,
+                                        &Vlr,lambda[efptCOUL],&dvdl[efptCOUL],
                                         pme_flags);
                     *cycles_pme = wallcycle_stop(wcycle,ewcPMEMESH);
 
@@ -483,7 +524,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                                         md->chargeA + md->homenr - fr->n_tpi,
                                         &Vlr);
                 }
-                PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+                PRINT_SEPDVDL("PME mesh",Vlr,dvdl[efptCOUL]);
             } 
             else
             {
@@ -497,8 +538,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                            md->chargeA,md->chargeB,
                            box_size,cr,md->homenr,
                            fr->vir_el_recip,fr->ewaldcoeff,
-                           lambda,&dvdlambda,fr->ewald_table);
-            PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
+                           lambda[efptCOUL],&dvdl[efptCOUL],fr->ewald_table);
+            PRINT_SEPDVDL("Ewald long-range",Vlr,dvdl[efptCOUL]);
             break;
         default:
             Vlr = 0;
@@ -510,7 +551,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
                       status,EELTYPE(fr->eeltype));
 		}
-        enerd->dvdl_lin += dvdlambda;
+        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
         enerd->term[F_COUL_RECIP] = Vlr + Vcorr;
         if (debug)
         {
@@ -524,18 +565,18 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     {
         if (EEL_RF(fr->eeltype))
         {
-            dvdlambda = 0;
+            dvdl[efptCOUL] = 0;
             
             if (fr->eeltype != eelRF_NEC)
             {
                 enerd->term[F_RF_EXCL] =
                     RF_excl_correction(fplog,fr,graph,md,excl,x,f,
-                                       fr->fshift,&pbc,lambda,&dvdlambda);
+                                       fr->fshift,&pbc,lambda[efptCOUL],&dvdl[efptCOUL]);
             }
             
-            enerd->dvdl_lin += dvdlambda;
+            enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
             PRINT_SEPDVDL("RF exclusion correction",
-                          enerd->term[F_RF_EXCL],dvdlambda);
+                          enerd->term[F_RF_EXCL],dvdl[efptCOUL]);
         }
     }
     where();
@@ -574,7 +615,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
 }
 
-void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd)
+void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd)
 {
     int i,n2;
     
@@ -582,7 +623,12 @@ void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd)
     {
         enerd->term[i] = 0;
     }
-    
+
+    for(i=0; i<efptNR; i++) {
+        enerd->dvdl_lin[i]  = 0;
+        enerd->dvdl_nonlin[i]  = 0;
+    }
+
     n2=ngener*ngener;
     if (debug)
     {
@@ -594,9 +640,9 @@ void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd)
         snew(enerd->grpp.ener[i],n2);
     }
 
-    if (n_flambda)
+    if (n_lambda)
     {
-        enerd->n_lambda = 1 + n_flambda;
+        enerd->n_lambda = 1 + n_lambda;
         snew(enerd->enerpart_lambda,enerd->n_lambda);
     }
     else
@@ -660,41 +706,92 @@ void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
       epot[F_EPOT] += epot[i];
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir)
+void sum_dhdl(gmx_enerdata_t *enerd, double *lambda, t_lambda *fepvals)
 {
-    int i;
-    double dlam,dhdl_lin;
-
-    enerd->term[F_DVDL] = enerd->dvdl_lin + enerd->dvdl_nonlin;
-
-    if (debug)
+    int i,j,index;
+    double dlam;
+    
+    enerd->term[F_DVDL_REMAIN] = 0.0;
+    for (i=0;i<efptNR;i++) 
     {
-        fprintf(debug,"dvdl: %f, non-linear %f + linear %f\n",
-                enerd->term[F_DVDL],enerd->dvdl_nonlin,enerd->dvdl_lin);
+        if (fepvals->separate_dvdl[i]) 
+        {
+            /* could this be done more readably/compactly? */
+            switch (i) {
+            case (efptCOUL):
+                index = F_DVDL_COUL;
+                break;
+            case (efptVDW):
+                index = F_DVDL_VDW;
+                break;
+            case (efptBONDED):
+                index = F_DVDL_BONDED;                
+                break;
+            case (efptRESTRAINT):
+                index = F_DVDL_RESTRAINT;                
+                break;
+            case (efptMASS):
+                index = F_DKDL;                
+                break;
+            default:
+                index = F_DVDL_REMAIN;
+                break;
+            }
+            enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
+            if (debug) 
+            {
+                fprintf(debug,"dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
+                        efpt_names[i],i,enerd->term[index],enerd->dvdl_nonlin[i],enerd->dvdl_lin[i]);
+            }
+        }
+        else 
+        {
+            enerd->term[F_DVDL_REMAIN] += enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
+            if (debug) 
+            {
+                fprintf(debug,"dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
+                        efpt_names[0],i,enerd->term[F_DVDL_REMAIN],enerd->dvdl_nonlin[i],enerd->dvdl_lin[i]);
+            }
+        }
     }
 
     /* Notes on the foreign lambda free energy difference evaluation:
      * Adding the potential and ekin terms that depend linearly on lambda
      * as delta lam * dvdl to the energy differences is exact.
-     * For the constraint dvdl this is not exact, but we have no other option.
+     * For the constraint dvdl this is not exact, but we have no other option 
+     * (try to remedy this - MRS)
      * For the non-bonded LR term we assume that the soft-core (if present)
      * no longer affects the energy beyond the short-range cut-off,
      * which is a very good approximation (except for exotic settings).
+     * (investigate how to overcome this - MRS)
      */
+    
     for(i=1; i<enerd->n_lambda; i++)
     {
-        dlam = (ir->flambda[i-1] - lambda);
-        dhdl_lin =
-            enerd->dvdl_lin + enerd->term[F_DKDL] + enerd->term[F_DHDL_CON];
-        if (debug)
+        
+        /* we don't need to worry about dvdl contributions to the currenta lambda, because 
+           it's automatically zero */
+        
+        /* first kinetic energy term */
+        dlam = (fepvals->all_lambda[efptMASS][i-1] - lambda[efptMASS]);
+        
+        /* make sure constraint terms are added on correctly here or elsewhere! MRS */
+        enerd->enerpart_lambda[i] += enerd->term[F_DKDL]*dlam;    
+        
+        for (j=0;j<efptNR;j++) 
         {
-            fprintf(debug,"enerdiff lam %g: non-linear %f linear %f*%f\n",
-                    ir->flambda[i-1],
-                    enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0],
-                    dlam,dhdl_lin);
+            if (j==efptMASS) {continue;}
+            
+            dlam = (fepvals->all_lambda[j][i-1]-lambda[j]);
+            enerd->enerpart_lambda[i] += dlam*enerd->dvdl_lin[j];
+            if (debug)
+            {
+                fprintf(debug,"enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
+                        fepvals->all_lambda[j][i-1],efpt_names[j],
+                        (enerd->enerpart_lambda[i] - enerd->enerpart_lambda[0]),
+                        dlam,enerd->dvdl_lin[j]);
+            }
         }
-        enerd->enerpart_lambda[i] += dlam*dhdl_lin;
-
     }
 }
 
@@ -717,17 +814,21 @@ void reset_enerdata(t_grpopts *opts,
 	enerd->grpp.ener[i][j] = 0.0;
     }
   }
-  enerd->dvdl_lin    = 0.0;
-  enerd->dvdl_nonlin = 0.0;
-
+  for (i=0;i<efptNR;i++) {
+      enerd->dvdl_lin[i]    = 0.0;  
+      enerd->dvdl_nonlin[i] = 0.0;
+  }
   /* Normal potential energy components */
   for(i=0; (i<=F_EPOT); i++) {
-    enerd->term[i] = 0.0;
+      enerd->term[i] = 0.0;
   }
-  /* Initialize the dVdlambda term with the long range contribution */
-  enerd->term[F_DVDL]     = 0.0;
-  enerd->term[F_DKDL]     = 0.0;
-  enerd->term[F_DHDL_CON] = 0.0;
+  /* Initialize the dvdl term with the long range contribution */
+  enerd->term[F_DVDL_COUL]       = 0.0;
+  enerd->term[F_DVDL_VDW]        = 0.0;
+  enerd->term[F_DVDL_BONDED]     = 0.0;
+  enerd->term[F_DVDL_RESTRAINT]  = 0.0;
+  enerd->term[F_DVDL_REMAIN]     = 0.0;
+  enerd->term[F_DKDL]            = 0.0;
   if (enerd->n_lambda > 0)
   {
       for(i=0; i<enerd->n_lambda; i++)

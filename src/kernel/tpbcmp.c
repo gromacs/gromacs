@@ -435,7 +435,7 @@ static void cmp_pull(FILE *fp,t_pull *pull1,t_pull *pull2,real ftol, real abstol
 
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, real abstol)
 {
-  int i;
+  int i,j;
 
   fprintf(fp,"comparing inputrec\n");
 
@@ -520,15 +520,19 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol, rea
   cmp_int(fp,"inputrec->eDispCorr",-1,ir1->eDispCorr,ir2->eDispCorr);
   cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol,abstol);
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
-  cmp_double(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol,abstol);
-  cmp_double(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol,abstol);
-  cmp_int(fp,"inputrec->n_foreign_lambda",-1,ir1->n_flambda,ir2->n_flambda);
-  for(i=0; i<min(ir1->n_flambda,ir2->n_flambda); i++) {
-    cmp_double(fp,"inputrec->foreign_lambda",-1,ir1->flambda[i],ir2->flambda[i],ftol,abstol);
-  }
-  cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol,abstol);
-  cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
-  cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol,abstol);
+  cmp_double(fp,"inputrec->fepvals->init_fep_state",-1,ir1->fepvals->init_fep_state,ir2->fepvals->init_fep_state,ftol,abstol);
+  cmp_double(fp,"inputrec->fepvalsdelta_lambda",-1,ir1->fepvals->delta_lambda,ir2->fepvals->delta_lambda,ftol,abstol);
+  cmp_int(fp,"inputrec->fepvalsn_lambda",-1,ir1->fepvals->n_lambda,ir2->fepvals->n_lambda);
+  for(i=0; i<efptNR;i++) 
+    {
+      for(j=0; j<min(ir1->fepvals->n_lambda,ir2->fepvals->n_lambda); j++) 
+	{
+	  cmp_double(fp,"inputrec->fepvals->all_lambda",-1,ir1->fepvals->all_lambda[i][j],ir2->fepvals->all_lambda[i][j],ftol,abstol);
+	}
+    }
+  cmp_real(fp,"inputrec->fepvals->sc_alpha",-1,ir1->fepvals->sc_alpha,ir2->fepvals->sc_alpha,ftol,abstol);
+  cmp_int(fp,"inputrec->fepvals->sc_power",-1,ir1->fepvals->sc_power,ir2->fepvals->sc_power);
+  cmp_real(fp,"inputrec->fepvals->sc_sigma",-1,ir1->fepvals->sc_sigma,ir2->fepvals->sc_sigma,ftol,abstol);
   cmp_int(fp,"inputrec->nstdhdl",-1,ir1->nstdhdl,ir2->nstdhdl);
 
   cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);

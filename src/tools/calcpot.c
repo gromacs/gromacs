@@ -169,10 +169,12 @@ void calc_pot(FILE *logf,t_commrec *cr,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
   static t_nrnb      nrnb;
-  real        lam=0,dum=0;
+  real        *lam,*dum;
   rvec        box_size;
   int         i,m;
 
+  snew(lam,efptNR);
+  snew(dum,efptNR);
   /* Calc the force */
   fprintf(stderr,"Doing single force calculation...\n");
 
@@ -188,7 +190,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
    */
   
   ns(logf,fr,x,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,lam,&dum,&enerd->grpp,TRUE,FALSE,FALSE,NULL);
+     &nrnb,lam,dum,&enerd->grpp,TRUE,FALSE,FALSE,NULL);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
@@ -203,6 +205,8 @@ void calc_pot(FILE *logf,t_commrec *cr,
   low_calc_pot(logf,eNL_VDW,fr,x,mdatoms,pot);
   /* electrostatics from any atom to atoms with LJ */
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
+  sfree(lam);
+  sfree(dum);
 }
 
 FILE *init_calcpot(const char *log,const char *tpx,const char *table,
@@ -217,6 +221,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   gmx_localtop_t *ltop;
   double   t,t0,lam0;
   real     lam;
+  int      fep_state;
   bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
   t_state  *state;
@@ -242,7 +247,7 @@ FILE *init_calcpot(const char *log,const char *tpx,const char *table,
   snew(state,1);
   init_single(fplog,inputrec,tpx,mtop,state);
   clear_rvec(mutot);
-  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&lam0,
+  init_md(fplog,*cr,inputrec,oenv,&t,&t0,&lam,&fep_state,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
 	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL,NULL,0);

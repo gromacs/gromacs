@@ -1020,7 +1020,8 @@ int main (int argc, char *argv[])
   nerror=0;
   snew(ir,1);
   snew(opts,1);
-  init_ir(ir,opts);
+  init_ir(ir);
+  init_opts(opts);
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
@@ -1114,13 +1115,15 @@ int main (int argc, char *argv[])
     if (bVerbose) {
       fprintf(stderr,"Reading position restraint coords from %s",fn);
       if (strcmp(fn,fnB) == 0) {
-	fprintf(stderr,"\n");
+          fprintf(stderr,"\n");
       } else {
-	fprintf(stderr," and %s\n",fnB);
-	if (ir->efep != efepNO && ir->n_flambda > 0) {
-	  fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
-	  nerror++;
-	}
+          fprintf(stderr," and %s\n",fnB);
+          /*
+            if (ir->efep != efepNO && ir->fepvals->n_lambda > 0) {
+            fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
+            nerror++;
+          }
+          */ /* testing a change to this MRS */
       }
     }
     gen_posres(sys,mi,fn,fnB,
@@ -1271,11 +1274,25 @@ int main (int argc, char *argv[])
     }
   }
 	
+
+  if (ir->efep!= efepNO)
+  {
+      state.fep_state = ir->fepvals->init_fep_state;
+      for (i=0;i<efptNR;i++) 
+      {
+          state.lambda[i] = ir->fepvals->all_lambda[i][state.fep_state];
+          /* overwrite with explicitly stated init_lambda */
+          if (ir->fepvals->init_lambda >= 0)
+          {
+              state.lambda[i] = ir->fepvals->init_lambda;
+          } 
+      }
+  } 
+  print_warn_num(TRUE);
+
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
-  print_warn_num(TRUE);
-  state.lambda = ir->init_lambda;
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   
   thanx(stderr);

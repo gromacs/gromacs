@@ -97,7 +97,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bondnb  ("FENEBONDS", "FENE Bonds",     2, 2, 0,  eNR_FENEBONDS, FENE_bonds ),
   def_bondt   ("TABBONDS", "Tab. Bonds",      2, 2, 2,  eNR_TABBONDS, tab_bonds   ),
   def_bondedtz("TABBONDSNC", "Tab. Bonds NC", 2, 2, 2,  eNR_TABBONDS, tab_bonds   ),
-  def_bonded  ("RESTRBONDS", "Restr. Bonds",  2, 4, 4,  eNR_RESTRBONDS,  restraint_bonds ),
+  def_bonded  ("RESTRBONDS", "Dis. Restr. Bonds",  2, 6, 4,  eNR_RESTRBONDS,  disrestraint_bonds ),
   def_angle   ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
   def_angle   ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
   def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0,0,          cross_bond_bond ),
@@ -117,8 +117,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("GB14",  "Generalized Born 1,4", 2, 2, 2,  eNR_GB,     unimplemented ),
   def_bondedz ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc    ("COUL14",   "Coulomb-14"                                           ),
-  def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0,  eNR_NB14,   unimplemented ),
-  def_bondedz ("LJC_NB",   "LJC Pairs NB",    2, 4, 0,  eNR_NB14,   unimplemented ),
+  def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 4,  eNR_NB14,   unimplemented ),
+  def_bondedz ("LJC_NB",   "LJC Pairs NB",    2, 4, 4,  eNR_NB14,   unimplemented ),
   def_nb      ("LJ_SR",    "LJ (SR)",         2, 2                                ),
   def_nb      ("BHAM",     "Buck.ham (SR)",   2, 3                                ),
   def_nofc    ("LJ_LR",    "LJ (LR)"                                              ),
@@ -139,7 +139,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("ORDEV",    "Ori. R. RMSD"                                         ),  
   def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
   def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz       ),
-  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 5, 0,  eNR_DIHRES, ta_dihres     ),
+  def_bonded  ("DIHRES",   "Dih. Rest.",      4, 5, 3,  eNR_DIHRES, ta_dihres     ),
   def_nofc    ("DIHVIOL",  "Dih. Rest. viol."                                     ),    
   def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk     ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
@@ -161,10 +161,14 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("TEMP",     "Temperature"      ),
   def_nofc    ("VTEMP",    "Vir. Temperature" ),
   def_nofc    ("PRES",     "Pressure"         ),
-  def_nofc    ("PDISPCORR","Pres. DC"         ),
-  def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
-  def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
-  def_nofc    ("DH/DL_CON","dH/dl constr."    )
+  def_nofc    ("PDISPCORR","Pres. DC"         ),  
+  def_nofc    ("DVM/DL",   "dVremain/dl"      ),
+  def_nofc    ("DK/DL",    "dEkin/dl"         ),
+  def_nofc    ("DVC/DL",   "dVcoul/dl"        ),
+  def_nofc    ("DVV/DL",   "dVvdw/dl"         ),
+  def_nofc    ("DVB/DL",   "dVbonded/dl"      ),
+  def_nofc    ("DVR/DL",   "dVrestraint/dl"   )/*,
+  def_nofc    ("DH/DL_CON","dH/dl constr."    )*/
 };
 
 bool have_interaction(t_idef *idef,int ftype)

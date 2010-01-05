@@ -154,7 +154,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         case ereLAMBDA:
             if (ir->efep != efepNO)
             {
-                repl_quantity(fplog,ms,re,i,ir->init_lambda);
+                repl_quantity(fplog,ms,re,i,ir->fepvals->init_fep_state);
             }
             break;
         default:
@@ -183,7 +183,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         }
         break;
     case ereLAMBDA:
-        if (ir->delta_lambda != 0)
+        if (ir->fepvals->delta_lambda != 0)
         {
             gmx_fatal(FARGS,"delta_lambda is not zero");
         }
@@ -475,7 +475,9 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     break;
   case ereLAMBDA:
     snew(dvdl,re->nrepl);
-    dvdl[re->repl] = ener[F_DVDL];
+    /* inprove this MRS! */
+    dvdl[re->repl] = ener[F_DVDL_REMAIN] + ener[F_DVDL_COUL] + 
+        ener[F_DVDL_VDW] + ener[F_DVDL_BONDED] + ener[F_DKDL] + ener[F_DVDL_RESTRAINT];
     gmx_sum_sim(re->nrepl,dvdl,ms);
     break;
   }
@@ -504,9 +506,10 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
 	/* Here we exchange based on a linear extrapolation of dV/dlambda.
 	 * We would like to have the real energies
 	 * from foreign lambda calculations.
+     * IS THIS EVEN CORRECT AT ALL MRS?  
 	 */
-	ediff = (dvdl[a] - dvdl[b])*(re->q[b] - re->q[a]);
-	delta = ediff/(BOLTZ*re->temp);
+     ediff = (dvdl[a] - dvdl[b])*(re->q[b] - re->q[a]);
+          delta = ediff/(BOLTZ*re->temp);
 	break;
       default:
 	gmx_incons("Unknown replica exchange quantity");

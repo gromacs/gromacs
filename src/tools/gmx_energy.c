@@ -560,7 +560,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       nexact    = 0;
       nnotexact = 0;
       for(i=0; (i<nset); i++) {
-	if (ee_sum[set[i]].esum != 0) {
+	if (ee_sum[set[i]].esum != 0) { /* if everything is zero, it will report as not being exact, and averaged over fewer states MRS */
 	  nexact++;
 	} else {
 	  nnotexact++;

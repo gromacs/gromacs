@@ -251,8 +251,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           where();
           if (inputrec->efep != efepNO) 
           {
-              idvdll  = add_bind(rb,1,&enerd->dvdl_lin);
-              idvdlnl = add_bind(rb,1,&enerd->dvdl_nonlin);
+              idvdll  = add_bind(rb,efptNR,enerd->dvdl_lin);
+              idvdlnl = add_bind(rb,efptNR,enerd->dvdl_nonlin);
               if (enerd->n_lambda > 0) 
               {
                   iepl = add_bind(rb,enerd->n_lambda,enerd->enerpart_lambda);
@@ -328,7 +328,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                   extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);              
               }
           }
-          extract_binr(rb,idedl,1,&(ekind->dekindl));
+          extract_binr(rb,idedl,1,&(ekind->dekindl));  /* MRS take this into account! MRS */
           extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
           where();
       }
@@ -358,8 +358,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           }
           if (inputrec->efep != efepNO) 
           {
-              extract_bind(rb,idvdll ,1,&enerd->dvdl_lin);
-              extract_bind(rb,idvdlnl,1,&enerd->dvdl_nonlin);
+              extract_bind(rb,idvdll ,efptNR,enerd->dvdl_lin);
+              extract_bind(rb,idvdlnl,efptNR,enerd->dvdl_nonlin);
               if (enerd->n_lambda > 0) 
               {
                   extract_bind(rb,iepl,enerd->n_lambda,enerd->enerpart_lambda);
@@ -539,7 +539,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         }
         
         if (bX || bV || bF) {
-            fwrite_trn(fp_trn,step,t,state_local->lambda,
+            fwrite_trn(fp_trn,step,t,state_local->lambda[efptFEP],
                        state_local->box,top_global->natoms,
                        bX ? state_global->x : NULL,
                        bV ? global_v : NULL,

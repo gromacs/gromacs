@@ -100,7 +100,7 @@ typedef struct gmx_pme_comm_n_box {
 typedef struct {
   matrix vir;
   real   energy;
-  real   dvdlambda;
+  real   dvdl;
   float  cycles;
   int    flags;
 } gmx_pme_comm_vir_ene_t;
@@ -397,7 +397,7 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 }
 
 static void receive_virial_energy(t_commrec *cr,
-				  matrix vir,real *energy,real *dvdlambda,
+				  matrix vir,real *energy,real *dvdl,
 				  float *pme_cycles) 
 {
   gmx_pme_comm_vir_ene_t cve;
@@ -416,7 +416,7 @@ static void receive_virial_energy(t_commrec *cr,
 	
     m_add(vir,cve.vir,vir);
     *energy = cve.energy;
-    *dvdlambda += cve.dvdlambda;
+    *dvdl += cve.dvdl;
     *pme_cycles = cve.cycles;
 
     bGotTermSignal = (cve.flags & PME_PP_TERM);
@@ -429,7 +429,7 @@ static void receive_virial_energy(t_commrec *cr,
 
 void gmx_pme_receive_f(t_commrec *cr,
 		       rvec f[], matrix vir, 
-		       real *energy, real *dvdlambda,
+		       real *energy, real *dvdl,
 		       float *pme_cycles)
 {
   int natoms,i;
@@ -458,12 +458,12 @@ void gmx_pme_receive_f(t_commrec *cr,
       rvec_inc(f[i],cr->dd->pme_recv_f_buf[i]);
 
   
-  receive_virial_energy(cr,vir,energy,dvdlambda,pme_cycles);
+  receive_virial_energy(cr,vir,energy,dvdl,pme_cycles);
 }
 
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
 				 rvec *f, matrix vir,
-				 real energy, real dvdlambda,
+				 real energy, real dvdl,
 				 float cycles,
 				 bool bGotTermSignal,
 				 bool bGotUsr1Signal)
@@ -490,7 +490,7 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
   /* send virial and energy to our last PP node */
   copy_mat(vir,cve.vir);
   cve.energy    = energy;
-  cve.dvdlambda = dvdlambda;
+  cve.dvdl = dvdl;
   cve.flags     = 0;
   if (bGotTermSignal)
     cve.flags |= PME_PP_TERM;

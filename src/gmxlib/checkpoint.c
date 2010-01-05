@@ -71,7 +71,7 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 
 const char *est_names[estNR]=
 {
-    "FE-lambda",
+    "FE-lambda","FE-fep-state",
     "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "thermostat-integral",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
@@ -757,7 +757,8 @@ static int do_cpt_state(XDR *xd,bool bRead,
         {
             switch (i)
             {
-            case estLAMBDA:  ret = do_cpte_real  (xd,0,i,sflags,&state->lambda,list); break;
+            case estLAMBDA:  ret = do_cpte_reals (xd,0,i,sflags,efptNR,&(state->lambda),list); break;
+            case estFEPSTATE: ret = do_cpte_int (xd,0,i,sflags,&state->fep_state,list); break;
             case estBOX:     ret = do_cpte_matrix(xd,0,i,sflags,state->box,list); break;
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
@@ -1704,7 +1705,8 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     fr->bTime   = TRUE;
     fr->time    = t;
     fr->bLambda = TRUE;
-    fr->lambda  = state.lambda;
+    fr->lambda  = state.lambda[efptFEP];
+    fr->fep_state  = state.fep_state;
     fr->bAtoms  = FALSE;
     fr->bX      = (state.flags & (1<<estX));
     if (fr->bX)

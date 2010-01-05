@@ -56,13 +56,13 @@ extern "C" {
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-enum { estLAMBDA,
-       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-       estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
-       estDISRE_INITF, estDISRE_RM3TAV,
-       estORIRE_INITF, estORIRE_DTAV,
-       estVIR_PREV, estNH_VXI, estVETA, estVOL0,
-       estNR };
+  enum { estLAMBDA, estFEPSTATE,
+	 estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
+	 estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
+	 estDISRE_INITF, estDISRE_RM3TAV,
+	 estORIRE_INITF, estORIRE_DTAV,
+	 estVIR_PREV, estNH_VXI, estVETA, estVOL0,
+	 estNR };
 
 #define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
 
@@ -121,7 +121,8 @@ typedef struct
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
-  real          lambda; /* the free energy switching parameter          */
+  int           fep_state; /* which FEP state we are in                 */
+  real          *lambda; /* lambda vector                        */
   matrix 	box;    /* box vector coordinates                      	*/
   matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */

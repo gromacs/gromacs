@@ -322,7 +322,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     
     if (bEner || bPres || bConstrain) 
     {
-        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda,
+        calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda[efptVDW],
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
     
@@ -330,9 +330,9 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
     {
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
-        enerd->term[F_DVDL] += dvdlcorr;
+        enerd->term[F_DVDL_VDW] += dvdlcorr;
         if (fr->efep != efepNO) {
-            enerd->dvdl_lin += dvdlcorr;
+            enerd->dvdl_lin[efptVDW] += dvdlcorr;
         }
     }
     
@@ -898,7 +898,8 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
-            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
+            /* not sure how this relates to free energy code -- what out what lambda is being used here. MRS */
+            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,inputrec->fepvals->init_lambda,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
 
@@ -1456,7 +1457,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     const char *fn_cpt;
     FILE       *fp_dhdl=NULL,*fp_field=NULL;
     double     run_time;
-    double     t,t0,lam0;
+    double     t,t0,lam0[efptNR];
     bool       bGStatEveryStep,bGStat,bNstEner,bCalcPres,bCalcEner;
     bool       bNS,bNStList,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep,
@@ -1507,11 +1508,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     atom_id     *grpindex=NULL;
     char        *grpname;
     t_coupl_rec *tcr=NULL;
+
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
     matrix      boxcopy={{0}},lastbox;
 	tensor      tmpvir;
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
+
+    /* for FEP */
+    int         fep_state;
+    real        frac;
+
     double      cycles;
     int         reset_counters=-1;
 	real        last_conserved = 0;
@@ -1579,7 +1586,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     groups = &top_global->groups;
 
     /* Initial values */
-    init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
+    init_md(fplog,cr,ir,oenv,&t,&t0,state_global->lambda,&(state_global->fep_state),lam0,
             nrnb,top_global,&upd,
             nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
             &fp_dhdl,&fp_field,&mdebin,
@@ -1589,7 +1596,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     clear_mat(pres);
     /* Energy terms and groups */
     snew(enerd,1);
-    init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,enerd);
+    init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,enerd);
     if (DOMAINDECOMP(cr))
     {
         f = NULL;
@@ -1607,7 +1614,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     init_ekindata(fplog,top_global,&(ir->opts),ekind_save);
     /* Copy the cos acceleration to the groups struct */    
     ekind->cosacc.cos_accel = ir->cos_accel;
-
+    
     gstat = global_stat_init(ir);
     debug_gmx();
 
@@ -1636,7 +1643,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
                     io);
     }
-
+    
     if (DOMAINDECOMP(cr)) {
         top = dd_init_local_top(top_global);
 
@@ -1650,25 +1657,25 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (PAR(cr)) {
             /* Initialize the particle decomposition and split the topology */
             top = split_system(fplog,top_global,ir,cr);
-
+            
             pd_cg_range(cr,&fr->cg0,&fr->hcg);
             pd_at_range(cr,&a0,&a1);
         } else {
             top = gmx_mtop_generate_local_top(top_global,ir);
-
+            
             a0 = 0;
             a1 = top_global->natoms;
         }
-
+        
         state = partdec_init_local_state(cr,state_global);
         f_global = f;
-
+        
         atoms2md(top_global,ir,0,NULL,a0,a1-a0,mdatoms);
-
+        
         if (vsite) {
             set_vsite_top(vsite,top,mdatoms,cr);
         }
-
+        
         if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
             graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
         }
@@ -1698,7 +1705,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         make_local_gb(cr,fr->born,ir->gb_algorithm);
     }
 
-    update_mdatoms(mdatoms,state->lambda);
+    update_mdatoms(mdatoms,state->lambda[efptMASS]);
 
     if (MASTER(cr))
     {
@@ -1977,23 +1984,61 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (ir->efep != efepNO)
         {
-            if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
+            /* find the current lambdas.  If rerunning, we either read in a state, or a lambda value,
+               requiring different logic. */
+            
+            if (bRerunMD) 
             {
-                state_global->lambda = rerun_fr.lambda;
-            }
-            else
+                if (rerun_fr.bLambda) 
+                {
+                    if (ir->fepvals->delta_lambda!=0)
+                    { 
+                        state_global->lambda[efptFEP] = rerun_fr.lambda;
+                        for (i=0;i<efptNR;i++) 
+                        {
+                            if (i!= efptFEP) 
+                            {
+                                state_global->lambda[i] = state_global->lambda[i];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        /* find out between which two value of lambda we should be */
+                        frac = (step*ir->fepvals->delta_lambda);
+                        fep_state = floor(frac*ir->fepvals->n_lambda);
+                        /* interpolate between this state and the next */
+                        /* this currently assumes that the initial lambda corresponds to lambda==0, verified in grompp */
+                        frac = (frac*ir->fepvals->n_lambda)-fep_state;
+                        for (i=0;i<efptNR;i++) 
+                        {
+                            /* is this correct? I think so . . . MRS */
+                            state_global->lambda[i] = lam0[i] + (ir->fepvals->all_lambda[i][fep_state]) +
+                                frac*(ir->fepvals->all_lambda[i][fep_state+1]-ir->fepvals->all_lambda[i][fep_state]);
+                        }
+                    }
+                } 
+                else if (rerun_fr.bFepState) 
+                {
+                    state_global->fep_state = rerun_fr.fep_state;                        
+                    for (i=0;i<efptNR;i++) 
+                    {
+                        state_global->lambda[i] = ir->fepvals->all_lambda[i][fep_state];
+                    }
+                }
+            } 
+            for (i=0;i<efptNR;i++) 
             {
-                state_global->lambda = lam0 + step*ir->delta_lambda;
+                state->lambda[i] = state_global->lambda[i];
             }
-            state->lambda = state_global->lambda;
-            bDoDHDL = do_per_step(step,ir->nstdhdl);
         }
-
+        bDoDHDL = do_per_step(step,ir->nstdhdl);
+    
         if (bSimAnn) 
         {
             update_annealing_target_temp(&(ir->opts),t);
         }
-
+        
         if (bRerunMD)
         {
             if (!(DOMAINDECOMP(cr) && !MASTER(cr)))
@@ -2141,12 +2186,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         if (MASTER(cr) && do_log && !bFFscan)
         {
-            print_ebin_header(fplog,step,t,state->lambda);
+            print_ebin_header(fplog,step,t,state->lambda[efptFEP]);
         }
 
         if (ir->efep != efepNO)
         {
-            update_mdatoms(mdatoms,state->lambda); 
+            update_mdatoms(mdatoms,state->lambda[efptMASS]); 
         }
 
         if (bRerunMD && rerun_fr.bV)
@@ -2403,6 +2448,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gmx_iterate_destroy(iterate);
 
             if (bTrotter && !bInitStep) {
+                enerd->term[F_DVDL_BONDED] += dvdl;        /* only add after iterations */
                 copy_mat(shake_vir,state->vir_prev);
                 if (IR_NVT_TROTTER(ir) && ir->eI==eiVV) {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
@@ -2414,13 +2460,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (bInitStep && ir->eI==eiVV) {
                 copy_rvecn(cbuf,state->v,0,state->natoms);
             }
-            
-            if (fr->bSepDVDL && fplog && do_log) 
-            {
-                fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
-            }
-            enerd->term[F_DHDL_CON] += dvdl;
-            
             wallcycle_stop(wcycle,ewcUPDATE);
             GMX_MPE_LOG(ev_timestep1);
             
@@ -2529,7 +2568,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             wallcycle_stop(wcycle,ewcTRAJ);
         }
         GMX_MPE_LOG(ev_output_finish);
-        
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV) 
         {
@@ -2667,11 +2705,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
                 }
                 
-                if (fr->bSepDVDL && fplog && do_log) 
+                if (fr->bSepDVDL && fplog && do_log)
                 {
-                    fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
+                    fprintf(fplog,sepdvdlformat,"Constraint dV/dl",0.0,dvdl);
                 }
-                enerd->term[F_DHDL_CON] += dvdl;
                 wallcycle_stop(wcycle,ewcUPDATE);
             } 
             else if (graph) 
@@ -2720,6 +2757,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (done_iterating(cr,fplog,iterate,trace(shake_vir),&tracevir)) break;
         }
         gmx_iterate_destroy(iterate);
+
+        /* only add after constraints */
+        enerd->term[F_DVDL_BONDED] += dvdl;
 
         update_box(fplog,step,ir,mdatoms,state,graph,f,
                    ir->nstlist==-1 ? &nlh.scale_tot : NULL,pcoupl_mu,nrnb,wcycle,upd,bInitStep,FALSE);
@@ -2817,7 +2857,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             chkpt = 1;
         }
-        
         /* The coordinates (x) were unshifted in update */
         if (bFFscan && (shellfc==NULL || bConverged))
         {
@@ -2863,7 +2902,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
         
-        sum_dhdl(enerd,state->lambda,ir);
+        sum_dhdl(enerd,state->lambda,ir->fepvals);
         /* use the directly determined last velocity, not actually the averaged half steps */
         if (bTrotter && ir->eI==eiVV) 
         {
@@ -2927,7 +2966,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 if (bNstEner)
                 {
                     upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,TRUE,
-                               t,mdatoms->tmass,enerd,state,lastbox,
+                               t,mdatoms->tmass,enerd,state,ir->fepvals,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
                 }

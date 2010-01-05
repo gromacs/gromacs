@@ -271,7 +271,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
                gmx_large_int_t step,int delta_step,
                t_mdatoms *md,
                rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-               real lambda,real *dvdlambda,
+               real lambda,real *dvdl,
                rvec *v,tensor *vir,
                t_nrnb *nrnb,int econq,bool bPscal,real veta, real vetanew)
 {
@@ -312,13 +312,16 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
         invdt  = 1/ir->delta_t;
     }
 
+#if 0
+/* this should be taken care of already . . . */
     if (ir->efep != efepNO && EI_DYNAMICS(ir->eI))
     {
         /* Set the constraint lengths for the step at which this configuration
          * is meant to be. The invmasses should not be changed.
          */
-        lambda += delta_step*ir->delta_lambda;
+        lambda += delta_step*ir->fepvals->delta_lambda;
     }
+#endif
     
     if (vir != NULL)
     {
@@ -329,7 +332,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     if (constr->lincsd)
     {
         bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr,
-                              x,xprime,min_proj,box,lambda,dvdlambda,
+                              x,xprime,min_proj,box,lambda,dvdl,
                               invdt,v,vir!=NULL,rmdr,
                               econq,nrnb,
                               constr->maxwarn,&constr->warncount_lincs);
@@ -351,14 +354,14 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,xprime,nrnb,
-                          constr->lagr,lambda,dvdlambda,
+                          constr->lagr,lambda,dvdl,
                           invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
             break;
         case (econqVeloc):
             bOK = bshakef(fplog,constr->shaked,
                           homenr,md->invmass,constr->nblocks,constr->sblock,
                           idef,ir,box,x,min_proj,nrnb,
-                          constr->lagr,lambda,dvdlambda,
+                          constr->lagr,lambda,dvdl,
                           invdt,NULL,vir!=NULL,rmdr,constr->maxwarn>=0,econq,vetavar);
             break;
         default:
@@ -886,15 +889,19 @@ static real constr_r_max_moltype(FILE *fplog,
       r1 = 0;
       count = 0;
       constr_recur(&at2con,molt->ilist,iparams,
-		   TRUE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxB,&count);
+                   TRUE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxB,&count);
     }
-    lam0 = ir->init_lambda;
+    /* what is this doing? Should just use the default lambd value? MRS */
+    lam0 = ir->fepvals->init_lambda;
     if (EI_DYNAMICS(ir->eI))
-      lam0 += ir->init_step*ir->delta_lambda;
+    {
+        lam0 += ir->init_step*ir->fepvals->delta_lambda;
+    }
     rmax = (1 - lam0)*sqrt(r2maxA) + lam0*sqrt(r2maxB);
-    if (EI_DYNAMICS(ir->eI)) {
-      lam1 = ir->init_lambda + (ir->init_step + ir->nsteps)*ir->delta_lambda;
-      rmax = max(rmax,(1 - lam1)*sqrt(r2maxA) + lam1*sqrt(r2maxB));
+    if (EI_DYNAMICS(ir->eI)) 
+    {
+        lam1 = ir->fepvals->init_lambda + (ir->init_step + ir->nsteps)*ir->fepvals->delta_lambda;
+        rmax = max(rmax,(1 - lam1)*sqrt(r2maxA) + lam1*sqrt(r2maxB));
     }
   }
 

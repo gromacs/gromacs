@@ -193,7 +193,8 @@ void init_top (t_topology *top)
 
 void init_inputrec(t_inputrec *ir)
 {
-  memset(ir,0,(size_t)sizeof(*ir));
+    memset(ir,0,(size_t)sizeof(*ir));
+    snew(ir->fepvals,1);
 }
 
 void stupid_fill_block(t_block *grp,int natom,bool bOneIndexGroup)
@@ -465,8 +466,11 @@ void init_state(t_state *state,int natoms,int ngtc, int nnhchains)
   state->natoms = natoms;
   state->nrng   = 0;
   state->flags  = 0;
-  state->lambda = 0;
-  state->veta   = 0;
+  state->fep_state = 0;
+  snew(state->lambda,efptNR);
+  for (i=0;i<efptNR;i++) {
+      state->lambda[i] = 0;
+  }
   clear_mat(state->box);
   clear_mat(state->box_rel);
   clear_mat(state->boxv);

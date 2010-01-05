@@ -68,8 +68,6 @@ int ifunc_index(directive d,int type)
       return F_TABBONDS;
     else if (type == 9)
       return F_TABBONDSNC;
-    else if (type == 10)
-      return F_RESTRBONDS;
     else
       gmx_fatal(FARGS,"Invalid bond type %d",type);
   case d_angles:
@@ -188,7 +186,11 @@ int ifunc_index(directive d,int type)
   case d_angle_restraints_z:
     return F_ANGRESZ;
   case d_distance_restraints:
-    return F_DISRES;
+    if (type == 3) {    /* type=3 means use the simple distance reweighting scheme, with free energies */
+      return F_DISRESTRBONDS;
+    } else {
+      return F_DISRES;
+    }
   case d_orientation_restraints:
     return F_ORIRES;
   case d_dihedral_restraints:
