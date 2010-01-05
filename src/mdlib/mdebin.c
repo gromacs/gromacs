@@ -502,12 +502,12 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     int nsets1 = 0;
     int s = 0;
     int nsetsextend;
-
+    
     /* consider adding an option for printing the full potential at each step, instead of the differences. */
-
+    
     if (ir->fepvals->n_lambda == 0) 
     {
-        sprintf(title,"%s-%s",dhdl,deltag);
+        sprintf(title,"%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
                 dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
@@ -518,7 +518,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
                 dhdl,deltag,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
     sprintf(label_x,"%s (%s)","Time",unit_time);
-
+    
 
     fp = xvgropen(filename,title,label_x,label_y,oenv);
     
@@ -576,7 +576,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
 
         xvgr_legend(fp,nsetsextend,setname,oenv);
         
-        for(s=0; s<nsets; s++)
+        for(s=0; s<nsetsextend; s++)
         {
             sfree(setname[s]);
         }

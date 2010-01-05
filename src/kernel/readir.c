@@ -247,7 +247,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       {
 	for (j=0;j<efptNR;j++)
 	  {
-	    sprintf(err_buf,"fep_lambda[%d] for %s must be between 0 and 1",i);
+	    sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[j],fep->all_lambda[j][i]);
 	    CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
 	  }
       }
