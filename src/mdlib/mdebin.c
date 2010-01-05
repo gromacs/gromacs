@@ -789,11 +789,12 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     
     if (fp_dhdl)
     {
+        fprintf(fp_dhdl,"%.4f ",time);
         for (i=0;i<efptNR;i++) 
         {
             if (fepvals->separate_dvdl[i])
             {
-                fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]); /* assumes this is first */
+                fprintf(fp_dhdl," %g",enerd->term[F_DVDL_REMAIN+i]); /* assumes F_DVDL_REMAIN is first */
             }
         }
         for(i=1; i<enerd->n_lambda; i++)
