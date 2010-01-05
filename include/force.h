@@ -90,8 +90,8 @@ extern void make_wall_tables(FILE *fplog,const output_env_t oenv,
 			     const gmx_groups_t *groups,
 			     t_forcerec *fr);
 
-extern void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-		     rvec x[],rvec f[],real lambda, real *dvdl, real Vlj[],t_nrnb *nrnb);
+extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
+		     rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
 
 
 
@@ -147,7 +147,7 @@ extern void init_forcerec(FILE       *fplog,
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
-extern void init_enerdata(int ngener,int n_lambda,gmx_enerdata_t *enerd);
+extern void init_enerdata(int ngener,int n_flambda,gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
 
 extern void destroy_enerdata(gmx_enerdata_t *enerd);
@@ -162,7 +162,7 @@ extern void reset_enerdata(t_grpopts *opts,
 extern void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd);
 /* Locally sum the non-bonded potential energy terms */
 
-extern void sum_dhdl(gmx_enerdata_t *enerd,double *lambda,t_lambda *fepvals);
+extern void sum_dhdl(gmx_enerdata_t *enerd,double lambda,t_inputrec *ir);
 /* Sum the free energy contributions */
 
 extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
@@ -206,7 +206,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     tensor vir_force,
 		     t_mdatoms *mdatoms,
 		     gmx_enerdata_t *enerd,t_fcdata *fcd,
-		     real *lambda,t_graph *graph,
+		     real lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     double t,FILE *field,gmx_edsam_t ed,
 		     bool bBornRadii,
@@ -230,7 +230,7 @@ extern void ns(FILE       *fplog,
 	       t_mdatoms  *md,
 	       t_commrec  *cr,
 	       t_nrnb     *nrnb,
-	       real       *lambda,
+	       real       lambda,
 	       real       *dvdlambda,
 	       gmx_grppairener_t *grppener,
 	       bool       bFillGrid,
@@ -260,8 +260,7 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      t_atomtypes  *atype,
 			      bool         bBornRadii,
 			      matrix       box,
-			      t_lambda      *fepvals,
-			      real         *lambda,
+			      real         lambda,
 			      t_graph      *graph,
 			      t_blocka     *excl,
 			      rvec         mu_tot[2],

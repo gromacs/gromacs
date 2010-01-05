@@ -117,16 +117,15 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->fene.bm=old[0];
     newparam->fene.kb=old[1];
     break;
-  case F_DISRESTRBONDS:
-    /* ignore the label and type prime fields in old[0] and old[1] */
-    newparam->disrestraint.lowA = old[2];
-    newparam->disrestraint.up1A = old[3];
-    newparam->disrestraint.up2A = old[4];
-    newparam->disrestraint.kA   = old[5];
-    newparam->disrestraint.lowB = old[6];
-    newparam->disrestraint.up1B = old[7];
-    newparam->disrestraint.up2B = old[8];
-    newparam->disrestraint.kB   = old[9];
+  case F_RESTRBONDS:
+    newparam->restraint.lowA = old[0];
+    newparam->restraint.up1A = old[1];
+    newparam->restraint.up2A = old[2];
+    newparam->restraint.kA   = old[3];
+    newparam->restraint.lowB = old[4];
+    newparam->restraint.up1B = old[5];
+    newparam->restraint.up2B = old[6];
+    newparam->restraint.kB   = old[7];
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -267,13 +266,10 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   case F_DIHRES:
     newparam->dihres.label = round_check(old[0],0,ftype,"label");
-    newparam->dihres.phiA   = old[1];
-    newparam->dihres.dphiA  = old[2];
-    newparam->dihres.kfacA  = old[3];
+    newparam->dihres.phi   = old[1];
+    newparam->dihres.dphi  = old[2];
+    newparam->dihres.kfac  = old[3];
     newparam->dihres.power = round_check(old[4],0,ftype,"power");
-    newparam->dihres.phiB   = old[5];
-    newparam->dihres.dphiB  = old[6];
-    newparam->dihres.kfacB  = old[7];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {
@@ -336,18 +332,18 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->vsiten.a = old[1];
     break;
   case F_CMAP:
-    newparam->cmap.cmapA=old[0];
-    newparam->cmap.cmapB=old[1];
-    break;
-  case F_GB12:
-  case F_GB13:
-  case F_GB14:
-    newparam->gb.sar  = old[0];
-    newparam->gb.st   = old[1];
-    newparam->gb.pi   = old[2];
-    newparam->gb.gbr  = old[3];
-    newparam->gb.bmlt = old[4];
-    break;
+	newparam->cmap.cmapA=old[0];
+	newparam->cmap.cmapB=old[1];
+	break;
+      case F_GB12:
+      case F_GB13:
+      case F_GB14:
+          newparam->gb.sar  = old[0];
+          newparam->gb.st   = old[1];
+          newparam->gb.pi   = old[2];
+          newparam->gb.gbr  = old[3];
+          newparam->gb.bmlt = old[4];
+          break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
 		ftype,__FILE__,__LINE__);

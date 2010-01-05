@@ -90,11 +90,12 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     gmx_groups_t *groups,
 			     t_commrec *cr,
 			     t_nrnb *nrnb,t_mdatoms *md,
-			     real *lambda,real *dvdl,
+			     real lambda,real *dvdlambda,
 			     gmx_grppairener_t *grppener,
 			     bool bFillGrid,
 			     bool bDoLongRange,
 			     bool bDoForces,rvec *f);
+ 
 
 /* Debugging routines from wnblist.c */
 extern void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);

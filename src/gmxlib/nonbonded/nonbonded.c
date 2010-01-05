@@ -314,7 +314,7 @@ gmx_setup_kernels(FILE *fplog)
 void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,t_blocka *excl,
                   real egnb[],real egcoul[],real egpol[],rvec box_size,
-                  t_nrnb *nrnb,real *lambda, real *dvdl,
+                  t_nrnb *nrnb,real lambda,real *dvdlambda,
                   int nls,int eNL,int flags)
 {
     bool            bLR,bDoForces,bForeignLambda;
@@ -478,7 +478,7 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 				
 				if(nlist->free_energy)
 				{
-					if(nlist->ivdw==enbvdwBHAM)
+					if(nlist->ivdw==2)
 					{
 						gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
 					}
@@ -509,11 +509,9 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  egnb,
 											  nblists->tab.scale,
 											  tabledata,
-											  lambda[efptCOUL],
-                                              lambda[efptVDW],
-                                              dvdl,
-                                              fr->sc_alphacoul,
-											  fr->sc_alphavdw,
+											  lambda,
+											  dvdlambda,
+											  fr->sc_alpha,
 											  fr->sc_power,
 											  fr->sc_sigma6,
                                               bDoForces,
@@ -627,7 +625,7 @@ do_listed_vdw_q(int ftype,int nbonds,
                 const t_iatom iatoms[],const t_iparams iparams[],
                 const rvec x[],rvec f[],rvec fshift[],
                 const t_pbc *pbc,const t_graph *g,
-                real *lambda, real *dvdl,
+                real lambda,real *dvdlambda,
                 const t_mdatoms *md,
                 const t_forcerec *fr,gmx_grppairener_t *grppener,
                 int *global_atom_index)
@@ -693,32 +691,32 @@ do_listed_vdw_q(int ftype,int nbonds,
 
     /* Determine the values for icoul/ivdw. */
     if (fr->bEwald) {
-        icoul = enbcoulOOR;
+        icoul = 1;
     } 
     else if(fr->bcoultab)
     {
-        icoul = enbcoulTAB;
+        icoul = 3;
     }
     else if(fr->eeltype == eelRF_NEC)
     {
-        icoul = enbcoulRF;
+        icoul = 2;
     }
     else 
     {
-        icoul = enbcoulOOR;
+        icoul = 1;
     }
     
     if(fr->bvdwtab)
     {
-        ivdw = enbvdwTAB;
+        ivdw = 3;
     }
     else if(fr->bBHAM)
     {
-        ivdw = enbvdwLJ;
+        ivdw = 2;
     }
     else 
     {
-        ivdw = enbvdwLJ;
+        ivdw = 1;
     }
     
     
@@ -817,12 +815,7 @@ do_listed_vdw_q(int ftype,int nbonds,
              * in the innerloops if we assign type combinations 0-0 and 0-1
              * to atom pair ai-aj in topologies A and B respectively.
              */
-
-            /* need to to a bit of a kludge here -- 
-               if the charges change, but the vdw do not, then even though bFreeEnergy is on, 
-               it won't work, because all the bonds are perturbed.
-            */
-            if(ivdw==enbvdwBHAM)
+            if(ivdw==2)
             {
                 gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
             }
@@ -853,11 +846,9 @@ do_listed_vdw_q(int ftype,int nbonds,
                                       egnb,
                                       tabscale,
                                       tab,
-                                      lambda[efptCOUL],
-                                      lambda[efptVDW],
-                                      dvdl,
-                                      fr->sc_alphacoul,
-                                      fr->sc_alphavdw,
+                                      lambda,
+                                      dvdlambda,
+                                      fr->sc_alpha,
                                       fr->sc_power,
                                       fr->sc_sigma6,
                                       TRUE,

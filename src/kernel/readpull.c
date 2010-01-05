@@ -293,15 +293,12 @@ void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
   rvec      init;
   dvec      dr,dev;
 
-  /* MRS -- is this necessarily the case?  Should it involve fep_state? MRS */
-  init_pull(NULL,ir,0,NULL,mtop,NULL,oenv,ir->fepvals->init_lambda,FALSE,0);
+  init_pull(NULL,ir,0,NULL,mtop,NULL,oenv,FALSE,0);
   md = init_mdatoms(NULL,mtop,ir->efep);
   atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
-  if (ir->efep) 
-    {
-      update_mdatoms(md,ir->fepvals->init_lambda);
-    }
-
+  if (ir->efep)
+    update_mdatoms(md,ir->init_lambda);
+  
   pull = ir->pull;
   if (pull->eGeom == epullgPOS)
     ndim = 3;

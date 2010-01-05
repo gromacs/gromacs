@@ -136,10 +136,6 @@ const char *efep_names[efepNR+1] = {
   "no", "yes", NULL
 };
 
-const char *efpt_names[efptNR+1] = {
-  "fep-lambda", "mass-lambda", "coul-lambda", "vdw-lambda", "bonded-lambda", "restraint-lambda",NULL
-};
-
 const char *esol_names[esolNR+1] = {
   "No", "SPC", "TIP4p", NULL
 };

@@ -686,7 +686,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
 		      gmx_large_int_t step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
 		      rvec *f,rvec *acc_dir,matrix box,
-		      real *lambda,real *dvdl,t_nrnb *nrnb)
+		      real lambda,real *dvdlambda,t_nrnb *nrnb)
 {
   rvec   *xnold,*xnew;
   double w_dt;
@@ -728,10 +728,11 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   }
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnold-start,NULL,box,
-	    lambda[efptBONDED],&(dvdl[efptBONDED]),NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x,xnew-start,NULL,box,
-	    lambda[efptBONDED],&(dvdl[efptBONDED]),NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord,FALSE,0,0);
+
   /* Set xnew to minus the acceleration */
   for (n=start; n<end; n++) {
     for(d=0; d<DIM; d++)
@@ -744,7 +745,7 @@ static void init_adir(FILE *log,gmx_shellfc_t shfc,
   /* Project the acceleration on the old bond directions */
   constrain(log,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
 	    x_old,xnew-start,acc_dir,box,
-	    lambda[efptBONDED],&(dvdl[efptBONDED]),NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
+	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon,FALSE,0,0); 
 }
 
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,

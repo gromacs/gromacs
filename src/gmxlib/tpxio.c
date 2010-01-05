@@ -124,7 +124,7 @@ static const t_ftupd ftupd[] = {
   { 34, F_FENEBONDS         },
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
-  { 70, F_DISRESTRBONDS     },
+  { 70, F_RESTRBONDS        },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -157,6 +157,7 @@ static const t_ftupd ftupd[] = {
   { 46, F_ECONSERVED        },
   { 69, F_VTEMP             },
   { 66, F_PDISPCORR         },
+  { 54, F_DHDL_CON          },
 };
 #define NFTUPD asize(ftupd)
 
@@ -223,92 +224,6 @@ static void do_pullgrp(t_pullgrp *pgrp,bool bRead, int file_version)
   } else {
     pgrp->kB = pgrp->k;
   }
-}
-
-static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version) 
-{
-  /* i is defined in the ndo_double macro; use g to iterate. */
-  int i,g;
-  real fv;
-  bool bDum=TRUE;
-  real rdum;
-
-  /* free energy values */
-  if (file_version >= 69)
-    {
-      do_int(fepvals->init_fep_state);
-      do_double(fepvals->init_lambda); 
-      do_double(fepvals->delta_lambda);
-    }
-  else if (file_version >= 59) {
-    do_double(fepvals->init_lambda);
-    do_double(fepvals->delta_lambda);
-  } else {
-    do_real(rdum);
-    fv = rdum;
-    do_real(rdum);
-    fv = rdum;
-  }
-  if (file_version >= 69) 
-    {
-      do_int(fepvals->n_lambda);
-      if (bRead) 
-	{
-	  snew(fepvals->all_lambda,efptNR);
-	}
-      for (g=0;g<efptNR;g++)
-	{
-	  if (bRead) 
-	    {
-	      snew(fepvals->all_lambda[g],fepvals->n_lambda);
-	    }
-	  ndo_double(fepvals->all_lambda[g],fepvals->n_lambda,bDum);
-	  ndo_int(fepvals->separate_dvdl,efptNR,bDum);
-	}
-    }
-  else if (file_version >= 64) 
-    {
-      do_int(fepvals->n_lambda);
-      snew(fepvals->all_lambda,efptNR);
-      if (bRead) 
-	{
-	  snew(fepvals->all_lambda[efptFEP],fepvals->n_lambda);
-	}
-      ndo_double(fepvals->all_lambda[efptFEP],fepvals->n_lambda,bDum);
-    } 
-  else 
-    {
-      fepvals->n_lambda = 0;
-      fepvals->all_lambda   = NULL;
-    }
-  if (file_version >= 13) 
-    {
-      do_real(fepvals->sc_alpha);
-    }
-  else
-    {
-      fepvals->sc_alpha = 0;
-    }
-  if (file_version >= 38)
-    {
-      do_int(fepvals->sc_power);
-    }
-  else
-    {
-      fepvals->sc_power = 2;
-    }
-  if (file_version >= 15)
-    {
-      do_real(fepvals->sc_sigma);
-    }
-  else
-    {
-      fepvals->sc_sigma = 0.3;
-    }    
-  if (file_version >= 70) 
-    {
-      do_int(fepvals->bScCoul);
-    }
 }
 
 static void do_pull(t_pull *pull,bool bRead, int file_version)
@@ -622,12 +537,38 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_real(*fudgeQQ);
     do_int(ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
-      {
-	ir->efep = efepYES;
+      ir->efep = efepYES;
+    if (file_version >= 59) {
+      do_double(ir->init_lambda); 
+      do_double(ir->delta_lambda);
+    } else {
+      do_real(rdum);
+      ir->init_lambda = rdum;
+      do_real(rdum);
+      ir->delta_lambda = rdum;
+    }
+    if (file_version >= 64) {
+      do_int(ir->n_flambda);
+      if (bRead) {
+	snew(ir->flambda,ir->n_flambda);
       }
-
-    do_fepvals(ir->fepvals,bRead,file_version);
-
+      ndo_double(ir->flambda,ir->n_flambda,bDum);
+    } else {
+      ir->n_flambda = 0;
+      ir->flambda   = NULL;
+    }
+    if (file_version >= 13)
+      do_real(ir->sc_alpha);
+    else
+      ir->sc_alpha = 0;
+    if (file_version >= 38)
+      do_int(ir->sc_power);
+    else
+      ir->sc_power = 2;
+    if (file_version >= 15)
+      do_real(ir->sc_sigma);
+    else
+      ir->sc_sigma = 0.3;
     if (file_version >= 64) {
       do_int(ir->nstdhdl);
     } else {
@@ -925,15 +866,15 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->fene.bm);
     do_real(iparams->fene.kb);
     break;
-  case F_DISRESTRBONDS:
-    do_real(iparams->disrestraint.lowA);
-    do_real(iparams->disrestraint.up1A);
-    do_real(iparams->disrestraint.up2A);
-    do_real(iparams->disrestraint.kA);
-    do_real(iparams->disrestraint.lowB);
-    do_real(iparams->disrestraint.up1B);
-    do_real(iparams->disrestraint.up2B);
-    do_real(iparams->disrestraint.kB);
+  case F_RESTRBONDS:
+    do_real(iparams->restraint.lowA);
+    do_real(iparams->restraint.up1A);
+    do_real(iparams->restraint.up2A);
+    do_real(iparams->restraint.kA);
+    do_real(iparams->restraint.lowB);
+    do_real(iparams->restraint.up1B);
+    do_real(iparams->restraint.up2B);
+    do_real(iparams->restraint.kB);
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -1060,14 +1001,9 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_DIHRES:
     do_int (iparams->dihres.power);
     do_int (iparams->dihres.label);
-    do_real(iparams->dihres.phiA);
-    do_real(iparams->dihres.dphiA);
-    do_real(iparams->dihres.kfacA);
-    if (file_version >= 70) {
-      do_real(iparams->dihres.phiB);
-      do_real(iparams->dihres.dphiB);
-      do_real(iparams->dihres.kfacB);
-    }
+    do_real(iparams->dihres.phi);
+    do_real(iparams->dihres.dphi);
+    do_real(iparams->dihres.kfac);
     break;
   case F_POSRES:
     do_rvec(iparams->posres.pos0A);
@@ -1971,11 +1907,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK,
     do_int (idum);
     do_real(rdum);
   }
-  if (fver >= 69) 
-    {
-      /*do_int(tpx->fep_state);  eventually replace lambda with fep state - MRS*/
-      do_real(tpx->lambda);
-    }
+  do_real(tpx->lambda);
   do_int (tpx->bIr);
   do_int (tpx->bTop);
   do_int (tpx->bX);
@@ -2006,7 +1938,7 @@ static int do_tpx(int fp,bool bRead,
   if (!bRead) {
     tpx.natoms = state->natoms;
     tpx.ngtc   = state->ngtc;
-    tpx.fep_state = state->fep_state;
+    tpx.lambda = state->lambda;
     tpx.bIr  = (ir       != NULL);
     tpx.bTop = (mtop     != NULL);
     tpx.bX   = (state->x != NULL);
@@ -2021,8 +1953,7 @@ static int do_tpx(int fp,bool bRead,
 
   if (bRead) {
     state->flags  = 0;
-    /* NEEDS SOME WORK - MRS*/
-    state->fep_state = tpx.fep_state;
+    state->lambda = tpx.lambda;
     /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
     if (bXVallocated) {
       xptr = state->x;

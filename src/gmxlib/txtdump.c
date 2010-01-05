@@ -491,35 +491,6 @@ static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
   PR("kB",pg->kB);
 }
 
-static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
-{
-    int i,j;
-
-    PI("init_fep_state",fepvals->init_fep_state);
-    PI("init_lambda",fepvals->init_lambda);
-    PR("delta_lambda",fepvals->delta_lambda);
-    if (!bMDPformat)
-    {
-        PI("n_lambdas",fepvals->n_lambda);
-    }
-    if (fepvals->n_lambda > 0)
-    {
-        pr_indent(fp,indent);
-        fprintf(fp,"all_lambda%s\n",bMDPformat ? " = " : ":");
-        for(i=0; i<efptNR; i++) {
-            fprintf(fp,"%18s",efpt_names[i]);
-            for(j=0; j<fepvals->n_lambda; j++)
-            {
-                fprintf(fp,"  %10g",fepvals->all_lambda[i][j]);
-            }
-            fprintf(fp,"\n");
-        }
-    }
-    PR("sc_alpha",fepvals->sc_alpha);
-    PS("sc_coul",BOOL(fepvals->bScCoul));
-    PI("sc_power",fepvals->sc_power);
-    PR("sc_sigma",fepvals->sc_sigma);
-};
 static void pr_pull(FILE *fp,int indent,t_pull *pull)
 {
   int g;
@@ -540,7 +511,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
                  bool bMDPformat)
 {
   const char *infbuf="inf";
-  int  i,j;
+  int  i;
   
   if (available(fp,ir,indent,title)) {
     if (!bMDPformat)
@@ -627,10 +598,27 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
 	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PS("free_energy",EFEPTYPE(ir->efep));
-    if (ir->efep != efepNO) {
-        pr_fepvals(fp,indent,ir->fepvals,bMDPformat);
-        PI("nstdhdl", ir->nstdhdl);
+    PR("init_lambda",ir->init_lambda);
+    PR("delta_lambda",ir->delta_lambda);
+    if (!bMDPformat)
+    {
+        PI("n_foreign_lambda",ir->n_flambda);
     }
+    if (ir->n_flambda > 0)
+    {
+        pr_indent(fp,indent);
+        fprintf(fp,"foreign_lambda%s",bMDPformat ? " = " : ":");
+        for(i=0; i<ir->n_flambda; i++)
+        {
+            fprintf(fp,"  %10g",ir->flambda[i]);
+        }
+        fprintf(fp,"\n");
+    }
+    PR("sc_alpha",ir->sc_alpha);
+    PI("sc_power",ir->sc_power);
+    PR("sc_sigma",ir->sc_sigma);
+    PI("nstdhdl", ir->nstdhdl);
+
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));
     PI("wall_atomtype[0]",ir->wall_atomtype[0]);
@@ -760,12 +748,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_FENEBONDS:
     fprintf(fp,"bm=%15.8e, kb=%15.8e\n",iparams->fene.bm,iparams->fene.kb);
     break;
-  case F_DISRESTRBONDS:
+  case F_RESTRBONDS:
       fprintf(fp,"lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kB=%15.8e,\n",
-              iparams->disrestraint.lowA,iparams->disrestraint.up1A,
-              iparams->disrestraint.up2A,iparams->disrestraint.kA,
-              iparams->disrestraint.lowB,iparams->disrestraint.up1B,
-              iparams->disrestraint.up2B,iparams->disrestraint.kB);
+              iparams->restraint.lowA,iparams->restraint.up1A,
+              iparams->restraint.up2A,iparams->restraint.kA,
+              iparams->restraint.lowB,iparams->restraint.up1B,
+              iparams->restraint.up2B,iparams->restraint.kB);
       break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -797,14 +785,14 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     break;
   case F_LJC14_Q:
     fprintf(fp,"fqq=%15.8e, qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
-            iparams->ljc14.fqq,
-            iparams->ljc14.qi,iparams->ljc14.qj,
-            iparams->ljc14.c6,iparams->ljc14.c12);
+	    iparams->ljc14.fqq,
+	    iparams->ljc14.qi,iparams->ljc14.qj,
+	    iparams->ljc14.c6,iparams->ljc14.c12);
     break;
   case F_LJC_PAIRS_NB:
     fprintf(fp,"qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
-            iparams->ljcnb.qi,iparams->ljcnb.qj,
-            iparams->ljcnb.c6,iparams->ljcnb.c12);
+	    iparams->ljcnb.qi,iparams->ljcnb.qj,
+	    iparams->ljcnb.c6,iparams->ljcnb.c12);
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -818,19 +806,18 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"label=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
 	    iparams->disres.label,iparams->disres.type,
 	    iparams->disres.low,iparams->disres.up1,
-        iparams->disres.up2,iparams->disres.kfac);
+	    iparams->disres.up2,iparams->disres.kfac);
     break;
   case F_ORIRES:
-     fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
-              iparams->orires.ex,iparams->orires.label,iparams->orires.power,
-              iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
+    fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
+	    iparams->orires.ex,iparams->orires.label,iparams->orires.power,
+	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_DIHRES:
-      fprintf(fp,"label=%d, power=%4d, phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
-              iparams->dihres.label,iparams->dihres.power,
-              iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
-              iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
-      break;
+    fprintf(fp,"label=%d, power=%4d phi=%15.8e, dphi=%15.8e, kfac=%15.8e)\n",
+	    iparams->dihres.label,iparams->dihres.power,
+	    iparams->dihres.phi,iparams->dihres.dphi,iparams->dihres.kfac);
+    break;
   case F_POSRES:
     fprintf(fp,"pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",
 	    iparams->posres.pos0A[XX],iparams->posres.pos0A[YY],
@@ -1442,7 +1429,7 @@ void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
       pr_indent(fp,indent);
       fprintf(fp,"natoms = %d\n",sh->natoms);
       pr_indent(fp,indent);
-      fprintf(fp,"lambda_state = %d\n",sh->lambda);
+      fprintf(fp,"lambda = %e\n",sh->lambda);
     }
 }
 

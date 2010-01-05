@@ -265,6 +265,66 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     thanx(stderr);
   }
 }
+/* THIS IS NOT ACTUALLY USED */
+#if 0
+void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+	     real *lambda,real *lam0,real *SAfactor,
+	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+	     int nfile,const t_filenm fnm[],char **traj,char **xtc_traj,
+             ener_file_t *fp_ene, t_mdebin **mdebin,t_groups *grps,rvec vcm,
+	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
+{
+  bool bBHAM,b14,bLR,bLJLR;
+  
+  /* Initial values */
+  *t = *t0       = ir->init_t;
+  if (ir->bPert) {
+    *lambda = *lam0 = ir->init_lambda;
+  }
+  else {
+    *lambda = *lam0   = 0.0;
+  } 
+  if (ir->bSimAnn) {
+    *SAfactor = 1.0 - *t0/ir->zero_temp_time;
+    if (*SAfactor < 0) 
+      *SAfactor = 0;
+  } else
+    *SAfactor     = 1.0;
+    
+  /* initialize nose-hoover chains, since it's not in the topology */
+  *nnhchains = ir->opts.nnhchains;
+  init_nrnb(mynrnb);
+  
+  /* Check Environment variables & other booleans */
+  *bTYZ=getenv("TYZ") != NULL;
+  set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
+  
+  /* Filenames */
+  *traj     = ftp2fn(efTRN,nfile,fnm);
+  *xtc_traj = ftp2fn(efXTC,nfile,fnm);
+
+  if (MASTER(cr)) {
+    *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
+			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
+			  ir->bDispCorr);
+  }
+  else {
+    *fp_ene = NULL;
+    *mdebin = NULL;
+  }
+  
+  /* Initiate variables */  
+  clear_rvec(vcm);
+  clear_mat(force_vir);
+  clear_mat(shake_vir);
+  
+  /* Set initial values for invmass etc. */
+  init_mdatoms(mdatoms,*lambda,TRUE);
+  
+  where();
+}
+#endif
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])

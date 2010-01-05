@@ -1121,8 +1121,9 @@ static void combine_forces(int nstlist,
          * the constraint force for the coordinate constraining.
          * Constrain only the additional LR part of the force.
          */
+        /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL,FALSE,FALSE,constr,idef,ir,NULL,cr,step,0,md,
-                  state->x,f_lr,f_lr,state->box,state->lambda[efptBONDED],NULL,
+                  state->x,f_lr,f_lr,state->box,state->lambda,NULL,
                   NULL,NULL,nrnb,econqForce,ir->epc==epcMTTK,state->veta,state->veta);
     }
     
@@ -1244,7 +1245,7 @@ void update_extended(FILE         *fplog,
 
 void update_constraints(FILE         *fplog,
                         gmx_large_int_t   step,
-                        real         *dvdl,          /* FEP stuff */
+                        real         *dvdlambda,    /* FEP stuff */
                         t_inputrec   *inputrec,      /* input record and box stuff	*/
                         gmx_ekindata_t *ekind,
                         t_mdatoms    *md,
@@ -1311,7 +1312,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,state->v,state->v,
-                      state->box,state->lambda[efptBONDED],&(dvdl[efptBONDED]),
+                      state->box,state->lambda,dvdlambda,
                       NULL,bCalcVir ? &vir_con : NULL,nrnb,econqVeloc,
                       inputrec->epc==epcMTTK,state->veta,vetanew);
         } 
@@ -1320,7 +1321,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,ekind,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,state->lambda[efptBONDED],&(dvdl[efptBONDED]),
+                      state->box,state->lambda,dvdlambda,
                       state->v,bCalcVir ? &vir_con : NULL ,nrnb,econqCoord,
                       inputrec->epc==epcMTTK,state->veta,state->veta);
         }
@@ -1378,9 +1379,7 @@ void update_constraints(FILE         *fplog,
             constrain(NULL,bLog,bEner,constr,idef,
                       inputrec,NULL,cr,step,1,md,
                       state->x,xprime,NULL,
-                      state->box,
-                      state->lambda[efptBONDED],
-                      &(dvdl[efptBONDED]),
+                      state->box,state->lambda,dvdlambda,
                       NULL,NULL,nrnb,econqCoord,FALSE,0,0);
             wallcycle_stop(wcycle,ewcCONSTR);
         }

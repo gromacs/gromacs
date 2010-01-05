@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * 
  *                This source code is part of
  * 
@@ -233,8 +233,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   for(i=0; i<estNR; i++) {
     if (state->flags & (1<<i)) {
       switch (i) {
-      case estLAMBDA:  nblock_bc(cr,efptNR,state->lambda);
-      case estFEPSTATE: block_bc(cr,state->fep_state); break;
+      case estLAMBDA:  block_bc(cr,state->lambda); break;
       case estBOX:     block_bc(cr,state->box); break;
       case estBOX_REL: block_bc(cr,state->box_rel); break;
       case estBOXV:    block_bc(cr,state->boxv); break;
@@ -445,32 +444,11 @@ static void bc_pullgrp(const t_commrec *cr,t_pullgrp *pgrp)
 static void bc_pull(const t_commrec *cr,t_pull *pull)
 {
   int g;
-  
+
   block_bc(cr,*pull);
   snew_bc(cr,pull->grp,pull->ngrp+1);
   for(g=0; g<pull->ngrp+1; g++)
-    {
-      bc_pullgrp(cr,&pull->grp[g]);
-    }
-}
-
-static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
-{
-  bool bAlloc=TRUE;
-  int i;
-
-  block_bc(cr,fepvals->init_lambda);   
-  block_bc(cr,fepvals->init_fep_state);
-  block_bc(cr,fepvals->delta_lambda);	
-  block_bc(cr,fepvals->n_lambda);        
-  for (i=0;i<efptNR;i++) {
-      snew_bc(cr,fepvals->all_lambda[i],fepvals->n_lambda);
-      nblock_bc(cr,fepvals->n_lambda,fepvals->all_lambda[i]);
-  }
-  block_bc(cr,fepvals->sc_alpha);        
-  block_bc(cr,fepvals->sc_power);
-  block_bc(cr,fepvals->sc_sigma);        
-  if (debug) fprintf(debug,"after bc_fepvals\n");
+    bc_pullgrp(cr,&pull->grp[g]);
 }
 
 static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
@@ -479,13 +457,9 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   int i;
   
   block_bc(cr,*inputrec);
-
+  snew_bc(cr,inputrec->flambda,inputrec->n_flambda);
+  nblock_bc(cr,inputrec->n_flambda,inputrec->flambda);
   bc_grpopts(cr,&(inputrec->opts));
-
-  if (inputrec->efep != efepNO) {
-      snew_bc(cr,inputrec->fepvals,1);
-      bc_fepvals(cr,inputrec->fepvals);
-  }
   if (inputrec->ePull != epullNO) {
     snew_bc(cr,inputrec->pull,1);
     bc_pull(cr,inputrec->pull);

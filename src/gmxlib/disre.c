@@ -363,7 +363,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
                const rvec x[],rvec f[],rvec fshift[],
                const t_pbc *pbc,const t_graph *g,
-               real lambda,real *dvdl,
+               real lambda,real *dvdlambda,
                const t_mdatoms *md,t_fcdata *fcd,
                int *global_atom_index)
 {
@@ -587,6 +587,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
             /* No violation so force and potential contributions */
             fa += 3*npair;
         }
+        res++;
     }
     
     dd->sumviol = violtot;

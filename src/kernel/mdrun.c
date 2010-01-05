@@ -497,6 +497,16 @@ int main(int argc,char *argv[])
       fplog = NULL;
   }
 
+#if 0
+  /* this is now done in mdrunner: */
+  /* Essential dynamics */
+  if (opt2bSet("-ei",NFILE,fnm)) {
+      /* Open input and output files, allocate space for ED data structure */
+      ed = ed_open(NFILE,fnm,cr);
+  } else
+      ed=NULL;
+#endif
+
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);

@@ -133,7 +133,7 @@ real morse_bonds(int nbonds,
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
-    type = forceatoms[i++];  
+    type = forceatoms[i++];
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
     
@@ -291,28 +291,28 @@ real FENE_bonds(int nbonds,
 }
 
 real harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
-              real *V,real *F)
+	      real *V,real *F)
 {
-    const real half=0.5;
-    real  L1,kk,x0,dx,dx2;
-    real  v,f,dvdl;
-    
-    L1    = 1.0-lambda;
-    kk    = L1*kA+lambda*kB;
-    x0    = L1*xA+lambda*xB;
-    
-    dx    = x-x0;
-    dx2   = dx*dx;
-    
-    f     = -kk*dx;
-    v     = half*kk*dx2;
-    dvdl  = half*(kB-kA)*dx2 + (xA-xB)*kk*dx;
-    
-    *F    = f;
-    *V    = v;
-    
-    return dvdl;
-    
+  const real half=0.5;
+  real  L1,kk,x0,dx,dx2;
+  real  v,f,dvdl;
+  
+  L1    = 1.0-lambda;
+  kk    = L1*kA+lambda*kB;
+  x0    = L1*xA+lambda*xB;
+  
+  dx    = x-x0;
+  dx2   = dx*dx;
+  
+  f     = -kk*dx;
+  v     = half*kk*dx2;
+  dvdl  = half*(kB-kA)*dx2 + (xA-xB)*kk*dx;
+  
+  *F    = f;
+  *V    = v;
+  
+  return dvdl;
+  
   /* That was 19 flops */
 }
 
@@ -321,7 +321,7 @@ real bonds(int nbonds,
 	   const t_iatom forceatoms[],const t_iparams forceparams[],
 	   const rvec x[],rvec f[],rvec fshift[],
 	   const t_pbc *pbc,const t_graph *g,
-	   real lambda,real *dvdl,
+	   real lambda,real *dvdlambda,
 	   const t_mdatoms *md,t_fcdata *fcd,
 	   int *global_atom_index)
 {
@@ -340,7 +340,7 @@ real bonds(int nbonds,
     dr2  = iprod(dx,dx);			/*   5		*/
     dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
-    *dvdl += harmonic(forceparams[type].harmonic.krA,
+    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA,
 			   forceparams[type].harmonic.rB,
@@ -372,13 +372,13 @@ real bonds(int nbonds,
   return vtot;
 }
 
-real disrestraint_bonds(int nbonds,
-                        const t_iatom forceatoms[],const t_iparams forceparams[],
-                        const rvec x[],rvec f[],rvec fshift[],
-                        const t_pbc *pbc,const t_graph *g,
-                        real lambda,real *dvdlambda,
-                        const t_mdatoms *md,t_fcdata *fcd,
-                        int *global_atom_index)
+real restraint_bonds(int nbonds,
+                     const t_iatom forceatoms[],const t_iparams forceparams[],
+                     const rvec x[],rvec f[],rvec fshift[],
+                     const t_pbc *pbc,const t_graph *g,
+                     real lambda,real *dvdlambda,
+                     const t_mdatoms *md,t_fcdata *fcd,
+                     int *global_atom_index)
 {
     int  i,m,ki,ai,aj,type;
     real dr,dr2,fbond,vbond,fij,vtot;
@@ -401,14 +401,14 @@ real disrestraint_bonds(int nbonds,
         dr2  = iprod(dx,dx);		             	/*   5		*/
         dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
-        low  = L1*forceparams[type].disrestraint.lowA + lambda*forceparams[type].disrestraint.lowB;
-        dlow =   -forceparams[type].disrestraint.lowA +        forceparams[type].disrestraint.lowB;
-        up1  = L1*forceparams[type].disrestraint.up1A + lambda*forceparams[type].disrestraint.up1B;
-        dup1 =   -forceparams[type].disrestraint.up1A +        forceparams[type].disrestraint.up1B;
-        up2  = L1*forceparams[type].disrestraint.up2A + lambda*forceparams[type].disrestraint.up2B;
-        dup2 =   -forceparams[type].disrestraint.up2A +        forceparams[type].disrestraint.up2B;
-        k    = L1*forceparams[type].disrestraint.kA   + lambda*forceparams[type].disrestraint.kB;
-        dk   =   -forceparams[type].disrestraint.kA   +        forceparams[type].disrestraint.kB;
+        low  = L1*forceparams[type].restraint.lowA + lambda*forceparams[type].restraint.lowB;
+        dlow =   -forceparams[type].restraint.lowA +        forceparams[type].restraint.lowB;
+        up1  = L1*forceparams[type].restraint.up1A + lambda*forceparams[type].restraint.up1B;
+        dup1 =   -forceparams[type].restraint.up1A +        forceparams[type].restraint.up1B;
+        up2  = L1*forceparams[type].restraint.up2A + lambda*forceparams[type].restraint.up2B;
+        dup2 =   -forceparams[type].restraint.up2A +        forceparams[type].restraint.up2B;
+        k    = L1*forceparams[type].restraint.kA   + lambda*forceparams[type].restraint.kB;
+        dk   =   -forceparams[type].restraint.kA   +        forceparams[type].restraint.kB;
         /* 24 */
 
         if (dr < low)
@@ -417,8 +417,7 @@ real disrestraint_bonds(int nbonds,
             drh2  = drh*drh;
             vbond = 0.5*k*drh2;
             fbond = -k*drh;
-            *dvdlambda += 0.5*dk*drh2 + k*dlow*drh; /* sign on k*dlow*drh term should 
-                                                       be positive because of the definition of drh */
+            *dvdlambda += 0.5*dk*drh2 - k*dlow*drh;
         } /* 11 */
         else if (dr <= up1)
         {
@@ -473,7 +472,7 @@ real polarize(int nbonds,
 	      const t_iatom forceatoms[],const t_iparams forceparams[],
 	      const rvec x[],rvec f[],rvec fshift[],
 	      const t_pbc *pbc,const t_graph *g,
-	      real lambda,real *dvdl,
+	      real lambda,real *dvdlambda,
 	      const t_mdatoms *md,t_fcdata *fcd,
 	      int *global_atom_index)
 {
@@ -495,7 +494,7 @@ real polarize(int nbonds,
     dr2  = iprod(dx,dx);			/*   5		*/
     dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
-    *dvdl += harmonic(ksh,ksh,0,0,dr,lambda,&vbond,&fbond);  /*  19  */
+    *dvdlambda += harmonic(ksh,ksh,0,0,dr,lambda,&vbond,&fbond);  /*  19  */
 
     if (dr2 == 0.0)
       continue;
@@ -522,7 +521,7 @@ real water_pol(int nbonds,
 	       const t_iatom forceatoms[],const t_iparams forceparams[],
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
-	       real lambda,real *dvdl,
+	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
 	       int *global_atom_index)
 {
@@ -681,7 +680,7 @@ real thole_pol(int nbonds,
 	       const t_iatom forceatoms[],const t_iparams forceparams[],
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
-	       real lambda,real *dvdl,
+	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
 	       int *global_atom_index)
 {
@@ -733,7 +732,7 @@ real angles(int nbonds,
 	    const t_iatom forceatoms[],const t_iparams forceparams[],
 	    const rvec x[],rvec f[],rvec fshift[],
 	    const t_pbc *pbc,const t_graph *g,
-	    real lambda,real *dvdl,
+	    real lambda,real *dvdlambda,
 	    const t_mdatoms *md,t_fcdata *fcd,
 	    int *global_atom_index)
 {
@@ -752,7 +751,7 @@ real angles(int nbonds,
     theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
-    *dvdl += harmonic(forceparams[type].harmonic.krA,
+    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA*DEG2RAD,
 			   forceparams[type].harmonic.rB*DEG2RAD,
@@ -806,201 +805,187 @@ real angles(int nbonds,
 }
 
 real urey_bradley(int nbonds,
-                  const t_iatom forceatoms[],const t_iparams forceparams[],
-                  const rvec x[],rvec f[],rvec fshift[],
-                  const t_pbc *pbc,const t_graph *g,
-                  real lambda,real *dvdl,
-                  const t_mdatoms *md,t_fcdata *fcd,
-                  int *global_atom_index)
+		  const t_iatom forceatoms[],const t_iparams forceparams[],
+		  const rvec x[],rvec f[],rvec fshift[],
+		  const t_pbc *pbc,const t_graph *g,
+		  real lambda,real *dvdlambda,
+		  const t_mdatoms *md,t_fcdata *fcd,
+		  int *global_atom_index)
 {
-    int  i,m,ai,aj,ak,t1,t2,type,ki;
-    rvec r_ij,r_kj,r_ik;
-    real cos_theta,cos_theta2,theta;
-    real dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
-    ivec jt,dt_ij,dt_kj,dt_ik;
-    
-    vtot = 0.0;
-    for(i=0; (i<nbonds); ) 
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        ak   = forceatoms[i++];
-        th0  = forceparams[type].u_b.theta*DEG2RAD;
-        kth  = forceparams[type].u_b.ktheta;
-        r13  = forceparams[type].u_b.r13;
-        kUB  = forceparams[type].u_b.kUB;
-    
-        theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
-                            r_ij,r_kj,&cos_theta,&t1,&t2);	        /*  41		*/
+  int  i,m,ai,aj,ak,t1,t2,type,ki;
+  rvec r_ij,r_kj,r_ik;
+  real cos_theta,cos_theta2,theta;
+  real dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
+  ivec jt,dt_ij,dt_kj,dt_ik;
   
-        *dvdl += harmonic(kth,kth,th0,th0,theta,lambda,&va,&dVdt);  /*  21      */
-        vtot += va;
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    th0  = forceparams[type].u_b.theta*DEG2RAD;
+    kth  = forceparams[type].u_b.ktheta;
+    r13  = forceparams[type].u_b.r13;
+    kUB  = forceparams[type].u_b.kUB;
     
-        ki   = pbc_rvec_sub(pbc,x[ai],x[ak],r_ik);	                /*   3 		*/
-        dr2  = iprod(r_ik,r_ik);			                        /*   5		*/
-        dr   = dr2*gmx_invsqrt(dr2);		                        /*  10		*/
+    theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
+			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
+  
+    *dvdlambda += harmonic(kth,kth,th0,th0,theta,lambda,&va,&dVdt);  /*  21  */
+    vtot += va;
+    
+    ki   = pbc_rvec_sub(pbc,x[ai],x[ak],r_ik);	/*   3 		*/
+    dr2  = iprod(r_ik,r_ik);			/*   5		*/
+    dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
-        *dvdl += harmonic(kUB,kUB,r13,r13,dr,lambda,&vbond,&fbond); /*  19      */
+    *dvdlambda += harmonic(kUB,kUB,r13,r13,dr,lambda,&vbond,&fbond); /*  19  */
 
-        cos_theta2 = sqr(cos_theta);                                /*   1		*/
-        if (cos_theta2 < 1) 
-        {
-            real st,sth;
-            real cik,cii,ckk;
-            real nrkj2,nrij2;
-            rvec f_i,f_j,f_k;
+    cos_theta2 = sqr(cos_theta);                /*   1		*/
+    if (cos_theta2 < 1) {
+      real st,sth;
+      real cik,cii,ckk;
+      real nrkj2,nrij2;
+      rvec f_i,f_j,f_k;
       
-            st  = dVdt*gmx_invsqrt(1 - cos_theta2);	                /*  12		*/
-            sth = st*cos_theta;			                            /*   1		*/
+      st  = dVdt*gmx_invsqrt(1 - cos_theta2);	/*  12		*/
+      sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
-            if (debug)
-            {
-                fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-                        theta*RAD2DEG,va,dVdt);
-            }
+      if (debug)
+	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+		theta*RAD2DEG,va,dVdt);
 #endif
-            nrkj2=iprod(r_kj,r_kj);			                        /*   5		*/
-            nrij2=iprod(r_ij,r_ij);
-            
-            cik=st*gmx_invsqrt(nrkj2*nrij2);		                /*  12		*/ 
-            cii=sth/nrij2;				                            /*  10		*/
-            ckk=sth/nrkj2;				                            /*  10		*/
-            
-            for (m=0; (m<DIM); m++) 
-            {			                                            /*  39		*/
-                f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
-                f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
-                f_j[m]=-f_i[m]-f_k[m];
-                f[ai][m]+=f_i[m];
-                f[aj][m]+=f_j[m];
-                f[ak][m]+=f_k[m];
-            }
-            if (g) 
-            {
-                copy_ivec(SHIFT_IVEC(g,aj),jt);
+      nrkj2=iprod(r_kj,r_kj);			/*   5		*/
+      nrij2=iprod(r_ij,r_ij);
       
-                ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
-                ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
-                t1=IVEC2IS(dt_ij);
-                t2=IVEC2IS(dt_kj);
-            }
-            rvec_inc(fshift[t1],f_i);
-            rvec_inc(fshift[CENTRAL],f_j);
-            rvec_inc(fshift[t2],f_k);
-        }                                                           /* 161 TOTAL */
-        /* Time for the bond calculations */
-        if (dr2 == 0.0) 
-        {
-            continue;
-        }
-        vtot  += vbond;                                             /*   1       */
-        fbond *= gmx_invsqrt(dr2);			                        /*   6		 */
-        
-        if (g) 
-        {
-            ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,ak),dt_ik);
-            ki=IVEC2IS(dt_ik);
-        }
-        for (m=0; (m<DIM); m++) 
-        {			                                                /*  15		*/
-            fik=fbond*r_ik[m];
-            f[ai][m]+=fik;
-            f[ak][m]-=fik;
-            fshift[ki][m]+=fik;
-            fshift[CENTRAL][m]-=fik;
-        }
+      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cii=sth/nrij2;				/*  10		*/
+      ckk=sth/nrkj2;				/*  10		*/
+      
+      for (m=0; (m<DIM); m++) {			/*  39		*/
+	f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
+	f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
+	f_j[m]=-f_i[m]-f_k[m];
+	f[ai][m]+=f_i[m];
+	f[aj][m]+=f_j[m];
+	f[ak][m]+=f_k[m];
+      }
+      if (g) {
+	copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+	t1=IVEC2IS(dt_ij);
+	t2=IVEC2IS(dt_kj);
+      }
+      rvec_inc(fshift[t1],f_i);
+      rvec_inc(fshift[CENTRAL],f_j);
+      rvec_inc(fshift[t2],f_k);
+    }                                           /* 161 TOTAL	*/
+    /* Time for the bond calculations */
+    if (dr2 == 0.0)
+      continue;
+
+    vtot  += vbond;  /* 1*/
+    fbond *= gmx_invsqrt(dr2);			/*   6		*/
+    
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,ak),dt_ik);
+      ki=IVEC2IS(dt_ik);
     }
-    return vtot;
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fik=fbond*r_ik[m];
+      f[ai][m]+=fik;
+      f[ak][m]-=fik;
+      fshift[ki][m]+=fik;
+      fshift[CENTRAL][m]-=fik;
+    }
+  }
+  return vtot;
 }
 
 real quartic_angles(int nbonds,
-                    const t_iatom forceatoms[],const t_iparams forceparams[],
-                    const rvec x[],rvec f[],rvec fshift[],
-                    const t_pbc *pbc,const t_graph *g,
-                    real lambda,real *dvdl,
-                    const t_mdatoms *md,t_fcdata *fcd,
-                    int *global_atom_index)
+		    const t_iatom forceatoms[],const t_iparams forceparams[],
+		    const rvec x[],rvec f[],rvec fshift[],
+		    const t_pbc *pbc,const t_graph *g,
+		    real lambda,real *dvdlambda,
+		    const t_mdatoms *md,t_fcdata *fcd,
+		    int *global_atom_index)
 {
-    int  i,j,ai,aj,ak,t1,t2,type;
-    rvec r_ij,r_kj;
-    real cos_theta,cos_theta2,theta,dt,dVdt,va,dtp,c,vtot;
-    ivec jt,dt_ij,dt_kj;
-    
-    vtot = 0.0;
-    for(i=0; (i<nbonds); ) 
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        ak   = forceatoms[i++];
-        
-        theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
-                            r_ij,r_kj,&cos_theta,&t1,&t2);	  /*  41	   */
-        
-        dt = theta - forceparams[type].qangle.theta*DEG2RAD;  /*   2       */
+  int  i,j,ai,aj,ak,t1,t2,type;
+  rvec r_ij,r_kj;
+  real cos_theta,cos_theta2,theta,dt,dVdt,va,dtp,c,vtot;
+  ivec jt,dt_ij,dt_kj;
+  
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
 
-        dVdt = 0;
-        va = forceparams[type].qangle.c[0];
-        dtp = 1.0;
-        for(j=1; j<=4; j++) 
-        {
-            c = forceparams[type].qangle.c[j];
-            dVdt -= j*c*dtp;
-            dtp *= dt;
-            va += c*dtp;
-        }                                                     /*  20       */
+    theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
+			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
 
-        vtot += va;
-    
-        cos_theta2 = sqr(cos_theta);                          /*   1	   */
-        if (cos_theta2 < 1) 
-        {
-            int  m;
-            real st,sth;
-            real cik,cii,ckk;
-            real nrkj2,nrij2;
-            rvec f_i,f_j,f_k;
-            
-            st  = dVdt*gmx_invsqrt(1 - cos_theta2);    	      /*  12	   */
-            sth = st*cos_theta;			                      /*   1	   */
-#ifdef DEBUG
-            if (debug) 
-            {
-                fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
-                        theta*RAD2DEG,va,dVdt);
-            }
-#endif
-            nrkj2=iprod(r_kj,r_kj);			                  /*   5	   */
-            nrij2=iprod(r_ij,r_ij);
-            
-            cik=st*gmx_invsqrt(nrkj2*nrij2);		          /*  12	   */ 
-            cii=sth/nrij2;				                      /*  10	   */
-            ckk=sth/nrkj2;				                      /*  10	   */
-            
-            for (m=0; (m<DIM); m++) 
-            {			                                      /*  39	   */
-                f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
-                f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
-                f_j[m]=-f_i[m]-f_k[m];
-                f[ai][m]+=f_i[m];
-                f[aj][m]+=f_j[m];
-                f[ak][m]+=f_k[m];
-            }
-            if (g) 
-            {
-                copy_ivec(SHIFT_IVEC(g,aj),jt);
-                ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
-                ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
-                t1=IVEC2IS(dt_ij);
-                t2=IVEC2IS(dt_kj);
-            }
-            rvec_inc(fshift[t1],f_i);
-            rvec_inc(fshift[CENTRAL],f_j);
-            rvec_inc(fshift[t2],f_k);
-        }                                                     /* 153 TOTAL */
+    dt = theta - forceparams[type].qangle.theta*DEG2RAD; /* 2          */
+
+    dVdt = 0;
+    va = forceparams[type].qangle.c[0];
+    dtp = 1.0;
+    for(j=1; j<=4; j++) {
+      c = forceparams[type].qangle.c[j];
+      dVdt -= j*c*dtp;
+      dtp *= dt;
+      va += c*dtp;
     }
-    return vtot;
+    /* 20 */
+
+    vtot += va;
+    
+    cos_theta2 = sqr(cos_theta);                /*   1		*/
+    if (cos_theta2 < 1) {
+      int  m;
+      real st,sth;
+      real cik,cii,ckk;
+      real nrkj2,nrij2;
+      rvec f_i,f_j,f_k;
+      
+      st  = dVdt*gmx_invsqrt(1 - cos_theta2);    	/*  12		*/
+      sth = st*cos_theta;			/*   1		*/
+#ifdef DEBUG
+      if (debug)
+	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+		theta*RAD2DEG,va,dVdt);
+#endif
+      nrkj2=iprod(r_kj,r_kj);			/*   5		*/
+      nrij2=iprod(r_ij,r_ij);
+      
+      cik=st*gmx_invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cii=sth/nrij2;				/*  10		*/
+      ckk=sth/nrkj2;				/*  10		*/
+      
+      for (m=0; (m<DIM); m++) {			/*  39		*/
+	f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
+	f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
+	f_j[m]=-f_i[m]-f_k[m];
+	f[ai][m]+=f_i[m];
+	f[aj][m]+=f_j[m];
+	f[ak][m]+=f_k[m];
+      }
+      if (g) {
+	copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+	t1=IVEC2IS(dt_ij);
+	t2=IVEC2IS(dt_kj);
+      }
+      rvec_inc(fshift[t1],f_i);
+      rvec_inc(fshift[CENTRAL],f_j);
+      rvec_inc(fshift[t2],f_k);
+    }                                           /* 153 TOTAL	*/
+  }
+  return vtot;
 }
 
 real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
@@ -1008,615 +993,570 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
                rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n,
                real *sign,int *t1,int *t2,int *t3)
 {
-    real ipr,phi;
-    
-    *t1 = pbc_rvec_sub(pbc,xi,xj,r_ij);       		           /*  3 	   */
-    *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			               /*  3	   */
-    *t3 = pbc_rvec_sub(pbc,xk,xl,r_kl);			               /*  3	   */
+  real ipr,phi;
 
-    cprod(r_ij,r_kj,m); 			                           /*  9 	   */
-    cprod(r_kj,r_kl,n);			                               /*  9	   */
-    phi=gmx_angle(m,n); 			                           /* 49 (assuming 25 for atan2) */
-    ipr=iprod(r_ij,n); 			                               /*  5 	   */
-    (*sign)=(ipr<0.0)?-1.0:1.0;
-    phi=(*sign)*phi; 			                               /*  1	   */
-    return phi;                                                /* 82 TOTAL */
+  *t1 = pbc_rvec_sub(pbc,xi,xj,r_ij);       		/*  3 		*/
+  *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			/*  3		*/
+  *t3 = pbc_rvec_sub(pbc,xk,xl,r_kl);			/*  3		*/
+
+  cprod(r_ij,r_kj,m); 			/*  9 		*/
+  cprod(r_kj,r_kl,n);			/*  9		*/
+  phi=gmx_angle(m,n); 			/* 49 (assuming 25 for atan2) */
+  ipr=iprod(r_ij,n); 			/*  5 		*/
+  (*sign)=(ipr<0.0)?-1.0:1.0;
+  phi=(*sign)*phi; 			/*  1		*/
+					/* 82 TOTAL	*/
+  return phi;
 }
 
 
 
 void do_dih_fup(int i,int j,int k,int l,real ddphi,
-                rvec r_ij,rvec r_kj,rvec r_kl,
-                rvec m,rvec n,rvec f[],rvec fshift[],
-                const t_pbc *pbc,const t_graph *g,
-                const rvec x[],int t1,int t2,int t3)
+		rvec r_ij,rvec r_kj,rvec r_kl,
+		rvec m,rvec n,rvec f[],rvec fshift[],
+		const t_pbc *pbc,const t_graph *g,
+		const rvec x[],int t1,int t2,int t3)
 {
-    /* 143 FLOPS */
-    rvec f_i,f_j,f_k,f_l;
-    rvec uvec,vvec,svec,dx_jl;
-    real iprm,iprn,nrkj,nrkj2;
-    real a,p,q,toler;
-    ivec jt,dt_ij,dt_kj,dt_lj;  
+  /* 143 FLOPS */
+  rvec f_i,f_j,f_k,f_l;
+  rvec uvec,vvec,svec,dx_jl;
+  real iprm,iprn,nrkj,nrkj2;
+  real a,p,q,toler;
+  ivec jt,dt_ij,dt_kj,dt_lj;  
+  
+  iprm  = iprod(m,m);		/*  5 	*/
+  iprn  = iprod(n,n);		/*  5	*/
+  nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+  toler = nrkj2*GMX_REAL_EPS;
+  if ((iprm > toler) && (iprn > toler)) {
+    nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
+    a     = -ddphi*nrkj/iprm;	/* 11	*/
+    svmul(a,m,f_i);		/*  3	*/
+    a     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(a,n,f_l);		/*  3 	*/
+    p     = iprod(r_ij,r_kj);	/*  5	*/
+    p    /= nrkj2;		/* 10	*/
+    q     = iprod(r_kl,r_kj);	/*  5	*/
+    q    /= nrkj2;		/* 10	*/
+    svmul(p,f_i,uvec);		/*  3	*/
+    svmul(q,f_l,vvec);		/*  3	*/
+    rvec_sub(uvec,vvec,svec);	/*  3	*/
+    rvec_sub(f_i,svec,f_j);	/*  3	*/
+    rvec_add(f_l,svec,f_k);	/*  3	*/
+    rvec_inc(f[i],f_i);   	/*  3	*/
+    rvec_dec(f[j],f_j);   	/*  3	*/
+    rvec_dec(f[k],f_k);   	/*  3	*/
+    rvec_inc(f[l],f_l);   	/*  3	*/
     
-    iprm  = iprod(m,m);		/*  5 	*/
-    iprn  = iprod(n,n);		/*  5	*/
-    nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
-    toler = nrkj2*GMX_REAL_EPS;
-    if ((iprm > toler) && (iprn > toler)) {
-        nrkj  = nrkj2*gmx_invsqrt(nrkj2);	/* 10	*/
-        a     = -ddphi*nrkj/iprm;	/* 11	*/
-        svmul(a,m,f_i);		/*  3	*/
-        a     = ddphi*nrkj/iprn;	/* 11	*/
-        svmul(a,n,f_l);		/*  3 	*/
-        p     = iprod(r_ij,r_kj);	/*  5	*/
-        p    /= nrkj2;		/* 10	*/
-        q     = iprod(r_kl,r_kj);	/*  5	*/
-        q    /= nrkj2;		/* 10	*/
-        svmul(p,f_i,uvec);		/*  3	*/
-        svmul(q,f_l,vvec);		/*  3	*/
-        rvec_sub(uvec,vvec,svec);	/*  3	*/
-        rvec_sub(f_i,svec,f_j);	/*  3	*/
-        rvec_add(f_l,svec,f_k);	/*  3	*/
-        rvec_inc(f[i],f_i);   	/*  3	*/
-        rvec_dec(f[j],f_j);   	/*  3	*/
-        rvec_dec(f[k],f_k);   	/*  3	*/
-        rvec_inc(f[l],f_l);   	/*  3	*/
-        
-        if (g) {
-            copy_ivec(SHIFT_IVEC(g,j),jt);
-            ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
-            ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
-            ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
-            t1=IVEC2IS(dt_ij);
-            t2=IVEC2IS(dt_kj);
-            t3=IVEC2IS(dt_lj);
-        } else if (pbc) {
-            t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
-        } else {
-            t3 = CENTRAL;
-        }
-    
-        rvec_inc(fshift[t1],f_i);
-        rvec_dec(fshift[CENTRAL],f_j);
-        rvec_dec(fshift[t2],f_k);
-        rvec_inc(fshift[t3],f_l);
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,j),jt);
+      ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
+      ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+      t3=IVEC2IS(dt_lj);
+    } else if (pbc) {
+      t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
+    } else {
+      t3 = CENTRAL;
     }
-    /* 112 TOTAL 	*/
+    
+    rvec_inc(fshift[t1],f_i);
+    rvec_dec(fshift[CENTRAL],f_j);
+    rvec_dec(fshift[t2],f_k);
+    rvec_inc(fshift[t3],f_l);
+  }
+  /* 112 TOTAL 	*/
 }
 
 
 real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
-             real phi,real lambda,real *V,real *F)
+	     real phi,real lambda,real *V,real *F)
 {
-    real v,dvdl,mdphi,v1,sdphi,ddphi;
-    real L1   = 1.0 - lambda;
-    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
-    real dph0 = (phiB - phiA)*DEG2RAD;
-    real cp   = L1*cpA + lambda*cpB;
-    
-    mdphi =  mult*phi - ph0;
-    sdphi = sin(mdphi);
-    ddphi = -cp*mult*sdphi;
-    v1    = 1.0 + cos(mdphi);
-    v     = cp*v1;
-    
-    dvdl  = (cpB - cpA)*v1 + cp*dph0*sdphi;
-    
-    *V = v;
-    *F = ddphi;
-    
-    return dvdl;
-    
-    /* That was 40 flops */
+  real v,dvdl,mdphi,v1,sdphi,ddphi;
+  real L1   = 1.0 - lambda;
+  real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+  real dph0 = (phiB - phiA)*DEG2RAD;
+  real cp   = L1*cpA + lambda*cpB;
+  
+  mdphi =  mult*phi - ph0;
+  sdphi = sin(mdphi);
+  ddphi = -cp*mult*sdphi;
+  v1    = 1.0 + cos(mdphi);
+  v     = cp*v1;
+  
+  dvdl  = (cpB - cpA)*v1 + cp*dph0*sdphi;
+  
+  *V = v;
+  *F = ddphi;
+  
+  return dvdl;
+  
+  /* That was 40 flops */
 }
 
 static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
-                        real phi,real lambda,real *V,real *F)
-/* similar to dopdihs, except for a minus sign  *
- * and a different treatment of mult/phi0       */
+			real phi,real lambda,real *V,real *F)
+     /* similar to dopdihs, except for a minus sign  *
+      * and a different treatment of mult/phi0       */
 {
-    real v,dvdl,mdphi,v1,sdphi,ddphi;
-    real L1   = 1.0 - lambda;
-    real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
-    real dph0 = (phiB - phiA)*DEG2RAD;
-    real cp   = L1*cpA + lambda*cpB;
-    
-    mdphi = mult*(phi-ph0);
-    sdphi = sin(mdphi);
-    ddphi = cp*mult*sdphi;
-    v1    = 1.0-cos(mdphi);
-    v     = cp*v1;
-    
-    dvdl  = (cpB-cpA)*v1 + cp*dph0*sdphi;
-    
-    *V = v;
-    *F = ddphi;
-    
-    return dvdl;
-    
-    /* That was 40 flops */
+  real v,dvdl,mdphi,v1,sdphi,ddphi;
+  real L1   = 1.0 - lambda;
+  real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+  real dph0 = (phiB - phiA)*DEG2RAD;
+  real cp   = L1*cpA + lambda*cpB;
+  
+  mdphi = mult*(phi-ph0);
+  sdphi = sin(mdphi);
+  ddphi = cp*mult*sdphi;
+  v1    = 1.0-cos(mdphi);
+  v     = cp*v1;
+  
+  dvdl  = (cpB-cpA)*v1 + cp*dph0*sdphi;
+  
+  *V = v;
+  *F = ddphi;
+  
+  return dvdl;
+  
+  /* That was 40 flops */
 }
 
 real pdihs(int nbonds,
-           const t_iatom forceatoms[],const t_iparams forceparams[],
-           const rvec x[],rvec f[],rvec fshift[],
-           const t_pbc *pbc,const t_graph *g,
-           real lambda,real *dvdl,
-           const t_mdatoms *md,t_fcdata *fcd,
-           int *global_atom_index)
+	   const t_iatom forceatoms[],const t_iparams forceparams[],
+	   const rvec x[],rvec f[],rvec fshift[],
+	   const t_pbc *pbc,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,t_fcdata *fcd,
+	   int *global_atom_index)
 {
-    int  i,type,ai,aj,ak,al;
-    int  t1,t2,t3;
-    rvec r_ij,r_kj,r_kl,m,n;
-    real phi,sign,ddphi,vpd,vtot;
+  int  i,type,ai,aj,ak,al;
+  int  t1,t2,t3;
+  rvec r_ij,r_kj,r_kl,m,n;
+  real phi,sign,ddphi,vpd,vtot;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    al   = forceatoms[i++];
     
-    vtot = 0.0;
-    for(i=0; (i<nbonds); ) {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        ak   = forceatoms[i++];
-        al   = forceatoms[i++];
-        
-        phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-                      &sign,&t1,&t2,&t3);			/*  84 		*/
+    phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                  &sign,&t1,&t2,&t3);			/*  84 		*/
 		
-        *dvdl += dopdihs(forceparams[type].pdihs.cpA,
-                         forceparams[type].pdihs.cpB,
-                         forceparams[type].pdihs.phiA,
-                         forceparams[type].pdihs.phiB,
-                         forceparams[type].pdihs.mult,
-                         phi,lambda,&vpd,&ddphi);
-        
-        vtot += vpd;
-        do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-                   f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
-        
+    *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
+			  forceparams[type].pdihs.cpB,
+			  forceparams[type].pdihs.phiA,
+			  forceparams[type].pdihs.phiB,
+			  forceparams[type].pdihs.mult,
+			  phi,lambda,&vpd,&ddphi);
+		       
+    vtot += vpd;
+    do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
+	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
+
 #ifdef DEBUG
-        fprintf(debug,"pdih: (%d,%d,%d,%d) phi=%g\n",
-                ai,aj,ak,al,phi);
+    fprintf(debug,"pdih: (%d,%d,%d,%d) phi=%g\n",
+	    ai,aj,ak,al,phi);
 #endif
-    } /* 223 TOTAL 	*/
-    
-    return vtot;
+  } /* 223 TOTAL 	*/
+
+  return vtot;
 }
 
-void make_dp_periodic(real *dp) 
-{
-    /* dp cannot be outside (-pi,pi) */
-    if (*dp >= M_PI)
-    {
-        *dp -= 2*M_PI;
-    }
-    else if (*dp < -M_PI) 
-    {
-        *dp += 2*M_PI;
-    }
-    return;
-}
+
 
 real idihs(int nbonds,
-           const t_iatom forceatoms[],const t_iparams forceparams[],
-           const rvec x[],rvec f[],rvec fshift[],
-           const t_pbc *pbc,const t_graph *g,
-           real lambda,real *dvdl,
-           const t_mdatoms *md,t_fcdata *fcd,
-           int *global_atom_index)
+	   const t_iatom forceatoms[],const t_iparams forceparams[],
+	   const rvec x[],rvec f[],rvec fshift[],
+	   const t_pbc *pbc,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,t_fcdata *fcd,
+	   int *global_atom_index)
 {
-    int  i,type,ai,aj,ak,al;
-    int  t1,t2,t3;
-    real phi,phi0,dphi0,ddphi,sign,vtot;
-    rvec r_ij,r_kj,r_kl,m,n;
-    real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl_term;
+  int  i,type,ai,aj,ak,al;
+  int  t1,t2,t3;
+  real phi,phi0,dphi0,ddphi,sign,vtot;
+  rvec r_ij,r_kj,r_kl,m,n;
+  real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl;
+
+  L1 = 1.0-lambda;
+  dvdl = 0;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    al   = forceatoms[i++];
     
-    L1 = 1.0-lambda;
-    dvdl_term = 0;
+    phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                  &sign,&t1,&t2,&t3);			/*  84		*/
     
-    vtot = 0.0;
-    for(i=0; (i<nbonds); ) 
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        ak   = forceatoms[i++];
-        al   = forceatoms[i++];
-        
-        phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-                      &sign,&t1,&t2,&t3);			/*  84		*/
-        
-        /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
-         * force changes if we just apply a normal harmonic.
-         * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).
-         * This means we will never have the periodicity problem, unless
-         * the dihedral is Pi away from phiO, which is very unlikely due to
-         * the potential.
-         */
-        kA = forceparams[type].harmonic.krA;
-        kB = forceparams[type].harmonic.krB;
-        pA = forceparams[type].harmonic.rA;
-        pB = forceparams[type].harmonic.rB;
-        
-        kk    = L1*kA + lambda*kB;
-        phi0  = (L1*pA + lambda*pB)*DEG2RAD;
-        dphi0 = (pB - pA)*DEG2RAD;
+    /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
+     * force changes if we just apply a normal harmonic.
+     * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).
+     * This means we will never have the periodicity problem, unless
+     * the dihedral is Pi away from phiO, which is very unlikely due to
+     * the potential.
+     */
+    kA = forceparams[type].harmonic.krA;
+    kB = forceparams[type].harmonic.krB;
+    pA = forceparams[type].harmonic.rA;
+    pB = forceparams[type].harmonic.rB;
 
-        dp = phi-phi0;
+    kk    = L1*kA + lambda*kB;
+    phi0  = (L1*pA + lambda*pB)*DEG2RAD;
+    dphi0 = (pB - pA)*DEG2RAD;
 
-        make_dp_periodic(&dp);
+    /* dp = (phi-phi0), modulo (-pi,pi) */
+    dp = phi-phi0;  
+    /* dp cannot be outside (-2*pi,2*pi) */
+    if (dp >= M_PI)
+      dp -= 2*M_PI;
+    else if(dp < -M_PI)
+      dp += 2*M_PI;
+    
+    dp2 = dp*dp;
 
-        dp2 = dp*dp;
+    vtot += 0.5*kk*dp2;
+    ddphi = -kk*dp;
+    
+    dvdl += 0.5*(kB - kA)*dp2 - kk*dphi0*dp;
 
-        vtot += 0.5*kk*dp2;
-        ddphi = -kk*dp;
-        
-        dvdl_term += 0.5*(kB - kA)*dp2 - kk*dphi0*dp;
-        
-        do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
-                   f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
-        /* 217 TOTAL	*/
+    do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
+	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
+    /* 217 TOTAL	*/
 #ifdef DEBUG
-        if (debug) 
-        {
-            fprintf(debug,"idih: (%d,%d,%d,%d) phi=%g\n",
-                    ai,aj,ak,al,phi);
-        }
+    if (debug)
+      fprintf(debug,"idih: (%d,%d,%d,%d) phi=%g\n",
+	      ai,aj,ak,al,phi);
 #endif
-    }
+  }
   
-    *dvdl += dvdl_term;
-    return vtot;
+  *dvdlambda += dvdl;
+  return vtot;
 }
 
 
 real posres(int nbonds,
-            const t_iatom forceatoms[],const t_iparams forceparams[],
-            const rvec x[],rvec f[],rvec vir_diag,
-            t_pbc *pbc,
-            real lambda,real *dvdl,
-            int refcoord_scaling,int ePBC,rvec comA,rvec comB)
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],rvec vir_diag,
+	    t_pbc *pbc,
+	    real lambda,real *dvdlambda,
+	    int refcoord_scaling,int ePBC,rvec comA,rvec comB)
 {
-    int  i,ai,m,d,type,ki,npbcdim=0;
-    const t_iparams *pr;
-    real v,vtot,fm,*fc;
-    real posA,posB,ref=0;
-    rvec comA_sc,comB_sc,rdist,dpdl,pos,dx;
-    
-    npbcdim = ePBC2npbcdim(ePBC);
-    
-    if (refcoord_scaling == erscCOM) 
-    {
-        clear_rvec(comA_sc);
-        clear_rvec(comB_sc);
-        for(m=0; m<npbcdim; m++) 
-        {
-            for(d=m; d<npbcdim; d++) 
-            {
-                comA_sc[m] += comA[d]*pbc->box[d][m];
-                comB_sc[m] += comB[d]*pbc->box[d][m];
-            }
-        }
+  int  i,ai,m,d,type,ki,npbcdim=0;
+  const t_iparams *pr;
+  real v,vtot,fm,*fc;
+  real posA,posB,ref=0;
+  rvec comA_sc,comB_sc,rdist,dpdl,pos,dx;
+
+  npbcdim = ePBC2npbcdim(ePBC);
+
+  if (refcoord_scaling == erscCOM) {
+    clear_rvec(comA_sc);
+    clear_rvec(comB_sc);
+    for(m=0; m<npbcdim; m++) {
+      for(d=m; d<npbcdim; d++) {
+	comA_sc[m] += comA[d]*pbc->box[d][m];
+	comB_sc[m] += comB[d]*pbc->box[d][m];
+      }
     }
+  }
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    pr   = &forceparams[type];
     
-    vtot = 0.0;
-    for(i=0; (i<nbonds); ) 
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        pr   = &forceparams[type];
-    
-        for(m=0; m<DIM; m++) 
-        {
-            posA = forceparams[type].posres.pos0A[m];
-            posB = forceparams[type].posres.pos0B[m];
-            if (m < npbcdim) 
-            {
-                switch (refcoord_scaling) 
-                {
-                case erscNO:
-                    ref      = 0;
-                    rdist[m] = (1 - lambda)*posA + lambda*posB;
-                    dpdl[m]  = posB - posA;
-                    break;
-                case erscALL:
-                    /* Box relative coordinates are stored for dimensions with pbc */
-                    posA *= pbc->box[m][m];
-                    posB *= pbc->box[m][m];
-                    for(d=m+1; d<npbcdim; d++) 
-                    {
-                        posA += forceparams[type].posres.pos0A[d]*pbc->box[d][m];
-                        posB += forceparams[type].posres.pos0B[d]*pbc->box[d][m];
-                    }
-                    ref      = (1 - lambda)*posA + lambda*posB;
-                    rdist[m] = 0;
-                    dpdl[m]  = posB - posA;
-                    break;
-                case erscCOM:
-                    ref      = (1 - lambda)*comA_sc[m] + lambda*comB_sc[m];
-                    rdist[m] = (1 - lambda)*posA + lambda*posB;
-                    dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
-                    break;
-                }
-            } 
-            else 
-            {
-                ref      = (1 - lambda)*posA + lambda*posB;
-                rdist[m] = 0;
-                dpdl[m]  = posB - posA;
-            }
-            
-            /* We do pbc_dx with ref+rdist,
-             * since with only ref we can be up to half a box vector wrong.
-             */
-            pos[m] = ref + rdist[m];
-        }
-        
-        if (pbc) 
-        {
-            pbc_dx(pbc,x[ai],pos,dx);
-        } 
-        else 
-        {
-            rvec_sub(x[ai],pos,dx);
-        }
-        
-        v=0;
-        for (m=0; (m<DIM); m++) 
-        {
-            *dvdl += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
-                              0,dpdl[m],dx[m],lambda,&v,&fm);
-            vtot += v;
-            if (f!=NULL) 
-            {
-                f[ai][m] += fm;
-            }
-            /* Here we correct for the pbc_dx which included rdist */
-            if (vir_diag != NULL) 
-            {
-                vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
-            }
-        }
+    for(m=0; m<DIM; m++) {
+      posA = forceparams[type].posres.pos0A[m];
+      posB = forceparams[type].posres.pos0B[m];
+      if (m < npbcdim) {
+	switch (refcoord_scaling) {
+	case erscNO:
+	  ref      = 0;
+	  rdist[m] = (1 - lambda)*posA + lambda*posB;
+	  dpdl[m]  = posB - posA;
+	  break;
+	case erscALL:
+	  /* Box relative coordinates are stored for dimensions with pbc */
+	  posA *= pbc->box[m][m];
+	  posB *= pbc->box[m][m];
+	  for(d=m+1; d<npbcdim; d++) {
+	    posA += forceparams[type].posres.pos0A[d]*pbc->box[d][m];
+	    posB += forceparams[type].posres.pos0B[d]*pbc->box[d][m];
+	  }
+	  ref      = (1 - lambda)*posA + lambda*posB;
+	  rdist[m] = 0;
+	  dpdl[m]  = posB - posA;
+	  break;
+	case erscCOM:
+	  ref      = (1 - lambda)*comA_sc[m] + lambda*comB_sc[m];
+	  rdist[m] = (1 - lambda)*posA + lambda*posB;
+	  dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
+	  break;
+	}
+      } else {
+	ref      = (1 - lambda)*posA + lambda*posB;
+	rdist[m] = 0;
+	dpdl[m]  = posB - posA;
+      }
+
+      /* We do pbc_dx with ref+rdist,
+       * since with only ref we can be up to half a box vector wrong.
+       */
+      pos[m] = ref + rdist[m];
     }
-    
-    return vtot;
+
+    if (pbc) {
+      pbc_dx(pbc,x[ai],pos,dx);
+    } else {
+      rvec_sub(x[ai],pos,dx);
+    }
+
+    v=0;
+    for (m=0; (m<DIM); m++) {
+      *dvdlambda += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
+			     0,dpdl[m],dx[m],lambda,&v,&fm);
+      vtot += v;
+      f[ai][m] += fm;
+
+      /* Here we correct for the pbc_dx which included rdist */
+      vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
+    }
+  }
+
+  return vtot;
 }
 
 static real low_angres(int nbonds,
-                       const t_iatom forceatoms[],const t_iparams forceparams[],
-                       const rvec x[],rvec f[],rvec fshift[],
-                       const t_pbc *pbc,const t_graph *g,
-                       real lambda,real *dvdl,
-                       bool bZAxis)
+		       const t_iatom forceatoms[],const t_iparams forceparams[],
+		       const rvec x[],rvec f[],rvec fshift[],
+		       const t_pbc *pbc,const t_graph *g,
+		       real lambda,real *dvdlambda,
+		       bool bZAxis)
 {
-    int  i,m,type,ai,aj,ak,al;
-    int  t1,t2;
-    real phi,cos_phi,cos_phi2,vid,vtot,dVdphi;
-    rvec r_ij,r_kl,f_i,f_k={0,0,0};
-    real st,sth,nrij2,nrkl2,c,cij,ckl;
-    
-    ivec dt;  
-    t2 = 0; /* avoid warning with gcc-3.3. It is never used uninitialized */
-    
-    vtot = 0.0;
-    ak=al=0; /* to avoid warnings */
-    for(i=0; i<nbonds; ) 
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        t1   = pbc_rvec_sub(pbc,x[aj],x[ai],r_ij);            	/*  3		*/
-        if (!bZAxis) 
-        {      
-            ak   = forceatoms[i++];
-            al   = forceatoms[i++];
-            t2   = pbc_rvec_sub(pbc,x[al],x[ak],r_kl);          /*  3		*/
-        } 
-        else 
-        {
-            r_kl[XX] = 0;
-            r_kl[YY] = 0;
-            r_kl[ZZ] = 1;
-        }
-        
-        cos_phi = cos_angle(r_ij,r_kl);		                    /* 25		*/
-        phi     = acos(cos_phi);                                /* 10       */
-        
-        *dvdl += dopdihs_min(forceparams[type].pdihs.cpA,
-                             forceparams[type].pdihs.cpB,
-                             forceparams[type].pdihs.phiA,
-                             forceparams[type].pdihs.phiB,
-                             forceparams[type].pdihs.mult,
-                             phi,lambda,&vid,&dVdphi);          /*  40      */
-        
-        vtot += vid;
-        
-        cos_phi2 = sqr(cos_phi);                                /*   1		*/
-        if (cos_phi2 < 1) 
-        {
-            st  = -dVdphi*gmx_invsqrt(1 - cos_phi2);            /*  12		*/
-            sth = st*cos_phi;				                    /*   1		*/
-            nrij2 = iprod(r_ij,r_ij);			                /*   5		*/
-            nrkl2 = iprod(r_kl,r_kl);                           /*   5      */
-            
-            c   = st*gmx_invsqrt(nrij2*nrkl2);		            /*  11		*/ 
-            cij = sth/nrij2;				                    /*  10		*/
-            ckl = sth/nrkl2;				                    /*  10		*/
-            
-            for (m=0; m<DIM; m++) 
-            {			                                        /*  18+18   */
-                f_i[m] = (c*r_kl[m]-cij*r_ij[m]);
-                f[ai][m] += f_i[m];
-                f[aj][m] -= f_i[m];
-                if (!bZAxis) 
-                {
-                    f_k[m] = (c*r_ij[m]-ckl*r_kl[m]);
-                    f[ak][m] += f_k[m];
-                    f[al][m] -= f_k[m];
-                }
-            }
-            
-            if (g) 
-            {
-                ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-                t1=IVEC2IS(dt);
-            }
-            rvec_inc(fshift[t1],f_i);
-            rvec_dec(fshift[CENTRAL],f_i);
-            if (!bZAxis) 
-            {
-                if (g) 
-                {
-                    ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
-                    t2=IVEC2IS(dt);
-                }
-                rvec_inc(fshift[t2],f_k);
-                rvec_dec(fshift[CENTRAL],f_k);
-            }
-        }
+  int  i,m,type,ai,aj,ak,al;
+  int  t1,t2;
+  real phi,cos_phi,cos_phi2,vid,vtot,dVdphi;
+  rvec r_ij,r_kl,f_i,f_k={0,0,0};
+  real st,sth,nrij2,nrkl2,c,cij,ckl;
+
+  ivec dt;  
+  t2 = 0; /* avoid warning with gcc-3.3. It is never used uninitialized */
+
+  vtot = 0.0;
+  ak=al=0; /* to avoid warnings */
+  for(i=0; i<nbonds; ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    t1   = pbc_rvec_sub(pbc,x[aj],x[ai],r_ij);            	/*  3		*/
+    if (!bZAxis) {      
+      ak   = forceatoms[i++];
+      al   = forceatoms[i++];
+      t2   = pbc_rvec_sub(pbc,x[al],x[ak],r_kl);           /*  3		*/
+    } else {
+      r_kl[XX] = 0;
+      r_kl[YY] = 0;
+      r_kl[ZZ] = 1;
     }
 
-    return vtot;  /*  184 / 157 (bZAxis)  total  */
+    cos_phi = cos_angle(r_ij,r_kl);		/* 25		*/
+    phi     = acos(cos_phi);                    /* 10           */
+
+    *dvdlambda += dopdihs_min(forceparams[type].pdihs.cpA,
+			      forceparams[type].pdihs.cpB,
+			      forceparams[type].pdihs.phiA,
+			      forceparams[type].pdihs.phiB,
+			      forceparams[type].pdihs.mult,
+			      phi,lambda,&vid,&dVdphi); /*  40  */
+    
+    vtot += vid;
+
+    cos_phi2 = sqr(cos_phi);                    /*   1		*/
+    if (cos_phi2 < 1) {
+      st  = -dVdphi*gmx_invsqrt(1 - cos_phi2);      /*  12		*/
+      sth = st*cos_phi;				/*   1		*/
+      nrij2 = iprod(r_ij,r_ij);			/*   5		*/
+      nrkl2 = iprod(r_kl,r_kl);                 /*   5          */
+      
+      c   = st*gmx_invsqrt(nrij2*nrkl2);		/*  11		*/ 
+      cij = sth/nrij2;				/*  10		*/
+      ckl = sth/nrkl2;				/*  10		*/
+      
+      for (m=0; m<DIM; m++) {			/*  18+18       */
+	f_i[m] = (c*r_kl[m]-cij*r_ij[m]);
+	f[ai][m] += f_i[m];
+	f[aj][m] -= f_i[m];
+	if (!bZAxis) {
+	  f_k[m] = (c*r_ij[m]-ckl*r_kl[m]);
+	  f[ak][m] += f_k[m];
+	  f[al][m] -= f_k[m];
+	}
+      }
+      
+      if (g) {
+	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	t1=IVEC2IS(dt);
+      }
+      rvec_inc(fshift[t1],f_i);
+      rvec_dec(fshift[CENTRAL],f_i);
+      if (!bZAxis) {
+	if (g) {
+	  ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
+	  t2=IVEC2IS(dt);
+	}
+	rvec_inc(fshift[t2],f_k);
+	rvec_dec(fshift[CENTRAL],f_k);
+      }
+    }
+  }
+
+  return vtot;  /*  184 / 157 (bZAxis)  total  */
 }
 
 real angres(int nbonds,
-            const t_iatom forceatoms[],const t_iparams forceparams[],
-            const rvec x[],rvec f[],rvec fshift[],
-            const t_pbc *pbc,const t_graph *g,
-            real lambda,real *dvdl,
-            const t_mdatoms *md,t_fcdata *fcd,
-            int *global_atom_index)
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],rvec fshift[],
+	    const t_pbc *pbc,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
 {
-    return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
-                      lambda,dvdl,FALSE);
+  return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
+		    lambda,dvdlambda,FALSE);
 }
 
 real angresz(int nbonds,
-             const t_iatom forceatoms[],const t_iparams forceparams[],
-             const rvec x[],rvec f[],rvec fshift[],
-             const t_pbc *pbc,const t_graph *g,
-             real lambda,real *dvdl,
-             const t_mdatoms *md,t_fcdata *fcd,
-             int *global_atom_index)
+	     const t_iatom forceatoms[],const t_iparams forceparams[],
+	     const rvec x[],rvec f[],rvec fshift[],
+	     const t_pbc *pbc,const t_graph *g,
+	     real lambda,real *dvdlambda,
+	     const t_mdatoms *md,t_fcdata *fcd,
+	     int *global_atom_index)
 {
-    return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
-                      lambda,dvdl,TRUE);
+  return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
+		    lambda,dvdlambda,TRUE);
 }
 
 
 real unimplemented(int nbonds,
-                   const t_iatom forceatoms[],const t_iparams forceparams[],
-                   const rvec x[],rvec f[],rvec fshift[],
-                   const t_pbc *pbc,const t_graph *g,
-                   real lambda,real *dvdl,
-                   const t_mdatoms *md,t_fcdata *fcd,
-                   int *global_atom_index)
+		   const t_iatom forceatoms[],const t_iparams forceparams[],
+		   const rvec x[],rvec f[],rvec fshift[],
+		   const t_pbc *pbc,const t_graph *g,
+		   real lambda,real *dvdlambda,
+		   const t_mdatoms *md,t_fcdata *fcd,
+		   int *global_atom_index)
 {
-    gmx_impl("*** you are using a not implemented function");
-    
-    return 0.0; /* To make the compiler happy */
+  gmx_impl("*** you are using a not implemented function");
+
+  return 0.0; /* To make the compiler happy */
 }
 
 real rbdihs(int nbonds,
-            const t_iatom forceatoms[],const t_iparams forceparams[],
-            const rvec x[],rvec f[],rvec fshift[],
-            const t_pbc *pbc,const t_graph *g,
-            real lambda,real *dvdl,
-            const t_mdatoms *md,t_fcdata *fcd,
-            int *global_atom_index)
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],rvec fshift[],
+	    const t_pbc *pbc,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
 {
-    const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
-    int  type,ai,aj,ak,al,i,j;
-    int  t1,t2,t3;
-    rvec r_ij,r_kj,r_kl,m,n;
-    real parmA[NR_RBDIHS];
-    real parmB[NR_RBDIHS];
-    real parm[NR_RBDIHS];
-    real cos_phi,phi,rbp,rbpBA;
-    real v,sign,ddphi,sin_phi;
-    real cosfac,vtot;
-    real L1   = 1.0-lambda;
-    real dvdl_term=0;
+  const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
+  int  type,ai,aj,ak,al,i,j;
+  int  t1,t2,t3;
+  rvec r_ij,r_kj,r_kl,m,n;
+  real parmA[NR_RBDIHS];
+  real parmB[NR_RBDIHS];
+  real parm[NR_RBDIHS];
+  real cos_phi,phi,rbp,rbpBA;
+  real v,sign,ddphi,sin_phi;
+  real cosfac,vtot;
+  real L1   = 1.0-lambda;
+  real dvdl=0;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    al   = forceatoms[i++];
+
+      phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+                    &sign,&t1,&t2,&t3);			/*  84		*/
+
+    /* Change to polymer convention */
+    if (phi < c0)
+      phi += M_PI;
+    else
+      phi -= M_PI;			/*   1		*/
+      
+    cos_phi = cos(phi);		
+    /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
+    sin_phi = sin(phi);
+
+    for(j=0; (j<NR_RBDIHS); j++) {
+      parmA[j] = forceparams[type].rbdihs.rbcA[j];
+      parmB[j] = forceparams[type].rbdihs.rbcB[j];
+      parm[j]  = L1*parmA[j]+lambda*parmB[j];
+    }
+    /* Calculate cosine powers */
+    /* Calculate the energy */
+    /* Calculate the derivative */
+
+    v       = parm[0];
+    dvdl   += (parmB[0]-parmA[0]);
+    ddphi   = c0;
+    cosfac  = c1;
     
-    vtot = 0.0;
-    for(i=0; (i<nbonds); ) 
-    {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        aj   = forceatoms[i++];
-        ak   = forceatoms[i++];
-        al   = forceatoms[i++];
-
-        phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-                      &sign,&t1,&t2,&t3);			             /*  84		*/
-
-        /* Change to polymer convention */
-        if (phi < c0)
-        {
-            phi += M_PI;
-        }
-        else
-        {
-            phi -= M_PI;			                             /*   1		*/
-        }
-        cos_phi = cos(phi);		
-
-        /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
-        sin_phi = sin(phi);
-
-        for(j=0; (j<NR_RBDIHS); j++) 
-        {
-            parmA[j] = forceparams[type].rbdihs.rbcA[j];
-            parmB[j] = forceparams[type].rbdihs.rbcB[j];
-            parm[j]  = L1*parmA[j]+lambda*parmB[j];
-        }
-        /* Calculate cosine powers */
-        /* Calculate the energy */
-        /* Calculate the derivative */
-
-        v       = parm[0];
-        dvdl_term   += (parmB[0]-parmA[0]);
-        ddphi   = c0;
-        cosfac  = c1;
-        
-        rbp     = parm[1];
-        rbpBA   = parmB[1]-parmA[1];
-        ddphi  += rbp*cosfac;
-        cosfac *= cos_phi;
-        v      += cosfac*rbp;
-        dvdl_term   += cosfac*rbpBA;
-        rbp     = parm[2];
-        rbpBA   = parmB[2]-parmA[2];    
-        ddphi  += c2*rbp*cosfac;
-        cosfac *= cos_phi;
-        v      += cosfac*rbp;
-        dvdl_term   += cosfac*rbpBA;
-        rbp     = parm[3];
-        rbpBA   = parmB[3]-parmA[3];
-        ddphi  += c3*rbp*cosfac;
-        cosfac *= cos_phi;
-        v      += cosfac*rbp;
-        dvdl_term   += cosfac*rbpBA;
-        rbp     = parm[4];
-        rbpBA   = parmB[4]-parmA[4];
-        ddphi  += c4*rbp*cosfac;
-        cosfac *= cos_phi;
-        v      += cosfac*rbp;
-        dvdl_term   += cosfac*rbpBA;
-        rbp     = parm[5];
-        rbpBA   = parmB[5]-parmA[5];
-        ddphi  += c5*rbp*cosfac;
-        cosfac *= cos_phi;
-        v      += cosfac*rbp;
-        dvdl_term   += cosfac*rbpBA;
-        
-        ddphi = -ddphi*sin_phi;				              /*  11		*/
-        
-        do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
-                   f,fshift,pbc,g,x,t1,t2,t3);		      /* 112		*/
-        vtot += v;
-    }  
-    *dvdl += dvdl_term;
+    rbp     = parm[1];
+    rbpBA   = parmB[1]-parmA[1];
+    ddphi  += rbp*cosfac;
+    cosfac *= cos_phi;
+    v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
+    rbp     = parm[2];
+    rbpBA   = parmB[2]-parmA[2];    
+    ddphi  += c2*rbp*cosfac;
+    cosfac *= cos_phi;
+    v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
+    rbp     = parm[3];
+    rbpBA   = parmB[3]-parmA[3];
+    ddphi  += c3*rbp*cosfac;
+    cosfac *= cos_phi;
+    v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
+    rbp     = parm[4];
+    rbpBA   = parmB[4]-parmA[4];
+    ddphi  += c4*rbp*cosfac;
+    cosfac *= cos_phi;
+    v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
+    rbp     = parm[5];
+    rbpBA   = parmB[5]-parmA[5];
+    ddphi  += c5*rbp*cosfac;
+    cosfac *= cos_phi;
+    v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
+   
+    ddphi = -ddphi*sin_phi;				/*  11		*/
     
-    return vtot;
+    do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
+	       f,fshift,pbc,g,x,t1,t2,t3);		/* 112		*/
+    vtot += v;
+  }  
+  *dvdlambda += dvdl;
+
+  return vtot;
 }
 
 int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *ipp2)
@@ -1662,7 +1602,7 @@ real cmap_dihs(int nbonds,
 			   const t_iatom forceatoms[],const t_iparams forceparams[],gmx_cmap_t *cmap_grid,
 			   const rvec x[],rvec f[],rvec fshift[],
 			   const t_pbc *pbc,const t_graph *g,
-			   real lambda,real *dvdl,
+			   real lambda,real *dvdlambda,
 			   const t_mdatoms *md,t_fcdata *fcd,
 			   int *global_atom_index)
 {
@@ -2098,7 +2038,7 @@ real g96bonds(int nbonds,
 	      const t_iatom forceatoms[],const t_iparams forceparams[],
 	      const rvec x[],rvec f[],rvec fshift[],
 	      const t_pbc *pbc,const t_graph *g,
-	      real lambda,real *dvdl,
+	      real lambda,real *dvdlambda,
 	      const t_mdatoms *md,t_fcdata *fcd,
 	      int *global_atom_index)
 {
@@ -2116,7 +2056,7 @@ real g96bonds(int nbonds,
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);		/*   3 		*/
     dr2  = iprod(dx,dx);				/*   5		*/
       
-    *dvdl += g96harmonic(forceparams[type].harmonic.krA,
+    *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
 			      forceparams[type].harmonic.krB,
 			      forceparams[type].harmonic.rA,
 			      forceparams[type].harmonic.rB,
@@ -2163,7 +2103,7 @@ real g96angles(int nbonds,
 	       const t_iatom forceatoms[],const t_iparams forceparams[],
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
-	       real lambda,real *dvdl,
+	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
 	       int *global_atom_index)
 {
@@ -2183,7 +2123,7 @@ real g96angles(int nbonds,
     
     cos_theta  = g96bond_angle(x[ai],x[aj],x[ak],pbc,r_ij,r_kj,&t1,&t2);
 
-    *dvdl += g96harmonic(forceparams[type].harmonic.krA,
+    *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
 			      forceparams[type].harmonic.krB,
 			      forceparams[type].harmonic.rA,
 			      forceparams[type].harmonic.rB,
@@ -2230,7 +2170,7 @@ real cross_bond_bond(int nbonds,
 		     const t_iatom forceatoms[],const t_iparams forceparams[],
 		     const rvec x[],rvec f[],rvec fshift[],
 		     const t_pbc *pbc,const t_graph *g,
-		     real lambda,real *dvdl,
+		     real lambda,real *dvdlambda,
 		     const t_mdatoms *md,t_fcdata *fcd,
 		     int *global_atom_index)
 {
@@ -2301,7 +2241,7 @@ real cross_bond_angle(int nbonds,
 		      const t_iatom forceatoms[],const t_iparams forceparams[],
 		      const rvec x[],rvec f[],rvec fshift[],
 		      const t_pbc *pbc,const t_graph *g,
-		      real lambda,real *dvdl,
+		      real lambda,real *dvdlambda,
 		      const t_mdatoms *md,t_fcdata *fcd,
 		      int *global_atom_index)
 {
@@ -2420,7 +2360,7 @@ real tab_bonds(int nbonds,
 	       const t_iatom forceatoms[],const t_iparams forceparams[],
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
-	       real lambda,real *dvdl,
+	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd,
 	       int *global_atom_index)
 {
@@ -2441,7 +2381,7 @@ real tab_bonds(int nbonds,
 
     table = forceparams[type].tab.table;
 
-    *dvdl += bonded_tab("bond",table,
+    *dvdlambda += bonded_tab("bond",table,
 			     &fcd->bondtab[table],
 			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
@@ -2477,7 +2417,7 @@ real tab_angles(int nbonds,
 		const t_iatom forceatoms[],const t_iparams forceparams[],
 		const rvec x[],rvec f[],rvec fshift[],
 		const t_pbc *pbc,const t_graph *g,
-		real lambda,real *dvdl,
+		real lambda,real *dvdlambda,
 		const t_mdatoms *md,t_fcdata *fcd,
 		int *global_atom_index)
 {
@@ -2498,7 +2438,7 @@ real tab_angles(int nbonds,
 
     table = forceparams[type].tab.table;
   
-    *dvdl += bonded_tab("angle",table,
+    *dvdlambda += bonded_tab("angle",table,
 			     &fcd->angletab[table],
 			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
@@ -2555,7 +2495,7 @@ real tab_dihs(int nbonds,
 	      const t_iatom forceatoms[],const t_iparams forceparams[],
 	      const rvec x[],rvec f[],rvec fshift[],
 	      const t_pbc *pbc,const t_graph *g,
-	      real lambda,real *dvdl,
+	      real lambda,real *dvdlambda,
 	      const t_mdatoms *md,t_fcdata *fcd,
 	      int *global_atom_index)
 {
@@ -2578,7 +2518,7 @@ real tab_dihs(int nbonds,
     table = forceparams[type].tab.table;
 
     /* Hopefully phi+M_PI never results in values < 0 */
-    *dvdl += bonded_tab("dihedral",table,
+    *dvdlambda += bonded_tab("dihedral",table,
 			     &fcd->dihtab[table],
 			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
@@ -2597,244 +2537,176 @@ real tab_dihs(int nbonds,
   return vtot;
 }
 
-real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef, 
-                   rvec x[], rvec f[], t_forcerec *fr,
-                   const t_pbc *pbc,const t_graph *g, 
-                   gmx_enerdata_t *enerd, t_nrnb *nrnb, 
-                   real *lambda, real *dvdl,
-                   const t_mdatoms *md,t_fcdata *fcd,
-                   int *global_atom_index, gmx_cmap_t *cmap_grid, 
-                   bool bPrintSepPot)
-{
-    int ind,nat1,nbonds,efptCURRENT,nbonds_np;
-    real v=0;
-    real *pdvdl;
-    real dvdl_dum[efptNR];
-    bool bForeign,bSep;
-    t_iatom *iatoms;
-
-    bForeign=FALSE;
-    if (dvdl==NULL) 
-    {
-        bForeign = TRUE;   /* if dvdl is NULL, we are doing foreign lambdas */
-        pdvdl = dvdl_dum;
-    } else {
-        pdvdl = dvdl;
-    }
-    
-    if (ftype<F_GB12 || ftype>F_GB14) 
-    {
-        if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES)) 
-        {
-            ind  = interaction_function[ftype].nrnb_ind;
-            nat1 = interaction_function[ftype].nratoms+1;
-
-            if (bForeign) 
-            {
-                nbonds_np = idef->il[ftype].nr_nonperturbed;
-                nbonds    = idef->il[ftype].nr - nbonds_np;
-                iatoms    = idef->il[ftype].iatoms + nbonds_np*nat1;
-            } 
-            else
-            {
-                iatoms = idef->il[ftype].iatoms;
-                nbonds    = idef->il[ftype].nr;
-            }
-            if (nbonds > 0)
-            {
-                if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) 
-                {
-                    if (IS_RESTRAINT_TYPE(ftype)) 
-                    {
-                        efptCURRENT = efptRESTRAINT;
-                    } 
-                    else 
-                    {
-                        efptCURRENT = efptBONDED;
-                    }
-
-                    if(ftype==F_CMAP)
-                    {
-                        v = cmap_dihs(nbonds,iatoms,
-                                      idef->iparams,cmap_grid,
-                                      (const rvec*)x,f,fr->fshift,
-                                      pbc,g,lambda[efptBONDED],&pdvdl[efptBONDED],md,fcd,
-                                      global_atom_index);
-                    }
-                    else
-                    {
-                        v =	    interaction_function[ftype].ifunc(nbonds,iatoms,
-                                                                  idef->iparams,
-                                                                  (const rvec*)x,f,fr->fshift,
-                                                                  pbc,g,lambda[efptCURRENT],&pdvdl[efptCURRENT],
-                                                                  md,fcd,global_atom_index);
-                    }
-                    if (!bForeign) 
-                    {
-                        enerd->dvdl_nonlin[efptCURRENT] += dvdl[efptCURRENT];
-                        if (bPrintSepPot) 
-                        {
-                            fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                                    interaction_function[ftype].longname,nbonds/nat1,v,pdvdl[efptCURRENT]);
-                        }
-                    } 
-                }
-                else 
-                {
-                    v = do_listed_vdw_q(ftype,nbonds,iatoms,
-                                        idef->iparams,
-                                        (const rvec*)x,f,fr->fshift,
-                                        pbc,g,
-                                        lambda,pdvdl,
-                                        md,fr,&enerd->grpp,global_atom_index);
-                    if (!bForeign)
-                    {
-                        enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
-                        enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
-                        
-                        if (bPrintSepPot) 
-                        {
-                            fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                                    interaction_function[ftype].longname,
-                                    interaction_function[F_LJ14].longname,nbonds/nat1,pdvdl[efptVDW]);
-                            fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-                                    interaction_function[ftype].longname,
-                                    interaction_function[F_COUL14].longname,nbonds/nat1,pdvdl[efptCOUL]);
-                        }
-                    }
-                    
-                }
-                if (ind != -1)
-                {
-                    inc_nrnb(nrnb,ind,nbonds/nat1);
-                }
-            }
-        }
-    }
-    return v;
-}
-
 void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
-                const t_idef *idef,
-                rvec x[],history_t *hist,
-                rvec f[],t_forcerec *fr,
-                const t_pbc *pbc,const t_graph *g,
-                gmx_enerdata_t *enerd,t_nrnb *nrnb,
-                real *lambda,
-                const t_mdatoms *md,
-                t_fcdata *fcd,int *global_atom_index,
-                t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
-                bool bPrintSepPot,gmx_large_int_t step)
+		const t_idef *idef,
+		rvec x[],history_t *hist,
+		rvec f[],t_forcerec *fr,
+		const t_pbc *pbc,const t_graph *g,
+		gmx_enerdata_t *enerd,t_nrnb *nrnb,
+		real lambda,
+		const t_mdatoms *md,
+		t_fcdata *fcd,int *global_atom_index,
+		t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
+		bool bPrintSepPot,gmx_large_int_t step)
 {
-    int    i,ftype,nbonds,ind,nat,efptCURRENT;
-    real   v,dvdl[efptNR];
-    real *epot;
-    const  t_pbc *pbc_null;
-    char   buf[22];
+  int    ftype,nbonds,ind,nat1;
+  real   *epot,v,dvdl;
+  const  t_pbc *pbc_null;
+  char   buf[22];
 
-    for (i=0;i<efptNR;i++)
-    {
-        dvdl[i] = 0.0;
-    }
-    if (fr->bMolPBC)
-    {
-        pbc_null = pbc;
-    }
-    else
-    {
-        pbc_null = NULL;
-    }
+  if (fr->bMolPBC)
+    pbc_null = pbc;
+  else
+    pbc_null = NULL;
 
-    if (bPrintSepPot) 
-    {
-        fprintf(fplog,"Step %s: bonded V and dVdl for this node\n",
-                gmx_step_str(step,buf));
-    }
+  if (bPrintSepPot)
+    fprintf(fplog,"Step %s: bonded V and dVdl for this node\n",
+	    gmx_step_str(step,buf));
 
 #ifdef DEBUG
-    if (g && debug) {
-        p_graph(debug,"Bondage is fun",g);
-    }
+  if (g && debug)
+    p_graph(debug,"Bondage is fun",g);
 #endif
-    
-    epot = enerd->term;
-    
-    /* Do pre force calculation stuff which might require communication */
-    if (idef->il[F_ORIRES].nr) 
-    {
-        epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
-                                            idef->il[F_ORIRES].iatoms,
-                                            idef->iparams,md,(const rvec*)x,
-                                            pbc_null,fcd,hist);
+  
+  epot = enerd->term;
+
+  /* Do pre force calculation stuff which might require communication */
+  if (idef->il[F_ORIRES].nr) {
+    epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
+					idef->il[F_ORIRES].iatoms,
+					idef->iparams,md,(const rvec*)x,
+					pbc_null,fcd,hist);
+  }
+  if (idef->il[F_DISRES].nr) {
+    calc_disres_R_6(ms,idef->il[F_DISRES].nr,
+		    idef->il[F_DISRES].iatoms,
+		    idef->iparams,(const rvec*)x,pbc_null,
+		    fcd,hist);
+  }
+  
+  /* Loop over all bonded force types to calculate the bonded forces */
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+	  if(ftype<F_GB12 || ftype>F_GB14) {
+    if (interaction_function[ftype].flags & IF_BOND &&
+	!(ftype == F_CONNBONDS || ftype == F_POSRES)) {
+      nbonds=idef->il[ftype].nr;
+      if (nbonds > 0) {
+	ind  = interaction_function[ftype].nrnb_ind;
+	nat1 = interaction_function[ftype].nratoms + 1;
+	dvdl = 0;
+	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
+		if(ftype==F_CMAP)
+		{
+			v = cmap_dihs(nbonds,idef->il[ftype].iatoms,
+						  idef->iparams,cmap_grid,
+						  (const rvec*)x,f,fr->fshift,
+						  pbc_null,g,lambda,&dvdl,md,fcd,
+						  global_atom_index);
+		}
+		else
+		{
+			v =
+	    interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
+					      idef->iparams,
+					      (const rvec*)x,f,fr->fshift,
+					      pbc_null,g,lambda,&dvdl,md,fcd,
+					      global_atom_index);
+		}
+
+	  if (bPrintSepPot) {
+	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+		    interaction_function[ftype].longname,nbonds/nat1,v,dvdl);
+	  }
+	} else {
+	  v = do_listed_vdw_q(ftype,nbonds,idef->il[ftype].iatoms,
+			      idef->iparams,
+			      (const rvec*)x,f,fr->fshift,
+			      pbc_null,g,
+			      lambda,&dvdl,
+			      md,fr,&enerd->grpp,global_atom_index);
+	  if (bPrintSepPot) {
+	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+		    interaction_function[ftype].longname,
+		    interaction_function[F_COUL14].longname,nbonds/nat1,dvdl);
+	  }
+	}
+	if (ind != -1)
+	  inc_nrnb(nrnb,ind,nbonds/nat1);
+	epot[ftype]        += v;
+	enerd->dvdl_nonlin += dvdl;
+      }
     }
-    if (idef->il[F_DISRES].nr) 
-    {
-        calc_disres_R_6(ms,idef->il[F_DISRES].nr,
-                        idef->il[F_DISRES].iatoms,
-                        idef->iparams,(const rvec*)x,pbc_null,
-                        fcd,hist);
-    }
-    
-    /* Loop over all bonded force types to calculate the bonded forces */
-    for(ftype=0; (ftype<F_NRE); ftype++) 
-    {
-        v = calc_one_bond(fplog,ftype,idef,x, 
-                          f,fr,pbc_null,g,enerd,nrnb,lambda,dvdl,
-                          md,fcd,global_atom_index,cmap_grid,bPrintSepPot);
-        epot[ftype]        += v;
-    }
-    /* Copy the sum of violations for the distance restraints from fcd */
-    if (fcd)
-    {
-        epot[F_DISRESVIOL] = fcd->disres.sumviol;
-    }
+  }
+  }
+  /* Copy the sum of violations for the distance restraints from fcd */
+  if (fcd)
+    epot[F_DISRESVIOL] = fcd->disres.sumviol;
 }
 
 void calc_bonds_lambda(FILE *fplog,
-                       const t_idef *idef,
-                       rvec x[],
-                       t_forcerec *fr,
-                       const t_pbc *pbc,const t_graph *g,
-                       gmx_enerdata_t *enerd,t_nrnb *nrnb,
-                       real *lambda,
-                       const t_mdatoms *md,
-                       t_fcdata *fcd,
-                       gmx_cmap_t *cmap_grid,
-                       int *global_atom_index)
+		       const t_idef *idef,
+		       rvec x[],
+		       t_forcerec *fr,
+		       const t_pbc *pbc,const t_graph *g,
+		       gmx_enerdata_t *enerd,t_nrnb *nrnb,
+		       real lambda,
+		       const t_mdatoms *md,
+		       t_fcdata *fcd,int *global_atom_index)
 {
-    int    i,ftype,nbonds_np,nbonds,ind,nat,efptCURRENT;
-    real   v,dr,dr2,*epot;
-    rvec   *f,*fshift_orig;
-    const  t_pbc *pbc_null;
-    t_iatom *iatom_fe;
+  int    ftype,nbonds_np,nbonds,ind,nat1;
+  real   *epot,v,dvdl;
+  rvec   *f,*fshift_orig;
+  const  t_pbc *pbc_null;
+  t_iatom *iatom_fe;
 
-    if (fr->bMolPBC)
-    {
-        pbc_null = pbc;
+  if (fr->bMolPBC)
+    pbc_null = pbc;
+  else
+    pbc_null = NULL;
+  
+  epot = enerd->term;
+  
+  snew(f,fr->natoms_force);
+  /* We want to preserve the fshift array in forcerec */
+  fshift_orig = fr->fshift;
+  snew(fr->fshift,SHIFTS);
+
+  /* Loop over all bonded force types to calculate the bonded forces */
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    if(ftype<F_GB12 || ftype>F_GB14) {
+      if (interaction_function[ftype].flags & IF_BOND &&
+	  !(ftype == F_CONNBONDS || ftype == F_POSRES)) {
+	nbonds_np = idef->il[ftype].nr_nonperturbed;
+	nbonds    = idef->il[ftype].nr - nbonds_np;
+	if (nbonds > 0) {
+	  ind  = interaction_function[ftype].nrnb_ind;
+	  nat1 = interaction_function[ftype].nratoms + 1;
+	  iatom_fe = idef->il[ftype].iatoms + nbonds_np*nat1;
+	  dvdl = 0;
+	  if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
+	    v =
+	      interaction_function[ftype].ifunc(nbonds,iatom_fe,
+						idef->iparams,
+						(const rvec*)x,f,fr->fshift,
+						pbc_null,g,lambda,&dvdl,md,fcd,
+						global_atom_index);
+	  } else {
+	    v = do_listed_vdw_q(ftype,nbonds,iatom_fe,
+				idef->iparams,
+				(const rvec*)x,f,fr->fshift,
+				pbc_null,g,
+				lambda,&dvdl,
+				md,fr,&enerd->grpp,global_atom_index);
+	  }
+	  if (ind != -1)
+	    inc_nrnb(nrnb,ind,nbonds/nat1);
+	  epot[ftype] += v;
+	}
+      }
     }
-    else
-    {
-        pbc_null = NULL;
-    }
-    
-    epot = enerd->term;
-    
-    snew(f,fr->natoms_force);
-    /* We want to preserve the fshift array in forcerec */
-    fshift_orig = fr->fshift;
-    snew(fr->fshift,SHIFTS);
-    
-    /* Loop over all bonded force types to calculate the bonded forces */
-    for(ftype=0; (ftype<F_NRE); ftype++) 
-    {
-        v = calc_one_bond(fplog,ftype,idef,x, 
-                          f,fr,pbc_null,g,enerd,nrnb,lambda,NULL,
-                          md,fcd,global_atom_index,cmap_grid,FALSE);
-        epot[ftype] += v;
-    }
-    
-    sfree(fr->fshift);
-    fr->fshift = fshift_orig;
-    sfree(f);
+  }
+
+  sfree(fr->fshift);
+  fr->fshift = fshift_orig;
+  sfree(f);
 }

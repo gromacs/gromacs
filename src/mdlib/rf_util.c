@@ -49,7 +49,7 @@ real RF_excl_correction(FILE *log,
 			const t_forcerec *fr,t_graph *g,
 			const t_mdatoms *mdatoms,const t_blocka *excl,
 			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
-			real lambda,real *dvdl)
+			real lambda,real *dvdlambda)
 {
   /* Calculate the reaction-field energy correction for this node:
    * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
@@ -152,13 +152,13 @@ real RF_excl_correction(FILE *log,
 	    rvec_dec(f[k],df);
 	    rvec_inc(fshift[ki],df);
 	    rvec_dec(fshift[CENTRAL],df);
-	    *dvdl += (qqB - qqA)*v;
+	    *dvdlambda += (qqB - qqA)*v;
 	  }
 	}
       }
     }
     ener += -0.5*ec*(L1*q2sumA + lambda*q2sumB);
-    *dvdl += -0.5*ec*(q2sumB - q2sumA);
+    *dvdlambda += -0.5*ec*(q2sumB - q2sumA);
   }
   
   if (debug)

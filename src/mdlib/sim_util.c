@@ -95,6 +95,12 @@
 
 #include "qmmm.h"
 
+#if 0
+typedef struct gmx_timeprint {
+    
+} t_gmx_timeprint;
+#endif
+
 
 double
 gmx_gettime()
@@ -387,7 +393,7 @@ void do_force(FILE *fplog,t_commrec *cr,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real *lambda,t_graph *graph,
+              real lambda,t_graph *graph,
               t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
               double t,FILE *field,gmx_edsam_t ed,
               bool bBornRadii,
@@ -399,10 +405,10 @@ void do_force(FILE *fplog,t_commrec *cr,
     bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
-    real   e,v,dvdl[efptNR];
-    real   dvdl_dum,lambda_dum;
+    real   e,v,dvdl;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
+  
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
 
@@ -498,7 +504,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    gmx_pme_send_x(cr,bBS ? boxs : box,x,mdatoms->nChargePerturbed,lambda[efptCOUL],step);
+    gmx_pme_send_x(cr,bBS ? boxs : box,x,mdatoms->nChargePerturbed,lambda,step);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);
@@ -543,7 +549,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         for(j=0; j<DIM; j++)
         {
             mu_tot[j] =
-                (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
+                (1.0 - lambda)*fr->mu_tot[0][j] + lambda*fr->mu_tot[1][j];
         }
     }
 
@@ -571,17 +577,16 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* Do the actual neighbour searching and if twin range electrostatics
          * also do the calculation of long range forces and energies.
          */
-        for (i=0;i<efptNR;i++) {dvdl[i] = 0;}
+        dvdl = 0; 
         ns(fplog,fr,x,box,
            groups,&(inputrec->opts),top,mdatoms,
-           cr,nrnb,lambda,dvdl,&enerd->grpp,bFillGrid,
+           cr,nrnb,lambda,&dvdl,&enerd->grpp,bFillGrid,
            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
         if (bSepDVDL)
         {
             fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
         }
-        enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
-        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
+        enerd->dvdl_lin += dvdl;
         
         wallcycle_stop(wcycle,ewcNS);
     }
@@ -674,7 +679,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                    top->idef.iparams_posres,
                    (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda[efptRESTRAINT],&(dvdl[efptRESTRAINT]),
+                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
                    fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
         if (bSepDVDL)
         {
@@ -682,33 +687,13 @@ void do_force(FILE *fplog,t_commrec *cr,
                     interaction_function[F_POSRES].longname,v,dvdl);
         }
         enerd->term[F_POSRES] += v;
-        enerd->dvdl_nonlin[efptRESTRAINT] += dvdl[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
-                                                                     but we can't be sure w/o additional checking that is
-                                                                     hard to do at this level of code. Otherwise, 
-                                                                     the dvdl is not differentiable */
+        /* This linear lambda dependence assumption is only correct
+         * when only k depends on lambda,
+         * not when the reference position depends on lambda.
+         * grompp checks for this.
+         */
+        enerd->dvdl_lin += dvdl;
         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
-
-        if ((inputrec->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
-        {
-            for(i=0; i<enerd->n_lambda; i++)
-            {
-                if (i==0) 
-                {
-                    lambda_dum = lambda[efptRESTRAINT];
-                }
-                else
-                {
-                    lambda_dum = inputrec->fepvals->all_lambda[efptRESTRAINT][i-1];
-                }
-                
-                v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
-                           top->idef.iparams_posres,
-                           (const rvec*)x,NULL,NULL,
-                           inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda_dum,&dvdl_dum,
-                           fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
-                enerd->enerpart_lambda[i] += v;
-            }
-        }
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
@@ -716,7 +701,7 @@ void do_force(FILE *fplog,t_commrec *cr,
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
-                      inputrec->fepvals,lambda,graph,&(top->excls),fr->mu_tot,
+                      lambda,graph,&(top->excls),fr->mu_tot,
                       flags,&cycles_pme);
     
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
@@ -820,15 +805,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          * which is why we call pull_potential after calc_virial.
          */
         set_pbc(&pbc,inputrec->ePBC,box);
-        dvdl[efptRESTRAINT] = 0; 
+        dvdl = 0; 
         enerd->term[F_COM_PULL] =
             pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-                           cr,t,lambda[efptRESTRAINT],x,f,vir_force,&(dvdl[efptRESTRAINT]));
+                           cr,t,lambda,x,f,vir_force,&dvdl);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl[efptRESTRAINT]);
+            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
         }
-        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT];
+        enerd->dvdl_lin += dvdl;
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
@@ -840,15 +825,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          * forces, virial and energy from the PME nodes here.
          */    
         wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-        dvdl[efptCOUL] = 0;
-        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&(dvdl[efptCOUL]),
+        dvdl = 0;
+        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
                           &cycles_seppme);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl[efptCOUL]);
+            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
         }
         enerd->term[F_COUL_RECIP] += e;
-        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
+        enerd->dvdl_lin += dvdl;
         if (wcycle)
         {
             dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
@@ -911,9 +896,8 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     gmx_large_int_t step;
     double mass,tmass,vcm[4];
     real   dt=ir->delta_t;
-    real   dvdl_dum;
+    real   dvdlambda;
     rvec   *savex;
-    char   buf[22];
     
     snew(savex,state->natoms);
 
@@ -926,16 +910,14 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     /* Do a first constrain to reset particles... */
     step = ir->init_step;
     if (fplog)
-    {
-        fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
-    }
-    dvdl_dum = 0;
+        fprintf(fplog,"\nConstraining the starting coordinates (step %ld)\n",step);
+    dvdlambda = 0;
     
     /* constrain the current position */
     constrain(NULL,TRUE,FALSE,constr,&(top->idef),
               ir,NULL,cr,step,0,md,
               state->x,state->x,NULL,
-              state->box,state->lambda[efptBONDED],&dvdl_dum,
+              state->box,state->lambda,&dvdlambda,
               NULL,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
     if (EI_VV(ir->eI)) 
     {
@@ -945,7 +927,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
                   ir,NULL,cr,step,0,md,
                   state->x,state->v,state->v,
-                  state->box,state->lambda[efptBONDED],&dvdl_dum,
+                  state->box,state->lambda,&dvdlambda,
                   NULL,NULL,nrnb,econqVeloc,ir->epc==epcMTTK,state->veta,state->veta);
     }
     /* constrain the inital velocities at t-dt/2 */
@@ -969,11 +951,11 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
             fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %ld)\n",
                     step);
         }
-        dvdl_dum = 0;
+        dvdlambda = 0;
         constrain(NULL,TRUE,FALSE,constr,&(top->idef),
                   ir,NULL,cr,step,-1,md,
                   state->x,savex,NULL,
-                  state->box,state->lambda[efptBONDED],&dvdl_dum,
+                  state->box,state->lambda,&dvdlambda,
                   state->v,NULL,nrnb,econqCoord,ir->epc==epcMTTK,state->veta,state->veta);
         
         for(i=start; i<end; i++) {
@@ -1154,115 +1136,109 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    matrix box,real lambda,tensor pres,tensor virial,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
-    bool bCorrAll,bCorrPres;
-    real dvdl,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
-    int  m;
-    
-    *prescorr = 0;
-    *enercorr = 0;
-    *dvdlcorr = 0;
-    
-    clear_mat(virial);
-    clear_mat(pres);
-    
-    if (ir->eDispCorr != edispcNO) {
-        bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-                     ir->eDispCorr == edispcAllEnerPres);
-        bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-                     ir->eDispCorr == edispcAllEnerPres);
-        
-        invvol = 1/det(box);
-        if (fr->n_tpi) 
-        {
-            /* Only correct for the interactions with the inserted molecule */
-            dens = (natoms - fr->n_tpi)*invvol;
-            ninter = fr->n_tpi;
-        } 
-        else 
-        {
-            dens = natoms*invvol;
-            ninter = 0.5*natoms;
-        }
-        
-        if (ir->efep == efepNO) 
-        {
-            avcsix    = fr->avcsix[0];
-            avctwelve = fr->avctwelve[0];
-        } 
-        else 
-        {
-            avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
-            avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
-        }
-        
-        *prescorr = 0;
-        *enercorr = 0;
-        *dvdlcorr = 0;
-        
-        enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-        *enercorr += avcsix*enerdiff;
-        dvdl = 0.0;
-        
-        if (ir->efep != efepNO) 
-        {
-            dvdl += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
-        }
-        if (bCorrAll) 
-        {
-            enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-            *enercorr += avctwelve*enerdiff;
-            if (fr->efep != efepNO) 
-            {
-                dvdl += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
-            }
-        }
-        
-        if (bCorrPres) 
-        {
-            svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
-            if (ir->eDispCorr == edispcAllEnerPres)
-            {
-                svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
-            }
-            /* The factor 2 is because of the Gromacs virial definition */
-            spres = -2.0*invvol*svir*PRESFAC;
-            
-            for(m=0; m<DIM; m++) {
-                virial[m][m] += svir;
-                pres[m][m] += spres;
-            }
-            *prescorr += spres;
-        }
-        
-        /* Can't currently control when it prints, for now, just print when degugging */
-        
-        if (debug)
-        {
-            if (bCorrAll) {
-                fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
-                        avcsix,avctwelve);
-            }
-            if (bCorrPres)
-            {
-                fprintf(debug,
-                        "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
-                        *enercorr,spres,svir);
-            }
-            else
-            {
-                fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
-            }
-        }
-        
-        if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-            fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    *enercorr,dvdl);
-        
-        if (fr->efep != efepNO) 
-        {
-            *dvdlcorr += dvdl;
-        }
-    }
+  bool bCorrAll,bCorrPres;
+  real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
+  int  m;
+  
+  *prescorr = 0;
+  *enercorr = 0;
+  *dvdlcorr = 0;
+  
+  clear_mat(virial);
+  clear_mat(pres);
+  
+  if (ir->eDispCorr != edispcNO) {
+      bCorrAll  = (ir->eDispCorr == edispcAllEner ||
+                   ir->eDispCorr == edispcAllEnerPres);
+      bCorrPres = (ir->eDispCorr == edispcEnerPres ||
+                   ir->eDispCorr == edispcAllEnerPres);
+
+      invvol = 1/det(box);
+      if (fr->n_tpi) 
+      {
+          /* Only correct for the interactions with the inserted molecule */
+          dens = (natoms - fr->n_tpi)*invvol;
+          ninter = fr->n_tpi;
+      } 
+      else 
+      {
+          dens = natoms*invvol;
+          ninter = 0.5*natoms;
+      }
+
+      if (ir->efep == efepNO) 
+      {
+          avcsix    = fr->avcsix[0];
+          avctwelve = fr->avctwelve[0];
+      } 
+      else 
+      {
+          avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
+          avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
+      }
+      
+      enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
+      *enercorr += avcsix*enerdiff;
+      dvdlambda = 0.0;
+      if (ir->efep != efepNO) 
+      {
+          dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+      }
+      if (bCorrAll) 
+      {
+          enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
+          *enercorr += avctwelve*enerdiff;
+          if (fr->efep != efepNO) 
+          {
+              dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+          }
+      }
+      
+      if (bCorrPres) 
+      {
+          svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
+          if (ir->eDispCorr == edispcAllEnerPres)
+          {
+              svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
+          }
+          /* The factor 2 is because of the Gromacs virial definition */
+          spres = -2.0*invvol*svir*PRESFAC;
+          
+          for(m=0; m<DIM; m++) {
+              virial[m][m] += svir;
+              pres[m][m] += spres;
+          }
+          *prescorr += spres;
+      }
+      
+      /* Can't currently control when it prints, for now, just print when degugging */
+      if (debug)
+      {
+          if (bCorrAll) {
+              fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                      avcsix,avctwelve);
+          }
+          if (bCorrPres) 
+          {
+              fprintf(debug,
+                      "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
+                      *enercorr,spres,svir);
+          }
+          else
+          {
+              fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
+          }
+      }
+      
+      if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+          fprintf(fplog,sepdvdlformat,"Dispersion correction",
+                  *enercorr,dvdlambda);
+      
+      if (fr->efep != efepNO) 
+      {
+          *dvdlcorr += dvdlambda;
+      }
+  }
 }
 
 void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
@@ -1425,12 +1401,11 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 void init_md(FILE *fplog,
              t_commrec *cr,t_inputrec *ir,const output_env_t oenv,
              double *t,double *t0,
-             real *lambda, int *fep_state, double *lam0,
+             real *lambda,double *lam0,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,const t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
-             const char **fn_cpt,
+             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,const char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
@@ -1444,26 +1419,15 @@ void init_md(FILE *fplog,
 	
     /* Initial values */
     *t = *t0       = ir->init_t;
-    for (i=0;i<efptNR;i++) 
+    if (ir->efep != efepNO)
     {
-        if (ir->efep != efepNO)
-        {
-            *fep_state = ir->fepvals->init_fep_state;
-            /* overwrite lambda state with init_lambda for now for backwards compatibility */
-            if (ir->fepvals->init_lambda>=0) /* if it's -1, it was never initializd */
-            {
-                lambda[i] = lam0[i] = ir->fepvals->init_lambda;
-            }
-            else 
-            {
-                lambda[i] = lam0[i] = ir->fepvals->all_lambda[i][*fep_state];
-            }
-        } 
-        else 
-        {
-            lambda[i] = lam0[i] = 0.0;
-        }
+        *lam0 = ir->init_lambda;
+        *lambda = *lam0 + ir->init_step*ir->delta_lambda;
     }
+    else
+    {
+        *lambda = *lam0   = 0.0;
+    } 
 
     *bSimAnn=FALSE;
     for(i=0;i<ir->opts.ngtc;i++)
