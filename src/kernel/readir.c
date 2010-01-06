@@ -689,6 +689,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
 	  sfree(count_fep_lambdas[i]);
 	}
     }
+  
   sfree(count_fep_lambdas);
 
   /* "fep-vals" is either zero or the full number. If zero, we'll need to define fep-lambda for internal
@@ -696,10 +697,9 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
 
   if (nfep[efptFEP] == 0) 
     {
-      for (i=0;i<=fep->n_lambda;i++) 
+      for (i=0;i<fep->n_lambda;i++) 
 	{
 	  fep->all_lambda[efptFEP][i] = 0;
-	  /*fep->all_lambda[efptFEP][i] = (real)i/fep->n_lambda;*/
 	}
     }  
 

@@ -96,8 +96,9 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
 
   /* Set to zero */
   for(j=0; (j<MAXFORCEPARAM); j++)
-    newparam->generic.buf[j]=0.0;
-    
+    {
+      newparam->generic.buf[j]=0.0;
+    }
   switch (ftype) {
   case F_G96ANGLES:
     /* Post processing of input data: store cosine iso angle itself */
@@ -118,7 +119,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->fene.kb=old[1];
     break;
   case F_DISRESTRBONDS:
-    /* ignore the label and type prime fields in old[0] and old[1] */
+    /* skips the label and type to match distance restraints */
     newparam->disrestraint.lowA = old[2];
     newparam->disrestraint.up1A = old[3];
     newparam->disrestraint.up2A = old[4];
