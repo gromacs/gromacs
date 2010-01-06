@@ -571,7 +571,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
         }
         if (ir->epc!=epcNO) {
             np = sprintf(buf,"pv(%s)",unit_energy);        
-            setname[nsets+1] = strdup(buf);
+            setname[(nsets-1)+1] = strdup(buf);  /* the first entry after nsets */
         }
 
         xvgr_legend(fp,nsetsextend,setname,oenv);
