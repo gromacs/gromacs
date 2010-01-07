@@ -1971,11 +1971,10 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK,
     do_int (idum);
     do_real(rdum);
   }
-  if (fver >= 69) 
-    {
-      /*do_int(tpx->fep_state);  eventually replace lambda with fep state - MRS*/
-      do_real(tpx->lambda);
-    }
+  if (fver >= 70) {
+    do_int(tpx->fep_state);  /*eventually replace lambda with fep state - MRS*/
+  }
+  do_real(tpx->lambda);
   do_int (tpx->bIr);
   do_int (tpx->bTop);
   do_int (tpx->bX);
@@ -2007,6 +2006,7 @@ static int do_tpx(int fp,bool bRead,
     tpx.natoms = state->natoms;
     tpx.ngtc   = state->ngtc;
     tpx.fep_state = state->fep_state;
+    tpx.lambda = state->lambda[efptFEP];
     tpx.bIr  = (ir       != NULL);
     tpx.bTop = (mtop     != NULL);
     tpx.bX   = (state->x != NULL);
@@ -2021,8 +2021,13 @@ static int do_tpx(int fp,bool bRead,
 
   if (bRead) {
     state->flags  = 0;
-    /* NEEDS SOME WORK - MRS*/
-    state->fep_state = tpx.fep_state;
+    if (file_version >= 70) 
+      {
+	state->fep_state = tpx.fep_state;
+      }
+    /* will this get correctly set later? */
+    state->lambda[efptFEP] = tpx.lambda;
+    
     /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
     if (bXVallocated) {
       xptr = state->x;
