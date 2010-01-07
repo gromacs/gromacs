@@ -169,7 +169,8 @@ typedef struct gmx_pme {
     int  nnodes_minor;
 #ifdef GMX_MPI
     MPI_Comm mpi_comm;
-    MPI_Comm mpi_comm_d[2];
+    MPI_Comm mpi_comm_d[2];  /* Indexed on dimension, 0=x, 1=y */
+
     MPI_Datatype  rvec_mpi;  /* the pme vector's MPI type */
 #endif
 
@@ -200,11 +201,11 @@ typedef struct gmx_pme {
     
     int  *nnx,*nny,*nnz;
     
-    pme_atomcomm_t atc[2];
+    pme_atomcomm_t atc[2];  /* Indexed on decomposition index */
     matrix    recipbox;
     splinevec bsp_mod;
     
-    pme_overlap_t overlap[2];
+    pme_overlap_t overlap[2]; /* Indexed on dimension, 0=x, 1=y */
 
     pme_atomcomm_t atc_energy; /* Only for gmx_pme_calc_energy */
     
@@ -943,7 +944,7 @@ copy_fftgrid_to_pmegrid(gmx_pme_t pme, real *fftgrid, real *pmegrid)
 static void
 wrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 {
-    int     nx,ny,nz,pnx,pny,pnz,overlap,ix,iy,iz;
+    int     nx,ny,nz,pnx,pny,pnz,ny_x,overlap,ix,iy,iz;
 
     nx = pme->nkx;
     ny = pme->nky;
@@ -968,7 +969,7 @@ wrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
         }
     }
 
-    if (pme->ndecompdim < 2)
+    if (pme->nnodes_minor == 1)
     {
        for(ix=0; ix<pnx; ix++)
        {
@@ -983,11 +984,13 @@ wrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
        }
     }
      
-    if (pme->ndecompdim < 1)
+    if (pme->nnodes_major == 1)
     {
+        ny_x = (pme->nnodes_minor == 1 ? ny : pny);
+
         for(ix=0; ix<overlap; ix++)
         {
-            for(iy=0; iy<ny; iy++)
+            for(iy=0; iy<ny_x; iy++)
             {
                 for(iz=0; iz<nz; iz++)
                 {
@@ -1003,7 +1006,7 @@ wrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 static void
 unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 {
-    int     nx,ny,nz,pnx,pny,pnz,overlap,ix,iy,iz;
+    int     nx,ny,nz,pnx,pny,pnz,ny_x,overlap,ix,iy,iz;
 
     nx = pme->nkx;
     ny = pme->nky;
@@ -1015,11 +1018,13 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 
     overlap = pme->pme_order - 1;
 
-    if (pme->ndecompdim < 1)
+    if (pme->nnodes_major == 1)
     {
+        ny_x = (pme->nnodes_minor == 1 ? ny : pny);
+
         for(ix=0; ix<overlap; ix++)
         {
-            for(iy=0; iy<ny; iy++)
+            for(iy=0; iy<ny_x; iy++)
             {
                 for(iz=0; iz<nz; iz++)
                 {
@@ -1030,7 +1035,7 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
         }
     }
 
-    if (pme->ndecompdim < 2)
+    if (pme->nnodes_minor == 1)
     {
        for(ix=0; ix<pnx; ix++)
        {
@@ -1941,7 +1946,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
 #ifdef GMX_MPI
     if (PAR(cr))
     {
-        atc->mpi_comm = pme->mpi_comm_d[atc->dimind];
+        atc->mpi_comm = pme->mpi_comm_d[dimind];
         MPI_Comm_size(atc->mpi_comm,&atc->nslab);
         MPI_Comm_rank(atc->mpi_comm,&atc->nodeid);
     }
@@ -2145,25 +2150,39 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
-
-        pme->mpi_comm_d[0] = pme->mpi_comm;
-        pme->nodeid_major  = pme->nodeid;
-        pme->nodeid_minor  = 0;
-        pme->mpi_comm_d[1] = NULL;
     }
 #endif
 
     if (pme->nnodes == 1)
     {
         pme->ndecompdim = 0;
+        pme->nodeid_major = 0;
+        pme->nodeid_minor = 0;
     }
     else
     {
-        if (pme->nnodes == nnodes_major)
+        if (nnodes_minor == 1)
         {
+#ifdef GMX_MPI
+            pme->mpi_comm_d[0] = pme->mpi_comm;
+            pme->mpi_comm_d[1] = NULL;
+#endif
             pme->ndecompdim = 1;
+            pme->nodeid_major = pme->nodeid;
+            pme->nodeid_minor = 0;
+            
         }
-        else
+        else if (nnodes_major == 1)
+        {
+#ifdef GMX_MPI
+            pme->mpi_comm_d[0] = NULL;
+            pme->mpi_comm_d[1] = pme->mpi_comm;
+#endif
+            pme->ndecompdim = 1;
+            pme->nodeid_major = 0;
+            pme->nodeid_minor = pme->nodeid;
+        }
+        else 
         {
             if (pme->nnodes % nnodes_major != 0)
             {
@@ -2216,16 +2235,18 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
 
     /* Use atc[0] for spreading */
-    init_atomcomm(pme,&pme->atc[0],cr,0,TRUE);
+    init_atomcomm(pme,&pme->atc[0],cr,nnodes_major > 1 ? 0 : 1,TRUE);
     if (pme->ndecompdim >= 2)
     {
         init_atomcomm(pme,&pme->atc[1],cr,1,FALSE);
     }
     
-    if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
-        pme->nky <= pme->pme_order ||
-        pme->nkz <= pme->pme_order)
-        gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_order for x",pme->pme_order);
+    if (pme->nkx < (pme->pme_order+1)*(pme->nnodes_major > 1 ? 2 : 1) ||
+        pme->nky < (pme->pme_order+1)*(pme->nnodes_minor > 1 ? 2 : 1) ||
+        pme->nkz < (pme->pme_order+1))
+    {
+        gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_order+1 for x and/or y",pme->pme_order);
+    }
     
     if (pme->nnodes > 1) {
 #ifdef GMX_MPI
@@ -2255,27 +2276,31 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
             /* This should work, but there is a bug somewhere */
             gmx_fatal(FARGS,"For 2D PME the fourier grid in x and y should be divisible by the number of nodes participating in PME in x and y");
         }
+    }
 
-        if (debug) {
-            fprintf(debug,"Parallelized PME sum used. nkx=%d, npme=%d\n",
-                    ir->nkx,pme->nnodes);
-            if ((ir->nkx % pme->nnodes) != 0)
-                fprintf(debug,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
-        }
-
+    d = 0;
+    if (pme->nnodes_major > 1)
+    {
 #ifdef GMX_MPI
-        init_overlap_comm(&pme->overlap[0],pme->pme_order,pme->mpi_comm_d[0],pme->nnodes_major,pme->nodeid_major,pme->nkx);
-        if (pme->ndecompdim > 1)
-        {
-            init_overlap_comm(&pme->overlap[1],pme->pme_order,pme->mpi_comm_d[1],pme->nnodes_minor,pme->nodeid_minor,pme->nky);
-        }
-        else
-        {
-            init_overlap_comm_serial(&pme->overlap[1],pme->nky);
-        }
+        init_overlap_comm(&pme->overlap[0],pme->pme_order,pme->mpi_comm_d[0],
+                          pme->nnodes_major,pme->nodeid_major,pme->nkx);
+        d++;
 #endif
-    } else {
+    }
+    else
+    {
         init_overlap_comm_serial(&pme->overlap[0],pme->nkx);
+    }
+    if (pme->nnodes_minor > 1)
+    {
+#ifdef GMX_MPI
+        init_overlap_comm(&pme->overlap[1],pme->pme_order,pme->mpi_comm_d[1],
+                          pme->nnodes_minor,pme->nodeid_minor,pme->nky);
+        d++;
+#endif
+    }
+    else
+    {
         init_overlap_comm_serial(&pme->overlap[1],pme->nky);
     }
     
@@ -2545,7 +2570,7 @@ int gmx_pme_do(gmx_pme_t pme,
             atc->pd_nalloc = over_alloc_dd(atc->npd);
             srenew(atc->pd,atc->pd_nalloc);
         }
-        atc->maxshift = maxshift0;
+        atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
     }
     
     for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
@@ -2605,7 +2630,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     atc->pd_nalloc = over_alloc_dd(atc->npd);
                     srenew(atc->pd,atc->pd_nalloc);
                 }
-                atc->maxshift = (d==0 ? maxshift0 : maxshift1);
+                atc->maxshift = (atc->dimind==0 ? maxshift0 : maxshift1);
                 pme_calc_pidx(n_d,pme->recipbox,x_d,atc);
                 where();
                 
