@@ -228,8 +228,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    oNout[1] = oK0;
 	    M[1] = vmax(M0,P[0]);
 	    pM[1] = M0[prank[0]];
+	    oM[1] = oM0[prank[0]];
 	    K[1] = vmax(N1,P[1]);
 	    pK[1] = N1[prank[1]];
+	    oK[1] = oN1[prank[1]];
 	    nP[1] = P[0];
 	    C[2] = MG;
 	    rC[2] = rMG;
@@ -237,8 +239,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    oNin[2] = oM0;
 	    M[2] = vmax(K0,P[0]);
 	    pM[2] = K0[prank[0]];
+	    oM[2] = oK0[prank[0]];
 	    K[2] = vmax(N1,P[1]);
 	    pK[2] = N1[prank[1]];
+	    oK[2] = oN1[prank[1]];
 	} else {
 	    N[0] = vmax(N0,P[0]);
 	    pN[0] = N[prank[0]];
@@ -255,8 +259,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    oNout[1] = oM1;
 	    M[1] = vmax(N0,P[0]);
 	    pM[1] = N0[prank[0]];
+	    oM[1] = oN0[prank[0]];
 	    K[1] = vmax(K1,P[1]);
 	    pK[1] = K1[prank[1]];
+	    oK[1] = oK1[prank[1]];
 	    nP[1] = P[1];
 	    C[2] = KG;
 	    rC[2] = rKG;
@@ -264,8 +270,10 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    oNin[2] = oK1;
 	    M[2] = vmax(N0,P[0]);
 	    pM[2] = N0[prank[0]];
+	    oM[2] = oN0[prank[0]];
 	    K[2] = vmax(M1,P[1]);
 	    pK[2] = M1[prank[1]];
+	    oK[2] = oM1[prank[1]];
 	}
 	
 	/*
@@ -479,16 +487,17 @@ static void compute_offsets(fft5d_plan plan, int xo[], int xl[], int xc[], int N
 		case ZYX:pos[0]=3;pos[1]=2;pos[2]=1;break;
 	}
 	/*if (debug) printf("pos: %d %d %d\n",pos[0],pos[1],pos[2]);*/
-	int *M=plan->M, *K=plan->K, *pM=plan->pM, *pK=plan->pK, *C=plan->C, *rC=plan->rC;
+	int *M=plan->M, *K=plan->K, *pM=plan->pM, *pK=plan->pK, *oM=plan->oM, *oK=plan->oK,
+	    *C=plan->C, *rC=plan->rC;
 	int *coor=plan->coor;
 	
 	/*xo, xl give offset and length in local transposed coordinate system
       for 0(/1/2): x(/y/z) in original coordinate system*/
 	for (i=0;i<3;i++) {
 		switch (pos[i]) {
-		case 1: xo[i]=1;         xc[i]=0;            xl[i]=C[s];break;
-		case 2: xo[i]=C[s];      xc[i]=coor[0]*M[s]; xl[i]=pM[s];break;
-		case 3: xo[i]=C[s]*M[s]; xc[i]=coor[1]*K[s]; xl[i]=pK[s];break;
+		case 1: xo[i]=1;         xc[i]=0;     xl[i]=C[s];break;
+		case 2: xo[i]=C[s];      xc[i]=oM[s]; xl[i]=pM[s];break;
+		case 3: xo[i]=C[s]*M[s]; xc[i]=oK[s]; xl[i]=pK[s];break;
 		}
 	}
     /*input order is different for test programm to match FFTW order 
