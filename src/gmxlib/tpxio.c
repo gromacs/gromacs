@@ -2021,13 +2021,6 @@ static int do_tpx(int fp,bool bRead,
 
   if (bRead) {
     state->flags  = 0;
-    if (file_version >= 70) 
-      {
-	state->fep_state = tpx.fep_state;
-      }
-    /* will this get correctly set later? */
-    state->lambda[efptFEP] = tpx.lambda;
-    
     /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
     if (bXVallocated) {
       xptr = state->x;
