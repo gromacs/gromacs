@@ -783,6 +783,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     idef->iparams_posres = NULL;
     idef->iparams_posres_nalloc = 0;
     idef->fudgeQQ  = ffp->fudgeQQ;
+    idef->cmap_grid = ffp->cmap_grid;
     idef->ilsort   = ilsortUNKNOWN;
 
     init_block(&top->cgs);

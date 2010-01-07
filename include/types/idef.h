@@ -243,6 +243,7 @@ typedef struct
   t_iparams  *iparams;
   double     reppow;     /* The repulsion power for VdW: C12*r^-reppow   */
   real       fudgeQQ;    /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+  gmx_cmap_t cmap_grid;  /* The dihedral correction maps                 */
 } gmx_ffparams_t;
 
 enum {
@@ -256,6 +257,7 @@ typedef struct
   t_functype *functype;
   t_iparams  *iparams;
   real fudgeQQ;
+  gmx_cmap_t cmap_grid;
   t_iparams  *iparams_posres;
   int iparams_posres_nalloc;
 

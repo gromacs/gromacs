@@ -2546,7 +2546,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		real lambda,
 		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
-		t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
+		t_atomtypes *atype, gmx_genborn_t *born,
 		bool bPrintSepPot,gmx_large_int_t step)
 {
   int    ftype,nbonds,ind,nat1;
@@ -2598,7 +2598,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		if(ftype==F_CMAP)
 		{
 			v = cmap_dihs(nbonds,idef->il[ftype].iatoms,
-						  idef->iparams,cmap_grid,
+						  idef->iparams,&idef->cmap_grid,
 						  (const rvec*)x,f,fr->fshift,
 						  pbc_null,g,lambda,&dvdl,md,fcd,
 						  global_atom_index);

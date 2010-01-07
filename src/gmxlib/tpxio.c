@@ -1782,13 +1782,13 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
 	
   if(file_version >= 65)
   {
-	  do_cmap(&mtop->cmap_grid,bRead);
+      do_cmap(&mtop->ffparams.cmap_grid,bRead);
   }
   else
   {
-	  mtop->cmap_grid.ngrid=0;
-	  mtop->cmap_grid.grid_spacing=0.1;
-	  mtop->cmap_grid.cmapdata=NULL;
+      mtop->ffparams.cmap_grid.ngrid        = 0;
+      mtop->ffparams.cmap_grid.grid_spacing = 0.1;
+      mtop->ffparams.cmap_grid.cmapdata     = NULL;
   }
 	  
   if (file_version >= 57) {

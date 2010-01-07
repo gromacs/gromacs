@@ -65,7 +65,7 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                        gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,
 		       t_fcdata *fcd,int *ddgatindex,
-		       t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap,
+		       t_atomtypes *atype, gmx_genborn_t *born,
 		       bool bPrintSepPot,gmx_large_int_t step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
