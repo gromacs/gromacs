@@ -1,338 +1,752 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- *       This source code is part of
- *
- *        G   R   O   M   A   C   S
- *
- * GROningen MAchine for Chemical Simulations
- *
- *            VERSION 2.0
  * 
- * Copyright (c) 1991-1997
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
+ *                This source code is part of
  * 
- * Please refer to:
- * GROMACS: A message-passing parallel molecular dynamics implementation
- * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
- * Comp. Phys. Comm. 91, 43-56 (1995)
- *
- * Also check out our WWW page:
- * http://rugmd0.chem.rug.nl/~gmx
- * or e-mail to:
- * gromacs@chem.rug.nl
- *
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 3.2.0
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2004, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
  * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-#include <string.h>
-#include <time.h>
-#include "typedefs.h"
-#include "sysstuff.h"
-#include "string2.h"
-#include "network.h"
-#include "confio.h"
-#include "copyrite.h"
-#include "smalloc.h"
-#include "main.h"
-#include "pbc.h"
-#include "force.h"
-#include "macros.h"
-#include "names.h"
-#include "fatal.h"
-#include "txtdump.h"
-#include "update.h"
-#include "random.h"
-#include "vec.h"
-#include "statutil.h"
-#include "tgroup.h"
-#include "nrnb.h"
-#include "disre.h"
-#include "mdatoms.h"
-#include "mdrun.h"
-#include "callf77.h"
-#include "pppm.h"
-
-bool optRerunMDset (int nfile, t_filenm fnm[])
-{
-  return opt2bSet("-rerun",nfile,fnm);
-}
-
-void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
-{
-  if (ir->nstcomm == 0) {
-    *bStopCM  = FALSE;
-    *bStopRot = FALSE;
-  } else if (ir->nstcomm > 0) {
-    *bStopCM  = do_per_step(step,ir->nstcomm);
-    *bStopRot = FALSE;
-  } else {
-    *bStopCM  = FALSE;
-    *bStopRot = do_per_step(step,-ir->nstcomm);
-  }
-}
-
-void set_pot_bools(t_inputrec *ir,t_topology *top,
-		   bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14)
-{
-  *bLR   = (ir->rcoulomb > ir->rlist) || EEL_LR(ir->coulombtype);
-  *bLJLR = (ir->rvdw > ir->rlist);
-  *bBHAM = (top->idef.functype[0]==F_BHAM);
-  *b14   = (top->idef.il[F_LJ14].nr > 0);
-}
-
-void finish_run(FILE *log,t_commrec *cr,
-		const char *confout,
-                t_nsborder *nsb,
-		t_topology *top,
-		t_parm *parm,
-		t_nrnb nrnb[],
-		double cputime,double realtime,int step,
-		bool bWriteStat)
-{
-  int    i,j;
-  t_nrnb ntot;
-  
-  for(i=0; (i<eNRNB); i++)
-    ntot.n[i]=0;
-  for(i=0; (i<nsb->nprocs); i++)
-    for(j=0; (j<eNRNB); j++)
-      ntot.n[j]+=nrnb[i].n[j];
-  
-  if (bWriteStat) {
-    if (MASTER(cr)) {
-      fprintf(stderr,"\n\n");
-      print_perf(stderr,cputime,realtime,&ntot,nsb->nprocs);
-    }
-    else
-      print_nrnb(log,&(nrnb[nsb->pid]));
-  }
-
-  if (MASTER(cr)) {
-    print_perf(log,cputime,realtime,&ntot,nsb->nprocs);
-    if (nsb->nprocs > 1)
-      pr_load(log,nsb->nprocs,nrnb);
-  }
-}
-
-void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
-	      bool bCompact,int nDlb,bool bNM,int nstepout,t_edsamyn *edyn)
-{
-  double     cputime=0,realtime;
-  t_parm     *parm;
-  rvec       *buf,*f,*vold,*v,*vt,*x,box_size;
-  real       *ener;
-  t_nrnb     *nrnb;
-  t_nsborder *nsb;
-  t_topology *top;
-  t_groups   *grps;
-  t_graph    *graph;
-  t_mdatoms  *mdatoms;
-  t_forcerec *fr;
-  time_t     start_t=0;
-  bool       bDummies;
-  int        i,m;
-    
-  /* Initiate everything (snew sets to zero!) */
-  snew(ener,F_NRE);
-  snew(nsb,1);
-  snew(top,1);
-  snew(grps,1);
-  snew(parm,1);
-  snew(nrnb,cr->nprocs);
-
-  /* Initiate invsqrt routines */
-  init_lookup_table(stdlog);
-  
-  if (bVerbose && MASTER(cr)) 
-    fprintf(stderr,"Getting Loaded...\n");
-
-  if (PAR(cr)) {
-    /* The master processor reads from disk, then passes everything
-     * around the ring, and finally frees the stuff
-     */
-    if (MASTER(cr)) 
-      distribute_parts(cr->left,cr->right,cr->pid,cr->nprocs,parm,
-		       ftp2fn(efTPX,nfile,fnm),nDlb);
-    
-    /* Every processor (including the master) reads the data from the ring */
-    init_parts(stdlog,cr,
-	       parm,top,&x,&v,&mdatoms,nsb,
-	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0);
-  } else {
-    /* Read it up... */
-    init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,&x,&v,&mdatoms,nsb);
-  }
-  snew(buf,nsb->natoms);
-  snew(f,nsb->natoms);
-  snew(vt,nsb->natoms);
-  snew(vold,nsb->natoms);
-
-  if (bVerbose && MASTER(cr))
-    fprintf(stderr,"Loaded with Money\n\n");
-
-  /* Index numbers for parallellism... */
-  nsb->pid      = cr->pid;
-  top->idef.pid = cr->pid;
-
-  /* Group stuff (energies etc) */
-  init_groups(stdlog,mdatoms,&(parm->ir.opts),grps);
-  
-  /* Periodicity stuff */  
-  graph=mk_graph(&(top->idef),top->atoms.nr,FALSE);
-  if (debug)
-    p_graph(debug,"Initial graph",graph);
-  
-  /* Distance Restraints */
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir));
-
-  /* check if there are dummies */
-  bDummies=FALSE;
-  for(i=0; (i<F_NRE) && !bDummies; i++)
-    bDummies = ((interaction_function[i].flags & IF_DUMMY) && 
-		(top->idef.il[i].nr > 0));
-
-  /* Initiate forcerecord */
-  fr = mk_forcerec();
-  init_forcerec(stdlog,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE);
-  /* Initiate box */
-  for(m=0; (m<DIM); m++)
-    box_size[m]=parm->box[m][m];
-    
-  /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM)
-    init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
-		
-  /* Now do whatever the user wants us to do (how flexible...) */
-  if (bNM) {
-    start_t=do_nm(stdlog,cr,nfile,fnm,
-		  bVerbose,bCompact,nstepout,parm,grps,
-		  top,ener,x,vold,v,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
-  }
-  else {
-    switch (parm->ir.eI) {
-    case eiMD:
-    case eiLD:
-      start_t=do_md(stdlog,cr,nfile,fnm,
-		    bVerbose,bCompact,bDummies,nstepout,parm,grps,
-		    top,ener,x,vold,v,vt,f,buf,
-		    mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
-      break;
-    case eiCG:
-      start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
-		    x,f,buf,mdatoms,parm->ekin,ener,
-		    nrnb,bVerbose,bDummies,cr,graph,fr,box_size);
-      break;
-    case eiSteep:
-      start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
-		       x,f,buf,mdatoms,parm->ekin,ener,
-		       nrnb,bVerbose,bDummies,cr,graph,fr,box_size);
-      break;
-    default:
-      fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);
-    }
-
-    /* Some timing stats */  
-    if (MASTER(cr)) {
-      print_time(stderr,start_t,parm->ir.nsteps,&parm->ir,cr);
-      realtime=difftime(time(NULL),start_t);
-      if ((cputime=cpu_time()) == 0)
-	cputime=realtime;
-    }
-    else 
-      realtime=0;
-    
-    md2atoms(mdatoms,&(top->atoms),TRUE);
-    
-    /* Finish up, write some stuff */
-    { 
-      const char *gro=ftp2fn(efSTO,nfile,fnm);
-      
-      /* if rerunMD, don't write last frame again */
-      finish_run(stdlog,cr,gro,nsb,top,parm,
-		 nrnb,cputime,realtime,parm->ir.nsteps,
-		 (parm->ir.eI==eiMD) || (parm->ir.eI==eiLD));
-    }
-  }
-  
-  /* Does what it says */  
-  print_date_and_time(stdlog,cr->pid,"Finished mdrun");
-
-  if (MASTER(cr)) {
-    thanx(stderr);
-  }
-}
-/* THIS IS NOT ACTUALLY USED */
-#if 0
-void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
-	     real *lambda,real *lam0,real *SAfactor,
-	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
-	     int nfile,const t_filenm fnm[],char **traj,char **xtc_traj,
-             ener_file_t *fp_ene, t_mdebin **mdebin,t_groups *grps,rvec vcm,
-	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms)
-{
-  bool bBHAM,b14,bLR,bLJLR;
-  
-  /* Initial values */
-  *t = *t0       = ir->init_t;
-  if (ir->bPert) {
-    *lambda = *lam0 = ir->init_lambda;
-  }
-  else {
-    *lambda = *lam0   = 0.0;
-  } 
-  if (ir->bSimAnn) {
-    *SAfactor = 1.0 - *t0/ir->zero_temp_time;
-    if (*SAfactor < 0) 
-      *SAfactor = 0;
-  } else
-    *SAfactor     = 1.0;
-    
-  /* initialize nose-hoover chains, since it's not in the topology */
-  *nnhchains = ir->opts.nnhchains;
-  init_nrnb(mynrnb);
-  
-  /* Check Environment variables & other booleans */
-  *bTYZ=getenv("TYZ") != NULL;
-  set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
-  
-  /* Filenames */
-  *traj     = ftp2fn(efTRN,nfile,fnm);
-  *xtc_traj = ftp2fn(efXTC,nfile,fnm);
-
-  if (MASTER(cr)) {
-    *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
-    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
-			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
-			  ir->bDispCorr);
-  }
-  else {
-    *fp_ene = NULL;
-    *mdebin = NULL;
-  }
-  
-  /* Initiate variables */  
-  clear_rvec(vcm);
-  clear_mat(force_vir);
-  clear_mat(shake_vir);
-  
-  /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,*lambda,TRUE);
-  
-  where();
-}
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
 
-void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
-		  t_graph *graph,rvec x[])
+#include <signal.h>
+#include <stdlib.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+/* _isnan() */
+#include <float.h>
+#endif
+
+#include "typedefs.h"
+#include "smalloc.h"
+#include "sysstuff.h"
+#include "statutil.h"
+#include "mdrun.h"
+#include "network.h"
+#include "pull.h"
+#include "names.h"
+#include "disre.h"
+#include "orires.h"
+#include "dihre.h"
+#include "pppm.h"
+#include "pme.h"
+#include "mdatoms.h"
+#include "repl_ex.h"
+#include "qmmm.h"
+#include "mpelogging.h"
+#include "domdec.h"
+#include "partdec.h"
+#include "coulomb.h"
+#include "constr.h"
+#include "mvdata.h"
+#include "checkpoint.h"
+#include "mtop_util.h"
+
+#ifdef GMX_LIB_MPI
+#include <mpi.h>
+#endif
+#ifdef GMX_THREADS
+#include "tmpi.h"
+#endif
+
+#ifdef GMX_FAHCORE
+#include "corewrap.h"
+#endif
+
+
+
+/* The following two variables and the signal_handler function
+ * are used from md.c and pme.c as well 
+ */
+extern bool bGotTermSignal, bGotUsr1Signal;
+
+static RETSIGTYPE signal_handler(int n)
 {
-  fprintf(log,"Removing pbc first time\n");
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  mk_mshift(log,graph,parm->box,x);
-  shift_self(graph,fr->shift_vec,x);
-  fprintf(log,"Done rmpbc\n");
+    switch (n) {
+        case SIGTERM:
+            bGotTermSignal = TRUE;
+            break;
+#ifdef HAVE_SIGUSR1
+        case SIGUSR1:
+            bGotUsr1Signal = TRUE;
+            break;
+#endif
+    }
 }
 
+typedef struct { 
+    gmx_integrator_t *func;
+} gmx_intp_t;
+
+/* The array should match the eI array in include/types/enums.h */
+const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md},{do_md}};
+
+gmx_large_int_t     deform_init_init_step_tpx;
+matrix              deform_init_box_tpx;
+#ifdef GMX_THREADS
+tMPI_Thread_mutex_t deform_init_box_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+#endif
+
+
+#ifdef GMX_THREADS
+struct mdrunner_arglist
+{
+    FILE *fplog;
+    t_commrec *cr;
+    int nfile;
+    const t_filenm *fnm;
+    output_env_t oenv;
+    bool bVerbose;
+    bool bCompact;
+    int nstglobalcomm;
+    ivec ddxyz;
+    int dd_node_order;
+    real rdd;
+    real rconstr;
+    const char *dddlb_opt;
+    real dlb_scale;
+    const char *ddcsx;
+    const char *ddcsy;
+    const char *ddcsz;
+    int nstepout;
+    int resetstep;
+    int nmultisim;
+    int repl_ex_nst;
+    int repl_ex_seed;
+    real pforce;
+    real cpt_period;
+    real max_hours;
+    unsigned long Flags;
+    int ret; /* return value */
+};
+
+
+static void mdrunner_start_fn(void *arg)
+{
+    struct mdrunner_arglist *mda=(struct mdrunner_arglist*)arg;
+    struct mdrunner_arglist mc=*mda; /* copy the arg list to make sure 
+                                        that it's thread-local. This doesn't
+                                        copy pointed-to items, of course,
+                                        but those are all const. */
+    t_commrec *cr;  /* we need a local version of this */
+    FILE *fplog=NULL;
+    t_filenm *fnm=dup_tfn(mc.nfile, mc.fnm);
+
+    cr=init_par_threads(mc.cr);
+    if (MASTER(cr))
+    {
+        fplog=mc.fplog;
+    }
+
+
+    mda->ret=mdrunner(fplog, cr, mc.nfile, mc.fnm, mc.oenv, mc.bVerbose,
+                      mc.bCompact, mc.nstglobalcomm, 
+                      mc.ddxyz, mc.dd_node_order, mc.rdd,
+                      mc.rconstr, mc.dddlb_opt, mc.dlb_scale, 
+                      mc.ddcsx, mc.ddcsy, mc.ddcsz, mc.nstepout, mc.resetstep, mc.nmultisim,
+                      mc.repl_ex_nst, mc.repl_ex_seed, mc.pforce, 
+                      mc.cpt_period, mc.max_hours, mc.Flags);
+}
+
+#endif
+
+int mdrunner_threads(int nthreads, 
+                     FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
+                     const output_env_t oenv, bool bVerbose,bool bCompact,
+                     int nstglobalcomm,
+                     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+                     const char *dddlb_opt,real dlb_scale,
+                     const char *ddcsx,const char *ddcsy,const char *ddcsz,
+                     int nstepout,int resetstep,int nmultisim,int repl_ex_nst,
+                     int repl_ex_seed, real pforce,real cpt_period,
+                     real max_hours, unsigned long Flags)
+{
+    int ret;
+    /* first check whether we even need to start tMPI */
+    if (nthreads < 2)
+    {
+        ret=mdrunner(fplog, cr, nfile, fnm, oenv, bVerbose, bCompact,
+                     nstglobalcomm,
+                     ddxyz, dd_node_order, rdd, rconstr, dddlb_opt, dlb_scale,
+                     ddcsx, ddcsy, ddcsz, nstepout, resetstep, nmultisim, repl_ex_nst, 
+                     repl_ex_seed, pforce, cpt_period, max_hours, Flags);
+    }
+    else
+    {
+#ifdef GMX_THREADS
+        struct mdrunner_arglist mda;
+        /* fill the data structure to pass as void pointer to thread start fn */
+        mda.fplog=fplog;
+        mda.cr=cr;
+        mda.nfile=nfile;
+        mda.fnm=fnm;
+        mda.oenv=oenv;
+        mda.bVerbose=bVerbose;
+        mda.bCompact=bCompact;
+        mda.nstglobalcomm=nstglobalcomm;
+        mda.ddxyz[XX]=ddxyz[XX];
+        mda.ddxyz[YY]=ddxyz[YY];
+        mda.ddxyz[ZZ]=ddxyz[ZZ];
+        mda.dd_node_order=dd_node_order;
+        mda.rdd=rdd;
+        mda.rconstr=rconstr;
+        mda.dddlb_opt=dddlb_opt;
+        mda.dlb_scale=dlb_scale;
+        mda.ddcsx=ddcsx;
+        mda.ddcsy=ddcsy;
+        mda.ddcsz=ddcsz;
+        mda.nstepout=nstepout;
+        mda.resetstep=resetstep;
+        mda.nmultisim=nmultisim;
+        mda.repl_ex_nst=repl_ex_nst;
+        mda.repl_ex_seed=repl_ex_seed;
+        mda.pforce=pforce;
+        mda.cpt_period=cpt_period;
+        mda.max_hours=max_hours;
+        mda.Flags=Flags;
+
+        fprintf(stderr, "Starting %d threads\n",nthreads);
+        fflush(stderr);
+        tMPI_Init_fn(nthreads, mdrunner_start_fn, (void*)(&mda) );
+        ret=mda.ret;
+#else
+        ret=-1;
+        gmx_comm("Multiple threads requested but not compiled with threads");
+#endif
+    }
+    return ret;
+}
+
+
+int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
+             const output_env_t oenv, bool bVerbose,bool bCompact,
+             int nstglobalcomm,
+             ivec ddxyz,int dd_node_order,real rdd,real rconstr,
+             const char *dddlb_opt,real dlb_scale,
+             const char *ddcsx,const char *ddcsy,const char *ddcsz,
+             int nstepout,int resetstep,int nmultisim,int repl_ex_nst,int repl_ex_seed,
+             real pforce,real cpt_period,real max_hours,
+             unsigned long Flags)
+{
+    double     nodetime=0,realtime;
+    t_inputrec *inputrec;
+    t_state    *state=NULL;
+    matrix     box;
+    gmx_ddbox_t ddbox;
+    int        npme_major;
+    real       tmpr1,tmpr2;
+    t_nrnb     *nrnb;
+    gmx_mtop_t *mtop=NULL;
+    t_mdatoms  *mdatoms=NULL;
+    t_forcerec *fr=NULL;
+    t_fcdata   *fcd=NULL;
+    real       ewaldcoeff=0;
+    gmx_pme_t  *pmedata=NULL;
+    gmx_vsite_t *vsite=NULL;
+    gmx_constr_t constr;
+    int        i,m,nChargePerturbed=-1,status,nalloc;
+    char       *gro;
+    gmx_wallcycle_t wcycle;
+    bool       bReadRNG,bReadEkin;
+    int        list;
+    gmx_runtime_t runtime;
+    int        rc;
+    gmx_large_int_t reset_counters;
+    gmx_edsam_t ed;
+
+    /* Essential dynamics */
+    if (opt2bSet("-ei",nfile,fnm)) 
+    {
+        /* Open input and output files, allocate space for ED data structure */
+        ed = ed_open(nfile,fnm,cr);
+    } 
+    else
+        ed=NULL;
+
+    snew(inputrec,1);
+    snew(mtop,1);
+
+    if (bVerbose && SIMMASTER(cr))
+    {
+        fprintf(stderr,"Getting Loaded...\n");
+    }
+    
+    if (Flags & MD_APPENDFILES) 
+    {
+        fplog = NULL;
+    }
+
+    if (PAR(cr))
+    {
+        /* The master thread on the master node reads from disk, 
+         * then distributes everything to the other processors.
+         */
+
+        list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
+
+        snew(state,1);
+        init_parallel(fplog, opt2fn_master("-s",nfile,fnm,cr),cr,
+                      inputrec,mtop,state,list);
+
+    }
+    else
+    {
+        /* Read a file for a single processor */
+        snew(state,1);
+        init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
+    }
+    if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC))
+    {
+        cr->npmenodes = 0;
+    }
+
+#ifdef GMX_FAHCORE
+    fcRegisterSteps(inputrec->nsteps,inputrec->init_step);
+#endif
+
+    /* NMR restraints must be initialized before load_checkpoint,
+     * since with time averaging the history is added to t_state.
+     * For proper consistency check we therefore need to extend
+     * t_state here.
+     * So the PME-only nodes (if present) will also initialize
+     * the distance restraints.
+     */
+    snew(fcd,1);
+
+    /* This needs to be called before read_checkpoint to extend the state */
+    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
+
+    if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0)
+    {
+        if (PAR(cr) && !(Flags & MD_PARTDEC))
+        {
+            gmx_fatal(FARGS,"Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+        }
+        /* Orientation restraints */
+        if (MASTER(cr))
+        {
+            init_orires(fplog,mtop,state->x,inputrec,cr->ms,&(fcd->orires),
+                        state);
+        }
+    }
+
+    if (DEFORM(*inputrec))
+    {
+        /* Store the deform reference box before reading the checkpoint */
+        if (SIMMASTER(cr))
+        {
+            copy_mat(state->box,box);
+        }
+        if (PAR(cr))
+        {
+            gmx_bcast(sizeof(box),box,cr);
+        }
+        /* Because we do not have the update struct available yet
+         * in which the reference values should be stored,
+         * we store them temporarily in static variables.
+         * This should be thread safe, since they are only written once
+         * and with identical values.
+         */
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_lock(&deform_init_box_mutex);
+#endif
+        deform_init_init_step_tpx = inputrec->init_step;
+        copy_mat(box,deform_init_box_tpx);
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
+#endif
+    }
+
+    if (opt2bSet("-cpi",nfile,fnm)) 
+    {
+        /* Check if checkpoint file exists before doing continuation.
+         * This way we can use identical input options for the first and subsequent runs...
+         */
+        if( gmx_fexist_master(opt2fn_master("-cpi",nfile,fnm,cr),cr) )
+        {
+            load_checkpoint(opt2fn_master("-cpi",nfile,fnm,cr),&fplog,
+                            cr,Flags & MD_PARTDEC,ddxyz,
+                            inputrec,state,&bReadRNG,&bReadEkin,
+                            (Flags & MD_APPENDFILES));
+            
+            if (bReadRNG)
+            {
+                Flags |= MD_READ_RNG;
+            }
+            if (bReadEkin)
+            {
+                Flags |= MD_READ_EKIN;
+            }
+        }
+    }
+
+    if ((MASTER(cr) || (Flags & MD_SEPPOT)) && (Flags & MD_APPENDFILES))
+    {
+        gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr,!(Flags & MD_SEPPOT),
+                             Flags,&fplog);
+    }
+
+    if (SIMMASTER(cr)) 
+    {
+        copy_mat(state->box,box);
+    }
+
+    if (PAR(cr)) 
+    {
+        gmx_bcast(sizeof(box),box,cr);
+    }
+
+    if (bVerbose && SIMMASTER(cr))
+    {
+        fprintf(stderr,"Loaded with Money\n\n");
+    }
+
+    if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI)))
+    {
+        cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
+                                           dddlb_opt,dlb_scale,
+                                           ddcsx,ddcsy,ddcsz,
+                                           mtop,inputrec,
+                                           box,state->x,
+                                           &ddbox,&npme_major);
+
+        make_dd_communicators(fplog,cr,dd_node_order);
+
+        /* Set overallocation to avoid frequent reallocation of arrays */
+        set_over_alloc_dd(TRUE);
+    }
+    else
+    {
+        cr->duty = (DUTY_PP | DUTY_PME);
+        npme_major = cr->nnodes;
+        
+        if (inputrec->ePBC == epbcSCREW)
+        {
+            gmx_fatal(FARGS,
+                      "pbc=%s is only implemented with domain decomposition",
+                      epbc_names[inputrec->ePBC]);
+        }
+    }
+
+    if (PAR(cr))
+    {
+        /* After possible communicator splitting in make_dd_communicators.
+         * we can set up the intra/inter node communication.
+         */
+        gmx_setup_nodecomm(fplog,cr);
+    }
+
+    wcycle = wallcycle_init(fplog,resetstep,cr);
+    if (PAR(cr))
+    {
+        /* Master synchronizes its value of reset_counters with all nodes 
+         * including PME only nodes */
+        reset_counters = wcycle_get_reset_counters(wcycle);
+        gmx_bcast_sim(sizeof(reset_counters),&reset_counters,cr);
+        wcycle_set_reset_counters(wcycle, reset_counters);
+    }
+
+
+    snew(nrnb,1);
+    if (cr->duty & DUTY_PP)
+    {
+        /* For domain decomposition we allocate dynamically
+         * in dd_partition_system.
+         */
+        if (DOMAINDECOMP(cr))
+        {
+            bcast_state_setup(cr,state);
+        }
+        else
+        {
+            if (PAR(cr))
+            {
+                if (!MASTER(cr))
+                {
+                    snew(state,1);
+                }
+                bcast_state(cr,state,TRUE);
+            }
+        }
+
+        /* Dihedral Restraints */
+        if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0)
+        {
+            init_dihres(fplog,mtop,inputrec,fcd);
+        }
+
+        /* Initiate forcerecord */
+        fr = mk_forcerec();
+        init_forcerec(fplog,oenv,fr,fcd,inputrec,mtop,cr,box,FALSE,
+                      opt2fn("-table",nfile,fnm),
+                      opt2fn("-tablep",nfile,fnm),
+                      opt2fn("-tableb",nfile,fnm),FALSE,pforce);
+
+        /* version for PCA_NOT_READ_NODE (see md.c) */
+        /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
+          "nofile","nofile","nofile",FALSE,pforce);
+          */        
+        fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
+
+        /* Initialize QM-MM */
+        if(fr->bQMMM)
+        {
+            init_QMMMrec(cr,box,mtop,inputrec,fr);
+        }
+
+        /* Initialize the mdatoms structure.
+         * mdatoms is not filled with atom data,
+         * as this can not be done now with domain decomposition.
+         */
+        mdatoms = init_mdatoms(fplog,mtop,inputrec->efep!=efepNO);
+
+        /* Initialize the virtual site communication */
+        vsite = init_vsite(mtop,cr);
+
+        calc_shifts(box,fr->shift_vec);
+
+        /* With periodic molecules the charge groups should be whole at start up
+         * and the virtual sites should not be far from their proper positions.
+         */
+        if (!inputrec->bContinuation && MASTER(cr) &&
+            !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
+        {
+            /* Make molecules whole at start of run */
+            if (fr->ePBC != epbcNONE)
+            {
+                do_pbc_first_mtop(fplog,inputrec->ePBC,box,mtop,state->x);
+            }
+            if (vsite)
+            {
+                /* Correct initial vsite positions are required
+                 * for the initial distribution in the domain decomposition
+                 * and for the initial shell prediction.
+                 */
+                construct_vsites_mtop(fplog,vsite,mtop,state->x);
+            }
+        }
+
+        /* Initiate PPPM if necessary */
+        if (fr->eeltype == eelPPPM)
+        {
+            if (mdatoms->nChargePerturbed)
+            {
+                gmx_fatal(FARGS,"Free energy with %s is not implemented",
+                          eel_names[fr->eeltype]);
+            }
+            status = gmx_pppm_init(fplog,cr,oenv,FALSE,TRUE,box,
+                                   getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
+            if (status != 0)
+            {
+                gmx_fatal(FARGS,"Error %d initializing PPPM",status);
+            }
+        }
+
+        if (EEL_PME(fr->eeltype))
+        {
+            ewaldcoeff = fr->ewaldcoeff;
+            pmedata = &fr->pmedata;
+        }
+        else
+        {
+            pmedata = NULL;
+        }
+    }
+    else
+    {
+        /* This is a PME only node */
+
+        /* We don't need the state */
+        done_state(state);
+
+        ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+        snew(pmedata,1);
+    }
+
+    /* Initiate PME if necessary,
+     * either on all nodes or on dedicated PME nodes only. */
+    if (EEL_PME(inputrec->coulombtype))
+    {
+        if (mdatoms)
+        {
+            nChargePerturbed = mdatoms->nChargePerturbed;
+        }
+        if (cr->npmenodes > 0)
+        {
+            /* The PME only nodes need to know nChargePerturbed */
+            gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
+        }
+        if (cr->duty & DUTY_PME)
+        {
+            status = gmx_pme_init(pmedata,cr,npme_major,inputrec,
+                                  mtop ? mtop->natoms : 0,nChargePerturbed,
+                                  (Flags & MD_REPRODUCIBLE));
+            if (status != 0) 
+            {
+                gmx_fatal(FARGS,"Error %d initializing PME",status);
+            }
+        }
+    }
+
+
+    if (integrator[inputrec->eI].func == do_md)
+    {
+        /* Turn on signal handling on all nodes */
+        /*
+         * (A user signal from the PME nodes (if any)
+         * is communicated to the PP nodes.
+         */
+        if (getenv("GMX_NO_TERM") == NULL)
+        {
+            if (debug)
+            {
+                fprintf(debug,"Installing signal handler for SIGTERM\n");
+            }
+            signal(SIGTERM,signal_handler);
+        }
+#ifdef HAVE_SIGUSR1
+        if (getenv("GMX_NO_USR1") == NULL)
+        {
+            if (debug)
+            {
+                fprintf(debug,"Installing signal handler for SIGUSR1\n");
+            }
+            signal(SIGUSR1,signal_handler);
+        }
+#endif
+    }
+
+    if (cr->duty & DUTY_PP)
+    {
+        if (inputrec->ePull != epullNO)
+        {
+            /* Initialize pull code */
+            init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
+                      EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
+        }
+
+        constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
+
+        if (DOMAINDECOMP(cr))
+        {
+            dd_init_bondeds(fplog,cr->dd,mtop,vsite,constr,inputrec,
+                            Flags & MD_DDBONDCHECK,fr->cginfo_mb);
+
+            set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,&ddbox);
+
+            setup_dd_grid(fplog,cr->dd);
+        }
+
+        /* Now do whatever the user wants us to do (how flexible...) */
+        integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
+                                      oenv,bVerbose,bCompact,
+                                      nstglobalcomm,
+                                      vsite,constr,
+                                      nstepout,inputrec,mtop,
+                                      fcd,state,
+                                      mdatoms,nrnb,wcycle,ed,fr,
+                                      repl_ex_nst,repl_ex_seed,
+                                      cpt_period,max_hours,
+                                      Flags,
+                                      &runtime);
+
+        if (inputrec->ePull != epullNO)
+        {
+            finish_pull(fplog,inputrec->pull);
+        }
+    } 
+    else 
+    {
+        /* do PME only */
+        gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE,inputrec);
+    }
+
+    if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
+    {
+        /* Some timing stats */  
+        if (MASTER(cr))
+        {
+            if (runtime.proc == 0)
+            {
+                runtime.proc = runtime.real;
+            }
+        }
+        else
+        {
+            runtime.real = 0;
+        }
+    }
+
+    wallcycle_stop(wcycle,ewcRUN);
+
+    /* Finish up, write some stuff
+     * if rerunMD, don't write last frame again 
+     */
+    finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
+               inputrec,nrnb,wcycle,&runtime,
+               EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
+
+    /* Does what it says */  
+    print_date_and_time(fplog,cr->nodeid,"Finished mdrun",&runtime);
+
+    /* Close logfile already here if we were appending to it */
+    if (MASTER(cr) && (Flags & MD_APPENDFILES))
+    {
+        gmx_log_close(fplog);
+    }	
+
+    if(bGotTermSignal)
+    {
+        rc = 1;
+    }
+    else if(bGotUsr1Signal)
+    {
+        rc = 2;
+    }
+    else
+    {
+        rc = 0;
+    }
+
+    return rc;
+}
+
+void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf)
+{
+    if (MASTER(cr))
+    {
+        fprintf(stderr,"\n%s\n",buf);
+    }
+    if (fplog)
+    {
+        fprintf(fplog,"\n%s\n",buf);
+    }
+}

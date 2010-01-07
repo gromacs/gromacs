@@ -65,7 +65,7 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                        gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,
 		       t_fcdata *fcd,int *ddgatindex,
-		       t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap,
+		       t_atomtypes *atype, gmx_genborn_t *born,
 		       bool bPrintSepPot,gmx_large_int_t step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
@@ -140,7 +140,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
  *  Bonded force functions
  *
  *************************************************************************/
-  extern t_ifunc bonds,g96bonds,morse_bonds,cubic_bonds,FENE_bonds;
+  extern t_ifunc bonds,g96bonds,morse_bonds,cubic_bonds,FENE_bonds,restraint_bonds;
   extern t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles;
   extern t_ifunc pdihs,idihs,rbdihs;
   extern t_ifunc tab_bonds,tab_angles,tab_dihs;

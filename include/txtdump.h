@@ -83,7 +83,6 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,
 void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
 	     bool bShowNumbers);
 void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers);
-void pr_cmap(FILE *fp,int indent,const char *title,gmx_cmap_t *cmap, bool bShowNumbers);
 /*
  * This routine prints out a (human) readable representation of 
  * the topology to the file fp. Ident specifies the number of 

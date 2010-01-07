@@ -213,6 +213,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "G96Bonds",                      44  },
     { "FENE Bonds",                    58  },
     { "Tab. Bonds",                    62  },
+    { "Restraint Potential",           86  },
     { "Angles",                        168 },
     { "G96Angles",                     150 },
     { "Quartic Angles",                160 },

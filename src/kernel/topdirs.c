@@ -68,6 +68,8 @@ int ifunc_index(directive d,int type)
       return F_TABBONDS;
     else if (type == 9)
       return F_TABBONDSNC;
+    else if (type == 10)
+      return F_RESTRBONDS;
     else
       gmx_fatal(FARGS,"Invalid bond type %d",type);
   case d_angles:

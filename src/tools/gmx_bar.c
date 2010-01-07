@@ -624,8 +624,9 @@ int gmx_bar(int argc,char *argv[])
     };
     
     t_filenm   fnm[] = {
-        { efXVG, "-f", "dhdl",  ffRDMULT },
-        { efXVG, "-o", "bar",   ffOPTWR }
+        { efXVG, "-f",  "dhdl",   ffRDMULT },
+        { efXVG, "-o",  "bar",    ffOPTWR },
+        { efXVG, "-oi", "barint", ffOPTWR }
     };
 #define NFILE asize(fnm)
     
@@ -634,7 +635,7 @@ int gmx_bar(int argc,char *argv[])
     barsim_t *ba,ba_tmp;
     barres_t *results;
     double   prec,dg_tot,var_tot,dg,sig;
-    FILE     *fp;
+    FILE     *fpb,*fpi;
     char     dgformat[20],xvgformat[STRLEN],buf[STRLEN];
     output_env_t oenv;
     
@@ -713,19 +714,28 @@ int gmx_bar(int argc,char *argv[])
                "assuming the Hamiltonian depends linearly on lambda\n\n");
     }
 
+    fpb = NULL;
     if (opt2bSet("-o",NFILE,fnm))
     {
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
-        fp = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
+        fpb = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
                       "\\8l\\4",unit_energy,oenv);
         if (get_print_xvgr_codes(oenv))
         {
-            fprintf(fp,"@TYPE xydy\n");
+            fprintf(fpb,"@TYPE xydy\n");
         }
     }
-    else
+    
+    fpi = NULL;
+    if (opt2bSet("-oi",NFILE,fnm))
     {
-        fp = NULL;
+        sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
+        fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
+                      "\\8l\\4",unit_energy,oenv);
+        if (get_print_xvgr_codes(oenv))
+        {
+            fprintf(fpi,"@TYPE xydy\n");
+        }
     }
 
     dg_tot  = 0;
@@ -733,13 +743,20 @@ int gmx_bar(int argc,char *argv[])
     for(f=0; f<nfile-1; f++)
     {
         
-        if (fp != NULL)
+        if (fpi != NULL)
         {
-            fprintf(fp,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
+            fprintf(fpi,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
 
         calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nb0, nb1,
                  &(results[f]), calc_s, calc_v);
+
+        if (fpb != NULL)
+        {
+            fprintf(fpb,xvgformat,
+                    0.5*(ba[f].lambda[0] + ba[f+1].lambda[0]),
+                    results[f].dg,results[f].dg_err);
+        }
 
         /*printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
                                               results[f].lambda_b);*/
@@ -781,11 +798,11 @@ int gmx_bar(int argc,char *argv[])
     printf(dgformat,sqrt(var_tot));
     printf("\n");
 
-    if (fp != NULL)
+    if (fpi != NULL)
     {
-        fprintf(fp,xvgformat,
+        fprintf(fpi,xvgformat,
                 ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
-        ffclose(fp);
+        ffclose(fpi);
     }
 
     do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");

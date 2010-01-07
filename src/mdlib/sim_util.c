@@ -910,7 +910,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     /* Do a first constrain to reset particles... */
     step = ir->init_step;
     if (fplog)
-        fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
+        fprintf(fplog,"\nConstraining the starting coordinates (step %ld)\n",step);
     dvdlambda = 0;
     
     /* constrain the current position */
@@ -948,7 +948,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
          */
         if (fplog)
         {
-            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+            fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %ld)\n",
                     step);
         }
         dvdlambda = 0;
@@ -1146,7 +1146,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
   
   clear_mat(virial);
   clear_mat(pres);
-
+  
   if (ir->eDispCorr != edispcNO) {
       bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                    ir->eDispCorr == edispcAllEnerPres);
@@ -1166,78 +1166,78 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
           ninter = 0.5*natoms;
       }
 
-    if (ir->efep == efepNO) 
-    {
-        avcsix    = fr->avcsix[0];
-        avctwelve = fr->avctwelve[0];
-    } 
-    else 
-    {
-        avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
-        avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
-    }
-    
-    enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
-    *enercorr += avcsix*enerdiff;
-    dvdlambda = 0.0;
-    if (ir->efep != efepNO) 
-    {
-      dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
-    }
-    if (bCorrAll) 
-    {
-        enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
-        *enercorr += avctwelve*enerdiff;
-        if (fr->efep != efepNO) 
-        {
-            dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
-        }
-    }
-
-    if (bCorrPres) 
-    {
-        svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
-        if (ir->eDispCorr == edispcAllEnerPres)
-        {
-            svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
-        }
-        /* The factor 2 is because of the Gromacs virial definition */
-        spres = -2.0*invvol*svir*PRESFAC;
-        
-        for(m=0; m<DIM; m++) {
-            virial[m][m] += svir;
-            pres[m][m] += spres;
-        }
-        *prescorr += spres;
-    }
-
-    /* Can't currently control when it prints, for now, just print when degugging */
-    if (debug)
-    {
-        if (bCorrAll) {
-            fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
-                    avcsix,avctwelve);
-        }
-        if (bCorrPres) 
-        {
-            fprintf(debug,
-                    "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
-                    *enercorr,spres,svir);
-        }
-        else
-        {
-            fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
-        }
-    }
-
-    if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-        fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                *enercorr,dvdlambda);
-    
-    if (fr->efep != efepNO) 
-    {
-        *dvdlcorr += dvdlambda;
-    }
+      if (ir->efep == efepNO) 
+      {
+          avcsix    = fr->avcsix[0];
+          avctwelve = fr->avctwelve[0];
+      } 
+      else 
+      {
+          avcsix    = (1 - lambda)*fr->avcsix[0]    + lambda*fr->avcsix[1];
+          avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
+      }
+      
+      enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
+      *enercorr += avcsix*enerdiff;
+      dvdlambda = 0.0;
+      if (ir->efep != efepNO) 
+      {
+          dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+      }
+      if (bCorrAll) 
+      {
+          enerdiff = ninter*(dens*fr->enerdifftwelve - fr->enershifttwelve);
+          *enercorr += avctwelve*enerdiff;
+          if (fr->efep != efepNO) 
+          {
+              dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+          }
+      }
+      
+      if (bCorrPres) 
+      {
+          svir = ninter*dens*avcsix*fr->virdiffsix/3.0;
+          if (ir->eDispCorr == edispcAllEnerPres)
+          {
+              svir += ninter*dens*avctwelve*fr->virdifftwelve/3.0;
+          }
+          /* The factor 2 is because of the Gromacs virial definition */
+          spres = -2.0*invvol*svir*PRESFAC;
+          
+          for(m=0; m<DIM; m++) {
+              virial[m][m] += svir;
+              pres[m][m] += spres;
+          }
+          *prescorr += spres;
+      }
+      
+      /* Can't currently control when it prints, for now, just print when degugging */
+      if (debug)
+      {
+          if (bCorrAll) {
+              fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
+                      avcsix,avctwelve);
+          }
+          if (bCorrPres) 
+          {
+              fprintf(debug,
+                      "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
+                      *enercorr,spres,svir);
+          }
+          else
+          {
+              fprintf(debug,"Long Range LJ corr.: Epot %10g\n",*enercorr);
+          }
+      }
+      
+      if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+          fprintf(fplog,sepdvdlformat,"Dispersion correction",
+                  *enercorr,dvdlambda);
+      
+      if (fr->efep != efepNO) 
+      {
+          *dvdlcorr += dvdlambda;
+      }
   }
 }
 

@@ -8389,7 +8389,10 @@ void dd_partition_system(FILE            *fplog,
     /* This call also sets the new number of home particles to dd->nat_home */
     atoms2md(top_global,ir,
              comm->nat[ddnatCON],dd->gatindex,0,dd->nat_home,mdatoms);
-    
+
+    /* Now we have the charges we can sort the FE interactions */
+    dd_sort_local_top(dd,mdatoms,top_local);
+
     if (shellfc)
     {
         /* Make the local shell stuff, currently no communication is done */

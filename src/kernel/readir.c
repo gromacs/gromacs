@@ -299,16 +299,20 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning_note("Old option for temperature coupling given: "
 		 "changing \"yes\" to \"Berendsen\"\n");
   }
-  if (ir->opts.nnhchains < 1) 
-    {
-      sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nnhchains);
-      ir->opts.nnhchains =1;
-      warning(NULL);
+  if (ir->etc == etcNOSEHOOVER) {
+    if (ir->opts.nnhchains < 1) 
+      {
+	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nnhchains);
+	ir->opts.nnhchains =1;
+	warning(NULL);
+      }
+    
+    if (!EI_VV(ir->eI) && ir->opts.nnhchains > 1) {
+      warning_note("leapfrog does not yet support Nose-Hoover chains, nnhchains reset to 1");
+      ir->opts.nnhchains = 1;
     }
-
-  if ((!EI_VV(ir->eI)) && ir->opts.nnhchains > 1) {
-    warning_note("leapfrog does not yet support Nose-Hoover chains, nnhchains reset to 1");
-    ir->opts.nnhchains = 1;
+  } else {
+    ir->opts.nnhchains = 0;
   }
 
   if (ir->etc == etcBERENDSEN) {

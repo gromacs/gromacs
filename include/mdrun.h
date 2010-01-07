@@ -122,6 +122,18 @@ typedef struct {
   gmx_large_int_t nsteps_done;
 } gmx_runtime_t;
 
+
+/* Variables for temporary use with the deform option,
+ * used in runner.c and md.c.
+ * (These variables should be stored in the tpx file.)
+ */
+extern gmx_large_int_t     deform_init_init_step_tpx;
+extern matrix              deform_init_box_tpx;
+#ifdef GMX_THREADS
+extern tMPI_Thread_mutex_t deform_init_box_mutex;
+#endif
+
+
 typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 				int nfile,const t_filenm fnm[],
 				const output_env_t oenv, bool bVerbose,
@@ -320,6 +332,10 @@ int mdrunner_threads(int nthreads,
 /* initializes nthread threads before running mdrunner: is the preferred
    way to start a simulation (even if nthreads=1 and no threads are started) */
 
+extern void md_print_warning(const t_commrec *cr,FILE *fplog,const char *buf);
+/* Print a warning message to stderr on the master node
+ * and to fplog if fplog!=NULL.
+ */
 
   extern void init_md(FILE *fplog,
 		      t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 

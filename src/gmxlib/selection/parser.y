@@ -69,7 +69,7 @@ yyerror(yyscan_t, char const *s);
 
     struct t_selexpr_value     *val;
     struct t_selexpr_param     *param;
-}
+};
 
 /* Invalid token to report lexer errors */
 %token INVALID
