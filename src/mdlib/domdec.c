@@ -1433,9 +1433,10 @@ void dd_collect_vec(gmx_domdec_t *dd,
 void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local,t_state *state)
 {
-    int est,i,j,ngtcp;
+    int est,i,j,ngtcp,nh;
 
     ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */    
+    nh = state->nnhchains;
 
     if (DDMASTER(dd))
     {
@@ -1449,9 +1450,9 @@ void dd_collect_state(gmx_domdec_t *dd,
 
         for(i=0; i<ngtcp; i++)
         {
-            for(j=0; j<NNHCHAIN; j++) {
-                state->nosehoover_xi[i*NNHCHAIN+j]        = state_local->nosehoover_xi[i*NNHCHAIN+j];
-                state->nosehoover_vxi[i*NNHCHAIN+j]       = state_local->nosehoover_vxi[i*NNHCHAIN+j];
+            for(j=0; j<nh; j++) {
+                state->nosehoover_xi[i*nh+j]        = state_local->nosehoover_xi[i*nh+j];
+                state->nosehoover_vxi[i*nh+j]       = state_local->nosehoover_vxi[i*nh+j];
             }
 
         }
@@ -1460,9 +1461,9 @@ void dd_collect_state(gmx_domdec_t *dd,
             state->therm_integral[i] = state_local->therm_integral[i];            
         }
     }
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state_local->flags & (1<<est))
+        if (EST_DISTR(est) && state_local->flags & (1<<est))
         {
             switch (est) {
             case estX:
@@ -1542,9 +1543,9 @@ static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
 
     state->nalloc = over_alloc_dd(nalloc);
     
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state->flags & (1<<est))
+        if (EST_DISTR(est) && state->flags & (1<<est))
         {
             switch(est) {
             case estX:
@@ -1687,9 +1688,10 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
                                 t_state *state,t_state *state_local,
                                 rvec **f)
 {
-    int  i,j,ngtch,ngtcp;
+    int  i,j,ngtch,ngtcp,nh;
     
     ngtcp = state->ngtc+1; /* need an extra state for barostat */
+    nh = state->nnhchains;
 
     if (DDMASTER(dd))
     {
@@ -1701,9 +1703,9 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
         copy_mat(state->boxv,state_local->boxv);
         for(i=0; i<ngtcp; i++)
         {
-            for(j=0; j<NNHCHAIN; j++) {
-                state_local->nosehoover_xi[i*NNHCHAIN+j]        = state->nosehoover_xi[i*NNHCHAIN+j];
-                state_local->nosehoover_vxi[i*NNHCHAIN+j]       = state->nosehoover_vxi[i*NNHCHAIN+j];
+            for(j=0; j<nh; j++) {
+                state_local->nosehoover_xi[i*nh+j]        = state->nosehoover_xi[i*nh+j];
+                state_local->nosehoover_vxi[i*nh+j]       = state->nosehoover_vxi[i*nh+j];
             }
         }
         for(i=0; i<state_local->ngtc; i++)
@@ -1717,17 +1719,17 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_bcast(dd,sizeof(state_local->box),state_local->box);
     dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
-    dd_bcast(dd,((ngtcp*NNHCHAIN)*sizeof(double)),state_local->nosehoover_xi);
-    dd_bcast(dd,((ngtcp*NNHCHAIN)*sizeof(double)),state_local->nosehoover_vxi);
+    dd_bcast(dd,((ngtcp*nh)*sizeof(double)),state_local->nosehoover_xi);
+    dd_bcast(dd,((ngtcp*nh)*sizeof(double)),state_local->nosehoover_vxi);
     dd_bcast(dd,state_local->ngtc*sizeof(double),state_local->therm_integral);
 
     if (dd->nat_home > state_local->nalloc)
     {
         dd_realloc_state(state_local,f,dd->nat_home);
     }
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        if (state_local->flags & (1<<i))
+        if (EST_DISTR(i) && state_local->flags & (1<<i))
         {
             switch (i) {
             case estX:
@@ -4070,9 +4072,9 @@ static void rotate_state_atom(t_state *state,int a)
 {
     int est;
 
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state->flags & (1<<est)) {
+        if (EST_DISTR(est) && state->flags & (1<<est)) {
             switch (est) {
             case estX:
                 /* Rotate the complete state; for a rectangular box only */
@@ -4137,24 +4139,27 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     comm  = dd->comm;
     cg_cm = fr->cg_cm;
     
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        switch (i)
+        if (EST_DISTR(i))
         {
-        case estX:   /* Always present */            break;
-        case estV:   bV   = (state->flags & (1<<i)); break;
-        case estSDX: bSDX = (state->flags & (1<<i)); break;
-        case estCGP: bCGP = (state->flags & (1<<i)); break;
-        case estLD_RNG:
-        case estLD_RNGI:
-        case estDISRE_INITF:
-        case estDISRE_RM3TAV:
-        case estORIRE_INITF:
-        case estORIRE_DTAV:
-            /* No processing required */
-            break;
-        default:
+            switch (i)
+            {
+            case estX:   /* Always present */            break;
+            case estV:   bV   = (state->flags & (1<<i)); break;
+            case estSDX: bSDX = (state->flags & (1<<i)); break;
+            case estCGP: bCGP = (state->flags & (1<<i)); break;
+            case estLD_RNG:
+            case estLD_RNGI:
+            case estDISRE_INITF:
+            case estDISRE_RM3TAV:
+            case estORIRE_INITF:
+            case estORIRE_DTAV:
+                /* No processing required */
+                break;
+            default:
             gmx_incons("Unknown state entry encountered in dd_redistribute_cg");
+            }
         }
     }
     

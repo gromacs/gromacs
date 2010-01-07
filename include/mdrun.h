@@ -238,7 +238,7 @@ extern void finish_run(FILE *log,t_commrec *cr,const char *confout,
 extern void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr);
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
-			  gmx_large_int_t step,gmx_mtop_t *top_global, int natoms, 
+			  gmx_large_int_t step, int natoms, 
 			  matrix box,real lambda,tensor pres,tensor virial,
 			  real *prescorr, real *enercorr, real *dvdlcorr);
 
@@ -322,19 +322,20 @@ int mdrunner_threads(int nthreads,
 
 
   extern void init_md(FILE *fplog,
-		    t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 
-                    double *t,double *t0,
-		    real *lambda,double *lam0,
-		    t_nrnb *nrnb,gmx_mtop_t *mtop,
-		    gmx_update_t *upd,
-		    int nfile,const t_filenm fnm[],
-		    int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
-                    const char **fn_cpt,
-		    FILE **fp_dhdl,FILE **fp_field,
-		    t_mdebin **mdebin,
-		    tensor force_vir,tensor shake_vir,
-		    rvec mu_tot,
-		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags);
+		      t_commrec *cr,t_inputrec *ir, const output_env_t oenv, 
+		      double *t,double *t0,
+		      real *lambda,double *lam0,
+		      t_nrnb *nrnb,gmx_mtop_t *mtop,
+		      gmx_update_t *upd,
+		      int nfile,const t_filenm fnm[],
+		      int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
+		      const char **fn_cpt,
+		      FILE **fp_dhdl,FILE **fp_field,
+		      t_mdebin **mdebin,
+		      tensor force_vir,tensor shake_vir,
+		      rvec mu_tot,
+		      bool *bNEMD,bool *bSimAnn,t_vcm **vcm, 
+		      t_state *state, unsigned long Flags);
   /* Routine in sim_util.c */
 
 #ifdef __cplusplus

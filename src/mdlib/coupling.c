@@ -64,11 +64,13 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
     t_grp_tcstat *tcstat;
     double *ivxi,*ixi;
     double *iQinv;
-    double GQ[NNHCHAIN];
+    double *GQ;
     bool bBarostat;
     int mstepsi, mstepsj;
     int ns = SUZUKI_YOSHIDA_NUM;  /* set the degree of integration in the types/state.h file */
-    
+    int nh = opts->nnhchains;
+
+    snew(GQ,nh);
     mstepsi = mstepsj = ns;
 
 /* if scalefac is NULL, we are doing the NHC of the barostat */
@@ -92,9 +94,9 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
         /* make it easier to iterate by selecting 
            out the sub-array that corresponds to this T group */
         
-        ivxi = &vxi[i*NNHCHAIN];
-        ixi = &xi[i*NNHCHAIN];
-        iQinv = &(MassQ->Qinv[i*NNHCHAIN]); 
+        ivxi = &vxi[i*nh];
+        ixi = &xi[i*nh];
+        iQinv = &(MassQ->Qinv[i*nh]); 
         if (bBarostat) {
             nd = 1;
             reft = max(0.0,opts->ref_t[0]);
@@ -122,7 +124,7 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                 /* compute the thermal forces */
                 GQ[0] = iQinv[0]*(Ekin - nd*kT);
                 
-                for (j=0;j<NNHCHAIN-1;j++) 
+                for (j=0;j<nh-1;j++) 
                 { 	
                     if (iQinv[j+1] > 0) {
                         /* we actually don't need to update here if we save the 
@@ -133,8 +135,8 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                     }
                 }
                 
-                ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
-                for (j=NNHCHAIN-1;j>0;j--) 
+                ivxi[nh-1] += 0.25*dt*GQ[nh-1];
+                for (j=nh-1;j>0;j--) 
                 { 
                     Efac = exp(-0.125*dt*ivxi[j]);
                     ivxi[j-1] = Efac*(ivxi[j-1]*Efac + 0.25*dt*GQ[j-1]);
@@ -155,12 +157,12 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                 GQ[0] = iQinv[0]*(Ekin - nd*kT);
                 
                 /* update thermostat positions */
-                for (j=0;j<NNHCHAIN;j++) 
+                for (j=0;j<nh;j++) 
                 { 
                     ixi[j] += 0.5*dt*ivxi[j];
                 }
                 
-                for (j=0;j<NNHCHAIN-1;j++) 
+                for (j=0;j<nh-1;j++) 
                 { 
                     Efac = exp(-0.125*dt*ivxi[j+1]);
                     ivxi[j] = Efac*(ivxi[j]*Efac + 0.25*dt*GQ[j]);
@@ -170,10 +172,11 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
                         GQ[j+1] = 0;
                     }
                 }
-                ivxi[NNHCHAIN-1] += 0.25*dt*GQ[NNHCHAIN-1];
+                ivxi[nh-1] += 0.25*dt*GQ[nh-1];
             }
         }
     }
+    sfree(GQ);
 }
 
 static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
@@ -786,7 +789,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
         }           
         
         /* now, allocate space for temperature variables */
-        snew(MassQ->Qinv,(ngtc+1)*NNHCHAIN);
+        snew(MassQ->Qinv,(ngtc+1)*opts->nnhchains);
         /* now, set temperature variables */
         for(i=0; i<ngtc; i++) 
         {
@@ -795,7 +798,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                 reft = max(0.0,opts->ref_t[i]);
                 nd = opts->nrdf[i];
                 kT = BOLTZ*reft;
-                for (j=0;j<NNHCHAIN;j++) 
+                for (j=0;j<opts->nnhchains;j++) 
                 {
                     if (j==0) 
                     {
@@ -805,15 +808,15 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                     {
                         ndj = 1;
                     }
-                    MassQ->Qinv[i*NNHCHAIN+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
+                    MassQ->Qinv[i*opts->nnhchains+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
                 }
             } 
             else 
             {
                 reft=0.0;
-                for (j=0;j<NNHCHAIN;j++) 
+                for (j=0;j<opts->nnhchains;j++) 
                 {
-                    MassQ->Qinv[i*NNHCHAIN+j] = 0.0;
+                    MassQ->Qinv[i*opts->nnhchains+j] = 0.0;
                 }
             }
         }
@@ -924,7 +927,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     {
         reft = max(0.0,opts->ref_t[0]);
         kT = BOLTZ*reft;
-        for (j=0;j<NNHCHAIN;j++) 
+        for (j=0;j<opts->nnhchains;j++) 
         {
             if (j==0) {
                 qmass = bmass;
@@ -933,14 +936,14 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
             {
                 qmass = 1;
             }
-            MassQ->Qinv[i*NNHCHAIN+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
+            MassQ->Qinv[i*opts->nnhchains+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
         }
     } 
     else 
     {
-        for (j=0;j<NNHCHAIN;j++) 
+        for (j=0;j<opts->nnhchains;j++) 
         {
-            MassQ->Qinv[i*NNHCHAIN+j]=0.0;
+            MassQ->Qinv[i*opts->nnhchains+j]=0.0;
         }
     }    
     return trotter_seq;
@@ -953,7 +956,8 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     double *ivxi, *ixi;
     double *iQinv;
     real vol,dbaro,W,Q;
-    
+    int nh = ir->opts.nnhchains;
+
     ener_npt = 0;
     
     /* now we compute the contribution of the pressure to the conserved quantity*/
@@ -993,13 +997,13 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     {
         /* add the energy from the barostat thermostat chain */
         i = ir->opts.ngtc;
-        ivxi = &vxi[i*NNHCHAIN];
-        ixi = &xi[i*NNHCHAIN];
-        iQinv = &(MassQ->Qinv[i*NNHCHAIN]);
+        ivxi = &vxi[i*nh];
+        ixi = &xi[i*nh];
+        iQinv = &(MassQ->Qinv[i*nh]);
         reft = max(ir->opts.ref_t[0],0); /* using 'System' temperature */
         kT = BOLTZ * reft;
         
-        for (j=0;j<NNHCHAIN;j++) 
+        for (j=0;j<nh;j++) 
         {
             ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
             /* contribution from the thermal variable of the NH chain */
@@ -1015,9 +1019,9 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     {
         for(i=0; i<ir->opts.ngtc; i++) 
         {
-            ixi = &xi[i*NNHCHAIN];
-            ivxi = &vxi[i*NNHCHAIN];
-            iQinv = &(MassQ->Qinv[i*NNHCHAIN]);
+            ixi = &xi[i*nh];
+            ivxi = &vxi[i*nh];
+            iQinv = &(MassQ->Qinv[i*nh]);
             
             nd = ir->opts.nrdf[i];
             reft = max(ir->opts.ref_t[i],0);
@@ -1028,7 +1032,7 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
                 if (IR_NVT_TROTTER(ir))
                 {
                     /* contribution from the thermal momenta of the NH chain */
-                    for (j=0;j<NNHCHAIN;j++) 
+                    for (j=0;j<nh;j++) 
                     {
                         ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
                         /* contribution from the thermal variable of the NH chain */
