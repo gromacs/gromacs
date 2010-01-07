@@ -1736,7 +1736,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
             }
             if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
             {
-                SET_CGINFO_BOND_INTER(cgi_mb[mb].cginfo[cg]);
+                SET_CGINFO_BOND_INTER(cgi_mb->cginfo[cg]);
                 ncgi++;
             }
         }
