@@ -2002,13 +2002,17 @@ init_overlap_comm(pme_overlap_t *  ol,
      */
     ol->noverlap_data  = norder - 1;
     ndata_per_node     = (ol->ndata + ol->nnodes - 1) / ol->nnodes;
-    /* This is the number of overlap nodes with "even" grid distribution.
-     * ol->noverlap_nodes = (ol->noverlap_data + ndata_per_node - 1)/ndata_per_node; */
+#define EVENDIST
+#ifdef EVENDIST
+    /* This is the number of overlap nodes with "even" grid distribution. */
+    ol->noverlap_nodes = (ol->noverlap_data + ndata_per_node - 1)/ndata_per_node;
+#else
     /* With all the imbalance at the end, the number of overlap nodes
      * is determined by what happens at the end.
      */
     ndata_last_node    = ol->ndata - (ol->nnodes - 1)*ndata_per_node;
     ol->noverlap_nodes = 1 + (max(ol->noverlap_data - ndata_last_node,0) + ndata_per_node - 1)/ndata_per_node;
+#endif
 
     snew(ol->send_id, ol->noverlap_nodes);
     snew(ol->recv_id,ol->noverlap_nodes);
@@ -2020,11 +2024,19 @@ init_overlap_comm(pme_overlap_t *  ol,
     snew(ol->comm_data, ol->noverlap_nodes);
     
     snew(ol->s2g,ol->nnodes+1);
+    if (debug) { fprintf(debug,"PME slab boundaries:"); }
     for(i=0; i<nnodes+1; i++) 
     {
+#ifdef EVENDIST
+        ol->s2g[i] = (i*ndata + nnodes/2)/nnodes;
+#else
         /* The definition of the grid position requires rounding up here */
         ol->s2g[i] = (i*ndata + nnodes - 1)/nnodes;
+#endif
+
+        if (debug) { fprintf(debug," %3d",ol->s2g[i]); }
     }
+    if (debug) { fprintf(debug,"\n"); }
     
     for(b=0; b<ol->noverlap_nodes; b++)
     {
@@ -2228,10 +2240,12 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     */
     if (pme->ndecompdim >= 1)
     {
+        /*
         gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
                                         'x',nnodes_major,&pme->nkx);
         gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
                                         'y',nnodes_minor,&pme->nky);
+        */
     }
 
     /* Use atc[0] for spreading */
@@ -2270,12 +2284,13 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                     pme->nkx,pme->nky,pme->nnodes);
         }
         
+        /*
         if (pme->nkx % pme->nnodes_major != 0 ||
             pme->nky % pme->nnodes_minor != 0)
         {
-            /* This should work, but there is a bug somewhere */
             gmx_fatal(FARGS,"For 2D PME the fourier grid in x and y should be divisible by the number of nodes participating in PME in x and y");
         }
+        */
     }
 
     d = 0;
