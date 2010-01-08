@@ -214,6 +214,10 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
   block_bc(cr,state->flags);
+  if (state->lambda==NULL)
+  {
+      snew_bc(cr,state->lambda,efptNR)      
+  }
 }
 
 void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
@@ -223,11 +227,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   ngtch = (state->ngtc+1)*(state->nnhchains); /* need an extra state for the barostat */
 
   bcast_state_setup(cr,state);
-  /* might be a better place for this?*/
-  if (state->lambda==NULL)
-  {
-      snew_bc(cr,state->lambda,efptNR)      
-  }
+
   if (MASTER(cr)) {
     bAlloc = FALSE;
   }
