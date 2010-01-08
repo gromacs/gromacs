@@ -49,7 +49,7 @@ extern "C" {
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* for now, define the number of NH chains here */
+/* for now, define the default number of NH chains here -- can be adjusted in the mdp*/
 #define NNHCHAINS 5
 
 /* These enums are used in flags as (1<<est...).
@@ -64,7 +64,7 @@ extern "C" {
 	 estVIR_PREV, estNH_VXI, estVETA, estVOL0,
 	 estNR };
 
-#define EST_DISTR(e) (!(((e) >= estFEPSTATE && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
 extern const char *est_names[estNR];

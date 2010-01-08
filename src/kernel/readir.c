@@ -350,13 +350,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
   if (ir->opts.nnhchains < 1) 
     {
-      sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nnhchains);
+      sprintf(warn_buf,"Number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nnhchains);
       ir->opts.nnhchains =1;
       warning(NULL);
     }
 
   if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nnhchains > 1) {
     warning_note("leapfrog does not yet support Nose-Hoover chains, nnhchains reset to 1");
+    ir->opts.nnhchains = 1;
+  } else {
     ir->opts.nnhchains = 1;
   }
 
