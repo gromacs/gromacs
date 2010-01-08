@@ -463,6 +463,7 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->init_fep_state);
   block_bc(cr,fepvals->delta_lambda);	
   block_bc(cr,fepvals->n_lambda);        
+  nblock_bc(cr,efptNR,fepvals->all_lambda);
   for (i=0;i<efptNR;i++) {
       snew_bc(cr,fepvals->all_lambda[i],fepvals->n_lambda);
       nblock_bc(cr,fepvals->n_lambda,fepvals->all_lambda[i]);
@@ -479,11 +480,17 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
   bool bAlloc=TRUE;
   int i;
+
+  int j=0;
+  while (j!=1) {
+      sleep(5);
+      continue;
+  }
   
   block_bc(cr,*inputrec);
-
+  
   bc_grpopts(cr,&(inputrec->opts));
-
+  
   if (inputrec->efep != efepNO) {
       snew_bc(cr,inputrec->fepvals,1);
       bc_fepvals(cr,inputrec->fepvals);
