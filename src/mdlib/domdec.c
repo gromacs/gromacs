@@ -7819,9 +7819,9 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     dd->ncg_home = ncg_new;
     
     /* Reorder the state */
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        if (state->flags & (1<<i))
+        if (EST_DISTR(i) && state->flags & (1<<i))
         {
             switch (i)
             {
