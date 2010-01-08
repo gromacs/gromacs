@@ -130,7 +130,6 @@ typedef struct {
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
   int  n_lambda;         /* The number of foreign lambda points               */
-  /*double *lambda;        current lambda values                             */
   double **all_lambda;   /* The array of all lambda values                    */
   real sc_alpha;         /* free energy soft-core parameter                   */
   int  sc_power;         /* lambda power for soft-core interactions           */

@@ -470,6 +470,8 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->sc_alpha);        
   block_bc(cr,fepvals->sc_power);
   block_bc(cr,fepvals->sc_sigma);        
+  block_bc(cr,fepvals->bScCoul);
+  nblock_bc(cr,efptNR,&(fepvals->separate_dvdl));
   if (debug) fprintf(debug,"after bc_fepvals\n");
 }
 
