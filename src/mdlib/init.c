@@ -79,6 +79,10 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       state->flags |= (1<<estFEPSTATE);
     }
   state->flags |= (1<<estX);
+  if (state->lambda==NULL)
+    {
+      snew(state->lambda,efptNR);
+    }
   if (state->x == NULL)
     snew(state->x,state->nalloc);
   if (EI_DYNAMICS(ir->eI)) {
