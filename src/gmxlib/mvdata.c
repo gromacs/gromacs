@@ -233,7 +233,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   for(i=0; i<estNR; i++) {
     if (state->flags & (1<<i)) {
       switch (i) {
-      case estLAMBDA:  nblock_bc(cr,efptNR,state->lambda);
+      case estLAMBDA:  nblock_bc(cr,efptNR,state->lambda); break;
       case estFEPSTATE: block_bc(cr,state->fep_state); break;
       case estBOX:     block_bc(cr,state->box); break;
       case estBOX_REL: block_bc(cr,state->box_rel); break;
@@ -253,18 +253,18 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 	  case estLD_RNGI: if(state->nrngi == 1) nblock_abc(cr,state->nrngi,state->ld_rngi); break;
       case estDISRE_INITF: block_bc(cr,state->hist.disre_initf); break;
       case estDISRE_RM3TAV:
-	block_bc(cr,state->hist.ndisrepairs);
-	nblock_abc(cr,state->hist.ndisrepairs,state->hist.disre_rm3tav);
-	break;
+          block_bc(cr,state->hist.ndisrepairs);
+          nblock_abc(cr,state->hist.ndisrepairs,state->hist.disre_rm3tav);
+          break;
       case estORIRE_INITF: block_bc(cr,state->hist.orire_initf); break;
       case estORIRE_DTAV:
-	block_bc(cr,state->hist.norire_Dtav);
-	nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
-	break;
+          block_bc(cr,state->hist.norire_Dtav);
+          nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
+          break;
       default:
-	gmx_fatal(FARGS,
-		  "Communication is not implemented for %s in bcast_state",
-		  est_names[i]);
+          gmx_fatal(FARGS,
+                    "Communication is not implemented for %s in bcast_state",
+                    est_names[i]);
       }
     }
   }
@@ -463,6 +463,7 @@ static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)
   block_bc(cr,fepvals->init_fep_state);
   block_bc(cr,fepvals->delta_lambda);	
   block_bc(cr,fepvals->n_lambda);        
+  snew_bc(cr,fepvals->all_lambda,efptNR);
   nblock_bc(cr,efptNR,fepvals->all_lambda);
   for (i=0;i<efptNR;i++) {
       snew_bc(cr,fepvals->all_lambda[i],fepvals->n_lambda);
