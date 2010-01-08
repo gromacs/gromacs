@@ -64,7 +64,7 @@ extern "C" {
 	 estVIR_PREV, estNH_VXI, estVETA, estVOL0,
 	 estNR };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
+#define EST_DISTR(e) (!(((e) >= estFEPSTATE && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
 extern const char *est_names[estNR];
