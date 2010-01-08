@@ -161,9 +161,9 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    oM0[i]=i*ceil((double)MG/P[0]);
 	    oK0[i]=i*ceil((double)KG/P[0]);
 	    #else
-	    oN0[i]=NG*i/P[0];
-	    oM0[i]=MG*i/P[0];
-	    oK0[i]=KG*i/P[0];
+	    oN0[i]=(NG*i + P[0]/2)/P[0];
+	    oM0[i]=(MG*i + P[0]/2)/P[0];
+	    oK0[i]=(KG*i + P[0]/2)/P[0];
 	    #endif
 	}
 	for (i=0;i<P[1];i++) 
@@ -173,9 +173,9 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    oM1[i]=i*ceil((double)MG/P[1]); 
 	    oK1[i]=i*ceil((double)KG/P[1]); 
 	    #else
-	    oN1[i]=NG*i/P[1]; 
-	    oM1[i]=MG*i/P[1]; 
-	    oK1[i]=KG*i/P[1]; 
+	    oN1[i]=(NG*i + P[1]/2)/P[1]; 
+	    oM1[i]=(MG*i + P[1]/2)/P[1]; 
+	    oK1[i]=(KG*i + P[1]/2)/P[1]; 
 	    #endif
 	}
 	for (i=0;i<P[0]-1;i++) 
