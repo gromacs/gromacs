@@ -251,10 +251,14 @@ static void compact_graph(FILE *fplog,t_graph *g)
   max_nedge = 0;
   n = 0;
   for(i=0; i<g->nnodes; i++) {
-    srenew(g->edge[i],g->nedge[i]);
+    for(j=0; j<g->nedge[i]; j++) {
+      g->edge[0][n++] = g->edge[i][j];
+    }
+    g->edge[i] = g->edge[0] + n - g->nedge[i];
     max_nedge = max(max_nedge,g->nedge[i]);
-    n+=g->nedge[i];
   }
+  srenew(g->edge[0],n);
+
   if (fplog) {
     fprintf(fplog,"Max number of graph edges per atom is %d\n",
 	    max_nedge);
@@ -325,8 +329,11 @@ void mk_graph_ilist(FILE *fplog,
     snew(g->ishift,g->nnodes);
     snew(g->nedge,g->nnodes);
     snew(g->edge,g->nnodes);
-    for(i=0; (i<g->nnodes); i++)
-      snew(g->edge[i],nbond[g->start+i]);
+    /* Allocate a single array and set pointers into it */
+    snew(g->edge[0],nbtot);
+    for(i=1; (i<g->nnodes); i++) {
+      g->edge[i] = g->edge[i-1] + nbond[g->start+i-1];
+    }
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
@@ -398,8 +405,7 @@ void done_graph(t_graph *g)
   if (g->nnodes > 0) {
     sfree(g->ishift);
     sfree(g->nedge);
-    for(i=0; (i<g->nnodes); i++)
-      sfree(g->edge[i]);
+    sfree(g->edge[0]);
     sfree(g->edge);
     sfree(g->egc);
   }
