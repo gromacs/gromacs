@@ -614,8 +614,9 @@ static void comp_state(t_state *st1, t_state *st2,
     cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);
   }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
-  if (st1->ngtc == st2->ngtc) {
-    for(i=0; i<st1->ngtc; i++)
+  cmp_int(stdout,"nnhchains",-1,st1->nnhchains,st2->nnhchains);
+  if (st1->ngtc == st2->ngtc && st1->nnhchains == st2->nnhchains) {
+    for(i=0; i<(st1->ngtc+1)*st1->nnhchains; i++)
       cmp_real(stdout,"nosehoover_xi",
 	       i,st1->nosehoover_xi[i],st2->nosehoover_xi[i],ftol,abstol);
   }
