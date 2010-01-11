@@ -1,4 +1,3 @@
-
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  */
 
@@ -80,12 +79,12 @@ static int vmax(int* a, int s) {
  * comm communicator to use for fft5d
  * P0 number of processor in 1st axes (can be null for automatic)
  * lin is allocated by fft5d because size of array is only known after planning phase */
-fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags flags, fft5d_type** rlin, fft5d_type** rlout, FILE* debug) {
-                                                                                 
-    #ifndef GMX                                                                  
-    debug=stderr;                                                                
-    #endif                                                                       
-                                                                                 
+fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags flags, fft5d_type** rlin, fft5d_type** rlout, FILE* debug)
+{
+    #ifndef GMX
+    debug=stderr;
+    #endif
+
     int P[2],bMaster,prank[2],i;
 	/* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
     if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != NULL)
@@ -306,23 +305,23 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	for (s=0;s<3;s++) {
         if (debug)
         {
-            fprintf(debug,"FFT5D: Plan s %d rC %d M %d K %d C %d lsize %d\n",
-                    s,rC[s],M[s],K[s],C[s],lsize);
+            fprintf(debug,"FFT5D: Plan s %d rC %d M %d pK %d C %d lsize %d\n",
+                    s,rC[s],M[s],pK[s],C[s],lsize);
         }
 		if ((flags&FFT5D_INPLACE) && s==2) {
 			output=lin;
 			fftwflags&=~FFTW_DESTROY_INPUT;
 		}
 		if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD) && s==0) {
-			plan->p1d[s] = FFTW(plan_many_dft_r2c)(1, &rC[s], M[s]*K[s],   
+			plan->p1d[s] = FFTW(plan_many_dft_r2c)(1, &rC[s], M[s]*pK[s],   
                     (fft5d_rtype*)lin, &rC[s], 1,   C[s]*2, /* why *2 */
 					(FFTW(complex)*)output, &C[s], 1,   C[s], fftwflags);
 		} else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD) && s==2) {
-			plan->p1d[s] = FFTW(plan_many_dft_c2r)(1, &rC[s], M[s]*K[s],   
+			plan->p1d[s] = FFTW(plan_many_dft_c2r)(1, &rC[s], M[s]*pK[s],   
 					(FFTW(complex)*)lin, &C[s], 1,   C[s], 
 					(fft5d_rtype*)output, &rC[s], 1,   C[s]*2, fftwflags);
 		} else {
-			plan->p1d[s] = FFTW(plan_many_dft)(1, &C[s], M[s]*K[s],   
+			plan->p1d[s] = FFTW(plan_many_dft)(1, &C[s], M[s]*pK[s],   
 					(FFTW(complex)*)lin, &C[s], 1,   C[s], 
 					(FFTW(complex)*)output, &C[s], 1,   C[s], (flags&FFT5D_BACKWARD)?1:-1, fftwflags);
 		}
@@ -527,18 +526,18 @@ static void print_localdata(const fft5d_type* lin, const char* txt, int N,int M,
 	compute_offsets(plan,xo,xl,xc,NG,s);
 	int ll=(plan->flags&FFT5D_REALCOMPLEX)?1:2;
     FFTW(print_plan)(plan->p1d[s]);
-	printf(txt,coor[0],coor[1],s);
+	fprintf(debug,txt,coor[0],coor[1],s);
 	/*printf("xo: %d %d %d, xl: %d %d %d\n",xo[0],xo[1],xo[2],xl[0],xl[1],xl[2]);*/
-	for (z=0;z<xl[2];z++) {
+	for(z=0;z<xl[2];z++) {
 		for(y=0;y<xl[1];y++) {
-			printf("%d %d: ",coor[0],coor[1]);
+            fprintf(debug,"%d %d: ",coor[0],coor[1]);
 			for (x=0;x<xl[0];x++) {
 				for (l=0;l<ll;l++) {
-					printf("%f ",((fft5d_rtype*)lin)[(z*xo[2]+y*xo[1])*2+(x*xo[0])*ll+l]);
+                    fprintf(debug,"%f ",((fft5d_rtype*)lin)[(z*xo[2]+y*xo[1])*2+(x*xo[0])*ll+l]);
 				}
-				printf(",");
+				fprintf(debug,",");
 			}
-			printf("\n");
+			fprintf(debug,"\n");
 		}
 	}
 }
