@@ -1436,7 +1436,7 @@ void dd_collect_state(gmx_domdec_t *dd,
     int est,i,j,ngtcp,nh;
 
     ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */    
-    nh = state->nnhchains;
+    nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
@@ -1691,7 +1691,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     int  i,j,ngtch,ngtcp,nh;
     
     ngtcp = state->ngtc+1; /* need an extra state for barostat */
-    nh = state->nnhchains;
+    nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {

@@ -369,7 +369,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
     
     md->nTC=groups->grps[egcTC].nr;
-    md->nNHC = ir->opts.nnhchains; /* shorthand for number of NH chains */ 
+    md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */ 
     if (md->epc == epcMTTK) 
     {
         md->nTCB = md->nTC + 1; /* for barostat temperature group */

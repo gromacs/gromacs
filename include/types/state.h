@@ -49,8 +49,8 @@ extern "C" {
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* for now, define the number of NH chains here */
-#define NNHCHAINS 5
+/* for now, define the length of the NH chains here */
+#define NNHCHAINLENGTH 5
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -118,7 +118,7 @@ typedef struct
   int           natoms;
   int           ngtc;
   int           nnhpres;
-  int           nnhchains; /* number of nose-hoover chains               */
+  int           nhchainlength; /* length of nose-hoover chains          */
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */

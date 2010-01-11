@@ -140,8 +140,8 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
 
     for (i = 0; i<stateb->ngtc; i++) 
     { 
-        nc = i*opts->nnhchains;
-        for (j=0; j < opts->nnhchains; j++) 
+        nc = i*opts->nhchainlength;
+        for (j=0; j < opts->nhchainlength; j++) 
         {
             stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
             stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
@@ -1152,7 +1152,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Initiate data for the special cases */
     if (bIterations) 
     {
-        bufstate = init_bufstate(state->natoms,(ir->opts.ngtc+1)*ir->opts.nnhchains); /* extra state for barostat */
+        bufstate = init_bufstate(state->natoms,(ir->opts.ngtc+1)*ir->opts.nhchainlength); /* extra state for barostat */
     }
     
     if (bFFscan) 

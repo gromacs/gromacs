@@ -68,7 +68,7 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
     bool bBarostat;
     int mstepsi, mstepsj;
     int ns = SUZUKI_YOSHIDA_NUM;  /* set the degree of integration in the types/state.h file */
-    int nh = opts->nnhchains;
+    int nh = opts->nhchainlength;
 
     snew(GQ,nh);
     mstepsi = mstepsj = ns;
@@ -789,7 +789,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
         }           
         
         /* now, allocate space for temperature variables */
-        snew(MassQ->Qinv,(ngtc+1)*opts->nnhchains);
+        snew(MassQ->Qinv,(ngtc+1)*opts->nhchainlength);
         /* now, set temperature variables */
         for(i=0; i<ngtc; i++) 
         {
@@ -798,7 +798,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                 reft = max(0.0,opts->ref_t[i]);
                 nd = opts->nrdf[i];
                 kT = BOLTZ*reft;
-                for (j=0;j<opts->nnhchains;j++) 
+                for (j=0;j<opts->nhchainlength;j++) 
                 {
                     if (j==0) 
                     {
@@ -808,15 +808,15 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                     {
                         ndj = 1;
                     }
-                    MassQ->Qinv[i*opts->nnhchains+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
+                    MassQ->Qinv[i*opts->nhchainlength+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
                 }
             } 
             else 
             {
                 reft=0.0;
-                for (j=0;j<opts->nnhchains;j++) 
+                for (j=0;j<opts->nhchainlength;j++) 
                 {
-                    MassQ->Qinv[i*opts->nnhchains+j] = 0.0;
+                    MassQ->Qinv[i*opts->nhchainlength+j] = 0.0;
                 }
             }
         }
@@ -927,7 +927,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     {
         reft = max(0.0,opts->ref_t[0]);
         kT = BOLTZ*reft;
-        for (j=0;j<opts->nnhchains;j++) 
+        for (j=0;j<opts->nhchainlength;j++) 
         {
             if (j==0) {
                 qmass = bmass;
@@ -936,14 +936,14 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
             {
                 qmass = 1;
             }
-            MassQ->Qinv[i*opts->nnhchains+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
+            MassQ->Qinv[i*opts->nhchainlength+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
         }
     } 
     else 
     {
-        for (j=0;j<opts->nnhchains;j++) 
+        for (j=0;j<opts->nhchainlength;j++) 
         {
-            MassQ->Qinv[i*opts->nnhchains+j]=0.0;
+            MassQ->Qinv[i*opts->nhchainlength+j]=0.0;
         }
     }    
     return trotter_seq;
@@ -956,7 +956,7 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     double *ivxi, *ixi;
     double *iQinv;
     real vol,dbaro,W,Q;
-    int nh = ir->opts.nnhchains;
+    int nh = ir->opts.nhchainlength;
 
     ener_npt = 0;
     
