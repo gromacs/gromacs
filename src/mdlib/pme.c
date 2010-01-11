@@ -133,6 +133,9 @@ typedef struct {
     MPI_Comm mpi_comm;
 #endif
 
+    int  nk;
+    int  *g2s;              /* PME grid to slab index */
+
     int  *node_dest;        /* The nodes to send x and q to with DD */
     int  *node_src;         /* The nodes to receive x and q from with DD */
     int  *buf_index;        /* Index for commnode into the buffers */
@@ -336,8 +339,9 @@ static void pme_calc_pidx(int natoms, matrix recipbox, rvec x[],
         {
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
-            s = nslab*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
-            si = (int)(s + 2*nslab) % nslab;
+            s = atc->nk*(xptr[XX]*rxx + xptr[YY]*ryx + xptr[ZZ]*rzx);
+            /* Add 2*nk so we are sure the int cast always rounds down */
+            si = atc->g2s[(int)(s + 2*atc->nk)];
             pd[i] = si;
             count[si]++;
         }
@@ -351,8 +355,9 @@ static void pme_calc_pidx(int natoms, matrix recipbox, rvec x[],
         {
             xptr   = x[i];
             /* Fractional coordinates along box vectors */
-            s = nslab*(xptr[YY]*ryy + xptr[ZZ]*rzy);
-            si = (int)(s + 2*nslab) % nslab;
+            s = atc->nk*(xptr[YY]*ryy + xptr[ZZ]*rzy);
+            /* Add 2*nk so we are sure the int cast always rounds down */
+            si = atc->g2s[(int)(s + 2*atc->nk)];
             pd[i] = si;
             count[si]++;
         }
@@ -1935,9 +1940,7 @@ int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
 static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
                           int dimind,bool bSpread)
 {
-    int lbnd,rbnd,maxlr,b,i;
-    int nn,nk;
-    pme_grid_comm_t *pgc;
+    int nk,k,s;
 
     atc->dimind = dimind;
     atc->nslab  = 1;
@@ -1969,6 +1972,22 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
         snew(atc->count,atc->nslab);
         snew(atc->rcount,atc->nslab);
         snew(atc->buf_index,atc->nslab);
+
+        atc->nk = (dimind == 0) ? pme->nkx : pme->nky;
+        snew(atc->g2s,5*atc->nk);
+        s = 0;
+        for(k=0; k<5*atc->nk; k++)
+        {
+            if (k == pme->overlap[dimind].s2g[s+1])
+            {
+                s++;
+            }
+            atc->g2s[k] = s;
+        }
+        for(k=atc->nk; k<5*atc->nk; k++)
+        {
+            atc->g2s[k] = atc->g2s[k % atc->nk];
+        }
     }
 }
 
@@ -2248,13 +2267,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         */
     }
 
-    /* Use atc[0] for spreading */
-    init_atomcomm(pme,&pme->atc[0],cr,nnodes_major > 1 ? 0 : 1,TRUE);
-    if (pme->ndecompdim >= 2)
-    {
-        init_atomcomm(pme,&pme->atc[1],cr,1,FALSE);
-    }
-    
     if (pme->nkx < (pme->pme_order+1)*(pme->nnodes_major > 1 ? 2 : 1) ||
         pme->nky < (pme->pme_order+1)*(pme->nnodes_minor > 1 ? 2 : 1) ||
         pme->nkz < (pme->pme_order+1))
@@ -2381,6 +2393,13 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
     
     make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
+    
+    /* Use atc[0] for spreading */
+    init_atomcomm(pme,&pme->atc[0],cr,nnodes_major > 1 ? 0 : 1,TRUE);
+    if (pme->ndecompdim >= 2)
+    {
+        init_atomcomm(pme,&pme->atc[1],cr,1,FALSE);
+    }
     
     if (pme->nnodes == 1) {
         pme->atc[0].n = homenr;
