@@ -50,7 +50,7 @@ extern "C" {
  */
 
 /* for now, define the length of the NH chains here */
-#define NNHCHAINLENGTH 5
+#define NHCHAINLENGTH 5
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
