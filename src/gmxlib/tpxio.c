@@ -248,12 +248,13 @@ static void do_rotgrp(t_rotgrp *rotg,bool bRead, int file_version)
   int  i;
 
   do_int(rotg->eType);
+  do_int(rotg->eOrigin);
   do_int(rotg->nat);
   if (bRead)
     snew(rotg->ind,rotg->nat);
   ndo_int(rotg->ind,rotg->nat,bDum);
   do_rvec(rotg->vec);
-  do_rvec(rotg->offset);
+  do_rvec(rotg->pivot);
   do_real(rotg->rate);
   do_real(rotg->k);
   do_real(rotg->slab_dist);

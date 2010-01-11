@@ -83,10 +83,15 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         sprintf(buf,"rot_group%d",g);
         STYPE(buf,              grpbuf[g], "");
         
-        CTYPE("Rotation type can be fixed, fixedplane, followplane, flexible1 or flexible2");
+        CTYPE("Rotation type can be fixed, fixedplane, flexible1 or flexible2");
         sprintf(buf,"rot_type%d",g);
         ETYPE(buf,              rotg->eType, erotg_names);
-        
+
+        CTYPE("Origin can be box_origin, COG (center of geometry), or COM (center of mass)");
+        CTYPE("With COG/COM, the reference group will follow the current rotation group coordinates");
+        sprintf(buf,"rot_origin%d",g);
+        ETYPE(buf,              rotg->eOrigin, erotg_originnames);
+
         CTYPE("Rotation vector");
         sprintf(buf,"rot_vec%d",g);
         STYPE(buf,              s_vec, "1.0 0.0 0.0");
@@ -101,14 +106,21 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
         for(m=0; m<DIM; m++)
             rotg->vec[m] = vec[m];
         
-        CTYPE("Pivot point for the fixed axis");
+        CTYPE("Pivot point for the fixed axis relative to rot_origin");
         sprintf(buf,"rot_pivot%d",g);
         STYPE(buf,              s_vec, "0.0 0.0 0.0");
         string2dvec(s_vec,vec);
         for(m=0; m<DIM; m++)
-            rotg->offset[m] = vec[m];
+            rotg->pivot[m] = vec[m];
+        if ( (rotg->eOrigin != erotgOriginBox) && (norm(rotg->pivot) != 0) )            
+        {
+            sprintf(warn_buf, "Using a non-zero rot_pivot%d in combination with %s subtraction.\n"
+                              "This means the pivot will be offset by this vector from the center.",
+                    g, rotg->eOrigin == erotgOriginCOG ? "COG":"COM");
+            warning(NULL);
+        }
 
-        CTYPE("Rotation rate (nm/ps) and force constant [kJ/(mol*nm^2)]");
+        CTYPE("Rotation rate (degree/ps) and force constant [kJ/(mol*nm^2)]");
         sprintf(buf,"rot_rate%d",g);
         RTYPE(buf,              rotg->rate, 0.0);
         sprintf(buf,"rot_k%d",g);

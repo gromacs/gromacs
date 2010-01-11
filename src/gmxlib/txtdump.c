@@ -513,9 +513,10 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   fprintf(fp,"rotation_group %d:\n",g);
   indent += 2;
   PS("type",EROTGEOM(rotg->eType));
+  PS("origin",EROTORIGIN(rotg->eOrigin));
   pr_ivec_block(fp,indent,"atom",rotg->ind,rotg->nat,TRUE);
   pr_rvec(fp,indent,"vec",rotg->vec,DIM,TRUE);
-  pr_rvec(fp,indent,"offset",rotg->offset,DIM,TRUE);
+  pr_rvec(fp,indent,"pivot",rotg->pivot,DIM,TRUE);
   PR("rate",rotg->rate);
   PR("k",rotg->k);
   PR("slab_dist",rotg->slab_dist);
