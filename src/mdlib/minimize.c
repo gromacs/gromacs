@@ -404,6 +404,12 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
 	     &state->s,state_global,state->f,f_global);
   
   if (confout != NULL && MASTER(cr)) {
+    if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr)) {
+      /* Make molecules whole only for confout writing */
+      do_pbc_mtop(fplog,ir->ePBC,state_global->box,top_global,
+		  state_global->x);
+    }
+
     write_sto_conf_mtop(confout,
 			*top_global->name,top_global,
 			state_global->x,NULL,ir->ePBC,state_global->box);
