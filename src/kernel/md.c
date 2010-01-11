@@ -113,7 +113,7 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
     
-    int i,j,nc,ngtc_eff;
+    int i,j,nc;
     
     stateb->natoms     = statea->natoms;
     stateb->ngtc       = statea->ngtc;
@@ -137,17 +137,20 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     copy_mat(statea->box,stateb->box);
     copy_mat(statea->box_rel,stateb->box_rel);
     copy_mat(statea->boxv,stateb->boxv);
-    /* need extra term for the barostat */
-    ngtc_eff = stateb->ngtc+1;
 
-    for (i = 0; i < ngtc_eff; i++) 
+    for (i = 0; i<stateb->ngtc; i++) 
     { 
         nc = i*opts->nnhchains;
         for (j=0; j < opts->nnhchains; j++) 
         {
-            stateb->nosehoover_xi[nc + j]       = statea->nosehoover_xi[nc + j];
-            stateb->nosehoover_vxi[nc + j]      = statea->nosehoover_vxi[nc + j];
+            stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
+            stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
         }
+    }
+    if (stateb->nhpres_xi != NULL)
+    {
+        stateb->nhpres_xi[0]  = statea->nhpres_xi[0];
+        stateb->nhpres_vxi[0] = statea->nhpres_vxi[0];
     }
 }
 
@@ -1118,6 +1121,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                   | (bRerunMD ? CGLO_RERUNMD:0)
                   | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN:0));
     
+    bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                     constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,

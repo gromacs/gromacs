@@ -58,7 +58,7 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int   i,j,mi,mj,jmax,nd,ndj,starti,endi;
+    int   i,j,mi,mj,jmax,nd,ndj,nvar;
     double Ekin,Efac,reft,kT;
     double dt;
     t_grp_tcstat *tcstat;
@@ -81,14 +81,12 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
     }
 
     if (bBarostat) {
-        starti = opts->ngtc;
-        endi = opts->ngtc+1;
+        nvar = 1;
     } else {
-        starti = 0;
-        endi = opts->ngtc;
+        nvar = opts->ngtc;
     }
 
-    for (i=starti; i<endi; i++) 
+    for (i=0; i<nvar; i++) 
     {
     
         /* make it easier to iterate by selecting 
@@ -620,6 +618,8 @@ t_state *init_bufstate(int size, int ntc)
     snew(state->v,size);
     snew(state->nosehoover_xi,ntc);
     snew(state->nosehoover_vxi,ntc);
+    snew(state->nhpres_xi,1);
+    snew(state->nhpres_vxi,1);
     snew(state->therm_integral,ntc);
     
     return state;
@@ -674,8 +674,8 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             break;
         case etrtBARONHC:
         case etrtBARONHC2:
-            NHC_trotter(&(ir->opts),ekind,dt,state->nosehoover_xi,
-                        state->nosehoover_vxi,NULL,&(state->veta),MassQ,FALSE);      
+            NHC_trotter(&(ir->opts),ekind,dt,state->nhpres_xi,state->nhpres_vxi,
+                        NULL,&(state->veta),MassQ,FALSE);      
             break;
         case etrtNHC:
         case etrtNHC2:

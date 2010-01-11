@@ -63,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 10;
+static const int cpt_version = 11;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -615,7 +615,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                           int *eIntegrator,int *simulation_part,
                           gmx_large_int_t *step,double *t,
                           int *nnodes,int *dd_nc,int *npme,
-                          int *natoms,int *ngtc, int *nnhchains,
+                          int *natoms,int *ngtc, int *nnhpres, int *nnhchains,
                           int *flags_state,int *flags_eks,int *flags_enh,
                           FILE *list)
 {
@@ -657,9 +657,13 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     }
     do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
+    if (*file_version >= 11) 
+    {
+        do_cpt_int_err(xd,"#NH pres variables",nnhpres,list);
+    }
     if (*file_version >= 10) 
     {
-        do_cpt_int_err(xd,"#T Nose-Hoover chains",nnhchains  ,list);
+        do_cpt_int_err(xd,"#Nose-Hoover chains",nnhchains  ,list);
     }
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
 	if (*file_version >= 3)
@@ -732,11 +736,12 @@ static int do_cpt_state(XDR *xd,bool bRead,
     int  **rng_p,**rngi_p;
     int  i;
     int  ret;
-    int  ngtch;
+    int  nnht,nnhp;
 
     ret = 0;
     
-    ngtch = (state->ngtc+1)*(state->nnhchains);  /* need extra for barostat */
+    nnht = state->nnhchains*state->ngtc;
+    nnhp = state->nnhchains*state->nnhpres;
 
     if (bReadRNG)
     {
@@ -763,8 +768,10 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
             case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
-            case estNH_XI:   ret = do_cpte_doubles (xd,0,i,sflags,ngtch,&state->nosehoover_xi,list); break;
-            case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,ngtch,&state->nosehoover_vxi,list); break;
+            case estNH_XI:   ret = do_cpte_doubles(xd,0,i,sflags,nnht,&state->nosehoover_xi,list); break;
+            case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,nnht,&state->nosehoover_vxi,list); break;
+            case estNHPRES_XI:   ret = do_cpte_doubles(xd,0,i,sflags,nnhp,&state->nhpres_xi,list); break;
+            case estNHPRES_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,nnhp,&state->nhpres_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
             case estVETA:    ret = do_cpte_real  (xd,0,i,sflags,&state->veta,list); break;
             case estVOL0:    ret = do_cpte_real(xd,0,i,sflags,&state->vol0,list); break;
@@ -1097,7 +1104,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
-                  &state->natoms,&state->ngtc,&state->nnhchains,
+                  &state->natoms,&state->ngtc,&state->nnhpres,&state->nnhchains,
                   &state->flags,&flags_eks,&flags_enh,NULL);
     
     sfree(version);
@@ -1245,7 +1252,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 	char filename[STRLEN],buf[22];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
-    int  natoms,ngtc,nnhchains,fflags,flags_eks,flags_enh;
+    int  natoms,ngtc,nnhpres,nnhchains,fflags,flags_eks,flags_enh;
     int  d;
     int  ret;
 	gmx_file_position_t *outputfiles;
@@ -1276,7 +1283,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator_f,simulation_part,step,t,
                   &nppnodes_f,dd_nc_f,&npmenodes_f,
-                  &natoms,&ngtc,&nnhchains,
+                  &natoms,&ngtc,&nnhpres,&nnhchains,
                   &fflags,&flags_eks,&flags_enh,NULL);
     
     if (cr == NULL || MASTER(cr))
@@ -1309,8 +1316,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     {
         gmx_fatal(FARGS,"Checkpoint file is for a system of %d T-coupling groups, while the current system consists of %d T-coupling groups",ngtc,state->ngtc);
     }
+    if (nnhpres != state->nnhpres)
+    {
+        gmx_fatal(FARGS,"Checkpoint file is for a system of %d NH-pressure-coupling variables, while the current system consists of %d NH-pressure-coupling variables",nnhpres,state->nnhpres);
+    }
 
-    init_gtc_state(state,state->ngtc,nnhchains); /* need to keep this here to keep the tpr format working */
+    init_gtc_state(state,state->ngtc,state->nnhpres,nnhchains); /* need to keep this here to keep the tpr format working */
     /* write over whatever was read; we use the number of Nose-Hoover chains from the checkpoint */
     
     if (eIntegrator_f != eIntegrator)
@@ -1629,7 +1640,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,simulation_part,step,t,&nppnodes,dd_nc,&npme,
-                  &state->natoms,&state->ngtc,&state->nnhchains,
+                  &state->natoms,&state->ngtc,&state->nnhpres,&state->nnhchains,
                   &state->flags,&flags_eks,&flags_enh,NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
@@ -1692,7 +1703,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     gmx_large_int_t step;
     double t;
     
-    init_state(&state,0,0,0);
+    init_state(&state,0,0,0,0);
     
     low_read_checkpoint_state(fp,&simulation_part,&step,&t,&state,FALSE);
     
@@ -1744,13 +1755,13 @@ void list_checkpoint(const char *fn,FILE *out)
     gmx_file_position_t *outputfiles;
 	int  nfiles;
 	
-    init_state(&state,-1,-1,-1);
+    init_state(&state,-1,-1,-1,-1);
 
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,dd_nc,&npme,
-                  &state.natoms,&state.ngtc,&state.nnhchains,
+                  &state.natoms,&state.ngtc,&state.nnhpres,&state.nnhchains,
                   &state.flags,&flags_eks,&flags_enh,out);
     ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
     if (ret)
@@ -1800,7 +1811,7 @@ void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
     ivec dd_nc_f;
     gmx_large_int_t step=0;
 	double t;
-    int  natoms,ngtc,nnhchains,fflags,flags_eks,flags_enh;
+    int  natoms,ngtc,nnhpres,nnhchains,fflags,flags_eks,flags_enh;
 		
     if (SIMMASTER(cr)) {
         if(!gmx_fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
@@ -1814,7 +1825,7 @@ void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                           &version,&btime,&buser,&bmach,&fprog,&ftime,
                           &eIntegrator_f,simulation_part,
                           &step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
-                          &natoms,&ngtc,&nnhchains,
+                          &natoms,&ngtc,&nnhpres,&nnhchains,
                           &fflags,&flags_eks,&flags_enh,NULL);
             if( gmx_fio_close(fp) != 0)
             {

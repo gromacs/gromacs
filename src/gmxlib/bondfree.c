@@ -1599,7 +1599,8 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *i
 }
 
 real cmap_dihs(int nbonds,
-			   const t_iatom forceatoms[],const t_iparams forceparams[],gmx_cmap_t *cmap_grid,
+			   const t_iatom forceatoms[],const t_iparams forceparams[],
+               const gmx_cmap_t *cmap_grid,
 			   const rvec x[],rvec f[],rvec fshift[],
 			   const t_pbc *pbc,const t_graph *g,
 			   real lambda,real *dvdlambda,
@@ -1635,6 +1636,8 @@ real cmap_dihs(int nbonds,
 	rvec dtf1,dtg1,dth1,dtf2,dtg2,dth2;
 	ivec jt1,dt1_ij,dt1_kj,dt1_lj;
 	ivec jt2,dt2_ij,dt2_kj,dt2_lj;
+
+    const real *cmapd;
 	
 	int loop_index[4][4] = {
 		{0,4,8,12},
@@ -1658,6 +1661,7 @@ real cmap_dihs(int nbonds,
 		
 		/* Which CMAP type is this */
 		cmapA = forceparams[type].cmap.cmapA;
+        cmapd = cmap_grid->cmapdata[cmapA].cmap;
 		
 		/* First torsion */
 		a1i   = ai;
@@ -1815,25 +1819,25 @@ real cmap_dihs(int nbonds,
 		pos3    = ip1p1*cmap_grid->grid_spacing+ip2p1;
 		pos4    = iphi1*cmap_grid->grid_spacing+ip2p1;
 		
-		ty[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4];
-		ty[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4];
-		ty[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4];
-		ty[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4];
+		ty[0]   = cmapd[pos1*4];
+		ty[1]   = cmapd[pos2*4];
+		ty[2]   = cmapd[pos3*4];
+		ty[3]   = cmapd[pos4*4];
 		
-		ty1[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+1];
-		ty1[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+1];
-		ty1[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+1];
-		ty1[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+1];
+		ty1[0]   = cmapd[pos1*4+1];
+		ty1[1]   = cmapd[pos2*4+1];
+		ty1[2]   = cmapd[pos3*4+1];
+		ty1[3]   = cmapd[pos4*4+1];
 		
-		ty2[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+2];
-		ty2[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+2];
-		ty2[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+2];
-		ty2[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+2];
+		ty2[0]   = cmapd[pos1*4+2];
+		ty2[1]   = cmapd[pos2*4+2];
+		ty2[2]   = cmapd[pos3*4+2];
+		ty2[3]   = cmapd[pos4*4+2];
 		
-		ty12[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+3];
-		ty12[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+3];
-		ty12[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+3];
-		ty12[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+3];
+		ty12[0]   = cmapd[pos1*4+3];
+		ty12[1]   = cmapd[pos2*4+3];
+		ty12[2]   = cmapd[pos3*4+3];
+		ty12[3]   = cmapd[pos4*4+3];
 		
 		/* Switch to degrees */
 		dx = 15;

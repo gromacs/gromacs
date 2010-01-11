@@ -1571,17 +1571,18 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int buf[3];
+    int buf[4];
     
     if (DDMASTER(dd))
     {
         buf[0] = state_global->flags;
         buf[1] = state_global->ngtc;
-        buf[2] = state_global->nnhchains;
+        buf[2] = state_global->nnhpres;
+        buf[3] = state_global->nnhchains;
     }
-    dd_bcast(dd,3*sizeof(int),buf);
+    dd_bcast(dd,4*sizeof(int),buf);
     
-    init_state(state_local,0,buf[1],buf[2]);
+    init_state(state_local,0,buf[1],buf[2],buf[3]);
     state_local->flags = buf[0];
     
     /* With Langevin Dynamics we need to make proper storage space
