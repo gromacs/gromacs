@@ -1958,13 +1958,13 @@ static int do_tpx(int fp,bool bRead,
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc,0);  /* nose-hoover chains */
+      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */
       state->natoms = tpx.natoms; 
       state->nalloc = tpx.natoms; 
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc,0);  /* nose-hoover chains */
+      init_state(state,tpx.natoms,tpx.ngtc,0,0);  /* nose-hoover chains */
     }
   }
 
@@ -2102,7 +2102,7 @@ static int do_tpx(int fp,bool bRead,
   if (bRead && tpx.bIr && ir) {
     if (state->ngtc == 0) {
       /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc,ir->opts.nnhchains);
+      init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nnhchains);
     }
     if (tpx.bTop && mtop) {
       if (file_version < 57) {

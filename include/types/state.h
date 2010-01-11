@@ -61,10 +61,10 @@ enum { estLAMBDA,
        estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
-       estVIR_PREV, estNH_VXI, estVETA, estVOL0,
+       estVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI,
        estNR };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estNHPRES_VXI)))
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
 extern const char *est_names[estNR];
@@ -117,6 +117,7 @@ typedef struct
 {
   int           natoms;
   int           ngtc;
+  int           nnhpres;
   int           nnhchains; /* number of nose-hoover chains               */
   int           nrng;
   int           nrngi;
@@ -129,6 +130,8 @@ typedef struct
   matrix        vir_prev; /* Pressure of the previous step for pcoupl  */
   double        *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
+  double        *nhpres_xi;  /* for Nose-Hoover pcoupl                  */
+  double        *nhpres_vxi; /* for Nose-Hoover pcoupl                  */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
   real          veta; /* trotter based isotropic P-coupling             */
   real          vol0; /* initial volume,required for computing NPT conserverd quantity */
