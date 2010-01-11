@@ -1,0 +1,33 @@
+<!ELEMENT qhops (resblocks, qhop+, apa)>
+
+  <!ELEMENT resblocks (residue_type+)>
+    <!ELEMENT residue_type (file? res+)>
+      <!ATTLIST residue_type name CDATA #REQUIRED>
+
+      <!ELEMENT file (#CDATA)>
+      <!ELEMENT res (acceptor*, donor*)>
+        <!ATTLIST res name CDATA #REQUIRED>
+
+        <!ELEMENT acceptor (proton+)>
+          <!ATTLIST acceptor name    CDATA #REQUIRED>
+          <!ATTLIST acceptor product CDATA #REQUIRED>
+
+        <!ELEMENT donor (proton+)>
+          <!ATTLIST donor    name    CDATA #REQUIRED>
+          <!ATTLIST donor    product CDATA #REQUIRED>
+
+          <!ELEMENT proton (#CDATA)>
+
+
+  <!ELEMENT qhop (don_atom+, acc_atom+, parameter+)>
+    <!ATTLIST qhop donor    CDATA #REQUIRED>
+    <!ATTLIST qhop acceptor CDATA #REQUIRED>
+
+    <!ELEMENT don_atom (#CDATA)>
+    <!ELEMENT acc_atom (#CDATA)>
+    <!ELEMENT parameter (EMPTY)>
+      <!ATTLIST parameter name  CDATA #REQUIRED>
+      <!ATTLIST parameter value CDATA #REQUIRED>
+      <!ATTLIST parameter unit  CDATA #REQUIRED>
+
+  <!ELEMENT apa (EMPTY)>

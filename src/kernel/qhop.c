@@ -35,6 +35,7 @@
 #include "constr.h"
 #include "gmx_qhop_db.h"
 
+#define VERBOSE_QHOP
 /* THIS IS JUST FOR QUICK AND DIRTY TEST WORK!!! */
 /* typedef struct{ */
   
@@ -47,11 +48,11 @@
 
 /* } t_qhop_parameters; */
 
-t_qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, gmx_qhop_db db){
+qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, qhop_db_t db){
   /* parameters of the current donor acceptor combination are based on 
    * the residue name.
    */
-  t_qhop_parameters
+  qhop_parameters
     *q;
   snew(q,1);
 
@@ -109,15 +110,18 @@ t_qhop_parameters *get_qhop_params(char *donor_name,char *acceptor_name, gmx_qho
   }
 #else
 
-  if (db == NULL)
-    gmx_fatal(FARGS, "Qhop database not initialized.");
-  else
-    if (gmx_qhop_db_get_parameters(db,donor_name,acceptor_name,q) != 1)
-      gmx_fatal(FARGS, "Parameters not found in qhop database.");
 #ifdef VERBOSE_QHOP
   fprintf(stderr, "--- PARAMETERS FOR DONOR %s - ACCEPTOR %s ---\n",
 	  donor_name, acceptor_name);
-  gmx_qhop_db_print(q);
+#endif /* VERBOSE_QHOP */
+  
+  if (db == NULL)
+    gmx_fatal(FARGS, "Qhop database not initialized.");
+  else
+    if (qhop_db_get_parameters(db,donor_name,acceptor_name,q) != 1)
+      gmx_fatal(FARGS, "Parameters not found in qhop database.");
+#ifdef VERBOSE_QHOP
+  qhop_db_print(q);
 #endif /* VERBOSE_QHOP */
 #endif /* HARDCODED_QHOP_PARAMS */
   return (q);
@@ -130,7 +134,7 @@ typedef struct {
 
 
   /* Make shure that the protonation state can be dealt with correctly */
-static void gmx_qhop_check_validity(int nqhopatoms, unsigned int protonation_state)
+static void qhop_check_validity(int nqhopatoms, unsigned int protonation_state)
 {
     if (nqhopatoms < 0)
         gmx_fatal(FARGS, "Cannot accept a negative number of qhop atoms.");
@@ -141,13 +145,13 @@ static void gmx_qhop_check_validity(int nqhopatoms, unsigned int protonation_sta
 
 
 /* Translates a protonation state into an integer number */
-static unsigned int gmx_qhop_get_protonation_state(int nqhopatoms, bool *bHyd)
+static unsigned int qhop_get_protonation_state(int nqhopatoms, bool *bHyd)
 {
     int i;
     unsigned int protonation_state=0;
     
 
-    gmx_qhop_check_validity(nqhopatoms, protonation_state);
+    qhop_check_validity(nqhopatoms, protonation_state);
     
     for (i=0; i<nqhopatoms; i++)
         protonation_state |=  bHyd[i] << i; 
@@ -158,13 +162,13 @@ static unsigned int gmx_qhop_get_protonation_state(int nqhopatoms, bool *bHyd)
 
 
 /* Translates an integer number into a protonation state */
-static int gmx_qhop_set_protonation_state(int nqhopatoms, unsigned int protonation_state, bool *bHyd)
+static int qhop_set_protonation_state(int nqhopatoms, unsigned int protonation_state, bool *bHyd)
 {
     int i, nchanges=0;
     unsigned int new_state;
     
     
-    gmx_qhop_check_validity(nqhopatoms, protonation_state);
+    qhop_check_validity(nqhopatoms, protonation_state);
     
     for (i=0; i<nqhopatoms; i++)
     {
@@ -509,7 +513,7 @@ static void get_protonation_state(t_commrec *cr, t_qhoprec *qhoprec){
       /* compute the integer corresponding to the proton byte, or pryte 
        */
       qhoprec->qhop_residues[i+j].pryte = 
-	gmx_qhop_get_protonation_state(qhoprec->qhop_atoms[i].nr_links+1, 
+	qhop_get_protonation_state(qhoprec->qhop_atoms[i].nr_links+1, 
 				       protonated);
     }
     /* with the pryte, we can decide what chargeset to use during the
@@ -543,7 +547,7 @@ static void set_charges(t_commrec *cr, t_qhoprec *qhoprec, t_mdatoms *md){
 
 int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, 
 	      t_forcerec *fr, rvec *x,matrix box,t_mdatoms *md,
-	      gmx_qhop_db *db){
+	      qhop_db_t *db){
   /* initialize qhoprec, picks out the atoms that are
      donors/acceptors, creates a bqhop donor array in mdatoms to be
      used by nbsearch, completes the qhop residues array and reads in
@@ -557,7 +561,7 @@ int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir,
   t_pbc
     pbc;
   
-  if ((*db = gmx_qhop_db_read("ffoplsaa")) == NULL) 
+  if ((*db = qhop_db_read("ffoplsaa", mtop)) == NULL)
     gmx_fatal(FARGS,"Can not read qhop database information");
 
   set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,box);
@@ -950,7 +954,7 @@ static real get_self_energy(t_commrec *cr, t_qhop_residue donor,
   return(Eself);
 } /* evaluate energy */
 
-real compute_E12_left(t_qhop_parameters *p,real rda, real E12){
+real compute_E12_left(qhop_parameters *p,real rda, real E12){
   
   real
     k_big,m_big,E12_left;
@@ -967,7 +971,7 @@ real compute_E12_left(t_qhop_parameters *p,real rda, real E12){
   return(E12_left);
 } /* compute_E12_left */
 
-real compute_E12_right(t_qhop_parameters *p,real rda,real Temp){
+real compute_E12_right(qhop_parameters *p,real rda,real Temp){
   
   real
     S,T,V,Eb,E12_right,d;
@@ -993,7 +997,7 @@ real compute_E12_right(t_qhop_parameters *p,real rda,real Temp){
   return(E12_right);
 } /* compute_E12_right */
 
-real compute_Eb(t_qhop_parameters *p, 
+real compute_Eb(qhop_parameters *p, 
 		real rda, real E12){
   real
     Eb,S,T,V,temp;
@@ -1006,7 +1010,7 @@ real compute_Eb(t_qhop_parameters *p,
   return(Eb);
 } /* compute_Eb */
 
-real compute_rate_TST(t_qhop_parameters *p,t_inputrec *ir, 
+real compute_rate_TST(qhop_parameters *p,t_inputrec *ir, 
 		      real E12, real rda, real T){
   
   real
@@ -1030,7 +1034,7 @@ real compute_rate_TST(t_qhop_parameters *p,t_inputrec *ir,
   return (pTST);
 } /* compute_prob_TST */
 
-real compute_rate_SE(t_qhop_parameters *p, t_inputrec *ir, 
+real compute_rate_SE(qhop_parameters *p, t_inputrec *ir, 
 		     real E12, real rda){
 
   real
@@ -1042,7 +1046,7 @@ real compute_rate_SE(t_qhop_parameters *p, t_inputrec *ir,
   return(pSE);
 } /* compute_prob_SE */
 
-real compute_rate_log(t_qhop_parameters *p, t_inputrec *ir,
+real compute_rate_log(qhop_parameters *p, t_inputrec *ir,
 		      real E12, real E12_left, real E12_right, 
 		      real rda, real T){
   
@@ -1073,7 +1077,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			 /*gmx_genborn_t *born,*/ bool bBornRadii,
 			 t_hop *hop, real T,real *E_12,
 			 t_qhoprec *qhoprec,t_pbc pbc,int step,
-			 gmx_qhop_db db){
+			 qhop_db_t db){
   
   /* compute the hopping probability based on the Q-hop criteria
    */
@@ -1082,7 +1086,7 @@ static real get_hop_prob(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     Eafter_tot, Eafter_self, Eafter,
     E12=0,E12_right,E12_left,Eb,
     r_TST,r_SE,r_log;
-  t_qhop_parameters 
+  qhop_parameters 
     *p;
   /* liever lui dan moe */
   p = get_qhop_params(qhoprec->qhop_atoms[hop->donor_id].resname,
@@ -1410,7 +1414,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 	     t_mdatoms *md, t_fcdata *fcd,t_graph *graph, t_forcerec *fr,
 	     gmx_vsite_t *vsite,rvec mu_tot,/*gmx_genborn_t *born, */
 	     bool bBornRadii,real T, int step,
-	     tensor force_vir, gmx_qhop_db db){
+	     tensor force_vir, qhop_db_t db){
   t_hop
     *hop;
   int

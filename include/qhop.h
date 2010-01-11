@@ -18,7 +18,7 @@
 
 t_qhoprec *mk_qhoprec(void);
 extern int init_qhop(t_commrec *cr, gmx_mtop_t *mtop, t_inputrec *ir, t_forcerec *fr,
-	      rvec *x,matrix box, t_mdatoms *md, gmx_qhop_db *db);
+	      rvec *x,matrix box, t_mdatoms *md, qhop_db_t *db);
 
 extern void do_qhop(FILE *fplog, 
 	     t_commrec *cr,
@@ -40,6 +40,6 @@ extern void do_qhop(FILE *fplog,
 	     real T,
 	     int step,
 	     tensor force_vir,
-	     gmx_qhop_db db);
+	     qhop_db_t db);
 
 #endif	/* _qhop_h */

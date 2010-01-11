@@ -1,10 +1,13 @@
 #ifndef _GMX_QHOP_XML_H
 #define _GMX_QHOP_XML_H
 
-#include "gmx_qhop_parm.h"
+#include "types/gmx_qhop_types.h"
+/*#include "gmx_qhop_parm.h"
+#include "gmx_qhop_db.h"*/
 
-extern gmx_qhop_t* gmx_qhops_read(char *fn,int *nqhop);
 
-extern void gmx_qhops_write(char *fn,int nqhop,gmx_qhop_t qht[]);
+extern void qhops_read(char *fn, qhop_db_t qdb);
+
+extern void qhops_write(char *fn,int nqhop,qhop_t qht[]);
 
 #endif

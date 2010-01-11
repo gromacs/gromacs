@@ -1088,7 +1088,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int         reset_counters=-1;
     char        sbuf[22],sbuf2[22];
     bool        bHandledSignal=FALSE;
-    gmx_qhop_db qhop_database=NULL;
+    qhop_db_t   qhop_database=NULL;
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -2383,7 +2383,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* End of main MD loop */
     debug_gmx();
     if (qhop_database != NULL)
-        gmx_qhop_db_done(qhop_database);
+        qhop_db_done(qhop_database);
 
     /* Stop the time */
     runtime_end(runtime);

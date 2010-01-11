@@ -1,89 +1,165 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE qhops.dtd PUBLIC "qhops.dtd" "qhops.dtd">
+<?xml version="1.0" encoding="ISO-8859-1"?><!-- -*- mode: nxml-*- -->
+<!DOCTYPE qhops PUBLIC "qhops.dtd" "qhops.dtd">
 <qhops>
-<qhop donor="H2O" acceptor="OH-">
-  <parameter name="alpha" value="0.0" unit=""/>
-  <parameter name="beta" value="0.0" unit=""/>
-  <parameter name="gamma" value="0.0" unit=""/>	
-  <parameter name="k_1" value="0.121573" unit="1/ps"/>	
-  <parameter name="k_2" value="86.69" unit="1/ps"/>
-  <parameter name="k_3" value="0.030572" unit=""/>
-  <parameter name="m_1" value="34.36" unit=""/>
-  <parameter name="m_2" value="4.36" unit=""/>
-  <parameter name="m_3" value="-30.43" unit=""/>
-  <parameter name="s_A" value="8314.356445" unit=""/>
-  <parameter name="t_A" value="0.17509" unit=""/>
-  <parameter name="v_A" value="-57.045151" unit="kJ/mol"/>
-  <parameter name="s_B" value="0.5000" unit=""/>
-  <parameter name="s_C" value="1.642304" unit=""/>
-  <parameter name="t_C" value="91.103" unit=""/>
-  <parameter name="v_C" value="0.000162" unit=""/>
-  <parameter name="f" value="-9.341085" unit=""/>
-  <parameter name="g" value="0.018496" unit=""/>
-  <parameter name="h" value="20.102501" unit=""/>
-  <parameter name="p_1" value="0.45" unit=""/>
-  <parameter name="q_1" value="0.835005" unit=""/>
-  <parameter name="q_2" value="-0.003848" unit=""/>
-  <parameter name="q_3" value="0.000004836630" unit=""/>
-  <parameter name="r_1" value="0.002429076703" unit=""/>
-  <parameter name="r_2" value="-0.000014638354" unit=""/>
-  <parameter name="r_3" value="0.000000018364" unit=""/>
-</qhop>
-<qhop donor="H3O+" acceptor="H2O">
-  <parameter name="alpha" value="0.0" unit=""/>
-  <parameter name="beta" value="0.0" unit=""/>
-  <parameter name="gamma" value="0.0" unit=""/>	
-  <parameter name="k_1" value="0.121573" unit="1/ps"/>	
-  <parameter name="k_2" value="86.69" unit="1/ps"/>
-  <parameter name="k_3" value="0.030572" unit=""/>
-  <parameter name="m_1" value="34.36" unit=""/>
-  <parameter name="m_2" value="4.36" unit=""/>
-  <parameter name="m_3" value="-30.43" unit=""/>
-  <parameter name="s_A" value="8314.356445" unit=""/>
-  <parameter name="t_A" value="0.17509" unit=""/>
-  <parameter name="v_A" value="-57.045151" unit="kJ/mol"/>
-  <parameter name="s_B" value="0.5000" unit=""/>
-  <parameter name="s_C" value="1.642304" unit=""/>
-  <parameter name="t_C" value="91.103" unit=""/>
-  <parameter name="v_C" value="0.000162" unit=""/>
-  <parameter name="f" value="-9.341085" unit=""/>
-  <parameter name="g" value="0.018496" unit=""/>
-  <parameter name="h" value="20.102501" unit=""/>
-  <parameter name="p_1" value="0.45" unit=""/>
-  <parameter name="q_1" value="0.835005" unit=""/>
-  <parameter name="q_2" value="-0.003848" unit=""/>
-  <parameter name="q_3" value="0.000004836630" unit=""/>
-  <parameter name="r_1" value="0.002429076703" unit=""/>
-  <parameter name="r_2" value="-0.000014638354" unit=""/>
-  <parameter name="r_3" value="0.000000018364" unit=""/>
-</qhop>
-<!-- The following was added to applu to the current work-in-progress-way of doing things. -->
-<qhop donor="SOL" acceptor="SOL">
-  <parameter name="alpha" value="0.0" unit=""/>
-  <parameter name="beta" value="0.0" unit=""/>
-  <parameter name="gamma" value="0.0" unit=""/>	
-  <parameter name="k_1" value="0.121573" unit="1/ps"/>	
-  <parameter name="k_2" value="86.69" unit="1/ps"/>
-  <parameter name="k_3" value="0.030572" unit=""/>
-  <parameter name="m_1" value="34.36" unit=""/>
-  <parameter name="m_2" value="4.36" unit=""/>
-  <parameter name="m_3" value="-30.43" unit=""/>
-  <parameter name="s_A" value="8314.356445" unit=""/>
-  <parameter name="t_A" value="0.17509" unit=""/>
-  <parameter name="v_A" value="-57.045151" unit="kJ/mol"/>
-  <parameter name="s_B" value="0.5000" unit=""/>
-  <parameter name="s_C" value="1.642304" unit=""/>
-  <parameter name="t_C" value="91.103" unit=""/>
-  <parameter name="v_C" value="0.000162" unit=""/>
-  <parameter name="f" value="-9.341085" unit=""/>
-  <parameter name="g" value="0.018496" unit=""/>
-  <parameter name="h" value="20.102501" unit=""/>
-  <parameter name="p_1" value="0.45" unit=""/>
-  <parameter name="q_1" value="0.835005" unit=""/>
-  <parameter name="q_2" value="-0.003848" unit=""/>
-  <parameter name="q_3" value="0.000004836630" unit=""/>
-  <parameter name="r_1" value="0.002429076703" unit=""/>
-  <parameter name="r_2" value="-0.000014638354" unit=""/>
-  <parameter name="r_3" value="0.000000018364" unit=""/>
-</qhop>
+  <resblocks>
+    <!--
+	#######
+	TIP3P
+	#######
+    -->
+    <residue_type name="qHOH">
+      <file> qtip3p.itp </file>
+      <res name="OH-">
+	<acceptor name="OW" product="SOL">
+	  <proton> HW2 </proton>
+	</acceptor>
+      </res>
+      <res name="SOL">
+	<acceptor name="OW" product="H3O+">
+	  <proton> HW3 </proton>
+	</acceptor>
+	<donor name="OW" product="OH-">
+	  <proton> HW2 </proton>
+	</donor>
+      </res>
+      <res name="H3O+">
+	<donor name="OW" product="SOL">
+	  <proton> HW3 </proton>
+	</donor>
+      </res>
+    </residue_type>
+    <!--
+	########
+	LYSINE
+	########
+    -->
+    <residue_type name="qLYS">
+      <res name="LYS">
+	<acceptor name="NZ" product="LYSH">
+	  <proton> HZ3 </proton>
+	</acceptor>
+      </res>
+      <res name="LYSH">
+	<donor name="NZ" product="LYSH">
+	  <proton> HZ3 </proton>
+	</donor>
+      </res>
+    </residue_type>
+    <!--
+	###########
+	HISTIDINE 
+	###########  
+    -->
+    <residue_type name="qHIS">
+      <res name="HISA">
+	<acceptor name="NE2" product="HISH">
+	  <proton> HE2 </proton>
+	</acceptor>
+      </res>
+      <res name="HISB">
+	<acceptor name="ND1" product="HISH">
+	  <proton> HD1 </proton>
+	</acceptor>
+      </res>
+      <res name="HISH">
+	<donor name="NE2" product="HISA">
+	  <proton> HE2 </proton>
+	</donor>
+	<donor name="ND1" product="HISB">
+	  <proton> HD1 </proton>
+	</donor>
+      </res>
+    </residue_type>
+  </resblocks>
+
+  <qhop donor="SOL" acceptor="OH-">
+    <don_atom> OW </don_atom>
+    <acc_atom> OW </acc_atom>
+    <parameter name="alpha" value="0.0" unit=""/>
+    <parameter name="beta" value="0.0" unit=""/>
+    <parameter name="gamma" value="0.0" unit=""/>	
+    <parameter name="k_1" value="0.121573" unit="1/ps"/>	
+    <parameter name="k_2" value="86.69" unit="1/ps"/>
+    <parameter name="k_3" value="0.030572" unit=""/>
+    <parameter name="m_1" value="34.36" unit=""/>
+    <parameter name="m_2" value="4.36" unit=""/>
+    <parameter name="m_3" value="-30.43" unit=""/>
+    <parameter name="s_A" value="8314.356445" unit=""/>
+    <parameter name="t_A" value="0.17509" unit=""/>
+    <parameter name="v_A" value="-57.045151" unit="kJ/mol"/>
+    <parameter name="s_B" value="0.5000" unit=""/>
+    <parameter name="s_C" value="1.642304" unit=""/>
+    <parameter name="t_C" value="91.103" unit=""/>
+    <parameter name="v_C" value="0.000162" unit=""/>
+    <parameter name="f" value="-9.341085" unit=""/>
+    <parameter name="g" value="0.018496" unit=""/>
+    <parameter name="h" value="20.102501" unit=""/>
+    <parameter name="p_1" value="0.45" unit=""/>
+    <parameter name="q_1" value="0.835005" unit=""/>
+    <parameter name="q_2" value="-0.003848" unit=""/>
+    <parameter name="q_3" value="0.000004836630" unit=""/>
+    <parameter name="r_1" value="0.002429076703" unit=""/>
+    <parameter name="r_2" value="-0.000014638354" unit=""/>
+    <parameter name="r_3" value="0.000000018364" unit=""/>
+  </qhop>
+  <qhop donor="H3O+" acceptor="SOL">
+    <don_atom> OW </don_atom>
+    <acc_atom> OW </acc_atom>
+    <parameter name="alpha" value="0.0" unit=""/>
+    <parameter name="beta" value="0.0" unit=""/>
+    <parameter name="gamma" value="0.0" unit=""/>	
+    <parameter name="k_1" value="0.121573" unit="1/ps"/>	
+    <parameter name="k_2" value="86.69" unit="1/ps"/>
+    <parameter name="k_3" value="0.030572" unit=""/>
+    <parameter name="m_1" value="34.36" unit=""/>
+    <parameter name="m_2" value="4.36" unit=""/>
+    <parameter name="m_3" value="-30.43" unit=""/>
+    <parameter name="s_A" value="8314.356445" unit=""/>
+    <parameter name="t_A" value="0.17509" unit=""/>
+    <parameter name="v_A" value="-57.045151" unit="kJ/mol"/>
+    <parameter name="s_B" value="0.5000" unit=""/>
+    <parameter name="s_C" value="1.642304" unit=""/>
+    <parameter name="t_C" value="91.103" unit=""/>
+    <parameter name="v_C" value="0.000162" unit=""/>
+    <parameter name="f" value="-9.341085" unit=""/>
+    <parameter name="g" value="0.018496" unit=""/>
+    <parameter name="h" value="20.102501" unit=""/>
+    <parameter name="p_1" value="0.45" unit=""/>
+    <parameter name="q_1" value="0.835005" unit=""/>
+    <parameter name="q_2" value="-0.003848" unit=""/>
+    <parameter name="q_3" value="0.000004836630" unit=""/>
+    <parameter name="r_1" value="0.002429076703" unit=""/>
+    <parameter name="r_2" value="-0.000014638354" unit=""/>
+    <parameter name="r_3" value="0.000000018364" unit=""/>
+  </qhop>
+  <qhop donor="H3O+" acceptor="OH-">
+    <don_atom> OW </don_atom>
+    <acc_atom> OW </acc_atom>
+    <parameter name="alpha" value="0.0" unit=""/>
+    <parameter name="beta" value="0.0" unit=""/>
+    <parameter name="gamma" value="0.0" unit=""/>	
+    <parameter name="k_1" value="0.121573" unit="1/ps"/>
+    <parameter name="k_2" value="86.69" unit="1/ps"/>
+    <parameter name="k_3" value="0.030572" unit=""/>
+    <parameter name="m_1" value="34.36" unit=""/>
+    <parameter name="m_2" value="4.36" unit=""/>
+    <parameter name="m_3" value="-30.43" unit=""/>
+    <parameter name="s_A" value="8314.356445" unit=""/>
+    <parameter name="t_A" value="0.17509" unit=""/>
+    <parameter name="v_A" value="-57.045151" unit="kJ/mol"/>
+    <parameter name="s_B" value="0.5000" unit=""/>
+    <parameter name="s_C" value="1.642304" unit=""/>
+    <parameter name="t_C" value="91.103" unit=""/>
+    <parameter name="v_C" value="0.000162" unit=""/>
+    <parameter name="f" value="-9.341085" unit=""/>
+    <parameter name="g" value="0.018496" unit=""/>
+    <parameter name="h" value="20.102501" unit=""/>
+    <parameter name="p_1" value="0.45" unit=""/>
+    <parameter name="q_1" value="0.835005" unit=""/>
+    <parameter name="q_2" value="-0.003848" unit=""/>
+    <parameter name="q_3" value="0.000004836630" unit=""/>
+    <parameter name="r_1" value="0.002429076703" unit=""/>
+    <parameter name="r_2" value="-0.000014638354" unit=""/>
+    <parameter name="r_3" value="0.000000018364" unit=""/>
+  </qhop>
 </qhops>

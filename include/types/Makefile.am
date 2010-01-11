@@ -13,5 +13,5 @@ pkgincludetypes_HEADERS = \
 	topology.h	fcdata.h  	filenm.h  	idef.h 		\
 	matrix.h    	nrnb.h     	trx.h		state.h		\
 	pbc.h		qmmmrec.h	shellfc.h	genborn.h	\
-	qhoprec.h
+	qhoprec.h	gmx_qhop_types.h
 
