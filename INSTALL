@@ -113,7 +113,7 @@ For instance, if you want to compile only the mdrun executable
 with parallel MPI support:
 
 make clean               
-./configure --enable-mpi --disable-nice
+./configure --enable-mpi
 make mdrun 
 make install-mdrun
 

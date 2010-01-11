@@ -41,6 +41,10 @@
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
@@ -172,5 +176,9 @@ extern void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 
 extern void init_t_protonate(t_protonate *protonate);
 /* initialize t_protein struct */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _hackblock_h */

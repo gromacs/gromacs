@@ -53,6 +53,8 @@
 #include "rmpbc.h"
 #include "tpxio.h"
 #include "nrjac.h"
+#include "gmx_ana.h"
+
 
 static void gyro_eigen(double **gyr,double *eig,double **eigv,int *ord)
 {
@@ -146,8 +148,8 @@ int gmx_polystat(int argc,char *argv[])
   real   t;
   rvec   *x,*bond=NULL;
   matrix box;
-  int    natoms,i,j,frame,ind0,ind1,a,d,d2,ord[DIM];
-  dvec   cm,sum_eig;
+  int    natoms,i,j,frame,ind0,ind1,a,d,d2,ord[DIM]={0};
+  dvec   cm,sum_eig={0,0,0};
   double **gyr,**gyr_all,eig[DIM],**eigv;
   double sum_eed2,sum_eed2_tot,sum_gyro,sum_gyro_tot,sum_pers_tot;
   int    *ninp=NULL;
@@ -380,11 +382,11 @@ int gmx_polystat(int argc,char *argv[])
 
   close_trx(status);
 
-  fclose(out);
+  ffclose(out);
   if (outv)
-    fclose(outv);
+    ffclose(outv);
   if (outp)
-    fclose(outp);
+    ffclose(outp);
 
   sum_eed2_tot /= frame;
   sum_gyro_tot /= frame;
@@ -414,7 +416,7 @@ int gmx_polystat(int argc,char *argv[])
     for (i = 0; i < j; i++) {
       fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
     }
-    fclose(outi);
+    ffclose(outi);
   }
 
   do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");

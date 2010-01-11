@@ -36,6 +36,11 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct {
   real r,g,b;
 } t_rgb;
@@ -78,3 +83,8 @@ typedef struct {
   int nmap;
   t_mapping *map;
 } t_matrix;
+
+#ifdef __cplusplus
+}
+#endif
+

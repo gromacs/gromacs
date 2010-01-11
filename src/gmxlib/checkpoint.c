@@ -22,6 +22,14 @@
 
 #include <string.h>
 #include <time.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+/* _chsize_s */
+#include <io.h>
+#include <sys/locking.h>
+#endif
+
+
 #include "filenm.h"
 #include "names.h"
 #include "typedefs.h"
@@ -35,6 +43,9 @@
 #include "gmx_random.h"
 #include "checkpoint.h"
 #include "futil.h"
+#include <fcntl.h>
+
+
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -52,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 7;
+static const int cpt_version = 10;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -66,13 +77,15 @@ const char *est_names[estNR]=
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
+    "vir_prev", "nosehoover-vxi", "v_eta", "vol0"
 };
 
-enum { eeksEKINH_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksNR };
+enum { eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR };
 
 const char *eeks_names[eeksNR]=
 {
-    "Ekinh_n", "Ekinh", "dEkindlambda", "mv_cos"
+    "Ekin_n", "Ekinh", "dEkindlambda", "mv_cos",
+    "Ekinf", "Ekinh_old", "EkinScaleF_NHC", "EkinScaleH_NHC","Vscale_NHC","Ekin_Total"
 };
 
 enum { eenhENERGY_N, eenhENERGY_AVER, eenhENERGY_SUM, eenhENERGY_NSUM,
@@ -85,6 +98,27 @@ const char *eenh_names[eenhNR]=
     "energy_sum_sim", "energy_nsum_sim",
     "energy_nsteps", "energy_nsteps_sim" 
 };
+
+
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+static int
+gmx_wintruncate(const char *filename, __int64 size)
+{
+    FILE *fp;
+    int   rc;
+    
+    fp=fopen(filename,"r+");
+    
+    if(fp==NULL)
+    {
+        return -1;
+    }
+    
+    return _chsize_s( fileno(fp), size);
+}
+#endif
+
 
 
 enum { ecprREAL, ecprRVEC, ecprMATRIX };
@@ -145,6 +179,34 @@ static int do_cpt_int(XDR *xd,const char *desc,int *i,FILE *list)
     {
         fprintf(list,"%s = %d\n",desc,*i);
     }
+    return 0;
+}
+
+static int do_cpt_u_chars(XDR *xd,const char *desc,int n,unsigned char *i,FILE *list)
+{
+    bool_t res=1;
+    int j;
+    if (list)
+    {
+        fprintf(list,"%s = ",desc);
+    }
+    for (j=0; j<n && res; j++)
+    {
+        res &= xdr_u_char(xd,&i[j]);
+        if (list)
+        {
+            fprintf(list,"%02x",i[j]);
+        }
+    }
+    if (list)
+    {
+        fprintf(list,"\n");
+    }
+    if (res == 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -553,7 +615,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                           int *eIntegrator,int *simulation_part,
                           gmx_large_int_t *step,double *t,
                           int *nnodes,int *dd_nc,int *npme,
-                          int *natoms,int *ngtc,
+                          int *natoms,int *ngtc, int *nnhchains,
                           int *flags_state,int *flags_eks,int *flags_enh,
                           FILE *list)
 {
@@ -595,6 +657,10 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     }
     do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
+    if (*file_version >= 10) 
+    {
+        do_cpt_int_err(xd,"#T Nose-Hoover chains",nnhchains  ,list);
+    }
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
 	if (*file_version >= 3)
 	{
@@ -666,8 +732,11 @@ static int do_cpt_state(XDR *xd,bool bRead,
     int  **rng_p,**rngi_p;
     int  i;
     int  ret;
-    
+    int  ngtch;
+
     ret = 0;
+    
+    ngtch = (state->ngtc+1)*(state->nnhchains);  /* need extra for barostat */
 
     if (bReadRNG)
     {
@@ -693,8 +762,12 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
-            case estNH_XI:   ret = do_cpte_reals (xd,0,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
+            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
+            case estNH_XI:   ret = do_cpte_doubles (xd,0,i,sflags,ngtch,&state->nosehoover_xi,list); break;
+            case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,ngtch,&state->nosehoover_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
+            case estVETA:    ret = do_cpte_real  (xd,0,i,sflags,&state->veta,list); break;
+            case estVOL0:    ret = do_cpte_real(xd,0,i,sflags,&state->vol0,list); break;
             case estX:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->x,list); break;
             case estV:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->v,list); break;
             case estSDX:     ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->sd_X,list); break;
@@ -729,11 +802,17 @@ static int do_cpt_ekinstate(XDR *xd,bool bRead,
         {
             switch (i)
             {
-
-			case eeksEKINH_N: ret = do_cpte_int(xd,1,i,fflags,&ekins->ekinh_n,list); break;
-			case eeksEKINH:   ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekinh_n,&ekins->ekinh,list); break;
- 			case eeksDEKINDL: ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
-            case eeksMVCOS:   ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
+                
+			case eeksEKIN_N:     ret = do_cpte_int(xd,1,i,fflags,&ekins->ekin_n,list); break;
+			case eeksEKINH :     ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh,list); break;
+			case eeksEKINF:      ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinf,list); break;
+			case eeksEKINO:      ret = do_cpte_matrices(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinh_old,list); break;
+            case eeksEKINTOTAL:  ret = do_cpte_matrix(xd,1,i,fflags,ekins->ekin_total,list); break;
+            case eeksEKINSCALEF: ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinscalef_nhc,list); break;
+            case eeksVSCALE:     ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->vscale_nhc,list); break;
+            case eeksEKINSCALEH: ret = do_cpte_doubles(xd,1,i,fflags,ekins->ekin_n,&ekins->ekinscaleh_nhc,list); break;
+ 			case eeksDEKINDL :   ret = do_cpte_real(xd,1,i,fflags,&ekins->dekindl,list); break;
+            case eeksMVCOS:      ret = do_cpte_real(xd,1,i,fflags,&ekins->mvcos,list); break;			
             default:
                 gmx_fatal(FARGS,"Unknown ekin data state entry %d\n"
                           "You are probably reading a new checkpoint file with old code",i);
@@ -813,9 +892,9 @@ static int do_cpt_enerhist(XDR *xd,bool bRead,
 
 static int do_cpt_files(XDR *xd, bool bRead, 
                         gmx_file_position_t **p_outputfiles, int *nfiles, 
-                        FILE *list)
+                        FILE *list, int file_version)
 {
-	int    i;
+	int    i,j;
 	off_t  offset;
 	off_t  mask = 0xFFFFFFFFL;
 	int    offset_high,offset_low;
@@ -889,6 +968,22 @@ static int do_cpt_files(XDR *xd, bool bRead,
 			{
 				return -1;
 			}
+		}
+		if (file_version >= 8)
+		{
+            if (do_cpt_int(xd,"file_checksum_size",&(outputfiles[i].chksum_size),
+                           list) != 0)
+            {
+                return -1;
+            }
+            if (do_cpt_u_chars(xd,"file_checksum",16,outputfiles[i].chksum,list) != 0)
+            {
+                return -1;
+            }
+		} 
+		else 
+		{
+		    outputfiles[i].chksum_size = -1;
 		}
 	}
 	return 0;
@@ -967,8 +1062,8 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
-            ((1<<eeksEKINH_N) | (1<<eeksEKINH) | (1<<eeksDEKINDL) |
-             (1<<eeksMVCOS));
+            ((1<<eeksEKIN_N) | (1<<eeksEKINH) | (1<<eeksEKINF) | (1<<eeksEKINO) | 
+             (1<<eeksEKINSCALEF) | (1<<eeksEKINSCALEH) | (1<<eeksVSCALE) | (1<<eeksDEKINDL) | (1<<eeksMVCOS));
     }
     else
     {
@@ -1002,9 +1097,9 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
-                  &state->natoms,&state->ngtc,
+                  &state->natoms,&state->ngtc,&state->nnhchains,
                   &state->flags,&flags_eks,&flags_enh,NULL);
-
+    
     sfree(version);
     sfree(btime);
     sfree(buser);
@@ -1014,7 +1109,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
     if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
 		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
 		(do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)    ||
-	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL) < 0))
+	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL,file_version) < 0))
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
 	}
@@ -1030,6 +1125,7 @@ void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 	sfree(outputfiles);
 	#ifdef GMX_FAHCORE
     /*code for alternate checkpointing scheme.  moved from top of loop over steps */
+      fcRequestCheckPoint();
       if ( fcCheckPointParallel( cr->nodeid, NULL,0) == 0 ) {
         gmx_fatal( 3,__FILE__,__LINE__, "Checkpoint error on step %d\n", step );
       }
@@ -1137,23 +1233,29 @@ static void check_match(FILE *fplog,
     }
 }
 
-static void read_checkpoint(const char *fn,FILE *fplog,
+static void read_checkpoint(const char *fn,FILE **pfplog,
                             t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                             int eIntegrator,gmx_large_int_t *step,double *t,
                             t_state *state,bool *bReadRNG,bool *bReadEkin,
                             int *simulation_part,bool bAppendOutputFiles)
 {
-    int  fp,i,j;
+    int  fp,i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
 	char filename[STRLEN],buf[22];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
-    int  natoms,ngtc,fflags,flags_eks,flags_enh;
+    int  natoms,ngtc,nnhchains,fflags,flags_eks,flags_enh;
     int  d;
     int  ret;
 	gmx_file_position_t *outputfiles;
 	int  nfiles;
+	int chksum_file;
+	FILE* fplog = *pfplog;
+	unsigned char digest[16];
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+	struct flock fl = { F_WRLCK, SEEK_SET, 0,       0,     0 }; 
+#endif
 	
     const char *int_warn=
         "WARNING: The checkpoint file was generator with integrator %s,\n"
@@ -1174,7 +1276,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator_f,simulation_part,step,t,
                   &nppnodes_f,dd_nc_f,&npmenodes_f,
-                  &natoms,&ngtc,
+                  &natoms,&ngtc,&nnhchains,
                   &fflags,&flags_eks,&flags_enh,NULL);
     
     if (cr == NULL || MASTER(cr))
@@ -1207,6 +1309,10 @@ static void read_checkpoint(const char *fn,FILE *fplog,
     {
         gmx_fatal(FARGS,"Checkpoint file is for a system of %d T-coupling groups, while the current system consists of %d T-coupling groups",ngtc,state->ngtc);
     }
+
+    init_gtc_state(state,state->ngtc,nnhchains); /* need to keep this here to keep the tpr format working */
+    /* write over whatever was read; we use the number of Nose-Hoover chains from the checkpoint */
+    
     if (eIntegrator_f != eIntegrator)
     {
         if (MASTER(cr))
@@ -1323,8 +1429,9 @@ static void read_checkpoint(const char *fn,FILE *fplog,
     {
         cp_error();
     }
-    *bReadEkin = (flags_eks & (1<<eeksEKINH));
-
+    *bReadEkin = ((flags_eks & (1<<eeksEKINH)) || (flags_eks & (1<<eeksEKINF)) || (flags_eks & (1<<eeksEKINO)) ||
+                  (flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE)));
+    
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp),TRUE,
                           flags_enh,&state->enerhist,NULL);
     if (ret)
@@ -1343,7 +1450,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
         state->enerhist.nsum_sim = *step;
     }
 
-	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);
+	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL,file_version);
 	if (ret)
 	{
 		cp_error();
@@ -1374,16 +1481,101 @@ static void read_checkpoint(const char *fn,FILE *fplog,
 	 */
     if (bAppendOutputFiles)
     {
+        if (fn2ftp(outputfiles[0].filename)!=efLOG)
+        {
+            /* make sure first file is log file so that it is OK to use it for 
+             * locking
+             */
+            gmx_fatal(FARGS,"The first output file should always be the log "
+                      "file but instead is: %s", outputfiles[0].filename);
+        }
         for(i=0;i<nfiles;i++)
         {
             if (outputfiles[i].filename,outputfiles[i].offset < 0)
             {
-                gmx_fatal(FARGS,"The original run wrote a file called '%s' which is larger than 2 GB, but mdrun did not support large file offsets. Can not append. Run mdrun without -append",outputfiles[i].filename);
+                gmx_fatal(FARGS,"The original run wrote a file called '%s' which "
+                    "is larger than 2 GB, but mdrun did not support large file"
+                    " offsets. Can not append. Run mdrun without -append",
+                    outputfiles[i].filename);
             }
+#ifdef FAHCORE
+            chksum_file=gmx_fio_open(outputfiles[i].filename,"a");
 
-            if (0 != truncate(outputfiles[i].filename,outputfiles[i].offset))
+#else
+            chksum_file=gmx_fio_open(outputfiles[i].filename,"r+");
+
+            /* lock log file */                
+            if (i==0)
             {
-                gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+#if !((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__) 
+                if (fcntl(fileno(gmx_fio_getfp(chksum_file)), F_SETLK, &fl)
+                    ==-1)
+#else
+                if (_locking(fileno(gmx_fio_getfp(chksum_file)), _LK_NBLCK, LONG_MAX)==-1)
+#endif
+                {
+                    gmx_fatal(FARGS,"Failed to lock: %s. Already running "
+                        "simulation?", outputfiles[i].filename);
+                }
+            }
+            
+            /* compute md5 chksum */ 
+            if (outputfiles[i].chksum_size != -1)
+            {
+                if (gmx_fio_get_file_md5(chksum_file,outputfiles[i].offset,
+                                     digest) != outputfiles[i].chksum_size)
+                {
+                    gmx_fatal(FARGS,"Can't read %d bytes of '%s' to compute"
+                        " checksum.", outputfiles[i].chksum_size, 
+                        outputfiles[i].filename);
+                }
+            } 
+            else if (i==0)  /*log file need to be seeked even when not reading md5*/
+            {
+                gmx_fio_seek(chksum_file,outputfiles[i].offset);
+            }
+#endif
+            
+            if (i==0) /*open log file here - so that lock is never lifted 
+                        after chksum is calculated */
+            {
+                *pfplog = gmx_fio_getfp(chksum_file);
+            }
+            else
+            {
+                gmx_fio_close(chksum_file);
+            }
+#ifndef FAHCORE            
+            /* compare md5 chksum */
+            if (outputfiles[i].chksum_size != -1 &&
+                memcmp(digest,outputfiles[i].chksum,16)!=0) 
+            {
+                if (debug)
+                {
+                    fprintf(debug,"chksum for %s: ",outputfiles[i].filename);
+                    for (j=0; j<16; j++)
+                    {
+                        fprintf(debug,"%02x",digest[j]);
+                    }
+                    fprintf(debug,"\n");
+                }
+                gmx_fatal(FARGS,"Checksum wrong for '%s'.",
+                          outputfiles[i].filename);
+            }
+#endif        
+
+              
+            if (i!=0) /*log file is already seeked to correct position */
+            {
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+                rc = gmx_wintruncate(outputfiles[i].filename,outputfiles[i].offset);
+#else            
+                rc = truncate(outputfiles[i].filename,outputfiles[i].offset);
+#endif
+                if(rc!=0)
+                {
+                    gmx_fatal(FARGS,"Truncation of file %s failed.",outputfiles[i].filename);
+                }
             }
         }
     }
@@ -1392,7 +1584,7 @@ static void read_checkpoint(const char *fn,FILE *fplog,
 }
 
 
-void load_checkpoint(const char *fn,FILE *fplog,
+void load_checkpoint(const char *fn,FILE **fplog,
                      t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                      t_inputrec *ir,t_state *state,
                      bool *bReadRNG,bool *bReadEkin,bool bAppend)
@@ -1437,7 +1629,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,simulation_part,step,t,&nppnodes,dd_nc,&npme,
-                  &state->natoms,&state->ngtc,
+                  &state->natoms,&state->ngtc,&state->nnhchains,
                   &state->flags,&flags_eks,&flags_enh,NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
@@ -1458,7 +1650,7 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
         cp_error();
     }
 
-	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);
+	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL,file_version);
 	sfree(outputfiles);
 	
     if (ret)
@@ -1500,7 +1692,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     gmx_large_int_t step;
     double t;
     
-    init_state(&state,0,0);
+    init_state(&state,0,0,0);
     
     low_read_checkpoint_state(fp,&simulation_part,&step,&t,&state,FALSE);
     
@@ -1552,13 +1744,13 @@ void list_checkpoint(const char *fn,FILE *out)
     gmx_file_position_t *outputfiles;
 	int  nfiles;
 	
-    init_state(&state,-1,-1);
+    init_state(&state,-1,-1,-1);
 
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&simulation_part,&step,&t,&nppnodes,dd_nc,&npme,
-                  &state.natoms,&state.ngtc,
+                  &state.natoms,&state.ngtc,&state.nnhchains,
                   &state.flags,&flags_eks,&flags_enh,out);
     ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
     if (ret)
@@ -1576,7 +1768,7 @@ void list_checkpoint(const char *fn,FILE *out)
 
     if (ret == 0)
     {
-		do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,out);
+		do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,out,file_version);
 	}
 	
     if (ret == 0)
@@ -1608,7 +1800,7 @@ void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
     ivec dd_nc_f;
     gmx_large_int_t step=0;
 	double t;
-    int  natoms,ngtc,fflags,flags_eks,flags_enh;
+    int  natoms,ngtc,nnhchains,fflags,flags_eks,flags_enh;
 		
     if (SIMMASTER(cr)) {
         if(!gmx_fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
@@ -1622,7 +1814,7 @@ void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
                           &version,&btime,&buser,&bmach,&fprog,&ftime,
                           &eIntegrator_f,simulation_part,
                           &step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
-                          &natoms,&ngtc,
+                          &natoms,&ngtc,&nnhchains,
                           &fflags,&flags_eks,&flags_enh,NULL);
             if( gmx_fio_close(fp) != 0)
             {

@@ -47,42 +47,61 @@
  */
 typedef struct
 {
-    /*! Positions to permute.*/
+    /** Positions to permute. */
     gmx_ana_pos_t    p;
-    /*! Group to receive the output permutation.*/
+    /** Group to receive the output permutation. */
     gmx_ana_index_t  g;
-    /*! Number of elements in the permutation.*/
+    /** Number of elements in the permutation. */
     int              n;
-    /*! Array describing the permutation.*/
+    /** Array describing the permutation. */
     int             *perm;
-    /*! Array that has the permutation reversed.*/
+    /** Array that has the permutation reversed. */
     int             *rperm;
 } t_methoddata_permute;
 
-/*! Allocates data for the \p permute selection modifier.*/
+/** Allocates data for the \p permute selection modifier. */
 static void *
 init_data_permute(int npar, gmx_ana_selparam_t *param);
-/*! Initializes data for the \p permute selection modifier.*/
+/** Initializes data for the \p permute selection modifier. */
 static int
 init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Initializes output for the \p permute selection modifier.*/
+/** Initializes output for the \p permute selection modifier. */
 static int
 init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
-/*! Frees the memory allocated for the \p permute selection modifier.*/
+/** Frees the memory allocated for the \p permute selection modifier. */
 static void
 free_data_permute(void *data);
-/*! Evaluates the \p permute selection modifier.*/
+/** Evaluates the \p permute selection modifier. */
 static int
 evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
-/*! Parameters for the \p permute selection modifier.*/
+/** Parameters for the \p permute selection modifier. */
 static gmx_ana_selparam_t smparams_permute[] = {
     {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {NULL,       {INT_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
-/*! \internal Selection method data for the \p permute modifier.*/
+/** Help text for the \p permute selection modifier. */
+static const char *help_permute[] = {
+    "PERMUTING SELECTIONS[PAR]",
+
+    "[TT]permute P1 ... PN[tt][PAR]",
+
+    "By default, all selections are evaluated such that the atom indices are",
+    "returned in ascending order. This can be changed by appending",
+    "[TT]permute P1 P2 ... PN[tt] to an expression.",
+    "The [TT]Pi[tt] should form a permutation of the numbers 1 to N.",
+    "This keyword permutes each N-position block in the selection such that",
+    "the i'th position in the block becomes Pi'th.",
+    "Note that it is the positions that are permuted, not individual atoms.",
+    "A fatal error occurs if the size of the selection is not a multiple of n.",
+    "It is only possible to permute the whole selection expression, not any",
+    "subexpressions, i.e., the [TT]permute[tt] keyword should appear last in",
+    "a selection.",
+};
+
+/** \internal Selection method data for the \p permute modifier. */
 gmx_ana_selmethod_t sm_permute = {
     "permute", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_permute), smparams_permute,
@@ -94,6 +113,7 @@ gmx_ana_selmethod_t sm_permute = {
     NULL,
     NULL,
     &evaluate_permute,
+    {"permute P1 ... PN", asize(help_permute), help_permute},
 };
 
 /*!
@@ -172,27 +192,17 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     int                   i, j, b, k;
 
     gmx_ana_pos_copy(out->u.p, &d->p, TRUE);
+    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     d->g.isize = 0;
+    gmx_ana_pos_empty_init(out->u.p);
     for (i = 0; i < d->p.nr; i += d->n)
     {
         for (j = 0; j < d->n; ++j)
         {
             b = i + d->rperm[j];
-            /* We do not permute the reference IDs to keep the mapping consistent */
-            out->u.p->m.mapid[i+j] = d->p.m.mapid[b];
-            out->u.p->m.orgid[i+j] = d->p.m.orgid[b];
-            /* Permute the index group and the mapping blocks */
-            for (k = d->p.m.b.index[b]; k < d->p.m.b.index[b+1]; ++k)
-            {
-                d->g.index[d->g.isize] = d->p.g->index[k];
-                out->u.p->m.b.a[d->g.isize] = d->p.m.b.a[k];
-                d->g.isize++;
-            }
-            out->u.p->m.mapb.index[i+j+1] = d->g.isize;
-            out->u.p->m.b.index[i+j+1] = d->g.isize;
+            gmx_ana_pos_append_init(out->u.p, &d->g, &d->p, b);
         }
     }
-    out->u.p->g = &d->g;
     return 0;
 }
 
@@ -238,31 +248,22 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 d->n);
         return -1;
     }
-    out->u.p->nr              = d->p.nr;
-    out->u.p->m.nr            = d->p.m.nr;
-    out->u.p->m.mapb.nr       = d->p.m.mapb.nr;
-    out->u.p->m.mapb.index[0] = 0;
-    d->g.isize                = 0;
+    d->g.isize = 0;
+    gmx_ana_pos_empty(out->u.p);
     for (i = 0; i < d->p.nr; i += d->n)
     {
         for (j = 0; j < d->n; ++j)
         {
             b = i + d->rperm[j];
-            copy_rvec(p->x[b], out->u.p->x[i+j]);
-            /* De-permute the reference IDs. */
             refid = d->p.m.refid[b];
-            refid = refid - (refid % d->n) + d->perm[refid % d->n];
-            out->u.p->m.refid[i+j] = refid;
-            /* Use the original IDs from the output structure to correctly
-             * handle user customization. */
-            out->u.p->m.mapid[i+j] = out->u.p->m.orgid[refid];
-            /* Permute the index group */
-            for (k = d->p.m.mapb.index[b]; k < d->p.m.mapb.index[b+1]; ++k)
+            if (refid != -1)
             {
-                d->g.index[d->g.isize++] = d->p.g->index[k];
+                /* De-permute the reference ID */
+                refid = refid - (refid % d->n) + d->perm[refid % d->n];
             }
-            out->u.p->m.mapb.index[i+j+1] = d->g.isize;
+            gmx_ana_pos_append(out->u.p, &d->g, p, b, refid);
         }
     }
+    gmx_ana_pos_append_finish(out->u.p);
     return 0;
 }

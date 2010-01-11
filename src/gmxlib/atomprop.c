@@ -206,7 +206,7 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
   }
 	
   /* for libraries we can use the low-level close routines */
-  fclose(fp);
+  ffclose(fp);
 
   ap->bSet = TRUE;
 }
@@ -267,6 +267,8 @@ static void destroy_prop(aprop_t *ap)
     sfree(ap->atomnm[i]);
     sfree(ap->resnm[i]);
   }
+  sfree(ap->atomnm);
+  sfree(ap->resnm);
   sfree(ap->bAvail);
   sfree(ap->value);
 }

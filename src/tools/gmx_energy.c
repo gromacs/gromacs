@@ -57,6 +57,8 @@
 #include "viewit.h"
 #include "mtop_util.h"
 #include "gmx_statistics.h"
+#include "gmx_ana.h"
+
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -507,8 +509,8 @@ static void einstein_visco(const char *fn,const char *fni,int nsets,
         }
         fprintf(fp1,"\n");
     }
-    fclose(fp0);
-    fclose(fp1);
+    ffclose(fp0);
+    ffclose(fp1);
 }
 
 static void analyse_ener(bool bCorr,const char *corrfn,
@@ -520,7 +522,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 			 gmx_large_int_t ee_nsum,
 			 t_energy ee_sum[],enersum_t *enersum,
 			 int nset,int set[],int nenergy,real **eneset,
-			 real **enesum,
+			 real **enesum,bool *bIsEner,
 			 char **leg,gmx_enxnm_t *enm,
 			 real Vaver,real ezero, const output_env_t oenv)
 {
@@ -537,7 +539,6 @@ static void analyse_ener(bool bCorr,const char *corrfn,
   real Temp=-1,Pres=-1,VarV=-1,VarT=-1;
   int  i,j;
   real chi2;
-  bool bIsEner;
   char buf[256];
 
   nsteps  = step - start_step + 1;
@@ -638,11 +639,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       } else if (strstr(leg[i],"essure") != NULL) {
 	Pres = aver;
       }
-      bIsEner = FALSE;
-      for (j=0; (j <= F_ETOT); j++)
-	bIsEner = bIsEner || 
-	  (strcasecmp(interaction_function[j].longname,leg[i]) == 0);
-      if (bIsEner) {
+      if (bIsEner[i]) {
 	pr_aver   = aver/nmol-ezero;
 	pr_stddev = stddev/nmol;
       }
@@ -652,7 +649,10 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       }
       if (nenergy > 1) {
 	lsq_y_ax_b_xdouble(nenergy,time,eneset[i],&a,&b,&r,&chi2);
-	totaldrift = a * delta_t;
+        if (bIsEner[i])
+          totaldrift = a * delta_t / nmol;
+        else
+          totaldrift = a * delta_t;
       } else {
 	totaldrift = 0;
       }
@@ -743,7 +743,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	intBulk  += 0.5*(eneset[11][i-1] + eneset[11][i])*factor;
 	fprintf(fp,"%10g  %10g  %10g\n",(i*Dt),integral,intBulk);
       }
-      fclose(fp);
+      ffclose(fp);
     }
     else if (bCorr) {
       if (bFluct)
@@ -992,6 +992,7 @@ int gmx_energy(int argc,char *argv[])
   double     *time=NULL;
   real       **eneset=NULL, **enesum=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
+  bool       *bIsEner=NULL;
   char       **pairleg,**odtleg,**otenleg;
   char       **leg=NULL;
   char       **nms;
@@ -1109,6 +1110,14 @@ int gmx_energy(int argc,char *argv[])
     }
     else
       xvgr_legend(out,nset,leg,oenv);
+
+    snew(bIsEner,nset);
+    for(i=0; (i<nset); i++) {
+      bIsEner[i] = FALSE;
+      for (j=0; (j <= F_ETOT); j++)
+	bIsEner[i] = bIsEner[i] ||
+	  (strcasecmp(interaction_function[j].longname,leg[i]) == 0);
+    }
     
     snew(eneset,nset+1);
     if (bVisco)
@@ -1409,8 +1418,12 @@ int gmx_energy(int argc,char *argv[])
 	      print1(out,bDp,fr->ener[set[0]].esum);
 	      print1(out,bDp,fr->ener[set[0]].eav);
 	    }
-	    else for(i=0; (i<nset); i++)
-	      print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+	    else for(i=0; (i<nset); i++) {
+              if (bIsEner[i])
+                print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+              else
+                print1(out,bDp,fr->ener[set[i]].e);
+            }
 
 	    fprintf(out,"\n");
 	  }
@@ -1504,7 +1517,8 @@ int gmx_energy(int argc,char *argv[])
 		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,start_step,start_t,frame[cur].step,frame[cur].t,
 		 time,reftemp,ee_nsum,ee_sum,&enersum,
-		 nset,set,nenergy,eneset,enesum,leg,enm,Vaver,ezero,oenv);
+		 nset,set,nenergy,eneset,enesum,bIsEner,leg,enm,Vaver,ezero,
+                 oenv);
   }
   if (opt2bSet("-f2",NFILE,fnm)) {
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 

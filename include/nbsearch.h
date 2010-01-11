@@ -46,40 +46,39 @@
 #include <indexutil.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 struct gmx_ana_pos_t;
 
-//! Data structure for neighborhood searches.
+/** Data structure for neighborhood searches. */
 typedef struct gmx_ana_nbsearch_t gmx_ana_nbsearch_t;
 
-//! Create a new neighborhood search data structure.
+/** Create a new neighborhood search data structure. */
 extern int
 gmx_ana_nbsearch_create(gmx_ana_nbsearch_t **d, real cutoff, int maxn);
-//! Free memory allocated for neighborhood search.
+/** Free memory allocated for neighborhood search. */
 extern void
 gmx_ana_nbsearch_free(gmx_ana_nbsearch_t *d);
 
-//! Initializes neighborhood search for a new frame.
+/** Initializes neighborhood search for a new frame. */
 extern int
 gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, rvec x[]);
-//! Initializes neighborhood search for a frame using \c gmx_ana_pos_t. 
+/** Initializes neighborhood search for a frame using \c gmx_ana_pos_t.  */
 extern int
 gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc,
                           struct gmx_ana_pos_t *p);
-//! Check whether a point is within a neighborhood.
+/** Check whether a point is within a neighborhood. */
 extern bool
 gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, rvec x);
-//! Check whether a position is within a neighborhood.
+/** Check whether a position is within a neighborhood. */
 extern bool
 gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d,
                                struct gmx_ana_pos_t *p, int i);
-//! Calculates the minimun distance from the reference points.
+/** Calculates the minimun distance from the reference points. */
 extern real
 gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, rvec x);
-//! Calculates the minimun distance from the reference points.
+/** Calculates the minimun distance from the reference points. */
 extern real
 gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d,
                              struct gmx_ana_pos_t *p, int i);

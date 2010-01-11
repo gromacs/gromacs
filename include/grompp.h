@@ -44,6 +44,10 @@
 #include "typedefs.h"
 #include "macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAXSLEN 32
 
 typedef struct {
@@ -207,6 +211,10 @@ static const char *ds[d_maxdir+1] = {
   "cmap",
   "invalid"
   };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _grompp_h */
 

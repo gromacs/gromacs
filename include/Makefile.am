@@ -2,9 +2,10 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
+# Please keep this file sorted!
+#
 
 SUBDIRS = . types thread_mpi
-
 
 pkginclude_HEADERS = \
 3dview.h \
@@ -50,6 +51,7 @@ gmx_qhop_db.h \
 gmx_qhop_parm.h \
 gmx_qhop_xml.h \
 gmx_random.h \
+gmx_sse2_single.h \
 gmx_statistics.h \
 gmx_system_xdr.h \
 gmx_wallcycle.h \
@@ -68,11 +70,14 @@ invblock.h \
 macros.h \
 magic.h \
 main.h \
+mainpage.h \
 maths.h \
 matio.h \
+md5.h \
 mdatoms.h \
 mdebin.h \
 mdrun.h \
+molfile_plugin.h \
 mpelogging.h \
 mshift.h \
 mtop_util.h\
@@ -100,6 +105,7 @@ position.h \
 pppm.h \
 princ.h \
 pull.h \
+qhop.h \
 qmmm.h \
 random.h \
 rbin.h \
@@ -129,6 +135,8 @@ symtab.h \
 sysstuff.h \
 tags.h \
 tgroup.h \
+thread_mpi.h \
+tmpi.h \
 topsort.h \
 toputil.h \
 tpxio.h \
@@ -142,15 +150,13 @@ utils.h \
 vcm.h \
 vec.h \
 viewit.h \
+vmddlopen.h \
+vmdio.h \
+vmdplugin.h \
 vsite.h \
 wgms.h \
 wman.h \
 writeps.h \
 xdrf.h \
 xtcio.h \
-xvgr.h \
-thread_mpi.h \
-tmpi.h	\
-qhop.h
-
-
+xvgr.h 

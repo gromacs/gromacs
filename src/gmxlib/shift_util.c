@@ -49,6 +49,7 @@
 #include "writeps.h"
 #include "macros.h"
 #include "xvgr.h"
+#include "pppm.h"
 #include "gmxfio.h"
 
 #define p2(x) ((x)*(x))

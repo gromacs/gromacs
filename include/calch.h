@@ -41,6 +41,10 @@
 #endif
 
 #include "typedefs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 	
 extern void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
 /*
@@ -62,5 +66,9 @@ extern void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
  *   
  *    l : dynamically changed index
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _calch_h */

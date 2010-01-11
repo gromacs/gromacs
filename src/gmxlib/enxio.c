@@ -199,7 +199,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
 }
 
 static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
-                       bool bTest, bool *bOK)
+                       int nre_test,bool *bWrongPrecision,bool *bOK)
 {
     int  magic=-7777777;
     real r;
@@ -207,12 +207,27 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     bool bRead = gmx_fio_getread(ef->fp);
     int  tempfix_nr=0;
     
+    if (nre_test >= 0)
+    {
+        *bWrongPrecision = FALSE;
+    }
+
     *bOK=TRUE;
     /* The original energy frame started with a real,
      * so we have to use a real for compatibility.
+     * This is VERY DIRTY code, since do_eheader can be called
+     * with the wrong precision set and then we could read r > -1e10,
+     * while actually the intention was r < -1e10.
+     * When nre_test >= 0, do_eheader should therefore terminate
+     * before the number of i/o calls starts depending on what has been read
+     * (which is the case for for instance the block sizes for variable
+     * number of blocks, where this number is read before).
      */
     r = -2e10;
-    if (!do_real(r))           return FALSE;
+    if (!do_real(r))
+    {
+        return FALSE;
+    }
     if (r > -1e10)
     {
         /* Assume we are reading an old format */
@@ -223,7 +238,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
     else
     {
-        if (!do_int (magic))       *bOK = FALSE;
+        if (!do_int(magic))       *bOK = FALSE;
         if (magic != -7777777)
         {
             gmx_fatal(FARGS,"Energy header magic number mismatch, this is not a GROMACS edr file");
@@ -256,6 +271,15 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     if (!do_int (fr->nre))     *bOK = FALSE;
     if (!do_int (fr->ndisre))  *bOK = FALSE;
     if (!do_int (fr->nblock))  *bOK = FALSE;
+
+    /* Frames could have nre=0, so we can not rely only on the fr->nre check */
+    if (bRead && nre_test >= 0 &&
+        ((fr->nre > 0 && fr->nre != nre_test) ||
+         fr->nre < 0 || fr->ndisre < 0 || fr->nblock < 0))
+    {
+        *bWrongPrecision = TRUE;
+        return *bOK;
+    }
 	
     if (*bOK && bRead && fr->nblock>fr->nr_alloc)
     {
@@ -280,8 +304,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     /* Do a dummy int to keep the format compatible with the old code */
     if (!do_int (dum))         *bOK = FALSE;
     
-    
-    if (*bOK && *file_version == 1 && !bTest)
+    if (*bOK && *file_version == 1 && nre_test < 0)
     {
 #if 0
         if (fp >= ener_old_nalloc)
@@ -347,7 +370,7 @@ ener_file_t open_enx(const char *fn,const char *mode)
     gmx_enxnm_t *nms=NULL;
     int        file_version=-1;
     t_enxframe *fr;
-    bool       bDum=TRUE;
+    bool       bWrongPrecision,bDum=TRUE;
     struct ener_file *ef;
 
     snew(ef,1);
@@ -358,27 +381,30 @@ ener_file_t open_enx(const char *fn,const char *mode)
         gmx_fio_setprecision(ef->fp,FALSE);
         do_enxnms(ef,&nre,&nms);
         snew(fr,1);
-        do_eheader(ef,&file_version,fr,TRUE,&bDum);
+        do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
         if(!bDum)
         {
             gmx_file("Cannot read energy file header. Corrupt file?");
         }
 
         /* Now check whether this file is in single precision */
-        if (((fr->e_size && (fr->nre == nre) && 
-                        (nre*4*(long int)sizeof(float) == fr->e_size)) ||
-                    (fr->d_size && 
-                     (fr->ndisre*(long int)sizeof(float)*2+(long int)sizeof(int) 
-                            == fr->d_size)))){
+        if (!bWrongPrecision &&
+            ((fr->e_size && (fr->nre == nre) && 
+              (nre*4*(long int)sizeof(float) == fr->e_size)) ||
+             (fr->d_size && 
+              (fr->ndisre*(long int)sizeof(float)*2+(long int)sizeof(int) 
+               == fr->d_size))))
+        {
             fprintf(stderr,"Opened %s as single precision energy file\n",fn);
             free_enxnms(nre,nms);
         }
-        else {
+        else
+        {
             gmx_fio_rewind(ef->fp);
             gmx_fio_select(ef->fp);
             gmx_fio_setprecision(ef->fp,TRUE);
             do_enxnms(ef,&nre,&nms);
-            do_eheader(ef,&file_version,fr,TRUE,&bDum);
+            do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bDum);
             if(!bDum)
             {
                 gmx_file("Cannot write energy file header; maybe you are out of quota?");
@@ -501,7 +527,7 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
     }
     gmx_fio_select(ef->fp);
     
-    if (!do_eheader(ef,&file_version,fr,FALSE,&bOK))
+    if (!do_eheader(ef,&file_version,fr,-1,NULL,&bOK))
     {
         if (bRead)
         {
@@ -682,7 +708,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
   int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
   int ind1[] = { XX,YY,ZZ,XX,XX,YY };
 
-  int nre,nfr,i,ni,npcoupl;
+  int nre,nfr,i,ni,npcoupl,ngctch;
   char       buf[STRLEN];
   gmx_enxnm_t *enm;
   t_enxframe *fr;
@@ -711,15 +737,22 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
     fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
   }
 
-  if (ir->etc == etcNOSEHOOVER) {
-    for(i=0; i<state->ngtc; i++) {
-      ni = groups->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
-      state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-    }
-    fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
-  }
-  
+  if (ir->etc == etcNOSEHOOVER) 
+  {
+      ngctch = state->ngtc;  
+      if (IR_NPT_TROTTER(ir)) 
+      {
+          ngctch += 1; /* an extra state is needed for the barostat */
+      }
+      for(i=0; i<ngctch; i++) {
+          ni = groups->grps[egcTC].nm_ind[i];
+          sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
+          state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
+          state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
+      }
+      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",ngctch,fn);
+  } 
+
   free_enxnms(nre,enm);
   free_enxframe(fr);
   sfree(fr);

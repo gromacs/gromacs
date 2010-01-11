@@ -39,6 +39,7 @@
 #endif
 
 #include "typedefs.h"
+#include "topsort.h"
 #include "smalloc.h"
 
 static bool ip_pert(int ftype,t_iparams *ip)

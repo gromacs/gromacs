@@ -59,6 +59,7 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "matio.h"
+#include "gmx_ana.h"
 
 static bool bAllowed(real phi,real psi)
 {
@@ -414,7 +415,7 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 #define NKKKCHI asize(kkkchi1)
 #define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
   
-  FILE    *fp,*ssfp[3];
+  FILE    *fp,*ssfp[3]={NULL,NULL,NULL};
   const char *sss[3] = { "sheet", "helix", "coil" };
   real    S2;
   real    *normhisto;
@@ -780,8 +781,8 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	}
       }
       if (bViol)
-	fclose(gp);
-      fclose(fp);
+	ffclose(gp);
+      ffclose(fp);
       if (bOm) {
 	sprintf(fn,"ramomega%s.xpm",dlist[i].name);
 	fp = ffopen(fn,"w");
@@ -806,7 +807,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	nlevels = 20;
 	write_xpm3(fp,0,"Omega/Ramachandran Plot","Deg","Phi","Psi",
 		   NMAT,NMAT,axis,axis,mat,lo,180.0,hi,rlo,rmid,rhi,&nlevels);
-	fclose(fp);
+	ffclose(fp);
 	for(j=0; (j<NMAT); j++)
 	  sfree(mat[j]);
 	sfree(mat);
@@ -821,7 +822,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
       Xi2 = dlist[i].j0[edChi2];
       for(j=0; (j<nf); j++)
 	fprintf(fp,"%10g  %10g\n",RAD2DEG*dih[Xi1][j],RAD2DEG*dih[Xi2][j]);
-      fclose(fp);
+      ffclose(fp);
     }
     else 
       fprintf(stderr,"No chi1 & chi2 angle for %s\n",dlist[i].name);

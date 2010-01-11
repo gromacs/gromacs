@@ -33,9 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
 */
 
 #ifndef _MPI_BINDINGS_H_
@@ -214,6 +211,7 @@ typedef struct tmpi_datatype_ *MPI_Datatype;
 #define MPI_Cart_coords             tMPI_Cart_coords
 #define MPI_Cart_map                tMPI_Cart_map
 #define MPI_Cart_create             tMPI_Cart_create
+#define MPI_Cart_sub                tMPI_Cart_sub
 
 #define MPI_Type_contiguous         tMPI_Type_contiguous
 #define MPI_Type_commit             tMPI_Type_commit

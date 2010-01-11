@@ -59,6 +59,7 @@
 #include "addconf.h"
 #include "pdbio.h"
 #include "pbc.h"
+#include "gmx_ana.h"
 
 #ifdef DEBUG
 void print_stat(rvec *x,int natoms,matrix box)
@@ -565,16 +566,16 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
       } else
 	fprintf(fpout,"%s",buf);
     }
-    fclose(fpin);
+    ffclose(fpin);
     if ( nsol ) {
       fprintf(stdout,"Adding line for %d solvent molecules to "
 	      "topology file (%s)\n",nsol,topinout);
       fprintf(fpout,"%-15s %5d\n","SOL",nsol);
     }
-    fclose(fpout);
+    ffclose(fpout);
     /* use ffopen to generate backup of topinout */
     fpout=ffopen(topinout,"w");
-    fclose(fpout);
+    ffclose(fpout);
     rename(TEMP_FILENM,topinout);
   }
 #undef TEMP_FILENM

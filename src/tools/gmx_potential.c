@@ -53,6 +53,8 @@
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
+#include "gmx_ana.h"
+
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19
@@ -365,9 +367,9 @@ void plot_potential(double *potential[], double *charge[], double *field[],
     fprintf(fie,"\n");
   }
 
-  fclose(pot);
-  fclose(cha);
-  fclose(fie);
+  ffclose(pot);
+  ffclose(cha);
+  ffclose(fie);
 }
 
 int gmx_potential(int argc,char *argv[])

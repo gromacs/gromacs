@@ -37,8 +37,9 @@
 #include <config.h>
 #endif
 
-
+#ifdef GMX_THREAD_SHM_FDECOMP
 #include <thread_mpi.h>
+#endif
 
 
 #include <stdio.h>
@@ -111,13 +112,14 @@
 #include "nb_kernel_ia64_single/nb_kernel_ia64_single.h"
 #endif
 
+#ifdef GMX_POWER6
+#include "nb_kernel_power6/nb_kernel_power6.h"
+#endif
+
 #ifdef GMX_BLUEGENE
 #include "nb_kernel_bluegene/nb_kernel_bluegene.h"
 #endif
 
-#ifdef GMX_POWER6
-#include "nb_kernel_power6/nb_kernel_power6.h"
-#endif
 
 
 enum { TABLE_NONE, TABLE_COMBINED, TABLE_COUL, TABLE_VDW, TABLE_NR };

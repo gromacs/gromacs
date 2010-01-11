@@ -45,26 +45,90 @@
  * \page selcompiler Selection compilation
  *
  * The compiler takes the selection element tree from the selection parser
- * (see \ref selparser) as input. It initializes missing fields, reorganizes,
- * simplifies and optimizes the tree, and evaluates static parts of the
- * selections.
- * The compilation is a global process, i.e., all selections are compiled
- * and optimized simultaneously. Hence, all the selections should be parsed
- * before the compiler can be called.
+ * (see \ref selparser) as input. The selection parser is quite independent of
+ * selection evaluation details, and the compiler processes the tree to
+ * conform to what the evaluation functions expect.
+ * For better control and optimization possibilities, the compilation is
+ * done on all selections simultaneously.
+ * Hence, all the selections should be parsed before the compiler can be
+ * called.
+ *
+ * The compiler initializes all fields in \c t_selelem not initialized by
+ * the parser: \c t_selelem::v (some fields have already been initialized by
+ * the parser), \c t_selelem::evaluate, and \c t_selelem::u (again, some
+ * elements have been initialized in the parser).
+ * The \c t_selelem::cdata field is used during the compilation to store
+ * internal data, but the data is freed when the compiler returns.
+ *
+ * In addition to initializing the elements, the compiler reorganizes the tree
+ * to simplify and optimize evaluation. The compiler also evaluates the static
+ * parts of the selection: in the end of the compilation, static parts have
+ * been replaced by the result of the evaluation.
+ *
+ * The compiler is called by calling gmx_ana_selcollection_compile().
+ * This functions then does the compilation in several passes over the
+ * \c t_selelem tree.
+ *  -# Subexpressions are extracted: a separate root is created for each
+ *     subexpression, and placed before the expression is first used.
+ *     Currently, only variables and expressions used to evaluate parameter
+ *     values are extracted, but common subexpression could also be detected
+ *     here.
+ *  -# A second pass with simple reordering and initialization is done:
+ *    -# Boolean expressions are combined such that one element can evaluate,
+ *       e.g., "A and B and C". The subexpressions in boolean expression are
+ *       reordered such that static expressions come first without otherwise
+ *       altering the relative order of the expressions.
+ *    -# The \c t_selelem::evaluate field is set to the correct evaluation
+ *       function from evaluate.h.
+ *    -# The compiler data structure is allocated for each element, and
+ *       the fields are initialized, with the exception of the contents of
+ *       \c gmax and \c gmin fields.
+ *    .
+ *  -# The evaluation function of all elements is replaced with the
+ *     analyze_static() function to be able to initialize the element before
+ *     the actual evaluation function is called.
+ *     The evaluation machinery is then called to initialize the whole tree,
+ *     while simultaneously evaluating the static expressions.
+ *     During the evaluation, track is kept of the smallest and largest
+ *     possible selections, and these are stored in the internal compiler
+ *     data structure for each element.
+ *     To be able to do this for all possible values of dynamical expressions,
+ *     special care needs to be taken with boolean expressions because they
+ *     are short-circuiting. This is done through the
+ *     \c t_compiler_data::bEvalMax flag, which makes dynamic child expressions
+ *     of \c BOOL_OR expressions evaluate to empty groups, while subexpressions
+ *     of \c BOOL_AND are evaluated to largest possible groups.
+ *     Memory is also allocated to store the results of the evaluation.
+ *     For each element, analyze_static() calls the actual evaluation function
+ *     after the element has been properly initialized.
+ *  -# Another evaluation pass is done over subexpressions with more than
+ *     one reference to them. These cannot be completely processed during the
+ *     first pass, because it is not known whether later references require
+ *     additional evaluation of static expressions.
+ *  -# Most of the processing is now done, and the next pass simply sets the
+ *     evaluation group of root elements to the largest selection as determined
+ *     in pass 3. Subexpressions that were evaluated to constants are no
+ *     longer referenced at this time, and are removed.
+ *  -# The next pass eliminates some unnecessary evaluation calls from
+ *     subexpressions that are referenced only once, as well as initializing
+ *     the position calculation data for selection method elements that require
+ *     it. Compiler data is also freed as it is no longer needed.
+ *  -# A final pass initializes the total masses and charges in the
+ *     \c gmx_ana_selection_t data structures.
+ *
+ * The actual evaluation of the selection is described in the documentation
+ * of the functions in evaluate.h.
  *
  * \todo
- * Write documentation for the overall structure of the compiler and
- * the optimizations that the compiler does.
- *
- * \todo
- * Describe the selection element tree after compilation in more detail.
+ * Some combinations of method parameter flags are not yet properly treated by
+ * the compiler or the evaluation functions in evaluate.c. All the ones used by
+ * currently implemented methods should work, but new combinations might not.
  *
  *
  * \section selcompiler_tree Element tree after compilation
  *
  * After the compilation, the selection element tree is suitable for
- * gmx_ana_selcollection_evaluate(). Here, the structure of the tree
- * is described.
+ * gmx_ana_selcollection_evaluate().
  * Enough memory has been allocated for \ref t_selelem::v
  * (and \ref t_selelem::cgrp for \ref SEL_SUBEXPR elements) to allow the
  * selection to be evaluated without allocating any memory.
@@ -95,9 +159,7 @@
  * as for the parsed tree (see \ref selparser_tree_root).
  * Subexpressions are treated as if they had been provided through variables.
  *
- * Selection names are stored as after parsing (see \ref selparser_tree_root),
- * with the exception that default names have been generated for selections
- * that did not have an explicit name.
+ * Selection names are stored as after parsing (see \ref selparser_tree_root).
  *
  *
  * \subsection selcompiler_tree_const Constant elements
@@ -107,8 +169,8 @@
  * Constant elements from the parser are also retained if present in
  * dynamic parts of the selections.
  * Several constant elements with a NULL \c t_selelem::evaluate are left for
- * debugging purposes; only the ones for \ref BOOL_OR expressions are used
- * during evaluation.
+ * debugging purposes; of these, only the ones for \ref BOOL_OR expressions are
+ * used during evaluation.
  *
  * The value is stored in \c t_selelem::v, and for group values with an
  * evaluation function set, also in \c t_selelem::cgrp.
@@ -120,7 +182,25 @@
  *
  * \subsection selcompiler_tree_method Method evaluation elements
  *
- * (to be written)
+ * All selection methods that need to be evaluated dynamically are described
+ * by a \ref SEL_EXPRESSION element. The \c t_selelem::method and
+ * \c t_selelem::mdata fields have already been initialized by the parser,
+ * and the compiler only calls the initialization functions in the method
+ * data structure to do some additional initialization of these fields at
+ * appropriate points. If the \c t_selelem::pc data field has been created by
+ * the parser, the compiler initializes the data structure properly once the
+ * required positions are known. If the \c t_selelem::pc field is NULL after
+ * the parser, but the method provides only sel_updatefunc_pos(), an
+ * appropriate position calculation data structure is created.
+ * If \c t_selelem::pc is not NULL, \c t_selelem::pos is also initialized
+ * to hold the positions calculated.
+ *
+ * Children of these elements are of type \ref SEL_SUBEXPRREF, and describe
+ * parameter values that need to be evaluated for each frame. See the next
+ * section for more details.
+ * \ref SEL_CONST children can also appear, and stand for parameters that get
+ * their value from a static expression. These elements are present only for
+ * debugging purposes: they always have a NULL evaluation function.
  *
  *
  * \subsection selcompiler_tree_subexpr Subexpression elements
@@ -135,7 +215,9 @@
  * For non-variable subexpression, automatic names have been generated to
  * help in debugging.
  *
- * (write about the contents of \ref SEL_SUBEXPR elements)
+ * For \ref SEL_SUBEXPR elements, memory has been allocated for
+ * \c t_selelem::cgrp to store the group for which the expression has been
+ * evaluated during the current frame.
  *
  * \ref SEL_SUBEXPRREF elements are used to describe references to
  * subexpressions. They have always a single child, which is the
@@ -161,6 +243,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdarg.h>
 
 #include <smalloc.h>
@@ -182,7 +265,7 @@
  */
 typedef struct t_compiler_data
 {
-    /*! The real evaluation method.*/
+    /** The real evaluation method. */
     sel_evalfunc  evaluate; 
     /*! \brief
      * Whether the element is a method parameter.
@@ -198,15 +281,15 @@ typedef struct t_compiler_data
      * but it is also FALSE for static elements within common subexpressions.
      */
     bool          bStatic;
-    /*! TRUE if the subexpression will always be evaluated with the same group.*/
+    /** TRUE if the subexpression will always be evaluated with the same group. */
     bool          bStaticEval;
-    /*! TRUE if the compiler evaluation routine should return the maximal selection.*/
+    /** TRUE if the compiler evaluation routine should return the maximal selection. */
     bool          bEvalMax;
-    /*! Smallest selection that can be selected by the subexpression.*/
+    /** Smallest selection that can be selected by the subexpression. */
     gmx_ana_index_t *gmin;
-    /*! Largest selection that can be selected by the subexpression.*/
+    /** Largest selection that can be selected by the subexpression. */
     gmx_ana_index_t *gmax;
-    /*! TRUE if memory has been allocated for \p gmin and \p gmax.*/
+    /** TRUE if memory has been allocated for \p gmin and \p gmax. */
     bool             bMinMaxAlloc;
 } t_compiler_data;
 
@@ -355,9 +438,12 @@ create_subexpression_name(t_selelem *sel, int i)
     int   len, ret;
     char *name;
 
-    len = 8 + 4;
+    len = 8 + (int)log10(abs(i)) + 3;
     snew(name, len+1);
-    ret = snprintf(name, len+1, "SubExpr %d", i);
+    /* FIXME: snprintf used to be used here for extra safety, but this
+     * requires extra checking on Windows since it only provides a
+     * non-C99-conforming implementation as _snprintf()... */
+    ret = sprintf(name, "SubExpr %d", i);
     if (ret < 0 || ret > len)
     {
         sfree(name);
@@ -997,6 +1083,14 @@ make_static(t_selelem *sel)
     /* Free the children */
     _gmx_selelem_free_chain(sel->child);
     sel->child           = NULL;
+    /* Set the group value.
+     * None of the elements for which this function may be called uses
+     * the cgrp group, so we can simply overwrite the contents without
+     * worrying about memory leaks. */
+    if (sel->v.type == GROUP_VALUE)
+    {
+        gmx_ana_index_set(&sel->u.cgrp, sel->v.u.g->isize, sel->v.u.g->index, NULL, 0);
+    }
 }
 
 /*! \brief
@@ -1237,7 +1331,12 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
     else
     {
         child->cdata->evaluate = &_gmx_sel_evaluate_static;
-        if (child->u.cgrp.isize > 0)
+        /* The cgrp has only been allocated if it originated from an
+         * external index group. In that case, we need special handling
+         * to preserve the name of the group and to not leak memory.
+         * If cgrp has been set in make_static(), it is not allocated,
+         * and hence we can overwrite it safely. */
+        if (child->u.cgrp.nalloc_index > 0)
         {
             char *name = child->u.cgrp.name;
             gmx_ana_index_copy(&child->u.cgrp, child->v.u.g, FALSE);
@@ -1405,7 +1504,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             {
                 return rc;
             }
-            if (sel->type == SEL_MODIFIER || !(sel->flags & SEL_DYNAMIC))
+            if (!(sel->flags & SEL_DYNAMIC))
             {
                 rc = sel->cdata->evaluate(data, sel, g);
                 if (rc == 0 && sel->cdata->bStatic)
@@ -1415,6 +1514,13 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else
             {
+                /* Modifiers need to be evaluated even though they process
+                 * positions to get the modified output groups from the
+                 * maximum possible selections. */
+                if (sel->type == SEL_MODIFIER)
+                {
+                    rc = sel->cdata->evaluate(data, sel, g);
+                }
                 gmx_ana_index_copy(&gmax, g, TRUE);
             }
             break;
@@ -1533,7 +1639,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
              * methods that do not have SMETH_SINGLEVAL or SMETH_VARNUMVAL). */
             if (sel->v.type == POS_VALUE && !(sel->flags & SEL_OUTINIT))
             {
-                gmx_ana_indexmap_copy(&sel->v.u.p->m, &sel->child->child->v.u.p->m, TRUE);
+                gmx_ana_pos_copy(sel->v.u.p, sel->child->child->v.u.p, TRUE);
                 sel->flags |= SEL_OUTINIT;
             }
             rc = sel->cdata->evaluate(data, sel, g);
@@ -1720,21 +1826,6 @@ init_root_item(t_selelem *root)
 {
     t_selelem   *expr;
     char        *name;
-
-    /* Get the name for constant expressions if it is not yet there */
-    if (!root->name)
-    {
-        if (root->child->type == SEL_CONST
-            || root->child->type == SEL_SUBEXPRREF)
-        {
-            root->name = root->child->name;
-        }
-        else if (root->child->type == SEL_EXPRESSION
-                 && root->child->child->type == SEL_CONST)
-        {
-            root->name = root->child->child->name;
-        }
-    }
 
     /* Process subexpressions */
     if (root->child->type == SEL_SUBEXPR)
@@ -2063,46 +2154,6 @@ update_info(t_topology *top, int ngrps, gmx_ana_selection_t *sel[],
 
 
 /********************************************************************
- * GROUP NAME INITIALIZATION
- ********************************************************************/
-
-/*! \brief
- * Initializes the names of the output index groups.
- *
- * \param[in]     ngrps Number of elements in the \p sel array.
- * \param[in,out] sel   Output selections.
- *
- * The name for the index group is either taken from the \p name field
- * of the root selection element, or set to "Selection N" (for the N'th
- * group).
- */
-static void set_group_names(int ngrps, gmx_ana_selection_t *sel[])
-{
-    int   g;
-
-    for (g = 0; g < ngrps; ++g)
-    {
-        char        *name = NULL;
-
-        if (sel[g]->selelem->name)
-        {
-            name = strdup(sel[g]->selelem->name);
-        }
-        if (!name)
-        {
-            snew(name, 14);
-            snprintf(name, 14, "Selection %d", g+1);
-        }
-        if (!sel[g]->selelem->name)
-        {
-            sel[g]->selelem->name = name;
-        }
-        sel[g]->name = name;
-    }
-}
-
-
-/********************************************************************
  * MAIN COMPILATION FUNCTION
  ********************************************************************/
 
@@ -2206,8 +2257,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         item = item->next;
     }
 
-    /* Create the root elements if they do not yet exist. */
-    /* The evaluation group of an existing root is also initialized here. */
+    /* Initialize evaluation groups and remove unused subexpressions. */
     sc->root = process_roots(sc->root);
 
     /* Initialize position calculations for methods, perform some final
@@ -2237,7 +2287,6 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
 
     /* Finish up by updating some information */
     update_info(sc->top, sc->nr, sc->sel, sc->bMaskOnly);
-    set_group_names(sc->nr, sc->sel);
 
     return 0;
 }

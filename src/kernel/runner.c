@@ -237,7 +237,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 
     /* Some timing stats */  
     if (MASTER(cr)) {
-      print_time(stderr,start_t,parm->ir.nsteps,&parm->ir);
+      print_time(stderr,start_t,parm->ir.nsteps,&parm->ir,cr);
       realtime=difftime(time(NULL),start_t);
       if ((cputime=cpu_time()) == 0)
 	cputime=realtime;
@@ -265,7 +265,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     thanx(stderr);
   }
 }
-
+/* THIS IS NOT ACTUALLY USED */
+#if 0
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,real *SAfactor,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
@@ -290,6 +291,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   } else
     *SAfactor     = 1.0;
     
+  /* initialize nose-hoover chains, since it's not in the topology */
+  *nnhchains = ir->opts.nnhchains;
   init_nrnb(mynrnb);
   
   /* Check Environment variables & other booleans */
@@ -321,6 +324,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   
   where();
 }
+#endif
 
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])

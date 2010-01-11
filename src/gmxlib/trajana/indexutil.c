@@ -28,7 +28,7 @@
  *
  * For more info, check our website at http://www.gromacs.org
  */
-/*! \file
+/*! \internal \file
  * \brief Implementation of functions in indexutil.h.
  */
 #ifdef HAVE_CONFIG_H
@@ -46,14 +46,14 @@
  * gmx_ana_indexgrps_t functions
  ********************************************************************/
 
-/*! \brief
+/*! \internal \brief
  * Stores a set of index groups.
  */
 struct gmx_ana_indexgrps_t
 {
-    //! Number of index groups.
+    /** Number of index groups. */
     int                 nr;
-    //! Array of index groups.
+    /** Array of index groups. */
     gmx_ana_index_t    *g;
 };
 
@@ -327,15 +327,18 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *na
 
 /*!
  * \param[in]  g      Index groups to print.
+ * \param[in]  maxn   Maximum number of indices to print
+ *      (-1 = print all, 0 = print only names).
  */
 void
-gmx_ana_indexgrps_dump(gmx_ana_indexgrps_t *g)
+gmx_ana_indexgrps_print(gmx_ana_indexgrps_t *g, int maxn)
 {
     int  i;
 
     for (i = 0; i < g->nr; ++i)
     {
-        gmx_ana_index_dump(&g->g[i], i);
+        fprintf(stderr, " %2d: ", i);
+        gmx_ana_index_dump(&g->g[i], i, maxn);
     }
 }
 
@@ -474,11 +477,12 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
 /*!
  * \param[in]  g      Index group to print.
  * \param[in]  i      Group number to use if the name is NULL.
+ * \param[in]  maxn   Maximum number of indices to print (-1 = print all).
  */
 void
-gmx_ana_index_dump(gmx_ana_index_t *g, int i)
+gmx_ana_index_dump(gmx_ana_index_t *g, int i, int maxn)
 {
-    int  j;
+    int  j, n;
 
     if (g->name)
     {
@@ -488,10 +492,23 @@ gmx_ana_index_dump(gmx_ana_index_t *g, int i)
     {
         fprintf(stderr, "Group %d", i+1);
     }
-    fprintf(stderr, " (%d atoms):", g->isize);
-    for (j = 0; j < g->isize; ++j)
+    fprintf(stderr, " (%d atoms)", g->isize);
+    if (maxn != 0)
     {
-        fprintf(stderr, " %d", g->index[j]+1);
+        fprintf(stderr, ":");
+        n = g->isize;
+        if (maxn >= 0 && n > maxn)
+        {
+            n = maxn;
+        }
+        for (j = 0; j < n; ++j)
+        {
+            fprintf(stderr, " %d", g->index[j]+1);
+        }
+        if (n < g->isize)
+        {
+            fprintf(stderr, " ...");
+        }
     }
     fprintf(stderr, "\n");
 }
@@ -549,7 +566,7 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
  * Set operations
  ********************************************************************/
 
-//! Helper function for gmx_ana_index_sort().
+/** Helper function for gmx_ana_index_sort(). */
 static int
 cmp_atomid(const void *a, const void *b)
 {
@@ -1133,6 +1150,8 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
     m->b.a               = NULL;
     m->b.nalloc_index    = 0;
     m->b.nalloc_a        = 0;
+    m->bStatic           = TRUE;
+    m->bMapStatic        = TRUE;
 }
 
 /*!
@@ -1237,8 +1256,6 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
         dest->type       = src->type;
         dest->b.nr       = src->b.nr;
         dest->b.nra      = src->b.nra;
-        dest->bStatic    = src->bStatic;
-        dest->bMapStatic = src->bMapStatic;
         memcpy(dest->orgid,      src->orgid,      dest->b.nr*sizeof(*dest->orgid));
         memcpy(dest->b.index,    src->b.index,   (dest->b.nr+1)*sizeof(*dest->b.index));
         memcpy(dest->b.a,        src->b.a,        dest->b.nra*sizeof(*dest->b.a));
@@ -1248,6 +1265,8 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
     memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
     memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
     memcpy(dest->mapb.index, src->mapb.index,(dest->mapb.nr+1)*sizeof(*dest->mapb.index));
+    dest->bStatic    = src->bStatic;
+    dest->bMapStatic = src->bMapStatic;
 }
 
 /*!
@@ -1268,13 +1287,16 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     bool bStatic;
 
     /* Process the simple cases first */
-    if (m->type == INDEX_UNKNOWN)
+    if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
     {
         return;
     }
     if (m->type == INDEX_ALL)
     {
-        m->mapb.index[1] = g->isize;
+        if (m->b.nr > 0)
+        {
+            m->mapb.index[1] = g->isize;
+        }
         return;
     }
     /* Reset the reference IDs and mapping if necessary */

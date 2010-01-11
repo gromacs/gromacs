@@ -35,6 +35,10 @@
 #ifndef _gmx_ana_h
 #define _gmx_ana_h
 
+#ifdef __cplusplus
+extern "C" { 
+#endif
+
 int 
 gmx_analyze(int argc,char *argv[]);
 
@@ -42,7 +46,7 @@ int
 gmx_anaeig(int argc,char *argv[]);
 
 int 
-gmx_angle(int argc,char *argv[]);
+gmx_g_angle(int argc,char *argv[]);
 
 int 
 gmx_bar(int argc,char *argv[]);
@@ -257,8 +261,9 @@ gmx_wheel(int argc,char *argv[]);
 int 
 gmx_xpm2ps(int argc,char *argv[]);
 
-
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /* _gmx_ana_h */

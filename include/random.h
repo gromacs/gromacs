@@ -42,6 +42,10 @@
 
 #include <typedefs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int make_seed(void);
 /* Make a random seed: (time+getpid) % 1000000 */
 
@@ -61,5 +65,9 @@ extern real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],
  */
 
 extern void stop_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _random_h */

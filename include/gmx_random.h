@@ -43,6 +43,10 @@
 #include <stdio.h>
 #include <types/simple.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Abstract datatype for a random number generator
  *
  * This is a handle to the full state of a random number generator. 
@@ -258,6 +262,9 @@ gmx_rng_gaussian_real(gmx_rng_t rng);
 real
 gmx_rng_gaussian_table(gmx_rng_t rng);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _GMX_RANDOM_H_ */
 

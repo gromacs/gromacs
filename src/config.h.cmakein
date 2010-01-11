@@ -92,7 +92,7 @@
 #cmakedefine GMX_FFT_ACML
 
 /* Single-precision SSE instructions on ia32 */
-#undef GMX_IA32_SSE
+#cmakedefine GMX_IA32_SSE
 
 /* Double-precision SSE2 instructions on ia32 */
 #undef GMX_IA32_SSE2
@@ -143,6 +143,9 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
+/* Compile with dlopen */
+#cmakedefine GMX_DLOPEN
+
 /* Use pthreads for thread_mpi multithreading */
 #cmakedefine THREAD_PTHREADS
 
@@ -150,7 +153,7 @@
 #cmakedefine HAVE_PTHREAD_H
 
 /* Single-precision SSE instructions on X86_64 */
-#undef GMX_X86_64_SSE
+#cmakedefine GMX_X86_64_SSE
 
 /* Double-precision SSE2 instructions on X86_64 */
 #undef GMX_X86_64_SSE2
@@ -199,6 +202,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <regex.h> header file. */
+#cmakedefine HAVE_REGEX_H
 
 /* Define to 1 if you have the <rpc/rpc.h> header file. */
 #cmakedefine HAVE_RPC_RPC_H

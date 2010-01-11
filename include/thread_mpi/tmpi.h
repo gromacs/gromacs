@@ -33,9 +33,6 @@ bugs must be traceable. We will be happy to consider code for
 inclusion in the official distribution, but derived work should not
 be called official thread_mpi. Details are found in the README & COPYING
 files.
-
-To help us fund development, we humbly ask that you cite
-any papers on the package - you can find them in the top README file.
 */
 
 #ifndef _TMPI_H_
@@ -70,24 +67,24 @@ extern "C"
 #include "thread_mpi/atomic.h"*/
 
 
-/** \brief tMPI Communicator
+/** tMPI Communicator
   
   Holds the group of processes to communicate
    with, and defines the scope for global operations such as broadcast. */
 typedef struct tmpi_comm_ *tMPI_Comm;
 
-/** \brief tMPI Group
+/** tMPI Group
   
   The group structure. Contains a list of threads. */
 typedef struct tmpi_group_ *tMPI_Group;
 
-/** \brief tMPI Request
+/** tMPI Request
   
   Request structure for holding data about non-blocking transfers. */
 typedef struct tmpi_req_ *tMPI_Request;
 
 
-/** \brief tMPI datatype
+/** tMPI datatype
 
   tMPI data type structure. Holds info about datatypes. */
 typedef struct tmpi_datatype_ *tMPI_Datatype;
@@ -117,11 +114,15 @@ extern const tMPI_Datatype TMPI_FLOAT;              /**< float */
 extern const tMPI_Datatype TMPI_DOUBLE;             /**< double */
 extern const tMPI_Datatype TMPI_LONG_DOUBLE;        /**< long double */
 /*extern tMPI_Datatype tMPI_UNSIGNED_WCHAR */
-extern const tMPI_Datatype TMPI_BYTE;       /**< byte (for binary xmissions) */
+extern const tMPI_Datatype TMPI_BYTE;               /**< byte (for binary 
+                                                               xmissions) */
+extern const tMPI_Datatype TMPI_POINTER;            /**< pointer (thread_mpi 
+                                                                  specific) */
+
 /*! \} */
 
 
-/** \brief Error codes */
+/** Error codes */
 enum
 {
     TMPI_SUCCESS=0,                 /*!< No error */
@@ -150,63 +151,63 @@ enum
     N_TMPI_ERR  /* this must be the last one */
 };
 
-/*! \brief Maximum length of error string for tMPI_Error_string() */
+/** Maximum length of error string for tMPI_Error_string() */
 #define TMPI_MAX_ERROR_STRING            256
 
-/*! \brief default code for undefined value, 
+/** default code for undefined value, 
   
     For example for undefined color in tMPI_Split(). */
 #define TMPI_UNDEFINED -1
 
-/*! \brief error handler function */
+/** error handler function */
 typedef void (*tMPI_Errhandler_fn)(tMPI_Comm*, int*);
-/*! \brief error handler object */
+/** error handler object */
 typedef struct tmpi_errhandler_ *tMPI_Errhandler;
 
-/*! \brief pre-defined error handler that abort()s on every error */
+/** pre-defined error handler that abort()s on every error */
 extern tMPI_Errhandler TMPI_ERRORS_ARE_FATAL;
-/*! \brief pre-defined error handler that tries to continue on every error */
+/** pre-defined error handler that tries to continue on every error */
 extern tMPI_Errhandler TMPI_ERRORS_RETURN;
 
 
-/** \brief Source number wildcard so tMPI_Recv(), etc. can receive from 
+/** Source number wildcard so tMPI_Recv(), etc. can receive from 
            any source. */
 #define TMPI_ANY_SOURCE -1
-/** \brief Tag number wildcard so tMPI_Recv(), etc. can receive messages with 
+/** Tag number wildcard so tMPI_Recv(), etc. can receive messages with 
            any tag. */
 #define TMPI_ANY_TAG -1
 
-/** \brief Return code for Cartesian topology with tMPI_Topo_test().  */
+/** Return code for Cartesian topology with tMPI_Topo_test().  */
 #define TMPI_CART 1
-/** \brief Return code for graph topology with tMPI_Topo_test().  */
+/** Return code for graph topology with tMPI_Topo_test().  */
 #define TMPI_GRAPH 2
 
 
-/** \brief Pre-initialized communicator with all available threads. */
+/** Pre-initialized communicator with all available threads. */
 extern tMPI_Comm TMPI_COMM_WORLD;
 
 
-/** \brief A pre-defined NULL communicator to compare against, to check comm 
+/** A pre-defined NULL communicator to compare against, to check comm 
            validity */
-#define TMPI_COMM_NULL 0
-/** \brief A pre-defined NULL group to compare against, to check group 
+#define TMPI_COMM_NULL NULL
+/** A pre-defined NULL group to compare against, to check group 
            validity */
-#define TMPI_GROUP_NULL 0
+#define TMPI_GROUP_NULL NULL
 
-/** \brief the empty group */
+/** the empty group */
 extern tMPI_Group tMPI_GROUP_EMPTY;
 
 
-/** \brief The maximum processor name returned using tMPI_Get_processor_name(). */
+/** The maximum processor name returned using tMPI_Get_processor_name(). */
 #define TMPI_MAX_PROCESSOR_NAME 128
 
 
-/** \brief Used as NULL status for tMPI_Recv(), etc. */
-#define TMPI_STATUS_IGNORE 0
-/** \brief Used as NULL status list for tMPI_Waitall(), etc. */
-#define TMPI_STATUSES_IGNORE 0
+/** Used as NULL status for tMPI_Recv(), etc. */
+#define TMPI_STATUS_IGNORE NULL
+/** Used as NULL status list for tMPI_Waitall(), etc. */
+#define TMPI_STATUSES_IGNORE NULL
 
-/** \brief tMPI Status.
+/** tMPI Status.
   
   Holds status info (tag, sender, amount of data transmitted) for receives. 
   The status object is user-maintained. */
@@ -219,17 +220,17 @@ typedef struct tmpi_status_
 } tMPI_Status;
 /*typedef struct tmpi_status_ tMPI_Status;*/
 
-/** \brief NULL request */
-#define TMPI_REQUEST_NULL 0
+/** NULL request */
+#define TMPI_REQUEST_NULL NULL
 
-/** \brief collective communication special to signify that the send 
+/** collective communication special to signify that the send 
            buffer is to function as receive buffer. 
            
            Used, for example in tMPI_Reduce. */
-#define TMPI_IN_PLACE 0
+#define TMPI_IN_PLACE NULL
 
 
-/** \brief tMPI_Reduce operators.
+/** tMPI_Reduce operators.
 
     These all work (except obviously bad combinations like bitwise
     and/or/xor on floats, etc): */
@@ -251,7 +252,7 @@ typedef enum
 /* function to obtain tMPI_COMM_SELF */
 tMPI_Comm tMPI_Get_comm_self(void);
 #endif
-/** \brief The thread-specific comm containing only the thread itself.
+/** The thread-specific comm containing only the thread itself.
 
     \hideinitializer
     \return the self comm object associated with the thread. */
@@ -267,7 +268,7 @@ tMPI_Comm tMPI_Get_comm_self(void);
 
 /*! \name Initialization and exit functions 
     \{ */
-/** \brief Traditional MPI initializer; spawns threads that start at main(). 
+/** Traditional MPI initializer; spawns threads that start at main(). 
   
     Seeks the argument '-np n', where n is the number of 
     threads that will be created. These new threads then run main() again,
@@ -280,7 +281,7 @@ tMPI_Comm tMPI_Get_comm_self(void);
 int tMPI_Init(int *argc, char ***argv);
 
 
-/** \brief Alternate thread MPI intializer and thread spawner.
+/** Alternate thread MPI intializer and thread spawner.
   
     Creates N threads (including main thread) 
     that run the function start_function, which takes a void* argument, 
@@ -299,25 +300,30 @@ int tMPI_Init(int *argc, char ***argv);
     */
 int tMPI_Init_fn(int N, void (*start_function)(void*), void *arg);
 
-/** \brief get the number of threads from the command line
+/** get the number of threads from the command line
   
     can be called before tMPI_Init() 
 
     \param[in]  argc            argc from main()
     \param[in]  argv            argv from main()
+    \param[in]  optname         name of the argument specifying the number of 
+                                threads to run. If this is NULL, this function
+                                will read the first argument and interpret
+                                it as the number of threads.
+    \param[out] nthreads        the number of threads
     
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
-int tMPI_Get_N(int *argc, char ***argv);
+int tMPI_Get_N(int *argc, char ***argv, const char *optname, int *nthreads);
 
 
 
-/** \brief Waits for all other threads to finish and cleans up 
+/** Waits for all other threads to finish and cleans up 
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Finalize(void);
 
 
-/** \brief Just kills all threads. 
+/** Just kills all threads. 
   
     Not really neccesary because exit() would do that for us anyway.
 
@@ -327,7 +333,7 @@ int tMPI_Finalize(void);
     \return Never returns. */
 int tMPI_Abort(tMPI_Comm comm, int errorcode);
 
-/** \brief whether tMPI_Init, but not yet tMPI_Finalize, has been run
+/** whether tMPI_Init, but not yet tMPI_Finalize, has been run
 
     \param[out] flag     Set to TRUE if tMPI_Init() has been called, 
                          FALSE if not.
@@ -335,7 +341,7 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode);
     \return     always returns TMPI_SUCCESS. */
 int tMPI_Initialized(int *flag);
 
-/** \brief Determine whether tMPI_Finalize has been run.
+/** Determine whether tMPI_Finalize has been run.
 
     \param[out] flag        Set to TRUE if tMPI_Finalize() has been 
                             called, FALSE if not.
@@ -354,7 +360,7 @@ int tMPI_Finalized(int *flag);
 
 /*! \name Error handling functions
     \{ */
-/** \brief Create an error handler object from a function.
+/** Create an error handler object from a function.
 
     \param[in]  function        The function to make an error handler of.
     \param[out] errhandler      The error handler.
@@ -364,13 +370,13 @@ int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
                            tMPI_Errhandler *errhandler);
 
 
-/** \brief Free the error handler object.
+/** Free the error handler object.
     
     \param[in] errhandler       The error handler.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Errhandler_free(tMPI_Errhandler *errhandler);
 
-/** \brief Set the error handler.
+/** Set the error handler.
 
     \param[in] comm         the communicator to set the error handler for.
     \param[in] errhandler   the error handler.
@@ -378,7 +384,7 @@ int tMPI_Errhandler_free(tMPI_Errhandler *errhandler);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 
 int tMPI_Comm_set_errhandler(tMPI_Comm comm, tMPI_Errhandler errhandler);
-/** \brief get the error handler.
+/** get the error handler.
 
     Gets the error handler associated with a comm
 
@@ -389,7 +395,7 @@ int tMPI_Comm_set_errhandler(tMPI_Comm comm, tMPI_Errhandler errhandler);
 
 int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler);
 
-/*! \brief get the error string associated with an error code. 
+/** get the error string associated with an error code. 
   
     The length of the error string will never exceed TMPI_MAX_ERROR_STRING.
 
@@ -411,7 +417,7 @@ int tMPI_Error_string(int errorcode, char *string, size_t *resultlen);
 
 /*! \name Environment query functions
     \{ */
-/** \brief returns string with thread number.
+/** returns string with thread number.
 
     \param[out] name        Pre-allocated string to output name to (will not 
                             be longer than TMPI_MAX_PROCESSOR_NAME). 
@@ -422,7 +428,7 @@ int tMPI_Error_string(int errorcode, char *string, size_t *resultlen);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Get_processor_name(char *name, int *resultlen);
 
-/** \brief get a time value as a double, in seconds.
+/** get a time value as a double, in seconds.
 
     \return time value.
     */
@@ -435,7 +441,7 @@ double tMPI_Wtick(void);
 #ifndef DOXYGEN
 #define tMPI_This_threadnr() (int)(tMPI_Get_current() - threads)
 #else
-/** \brief Get the thread number of this thread. 
+/** Get the thread number of this thread. 
     Mostly for debugging.
 
     \return the global thread number. */
@@ -454,14 +460,14 @@ int tMPI_This_Threadnr(void);
 
 /*! \name tMPI_Group functions
     \{ */
-/** \brief Get the size (number of members) of a group.  
+/** Get the size (number of members) of a group.  
 
     \param[in]  group       The group.
     \param[out] size        Size.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Group_size(tMPI_Group group, int *size);
 
-/** \brief Get the rank of a thread in a group 
+/** Get the rank of a thread in a group 
 
     \param[in]  group       The group.
     \param[out] rank        Variable for the rank, or TMPI_UNDEFINED 
@@ -469,7 +475,7 @@ int tMPI_Group_size(tMPI_Group group, int *size);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Group_rank(tMPI_Group group, int *rank);
 
-/** \brief Create a new group as a the collection of threads with given ranks. 
+/** Create a new group as a the collection of threads with given ranks. 
 
     \param[in] group        The group from which the ranks are taken.
     \param[in] n            The number of new group members.
@@ -479,7 +485,7 @@ int tMPI_Group_rank(tMPI_Group group, int *rank);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup);
 
-/** \brief Get a pointer to the group in the comm. 
+/** Get a pointer to the group in the comm. 
     
     \param[in] comm         The comm from which to take the group.
     \param[out] group       The comm's group. 
@@ -487,7 +493,7 @@ int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group);
 
-/** \brief De-allocate a group 
+/** De-allocate a group 
 
     \param[in] group        The group to de-allocate.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
@@ -502,21 +508,21 @@ int tMPI_Group_free(tMPI_Group *group);
 
 /*! \name tMPI_Comm functions
     \{ */
-/** \brief Get the comm size (nr. of threads).
+/** Get the comm size (nr. of threads).
     
     \param[in] comm         The comm to query.
     \param[out] size        The comm size.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_size(tMPI_Comm comm, int *size);
 
-/** \brief get the rank in comm of the current process 
+/** get the rank in comm of the current process 
 
     \param[in]  comm        The comm to query.
     \param[out] rank        Thread rank in comm.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_rank(tMPI_Comm comm, int *rank);
 
-/** \brief De-allocate a comm 
+/** De-allocate a comm 
 
     Collective function.
 
@@ -524,7 +530,7 @@ int tMPI_Comm_rank(tMPI_Comm comm, int *rank);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_free(tMPI_Comm *comm);
 
-/** \brief Create a comm based on group membership.
+/** Create a comm based on group membership.
 
     Collective function that creates a new comm containing only proceses 
     that are members of the given group.
@@ -536,7 +542,7 @@ int tMPI_Comm_free(tMPI_Comm *comm);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_create(tMPI_Comm comm, tMPI_Group group, tMPI_Comm *newcomm);
 
-/** \brief Split up a group into same-colored sub-groups ordered by key.
+/** Split up a group into same-colored sub-groups ordered by key.
 
     This is the main comm creation function: it's a collective call that takes
     a color and a key from each process, and arranges all threads that
@@ -556,7 +562,7 @@ int tMPI_Comm_create(tMPI_Comm comm, tMPI_Group group, tMPI_Comm *newcomm);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm);
 
-/** \brief Make a duplicate of a comm.
+/** Make a duplicate of a comm.
 
     Collective function.
 
@@ -576,7 +582,7 @@ int tMPI_Comm_dup(tMPI_Comm comm, tMPI_Comm *newcomm);
 /*! \name Topology functions
     \{ */
 /* topology functions */
-/** \brief Check what type of topology the comm has. 
+/** Check what type of topology the comm has. 
 
     \param[in] comm         The comm to query
     \param[out] status      The type of topology. 
@@ -584,7 +590,7 @@ int tMPI_Comm_dup(tMPI_Comm comm, tMPI_Comm *newcomm);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Topo_test(tMPI_Comm comm, int *status);
 
-/** \brief Get the dimensionality of a comm with a topology.
+/** Get the dimensionality of a comm with a topology.
 
     \param[in] comm         The comm to query.
     \param[out] ndims       The number of dimensions.
@@ -592,7 +598,7 @@ int tMPI_Topo_test(tMPI_Comm comm, int *status);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 
 int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims);
-/** \brief Get the size and pbc a of a comm with a Cartesian topology has.
+/** Get the size and pbc a of a comm with a Cartesian topology has.
 
     \param[in]  comm        The comm to query.
     \param[in]  maxdims     The maximum number of dimensions in the periods 
@@ -604,10 +610,10 @@ int tMPI_Cartdim_get(tMPI_Comm comm, int *ndims);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 
 int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods, 
-                 int *coords);
+                  int *coords);
 
 
-/** \brief Get rank that a specific set of process coordinates has in 
+/** Get rank that a specific set of process coordinates has in 
     a Cartesian topology.
 
     \param[in]  comm        The comm to query.
@@ -617,7 +623,7 @@ int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank);
 
-/** \brief Get coordinates of a process rank in a Cartesian topology.
+/** Get coordinates of a process rank in a Cartesian topology.
 
     \param[in]  comm        The comm to query.
     \param[in]  rank        The rank associated with the coordinates.
@@ -628,7 +634,7 @@ int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords);
 
-/** \brief Get optimal rank this process would have in a Cartesian topology. 
+/** Get optimal rank this process would have in a Cartesian topology. 
 
     \param[in]  comm        The comm to query.
     \param[in]  ndims       The number of dimensions.
@@ -639,9 +645,9 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods, 
-                         int *newrank);
+                  int *newrank);
 
-/** \brief Create a comm with a Cartesian topology.
+/** Create a comm with a Cartesian topology.
 
     \param[in]  comm_old    The originating comm.
     \param[in]  ndims       The number of dimensions.
@@ -653,7 +659,21 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
    
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods, 
-                    int reorder, tMPI_Comm *comm_cart);
+                     int reorder, tMPI_Comm *comm_cart);
+
+/** Create a comms that are sub-spaces of the Cartesian topology communicator.
+    Works like a MPI_Comm_split() for the Cartesian dimensions specified 
+    as false in remain_dims.
+
+    \param[in]  comm        The originating comm with Cartesian topology.
+    \param[in]  remain_dims An Boolean array that decides whether a specific
+                            dimensionality should remain in newcomm (if true), 
+                            or should be split up (if false).
+    \param[out] newcomm     The new split communicator
+   
+    \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
+int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm);
+
 /*! \} */
 
 
@@ -665,7 +685,7 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
 
 /*! \name Data type manipulation functions
     \{ */
-/** \brief Create a contiguous data type (the only type possible right now).
+/** Create a contiguous data type (the only type possible right now).
 
     Creates a datatype that is a vector of oldtype.
 
@@ -677,7 +697,7 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
                         tMPI_Datatype *newtype);
 
 
-/** \brief Make a data type ready for use.
+/** Make a data type ready for use.
 
     \param[in,out] datatype  The new datatype.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
@@ -697,7 +717,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype);
 /* blocking transfers. The actual transfer (copy) is done on the receiving end 
     (so that the receiver's cache already contains the data that it presumably
      will use soon).  */
-/** \brief Send message; blocks until buf is reusable. 
+/** Send message; blocks until buf is reusable. 
 
     \param[in]  buf         The buffer with data to send.
     \param[in]  count       The number of items to send.
@@ -709,7 +729,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype);
 int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest, 
              int tag, tMPI_Comm comm);
 
-/** \brief Receive message; blocks until buf is filled.
+/** Receive message; blocks until buf is filled.
 
     \param[out] buf         The buffer for data to receive.
     \param[in]  count       The maximum number of items to receive.
@@ -722,7 +742,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
 int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source, 
              int tag, tMPI_Comm comm, tMPI_Status *status);
 
-/** \brief Send & receive message at the same time. 
+/** Send & receive message at the same time. 
     
     Blocks until recvbuf is filled, and sendbuf is ready for reuse.
 
@@ -748,7 +768,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     end, during tMPI_Wait, tMPI_Waitall or tMPI_Test. For tMPI_Waitall, 
     the incoming messages are processed in the order they come in.  */
 
-/** \brief Initiate sending a message, non-blocking.
+/** Initiate sending a message, non-blocking.
 
     This makes the buffer available to be received. The contents of buf
     should not be touched before the transmission is finished with 
@@ -767,7 +787,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
 int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest, 
               int tag, tMPI_Comm comm, tMPI_Request *request);
 
-/** \brief Initiate receiving a message.
+/** Initiate receiving a message.
 
     This makes the buffer available to be filled with data. The contents of 
     buf should not be relied on before the transmission is finished with 
@@ -785,7 +805,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
 int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source, 
               int tag, tMPI_Comm comm, tMPI_Request *request);
 
-/** \brief Test whether a message is transferred. 
+/** Test whether a message is transferred. 
     
     \param[in,out]  request The request obtained wit tMPI_Isend()/tMPI_Irecv().
     \param[out]     flag    A flag set to TRUE(1) if the request is finished,
@@ -795,7 +815,7 @@ int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source,
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status);
 
-/** \brief Wait until a message is transferred.
+/** Wait until a message is transferred.
     
     \param[in,out]  request The request obtained wit tMPI_Isend()/tMPI_Irecv().
     \param[out]     status  Message status.
@@ -803,7 +823,7 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status);
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 int tMPI_Wait(tMPI_Request *request, tMPI_Status *status);
 
-/** \brief Wait until several messages are transferred. 
+/** Wait until several messages are transferred. 
    
     \param[in]      count               The number of requests
     \param[in,out]  array_of_requests   List of count requests obtained with
@@ -816,7 +836,7 @@ int tMPI_Waitall(int count, tMPI_Request *array_of_requests,
                 tMPI_Status *array_of_statuses);
 
 
-/** \brief get the number of actually transferred items from a receive 
+/** get the number of actually transferred items from a receive 
     status. 
     
     \param[in]  status      The status. 
@@ -836,7 +856,7 @@ int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count);
 
 /*! \name Synchronization functions
     \{ */
-/** \brief Block until all threads in the comm call this function. 
+/** Block until all threads in the comm call this function. 
 
     \param[in]  comm    The comm object.
   
@@ -852,7 +872,7 @@ int tMPI_Barrier(tMPI_Comm comm);
 
 /*! \name Multicast communication functions
     \{ */
-/** \brief Broadcast from one thread to all others in comm.
+/** Broadcast from one thread to all others in comm.
 
     Collective function; data is transferred from root's buffer to all others'
     buffer. 
@@ -868,7 +888,7 @@ int tMPI_Barrier(tMPI_Comm comm);
 int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root, 
               tMPI_Comm comm);
 
-/** \brief Gather data from all threads in comm to root. 
+/** Gather data from all threads in comm to root. 
 
     Collective function; assumes that all data is received in blocks of 
     recvcount. 
@@ -890,7 +910,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                tMPI_Comm comm);
 
 
-/** \brief Gather irregularly laid out data from all processes in comm to root. 
+/** Gather irregularly laid out data from all processes in comm to root. 
 
     Collective function.
 
@@ -914,7 +934,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                 tMPI_Datatype recvtype, int root, tMPI_Comm comm);
 
 
-/** \brief Spread parts of sendbuf to all processes in comm from root.
+/** Spread parts of sendbuf to all processes in comm from root.
 
     Collective function.
 
@@ -935,7 +955,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                 void* recvbuf, int recvcount, tMPI_Datatype recvtype, int root, 
                 tMPI_Comm comm);
 
-/** \brief Spread irregularly laid out parts of sendbuf to all processes 
+/** Spread irregularly laid out parts of sendbuf to all processes 
             in comm from root.
 
     Collective function.
@@ -960,7 +980,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
                  tMPI_Datatype recvtype, int root, tMPI_Comm comm); 
 
 
-/** \brief Spread out parts of sendbuf to all processes from all processes in 
+/** Spread out parts of sendbuf to all processes from all processes in 
            comm.
 
     Collective function.
@@ -980,7 +1000,7 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                   tMPI_Comm comm);
 
 
-/** \brief Spread out irregularly laid out parts of sendbuf to all 
+/** Spread out irregularly laid out parts of sendbuf to all 
            processes from all processes in comm.
 
     Collective function.
@@ -1016,12 +1036,14 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
 
 /*! \name Reduce functions
     \{ */
-/**\brief Do an operation between all locally held buffers on all items in the 
-          buffers, and send the results to root.
+/** Do an operation between all locally held buffers on all items in the 
+    buffers, and send the results to root.
 
     Collective function.
-   
-    \param[in]  sendbuf     The operand parameters.
+
+    \param[in]  sendbuf     The operand parameters. Root may specify 
+                            TMPI_IN_PLACE, in which case recvbuf will hold
+                            the operand parameters.
     \param[out] recvbuf     The result buffer at root.
     \param[in]  count       The number of items to do operation on.
     \param[in]  datatype    The data type of the items.
@@ -1035,13 +1057,16 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
 
 
 
-/** \brief Do an operation between all locally held buffers on all items in the 
+/** Do an operation between all locally held buffers on all items in the 
     buffers and broadcast the results. 
 
     Collective function.
-   
-    \param[in]  sendbuf     The operand parameters.
-    \param[out] recvbuf     The result buffer at root.
+
+
+    \param[in]  sendbuf     The operand parameters. Any process may specify 
+                            TMPI_IN_PLACE, in which case recvbuf will hold
+                            the operand parameters for that process.
+    \param[out] recvbuf     The result buffer.
     \param[in]  count       The number of items to do operation on.
     \param[in]  datatype    The data type of the items.
     \param[in]  op          The operation to perform.
@@ -1051,7 +1076,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
 int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count, 
                   tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
 
-/** \brief Do an tMPI_Reduce, but with the following assumption:
+/** Do an tMPI_Reduce, but with the following assumption:
     recvbuf points to a valid buffer in all calling threads, or 
     sendbuf has the value TMPI_IN_PLACE (in which case the values of 
     sendbuf may be changed in that thread).  
@@ -1059,11 +1084,12 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     This avoids unnecesary memory allocations associated with the normal
     tMPI_Reduce. 
 
-    Collective call. 
+    Collective function. 
     
-
-    \param[in,out]  sendbuf     The operand parameters.
-    \param[out]     recvbuf     The result buffer (or TMPI_IN_PLACE).
+    \param[in]      sendbuf     The operand parameters (or TMPI_IN_PLACE, 
+                                in which case the operand parameters will 
+                                be in recvbuf).
+    \param[in,out]  recvbuf     The result buffer.
     \param[in]      count       The number of items to do operation on.
     \param[in]      datatype    The data type of the items.
     \param[in]      op          The operation to perform.

@@ -57,6 +57,8 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "pbc.h"
+#include "gmx_ana.h"
+
 
 #define NK  24
 #define NPK 4
@@ -94,7 +96,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 	fprintf(fp," %g",tc[j][i]);
       fprintf(fp,"\n");
     }
-    fclose(fp);
+    ffclose(fp);
     do_view(oenv,fn_trans,"-nxy");
   }
   
@@ -140,7 +142,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
     }
     fprintf(fp,"\n");
   }
-  fclose(fp);
+  ffclose(fp);
   do_view(oenv,fn_tc,"-nxy");
   
   if (fn_cub) {
@@ -181,7 +183,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fprintf(fp,"%g %g\n",i*dt,fit_function(effnVAC,fitparms,i*dt));
     fprintf(fp,"&\n");
   }
-  fclose(fp);
+  ffclose(fp);
   do_view(oenv,fn_tcf,"-nxy");
 
   if (fn_cub) {
@@ -204,10 +206,10 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
       fprintf(fp_cub,"&\n");
     }
     fprintf(fp_vk,"&\n");
-    fclose(fp_cub);
+    ffclose(fp_cub);
     do_view(oenv,fn_cub,"-nxy");
   }
-  fclose(fp_vk);
+  ffclose(fp_vk);
   do_view(oenv,fn_vk,"-nxy");
 }
 

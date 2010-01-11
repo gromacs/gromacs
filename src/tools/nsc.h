@@ -11,7 +11,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -38,27 +38,7 @@
 #define FLAG_VOLUME     02
 #define FLAG_ATOM_AREA  04
 
-#define NSC nsc_dclm
 
-extern int NSC(
-  real * ,	/* atom coordinates xyz0, xyz1, ... */
-  real * ,	/* atom radii r0, r1, r2, ... */
-  int ,         /* number of atoms */
-  int ,		/* number of dots per fully accessible sphere */
-  int ,		/* flag : dots, volume and/or area per atom */
-  real * ,	/* 1 output: overall area */
-  real ** ,     /* 2 output: pointer to list of areas per atom */
-  real * ,	/* 3 output: overall volume */
-  real ** ,	/* 4 output: pointer to list of surface dots x0, y0, z0, ... */
-  int *	        /* 5 output: number of surface dots */
-  );
-
-extern int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
-		     int  densit, int mode,
-		     real *value_of_area, real **at_area,
-		     real *value_of_vol,
-		     real **lidots, int *nu_dots,
-		     matrix box);
 
 extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 			int  densit, int mode,

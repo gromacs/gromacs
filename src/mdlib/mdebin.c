@@ -76,6 +76,9 @@ static const char *boxvel_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
+static bool bTricl,bDynBox;
+static int  f_nre=0,epc,etc,nCrmsd;
+
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir)
@@ -113,14 +116,19 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   static const char *visc_nm[] = {
     "1/Viscosity"
   };
+  static char *bufbaro[] = {
+    "barostat"
+  };
+
   char     **grpnms;
   const gmx_groups_t *groups;
   char     **gnm;
   char     buf[256];
+  char     *bufi;
   t_mdebin *md;
-  int      i,j,ni,nj,n,k,kk,ncon,nset;
-  bool     bBHAM,b14;
- 
+  int      i,j,ni,nj,n,nh,k,kk,ncon,nset;
+  bool     bBHAM,bNoseHoover,b14;
+
   snew(md,1);
 
   groups = &mtop->groups;
@@ -148,78 +156,87 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   /* Energy monitoring */
   for(i=0;i<egNR;i++)
   {
-    md->bEInd[i]=FALSE;
+      md->bEInd[i]=FALSE;
   }
-
 
   for(i=0; i<F_NRE; i++) {
-    md->bEner[i] = FALSE;
-    if (i == F_LJ)
-      md->bEner[i] = !bBHAM;
-    else if (i == F_BHAM)
-      md->bEner[i] = bBHAM;
-    else if (i == F_EQM)
-      md->bEner[i] = ir->bQMMM;
-    else if (i == F_COUL_LR)
-      md->bEner[i] = (ir->rcoulomb > ir->rlist);
-    else if (i == F_LJ_LR)
-      md->bEner[i] = (!bBHAM && ir->rvdw > ir->rlist);
-    else if (i == F_BHAM_LR)
-      md->bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
-    else if (i == F_RF_EXCL)
-      md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC);
-    else if (i == F_COUL_RECIP)
-      md->bEner[i] = EEL_FULL(ir->coulombtype);
-    else if (i == F_LJ14)
-      md->bEner[i] = b14;
-    else if (i == F_COUL14)
-      md->bEner[i] = b14;
-    else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
       md->bEner[i] = FALSE;
-    else if ((i == F_DVDL) || (i == F_DKDL))
-      md->bEner[i] = (ir->efep != efepNO);
-    else if (i == F_DHDL_CON)
-      md->bEner[i] = (ir->efep != efepNO && md->bConstr);
-    else if ((interaction_function[i].flags & IF_VSITE) ||
-	     (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
-      md->bEner[i] = FALSE;
-    else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
-      md->bEner[i] = TRUE;
-    else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
-      md->bEner[i] = EI_DYNAMICS(ir->eI);
-    else if (i == F_DISPCORR || i == F_PDISPCORR)
-      md->bEner[i] = (ir->eDispCorr != edispcNO);
-    else if (i == F_DISRESVIOL)
-      md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_DISRES) > 0);
-    else if (i == F_ORIRESDEV)
-      md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0);
-    else if (i == F_CONNBONDS)
-      md->bEner[i] = FALSE;
-    else if (i == F_COM_PULL)
-      md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
-    else if (i == F_ECONSERVED)
-      md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
-		  ir->epc == epcNO);
-    else
-      md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
+      if (i == F_LJ)
+          md->bEner[i] = !bBHAM;
+      else if (i == F_BHAM)
+          md->bEner[i] = bBHAM;
+      else if (i == F_EQM)
+          md->bEner[i] = ir->bQMMM;
+      else if (i == F_COUL_LR)
+          md->bEner[i] = (ir->rcoulomb > ir->rlist);
+      else if (i == F_LJ_LR)
+          md->bEner[i] = (!bBHAM && ir->rvdw > ir->rlist);
+      else if (i == F_BHAM_LR)
+          md->bEner[i] = (bBHAM && ir->rvdw > ir->rlist);
+      else if (i == F_RF_EXCL)
+          md->bEner[i] = (EEL_RF(ir->coulombtype) && ir->coulombtype != eelRF_NEC);
+      else if (i == F_COUL_RECIP)
+          md->bEner[i] = EEL_FULL(ir->coulombtype);
+      else if (i == F_LJ14)
+          md->bEner[i] = b14;
+      else if (i == F_COUL14)
+          md->bEner[i] = b14;
+      else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
+          md->bEner[i] = FALSE;
+      else if ((i == F_DVDL) || (i == F_DKDL))
+          md->bEner[i] = (ir->efep != efepNO);
+      else if (i == F_DHDL_CON)
+          md->bEner[i] = (ir->efep != efepNO && md->bConstr);
+      else if ((interaction_function[i].flags & IF_VSITE) ||
+               (i == F_CONSTR) || (i == F_CONSTRNC) || (i == F_SETTLE))
+          md->bEner[i] = FALSE;
+      else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
+          md->bEner[i] = TRUE;
+      else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
+          md->bEner[i] = EI_DYNAMICS(ir->eI);
+      else if (i==F_VTEMP) 
+          md->bEner[i] =  (EI_DYNAMICS(ir->eI) && getenv("GMX_VIRIAL_TEMPERATURE"));
+      else if (i == F_DISPCORR || i == F_PDISPCORR)
+          md->bEner[i] = (ir->eDispCorr != edispcNO);
+      else if (i == F_DISRESVIOL)
+          md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_DISRES) > 0);
+      else if (i == F_ORIRESDEV)
+          md->bEner[i] = (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0);
+      else if (i == F_CONNBONDS)
+          md->bEner[i] = FALSE;
+      else if (i == F_COM_PULL)
+          md->bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
+      else if (i == F_ECONSERVED)
+          md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
+                          (ir->epc == epcNO || ir->epc==epcMTTK));
+      else
+          md->bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
+  }
+  
+  md->f_nre=0;
+  for(i=0; i<F_NRE; i++)
+  {
+      if (md->bEner[i])
+      {
+          /* FIXME: The constness should not be cast away */
+          /*ener_nm[f_nre]=(char *)interaction_function[i].longname;*/
+          ener_nm[md->f_nre]=interaction_function[i].longname;
+          md->f_nre++;
+      }
   }
 
-    md->f_nre=0;
-    for(i=0; i<F_NRE; i++)
+    md->epc = ir->epc;
+    for (i=0;i<DIM;i++) 
     {
-        if (md->bEner[i])
+        for (j=0;j<DIM;j++) 
         {
-            /* FIXME: The constness should not be cast away */
-            /*ener_nm[f_nre]=(char *)interaction_function[i].longname;*/
-            ener_nm[md->f_nre]=interaction_function[i].longname;
-            md->f_nre++;
+            md->ref_p[i][j] = ir->ref_p[i][j];
         }
     }
-
-    md->epc = ir->epc;
     md->bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     md->bDynBox = DYNAMIC_BOX(*ir);
     md->etc = ir->etc;
+    md->bNHC_trotter = IR_NVT_TROTTER(ir);
   
     md->ebin  = mk_ebin();
     /* Pass NULL for unit to let get_ebin_space determine the units
@@ -251,10 +268,10 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     md->ipres  = get_ebin_space(md->ebin,asize(pres_nm),pres_nm,unit_pres_bar);
     md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm,
                                 unit_surft_bar);
-    if (md->epc == epcPARRINELLORAHMAN)
+    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         md->ipc = get_ebin_space(md->ebin,md->bTricl ? 6 : 3,
-				 boxvel_nm,unit_vel);
+                                 boxvel_nm,unit_vel);
     }
     md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm,unit_dipole_D);
     if (ir->cos_accel != 0)
@@ -263,6 +280,15 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->ivisc = get_ebin_space(md->ebin,asize(visc_nm),visc_nm,
                                    unit_invvisc_SI);
     }
+
+    /* Energy monitoring */
+    for(i=0;i<egNR;i++)
+    {
+        md->bEInd[i] = FALSE;
+    }
+    md->bEInd[egCOULSR] = TRUE;
+    md->bEInd[egLJSR  ] = TRUE;
+
     if (ir->rcoulomb > ir->rlist)
     {
         md->bEInd[egCOULLR] = TRUE;
@@ -340,12 +366,37 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
             gmx_incons("Number of energy terms wrong");
         }
     }
+
     
     md->nTC=groups->grps[egcTC].nr;
-    snew(md->grpnms,md->nTC);
-    snew(md->tmp_r,md->nTC);
-    snew(md->tmp_v,md->nTC);
+    md->nNHC = ir->opts.nnhchains; /* shorthand for number of NH chains */ 
+    if (md->epc == epcMTTK) 
+    {
+        md->nTCB = md->nTC + 1; /* for barostat temperature group */
+    } 
+    else 
+    {
+        md->nTCB = md->nTC;
+    }
+   
+    
+    if (md->etc == etcNOSEHOOVER) {
+        if (md->bNHC_trotter) { 
+            md->mde_n = 2*md->nNHC*md->nTCB;
+        }
+        else 
+        {
+            md->mde_n = 2*md->nTCB;
+        }
+    } else { 
+        md->mde_n = md->nTCB;
+    }
+
+    snew(md->tmp_r,md->mde_n);
+    snew(md->tmp_v,md->mde_n);
+    snew(md->grpnms,md->mde_n);
     grpnms = md->grpnms;
+
     for(i=0; (i<md->nTC); i++)
     {
         ni=groups->grps[egcTC].nm_ind[i];
@@ -354,19 +405,47 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     }
     md->itemp=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,
                              unit_temp_K);
+
+    bNoseHoover = (getenv("GMX_NOSEHOOVER_CHAINS") != NULL); /* whether to print Nose-Hoover chains */
+
     if (md->etc == etcNOSEHOOVER)
     {
-        for(i=0; (i<md->nTC); i++)
+        if (bNoseHoover) 
         {
-            ni=groups->grps[egcTC].nm_ind[i];
-            sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
-            grpnms[i]=strdup(buf);
+            if (md->bNHC_trotter) 
+            {
+                for(i=0; (i<md->nTCB); i++) 
+                {
+                    ni=groups->grps[egcTC].nm_ind[i];
+                    /* this one is a barostat thermostat */
+                    if ((i==md->nTCB-1) && (md->nTCB > md->nTC)) {bufi = bufbaro[0];} else {bufi = *(groups->grpname[ni]);}
+                    for(j=0; (j<md->nNHC); j++) 
+                    {
+                        sprintf(buf,"Xi-%d-%s",j,bufi);
+                        grpnms[2*(i*md->nNHC+j)]=strdup(buf);
+                        sprintf(buf,"vXi-%d-%s",j,bufi);
+                        grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                    }
+                }
+                md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
+            } 
+            else
+            {
+                for(i=0; (i<md->nTCB); i++) 
+                {
+                    ni=groups->grps[egcTC].nm_ind[i];
+                    bufi = *(groups->grpname[ni]);
+                    sprintf(buf,"Xi-%s",bufi);
+                    grpnms[2*i]=strdup(buf);
+                    sprintf(buf,"vXi-%s",bufi);
+                    grpnms[2*i+1]=strdup(buf);
+                }
+                md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
+            }
         }
-        md->itc=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,
-                               unit_invtime);
     }
-    else  if (md->etc == etcBERENDSEN || md->etc == etcYES || 
-	      md->etc == etcVRESCALE)
+    else if (md->etc == etcBERENDSEN || md->etc == etcYES || 
+             md->etc == etcVRESCALE)
     {
         for(i=0; (i<md->nTC); i++)
         {
@@ -374,9 +453,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
             sprintf(buf,"Lamb-%s",*(groups->grpname[ni]));
             grpnms[i]=strdup(buf);
         }
-        md->itc=get_ebin_space(md->ebin,md->nTC,(const char **)grpnms,"");
+        md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,"");
     }
+
     sfree(grpnms);
+
     
     md->nU=groups->grps[egcACC].nr;
     if (md->nU > 1)
@@ -486,7 +567,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   tmp;
-    
+    bool   bNoseHoover;
+
     /* Do NOT use the box in the state variable, but the separate box provided
      * as an argument. This is because we sometimes need to write the box from
      * the last timestep to match the trajectory frames.
@@ -522,9 +604,23 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         vol  = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
         dens = (tmass*AMU)/(vol*NANO*NANO*NANO);
         
-        /* This is pV (in kJ/mol) */  
-        pv = vol*enerd->term[F_PRES]/PRESFAC;
-
+        /* This is pV (in kJ/mol).  The pressure is the reference pressure,
+         not the instantaneous pressure */  
+        pv = 0;
+        for (i=0;i<DIM;i++) 
+        {
+            for (j=0;j<DIM;j++) 
+            {
+                if (i>j) 
+                {
+                    pv += box[i][j]*md->ref_p[i][j]/PRESFAC;
+                } 
+                else 
+                {
+                    pv += box[j][i]*md->ref_p[j][i]/PRESFAC;
+                }
+            }
+        }
         add_ebin(md->ebin,md->ib   ,NBOXS,bs   ,bSum);
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
@@ -539,7 +635,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
     add_ebin(md->ebin,md->ipres,9,pres[0],bSum);
     tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
     add_ebin(md->ebin,md->isurft,1,&tmp,bSum);
-    if (md->epc == epcPARRINELLORAHMAN)
+    if (md->epc == epcPARRINELLORAHMAN || md->epc == epcMTTK)
     {
         tmp6[0] = state->boxv[XX][XX];
         tmp6[1] = state->boxv[YY][YY];
@@ -588,16 +684,39 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
             md->tmp_r[i] = ekind->tcstat[i].T;
         }
         add_ebin(md->ebin,md->itemp,md->nTC,md->tmp_r,bSum);
+
+        bNoseHoover = (getenv("GMX_NOSEHOOVER_CHAINS") != NULL); /* whether to print Nose-Hoover chains */
+
         if (md->etc == etcNOSEHOOVER)
         {
-            for(i=0; (i<md->nTC); i++)
+            if (bNoseHoover) 
             {
-                 md->tmp_r[i] = state->nosehoover_xi[i];
+                if (md->bNHC_trotter)
+                {
+                    
+                    for(i=0; (i<md->nTCB); i++) 
+                    {
+                        for (j=0;j<md->nNHC;j++) 
+                        {
+                            k = i*md->nNHC+j;
+                            md->tmp_r[2*k] = state->nosehoover_xi[k];
+                            md->tmp_r[2*k+1] = state->nosehoover_vxi[k];
+                        }
+                    }
+                    add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);      
+                } 
+                else 
+                {
+                    for(i=0; (i<md->nTC); i++)
+                    {
+                        md->tmp_r[2*i] = state->nosehoover_xi[i];
+                        md->tmp_r[2*i+1] = state->nosehoover_vxi[i];
+                    }
+                    add_ebin(md->ebin,md->itc,md->mde_n,md->tmp_r,bSum);
+                }
             }
-            add_ebin(md->ebin,md->itc,md->nTC,md->tmp_r,bSum);
         }
-        else if (md->etc == etcBERENDSEN || md->etc == etcYES || 
-		 md->etc == etcVRESCALE)
+        else if (md->etc == etcBERENDSEN || md->etc == etcYES || md->etc == etcVRESCALE)
         {
             for(i=0; (i<md->nTC); i++)
             {
@@ -630,7 +749,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         fprintf(fp_dhdl,"\n");
     }
-}
+    }
 
 void upd_mdebin_step(t_mdebin *md)
 {

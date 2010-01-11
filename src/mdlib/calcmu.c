@@ -45,6 +45,7 @@
 #include "gmx_fatal.h"
 #include "physics.h"
 #include "main.h"
+#include "calcmu.h"
 
 void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
 	     int nChargePerturbed,

@@ -60,6 +60,7 @@
 #include "txtdump.h"
 #include "eigio.h"
 #include "physics.h"
+#include "gmx_ana.h"
 
 static void calc_entropy_qh(FILE *fp,int n,real eigval[],real temp,int nskip)
 {
@@ -119,6 +120,10 @@ static real tick_spacing(real range,int minticks)
 {
   real sp;
 
+  if (range <= 0) {
+    return 1.0;
+  }
+
   sp = 0.2*exp(log(10)*ceil(log(range)/log(10)));
   while (range/sp < minticks-1)
     sp = sp/2;
@@ -175,10 +180,12 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
 	fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
       else 
 	fprintf(out,"@ xaxis  ticklabel off\n");
-      fprintf(out,"@ world xmin %g\n",x[0]*scale_x);
-      fprintf(out,"@ world xmax %g\n",x[n-1]*scale_x);
-      fprintf(out,"@ world ymin %g\n",min);
-      fprintf(out,"@ world ymax %g\n",max);
+      if (n > 1) {
+	fprintf(out,"@ world xmin %g\n",x[0]*scale_x);
+	fprintf(out,"@ world xmax %g\n",x[n-1]*scale_x);
+	fprintf(out,"@ world ymin %g\n",min);
+	fprintf(out,"@ world ymax %g\n",max);
+      }
       fprintf(out,"@ view xmin 0.15\n");
       fprintf(out,"@ view xmax 0.85\n");
       fprintf(out,"@ view ymin %g\n",0.15+(ngraphs-1-g)*0.7/ngraphs);
@@ -211,7 +218,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
             fprintf(out,"&\n");
     }
   }
-  fclose(out);
+  ffclose(out);
 }
 
 static void 
@@ -348,7 +355,7 @@ static void inprod_matrix(const char *matfile,int natoms,
   out = ffopen(matfile,"w");
   write_xpm(out,0,"Eigenvector inner-products","in.prod.","run 1","run 2",
 	    nx,ny,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
-  fclose(out);
+  ffclose(out);
 }
 
 static void overlap(const char *outfile,int natoms,
@@ -382,11 +389,10 @@ static void overlap(const char *outfile,int natoms,
     fprintf(out,"%5d  %5.3f\n",eignr2[x]+1,overlap/noutvec);
   }
 
-  fclose(out);
+  ffclose(out);
 }
 
-static void project(const char *trajfile,t_topology *top,int ePBC,
-                    matrix topbox, rvec *xtop,
+static void project(const char *trajfile,t_topology *top,int ePBC,matrix topbox,
                     const char *projfile,const char *twodplotfile,
                     const char *threedplotfile, const char *filterfile,int skip,
                     const char *extremefile,bool bExtrAll,real extreme,
@@ -446,16 +452,12 @@ static void project(const char *trajfile,t_topology *top,int ePBC,
 	}
 	inprod[noutvec][nframes]=t;
 	/* calculate x: a fitted struture of the selected atoms */
-	if (bFit && (xref==NULL)) {
+	if (bFit) {
 	  reset_x(nfit,ifit,nat,NULL,xread,w_rls);
-	  do_fit(nat,w_rls,xtop,xread);
+	  do_fit(nat,w_rls,xref,xread);
 	}
 	for (i=0; i<natoms; i++)
 	  copy_rvec(xread[index[i]],x[i]);
-	if (bFit && xref) {
-	  reset_x(natoms,all_at,natoms,NULL,x,w_rls);
-	  do_fit(natoms,w_rls,xref,x);
-	}
 
 	for(v=0; v<noutvec; v++) {
 	  vec=outvec[v];
@@ -517,7 +519,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,
 	fprintf(xvgrout,"&\n");
       fprintf(xvgrout,"%10.5f %10.5f\n",inprod[0][i],inprod[noutvec-1][i]);
     }
-    fclose(xvgrout);
+    ffclose(xvgrout);
   }
   
   if (threedplotfile) {
@@ -593,7 +595,7 @@ static void project(const char *trajfile,t_topology *top,int ePBC,
 	j++;
       }
       fprintf(out,"TER\n");
-      fclose(out);
+      ffclose(out);
     } else
       write_sto_conf(threedplotfile,str,&atoms,x,NULL,ePBC,box); 
     free_t_atoms(&atoms,FALSE);
@@ -836,7 +838,7 @@ int gmx_anaeig(int argc,char *argv[])
   t_topology top;
   int        ePBC=-1;
   t_atoms    *atoms=NULL;
-  rvec       *xtop,*xref1,*xref2;
+  rvec       *xtop,*xref1,*xref2,*xrefp=NULL;
   bool       bDMR1,bDMA1,bDMR2,bDMA2;
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;
   rvec       *x,*xread,*xav1,*xav2,**eigvec1=NULL,**eigvec2=NULL;
@@ -990,42 +992,35 @@ int gmx_anaeig(int argc,char *argv[])
 		       title,&top,&ePBC,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
     rm_pbc(&(top.idef),ePBC,atoms->nr,topbox,xtop,xtop);
-    /* Fitting is only needed when we need to read a trajectory */ 
-    if (bTraj) {
-      if ((xref1==NULL) || (bM && bDMR1)) {
-	if (bFit1) {
+    /* Fitting is only required for the projection */ 
+    if (bProj && bFit1) {
+      if (xref1 == NULL) {
 	  printf("\nNote: the structure in %s should be the same\n"
 		 "      as the one used for the fit in g_covar\n",topfile);
-	  printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
-	  get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
-	  snew(w_rls,atoms->nr);
-	  for(i=0; (i<nfit); i++) {
-	    if (bM && bDMR1)
-	      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
-	    else
-	      w_rls[ifit[i]]=1.0;
-	  }
-	}
-	else {
-	    /* make the fit index in xref instead of xtop */
-	  nfit=natoms;
-	  snew(ifit,natoms);
-	  snew(w_rls,nfit);
-	  for(i=0; (i<nfit); i++) {
-	    ifit[i]=i;
-	    w_rls[i]=atoms->atom[ifit[i]].m;
-	  }
+      }
+      printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+      get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
+
+      snew(w_rls,atoms->nr);
+      for(i=0; (i<nfit); i++) {
+	if (bDMR1) {
+	  w_rls[ifit[i]] = atoms->atom[ifit[i]].m;
+	} else {
+	  w_rls[ifit[i]] = 1.0;
 	}
       }
-      else {
-	/* make the fit non mass weighted on xref */
-	nfit=natoms;
-	snew(ifit,nfit);
-	snew(w_rls,nfit);
-	for(i=0; i<nfit; i++) {
-	  ifit[i]=i;
-	  w_rls[i]=1.0;
+
+      snew(xrefp,atoms->nr);
+      if (xref1 != NULL) {
+	for(i=0; (i<nfit); i++) {
+	  copy_rvec(xref1[i],xrefp[ifit[i]]);
 	}
+      } else {
+	/* The top coordinates are the fitting reference */
+	for(i=0; (i<nfit); i++) {
+	  copy_rvec(xtop[ifit[i]],xrefp[ifit[i]]);
+	}
+	reset_x(nfit,ifit,atoms->nr,NULL,xrefp,w_rls);
       }
     }
   }
@@ -1141,10 +1136,10 @@ int gmx_anaeig(int argc,char *argv[])
     
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
-	    bTop ? &top : NULL,ePBC,topbox,xtop,
+	    bTop ? &top : NULL,ePBC,topbox,
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
-	    bFit1,xref1,nfit,ifit,w_rls,
+	    bFit1,xrefp,nfit,ifit,w_rls,
 	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit,
             oenv);
     

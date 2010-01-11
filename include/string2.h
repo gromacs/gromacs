@@ -32,7 +32,9 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
+/*! \file
+ * \brief Generic string handling functions.
+ */
 #ifndef _string2_h
 #define _string2_h
 
@@ -47,15 +49,21 @@
  *
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <string.h>
 #include <stdio.h>
-#include "typedefs.h"
+#include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
 
+
+/*#include "typedefs.h"*/
 #include "types/simple.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
@@ -103,6 +111,12 @@ extern char *gmx_strndup(const char *src, int n);
 
 #define strndup gmx_strndup
 
+/** Pattern matcing with wildcards. */
+extern int gmx_wcmatch(const char *pattern, const char *src);
+
+/** Return value for gmx_wcmatch() when there is no match. */
+#define GMX_NO_WCMATCH 1
+
 
 /* this is our implementation of strsep, the thread-safe replacement for
    strtok */
@@ -118,18 +132,11 @@ extern char *wrap_lines(const char *buf,int line_width, int indent,
  * the lines that are created due to wapping.
  */
 
- 
-  extern char **split(char sep,char *str);
-  /* Implementation of the well-known Perl function split */
 
+extern char **split(char sep,char *str);
+/* Implementation of the well-known Perl function split */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
-#include "errno.h"
-
-gmx_large_int_t
-str_to_large_int_t(const char *str, char **endptr);
+gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 
 #ifdef __cplusplus
 }

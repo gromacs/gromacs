@@ -43,6 +43,10 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "network.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 	
 typedef struct {
   int    nreal;
@@ -69,5 +73,9 @@ extern void sum_bin(t_bin *b,t_commrec *cr);
 extern void extract_binr(t_bin *b,int index,int nr,real r[]);
 extern void extract_bind(t_bin *b,int index,int nr,double r[]);
 /* Extract values from the bin, starting from index (see add_bin) */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _rbin_h */
