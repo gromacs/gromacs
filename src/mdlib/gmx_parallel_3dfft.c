@@ -87,10 +87,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     MPI_Comm rcomm[]={comm[1],comm[0]};
     int Nb,Mb,Kb; /* dimension for backtransform (in starting order) */
     
-    if (!(flags&FFT5D_ORDER_YZ)) { /* currently always true because ORDER_YZ never set */
+    if (!(flags&FFT5D_ORDER_YZ)) { 
         Nb=M;Mb=K;Kb=rN;		
     } else {
-        Nb=K;Mb=rN;Kb=M;
+        Nb=K;Mb=rN;Kb=M;  /* currently always true because ORDER_YZ always set */
     }
     
     (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (fft5d_type**)real_data, (fft5d_type**)complex_data,debug);
