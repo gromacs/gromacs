@@ -241,7 +241,9 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                 wallcycle_start(wcycle,ewcMoveE);
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,constr,vcm,NULL,NULL,terminate,top_global,state,
+                            ir,ekind,constr,vcm,NULL,
+                            chkpt,terminate,
+                            top_global,state,
                             *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
                 if (terminate != 0)
@@ -1124,7 +1126,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                    constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
@@ -1134,7 +1136,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                        constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                         cglo_flags &~ CGLO_PRESSURE);
     }
@@ -1714,7 +1716,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                                    constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags 
                                     | CGLO_ENERGY 
@@ -1879,10 +1881,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
-        /* Determine the pressure:                                                             
-         * always when we want exact averages in the energy file,                              
-         * at ns steps when we have pressure coupling,                                         
-         * otherwise only at energy output steps (set below).                                  
+        /* Determine the pressure:
+         * always when we want exact averages in the energy file,
+         * at ns steps when we have pressure coupling,
+         * otherwise only at energy output steps (set below).
          */
     
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
@@ -1900,7 +1902,23 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bCalcPres = TRUE;
             bGStat    = TRUE;
         }
-    
+
+        /* In parallel we only have to check for checkpointing in steps
+         * where we do global communication,
+         *  otherwise the other nodes don't know.
+         */
+        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
+                           cpt_period >= 0 &&
+                           (cpt_period == 0 || 
+                            run_time >= nchkpt*cpt_period*60.0)))
+        {
+            if (chkpt == 0)
+            {
+                nchkpt++;
+            }
+            chkpt = 1;
+        }
+  
         iterate=gmx_iterate_init(bIterations);
     
         /* for iterations, we save these vectors, as we will be redoing the calculations */
@@ -1950,9 +1968,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     }
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[3]);
                 }
-                /* We can only do Berendsen coupling after we have summed the kinetic
-                 * energy or virial. Since the happens in global_state after update,
-                 * we should only do it at step % nstlist = 1 with bGStatEveryStep=FALSE.
+                /* We can only do Berendsen coupling after we have summed
+                 * the kinetic energy or virial. Since the happens
+                 * in global_state after update, we should only do it at
+                 * step % nstlist = 1 with bGStatEveryStep=FALSE.
                  */
                 
                 update_extended(fplog,step,ir,mdatoms,state,ekind,pcoupl_mu,M,wcycle,
@@ -1961,8 +1980,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 update_coords(fplog,step,ir,mdatoms,state,f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
                               ekind,M,wcycle,upd,FALSE,etrtVELOCITY,cr,nrnb,constr,&top->idef);
 
-                /* above, initialize just copies ekinh into ekin, it doesn't copy 
-                   position (for VV), and entire integrator for MD */
+                /* Above, initialize just copies ekinh into ekin,
+                 * it doesn't copy position (for VV),
+                 * and entire integrator for MD.
+                 */
                 
                 if (ir->eI==eiVVAK) 
                 {
@@ -1983,7 +2004,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* just compute the kinetic energy at the half step to perform a trotter step */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
+                                    constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT    
                         );
@@ -2142,22 +2163,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  */
                 nlh.nabnsb = 0;
             }
-        }
-        
-        /* In parallel we only have to check for checkpointing in steps
-         * where we do global communication,
-         *  otherwise the other nodes don't know.
-         */
-        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
-                           cpt_period >= 0 &&
-                           (cpt_period == 0 || 
-                            run_time >= nchkpt*cpt_period*60.0)))
-        {
-            if (chkpt == 0)
-            {
-                nchkpt++;
-            }
-            chkpt = 1;
         }
         
         /* The coordinates (x) were unshifted in update */
