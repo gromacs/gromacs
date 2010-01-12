@@ -1,0 +1,86 @@
+; TIP3P for use with qhop. Contains qHOH, OH- and H3O+.
+; Force parameters for qHOH are irrelevant,
+; as they will not be used for real in simulation.
+;
+; You CAN'T use settle with qhop right now, perhaps never.
+; Ordinary contraints, however, will be used.
+
+[ moleculetype ]
+; molname	nrexcl
+qHOH		2
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+#ifdef _FF_OPLS
+1     opls_118  1       qHOH              OW             1       -0.6
+2     opls_119  1       qHOH             HW1             1        0.2
+3     opls_119  1       qHOH             HW2             1        0.2
+4     opls_119  1       qHOH             HW3             1        0.2
+
+[ constraints ]
+;  ai    aj funct            b0
+    1     2     2            0.09572
+    1     3     2            0.09572
+    1     4     2            0.09572
+    2     3     2            0.0.1587
+    2     4     2            0.0.1587
+    3     4     2            0.0.1587
+; This geometry is identical to that of HOH+.
+; Constraint lengths in the qhop-simulation are
+; taken from the bonds found in the relevant molecule type(s): HOH, OH- or H3O.
+
+[ exclusions ]
+1	2	3	4
+2	1	3	4
+3	1	2	4
+4	1	2	3
+#endif
+
+;-------------------------------
+[ moleculetype ]
+; molname	nrexcl
+OH-		2
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+#ifdef _FF_OPLS
+1     opls_111  1       qHOH              OW             1       -1.187
+2     opls_112  1       qHOH             HW1             1        0.187
+
+[ constraints ]
+;  ai    aj funct            b0
+    1     2     2            0.09572
+
+[ exclusions ]
+1	2
+2	1
+#endif
+
+;-------------------------------
+[ moleculetype ]
+ ; molname	nrexcl
+H3O+		2
+
+[ atoms ]
+; id	at type	res nr 	residu name	at name		cg nr	charge
+#ifdef _FF_OPLS
+1     opls_118  1       qHOH              OW             1       -0.59
+2     opls_119  1       qHOH             HW1             1        0.53
+3     opls_119  1       qHOH             HW2             1        0.53
+4     opls_119  1       qHOH             HW3             1        0.53
+
+[ constraints ]
+;  ai    aj funct            b0
+    1     2     2            0.09572
+    1     3     2            0.09572
+    1     4     2            0.09572
+    2     3     2            0.1587
+    2     4     2            0.1587
+    3     4     2            0.1587
+
+[ exclusions ]
+1	2	3	4
+2	1	3	4
+3	1	2	4
+4	1	2	3
+#endif
