@@ -120,7 +120,6 @@ typedef struct {
     int  ndata;
     int  *s2g0;
     int  *s2g1;
-    int  noverlap_data; 
     int  noverlap_nodes;
     int  *send_id,*recv_id;
     pme_grid_comm_t *comm_data;
@@ -1984,8 +1983,8 @@ init_overlap_comm(pme_overlap_t *  ol,
     int exten;
     int nn,nk;
     pme_grid_comm_t *pgc;
-    int ndata_per_node,ndata_last_node;
-    int send_index1,recv_index1;
+    bool bCont;
+    int fft_start,fft_end,send_index1,recv_index1;
     
     ol->mpi_comm = comm;
     
@@ -1994,34 +1993,13 @@ init_overlap_comm(pme_overlap_t *  ol,
     
     ol->ndata  = ndata;
 
-    /* Linear translation of the PME grid wont affect reciprocal space calculations,
-     * so to optimize we only interpolate "upwards", which also means we only have to
-     * consider overlap in one direction.
-     * I.e., particles on this node might also be spread to grid indices that belong to
-     * higher nodes (modulo nnodes)
+    /* Linear translation of the PME grid wo'nt affect reciprocal space
+     * calculations, so to optimize we only interpolate "upwards",
+     * which also means we only have to consider overlap in one direction.
+     * I.e., particles on this node might also be spread to grid indices
+     * that belong to higher nodes (modulo nnodes)
      */
-    exten = norder - 1;
-    if (ol->ndata % ol->nnodes == 0)
-    {
-        ol->noverlap_data = exten;
-    }
-    else
-    {
-        ol->noverlap_data = exten + 1;
-    }
-    ndata_per_node     = (ol->ndata + ol->nnodes - 1) / ol->nnodes;
-    /* This is the number of overlap nodes with "even" grid distribution. */
-    ol->noverlap_nodes = (ol->noverlap_data + ndata_per_node - 1)/ndata_per_node;
 
-    snew(ol->send_id, ol->noverlap_nodes);
-    snew(ol->recv_id,ol->noverlap_nodes);
-    for(b=0; b<ol->noverlap_nodes; b++)
-    {
-        ol->send_id[b] = (ol->nodeid + (b + 1)) % ol->nnodes;
-        ol->recv_id[b] = (ol->nodeid - (b +1) + ol->nnodes) % ol->nnodes;
-    }
-    snew(ol->comm_data, ol->noverlap_nodes);
-    
     snew(ol->s2g0,ol->nnodes+1);
     snew(ol->s2g1,ol->nnodes+1);
     if (debug) { fprintf(debug,"PME slab boundaries:"); }
@@ -2039,42 +2017,75 @@ init_overlap_comm(pme_overlap_t *  ol,
         }
     }
     if (debug) { fprintf(debug,"\n"); }
-    
+
+    /* The local charged spreading grid extension due to pme_order */
+    exten = norder - 1;
+
+    /* Determine with how many nodes we need to communicate the grid overlap */
+    b = 0;
+    do
+    {
+        b++;
+        bCont = FALSE;
+        for(i=0; i<nnodes; i++)
+        {
+            if ((i+b <  nnodes &&
+                 ol->s2g1[i+1] + exten > ol->s2g0[i+b]) ||
+                (i+b >= nnodes &&
+                 ol->s2g1[i+1] + exten > ol->s2g0[i+b-nnodes] + ndata))
+            {
+                bCont = TRUE;
+            }
+        }
+    }
+    while (bCont && b < nnodes);
+    ol->noverlap_nodes = b - 1;
+
+    snew(ol->send_id,ol->noverlap_nodes);
+    snew(ol->recv_id,ol->noverlap_nodes);
+    for(b=0; b<ol->noverlap_nodes; b++)
+    {
+        ol->send_id[b] = (ol->nodeid + (b + 1)) % ol->nnodes;
+        ol->recv_id[b] = (ol->nodeid - (b + 1) + ol->nnodes) % ol->nnodes;
+    }
+    snew(ol->comm_data, ol->noverlap_nodes);
+
     for(b=0; b<ol->noverlap_nodes; b++)
     {
         pgc = &ol->comm_data[b];
         /* Send */
-        pgc->send_index0 = ol->s2g0[ol->send_id[b]];
-        send_index1      = ol->s2g1[nodeid+1] + exten;
-        if (pgc->send_index0 < ol->s2g0[ol->nodeid])
+        fft_start        = ol->s2g0[ol->send_id[b]];
+        fft_end          = ol->s2g0[ol->send_id[b]+1];
+        if (ol->send_id[b] < nodeid)
         {
-            pgc->send_index0 += ol->ndata;
+            fft_start += ol->ndata;
+            fft_end  += ol->ndata;
         }
-        /* Send the number of overlapping data slices, or the number of slices on the node if that is smaller */
-        pgc->send_nindex = min(ol->noverlap_data,
-                               max(0,send_index1 - pgc->send_index0));
+        send_index1      = ol->s2g1[nodeid+1] + exten;
+        send_index1      = min(send_index1,fft_end);
+        pgc->send_index0 = fft_start;
+        pgc->send_nindex = max(0,send_index1 - pgc->send_index0);
 
         /* We always start receiving to the first index of our slab */
-        pgc->recv_index0 = ol->s2g0[ol->nodeid];
+        fft_start        = ol->s2g0[ol->nodeid];
+        fft_end          = ol->s2g0[ol->nodeid+1];
         recv_index1      = ol->s2g1[ol->recv_id[b]+1] + exten;
-        if (recv_index1 >= ol->s2g1[ol->nodeid+1] + exten)
+        if (ol->recv_id[b] > nodeid)
         {
             recv_index1 -= ol->ndata;
         }
-        /* Recv the number of overlapping data slices, or the number of slices on the node if that is smaller */
-        pgc->recv_nindex = min(ol->noverlap_data,
-                               max(0,recv_index1 - pgc->recv_index0));
+        recv_index1      = min(recv_index1,fft_end);
+        pgc->recv_index0 = fft_start;
+        pgc->recv_nindex = max(0,recv_index1 - pgc->recv_index0);
     }
 }
 #endif
 
 static void 
 init_overlap_comm_serial(pme_overlap_t *  ol,
-                         int              norder,
                          int              ndata)
 {
     ol->nnodes         = 1;
-    ol->noverlap_data  = norder - 1;
     ol->noverlap_nodes = 0;
     snew(ol->s2g0,ol->nnodes+1);
     ol->s2g0[0] = 0;
@@ -2258,13 +2269,13 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         */
     }
 
-    if (pme->nkx < (pme->pme_order+1)*(pme->nnodes_major > 1 ? 2 : 1) ||
-        pme->nky < (pme->pme_order+1)*(pme->nnodes_minor > 1 ? 2 : 1) ||
-        pme->nkz < (pme->pme_order+1))
+    if (pme->nkx <= pme->pme_order*(pme->nnodes_major > 1 ? 2 : 1) ||
+        pme->nky <= pme->pme_order*(pme->nnodes_minor > 1 ? 2 : 1) ||
+        pme->nkz <= pme->pme_order)
     {
-        gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_order+1 for x and/or y",pme->pme_order);
+        gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_ordern for x and/or y",pme->pme_order);
     }
-    
+
     if (pme->nnodes > 1) {
 #ifdef GMX_MPI
         MPI_Type_contiguous(DIM, mpi_type, &(pme->rvec_mpi));
@@ -2307,7 +2318,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
     else
     {
-        init_overlap_comm_serial(&pme->overlap[0],pme->pme_order,pme->nkx);
+        init_overlap_comm_serial(&pme->overlap[0],pme->nkx);
     }
     if (pme->nnodes_minor > 1)
     {
@@ -2319,7 +2330,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
     else
     {
-        init_overlap_comm_serial(&pme->overlap[1],pme->pme_order,pme->nky);
+        init_overlap_comm_serial(&pme->overlap[1],pme->nky);
     }
     
     snew(pme->bsp_mod[XX],pme->nkx);
@@ -2334,9 +2345,9 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         pme->overlap[1].s2g1[pme->nodeid_minor+1] - 
         pme->overlap[1].s2g0[pme->nodeid_minor];
     
-    pme->pmegrid_nx = nlocal_major + pme->overlap[0].noverlap_data;
-    pme->pmegrid_ny = nlocal_minor + pme->overlap[1].noverlap_data;
-    pme->pmegrid_nz = pme->nkz + pme->pme_order - 1;
+    pme->pmegrid_nx = nlocal_major + pme->pme_order - 1;
+    pme->pmegrid_ny = nlocal_minor + pme->pme_order - 1;
+    pme->pmegrid_nz = pme->nkz     + pme->pme_order - 1;
     
     pme->pmegrid_start_ix = pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
