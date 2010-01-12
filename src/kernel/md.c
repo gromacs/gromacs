@@ -241,15 +241,15 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                 wallcycle_start(wcycle,ewcMoveE);
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,constr,vcm,NULL,
+                            ir,ekind,constr,vcm,nabnsb,
                             chkpt,terminate,
                             top_global,state,
                             *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
-                if (terminate != 0)
+                if (*terminate != 0)
                 {
-                    terminate_now = terminate;
-                    terminate = 0;
+                    *terminate_now = *terminate;
+                    *terminate = 0;
                 }
                 *bSumEkinhOld = FALSE;
                 wallcycle_stop(wcycle,ewcMoveE);
@@ -1126,7 +1126,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                    constr,NULL,&terminate,&terminate_now,NULL,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
@@ -1136,7 +1136,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                        constr,NULL,&terminate,&terminate_now,NULL,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                         cglo_flags &~ CGLO_PRESSURE);
     }
@@ -1501,7 +1501,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
-                            constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                            constr,&chkpt,&terminate,&terminate_now,NULL,state->box,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
@@ -1716,7 +1716,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),state->box,
+                                    constr,NULL,&terminate,&terminate_now,NULL,state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags 
                                     | CGLO_ENERGY 
@@ -1903,6 +1903,81 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             bGStat    = TRUE;
         }
 
+        /* Determine the wallclock run time up till now */
+        run_time = (double)time(NULL) - (double)runtime->real;
+
+        /* Check whether everything is still allright */    
+        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
+        {
+            if (bGotTermSignal || ir->nstlist == 0)
+            {
+                terminate = 1;
+            }
+            else
+            {
+                terminate = -1;
+            }
+            if (!PAR(cr))
+            {
+                terminate_now = terminate;
+            }
+            if (fplog)
+            {
+                fprintf(fplog,
+                        "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+                        bGotTermSignal ? "TERM" : "USR1",
+                        terminate==-1 ? "NS " : "");
+                fflush(fplog);
+            }
+            fprintf(stderr,
+                    "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+                    bGotTermSignal ? "TERM" : "USR1",
+                    terminate==-1 ? "NS " : "");
+            fflush(stderr);
+            bHandledSignal=TRUE;
+        }
+        else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
+                 (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
+                 terminate == 0)
+        {
+            /* Signal to terminate the run */
+            terminate = (ir->nstlist == 0 ? 1 : -1);
+            if (!PAR(cr))
+            {
+                terminate_now = terminate;
+            }
+            if (fplog)
+            {
+                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+            }
+            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+        }
+        
+        if (ir->nstlist == -1 && !bRerunMD)
+        {
+            /* When bGStatEveryStep=FALSE, global_stat is only called
+             * when we check the atom displacements, not at NS steps.
+             * This means that also the bonded interaction count check is not
+             * performed immediately after NS. Therefore a few MD steps could
+             * be performed with missing interactions.
+             * But wrong energies are never written to file,
+             * since energies are only written after global_stat
+             * has been called.
+             */
+            if (step >= nlh.step_nscheck)
+            {
+                nlh.nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,
+                                                     nlh.scale_tot,state->x);
+            }
+            else
+            {
+                /* This is not necessarily true,
+                 * but step_nscheck is determined quite conservatively.
+                 */
+                nlh.nabnsb = 0;
+            }
+        }
+
         /* In parallel we only have to check for checkpointing in steps
          * where we do global communication,
          *  otherwise the other nodes don't know.
@@ -2067,7 +2142,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                            constr,&chkpt,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
+                            constr,&chkpt,&terminate,&terminate_now,
+                            ir->nstlist==-1 ? &(nlh.nabnsb) : NULL,lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
@@ -2090,81 +2166,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
     
-        /* Determine the wallclock run time up till now */
-        run_time = (double)time(NULL) - (double)runtime->real;
-
-        /* Check whether everything is still allright */    
-        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
-        {
-            if (bGotTermSignal || ir->nstlist == 0)
-            {
-                terminate = 1;
-            }
-            else
-            {
-                terminate = -1;
-            }
-            if (!PAR(cr))
-            {
-                terminate_now = terminate;
-            }
-            if (fplog)
-            {
-                fprintf(fplog,
-                        "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        bGotTermSignal ? "TERM" : "USR1",
-                        terminate==-1 ? "NS " : "");
-                fflush(fplog);
-            }
-            fprintf(stderr,
-                    "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    bGotTermSignal ? "TERM" : "USR1",
-                    terminate==-1 ? "NS " : "");
-            fflush(stderr);
-            bHandledSignal=TRUE;
-        }
-        else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 terminate == 0)
-        {
-            /* Signal to terminate the run */
-            terminate = (ir->nstlist == 0 ? 1 : -1);
-            if (!PAR(cr))
-            {
-                terminate_now = terminate;
-            }
-            if (fplog)
-            {
-                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
-            }
-            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
-        }
-        
-        if (ir->nstlist == -1 && !bRerunMD)
-        {
-            /* When bGStatEveryStep=FALSE, global_stat is only called
-             * when we check the atom displacements, not at NS steps.
-             * This means that also the bonded interaction count check is not
-             * performed immediately after NS. Therefore a few MD steps could
-             * be performed with missing interactions.
-             * But wrong energies are never written to file,
-             * since energies are only written after global_stat
-             * has been called.
-             */
-            if (step >= nlh.step_nscheck)
-            {
-                nlh.nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,
-                                                     nlh.scale_tot,state->x);
-            }
-            else
-            {
-                /* This is not necessarily true,
-                 * but step_nscheck is determined quite conservatively.
-                 */
-                nlh.nabnsb = 0;
-            }
-        }
-        
         /* The coordinates (x) were unshifted in update */
         if (bFFscan && (shellfc==NULL || bConverged))
         {
