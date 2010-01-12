@@ -135,7 +135,7 @@ int main(int argc,char *argv[])
     oldx = x;
       
   }
-  fclose(fp);
+  ffclose(fp);
   
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
 

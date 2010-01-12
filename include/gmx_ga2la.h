@@ -40,6 +40,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     int  la;
     int  cell;
@@ -101,7 +105,7 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
      * Method 1 is faster for low parallelization, 2 for high parallelization.
      * We switch to method 2 when it uses less than half the memory method 1.
      */
-    ga2la->bAll = (9*nat_loc >= nat_tot);
+    ga2la->bAll = (nat_tot < 1024 || 9*nat_loc >= nat_tot);
     if (ga2la->bAll)
     {
         ga2la->nalloc = nat_tot;
@@ -318,5 +322,9 @@ static bool ga2la_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 
     return FALSE;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _gmx_ga2la_h */

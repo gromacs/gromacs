@@ -1433,23 +1433,37 @@ void dd_collect_vec(gmx_domdec_t *dd,
 void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local,t_state *state)
 {
-    int est,i;
-    
+    int est,i,j,ngtcp,nh;
+
+    ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */    
+    nh = state->nnhchains;
+
     if (DDMASTER(dd))
     {
         state->lambda = state_local->lambda;
+        state->veta = state_local->veta;
+        state->vol0 = state_local->vol0;
         copy_mat(state_local->box,state->box);
         copy_mat(state_local->boxv,state->boxv);
+        copy_mat(state_local->vir_prev,state->vir_prev);
         copy_mat(state_local->pres_prev,state->pres_prev);
-        for(i=0; i<state_local->ngtc; i++)
+
+        for(i=0; i<ngtcp; i++)
         {
-            state->nosehoover_xi[i]  = state_local->nosehoover_xi[i];
-            state->therm_integral[i] = state_local->therm_integral[i];
+            for(j=0; j<nh; j++) {
+                state->nosehoover_xi[i*nh+j]        = state_local->nosehoover_xi[i*nh+j];
+                state->nosehoover_vxi[i*nh+j]       = state_local->nosehoover_vxi[i*nh+j];
+            }
+
+        }
+        for(i=0; i<state_local->ngtc; i++) 
+        {
+            state->therm_integral[i] = state_local->therm_integral[i];            
         }
     }
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state_local->flags & (1<<est))
+        if (EST_DISTR(est) && state_local->flags & (1<<est))
         {
             switch (est) {
             case estX:
@@ -1529,9 +1543,9 @@ static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
 
     state->nalloc = over_alloc_dd(nalloc);
     
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state->flags & (1<<est))
+        if (EST_DISTR(est) && state->flags & (1<<est))
         {
             switch(est) {
             case estX:
@@ -1674,34 +1688,48 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
                                 t_state *state,t_state *state_local,
                                 rvec **f)
 {
-    int  i;
+    int  i,j,ngtch,ngtcp,nh;
     
+    ngtcp = state->ngtc+1; /* need an extra state for barostat */
+    nh = state->nnhchains;
+
     if (DDMASTER(dd))
     {
         state_local->lambda = state->lambda;
+        state_local->veta   = state->veta;
+        state_local->vol0   = state->vol0;
         copy_mat(state->box,state_local->box);
         copy_mat(state->box_rel,state_local->box_rel);
         copy_mat(state->boxv,state_local->boxv);
+        for(i=0; i<ngtcp; i++)
+        {
+            for(j=0; j<nh; j++) {
+                state_local->nosehoover_xi[i*nh+j]        = state->nosehoover_xi[i*nh+j];
+                state_local->nosehoover_vxi[i*nh+j]       = state->nosehoover_vxi[i*nh+j];
+            }
+        }
         for(i=0; i<state_local->ngtc; i++)
         {
-            state_local->nosehoover_xi[i]  = state->nosehoover_xi[i];
             state_local->therm_integral[i] = state->therm_integral[i];
         }
     }
     dd_bcast(dd,sizeof(real),&state_local->lambda);
+    dd_bcast(dd,sizeof(real),&state_local->veta);
+    dd_bcast(dd,sizeof(real),&state_local->vol0);
     dd_bcast(dd,sizeof(state_local->box),state_local->box);
     dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
-    dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->nosehoover_xi);
-    dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->therm_integral);
+    dd_bcast(dd,((ngtcp*nh)*sizeof(double)),state_local->nosehoover_xi);
+    dd_bcast(dd,((ngtcp*nh)*sizeof(double)),state_local->nosehoover_vxi);
+    dd_bcast(dd,state_local->ngtc*sizeof(double),state_local->therm_integral);
 
     if (dd->nat_home > state_local->nalloc)
     {
         dd_realloc_state(state_local,f,dd->nat_home);
     }
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        if (state_local->flags & (1<<i))
+        if (EST_DISTR(i) && state_local->flags & (1<<i))
         {
             switch (i) {
             case estX:
@@ -4044,9 +4072,9 @@ static void rotate_state_atom(t_state *state,int a)
 {
     int est;
 
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state->flags & (1<<est)) {
+        if (EST_DISTR(est) && state->flags & (1<<est)) {
             switch (est) {
             case estX:
                 /* Rotate the complete state; for a rectangular box only */
@@ -4111,24 +4139,27 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     comm  = dd->comm;
     cg_cm = fr->cg_cm;
     
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        switch (i)
+        if (EST_DISTR(i))
         {
-        case estX:   /* Always present */            break;
-        case estV:   bV   = (state->flags & (1<<i)); break;
-        case estSDX: bSDX = (state->flags & (1<<i)); break;
-        case estCGP: bCGP = (state->flags & (1<<i)); break;
-        case estLD_RNG:
-        case estLD_RNGI:
-        case estDISRE_INITF:
-        case estDISRE_RM3TAV:
-        case estORIRE_INITF:
-        case estORIRE_DTAV:
-            /* No processing required */
-            break;
-        default:
+            switch (i)
+            {
+            case estX:   /* Always present */            break;
+            case estV:   bV   = (state->flags & (1<<i)); break;
+            case estSDX: bSDX = (state->flags & (1<<i)); break;
+            case estCGP: bCGP = (state->flags & (1<<i)); break;
+            case estLD_RNG:
+            case estLD_RNGI:
+            case estDISRE_INITF:
+            case estDISRE_RM3TAV:
+            case estORIRE_INITF:
+            case estORIRE_DTAV:
+                /* No processing required */
+                break;
+            default:
             gmx_incons("Unknown state entry encountered in dd_redistribute_cg");
+            }
         }
     }
     
@@ -6043,6 +6074,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     comm->nstDDDump     = dd_nst_env(fplog,"GMX_DD_DUMP",0);
     comm->nstDDDumpGrid = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
     comm->DD_debug      = dd_nst_env(fplog,"GMX_DD_DEBUG",0);
+
+    dd->pme_recv_f_alloc = 0;
+    dd->pme_recv_f_buf = NULL;
 
     if (dd->bSendRecv2 && fplog)
     {

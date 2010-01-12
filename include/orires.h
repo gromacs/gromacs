@@ -40,12 +40,12 @@
 #include <config.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "sysstuff.h"
 #include "typedefs.h"
+
+#ifdef __cplusplus
+    extern "C" {
+#endif
 
 extern void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
 			rvec x[],

@@ -40,10 +40,14 @@
 #include <config.h>
 #endif
 
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "tpxio.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #define LINE_WIDTH	80
 #define RMARGIN		10
@@ -94,5 +98,9 @@ void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
  */
 
 void pr_commrec(FILE *fp,int indent,t_commrec *cr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _txtdump_h */

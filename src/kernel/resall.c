@@ -81,7 +81,7 @@ gpp_atomtype_t read_atype(const char *adb,t_symtab *tab)
       fprintf(stderr,"\rAtomtype %d",nratt+1);
     }
   }
-  fclose(in);
+  ffclose(in);
   fprintf(stderr,"\n");
   
   return at;
@@ -364,7 +364,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
     nrtp++;
     fprintf(stderr,"\rResidue %d",nrtp);
   }
-  fclose(in);
+  ffclose(in);
   /* give back unused memory */
   srenew(rrtp,nrtp);
   

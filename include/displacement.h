@@ -48,46 +48,46 @@ extern "C"
 {
 #endif
 
-//! Data structure for displacement calculation.
+/** Data structure for displacement calculation. */
 typedef struct gmx_ana_displ_t gmx_ana_displ_t;
 
 struct gmx_ana_pos_t;
 
-//! Allocates memory for displacement calculation.
+/** Allocates memory for displacement calculation. */
 extern int
 gmx_ana_displ_create(gmx_ana_displ_t **d, int nmax, real tmax);
-//! Initializes displacement calculation for a frame.
+/** Initializes displacement calculation for a frame. */
 extern int
 gmx_ana_displ_start_frame(gmx_ana_displ_t *d, real t);
-//! Returns the number of steps corresponding to a given time interval.
+/** Returns the number of steps corresponding to a given time interval. */
 extern int
 gmx_ana_displ_time_to_steps(gmx_ana_displ_t *d, real time, int *nsteps);
-//! Stores the position of a particle for displacement calculation.
+/** Stores the position of a particle for displacement calculation. */
 extern int
 gmx_ana_displ_store(gmx_ana_displ_t *d, atom_id id, rvec x, bool bPres);
-//! Convenience function for storing an array of particle positions for displacement calculation.
+/** Convenience function for storing an array of particle positions for displacement calculation. */
 extern int
 gmx_ana_displ_store_array(gmx_ana_displ_t *d, int n, atom_id id[], rvec x[]);
-//! Stores an array of particle positions for displacement calculation, including unselected particles.
+/** Stores an array of particle positions for displacement calculation, including unselected particles. */
 extern int
 gmx_ana_displ_store_all(gmx_ana_displ_t *d, atom_id id[], rvec x[]);
-//! Convenience function for storing a set of positions from \c gmx_ana_pos_t.
+/** Convenience function for storing a set of positions from \c gmx_ana_pos_t. */
 extern int
 gmx_ana_displ_store_pos(gmx_ana_displ_t *d, struct gmx_ana_pos_t *p);
-//! Calculates the displacement vector for a particle.
+/** Calculates the displacement vector for a particle. */
 extern int
 gmx_ana_displ_vector(gmx_ana_displ_t *d, int step, t_pbc *pbc,
                      atom_id id, rvec x, rvec xout, bool *pout);
-//! Calculates the displacement vectors for a list of particles.
+/** Calculates the displacement vectors for a list of particles. */
 extern int
 gmx_ana_displ_vectors(gmx_ana_displ_t *d, int step, t_pbc *pbc,
                       int n, atom_id id[], rvec x[],
                       rvec xout[], bool *pout);
-//! Calculates the displacement vectors for all particles, including unselected.
+/** Calculates the displacement vectors for all particles, including unselected. */
 extern int
 gmx_ana_displ_vectors_all(gmx_ana_displ_t *d, int step, t_pbc *pbc,
                           rvec x[], rvec xout[], bool *pout);
-//! Frees the memory allocated for displacement calculation.
+/** Frees the memory allocated for displacement calculation. */
 extern void
 gmx_ana_displ_free(gmx_ana_displ_t *d);
 

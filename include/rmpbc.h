@@ -40,13 +40,12 @@
 #include <config.h>
 #endif
 
+#include "typedefs.h"
+	
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-#include "typedefs.h"
-	
 extern void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],
 		   rvec x_s[]);
 /* Correct coordinates for atoms within every molecule for the periodic

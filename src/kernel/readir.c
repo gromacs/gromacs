@@ -156,7 +156,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   /* GENERAL INTEGRATOR STUFF */
-  if (ir->eI != eiMD) {
+  if (!(ir->eI == eiMD || EI_VV(ir->eI))) {
     ir->etc = etcNO;
   }
   if (!EI_DYNAMICS(ir->eI)) {
@@ -281,7 +281,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
   }
     
-  if (ir->eI == eiMD && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
+  if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
     warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
@@ -299,6 +299,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     ir->etc = etcBERENDSEN;
     warning_note("Old option for temperature coupling given: "
 		 "changing \"yes\" to \"Berendsen\"\n");
+  }
+  if (ir->opts.nnhchains < 1) 
+    {
+      sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nnhchains);
+      ir->opts.nnhchains =1;
+      warning(NULL);
+    }
+
+  if ((!EI_VV(ir->eI)) && ir->opts.nnhchains > 1) {
+    warning_note("leapfrog does not yet support Nose-Hoover chains, nnhchains reset to 1");
+    ir->opts.nnhchains = 1;
   }
 
   if (ir->etc == etcBERENDSEN) {
@@ -345,7 +356,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
     warning(NULL);
   }
-  
+
+  if (EI_VV(ir->eI)) {
+    if (ir->epc > epcNO) {
+      if (ir->epc!=epcMTTK) {
+	warning_error("NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+      }
+    }
+  }
+
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   if (ir->coulombtype == eelSWITCH) {
@@ -423,8 +442,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   if (EEL_PME(ir->coulombtype)) {
-    if ((ir->pme_order < 4) || (ir->pme_order % 2 == 1)) {
-      warning_error("pme_order should be even and at least 4");
+    if (ir->pme_order < 3) {
+      warning_error("pme_order can not be smaller than 3");
     }
   }
 
@@ -789,6 +808,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
+  ITYPE("nhchains",     ir->opts.nnhchains, NNHCHAINS);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
@@ -1580,8 +1600,7 @@ void do_index(const char* mdparin, const char *ndx,
   } else {
     grps = init_index(ndx,&gnames);
   }
-  
-  
+
   groups = &mtop->groups;
   natoms = mtop->natoms;
   symtab = &mtop->symtab;
@@ -1596,6 +1615,8 @@ void do_index(const char* mdparin, const char *ndx,
   srenew(gnames,grps->nr+1);
   gnames[restnm] = *(groups->grpname[i]);
   groups->ngrpname = grps->nr+1;
+
+  set_warning_line(mdparin,-1);
 
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
@@ -2025,7 +2046,7 @@ static bool absolute_reference(t_inputrec *ir,gmx_mtop_t *sys,ivec AbsRef)
 void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
-  int  i,m,nmol,npct;
+  int  i,m,g,nmol,npct;
   bool bCharge,bAcc;
   real gdt_max,*mgrp,mt;
   rvec acc;
@@ -2125,13 +2146,30 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
     gmx_fatal(FARGS,"Soft-core interactions are only supported with VdW repulsion power 12");
   }
 
-  if (ir->ePull != epullNO && ir->pull->grp[0].nat == 0) {
-    absolute_reference(ir,sys,AbsRef);
-    for(m=0; m<DIM; m++) {
-      if (ir->pull->dim[m] && !AbsRef[m]) {
-	set_warning_line(mdparin,-1);
-	warning("You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
-	break;
+  if (ir->ePull != epullNO) {
+    if (ir->pull->grp[0].nat == 0) {
+      absolute_reference(ir,sys,AbsRef);
+      for(m=0; m<DIM; m++) {
+	if (ir->pull->dim[m] && !AbsRef[m]) {
+	  set_warning_line(mdparin,-1);
+	  warning("You are using an absolute reference for pulling, but the rest of the system does not have an absolute reference. This will lead to artifacts.");
+	  break;
+	}
+      }
+    }
+
+    if (ir->pull->eGeom == epullgDIRPBC) {
+      for(i=0; i<3; i++) {
+	for(m=0; m<=i; m++) {
+	  if ((ir->epc != epcNO && ir->compress[i][m] != 0) ||
+	      ir->deform[i][m] != 0) {
+	    for(g=1; g<ir->pull->ngrp; g++) {
+	      if (ir->pull->grp[g].vec[m] != 0) {
+		gmx_fatal(FARGS,"Can not have dynamic box while using pull geometry '%s' (dim %c)",EPULLGEOM(ir->pull->eGeom),'x'+m);
+	      }
+	    }
+	  }
+	}
       }
     }
   }

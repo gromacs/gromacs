@@ -111,13 +111,13 @@ void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
     {
         od->Dtav = od->Dins;
         od->edt  = 0.0;
-        od->edt1 = 1.0;
+        od->edt_1= 1.0;
     }
     else
     {
         snew(od->Dtav,od->nr);
         od->edt  = exp(-ir->delta_t/ir->orires_tau);
-        od->edt1 = 1.0 - od->edt;
+        od->edt_1= 1.0 - od->edt;
 
         /* Extend the state with the orires history */
         state->flags |= (1<<estORIRE_INITF);
@@ -328,7 +328,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
                      t_fcdata *fcd,history_t *hist)
 {
     int          fa,d,i,j,type,ex,nref;
-    real         edt,edt1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
+    real         edt,edt_1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
     tensor       *S,R,TMP;
     rvec5        *Dinsl,*Dins,*Dtav,*rhs;
     real         *mref,***T;
@@ -348,7 +348,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     
     bTAV = (od->edt != 0);
     edt  = od->edt;
-    edt1 = od->edt1;
+    edt_1= od->edt_1;
     S    = od->S;
     Dinsl= od->Dinsl;
     Dins = od->Dins;
@@ -475,7 +475,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
              */
             for(i=0; i<5; i++)
             {
-                Dtav[d][i] = edt*hist->orire_Dtav[d*5+i] + edt1*Dins[d][i];
+                Dtav[d][i] = edt*hist->orire_Dtav[d*5+i] + edt_1*Dins[d][i];
             }
         }
         

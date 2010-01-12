@@ -38,6 +38,11 @@
 
 #include "gmx_fatal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
 
 typedef struct {
@@ -55,4 +60,8 @@ typedef struct {
 
 
 #define SHIFT_IVEC(g,i) ((g)->ishift[(i)-(g)->start])
+
+#ifdef __cplusplus
+}
+#endif
 

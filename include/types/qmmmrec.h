@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int           nrQMatoms;      /* total nr of QM atoms              */
   rvec          *xQM;           /* shifted to center of box          */  
@@ -98,4 +102,6 @@ typedef struct {
   t_MMrec       *mm;        /* there can only be one MM subsystem !   */
 } t_QMMMrec;
 
-
+#ifdef __cplusplus
+}
+#endif

@@ -117,6 +117,23 @@ extern "C"
  * Cannot be combined with \ref POS_VALUE or \ref GROUP_VALUE parameters.
  */
 #define SPAR_ATOMVAL  32
+/*! \brief
+ * If set, the parameter takes one of a set of predefined strings.
+ *
+ * Can only be specified for a \ref STR_VALUE parameter that takes a single
+ * string.
+ * The data pointer in \c gmx_ana_selparam_t::val should be initialized into an
+ * array of strings such that the first and last elements are NULL, and the
+ * rest give the possible values. For optional values, the second element in
+ * the array should give the default value. The string given by the user is
+ * matched against the beginnings of the given strings, and if a unique match
+ * is found, the first pointer in the array will be initialized to point to
+ * the matching string.
+ * The data pointer can be initialized as a static array; duplication of the
+ * array for multiple instances of the same method is automatically taken care
+ * of.
+ */
+#define SPAR_ENUMVAL  128
 /*@}*/
 
 /*! \brief
@@ -124,7 +141,7 @@ extern "C"
  */
 typedef struct gmx_ana_selparam_t
 {
-    /*! Name of the parameter.*/
+    /** Name of the parameter. */
     const char         *name;
     /*! \brief
      * The parameter value.
@@ -167,7 +184,7 @@ typedef struct gmx_ana_selparam_t
     int                 flags;
 } gmx_ana_selparam_t;
 
-/*! Finds a parameter from an array by name.*/
+/** Finds a parameter from an array by name. */
 extern gmx_ana_selparam_t *
 gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param);
 

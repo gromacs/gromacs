@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
   eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
@@ -104,3 +108,9 @@ typedef struct {
 
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
+
+#ifdef __cplusplus
+}
+#endif
+
+

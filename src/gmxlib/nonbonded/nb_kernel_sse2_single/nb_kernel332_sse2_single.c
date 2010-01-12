@@ -701,6 +701,8 @@ void nb_kernel332_sse2_single(
     *inneriter       = ninner;         
 }
 
+#else
+int nb_kernel332_sse2_single_dummy;
 #endif
 
 

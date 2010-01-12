@@ -44,63 +44,66 @@
 #include <position.h>
 #include <selmethod.h>
 
+#include "keywords.h"
+#include "selelem.h"
+
 /*! \internal \brief
  * Data structure for position keyword evaluation.
  */
 typedef struct
 {
-    /*! Position calculation collection to use.*/
+    /** Position calculation collection to use. */
     gmx_ana_poscalc_coll_t *pcc;
-    /*! Index group for which the center should be evaluated.*/
+    /** Index group for which the center should be evaluated. */
     gmx_ana_index_t    g;
-    /*! Position evaluation data structure.*/
+    /** Position evaluation data structure. */
     gmx_ana_poscalc_t *pc;
-    /*! TRUE if periodic boundary conditions should be used.*/
+    /** TRUE if periodic boundary conditions should be used. */
     bool               bPBC;
-    /*! Type of positions to calculate.*/
+    /** Type of positions to calculate. */
     char              *type;
-    /*! Flags for the position calculation.*/
+    /** Flags for the position calculation. */
     int                flags;
 } t_methoddata_pos;
 
-/*! Allocates data for position evaluation selection methods.*/
+/** Allocates data for position evaluation selection methods. */
 static void *
 init_data_pos(int npar, gmx_ana_selparam_t *param);
-/*! Sets the position calculation collection for position evaluation selection methods.*/
+/** Sets the position calculation collection for position evaluation selection methods. */
 static void
 set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data);
-/*! Initializes position evaluation keywords.*/
+/** Initializes position evaluation keywords. */
 static int
 init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Initializes the \p cog selection method.*/
+/** Initializes the \p cog selection method. */
 static int
 init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Initializes the \p cog selection method.*/
+/** Initializes the \p cog selection method. */
 static int
 init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
-/*! Initializes output for position evaluation selection methods.*/
+/** Initializes output for position evaluation selection methods. */
 static int
 init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data);
-/*! Frees the data allocated for position evaluation selection methods.*/
+/** Frees the data allocated for position evaluation selection methods. */
 static void
 free_data_pos(void *data);
-/*! Evaluates position evaluation selection methods.*/
+/** Evaluates position evaluation selection methods. */
 static int
 evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
-/*! Parameters for position keyword evaluation.*/
+/** Parameters for position keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_pos[] = {
     {NULL,   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
-/*! Parameters for the \p cog and \p com selection methods.*/
+/** Parameters for the \p cog and \p com selection methods. */
 static gmx_ana_selparam_t smparams_com[] = {
     {"of",   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
     {"pbc",  {NO_VALUE,    0, {NULL}}, NULL, 0},
 };
 
-/*! \internal Selection method data for position keyword evaluation.*/
+/** \internal Selection method data for position keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_pos = {
     "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL,
     asize(smparams_keyword_pos), smparams_keyword_pos,
@@ -112,9 +115,10 @@ gmx_ana_selmethod_t sm_keyword_pos = {
      NULL,
     &evaluate_pos,
      NULL,
+    {NULL, 0, NULL},
 };
 
-/*! \internal Selection method data for the \p cog method.*/
+/** \internal Selection method data for the \p cog method. */
 gmx_ana_selmethod_t sm_cog = {
     "cog", POS_VALUE, SMETH_DYNAMIC | SMETH_SINGLEVAL,
     asize(smparams_com), smparams_com,
@@ -126,9 +130,10 @@ gmx_ana_selmethod_t sm_cog = {
      NULL,
     &evaluate_pos,
      NULL,
+    {"cog of ATOM_EXPR [pbc]", 0, NULL},
 };
 
-/*! \internal Selection method data for the \p com method.*/
+/** \internal Selection method data for the \p com method. */
 gmx_ana_selmethod_t sm_com = {
     "com", POS_VALUE, SMETH_REQTOP | SMETH_DYNAMIC | SMETH_SINGLEVAL,
     asize(smparams_com), smparams_com,
@@ -140,6 +145,7 @@ gmx_ana_selmethod_t sm_com = {
      NULL,
     &evaluate_pos,
      NULL,
+    {"com of ATOM_EXPR [pbc]", 0, NULL},
 };
 
 /*!
@@ -167,7 +173,7 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
     data->pc       = NULL;
     data->bPBC     = FALSE;
     data->type     = NULL;
-    data->flags    = 0;
+    data->flags    = -1;
     return data;
 }
 
@@ -182,24 +188,56 @@ set_poscoll_pos(gmx_ana_poscalc_coll_t *pcc, void *data)
 }
 
 /*!
+ * \param[in,out] sel   Selection element to initialize.
  * \param[in]     type  One of the enum values acceptable for
  *   gmx_ana_poscalc_type_from_enum().
- * \param[in]     flags Default completion flags
- *   (see gmx_ana_poscalc_type_from_enum()).
- * \param[in,out] data  Should point to \c t_methoddata_pos.
  *
  * Initializes the reference position type for position evaluation.
  * If called multiple times, the first setting takes effect, and later calls
  * are neglected.
  */
 void
-_gmx_selelem_set_kwpos_type(const char *type, int flags, void *data)
+_gmx_selelem_set_kwpos_type(t_selelem *sel, const char *type)
 {
-    t_methoddata_pos *d = (t_methoddata_pos *)data;
+    t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
 
+    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
+        || sel->u.expr.method->name != sm_keyword_pos.name)
+    {
+        return;
+    }
     if (!d->type && type)
     {
         d->type  = strdup(type);
+        /* FIXME: It would be better not to have the string here hardcoded. */
+        if (type[0] != 'a')
+        {
+            sel->u.expr.method->flags |= SMETH_REQTOP;
+        }
+    }
+}
+
+/*!
+ * \param[in,out] sel   Selection element to initialize.
+ * \param[in]     flags Default completion flags
+ *   (see gmx_ana_poscalc_type_from_enum()).
+ *
+ * Initializes the flags for position evaluation.
+ * If called multiple times, the first setting takes effect, and later calls
+ * are neglected.
+ */
+void
+_gmx_selelem_set_kwpos_flags(t_selelem *sel, int flags)
+{
+    t_methoddata_pos *d = (t_methoddata_pos *)sel->u.expr.mdata;
+
+    if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
+        || sel->u.expr.method->name != sm_keyword_pos.name)
+    {
+        return;
+    }
+    if (d->flags == -1)
+    {
         d->flags = flags;
     }
 }
@@ -298,7 +336,7 @@ init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     gmx_ana_poscalc_init_pos(d->pc, out->u.p);
-    out->u.p->g = &d->g;
+    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
     return 0;
 }
 
@@ -331,6 +369,6 @@ evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
-    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr->x, pbc);
+    gmx_ana_poscalc_update(d->pc, out->u.p, &d->g, fr, pbc);
     return 0;
 }

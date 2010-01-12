@@ -2228,14 +2228,18 @@ static void decouple_atoms(t_atoms *atoms,int atomtype_decouple,
   int i;
 
   for(i=0; i<atoms->nr; i++) {
-    if (couple_lam0 != ecouplamVDWQ)
+    if (couple_lam0 == ecouplamNONE || couple_lam0 == ecouplamVDW) {
       atoms->atom[i].q     = 0.0;
-    if (couple_lam0 == ecouplamNONE)
+    }
+    if (couple_lam0 == ecouplamNONE || couple_lam0 == ecouplamQ) {
       atoms->atom[i].type  = atomtype_decouple;
-    if (couple_lam1 != ecouplamVDWQ)
+    }
+    if (couple_lam1 == ecouplamNONE || couple_lam1 == ecouplamVDW) {
       atoms->atom[i].qB    = 0.0;
-    if (couple_lam1 == ecouplamNONE)
+    }
+    if (couple_lam1 == ecouplamNONE || couple_lam1 == ecouplamQ) {
       atoms->atom[i].typeB = atomtype_decouple;
+    }
   }
 }
 

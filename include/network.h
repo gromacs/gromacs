@@ -58,6 +58,10 @@
 #include "main.h"
 #include "gmx_fatal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int gmx_setup(int *argc,char **argv,int *nnodes);
 /* Initializes the parallel communication, return the ID of the node */
 
@@ -134,5 +138,10 @@ if (bDebugMode()) fprintf(fp,"NODEID=%d, %s  %d\n",gmx_mpi_initialized() ? gmx_n
 #else
 #define debug_gmx()
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif	/* _network_h */

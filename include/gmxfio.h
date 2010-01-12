@@ -91,6 +91,15 @@ int gmx_fio_close(int fp);
  * Returns 0 on success.
  */
 
+int gmx_fio_fp_close(int fp);
+/* Close the file corresponding to fp without closing the FIO entry
+ * Needed e.g. for trxio because the FIO entries are used to store 
+ * additional data.
+ * NOTE that the fp still needs to be properly closed with gmx_fio_close().
+ * The routine will exit when an invalid fio is handled.
+ * Returns 0 on success.
+ */
+
 void gmx_fio_select(int fp);
 /* This routine sets the global variables do_read and do_write
  * to point to the correct routines for fp.
@@ -134,7 +143,7 @@ int gmx_fio_flush(int fio);
 extern off_t gmx_fio_ftell(int fio);
 /* Return file position if possible */
 
-extern void gmx_fio_seek(int fio,off_t fpos);
+extern int gmx_fio_seek(int fio,off_t fpos);
 /* Set file position if possible, quit otherwise */
 
 extern FILE *gmx_fio_getfp(int fio);
@@ -160,7 +169,9 @@ int gmx_fio_fclose(FILE *fp);
 typedef struct
 {
 	char      filename[STRLEN];
-	off_t     offset;    
+	off_t     offset; 
+	unsigned char chksum[16];
+	int       chksum_size;
 } 
 gmx_file_position_t;
 
@@ -183,6 +194,8 @@ gmx_fio_check_file_position(int fio);
 int
 gmx_fio_get_output_file_positions (gmx_file_position_t ** outputfiles,
                                    int *nfiles );
+
+int gmx_fio_get_file_md5(int fio, off_t offset,  unsigned char digest[]);
 
 
 extern int xtc_seek_frame(int frame, int fio, int natoms);

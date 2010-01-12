@@ -36,8 +36,9 @@
 #include <config.h>
 #endif
 
-
+#ifdef GMX_THREADS
 #include <thread_mpi.h>
+#endif
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -157,7 +158,7 @@ static void pukeit(const char *db,const char *defstring, char *retstring,
   if (be_cool() && ((fp = low_libopen(db,FALSE)) != NULL)) {
     nhlp=fget_lines(fp,&help);
     /* for libraries we can use the low-level close routines */
-    fclose(fp);
+    ffclose(fp);
     seed=time(NULL);
     *cqnum=nhlp*rando(&seed);
     if (strlen(help[*cqnum]) >= STRLEN)

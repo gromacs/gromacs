@@ -36,6 +36,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of
  * the diagonal of the box to within the maximum cut-off distance.
@@ -43,6 +47,7 @@
 #define MAX_NTRICVEC 12
 
 typedef struct {
+  int    ndim_ePBC;
   int    ePBCDX;
   int    dim;
   matrix box;
@@ -56,3 +61,8 @@ typedef struct {
   ivec   tric_shift[MAX_NTRICVEC];
   rvec   tric_vec[MAX_NTRICVEC];
 } t_pbc;
+
+#ifdef __cplusplus
+}
+#endif
+

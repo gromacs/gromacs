@@ -62,6 +62,8 @@
 #include "gstat.h"
 #include "matio.h"
 #include "mtop_util.h"
+#include "gmx_ana.h"
+
 
 static void clust_size(const char *ndx,const char *trx,const char *xpm,
 		       const char *xpmw,const char *ncl,const char *acl, 
@@ -274,12 +276,12 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
     nframe++;
   } while (read_next_frame(oenv,status,&fr));
   close_trx(status);
-  fclose(fp);
-  fclose(gp);
-  fclose(hp);
-  fclose(tp);
+  ffclose(fp);
+  ffclose(gp);
+  ffclose(hp);
+  ffclose(tp);
   if (max_clust_ind >= 0) {
-    fp = fopen(mcn,"w");
+    fp = ffopen(mcn,"w");
     fprintf(fp,"[ max_clust ]\n");
     for(i=0; (i<nindex); i++) 
       if (clust_index[i] == max_clust_ind) {
@@ -291,8 +293,24 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
 	  fprintf(fp,"%d\n",index[i]+1);
 	}
       }
-    fclose(fp);
+    ffclose(fp);
   }
+  
+  /* Print the real distribution cluster-size/numer, averaged over the trajectory. */
+  fp = xvgropen(histo,"Cluster size distribution","Cluster size","()",oenv);
+  nhisto = 0;
+  fprintf(fp,"%5d  %8.3f\n",0,0.0);
+  for(j=0; (j<max_size); j++) {
+    real nelem = 0;
+    for(i=0; (i<n_x); i++)
+      nelem += cs_dist[i][j];
+    fprintf(fp,"%5d  %8.3f\n",j+1,nelem/n_x);
+    nhisto += (int)((j+1)*nelem/n_x);
+  }
+  fprintf(fp,"%5d  %8.3f\n",j+1,0.0);
+  ffclose(fp);
+
+  fprintf(stderr,"Total number of atoms in clusters =  %d\n",nhisto);
   
   /* Look for the smallest entry that is not zero 
    * This will make that zero is white, and not zero is coloured.
@@ -311,11 +329,14 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   write_xpm3(fp,0,"Cluster size distribution","# clusters",timebuf,"Size",
 	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
-  fclose(fp);
+  ffclose(fp);
+  cmid = 100.0;
   cmax = 0.0;
   for(i=0; (i<n_x); i++)
     for(j=0; (j<max_size); j++) {
       cs_dist[i][j] *= (j+1);
+      if ((cs_dist[i][j] > 0) && (cs_dist[i][j] < cmid))
+	cmid = cs_dist[i][j];
       cmax = max(cs_dist[i][j],cmax);
     }
   fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
@@ -323,23 +344,8 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   write_xpm3(fp,0,"Weighted cluster size distribution","Fraction",timebuf,
              "Size", n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
-  fclose(fp);
+  ffclose(fp);
 
-  fp = xvgropen(histo,"Cluster size distribution","Cluster size","()",oenv);
-  nhisto = 0;
-  fprintf(fp,"%5d  %8.3f\n",0,0.0);
-  for(j=0; (j<max_size); j++) {
-    real nelem = 0;
-    for(i=0; (i<n_x); i++)
-      nelem += cs_dist[i][j];
-    fprintf(fp,"%5d  %8.3f\n",j+1,nelem/n_x);
-    nhisto += (int)((j+1)*nelem/n_x);
-  }
-  fprintf(fp,"%5d  %8.3f\n",j+1,0.0);
-  fclose(fp);
-
-  fprintf(stderr,"Total number of atoms in clusters =  %d\n",nhisto);
-  
   sfree(clust_index);
   sfree(clust_size);
   sfree(index);

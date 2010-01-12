@@ -38,7 +38,9 @@
 #endif
 
 /* This file is completely threadsafe - please keep it that way! */
+#ifdef GMX_THREADS
 #include <thread_mpi.h>
+#endif
 
 
 #include <stdio.h>
@@ -375,7 +377,7 @@ static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->ref_t[i]);
   fprintf(out,"\n");
-  
+
   pr_indent(out,indent);
   fprintf(out,"tau_t%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)

@@ -43,6 +43,10 @@
 #include "typedefs.h"
 #include "network.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 			  gmx_ekindata_t *ekind);
 /* Allocate memory and set the grpnr array. */
@@ -58,9 +62,8 @@ extern void accumulate_u(t_commrec *cr,t_grpopts *opts,
  * and sum them up. Return them in grps.
  */
 
-extern real sum_ekin(bool bFirstStep,
-		     t_grpopts *opts,gmx_ekindata_t *ekind,tensor ekin,
-		     real *dekindlambda);
+extern real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind, real *dekindlambda, 
+		     bool bEkinFullStep,bool bSaveEkinOld, bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
@@ -71,5 +74,9 @@ extern void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _tgroup_h */

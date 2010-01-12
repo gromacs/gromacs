@@ -51,8 +51,10 @@
 #include "physics.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
+#include "gmx_ana.h"
 
 typedef struct {
+    char   *filename;
     int    nset;
     int    np;
     int    begin;
@@ -61,6 +63,25 @@ typedef struct {
     double *t;
     double **y;
 } barsim_t;
+
+/* calculated values */
+typedef struct {
+    barsim_t *a, *b; /* the simulation data */
+
+    double lambda_a, lambda_b; /* the lambda values at a and b */
+
+    double dg; /* the free energy difference */
+    double dg_err; /* the free energy difference */
+
+    double sa; /* relative entropy of b in state a */
+    double sa_err; /* error in sa */
+    double sb; /* relative entropy of a in state b */
+    double sb_err; /* error in sb */
+
+    double dg_var; /* expected dg variance per sample */
+    double dg_var_err; /* error in dg_var */
+} barres_t;
+
 
 static double calc_bar_sum(int n,double *W,double beta_Wfac,double sbMmDG)
 {
@@ -71,7 +92,7 @@ static double calc_bar_sum(int n,double *W,double beta_Wfac,double sbMmDG)
     
     for(i=0; i<n; i++)
     {
-        sum += 1/(1 + exp(beta_Wfac*W[i] + sbMmDG));
+        sum += 1./(1. + exp(beta_Wfac*W[i] + sbMmDG));
     }
     
     return sum;
@@ -103,6 +124,8 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
         Wfac2 = -delta_lambda;
     }
 
+    /* calculate minimum and maximum work to give an initial estimate of 
+       delta G  as their average */
     Wmin = W1[0];
     Wmax = W1[0];
     for(i=0; i<n1; i++)
@@ -126,6 +149,9 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
     while (DG2 - DG0 > 2*prec)
     {
         DG1 = 0.5*(DG0 + DG2);
+
+        /*printf("Wfac1=%g, Wfac2=%g, beta=%g, DG1=%g\n",Wfac1,Wfac2,beta,
+          DG1);*/
         dDG1 =
             calc_bar_sum(n1,W1,beta*Wfac1, beta*(M-DG1)) -
             calc_bar_sum(n2,W2,beta*Wfac2,-beta*(M-DG1));
@@ -146,6 +172,95 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
     
     return 0.5*(DG0 + DG2);
 }
+
+static void calc_rel_entropy(int n1,double *W1,int n2,double *W2,
+                             double delta_lambda, double temp, 
+                             double dg, double *sa, double *sb)
+{
+    int i;
+    double W_ab=0.;
+    double W_ba=0.;
+    double kT, beta;
+    double Wfac1, Wfac2;
+
+    kT   = BOLTZ*temp;
+    beta = 1/kT;
+
+    /* to ensure the work values are the same as during the delta_G */
+    if (delta_lambda == 0)
+    {
+        Wfac1 = 1;
+        Wfac2 = 1;
+    }
+    else
+    {
+        Wfac1 =  delta_lambda;
+        Wfac2 =  -delta_lambda;
+    }
+
+    /* first calculate the average work in both directions */
+    for(i=0;i<n1;i++)
+    {
+        W_ab += Wfac1*W1[i];
+    }
+    W_ab/=n1;
+    for(i=0;i<n2;i++)
+    {
+        W_ba += Wfac2*W2[i]; 
+    }
+    W_ba/=n2;
+   
+    /* then calculate the relative entropies */
+    *sa = beta*(W_ab - dg);
+    *sb = beta*(W_ba + dg);
+}
+
+static void calc_dg_variance(int n1, double *W1, int n2, double *W2, 
+                             double delta_lambda, double temp, 
+                             double dg, double *var)
+{
+    int i;
+    double M;
+    double sigmafact=0.;
+    double kT, beta;
+    double Wfac1, Wfac2;
+
+    kT   = BOLTZ*temp;
+    beta = 1/kT;
+
+    /* to ensure the work values are the same as during the delta_G */
+    if (delta_lambda == 0)
+    {
+        Wfac1 = 1;
+        Wfac2 = 1;
+    }
+    else
+    {
+        Wfac1 =  delta_lambda;
+        Wfac2 =  -delta_lambda;
+    }
+
+    M=kT*log(((double)n1)/((double)n2));
+
+    /* calculate average in both directions */
+    for(i=0;i<n1;i++)
+    {
+        sigmafact += 1./(2. + 2.*cosh(beta*(M + Wfac1*W1[i] - dg)));
+    }
+    for(i=0;i<n2;i++)
+    {
+        sigmafact += 1./(2. + 2.*cosh(beta*(M + Wfac2*W2[i] - dg)));
+    }
+    sigmafact/=(n1+n2);
+   
+    /* Eq. 10 from 
+       Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
+    *var = kT*kT*((1./sigmafact) - ( (n1+n2)/n1 + (n1+n2)/n2 ));
+}
+
+
+
+
 
 static void get_begin_end(barsim_t *ba,real begin,real end,int *b,int *e)
 {
@@ -178,13 +293,13 @@ static int get_lam_set(barsim_t *ba,double lambda)
     int i;
 
     i = 1;
-    while (i + 1 < ba->nset && ba->lambda[i] != lambda)
+    while (i < ba->nset && ba->lambda[i] != lambda)
     {
         i++;
     }
-    if (i == ba->nset)
+    if (i  == ba->nset)
     {
-        gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file of lambda = %g",lambda,ba->lambda[0]);
+        gmx_fatal(FARGS,"Could not find a set for lambda = %g in the file '%s' of lambda = %g",lambda,ba->filename,ba->lambda[0]);
     }
 
     return i;
@@ -193,10 +308,16 @@ static int get_lam_set(barsim_t *ba,double lambda)
 static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                      real temp,double tol,
                      int npee0,int npee1,
-                     double *dg,double *sig)
+                     barres_t *br, bool calc_s, bool calc_var)
 {
     int np1,np2,s1,s2,npee,p;
-    double delta_lambda,dgp,dgs,dgs2;
+    double delta_lambda; 
+    double dg_sig, sa_sig, sb_sig, var_sig; /* intermediate variance values for 
+                                               calculated quantities */
+    br->a = ba1;
+    br->b = ba2;
+    br->lambda_a = ba1->lambda[0];
+    br->lambda_b = ba2->lambda[0];
 
     if (bUsedhdl)
     {
@@ -216,19 +337,46 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
     np1 = ba1->end - ba1->begin;
     np2 = ba2->end - ba2->begin;
 
-    *dg = calc_bar_lowlevel(np1,ba1->y[s1]+ba1->begin,
-                            np2,ba2->y[s2]+ba2->begin,
-                            delta_lambda,temp,tol);
+    br->dg = calc_bar_lowlevel(np1,ba1->y[s1]+ba1->begin,
+                               np2,ba2->y[s2]+ba2->begin,
+                               delta_lambda,temp,tol);
 
-    *sig = 0;
+
+    if (calc_s)
+    {
+        calc_rel_entropy(np1, ba1->y[s1]+ba1->begin,
+                         np2, ba2->y[s2]+ba2->begin,
+                         delta_lambda, temp, br->dg, &(br->sa), &(br->sb));
+    }
+    if (calc_var)
+    {
+        calc_dg_variance(np1, ba1->y[s1]+ba1->begin,
+                         np2, ba2->y[s2]+ba2->begin,
+                         delta_lambda, temp, br->dg, &(br->dg_var) );
+    }
+
+
+    dg_sig = 0;
+    sa_sig = 0;
+    sb_sig = 0;
+    var_sig = 0;
     if (np1 >= npee1 && np2 >= npee1)
     {
         for(npee=npee0; npee<=npee1; npee++)
         {
-            dgs  = 0;
-            dgs2 = 0;
+            double dgs  = 0;
+            double dgs2 = 0;
+            double dsa  = 0;
+            double dsb  = 0;
+            double dsa2 = 0;
+            double dsb2 = 0;
+            double dvar = 0;
+            double dvar2= 0;
+ 
+            
             for(p=0; p<npee; p++)
             {
+                double dgp;
                 dgp = calc_bar_lowlevel(np1/npee,
                                         ba1->y[s1]+ba1->begin+p*(np1/npee),
                                         np2/npee,
@@ -236,19 +384,75 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                                         delta_lambda,temp,tol);
                 dgs  += dgp;
                 dgs2 += dgp*dgp;
+
+                if (calc_s)
+                {
+                    double sac, sbc;
+                    calc_rel_entropy(np1/npee, 
+                                     ba1->y[s1]+ba1->begin+p*(np1/npee),
+                                     np2/npee, 
+                                     ba2->y[s2]+ba2->begin+p*(np2/npee),
+                                     delta_lambda, temp, dgp, &sac, &sbc); 
+                    dsa  += sac;
+                    dsa2 += sac*sac;
+                    dsb  += sbc;
+                    dsb2 += sbc*sbc;
+                }
+                if (calc_var)
+                {
+                    double varc;
+                    calc_dg_variance(np1/npee, 
+                                     ba1->y[s1]+ba1->begin+p*(np1/npee),
+                                     np2/npee, 
+                                     ba2->y[s2]+ba2->begin+p*(np2/npee),
+                                     delta_lambda, temp, dgp, &varc );
+
+                    dvar  += varc;
+                    dvar2 += varc*varc;
+                }
+
             }
             dgs  /= npee;
             dgs2 /= npee;
-            *sig += sqrt((dgs2-dgs*dgs)/(npee-1));
+            dg_sig += sqrt((dgs2-dgs*dgs)/(npee-1));
+
+            if (calc_s)
+            {
+                dsa  /= npee;
+                dsa2 /= npee;
+                dsb  /= npee;
+                dsb2 /= npee;
+                sa_sig += sqrt((dsa2-dsa*dsa)/(npee-1));
+                sb_sig += sqrt((dsb2-dsb*dsb)/(npee-1));
+            }
+            if (calc_var)
+            {
+                dvar  /= npee;
+                dvar2 /= npee;
+                var_sig += sqrt((dvar2-dvar*dvar)/(npee-1));
+            }
         }
-        *sig /= npee1 - npee0 + 1;
+        br->dg_err = dg_sig/(npee1 - npee0 + 1);
+        if (calc_s)
+        {
+            br->sa_err = sa_sig/(npee1 - npee0 + 1);
+            br->sb_err = sb_sig/(npee1 - npee0 + 1);
+        }
+        if (calc_var)
+        {
+            br->dg_var_err = var_sig/(npee1 - npee0 + 1);
+        }
+ 
     }
 }
+
+
+
 
 static double legend2lambda(char *fn,const char *legend,bool bdhdl)
 {
     double lambda=0;
-    char   *ptr;
+    const char   *ptr;
 
     if (legend == NULL)
     {
@@ -303,9 +507,15 @@ static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
     int  i;
     char **legend,*ptr;
 
-    printf("'%s' ",fn);
+    ba->filename = fn;
+
+    printf("'%s' ",ba->filename);
 
     ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
+    if (!ba->y)
+    {
+        gmx_fatal(FARGS,"File %s contains no usable data.",fn);
+    }
     ba->t  = ba->y[0];
 
     get_begin_end(ba,begin,end,&ba->begin,&ba->end);
@@ -383,15 +593,32 @@ int gmx_bar(int argc,char *argv[])
         "The final error estimate is determined from the average variance",
         "over 4 and 5 blocks to lower the chance of an low error estimate",
         "when the differences between the block are coincidentally low",
-        "for a certain number of blocks."
+        "for a certain number of blocks.[BR]",
+        "An estimate of the expected per-sample variance (as given in ",
+        "Bennett's original BAR paper: Bennett, J. Comp. Phys. 22, p 245, ",    
+        "(1976), Eq. 10) can be obtained with the [TT]-v[tt] option. ",
+        "Note that this only gives an estimate of the quality of sampling, ",
+        "not of the actual statistical error, because it assumes independent ",
+        "samples.[BR]",
+        "As a measure of phase space overlap, the relative entropy of ",
+        "both states in each other's ensemble (i.e. the relative entropy s_ab ",
+        "of the work samples of state b in the ensemble of state a, and vice ",
+        "versa for s_ba) can be estimated using the [TT]-s[tt] option. The ",
+        "shared entropy is a positive measure of the overlap of ",
+        "the Boltzmann distributions of the two states that goes to zero ",
+        "for identical distributions. See ",
+        "Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information."
     };
     static real begin=0,end=-1,temp=298;
     static int nd=2,nb0=4,nb1=5;
+    bool calc_s,calc_v;
     t_pargs pa[] = {
         { "-b",    FALSE, etREAL, {&begin},  "Begin time for BAR" },
         { "-e",    FALSE, etREAL, {&end},    "End time for BAR" },
         { "-temp", FALSE, etREAL, {&temp},   "Temperature (K)" },
         { "-prec", FALSE, etINT,  {&nd},     "The number of digits after the decimal point" },
+        { "-s",    FALSE, etBOOL, {&calc_s}, "Calculate relative entropy"},
+        { "-v",    FALSE, etBOOL, {&calc_v}, "Calculate expected per-sample variance"},
         { "-nb0",  FALSE, etINT,  {&nb0}, "HIDDENMinimum number of blocks for error estimation" },
         { "-nb1",  FALSE, etINT,  {&nb1}, "HIDDENMaximum number of blocks for error estimation" }
     };
@@ -405,6 +632,7 @@ int gmx_bar(int argc,char *argv[])
     int      nfile,f,f2,fm,n1,nm;
     char     **fnms;
     barsim_t *ba,ba_tmp;
+    barres_t *results;
     double   prec,dg_tot,var_tot,dg,sig;
     FILE     *fp;
     char     dgformat[20],xvgformat[STRLEN],buf[STRLEN];
@@ -431,6 +659,7 @@ int gmx_bar(int argc,char *argv[])
 
 
     snew(ba,nfile);
+    snew(results,nfile-1);
     n1 = 0;
     nm = 0;
     for(f=0; f<nfile; f++)
@@ -503,26 +732,52 @@ int gmx_bar(int argc,char *argv[])
     var_tot = 0;
     for(f=0; f<nfile-1; f++)
     {
+        
         if (fp != NULL)
         {
-            fprintf(fp,xvgformat,
-                    ba[f].lambda[0],dg_tot,sqrt(var_tot));
+            fprintf(fp,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
 
-        calc_bar(&ba[f],&ba[f+1],n1>0,temp,prec,nb0,nb1,&dg,&sig);
+        calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nb0, nb1,
+                 &(results[f]), calc_s, calc_v);
 
-        printf("lambda %4.2f - %4.2f, DG ",ba[f].lambda[0],ba[f+1].lambda[0]);
-        printf(dgformat,dg);
-        printf(" err");
-        printf(dgformat,sig);
+        /*printf("lambda %4.2f - %4.2f, DG ", results[f].lambda_a,
+                                              results[f].lambda_b);*/
+        printf("lambda ");
+        printf(dgformat, results[f].lambda_a);
+        printf(" - ");
+        printf(dgformat, results[f].lambda_b);
+        printf(", DG ");
+
+        printf(dgformat,results[f].dg);
+        printf(" +/- ");
+        printf(dgformat,results[f].dg_err);
+        if (calc_s)
+        {
+            printf("   s_A "); 
+            printf(dgformat, results[f].sa);
+            printf(" +/- "); 
+            printf(dgformat, results[f].sa_err);
+            printf("  s_B "); 
+            printf(dgformat, results[f].sb);
+            printf(" +/- "); 
+            printf(dgformat, results[f].sb_err);
+        }
+        if (calc_v)
+        {
+            printf("   var est ");
+            printf(dgformat, results[f].dg_var);
+            printf(" +/- "); 
+            printf(dgformat, results[f].dg_var_err);
+        }
         printf("\n");
-        dg_tot  += dg;
-        var_tot += sig*sig;
+        dg_tot  += results[f].dg;
+        var_tot += results[f].dg_err*results[f].dg_err;
     }
     printf("\n");
     printf("total  %4.2f - %4.2f, DG ",ba[0].lambda[0],ba[nfile-1].lambda[0]);
     printf(dgformat,dg_tot);
-    printf(" err");
+    printf(" +/- ");
     printf(dgformat,sqrt(var_tot));
     printf("\n");
 
@@ -530,7 +785,7 @@ int gmx_bar(int argc,char *argv[])
     {
         fprintf(fp,xvgformat,
                 ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
-        fclose(fp);
+        ffclose(fp);
     }
 
     do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");

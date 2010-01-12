@@ -645,7 +645,7 @@ int main(int argc,char *argv[])
 	    nx,ny,nz,odist,hdist);
 	bromacs(quote,255);
     write_pdbfile(fp,quote,pdba,xx,boxje,' ',-1);
-    fclose(fp);
+    ffclose(fp);
   }
   else {
     bromacs(quote,255);

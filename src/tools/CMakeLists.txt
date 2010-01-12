@@ -19,6 +19,7 @@ add_library(gmxana
             gmx_polystat.c  gmx_potential.c gmx_rama.c      
             gmx_rdf.c       gmx_rms.c       gmx_rmsdist.c   gmx_rmsf.c      
             gmx_rotacf.c    gmx_saltbr.c    gmx_sas.c       gmx_sdf.c       
+            gmx_select.c
             gmx_sgangle.c   gmx_sorient.c   gmx_spol.c      gmx_tcaf.c      
             gmx_traj.c      gmx_velacc.c    gmx_helixorient.c 
             gmx_clustsize.c gmx_mdmat.c     gmx_wham.c      
@@ -26,7 +27,7 @@ add_library(gmxana
             gmx_trjconv.c   gmx_trjcat.c    gmx_trjorder.c  gmx_xpm2ps.c    
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
-            addconf.c       calcpot.c       edittop.c)
+            addconf.c       calcpot.c       edittop.c       gmx_bar.c)
 
 target_link_libraries(gmxana md ${GMX_EXTRA_LIBRARIES})
 
@@ -44,9 +45,9 @@ set(GMX_TOOLS_PROGRAMS
     g_dyndom g_enemat g_energy g_lie g_filter g_gyrate
     g_h2order g_hbond g_helix g_mindist g_msd g_morph g_nmeig
     g_nmens g_order g_polystat g_potential g_rama g_rdf g_rms
-    g_rmsf g_rotacf g_saltbr g_sas g_sgangle g_sham g_sorient
+    g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_sdf g_spatial g_tcaf g_traj g_tune_pme g_vanhove
-    g_velacc g_clustsize g_mdmat g_wham g_kinetics sigeps
+    g_velacc g_clustsize g_mdmat g_wham g_kinetics sigeps g_bar
     )
 
 

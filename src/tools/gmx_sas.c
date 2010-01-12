@@ -57,6 +57,9 @@
 #include "names.h"
 #include "atomprop.h"
 #include "physics.h"
+#include "tpxio.h"
+#include "gmx_ana.h"
+
 
 typedef struct {
   atom_id  aa,ab;
@@ -228,10 +231,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   gmx_atomprop_t aps=NULL;
   int          status,ndefault;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
-  rvec         *x;
-  matrix       box;
-  t_topology   *top;
+  rvec         *xtop,*x;
+  matrix       topbox,box;
+  t_topology   top;
+  char         title[STRLEN];
   int          ePBC;
+  bool         bTop;
   t_atoms      *atoms;
   bool         *bOut,*bPhobic;
   bool         bConnelly;
@@ -248,16 +253,22 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   bITP   = opt2bSet("-i",nfile,fnm);
   bResAt = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
 
-  top   = read_top(ftp2fn(efTPX,nfile,fnm),&ePBC);
-  atoms = &(top->atoms);
+  bTop = read_tps_conf(ftp2fn(efTPS,nfile,fnm),title,&top,&ePBC,
+		       &xtop,NULL,topbox,FALSE);
+  atoms = &(top.atoms);
   
-  bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
-  if (!bDGsol) 
-    fprintf(stderr,"Warning: your tpr file is too old, will not compute "
-	    "Delta G of solvation\n");
-  else {
-    printf("In case you use free energy of solvation predictions:\n");
-    please_cite(stdout,"Eisenberg86a");
+  if (!bTop) {
+    fprintf(stderr,"No tpr file, will not compute Delta G of solvation\n");
+    bDGsol = FALSE;
+  } else {
+    bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
+    if (!bDGsol) {
+      fprintf(stderr,"Warning: your tpr file is too old, will not compute "
+	      "Delta G of solvation\n");
+    } else {
+      printf("In case you use free energy of solvation predictions:\n");
+      please_cite(stdout,"Eisenberg86a");
+    }
   }
 
   aps = gmx_atomprop_init();
@@ -275,11 +286,11 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   snew(index,2);
   snew(grpname,2);
   fprintf(stderr,"Select a group for calculation of surface and a group for output:\n");
-  get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),2,nx,index,grpname);
+  get_index(atoms,ftp2fn_null(efNDX,nfile,fnm),2,nx,index,grpname);
 
   if (bFindex) {
     fprintf(stderr,"Select a group of hydrophobic atoms:\n");
-    get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nphobic,&findex,&fgrpname);
+    get_index(atoms,ftp2fn_null(efNDX,nfile,fnm),1,&nphobic,&findex,&fgrpname);
   }
   snew(bOut,natoms);
   for(i=0; i<nx[1]; i++)
@@ -302,8 +313,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   ndefault = 0;
   for(i=0; (i<natoms); i++) {
     if (!gmx_atomprop_query(aps,epropVDW,
-			    *(top->atoms.resinfo[top->atoms.atom[i].resind].name),
-			    *(top->atoms.atomname[i]),&radius[i]))
+			    *(atoms->resinfo[atoms->atom[i].resind].name),
+			    *(atoms->atomname[i]),&radius[i]))
       ndefault++;
     /* radius[i] = calc_radius(*(top->atoms.atomname[i])); */
     radius[i] += solsize;
@@ -357,6 +368,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   xvgr_legend(fp,asize(flegend) - (bDGsol ? 0 : 1),flegend,oenv);
   vfile = opt2fn_null("-tv",nfile,fnm);
   if (vfile) {
+    if (!bTop) {
+      gmx_fatal(FARGS,"Need a tpr file for option -tv");
+    }
     vp=xvgropen(vfile,"Volume and Density","Time (ps)","",oenv);
     xvgr_legend(vp,asize(vlegend),vlegend,oenv);
     totmass  = 0;
@@ -371,7 +385,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	ndefault++;
       totmass += mm;
       */
-      totmass += top->atoms.atom[ii].m;
+      totmass += atoms->atom[ii].m;
     }
     if (ndefault)
       fprintf(stderr,"WARNING: Using %d default masses for density calculation, which most likely are inaccurate\n",ndefault);
@@ -384,15 +398,19 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   nfr=0;
   do {
     if (bPBC)
-      rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+      rm_pbc(&top.idef,ePBC,natoms,box,x,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
-    if (bConnelly)
+    if (bConnelly) {
+      if (!bTop)
+	gmx_fatal(FARGS,"Need a tpr file for Connelly plot");
       flag = FLAG_ATOM_AREA | FLAG_DOTS;
-    else
+    } else {
       flag = FLAG_ATOM_AREA;
-    if (vp)
+    }
+    if (vp) {
       flag = flag | FLAG_VOLUME;
+    }
       
     if (debug)
       write_sto_conf("check.pdb","pbc check",atoms,x,NULL,ePBC,box);
@@ -401,12 +419,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			  &area,&totvolume,&surfacedots,&nsurfacedots,
 			  index[0],ePBC,bPBC ? box : NULL);
     if (retval)
-      gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
+      gmx_fatal(FARGS,"Something wrong in nsc_dclm_pbc");
     
     if (bConnelly)
       connelly_plot(ftp2fn(efPDB,nfile,fnm),
 		    nsurfacedots,surfacedots,x,atoms,
-		    &(top->symtab),ePBC,box,bSave);
+		    &(top.symtab),ePBC,box,bSave);
     harea  = 0; 
     tarea  = 0;
     dgsolv = 0;
@@ -458,9 +476,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   fprintf(stderr,"\n");
   close_trj(status);
-  fclose(fp);
+  ffclose(fp);
   if (vp)
-    fclose(vp);
+    ffclose(vp);
     
   /* if necessary, print areas per atom to file too: */
   if (bResAt) {
@@ -503,11 +521,34 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
     }
     if (bITP)
-      fclose(fp3);
-    fclose(fp);
+      ffclose(fp3);
+    ffclose(fp);
   }
 
-  sfree(x);
+    /* Be a good citizen, keep our memory free! */
+    sfree(x);
+    sfree(nx);
+    for(i=0;i<2;i++)
+    {
+        sfree(index[i]);
+        sfree(grpname[i]);
+    }
+    sfree(bOut);
+    sfree(radius);
+    sfree(bPhobic);
+    
+    if(bResAt)
+    {
+        sfree(atom_area);
+        sfree(atom_area2);
+        sfree(res_a);
+        sfree(res_area);
+        sfree(res_area2);
+    }
+    if(bDGsol)
+    {
+        sfree(dgs_factor);
+    }
 }
 
 int gmx_sas(int argc,char *argv[])
@@ -564,7 +605,7 @@ int gmx_sas(int argc,char *argv[])
   };
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
-    { efTPX, "-s",   NULL,       ffREAD },
+    { efTPS, "-s",   NULL,       ffREAD },
     { efXVG, "-o",   "area",     ffWRITE },
     { efXVG, "-or",  "resarea",  ffOPTWR },
     { efXVG, "-oa",  "atomarea", ffOPTWR },

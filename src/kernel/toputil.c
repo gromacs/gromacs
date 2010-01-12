@@ -125,10 +125,6 @@ void add_param_to_list(t_params *list, t_param *b)
 {
   int j;
   
-  if (debug) {
-    fprintf(debug,"add_param_to)list: nr = %d\n",list->nr);
-    fflush(debug);
-  }
   /* allocate one position extra */
   pr_alloc (1,list);
 

@@ -1342,7 +1342,9 @@ static bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
 			     t_state *state,  t_mdatoms *md, 
 			     t_qhoprec *qhoprec,int step,
 			     gmx_constr_t constr,real DE,t_pbc pbc,  
-			     t_hop *hop){
+			     t_hop *hop,gmx_ekindata_t *ekindata,
+			     bool bPscal,real veta,real vetanew)
+{
   /* takes as input the total MM potential energy change for the hop
      and alters the kinetic energy so that the total energy remains
      constant.
@@ -1380,11 +1382,11 @@ static bool scale_velocities(t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
     fprintf(stderr,"before constr. ekin_new = %f\n",
 	    check_ekin( state->v  ,md));
     if(bConstrain){
-      constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,cr,
+      constrain(NULL,FALSE,FALSE,constr,&top->idef,ir,ekindata,cr,
 		step,1,md,state->x,state->v,state->v,state->box,
 		state->lambda,&dvdl,
 		NULL,NULL,nrnb,
-		econqVeloc);
+		econqVeloc,bPscal,veta,vetanew);
       /* and send the veloities around again, bit expensive, 
 	 so there must be an easier way
 	 of doing this...
@@ -1483,7 +1485,7 @@ void do_qhop(FILE *fplog, t_commrec *cr,t_inputrec *ir, t_nrnb *nrnb,
       
       bHop = do_hop(cr, fr->qhoprec, md, &hop[i], state->x,mtop);
       fprintf(stderr,"hopping!\n");
-      //      scale_velocities();
+      /*      scale_velocities();*/
     }
     else{
       bHop = FALSE;

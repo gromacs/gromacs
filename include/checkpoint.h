@@ -43,6 +43,10 @@
 #include "typedefs.h"
 #include "gmxfio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Write a checkpoint to fn */
 extern void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int simulation_part,
@@ -55,7 +59,7 @@ extern void write_checkpoint(const char *fn,FILE *fplog,t_commrec *cr,
  * and communicates all the modified number of steps and the parallel setup,
  * but not the state itself.
  */
-extern void load_checkpoint(const char *fn,FILE *fplog,
+extern void load_checkpoint(const char *fn,FILE **fplog,
 			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
 			    t_inputrec *ir,t_state *state,bool *bReadRNG, 
 			    bool *bReadEkin,
@@ -80,5 +84,9 @@ extern void list_checkpoint(const char *fn,FILE *out);
  */
 void read_checkpoint_simulation_part(const char *filename,int *simulation_part,
                                      gmx_large_int_t *step,t_commrec *cr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -52,6 +52,8 @@
 #include "rmpbc.h"
 #include "tpxio.h"
 #include "physics.h"
+#include "gmx_ana.h"
+
 
 #define MAX_ENDS 3
 
@@ -367,16 +369,16 @@ int gmx_bundle(int argc,char *argv[])
   
   if (fpdb >= 0)
     close_trx(fpdb);
-  fclose(flen);
-  fclose(fdist);
-  fclose(fz);
-  fclose(ftilt);
-  fclose(ftiltr);
-  fclose(ftiltl);
+  ffclose(flen);
+  ffclose(fdist);
+  ffclose(fz);
+  ffclose(ftilt);
+  ffclose(ftiltr);
+  ffclose(ftiltl);
   if (bKink) {
-    fclose(fkink);
-    fclose(fkinkr);
-    fclose(fkinkl);
+    ffclose(fkink);
+    ffclose(fkinkr);
+    ffclose(fkinkl);
   }
   
   thanx(stderr);

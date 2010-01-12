@@ -42,6 +42,11 @@
 
 #include "typedefs.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   int  count; /* sort order for output  */
   bool bObsolete; /* whether it is an obsolete param value */
@@ -162,5 +167,9 @@ extern void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace);
 extern char *pargs_print_line(t_pargs *pa,bool bLeadingSpace);
 
 extern void pr_enums(FILE *fp, int npargs,t_pargs pa[],int shell);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

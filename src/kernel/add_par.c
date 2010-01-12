@@ -199,33 +199,44 @@ void add_vsite4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
 
 int search_jtype(t_restp *rtp,char *name,bool bNterm)
 {
-  int  j,k,kmax,jmax,minstrlen;
+  int  niter,iter,j,k,kmax,jmax,minstrlen;
   char *rtpname,searchname[12];
   
   strcpy(searchname,name);
   
   /* Do a best match comparison */
-  /* for protein N-terminus, rename H1, H2 and H3 to H */
+  /* for protein N-terminus, allow renaming of H1, H2 and H3 to H */
   if ( bNterm && (strlen(searchname)==2) && (searchname[0] == 'H') && 
        ( (searchname[1] == '1') || (searchname[1] == '2') || 
-	 (searchname[1] == '3') ) )
-    searchname[1]='\0';
+	 (searchname[1] == '3') ) ) {
+    niter = 2;
+  } else {
+    niter = 1;
+  }
   kmax=0;
   jmax=-1;
-  for(j=0; (j<rtp->natom); j++) {
-    rtpname=*(rtp->atomname[j]);
-    if (strcasecmp(searchname,rtpname) == 0) {
-      jmax=j;
-      kmax=strlen(searchname);
-      break;
+  for(iter=0; (iter<niter && jmax==-1); iter++) {
+    if (iter == 1) {
+      /* Try without the hydrogen number in the N-terminus */
+      searchname[1] = '\0';
     }
-	  minstrlen = min(strlen(searchname), strlen(rtpname));
-    for(k=0; k < minstrlen; k++) 
-      if (searchname[k] != rtpname[k])
+    for(j=0; (j<rtp->natom); j++) {
+      rtpname=*(rtp->atomname[j]);
+      if (strcasecmp(searchname,rtpname) == 0) {
+	jmax=j;
+	kmax=strlen(searchname);
 	break;
-    if (k > kmax) {
-      kmax=k;
-      jmax=j;
+      }
+      if (iter == niter - 1) {
+	minstrlen = min(strlen(searchname), strlen(rtpname));
+	for(k=0; k < minstrlen; k++) 
+	  if (searchname[k] != rtpname[k])
+	    break;
+	if (k > kmax) {
+	  kmax=k;
+	  jmax=j;
+	}
+      }
     }
   }
   if (jmax == -1)

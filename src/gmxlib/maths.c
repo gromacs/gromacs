@@ -50,6 +50,18 @@ int gmx_nint(real a)
   return result;
 }
 
+real cuberoot (real x) 
+{
+  if (x < 0) 
+    { 
+      return (-pow(-x,1.0/DIM));
+    } 
+  else 
+    {
+      return (pow(x,1.0/DIM));
+    }
+}
+
 real sign(real x,real y)
 {
   if (y < 0)

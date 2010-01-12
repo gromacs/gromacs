@@ -39,6 +39,10 @@
 #include <config.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The nonbonded kernels are documented in gmxlib/nonbonded_kernels, 
  * but here's a lazy version of the numbering. The first position
  * is the Coulomb interaction (0 for none), second is Van der Waals
@@ -126,5 +130,8 @@ typedef struct {
 
 typedef struct gmx_wallcycle *gmx_wallcycle_t;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

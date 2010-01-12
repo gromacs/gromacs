@@ -55,6 +55,8 @@
 #include "tpxio.h"
 #include "rmpbc.h"
 #include "pbc.h"
+#include "gmx_ana.h"
+
 
 #define FARAWAY 10000
 
@@ -295,7 +297,7 @@ int gmx_mdmat(int argc,char *argv[])
   fprintf(stderr,"\n");
   close_trj(status);
   if (bFrames)
-    fclose(out);
+    ffclose(out);
   
   fprintf(stderr,"Processed %d frames\n",nframes);
     
@@ -329,7 +331,7 @@ int gmx_mdmat(int argc,char *argv[])
       fprintf(fp,"%3d  %8.3f  %3d  %8.3f  %3d  %8.3f\n",
 	      i+1,ratio,tot_n[i],mean_n[i],natm[i],mean_n[i]/natm[i]);
     }
-    fclose(fp);
+    ffclose(fp);
   }
     
   thanx(stderr);
