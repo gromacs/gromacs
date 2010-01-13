@@ -430,35 +430,51 @@ static void init_energyhistory(energyhistory_t *enh)
   enh->nener        = 0;
 }
 
-void init_gtc_state(t_state *state, int ngtc, int nnhchains)
+void init_gtc_state(t_state *state, int ngtc, int nhchainlength, int nnhpres)
 {
-    int i,j,ngtcp;
+    int i,j;
 
     state->ngtc = ngtc;
-    state->nnhchains = nnhchains;
-    ngtcp = state->ngtc+1; /* need an extra state for the barostat */
-    if (state->ngtc > 0) {
-        snew(state->nosehoover_xi, state->nnhchains*ngtcp); 
-        snew(state->nosehoover_vxi, state->nnhchains*ngtcp);
+    state->nhchainlength = nhchainlength;
+    if (state->ngtc > 0)
+    {
+        snew(state->nosehoover_xi, state->nhchainlength*state->ngtc); 
+        snew(state->nosehoover_vxi, state->nhchainlength*state->ngtc);
         snew(state->therm_integral, state->ngtc);
-        for(i=0; i<ngtcp; i++) {
-            for (j=0;j<state->nnhchains;j++) {
-                state->nosehoover_xi[i*state->nnhchains + j]  = 0.0;
-                state->nosehoover_vxi[i*state->nnhchains + j]  = 0.0;
+        for(i=0; i<state->ngtc; i++)
+        {
+            for (j=0;j<state->nhchainlength;j++)
+ {
+                state->nosehoover_xi[i*state->nhchainlength + j]  = 0.0;
+                state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
             }
         }
         for(i=0; i<ngtc; i++) {
             state->therm_integral[i]  = 0.0;
         }
-    } else {
+    }
+    else
+    {
         state->nosehoover_xi  = NULL;
         state->nosehoover_vxi = NULL;
         state->therm_integral = NULL;
     }
+
+    state->nnhpres = nnhpres;
+    if (state->nnhpres > 0)
+    {
+        snew(state->nhpres_xi ,state->nhchainlength*state->nnhpres);
+        snew(state->nhpres_vxi,state->nhchainlength*state->nnhpres);
+    }
+    else
+    {
+        state->nhpres_xi  = NULL;
+        state->nhpres_vxi = NULL;
+    }
 }
 
 
-void init_state(t_state *state,int natoms,int ngtc, int nnhchains)
+void init_state(t_state *state,int natoms,int ngtc,int nnhpres,int nhchainlength)
 {
   int i;
 
@@ -472,7 +488,7 @@ void init_state(t_state *state,int natoms,int ngtc, int nnhchains)
   clear_mat(state->boxv);
   clear_mat(state->pres_prev);
   clear_mat(state->vir_prev);
-  init_gtc_state(state,ngtc,nnhchains);
+  init_gtc_state(state,ngtc,nnhpres,nhchainlength);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {
     snew(state->x,state->nalloc);

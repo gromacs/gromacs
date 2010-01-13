@@ -614,10 +614,29 @@ static void comp_state(t_state *st1, t_state *st2,
     cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,FALSE,ftol,abstol);
   }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
-  if (st1->ngtc == st2->ngtc) {
-    for(i=0; i<st1->ngtc; i++)
-      cmp_real(stdout,"nosehoover_xi",
-	       i,st1->nosehoover_xi[i],st2->nosehoover_xi[i],ftol,abstol);
+  cmp_int(stdout,"nnhpres",-1,st1->nnhpres,st2->nnhpres);
+  cmp_int(stdout,"nhchainlength",-1,st1->nhchainlength,st2->nhchainlength);
+  if (st1->nhchainlength == st2->nhchainlength) {
+    if (st1->ngtc == st2->ngtc) {
+      for(i=0; i<st1->ngtc*st1->nhchainlength; i++)
+	cmp_real(stdout,"nosehoover_xi",
+		 i,st1->nosehoover_xi[i],st2->nosehoover_xi[i],ftol,abstol);
+      if (st1->flags & (1<<estNH_VXI)) {
+	for(i=0; i<st1->ngtc*st1->nhchainlength; i++)
+	  cmp_real(stdout,"nosehoover_vxi",
+		   i,st1->nosehoover_vxi[i],st2->nosehoover_vxi[i],ftol,abstol);
+      }
+    }
+    if (st1->nnhpres == st2->nnhpres) {
+      for(i=0; i<st1->nnhpres*st1->nhchainlength; i++)
+	cmp_real(stdout,"nhpres_xi",
+		 i,st1->nhpres_xi[i],st2->nhpres_xi[i],ftol,abstol);
+      if (st1->flags & (1<<estNHPRES_VXI)) {
+	for(i=0; i<st1->nnhpres*st1->nhchainlength; i++)
+	  cmp_real(stdout,"nhpres_vxi",
+		   i,st1->nhpres_vxi[i],st2->nhpres_vxi[i],ftol,abstol);
+      }
+    }
   }
   cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
   if (st1->natoms == st2->natoms) {

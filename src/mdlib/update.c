@@ -667,42 +667,41 @@ static void do_update_sd2(gmx_stochd_t *sd,bool bInitStep,
                   if (bInitStep) 
                   {
                       sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
-                      
-                      Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
-                          + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
-                      sd_V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
-                      
-                      v[n][d] = vn*sdc[gt].em 
-                          + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                          + sd_V[n-start][d] - sdc[gt].em*Vmh;
-                      
-                      xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh); 
-                  } 
-                  else 
-                  {
-                      
-                      /* Correct the velocities for the constraints.
-                       * This operation introduces some inaccuracy,
-                       * since the velocity is determined from differences in coordinates.
-                       */
-                      v[n][d] = 
-                          (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
-                      
-                      Xmh = sd_V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
-                          + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
-                      sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
-                      
-                      xprime[n][d] += sd_X[n][d] - Xmh;
-                      
                   }
+                  Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
+                      + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
+                  sd_V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                  
+                  v[n][d] = vn*sdc[gt].em 
+                      + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
+                      + sd_V[n-start][d] - sdc[gt].em*Vmh;
+                  
+                  xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh); 
               } 
               else 
               {
-                  if (bFirstHalf) 
-                  {
-                      v[n][d]        = 0.0;
-                      xprime[n][d]   = x[n][d];
-                  }
+                  
+                  /* Correct the velocities for the constraints.
+                   * This operation introduces some inaccuracy,
+                   * since the velocity is determined from differences in coordinates.
+                   */
+                  v[n][d] = 
+                      (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
+                  
+                  Xmh = sd_V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
+                      + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
+                  sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
+                  
+                  xprime[n][d] += sd_X[n][d] - Xmh;
+                  
+              }
+          } 
+          else 
+          {
+              if (bFirstHalf) 
+              {
+                  v[n][d]        = 0.0;
+                  xprime[n][d]   = x[n][d];
               }
           }
       }
@@ -1271,7 +1270,7 @@ void update_constraints(FILE         *fplog,
     real             dt_1;
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
-    rvec             *vbuf,*xprime;
+    rvec             *vbuf,*xprime=NULL;
     
     if (constr) {bDoConstr=TRUE;}
     if (bFirstHalf && !EI_VV(inputrec->eI)) {bDoConstr=FALSE;} 
@@ -1361,7 +1360,7 @@ void update_constraints(FILE         *fplog,
     }
     
     where();
-    if (inputrec->eI == eiSD2) 
+    if ((inputrec->eI == eiSD2) && !(bFirstHalf))
     {
         /* The second part of the SD integration */
         do_update_sd2(upd->sd,FALSE,start,homenr,

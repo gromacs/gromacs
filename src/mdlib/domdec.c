@@ -1436,7 +1436,7 @@ void dd_collect_state(gmx_domdec_t *dd,
     int est,i,j,ngtcp,nh;
 
     ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */    
-    nh = state->nnhchains;
+    nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
@@ -1461,9 +1461,9 @@ void dd_collect_state(gmx_domdec_t *dd,
             state->therm_integral[i] = state_local->therm_integral[i];            
         }
     }
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state_local->flags & (1<<est))
+        if (EST_DISTR(est) && state_local->flags & (1<<est))
         {
             switch (est) {
             case estX:
@@ -1543,9 +1543,9 @@ static void dd_realloc_state(t_state *state,rvec **f,int nalloc)
 
     state->nalloc = over_alloc_dd(nalloc);
     
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state->flags & (1<<est))
+        if (EST_DISTR(est) && state->flags & (1<<est))
         {
             switch(est) {
             case estX:
@@ -1691,7 +1691,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     int  i,j,ngtch,ngtcp,nh;
     
     ngtcp = state->ngtc+1; /* need an extra state for barostat */
-    nh = state->nnhchains;
+    nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
@@ -1727,9 +1727,9 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     {
         dd_realloc_state(state_local,f,dd->nat_home);
     }
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        if (state_local->flags & (1<<i))
+        if (EST_DISTR(i) && state_local->flags & (1<<i))
         {
             switch (i) {
             case estX:
@@ -4072,9 +4072,9 @@ static void rotate_state_atom(t_state *state,int a)
 {
     int est;
 
-    for(est=estX; est<estNR; est++)
+    for(est=0; est<estNR; est++)
     {
-        if (state->flags & (1<<est)) {
+        if (EST_DISTR(est) && state->flags & (1<<est)) {
             switch (est) {
             case estX:
                 /* Rotate the complete state; for a rectangular box only */
@@ -4139,24 +4139,27 @@ static int dd_redistribute_cg(FILE *fplog,gmx_large_int_t step,
     comm  = dd->comm;
     cg_cm = fr->cg_cm;
     
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        switch (i)
+        if (EST_DISTR(i))
         {
-        case estX:   /* Always present */            break;
-        case estV:   bV   = (state->flags & (1<<i)); break;
-        case estSDX: bSDX = (state->flags & (1<<i)); break;
-        case estCGP: bCGP = (state->flags & (1<<i)); break;
-        case estLD_RNG:
-        case estLD_RNGI:
-        case estDISRE_INITF:
-        case estDISRE_RM3TAV:
-        case estORIRE_INITF:
-        case estORIRE_DTAV:
-            /* No processing required */
-            break;
-        default:
+            switch (i)
+            {
+            case estX:   /* Always present */            break;
+            case estV:   bV   = (state->flags & (1<<i)); break;
+            case estSDX: bSDX = (state->flags & (1<<i)); break;
+            case estCGP: bCGP = (state->flags & (1<<i)); break;
+            case estLD_RNG:
+            case estLD_RNGI:
+            case estDISRE_INITF:
+            case estDISRE_RM3TAV:
+            case estORIRE_INITF:
+            case estORIRE_DTAV:
+                /* No processing required */
+                break;
+            default:
             gmx_incons("Unknown state entry encountered in dd_redistribute_cg");
+            }
         }
     }
     
@@ -7816,9 +7819,9 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     dd->ncg_home = ncg_new;
     
     /* Reorder the state */
-    for(i=estX; i<estNR; i++)
+    for(i=0; i<estNR; i++)
     {
-        if (state->flags & (1<<i))
+        if (EST_DISTR(i) && state->flags & (1<<i))
         {
             switch (i)
             {
@@ -8386,7 +8389,10 @@ void dd_partition_system(FILE            *fplog,
     /* This call also sets the new number of home particles to dd->nat_home */
     atoms2md(top_global,ir,
              comm->nat[ddnatCON],dd->gatindex,0,dd->nat_home,mdatoms);
-    
+
+    /* Now we have the charges we can sort the FE interactions */
+    dd_sort_local_top(dd,mdatoms,top_local);
+
     if (shellfc)
     {
         /* Make the local shell stuff, currently no communication is done */

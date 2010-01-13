@@ -210,7 +210,7 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 {
   block_bc(cr,state->natoms);
   block_bc(cr,state->ngtc);
-  block_bc(cr,state->nnhchains);
+  block_bc(cr,state->nhchainlength);
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
   block_bc(cr,state->flags);
@@ -220,7 +220,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
   int i,ngtch;
 
-  ngtch = (state->ngtc+1)*(state->nnhchains); /* need an extra state for the barostat */
+  ngtch = (state->ngtc+1)*(state->nhchainlength); /* need an extra state for the barostat */
 
   bcast_state_setup(cr,state);
 
@@ -314,20 +314,6 @@ static void bc_idef(const t_commrec *cr,t_idef *idef)
   block_bc(cr,idef->ilsort);
 }
 
-static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
-{
-  int i;
-  
-  block_bc(cr,ffp->ntypes);
-  block_bc(cr,ffp->atnr);
-  snew_bc(cr,ffp->functype,ffp->ntypes);
-  snew_bc(cr,ffp->iparams,ffp->ntypes);
-  nblock_bc(cr,ffp->ntypes,ffp->functype);
-  nblock_bc(cr,ffp->ntypes,ffp->iparams);
-  block_bc(cr,ffp->reppow);
-  block_bc(cr,ffp->fudgeQQ);
-}
-
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 {
 	int i,j,nelem,ngrid;
@@ -350,6 +336,20 @@ static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 	}
 }
 
+static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
+{
+  int i;
+  
+  block_bc(cr,ffp->ntypes);
+  block_bc(cr,ffp->atnr);
+  snew_bc(cr,ffp->functype,ffp->ntypes);
+  snew_bc(cr,ffp->iparams,ffp->ntypes);
+  nblock_bc(cr,ffp->ntypes,ffp->functype);
+  nblock_bc(cr,ffp->ntypes,ffp->iparams);
+  block_bc(cr,ffp->reppow);
+  block_bc(cr,ffp->fudgeQQ);
+  bc_cmap(cr,&ffp->cmap_grid);
+}
 
 static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
 {
@@ -578,5 +578,4 @@ void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
 
   bc_block(cr,&mtop->mols);
   bc_groups(cr,&mtop->symtab,mtop->natoms,&mtop->groups);
-  bc_cmap(cr,&mtop->cmap_grid);
 }

@@ -107,7 +107,7 @@ extern "C" {
      
      /* Essential dynamics related events */
      int ev_edsam_start,             ev_edsam_finish;
-     int ev_get_coords_start,        ev_get_coords_finish;
+     int ev_get_group_x_start,       ev_get_group_x_finish;
      int ev_ed_apply_cons_start,     ev_ed_apply_cons_finish;
      int ev_fit_to_reference_start,  ev_fit_to_reference_finish;
 #endif

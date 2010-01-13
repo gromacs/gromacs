@@ -369,7 +369,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
 
     
     md->nTC=groups->grps[egcTC].nr;
-    md->nNHC = ir->opts.nnhchains; /* shorthand for number of NH chains */ 
+    md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */ 
     if (md->epc == epcMTTK) 
     {
         md->nTCB = md->nTC + 1; /* for barostat temperature group */
@@ -498,7 +498,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     sprintf(label_x,"%s (%s)","Time",unit_time);
     if (ir->n_flambda == 0)
     {
-        sprintf(title,"%s",dhdl);
+        sprintf(title,"%s",dhdl,deltag);
         sprintf(label_y,"%s (%s %s)",
                 dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
     }

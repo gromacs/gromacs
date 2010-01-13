@@ -97,6 +97,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bondnb  ("FENEBONDS", "FENE Bonds",     2, 2, 0,  eNR_FENEBONDS, FENE_bonds ),
   def_bondt   ("TABBONDS", "Tab. Bonds",      2, 2, 2,  eNR_TABBONDS, tab_bonds   ),
   def_bondedtz("TABBONDSNC", "Tab. Bonds NC", 2, 2, 2,  eNR_TABBONDS, tab_bonds   ),
+  def_bonded  ("RESTRAINTPOT", "Restraint Pot.", 2, 4, 4,  eNR_RESTRBONDS,  restraint_bonds ),
   def_angle   ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
   def_angle   ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
   def_bonded  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0,0,          cross_bond_bond ),
@@ -160,7 +161,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("TEMP",     "Temperature"      ),
   def_nofc    ("VTEMP",    "Vir. Temperature" ),
   def_nofc    ("PRES",     "Pressure"         ),
-  def_nofc    ("PDISPCORR","Disper. corr. (Pressure)"                             ),  
+  def_nofc    ("PDISPCORR","Pres. Dsp. Cor."  ),  
   def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
   def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
   def_nofc    ("DH/DL_CON","dH/dl constr."    )

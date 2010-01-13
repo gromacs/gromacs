@@ -52,13 +52,12 @@
 #include "mdrun.h"
 #include "update.h"
 #include "physics.h"
-#include "rmpbc.h"
 #include "nrjac.h"
 #include "mtop_util.h"
 #include "edsam.h"
 #include "mpelogging.h"
 #include "gmxfio.h"
-#include "gmx_ga2la.h"
+#include "groupcoord.h"
 
 
 /* We use the same defines as in mvdata.c here */
@@ -123,12 +122,13 @@ typedef struct gmx_edx
     int           nr_loc;         /* number of atoms on local node            */
     int           *anrs;          /* atom index numbers                       */
     int           *anrs_loc;      /* local atom index numbers                 */
+    int           nalloc_loc;     /* allocation size of anrs_loc              */
     int           *c_ind;         /* at which position of the whole anrs 
                                    * array is a local atom?, i.e. 
                                    * c_ind[0...nr_loc-1] gives the atom index 
                                    * with respect to the collective 
                                    * anrs[0...nr-1] array                     */
-    rvec          *x;             /* coordinates for this structure           */
+    rvec          *x;             /* positions for this structure             */
     rvec          *x_old;         /* used to keep track of the shift vectors
                                      such that the ED molecule can always be 
                                      made whole in the parallel case          */
@@ -149,7 +149,7 @@ typedef struct edpar
     int            outfrq;         /* freq (in steps) of writing to edo    */
     int            maxedsteps;     /* max nr of steps per cycle            */
 
-    /* all gmx_edx datasets are copied to all nodes in the parallel case    */
+    /* all gmx_edx datasets are copied to all nodes in the parallel case   */
     struct gmx_edx sref;           /* reference positions, to these fitting
                                     * will be done                         */
     bool           bRefEqAv;       /* If true, reference & average indices
@@ -185,9 +185,9 @@ struct t_do_edsam
     matrix old_rotmat;
     real oldrad;
     rvec old_transvec,older_transvec,transvec_compact;
-    rvec *xcoll;         /* Coordinates from all nodes, this is the 
-                            collective set of coords we work on.
-                            These are the coordinates of atoms with 
+    rvec *xcoll;         /* Positions from all nodes, this is the 
+                            collective set we work on.
+                            These are the positions of atoms with 
                             average structure indices */
     rvec *xc_ref;        /* same but with reference structure indices */
     ivec *shifts_xcoll;        /* Shifts for xcoll  */
@@ -213,14 +213,8 @@ struct t_ed_buffer
 /* Function declarations */
 static void fit_to_reference(rvec *xcoll,rvec transvec,matrix rotmat,t_edpar *edi);
 
-static void get_coordinates(t_commrec *cr,rvec *xc,
-                            ivec *shifts_xc,ivec *extra_shifts_xc,
-                            bool bNeedShiftsUpdate,
-                            rvec *x_loc,struct gmx_edx *s,matrix box,
-                            const char title[]);
-
 static void translate_and_rotate(rvec *x,int nat,rvec transvec,matrix rotmat);
-/* End funtion declarations */
+/* End function declarations */
 
 
 /* Does not subtract average positions, projection on single eigenvector is returned
@@ -268,7 +262,7 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec, t_commrec *cr)
 /* Project vector x, subtract average positions prior to projection and add 
  * them afterwards to retain the unchanged vector. Store in xproj. Mass-weighting
  * is applied. */
-static void project_to_eigvectors(rvec       *x,    /* The coordinates to project to an eigenvector */ 
+static void project_to_eigvectors(rvec       *x,    /* The positions to project to an eigenvector */ 
                                   t_eigvec   *vec,  /* The eigenvectors */
                                   t_edpar    *edi)
 {
@@ -291,7 +285,7 @@ static void project_to_eigvectors(rvec       *x,    /* The coordinates to projec
 
 
 /* Project vector x onto all edi->vecs (mon, linfix,...) */
-static void project(rvec      *x,     /* coordinates to project */ 
+static void project(rvec      *x,     /* positions to project */ 
                     t_edpar   *edi)   /* edi data set */
 {
     /* It is not more work to subtract the average position in every s
@@ -319,6 +313,7 @@ static real calc_radius(t_eigvec *vec)
 
 
 /* Debug helper */
+#ifdef DEBUGHELPERS
 static void dump_xcoll(t_edpar *edi, struct t_do_edsam *buf, t_commrec *cr, 
                        int step)
 {
@@ -356,7 +351,7 @@ static void dump_edi_positions(FILE *out, struct gmx_edx *s, const char name[])
     int i;
 
     
-    fprintf(out, "#%s coordinates:\n%d\n", name, s->nr);
+    fprintf(out, "#%s positions:\n%d\n", name, s->nr);
     if (s->nr == 0)
         return;
 
@@ -470,6 +465,7 @@ static void dump_mat(FILE* out, int dim, double** mat)
         fprintf(out,"\n");
     }
 }
+#endif
 
 
 struct t_do_edfit { 
@@ -597,63 +593,22 @@ static void do_edfit(int natoms,rvec *xp,rvec *x,matrix R,t_edpar *edi)
 }
 
 
-static void rotate_x(int nr,rvec *x,matrix rmat)
-{
-    int i,j,k;
-    rvec x_old;
-
-    
-    /* Apply the rotation matrix */
-    for(i=0;(i<nr);i++)
-    {
-        for(j=0;(j<3);j++)
-            x_old[j]=x[i][j];
-        for(j=0;(j<3);j++)
-        {
-            x[i][j]=0;
-            for(k=0;(k<3);k++)
-                x[i][j]+=rmat[k][j]*x_old[k];
-        }
-    }
-}
-
-
-static void rmrotfit(int nat, rvec *xcoll, matrix rotmat)
-{
-    int    i,j,k;
-    rvec   xdum;
-
-
-    /* invert the rotation matrix and apply */
-    for (i=0; i<nat; i++)
-    {
-        for (j=0; j<3; j++)
-            xdum[j]=xcoll[i][j];
-        for (j=0; j<3; j++)
-        {
-            xcoll[i][j]=0;
-            for (k=0; k<3; k++)
-                xcoll[i][j] += rotmat[j][k]*xdum[k];
-        }
-    }
-}
-
-
-static void rmtransfit(int nat, rvec *xcoll, rvec transvec) 
-{ 
-    int i;
-
-    
-    /* subtract the translation vector */
-    for(i=0; i<nat; i++)
-        rvec_dec(xcoll[i], transvec);
-}
-
-
 static void rmfit(int nat, rvec *xcoll, rvec transvec, matrix rotmat) 
 {
-    rmrotfit(nat, xcoll, rotmat);
-    rmtransfit(nat, xcoll, transvec);
+    rvec vec;
+    matrix tmat;
+    
+
+    /* Remove rotation.
+     * The inverse rotation is described by the transposed rotation matrix */
+    transpose(rotmat,tmat);
+    rotate_x(xcoll, nat, tmat);
+
+    /* Remove translation */
+    vec[XX]=-transvec[XX];
+    vec[YY]=-transvec[YY];
+    vec[ZZ]=-transvec[ZZ];
+    translate_x(xcoll, nat, vec);
 }
 
 
@@ -854,26 +809,29 @@ static void do_single_flood(FILE *edo,
 {  
     int i;
     matrix  rotmat;         /* rotation matrix */
+    matrix  tmat;           /* inverse rotation */
     rvec    transvec;       /* translation vector */
     struct t_do_edsam *buf;
 
     
     buf=edi->buf->do_edsam;
     
-    /* Broadcast the coordinates of the average structure such that they are known on
-     * every processor. Each node contributes its local coordinates x and stores them in
+    /* Broadcast the positions of the AVERAGE structure such that they are known on
+     * every processor. Each node contributes its local positions x and stores them in
      * the collective ED array buf->xcoll */  
-    get_coordinates(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, x, &edi->sav,  box, "XC_AVERAGE (FLOODING)");  
+    communicate_group_positions(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, x, 
+                    edi->sav.nr, edi->sav.nr_loc, edi->sav.anrs_loc, edi->sav.c_ind, edi->sav.x_old, box);  
     
-    /* Only assembly reference coordinates if their indices differ from the average ones */
+    /* Only assembly REFERENCE positions if their indices differ from the average ones */
     if (!edi->bRefEqAv)
-        get_coordinates(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, x, &edi->sref, box, "XC_REFERENCE (FLOODING)");
+        communicate_group_positions(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, x, 
+                edi->sref.nr, edi->sref.nr_loc, edi->sref.anrs_loc, edi->sref.c_ind, edi->sref.x_old, box);
 
-    /* If bUpdateShifts was TRUE, the shifts have just been updated in get_coordinates.
+    /* If bUpdateShifts was TRUE, the shifts have just been updated in get_positions.
      * We do not need to update the shifts until the next NS step */
     buf->bUpdateShifts = FALSE;
 
-    /* Now all nodes have all of the ED/flooding coordinates in edi->sav->xcoll,
+    /* Now all nodes have all of the ED/flooding positions in edi->sav->xcoll,
      * as well as the indices in edi->sav.anrs */
   
     /* Fit the reference indices to the reference structure */
@@ -896,12 +854,13 @@ static void do_single_flood(FILE *edo,
     /* Compute the flooding forces */
     flood_forces(edi);
 
-    /* Translate them into cartesian coordinates */
+    /* Translate them into cartesian positions */
     flood_blowup(edi, edi->flood.forces_cartesian);
 
     /* Rotate forces back so that they correspond to the given structure and not to the fitted one */
     /* Each node rotates back its local forces */
-    rmrotfit(edi->sav.nr_loc, edi->flood.forces_cartesian, rotmat);
+    transpose(rotmat,tmat);
+    rotate_x(edi->flood.forces_cartesian, edi->sav.nr_loc, tmat);
 
     /* Finally add forces to the main force variable */
     for (i=0; i<edi->sav.nr_loc; i++)
@@ -916,7 +875,7 @@ static void do_single_flood(FILE *edo,
 /* Main flooding routine, called from do_force */
 extern void do_flood(FILE       *log,      /* md.log file */
                      t_commrec   *cr,      /* Communication record */
-                     rvec        x[],      /* Coordinates on the local processor */
+                     rvec        x[],      /* Positions on the local processor */
                      rvec        force[],  /* forcefield forces, to these the flooding forces are added */
                      gmx_edsam_t ed,       /* ed data structure contains all ED and flooding datasets */
                      matrix      box,      /* the box */
@@ -961,6 +920,7 @@ static void init_flood(t_edpar *edi, gmx_edsam_t ed, real dt, t_commrec *cr)
 }
 
 
+#ifdef DEBUGHELPERS
 /*********** Energy book keeping ******/
 static void get_flood_enx_names(t_edpar *edi, char** names, int *nnames)  /* get header of energies */
 {
@@ -1000,45 +960,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[],int nnames)
         gmx_fatal(FARGS,"Number of energies is not consistent with t_edi structure");
 }
 /************* END of FLOODING IMPLEMENTATION ****************************/
-
-
-
-static void get_COM(int   nat,   /* number of atoms in the coordinate buffer */
-                    rvec  *x,    /* coordinate buffer */
-                    real  *m,    /* buffer for the masses */
-                    real  tmass, /* total mass */
-                    rvec  com)   /* the center of mass */
-{
-    int  i;
-    rvec xm, dum_com = {.0, .0, .0};
-
-
-    /* calculate COM */
-    for (i=0; i<nat; i++)
-    {
-        svmul(m[i], x[i], xm);
-        rvec_inc(dum_com, xm);
-    }
-    svmul(1.0/tmass, dum_com, dum_com);
-
-    com[XX] = dum_com[XX];
-    com[YY] = dum_com[YY];
-    com[ZZ] = dum_com[ZZ]; 
-}
-
-
-/* Put current coordinates into origin */
-static void subtract_COM(int   nat,  /* number of atoms in the coordinate buffer */
-                         rvec  *x,   /* coordinate buffer */
-                         rvec  com)  /* the center of mass */
-{
-    int  i;  
-
-    
-    /* subtract COM */
-    for (i=0; i<nat; i++) 
-        rvec_dec(x[i], com);
-}
+#endif
 
 
 gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],t_commrec *cr)
@@ -1079,7 +1001,9 @@ static void bc_ed_positions(t_commrec *cr, struct gmx_edx *s, int stype)
     {
         /* We need these additional variables in the parallel case: */
         snew(s->c_ind    , s->nr   );   /* Collective indices */
-        snew(s->anrs_loc , s->nr   );   /* Local atom indices */
+        /* Local atom indices get assigned in dd_make_local_group_indices. 
+         * There, also memory is allocated */
+        s->nalloc_loc = 0;              /* allocation size of s->anrs_loc */
         snew_bc(cr, s->x_old, s->nr);   /* To be able to always make the ED molecule whole, ...        */ 
         nblock_bc(cr, s->nr, s->x_old); /* ... keep track of shift changes with the help of old coords */
     }
@@ -1229,8 +1153,11 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
     }
 
     /* put reference structure in origin */
-    get_COM(edi->sref.nr, edi->sref.x, edi->sref.m, edi->sref.mtot, com);
-    subtract_COM(edi->sref.nr, edi->sref.x, com);
+    get_center(edi->sref.x, edi->sref.m, edi->sref.nr, com);
+    com[XX] = -com[XX];
+    com[YY] = -com[YY];
+    com[ZZ] = -com[ZZ];
+    translate_x(edi->sref.x, edi->sref.nr, com);
 
     /* Init ED buffer */
     snew(edi->buf, 1);
@@ -1562,14 +1489,14 @@ static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms, t_commre
 
 
 struct t_fit_to_ref {
-    rvec *xcopy;       /* Working copy of the coordinates in fit_to_reference */
+    rvec *xcopy;       /* Working copy of the positions in fit_to_reference */
 };
 
-/* Fit the current coordinates to the reference coordinates 
+/* Fit the current positions to the reference positions 
  * Do not actually do the fit, just return rotation and translation.
  * Note that the COM of the reference structure was already put into 
- * the origin by init_edi. New version of fitit */
-static void fit_to_reference(rvec      *xcoll,    /* The coordinates to be fitted */
+ * the origin by init_edi. */
+static void fit_to_reference(rvec      *xcoll,    /* The positions to be fitted */
                              rvec      transvec,  /* The translation vector */ 
                              matrix    rotmat,    /* The rotation matrix */
                              t_edpar   *edi)      /* Just needed for do_edfit */
@@ -1589,47 +1516,43 @@ static void fit_to_reference(rvec      *xcoll,    /* The coordinates to be fitte
     }
     loc = edi->buf->fit_to_ref;
  
-    /* We do not touch the original coordinates but work on a copy. */
+    /* We do not touch the original positions but work on a copy. */
     for (i=0; i<edi->sref.nr; i++)
         copy_rvec(xcoll[i], loc->xcopy[i]);
 
     /* Calculate the center of mass */
-    get_COM(edi->sref.nr, loc->xcopy, edi->sref.m, edi->sref.mtot, com);
-
-    /* Subtract the center of mass from the copy */
-    subtract_COM(edi->sref.nr, loc->xcopy, com);
-
-    /* Determine the rotation matrix */
-    do_edfit(edi->sref.nr, edi->sref.x, loc->xcopy, rotmat, edi);
+    get_center(loc->xcopy, edi->sref.m, edi->sref.nr, com);
 
     transvec[XX] = -com[XX];
     transvec[YY] = -com[YY];
     transvec[ZZ] = -com[ZZ];
 
+    /* Subtract the center of mass from the copy */
+    translate_x(loc->xcopy, edi->sref.nr, transvec);
+
+    /* Determine the rotation matrix */
+    do_edfit(edi->sref.nr, edi->sref.x, loc->xcopy, rotmat, edi);
+
     GMX_MPE_LOG(ev_fit_to_reference_finish);
 }
 
 
-static void translate_and_rotate(rvec *x,         /* The coordinates to be translated and rotated */
-                                 int nat,         /* How many coordinates are there */
+static void translate_and_rotate(rvec *x,         /* The positions to be translated and rotated */
+                                 int nat,         /* How many positions are there? */
                                  rvec transvec,   /* The translation vector */ 
                                  matrix rotmat)   /* The rotation matrix */
 {
-    int i;
-
-    
     /* Translation */
-    for (i=0; i<nat; i++)
-        rvec_inc(x[i], transvec);
+    translate_x(x, nat, transvec);
 
     /* Rotation */
-    rotate_x(nat, x, rotmat);
+    rotate_x(x, nat, rotmat);
 }
 
 
-/* Gets the rms deviation of the x coordinates to the structure s */
+/* Gets the rms deviation of the positions to the structure s */
 /* fit_to_structure has to be called before calling this routine! */
-static real rmsd_from_structure(rvec           *x,  /* The x coordinates under consideration */ 
+static real rmsd_from_structure(rvec           *x,  /* The positions under consideration */ 
                                 struct gmx_edx *s)  /* The structure from which the rmsd shall be computed */
 {
     real  rmsd=0.0;
@@ -1643,41 +1566,6 @@ static real rmsd_from_structure(rvec           *x,  /* The x coordinates under c
     rmsd = sqrt(rmsd);
 
     return rmsd;
-}
-
-
-/* select the indices of the ED atoms which are local 
- *
- * Only the indices that correspond to the structure s are
- * taken into account and saved in s->c_ind[] 
- */
-static void dd_make_local_indices(gmx_domdec_t *dd, struct gmx_edx *s, t_mdatoms *md)
-{
-    int         i,ii;
-    gmx_ga2la_t ga2la;
-
-
-    ga2la = dd->ga2la;
-
-    /* we have not yet found a local atom */
-    s->nr_loc = 0; 
-    /* go through all the atom indices of the structure */
-    for(i=0; i<s->nr; i++)
-    {
-        if (ga2la_home(ga2la,s->anrs[i],&ii))
-        {
-            if (ii < md->start+md->homenr)
-            {
-                /* The atom with this index is a home atom, therefore 
-                 * save its local index in local atom numbers array */
-                s->anrs_loc[s->nr_loc] = ii;
-                /* keep track of where this local atom is in the collective c_ind array: */
-                s->c_ind[s->nr_loc] = i;
-                /* add one to the local atom count */
-                s->nr_loc++; 
-            }
-        }
-    }
 }
 
 
@@ -1695,95 +1583,21 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed,t_mdatoms *
             /* Local atoms of the reference structure (for fitting), need only be assembled
              * if their indices differ from the average ones */
             if (!edi->bRefEqAv)
-                dd_make_local_indices(dd, &edi->sref, md);
+                dd_make_local_group_indices(dd->ga2la, md, edi->sref.nr, edi->sref.anrs, 
+                        &edi->sref.nr_loc, &edi->sref.anrs_loc, &edi->sref.nalloc_loc, edi->sref.c_ind);
             
             /* Local atoms of the average structure (on these ED will be performed) */
-            dd_make_local_indices(dd, &edi->sav , md);
+            dd_make_local_group_indices(dd->ga2la, md, edi->sav.nr, edi->sav.anrs,
+                    &edi->sav.nr_loc, &edi->sav.anrs_loc, &edi->sav.nalloc_loc, edi->sav.c_ind);
 
             /* Indicate that the ED shift vectors for this structure need to be updated 
-             * at the next call to get_coordinates, since obviously we are in a NS step */
+             * at the next call to communicate_group_positions, since obviously we are in a NS step */
             edi->buf->do_edsam->bUpdateShifts = TRUE;
             
             /* Set the pointer to the next ED dataset (if any) */
             edi=edi->next_edi;
         }
     }
-}
-
-
-static void ed_get_shifts(int npbcdim, matrix box,
-        rvec *xc, struct gmx_edx *s, ivec *shifts)
-{
-    int  i,m,d;
-    rvec dx;
-
-
-    /* Get the shifts such that each atom is within closest
-     * distance to its position at the last NS time step after shifting.
-     * If we start with a whole structure, and always keep track of 
-     * shift changes, the structure will stay whole this way */
-    for (i=0; i < s->nr; i++)
-        clear_ivec(shifts[i]);
-
-    for (i=0; i<s->nr; i++)
-    {
-        /* The distance this atom moved since the last time step */
-        /* If this is more than just a bit, it has changed its home pbc box */
-        rvec_sub(xc[i],s->x_old[i],dx);
-
-        for(m=npbcdim-1; m>=0; m--)
-        {
-            while (dx[m] < -0.5*box[m][m])
-            {
-                for(d=0; d<DIM; d++)
-                    dx[d] += box[m][d];
-                shifts[i][m]++;
-            }
-            while (dx[m] >= 0.5*box[m][m])
-            {
-                for(d=0; d<DIM; d++)
-                    dx[d] -= box[m][d];
-                shifts[i][m]--;
-            }
-        }
-    }
-}
-
-
-extern void ed_shift_coords(matrix box, rvec x[], ivec *is, int nr)
-{
-    int      i,tx,ty,tz;
-
-
-    GMX_MPE_LOG(ev_shift_start);
-
-    /* Loop over the ED atoms */
-    if(TRICLINIC(box)) 
-    {
-        for (i=0; i < nr; i++)
-        {
-            tx=is[i][XX];
-            ty=is[i][YY];
-            tz=is[i][ZZ];
-
-            x[i][XX]=x[i][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
-            x[i][YY]=x[i][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
-            x[i][ZZ]=x[i][ZZ]+tz*box[ZZ][ZZ];
-        }
-    } else
-    {
-        for (i=0; i < nr; i++)
-        {
-            tx=is[i][XX];
-            ty=is[i][YY];
-            tz=is[i][ZZ];
-
-            x[i][XX]=x[i][XX]+tx*box[XX][XX];
-            x[i][YY]=x[i][YY]+ty*box[YY][YY];
-            x[i][ZZ]=x[i][ZZ]+tz*box[ZZ][ZZ];
-        }
-    }    
-    GMX_MPE_LOG(ev_shift_finish);
 }
 
 
@@ -1811,70 +1625,6 @@ static inline void ed_unshift_single_coord(matrix box, const rvec x, const ivec 
     }
 
     GMX_MPE_LOG(ev_unshift_finish);
-}
-
-
-/* Assemble the coordinates such that every node has all of them. 
- * Get the indices from structure s */
-static void get_coordinates(t_commrec      *cr, 
-                            rvec           *xc,               /* Collective array of coordinates (write here) */
-                            ivec           *shifts_xc,        /* Collective array of shifts */
-                            ivec           *extra_shifts_xc,  /* Extra shifts since last time step */
-                            bool           bNeedShiftsUpdate, /* NS step, the shifts have changed */
-                            rvec           *x_loc,            /* Local coordinates on this node (read coords from here) */ 
-                            struct gmx_edx *s,                /* The structure for which to get the current coordinates */
-                            matrix         box,
-                            const char     title[])
-{
-    int i;
-
-
-    GMX_MPE_LOG(ev_get_coords_start);
-
-    /* Zero out the collective coordinate array */
-    clear_rvecs(s->nr, xc);
-
-    /* Put the local coordinates that this node has into the right place of 
-     * the collective array. Note that in the serial case, s->c_ind[i] = i */
-    for (i=0; i<s->nr_loc; i++)
-        copy_rvec(x_loc[s->anrs_loc[i]], xc[s->c_ind[i]]);
-
-    if (PAR(cr))
-    {
-        /* Add the arrays from all nodes together */
-        gmx_sum(s->nr*3, xc[0], cr);
-
-        /* To make the ED molecule whole, start with a whole structure and each
-         * step move the assembled coordinates at closest distance to the positions 
-         * from the last step. First shift the coordinates with the saved ED shift 
-         * vectors (these are 0 when this routine is called for the first time!) */
-        ed_shift_coords(box, xc, shifts_xc, s->nr);
-        
-        /* Now check if some shifts changed since the last step.
-         * This only needs to be done when the shifts are expected to have changed,
-         * i.e. after neighboursearching */
-        if (bNeedShiftsUpdate) 
-        {
-            ed_get_shifts(3, box, xc, s, extra_shifts_xc);
-            
-            /* Shift with the additional shifts such that we get a whole molecule now */
-            ed_shift_coords(box, xc, extra_shifts_xc, s->nr);
-            
-            /* Add the shift vectors together for the next time step */
-            for (i=0; i<s->nr; i++)
-            {
-                shifts_xc[i][XX] += extra_shifts_xc[i][XX];
-                shifts_xc[i][YY] += extra_shifts_xc[i][YY];
-                shifts_xc[i][ZZ] += extra_shifts_xc[i][ZZ];
-            }
-            
-            /* Store current correctly-shifted coordinates for comparison in the next NS time step */
-            for (i=0; i<s->nr; i++)
-                copy_rvec(xc[i],s->x_old[i]);   
-        }
-    }
-    
-    GMX_MPE_LOG(ev_get_coords_finish);
 }
 
 
@@ -2226,15 +1976,15 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                 t_inputrec  *ir,     /* input record                       */
                 t_commrec   *cr,     /* communication record               */
                 gmx_edsam_t ed,      /* contains all ED data               */
-                rvec        x[],     /* coordinates of the whole MD system */
+                rvec        x[],     /* positions of the whole MD system   */
                 matrix      box)     /* the box                            */
 {
     t_edpar *edi = NULL;    /* points to a single edi data set */
     int     numedis=0;      /* keep track of the number of ED data sets in edi file */
     int     i,nr_edi;
-    rvec    *x_pbc  = NULL; /* coordinates of the whole MD system with pbc removed  */
-    rvec    *xfit   = NULL; /* the coordinates which will be fitted to the reference structure  */
-    rvec    *xstart = NULL; /* the coordinates which are subject to ED sampling */
+    rvec    *x_pbc  = NULL; /* positions of the whole MD system with pbc removed  */
+    rvec    *xfit   = NULL; /* the positions which will be fitted to the reference structure  */
+    rvec    *xstart = NULL; /* the positions which are subject to ED sampling */
     rvec    fit_transvec;   /* translation ... */
     matrix  fit_rotmat;     /* ... and rotation from fit to reference structure */
        
@@ -2276,7 +2026,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
         }
     }
 
-    /* The master does the work here. The other nodes get the coordinates 
+    /* The master does the work here. The other nodes get the positions 
      * not before dd_partition_system which is called after init_edsam */
     if (MASTER(cr))
     {
@@ -2298,23 +2048,23 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
             srenew(xfit  , edi->sref.nr );
             srenew(xstart, edi->sav.nr  );
 
-            /* Extract the coordinates of the atoms to which will be fitted */
+            /* Extract the positions of the atoms to which will be fitted */
             for (i=0; i < edi->sref.nr; i++)
             {
                 copy_rvec(x_pbc[edi->sref.anrs[i]], xfit[i]);
                 
-                /* Save the sref coordinates such that in the next time step the molecule can 
+                /* Save the sref positions such that in the next time step the molecule can 
                  * be made whole again (in the parallel case) */
                 if (PAR(cr))
                     copy_rvec(xfit[i], edi->sref.x_old[i]);
             }
             
-            /* Extract the coordinates of the atoms subject to ED sampling */
+            /* Extract the positions of the atoms subject to ED sampling */
             for (i=0; i < edi->sav.nr; i++)
             {
                 copy_rvec(x_pbc[edi->sav.anrs[i]], xstart[i]);
 
-                /* Save the sav coordinates such that in the next time step the molecule can 
+                /* Save the sav positions such that in the next time step the molecule can 
                  * be made whole again (in the parallel case) */
                 if (PAR(cr))
                     copy_rvec(xstart[i], edi->sav.x_old[i]);
@@ -2451,11 +2201,11 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 
         /* Space for collective ED buffer variables */
 
-        /* Collective coordinates of atoms with the average indices */
+        /* Collective positions of atoms with the average indices */
         snew(edi->buf->do_edsam->xcoll                  , edi->sav.nr);
         snew(edi->buf->do_edsam->shifts_xcoll           , edi->sav.nr); /* buffer for xcoll shifts */ 
         snew(edi->buf->do_edsam->extra_shifts_xcoll     , edi->sav.nr); 
-        /* Collective coordinates of atoms with the reference indices */
+        /* Collective positions of atoms with the reference indices */
         if (!edi->bRefEqAv)
         {
             snew(edi->buf->do_edsam->xc_ref             , edi->sref.nr);
@@ -2488,7 +2238,7 @@ void do_edsam(t_inputrec  *ir,
               int         step,
               t_mdatoms   *md,
               t_commrec   *cr,
-              rvec        xs[],   /* The local current coordinates on this processor */
+              rvec        xs[],   /* The local current positions on this processor */
               rvec        v[],    /* The velocities */
               matrix      box,
               gmx_edsam_t ed)
@@ -2530,28 +2280,30 @@ void do_edsam(t_inputrec  *ir,
                 /* initialise radacc radius for slope criterion */
                 buf->oldrad=calc_radius(&edi->vecs.radacc);
 
-            /* Copy the coordinates into buf->xc* arrays and after ED 
-             * feed back corrections to the official coordinates */
+            /* Copy the positions into buf->xc* arrays and after ED 
+             * feed back corrections to the official positions */
 
-            /* Broadcast the ED coordinates such that every node has all of them
-             * Every node contributes its local coordinates xs and stores it in
+            /* Broadcast the ED positions such that every node has all of them
+             * Every node contributes its local positions xs and stores it in
              * the collective buf->xcoll array. Note that for edinr > 1
              * xs could already have been modified by an earlier ED */
             
-            get_coordinates(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, xs, &edi->sav,  box, "XC_AVERAGE");  
+            communicate_group_positions(cr, buf->xcoll, buf->shifts_xcoll, buf->extra_shifts_xcoll, buf->bUpdateShifts, xs, 
+                    edi->sav.nr, edi->sav.nr_loc, edi->sav.anrs_loc, edi->sav.c_ind, edi->sav.x_old,  box);  
 
 #ifdef DEBUG_ED
             dump_xcoll(edi, buf, cr, step);
 #endif
-            /* Only assembly reference coordinates if their indices differ from the average ones */
+            /* Only assembly reference positions if their indices differ from the average ones */
             if (!edi->bRefEqAv)
-                get_coordinates(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, xs, &edi->sref, box, "XC_REFERENCE");
+                communicate_group_positions(cr, buf->xc_ref, buf->shifts_xc_ref, buf->extra_shifts_xc_ref, buf->bUpdateShifts, xs, 
+                        edi->sref.nr, edi->sref.nr_loc, edi->sref.anrs_loc, edi->sref.c_ind, edi->sref.x_old, box);
             
-            /* If bUpdateShifts was TRUE then the shifts have just been updated in get_coordinates.
+            /* If bUpdateShifts was TRUE then the shifts have just been updated in get_positions.
              * We do not need to uptdate the shifts until the next NS step */
             buf->bUpdateShifts = FALSE;
             
-            /* Now all nodes have all of the ED coordinates in edi->sav->xcoll,
+            /* Now all nodes have all of the ED positions in edi->sav->xcoll,
              * as well as the indices in edi->sav.anrs */
 
             /* Fit the reference indices to the reference structure */
@@ -2614,13 +2366,13 @@ void do_edsam(t_inputrec  *ir,
                     write_edo(edinr, edi, ed, step, rmsdev);
             }
             
-            /* Copy back the coordinates unless monitoring only */
+            /* Copy back the positions unless monitoring only */
             if (ed_constraints(ed->eEDtype, edi))
             {
                 /* remove fitting */
                 rmfit(edi->sav.nr, buf->xcoll, transvec, rotmat);
 
-                /* Copy the ED corrected coordinates into the coordinate array */
+                /* Copy the ED corrected positions into the coordinate array */
                 /* Each node copies its local part. In the serial case, nat_loc is the 
                  * total number of ED atoms */
                 for (i=0; i<edi->sav.nr_loc; i++)
@@ -2629,7 +2381,7 @@ void do_edsam(t_inputrec  *ir,
                     ed_unshift_single_coord(box, buf->xcoll[edi->sav.c_ind[i]], 
                                             buf->shifts_xcoll[edi->sav.c_ind[i]], x_unsh);
                     
-                    /* dx is the ED correction to the coordinates: */
+                    /* dx is the ED correction to the positions: */
                     rvec_sub(x_unsh, xs[edi->sav.anrs_loc[i]], dx);
                     
                     if (v != NULL)

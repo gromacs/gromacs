@@ -103,7 +103,7 @@ enum
     eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
     eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
     eNR_BONDS,                eNR_G96BONDS,             eNR_FENEBONDS,
-    eNR_TABBONDS,
+    eNR_TABBONDS,             eNR_RESTRBONDS,
     eNR_ANGLES,               eNR_G96ANGLES,            eNR_QANGLES,
     eNR_TABANGLES,            eNR_PROPER,               eNR_IMPROPER,
     eNR_RB,                   eNR_FOURDIH,              eNR_TABDIHS,
