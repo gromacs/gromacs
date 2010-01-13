@@ -141,7 +141,7 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     state->flags |= (1<<estTC_INT);
   }
   
-  init_gtc_state(state,state->ngtc,nnhpres,ir->opts.nnhchains); /* allocate the space for nose-hoover chains */
+  init_gtc_state(state,state->ngtc,nnhpres,ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);

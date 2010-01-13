@@ -1578,7 +1578,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[0] = state_global->flags;
         buf[1] = state_global->ngtc;
         buf[2] = state_global->nnhpres;
-        buf[3] = state_global->nnhchains;
+        buf[3] = state_global->nhchainlength;
     }
     dd_bcast(dd,4*sizeof(int),buf);
     

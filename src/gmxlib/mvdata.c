@@ -210,7 +210,7 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 {
   block_bc(cr,state->natoms);
   block_bc(cr,state->ngtc);
-  block_bc(cr,state->nnhchains);
+  block_bc(cr,state->nhchainlength);
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
   block_bc(cr,state->flags);
@@ -220,7 +220,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
   int i,ngtch;
 
-  ngtch = (state->ngtc+1)*(state->nnhchains); /* need an extra state for the barostat */
+  ngtch = (state->ngtc+1)*(state->nhchainlength); /* need an extra state for the barostat */
 
   bcast_state_setup(cr,state);
 

@@ -675,9 +675,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     /* grpopts stuff */
     do_int(ir->opts.ngtc); 
     if (file_version >= 69) {
-      do_int(ir->opts.nnhchains);
+      do_int(ir->opts.nhchainlength);
     } else {
-      ir->opts.nnhchains = 0;
+      ir->opts.nhchainlength = 0;
     }
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 
@@ -2102,7 +2102,7 @@ static int do_tpx(int fp,bool bRead,
   if (bRead && tpx.bIr && ir) {
     if (state->ngtc == 0) {
       /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nnhchains);
+      init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
     }
     if (tpx.bTop && mtop) {
       if (file_version < 57) {

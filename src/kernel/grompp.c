@@ -1204,7 +1204,7 @@ int main (int argc, char *argv[])
 	   bGenVel ? state.v : NULL);
 	
   /* Init the temperature coupling state */
-  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nnhchains);
+  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength);
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");

@@ -300,19 +300,19 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 		 "changing \"yes\" to \"Berendsen\"\n");
   }
   if (ir->etc == etcNOSEHOOVER) {
-    if (ir->opts.nnhchains < 1) 
+    if (ir->opts.nhchainlength < 1) 
       {
-	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nnhchains);
-	ir->opts.nnhchains =1;
+	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
+	ir->opts.nhchainlength =1;
 	warning(NULL);
       }
     
-    if (!EI_VV(ir->eI) && ir->opts.nnhchains > 1) {
-      warning_note("leapfrog does not yet support Nose-Hoover chains, nnhchains reset to 1");
-      ir->opts.nnhchains = 1;
+    if (!EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
+      warning_note("leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
+      ir->opts.nhchainlength = 1;
     }
   } else {
-    ir->opts.nnhchains = 0;
+    ir->opts.nhchainlength = 0;
   }
 
   if (ir->etc == etcBERENDSEN) {
@@ -811,7 +811,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
-  ITYPE("nhchains",     ir->opts.nnhchains, NNHCHAINS);
+  ITYPE("nhchains",     ir->opts.nhchainlength, NHCHAINLENGTH);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
