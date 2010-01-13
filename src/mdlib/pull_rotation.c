@@ -851,32 +851,24 @@ static void get_center(rvec x[], real weight[], const int nat, rvec rcenter)
 
 /* Get the center from local coordinates that already have the correct
  * PBC representation */
-static void get_center_comm(t_rotgrp *rotg, bool bNS, t_commrec *cr)
+static void get_center_comm(
+        t_commrec *cr,
+        rvec x_loc[], /* in: Local positions */
+        real weight_loc[], /* in: local masses or other weights */
+        int nat_loc, /* in: local number of atoms */
+        int nat_group, /* in: total number of atoms of the group */ 
+        rvec center) /* out: weighted center */
 {
-    gmx_enfrotgrp_t erg;
     double weight_sum, denom;
     dvec   dcoord_sum;
     double buf[4];    
-    int    i,ii;
     
     
-    erg = rotg->enfrotgrp;
+    weight_sum = get_coord_sum(x_loc, weight_loc, nat_loc, dcoord_sum);
     
-    /* Prepare a local masses array; this array 
-     * changes in DD/neighborsearching steps */
-    if (bNS && erg->m_loc != NULL)
-    {
-        for (i=0; i<erg->nat_loc; i++)
-        {
-            /* Index of local atom w.r.t. the collective rotation group */
-            ii = erg->xc_ref_ind[i];
-            erg->m_loc[i] = erg->mc[ii];
-        }
-    }
-    
-    weight_sum = get_coord_sum(erg->x_loc_pbc, erg->m_loc, erg->nat_loc, dcoord_sum);
-    
-    /* For parallel calculations, add the local contributions */
+    /* Add the local contributions from all nodes. Put the coordinate sum
+     * vector and the weight in a buffer array so that we get along with a 
+     * single communication call. */
     if (PAR(cr))
     {
         buf[0] = dcoord_sum[XX];
@@ -884,7 +876,7 @@ static void get_center_comm(t_rotgrp *rotg, bool bNS, t_commrec *cr)
         buf[2] = dcoord_sum[ZZ];
         buf[3] = weight_sum;
         
-        /* Communicate */
+        /* Communicate buffer */
         gmx_sumd(4, buf, cr);
         
         dcoord_sum[XX] = buf[0];
@@ -893,14 +885,14 @@ static void get_center_comm(t_rotgrp *rotg, bool bNS, t_commrec *cr)
         weight_sum     = buf[3];
     }
     
-    if (erg->m_loc != NULL)
+    if (weight_loc != NULL)
         denom = 1.0/weight_sum; /* Divide by the sum of weight */
     else
-        denom = 1.0/rotg->nat;  /* Divide by the number of atoms */
+        denom = 1.0/nat_group;  /* Divide by the number of atoms */
         
-    erg->center[XX] = dcoord_sum[XX]*denom;
-    erg->center[YY] = dcoord_sum[YY]*denom;
-    erg->center[ZZ] = dcoord_sum[ZZ]*denom;
+    center[XX] = dcoord_sum[XX]*denom;
+    center[YY] = dcoord_sum[YY]*denom;
+    center[ZZ] = dcoord_sum[ZZ]*denom;
 }
 
 
@@ -2673,7 +2665,8 @@ static void make_local_rotation_group(gmx_ga2la_t ga2la,
 
         if (ii >= start && ii < end) {
             /* This is a home atom, add it to the local rotation group */
-            if (erg->nat_loc >= erg->nalloc_loc) {
+            if (erg->nat_loc >= erg->nalloc_loc)
+            {
                 erg->nalloc_loc = over_alloc_dd(erg->nat_loc+1);
                 srenew(erg->ind_loc,erg->nalloc_loc);
             }
@@ -2887,7 +2880,7 @@ extern void do_rotation(
         gmx_wallcycle_t wcycle,
         bool bNS)
 {
-    int      g;
+    int      g,i,ii;
     t_pbc    pbc;
     t_rot    *rot;
     t_rotgrp *rotg;
@@ -2938,7 +2931,20 @@ extern void do_rotation(
             if (rotg->eOrigin == erotgOriginBox)
                 clear_rvec(erg->center);
             else
-                get_center_comm(rotg, bNS, cr);
+            {
+                /* Prepare a local masses array; this array 
+                 * changes in DD/neighborsearching steps */
+                if (bNS && erg->m_loc != NULL)
+                {
+                    for (i=0; i<erg->nat_loc; i++)
+                    {
+                        /* Index of local atom w.r.t. the collective rotation group */
+                        ii = erg->xc_ref_ind[i];
+                        erg->m_loc[i] = erg->mc[ii];
+                    }
+                }
+                get_center_comm(cr, erg->x_loc_pbc, erg->m_loc, erg->nat_loc, rotg->nat, erg->center);
+            }
             break;
         case erotgFLEX1:
         case erotgFLEX2:
