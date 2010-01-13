@@ -1710,8 +1710,8 @@ static real gather_energy_bsplines(gmx_pme_t pme,real *grid,
     return energy;
 }
 
-void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
-                   int nz,rvec fractx[],int nr,real charge[],
+void make_bsplines(splinevec theta,splinevec dtheta,int order,
+                   rvec fractx[],int nr,real charge[],
                    bool bFreeEnergy)
 {
     /* construct splines for local atoms */
@@ -1970,11 +1970,12 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
     }
 }
 
-#ifdef GMX_MPI   
 static void 
 init_overlap_comm(pme_overlap_t *  ol,
                   int              norder,
+#ifdef GMX_MPI
                   MPI_Comm         comm,  
+#endif
                   int              nnodes, 
                   int              nodeid,
                   int              ndata)
@@ -1986,7 +1987,9 @@ init_overlap_comm(pme_overlap_t *  ol,
     bool bCont;
     int fft_start,fft_end,send_index1,recv_index1;
     
+#ifdef GMX_MPI
     ol->mpi_comm = comm;
+#endif
     
     ol->nnodes = nnodes;
     ol->nodeid = nodeid;
@@ -2076,21 +2079,6 @@ init_overlap_comm(pme_overlap_t *  ol,
         pgc->recv_index0 = fft_start;
         pgc->recv_nindex = max(0,recv_index1 - pgc->recv_index0);
     }
-}
-#endif
-
-static void 
-init_overlap_comm_serial(pme_overlap_t *  ol,
-                         int              norder,
-                         int              ndata)
-{
-    ol->nnodes         = 1;
-    ol->noverlap_nodes = 0;
-    snew(ol->s2g0,ol->nnodes+1);
-    snew(ol->s2g1,ol->nnodes);
-    ol->s2g0[0] = 0;
-    ol->s2g0[1] = ndata;
-    ol->s2g1[0] = ndata + norder - 1;
 }
 
 static int *
@@ -2297,28 +2285,17 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         }
     }
 
-    if (pme->nnodes_major > 1)
-    {
+    init_overlap_comm(&pme->overlap[0],pme->pme_order,
 #ifdef GMX_MPI
-        init_overlap_comm(&pme->overlap[0],pme->pme_order,pme->mpi_comm_d[0],
-                          pme->nnodes_major,pme->nodeid_major,pme->nkx);
+                      pme->mpi_comm_d[0],
 #endif
-    }
-    else
-    {
-        init_overlap_comm_serial(&pme->overlap[0],pme->pme_order,pme->nkx);
-    }
-    if (pme->nnodes_minor > 1)
-    {
+                      pme->nnodes_major,pme->nodeid_major,pme->nkx);
+    
+    init_overlap_comm(&pme->overlap[1],pme->pme_order,
 #ifdef GMX_MPI
-        init_overlap_comm(&pme->overlap[1],pme->pme_order,pme->mpi_comm_d[1],
-                          pme->nnodes_minor,pme->nodeid_minor,pme->nky);
+                      pme->mpi_comm_d[1],
 #endif
-    }
-    else
-    {
-        init_overlap_comm_serial(&pme->overlap[1],pme->pme_order,pme->nky);
-    }
+                      pme->nnodes_minor,pme->nodeid_minor,pme->nky);
     
     snew(pme->bsp_mod[XX],pme->nkx);
     snew(pme->bsp_mod[YY],pme->nky);
@@ -2431,7 +2408,7 @@ static void spread_on_grid(gmx_pme_t pme,
         calc_interpolation_idx(pme,atc);
         
         /* make local bsplines  */
-        make_bsplines(atc->theta,atc->dtheta,pme->pme_order,pme->nky,pme->nky,pme->nkz,
+        make_bsplines(atc->theta,atc->dtheta,pme->pme_order,
                       atc->fractx,atc->n,atc->q,pme->bFEP);
     }    
     
