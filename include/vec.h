@@ -130,7 +130,10 @@
 
 #ifdef __cplusplus
 extern "C" {
+#elif 0
+} /* avoid screwing up indentation */
 #endif
+
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
@@ -237,6 +240,16 @@ static real sqr(real x)
 static inline double dsqr(double x)
 {
   return (x*x);
+}
+
+/* Maclaurin series for sinh(x)/x, useful for NH chains and MTTK pressure control 
+   Here, we compute it to 10th order, which might be overkill, 8th is probably enough, 
+   but it's not very much more expensive. */
+
+static inline real series_sinhx(real x) 
+{
+  real x2 = x*x;
+  return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
 }
 
 extern void vecinvsqrt(real in[],real out[],int n);
@@ -368,6 +381,16 @@ static inline void copy_rvec(const rvec a,rvec b)
   b[XX]=a[XX];
   b[YY]=a[YY];
   b[ZZ]=a[ZZ];
+}
+
+static inline void copy_rvecn(rvec *a,rvec *b,int startn, int endn)
+{
+  int i;
+  for (i=startn;i<endn;i++) {
+    b[i][XX]=a[i][XX];
+    b[i][YY]=a[i][YY];
+    b[i][ZZ]=a[i][ZZ];
+  }
 }
 
 static inline void copy_dvec(const dvec a,dvec b)
@@ -509,7 +532,14 @@ static inline double dnorm(const dvec a)
   return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
 
-static inline real cos_angle(const rvec a,const rvec b)
+/* WARNING:
+ * Do _not_ use these routines to calculate the angle between two vectors
+ * as acos(cos_angle(u,v)). While it might seem obvious, the acos function
+ * is very flat close to -1 and 1, which will lead to accuracy-loss.
+ * Instead, use the new gmx_angle() function directly.
+ */
+static inline real 
+cos_angle(const rvec a,const rvec b)
 {
   /* 
    *                  ax*bx + ay*by + az*bz
@@ -542,7 +572,14 @@ static inline real cos_angle(const rvec a,const rvec b)
   return cosval;
 }
 
-static inline real cos_angle_no_table(const rvec a,const rvec b)
+/* WARNING:
+ * Do _not_ use these routines to calculate the angle between two vectors
+ * as acos(cos_angle(u,v)). While it might seem obvious, the acos function
+ * is very flat close to -1 and 1, which will lead to accuracy-loss.
+ * Instead, use the new gmx_angle() function directly.
+ */
+static inline real 
+cos_angle_no_table(const rvec a,const rvec b)
 {
   /* This version does not need the invsqrt lookup table */
   real   cosval;
@@ -567,6 +604,7 @@ static inline real cos_angle_no_table(const rvec a,const rvec b)
   return cosval;
 }
 
+
 static inline void cprod(const rvec a,const rvec b,rvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
@@ -579,6 +617,24 @@ static inline void dcprod(const dvec a,const dvec b,dvec c)
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
   c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];
   c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
+}
+
+/* This routine calculates the angle between a & b without any loss of accuracy close to 0/PI.
+ * If you only need cos(theta), use the cos_angle() routines to save a few cycles.
+ * This routine is faster than it might appear, since atan2 is accelerated on many CPUs (e.g. x86).
+ */
+static inline real 
+gmx_angle(const rvec a, const rvec b)
+{
+    rvec w;
+    real wlen,s,theta;
+    
+    cprod(a,b,w);
+    
+    wlen  = norm(w);
+    s     = iprod(a,b);
+    
+    return atan2(wlen,s);
 }
 
 static inline void mmul_ur0(matrix a,matrix b,matrix dest)

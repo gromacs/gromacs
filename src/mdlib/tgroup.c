@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -53,35 +53,40 @@
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
-  int i,j;
-  
-  for(i=0; (i<ngtc); i++) {
-    tcstat[i].T = 0;
-    clear_mat(tcstat[i].ekin);
-  }
+    int i,j;
+    
+    for(i=0; (i<ngtc); i++) {
+        tcstat[i].T = 0;
+        clear_mat(tcstat[i].ekinh);
+        clear_mat(tcstat[i].ekinh_old);
+        clear_mat(tcstat[i].ekinf);
+    }
 }
 
 static void init_grpstat(FILE *log,
 			 gmx_mtop_t *mtop,int ngacc,t_grp_acc gstat[])
 {
-  gmx_groups_t *groups;
-  gmx_mtop_atomloop_all_t aloop;
-  int    i,grp;
-  t_atom *atom;
-
-  if (ngacc > 0) {
-    groups = &mtop->groups;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
-    while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
-      grp = ggrpnr(groups,egcACC,i);
-      if ((grp < 0) && (grp >= ngacc))
-	gmx_incons("Input for acceleration groups wrong");
-      gstat[grp].nat++;
-      /* This will not work for integrator BD */
-      gstat[grp].mA += atom->m;
-      gstat[grp].mB += atom->mB;
+    gmx_groups_t *groups;
+    gmx_mtop_atomloop_all_t aloop;
+    int    i,grp;
+    t_atom *atom;
+    
+    if (ngacc > 0) {
+        groups = &mtop->groups;
+        aloop = gmx_mtop_atomloop_all_init(mtop);
+        while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) 
+        {
+            grp = ggrpnr(groups,egcACC,i);
+            if ((grp < 0) && (grp >= ngacc))
+            {
+                gmx_incons("Input for acceleration groups wrong");
+            }
+            gstat[grp].nat++;
+            /* This will not work for integrator BD */
+            gstat[grp].mA += atom->m;
+            gstat[grp].mB += atom->mB;
+        }
     }
-  }
 }
 
 void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
@@ -94,11 +99,15 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 #endif
   snew(ekind->tcstat,opts->ngtc);
   init_grptcstat(opts->ngtc,ekind->tcstat);
-   /* Set Berendsen tcoupl lambda's to 1, 
+  /* Set Berendsen tcoupl lambda's to 1, 
    * so runs without Berendsen coupling are not affected.
    */
-  for(i=0; i<opts->ngtc; i++) {
-    ekind->tcstat[i].lambda = 1.0;
+  for(i=0; i<opts->ngtc; i++) 
+  {
+      ekind->tcstat[i].lambda = 1.0;
+      ekind->tcstat[i].vscale_nhc = 1.0;
+      ekind->tcstat[i].ekinscaleh_nhc = 1.0;
+      ekind->tcstat[i].ekinscalef_nhc = 1.0;
   }
   
   snew(ekind->grpstat,opts->ngacc);
@@ -107,32 +116,42 @@ void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
 
 void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
 {
-  /* This routine will only be called when it's necessary */
-  t_bin *rb;
-  int   g;
-
-  rb = mk_bin();
-
-  for(g=0; (g<opts->ngacc); g++) 
-    add_binr(rb,DIM,ekind->grpstat[g].u);
+    /* This routine will only be called when it's necessary */
+    t_bin *rb;
+    int   g;
     
-  sum_bin(rb,cr);
-  
-  for(g=0; (g<opts->ngacc); g++) 
-    extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
-
-  destroy_bin(rb);
+    rb = mk_bin();
+    
+    for(g=0; (g<opts->ngacc); g++) 
+    {
+        add_binr(rb,DIM,ekind->grpstat[g].u);
+    }
+    sum_bin(rb,cr);
+    
+    for(g=0; (g<opts->ngacc); g++) 
+    {
+        extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
+    }
+    destroy_bin(rb);
 }       
 
+/* I don't think accumulate_ekin is used anymore? */
+
+#if 0
 static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,
 			    gmx_ekindata_t *ekind)
 {
-  int g;
+    int g;
 
-  if(PAR(cr))
-    for(g=0; (g<opts->ngtc); g++) 
-      gmx_sum(DIM*DIM,ekind->tcstat[g].ekin[0],cr);
+    if(PAR(cr))
+    {
+        for(g=0; (g<opts->ngtc); g++) 
+        {
+            gmx_sum(DIM*DIM,ekind->tcstat[g].ekinf[0],cr);
+        }
+    }
 }       
+#endif 
 
 void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 		     t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
@@ -155,81 +174,99 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
       if (md->cACC)
 	g = md->cACC[n];
       for(d=0; (d<DIM);d++) {
-	mv = md->massT[n]*v[n][d];
-	ekind->grpstat[g].u[d] += mv;
+          mv = md->massT[n]*v[n][d];
+          ekind->grpstat[g].u[d] += mv;
       }
     }
 
     for (g=0; (g < opts->ngacc); g++) {
       for(d=0; (d<DIM);d++) {
-	ekind->grpstat[g].u[d] /=
-	  (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
+          ekind->grpstat[g].u[d] /=
+              (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
       }
     }
   }
 }
 
-real sum_ekin(bool bFirstStep,
-	      t_grpopts *opts,gmx_ekindata_t *ekind,
-	      tensor ekin,real *dekindlambda)
+real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
+              bool bEkinAveVel, bool bSaveEkinOld, bool bScaleEkin)
 {
-  int          i,j,m,ngtc;
-  real         T,ek;
-  t_grp_tcstat *tcstat;
-  real         nrdf,nd,*ndf;
-  
-  ngtc = opts->ngtc;
-  ndf  = opts->nrdf;
-  
-  clear_mat(ekin);
-  
-  T = 0; 
-  nrdf = 0;
-
-  for(i=0; (i<ngtc); i++) {
-    tcstat = &ekind->tcstat[i];
-    nd = ndf[i];
-    /* Sometimes a group does not have degrees of freedom, e.g.
-     * when it consists of shells and virtual sites, then we just
-     * set the temperatue to 0 and also neglect the kinetic
-     * energy, which should be  zero anyway.
-     */
-    if (nd > 0) {
-      if (bFirstStep) {
-	/* This Ekin is only used for reporting the initial temperature
-	 * or when doing mdrun -rerun.
-	 */
-	copy_mat(tcstat->ekinh,tcstat->ekin);
-      } else {
-	/* Calculate the full step Ekin as the average of the half steps */
-	for(j=0; (j<DIM); j++)
-	  for(m=0; (m<DIM); m++)
-	    tcstat->ekin[j][m] =
-	      0.5*(tcstat->ekinh[j][m] + tcstat->ekinh_old[j][m]);
-      }
-      m_add(tcstat->ekin,ekin,ekin);
-      ek = 0;
-      for(m=0; (m<DIM); m++)
-	ek += tcstat->ekinh[m][m];
-      tcstat->Th = calc_temp(ek,nd);
-      ek = 0;
-      for(m=0; (m<DIM); m++) 
-	ek += tcstat->ekin[m][m];
-      tcstat->T = calc_temp(ek,nd);
-    }
-    else {
-      tcstat->T  = 0;
-      tcstat->Th = 0;
-    }
+    int          i,j,m,ngtc;
+    real         T,ek;
+    t_grp_tcstat *tcstat;
+    real         nrdf,nd,*ndf;
     
-    T    += nd*tcstat->T;
-    nrdf += nd;
-  }
-  if (nrdf > 0)
-    T/=nrdf;
+    ngtc = opts->ngtc;
+    ndf  = opts->nrdf;
+    
+    T = 0; 
+    nrdf = 0;
 
-  if (dekindlambda)
-    *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
+    clear_mat(ekind->ekin);
 
-  return T;
+    for(i=0; (i<ngtc); i++) 
+    {
+
+        nd = ndf[i];
+        tcstat = &ekind->tcstat[i];
+        /* Sometimes a group does not have degrees of freedom, e.g.
+         * when it consists of shells and virtual sites, then we just
+         * set the temperatue to 0 and also neglect the kinetic
+         * energy, which should be  zero anyway.
+         */
+        
+        if (nd > 0) {
+            if (bEkinAveVel)
+            {
+                if (!bScaleEkin)
+                {
+                    /* in this case, kinetic energy is from the current velocities already */
+                    msmul(tcstat->ekinf,tcstat->ekinscalef_nhc,tcstat->ekinf);
+                }
+            } 
+            else 
+                
+            {
+                /* Calculate the full step Ekin as the average of the half steps */
+                for(j=0; (j<DIM); j++)
+                {
+                    for(m=0; (m<DIM); m++)
+                    {
+                        tcstat->ekinf[j][m] =
+                            0.5*(tcstat->ekinh[j][m]*tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
+                    }
+                }
+            }
+            m_add(tcstat->ekinf,ekind->ekin,ekind->ekin);
+            
+            tcstat->Th = calc_temp(trace(tcstat->ekinh),nd);
+            tcstat->T  = calc_temp(trace(tcstat->ekinf),nd);
+
+            /* after the scaling factors have been multiplied in, we can remove them */
+            if (bEkinAveVel) 
+            {
+                tcstat->ekinscalef_nhc = 1.0;
+            } 
+            else 
+            {
+                tcstat->ekinscaleh_nhc = 1.0;
+            }
+        }
+        else 
+        {
+            tcstat->T  = 0;
+            tcstat->Th = 0;
+        }
+        T    += nd*tcstat->T;
+        nrdf += nd;
+    }
+    if (nrdf > 0)
+    {
+        T/=nrdf;
+    }
+    if (dekindlambda) 
+    {
+        *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
+    }
+    return T;
 }

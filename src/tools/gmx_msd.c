@@ -189,7 +189,7 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
     }
     fprintf(out,"\n");
   }
-  fclose(out);
+  ffclose(out);
 }
 
 /* called from corr_loop, to do the main calculations */
@@ -503,7 +503,7 @@ void printmol(t_corr *curr,const char *fn,
 	pdbinfo[j].bfac = sqrtD;
     }
   }
-  fclose(out);
+  ffclose(out);
   do_view(oenv,fn,"-graphtype bar");
   
   /* Compute variance, stddev and error */
@@ -534,7 +534,7 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
 	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
 	      real t_pdb,rvec **x_pdb,matrix box_pdb, const output_env_t oenv)
 {
-  rvec         *x[2],*xa[2],com;
+  rvec         *x[2],*xa[2],com={0};
   real         t,t_prev=0;
   int          natoms,i,j,status,cur=0,maxframes=0;
 #define        prev (1-cur)
@@ -789,14 +789,15 @@ int gmx_msd(int argc,char *argv[])
 {
   const char *desc[] = {
     "g_msd computes the mean square displacement (MSD) of atoms from",
-    "their initial positions. This provides an easy way to compute",
+    "a set of initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation.",
-    "The time between additional starting points for the MSD calculation",
+    "The time between the reference points for the MSD calculation",
     "is set with [TT]-trestart[tt].",
     "The diffusion constant is calculated by least squares fitting a",
-    "straight line through the MSD from [TT]-beginfit[tt] to",
-    "[TT]-endfit[tt]. An error estimate given, which is the difference",
-    "of the diffusion coefficients obtained from fits over the two halfs",
+    "straight line (D*t + c) through the MSD(t) from [TT]-beginfit[tt] to",
+    "[TT]-endfit[tt] (note that t is time from the reference positions,",
+    "not simulation time). An error estimate given, which is the difference",
+    "of the diffusion coefficients obtained from fits over the two halves",
     "of the fit interval.[PAR]",
     "There are three, mutually exclusive, options to determine different",
     "types of mean square displacement: [TT]-type[tt], [TT]-lateral[tt]",
@@ -808,14 +809,14 @@ int gmx_msd(int argc,char *argv[])
     "as mdrun usually already removes the center of mass motion.",
     "When you use this option be sure that the whole system is stored",
     "in the trajectory file.[PAR]",
-    "[TT]-mw[tt], i.e. for each inidividual molecule an diffusion constant",
+    "[TT]-mw[tt], i.e. for each individual molecule an diffusion constant",
     "is computed for its center of mass. The chosen index group will",
     "be split into molecules.",
     "The diffusion coefficient is determined by linear regression of the MSD,",
     "where, unlike for the normal output of D, the times are weighted",
-    "according to the number of restart point, i.e. short times have",
-    "a higher weight. Also when [TT]-beginfit[tt]=-1,fitting starts at 0",
-    "and when [TT]-endfit[tt]=-1, fitting goes to the end.",
+    "according to the number of reference points, i.e. short times have",
+    "a higher weight. Also when [TT]-beginfit[tt]=-1,fitting starts at 10%",
+    "and when [TT]-endfit[tt]=-1, fitting goes to 90%.",
     "Using this option one also gets an accurate error estimate",
     "based on the statistics between individual molecules.",
     "Note that this diffusion coefficient and error estimate are only",

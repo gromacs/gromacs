@@ -303,8 +303,8 @@ int main (int argc,char *argv[])
   in  = opt2FILE("-d",NFILE,fnm,"r");
   out = ftp2FILE(efITP,NFILE,fnm,"w");
   conv_dr(in,out,opt2fn("-m",NFILE,fnm),&(top->atoms),r0,bXplor,bVerbose);
-  fclose(in);
-  fclose(out);
+  ffclose(in);
+  ffclose(out);
   
   thanx(stderr);
   

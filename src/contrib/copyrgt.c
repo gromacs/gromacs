@@ -156,8 +156,8 @@ void cr_c(char *fn)
       fprintf(out,"%s\n",line);
     } while (!feof(in) && fgets2(line,MAXS,in));
   }
-  fclose(in);
-  fclose(out);
+  ffclose(in);
+  ffclose(out);
 }
 
 void cr_other(char *fn)
@@ -222,8 +222,8 @@ void cr_tex(char *fn)
       fprintf(out,"%s\n",line);
     while (!feof(in) && fgets2(line,MAXS,in));
   }
-  fclose(in);
-  fclose(out);
+  ffclose(in);
+  ffclose(out);
 }
 
 int main(int argc,char *argv[])

@@ -70,33 +70,86 @@ extern void set_stochd_state(gmx_update_t sd,t_state *state);
 extern void set_deform_reference_box(gmx_update_t upd,
 				     gmx_large_int_t step,matrix box);
 
-extern void update(FILE         *fplog,
+extern void update_extended(FILE         *fplog,
 		   gmx_large_int_t   step,
-		   real         *dvdlambda, /* FEP stuff */
-		   t_inputrec   *inputrec,  /* input record and box stuff */
+		   t_inputrec   *inputrec,  
 		   t_mdatoms    *md,
 		   t_state      *state,
-		   t_graph      *graph,	
-		   rvec         *f,         /* forces on home particles */
-		   bool         bDoLR,
-		   rvec         *f_lr,      /* LR forces, only with dDoLR */
-		   t_fcdata     *fcd,
-		   t_idef       *idef,
 		   gmx_ekindata_t *ekind,
-		   matrix       *scale_tot,
-		   t_commrec    *cr,
-		   t_nrnb       *nrnb,
+		   matrix       pcoupl_mu,		    
+		   matrix       M,	    
 		   gmx_wallcycle_t wcycle,
 		   gmx_update_t upd,
-		   gmx_constr_t constr,
-		   bool         bCalcVir,
-		   tensor       vir_part,
-		   bool         bNEMD,
-		   bool         bInitStep);
+		   bool         bInitStep,
+		   bool         bFirstHalf,
+		   t_extmass    *MassQ
+);
 /* Return TRUE if OK, FALSE in case of Shake Error */
-     
+
+extern void update_coords(FILE         *fplog,
+			  gmx_large_int_t   step,
+			  t_inputrec   *inputrec,  /* input record and box stuff	*/
+			  t_mdatoms    *md,
+			  t_state      *state,
+			  rvec         *f,    /* forces on home particles */
+			  bool         bDoLR,
+			  rvec         *f_lr,
+			  t_fcdata     *fcd,
+			  gmx_ekindata_t *ekind,
+			  matrix       M,
+			  gmx_wallcycle_t wcycle,
+			  gmx_update_t upd,
+			  bool         bInitStep,
+			  int          bUpdatePart,
+			  t_commrec    *cr,  /* these shouldn't be here -- need to think about it */
+			  t_nrnb       *nrnb,
+			  gmx_constr_t constr,
+			  t_idef       *idef);
+
+/* Return TRUE if OK, FALSE in case of Shake Error */
+
+extern void update_constraints(FILE         *fplog,
+			       gmx_large_int_t   step,
+			       real         *dvdlambda, /* FEP stuff */
+			       t_inputrec   *inputrec,  /* input record and box stuff	*/
+			       gmx_ekindata_t *ekind,
+			       t_mdatoms    *md,
+			       t_state      *state,
+			       t_graph      *graph,	
+			       rvec         force[],    /* forces on home particles */
+			       t_idef       *idef,
+			       tensor       vir_part,
+			       tensor       vir,
+			       t_commrec    *cr,
+			       t_nrnb       *nrnb,
+			       gmx_wallcycle_t wcycle,
+			       gmx_update_t upd,
+			       gmx_constr_t constr,
+			       bool         bInitStep,
+			       bool         bFirstHalf,
+			       bool         bCalcVir,
+			       real         vetanew);
+
+/* Return TRUE if OK, FALSE in case of Shake Error */
+
+extern void update_box(FILE         *fplog,
+		       gmx_large_int_t   step,
+		       t_inputrec   *inputrec,  /* input record and box stuff	*/
+		       t_mdatoms    *md,
+		       t_state      *state,
+		       t_graph      *graph,
+		       rvec         force[],    /* forces on home particles */
+		       matrix       *scale_tot,
+		       matrix       pcoupl_mu,		    
+		       t_nrnb       *nrnb,
+		       gmx_wallcycle_t wcycle,
+		       gmx_update_t upd,
+		       bool         bInitStep,
+		       bool         bFirstHalf);
+/* Return TRUE if OK, FALSE in case of Shake Error */
+
 extern void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
-			 gmx_ekindata_t *ekind,t_nrnb *nrnb);
+			 gmx_ekindata_t *ekind,t_nrnb *nrnb,bool bEkinAveVel, bool bSaveOld);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -126,12 +179,30 @@ restore_ekinstate_from_state(t_commrec *cr,
 extern void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt);
 
 extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
-			      real xi[],double ixi[]);
-/* Compute temperature scaling. For Nose-Hoover it is done in update. */
+			      double xi[],double vxi[],t_extmass *MassQ);
 
-extern real nosehoover_energy(t_grpopts *opts,gmx_ekindata_t *ekind,
-			      real *xi,double *ixi);
-/* Returns the Nose-Hoover contribution to the conserved energy */
+extern t_state *init_bufstate(int size, int ntc);
+
+
+/*
+extern trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
+			   t_state *state, tensor vir, t_mdatoms *md, 
+			   t_extmass *MassQ, bool bFirstHalf, bool bThermo, bool bBaro, bool bInitStep);
+*/
+
+
+extern void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, gmx_enerdata_t *enerd, 
+			   t_state *state, tensor vir, t_mdatoms *md, 
+			   t_extmass *MassQ, int *trotter_seq);
+
+extern int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, bool bTrotter); 
+
+
+extern real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ);
+/* computes all the pressure/tempertature control energy terms to get a conserved energy */
+
+extern void NBaroT_trotter(t_grpopts *opts, real dt,
+			   double xi[],double vxi[],real *veta, t_extmass *MassQ);
 
 extern void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			    double therm_integral[],
@@ -140,6 +211,7 @@ extern void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 
 extern real vrescale_energy(t_grpopts *opts,double therm_integral[]);
 /* Returns the V-rescale contribution to the conserved energy */
+
 
 /* Set reference temp for simulated annealing at time t*/
 extern void update_annealing_target_temp(t_grpopts *opts,real t); 
@@ -174,6 +246,7 @@ extern void berendsen_pscale(t_inputrec *ir,matrix mu,
 extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);
 /* Correct ekin for vcm */
+
 
 #ifdef __cplusplus
 }

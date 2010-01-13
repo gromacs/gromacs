@@ -132,8 +132,8 @@ void init_atom (t_atoms *at);
 void init_mtop(gmx_mtop_t *mtop);
 void init_top (t_topology *top);
 void init_inputrec(t_inputrec *ir);
-void init_gtc_state(t_state *state,int ngtc);
-void init_state(t_state *state,int natoms,int ngtc);
+void init_gtc_state(t_state *state,int ngtc, int nnhchains);
+void init_state(t_state *state,int natoms,int ngtc, int nnhchains);
 
 void copy_blocka(const t_blocka *src,t_blocka *dest);
 

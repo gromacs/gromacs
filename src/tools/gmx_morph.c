@@ -178,7 +178,7 @@ int gmx_morph(int argc,char *argv[])
   close_trx(status); 
   
   if (bRMS) {
-    fclose(fp);
+    ffclose(fp);
     do_view(oenv,opt2fn("-or",NFILE,fnm),"-nxy");
   }
   

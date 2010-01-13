@@ -63,7 +63,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 68;
+static const int tpx_version = 69;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -717,10 +717,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     
     /* grpopts stuff */
     do_int(ir->opts.ngtc); 
+    do_int(ir->opts.nnhchains);
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 
     do_int(ir->opts.ngener);
-
+    
     if (bRead) {
       snew(ir->opts.nrdf,   ir->opts.ngtc); 
       snew(ir->opts.ref_t,  ir->opts.ngtc); 
@@ -1986,13 +1987,13 @@ static int do_tpx(int fp,bool bRead,
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc);
-      state->natoms = tpx.natoms;
-      state->nalloc = tpx.natoms;
+      init_state(state,0,tpx.ngtc,0);  /* nose-hoover chains */
+      state->natoms = tpx.natoms; 
+      state->nalloc = tpx.natoms; 
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc);
+      init_state(state,tpx.natoms,tpx.ngtc,0);  /* nose-hoover chains */
     }
   }
 
@@ -2019,7 +2020,10 @@ static int do_tpx(int fp,bool bRead,
   
   if (state->ngtc > 0 && file_version >= 28) {
     real *dumv;
-    ndo_real(state->nosehoover_xi,state->ngtc,bDum);
+    ndo_double(state->nosehoover_xi,state->ngtc,bDum); /* keeping this the same for now, to avoid compatibility issues
+							  Exact continuation is not guaranteed!x */
+    /*ndo_double(state->nosehoover_vxi,state->ngtc,bDum);*/
+    /*ndo_double(state->therm_integral,state->ngtc,bDum);*/
     snew(dumv,state->ngtc);
     /* These used to be the Berendsen tcoupl_lambda's */
     ndo_real(dumv,state->ngtc,bDum);
@@ -2125,7 +2129,7 @@ static int do_tpx(int fp,bool bRead,
   if (bRead && tpx.bIr && ir) {
     if (state->ngtc == 0) {
       /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc);
+      init_gtc_state(state,ir->opts.ngtc,ir->opts.nnhchains);
     }
     if (tpx.bTop && mtop) {
       if (file_version < 57) {

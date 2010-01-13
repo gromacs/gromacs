@@ -2230,7 +2230,7 @@ static int angle(t_rotgrp *rotg,
     /* Also return the weight */
     *weight = normxp;
     
-    /* Everythin OK */
+    /* Everything OK */
     return 0;
 }
 

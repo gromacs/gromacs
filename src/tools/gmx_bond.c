@@ -208,7 +208,7 @@ static void do_bonds(FILE *log,const char *fn,const char *fbond,
     fac=2.0/(nframes*gnx*db);
     for(i=i0; (i<=i1); i++)
       fprintf(out,"%8.5f  %8.5f\n",b0+i*db,btab[i]*fac);
-    fclose(out);
+    ffclose(out);
   }
   else {
     fprintf(log,"%5s  %5s  %8s  %8s\n","i","j","b_aver","sigma");

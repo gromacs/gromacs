@@ -88,11 +88,11 @@ int main()
   
   out=ffopen("files.tex","w");
   pr_texdefs(out);
-  fclose(out);
+  ffclose(out);
   
   out=ffopen("files.html","w");
   pr_htmldefs(out);
-  fclose(out);
+  ffclose(out);
 
   return 0;
 }

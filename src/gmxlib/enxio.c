@@ -238,7 +238,7 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
     else
     {
-        if (!do_int (magic))       *bOK = FALSE;
+        if (!do_int(magic))       *bOK = FALSE;
         if (magic != -7777777)
         {
             gmx_fatal(FARGS,"Energy header magic number mismatch, this is not a GROMACS edr file");
@@ -708,7 +708,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
   int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
   int ind1[] = { XX,YY,ZZ,XX,XX,YY };
 
-  int nre,nfr,i,ni,npcoupl;
+  int nre,nfr,i,ni,npcoupl,ngctch;
   char       buf[STRLEN];
   gmx_enxnm_t *enm;
   t_enxframe *fr;
@@ -737,15 +737,22 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
     fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
   }
 
-  if (ir->etc == etcNOSEHOOVER) {
-    for(i=0; i<state->ngtc; i++) {
-      ni = groups->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
-      state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-    }
-    fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
-  }
-  
+  if (ir->etc == etcNOSEHOOVER) 
+  {
+      ngctch = state->ngtc;  
+      if (IR_NPT_TROTTER(ir)) 
+      {
+          ngctch += 1; /* an extra state is needed for the barostat */
+      }
+      for(i=0; i<ngctch; i++) {
+          ni = groups->grps[egcTC].nm_ind[i];
+          sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
+          state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
+          state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
+      }
+      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",ngctch,fn);
+  } 
+
   free_enxnms(nre,enm);
   free_enxframe(fr);
   sfree(fr);

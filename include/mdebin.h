@@ -55,15 +55,17 @@ typedef struct {
   int    ie,iconrmsd,ib,ivol,idens,ipv;
   int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu;
   int    ivcos,ivisc;
-  int    nE,nEg,nEc,nTC,nU;
+  int    nE,nEg,nEc,nTC,nTCB,nU,nNHC;
   int    *igrp;
   char   **grpnms;
+  int    mde_n;
   real   *tmp_r;
   rvec   *tmp_v;
   bool	 bConstr;
   bool   bConstrVir;
   bool   bTricl;
   bool   bDynBox;
+  bool   bNHC_trotter;
   int    f_nre;
   int    epc;
   tensor ref_p;

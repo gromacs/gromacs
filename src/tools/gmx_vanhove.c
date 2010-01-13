@@ -348,7 +348,7 @@ int gmx_vanhove(int argc,char *argv[])
     write_xpm(fp,MAT_SPATIAL_Y,"Van Hove function","G (1/nm)",
 	      sbin==0 ? "time (ps)" : "sqrt(time) (ps^1/2)","r (nm)",
 	      mat_nx,nbin,tickx,ticky,mat,0,matmax,rlo,rhi,&nlev);     
-    fclose(fp);
+    ffclose(fp);
   }
   
   if (orfile) {
@@ -367,7 +367,7 @@ int gmx_vanhove(int argc,char *argv[])
 		(real)pr[fbin][i]/(rcount[fbin]*isize*rbin*(i==0 ? 0.5 : 1)));
       fprintf(fp,"\n");
     }
-    fclose(fp);
+    ffclose(fp);
   }
   
   if (otfile) {
@@ -376,7 +376,7 @@ int gmx_vanhove(int argc,char *argv[])
     fprintf(fp,"@ subtitle \"for particles in group %s\"\n",grpname);
     for(f=0; f<=ftmax; f++)
       fprintf(fp,"%g %g\n",f*dt,(real)pt[f]/(tcount[f]*isize));
-    fclose(fp);
+    ffclose(fp);
   }
 
   do_view(oenv, matfile,NULL);

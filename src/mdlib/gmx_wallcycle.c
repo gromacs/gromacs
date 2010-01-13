@@ -75,7 +75,7 @@ typedef struct gmx_wallcycle
 
 /* Each name should not exceed 19 characters */
 static const char *wcn[ewcNR] =
-  { "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test", "Born radii", "Enforced rotation" };
+{ "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load", "DD comm. bounds", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Born radii", "Force", "Wait + Comm. F", "PME mesh", "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME solve", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Enforced rotation", "Test" };
 
 bool wallcycle_have_counter(void)
 {
@@ -248,7 +248,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
     wallcc_t *wcc;
-    double buf[ewcNR],*cyc_all,*buf_all;
+    double cycles_n[ewcNR],buf[ewcNR],*cyc_all,*buf_all;
     int    i;
 
     if (wc == NULL)
@@ -266,27 +266,29 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     {
         wcc[ewcDOMDEC].c -= wcc[ewcDDCOMMBOUND].c;
     }
-    if (wcc[ewcPMEMESH].n > 0)
+    if (cr->npmenodes == 0)
     {
-        wcc[ewcFORCE].c -= wcc[ewcPMEMESH].c;
-    }
-    
-    if (wcc[ewcPMEMESH_SEP].n > 0)
-    {
-        /* This must be a PME only node, calculate the Wait + Comm. time */
-        wcc[ewcPMEWAITCOMM].c = wcc[ewcRUN].c - wcc[ewcPMEMESH_SEP].c;
+        /* All nodes do PME (or no PME at all) */
+        if (wcc[ewcPMEMESH].n > 0)
+        {
+            wcc[ewcFORCE].c -= wcc[ewcPMEMESH].c;
+        }
     }
     else
     {
-        /* Correct the PME mesh only call count */
-        wcc[ewcPMEMESH_SEP].n = wcc[ewcFORCE].n;
-        wcc[ewcPMEWAITCOMM].n = wcc[ewcFORCE].n;
+        /* The are PME-only nodes */
+        if (wcc[ewcPMEMESH].n > 0)
+        {
+            /* This must be a PME only node, calculate the Wait + Comm. time */
+            wcc[ewcPMEWAITCOMM].c = wcc[ewcRUN].c - wcc[ewcPMEMESH].c;
+        }
     }
     
     /* Store the cycles in a double buffer for summing */
     for(i=0; i<ewcNR; i++)
     {
-        cycles[i] = (double)wcc[i].c;
+        cycles_n[i] = (double)wcc[i].n;
+        cycles[i]   = (double)wcc[i].c;
     }
     
     if (wcc[ewcUPDATE].n > 0)
@@ -295,15 +297,22 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
         cycles[ewcUPDATE] -= cycles[ewcCONSTR];
     }
     
-#ifdef GMX_MPI    
+#ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
+        MPI_Allreduce(cycles_n,buf,ewcNR,MPI_DOUBLE,MPI_MAX,
+                      cr->mpi_comm_mysim);
+        for(i=0; i<ewcNR; i++)
+        {
+            wcc[i].n = (int)(buf[i] + 0.5);
+        }
         MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,
                       cr->mpi_comm_mysim);
         for(i=0; i<ewcNR; i++)
         {
             cycles[i] = buf[i];
         }
+
         if (wc->wcc_all != NULL)
         {
             snew(cyc_all,ewcNR*ewcNR);
@@ -340,6 +349,11 @@ static void print_cycles(FILE *fplog, double c2t, const char *name, int nnodes,
   }
 }
 
+static bool subdivision(int ewc)
+{
+    return (ewc >= ewcPME_REDISTXF && ewc <= ewcPME_SOLVE);
+}
+
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 		     gmx_wallcycle_t wc, double cycles[])
 {
@@ -359,7 +373,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     }
     else
     {
-        npp = nnodes;
+        npp  = nnodes;
+        npme = nnodes;
     }
     tot = cycles[ewcRUN];
     /* Conversion factor from cycles to seconds */
@@ -379,10 +394,13 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     sum = 0;
     for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
     {
-        print_cycles(fplog,c2t,wcn[i],
-                     (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
-                     wc->wcc[i].n,cycles[i],tot);
-        sum += cycles[i];
+        if (!subdivision(i))
+        {
+            print_cycles(fplog,c2t,wcn[i],
+                         (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
+                         wc->wcc[i].n,cycles[i],tot);
+            sum += cycles[i];
+        }
     }
     if (wc->wcc_all != NULL)
     {
@@ -395,11 +413,10 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 sprintf(buf+10,"%-9s",wcn[j]);
                 buf[19] = '\0';
                 print_cycles(fplog,c2t,buf,
-                             (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
+                             (i==ewcPMEMESH || i==ewcPMEWAITCOMM) ? npme : npp,
                              wc->wcc_all[i*ewcNR+j].n,
                              wc->wcc_all[i*ewcNR+j].c,
                              tot);
-                sum += wc->wcc_all[i*ewcNR+j].c;
             }
         }
     }
@@ -408,6 +425,21 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     print_cycles(fplog,c2t,"Total",nnodes,0,tot,tot);
     fprintf(fplog,"%s\n",myline);
     
+    if (wc->wcc[ewcPMEMESH].n > 0)
+    {
+        fprintf(fplog,"%s\n",myline);
+        for(i=ewcPPDURINGPME+1; i<ewcNR; i++)
+        {
+            if (subdivision(i))
+            {
+                print_cycles(fplog,c2t,wcn[i],
+                             (i>=ewcPMEMESH || i<=ewcPME_SOLVE) ? npme : npp,
+                             wc->wcc[i].n,cycles[i],tot);
+            }
+        }
+        fprintf(fplog,"%s\n",myline);
+    }
+
     if (cycles[ewcMoveE] > tot*0.05)
     {
         sprintf(buf,

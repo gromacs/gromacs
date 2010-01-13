@@ -41,6 +41,7 @@
 #include "macros.h"
 #include "xvgr.h"
 #include "matio.h"
+#include "futil.h"
 
 t_mat *init_mat(int n1,bool b1D)
 {
@@ -192,7 +193,7 @@ void low_rmsd_dist(const char *fn,real maxrms,int nn,real **mat,
   fp = xvgropen(fn,"RMS Distribution","RMS (nm)","a.u.",oenv);
   for(i=0; (i<101); i++)
     fprintf(fp,"%10g  %10d\n",i/fac,histo[i]);
-  fclose(fp);
+  ffclose(fp);
   sfree(histo);
 }
 
