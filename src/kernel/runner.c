@@ -652,6 +652,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             init_pull(fplog,inputrec,nfile,fnm,mtop,cr,oenv,
                       EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
         }
+        
+        if (inputrec->bRot)
+        {
+           /* Initialize enforced rotation code */
+           init_rot(fplog,inputrec,nfile,fnm,cr,box,state->x,mtop,oenv,Flags);
+        }
 
         constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
 
@@ -682,6 +688,12 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             finish_pull(fplog,inputrec->pull);
         }
+        
+        if (inputrec->bRot)
+        {
+            finish_rot(fplog,inputrec->rot);
+        }
+
     } 
     else 
     {
