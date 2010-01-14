@@ -372,13 +372,13 @@ real bonds(int nbonds,
   return vtot;
 }
 
-real disrestraint_bonds(int nbonds,
-                        const t_iatom forceatoms[],const t_iparams forceparams[],
-                        const rvec x[],rvec f[],rvec fshift[],
-                        const t_pbc *pbc,const t_graph *g,
-                        real lambda,real *dvdlambda,
-                        const t_mdatoms *md,t_fcdata *fcd,
-                        int *global_atom_index)
+real restraint_bonds(int nbonds,
+                     const t_iatom forceatoms[],const t_iparams forceparams[],
+                     const rvec x[],rvec f[],rvec fshift[],
+                     const t_pbc *pbc,const t_graph *g,
+                     real lambda,real *dvdlambda,
+                     const t_mdatoms *md,t_fcdata *fcd,
+                     int *global_atom_index)
 {
     int  i,m,ki,ai,aj,type;
     real dr,dr2,fbond,vbond,fij,vtot;
@@ -401,14 +401,14 @@ real disrestraint_bonds(int nbonds,
         dr2  = iprod(dx,dx);		             	/*   5		*/
         dr   = dr2*gmx_invsqrt(dr2);		        /*  10		*/
 
-        low  = L1*forceparams[type].disrestraint.lowA + lambda*forceparams[type].disrestraint.lowB;
-        dlow =   -forceparams[type].disrestraint.lowA +        forceparams[type].disrestraint.lowB;
-        up1  = L1*forceparams[type].disrestraint.up1A + lambda*forceparams[type].disrestraint.up1B;
-        dup1 =   -forceparams[type].disrestraint.up1A +        forceparams[type].disrestraint.up1B;
-        up2  = L1*forceparams[type].disrestraint.up2A + lambda*forceparams[type].disrestraint.up2B;
-        dup2 =   -forceparams[type].disrestraint.up2A +        forceparams[type].disrestraint.up2B;
-        k    = L1*forceparams[type].disrestraint.kA   + lambda*forceparams[type].disrestraint.kB;
-        dk   =   -forceparams[type].disrestraint.kA   +        forceparams[type].disrestraint.kB;
+        low  = L1*forceparams[type].restraint.lowA + lambda*forceparams[type].restraint.lowB;
+        dlow =   -forceparams[type].restraint.lowA +        forceparams[type].restraint.lowB;
+        up1  = L1*forceparams[type].restraint.up1A + lambda*forceparams[type].restraint.up1B;
+        dup1 =   -forceparams[type].restraint.up1A +        forceparams[type].restraint.up1B;
+        up2  = L1*forceparams[type].restraint.up2A + lambda*forceparams[type].restraint.up2B;
+        dup2 =   -forceparams[type].restraint.up2A +        forceparams[type].restraint.up2B;
+        k    = L1*forceparams[type].restraint.kA   + lambda*forceparams[type].restraint.kB;
+        dk   =   -forceparams[type].restraint.kA   +        forceparams[type].restraint.kB;
         /* 24 */
 
         if (dr < low)
@@ -1659,7 +1659,8 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1, int *i
 }
 
 real cmap_dihs(int nbonds,
-			   const t_iatom forceatoms[],const t_iparams forceparams[],gmx_cmap_t *cmap_grid,
+			   const t_iatom forceatoms[],const t_iparams forceparams[],
+               const gmx_cmap_t *cmap_grid,
 			   const rvec x[],rvec f[],rvec fshift[],
 			   const t_pbc *pbc,const t_graph *g,
 			   real lambda,real *dvdl,
@@ -1696,6 +1697,8 @@ real cmap_dihs(int nbonds,
 	ivec jt1,dt1_ij,dt1_kj,dt1_lj;
 	ivec jt2,dt2_ij,dt2_kj,dt2_lj;
 	
+    const real *cmapd;
+
 	int loop_index[4][4] = {
 		{0,4,8,12},
 		{1,5,9,13},
@@ -1718,7 +1721,8 @@ real cmap_dihs(int nbonds,
 		
 		/* Which CMAP type is this */
 		cmapA = forceparams[type].cmap.cmapA;
-		
+        cmapd = cmap_grid->cmapdata[cmapA].cmap;
+
 		/* First torsion */
 		a1i   = ai;
 		a1j   = aj;
@@ -1874,26 +1878,27 @@ real cmap_dihs(int nbonds,
 		pos2    = ip1p1*cmap_grid->grid_spacing+iphi2;
 		pos3    = ip1p1*cmap_grid->grid_spacing+ip2p1;
 		pos4    = iphi1*cmap_grid->grid_spacing+ip2p1;
+
+		ty[0]   = cmapd[pos1*4];
+		ty[1]   = cmapd[pos2*4];
+		ty[2]   = cmapd[pos3*4];
+		ty[3]   = cmapd[pos4*4];		
 		
-		ty[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4];
-		ty[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4];
-		ty[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4];
-		ty[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4];
-		
-		ty1[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+1];
-		ty1[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+1];
-		ty1[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+1];
-		ty1[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+1];
-		
-		ty2[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+2];
-		ty2[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+2];
-		ty2[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+2];
-		ty2[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+2];
-		
-		ty12[0]   = cmap_grid->cmapdata[cmapA].cmap[pos1*4+3];
-		ty12[1]   = cmap_grid->cmapdata[cmapA].cmap[pos2*4+3];
-		ty12[2]   = cmap_grid->cmapdata[cmapA].cmap[pos3*4+3];
-		ty12[3]   = cmap_grid->cmapdata[cmapA].cmap[pos4*4+3];
+		ty1[0]   = cmapd[pos1*4+1];
+		ty1[1]   = cmapd[pos2*4+1];
+		ty1[2]   = cmapd[pos3*4+1];
+		ty1[3]   = cmapd[pos4*4+1];		
+
+		ty2[0]   = cmapd[pos1*4+2];
+		ty2[1]   = cmapd[pos2*4+2];
+		ty2[2]   = cmapd[pos3*4+2];
+		ty2[3]   = cmapd[pos4*4+2];		
+
+		ty12[0]   = cmapd[pos1*4+3];
+		ty12[1]   = cmapd[pos2*4+3];
+		ty12[2]   = cmapd[pos3*4+3];
+		ty12[3]   = cmapd[pos4*4+3];		
+
 		
 		/* Switch to degrees */
 		dx = 15;
@@ -2603,8 +2608,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                    gmx_enerdata_t *enerd, t_nrnb *nrnb, 
                    real *lambda, real *dvdl,
                    const t_mdatoms *md,t_fcdata *fcd,
-                   int *global_atom_index, gmx_cmap_t *cmap_grid, 
-                   bool bPrintSepPot)
+                   int *global_atom_index, bool bPrintSepPot)
 {
     int ind,nat1,nbonds,efptCURRENT,nbonds_np;
     real v=0;
@@ -2657,7 +2661,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                     if(ftype==F_CMAP)
                     {
                         v = cmap_dihs(nbonds,iatoms,
-                                      idef->iparams,cmap_grid,
+                                      idef->iparams,&idef->cmap_grid,
                                       (const rvec*)x,f,fr->fshift,
                                       pbc,g,lambda[efptBONDED],&pdvdl[efptBONDED],md,fcd,
                                       global_atom_index);
@@ -2724,7 +2728,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd,int *global_atom_index,
-                t_atomtypes *atype, gmx_genborn_t *born,gmx_cmap_t *cmap_grid,
+                t_atomtypes *atype, gmx_genborn_t *born,
                 bool bPrintSepPot,gmx_large_int_t step)
 {
     int    i,ftype,nbonds,ind,nat,efptCURRENT;
@@ -2781,7 +2785,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     {
         v = calc_one_bond(fplog,ftype,idef,x, 
                           f,fr,pbc_null,g,enerd,nrnb,lambda,dvdl,
-                          md,fcd,global_atom_index,cmap_grid,bPrintSepPot);
+                          md,fcd,global_atom_index,bPrintSepPot);
         epot[ftype]        += v;
     }
     /* Copy the sum of violations for the distance restraints from fcd */
@@ -2800,7 +2804,6 @@ void calc_bonds_lambda(FILE *fplog,
                        real *lambda,
                        const t_mdatoms *md,
                        t_fcdata *fcd,
-                       gmx_cmap_t *cmap_grid,
                        int *global_atom_index)
 {
     int    i,ftype,nbonds_np,nbonds,ind,nat,efptCURRENT;
@@ -2830,7 +2833,7 @@ void calc_bonds_lambda(FILE *fplog,
     {
         v = calc_one_bond(fplog,ftype,idef,x, 
                           f,fr,pbc_null,g,enerd,nrnb,lambda,NULL,
-                          md,fcd,global_atom_index,cmap_grid,FALSE);
+                          md,fcd,global_atom_index,FALSE);
         epot[ftype] += v;
     }
     

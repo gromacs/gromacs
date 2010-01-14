@@ -64,7 +64,7 @@ enum {
   F_FENEBONDS,
   F_TABBONDS,
   F_TABBONDSNC,
-  F_DISRESTRBONDS,
+  F_RESTRBONDS,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
@@ -139,7 +139,7 @@ enum {
   F_NRE		/* This number is for the total number of energies	*/
 };
 
-#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_DISRESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES) || (ifunc==F_DIHRESVIOL)))
+#define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_RESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES) || (ifunc==F_DIHRESVIOL)))
 
   
 typedef union
@@ -152,7 +152,7 @@ typedef union
    */
   struct {real a,b,c;	                                   } bham;
   struct {real rA,krA,rB,krB;           	           } harmonic;
-  struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } disrestraint;
+  struct {real lowA,up1A,up2A,kA,lowB,up1B,up2B,kB;        } restraint;
   /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */ 
   struct {real b0,kb,kcub;                                 } cubic;
   struct {real bm,kb;                                      } fene;
@@ -250,6 +250,7 @@ typedef struct
   t_iparams  *iparams;
   double     reppow;     /* The repulsion power for VdW: C12*r^-reppow   */
   real       fudgeQQ;    /* The scaling factor for Coulomb 1-4: f*q1*q2  */
+  gmx_cmap_t cmap_grid;  /* The dihedral correction maps                 */
 } gmx_ffparams_t;
 
 enum {
@@ -263,6 +264,7 @@ typedef struct
   t_functype *functype;
   t_iparams  *iparams;
   real fudgeQQ;
+  gmx_cmap_t cmap_grid;
   t_iparams  *iparams_posres;
   int iparams_posres_nalloc;
 

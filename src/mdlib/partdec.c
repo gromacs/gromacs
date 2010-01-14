@@ -187,10 +187,17 @@ void gmx_tx_rx_real(const t_commrec *cr,
 #else
 #define mpi_type MPI_FLOAT
 #endif
-  
-  MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
-               recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
-               cr->mpi_comm_mygroup,&stat);
+  if (send_bufsize > 0 && recv_bufsize > 0) {
+    MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
+		 recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
+		 cr->mpi_comm_mygroup,&stat);
+  } else if (send_bufsize > 0) {
+    MPI_Send(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
+	     cr->mpi_comm_mygroup);
+  } else if (recv_bufsize > 0) {
+    MPI_Recv(recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
+	     cr->mpi_comm_mygroup,&stat);
+  }
 #undef mpi_type
 #endif
 }

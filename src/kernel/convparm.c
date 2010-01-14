@@ -118,16 +118,15 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->fene.bm=old[0];
     newparam->fene.kb=old[1];
     break;
-  case F_DISRESTRBONDS:
-    /* skips the label and type to match distance restraints */
-    newparam->disrestraint.lowA = old[2];
-    newparam->disrestraint.up1A = old[3];
-    newparam->disrestraint.up2A = old[4];
-    newparam->disrestraint.kA   = old[5];
-    newparam->disrestraint.lowB = old[6];
-    newparam->disrestraint.up1B = old[7];
-    newparam->disrestraint.up2B = old[8];
-    newparam->disrestraint.kB   = old[9];
+  case F_RESTRBONDS:
+    newparam->restraint.lowA = old[0];
+    newparam->restraint.up1A = old[1];
+    newparam->restraint.up2A = old[2];
+    newparam->restraint.kA   = old[3];
+    newparam->restraint.lowB = old[4];
+    newparam->restraint.up1B = old[5];
+    newparam->restraint.up2B = old[6];
+    newparam->restraint.kB   = old[7];
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:

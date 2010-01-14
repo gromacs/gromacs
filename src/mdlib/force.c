@@ -379,7 +379,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         GMX_MPE_LOG(ev_calc_bonds_start);
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
-                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born, &(mtop->cmap_grid),
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL, atype, born,
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
         
         /* Check if we have to determine energy differences
@@ -407,9 +407,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                         lambda_dum[j] = fepvals->all_lambda[j][i-1];
                     }
                 }
-                calc_bonds_lambda(fplog,
-                                  idef,x,fr,&pbc,graph,&ed_lam,nrnb,lambda_dum,md,
-                                  fcd,&(mtop->cmap_grid),DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                calc_bonds_lambda(fplog,idef,x,fr,&pbc,graph,&ed_lam,nrnb,lambda_dum,md,
+                                  fcd,DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                 sum_epot(&ir->opts,&ed_lam);
                 enerd->enerpart_lambda[i] += ed_lam.term[F_EPOT];
             }

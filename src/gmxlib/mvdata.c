@@ -210,7 +210,8 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 {
   block_bc(cr,state->natoms);
   block_bc(cr,state->ngtc);
-  block_bc(cr,state->nnhchains);
+  block_bc(cr,state->nnhpres);
+  block_bc(cr,state->nhchainlength);
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
   block_bc(cr,state->flags);
@@ -222,9 +223,10 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 
 void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
-  int i,ngtch;
+  int i,nnht,nnhtp;
 
-  ngtch = (state->ngtc+1)*(state->nnhchains); /* need an extra state for the barostat */
+  nnht = (state->ngtc)*(state->nhchainlength); 
+  nnhtp = (state->nnhpres)*(state->nhchainlength); 
 
   bcast_state_setup(cr,state);
 
@@ -244,8 +246,10 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estBOXV:    block_bc(cr,state->boxv); break;
       case estPRES_PREV: block_bc(cr,state->pres_prev); break;
       case estVIR_PREV: block_bc(cr,state->vir_prev); break;
-      case estNH_XI:   nblock_abc(cr,ngtch,state->nosehoover_xi); break;
-      case estNH_VXI:  nblock_abc(cr,ngtch,state->nosehoover_vxi); break;
+      case estNH_XI:   nblock_abc(cr,nnht,state->nosehoover_xi); break;
+      case estNH_VXI:  nblock_abc(cr,nnht,state->nosehoover_vxi); break;
+      case estNHPRES_XI:   nblock_abc(cr,nnhtp,state->nhpres_xi); break;
+      case estNHPRES_VXI:  nblock_abc(cr,nnhtp,state->nhpres_vxi); break;
       case estTC_INT:  nblock_abc(cr,state->ngtc,state->therm_integral); break;
       case estVETA:    block_bc(cr,state->veta); break;
       case estVOL0:    block_bc(cr,state->vol0); break;
@@ -319,20 +323,6 @@ static void bc_idef(const t_commrec *cr,t_idef *idef)
   block_bc(cr,idef->ilsort);
 }
 
-static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
-{
-  int i;
-  
-  block_bc(cr,ffp->ntypes);
-  block_bc(cr,ffp->atnr);
-  snew_bc(cr,ffp->functype,ffp->ntypes);
-  snew_bc(cr,ffp->iparams,ffp->ntypes);
-  nblock_bc(cr,ffp->ntypes,ffp->functype);
-  nblock_bc(cr,ffp->ntypes,ffp->iparams);
-  block_bc(cr,ffp->reppow);
-  block_bc(cr,ffp->fudgeQQ);
-}
-
 static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 {
 	int i,j,nelem,ngrid;
@@ -355,6 +345,20 @@ static void bc_cmap(const t_commrec *cr, gmx_cmap_t *cmap_grid)
 	}
 }
 
+static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
+{
+  int i;
+  
+  block_bc(cr,ffp->ntypes);
+  block_bc(cr,ffp->atnr);
+  snew_bc(cr,ffp->functype,ffp->ntypes);
+  snew_bc(cr,ffp->iparams,ffp->ntypes);
+  nblock_bc(cr,ffp->ntypes,ffp->functype);
+  nblock_bc(cr,ffp->ntypes,ffp->iparams);
+  block_bc(cr,ffp->reppow);
+  block_bc(cr,ffp->fudgeQQ);
+  bc_cmap(cr,&ffp->cmap_grid);
+}
 
 static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
 {
@@ -595,5 +599,4 @@ void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
 
   bc_block(cr,&mtop->mols);
   bc_groups(cr,&mtop->symtab,mtop->natoms,&mtop->groups);
-  bc_cmap(cr,&mtop->cmap_grid);
 }

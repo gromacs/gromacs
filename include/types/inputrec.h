@@ -66,7 +66,7 @@ typedef struct {
 
 typedef struct {
   int     ngtc;                  /* # T-Coupl groups                        */
-  int     nnhchains;             /* # of nose-hoover chains per group       */
+  int     nhchainlength;         /* # of nose-hoover chains per group       */
   int     ngacc;                 /* # Accelerate groups                     */
   int     ngfrz;                 /* # Freeze groups                         */
   int     ngener;	         /* # Ener groups			    */

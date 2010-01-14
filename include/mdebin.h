@@ -55,10 +55,11 @@ typedef struct {
   int    ie,iconrmsd,ib,ivol,idens,ipv;
   int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu;
   int    ivcos,ivisc;
-  int    nE,nEg,nEc,nTC,nTCB,nU,nNHC;
+  int    nE,nEg,nEc,nTC,nTCP,nU,nNHC;
   int    *igrp;
   char   **grpnms;
   int    mde_n;
+  int    mdep_n;
   real   *tmp_r;
   rvec   *tmp_v;
   bool	 bConstr;
@@ -66,6 +67,7 @@ typedef struct {
   bool   bTricl;
   bool   bDynBox;
   bool   bNHC_trotter;
+  bool   bMTTK;
   int    f_nre;
   int    epc;
   tensor ref_p;

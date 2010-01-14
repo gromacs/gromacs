@@ -52,13 +52,13 @@
 #define NTROTTERPARTS 3
 
 /* these integration routines are only references inside this file */
-static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
+static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtfull,
                         double xi[],double vxi[], double scalefac[], real *veta, t_extmass *MassQ, bool bEkinAveVel)
 
 {
     /* general routine for both barostat and thermostat nose hoover chains */
 
-    int   i,j,mi,mj,jmax,nd,ndj,starti,endi;
+    int   i,j,mi,mj,jmax,nd;
     double Ekin,Efac,reft,kT;
     double dt;
     t_grp_tcstat *tcstat;
@@ -68,8 +68,8 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
     bool bBarostat;
     int mstepsi, mstepsj;
     int ns = SUZUKI_YOSHIDA_NUM;  /* set the degree of integration in the types/state.h file */
-    int nh = opts->nnhchains;
-
+    int nh = opts->nhchainlength;
+    
     snew(GQ,nh);
     mstepsi = mstepsj = ns;
 
@@ -80,15 +80,7 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
         bBarostat = TRUE;
     }
 
-    if (bBarostat) {
-        starti = opts->ngtc;
-        endi = opts->ngtc+1;
-    } else {
-        starti = 0;
-        endi = opts->ngtc;
-    }
-
-    for (i=starti; i<endi; i++) 
+    for (i=0; i<nvar; i++) 
     {
     
         /* make it easier to iterate by selecting 
@@ -96,12 +88,13 @@ static void NHC_trotter(t_grpopts *opts,gmx_ekindata_t *ekind,real dtfull,
         
         ivxi = &vxi[i*nh];
         ixi = &xi[i*nh];
-        iQinv = &(MassQ->Qinv[i*nh]); 
         if (bBarostat) {
-            nd = 1;
+            iQinv = &(MassQ->QPinv[i*nh]); 
+            nd = 1; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft = max(0.0,opts->ref_t[0]);
             Ekin = sqr(*veta)/MassQ->Winv;
         } else {
+            iQinv = &(MassQ->Qinv[i*nh]);  
             tcstat = &ekind->tcstat[i];
             nd = opts->nrdf[i];
             reft = max(0.0,opts->ref_t[i]);
@@ -612,16 +605,18 @@ void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
     }
 }
 
-t_state *init_bufstate(int size, int ntc) 
+t_state *init_bufstate(t_state *template_state) 
 {
     t_state *state;
+    int nc = template_state->nhchainlength;
     snew(state,1);
-    snew(state->x,size);
-    snew(state->v,size);
-    snew(state->nosehoover_xi,ntc);
-    snew(state->nosehoover_vxi,ntc);
-    snew(state->therm_integral,ntc);
-    
+    snew(state->x,template_state->natoms);
+    snew(state->v,template_state->natoms);
+    snew(state->nosehoover_xi,nc*template_state->ngtc);
+    snew(state->nosehoover_vxi,nc*template_state->ngtc);
+    snew(state->therm_integral,template_state->ngtc);
+    snew(state->nhpres_xi,nc*template_state->nnhpres);
+    snew(state->nhpres_vxi,nc*template_state->nnhpres);
     return state;
 }  
 
@@ -635,7 +630,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
     t_grp_tcstat *tcstat;
     t_grpopts *opts;
     real ecorr,pcorr,dvdlcorr;
-    real bmass,qmass,reft,kT,dt,ndj,nd;
+    real bmass,qmass,reft,kT,dt,nd;
     tensor dumpres,dumvir;
     double *scalefac;
     rvec sumv,consk;
@@ -674,12 +669,12 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
             break;
         case etrtBARONHC:
         case etrtBARONHC2:
-            NHC_trotter(&(ir->opts),ekind,dt,state->nosehoover_xi,
-                        state->nosehoover_vxi,NULL,&(state->veta),MassQ,FALSE);      
+            NHC_trotter(opts,state->nnhpres,ekind,dt,state->nhpres_xi,
+                        state->nhpres_vxi,NULL,&(state->veta),MassQ,FALSE);      
             break;
         case etrtNHC:
         case etrtNHC2:
-            NHC_trotter(opts,ekind,dt,state->nosehoover_xi,
+            NHC_trotter(opts,opts->ngtc,ekind,dt,state->nosehoover_xi,
                         state->nosehoover_vxi,scalefac,NULL,MassQ,(ir->eI==eiVV));
             /* need to rescale the kinetic energies and velocities here.  Could 
                scale the velocities later, but we need them scaled in order to 
@@ -739,7 +734,7 @@ void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind,
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrotter) 
 {
-    int n,i,j,d,ntgrp,ngtc,gc=0;
+    int n,i,j,d,ntgrp,ngtc,nnhpres,nh,gc=0;
     t_grp_tcstat *tcstat;
     t_grpopts *opts;
     real ecorr,pcorr,dvdlcorr;
@@ -748,11 +743,13 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     int **trotter_seq;
 
     opts = &(ir->opts); /* just for ease of referencing */
-    ngtc = opts->ngtc;
-    
+    ngtc = state->ngtc;
+    nnhpres = state->nnhpres;
+    nh = state->nhchainlength; 
+
     if (ir->eI == eiMD) {
-        snew(MassQ->Qinv,opts->ngtc);
-        for(i=0; (i<opts->ngtc); i++) 
+        snew(MassQ->Qinv,ngtc);
+        for(i=0; (i<ngtc); i++) 
         { 
             if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0)) 
             {
@@ -767,7 +764,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
     else if (EI_VV(ir->eI))
     {
     /* Set pressure variables */
-    
+        
         if (state->vol0 == 0) 
         {
             state->vol0 = det(state->box); /* because we start by defining a fixed compressibility, 
@@ -787,9 +784,9 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                 /* not clear this is correct yet for the anisotropic case*/
             } 
         }           
+        /* Allocate space for thermostat variables */
+        snew(MassQ->Qinv,ngtc*nh);
         
-        /* now, allocate space for temperature variables */
-        snew(MassQ->Qinv,(ngtc+1)*opts->nnhchains);
         /* now, set temperature variables */
         for(i=0; i<ngtc; i++) 
         {
@@ -798,7 +795,7 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                 reft = max(0.0,opts->ref_t[i]);
                 nd = opts->nrdf[i];
                 kT = BOLTZ*reft;
-                for (j=0;j<opts->nnhchains;j++) 
+                for (j=0;j<nh;j++) 
                 {
                     if (j==0) 
                     {
@@ -808,15 +805,15 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
                     {
                         ndj = 1;
                     }
-                    MassQ->Qinv[i*opts->nnhchains+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
+                    MassQ->Qinv[i*nh+j]   = 1.0/(sqr(opts->tau_t[i]/M_2PI)*ndj*kT);
                 }
-            } 
+            }
             else 
             {
                 reft=0.0;
-                for (j=0;j<opts->nnhchains;j++) 
+                for (j=0;j<nh;j++) 
                 {
-                    MassQ->Qinv[i*opts->nnhchains+j] = 0.0;
+                    MassQ->Qinv[i*nh+j] = 0.0;
                 }
             }
         }
@@ -920,43 +917,47 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, bool bTrot
         bmass = DIM*DIM;  /* recommended mass parameters for isotropic barostat */
     }    
 
+    snew(MassQ->QPinv,nnhpres*opts->nhchainlength);
+
     /* barostat temperature */
-    i = ngtc;  /* barostat temperature control variables are one after the last T-group */
-    
     if ((ir->tau_p > 0) && (opts->ref_t[0] > 0)) 
     {
         reft = max(0.0,opts->ref_t[0]);
         kT = BOLTZ*reft;
-        for (j=0;j<opts->nnhchains;j++) 
-        {
-            if (j==0) {
-                qmass = bmass;
-            } 
-            else 
+        for (i=0;i<nnhpres;i++) {
+            for (j=0;j<nh;j++) 
             {
-                qmass = 1;
+                if (j==0) {
+                    qmass = bmass;
+                } 
+                else 
+                {
+                    qmass = 1;
+                }
+                MassQ->QPinv[i*opts->nhchainlength+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
             }
-            MassQ->Qinv[i*opts->nnhchains+j]   = 1.0/(sqr(opts->tau_t[0]/M_2PI)*qmass*kT);
         }
-    } 
+    }
     else 
     {
-        for (j=0;j<opts->nnhchains;j++) 
-        {
-            MassQ->Qinv[i*opts->nnhchains+j]=0.0;
+        for (i=0;i<nnhpres;i++) {
+            for (j=0;j<nh;j++) 
+            {
+                MassQ->QPinv[i*nh+j]=0.0;
+            }
         }
     }    
     return trotter_seq;
 }
 
-real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, t_extmass *MassQ)
+real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 {
     int  i,j,nd,ndj,bmass,qmass,ngtcall;
     real ener_npt,reft,eta,kT,tau;
     double *ivxi, *ixi;
     double *iQinv;
     real vol,dbaro,W,Q;
-    int nh = ir->opts.nnhchains;
+    int nh = state->nhchainlength;
 
     ener_npt = 0;
     
@@ -964,17 +965,16 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     
     if (ir->epc==epcMTTK) 
     {
-        
         /* find the volume, and the kinetic energy of the volume */
         
         switch (ir->epct) {
             
         case epctISOTROPIC:
             /* contribution from the pressure momenenta */
-            ener_npt += 0.5*sqr(veta)/MassQ->Winv;
+            ener_npt += 0.5*sqr(state->veta)/MassQ->Winv;
             
             /* contribution from the PV term */
-            vol = det(box);
+            vol = det(state->box);
             ener_npt += vol*trace(ir->ref_p)/(DIM*PRESFAC);
 
             break;
@@ -996,31 +996,34 @@ real NPT_energy(t_inputrec *ir, double *xi, double *vxi, real veta, tensor box, 
     if (IR_NPT_TROTTER(ir)) 
     {
         /* add the energy from the barostat thermostat chain */
-        i = ir->opts.ngtc;
-        ivxi = &vxi[i*nh];
-        ixi = &xi[i*nh];
-        iQinv = &(MassQ->Qinv[i*nh]);
-        reft = max(ir->opts.ref_t[0],0); /* using 'System' temperature */
-        kT = BOLTZ * reft;
+        for (i=0;i<state->nnhpres;i++) {
+
+            /* note -- assumes only one degree of freedom that is thermostatted in barostat */
+            ivxi = &state->nhpres_vxi[i*nh];
+            ixi = &state->nhpres_xi[i*nh];
+            iQinv = &(MassQ->QPinv[i*nh]);
+            reft = max(ir->opts.ref_t[0],0); /* using 'System' temperature */
+            kT = BOLTZ * reft;
         
-        for (j=0;j<nh;j++) 
-        {
-            ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
-            /* contribution from the thermal variable of the NH chain */
-            ener_npt += ixi[j]*kT;
-            if (debug) 
+            for (j=0;j<nh;j++) 
             {
-                fprintf(debug,"T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f",i,j,ivxi[j],ixi[j]);
+                ener_npt += 0.5*sqr(ivxi[j])/iQinv[j];
+                /* contribution from the thermal variable of the NH chain */
+                ener_npt += ixi[j]*kT;
+                if (debug) 
+                {
+                    fprintf(debug,"P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f",i,j,ivxi[j],ixi[j]);
+                }
             }
         }
     }
-    
+        
     if (ir->etc) 
     {
         for(i=0; i<ir->opts.ngtc; i++) 
         {
-            ixi = &xi[i*nh];
-            ivxi = &vxi[i*nh];
+            ixi = &state->nosehoover_xi[i*nh];
+            ivxi = &state->nosehoover_vxi[i*nh];
             iQinv = &(MassQ->Qinv[i*nh]);
             
             nd = ir->opts.nrdf[i];

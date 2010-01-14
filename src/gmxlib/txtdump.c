@@ -760,12 +760,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_FENEBONDS:
     fprintf(fp,"bm=%15.8e, kb=%15.8e\n",iparams->fene.bm,iparams->fene.kb);
     break;
-  case F_DISRESTRBONDS:
+  case F_RESTRBONDS:
       fprintf(fp,"lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kA=%15.8e, lowB=%15.8e, up1B=%15.8e, up2B=%15.8e, kB=%15.8e,\n",
-              iparams->disrestraint.lowA,iparams->disrestraint.up1A,
-              iparams->disrestraint.up2A,iparams->disrestraint.kA,
-              iparams->disrestraint.lowB,iparams->disrestraint.up1B,
-              iparams->disrestraint.up2B,iparams->disrestraint.kB);
+              iparams->restraint.lowA,iparams->restraint.up1A,
+              iparams->restraint.up2A,iparams->restraint.kA,
+              iparams->restraint.lowB,iparams->restraint.up1B,
+              iparams->restraint.up2B,iparams->restraint.kB);
       break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -949,6 +949,45 @@ void pr_ilist(FILE *fp,int indent,const char *title,
     }
 }
 
+void pr_cmap(FILE *fp, int indent, const char *title, 
+             gmx_cmap_t *cmap_grid, bool bShowNumbers)
+{
+    int i,j,nelem;
+    real dx,idx;
+	
+    dx    = 360.0 / cmap_grid->grid_spacing;
+    nelem = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
+	
+    if(available(fp,cmap_grid,indent,title))
+    {
+        fprintf(fp,"%s\n",title);
+		
+        for(i=0;i<cmap_grid->ngrid;i++)
+        {
+            idx = -180.0;
+            fprintf(fp,"%8s %8s %8s %8s\n","V","dVdx","dVdy","d2dV");
+			
+            fprintf(fp,"grid[%3d]={\n",bShowNumbers?i:-1);
+			
+            for(j=0;j<nelem;j++)
+            {
+                if( (j%cmap_grid->grid_spacing)==0)
+                {
+                    fprintf(fp,"%8.1f\n",idx);
+                    idx+=dx;
+                }
+				
+                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4]);
+                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4+1]);
+                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4+2]);
+                fprintf(fp,"%8.3f\n",cmap_grid->cmapdata[i].cmap[j*4+3]);
+            }
+            fprintf(fp,"\n");
+        }
+    }
+	
+}
+
 void pr_ffparams(FILE *fp,int indent,const char *title,
                  gmx_ffparams_t *ffparams,
                  bool bShowNumbers)
@@ -969,6 +1008,7 @@ void pr_ffparams(FILE *fp,int indent,const char *title,
   }
   (void) pr_double(fp,indent,"reppow",ffparams->reppow);
   (void) pr_real(fp,indent,"fudgeQQ",ffparams->fudgeQQ);
+  pr_cmap(fp,indent,"cmap",&ffparams->cmap_grid,bShowNumbers);
 }
 
 void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers)
@@ -1281,46 +1321,6 @@ void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
     }
 }
 
-void pr_cmap(FILE *fp, int indent, const char *title, gmx_cmap_t *cmap_grid,
-             bool bShowNumbers)
-{
-    int i,j,nelem;
-    real dx,idx;
-	
-    dx    = 360.0 / cmap_grid->grid_spacing;
-    nelem = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
-	
-    if(available(fp,cmap_grid,indent,title))
-    {
-        fprintf(fp,"%s\n",title);
-		
-        for(i=0;i<cmap_grid->ngrid;i++)
-        {
-            idx = -180.0;
-            fprintf(fp,"%8s %8s %8s %8s\n","V","dVdx","dVdy","d2dV");
-			
-            fprintf(fp,"grid[%3d]={\n",bShowNumbers?i:-1);
-			
-            for(j=0;j<nelem;j++)
-            {
-                if( (j%cmap_grid->grid_spacing)==0)
-                {
-                    fprintf(fp,"%8.1f\n",idx);
-                    idx+=dx;
-                }
-				
-                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4]);
-                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4+1]);
-                fprintf(fp,"%8.3f ",cmap_grid->cmapdata[i].cmap[j*4+2]);
-                fprintf(fp,"%8.3f\n",cmap_grid->cmapdata[i].cmap[j*4+3]);
-            }
-            fprintf(fp,"\n");
-        }
-    }
-	
-}
-
-
 void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes, 
 		  bool bShowNumbers)
 {
@@ -1400,7 +1400,6 @@ void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
                        &mtop->ffparams,bShowNumbers);
         }
         pr_groups(fp,indent,"groups",&mtop->groups,bShowNumbers);
-        pr_cmap(fp,indent,"cmap",&mtop->cmap_grid,bShowNumbers);
     }
 }
 

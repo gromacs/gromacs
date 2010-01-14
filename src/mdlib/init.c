@@ -114,6 +114,8 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   } else {
     state->nrng = 0;
   }
+
+  state->nnhpres = 0;
   if (ir->ePBC != epbcNONE) {
     state->flags |= (1<<estBOX);
     if (PRESERVE_SHAPE(*ir)) {
@@ -124,6 +126,9 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     }
     if (ir->epc != epcNO) {
       if (IR_NPT_TROTTER(ir)) {
+	state->nnhpres = 1;
+	state->flags |= (1<<estNHPRES_XI);
+	state->flags |= (1<<estNHPRES_VXI);
 	state->flags |= (1<<estVIR_PREV);
 	state->flags |= (1<<estVETA);
 	state->flags |= (1<<estVOL0);
@@ -142,7 +147,7 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
     state->flags |= (1<<estTC_INT);
   }
   
-  init_gtc_state(state,state->ngtc,ir->opts.nnhchains); /* allocate the space for nose-hoover chains */
+  init_gtc_state(state,state->ngtc,state->nnhpres,ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);

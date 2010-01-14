@@ -124,7 +124,7 @@ static const t_ftupd ftupd[] = {
   { 34, F_FENEBONDS         },
   { 43, F_TABBONDS          },
   { 43, F_TABBONDSNC        },
-  { 70, F_DISRESTRBONDS     },
+  { 70, F_RESTRBONDS     },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
@@ -734,9 +734,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     /* grpopts stuff */
     do_int(ir->opts.ngtc); 
     if (file_version >= 69) {
-      do_int(ir->opts.nnhchains);
+      do_int(ir->opts.nhchainlength);
     } else {
-      ir->opts.nnhchains = 0;
+      ir->opts.nhchainlength = 0;
     }
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 
@@ -925,15 +925,15 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->fene.bm);
     do_real(iparams->fene.kb);
     break;
-  case F_DISRESTRBONDS:
-    do_real(iparams->disrestraint.lowA);
-    do_real(iparams->disrestraint.up1A);
-    do_real(iparams->disrestraint.up2A);
-    do_real(iparams->disrestraint.kA);
-    do_real(iparams->disrestraint.lowB);
-    do_real(iparams->disrestraint.up1B);
-    do_real(iparams->disrestraint.up2B);
-    do_real(iparams->disrestraint.kB);
+  case F_RESTRBONDS:
+    do_real(iparams->restraint.lowA);
+    do_real(iparams->restraint.up1A);
+    do_real(iparams->restraint.up2A);
+    do_real(iparams->restraint.kA);
+    do_real(iparams->restraint.lowB);
+    do_real(iparams->restraint.up1B);
+    do_real(iparams->restraint.up2B);
+    do_real(iparams->restraint.kB);
     break;
   case F_TABBONDS:
   case F_TABBONDSNC:
@@ -1846,13 +1846,13 @@ static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
 	
   if(file_version >= 65)
   {
-	  do_cmap(&mtop->cmap_grid,bRead);
+      do_cmap(&mtop->ffparams.cmap_grid,bRead);
   }
   else
   {
-	  mtop->cmap_grid.ngrid=0;
-	  mtop->cmap_grid.grid_spacing=0.1;
-	  mtop->cmap_grid.cmapdata=NULL;
+      mtop->ffparams.cmap_grid.ngrid        = 0;
+      mtop->ffparams.cmap_grid.grid_spacing = 0.1;
+      mtop->ffparams.cmap_grid.cmapdata     = NULL;
   }
 	  
   if (file_version >= 57) {
@@ -2004,7 +2004,7 @@ static int do_tpx(int fp,bool bRead,
 
   if (!bRead) {
     tpx.natoms = state->natoms;
-    tpx.ngtc   = state->ngtc;
+    tpx.ngtc   = state->ngtc;  /* need to add nnhpres here? */
     tpx.fep_state = state->fep_state;
     tpx.lambda = state->lambda[efptFEP];
     tpx.bIr  = (ir       != NULL);
@@ -2025,13 +2025,13 @@ static int do_tpx(int fp,bool bRead,
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc,0);  /* nose-hoover chains */
+      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */ /* need to add nnhpres here? */
       state->natoms = tpx.natoms; 
       state->nalloc = tpx.natoms; 
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc,0);  /* nose-hoover chains */
+      init_state(state,tpx.natoms,tpx.ngtc,0,0);  /* nose-hoover chains */
     }
   }
 
@@ -2169,7 +2169,7 @@ static int do_tpx(int fp,bool bRead,
   if (bRead && tpx.bIr && ir) {
     if (state->ngtc == 0) {
       /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc,ir->opts.nnhchains);
+      init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
     }
     if (tpx.bTop && mtop) {
       if (file_version < 57) {

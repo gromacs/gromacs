@@ -50,7 +50,7 @@ extern "C" {
  */
 
 /* for now, define the default number of NH chains here -- can be adjusted in the mdp*/
-#define NNHCHAINS 5
+#define NHCHAINLENGTH 5
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
@@ -61,10 +61,10 @@ extern "C" {
 	 estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
 	 estDISRE_INITF, estDISRE_RM3TAV,
 	 estORIRE_INITF, estORIRE_DTAV,
-	 estVIR_PREV, estNH_VXI, estVETA, estVOL0,
+	 estVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI,
 	 estNR };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estVOL0)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estNHPRES_VXI)))
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
 extern const char *est_names[estNR];
@@ -117,19 +117,22 @@ typedef struct
 {
   int           natoms;
   int           ngtc;
-  int           nnhchains; /* number of nose-hoover chains               */
+  int           nnhpres;
+  int           nhchainlength; /* number of nose-hoover chains               */
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
   int           fep_state; /* which FEP state we are in                 */
-  real          *lambda; /* lambda vector                        */
+  real          *lambda; /* lambda vector                               */
   matrix 	box;    /* box vector coordinates                      	*/
   matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
-  matrix        vir_prev; /* Pressure of the previous step for pcoupl  */
+  matrix        vir_prev; /* Pressure of the previous step for pcoupl   */
   double        *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
+  double        *nhpres_xi;  /* for Nose-Hoover t-coupling for barostat */
+  double        *nhpres_vxi; /* for Nose-Hoover t-coupling for barostat */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
   real          veta; /* trotter based isotropic P-coupling             */
   real          vol0; /* initial volume,required for computing NPT conserverd quantity */
@@ -158,6 +161,7 @@ typedef struct
 typedef struct 
 { 
   double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
+  double *QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
   double Winv;   /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
   tensor Winvm;  /* inverse pressure mass tensor, computed       */       
 } t_extmass;

@@ -114,7 +114,9 @@ int ifunc_index(directive d,int type)
     case 8:
       return F_TABDIHS;
     case 9:
-	  return F_PDIHS;  /* proper dihedrals where we allow multiple terms over single bond */
+      return F_PDIHS;  /* proper dihedrals where we allow multiple terms over single bond */
+    case 10: 
+      return F_RESTRBONDS; /* distance restraint potential type bonds */
     default:
       gmx_fatal(FARGS,"Invalid dihedral type %d",type);
     }
@@ -186,11 +188,7 @@ int ifunc_index(directive d,int type)
   case d_angle_restraints_z:
     return F_ANGRESZ;
   case d_distance_restraints:
-    if (type == 3) {    /* type=3 means use the simple distance reweighting scheme, with free energies */
-      return F_DISRESTRBONDS;
-    } else {
-      return F_DISRES;
-    }
+    return F_DISRES;
   case d_orientation_restraints:
     return F_ORIRES;
   case d_dihedral_restraints:
