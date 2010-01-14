@@ -498,7 +498,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     sprintf(label_x,"%s (%s)","Time",unit_time);
     if (ir->n_flambda == 0)
     {
-        sprintf(title,"%s",dhdl,deltag);
+        sprintf(title,"%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
                 dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
     }
