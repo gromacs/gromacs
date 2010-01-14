@@ -93,10 +93,10 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
         Nb=K;Mb=rN;Kb=M;  /* currently always true because ORDER_YZ always set */
     }
     
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (fft5d_type**)real_data, (fft5d_type**)complex_data,debug);
+    (*pfft_setup)->p1 = fft5d_plan_3d(rN,M,K,rcomm, flags, (fft5d_type**)real_data, (fft5d_type**)complex_data);
     
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb,Mb,Kb,rcomm,
-                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, (fft5d_type**)complex_data, (fft5d_type**)real_data,debug);
+                                      (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, (fft5d_type**)complex_data, (fft5d_type**)real_data);
     
     return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 !=0;
 }
@@ -124,8 +124,8 @@ fft5d_limits(fft5d_plan p,
     } else {
         local_size[2]=p->C[0];
     }
-    local_size[1]=M0;
-    local_size[0]=K1;
+    local_size[1]=p->pM[0]; 
+    local_size[0]=p->pK[0]; 
     return 0;
 }
 
@@ -137,7 +137,7 @@ gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
     return fft5d_limits(pfft_setup->p1,local_ndata,local_offset,local_size);
 }
 
-static reorder_ivec_yzx(ivec v)
+static void reorder_ivec_yzx(ivec v)
 {
     real tmp;
 
