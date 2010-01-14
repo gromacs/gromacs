@@ -325,7 +325,14 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        enlist_def = enlistCG_CG;
        if (log != NULL)
        {
-           fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
+	 if (fr->adress_type!=eAdressOff)
+	 {
+	   fprintf(log,"\nUsing charge-group - charge-group neighbor lists and ADRESS kernel\n\n");
+         }
+	 else 
+	 {
+	   fprintf(log,"\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
+	 }
        }
    }
    
