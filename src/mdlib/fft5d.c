@@ -386,14 +386,23 @@ enum order {
   maxN,maxM,maxK is max size of local data
   pN, pM, pK is local size specific to current processor (only different to max if not divisible)
   NG, MG, KG is size of global data*/
-static void splitaxes(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,int maxK, int pN, int pM, int pK,
-		      int P,int NG,int *N, int* oN) {
+static void splitaxes(fft5d_type* lin,const fft5d_type* lout,
+                      int maxN,int maxM,int maxK, int pN, int pM, int pK,
+                      int P,int NG,int *N, int* oN) {
     int x,y,z,i;
+    int in_i,out_i,in_z,out_z,in_y,out_y;
+
     for (i=0;i<P;i++) { /*index cube along long axis*/
+        in_i  = i*maxN*maxM*maxK;
+        out_i = oN[i];
         for (z=0;z<pK;z++) { /*3. z l*/ 
+            in_z  = in_i  + z*maxN*maxM;
+            out_z = out_i + z*NG*pM;
             for (y=0;y<pM;y++) { /*2. y k*/
+                in_y  = in_z  + y*maxN;
+                out_y = out_z + y*NG;
                 for (x=0;x<N[i];x++) { /*1. x j*/
-                    lin[x+y*maxN+z*maxN*maxM+i*maxN*maxM*maxK]=lout[(oN[i]+x)+y*NG+z*NG*pM];
+                    lin[in_y+x] = lout[out_y+x];
                     /*after split important that each processor chunk i has size maxN*maxM*maxK and thus being the same size*/
                     /*before split data contiguos - thus if different processor get different amount oN is different*/
                 }
@@ -408,14 +417,24 @@ static void splitaxes(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,i
   the major, middle, minor order is only correct for x,y,z (N,M,K) for the input
   N,M,K local dimensions
   KG global size*/
-static void joinAxesTrans13(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,int maxK,int pN, int pM, int pK, 
-			    int P,int KG, int* K, int* oK) {
+static void joinAxesTrans13(fft5d_type* lin,const fft5d_type* lout,
+                            int maxN,int maxM,int maxK,int pN, int pM, int pK, 
+                            int P,int KG, int* K, int* oK)
+{
 	int i,x,y,z;
+    int in_i,out_i,in_x,out_x,in_z,out_z;
+
 	for (i=0;i<P;i++) { /*index cube along long axis*/
+        in_i  = oK[i];
+        out_i = i*maxM*maxN*maxK;
 		for (x=0;x<pN;x++) { /*1.j*/
-			for (z=0;z<K[i];z++) { /*3.l*/
-				for (y=0;y<pM;y++) { /*2.k*/
-					lin[(oK[i]+z)+y*KG+x*KG*pM]=lout[x+y*maxN+z*maxM*maxN+i*maxM*maxN*maxK];
+            in_x  = in_i  + x*KG*pM;
+            out_x = out_i + x;
+            for (z=0;z<K[i];z++) { /*3.l*/
+                in_z  = in_x  + z;
+                out_z = out_x + z*maxM*maxN;
+                for (y=0;y<pM;y++) { /*2.k*/
+                    lin[in_z+y*KG] = lout[out_z+y*maxN];
 				}
 			}
 		}
@@ -431,11 +450,19 @@ static void joinAxesTrans13(fft5d_type* lin,const fft5d_type* lout,int maxN,int 
 static void joinAxesTrans12(fft5d_type* lin,const fft5d_type* lout,int maxN,int maxM,int maxK,int pN, int pM, int pK,
 			    int P,int MG, int* M, int* oM) {
 	int i,z,y,x;
+    int in_i,out_i,in_z,out_z,in_x,out_x;
+
 	for (i=0;i<P;i++) { /*index cube along long axis*/
+        in_i  = oM[i];
+        out_i = i*maxM*maxN*maxK;
 		for (z=0;z<pK;z++) { 
-            for (x=0;x<pN;x++) { 
-				for (y=0;y<M[i];y++) { 
-					lin[(oM[i]+y)+x*MG+z*MG*pN]=lout[x+y*maxN+z*maxM*maxN+i*maxM*maxN*maxK];
+            in_z  = in_i  + z*MG*pN;
+            out_z = out_i + z*maxM*maxN;
+            for (x=0;x<pN;x++) {
+                in_x  = in_z  + x*MG;
+                out_x = out_z + x;
+				for (y=0;y<M[i];y++) {
+					lin[in_x+y] = lout[out_x+y*maxN];
 				}
 			}
 		}

@@ -1890,46 +1890,27 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   return 0;
 }
 
-int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
+static int mult_up(int n,int f)
 {
-  int   nnx,nny;
-  float imbal;
-  int   ret;
+    return ((n + f - 1)/f)*f;
+}
 
-  ret = 0;
-  if (nnodes > nkx && nnodes > nky) {
-    /* This is probably always bad */
-    ret = 2;
-  } else if (2*nnodes > nkx && nnodes != nkx) {
-    /* This is inconvenient for the grid overlap communication */
-    ret = 1;
-  } 
 
-  /* Determine the maximum number of grid slabs per PME node */
-  nnx = (nkx + nnodes - 1)/nnodes;
-  nny = (nky + nnodes - 1)/nnodes;
-  /* Estimate the FFT + solve_pme load imbalance.
-   * Imbalance in x for 2D FFT.
-   * Imbalance in y for 1D FFT + solve_pme.
-   * x and y imbalance affect the performance roughly equally.
-   */
-  imbal = (nnx*nnodes/(float)nkx + nny*nnodes/(float)nky)*0.5 - 1;
-  if (debug)
-    fprintf(debug,"PME load imbalance estimate for npme=%d: %f\n",
-	    nnodes,imbal);
+static double pme_load_imbalance(gmx_pme_t pme)
+{
+    int    nma,nmi;
+    double n1,n2,n3;
 
-  /* The cost of charge spreading and force gathering (which is always
-   * load balanced) is usually 1-2 times more than FFT+solve_pme.
-   * So we compare the imbalance to (a rough guess of) the performance gain
-   * in spreading and gathering with respect to one node less.
-   */
-  if (imbal > 2.0/nnodes) {
-    ret = max(ret,2);
-  } else if (imbal > 1.0/nnodes) {
-    ret = max(ret,1);
-  }
+    nma = pme->nnodes_major;
+    nmi = pme->nnodes_minor;
 
-  return ret;
+    n1 = mult_up(pme->nkx,nma)*mult_up(pme->nky,nmi)*pme->nkz;
+    n2 = mult_up(pme->nkx,nma)*mult_up(pme->nkz,nmi)*pme->nky;
+    n3 = mult_up(pme->nky,nma)*mult_up(pme->nkz,nmi)*pme->nkx;
+
+    /* pme_solve is roughly double the cost of an fft */
+
+    return (n1 + n2 + 3*n3)/(double)(6*pme->nkx*pme->nky*pme->nkz);
 }
 
 static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc, t_commrec *cr,
@@ -2263,6 +2244,8 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
 
     if (pme->nnodes > 1) {
+        double imbal;
+
 #ifdef GMX_MPI
         MPI_Type_contiguous(DIM, mpi_type, &(pme->rvec_mpi));
         MPI_Type_commit(&(pme->rvec_mpi));
@@ -2274,14 +2257,19 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
          * (unless the charge distribution is inhomogeneous).
          */
         
-        if (pme_inconvenient_nnodes(pme->nkx,pme->nky,pme->nnodes) &&
-            pme->nodeid == 0) {
+        imbal = pme_load_imbalance(pme);
+        if (imbal >= 1.2 && pme->nodeid_major == 0 && pme->nodeid_minor == 0)
+        {
             fprintf(stderr,
                     "\n"
-                    "NOTE: For optimal PME load balancing at high parallelization\n"
-                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_nodes (%d)\n"
+                    "NOTE: The load imbalance in PME FFT and solve is %d%%.\n"
+                    "      For optimal PME load balancing\n"
+                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_nodes_x (%d)\n"
+                    "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_nodes_y (%d)\n"
                     "\n",
-                    pme->nkx,pme->nky,pme->nnodes);
+                    (int)((imbal-1)*100 + 0.5),
+                    pme->nkx,pme->nky,pme->nnodes_major,
+                    pme->nky,pme->nkz,pme->nnodes_minor);
         }
     }
 
