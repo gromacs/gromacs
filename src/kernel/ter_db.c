@@ -79,21 +79,27 @@ int find_kw(char *keyw)
 static void read_atom(char *line, bool bAdd,
 		      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
-  int    nr, i, n;
-  char   buf[4][30],type[12];
+  int    nr, nrmax, i;
+  char   buf[6][30],type[12];
   double m, q;
   
   /* This code is messy, because of support for different formats:
-   * for replace: [new name] <atom type> <m> <q>
+   * for replace: [new name] <atom type> <m> <q> [cgnr]
    * for add:                <atom type> <m> <q> [cgnr]
    */
-  nr = sscanf(line,"%s %s %s %s %n", buf[0], buf[1], buf[2], buf[3], &n);
-  if (!(nr == 3 || nr == 4)) {
-    gmx_fatal(FARGS,"Reading Termini Database: expected %d or %d items of atom data in stead of %d on line\n%s", 3, 4, nr, line);
+  nr = sscanf(line,"%s %s %s %s %s %s",
+	      buf[0],buf[1],buf[2],buf[3],buf[4],buf[6]);
+
+  nrmax = (bAdd ? 4 : 5);
+  if (nr < 3 || nr > nrmax) {
+    gmx_fatal(FARGS,"Reading Termini Database: expected %d or %d items of atom data in stead of %d on line\n%s", 3, nrmax, nr, line);
   }
   i = 0;
   if (!bAdd) {
-    if (nr == 4) {
+    /* Here there is ambiguity, we have to assume that the atom type does not
+     * start with a digit to make a line with 4 entries uniquely interpretable.
+     */
+    if (nr == 5 || (nr == 4 && !isdigit(buf[1][0]))) {
       *nname = strdup(buf[i++]);
     } else {
       *nname = NULL;
@@ -104,8 +110,8 @@ static void read_atom(char *line, bool bAdd,
   a->m = m;
   sscanf(buf[i++],"%lf",&q);
   a->q = q;
-  if (bAdd && nr == 4) {
-    sscanf(buf[3],"%d", cgnr);
+  if (bAdd && i ==  nrmax-1) {
+    sscanf(buf[i++],"%d", cgnr);
   } else {
     *cgnr = NOTSET;
   }
