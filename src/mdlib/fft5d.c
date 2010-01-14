@@ -316,7 +316,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 		}
 		if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD) && s==0) {
 			plan->p1d[s] = FFTW(plan_many_dft_r2c)(1, &rC[s], pM[s]*pK[s],   
-                    (fft5d_rtype*)lin, &rC[s], 1,   C[s]*2, /* why *2 */
+                    (fft5d_rtype*)lin, &rC[s], 1,   C[s]*2, 
 					(FFTW(complex)*)output, &C[s], 1,   C[s], fftwflags);
 		} else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD) && s==2) {
 			plan->p1d[s] = FFTW(plan_many_dft_c2r)(1, &rC[s], pM[s]*pK[s],   
@@ -433,7 +433,7 @@ static void joinAxesTrans12(fft5d_type* lin,const fft5d_type* lout,int maxN,int 
 	int i,z,y,x;
 	for (i=0;i<P;i++) { /*index cube along long axis*/
 		for (z=0;z<pK;z++) { 
-            for (x=0;x<pN;x++) {  //why does pN not work?!?
+            for (x=0;x<pN;x++) { 
 				for (y=0;y<M[i];y++) { 
 					lin[(oM[i]+y)+x*MG+z*MG*pN]=lout[x+y*maxN+z*maxM*maxN+i*maxM*maxN*maxK];
 				}
