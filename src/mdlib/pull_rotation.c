@@ -1934,8 +1934,9 @@ static void do_flexible(
 }
 
 
-/* Calculate the angle between reference and actual rotation group atom: */
-static int angle(t_rotgrp *rotg,
+/* Calculate the angle between reference and actual rotation group atom,
+ * both projected into a plane perpendicular to the rotation vector: */
+static void angle(t_rotgrp *rotg,
         rvec x_act,
         rvec x_ref,
         real *alpha,
@@ -1944,11 +1945,7 @@ static int angle(t_rotgrp *rotg,
 {
     rvec x , xr ;  /* actual and reference positions in new coordinate system */
     rvec xp, xrp;  /* dito, but projected on a plane perpendicular to pg->vec */
-    real normxp;   /* saved for efficiency reasons */
     rvec dum;
-    real cosalpha; /* cos of angle between projected reference and actual position */
-    int sign;
-    real denominator;
 
 
     /* Move the center of positions to rot_offset: */
@@ -1963,35 +1960,17 @@ static int angle(t_rotgrp *rotg,
     svmul(iprod(rotg->vec, x), rotg->vec, dum);
     rvec_sub(x, dum, xp);
 
-    /* Calculate the angle between the projected positions: */
-    normxp = norm(xp); /* save for later use */
-    denominator = norm(xrp)*normxp;
-    
-    /* Can we actually calculate this angle? */
-    if (0.0 == denominator)
-        return -1;
-
-    cosalpha = iprod(xrp, xp) / denominator;
-    if (cosalpha < -1.0) cosalpha = -1.0;
-    if (cosalpha >  1.0) cosalpha =  1.0;
-
-    /* Retrieve some information about which vector precedes */
+    /* Retrieve information about which vector precedes. gmx_angle always
+     * returns a positive angle. */
     cprod(xp, xrp, dum); /* if reference precedes, this is pointing into the same direction as vec */
 
     if (iprod(rotg->vec, dum) >= 0)
-        /* This will be the case when the reference group runs ahead. Thus the sign for the
-         * angle of the actual group (which we are interested in) is negative = behind */
-        sign = -1;
+        *alpha = -gmx_angle(xrp, xp);
     else
-        sign = 1;
-
-    /* Return the angle in radians */
-    *alpha = sign * acos(cosalpha);
-    /* Also return the weight */
-    *weight = normxp;
+        *alpha = +gmx_angle(xrp, xp);
     
-    /* Everything OK */
-    return 0;
+    /* Also return the weight */
+    *weight = norm(xp);
 }
 
 
@@ -2063,11 +2042,8 @@ static void do_fixed(
             /* Add to the torque of this rotation group */
             erg->fix_torque_v += torque(rotg->vec, tmp_f, erg->x_loc_pbc[i], rotg->pivot);
             
-            /* Calculate the angle between reference and actual rotation group atom.
-             * If this routine returns something else than 0, the angle could not 
-             * be determined (e.g. because actual or reference position is on
-             * the rotation axis) */
-            if (0 == angle(rotg, erg->x_loc_pbc[i], erg->xr_loc[i], &alpha, &weight, rotg->pivot))  /* angle in rad, weighted */
+            /* Calculate the angle between reference and actual rotation group atom. */
+            angle(rotg, erg->x_loc_pbc[i], erg->xr_loc[i], &alpha, &weight, rotg->pivot);  /* angle in rad, weighted */
             {
                 erg->fix_angles_v += alpha * weight;
                 erg->fix_weight_v += weight;
