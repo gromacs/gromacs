@@ -79,16 +79,26 @@ int find_kw(char *keyw)
 static void read_atom(char *line, bool bAdd,
 		      char **nname, t_atom *a, gpp_atomtype_t atype, int *cgnr)
 {
-  int    nr, i, n;
-  char   buf[4][30],type[12];
+  int    nr, i;
+  char   buf[5][30],type[12];
   double m, q;
   
   /* This code is messy, because of support for different formats:
-   * for replace: [new name] <atom type> <m> <q>
+   * for replace: [new name] <atom type> <m> <q> [cgnr (old format)]
    * for add:                <atom type> <m> <q> [cgnr]
    */
-  nr = sscanf(line,"%s %s %s %s %n", buf[0], buf[1], buf[2], buf[3], &n);
-  if (!(nr == 3 || nr == 4)) {
+  nr = sscanf(line,"%s %s %s %s %s",buf[0],buf[1],buf[2],buf[3],buf[4]);
+  
+  /* Here there an ambiguity due to the old replace format with cgnr,
+   * which was read for years, but ignored in the rest of the code.
+   * We have to assume that the atom type does not start with a digit
+   * to make a line with 4 entries uniquely interpretable.
+   */
+  if (!bAdd && nr == 4 && isdigit(buf[1][0])) {
+    nr = 3;
+  }
+
+  if (nr < 3 || nr > 4) {
     gmx_fatal(FARGS,"Reading Termini Database: expected %d or %d items of atom data in stead of %d on line\n%s", 3, 4, nr, line);
   }
   i = 0;
@@ -105,7 +115,7 @@ static void read_atom(char *line, bool bAdd,
   sscanf(buf[i++],"%lf",&q);
   a->q = q;
   if (bAdd && nr == 4) {
-    sscanf(buf[3],"%d", cgnr);
+    sscanf(buf[i++],"%d", cgnr);
   } else {
     *cgnr = NOTSET;
   }

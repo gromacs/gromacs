@@ -32,6 +32,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	genborn_allvsall_sse2_single.h			\
 	gmx_qhop_parm.c	gmx_qhop_parm.h			\
 	gmx_qhop_xml.c	gmx_qhop_xml.h			\
+	groupcoord.c   \
 	pme.c		pme_pp.c	pppm.c		\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
