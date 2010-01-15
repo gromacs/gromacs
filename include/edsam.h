@@ -63,8 +63,6 @@ extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed,t_mdatoms 
 extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed, matrix box, int step);
 /* Flooding - called from do_force() */
 
-extern void ed_shift_coords(matrix box, rvec x[], ivec *is, int nr);
-
 #ifdef __cplusplus
 }
 #endif
