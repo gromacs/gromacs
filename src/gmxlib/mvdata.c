@@ -500,8 +500,11 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   
   bc_grpopts(cr,&(inputrec->opts));
   
+  /* even if efep is efepNO, we need to initialize to make sure that
+   * n_lambda is set to zero */
+
+  snew_bc(cr,inputrec->fepvals,1);
   if (inputrec->efep != efepNO) {
-      snew_bc(cr,inputrec->fepvals,1);
       bc_fepvals(cr,inputrec->fepvals);
   }
   if (inputrec->ePull != epullNO) {
