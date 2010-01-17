@@ -95,9 +95,10 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
   real tmp;
 
   /* Set to zero */
-  for(j=0; (j<MAXFORCEPARAM); j++)
-    newparam->generic.buf[j]=0.0;
-    
+  for(j=0; (j<MAXFORCEPARAM); j++) 
+    {
+      newparam->generic.buf[j]=0.0;
+    }
   switch (ftype) {
   case F_G96ANGLES:
     /* Post processing of input data: store cosine iso angle itself */
@@ -332,21 +333,21 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->vsiten.a = old[1];
     break;
   case F_CMAP:
-	newparam->cmap.cmapA=old[0];
-	newparam->cmap.cmapB=old[1];
-	break;
-      case F_GB12:
-      case F_GB13:
-      case F_GB14:
-          newparam->gb.sar  = old[0];
-          newparam->gb.st   = old[1];
-          newparam->gb.pi   = old[2];
-          newparam->gb.gbr  = old[3];
-          newparam->gb.bmlt = old[4];
-          break;
+    newparam->cmap.cmapA=old[0];
+    newparam->cmap.cmapB=old[1];
+    break;
+  case F_GB12:
+  case F_GB13:
+  case F_GB14:
+    newparam->gb.sar  = old[0];
+    newparam->gb.st   = old[1];
+    newparam->gb.pi   = old[2];
+    newparam->gb.gbr  = old[3];
+    newparam->gb.bmlt = old[4];
+    break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
-		ftype,__FILE__,__LINE__);
+	      ftype,__FILE__,__LINE__);
   }
 }
 

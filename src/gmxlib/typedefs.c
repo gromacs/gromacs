@@ -430,17 +430,18 @@ static void init_energyhistory(energyhistory_t *enh)
   enh->nener        = 0;
 }
 
-void init_gtc_state(t_state *state, int ngtc, int nhchainlength, int nnhpres)
+void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 {
     int i,j;
 
     state->ngtc = ngtc;
+    state->nnhpres = nnhpres;
     state->nhchainlength = nhchainlength;
     if (state->ngtc > 0)
     {
-        snew(state->nosehoover_xi, state->nhchainlength*state->ngtc); 
-        snew(state->nosehoover_vxi, state->nhchainlength*state->ngtc);
-        snew(state->therm_integral, state->ngtc);
+        snew(state->nosehoover_xi,state->nhchainlength*state->ngtc); 
+        snew(state->nosehoover_vxi,state->nhchainlength*state->ngtc);
+        snew(state->therm_integral,state->ngtc);
         for(i=0; i<state->ngtc; i++)
         {
             for (j=0;j<state->nhchainlength;j++)
@@ -449,7 +450,7 @@ void init_gtc_state(t_state *state, int ngtc, int nhchainlength, int nnhpres)
                 state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
             }
         }
-        for(i=0; i<ngtc; i++) {
+        for(i=0; i<state->ngtc; i++) {
             state->therm_integral[i]  = 0.0;
         }
     }
@@ -460,11 +461,18 @@ void init_gtc_state(t_state *state, int ngtc, int nhchainlength, int nnhpres)
         state->therm_integral = NULL;
     }
 
-    state->nnhpres = nnhpres;
     if (state->nnhpres > 0)
     {
-        snew(state->nhpres_xi ,state->nhchainlength*state->nnhpres);
-        snew(state->nhpres_vxi,state->nhchainlength*state->nnhpres);
+        snew(state->nhpres_xi,state->nhchainlength*nnhpres); 
+        snew(state->nhpres_vxi,state->nhchainlength*nnhpres);
+        for(i=0; i<nnhpres; i++) 
+        {
+            for (j=0;j<state->nhchainlength;j++) 
+            {
+                state->nhpres_xi[i*nhchainlength + j]  = 0.0;
+                state->nhpres_vxi[i*nhchainlength + j]  = 0.0;
+            }
+        }
     }
     else
     {
@@ -474,7 +482,7 @@ void init_gtc_state(t_state *state, int ngtc, int nhchainlength, int nnhpres)
 }
 
 
-void init_state(t_state *state,int natoms,int ngtc,int nnhpres,int nhchainlength)
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength)
 {
   int i;
 

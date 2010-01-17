@@ -118,7 +118,7 @@ typedef struct
   int           natoms;
   int           ngtc;
   int           nnhpres;
-  int           nhchainlength; /* length of nose-hoover chains          */
+  int           nhchainlength; /* length of each nose-hoover chain      */
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
@@ -130,8 +130,8 @@ typedef struct
   matrix        vir_prev; /* Pressure of the previous step for pcoupl  */
   double        *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
-  double        *nhpres_xi;  /* for Nose-Hoover pcoupl                  */
-  double        *nhpres_vxi; /* for Nose-Hoover pcoupl                  */
+  double        *nhpres_xi;  /* for Nose-Hoover pcoupl for barostat     */
+  double        *nhpres_vxi; /* for Nose-Hoover pcoupl for barostat     */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
   real          veta; /* trotter based isotropic P-coupling             */
   real          vol0; /* initial volume,required for computing NPT conserverd quantity */
@@ -160,6 +160,7 @@ typedef struct
 typedef struct 
 { 
   double *Qinv;  /* inverse mass of thermostat -- computed from inputs, but a good place to store */
+  double *QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
   double Winv;   /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
   tensor Winvm;  /* inverse pressure mass tensor, computed       */       
 } t_extmass;

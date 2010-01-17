@@ -117,6 +117,7 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     
     stateb->natoms     = statea->natoms;
     stateb->ngtc       = statea->ngtc;
+    stateb->nnhpres    = statea->nnhpres;
     stateb->veta       = statea->veta;
     if (ekinda) 
     {
@@ -141,7 +142,7 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     for (i = 0; i<stateb->ngtc; i++) 
     { 
         nc = i*opts->nhchainlength;
-        for (j=0; j < opts->nhchainlength; j++) 
+        for (j=0; j<opts->nhchainlength; j++) 
         {
             stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
             stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
@@ -149,8 +150,15 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     }
     if (stateb->nhpres_xi != NULL)
     {
-        stateb->nhpres_xi[0]  = statea->nhpres_xi[0];
-        stateb->nhpres_vxi[0] = statea->nhpres_vxi[0];
+        for (i = 0; i<stateb->nnhpres; i++) 
+        {
+            nc = i*opts->nhchainlength;
+            for (j=0; j<opts->nhchainlength; j++) 
+            {
+                stateb->nhpres_xi[nc+j]  = statea->nhpres_xi[nc+j];
+                stateb->nhpres_vxi[nc+j] = statea->nhpres_vxi[nc+j];
+            }
+        }
     }
 }
 
@@ -341,16 +349,17 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
 }
 
 
-/* Definitions for convergence of iterated constraints.  Could be optimized . . .  */
+/* Definitions for convergence of iterated constraints */
 
 /* data type */
 struct gmx_iterate 
 {
-   real f,fprev,x,xprev;  
-   int iter_i;
-   bool bIterate;
-   bool bFirstIterate;
-   real *allrelerr;    
+    real f,fprev,x,xprev;  
+    int iter_i;
+    bool bIterate;
+    bool bFirstIterate;
+    real *allrelerr;    
+    int num_close; /* number of "close" violations, caused by limited precision. */
 };
   
 /* abstract data type for iteration data */
@@ -359,16 +368,24 @@ gmx_iterate_t;
   
 #ifdef GMX_DOUBLE
 #define CONVERGEITER  0.000000001
+#define CLOSE_ENOUGH  0.000001000
 #else
-#define CONVERGEITER  0.0001
+#define CONVERGEITER  0.00001
+#define CLOSE_ENOUGH  0.01
 #endif
-#define MAXITERCONST       200
+#define MAXITERCONST       50
+
+/* we want to keep track of the close calls.  If there are too many, there might be some other issues.
+   so we make sure that it's either less than some predetermined number, or if more than that number,
+   only some small fraction of the total. */
+#define MAX_NUMBER_CLOSE        10
+#define FRACTION_CLOSE     0.00001
   
   /* used to escape out of cyclic traps because of limited numberical precision  */
 #define CYCLEMAX            20
 #define FALLBACK          1000 
 
-gmx_iterate_t gmx_iterate_init(bool bIterate) {
+static gmx_iterate_t gmx_iterate_init(bool bIterate) {
     
     gmx_iterate_t iterate;
     int i,maxcycle;
@@ -381,6 +398,7 @@ gmx_iterate_t gmx_iterate_init(bool bIterate) {
     iterate->iter_i = 0;
     iterate->bIterate = bIterate;
     iterate->bFirstIterate = TRUE; 
+    iterate->num_close = 0;
     snew(iterate->allrelerr,maxcycle);
     for (i=0;i<maxcycle;i++) 
     {
@@ -395,7 +413,7 @@ static void gmx_iterate_destroy(gmx_iterate_t iterate)
     sfree(iterate);
 }
 
-static bool done_iterating(const t_commrec *cr,FILE *fplog, gmx_iterate_t iterate, real fom, real *newf) 
+static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t iterate, real fom, real *newf) 
 {    
     /* monitor convergence, and use a secant search to propose new
        values.  
@@ -494,12 +512,14 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, gmx_iterate_t iterat
         }
         if (iterate->iter_i > MAXITERCONST) 
         {
-            /* test to see if we're stuck in some numerical-precision induced loop */
+            /* step #1 to determine if we should die - test to see if
+             * we're stuck in some numerical-precision induced loop */
+
             incycle = FALSE;
             for (i=0;i<CYCLEMAX;i++) {
                 if (iterate->allrelerr[(MAXITERCONST-2*CYCLEMAX)-i] == iterate->allrelerr[iterate->iter_i-1]) {
                     incycle = TRUE;
-                    if (relerr > CONVERGEITER*FALLBACK) {incycle = FALSE; break;}
+                    if (relerr > CLOSE_ENOUGH) {incycle = FALSE; break;}
                 }
             }
             
@@ -507,11 +527,37 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, gmx_iterate_t iterat
                 /* we are trapped in a numerical attractor, and can't converge any more, and are close to the final result.
                    Better to give up here and proceed with a warning than have the simulation die.
                 */
-                sprintf(buf,"numerical convergence issues with NPT, relative error only %10.5g, continuing\n",relerr);
+                sprintf(buf,"Slight numerical convergence deviation with NPT, at step %d relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
                 md_print_warning(cr,fplog,buf);
                 return TRUE;
-            } else {
-                gmx_fatal(FARGS,"Could not converge NPT constraints\n");
+            } 
+            else 
+            {
+                /* Step #2 test to see if we are reasonably close
+                 * anyway, then monitor the number.  If not, die */
+
+                if (relerr < CLOSE_ENOUGH) 
+                {
+                    iterate->num_close++;
+                    /* if so, how many close calls have we had?  If less than a few, we're OK */
+                    if (iterate->num_close < MAX_NUMBER_CLOSE) 
+                    {
+                        sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
+                        md_print_warning(cr,fplog,buf);
+                        return TRUE;
+                        /* if more than a few, check the total fraction.  If too high, die. */
+                    } else if (iterate->num_close/nsteps > FRACTION_CLOSE) {
+                        gmx_fatal(FARGS,"Could not converge NPT constraints\n");
+                    } else {
+                        sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
+                        md_print_warning(cr,fplog,buf);
+                        return TRUE;
+                    }
+                }
+                else 
+                {
+                    gmx_fatal(FARGS,"Could not converge NPT constraints\n");
+                }
             }
         }
     }
@@ -1154,7 +1200,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Initiate data for the special cases */
     if (bIterations) 
     {
-        bufstate = init_bufstate(state->natoms,(ir->opts.ngtc+1)*ir->opts.nhchainlength); /* extra state for barostat */
+        bufstate = init_bufstate(state);
     }
     
     if (bFFscan) 
@@ -1742,7 +1788,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
                 
-                if (done_iterating(cr,fplog,iterate,state->veta,&vetanew)) break;
+                if (done_iterating(cr,fplog,step,iterate,state->veta,&vetanew)) break;
             }
             gmx_iterate_destroy(iterate);
 
@@ -1776,7 +1822,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             if (IR_NVT_TROTTER(ir) || IR_NPT_TROTTER(ir))
             {
                 last_conserved = 
-                    NPT_energy(ir,state->nosehoover_xi,state->nosehoover_vxi,state->veta, state->box, &MassQ); 
+                    NPT_energy(ir,state,&MassQ); 
                 if ((ir->eDispCorr != edispcEnerPres) && (ir->eDispCorr != edispcAllEnerPres)) 
                 {
                     last_conserved -= enerd->term[F_DISPCORR];
@@ -2156,7 +2202,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
         
-            if (done_iterating(cr,fplog,iterate,trace(shake_vir),&tracevir)) break;
+            if (done_iterating(cr,fplog,step,iterate,trace(shake_vir),&tracevir)) break;
         }
         gmx_iterate_destroy(iterate);
 
@@ -2230,8 +2276,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + last_conserved;
             } else {
                 enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + 
-                    NPT_energy(ir,state->nosehoover_xi,
-                               state->nosehoover_vxi,state->veta,state->box,&MassQ);	
+                    NPT_energy(ir,state,&MassQ);	
             }
             break;
         case etcVRESCALE:

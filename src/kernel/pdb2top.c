@@ -303,21 +303,12 @@ static void print_top_system(FILE *out, const char *title)
 void print_top_mols(FILE *out, const char *title, const char *water,
 		    int nincl, char **incls, int nmol, t_mols *mols)
 {
-  int  i;
-  char *incl;
-
+  int i;
+  
   if (nincl>0) {
     fprintf(out,"; Include chain topologies\n");
-    for (i=0; (i<nincl); i++) {
-        incl = strrchr(incls[i],DIR_SEPARATOR);
-        if (incl == NULL) {
-            incl = incls[i];
-        } else {
-            /* Remove the path from the include name */
-            incl = incl + 1;
-        }
-      fprintf(out,"#include \"%s\"\n",incl);
-    }
+    for (i=0; (i<nincl); i++)
+      fprintf(out,"#include \"%s\"\n",incls[i]);
     fprintf(out,"\n");
   }
 

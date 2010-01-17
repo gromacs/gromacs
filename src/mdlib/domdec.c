@@ -1433,9 +1433,8 @@ void dd_collect_vec(gmx_domdec_t *dd,
 void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local,t_state *state)
 {
-    int est,i,j,ngtcp,nh;
+    int est,i,j,nh;
 
-    ngtcp = state_local->ngtc+1; /* we need an extra state for the barostat */    
     nh = state->nhchainlength;
 
     if (DDMASTER(dd))
@@ -1448,17 +1447,21 @@ void dd_collect_state(gmx_domdec_t *dd,
         copy_mat(state_local->vir_prev,state->vir_prev);
         copy_mat(state_local->pres_prev,state->pres_prev);
 
-        for(i=0; i<ngtcp; i++)
+
+        for(i=0; i<state_local->ngtc; i++)
         {
             for(j=0; j<nh; j++) {
                 state->nosehoover_xi[i*nh+j]        = state_local->nosehoover_xi[i*nh+j];
                 state->nosehoover_vxi[i*nh+j]       = state_local->nosehoover_vxi[i*nh+j];
             }
-
-        }
-        for(i=0; i<state_local->ngtc; i++) 
-        {
             state->therm_integral[i] = state_local->therm_integral[i];            
+        }
+        for(i=0; i<state_local->nnhpres; i++) 
+        {
+            for(j=0; j<nh; j++) {
+                state->nhpres_xi[i*nh+j]        = state_local->nhpres_xi[i*nh+j];
+                state->nhpres_vxi[i*nh+j]       = state_local->nhpres_vxi[i*nh+j];
+            }
         }
     }
     for(est=0; est<estNR; est++)
@@ -1689,8 +1692,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
                                 rvec **f)
 {
     int  i,j,ngtch,ngtcp,nh;
-    
-    ngtcp = state->ngtc+1; /* need an extra state for barostat */
+
     nh = state->nhchainlength;
 
     if (DDMASTER(dd))
@@ -1701,16 +1703,18 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
         copy_mat(state->box,state_local->box);
         copy_mat(state->box_rel,state_local->box_rel);
         copy_mat(state->boxv,state_local->boxv);
-        for(i=0; i<ngtcp; i++)
+        for(i=0; i<state_local->ngtc; i++)
         {
             for(j=0; j<nh; j++) {
                 state_local->nosehoover_xi[i*nh+j]        = state->nosehoover_xi[i*nh+j];
                 state_local->nosehoover_vxi[i*nh+j]       = state->nosehoover_vxi[i*nh+j];
             }
-        }
-        for(i=0; i<state_local->ngtc; i++)
-        {
             state_local->therm_integral[i] = state->therm_integral[i];
+        }
+        for(i=0; i<state_local->nnhpres; i++)
+        {
+            state_local->nhpres_xi[i*nh+j]        = state->nhpres_xi[i*nh+j];
+            state_local->nhpres_vxi[i*nh+j]       = state->nhpres_vxi[i*nh+j];
         }
     }
     dd_bcast(dd,sizeof(real),&state_local->lambda);
@@ -1719,9 +1723,11 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_bcast(dd,sizeof(state_local->box),state_local->box);
     dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
-    dd_bcast(dd,((ngtcp*nh)*sizeof(double)),state_local->nosehoover_xi);
-    dd_bcast(dd,((ngtcp*nh)*sizeof(double)),state_local->nosehoover_vxi);
+    dd_bcast(dd,((state_local->ngtc*nh)*sizeof(double)),state_local->nosehoover_xi);
+    dd_bcast(dd,((state_local->ngtc*nh)*sizeof(double)),state_local->nosehoover_vxi);
     dd_bcast(dd,state_local->ngtc*sizeof(double),state_local->therm_integral);
+    dd_bcast(dd,((state_local->nnhpres*nh)*sizeof(double)),state_local->nhpres_xi);
+    dd_bcast(dd,((state_local->nnhpres*nh)*sizeof(double)),state_local->nhpres_vxi);
 
     if (dd->nat_home > state_local->nalloc)
     {
