@@ -86,7 +86,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 
     int P[2],bMaster,prank[2],i;
 	/* comm, prank and P are in the order of the decomposition (plan->cart is in the order of transposes) */
-    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != NULL)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[0] != 0)
     {
 	    MPI_Comm_size(comm[0],&P[0]);
 	    MPI_Comm_rank(comm[0],&prank[0]);
@@ -96,7 +96,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
         P[0] = 1;
         prank[0] = 0;
     }
-    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != NULL)
+    if (GMX_PARALLEL_ENV_INITIALIZED && comm[1] != 0)
     {
 	    MPI_Comm_size(comm[1],&P[1]);
 	    MPI_Comm_rank(comm[1],&prank[1]);
@@ -335,8 +335,8 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	    plan->cart[1]=comm[0]; plan->cart[0]=comm[1];
 	}
 #ifdef FFT5D_MPI_TRANSPOSE
-	for (s=0;s<2;s++) {
-        if ((s==0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s==1 && (plan->flags&FFT5D_ORDER_YZ))) 
+    for (s=0;s<2;s++) {
+        if ((s==0 && !(flags&FFT5D_ORDER_YZ)) || (s==1 && (flags&FFT5D_ORDER_YZ))) 
             plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*K[s]*pM[s]*2, 1, 1, (fft5d_rtype*)lin, (fft5d_rtype*)lout, plan->cart[s], FFTW_PATIENT);
         else
             plan->mpip[s] = FFTW(mpi_plan_many_transpose)(nP[s], nP[s], N[s]*pK[s]*M[s]*2, 1, 1, (fft5d_rtype*)lin, (fft5d_rtype*)lout, plan->cart[s], FFTW_PATIENT);
@@ -350,7 +350,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
 	plan->NG=NG;plan->MG=MG;plan->KG=KG;
 	
 	for (s=0;s<3;s++) {
-	        plan->N[s]=N[s];plan->M[s]=M[s];plan->K[s]=K[s];plan->pN[s]=pN[s];plan->pM[s]=pM[s];plan->pK[s]=pK[s];
+        plan->N[s]=N[s];plan->M[s]=M[s];plan->K[s]=K[s];plan->pN[s]=pN[s];plan->pM[s]=pM[s];plan->pK[s]=pK[s];
 		plan->oM[s]=oM[s];plan->oK[s]=oK[s];
 		plan->C[s]=C[s];plan->rC[s]=rC[s];
 		plan->iNin[s]=iNin[s];plan->oNin[s]=oNin[s];plan->iNout[s]=iNout[s];plan->oNout[s]=oNout[s];
@@ -608,7 +608,7 @@ void fft5d_execute(fft5d_plan plan,fft5d_time times) {
 		/*send, recv*/
 		time=MPI_Wtime();
 #ifdef GMX_MPI
-        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] != NULL)
+        if (GMX_PARALLEL_ENV_INITIALIZED && cart[s] != 0)
         {
 #ifdef FFT5D_MPI_TRANSPOSE
 			FFTW(execute)(mpip[s]);  
