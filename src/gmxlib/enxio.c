@@ -715,7 +715,7 @@ void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
   int ind1[] = { XX,YY,ZZ,XX,XX,YY };
   int nre,nfr,i,j,ni,npcoupl;
   char       buf[STRLEN];
-  char       *bufi;
+  const char *bufi;
   gmx_enxnm_t *enm;
   t_enxframe *fr;
   ener_file_t in;
