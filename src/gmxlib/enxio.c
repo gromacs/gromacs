@@ -317,11 +317,12 @@ static bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         {
             ef->eo.bReadFirstStep = TRUE;
             ef->eo.first_step     = fr->step;
+            ef->eo.step_prev      = fr->step;
             ef->eo.nsum_prev      = 0;
         }
         
-        fr->nsum = fr->step - ef->eo.first_step + 1;
-        fr->nsteps = fr->nsum;
+        fr->nsum   = fr->step - ef->eo.first_step + 1;
+        fr->nsteps = fr->step - ef->eo.step_prev;
     }
 	
     return *bOK;
@@ -531,7 +532,7 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
     {
         if (bRead)
         {
-            fprintf(stderr,"\rLast energy frame read %d time %8.3f           ",
+            fprintf(stderr,"\rLast energy frame read %d time %8.3f         ",
                     ef->framenr-1,ef->frametime);
             if (!bOK)
             {
@@ -552,7 +553,7 @@ bool do_enx(ener_file_t ef,t_enxframe *fr)
             (ef->framenr <  200 || ef->framenr %  100 == 0) &&
             (ef->framenr < 2000 || ef->framenr % 1000 == 0))
         {
-            fprintf(stderr,"\rReading energy frame %6d time %8.3f           ",
+            fprintf(stderr,"\rReading energy frame %6d time %8.3f         ",
                     ef->framenr,fr->t);
         }
         ef->framenr++;
