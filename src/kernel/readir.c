@@ -308,7 +308,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	warning(NULL);
       }
     
-    if (!EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
+    if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
       warning_note("leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
       ir->opts.nhchainlength = 1;
     }
@@ -812,7 +812,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
-  ITYPE("nhchains",     ir->opts.nhchainlength, NHCHAINLENGTH);
+  ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");

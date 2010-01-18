@@ -1,4 +1,4 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  * 
  *                This source code is part of
  * 
@@ -210,6 +210,7 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 {
   block_bc(cr,state->natoms);
   block_bc(cr,state->ngtc);
+  block_bc(cr,state->nnhpres);
   block_bc(cr,state->nhchainlength);
   block_bc(cr,state->nrng);
   block_bc(cr,state->nrngi);
@@ -218,9 +219,10 @@ void bcast_state_setup(const t_commrec *cr,t_state *state)
 
 void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
-  int i,ngtch;
+  int i,nnht,nnhtp;
 
-  ngtch = (state->ngtc+1)*(state->nhchainlength); /* need an extra state for the barostat */
+  nnht = (state->ngtc)*(state->nhchainlength); 
+  nnhtp = (state->nnhpres)*(state->nhchainlength); 
 
   bcast_state_setup(cr,state);
 
@@ -239,8 +241,10 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estBOXV:    block_bc(cr,state->boxv); break;
       case estPRES_PREV: block_bc(cr,state->pres_prev); break;
       case estVIR_PREV: block_bc(cr,state->vir_prev); break;
-      case estNH_XI:   nblock_abc(cr,ngtch,state->nosehoover_xi); break;
-      case estNH_VXI:  nblock_abc(cr,ngtch,state->nosehoover_vxi); break;
+      case estNH_XI:   nblock_abc(cr,nnht,state->nosehoover_xi); break;
+      case estNH_VXI:  nblock_abc(cr,nnht,state->nosehoover_vxi); break;
+      case estNHPRES_XI:   nblock_abc(cr,nnhtp,state->nhpres_xi); break;
+      case estNHPRES_VXI:  nblock_abc(cr,nnhtp,state->nhpres_vxi); break;
       case estTC_INT:  nblock_abc(cr,state->ngtc,state->therm_integral); break;
       case estVETA:    block_bc(cr,state->veta); break;
       case estVOL0:    block_bc(cr,state->vol0); break;
@@ -252,18 +256,18 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 	  case estLD_RNGI: if(state->nrngi == 1) nblock_abc(cr,state->nrngi,state->ld_rngi); break;
       case estDISRE_INITF: block_bc(cr,state->hist.disre_initf); break;
       case estDISRE_RM3TAV:
-	block_bc(cr,state->hist.ndisrepairs);
-	nblock_abc(cr,state->hist.ndisrepairs,state->hist.disre_rm3tav);
-	break;
+          block_bc(cr,state->hist.ndisrepairs);
+          nblock_abc(cr,state->hist.ndisrepairs,state->hist.disre_rm3tav);
+          break;
       case estORIRE_INITF: block_bc(cr,state->hist.orire_initf); break;
       case estORIRE_DTAV:
-	block_bc(cr,state->hist.norire_Dtav);
-	nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
-	break;
+          block_bc(cr,state->hist.norire_Dtav);
+          nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
+          break;
       default:
-	gmx_fatal(FARGS,
-		  "Communication is not implemented for %s in bcast_state",
-		  est_names[i]);
+          gmx_fatal(FARGS,
+                    "Communication is not implemented for %s in bcast_state",
+                    est_names[i]);
       }
     }
   }
@@ -448,7 +452,9 @@ static void bc_pull(const t_commrec *cr,t_pull *pull)
   block_bc(cr,*pull);
   snew_bc(cr,pull->grp,pull->ngrp+1);
   for(g=0; g<pull->ngrp+1; g++)
-    bc_pullgrp(cr,&pull->grp[g]);
+  {
+      bc_pullgrp(cr,&pull->grp[g]);
+  }
 }
 
 static void bc_rotgrp(const t_commrec *cr,t_rotgrp *rotg)
