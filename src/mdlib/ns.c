@@ -315,7 +315,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        ivdw = 1;
    }
 
-   fr->ns.bCGlist = (getenv("GMX_NBLISTCG") != 0);
+   fr->ns.bCGlist = ((fr->adress_type!=eAdressOff)||(getenv("GMX_NBLISTCG") != 0));
    if (!fr->ns.bCGlist)
    {
        enlist_def = enlistATOM_ATOM;
