@@ -108,7 +108,7 @@ gmx_wintruncate(const char *filename, __int64 size)
     FILE *fp;
     int   rc;
     
-    fp=fopen(filename,"r+");
+    fp=fopen(filename,"rb+");
     
     if(fp==NULL)
     {
