@@ -93,8 +93,8 @@ gmx_cycles_calibrate(double sampletime)
      *
      * We call gettimeofday an extra time at the start to avoid cache misses.
      */
-    gettimeofday(&t1,&tz);
-    gettimeofday(&t1,&tz);
+    gettimeofday(&t1,NULL);
+    gettimeofday(&t1,NULL);
     c1=gmx_cycles_read();
     
     do 
@@ -106,7 +106,7 @@ gmx_cycles_calibrate(double sampletime)
         for(i=0;i<10000;i++)
             d=d/(1.0+(double)i);
         /* Read the time again */
-        gettimeofday(&t2,&tz);
+        gettimeofday(&t2,NULL);
         c2=gmx_cycles_read();
         timediff=(double)(t2.tv_sec-t1.tv_sec)+
             (double)(t2.tv_usec-t1.tv_usec)*1e-6;

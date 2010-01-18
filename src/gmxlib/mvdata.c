@@ -490,12 +490,6 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   bool bAlloc=TRUE;
   int i;
 
-  int j=0;
-  while (j!=1) {
-      sleep(5);
-      continue;
-  }
-  
   block_bc(cr,*inputrec);
   
   bc_grpopts(cr,&(inputrec->opts));

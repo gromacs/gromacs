@@ -137,13 +137,13 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     copy_mat(statea->box_rel,stateb->box_rel);
     copy_mat(statea->boxv,stateb->boxv);
 
-    for (i = 0; i < stateb->ngtc; i++) 
+    for (i = 0; i<stateb->ngtc; i++) 
     { 
         nc = i*opts->nhchainlength;
-        for (j=0; j < opts->nhchainlength; j++) 
+        for (j=0; j<opts->nhchainlength; j++) 
         {
-            stateb->nosehoover_xi[nc + j]  = statea->nosehoover_xi[nc + j];
-            stateb->nosehoover_vxi[nc + j] = statea->nosehoover_vxi[nc + j];
+            stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
+            stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
         }
     }
     
@@ -376,7 +376,7 @@ gmx_iterate_t;
 #define CONVERGEITER  0.00001
 #define CLOSE_ENOUGH  0.01
 #endif
-#define MAXITERCONST       200
+#define MAXITERCONST       50
 
 /* we want to keep track of the close calls.  If there are too many, there might be some other issues.
    so we make sure that it's either less than some predetermined number, or if more than that number,
@@ -388,7 +388,7 @@ gmx_iterate_t;
 #define CYCLEMAX            20
 #define FALLBACK          1000 
 
-gmx_iterate_t gmx_iterate_init(bool bIterate) {
+static gmx_iterate_t gmx_iterate_init(bool bIterate) {
     
     gmx_iterate_t iterate;
     int i,maxcycle;
@@ -410,7 +410,7 @@ gmx_iterate_t gmx_iterate_init(bool bIterate) {
     return iterate;
 }
 
-void gmx_iterate_destroy(gmx_iterate_t iterate) 
+static void gmx_iterate_destroy(gmx_iterate_t iterate) 
 {
     sfree(iterate->allrelerr);
     sfree(iterate);
@@ -1017,13 +1017,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     if (DEFORM(*ir))
     {
 #ifdef GMX_THREADS
-        tMPI_Thread_mutex_lock(&box_mutex);
+        tMPI_Thread_mutex_lock(&deform_init_box_mutex);
 #endif
         set_deform_reference_box(upd,
                                  deform_init_init_step_tpx,
                                  deform_init_box_tpx);
 #ifdef GMX_THREADS
-        tMPI_Thread_mutex_unlock(&box_mutex);
+        tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
 #endif
     }
 
@@ -1181,7 +1181,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;   /* should this be here? MRS */
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,&chkpt,&terminate,&terminate_now,NULL,state->box,
+                    constr,NULL,&terminate,&terminate_now,NULL,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
@@ -2079,8 +2079,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             chkpt = 1;
         }
-        /*   ^^^^^^^^^^^^^^ VERIFY WHERE THIS SECTION GOES  ^^^^^^^^^^^^^^^^ */
-
 
         iterate=gmx_iterate_init(bIterations);
     

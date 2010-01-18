@@ -433,7 +433,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                     bufi = *(groups->grpname[ni]);
                     for(j=0; (j<md->nNHC); j++) 
                     {
-
                         sprintf(buf,"Xi-%d-%s",j,bufi);
                         grpnms[2*(i*md->nNHC+j)]=strdup(buf);
                         sprintf(buf,"vXi-%d-%s",j,bufi);
@@ -454,7 +453,6 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                     }
                 }
                 md->itc=get_ebin_space(md->ebin,md->mdep_n,(const char **)grpnms,unit_invtime);
-
             } 
             else
             {
@@ -836,7 +834,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         }
         for(i=1; i<enerd->n_lambda; i++)
         {
-            fprintf(fp_dhdl," %g",
+            fprintf(fp_dhdl," %.12g",
                     enerd->enerpart_lambda[i]-enerd->enerpart_lambda[0]);
         }
         if (md->epc!=epcNO) 

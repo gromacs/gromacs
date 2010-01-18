@@ -441,15 +441,15 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 
     if (state->ngtc > 0) 
     {
-        snew(state->nosehoover_xi, nhchainlength*ngtc); 
-        snew(state->nosehoover_vxi, nhchainlength*ngtc);
+        snew(state->nosehoover_xi,  state->nhchainlength*ngtc); 
+        snew(state->nosehoover_vxi,  state->nhchainlength*ngtc);
         snew(state->therm_integral, state->ngtc);
         for(i=0; i<ngtc; i++) 
         {
-            for (j=0;j<nhchainlength;j++) 
+            for (j=0;j<state->nhchainlength;j++) 
             {
-                state->nosehoover_xi[i*nhchainlength + j]  = 0.0;
-                state->nosehoover_vxi[i*nhchainlength + j]  = 0.0;
+                state->nosehoover_xi[i*state->nhchainlength + j]  = 0.0;
+                state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
             }
             state->therm_integral[i]  = 0.0;
         }
@@ -462,8 +462,8 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     }
     if (state->nnhpres > 0) 
     {
-        snew(state->nhpres_xi, nhchainlength*nnhpres); 
-        snew(state->nhpres_vxi, nhchainlength*nnhpres);
+        snew(state->nhpres_xi,state->nhchainlength*nnhpres); 
+        snew(state->nhpres_vxi,state->nhchainlength*nnhpres);
         for(i=0; i<nnhpres; i++) 
         {
             for (j=0;j<nhchainlength;j++) 
@@ -481,7 +481,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 }
 
 
-void init_state(t_state *state,int natoms,int ngtc, int nnhpres, int nhchainlength)
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength)
 {
   int i;
 

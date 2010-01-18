@@ -58,8 +58,7 @@ typedef struct {
   int    nE,nEg,nEc,nTC,nTCP,nU,nNHC;
   int    *igrp;
   char   **grpnms;
-  int    mde_n;
-  int    mdep_n;
+  int    mde_n,mdep_n;
   real   *tmp_r;
   rvec   *tmp_v;
   bool	 bConstr;

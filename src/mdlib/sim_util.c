@@ -926,7 +926,7 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     step = ir->init_step;
     if (fplog)
     {
-        fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
+        fprintf(fplog,"\nConstraining the starting coordinates (step %ld)\n",step);
     }
     dvdl_dum = 0;
     

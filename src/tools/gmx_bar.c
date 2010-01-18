@@ -729,7 +729,6 @@ int gmx_bar(int argc,char *argv[])
     fpi = NULL;
     if (opt2bSet("-oi",NFILE,fnm))
     {
-        fpi = NULL;
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
                        "\\8l\\4",unit_energy,oenv);

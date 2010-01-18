@@ -267,9 +267,9 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   case F_DIHRES:
     newparam->dihres.label = round_check(old[0],0,ftype,"label");
-    newparam->dihres.phiA   = old[1];
-    newparam->dihres.dphiA  = old[2];
-    newparam->dihres.kfacA  = old[3];
+    newparam->dihres.phiA  = old[1];
+    newparam->dihres.dphiA = old[2];
+    newparam->dihres.kfacA = old[3];
     newparam->dihres.power = round_check(old[4],0,ftype,"power");
     newparam->dihres.phiB   = old[5];
     newparam->dihres.dphiB  = old[6];
