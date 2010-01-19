@@ -32,7 +32,7 @@ set(GMXPREPROCESS_SOURCES
     xlate.c)
 
 set(MDRUN_SOURCES 
-    gctio.c    ionize.c
+    gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
     md.c         mdrun.c    genalg.c)
 

@@ -171,6 +171,82 @@ static const char *get_histp(int resnr)
   return select_res(ehisNR,resnr,hh,expl,"HISTIDINE");
 }
 
+typedef struct {
+  char gmx[6];
+  char main[6];
+  char nter[6];
+  char cter[6];
+} resrename_t;
+
+static void read_resrename(const char *fname,FILE *fp,
+			   int *nresrename,resrename_t **resrename)
+{
+  char line[STRLEN],buf[STRLEN];
+  int  n;
+  resrename_t *rr;
+
+  n  = 0;
+  rr = NULL;
+
+  while(get_a_line(fp,line,STRLEN)) {
+    srenew(rr,n+1);
+    if (sscanf(line,"%s %s %s %s %s",
+	       rr[n].gmx,rr[n].main,rr[n].nter,rr[n].cter,buf) != 4) {
+      gmx_fatal(FARGS,"Invalid line in residue renaming database '%s':\n",
+		fname,line);
+    }
+    n++;
+  }
+
+  *nresrename = n;
+  *resrename  = rr;
+}
+
+static void rename_residues(t_atoms *pdba,int nterpairs,int *rN,int *rC,
+			    int nrr,resrename_t *rr,t_symtab *symtab)
+{
+  int  r,i,j;
+  bool bN,bC;
+  char *nn;
+
+  for(r=0; r<pdba->nres; r++) {
+    i = 0;
+    while(i<nrr && strcmp(*pdba->resinfo[r].name,rr[i].gmx) != 0) {
+      i++;
+    }
+    /* If found in the database, rename this residue,
+     * otherwise keep the old name.
+     */
+    if (i < nrr) {
+      bN = FALSE;
+      bC = FALSE;
+      for(j=0; j<nterpairs; j++) {
+	if (r == rN[j]) {
+	  bN = TRUE;
+	}
+      }
+      for(j=0; j<nterpairs; j++) {
+	if (r == rC[j]) {
+	  bC = TRUE;
+	}
+      }
+      if (bN) {
+	nn = rr[i].nter;
+      } else if (bC) {
+	nn = rr[i].cter;
+      } else {
+	nn = rr[i].main;
+      }
+      if (nn[0] == '-') {
+	gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",pdba->resinfo[r].name,bN ? " as a N-terminus" : (bC ? " as a C-terminus" : ""));
+      }
+      fprintf(stderr,"Renaming residue %d '%s' to '%s'\n",
+	      pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
+      pdba->resinfo[r].name = put_symtab(symtab,nn);
+    }
+  }
+}
+
 static void rename_pdbres(t_atoms *pdba,const char *oldnm,const char *newnm,
 			  bool bFullCompare,t_symtab *symtab)
 {
@@ -679,7 +755,9 @@ int main(int argc, char *argv[])
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
   char       *c,forcefield[STRLEN],fff[STRLEN],suffix[STRLEN];
   const char *watres;
-  char       rtp[STRLEN];
+  char       rtp[STRLEN],rrnn[STRLEN];
+  int        nresrename;
+  resrename_t *resrename=NULL;
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;
@@ -843,6 +921,16 @@ int main(int argc, char *argv[])
 
   /* Amino acid database */  
   aan = get_aa_names();
+  
+  /* Read residue renaming database, if present */
+  sprintf(rrnn,"%s.rrn",forcefield);
+  fp = low_libopen(rrnn,FALSE);
+  if (fp != NULL) {
+    read_resrename(rrnn,fp,&nresrename,&resrename);
+    gmx_fio_fclose(fp);
+  } else {
+    nresrename = 0;
+  }
 
   /* Encad only works with the f3c water model */
   if(strncmp(forcefield,"ffencad",7) == 0)
@@ -1067,6 +1155,24 @@ int main(int argc, char *argv[])
 
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
 		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab);
+
+    for(i=0; i<cc->nterpairs; i++) {
+      cc->chainstart[cc->nterpairs] = pdba->nres;
+      find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
+		  &(cc->rN[i]),&(cc->rC[i]),aan);    
+      
+      if ( (cc->rN[i]<0) || (cc->rC[i]<0) ) {
+	printf("No N- or C-terminus found: "
+	       "this chain appears to contain no protein\n");
+	cc->nterpairs = i;
+	break;
+      }
+    }
+
+    if (nresrename > 0) {
+      rename_residues(pdba,cc->nterpairs,cc->rN,cc->rC,nresrename,resrename,
+		      &symtab);
+    }
 		  
     if (bSort) {
       block = new_blocka();
@@ -1107,46 +1213,36 @@ int main(int argc, char *argv[])
     }
 
     for(i=0; i<cc->nterpairs; i++) {
-      cc->chainstart[cc->nterpairs] = pdba->nres;
-      find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
-		  &(cc->rN[i]),&(cc->rC[i]),aan);    
+      /* Set termini.
+       * We first apply a filter so we only have the
+       * termini that can be applied to the residue in question
+       * (or a generic terminus if no-residue specific is available).
+       */
+      /* First the N terminus */
+      strncpy(resname,*pdba->resinfo[cc->rN[i]].name,3);
+      tdblist=filter_ter(nNtdb,ntdb,resname,&ntdblist);
+      if(ntdblist==0)
+	gmx_fatal(FARGS,"No suitable N-terminus found in database");
       
-      if ( (cc->rN[i]<0) || (cc->rC[i]<0) ) {
-	printf("No N- or C-terminus found: "
-	       "this chain appears to contain no protein\n");
-	cc->nterpairs = 0;
-      } else {
-	/* Set termini.
-	 * We first apply a filter so we only have the
-	 * termini that can be applied to the residue in question
-	 * (or a generic terminus if no-residue specific is available).
-	 */
-	/* First the N terminus */
-	strncpy(resname,*pdba->resinfo[cc->rN[i]].name,3);
-	tdblist=filter_ter(nNtdb,ntdb,resname,&ntdblist);
-	if(ntdblist==0)
-	  gmx_fatal(FARGS,"No suitable N-terminus found in database");
-
-	if(bTerMan && ntdblist>1)
-	  cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select N-terminus type (start)");
-	else
-	  cc->ntdb[i] = tdblist[0];
-	printf("N-terminus: %s\n",(cc->ntdb[i])->name);
-	sfree(tdblist);
-	
-	/* And the C terminus */
-	strncpy(resname,*pdba->resinfo[cc->rC[i]].name,3);
-	tdblist=filter_ter(nCtdb,ctdb,resname,&ntdblist);
-	if(ntdblist==0)
-	  gmx_fatal(FARGS,"No suitable C-terminus found in database");
-	
-	if(bTerMan && ntdblist>1)
-	  cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select C-terminus type (end)");
-	else
-	  cc->ctdb[i] = tdblist[0];
-	printf("C-terminus: %s\n",(cc->ctdb[i])->name);
-	sfree(tdblist);
-      }
+      if(bTerMan && ntdblist>1)
+	cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select N-terminus type (start)");
+      else
+	cc->ntdb[i] = tdblist[0];
+      printf("N-terminus: %s\n",(cc->ntdb[i])->name);
+      sfree(tdblist);
+      
+      /* And the C terminus */
+      strncpy(resname,*pdba->resinfo[cc->rC[i]].name,3);
+      tdblist=filter_ter(nCtdb,ctdb,resname,&ntdblist);
+      if(ntdblist==0)
+	gmx_fatal(FARGS,"No suitable C-terminus found in database");
+      
+      if(bTerMan && ntdblist>1)
+	cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select C-terminus type (end)");
+      else
+	cc->ctdb[i] = tdblist[0];
+      printf("C-terminus: %s\n",(cc->ctdb[i])->name);
+      sfree(tdblist);
     }
 
     /* Generate Hydrogen atoms (and termini) in the sequence */

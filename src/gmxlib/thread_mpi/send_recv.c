@@ -910,7 +910,7 @@ static void tMPI_Test_incoming(struct tmpi_thread *th)
     check_id=tMPI_Atomic_get( &(th->evs_new_incoming));
 #else
     tMPI_Thread_mutex_lock( &(th->ev_check_lock) );
-    if (th->evs_new_incoming == 0)
+    if (th->evs_new_incoming == 0 && th->ev_received==0)
     {
         tMPI_Thread_cond_wait( &(th->ev_check_cond), &(th->ev_check_lock) );
         /* we don't need to check for spurious wakeups here, because our 

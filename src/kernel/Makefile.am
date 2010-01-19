@@ -53,7 +53,7 @@ mdrun_SOURCES = \
 	gctio.c 	\
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
-	xutils.c	md.c		mdrun.c		\
+	xutils.c	runner.c	md.c		mdrun.c		\
 	genalg.c	genalg.h
 
 if GMX_FAHCORE

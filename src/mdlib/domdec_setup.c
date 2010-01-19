@@ -29,6 +29,7 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "vec.h"
+#include "names.h"
 
 /* Margin for setting up the DD grid */
 #define DD_GRID_MARGIN_PRES_SCALE 1.05
@@ -225,6 +226,12 @@ real comm_box_frac(ivec dd_nc,real cutoff,gmx_ddbox_t *ddbox)
     return comm_vol;
 }
 
+static bool inhomogeneous_z(const t_inputrec *ir)
+{
+    return ((EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) &&
+            ir->ePBC==epbcXYZ && ir->ewald_geometry==eewg3DC);
+}
+
 static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
                            matrix box,gmx_ddbox_t *ddbox,t_inputrec *ir,
                            float pbcdxr,
@@ -248,6 +255,11 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
         return -1;
     }
     
+    if (inhomogeneous_z(ir) && nc[ZZ] > 1)
+    {
+        return -1;
+    }
+
     /* Check if the triclinic requirements are met */
     for(i=0; i<DIM; i++)
     {
@@ -469,6 +481,11 @@ static real optimize_ncells(FILE *fplog,
     {
         fprintf(fplog,"Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n",npp,limit);
 
+        if (inhomogeneous_z(ir))
+        {
+            fprintf(fplog,"Ewald_geometry=%s: assuming inhomogeneous particle distribution in z, will not decompose in z.\n",eewg_names[ir->ewald_geometry]);
+        }
+
         if (limit > 0)
         {
             fprintf(fplog,"The maximum allowed number of cells is:");
@@ -478,6 +495,10 @@ static real optimize_ncells(FILE *fplog,
                 if (d >= ddbox->npbcdim && nmax < 2)
                 {
                     nmax = 2;
+                }
+                if (d == ZZ && inhomogeneous_z(ir))
+                {
+                    nmax = 1;
                 }
                 fprintf(fplog," %c %d",'X' + d,nmax);
             }

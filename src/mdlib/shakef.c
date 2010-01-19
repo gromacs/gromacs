@@ -185,7 +185,7 @@ int vec_shakef(FILE *fplog,gmx_shakedata_t shaked,
     int     nit,ll,i,j,type;
     t_iatom *ia;
     real    L1,tol2,toler;
-    real    mm,tmp;
+    real    mm=0.,tmp;
     int     error;
     real    g,vscale,rscale,rvscale;
 
@@ -348,7 +348,7 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec prime[], rvec v[],
         dp=iprod(dx,dv);
         fprintf(log,"%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
                 ai+1,1.0/invmass[ai],
-                aj+1,1.0/invmass[aj],d,dp,0);
+                aj+1,1.0/invmass[aj],d,dp,0.);
         break;
     }
   }

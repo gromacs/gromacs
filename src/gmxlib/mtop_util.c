@@ -63,6 +63,11 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
     {
         sscanf(env,"%d",&mtop->maxres_renum);
     }
+    if (mtop->maxres_renum == -1)
+    {
+        /* -1 signals renumber residues in all molecules */
+        mtop->maxres_renum = INT_MAX;
+    }
 
     mtop->maxresnr = gmx_mtop_maxresnr(mtop,mtop->maxres_renum);
 }
@@ -576,8 +581,11 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
         /* Single residue molecule, continue counting residues */
         for (j=0; (j<copies); j++)
         {
-            (*maxresnr)++;
-            dest->resinfo[dest->nres+j].nr = *maxresnr;
+            for (l=0; l<src->nres; l++)
+            {
+                (*maxresnr)++;
+                dest->resinfo[dest->nres+j*src->nres+l].nr = *maxresnr;
+            }
         }
     }
     
@@ -766,6 +774,10 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     gmx_moltype_t *molt;
     const gmx_ffparams_t *ffp;
     t_idef *idef;
+    real   *qA,*qB;
+    gmx_mtop_atomloop_all_t aloop;
+    int    ag;
+    t_atom *atom;
 
     top->atomtypes = mtop->atomtypes;
     
@@ -779,6 +791,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     idef->iparams_posres = NULL;
     idef->iparams_posres_nalloc = 0;
     idef->fudgeQQ  = ffp->fudgeQQ;
+    idef->cmap_grid = ffp->cmap_grid;
     idef->ilsort   = ilsortUNKNOWN;
 
     init_block(&top->cgs);
@@ -841,7 +854,17 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
     {
         if (ir->efep != efepNO && gmx_mtop_bondeds_free_energy(mtop))
         {
-            gmx_sort_ilist_fe(&top->idef);
+            snew(qA,mtop->natoms);
+            snew(qB,mtop->natoms);
+            aloop = gmx_mtop_atomloop_all_init(mtop);
+            while (gmx_mtop_atomloop_all_next(aloop,&ag,&atom))
+            {
+                qA[ag] = atom->q;
+                qB[ag] = atom->qB;
+            }
+            gmx_sort_ilist_fe(&top->idef,qA,qB);
+            sfree(qA);
+            sfree(qB);
         }
         else
         {
