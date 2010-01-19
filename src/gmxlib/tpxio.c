@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -2147,42 +2148,60 @@ static int do_tpx(int fp,bool bRead,
     }
   }
 
-  if (bRead && tpx.bIr && ir) {
-    if (state->ngtc == 0) {
-      /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
-    }
-    if (tpx.bTop && mtop) {
-      if (file_version < 57) {
-	if (mtop->moltype[0].ilist[F_DISRES].nr > 0) {
-	  ir->eDisre = edrSimple;
-	} else {
-	  ir->eDisre = edrNone;
-	}
-      }
-      set_disres_npair(mtop);
-      gmx_mtop_finalize(mtop);
-    }
-  }
+    if (bRead)
+    {
+        if (tpx.bIr && ir)
+        {
+            if (state->ngtc == 0)
+            {
+                /* Reading old version without tcoupl state data: set it */
+                init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
+            }
+            if (tpx.bTop && mtop)
+            {
+                if (file_version < 57)
+                {
+                    if (mtop->moltype[0].ilist[F_DISRES].nr > 0)
+                    {
+                        ir->eDisre = edrSimple;
+                    }
+                    else
+                    {
+                        ir->eDisre = edrNone;
+                    }
+                }
+                set_disres_npair(mtop);
+            }
+        }
 
-  if (bRead && file_version >= 57) {
-    char *env;
-    int  ienv;
-    env = getenv("GMX_NOCHARGEGROUPS");
-    if (env != NULL) {
-      sscanf(env,"%d",&ienv);
-      fprintf(stderr,"\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",ienv);
-      if (ienv > 0) {
-	fprintf(stderr,
-		"Will make single atomic charge groups in non-solvent%s\n",
-	       ienv > 1 ? " and solvent" : "");
-	gmx_mtop_make_atomic_charge_groups(mtop,ienv==1);
-      }
-      fprintf(stderr,"\n");
-    }
-  }
+        if (tpx.bTop && mtop)
+        {
+            gmx_mtop_finalize(mtop);
+        }
 
-  return ePBC;
+        if (file_version >= 57)
+        {
+            char *env;
+            int  ienv;
+            env = getenv("GMX_NOCHARGEGROUPS");
+            if (env != NULL)
+            {
+                sscanf(env,"%d",&ienv);
+                fprintf(stderr,"\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",
+                        ienv);
+                if (ienv > 0)
+                {
+                    fprintf(stderr,
+                            "Will make single atomic charge groups in non-solvent%s\n",
+                            ienv > 1 ? " and solvent" : "");
+                    gmx_mtop_make_atomic_charge_groups(mtop,ienv==1);
+                }
+                fprintf(stderr,"\n");
+            }
+        }
+    }
+
+    return ePBC;
 }
 
 /************************************************************

@@ -116,7 +116,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   static const char *visc_nm[] = {
     "1/Viscosity"
   };
-  static char *bufbaro[] = {
+  static const char *baro_nm[] = {
     "Barostat"
   };
 
@@ -124,7 +124,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   const gmx_groups_t *groups;
   char     **gnm;
   char     buf[256];
-  char     *bufi;
+  const char     *bufi;
   t_mdebin *md;
   int      i,j,ni,nj,n,nh,k,kk,ncon,nset;
   bool     bBHAM,bNoseHoover,b14;
@@ -371,9 +371,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     
     md->nTC=groups->grps[egcTC].nr;
     md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */ 
-    if (md->epc == epcMTTK)
+    if (md->bMTTK)
     {
-        md->nTCP = 1;  /* assume only one possible coupling system for barostat */
+        md->nTCP = 1;  /* assume only one possible coupling system for barostat for now */
     } 
     else 
     {
@@ -390,11 +390,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         }
         if (md->epc == epcMTTK)
         {
-            md->mdep_n = 2*md->nNHC*md->nTCP;
+            md->mdeb_n = 2*md->nNHC*md->nTCP;
         }
     } else { 
         md->mde_n = md->nTC;
-        md->mdep_n = 0;
+        md->mdeb_n = 0;
     }
 
     snew(md->tmp_r,md->mde_n);
@@ -432,18 +432,21 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                     }
                 }
                 md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
-                for(i=0; (i<md->nTCP); i++) 
+                if (md->bMTTK) 
                 {
-                    bufi = bufbaro[i];  /* All barostat DOF's together for now. */
-                    for(j=0; (j<md->nNHC); j++) 
+                    for(i=0; (i<md->nTCP); i++) 
                     {
-                        sprintf(buf,"Xi-%d-%s",j,bufi);
-                        grpnms[2*(i*md->nNHC+j)]=strdup(buf);
-                        sprintf(buf,"Xi-%d-%s",j,bufi);
-                        grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                        bufi = baro_nm[0];  /* All barostat DOF's together for now. */
+                        for(j=0; (j<md->nNHC); j++) 
+                        {
+                            sprintf(buf,"Xi-%d-%s",j,bufi);
+                            grpnms[2*(i*md->nNHC+j)]=strdup(buf);
+                            sprintf(buf,"vXi-%d-%s",j,bufi);
+                            grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                        }
                     }
+                    md->itcb=get_ebin_space(md->ebin,md->mdeb_n,(const char **)grpnms,unit_invtime);
                 }
-                md->itc=get_ebin_space(md->ebin,md->mdep_n,(const char **)grpnms,unit_invtime);
             } 
             else
             {
@@ -709,7 +712,6 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
             {
                 if (md->bNHC_trotter)
                 {
-                    
                     for(i=0; (i<md->nTC); i++) 
                     {
                         for (j=0;j<md->nNHC;j++) 
@@ -731,7 +733,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                                 md->tmp_r[2*k+1] = state->nhpres_vxi[k];
                             }
                         }
-                        add_ebin(md->ebin,md->itc,md->mdep_n,md->tmp_r,bSum);      
+                        add_ebin(md->ebin,md->itcb,md->mdeb_n,md->tmp_r,bSum);      
                     }
 
                 } 
