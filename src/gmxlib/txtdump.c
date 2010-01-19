@@ -515,6 +515,7 @@ static void pr_rotgrp(FILE *fp,int indent,int g,t_rotgrp *rotg)
   PS("type",EROTGEOM(rotg->eType));
   PS("origin",EROTORIGIN(rotg->eOrigin));
   pr_ivec_block(fp,indent,"atom",rotg->ind,rotg->nat,TRUE);
+  pr_rvecs(fp,indent,"x_ref",rotg->x_ref,rotg->nat);
   pr_rvec(fp,indent,"vec",rotg->vec,DIM,TRUE);
   pr_rvec(fp,indent,"pivot",rotg->pivot,DIM,TRUE);
   PR("rate",rotg->rate);

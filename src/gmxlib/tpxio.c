@@ -63,7 +63,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 70;
+static const int tpx_version = 71;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -255,6 +255,9 @@ static void do_rotgrp(t_rotgrp *rotg,bool bRead, int file_version)
   if (bRead)
     snew(rotg->ind,rotg->nat);
   ndo_int(rotg->ind,rotg->nat,bDum);
+  if (bRead)
+      snew(rotg->x_ref,rotg->nat);
+  ndo_rvec(rotg->x_ref,rotg->nat);
   do_rvec(rotg->vec);
   do_rvec(rotg->pivot);
   do_real(rotg->rate);
@@ -706,7 +709,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     }
     
     /* Enforced rotation */
-    if (file_version >= 68) {
+    if (file_version >= 71) {
         do_int(ir->bRot);
         if (ir->bRot == TRUE) {
             if (bRead)

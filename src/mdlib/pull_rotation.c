@@ -108,7 +108,6 @@ typedef struct gmx_enfrotgrp
                              * chose origin is COG or COM, otherwise (0,0,0)  */
 
     /* Collective coordinates for the whole rotation group */
-    rvec  *xc_ref;          /* Reference (unrotated) positions                */
     real  *xc_ref_length;   /* Length of each x_rotref vector after x_rotref 
                                has been put into origin                       */
     int   *xc_ref_ind;      /* Position of each local atom in the collective
@@ -1380,7 +1379,7 @@ static real do_flex2_lowlevel(
             islab = n - erg->slab_first; /* slab index */
             
             /* The (unrotated) reference position of this atom is copied to ref_x: */
-            copy_rvec(erg->xc_ref[iigrp], ref_x);
+            copy_rvec(rotg->x_ref[iigrp], ref_x);
             beta = calc_beta(curr_x, rotg,n);
             /* The center of geometry (COG) of this slab is copied to curr_COG: */
             copy_rvec(erg->slab_center[islab], curr_COG);
@@ -1557,7 +1556,7 @@ static real do_flex_lowlevel(
             islab = n - erg->slab_first; /* slab index */
             
             /* The (unrotated) reference position of this atom is copied to ref_x: */
-            copy_rvec(erg->xc_ref[iigrp], ref_x);
+            copy_rvec(rotg->x_ref[iigrp], ref_x);
             beta = calc_beta(curr_x, rotg,n);
             /* The center of geometry (COG) of this slab is copied to curr_COG: */
             copy_rvec(erg->slab_center[islab], curr_COG);
@@ -1614,7 +1613,7 @@ static real do_flex_lowlevel(
 
                 /* Calculate r=Omega*(y_i-y_0) for atom i and slab n: */
                 /* Unrotated reference position y_i: */
-                copy_rvec(erg->xc_ref[i],yi);
+                copy_rvec(rotg->x_ref[i],yi);
                 
                 /* COG y0 for this slab: */
                 /* The reference COG of this slab is still in ref_COG */
@@ -1758,7 +1757,7 @@ static void sort_collective_coordinates(
     for (i=0; i<rotg->nat; i++)
     {
         copy_rvec(erg->xc[data[i].ind], buf[i]);
-        copy_rvec(erg->xc_ref[data[i].ind], erg->xc_ref_sorted[i]);
+        copy_rvec(rotg->x_ref[data[i].ind], erg->xc_ref_sorted[i]);
         erg->xc_sortind[i] = data[i].ind;
     }
 
@@ -2091,7 +2090,7 @@ static void get_firstlast_atom_ref(
     erg=rotg->enfrotgrp;
 
     /* Start with some value */
-    minproj = iprod(erg->xc_ref[0], rotg->vec);
+    minproj = iprod(rotg->x_ref[0], rotg->vec);
     maxproj = minproj;
     
     /* This is just to ensure that it still works if all the atoms of the 
@@ -2104,7 +2103,7 @@ static void get_firstlast_atom_ref(
      * project them on the rotation vector to find the extremes */
     for (i=0; i<rotg->nat; i++)
     {
-        xcproj = iprod(erg->xc_ref[i], rotg->vec);
+        xcproj = iprod(rotg->x_ref[i], rotg->vec);
         if (xcproj < minproj)
         {
             minproj = xcproj;
@@ -2160,59 +2159,41 @@ static void allocate_slabs(
 }
 
 
-extern void init_rot_group(
-        FILE *fplog,t_commrec *cr,
-        int g,t_rotgrp *rotg,
-        rvec *x,       /* the positions */
-        gmx_mtop_t *mtop,
-        FILE *out_slabs,
-        matrix box)
+extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
+        rvec *x,gmx_mtop_t *mtop,FILE *out_slabs,matrix box)
 {
     int i,ii;
-    char        filename[255];/* File to save the reference positions in for enforced rotation */
-    rvec        f_box[3];     /* Box from reference file */
     rvec        coord;
     rvec        center;       /* COG or COM of rotation group */
-    t_trnheader header;       /* Header information of reference file */
-    bool        bSame;        /* Used for a check if box sizes agree */
     bool        bFlex;        /* Flexible rotation? */
     t_atom      *atom;
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
     int         ref_firstindex, ref_lastindex;
     rvec        *xdum;
     rvec        transvec;
-    
+        
     
     bFlex = (rotg->eType == erotgFLEX1 || rotg->eType == erotgFLEX2);
     
     erg=rotg->enfrotgrp;
     
-    snew(erg->xc_ref    , rotg->nat);
-    snew(erg->xc_ref_ind, rotg->nat);
-    snew(erg->f_rot_loc , rotg->nat);
-    
-    /* Allocate space for the masses if needed */
-    erg->mc=NULL;
-    erg->m_loc=NULL;
-    if (rotg->eOrigin == erotgOriginCOM)
-    {
-        snew(erg->mc, rotg->nat);
-        if (!bFlex)
-            snew(erg->m_loc, rotg->nat);
-    }
-    
-    /* xc_ref_ind needs to be set to identity in the serial case */
-    if (!PAR(cr))
-        for (i=0; i<rotg->nat; i++)
-            erg->xc_ref_ind[i] = i;
-
     /* Allocate space for collective coordinates if needed */
     if (bFlex)
     {
         snew(erg->xc        , rotg->nat);
-        snew(erg->xc_old    , rotg->nat);
         snew(erg->xc_shifts , rotg->nat);
         snew(erg->xc_eshifts, rotg->nat);
+        /* Save the original (whole) set of positions such that later the
+         * molecule can always be made whole again */
+        snew(erg->xc_old    , rotg->nat);        
+        if (MASTER(cr))
+        {
+            for (i=0; i<rotg->nat; i++)
+            {
+                ii = rotg->ind[i];
+                copy_rvec(x[ii], erg->xc_old[i]);
+            }
+        }
         if (rotg->eFittype == erotgFitNORM)
         {
             snew(erg->xc_ref_length, rotg->nat); /* in case fit type NORM is chosen */
@@ -2224,122 +2205,69 @@ extern void init_rot_group(
         snew(erg->xr_loc   , rotg->nat);
         snew(erg->x_loc_pbc, rotg->nat);
     }
+    
+    snew(erg->f_rot_loc , rotg->nat);
+    snew(erg->xc_ref_ind, rotg->nat);
+    
+    /* xc_ref_ind needs to be set to identity in the serial case */
+    if (!PAR(cr))
+        for (i=0; i<rotg->nat; i++)
+            erg->xc_ref_ind[i] = i;
 
-    /* Read in rotation reference positions from file, if it exists.
-     * If not, write out the initial rotation group positions as the reference set */
-    if (MASTER(cr))
+    /* Copy the masses so that the COM can be determined */
+    erg->mc=NULL;
+    erg->m_loc=NULL;
+    if (rotg->eOrigin == erotgOriginCOM)
     {
-        /* Save the reference positions to trr */
-        /* Make a trr for each rotation group */
-        sprintf(filename, "ref_%d_%s.trr", g, erotg_names[rotg->eType]);
-        if (gmx_fexist(filename)) /* Read rotation reference positions from file */
+        snew(erg->mc, rotg->nat);
+        for (i=0; i<rotg->nat; i++)
         {
-            fprintf(fplog, "Enforced rotation: found file %s containing reference positions.\n", filename);
-            read_trnheader(filename, &header);
-            if (rotg->nat != header.natoms)
-                gmx_fatal(FARGS,"Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
-                        filename, header.natoms, rotg->nat);
-            read_trn(filename, &header.step, &header.t, &header.lambda, f_box, &header.natoms, erg->xc_ref, NULL, NULL);
-            fprintf(fplog , "Enforced rotation: read reference positions for group %d from %s.\n", g, filename);
-            /* Check if the box is unchanged and output a warning if not: */
-            bSame = TRUE;
-            for (i=0; i<DIM; i++)
-                for (ii=0; ii<DIM; ii++)
-                    if (f_box[i][ii] != box[i][ii]) bSame = FALSE;
-
-            if (!bSame)
-            {
-                sprintf(warn_buf, "Enforced rotation: Box size in reference file %s differs from actual box size!", filename);
-                warning(NULL);
-                pr_rvecs(stderr,0,"Your box is:",box  ,3);
-                pr_rvecs(fplog ,0,"Your box is:",box  ,3);
-                pr_rvecs(stderr,0,"Box in file:",f_box,3);
-                pr_rvecs(fplog ,0,"Box in file:",f_box,3);
-            }
-
-            if (g != header.step)
-            {   /* We use step to indicate the number of the rotation group here */
-                sprintf(warn_buf,"Coordinates from %s will be used for rotation group %d", filename, g);
-                warning(NULL);
-            }
+            gmx_mtop_atomnr_to_atom(mtop,rotg->ind[i],&atom);
+            erg->mc[i] = atom->m;
         }
-        else /* Save the initial positions of the rotation group as reference */
+        if (!bFlex)
+            snew(erg->m_loc, rotg->nat);
+    }
+    
+    /* When COM or COG is subtracted from the positions, the centers of 
+     * reference and initial groups need to be determined */
+    if (rotg->eOrigin != erotgOriginBox)
+    {
+        /* Save the center of the REFERENCE structure: */
+        get_center(rotg->x_ref, erg->mc, rotg->nat, center);
+        if (MASTER(cr))
         {
-            for(i=0; i<rotg->nat; i++)
-            {
-                ii = rotg->ind[i];
-                copy_rvec(x[ii], erg->xc_ref[i]);
-            }
-            write_trn(filename,g,0.0,0.0,box,rotg->nat,erg->xc_ref,NULL,NULL);
-            fprintf(fplog, "Enforced rotation: saved %d coordinates of group %d to %s.\n",
-                    rotg->nat, g, filename);
-        }
-        
-        /* Follow the center of mass? Then we need the masses! */
-        if (rotg->eOrigin == erotgOriginCOM)
-        {
-            /* We need to copy the masses to be able to determine the COM */
-            for (i=0; i<rotg->nat; i++)
-            {
-                gmx_mtop_atomnr_to_atom(mtop,rotg->ind[i],&atom);
-                erg->mc[i] = atom->m;
-            }
-        }
-        
-        /* When COM or COG is subtracted from the positions, the centers of 
-         * reference and initial groups need to be determined */
-        if (rotg->eOrigin != erotgOriginBox)
-        {
-            /* Save the center of the REFERENCE structure: */
-            get_center(erg->xc_ref, erg->mc, rotg->nat, center);
             fprintf(fplog, "Enforced rotation: group %d reference %s =%14.7e %14.7e %14.7e is subtracted from ref. positions\n", g,
                     rotg->eOrigin==erotgOriginCOG? "COG":"COM", center[XX], center[YY], center[ZZ]);
-            /* Subtract the center from the reference positions */
-            svmul(-1.0, center, transvec);
-            translate_x(erg->xc_ref, rotg->nat, transvec);
-
-            /* For fixed rotation we need the center of the initial positions */
-            if (!bFlex)
-            {            
-                snew(xdum, rotg->nat);            
-                for (i=0; i<rotg->nat; i++)
-                {
-                    ii = rotg->ind[i];
-                    copy_rvec(x[ii], xdum[i]);
-                }
-                get_center(xdum, erg->mc, rotg->nat, erg->center);
-                sfree(xdum);
-                fprintf(fplog, "Enforced rotation: group %d initial   %s =%14.7e %14.7e %14.7e\n", g,
-                        rotg->eOrigin==erotgOriginCOG? "COG":"COM", erg->center[XX], erg->center[YY], erg->center[ZZ]);
-            }
         }
-        
-        if (bFlex)
-        {
-            /* Save the original (whole) set of positions such that later the
-             * molecule can always be made whole again */
+        /* Subtract the center from the reference positions */
+        svmul(-1.0, center, transvec);
+        translate_x(rotg->x_ref, rotg->nat, transvec);
+
+        /* For fixed rotation we need the center of the initial positions */
+        if (MASTER(cr) && !bFlex)
+        {            
+            snew(xdum, rotg->nat);            
             for (i=0; i<rotg->nat; i++)
             {
                 ii = rotg->ind[i];
-                copy_rvec(x[ii], erg->xc_old[i]);
+                copy_rvec(x[ii], xdum[i]);
             }
+            get_center(xdum, erg->mc, rotg->nat, erg->center);
+            sfree(xdum);
+            fprintf(fplog, "Enforced rotation: group %d initial   %s =%14.7e %14.7e %14.7e\n", g,
+                    rotg->eOrigin==erotgOriginCOG? "COG":"COM", erg->center[XX], erg->center[YY], erg->center[ZZ]);
         }
     }
+
 #ifdef GMX_MPI
     /* Broadcast from master node to all PP nodes */
     if (PAR(cr))
     {
-        /* Broadcast reference positions to all PP nodes */
-        gmx_bcast(rotg->nat*sizeof(erg->xc_ref[0]), erg->xc_ref, cr);
-        /* Broadcast other stuff */
         if (bFlex)
             gmx_bcast(rotg->nat*sizeof(erg->xc_old[0]),erg->xc_old, cr);
         else
             gmx_bcast(sizeof(erg->center), erg->center, cr);
-        
-        /* Broadcast masses */
-        if (rotg->eOrigin == erotgOriginCOM)
-            gmx_bcast(rotg->nat*sizeof(erg->mc[0]), erg->mc, cr);
     }
 #endif
     /* Enforced rotation with flexible axis */
@@ -2352,8 +2280,8 @@ extern void init_rot_group(
         get_firstlast_atom_ref(rotg, &ref_firstindex, &ref_lastindex);
         
         /* From the extreme coordinates of the reference group, determine the first and last slab */
-        erg->slab_first_ref = get_first_slab(rotg, erg->max_beta, erg->xc_ref[ref_firstindex]);
-        erg->slab_last_ref  = get_last_slab( rotg, erg->max_beta, erg->xc_ref[ref_lastindex ]);
+        erg->slab_first_ref = get_first_slab(rotg, erg->max_beta, rotg->x_ref[ref_firstindex]);
+        erg->slab_last_ref  = get_last_slab( rotg, erg->max_beta, rotg->x_ref[ref_lastindex ]);
 
         /* Add some slabs on both sides such that the flexible group can move a bit */
         erg->slab_buffer = (erg->slab_last_ref - erg->slab_first_ref + 1) / 2;
@@ -2366,17 +2294,17 @@ extern void init_rot_group(
         /* Flexible rotation: determine the reference COGs for the rest of the simulation */
         erg->slab_first = erg->slab_first_ref;
         erg->slab_last = erg->slab_last_ref;
-        get_slab_centers(rotg,erg->xc_ref,cr,g,-1,out_slabs,TRUE,TRUE);
+        get_slab_centers(rotg,rotg->x_ref,cr,g,-1,out_slabs,TRUE,TRUE);
 
         /* Also save the center of geometry of the reference structure (only needed for fitting): */
-        get_center(erg->xc_ref, NULL, rotg->nat, erg->xc_ref_center);
+        get_center(rotg->x_ref, NULL, rotg->nat, erg->xc_ref_center);
 
         /* Length of each x_rotref vector from center (needed if fit routine NORM is chosen): */
         if (rotg->eFittype == erotgFitNORM)
         {
             for (i=0; i<rotg->nat; i++)
             {
-                rvec_sub(erg->xc_ref[i], erg->xc_ref_center, coord);
+                rvec_sub(rotg->x_ref[i], erg->xc_ref_center, coord);
                 erg->xc_ref_length[i] = norm(coord);
             }
         }
@@ -2559,7 +2487,7 @@ static void rotate_local_reference(t_rotgrp *rotg)
         iigrp = erg->xc_ref_ind[i];
         /* Rotate this atom around dislocated rotation axis: */
         /* Move rotation axis, so that it runs through the origin: */
-        rvec_sub(erg->xc_ref[iigrp], rotg->pivot, xr);
+        rvec_sub(rotg->x_ref[iigrp], rotg->pivot, xr);
         /* Rotate around the origin: */
         mvmul(erg->rotmat, xr, xrcpy);
         /* Move back and store for later usage */

@@ -159,6 +159,7 @@ typedef struct {
   int        eOrigin;        /* Subtract the rot groups COM / COG?            */
   int        nat;            /* Number of atoms in the group                  */
   atom_id    *ind;           /* The global atoms numbers                      */
+  rvec       *x_ref;         /* The reference positions                       */
   rvec       vec;            /* The rotation vector                           */
   real       rate;           /* Rate of rotation (degree/ps)                  */
   real       k;              /* Force constant                                */

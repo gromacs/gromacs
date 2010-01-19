@@ -38,6 +38,10 @@
 #include "smalloc.h"
 #include "readir.h"
 #include "names.h"
+#include "futil.h"
+#include "trnio.h"
+#include "txtdump.h"
+
 
 static char s_vec[STRLEN];
 
@@ -143,31 +147,103 @@ extern char **read_rotparams(int *ninp_p,t_inpfile **inp_p,t_rot *rot)
 }
 
 
+/* Check whether the box is unchanged */
+static void check_box(matrix f_box, matrix box, char fn[])
+{
+    int i,ii;
+    bool bSame=TRUE;
+    
+    
+    for (i=0; i<DIM; i++)
+        for (ii=0; ii<DIM; ii++)
+            if (f_box[i][ii] != box[i][ii]) 
+                bSame = FALSE;
+    if (!bSame)
+    {
+        sprintf(warn_buf, "Enforced rotation: Box size in reference file %s differs from actual box size!", fn);
+        warning(NULL);
+        pr_rvecs(stderr,0,"Your box is:",box  ,3);
+        pr_rvecs(stderr,0,"Box in file:",f_box,3);
+    }
+}
+
+
+/* Extract the reference positions for the rotation group(s) */
+void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
+        const char *fn)
+{
+    int     g,i,ii;
+    t_rotgrp *rotg;
+    t_trnheader header;       /* Header information of reference file */
+    char base[STRLEN],extension[STRLEN],reffile[STRLEN];
+    char *extpos;
+    rvec        f_box[3];     /* Box from reference file */
+
+    
+    /* Base name and extension of the reference file: */
+    strncpy(base, fn, STRLEN - 1);
+    extpos = strrchr(base, '.');
+    strcpy(extension,extpos+1);
+    *extpos = '\0';
+
+    for (g=0; g<rot->ngrp; g++)
+     {
+         rotg = &rot->grp[g];
+         fprintf(stderr, "Enforced rotation: group %d has %d reference positions.",g,rotg->nat);
+         snew(rotg->x_ref, rotg->nat);
+         
+         sprintf(reffile, "%s.%d.%s", base,g,extension);
+         if (gmx_fexist(reffile))
+         {
+             fprintf(stderr, " Reading them from %s.\n", reffile);
+             read_trnheader(reffile, &header);
+             if (rotg->nat != header.natoms)
+                 gmx_fatal(FARGS,"Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
+                         reffile, header.natoms, rotg->nat);
+             read_trn(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
+
+             /* Check whether the box is unchanged and output a warning if not: */
+             check_box(f_box,box,reffile);
+         }
+         else
+         {
+             fprintf(stderr, " Saving them to %s.\n", reffile);         
+             for(i=0; i<rotg->nat; i++)
+             {
+                 ii = rotg->ind[i];
+                 copy_rvec(x[ii], rotg->x_ref[i]);
+             }
+             write_trn(reffile,g,0.0,0.0,box,rotg->nat,rotg->x_ref,NULL,NULL);
+         }
+     }
+}
+
+
 extern void make_rotation_groups(t_rot *rot,char **rotgnames,t_blocka *grps,char **gnames)
 {
     int      g,ig=-1,i;
-    t_rotgrp *rotgrp;
+    t_rotgrp *rotg;
     
     
     for (g=0; g<rot->ngrp; g++)
     {
-        rotgrp = &rot->grp[g];
+        rotg = &rot->grp[g];
         if (g == 0 && strcmp(rotgnames[g],"") == 0)
         {
-            rotgrp->nat = 0;
+            rotg->nat = 0;
         }
         else
         {
             ig = search_string(rotgnames[g],grps->nr,gnames);
-            rotgrp->nat = grps->index[ig+1] - grps->index[ig];
+            rotg->nat = grps->index[ig+1] - grps->index[ig];
         }
         
-        if (rotgrp->nat > 0)
+        if (rotg->nat > 0)
         {
-            fprintf(stderr,"Rotation group %d '%s' has %d atoms\n",g,rotgnames[g],rotgrp->nat);
-            snew(rotgrp->ind,rotgrp->nat);
-            for(i=0; i<rotgrp->nat; i++)
-                rotgrp->ind[i] = grps->a[grps->index[ig]+i];            
+            fprintf(stderr,"Rotation group %d '%s' has %d atoms\n",g,rotgnames[g],rotg->nat);
+            snew(rotg->ind,rotg->nat);
+            for(i=0; i<rotg->nat; i++)
+                rotg->ind[i] = grps->a[grps->index[ig]+i];            
         }
         else
             gmx_fatal(FARGS,"Rotation group %d '%s' is empty",g,rotgnames[g]);

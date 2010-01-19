@@ -463,6 +463,8 @@ static void bc_rotgrp(const t_commrec *cr,t_rotgrp *rotg)
   if (rotg->nat > 0) {
     snew_bc(cr,rotg->ind,rotg->nat);
     nblock_bc(cr,rotg->nat,rotg->ind);
+    snew_bc(cr,rotg->x_ref,rotg->nat);
+    nblock_bc(cr,rotg->nat,rotg->x_ref);
   }
 }
 
