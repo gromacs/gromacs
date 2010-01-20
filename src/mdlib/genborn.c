@@ -1133,6 +1133,8 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 {    
     real *p;
     int   cnt;
+    int ndadx;
+
     if(fr->bAllvsAll && fr->dadx==NULL)
     {
         /* We might need up to 8 atoms of padding before and after, 
@@ -1144,11 +1146,18 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     }
     else
     {
+        /* In the SSE-enabled gb-loops, when writing to dadx, we
+         * always write 2*4 elements at a time, even in the case with only
+         * 1-3 j particles, where we only really need to write 2*(1-3)
+         * elements. This is because we want dadx to be aligned to a 16-
+         * byte boundary, and being able to use _mm_store/load_ps
+         */
+        ndadx = 2 * (nl->nrj + 3*nl->nri);
+
         /* First, reallocate the dadx array, we need 3 extra for SSE */
-        if (2*nl->nrj + 3 > fr->nalloc_dadx)
+        if (ndadx + 3 > fr->nalloc_dadx)
         {
-            /* add 4for alignment */
-            fr->nalloc_dadx = over_alloc_large(2*nl->nrj + 3) + 4;
+            fr->nalloc_dadx = over_alloc_large(ndadx) + 3;
             srenew(fr->dadx_rawptr,fr->nalloc_dadx);
             fr->dadx = (real *) (((size_t) fr->dadx_rawptr + 16) & (~((size_t) 15)));            
         }
