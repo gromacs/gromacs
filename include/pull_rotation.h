@@ -31,6 +31,16 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+
+/*! \file pull_rotation.h
+ *
+ *  @brief Enforced rotation of protein parts or other groups of particles.
+ *
+ *  This file contains routines that are used to enforce rotational motion
+ *  upon a subgroup of particles.  
+ *  
+ */
+
 #ifndef _rotation_h
 #define _rotation_h
 
@@ -41,23 +51,76 @@
 #include "vec.h"
 #include "typedefs.h"
 
-/* This file contains function declarations necessary 
-   for mdrun to interface with the enforced rotation code */
 
+/*! \brief Initialize the enforced rotation groups.
+ * 
+ * This routine does the memory allocation for various helper arrays, opens
+ * the output files etc.  
+ *
+ * \param fplog             General output file, normally md.log.
+ * \param ir                Struct containing MD input parameters, among those
+ *                          also the enforced rotation parameters.
+ * \param nfile             Number of entries in the fnm structure.       
+ * \param fnm               The filenames struct containing also the names
+ *                          of the rotation output files.
+ * \param cr                Pointer to MPI communication data.
+ * \param x                 The positions of all MD particles.
+ * \param mtop              Molecular topology.
+ * \param oenv              Needed to open the rotation output xvgr file.
+ * \param Flags             Flags passed over from main, used to determine
+ *                          whether or not we are doing a rerun.
+ */
 extern void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
-        t_commrec *cr, matrix box, rvec *x, gmx_mtop_t *mtop, 
-        const output_env_t oenv, unsigned long Flags);
+        t_commrec *cr, rvec *x, gmx_mtop_t *mtop, const output_env_t oenv, 
+        unsigned long Flags);
 
-extern void do_rotation(
-        t_commrec *cr,
-        t_inputrec *ir,
-        matrix box,
-        rvec x[],
-        real t,
-        int step,
-        gmx_wallcycle_t wcycle,
-        bool bNS);
 
+/*! \brief Calculation of the enforced rotation potential.
+ * 
+ * This is the main enforced rotation module which is called during every time
+ * step. Here the rotation potential as well as the resulting forces are 
+ * calculated.
+ * 
+ * \param cr                Pointer to MPI communication data.
+ * \param ir                Struct containing MD input parameters, among those
+ * \param box               Simulation box, needed to make group whole.
+ * \param x                 The positions of all the local particles.
+ * \param t                 Time.
+ * \param step              The time step.
+ * \param wcycle            During the potential calculation the wallcycles are
+ *                          counted. Later they enter the dynamic load balancing.
+ * \param bNS               After domain decomposition / neighborsearching several
+ *                          local arrays have to be updated (masses, shifts)
+ */
+extern void do_rotation(t_commrec *cr,t_inputrec *ir,matrix box,rvec x[],real t,
+        int step,gmx_wallcycle_t wcycle,bool bNS);
+
+
+/*! \brief Add the enforced rotation forces to the official force array.
+ * 
+ * Adds the forces from enforced rotation potential to the local forces and
+ * sums up the contributions to the rotation potential from all the nodes. Since
+ * this needs communication, this routine should be called after the SR forces 
+ * have been evaluated (in order not to spoil cycle counts). 
+ * This routine also outputs data to the various rotation output files (e.g.
+ * the potential, the angle of the group, torques and more).
+ * 
+ * \param rot               Pointer to all the enforced rotation data.
+ * \param f                 The local forces to which the rotational forces have
+ *                          to be added.
+ * \param cr                Pointer to MPI communication data.
+ * \param step              The time step, used for output.
+ * \param t                 Time, used for output.
+ */
 extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, int step, real t);
+
+
+/*! \brief Close the enforced rotation output files.
+ *
+ * \param fplog             General output file, normally md.log.
+ * \param rot               Pointer to all the enforced rotation data.
+ */
+extern void finish_rot(FILE *fplog,t_rot *rot);
+
 
 #endif

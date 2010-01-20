@@ -2160,7 +2160,7 @@ static void allocate_slabs(
 
 
 extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
-        rvec *x,gmx_mtop_t *mtop,FILE *out_slabs,matrix box)
+        rvec *x,gmx_mtop_t *mtop,FILE *out_slabs)
 {
     int i,ii;
     rvec        coord;
@@ -2359,8 +2359,8 @@ void dd_make_local_rotation_groups(gmx_domdec_t *dd,t_rot *rot,t_mdatoms *md)
 
 
 void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
-        t_commrec *cr, matrix box, rvec *x, gmx_mtop_t *mtop,
-        const output_env_t oenv, unsigned long Flags)
+        t_commrec *cr, rvec *x, gmx_mtop_t *mtop, const output_env_t oenv,
+        unsigned long Flags)
 {
     t_rot    *rot;
     t_rotgrp *rotg;
@@ -2422,7 +2422,7 @@ void init_rot(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog,cr,g,rotg,x,mtop,er->out_slabs,box);
+            init_rot_group(fplog,cr,g,rotg,x,mtop,er->out_slabs);
         }
     }
     

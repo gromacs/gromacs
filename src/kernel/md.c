@@ -64,7 +64,6 @@
 #include "confio.h"
 #include "network.h"
 #include "pull.h"
-#include "pull_rotation.h"
 #include "xvgr.h"
 #include "physics.h"
 #include "names.h"
