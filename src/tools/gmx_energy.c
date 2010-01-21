@@ -901,9 +901,9 @@ int gmx_energy(int argc,char *argv[])
     "will be computed:[BR]",
     "Property                       Energy terms needed  Extra flags[BR]",
     "-----------------------------------------------------------------[BR]",
-    "Heat capacity Cp (NPT sims)    Etot, Vol, Temp      [TT]-nmol[tt] N[BR]",
+    "Heat capacity Cp (NPT sims)    Enthalpy, Temp       [TT]-nmol[tt] N[BR]",
     "Heat capacity Cv (NVT sims)    Etot, Temp           [TT]-nmol[tt] N[BR]",
-    "Thermal expansion coeff. (NPT) Etot, Vol, Temp      [TT]-nmol[tt] N[BR]",
+    "Thermal expansion coeff. (NPT) Enthalpy, Vol, Temp  [TT]-nmol[tt] N[BR]",
     "Isothermal compressibility     Vol, Temp            [TT]-nmol[tt] N[BR]",
     "Adiabatic bulk modulus         Vol, Temp            [TT]-nmol[tt] N[PAR]",
     
