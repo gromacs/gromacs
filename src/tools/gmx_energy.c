@@ -536,7 +536,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
   gmx_large_int_t nsteps;
   int  nexact,nnotexact,iset;
   double x1m,x1mk;
-  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0;
+  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0,VarEnthalpy=-1;
   int  i,j;
   real chi2;
   char buf[256];
@@ -641,6 +641,8 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       } else if (strstr(leg[i],"otal") != NULL) {
 	VarEtot = sqr(stddev);
 	AvEtot = aver;
+      } else if (strstr(leg[i],"nthalpy") != NULL) {
+	VarEnthalpy = sqr(stddev);
       }
       if (bIsEner[i]) {
 	pr_aver   = aver/nmol-ezero;
@@ -686,6 +688,9 @@ static void analyse_ener(bool bCorr,const char *corrfn,
     }
     if (Temp != -1) {
       printf("\nTemperature dependent fluctuation properties at T = %g\n",Temp);
+      if (nmol < 2)
+	printf("Warning: nmol = %d, this may not be what you want.\n",
+	       nmol);
       if (VarV != -1) {
 	real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
 	
@@ -694,10 +699,12 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	printf("Adiabatic bulk modulus:     %10g  %s\n",
 	       1.0/tmp,unit_pres_bar);
       }
-      if ((VarV != -1) && (VarEtot != -1)) {
-	real Cp = (1000*(VarEtot+sqr(PRESFAC)*VarV)/nmol)/(BOLTZ*Temp*Temp);
-	real aP = (((sqrt(VarEtot)+PRESFAC*sqrt(VarV))*sqrt(VarV))/sqrt(nmol))/(BOLTZ*Vaver*Temp*Temp);
+      if (VarEnthalpy != -1) {
+	real Cp = (1000*(VarEnthalpy)/nmol)/(BOLTZ*Temp*Temp);
 	printf("Heat capacity at constant pressure Cp: %10g J/mol K\n",Cp);
+      }
+      if ((VarV != -1) && (VarEnthalpy != -1)) {
+	real aP = (sqrt(VarEnthalpy*VarV/nmol))/(BOLTZ*Vaver*Temp*Temp);
 	printf("Thermal expansion coefficient alphaP: %10g 1/K\n",aP);
       }
       if ((VarV == -1) && (VarEtot != -1)) {

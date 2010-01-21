@@ -68,6 +68,8 @@ static const char *dens_nm[] = {"Density" };
 
 static const char *pv_nm[] = {"pV" };
 
+static const char *enthalpy_nm[] = {"Enthalpy" };
+
 static const char *boxvel_nm[] = {
   "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
   "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
@@ -259,6 +261,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
         md->ipv   = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
+        md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
     }
     if (md->bConstrVir)
     {
@@ -582,7 +585,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
 {
     int    i,j,k,kk,m,n,gid;
     real   crmsd[2],tmp6[6];
-    real   bs[NTRICLBOXS],vol,dens,pv;
+    real   bs[NTRICLBOXS],vol,dens,pv,enthalpy;
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   tmp;
@@ -644,6 +647,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
         add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
+        enthalpy = pv + enerd->term[F_ETOT];
+        add_ebin(md->ebin,md->ienthalpy  ,1    ,&enthalpy  ,bSum);
     }
     if (md->bConstrVir)
     {
