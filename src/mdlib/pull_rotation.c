@@ -58,6 +58,8 @@
 #include "groupcoord.h"
 
 
+/* Set the minimum weight for the determination of the slab centers */
+#define WEIGHT_MIN (10*GMX_FLOAT_MIN)
 
 /* Helper structure for sorting positions along rotation vector             */
 typedef struct {
@@ -393,6 +395,38 @@ static inline real gaussian_weight(rvec curr_x, t_rotgrp *rotg, int n)
 }
 
 
+/* Determines the weight in a single slab, also returns the Gaussian-weighted sum
+ * of positions for that slab */
+static real get_slab_weight(int j, t_rotgrp *rotg, rvec xc[], rvec *x_weighted_sum)
+{
+    rvec curr_x;              /* The position of an atom                      */
+    rvec curr_x_weighted;     /* The gaussian-weighted position               */
+    real gaussian;            /* A single gaussian weight                     */
+    real slabweight = 0.0;    /* The sum of weights in the slab               */
+    int i,islab;
+    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data      */
+
+    
+    erg=rotg->enfrotgrp;
+    clear_rvec(*x_weighted_sum);
+    
+    /* Slab index */
+    islab = j - erg->slab_first;
+    
+    /* Loop over all atoms in the rotation group */
+     for (i=0; i<rotg->nat; i++)
+     {
+         copy_rvec(xc[i], curr_x);
+         gaussian = gaussian_weight(curr_x, rotg, j);
+         svmul(gaussian, curr_x, curr_x_weighted);
+         rvec_add(*x_weighted_sum, curr_x_weighted, *x_weighted_sum);
+         slabweight += gaussian;
+     } /* END of loop over rotation group atoms */
+
+     return slabweight;
+}
+
+
 static void get_slab_centers(
         t_rotgrp *rotg,       /* The rotation group information               */
         rvec      *xc,        /* The rotation group positions; will 
@@ -407,12 +441,9 @@ static void get_slab_centers(
                                  init_rot_group we need to store
                                  the reference slab COGs                      */
 {
-    rvec curr_x;              /* The position of an atom                 */
-    rvec curr_x_weighted;     /* The gaussian-weighted position          */
-    real gaussian;            /* The gaussian weight                     */
     int i,j,islab;
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
-
+    
     
     erg=rotg->enfrotgrp;
 
@@ -420,22 +451,10 @@ static void get_slab_centers(
     for (j = erg->slab_first; j <= erg->slab_last; j++)
     {
         islab = j - erg->slab_first;
-        /* Initialize data for this slab: */
-        clear_rvec(erg->slab_center[islab]);
-        erg->slab_weights[islab] = 0.0;
-
-        /* loop over all atoms in the rotation group */
-        for(i=0; i<rotg->nat;i++)
-        {
-            copy_rvec(xc[i], curr_x);
-            gaussian = gaussian_weight(curr_x, rotg, j);
-            svmul(gaussian, curr_x, curr_x_weighted);
-            rvec_add(erg->slab_center[islab], curr_x_weighted, erg->slab_center[islab]);
-            erg->slab_weights[islab] += gaussian;
-        } /* END of loop over rotation group atoms */
-
-        /* Do the calculations ONLY if there is weight in the slab! */
-        if (erg->slab_weights[islab] > 0.0)
+        erg->slab_weights[islab] = get_slab_weight(j, rotg, xc, &erg->slab_center[islab]);
+        
+        /* We can do the calculations ONLY if there is weight in the slab! */
+        if (erg->slab_weights[islab] > WEIGHT_MIN)
         {
             svmul(1.0/erg->slab_weights[islab], erg->slab_center[islab], erg->slab_center[islab]);
         }
@@ -443,7 +462,7 @@ static void get_slab_centers(
         {
             /* We need to check this here, since we divide through slab_weights
              * in the flexible low-level routines! */
-            gmx_fatal(FARGS, "Slab %d has weight 0, cannot determine its center!", j);
+            gmx_fatal(FARGS, "Not enough weight in slab %d. Slab center cannot be determined!", j);
         }
         
         /* At first time step: save the COGs of the reference structure */
@@ -1863,12 +1882,12 @@ static void get_firstlast_slab_check(
 
     /* Check whether we have reference data to compare against */
     if (erg->slab_first < erg->slab_first_ref)
-        gmx_fatal(FARGS, "Enforced rotation: No reference data for first slab (n=%d), unable to proceed", 
+        gmx_fatal(FARGS, "Enforced rotation: No reference data for first slab (n=%d), unable to proceed.", 
                   erg->slab_first);
     
     /* Check whether we have reference data to compare against */
     if (erg->slab_last > erg->slab_last_ref)
-        gmx_fatal(FARGS, "Enforced rotation: No reference data for last slab (n=%d), unable to proceed",
+        gmx_fatal(FARGS, "Enforced rotation: No reference data for last slab (n=%d), unable to proceed.",
                   erg->slab_last);
 }
 
@@ -2159,6 +2178,38 @@ static void allocate_slabs(
 }
 
 
+/* From the extreme coordinates of the reference group, determine the first 
+ * and last slab of the reference. We can never have more slabs in the real
+ * simulation than calculated here for the reference.
+ */
+static void get_firstlast_slab_ref(t_rotgrp *rotg, int ref_firstindex, int ref_lastindex)
+{
+    gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
+    int first,last,firststart;
+    rvec dummy;
+
+    
+    erg=rotg->enfrotgrp;
+    first = get_first_slab(rotg, erg->max_beta, rotg->x_ref[ref_firstindex]);
+    last  = get_last_slab( rotg, erg->max_beta, rotg->x_ref[ref_lastindex ]);
+    firststart = first;
+
+    while (get_slab_weight(first, rotg, rotg->x_ref, &dummy) > WEIGHT_MIN)
+    {
+        first--;
+    }
+    erg->slab_first_ref = first+1;
+    while (get_slab_weight(last, rotg, rotg->x_ref, &dummy) > WEIGHT_MIN)
+    {
+        last++;
+    }
+    erg->slab_last_ref  = last-1;
+    
+    erg->slab_buffer = firststart - erg->slab_first_ref;
+}
+
+
+
 extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
         rvec *x,gmx_mtop_t *mtop,FILE *out_slabs)
 {
@@ -2276,18 +2327,13 @@ extern void init_rot_group(FILE *fplog,t_commrec *cr,int g,t_rotgrp *rotg,
         /* Calculate maximum beta value from minimum gaussian (performance opt.) */
         erg->max_beta = calc_beta_max(rotg->min_gaussian, rotg->slab_dist);
 
-        /* Determine the smallest and larges coordinate with respect to the rotation vector */
+        /* Determine the smallest and largest coordinate with respect to the rotation vector */
         get_firstlast_atom_ref(rotg, &ref_firstindex, &ref_lastindex);
         
-        /* From the extreme coordinates of the reference group, determine the first and last slab */
-        erg->slab_first_ref = get_first_slab(rotg, erg->max_beta, rotg->x_ref[ref_firstindex]);
-        erg->slab_last_ref  = get_last_slab( rotg, erg->max_beta, rotg->x_ref[ref_lastindex ]);
-
-        /* Add some slabs on both sides such that the flexible group can move a bit */
-        erg->slab_buffer = (erg->slab_last_ref - erg->slab_first_ref + 1) / 2;
-        erg->slab_first_ref = erg->slab_first_ref - erg->slab_buffer;
-        erg->slab_last_ref  = erg->slab_last_ref  + erg->slab_buffer;
-        
+        /* From the extreme coordinates of the reference group, determine the first 
+         * and last slab of the reference. */
+        get_firstlast_slab_ref(rotg, ref_firstindex, ref_lastindex);
+                
         /* Allocate memory for the slabs */
         allocate_slabs(rotg, fplog, g, cr);
 
