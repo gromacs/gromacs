@@ -120,11 +120,13 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], fft5d_flags f
    	        if (debug) 
 		    fprintf(debug,"FFT5D: N: %d, M: %d, K: %d, P: %dx%d, real2complex: %d, backward: %d, order yz: %d, debug %d\n",
 			    NG,MG,KG,P[0],P[1],(flags&FFT5D_REALCOMPLEX)>0,(flags&FFT5D_BACKWARD)>0,(flags&FFT5D_ORDER_YZ)>0,(flags&FFT5D_DEBUG)>0);
+                #ifndef GMX_FAHCORE
 		if (fft5d_fmax(fft5d_fmax(lpfactor(NG),lpfactor(MG)),lpfactor(KG))>7) {
 			printf("WARNING: FFT very slow with prime factors larger 7\n");
 			printf("Change FFT size or in case you cannot change it look at\n");
 			printf("http://www.fftw.org/fftw3_doc/Generating-your-own-code.html\n");
 		}
+                #endif
 	}
 	
 	if (NG==0 || MG==0 || KG==0) {
