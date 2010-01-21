@@ -52,6 +52,7 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "maths.h"
 
 typedef struct {
     char   *filename;
@@ -293,7 +294,8 @@ static int get_lam_set(barsim_t *ba,double lambda)
     int i;
 
     i = 1;
-    while (i < ba->nset && ba->lambda[i] != lambda)
+    while (i < ba->nset &&
+           !gmx_within_tol(ba->lambda[i],lambda,10*GMX_REAL_EPS))
     {
         i++;
     }
