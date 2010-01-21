@@ -211,13 +211,6 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
   ap->bSet = TRUE;
 }
 
-static void atomprop_name_warning(const char *type)
-{
-  printf("WARNING: %s will be determined based on residue and atom names,\n"
-	 "         this can deviate from the real mass of the atom type\n",
-	 type);
-}
-
 static void set_prop(gmx_atomprop_t aps,int eprop) 
 {
   gmx_atomprop *ap2 = (gmx_atomprop*) aps;
@@ -226,20 +219,13 @@ static void set_prop(gmx_atomprop_t aps,int eprop)
   double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
   aprop_t *ap;
 
-  if (eprop == epropMass) {
-    atomprop_name_warning("masses");
-  }
-  if (eprop == epropVDW) {
-    atomprop_name_warning("vdwradii");
-  }
-  
-
   ap = &ap2->prop[eprop];
   ap->db  = strdup(fns[eprop]);
   ap->def = def[eprop];
   read_prop(aps,eprop,fac[eprop]);
 
-  printf("Entries in %s: %d\n",ap->db,ap->nprop);
+  if (debug)
+    fprintf(debug,"Entries in %s: %d\n",ap->db,ap->nprop);
 }
 
 gmx_atomprop_t gmx_atomprop_init(void)
@@ -250,6 +236,11 @@ gmx_atomprop_t gmx_atomprop_init(void)
   snew(aps,1);
 
   aps->aan = get_aa_names();
+
+  printf("WARNING: masses and atomic (Van der Waals) radii will be determined\n");
+  printf("         based on residue and atom names. These numbers can deviate\n");
+  printf("         from the correct mass and radius of the atom type.\n");
+
 
   for(p=0; p<epropNR; p++) 
     set_prop(aps,p);

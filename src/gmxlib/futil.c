@@ -645,9 +645,9 @@ FILE *low_libopen(const char *file,bool bFatal)
     if (fn==NULL) {
         ff=NULL;
     } else {
-        if (bFatal)
-            fprintf(stderr,"Opening library file %s\n",fn);
-        ff=fopen(fn,"r");
+      if (debug)
+	fprintf(debug,"Opening library file %s\n",fn);
+      ff=fopen(fn,"r");
     }
     sfree(fn);
 

@@ -89,6 +89,7 @@ struct output_env
     int time_unit; /*  the time unit as index for the above-defined arrays */
     bool view;  /* view of file requested */
     bool xvgr_codes; /* xmgrace-style legends etc. in file output */
+    int  verbosity; /* The level of verbosity for this program */
 #if 0
     const char *program; /* the program name */
     char *cmdline; /* the re-assembled command line */
@@ -141,6 +142,10 @@ void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes,
     oenv->xvgr_codes=xvgr_codes;
 }
 
+int output_env_verbosity(output_env_t oenv)
+{
+  return oenv->verbosity;
+}
 
 const char *ShortProgram(void)
 {
@@ -590,12 +595,12 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       int nbugs,const char **bugs,
                        output_env_t *oenv)
 {
-    bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
+  bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE,bVersion=FALSE;
     const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", 
                             "completion", "py", "xml", "wiki", NULL };
     const char *time_units[] = { NULL, "ps", "fs", "ns", "us", "ms", "s", 
                                 NULL };
-    int  nicelevel=0,mantp=0,npri=0,debug_level=0;
+    int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
     bool bView=FALSE, bXvgrCodes=TRUE;
@@ -624,15 +629,19 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #define EXTRA_PA 16
     
     t_pargs pca_pa[] = {
-        { "-h",    FALSE, etBOOL, {&bHelp},     
-        "Print help info and quit" }, 
-        { "-hidden", FALSE, etBOOL, {&bHidden},
-        "HIDDENPrint hidden options" },
-        { "-quiet",FALSE, etBOOL, {&bQuiet},
+      { "-h",    FALSE, etBOOL, {&bHelp},     
+	"Print help info and quit" }, 
+      { "-version",  FALSE, etBOOL, {&bVersion},     
+	"Print version info and quit" }, 
+      { "-v",    FALSE,  etINT, {&verbose_level},
+	"Level of verbosity for this program" },
+      { "-hidden", FALSE, etBOOL, {&bHidden},
+	  "HIDDENPrint hidden options" },
+      { "-quiet",FALSE, etBOOL, {&bQuiet},
         "HIDDENDo not print help info" },
-        { "-man",  FALSE, etENUM,  {manstr},
+      { "-man",  FALSE, etENUM,  {manstr},
         "HIDDENWrite manual and quit" },
-        { "-debug",FALSE, etINT, {&debug_level},
+      { "-debug",FALSE, etINT, {&debug_level},
         "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
     };
 #define NPCA_PA asize(pca_pa)
@@ -671,7 +680,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     debug_gmx();
     set_program_name(argv[0]);
     set_command_line(*argc, argv);
-    
+      
     /* Handle the flags argument, which is a bit field 
      * The FF macro returns whether or not the bit is set
      */
@@ -736,6 +745,17 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
    
     /* Now parse all the command-line options */
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
+
+    if (bVersion) {
+      printf("Program: %s\nVersion: %s\n",Program(),
+#ifdef PACKAGE_VERSION
+	     PACKAGE_VERSION
+#else
+	     "Unknown"
+#endif
+	     );
+      exit(0);
+    }
     
     if (FF(PCA_CAN_SET_DEFFNM) && (deffnm!=NULL))
         set_default_file_name(deffnm);
