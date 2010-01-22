@@ -1716,8 +1716,10 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
         }
         for(i=0; i<state_local->nnhpres; i++)
         {
-            state_local->nhpres_xi[i*nh+j]        = state->nhpres_xi[i*nh+j];
-            state_local->nhpres_vxi[i*nh+j]       = state->nhpres_vxi[i*nh+j];
+            for(j=0; j<nh; j++) {
+                state_local->nhpres_xi[i*nh+j]        = state->nhpres_xi[i*nh+j];
+                state_local->nhpres_vxi[i*nh+j]       = state->nhpres_vxi[i*nh+j];
+            }
         }
     }
     dd_bcast(dd,sizeof(real),&state_local->lambda);
