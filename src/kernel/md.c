@@ -1793,7 +1793,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gmx_iterate_destroy(iterate);
 
             if (bTrotter && !bInitStep) {
-                copy_mat(shake_vir,state->vir_prev);
+                copy_mat(shake_vir,state->svir_prev);
+                copy_mat(force_vir,state->fvir_prev);
                 if (IR_NVT_TROTTER(ir) && ir->eI==eiVV) {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
                     enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,NULL,(ir->eI==eiVV),FALSE,FALSE);
@@ -1923,7 +1924,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV) 
         {
-            copy_mat(state->vir_prev,shake_vir);
+            copy_mat(state->svir_prev,shake_vir);
+            copy_mat(state->fvir_prev,force_vir);
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
         
@@ -2074,15 +2076,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
                 if (bTrotter) 
                 {
-                
-                    if (iterate->bFirstIterate) 
-                    {
-                        tracevir = trace(shake_vir);
-                    }
                     if (iterate->bIterate) 
                     {
-                        /* we use a new value of scalevir to converge the iterations faster */
-                        scalevir = tracevir/trace(shake_vir);
+                        if (iterate->bFirstIterate) 
+                        {
+                            scalevir = 1;
+                        }
+                        else 
+                        {
+                            /* we use a new value of scalevir to converge the iterations faster */
+                            scalevir = tracevir/trace(shake_vir);
+                        }
                         msmul(shake_vir,scalevir,shake_vir); 
                         m_add(force_vir,shake_vir,total_vir);
                         clear_mat(shake_vir);
@@ -2195,9 +2199,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
-                            | (!EI_VV(ir->eI) ? CGLO_CONSTRAINT : 0 ) 
                             | (iterate->bIterate ? CGLO_ITERATE : 0) 
                             | (iterate->bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                            | CGLO_CONSTRAINT 
                 );            
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
@@ -2394,7 +2398,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * We can not just use bGStat, since then the simulation results
          * would depend on nstenergy and nstlog or step_nscheck.
          */
-        if (((state->flags & (1<<estPRES_PREV)) || (state->flags & (1<<estVIR_PREV))) &&
+        if (((state->flags & (1<<estPRES_PREV)) || 
+             (state->flags & (1<<estSVIR_PREV)) ||
+             (state->flags & (1<<estFVIR_PREV))) &&
             (bGStatEveryStep ||
              (ir->nstlist > 0 && step % ir->nstlist == 0) ||
              (ir->nstlist < 0 && nlh.nabnsb > 0) ||

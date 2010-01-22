@@ -149,7 +149,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    j;
   real   *rmsd_data=NULL,rbnsb;
   double nb;
-  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate;
+  bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
 
   bVV           = EI_VV(inputrec->eI);
   bTemp         = flags & CGLO_TEMPERATURE;
@@ -157,7 +157,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bPres         = flags & CGLO_PRESSURE; 
   bConstrVir    = flags & CGLO_CONSTRAINT;
   bFirstIterate = flags & CGLO_FIRSTITERATE;
-  bEkinAveVel = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
+  bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
+  bReadEkin     = flags & CGLO_READEKIN;
 
   snew(copyenerd,F_NRE);
   rb   = gs->rb;
@@ -195,11 +196,11 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               {
                   itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
-              if (bEkinAveVel) 
+              if (bEkinAveVel && !bReadEkin) 
               {
                   itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinf[0]);
               } 
-              else 
+              else if (!bReadEkin)
               {
                   itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
               }
@@ -320,10 +321,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               {
                   extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
               }
-              if (bEkinAveVel) {
+              if (bEkinAveVel && !bReadEkin) {
                   extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinf[0]);
               }
-              else
+              else if (!bReadEkin)
               {
                   extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);              
               }
@@ -491,7 +492,8 @@ void write_traj(FILE *fplog,t_commrec *cr,
             state_global->vol0 = state_local->vol0;
             copy_mat(state_local->box,state_global->box);
             copy_mat(state_local->boxv,state_global->boxv);
-            copy_mat(state_local->vir_prev,state_global->vir_prev);
+            copy_mat(state_local->svir_prev,state_global->svir_prev);
+            copy_mat(state_local->fvir_prev,state_global->fvir_prev);
             copy_mat(state_local->pres_prev,state_global->pres_prev);
         }
         if (cr->nnodes > 1)

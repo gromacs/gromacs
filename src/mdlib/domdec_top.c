@@ -1571,7 +1571,7 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int buf[4];
+    int i,j, buf[4];
     
     if (DDMASTER(dd))
     {

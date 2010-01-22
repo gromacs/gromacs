@@ -380,7 +380,8 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
   exchange_rvecs(ms,b,state->boxv,DIM);
   exchange_reals(ms,b,&(state->veta),1);
   exchange_reals(ms,b,&(state->vol0),1);
-  exchange_rvecs(ms,b,state->vir_prev,DIM);
+  exchange_rvecs(ms,b,state->svir_prev,DIM);
+  exchange_rvecs(ms,b,state->fvir_prev,DIM);
   exchange_rvecs(ms,b,state->pres_prev,DIM);
   exchange_doubles(ms,b,state->nosehoover_xi,ngtcp);
   exchange_doubles(ms,b,state->nosehoover_vxi,ngtcp);  

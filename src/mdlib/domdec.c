@@ -1444,7 +1444,8 @@ void dd_collect_state(gmx_domdec_t *dd,
         state->vol0 = state_local->vol0;
         copy_mat(state_local->box,state->box);
         copy_mat(state_local->boxv,state->boxv);
-        copy_mat(state_local->vir_prev,state->vir_prev);
+        copy_mat(state_local->svir_prev,state->svir_prev);
+        copy_mat(state_local->fvir_prev,state->fvir_prev);
         copy_mat(state_local->pres_prev,state->pres_prev);
 
 
@@ -1703,6 +1704,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
         copy_mat(state->box,state_local->box);
         copy_mat(state->box_rel,state_local->box_rel);
         copy_mat(state->boxv,state_local->boxv);
+        copy_mat(state->svir_prev,state_local->svir_prev);
+        copy_mat(state->fvir_prev,state_local->fvir_prev);
         for(i=0; i<state_local->ngtc; i++)
         {
             for(j=0; j<nh; j++) {
@@ -1723,6 +1726,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_bcast(dd,sizeof(state_local->box),state_local->box);
     dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
+    dd_bcast(dd,sizeof(state_local->svir_prev),state_local->svir_prev);
+    dd_bcast(dd,sizeof(state_local->fvir_prev),state_local->fvir_prev);
     dd_bcast(dd,((state_local->ngtc*nh)*sizeof(double)),state_local->nosehoover_xi);
     dd_bcast(dd,((state_local->ngtc*nh)*sizeof(double)),state_local->nosehoover_vxi);
     dd_bcast(dd,state_local->ngtc*sizeof(double),state_local->therm_integral);
@@ -8031,6 +8036,7 @@ void dd_partition_system(FILE            *fplog,
          * We therefore have to do DLB in the first partitioning
          * after an MD step where P-coupling occured.
          * We need to determine the last step in which p-coupling occurred.
+         * MRS -- need to validate this for vv?
          */
         n = ir->nstcalcenergy;
         if (n == 1)

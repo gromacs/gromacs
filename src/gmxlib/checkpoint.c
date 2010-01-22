@@ -77,7 +77,7 @@ const char *est_names[estNR]=
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "vir_prev", "nosehoover-vxi", "v_eta", "vol0"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "fvir_prev"
 };
 
 enum { eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR };
@@ -767,7 +767,8 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
-            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
+            case estSVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->svir_prev,list); break;
+            case estFVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->fvir_prev,list); break;
             case estNH_XI:   ret = do_cpte_doubles(xd,0,i,sflags,nnht,&state->nosehoover_xi,list); break;
             case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,nnht,&state->nosehoover_vxi,list); break;
             case estNHPRES_XI:   ret = do_cpte_doubles(xd,0,i,sflags,nnhtp,&state->nhpres_xi,list); break;

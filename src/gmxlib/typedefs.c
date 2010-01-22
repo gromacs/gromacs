@@ -495,7 +495,8 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
   clear_mat(state->box_rel);
   clear_mat(state->boxv);
   clear_mat(state->pres_prev);
-  clear_mat(state->vir_prev);
+  clear_mat(state->svir_prev);
+  clear_mat(state->fvir_prev);
   init_gtc_state(state,ngtc,nnhpres,nhchainlength);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {
