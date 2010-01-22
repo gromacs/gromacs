@@ -337,6 +337,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber)
   gmx_atomprop *ap = (gmx_atomprop*) aps;
   int i;
   
+  set_prop(aps,epropElement);
   for(i=0; (i<ap->prop[epropElement].nprop); i++) {
     if (gmx_nint(ap->prop[epropElement].value[i]) == atomnumber) {
       return ap->prop[epropElement].atomnm[i];
@@ -350,6 +351,7 @@ int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *elem)
   gmx_atomprop *ap = (gmx_atomprop*) aps;
   int i;
   
+  set_prop(aps,epropElement);
   for(i=0; (i<ap->prop[epropElement].nprop); i++) {
     if (strcasecmp(ap->prop[epropElement].atomnm[i],elem) == 0) {
       return gmx_nint(ap->prop[epropElement].value[i]);
