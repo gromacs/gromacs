@@ -800,7 +800,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     fprintf(fp,"@g%d type %s\n",0,"bar");
   }
   snew(structure,nf);
-  fprintf(log,"\n%3s | %3s %4s | %6s %4s | cluster members\n",
+  fprintf(log,"\n%3s | %3s  %4s | %6s %4s | cluster members\n",
 	  "cl.","#st","rmsd","middle","rmsd");
   for(cl=1; cl<=clust->ncl; cl++) {
     /* prepare structures (fit, middle, average) */
@@ -849,7 +849,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     
     /* dump cluster info to logfile */
     if (nstr > 1) {
-      sprintf(buf1,"%5.3f",clrmsd);
+      sprintf(buf1,"%6.3f",clrmsd);
       if (buf1[0] == '0')
 	buf1[0] = ' ';
       sprintf(buf2,"%5.3f",midrmsd);
@@ -859,10 +859,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       sprintf(buf1,"%5s","");
       sprintf(buf2,"%5s","");
     }
-    fprintf(log,"%3d | %3d%s | %6g%s |",cl,nstr,buf1,time[midstr],buf2);
+    fprintf(log,"%3d | %3d %s | %6g%s |",cl,nstr,buf1,time[midstr],buf2);
     for(i=0; i<nstr; i++) {
       if ((i % 7 == 0) && i)
-	sprintf(buf,"\n%3s | %3s %4s | %6s %4s |","","","","","");
+	sprintf(buf,"\n%3s | %3s  %4s | %6s %4s |","","","","","");
       else
 	buf[0] = '\0';
       i1 = structure[i];

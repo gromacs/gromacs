@@ -978,6 +978,7 @@ int main (int argc, char *argv[])
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
+  bool         bVerbose;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -995,13 +996,11 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE;
+  static bRenum=TRUE;
   static bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
-    { "-v",       FALSE, etBOOL, {&bVerbose},
-      "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
@@ -1025,6 +1024,7 @@ int main (int argc, char *argv[])
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
+  bVerbose = (output_env_verbosity(oenv) > 0);
   
   init_warning(maxwarn);
   

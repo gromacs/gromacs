@@ -87,7 +87,7 @@ extern void set_output_env(output_env_t oenv,  bool view, bool xvgr_codes,
                            const char *timenm);
 extern void init_output_env(output_env_t oenv,  int argc, char *argv[],
                             bool view, bool xvgr_codes, const char *timenm);
-
+extern int output_env_verbosity(output_env_t oenv);
 
     
 /* Return the name of the program */

@@ -284,6 +284,11 @@ typedef struct {
 void please_cite(FILE *fp,const char *key)
 {
   static const t_citerec citedb[] = {
+    { "Allen1987a",
+      "M. P. Allen and D. J. Tildesley",
+      "Computer simulation of liquids",
+      "Oxford Science Publications",
+      1, 1987, "1" },
     { "Berendsen95a",
       "H. J. C. Berendsen, D. van der Spoel and R. van Drunen",
       "GROMACS: A message-passing parallel molecular dynamics implementation",
