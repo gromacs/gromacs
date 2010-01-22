@@ -62,6 +62,7 @@ typedef struct {
 } aprop_t;
 
 typedef struct gmx_atomprop {
+  bool       bWarned;
   aprop_t    prop[epropNR];
   t_aa_names *aan;
 } gmx_atomprop;
@@ -219,13 +220,22 @@ static void set_prop(gmx_atomprop_t aps,int eprop)
   double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
   aprop_t *ap;
 
+  if ((!aps->bWarned) && (eprop == epropMass) || (eprop == epropVDW)) {
+    printf("WARNING: masses and atomic (Van der Waals) radii will be determined\n");
+    printf("         based on residue and atom names. These numbers can deviate\n");
+    printf("         from the correct mass and radius of the atom type.\n");
+    aps->bWarned = TRUE;
+  }
+  
   ap = &ap2->prop[eprop];
-  ap->db  = strdup(fns[eprop]);
-  ap->def = def[eprop];
-  read_prop(aps,eprop,fac[eprop]);
-
-  if (debug)
-    fprintf(debug,"Entries in %s: %d\n",ap->db,ap->nprop);
+  if (!ap->bSet) {
+    ap->db  = strdup(fns[eprop]);
+    ap->def = def[eprop];
+    read_prop(aps,eprop,fac[eprop]);
+    
+    if (debug)
+      fprintf(debug,"Entries in %s: %d\n",ap->db,ap->nprop);
+  }
 }
 
 gmx_atomprop_t gmx_atomprop_init(void)
@@ -236,14 +246,7 @@ gmx_atomprop_t gmx_atomprop_init(void)
   snew(aps,1);
 
   aps->aan = get_aa_names();
-
-  printf("WARNING: masses and atomic (Van der Waals) radii will be determined\n");
-  printf("         based on residue and atom names. These numbers can deviate\n");
-  printf("         from the correct mass and radius of the atom type.\n");
-
-
-  for(p=0; p<epropNR; p++) 
-    set_prop(aps,p);
+  aps->bWarned = FALSE;
 
   return (gmx_atomprop_t)aps;
 }
@@ -252,16 +255,18 @@ static void destroy_prop(aprop_t *ap)
 {
   int i;
 
-  sfree(ap->db);
-
-  for(i=0; i<ap->nprop; i++) {
-    sfree(ap->atomnm[i]);
-    sfree(ap->resnm[i]);
+  if (ap->bSet) {
+    sfree(ap->db);
+    
+    for(i=0; i<ap->nprop; i++) {
+      sfree(ap->atomnm[i]);
+      sfree(ap->resnm[i]);
+    }
+    sfree(ap->atomnm);
+    sfree(ap->resnm);
+    sfree(ap->bAvail);
+    sfree(ap->value);
   }
-  sfree(ap->atomnm);
-  sfree(ap->resnm);
-  sfree(ap->bAvail);
-  sfree(ap->value);
 }
 
 void gmx_atomprop_destroy(gmx_atomprop_t aps)
@@ -294,6 +299,7 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
   char atomname[MAXQ],resname[MAXQ];
   bool bExact;
 
+  set_prop(aps,eprop);
   if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
     if (debug)
       fprintf(debug,"WARNING: will only compare first %d characters\n",
