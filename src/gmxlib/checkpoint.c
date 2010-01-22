@@ -77,7 +77,7 @@ const char *est_names[estNR]=
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "fvir_prev"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev",
 };
 
 enum { eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR };
