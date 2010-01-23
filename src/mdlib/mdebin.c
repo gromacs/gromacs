@@ -116,7 +116,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   static const char *visc_nm[] = {
     "1/Viscosity"
   };
-  static char *bufbaro[] = {
+  static const char *baro_nm[] = {
     "Barostat"
   };
 
@@ -443,7 +443,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                 
                 for(i=0; (i<md->nTCP); i++) 
                 {
-                    bufi = bufbaro[i];  /* All barostat DOF's together for now. */
+                    bufi = baro_nm[i];  /* All barostat DOF's together for now. */
                     for(j=0; (j<md->nNHC); j++) 
                     {
                         sprintf(buf,"Xi-%d-%s",j,bufi);
