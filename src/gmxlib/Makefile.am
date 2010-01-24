@@ -77,9 +77,17 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
 
-
-
-
-
-
+#version.h contains git version or version defined in VERSION
+copywrite.c: version.h
+#actually version.h would need to be a PHONY rule, because git rev can
+#change without actual code changes. But also all targets depending on 
+#a PHONY rule would also be rebuild everytime, so we add update_version
+#rule that changes version.h if and only if git rev is REALLY changed
+version.h: update_version
+#echo @VERSION@ is just a failback, if there is no git or release builds
+update_version:
+	[ -f version.h ] || touch version.h
+	version=`git --git-dir=$(top_builddir)/.git rev-parse --short HEAD 2> /dev/null || echo @VERSION@`; \
+	version="static const char ver_string[]=\"VERSION $$version\";"; \
+	echo "$$version" | cmp -s version.h - || echo "$$version" > version.h
 
