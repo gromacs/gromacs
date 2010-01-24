@@ -245,7 +245,8 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estBOX_REL: block_bc(cr,state->box_rel); break;
       case estBOXV:    block_bc(cr,state->boxv); break;
       case estPRES_PREV: block_bc(cr,state->pres_prev); break;
-      case estVIR_PREV: block_bc(cr,state->vir_prev); break;
+      case estSVIR_PREV: block_bc(cr,state->svir_prev); break;
+      case estFVIR_PREV: block_bc(cr,state->fvir_prev); break;
       case estNH_XI:   nblock_abc(cr,nnht,state->nosehoover_xi); break;
       case estNH_VXI:  nblock_abc(cr,nnht,state->nosehoover_vxi); break;
       case estNHPRES_XI:   nblock_abc(cr,nnhtp,state->nhpres_xi); break;
@@ -453,13 +454,13 @@ static void bc_pullgrp(const t_commrec *cr,t_pullgrp *pgrp)
 static void bc_pull(const t_commrec *cr,t_pull *pull)
 {
   int g;
-  
+
   block_bc(cr,*pull);
   snew_bc(cr,pull->grp,pull->ngrp+1);
   for(g=0; g<pull->ngrp+1; g++)
-    {
+  {
       bc_pullgrp(cr,&pull->grp[g]);
-    }
+  }
 }
 
 static void bc_fepvals(const t_commrec *cr,t_lambda *fepvals)

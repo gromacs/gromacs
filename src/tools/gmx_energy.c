@@ -536,7 +536,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
   gmx_large_int_t nsteps;
   int  nexact,nnotexact,iset;
   double x1m,x1mk;
-  real Temp=-1,Pres=-1,VarV=-1,VarT=-1;
+  real Temp=-1,Pres=-1,VarV=-1,VarT=-1,VarEtot=-1,AvEtot=0,VarEnthalpy=-1;
   int  i,j;
   real chi2;
   char buf[256];
@@ -560,7 +560,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       nexact    = 0;
       nnotexact = 0;
       for(i=0; (i<nset); i++) {
-	if (ee_sum[set[i]].esum != 0) { /* if everything is zero, it will report as not being exact, and averaged over fewer states MRS */
+	if (ee_sum[set[i]].esum != 0) {
 	  nexact++;
 	} else {
 	  nnotexact++;
@@ -638,6 +638,11 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	Vaver= aver;
       } else if (strstr(leg[i],"essure") != NULL) {
 	Pres = aver;
+      } else if (strstr(leg[i],"otal") != NULL) {
+	VarEtot = sqr(stddev);
+	AvEtot = aver;
+      } else if (strstr(leg[i],"nthalpy") != NULL) {
+	VarEnthalpy = sqr(stddev);
       }
       if (bIsEner[i]) {
 	pr_aver   = aver/nmol-ezero;
@@ -682,19 +687,31 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	fprintf(stdout,"\n");
     }
     if (Temp != -1) {
-      real factor;
-      
-      factor = nmol*ndf*VarT/(3.0*sqr(Temp));
-      fprintf(stdout,"Heat Capacity Cv:   %10g J/mol K (factor = %g)\n",
-	      1000*BOLTZ/(2.0/3.0 - factor),factor);
-    }
-    if ((VarV != -1) && (Temp != -1)) {
-      real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
-      
-      fprintf(stdout,"Isothermal Compressibility: %10g /%s\n",
-	      tmp,unit_pres_bar);
-      fprintf(stdout,"Adiabatic bulk modulus:     %10g  %s\n",
-	      1.0/tmp,unit_pres_bar);
+      printf("\nTemperature dependent fluctuation properties at T = %g\n",Temp);
+      if (nmol < 2)
+	printf("Warning: nmol = %d, this may not be what you want.\n",
+	       nmol);
+      if (VarV != -1) {
+	real tmp = VarV/(Vaver*BOLTZ*Temp*PRESFAC);
+	
+	printf("Isothermal Compressibility: %10g /%s\n",
+	       tmp,unit_pres_bar);
+	printf("Adiabatic bulk modulus:     %10g  %s\n",
+	       1.0/tmp,unit_pres_bar);
+      }
+      if (VarEnthalpy != -1) {
+	real Cp = (1000*(VarEnthalpy)/nmol)/(BOLTZ*Temp*Temp);
+	printf("Heat capacity at constant pressure Cp: %10g J/mol K\n",Cp);
+      }
+      if ((VarV != -1) && (VarEnthalpy != -1)) {
+	real aP = (sqrt(VarEnthalpy*VarV/nmol))/(BOLTZ*Vaver*Temp*Temp);
+	printf("Thermal expansion coefficient alphaP: %10g 1/K\n",aP);
+      }
+      if ((VarV == -1) && (VarEtot != -1)) {
+	real Cv = (1000*(VarEtot)/nmol)/(BOLTZ*Temp*Temp);
+	printf("Heat capacity at constant volume Cv: %10g J/mol K\n",Cv);
+      }
+      please_cite(stdout,"Allen1987a");
     }
     /* Do correlation function */
     Dt = delta_t/nenergy;
@@ -878,6 +895,17 @@ int gmx_energy(int argc,char *argv[])
     "a LSQ fit of the data to a straight line. The reported total drift",
     "is the difference of the fit at the first and last point.",
     "The term fluctuation gives the RMSD around the LSQ fit.[PAR]",
+    
+    "Some fluctuation-dependent properties can be calculated provided",
+    "the correct energy terms are selected. The following properties",
+    "will be computed:[BR]",
+    "Property                       Energy terms needed  Extra flags[BR]",
+    "-----------------------------------------------------------------[BR]",
+    "Heat capacity Cp (NPT sims)    Enthalpy, Temp       [TT]-nmol[tt] N[BR]",
+    "Heat capacity Cv (NVT sims)    Etot, Temp           [TT]-nmol[tt] N[BR]",
+    "Thermal expansion coeff. (NPT) Enthalpy, Vol, Temp  [TT]-nmol[tt] N[BR]",
+    "Isothermal compressibility     Vol, Temp            [TT]-nmol[tt] N[BR]",
+    "Adiabatic bulk modulus         Vol, Temp            [TT]-nmol[tt] N[PAR]",
     
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",

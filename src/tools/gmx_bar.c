@@ -52,6 +52,7 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "maths.h"
 
 typedef struct {
     char   *filename;
@@ -293,7 +294,8 @@ static int get_lam_set(barsim_t *ba,double lambda)
     int i;
 
     i = 1;
-    while (i < ba->nset && ba->lambda[i] != lambda)
+    while (i < ba->nset &&
+           !gmx_within_tol(ba->lambda[i],lambda,10*GMX_REAL_EPS))
     {
         i++;
     }
@@ -624,8 +626,8 @@ int gmx_bar(int argc,char *argv[])
     };
     
     t_filenm   fnm[] = {
-        { efXVG, "-f", "dhdl",  ffRDMULT },
-        { efXVG, "-o", "bar",   ffOPTWR },
+        { efXVG, "-f",  "dhdl",   ffRDMULT },
+        { efXVG, "-o",  "bar",    ffOPTWR },
         { efXVG, "-oi", "barint", ffOPTWR }
     };
 #define NFILE asize(fnm)
@@ -714,6 +716,7 @@ int gmx_bar(int argc,char *argv[])
                "assuming the Hamiltonian depends linearly on lambda\n\n");
     }
 
+    fpb = NULL;
     if (opt2bSet("-o",NFILE,fnm))
     {
         fpb = NULL;
@@ -731,12 +734,12 @@ int gmx_bar(int argc,char *argv[])
     {
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
-                       "\\8l\\4",unit_energy,oenv);
+                      "\\8l\\4",unit_energy,oenv);
         if (get_print_xvgr_codes(oenv))
         {
             fprintf(fpi,"@TYPE xydy\n");
         }
-    }        
+    }
 
     dg_tot  = 0;
     var_tot = 0;
@@ -754,7 +757,7 @@ int gmx_bar(int argc,char *argv[])
         if (fpb != NULL)
         {
             fprintf(fpb,xvgformat,
-                    0.5*(ba[f].lambda[0]  + ba[f+1].lambda[0]),
+                    0.5*(ba[f].lambda[0] + ba[f+1].lambda[0]),
                     results[f].dg,results[f].dg_err);
         }
 

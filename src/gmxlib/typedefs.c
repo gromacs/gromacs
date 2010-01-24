@@ -438,42 +438,44 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     state->ngtc = ngtc;
     state->nnhpres = nnhpres;
     state->nhchainlength = nhchainlength;
-
-    if (state->ngtc > 0) 
+    if (state->ngtc > 0)
     {
-        snew(state->nosehoover_xi,  state->nhchainlength*ngtc); 
-        snew(state->nosehoover_vxi,  state->nhchainlength*ngtc);
-        snew(state->therm_integral, state->ngtc);
-        for(i=0; i<ngtc; i++) 
+        snew(state->nosehoover_xi,state->nhchainlength*state->ngtc); 
+        snew(state->nosehoover_vxi,state->nhchainlength*state->ngtc);
+        snew(state->therm_integral,state->ngtc);
+        for(i=0; i<state->ngtc; i++)
         {
-            for (j=0;j<state->nhchainlength;j++) 
+            for (j=0;j<state->nhchainlength;j++)
             {
                 state->nosehoover_xi[i*state->nhchainlength + j]  = 0.0;
                 state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
             }
+        }
+        for(i=0; i<state->ngtc; i++) {
             state->therm_integral[i]  = 0.0;
         }
-    } 
-    else 
+    }
+    else
     {
         state->nosehoover_xi  = NULL;
         state->nosehoover_vxi = NULL;
         state->therm_integral = NULL;
     }
-    if (state->nnhpres > 0) 
+
+    if (state->nnhpres > 0)
     {
         snew(state->nhpres_xi,state->nhchainlength*nnhpres); 
         snew(state->nhpres_vxi,state->nhchainlength*nnhpres);
         for(i=0; i<nnhpres; i++) 
         {
-            for (j=0;j<nhchainlength;j++) 
+            for (j=0;j<state->nhchainlength;j++) 
             {
                 state->nhpres_xi[i*nhchainlength + j]  = 0.0;
                 state->nhpres_vxi[i*nhchainlength + j]  = 0.0;
             }
         }
     }
-    else 
+    else
     {
         state->nhpres_xi  = NULL;
         state->nhpres_vxi = NULL;
@@ -488,16 +490,19 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
   state->natoms = natoms;
   state->nrng   = 0;
   state->flags  = 0;
-  state->fep_state = 0;
+  state->lambda = 0;
   snew(state->lambda,efptNR);
-  for (i=0;i<efptNR;i++) {
+  for (i=0;i<efptNR;i++) 
+  {
       state->lambda[i] = 0;
   }
+  state->veta   = 0;
   clear_mat(state->box);
   clear_mat(state->box_rel);
   clear_mat(state->boxv);
   clear_mat(state->pres_prev);
-  clear_mat(state->vir_prev);
+  clear_mat(state->svir_prev);
+  clear_mat(state->fvir_prev);
   init_gtc_state(state,ngtc,nnhpres,nhchainlength);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {

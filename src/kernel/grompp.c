@@ -977,6 +977,7 @@ int main (int argc, char *argv[])
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
+  bool         bVerbose;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -994,13 +995,11 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE;
+  static bool bRenum=TRUE;
   static bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
-    { "-v",       FALSE, etBOOL, {&bVerbose},
-      "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
@@ -1019,12 +1018,12 @@ int main (int argc, char *argv[])
   nerror=0;
   snew(ir,1);
   snew(opts,1);
-  init_ir(ir);
-  init_opts(opts);
+  init_ir(ir,opts);
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
+  bVerbose = (output_env_verbosity(oenv) > 0);
   
   init_warning(maxwarn);
   
@@ -1114,15 +1113,13 @@ int main (int argc, char *argv[])
     if (bVerbose) {
       fprintf(stderr,"Reading position restraint coords from %s",fn);
       if (strcmp(fn,fnB) == 0) {
-          fprintf(stderr,"\n");
+	fprintf(stderr,"\n");
       } else {
-          fprintf(stderr," and %s\n",fnB);
-          /*
-            if (ir->efep != efepNO && ir->fepvals->n_lambda > 0) {
-            fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
-            nerror++;
-          }
-          */ /* testing a change to this MRS */
+	fprintf(stderr," and %s\n",fnB);
+	if (ir->efep != efepNO && ir->fepvals->n_lambda > 0) {
+	  fprintf(stderr,"ERROR: can not change the position restraint reference coordinates with lambda togther with foreign lambda calculation.\n");
+	  nerror++;
+	}
       }
     }
     gen_posres(sys,mi,fn,fnB,
@@ -1206,7 +1203,7 @@ int main (int argc, char *argv[])
 	   bGenVel ? state.v : NULL);
 	
   /* Init the temperature coupling state */
-  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength);  /* need to add nnpres here? */
+  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength); /* need to add nnhpres here? */
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");
@@ -1273,7 +1270,6 @@ int main (int argc, char *argv[])
     }
   }
 	
-
   if (ir->efep!= efepNO)
   {
       state.fep_state = ir->fepvals->init_fep_state;
@@ -1287,11 +1283,11 @@ int main (int argc, char *argv[])
           } 
       }
   } 
-  print_warn_num(TRUE);
 
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
+  print_warn_num(TRUE);
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),ir,&state,sys);
   
   thanx(stderr);

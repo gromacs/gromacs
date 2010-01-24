@@ -87,13 +87,10 @@ static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
 enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
 
 
-void init_opts(t_gromppopts *opts) {
-    snew(opts->include,STRLEN); 
-    snew(opts->define,STRLEN);
-}
-
-void init_ir(t_inputrec *ir)
+void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
+  snew(opts->include,STRLEN); 
+  snew(opts->define,STRLEN);
   snew(ir->fepvals,1);
 }
 
@@ -337,6 +334,10 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
+  sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
+  CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
+	&& (ir->efep!=efepNO));
+  
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
@@ -351,7 +352,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   if (ir->etc == etcNOSEHOOVER) {
     if (ir->opts.nhchainlength < 1) 
       {
-	sprintf(warn_buf,"Number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
+	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
 	ir->opts.nhchainlength =1;
 	warning(NULL);
       }
@@ -557,7 +558,6 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     warning("Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
   }
 
-
   /* ENERGY CONSERVATION */
   if (ir->eI == eiMD && ir->etc == etcNO) {
     if (!EVDW_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0) {
@@ -629,7 +629,6 @@ static void parse_n_double(char *str,int *n,double **r)
     (*r)[i] = strtod(ptr[i],NULL);
   }
 }
-
 
 static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
 
@@ -1228,7 +1227,7 @@ void get_ir(const char *mdparin,const char *mdparout,
       warning("Can not couple a molecule with free_energy = no");
     }
   }
-  
+
   /* FREE ENERGY OPTIONS */
   if (ir->efep != efepNO) 
     {
@@ -1238,7 +1237,7 @@ void get_ir(const char *mdparin,const char *mdparout,
     {
       ir->fepvals->n_lambda = 0;
     }
-
+  
   do_wall_params(ir,wall_atomtype,wall_density,opts);
   
   if (opts->bOrire && str_nelem(orirefitgrp,MAXPTR,NULL)!=1) {
@@ -1725,7 +1724,7 @@ void do_index(const char* mdparin, const char *ndx,
   real    SAtime;
   bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
-    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;	
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -2188,16 +2187,26 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
       !(absolute_reference(ir,sys,AbsRef) || ir->nsteps <= 10)) {
     warning("You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
   }
-
-  if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
-    bCharge = FALSE;
-    aloopb = gmx_mtop_atomloop_block_init(sys);
-    while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
-      if (atom->q != 0 || atom->qB != 0) {
-	bCharge = TRUE;
-      }
+  
+  bCharge = FALSE;
+  aloopb = gmx_mtop_atomloop_block_init(sys);
+  while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
+    if (atom->q != 0 || atom->qB != 0) {
+      bCharge = TRUE;
     }
-    if (bCharge) {
+  }
+  
+  if (!bCharge) {
+    if (EEL_FULL(ir->coulombtype)) {
+      set_warning_line(mdparin,-1);
+      sprintf(err_buf,
+	      "You are using full electrostatics treatment %s for a system without charges.\n"
+	      "This costs a lot of performance for just processing zeros, consider using %s instead.\n",
+	      EELTYPE(ir->coulombtype),EELTYPE(eelCUT));
+      warning(err_buf);
+    }
+  } else {
+    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
       set_warning_line(mdparin,-1);
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"

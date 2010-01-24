@@ -49,24 +49,25 @@ extern "C" {
  * Currently the random seeds for SD and BD are missing.
  */
 
-/* for now, define the default number of NH chains here -- can be adjusted in the mdp*/
+/* for now, define the length of the NH chains here */
 #define NHCHAINLENGTH 5
 
 /* These enums are used in flags as (1<<est...).
  * The order of these enums should not be changed,
  * since that affects the checkpoint (.cpt) file format.
  */
-  enum { estLAMBDA, estFEPSTATE,
+  enum { estLAMBDA,
 	 estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
 	 estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
 	 estDISRE_INITF, estDISRE_RM3TAV,
 	 estORIRE_INITF, estORIRE_DTAV,
-	 estVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI,
+	 estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
+	 estFEPSTATE, 
 	 estNR };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estVIR_PREV && (e) <= estNHPRES_VXI)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estFEPSTATE)))
 
-/* The names of the state entries, defined in src/gmxib/checkpoint.c */
+/* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
 
 typedef struct
@@ -128,11 +129,12 @@ typedef struct
   matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
-  matrix        vir_prev; /* Pressure of the previous step for pcoupl   */
+  matrix        svir_prev; /* Shake virial for previous step for pcoupl */
+  matrix        fvir_prev; /* Force virial of the previous step for pcoupl  */
   double        *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
-  double        *nhpres_xi;  /* for Nose-Hoover t-coupling for barostat */
-  double        *nhpres_vxi; /* for Nose-Hoover t-coupling for barostat */
+  double        *nhpres_xi;  /* for Nose-Hoover pcoupl for barostat     */
+  double        *nhpres_vxi; /* for Nose-Hoover pcoupl for barostat     */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
   real          veta; /* trotter based isotropic P-coupling             */
   real          vol0; /* initial volume,required for computing NPT conserverd quantity */

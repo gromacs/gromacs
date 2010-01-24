@@ -609,9 +609,13 @@ static void comp_state(t_state *st1, t_state *st2,
   cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,FALSE,ftol,abstol);
   fprintf(stdout,"comparing boxv\n");
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,FALSE,ftol,abstol);
-  if (st1->flags & (1<<estVIR_PREV)) {
-    fprintf(stdout,"comparing vir_pres\n");
-    cmp_rvecs(stdout,"vir_prev",DIM,st1->vir_prev,st2->vir_prev,FALSE,ftol,abstol);
+  if (st1->flags & (1<<estSVIR_PREV)) {
+    fprintf(stdout,"comparing shake vir_prev\n");
+    cmp_rvecs(stdout,"svir_prev",DIM,st1->svir_prev,st2->svir_prev,FALSE,ftol,abstol);
+  }
+  if (st1->flags & (1<<estFVIR_PREV)) {
+    fprintf(stdout,"comparing force vir_prev\n");
+    cmp_rvecs(stdout,"fvir_prev",DIM,st1->fvir_prev,st2->fvir_prev,FALSE,ftol,abstol);
   }
   if (st1->flags & (1<<estPRES_PREV)) {
     fprintf(stdout,"comparing prev_pres\n");
@@ -638,6 +642,7 @@ static void comp_state(t_state *st1, t_state *st2,
       }
     }
   }
+
   cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
   if (st1->natoms == st2->natoms) {
     if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX))) {

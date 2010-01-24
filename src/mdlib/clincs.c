@@ -184,7 +184,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
 
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
                       struct gmx_lincsdata *lincsd,real *invmass,
-                      int econq,real *dvdl,
+                      int econq,real *dvdlambda,
                       bool bCalcVir,tensor rmdf)
 {
     int     b,i,j,k,n;
@@ -218,7 +218,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
     
     if (econq != econqForce)
     {
-        dvdl = NULL;
+        dvdlambda = NULL;
     }
     
     /* Compute normalized i-j vectors */
@@ -285,10 +285,10 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
                 fp[j][0] += tmp0*im2;
                 fp[j][1] += tmp1*im2;
                 fp[j][2] += tmp2*im2;
-                if (dvdl)
+                if (dvdlambda)
                 {
                     /* This is only correct with forces and invmass=1 */
-                    *dvdl -= mvb*lincsd->ddist[b];
+                    *dvdlambda -= mvb*lincsd->ddist[b];
                 }
             }
         } /* 16 ncons flops */
@@ -309,9 +309,9 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
             fp[j][0] += tmp0;
             fp[j][1] += tmp1;
             fp[j][2] += tmp2;
-            if (dvdl)
+            if (dvdlambda)
             {
-                *dvdl -= mvb*lincsd->ddist[b];
+                *dvdlambda -= mvb*lincsd->ddist[b];
             }
         }
         /* 10 ncons flops */
@@ -1144,7 +1144,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
                      struct gmx_lincsdata *lincsd,t_mdatoms *md,
                      t_commrec *cr, 
                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-                     real lambda,real *dvdl,
+                     real lambda,real *dvdlambda,
                      real invdt,rvec *v,
                      bool bCalcVir,tensor rmdr,
                      int econq,
@@ -1259,14 +1259,14 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
         
         if (ir->efep != efepNO)
         {
-            real dt_2,dvdl_term=0;
+            real dt_2,dvdl=0;
             
             dt_2 = 1.0/(ir->delta_t*ir->delta_t);
             for(i=0; (i<lincsd->nc); i++)
             {
-                dvdl_term += lincsd->lambda[i]*dt_2*lincsd->ddist[i];
+                dvdl += lincsd->lambda[i]*dt_2*lincsd->ddist[i];
             }
-            *dvdl += dvdl_term;
+            *dvdlambda += dvdl;
 		}
         
         if (bLog && fplog && lincsd->nc > 0)
@@ -1336,7 +1336,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     } 
     else
     {
-        do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq,dvdl,
+        do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq,dvdlambda,
                   bCalcVir,rmdr);
     }
   

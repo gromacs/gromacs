@@ -68,6 +68,8 @@ static const char *dens_nm[] = {"Density" };
 
 static const char *pv_nm[] = {"pV" };
 
+static const char *enthalpy_nm[] = {"Enthalpy" };
+
 static const char *boxvel_nm[] = {
   "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
   "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
@@ -124,7 +126,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
   const gmx_groups_t *groups;
   char     **gnm;
   char     buf[256];
-  char     *bufi;
+  const char     *bufi;
   t_mdebin *md;
   int      i,j,ni,nj,n,nh,k,kk,ncon,nset;
   bool     bBHAM,bNoseHoover,b14;
@@ -264,6 +266,7 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
         md->ipv   = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
+        md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
     }
     if (md->bConstrVir)
     {
@@ -376,16 +379,14 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     
     md->nTC=groups->grps[egcTC].nr;
     md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */ 
-
-    if (md->epc == epcMTTK)
+    if (md->bMTTK)
     {
-        md->nTCP = 1;  /* assume only one possible coupling system for barostat */
+        md->nTCP = 1;  /* assume only one possible coupling system for barostat for now */
     } 
     else 
     {
         md->nTCP = 0;
     }
-
     if (md->etc == etcNOSEHOOVER) 
     {
         if (md->bNHC_trotter) 
@@ -398,11 +399,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         }
         if (md->epc == epcMTTK)
         {
-            md->mdep_n = 2*md->nNHC*md->nTCP;
+            md->mdeb_n = 2*md->nNHC*md->nTCP;
         }
     } else { 
         md->mde_n = md->nTC;
-        md->mdep_n = 0;
+        md->mdeb_n = 0;
     }
 
     snew(md->tmp_r,md->mde_n);
@@ -440,19 +441,22 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
                     }
                 }
                 md->itc=get_ebin_space(md->ebin,md->mde_n,(const char **)grpnms,unit_invtime);
-                
-                for(i=0; (i<md->nTCP); i++) 
+
+                if (md->bMTTK) 
                 {
-                    bufi = baro_nm[i];  /* All barostat DOF's together for now. */
-                    for(j=0; (j<md->nNHC); j++) 
+                    for(i=0; (i<md->nTCP); i++) 
                     {
-                        sprintf(buf,"Xi-%d-%s",j,bufi);
-                        grpnms[2*(i*md->nNHC+j)]=strdup(buf);
-                        sprintf(buf,"Xi-%d-%s",j,bufi);
-                        grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                        bufi = baro_nm[0];  /* All barostat DOF's together for now. */
+                        for(j=0; (j<md->nNHC); j++) 
+                        {
+                            sprintf(buf,"Xi-%d-%s",j,bufi);
+                            grpnms[2*(i*md->nNHC+j)]=strdup(buf);
+                            sprintf(buf,"vXi-%d-%s",j,bufi);
+                            grpnms[2*(i*md->nNHC+j)+1]=strdup(buf);
+                        }
                     }
+                    md->itcb=get_ebin_space(md->ebin,md->mdeb_n,(const char **)grpnms,unit_invtime);
                 }
-                md->itc=get_ebin_space(md->ebin,md->mdep_n,(const char **)grpnms,unit_invtime);
             } 
             else
             {
@@ -635,7 +639,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
 {
     int    i,j,k,kk,m,n,gid;
     real   crmsd[2],tmp6[6];
-    real   bs[NTRICLBOXS],vol,dens,pv;
+    real   bs[NTRICLBOXS],vol,dens,pv,enthalpy;
     real   eee[egNR];
     real   ecopy[F_NRE];
     real   tmp;
@@ -697,6 +701,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
         add_ebin(md->ebin,md->ivol ,1    ,&vol ,bSum);
         add_ebin(md->ebin,md->idens,1    ,&dens,bSum);
         add_ebin(md->ebin,md->ipv  ,1    ,&pv  ,bSum);
+        enthalpy = pv + enerd->term[F_ETOT];
+        add_ebin(md->ebin,md->ienthalpy  ,1    ,&enthalpy  ,bSum);
     }
     if (md->bConstrVir)
     {
@@ -765,7 +771,6 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
             {
                 if (md->bNHC_trotter)
                 {
-                    
                     for(i=0; (i<md->nTC); i++) 
                     {
                         for (j=0;j<md->nNHC;j++) 
@@ -787,9 +792,9 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dhdl,
                                 md->tmp_r[2*k+1] = state->nhpres_vxi[k];
                             }
                         }
-                        add_ebin(md->ebin,md->itc,md->mdep_n,md->tmp_r,bSum);      
+                        add_ebin(md->ebin,md->itcb,md->mdeb_n,md->tmp_r,bSum);      
                     }
-                }
+                } 
                 else 
                 {
                     for(i=0; (i<md->nTC); i++)

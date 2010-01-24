@@ -71,13 +71,13 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 
 const char *est_names[estNR]=
 {
-    "FE-lambda","FE-fep-state",
+    "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "thermostat-integral",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "vir_prev", "nosehoover-vxi", "v_eta", "vol0"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev","fep_state"
 };
 
 enum { eeksEKIN_N, eeksEKINH, eeksDEKINDL, eeksMVCOS, eeksEKINF, eeksEKINO, eeksEKINSCALEF, eeksEKINSCALEH, eeksVSCALE, eeksEKINTOTAL, eeksNR };
@@ -108,7 +108,7 @@ gmx_wintruncate(const char *filename, __int64 size)
     FILE *fp;
     int   rc;
     
-    fp=fopen(filename,"r+");
+    fp=fopen(filename,"rb+");
     
     if(fp==NULL)
     {
@@ -659,11 +659,11 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
     if (*file_version >= 10) 
     {
-        do_cpt_int_err(xd,"#T Nose-Hoover chains",nhchainlength  ,list);
+        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength  ,list);
     }
     if (*file_version >= 11)
     {
-        do_cpt_int_err(xd,"#T Nose-Hoover chains for barostat ",nnhpres,list);
+        do_cpt_int_err(xd,"#Nose-Hoover T-chains for barostat ",nnhpres,list);
     }
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
 	if (*file_version >= 3)
@@ -762,25 +762,26 @@ static int do_cpt_state(XDR *xd,bool bRead,
         {
             switch (i)
             {
-            case estLAMBDA:  ret = do_cpte_reals (xd,0,i,sflags,efptNR,&(state->lambda),list); break;
+            case estLAMBDA:  ret = do_cpte_reals(xd,0,i,sflags,efptNR,&(state->lambda),list); break;
             case estFEPSTATE: ret = do_cpte_int (xd,0,i,sflags,&state->fep_state,list); break;
             case estBOX:     ret = do_cpte_matrix(xd,0,i,sflags,state->box,list); break;
             case estBOX_REL: ret = do_cpte_matrix(xd,0,i,sflags,state->box_rel,list); break;
             case estBOXV:    ret = do_cpte_matrix(xd,0,i,sflags,state->boxv,list); break;
             case estPRES_PREV: ret = do_cpte_matrix(xd,0,i,sflags,state->pres_prev,list); break;
-            case estVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->vir_prev,list); break;
+            case estSVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->svir_prev,list); break;
+            case estFVIR_PREV:  ret = do_cpte_matrix(xd,0,i,sflags,state->fvir_prev,list); break;
             case estNH_XI:   ret = do_cpte_doubles(xd,0,i,sflags,nnht,&state->nosehoover_xi,list); break;
             case estNH_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,nnht,&state->nosehoover_vxi,list); break;
             case estNHPRES_XI:   ret = do_cpte_doubles(xd,0,i,sflags,nnhtp,&state->nhpres_xi,list); break;
             case estNHPRES_VXI:  ret = do_cpte_doubles(xd,0,i,sflags,nnhtp,&state->nhpres_vxi,list); break;
             case estTC_INT:  ret = do_cpte_doubles(xd,0,i,sflags,state->ngtc,&state->therm_integral,list); break;
-            case estVETA:    ret = do_cpte_real  (xd,0,i,sflags,&state->veta,list); break;
+            case estVETA:    ret = do_cpte_real(xd,0,i,sflags,&state->veta,list); break;
             case estVOL0:    ret = do_cpte_real(xd,0,i,sflags,&state->vol0,list); break;
-            case estX:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->x,list); break;
-            case estV:       ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->v,list); break;
-            case estSDX:     ret = do_cpte_rvecs (xd,0,i,sflags,state->natoms,&state->sd_X,list); break;
-            case estLD_RNG:  ret = do_cpte_ints  (xd,0,i,sflags,state->nrng,rng_p,list); break;
-            case estLD_RNGI: ret = do_cpte_ints (xd,0,i,sflags,state->nrngi,rngi_p,list); break;
+            case estX:       ret = do_cpte_rvecs(xd,0,i,sflags,state->natoms,&state->x,list); break;
+            case estV:       ret = do_cpte_rvecs(xd,0,i,sflags,state->natoms,&state->v,list); break;
+            case estSDX:     ret = do_cpte_rvecs(xd,0,i,sflags,state->natoms,&state->sd_X,list); break;
+            case estLD_RNG:  ret = do_cpte_ints(xd,0,i,sflags,state->nrng,rng_p,list); break;
+            case estLD_RNGI: ret = do_cpte_ints(xd,0,i,sflags,state->nrngi,rngi_p,list); break;
             case estDISRE_INITF:  ret = do_cpte_real (xd,0,i,sflags,&state->hist.disre_initf,list); break;
             case estDISRE_RM3TAV: ret = do_cpte_reals(xd,0,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
             case estORIRE_INITF:  ret = do_cpte_real (xd,0,i,sflags,&state->hist.orire_initf,list); break;

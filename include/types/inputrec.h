@@ -165,8 +165,8 @@ typedef struct {
 
 typedef struct {
   int  eI;              /* Integration method 				*/
-  gmx_large_int_t nsteps;	/* number of steps to be taken		*/
-  int  simulation_part; /* Used in checkpointing to separate chunks     */
+  gmx_large_int_t nsteps;	/* number of steps to be taken			*/
+  int  simulation_part; /* Used in checkpointing to separate chunks */
   gmx_large_int_t init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  nstcalcenergy;	/* fequency of energy calc. and T/P coupl. upd.	*/
   int  ns_type;		/* which ns method should we use?               */
@@ -225,7 +225,7 @@ typedef struct {
   real gb_obc_gamma;    /* 3rd scaling factor for Bashford-Case GB      */
   real gb_dielectric_offset; /* Dielectric offset for Still/HCT/OBC     */
   int  sa_algorithm;    /* Algorithm for SA part of GBSA                */
-  real sa_surface_tension; /* Energy factor for SA part of GBSA         */
+  real sa_surface_tension; /* Energy factor for SA part of GBSA */
   int  vdwtype;         /* Type of Van der Waals treatment              */
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
   real rvdw;		    /* Van der Waals cutoff (nm)	        */
@@ -237,17 +237,17 @@ typedef struct {
   t_lambda *fepvals;    /* Data for the FEP state                       */
   int  nstdhdl;         /* The frequency for calculating dhdl           */
   int  eDisre;          /* Type of distance restraining                 */
-  real dr_fc;	        /* force constant for ta_disre			*/
+  real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
-  real dr_tau;	        /* time constant for memory function in disres 	*/
-  real orires_fc;       /* force constant for orientational restraints  */
-  real orires_tau;      /* time constant for memory function in orires 	*/
+  real dr_tau;		    /* time constant for memory function in disres 	*/
+  real orires_fc;	    /* force constant for orientational restraints  */
+  real orires_tau;	    /* time constant for memory function in orires 	*/
   int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
   real dihre_fc;        /* force constant for dihedral restraints	*/
-  real em_stepsize;     /* The stepsize for updating			*/
-  real em_tol;	        /* The tolerance				*/
+  real em_stepsize;	    /* The stepsize for updating			*/
+  real em_tol;		    /* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */
                         /* steepest descent in relax_shells             */
   real fc_stepsize;     /* Stepsize for directional minimization        */

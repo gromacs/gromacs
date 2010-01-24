@@ -520,6 +520,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fepvals, bool bMDPformat)
     PI("sc_power",fepvals->sc_power);
     PR("sc_sigma",fepvals->sc_sigma);
 };
+
 static void pr_pull(FILE *fp,int indent,t_pull *pull)
 {
   int g;
@@ -540,7 +541,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
                  bool bMDPformat)
 {
   const char *infbuf="inf";
-  int  i,j;
+  int  i;
   
   if (available(fp,ir,indent,title)) {
     if (!bMDPformat)
@@ -627,9 +628,9 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
 	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PS("free_energy",EFEPTYPE(ir->efep));
+    PI("nstdhdl", ir->nstdhdl);
     if (ir->efep != efepNO) {
         pr_fepvals(fp,indent,ir->fepvals,bMDPformat);
-        PI("nstdhdl", ir->nstdhdl);
     }
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));
@@ -797,14 +798,14 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     break;
   case F_LJC14_Q:
     fprintf(fp,"fqq=%15.8e, qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
-            iparams->ljc14.fqq,
-            iparams->ljc14.qi,iparams->ljc14.qj,
-            iparams->ljc14.c6,iparams->ljc14.c12);
+	    iparams->ljc14.fqq,
+	    iparams->ljc14.qi,iparams->ljc14.qj,
+	    iparams->ljc14.c6,iparams->ljc14.c12);
     break;
   case F_LJC_PAIRS_NB:
     fprintf(fp,"qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
-            iparams->ljcnb.qi,iparams->ljcnb.qj,
-            iparams->ljcnb.c6,iparams->ljcnb.c12);
+	    iparams->ljcnb.qi,iparams->ljcnb.qj,
+	    iparams->ljcnb.c6,iparams->ljcnb.c12);
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -818,19 +819,19 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"label=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
 	    iparams->disres.label,iparams->disres.type,
 	    iparams->disres.low,iparams->disres.up1,
-        iparams->disres.up2,iparams->disres.kfac);
+	    iparams->disres.up2,iparams->disres.kfac);
     break;
   case F_ORIRES:
-     fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
-              iparams->orires.ex,iparams->orires.label,iparams->orires.power,
-              iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
+    fprintf(fp,"ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
+	    iparams->orires.ex,iparams->orires.label,iparams->orires.power,
+	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_DIHRES:
       fprintf(fp,"label=%d, power=%4d, phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, kfacB=%15.8e\n",
               iparams->dihres.label,iparams->dihres.power,
               iparams->dihres.phiA,iparams->dihres.dphiA,iparams->dihres.kfacA,
               iparams->dihres.phiB,iparams->dihres.dphiB,iparams->dihres.kfacB);
-      break;
+    break;
   case F_POSRES:
     fprintf(fp,"pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)\n",
 	    iparams->posres.pos0A[XX],iparams->posres.pos0A[YY],
@@ -949,8 +950,8 @@ void pr_ilist(FILE *fp,int indent,const char *title,
     }
 }
 
-void pr_cmap(FILE *fp, int indent, const char *title, 
-             gmx_cmap_t *cmap_grid, bool bShowNumbers)
+static void pr_cmap(FILE *fp, int indent, const char *title,
+                    gmx_cmap_t *cmap_grid, bool bShowNumbers)
 {
     int i,j,nelem;
     real dx,idx;
@@ -1441,7 +1442,7 @@ void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
       pr_indent(fp,indent);
       fprintf(fp,"natoms = %d\n",sh->natoms);
       pr_indent(fp,indent);
-      fprintf(fp,"lambda_state = %d\n",sh->lambda);
+      fprintf(fp,"lambda = %e\n",sh->lambda);
     }
 }
 

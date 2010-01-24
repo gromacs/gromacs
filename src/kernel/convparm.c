@@ -95,7 +95,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
   real tmp;
 
   /* Set to zero */
-  for(j=0; (j<MAXFORCEPARAM); j++)
+  for(j=0; (j<MAXFORCEPARAM); j++) 
     {
       newparam->generic.buf[j]=0.0;
     }
@@ -350,7 +350,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
-		ftype,__FILE__,__LINE__);
+	      ftype,__FILE__,__LINE__);
   }
 }
 

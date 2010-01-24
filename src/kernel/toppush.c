@@ -1572,7 +1572,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     bFoundA = default_nb_params(F_LJ14,bondtype,at,&param,3,FALSE,bGenPairs);
     bFoundB = TRUE;
   } else if (ftype == F_LJC_PAIRS_NB) {
-    /* Defaults are not supported here - MRS -- does this need to be revised for free energy calcs?*/
+    /* Defaults are not supported here */
     bFoundA = FALSE;
     bFoundB = TRUE;
   } else {

@@ -169,12 +169,10 @@ void calc_pot(FILE *logf,t_commrec *cr,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
   static t_nrnb      nrnb;
-  real        *lam,*dum;
+  real        lam[efptNR],dum[efptNR];
   rvec        box_size;
   int         i,m;
 
-  snew(lam,efptNR);
-  snew(dum,efptNR);
   /* Calc the force */
   fprintf(stderr,"Doing single force calculation...\n");
 
@@ -188,9 +186,8 @@ void calc_pot(FILE *logf,t_commrec *cr,
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
-  
   ns(logf,fr,x,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,lam,dum,&enerd->grpp,TRUE,FALSE,FALSE,NULL);
+     &nrnb,&lam[0],&dum[0],&enerd->grpp,TRUE,FALSE,FALSE,NULL);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
@@ -205,8 +202,6 @@ void calc_pot(FILE *logf,t_commrec *cr,
   low_calc_pot(logf,eNL_VDW,fr,x,mdatoms,pot);
   /* electrostatics from any atom to atoms with LJ */
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
-  sfree(lam);
-  sfree(dum);
 }
 
 FILE *init_calcpot(const char *log,const char *tpx,const char *table,

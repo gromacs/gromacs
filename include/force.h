@@ -91,8 +91,7 @@ extern void make_wall_tables(FILE *fplog,const output_env_t oenv,
 			     t_forcerec *fr);
 
 extern void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-		     rvec x[],rvec f[],real lambda, real *dvdl, real Vlj[],t_nrnb *nrnb);
-
+		     rvec x[],rvec f[],real lambda, real *dvdlambda, real Vlj[],t_nrnb *nrnb);
 
 
 extern t_forcerec *mk_forcerec(void);
@@ -260,7 +259,7 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      t_atomtypes  *atype,
 			      bool         bBornRadii,
 			      matrix       box,
-			      t_lambda      *fepvals,
+			      t_lambda     *fepvals,
 			      real         *lambda,
 			      t_graph      *graph,
 			      t_blocka     *excl,

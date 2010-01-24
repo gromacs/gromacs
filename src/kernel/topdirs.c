@@ -50,7 +50,7 @@ int ifunc_index(directive d,int type)
   switch (d) {
   case d_bondtypes:
   case d_bonds:
-    switch (type) {
+    switch(type) {
     case 1: 
       return F_BONDS;
     case 2: 

@@ -74,8 +74,8 @@ typedef struct {
   bool bCoupleIntra;
 } t_gromppopts;
 
-extern void init_ir(t_inputrec *ir);
-extern void init_opts(t_gromppopts *opts);
+
+extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
 extern void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,

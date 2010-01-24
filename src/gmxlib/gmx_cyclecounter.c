@@ -65,7 +65,6 @@ gmx_cycles_calibrate(double sampletime)
   
   /*  generic implementation with gettimeofday() */
     struct timeval t1,t2;
-    struct timezone tz = { 0,0 };
     gmx_cycles_t c1,c2;
     double timediff,cyclediff;
     double d=0.1; /* Dummy variable so we don't optimize away delay loop */

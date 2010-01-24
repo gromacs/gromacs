@@ -187,6 +187,7 @@ void gmx_tx_rx_real(const t_commrec *cr,
 #else
 #define mpi_type MPI_FLOAT
 #endif
+
   if (send_bufsize > 0 && recv_bufsize > 0) {
     MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
 		 recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,

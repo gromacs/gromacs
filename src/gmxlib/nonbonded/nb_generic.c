@@ -91,9 +91,9 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 	eps2                = 0.0;
 	
 	/* 3 VdW parameters for buckingham, otherwise 2 */
-	nvdwparam           = (nlist->ivdw==enbvdwBHAM) ? 3 : 2;
-	table_nelements     = (icoul==enbcoulTAB) ? 4 : 0;
-	table_nelements    += (ivdw==enbvdwTAB) ? 8 : 0;
+	nvdwparam           = (nlist->ivdw==2) ? 3 : 2;
+	table_nelements     = (icoul==3) ? 4 : 0;
+	table_nelements    += (ivdw==3) ? 8 : 0;
 	  
     charge              = mdatoms->chargeA;
 	type                = mdatoms->typeA;
@@ -138,7 +138,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
             rinvsq           = rinv*rinv;  
 			fscal            = 0;
 			
-			if(icoul==enbcoulTAB || ivdw==enbvdwTAB)
+			if(icoul==3 || ivdw==3)
 			{
 				r                = rsq*rinv;
 				rt               = r*tabscale;     
@@ -148,27 +148,27 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 				nnn              = table_nelements*n0;           				
 			}
 			
-			/* Coulomb interaction. icoul==enbcoulNONE means no interaction */
-			if(icoul!=enbcoulNONE)
+			/* Coulomb interaction. icoul==0 means no interaction */
+			if(icoul>0)
 			{
 				qq               = iq*charge[jnr]; 
 
 				switch(icoul)
 				{
-					case enbcoulOOR:
+					case 1:
 						/* Vanilla cutoff coulomb */
 						vcoul            = qq*rinv;      
 						fscal            = vcoul*rinvsq; 
 						break;
 
-					case enbcoulRF:
+					case 2:
 						/* Reaction-field */
 						krsq             = fr->k_rf*rsq;      
 						vcoul            = qq*(rinv+krsq-fr->c_rf);
 						fscal            = qq*(rinv-2.0*krsq)*rinvsq;
 						break;
 
-					case enbcoulTAB:
+					case 3:
 						/* Tabulated coulomb */
 						Y                = VFtab[nnn];     
 						F                = VFtab[nnn+1];   
@@ -182,7 +182,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						fscal            = -qq*FF*tabscale*rinv;
 						break;
 					
-					case enbcoulGB:
+					case 4:
 						/* GB */
 						gmx_fatal(FARGS,"Death & horror! GB generic interaction not implemented.\n");
 						break;
@@ -195,14 +195,14 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 			} /* End of coulomb interactions */
 			
 			
-			/* VdW interaction. ivdw==enbvdwNONE means no interaction */
-			if(ivdw!=0)
+			/* VdW interaction. ivdw==0 means no interaction */
+			if(ivdw>0)
 			{
 				tj               = nti+nvdwparam*type[jnr];
 				
 				switch(ivdw)
 				{
-					case enbvdwLJ:
+					case 1:
 						/* Vanilla Lennard-Jones cutoff */
 						c6               = vdwparam[tj];   
 						c12              = vdwparam[tj+1]; 
@@ -214,7 +214,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
 						break;
 						
-					case enbvdwBHAM:
+					case 2:
 						/* Buckingham */
 						c6               = vdwparam[tj];   
 						cexp1            = vdwparam[tj+1]; 
@@ -228,7 +228,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
 						break;
 						
-					case enbvdwTAB:
+					case 3:
 						/* Tabulated VdW */
 						c6               = vdwparam[tj];   
 						c12              = vdwparam[tj+1]; 

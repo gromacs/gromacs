@@ -97,7 +97,7 @@ static void wall_error(int a,rvec *x,real r)
 }
 
 void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-	      rvec x[],rvec f[],real lambda,real *dvdl, real Vlj[],t_nrnb *nrnb)
+	      rvec x[],rvec f[],real lambda,real *dvdlambda,real Vlj[],t_nrnb *nrnb)
 {
   int  nwall,w,lam,i;
   int  ntw[2],at,ntype,ngid,ggid,*egp_flags,*type;
@@ -130,6 +130,7 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
   wall_z[1] = box[ZZ][ZZ];
 
   Vtot = 0;
+  dvdlambda = 0;
   clear_dvec(xf_z);
   for(lam=0; lam<(md->nPerturbed ? 2 : 1); lam++) {
     if (md->nPerturbed) {
@@ -249,7 +250,7 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
       }
     }
     if (md->nPerturbed)
-      *dvdl += (lam==0 ? -1 : 1)*Vtot;
+      *dvdlambda += (lam==0 ? -1 : 1)*Vtot;
 
     inc_nrnb(nrnb,eNR_WALLS,md->homenr);
   }
@@ -257,4 +258,6 @@ void do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
   for(i=0; i<DIM; i++) {
     fr->vir_wall_z[i] = -0.5*xf_z[i];
   }
+  
+  return;
 }

@@ -95,6 +95,12 @@
 
 #include "qmmm.h"
 
+#if 0
+typedef struct gmx_timeprint {
+    
+} t_gmx_timeprint;
+#endif
+
 
 double
 gmx_gettime()
@@ -398,10 +404,11 @@ void do_force(FILE *fplog,t_commrec *cr,
     bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS;
     bool   bDoLongRange,bDoForces,bSepLRF;
     matrix boxs;
-    real   e,v,dvdl[efptNR];
+    real   e,v,dvdlambda[efptNR];
     real   dvdl_dum,lambda_dum;
     t_pbc  pbc;
     float  cycles_ppdpme,cycles_pme,cycles_seppme,cycles_force;
+  
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
 
@@ -570,17 +577,17 @@ void do_force(FILE *fplog,t_commrec *cr,
         /* Do the actual neighbour searching and if twin range electrostatics
          * also do the calculation of long range forces and energies.
          */
-        for (i=0;i<efptNR;i++) {dvdl[i] = 0;}
+        for (i=0;i<efptNR;i++) {dvdlambda[i] = 0;}
         ns(fplog,fr,x,box,
            groups,&(inputrec->opts),top,mdatoms,
-           cr,nrnb,lambda,dvdl,&enerd->grpp,bFillGrid,
+           cr,nrnb,lambda,dvdlambda,&enerd->grpp,bFillGrid,
            bDoLongRange,bDoForces,bSepLRF ? fr->f_twin : f);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdl);
+            fprintf(fplog,sepdvdlformat,"LR non-bonded",0.0,dvdlambda);
         }
-        enerd->dvdl_lin[efptVDW] += dvdl[efptVDW];
-        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
+        enerd->dvdl_lin[efptVDW] += dvdlambda[efptVDW];
+        enerd->dvdl_lin[efptCOUL] += dvdlambda[efptCOUL];
         
         wallcycle_stop(wcycle,ewcNS);
     }
@@ -673,33 +680,29 @@ void do_force(FILE *fplog,t_commrec *cr,
         v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                    top->idef.iparams_posres,
                    (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda[efptRESTRAINT],&(dvdl[efptRESTRAINT]),
+                   inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda[efptRESTRAINT],&(dvdlambda[efptRESTRAINT]),
                    fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
         if (bSepDVDL)
         {
             fprintf(fplog,sepdvdlformat,
-                    interaction_function[F_POSRES].longname,v,dvdl);
+                    interaction_function[F_POSRES].longname,v,dvdlambda);
         }
         enerd->term[F_POSRES] += v;
-        enerd->dvdl_nonlin[efptRESTRAINT] += dvdl[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
+        /* This linear lambda dependence assumption is only correct
+         * when only k depends on lambda,
+         * not when the reference position depends on lambda.
+         * grompp checks for this.  (verify this is still the case?)
+         */
+        enerd->dvdl_nonlin[efptRESTRAINT] += dvdlambda[efptRESTRAINT]; /* if just the force constant changes, this is linear, 
                                                                      but we can't be sure w/o additional checking that is
                                                                      hard to do at this level of code. Otherwise, 
                                                                      the dvdl is not differentiable */
-        inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
-
+         inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
         if ((inputrec->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
         {
             for(i=0; i<enerd->n_lambda; i++)
             {
-                if (i==0) 
-                {
-                    lambda_dum = lambda[efptRESTRAINT];
-                }
-                else
-                {
-                    lambda_dum = inputrec->fepvals->all_lambda[efptRESTRAINT][i-1];
-                }
-                
+                lambda_dum = (i==0 ? lambda[efptRESTRAINT] : inputrec->fepvals->all_lambda[efptRESTRAINT][i-1]);
                 v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
                            top->idef.iparams_posres,
                            (const rvec*)x,NULL,NULL,
@@ -707,8 +710,9 @@ void do_force(FILE *fplog,t_commrec *cr,
                            fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
                 enerd->enerpart_lambda[i] += v;
             }
-        }
-    }
+        } 
+
+   }
 
     /* Compute the bonded and non-bonded energies and optionally forces */    
     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
@@ -819,15 +823,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          * which is why we call pull_potential after calc_virial.
          */
         set_pbc(&pbc,inputrec->ePBC,box);
-        dvdl[efptRESTRAINT] = 0; 
+        dvdlambda[efptRESTRAINT] = 0; 
         enerd->term[F_COM_PULL] =
             pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-                           cr,t,lambda[efptRESTRAINT],x,f,vir_force,&(dvdl[efptRESTRAINT]));
+                           cr,t,lambda[efptRESTRAINT],x,f,vir_force,&(dvdlambda[efptRESTRAINT]));
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl[efptRESTRAINT]);
+            fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdlambda[efptRESTRAINT]);
         }
-        enerd->dvdl_lin[efptRESTRAINT] += dvdl[efptRESTRAINT];
+        enerd->dvdl_lin[efptRESTRAINT] += dvdlambda[efptRESTRAINT];
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
@@ -839,15 +843,15 @@ void do_force(FILE *fplog,t_commrec *cr,
          * forces, virial and energy from the PME nodes here.
          */    
         wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-        dvdl[efptCOUL] = 0;
-        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&(dvdl[efptCOUL]),
+        dvdlambda[efptCOUL] = 0;
+        gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdlambda[efptCOUL],
                           &cycles_seppme);
         if (bSepDVDL)
         {
-            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl[efptCOUL]);
+            fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdlambda[efptCOUL]);
         }
         enerd->term[F_COUL_RECIP] += e;
-        enerd->dvdl_lin[efptCOUL] += dvdl[efptCOUL];
+        enerd->dvdl_lin[efptCOUL] += dvdlambda[efptCOUL];
         if (wcycle)
         {
             dd_cycles_add(cr->dd,cycles_seppme,ddCyclPME);
@@ -912,7 +916,6 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     real   dt=ir->delta_t;
     real   dvdl_dum;
     rvec   *savex;
-    char   buf[22];
     
     snew(savex,state->natoms);
 
@@ -1154,7 +1157,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
                    real *prescorr, real *enercorr, real *dvdlcorr)
 {
     bool bCorrAll,bCorrPres;
-    real dvdl,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
+    real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
     int  m;
     
     *prescorr = 0;
@@ -1194,17 +1197,12 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             avctwelve = (1 - lambda)*fr->avctwelve[0] + lambda*fr->avctwelve[1];
         }
         
-        *prescorr = 0;
-        *enercorr = 0;
-        *dvdlcorr = 0;
-        
         enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
         *enercorr += avcsix*enerdiff;
-        dvdl = 0.0;
-        
+        dvdlambda = 0.0;
         if (ir->efep != efepNO) 
         {
-            dvdl += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
+            dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
         }
         if (bCorrAll) 
         {
@@ -1212,7 +1210,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             *enercorr += avctwelve*enerdiff;
             if (fr->efep != efepNO) 
             {
-                dvdl += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
+                dvdlambda += (fr->avctwelve[1] - fr->avctwelve[0])*enerdiff;
             }
         }
         
@@ -1234,14 +1232,13 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         }
         
         /* Can't currently control when it prints, for now, just print when degugging */
-        
         if (debug)
         {
             if (bCorrAll) {
                 fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
                         avcsix,avctwelve);
             }
-            if (bCorrPres)
+            if (bCorrPres) 
             {
                 fprintf(debug,
                         "Long Range LJ corr.: Epot %10g, Pres: %10g, Vir: %10g\n",
@@ -1254,12 +1251,13 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         }
         
         if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+        {
             fprintf(fplog,sepdvdlformat,"Dispersion correction",
-                    *enercorr,dvdl);
-        
+                    *enercorr,dvdlambda);
+        }
         if (fr->efep != efepNO) 
         {
-            *dvdlcorr += dvdl;
+            *dvdlcorr += dvdlambda;
         }
     }
 }
@@ -1428,8 +1426,7 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb,gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile,const t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
-             const char **fn_cpt,
+             int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,const char **fn_cpt,
              FILE **fp_dhdl,FILE **fp_field,
              t_mdebin **mdebin,
              tensor force_vir,tensor shake_vir,rvec mu_tot,
@@ -1443,6 +1440,7 @@ void init_md(FILE *fplog,
 	
     /* Initial values */
     *t = *t0       = ir->init_t;
+
     for (i=0;i<efptNR;i++) 
     {
         if (ir->efep != efepNO)

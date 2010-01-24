@@ -141,7 +141,6 @@ enum {
 
 #define IS_RESTRAINT_TYPE(ifunc) (((ifunc==F_POSRES) || (ifunc==F_DISRES) || (ifunc==F_RESTRBONDS) || (ifunc==F_DISRESVIOL) || (ifunc==F_ORIRES) || (ifunc==F_ORIRESDEV) || (ifunc==F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc==F_DIHRES) || (ifunc==F_DIHRESVIOL)))
 
-  
 typedef union
 {
   /* Some parameters have A and B values for free energy calculations.
@@ -165,8 +164,8 @@ typedef union
   struct {real a,alpha1,alpha2,rfac;                       } thole;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
-  struct {real fqq,qi,qj,c6,c12;                           } ljc14;
-  struct {real qi,qj,c6,c12;	                           } ljcnb;
+  struct {real fqq,qi,qj,c6,c12;	                   } ljc14;
+  struct {real qi,qj,c6,c12;		                   } ljcnb;
   /* Proper dihedrals can not have different multiplicity when
    * doing free energy calculations, because the potential would not
    * be periodic anymore.

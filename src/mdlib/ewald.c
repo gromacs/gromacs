@@ -127,7 +127,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	      rvec box,
 	      t_commrec *cr,   int natoms,
 	      matrix lrvir,    real ewaldcoeff,
-	      real lambda,     real *dvdl,
+	      real lambda,     real *dvdlambda,
               ewald_tab_t et)
 {
   real factor=-1.0/(4*ewaldcoeff*ewaldcoeff);
@@ -236,7 +236,7 @@ real do_ewald(FILE *log,       bool bVerbose,
     energy = energy_AB[0];
   } else {
     energy = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
-    *dvdl += scaleRecip*(energy_AB[1] - energy_AB[0]);
+    *dvdlambda += scaleRecip*(energy_AB[1] - energy_AB[0]);
   }
 
   lrvir[XX][XX]=-0.5*scaleRecip*(lrvir[XX][XX]+energy);

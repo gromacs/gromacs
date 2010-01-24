@@ -69,6 +69,8 @@ static char *int_title(const char *title,int nodeid,char buf[], int size)
 
 static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 {
+  int nnhpres;
+
   /* The entries in the state in the tpx file might not correspond
    * with what is needed, so we correct this here.
    */
@@ -129,7 +131,8 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 	state->nnhpres = 1;
 	state->flags |= (1<<estNHPRES_XI);
 	state->flags |= (1<<estNHPRES_VXI);
-	state->flags |= (1<<estVIR_PREV);
+	state->flags |= (1<<estSVIR_PREV);
+	state->flags |= (1<<estFVIR_PREV);
 	state->flags |= (1<<estVETA);
 	state->flags |= (1<<estVOL0);
       } else {
@@ -159,7 +162,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
 {
   read_tpx_state(tpxfile,inputrec,state,NULL,mtop);
   set_state_entries(state,inputrec,1);
-  
+
   if (fplog)
     pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
 }

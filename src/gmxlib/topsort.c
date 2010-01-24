@@ -106,8 +106,8 @@ static bool ip_pert(int ftype,const t_iparams *ip)
         bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
                  (ip->dihres.dphiA != ip->dihres.dphiB) ||
                  (ip->dihres.kfacA != ip->dihres.kfacB));
-        break;
-    case F_LJ14:
+        break; 
+   case F_LJ14:
         bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
                  ip->lj14.c12A != ip->lj14.c12B);
         break;
@@ -178,17 +178,21 @@ bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 
 void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
 {
-    int ftype,nral,i,ic,ib,a;
+    int  ftype,nral,i,ic,ib,a;
+    t_iparams *iparams;
     t_ilist *ilist;
     t_iatom *iatoms;
-    t_iparams *iparams;
     bool bPert;
-    t_iatom *iabuf = NULL;
-    int  iabuf_nalloc = 0;
-   
+    t_iatom *iabuf;
+    int  iabuf_nalloc;
+
+    iabuf_nalloc = 0;
+    iabuf        = NULL;
+    
     iparams = idef->iparams;
 
-    for (ftype=0;ftype<F_NRE;ftype++) {
+    for(ftype=0; ftype<F_NRE; ftype++)
+    {
         if (interaction_function[ftype].flags & IF_BOND)
         {
             ilist = &idef->il[ftype];
@@ -224,13 +228,13 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
             }
             /* Now we now the number of non-perturbed interactions */
             ilist->nr_nonperturbed = ic;
-        
+            
             /* Copy the buffer with perturbed interactions to the ilist */
             for(a=0; a<ib; a++)
             {
                 iatoms[ic++] = iabuf[a];
             }
-            
+
             if (debug)
             {
                 fprintf(debug,"%s non-pert %d pert %d\n",
@@ -240,7 +244,8 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
             }
         }
     }
+
     sfree(iabuf);
+
     idef->ilsort = ilsortFE_SORTED;
 }
-

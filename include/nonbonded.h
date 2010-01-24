@@ -56,7 +56,7 @@ void
 do_nonbonded(t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,t_blocka *excl,
              real egnb[],real egcoul[],real egb[],rvec box_size,
-             t_nrnb *nrnb,real *lambda, real *dvdl,
+             t_nrnb *nrnb,real *lambda,real dvdlambda[],
              int nls,int eNL,int flags);
 
 /* Calculate VdW/charge pair interactions (usually 1-4 interactions).

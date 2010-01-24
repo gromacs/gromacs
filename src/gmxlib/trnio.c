@@ -243,7 +243,6 @@ void read_trn(const char *fn,int *step,real *t,real *lambda,
   close_trn(fp);
 }
 
-/* should lambda be the fep_state instead? will not be backwards compatible? MRS */
 void fwrite_trn(int fp,int step,real t,real lambda,
 		rvec *box,int natoms,rvec *x,rvec *v,rvec *f)
 {

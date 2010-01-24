@@ -297,9 +297,9 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   put_charge_groups_in_box(fp,0,cgs->nr,fr->ePBC,box,cgs,x,fr->cg_cm);
   
   /* Do the actual neighboursearching */
-  init_neighbor_list(fp,fr,md->homenr);
   snew(lambda,efptNR);
   snew(dvdl,efptNR);
+  init_neighbor_list(fp,fr,md->homenr);
   search_neighbours(fp,fr,x,box,top,
 		    &mtop->groups,cr,&nrnb,md,lambda,dvdl,NULL,
 		    TRUE,FALSE,FALSE,NULL);

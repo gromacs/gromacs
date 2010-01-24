@@ -374,7 +374,6 @@ static bool gmx_next_frame(int status,t_trxframe *fr)
     fr->step=sh.step;
     fr->bTime=TRUE;
     fr->time=sh.t;
-    /* change this? */
     fr->bLambda = TRUE;
     fr->bFepState = TRUE;
     fr->lambda = sh.lambda;

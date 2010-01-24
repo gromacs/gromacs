@@ -154,7 +154,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         case ereLAMBDA:
             if (ir->efep != efepNO)
             {
-                repl_quantity(fplog,ms,re,i,ir->fepvals->init_fep_state);
+                repl_quantity(fplog,ms,re,i,ir->fepvals->init_lambda);
             }
             break;
         default:
@@ -372,18 +372,21 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
 {
 
   /* When t_state changes, this code should be updated. */
-  int ngtcp;
-  ngtcp = (state->ngtc+1) * state->nhchainlength;
-
+  int ngtc,nnhpres;
+  ngtc = state->ngtc * state->nhchainlength;
+  nnhpres = state->nnhpres* state->nhchainlength;
   exchange_rvecs(ms,b,state->box,DIM);
   exchange_rvecs(ms,b,state->box_rel,DIM);
   exchange_rvecs(ms,b,state->boxv,DIM);
   exchange_reals(ms,b,&(state->veta),1);
   exchange_reals(ms,b,&(state->vol0),1);
-  exchange_rvecs(ms,b,state->vir_prev,DIM);
+  exchange_rvecs(ms,b,state->svir_prev,DIM);
+  exchange_rvecs(ms,b,state->fvir_prev,DIM);
   exchange_rvecs(ms,b,state->pres_prev,DIM);
-  exchange_doubles(ms,b,state->nosehoover_xi,ngtcp);
-  exchange_doubles(ms,b,state->nosehoover_vxi,ngtcp);  
+  exchange_doubles(ms,b,state->nosehoover_xi,ngtc);
+  exchange_doubles(ms,b,state->nosehoover_vxi,ngtc);  
+  exchange_doubles(ms,b,state->nhpres_xi,nnhpres);
+  exchange_doubles(ms,b,state->nhpres_vxi,nnhpres);  
   exchange_doubles(ms,b,state->therm_integral,state->ngtc);
   exchange_rvecs(ms,b,state->x,state->natoms);
   exchange_rvecs(ms,b,state->v,state->natoms);
@@ -474,8 +477,8 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
     gmx_sum_sim(re->nrepl,Vol,ms);
     break;
   case ereLAMBDA:
+      /* Not clear this is correct. */
     snew(dvdl,re->nrepl);
-    /* inprove this MRS! */
     dvdl[re->repl] = ener[F_DVDL_REMAIN] + ener[F_DVDL_COUL] + 
         ener[F_DVDL_VDW] + ener[F_DVDL_BONDED] + ener[F_DKDL] + ener[F_DVDL_RESTRAINT];
     gmx_sum_sim(re->nrepl,dvdl,ms);
@@ -505,10 +508,9 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
       case ereLAMBDA:
 	/* Here we exchange based on a linear extrapolation of dV/dlambda.
 	 * We would like to have the real energies
-	 * from foreign lambda calculations.
-     * IS THIS EVEN CORRECT AT ALL MRS?  
+	 * from foreign lambda calculations, as currently, this is not correct. 
 	 */
-     ediff = (dvdl[a] - dvdl[b])*(re->q[b] - re->q[a]);
+          ediff = (dvdl[a] - dvdl[b])*(re->q[b] - re->q[a]);
           delta = ediff/(BOLTZ*re->temp);
 	break;
       default:

@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -63,7 +64,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 70;
+static const int tpx_version = 71;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -235,80 +236,80 @@ static void do_fepvals(t_lambda *fepvals,bool bRead, int file_version)
 
   /* free energy values */
   if (file_version >= 69)
-    {
+  {
       do_int(fepvals->init_fep_state);
       do_double(fepvals->init_lambda); 
       do_double(fepvals->delta_lambda);
-    }
+  }
   else if (file_version >= 59) {
-    do_double(fepvals->init_lambda);
-    do_double(fepvals->delta_lambda);
+      do_double(fepvals->init_lambda);
+      do_double(fepvals->delta_lambda);
   } else {
-    do_real(rdum);
-    fv = rdum;
-    do_real(rdum);
-    fv = rdum;
+      do_real(rdum);
+      fv = rdum;
+      do_real(rdum);
+      fv = rdum;
   }
   if (file_version >= 69) 
-    {
+  {
       do_int(fepvals->n_lambda);
       if (bRead) 
-	{
-	  snew(fepvals->all_lambda,efptNR);
-	}
+      {
+          snew(fepvals->all_lambda,efptNR);
+      }
       for (g=0;g<efptNR;g++)
-	{
-	  if (bRead) 
-	    {
-	      snew(fepvals->all_lambda[g],fepvals->n_lambda);
-	    }
-	  ndo_double(fepvals->all_lambda[g],fepvals->n_lambda,bDum);
-	  ndo_int(fepvals->separate_dvdl,efptNR,bDum);
-	}
-    }
+      {
+          if (bRead) 
+          {
+              snew(fepvals->all_lambda[g],fepvals->n_lambda);
+          }
+          ndo_double(fepvals->all_lambda[g],fepvals->n_lambda,bDum);
+          ndo_int(fepvals->separate_dvdl,efptNR,bDum);
+      }
+  }
   else if (file_version >= 64) 
-    {
+  {
       do_int(fepvals->n_lambda);
       snew(fepvals->all_lambda,efptNR);
       if (bRead) 
-	{
-	  snew(fepvals->all_lambda[efptFEP],fepvals->n_lambda);
-	}
+      {
+          snew(fepvals->all_lambda[efptFEP],fepvals->n_lambda);
+      }
       ndo_double(fepvals->all_lambda[efptFEP],fepvals->n_lambda,bDum);
-    } 
+  } 
   else 
-    {
+  {
       fepvals->n_lambda = 0;
       fepvals->all_lambda   = NULL;
-    }
+  }
   if (file_version >= 13) 
-    {
+  {
       do_real(fepvals->sc_alpha);
-    }
+  }
   else
-    {
+  {
       fepvals->sc_alpha = 0;
-    }
+  }
   if (file_version >= 38)
-    {
+  {
       do_int(fepvals->sc_power);
-    }
+  }
   else
-    {
+  {
       fepvals->sc_power = 2;
-    }
+  }
   if (file_version >= 15)
-    {
+  {
       do_real(fepvals->sc_sigma);
-    }
+  }
   else
-    {
+  {
       fepvals->sc_sigma = 0.3;
-    }    
+  }    
   if (file_version >= 70) 
-    {
+  {
       do_int(fepvals->bScCoul);
-    }
+  }
 }
 
 static void do_pull(t_pull *pull,bool bRead, int file_version)
@@ -622,9 +623,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_real(*fudgeQQ);
     do_int(ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
-      {
-	ir->efep = efepYES;
-      }
+      ir->efep = efepYES;
 
     do_fepvals(ir->fepvals,bRead,file_version);
 
@@ -1063,7 +1062,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->dihres.phiA);
     do_real(iparams->dihres.dphiA);
     do_real(iparams->dihres.kfacA);
-    if (file_version >= 70) {
+    if (file_version >= 71) {
       do_real(iparams->dihres.phiB);
       do_real(iparams->dihres.dphiB);
       do_real(iparams->dihres.kfacB);
@@ -1974,6 +1973,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK,
   if (fver >= 70) {
     do_int(tpx->fep_state);  /*eventually replace lambda with fep state - MRS*/
   }
+
   do_real(tpx->lambda);
   do_int (tpx->bIr);
   do_int (tpx->bTop);
@@ -2021,11 +2021,12 @@ static int do_tpx(int fp,bool bRead,
 
   if (bRead) {
     state->flags  = 0;
+    /* state->lambda = tpx.lambda; */ /*remove this? */ 
     /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */ /* need to add nnhpres here? */
+      init_state(state,0,tpx.ngtc,0,0);  /* nose-hoover chains */ /* eventually, need to add nnhpres here? */
       state->natoms = tpx.natoms; 
       state->nalloc = tpx.natoms; 
       state->x = xptr;
@@ -2166,42 +2167,60 @@ static int do_tpx(int fp,bool bRead,
     }
   }
 
-  if (bRead && tpx.bIr && ir) {
-    if (state->ngtc == 0) {
-      /* Reading old version without tcoupl state data: set it */
-      init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
-    }
-    if (tpx.bTop && mtop) {
-      if (file_version < 57) {
-	if (mtop->moltype[0].ilist[F_DISRES].nr > 0) {
-	  ir->eDisre = edrSimple;
-	} else {
-	  ir->eDisre = edrNone;
-	}
-      }
-      set_disres_npair(mtop);
-      gmx_mtop_finalize(mtop);
-    }
-  }
+    if (bRead)
+    {
+        if (tpx.bIr && ir)
+        {
+            if (state->ngtc == 0)
+            {
+                /* Reading old version without tcoupl state data: set it */
+                init_gtc_state(state,ir->opts.ngtc,0,ir->opts.nhchainlength);
+            }
+            if (tpx.bTop && mtop)
+            {
+                if (file_version < 57)
+                {
+                    if (mtop->moltype[0].ilist[F_DISRES].nr > 0)
+                    {
+                        ir->eDisre = edrSimple;
+                    }
+                    else
+                    {
+                        ir->eDisre = edrNone;
+                    }
+                }
+                set_disres_npair(mtop);
+            }
+        }
 
-  if (bRead && file_version >= 57) {
-    char *env;
-    int  ienv;
-    env = getenv("GMX_NOCHARGEGROUPS");
-    if (env != NULL) {
-      sscanf(env,"%d",&ienv);
-      fprintf(stderr,"\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",ienv);
-      if (ienv > 0) {
-	fprintf(stderr,
-		"Will make single atomic charge groups in non-solvent%s\n",
-	       ienv > 1 ? " and solvent" : "");
-	gmx_mtop_make_atomic_charge_groups(mtop,ienv==1);
-      }
-      fprintf(stderr,"\n");
-    }
-  }
+        if (tpx.bTop && mtop)
+        {
+            gmx_mtop_finalize(mtop);
+        }
 
-  return ePBC;
+        if (file_version >= 57)
+        {
+            char *env;
+            int  ienv;
+            env = getenv("GMX_NOCHARGEGROUPS");
+            if (env != NULL)
+            {
+                sscanf(env,"%d",&ienv);
+                fprintf(stderr,"\nFound env.var. GMX_NOCHARGEGROUPS = %d\n",
+                        ienv);
+                if (ienv > 0)
+                {
+                    fprintf(stderr,
+                            "Will make single atomic charge groups in non-solvent%s\n",
+                            ienv > 1 ? " and solvent" : "");
+                    gmx_mtop_make_atomic_charge_groups(mtop,ienv==1);
+                }
+                fprintf(stderr,"\n");
+            }
+        }
+    }
+
+    return ePBC;
 }
 
 /************************************************************

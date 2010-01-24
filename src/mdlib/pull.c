@@ -877,7 +877,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 /* Pulling with a harmonic umbrella potential or constant force */
 static void do_pull_pot(int ePull,
                         t_pull *pull, t_pbc *pbc, double t, real lambda,
-                        real *V, tensor vir, real *dvdl)
+                        real *V, tensor vir, real *dVdl)
 {
     int       g,j,m;
     dvec      dev;
@@ -887,7 +887,7 @@ static void do_pull_pot(int ePull,
     
     /* loop over the groups that are being pulled */
     *V    = 0;
-    *dvdl = 0;
+    *dVdl = 0;
     for(g=1; g<1+pull->ngrp; g++)
     {
         pgrp = &pull->grp[g];
@@ -905,13 +905,13 @@ static void do_pull_pot(int ePull,
             {
                 pgrp->f_scal  =       -k*dev[0];
                 *V           += 0.5*   k*dsqr(dev[0]);
-                *dvdl        += 0.5*dkdl*dsqr(dev[0]);
+                *dVdl        += 0.5*dkdl*dsqr(dev[0]);
             }
             else
             {
                 pgrp->f_scal  =   -k;
                 *V           +=    k*ndr;
-                *dvdl        += dkdl*ndr;
+                *dVdl        += dkdl*ndr;
             }
             for(m=0; m<DIM; m++)
             {
@@ -925,7 +925,7 @@ static void do_pull_pot(int ePull,
             {
                 pgrp->f_scal  =       -k*dev[0];
                 *V           += 0.5*   k*dsqr(dev[0]);
-                *dvdl        += 0.5*dkdl*dsqr(dev[0]);
+                *dVdl        += 0.5*dkdl*dsqr(dev[0]);
             }
             else
             {
@@ -936,7 +936,7 @@ static void do_pull_pot(int ePull,
                 }
                 pgrp->f_scal  =   -k;
                 *V           +=    k*ndr;
-                *dvdl        += dkdl*ndr;
+                *dVdl        += dkdl*ndr;
             }
             for(m=0; m<DIM; m++)
             {
@@ -950,13 +950,13 @@ static void do_pull_pot(int ePull,
                 {
                     pgrp->f[m]  =       -k*dev[m];
                     *V         += 0.5*   k*dsqr(dev[m]);
-                    *dvdl      += 0.5*dkdl*dsqr(dev[m]);
+                    *dVdl      += 0.5*dkdl*dsqr(dev[m]);
                 }
                 else
                 {
                     pgrp->f[m]  =   -k*pull->dim[m];
                     *V         +=    k*pgrp->dr[m]*pull->dim[m];
-                    *dvdl      += dkdl*pgrp->dr[m]*pull->dim[m];
+                    *dVdl      += dkdl*pgrp->dr[m]*pull->dim[m];
                 }
             }
             break;
@@ -978,23 +978,23 @@ static void do_pull_pot(int ePull,
 
 real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 		    t_commrec *cr, double t, real lambda,
-		    rvec *x, rvec *f, tensor vir, real *dvdl)
+		    rvec *x, rvec *f, tensor vir, real *dvdlambda)
 {
-    real V,dvdl_term;
-    
-    pull_calc_coms(cr,pull,md,pbc,t,x,NULL);
-    
-    do_pull_pot(ePull,pull,pbc,t,lambda,
-                &V,pull->bVirial && MASTER(cr) ? vir : NULL,&dvdl_term);
-    
-    /* Distribute forces over pulled groups */
-    apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
-    
-    if (MASTER(cr)) {
-        *dvdl += dvdl_term;
-    }
-    
-    return (MASTER(cr) ? V : 0.0);
+  real V,dVdl;
+
+  pull_calc_coms(cr,pull,md,pbc,t,x,NULL);
+
+  do_pull_pot(ePull,pull,pbc,t,lambda,
+	      &V,pull->bVirial && MASTER(cr) ? vir : NULL,&dVdl);
+
+  /* Distribute forces over pulled groups */
+  apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
+
+  if (MASTER(cr)) {
+    *dvdlambda += dVdl;
+  }
+
+  return (MASTER(cr) ? V : 0.0);
 }
 
 void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
@@ -1117,7 +1117,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
     if (ir->efep == efepNO) {
       m = atom->m;
     } else {
-        m = (1 - lambda)*atom->m + lambda*atom->mB;
+      m = (1 - lambda)*atom->m + lambda*atom->mB;
     }
     if (pg->nweight > 0) {
       w = pg->weight[i];
