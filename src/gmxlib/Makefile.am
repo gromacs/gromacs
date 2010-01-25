@@ -78,7 +78,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
 
 #version.h contains git version or version defined in VERSION
-copywrite.c: version.h
+copywrite.o: version.h
 #actually version.h would need to be a PHONY rule, because git rev can
 #change without actual code changes. But also all targets depending on 
 #a PHONY rule would also be rebuild everytime, so we add update_version
