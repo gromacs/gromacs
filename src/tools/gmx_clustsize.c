@@ -98,8 +98,8 @@ static void clust_size(const char *ndx,const char *trx,const char *xpm,
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
   clear_trxframe(&fr,TRUE);
-  sprintf(timebuf,"Time (%s)",get_time_unit(oenv));
-  tf     = get_time_factor(oenv);
+  sprintf(timebuf,"Time (%s)",output_env_get_time_unit(oenv));
+  tf     = output_env_get_time_factor(oenv);
   fp     = xvgropen(ncl,"Number of clusters",timebuf,"N",oenv);
   gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules",oenv);
   hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules",oenv);

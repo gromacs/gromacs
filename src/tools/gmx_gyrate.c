@@ -256,7 +256,7 @@ int gmx_gyrate(int argc,char *argv[])
     xvgr_legend(out,NLEG,legI,oenv);
   else {
     if (bRot)
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
     xvgr_legend(out,NLEG,leg,oenv);
   }

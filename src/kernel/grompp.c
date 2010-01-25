@@ -1024,7 +1024,7 @@ int main (int argc, char *argv[])
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
-  bVerbose = (output_env_verbosity(oenv) > 0);
+  bVerbose = (output_env_get_verbosity(oenv) > 0);
   
   init_warning(maxwarn);
   

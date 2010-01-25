@@ -79,7 +79,7 @@ static void printcount_(const output_env_t oenv,const char *l,real t)
   if ((__frame < 2*SKIP1 || __frame % SKIP1 == 0) &&
       (__frame < 2*SKIP2 || __frame % SKIP2 == 0) &&
       (__frame < 2*SKIP3 || __frame % SKIP3 == 0))
-    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,conv_time(oenv,t));
+    fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,output_env_conv_time(oenv,t));
 }
 
 static void printcount(const output_env_t oenv,real t,bool bSkip)
