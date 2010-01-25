@@ -75,10 +75,10 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.h
 
 #version.h contains git version or version defined in VERSION
-copywrite.o: version.h
+copyrite.c: version.h
 #actually version.h would need to be a PHONY rule, because git rev can
 #change without actual code changes. But also all targets depending on 
 #a PHONY rule would also be rebuild everytime, so we add update_version
