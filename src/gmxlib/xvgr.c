@@ -67,7 +67,7 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
     time_t t;
 
     xvgr=gmx_fio_fopen(fn,"w");
-    if (get_print_xvgr_codes(oenv)) 
+    if (output_env_get_print_xvgr_codes(oenv)) 
     {
         time(&t);
         fprintf(xvgr,"# This file was created %s",ctime(&t));
@@ -94,7 +94,7 @@ xvgrclose(FILE *fp)
 
 void xvgr_subtitle(FILE *out,const char *subtitle,const output_env_t oenv)
 {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out,"@ subtitle \"%s\"\n",subtitle);
     }
@@ -103,7 +103,7 @@ void xvgr_subtitle(FILE *out,const char *subtitle,const output_env_t oenv)
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,
                const output_env_t oenv)
 {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out,"@ view %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
     }
@@ -112,7 +112,7 @@ void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax,
 void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
                 const output_env_t oenv)
 {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out,"@ world xmin %g\n"
                 "@ world ymin %g\n"
@@ -125,7 +125,7 @@ void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
 {
   int i;
   
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
   {
       xvgr_view(out,0.15,0.15,0.75,0.85,oenv);
       fprintf(out,"@ legend on\n");
@@ -146,7 +146,7 @@ void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
                      const output_env_t oenv)
 {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out, "@    with g0\n");
         fprintf(out, "@    s%d linestyle %d\n", NrSet, LineStyle);
@@ -163,7 +163,7 @@ void xvgr_box(FILE *out,
 	      int LineStyle,int LineWidth,int LineColor,
 	      int BoxFill,int BoxColor,int BoxPattern,const output_env_t oenv)
 {
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out,"@with box\n");
         fprintf(out,"@    box on\n");

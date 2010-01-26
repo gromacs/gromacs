@@ -1557,6 +1557,7 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
     top->idef.functype = top_global->ffparams.functype;
     top->idef.iparams  = top_global->ffparams.iparams;
     top->idef.fudgeQQ  = top_global->ffparams.fudgeQQ;
+    top->idef.cmap_grid= top_global->ffparams.cmap_grid;
     
     for(i=0; i<F_NRE; i++)
     {
@@ -1571,7 +1572,7 @@ gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 void dd_init_local_state(gmx_domdec_t *dd,
                          t_state *state_global,t_state *state_local)
 {
-    int buf[4];
+    int i,j, buf[4];
     
     if (DDMASTER(dd))
     {

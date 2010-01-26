@@ -414,7 +414,7 @@ void xvgr_selcollection(FILE *out, gmx_ana_selcollection_t *sc,
 {
     int  i;
 
-    if (get_print_xvgr_codes(oenv) && sc)
+    if (output_env_get_print_xvgr_codes(oenv) && sc)
     {
         fprintf(out, "# Selections:\n");
         for (i = 0; i < sc->nvars; ++i)

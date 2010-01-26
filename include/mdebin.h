@@ -52,7 +52,7 @@ extern "C" {
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,iconrmsd,ib,ivol,idens,ipv;
+  int    ie,iconrmsd,ib,ivol,idens,ipv,ienthalpy;
   int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,itcb,iu,imu;
   int    ivcos,ivisc;
   int    nE,nEg,nEc,nTC,nTCP,nU,nNHC;

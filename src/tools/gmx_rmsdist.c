@@ -647,7 +647,7 @@ int gmx_rmsdist (int argc,char *argv[])
   /*open output files*/
   fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS Deviation","Time (ps)","RMSD (nm)",
               oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(fp,"@ subtitle \"of distances between %s atoms\"\n",grpname);
   
   /*do a first step*/

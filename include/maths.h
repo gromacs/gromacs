@@ -109,11 +109,7 @@ extern  real    gmx_erfc(real x);
  *
  *  This routine checks if the relative difference between two numbers is
  *  approximately within the given tolerance, defined as
- *  fabs(f1-f2)<=tolerance*fabs(f1+f2+1.0).
- *
- *  This expression is somewhat based on trial-and-error; the fabs() term on
- *  the right hand side avoids a division (important if f1==f2==0), and adding
- *  1.0 is necessary when comparing a single number vs. 0.0. 
+ *  fabs(f1-f2)<=tolerance*fabs(f1+f2).
  *
  *  To check if two floating-point numbers are almost identical, use this routine 
  *  with the tolerance GMX_REAL_EPS, or GMX_DOUBLE_EPS if the check should be

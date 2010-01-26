@@ -263,9 +263,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 	/* If we are doing GB, calculate bonded forces and apply corrections 
 	 * to the solvation forces */
 	if (ir->implicit_solvent)  {
-		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,ir->gb_algorithm,nrnb,bBornRadii);
-		enerd->term[F_GB12]+=dvdgb;	
+		dvdgb = calc_gb_forces(cr,md,born,top,atype,x,f,fr,idef,
+							   ir->gb_algorithm,nrnb,bBornRadii,&pbc,graph);
 		
+		enerd->term[F_GB12]+=dvdgb;	
+	
 		/* Also add the nonbonded GB potential energy (only from one energy group currently) */
 		enerd->term[F_GB12]+=enerd->grpp.ener[egGB][0];
 	}
