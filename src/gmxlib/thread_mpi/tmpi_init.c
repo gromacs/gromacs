@@ -268,7 +268,7 @@ static void* tMPI_Thread_starter(void *arg)
     {
         tMPI_Send_env_list_init( &(th->evs[i]), N_send_envelopes);
     }
-#ifndef TMPI_NO_BUSY_WAIT
+#ifndef TMPI_NO_BUSY_WAIT_SEND_RECV
     tMPI_Atomic_set( &(th->evs_new_incoming), 0);
 #else
     tMPI_Thread_mutex_init( &(th->ev_check_lock ) );
@@ -287,6 +287,9 @@ static void* tMPI_Thread_starter(void *arg)
                                Nthreads*COPY_BUFFER_SIZE);
 #endif
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_init(&(th->profile));
+#endif
     /* now wait for all other threads to come on line, before we
        start the MPI program */
     tMPI_Barrier(TMPI_COMM_WORLD);
@@ -446,6 +449,9 @@ int tMPI_Finalize(void)
 #endif
 
     tMPI_Barrier(TMPI_COMM_WORLD);
+#ifdef TMPI_PROFILE
+    tMPI_Profile_stop(&(th->profile));
+#endif
 
     tMPI_Recv_env_list_destroy( &(th->evr));
     for(i=0;i<Nthreads;i++)
@@ -455,7 +461,7 @@ int tMPI_Finalize(void)
     tMPI_Free_env_list_destroy( &(th->envelopes) );
     tMPI_Req_list_destroy( &(th->rql) );
 
-#ifdef TMPI_NO_BUSY_WAIT
+#ifdef TMPI_NO_BUSY_WAIT_SEND_RECV
     tMPI_Thread_mutex_destroy(&(th->ev_check_lock));
     tMPI_Thread_cond_destroy(&(th->ev_check_cond));
 #endif
@@ -472,7 +478,12 @@ int tMPI_Finalize(void)
     if (tMPI_Is_master())
     {
         tMPI_Comm next;
-        /* we just wait for all threads to finish; the order isn't very 
+
+#ifdef TMPI_PROFILE
+        tMPI_Profiles_summarize(Nthreads, threads);
+        tMPI_Profiles_destroy(Nthreads, threads);
+#endif
+       /* we just wait for all threads to finish; the order isn't very 
            relevant, as all threads should arrive at their endpoints soon. */
         for(i=1;i<Nthreads;i++)
         {
@@ -655,7 +666,6 @@ int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count)
     *count = (int)(status->transferred/datatype->size);
     return TMPI_SUCCESS;
 }
-
 
 
 

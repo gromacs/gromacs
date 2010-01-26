@@ -44,8 +44,7 @@ files.
  */
 
 #define tMPI_Atomic_memory_barrier()  { __asm__ __volatile__("\t eieio\n"\
-                                                            : : :"memory" ); }
-
+                                                             : : :"memory" ); }
 
 
 
