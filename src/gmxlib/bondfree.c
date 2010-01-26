@@ -2586,7 +2586,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
             {
                 nbonds_np = idef->il[ftype].nr_nonperturbed;
                 nbonds    = idef->il[ftype].nr - nbonds_np;
-                iatoms    = idef->il[ftype].iatoms + nbonds_np*nat1;
+                iatoms    = idef->il[ftype].iatoms + nbonds_np;
             } 
             else
             {

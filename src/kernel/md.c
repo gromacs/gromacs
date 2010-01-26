@@ -1421,6 +1421,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 state->lambda[i] = state_global->lambda[i];
             }
         }
+        bDoDHDL = do_per_step(step,ir->nstdhdl);
 
         if (bSimAnn) 
         {
