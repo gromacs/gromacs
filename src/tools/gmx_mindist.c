@@ -121,8 +121,8 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   check_index(NULL,n,index,NULL,natoms);
   
   out = xvgropen(outfn,"Minimum distance to periodic image",
-		 get_time_label(oenv),"Distance (nm)",oenv);
-  if (get_print_xvgr_codes(oenv))
+		 output_env_get_time_label(oenv),"Distance (nm)",oenv);
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(out,"@ subtitle \"and maximum internal distance\"\n");
   xvgr_legend(out,5,leg,oenv);
     
@@ -141,10 +141,10 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
       ind_mini = ind_min[0];
       ind_minj = ind_min[1];
     }
-    if ( bSplit && !bFirst && abs(t/get_time_factor(oenv))<1e-5 )
+    if ( bSplit && !bFirst && abs(t/output_env_get_time_factor(oenv))<1e-5 )
       fprintf(out, "&\n");
     fprintf(out,"\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",
-	    conv_time(oenv,t),rmin,rmax,norm(box[0]),norm(box[1]),norm(box[2]));
+	    output_env_conv_time(oenv,t),rmin,rmax,norm(box[0]),norm(box[1]),norm(box[2]));
     bFirst=FALSE;
   } while(read_next_x(oenv,status,&t,natoms,x,box));
     
@@ -153,7 +153,7 @@ static void periodic_mindist_plot(const char *trxfn,const char *outfn,
   fprintf(stdout,
 	  "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
 	  "between atoms %d and %d\n",
-	  rmint,conv_time(oenv,tmint),get_time_unit(oenv),
+	  rmint,output_env_conv_time(oenv,tmint),output_env_get_time_unit(oenv),
 	  index[ind_mini]+1,index[ind_minj]+1);
 }
 
@@ -270,9 +270,9 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
-  dist= xvgropen(dfile,buf,get_time_label(oenv),"Distance (nm)",oenv);
+  dist= xvgropen(dfile,buf,output_env_get_time_label(oenv),"Distance (nm)",oenv);
   sprintf(buf,"Number of Contacts %s %g nm",bMin ? "<" : ">",rcut);
-  num = nfile ? xvgropen(nfile,buf,get_time_label(oenv),"Number",oenv) : NULL;
+  num = nfile ? xvgropen(nfile,buf,output_env_get_time_label(oenv),"Number",oenv) : NULL;
   atm = afile ? ffopen(afile,"w") : NULL;
   trxout = xfile ? open_trx(xfile,"w") : NOTSET;
   
@@ -309,7 +309,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   if (bEachResEachTime)
   {
     sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
-    respertime=xvgropen(rfile,buf,get_time_label(oenv),"Distance (nm)",oenv);
+    respertime=xvgropen(rfile,buf,output_env_get_time_label(oenv),"Distance (nm)",oenv);
     xvgr_legend(respertime,ng-1,leg,oenv);
 	if (bPrintResName) 
 	  fprintf(respertime,"# ");
@@ -333,13 +333,13 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
   }
   bFirst=TRUE;  
   do {
-    if ( bSplit && !bFirst && abs(t/get_time_factor(oenv))<1e-5 ) {
+    if ( bSplit && !bFirst && abs(t/output_env_get_time_factor(oenv))<1e-5 ) {
       fprintf(dist, "&\n");
       if (num) fprintf(num, "&\n");
       if (atm) fprintf(atm, "&\n");
     }
-    fprintf(dist,"%12e",conv_time(oenv,t));
-    if (num) fprintf(num,"%12e",conv_time(oenv,t));
+    fprintf(dist,"%12e",output_env_conv_time(oenv,t));
+    if (num) fprintf(num,"%12e",output_env_conv_time(oenv,t));
     
     if (bMat) {
       if (ng == 1) {
@@ -382,7 +382,7 @@ void dist_plot(const char *fn,const char *afile,const char *dfile,
     if ( bMin?min1:max1 != -1 )
       if (atm)
 	fprintf(atm,"%12e  %12d  %12d\n",
-		conv_time(oenv,t),1+(bMin ? min1 : max1),
+		output_env_conv_time(oenv,t),1+(bMin ? min1 : max1),
                                   1+(bMin ? min2 : max2));
     
     if (trxout>=0) {

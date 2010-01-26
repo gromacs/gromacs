@@ -582,7 +582,7 @@ int gmx_rms(int argc, char *argv[])
                 rlsm[j][teller] = 
                     calc_similar_ind(ewhat!=ewRMSD,irms[j],ind_rms[j],w_rms,x,xm);
         }
-        time[teller]=conv_time(oenv,t);
+        time[teller]=output_env_conv_time(oenv,t);
 
         teller++;
         if (teller >= maxframe) {
@@ -634,7 +634,7 @@ int gmx_rms(int argc, char *argv[])
                 tel_mat2++;
             }
 
-            time2[teller2]=conv_time(oenv,t);
+            time2[teller2]=output_env_conv_time(oenv,t);
 
             teller2++;
             if (teller2 >= maxframe2) {
@@ -780,7 +780,7 @@ int gmx_rms(int argc, char *argv[])
                         rmsd_min,rmsd_max);
             sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
             write_xpm(opt2FILE("-m",NFILE,fnm,"w"),0,buf,whatlabel[ewhat],
-                      get_time_label(oenv),get_time_label(oenv),tel_mat,tel_mat2,
+                      output_env_get_time_label(oenv),output_env_get_time_label(oenv),tel_mat,tel_mat2,
                       axis,axis2, rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
             /* Print the distribution of RMSD values */
             if (opt2bSet("-dist",NFILE,fnm)) 
@@ -821,7 +821,7 @@ int gmx_rms(int argc, char *argv[])
                     del_yaxis[i]=delta_maxy*i/del_lev;
                 sprintf(buf,"%s %s vs. delta t",gn_rms[0],whatname[ewhat]);
                 fp = ffopen("delta.xpm","w");
-                write_xpm(fp,0,buf,"density",get_time_label(oenv),whatlabel[ewhat],
+                write_xpm(fp,0,buf,"density",output_env_get_time_label(oenv),whatlabel[ewhat],
                           delta_xsize,del_lev+1,del_xaxis,del_yaxis,
                           delta,0.0,delta_max,rlo,rhi,&nlevels);
                 ffclose(fp);
@@ -848,7 +848,7 @@ int gmx_rms(int argc, char *argv[])
             rhi.r = 0; rhi.g = 0; rhi.b = 0;
             sprintf(buf,"%s av. bond angle deviation",gn_rms[0]);
             write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),0,buf,"degrees",
-                      get_time_label(oenv),get_time_label(oenv),tel_mat,tel_mat2,
+                      output_env_get_time_label(oenv),output_env_get_time_label(oenv),tel_mat,tel_mat2,
                       axis,axis2, bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
         }
     }
@@ -860,10 +860,10 @@ int gmx_rms(int argc, char *argv[])
         sprintf(buf,"%s",whatxvgname[ewhat]);
     else
         sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
-                time[prev*freq]-time[0], get_time_label(oenv));
-    fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,get_xvgr_tlabel(oenv),
+                time[prev*freq]-time[0], output_env_get_time_label(oenv));
+    fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,output_env_get_xvgr_tlabel(oenv),
                 whatxvglabel[ewhat], oenv);
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
         fprintf(fp,"@ subtitle \"%s%s after %s%s%s\"\n",
                 (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
                     bFit     ?" to ":""   , bFit?gn_fit:"");
@@ -871,7 +871,7 @@ int gmx_rms(int argc, char *argv[])
         xvgr_legend(fp,nrms,gn_rms,oenv);
     for(i=0; (i<teller); i++) {
         if ( bSplit && i>0 && 
-            abs(time[bPrev ? freq*i : i]/get_time_factor(oenv))<1e-5 ) 
+            abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv))<1e-5 ) 
         {
             fprintf(fp,"&\n");
         }
@@ -889,15 +889,15 @@ int gmx_rms(int argc, char *argv[])
         /* Write the mirror RMSD's to file */
         sprintf(buf,"%s with Mirror",whatxvgname[ewhat]);
         sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
-        fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, get_xvgr_tlabel(oenv), 
+        fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, output_env_get_xvgr_tlabel(oenv), 
                     buf2,oenv);
         if (nrms == 1) {
-            if (get_print_xvgr_codes(oenv))
+            if (output_env_get_print_xvgr_codes(oenv))
                 fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
                         gn_rms[0],gn_fit);
         }
         else {
-            if (get_print_xvgr_codes(oenv))
+            if (output_env_get_print_xvgr_codes(oenv))
                 fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
             xvgr_legend(fp,nrms,gn_rms,oenv);
         }

@@ -1121,6 +1121,9 @@ void forcerec_set_ranges(t_forcerec *fr,
     fr->cg0 = 0;
     fr->hcg = ncg_home;
 
+    /* fr->ncg_force is unused in the standard code,
+     * but it can be useful for modified code dealing with charge groups.
+     */
     fr->ncg_force    = ncg_force;
     fr->natoms_force = natoms_force;
 
@@ -1623,7 +1626,9 @@ void init_forcerec(FILE *fp,
     
     if (!DOMAINDECOMP(cr))
     {
-        /* This is corrected later for particle decomposition */
+        /* When using particle decomposition, the effect of the second argument,
+         * which sets fr->hcg, is corrected later in do_md and init_em.
+         */
         forcerec_set_ranges(fr,ncg_mtop(mtop),ncg_mtop(mtop),
                             mtop->natoms,mtop->natoms);
     }

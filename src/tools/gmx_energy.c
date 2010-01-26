@@ -1250,7 +1250,7 @@ int gmx_energy(int argc,char *argv[])
     if (bDRAll) { 
       fp_pairs=xvgropen(opt2fn("-pairs",NFILE,fnm),"Pair Distances",
 			"Time (ps)","Distance (nm)",oenv);
-      if (get_print_xvgr_codes(oenv))
+      if (output_env_get_print_xvgr_codes(oenv))
 	fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
 		ir.dr_tau);
     }

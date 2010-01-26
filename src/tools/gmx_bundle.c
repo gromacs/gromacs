@@ -267,27 +267,27 @@ int gmx_bundle(int argc,char *argv[])
   snew(bun.len,n);
 
   flen   = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
   fdist  = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
   fz     = xvgropen(opt2fn("-oz",NFILE,fnm),"Z-shift of axis centers",
-		    get_xvgr_tlabel(oenv),"(nm)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(nm)",oenv);
   ftilt  = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
-		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   ftiltr = xvgropen(opt2fn("-otr",NFILE,fnm),"Radial axis tilts",
-		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
-		    get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		    output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   
   if (bKink) {
     fkink  = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
-		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		      output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
-		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
-    if (get_print_xvgr_codes(oenv))
+		      output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
+    if (output_env_get_print_xvgr_codes(oenv))
       fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
-		      get_xvgr_tlabel(oenv),"(degrees)",oenv);
+		      output_env_get_xvgr_tlabel(oenv),"(degrees)",oenv);
   }
 
   if (opt2bSet("-oa",NFILE,fnm)) {
@@ -309,7 +309,7 @@ int gmx_bundle(int argc,char *argv[])
   do {
     rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
-    t = conv_time(oenv,fr.time);
+    t = output_env_conv_time(oenv,fr.time);
     fprintf(flen," %10g",t);
     fprintf(fdist," %10g",t);
     fprintf(fz," %10g",t);

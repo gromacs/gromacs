@@ -316,7 +316,7 @@ static void estimate_error(const char *eefile,int nb_min,int resol,int n,
     
     fp = xvgropen(eefile,"Error estimates",
                   "Block size (time)","Error estimate", oenv);
-    if (get_print_xvgr_codes(oenv))
+    if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(fp,
                 "@ subtitle \"using block averaging, total time %g (%d points)\"\n",

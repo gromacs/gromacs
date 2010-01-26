@@ -723,7 +723,7 @@ int gmx_bar(int argc,char *argv[])
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fpb = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
                       "\\8l\\4",unit_energy,oenv);
-        if (get_print_xvgr_codes(oenv))
+        if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fpb,"@TYPE xydy\n");
         }
@@ -735,7 +735,7 @@ int gmx_bar(int argc,char *argv[])
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
                       "\\8l\\4",unit_energy,oenv);
-        if (get_print_xvgr_codes(oenv))
+        if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fpi,"@TYPE xydy\n");
         }

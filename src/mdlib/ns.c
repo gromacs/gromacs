@@ -2462,6 +2462,8 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     if (debug) 
         pr_bvec(debug,0,"bHaveVdW",ns->bHaveVdW,fr->ntype,TRUE);
     
+    ns->nra_alloc = 0;
+    ns->bexcl = NULL;
     if (!DOMAINDECOMP(cr))
     {
         /* This could be reduced with particle decomposition */

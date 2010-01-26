@@ -67,7 +67,7 @@ void do_view(const output_env_t oenv,const char *fn, const char *opts)
   const char *cmd;
   int ftp, n;
   
-  if (get_view(oenv) && fn) {
+  if (output_env_get_view(oenv) && fn) {
     if (getenv("DISPLAY") == NULL) {
       fprintf(stderr,"Can not view %s, no DISPLAY environment variable.\n",fn);
     } else {
