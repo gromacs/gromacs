@@ -658,6 +658,8 @@ AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(gettimeofday)
 AC_CHECK_FUNCS(isnan)
 AC_CHECK_FUNCS(_isnan)
+AC_CHECK_FUNCS(isfinite)
+AC_CHECK_FUNCS(_isfinite)
 
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
