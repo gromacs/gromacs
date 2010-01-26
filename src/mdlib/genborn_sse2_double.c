@@ -601,17 +601,15 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,int natoms, gmx_loca
 	}
 	
 	/* Compute the radii */
-	for(i=0;i<nl->nri;i++)
+	for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
 	{
-		ai = nl->iinr[i];
-		
-		if(born->use[ai] != 0)
+		if(born->use[i] != 0)
 		{
-			gpi_ai = born->gpol[ai] + born->gpol_still_work[ai];
+			gpi_ai = born->gpol[i] + born->gpol_still_work[i];
 			gpi2   = gpi_ai*gpi_ai;
 			
-			born->bRad[ai]=factor*gmx_invsqrt(gpi2);
-			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
+			born->bRad[i]=factor*gmx_invsqrt(gpi2);
+			fr->invsqrta[i]=gmx_invsqrt(born->bRad[ai]);
 		}
 	}
 	
@@ -1208,19 +1206,17 @@ calc_gb_rad_hct_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_local
 	}
 	
 	/* Compute the radii */
-	for(i=0;i<nl->nri;i++)
+	for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
 	{
-		ai      = nl->iinr[i];
-		
-		if(born->use[ai] != 0)
+		if(born->use[i] != 0)
 		{
-			rr      = top->atomtypes.gb_radius[md->typeA[ai]]-doff; 
-			sum     = 1.0/rr - born->gpol_hct_work[ai];
+			rr      = top->atomtypes.gb_radius[md->typeA[i]]-doff; 
+			sum     = 1.0/rr - born->gpol_hct_work[i];
 			min_rad = rr + doff;
 			rad     = 1.0/sum;  
 			
-			born->bRad[ai]   = rad > min_rad ? rad : min_rad;
-			fr->invsqrta[ai] = gmx_invsqrt(born->bRad[ai]);
+			born->bRad[i]   = rad > min_rad ? rad : min_rad;
+			fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
 		}
 	}
 	
@@ -1816,28 +1812,26 @@ calc_gb_rad_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_loca
 	}
 	
 	/* Compute the radii */
-	for(i=0;i<nl->nri;i++)
+	for(i=0;i<fr->natoms_force;i++) /* PELA born->nr */
 	{
-		ai      = nl->iinr[i];
-		
-		if(born->use[ai] != 0)
+		if(born->use[i] != 0)
 		{
-			rr      = top->atomtypes.gb_radius[md->typeA[ai]];
+			rr      = top->atomtypes.gb_radius[md->typeA[i]];
 			rr_inv2 = 1.0/rr;
 			rr      = rr-doff; 
 			rr_inv  = 1.0/rr;
-			sum     = rr * born->gpol_hct_work[ai];
+			sum     = rr * born->gpol_hct_work[i];
 			sum2    = sum  * sum;
 			sum3    = sum2 * sum;
 			
 			tsum    = tanh(born->obc_alpha*sum-born->obc_beta*sum2+born->obc_gamma*sum3);
-			born->bRad[ai] = rr_inv - tsum*rr_inv2;
-			born->bRad[ai] = 1.0 / born->bRad[ai];
+			born->bRad[i] = rr_inv - tsum*rr_inv2;
+			born->bRad[i] = 1.0 / born->bRad[i];
 			
 			fr->invsqrta[ai]=gmx_invsqrt(born->bRad[ai]);
 			
 			tchain  = rr * (born->obc_alpha-2*born->obc_beta*sum+3*born->obc_gamma*sum2);
-			born->drobc[ai] = (1.0-tsum*tsum)*tchain*rr_inv2;
+			born->drobc[i] = (1.0-tsum*tsum)*tchain*rr_inv2;
 		}
 	}
 	
