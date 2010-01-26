@@ -100,6 +100,7 @@ int init_gb_nblist(int natoms, t_nblist *nl)
     nl->gid         = NULL;
     nl->shift       = NULL;
     nl->jindex      = NULL;
+    nl->jjnr        = NULL;
     /*nl->nltype      = nltype;*/
     
     srenew(nl->iinr,   nl->maxnri);
