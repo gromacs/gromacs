@@ -87,7 +87,7 @@ version.h: update_version
 #echo @VERSION@ is just a failback, if there is no git or release builds
 update_version:
 	[ -f version.h ] || touch version.h
-	version=`git --git-dir=$(top_builddir)/.git rev-parse HEAD 2> /dev/null || echo @VERSION@`; \
+	version=`git --git-dir=$(top_srcdir)/.git rev-parse HEAD 2> /dev/null || echo @VERSION@`; \
 	version="static const char ver_string[]=\"VERSION $$version\";"; \
 	echo "$$version" | cmp -s version.h - || echo "$$version" > version.h
 
