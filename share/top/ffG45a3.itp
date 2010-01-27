@@ -1,10 +1,3 @@
-#define _FF_GROMOS96
-#define _FF_GROMOS45A3
-
-[ defaults ]
-; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
-  1		1		no		1.0	1.0
-
-#include "ffG45a3nb.itp"
-#include "ffG45a3bon.itp"
-
+; This file is for backward compatibility only.
+; Please directly include the file below in your .top file.
+#include "gromos45a3.ff/forcefield.itp"
