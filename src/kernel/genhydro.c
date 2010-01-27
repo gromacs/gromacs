@@ -135,8 +135,12 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   snew(hb,pdba->nres);
   /* first the termini */
   for(i=0; i<nterpairs; i++) {
-    copy_t_hackblock(ntdb[i], &hb[rN[i]]);
-    merge_t_hackblock(ctdb[i], &hb[rC[i]]);
+    if (ntdb[i] != NULL) {
+      copy_t_hackblock(ntdb[i], &hb[rN[i]]);
+    }
+    if (ctdb[i] != NULL) {
+      merge_t_hackblock(ctdb[i], &hb[rC[i]]);
+    }
   }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {

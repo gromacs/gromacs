@@ -64,6 +64,8 @@
 #include "gen_vsite.h"
 #include "add_par.h"
 #include "toputil.h"
+#include "fflibutil.h"
+#include "strdb.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
@@ -111,56 +113,119 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
-typedef struct { char *desc,*fn; } t_fff;
-
 void
-choose_ff(char *forcefield, int maxlen)
+choose_ff(const char *ffsel,
+          char *forcefield, int ff_maxlen,
+          char *ffdir, int ffdir_maxlen)
 {
-  FILE    *in;
-  t_fff   *fff;
-  int     i,nff,sel;
-  char    *c,buf[STRLEN],fn[32];
-  char    *pret;
+    int  nff;
+    char **ffdirs,**ffs,*ptr;
+    int  i,sel;
+    char buf[STRLEN];
+    FILE *fp;
+    char *pret;
 
-  in=libopen("FF.dat");
-  fgets2(buf,255,in);
-  sscanf(buf,"%d",&nff);
-  snew(fff,nff);
-  for(i=0; (i<nff); i++) {
-    fgets2(buf,255,in);
-    sscanf(buf,"%s",fn);
-    fff[i].fn=strdup(fn);
-    /* Search for next non-space character, there starts description */
-    c=&(buf[strlen(fn)+1]);
-    while (isspace(*c)) c++;
-    fff[i].desc=strdup(c);
-  }
-  ffclose(in);
+    nff = fflib_search_file_in_dirend(fflib_forcefield_itp(),
+                                      fflib_forcefield_dir_ext(),
+                                      &ffdirs);
 
-  if (nff > 1) {
-    printf("\nSelect the Force Field:\n");
+    if (nff == 0)
+    {
+        gmx_fatal(FARGS,"No force fields found (files with name '%s' in subdirectories ending on '%s')",
+                  fflib_forcefield_itp(),fflib_forcefield_dir_ext());
+    }
+
+    /* Store the force field names in ffs */
+    snew(ffs,nff);
+    for(i=0; i<nff; i++)
+    {
+        /* Remove the path from the ffdir name */
+        ptr = strrchr(ffdirs[i],DIR_SEPARATOR);
+        if (ptr == 0)
+        {
+            ffs[i] = strdup(ffdirs[i]);
+        }
+        else
+        {
+            ffs[i] = strdup(ptr+1);
+        }
+        /* Remove the extension from the ffdir name */
+        ffs[i][strlen(ffs[i])-strlen(fflib_forcefield_dir_ext())] = '\0';
+    }
+
+    if (ffsel != NULL)
+    {
+        sel = -1;
+        for(i=0; i<nff; i++)
+        {
+            if (strcmp(ffs[i],ffsel) == 0)
+            {
+                sel = i;
+            }
+        }
+        if (sel == -1)
+        {
+            gmx_fatal(FARGS,"Could not find force field '%s'",ffsel);
+        }
+    }
+    else if (nff > 1)
+    {
+        printf("\nSelect the Force Field:\n");
+        for(i=0; (i<nff); i++)
+        {
+            sprintf(buf,"%s%c%s",
+                    ffdirs[i],DIR_SEPARATOR,fflib_forcefield_doc());
+            if (gmx_fexist(buf))
+            {
+                /* We don't use fflib_open, because we don't want printf's */
+                fp = ffopen(buf,"r");
+                get_a_line(fp,buf,STRLEN);
+                ffclose(fp);
+                printf("%2d: %s\n",i,buf);
+            }
+            else
+            {
+                printf("%2d: %s\n",i,ffs[i]);
+            }
+        }
+        do
+        {
+            pret = fgets(buf,STRLEN,stdin);
+            
+            if(pret != NULL)
+            {
+                sscanf(buf,"%d",&sel);
+            }
+        }
+        while ( pret==NULL || (sel < 0) || (sel >= nff));
+    }
+    else
+    {
+        sel = 0;
+    }
+
+    if (strlen(ffs[sel]) >= ff_maxlen)
+    {
+        gmx_fatal(FARGS,"Length of force field name (%d) >= maxlen (%d)",
+                  strlen(ffs[sel]),ff_maxlen);
+    }
+    strcpy(forcefield,ffs[sel]);
+
+    if (strlen(ffdirs[sel]) >= ffdir_maxlen)
+    {
+        gmx_fatal(FARGS,"Length of force field dir (%d) >= maxlen (%d)",
+                  strlen(ffdirs[sel]),ffdir_maxlen);
+    }
+    strcpy(ffdir,ffdirs[sel]);
+
     for(i=0; (i<nff); i++)
-      printf("%2d: %s\n",i,fff[i].desc);
-    do {
-      pret = fgets(buf,STRLEN,stdin);
-
-      if(pret != NULL)
-	sscanf(buf,"%d",&sel);
-    } while ( pret==NULL || (sel < 0) || (sel >= nff));
-  }
-  else
-    sel=0;
-
-  strncpy(forcefield,fff[sel].fn,maxlen);
-
-  for(i=0; (i<nff); i++) {
-    sfree(fff[i].desc);
-    sfree(fff[i].fn);
-  }
-  sfree(fff);
-  
+    {
+        sfree(ffdirs[i]);
+        sfree(ffs[i]);
+    }
+    sfree(ffdirs);
+    sfree(ffs);
 }
-
 
 static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype, 
 		     t_restp restp[])
@@ -260,13 +325,14 @@ void print_top_comment(FILE *out,const char *filename,const char *title,bool bIT
 }
 
 void print_top_header(FILE *out,const char *filename, 
-		      const char *title,bool bITP,const char *ff,real mHmult)
+                      const char *title,bool bITP,const char *ffdir,real mHmult)
 {
-  print_top_comment(out,filename,title,bITP);
-
-  print_top_heavy_H(out, mHmult);
-  fprintf(out,"; Include forcefield parameters\n");
-  fprintf(out,"#include \"%s.itp\"\n\n",ff);
+    print_top_comment(out,filename,title,bITP);
+    
+    print_top_heavy_H(out, mHmult);
+    fprintf(out,"; Include forcefield parameters\n");
+    fprintf(out,"#include \"%s%c%s\"\n\n",
+            ffdir,DIR_SEPARATOR,fflib_forcefield_itp());
 }
 
 static void print_top_posre(FILE *out,const char *pr)
@@ -277,10 +343,10 @@ static void print_top_posre(FILE *out,const char *pr)
   fprintf(out,"#endif\n\n");
 }
   
-static void print_top_water(FILE *out,const char *water)
+static void print_top_water(FILE *out,const char *ffdir,const char *water)
 {
   fprintf(out,"; Include water topology\n");
-  fprintf(out,"#include \"%s.itp\"\n",water);
+  fprintf(out,"#include \"%s%c%s.itp\"\n",ffdir,DIR_SEPARATOR,water);
   fprintf(out,"\n");
   fprintf(out,"#ifdef POSRES_WATER\n");
   fprintf(out,"; Position restraint for each water oxygen\n");
@@ -288,8 +354,8 @@ static void print_top_water(FILE *out,const char *water)
   fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
   fprintf(out,"%4d %4d %10g %10g %10g\n",1,1,1000.0,1000.0,1000.0);
   fprintf(out,"#endif\n\n");
-  fprintf(out,"; Include generic topology for ions\n");
-  fprintf(out,"#include \"ions.itp\"\n");
+  fprintf(out,"; Include topology for ions\n");
+  fprintf(out,"#include \"%s%cions.itp\"\n",ffdir,DIR_SEPARATOR);
   fprintf(out,"\n");
 }
 
@@ -300,8 +366,9 @@ static void print_top_system(FILE *out, const char *title)
   fprintf(out,"%s\n\n",title[0]?title:"Protein");
 }
 
-void print_top_mols(FILE *out, const char *title, const char *water,
-		    int nincl, char **incls, int nmol, t_mols *mols)
+void print_top_mols(FILE *out,
+                    const char *title, const char *ffdir, const char *water,
+                    int nincl, char **incls, int nmol, t_mols *mols)
 {
   int  i;
   char *incl;
@@ -321,9 +388,11 @@ void print_top_mols(FILE *out, const char *title, const char *water,
     fprintf(out,"\n");
   }
 
-  if (water)
-    print_top_water(out,water);
-  print_top_system(out, title);
+    if (water)
+    {
+      print_top_water(out,ffdir,water);
+    }
+    print_top_system(out, title);
   
   if (nmol) {
     fprintf(out,"[ %s ]\n",dir2str(d_molecules));
@@ -402,10 +471,17 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   }
 }
 
+static bool inter_res_bond(const t_rbonded *b)
+{
+    return (b->AI[0] == '-' || b->AI[0] == '+' ||
+            b->AJ[0] == '-' || b->AJ[0] == '+');
+}
+
 static void at2bonds(t_params *psb, t_hackblock *hb,
-		     int natoms, t_atom atom[], char **aname[], 
-		     int nres, rvec x[], 
-		     real long_bond_dist, real short_bond_dist)
+                     int natoms, t_atom atom[], char **aname[], 
+                     int nres, rvec x[], 
+                     real long_bond_dist, real short_bond_dist,
+                     bool bAllowMissing)
 {
   int     resind,i,j,k;
   atom_id ai,aj;
@@ -434,14 +510,18 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
       aj=search_atom(hb[resind].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname,
 		     ptr,TRUE);
       if (ai != NO_ATID && aj != NO_ATID) {
-	dist2 = distance2(x[ai],x[aj]);
-	if (dist2 > long_bond_dist2 )
-	  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
-		  ai+1,aj+1,sqrt(dist2));
-	else if (dist2 < short_bond_dist2 )
-	  fprintf(stderr,"Warning: Short Bond (%d-%d = %g nm)\n",
-		  ai+1,aj+1,sqrt(dist2));
-	add_param(psb,ai,aj,NULL,hb[resind].rb[ebtsBONDS].b[j].s);
+          dist2 = distance2(x[ai],x[aj]);
+          if (dist2 > long_bond_dist2 )
+          {
+              fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
+                      ai+1,aj+1,sqrt(dist2));
+          }
+          else if (dist2 < short_bond_dist2 )
+          {
+              fprintf(stderr,"Warning: Short Bond (%d-%d = %g nm)\n",
+                      ai+1,aj+1,sqrt(dist2));
+          }
+          add_param(psb,ai,aj,NULL,hb[resind].rb[ebtsBONDS].b[j].s);
       }
     }
     /* add bonds from list of hacks (each added atom gets a bond) */
@@ -538,6 +618,29 @@ void print_sums(t_atoms *atoms, bool bSystem)
   fprintf(stderr,"Total charge%s %.3f e\n",where,qtot);
 }
 
+static void check_restp_type(const char *name,int t1,int t2)
+{
+    if (t1 != t2)
+    {
+        gmx_fatal(FARGS,"Residues in one molecule have a different '%s' type: %d and %d",name,t1,t2);
+    }
+}
+
+static void check_restp_types(t_restp *r0,t_restp *r1)
+{
+    int i;
+
+    check_restp_type("all dihedrals",r0->bAlldih,r1->bAlldih);
+    check_restp_type("nrexcl",r0->nrexcl,r1->nrexcl);
+    check_restp_type("HH14",r0->HH14,r1->HH14);
+    check_restp_type("remove dihedrals",r0->bRemoveDih,r1->bRemoveDih);
+
+    for(i=0; i<ebtsNR; i++)
+    {
+        check_restp_type(btsNames[i],r0->rb[i].type,r1->rb[i].type);
+    }
+}
+
 static void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
 			       int nrtp, t_restp rtp[],
 			       int nres, t_resinfo *resinfo, 
@@ -549,29 +652,51 @@ static void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
   t_restp *res;
   char buf[STRLEN];
   const char *Hnum="123456";
-  bool bN,bC;
+  int tern,terc;
+  bool bN,bC,bRM;
 
   snew(*hb,nres);
   snew(*restp,nres);
   /* first the termini */
   for(i=0; i<nterpairs; i++) {
-    if (rn[i]>=0)
-      copy_t_hackblock(ntdb[i], &(*hb)[rn[i]]);
-    if (rc[i]>=0)
-      merge_t_hackblock(ctdb[i], &(*hb)[rc[i]]);
+      if (rn[i] >= 0 && ntdb[i] != NULL) {
+          copy_t_hackblock(ntdb[i], &(*hb)[rn[i]]);
+      }
+      if (rc[i] >= 0 && ctdb[i] != NULL) {
+          merge_t_hackblock(ctdb[i], &(*hb)[rc[i]]);
+      }
   }  
 
   /* then the whole rtp */
   for(i=0; i < nres; i++) {
     res = search_rtp(*resinfo[i].name,nrtp,rtp);
     copy_t_restp(res, &(*restp)[i]);
-    bN = FALSE;
-    for(j=0; j<nterpairs && !bN; j++)
-      bN = i==rn[j];
-    bC = FALSE;
-    for(j=0; j<nterpairs && !bC; j++)
-      bC = i==rc[j];
-    merge_t_bondeds(res->rb, (*hb)[i].rb,bN,bC);
+
+    /* Check that we do not have different bonded types in one molecule */
+    check_restp_types(&(*restp)[0],&(*restp)[i]);
+
+    tern = -1;
+    for(j=0; j<nterpairs && tern==-1; j++) {
+        if (i == rn[j]) {
+            tern = j;
+        }
+    }
+    terc = -1;
+    for(j=0; j<nterpairs && terc == -1; j++) {
+        if (i == rc[j]) {
+            terc = j;
+        }
+    }
+    bRM = merge_t_bondeds(res->rb, (*hb)[i].rb,tern>=0,terc>=0);
+
+    if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
+                (terc >= 0 && ctdb[terc] == NULL))) {
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Edit a .n.tdb and/or .c.tdb file.");
+    }
+    if (bRM && ((tern >= 0 && ntdb[tern]->nhack == 0) ||
+                (terc >= 0 && ctdb[terc]->nhack == 0))) {
+        gmx_fatal(FARGS,"There is a dangling bond at at least one of the terminal ends. Select a proper terminal entry.");
+    }
   }
   
   /* now perform t_hack's on t_restp's,
@@ -727,15 +852,16 @@ scrub_charge_groups(int *cgnr, int natoms)
 
 
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
-	     t_atoms *atoms, rvec **x, gpp_atomtype_t atype, t_symtab *tab,
-	     int bts[], int nrtp, t_restp   rtp[],
-	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-	     int *rn, int *rc, bool bAllowMissing,
-	     bool bH14, bool bAlldih, bool bRemoveDih,
-	     bool bVsites, bool bVsiteAromatics, char *ff, real mHmult,
-	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
-	     real long_bond_dist, real short_bond_dist,
-	     bool bDeuterate, bool bChargeGroups, bool bCmap)
+             t_atoms *atoms, rvec **x, gpp_atomtype_t atype, t_symtab *tab,
+             int nrtp, t_restp   rtp[],
+             int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
+             int *rn, int *rc, bool bAllowMissing,
+             bool bVsites, bool bVsiteAromatics,
+             const char *ff, const char *ffdir, real mHmult,
+             int nssbonds, t_ssbond *ssbonds,
+             real long_bond_dist, real short_bond_dist,
+             bool bDeuterate, bool bChargeGroups, bool bCmap,
+             bool bRenumRes)
 {
   t_hackblock *hb;
   t_restp  *restp;
@@ -745,6 +871,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   int      *cgnr;
   int      *vsite_type;
   int      i,nmissat;
+  int      bts[ebtsNR];
   
   init_plist(plist);
 
@@ -757,15 +884,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
      do now :( AF 26-7-99 */
   
   if (debug) {
-    print_resall(debug, bts, atoms->nres, restp, atype,bAlldih,nrexcl,
-		 bH14,bRemoveDih);
+    print_resall(debug, atoms->nres, restp, atype);
     dump_hb(debug, atoms->nres, hb);
   }
   
   /* Make bonds */
   at2bonds(&(plist[F_BONDS]), hb, 
-	   atoms->nr, atoms->atom, atoms->atomname, atoms->nres, *x, 
-	   long_bond_dist, short_bond_dist);
+           atoms->nr, atoms->atom, atoms->atomname, atoms->nres, *x, 
+           long_bond_dist, short_bond_dist, bAllowMissing);
   
   /* specbonds: disulphide bonds & heme-his */
   do_ssbonds(&(plist[F_BONDS]),
@@ -788,11 +914,12 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   snew(vsite_type,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     vsite_type[i]=NOTSET;
-  if (bVsites)
+  if (bVsites) {
     /* determine which atoms will be vsites and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
     do_vsites(nrtp, rtp, atype, atoms, tab, x, plist, 
-	       &vsite_type, &cgnr, mHmult, bVsiteAromatics, ff);
+              &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
+  }
   
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles, dihedrals and pairs...\n");
@@ -800,7 +927,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih,bRemoveDih,
+  gen_pad(&nnb,atoms,restp[0].nrexcl,restp[0].HH14,
+          plist,excls,hb,restp[0].bAlldih,restp[0].bRemoveDih,
           bAllowMissing);
   done_nnb(&nnb);
   
@@ -842,11 +970,26 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   {
 	  scrub_charge_groups(cgnr, atoms->nr);
   }
+
+    if (bRenumRes)
+    {
+        for(i=0; i<atoms->nres; i++) 
+        {
+            atoms->resinfo[i].nr = i + 1;
+            atoms->resinfo[i].ic = ' ';
+        }
+    }
 	
   if (top_file) {
     fprintf(stderr,"Writing topology\n");
+    /* We can copy the bonded types from the first restp,
+     * since the types have to be identical for all residues in one molecule.
+     */
+    for(i=0; i<ebtsNR; i++) {
+        bts[i] = restp[0].rb[i].type;
+    }
     write_top(top_file, posre_fn, molname,
-	      atoms, bts, plist, excls, atype, cgnr, nrexcl);
+	      atoms, bts, plist, excls, atype, cgnr, restp[0].nrexcl);
   }
   
   /* cleaning up */
