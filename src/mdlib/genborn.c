@@ -668,7 +668,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
 		if(born->use[i] != 0)
         {
 		
-            gpi  = born->gpol[ai]+born->gpol_still_work[i];
+            gpi  = born->gpol[i]+born->gpol_still_work[i];
             gpi2 = gpi * gpi;
             born->bRad[i]   = factor*gmx_invsqrt(gpi2);
             fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
@@ -1116,7 +1116,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
             born->bRad[i] = rai_inv - tsum*rai_inv2;
             born->bRad[i] = 1.0 / born->bRad[i];
             
-            fr->invsqrta[ai]=gmx_invsqrt(born->bRad[i]);
+            fr->invsqrta[i] = gmx_invsqrt(born->bRad[i]);
             
             tchain  = rai * (born->obc_alpha-2*born->obc_beta*sum_ai+3*born->obc_gamma*sum_ai2);
             born->drobc[i] = (1.0-tsum*tsum)*tchain*rai_inv2;
