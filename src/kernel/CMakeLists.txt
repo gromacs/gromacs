@@ -3,6 +3,7 @@ set(GMXPREPROCESS_SOURCES
     add_par.c       
     compute_io.c    
     convparm.c      
+    fflibutil.c
     gen_ad.c        
     gen_vsite.c     
     genhydro.c   
