@@ -312,6 +312,7 @@ int main(int argc,char *argv[])
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
   bool bAppendFiles=FALSE,bAddPart=TRUE;
+  bool bResetCountersHalfMaxH=FALSE;
   output_env_t oenv=NULL;
 	
   t_pargs pa[] = {
@@ -378,7 +379,9 @@ int main(int argc,char *argv[])
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" },
     { "-resetstep", FALSE, etINT, {&resetstep},
-      "HIDDENReset cycle counters after these many time steps" }
+      "HIDDENReset cycle counters after these many time steps" },
+    { "-resethmaxh", FALSE, etBOOL, {&bResetCountersHalfMaxH},
+      "HIDDENReset the cycle counters after half -maxh" }
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
@@ -478,6 +481,9 @@ int main(int argc,char *argv[])
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
+  if (max_hours > 0) {
+    Flags = Flags | (bResetCountersHalfMaxH ? MD_RESETCOUNTERSHALFMAXH : 0);
+  }
 
 
   /* We postpone opening the log file if we are appending, so we can 

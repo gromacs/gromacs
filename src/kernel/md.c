@@ -169,6 +169,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
                             tensor pres, rvec mu_tot, gmx_constr_t constr, 
                             real *chkpt,real *terminate, real *terminate_now,
+                            real *reset_counters,real *reset_counters_now,
                             int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
                             int natoms, bool *bSumEkinhOld, int flags)
 {
@@ -250,14 +251,25 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
                             ir,ekind,constr,vcm,nabnsb,
-                            chkpt,terminate,
+                            chkpt,terminate,reset_counters,
                             top_global,state,
                             *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
-                if (*terminate != 0)
+                if (terminate != NULL)
                 {
-                    *terminate_now = *terminate;
-                    *terminate = 0;
+                    if (*terminate != 0)
+                    {
+                        *terminate_now = *terminate;
+                        *terminate = 0;
+                    }
+                }
+                if (reset_counters != NULL)
+                {
+                    if (*reset_counters != 0)
+                    {
+                        *reset_counters_now = *reset_counters;
+                        *reset_counters = 0;
+                    }
                 }
                 *bSumEkinhOld = FALSE;
                 wallcycle_stop(wcycle,ewcMoveE);
@@ -888,6 +900,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bIonize=FALSE;
     bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     bool        bAppend;
+    bool        bResetCountersHalfMaxH;
     bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
@@ -900,7 +913,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
-    int         reset_counters=-1;
+    real        reset_counters=0,reset_counters_now=0;
 	real        last_conserved = 0;
     real        last_ekin = 0;
 	int         iter_i;
@@ -919,6 +932,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bIonize  = (Flags & MD_IONIZE);
     bFFscan  = (Flags & MD_FFSCAN);
     bAppend  = (Flags & MD_APPENDFILES);
+    bResetCountersHalfMaxH = (Flags & MD_RESETCOUNTERSHALFMAXH);
     /* md-vv uses averaged full step velocities for T-control 
        md-vv2 uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
@@ -1172,7 +1186,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,NULL,&terminate,&terminate_now,NULL,state->box,
+                    constr,NULL,NULL,NULL,NULL,NULL,
+                    NULL,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
@@ -1182,7 +1197,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,NULL,&terminate,&terminate_now,NULL,state->box,
+                        constr,NULL,NULL,NULL,NULL,NULL,NULL,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                         cglo_flags &~ CGLO_PRESSURE);
     }
@@ -1547,7 +1562,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
-                            constr,&chkpt,&terminate,&terminate_now,NULL,state->box,
+                            constr,NULL,NULL,NULL,NULL,NULL,
+                            NULL,state->box,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
@@ -1762,7 +1778,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,&terminate,&terminate_now,NULL,state->box,
+                                    constr,NULL,&terminate,&terminate_now,
+                                    &reset_counters,&reset_counters_now,
+                                    NULL,state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags 
                                     | CGLO_ENERGY 
@@ -2001,6 +2019,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
         }
         
+        if (bResetCountersHalfMaxH && MASTER(cr) &&
+            run_time > max_hours*60.0*60.0*0.495)
+        {
+            reset_counters = 1;
+            if (!PAR(cr))
+            {
+                reset_counters_now = reset_counters;
+            }
+        }
+
         if (ir->nstlist == -1 && !bRerunMD)
         {
             /* When bGStatEveryStep=FALSE, global_stat is only called
@@ -2129,7 +2157,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* just compute the kinetic energy at the half step to perform a trotter step */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,&terminate,&terminate_now,&(nlh.nabnsb),lastbox,
+                                    constr,NULL,NULL,NULL,NULL,NULL,&(nlh.nabnsb),lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT    
                         );
@@ -2193,6 +2221,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
                             constr,&chkpt,&terminate,&terminate_now,
+                            &reset_counters,&reset_counters_now,
                             ir->nstlist==-1 ? &(nlh.nabnsb) : NULL,lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
@@ -2436,11 +2465,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             dd_cycles_add(cr->dd,cycles,ddCyclStep);
         }
         
-        if (step_rel == wcycle_get_reset_counters(wcycle))
+        if (step_rel == wcycle_get_reset_counters(wcycle) ||
+            reset_counters_now == 1)
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
             wcycle_set_reset_counters(wcycle, 0);
+            bResetCountersHalfMaxH = FALSE;
+            reset_counters_now = 0;
         }
     }
     /* End of main MD loop */

@@ -1409,6 +1409,18 @@ int main(int argc, char *argv[])
     }
   }
   
+  sprintf(buf_fn,"%s%c%s.itp",ffdir,DIR_SEPARATOR,watstr[0]);
+  if (!fflib_fexist(buf_fn)) {
+    for(chain=0; chain<nch; chain++) {
+      if (chains[chain].bAllWat) {
+	gmx_fatal(FARGS,"The topology file '%s' for the select water model '%s' can not be found in the force field directory. Select a different water model or remove the water from your input file.",
+		  buf_fn,watstr[0]);
+      }
+    }
+    /* Do not include the water topology file. */
+    watstr[0] = NULL;
+  }
+
   print_top_mols(top_file,title,ffdir,watstr[0],nincl,incls,nmol,mols);
   gmx_fio_fclose(top_file);
 

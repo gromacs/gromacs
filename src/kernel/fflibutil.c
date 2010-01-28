@@ -341,6 +341,25 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
 #endif 
 }
 
+bool fflib_fexist(const char *file)
+{
+    char *file_fullpath;
+
+    file_fullpath = low_gmxlibfn(file,FALSE);
+    
+    if (file_fullpath == NULL)
+    {
+        return FALSE;
+    }
+    else
+    {
+        sfree(file_fullpath);
+
+        return TRUE;
+    }
+}
+
+
 FILE *fflib_open(const char *file)
 {
     char *file_fullpath;
