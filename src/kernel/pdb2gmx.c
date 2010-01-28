@@ -240,7 +240,8 @@ static void read_resrename(const char *fname,FILE *fp,
 }
 
 static void rename_residues(t_atoms *pdba,int nterpairs,int *rN,int *rC,
-			    int nrr,resrename_t *rr,t_symtab *symtab)
+			    int nrr,resrename_t *rr,t_symtab *symtab,
+			    bool bVerbose)
 {
   int  r,i,j;
   bool bN,bC;
@@ -277,11 +278,13 @@ static void rename_residues(t_atoms *pdba,int nterpairs,int *rN,int *rC,
       if (nn[0] == '-') {
 	gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",pdba->resinfo[r].name,bN ? " as a N-terminus" : (bC ? " as a C-terminus" : ""));
       }
-      if (debug) {
-	fprintf(debug,"Renaming residue %d '%s' to '%s'\n",
-		pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
+      if (strcmp(*pdba->resinfo[r].name,nn) != 0) {
+	if (bVerbose) {
+	  printf("Renaming residue %d '%s' to '%s'\n",
+		 pdba->resinfo[r].nr,*pdba->resinfo[r].name,nn);
+	}
+	pdba->resinfo[r].name = put_symtab(symtab,nn);
       }
-      pdba->resinfo[r].name = put_symtab(symtab,nn);
     }
   }
 }
@@ -383,7 +386,7 @@ static int read_pdball(const char *inf, const char *outf,char *title,
 		       t_atoms *atoms, rvec **x,
 		       int *ePBC,matrix box, bool bRemoveH,
 		       t_symtab *symtab,t_aa_names *aan,const char *watres,
-		       gmx_atomprop_t aps)
+		       gmx_atomprop_t aps,bool bVerbose)
 /* Read a pdb file. (containing proteins) */
 {
   int  natom,new_natom,i;
@@ -422,7 +425,7 @@ static int read_pdball(const char *inf, const char *outf,char *title,
   
   rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
-  rename_atoms(atoms,symtab,aan);
+  rename_atoms("xlateat.dat",NULL,atoms,symtab,aan,TRUE,bVerbose);
   
   if (natom == 0)
     return 0;
@@ -621,7 +624,8 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
 	printf("\n");
       }
       pdba->nr--;
-      sfree(pdba->atomname[i]);
+      /* We can not free, since it might be in the symtab */
+      /* sfree(pdba->atomname[i]); */
       for (j=i; j < pdba->nr; j++) {
 	pdba->atom[j]     = pdba->atom[j+1];
 	pdba->atomname[j] = pdba->atomname[j+1];
@@ -629,7 +633,7 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
 	copy_rvec(x[j+1],x[j]);
       }
       srenew(pdba->atom,     pdba->nr);
-      srenew(pdba->atomname, pdba->nr);
+      /* srenew(pdba->atomname, pdba->nr); */
       srenew(pdba->pdbinfo,  pdba->nr);
     }
   }
@@ -970,7 +974,7 @@ int main(int argc, char *argv[])
   aan = get_aa_names();
   
   /* Read residue renaming database(s), if present */
-  nrrn = fflib_search_file_end(ffdir,".rrn",FALSE,&rrn);
+  nrrn = fflib_search_file_end(ffdir,".r2b",FALSE,&rrn);
   nresrename = 0;
   resrename  = NULL;
   for(i=0; i<nrrn; i++) {
@@ -1000,7 +1004,7 @@ int main(int argc, char *argv[])
   aps = gmx_atomprop_init();
   natom = read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
 		      &pdba_all,&pdbx,&ePBC,box,bRemoveH,&symtab,aan,watres,
-		      aps);
+		      aps,bVerbose);
   
   if (natom==0)
     gmx_fatal(FARGS,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -1233,8 +1237,10 @@ int main(int argc, char *argv[])
 
     if (nresrename > 0) {
       rename_residues(pdba,cc->nterpairs,cc->rN,cc->rC,nresrename,resrename,
-		      &symtab);
+		      &symtab,bVerbose);
     }
+
+    rename_atoms(NULL,ffdir,pdba,&symtab,aan,FALSE,bVerbose);
 		  
     if (bSort) {
       block = new_blocka();
@@ -1413,7 +1419,7 @@ int main(int argc, char *argv[])
   if (!fflib_fexist(buf_fn)) {
     for(chain=0; chain<nch; chain++) {
       if (chains[chain].bAllWat) {
-	gmx_fatal(FARGS,"The topology file '%s' for the select water model '%s' can not be found in the force field directory. Select a different water model or remove the water from your input file.",
+	gmx_fatal(FARGS,"The topology file '%s' for the selected water model '%s' can not be found in the force field directory. Select a different water model or remove the water from your input file.",
 		  buf_fn,watstr[0]);
       }
     }

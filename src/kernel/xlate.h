@@ -38,6 +38,8 @@
 
 #include "index.h"
 
-extern void rename_atoms(t_atoms *atoms,t_symtab *symtab,t_aa_names *aan);
+extern void rename_atoms(const char *xlfile,const char *ffdir,
+			 t_atoms *atoms,t_symtab *symtab,t_aa_names *aan,
+			 bool bReorderNum,bool bVerbose);
 
 #endif
