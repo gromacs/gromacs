@@ -515,7 +515,8 @@ static void einstein_visco(const char *fn,const char *fni,int nsets,
 
 static void analyse_ener(bool bCorr,const char *corrfn,
 			 bool bFee,bool bSum,bool bFluct,
-			 bool bVisco,const char *visfn,int  nmol,int ndf,
+			 bool bVisco,const char *visfn,int nmol,
+			 int nconstr,
 			 gmx_large_int_t start_step,double start_t,
 			 gmx_large_int_t step,double t,
 			 double time[], real reftemp,
@@ -687,7 +688,7 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	fprintf(stdout,"\n");
     }
     if (Temp != -1) {
-      printf("\nTemperature dependent fluctuation properties at T = %g\n",Temp);
+      printf("\nTemperature dependent fluctuation properties at T = %g. #constr/mol = %d\n",Temp,nconstr);
       if (nmol < 2)
 	printf("Warning: nmol = %d, this may not be what you want.\n",
 	       nmol);
@@ -700,7 +701,8 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	       1.0/tmp,unit_pres_bar);
       }
       if (VarEnthalpy != -1) {
-	real Cp = (1000*(VarEnthalpy)/nmol)/(BOLTZ*Temp*Temp);
+	real Cp = 1000*((VarEnthalpy/nmol)/(BOLTZ*Temp*Temp) - 
+			0.5*BOLTZ*nconstr);
 	printf("Heat capacity at constant pressure Cp: %10g J/mol K\n",Cp);
       }
       if ((VarV != -1) && (VarEnthalpy != -1)) {
@@ -708,7 +710,8 @@ static void analyse_ener(bool bCorr,const char *corrfn,
 	printf("Thermal expansion coefficient alphaP: %10g 1/K\n",aP);
       }
       if ((VarV == -1) && (VarEtot != -1)) {
-	real Cv = (1000*(VarEtot)/nmol)/(BOLTZ*Temp*Temp);
+	real Cv = 1000*((VarEtot/nmol)/(BOLTZ*Temp*Temp) - 
+			0.5*BOLTZ*nconstr);
 	printf("Heat capacity at constant volume Cv: %10g J/mol K\n",Cv);
       }
       please_cite(stdout,"Allen1987a");
@@ -899,13 +902,20 @@ int gmx_energy(int argc,char *argv[])
     "Some fluctuation-dependent properties can be calculated provided",
     "the correct energy terms are selected. The following properties",
     "will be computed:[BR]",
-    "Property                       Energy terms needed  Extra flags[BR]",
-    "-----------------------------------------------------------------[BR]",
-    "Heat capacity Cp (NPT sims)    Enthalpy, Temp       [TT]-nmol[tt] N[BR]",
-    "Heat capacity Cv (NVT sims)    Etot, Temp           [TT]-nmol[tt] N[BR]",
-    "Thermal expansion coeff. (NPT) Enthalpy, Vol, Temp  [TT]-nmol[tt] N[BR]",
-    "Isothermal compressibility     Vol, Temp            [TT]-nmol[tt] N[BR]",
-    "Adiabatic bulk modulus         Vol, Temp            [TT]-nmol[tt] N[PAR]",
+    "Property                       Energy terms needed[BR]",
+    "--------------------------------------------------[BR]",
+    "Heat capacity Cp (NPT sims)    Enthalpy, Temp     [BR]",
+    "Heat capacity Cv (NVT sims)    Etot, Temp         [BR]",
+    "Thermal expansion coeff. (NPT) Enthalpy, Vol, Temp[BR]",
+    "Isothermal compressibility     Vol, Temp          [BR]",
+    "Adiabatic bulk modulus         Vol, Temp          [PBR]",
+    "--------------------------------------------------[BR]",
+    "You always need to set the number of molecules [TT]-nmol[tt], and,",
+    "if you used constraints in your simulations you will need to give",
+    "the number of constraints per molecule [TT]-nconstr[tt] in order to",
+    "correct for this: (nconstr/2) kB is subtracted from the heat",
+    "capacity in this case. For instance in the case of rigid water",
+    "you need to give the value 3 to this option.[PAR]",
     
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
@@ -954,7 +964,7 @@ int gmx_energy(int argc,char *argv[])
   };
   static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
-  static int  skip=0,nmol=1,ndf=3;
+  static int  skip=0,nmol=1,nconstr=0;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
     { "-fee",   FALSE, etBOOL,  {&bFee},
@@ -975,8 +985,8 @@ int gmx_energy(int argc,char *argv[])
       "Print also the X1,t and sigma1,t, only if only 1 energy is requested" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
-    { "-ndf",  FALSE, etINT,  {&ndf},
-      "Number of degrees of freedom per molecule. Necessary for calculating the heat capacity" },
+    { "-nconstr",  FALSE, etINT,  {&nconstr},
+      "Number of constraints per molecule. Necessary for calculating the heat capacity" },
     { "-fluc", FALSE, etBOOL, {&bFluct},
       "Calculate autocorrelation of energy fluctuations rather than energy itself" },
     { "-orinst", FALSE, etBOOL, {&bOrinst},
@@ -1543,7 +1553,7 @@ int gmx_energy(int argc,char *argv[])
   } else {
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
-		 nmol,ndf,start_step,start_t,frame[cur].step,frame[cur].t,
+		 nmol,nconstr,start_step,start_t,frame[cur].step,frame[cur].t,
 		 time,reftemp,ee_nsum,ee_sum,&enersum,
 		 nset,set,nenergy,eneset,enesum,bIsEner,leg,enm,Vaver,ezero,
                  oenv);
