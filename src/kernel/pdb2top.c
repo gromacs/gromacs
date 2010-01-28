@@ -121,7 +121,7 @@ choose_ff(const char *ffsel,
     int  nff;
     char **ffdirs,**ffs,*ptr;
     int  i,sel;
-    char buf[STRLEN];
+    char buf[STRLEN],*doc_dir;
     FILE *fp;
     char *pret;
 
@@ -175,12 +175,14 @@ choose_ff(const char *ffsel,
         {
             sprintf(buf,"%s%c%s",
                     ffdirs[i],DIR_SEPARATOR,fflib_forcefield_doc());
-            if (gmx_fexist(buf))
+            doc_dir = low_libfn(buf,FALSE);
+            if (doc_dir != NULL)
             {
                 /* We don't use fflib_open, because we don't want printf's */
-                fp = ffopen(buf,"r");
+                fp = ffopen(doc_dir,"r");
                 get_a_line(fp,buf,STRLEN);
                 ffclose(fp);
+                sfree(doc_dir);
                 printf("%2d: %s\n",i,buf);
             }
             else

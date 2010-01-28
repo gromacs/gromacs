@@ -249,7 +249,8 @@ void clear_t_restp(t_restp *rrtp)
 }
 
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp, 
-                 gpp_atomtype_t atype, t_symtab *tab)
+                 gpp_atomtype_t atype, t_symtab *tab,
+                 bool bAllowOverrideRTP)
 {
   FILE      *in;
   char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
@@ -411,13 +412,25 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         nrtp++;
         fprintf(stderr,"\rResidue %d",nrtp);
     } else {
-        fprintf(stderr,"\n");
-        fprintf(stderr,"Found another rtp entry for '%s' in '%s', ignoring this entry and keeping the one from '%s.rtp'\n",
-                rrtp[nrtp].resname,rrdb,rrtp[nrtp].filebase);
-        /* We should free all the data for this entry.
-         * The current code gives a lot of dangling pointers.
-         */
-        clear_t_restp(&rrtp[nrtp]);
+        if (firstrtp >= *nrtpptr)
+        {
+            gmx_fatal(FARGS,"Found a second entry for '%s' in '%s'",
+                      rrtp[nrtp].resname,rrdb);
+        }
+        if (bAllowOverrideRTP)
+        {
+            fprintf(stderr,"\n");
+            fprintf(stderr,"Found another rtp entry for '%s' in '%s', ignoring this entry and keeping the one from '%s.rtp'\n",
+                    rrtp[nrtp].resname,rrdb,rrtp[firstrtp].filebase);
+            /* We should free all the data for this entry.
+             * The current code gives a lot of dangling pointers.
+             */
+            clear_t_restp(&rrtp[nrtp]);
+        }
+        else
+        {
+            gmx_fatal(FARGS,"Found rtp entries for '%s' in both '%s' and '%s'. If you want the first definition to override the second one, set the -rtpo option of pdb2gmx.",rrtp[nrtp].resname,rrtp[firstrtp].filebase,rrdb);
+        }
     }
   }
   ffclose(in);

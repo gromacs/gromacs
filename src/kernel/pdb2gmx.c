@@ -827,7 +827,7 @@ int main(int argc, char *argv[])
  
 
   /* Command line arguments must be static */
-  static bool bNewRTP=FALSE,bMerge=FALSE;
+  static bool bNewRTP=FALSE,bAllowOverrideRTP=FALSE,bMerge=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bGlnMan=FALSE, bArgMan=FALSE;
@@ -845,6 +845,8 @@ int main(int argc, char *argv[])
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
+    { "-rtpo",  FALSE, etBOOL,  {&bAllowOverrideRTP},
+      "Allow an entry in a local rtp file to override a library rtp entry"},
     { "-lb",     FALSE, etREAL, {&long_bond_dist},
       "HIDDENLong bond warning distance" },
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
@@ -1164,7 +1166,7 @@ int main(int argc, char *argv[])
   nrtp  = 0;
   restp = NULL;
   for(i=0; i<nrtpf; i++) {
-    read_resall(rtpf[i],&nrtp,&restp,atype,&symtab);
+    read_resall(rtpf[i],&nrtp,&restp,atype,&symtab,bAllowOverrideRTP);
     sfree(rtpf[i]);
   }
   sfree(rtpf);

@@ -52,7 +52,8 @@ extern gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
 /* read atom type database(s) */
 
 extern void read_resall(char *resdb, int *nrtp,t_restp **rtp, 
-			gpp_atomtype_t atype, t_symtab *tab);
+			gpp_atomtype_t atype, t_symtab *tab,
+			bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
 extern void print_resall(FILE *out, int nrtp, t_restp rtp[], 
