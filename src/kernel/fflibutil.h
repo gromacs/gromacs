@@ -65,10 +65,8 @@ extern void fflib_filename_base(const char *filename,char *filebase,int maxlen);
 extern int fflib_search_file_end(const char *ffdir,const char *file_end,
 				 bool bFatalError,
 				 char ***filenames);
-/* Search for files ending on file_end.
- * If ffdir!=NULL: search in the current dir and ffdir.
- * If ffdir==NULL: search in the current dir and libpath.
- * If bFatalError: generate a fatal error when no files are found.
+/* Search for files ending on file_end in the force field directory fflib.
+ * fflib should be in the current working directory or the GROMACS lib.path.
  * Return the number of files and the file names in filenames.
  */
 
