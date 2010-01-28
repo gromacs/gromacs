@@ -175,7 +175,7 @@ choose_ff(const char *ffsel,
         {
             sprintf(buf,"%s%c%s",
                     ffdirs[i],DIR_SEPARATOR,fflib_forcefield_doc());
-            doc_dir = low_libfn(buf,FALSE);
+            doc_dir = low_gmxlibfn(buf,FALSE);
             if (doc_dir != NULL)
             {
                 /* We don't use fflib_open, because we don't want printf's */

@@ -224,7 +224,7 @@ int cpp_open_file(const char *filenm,gmx_cpp_t *handle, char **cppopts)
     snew(cpp->cwd,STRLEN);
 
     /* Search for the directory in cwd and the GROMACS search path */
-    cpp->path = libfn(buf);
+    cpp->path = gmxlibfn(buf);
     sfree(buf);
       
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)

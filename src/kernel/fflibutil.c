@@ -172,7 +172,7 @@ static int low_fflib_search_file_end(const char *ffdir,
     if (ffdir != NULL)
     {
         /* Search in current dir and ffdir */
-        libpath = libfn(ffdir);
+        libpath = gmxlibfn(ffdir);
     }
     else
     {
@@ -346,7 +346,7 @@ FILE *fflib_open(const char *file)
     char *file_fullpath;
     FILE *fp;
 
-    file_fullpath = libfn(file);
+    file_fullpath = gmxlibfn(file);
     fprintf(stderr,"Opening force field file %s\n",file_fullpath);
     fp = ffopen(file_fullpath,"r");
     sfree(file_fullpath);
