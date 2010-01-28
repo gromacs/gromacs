@@ -347,6 +347,8 @@ static void print_top_posre(FILE *out,const char *pr)
   
 static void print_top_water(FILE *out,const char *ffdir,const char *water)
 {
+    char buf[STRLEN];
+
   fprintf(out,"; Include water topology\n");
   fprintf(out,"#include \"%s%c%s.itp\"\n",ffdir,DIR_SEPARATOR,water);
   fprintf(out,"\n");
@@ -355,10 +357,16 @@ static void print_top_water(FILE *out,const char *ffdir,const char *water)
   fprintf(out,"[ position_restraints ]\n");
   fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
   fprintf(out,"%4d %4d %10g %10g %10g\n",1,1,1000.0,1000.0,1000.0);
-  fprintf(out,"#endif\n\n");
-  fprintf(out,"; Include topology for ions\n");
-  fprintf(out,"#include \"%s%cions.itp\"\n",ffdir,DIR_SEPARATOR);
+  fprintf(out,"#endif\n");
   fprintf(out,"\n");
+
+    sprintf(buf,"%s%c%s",ffdir,DIR_SEPARATOR,"ions.itp");
+    if (fflib_fexist(buf))
+    {
+        fprintf(out,"; Include topology for ions\n");
+        fprintf(out,"#include \"%s%cions.itp\"\n",ffdir,DIR_SEPARATOR);
+        fprintf(out,"\n");
+    }
 }
 
 static void print_top_system(FILE *out, const char *title)
