@@ -133,7 +133,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,gmx_constr_t constr,
                  t_vcm *vcm,int *nabnsb,
-                 real *chkpt,real *terminate,
+                 real *chkpt,real *terminate,real *reset_counters,
                  gmx_mtop_t *top_global, t_state *state_local, 
                  bool bSumEkinhOld, int flags)
 /* instead of current system, booleans for summing virial, kinetic energy, and other terms */
@@ -142,7 +142,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    *itc0,*itc1;
   int    ie=0,ifv=0,isv=0,irmsd=0,imu=0;
   int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
-  int    ibnsb=-1,ichkpt=-1,iterminate;
+  int    ibnsb=-1,ichkpt=-1,iterminate,ireset;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   real   *copyenerd;
@@ -293,7 +293,12 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           ichkpt   = add_binr(rb,1,chkpt);
       }
   }
-  iterminate = add_binr(rb,1,terminate);
+  if (terminate != NULL) {
+      iterminate = add_binr(rb,1,terminate);
+  }
+  if (reset_counters != NULL) {
+      ireset = add_binr(rb,1,reset_counters);
+  }
 
   /* Global sum it all */
   if (debug)
@@ -402,7 +407,12 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           {
               extract_binr(rb,ichkpt,1,chkpt);
           }
-          extract_binr(rb,iterminate,1,terminate);
+          if (terminate != NULL) {
+              extract_binr(rb,iterminate,1,terminate);
+          }
+          if (reset_counters != NULL) {
+              extract_binr(rb,ireset,1,reset_counters);
+          }
           where();
           
           filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
