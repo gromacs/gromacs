@@ -900,7 +900,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bIonize=FALSE;
     bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     bool        bAppend;
-    bool        bResetCountersHalfMaxH;
+    bool        bResetCountersHalfMaxH=FALSE;
     bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
@@ -932,7 +932,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bIonize  = (Flags & MD_IONIZE);
     bFFscan  = (Flags & MD_FFSCAN);
     bAppend  = (Flags & MD_APPENDFILES);
-    bResetCountersHalfMaxH = (Flags & MD_RESETCOUNTERSHALFMAXH);
+    if (Flags & MD_RESETCOUNTERSHALFWAY)
+    {
+        if (ir->nsteps > 0)
+        {
+            /* Signal to reset the counters half the simulation steps. */
+            wcycle_set_reset_counters(wcycle,ir->nsteps/2);
+        }
+        /* Signal to reset the counters halfway the simulation time. */
+        bResetCountersHalfMaxH = (max_hours > 0);
+    }
+
     /* md-vv uses averaged full step velocities for T-control 
        md-vv2 uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
@@ -1259,20 +1269,28 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         else
         {
+            char tbuf[20];
             fprintf(stderr,"starting mdrun '%s'\n",
                     *(top_global->name));
+            if (ir->nsteps >= 0)
+            {
+                sprintf(tbuf,"%8.1f",(ir->init_step+ir->nsteps)*ir->delta_t);
+            }
+            else
+            {
+                sprintf(tbuf,"%s","infinite");
+            }
             if (ir->init_step > 0)
             {
-                fprintf(stderr,"%s steps, %8.1f ps (continuing from step %s, %8.1f ps).\n",
-                        gmx_step_str(ir->init_step+ir->nsteps,sbuf),
-                        (ir->init_step+ir->nsteps)*ir->delta_t,
+                fprintf(stderr,"%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
+                        gmx_step_str(ir->init_step+ir->nsteps,sbuf),tbuf,
                         gmx_step_str(ir->init_step,sbuf2),
                         ir->init_step*ir->delta_t);
             }
             else
             {
-                fprintf(stderr,"%s steps, %8.1f ps.\n",
-                        gmx_step_str(ir->nsteps,sbuf),ir->nsteps*ir->delta_t);
+                fprintf(stderr,"%s steps, %s ps.\n",
+                        gmx_step_str(ir->nsteps,sbuf),tbuf);
             }
         }
         fprintf(fplog,"\n");
@@ -1354,7 +1372,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         init_nlistheuristics(&nlh,bGStatEveryStep,step);
     }
 
-    bLastStep = (bRerunMD || step_rel > ir->nsteps);
+    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep || (bRerunMD && bNotLastFrame)) {
 
         wallcycle_start(wcycle,ewcSTEP);
@@ -2470,7 +2488,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
-            wcycle_set_reset_counters(wcycle, 0);
+            wcycle_set_reset_counters(wcycle,-1);
             bResetCountersHalfMaxH = FALSE;
             reset_counters_now = 0;
         }

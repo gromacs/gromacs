@@ -74,7 +74,7 @@ extern "C" {
 #define MD_APPENDFILES  (1<<16)
 #define MD_READ_EKIN    (1<<17)
 #define MD_STARTFROMCPT (1<<18)
-#define MD_RESETCOUNTERSHALFMAXH (1<<19)
+#define MD_RESETCOUNTERSHALFWAY (1<<19)
 
 /* define a number of flags to better control the information passed to the compute_globals code in md.c */
 
