@@ -1197,8 +1197,7 @@ real idihs(int nbonds,
   real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl_term;
 
   L1 = 1.0-lambda;
-  dvdl = 0;
-
+  dvdl_term = 0;
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
@@ -2558,22 +2557,19 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                    const t_mdatoms *md,t_fcdata *fcd,
                    int *global_atom_index, bool bPrintSepPot)
 {
-    int ind,nat1,nbonds,efptCURRENT,nbonds_np;
+    int ind,nat1,nbonds,efptFTYPE,nbonds_np;
     real v=0;
-    real *pdvdl;
-    real dvdl_dum[efptNR];
     bool bForeign,bSep;
+    real clambda,dvdl_dum=0;
+    real *cdvdl;
     t_iatom *iatoms;
 
-    bForeign=FALSE;
-    if (dvdl==NULL) 
+    bForeign = FALSE;
+    if (dvdl == NULL) 
     {
-        bForeign = TRUE;   /* if dvdl is NULL, we are doing foreign lambdas */
-        pdvdl = dvdl_dum;
-    } else {
-        pdvdl = dvdl;
+        bForeign = TRUE;
     }
-    
+
     if (ftype<F_GB12 || ftype>F_GB14) 
     {
         if (interaction_function[ftype].flags & IF_BOND &&
@@ -2581,7 +2577,7 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
         {
             ind  = interaction_function[ftype].nrnb_ind;
             nat1 = interaction_function[ftype].nratoms+1;
-
+            
             if (bForeign) 
             {
                 nbonds_np = idef->il[ftype].nr_nonperturbed;
@@ -2590,8 +2586,8 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
             } 
             else
             {
-                iatoms = idef->il[ftype].iatoms;
                 nbonds    = idef->il[ftype].nr;
+                iatoms    = idef->il[ftype].iatoms;
             }
             if (nbonds > 0)
             {
@@ -2599,19 +2595,29 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                 {
                     if (IS_RESTRAINT_TYPE(ftype)) 
                     {
-                        efptCURRENT = efptRESTRAINT;
+                        efptFTYPE = efptRESTRAINT;
                     } 
                     else 
                     {
-                        efptCURRENT = efptBONDED;
+                        efptFTYPE = efptBONDED;
                     }
 
+                    clambda = lambda[efptFTYPE];
+                    if (bForeign) 
+                    {
+                        cdvdl = &dvdl_dum;
+                    } 
+                    else 
+                    {
+                        cdvdl = &(dvdl[efptFTYPE]);
+                    }
+                    
                     if(ftype==F_CMAP)
                     {
                         v = cmap_dihs(nbonds,iatoms,
                                       idef->iparams,&idef->cmap_grid,
                                       (const rvec*)x,f,fr->fshift,
-                                      pbc,g,lambda[efptBONDED],&pdvdl[efptBONDED],md,fcd,
+                                      pbc,g,clambda,cdvdl,md,fcd,
                                       global_atom_index);
                     }
                     else
@@ -2619,28 +2625,40 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                         v =	    interaction_function[ftype].ifunc(nbonds,iatoms,
                                                                   idef->iparams,
                                                                   (const rvec*)x,f,fr->fshift,
-                                                                  pbc,g,lambda[efptCURRENT],&pdvdl[efptCURRENT],
+                                                                  pbc,g,clambda,cdvdl,
                                                                   md,fcd,global_atom_index);
                     }
                     if (!bForeign) 
                     {
-                        enerd->dvdl_nonlin[efptCURRENT] += dvdl[efptCURRENT];
-                        if (bPrintSepPot) 
+                        enerd->dvdl_nonlin[efptFTYPE] += cdvdl[efptFTYPE];
+                        if (bPrintSepPot && !bForeign) 
                         {
                             fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-                                    interaction_function[ftype].longname,nbonds/nat1,v,pdvdl[efptCURRENT]);
+                                    interaction_function[ftype].longname,nbonds/nat1,v,cdvdl);
                         }
                     } 
                 }
                 else 
                 {
+                    if (bForeign) 
+                    {
+                        snew(cdvdl,efptNR);
+                    } 
+                    else 
+                    {
+                        cdvdl = dvdl;
+                    }
                     v = do_listed_vdw_q(ftype,nbonds,iatoms,
                                         idef->iparams,
                                         (const rvec*)x,f,fr->fshift,
                                         pbc,g,
-                                        lambda,pdvdl,
+                                        lambda,cdvdl,
                                         md,fr,&enerd->grpp,global_atom_index);
-                    if (!bForeign)
+                    if (bForeign) 
+                    {
+                        sfree(cdvdl);
+                    } 
+                    else 
                     {
                         enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
                         enerd->dvdl_nonlin[efptVDW] += dvdl[efptVDW];
@@ -2649,13 +2667,12 @@ real calc_one_bond(FILE *fplog,int ftype, const t_idef *idef,
                         {
                             fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
                                     interaction_function[ftype].longname,
-                                    interaction_function[F_LJ14].longname,nbonds/nat1,pdvdl[efptVDW]);
+                                    interaction_function[F_LJ14].longname,nbonds/nat1,cdvdl[efptVDW]);
                             fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
                                     interaction_function[ftype].longname,
-                                    interaction_function[F_COUL14].longname,nbonds/nat1,pdvdl[efptCOUL]);
+                                    interaction_function[F_COUL14].longname,nbonds/nat1,cdvdl[efptCOUL]);
                         }
                     }
-                    
                 }
                 if (ind != -1)
                 {
@@ -2679,7 +2696,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                 t_atomtypes *atype, gmx_genborn_t *born,
                 bool bPrintSepPot,gmx_large_int_t step)
 {
-    int    i,ftype,nbonds,ind,nat,efptCURRENT;
+    int    i,ftype,nbonds,ind,nat;
     real   v,dvdl[efptNR];
     real   *epot;
     const  t_pbc *pbc_null;
@@ -2753,7 +2770,7 @@ void calc_bonds_lambda(FILE *fplog,
                        t_fcdata *fcd,
                        int *global_atom_index)
 {
-    int    i,ftype,nbonds_np,nbonds,ind,nat,efptCURRENT;
+    int    i,ftype,nbonds_np,nbonds,ind,nat;
     real   v,dr,dr2,*epot;
     rvec   *f,*fshift_orig;
     const  t_pbc *pbc_null;

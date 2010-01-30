@@ -236,13 +236,17 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(err_buf,"Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero",fep->delta_lambda);    
     CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state !=0) ||  (fep->init_lambda !=0))); 
     
+
     sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
     CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM));
     
     /* check validty of lambda inputs */
-    for (i=0;i<fep->n_lambda;i++) 
+    sprintf(err_buf,"initial fep state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
+    CHECK((fep->init_fep_state >= fep->n_lambda));
+    
+    for (j=0;j<efptNR;j++)
       {
-	for (j=0;j<efptNR;j++)
+	for (i=0;i<fep->n_lambda;i++) 
 	  {
 	    sprintf(err_buf,"Entry %d for %s must be between 0 and 1, instead is %g",i,efpt_names[j],fep->all_lambda[j][i]);
 	    CHECK((fep->all_lambda[j][i] < 0) || (fep->all_lambda[j][i] > 1));
@@ -647,7 +651,8 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN]) {
       parse_n_double(fep_lambda[i],&(nfep[i]),&(count_fep_lambdas[i]));
     }
 
-  /* now, determine the number.  All must be zero, or equal. */
+  /* now, determine the number.  All must be either zero, or equal. */
+
   max_n_lambda = 0;
   for (i=0;i<efptNR;i++) 
     {
