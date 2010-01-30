@@ -1,9 +1,3 @@
-#ifdef _FF_OPLS
-;
-; This topology file should work with ffoplsaa.itp
-;
-
-	
 [ moleculetype ]
 ; molname       nrexcl
 SOL             2
@@ -20,8 +14,8 @@ SOL             2
 ; i     funct   doh     dhh
 1       1       0.09572 0.15139
 
-[ dummies3 ]
-; The position of the dummy is computed as follows:
+[ virtual_sites3 ]
+; The position of the virtual site is computed as follows:
 ;
 ; The distance from OW to L is 0.07 nm, the geometry is tetrahedral
 ; (109.47 deg)
@@ -30,9 +24,9 @@ SOL             2
 ;
 ; Using | xOH1 X xOH2 | = | xOH1 | | xOH2 | sin (H1-O-H2)
 ;       | xOH1 + xOH2 | = 2 | xOH1 | cos (H1-O-H2)
-; Dummy pos x4 = x1 + a*x21 + b*x31 + c*(x21 X x31)
+; Vsite pos x4 = x1 + a*x21 + b*x31 + c*(x21 X x31)
 
-; Dummy from                    funct   a       b               c
+; Vsite from                    funct   a       b               c
 4       1       2       3       4       -0.344908  -0.344908  -6.4437903493
 5       1       2       3       4       -0.344908  -0.344908   6.4437903493
 
@@ -42,4 +36,3 @@ SOL             2
 3       1       2       4       5
 4       1       2       3       5
 5       1       2       3       4
-#endif

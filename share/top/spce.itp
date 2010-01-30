@@ -1,51 +1,11 @@
-[ moleculetype ]
-; molname	nrexcl
-SOL		2
-
-[ atoms ]
-;   nr   type  resnr residue  atom   cgnr     charge       mass
-#ifdef _FF_GROMACS 
-     1	   OW	   1	SOL     OW      1    -0.8476
-     2	   HW	   1	SOL    HW1      1     0.4238
-     3	   HW	   1	SOL    HW2	1     0.4238
+; This file is for backward compatibility only.
+; Please directly include the spce.itp file from your force field directory.
+#ifdef _FF_GROMACS
+#include "gmx.ff/spce.itp"
 #endif
-#ifdef _FF_GROMOS96  
-#ifdef HEAVY_H
-     1	   OW	   1	SOL     OW      1    -0.8476    9.95140
-     2	    H 	   1	SOL    HW1      1     0.4238    4.03200
-     3	    H 	   1	SOL    HW2	1     0.4238    4.03200
-#else
-     1	   OW	   1	SOL     OW      1    -0.8476   15.99940
-     2	    H 	   1	SOL    HW1      1     0.4238    1.00800
-     3	    H 	   1	SOL    HW2	1     0.4238    1.00800
-#endif
+#ifdef _FF_GROMOS96
+#include "gromos43a1.ff/spce.itp"
 #endif
 #ifdef _FF_OPLS  
-     1	opls_116   1	SOL     OW      1      -0.8476
-     2	opls_117   1	SOL    HW1      1       0.4238 
-     3	opls_117   1	SOL    HW2	1       0.4238
+#include "oplsaa.ff/spce.itp"
 #endif
- 
-#ifdef FLEXIBLE
-[ bonds ]
-; i	j	funct	length	force.c.
-1	2	1	0.1	345000	0.1     345000
-1	3	1	0.1	345000	0.1     345000
-	
-
-[ angles ]
-; i	j	k	funct	angle	force.c.
-2	1	3	1	109.47	383	109.47	383
-#else
-[ settles ]
-; OW	funct	doh	dhh
-1	1	0.1	0.16330
-
-[ exclusions ]
-1	2	3
-2	1	3
-3	1	2
-#endif
-
-
-

@@ -373,7 +373,7 @@ static void add_solv(const char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,
   int     onr,onres;
   char    *lfn;
 
-  lfn=libfn(fn);
+  lfn = gmxlibfn(fn);
   strncpy(filename,lfn,STRLEN);
   sfree(lfn);
   snew(atoms_solvt,1);

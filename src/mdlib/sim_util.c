@@ -595,7 +595,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	
     if (inputrec->implicit_solvent && bNS) 
     {
-        make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm,inputrec->rlist,
+        make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
                        x,box,fr,&top->idef,graph,fr->born);
     }
 	

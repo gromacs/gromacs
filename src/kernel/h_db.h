@@ -44,11 +44,11 @@ extern const int ncontrol[];
   
 /* functions for the h-database */
 
-extern void read_ab(char *line,char *fn,t_hack *ab);
+extern void read_ab(char *line,const char *fn,t_hack *ab);
 /* Read one add block */
 
-extern int read_h_db(char *fn,t_hackblock **ah);
-/* Read the database from file */
+extern int read_h_db(const char *ffdir,t_hackblock **ah);
+/* Read the database from hdb file(s) in ffdir or current dir */
 
 extern void print_ab(FILE *out,t_hack *ab,char *nname);
 /* print one add block */

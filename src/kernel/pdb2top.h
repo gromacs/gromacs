@@ -50,18 +50,26 @@ typedef struct {
   char *a1,*a2;
 } t_ssbond;
 
+extern void choose_ff(const char *ffsel,
+		      char *forcefield, int ff_maxlen,
+		      char *ffdir, int ffdir_maxlen);
+/* Find force fields in the current and libdirs and choose an ff.
+ * If ffsel!=NULL: search for ffsel.
+ * If ffsel==NULL: interactive selection.
+ */
+
 extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    t_atoms *atoms,rvec **x,
 		    gpp_atomtype_t atype,t_symtab *tab,
-		    int bts[],
 		    int nrtp, t_restp rtp[],
 		    int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
 		    int *rn, int *rc, bool bAllowMissing,
-		    bool HH14, bool bAlldih, bool bRemoveDih,
-		    bool bVsites, bool bVsiteAromatics, char *ff,real mHmult,
-		    int nssbonds, t_ssbond ssbonds[], int nrexcl, 
+		    bool bVsites, bool bVsiteAromatics,
+		    const char *ff, const char *ffdir, real mHmult,
+		    int nssbonds, t_ssbond ssbonds[],
 		    real long_bond_dist, real short_bond_dist,
-		    bool bDeuterate, bool bChargeGroups, bool bCmap);
+		    bool bDeuterate, bool bChargeGroups, bool bCmap,
+		    bool bRenumRes);
 /* Create a topology ! */
 
 extern void print_sums(t_atoms *atoms, bool bSystem);

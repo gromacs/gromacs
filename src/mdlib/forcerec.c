@@ -500,7 +500,7 @@ check_solvent(FILE *                fp,
     
     if (bestsol != esolNO && fp!=NULL)
     {
-        fprintf(fp,"\nEnabling %s water optimization for %d molecules.\n\n",
+        fprintf(fp,"\nEnabling %s-like water optimization for %d molecules.\n\n",
                 esol_names[bestsol],
                 solvent_parameters[bestsp].count);
     }

@@ -48,9 +48,13 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     int ret=TMPI_SUCCESS;
 
 #ifdef TMPI_TRACE
-    tMPI_Profile_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype,
-                       root, comm);
+    tMPI_Profile_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, 
+                       datatype, root, comm);
 #endif
+#ifdef TMPI_PROFILE
+       tMPI_Profile_count(TMPIFN_Bcast); 
+#endif
+
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);

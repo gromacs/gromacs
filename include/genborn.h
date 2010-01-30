@@ -71,9 +71,9 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
 
 
 /* Bonded GB interactions */								
-real gb_bonds_tab(real *x, real *f, real *charge, real *p_gbtabscale,
+real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
 				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef,
-				  real gb_epsilon_solvent, real facel);
+				  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
 
 
 
@@ -92,11 +92,12 @@ convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist
 /* Functions for calculating adjustments due to ie chain rule terms */
 real 
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, t_nrnb *nrnb, bool bRad);
+			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, t_nrnb *nrnb, bool bRad,
+			   const t_pbc *pbc, const t_graph *graph);
 
 
 int
-make_gb_nblist(t_commrec *cr, int natoms, int gb_algorithm, real gbcut,
+make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
 	       rvec x[], matrix box,
 	       t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born);
 
