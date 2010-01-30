@@ -382,20 +382,20 @@ gmx_iterate_t;
 #define CONVERGEITER  0.000000001
 #define CLOSE_ENOUGH  0.000001000
 #else
-#define CONVERGEITER  0.00001
-#define CLOSE_ENOUGH  0.01
+#define CONVERGEITER  0.0001
+#define CLOSE_ENOUGH  0.0050
 #endif
+/* iterate constraints up to 50 times  */
 #define MAXITERCONST       50
 
 /* we want to keep track of the close calls.  If there are too many, there might be some other issues.
    so we make sure that it's either less than some predetermined number, or if more than that number,
    only some small fraction of the total. */
-#define MAX_NUMBER_CLOSE        10
-#define FRACTION_CLOSE     0.00001
+#define MAX_NUMBER_CLOSE        50
+#define FRACTION_CLOSE       0.001
   
-  /* used to escape out of cyclic traps because of limited numberical precision  */
+/* maximum length of cyclic traps to check, emerging from limited numerical precision  */
 #define CYCLEMAX            20
-#define FALLBACK          1000 
 
 static gmx_iterate_t gmx_iterate_init(bool bIterate) {
     
@@ -502,7 +502,6 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
     */
     
     relerr = (fabs((iterate->f-iterate->fprev)/fom));
-    
     iterate->allrelerr[iterate->iter_i] = relerr;
     
     if (iterate->iter_i > 0) 
@@ -513,7 +512,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
                     iterate->iter_i,fom,relerr,*newf);
         }
         
-        if ((relerr < CONVERGEITER) || (fom==0))
+        if ((relerr < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
         {
             iterate->bIterate = FALSE;
             if (debug) 
@@ -522,54 +521,51 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
             }
             return TRUE;
         }
-        if (iterate->iter_i > MAXITERCONST) 
+        if (iterate->iter_i > MAXITERCONST)
         {
-            /* step #1 to determine if we should die - test to see if
-             * we're stuck in some numerical-precision induced loop */
-
-            incycle = FALSE;
-            for (i=0;i<CYCLEMAX;i++) {
-                if (iterate->allrelerr[(MAXITERCONST-2*CYCLEMAX)-i] == iterate->allrelerr[iterate->iter_i-1]) {
-                    incycle = TRUE;
-                    if (relerr > CLOSE_ENOUGH) {incycle = FALSE; break;}
-                }
-            }
-            
-            if (incycle) {
-                /* we are trapped in a numerical attractor, and can't converge any more, and are close to the final result.
-                   Better to give up here and proceed with a warning than have the simulation die.
-                */
-                sprintf(buf,"Slight numerical convergence deviation with NPT, at step %d relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
-                md_print_warning(cr,fplog,buf);
-                return TRUE;
-            } 
-            else 
+            if (relerr < CLOSE_ENOUGH)
             {
-                /* Step #2 test to see if we are reasonably close
-                 * anyway, then monitor the number.  If not, die */
-
-                if (relerr < CLOSE_ENOUGH) 
-                {
+                incycle = FALSE;
+                for (i=1;i<CYCLEMAX;i++) {
+                    if ((iterate->allrelerr[iterate->iter_i-(1+i)] == iterate->allrelerr[iterate->iter_i-1]) &&
+                        (iterate->allrelerr[iterate->iter_i-(1+i)] == iterate->allrelerr[iterate->iter_i-(1+2*i)])) {
+                        incycle = TRUE;
+                        if (debug) 
+                        {
+                            fprintf(debug,"Exiting from an NPT iterating cycle of length %d\n",i);
+                        }
+                        break;
+                    }
+                }
+                
+                if (incycle) {
+                    /* step 1: trapped in a numerical attractor */
+                    /* we are trapped in a numerical attractor, and can't converge any more, and are close to the final result.
+                       Better to give up convergence here than have the simulation die.
+                    */
                     iterate->num_close++;
-                    /* if so, how many close calls have we had?  If less than a few, we're OK */
+                    return TRUE;
+                } 
+                else 
+                {
+                    /* Step #2: test if we are reasonably close for other reasons, then monitor the number.  If not, die */
+                    
+                    /* how many close calls have we had?  If less than a few, we're OK */
                     if (iterate->num_close < MAX_NUMBER_CLOSE) 
                     {
                         sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
                         md_print_warning(cr,fplog,buf);
+                        iterate->num_close++;
                         return TRUE;
                         /* if more than a few, check the total fraction.  If too high, die. */
-                    } else if (iterate->num_close/nsteps > FRACTION_CLOSE) {
-                        gmx_fatal(FARGS,"Could not converge NPT constraints\n");
-                    } else {
-                        sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
-                        md_print_warning(cr,fplog,buf);
-                        return TRUE;
-                    }
+                    } else if (iterate->num_close/(double)nsteps > FRACTION_CLOSE) {
+                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d\%\n",iterate->num_close/(double)nsteps);
+                    } 
                 }
-                else 
-                {
-                    gmx_fatal(FARGS,"Could not converge NPT constraints\n");
-                }
+            }
+            else 
+            {
+                gmx_fatal(FARGS,"Could not converge NPT constraints\n");
             }
         }
     }
@@ -1824,7 +1820,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[2]);
                 }
                 
-                if (done_iterating(cr,fplog,step,iterate,state->veta,&vetanew)) break;
+                if (done_iterating(cr,fplog,step,iterate,state->veta,&vetanew)) 
+                {
+                    break;
+                }
             }
             gmx_iterate_destroy(iterate);
 
@@ -2253,7 +2252,15 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
         
-            if (done_iterating(cr,fplog,step,iterate,trace(shake_vir),&tracevir)) break;
+            /* Note: this is OK, but there are some numerical precision issues with using the convergence of
+               the virial that should probably be addressed eventually. state->veta has better properies,
+               but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
+               generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
+            
+            if (done_iterating(cr,fplog,step,iterate,trace(shake_vir),&tracevir)) 
+            {
+                break;
+            }
         }
         gmx_iterate_destroy(iterate);
 
