@@ -545,8 +545,9 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
   if ( bUpdate_pdba ) {
     if ( !bKeep_old_pdba ) {
       for(i=0; i < natoms; i++) {
-	sfree(*(pdba->atomname[i]));
-	/*       sfree(pdba->atomname[i]); */
+	/* Do not free the atomname string itself, it might be in symtab */
+	/* sfree(*(pdba->atomname[i])); */
+	/* sfree(pdba->atomname[i]); */
       }
       sfree(pdba->atomname);
       sfree(pdba->atom);

@@ -142,7 +142,13 @@ static bool read_atoms(FILE *in,char *line,
       srenew(r0->atomname, maxentries);
       srenew(r0->cgnr,     maxentries);
     }
-    r0->atomname[i]=put_symtab(tab,buf);
+    /* Because of a buf somewhere else in pdb2gmx a symtab entry
+     * gets modified accidentally. Replacing the put_symtab by a strdup
+     * seems to resolve the problem. So we do that (temporarily).
+     */
+    /* r0->atomname[i] = put_symtab(tab,buf); */
+    snew(r0->atomname[i],1);
+    *r0->atomname[i] = strdup(buf);
     r0->atom[i].q=q;
     r0->cgnr[i]=cg;
     j = get_atomtype_type(buf1,atype);
@@ -479,7 +485,7 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
  *                  SEARCH   ROUTINES
  * 
  ***********************************************************/
-int neq_str(char *a1,char *a2)
+int neq_str(const char *a1,const char *a2)
 {
   int j,l;
   
