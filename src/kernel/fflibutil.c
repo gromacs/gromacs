@@ -111,7 +111,7 @@ void fflib_filename_base(const char *filename,char *filebase,int maxlen)
     }
 }
 
-static void sort_filenames(int n,char **name)
+static void sort_filenames(int n,char **name,char **name2)
 {
     /* Slow sort, but we usually have tens of names */
     int  i,j,f;
@@ -132,13 +132,21 @@ static void sort_filenames(int n,char **name)
             tmp     = name[i];
             name[i] = name[f];
             name[f] = tmp;
+            if (name2 != NULL)
+            {
+                tmp      = name2[i];
+                name2[i] = name2[f];
+                name2[f] = tmp;
+            }
         }
     }
 }
 
-int fflib_search_file_end(const char *ffdir,const char *file_end,
-                          bool bFatalError,
-                          char ***filenames)
+static int low_fflib_search_file_end(const char *ffdir,
+                                     const char *file_end,
+                                     bool bFatalError,
+                                     char ***filenames,
+                                     char ***filenames_short)
 {
 #ifndef HAVE_DIRENT
     gmx_fatal(FARGS,"lib_search_file_end called while the 'dirent' functionality is not available on this system");
@@ -147,42 +155,44 @@ int fflib_search_file_end(const char *ffdir,const char *file_end,
     char *ret=NULL;
     char *lib,*dir;
     char buf[1024];
-    char libpath[GMX_PATH_MAX];
-    bool env_is_set=FALSE;
+    char *libpath;
+    bool env_is_set;
     int  len_fe,len_name;
-    char **fns;
-    char *s,tmppath[GMX_PATH_MAX],tmpfn[GMX_PATH_MAX];
+    char **fns,**fns_short;
+    char dir_print[GMX_PATH_MAX];
+    char *pdum;
+    char *s,fn_dir[GMX_PATH_MAX];
     DIR  *dirptr;
     struct dirent *dirent;
     int  n,n_thisdir;
 
-    /* GMXLIB can be a path now */
-    lib=getenv("GMXLIB");
-    if (lib != NULL)
-    {
-        env_is_set = TRUE;
-        strncpy(libpath,lib,GMX_PATH_MAX);
-    } 
-    else if (!get_libdir(libpath))
-    {
-        strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
-    }
-
     len_fe = strlen(file_end);
 
+    env_is_set = FALSE;
     if (ffdir != NULL)
     {
         /* Search in current dir and ffdir */
-        strncpy(tmppath,ffdir,GMX_PATH_MAX);
+        libpath = gmxlibfn(ffdir);
     }
     else
     {
-        /* Search in current dir and libpath */
-        strncpy(tmppath,libpath,GMX_PATH_MAX);
+        /* GMXLIB can be a path now */
+        lib = getenv("GMXLIB");
+        snew(libpath,GMX_PATH_MAX);
+        if (lib != NULL)
+        {
+            env_is_set = TRUE;
+            strncpy(libpath,lib,GMX_PATH_MAX);
+        } 
+        else if (!get_libdir(libpath))
+        {
+            strncpy(libpath,GMXLIBDIR,GMX_PATH_MAX);
+        }
     }
-    s = tmppath;
+    s = libpath;
     n = 0;
-    fns = NULL;
+    fns       = NULL;
+    fns_short = NULL;
     /* Start with the current directory, continue with libpath */
     dir = ".";
     do
@@ -190,6 +200,21 @@ int fflib_search_file_end(const char *ffdir,const char *file_end,
         dirptr = opendir(dir);
         if (dirptr != NULL)
         {
+            if (strcmp(dir,".") == 0)
+            {
+                /* Print the absolute path to the current working dir. */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+                pdum = _getcwd(dir_print,sizeof(dir_print)-1);
+#else
+                pdum =  getcwd(dir_print,sizeof(dir_print)-1);
+#endif
+            }
+            else
+            {
+                /* Print the directory dir, can be relative or absolute. */
+                strcpy(dir_print,dir);
+            }
+
             n_thisdir = 0;
             while ((dirent = readdir(dirptr)) != NULL)
             {
@@ -204,25 +229,41 @@ int fflib_search_file_end(const char *ffdir,const char *file_end,
                 {
                     /* We have a match */
                     srenew(fns,n+1);
-                    if (strcmp(dir,".") == 0)
+                    sprintf(fn_dir,"%s%c%s",
+                            dir_print,DIR_SEPARATOR,dirent->d_name);
+
+                    /* Copy the file name, possibly including the path. */
+                    fns[n] = strdup(fn_dir);
+
+                    if (ffdir == NULL)
                     {
-                        fns[n] = strdup(dirent->d_name);
-                    }
-                    else
-                    {
-                        sprintf(tmpfn,"%s%c%s",
-                                dir,DIR_SEPARATOR,dirent->d_name);
-                        fns[n] = strdup(tmpfn);
+                        /* We are searching in a path.
+                         * Use the relative path when we use share/top
+                         * from the installation.
+                         * Add the full path when we use the current
+                         * working directory of GMXLIB.
+                         */
+                        srenew(fns_short,n+1);
+                        if (strcmp(dir,".") == 0 || env_is_set)
+                        {
+                            fns_short[n] = strdup(fn_dir);
+                        }
+                        else
+                        {
+                            fns_short[n] = strdup(dirent->d_name);
+                        }
                     }
                     n++;
                     n_thisdir++;
                 }
             }
 
-            sort_filenames(n_thisdir,fns+n-n_thisdir);
+            sort_filenames(n_thisdir,fns+n-n_thisdir,fns_short+n-n_thisdir);
         }
     }
     while((dir=gmx_strsep(&s, PATH_SEPARATOR)) != NULL);
+
+    sfree(libpath);
 
     if (n == 0 && bFatalError)
     {
@@ -237,9 +278,20 @@ int fflib_search_file_end(const char *ffdir,const char *file_end,
     }
 
     *filenames = fns;
+    if (ffdir == NULL)
+    {
+        *filenames_short = fns_short;
+    }
 
     return n;
 #endif
+}
+
+int fflib_search_file_end(const char *ffdir,const char *file_end,
+                          bool bFatalError,
+                          char ***filenames)
+{
+    return low_fflib_search_file_end(ffdir,file_end,bFatalError,filenames,NULL);
 }
 
 int fflib_search_file_in_dirend(const char *filename,const char *dirend,
@@ -250,14 +302,14 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
     return 0;
 #else
     int  nf,i;
-    char **f;
+    char **f,**f_short;
     int  n;
     char **dns;
     DIR  *dirptr;
     struct dirent *dirent;
 
     /* Find all files (not only dir's) ending on dirend */
-    nf = fflib_search_file_end(NULL,dirend,FALSE,&f);
+    nf = low_fflib_search_file_end(NULL,dirend,FALSE,&f,&f_short);
 
     n = 0;
     dns = NULL;
@@ -272,14 +324,16 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
                 {
                     /* We have a match */
                     srenew(dns,n+1);
-                    dns[n] = strdup(f[i]);
+                    dns[n] = strdup(f_short[i]);
                     n++;
                 }
             }
         }
         sfree(f[i]);
+        sfree(f_short[i]);
     }
     sfree(f);
+    sfree(f_short);
 
     *dirnames = dns;
 
@@ -287,11 +341,34 @@ int fflib_search_file_in_dirend(const char *filename,const char *dirend,
 #endif 
 }
 
+bool fflib_fexist(const char *file)
+{
+    char *file_fullpath;
+
+    file_fullpath = low_gmxlibfn(file,FALSE);
+    
+    if (file_fullpath == NULL)
+    {
+        return FALSE;
+    }
+    else
+    {
+        sfree(file_fullpath);
+
+        return TRUE;
+    }
+}
+
+
 FILE *fflib_open(const char *file)
 {
+    char *file_fullpath;
     FILE *fp;
 
-    fprintf(stderr,"Opening force field file %s\n",file);
+    file_fullpath = gmxlibfn(file);
+    fprintf(stderr,"Opening force field file %s\n",file_fullpath);
+    fp = ffopen(file_fullpath,"r");
+    sfree(file_fullpath);
 
-    return ffopen(file,"r");
+    return fp;
 }

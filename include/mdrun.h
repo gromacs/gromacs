@@ -74,6 +74,7 @@ extern "C" {
 #define MD_APPENDFILES  (1<<16)
 #define MD_READ_EKIN    (1<<17)
 #define MD_STARTFROMCPT (1<<18)
+#define MD_RESETCOUNTERSHALFWAY (1<<19)
 
 /* define a number of flags to better control the information passed to the compute_globals code in md.c */
 
@@ -199,6 +200,7 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			gmx_ekindata_t *ekind,
 			gmx_constr_t constr,t_vcm *vcm,
 			int *nabnsb,real *chkpt,real *terminate,
+			real *reset_counters,
 			gmx_mtop_t *top_global, t_state *state_local, 
 			bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */

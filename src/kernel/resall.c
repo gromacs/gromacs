@@ -142,7 +142,13 @@ static bool read_atoms(FILE *in,char *line,
       srenew(r0->atomname, maxentries);
       srenew(r0->cgnr,     maxentries);
     }
-    r0->atomname[i]=put_symtab(tab,buf);
+    /* Because of a buf somewhere else in pdb2gmx a symtab entry
+     * gets modified accidentally. Replacing the put_symtab by a strdup
+     * seems to resolve the problem. So we do that (temporarily).
+     */
+    /* r0->atomname[i] = put_symtab(tab,buf); */
+    snew(r0->atomname[i],1);
+    *r0->atomname[i] = strdup(buf);
     r0->atom[i].q=q;
     r0->cgnr[i]=cg;
     j = get_atomtype_type(buf1,atype);
@@ -249,7 +255,8 @@ void clear_t_restp(t_restp *rrtp)
 }
 
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp, 
-                 gpp_atomtype_t atype, t_symtab *tab)
+                 gpp_atomtype_t atype, t_symtab *tab,
+                 bool bAllowOverrideRTP)
 {
   FILE      *in;
   char      filebase[STRLEN],*ptr,line[STRLEN],header[STRLEN];
@@ -411,13 +418,25 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         nrtp++;
         fprintf(stderr,"\rResidue %d",nrtp);
     } else {
-        fprintf(stderr,"\n");
-        fprintf(stderr,"Found another rtp entry for '%s' in '%s', ignoring this entry and keeping the one from '%s.rtp'\n",
-                rrtp[nrtp].resname,rrdb,rrtp[nrtp].filebase);
-        /* We should free all the data for this entry.
-         * The current code gives a lot of dangling pointers.
-         */
-        clear_t_restp(&rrtp[nrtp]);
+        if (firstrtp >= *nrtpptr)
+        {
+            gmx_fatal(FARGS,"Found a second entry for '%s' in '%s'",
+                      rrtp[nrtp].resname,rrdb);
+        }
+        if (bAllowOverrideRTP)
+        {
+            fprintf(stderr,"\n");
+            fprintf(stderr,"Found another rtp entry for '%s' in '%s', ignoring this entry and keeping the one from '%s.rtp'\n",
+                    rrtp[nrtp].resname,rrdb,rrtp[firstrtp].filebase);
+            /* We should free all the data for this entry.
+             * The current code gives a lot of dangling pointers.
+             */
+            clear_t_restp(&rrtp[nrtp]);
+        }
+        else
+        {
+            gmx_fatal(FARGS,"Found rtp entries for '%s' in both '%s' and '%s'. If you want the first definition to override the second one, set the -rtpo option of pdb2gmx.",rrtp[nrtp].resname,rrtp[firstrtp].filebase,rrdb);
+        }
     }
   }
   ffclose(in);
@@ -466,7 +485,7 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
  *                  SEARCH   ROUTINES
  * 
  ***********************************************************/
-int neq_str(char *a1,char *a2)
+int neq_str(const char *a1,const char *a2)
 {
   int j,l;
   

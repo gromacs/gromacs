@@ -689,7 +689,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     wallcycle_start(wcycle,ewcMoveE);
 
     global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                inputrec,NULL,NULL,NULL,NULL,NULL,&terminate,
+                inputrec,NULL,NULL,NULL,NULL,NULL,&terminate,NULL,
                 top_global,&ems->s,FALSE,
                 CGLO_ENERGY | 
                 CGLO_PRESSURE | 

@@ -650,7 +650,7 @@ void ps_mat(const char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   bool   bMap1,bNextMap1,bDiscrete;
  
   /* memory leak: */
-  libm2p = m2p ? libfn(m2p) : m2p;
+  libm2p = m2p ? gmxlibfn(m2p) : m2p;
   get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;
