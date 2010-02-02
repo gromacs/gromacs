@@ -968,7 +968,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
              */
             for(k=0; k<rptr->natom; k++)
             {
-                if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
+                if (strcasecmp(oldnm,*rptr->atomname[k]) == 0)
                 {
                     break;
                 }
