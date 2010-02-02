@@ -228,15 +228,8 @@ extern void make_rotation_groups(t_rot *rot,char **rotgnames,t_blocka *grps,char
     for (g=0; g<rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        if (g == 0 && strcmp(rotgnames[g],"") == 0)
-        {
-            rotg->nat = 0;
-        }
-        else
-        {
-            ig = search_string(rotgnames[g],grps->nr,gnames);
-            rotg->nat = grps->index[ig+1] - grps->index[ig];
-        }
+        ig = search_string(rotgnames[g],grps->nr,gnames);
+        rotg->nat = grps->index[ig+1] - grps->index[ig];
         
         if (rotg->nat > 0)
         {
