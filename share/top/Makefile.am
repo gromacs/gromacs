@@ -34,7 +34,11 @@ topol_DATA = \
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
 	table6-9.xvg 	atom_nom.tbl	tip5p.gro	\
-	sw.itp		elements.dat	defselection.dat
+	sw.itp		elements.dat	defselection.dat \
+	ffG43a1.itp     ffG53a5.itp     ffencads.itp    ffgmx2.itp \
+	ffG43a2.itp     ffG53a6.itp     ffencadv.itp    ffoplsaa-n.tst \
+	ffG45a3.itp     ffgmx.itp       ffoplsaa.itp
+
 
 EXTRA_DIST = ${topol_DATA}
 
