@@ -1206,7 +1206,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   {
     dd_clear_f_vsites(cr->dd,f);
   } 
-  else if(PARTDECOMP(cr))
+  else if (PARTDECOMP(cr) && vsite->vsitecomm != NULL)
   {
     pd_clear_nonlocal_constructs(vsite->vsitecomm,f);
   }
