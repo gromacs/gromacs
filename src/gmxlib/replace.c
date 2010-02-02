@@ -133,7 +133,7 @@ char *replaceww(const char *string,const char *search,const char *replace)
   return buf;
 }
 
-#ifdef DEBUG
+#ifdef DEBUGREPLACE
 void main(int argc,char *argv[])
 {
   printf("String was: '%s' Search: '%s' Replace: '%s'\n",

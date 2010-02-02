@@ -2056,16 +2056,26 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
       !(absolute_reference(ir,sys,AbsRef) || ir->nsteps <= 10)) {
     warning("You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
   }
-
-  if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
-    bCharge = FALSE;
-    aloopb = gmx_mtop_atomloop_block_init(sys);
-    while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
-      if (atom->q != 0 || atom->qB != 0) {
-	bCharge = TRUE;
-      }
+  
+  bCharge = FALSE;
+  aloopb = gmx_mtop_atomloop_block_init(sys);
+  while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
+    if (atom->q != 0 || atom->qB != 0) {
+      bCharge = TRUE;
     }
-    if (bCharge) {
+  }
+  
+  if (!bCharge) {
+    if (EEL_FULL(ir->coulombtype)) {
+      set_warning_line(mdparin,-1);
+      sprintf(err_buf,
+	      "You are using full electrostatics treatment %s for a system without charges.\n"
+	      "This costs a lot of performance for just processing zeros, consider using %s instead.\n",
+	      EELTYPE(ir->coulombtype),EELTYPE(eelCUT));
+      warning(err_buf);
+    }
+  } else {
+    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
       set_warning_line(mdparin,-1);
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"

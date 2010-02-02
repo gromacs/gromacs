@@ -47,7 +47,7 @@ typedef struct {
   double *blen;
 } t_nm2type;
 
-extern t_nm2type *rd_nm2type(const char *ff,int *nnm);
+extern t_nm2type *rd_nm2type(const char *ffdir,int *nnm);
 /* Read the name 2 type database. nnm is the number of entries 
  * ff is the force field.
  */

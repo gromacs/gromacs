@@ -63,6 +63,11 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
     {
         sscanf(env,"%d",&mtop->maxres_renum);
     }
+    if (mtop->maxres_renum == -1)
+    {
+        /* -1 signals renumber residues in all molecules */
+        mtop->maxres_renum = INT_MAX;
+    }
 
     mtop->maxresnr = gmx_mtop_maxresnr(mtop,mtop->maxres_renum);
 }
@@ -576,8 +581,11 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
         /* Single residue molecule, continue counting residues */
         for (j=0; (j<copies); j++)
         {
-            (*maxresnr)++;
-            dest->resinfo[dest->nres+j].nr = *maxresnr;
+            for (l=0; l<src->nres; l++)
+            {
+                (*maxresnr)++;
+                dest->resinfo[dest->nres+j*src->nres+l].nr = *maxresnr;
+            }
         }
     }
     

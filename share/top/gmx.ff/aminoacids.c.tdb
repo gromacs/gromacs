@@ -1,0 +1,24 @@
+[ None ]
+
+[ COO- ]
+[ replace ]
+C	C	C	12.011	0.27
+O	O1	OM	15.9994	-0.635
+OXT	O2	OM	15.9994	-0.635
+[ add ]
+2	8	O	C	CA	N
+	OM	15.9994	-0.635
+[ impropers ]
+C	O1	O2	CA	
+
+[ COOH ]
+[ replace ]
+C	C	C	12.011	0.53
+O	O	OA	15.9994	-0.548
+OXT	OT	O	15.9994	-0.38
+[ add ]
+1	2	OT	C	CA	N
+	O	15.9994	-0.38
+1	2	HO	O	C	CA
+	HO	1.008	0.398
+

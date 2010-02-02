@@ -15,6 +15,7 @@ libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
 add_par.c	add_par.h	\
 compute_io.c	compute_io.h	\
 convparm.c 	convparm.h	\
+fflibutil.c	fflibutil.h	\
 gen_ad.c 	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\

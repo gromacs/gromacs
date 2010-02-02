@@ -1141,7 +1141,12 @@ are not used.</dd>
 <dd>Pull along the vector connecting the two groups.
 Components can be selected with <b>pull_dim</b>.</dd>
 <dt><b>direction</b></dt>
-<dd>Pull in the direction of <b>pull_vec</b>.
+<dd>Pull in the direction of <b>pull_vec</b>.</dd>
+<dt><b>direction_periodic</b></dt>
+<dd>As <b>direction</b>, but allows the distance to be larger than
+half the box size. With this geometry the box should not be dynamic
+(e.g. no pressure scaling) in the pull dimensions and the pull force
+is not added to virial.</dd>
 <dt><b>cylinder</b></dt>
 <dd>Designed for pulling with respect to a layer where the reference COM
 is given by a local cylindrical part of the reference group.

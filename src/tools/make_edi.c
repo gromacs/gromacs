@@ -740,6 +740,7 @@ int main(int argc,char *argv[])
     } else {
         nfit=natoms;
         ifit=index;
+        xref1=xav1;
     };
 
     /* if -flood read eigenvalues and store them in evSteplist[evFLODD] */

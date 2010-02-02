@@ -123,7 +123,8 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 	state->nnhpres = 1;
 	state->flags |= (1<<estNHPRES_XI);
 	state->flags |= (1<<estNHPRES_VXI);
-	state->flags |= (1<<estVIR_PREV);
+	state->flags |= (1<<estSVIR_PREV);
+	state->flags |= (1<<estFVIR_PREV);
 	state->flags |= (1<<estVETA);
 	state->flags |= (1<<estVOL0);
       } else {

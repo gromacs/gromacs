@@ -135,8 +135,12 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   snew(hb,pdba->nres);
   /* first the termini */
   for(i=0; i<nterpairs; i++) {
-    copy_t_hackblock(ntdb[i], &hb[rN[i]]);
-    merge_t_hackblock(ctdb[i], &hb[rC[i]]);
+    if (ntdb[i] != NULL) {
+      copy_t_hackblock(ntdb[i], &hb[rN[i]]);
+    }
+    if (ctdb[i] != NULL) {
+      merge_t_hackblock(ctdb[i], &hb[rC[i]]);
+    }
   }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
@@ -541,8 +545,9 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
   if ( bUpdate_pdba ) {
     if ( !bKeep_old_pdba ) {
       for(i=0; i < natoms; i++) {
-	sfree(*(pdba->atomname[i]));
-	/*       sfree(pdba->atomname[i]); */
+	/* Do not free the atomname string itself, it might be in symtab */
+	/* sfree(*(pdba->atomname[i])); */
+	/* sfree(pdba->atomname[i]); */
       }
       sfree(pdba->atomname);
       sfree(pdba->atom);

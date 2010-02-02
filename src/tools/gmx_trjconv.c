@@ -1240,7 +1240,7 @@ int gmx_trjconv(int argc,char *argv[])
 
                     if (bTDump)
                         fprintf(stderr,"\nDumping frame at t= %g %s\n",
-                                conv_time(oenv,fr.time),get_time_unit(oenv));
+                                output_env_conv_time(oenv,fr.time),output_env_get_time_unit(oenv));
 
                     /* check for writing at each delta_t */
                     bDoIt=(delta_t == 0);
@@ -1258,7 +1258,7 @@ int gmx_trjconv(int argc,char *argv[])
                         /* print sometimes */
                         if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
                             fprintf(stderr," ->  frame %6d time %8.3f      \r",
-                                    outframe,conv_time(oenv,fr.time));
+                                    outframe,output_env_conv_time(oenv,fr.time));
 
                         if (!bPFit) {
                             /* Now modify the coords according to the flags,

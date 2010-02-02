@@ -110,6 +110,8 @@ check_function_exists(memcmp            HAVE_MEMCMP)
 check_function_exists(gettimeofday      HAVE_GETTIMEOFDAY)
 check_function_exists(isnan             HAVE_ISNAN)
 check_function_exists(_isnan            HAVE__ISNAN)
+check_function_exists(isfinite          HAVE_ISFINITE)
+check_function_exists(_isfinite         HAVE__ISFINITE)
 # After large files? check_function_exists(fseeko     HAVE_FSEEKO)
 
 include(CheckLibraryExists)

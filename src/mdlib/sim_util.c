@@ -374,7 +374,8 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
   pf2 = sqr(pforce);
   for(i=md->start; i<md->start+md->homenr; i++) {
     fn2 = norm2(f[i]);
-    if (fn2 >= pf2) {
+    /* We also catch NAN, if the compiler does not optimize this away. */
+    if (fn2 >= pf2 || fn2 != fn2) {
       fprintf(fp,"step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
 	      gmx_step_str(step,buf),
 	      ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
@@ -593,7 +594,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	
     if (inputrec->implicit_solvent && bNS) 
     {
-        make_gb_nblist(cr,mtop->natoms,inputrec->gb_algorithm,inputrec->rlist,
+        make_gb_nblist(cr,inputrec->gb_algorithm,inputrec->rlist,
                        x,box,fr,&top->idef,graph,fr->born);
     }
 	

@@ -52,6 +52,7 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "maths.h"
 
 typedef struct {
     char   *filename;
@@ -293,7 +294,8 @@ static int get_lam_set(barsim_t *ba,double lambda)
     int i;
 
     i = 1;
-    while (i < ba->nset && ba->lambda[i] != lambda)
+    while (i < ba->nset &&
+           !gmx_within_tol(ba->lambda[i],lambda,10*GMX_REAL_EPS))
     {
         i++;
     }
@@ -720,7 +722,7 @@ int gmx_bar(int argc,char *argv[])
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fpb = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
                       "\\8l\\4",unit_energy,oenv);
-        if (get_print_xvgr_codes(oenv))
+        if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fpb,"@TYPE xydy\n");
         }
@@ -732,7 +734,7 @@ int gmx_bar(int argc,char *argv[])
         sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
                       "\\8l\\4",unit_energy,oenv);
-        if (get_print_xvgr_codes(oenv))
+        if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fpi,"@TYPE xydy\n");
         }

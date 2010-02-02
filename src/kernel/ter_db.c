@@ -49,6 +49,7 @@
 #include "ter_db.h"
 #include "toputil.h"
 #include "gmxfio.h"
+#include "fflibutil.h"
 
 
 /* use bonded types definitions in hackblock.h */
@@ -134,7 +135,7 @@ static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],
   int i,j,k,bt,nrepl,nadd,ndel;
   char buf[STRLEN],nname[STRLEN];
   
-  sprintf(buf,"%s-%c_new.tdb",ff,C);
+  sprintf(buf,"%s-%c.tdb",ff,C);
   out = gmx_fio_fopen(buf,"w");
   
   for(i=0; (i<nb); i++) {
@@ -191,20 +192,29 @@ static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],
   gmx_fio_fclose(out);
 }
 
-int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
+static void read_ter_db_file(char *fn,
+			     int *ntbptr,t_hackblock **tbptr,
+			     gpp_atomtype_t atype)
 {
+  char       filebase[STRLEN],*ptr;
   FILE       *in;
-  char       inf[STRLEN],header[STRLEN],buf[STRLEN],line[STRLEN];
+  char       header[STRLEN],buf[STRLEN],line[STRLEN];
   t_hackblock *tb;
   int        i,j,n,ni,kwnr,nb,maxnb,nh;
-  
-  sprintf(inf,"%s-%c.tdb",FF,ter);
-  in=libopen(inf);
+
+  fflib_filename_base(fn,filebase,STRLEN);
+  /* Remove the C/N termini extension */
+  ptr = strrchr(filebase,'.');
+  if (ptr != NULL) {
+    ptr[0] = '\0';
+  }
+
+  in = fflib_open(fn);
   if (debug)
-    fprintf(debug,"Opened %s\n",inf);
+    fprintf(debug,"Opened %s\n",fn);
   
-  tb=NULL;
-  nb=-1;
+  tb = *tbptr;
+  nb = *ntbptr - 1;
   maxnb=0;
   kwnr=NOTSET;
   get_a_line(in,line,STRLEN);
@@ -217,11 +227,12 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 	nb++;
 	/* here starts a new block */
 	if ( nb >= maxnb ) {
-	  maxnb+=100;
+	  maxnb = nb + 100;
 	  srenew(tb,maxnb);
 	}
 	clear_t_hackblock(&tb[nb]);
-	tb[nb].name=strdup(header);
+	tb[nb].name     = strdup(header);
+	tb[nb].filebase = strdup(filebase);
       }
     } else {
       if (nb < 0)
@@ -247,12 +258,12 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 	if ( kwnr==ekwRepl || kwnr==ekwDel ) {
 	  if (sscanf(line, "%s%n", buf, &n) != 1) 
 	    gmx_fatal(FARGS,"Reading Termini Database '%s': "
-		      "expected atom name on line\n%s",inf,line);
+		      "expected atom name on line\n%s",fn,line);
 	  tb[nb].hack[nh].oname = strdup(buf);
 	  /* we only replace or delete one atom at a time */
 	  tb[nb].hack[nh].nr = 1;
 	} else if ( kwnr==ekwAdd ) {
-	  read_ab(line, inf, &(tb[nb].hack[nh]));
+	  read_ab(line, fn, &(tb[nb].hack[nh]));
 	  get_a_line(in, line, STRLEN);
 	} else
 	  gmx_fatal(FARGS,"unimplemented keyword number %d (%s:%d)",
@@ -266,7 +277,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 	    if (tb[nb].hack[nh].oname != NULL) {
 	      tb[nb].hack[nh].nname = strdup(tb[nb].hack[nh].oname);
 	    } else {
-	      gmx_fatal(FARGS,"Reading Termini Database '%s': don't know which name the new atom should have on line\n%s",inf,line);
+	      gmx_fatal(FARGS,"Reading Termini Database '%s': don't know which name the new atom should have on line\n%s",fn,line);
 	    }
 	  }
 	}
@@ -278,7 +289,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
 	  if ( sscanf(line+n, "%s%n", buf, &ni) == 1 )
 	    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = strdup(buf);
 	  else
-	    gmx_fatal(FARGS,"Reading Termini Database '%s': expected %d atom names (found %d) on line\n%s", inf, btsNiatoms[kwnr], j-1, line);
+	    gmx_fatal(FARGS,"Reading Termini Database '%s': expected %d atom names (found %d) on line\n%s", fn, btsNiatoms[kwnr], j-1, line);
 	  n+=ni;
 	}
 	for(   ; j<MAXATOMLIST; j++)
@@ -298,14 +309,43 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,gpp_atomtype_t atype)
   
   ffclose(in);
   
-  if (debug) 
-    print_ter_db(FF,ter,nb,tb,atype);
-  
-  *tbptr=tb;
-  return nb;
+  *ntbptr = nb;
+  *tbptr  = tb;
 }
 
-t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret)
+int read_ter_db(const char *ffdir,char ter,
+		t_hackblock **tbptr,gpp_atomtype_t atype)
+{
+  char ext[STRLEN];
+  int  ntdbf,f;
+  char **tdbf;
+  int  ntb;
+
+  sprintf(ext,".%c.tdb",ter);
+
+  /* Search for termini database files.
+   * Do not generate an error when none are found.
+   */
+  ntdbf = fflib_search_file_end(ffdir,ext,FALSE,&tdbf);
+  ntb    = 0;
+  *tbptr = NULL;
+  for(f=0; f<ntdbf; f++) {
+    read_ter_db_file(tdbf[f],&ntb,tbptr,atype);
+    sfree(tdbf[f]);
+  }
+  sfree(tdbf);
+
+  if (debug) {
+    print_ter_db("new",ter,ntb,*tbptr,atype);
+  }
+
+  return ntb;
+}
+
+t_hackblock **filter_ter(int nrtp,t_restp rtp[],
+			 int nb,t_hackblock tb[],
+			 const char *resname,
+			 int *nret)
 {
   /* Since some force fields (e.g. OPLS) needs different
    * atomtypes for different residues there could be a lot
@@ -328,10 +368,13 @@ t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret)
    * Remember to free the list when you are done with it...
    */ 
 
+  t_restp *restp;
   int i,j,n,len,none_idx;
   bool found;
   char *s,*s2,*c;
   t_hackblock **list;
+
+  restp = search_rtp(resname,nrtp,rtp);
   
   n=0;
   list=NULL;
@@ -340,7 +383,13 @@ t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret)
     s=tb[i].name;
     found=FALSE;
     do {
-      if(!strncasecmp(resname,s,3)) {
+      /* The residue name should appear in a tdb file with the same base name
+       * as the file containing the rtp entry.
+       * This makes termini selection for different molecule types
+       * much cleaner.
+       */
+      if (strcasecmp(restp->filebase,tb[i].filebase) == 0 &&
+	  strncasecmp(resname,s,3) == 0) {
 	found=TRUE;
 	srenew(list,n+1);
 	list[n]=&(tb[i]);
