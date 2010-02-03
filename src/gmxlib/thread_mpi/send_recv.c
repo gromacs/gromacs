@@ -1203,27 +1203,37 @@ static void tMPI_Xfer(struct send_envelope *evs, struct recv_envelope *evr)
     }
     evr->bufsize=evs->bufsize;
     /* and mark that we're finished */
-#ifdef TMPI_NO_BUSY_WAIT_SEND_RECV
-    tMPI_Thread_mutex_lock( &(evr->src->ev_check_lock) );
-#endif
- 
-    tMPI_Atomic_set( &(evr->state), env_finished);
-    tMPI_Atomic_set( &(evs->state), env_finished);
-    tMPI_Atomic_memory_barrier();
-    /* remove the receiving envelope if it's in a list */
-    tMPI_Recv_env_list_remove(evr);
-#ifdef USE_SEND_RECV_COPY_BUFFER
-    if (remove_sender)
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
     {
-        tMPI_Send_env_list_rts(evs);
+        struct tmpi_thread *cur=tMPI_Get_current();
+        tMPI_Profile_wait_start_thread(cur);
+#endif
+#ifdef TMPI_NO_BUSY_WAIT_SEND_RECV
+        tMPI_Thread_mutex_lock( &(evr->src->ev_check_lock) );
+#endif
+
+        tMPI_Atomic_set( &(evr->state), env_finished);
+        tMPI_Atomic_set( &(evs->state), env_finished);
+        tMPI_Atomic_memory_barrier();
+        /* remove the receiving envelope if it's in a list */
+        tMPI_Recv_env_list_remove(evr);
+#ifdef USE_SEND_RECV_COPY_BUFFER
+        if (remove_sender)
+        {
+            tMPI_Send_env_list_rts(evs);
+        }
+#endif
+#ifdef TMPI_NO_BUSY_WAIT_SEND_RECV
+        evr->src->ev_received++;
+        /* wake a potentially sleeping source thread. */
+        tMPI_Thread_cond_signal( &(evr->src->ev_check_cond) );
+        tMPI_Thread_mutex_unlock( &(evr->src->ev_check_lock) );
+#endif
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_P2p_xfer);
     }
 #endif
-#ifdef TMPI_NO_BUSY_WAIT_SEND_RECV
-    evr->src->ev_received++;
-    /* wake a potentially sleeping source thread. */
-    tMPI_Thread_cond_signal( &(evr->src->ev_check_cond) );
-    tMPI_Thread_mutex_unlock( &(evr->src->ev_check_lock) );
-#endif
+ 
 
 #ifdef TMPI_DEBUG
     printf("%5d: tMPI_Xfer (%d->%d, tag=%d) done\n", 

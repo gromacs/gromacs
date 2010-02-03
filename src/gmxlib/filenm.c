@@ -196,6 +196,7 @@ static const t_deffile
     { eftASC, ".edi", "sam",    NULL, "ED sampling input"},
     { eftASC, ".edo", "sam",    NULL, "ED sampling output"},
     { eftASC, ".hat", "gk", NULL, "Fourier transform of spread function" },
+    { eftASC, ".cub", "pot",  NULL, "Gaussian cube file" },
     { eftASC, ".xpm", "root", NULL, "X PixMap compatible matrix file" } 
 };
 

@@ -103,6 +103,7 @@ typedef struct {
   int     tp;       /* Type of attachment (1..11) */
   int     nctl;     /* How many control atoms there are */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
+  bool    bAlreadyPresent;
   rvec    newx;     /* calculated new position    */
   atom_id newi;     /* new atom index number (after additions) */
 } t_hack;

@@ -263,25 +263,17 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 	if (ab[i][j].nname == NULL)
 	  gmx_incons("ab[i][j].nname not allocated");
 	/* check if the atom is already present */
-	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check", TRUE);
+	k = pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check", TRUE);
 	if ( k != -1 ) {
-	  /* we found the added atom, so move the hack there: */
-	  srenew(ab[k], nab[k]+1);
-	  ab[k][nab[k]] = ab[i][j];
-	  ab[k][nab[k]].oname = strdup(ab[k][nab[k]].nname);
-	  /* reset any possible new coordinates: */
-	  for(d=0; d<DIM; d++)
-	    ab[k][nab[k]].newx[d]=NOTSET;
-	  /* keep count */
-	  nab[k]++;
-	  /* remove the hack from this atom: */
-	  for(k=j+1; k<nab[i]; k++)
-	    ab[i][k-1] = ab[i][k];
-	  /* keep count */
-	  nab[i]--;
-	  j--;
-	  srenew(ab[i], nab[i]);
+	  /* We found the added atom. */
+	  ab[i][j].bAlreadyPresent = TRUE;
+	  if (debug) {
+	    fprintf(debug,"Atom '%s' in residue '%s' %d is already present\n",
+		    ab[i][j].nname,
+		    *pdba->resinfo[rnr].name,pdba->resinfo[rnr].nr);
+	  }
 	} else {
+	  ab[i][j].bAlreadyPresent = FALSE;
 	  /* count how many atoms we'll add */
 	  nadd++;
 	}
@@ -371,7 +363,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
   t_atoms     *newpdba=NULL,*pdba=NULL;
   bool        bSet;
   int         nadd;
-  int         i,newi,j,d,natoms;
+  int         i,newi,j,d,natoms,nalreadypresent;
   int         *nab=NULL;
   t_hack      **ab=NULL;
   t_hackblock *hb;
@@ -479,6 +471,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 	copy_atom(pdba,i, newpdba,newi);
       copy_rvec((*xptr)[i],xn[newi]);
       /* process the hacks for this atom */
+      nalreadypresent = 0;
       for(j=0; j<nab[i]; j++) {
 	if ( ab[i][j].oname==NULL ) { /* add */
 	  newi++;
@@ -501,6 +494,14 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 	    (ab[i][j].oname == NULL ||
 	     strcmp(ab[i][j].oname,*newpdba->atomname[newi]) == 0)) {
 	  /* add or replace */
+	  if (ab[i][j].oname == NULL && ab[i][j].bAlreadyPresent) {
+	    /* This atom is already present, copy it from the input. */
+	    nalreadypresent++;
+	    if (bUpdate_pdba) {
+	      copy_atom(pdba,i+nalreadypresent, newpdba,newi);
+	    }
+	    copy_rvec((*xptr)[i+nalreadypresent],xn[newi]);
+	  } else {
 	  if (bUpdate_pdba) {
 	    if (gmx_debug_at) {
 	      fprintf(debug,"Replacing %d '%s' with (old name '%s') %s\n",
@@ -522,12 +523,14 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
 	    bSet = bSet && ab[i][j].newx[d]!=NOTSET;
 	  if (bSet)
 	    copy_rvec(ab[i][j].newx, xn[newi]);
+	  }
 	  if (bUpdate_pdba && debug) 
 	    fprintf(debug," %s %g %g",*newpdba->atomname[newi],
 		    newpdba->atom[newi].m,newpdba->atom[newi].q);
 	}
       }
       newi++;
+      i += nalreadypresent;
       if (debug) fprintf(debug,"\n");
     }
   }

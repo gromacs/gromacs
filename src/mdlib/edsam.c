@@ -1569,7 +1569,7 @@ static real rmsd_from_structure(rvec           *x,  /* The positions under consi
 }
 
 
-void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed,t_mdatoms *md)
+void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed)
 {
     t_edpar *edi;
 
@@ -1583,11 +1583,11 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, struct gmx_edsam *ed,t_mdatoms *
             /* Local atoms of the reference structure (for fitting), need only be assembled
              * if their indices differ from the average ones */
             if (!edi->bRefEqAv)
-                dd_make_local_group_indices(dd->ga2la, md, edi->sref.nr, edi->sref.anrs, 
+                dd_make_local_group_indices(dd->ga2la, edi->sref.nr, edi->sref.anrs,
                         &edi->sref.nr_loc, &edi->sref.anrs_loc, &edi->sref.nalloc_loc, edi->sref.c_ind);
             
             /* Local atoms of the average structure (on these ED will be performed) */
-            dd_make_local_group_indices(dd->ga2la, md, edi->sav.nr, edi->sav.anrs,
+            dd_make_local_group_indices(dd->ga2la, edi->sav.nr, edi->sav.anrs,
                     &edi->sav.nr_loc, &edi->sav.anrs_loc, &edi->sav.nalloc_loc, edi->sav.c_ind);
 
             /* Indicate that the ED shift vectors for this structure need to be updated 

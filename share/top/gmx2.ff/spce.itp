@@ -5,8 +5,8 @@ SOL		2
 [ atoms ]
 ;   nr   type  resnr residue  atom   cgnr     charge       mass
      1     OW      1    SOL     OW      1    -0.8476
-     2      H      1    SOL    HW1      1     0.4238
-     3      H      1    SOL    HW2      1     0.4238
+     2     HW      1    SOL    HW1      1     0.4238
+     3     HW      1    SOL    HW2      1     0.4238
 
 #ifndef FLEXIBLE
 [ settles ]

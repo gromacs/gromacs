@@ -39,7 +39,7 @@
 #include "index.h"
 
 extern void rename_atoms(const char *xlfile,const char *ffdir,
-			 t_atoms *atoms,t_symtab *symtab,t_aa_names *aan,
-			 bool bReorderNum,bool bVerbose);
+			 t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
+			 t_aa_names *aan,bool bReorderNum,bool bVerbose);
 
 #endif

@@ -142,7 +142,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    *itc0,*itc1;
   int    ie=0,ifv=0,isv=0,irmsd=0,imu=0;
   int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
-  int    ibnsb=-1,ichkpt=-1,iterminate,ireset;
+  int    ibnsb=-1,ichkpt=-1,iterminate=0,ireset=0;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   real   *copyenerd;
