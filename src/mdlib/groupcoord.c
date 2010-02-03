@@ -68,7 +68,7 @@ extern void dd_make_local_group_indices(
     localnr = 0;
     for(i=0; i<nr; i++)
     {
-        if (ga2la_home(ga2la,anrs[i],&ii))
+        if (ga2la_get_home(ga2la,anrs[i],&ii))
         {
             if (ii < md->start+md->homenr)
             {
