@@ -56,8 +56,8 @@ typedef struct {
     char *replace;
 } t_xlate_atom;
 
-static void *get_xlatoms(const char *fn,FILE *fp,
-                         int *nptr,t_xlate_atom **xlptr)
+static void get_xlatoms(const char *fn,FILE *fp,
+                        int *nptr,t_xlate_atom **xlptr)
 {
     char filebase[STRLEN];
     char line[STRLEN];
@@ -73,7 +73,7 @@ static void *get_xlatoms(const char *fn,FILE *fp,
 
     while (get_a_line(fp,line,STRLEN))
     {
-        na = sscanf(line,"%s%s%s",rbuf,abuf,repbuf,dumbuf);
+        na = sscanf(line,"%s%s%s%s",rbuf,abuf,repbuf,dumbuf);
         /* Check if we are reading an old format file with the number of items
          * on the first line.
          */

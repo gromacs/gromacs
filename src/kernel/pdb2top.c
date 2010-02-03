@@ -980,7 +980,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
                  */
                 if (bVerbose)
                 {
-                    printf("Deleting atom '%s' in residue '%s'\n",
+                    printf("Deleting atom '%s' in residue '%s' %d\n",
                            oldnm,rptr->resname,resnr);
                 }
                 sfree(pdba->atomname[atind]);
