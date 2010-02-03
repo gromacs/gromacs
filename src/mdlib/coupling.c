@@ -620,6 +620,19 @@ t_state *init_bufstate(t_state *template_state)
     return state;
 }  
 
+
+void destroy_bufstate(t_state *state) 
+{
+    sfree(state->x);
+    sfree(state->v);
+    sfree(state->nosehoover_xi);
+    sfree(state->nosehoover_vxi);
+    sfree(state->therm_integral);
+    sfree(state->nhpres_xi);
+    sfree(state->nhpres_vxi);
+    sfree(state);
+}  
+
 void trotter_update(t_inputrec *ir,gmx_ekindata_t *ekind, 
                     gmx_enerdata_t *enerd, t_state *state, 
                     tensor vir, t_mdatoms *md, 
