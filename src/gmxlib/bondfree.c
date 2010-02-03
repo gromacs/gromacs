@@ -2800,7 +2800,6 @@ void calc_bonds_lambda(FILE *fplog,
                           md,fcd,global_atom_index,FALSE);
         epot[ftype] += v;
     }
-
     
     sfree(fr->fshift);
     fr->fshift = fshift_orig;

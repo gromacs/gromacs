@@ -47,28 +47,33 @@
 #include "index.h"
 #include "futil.h"
 #include "fflibutil.h"
+#include "hackblock.h"
 
 typedef struct {
-  char *res;
-  char *atom;
-  char *replace;
+    char *filebase;
+    char *res;
+    char *atom;
+    char *replace;
 } t_xlate_atom;
 
-static void *get_xlatoms(const char *fn,FILE *fp,
-                         int *nptr,t_xlate_atom **xlptr)
+static void get_xlatoms(const char *fn,FILE *fp,
+                        int *nptr,t_xlate_atom **xlptr)
 {
+    char filebase[STRLEN];
     char line[STRLEN];
     char rbuf[1024],abuf[1024],repbuf[1024],dumbuf[1024];
     char *_ptr;
     int  n,na,idum;
     t_xlate_atom *xl;
-    
+
+    fflib_filename_base(fn,filebase,STRLEN);
+
     n  = *nptr;
     xl = *xlptr;
 
     while (get_a_line(fp,line,STRLEN))
     {
-        na = sscanf(line,"%s%s%s",rbuf,abuf,repbuf,dumbuf);
+        na = sscanf(line,"%s%s%s%s",rbuf,abuf,repbuf,dumbuf);
         /* Check if we are reading an old format file with the number of items
          * on the first line.
          */
@@ -82,7 +87,8 @@ static void *get_xlatoms(const char *fn,FILE *fp,
         }
         
         srenew(xl,n+1);
-        
+        xl[n].filebase = strdup(filebase);
+
         /* Use wildcards... */
         if (strcmp(rbuf,"*") != 0)
         {
@@ -108,28 +114,29 @@ static void *get_xlatoms(const char *fn,FILE *fp,
     *xlptr = xl;
 }
 
-static void done_xlatom(int nxlate,t_xlate_atom **xlatom)
+static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
 {
-  int i;
-  
-  for(i=0; (i<nxlate); i++) {
-    if ((*xlatom)[i].res)
-      sfree((*xlatom)[i].res);
-    if ((*xlatom)[i].atom)
-      sfree((*xlatom)[i].atom);
-    if ((*xlatom)[i].replace)
-      sfree((*xlatom)[i].replace);
-  }
-  sfree(*xlatom);
-  *xlatom = NULL;
+    int i;
+    
+    for(i=0; (i<nxlate); i++)
+    {
+        sfree(xlatom[i].filebase);
+        if (xlatom[i].res != NULL)
+        {
+            sfree(xlatom[i].res);
+        }
+        sfree(xlatom[i].atom);
+        sfree(xlatom[i].replace);
+    }
+    sfree(xlatom);
 }
 
 void rename_atoms(const char *xlfile,const char *ffdir,
-                  t_atoms *atoms,t_symtab *symtab,t_aa_names *aan,
-                  bool bReorderNum,bool bVerbose)
+                  t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
+                  t_aa_names *aan,bool bReorderNum,bool bVerbose)
 {
     FILE *fp;
-    int nxlate,a,i;
+    int nxlate,a,i,resind;
     t_xlate_atom *xlatom;
     int  nf;
     char **f;
@@ -150,7 +157,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         for(i=0; i<nf; i++)
         {
             fp = fflib_open(f[i]);
-            get_xlatoms(xlfile,fp,&nxlate,&xlatom);
+            get_xlatoms(f[i],fp,&nxlate,&xlatom);
             fclose(fp);
             sfree(f[i]);
         }
@@ -159,7 +166,8 @@ void rename_atoms(const char *xlfile,const char *ffdir,
 
     for(a=0; (a<atoms->nr); a++)
     {
-        res = *(atoms->resinfo[atoms->atom[a].resind].name);
+        resind = atoms->atom[a].resind;
+        res    = *(atoms->resinfo[resind].name);
         strcpy(atombuf,*(atoms->atomname[a]));
         bReorderedNum = FALSE;
         if (bReorderNum)
@@ -175,37 +183,43 @@ void rename_atoms(const char *xlfile,const char *ffdir,
                 bReorderedNum = TRUE;
             }
         }
-        bRenamed=FALSE;
+        bRenamed = FALSE;
         for(i=0; (i<nxlate) && !bRenamed; i++) {
-            /* Match the residue name */
-            bMatch = (xlatom[i].res == NULL ||
-                      (strcasecmp("protein",xlatom[i].res) == 0 &&
-                       is_protein(aan,res)));
-            if (!bMatch)
+            /* Check if the base file name of the rtp and arn entry match */
+            if (restp == NULL ||
+                strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
             {
-                ptr0 = res;
-                ptr1 = xlatom[i].res;
-                while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
-                       (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
+                /* Match the residue name */
+                bMatch = (xlatom[i].res == NULL ||
+                          (strcasecmp("protein",xlatom[i].res) == 0 &&
+                           is_protein(aan,res)));
+                if (!bMatch)
                 {
-                    ptr0++;
-                    ptr1++;
+                    ptr0 = res;
+                    ptr1 = xlatom[i].res;
+                    while (ptr0[0] != '\0' && ptr1[0] != '\0' &&
+                           (ptr0[0] == ptr1[0] || ptr1[0] == '?'))
+                    {
+                        ptr0++;
+                        ptr1++;
+                    }
+                    bMatch = (ptr0[0] == '\0' && ptr1[0] == '\0');
                 }
-                bMatch = (ptr0[0] == '\0' && ptr1[0] == '\0');
-            }
-            if (bMatch && strcmp(atombuf,xlatom[i].atom) == 0)
-            {
-                /* We have a match. */
-                /* Don't free the old atomname, since it might be in the symtab.
-                 */
-                ptr0 = strdup(xlatom[i].replace);
-                if (bVerbose)
+                if (bMatch && strcmp(atombuf,xlatom[i].atom) == 0)
                 {
-                    printf("Renaming atom '%s' in '%s' to '%s'\n",
-                           *atoms->atomname[a],res,ptr0);
+                    /* We have a match. */
+                    /* Don't free the old atomname,
+                     * since it might be in the symtab.
+                     */
+                    ptr0 = strdup(xlatom[i].replace);
+                    if (bVerbose)
+                    {
+                        printf("Renaming atom '%s' in '%s' to '%s'\n",
+                               *atoms->atomname[a],res,ptr0);
+                    }
+                    atoms->atomname[a] = put_symtab(symtab,ptr0);
+                    bRenamed = TRUE;
                 }
-                atoms->atomname[a] = put_symtab(symtab,ptr0);
-                bRenamed = TRUE;
             }
         }
         if (bReorderedNum && !bRenamed)
@@ -214,6 +228,6 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         }
     }
 
-    done_xlatom(nxlate,&xlatom);
+    done_xlatom(nxlate,xlatom);
 }
 

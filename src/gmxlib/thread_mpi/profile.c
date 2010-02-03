@@ -52,7 +52,11 @@ files.
 #include <string.h>
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
 #include <sys/time.h>
+#else
+/* windows doesn't do standard C */
+#define snprintf sprintf_s
 #endif
+
 
 #include "thread_mpi/threads.h"
 #include "thread_mpi/atomic.h"
@@ -93,6 +97,7 @@ const char *tmpi_waitfn_names[] =
 {
     "Send",
     "Recv",
+    "P2p signal",
     "Waitall",
     "Coll. send",
     "Coll. recv",
@@ -248,7 +253,7 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         double tot_time=0.;
         double tot_diff=0.;
 
-        printf("%11s", "Total wait");
+        printf("%11s", "Total");
         for(j=0;j<Nthreads;j++)
         {
             double time=(double)(threads[j].profile.global_stop - 

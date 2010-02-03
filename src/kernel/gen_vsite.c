@@ -1630,10 +1630,15 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 	strcpy(nexttpname,get_atomtype_name(get_atype(heavies[0],at,nrtp,rtp,aan),atype));
 	ch=get_dummymass_name(vsiteconflist,nvsiteconf,tpname,nexttpname);
 
-	if(ch==NULL) 
-	  gmx_fatal(FARGS,"Cant find dummy mass for type %s bonded to type %s in the virtual site database (.vsd files). Add it to the database!\n",tpname,nexttpname);
-	else
+	if (ch == NULL) {
+	  if (ndb > 0) {
+	    gmx_fatal(FARGS,"Can't find dummy mass for type %s bonded to type %s in the virtual site database (.vsd files). Add it to the database!\n",tpname,nexttpname);
+	  } else {
+	     gmx_fatal(FARGS,"A dummy mass for type %s bonded to type %s is required, but no virtual site database (.vsd) files where found.\n",tpname,nexttpname);
+	  }
+	} else {
 	  strcpy(name,ch);
+	}
 
 	tpM=vsite_nm2type(name,atype);
 	/* make space for 2 masses: shift all atoms starting with 'Heavy' */

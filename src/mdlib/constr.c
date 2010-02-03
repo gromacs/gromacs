@@ -768,7 +768,7 @@ void set_constraints(struct gmx_constr *constr,
     /* Make a selection of the local atoms for essential dynamics */
     if (constr->ed && cr->dd)
     {
-        dd_make_local_ed_indices(cr->dd,constr->ed,md);
+        dd_make_local_ed_indices(cr->dd,constr->ed);
     }
 }
 

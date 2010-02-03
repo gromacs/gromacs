@@ -27,14 +27,18 @@ topol_DATA = \
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
 	urea+h2o.gro    \
 	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
-	cb-shift.dat	co-shift.dat	edissoc.dat	FF.dat		\
+	cb-shift.dat	co-shift.dat	edissoc.dat			\
 	gurgle.dat	ha-shift.dat	links.dat	phbres.dat	\
 	random.dat	refi_aa.dat	specbond.dat	surface.dat	\
 	vdwradii.dat	xlateat.dat	highway.dat			\
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
 	table6-9.xvg 	atom_nom.tbl	tip5p.gro	\
-	sw.itp		elements.dat	defselection.dat
+	sw.itp		elements.dat	defselection.dat \
+	ffG43a1.itp     ffG53a5.itp     ffencads.itp    ffgmx2.itp \
+	ffG43a2.itp     ffG53a6.itp     ffencadv.itp    ffoplsaa-n.tst \
+	ffG45a3.itp     ffgmx.itp       ffoplsaa.itp
+
 
 EXTRA_DIST = ${topol_DATA}
 

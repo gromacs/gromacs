@@ -67,6 +67,13 @@ static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t warning_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
+/* a local version of _gmx_error with optional locking of debug_mutex to 
+   avoid deadlocks when called from functions which themselves lock 
+   that mutex. This is ugly, but to fix this, the entire structure
+   and interface of gmx_fatal will need to be reconsidered. */
+static void _gmx_error_locking(const char *key,const char *msg,
+                               const char *file,int line, bool lock);
+
 bool bDebugMode(void)
 {
     bool ret;
@@ -452,7 +459,7 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 #ifdef GMX_THREADS
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
-  _gmx_error("fatal",msg,file,line);
+  _gmx_error_locking("fatal",msg,file,line, TRUE);
 }
 
 static int  nwarn_note  = 0;
@@ -768,7 +775,8 @@ char *gmx_strerror(const char *key)
   }
 }
 
-void _gmx_error(const char *key,const char *msg,const char *file,int line)
+static void _gmx_error_locking(const char *key,const char *msg,
+                               const char *file,int line, bool lock)
 {
   char buf[10240],tmpbuf[1024];
   int  cqnum;
@@ -776,7 +784,7 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   char *strerr;
 
 #ifdef GMX_THREADS
-  if (msg == NULL)  /* TODO needs checking for possible deadlock when msg == NULL [pszilard] */
+  if (lock)  
   {
     tMPI_Thread_mutex_lock(&warning_mutex);
   }
@@ -793,12 +801,18 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
 	  strerr,msg ? msg : warn_buf,llines,tmpbuf);
   free(strerr);
 #ifdef GMX_THREADS
-  if (msg == NULL)
+  if (lock)
   {
     tMPI_Thread_mutex_unlock(&warning_mutex);
   }
 #endif
   gmx_error_handler(buf);
+
+}
+
+void _gmx_error(const char *key,const char *msg,const char *file,int line)
+{
+    _gmx_error_locking(key, msg, file, line, TRUE);
 }
 
 void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int line)

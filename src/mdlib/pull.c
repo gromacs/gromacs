@@ -1015,8 +1015,8 @@ static void make_local_pull_group(gmx_ga2la_t ga2la,
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
     if (ga2la) {
-      if (!ga2la_home(ga2la,ii,&ii)) {
-	ii = -1;
+      if (!ga2la_get_home(ga2la,ii,&ii)) {
+        ii = -1;
       }
     }
     if (ii >= start && ii < end) {

@@ -51,7 +51,6 @@
  */
 extern void dd_make_local_group_indices(
         gmx_ga2la_t   ga2la,
-        t_mdatoms     *md,
         const int     nr,          /* IN:  Total number of atoms in the group */
         int           anrs[],      /* IN:  Global atom numbers of the groups atoms */
         int           *nr_loc,     /* OUT: Number of group atoms found locally */
@@ -68,32 +67,29 @@ extern void dd_make_local_group_indices(
     localnr = 0;
     for(i=0; i<nr; i++)
     {
-        if (ga2la_home(ga2la,anrs[i],&ii))
+        if (ga2la_get_home(ga2la,anrs[i],&ii))
         {
-            if (ii < md->start+md->homenr)
+            /* The atom with this index is a home atom */
+            if (localnr >= *nalloc_loc) /* Check whether memory suffices */
             {
-                /* The atom with this index is a home atom */
-                if (localnr >= *nalloc_loc) /* Check whether memory suffices */
-                {
-                    *nalloc_loc = over_alloc_dd(localnr+1);
-                    /* We never need more memory than the number of atoms in the group */
-                    *nalloc_loc = MIN(*nalloc_loc, nr);
-                    srenew(*anrs_loc,*nalloc_loc);
-                }
-                /* Save the atoms index in the local atom numbers array */
-                (*anrs_loc)[localnr] = ii;
-                
-                if (coll_ind != NULL)
-                {
-                    /* Keep track of where this local atom belongs in the collective index array.
-                     * This is needed when reducing the local arrays to a collective/global array 
-                     * in communicate_group_positions */
-                    coll_ind[localnr] = i;
-                }
-                
-                /* add one to the local atom count */
-                localnr++; 
+                *nalloc_loc = over_alloc_dd(localnr+1);
+                /* We never need more memory than the number of atoms in the group */
+                *nalloc_loc = MIN(*nalloc_loc, nr);
+                srenew(*anrs_loc,*nalloc_loc);
             }
+            /* Save the atoms index in the local atom numbers array */
+            (*anrs_loc)[localnr] = ii;
+
+            if (coll_ind != NULL)
+            {
+                /* Keep track of where this local atom belongs in the collective index array.
+                 * This is needed when reducing the local arrays to a collective/global array
+                 * in communicate_group_positions */
+                coll_ind[localnr] = i;
+            }
+
+            /* add one to the local atom count */
+            localnr++;
         }
     }
  
