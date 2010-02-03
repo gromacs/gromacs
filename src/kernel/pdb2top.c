@@ -923,6 +923,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
             }
 
             /* This atom still has the old name, rename it */
+            newnm = hbr->hack[j].nname;
             for(k=0; k<rptr->natom; k++)
             {
                 if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
@@ -939,7 +940,6 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
                 /* We need to find the add hack that can add this atom
                  * to find out after which atom it should be added.
                  */
-                newnm = hbr->hack[j].nname;
                 bFoundInAdd = FALSE;
                 for(k=0; k<hbr->nhack; k++)
                 {
