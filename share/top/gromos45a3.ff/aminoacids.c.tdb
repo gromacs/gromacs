@@ -2,10 +2,9 @@
 
 [ COO- ]
 [ replace ]
-C		C	12.011	0.27
-[ replace ]
-O 	  O1	OM	15.9994	-0.635
-OXT	  O2	OM	15.9994	-0.635
+C	C	C	12.011	0.27
+O 	O1	OM	15.9994	-0.635
+OXT	O2	OM	15.9994	-0.635
 [ add ]
 2	8	O	C	CA	N
 	OM	15.9994	-0.635
@@ -23,10 +22,9 @@ C	CA	O2	O1	gi_1
 
 [ COOH ]
 [ replace ]
-C		C	12.011	0.53
-O		OA	15.9994	-0.548
-[ delete ]
-OXT
+C	C	C	12.011	0.53
+O	O	OA	15.9994	-0.548
+OXT	OT	O	15.9994	-0.38
 [ add ]
 1	2	OT	C	CA	N
 	O	15.9994	-0.38
