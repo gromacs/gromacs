@@ -56,7 +56,7 @@ extern void init_edsam(gmx_mtop_t *mtop,t_inputrec *ir,t_commrec *cr,
 /* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle 
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 
-extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed,t_mdatoms *md);
+extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
 /* Make a selection of the home atoms for the ED groups. 
  * Should be called at every domain decomposition. */
  
