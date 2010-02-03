@@ -97,6 +97,7 @@ const char *tmpi_waitfn_names[] =
 {
     "Send",
     "Recv",
+    "P2p signal",
     "Waitall",
     "Coll. send",
     "Coll. recv",
