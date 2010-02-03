@@ -851,23 +851,32 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 static bool atomname_cmp_nr(const char *anm,t_hack *hack,int *nr)
 {
 
-  if (hack->nr == 1) {
-    *nr = 0;
-    
-    return (strcasecmp(anm,hack->nname) != 0);
-  } else {
-    if (isdigit(anm[strlen(anm)-1])) {
-      *nr = anm[strlen(anm)-1] - '0';
-    } else {
-      *nr = 0;
+    if (hack->nr == 1)
+    {
+        *nr = 0;
+        
+        return (strcasecmp(anm,hack->nname) == 0);
     }
-    if (*nr <= 0 || *nr > hack->nr) {
-      return FALSE;
-    } else {
-      return (strlen(anm) == strlen(hack->nname) + 1 &&
-	      strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
+    else
+    {
+        if (isdigit(anm[strlen(anm)-1]))
+        {
+            *nr = anm[strlen(anm)-1] - '0';
+        }
+        else
+        {
+            *nr = 0;
+        }
+        if (*nr <= 0 || *nr > hack->nr)
+        {
+            return FALSE;
+        }
+        else
+        {
+            return (strlen(anm) == strlen(hack->nname) + 1 &&
+                    strncasecmp(anm,hack->nname,strlen(hack->nname)) == 0);
+        }
     }
-  }
 }
 
 static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
@@ -880,7 +889,7 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
     int  anmnr;
     char *start_at,buf[STRLEN];
     int  start_nr;
-    bool bFoundInAdd;
+    bool bReplaceReplace,bFoundInAdd;
     bool bDeleted;
 
     oldnm = *pdba->atomname[atind];
@@ -892,15 +901,51 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
         if (hbr->hack[j].oname != NULL && hbr->hack[j].nname != NULL &&
             strcasecmp(oldnm,hbr->hack[j].oname) == 0)
         {
-            /* This atom still has the old name, rename it */
-            /* We need to find the add hack that can add this atom
-             * to find out after which atom it should be added.
-             */
-            newnm = hbr->hack[j].nname;
-            bFoundInAdd = FALSE;
+            /* This is a replace entry. */
+            /* Check if we are not replacing a replaced atom. */
+            bReplaceReplace = FALSE;
             for(k=0; k<hbr->nhack; k++) {
-                if (hbr->hack[k].oname == NULL && hbr->hack[k].nname != NULL) {
-                    if (atomname_cmp_nr(newnm,&hbr->hack[k],&anmnr))
+                if (k != j &&
+                    hbr->hack[k].oname != NULL && hbr->hack[k].nname != NULL &&
+                    strcasecmp(hbr->hack[k].nname,hbr->hack[j].oname) == 0)
+                {
+                    /* The replace in hack[j] replaces an atom that
+                     * was already replaced in hack[k], we do not want
+                     * second or higher level replaces at this stage.
+                     */
+                    bReplaceReplace = TRUE;
+                }
+            }
+            if (bReplaceReplace)
+            {
+                /* Skip this replace. */
+                continue;
+            }
+
+            /* This atom still has the old name, rename it */
+            for(k=0; k<rptr->natom; k++)
+            {
+                if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
+                {
+                    break;
+                }
+            }
+            if (k == rptr->natom)
+            {
+                /* The new name is not present in the rtp.
+                 * We need to apply the replace also to the rtp entry.
+                 */
+                
+                /* We need to find the add hack that can add this atom
+                 * to find out after which atom it should be added.
+                 */
+                newnm = hbr->hack[j].nname;
+                bFoundInAdd = FALSE;
+                for(k=0; k<hbr->nhack; k++)
+                {
+                    if (hbr->hack[k].oname == NULL &&
+                        hbr->hack[k].nname != NULL &&
+                        atomname_cmp_nr(newnm,&hbr->hack[k],&anmnr))
                     {
                         if (anmnr <= 1)
                         {
@@ -926,31 +971,20 @@ static bool match_atomnames_with_rtp_atom(t_atoms *pdba,int atind,
                         /* We can add the atom after atom start_nr */
                         add_atom_to_restp(rptr,resnr,start_nr,
                                           &hbr->hack[j]);
-                    }
-                    else
-                    {
-                        gmx_fatal(FARGS,"Could not find an 'add' entry for atom named '%s' corresponding to the 'replace' entry from atom name '%s' to '%s' for tdb or hdb database of residue type '%s'",
-                                  newnm,
-                                  hbr->hack[j].oname,hbr->hack[j].nname,
-                                  rptr->resname);
+                        
+                        bFoundInAdd = TRUE;
                     }
                 }
-            }
-            if (!bFoundInAdd)
-            {
-                for(k=0; k<rptr->natom; k++)
+
+                if (!bFoundInAdd)
                 {
-                    if (strcasecmp(newnm,*rptr->atomname[k]) == 0)
-                    {
-                        break;
-                    }
-                }
-                if (k == rptr->natom) {
-                    gmx_fatal(FARGS,"Renamed atom '%s' (old name '%s') not found in rtp entry '%s' for residue %d",
-                              oldnm,newnm,rptr->resname,resnr);
+                    gmx_fatal(FARGS,"Could not find an 'add' entry for atom named '%s' corresponding to the 'replace' entry from atom name '%s' to '%s' for tdb or hdb database of residue type '%s'",
+                              newnm,
+                              hbr->hack[j].oname,hbr->hack[j].nname,
+                              rptr->resname);
                 }
             }
-            
+                
             if (bVerbose)
             {
                 printf("Renaming atom '%s' in residue '%s' %d to '%s'\n",
