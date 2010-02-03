@@ -1218,12 +1218,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     temp0 = enerd->term[F_TEMP];
     
-    /* Initiate data for the special cases */
+    /* if using an iterative algorithm, we need to create a working directory for the state. */
     if (bIterations) 
     {
-        bufstate = init_bufstate(state);
+            bufstate = init_bufstate(state);
     }
-    
     if (bFFscan) 
     {
         snew(xcopy,state->natoms);
@@ -1555,6 +1554,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,do_verbose);
                 wallcycle_stop(wcycle,ewcDOMDEC);
+                /* If using an iterative integrator, reallocate space to match the decomposition */
+                if (bIterations) 
+                {
+                    destroy_bufstate(bufstate);
+                    bufstate = init_bufstate(state);
+                }
             }
         }
 
@@ -2440,6 +2445,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             else 
             {
                 bcast_state(cr,state,FALSE);
+            }
+            /* if doing an iterative method, reallocate space with the new system information*/
+            if (bIterations) 
+            {
+                destroy_bufstate(bufstate);
+                bufstate = init_bufstate(state);
             }
         }
         
