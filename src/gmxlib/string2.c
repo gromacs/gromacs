@@ -57,6 +57,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
+#include "futil.h"
 
 int continuing(char *s)
 /* strip trailing spaces and if s ends with a CONTINUE remove that too.
