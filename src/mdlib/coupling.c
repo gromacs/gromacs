@@ -605,21 +605,19 @@ void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
     }
 }
 
-t_state *init_bufstate(t_state *template_state) 
+t_state *init_bufstate(const t_state *template_state) 
 {
     t_state *state;
     int nc = template_state->nhchainlength;
     snew(state,1);
-    snew(state->x,template_state->natoms);
-    snew(state->v,template_state->natoms);
     snew(state->nosehoover_xi,nc*template_state->ngtc);
     snew(state->nosehoover_vxi,nc*template_state->ngtc);
     snew(state->therm_integral,template_state->ngtc);
     snew(state->nhpres_xi,nc*template_state->nnhpres);
     snew(state->nhpres_vxi,nc*template_state->nnhpres);
+
     return state;
 }  
-
 
 void destroy_bufstate(t_state *state) 
 {
