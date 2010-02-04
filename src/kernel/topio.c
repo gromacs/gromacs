@@ -594,6 +594,7 @@ static char **read_topol(const char *infile,const char *outfile,
 			
 			srenew(pline,strlen(pline)+strlen(tmp_line)+1);
 			strcat(pline,tmp_line);
+            sfree(tmp_line);
 		}
 				
       /* skip trailing and leading spaces and comment text */
