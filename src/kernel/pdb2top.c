@@ -1162,14 +1162,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   init_plist(plist);
 
-  /* lookup hackblocks and rtp for all residues */
-  //get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resinfo, 
-  //	     nterpairs, ntdb, ctdb, rn, rc);
-  /* ideally, now we would not need the rtp itself anymore, but do 
-     everything using the hb and restp arrays. Unfortunately, that 
-     requires some re-thinking of code in gen_vsite.c, which I won't 
-     do now :( AF 26-7-99 */
-  
   if (debug) {
     print_resall(debug, atoms->nres, restp, atype);
     dump_hb(debug, atoms->nres, hb);
