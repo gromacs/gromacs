@@ -656,6 +656,15 @@ void gmx_conect_add(gmx_conect conect,int ai,int aj)
   }
 }
 
+static void set_chainid(t_atoms *atoms,int r0,int r1,char id)
+{
+  int r;
+
+  for(r=r0; r<r1; r++) {
+    atoms->resinfo[r].chain = id;
+  }
+}
+
 int read_pdbfile(FILE *in,char *title,int *model_nr,
 		 t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
 		 gmx_conect conect)
@@ -668,7 +677,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   char line[STRLEN+1];
   int  line_type;
   char *c,*d;
-  int  natom;
+  int  natom,nterread,nres_ter_prev=0;
+  char chidmax=' ';
   bool bStop=FALSE;
 
   if (ePBC) {
@@ -686,6 +696,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   bCOMPND=FALSE;
   title[0]='\0';
   natom=0;
+  nterread = 0;
   while (!bStop && (fgets2(line,STRLEN,in) != NULL)) {
     line_type = line2type(line);
     
@@ -746,8 +757,30 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
       break;
       
     case epdbTER:
-      if (bTER)
+      if (bTER) {
 	bStop=TRUE;
+      } else {
+	/* Since we can currently not store TER entries in the pdb file,
+	 * we add chain identifiers when we find two or more chains
+	 * without identifier or with identical identifiers.
+	 */
+	nterread++;
+	if (nterread == 2 && atoms->resinfo[0].chain == ' ') {
+	  set_chainid(atoms,0,nres_ter_prev,chidmax);
+	  chidmax = 'A';
+	}
+	if (nterread >= 2 && 
+	    (atoms->resinfo[nres_ter_prev].chain == ' ' ||
+	     (nres_ter_prev > 0 &&
+	      atoms->resinfo[nres_ter_prev-1].chain !=
+	      atoms->resinfo[nres_ter_prev].chain)) &&
+	    chidmax < 'Z') {
+	  chidmax++;
+	  set_chainid(atoms,nres_ter_prev,atoms->nres,chidmax);
+	}
+	chidmax = max(chidmax,atoms->resinfo[nres_ter_prev].chain);
+	nres_ter_prev = atoms->nres;
+      }
       break;
     case epdbMODEL:
       if(model_nr)

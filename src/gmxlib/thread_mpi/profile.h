@@ -35,6 +35,7 @@ enum tmpi_wait_functions
 {
     TMPIWAIT_Send, /* p2p send wait */
     TMPIWAIT_Recv, /* p2p recv wait */
+    TMPIWAIT_P2p_xfer, /* p2p signaling wait */
     TMPIWAIT_Waitall, /* p2p waitall */
     TMPIWAIT_Coll_send, /* collective recv wait */
     TMPIWAIT_Coll_recv, /* collective recv wait */

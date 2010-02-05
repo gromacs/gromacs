@@ -555,7 +555,8 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
                 errorcode);
         fflush(stderr);
         /*sleep(1);*/
-        abort();
+        /*abort();*/
+        exit(errorcode);
     }
     else
     {

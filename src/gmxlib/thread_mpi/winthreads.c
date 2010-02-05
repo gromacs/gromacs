@@ -137,6 +137,8 @@ int tMPI_Thread_create(tMPI_Thread_t *thread,
                          GetLastError());
         return -1;
     }
+    /* inherit the thread priority from the paren thread. */
+    SetThreadPriority(*thread, GetThreadPriority(GetCurrentThread()));
 
     return 0;
 }

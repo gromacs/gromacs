@@ -57,6 +57,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
+#include "futil.h"
 
 int continuing(char *s)
 /* strip trailing spaces and if s ends with a CONTINUE remove that too.
@@ -82,9 +83,24 @@ char *fgets2(char *line, int n, FILE *stream)
  */
 {
   char *c;
-  if (fgets(line,n,stream)==NULL) return NULL;
-  if ((c=strchr(line,'\n'))!=NULL) *c=0;
-  if ((c=strchr(line,'\r'))!=NULL) *c=0;
+  if (fgets(line,n,stream) == NULL) {
+    return NULL;
+  }
+  if ((c=strchr(line,'\n')) != NULL) {
+    *c = '\0';
+  } else {
+    /* A line not ending in a newline can only occur at the end of a file,
+     * or because of n being too small.
+     * Since both cases occur very infrequently, we can check for EOF.
+     */
+    if (!gmx_eof(stream)) {
+      gmx_fatal(FARGS,"An input file contains a line longer than %d characters, while the buffer passed to fgets2 has size %d. The line starts with: '%20.20s'",n,n,line);
+    }
+  }
+  if ((c=strchr(line,'\r')) != NULL) {
+    *c = '\0';
+  }
+
   return line;
 }
 

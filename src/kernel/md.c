@@ -114,7 +114,15 @@ static void copy_coupling_state(t_state *statea,t_state *stateb,
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
     
     int i,j,nc;
-    
+
+    /* Make sure we have enough space for x and v */
+    if (statea->nalloc > stateb->nalloc)
+    {
+        stateb->nalloc = statea->nalloc;
+        srenew(stateb->x,stateb->nalloc);
+        srenew(stateb->v,stateb->nalloc);
+    }
+
     stateb->natoms     = statea->natoms;
     stateb->ngtc       = statea->ngtc;
     stateb->nnhpres    = statea->nnhpres;
@@ -1218,12 +1226,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     temp0 = enerd->term[F_TEMP];
     
-    /* Initiate data for the special cases */
+    /* if using an iterative algorithm, we need to create a working directory for the state. */
     if (bIterations) 
     {
-        bufstate = init_bufstate(state);
+            bufstate = init_bufstate(state);
     }
-    
     if (bFFscan) 
     {
         snew(xcopy,state->natoms);
@@ -1555,6 +1562,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     vsite,shellfc,constr,
                                     nrnb,wcycle,do_verbose);
                 wallcycle_stop(wcycle,ewcDOMDEC);
+                /* If using an iterative integrator, reallocate space to match the decomposition */
             }
         }
 

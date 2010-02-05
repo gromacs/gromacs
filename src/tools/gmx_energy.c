@@ -678,8 +678,8 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       }
     }
     if (bSum) {
-      fprintf(stdout,"%-24s %10g %10s %10s %10s %10s",
-	      "Total",avertot/nmol,"--","--","--","--");
+      fprintf(stdout,"%-24s %10g %10s %10s %10s  (%s)",
+	      "Total",avertot/nmol,"--","--","--",enm[set[0]].unit);
       /* pr_aver,pr_stddev,a,totaldrift */
       if (bFee) 
 	fprintf(stdout,"  %10g  %10g\n",

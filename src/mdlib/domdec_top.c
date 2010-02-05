@@ -788,7 +788,7 @@ static void add_vsite(gmx_ga2la_t ga2la,int *index,int *rtil,
     for(k=2; k<1+nral; k++)
     {
         ak_gl = a_gl + iatoms[k] - a_mol;
-        if (!ga2la_home(ga2la,ak_gl,&tiatoms[k]))
+        if (!ga2la_get_home(ga2la,ak_gl,&tiatoms[k]))
         {
             /* Copy the global index, convert later in make_local_vsites */
             tiatoms[k] = -(ak_gl + 1);

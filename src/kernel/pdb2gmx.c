@@ -348,15 +348,16 @@ static void check_occupancy(t_atoms *atoms,const char *filename,bool bVerbose)
 	  nnotone++;
       }
     }
-    if (nzero == atoms->nr)
+    if (nzero == atoms->nr) {
       fprintf(stderr,"All occupancy fields zero. This is probably not an X-Ray structure\n");
-    else if ((nzero > 0) || (nnotone > 0))
+    } else if ((nzero > 0) || (nnotone > 0)) {
       fprintf(stderr,
 	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
 	      " with\n         occupancy unequal to one (out of %d atoms)."
 	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
-    else
+    } else {
       fprintf(stderr,"All occupancies are one\n");
+    }
   }
 }
 
@@ -425,7 +426,7 @@ static int read_pdball(const char *inf, const char *outf,char *title,
   
   rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
-  rename_atoms("xlateat.dat",NULL,atoms,symtab,aan,TRUE,bVerbose);
+  rename_atoms("xlateat.dat",NULL,atoms,symtab,NULL,aan,TRUE,bVerbose);
   
   if (natom == 0)
     return 0;
@@ -505,7 +506,7 @@ int pdbicomp(const void *a,const void *b)
   return d;
 }
 
-static void sort_pdbatoms(int nrtp,t_restp restp[],
+static void sort_pdbatoms(int nrtp,t_restp restp[],t_hackblock hb[],
 			  int natoms,t_atoms **pdbaptr,rvec **x,
 			  t_blocka *block,char ***gnames)
 {
@@ -513,6 +514,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   rvec **xnew;
   int     i,j;
   t_restp *rptr;
+  t_hackblock *hbr;
   t_pdbindex *pdbi;
   atom_id *a;
   char *atomnm,*resnm;
@@ -526,11 +528,15 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   for(i=0; i<natoms; i++) {
     atomnm = *pdba->atomname[i];
     resnm = *pdba->resinfo[pdba->atom[i].resind].name;
-    if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL)
+    if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL) {
       gmx_fatal(FARGS,"Residue type %s not found",resnm);
-    for(j=0; (j<rptr->natom); j++)
-      if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0)
+    }
+    rptr = &restp[pdba->atom[i].resind];
+    for(j=0; (j<rptr->natom); j++) {
+      if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0) {
 	break;
+      }
+    }
     if (j==rptr->natom) {
       if ( ( ( pdba->atom[i].resind == 0) && (atomnm[0] == 'H') &&
 	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
@@ -815,6 +821,8 @@ int main(int argc, char *argv[])
   rvec       *pdbx,*x;
   bool       bUsed,bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE;
   real       mHmult=0;
+  t_hackblock *hb_chain;
+  t_restp    *restp_chain;
   output_env_t oenv;
 
 	gmx_atomprop_t aps;
@@ -1239,29 +1247,6 @@ int main(int argc, char *argv[])
       rename_residues(pdba,cc->nterpairs,cc->rN,cc->rC,nresrename,resrename,
 		      &symtab,bVerbose);
     }
-
-    rename_atoms(NULL,ffdir,pdba,&symtab,aan,FALSE,bVerbose);
-		  
-    if (bSort) {
-      block = new_blocka();
-      snew(gnames,1);
-      sort_pdbatoms(nrtp,restp,natom,&pdba,&x,block,&gnames);
-      natom = remove_duplicate_atoms(pdba,x,bVerbose);
-      if (ftp2bSet(efNDX,NFILE,fnm)) {
-	if (bRemoveH)
-	  fprintf(stderr,"WARNING: with the -remh option the generated "
-		  "index file (%s) might be useless\n"
-		  "(the index file is generated before hydrogens are added)",
-		  ftp2fn(efNDX,NFILE,fnm));
-	write_index(ftp2fn(efNDX,NFILE,fnm),block,gnames);
-      }
-      for(i=0; i < block->nr; i++)
-	sfree(gnames[i]);
-      sfree(gnames);
-      done_blocka(block);
-    } else 
-      fprintf(stderr,"WARNING: "
-	      "without sorting no check for duplicate atoms can be done\n");
     
     if (debug) {
       if (cc->chain == ' ') {
@@ -1311,6 +1296,43 @@ int main(int argc, char *argv[])
       } else {
 	cc->ctdb[i] = NULL;
       }
+    }
+
+    /* lookup hackblocks and rtp for all residues */
+    get_hackblocks_rtp(&hb_chain, &restp_chain,
+		       nrtp, restp, pdba->nres, pdba->resinfo, 
+		       cc->nterpairs, cc->ntdb, cc->ctdb, cc->rN, cc->rC);
+    /* ideally, now we would not need the rtp itself anymore, but do 
+     everything using the hb and restp arrays. Unfortunately, that 
+     requires some re-thinking of code in gen_vsite.c, which I won't 
+     do now :( AF 26-7-99 */
+
+    rename_atoms(NULL,ffdir,pdba,&symtab,restp_chain,aan,FALSE,bVerbose);
+
+    match_atomnames_with_rtp(restp_chain,hb_chain,pdba,bVerbose);
+
+    if (bSort) {
+      block = new_blocka();
+      snew(gnames,1);
+      sort_pdbatoms(pdba->nres,restp_chain,hb_chain,
+		    natom,&pdba,&x,block,&gnames);
+      natom = remove_duplicate_atoms(pdba,x,bVerbose);
+      if (ftp2bSet(efNDX,NFILE,fnm)) {
+	if (bRemoveH) {
+	  fprintf(stderr,"WARNING: with the -remh option the generated "
+		  "index file (%s) might be useless\n"
+		  "(the index file is generated before hydrogens are added)",
+		  ftp2fn(efNDX,NFILE,fnm));
+	}
+	write_index(ftp2fn(efNDX,NFILE,fnm),block,gnames);
+      }
+      for(i=0; i < block->nr; i++)
+	sfree(gnames[i]);
+      sfree(gnames);
+      done_blocka(block);
+    } else {
+      fprintf(stderr,"WARNING: "
+	      "without sorting no check for duplicate atoms can be done\n");
     }
 
     /* Generate Hydrogen atoms (and termini) in the sequence */
@@ -1388,7 +1410,9 @@ int main(int argc, char *argv[])
       else
 	top_file2=top_file;
     
-    pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,nrtp,restp,
+    pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,
+	    nrtp,restp,
+	    restp_chain,hb_chain,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bAllowMissing,
 	    bVsites,bVsiteAromatics,forcefield,ffdir,
 	    mHmult,nssbonds,ssbonds,
