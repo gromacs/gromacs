@@ -155,7 +155,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
   }
 
   /* GENERAL INTEGRATOR STUFF */
-  if (ir->eI != eiMD) {
+  if (!(ir->eI == eiMD || EI_VV(ir->eI))) {
     ir->etc = etcNO;
   }
   if (!EI_DYNAMICS(ir->eI)) {
@@ -280,7 +280,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     }
   }
     
-  if (ir->eI == eiMD && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
+  if (EI_STATE_VELOCITY(ir->eI) && ir->ePBC == epbcNONE && ir->comm_mode != ecmANGULAR) {
     warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
@@ -298,6 +298,21 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     ir->etc = etcBERENDSEN;
     warning_note("Old option for temperature coupling given: "
 		 "changing \"yes\" to \"Berendsen\"\n");
+  }
+  if (ir->etc == etcNOSEHOOVER) {
+    if (ir->opts.nhchainlength < 1) 
+      {
+	sprintf(warn_buf,"number of Nose-Hoover chains (currently %d) cannot be less than 1,reset to 1\n",ir->opts.nhchainlength);
+	ir->opts.nhchainlength =1;
+	warning(NULL);
+      }
+    
+    if (ir->etc==etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1) {
+      warning_note("leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1");
+      ir->opts.nhchainlength = 1;
+    }
+  } else {
+    ir->opts.nhchainlength = 0;
   }
 
   if (ir->etc == etcBERENDSEN) {
@@ -344,7 +359,15 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
     warning(NULL);
   }
-  
+
+  if (EI_VV(ir->eI)) {
+    if (ir->epc > epcNO) {
+      if (ir->epc!=epcMTTK) {
+	warning_error("NPT only defined for vv using Martyna-Tuckerman-Tobias-Klein equations");	      
+      }
+    }
+  }
+
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   if (ir->coulombtype == eelSWITCH) {
@@ -788,6 +811,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->etc,        etcoupl_names, nerror, TRUE);
+  ITYPE("nh-chain-length",     ir->opts.nhchainlength, NHCHAINLENGTH);
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
@@ -2040,16 +2064,26 @@ void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror
       !(absolute_reference(ir,sys,AbsRef) || ir->nsteps <= 10)) {
     warning("You are not using center of mass motion removal (mdp option comm-mode), numerical rounding errors can lead to build up of kinetic energy of the center of mass");
   }
-
-  if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
-    bCharge = FALSE;
-    aloopb = gmx_mtop_atomloop_block_init(sys);
-    while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
-      if (atom->q != 0 || atom->qB != 0) {
-	bCharge = TRUE;
-      }
+  
+  bCharge = FALSE;
+  aloopb = gmx_mtop_atomloop_block_init(sys);
+  while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
+    if (atom->q != 0 || atom->qB != 0) {
+      bCharge = TRUE;
     }
-    if (bCharge) {
+  }
+  
+  if (!bCharge) {
+    if (EEL_FULL(ir->coulombtype)) {
+      set_warning_line(mdparin,-1);
+      sprintf(err_buf,
+	      "You are using full electrostatics treatment %s for a system without charges.\n"
+	      "This costs a lot of performance for just processing zeros, consider using %s instead.\n",
+	      EELTYPE(ir->coulombtype),EELTYPE(eelCUT));
+      warning(err_buf);
+    }
+  } else {
+    if (ir->coulombtype == eelCUT && ir->rcoulomb > 0) {
       set_warning_line(mdparin,-1);
       sprintf(err_buf,
 	      "You are using a plain Coulomb cut-off, which might produce artifacts.\n"

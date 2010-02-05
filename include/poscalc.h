@@ -101,6 +101,14 @@ extern "C" {
  * Has effect only if \ref POS_DYNAMIC is not set.
  */
 #define POS_MASKONLY    32
+/*! \brief
+ * Calculate velocities of the positions.
+ */
+#define POS_VELOCITIES  64
+/*! \brief
+ * Calculate forces on the positions.
+ */
+#define POS_FORCES      128
 /*@}*/
 
 /** Specifies the type of positions to be calculated. */
@@ -175,7 +183,7 @@ gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc);
 extern void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
                        struct gmx_ana_pos_t *p, struct gmx_ana_index_t *g,
-                       rvec x[], t_pbc *pbc);
+                       t_trxframe *fr, t_pbc *pbc);
 
 #ifdef __cplusplus
 }

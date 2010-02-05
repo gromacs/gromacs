@@ -245,7 +245,7 @@ gmx_qhops_read(char *fn,int *nqhop)
   xmlDoValidityCheckingDefaultValue = 0;
   if (NULL == fn) 
   {
-    fn = (char *)libfn(db);
+    fn = (char *)gmxlibfn(db);
     fna=TRUE;
   }
   if ((doc = xmlParseFile(fn)) == NULL) {

@@ -107,7 +107,7 @@ static int register_cb(void *v, vmdplugin_t *p) {
 }
 
 static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdplugin) {
-    // Open the dll; try to execute the init function.
+    /* Open the dll; try to execute the init function. */
     void *handle, *ifunc, *registerfunc; 
     handle = vmddlopen(fullpath);
     if (!handle) {
@@ -128,7 +128,7 @@ static int load_sharedlibrary_plugins(const char *fullpath,t_gmxvmdplugin* vmdpl
         vmddlclose(handle);
         return 0;
     } else {
-        // Load plugins from the library.
+        /* Load plugins from the library.*/
         ((regfunc)registerfunc)(vmdplugin, register_cb);
     } 
     

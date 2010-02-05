@@ -58,32 +58,62 @@ extern "C" {
 #endif
 
 #ifndef M_2PI
-#define	M_2PI		6.28318530718
+#define	M_2PI		6.28318530717958647692
 #endif
-
+    
 #ifndef M_SQRT2
 #define M_SQRT2 sqrt(2.0)
 #endif
+    
+/* Suzuki-Yoshida Constants, for n=3 and n=5, for symplectic integration  */
+/* for n=1, w0 = 1 */
+/* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
+/* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
+    
+#define MAX_SUZUKI_YOSHIDA_NUM 5
+#define SUZUKI_YOSHIDA_NUM  5
+
+static const double sy_const_1[] = { 1. };
+static const double sy_const_3[] = { 0.828981543588751,-0.657963087177502,0.828981543588751 };
+static const double sy_const_5[] = { 0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065 };
+
+static const double* sy_const[] = {
+    NULL,
+    sy_const_1,
+    NULL,
+    sy_const_3,
+    NULL,
+    sy_const_5
+};
+
+/*
+static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
+    {},
+    {1},
+    {},
+    {0.828981543588751,-0.657963087177502,0.828981543588751},
+    {},
+    {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
+};*/
 
 #ifndef M_LN2
 #define M_LN2       0.693147180560
 #endif
 
 extern	int		gmx_nint(real a);
-extern  real            sign(real x,real y);
+extern  real    sign(real x,real y);
 
-extern  real            gmx_erf(real x);
-extern  real            gmx_erfc(real x);
+extern	int		gmx_nint(real a);
+extern  real    sign(real x,real y);
+extern  real    cuberoot (real a);
+extern  real    gmx_erf(real x);
+extern  real    gmx_erfc(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *
  *  This routine checks if the relative difference between two numbers is
  *  approximately within the given tolerance, defined as
- *  fabs(f1-f2)<=tolerance*fabs(f1+f2+1.0).
- *
- *  This expression is somewhat based on trial-and-error; the fabs() term on
- *  the right hand side avoids a division (important if f1==f2==0), and adding
- *  1.0 is necessary when comparing a single number vs. 0.0. 
+ *  fabs(f1-f2)<=tolerance*fabs(f1+f2).
  *
  *  To check if two floating-point numbers are almost identical, use this routine 
  *  with the tolerance GMX_REAL_EPS, or GMX_DOUBLE_EPS if the check should be

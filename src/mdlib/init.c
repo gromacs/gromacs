@@ -69,6 +69,8 @@ static char *int_title(const char *title,int nodeid,char buf[], int size)
 
 static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 {
+  int nnhpres;
+
   /* The entries in the state in the tpx file might not correspond
    * with what is needed, so we correct this here.
    */
@@ -107,25 +109,40 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   } else {
     state->nrng = 0;
   }
+  state->nnhpres = 0;
   if (ir->ePBC != epbcNONE) {
     state->flags |= (1<<estBOX);
     if (PRESERVE_SHAPE(*ir)) {
       state->flags |= (1<<estBOX_REL);
     }
-    if (ir->epc == epcPARRINELLORAHMAN) {
+    if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK)) {
       state->flags |= (1<<estBOXV);
     }
     if (ir->epc != epcNO) {
-      state->flags |= (1<<estPRES_PREV);
+      if (IR_NPT_TROTTER(ir)) {
+	state->nnhpres = 1;
+	state->flags |= (1<<estNHPRES_XI);
+	state->flags |= (1<<estNHPRES_VXI);
+	state->flags |= (1<<estSVIR_PREV);
+	state->flags |= (1<<estFVIR_PREV);
+	state->flags |= (1<<estVETA);
+	state->flags |= (1<<estVOL0);
+      } else {
+	state->flags |= (1<<estPRES_PREV);
+      }
     }
-    if (ir->etc == etcNOSEHOOVER) {
-      state->flags |= (1<<estNH_XI);
-    }
-  }
-  if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
-    state->flags |= (1<<estTC_INT);
   }
 
+  if (ir->etc == etcNOSEHOOVER) {
+    state->flags |= (1<<estNH_XI);
+    state->flags |= (1<<estNH_VXI);
+  }
+  
+  if (ir->etc == etcVRESCALE) {
+    state->flags |= (1<<estTC_INT);
+  }
+  
+  init_gtc_state(state,state->ngtc,state->nnhpres,ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
   init_ekinstate(&state->ekinstate,ir);
 
   init_energyhistory(&state->enerhist);

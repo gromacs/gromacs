@@ -60,9 +60,9 @@ files.
 /* the normal maximum number of threads for pre-defined arrays
    (if the actual number of threads is bigger than this, it'll
     allocate/deallocate arrays, so no problems will arise). */
-#define MAX_PREALLOC_THREADS 32
+#define MAX_PREALLOC_THREADS 64
 
-/* Whether to use lock&wait-free lists using compare-and-swap (cmpxchg on x86)
+/* Whether to use lock-free lists using compare-and-swap (cmpxchg on x86)
    pointer functions. Message passing using blocking Send/Recv, and multicasts 
    are is still blocking, of course. */
 #define TMPI_LOCK_FREE_LISTS
@@ -74,7 +74,11 @@ files.
 
    This option can be set with cmake. */
 /*#define TMPI_NO_BUSY_WAIT*/
-
+#ifdef TMPI_NO_BUSY_WAIT
+#define TMPI_NO_BUSY_WAIT_SEND_RECV
+#define TMPI_NO_BUSY_WAIT_COLLECTIVE
+#define TMPI_NO_BUSY_WAIT_BARRIER
+#endif
 
 /* whether to disable double-copying (where the sender copies data to an 
    intermediate buffer for small enough buffers, allowing it to return
@@ -111,5 +115,11 @@ files.
 #endif
 
 
+/* Whether to do profiling of the number of MPI communication calls. A 
+    report with the total number of calls for each communication function
+    will be generated at MPI_Finalize(). 
+    
+    This option can be set with cmake.*/
+/*#define TMPI_PROFILE*/
 
 

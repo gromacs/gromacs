@@ -375,7 +375,7 @@ new_status(const char *topfile,const char *topppfile,const char *confin,
     char title[STRLEN];
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
-    init_state(state,state->natoms,0);
+    init_state(state,state->natoms,0,0,0);
     read_stx_conf(confin,title,confat,state->x,state->v,NULL,state->box);
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir,state);
@@ -978,6 +978,7 @@ int main (int argc, char *argv[])
   t_params     *gb_plist = NULL;
   gmx_genborn_t *born = NULL;
   output_env_t oenv;
+  bool         bVerbose;
 
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -995,13 +996,11 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE;
+  static bool bRenum=TRUE;
   static bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
-    { "-v",       FALSE, etBOOL, {&bVerbose},
-      "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
@@ -1025,6 +1024,7 @@ int main (int argc, char *argv[])
   /* Parse the command line */
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
                     asize(desc),desc,0,NULL,&oenv);
+  bVerbose = (output_env_get_verbosity(oenv) > 0);
   
   init_warning(maxwarn);
   
@@ -1164,8 +1164,8 @@ int main (int argc, char *argv[])
 	/* If we are using CMAP, setup the pre-interpolation grid */
 	if(plist->ncmap>0)
 	{
-		init_cmap_grid(&sys->cmap_grid, plist->nc, plist->grid_spacing);
-		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->cmap_grid);
+		init_cmap_grid(&sys->ffparams.cmap_grid, plist->nc, plist->grid_spacing);
+		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->ffparams.cmap_grid);
 	}
 	
   set_wall_atomtype(atype,opts,ir);
@@ -1223,7 +1223,7 @@ int main (int argc, char *argv[])
 	   bGenVel ? state.v : NULL);
 	
   /* Init the temperature coupling state */
-  init_gtc_state(&state,ir->opts.ngtc);
+  init_gtc_state(&state,ir->opts.ngtc,0,ir->opts.nhchainlength);
 
   if (bVerbose)
     fprintf(stderr,"Checking consistency between energy and charge groups...\n");

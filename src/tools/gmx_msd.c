@@ -163,18 +163,18 @@ static void corr_print(t_corr *curr,bool bTen,const char *fn,const char *title,
   FILE *out;
   int  i,j;
   
-  out=xvgropen(fn,title,get_xvgr_tlabel(oenv),yaxis,oenv);
+  out=xvgropen(fn,title,output_env_get_xvgr_tlabel(oenv),yaxis,oenv);
   if (DD) {
     fprintf(out,"# MSD gathered over %g %s with %d restarts\n",
-	    msdtime,get_time_unit(oenv),curr->nrestart);
+	    msdtime,output_env_get_time_unit(oenv),curr->nrestart);
     fprintf(out,"# Diffusion constants fitted from time %g to %g %s\n",
-	    beginfit,endfit,get_time_unit(oenv));
+	    beginfit,endfit,output_env_get_time_unit(oenv));
     for(i=0; i<curr->ngrp; i++) 
       fprintf(out,"# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
 	      grpname[i],DD[i],SigmaD[i]);
   }
   for(i=0; i<curr->nframes; i++) {
-    fprintf(out,"%10g",conv_time(oenv,curr->time[i]));
+    fprintf(out,"%10g",output_env_conv_time(oenv,curr->time[i]));
     for(j=0; j<curr->ngrp; j++) {
       fprintf(out,"  %10g",curr->data[j][i]);
       if (bTen) {
@@ -649,8 +649,8 @@ int corr_loop(t_corr *curr,const char *fn,t_topology *top,int ePBC,
   } while (read_next_x(oenv,status,&t,natoms,x[cur],box));
   fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
 	  curr->nrestart, 
-	  conv_time(oenv,dt), get_time_unit(oenv),
-	  conv_time(oenv,curr->time[curr->nframes-1]), get_time_unit(oenv) );
+	  output_env_conv_time(oenv,dt), output_env_get_time_unit(oenv),
+	  output_env_conv_time(oenv,curr->time[curr->nframes-1]), output_env_get_time_unit(oenv) );
   
   close_trj(status);
 
@@ -755,7 +755,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
     for(i1=i0; i1<msd->nframes && msd->time[i1]<=endfit; i1++)
 		      ;
   fprintf(stdout,"Fitting from %g to %g %s\n\n",beginfit,endfit,
-                 get_time_unit(oenv));
+                 output_env_get_time_unit(oenv));
 
   N = i1-i0;
   if (N <= 2) {
@@ -789,14 +789,15 @@ int gmx_msd(int argc,char *argv[])
 {
   const char *desc[] = {
     "g_msd computes the mean square displacement (MSD) of atoms from",
-    "their initial positions. This provides an easy way to compute",
+    "a set of initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation.",
-    "The time between additional starting points for the MSD calculation",
+    "The time between the reference points for the MSD calculation",
     "is set with [TT]-trestart[tt].",
     "The diffusion constant is calculated by least squares fitting a",
-    "straight line through the MSD from [TT]-beginfit[tt] to",
-    "[TT]-endfit[tt]. An error estimate given, which is the difference",
-    "of the diffusion coefficients obtained from fits over the two halfs",
+    "straight line (D*t + c) through the MSD(t) from [TT]-beginfit[tt] to",
+    "[TT]-endfit[tt] (note that t is time from the reference positions,",
+    "not simulation time). An error estimate given, which is the difference",
+    "of the diffusion coefficients obtained from fits over the two halves",
     "of the fit interval.[PAR]",
     "There are three, mutually exclusive, options to determine different",
     "types of mean square displacement: [TT]-type[tt], [TT]-lateral[tt]",
@@ -808,14 +809,14 @@ int gmx_msd(int argc,char *argv[])
     "as mdrun usually already removes the center of mass motion.",
     "When you use this option be sure that the whole system is stored",
     "in the trajectory file.[PAR]",
-    "[TT]-mw[tt], i.e. for each inidividual molecule an diffusion constant",
+    "[TT]-mw[tt], i.e. for each individual molecule an diffusion constant",
     "is computed for its center of mass. The chosen index group will",
     "be split into molecules.",
     "The diffusion coefficient is determined by linear regression of the MSD,",
     "where, unlike for the normal output of D, the times are weighted",
-    "according to the number of restart point, i.e. short times have",
-    "a higher weight. Also when [TT]-beginfit[tt]=-1,fitting starts at 0",
-    "and when [TT]-endfit[tt]=-1, fitting goes to the end.",
+    "according to the number of reference points, i.e. short times have",
+    "a higher weight. Also when [TT]-beginfit[tt]=-1,fitting starts at 10%",
+    "and when [TT]-endfit[tt]=-1, fitting goes to 90%.",
     "Using this option one also gets an accurate error estimate",
     "based on the statistics between individual molecules.",
     "Note that this diffusion coefficient and error estimate are only",

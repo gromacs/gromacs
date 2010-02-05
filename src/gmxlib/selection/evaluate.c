@@ -695,7 +695,7 @@ _gmx_sel_evaluate_method(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index
     if (sel->u.expr.pc)
     {
         gmx_ana_poscalc_update(sel->u.expr.pc, sel->u.expr.pos, g,
-                               data->fr->x, data->pbc);
+                               data->fr, data->pbc);
         rc = sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
                                          sel->u.expr.pos, &sel->v,
                                          sel->u.expr.mdata);

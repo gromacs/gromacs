@@ -53,7 +53,7 @@ const char *ens_names[ensNR+1]=
 
 const char *ei_names[eiNR+1]=
 {
-  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", "tpic", "sd1", NULL 
+  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", "tpic", "sd1", "md-vv", "md-vv-avek",NULL 
 };
 
 const char *bool_names[BOOL_NR+1]=
@@ -100,7 +100,7 @@ const char *etcoupl_names[etcNR+1] = {
 }; /* yes is alias for berendsen */
 
 const char *epcoupl_names[epcNR+1] = {
-  "No", "Berendsen", "Parrinello-Rahman", "Isotropic", NULL
+  "No", "Berendsen", "Parrinello-Rahman", "Isotropic", "MTTK", NULL
 }; /* isotropic is alias for berendsen */
 
 const char *epcoupltype_names[epctNR+1] = {

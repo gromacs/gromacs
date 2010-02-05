@@ -58,6 +58,7 @@ enum {
   efMTX,
   efEDI, efEDO, 
   efHAT,
+  efCUB,
   efXPM,
   efNR
 };

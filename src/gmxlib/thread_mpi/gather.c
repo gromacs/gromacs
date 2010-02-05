@@ -47,19 +47,22 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_TRACE
-        tMPI_Trace_print("tMPI_Gather(%p, %d, %p, %p, %d, %p, %d, %p)",
-                           sendbuf, sendcount, sendtype, 
-                           recvbuf, recvcount, recvtype, 
-                           root, comm);
+    tMPI_Trace_print("tMPI_Gather(%p, %d, %p, %p, %d, %p, %d, %p)",
+                     sendbuf, sendcount, sendtype, 
+                     recvbuf, recvcount, recvtype, root, comm);
+#endif
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count(TMPIFN_Gather); 
 #endif
 
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -83,6 +86,9 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].read_data[myrank]=TRUE;
 
         /* poll data availability as long as there are xfers to be done */
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_start_thread(cur);
+#endif
         while(n_remaining>0)
         {
             for(i=0;i<comm->grp.N;i++)
@@ -90,6 +96,12 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                 if ( !cev->met[myrank].read_data[i] &&
                     (tMPI_Atomic_get(&(cev->met[i].current_sync))== synct))
                 {
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+                    tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Coll_recv);
+                    /* we don't count transfers as waits */ 
+#endif
+
+
                     tMPI_Mult_recv(comm, cev, i, 0, TMPI_GATHER_TAG, recvtype, 
                                    recvcount*recvtype->size,
                                    (char*)recvbuf+i*recvcount*recvtype->size,
@@ -98,9 +110,16 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                         return ret;
                     cev->met[myrank].read_data[i]=TRUE;
                     n_remaining--;
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+                    tMPI_Profile_wait_start_thread(cur);
+#endif
+
                 }
             }
         }
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Coll_recv);
+#endif
     }
     else
     {
@@ -128,18 +147,22 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Gatherv(%p, %d, %p, %p, %p, %p, %p, %d, %p)",
                      sendbuf, sendcount, sendtype, recvbuf,
                      recvcounts, displs, recvtype, root, comm);
 #endif
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count(TMPIFN_Gatherv); 
+#endif
 
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -163,6 +186,9 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         cev->met[myrank].read_data[myrank]=TRUE;
 
         /* poll data availability */
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_start_thread(cur);
+#endif
         while(n_remaining>0)
         {
             for(i=0;i<comm->grp.N;i++)
@@ -170,6 +196,10 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                 if ( !cev->met[myrank].read_data[i] &&
                     (tMPI_Atomic_get(&(cev->met[i].current_sync))==synct) )
                 {
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+                    tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Coll_recv);
+                    /* we don't count transfers as waits */ 
+#endif
                     tMPI_Mult_recv(comm, cev, i, 0, TMPI_GATHERV_TAG, recvtype,
                                    recvcounts[i]*recvtype->size,
                                    (char*)recvbuf+displs[i]*recvtype->size,
@@ -178,9 +208,15 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                         return ret;
                     cev->met[myrank].read_data[i]=TRUE;
                     n_remaining--;
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+                    tMPI_Profile_wait_start_thread(cur);
+#endif
                 }
             }
         }
+#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
+        tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Coll_recv);
+#endif
     }
     else
     {

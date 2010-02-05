@@ -35,6 +35,7 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <string.h>
 
 #include <smalloc.h>
@@ -54,6 +55,8 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
 {
     pos->nr = 0;
     pos->x  = NULL;
+    pos->v  = NULL;
+    pos->f  = NULL;
     gmx_ana_indexmap_clear(&pos->m);
     pos->g  = NULL;
     pos->nalloc_x = 0;
@@ -74,10 +77,50 @@ gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
     {
         pos->nalloc_x = n;
         srenew(pos->x, n);
+        if (pos->v)
+        {
+            srenew(pos->v, n);
+        }
+        if (pos->f)
+        {
+            srenew(pos->f, n);
+        }
     }
     if (isize > 0)
     {
         gmx_ana_indexmap_reserve(&pos->m, n, isize);
+    }
+}
+
+/*!
+ * \param[in,out] pos   Position data structure.
+ *
+ * Currently, this function can only be called after gmx_ana_pos_reserve()
+ * has been called at least once with a \p n > 0.
+ */
+void
+gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
+{
+    assert(pos->nalloc_x > 0);
+    if (!pos->v)
+    {
+        snew(pos->v, pos->nalloc_x);
+    }
+}
+
+/*!
+ * \param[in,out] pos   Position data structure.
+ *
+ * Currently, this function can only be called after gmx_ana_pos_reserve()
+ * has been called at least once with a \p n > 0.
+ */
+void
+gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
+{
+    assert(pos->nalloc_x > 0);
+    if (!pos->f)
+    {
+        snew(pos->f, pos->nalloc_x);
     }
 }
 
@@ -91,7 +134,12 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x)
     gmx_ana_pos_clear(pos);
     pos->nr = 1;
     snew(pos->x, 1);
+    snew(pos->v, 1);
+    snew(pos->f, 1);
+    pos->nalloc_x = 1;
     copy_rvec(x, pos->x[0]);
+    clear_rvec(pos->v[0]);
+    clear_rvec(pos->f[0]);
     gmx_ana_indexmap_init(&pos->m, NULL, NULL, INDEX_UNKNOWN);
 }
 
@@ -108,6 +156,9 @@ gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
 {
     pos->nr = 0;
     sfree(pos->x); pos->x = NULL;
+    sfree(pos->v); pos->v = NULL;
+    sfree(pos->f); pos->f = NULL;
+    pos->nalloc_x = 0;
     gmx_ana_indexmap_deinit(&pos->m);
 }
 
@@ -141,9 +192,25 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
     if (bFirst)
     {
         gmx_ana_pos_reserve(dest, src->nr, 0);
+        if (src->v)
+        {
+            gmx_ana_pos_reserve_velocities(dest);
+        }
+        if (src->f)
+        {
+            gmx_ana_pos_reserve_forces(dest);
+        }
     }
     dest->nr = src->nr;
     memcpy(dest->x, src->x, dest->nr*sizeof(*dest->x));
+    if (dest->v)
+    {
+        memcpy(dest->v, src->v, dest->nr*sizeof(*dest->v));
+    }
+    if (dest->f)
+    {
+        memcpy(dest->f, src->f, dest->nr*sizeof(*dest->f));
+    }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
     dest->g = src->g;
 }
@@ -230,6 +297,28 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
 
     j = dest->nr;
     copy_rvec(src->x[i], dest->x[j]);
+    if (dest->v)
+    {
+        if (src->v)
+        {
+            copy_rvec(src->v[i], dest->v[j]);
+        }
+        else
+        {
+            clear_rvec(dest->v[j]);
+        }
+    }
+    if (dest->f)
+    {
+        if (src->f)
+        {
+            copy_rvec(src->f[i], dest->f[j]);
+        }
+        else
+        {
+            clear_rvec(dest->f[j]);
+        }
+    }
     dest->m.refid[j] = j;
     dest->m.mapid[j] = src->m.mapid[i];
     dest->m.orgid[j] = src->m.orgid[i];
@@ -270,6 +359,28 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
     if (dest)
     {
         j = dest->nr;
+        if (dest->v)
+        {
+            if (src->v)
+            {
+                copy_rvec(src->v[i], dest->v[j]);
+            }
+            else
+            {
+                clear_rvec(dest->v[j]);
+            }
+        }
+        if (dest->f)
+        {
+            if (src->f)
+            {
+                copy_rvec(src->f[i], dest->f[j]);
+            }
+            else
+            {
+                clear_rvec(dest->f[j]);
+            }
+        }
         copy_rvec(src->x[i], dest->x[j]);
         if (refid < 0)
         {

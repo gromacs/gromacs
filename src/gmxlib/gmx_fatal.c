@@ -63,7 +63,16 @@ static FILE *log_file = NULL;
 #ifdef GMX_THREADS
 static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t warning_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
+
+/* a local version of _gmx_error with optional locking of debug_mutex to 
+   avoid deadlocks when called from functions which themselves lock 
+   that mutex. This is ugly, but to fix this, the entire structure
+   and interface of gmx_fatal will need to be reconsidered. */
+static void _gmx_error_locking(const char *key,const char *msg,
+                               const char *file,int line, bool lock);
 
 bool bDebugMode(void)
 {
@@ -234,7 +243,7 @@ static void quit_gmx(const char *msg)
 void _set_fatal_tmp_file(const char *fn, const char *file, int line)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (fatal_tmp_file == NULL)
     fatal_tmp_file = strdup(fn);
@@ -242,14 +251,14 @@ void _set_fatal_tmp_file(const char *fn, const char *file, int line)
     fprintf(stderr,"BUGWARNING: fatal_tmp_file already set at %s:%d",
 	    file,line);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
 void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (strcmp(fn,fatal_tmp_file) == 0) {
     sfree(fatal_tmp_file);
@@ -258,14 +267,14 @@ void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
     fprintf(stderr,"BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
 	    fn,file,line);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
 static void clean_fatal_tmp_file()
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
 #endif
   if (fatal_tmp_file) {
     fprintf(stderr,"Cleaning up temporary file %s\n",fatal_tmp_file);
@@ -274,7 +283,7 @@ static void clean_fatal_tmp_file()
     fatal_tmp_file = NULL;
   }
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
 #endif
 }
 
@@ -348,7 +357,7 @@ static void fatal_error(int f_errno,const char *fmt,...)
   va_end(ap);
   bputc(msg,&len,'\0');
 
-  fatal_errno = f_errno;
+  fatal_errno = f_errno; /* TODO might need a mutex as it's global [pszilard] */
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -450,7 +459,7 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 #ifdef GMX_THREADS
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
-  _gmx_error("fatal",msg,file,line);
+  _gmx_error_locking("fatal",msg,file,line, TRUE);
 }
 
 static int  nwarn_note  = 0;
@@ -464,28 +473,28 @@ char   warn_buf[1024]   = "";
 void init_warning(int maxwarning)
 {
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&debug_mutex);
+  tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
   maxwarn     = maxwarning;
   nwarn_note  = 0;
   nwarn_warn  = 0;
   nwarn_error = 0;
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&debug_mutex);
+  tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
 void set_warning_line(const char *s,int line)
 {
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&debug_mutex);
+  tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
   if (s == NULL)
     gmx_incons("Calling set_warning_line with NULL pointer");
   strcpy(filenm,s);
   lineno = line;
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&debug_mutex);
+  tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
@@ -493,11 +502,11 @@ int get_warning_line()
 {
     int ret;
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     ret=lineno;
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
     return ret;
 }
@@ -538,36 +547,36 @@ static void low_warning(const char *wtype,int n,const char *s)
 void warning(const char *s)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     nwarn_warn++;
     low_warning("WARNING",nwarn_warn,s);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
 void warning_note(const char *s)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     nwarn_note++;
     low_warning("NOTE",nwarn_note,s);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
 void warning_error(const char *s)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     nwarn_error++;
     low_warning("ERROR",nwarn_error,s);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
@@ -582,7 +591,7 @@ static void print_warn_count(const char *type,int n)
 void print_warn_num(bool bFatalError)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     print_warn_count("note",nwarn_note);
 
@@ -592,14 +601,14 @@ void print_warn_num(bool bFatalError)
                 "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn_warn,Program());
     }
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
 void check_warning_error(int f_errno,const char *file,int line)
 {
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     if (nwarn_error > 0) {
         print_warn_num(FALSE);
@@ -608,7 +617,7 @@ void check_warning_error(int f_errno,const char *file,int line)
                   (nwarn_error==1) ? ""    : "s");
     }
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
@@ -766,7 +775,8 @@ char *gmx_strerror(const char *key)
   }
 }
 
-void _gmx_error(const char *key,const char *msg,const char *file,int line)
+static void _gmx_error_locking(const char *key,const char *msg,
+                               const char *file,int line, bool lock)
 {
   char buf[10240],tmpbuf[1024];
   int  cqnum;
@@ -774,7 +784,10 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   char *strerr;
 
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
+  if (lock)  
+  {
+    tMPI_Thread_mutex_lock(&warning_mutex);
+  }
 #endif
   /* protect the audience from suggestive discussions */
   
@@ -788,9 +801,18 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
 	  strerr,msg ? msg : warn_buf,llines,tmpbuf);
   free(strerr);
 #ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
+  if (lock)
+  {
+    tMPI_Thread_mutex_unlock(&warning_mutex);
+  }
 #endif
   gmx_error_handler(buf);
+
+}
+
+void _gmx_error(const char *key,const char *msg,const char *file,int line)
+{
+    _gmx_error_locking(key, msg, file, line, TRUE);
 }
 
 void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int line)

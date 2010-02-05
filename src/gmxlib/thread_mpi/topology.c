@@ -272,7 +272,7 @@ static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
-#ifndef TMPI_NO_BUSY_WAIT
+#ifndef TMPI_NO_BUSY_WAIT_BARRIER
         tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
 #else
         tMPI_Thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );

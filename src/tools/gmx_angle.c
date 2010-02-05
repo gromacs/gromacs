@@ -352,7 +352,7 @@ int gmx_g_angle(int argc,char *argv[])
   bPeriodic=(mult==4) && (first==0) && (last==maxangstat-1);
   
   out=xvgropen(opt2fn("-od",NFILE,fnm),title,"Degrees","",oenv);
-  if (get_print_xvgr_codes(oenv))
+  if (output_env_get_print_xvgr_codes(oenv))
     fprintf(out,"@    subtitle \"average angle: %g\\So\\N\"\n",aver);
   norm_fac=1.0/(nangles*nframes*binwidth);
   if (bPeriodic) {

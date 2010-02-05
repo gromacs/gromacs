@@ -103,6 +103,44 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
 }
 
 /*!
+ * \param[in]  top    Topology structure with masses.
+ * \param[in]  f      Forces on all atoms.
+ * \param[in]  nrefat Number of atoms in the index.
+ * \param[in]  index  Indices of atoms.
+ * \param[out] fout   Force on the COG position for the indexed atoms.
+ * \returns    0 on success, EINVAL if \p top is NULL.
+ *
+ * No special function is provided for calculating the force on the center of
+ * mass, because this can be achieved with gmx_calc_cog().
+ */
+int
+gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout)
+{
+    int                 m, j, ai;
+    real                mass, mtot;
+
+    if (!top)
+    {
+        gmx_incons("no masses available while mass weighting was needed");
+        return EINVAL;
+    }
+    clear_rvec(fout);
+    mtot = 0;
+    for (m = 0; m < nrefat; ++m)
+    {
+        ai = index[m];
+        mass = top->atoms.atom[ai].m;
+        for (j = 0; j < DIM; ++j)
+        {
+            fout[j] += f[ai][j] / mass;
+        }
+        mtot += mass;
+    }
+    svmul(mtot, fout, fout);
+    return 0;
+}
+
+/*!
  * \param[in]  top   Topology structure with masses
  *   (can be NULL if \p bMASS==FALSE).
  * \param[in]  x     Position vectors of all atoms.
@@ -118,7 +156,7 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
  */
 int
 gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
-          bool bMass, rvec xout)
+              bool bMass, rvec xout)
 {
     if (bMass)
     {
@@ -127,6 +165,34 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
     else
     {
         return gmx_calc_cog(top, x, nrefat, index, xout);
+    }
+}
+
+/*!
+ * \param[in]  top   Topology structure with masses
+ *   (can be NULL if \p bMASS==TRUE).
+ * \param[in]  x     Forces on all atoms.
+ * \param[in]  nrefat Number of atoms in the index.
+ * \param[in]  index Indices of atoms.
+ * \param[in]  bMass If TRUE, force on COM is calculated.
+ * \param[out] xout  Force on the COM/COG position for the indexed atoms.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is FALSE.
+ *
+ * Calls either gmx_calc_cog() or gmx_calc_cog_f() depending on the value of
+ * \p bMass.
+ * Other parameters are passed unmodified to these functions.
+ */
+int
+gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, atom_id index[],
+                bool bMass, rvec fout)
+{
+    if (bMass)
+    {
+        return gmx_calc_cog(top, f, nrefat, index, fout);
+    }
+    else
+    {
+        return gmx_calc_cog_f(top, f, nrefat, index, fout);
     }
 }
 
@@ -361,6 +427,46 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
 }
 
 /*!
+ * \param[in]  top   Topology structure with masses.
+ * \param[in]  f     Forces on all atoms.
+ * \param[in]  block t_block structure that divides \p index into blocks.
+ * \param[in]  index Indices of atoms.
+ * \param[out] xout  \p block->nr Forces on COG positions.
+ * \returns    0 on success, EINVAL if \p top is NULL.
+ */
+int
+gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
+                     rvec fout[])
+{
+    int                 b, i, ai, d;
+    rvec                fb;
+    real                mass, mtot;
+
+    if (!top)
+    {
+        gmx_incons("no masses available while mass weighting was needed");
+        return EINVAL;
+    }
+    for (b = 0; b < block->nr; ++b)
+    {
+        clear_rvec(fb);
+        mtot = 0;
+        for (i = block->index[b]; i < block->index[b+1]; ++i)
+        {
+            ai = index[i];
+            mass = top->atoms.atom[ai].m;
+            for (d = 0; d < DIM; ++d)
+            {
+                fb[d] += f[ai][d] / mass;
+            }
+            mtot += mass;
+        }
+        svmul(mtot, fb, fout[b]);
+    }
+    return 0;
+}
+
+/*!
  * \param[in]  top   Topology structure with masses
  *   (can be NULL if \p bMASS==FALSE).
  * \param[in]  x     Position vectors of all atoms.
@@ -391,6 +497,34 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
 /*!
  * \param[in]  top   Topology structure with masses
  *   (can be NULL if \p bMASS==FALSE).
+ * \param[in]  f     Forces on all atoms.
+ * \param[in]  block t_block structure that divides \p index into blocks.
+ * \param[in]  index Indices of atoms.
+ * \param[in]  bMass If TRUE, force on COM is calculated.
+ * \param[out] xout  \p block->nr forces on the COM/COG positions.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is TRUE.
+ *
+ * Calls either gmx_calc_com_block() or gmx_calc_cog_block() depending on the
+ * value of \p bMass.
+ * Other parameters are passed unmodified to these functions.
+ */
+int
+gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
+                      bool bMass, rvec fout[])
+{
+    if (bMass)
+    {
+        return gmx_calc_cog_block(top, f, block, index, fout);
+    }
+    else
+    {
+        return gmx_calc_cog_f_block(top, f, block, index, fout);
+    }
+}
+
+/*!
+ * \param[in]  top   Topology structure with masses
+ *   (can be NULL if \p bMASS==FALSE).
  * \param[in]  x     Position vectors of all atoms.
  * \param[in]  block Blocks for calculation.
  * \param[in]  bMass If TRUE, mass weighting is used.
@@ -413,4 +547,31 @@ gmx_calc_comg_blocka(t_topology *top, rvec x[], t_blocka *block,
 {
     /* TODO: It would probably be better to do this without the type cast */
     return gmx_calc_comg_block(top, x, (t_block *)block, block->a, bMass, xout);
+}
+
+/*!
+ * \param[in]  top   Topology structure with masses
+ *   (can be NULL if \p bMASS==TRUE).
+ * \param[in]  f     Forces on all atoms.
+ * \param[in]  block Blocks for calculation.
+ * \param[in]  bMass If TRUE, force on COM is calculated.
+ * \param[out] fout  \p block->nr forces on the COM/COG positions.
+ * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is FALSE.
+ *
+ * Calls gmx_calc_comg_f_block(), converting the \p t_blocka structure into
+ * a \p t_block and an index. Other parameters are passed unmodified.
+ *
+ * \attention
+ * This function assumes that a pointer to \c t_blocka can be safely typecast
+ * into \c t_block such that the index fields can still be referenced.
+ * With the present Gromacs defitions of these types, this is the case,
+ * but if the layout of these structures is changed, this may lead to strange
+ * crashes.
+ */
+int
+gmx_calc_comg_f_blocka(t_topology *top, rvec f[], t_blocka *block,
+                       bool bMass, rvec fout[])
+{
+    /* TODO: It would probably be better to do this without the type cast */
+    return gmx_calc_comg_f_block(top, f, (t_block *)block, block->a, bMass, fout);
 }

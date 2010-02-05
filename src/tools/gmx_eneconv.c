@@ -489,10 +489,10 @@ int gmx_eneconv(int argc,char *argv[])
   t_enxframe *fr,*fro;
   gmx_large_int_t ee_sum_step=0,ee_sum_nsteps,ee_sum_nsum;
   t_energy   *ee_sum;
-  gmx_large_int_t laststep,startstep,startstep_file=0;
+  gmx_large_int_t lastfilestep,laststep,startstep,startstep_file=0;
   int        noutfr;
   int        nre,nremax,this_nre,nfile,f,i,j,kkk,nset,*set=NULL;
-  real       t; 
+  double     last_t; 
   char       **fnms;
   real       *readtime,*settime,timestep,t1,tadjust;
   char       inputstring[STRLEN],*chptr,buf[22],buf2[22],buf3[22];
@@ -542,6 +542,7 @@ int gmx_eneconv(int argc,char *argv[])
   timestep = 0.0;
   snew(fnms,argc);
   nfile=0;
+  lastfilestep=0;
   laststep=startstep=0;
   
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
@@ -562,14 +563,14 @@ int gmx_eneconv(int argc,char *argv[])
 
   snew(fr,1);
   snew(fro,1);
-  fro->t = -1;
+  fro->t = -1e20;
   fro->nre = nre;
   snew(fro->ener,nremax);
 
   noutfr=0;
   bFirst=TRUE;
 
-  t = -1e20;
+  last_t = fro->t;
   for(f=0;f<nfile;f++) {
     bNewFile=TRUE;
     bNewOutput=TRUE;
@@ -586,7 +587,7 @@ int gmx_eneconv(int argc,char *argv[])
     }
     
     /* start reading from the next file */
-    while ((t <= (settime[f+1] + GMX_REAL_EPS)) &&
+    while ((fro->t <= (settime[f+1] + GMX_REAL_EPS)) &&
 	  do_enx(in,fr)) {
       if(bNewFile) {
 	startstep_file = fr->step;
@@ -598,50 +599,56 @@ int gmx_eneconv(int argc,char *argv[])
 	bNewFile = FALSE;
       }
       
-      if (debug) {
-	fprintf(debug,"fr->step %s, ee_sum_nsteps %s, ee_sum_nsum %s\n",
-		gmx_step_str(fr->step,buf),
-		gmx_step_str(ee_sum_nsteps,buf2),
-		gmx_step_str(ee_sum_nsum,buf3));
-      }
-
-      if (tadjust + fr->t <= t) {
+      if (tadjust + fr->t <= last_t) {
 	/* Skip this frame, since we already have it / past it */
+	if (debug) {
+	  fprintf(debug,"fr->step %s, fr->t %.4f\n",
+		  gmx_step_str(fr->step,buf),fr->t);
+	  fprintf(debug,"tadjust %12.6e + fr->t %12.6e <= t %12.6e\n",
+		  tadjust,fr->t,last_t);
+	}
 	continue;
       }
 
-      fro->step = laststep + fr->step - startstep_file;
-      t = tadjust + fr->t;
+      fro->step = lastfilestep + fr->step - startstep_file;
+      fro->t    = tadjust  + fr->t;
 
-      /*bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
-		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
-		(t < settime[i+1]-GMX_REAL_EPS));*/
-      bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
-		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
-		(t <= settime[f+1]+0.5*timestep));
-      
+      bWrite = ((begin<0 || (begin>=0 && (fro->t >= begin-GMX_REAL_EPS))) && 
+		(end  <0 || (end  >=0 && (fro->t <= end  +GMX_REAL_EPS))) &&
+		(fro->t <= settime[f+1]+0.5*timestep));
+
+      if (debug) {
+	fprintf(debug,
+		"fr->step %s, fr->t %.4f, fro->step %s fro->t %.4f, w %d\n",
+		gmx_step_str(fr->step,buf),fr->t,
+		gmx_step_str(fro->step,buf2),fro->t,bWrite);
+      }
+
       if (bError)      
-	if ((end > 0) && (t > end+GMX_REAL_EPS)) {
+	if ((end > 0) && (fro->t > end+GMX_REAL_EPS)) {
 	  f = nfile;
 	  break;
 	}
       
-      if (t >= begin-GMX_REAL_EPS) {
+      if (fro->t >= begin-GMX_REAL_EPS) {
 	if (bFirst) {
 	  bFirst = FALSE;
 	  startstep = fr->step;	
 	}
-	update_ee_sum(nre,&ee_sum_step,&ee_sum_nsteps,&ee_sum_nsum,ee_sum,
-		      fr,fro->step);
+	if (bWrite) {
+	  update_ee_sum(nre,&ee_sum_step,&ee_sum_nsteps,&ee_sum_nsum,ee_sum,
+			fr,fro->step);
+	}
       }	  
       
       /* determine if we should write it */
-      if (bWrite && (delta_t==0 || bRmod(t,toffset,delta_t))) {
-	fro->t = t;
+      if (bWrite && (delta_t==0 || bRmod(fro->t,toffset,delta_t))) {
+	laststep = fro->step;
+	last_t   = fro->t;
 	if(bNewOutput) {
 	  bNewOutput=FALSE;
 	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%s\n",
-		  t,gmx_step_str(fro->step,buf));
+		  fro->t,gmx_step_str(fro->step,buf));
 	}
 
 	/* Copy the energies */
@@ -689,11 +696,9 @@ int gmx_eneconv(int argc,char *argv[])
       }
     }
 
-    if (nfile > 1) {
-      laststep = fro->step;
-      printf("laststep=%s step=%s\n",
-	     gmx_step_str(laststep,buf),gmx_step_str(fro->step,buf2));
-    }
+    printf("\nLast step written from %s: t %g, step %s\n",
+	   fnms[f],last_t,gmx_step_str(laststep,buf));
+    lastfilestep = laststep;
     
     /* set the next time from the last in previous file */
     if (cont_type[f+1]==TIME_CONTINUE) {
@@ -709,7 +714,7 @@ int gmx_eneconv(int argc,char *argv[])
     if ((fro->t < end) && (f < nfile-1) &&
 	(fro->t < settime[f+1]-1.5*timestep)) 
       fprintf(stderr,
-	      "\nWARNING: There might be a gap around t=%g\n",t);
+	      "\nWARNING: There might be a gap around t=%g\n",fro->t);
     
     /* move energies to lastee */
     close_enx(in);

@@ -45,21 +45,19 @@
 extern "C" {
 #endif
 
-extern t_restp *search_rtp(char *key,int nrtp,t_restp rtp[]);
+extern t_restp *search_rtp(const char *key,int nrtp,t_restp rtp[]);
 /* Search for an entry in the rtp database */
 
-extern gpp_atomtype_t read_atype(const char *adb,t_symtab *tab);
-/* read atom type database */
+extern gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
+/* read atom type database(s) */
 
-extern int read_resall(char *resdb, int bts[], t_restp **rtp, 
-		       gpp_atomtype_t atype, t_symtab *tab,
-		       bool *bAlldih, int *nrexcl,
-		       bool *HH14, bool *bRemoveDih);
-/* read rtp database */
+extern void read_resall(char *resdb, int *nrtp,t_restp **rtp, 
+			gpp_atomtype_t atype, t_symtab *tab,
+			bool bAllowOverrideRTP);
+/* read rtp database, append to the existing database */
 
-extern void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[], 
-			 gpp_atomtype_t atype, bool bAlldih, int nrexcl,
-			 bool HH14, bool remove_dih);
+extern void print_resall(FILE *out, int nrtp, t_restp rtp[], 
+			 gpp_atomtype_t atype);
 /* write rtp database */
 #ifdef __cplusplus
 }

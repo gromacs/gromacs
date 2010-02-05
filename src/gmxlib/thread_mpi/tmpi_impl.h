@@ -328,7 +328,7 @@ struct coll_env_thread
     tMPI_Atomic_ptr_t *cpbuf; /* copy_buffer pointers. */
     struct copy_buffer *cb; /* the copy buffer cpbuf points to */
 #endif
-#ifdef TMPI_NO_BUSY_WAIT
+#ifdef TMPI_NO_BUSY_WAIT_COLLECTIVE
     tMPI_Thread_mutex_t wait_mutex; /* mutex associated with waiting */
     tMPI_Thread_cond_t send_cond; /* condition associated with the sending */
     tMPI_Thread_cond_t recv_cond; /* condition associated with the receiving */
@@ -377,6 +377,9 @@ struct coll_sync
 
 
 /* GLOBALLY AVAILABLE DATA STRUCTURES */
+#ifdef TMPI_PROFILE
+#include "profile.h"
+#endif
 
 /* information about a running thread. This structure is put in a 
    globally available array; the envelope exchange, etc. are all done through
@@ -391,7 +394,7 @@ struct tmpi_thread
     struct send_envelope_list *evs;
 
 
-#ifndef TMPI_NO_BUSY_WAIT 
+#ifndef TMPI_NO_BUSY_WAIT_SEND_RECV
     /* send envelope change indicator/count */
     tMPI_Atomic_t evs_new_incoming;
 #else
@@ -415,6 +418,10 @@ struct tmpi_thread
 #endif
 
     tMPI_Comm self_comm; /* comms for MPI_COMM_SELF */
+
+#ifdef TMPI_PROFILE
+    struct tmpi_profile profile;
+#endif
 
     void (*start_fn)(void*); /* The start function (or NULL, if main() is to be
                                 called) */
@@ -496,7 +503,7 @@ struct tmpi_comm_
        multicast_barrier[3] contains a barrier for N/8 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-#ifndef TMPI_NO_BUSY_WAIT
+#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     tMPI_Spinlock_barrier_t *multicast_barrier;   
 #else
     tMPI_Thread_barrier_t *multicast_barrier;   
@@ -586,7 +593,7 @@ typedef struct tmpi_datatype_ tmpi_dt;
 
 
 
-
+#if 0
 #ifdef TMPI_PROFILE
 /* bookkeeping structure for a single call */
 struct tmpi_profile_call_
@@ -601,7 +608,7 @@ struct tmpi_profile_
     struct tmpi_profile_call_ tMPI_Send;
 }; 
 #endif
-
+#endif
 
 
 

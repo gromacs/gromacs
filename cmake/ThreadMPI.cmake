@@ -13,7 +13,7 @@ if (CMAKE_USE_PTHREADS_INIT)
                        thread_mpi/errhandler.c thread_mpi/type.c
                        thread_mpi/group.c thread_mpi/comm.c 
                        thread_mpi/topology.c thread_mpi/send_recv.c 
-                       thread_mpi/collective.c)
+                       thread_mpi/collective.c thread_mpi/profile.c)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
 else (CMAKE_USE_PTHREADS_INIT)
     if (CMAKE_USE_WIN32_THREADS_INIT)
@@ -23,7 +23,7 @@ else (CMAKE_USE_PTHREADS_INIT)
                            thread_mpi/errhandler.c thread_mpi/type.c
                            thread_mpi/group.c thread_mpi/comm.c 
                            thread_mpi/topology.c thread_mpi/send_recv.c 
-                           thread_mpi/collective.c)
+                           thread_mpi/collective.c thread_mpi/profile.c)
         set(THREAD_LIBRARY )
     endif (CMAKE_USE_WIN32_THREADS_INIT)
 endif (CMAKE_USE_PTHREADS_INIT)
@@ -45,4 +45,13 @@ if (THREAD_MPI_COPY_BUFFER)
 else (THREAD_MPI_COPY_BUFFER)
     add_definitions(-DTMPI_NO_COPY_BUFFER)
 endif (THREAD_MPI_COPY_BUFFER)
+    
+# the profiling option
+option(THREAD_MPI_PROFILING "Turn on simple MPI profiling." OFF)
+mark_as_advanced(THREAD_MPI_PROFILING)
+if (THREAD_MPI_PROFILING)
+    add_definitions(-DTMPI_PROFILE)
+else (THREAD_MPI_PROFILING)
+    add_definitions()
+endif (THREAD_MPI_PROFILING)
 

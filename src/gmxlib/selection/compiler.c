@@ -1639,8 +1639,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
              * methods that do not have SMETH_SINGLEVAL or SMETH_VARNUMVAL). */
             if (sel->v.type == POS_VALUE && !(sel->flags & SEL_OUTINIT))
             {
-                gmx_ana_indexmap_copy(&sel->v.u.p->m, &sel->child->child->v.u.p->m, TRUE);
-                gmx_ana_pos_set_nr(sel->v.u.p, sel->child->child->v.u.p->nr);
+                gmx_ana_pos_copy(sel->v.u.p, sel->child->child->v.u.p, TRUE);
                 sel->flags |= SEL_OUTINIT;
             }
             rc = sel->cdata->evaluate(data, sel, g);

@@ -123,7 +123,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
-#ifndef TMPI_NO_BUSY_WAIT
+#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)tMPI_Malloc(
                       sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
 #else
@@ -134,7 +134,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
-#ifndef TMPI_NO_BUSY_WAIT
+#ifndef TMPI_NO_BUSY_WAIT_BARRIER
         tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
 #else
         tMPI_Thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
@@ -187,7 +187,7 @@ void tMPI_Comm_destroy(tMPI_Comm comm)
 {
 
     free(comm->grp.peers);
-#ifndef TMPI_NO_BUSY_WAIT
+#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     free(comm->multicast_barrier);
 #else
     {

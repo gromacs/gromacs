@@ -128,16 +128,17 @@ int gmx_stats_add_point(gmx_stats_t gstats,double x,double y,
     return estatsOK;
 }
 
-int gmx_stats_get_point(gmx_stats_t gstats,real *x,real *y,real *dx,real *dy)
+int gmx_stats_get_point(gmx_stats_t gstats,real *x,real *y,
+                        real *dx,real *dy)
 {
     gmx_stats *stats = (gmx_stats *) gstats;
   
     if (stats->np_c < stats->np) 
     {
-        if (x)  *x  = stats->x[stats->np_c];
-        if (y)  *y  = stats->y[stats->np_c];
-        if (dx) *dx = stats->dx[stats->np_c];
-        if (dy) *dy = stats->dy[stats->np_c];
+        if (NULL != x)  *x  = stats->x[stats->np_c];
+        if (NULL != y)  *y  = stats->y[stats->np_c];
+        if (NULL != dx) *dx = stats->dx[stats->np_c];
+        if (NULL != dy) *dy = stats->dy[stats->np_c];
         stats->np_c++;
     
         return estatsOK;
@@ -273,13 +274,14 @@ static int gmx_stats_compute(gmx_stats *stats,int weight)
         {
             stats->chi2   = sqrt(chi2/(N-2));
             stats->chi2aa = sqrt(chi2aa/(N-2));
-    
+            
             /* Look up equations! */
             dx2 = (xx-sx*sx);
             dy2 = (yy-sy*sy);
             stats->sigma_a = sqrt(stats->chi2/((N-2)*dx2));
             stats->sigma_b = stats->sigma_a*sqrt(xx);
-            stats->Rfit    = stats->a*sqrt(dx2/dy2);
+            stats->Rfit    = fabs(ssxy)/sqrt(ssxx*ssyy);
+                /*stats->a*sqrt(dx2/dy2);*/
             stats->Rfitaa  = stats->aa*sqrt(dx2/dy2);  
         }
         else

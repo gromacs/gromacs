@@ -52,18 +52,21 @@ extern "C" {
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,iconrmsd,ib,ivol,idens,ipv;
-  int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu;
+  int    ie,iconrmsd,ib,ivol,idens,ipv,ienthalpy;
+  int    isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,itcb,iu,imu;
   int    ivcos,ivisc;
-  int    nE,nEg,nEc,nTC,nU;
+  int    nE,nEg,nEc,nTC,nTCP,nU,nNHC;
   int    *igrp;
   char   **grpnms;
+  int    mde_n,mdeb_n;
   real   *tmp_r;
   rvec   *tmp_v;
   bool	 bConstr;
   bool   bConstrVir;
   bool   bTricl;
   bool   bDynBox;
+  bool   bNHC_trotter;
+  bool   bMTTK;
   int    f_nre;
   int    epc;
   tensor ref_p;

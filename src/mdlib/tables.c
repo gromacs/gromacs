@@ -356,7 +356,7 @@ static void read_tables(FILE *fp,const char *fn,
   double tabscale;
 
   nny = 2*ntab+1;  
-  libfn = low_libfn(fn,TRUE);
+  libfn = gmxlibfn(fn);
   nx  = read_xvg(libfn,&yy,&ny);
   if (ny != nny)
     gmx_fatal(FARGS,"Trying to read file %s, but nr columns = %d, should be %d",

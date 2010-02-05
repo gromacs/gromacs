@@ -313,6 +313,7 @@ int main(int argc,char *argv[])
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
   bool bAppendFiles=FALSE,bAddPart=TRUE;
+  bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
 	
   t_pargs pa[] = {
@@ -379,7 +380,9 @@ int main(int argc,char *argv[])
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" },
     { "-resetstep", FALSE, etINT, {&resetstep},
-      "HIDDENReset cycle counters after these many time steps" }
+      "HIDDENReset cycle counters after these many time steps" },
+    { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
+      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" }
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
@@ -396,9 +399,6 @@ int main(int argc,char *argv[])
     
   PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
 	       | (MASTER(cr) ? 0 : PCA_QUIET));
-  /* Only run niced when not running in parallel */
-  if (!gmx_parallel_env_initialized())
-    PCA_Flags |= PCA_BE_NICE;
   
 
   /* Comment this in to do fexist calls only on master
@@ -482,6 +482,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
   Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
+  Flags = Flags | (bResetCountersHalfWay ? MD_RESETCOUNTERSHALFWAY : 0);
 
 
   /* We postpone opening the log file if we are appending, so we can 

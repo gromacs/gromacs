@@ -64,6 +64,7 @@ typedef struct {
 } t_rbonded;
 
 typedef struct {
+  int       type;        /* The type of bonded interaction */
   int       nb;          /* number of bondeds */
   t_rbonded *b;          /* bondeds */
 } t_rbondeds;
@@ -71,11 +72,18 @@ typedef struct {
 /* RESIDUES (rtp) */
 typedef struct {
   char   *resname;
+  /* The base file name this rtp entry was read from */
+  char   *filebase;
   /* atom data */
   int    natom;
   t_atom *atom;
   char   ***atomname;
   int    *cgnr;
+  /* Bonded interaction setup */
+  bool      bAlldih;
+  int       nrexcl;
+  bool      HH14;
+  bool      bRemoveDih;
   /* list of bonded interactions to add */
   t_rbondeds rb[ebtsNR];
 } t_restp;
@@ -95,12 +103,14 @@ typedef struct {
   int     tp;       /* Type of attachment (1..11) */
   int     nctl;     /* How many control atoms there are */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
+  bool    bAlreadyPresent;
   rvec    newx;     /* calculated new position    */
   atom_id newi;     /* new atom index number (after additions) */
 } t_hack;
 
 typedef struct {
   char      *name;  /* Name of hack block (residue or terminus) */
+  char      *filebase; /* The base file name this entry was read from */
   int       nhack;  /* Number of atoms to hack                  */
   int       maxhack;/* used for efficient srenew-ing            */
   t_hack    *hack;  /* Hack list                                */
@@ -150,11 +160,12 @@ extern void clear_t_hackblock(t_hackblock *hb);
 extern void clear_t_hack(t_hack *hack);
 /* reset struct */
 
-extern void merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
+extern bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], 
 			    bool bMin, bool bPlus);
 /* add s[].b[] to d[].b[]
  * If bMin==TRUE, don't copy bondeds with atoms starting with '-'
  * If bPlus==TRUE, don't copy bondeds with atoms starting with '+'
+ * Returns if bonds were removed at the termini.
  */
      
 extern void copy_t_restp(t_restp *s, t_restp *d);
