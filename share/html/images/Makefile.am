@@ -2,6 +2,8 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
+htmldir = ${pkgdatadir}/html
+
 imagedir = ${htmldir}/images
 
 image_DATA = \
