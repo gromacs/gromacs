@@ -457,7 +457,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
        0.02, which is smaller that would ever be necessary in
        practice. Generally, 3-5 iterations will be sufficient */
 
-    real relerr,xmin;
+    real relerr,err,xmin;
     char buf[256];
     int i;
     bool incycle;
@@ -509,7 +509,9 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
        relerr = (fabs((*newf-xmin) / *newf));
     */
     
-    relerr = (fabs((iterate->f-iterate->fprev)/fom));
+    err = fabs((iterate->f-iterate->fprev));
+    relerr = fabs(err/fom);
+
     iterate->allrelerr[iterate->iter_i] = relerr;
     
     if (iterate->iter_i > 0) 
@@ -520,7 +522,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
                     iterate->iter_i,fom,relerr,*newf);
         }
         
-        if ((relerr < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
+        if ((relerr < CONVERGEITER) || (err < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
         {
             iterate->bIterate = FALSE;
             if (debug) 
