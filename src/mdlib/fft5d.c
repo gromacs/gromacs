@@ -26,9 +26,6 @@
 
 #ifndef __FLT_EPSILON__
 #define __FLT_EPSILON__ FLT_EPSILON
-#endif
-
-#ifndef __DLB_EPSILON__
 #define __DBL_EPSILON__ DBL_EPSILON
 #endif
 
