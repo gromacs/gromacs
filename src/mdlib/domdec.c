@@ -5534,7 +5534,7 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
 }
 
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
-			       int reorder)
+                               int reorder)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -5557,18 +5557,22 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
         if (bDiv[YY] || bDiv[ZZ])
         {
             comm->bCartesianPP_PME = TRUE;
-            /* We choose the direction that provides the thinnest slab
+            /* If we have 2D PME decomposition, which is always in x+y,
+             * we stack the PME only nodes in z.
+             * Otherwise we choose the direction that provides the thinnest slab
              * of PME only nodes as this will have the least effect
              * on the PP communication.
              * But for the PME communication the opposite might be better.
              */
-            if (bDiv[YY] && (!bDiv[ZZ] || dd->nc[YY] <= dd->nc[ZZ]))
+            if (bDiv[ZZ] && (comm->npmenodes_minor > 1 ||
+                             !bDiv[YY] ||
+                             dd->nc[YY] > dd->nc[ZZ]))
             {
-                comm->cartpmedim = YY;
+                comm->cartpmedim = ZZ;
             }
             else
             {
-                comm->cartpmedim = ZZ;
+                comm->cartpmedim = YY;
             }
             comm->ntot[comm->cartpmedim]
                 += (cr->npmenodes*dd->nc[comm->cartpmedim])/dd->nnodes;
