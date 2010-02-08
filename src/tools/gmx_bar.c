@@ -309,13 +309,13 @@ static int get_lam_set(barsim_t *ba,double lambda)
 
 static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                      real temp,double tol,
-                     int npee0,int npee1,
+                     int npee_min,int npee_max,
                      barres_t *br, bool calc_s, bool calc_var)
 {
     int np1,np2,s1,s2,npee,p;
     double delta_lambda; 
-    double dg_sig, sa_sig, sb_sig, var_sig; /* intermediate variance values for 
-                                               calculated quantities */
+    double dg_sig2,sa_sig2,sb_sig2,var_sig2; /* intermediate variance values
+                                                for calculated quantities */
     br->a = ba1;
     br->b = ba2;
     br->lambda_a = ba1->lambda[0];
@@ -358,13 +358,13 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
     }
 
 
-    dg_sig = 0;
-    sa_sig = 0;
-    sb_sig = 0;
-    var_sig = 0;
-    if (np1 >= npee1 && np2 >= npee1)
+    dg_sig2 = 0;
+    sa_sig2 = 0;
+    sb_sig2 = 0;
+    var_sig2 = 0;
+    if (np1 >= npee_max && np2 >= npee_max)
     {
-        for(npee=npee0; npee<=npee1; npee++)
+        for(npee=npee_min; npee<=npee_max; npee++)
         {
             double dgs  = 0;
             double dgs2 = 0;
@@ -416,7 +416,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
             }
             dgs  /= npee;
             dgs2 /= npee;
-            dg_sig += sqrt((dgs2-dgs*dgs)/(npee-1));
+            dg_sig2 += (dgs2-dgs*dgs)/(npee-1);
 
             if (calc_s)
             {
@@ -424,25 +424,25 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                 dsa2 /= npee;
                 dsb  /= npee;
                 dsb2 /= npee;
-                sa_sig += sqrt((dsa2-dsa*dsa)/(npee-1));
-                sb_sig += sqrt((dsb2-dsb*dsb)/(npee-1));
+                sa_sig2 += (dsa2-dsa*dsa)/(npee-1);
+                sb_sig2 += (dsb2-dsb*dsb)/(npee-1);
             }
             if (calc_var)
             {
                 dvar  /= npee;
                 dvar2 /= npee;
-                var_sig += sqrt((dvar2-dvar*dvar)/(npee-1));
+                var_sig2 += (dvar2-dvar*dvar)/(npee-1);
             }
         }
-        br->dg_err = dg_sig/(npee1 - npee0 + 1);
+        br->dg_err = sqrt(dg_sig2/(npee_max - npee_min + 1));
         if (calc_s)
         {
-            br->sa_err = sa_sig/(npee1 - npee0 + 1);
-            br->sb_err = sb_sig/(npee1 - npee0 + 1);
+            br->sa_err = sqrt(sa_sig2/(npee_max - npee_min + 1));
+            br->sb_err = sqrt(sb_sig2/(npee_max - npee_min + 1));
         }
         if (calc_var)
         {
-            br->dg_var_err = var_sig/(npee1 - npee0 + 1);
+            br->dg_var_err = sqrt(var_sig2/(npee_max - npee_min + 1));
         }
  
     }
@@ -593,9 +593,8 @@ int gmx_bar(int argc,char *argv[])
         "the free energy differences over those blocks and assuming",
         "the blocks are independent.",
         "The final error estimate is determined from the average variance",
-        "over 4 and 5 blocks to lower the chance of an low error estimate",
-        "when the differences between the block are coincidentally low",
-        "for a certain number of blocks.[BR]",
+        "over 5 blocks. A range of blocks numbers for error estimation can",
+        "be provided with the options [TT]-nbmin[tt] and [TT]-nbmax[tt].[BR]",
         "An estimate of the expected per-sample variance (as given in ",
         "Bennett's original BAR paper: Bennett, J. Comp. Phys. 22, p 245, ",    
         "(1976), Eq. 10) can be obtained with the [TT]-v[tt] option. ",
@@ -612,7 +611,7 @@ int gmx_bar(int argc,char *argv[])
         "Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information."
     };
     static real begin=0,end=-1,temp=298;
-    static int nd=2,nb0=4,nb1=5;
+    static int nd=2,nbmin=5,nbmax=5;
     bool calc_s,calc_v;
     t_pargs pa[] = {
         { "-b",    FALSE, etREAL, {&begin},  "Begin time for BAR" },
@@ -621,8 +620,8 @@ int gmx_bar(int argc,char *argv[])
         { "-prec", FALSE, etINT,  {&nd},     "The number of digits after the decimal point" },
         { "-s",    FALSE, etBOOL, {&calc_s}, "Calculate relative entropy"},
         { "-v",    FALSE, etBOOL, {&calc_v}, "Calculate expected per-sample variance"},
-        { "-nb0",  FALSE, etINT,  {&nb0}, "HIDDENMinimum number of blocks for error estimation" },
-        { "-nb1",  FALSE, etINT,  {&nb1}, "HIDDENMaximum number of blocks for error estimation" }
+        { "-nbmin",  FALSE, etINT,  {&nbmin}, "Minimum number of blocks for error estimation" },
+        { "-nbmax",  FALSE, etINT,  {&nbmax}, "Maximum number of blocks for error estimation" }
     };
     
     t_filenm   fnm[] = {
@@ -750,7 +749,7 @@ int gmx_bar(int argc,char *argv[])
             fprintf(fpi,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
 
-        calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nb0, nb1,
+        calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nbmin, nbmax,
                  &(results[f]), calc_s, calc_v);
 
         if (fpb != NULL)

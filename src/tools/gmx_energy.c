@@ -571,9 +571,9 @@ static void add_ee_av(ee_sum_t *ees)
     ees->sum   = 0;
 }
 
-static double calc_ee(int nb,ee_sum_t *ees)
+static double calc_ee2(int nb,ee_sum_t *ees)
 {
-    return sqrt((ees->sav2/nb - dsqr(ees->sav/nb))/(nb - 1));
+    return (ees->sav2/nb - dsqr(ees->sav/nb))/(nb - 1);
 }
 
 static void set_ee_av(ener_ee_t *eee)
@@ -596,7 +596,7 @@ static void set_ee_av(ener_ee_t *eee)
 static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
 {
     int  nb,i,f,nee;
-    double sum,sum2,sump;
+    double sum,sum2,sump,see2;
     gmx_large_int_t sum_steps,steps,np,p,bound_nb;
     enerdat_t *ed;
     exactsum_t *es;
@@ -743,7 +743,8 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
             edat->s[i].slope = 0;
         }
 
-        nee = 0;
+        nee  = 0;
+        see2 = 0;
         for(nb=nbmin; nb<=nbmax; nb++)
         {
             /* Check if we actually got nb blocks and if the smallest
@@ -751,13 +752,13 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
              */
             if (eee[nb].b == nb && 5*nb*eee[nb].nst_min >= 4*edat->nsteps)
             {
-                edat->s[i].ee += calc_ee(nb,&eee[nb].sum);
+                see2 += calc_ee2(nb,&eee[nb].sum);
                 nee++;
             }
         }
         if (nee > 0)
         {
-            edat->s[i].ee /= nee;
+            edat->s[i].ee = sqrt(see2/nee);
         }
         else
         {
