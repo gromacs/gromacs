@@ -56,6 +56,78 @@
 int main(int argc,char *argv[])
 {
   const char *desc[] = {
+ #ifdef GMX_OPENMM
+    "This is an experimental release of GROMACS for accelerated",
+	"Molecular Dynamics simulations on GPU processors. Support is provided",
+	"by the OpenMM library (https://simtk.org/home/openmm).[PAR]",
+	"*Warning*[BR]",
+	"This release is targeted at developers and advanced users and",
+	"should not be considered ready for production. The following should be",
+	"noted before using the program:[PAR]",
+	"Usage:[BR]",
+	"$ mdrun -device \"OpenMM:platform=Cuda,memtest=15,deviceid=0,force-device=no\"[PAR]",
+	"OpenMM options:[PAR]",
+	"      [TT]platform[tt] = Cuda\nThe only available value. OpenCL support will be available soon[PAR]",
+	"      [TT]memtest[tt] = 15\nRun a partial, random GPU memory test for the given amount of seconds. A full test",
+	"(recommended!) can be run with \"full\". Memory testing can be disabled with \"off\".[PAR]",
+	"      [TT]deviceid[tt] = 0\nSpecify the target device when multiple cards are present.",
+	"Only one card can be used at any given time though.[PAR]",
+	"      [TT]force-device[tt] = no\nIf set to \"yes\" mdrun  will be forced to execute on",
+	"hardware that is not officially supported. GPU acceleration can also be achieved on older,",
+	"but Cuda capable, cards although the simulation might be too slow, and the memory limits too strict.[PAR]",
+	" * The current release runs only on modern nVidia GPU hardware with CUDA support.",
+	"Make sure that the necessary CUDA drivers and libraries for your operating system",
+	"are already installed. The CUDA SDK also should be installed in order to compile",
+	"the program from source (http://www.nvidia.com/object/cuda_home.html).[PAR]"
+	" * Multiple GPU cards are not supported.[PAR]"
+	" * Only a small subset of the GROMACS features and options are supported on the GPUs.",
+	"See below for a detailed list.[PAR]",
+	" * Consumer level GPU cards are known to often have problems with faulty memory.",
+	"It is recommended that a full memory check of the cards is done at least once",
+	"(for example, using the memtest=full option).",
+	"A partial memory check (for example, memtest=15) before and",
+	"after the simulation run would help spot",
+	"problems resulting from processor overheating.[PAR]"
+	" * The maximum size of the simulated systems depends on the available",
+	"GPU memory,for example, a GTX280 with 1GB memory has been tested with systems",
+	"of up to about 100,000 atoms.[PAR]",
+	" * In order to take a full advantage of the GPU platform features, many algorithms",
+	"have been implemented in a very different way than they are on the CPUs.",
+	"Therefore numercal correspondence between properties of the state of",
+	"simulated systems should not be expected. Moreover, the values will likely vary",
+	"when simulations are done on different GPU hardware.[PAR]"
+	" * Frequent retrieval of system state information such as",
+	"trajectory coordinates and energies can greatly influence the performance",
+	"of the program due to slow CPU<->GPU memory transfer speed.[PAR]",
+	" * MD algorithms are complex, and although the Gromacs code is highly tuned for them,",
+	"they often do not translate very well onto the streaming architetures.",
+	"Realistic expectations about the achievable speed-up from test with GTX280:",
+	"For small protein systems in implicit solvent using all-vs-all kernels the acceleration",
+	"can be as high as 20 times, but in most other setups involving cutoffs and PME the",
+	"acceleration is usually only 4~6 times relative to a 3GHz CPU.[PAR]",
+	"Supported features:[PAR]",
+	" * Integrators: md, md-vv, md-vv2, sd and bd.\n",
+	" * Long-range interactions (option coulombtype): Reaction-Field, Ewald, PME.\n",
+	" * Temperature control: Supported only with the sd, bd, md-vv and md-vv2 integrators.\n",
+	" * Pressure control: Not supported.\n",
+	" * Implicit solvent: Supported.\n",
+	"A detailed description can be found on the website:\n",
+	"http://www.gromacs.org/index.php?title=Download_%26_Installation/Related_Software/OpenMM[PAR]",
+// From the original mdrun documentaion
+    "The mdrun program reads the run input file ([TT]-s[tt])",
+    "and distributes the topology over nodes if needed.",
+    "mdrun produces at least four output files.",
+    "A single log file ([TT]-g[tt]) is written, unless the option",
+    "[TT]-seppot[tt] is used, in which case each node writes a log file.",
+    "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
+    "optionally forces.",
+    "The structure file ([TT]-c[tt]) contains the coordinates and",
+    "velocities of the last step.",
+    "The energy file ([TT]-e[tt]) contains energies, the temperature,",
+    "pressure, etc, a lot of these things are also printed in the log file.",
+    "Optionally coordinates can be written to a compressed trajectory file",
+    "([TT]-x[tt]).",
+#else
     "The mdrun program is the main computational chemistry engine",
     "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
     "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -102,7 +174,7 @@ int main(int argc,char *argv[])
     "be assigned to do only the PME mesh calculation;",
     "this is computationally more efficient starting at about 12 nodes.",
     "The number of PME nodes is set with option [TT]-npme[tt],",
-    "this can not be more than half of the nodes.", 
+    "this can not be more than half of the nodes.",
     "By default mdrun makes a guess for the number of PME",
     "nodes when the number of nodes is larger than 11 or performance wise",
     "not compatible with the PME grid x dimension.",
@@ -252,6 +324,7 @@ int main(int argc,char *argv[])
     "the mdrun process that is the parent of the others.",
     "[PAR]",
     "When mdrun is started with MPI, it does not run niced by default."
+#endif
   };
   t_commrec    *cr;
   t_filenm fnm[] = {
@@ -263,6 +336,7 @@ int main(int argc,char *argv[])
     { efSTO, "-c",      "confout",  ffWRITE },
     { efEDR, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
+#ifndef GMX_OPENMM
     { efXVG, "-dhdl",   "dhdl",     ffOPTWR },
     { efXVG, "-field",  "field",    ffOPTWR },
     { efXVG, "-table",  "table",    ffOPTRD },
@@ -282,6 +356,7 @@ int main(int argc,char *argv[])
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR }
+#endif
   };
 #define NFILE asize(fnm)
 
@@ -319,8 +394,13 @@ int main(int argc,char *argv[])
   bool bAppendFiles=TRUE,bAddPart=TRUE;
   bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
-	
+  const char *deviceOptions = "";
+
   t_pargs pa[] = {
+#ifdef GMX_OPENMM
+    { "-device",  FALSE, etSTR, {&deviceOptions},
+      "Device option string" },
+#else
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
@@ -387,6 +467,7 @@ int main(int argc,char *argv[])
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
       "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" }
+#endif
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
@@ -527,7 +608,7 @@ int main(int argc,char *argv[])
                         ddxyz,dd_node_order,rdd,rconstr,
                         dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
                         nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,pforce,
-                        cpt_period,max_hours,Flags);
+                        cpt_period,max_hours,deviceOptions,Flags);
 
   if (gmx_parallel_env_initialized())
       gmx_finalize();

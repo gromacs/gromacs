@@ -40,6 +40,18 @@ set(MDRUN_SOURCES
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
 
+if(GMX_OPENMM) 
+    add_subdirectory(gmx_gpu_utils)
+    include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
+    link_directories(${OpenMM_LIBRARY_DIR}) 
+    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) # only for the openmm interface
+    add_library(openmminterface md_openmm.cpp)
+#    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
+    set(GMX_OPENMM_LIBRARIES openmminterface gmx_gpu_utils OpenMM)   
+    list(APPEND MDRUN_SOURCES md_openmm.cpp)
+    install(TARGETS openmminterface DESTINATION ${LIB_INSTALL_DIR})   
+endif(GMX_OPENMM)
+
 if(GMX_FAHCORE)
   add_library(fahcore ${MDRUN_SOURCES})
 else(GMX_FAHCORE)
@@ -71,7 +83,7 @@ add_executable(gmxcheck gmxcheck.c)
 target_link_libraries(gmxcheck ${GMX_EXTRA_LIBRARIES})
 
 add_executable(mdrun ${MDRUN_SOURCES})
-target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES})
+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 
 install(TARGETS 
         grompp
@@ -87,6 +99,4 @@ install(TARGETS
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
 
 endif(GMX_FAHCORE)
-
-
 

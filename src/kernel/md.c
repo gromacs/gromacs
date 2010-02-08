@@ -960,6 +960,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              gmx_edsam_t ed,t_forcerec *fr,
              int repl_ex_nst,int repl_ex_seed,
              real cpt_period,real max_hours,
+             const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -2685,3 +2686,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     return 0;
 }
 
+/*
+TODO Check this warning: do_md_openmm.c|542|warning: ‘bCPT’ may be used uninitialized in this function|
+*/
+
+#ifdef GMX_OPENMM
+
+//#define DO_MD_PATCHED
+
+#ifdef DO_MD_PATCHED
+#include "do_md_openmm.h"
+#else
+#include "do_md_openmm_nopatch.h"
+#endif
+
+#endif
