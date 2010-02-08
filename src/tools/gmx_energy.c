@@ -580,7 +580,7 @@ static void set_ee_av(ener_ee_t *eee)
 {
     if (debug)
     {
-        char buf[20];
+        char buf[STEPSTRSIZE];
         fprintf(debug,"Storing average for err.est.: %s steps\n",
                 gmx_step_str(eee->nst,buf));
     }
@@ -750,6 +750,14 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
             /* Check if we actually got nb blocks and if the smallest
              * block is not shorter than 80% of the average.
              */
+            if (debug)
+            {
+                char buf1[STEPSTRSIZE],buf2[STEPSTRSIZE];
+                fprintf(debug,"Requested %d blocks, we have %d blocks, min %s nsteps %s\n",
+                        nb,eee[nb].b,
+                        gmx_step_str(eee[nb].nst_min,buf1),
+                        gmx_step_str(edat->nsteps,buf2));
+            }
             if (eee[nb].b == nb && 5*nb*eee[nb].nst_min >= 4*edat->nsteps)
             {
                 see2 += calc_ee2(nb,&eee[nb].sum);

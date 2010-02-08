@@ -369,7 +369,7 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 {
   int  i;
   real pf2,fn2;
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   pf2 = sqr(pforce);
   for(i=md->start; i<md->start+md->homenr; i++) {

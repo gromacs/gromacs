@@ -609,7 +609,7 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                                gmx_runtime_t *runtime)
 {
-    char buf[STRLEN],sbuf[22];
+    char buf[STRLEN],sbuf[STEPSTRSIZE];
 
     /* Reset all the counters related to performance over the run */
     sprintf(buf,"Step %s: resetting all time and cycle counters\n",
@@ -770,7 +770,7 @@ static void init_nlistheuristics(gmx_nlheur_t *nlh,
 static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 {
     gmx_large_int_t nl_lt;
-    char sbuf[22],sbuf2[22];
+    char sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
 
     /* Determine the neighbor list life time */
     nl_lt = step - nlh->step_ns;
@@ -925,7 +925,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	int         iter_i;
 	t_extmass   MassQ;
     int         **trotter_seq; 
-    char        sbuf[22],sbuf2[22];
+    char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     bool        bHandledSignal=FALSE;
     gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE

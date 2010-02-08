@@ -116,9 +116,11 @@ extern int gmx_large_int_to_int(gmx_large_int_t step,const char *warn);
  * "WARNING during %s:", where warn is printed in %s.
  */
 
+#define STEPSTRSIZE 22
+
 extern char *gmx_step_str(gmx_large_int_t i,char *buf);
 /* Prints a gmx_large_int_t value in buf and returns the pointer to buf.
- * buf should be large enough to contain i: 22 chars.
+ * buf should be large enough to contain i: STEPSTRSIZE (22) chars.
  * When multiple gmx_large_int_t values are printed in the same printf call,
  * be sure to call gmx_step_str with different buffers.
  */
