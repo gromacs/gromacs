@@ -1315,7 +1315,7 @@ int gmx_energy(int argc,char *argv[])
     "the energies must both be calculated from the same trajectory."
     
   };
-  static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
+  static bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
   static int  skip=0,nmol=1,nconstr=0,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
@@ -1338,8 +1338,8 @@ int gmx_energy(int argc,char *argv[])
       "Compute the total dipole moment from the components" },
     { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
-    { "-aver", FALSE, etBOOL, {&bAll},
-      "Print also the X1,t and sigma1,t, only if only 1 energy is requested" },
+    { "-aver", FALSE, etBOOL, {&bPrAll},
+      "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
     { "-nconstr",  FALSE, etINT,  {&nconstr},
@@ -1508,6 +1508,10 @@ int gmx_energy(int argc,char *argv[])
 	  (strcasecmp(interaction_function[j].longname,leg[i]) == 0);
     }
     
+    if (bPrAll && nset > 1) {
+        gmx_fatal(FARGS,"Printing averages can only be done when a single set is selected");
+    }
+
     time = NULL;
 
     if (bORIRE || bOTEN)
@@ -1771,25 +1775,6 @@ int gmx_energy(int argc,char *argv[])
 	  srenew(time,edat.nframes+1000);
 	}
 	time[edat.nframes] = fr->t;
-#if 0
-	sum=0;
-	for(i=0; (i<nset); i++) {
-	  ener = fr->ener[set[i]].e;
-	  eneset[i][nenergy] = ener;
-	  sum += ener;
-	  if (bVisco) {
-	    enedat[i][nenergy] = fr->ener[set[i]].edat;
-	  }
-	  /* Sum the actual frame energies,
-	   * for in case we do not have exact sums in the energy file.
-	   */
-	  enersum.sum[i]  += ener;
-	  enersum.sum2[i] += ener*ener;
-	}
-	if (bSum) {
-	  eneset[nset][nenergy] = sum;
-	}
-#endif
 	edat.nframes++;
       }
       /* 
@@ -1829,26 +1814,47 @@ int gmx_energy(int argc,char *argv[])
 	 *******************************************/
 	else {
 	  if (fr->nre > 0) {
-	    print_time(out,fr->t);
-	    if (bSum) {
-	      sum = 0;
-	      for(i=0; i<nset; i++) {
-		sum += fr->ener[set[i]].e;
-	      }
-	      print1(out,bDp,sum/nmol-ezero);
-	    } else if ((nset == 1) && bAll) {
-	      print1(out,bDp,fr->ener[set[0]].e);
-	      print1(out,bDp,fr->ener[set[0]].esum);
-	      print1(out,bDp,fr->ener[set[0]].eav);
-	    }
-	    else for(i=0; (i<nset); i++) {
-              if (bIsEner[i])
-                print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
-              else
-                print1(out,bDp,fr->ener[set[i]].e);
+            if (bPrAll)
+            {
+                /* We skip frames with single points (usually only the first frame),
+                 * since they would result in an average plot with outliers.
+                 */
+                if (fr->nsum > 1) {
+                    print_time(out,fr->t);
+                     print1(out,bDp,fr->ener[set[0]].e);
+                     print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
+                     print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
+                     fprintf(out,"\n");
+                }
             }
-
-	    fprintf(out,"\n");
+            else
+            {
+                print_time(out,fr->t);
+                if (bSum)
+                {
+                    sum = 0;
+                    for(i=0; i<nset; i++)
+                    {
+                        sum += fr->ener[set[i]].e;
+                    }
+                    print1(out,bDp,sum/nmol-ezero);
+                }
+                else
+                {
+                    for(i=0; (i<nset); i++)
+                    {
+                        if (bIsEner[i])
+                        {
+                            print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+                        }
+                        else
+                        {
+                            print1(out,bDp,fr->ener[set[i]].e);
+                        }
+                    }
+                }
+                fprintf(out,"\n");
+            }
 	  }
 	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
 	    if (fr->nr[enx_i] != nor)
