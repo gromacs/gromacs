@@ -597,7 +597,7 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
 {
     int  nb,i,f,nee;
     double sum,sum2,sump,see2;
-    gmx_large_int_t sum_steps,steps,np,p,bound_nb;
+    gmx_large_int_t steps,np,p,bound_nb;
     enerdat_t *ed;
     exactsum_t *es;
     bool bAllZero;
@@ -635,7 +635,6 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
     {
         ed = &edat->s[i];
         
-        sum_steps = 0;
         sum  = 0;
         sum2 = 0;
         np   = 0;
@@ -687,8 +686,6 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
             sxx += p*x*x;
             sxy += x*sump;
 
-            sum_steps += edat->steps[f];
-
             for(nb=nbmin; nb<=nbmax; nb++)
             {
                 /* Check if the current end step is closer to the desired
@@ -736,7 +733,7 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
 
         if (edat->nframes > 1)
         {
-            edat->s[i].slope = (sum_steps*sxy - sx*sy)/(sum_steps*sxx - sx*sx);
+            edat->s[i].slope = (np*sxy - sx*sy)/(np*sxx - sx*sx);
         }
         else
         {
