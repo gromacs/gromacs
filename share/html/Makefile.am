@@ -4,6 +4,7 @@
 #
 SUBDIRS = .  images  online
 
+
 htmldir = ${pkgdatadir}/html
 
 html_DATA = online.html gmxfaq.html
