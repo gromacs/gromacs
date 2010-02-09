@@ -1636,7 +1636,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEner = bNstEner;
-		bCalcPres = (bGStatEveryStep || (ir->epc != epcNO && bNS));
+        bCalcPres = (bNstEner || (ir->epc != epcNO && bNS));
 
         /* Do we need global communication ? */
         bGStat = (bCalcEner || bStopCM ||
@@ -1982,7 +1982,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEner = bNstEner;
-        bCalcPres = (bGStatEveryStep || (ir->epc != epcNO && bNS));
+        bCalcPres = (bNstEner || (ir->epc != epcNO && bNS));
         
         /* Do we need global communication ? */
         bGStat = (bGStatEveryStep || bStopCM || bNS ||
