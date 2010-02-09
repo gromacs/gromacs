@@ -44,8 +44,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define HAVE_DIRENT
-#ifdef HAVE_DIRENT
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #endif
 

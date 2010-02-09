@@ -569,7 +569,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
                         return TRUE;
                         /* if more than a few, check the total fraction.  If too high, die. */
                     } else if (iterate->num_close/(double)nsteps > FRACTION_CLOSE) {
-                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d\%\n",iterate->num_close/(double)nsteps);
+                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d%%\n",iterate->num_close/(double)nsteps);
                     } 
                 }
             }
