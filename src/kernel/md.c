@@ -2692,7 +2692,7 @@ TODO Check this warning: do_md_openmm.c|542|warning: ‘bCPT’ may be used unin
 
 #ifdef GMX_OPENMM
 
-//#define DO_MD_PATCHED
+#define DO_MD_PATCHED
 
 #ifdef DO_MD_PATCHED
 #include "do_md_openmm.h"

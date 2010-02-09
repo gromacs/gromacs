@@ -566,7 +566,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
 //#ifdef GMX_OPENMM
 
-	step_rel++;
 //#else        
         /* Now we have the energies and forces corresponding to the 
          * coordinates at time t. We must output all of this before
@@ -579,19 +578,21 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bV   = do_per_step(step,ir->nstvout) || (bLastStep && ir->nstvout);
         bF   = do_per_step(step,ir->nstfout) || (bLastStep && ir->nstfout);
         bXTC = do_per_step(step,ir->nstxtcout) || (bLastStep && ir->nstxtcout);
+        do_ene = do_per_step(step,ir->nstenergy);
         do_log = do_per_step(step,ir->nstlog)  || bFirstStep || bLastStep;
 
 //#ifdef GMX_OPENMM
-    do_ene = do_per_step(step,ir->nstenergy);
-//    if (bX || bV || bF || bXTC || do_ene) {
-//      wallcycle_start(wcycle,ewcTRAJ);
-//      openmm_copy_state(openmmData, state, &t, f, enerd, bX||bXTC, bV||bXTC, bF||bXTC, do_ene);
+
       if( bX || bXTC || bV ){                                                                                                                                                                 
         wallcycle_start(wcycle,ewcTRAJ);                                                                                                                                                      
         openmm_copy_state(openmmData, state, &t, f, enerd, bX||bXTC, bV, 0, 0);                                                                                                               
         wallcycle_stop(wcycle,ewcTRAJ);                                                                                                                                                       
       }                                                                                                                                                                                       
+
       openmm_take_one_step(openmmData);                                                                                                                                                       
+      step++;
+      step_rel++;
+      bLastStep = (step_rel == ir->nsteps);
       if (bX || bV || bF || bXTC || do_ene) {
         wallcycle_start(wcycle,ewcTRAJ);
         if( bF || do_ene ){                                                                                                                                                                   
@@ -630,38 +631,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             wallcycle_stop(wcycle,ewcTRAJ);
         }
         GMX_MPE_LOG(ev_output_finish);
- 
-    bFirstStep = FALSE;
         
-        if (bRerunMD) 
-        {
-            /* read next frame from input trajectory */
-            bNotLastFrame = read_next_frame(oenv,status,&rerun_fr);
-        }
-        
-        if (!bRerunMD || !rerun_fr.bStep)
-        {
-            /* increase the MD step number */
-            step++;
-            step_rel++;
-        }
-        
-        cycles = wallcycle_stop(wcycle,ewcSTEP);
-        if (DOMAINDECOMP(cr) && wcycle)
-        {
-            dd_cycles_add(cr->dd,cycles,ddCyclStep);
-        }
-        
-        if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            reset_counters_now == 1)
-        {
-            /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
-            wcycle_set_reset_counters(wcycle,-1);
-            bResetCountersHalfMaxH = FALSE;
-            reset_counters_now = 0;
-        }
-
     }
     /* End of main MD loop */
     debug_gmx();
