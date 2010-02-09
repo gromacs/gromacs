@@ -1214,6 +1214,7 @@ void init_forcerec(FILE *fp,
     fr->adress_type     = ir->adress_type;
     fr->badress_new_wf  = ir->badress_new_wf;
     fr->badress_chempot_dx = ir->badress_chempot_dx;
+    fr->badress_tf_full_box = ir->badress_tf_full_box;
     fr->adress_const_wf = ir->adress_const_wf;
     fr->adress_ex_width = ir->adress_ex_width;
     fr->adress_hy_width = ir->adress_hy_width;

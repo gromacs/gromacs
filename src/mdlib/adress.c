@@ -414,7 +414,7 @@ adress_thermo_force(int                  cg0,
     int              adresstype;
     real             adressw, adressr;
     bool             bnew_wf;
-    bool	     badress_chempot_dx;
+    bool	     badress_chempot_dx, badress_tf_full_box;
     atom_id *        cgindex;
     unsigned short * ptype;
     rvec *           ref;
@@ -436,6 +436,7 @@ adress_thermo_force(int                  cg0,
     tabscale         = fr->atf_tab.scale;
     ATFtab           = fr->atf_tab.tab;
     badress_chempot_dx = fr->badress_chempot_dx;
+    badress_tf_full_box = fr->badress_tf_full_box;
 
     for(icg=cg0; (icg<cg1); icg++)
     {
@@ -448,8 +449,8 @@ adress_thermo_force(int                  cg0,
             if (ptype[k0] == eptVSite)
             {
                 w    = wf[k0];
-                /* is it hybrid? */
-                if (w > 0 && w < 1)
+                /* is it hybrid or apply the thermodynamics force everywhere?*/
+                if ((w > 0 && w < 1) || badress_tf_full_box)
                 {
                     fscal            = 0;
                     if (pbc)
@@ -514,8 +515,8 @@ adress_thermo_force(int                  cg0,
                         }
 
                         dl=sqrt(sqr_dl);
-                        
-                        wt               = (dl-adressr)*tabscale;
+
+                       wt               = (dl-adressr)*tabscale;
                         n0               = wt;
                         eps              = wt-n0;
                         eps2             = eps*eps;
