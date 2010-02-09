@@ -564,9 +564,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         GMX_MPE_LOG(ev_timestep1);
 
-//#ifdef GMX_OPENMM
-
-//#else        
         /* Now we have the energies and forces corresponding to the 
          * coordinates at time t. We must output all of this before
          * the update.
@@ -578,8 +575,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bV   = do_per_step(step,ir->nstvout) || (bLastStep && ir->nstvout);
         bF   = do_per_step(step,ir->nstfout) || (bLastStep && ir->nstfout);
         bXTC = do_per_step(step,ir->nstxtcout) || (bLastStep && ir->nstxtcout);
-        do_ene = do_per_step(step,ir->nstenergy);
-        do_log = do_per_step(step,ir->nstlog)  || bFirstStep || bLastStep;
+        do_ene = do_per_step(step,ir->nstenergy) || (bLastStep && ir->nstenergy);
 
 //#ifdef GMX_OPENMM
 
@@ -590,8 +586,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
       }                                                                                                                                                                                       
 
       openmm_take_one_step(openmmData);                                                                                                                                                       
-      step++;
-      step_rel++;
       bLastStep = (step_rel == ir->nsteps);
       if (bX || bV || bF || bXTC || do_ene) {
         wallcycle_start(wcycle,ewcTRAJ);
@@ -632,6 +626,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         GMX_MPE_LOG(ev_output_finish);
         
+        bFirstStep = FALSE;
+        bInitStep = FALSE;
+        step++;
+        step_rel++;
     }
     /* End of main MD loop */
     debug_gmx();
