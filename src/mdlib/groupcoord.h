@@ -192,5 +192,5 @@ extern void translate_x(rvec x[], const int nr, const rvec transvec);
  * \param rmat[in]           Rotation matrix to operate on all positions.
  * 
  */
-extern void rotate_x(rvec x[], int nr, matrix rmat);
+extern void rotate_x(rvec x[], const int nr, matrix rmat);
 

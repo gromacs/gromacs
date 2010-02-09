@@ -815,13 +815,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
             all_pa[i].u.c[0]=all_pa[i].u.c[1];
     
     
-    /* set program name, command line, and default values for output options */
-    output_env_init(*oenv, *argc, argv, bView, bXvgrCodes, time_units[1],
-                    verbose_level, debug_level);
-   
+  
     /* Now parse all the command-line options */
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
+    /* set program name, command line, and default values for output options */
+    output_env_init(*oenv, *argc, argv, bView, bXvgrCodes, time_units[1],
+                    verbose_level, debug_level);
+ 
     if (bVersion) {
       printf("Program: %s\nVersion: %s\n",output_env_get_program_name(*oenv),
 #ifdef PACKAGE_VERSION

@@ -127,7 +127,7 @@ static void print_converged(FILE *fp,const char *alg,real ftol,
 			    gmx_large_int_t count,bool bDone,gmx_large_int_t nsteps,
 			    real epot,real fmax, int nfmax, real fnorm)
 {
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   if (bDone)
     fprintf(fp,"\n%s converged to Fmax < %g in %s steps\n",

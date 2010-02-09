@@ -221,7 +221,7 @@ static void do_cpt_int_err(XDR *xd,const char *desc,int *i,FILE *list)
 static void do_cpt_step_err(XDR *xd,const char *desc,gmx_large_int_t *i,FILE *list)
 {
     bool_t res=0;
-    char   buf[22];
+    char   buf[STEPSTRSIZE];
 
     res = xdr_gmx_large_int(xd,i,"reading checkpoint file");
     if (res == 0)
@@ -1250,7 +1250,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     int  fp,i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
-	char filename[STRLEN],buf[22];
+	char filename[STRLEN],buf[STEPSTRSIZE];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
     int  natoms,ngtc,nnhpres,nhchainlength,fflags,flags_eks,flags_enh;

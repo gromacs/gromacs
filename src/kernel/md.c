@@ -457,7 +457,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
        0.02, which is smaller that would ever be necessary in
        practice. Generally, 3-5 iterations will be sufficient */
 
-    real relerr,xmin;
+    real relerr,err,xmin;
     char buf[256];
     int i;
     bool incycle;
@@ -509,7 +509,9 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
        relerr = (fabs((*newf-xmin) / *newf));
     */
     
-    relerr = (fabs((iterate->f-iterate->fprev)/fom));
+    err = fabs((iterate->f-iterate->fprev));
+    relerr = fabs(err/fom);
+
     iterate->allrelerr[iterate->iter_i] = relerr;
     
     if (iterate->iter_i > 0) 
@@ -520,7 +522,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
                     iterate->iter_i,fom,relerr,*newf);
         }
         
-        if ((relerr < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
+        if ((relerr < CONVERGEITER) || (err < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
         {
             iterate->bIterate = FALSE;
             if (debug) 
@@ -567,7 +569,7 @@ static bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iter
                         return TRUE;
                         /* if more than a few, check the total fraction.  If too high, die. */
                     } else if (iterate->num_close/(double)nsteps > FRACTION_CLOSE) {
-                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d\%\n",iterate->num_close/(double)nsteps);
+                        gmx_fatal(FARGS,"Could not converge NPT constraints, too many exceptions (%d%%\n",iterate->num_close/(double)nsteps);
                     } 
                 }
             }
@@ -607,7 +609,7 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
                                gmx_wallcycle_t wcycle,t_nrnb *nrnb,
                                gmx_runtime_t *runtime)
 {
-    char buf[STRLEN],sbuf[22];
+    char buf[STRLEN],sbuf[STEPSTRSIZE];
 
     /* Reset all the counters related to performance over the run */
     sprintf(buf,"Step %s: resetting all time and cycle counters\n",
@@ -768,7 +770,7 @@ static void init_nlistheuristics(gmx_nlheur_t *nlh,
 static void update_nliststatistics(gmx_nlheur_t *nlh,gmx_large_int_t step)
 {
     gmx_large_int_t nl_lt;
-    char sbuf[22],sbuf2[22];
+    char sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
 
     /* Determine the neighbor list life time */
     nl_lt = step - nlh->step_ns;
@@ -923,7 +925,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	int         iter_i;
 	t_extmass   MassQ;
     int         **trotter_seq; 
-    char        sbuf[22],sbuf2[22];
+    char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
     bool        bHandledSignal=FALSE;
     gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE
@@ -1634,7 +1636,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEner = bNstEner;
-		bCalcPres = (bGStatEveryStep || (ir->epc != epcNO && bNS));
+        bCalcPres = (bNstEner || (ir->epc != epcNO && bNS));
 
         /* Do we need global communication ? */
         bGStat = (bCalcEner || bStopCM ||
@@ -1980,7 +1982,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
         bNstEner = (bGStatEveryStep || do_per_step(step,ir->nstcalcenergy));
         bCalcEner = bNstEner;
-        bCalcPres = (bGStatEveryStep || (ir->epc != epcNO && bNS));
+        bCalcPres = (bNstEner || (ir->epc != epcNO && bNS));
         
         /* Do we need global communication ? */
         bGStat = (bGStatEveryStep || bStopCM || bNS ||
