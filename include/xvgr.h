@@ -79,8 +79,21 @@ enum {
  *            XVGR   ROUTINES
  ***************************************************/
 
-extern bool use_xmgr(void);
-/* Returns if we use xmgr instead of xmgrace */
+/* Strings such as titles, lables and legends can contain escape sequences
+ * for formatting. Currently supported are:
+ * \s : start subscript
+ * \S : start superscript
+ * \N : end sub/superscript
+ * \symbol : where symbol is the full name of a greek letter
+ *           (see the xvgrstr function in xvgr.c for the full list)
+ *           when starting with a capital, a capital symbol will be printed,
+ *           note that symbol does not need to be followed by a space
+ * \8 : (deprecated) start symbol font
+ * \4 : (deprecated) end symbol font
+ */
+
+extern bool output_env_get_print_xvgr_codes(const output_env_t oenv);
+/* Returns if we should print xmgrace or xmgr codes */
 
 extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                       const char *yaxis,const output_env_t oenv);

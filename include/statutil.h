@@ -185,10 +185,6 @@ extern int check_times(real t);
 
    There are still legacy functions for the program name, and the command 
    line, but the output_env versions are now preferred.*/
-extern void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                            bool view, bool xvgr_codes, const char *timenm,
-                            int verbosity, int debug_level);
-
 
 extern int output_env_get_verbosity(const output_env_t oenv);
 /* return the verbosity */
@@ -220,8 +216,10 @@ extern void output_env_conv_times(const output_env_t oenv, int n, real *time);
 extern bool output_env_get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
-extern bool output_env_get_print_xvgr_codes(const output_env_t oenv);
-/* Return TRUE when user wants printing of legends etc. in the file. */
+enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE };
+
+extern int output_env_get_xvg_format(const output_env_t oenv);
+/* Returns enum (see above) for xvg output formatting */
 
 extern const char *output_env_get_program_name(const output_env_t oenv);
 /* return the program name */

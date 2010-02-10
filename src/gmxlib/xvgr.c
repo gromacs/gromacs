@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -49,21 +50,186 @@
 #include "vec.h"
 #include "gmxfio.h"
 
-bool use_xmgr()
+bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
-  char *env;
-  bool bXMGR;
+    int xvg_format;
 
-  env = getenv("GMX_VIEW_XVG");
+    xvg_format = output_env_get_xvg_format(oenv);
 
-  return (env!=NULL && strcmp(env,"xmgr")==0);
-} 
+    return (xvg_format == exvgXMGRACE || xvg_format == exvgXMGR);
+}
+
+static char *xvgrstr(const char *gmx,const output_env_t oenv,
+                     char *buf,int buflen)
+{
+    /* Supported greek letter names and corresponding xmgrace/xmgr symbols */
+    const char *sym[]={ "beta", "chi", "delta", "eta", "lambda", "mu", "omega", "phi", "psi", "rho", "theta", NULL };
+    const char symc[]={ 'b',    'c',   'd',     'h',   'l',      'm',  'w',     'f',   'y',   'r',   'q',     '\0' };
+    int  xvgf;
+    bool bXVGR;
+    int  g,b,i;
+    char c;
+
+    xvgf  = output_env_get_xvg_format(oenv);
+    bXVGR = (xvgf == exvgXMGRACE || xvgf == exvgXMGR);
+
+    g = 0;
+    b = 0;
+    while (gmx[g] != '\0')
+    {
+        /* Check with the largest string we have ("lambda"), add one for \0 */
+        if (b + 6 + 1 >= buflen)
+        {
+            gmx_fatal(FARGS,"Output buffer length in xvgstr (%d) too small to process xvg input string '%s'",buflen,gmx);
+        }
+        if (gmx[g] == '\\')
+        {
+            g++;
+            if (gmx[g] == 's')
+            {
+                /* Subscript */
+                if (bXVGR)
+                {
+                    buf[b++] = '\\';
+                    buf[b++] = 's';
+                }
+                else
+                {
+                    buf[b++] = '_';
+                }
+                g++;
+            }
+            else if (gmx[g] == 'S')
+            {
+                /* Superscript */
+                if (bXVGR)
+                {
+                    buf[b++] = '\\';
+                    buf[b++] = 'S';
+                }
+                else
+                {
+                    buf[b++] = '^';
+                }
+                g++;
+            }
+            else if (gmx[g] == 'N')
+            {
+                /* End sub/superscript */
+                if (bXVGR)
+                {
+                    buf[b++] = '\\';
+                    buf[b++] = 'N';
+                }
+                else
+                {
+                    if (gmx[g+1] != ' ')
+                    {
+                        buf[b++] = ' ';
+                    }
+                }
+                g++;
+            }
+            else if (gmx[g] == '4')
+            {
+                /* Backward compatibility for xmgr normal font "\4" */
+                switch (xvgf)
+                {
+                case exvgXMGRACE:
+                    sprintf(buf+b,"%s","\\f{}");
+                    break;
+                case exvgXMGR:
+                    sprintf(buf+b,"%s","\\4");
+                    break;
+                default:
+                    buf[b] = '\0';
+                    break;
+                }
+                g++;
+                b = strlen(buf);
+            }
+            else if (gmx[g] == '8')
+            {
+                /* Backward compatibility for xmgr symbol font "\8" */
+                switch (xvgf)
+                {
+                case exvgXMGRACE:
+                    sprintf(buf+b,"%s","\\x");
+                    break;
+                case exvgXMGR:
+                    sprintf(buf+b,"%s","\\8");
+                    break;
+                default:
+                    buf[b] = '\0';
+                    break;
+                }
+                g++;
+                b = strlen(buf);
+            }
+            else
+            {
+                /* Check for special symbol */
+                i = 0;
+                while (sym[i] != NULL &&
+                       strncasecmp(sym[i],gmx+g,strlen(sym[i])) != 0)
+                {
+                    i++;
+                }
+                if (sym[i] != NULL)
+                {
+                    c = symc[i];
+                    if (isupper(gmx[g]))
+                    {
+                        c = toupper(c);
+                    }
+                    switch (xvgf)
+                    {
+                    case exvgXMGRACE:
+                        sprintf(buf+b,"%s%c%s","\\x",c,"\\f{}");
+                        break;
+                    case exvgXMGR:
+                        sprintf(buf+b,"%s%c%s","\\4",c,"\\8");
+                        break;
+                    default:
+                        strncat(buf+b,gmx+g,strlen(sym[i]));
+                        b += strlen(sym[i]);
+                        if (gmx[g+strlen(sym[i])] != ' ')
+                        {
+                            buf[b++] = ' ';
+                        }
+                        buf[b] = '\0';
+                        break;
+                    }
+                    g += strlen(sym[i]);
+                    b  = strlen(buf);
+                }
+                else
+                {
+                    /* Unknown escape sequence, this should not happen.
+                     * We do not generate a fatal error, since that might
+                     * stop otherwise functioning code from working.
+                     * Copy the backslash to the output and continue processing.
+                     */
+                    buf[b++] = '\\';
+                }
+            }
+        }
+        else
+        {
+            buf[b++] = gmx[g++];
+        }
+    }
+
+    buf[b++] = '\0';
+
+    return buf;
+}
 
 FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                const char *yaxis,const output_env_t oenv)
 {
     FILE *xvgr;
-    char pukestr[100];
+    char pukestr[100],buf[STRLEN];
     time_t t;
 
     xvgr=gmx_fio_fopen(fn,"w");
@@ -75,13 +241,19 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
         fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
         bromacs(pukestr,99);
         fprintf(xvgr,"# %s\n#\n",pukestr);
-        fprintf(xvgr,"@    title \"%s\"\n",title);
-        fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
-        fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
-        if (use_xmgr())
+        fprintf(xvgr,"@    title \"%s\"\n",xvgrstr(title,oenv,buf,STRLEN));
+        fprintf(xvgr,"@    xaxis  label \"%s\"\n",
+                xvgrstr(xaxis,oenv,buf,STRLEN));
+        fprintf(xvgr,"@    yaxis  label \"%s\"\n",
+                xvgrstr(yaxis,oenv,buf,STRLEN));
+        if (output_env_get_xvg_format(oenv) == exvgXMGR)
+        {
             fprintf(xvgr,"@TYPE nxy\n");
+        }
         else
+        {
             fprintf(xvgr,"@TYPE xy\n");
+        }
     }
     return xvgr;
 }
@@ -94,9 +266,11 @@ xvgrclose(FILE *fp)
 
 void xvgr_subtitle(FILE *out,const char *subtitle,const output_env_t oenv)
 {
+    char buf[STRLEN];
+
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        fprintf(out,"@ subtitle \"%s\"\n",subtitle);
+        fprintf(out,"@ subtitle \"%s\"\n",xvgrstr(subtitle,oenv,buf,STRLEN));
     }
 }
 
@@ -123,24 +297,33 @@ void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax,
 
 void xvgr_legend(FILE *out,int nsets,char **setname,const output_env_t oenv)
 {
-  int i;
-  
-  if (output_env_get_print_xvgr_codes(oenv))
-  {
-      xvgr_view(out,0.15,0.15,0.75,0.85,oenv);
-      fprintf(out,"@ legend on\n");
-      fprintf(out,"@ legend box on\n");
-      fprintf(out,"@ legend loctype view\n");
-      fprintf(out,"@ legend %g, %g\n",0.78,0.8);
-      fprintf(out,"@ legend length %d\n",2);
-      for(i=0; (i<nsets); i++)
-          if (setname[i]) {
-              if (use_xmgr())
-                  fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
-              else
-                  fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
-          }
-  }
+    int  i;
+    char buf[STRLEN];
+    
+    if (output_env_get_print_xvgr_codes(oenv))
+    {
+        xvgr_view(out,0.15,0.15,0.75,0.85,oenv);
+        fprintf(out,"@ legend on\n");
+        fprintf(out,"@ legend box on\n");
+        fprintf(out,"@ legend loctype view\n");
+        fprintf(out,"@ legend %g, %g\n",0.78,0.8);
+        fprintf(out,"@ legend length %d\n",2);
+        for(i=0; (i<nsets); i++)
+        {
+            if (setname[i]) {
+                if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                {
+                    fprintf(out,"@ legend string %d \"%s\"\n",
+                            i,xvgrstr(setname[i],oenv,buf,STRLEN));
+                }
+                else
+                {
+                    fprintf(out,"@ s%d legend \"%s\"\n",
+                            i,xvgrstr(setname[i],oenv,buf,STRLEN));
+                }
+            }
+        }
+    }
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
