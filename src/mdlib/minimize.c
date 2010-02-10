@@ -2683,37 +2683,37 @@ double do_tpi(FILE *fplog,t_commrec *cr,
     xvgr_subtitle(fp_tpi,"f. are averages over one frame",oenv);
     snew(leg,4+nener);
     e = 0;
-    sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
+    sprintf(str,"-kT log(<Ve\\S-\\betaU\\N>/<V>)");
     leg[e++] = strdup(str);
-    sprintf(str,"f. -kT log<e\\S-\\8b\\4U\\N>");
+    sprintf(str,"f. -kT log<e\\S-\\betaU\\N>");
     leg[e++] = strdup(str);
-    sprintf(str,"f. <e\\S-\\8b\\4U\\N>");
+    sprintf(str,"f. <e\\S-\\betaU\\N>");
     leg[e++] = strdup(str);
     sprintf(str,"f. V");
     leg[e++] = strdup(str);
-    sprintf(str,"f. <Ue\\S-\\8b\\4U\\N>");
+    sprintf(str,"f. <Ue\\S-\\betaU\\N>");
     leg[e++] = strdup(str);
     for(i=0; i<ngid; i++) {
-      sprintf(str,"f. <U\\sVdW %s\\Ne\\S-\\8b\\4U\\N>",
+      sprintf(str,"f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
 	      *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
       leg[e++] = strdup(str);
     }
     if (bDispCorr) {
-      sprintf(str,"f. <U\\sdisp c\\Ne\\S-\\8b\\4U\\N>");
+      sprintf(str,"f. <U\\sdisp c\\Ne\\S-\\betaU\\N>");
       leg[e++] = strdup(str);
     }
     if (bCharge) {
       for(i=0; i<ngid; i++) {
-	sprintf(str,"f. <U\\sCoul %s\\Ne\\S-\\8b\\4U\\N>",
+	sprintf(str,"f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
 		*(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
 	leg[e++] = strdup(str);
       }
       if (bRFExcl) {
-	sprintf(str,"f. <U\\sRF excl\\Ne\\S-\\8b\\4U\\N>");
+	sprintf(str,"f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
 	leg[e++] = strdup(str);
       }
       if (EEL_FULL(fr->eeltype)) {
-	sprintf(str,"f. <U\\sCoul recip\\Ne\\S-\\8b\\4U\\N>");
+	sprintf(str,"f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
 	leg[e++] = strdup(str);
       }
     }
@@ -3081,8 +3081,8 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   }
   fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
 		    "TPI energy distribution",
-		    "\\8b\\4U - log(V/<V>)","count",oenv);
-  sprintf(str,"number \\8b\\4U > %g: %9.3e",bU_bin_limit,bin[0]);
+		    "\\betaU - log(V/<V>)","count",oenv);
+  sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
   xvgr_subtitle(fp_tpi,str,oenv);
   xvgr_legend(fp_tpi,2,(char **)tpid_leg,oenv);
   for(i=nbin-1; i>0; i--) {

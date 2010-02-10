@@ -81,7 +81,7 @@ static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
 static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
                                         "ms", "s", NULL };
 static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns", 
-                                         "\\8m\\4s", "ms", "s" };
+                                         "\\mus", "ms", "s" };
 
 
 
