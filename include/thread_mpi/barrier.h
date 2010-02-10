@@ -35,59 +35,50 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifndef _TMPI_BARRIER_H_
+#define _TMPI_BARRIER_H_
 
-/* this file is to be #included from collective.c */
+/** Yielding spinlock-based barrier type
+ *
+ *  This barrier has the same functionality as the standard
+ *  tMPI_Thread_barrier_t, but since it is based on spinlocks that yield 
+ *  to the scheduler in case of waiting. It provides faster synchronization 
+ *  at the cost of busy-waiting, but will still behave relatively nicely
+ *  to other processes/threads. This is therefore the preferred type of
+ *  barrier for when waits are expected to be reasonably short.
+ *
+ *  Variables of this type should be initialized by calling
+ *  tMPI_Spinlock_barrier_init() to set the number of threads
+ *  that should be synchronized.
+ * 
+ * \see
+ * - tMPI_Spinlock_barrier_init
+ * - tMPI_Spinlock_barrier_wait
+ */
+typedef struct tMPI_Spinlock_barrier tMPI_Spinlock_barrier_t;
 
-/* broadcast */
-int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
-               tMPI_Comm comm)
-{
-    int synct;
-    struct coll_env *cev;
-    int myrank;
-    int ret=TMPI_SUCCESS;
-    struct tmpi_thread *cur=tMPI_Get_current();
+/** Initialize yielding spinlock-based barrier
+ *
+ *  \param barrier  Pointer to _spinlock_ barrier. Note that this is not
+ *                  the same datatype as the full, thread based, barrier.
+ *  \param count    Number of threads to synchronize. All threads
+ *                  will be released after \a count calls to 
+ *                  tMPI_Spinlock_barrier_wait().  
+ */
+void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count);
 
-#ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+
+/** Perform yielding, busy-waiting barrier synchronization
+  *
+  *  This routine blocks until it has been called N times,
+  *  where N is the count value the barrier was initialized with.
+  *  After N total calls all threads return. The barrier automatically
+  *  cycles, and thus requires another N calls to unblock another time.
+  *
+  *  \param barrier  Pointer to previously create barrier.
+  *
+  *  \return The last thread returns -1, all the others 0.
+  */
+int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier);
+
 #endif
-#ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype, 
-                     root, comm);
-#endif
-
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    myrank=tMPI_Comm_seek_rank(comm, cur);
-
-    /* we increase our counter, and determine which coll_env we get */
-    cev=tMPI_Get_cev(comm, myrank, &synct);
-
-    if (myrank==root)
-    {
-        /* first set up the data */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
-                        count*datatype->size, buffer, comm->grp.N-1, synct);
-        /* and wait until everybody is done copying */
-        tMPI_Wait_for_others(cev, myrank);
-    }
-    else
-    {
-        size_t bufsize=count*datatype->size;
-        /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
-        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
-                       buffer, &ret);
-    }
-#ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Bcast); 
-#endif
-    return ret;
-}
-
-
-
-
-

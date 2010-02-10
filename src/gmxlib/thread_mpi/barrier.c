@@ -35,59 +35,76 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-/* this file is to be #included from collective.c */
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
-/* broadcast */
-int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
-               tMPI_Comm comm)
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+#include "impl.h"
+
+
+
+void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count)
 {
-    int synct;
-    struct coll_env *cev;
-    int myrank;
-    int ret=TMPI_SUCCESS;
-    struct tmpi_thread *cur=tMPI_Get_current();
-
-#ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
-#endif
-#ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype, 
-                     root, comm);
-#endif
-
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    myrank=tMPI_Comm_seek_rank(comm, cur);
-
-    /* we increase our counter, and determine which coll_env we get */
-    cev=tMPI_Get_cev(comm, myrank, &synct);
-
-    if (myrank==root)
-    {
-        /* first set up the data */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
-                        count*datatype->size, buffer, comm->grp.N-1, synct);
-        /* and wait until everybody is done copying */
-        tMPI_Wait_for_others(cev, myrank);
-    }
-    else
-    {
-        size_t bufsize=count*datatype->size;
-        /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
-        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
-                       buffer, &ret);
-    }
-#ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Bcast); 
-#endif
-    return ret;
+    barrier->threshold = count;
+    barrier->cycle     = 0;
+    tMPI_Atomic_set(&(barrier->count),count);
+    TMPI_YIELD_WAIT_DATA_INIT(barrier);
 }
 
 
+int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
+{
+    int    cycle;
+    int    status;
+    /*int    i;*/
 
+    /* We don't need to lock or use atomic ops here, since the cycle index 
+     * cannot change until after the last thread has performed the check
+     * further down. Further, they cannot reach this point in the next 
+     * barrier iteration until all of them have been released, and that 
+     * happens after the cycle value has been updated.
+     *
+     * No synchronization == fast synchronization.
+     */
+    cycle = barrier->cycle;
+
+    /* Decrement the count atomically and check if it is zero.
+     * This will only be true for the last thread calling us.
+     */
+    if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
+    {
+        tMPI_Atomic_set(&(barrier->count), barrier->threshold);
+        barrier->cycle = !barrier->cycle;
+
+        status = -1;
+    }
+    else
+    {
+        /* Wait until the last thread changes the cycle index.
+         * We are both using a memory barrier, and explicit
+         * volatile pointer cast to make sure the compiler
+         * doesn't try to be smart and cache the contents.
+         */
+        do
+        {
+            TMPI_YIELD_WAIT(barrier);
+            tMPI_Atomic_memory_barrier();
+        }
+        while( *(volatile int *)(&(barrier->cycle)) == cycle);
+
+        status = 0;
+    }
+    return status;
+}
 
 

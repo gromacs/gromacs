@@ -51,10 +51,7 @@ files.
 #include <sys/time.h>
 #endif
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 #ifdef TMPI_TRACE
 #include <stdarg.h>
@@ -248,7 +245,6 @@ static void* tMPI_Thread_starter(void *arg)
 
     tMPI_Thread_setspecific(id_key, arg);
 
-
 #ifdef TMPI_TRACE
     tMPI_Trace_print("Created thread nr. %d", (int)(th-threads));
 #endif
@@ -268,22 +264,17 @@ static void* tMPI_Thread_starter(void *arg)
     {
         tMPI_Send_env_list_init( &(th->evs[i]), N_send_envelopes);
     }
-#ifndef TMPI_NO_BUSY_WAIT_SEND_RECV
-    tMPI_Atomic_set( &(th->evs_new_incoming), 0);
-#else
-    tMPI_Thread_mutex_init( &(th->ev_check_lock ) );
-    tMPI_Thread_cond_init( &(th->ev_check_cond ) );
-    th->evs_new_incoming=0;
-    th->ev_received=0;
-#endif
+
+    tMPI_Atomic_set( &(th->ev_outgoing_received), 0);
+
+    tMPI_Event_init( &(th->p2p_event) );
 
     /* allocate requests */
     tMPI_Req_list_init(&(th->rql), N_reqs);
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* allcate copy_buffer list */
-    tMPI_Copy_buffer_list_init(&(th->cbl_multi), 
-                               (Nthreads+1)*(N_COLL_ENV+1),
+    tMPI_Copy_buffer_list_init(&(th->cbl_multi), (Nthreads+1)*(N_COLL_ENV+1),
                                Nthreads*COPY_BUFFER_SIZE);
 #endif
 
@@ -292,7 +283,8 @@ static void* tMPI_Thread_starter(void *arg)
 #endif
     /* now wait for all other threads to come on line, before we
        start the MPI program */
-    tMPI_Barrier(TMPI_COMM_WORLD);
+    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->multicast_barrier[0]));
+
 
     if (! th->start_fn )
         main(th->argc, th->argv);
@@ -338,7 +330,6 @@ void tMPI_Start_threads(int N, int *argc, char ***argv,
         threads=(struct tmpi_thread*)tMPI_Malloc(sizeof(struct tmpi_thread)*N);
         TMPI_COMM_WORLD=tMPI_Comm_alloc(NULL, N);
         tMPI_GROUP_EMPTY=tMPI_Group_alloc();
-        TMPI_COMM_WORLD->grp.N=N;
 
         if (tMPI_Thread_key_create(&id_key, NULL))
         {
@@ -448,7 +439,8 @@ int tMPI_Finalize(void)
     fflush(stdout);
 #endif
 
-    tMPI_Barrier(TMPI_COMM_WORLD);
+    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->multicast_barrier[0]));
+
 #ifdef TMPI_PROFILE
     tMPI_Profile_stop(&(th->profile));
 #endif
@@ -461,10 +453,7 @@ int tMPI_Finalize(void)
     tMPI_Free_env_list_destroy( &(th->envelopes) );
     tMPI_Req_list_destroy( &(th->rql) );
 
-#ifdef TMPI_NO_BUSY_WAIT_SEND_RECV
-    tMPI_Thread_mutex_destroy(&(th->ev_check_lock));
-    tMPI_Thread_cond_destroy(&(th->ev_check_cond));
-#endif
+    tMPI_Event_destroy( &(th->p2p_event) );
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     tMPI_Copy_buffer_list_destroy(&(th->cbl_multi));
 #endif

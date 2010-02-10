@@ -50,11 +50,7 @@ files.
 #include <string.h>
 
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
-
+#include "impl.h"
 
 
 /* topology functions */
@@ -134,7 +130,7 @@ int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
     int i,mul=1,ret=0;
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);, 
+    tMPI_Trace_print("tMPI_Cart_get(%p, %p, %p)", comm, coords, rank);
 #endif
     if (!comm)
     {
@@ -272,11 +268,7 @@ static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
         tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#else
-        tMPI_Thread_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
-#endif
     }
 }
 
@@ -291,8 +283,8 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
     
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm, ndims, 
-                     dims, periods, reorder, comm_cart);
+    tMPI_Trace_print("tMPI_Cart_create(%p, %d, %p, %p, %d, %p)", comm_old, 
+                     ndims, dims, periods, reorder, comm_cart);
 #endif
     if (!comm_old)
     {

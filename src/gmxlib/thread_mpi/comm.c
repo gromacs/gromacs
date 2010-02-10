@@ -50,10 +50,7 @@ files.
 #include <string.h>
 
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 /* helper function for tMPI_Comm_split. Splits N entities with color and key
    out so that the output contains Ngroups groups each with elements
@@ -123,22 +120,13 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     } 
 
     ret->Nbarriers=Nbarriers;
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
-    ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)tMPI_Malloc(
-                      sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
-#else
-    ret->multicast_barrier=(tMPI_Thread_barrier_t*)tMPI_Malloc(
-                      sizeof(tMPI_Thread_barrier_t)*(Nbarriers+1));
-#endif
+    ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)
+              tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
     ret->N_multicast_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
     Nred=N;
     for(i=0;i<Nbarriers;i++)
     {
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
         tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
-#else
-        tMPI_Thread_barrier_init( &(ret->multicast_barrier[i]), Nred);
-#endif
         ret->N_multicast_barrier[i]=Nred;
         /* Nred is now Nred/2 + a rest term because solitary 
            process at the end of the list must still be accounter for */
@@ -187,16 +175,8 @@ void tMPI_Comm_destroy(tMPI_Comm comm)
 {
 
     free(comm->grp.peers);
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     free(comm->multicast_barrier);
-#else
-    {
-        int i;
-        for(i=0;i<comm->Nbarriers;i++)
-            tMPI_Thread_barrier_destroy(&(comm->multicast_barrier[i]));
-        free(comm->multicast_barrier);
-    }
-#endif
+
     tMPI_Coll_env_destroy( comm->cev );
     tMPI_Coll_sync_destroy( comm->csync );
 

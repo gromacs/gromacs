@@ -36,58 +36,46 @@ files.
 */
 
 
-/* this file is to be #included from collective.c */
-
-/* broadcast */
-int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
-               tMPI_Comm comm)
-{
-    int synct;
-    struct coll_env *cev;
-    int myrank;
-    int ret=TMPI_SUCCESS;
-    struct tmpi_thread *cur=tMPI_Get_current();
-
-#ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "impl.h"
+
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype, 
-                     root, comm);
+#include <stdarg.h>
 #endif
 
-    if (!comm)
-    {
-        return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
-    }
-    myrank=tMPI_Comm_seek_rank(comm, cur);
 
-    /* we increase our counter, and determine which coll_env we get */
-    cev=tMPI_Get_cev(comm, myrank, &synct);
-
-    if (myrank==root)
-    {
-        /* first set up the data */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype, 
-                        count*datatype->size, buffer, comm->grp.N-1, synct);
-        /* and wait until everybody is done copying */
-        tMPI_Wait_for_others(cev, myrank);
-    }
-    else
-    {
-        size_t bufsize=count*datatype->size;
-        /* wait until root becomes available */
-        tMPI_Wait_for_data(cev, root, synct);
-        tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
-                       buffer, &ret);
-    }
-#ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Bcast); 
-#endif
-    return ret;
+void tMPI_Event_init(tMPI_Event *ev)
+{
+    tMPI_Atomic_set(&(ev->sync), 0);
+    ev->last_sync=0;
 }
 
+void tMPI_Event_destroy(tMPI_Event *ev)
+{
+    tMPI_Atomic_set(&(ev->sync), 0);
+    ev->last_sync=0;
+}
 
-
+int tMPI_Event_wait(tMPI_Event *ev) 
+{
+    while( (tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync)) <= 0 )
+    { 
+        tMPI_Atomic_memory_barrier(); 
+        TMPI_YIELD_WAIT(ev);
+    }
+    return tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync); 
+}
 
 

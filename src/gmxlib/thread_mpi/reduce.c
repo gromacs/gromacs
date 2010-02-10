@@ -102,15 +102,11 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
     /* there's a barrier to wait for all the processes to put their 
        send/recvbuf in the global list */
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-    tMPI_Profile_wait_start_thread(cur);
+    tMPI_Profile_wait_start(cur);
 #endif
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-    tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Reduce);
+    tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
 
     /* check the buffers */
@@ -171,15 +167,11 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             }
             /* split barrier */
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-            tMPI_Profile_wait_start_thread(cur);
+            tMPI_Profile_wait_start(cur);
 #endif
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
             tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
-#else
-            tMPI_Thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-#endif
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-            tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Reduce);
+            tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
         }
         else 
@@ -192,15 +184,11 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
             fflush(0);
 #endif
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-            tMPI_Profile_wait_start_thread(cur);
+            tMPI_Profile_wait_start(cur);
 #endif
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
             tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[iteration]));
-#else
-            tMPI_Thread_barrier_wait( &(comm->multicast_barrier[iteration]));
-#endif
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-            tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Reduce);
+            tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
             break;
         }
@@ -219,9 +207,13 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
                tMPI_Datatype datatype, tMPI_Op op, int root, tMPI_Comm comm)
 {
-    int myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    struct tmpi_thread *cur=tMPI_Get_current();
+    int myrank=tMPI_Comm_seek_rank(comm, cur);
     int ret;
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur);
+#endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Reduce(%p, %p, %d, %p, %p, %d, %p)",
                        sendbuf, recvbuf, count, datatype, op, root, comm);
@@ -246,6 +238,9 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
     {
         free(recvbuf);
     }
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Reduce);
+#endif
     return ret;
 }
 
@@ -257,6 +252,9 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     int myrank=tMPI_Comm_seek_rank(comm, cur);
     int ret;
 
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_start(cur);
+#endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Allreduce(%p, %p, %d, %p, %p, %p)",
                      sendbuf, recvbuf, count, datatype, op, comm);
@@ -277,16 +275,12 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     rootbuf=(void*)comm->recvbuf[0];
 
 
-#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-    tMPI_Profile_wait_start_thread(cur);
+#if defined(TMPI_PROFILE) 
+    tMPI_Profile_wait_start(cur);
 #endif
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
-#endif
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-    tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Reduce);
+    tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
 
     /* and now we just copy things back inefficiently. We should make
@@ -300,17 +294,13 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
         memcpy(recvbuf, rootbuf, datatype->size*count );
     }
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-    tMPI_Profile_wait_start_thread(cur);
+    tMPI_Profile_wait_start(cur);
 #endif
-#ifndef TMPI_NO_BUSY_WAIT_BARRIER
     tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]));
-#else
-    tMPI_Thread_barrier_wait( &(comm->multicast_barrier[0]));
+#if defined(TMPI_PROFILE)
+    tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
+    tMPI_Profile_count_stop(cur, TMPIFN_Allreduce);
 #endif
-#if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
-    tMPI_Profile_wait_stop_thread(cur, TMPIWAIT_Reduce);
-#endif
-
     return ret;
 }
 
