@@ -188,7 +188,7 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
                         sprintf(buf+b,"%s%c%s","\\x",c,"\\f{}");
                         break;
                     case exvgXMGR:
-                        sprintf(buf+b,"%s%c%s","\\4",c,"\\8");
+                        sprintf(buf+b,"%s%c%s","\\8",c,"\\4");
                         break;
                     default:
                         strncat(buf+b,gmx+g,strlen(sym[i]));
@@ -404,7 +404,34 @@ static int wordcount(char *ptr)
   return n;
 }
 
-int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
+static char *read_xvgr_string(const char *line)
+{
+    char *ptr0,*ptr1,*str;
+
+    ptr0 = strchr(line,'"');
+    if (ptr0 != NULL) {
+        ptr0++;
+        ptr1 = strchr(ptr0,'"');
+        if (ptr1 != NULL)
+        {
+            str = strdup(ptr0);
+            str[ptr1-ptr0] = '\0';
+        }
+        else
+        {
+            str = strdup("");
+        }
+    }
+    else
+    {
+        str = strdup("");
+    }
+
+    return str;
+}
+
+int read_xvg_legend(const char *fn,double ***y,int *ny,
+                    char **subtitle,char ***legend)
 {
   FILE   *fp;
   char   *ptr,*ptr0,*ptr1;
@@ -422,6 +449,9 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
   fp   = gmx_fio_fopen(fn,"r");
 
   snew(tmpbuf,len);
+  if (subtitle != NULL) {
+    *subtitle = NULL;
+  }
   legend_nalloc = 0;
   if (legend != NULL) {
     *legend = NULL;
@@ -435,7 +465,13 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
 	ptr++;
 	trim(ptr);
 	set = -1;
-	if (strncmp(ptr,"legend string",13) == 0) {
+    if (strncmp(ptr,"subtitle",8) == 0) {
+	  ptr += 8;
+      if (subtitle != NULL)
+      {
+          *subtitle = read_xvgr_string(ptr);
+      }
+	} else if (strncmp(ptr,"legend string",13) == 0) {
 	  ptr += 13;
 	  sscanf(ptr,"%d%n",&set,&nchar);
 	  ptr += nchar;
@@ -454,17 +490,9 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
 	  if (set >= legend_nalloc) {
 	    legend_nalloc = set + 1;
 	    srenew(*legend,legend_nalloc);
-	    ptr0 = strchr(ptr,'"');
-	    if (ptr0 != NULL) {
-	      ptr0++;
-	      ptr1 = strchr(ptr0,'"');
-	      if (ptr1 != NULL) {
-		(*legend)[set] = strdup(ptr0);
-		(*legend)[set][ptr1-ptr0] = '\0';
-	      }
-	    }
-	  }
-	}
+        (*legend)[set] = read_xvgr_string(ptr);
+      }
+    }
       }
     } else if (ptr[0] != '#') {
       if (nny == 0) {
@@ -527,7 +555,7 @@ int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend)
 
 int read_xvg(const char *fn,double ***y,int *ny)
 {
-  return read_xvg_legend(fn,y,ny,NULL);
+    return read_xvg_legend(fn,y,ny,NULL,NULL);
 }
 
 void write_xvg(const char *fn,const char *title,int nx,int ny,real **y,

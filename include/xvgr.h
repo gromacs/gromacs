@@ -130,10 +130,13 @@ extern void xvgr_box(FILE *out,
                      const output_env_t oenv);
 /* Make a box */
 
-extern int read_xvg_legend(const char *fn,double ***y,int *ny,char ***legend);
+extern int read_xvg_legend(const char *fn,double ***y,int *ny,
+			   char **subtitle,char ***legend);
 /* Read an xvg file for post processing. The number of rows is returned
  * fn is the filename, y is a pointer to a 2D array (to be allocated by
  * the routine) ny is the number of columns (including X if appropriate).
+ * If subtitle!=NULL, read the subtitle (when present),
+ * the subtitle string will be NULL when not present.
  * If legend!=NULL, read the legends for the sets (when present),
  * 0 is the first y legend, the legend string will be NULL when not present.
  */

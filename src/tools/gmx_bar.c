@@ -60,6 +60,7 @@ typedef struct {
     int    np;
     int    begin;
     int    end;
+    double temp;
     double *lambda;
     double *t;
     double **y;
@@ -100,7 +101,7 @@ static double calc_bar_sum(int n,double *W,double beta_Wfac,double sbMmDG)
 }
 
 static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
-                                double delta_lambda,real temp,double prec)
+                                double delta_lambda,double temp,double prec)
 {
     double kT,beta,beta_dl,M;
     double DG;
@@ -308,7 +309,7 @@ static int get_lam_set(barsim_t *ba,double lambda)
 }
 
 static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
-                     real temp,double tol,
+                     double tol,
                      int npee_min,int npee_max,
                      barres_t *br, bool calc_s, bool calc_var)
 {
@@ -341,20 +342,20 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
 
     br->dg = calc_bar_lowlevel(np1,ba1->y[s1]+ba1->begin,
                                np2,ba2->y[s2]+ba2->begin,
-                               delta_lambda,temp,tol);
+                               delta_lambda,ba1->temp,tol);
 
 
     if (calc_s)
     {
         calc_rel_entropy(np1, ba1->y[s1]+ba1->begin,
                          np2, ba2->y[s2]+ba2->begin,
-                         delta_lambda, temp, br->dg, &(br->sa), &(br->sb));
+                         delta_lambda, ba1->temp, br->dg, &(br->sa), &(br->sb));
     }
     if (calc_var)
     {
         calc_dg_variance(np1, ba1->y[s1]+ba1->begin,
                          np2, ba2->y[s2]+ba2->begin,
-                         delta_lambda, temp, br->dg, &(br->dg_var) );
+                         delta_lambda, ba1->temp, br->dg, &(br->dg_var) );
     }
 
 
@@ -383,7 +384,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                                         ba1->y[s1]+ba1->begin+p*(np1/npee),
                                         np2/npee,
                                         ba2->y[s2]+ba2->begin+p*(np2/npee),
-                                        delta_lambda,temp,tol);
+                                        delta_lambda,ba1->temp,tol);
                 dgs  += dgp;
                 dgs2 += dgp*dgp;
 
@@ -394,7 +395,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                                      ba1->y[s1]+ba1->begin+p*(np1/npee),
                                      np2/npee, 
                                      ba2->y[s2]+ba2->begin+p*(np2/npee),
-                                     delta_lambda, temp, dgp, &sac, &sbc); 
+                                     delta_lambda, ba1->temp, dgp, &sac, &sbc); 
                     dsa  += sac;
                     dsa2 += sac*sac;
                     dsb  += sbc;
@@ -407,7 +408,7 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                                      ba1->y[s1]+ba1->begin+p*(np1/npee),
                                      np2/npee, 
                                      ba2->y[s2]+ba2->begin+p*(np2/npee),
-                                     delta_lambda, temp, dgp, &varc );
+                                     delta_lambda, ba1->temp, dgp, &varc );
 
                     dvar  += varc;
                     dvar2 += varc*varc;
@@ -504,16 +505,17 @@ static double filename2lambda(char *fn)
     return lambda;
 }
 
-static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
+static void read_barsim(char *fn,double begin,double end,real temp,
+                        barsim_t *ba)
 {
     int  i;
-    char **legend,*ptr;
+    char *subtitle,**legend,*ptr;
 
     ba->filename = fn;
 
     printf("'%s' ",ba->filename);
 
-    ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&legend);
+    ba->np = read_xvg_legend(fn,&ba->y,&ba->nset,&subtitle,&legend);
     if (!ba->y)
     {
         gmx_fatal(FARGS,"File %s contains no usable data.",fn);
@@ -523,6 +525,32 @@ static void read_barsim(char *fn,double begin,double end,barsim_t *ba)
     get_begin_end(ba,begin,end,&ba->begin,&ba->end);
     printf("%.1f - %.1f, %6d points, lam:",
            ba->t[ba->begin],ba->t[ba->end-1],ba->end-ba->begin);
+
+    ba->temp = -1;
+    if (subtitle != NULL)
+    {
+        ptr = strstr(subtitle,"T =");
+        if (ptr != NULL)
+        {
+            ptr += 3;
+            if (sscanf(ptr,"%lf",&ba->temp) == 1)
+            {
+                if (ba->temp <= 0)
+                {
+                    gmx_fatal(FARGS,"Found temperature of %g in file '%s'",
+                              ba->temp,fn);
+                }
+            }
+        }
+    }
+    if (ba->temp < 0)
+    {
+        if (temp <= 0)
+        {
+            gmx_fatal(FARGS,"Did not find a temperature in the subtitle in file '%s', use the -temp option of g_bar",fn);
+        }
+        ba->temp = temp;
+    }
 
     snew(ba->lambda,ba->nset-1);
     if (legend == NULL)
@@ -610,7 +638,7 @@ int gmx_bar(int argc,char *argv[])
         "for identical distributions. See ",
         "Wu & Kofke, J. Chem. Phys. 123 084109 (2009) for more information."
     };
-    static real begin=0,end=-1,temp=298;
+    static real begin=0,end=-1,temp=-1;
     static int nd=2,nbmin=5,nbmax=5;
     bool calc_s,calc_v;
     t_pargs pa[] = {
@@ -666,8 +694,12 @@ int gmx_bar(int argc,char *argv[])
     nm = 0;
     for(f=0; f<nfile; f++)
     {
-        read_barsim(fnms[f],begin,end,&ba[f]);
-        
+        read_barsim(fnms[f],begin,end,temp,&ba[f]);
+        if (f > 0 && ba[f].temp != ba[0].temp)
+        {
+            printf("\nWARNING: temperature for file '%s' (%g) is not equal to that of file '%s' (%g)\n\n",fnms[f],ba[f].temp,fnms[0],ba[0].temp);
+        }
+
         if (ba[f].nset == 0)
         {
             gmx_fatal(FARGS,"File '%s' contains less than two columns",fnms[f]);
@@ -718,9 +750,9 @@ int gmx_bar(int argc,char *argv[])
     fpb = NULL;
     if (opt2bSet("-o",NFILE,fnm))
     {
-        sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
+        sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
         fpb = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
-                      "\\8l\\4",unit_energy,oenv);
+                      "\\lambda",buf,oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fpb,"@TYPE xydy\n");
@@ -730,9 +762,9 @@ int gmx_bar(int argc,char *argv[])
     fpi = NULL;
     if (opt2bSet("-oi",NFILE,fnm))
     {
-        sprintf(buf,"%s (%s)","\\8D\\4G",unit_energy);
+        sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
-                      "\\8l\\4",unit_energy,oenv);
+                      "\\lambda",buf,oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fpi,"@TYPE xydy\n");
@@ -749,7 +781,7 @@ int gmx_bar(int argc,char *argv[])
             fprintf(fpi,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
         }
 
-        calc_bar(&ba[f], &ba[f+1], n1>0, temp, prec, nbmin, nbmax,
+        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax,
                  &(results[f]), calc_s, calc_v);
 
         if (fpb != NULL)
@@ -807,6 +839,7 @@ int gmx_bar(int argc,char *argv[])
     }
 
     do_view(oenv,opt2fn_null("-o",NFILE,fnm),"-xydy");
+    do_view(oenv,opt2fn_null("-oi",NFILE,fnm),"-xydy");
     
     thanx(stderr);
     
