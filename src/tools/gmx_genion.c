@@ -231,7 +231,7 @@ static void update_topol(const char *topinout,int p_num,int n_num,
 {
 #define TEMP_FILENM "temp.top"
   FILE *fpin,*fpout;
-  char  buf[STRLEN],buf2[STRLEN],*temp,**mol_line;
+  char  buf[STRLEN],buf2[STRLEN],*temp,**mol_line=NULL;
   int  line,i,nsol,nmol_line,sol_line,nsol_last;
   bool bMolecules;
   
