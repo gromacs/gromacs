@@ -227,6 +227,9 @@ static void calc_dg_variance(int n1, double *W1, int n2, double *W2,
     double kT, beta;
     double Wfac1, Wfac2;
 
+    double nn1=n1; /* this makes the fraction in the *var eq below nicer */
+    double nn2=n2;
+
     kT   = BOLTZ*temp;
     beta = 1/kT;
 
@@ -257,7 +260,7 @@ static void calc_dg_variance(int n1, double *W1, int n2, double *W2,
    
     /* Eq. 10 from 
        Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
-    *var = kT*kT*((1./sigmafact) - ( (n1+n2)/n1 + (n1+n2)/n2 ));
+    *var = kT*kT*((1./sigmafact) - ( (nn1+nn2)/nn1 + (nn1+nn2)/nn2 ));
 }
 
 
