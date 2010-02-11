@@ -315,10 +315,15 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     // Abort if unsupported critical options are present
 
     /* Integrator */
-    if (!EI_DYNAMICS(ir->eI))
+    if ( (ir->eI !=  eiVV)   &&  
+         (ir->eI !=  eiVVAK) && 
+         (ir->eI !=  eiSD1)  && 
+         (ir->eI !=  eiSD2)  && 
+         (ir->eI !=  eiBD) 
+       )
     {
         gmx_fatal(FARGS, "** OpenMM Error ** : Unsupported integrator requested."
-                "Available integrators are: md, sd, and bd. \n");
+                "Available integrators are: md-vv/md-vvak, sd/sd1, and bd. \n");
     }
 
     /* Electroctstics */
@@ -332,11 +337,10 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     if (ir->bPeriodicMols)
         gmx_fatal(FARGS,"** OpenMM Error ** : Systems with periodic molecules ares not supported\n");
 
-    if (ir->etc != etcNO)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Temperature coupling can be achieved only by using the \"sd\" or \"bd\" integrators and the \"ref-t\" option. \n");
+    if ( (ir->etc != etcNO) && (ir->etc != etcANDERSEN) && (ir->etc != etcANDERSENINTERVAL))
+        gmx_fatal(FARGS,"** OpenMM Error ** : Temperature coupling can be achieved by using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or \"andersen-interval\" thermostat, or \n\t(2)\t\"sd\",\"sd1\" or \"bd\" integrators\n");
 
-    else
-		if (ir->opts.ngtc > 1)
+	if (ir->opts.ngtc > 1)
         	gmx_fatal(FARGS,"** OpenMM Error ** : Multiple temperature coupling groups are not supported. \n");
 
     if (ir->epc != etcNO)
@@ -684,8 +688,15 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
     real friction = (ir->opts.tau_t[0] == 0.0 ? 0.0 : 1.0/ir->opts.tau_t[0]);
     Integrator* integ;
-    if (ir->eI == eiMD)
+    if (ir->eI == eiVV || ir->eI == eiVVAK) {
         integ = new VerletIntegrator(ir->delta_t);
+        if ( ir->etc == etcANDERSEN) {
+           real collisionFreq = ir->opts.tau_t[0] / 1000; /* tau_t (ps) / 1000 = collisionFreq (fs^-1) */
+           AndersenThermostat* thermostat = new AndersenThermostat(ir->opts.ref_t[0], friction); /* TODO test this  */
+           sys->addForce(thermostat);
+        }
+    }
+
     else if (ir->eI == eiBD) {
         integ = new BrownianIntegrator(ir->opts.ref_t[0], friction, ir->delta_t);
         static_cast<BrownianIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); /* TODO test this */
@@ -693,6 +704,10 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
     else if (EI_SD(ir->eI)) {
         integ = new LangevinIntegrator(ir->opts.ref_t[0], friction, ir->delta_t);
         static_cast<LangevinIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); /* TODO test this */
+    }
+    else {
+        gmx_fatal(FARGS, "** OpenMM Error ** : Unsupported integrator requested."
+                "Available integrators are: md-vv/md-vvak, sd/sd1, and bd. \n");
     }
 
     integ->setConstraintTolerance(ir->shake_tol);
