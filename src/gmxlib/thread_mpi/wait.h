@@ -55,15 +55,28 @@ files.
 #define TMPI_YIELD_WAIT(data)  sched_yield()
 
 #else
-/* and in Windows, we do Sleep(0) */
-
+/* and in Windows, we do SwitchToThread() alternated with Sleep(0). This
+   is apparently recommende practice (SwitchToThread() alone just gives
+   up the slice for threads on the current core, and Sleep(0) alone could
+   lead to starvation. This mixed approach actually gives better real-world 
+   performance in the test program.*/
 /* the data associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA
+#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
 /* the initialization  associated with waiting. */
-#define TMPI_YIELD_WAIT_DATA_INIT(data)
+#define TMPI_YIELD_WAIT_DATA_INIT(data) { (data)->yield_wait_counter=0; }
 
-/* the waiting macro */
-#define TMPI_YIELD_WAIT(data)  SwitchToThread()
+/* the waiting macro is so complicated because using SwitchToThread only schedules */
+#define TMPI_YIELD_WAIT(data)  { \
+    if ( ((data)->yield_wait_counter++)%100 == 0 ) \
+    {\
+        SwitchToThread();\
+    }\
+    else\
+    {\
+        Sleep(0);\
+    }\
+}
+
 #endif
 
 

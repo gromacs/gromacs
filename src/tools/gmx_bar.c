@@ -219,7 +219,7 @@ static void calc_rel_entropy(int n1,double *W1,int n2,double *W2,
 
 static void calc_dg_stddev(int n1, double *W1, int n2, double *W2, 
                              double delta_lambda, double temp, 
-                             double dg, double *var)
+                             double dg, double *stddev)
 {
     int i;
     double M;
@@ -227,7 +227,7 @@ static void calc_dg_stddev(int n1, double *W1, int n2, double *W2,
     double kT, beta;
     double Wfac1, Wfac2;
 
-    double nn1=n1; /* this makes the fraction in the *var eq below nicer */
+    double nn1=n1; /* this makes the fraction in the *stddev eq below nicer */
     double nn2=n2;
 
     kT   = BOLTZ*temp;
@@ -254,13 +254,13 @@ static void calc_dg_stddev(int n1, double *W1, int n2, double *W2,
     }
     for(i=0;i<n2;i++)
     {
-        sigmafact += 1./(2. + 2.*cosh((M + Wfac2*W2[i] - dg)));
+        sigmafact += 1./(2. + 2.*cosh((M + Wfac2*W2[i] + dg)));
     }
     sigmafact/=(n1+n2);
    
     /* Eq. 10 from 
        Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
-    *var = sqrt(((1./sigmafact) - ( (nn1+nn2)/nn1 + (nn1+nn2)/nn2 )));
+    *stddev = sqrt(((1./sigmafact) - ( (nn1+nn2)/nn1 + (nn1+nn2)/nn2 )));
 }
 
 
@@ -312,14 +312,12 @@ static int get_lam_set(barsim_t *ba,double lambda)
 }
 
 static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
-                     double tol,
-                     int npee_min,int npee_max,
-                     barres_t *br, bool calc_s, bool calc_var)
+                     double tol, int npee_min,int npee_max, barres_t *br)
 {
     int np1,np2,s1,s2,npee,p;
     double delta_lambda; 
-    double dg_sig2,sa_sig2,sb_sig2,var_sig2; /* intermediate variance values
-                                                for calculated quantities */
+    double dg_sig2,sa_sig2,sb_sig2,stddev_sig2; /* intermediate variance values
+                                                   for calculated quantities */
     br->a = ba1;
     br->b = ba2;
     br->lambda_a = ba1->lambda[0];
@@ -348,41 +346,37 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                                delta_lambda,ba1->temp,tol);
 
 
-    if (calc_s)
-    {
-        calc_rel_entropy(np1, ba1->y[s1]+ba1->begin,
-                         np2, ba2->y[s2]+ba2->begin,
-                         delta_lambda, ba1->temp, br->dg, &(br->sa), &(br->sb));
-    }
-    if (calc_var)
-    {
-        calc_dg_stddev(np1, ba1->y[s1]+ba1->begin,
-                         np2, ba2->y[s2]+ba2->begin,
-                         delta_lambda, ba1->temp, br->dg, &(br->dg_stddev) );
-    }
+    calc_rel_entropy(np1, ba1->y[s1]+ba1->begin,
+                     np2, ba2->y[s2]+ba2->begin,
+                     delta_lambda, ba1->temp, br->dg, &(br->sa), &(br->sb));
+    calc_dg_stddev(np1, ba1->y[s1]+ba1->begin,
+                   np2, ba2->y[s2]+ba2->begin,
+                   delta_lambda, ba1->temp, br->dg, &(br->dg_stddev) );
 
 
     dg_sig2 = 0;
     sa_sig2 = 0;
     sb_sig2 = 0;
-    var_sig2 = 0;
+    stddev_sig2 = 0;
     if (np1 >= npee_max && np2 >= npee_max)
     {
         for(npee=npee_min; npee<=npee_max; npee++)
         {
-            double dgs  = 0;
-            double dgs2 = 0;
-            double dsa  = 0;
-            double dsb  = 0;
-            double dsa2 = 0;
-            double dsb2 = 0;
-            double dvar = 0;
-            double dvar2= 0;
+            double dgs      = 0;
+            double dgs2     = 0;
+            double dsa      = 0;
+            double dsb      = 0;
+            double dsa2     = 0;
+            double dsb2     = 0;
+            double dstddev  = 0;
+            double dstddev2 = 0;
  
             
             for(p=0; p<npee; p++)
             {
                 double dgp;
+                double stddevc;
+                double sac, sbc;
                 dgp = calc_bar_lowlevel(np1/npee,
                                         ba1->y[s1]+ba1->begin+p*(np1/npee),
                                         np2/npee,
@@ -391,63 +385,44 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                 dgs  += dgp;
                 dgs2 += dgp*dgp;
 
-                if (calc_s)
-                {
-                    double sac, sbc;
-                    calc_rel_entropy(np1/npee, 
-                                     ba1->y[s1]+ba1->begin+p*(np1/npee),
-                                     np2/npee, 
-                                     ba2->y[s2]+ba2->begin+p*(np2/npee),
-                                     delta_lambda, ba1->temp, dgp, &sac, &sbc); 
-                    dsa  += sac;
-                    dsa2 += sac*sac;
-                    dsb  += sbc;
-                    dsb2 += sbc*sbc;
-                }
-                if (calc_var)
-                {
-                    double varc;
-                    calc_dg_stddev(np1/npee, 
-                                     ba1->y[s1]+ba1->begin+p*(np1/npee),
-                                     np2/npee, 
-                                     ba2->y[s2]+ba2->begin+p*(np2/npee),
-                                     delta_lambda, ba1->temp, dgp, &varc );
+                calc_rel_entropy(np1/npee, 
+                                 ba1->y[s1]+ba1->begin+p*(np1/npee),
+                                 np2/npee, 
+                                 ba2->y[s2]+ba2->begin+p*(np2/npee),
+                                 delta_lambda, ba1->temp, dgp, &sac, &sbc); 
+                dsa  += sac;
+                dsa2 += sac*sac;
+                dsb  += sbc;
+                dsb2 += sbc*sbc;
+                calc_dg_stddev(np1/npee, 
+                               ba1->y[s1]+ba1->begin+p*(np1/npee),
+                               np2/npee, 
+                               ba2->y[s2]+ba2->begin+p*(np2/npee),
+                               delta_lambda, ba1->temp, dgp, &stddevc );
 
-                    dvar  += varc;
-                    dvar2 += varc*varc;
-                }
+                dstddev  += stddevc;
+                dstddev2 += stddevc*stddevc;
 
             }
             dgs  /= npee;
             dgs2 /= npee;
             dg_sig2 += (dgs2-dgs*dgs)/(npee-1);
 
-            if (calc_s)
-            {
-                dsa  /= npee;
-                dsa2 /= npee;
-                dsb  /= npee;
-                dsb2 /= npee;
-                sa_sig2 += (dsa2-dsa*dsa)/(npee-1);
-                sb_sig2 += (dsb2-dsb*dsb)/(npee-1);
-            }
-            if (calc_var)
-            {
-                dvar  /= npee;
-                dvar2 /= npee;
-                var_sig2 += (dvar2-dvar*dvar)/(npee-1);
-            }
+            dsa  /= npee;
+            dsa2 /= npee;
+            dsb  /= npee;
+            dsb2 /= npee;
+            sa_sig2 += (dsa2-dsa*dsa)/(npee-1);
+            sb_sig2 += (dsb2-dsb*dsb)/(npee-1);
+
+            dstddev  /= npee;
+            dstddev2 /= npee;
+            stddev_sig2 += (dstddev2-dstddev*dstddev)/(npee-1);
         }
         br->dg_err = sqrt(dg_sig2/(npee_max - npee_min + 1));
-        if (calc_s)
-        {
-            br->sa_err = sqrt(sa_sig2/(npee_max - npee_min + 1));
-            br->sb_err = sqrt(sb_sig2/(npee_max - npee_min + 1));
-        }
-        if (calc_var)
-        {
-            br->dg_stddev_err = sqrt(var_sig2/(npee_max - npee_min + 1));
-        }
+        br->sa_err = sqrt(sa_sig2/(npee_max - npee_min + 1));
+        br->sb_err = sqrt(sb_sig2/(npee_max - npee_min + 1));
+        br->dg_stddev_err = sqrt(stddev_sig2/(npee_max - npee_min + 1));
  
     }
 }
@@ -667,8 +642,6 @@ int gmx_bar(int argc,char *argv[])
         { "-e",    FALSE, etREAL, {&end},    "End time for BAR" },
         { "-temp", FALSE, etREAL, {&temp},   "Temperature (K)" },
         { "-prec", FALSE, etINT,  {&nd},     "The number of digits after the decimal point" },
-    /*    { "-s",    FALSE, etBOOL, {&calc_s}, "Calculate relative entropy"},
-        { "-v",    FALSE, etBOOL, {&calc_v}, "Calculate expected per-sample variance"},*/
         { "-nbmin",  FALSE, etINT,  {&nbmin}, "Minimum number of blocks for error estimation" },
         { "-nbmax",  FALSE, etINT,  {&nbmax}, "Maximum number of blocks for error estimation" }
     };
@@ -691,6 +664,7 @@ int gmx_bar(int argc,char *argv[])
     char     kteformat[STRLEN], skteformat[STRLEN];
     output_env_t oenv;
     double   kT, beta;
+    bool     result_OK=TRUE;
     
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
@@ -710,10 +684,10 @@ int gmx_bar(int argc,char *argv[])
     prec = pow(10,-nd);
     sprintf( dgformat,"%%%d.%df",3+nd,nd);
     /* the format strings of the results in kT */
-    sprintf( ktformat,"%%%d.%df",6+nd,nd);
+    sprintf( ktformat,"%%%d.%df",5+nd,nd);
     sprintf( sktformat,"%%%ds",6+nd);
     /* the format strings of the errors in kT */
-    sprintf( kteformat,"%%%d.%df",4+nd,nd);
+    sprintf( kteformat,"%%%d.%df",3+nd,nd);
     sprintf( skteformat,"%%%ds",4+nd);
     sprintf(xvgformat,"%s %s %s\n","%g",dgformat,dgformat);
 
@@ -805,8 +779,7 @@ int gmx_bar(int argc,char *argv[])
     for(f=0; f<nfile-1; f++)
     {
         
-        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax,
-                 &(results[f]), TRUE, TRUE);
+        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax, &(results[f]));
     }
 
     /* print results in kT */
@@ -814,7 +787,6 @@ int gmx_bar(int argc,char *argv[])
     beta = 1/kT;
 
     printf("\nDetailed results in kT (see help for explanation):\n\n");
-    printf(" ");
     printf(skteformat, "lam_A ");
     printf(skteformat, "lam_B ");
     printf(sktformat,  "DG ");
@@ -829,16 +801,42 @@ int gmx_bar(int argc,char *argv[])
     for(f=0; f<nfile-1; f++)
     {
         printf(kteformat, results[f].lambda_a);
+        printf(" ");
         printf(kteformat, results[f].lambda_b);
+        printf(" ");
         printf(ktformat,  results[f].dg);
+        printf(" ");
         printf(kteformat, results[f].dg_err);
+        printf(" ");
         printf(ktformat,  results[f].sa);
+        printf(" ");
         printf(kteformat, results[f].sa_err);
+        printf(" ");
         printf(ktformat,  results[f].sb);
+        printf(" ");
         printf(kteformat, results[f].sb_err);
+        printf(" ");
         printf(ktformat,  results[f].dg_stddev);
+        printf(" ");
         printf(kteformat, results[f].dg_stddev_err);
         printf("\n");
+
+        /* check for significant negative relative entropy */
+        if ( (results[f].sa<0 && (results[f].sa_err<fabs(results[f].sa))) ||
+             (results[f].sb<0 && (results[f].sb_err<fabs(results[f].sb))) )
+        {
+            result_OK=FALSE;
+        }
+    }
+
+    if (!result_OK)
+    {
+
+        warning("Some of these results violate the Second Law of "
+                "Thermodynamics: \n"
+                "This is can be the result of severe "
+                "undersampling, or (more likely) there is something wrong "
+                "with the simulation.\n");
     }
 
 

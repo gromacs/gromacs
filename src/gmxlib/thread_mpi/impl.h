@@ -46,10 +46,16 @@ files.
 #include "thread_mpi/barrier.h"
 #include "wait.h"
 #include "barrier.h"
+#include "event.h"
 
 
 
-/* BASIC DEFINITIONS */
+/**************************************************************************
+   
+  BASIC DEFINITIONS 
+   
+**************************************************************************/
+
 
 
 #ifndef __cplusplus
@@ -70,7 +76,12 @@ typedef int bool;
 
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
-/* PRE-ALLOCATED COMMUNICATION BUFFERS */
+/**************************************************************************
+   
+   PRE-ALLOCATED COMMUNICATION BUFFERS 
+   
+**************************************************************************/
+
 
 /* Buffer structure. Every thread structure has several of these ready to
    be used when the data transmission is small enough for double copying to 
@@ -109,7 +120,11 @@ struct copy_buffer_list
 
 
 
-/* POINT-TO-POINT COMMUNICATION DATA STRUCTURES */
+/**************************************************************************
+   
+   POINT-TO-POINT COMMUNICATION DATA STRUCTURES 
+   
+**************************************************************************/
 
 /* the message envelopes (as described in the MPI standard). 
    These fully describes the message, and make each message unique (enough).
@@ -269,7 +284,11 @@ struct req_list
 
 
 
-/* MULTICAST COMMUNICATION DATA STRUCTURES */
+/**************************************************************************
+
+  MULTICAST COMMUNICATION DATA STRUCTURES 
+
+**************************************************************************/
 
 /* these are data structures meant for keeping track of multicast operations
    (tMPI_Bcast, tMPI_Gather, etc.). Because these operations are all collective
@@ -354,8 +373,12 @@ struct coll_sync
 
 
 
+/**************************************************************************
 
-/* GLOBALLY AVAILABLE DATA STRUCTURES */
+  THREAD & GLOBALLY AVAILABLE DATA STRUCTURES 
+
+**************************************************************************/
+
 #ifdef TMPI_PROFILE
 #include "profile.h"
 #endif
@@ -371,16 +394,18 @@ struct tmpi_thread
     struct recv_envelope_list evr;
     /* the send envelopes posted by other threadas */
     struct send_envelope_list *evs;
+    /* free send and receive envelopes */
+    struct free_envelope_list envelopes; 
 
-    tMPI_Atomic_t ev_outgoing_received; /* number of finished send envelopes */
-
+    /* number of finished send envelopes */
+    tMPI_Atomic_t ev_outgoing_received; 
     /* the p2p communication events (incoming envelopes + finished send 
        envelopes generate events) */
     tMPI_Event p2p_event;
+    TMPI_YIELD_WAIT_DATA /* data associated with waiting */
 
     struct req_list rql;  /* list of pre-allocated requests */
 
-    struct free_envelope_list envelopes; /* free envelopes */
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* copy buffer list for multicast communications */
     struct copy_buffer_list cbl_multi; 
@@ -389,16 +414,17 @@ struct tmpi_thread
     tMPI_Comm self_comm; /* comms for MPI_COMM_SELF */
 
 #ifdef TMPI_PROFILE
+    /* the per-thread profile structure that keeps call counts & wait times. */
     struct tmpi_profile profile;
 #endif
+    /* The start function (or NULL, if main() is to be called) */
+    void (*start_fn)(void*); 
+    /* the argument to the start function, if it's not main()*/
+    void *start_arg; 
 
-    void (*start_fn)(void*); /* The start function (or NULL, if main() is to be
-                                called) */
-    void *start_arg; /* the argument to the start function, if it's not main()*/
-
-    /* we copy these for each thread (this is not required by the 
-       MPI standard, but it's convenient). Note that we copy, because
-       some programs (like Gromacs) like to manipulate these. */    
+    /* we copy these for each thread (providing these to main() is not 
+       required by the MPI standard, but it's convenient). Note that we copy, 
+       because some programs (like Gromacs) like to manipulate these. */    
     int argc;
     char **argv;
 };
@@ -426,6 +452,16 @@ struct tmpi_global
 
     /* spinlock/mutex for manipulating tmpi_user_types */
     tMPI_Spinlock_t  datatype_lock;
+
+    /* the timer for tMPI_Wtime() */
+    tMPI_Thread_mutex_t timer_mutex;
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
+    /* the time at initialization. */
+    struct timeval timer_init;
+#else
+    /* the time at initialization. */
+    DWORD timer_init;
+#endif
 };
 
 
@@ -445,8 +481,11 @@ struct tmpi_global
 
 
 
-/* COMMUNICATOR DATA STRUCTURES */
+/**************************************************************************
 
+  COMMUNICATOR DATA STRUCTURES 
+
+**************************************************************************/
 
 
 struct tmpi_group_
@@ -490,6 +529,9 @@ struct tmpi_comm_
     tMPI_Thread_cond_t comm_create_finish;
 
     tMPI_Comm *new_comm; /* newly created communicators */
+
+    /* the split structure is shared among the comm threads and is 
+       allocated & deallocated during tMPI_Comm_split */
     struct tmpi_split *split;
 
     /* the topologies (only cartesian topology is currently implemented */
@@ -498,7 +540,9 @@ struct tmpi_comm_
 
     tMPI_Errhandler erh;
 
-    /* links of a global list of all comms that starts at TMPI_COMM_WORLD */
+    /* links for a global circular list of all comms that starts at 
+       TMPI_COMM_WORLD. Used to de-allocate the comm structures after 
+       tMPI_Finalize(). */
     struct tmpi_comm_ *next,*prev;
 };
 
@@ -532,7 +576,11 @@ struct tmpi_graph_topol_
 
 
 
+/**************************************************************************
 
+  DATA TYPE DATA STRUCTURES
+
+**************************************************************************/
 
 /* tMPI_Reduce Op functions */
 typedef void (*tMPI_Op_fn)(void*, void*, void*, int);
@@ -558,28 +606,17 @@ typedef struct tmpi_datatype_ tmpi_dt;
 
 
 
-#if 0
-#ifdef TMPI_PROFILE
-/* bookkeeping structure for a single call */
-struct tmpi_profile_call_
-{
-    int Ncalls;
-    int Nbuffered; 
-}
-
-/* bookkeeping structure for profiling */
-struct tmpi_profile_
-{
-    struct tmpi_profile_call_ tMPI_Send;
-}; 
-#endif
-#endif
 
 
 
 
 
-/* global variables */
+/**************************************************************************
+
+  GLOBAL VARIABLES
+
+**************************************************************************/
+
 
 /* the threads themselves (tmpi_comm only contains lists of pointers to this
          structure */
@@ -595,6 +632,15 @@ extern struct tmpi_global *tmpi_global;
 
 
 
+
+
+
+
+/**************************************************************************
+
+  FUNCTION PROTOTYPES & MACROS
+
+**************************************************************************/
 
 #ifdef TMPI_TRACE
 void tMPI_Trace_print(const char *fmt, ...);
@@ -649,6 +695,11 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N);
 void tMPI_Comm_destroy(tMPI_Comm comm);
 /* allocate a group object */
 tMPI_Group tMPI_Group_alloc(void);
+
+/* topology functions */
+/* de-allocate a cartesian topology structure. (it is allocated with
+   the internal function tMPI_Cart_init()) */
+void tMPI_Cart_destroy(struct cart_topol *top);
 
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER

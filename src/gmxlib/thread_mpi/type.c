@@ -146,6 +146,7 @@ files.
 #include "tmpi_ops.c"
 
 
+/* These are the fundamental data types. They exist as global variables */
 tmpi_dt tmpi_char    ={sizeof(char),              oplist_CHAR,     0,NULL,TRUE};
 tmpi_dt tmpi_short   ={sizeof(short),             oplist_SHORT,    0,NULL,TRUE};
 tmpi_dt tmpi_int     ={sizeof(int),               oplist_INT,      0,NULL,TRUE};
@@ -170,7 +171,7 @@ tmpi_dt tmpi_pointer ={sizeof(void*),             NULL,            0,NULL,TRUE};
 
 
 
-
+/* the variable types as they are referred to from MPI */
 const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
 const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
 const tMPI_Datatype TMPI_INT                = &tmpi_int;

@@ -138,6 +138,10 @@ void tMPI_Profile_init(struct tmpi_profile *prof)
     prof->total_coll_xfers=0;
 }
 
+void tMPI_Profile_destroy(struct tmpi_profile *prof)
+{
+}
+
 
 
 
@@ -307,17 +311,11 @@ void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads)
         printf("-");
     printf("\n");
 
+    /* here we make use of the fact that this is how we calculate tMPI_Wtime */
+    printf("\nTotal run time: %g +/- %g s.\n", tMPI_Wtime(), tMPI_Wtick());
+
     printf("\n");
 
 }
 
-/* destroy all of them  */
-void tMPI_Profiles_destroy(int Nthreads, struct tmpi_thread *threads)
-{
-    /*
-    int i;
-
-    for(i=0;i<Nthreads;i++)
-        tMPI_Free(threads[i].profile);*/
-}
 #endif

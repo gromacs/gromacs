@@ -56,11 +56,7 @@ files.
    
    This structure allows notification of a single thread by any number of 
    threads*/
-typedef struct tMPI_Event
-{
-    tMPI_Atomic_t sync; /* the event sync counter */
-    int last_sync; /* the last sync event looked at */
-} tMPI_Event;
+typedef struct tMPI_Event tMPI_Event;
 
 
 /*! \brief Initialize the event object.

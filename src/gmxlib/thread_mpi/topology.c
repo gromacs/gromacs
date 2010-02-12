@@ -272,6 +272,15 @@ static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
     }
 }
 
+void tMPI_Cart_destroy(struct cart_topol *cart)
+{
+    if (cart)
+    {
+        free(cart->dims);
+        free(cart->periods);
+    }
+}
+
 int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
                      int reorder, tMPI_Comm *comm_cart)
 {

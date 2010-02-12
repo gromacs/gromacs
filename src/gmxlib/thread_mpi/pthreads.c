@@ -510,16 +510,4 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *   barrier)
 }
 
 
-
-void tMPI_Lockfile(FILE *stream)
-{
-    flockfile(stream);
-}
-
-
-void tMPI_Unlockfile(FILE *stream)
-{
-    funlockfile(stream);
-}
-
 #endif /* THREAD_PTHREADS */

@@ -862,19 +862,4 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     return ret;
 }
 
-
-
-void tMPI_lockfile(FILE *stream)
-{
-    /*    flockfile(stream);*/
-    /* TODO: implement this */
-}
-
-
-void tMPI_unlockfile(FILE *stream)
-{
-    /*    funlockfile(stream);*/
-    /* TODO: implement this */
-}
-
 #endif /* THREAD_WINDOWS  */

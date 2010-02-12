@@ -154,7 +154,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     for(i=0;i<N;i++)
         tMPI_Coll_sync_init( &(ret->csync[i]));
 
-    /* we insert ourselves after TMPI_COMM_WORLD */
+    /* we insert ourselves in the circular list, after TMPI_COMM_WORLD */
     if (TMPI_COMM_WORLD)
     {
         ret->next=TMPI_COMM_WORLD;
@@ -173,12 +173,18 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 
 void tMPI_Comm_destroy(tMPI_Comm comm)
 {
+    int i;
 
     free(comm->grp.peers);
     free(comm->multicast_barrier);
+    free(comm->N_multicast_barrier);
 
-    tMPI_Coll_env_destroy( comm->cev );
-    tMPI_Coll_sync_destroy( comm->csync );
+    for(i=0;i<N_COLL_ENV;i++)
+        tMPI_Coll_env_destroy( &(comm->cev[i]) );
+    for(i=0;i<comm->grp.N;i++)
+        tMPI_Coll_sync_destroy( &(comm->csync[i]) );
+    free(comm->cev);
+    free(comm->csync);
 
     tMPI_Thread_mutex_destroy( &(comm->comm_create_lock) );
     tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
@@ -186,13 +192,14 @@ void tMPI_Comm_destroy(tMPI_Comm comm)
 
     free((void*)comm->sendbuf);
     free((void*)comm->recvbuf);
+
     if ( comm->cart )
     {
-        free(comm->cart->dims);
-        free(comm->cart->periods);
+        tMPI_Cart_destroy( comm->cart );
         free(comm->cart);
     }
 
+    /* remove ourselves from the circular list */
     if (comm->next)
         comm->next->prev=comm->prev;
     if (comm->prev)
@@ -474,6 +481,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
             free(comm_N);
         }
         free(comm_groups);
+        free(comms);
         spl->can_finish=TRUE;
 
         /* tell the waiting threads that there's a comm ready */

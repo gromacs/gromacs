@@ -35,50 +35,10 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-#ifndef _TMPI_BARRIER_H_
-#define _TMPI_BARRIER_H_
 
-/** Fast (possibly busy-wait-based) barrier type
- *
- *  This barrier has the same functionality as the standard
- *  tMPI_Thread_barrier_t, but since it is based on spinlocks that yield 
- *  to the scheduler in case of waiting, it provides faster synchronization 
- *  at the cost of busy-waiting, while still behaving relatively nicely
- *  to other processes/threads. This is therefore the preferred type of
- *  barrier for when waits are expected to be reasonably short.
- *
- *  Variables of this type should be initialized by calling
- *  tMPI_Spinlock_barrier_init() to set the number of threads
- *  that should be synchronized.
- * 
- * \see
- * - tMPI_Spinlock_barrier_init
- * - tMPI_Spinlock_barrier_wait
- */
-typedef struct tMPI_Spinlock_barrier tMPI_Spinlock_barrier_t;
-
-/** Initialize barrier
- *
- *  \param barrier  Pointer to _spinlock_ barrier. Note that this is not
- *                  the same datatype as the full, thread based, barrier.
- *  \param count    Number of threads to synchronize. All threads
- *                  will be released after \a count calls to 
- *                  tMPI_Spinlock_barrier_wait().  
- */
-void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count);
-
-
-/** Perform yielding, busy-waiting barrier synchronization
-  *
-  *  This routine blocks until it has been called N times,
-  *  where N is the count value the barrier was initialized with.
-  *  After N total calls all threads return. The barrier automatically
-  *  cycles, and thus requires another N calls to unblock another time.
-  *
-  *  \param barrier  Pointer to previously create barrier.
-  *
-  *  \return The last thread returns -1, all the others 0.
-  */
-int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier);
-
-#endif
+struct tMPI_Event
+{
+    tMPI_Atomic_t sync; /* the event sync counter */
+    int last_sync; /* the last sync event looked at */
+    TMPI_YIELD_WAIT_DATA   /* data associated with yielding */
+};

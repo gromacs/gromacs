@@ -120,6 +120,9 @@ struct tmpi_profile
 /* initialize the profile counter */
 void tMPI_Profile_init(struct tmpi_profile *prof);
 
+/* deallocations */
+void tMPI_Profile_destroy(struct tmpi_profile *prof);
+
 /* stop counting */
 void tMPI_Profile_stop(struct tmpi_profile *prof);
 
@@ -208,8 +211,6 @@ void tMPI_Profile_count_coll_xfer(struct tmpi_thread *th);*/
 
 /* output functions */
 void tMPI_Profiles_summarize(int Nthreads, struct tmpi_thread *threads);
-/* deallocations */
-void tMPI_Profiles_destroy(int Nthreads, struct tmpi_thread *threads);
 
 #endif
 
