@@ -6486,6 +6486,9 @@ static void turn_on_dlb(FILE *fplog,t_commrec *cr,gmx_large_int_t step)
     {
         dd_warning(cr,fplog,"NOTE: the minimum cell size is smaller than 1.05 times the cell size limit, will not turn on dynamic load balancing\n");
 
+        /* Change DLB from "auto" to "no". */
+        comm->eDLB = edlbNO;
+
         return;
     }
 
