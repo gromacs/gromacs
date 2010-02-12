@@ -11,7 +11,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 ########################################################################
 option(GMX_DOUBLE "Use double precision" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
-option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" OFF)
+option(GMX_THREADS    "Build a parallel (threaded-based) version of GROMACS: (doesn't work yet!)" ON)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 set(GMX_ACCELERATION "none" 
@@ -51,7 +51,9 @@ set(GMX_EXTRA_LIBRARIES)
 ########################################################################
 if(GMX_MPI)
     if(GMX_THREADS)
-        message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
+        #message(FATAL_ERROR "Thread-based parallelization conflicts with MPI.")
+        set(GMX_THREADS OFF CACHE BOOL 
+            "Thread-based parallelization conflicts with MPI." FORCE)
     endif(GMX_THREADS)
     find_package(MPI)
     if(MPI_FOUND)
