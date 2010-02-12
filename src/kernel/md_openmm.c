@@ -60,9 +60,8 @@
 #include "tmpi.h"
 #endif
 
-#ifdef GMX_OPENMM
+/* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
-#endif
 
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,

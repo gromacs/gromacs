@@ -327,9 +327,9 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     }
 
     /* Electroctstics */
-    if ((ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
+    if ((ir-> ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
     {
-        gmx_fatal(FARGS,"** OpenMM Error ** : Unsupported method for electrostatics."
+        gmx_fatal(FARGS,"** OpenMM Error ** : Unsupported method for electrostatics. "
             "Use NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
     }
 
@@ -338,10 +338,12 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
         gmx_fatal(FARGS,"** OpenMM Error ** : Systems with periodic molecules ares not supported\n");
 
     if ( (ir->etc != etcNO) && (ir->etc != etcANDERSEN) && (ir->etc != etcANDERSENINTERVAL))
-        gmx_fatal(FARGS,"** OpenMM Error ** : Temperature coupling can be achieved by using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or \"andersen-interval\" thermostat, or \n\t(2)\t\"sd\",\"sd1\" or \"bd\" integrators\n");
+        gmx_fatal(FARGS,"** OpenMM Error ** : Temperature coupling can be achieved by "
+                "using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or "
+                "\"andersen-interval\" thermostat, or \n\t(2)\t\"sd\",\"sd1\" or \"bd\" integrators\n");
 
-	if (ir->opts.ngtc > 1)
-        	gmx_fatal(FARGS,"** OpenMM Error ** : Multiple temperature coupling groups are not supported. \n");
+    if (ir->opts.ngtc > 1)
+        gmx_fatal(FARGS,"** OpenMM Error ** : Multiple temperature coupling groups are not supported. \n");
 
     if (ir->epc != etcNO)
         gmx_fatal(FARGS,"** OpenMM Error ** : Pressure coupling is not supported. \n");
@@ -350,7 +352,9 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
         gmx_fatal(FARGS,"** OpenMM Error ** : Simulated annealing is not supported. \n");
 
     if (ir->eConstrAlg != econtSHAKE)
-        warning_note("** OpenMM Warning ** : Constraints in OpenMM are done by a combination of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set by the \"shake_tol\" option.");
+        warning_note("** OpenMM Warning ** : Constraints in OpenMM are done by a combination "
+                "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
+                "by the \"shake_tol\" option.");
 
     if (ir->nwall != 0)
         gmx_fatal(FARGS,"** OpenMM Error ** : Walls are not supported.\n");
@@ -374,7 +378,8 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
         gmx_fatal(FARGS,"** OpenMM Error ** : Free energy calculations are not supported.\n");
 
     if (ir->opts.ngacc > 1)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Non-equilibrium MD (accelerated groups) are not supported. \n");
+        gmx_fatal(FARGS,"** OpenMM Error ** : Non-equilibrium MD (accelerated groups) are " 
+                "not supported. \n");
 
     if (IR_ELEC_FIELD(*ir))
         gmx_fatal(FARGS,"** OpenMM Error ** : Electric fields are not supported. \n");
@@ -383,7 +388,8 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
         gmx_fatal(FARGS,"** OpenMM Error ** : QMMM calculations are not supported. \n");
 
     if (ir->rcoulomb != ir->rvdw)
-        gmx_fatal(FARGS,"** OpenMM Error ** : OpenMM uses a single cutoff for both Coulomb and VdW interactions. Please set rcoulomb equal to rvdw. \n");
+        gmx_fatal(FARGS,"** OpenMM Error ** : OpenMM uses a single cutoff for both Coulomb "
+                "and VdW interactions. Please set rcoulomb equal to rvdw. \n");
 
 }
 
@@ -551,18 +557,18 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
 
     else {
 	    switch (ir->coulombtype)
-      	{
-   	     case eelRF: // TODO what is the correct condition?
-   		     if (ir->ePBC == epbcXYZ) {
+      	    {
+   	        case eelRF: // TODO what is the correct condition?
+   	            if (ir->ePBC == epbcXYZ) {
    		         nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffPeriodic);
    		         sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0), Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));
-   		     }
-   		     else if (ir->ePBC == epbcNONE)
-   		         nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffNonPeriodic);
-   		     else
-   		         gmx_fatal(FARGS,"** OpenMM Error ** : Only full periodic boundary conditions (pbc = xyz), or none (pbc = no) are supported\n");
-   		     nonbondedForce->setCutoffDistance(ir->rcoulomb);
-   			 break;
+   		    }
+   		    else if (ir->ePBC == epbcNONE)
+   		        nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffNonPeriodic);
+   		    else
+   		        gmx_fatal(FARGS,"** OpenMM Error ** : Only full periodic boundary conditions (pbc = xyz), or none (pbc = no) are supported\n");   		    
+                    nonbondedForce->setCutoffDistance(ir->rcoulomb);
+                    break;
 
    	     case eelEWALD:
 	   	     if (ir->ewald_geometry == eewg3DC)
