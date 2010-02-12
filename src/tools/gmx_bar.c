@@ -831,14 +831,13 @@ int gmx_bar(int argc,char *argv[])
 
     if (!result_OK)
     {
-
-        warning("Some of these results violate the Second Law of "
-                "Thermodynamics: \n"
-                "This is can be the result of severe "
-                "undersampling, or (more likely) there is something wrong "
-                "with the simulation.\n");
+        printf("\nWARNING: Some of these results violate the Second Law of "
+               "Thermodynamics: \n"
+               "         This is can be the result of severe undersampling, or "
+               "(more likely)\n" 
+               "         there is something wrong with the simulation.\n");
     }
-
+ 
 
     /* final results in kJ/mol */
     printf("\n\nFinal results in kJ/mol:\n\n");

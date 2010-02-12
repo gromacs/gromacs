@@ -44,8 +44,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-
-/* This include has now been moved upwards and the sky hasn't fallen... */
 #include "typedefs.h"
 
 #ifdef __cplusplus
