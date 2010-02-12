@@ -20,7 +20,7 @@ using namespace std;
 #include "gmx_gpu_utils.h"
 #include "mtop_util.h"
 
-#include "md_openmm.h"
+#include "openmm_wrapper.h"
 
 using namespace OpenMM;
 

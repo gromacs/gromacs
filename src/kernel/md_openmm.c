@@ -1,3 +1,69 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <signal.h>
+#include <stdlib.h>
+
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+/* _isnan() */
+#include <float.h>
+#endif
+
+#include "typedefs.h"
+#include "smalloc.h"
+#include "sysstuff.h"
+#include "vec.h"
+#include "statutil.h"
+#include "vcm.h"
+#include "mdebin.h"
+#include "nrnb.h"
+#include "calcmu.h"
+#include "index.h"
+#include "vsite.h"
+#include "update.h"
+#include "ns.h"
+#include "trnio.h"
+#include "xtcio.h"
+#include "mdrun.h"
+#include "confio.h"
+#include "network.h"
+#include "pull.h"
+#include "xvgr.h"
+#include "physics.h"
+#include "names.h"
+#include "xmdrun.h"
+#include "ionize.h"
+#include "disre.h"
+#include "orires.h"
+#include "dihre.h"
+#include "pppm.h"
+#include "pme.h"
+#include "mdatoms.h"
+#include "repl_ex.h"
+#include "qmmm.h"
+#include "mpelogging.h"
+#include "domdec.h"
+#include "partdec.h"
+#include "topsort.h"
+#include "coulomb.h"
+#include "constr.h"
+#include "shellfc.h"
+#include "compute_io.h"
+#include "mvdata.h"
+#include "checkpoint.h"
+#include "mtop_util.h"
+#include "genborn.h"
+#include "string2.h"
+
+#ifdef GMX_THREADS
+#include "tmpi.h"
+#endif
+
+#ifdef GMX_OPENMM
+#include "openmm_wrapper.h"
+#endif
+
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -37,7 +103,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_vcm      *vcm;
     t_state    *bufstate=NULL;   
     matrix     *scale_tot,pcoupl_mu,M,ebox;
-    gmx_nlheur_t nlh;
+//    gmx_nlheur_t nlh;
     t_trxframe rerun_fr;
     gmx_repl_ex_t repl_ex=NULL;
     int        nchkpt=1;
@@ -87,12 +153,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     int         **trotter_seq; 
     char        sbuf[22],sbuf2[22];
     bool        bHandledSignal=FALSE;
-    gmx_iterate_t iterate;
+//    gmx_iterate_t iterate;
  
-//#ifdef GMX_OPENMM
     const char *ommOptions = NULL;
     void   *openmmData;
-//#endif
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
@@ -134,7 +198,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     check_ir_old_tpx_versions(cr,fplog,ir,top_global);
 
-    nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
+//****    nstglobalcomm = check_nstglobalcomm(fplog,cr,nstglobalcomm,ir);
     bGStatEveryStep = (nstglobalcomm == 1);
 
     if (!bGStatEveryStep && ir->nstlist == -1 && fplog != NULL)
@@ -379,30 +443,31 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     debug_gmx();
   
     /* I'm assuming we need global communication the first time! MRS */
-    cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
-                  | (bVV ? CGLO_PRESSURE:0)
-                  | (bVV ? CGLO_CONSTRAINT:0)
-                  | (bRerunMD ? CGLO_RERUNMD:0)
-                  | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN:0));
-    
-    bSumEkinhOld = FALSE;
-    compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,NULL,NULL,NULL,NULL,NULL,
-                    NULL,state->box,
-                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
-    if (ir->eI == eiVVAK) {
-        /* a second call to get the half step temperature initialized as well */ 
-        /* we do the same call as above, but turn the pressure off -- internally, this 
-           is recognized as a velocity verlet half-step kinetic energy calculation.
-           This minimized excess variables, but perhaps loses some logic?*/
-        
-        compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                        wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,NULL,NULL,NULL,NULL,NULL,NULL,state->box,
-                        top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                        cglo_flags &~ CGLO_PRESSURE);
-    }
+//*************
+//  cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+//                  | (bVV ? CGLO_PRESSURE:0)
+//                  | (bVV ? CGLO_CONSTRAINT:0)
+//                  | (bRerunMD ? CGLO_RERUNMD:0)
+//                  | ((Flags & MD_READ_EKIN) ? CGLO_READEKIN:0));
+//    
+//    bSumEkinhOld = FALSE;
+//    compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+//                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+//                    constr,NULL,NULL,NULL,NULL,NULL,
+//                    NULL,state->box,
+//                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
+//    if (ir->eI == eiVVAK) {
+//        /* a second call to get the half step temperature initialized as well */ 
+//        /* we do the same call as above, but turn the pressure off -- internally, this 
+//           is recognized as a velocity verlet half-step kinetic energy calculation.
+//           This minimized excess variables, but perhaps loses some logic?*/
+//        
+//        compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+//                        wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+//                        constr,NULL,NULL,NULL,NULL,NULL,NULL,state->box,
+//                        top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+//                        cglo_flags &~ CGLO_PRESSURE);
+//    }
     
     /* Calculate the initial half step temperature, and save the ekinh_old */
     if (!(Flags & MD_STARTFROMCPT)) 
@@ -552,10 +617,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     step = ir->init_step;
     step_rel = 0;
 
-    if (ir->nstlist == -1)
-    {
-        init_nlistheuristics(&nlh,bGStatEveryStep,step);
-    }
+//    if (ir->nstlist == -1)
+//    {
+//        init_nlistheuristics(&nlh,bGStatEveryStep,step);
+//    }
 
     bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps));
     while (!bLastStep || (bRerunMD && bNotLastFrame)) {
@@ -580,7 +645,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 //#ifdef GMX_OPENMM
 
       if( bX || bXTC || bV ){                                                                                                                                                                 
-        wallcycle_start(wcycle,ewcTRAJ);                                                                                                                                                      
+        wallcycle_start(wcycle,ewcTRAJ);                                                                                                                                                              
         openmm_copy_state(openmmData, state, &t, f, enerd, bX||bXTC, bV, 0, 0);                                                                                                               
         wallcycle_stop(wcycle,ewcTRAJ);                                                                                                                                                       
       }                                                                                                                                                                                       
@@ -676,11 +741,11 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     debug_gmx();
 
-    if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
-    {
-        fprintf(fplog,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n",nlh.s1/nlh.nns,sqrt(nlh.s2/nlh.nns - sqr(nlh.s1/nlh.nns)));
-        fprintf(fplog,"Average number of atoms that crossed the half buffer length: %.1f\n\n",nlh.ab/nlh.nns);
-    }
+//    if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
+//    {
+//        fprintf(fplog,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n",nlh.s1/nlh.nns,sqrt(nlh.s2/nlh.nns - sqr(nlh.s1/nlh.nns)));
+//        fprintf(fplog,"Average number of atoms that crossed the half buffer length: %.1f\n\n",nlh.ab/nlh.nns);
+//    }
     
     if (shellfc && fplog)
     {

@@ -3,7 +3,6 @@ set(GMXPREPROCESS_SOURCES
     add_par.c       
     compute_io.c    
     convparm.c      
-    fflibutil.c
     gen_ad.c        
     gen_vsite.c     
     genhydro.c   
@@ -35,7 +34,7 @@ set(GMXPREPROCESS_SOURCES
 set(MDRUN_SOURCES 
     gctio.c    ionize.c runner.c
     do_gct.c     repl_ex.c  xutils.c
-    md.c         mdrun.c    genalg.c)
+    md.c         mdrun.c    genalg.c md_openmm.c)
 
 add_library(gmxpreprocess ${GMXPREPROCESS_SOURCES})
 target_link_libraries(gmxpreprocess md)
@@ -44,12 +43,11 @@ if(GMX_OPENMM)
     add_subdirectory(gmx_gpu_utils)
     include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
     link_directories(${OpenMM_LIBRARY_DIR}) 
-    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) # only for the openmm interface
-    add_library(openmminterface md_openmm.cpp)
+    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
+    add_library(openmm_api_wrapper openmm_wrapper.cpp)
 #    remove_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" )  # TODO where should this go?!
-    set(GMX_OPENMM_LIBRARIES openmminterface gmx_gpu_utils OpenMM)   
-    list(APPEND MDRUN_SOURCES md_openmm.cpp)
-    install(TARGETS openmminterface DESTINATION ${LIB_INSTALL_DIR})   
+    set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils OpenMM)   
+    install(TARGETS openmm_api_wrapper gmx_gpu_utils DESTINATION ${LIB_INSTALL_DIR})   
 endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)

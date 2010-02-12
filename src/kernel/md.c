@@ -808,7 +808,8 @@ static int check_nstglobalcomm(FILE *fplog,t_commrec *cr,
     return nstglobalcomm;
 }
 
-static void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
+// static
+void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
                                       t_inputrec *ir,gmx_mtop_t *mtop)
 {
     /* Check required for old tpx files */
@@ -2685,19 +2686,3 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     
     return 0;
 }
-
-/*
-TODO Check this warning: do_md_openmm.c|542|warning: ‘bCPT’ may be used uninitialized in this function|
-*/
-
-#ifdef GMX_OPENMM
-
-#define DO_MD_PATCHED
-
-#ifdef DO_MD_PATCHED
-#include "do_md_openmm.h"
-#else
-#include "do_md_openmm_nopatch.h"
-#endif
-
-#endif

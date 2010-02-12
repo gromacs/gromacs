@@ -71,6 +71,8 @@
 #include "mtop_util.h"
 #include "sighandler.h"
 
+#include "md_openmm.h"
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -86,6 +88,24 @@
 #include "md_openmm.h"
 #endif
 
+/* The following two variables and the signal_handler function
+ * are used from md.c and pme.c as well 
+ */
+extern bool bGotTermSignal, bGotUsr1Signal;
+
+static RETSIGTYPE signal_handler(int n)
+{
+    switch (n) {
+        case SIGTERM:
+            bGotTermSignal = TRUE;
+            break;
+#ifdef HAVE_SIGUSR1
+        case SIGUSR1:
+            bGotUsr1Signal = TRUE;
+            break;
+#endif
+    }
+}
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -93,7 +113,7 @@ typedef struct {
 
 /* The array should match the eI array in include/types/enums.h */
 #ifdef GMX_OPENMM  /* FIXME do_md_openmm needs fixing */
-const gmx_intp_t integrator[eiNR] = { {do_md_openmm}, {do_steep}, {do_cg}, {do_md_openmm}, {do_md_openmm}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md_openmm}, {do_md_openmm},{do_md_openmm}};
+const gmx_intp_t integrator[eiNR] = { {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm},{do_md_openmm}};
 #else
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md},{do_md}};
 #endif
