@@ -810,13 +810,13 @@ int gmx_bar(int argc,char *argv[])
     }
 
     /* print results in kT */
-    kT   = BOLTZ*temp;
+    kT   = BOLTZ*ba[0].temp;
     beta = 1/kT;
 
     printf("\nDetailed results in kT (see help for explanation):\n\n");
     printf(" ");
-    printf(skteformat, "lam A ");
-    printf(skteformat, "lam B ");
+    printf(skteformat, "lam_A ");
+    printf(skteformat, "lam_B ");
     printf(sktformat,  "DG ");
     printf(skteformat, "+/- ");
     printf(sktformat,  "s_A ");
@@ -843,7 +843,7 @@ int gmx_bar(int argc,char *argv[])
 
 
     /* final results in kJ/mol */
-    printf("\n\n\nFinal results in kJ/mol:\n\n");
+    printf("\n\nFinal results in kJ/mol:\n\n");
     dg_tot  = 0;
     var_tot = 0;
     for(f=0; f<nfile-1; f++)
@@ -879,7 +879,12 @@ int gmx_bar(int argc,char *argv[])
         var_tot += results[f].dg_err*results[f].dg_err;
     }
     printf("\n");
-    printf("total  %4.2f - %4.2f, DG ",ba[0].lambda[0],ba[nfile-1].lambda[0]);
+    printf("total  ");
+    printf(dgformat, ba[0].lambda[0]);
+    printf(" - ");
+    printf(dgformat, ba[nfile-1].lambda[0]);
+    printf(",   DG ");
+
     printf(dgformat,dg_tot*kT);
     printf(" +/- ");
     printf(dgformat,sqrt(var_tot)*kT);
