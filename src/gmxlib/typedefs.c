@@ -571,6 +571,33 @@ void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b)
     do_box_rel(ir,box_rel,b,FALSE);
 }
 
+void add_t_atoms(t_atoms *atoms,int nextra)
+{
+    int i;
+    
+    srenew(atoms->atomname,atoms->nr+nextra);
+    srenew(atoms->resinfo,atoms->nr+nextra);
+    srenew(atoms->atom,atoms->nr+nextra);
+    if (NULL != atoms->pdbinfo)
+        srenew(atoms->pdbinfo,atoms->nr+nextra);
+    if (NULL != atoms->atomtype)
+        srenew(atoms->atomtype,atoms->nr+nextra);
+    if (NULL != atoms->atomtypeB)
+        srenew(atoms->atomtypeB,atoms->nr+nextra);
+    for(i=atoms->nr; (i<atoms->nr+nextra); i++) {
+        atoms->atomname[i] = NULL;
+        memset(&atoms->resinfo[i],0,sizeof(atoms->resinfo[i]));
+        memset(&atoms->atom[i],0,sizeof(atoms->atom[i]));
+        if (NULL != atoms->pdbinfo)
+            memset(&atoms->pdbinfo[i],0,sizeof(atoms->pdbinfo[i]));
+        if (NULL != atoms->atomtype)
+            atoms->atomtype[i] = NULL;
+        if (NULL != atoms->atomtypeB)
+            atoms->atomtypeB[i] = NULL;
+    }
+    atoms->nr += nextra;
+}
+
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 {
   atoms->nr=natoms;
