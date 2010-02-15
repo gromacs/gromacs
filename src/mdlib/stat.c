@@ -95,36 +95,49 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static void filter_enerdterm(real *afrom,real *ato, bool bTemp, bool bPres, bool bEner) {
-    int i;
+static int filter_enerdterm(real *afrom, bool bToBuffer, real *ato,
+                            bool bTemp, bool bPres, bool bEner) {
+    int i,to,from;
 
-  for (i=0;i<F_NRE;i++)
-  {
-      switch (i) {
-      case F_EKIN:
-      case F_TEMP:
-      case F_DKDL:
-          if (bTemp)
-          {
-              ato[i] = afrom[i];
-          }
-          break;
-      case F_PRES:    
-      case F_PDISPCORR:
-      case F_VTEMP:
-          if (bPres)
-          {
-              ato[i] = afrom[i];
-          }
-          break;
-      default:
-          if (bEner)
-          {
-              ato[i] = afrom[i];
-          }
-          break;
-      }
-  }
+    from = 0;
+    to   = 0;
+    for (i=0;i<F_NRE;i++)
+    {
+        if (bToBuffer)
+        {
+            from = i;
+        }
+        else
+        {
+            to = i;
+        }
+        switch (i) {
+        case F_EKIN:
+        case F_TEMP:
+        case F_DKDL:
+            if (bTemp)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        case F_PRES:    
+        case F_PDISPCORR:
+        case F_VTEMP:
+            if (bPres)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        default:
+            if (bEner)
+            {
+                ato[to++] = afrom[from++];
+            }
+            break;
+        }
+    }
+
+    return to;
 }
 
 void global_stat(FILE *fplog,gmx_global_stat_t gs,
@@ -145,8 +158,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    ibnsb=-1,ichkpt=-1,iterminate=0,ireset=0;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
-  real   *copyenerd;
-  int    j;
+  real   copyenerd[F_NRE];
+  int    nener,j;
   real   *rmsd_data=NULL,rbnsb;
   double nb;
   bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
@@ -160,7 +173,6 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   bEkinAveVel   = (inputrec->eI==eiVV || (inputrec->eI==eiVVAK && IR_NPT_TROTTER(inputrec) && bPres));
   bReadEkin     = flags & CGLO_READEKIN;
 
-  snew(copyenerd,F_NRE);
   rb   = gs->rb;
   itc0 = gs->itc0;
   itc1 = gs->itc1;
@@ -176,7 +188,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
      communicated and summed when they need to be, to avoid repeating
      the sums and overcounting. */
 
-  filter_enerdterm(enerd->term,copyenerd,bTemp,bPres,bEner);
+  nener = filter_enerdterm(enerd->term,TRUE,copyenerd,bTemp,bPres,bEner);
   
   /* First, the data that needs to be communicated with velocity verlet every time
      This is just the constraint virial.*/
@@ -226,7 +238,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       where();
       if (bFirstIterate) 
       {
-          ie  = add_binr(rb,F_NRE,copyenerd);
+          ie  = add_binr(rb,nener,copyenerd);
       }
       where();
       if (constr) 
@@ -277,21 +289,21 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               where();
           }
       }
-      if (DOMAINDECOMP(cr)) 
-      {
-          nb = cr->dd->nbonded_local;
-          inb = add_bind(rb,1,&nb);
+  }
+  if (DOMAINDECOMP(cr)) 
+  {
+      nb = cr->dd->nbonded_local;
+      inb = add_bind(rb,1,&nb);
       }
-      where();
-      if (nabnsb) 
-      {
-          rbnsb = *nabnsb;
-          ibnsb = add_binr(rb,1,&rbnsb);
-      }
-      if (chkpt) 
-      {
-          ichkpt   = add_binr(rb,1,chkpt);
-      }
+  where();
+  if (nabnsb != NULL) 
+  {
+      rbnsb = *nabnsb;
+      ibnsb = add_binr(rb,1,&rbnsb);
+  }
+  if (chkpt != NULL)
+  {
+      ichkpt   = add_binr(rb,1,chkpt);
   }
   if (terminate != NULL) {
       iterminate = add_binr(rb,1,terminate);
@@ -348,7 +360,7 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   {
       if (bFirstIterate) 
       {
-          extract_binr(rb,ie  ,F_NRE,copyenerd);
+          extract_binr(rb,ie,nener,copyenerd);
           if (rmsd_data) 
           {
               extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
@@ -397,31 +409,29 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
               }
           }
           where();
-          if (nabnsb) 
-          {
-              extract_binr(rb,ibnsb,1,&rbnsb);
-              *nabnsb = (int)(rbnsb + 0.5);
-          }
-          where();
-          if (chkpt)
-          {
-              extract_binr(rb,ichkpt,1,chkpt);
-          }
-          if (terminate != NULL) {
-              extract_binr(rb,iterminate,1,terminate);
-          }
-          if (reset_counters != NULL) {
-              extract_binr(rb,ireset,1,reset_counters);
-          }
-          where();
-          
-          filter_enerdterm(copyenerd,enerd->term,bTemp,bPres,bEner);          
-/* Small hack for temp only - not entirely clear if still needed?*/
-          //enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
-      }
 
+          filter_enerdterm(copyenerd,FALSE,enerd->term,bTemp,bPres,bEner);    
+/* Small hack for temp only - not entirely clear if still needed?*/
+          /* enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
+      }
   }
-  sfree(copyenerd);
+  if (nabnsb != NULL) 
+  {
+      extract_binr(rb,ibnsb,1,&rbnsb);
+      *nabnsb = (int)(rbnsb + 0.5);
+  }
+  where();
+  if (chkpt != NULL)
+  {
+      extract_binr(rb,ichkpt,1,chkpt);
+  }
+  if (terminate != NULL) {
+      extract_binr(rb,iterminate,1,terminate);
+  }
+  if (reset_counters != NULL) {
+      extract_binr(rb,ireset,1,reset_counters);
+  }
+  where();
 }
 
 int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep)

@@ -176,7 +176,8 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                             gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
                             tensor pres, rvec mu_tot, gmx_constr_t constr, 
-                            real *chkpt,real *terminate, real *terminate_now,
+                            real *chkpt,bool *bSetCPT,
+                            real *terminate, real *terminate_now,
                             real *reset_counters,real *reset_counters_now,
                             int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
                             int natoms, bool *bSumEkinhOld, int flags)
@@ -250,6 +251,7 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
              * so signal that we still have to do it.                                                
              */
             *bSumEkinhOld = TRUE;
+
         }
         else
         {
@@ -263,25 +265,24 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             top_global,state,
                             *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
-                if (terminate != NULL)
-                {
-                    if (*terminate != 0)
-                    {
-                        *terminate_now = *terminate;
-                        *terminate = 0;
-                    }
-                }
-                if (reset_counters != NULL)
-                {
-                    if (*reset_counters != 0)
-                    {
-                        *reset_counters_now = *reset_counters;
-                        *reset_counters = 0;
-                    }
-                }
-                *bSumEkinhOld = FALSE;
                 wallcycle_stop(wcycle,ewcMoveE);
             }
+            if (chkpt != NULL && *chkpt != 0)
+            {
+                *bSetCPT = TRUE;
+                *chkpt = 0;
+            }
+            if (terminate != NULL && *terminate != 0)
+            {
+                *terminate_now = *terminate;
+                *terminate = 0;
+            }
+            if (reset_counters != NULL && *reset_counters != 0)
+            {
+                *reset_counters_now = *reset_counters;
+                *reset_counters = 0;
+            }
+            *bSumEkinhOld = FALSE;
         }
     }
     
@@ -868,7 +869,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bBornRadii,bStartingFromCpt;
     bool       bDoDHDL=FALSE;
     bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
-               bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
+               bForceUpdate=FALSE,bX,bV,bF,bXTC,bSetCPT,bCPT;
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
@@ -1202,7 +1203,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,NULL,NULL,NULL,NULL,NULL,
+                    constr,NULL,NULL,NULL,NULL,NULL,NULL,
                     NULL,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
@@ -1213,7 +1214,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,NULL,NULL,NULL,NULL,NULL,NULL,state->box,
+                        constr,NULL,NULL,NULL,NULL,NULL,NULL,NULL,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                         cglo_flags &~ CGLO_PRESSURE);
     }
@@ -1365,9 +1366,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
     bInitStep = bFirstStep && (bStateFromTPX || bVV);
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
-    bLastStep = FALSE;
+    bLastStep    = FALSE;
     bSumEkinhOld = FALSE;
-    bExchanged = FALSE;
+    bSetCPT      = FALSE;
+    bExchanged   = FALSE;
 
     step = ir->init_step;
     step_rel = 0;
@@ -1586,7 +1588,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
-                            constr,NULL,NULL,NULL,NULL,NULL,
+                            constr,NULL,NULL,NULL,NULL,NULL,NULL,
                             NULL,state->box,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
@@ -1616,17 +1618,17 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         GMX_MPE_LOG(ev_timestep2);
 
-        if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD)
+        /* We write a checkpoint at this MD step when:
+         * either at an NS step when we signalled through bSetCPT,
+         * or at the last step (but not when we do not want confout),
+         * but never at the first step or with rerun.
+         */
+        if (!bCPT)
         {
-            bCPT = (chkpt > 0 || (bLastStep && (Flags & MD_CONFOUT)));
-            if (bCPT)
-            {
-                chkpt = 0;
-            }
-        }
-        else
-        {
-            bCPT = FALSE;
+            bCPT = ((((bSetCPT && bNS) ||
+                      (bLastStep && (Flags & MD_CONFOUT))) &&
+                     (step > ir->init_step) && !bRerunMD));
+            bSetCPT = FALSE;
         }
 
         /* Determine the pressure:
@@ -1802,8 +1804,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,&terminate,&terminate_now,
-                                    &reset_counters,&reset_counters_now,
+                                    constr,NULL,NULL,NULL,NULL,NULL,NULL,
                                     NULL,state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags 
@@ -1907,7 +1908,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
             
-            bCPT = bCPT;
             /*Gromacs drives checkpointing; no ||  
               fcCheckPointPendingThreads(cr->nodeid,
               nthreads*nnodes);*/
@@ -1943,6 +1943,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
                        fn_cpt,bCPT,top_global,ir->eI,ir->simulation_part,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
+            bCPT = FALSE;
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
@@ -2010,10 +2011,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 terminate = -1;
             }
-            if (!PAR(cr))
-            {
-                terminate_now = terminate;
-            }
             if (fplog)
             {
                 fprintf(fplog,
@@ -2035,10 +2032,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             /* Signal to terminate the run */
             terminate = (ir->nstlist == 0 ? 1 : -1);
-            if (!PAR(cr))
-            {
-                terminate_now = terminate;
-            }
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -2184,7 +2177,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* just compute the kinetic energy at the half step to perform a trotter step */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,NULL,NULL,NULL,NULL,&(nlh.nabnsb),lastbox,
+                                    constr,NULL,NULL,NULL,NULL,NULL,NULL,&(nlh.nabnsb),lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT    
                         );
@@ -2247,7 +2240,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                            constr,&chkpt,&terminate,&terminate_now,
+                            constr,&chkpt,&bSetCPT,&terminate,&terminate_now,
                             &reset_counters,&reset_counters_now,
                             ir->nstlist==-1 ? &(nlh.nabnsb) : NULL,lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
@@ -2266,7 +2259,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                the virial that should probably be addressed eventually. state->veta has better properies,
                but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
                generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
-            
+
             if (done_iterating(cr,fplog,step,iterate,trace(shake_vir),&tracevir)) 
             {
                 break;
