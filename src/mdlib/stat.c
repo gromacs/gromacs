@@ -145,8 +145,8 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
                  tensor fvir,tensor svir,rvec mu_tot,
                  t_inputrec *inputrec,
                  gmx_ekindata_t *ekind,gmx_constr_t constr,
-                 t_vcm *vcm,int *nabnsb,
-                 real *chkpt,real *terminate,real *reset_counters,
+                 t_vcm *vcm,
+                 int nsig,real *sig,
                  gmx_mtop_t *top_global, t_state *state_local, 
                  bool bSumEkinhOld, int flags)
 /* instead of current system, booleans for summing virial, kinetic energy, and other terms */
@@ -155,12 +155,12 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
   int    *itc0,*itc1;
   int    ie=0,ifv=0,isv=0,irmsd=0,imu=0;
   int    idedl=0,idvdll=0,idvdlnl=0,iepl=0,icm=0,imass=0,ica=0,inb=0;
-  int    ibnsb=-1,ichkpt=-1,iterminate=0,ireset=0;
+  int    isig=-1;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   real   copyenerd[F_NRE];
   int    nener,j;
-  real   *rmsd_data=NULL,rbnsb;
+  real   *rmsd_data=NULL;
   double nb;
   bool   bVV,bTemp,bEner,bPres,bConstrVir,bEkinAveVel,bFirstIterate,bReadEkin;
 
@@ -296,20 +296,9 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
       inb = add_bind(rb,1,&nb);
       }
   where();
-  if (nabnsb != NULL) 
+  if (nsig > 0) 
   {
-      rbnsb = *nabnsb;
-      ibnsb = add_binr(rb,1,&rbnsb);
-  }
-  if (chkpt != NULL)
-  {
-      ichkpt   = add_binr(rb,1,chkpt);
-  }
-  if (terminate != NULL) {
-      iterminate = add_binr(rb,1,terminate);
-  }
-  if (reset_counters != NULL) {
-      ireset = add_binr(rb,1,reset_counters);
+      isig = add_binr(rb,nsig,sig);
   }
 
   /* Global sum it all */
@@ -415,21 +404,10 @@ void global_stat(FILE *fplog,gmx_global_stat_t gs,
           /* enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes); */
       }
   }
-  if (nabnsb != NULL) 
+
+  if (nsig > 0) 
   {
-      extract_binr(rb,ibnsb,1,&rbnsb);
-      *nabnsb = (int)(rbnsb + 0.5);
-  }
-  where();
-  if (chkpt != NULL)
-  {
-      extract_binr(rb,ichkpt,1,chkpt);
-  }
-  if (terminate != NULL) {
-      extract_binr(rb,iterminate,1,terminate);
-  }
-  if (reset_counters != NULL) {
-      extract_binr(rb,ireset,1,reset_counters);
+      extract_binr(rb,isig,nsig,sig);
   }
   where();
 }

@@ -107,6 +107,26 @@
 extern bool bGotTermSignal, bGotUsr1Signal;
 
 
+enum { eglNABNSB, eglCHKPT, eglTERM, eglRESETCOUNTERS, eglNR };
+
+typedef struct {
+    /* int's or boolean disguised as reals to pass them to global_stat */
+    real sig[eglNR]; /* The signal set by one process in do_md */
+    int  set[eglNR]; /* The communicated signal, equal for all processes */
+} globsig_t;
+
+
+static void init_global_signals(globsig_t *gs)
+{
+    int i;
+
+    for(i=0; i<eglNR; i++)
+    {
+        gs->sig[i] = 0;
+        gs->set[i] = 0;
+    }
+}
+
 static void copy_coupling_state(t_state *statea,t_state *stateb, 
                                 gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb, t_grpopts* opts) 
 {
@@ -176,10 +196,8 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                             t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
                             gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
                             tensor pres, rvec mu_tot, gmx_constr_t constr, 
-                            real *chkpt,bool *bSetCPT,
-                            real *terminate, real *terminate_now,
-                            real *reset_counters,real *reset_counters_now,
-                            int *nabnsb, matrix box, gmx_mtop_t *top_global, real *pcurr, 
+                            globsig_t *gs,
+                            matrix box, gmx_mtop_t *top_global, real *pcurr, 
                             int natoms, bool *bSumEkinhOld, int flags)
 {
     int i;
@@ -260,27 +278,25 @@ static void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr,
                 wallcycle_start(wcycle,ewcMoveE);
                 GMX_MPE_LOG(ev_global_stat_start);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                            ir,ekind,constr,vcm,nabnsb,
-                            chkpt,terminate,reset_counters,
+                            ir,ekind,constr,vcm,
+                            gs != NULL ? eglNR   : 0,
+                            gs != NULL ? gs->sig : NULL,
                             top_global,state,
                             *bSumEkinhOld,flags);
                 GMX_MPE_LOG(ev_global_stat_finish);
                 wallcycle_stop(wcycle,ewcMoveE);
             }
-            if (chkpt != NULL && *chkpt != 0)
+            if (gs != NULL)
             {
-                *bSetCPT = TRUE;
-                *chkpt = 0;
-            }
-            if (terminate != NULL && *terminate != 0)
-            {
-                *terminate_now = *terminate;
-                *terminate = 0;
-            }
-            if (reset_counters != NULL && *reset_counters != 0)
-            {
-                *reset_counters_now = *reset_counters;
-                *reset_counters = 0;
+                for(i=0; i<eglNR; i++)
+                {
+                    /* Set the communicated signal */
+                    gs->set[i] = (gs->sig[i] > 0 ?
+                                  (int)(gs->sig[i] + 0.5) :
+                                  (int)(gs->sig[i] - 0.5));
+                    /* Turn off the signalling */
+                    gs->sig[i] = 0;
+                }
             }
             *bSumEkinhOld = FALSE;
         }
@@ -882,8 +898,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     t_trxframe rerun_fr;
     gmx_repl_ex_t repl_ex=NULL;
     int        nchkpt=1;
-    /* Booleans (disguised as a reals) to checkpoint and terminate mdrun */  
-    real       chkpt=0,terminate=0,terminate_now=0;
 
     gmx_localtop_t *top;	
     t_mdebin *mdebin=NULL;
@@ -896,6 +910,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_global_stat_t gstat;
     gmx_update_t upd=NULL;
     t_graph    *graph=NULL;
+    globsig_t   gs;
 
     bool        bFFscan;
     gmx_groups_t *groups;
@@ -920,7 +935,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	real        fom,oldfom,veta_save,pcurr,scalevir,tracevir;
 	real        vetanew = 0;
     double      cycles;
-    real        reset_counters=0,reset_counters_now=0;
 	real        last_conserved = 0;
     real        last_ekin = 0;
 	int         iter_i;
@@ -1203,8 +1217,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bSumEkinhOld = FALSE;
     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                    constr,NULL,NULL,NULL,NULL,NULL,NULL,
-                    NULL,state->box,
+                    constr,NULL,state->box,
                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,cglo_flags);
     if (ir->eI == eiVVAK) {
         /* a second call to get the half step temperature initialized as well */ 
@@ -1214,7 +1227,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                         wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                        constr,NULL,NULL,NULL,NULL,NULL,NULL,NULL,state->box,
+                        constr,NULL,state->box,
                         top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                         cglo_flags &~ CGLO_PRESSURE);
     }
@@ -1368,8 +1381,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
     bLastStep    = FALSE;
     bSumEkinhOld = FALSE;
-    bSetCPT      = FALSE;
     bExchanged   = FALSE;
+
+    init_global_signals(&gs);
 
     step = ir->init_step;
     step_rel = 0;
@@ -1516,7 +1530,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         } 
 
-        if (terminate_now > 0 || (terminate_now < 0 && bNS))
+        if (gs.set[eglTERM] > 0 || (gs.set[eglTERM] < 0 && bNS))
         {
             bLastStep = TRUE;
         }
@@ -1588,8 +1602,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /* This may not be quite working correctly yet . . . . */
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,NULL,NULL,NULL,NULL,mu_tot,
-                            constr,NULL,NULL,NULL,NULL,NULL,NULL,
-                            NULL,state->box,
+                            constr,NULL,state->box,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
@@ -1804,8 +1817,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,NULL,NULL,NULL,NULL,NULL,
-                                    NULL,state->box,
+                                    constr,NULL,state->box,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags 
                                     | CGLO_ENERGY 
@@ -2005,33 +2017,33 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         {
             if (bGotTermSignal || ir->nstlist == 0)
             {
-                terminate = 1;
+                gs.sig[eglTERM] = 1;
             }
             else
             {
-                terminate = -1;
+                gs.sig[eglTERM] = -1;
             }
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                         bGotTermSignal ? "TERM" : "USR1",
-                        terminate==-1 ? "NS " : "");
+                        gs.sig[eglTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
                     bGotTermSignal ? "TERM" : "USR1",
-                    terminate==-1 ? "NS " : "");
+                    gs.sig[eglTERM]==-1 ? "NS " : "");
             fflush(stderr);
             bHandledSignal=TRUE;
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 terminate == 0)
+                 gs.sig[eglTERM] == 0)
         {
             /* Signal to terminate the run */
-            terminate = (ir->nstlist == 0 ? 1 : -1);
+            gs.sig[eglTERM] = (ir->nstlist == 0 ? 1 : -1);
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -2042,11 +2054,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (bResetCountersHalfMaxH && MASTER(cr) &&
             run_time > max_hours*60.0*60.0*0.495)
         {
-            reset_counters = 1;
-            if (!PAR(cr))
-            {
-                reset_counters_now = reset_counters;
-            }
+            gs.sig[eglRESETCOUNTERS] = 1;
         }
 
         if (ir->nstlist == -1 && !bRerunMD)
@@ -2083,11 +2091,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                            (cpt_period == 0 || 
                             run_time >= nchkpt*cpt_period*60.0)))
         {
-            if (chkpt == 0)
+            if (gs.sig[eglCHKPT] == 0)
             {
                 nchkpt++;
             }
-            chkpt = 1;
+            gs.sig[eglCHKPT] = 1;
         }
   
         iterate=gmx_iterate_init(bIterations);
@@ -2177,7 +2185,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     /* just compute the kinetic energy at the half step to perform a trotter step */
                     compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                                     wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                    constr,NULL,NULL,NULL,NULL,NULL,NULL,&(nlh.nabnsb),lastbox,
+                                    constr,NULL,lastbox,
                                     top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE | CGLO_CONSTRAINT    
                         );
@@ -2238,11 +2246,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             
             /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
+            gs.sig[eglNABNSB] = nlh.nabnsb;
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                            constr,&chkpt,&bSetCPT,&terminate,&terminate_now,
-                            &reset_counters,&reset_counters_now,
-                            ir->nstlist==-1 ? &(nlh.nabnsb) : NULL,lastbox,
+                            constr,&gs,
+                            lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0) 
@@ -2252,6 +2260,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (iterate->bFirstIterate ? CGLO_FIRSTITERATE : 0)
                             | CGLO_CONSTRAINT 
                 );            
+            nlh.nabnsb = gs.set[eglNABNSB];
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
         
@@ -2494,13 +2503,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         
         if (step_rel == wcycle_get_reset_counters(wcycle) ||
-            reset_counters_now == 1)
+            gs.set[eglRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
             reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
             wcycle_set_reset_counters(wcycle,-1);
             bResetCountersHalfMaxH = FALSE;
-            reset_counters_now = 0;
+            gs.set[eglRESETCOUNTERS] = 0;
         }
     }
     /* End of main MD loop */
