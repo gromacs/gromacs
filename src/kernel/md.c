@@ -885,7 +885,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bBornRadii,bStartingFromCpt;
     bool       bDoDHDL=FALSE;
     bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
-               bForceUpdate=FALSE,bX,bV,bF,bXTC,bSetCPT,bCPT;
+               bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
@@ -1632,16 +1632,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         GMX_MPE_LOG(ev_timestep2);
 
         /* We write a checkpoint at this MD step when:
-         * either at an NS step when we signalled through bSetCPT,
+         * either at an NS step when we signalled through gs,
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = ((((bSetCPT && bNS) ||
+        bCPT = ((((gs.set[eglCHKPT] && bNS) ||
                   (bLastStep && (Flags & MD_CONFOUT))) &&
                  (step > ir->init_step) && !bRerunMD));
         if (bCPT)
         {
-            bSetCPT = FALSE;
+            gs.set[eglCHKPT] = 0;
         }
 
         /* Determine the pressure:
