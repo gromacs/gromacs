@@ -313,7 +313,7 @@ tMPI_Send_env_list_fetch_new(struct send_envelope_list *evl)
         {
             /* There are no free send envelopes, so all we can do is handle
                incoming requests until we get a free send envelope. */
-            printf("AAAAAAAAAAAARGH!!\n");
+            printf("Ran out of send envelopes!!\n");
             tMPI_Wait_process_incoming(tMPI_Get_current());
         }
 #else
@@ -773,7 +773,13 @@ static struct envelope* tMPI_Prep_send_envelope(struct send_envelope_list *evl,
 #endif
 
     tMPI_Atomic_set(&(ev->state), env_unmatched);
+
     ev->error=TMPI_SUCCESS;
+    if (count < 0)
+    {
+        tMPI_Error(comm, TMPI_ERR_XFER_BUFSIZE);
+        ev->error=TMPI_ERR_XFER_BUFSIZE;
+    }
 
     return ev;
 }
@@ -804,7 +810,13 @@ static struct envelope* tMPI_Prep_recv_envelope(struct tmpi_thread *cur,
     ev->rlist=NULL;
 
     tMPI_Atomic_set(&(ev->state), env_unmatched);
+
     ev->error=TMPI_SUCCESS;
+    if (count < 0)
+    {
+        tMPI_Error(comm, TMPI_ERR_XFER_BUFSIZE);
+        ev->error=TMPI_ERR_XFER_BUFSIZE;
+    }
 
     return ev;
 }
@@ -1129,6 +1141,8 @@ static bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
             /* do our transfer and are guaranteed a finished 
                envelope. */
             tMPI_Send_copy_buffer(ev, rq->st);
+            /* get the results */
+            rq->error=rq->ev->error;
             rq->finished=TRUE;
         }
         else
@@ -1137,6 +1151,8 @@ static bool tMPI_Test_single(struct tmpi_thread *cur, struct tmpi_req_ *rq)
             if( tMPI_Atomic_get( &(ev->state) ) >= env_finished ) 
             {
                 rq->finished=TRUE;
+                /* get the results */
+                rq->error=rq->ev->error;
                 tMPI_Set_status(ev, rq->st);
                 /* and release the envelope. After this point, the envelope
                    may be reused, so its contents shouldn't be relied on. */
@@ -1170,7 +1186,7 @@ static bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
     if (any_done)
         *any_done=FALSE;
 
-    do
+    while(creq)
     {
         bool finished=tMPI_Test_single(cur, creq);
         i++;
@@ -1190,7 +1206,7 @@ static bool tMPI_Test_multi(struct tmpi_thread *cur, struct tmpi_req_ *rqs,
         }
 
         creq = creq->next;
-    } while (creq); 
+    } 
 
     return all_done;
 }
@@ -1398,7 +1414,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_stop(cur, TMPIFN_Isend);
 #endif
-    return TMPI_SUCCESS;    
+    return ev->error;    
 }
 
 
@@ -1440,7 +1456,7 @@ int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source,
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_stop(cur, TMPIFN_Irecv);
 #endif
-    return TMPI_SUCCESS;
+    return ev->error;
 }
 
 
@@ -1550,7 +1566,6 @@ int tMPI_Waitall(int count, tMPI_Request *array_of_requests,
     tMPI_Trace_print("tMPI_Waitall(%d, %p, %p)", count, array_of_requests, 
                        array_of_statuses);
 #endif
-
 
     /* construct the list of requests */
     for(i=0;i<count;i++)
