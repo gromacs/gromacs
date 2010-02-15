@@ -364,25 +364,37 @@ void xvgr_box(FILE *out,
 
 static char *fgets3(FILE *fp,char ptr[],int *len)
 {
-  char *p;
-  int  slen;
+    char *p;
+    int  slen;
 
-  if (fgets(ptr,*len-1,fp) == NULL)
-    return NULL;
-  p = ptr;
-  while ((strchr(ptr,'\n') == NULL) && (!feof(fp))) {
-    /* This line is longer than len characters, let's increase len! */
-    *len += STRLEN;
-    p    += STRLEN;
-    srenew(ptr,*len);
-    if (fgets(p-1,STRLEN,fp) == NULL)
-      break;
-  }
-  slen = strlen(ptr);
-  if (ptr[slen-1] == '\n')
-    ptr[slen-1] = '\0';
+    if (fgets(ptr,*len-1,fp) == NULL)
+    {
+        return NULL;
+    }
+    p = ptr;
+    while ((strchr(ptr,'\n') == NULL) && (!feof(fp)))
+    {
+        /* This line is longer than len characters, let's increase len! */
+        *len += STRLEN;
+        p    += STRLEN;
+        srenew(ptr,*len);
+        if (fgets(p-1,STRLEN,fp) == NULL)
+        {
+            break;
+        }
+    }
+    if (feof(fp))
+    {
+        /* We reached EOF before '\n', skip this last line. */
+        return NULL;
+    }
+    slen = strlen(ptr);
+    if (ptr[slen-1] == '\n')
+    {
+        ptr[slen-1] = '\0';
+    }
 
-  return ptr;
+    return ptr;
 }
 
 static int wordcount(char *ptr)
