@@ -1636,11 +1636,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        if (!bCPT)
+        bCPT = ((((bSetCPT && bNS) ||
+                  (bLastStep && (Flags & MD_CONFOUT))) &&
+                 (step > ir->init_step) && !bRerunMD));
+        if (bCPT)
         {
-            bCPT = ((((bSetCPT && bNS) ||
-                      (bLastStep && (Flags & MD_CONFOUT))) &&
-                     (step > ir->init_step) && !bRerunMD));
             bSetCPT = FALSE;
         }
 
