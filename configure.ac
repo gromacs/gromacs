@@ -190,6 +190,10 @@ AC_ARG_ENABLE(cgunits,
               [AC_HELP_STRING([--enable-cgunits],
                               [Build a gromacs with uses reduced units])],,enable_cgunits=no)
 
+if test "$enable_cgunits" = "yes"; then
+  AC_DEFINE(CGUNITS,,[Use reduced (CG) units])
+fi
+
 # FFT libraries - only use one...
 AC_ARG_WITH(fft,
             [AC_HELP_STRING([--with-fft=@<:@fftw3/fftw2/mkl(>=6.0)/fftpack@:>@],
@@ -1052,10 +1056,6 @@ AM_CONDITIONAL([GMX_FAHCORE],[test "$enable_fahcore" = "yes"])
 
 if test "$enable_all_static" = "yes"; then
   LDFLAGS="$LDFLAGS -all-static"
-fi
-
-if test "$enable_cgunits" = "yes"; then
-  CPPFLAGS="$CPPFLAGS -DCGUNITS"
 fi
 
 # we have asm source, so this is necessary for automake 1.6
