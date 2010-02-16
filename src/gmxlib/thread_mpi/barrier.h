@@ -38,7 +38,7 @@ files.
 
 struct tMPI_Spinlock_barrier
 {
-    tMPI_Atomic_t      count;     /*!< Number of threads remaining     */
+    tMPI_Atomic_t     count;     /*!< Number of threads remaining     */
     int               threshold; /*!< Total number of threads         */
     volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
     TMPI_YIELD_WAIT_DATA

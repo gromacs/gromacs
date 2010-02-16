@@ -283,7 +283,7 @@ static void tMPI_Thread_init(struct tmpi_thread *th)
 #endif
     /* now wait for all other threads to come on line, before we
        start the MPI program */
-    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->multicast_barrier[0]));
+    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
 }
 
 
@@ -354,7 +354,9 @@ static void* tMPI_Thread_starter(void *arg)
 
     /* start_fn, start_arg, argc and argv were set by the calling function */ 
     if (! th->start_fn )
+    {
         main(th->argc, th->argv);
+    }
     else
     {
         th->start_fn(th->start_arg);
@@ -501,7 +503,7 @@ int tMPI_Finalize(void)
         struct tmpi_thread *cur=tMPI_Get_current();
 
         tMPI_Profile_stop( &(cur->profile) );
-        tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->multicast_barrier[0]));
+        tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
 
         if (tMPI_Is_master())
         {
@@ -509,7 +511,7 @@ int tMPI_Finalize(void)
         }
     }
 #endif
-    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->multicast_barrier[0]));
+    tMPI_Spinlock_barrier_wait( &(TMPI_COMM_WORLD->barrier));
 
     if (tMPI_Is_master())
     {

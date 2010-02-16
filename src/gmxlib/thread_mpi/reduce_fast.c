@@ -60,7 +60,7 @@ static void *tMPI_Reduce_req_allocator(void *arg)
     tMPI_Reduce_req *ret;
     /*tMPI_Comm comm=(tMPI_Comm)arg;*/
 
-    ret=tMPI_Malloc(sizeof(tMPI_Reduce_req));
+    ret=(tMPI_Reduce_req*)tMPI_Malloc(sizeof(tMPI_Reduce_req));
     tMPI_Atomic_set( &(ret->n_remaining), 0);
     ret->comm=(tMPI_Comm)arg;
 

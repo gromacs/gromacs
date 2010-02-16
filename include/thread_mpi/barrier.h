@@ -70,15 +70,31 @@ void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count);
 
 /** Perform yielding, busy-waiting barrier synchronization
   *
-  *  This routine blocks until it has been called N times,
+  *  This function blocks until it has been called N times,
   *  where N is the count value the barrier was initialized with.
   *  After N total calls all threads return. The barrier automatically
   *  cycles, and thus requires another N calls to unblock another time.
   *
-  *  \param barrier  Pointer to previously create barrier.
+  *  \param barrier  Pointer to previously created barrier.
   *
   *  \return The last thread returns -1, all the others 0.
   */
 int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier);
+
+
+#ifdef DOXYGEN
+/** Get the number of threads to synchronize for a barrier
+  * 
+  *  This function returns the total number of threads the barrier 
+  *  synchronizes.
+  *    
+  *  \param barrier  Pointer to barrier.
+  *
+  *  \return the number of threads to synchronize
+  */
+int tMPI_Spinlock_barrier_N(tMPI_Spinlock_barrier_t *barrier);
+#else
+#define tMPI_Spinlock_barrier_N(barrier)  ((barrier)->threshold)
+#endif
 
 #endif

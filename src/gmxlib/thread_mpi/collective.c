@@ -213,16 +213,33 @@ void tMPI_Coll_env_destroy(struct coll_env *cev)
 }
 
 
-void tMPI_Coll_sync_init(struct coll_sync *csync)
+void tMPI_Coll_sync_init(struct coll_sync *csync, int N)
 {
+    int i;
+
     csync->synct=0;
     csync->syncs=0;
+    csync->N=N;
+
+    csync->events=(tMPI_Event*)tMPI_Malloc(sizeof(tMPI_Event)*N);
+    for(i=0;i<N;i++)
+    {
+        tMPI_Event_init( &(csync->events[i]) );
+    }
 }
 
 void tMPI_Coll_sync_destroy(struct coll_sync *csync)
 {
+    int i;
+
     csync->synct=0;
     csync->syncs=0;
+
+    for(i=0;i<csync->N;i++)
+    {
+        tMPI_Event_destroy( &(csync->events[i]) );
+    }
+    free(csync->events);
 }
 
 
@@ -552,7 +569,7 @@ int tMPI_Barrier(tMPI_Comm comm)
         tMPI_Profile_wait_start(cur);
 #endif
 
-        tMPI_Spinlock_barrier_wait( &(comm->multicast_barrier[0]) );
+        tMPI_Spinlock_barrier_wait( &(comm->barrier) );
 #if defined(TMPI_PROFILE) 
         tMPI_Profile_wait_stop(cur, TMPIWAIT_Barrier);
 #endif

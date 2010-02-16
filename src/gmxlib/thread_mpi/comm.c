@@ -94,7 +94,7 @@ int tMPI_Comm_rank(tMPI_Comm comm, int *rank)
 tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
 {
     struct tmpi_comm_ *ret;
-    int i,Nbarriers,Nred;
+    int i;
 
     ret=(struct tmpi_comm_*)tMPI_Malloc(sizeof(struct tmpi_comm_));
     ret->grp.peers=(struct tmpi_thread**)tMPI_Malloc(
@@ -111,29 +111,82 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     ret->cart=NULL;
     /*ret->graph=NULL;*/
 
-    /* calculate the number of multicast barriers */
-    Nbarriers=0;
-    Nred=N;
-    while(Nred>1) {
-        Nbarriers+=1;
-        Nred = Nred/2 + Nred%2;
-    } 
 
-    ret->Nbarriers=Nbarriers;
-    ret->multicast_barrier=(tMPI_Spinlock_barrier_t*)
-              tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
-    ret->N_multicast_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
-    Nred=N;
-    for(i=0;i<Nbarriers;i++)
+    /* initialize the main barrier */
+    tMPI_Spinlock_barrier_init(&(ret->barrier), N);
+
+#if 0
     {
-        tMPI_Spinlock_barrier_init( &(ret->multicast_barrier[i]), Nred);
-        ret->N_multicast_barrier[i]=Nred;
-        /* Nred is now Nred/2 + a rest term because solitary 
-           process at the end of the list must still be accounter for */
-        Nred = Nred/2 + Nred%2;
+        /* calculate the number of reduce barriers */
+        int Nbarriers=0;
+        int Nred=N;
+        while(Nred>1) {
+            Nbarriers+=1;
+            Nred = Nred/2 + Nred%2;
+        } 
+
+        ret->Nreduce_barriers=Nbarriers;
+        ret->reduce_barrier=(tMPI_Spinlock_barrier_t*)
+                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nbarriers+1));
+        ret->N_reduce_barrier=(int*)tMPI_Malloc(sizeof(int)*(Nbarriers+1));
+        Nred=N;
+        for(i=0;i<Nbarriers;i++)
+        {
+            tMPI_Spinlock_barrier_init( &(ret->reduce_barrier[i]), Nred);
+            ret->N_reduce_barrier[i]=Nred;
+            /* Nred is now Nred/2 + a rest term because solitary 
+               process at the end of the list must still be accounter for */
+            Nred = Nred/2 + Nred%2;
+        }
     }
+#endif
+
+    /* the reduce barriers */
+    {
+        /* First calculate the number of reduce barriers */
+        int Niter=0; /* the iteration number */
+        int Nred=N; /* the number of reduce barriers for this iteration */
+        while(Nred>1) {
+            /* Nred is now Nred/2 + a rest term because solitary 
+               process at the end of the list must still be accounter for */
+            Nred = Nred/2 + Nred%2;
+            Niter+=1;
+        } 
+
+        ret->N_reduce_iter=Niter;
+        /* allocate the list */
+        ret->reduce_barrier=(tMPI_Spinlock_barrier_t**)
+                  tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t*)*(Niter+1));
+        ret->N_reduce=(int*)tMPI_Malloc(sizeof(int)*(Niter+1));
+
+        /* we re-set Nred to N */
+        Nred=N;
+        for(i=0;i<Niter;i++)
+        {
+            int j;
+
+            Nred = Nred/2 + Nred%2;
+            ret->N_reduce[i] = Nred;
+            /* allocate the sub-list */
+            ret->reduce_barrier[i]=(tMPI_Spinlock_barrier_t*)
+                      tMPI_Malloc(sizeof(tMPI_Spinlock_barrier_t)*(Nred));
+            for(j=0;j<Nred;j++)
+            {
+                tMPI_Spinlock_barrier_init(&(ret->reduce_barrier[i][j]),2);
+            }
+        }
+    }
+
+    /* the reduce buffers */
+#if 0
     ret->sendbuf=(volatile void**)tMPI_Malloc(sizeof(void*)*Nthreads);
     ret->recvbuf=(volatile void**)tMPI_Malloc(sizeof(void*)*Nthreads);
+#else
+    ret->reduce_sendbuf=(tMPI_Atomic_ptr_t*)
+              tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
+    ret->reduce_recvbuf=(tMPI_Atomic_ptr_t*)
+              tMPI_Malloc(sizeof(tMPI_Atomic_ptr_t)*Nthreads);
+#endif
 
 
     if (parent)
@@ -152,7 +205,7 @@ tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N)
     /* multi_sync objects */
     ret->csync=(struct coll_sync*)tMPI_Malloc(sizeof(struct coll_sync)*N);
     for(i=0;i<N;i++)
-        tMPI_Coll_sync_init( &(ret->csync[i]));
+        tMPI_Coll_sync_init( &(ret->csync[i]), N);
 
     /* we insert ourselves in the circular list, after TMPI_COMM_WORLD */
     if (TMPI_COMM_WORLD)
@@ -176,8 +229,14 @@ void tMPI_Comm_destroy(tMPI_Comm comm)
     int i;
 
     free(comm->grp.peers);
-    free(comm->multicast_barrier);
-    free(comm->N_multicast_barrier);
+#if 0
+    free(comm->reduce_barrier);
+    free(comm->N_reduce_barrier);
+#endif
+    for(i=0;i<comm->N_reduce_iter;i++)
+        free(comm->reduce_barrier[i]);
+    free(comm->reduce_barrier);
+    free(comm->N_reduce);
 
     for(i=0;i<N_COLL_ENV;i++)
         tMPI_Coll_env_destroy( &(comm->cev[i]) );
@@ -190,8 +249,8 @@ void tMPI_Comm_destroy(tMPI_Comm comm)
     tMPI_Thread_cond_destroy( &(comm->comm_create_prep) );
     tMPI_Thread_cond_destroy( &(comm->comm_create_finish) );
 
-    free((void*)comm->sendbuf);
-    free((void*)comm->recvbuf);
+    free((void*)comm->reduce_sendbuf);
+    free((void*)comm->reduce_recvbuf);
 
     if ( comm->cart )
     {

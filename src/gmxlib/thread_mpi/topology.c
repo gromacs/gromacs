@@ -268,7 +268,7 @@ static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
        every thread that is part of the new communicator */
     if (*comm_cart)
     {
-        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->multicast_barrier[0]) );
+        tMPI_Spinlock_barrier_wait( &( (*comm_cart)->barrier) );
     }
 }
 
@@ -351,9 +351,9 @@ int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm)
     tMPI_Comm_rank(comm, &myrank);
     if ( comm->cart )
     {
-        oldcoords=tMPI_Malloc(sizeof(int)*comm->cart->ndims);
-        dims=tMPI_Malloc(sizeof(int)*comm->cart->ndims);
-        periods=tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        oldcoords=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        dims=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
+        periods=(int*)tMPI_Malloc(sizeof(int)*comm->cart->ndims);
 
         /* get old coordinates */
         tMPI_Cart_coords(comm, myrank, comm->cart->ndims, oldcoords);

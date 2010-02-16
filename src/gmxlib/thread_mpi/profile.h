@@ -44,6 +44,8 @@ files.
 
 #include "thread_mpi/atomic/cycles.h"
 
+struct tmpi_thread;
+
 enum tmpi_functions 
 {
     TMPIFN_Send=0, /* first the point-to-point comm functions */

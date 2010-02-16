@@ -145,8 +145,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
                                 sendsize, recvtype->size*recvcount, 
                                 (char*)sendbuf+sendsize*myrank, 
-                                recvbuf,
-                                &ret);
+                                recvbuf, &ret);
         }
 
         /* and wait until everybody is done copying */

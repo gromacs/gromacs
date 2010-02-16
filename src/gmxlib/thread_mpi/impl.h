@@ -47,6 +47,10 @@ files.
 #include "wait.h"
 #include "barrier.h"
 #include "event.h"
+#ifdef TMPI_PROFILE
+#include "profile.h"
+#endif
+
 
 
 
@@ -363,7 +367,12 @@ struct coll_sync
 {
     int synct; /* sync counter for coll_env_thread.  */
     int syncs; /* sync counter for coll_env_coll.  */
+
+    tMPI_Event *events; /* One event for each other thread */
+    int N; /* the number of threads */
 };
+
+
 
 
 
@@ -379,16 +388,14 @@ struct coll_sync
 
 **************************************************************************/
 
-#ifdef TMPI_PROFILE
-#include "profile.h"
-#endif
-
 /* information about a running thread. This structure is put in a 
    globally available array; the envelope exchange, etc. are all done through
    the elements of this array.*/
 struct tmpi_thread
 {
-    tMPI_Thread_t thread_id;
+    tMPI_Thread_t thread_id; /* this thread's id */
+
+    /* p2p communication structures: */
 
     /* the receive envelopes posted for other threads to check */
     struct recv_envelope_list evr;
@@ -396,23 +403,23 @@ struct tmpi_thread
     struct send_envelope_list *evs;
     /* free send and receive envelopes */
     struct free_envelope_list envelopes; 
-
     /* number of finished send envelopes */
     tMPI_Atomic_t ev_outgoing_received; 
     /* the p2p communication events (incoming envelopes + finished send 
        envelopes generate events) */
     tMPI_Event p2p_event;
     TMPI_YIELD_WAIT_DATA /* data associated with waiting */
-
     struct req_list rql;  /* list of pre-allocated requests */
 
+    /* collective communication structures: */
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* copy buffer list for multicast communications */
     struct copy_buffer_list cbl_multi; 
 #endif
 
-    tMPI_Comm self_comm; /* comms for MPI_COMM_SELF */
+    /* miscellaneous data: */
 
+    tMPI_Comm self_comm; /* comms for MPI_COMM_SELF */
 #ifdef TMPI_PROFILE
     /* the per-thread profile structure that keeps call counts & wait times. */
     struct tmpi_profile profile;
@@ -430,6 +437,17 @@ struct tmpi_thread
 };
 
 
+
+
+
+
+/**************************************************************************
+
+  ERROR HANDLER DATA STRUCTURES 
+
+**************************************************************************/
+
+
 /* the error handler  */
 struct tmpi_errhandler_
 {
@@ -441,6 +459,15 @@ struct tmpi_errhandler_
 void tmpi_errors_are_fatal_fn(tMPI_Comm *comm, int *err);
 void tmpi_errors_return_fn(tMPI_Comm *comm, int *err);
 
+
+
+
+
+/**************************************************************************
+
+  GLOBAL DATA STRUCTURE
+
+**************************************************************************/
 
 /* global MPI information */
 struct tmpi_global
@@ -478,9 +505,6 @@ struct tmpi_global
 
 
 
-
-
-
 /**************************************************************************
 
   COMMUNICATOR DATA STRUCTURES 
@@ -503,23 +527,40 @@ struct tmpi_comm_
 {
     struct tmpi_group_ grp; /* the communicator group */
 
-    /* list of barrier_t's. 
-       multicast_barrier[0] contains a barrier for N threads 
+    /* the barrier for tMPI_Barrier() */
+    tMPI_Spinlock_barrier_t barrier;
+
+
+#if 0
+    /* list of barrier_t's for reduce operations. 
+       reduce_barrier[0] contains a barrier for N threads 
        (N=the number of threads in the communicator)
-       multicast_barrier[1] contains a barrier for N/2 threads
-       multicast_barrier[2] contains a barrier for N/4 threads
-       multicast_barrier[3] contains a barrier for N/8 threads
+       reduce_barrier[1] contains a barrier for N/2 threads
+       reduce_barrier[2] contains a barrier for N/4 threads
+       reduce_barrier[3] contains a barrier for N/8 threads
        and so on. (until N/x reaches 1)
        This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
-    tMPI_Spinlock_barrier_t *multicast_barrier;   
-    int *N_multicast_barrier;
-    int Nbarriers;
+    tMPI_Spinlock_barrier_t *reduce_barrier;   
+    int *N_reduce_barrier;
+    int Nreduce_barriers;
+#endif
+
+    /* List of barriers for reduce operations.
+       reduce_barrier[0] contains a list of N/2 barriers for N threads
+       reduce_barrier[1] contains a list of N/4 barriers for N/2 threads
+       reduce_barrier[2] contains a list of N/8 barriers for N/4 threads
+       and so on. (until N/x reaches 1)
+       This is to facilitate tree-based algorithms for tMPI_Reduce, etc.  */
+    tMPI_Spinlock_barrier_t **reduce_barrier;
+    int *N_reduce; /* the number of barriers in each iteration */
+    int N_reduce_iter; /* the number of iterations */
+
 
     struct coll_env *cev; /* list of multicast envelope objecs */
     struct coll_sync *csync; /* list of multicast sync objecs */
 
-    /* lists of globally shared send/receive buffers for tMPI_Reduce, etc. */
-    volatile void **sendbuf, **recvbuf; 
+    /* lists of globally shared send/receive buffers for tMPI_Reduce. */
+    tMPI_Atomic_ptr_t *reduce_sendbuf, *reduce_recvbuf; 
     
     /* mutex for communication object creation. Traditional mutexes are 
        better here because communicator creation should not be done in 
@@ -761,7 +802,7 @@ void tMPI_Coll_env_init(struct coll_env *mev, int N);
 void tMPI_Coll_env_destroy(struct coll_env *mev);
 
 /* initialize a coll sync structure */
-void tMPI_Coll_sync_init(struct coll_sync *msc);
+void tMPI_Coll_sync_init(struct coll_sync *msc, int N);
 /* destroy a coll sync structure */
 void tMPI_Coll_sync_destroy(struct coll_sync *msc);
 
