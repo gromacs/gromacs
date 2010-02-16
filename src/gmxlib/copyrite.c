@@ -225,8 +225,11 @@ void CopyRight(FILE *out,const char *szProgram)
   int i;
 
   set_program_name(szProgram);
-
+#ifdef CGUNITS
+  ster_print(out,"CG AdResS G  R  O  M  A  C  S");
+#else
   ster_print(out,"AdResS G  R  O  M  A  C  S");
+#endif
   fprintf(out,"\n");
   
   bromacs(tmpstr,1023);

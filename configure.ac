@@ -186,6 +186,9 @@ AC_ARG_ENABLE(all-static,
                               [Make completely static binaries])],, enable_all_static=no)
 # Dont add the -all-static flag until after the compiler test.
 
+AC_ARG_ENABLE(cgunits,
+              [AC_HELP_STRING([--enable-cgunits],
+                              [Build a gromacs with uses reduced units])],,enable_cgunits=no)
 
 # FFT libraries - only use one...
 AC_ARG_WITH(fft,
@@ -1049,6 +1052,10 @@ AM_CONDITIONAL([GMX_FAHCORE],[test "$enable_fahcore" = "yes"])
 
 if test "$enable_all_static" = "yes"; then
   LDFLAGS="$LDFLAGS -all-static"
+fi
+
+if test "$enable_cgunits" = "yes"; then
+  CPPFLAGS="$CPPFLAGS -DCGUNITS"
 fi
 
 # we have asm source, so this is necessary for automake 1.6

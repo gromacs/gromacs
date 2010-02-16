@@ -76,7 +76,11 @@ extern "C" {
 #define BOLTZMANN	 (1.380658e-23)		/* (J/K)	*/
 #define AVOGADRO	 (6.0221367e23)		/* ()		*/
 #define RGAS             (BOLTZMANN*AVOGADRO)   /* (J/(mol K))  */
+#ifdef CGUNITS
+#define BOLTZ            (1.)            
+#else
 #define BOLTZ            (RGAS/KILO)            /* (kJ/(mol K)) */
+#endif
 #define FARADAY          (E_CHARGE*AVOGADRO)    /* (C/mol)      */
 #define ELECTRONVOLT     (E_CHARGE*AVOGADRO/KILO) /* (kJ/mol)   */     
 #define PLANCK1          (6.6262e-34)           /* J s */
@@ -92,7 +96,11 @@ extern "C" {
 /* Improved accuracy (PL & EL, 20090421) */
 #define FACEL		 (332.0636930*CAL2JOULE)/* (10 * (ONE_4PI_EPS0)) */
 #define ONE_4PI_EPS0	 (FACEL*0.1)            /* 1/(4*pi*e0)*/
+#ifdef CGUNITS
+#define PRESFAC           (1.)             /* bar / pressure unity */
+#else
 #define PRESFAC           (16.6054)             /* bar / pressure unity */
+#endif
 #define ENM2DEBYE         48.0321               /* Convert electron nm  *
 						 * to debye             */
 #define DEBYE2ENM         0.02081941
