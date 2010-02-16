@@ -1636,9 +1636,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * or at the last step (but not when we do not want confout),
          * but never at the first step or with rerun.
          */
-        bCPT = ((((gs.set[eglCHKPT] && bNS) ||
-                  (bLastStep && (Flags & MD_CONFOUT))) &&
-                 (step > ir->init_step) && !bRerunMD));
+        bCPT = (((gs.set[eglCHKPT] && bNS) ||
+                 (bLastStep && (Flags & MD_CONFOUT))) &&
+                step > ir->init_step && !bRerunMD);
         if (bCPT)
         {
             gs.set[eglCHKPT] = 0;
@@ -2249,7 +2249,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             gs.sig[eglNABNSB] = nlh.nabnsb;
             compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
                             wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                            constr,&gs,
+                            constr,
+                            iterate->bFirstIterate ? &gs : NULL,
                             lastbox,
                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                             cglo_flags 
