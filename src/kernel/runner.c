@@ -294,7 +294,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 #ifdef GMX_THREADS
                   "but the number of threads (option -nt) is 1"
 #else
-                  "but mdrun was not started through mpirun/mpiexec or only only process was requested through mpirun/mpiexec" 
+                  "but mdrun was not started through mpirun/mpiexec or only one process was requested through mpirun/mpiexec" 
 #endif
 #endif
             );
