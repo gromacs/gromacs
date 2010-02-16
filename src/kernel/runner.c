@@ -282,6 +282,24 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t reset_counters;
     gmx_edsam_t ed;
 
+    /* A parallel command line option consistency check */
+    if (!PAR(cr) &&
+        (ddxyz[XX] > 1 || ddxyz[YY] > 1 || ddxyz[ZZ] > 1 || cr->npmenodes > 0))
+    {
+        gmx_fatal(FARGS,
+                  "The -dd or -npme option request a parallel simulation, "
+#ifndef GMX_MPI
+                  "but mdrun was compiled without threads or MPI enabled"
+#else
+#ifdef GMX_THREADS
+                  "but the number of threads (option -nt) is 1"
+#else
+                  "but mdrun was not started through mpirun/mpiexec or only only process was requested through mpirun/mpiexec" 
+#endif
+#endif
+            );
+    }
+
     /* Essential dynamics */
     if (opt2bSet("-ei",nfile,fnm)) 
     {
