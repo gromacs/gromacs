@@ -786,6 +786,8 @@ int gmx_bar(int argc,char *argv[])
     kT   = BOLTZ*ba[0].temp;
     beta = 1/kT;
 
+    printf("\nTemperature: %g K\n", ba[0].temp);
+
     printf("\nDetailed results in kT (see help for explanation):\n\n");
     printf(skteformat, "lam_A ");
     printf(skteformat, "lam_B ");
