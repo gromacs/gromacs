@@ -224,6 +224,8 @@ extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
 
+extern double gmx_gettime();
+
 extern void print_time(FILE *out, gmx_runtime_t *runtime,
                        gmx_large_int_t step,t_inputrec *ir, t_commrec *cr);
 
