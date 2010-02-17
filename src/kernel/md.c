@@ -1856,7 +1856,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
-            if (iterate.bIterate) { 
+            if (bIterations && iterate.bIterate) { 
                 copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
             }
             
