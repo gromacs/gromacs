@@ -8,7 +8,7 @@ lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
-libgmxpreprocess@LIBSUFFIX@_la_LIBADD       =
+libgmxpreprocess@LIBSUFFIX@_la_LIBADD       = ../mdlib/libmd@LIBSUFFIX@.la
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
 
 libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
