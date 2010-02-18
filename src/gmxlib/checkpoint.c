@@ -63,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 11;
+static const int cpt_version = 12;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -623,7 +623,8 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     int  magic;
     int  idum=0;
     int  i;
-    
+    char *fhost;
+
     if (bRead)
     {
         magic = -1;
@@ -643,6 +644,18 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                   "The checkpoint file is corrupted or not a checkpoint file",
                   magic,CPT_MAGIC1);
     }
+    if (!bRead)
+    {
+        snew(fhost,255);
+#ifdef HAVE_UNISTD_H
+        if (gethostname(fhost,255) != 0)
+        {
+            sprintf(fhost,"unknown");
+        }
+#else
+        sprintf(fhost,"unknown");
+#endif  
+    }
     do_cpt_string_err(xd,bRead,"GROMACS version"           ,version,list);
     do_cpt_string_err(xd,bRead,"GROMACS build time"        ,btime,list);
     do_cpt_string_err(xd,bRead,"GROMACS build user"        ,buser,list);
@@ -654,6 +667,14 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     if (*file_version > cpt_version)
     {
         gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
+    }
+    if (*file_version >= 12)
+    {
+        do_cpt_string_err(xd,bRead,"generating host"           ,&fhost,list);
+        if (list == NULL)
+        {
+            sfree(fhost);
+        }
     }
     do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
