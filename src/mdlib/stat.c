@@ -66,6 +66,7 @@
 #include "constr.h"
 #include "checkpoint.h"
 #include "mdrun.h"
+#include "xvgr.h"
 
 typedef struct gmx_global_stat
 {
@@ -430,12 +431,103 @@ static void moveit(t_commrec *cr,
 	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
+gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],bool bAppendFiles,
+                          const t_commrec *cr,const t_inputrec *ir,
+                          const output_env_t oenv)
+{
+    gmx_mdoutf_t *of;
+    char filemode[3];
+
+    snew(of,1);
+
+    of->fp_trn   = -1;
+    of->fp_ene   = NULL;
+    of->fp_xtc   = -1;
+    of->fp_dhdl  = NULL;
+    of->fp_field = NULL;
+    
+    of->eIntegrator     = ir->eI;
+    of->simulation_part = ir->simulation_part;
+
+    if (MASTER(cr))
+    {
+        sprintf(filemode, bAppendFiles ? "a+" : "w+");  
+        
+        if (ir->eI != eiNM)
+        {
+            of->fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
+        }
+        if (ir->nstxtcout > 0 && !EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            of->fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
+            of->xtc_prec = ir->xtcprec;
+        }
+        of->fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm), filemode);
+        of->fn_cpt = opt2fn("-cpo",nfile,fnm);
+        
+        if (ir->efep != efepNO && ir->nstdhdl > 0 &&
+            !EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            if (bAppendFiles)
+            {
+                of->fp_dhdl = gmx_fio_fopen(opt2fn("-dhdl",nfile,fnm),filemode);
+            }
+            else
+            {
+                of->fp_dhdl = open_dhdl(opt2fn("-dhdl",nfile,fnm),ir,oenv);
+            }
+        }
+        
+        if (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n)
+        {
+            if (bAppendFiles)
+            {
+                of->fp_dhdl = gmx_fio_fopen(opt2fn("-field",nfile,fnm),
+                                            filemode);
+            }
+            else
+            {				  
+                of->fp_field = xvgropen(opt2fn("-field",nfile,fnm),
+                                        "Applied electric field","Time (ps)",
+                                        "E (V/nm)",oenv);
+            }
+        }
+    }
+
+    return of;
+}
+
+void done_mdoutf(gmx_mdoutf_t *of)
+{
+    if (of->fp_ene != NULL)
+    {
+        close_enx(of->fp_ene);
+    }
+    if (of->fp_xtc >= 0)
+    {
+        close_xtc(of->fp_xtc);
+    }
+    if (of->fp_trn >= 0)
+    {
+        close_trn(of->fp_trn);
+    }
+    if (of->fp_dhdl != NULL)
+    {
+        gmx_fio_fclose(of->fp_dhdl);
+    }
+    if (of->fp_field != NULL)
+    {
+        gmx_fio_fclose(of->fp_field);
+    }
+
+    sfree(of);
+}
+
 void write_traj(FILE *fplog,t_commrec *cr,
-                int fp_trn,bool bX,bool bV,bool bF,
-                int fp_xtc,bool bXTC,int xtc_prec,
-                const char *fn_cpt,bool bCPT,
+                gmx_mdoutf_t *of,
+                bool bX,bool bV,bool bF,bool bXTC,bool bCPT,
                 gmx_mtop_t *top_global,
-                int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
+                gmx_large_int_t step,double t,
                 t_state *state_local,t_state *state_global,
                 rvec *f_local,rvec *f_global,
                 int *n_xtc,rvec **x_xtc)
@@ -535,20 +627,21 @@ void write_traj(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr)) {
         if (bCPT) {
-            write_checkpoint(fn_cpt,fplog,cr,eIntegrator,simulation_part,step,t,state_global);
+            write_checkpoint(of->fn_cpt,fplog,cr,of->eIntegrator,
+                             of->simulation_part,step,t,state_global);
         }
         
         if (bX || bV || bF) {
-            fwrite_trn(fp_trn,step,t,state_local->lambda,
+            fwrite_trn(of->fp_trn,step,t,state_local->lambda,
                        state_local->box,top_global->natoms,
                        bX ? state_global->x : NULL,
                        bV ? global_v : NULL,
                        bF ? f_global : NULL);
-            if(gmx_fio_flush(fp_trn) != 0)
+            if (gmx_fio_flush(of->fp_trn) != 0)
             {
                 gmx_file("Cannot write trajectory; maybe you are out of quota?");
             }
-            gmx_fio_check_file_position(fp_trn);
+            gmx_fio_check_file_position(of->fp_trn);
         }      
         if (bXTC) {
             groups = &top_global->groups;
@@ -583,12 +676,12 @@ void write_traj(FILE *fplog,t_commrec *cr,
                     }
                 }
             }
-            if (write_xtc(fp_xtc,*n_xtc,step,t,
-                          state_local->box,xxtc,xtc_prec) == 0)
+            if (write_xtc(of->fp_xtc,*n_xtc,step,t,
+                          state_local->box,xxtc,of->xtc_prec) == 0)
             {
                 gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
             }
-            gmx_fio_check_file_position(fp_xtc);
+            gmx_fio_check_file_position(of->fp_xtc);
         }
     }
 }

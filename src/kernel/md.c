@@ -88,7 +88,6 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
-#include "genborn.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -967,11 +966,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
-    int        fp_trn=0,fp_xtc=0;
-    ener_file_t fp_ene=NULL;
+    gmx_mdoutf_t *outf;
     gmx_large_int_t step,step_rel;
-    const char *fn_cpt;
-    FILE       *fp_dhdl=NULL,*fp_field=NULL;
     double     run_time;
     double     t,t0,lam0;
     bool       bGStatEveryStep,bGStat,bNstEner,bCalcPres,bCalcEner;
@@ -1108,8 +1104,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Initial values */
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
-            nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
-            &fp_dhdl,&fp_field,&mdebin,
+            nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
@@ -1219,12 +1214,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             state,&f,mdatoms,top,fr,
                             vsite,shellfc,constr,
                             nrnb,wcycle,FALSE);
-    }
-
-    /* If not DD, copy gb data */
-    if(ir->implicit_solvent && !DOMAINDECOMP(cr))
-    {
-        make_local_gb(cr,fr->born,ir->gb_algorithm);
     }
 
     update_mdatoms(mdatoms,state->lambda);
@@ -1788,7 +1777,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                       nrnb,wcycle,graph,groups,
                                       shellfc,fr,bBornRadii,t,mu_tot,
                                       state->natoms,&bConverged,vsite,
-                                      fp_field);
+                                      outf->fp_field);
             tcount+=count;
 
             if (bConverged)
@@ -1808,7 +1797,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                      state->box,state->x,&state->hist,
                      f,force_vir,mdatoms,enerd,fcd,
                      state->lambda,graph,
-                     fr,vsite,mu_tot,t,fp_field,ed,bBornRadii,
+                     fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
     
@@ -2049,8 +2038,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_energyhistory(&state_global->enerhist,mdebin);
                 }
             }
-            write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
-                       fn_cpt,bCPT,top_global,ir->eI,ir->simulation_part,
+            write_traj(fplog,cr,outf,bX,bV,bF,bXTC,bCPT,top_global,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             if (bCPT)
             {
@@ -2504,7 +2492,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 if (bNstEner)
                 {
-                    upd_mdebin(mdebin,bDoDHDL ? fp_dhdl : NULL,TRUE,
+                    upd_mdebin(mdebin,bDoDHDL ? outf->fp_dhdl : NULL,TRUE,
                                t,mdatoms->tmass,enerd,state,lastbox,
                                shake_vir,force_vir,total_vir,pres,
                                ekind,mu_tot,constr);
@@ -2517,7 +2505,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 do_dr  = do_per_step(step,ir->nstdisreout);
                 do_or  = do_per_step(step,ir->nstorireout);
                 
-                print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,t,
+                print_ebin(outf->fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,
+                           step,t,
                            eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
             }
             if (ir->ePull != epullNO)
@@ -2648,24 +2637,13 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     {
         if (bGStatEveryStep && !bRerunMD) 
         {
-            print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
+            print_ebin(outf->fp_ene,FALSE,FALSE,FALSE,fplog,step,t,
                        eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
         }
-        close_enx(fp_ene);
-        if (ir->nstxtcout)
-        {
-            close_xtc(fp_xtc);
-        }
-        close_trn(fp_trn);
-        if (fp_dhdl)
-        {
-            gmx_fio_fclose(fp_dhdl);
-        }
-        if (fp_field)
-        {
-            gmx_fio_fclose(fp_field);
-        }
     }
+
+    done_mdoutf(outf);
+
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
