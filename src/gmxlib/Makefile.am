@@ -78,7 +78,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.h
 
 #version.h contains git version or version defined in VERSION
-copyrite.o: version.h
+copyrite.c: version.h
 #The empty target FORCE forces make to run the commands every time. But
 #version.h is only changed if the version actually has changed, and hence
 #rebuilds are only triggered when they are needed.
