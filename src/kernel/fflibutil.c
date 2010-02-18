@@ -147,7 +147,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                                      char ***filenames,
                                      char ***filenames_short)
 {
-#ifndef HAVE_DIRENT
+#ifndef HAVE_DIRENT_H
     gmx_fatal(FARGS,"lib_search_file_end called while the 'dirent' functionality is not available on this system");
     return 0;
 #else
@@ -296,7 +296,7 @@ int fflib_search_file_end(const char *ffdir,const char *file_end,
 int fflib_search_file_in_dirend(const char *filename,const char *dirend,
                                 char ***dirnames)
 {
-#ifndef HAVE_DIRENT
+#ifndef HAVE_DIRENT_H
     gmx_fatal(FARGS,"lib_search_file_in_dirend called while the 'dirent' functionality is not available on this system");
     return 0;
 #else
