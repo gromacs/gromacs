@@ -24,6 +24,9 @@ AC_DISABLE_SHARED
 # Simple options and makefile variables
 #######################################################################
 
+# This is currently not defined by CMake, because it's tricky to generate
+# version.h portably (the autoconf rules for it are in src/gmxlib/Makefile.am).
+AC_DEFINE(USE_VERSION_H,,[Use the version string from generated version.h])
 
 ### Single/Double
 AC_ARG_ENABLE(float,

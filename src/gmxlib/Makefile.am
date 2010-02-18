@@ -75,9 +75,22 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl 
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.h
 
-
+#version.h contains git version or version defined in VERSION
+copyrite.o: version.h
+#The empty target FORCE forces make to run the commands every time. But
+#version.h is only changed if the version actually has changed, and hence
+#rebuilds are only triggered when they are needed.
+#Having the commands in the update_version rule does about the same thing,
+#except that one needs to run make twice if the version has changed to rebuild
+#copyrite.c.
+version.h: FORCE
+	[ -f version.h ] || touch version.h
+	version=`git --git-dir=$(top_srcdir)/.git describe --always --long --abbrev=20 HEAD 2>/dev/null || echo @VERSION@`; \
+	version="static const char ver_string[] = \"VERSION $$version\";"; \
+	echo "$$version" | cmp -s version.h - || echo "$$version" > version.h
+FORCE:
 
 
 
