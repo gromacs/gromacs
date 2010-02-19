@@ -76,7 +76,9 @@ extern "C" {
 #define MD_STARTFROMCPT (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 
-/* define a number of flags to better control the information passed to the compute_globals code in md.c */
+/* Define a number of flags to better control the information
+ * passed to compute_globals in md.c and global_stat.
+ */
 
 /* We are rerunning the simulation */
 #define CGLO_RERUNMD        (1<<1)
@@ -226,15 +228,22 @@ extern gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],
 extern void done_mdoutf(gmx_mdoutf_t *of);
 /* Close all open output files and free the of pointer */
 
+#define MDOF_X   (1<<0)
+#define MDOF_V   (1<<1)
+#define MDOF_F   (1<<2)
+#define MDOF_XTC (1<<3)
+#define MDOF_CPT (1<<4)
+
 extern void write_traj(FILE *fplog,t_commrec *cr,
 		       gmx_mdoutf_t *of,
-		       bool bX,bool bV,bool bF,bool bXTC,bool bCPT,
+		       int mdof_flags,
 		       gmx_mtop_t *top_global,
 		       gmx_large_int_t step,double t,
 		       t_state *state_local,t_state *state_global,
 		       rvec *f_local,rvec *f_global,
 		       int *n_xtc,rvec **x_xtc);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
+ * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.
  */
 

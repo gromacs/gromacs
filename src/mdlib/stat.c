@@ -525,7 +525,7 @@ void done_mdoutf(gmx_mdoutf_t *of)
 
 void write_traj(FILE *fplog,t_commrec *cr,
                 gmx_mdoutf_t *of,
-                bool bX,bool bV,bool bF,bool bXTC,bool bCPT,
+                int mdof_flags,
                 gmx_mtop_t *top_global,
                 gmx_large_int_t step,double t,
                 t_state *state_local,t_state *state_global,
@@ -548,31 +548,31 @@ void write_traj(FILE *fplog,t_commrec *cr,
     
     if (DOMAINDECOMP(cr))
     {
-        if (bCPT)
+        if (mdof_flags & MDOF_CPT)
         {
             dd_collect_state(cr->dd,state_local,state_global);
         }
         else
         {
-            if (bX || bXTC)
+            if (mdof_flags & (MDOF_X | MDOF_XTC))
             {
                 dd_collect_vec(cr->dd,state_local,state_local->x,
                                state_global->x);
             }
-            if (bV)
+            if (mdof_flags & MDOF_V)
             {
                 dd_collect_vec(cr->dd,state_local,local_v,
                                global_v);
             }
         }
-        if (bF)
+        if (mdof_flags & MDOF_F)
         {
             dd_collect_vec(cr->dd,state_local,f_local,f_global);
         }
     }
     else
     {
-        if (bCPT)
+        if (mdof_flags & MDOF_CPT)
         {
             /* All pointers in state_local are equal to state_global,
              * but we need to copy the non-pointer entries.
@@ -589,7 +589,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
         if (cr->nnodes > 1)
         {
             /* Particle decomposition, collect the data on the master node */
-            if (bCPT)
+            if (mdof_flags & MDOF_CPT)
             {
                 if (state_local->flags & (1<<estX))   MX(state_global->x);
                 if (state_local->flags & (1<<estV))   MX(state_global->v);
@@ -618,32 +618,35 @@ void write_traj(FILE *fplog,t_commrec *cr,
             }
             else
             {
-                if (bX || bXTC) MX(state_global->x);
-                if (bV)         MX(global_v);
+                if (mdof_flags & (MDOF_X | MDOF_XTC)) MX(state_global->x);
+                if (mdof_flags & MDOF_V)              MX(global_v);
             }
-            if (bF)         MX(f_global);
-        }
-    }
-    
-    if (MASTER(cr)) {
-        if (bCPT) {
-            write_checkpoint(of->fn_cpt,fplog,cr,of->eIntegrator,
-                             of->simulation_part,step,t,state_global);
-        }
-        
-        if (bX || bV || bF) {
+            if (mdof_flags & MDOF_F) MX(f_global);
+         }
+     }
+
+     if (MASTER(cr))
+     {
+         if (mdof_flags & MDOF_CPT)
+         {
+             write_checkpoint(of->fn_cpt,fplog,cr,of->eIntegrator,
+                              of->simulation_part,step,t,state_global);
+         }
+
+         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
+         {
             fwrite_trn(of->fp_trn,step,t,state_local->lambda,
                        state_local->box,top_global->natoms,
-                       bX ? state_global->x : NULL,
-                       bV ? global_v : NULL,
-                       bF ? f_global : NULL);
+                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? global_v : NULL,
+                       (mdof_flags & MDOF_F) ? f_global : NULL);
             if (gmx_fio_flush(of->fp_trn) != 0)
             {
                 gmx_file("Cannot write trajectory; maybe you are out of quota?");
             }
             gmx_fio_check_file_position(of->fp_trn);
         }      
-        if (bXTC) {
+        if (mdof_flags & MDOF_XTC) {
             groups = &top_global->groups;
             if (*n_xtc == -1)
             {

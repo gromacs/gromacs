@@ -415,13 +415,18 @@ static void write_em_traj(FILE *fplog,t_commrec *cr,
                           em_state_t *state,
                           t_state *state_global,rvec *f_global)
 {
+    int mdof_flags;
+
     if ((bX || bF || confout != NULL) && !DOMAINDECOMP(cr))
     {
         f_global = state->f;
         copy_em_coords_back(state,state_global,bF ? f_global : NULL);
     }
     
-    write_traj(fplog,cr,outf,bX,FALSE,bF,FALSE,FALSE,
+    mdof_flags = 0;
+    if (bX) { mdof_flags |= MDOF_X; }
+    if (bF) { mdof_flags |= MDOF_F; }
+    write_traj(fplog,cr,outf,mdof_flags,
                top_global,step,(double)step,
                &state->s,state_global,state->f,f_global,NULL,NULL);
     
@@ -1534,7 +1539,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(fplog,cr,outf,do_x,FALSE,do_f,FALSE,FALSE,
+    write_traj(fplog,cr,outf,MDOF_X | MDOF_F,
                top_global,step,(real)step,state,state,f,f,NULL,NULL);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */

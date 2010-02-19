@@ -976,7 +976,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bBornRadii,bStartingFromCpt;
     bool       bDoDHDL=FALSE;
     bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
-               bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
+               bForceUpdate=FALSE,bCPT;
+    int        mdof_flags;
     bool       bMasterState;
     int        force_flags,cglo_flags;
     tensor     force_vir,shake_vir,total_vir,tmp_vir,pres;
@@ -1990,18 +1991,21 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         GMX_MPE_LOG(ev_output_start);
 
-        bX   = do_per_step(step,ir->nstxout);
-        bV   = do_per_step(step,ir->nstvout);
-        bF   = do_per_step(step,ir->nstfout);
-        bXTC = do_per_step(step,ir->nstxtcout);
+        mdof_flags = 0;
+        if (do_per_step(step,ir->nstxout)) { mdof_flags |= MDOF_X; }
+        if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
+        if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
+        if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
 
 #ifdef GMX_FAHCORE
         if (MASTER(cr))
             fcReportProgress( ir->nsteps, step );
 
-        bX = bX || bLastStep; /*enforce writing positions and velocities 
-                                at end of run */
-        bV = bV || bLastStep;
+        if (bLastStep)
+        {
+            /* Enforce writing positions and velocities at end of run */
+            mdof_flags |= (MDOF_X | MDOF_V);
+        }
         {
             int nthreads=(cr->nthreads==0 ? 1 : cr->nthreads);
             int nnodes=(cr->nnodes==0 ? 1 : cr->nnodes);
@@ -2015,7 +2019,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 #endif
         
-        if (bX || bV || bF || bXTC || bCPT)
+        if (mdof_flags != 0)
         {
             wallcycle_start(wcycle,ewcTRAJ);
             if (bCPT)
@@ -2038,7 +2042,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     update_energyhistory(&state_global->enerhist,mdebin);
                 }
             }
-            write_traj(fplog,cr,outf,bX,bV,bF,bXTC,bCPT,top_global,
+            write_traj(fplog,cr,outf,mdof_flags,top_global,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             if (bCPT)
             {
