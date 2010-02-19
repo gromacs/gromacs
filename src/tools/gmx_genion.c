@@ -308,10 +308,9 @@ static void update_topol(const char *topinout,int p_num,int n_num,
       }
     }
   }
-  ffclose(fpin);
   ffclose(fpout);
   /* use ffopen to generate backup of topinout */
-  fpout=ffopen(topinout,"w");
+  fpout = ffopen(topinout,"w");
   ffclose(fpout);
   rename(TEMP_FILENM,topinout);
 #undef TEMP_FILENM
