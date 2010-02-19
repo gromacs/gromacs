@@ -61,6 +61,40 @@
 /* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
 
+/* The following two variables are set in runner.c */
+extern bool bGotTermSignal, bGotUsr1Signal;
+
+#if 0
+static void reset_all_counters(FILE *fplog,t_commrec *cr,
+                               gmx_large_int_t step,
+                               gmx_large_int_t *step_rel,t_inputrec *ir,
+                               gmx_wallcycle_t wcycle,t_nrnb *nrnb,
+                               gmx_runtime_t *runtime)
+{
+    char buf[STRLEN],sbuf[STEPSTRSIZE];
+
+    /* Reset all the counters related to performance over the run */
+    sprintf(buf,"Step %s: resetting all time and cycle counters\n",
+            gmx_step_str(step,sbuf));
+    md_print_warning(cr,fplog,buf);
+
+    wallcycle_stop(wcycle,ewcRUN);
+    wallcycle_reset_all(wcycle);
+    if (DOMAINDECOMP(cr))
+    {
+        reset_dd_statistics_counters(cr->dd);
+    }
+    init_nrnb(nrnb);
+    ir->init_step += *step_rel;
+    ir->nsteps    -= *step_rel;
+    *step_rel = 0;
+    wallcycle_start(wcycle,ewcRUN);
+    runtime_start(runtime);
+    print_date_and_time(fplog,cr->nodeid,"Restarted time",runtime);
+}
+#endif
+
+
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -83,15 +117,17 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_large_int_t step,step_rel;
     const char *fn_cpt;
     FILE       *fp_dhdl=NULL,*fp_field=NULL;
+    double     run_time;
     double     t,t0,lam0;
     bool       bSimAnn,
                bFirstStep,bStateFromTPX,bInitStep,bLastStep;
-    bool       bNEMD,do_ene,do_log,
+    bool       bNEMD,do_ene,do_log, do_verbose,
                bX,bV,bF,bXTC,bCPT=FALSE;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
     rvec       mu_tot;
     t_vcm      *vcm;
+    real       chkpt=0,terminate=0,terminate_now=0;
     gmx_localtop_t *top;	
     t_mdebin *mdebin=NULL;
     t_state    *state=NULL;
@@ -109,6 +145,9 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bool        bAppend;
     int         a0,a1;
     matrix      lastbox;
+    real        reset_counters=0,reset_counters_now=0;
+    char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
+    bool        bHandledSignal=FALSE;
  
     const char *ommOptions = NULL;
     void   *openmmData;
@@ -246,7 +285,36 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
     debug_gmx();
   
-    /* I'm assuming we need global communication the first time! MRS */
+    if (MASTER(cr))
+    {
+        fprintf(fplog,"Initial temperature: %g K\n",enerd->term[F_TEMP]);
+        char tbuf[20];
+        fprintf(stderr,"starting mdrun '%s'\n",
+                *(top_global->name));
+        if (ir->nsteps >= 0)
+        {
+            sprintf(tbuf,"%8.1f",(ir->init_step+ir->nsteps)*ir->delta_t);
+        }
+        else
+        {
+            sprintf(tbuf,"%s","infinite");
+        }
+        if (ir->init_step > 0)
+        {
+            fprintf(stderr,"%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
+                    gmx_step_str(ir->init_step+ir->nsteps,sbuf),tbuf,
+                    gmx_step_str(ir->init_step,sbuf2),
+                    ir->init_step*ir->delta_t);
+        }
+        else
+        {
+            fprintf(stderr,"%s steps, %s ps.\n",
+                    gmx_step_str(ir->nsteps,sbuf),tbuf);
+        }
+    }
+
+    fprintf(fplog,"\n");
+
     /* Set and write start time */
     runtime_start(runtime);
     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
@@ -273,11 +341,49 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     step_rel = 0;
 
     bLastStep = ((ir->nsteps >= 0 && step_rel > ir->nsteps));
+
     while (!bLastStep) {
 
         wallcycle_start(wcycle,ewcSTEP);
 
         GMX_MPE_LOG(ev_timestep1);
+
+        bLastStep = (step_rel == ir->nsteps);
+        t = t0 + step*ir->delta_t;
+
+        if (terminate_now > 0 )
+        {
+            bLastStep = TRUE;
+        }
+
+        do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
+        do_verbose = bVerbose &&
+                  (step % stepout == 0 || bFirstStep || bLastStep);
+
+        if (MASTER(cr) && do_log)
+        {
+            print_ebin_header(fplog,step,t,state->lambda);
+        }
+
+        clear_mat(force_vir);
+
+        GMX_MPE_LOG(ev_timestep2);
+
+// TODO do we enable usage of heckpoints?
+//
+//        if ((bLastStep) && (step > ir->init_step))
+//        {
+//            bCPT = (chkpt > 0 || (bLastStep && (Flags & MD_CONFOUT)));
+//            if (bCPT)
+//            {
+//                chkpt = 0;
+//            }
+//        }
+//        else
+//        {
+//            bCPT = FALSE;
+//        }
+
 
         /* Now we have the energies and forces corresponding to the 
          * coordinates at time t. We must output all of this before
@@ -285,8 +391,6 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * for RerunMD t is read from input trajectory
          */
         GMX_MPE_LOG(ev_output_start);
-
-        do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
 
         bX   = do_per_step(step,ir->nstxout) || (bLastStep && ir->nstxout);
         bV   = do_per_step(step,ir->nstvout) || (bLastStep && ir->nstvout);
@@ -301,7 +405,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
       }                                                                                                                                                                                       
 
       openmm_take_one_step(openmmData);                                                                                                                                                       
-      bLastStep = (step_rel == ir->nsteps);
+
       if (bX || bV || bF || bXTC || do_ene) {
         wallcycle_start(wcycle,ewcTRAJ);
         if( bF || do_ene ){                                                                                                                                                                   
@@ -338,10 +442,114 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
         GMX_MPE_LOG(ev_output_finish);
         
+
+        /* Determine the wallclock run time up till now */
+        run_time = (double)time(NULL) - (double)runtime->real;
+
+        /* Check whether everything is still allright */    
+        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
+        {
+            if (bGotTermSignal || ir->nstlist == 0)
+            {
+                terminate = 1;
+            }
+            else
+            {
+                terminate = -1;
+            }
+            terminate_now = terminate;
+            if (fplog)
+            {
+                fprintf(fplog,
+                        "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+                        bGotTermSignal ? "TERM" : "USR1",
+                        terminate==-1 ? "NS " : "");
+                fflush(fplog);
+            }
+            fprintf(stderr,
+                    "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+                    bGotTermSignal ? "TERM" : "USR1",
+                    terminate==-1 ? "NS " : "");
+            fflush(stderr);
+            bHandledSignal=TRUE;
+        }
+
+        else if (MASTER(cr) &&
+                 (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
+                 terminate == 0)
+        {
+            /* Signal to terminate the run */
+            terminate = 1 ;
+            terminate_now = terminate;
+
+            if (fplog)
+            {
+                fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+            }
+            fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
+        }
+        
+
+///////   TODO checkpointing?
+//
+//        /* In parallel we only have to check for checkpointing in steps
+//         * where we do global communication,
+//         *  otherwise the other nodes don't know.
+//         */
+//        if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
+//                           cpt_period >= 0 &&
+//                           (cpt_period == 0 || 
+//                            run_time >= nchkpt*cpt_period*60.0)))
+//        {
+//            if (chkpt == 0)
+//            {
+//                nchkpt++;
+//            }
+//            chkpt = 1;
+//        }
+  
+         
+        /* Time for performance */
+        if (((step % stepout) == 0) || bLastStep) 
+        {
+            runtime_upd_proc(runtime);
+        }
+ 
+
+            if (do_per_step(step,ir->nstlog))
+            {
+                if(fflush(fplog) != 0)
+                {
+                    gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+                }
+            }
+
+
+        /* Remaining runtime */
+        if (MULTIMASTER(cr) && do_verbose) 
+        {
+            print_time(stderr,runtime,step,ir,cr);
+        }
+
+
         bFirstStep = FALSE;
         bInitStep = FALSE;
         step++;
         step_rel++;
+
+
+#if 0
+        if (step_rel == wcycle_get_reset_counters(wcycle) ||
+            reset_counters_now == 1)
+        {
+            /* Reset all the counters related to performance over the run */
+            reset_all_counters(fplog,cr,step,&step_rel,ir,wcycle,nrnb,runtime);
+            wcycle_set_reset_counters(wcycle,-1);
+////            bResetCountersHalfMaxH = FALSE;
+            reset_counters_now = 0;
+        }
+#endif
+
     }
     /* End of main MD loop */
     debug_gmx();

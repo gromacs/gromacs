@@ -397,9 +397,12 @@ int main(int argc,char *argv[])
   const char *deviceOptions = "";
 
   t_pargs pa[] = {
+
+// arguments relevant to OPENMM only
 #ifdef GMX_OPENMM
     { "-device",  FALSE, etSTR, {&deviceOptions},
       "Device option string" },
+// args for non-OpenMM binaries
 #else
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
@@ -447,8 +450,6 @@ int main(int argc,char *argv[])
       "Append to previous output files when continuing from checkpoint" },
     { "-addpart",  FALSE, etBOOL, {&bAddPart},
       "Add the simulation part number to all output files when continuing from checkpoint" },
-    { "-maxh",   FALSE, etREAL, {&max_hours},
-      "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -468,6 +469,9 @@ int main(int argc,char *argv[])
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
       "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" }
 #endif
+// args for both
+    { "-maxh",   FALSE, etREAL, {&max_hours},
+      "Terminate after 0.99 times this time (hours)" },
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
