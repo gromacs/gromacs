@@ -1254,10 +1254,16 @@ int main (int argc, char *argv[])
   if (EEL_PME(ir->coulombtype)) {
     float ratio = pme_load_estimate(sys,ir,state.box);
     fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
-    if (ratio > 0.5)
+    /* With free energy we might need to do PME both for the A and B state
+     * charges. This will double the cost, but the optimal performance will
+     * then probably be at a slightly larger cut-off and grid spacing.
+     */
+    if ((ir->efep == efepNO && ratio > 1.0/2.0) ||
+        (ir->efep != efepNO && ratio > 2.0/3.0)) {
       warning_note("The optimal PME mesh load for parallel simulations is below 0.5\n"
 		   "and for highly parallel simulations between 0.25 and 0.33,\n"
 		   "for higher performance, increase the cut-off and the PME grid spacing");
+    }
   }
 
   {
