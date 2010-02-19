@@ -245,7 +245,7 @@ static void calc_dg_stddev(int n1, double *W1, int n2, double *W2,
         Wfac2 =  -beta*delta_lambda;
     }
 
-    M=log(nn1/nn2);
+    M = log(nn1/nn2);
 
     /* calculate average in both directions */
     for(i=0;i<n1;i++)
@@ -254,9 +254,9 @@ static void calc_dg_stddev(int n1, double *W1, int n2, double *W2,
     }
     for(i=0;i<n2;i++)
     {
-        sigmafact += 1./(2. + 2.*cosh((M + Wfac2*W2[i] + dg)));
+        sigmafact += 1./(2. + 2.*cosh((M - Wfac2*W2[i] - dg)));
     }
-    sigmafact/=(n1+n2);
+    sigmafact /= (n1 + n2);
    
     /* Eq. 10 from 
        Shirts, Bair, Hooker & Pande, Phys. Rev. Lett 91, 140601 (2003): */
