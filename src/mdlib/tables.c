@@ -1171,7 +1171,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
             {
                 if (fr->badress_tf_full_box){
                     // TODO : should really check tf is defined everywhere (in box)
-                   if ((rtab > fr->adress_hy_width+fr->adress_ex_width)){
+                   if ((rtab < fr->adress_hy_width+fr->adress_ex_width)){
                        gmx_fatal(FARGS,"AdResS therm force table in file %s extends to %f:\n"
                                     "\tshould extend to at least half the length of the longest box side"
                                     "%f\n",fn,rtab, fr->adress_hy_width);
