@@ -788,12 +788,14 @@ static enerdata_t *calc_sum(int nset,enerdata_t *edat,int nbmin,int nbmax)
     snew(s->es  ,esum->nframes);
     
     s->bExactStat = TRUE;
+    s->slope      = 0;
     for(i=0; i<nset; i++)
     {
         if (!edat->s[i].bExactStat)
         {
             s->bExactStat = FALSE;
         }
+        s->slope += edat->s[i].slope;
     }
     
     for(f=0; f<edat->nframes; f++)
@@ -994,9 +996,10 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       }
     }
     if (bSum) {
-      fprintf(stdout,"%-24s %10g %10s %10s %10s  (%s)",
+        totaldrift = (edat->nsteps - 1)*esum->s[0].slope;
+      fprintf(stdout,"%-24s %10g %10s %10s %10g  (%s)",
 	      "Total",esum->s[0].av/nmol,ee_pr(esum->s[0].ee/nmol,eebuf),
-	      "--","--",enm[set[0]].unit);
+	      "--",totaldrift/nmol,enm[set[0]].unit);
       /* pr_aver,pr_stddev,a,totaldrift */
       if (bFee) 
 	fprintf(stdout,"  %10g  %10g\n",
