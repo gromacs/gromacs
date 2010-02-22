@@ -680,11 +680,19 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
     if (*file_version >= 10) 
     {
-        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength  ,list);
+        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength,list);
+    }
+    else
+    {
+        *nhchainlength = 1;
     }
     if (*file_version >= 11)
     {
         do_cpt_int_err(xd,"#Nose-Hoover T-chains for barostat ",nnhpres,list);
+    }
+    else
+    {
+        *nnhpres = 0;
     }
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
 	if (*file_version >= 3)
@@ -1474,10 +1482,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 
     if (file_version < 6)
     {
-        fprintf(stderr,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+        const char *warn="Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the averages stored in the energy file will be incorrect.";
+
+        fprintf(stderr,"\nWARNING: %s\n\n",warn);
         if (fplog)
         {
-            fprintf(fplog,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+            fprintf(fplog,"\nWARNING: %s\n\n",warn);
         }
         state->enerhist.nsum     = *step;
         state->enerhist.nsum_sim = *step;
