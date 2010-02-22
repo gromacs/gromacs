@@ -312,7 +312,8 @@ static int get_lam_set(barsim_t *ba,double lambda)
 }
 
 static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
-                     double tol, int npee_min,int npee_max, barres_t *br)
+                     double tol, int npee_min,int npee_max,
+                     barres_t *br, bool *bEE, double *partsum)
 {
     int np1,np2,s1,s2,npee,p;
     double delta_lambda; 
@@ -385,6 +386,8 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
                 dgs  += dgp;
                 dgs2 += dgp*dgp;
 
+                partsum[npee*(npee_max+1)+p] += dgp;
+
                 calc_rel_entropy(np1/npee, 
                                  ba1->y[s1]+ba1->begin+p*(np1/npee),
                                  np2/npee, 
@@ -402,7 +405,6 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
 
                 dstddev  += stddevc;
                 dstddev2 += stddevc*stddevc;
-
             }
             dgs  /= npee;
             dgs2 /= npee;
@@ -423,11 +425,37 @@ static void calc_bar(barsim_t *ba1,barsim_t *ba2,bool bUsedhdl,
         br->sa_err = sqrt(sa_sig2/(npee_max - npee_min + 1));
         br->sb_err = sqrt(sb_sig2/(npee_max - npee_min + 1));
         br->dg_stddev_err = sqrt(stddev_sig2/(npee_max - npee_min + 1));
- 
+    }
+    else
+    {
+        *bEE = FALSE;
     }
 }
 
 
+static double bar_err(int nbmin, int nbmax, const double *partsum)
+{
+    int nb,b;
+    double svar,s,s2,dg;
+
+    svar = 0;
+    for(nb=nbmin; nb<=nbmax; nb++)
+    {
+        s  = 0;
+        s2 = 0;
+        for(b=0; b<nb; b++)
+        {
+            dg  = partsum[nb*(nbmax+1)+b];
+            s  += dg;
+            s2 += dg*dg;
+        }
+        s  /= nb;
+        s2 /= nb;
+        svar += (s2 - s*s)/(nb - 1);
+    }
+
+    return sqrt(svar/(nbmax + 1 - nbmin));
+}
 
 
 static double legend2lambda(char *fn,const char *legend,bool bdhdl)
@@ -657,14 +685,15 @@ int gmx_bar(int argc,char *argv[])
     char     **fnms;
     barsim_t *ba,ba_tmp;
     barres_t *results;
-    double   prec,dg_tot,var_tot,dg,sig;
+    double   *partsum;
+    double   prec,dg_tot,dg,sig;
     FILE     *fpb,*fpi;
-    char     dgformat[20],xvgformat[STRLEN],buf[STRLEN];
+    char     dgformat[20],xvg2format[STRLEN],xvg3format[STRLEN],buf[STRLEN];
     char     ktformat[STRLEN], sktformat[STRLEN];
     char     kteformat[STRLEN], skteformat[STRLEN];
     output_env_t oenv;
     double   kT, beta;
-    bool     result_OK=TRUE;
+    bool     result_OK=TRUE,bEE=TRUE;
     
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,
@@ -689,11 +718,13 @@ int gmx_bar(int argc,char *argv[])
     /* the format strings of the errors in kT */
     sprintf( kteformat,"%%%d.%df",3+nd,nd);
     sprintf( skteformat,"%%%ds",4+nd);
-    sprintf(xvgformat,"%s %s %s\n","%g",dgformat,dgformat);
+    sprintf(xvg2format,"%s %s\n","%g",dgformat);
+    sprintf(xvg3format,"%s %s %s\n","%g",dgformat,dgformat);
 
 
     snew(ba,nfile);
     snew(results,nfile-1);
+    snew(partsum,(nbmax+1)*(nbmax+1));
     n1 = 0;
     nm = 0;
     for(f=0; f<nfile; f++)
@@ -755,12 +786,8 @@ int gmx_bar(int argc,char *argv[])
     if (opt2bSet("-o",NFILE,fnm))
     {
         sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
-        fpb = xvgropen(opt2fn("-o",NFILE,fnm),"Free energy differences",
-                      "\\lambda",buf,oenv);
-        if (output_env_get_print_xvgr_codes(oenv))
-        {
-            fprintf(fpb,"@TYPE xydy\n");
-        }
+        fpb = xvgropen_type(opt2fn("-o",NFILE,fnm),"Free energy differences",
+                            "\\lambda",buf,exvggtXYDY,oenv);
     }
     
     fpi = NULL;
@@ -769,17 +796,14 @@ int gmx_bar(int argc,char *argv[])
         sprintf(buf,"%s (%s)","\\DeltaG",unit_energy);
         fpi = xvgropen(opt2fn("-oi",NFILE,fnm),"Free energy integral",
                       "\\lambda",buf,oenv);
-        if (output_env_get_print_xvgr_codes(oenv))
-        {
-            fprintf(fpi,"@TYPE xydy\n");
-        }
     }
 
     /* first calculate results */
+    bEE = TRUE;
     for(f=0; f<nfile-1; f++)
     {
-        
-        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax, &(results[f]));
+        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax,
+                 &(results[f]), &bEE, partsum);
     }
 
     /* print results in kT */
@@ -844,19 +868,18 @@ int gmx_bar(int argc,char *argv[])
     /* final results in kJ/mol */
     printf("\n\nFinal results in kJ/mol:\n\n");
     dg_tot  = 0;
-    var_tot = 0;
     for(f=0; f<nfile-1; f++)
     {
         
         if (fpi != NULL)
         {
-            fprintf(fpi,xvgformat, ba[f].lambda[0],dg_tot,sqrt(var_tot));
+            fprintf(fpi, xvg2format, ba[f].lambda[0], dg_tot);
         }
 
 
         if (fpb != NULL)
         {
-            fprintf(fpb,xvgformat,
+            fprintf(fpb, xvg3format,
                     0.5*(ba[f].lambda[0] + ba[f+1].lambda[0]),
                     results[f].dg,results[f].dg_err);
         }
@@ -874,8 +897,7 @@ int gmx_bar(int argc,char *argv[])
         printf(dgformat,results[f].dg_err*kT);
 
         printf("\n");
-        dg_tot  += results[f].dg;
-        var_tot += results[f].dg_err*results[f].dg_err;
+        dg_tot += results[f].dg;
     }
     printf("\n");
     printf("total  ");
@@ -885,14 +907,17 @@ int gmx_bar(int argc,char *argv[])
     printf(",   DG ");
 
     printf(dgformat,dg_tot*kT);
-    printf(" +/- ");
-    printf(dgformat,sqrt(var_tot)*kT);
+    if (bEE)
+    {
+        printf(" +/- ");
+        printf(dgformat,bar_err(nbmin,nbmax,partsum)*kT);
+    }
     printf("\n");
 
     if (fpi != NULL)
     {
-        fprintf(fpi,xvgformat,
-                ba[nfile-1].lambda[0],dg_tot,sqrt(var_tot));
+        fprintf(fpi, xvg2format,
+                ba[nfile-1].lambda[0], dg_tot);
         ffclose(fpi);
     }
 

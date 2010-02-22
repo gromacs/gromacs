@@ -225,8 +225,9 @@ static char *xvgrstr(const char *gmx,const output_env_t oenv,
     return buf;
 }
 
-FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
-               const char *yaxis,const output_env_t oenv)
+FILE *xvgropen_type(const char *fn,const char *title,const char *xaxis,
+                    const char *yaxis,int exvg_graph_type,
+                    const output_env_t oenv)
 {
     FILE *xvgr;
     char pukestr[100],buf[STRLEN];
@@ -246,16 +247,34 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
                 xvgrstr(xaxis,oenv,buf,STRLEN));
         fprintf(xvgr,"@    yaxis  label \"%s\"\n",
                 xvgrstr(yaxis,oenv,buf,STRLEN));
-        if (output_env_get_xvg_format(oenv) == exvgXMGR)
+        switch (exvg_graph_type)
         {
-            fprintf(xvgr,"@TYPE nxy\n");
-        }
-        else
-        {
-            fprintf(xvgr,"@TYPE xy\n");
+        case exvggtXNY:
+            if (output_env_get_xvg_format(oenv) == exvgXMGR)
+            {
+                fprintf(xvgr,"@TYPE nxy\n");
+            }
+            else
+            {
+                fprintf(xvgr,"@TYPE xy\n");
+            }
+            break;
+        case exvggtXYDY:
+            fprintf(xvgr,"@TYPE xydy\n");
+            break;
+        case exvggtXYDYDY:
+            fprintf(xvgr,"@TYPE xydydy\n");
+            break;
         }
     }
+
     return xvgr;
+}
+
+FILE *xvgropen(const char *fn,const char *title,const char *xaxis,
+               const char *yaxis,const output_env_t oenv)
+{
+    return xvgropen_type(fn,title,xaxis,yaxis,exvggtXNY,oenv);
 }
 
 void
