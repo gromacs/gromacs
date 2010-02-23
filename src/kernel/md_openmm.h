@@ -1,3 +1,6 @@
+#ifndef _MD_OPENMM_H
+#define _MD_OPENMM_H
+
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -14,3 +17,5 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const char *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime);
+
+#endif // _MD_OPENMM_H

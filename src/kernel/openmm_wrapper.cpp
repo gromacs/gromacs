@@ -327,7 +327,7 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
     }
 
     /* Electroctstics */
-    if ((ir-> ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
+    if ((ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
     {
         gmx_fatal(FARGS,"** OpenMM Error ** : Unsupported method for electrostatics. "
             "Use NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");

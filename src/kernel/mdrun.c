@@ -467,7 +467,7 @@ int main(int argc,char *argv[])
     { "-resetstep", FALSE, etINT, {&resetstep},
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
-      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" }
+      "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
 #endif
 // args for both
     { "-maxh",   FALSE, etREAL, {&max_hours},
