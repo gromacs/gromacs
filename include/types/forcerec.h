@@ -356,6 +356,7 @@ typedef struct {
   int  adress_type;
   bool badress_new_wf;
   bool badress_chempot_dx;
+  bool badress_tf_full_box;
   real adress_const_wf;
   real adress_ex_width;
   real adress_hy_width;

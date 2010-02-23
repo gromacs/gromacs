@@ -515,8 +515,15 @@ adress_thermo_force(int                  cg0,
                         }
 
                         dl=sqrt(sqr_dl);
-
-                       wt               = (dl-adressr)*tabscale;
+                        if (badress_tf_full_box){
+                            // table origin is center of box
+                            wt               = dl*tabscale;
+                        }
+                        else
+                        {
+                            // table origin is begin of the hybrid zone
+                            wt               = (dl-adressr)*tabscale;
+                        }
                         n0               = wt;
                         eps              = wt-n0;
                         eps2             = eps*eps;

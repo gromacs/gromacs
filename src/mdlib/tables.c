@@ -949,7 +949,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
 	x0 = i*table.r/(5*(table.n-1));
 	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
-      }
+	      }
       gmx_fio_fclose(fp);
     }
     done_tabledata(&(td[k]));
@@ -1116,7 +1116,8 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 
 t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 			    const t_forcerec *fr,
-			    const char *fn)
+			    const char *fn,
+                            matrix box)
 {
 	const char *fns[3] = { "atfctab.xvg", "atfdtab.xvg", "atfrtab.xvg" };
 	const char *fns14[3] = { "atfctab14.xvg", "atfdtab14.xvg", "atfrtab14.xvg" };
@@ -1137,6 +1138,10 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 
         if (!fr->badress_chempot_dx){
             table.r         = 1;
+        }
+        else if (fr->badress_tf_full_box){
+            // take half box x direction as tab range
+            table.r         = box[0][0]/2;
         }
         else
         {

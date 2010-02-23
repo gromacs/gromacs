@@ -1601,7 +1601,7 @@ void init_forcerec(FILE *fp,
     /* Read AdResS Thermo Force table if needed */
     if(fr->adress_icor == eAdressICThermoForce)
     {
-        fr->atf_tab = make_atf_table(fp,oenv,fr,tabafn);
+        fr->atf_tab = make_atf_table(fp,oenv,fr,tabafn, box);
     }
     
     /* Wall stuff */
