@@ -1996,6 +1996,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
         if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
         if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
+        if (bCPT) { mdof_flags |= MDOF_CPT; };
 
 #ifdef GMX_FAHCORE
         if (MASTER(cr))
@@ -2054,7 +2055,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
                 !bRerunMD && !bFFscan)
             {
-                /* x and v have been collected in write_traj */
+                /* x and v have been collected in write_traj,
+                 * because a checkpoint file will always be written
+                 * at the last step.
+                 */
                 fprintf(stderr,"\nWriting final coordinates.\n");
                 if (ir->ePBC != epbcNONE && !ir->bPeriodicMols &&
                     DOMAINDECOMP(cr))
