@@ -65,8 +65,8 @@
 #define PP_PME_FEP      (1<<3)
 #define PP_PME_FINISH   (1<<4)
 
-#define PME_PP_TERM     (1<<0)
-#define PME_PP_USR1     (1<<1)
+#define PME_PP_SIGSTOP     (1<<0)
+#define PME_PP_SIGSTOPNSS     (1<<1)
 
 typedef struct gmx_pme_pp {
 #ifdef GMX_MPI
@@ -416,8 +416,8 @@ static void receive_virial_energy(t_commrec *cr,
     *dvdlambda += cve.dvdlambda;
     *pme_cycles = cve.cycles;
 
-    bGotStopNextStepSignal = (cve.flags & PME_PP_TERM);
-    bGotStopNextNSStepSignal = (cve.flags & PME_PP_USR1);
+    bGotStopNextStepSignal = (cve.flags & PME_PP_SIGSTOP);
+    bGotStopNextNSStepSignal = (cve.flags & PME_PP_SIGSTOPNSS);
   } else {
     *energy = 0;
     *pme_cycles = 0;
@@ -490,9 +490,9 @@ void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
   cve.dvdlambda = dvdlambda;
   cve.flags     = 0;
   if (bGotStopNextStepSignal)
-    cve.flags |= PME_PP_TERM;
+    cve.flags |= PME_PP_SIGSTOP;
   if (bGotStopNextNSStepSignal)
-    cve.flags |= PME_PP_USR1;
+    cve.flags |= PME_PP_SIGSTOPNSS;
   
   cve.cycles = cycles;
   

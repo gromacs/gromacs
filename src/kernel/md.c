@@ -2125,10 +2125,21 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         gs.sig[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
-            fprintf(stderr,
-                    "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    signal_name[last_signal_number_recvd], 
-                    gs.sig[eglsTERM]==-1 ? "NS " : "");
+#ifdef GMX_THREADS
+            if (MASTERTHREAD(cr))
+            {
+#endif
+                fprintf(stderr,
+                        "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+                        signal_name[last_signal_number_recvd], 
+                        gs.sig[eglsTERM]==-1 ? "NS " : "");
+#ifdef GMX_THREADS
+            }
+            else
+            {
+                fprintf(stderr, ".");
+            }
+#endif
             fflush(stderr);
             bHandledSignal=last_signal_number_recvd;
         }

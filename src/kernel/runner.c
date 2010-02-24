@@ -83,66 +83,6 @@
 #endif
 
 
-#if 0
-/* The following two variables and the signal_handler function
- * are used from md.c and pme.c as well 
- *
- * Do not fear these global variables: they represent inherently process-global
- * information that needs to be shared across threads 
- */
-
-
-/* we got a signal to stop in the next step: */
-volatile sig_atomic_t bGotStopNextStepSignal;
-/* we got a signal to stop in the next neighbour search step: */
-volatile sig_atomic_t bGotStopNextNSStepSignal; 
-
-/* our names for the handled signals. These must match the number given
-   in signal_handler. */
-const char *signal_name[] = 
-{
-    "TERM",
-    "INT",
-    "second INT",
-    "USR1"
-};
-
-/* the last signal received, according to the numbering
-   we use in signal_name */
-volatile sig_atomic_t last_signal_number_recvd=-1; 
-
-RETSIGTYPE signal_handler(int n)
-{
-    switch (n) {
-        case SIGTERM:
-            bGotStopNextStepSignal = TRUE;
-            last_signal_number_recvd = 0;
-            break;
-        case SIGINT:
-            if (!bGotStopNextNSStepSignal)
-            {
-                bGotStopNextNSStepSignal = TRUE;
-                last_signal_number_recvd = 1;
-            }
-            else if (!bGotStopNextStepSignal)
-            {
-                bGotStopNextStepSignal = TRUE;
-                last_signal_number_recvd = 2;
-            }
-            else
-                abort();
-            break;
-#ifdef HAVE_SIGUSR1
-        case SIGUSR1:
-            bGotStopNextNSStepSignal = TRUE;
-            last_signal_number_recvd = 3;
-            break;
-#endif
-    }
-}
-
-#endif
-
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -700,16 +640,6 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
             signal(SIGINT,signal_handler);
         }
-#ifdef HAVE_SIGUSR1
-        if (getenv("GMX_NO_USR1") == NULL)
-        {
-            if (debug)
-            {
-                fprintf(debug,"Installing signal handler for SIGUSR1\n");
-            }
-            signal(SIGUSR1,signal_handler);
-        }
-#endif
     }
 
     if (cr->duty & DUTY_PP)

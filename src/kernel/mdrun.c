@@ -239,7 +239,7 @@ int main(int argc,char *argv[])
     "exceeds [TT]-maxh[tt]*0.99 hours.",
     "[PAR]",
     "When mdrun receives a TERM signal, it will set nsteps to the current",
-    "step plus one. When mdrun receives a USR1 signal, it will stop after",
+    "step plus one. When mdrun receives an INT signal, it will stop after",
     "the next neighbor search step (with nstlist=0 at the next step).",
     "In both cases all the usual output will be written to file.",
     "When running with MPI, a signal to one of the mdrun processes",

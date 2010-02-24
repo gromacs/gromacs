@@ -783,6 +783,9 @@ AC_C_INLINE
 # AC_TYPE_UID_T is broken on Mac OS X, so use generic tests instead
 AC_CHECK_TYPES([uid_t],[],[AC_DEFINE(uid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
 AC_CHECK_TYPES([gid_t],[],[AC_DEFINE(gid_t, int, [Define to `int' if <sys/types.h> doesn't define.])],[[#include <sys/types.h>]])
+
+AC_CHECK_TYPES([sig_atomic_t],[],[AC_DEFINE(sig_atomic_t, int, [Define to `int' (and hope it's atomic) if <signal.h> doesn't define it.])],[[#include <signal.h>]])
+
     
 
 

@@ -58,8 +58,7 @@ const char *signal_name[] =
 {
     "TERM",
     "INT",
-    "second INT",
-    "USR1"
+    "second INT"
 };
 
 /* the last signal received, according to the numbering
@@ -73,6 +72,9 @@ RETSIGTYPE signal_handler(int n)
             bGotStopNextStepSignal = TRUE;
             last_signal_number_recvd = 0;
             break;
+/* windows doesn't do SIGINT correctly:. */
+#if (!(defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64))||\
+            (defined __CYGWIN__ && defined __CYGWIN32__)
         case SIGINT:
             if (!bGotStopNextNSStepSignal)
             {
@@ -85,11 +87,6 @@ RETSIGTYPE signal_handler(int n)
             }
             else
                 abort();
-            break;
-#ifdef HAVE_SIGUSR1
-        case SIGUSR1:
-            bGotStopNextNSStepSignal = TRUE;
-            last_signal_number_recvd = 3;
             break;
 #endif
     }
