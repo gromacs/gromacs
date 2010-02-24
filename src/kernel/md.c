@@ -1875,7 +1875,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 bOK = TRUE;
                 if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  /* Why is rerun_fr.bV here?  Unclear. */
-                    wallcycle_start(wcycle,ewcUPDATE);
                     dvdl = 0;
                     
                     update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
