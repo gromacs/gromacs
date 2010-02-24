@@ -105,9 +105,9 @@ static int read_g96_pos(char line[],t_symtab *symtab,
 	      resnr = oldres;
 	    else {
 	      resnr    = 1;
-	      strcpy(resnm,"???"); 
+	      strncpy(resnm,"???",sizeof(resnm)-1); 
 	    }
-	    strcpy(anm,"???"); 
+	    strncpy(anm,"???",sizeof(anm)-1); 
 	  }
 	  atoms->atomname[natoms]=put_symtab(symtab,anm);
 	  if (resnr != oldres) {
@@ -1027,19 +1027,19 @@ void write_hconf_indexed_p(FILE *out,const char *title,t_atoms *atoms,
     ai=index[i];
     
     resind = atoms->atom[ai].resind;
-    strcpy(resnm," ??? ");
+    strncpy(resnm," ??? ",sizeof(resnm)-1);
     if (resind < atoms->nres) {
-      strcpy(resnm,*atoms->resinfo[resind].name);
+      strncpy(resnm,*atoms->resinfo[resind].name,sizeof(resnm)-1);
       resnr = atoms->resinfo[resind].nr;
     } else {
-      strcpy(resnm," ??? ");
+      strncpy(resnm," ??? ",sizeof(resnm)-1);
       resnr = resind + 1;
     }
     
     if (atoms->atom)
-      strcpy(nm,*atoms->atomname[ai]);
+      strncpy(nm,*atoms->atomname[ai],sizeof(nm)-1);
     else
-      strcpy(nm," ??? ");
+      strncpy(nm," ??? ",sizeof(nm)-1);
 
     fprintf(out,"%5d%-5.5s%5.5s%5d",resnr%100000,resnm,nm,(ai+1)%100000);
     /* next fprintf uses built format string */

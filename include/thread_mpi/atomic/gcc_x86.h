@@ -89,11 +89,11 @@ typedef struct tMPI_Spinlock
    We disable this for 32-bit builds because the target may be 80386, 
    which didn't have cmpxchg, etc (they were introduced as only as 'recently' 
    as the 486, and gcc on some Linux versions still target 80386 by default). 
-   
-   We also specifically check for icc on windows, because that only 
-   supports the MSVC-style atomic intrinsics. */
+  
+   We also specifically check for icc, because intrinsics are not always
+   supported there. */
 #if ( (TMPI_GCC_VERSION >= 40100) && defined(__x86_64__) &&  \
-     (!(defined(__INTEL_COMPILER) && (defined(_WIN32) || defined(_WIN64) ) )) ) 
+     !defined(__INTEL_COMPILER) ) 
 #include "gcc_intrinsics.h"
 
 #else

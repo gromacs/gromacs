@@ -63,7 +63,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 11;
+static const int cpt_version = 12;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -221,7 +221,7 @@ static void do_cpt_int_err(XDR *xd,const char *desc,int *i,FILE *list)
 static void do_cpt_step_err(XDR *xd,const char *desc,gmx_large_int_t *i,FILE *list)
 {
     bool_t res=0;
-    char   buf[22];
+    char   buf[STEPSTRSIZE];
 
     res = xdr_gmx_large_int(xd,i,"reading checkpoint file");
     if (res == 0)
@@ -623,7 +623,8 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     int  magic;
     int  idum=0;
     int  i;
-    
+    char *fhost;
+
     if (bRead)
     {
         magic = -1;
@@ -643,6 +644,18 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                   "The checkpoint file is corrupted or not a checkpoint file",
                   magic,CPT_MAGIC1);
     }
+    if (!bRead)
+    {
+        snew(fhost,255);
+#ifdef HAVE_UNISTD_H
+        if (gethostname(fhost,255) != 0)
+        {
+            sprintf(fhost,"unknown");
+        }
+#else
+        sprintf(fhost,"unknown");
+#endif  
+    }
     do_cpt_string_err(xd,bRead,"GROMACS version"           ,version,list);
     do_cpt_string_err(xd,bRead,"GROMACS build time"        ,btime,list);
     do_cpt_string_err(xd,bRead,"GROMACS build user"        ,buser,list);
@@ -655,15 +668,31 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     {
         gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
     }
+    if (*file_version >= 12)
+    {
+        do_cpt_string_err(xd,bRead,"generating host"           ,&fhost,list);
+        if (list == NULL)
+        {
+            sfree(fhost);
+        }
+    }
     do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
     if (*file_version >= 10) 
     {
-        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength  ,list);
+        do_cpt_int_err(xd,"#Nose-Hoover T-chains",nhchainlength,list);
+    }
+    else
+    {
+        *nhchainlength = 1;
     }
     if (*file_version >= 11)
     {
         do_cpt_int_err(xd,"#Nose-Hoover T-chains for barostat ",nnhpres,list);
+    }
+    else
+    {
+        *nnhpres = 0;
     }
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
 	if (*file_version >= 3)
@@ -1250,7 +1279,7 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
     int  fp,i,j,rc;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
-	char filename[STRLEN],buf[22];
+	char filename[STRLEN],buf[STEPSTRSIZE];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
     int  natoms,ngtc,nnhpres,nhchainlength,fflags,flags_eks,flags_enh;
@@ -1453,10 +1482,12 @@ static void read_checkpoint(const char *fn,FILE **pfplog,
 
     if (file_version < 6)
     {
-        fprintf(stderr,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+        const char *warn="Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the averages stored in the energy file will be incorrect.";
+
+        fprintf(stderr,"\nWARNING: %s\n\n",warn);
         if (fplog)
         {
-            fprintf(fplog,"\nWARNING: Reading checkpoint file in old format, assuming that the run that generated this file started at step 0, if this is not the case the energy averages will be incorrect.\n\n");
+            fprintf(fplog,"\nWARNING: %s\n\n",warn);
         }
         state->enerhist.nsum     = *step;
         state->enerhist.nsum_sim = *step;

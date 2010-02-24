@@ -24,6 +24,9 @@ AC_DISABLE_SHARED
 # Simple options and makefile variables
 #######################################################################
 
+# This is currently not defined by CMake, because it's tricky to generate
+# version.h portably (the autoconf rules for it are in src/gmxlib/Makefile.am).
+AC_DEFINE(USE_VERSION_H,,[Use the version string from generated version.h])
 
 ### Single/Double
 AC_ARG_ENABLE(float,
@@ -65,7 +68,8 @@ AC_SUBST(F77LINK,"\$(LINK)")
 ### MPI or not
 AC_ARG_ENABLE(mpi,
               [AC_HELP_STRING([--enable-mpi],
-	                      [Compile for parallel runs using MPI])],,enable_mpi=no)
+	                      [Compile for parallel runs using MPI]
+                              [(instead of threads)])],,enable_mpi=no)
 
 
 ### MPI environment
@@ -83,7 +87,9 @@ fi
 ### MPI_IN_PLACE
 AC_ARG_ENABLE(mpi-in-place,
               [AC_HELP_STRING([--disable-mpi-in-place],
-                              [Disable MPI_IN_PLACE. For MPI implementations that have broken support for it (some versions of MPICH, for example).])],, enable_mpi_in_place=yes)
+                              [Disable MPI_IN_PLACE. For MPI implementations]
+                              [that have broken support for it ]
+                              [(some versions of MPICH, for example).])],, enable_mpi_in_place=yes)
 
 
 
@@ -211,12 +217,8 @@ AC_ARG_ENABLE(fftw-measure,
 
 
 AC_ARG_ENABLE(threads,
-              [AC_HELP_STRING([--enable-threads],    
-                              [Compile for parallel runs using threads])],,enable_threads=no)
-
-# if test "$enable_threads" = "yes"; then
-#   with_threads=pthreads;
-#fi
+              [AC_HELP_STRING([--disable-threads],    
+                              [Disable parallel runs using threads])],,enable_threads=yes)
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -273,7 +275,9 @@ if test "$with_qmmm_mopac" = "yes"; then
 fi
 
 AC_ARG_WITH(dlopen,
- [  --without-dlopen        do not compile with dlopen, needed to read VMD supported file formats],,with_dlopen=yes)
+            [AC_HELP_STRING([--without-dlopen],
+                            [do not compile with dlopen, needed to read VMD]
+                            [supported file formats])],,with_dlopen=yes)
 
 
 
@@ -325,6 +329,7 @@ AM_PROG_AS( $CC )
 # fail on platforms where MPI executables can only be run through a batchqueue.
 
 if test "$enable_mpi" = "yes"; then
+  enable_threads="no"
   AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
@@ -645,6 +650,7 @@ AC_CHECK_HEADERS([limits.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_HEADERS(dirent.h)
 AC_CHECK_HEADERS(regex.h,,[AC_MSG_WARN(
 [No regex.h found.
 Regular expression matching in selections will be disabled.
@@ -718,7 +724,8 @@ fi
 
 # GNU Scientific Library or not
 AC_ARG_WITH(gsl,
- [  --with-gsl                    Link to the GNU scientific library, enables extra functions in analysis],,with_gsl=no)
+ [AC_HELP_STRING([--with-gsl],[Link to the GNU scientific library, ]
+                 [enables extra functions in analysis])],,with_gsl=no)
 
 ######
 if test "$with_gsl" = "yes"; then
@@ -734,7 +741,8 @@ fi
 
 
 AC_ARG_WITH(xml,
- [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
+ [AC_HELP_STRING([--without-xml],[do not link to the xml2 library,] 
+                 [disallows the use of certain file formats])],,with_xml=yes)
  
 #########
 # Check for libxml2, but it is optional, so dont stop

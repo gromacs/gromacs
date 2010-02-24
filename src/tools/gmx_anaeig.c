@@ -143,8 +143,9 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
-  if (!use_xmgr() && output_env_get_print_xvgr_codes(oenv))
+  if (output_env_get_xvg_format(oenv) == exvgXMGRACE) {
     fprintf(out,"@ autoscale onread none\n");
+  }
   for(g=0; g<ngraphs; g++) {
     if (y) {
       min=y[g][0];

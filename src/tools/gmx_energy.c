@@ -571,16 +571,16 @@ static void add_ee_av(ee_sum_t *ees)
     ees->sum   = 0;
 }
 
-static double calc_ee(int nb,ee_sum_t *ees)
+static double calc_ee2(int nb,ee_sum_t *ees)
 {
-    return sqrt((ees->sav2/nb - dsqr(ees->sav/nb))/(nb - 1));
+    return (ees->sav2/nb - dsqr(ees->sav/nb))/(nb - 1);
 }
 
 static void set_ee_av(ener_ee_t *eee)
 {
     if (debug)
     {
-        char buf[20];
+        char buf[STEPSTRSIZE];
         fprintf(debug,"Storing average for err.est.: %s steps\n",
                 gmx_step_str(eee->nst,buf));
     }
@@ -596,8 +596,8 @@ static void set_ee_av(ener_ee_t *eee)
 static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
 {
     int  nb,i,f,nee;
-    double sum,sum2,sump;
-    gmx_large_int_t sum_steps,steps,np,p,bound_nb;
+    double sum,sum2,sump,see2;
+    gmx_large_int_t steps,np,p,bound_nb;
     enerdat_t *ed;
     exactsum_t *es;
     bool bAllZero;
@@ -635,7 +635,6 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
     {
         ed = &edat->s[i];
         
-        sum_steps = 0;
         sum  = 0;
         sum2 = 0;
         np   = 0;
@@ -687,8 +686,6 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
             sxx += p*x*x;
             sxy += x*sump;
 
-            sum_steps += edat->steps[f];
-
             for(nb=nbmin; nb<=nbmax; nb++)
             {
                 /* Check if the current end step is closer to the desired
@@ -736,28 +733,37 @@ static void calc_averages(int nset,enerdata_t *edat,int nbmin,int nbmax)
 
         if (edat->nframes > 1)
         {
-            edat->s[i].slope = (sum_steps*sxy - sx*sy)/(sum_steps*sxx - sx*sx);
+            edat->s[i].slope = (np*sxy - sx*sy)/(np*sxx - sx*sx);
         }
         else
         {
             edat->s[i].slope = 0;
         }
 
-        nee = 0;
+        nee  = 0;
+        see2 = 0;
         for(nb=nbmin; nb<=nbmax; nb++)
         {
             /* Check if we actually got nb blocks and if the smallest
              * block is not shorter than 80% of the average.
              */
+            if (debug)
+            {
+                char buf1[STEPSTRSIZE],buf2[STEPSTRSIZE];
+                fprintf(debug,"Requested %d blocks, we have %d blocks, min %s nsteps %s\n",
+                        nb,eee[nb].b,
+                        gmx_step_str(eee[nb].nst_min,buf1),
+                        gmx_step_str(edat->nsteps,buf2));
+            }
             if (eee[nb].b == nb && 5*nb*eee[nb].nst_min >= 4*edat->nsteps)
             {
-                edat->s[i].ee += calc_ee(nb,&eee[nb].sum);
+                see2 += calc_ee2(nb,&eee[nb].sum);
                 nee++;
             }
         }
         if (nee > 0)
         {
-            edat->s[i].ee /= nee;
+            edat->s[i].ee = sqrt(see2/nee);
         }
         else
         {
@@ -782,12 +788,14 @@ static enerdata_t *calc_sum(int nset,enerdata_t *edat,int nbmin,int nbmax)
     snew(s->es  ,esum->nframes);
     
     s->bExactStat = TRUE;
+    s->slope      = 0;
     for(i=0; i<nset; i++)
     {
         if (!edat->s[i].bExactStat)
         {
             s->bExactStat = FALSE;
         }
+        s->slope += edat->s[i].slope;
     }
     
     for(f=0; f<edat->nframes; f++)
@@ -988,9 +996,10 @@ static void analyse_ener(bool bCorr,const char *corrfn,
       }
     }
     if (bSum) {
-      fprintf(stdout,"%-24s %10g %10s %10s %10s  (%s)",
+        totaldrift = (edat->nsteps - 1)*esum->s[0].slope;
+      fprintf(stdout,"%-24s %10g %10s %10s %10g  (%s)",
 	      "Total",esum->s[0].av/nmol,ee_pr(esum->s[0].ee/nmol,eebuf),
-	      "--","--",enm[set[0]].unit);
+	      "--",totaldrift/nmol,enm[set[0]].unit);
       /* pr_aver,pr_stddev,a,totaldrift */
       if (bFee) 
 	fprintf(stdout,"  %10g  %10g\n",
@@ -1309,7 +1318,7 @@ int gmx_energy(int argc,char *argv[])
     "the energies must both be calculated from the same trajectory."
     
   };
-  static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
+  static bool bSum=FALSE,bFee=FALSE,bPrAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
   static int  skip=0,nmol=1,nconstr=0,nbmin=5,nbmax=5;
   static real reftemp=300.0,ezero=0;
@@ -1332,8 +1341,8 @@ int gmx_energy(int argc,char *argv[])
       "Compute the total dipole moment from the components" },
     { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
-    { "-aver", FALSE, etBOOL, {&bAll},
-      "Print also the X1,t and sigma1,t, only if only 1 energy is requested" },
+    { "-aver", FALSE, etBOOL, {&bPrAll},
+      "Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested)" },
     { "-nmol", FALSE, etINT,  {&nmol},
       "Number of molecules in your sample: the energies are divided by this number" },
     { "-nconstr",  FALSE, etINT,  {&nconstr},
@@ -1502,6 +1511,10 @@ int gmx_energy(int argc,char *argv[])
 	  (strcasecmp(interaction_function[j].longname,leg[i]) == 0);
     }
     
+    if (bPrAll && nset > 1) {
+        gmx_fatal(FARGS,"Printing averages can only be done when a single set is selected");
+    }
+
     time = NULL;
 
     if (bORIRE || bOTEN)
@@ -1765,25 +1778,6 @@ int gmx_energy(int argc,char *argv[])
 	  srenew(time,edat.nframes+1000);
 	}
 	time[edat.nframes] = fr->t;
-#if 0
-	sum=0;
-	for(i=0; (i<nset); i++) {
-	  ener = fr->ener[set[i]].e;
-	  eneset[i][nenergy] = ener;
-	  sum += ener;
-	  if (bVisco) {
-	    enedat[i][nenergy] = fr->ener[set[i]].edat;
-	  }
-	  /* Sum the actual frame energies,
-	   * for in case we do not have exact sums in the energy file.
-	   */
-	  enersum.sum[i]  += ener;
-	  enersum.sum2[i] += ener*ener;
-	}
-	if (bSum) {
-	  eneset[nset][nenergy] = sum;
-	}
-#endif
 	edat.nframes++;
       }
       /* 
@@ -1823,26 +1817,47 @@ int gmx_energy(int argc,char *argv[])
 	 *******************************************/
 	else {
 	  if (fr->nre > 0) {
-	    print_time(out,fr->t);
-	    if (bSum) {
-	      sum = 0;
-	      for(i=0; i<nset; i++) {
-		sum += fr->ener[set[i]].e;
-	      }
-	      print1(out,bDp,sum/nmol-ezero);
-	    } else if ((nset == 1) && bAll) {
-	      print1(out,bDp,fr->ener[set[0]].e);
-	      print1(out,bDp,fr->ener[set[0]].esum);
-	      print1(out,bDp,fr->ener[set[0]].eav);
-	    }
-	    else for(i=0; (i<nset); i++) {
-              if (bIsEner[i])
-                print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
-              else
-                print1(out,bDp,fr->ener[set[i]].e);
+            if (bPrAll)
+            {
+                /* We skip frames with single points (usually only the first frame),
+                 * since they would result in an average plot with outliers.
+                 */
+                if (fr->nsum > 1) {
+                    print_time(out,fr->t);
+                     print1(out,bDp,fr->ener[set[0]].e);
+                     print1(out,bDp,fr->ener[set[0]].esum/fr->nsum);
+                     print1(out,bDp,sqrt(fr->ener[set[0]].eav/fr->nsum));
+                     fprintf(out,"\n");
+                }
             }
-
-	    fprintf(out,"\n");
+            else
+            {
+                print_time(out,fr->t);
+                if (bSum)
+                {
+                    sum = 0;
+                    for(i=0; i<nset; i++)
+                    {
+                        sum += fr->ener[set[i]].e;
+                    }
+                    print1(out,bDp,sum/nmol-ezero);
+                }
+                else
+                {
+                    for(i=0; (i<nset); i++)
+                    {
+                        if (bIsEner[i])
+                        {
+                            print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+                        }
+                        else
+                        {
+                            print1(out,bDp,fr->ener[set[i]].e);
+                        }
+                    }
+                }
+                fprintf(out,"\n");
+            }
 	  }
 	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
 	    if (fr->nr[enx_i] != nor)

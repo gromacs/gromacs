@@ -36,7 +36,6 @@ files.
 */
 
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -48,42 +47,38 @@ files.
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdarg.h>
 #include <string.h>
 
 #include "impl.h"
 
-
-
-static void *tMPI_Reduce_req_allocator(void *arg)
-{
-    tMPI_Reduce_req *ret;
-    /*tMPI_Comm comm=(tMPI_Comm)arg;*/
-
-    ret=(tMPI_Reduce_req*)tMPI_Malloc(sizeof(tMPI_Reduce_req));
-    tMPI_Atomic_set( &(ret->n_remaining), 0);
-    ret->comm=(tMPI_Comm)arg;
-
-    return (void*)ret;
-}
-
-tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm)
-{
-    tMPI_Reduce_req *ret;
-    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator, 
-                                         comm, NULL);
-    return ret;
-}
-
-#if 0
-void tMPI_Reduce_async(tMPI_Reduce_req *req, 
-                       void (*function)(int, void*, void*, void *), 
-                       size_t n, void *input, void *res)
-{
-    
-}
-
+#ifdef TMPI_TRACE
+#include <stdarg.h>
 #endif
 
+
+void tMPI_Event_init(tMPI_Event *ev)
+{
+    tMPI_Atomic_set(&(ev->sync), 0);
+    ev->last_sync=0;
+}
+
+void tMPI_Event_destroy(tMPI_Event *ev)
+{
+    tMPI_Atomic_set(&(ev->sync), 0);
+    ev->last_sync=0;
+}
+
+int tMPI_Event_wait(tMPI_Event *ev) 
+{
+    /* for most OSes yielding waits result in much better performance 
+       (by an order of magnitude) than using the OS-provided wait functions 
+       such as pthread_cond_wait(). That's why we do a busy-wait loop here.*/
+    while( (tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync)) <= 0 )
+    { 
+        tMPI_Atomic_memory_barrier(); 
+        TMPI_YIELD_WAIT(ev);
+    }
+    return tMPI_Atomic_get(&(ev->sync)) - (ev->last_sync); 
+}
 
 

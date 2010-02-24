@@ -102,7 +102,7 @@ make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
 	       t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born);
 
 void 
-make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
+make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 
 #ifdef __cplusplus
 }

@@ -36,54 +36,12 @@ files.
 */
 
 
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-
-#include "impl.h"
-
-
-
-static void *tMPI_Reduce_req_allocator(void *arg)
+struct tMPI_Spinlock_barrier
 {
-    tMPI_Reduce_req *ret;
-    /*tMPI_Comm comm=(tMPI_Comm)arg;*/
-
-    ret=(tMPI_Reduce_req*)tMPI_Malloc(sizeof(tMPI_Reduce_req));
-    tMPI_Atomic_set( &(ret->n_remaining), 0);
-    ret->comm=(tMPI_Comm)arg;
-
-    return (void*)ret;
-}
-
-tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm)
-{
-    tMPI_Reduce_req *ret;
-    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator, 
-                                         comm, NULL);
-    return ret;
-}
-
-#if 0
-void tMPI_Reduce_async(tMPI_Reduce_req *req, 
-                       void (*function)(int, void*, void*, void *), 
-                       size_t n, void *input, void *res)
-{
-    
-}
-
-#endif
-
+    tMPI_Atomic_t     count;     /*!< Number of threads remaining     */
+    int               threshold; /*!< Total number of threads         */
+    volatile int      cycle;     /*!< Current cycle (alternating 0/1) */
+    TMPI_YIELD_WAIT_DATA
+};
 
 

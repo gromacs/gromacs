@@ -509,10 +509,11 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     return md;
 }
 
-FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
+FILE *open_dhdl(const char *filename,const t_inputrec *ir,
+                const output_env_t oenv)
 {
     FILE *fp;
-    const char *dhdl="dH/d\\8l\\4",*deltag="\\8D\\4H",*lambda="\\8l\\4";
+    const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  nsets,s;
     char **setname,buf[STRLEN];
@@ -522,7 +523,7 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
     {
         sprintf(title,"%s",dhdl);
         sprintf(label_y,"%s (%s %s)",
-                dhdl,unit_energy,"[\\8l\\4]\\S-1\\N");
+                dhdl,unit_energy,"[\\lambda]\\S-1\\N");
     }
     else
     {
@@ -530,6 +531,9 @@ FILE *open_dhdl(const char *filename,t_inputrec *ir,const output_env_t oenv)
         sprintf(label_y,"(%s)",unit_energy);
     }
     fp = xvgropen(filename,title,label_x,label_y,oenv);
+
+    sprintf(buf,"T = %g (K)",ir->opts.ref_t[0]);
+    xvgr_subtitle(fp,buf,oenv);
 
     if (ir->n_flambda > 0)
     {

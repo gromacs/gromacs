@@ -75,7 +75,6 @@
 #include "physics.h"
 #include "xvgr.h"
 #include "mdatoms.h"
-#include "gbutil.h"
 #include "ns.h"
 #include "gmx_wallcycle.h"
 #include "mtop_util.h"
@@ -127,7 +126,7 @@ static void print_converged(FILE *fp,const char *alg,real ftol,
 			    gmx_large_int_t count,bool bDone,gmx_large_int_t nsteps,
 			    real epot,real fmax, int nfmax, real fnorm)
 {
-  char buf[22];
+  char buf[STEPSTRSIZE];
 
   if (bDone)
     fprintf(fp,"\n%s converged to Fmax < %g in %s steps\n",
@@ -238,8 +237,8 @@ void init_em(FILE *fplog,const char *title,
              t_forcerec *fr,gmx_enerdata_t **enerd,
              t_graph **graph,t_mdatoms *mdatoms,gmx_global_stat_t *gstat,
              gmx_vsite_t *vsite,gmx_constr_t constr,
-             int nfile,const t_filenm fnm[],int *fp_trn,ener_file_t *fp_ene,
-             t_mdebin **mdebin)
+             int nfile,const t_filenm fnm[],
+             gmx_mdoutf_t **outf,t_mdebin **mdebin)
 {
     int  start,homenr,i;
     real dvdlambda;
@@ -370,46 +369,23 @@ void init_em(FILE *fplog,const char *title,
     *gstat = global_stat_init(ir);
   }
 
-
-  if (MASTER(cr)) {
-    if (fp_trn)
-      *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm),"w");
-    if (fp_ene)
-      *fp_ene = open_enx(ftp2fn(efEDR,nfile,fnm),"w");
-  } else {
-    if (fp_trn)
-      *fp_trn = -1;
-    if (fp_ene)
-      *fp_ene = NULL;
-  }
+  *outf = init_mdoutf(nfile,fnm,FALSE,cr,ir,NULL);
 
   snew(*enerd,1);
   init_enerdata(top_global->groups.grps[egcENER].nr,ir->n_flambda,*enerd);
 
   /* Init bin for energy stuff */
-  *mdebin = init_mdebin(*fp_ene,top_global,ir); 
-	
-	/* If doing gb, copy make local gb data (for dd, this is done in dd_partition_system) */
-    if(ir->implicit_solvent && !DOMAINDECOMP(cr))
-    {
-        make_local_gb(cr,fr->born,ir->gb_algorithm);
-    }
-	
-	
+  *mdebin = init_mdebin((*outf)->fp_ene,top_global,ir); 
 }
 
-static void finish_em(FILE *fplog,t_commrec *cr,
-		      int fp_traj,ener_file_t fp_ene)
+static void finish_em(FILE *fplog,t_commrec *cr,gmx_mdoutf_t *outf)
 {
   if (!(cr->duty & DUTY_PME)) {
     /* Tell the PME only node to finish */
     gmx_pme_finish(cr);
   }
 
-  if (MASTER(cr)) {
-    close_trn(fp_traj);
-    close_enx(fp_ene);
-  }
+  done_mdoutf(outf);
 }
 
 static void swap_em_state(em_state_t *ems1,em_state_t *ems2)
@@ -432,20 +408,26 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state,rvec *f)
 }
 
 static void write_em_traj(FILE *fplog,t_commrec *cr,
-                          int fp_trn,bool bX,bool bF,const char *confout,
+                          gmx_mdoutf_t *outf,
+                          bool bX,bool bF,const char *confout,
                           gmx_mtop_t *top_global,
                           t_inputrec *ir,gmx_large_int_t step,
                           em_state_t *state,
                           t_state *state_global,rvec *f_global)
 {
+    int mdof_flags;
+
     if ((bX || bF || confout != NULL) && !DOMAINDECOMP(cr))
     {
         f_global = state->f;
         copy_em_coords_back(state,state_global,bF ? f_global : NULL);
     }
     
-    write_traj(fplog,cr,fp_trn,bX,FALSE,bF,0,FALSE,0,NULL,FALSE,
-               top_global,ir->eI,ir->simulation_part,step,(double)step,
+    mdof_flags = 0;
+    if (bX) { mdof_flags |= MDOF_X; }
+    if (bF) { mdof_flags |= MDOF_F; }
+    write_traj(fplog,cr,outf,mdof_flags,
+               top_global,step,(double)step,
                &state->s,state_global,state->f,f_global,NULL,NULL);
     
     if (confout != NULL && MASTER(cr))
@@ -689,7 +671,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     wallcycle_start(wcycle,ewcMoveE);
 
     global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
-                inputrec,NULL,NULL,NULL,NULL,NULL,&terminate,NULL,
+                inputrec,NULL,NULL,NULL,1,&terminate,
                 top_global,&ems->s,FALSE,
                 CGLO_ENERGY | 
                 CGLO_PRESSURE | 
@@ -876,8 +858,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
   bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
   tensor vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
-  int    fp_trn;
-  ener_file_t fp_ene;
+  gmx_mdoutf_t *outf;
   int    i,m,gf,step,nminstep;
   real   terminate=0;  
 
@@ -892,7 +873,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
   init_em(fplog,CG,cr,inputrec,
           state_global,top_global,s_min,&top,&f,&f_global,
           nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
-          nfile,fnm,&fp_trn,&fp_ene,&mdebin);
+          nfile,fnm,&outf,&mdebin);
   
   /* Print to log file */
   print_date_and_time(fplog,cr->nodeid,
@@ -925,8 +906,8 @@ double do_cg(FILE *fplog,t_commrec *cr,
 	       NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,s_min->s.lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,eprNORMAL,
-	       TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
+    print_ebin(outf->fp_ene,TRUE,FALSE,FALSE,fplog,step,step,eprNORMAL,
+               TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
   }
   where();
 
@@ -1027,9 +1008,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_em_traj(fplog,cr,fp_trn,do_x,do_f,NULL,
-		  top_global,inputrec,step,
-		  s_min,state_global,f_global);
+    write_em_traj(fplog,cr,outf,do_x,do_f,NULL,
+                  top_global,inputrec,step,
+                  s_min,state_global,f_global);
     
     /* Take a step downhill.
      * In theory, we should minimize the function along this direction.
@@ -1279,7 +1260,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
 	print_ebin_header(fplog,step,step,s_min->s.lambda);
-      print_ebin(fp_ene,do_ene,FALSE,FALSE,
+      print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,
 		 do_log ? fplog : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
@@ -1312,7 +1293,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
     }
     if (!do_ene || !do_log) {
       /* Write final energy file entries */
-      print_ebin(fp_ene,!do_ene,FALSE,FALSE,
+      print_ebin(outf->fp_ene,!do_ene,FALSE,FALSE,
 		 !do_log ? fplog : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
@@ -1332,9 +1313,9 @@ double do_cg(FILE *fplog,t_commrec *cr,
   do_x = !do_per_step(step,inputrec->nstxout);
   do_f = (inputrec->nstfout > 0 && !do_per_step(step,inputrec->nstfout));
   
-  write_em_traj(fplog,cr,fp_trn,do_x,do_f,ftp2fn(efSTO,nfile,fnm),
-		top_global,inputrec,step,
-		s_min,state_global,f_global);
+  write_em_traj(fplog,cr,outf,do_x,do_f,ftp2fn(efSTO,nfile,fnm),
+                top_global,inputrec,step,
+                s_min,state_global,f_global);
   
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
   
@@ -1347,7 +1328,7 @@ double do_cg(FILE *fplog,t_commrec *cr,
     fprintf(fplog,"\nPerformed %d energy evaluations in total.\n",neval);
   }
   
-  finish_em(fplog,cr,fp_trn,fp_ene);
+  finish_em(fplog,cr,outf);
   
   /* To print the actual number of steps we needed somewhere */
   runtime->nsteps_done = step;
@@ -1395,8 +1376,8 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   real   fnorm,fmax;
   bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
   tensor vir,pres;
-  int    fp_trn,start,end,number_steps;
-  ener_file_t fp_ene;
+  int    start,end,number_steps;
+  gmx_mdoutf_t *outf;
   int    i,k,m,n,nfmax,gf,step;
   /* not used */
   real   terminate;
@@ -1442,7 +1423,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   init_em(fplog,LBFGS,cr,inputrec,
           state,top_global,&ems,&top,&f,&f_global,
           nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
-          nfile,fnm,&fp_trn,&fp_ene,&mdebin);
+          nfile,fnm,&outf,&mdebin);
   /* Do_lbfgs is not completely updated like do_steep and do_cg,
    * so we free some memory again.
    */
@@ -1504,8 +1485,8 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
 	       NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,state->lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,eprNORMAL,
-	       TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
+    print_ebin(outf->fp_ene,TRUE,FALSE,FALSE,fplog,step,step,eprNORMAL,
+               TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
   }
   where();
   
@@ -1558,9 +1539,8 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-               top_global,inputrec->eI,inputrec->simulation_part,
-               step,(real)step,state,state,f,f,NULL,NULL);
+    write_traj(fplog,cr,outf,MDOF_X | MDOF_F,
+               top_global,step,(real)step,state,state,f,f,NULL,NULL);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */
     
@@ -1920,7 +1900,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
 	print_ebin_header(fplog,step,step,state->lambda);
-      print_ebin(fp_ene,do_ene,FALSE,FALSE,
+      print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,
 		 do_log ? fplog : NULL,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
     }
@@ -1950,7 +1930,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   if(!do_log) /* Write final value to log since we didn't do anythin last step */
     print_ebin_header(fplog,step,step,state->lambda);
   if(!do_ene || !do_log) /* Write final energy file entries */
-    print_ebin(fp_ene,!do_ene,FALSE,FALSE,
+    print_ebin(outf->fp_ene,!do_ene,FALSE,FALSE,
 	       !do_log ? fplog : NULL,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top_global->groups),&(inputrec->opts));
   
@@ -1967,9 +1947,9 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
    */  
   do_x = !do_per_step(step,inputrec->nstxout);
   do_f = !do_per_step(step,inputrec->nstfout);
-  write_em_traj(fplog,cr,fp_trn,do_x,do_f,ftp2fn(efSTO,nfile,fnm),
-		top_global,inputrec,step,
-		&ems,state,f);
+  write_em_traj(fplog,cr,outf,do_x,do_f,ftp2fn(efSTO,nfile,fnm),
+                top_global,inputrec,step,
+                &ems,state,f);
   
   if (MASTER(cr)) {
     print_converged(stderr,LBFGS,inputrec->em_tol,step,converged,
@@ -1980,7 +1960,7 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
     fprintf(fplog,"\nPerformed %d energy evaluations in total.\n",neval);
   }
   
-  finish_em(fplog,cr,fp_trn,fp_ene);
+  finish_em(fplog,cr,outf);
 
   /* To print the actual number of steps we needed somewhere */
   runtime->nsteps_done = step;
@@ -2017,8 +1997,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
   t_graph    *graph;
   real   stepsize,constepsize;
   real   ustep,dvdlambda,fnormn;
-  int        fp_trn; 
-  ener_file_t fp_ene;
+  gmx_mdoutf_t *outf;
   t_mdebin   *mdebin; 
   bool   bDone,bAbort,do_x,do_f; 
   tensor vir,pres; 
@@ -2036,7 +2015,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
   init_em(fplog,SD,cr,inputrec,
           state_global,top_global,s_try,&top,&f,&f_global,
           nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
-          nfile,fnm,&fp_trn,&fp_ene,&mdebin);
+          nfile,fnm,&outf,&mdebin);
 	
   /* Print to log file  */
   print_date_and_time(fplog,cr->nodeid,"Started Steepest Descents",NULL);
@@ -2100,7 +2079,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
 	upd_mdebin(mdebin,NULL,FALSE,(double)count,
 		   mdatoms->tmass,enerd,&s_try->s,s_try->s.box,
 		   NULL,NULL,vir,pres,NULL,mu_tot,constr);
-	print_ebin(fp_ene,TRUE,
+	print_ebin(outf->fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),
 		   do_per_step(steps_accepted,inputrec->nstorireout),
 		   fplog,count,count,eprNORMAL,TRUE,
@@ -2130,9 +2109,9 @@ double do_steep(FILE *fplog,t_commrec *cr,
       /* Write to trn, if necessary */
       do_x = do_per_step(steps_accepted,inputrec->nstxout);
       do_f = do_per_step(steps_accepted,inputrec->nstfout);
-      write_em_traj(fplog,cr,fp_trn,do_x,do_f,NULL,
-		    top_global,inputrec,count,
-		    s_min,state_global,f_global);
+      write_em_traj(fplog,cr,outf,do_x,do_f,NULL,
+                    top_global,inputrec,count,
+                    s_min,state_global,f_global);
     } 
     else {
       /* If energy is not smaller make the step smaller...  */
@@ -2169,7 +2148,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
     /* Print some shit...  */
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
-  write_em_traj(fplog,cr,fp_trn,TRUE,inputrec->nstfout,ftp2fn(efSTO,nfile,fnm),
+  write_em_traj(fplog,cr,outf,TRUE,inputrec->nstfout,ftp2fn(efSTO,nfile,fnm),
 		top_global,inputrec,count,
 		s_min,state_global,f_global);
 
@@ -2182,7 +2161,7 @@ double do_steep(FILE *fplog,t_commrec *cr,
 		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
   }
 
-  finish_em(fplog,cr,fp_trn,fp_ene);
+  finish_em(fplog,cr,outf);
   
   /* To print the actual number of steps we needed somewhere */
   inputrec->nsteps=count;
@@ -2213,7 +2192,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
 {
     t_mdebin   *mdebin;
     const char *NM = "Normal Mode Analysis";
-    ener_file_t fp_ene;
+    gmx_mdoutf_t *outf;
     int        step,i;
     rvec       *f_global;
     gmx_localtop_t *top;
@@ -2246,7 +2225,7 @@ double do_nm(FILE *fplog,t_commrec *cr,
             state_global,top_global,state_work,&top,
             &f,&f_global,
             nrnb,mu_tot,fr,&enerd,&graph,mdatoms,&gstat,vsite,constr,
-            nfile,fnm,NULL,&fp_ene,&mdebin);
+            nfile,fnm,&outf,&mdebin);
     
     snew(fneg,top_global->natoms);
     snew(fpos,top_global->natoms);
@@ -2426,6 +2405,8 @@ double do_nm(FILE *fplog,t_commrec *cr,
       
     fprintf(stderr,"\n\nWriting Hessian...\n");
     gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
+
+    finish_em(fplog,cr,outf);
 
     runtime->nsteps_done = step;
     
@@ -2683,37 +2664,37 @@ double do_tpi(FILE *fplog,t_commrec *cr,
     xvgr_subtitle(fp_tpi,"f. are averages over one frame",oenv);
     snew(leg,4+nener);
     e = 0;
-    sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
+    sprintf(str,"-kT log(<Ve\\S-\\betaU\\N>/<V>)");
     leg[e++] = strdup(str);
-    sprintf(str,"f. -kT log<e\\S-\\8b\\4U\\N>");
+    sprintf(str,"f. -kT log<e\\S-\\betaU\\N>");
     leg[e++] = strdup(str);
-    sprintf(str,"f. <e\\S-\\8b\\4U\\N>");
+    sprintf(str,"f. <e\\S-\\betaU\\N>");
     leg[e++] = strdup(str);
     sprintf(str,"f. V");
     leg[e++] = strdup(str);
-    sprintf(str,"f. <Ue\\S-\\8b\\4U\\N>");
+    sprintf(str,"f. <Ue\\S-\\betaU\\N>");
     leg[e++] = strdup(str);
     for(i=0; i<ngid; i++) {
-      sprintf(str,"f. <U\\sVdW %s\\Ne\\S-\\8b\\4U\\N>",
+      sprintf(str,"f. <U\\sVdW %s\\Ne\\S-\\betaU\\N>",
 	      *(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
       leg[e++] = strdup(str);
     }
     if (bDispCorr) {
-      sprintf(str,"f. <U\\sdisp c\\Ne\\S-\\8b\\4U\\N>");
+      sprintf(str,"f. <U\\sdisp c\\Ne\\S-\\betaU\\N>");
       leg[e++] = strdup(str);
     }
     if (bCharge) {
       for(i=0; i<ngid; i++) {
-	sprintf(str,"f. <U\\sCoul %s\\Ne\\S-\\8b\\4U\\N>",
+	sprintf(str,"f. <U\\sCoul %s\\Ne\\S-\\betaU\\N>",
 		*(groups->grpname[groups->grps[egcENER].nm_ind[i]]));
 	leg[e++] = strdup(str);
       }
       if (bRFExcl) {
-	sprintf(str,"f. <U\\sRF excl\\Ne\\S-\\8b\\4U\\N>");
+	sprintf(str,"f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
 	leg[e++] = strdup(str);
       }
       if (EEL_FULL(fr->eeltype)) {
-	sprintf(str,"f. <U\\sCoul recip\\Ne\\S-\\8b\\4U\\N>");
+	sprintf(str,"f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
 	leg[e++] = strdup(str);
       }
     }
@@ -3081,8 +3062,8 @@ double do_tpi(FILE *fplog,t_commrec *cr,
   }
   fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
 		    "TPI energy distribution",
-		    "\\8b\\4U - log(V/<V>)","count",oenv);
-  sprintf(str,"number \\8b\\4U > %g: %9.3e",bU_bin_limit,bin[0]);
+		    "\\betaU - log(V/<V>)","count",oenv);
+  sprintf(str,"number \\betaU > %g: %9.3e",bU_bin_limit,bin[0]);
   xvgr_subtitle(fp_tpi,str,oenv);
   xvgr_legend(fp_tpi,2,(char **)tpid_leg,oenv);
   for(i=nbin-1; i>0; i--) {

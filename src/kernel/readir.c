@@ -2234,6 +2234,9 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
       sprintf(warn_buf,"For accurate %s with LINCS constraints, lincs_order should be 8 or more.",ei_names[ir->eI]);
       warning_note(NULL);
     }
+    if (ir->epc==epcMTTK) {
+      warning_error("MTTK not compatible with lincs -- use shake instead.");
+    }
   }
 
   if (ir->LincsWarnAngle > 90.0) {
