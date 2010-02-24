@@ -674,7 +674,8 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         {
             pgrp = &pull->grp[g];
             
-            get_pullgrps_dr(pull,pbc,g,t,rinew[g],rjnew[g],-1,unc_ij);
+            get_pullgrps_dr(pull,pbc,g,t,rinew[g],rjnew[PULL_CYL(pull) ? g : 0],
+                            -1,unc_ij);
             
             switch (pull->eGeom)
             {
