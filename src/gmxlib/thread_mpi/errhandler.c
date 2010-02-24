@@ -51,10 +51,7 @@ files.
 #include <sys/time.h>
 #endif
 
-#include "thread_mpi/threads.h"
-#include "thread_mpi/atomic.h"
-#include "thread_mpi/tmpi.h"
-#include "tmpi_impl.h"
+#include "impl.h"
 
 
 

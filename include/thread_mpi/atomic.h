@@ -643,6 +643,8 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 
 #endif
 
+
+#if 0
 /** Spinlock-based barrier type
  *
  *  This barrier has the same functionality as the standard
@@ -745,6 +747,8 @@ static inline int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
     }
     return status;
 }
+#endif
+
 
 #ifdef inline_defined_in_atomic
 #undef inline

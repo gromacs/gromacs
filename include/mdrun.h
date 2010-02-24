@@ -76,7 +76,9 @@ extern "C" {
 #define MD_STARTFROMCPT (1<<18)
 #define MD_RESETCOUNTERSHALFWAY (1<<19)
 
-/* define a number of flags to better control the information passed to the compute_globals code in md.c */
+/* Define a number of flags to better control the information
+ * passed to compute_globals in md.c and global_stat.
+ */
 
 /* We are rerunning the simulation */
 #define CGLO_RERUNMD        (1<<1)
@@ -123,6 +125,17 @@ typedef struct {
   gmx_large_int_t nsteps_done;
 } gmx_runtime_t;
 
+typedef struct {
+  int  fp_trn;
+  int  fp_xtc;
+  int  xtc_prec;
+  ener_file_t fp_ene;
+  const char *fn_cpt;
+  int  eIntegrator;
+  int  simulation_part;
+  FILE *fp_dhdl;
+  FILE *fp_field;
+} gmx_mdoutf_t;
 
 /* Variables for temporary use with the deform option,
  * used in runner.c and md.c.
@@ -199,22 +212,38 @@ extern void global_stat(FILE *log,gmx_global_stat_t gs,
 			t_inputrec *inputrec,
 			gmx_ekindata_t *ekind,
 			gmx_constr_t constr,t_vcm *vcm,
-			int *nabnsb,real *chkpt,real *terminate,
-			real *reset_counters,
+			int nsig,real *sig,
 			gmx_mtop_t *top_global, t_state *state_local, 
 			bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
-void write_traj(FILE *fplog,t_commrec *cr,
-		int fp_trn,bool bX,bool bV,bool bF,
-		int fp_xtc,bool bXTC,int xtc_prec,
-		const char *fn_cpt,bool bCPT,
-		gmx_mtop_t *top_global,
-		int eIntegrator,int simulation_part,gmx_large_int_t step,double t,
-		t_state *state_local,t_state *state_global,
-		rvec *f_local,rvec *f_global,
-		int *n_xtc,rvec **x_xtc);
+extern gmx_mdoutf_t *init_mdoutf(int nfile,const t_filenm fnm[],
+				 bool bAppendFiles,
+				 const t_commrec *cr,const t_inputrec *ir,
+				 const output_env_t oenv);
+/* Returns a pointer to a data structure with all output file pointers
+ * and names required by mdrun.
+ */
+
+extern void done_mdoutf(gmx_mdoutf_t *of);
+/* Close all open output files and free the of pointer */
+
+#define MDOF_X   (1<<0)
+#define MDOF_V   (1<<1)
+#define MDOF_F   (1<<2)
+#define MDOF_XTC (1<<3)
+#define MDOF_CPT (1<<4)
+
+extern void write_traj(FILE *fplog,t_commrec *cr,
+		       gmx_mdoutf_t *of,
+		       int mdof_flags,
+		       gmx_mtop_t *top_global,
+		       gmx_large_int_t step,double t,
+		       t_state *state_local,t_state *state_global,
+		       rvec *f_local,rvec *f_global,
+		       int *n_xtc,rvec **x_xtc);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
+ * What is written is determined by the mdof_flags defined above.
  * Data is collected to the master node only when necessary.
  */
 
@@ -224,6 +253,8 @@ extern int do_per_step(gmx_large_int_t step,gmx_large_int_t nstep);
 extern int do_any_io(int step, t_inputrec *ir);
 
 /* ROUTINES from sim_util.c */
+
+extern double gmx_gettime();
 
 extern void print_time(FILE *out, gmx_runtime_t *runtime,
                        gmx_large_int_t step,t_inputrec *ir, t_commrec *cr);
@@ -346,10 +377,7 @@ extern void init_md(FILE *fplog,
 		    t_nrnb *nrnb,gmx_mtop_t *mtop,
 		    gmx_update_t *upd,
 		    int nfile,const t_filenm fnm[],
-		    int *fp_trn,int *fp_xtc,ener_file_t *fp_ene,
-		    const char **fn_cpt,
-		    FILE **fp_dhdl,FILE **fp_field,
-		    t_mdebin **mdebin,
+		    gmx_mdoutf_t **outf,t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, 

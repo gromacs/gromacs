@@ -244,10 +244,11 @@ int gmx_saltbr(int argc,char *argv[])
 	  if (nset[nnn] == 0) 
 	    xvgr_legend(out[nnn],1,&buf,oenv);
 	  else {
-	    if (use_xmgr())
+	    if (output_env_get_xvg_format(oenv) == exvgXMGR) {
 	      fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);
-	    else
+	    } else if (output_env_get_xvg_format(oenv) == exvgXMGRACE) {
 	      fprintf(out[nnn],"@ s%d legend \"%s\"\n",nset[nnn],buf);
+	    }
 	  }
 	  nset[nnn]++;
 	  nWithin[i][j]=nnn+1;

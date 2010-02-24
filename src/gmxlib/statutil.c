@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -80,7 +81,7 @@ static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
 static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
                                         "ms", "s", NULL };
 static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns", 
-                                         "\\8m\\4s", "ms", "s" };
+                                         "\\mus", "ms", "s" };
 
 
 
@@ -88,14 +89,13 @@ struct output_env
 {
     int time_unit; /*  the time unit as index for the above-defined arrays */
     bool view;  /* view of file requested */
-    bool xvgr_codes; /* xmgrace-style legends etc. in file output */
+    int xvg_format; /* xvg output format, enum defined in statutil.h */
     int  verbosity; /* The level of verbosity for this program */
     int debug_level; /* the debug level */
 
     const char *program_name; /* the program name */
     char *cmd_line; /* the re-assembled command line */
 };
-static void output_env_set_time_units(output_env_t oenv, const char *timenm);
 
 
 /* inherently globally shared names: */
@@ -270,15 +270,16 @@ int check_times(real t)
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                     bool view, bool xvgr_codes, const char *timenm, 
-                     int verbosity, int debug_level)
+static void output_env_init(output_env_t oenv,  int argc, char *argv[],
+                            const char *timenm[],
+                            bool view, const char *xvg_format[],
+                            int verbosity, int debug_level)
 {
     int i;
-    
-    output_env_set_time_units(oenv, timenm);
+
+    oenv->time_unit  = nenum(timenm);
     oenv->view=view;
-    oenv->xvgr_codes=xvgr_codes;
+    oenv->xvg_format = nenum(xvg_format);
     oenv->verbosity=verbosity;
     oenv->debug_level=debug_level;
 
@@ -318,25 +319,6 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
     }
 }
 
-static void output_env_set_time_units(output_env_t oenv, const char *timenm)
-{
-    int i, time_unit=2; /* the default is ps */
-
-    if (timenm)
-    {
-        i=1;
-        while(time_units_str[i])
-        {
-            if (strcmp(timenm, time_units_str[i])==0)
-                break;
-            i++;
-        }
-        if (time_units_str[i])
-            time_unit=i;
-    }
-    oenv->time_unit=time_unit;
-}
-
 int output_env_get_verbosity(const output_env_t oenv)
 {
     return oenv->verbosity;
@@ -346,7 +328,6 @@ int output_env_get_debug_level(const output_env_t oenv)
 {
     return oenv->debug_level;
 }
-
 
 
 const char *output_env_get_time_unit(const output_env_t oenv)
@@ -408,9 +389,9 @@ bool output_env_get_view(const output_env_t oenv)
     return oenv->view;
 }
 
-bool output_env_get_print_xvgr_codes(const output_env_t oenv)
+int output_env_get_xvg_format(const output_env_t oenv)
 {
-    return oenv->xvgr_codes;
+    return oenv->xvg_format;
 }
 
 const char *output_env_get_program_name(const output_env_t oenv)
@@ -437,25 +418,66 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
 }
 
 
-
-
-static void set_default_time_unit(const char *time_list[])
+static void set_default_time_unit(const char *time_list[], bool bCanTime)
 {
     int i,j;
-    const char *select=getenv("GMXTIMEUNIT");
-    if (!select)
-        select="ps";
-    
-    i=1;
-    while(time_list[i] && strcmp(time_list[i], select)!=0)
-        i++;
-    if (strcmp(time_list[i], select)==0) {
-        /* swap the values and set time_list[0]*/
-        time_list[0]=time_list[i];
-        time_list[i]=time_list[1];
-        time_list[1]=time_list[0];
+    const char *select;
+
+    if (bCanTime)
+    {
+        select = getenv("GMXTIMEUNIT");
+        if (select != NULL)
+        {
+            i = 1;
+            while(time_list[i] && strcmp(time_list[i], select) != 0)
+            {
+                i++;
+            }
+        }
+    }
+    if (!bCanTime || select == NULL || strcmp(time_list[i], select) != 0)
+    {
+        /* Set it to the default: ps */
+        i = 1;
+        while(time_list[i] && strcmp(time_list[i], "ps") != 0)
+        {
+            i++;
+        }
+        
+    }
+    time_list[0] = time_list[i];
+}
+
+
+static void set_default_xvg_format(const char *xvg_list[])
+{
+    int i,j;
+    const char *select,*tmp;
+
+    select = getenv("GMX_VIEW_XVG");
+    if (select == NULL)
+    {
+        /* The default is the first option */
+        xvg_list[0] = xvg_list[1];
+    }
+    else
+    {
+        i = 1;
+        while (xvg_list[i] && strcmp(xvg_list[i], select) != 0)
+        {
+            i++;
+        }
+        if (xvg_list[i] != NULL)
+        {
+            xvg_list[0] = xvg_list[i];
+        }
+        else
+        {
+            xvg_list[0] = xvg_list[exvgNONE];
+        }
     }
 }
+
 
 /***** T O P O L O G Y   S T U F F ******/
 
@@ -673,12 +695,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE,bVersion=FALSE;
     const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", 
                             "completion", "py", "xml", "wiki", NULL };
-    const char *time_units[] = { NULL, "ps", "fs", "ns", "us", "ms", "s", 
+    /* This array should match the order of the enum in statutil.h */
+    const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
+    const char *time_units[] = { NULL, "fs", "ps", "ns", "us", "ms", "s", 
                                 NULL };
     int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
     char *deffnm=NULL;
     real tbegin=0,tend=0,tdelta=0;
-    bool bView=FALSE, bXvgrCodes=TRUE;
+    bool bView=FALSE;
     
     t_pargs *all_pa=NULL;
     
@@ -696,8 +720,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     "Only use frame when t MOD dt = first time (%t)" };
     t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},
     "View output xvg, xpm, eps and pdb files" };
-    t_pargs code_pa   = { "-xvgr", FALSE, etBOOL,  {&bXvgrCodes},
-    "Add specific codes (legends etc.) in the output xvg files for the xmgrace program" };
+    t_pargs xvg_pa    = { "-xvg",  FALSE, etENUM,  {xvg_format},
+    "xvg plot formatting" };
     t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {time_units},
     "Time unit" };
     /* Maximum number of extra arguments */
@@ -791,9 +815,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (FF(PCA_CAN_END))
         npall = add_parg(npall,all_pa,&end_pa);
     if (FF(PCA_CAN_DT))
+    {
         npall = add_parg(npall,all_pa,&dt_pa);
+    }
     if (FF(PCA_TIME_UNIT)) {
-        set_default_time_unit(time_units);
         npall = add_parg(npall,all_pa,&time_pa);
     } 
     if (FF(PCA_CAN_VIEW)) 
@@ -801,9 +826,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     bXvgr = FALSE;
     for(i=0; (i<nfile); i++)
+    {
         bXvgr = bXvgr ||  (fnm[i].ftp == efXVG);
+    }
     if (bXvgr)
-        npall = add_parg(npall,all_pa,&code_pa);
+    {
+        npall = add_parg(npall,all_pa,&xvg_pa);
+    }
     
     /* Now append the program specific arguments */
     for(i=0; (i<npargs); i++)
@@ -811,17 +840,22 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     
     /* set etENUM options to default */
     for(i=0; (i<npall); i++)
+    {
         if (all_pa[i].type==etENUM)
+        {
             all_pa[i].u.c[0]=all_pa[i].u.c[1];
-    
-    
-    /* set program name, command line, and default values for output options */
-    output_env_init(*oenv, *argc, argv, bView, bXvgrCodes, time_units[1],
-                    verbose_level, debug_level);
-   
+        }
+    }
+    set_default_time_unit(time_units,FF(PCA_TIME_UNIT));
+    set_default_xvg_format(xvg_format);
+  
     /* Now parse all the command-line options */
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
+    /* set program name, command line, and default values for output options */
+    output_env_init(*oenv, *argc, argv, time_units, bView, xvg_format,
+                    verbose_level, debug_level);
+ 
     if (bVersion) {
       printf("Program: %s\nVersion: %s\n",output_env_get_program_name(*oenv),
 #ifdef PACKAGE_VERSION
@@ -897,8 +931,9 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #endif
 #endif
    
-    output_env_set_time_units(*oenv, time_units[0]); 
-   
+    /* Update oenv for parsed command line options settings. */
+    (*oenv)->xvg_format = nenum(xvg_format);
+    (*oenv)->time_unit  = nenum(time_units);
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)

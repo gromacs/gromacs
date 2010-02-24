@@ -35,8 +35,6 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -55,35 +53,58 @@ files.
 
 
 
-static void *tMPI_Reduce_req_allocator(void *arg)
+void tMPI_Spinlock_barrier_init(tMPI_Spinlock_barrier_t *barrier, int count)
 {
-    tMPI_Reduce_req *ret;
-    /*tMPI_Comm comm=(tMPI_Comm)arg;*/
-
-    ret=(tMPI_Reduce_req*)tMPI_Malloc(sizeof(tMPI_Reduce_req));
-    tMPI_Atomic_set( &(ret->n_remaining), 0);
-    ret->comm=(tMPI_Comm)arg;
-
-    return (void*)ret;
+    barrier->threshold = count;
+    barrier->cycle     = 0;
+    tMPI_Atomic_set(&(barrier->count),count);
+    TMPI_YIELD_WAIT_DATA_INIT(barrier);
 }
 
-tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm)
+
+int tMPI_Spinlock_barrier_wait(tMPI_Spinlock_barrier_t *barrier)
 {
-    tMPI_Reduce_req *ret;
-    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator, 
-                                         comm, NULL);
-    return ret;
+    int    cycle;
+    int    status;
+    /*int    i;*/
+
+    /* We don't need to lock or use atomic ops here, since the cycle index 
+     * cannot change until after the last thread has performed the check
+     * further down. Further, they cannot reach this point in the next 
+     * barrier iteration until all of them have been released, and that 
+     * happens after the cycle value has been updated.
+     *
+     * No synchronization == fast synchronization.
+     */
+    cycle = barrier->cycle;
+
+    /* Decrement the count atomically and check if it is zero.
+     * This will only be true for the last thread calling us.
+     */
+    if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
+    {
+        tMPI_Atomic_set(&(barrier->count), barrier->threshold);
+        barrier->cycle = !barrier->cycle;
+
+        status = -1;
+    }
+    else
+    {
+        /* Wait until the last thread changes the cycle index.
+         * We are both using a memory barrier, and explicit
+         * volatile pointer cast to make sure the compiler
+         * doesn't try to be smart and cache the contents.
+         */
+        do
+        {
+            TMPI_YIELD_WAIT(barrier);
+            tMPI_Atomic_memory_barrier();
+        }
+        while( *(volatile int *)(&(barrier->cycle)) == cycle);
+
+        status = 0;
+    }
+    return status;
 }
-
-#if 0
-void tMPI_Reduce_async(tMPI_Reduce_req *req, 
-                       void (*function)(int, void*, void*, void *), 
-                       size_t n, void *input, void *res)
-{
-    
-}
-
-#endif
-
 
 

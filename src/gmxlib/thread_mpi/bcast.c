@@ -46,20 +46,21 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     struct coll_env *cev;
     int myrank;
     int ret=TMPI_SUCCESS;
+    struct tmpi_thread *cur=tMPI_Get_current();
 
-#ifdef TMPI_TRACE
-    tMPI_Profile_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, 
-                       datatype, root, comm);
-#endif
 #ifdef TMPI_PROFILE
-       tMPI_Profile_count(TMPIFN_Bcast); 
+    tMPI_Profile_count_start(cur); 
+#endif
+#ifdef TMPI_TRACE
+    tMPI_Trace_print("tMPI_Bcast(%p, %d, %p, %d, %p)", buffer, count, datatype, 
+                     root, comm);
 #endif
 
     if (!comm)
     {
         return tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_COMM);
     }
-    myrank=tMPI_Comm_seek_rank(comm, tMPI_Get_current());
+    myrank=tMPI_Comm_seek_rank(comm, cur);
 
     /* we increase our counter, and determine which coll_env we get */
     cev=tMPI_Get_cev(comm, myrank, &synct);
@@ -80,6 +81,9 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
         tMPI_Mult_recv(comm, cev, root, 0, TMPI_BCAST_TAG, datatype, bufsize, 
                        buffer, &ret);
     }
+#ifdef TMPI_PROFILE
+    tMPI_Profile_count_stop(cur, TMPIFN_Bcast); 
+#endif
     return ret;
 }
 

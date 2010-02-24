@@ -527,8 +527,13 @@ void please_cite(FILE *fp,const char *key)
  */
 const char *GromacsVersion()
 {
-
-  /* Version is generated at compile time */
+#ifdef USE_VERSION_H
+  /* Version generated at compile time. */
   #include "version.h"
+#else
+  /* Fall back to statically defined version. */
+  static const char ver_string[]="VERSION " VERSION;
+#endif
+  
   return ver_string;
 }

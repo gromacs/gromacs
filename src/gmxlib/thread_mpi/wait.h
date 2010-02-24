@@ -36,54 +36,62 @@ files.
 */
 
 
+#ifndef _TMPI_WAIT_H_
+#define _TMPI_WAIT_H_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef TMPI_WAIT_FOR_NO_ONE
 
-#ifdef HAVE_UNISTD_H
+#if ! (defined( _WIN32 ) || defined( _WIN64 ) )
 #include <unistd.h>
-#endif
+#include <sched.h>
 
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
+/* for now we just do sched_yield(). It's in POSIX. */
+/* the data associated with waiting. */
+#define TMPI_YIELD_WAIT_DATA
+/* the initialization  associated with waiting. */
+#define TMPI_YIELD_WAIT_DATA_INIT(data)
 
-#include "impl.h"
+/* the waiting macro */
+#define TMPI_YIELD_WAIT(data)  sched_yield()
 
+#else
+/* and in Windows, we do SwitchToThread() alternated with Sleep(0). This
+   is apparently recommende practice (SwitchToThread() alone just gives
+   up the slice for threads on the current core, and Sleep(0) alone could
+   lead to starvation. This mixed approach actually gives better real-world 
+   performance in the test program.*/
+/* the data associated with waiting. */
+#define TMPI_YIELD_WAIT_DATA  int yield_wait_counter;
+/* the initialization  associated with waiting. */
+#define TMPI_YIELD_WAIT_DATA_INIT(data) { (data)->yield_wait_counter=0; }
 
-
-static void *tMPI_Reduce_req_allocator(void *arg)
-{
-    tMPI_Reduce_req *ret;
-    /*tMPI_Comm comm=(tMPI_Comm)arg;*/
-
-    ret=(tMPI_Reduce_req*)tMPI_Malloc(sizeof(tMPI_Reduce_req));
-    tMPI_Atomic_set( &(ret->n_remaining), 0);
-    ret->comm=(tMPI_Comm)arg;
-
-    return (void*)ret;
-}
-
-tMPI_Reduce_req *tMPI_Reduce_req_alloc(tMPI_Comm comm)
-{
-    tMPI_Reduce_req *ret;
-    ret=(tMPI_Reduce_req*)tMPI_Once_wait(comm, tMPI_Reduce_req_allocator, 
-                                         comm, NULL);
-    return ret;
-}
-
-#if 0
-void tMPI_Reduce_async(tMPI_Reduce_req *req, 
-                       void (*function)(int, void*, void*, void *), 
-                       size_t n, void *input, void *res)
-{
-    
+/* the waiting macro is so complicated because using SwitchToThread only schedules */
+#define TMPI_YIELD_WAIT(data)  { \
+    if ( ((data)->yield_wait_counter++)%100 == 0 ) \
+    {\
+        SwitchToThread();\
+    }\
+    else\
+    {\
+        Sleep(0);\
+    }\
 }
 
 #endif
 
 
+#else /* !TMPI_WAIT_FOR_NO_ONE */
+
+/* the data associated with waiting. */
+#define TMPI_YIELD_WAIT_DATA
+/* the initialization  associated with waiting. */
+#define TMPI_YIELD_WAIT_DATA_INIT(data)
+
+/* the waiting macro */
+#define TMPI_YIELD_WAIT(data)  
+
+
+#endif /* !TMPI_WAIT_FOR_NO_ONE */
+
+#endif
 

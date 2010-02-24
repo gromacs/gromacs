@@ -1980,7 +1980,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
     return 0;
 }
 
-void make_local_gb(t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
+void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 {
     int i,at0,at1;
     gmx_domdec_t *dd=NULL;

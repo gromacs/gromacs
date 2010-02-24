@@ -83,7 +83,7 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 {
   t_atom *atom;
   int  mb,nmol,atnr,cg,a,a0,ncqlj,ncq,nclj;
-  bool bBHAM,bLJcut,bWater,bQ,bLJ;
+  bool bBHAM,bLJcut,bChargePerturbed,bWater,bQ,bLJ;
   double nw,nqlj,nq,nlj,cost_bond,cost_pp,cost_spread,cost_fft;
   float fq,fqlj,flj,fljtab,fqljw,fqw,fqspread,ffft,fbond;
   float ratio;
@@ -120,6 +120,7 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   nqlj = 0;
   nq   = 0;
   nlj  = 0;
+  bChargePerturbed = FALSE;
   for(mb=0; mb<mtop->nmolblock; mb++) {
     molt = &mtop->moltype[mtop->molblock[mb].type];
     atom = molt->atoms.atom;
@@ -135,6 +136,9 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 	bQ  = (atom[a].q != 0 || atom[a].qB != 0);
 	bLJ = (iparams[(atnr+1)*atom[a].type].lj.c6  != 0 ||
 	       iparams[(atnr+1)*atom[a].type].lj.c12 != 0);
+	if (atom[a].q != atom[a].qB) {
+	  bChargePerturbed = TRUE;
+	}
 	/* This if this atom fits into water optimization */
 	if (!((a == a0   &&  bQ &&  bLJ) ||
 	      (a == a0+1 &&  bQ && !bLJ) ||
@@ -177,7 +181,13 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
   
   cost_spread = fqspread*(3*nw + nqlj + nq);
   cost_fft    = ffft*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
-  
+
+  if (ir->efep != efepNO && bChargePerturbed) {
+    /* All PME work, except the spline coefficient calculation, doubles */
+    cost_spread *= 2;
+    cost_fft    *= 2;
+  }
+
   ratio =
     (cost_spread + cost_fft)/(cost_bond + cost_pp + cost_spread + cost_fft);
 

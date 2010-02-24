@@ -544,21 +544,6 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier);
 
 
 
-/** Lock a file so only one thread can use it
- *
- *  Call this routine before writing to logfiles or standard out, in order
- *  to avoid mixing output from multiple threads.
- */
-void tMPI_Lockfile(FILE *   stream);
-
-
-/** Unlock a file (allow other threads to use it)
- *
- *  Call this routine when you finish a write statement to a file, so other
- *  threads can use it again.
- */
-void tMPI_Unlockfile(FILE *   stream);
-
 
 #ifdef __cplusplus
 }

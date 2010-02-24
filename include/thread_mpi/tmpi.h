@@ -433,10 +433,10 @@ int tMPI_Get_processor_name(char *name, int *resultlen);
     \return time value.
     */
 double tMPI_Wtime(void);
-#if 0
-/** get the resolution of tMPI_Wtime as a double, in seconds */
+/** get the resolution of tMPI_Wtime as a double, in seconds 
+
+    \return time resolution. */
 double tMPI_Wtick(void);
-#endif
 
 #ifndef DOXYGEN
 #define tMPI_This_threadnr() (int)(tMPI_Get_current() - threads)

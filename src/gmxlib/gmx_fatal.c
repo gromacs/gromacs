@@ -67,12 +67,6 @@ static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t warning_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
-/* a local version of _gmx_error with optional locking of debug_mutex to 
-   avoid deadlocks when called from functions which themselves lock 
-   that mutex. This is ugly, but to fix this, the entire structure
-   and interface of gmx_fatal will need to be reconsidered. */
-static void _gmx_error_locking(const char *key,const char *msg,
-                               const char *file,int line, bool lock);
 
 bool bDebugMode(void)
 {
@@ -459,7 +453,7 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 #ifdef GMX_THREADS
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
-  _gmx_error_locking("fatal",msg,file,line, TRUE);
+  _gmx_error("fatal",msg,file,line);
 }
 
 static int  nwarn_note  = 0;
@@ -486,15 +480,18 @@ void init_warning(int maxwarning)
 
 void set_warning_line(const char *s,int line)
 {
+    if (s == NULL)
+    {
+        gmx_incons("Calling set_warning_line with NULL pointer");
+    }
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&warning_mutex);
+    tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
-  if (s == NULL)
-    gmx_incons("Calling set_warning_line with NULL pointer");
-  strcpy(filenm,s);
-  lineno = line;
+
+    strcpy(filenm,s);
+    lineno = line;
 #ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&warning_mutex);
+    tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
 }
 
@@ -590,35 +587,42 @@ static void print_warn_count(const char *type,int n)
 
 void print_warn_num(bool bFatalError)
 {
+    bool cond;
+    int nww;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
     print_warn_count("note",nwarn_note);
-
     print_warn_count("warning",nwarn_warn);
-    if (bFatalError && nwarn_warn > maxwarn) {
-        gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
-                "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn_warn,Program());
-    }
+    nww=nwarn_warn;
+    cond=bFatalError && nwarn_warn > maxwarn;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
+
+    if (cond) {
+        gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
+                  "If you are sure all warnings are harmless, use the -maxwarn option.",
+                  nww,Program());
+    }
 }
 
 void check_warning_error(int f_errno,const char *file,int line)
 {
+    int nwe;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&warning_mutex);
 #endif
-    if (nwarn_error > 0) {
-        print_warn_num(FALSE);
-        gmx_fatal(f_errno,file,line,"There %s %d error%s in input file(s)",
-                  (nwarn_error==1) ? "was" : "were",nwarn_error,
-                  (nwarn_error==1) ? ""    : "s");
-    }
+    nwe=nwarn_error;
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&warning_mutex);
 #endif
+    if (nwe > 0) {
+        print_warn_num(FALSE);
+        gmx_fatal(f_errno,file,line,"There %s %d error%s in input file(s)",
+                  (nwe==1) ? "was" : "were",nwe,
+                  (nwe==1) ? ""    : "s");
+    }
 }
 
 void _too_few(const char *fn,int line)
@@ -775,44 +779,32 @@ char *gmx_strerror(const char *key)
   }
 }
 
-static void _gmx_error_locking(const char *key,const char *msg,
-                               const char *file,int line, bool lock)
-{
-  char buf[10240],tmpbuf[1024];
-  int  cqnum;
-  const char *llines = "-------------------------------------------------------";
-  char *strerr;
-
-#ifdef GMX_THREADS
-  if (lock)  
-  {
-    tMPI_Thread_mutex_lock(&warning_mutex);
-  }
-#endif
-  /* protect the audience from suggestive discussions */
-  
-  cool_quote(tmpbuf,1023,&cqnum);
-  strerr = gmx_strerror(key);
-  sprintf(buf,"\n%s\nProgram %s, %s\n"
-	  "Source code file: %s, line: %d\n\n"
-	  "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
-	  "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
-	  llines,ShortProgram(),GromacsVersion(),file,line,
-	  strerr,msg ? msg : warn_buf,llines,tmpbuf);
-  free(strerr);
-#ifdef GMX_THREADS
-  if (lock)
-  {
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-  }
-#endif
-  gmx_error_handler(buf);
-
-}
 
 void _gmx_error(const char *key,const char *msg,const char *file,int line)
 {
-    _gmx_error_locking(key, msg, file, line, TRUE);
+    char buf[10240],tmpbuf[1024];
+    int  cqnum;
+    const char *llines = "-------------------------------------------------------";
+    char *strerr;
+
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_lock(&warning_mutex);
+#endif
+    /* protect the audience from suggestive discussions */
+
+    cool_quote(tmpbuf,1023,&cqnum);
+    strerr = gmx_strerror(key);
+    sprintf(buf,"\n%s\nProgram %s, %s\n"
+            "Source code file: %s, line: %d\n\n"
+            "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
+            "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
+            llines,ShortProgram(),GromacsVersion(),file,line,
+            strerr,msg ? msg : warn_buf,llines,tmpbuf);
+    free(strerr);
+#ifdef GMX_THREADS
+    tMPI_Thread_mutex_unlock(&warning_mutex);
+#endif
+    gmx_error_handler(buf);
 }
 
 void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int line)

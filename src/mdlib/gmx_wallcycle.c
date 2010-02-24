@@ -291,12 +291,6 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
         cycles[i]   = (double)wcc[i].c;
     }
     
-    if (wcc[ewcUPDATE].n > 0)
-    {
-        /* Remove the constraint part from the update count */
-        cycles[ewcUPDATE] -= cycles[ewcCONSTR];
-    }
-    
 #ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
