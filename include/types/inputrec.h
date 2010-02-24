@@ -284,6 +284,7 @@ typedef struct {
   int  adress_type;     /* type of AdResS simulation                    */
   bool badress_new_wf;  /* enable new AdResS weighting function         */
   bool badress_chempot_dx;  /*true:interaction table format input is F=-dmu/dx   false: dmu_dwp  */
+  bool badress_tf_full_box; /* true: appy therm force everywhere in the box according to table false: only in hybrid region */
   real adress_const_wf; /* value of weighting function for eAdressConst */
   real adress_ex_width; /* center of the explicit zone                  */
   real adress_hy_width; /* width of the hybrid zone                     */
