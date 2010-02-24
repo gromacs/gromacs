@@ -192,43 +192,49 @@ static void quit_gmx(const char *msg)
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-  if (!fatal_errno) {
-    if (log_file) 
-      fprintf(log_file,"%s\n",msg);
-    fprintf(stderr,"%s\n",msg);
-    /* we set it to no-zero because if this function is called, something 
-       has gone wrong */
-    fatal_errno=255;
-  }
-  else {
-    if (fatal_errno != -1)
-      errno=fatal_errno;
-    perror(msg);
-  }
-  
-  if (gmx_parallel_env_initialized()) {
-    int  nnodes;
-    int  noderank;
-    
-    nnodes   = gmx_node_num();
-    noderank = gmx_node_rank();
-    
-    if (nnodes > 1) 
-      fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",
-	      noderank);
-    gmx_abort(noderank,nnodes,-1);
-  } else {
-    if (debug)
-      fflush(debug);
-    if (bDebugMode()) {
-      fprintf(stderr,"dump core (y/n):"); 
-      fflush(stderr);
-      if (toupper(getc(stdin))!='N') 
-	(void) abort(); 
+    if (!fatal_errno) 
+    {
+        if (log_file) 
+            fprintf(log_file,"%s\n",msg);
+        fprintf(stderr,"%s\n",msg);
+        /* we set it to no-zero because if this function is called, something 
+           has gone wrong */
+        fatal_errno=255;
     }
-  }
+    else 
+    {
+        if (fatal_errno != -1)
+            errno=fatal_errno;
+        perror(msg);
+    }
 
-  exit(fatal_errno);
+#ifndef GMX_THREADS 
+    if (gmx_parallel_env_initialized()) {
+        int  nnodes;
+        int  noderank;
+
+        nnodes   = gmx_node_num();
+        noderank = gmx_node_rank();
+
+        if (nnodes > 1) 
+            fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",
+                    noderank);
+        gmx_abort(noderank,nnodes,-1);
+    } 
+    else 
+#endif
+    {
+        if (debug)
+            fflush(debug);
+        if (bDebugMode()) {
+            fprintf(stderr,"dump core (y/n):"); 
+            fflush(stderr);
+            if (toupper(getc(stdin))!='N') 
+                (void) abort(); 
+        }
+    }
+
+    exit(fatal_errno);
 #ifdef GMX_THREADS
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif

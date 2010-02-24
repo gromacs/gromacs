@@ -154,4 +154,5 @@ tmpi.h \
 mainpage.h \
 molfile_plugin.h \
 vmddlopen.h \
-vmdplugin.h
+vmdplugin.h \
+sighandler.h

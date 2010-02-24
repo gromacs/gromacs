@@ -80,6 +80,7 @@
 #include "mtop_util.h"
 #include "gmxfio.h"
 #include "pme.h"
+#include "gbutil.h"
 
 typedef struct {
   t_state s;

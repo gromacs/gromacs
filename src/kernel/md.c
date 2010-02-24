@@ -88,6 +88,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "sighandler.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -100,10 +101,6 @@
 #include "corewrap.h"
 #endif
 
-
-
-/* The following two variables are set in runner.c */
-extern bool bGotTermSignal, bGotUsr1Signal;
 
 
 enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
@@ -1033,7 +1030,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	t_extmass   MassQ;
     int         **trotter_seq; 
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    bool        bHandledSignal=FALSE;
+    int         bHandledSignal=-1; /* compare to last_signal_recvd */
     gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -2109,9 +2106,10 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */    
-        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
+        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
+            (bHandledSignal!=last_signal_number_recvd))
         {
-            if (bGotTermSignal || ir->nstlist == 0)
+            if (bGotStopNextStepSignal || ir->nstlist == 0)
             {
                 gs.sig[eglsTERM] = 1;
             }
@@ -2123,16 +2121,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        bGotTermSignal ? "TERM" : "USR1",
+                        signal_name[last_signal_number_recvd], 
                         gs.sig[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    bGotTermSignal ? "TERM" : "USR1",
+                    signal_name[last_signal_number_recvd], 
                     gs.sig[eglsTERM]==-1 ? "NS " : "");
             fflush(stderr);
-            bHandledSignal=TRUE;
+            bHandledSignal=last_signal_number_recvd;
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
