@@ -48,9 +48,9 @@
 
 
 /* we got a signal to stop in the next step: */
-volatile sig_atomic_t bGotStopNextStepSignal;
+volatile sig_atomic_t bGotStopNextStepSignal=FALSE;
 /* we got a signal to stop in the next neighbour search step: */
-volatile sig_atomic_t bGotStopNextNSStepSignal;
+volatile sig_atomic_t bGotStopNextNSStepSignal=FALSE;
 
 /* our names for the handled signals. These must match the number given
    in signal_handler. */
@@ -91,6 +91,7 @@ RETSIGTYPE signal_handler(int n)
 #endif
     }
 }
+
 
 
 

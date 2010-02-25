@@ -1030,7 +1030,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	t_extmass   MassQ;
     int         **trotter_seq; 
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    int         bHandledSignal=-1; /* compare to last_signal_recvd */
+    int         handledSignal=-1; /* compare to last_signal_recvd */
     gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -2107,7 +2107,8 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 
         /* Check whether everything is still allright */    
         if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
-            (bHandledSignal!=last_signal_number_recvd))
+            (handledSignal!=last_signal_number_recvd) &&
+            MASTERTHREAD(cr))
         {
             if (bGotStopNextStepSignal || ir->nstlist == 0)
             {
@@ -2125,23 +2126,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                         gs.sig[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
-#ifdef GMX_THREADS
-            if (MASTERTHREAD(cr))
-            {
-#endif
-                fprintf(stderr,
-                        "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        signal_name[last_signal_number_recvd], 
-                        gs.sig[eglsTERM]==-1 ? "NS " : "");
-#ifdef GMX_THREADS
-            }
-            else
-            {
-                fprintf(stderr, ".");
-            }
-#endif
+            fprintf(stderr,
+                    "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+                    signal_name[last_signal_number_recvd], 
+                    gs.sig[eglsTERM]==-1 ? "NS " : "");
             fflush(stderr);
-            bHandledSignal=last_signal_number_recvd;
+            handledSignal=last_signal_number_recvd;
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
