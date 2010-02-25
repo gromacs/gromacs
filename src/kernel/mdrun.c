@@ -434,8 +434,6 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in z" },
     { "-gcom",    FALSE, etINT,{&nstglobalcomm},
       "Global communication frequency" },
-    { "-v",       FALSE, etBOOL,{&bVerbose},  
-      "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
     { "-seppot",  FALSE, etBOOL, {&bSepPot},
@@ -470,6 +468,8 @@ int main(int argc,char *argv[])
       "HIDDENReset the cycle counters after half the number of steps or halfway -maxh" },
 #endif
 // args for both
+    { "-v",       FALSE, etBOOL,{&bVerbose},  
+      "Be loud and noisy" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
   };
