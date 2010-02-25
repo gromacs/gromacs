@@ -71,6 +71,8 @@ extern volatile sig_atomic_t last_signal_number_recvd;
 /* prototype for the signal handler */
 extern RETSIGTYPE signal_handler(int n);
 
+/* install the signal handlers */
+void signal_handler_install(void);
 
 #ifdef __cplusplus
 }
