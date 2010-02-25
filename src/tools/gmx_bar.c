@@ -143,12 +143,12 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
     DG0 = Wmin;
     DG2 = Wmax;
     
-    /* For the comparison we can use twice the tolerance */
+    /* For the comparison we can use twice the tolerance (prec is in kJ/mol) */
     if (debug)
     {
         fprintf(debug,"DG %9.5f %9.5f\n",DG0,DG2);
     }
-    while (DG2 - DG0 > 2*prec)
+    while (DG2 - DG0 > 2*prec*beta)
     {
         DG1 = 0.5*(DG0 + DG2);
 
@@ -802,7 +802,10 @@ int gmx_bar(int argc,char *argv[])
     bEE = TRUE;
     for(f=0; f<nfile-1; f++)
     {
-        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax,
+        /* Determine the free energy difference with a factor of 10
+         * more accuracy than requested for printing.
+         */
+        calc_bar(&ba[f], &ba[f+1], n1>0, 0.1*prec, nbmin, nbmax,
                  &(results[f]), &bEE, partsum);
     }
 
