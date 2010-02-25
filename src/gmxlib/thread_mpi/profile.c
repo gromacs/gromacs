@@ -76,6 +76,11 @@ const char *tmpi_function_names[] =
     "Wait",
     "Test",
     "Waitall",
+    "Testall",
+    "Waitany",
+    "Testany",
+    "Waitsome",
+    "Testsome",
 
     "Barrier",
 
@@ -96,7 +101,6 @@ const char *tmpi_waitfn_names[] =
 {
     "P2p",
     "P2p signal",
-    "Waitall",
     "Coll. send",
     "Coll. recv",
     "Barrier",

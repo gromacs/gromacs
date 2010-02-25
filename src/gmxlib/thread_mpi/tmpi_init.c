@@ -594,30 +594,25 @@ int tMPI_Abort(tMPI_Comm comm, int errorcode)
     
     if (tMPI_Is_master())
     {
-#if 0
         if (comm==TMPI_COMM_WORLD)
             fprintf(stderr, 
                "tMPI_Abort called on TMPI_COMM_WORLD main with errorcode=%d\n",
                errorcode);
         else
-            fprintf(stderr, "tMPI_Abort called on main thread with errorcode=%d\n",
+        fprintf(stderr, "tMPI_Abort called on main thread with errorcode=%d\n",
                 errorcode);
         fflush(stderr);
-#endif
         exit(errorcode);
     }
     else
     {
         int *ret;
         /* kill myself */
-#if 0
         fprintf(stderr, "tMPI_Abort called with error code %d on thread %d\n", 
                         errorcode, tMPI_This_threadnr());
         fflush(stderr);
-#endif
         ret=(int*)malloc(sizeof(int));
         tMPI_Thread_exit(ret);
-        exit(errorcode);
     }
 #endif
     return TMPI_SUCCESS;
