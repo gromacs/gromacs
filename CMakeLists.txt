@@ -40,22 +40,23 @@ option(GMX_X86_64_ASM "Add SSE assembly files for X86_64" OFF)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
 if(GMX_OPENMM)
+    # we'll use the built-in fft to avoid unnecessary dependencies
+    set (GMX_FFT_LIBRARY "fftpack")
     if(GMX_MPI)
-        message(FATAL_ERROR "The OpenMM build is not compatible with MPI option!")
+        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
     endif(GMX_MPI)
     if(GMX_THREADS)
-        message(FATAL_ERROR "The OpenMM build is not compatible with threads option!")
+        message(FATAL_ERROR "The OpenMM build is not compatible with threads!")
     endif(GMX_THREADS)
-#    if(GMX_SOFTWARE_INVSQRT)
-#        message(WARNING "The OpenMM build cannot make use of gromacs software 1/sqrt!")
-#        set(GMX_SOFTWARE_INVSQRT OFF)
-#    endif(GMX_SOFTWARE_INVSQRT)
+    if(GMX_SOFTWARE_INVSQRT)
+        set(GMX_SOFTWARE_INVSQRT OFF)
+    endif(GMX_SOFTWARE_INVSQRT)
     if(NOT GMX_ACCELERATION MATCHES "none")    
         message(WARNING "The OpenMM build does not support other acceleration modes!")
         set(GMX_ACCELERATION "none")
     endif()
     if(GMX_FAHCORE)
-        message(FATAL_ERROR "The OpenMM build does not support other acceleration modes!")
+        message(FATAL_ERROR "The OpenMM build does not support the FAH option!")
     endif(GMX_FAHCORE)
 endif(GMX_OPENMM)
 
@@ -223,13 +224,6 @@ if(GMX_OPENMM)
         set(CUDA_VERBOSE_BUILD ON)
     endif()
     find_package(OpenMM) 
-#   message(
-#           "OpenMM_ROOT_DIR: ${OpenMM_ROOT_DIR}\n"
-#           "OpenMM_LIBRARIES: ${OpenMM_LIBRARIES}\n"
-#           "OpenMM_LIBRARY_DIR:   ${OpenMM_LIBRARY_DIR}\n"
-#           "OpenMM_INCLUDE_DIR: ${OpenMM_INCLUDE_DIR}\n"
-#           "OpenMM_PLUGIN_DIR: ${OpenMM_PLUGIN_DIR}\n"
-#           )
 endif(GMX_OPENMM)
 
 if(APPLE)
@@ -366,7 +360,7 @@ else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
     MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, None")
 endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
-# Process FFT library settings
+# Process FFT library settings - if not OpenMM build 
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 #    MESSAGE(STATUS "Using external FFT library - fftw3")
