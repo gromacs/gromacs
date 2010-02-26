@@ -538,8 +538,10 @@ AC_TRY_COMPILE([#include<fftw3.h>],,[
 AC_MSG_RESULT(yes)
 if test "$enable_float" = "yes"; then
   AC_CHECK_LIB([fftw3f],main,,AC_MSG_ERROR([Cannot find fftw3f library]))
+  PKG_FFTW="fftw3f"
 else
   AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
+  PKG_FFTW="fftw3"
 fi
   AC_DEFINE(GMX_FFT_FFTW3,,[Use FFTW3 FFT library])
 ],[
@@ -557,6 +559,7 @@ to use a slower set of FFTs built into Gromacs.
 (Just install FFTW3 unless you really know what you are doing).
 ])
 ])
+  AC_SUBST(PKG_FFTW)
   ;;
 
 mkl*)
@@ -575,6 +578,7 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
   if test "$have_mkl" == "no"; then
     # we assume it's a new MKL
     LIBS="$LIBS -liomp5 -lmkl_sequential -lmkl_core"
+    LMKL=" -liomp5 -lmkl_sequential -lmkl_core"
     AC_CHECK_LIB([mkl_intel_lp64],DftiComputeForward,,[have_mkl10_64="no"])
     if test "$have_mkl10_64" == "no"; then
       AC_CHECK_LIB([mkl_intel],DftiComputeForward,,[have_mkl10_32="no"])
@@ -584,6 +588,7 @@ AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot f
     fi
   fi
   AC_DEFINE(GMX_FFT_MKL,,[Use Intel MKL FFT library])
+  AC_SUBST(LMKL)
   ;;
 
 fftpack | no)
@@ -729,6 +734,8 @@ if test "$with_gsl" = "yes"; then
   LDFLAGS="$ac_save_LDFLAGS -lgslcblas"
 # gslcblas library found, check main lib
   AC_CHECK_LIB(gsl,main)])])
+  PKG_GSL="gsl"
+  AC_SUBST(PKG_GSL)
 #
 fi
 
@@ -747,6 +754,8 @@ if test "$with_xml" = "yes"; then
    if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
    fi
+   PKG_XML2="libxml-2.0"
+   AC_SUBST(PKG_XML2)
 # restore CPPFLAGS
    CPPFLAGS="$ac_save_CPPFLAGS"
 fi
@@ -1072,6 +1081,7 @@ AC_SUBST(CCASFLAGS)
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/libgmx${LIBSUFFIX}.pc:src/gmxlib/libgmx.pc.in ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_blas/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/selection/Makefile ])
@@ -1096,8 +1106,11 @@ AC_CONFIG_FILES([ include/types/Makefile ])
 AC_CONFIG_FILES([ include/thread_mpi/Makefile ])
 AC_CONFIG_FILES([ include/thread_mpi/atomic/Makefile ])
 AC_CONFIG_FILES([ src/mdlib/Makefile ])
+AC_CONFIG_FILES([ src/mdlib/libmd${LIBSUFFIX}.pc:src/mdlib/libmd.pc.in ])
 AC_CONFIG_FILES([ src/kernel/Makefile ])
+AC_CONFIG_FILES([ src/kernel/libgmxpreprocess${LIBSUFFIX}.pc:src/kernel/libgmxpreprocess.pc.in ])
 AC_CONFIG_FILES([ src/tools/Makefile ])
+AC_CONFIG_FILES([ src/tools/libgmxana${LIBSUFFIX}.pc:src/tools/libgmxana.pc.in ])
 AC_CONFIG_FILES([ src/ngmx/Makefile ])
 AC_CONFIG_FILES([ src/contrib/Makefile ])
 AC_CONFIG_FILES([ scripts/Makefile ])

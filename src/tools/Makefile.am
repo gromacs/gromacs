@@ -6,6 +6,9 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES = libgmxana@LIBSUFFIX@.la
 
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libgmxana@LIBSUFFIX@.pc
+
 libgmxana@LIBSUFFIX@_la_LIBADD         = ../gmxlib/libgmx@LIBSUFFIX@.la	../mdlib/libmd@LIBSUFFIX@.la	
 libgmxana@LIBSUFFIX@_la_DEPENDENCIES   = ../gmxlib/libgmx@LIBSUFFIX@.la	../mdlib/libmd@LIBSUFFIX@.la	
 libgmxana@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@

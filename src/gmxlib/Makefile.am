@@ -72,7 +72,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
 	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c
 
-
+pkgconfigdir = ${libdir}/pkgconfig
+pkgconfig_DATA = libgmx@LIBSUFFIX@.pc
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.h
