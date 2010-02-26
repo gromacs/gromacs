@@ -95,6 +95,7 @@ copyrite.lo: version.h
 version.h: FORCE
 	[ -f version.h ] || touch version.h
 	version=`git --git-dir=$(top_srcdir)/.git describe --always --long --abbrev=20 HEAD 2>/dev/null || echo @VERSION@`; \
+	version=$$version`which git >/dev/null && [ -d $(top_srcdir)/.git ] && (cd $(top_srcdir) && git diff-index --quiet HEAD) || echo " (mod)"`; \
 	version="static const char ver_string[] = \"VERSION $$version\";"; \
 	echo "$$version" | cmp -s version.h - || echo "$$version" > version.h
 FORCE:
