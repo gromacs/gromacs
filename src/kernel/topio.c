@@ -56,6 +56,7 @@
 #include "string2.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
+#include "warninp.h"
 #include "vsite_parm.h"
 
 #include "grompp.h"

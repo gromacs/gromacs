@@ -56,6 +56,7 @@
 #include "futil.h"
 #include "macros.h"
 #include "gmxcpp.h"
+#include "warninp.h"
 
 typedef struct {
   char *name;

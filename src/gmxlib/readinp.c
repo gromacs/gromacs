@@ -48,6 +48,7 @@
 #include "gmxfio.h"
 #include "gmxcpp.h"
 #include "names.h"
+#include "warninp.h"
 
 static int inp_count = 1;
 

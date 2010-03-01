@@ -144,6 +144,7 @@ vec.h \
 viewit.h \
 vmdio.h \
 vsite.h \
+warninp.h \
 wgms.h \
 wman.h \
 writeps.h \

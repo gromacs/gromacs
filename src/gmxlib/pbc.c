@@ -862,7 +862,9 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 
     is = IVEC2IS(ishift);
     if (debug)
-        range_check(is,0,SHIFTS);
+    {
+        range_check_mesg(is,0,SHIFTS,"PBC shift vector index range check.");
+    }
 
     return is; 
 }

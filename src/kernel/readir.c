@@ -51,6 +51,7 @@
 #include "symtab.h"
 #include "string2.h"
 #include "readinp.h"
+#include "warninp.h"
 #include "readir.h" 
 #include "toputil.h"
 #include "index.h"

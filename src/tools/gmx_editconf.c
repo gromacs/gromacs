@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -212,7 +213,6 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     real bfac_min, bfac_max;
     int i, n;
     bool found;
-    char buf[120];
 
     bfac_max = -1e10;
     bfac_min = 1e10;
@@ -267,8 +267,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
                 }
             if (!found)
             {
-                sprintf(buf, "Residue nr %d not found\n", bfac_nr[i]);
-                warning(buf);
+                gmx_warning("Residue nr %d not found\n", bfac_nr[i]);
             }
         }
     }

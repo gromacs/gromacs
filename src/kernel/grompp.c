@@ -64,6 +64,7 @@
 #include "sortwater.h"
 #include "convparm.h"
 #include "gmx_fatal.h"
+#include "warninp.h"
 #include "index.h"
 #include "gmxfio.h"
 #include "trnio.h"
