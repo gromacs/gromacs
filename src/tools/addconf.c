@@ -50,6 +50,7 @@
 #include "nrnb.h"
 #include "ns.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 static real box_margin;
 

@@ -15,6 +15,7 @@ calcgrid.h \
 calch.h \
 calcmu.h \
 centerofmass.h \
+chargegroup.h \
 checkpoint.h \
 confio.h \
 constr.h \

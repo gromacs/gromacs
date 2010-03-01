@@ -40,7 +40,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\
-	tables.c	tgroup.c	\
+	tables.c	tgroup.c	tpi.c	\
 	update.c	vcm.c		vsite.c	\
 	wall.c		wnblist.c	\
 	csettle.c       clincs.c	\
