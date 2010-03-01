@@ -46,7 +46,7 @@
 #include "gmx_fatal.h"
 
 
-void calc_chargegroup_radii(const gmx_mtop_t *mtop,const rvec *x,
+void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
                             real *rvdw1,real *rvdw2,
                             real *rcoul1,real *rcoul2)
 {

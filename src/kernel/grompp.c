@@ -1229,9 +1229,16 @@ int main (int argc, char *argv[])
 		bNeedVel,bGenVel,fr_time,ir,&state,sys,oenv);
   }
 
-  if (ir->ePBC==epbcXY && ir->nwall!=2)
-    clear_rvec(state.box[ZZ]);
+    if (ir->ePBC==epbcXY && ir->nwall!=2)
+    {
+        clear_rvec(state.box[ZZ]);
+    }
   
+    if (ir->rlist > 0)
+    {
+        check_chargegroup_radii(mdparin,sys,ir,state.x);
+    }
+
   if (EEL_FULL(ir->coulombtype)) {
     /* Calculate the optimal grid dimensions */
     copy_mat(state.box,box);

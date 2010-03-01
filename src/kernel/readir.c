@@ -1,4 +1,5 @@
-/*
+/*   -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -57,6 +58,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -115,6 +117,11 @@ static void check_nst(const char *desc_nst,int nst,
     }
 }
 
+static bool ir_NVE(const t_inputrec *ir)
+{
+    return ((ir->eI == eiMD || EI_VV(ir->eI)) && ir->etc == etcNO);
+}
+
 void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
               int *nerror)
 /* Check internal consistency */
@@ -132,8 +139,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 
   /* BASIC CUT-OFF STUFF */
   if (ir->rlist == 0 ||
-      !(( EEL_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
-	(EVDW_ZERO_AT_CUTOFF(ir->vdwtype)     && ir->rvdw     > ir->rlist))) {
+      !((EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > ir->rlist) ||
+        (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)    && ir->rvdw     > ir->rlist))) {
     /* No switched potential and/or no twin-range:
      * we can set the long-range cut-off to the maximum of the other cut-offs.
      */
@@ -411,7 +418,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
    * means the interaction is zero outside rcoulomb, but it helps to
    * provide accurate energy conservation.
    */
-  if (EEL_ZERO_AT_CUTOFF(ir->coulombtype)) {
+  if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype)) {
     if (EEL_SWITCHED(ir->coulombtype)) {
       sprintf(err_buf,
 	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb",
@@ -469,7 +476,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
-  if ((EEL_SWITCHED(ir->coulombtype) || ir->coulombtype == eelRF_ZERO)
+  if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
       && (ir->rlistlong <= ir->rcoulomb)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, %s should be 0.1 to 0.3 nm larger than rcoulomb.",
 	    IR_TWINRANGE(*ir) ? "rlistlong" : "rlist");
@@ -490,8 +497,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
 	    "nstlist=-1 only works with switched or shifted potentials,\n"
 	    "suggestion: use vdw-type=%s and coulomb-type=%s",
 	    evdw_names[evdwSHIFT],eel_names[eelPMESWITCH]);
-    CHECK(!(EEL_ZERO_AT_CUTOFF(ir->coulombtype) &&
-	    EVDW_ZERO_AT_CUTOFF(ir->vdwtype)));
+    CHECK(!(EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) &&
+            EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype)));
 
     sprintf(err_buf,"With nstlist=-1 rvdw and rcoulomb should be smaller than rlist to account for diffusion and possibly charge-group radii");
     CHECK(ir->rvdw >= ir->rlist || ir->rcoulomb >= ir->rlist);
@@ -515,19 +522,22 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
     CHECK(ir->sc_alpha!=0 && ir->sc_power!=1 && ir->sc_power!=2);
   }
 
-  /* ENERGY CONSERVATION */
-  if (ir->eI == eiMD && ir->etc == etcNO) {
-    if (!EVDW_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0) {
-      sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-	      evdw_names[evdwSHIFT]);
-      warning_note(NULL);
+    /* ENERGY CONSERVATION */
+    if (ir_NVE(ir))
+    {
+        if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0)
+        {
+            sprintf(warn_buf,"You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
+                    evdw_names[evdwSHIFT]);
+            warning_note(NULL);
+        }
+        if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0)
+        {
+            sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
+                    eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
+            warning_note(NULL);
+        }
     }
-    if (!EEL_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0) {
-      sprintf(warn_buf,"You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-	      eel_names[eelPMESWITCH],eel_names[eelRF_ZERO]);
-      warning_note(NULL);
-    }
-  }
 
   if(ir->coulombtype==eelGB_NOTUSED)
   {
@@ -2248,3 +2258,73 @@ void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
   }
 }
 
+void check_chargegroup_radii(const char *mdparin,
+                             const gmx_mtop_t *mtop,const t_inputrec *ir,
+                             rvec *x)
+{
+    real rvdw1,rvdw2,rcoul1,rcoul2;
+
+    calc_chargegroup_radii(mtop,x,&rvdw1,&rvdw2,&rcoul1,&rcoul2);
+
+    if (rvdw1 > 0)
+    {
+        printf("Largest charge group radii for Van der Waals: %5.3f, %5.3f nm\n",
+               rvdw1,rvdw2);
+    }
+    if (rcoul1 > 0)
+    {
+        printf("Largest charge group radii for Coulomb:       %5.3f, %5.3f nm\n",
+               rcoul1,rcoul2);
+    }
+
+    if (ir->rlist > 0)
+    {
+        set_warning_line(mdparin,-1);
+
+        if (rvdw1  + rvdw2  > ir->rlist ||
+            rcoul1 + rcoul2 > ir->rlist)
+        {
+            sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than rlist (%f)\n",max(rvdw1+rvdw2,rcoul1+rcoul2),ir->rlist);
+            warning(NULL);
+        }
+        else
+        {
+            /* Here we do not use the zero at cut-off macro,
+             * since user defined interactions might purposely
+             * not be zero at the cut-off.
+             */
+            if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
+                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
+            {
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rvdw (%f)\n",
+                        rvdw1+rvdw2,
+                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
+                        ir->rlist,ir->rvdw);
+                if (ir_NVE(ir))
+                {
+                    warning(NULL);
+                }
+                else
+                {
+                    warning_note(NULL);
+                }
+            }
+            if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) &&
+                rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
+            {
+                sprintf(warn_buf,"The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f)\n",
+                        rcoul1+rcoul2,
+                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
+                        ir->rlistlong,ir->rcoulomb);
+                if (ir_NVE(ir))
+                {
+                    warning(NULL);
+                }
+                else
+                {
+                    warning_note(NULL);
+                }
+            }
+        }
+    }
+}

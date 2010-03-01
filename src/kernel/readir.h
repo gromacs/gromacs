@@ -93,6 +93,11 @@ extern void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 			 int *nerror);
 /* Do even more checks */
 
+extern void check_chargegroup_radii(const char *mdparin,
+				    const gmx_mtop_t *mtop,const t_inputrec *ir,
+				    rvec *x);
+/* Even more checks, charge group radii vs. cut-off's only. */
+
 extern void get_ir(const char *mdparin,const char *mdparout,
 		   t_inputrec *ir,t_gromppopts *opts, int *nerror);
 /* Read the input file, and retrieve data for inputrec.

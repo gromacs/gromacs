@@ -47,7 +47,7 @@
 extern "C" { 
 #endif
 
-  extern void calc_chargegroup_radii(const gmx_mtop_t *mtop,const rvec *x,
+  extern void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
 				     real *rvdw1,real *rvdw2,
 				     real *rcoul1,real *rcoul2);
   /* This routine calculates the two largest charge group radii in x,
