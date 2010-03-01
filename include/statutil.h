@@ -186,6 +186,24 @@ extern int check_times(real t);
    There are still legacy functions for the program name, and the command 
    line, but the output_env versions are now preferred.*/
 
+typedef enum 
+{ 
+    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s 
+} time_unit_t;
+/* the time units */
+
+typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
+/* the xvg output formattings */
+
+void output_env_init(output_env_t oenv,  int argc, char *argv[],
+                     time_unit_t tmu, bool view, xvg_format_t xvg_format,
+                     int verbosity, int debug_level);
+/* initialize an output_env structure, setting the command line, 
+   the default time value a boolean view that is set to TRUE when the 
+   user requests direct viewing of graphs, 
+   the graph formatting type, the verbosity, and debug level */
+
+
 extern int output_env_get_verbosity(const output_env_t oenv);
 /* return the verbosity */
 
@@ -216,9 +234,8 @@ extern void output_env_conv_times(const output_env_t oenv, int n, real *time);
 extern bool output_env_get_view(const output_env_t oenv);
 /* Return TRUE when user requested viewing of the file */
 
-enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE };
 
-extern int output_env_get_xvg_format(const output_env_t oenv);
+extern xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
 /* Returns enum (see above) for xvg output formatting */
 
 extern const char *output_env_get_program_name(const output_env_t oenv);

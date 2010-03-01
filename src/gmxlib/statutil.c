@@ -76,6 +76,7 @@
  ******************************************************************/
 
 /* read only time names */
+/* These must correspond to the time units type time_unit_t in statutil.h */
 static const real timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
 static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
 static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
@@ -87,9 +88,9 @@ static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",
 
 struct output_env
 {
-    int time_unit; /*  the time unit as index for the above-defined arrays */
+    time_unit_t time_unit; /* the time unit, enum defined in statuti.h */
     bool view;  /* view of file requested */
-    int xvg_format; /* xvg output format, enum defined in statutil.h */
+    xvg_format_t xvg_format; /* xvg output format, enum defined in statutil.h */
     int  verbosity; /* The level of verbosity for this program */
     int debug_level; /* the debug level */
 
@@ -270,16 +271,15 @@ int check_times(real t)
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-static void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                            const char *timenm[],
-                            bool view, const char *xvg_format[],
-                            int verbosity, int debug_level)
+void output_env_init(output_env_t oenv,  int argc, char *argv[],
+                     time_unit_t tmu, bool view, xvg_format_t xvg_format,
+                     int verbosity, int debug_level)
 {
     int i;
 
-    oenv->time_unit  = nenum(timenm);
+    oenv->time_unit  = tmu;
     oenv->view=view;
-    oenv->xvg_format = nenum(xvg_format);
+    oenv->xvg_format = xvg_format;
     oenv->verbosity=verbosity;
     oenv->debug_level=debug_level;
 
@@ -389,7 +389,7 @@ bool output_env_get_view(const output_env_t oenv)
     return oenv->view;
 }
 
-int output_env_get_xvg_format(const output_env_t oenv)
+xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
 {
     return oenv->xvg_format;
 }
@@ -697,6 +697,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                             "completion", "py", "xml", "wiki", NULL };
     /* This array should match the order of the enum in statutil.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
+    /* This array should match the order of the enum in statutil.h */
     const char *time_units[] = { NULL, "fs", "ps", "ns", "us", "ms", "s", 
                                 NULL };
     int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
@@ -853,8 +854,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
     /* set program name, command line, and default values for output options */
-    output_env_init(*oenv, *argc, argv, time_units, bView, xvg_format,
-                    verbose_level, debug_level);
+    output_env_init(*oenv, *argc, argv, nenum(time_units), bView, 
+                    nenum(xvg_format), verbose_level, debug_level);
  
     if (bVersion) {
       printf("Program: %s\nVersion: %s\n",output_env_get_program_name(*oenv),
