@@ -52,11 +52,15 @@ typedef struct warninp *warninp_t;
 
 
 warninp_t
-init_warning(int maxwarning);
+init_warning(bool bAllowWarnings,int maxwarning);
 /* Initialize the warning data structure.
+ * If bAllowWarnings=FALSE, all warnings (calls to warning()) will be
+ * transformed into errors, calls to warning_note still produce notes.
  * maxwarning determines the maximum number of warnings that are allowed
  * for proceeding. When this number is exceeded check_warning_error
  * and done_warning will generate a fatal error.
+ * bAllowWarnings=TRUE should only be used by programs that have
+ * a -maxwarn command line option.
  */
 
 void 

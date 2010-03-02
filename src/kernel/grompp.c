@@ -1036,7 +1036,7 @@ int main (int argc, char *argv[])
                     asize(desc),desc,0,NULL,&oenv);
   bVerbose = (output_env_get_verbosity(oenv) > 0);
   
-  wi = init_warning(maxwarn);
+  wi = init_warning(TRUE,maxwarn);
   
   /* PARAMETER file processing */
   mdparin = opt2fn("-f",NFILE,fnm);

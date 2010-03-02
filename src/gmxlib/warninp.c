@@ -46,6 +46,7 @@
 #include "warninp.h"
 
 typedef struct warninp {
+    bool bAllowWarnings;
     int  nwarn_note;
     int  nwarn_warn;
     int  nwarn_error;
@@ -54,18 +55,19 @@ typedef struct warninp {
     char filenm[256];
 } t_warninp;
 
-warninp_t init_warning(int maxwarning)
+warninp_t init_warning(bool bAllowWarnings,int maxwarning)
 {
     warninp_t wi;
 
     snew(wi,1);
 
-    wi->maxwarn     = maxwarning;
-    wi->nwarn_note  = 0;
-    wi->nwarn_warn  = 0;
-    wi->nwarn_error = 0;
+    wi->bAllowWarnings = bAllowWarnings;
+    wi->maxwarn        = maxwarning;
+    wi->nwarn_note     = 0;
+    wi->nwarn_warn     = 0;
+    wi->nwarn_error    = 0;
     strcpy(wi->filenm,"unknown");
-    wi->lineno      = 0;
+    wi->lineno         = 0;
 
     return wi;
 }
@@ -132,8 +134,15 @@ static void low_warning(warninp_t wi,const char *wtype,int n,const char *s)
 
 void warning(warninp_t wi,const char *s)
 {
-    wi->nwarn_warn++;
-    low_warning(wi,"WARNING",wi->nwarn_warn,s);
+    if (wi->bAllowWarnings)
+    {
+        wi->nwarn_warn++;
+        low_warning(wi,"WARNING",wi->nwarn_warn,s);
+    }
+    else
+    {
+        warning_error(wi,s);
+    }
 }
 
 void warning_note(warninp_t wi,const char *s)
@@ -177,7 +186,7 @@ void done_warning(warninp_t wi,int f_errno,const char *file,int line)
 
     check_warning_error(wi,f_errno,file,line);
 
-    if (wi->nwarn_warn > wi->maxwarn)
+    if (wi->maxwarn >= 0 && wi->nwarn_warn > wi->maxwarn)
     {
         gmx_fatal(f_errno,file,line,
                   "Too many warnings (%d), %s terminated.\n"

@@ -433,7 +433,7 @@ void read_gct(const char *fn,t_coupl_rec *tcr)
   int       i,j,ninp,nQ,nLJ,nBU,nIP;
   bool      bWrong;
   
-  wi = init_warning(1);
+  wi = init_warning(FALSE,0);
 
   inp=read_inpfile(fn,&ninp,NULL,wi);
 
