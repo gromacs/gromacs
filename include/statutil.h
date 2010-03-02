@@ -190,7 +190,7 @@ typedef enum
 { 
     timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s 
 } time_unit_t;
-/* the time units */
+/* the time units. For the time being, ps means no conversion. */
 
 typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
 /* the xvg output formattings */
@@ -202,6 +202,10 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
    the default time value a boolean view that is set to TRUE when the 
    user requests direct viewing of graphs, 
    the graph formatting type, the verbosity, and debug level */
+
+void output_env_init_default(output_env_t oenv);
+/* initialize an output_env structure, with reasonable default settings.
+    (the time unit is set to time_ps, which means no conversion).  */
 
 
 extern int output_env_get_verbosity(const output_env_t oenv);

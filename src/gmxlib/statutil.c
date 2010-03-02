@@ -276,6 +276,8 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
                      int verbosity, int debug_level)
 {
     int i;
+    int cmdlength=0;
+    char *argvzero=NULL;
 
     oenv->time_unit  = tmu;
     oenv->view=view;
@@ -283,41 +285,50 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
     oenv->verbosity=verbosity;
     oenv->debug_level=debug_level;
 
+    if (argv)
+        argvzero=argv[0];
+
     /* set program name */
+    /* When you run a dynamically linked program before installing
+     * it, libtool uses wrapper scripts and prefixes the name with "lt-".
+     * Until libtool is fixed to set argv[0] right, rip away the prefix:
+     */
+    if (!argvzero || oenv->program_name == NULL)
     {
-        char *argvzero=argv[0];
-        /* When you run a dynamically linked program before installing
-         * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-         * Until libtool is fixed to set argv[0] right, rip away the prefix:
-         */
-        if (oenv->program_name == NULL)
-        {
-            if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
-                oenv->program_name=strdup(argvzero+3);
-            else
-                oenv->program_name=strdup(argvzero);
-        }
-        if (oenv->program_name == NULL)
-            oenv->program_name="GROMACS";
+        if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
+            oenv->program_name=strdup(argvzero+3);
+        else
+            oenv->program_name=strdup(argvzero);
     }
+    if (oenv->program_name == NULL)
+        oenv->program_name="GROMACS";
    
     /* copy command line */ 
+    if (argv) 
     {
-        int cmdlength = strlen(argv[0]);
+        cmdlength = strlen(argv[0]);
         for (i=1; i<argc; i++) 
         {
             cmdlength += strlen(argv[i]);
         }
+    }
         
-        /* Fill the cmdline string */
-        snew(oenv->cmd_line,cmdlength+argc+1);
-        for (i=0; i<argc; i++) 
-        {
-            strcat(oenv->cmd_line,argv[i]);
-            strcat(oenv->cmd_line," ");
-        }
+    /* Fill the cmdline string */
+    snew(oenv->cmd_line,cmdlength+argc+1);
+    for (i=0; i<argc; i++) 
+    {
+        strcat(oenv->cmd_line,argv[i]);
+        strcat(oenv->cmd_line," ");
     }
 }
+
+
+void output_env_init_default(output_env_t oenv)
+{
+    output_env_init(oenv, 0, NULL, time_ps, FALSE, exvgNONE, 0, 0);
+}
+
+
 
 int output_env_get_verbosity(const output_env_t oenv)
 {
