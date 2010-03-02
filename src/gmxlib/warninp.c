@@ -45,193 +45,165 @@
 #include "gmx_fatal.h"
 #include "warninp.h"
 
-#ifdef GMX_THREADS
-#include "thread_mpi.h"
-#endif
+typedef struct warninp {
+    int  nwarn_note;
+    int  nwarn_warn;
+    int  nwarn_error;
+    int  maxwarn;
+    int  lineno;
+    char filenm[256];
+} t_warninp;
 
-#ifdef GMX_THREADS
-static tMPI_Thread_mutex_t warning_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
-
-static int  nwarn_note  = 0;
-static int  nwarn_warn  = 0;
-static int  nwarn_error = 0;
-static int  maxwarn     = 10;
-static int  lineno      = 1;
-static char filenm[256] = "";
-char   warn_buf[1024]   = "";
-
-void init_warning(int maxwarning)
+warninp_t init_warning(int maxwarning)
 {
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-  maxwarn     = maxwarning;
-  nwarn_note  = 0;
-  nwarn_warn  = 0;
-  nwarn_error = 0;
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
+    warninp_t wi;
+
+    snew(wi,1);
+
+    wi->maxwarn     = maxwarning;
+    wi->nwarn_note  = 0;
+    wi->nwarn_warn  = 0;
+    wi->nwarn_error = 0;
+    strcpy(wi->filenm,"unknown");
+    wi->lineno      = 0;
+
+    return wi;
 }
 
-void set_warning_line(const char *s,int line)
+void set_warning_line(warninp_t wi,const char *s,int line)
 {
     if (s == NULL)
     {
         gmx_incons("Calling set_warning_line with NULL pointer");
     }
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
 
-    strcpy(filenm,s);
-    lineno = line;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
+    strcpy(wi->filenm,s);
+    wi->lineno = line;
 }
 
-int get_warning_line()
+int get_warning_line(warninp_t wi)
 {
-    int ret;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    ret=lineno;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-    return ret;
+    return wi->lineno;
 }
 
-const char *get_warning_file()
+const char *get_warning_file(warninp_t wi)
 {
-    return filenm;
+    return wi->filenm;
 }
 
-static void low_warning(const char *wtype,int n,const char *s)
+static void low_warning(warninp_t wi,const char *wtype,int n,const char *s)
 {
 #define indent 2 
-  char linenobuf[32], *temp, *temp2;
-  int i;
-
-  if (s == NULL)
-    s = warn_buf;
-  if (lineno != -1)
-    sprintf(linenobuf,"%d",lineno);
-  else
-    strcpy(linenobuf,"unknown");
-  snew(temp,strlen(s)+indent+1);
-  for(i=0; i<indent; i++)
-    temp[i] = ' ';
-  temp[indent] = '\0';
-  strcat(temp,s);
-  temp2 = wrap_lines(temp,78-indent,indent,FALSE);
-  if (strlen(filenm) > 0) {
-    fprintf(stderr,"\n%s %d [file %s, line %s]:\n%s\n\n",
-	    wtype,n,filenm,linenobuf,temp2);
-  } else {
-    fprintf(stderr,"\n%s %d:\n%s\n\n",wtype,n,temp2);
-  }
-  sfree(temp);
-  sfree(temp2);
+    char *temp, *temp2;
+    int  i;
+    
+    if (s == NULL)
+    {
+        s = "Empty error message.";
+    }
+    snew(temp,strlen(s)+indent+1);
+    for(i=0; i<indent; i++)
+    {
+        temp[i] = ' ';
+    }
+    temp[indent] = '\0';
+    strcat(temp,s);
+    temp2 = wrap_lines(temp,78-indent,indent,FALSE);
+    if (strlen(wi->filenm) > 0)
+    {
+        if (wi->lineno != -1)
+        {
+            fprintf(stderr,"\n%s %d [file %s, line %d]:\n%s\n\n",
+                    wtype,n,wi->filenm,wi->lineno,temp2);
+        }
+        else
+        {
+            fprintf(stderr,"\n%s %d [file %s]:\n%s\n\n",
+                    wtype,n,wi->filenm,temp2);
+        }   
+    }
+    else
+    {
+        fprintf(stderr,"\n%s %d:\n%s\n\n",wtype,n,temp2);
+    }
+    sfree(temp);
+    sfree(temp2);
 }
 
-void warning(const char *s)
+void warning(warninp_t wi,const char *s)
 {
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwarn_warn++;
-    low_warning("WARNING",nwarn_warn,s);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
+    wi->nwarn_warn++;
+    low_warning(wi,"WARNING",wi->nwarn_warn,s);
 }
 
-void warning_note(const char *s)
+void warning_note(warninp_t wi,const char *s)
 {
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwarn_note++;
-    low_warning("NOTE",nwarn_note,s);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
+    wi->nwarn_note++;
+    low_warning(wi,"NOTE",wi->nwarn_note,s);
 }
 
-void warning_error(const char *s)
+void warning_error(warninp_t wi,const char *s)
 {
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwarn_error++;
-    low_warning("ERROR",nwarn_error,s);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
+    wi->nwarn_error++;
+    low_warning(wi,"ERROR",wi->nwarn_error,s);
 }
 
 static void print_warn_count(const char *type,int n)
 {
-  if (n > 0) {
-    fprintf(stderr,"\nThere %s %d %s%s\n",
-	    (n==1) ? "was" : "were", n, type, (n==1) ? "" : "s");
-  }
-}
-
-void print_warn_num(bool bFatalError)
-{
-    bool cond;
-    int nww;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    print_warn_count("note",nwarn_note);
-    print_warn_count("warning",nwarn_warn);
-    nww=nwarn_warn;
-    cond=bFatalError && nwarn_warn > maxwarn;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-
-    if (cond) {
-        gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
-                  "If you are sure all warnings are harmless, use the -maxwarn option.",
-                  nww,Program());
+    if (n > 0)
+    {
+        fprintf(stderr,"\nThere %s %d %s%s\n",
+                (n==1) ? "was" : "were", n, type, (n==1) ? "" : "s");
     }
 }
 
-void check_warning_error(int f_errno,const char *file,int line)
+void check_warning_error(warninp_t wi,int f_errno,const char *file,int line)
 {
-    int nwe;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwe=nwarn_error;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-    if (nwe > 0) {
-        print_warn_num(FALSE);
+    if (wi->nwarn_error > 0)
+    {
+        print_warn_count("note",wi->nwarn_note);
+        print_warn_count("warning",wi->nwarn_warn);
+
         gmx_fatal(f_errno,file,line,"There %s %d error%s in input file(s)",
-                  (nwe==1) ? "was" : "were",nwe,
-                  (nwe==1) ? ""    : "s");
+                  (wi->nwarn_error==1) ? "was" : "were",wi->nwarn_error,
+                  (wi->nwarn_error==1) ? ""    : "s");
     }
 }
 
-void _too_few(const char *fn,int line)
+void done_warning(warninp_t wi,int f_errno,const char *file,int line)
 {
-  sprintf(warn_buf,"Too few parameters on line (source file %s, line %d)",
-	  fn,line);
-  warning(NULL);
+    print_warn_count("note",wi->nwarn_note);
+    print_warn_count("warning",wi->nwarn_warn);
+
+    check_warning_error(wi,f_errno,file,line);
+
+    if (wi->nwarn_warn > wi->maxwarn)
+    {
+        gmx_fatal(f_errno,file,line,
+                  "Too many warnings (%d), %s terminated.\n"
+                  "If you are sure all warnings are harmless, use the -maxwarn option.",
+                  wi->nwarn_warn,Program());
+    }
+
+    sfree(wi);
 }
 
-void _incorrect_n_param(const char *fn,int line)
+void _too_few(warninp_t wi,const char *fn,int line)
 {
-  sprintf(warn_buf,"Incorrect number of parameters on line (source file %s, line %d)",
-	  fn,line);
-  warning(NULL);
+    char buf[STRLEN];
+    
+    sprintf(buf,
+            "Too few parameters on line (source file %s, line %d)",
+            fn,line);
+    warning(wi,buf);
+}
+
+void _incorrect_n_param(warninp_t wi,const char *fn,int line)
+{
+    char buf[STRLEN];
+
+    sprintf(buf,
+            "Incorrect number of parameters on line (source file %s, line %d)",
+            fn,line);
+    warning(wi,buf);
 }

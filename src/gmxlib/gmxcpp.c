@@ -56,7 +56,6 @@
 #include "futil.h"
 #include "macros.h"
 #include "gmxcpp.h"
-#include "warninp.h"
 
 typedef struct {
   char *name;
@@ -458,7 +457,6 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   /* Now we've read a line! */
   if (debug) 
     fprintf(debug,"%s : %4d : %s\n",handle->fn,handle->line_nr,buf);
-  set_warning_line(handle->fn,handle->line_nr);
 
   /* Process directives if this line contains one */
   if (find_directive(buf, &dname, &dval))
@@ -506,6 +504,16 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   }
   
   return eCPP_OK;
+}
+
+char *cpp_cur_file(const gmx_cpp_t *handlep)
+{
+  return (*handlep)->fn;
+}
+
+int cpp_cur_linenr(const gmx_cpp_t *handlep)
+{
+  return (*handlep)->line_nr;
 }
 
 /* Close the file! Return integer status. */

@@ -46,29 +46,34 @@
 extern "C" {
 #endif
 
-void 
+
+/* Abstract type for warning bookkeeping */
+typedef struct warninp *warninp_t;
+
+
+warninp_t
 init_warning(int maxwarning);
-/* Set the max number of warnings */
+/* Initialize the warning data structure.
+ * maxwarning determines the maximum number of warnings that are allowed
+ * for proceeding. When this number is exceeded check_warning_error
+ * and done_warning will generate a fatal error.
+ */
 
 void 
-set_warning_line(const char *fn,int line);
+set_warning_line(warninp_t wi,const char *fn,int line);
 /* Set filename and linenumber for the warning */
   
 int 
-get_warning_line(void);
+get_warning_line(warninp_t wi);
 /* Get linenumber for the warning */
   
 
 const char *
-get_warning_file(void);
+get_warning_file(warninp_t wi);
 /* Get filename for the warning */
   
-extern char 
-warn_buf[1024];
-/* Warning buffer of 1024 bytes, which can be used to print messages to */
-
 void
-warning(const char *s);
+warning(warninp_t wi,const char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_warn (local) is incremented.
@@ -79,7 +84,7 @@ warning(const char *s);
  */
 
 void 
-warning_note(const char *s);
+warning_note(warninp_t wi,const char *s);
 /* Issue a note, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_note (local) is incremented.
@@ -88,33 +93,35 @@ warning_note(const char *s);
  */
 
 void 
-warning_error(const char *s);
+warning_error(warninp_t wi,const char *s);
 /* Issue an error, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_error (local) is incremented.
  */
  
 void 
-check_warning_error(int f_errno,const char *file,int line);
+check_warning_error(warninp_t wi,int f_errno,const char *file,int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
  */
 
-void 
-print_warn_num(bool bFatalError);
-/* Print the total number of warnings, if larger than 0.
- * When bFatalError == TRUE generates a fatal error
- * when the number is larger than maxwarn.
+void
+done_warning(warninp_t wi,int f_errno,const char *file,int line);
+/* Should be called when finished processing the input file.
+ * Prints the number of notes and warnings
+ * and generates a fatal error when errors were found or too many
+ * warnings were generatesd.
+ * Frees the data structure pointed to by wi.
  */
   
 void 
-_too_few(const char *fn,int line);
-#define too_few() _too_few(__FILE__,__LINE__)
+_too_few(warninp_t wi,const char *fn,int line);
+#define too_few(wi) _too_few(wi,__FILE__,__LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
 void 
-_incorrect_n_param(const char *fn,int line);
-#define incorrect_n_param() _incorrect_n_param(__FILE__,__LINE__)
+_incorrect_n_param(warninp_t wi,const char *fn,int line);
+#define incorrect_n_param(wi) _incorrect_n_param(wi,__FILE__,__LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
   
 #ifdef __cplusplus
