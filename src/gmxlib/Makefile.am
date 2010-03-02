@@ -71,7 +71,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	libxdrf.c	gmx_arpack.c			\
 	dihres.c	gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
-	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c
+	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c 	\
+	oenv.c
 
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libgmx@LIBSUFFIX@.pc

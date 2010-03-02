@@ -47,6 +47,7 @@
 #include "readinp.h"
 #include "wman.h"
 #include "pdbio.h"
+#include "oenv.h"
 
 
 #ifdef __cplusplus
@@ -176,77 +177,6 @@ extern int check_times(real t);
  *          0 if tbegin <= t <=tend,
  *          1 if t>tend
  */
-
-
-/* output_env member functions */
-
-/* The output_env structure holds information about program name, cmd line, 
-   default times, etc. 
-
-   There are still legacy functions for the program name, and the command 
-   line, but the output_env versions are now preferred.*/
-
-typedef enum 
-{ 
-    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s 
-} time_unit_t;
-/* the time units. For the time being, ps means no conversion. */
-
-typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
-/* the xvg output formattings */
-
-void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                     time_unit_t tmu, bool view, xvg_format_t xvg_format,
-                     int verbosity, int debug_level);
-/* initialize an output_env structure, setting the command line, 
-   the default time value a boolean view that is set to TRUE when the 
-   user requests direct viewing of graphs, 
-   the graph formatting type, the verbosity, and debug level */
-
-void output_env_init_default(output_env_t oenv);
-/* initialize an output_env structure, with reasonable default settings.
-    (the time unit is set to time_ps, which means no conversion).  */
-
-
-extern int output_env_get_verbosity(const output_env_t oenv);
-/* return the verbosity */
-
-extern int output_env_get_debug_level(const output_env_t oenv);
-/* return the debug level */
-
-extern const char *output_env_get_time_unit(const output_env_t oenv);
-/* return time unit (e.g. ps or ns) */
-
-extern const char *output_env_get_time_label(const output_env_t oenv);
-/* return time unit label (e.g. "Time (ps)") */
-
-extern const char *output_env_get_xvgr_tlabel(const output_env_t oenv);
-/* retrun x-axis time label for xmgr */
-
-extern real output_env_get_time_factor(const output_env_t oenv);
-/* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
-
-extern real output_env_get_time_invfactor(const output_env_t oenv);
-/* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
-
-extern real output_env_conv_time(const output_env_t oenv, real time);
-/* return converted time */
-
-extern void output_env_conv_times(const output_env_t oenv, int n, real *time);
-/* convert array of times */
-
-extern bool output_env_get_view(const output_env_t oenv);
-/* Return TRUE when user requested viewing of the file */
-
-
-extern xvg_format_t output_env_get_xvg_format(const output_env_t oenv);
-/* Returns enum (see above) for xvg output formatting */
-
-extern const char *output_env_get_program_name(const output_env_t oenv);
-/* return the program name */
-
-extern const char *output_env_get_cmd_line(const output_env_t oenv);
-/* return the command line */
 
 
 
