@@ -72,7 +72,8 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
-  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],adress_refs[STRLEN];
+  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN],adress_refs[STRLEN],
+  adress_tf_grp_names[STRLEN];
 static char foreign_lambda[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -995,6 +996,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("adress_exvdw",               ir->adress_ivdw,     evdw_names,        nerror, TRUE);
   EETYPE("adress_site",                ir->adress_site,     eAdressSITEtype_names,nerror, TRUE);
   STYPE ("adress_reference_coords",    adress_refs,         NULL);
+  STYPE ("adress_tf_grp_names",    adress_refs,         NULL);
 
   /* User defined thingies */
   CCTYPE ("User defined thingies");
@@ -1587,7 +1589,7 @@ void do_index(const char* mdparin, const char *ndx,
   t_atoms atoms_all;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
-  int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser,nadress_refs;
+  int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser,nadress_refs, nadress_tf_grp_names;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
@@ -1939,6 +1941,24 @@ void do_index(const char* mdparin, const char *ndx,
     ir->adress_refs[i]=strtod(ptr1[i],NULL);
   for( ;(i<DIM); i++)
     ir->adress_refs[i]=0;
+
+
+  nadress_tf_grp_names = str_nelem(adress_tf_grp_names,MAXPTR,ptr1);
+
+  if (nadress_tf_grp_names > 0){
+  for (g=0; g <nadress_tf_grp_names; g++){
+    //search group index, already checks if group exists
+    ig = search_string(pgnames[g],grps->nr,gnames);
+    if (bVerbose){
+        fprintf(stderr,"%s :",gtypes[i],groups->grps[i].nr);
+    }
+
+  }
+  }
+  //TODO: find grp indices, store them somehow
+  //for(i=0; (i<nadress_tf_grp_names); i++)
+  //  ir->adress_tf_grp_names[i]=strtod(ptr1[i],NULL);
+
   /* End AdResS input */
 
   if (bVerbose)
