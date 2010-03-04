@@ -333,10 +333,6 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
             "Use NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
     }
 
-    /* TODO what is this code checking? */
-    if (ir->bPeriodicMols)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Systems with periodic molecules ares not supported\n");
-
     if ( (ir->etc != etcNO) && (ir->etc != etcANDERSEN) && (ir->etc != etcANDERSENINTERVAL))
         gmx_fatal(FARGS,"** OpenMM Error ** : Temperature coupling can be achieved by "
                 "using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or "
