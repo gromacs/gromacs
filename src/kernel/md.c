@@ -1816,35 +1816,44 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
         
-        if (!bStartingFromCpt && !bRerunMD) {
-            if (ir->eI==eiVV && bInitStep) {
-                /* if using velocity verlet with full time step Ekin, take the first half step only to compute the 
-                   virial for the first step. From there, revert back to the initial coordinates
-                   so that the input is actually the initial step */
-                copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
-            }
-            
-            /* this is for NHC in the Ekin(t+dt/2) version of vv */
-            if (!bInitStep || ir->eI!=eiVV)
+        if (!bStartingFromCpt && !bRerunMD)
+        {
+            if (ir->eI == eiVV)
             {
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
-            }
-            
-            update_coords(fplog,step,ir,mdatoms,state,
-                          f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                          ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
-            
-            if (bIterations)
-            {
-                gmx_iterate_init(&iterate,bIterations && !bInitStep);
-            }
-            /* for iterations, we save these vectors, as we will be self-consistently iterating
-               the calculations */
-            /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
-            
-            /* save the state */
-            if (bIterations && iterate.bIterate) { 
-                copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
+                if (bInitStep)
+                {
+                    /* if using velocity verlet with full time step Ekin,
+                     * take the first half step only to compute the 
+                     * virial for the first step. From there,
+                     * revert back to the initial coordinates
+                     * so that the input is actually the initial step.
+                     */
+                    copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
+                }
+                
+                /* this is for NHC in the Ekin(t+dt/2) version of vv */
+                if (!bInitStep)
+                {
+                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+                }
+                
+                update_coords(fplog,step,ir,mdatoms,state,
+                              f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
+                              cr,nrnb,constr,&top->idef);
+                
+                if (bIterations)
+                {
+                    gmx_iterate_init(&iterate,bIterations && !bInitStep);
+                }
+                /* for iterations, we save these vectors, as we will be self-consistently iterating
+                   the calculations */
+                /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
+                
+                /* save the state */
+                if (bIterations && iterate.bIterate) { 
+                    copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
+                }
             }
             
             bFirstIterate = TRUE;
