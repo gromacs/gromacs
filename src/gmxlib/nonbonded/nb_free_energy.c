@@ -113,12 +113,15 @@ gmx_nb_free_energy_kernel(int                  icoul,
     dvdl_coul  = 0;
     dvdl_vdw   = 0;
 
+    /* Lambda factor for state A, 1-lambda*/
     LFC[STATE_A] = 1.0 - lambda_coul;
     LFV[STATE_A] = 1.0 - lambda_vdw;
 
+    /* Lambda factor for state B, lambda*/
     LFC[STATE_B] = lambda_coul;
     LFV[STATE_B] = lambda_vdw;
 
+    /*derivative of the lambda factor for state A and B */
     DLF[STATE_A] = -1;
     DLF[STATE_B] = 1;
 
@@ -333,10 +336,16 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     dvdl_coul  -= (DLF[i]*qq[i])*VV;
                 }
             }
-                
+
+            j=0;
             /* Assemble A and B states */
             for (i=0;i<NSTATES;i++) 
             {
+                if (i==STATE_A) {
+                    j=STATE_B;
+                } else if (i==STATE_B) {
+                    j=STATE_A;
+                }
                 vctot         += LFC[i]*Vcoul[i];
                 vvtot         += LFV[i]*Vvdw[i];
                 
@@ -344,10 +353,10 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 Fscal         += (LFV[i]*FscalV[i]*rinv4V[i])*r4;
                 
                 dvdl_coul     += Vcoul[i]*DLF[i];
-                dvdl_coul     += DLF[i]*LFC[i]*dalf_coul[i]*FscalC[i]*sigma6[i]*rinv4C[i];
+                dvdl_coul     += DLF[j]*LFC[i]*dalf_coul[i]*FscalC[i]*sigma6[i]*rinv4C[i];
                 
                 dvdl_vdw      += Vvdw[i]*DLF[i];
-                dvdl_vdw      += DLF[i]*LFV[i]*dalf_vdw[i]*FscalV[i]*sigma6[i]*rinv4V[i];
+                dvdl_vdw      += DLF[j]*LFV[i]*dalf_vdw[i]*FscalV[i]*sigma6[i]*rinv4V[i];
             }
             if (bDoForces)
             {
