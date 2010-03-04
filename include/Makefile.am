@@ -157,4 +157,5 @@ mainpage.h \
 molfile_plugin.h \
 vmddlopen.h \
 vmdplugin.h \
+oenv.h \
 sighandler.h

@@ -98,6 +98,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
     oenv->xvg_format = xvg_format;
     oenv->verbosity=verbosity;
     oenv->debug_level=debug_level;
+    oenv->program_name=NULL;
 
     if (argv)
         argvzero=argv[0];
@@ -107,7 +108,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
      * it, libtool uses wrapper scripts and prefixes the name with "lt-".
      * Until libtool is fixed to set argv[0] right, rip away the prefix:
      */
-    if (!argvzero || oenv->program_name == NULL)
+    if (argvzero)
     {
         if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
             oenv->program_name=strdup(argvzero+3);
@@ -120,7 +121,7 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
     /* copy command line */ 
     if (argv) 
     {
-        cmdlength = strlen(argv[0]);
+        cmdlength = strlen(argvzero);
         for (i=1; i<argc; i++) 
         {
             cmdlength += strlen(argv[i]);
