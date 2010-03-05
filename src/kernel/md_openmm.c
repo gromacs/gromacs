@@ -51,6 +51,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "sighandler.h"
 #include "genborn.h"
 #include "string2.h"
 
@@ -61,8 +62,114 @@
 /* include even when OpenMM not used to force compilation of do_md_openmm */
 #include "openmm_wrapper.h"
 
-/* The following two variables are set in runner.c */
-extern bool bGotTermSignal, bGotUsr1Signal;
+
+enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
+
+typedef struct {
+    int nstms;       /* The frequency for intersimulation communication */
+    int sig[eglsNR]; /* The signal set by one process in do_md */
+    int set[eglsNR]; /* The communicated signal, equal for all processes */
+} globsig_t;
+
+
+static int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
+{
+    int  *buf;
+    bool bPos,bEqual;
+    int  s,d;
+
+    snew(buf,ms->nsim);
+    buf[ms->sim] = n;
+    gmx_sumi_sim(ms->nsim,buf,ms);
+    bPos   = TRUE;
+    bEqual = TRUE;
+    for(s=0; s<ms->nsim; s++)
+    {
+        bPos   = bPos   && (buf[s] > 0);
+        bEqual = bEqual && (buf[s] == buf[0]);
+    }
+    if (bPos)
+    {
+        if (bEqual)
+        {
+            nmin = min(nmin,buf[0]);
+        }
+        else
+        {
+            /* Find the least common multiple */
+            for(d=2; d<nmin; d++)
+            {
+                s = 0;
+                while (s < ms->nsim && d % buf[s] == 0)
+                {
+                    s++;
+                }
+                if (s == ms->nsim)
+                {
+                    /* We found the LCM and it is less than nmin */
+                    nmin = d;
+                    break;
+                }
+            }
+        }
+    }
+    sfree(buf);
+
+    return nmin;
+}
+
+static int multisim_nstsimsync(const t_commrec *cr,
+                               const t_inputrec *ir,int repl_ex_nst)
+{
+    int nmin;
+
+    if (MASTER(cr))
+    {
+        nmin = INT_MAX;
+        nmin = multisim_min(cr->ms,nmin,ir->nstlist);
+        nmin = multisim_min(cr->ms,nmin,ir->nstcalcenergy);
+        nmin = multisim_min(cr->ms,nmin,repl_ex_nst);
+        if (nmin == INT_MAX)
+        {
+            gmx_fatal(FARGS,"Can not find an appropriate interval for inter-simulation communication, since nstlist, nstcalcenergy and -replex are all <= 0");
+        }
+        /* Avoid inter-simulation communication at every (second) step */
+        if (nmin <= 2)
+        {
+            nmin = 10;
+        }
+    }
+
+    gmx_bcast(sizeof(int),&nmin,cr);
+
+    return nmin;
+}
+
+static void init_global_signals(globsig_t *gs,const t_commrec *cr,
+                                const t_inputrec *ir,int repl_ex_nst)
+{
+    int i;
+
+    if (MULTISIM(cr))
+    {
+        gs->nstms = multisim_nstsimsync(cr,ir,repl_ex_nst);
+        if (debug)
+        {
+            fprintf(debug,"Syncing simulations for checkpointing and termination every %d steps\n",gs->nstms);
+        }
+    }
+    else
+    {
+        gs->nstms = 1;
+    }
+
+    for(i=0; i<eglsNR; i++)
+    {
+        gs->sig[i] = 0;
+        gs->set[i] = 0;
+    }
+}
+
 
 #if 0
 static void reset_all_counters(FILE *fplog,t_commrec *cr,
@@ -94,7 +201,6 @@ static void reset_all_counters(FILE *fplog,t_commrec *cr,
 }
 #endif
 
-
 double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              const output_env_t oenv, bool bVerbose,bool bCompact,
              int nstglobalcomm,
@@ -112,8 +218,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
+    gmx_mdoutf_t *outf;
     int        fp_trn=0,fp_xtc=0;
-    ener_file_t fp_ene=NULL;
     gmx_large_int_t step,step_rel;
     const char *fn_cpt;
     FILE       *fp_dhdl=NULL,*fp_field=NULL;
@@ -125,9 +231,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                bX,bV,bF,bXTC,bCPT=FALSE;
     tensor     force_vir,shake_vir,total_vir,pres;
     int        i,m;
+    int        mdof_flags;
     rvec       mu_tot;
     t_vcm      *vcm;
-    real       chkpt=0,terminate=0,terminate_now=0;
+    real       chkpt=0,terminate=0;
     gmx_localtop_t *top;	
     t_mdebin *mdebin=NULL;
     t_state    *state=NULL;
@@ -139,6 +246,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_global_stat_t gstat;
     gmx_update_t upd=NULL;
     t_graph    *graph=NULL;
+    globsig_t   gs;
 
     gmx_groups_t *groups;
     gmx_ekindata_t *ekind, *ekind_save;
@@ -147,6 +255,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     matrix      lastbox;
     real        reset_counters=0,reset_counters_now=0;
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
+    int         handledSignal=-1; /* compare to last_signal_recvd */
     bool        bHandledSignal=FALSE;
  
     const char *ommOptions = NULL;
@@ -160,8 +269,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Initial values */
     init_md(fplog,cr,ir,oenv,&t,&t0,&state_global->lambda,&lam0,
             nrnb,top_global,&upd,
-            nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
-            &fp_dhdl,&fp_field,&mdebin,
+            nfile,fnm,&outf,&mdebin,
             force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,state_global,Flags);
 
     clear_mat(total_vir);
@@ -233,6 +341,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }                                                                                                                                                                               
           }                                                                                                                                                                                   
       }                                                                                                                                                                                       
+
       openmmData = openmm_init(fplog, ommOptions, cr, ir, top_global, top, mdatoms, fr, state);                                                                                         
 
 
@@ -337,6 +446,8 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
     bLastStep = FALSE;
 
+    init_global_signals(&gs,cr,ir,repl_ex_nst);
+
     step = ir->init_step;
     step_rel = 0;
 
@@ -351,7 +462,7 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         bLastStep = (step_rel == ir->nsteps);
         t = t0 + step*ir->delta_t;
 
-        if (terminate_now > 0 )
+        if (gs.set[eglsTERM] > 0 )
         {
             bLastStep = TRUE;
         }
@@ -392,10 +503,16 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         GMX_MPE_LOG(ev_output_start);
 
-        bX   = do_per_step(step,ir->nstxout) || (bLastStep && ir->nstxout);
-        bV   = do_per_step(step,ir->nstvout) || (bLastStep && ir->nstvout);
-        bF   = do_per_step(step,ir->nstfout) || (bLastStep && ir->nstfout);
-        bXTC = do_per_step(step,ir->nstxtcout) || (bLastStep && ir->nstxtcout);
+        mdof_flags = 0;
+        if (do_per_step(step,ir->nstxout)) { mdof_flags |= MDOF_X; }
+        if (do_per_step(step,ir->nstvout)) { mdof_flags |= MDOF_V; }
+        if (do_per_step(step,ir->nstfout)) { mdof_flags |= MDOF_F; }
+        if (do_per_step(step,ir->nstxtcout)) { mdof_flags |= MDOF_XTC; }
+        if (bCPT) { mdof_flags |= MDOF_CPT; };
+        bX   = MDOF_X || (bLastStep && ir->nstxout);
+        bV   = MDOF_V || (bLastStep && ir->nstvout);
+        bF   = MDOF_F || (bLastStep && ir->nstfout);
+        bXTC = MDOF_XTC || (bLastStep && ir->nstxtcout);
         do_ene = do_per_step(step,ir->nstenergy) || (bLastStep && ir->nstenergy);
 
       if( bX || bXTC || bV ){                                                                                                                                                                 
@@ -415,11 +532,10 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 		 t,mdatoms->tmass,enerd,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,
 		 ekind,mu_tot,constr);
-      print_ebin(fp_ene,do_ene,FALSE,FALSE,do_log?fplog:NULL,step,t,
-		 eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts)); // XXX check this do_log stuff!
+         print_ebin(outf->fp_ene,do_ene,FALSE,FALSE,fplog,step,t,
+                       eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
 
-            write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
-                       fn_cpt,bCPT,top_global,ir->eI,ir->simulation_part,
+            write_traj(fplog,cr,outf,mdof_flags,top_global,
                        step,t,state,state_global,f,f_global,&n_xtc,&x_xtc);
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
@@ -447,41 +563,40 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = (double)time(NULL) - (double)runtime->real;
 
         /* Check whether everything is still allright */    
-        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
+        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
+            (handledSignal!=last_signal_number_recvd) &&
+            MASTERTHREAD(cr))
         {
-            if (bGotTermSignal || ir->nstlist == 0)
+            if (bGotStopNextStepSignal || ir->nstlist == 0)
             {
-                terminate = 1;
+                gs.sig[eglsTERM] = 1;
             }
             else
             {
-                terminate = -1;
+                gs.sig[eglsTERM] = -1;
             }
-            terminate_now = terminate;
             if (fplog)
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        bGotTermSignal ? "TERM" : "USR1",
-                        terminate==-1 ? "NS " : "");
+                        signal_name[last_signal_number_recvd], 
+                        gs.sig[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    bGotTermSignal ? "TERM" : "USR1",
-                    terminate==-1 ? "NS " : "");
+                    signal_name[last_signal_number_recvd], 
+                    gs.sig[eglsTERM]==-1 ? "NS " : "");
             fflush(stderr);
-            bHandledSignal=TRUE;
+            handledSignal=last_signal_number_recvd;
         }
 
         else if (MASTER(cr) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
-                 terminate == 0)
+                 gs.sig[eglsTERM] == 0)
         {
             /* Signal to terminate the run */
-            terminate = 1 ;
-            terminate_now = terminate;
-
+            gs.sig[eglsTERM] = 1;
             if (fplog)
             {
                 fprintf(fplog,"\nStep %s: Run time exceeded %.3f hours, will terminate the run\n",gmx_step_str(step,sbuf),max_hours*0.99);
@@ -559,23 +674,9 @@ double do_md_openmm(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     /* Stop the time */
     runtime_end(runtime);
     
-    if (MASTER(cr))
-    {
-        close_enx(fp_ene);
-        if (ir->nstxtcout)
-        {
-            close_xtc(fp_xtc);
-        }
-        close_trn(fp_trn);
-        if (fp_dhdl)
-        {
-            gmx_fio_fclose(fp_dhdl);
-        }
-        if (fp_field)
-        {
-            gmx_fio_fclose(fp_field);
-        }
-    }
+
+    done_mdoutf(outf);
+
     debug_gmx();
 
     runtime->nsteps_done = step_rel;

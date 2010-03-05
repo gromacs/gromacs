@@ -19,6 +19,7 @@ using namespace std;
 #include "string2.h"
 #include "gmx_gpu_utils.h"
 #include "mtop_util.h"
+#include "warninp.h"
 
 #include "openmm_wrapper.h"
 
@@ -28,6 +29,7 @@ using namespace OpenMM;
     "The %s-simulation GPU memory test detected errors. As memory errors would cause incorrect " \
     "simulation results, gromacs has aborted execution.\n Make sure that your GPU's memory is not " \
     "overclocked and that the device is properly cooled.\n", (str)
+
 
 /** Convert string to type T. */
 template <class T>
@@ -230,6 +232,9 @@ public:
 
 void run_memtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatformOptions *opt)
 {
+
+    char warn_buf[STRLEN];
+
     // TODO I guess the log entries should go on stdout as well, shouldn't they? [sz]
     int which_test;
     int res;
@@ -257,7 +262,7 @@ void run_memtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatform
             sprintf(warn_buf, "%s-simulation GPU memtest skipped. Note, that faulty memory can cause "
                     "incorrect results!\n", pre_post);
             fprintf(fplog, "%s", warn_buf);
-            warning_note(NULL);
+            gmx_warning(warn_buf);
             break; /* case 0 */
 
         case 1: /* quick memtest */
@@ -312,6 +317,9 @@ void run_memtest(FILE* fplog, int devId, const char* pre_post, GmxOpenMMPlatform
 
 void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
 {
+
+    char warn_buf[STRLEN];
+
     // Abort if unsupported critical options are present
 
     /* Integrator */
@@ -322,69 +330,66 @@ void checkGmxOptions(t_inputrec *ir, gmx_localtop_t *top)
          (ir->eI !=  eiBD) 
        )
     {
-        gmx_fatal(FARGS, "** OpenMM Error ** : Unsupported integrator requested."
-                "Available integrators are: md-vv/md-vvak, sd/sd1, and bd. \n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd. \n");
     }
 
     /* Electroctstics */
     if ((ir->coulombtype != eelPME) && (ir->coulombtype != eelRF) &&  (ir->coulombtype != eelEWALD))
     {
-        gmx_fatal(FARGS,"** OpenMM Error ** : Unsupported method for electrostatics. "
-            "Use NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
+        gmx_fatal(FARGS,"OpenMM supports only the following methods for electrostatics: NoCutoff (i.e. rcoulomb = rvdw = 0 ),Reaction-Field, Ewald or PME.\n");
     }
 
     if ( (ir->etc != etcNO) && (ir->etc != etcANDERSEN) && (ir->etc != etcANDERSENINTERVAL))
-        gmx_fatal(FARGS,"** OpenMM Error ** : Temperature coupling can be achieved by "
+        gmx_fatal(FARGS,"In OpenMM temperature coupling can be achieved by "
                 "using either \n\t(1)\t\"md-vv\" or \"md-vvak\" integrators with \"andersen\" or "
                 "\"andersen-interval\" thermostat, or \n\t(2)\t\"sd\",\"sd1\" or \"bd\" integrators\n");
 
     if (ir->opts.ngtc > 1)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Multiple temperature coupling groups are not supported. \n");
+        gmx_fatal(FARGS,"OpenMM does not support multiple temperature coupling groups.\n");
 
     if (ir->epc != etcNO)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Pressure coupling is not supported. \n");
+        gmx_fatal(FARGS,"OpenMM does not support pressure coupling.\n");
 
     if (ir->opts.annealing[0])
-        gmx_fatal(FARGS,"** OpenMM Error ** : Simulated annealing is not supported. \n");
+        gmx_fatal(FARGS,"OpenMM does not support simulated annealing.\n");
 
     if (ir->eConstrAlg != econtSHAKE)
-        warning_note("** OpenMM Warning ** : Constraints in OpenMM are done by a combination "
+        gmx_warning("Constraints in OpenMM are done by a combination "
                 "of SHAKE, SETTLE and CCMA. Accuracy is based on the SHAKE tolerance set "
                 "by the \"shake_tol\" option.");
 
     if (ir->nwall != 0)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Walls are not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support walls.\n");
 
     if (ir->ePull != epullNO)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Pulling is not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support pulling.\n");
 
     if (top->idef.il[F_DISRES].nr > 0)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Distant restraints are not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support distant restraints.\n");
 
     if (top->idef.il[F_ORIRES].nr > 0)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Orientation restraints are not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support orientation restraints.\n");
 
     if (top->idef.il[F_ANGRES].nr > 0)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Angle restraints are not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support angle restraints,\n");
 
     if (top->idef.il[F_DIHRES].nr > 0)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Dihedral restraints are not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support dihedral restraints.\n");
 
     if (ir->efep != efepNO)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Free energy calculations are not supported.\n");
+        gmx_fatal(FARGS,"OpenMM does not support free energy calculations.\n");
 
     if (ir->opts.ngacc > 1)
-        gmx_fatal(FARGS,"** OpenMM Error ** : Non-equilibrium MD (accelerated groups) are " 
-                "not supported. \n");
+        gmx_fatal(FARGS,"OpenMM does not support non-equilibrium MD (accelerated groups).\n");
 
     if (IR_ELEC_FIELD(*ir))
-        gmx_fatal(FARGS,"** OpenMM Error ** : Electric fields are not supported. \n");
+        gmx_fatal(FARGS,"OpenMM does not support electric fields. \n");
 
     if (ir->bQMMM)
-        gmx_fatal(FARGS,"** OpenMM Error ** : QMMM calculations are not supported. \n");
+        gmx_fatal(FARGS,"OpenMM does not support QMMM calculations. \n");
 
     if (ir->rcoulomb != ir->rvdw)
-        gmx_fatal(FARGS,"** OpenMM Error ** : OpenMM uses a single cutoff for both Coulomb "
+        gmx_fatal(FARGS,"OpenMM uses a single cutoff for both Coulomb "
                 "and VdW interactions. Please set rcoulomb equal to rvdw. \n");
 
 }
@@ -397,6 +402,9 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
                     gmx_mtop_t *top_global, gmx_localtop_t *top,
                     t_mdatoms *mdatoms, t_forcerec *fr,t_state *state)
 {
+
+    char warn_buf[STRLEN];
+
     static bool hasLoadedPlugins = false;
     string usedPluginDir;
 
@@ -562,15 +570,15 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
    		    else if (ir->ePBC == epbcNONE)
    		        nonbondedForce->setNonbondedMethod(NonbondedForce::CutoffNonPeriodic);
    		    else
-   		        gmx_fatal(FARGS,"** OpenMM Error ** : Only full periodic boundary conditions (pbc = xyz), or none (pbc = no) are supported\n");   		    
+   		        gmx_fatal(FARGS,"OpenMM supports only full periodic boundary conditions (pbc = xyz), or none (pbc = no).\n");   		    
                     nonbondedForce->setCutoffDistance(ir->rcoulomb);
                     break;
 
    	     case eelEWALD:
 	   	     if (ir->ewald_geometry == eewg3DC)
-   		         gmx_fatal(FARGS,"** OpenMM Error ** : Only Ewald 3D geometry is supported\n");
+   		         gmx_fatal(FARGS,"OpenMM supports only Ewald 3D geometry.\n");
    		     if (ir->epsilon_surface != 0)
-   		         gmx_fatal(FARGS,"** OpenMM Error ** : Dipole correction in Ewald summation is not supported\n");
+   		         gmx_fatal(FARGS,"OpenMM does not support dipole correction in Ewald summation.\n");
    		     nonbondedForce->setNonbondedMethod(NonbondedForce::Ewald);
    		     nonbondedForce->setCutoffDistance(ir->rcoulomb);
    		     sys->setPeriodicBoxVectors(Vec3(state->box[0][0], 0, 0), Vec3(0, state->box[1][1], 0), Vec3(0, 0, state->box[2][2]));
@@ -658,7 +666,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             else if (nonbondedForce->getNonbondedMethod() == NonbondedForce::CutoffPeriodic)
                 gbsa->setNonbondedMethod(GBSAOBCForce::CutoffPeriodic);
             else
-   		        gmx_fatal(FARGS,"** OpenMM Error ** : Only Reaction-Field electrostatics is supported with OBC/GBSA.\n");
+   		        gmx_fatal(FARGS,"OpenMM supports only Reaction-Field electrostatics with OBC/GBSA.\n");
 
             for (int i = 0; i < numAtoms; ++i)
                 gbsa->addParticle(charges[i],
@@ -708,8 +716,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
         static_cast<LangevinIntegrator*>(integ)->setRandomNumberSeed(ir->ld_seed); /* TODO test this */
     }
     else {
-        gmx_fatal(FARGS, "** OpenMM Error ** : Unsupported integrator requested."
-                "Available integrators are: md-vv/md-vvak, sd/sd1, and bd. \n");
+        gmx_fatal(FARGS, "OpenMM supports only the following integrators: md-vv/md-vvak, sd/sd1, and bd. \n");
     }
 
     integ->setConstraintTolerance(ir->shake_tol);
@@ -768,7 +775,7 @@ void* openmm_init(FILE *fplog, const char *platformOptStr,
             sprintf(warn_buf, "Non-supported GPU selected (#%d, %s), forced continuing.\n"
                     "Note, that the simulation can be slow or it migth even crash.", devId, gpuname);
             fprintf(fplog, "%s", warn_buf);
-            warning_note(NULL);
+            gmx_warning(warn_buf);
         }
         else
         {

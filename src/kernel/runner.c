@@ -88,24 +88,6 @@
 #include "md_openmm.h"
 #endif
 
-/* The following two variables and the signal_handler function
- * are used from md.c and pme.c as well 
- */
-extern bool bGotTermSignal, bGotUsr1Signal;
-
-static RETSIGTYPE signal_handler(int n)
-{
-    switch (n) {
-        case SIGTERM:
-            bGotTermSignal = TRUE;
-            break;
-#ifdef HAVE_SIGUSR1
-        case SIGUSR1:
-            bGotUsr1Signal = TRUE;
-            break;
-#endif
-    }
-}
 
 typedef struct { 
     gmx_integrator_t *func;
