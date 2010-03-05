@@ -39,4 +39,4 @@ contents="#include \"version.h\"\nconst char _gmx_ver_string[] = \"VERSION $vers
 
 # Write contents into version.c if they differ from the current contents.
 [ -f version.c ] || touch version.c
-echo "$contents" | cmp -s version.c - || echo "$contents" > version.c
+echo -e "$contents" | cmp -s version.c - || echo -e "$contents" > version.c
