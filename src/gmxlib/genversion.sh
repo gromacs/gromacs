@@ -35,8 +35,15 @@ else
     fullhash="unknown"
     baserev="unknown"
 fi
-contents="#include \"version.h\"\nconst char _gmx_ver_string[] = \"VERSION $version\";\nconst char _gmx_full_git_hash[] = \"$fullhash\";\nconst char _gmx_central_base_hash[] = \"$baserev\";"
 
-# Write contents into version.c if they differ from the current contents.
+# write out to a temporary file, to compare with current version.c
+echo "#include \"version.h\"" > version.c.tmp
+echo "const char _gmx_ver_string[] = \"VERSION $version\";" >> version.c.tmp
+echo "const char _gmx_full_git_hash[] = \"$fullhash\";" >> version.c.tmp
+echo "const char _gmx_central_base_hash[] = \"$baserev\";" >> version.c.tmp
+
+# Write contents into version.c.tmp if they differ from the current version.c.
 [ -f version.c ] || touch version.c
-echo -e "$contents" | cmp -s version.c - || echo -e "$contents" > version.c
+cmp -s version.c.tmp version.c || mv -f version.c.tmp version.c
+rm -f version.c.tmp
+
