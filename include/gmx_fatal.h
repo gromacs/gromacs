@@ -85,6 +85,15 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
  * gmx_fatal(FARGS,fmt,...)
  */
 
+extern void
+gmx_fatal_collective(int f_errno,const char *file,int line,
+		     bool bMaster,
+		     const char *fmt,...);
+/* As gmx_fatal, but only process with bMaster=TRUE prints the error message.
+ * This is useful for handling errors in code that is executed identically
+ * for all processes.
+ */
+
 void
 gmx_fatal_set_log_file(FILE *fp);
 /* Set the log file for printing error messages */

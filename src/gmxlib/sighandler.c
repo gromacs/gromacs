@@ -37,6 +37,7 @@
 #endif
 
 #include "typedefs.h"
+#include "gmx_fatal.h"
 #include "sighandler.h"
 
 /* The following two variables and the signal_handler function

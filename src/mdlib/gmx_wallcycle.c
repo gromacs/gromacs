@@ -42,6 +42,7 @@
 #include "gmx_wallcycle.h"
 #include "gmx_cyclecounter.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>

@@ -44,6 +44,7 @@
 #include "toputil.h"
 #include "hackblock.h"
 #include "string2.h"
+#include "gmx_fatal.h"
 
 static void clear_atom_list(int i0, atom_id a[])
 {

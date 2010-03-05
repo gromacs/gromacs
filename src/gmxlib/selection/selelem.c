@@ -36,6 +36,7 @@
 #endif
 
 #include <smalloc.h>
+#include <gmx_fatal.h>
 
 #include <indexutil.h>
 #include <poscalc.h>

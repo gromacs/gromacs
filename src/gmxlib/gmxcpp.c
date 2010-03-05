@@ -55,6 +55,7 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "macros.h"
+#include "gmx_fatal.h"
 #include "gmxcpp.h"
 
 typedef struct {

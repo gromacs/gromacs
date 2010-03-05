@@ -815,7 +815,7 @@ static void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
     if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
         ir->nstcalcenergy % ir->nstlist != 0)
     {
-        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifiying energy calculation and/or T/P-coupling frequencies");
+        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies");
 
         if (gmx_mtop_ftype_count(mtop,F_CONSTR) +
             gmx_mtop_ftype_count(mtop,F_CONSTRNC) > 0 &&

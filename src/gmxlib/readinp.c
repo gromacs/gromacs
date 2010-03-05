@@ -49,6 +49,7 @@
 #include "gmxcpp.h"
 #include "names.h"
 #include "warninp.h"
+#include "gmx_fatal.h"
 
 static int inp_count = 1;
 

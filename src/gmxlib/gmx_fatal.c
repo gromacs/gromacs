@@ -287,83 +287,6 @@ static void clean_fatal_tmp_file()
 #endif
 }
 
-/* Old function do not use */
-static void fatal_error(int f_errno,const char *fmt,...)
-{
-  va_list ap;
-  const char    *p;
-  char    cval,*sval,msg[STRLEN];
-  char    ibuf[64],ifmt[64];
-  int     index,ival,fld,len;
-  double  dval;
-#ifdef _SPECIAL_VAR_ARG
-  int     f_errno;
-  char    *fmt;
-  
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-  va_start(ap,);
-  f_errno=va_arg(ap,int);
-  fmt=va_arg(ap,char *);
-#else
-  va_start(ap,fmt);
-#endif
-
-  clean_fatal_tmp_file();
-  
-  len=0;
-  for (p=fmt; *p; p++) {
-    if (*p!='%')
-      bputc(msg,&len,*p);
-    else {
-      p++;
-      fld=getfld(&p);
-      switch(*p) {
-      case 'x':
-	ival=va_arg(ap,int);
-	sprintf(ifmt,"0x%%%dx",fld);
-	sprintf(ibuf,ifmt,(unsigned int)ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'd':
-	ival=va_arg(ap,int);
-	sprintf(ifmt,"%%%dd",fld);
-	sprintf(ibuf,ifmt,ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'f':
-	dval=va_arg(ap,double);
-	sprintf(ifmt,"%%%df",fld);
-	sprintf(ibuf,ifmt,dval);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'c':
-	cval=(char) va_arg(ap,int); /* char is promoted to int */
-	bputc(msg,&len,cval);
-	break;
-      case 's':
-	sval=va_arg(ap,char *);
-	bputs(msg,&len,sval,fld);
-	break;
-     default:
-	break;
-      }
-    }
-  }
-  va_end(ap);
-  bputc(msg,&len,'\0');
-
-  fatal_errno = f_errno; /* TODO might need a mutex as it's global [pszilard] */
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
-  gmx_error("fatal",msg);
-}
-
 static void parse_printf_args(const char *fmt,va_list *ap,char *msg)
 {
     int     len;
@@ -445,26 +368,9 @@ static void parse_printf_args(const char *fmt,va_list *ap,char *msg)
 void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 {
   va_list ap;
-  const char    *p;
-  char    cval,*sval,msg[STRLEN];
-  char    ibuf[64],ifmt[64];
-  int     index,ival,fld,len;
-  double  dval;
-#ifdef _SPECIAL_VAR_ARG
-  int     f_errno,line;
-  char    *fmt,*file;
+  char    msg[STRLEN];
   
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-  va_start(ap,);
-  f_errno = va_arg(ap,int);
-  file    = va_arg(ap,char *);
-  line    = va_arg(ap,int);
-  fmt     = va_arg(ap,char *);
-#else
   va_start(ap,fmt);
-#endif
 
   clean_fatal_tmp_file();
 
@@ -472,12 +378,55 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
   
   va_end(ap);
 
+#ifdef GMX_THREADS
+  tMPI_Thread_mutex_lock(&debug_mutex);
+#endif
+
   fatal_errno = f_errno;
-  
+
 #ifdef GMX_THREADS
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
+
   _gmx_error("fatal",msg,file,line);
+}
+
+void gmx_fatal_collective(int f_errno,const char *file,int line,
+                          bool bMaster,
+                          const char *fmt,...)
+{
+    va_list ap;
+    char    msg[STRLEN];
+    
+    if (bMaster)
+    {
+        va_start(ap,fmt);
+        
+        clean_fatal_tmp_file();
+        
+        parse_printf_args(fmt,&ap,msg);
+        
+        va_end(ap);
+        
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_lock(&debug_mutex);
+#endif
+        
+        fatal_errno = f_errno;
+        
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_unlock(&debug_mutex);
+#endif
+
+        _gmx_error("fatal",msg,file,line);
+    }
+
+#ifdef GMX_MPI
+    /* Let all other processes wait till the master has printed
+     * the error message and issued MPI_Abort.
+     */
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
 }
 
 void _invalid_case(const char *fn,int line)

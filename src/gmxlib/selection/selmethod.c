@@ -36,6 +36,7 @@
 #endif
 
 #include <ctype.h>
+#include <stdarg.h>
 
 #include <macros.h>
 #include <string2.h>
