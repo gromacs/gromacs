@@ -39,6 +39,7 @@
 
 
 #include <ctype.h>
+#include "copyrite.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
@@ -688,13 +689,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
                     nenum(xvg_format), verbose_level, debug_level);
  
     if (bVersion) {
-      printf("Program: %s\nVersion: %s\n",output_env_get_program_name(*oenv),
-#ifdef PACKAGE_VERSION
-	     PACKAGE_VERSION
-#else
-	     "Unknown"
-#endif
-	     );
+      printf("Program: %s\n",output_env_get_program_name(*oenv));
+      gmx_print_version_info(stdout);
       exit(0);
     }
     

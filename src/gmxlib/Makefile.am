@@ -72,35 +72,20 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	dihres.c	gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		\
 	gmx_system_xdr.c md5.c vmdio.c vmddlopen.c	sighandler.c 	\
-	oenv.c
+	oenv.c		version.c
 
 pkgconfigdir = ${libdir}/pkgconfig
 pkgconfig_DATA = libgmx@LIBSUFFIX@.pc
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.h
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl version.c
 
-#version.h contains git version or version defined in VERSION
-copyrite.$(OBJEXT): version.h
-#Although documented in the automake manual as being the right way of doing
-#things, the above dependency actually doesn't seem to work together with
-#libtool. The additional dependency below should fix things.
-#A dependency like copyrite.c: version.h also seems to work, but is more
-#obscure. If there still are problems, adding BUILT_SOURCES = version.h
-#should solve them once and for all.
-copyrite.lo: version.h
+#version.c contains git version information or version defined in VERSION
 #The empty target FORCE forces make to run the commands every time. But
-#version.h is only changed if the version actually has changed, and hence
+#version.c is only changed if the version actually has changed, and hence
 #rebuilds are only triggered when they are needed.
-#Having the commands in the update_version rule does about the same thing,
-#except that one needs to run make twice if the version has changed to rebuild
-#copyrite.c.
-version.h: FORCE
-	[ -f version.h ] || touch version.h
-	version=`git --git-dir=$(top_srcdir)/.git describe --always --long --abbrev=20 HEAD 2>/dev/null || echo @VERSION@`; \
-	version=$$version`which git >/dev/null && [ -d $(top_srcdir)/.git ] && (cd $(top_srcdir) && git diff-index --quiet HEAD) || echo " (mod)"`; \
-	version="static const char ver_string[] = \"VERSION $$version\";"; \
-	echo "$$version" | cmp -s version.h - || echo "$$version" > version.h
+version.c: FORCE
+	$(top_srcdir)/src/gmxlib/genversion.sh @VERSION@ $(top_srcdir)
 FORCE:
 
 

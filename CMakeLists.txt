@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 project(Gromacs)
-set(PROJECT_VERSION "4.0.99_development_20090605"
+set(PROJECT_VERSION "4.0.99-dev-20100305"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
