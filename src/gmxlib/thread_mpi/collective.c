@@ -75,7 +75,8 @@ static void tMPI_Coll_root_xfer(tMPI_Comm comm,
 /* wait for other processes to copy data from my cev */
 static void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
 /* wait for data to become available from a specific rank */
-static void tMPI_Wait_for_data(struct coll_env *cev, int rank, int synct);
+static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+                               int rank, int synct);
 
 /* run a single binary reduce operation on src_a and src_b, producing dest. 
       dest and src_a may be identical */
@@ -518,10 +519,10 @@ static void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 #endif
 }
 
-static void tMPI_Wait_for_data(struct coll_env *cev, int rank, int synct)
+static void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+                               int rank, int synct)
 {
 #if defined(TMPI_PROFILE) 
-    struct tmpi_thread *cur=tMPI_Get_current();
     tMPI_Profile_wait_start(cur);
 #endif
 

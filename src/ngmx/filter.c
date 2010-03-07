@@ -45,6 +45,7 @@
 #include "xdlghi.h"
 #include "dialogs.h"
 #include "index.h"
+#include "gmx_fatal.h"
 
 t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
 {

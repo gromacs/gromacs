@@ -50,6 +50,7 @@
 #include <string.h>
 
 #include "string2.h"
+#include "gmx_fatal.h"
 
 #include <selmethod.h>
 

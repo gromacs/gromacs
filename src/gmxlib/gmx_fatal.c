@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -64,7 +65,6 @@ static FILE *log_file = NULL;
 static tMPI_Thread_mutex_t debug_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t fatal_tmp_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
-static tMPI_Thread_mutex_t warning_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
@@ -287,362 +287,146 @@ static void clean_fatal_tmp_file()
 #endif
 }
 
-/* Old function do not use */
-static void fatal_error(int f_errno,const char *fmt,...)
+static void parse_printf_args(const char *fmt,va_list *ap,char *msg)
 {
-  va_list ap;
-  const char    *p;
-  char    cval,*sval,msg[STRLEN];
-  char    ibuf[64],ifmt[64];
-  int     index,ival,fld,len;
-  double  dval;
-#ifdef _SPECIAL_VAR_ARG
-  int     f_errno;
-  char    *fmt;
-  
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-  va_start(ap,);
-  f_errno=va_arg(ap,int);
-  fmt=va_arg(ap,char *);
-#else
-  va_start(ap,fmt);
-#endif
-
-  clean_fatal_tmp_file();
-  
-  len=0;
-  for (p=fmt; *p; p++) {
-    if (*p!='%')
-      bputc(msg,&len,*p);
-    else {
-      p++;
-      fld=getfld(&p);
-      switch(*p) {
-      case 'x':
-	ival=va_arg(ap,int);
-	sprintf(ifmt,"0x%%%dx",fld);
-	sprintf(ibuf,ifmt,(unsigned int)ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'd':
-	ival=va_arg(ap,int);
-	sprintf(ifmt,"%%%dd",fld);
-	sprintf(ibuf,ifmt,ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'f':
-	dval=va_arg(ap,double);
-	sprintf(ifmt,"%%%df",fld);
-	sprintf(ibuf,ifmt,dval);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'c':
-	cval=(char) va_arg(ap,int); /* char is promoted to int */
-	bputc(msg,&len,cval);
-	break;
-      case 's':
-	sval=va_arg(ap,char *);
-	bputs(msg,&len,sval,fld);
-	break;
-     default:
-	break;
-      }
+    int     len;
+    const char *p;
+    char    cval,*sval;
+    char    ibuf[64],ifmt[64];
+    int     index,ival,fld;
+    double  dval;
+    
+    len = 0;
+    for(p=fmt; *p; p++)
+    {
+        if (*p!='%')
+        {
+            bputc(msg,&len,*p);
+        }
+        else
+        {
+            p++;
+            fld = getfld(&p);
+            switch(*p) {
+            case 'x':
+                ival = va_arg(*ap,int);
+                sprintf(ifmt,"0x%%%dx",fld);
+                sprintf(ibuf,ifmt,(unsigned int)ival);
+                for(index=0; (index<(int)strlen(ibuf)); index++)
+                    bputc(msg,&len,ibuf[index]);
+                break;
+            case 'd':
+                ival = va_arg(*ap,int);
+                sprintf(ifmt,"%%%dd",fld);
+                sprintf(ibuf,ifmt,ival);
+                for(index=0; (index<(int)strlen(ibuf)); index++)
+                    bputc(msg,&len,ibuf[index]);
+                break;
+            case 'u':
+                ival = va_arg(*ap,unsigned);
+                sprintf(ifmt,"%%%du",fld);
+                sprintf(ibuf,ifmt,ival);
+                for(index=0; (index<(int)strlen(ibuf)); index++)
+                    bputc(msg,&len,ibuf[index]);
+                break;
+            case 'f':
+                dval = va_arg(*ap,double);
+                sprintf(ifmt,"%%%df",fld);
+                sprintf(ibuf,ifmt,dval);
+                for(index=0; (index<(int)strlen(ibuf)); index++)
+                    bputc(msg,&len,ibuf[index]);
+                break;
+            case 'g':
+                dval = va_arg(*ap,double);
+                sprintf(ifmt,"%%%dg",fld);
+                sprintf(ibuf,ifmt,dval);
+                for(index=0; (index<(int)strlen(ibuf)); index++)
+                    bputc(msg,&len,ibuf[index]);
+                break;
+            case 'c':
+                cval = (char) va_arg(*ap,int); /* char is promoted to int */
+                bputc(msg,&len,cval);
+                break;
+            case 's':
+                sval = va_arg(*ap,char *);
+                if (sval == NULL)
+                    sval = strdup("(null)");
+                bputs(msg,&len,sval,fld);
+                break;
+            case '%':
+                bputc(msg,&len,*p);
+                break;
+            default:
+                break;
+            }
+        }
     }
-  }
-  va_end(ap);
-  bputc(msg,&len,'\0');
 
-  fatal_errno = f_errno; /* TODO might need a mutex as it's global [pszilard] */
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
-  gmx_error("fatal",msg);
+    bputc(msg,&len,'\0');
 }
 
 void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 {
   va_list ap;
-  const char    *p;
-  char    cval,*sval,msg[STRLEN];
-  char    ibuf[64],ifmt[64];
-  int     index,ival,fld,len;
-  double  dval;
-#ifdef _SPECIAL_VAR_ARG
-  int     f_errno,line;
-  char    *fmt,*file;
+  char    msg[STRLEN];
   
+  va_start(ap,fmt);
+
+  clean_fatal_tmp_file();
+
+  parse_printf_args(fmt,&ap,msg);
+  
+  va_end(ap);
+
 #ifdef GMX_THREADS
   tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
-  va_start(ap,);
-  f_errno = va_arg(ap,int);
-  file    = va_arg(ap,char *);
-  line    = va_arg(ap,int);
-  fmt     = va_arg(ap,char *);
-#else
-  va_start(ap,fmt);
-#endif
-
-  clean_fatal_tmp_file();
-  
-  len=0;
-  for (p=fmt; *p; p++) {
-    if (*p!='%')
-      bputc(msg,&len,*p);
-    else {
-      p++;
-      fld=getfld(&p);
-      switch(*p) {
-      case 'x':
-	ival=va_arg(ap,int);
-	sprintf(ifmt,"0x%%%dx",fld);
-	sprintf(ibuf,ifmt,(unsigned int)ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'd':
-	ival=va_arg(ap,int);
-	sprintf(ifmt,"%%%dd",fld);
-	sprintf(ibuf,ifmt,ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'u':
-	ival=va_arg(ap,unsigned);
-	sprintf(ifmt,"%%%du",fld);
-	sprintf(ibuf,ifmt,ival);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'f':
-	dval=va_arg(ap,double);
-	sprintf(ifmt,"%%%df",fld);
-	sprintf(ibuf,ifmt,dval);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'g':
-	dval=va_arg(ap,double);
-	sprintf(ifmt,"%%%dg",fld);
-	sprintf(ibuf,ifmt,dval);
-	for(index=0; (index<(int)strlen(ibuf)); index++)
-	  bputc(msg,&len,ibuf[index]);
-	break;
-      case 'c':
-	cval=(char) va_arg(ap,int); /* char is promoted to int */
-	bputc(msg,&len,cval);
-	break;
-      case 's':
-	sval=va_arg(ap,char *);
-	if (sval == NULL)
-	  sval = strdup("(null)");
-	bputs(msg,&len,sval,fld);
-	break;
-      case '%':
-	bputc(msg,&len,*p);
-	break;
-      default:
-	break;
-      }
-    }
-  }
-  va_end(ap);
-  bputc(msg,&len,'\0');
 
   fatal_errno = f_errno;
-  
+
 #ifdef GMX_THREADS
   tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
+
   _gmx_error("fatal",msg,file,line);
 }
 
-static int  nwarn_note  = 0;
-static int  nwarn_warn  = 0;
-static int  nwarn_error = 0;
-static int  maxwarn     = 10;
-static int  lineno      = 1;
-static char filenm[256] = "";
-char   warn_buf[1024]   = "";
-
-void init_warning(int maxwarning)
+void gmx_fatal_collective(int f_errno,const char *file,int line,
+                          bool bMaster,
+                          const char *fmt,...)
 {
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-  maxwarn     = maxwarning;
-  nwarn_note  = 0;
-  nwarn_warn  = 0;
-  nwarn_error = 0;
-#ifdef GMX_THREADS
-  tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-}
-
-void set_warning_line(const char *s,int line)
-{
-    if (s == NULL)
+    va_list ap;
+    char    msg[STRLEN];
+    
+    if (bMaster)
     {
-        gmx_incons("Calling set_warning_line with NULL pointer");
+        va_start(ap,fmt);
+        
+        clean_fatal_tmp_file();
+        
+        parse_printf_args(fmt,&ap,msg);
+        
+        va_end(ap);
+        
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_lock(&debug_mutex);
+#endif
+        
+        fatal_errno = f_errno;
+        
+#ifdef GMX_THREADS
+        tMPI_Thread_mutex_unlock(&debug_mutex);
+#endif
+
+        _gmx_error("fatal",msg,file,line);
     }
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
 
-    strcpy(filenm,s);
-    lineno = line;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
+#ifdef GMX_MPI
+    /* Let all other processes wait till the master has printed
+     * the error message and issued MPI_Abort.
+     */
+    MPI_Barrier(MPI_COMM_WORLD);
 #endif
-}
-
-int get_warning_line()
-{
-    int ret;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    ret=lineno;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-    return ret;
-}
-
-const char *get_warning_file()
-{
-    return filenm;
-}
-
-static void low_warning(const char *wtype,int n,const char *s)
-{
-#define indent 2 
-  char linenobuf[32], *temp, *temp2;
-  int i;
-
-  if (s == NULL)
-    s = warn_buf;
-  if (lineno != -1)
-    sprintf(linenobuf,"%d",lineno);
-  else
-    strcpy(linenobuf,"unknown");
-  snew(temp,strlen(s)+indent+1);
-  for(i=0; i<indent; i++)
-    temp[i] = ' ';
-  temp[indent] = '\0';
-  strcat(temp,s);
-  temp2 = wrap_lines(temp,78-indent,indent,FALSE);
-  if (strlen(filenm) > 0) {
-    fprintf(stderr,"\n%s %d [file %s, line %s]:\n%s\n\n",
-	    wtype,n,filenm,linenobuf,temp2);
-  } else {
-    fprintf(stderr,"\n%s %d:\n%s\n\n",wtype,n,temp2);
-  }
-  sfree(temp);
-  sfree(temp2);
-}
-
-void warning(const char *s)
-{
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwarn_warn++;
-    low_warning("WARNING",nwarn_warn,s);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-}
-
-void warning_note(const char *s)
-{
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwarn_note++;
-    low_warning("NOTE",nwarn_note,s);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-}
-
-void warning_error(const char *s)
-{
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwarn_error++;
-    low_warning("ERROR",nwarn_error,s);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-}
-
-static void print_warn_count(const char *type,int n)
-{
-  if (n > 0) {
-    fprintf(stderr,"\nThere %s %d %s%s\n",
-	    (n==1) ? "was" : "were", n, type, (n==1) ? "" : "s");
-  }
-}
-
-void print_warn_num(bool bFatalError)
-{
-    bool cond;
-    int nww;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    print_warn_count("note",nwarn_note);
-    print_warn_count("warning",nwarn_warn);
-    nww=nwarn_warn;
-    cond=bFatalError && nwarn_warn > maxwarn;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-
-    if (cond) {
-        gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
-                  "If you are sure all warnings are harmless, use the -maxwarn option.",
-                  nww,Program());
-    }
-}
-
-void check_warning_error(int f_errno,const char *file,int line)
-{
-    int nwe;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
-    nwe=nwarn_error;
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
-    if (nwe > 0) {
-        print_warn_num(FALSE);
-        gmx_fatal(f_errno,file,line,"There %s %d error%s in input file(s)",
-                  (nwe==1) ? "was" : "were",nwe,
-                  (nwe==1) ? ""    : "s");
-    }
-}
-
-void _too_few(const char *fn,int line)
-{
-  sprintf(warn_buf,"Too few parameters on line (source file %s, line %d)",
-	  fn,line);
-  warning(NULL);
-}
-
-void _incorrect_n_param(const char *fn,int line)
-{
-  sprintf(warn_buf,"Incorrect number of parameters on line (source file %s, line %d)",
-	  fn,line);
-  warning(NULL);
 }
 
 void _invalid_case(const char *fn,int line)
@@ -788,15 +572,17 @@ char *gmx_strerror(const char *key)
 
 void _gmx_error(const char *key,const char *msg,const char *file,int line)
 {
-    char buf[10240],tmpbuf[1024];
+  char buf[10240],tmpbuf[1024],errerrbuf[1024];
     int  cqnum;
     const char *llines = "-------------------------------------------------------";
     char *strerr;
 
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_lock(&warning_mutex);
-#endif
     /* protect the audience from suggestive discussions */
+
+    if (msg == NULL)
+    {
+        sprintf(errerrbuf,"Empty fatal_error message. %s",gmxuser);
+    }
 
     cool_quote(tmpbuf,1023,&cqnum);
     strerr = gmx_strerror(key);
@@ -805,23 +591,21 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
             "%s:\n%s\nFor more information and tips for trouble shooting please check the GROMACS website at\n"
             "http://www.gromacs.org/Documentation/Errors\n%s\n\n%s\n",
             llines,ShortProgram(),GromacsVersion(),file,line,
-            strerr,msg ? msg : warn_buf,llines,tmpbuf);
+            strerr,msg ? msg : errerrbuf,llines,tmpbuf);
     free(strerr);
-#ifdef GMX_THREADS
-    tMPI_Thread_mutex_unlock(&warning_mutex);
-#endif
+
     gmx_error_handler(buf);
 }
 
-void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int line)
+void _range_check(int n,int n_min,int n_max,const char *warn_str,
+		  const char *var,const char *file,int line)
 {
   char buf[1024];
   
   if ((n < n_min) || (n >= n_max)) {
-    if (strlen(warn_buf) > 0) {
-      strcpy(buf,warn_buf);
+    if (warn_str != NULL) {
+      strcpy(buf,warn_str);
       strcat(buf,"\n");
-      warn_buf[0] = '\0';
     }
     else
       buf[0] = '\0';
@@ -833,3 +617,16 @@ void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int
   }
 }
 
+void gmx_warning(const char *fmt,...)
+{
+    va_list ap;
+    char msg[STRLEN];
+
+    va_start(ap,fmt);
+
+    parse_printf_args(fmt,&ap,msg);
+
+    va_end(ap);
+
+    fprintf(stderr,"\nWARNING: %s\n\n",msg);
+}

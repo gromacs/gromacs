@@ -186,6 +186,8 @@ extern gmx_integrator_t do_lbfgs;
 extern gmx_integrator_t do_nm;
 /* Do normal mode analysis */
 
+/* ROUTINES from tpi.c */
+
 extern gmx_integrator_t do_tpi;
 /* Do test particle insertion */
 

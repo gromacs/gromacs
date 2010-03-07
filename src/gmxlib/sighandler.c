@@ -37,6 +37,7 @@
 #endif
 
 #include "typedefs.h"
+#include "gmx_fatal.h"
 #include "sighandler.h"
 
 /* The following two variables and the signal_handler function
@@ -48,9 +49,9 @@
 
 
 /* we got a signal to stop in the next step: */
-volatile sig_atomic_t bGotStopNextStepSignal;
+volatile sig_atomic_t bGotStopNextStepSignal=FALSE;
 /* we got a signal to stop in the next neighbour search step: */
-volatile sig_atomic_t bGotStopNextNSStepSignal;
+volatile sig_atomic_t bGotStopNextNSStepSignal=FALSE;
 
 /* our names for the handled signals. These must match the number given
    in signal_handler. */
@@ -72,9 +73,9 @@ RETSIGTYPE signal_handler(int n)
             bGotStopNextStepSignal = TRUE;
             last_signal_number_recvd = 0;
             break;
-/* windows doesn't do SIGINT correctly:. */
-#if (!(defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64))||\
-            (defined __CYGWIN__ && defined __CYGWIN32__)
+/* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in 
+   ANSI C89, and windows spawns a thread specifically to run the INT signal 
+   handler), but that doesn't matter for a simple signal handler like this. */
         case SIGINT:
             if (!bGotStopNextNSStepSignal)
             {
@@ -88,8 +89,29 @@ RETSIGTYPE signal_handler(int n)
             else
                 abort();
             break;
-#endif
     }
+}
+
+
+void signal_handler_install(void)
+{
+    if (getenv("GMX_NO_TERM") == NULL)
+    {
+        if (debug)
+        {
+            fprintf(debug,"Installing signal handler for SIGTERM\n");
+        }
+        signal(SIGTERM,signal_handler);
+    }
+    if (getenv("GMX_NO_INT") == NULL)
+    {
+        if (debug)
+        {
+            fprintf(debug,"Installing signal handler for SIGINT\n");
+        }
+        signal(SIGINT,signal_handler);
+    }
+
 }
 
 

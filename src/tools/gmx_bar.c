@@ -101,7 +101,7 @@ static double calc_bar_sum(int n,double *W,double Wfac,double sbMmDG)
 }
 
 static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
-                                double delta_lambda,double temp,double prec)
+                                double delta_lambda,double temp,double tol)
 {
     double kT,beta,beta_dl,M;
     double DG;
@@ -126,8 +126,18 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
         Wfac2 = -beta*delta_lambda;
     }
 
-    /* calculate minimum and maximum work to give an initial estimate of 
-       delta G  as their average */
+    if (beta < 1)
+    {
+        /* We print the output both in kT and kJ/mol.
+         * Here we determine DG in kT, so when beta < 1
+         * the precision has to be increased.
+         */
+        tol *= beta;
+    }
+
+    /* Calculate minimum and maximum work to give an initial estimate of 
+     * delta G  as their average.
+     */
     Wmin = W1[0];
     Wmax = W1[0];
     for(i=0; i<n1; i++)
@@ -143,12 +153,12 @@ static double calc_bar_lowlevel(int n1,double *W1,int n2,double *W2,
     DG0 = Wmin;
     DG2 = Wmax;
     
-    /* For the comparison we can use twice the tolerance */
+    /* For the comparison we can use twice the tolerance. */
     if (debug)
     {
         fprintf(debug,"DG %9.5f %9.5f\n",DG0,DG2);
     }
-    while (DG2 - DG0 > 2*prec)
+    while (DG2 - DG0 > 2*tol)
     {
         DG1 = 0.5*(DG0 + DG2);
 
@@ -802,7 +812,10 @@ int gmx_bar(int argc,char *argv[])
     bEE = TRUE;
     for(f=0; f<nfile-1; f++)
     {
-        calc_bar(&ba[f], &ba[f+1], n1>0, prec, nbmin, nbmax,
+        /* Determine the free energy difference with a factor of 10
+         * more accuracy than requested for printing.
+         */
+        calc_bar(&ba[f], &ba[f+1], n1>0, 0.1*prec, nbmin, nbmax,
                  &(results[f]), &bEE, partsum);
     }
 
@@ -847,9 +860,9 @@ int gmx_bar(int argc,char *argv[])
         printf(kteformat, results[f].dg_stddev_err);
         printf("\n");
 
-        /* check for significant negative relative entropy */
-        if ( (results[f].sa<0 && (results[f].sa_err<fabs(results[f].sa))) ||
-             (results[f].sb<0 && (results[f].sb_err<fabs(results[f].sb))) )
+        /* Check for negative relative entropy with a 95% certainty. */
+        if (results[f].sa < -2*results[f].sa_err ||
+            results[f].sb < -2*results[f].sb_err)
         {
             result_OK=FALSE;
         }
@@ -861,7 +874,7 @@ int gmx_bar(int argc,char *argv[])
                "Thermodynamics: \n"
                "         This is can be the result of severe undersampling, or "
                "(more likely)\n" 
-               "         there is something wrong with the simulation.\n");
+               "         there is something wrong with the simulations.\n");
     }
  
 

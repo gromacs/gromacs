@@ -32,6 +32,7 @@
 #include "domdec_network.h"
 #include "nrnb.h"
 #include "pbc.h"
+#include "chargegroup.h"
 #include "constr.h"
 #include "mdatoms.h"
 #include "names.h"
@@ -2908,19 +2909,12 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,gmx_ddbox_t *ddbox,
         if (d < ddbox->npbcdim &&
             dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            if (DDMASTER(dd))
-            {
-                gmx_fatal(FARGS,"The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
-                          dim2char(d),ddbox->box_size[d],ddbox->skew_fac[d],
-                          comm->cutoff,
-                          dd->nc[d],dd->nc[d],
-                          dd->nnodes > dd->nc[d] ? "cells" : "processors");
-            }
-#ifdef GMX_LIB_MPI
-            MPI_Abort(MPI_COMM_WORLD, 0);
-#else
-            exit(0);
-#endif
+            gmx_fatal_collective(FARGS,DDMASTER(dd),
+                                 "The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
+                                 dim2char(d),ddbox->box_size[d],ddbox->skew_fac[d],
+                                 comm->cutoff,
+                                 dd->nc[d],dd->nc[d],
+                                 dd->nnodes > dd->nc[d] ? "cells" : "processors");
         }
     }
     
@@ -6290,15 +6284,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 fprintf(fplog,"ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n",acs,comm->cellsize_limit);
             }
-            if (MASTER(cr))
-            {
-                gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
-            }
-#ifdef GMX_LIB_MPI
-            MPI_Abort(MPI_COMM_WORLD, 0);
-#else
-            exit(0);
-#endif
+            gmx_fatal_collective(FARGS,MASTER(cr),
+                                 "The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",
+                                 acs,comm->cellsize_limit);
         }
     }
     else
@@ -6313,23 +6301,17 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         
         if (dd->nc[XX] == 0)
         {
-            if (MASTER(cr))
-            {
-                bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
-                sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
-                        !bC ? "-rdd" : "-rcon",
-                        comm->eDLB!=edlbNO ? " or -dds" : "",
-                        bC ? " or your LINCS settings" : "");
-                gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
-                          "%s\n"
-                          "Look in the log file for details on the domain decomposition",
-                          cr->nnodes-cr->npmenodes,limit,buf);
-            }
-#ifdef GMX_LIB_MPI
-            MPI_Abort(MPI_COMM_WORLD, 0);
-#else
-            exit(0);
-#endif
+            bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
+            sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
+                    !bC ? "-rdd" : "-rcon",
+                    comm->eDLB!=edlbNO ? " or -dds" : "",
+                    bC ? " or your LINCS settings" : "");
+
+            gmx_fatal_collective(FARGS,MASTER(cr),
+                                 "There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
+                                 "%s\n"
+                                 "Look in the log file for details on the domain decomposition",
+                                 cr->nnodes-cr->npmenodes,limit,buf);
         }
         set_dd_dim(fplog,dd);
     }
@@ -8396,8 +8378,14 @@ void dd_partition_system(FILE            *fplog,
         nat_f_novirsum = 0;
     }
 
-    /* Set the number of atoms required for the force calculation */
-    forcerec_set_ranges(fr,dd->ncg_home,dd->ncg_tot,dd->nat_tot,nat_f_novirsum);
+    /* Set the number of atoms required for the force calculation.
+     * Forces need to be constrained when using a twin-range setup
+     * or with energy minimization. For simple simulations we could
+     * avoid some allocation, zeroing and copying, but this is
+     * probably not worth the complications ande checking.
+     */
+    forcerec_set_ranges(fr,dd->ncg_home,dd->ncg_tot,
+                        comm->nat[ddnatCON],nat_f_novirsum);
 
     /* We make the all mdatoms up to nat_tot_con.
      * We could save some work by only setting invmass

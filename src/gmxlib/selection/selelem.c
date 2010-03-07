@@ -36,6 +36,7 @@
 #endif
 
 #include <smalloc.h>
+#include <gmx_fatal.h>
 
 #include <indexutil.h>
 #include <poscalc.h>
@@ -540,8 +541,19 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, bool bValues, int level)
         switch (sel->v.type)
         {
             case POS_VALUE:
-                fprintf(fp, "(%f, %f, %f)",
-                        sel->v.u.p->x[0][XX], sel->v.u.p->x[0][YY], sel->v.u.p->x[0][ZZ]);
+                /* In normal use, the pointer should never be NULL, but it's
+                 * useful to have the check for debugging to avoid accidental
+                 * segfaults when printing the selection tree. */
+                if (sel->v.u.p->x)
+                {
+                    fprintf(fp, "(%f, %f, %f)",
+                            sel->v.u.p->x[0][XX], sel->v.u.p->x[0][YY],
+                            sel->v.u.p->x[0][ZZ]);
+                }
+                else
+                {
+                    fprintf(fp, "(null)");
+                }
                 break;
             case GROUP_VALUE:
                 fprintf(fp, "%d atoms", sel->v.u.g->isize);
