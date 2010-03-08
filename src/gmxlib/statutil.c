@@ -685,8 +685,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
     /* set program name, command line, and default values for output options */
-    output_env_init(*oenv, *argc, argv, nenum(time_units), bView, 
-                    nenum(xvg_format), verbose_level, debug_level);
+    output_env_init(*oenv, *argc, argv, (time_unit_t)nenum(time_units), bView, 
+                    (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
  
     if (bVersion) {
       printf("Program: %s\n",output_env_get_program_name(*oenv));
@@ -759,8 +759,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #endif
    
     /* Update oenv for parsed command line options settings. */
-    (*oenv)->xvg_format = nenum(xvg_format);
-    (*oenv)->time_unit  = nenum(time_units);
+    (*oenv)->xvg_format = (xvg_format_t)nenum(xvg_format);
+    (*oenv)->time_unit  = (time_unit_t)nenum(time_units);
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)

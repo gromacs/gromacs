@@ -65,6 +65,7 @@
 #include "thread_mpi.h"
 #endif
 
+#include "fflibutil.h"
 
 const char *fflib_forcefield_dir_ext()
 {

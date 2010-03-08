@@ -44,6 +44,7 @@
 #include "pbc.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
+#include "chargegroup.h"
 
 
 void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,

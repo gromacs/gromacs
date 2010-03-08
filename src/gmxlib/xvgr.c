@@ -437,8 +437,9 @@ static int wordcount(char *ptr)
 
 static char *read_xvgr_string(const char *line)
 {
-    char *ptr0,*ptr1,*str;
-
+    const char *ptr0,*ptr1;
+    char *str;
+    
     ptr0 = strchr(line,'"');
     if (ptr0 != NULL) {
         ptr0++;
