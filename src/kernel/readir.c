@@ -998,16 +998,16 @@ void get_ir(const char *mdparin,const char *mdparout,
   
   /* AdResS defined thingies */
   CCTYPE ("AdResS parameters");
-  EETYPE("adress_type",                ir->adress_type,     eAdresstype_names, nerror, TRUE);
-  EETYPE("adress_new_wf",              ir->badress_new_wf,  yesno_names,       nerror, TRUE);
-  EETYPE("adress_chempot_dx",         ir->badress_chempot_dx,  yesno_names,       nerror, TRUE);
-  RTYPE ("adress_const_wf",            ir->adress_const_wf, 1);
-  RTYPE ("adress_ex_width",            ir->adress_ex_width, 0);
-  RTYPE ("adress_hy_width",            ir->adress_hy_width, 0);
-  EETYPE("adress_interface_correction",ir->adress_icor,     eAdressICtype_names,nerror, TRUE);
-  EETYPE("adress_exvdw",               ir->adress_ivdw,     evdw_names,        nerror, TRUE);
-  EETYPE("adress_site",                ir->adress_site,     eAdressSITEtype_names,nerror, TRUE);
-  STYPE ("adress_reference_coords",    adress_refs,         NULL);
+  EETYPE("adress_type",                ir->adress_type,         eAdresstype_names);
+  EETYPE("adress_new_wf",              ir->badress_new_wf,      yesno_names);
+  EETYPE("adress_chempot_dx",          ir->badress_chempot_dx,  yesno_names);
+  RTYPE ("adress_const_wf",            ir->adress_const_wf,     1);
+  RTYPE ("adress_ex_width",            ir->adress_ex_width,     0);
+  RTYPE ("adress_hy_width",            ir->adress_hy_width,     0);
+  EETYPE("adress_interface_correction",ir->adress_icor,         eAdressICtype_names);
+  EETYPE("adress_exvdw",               ir->adress_ivdw,         evdw_names);
+  EETYPE("adress_site",                ir->adress_site,         eAdressSITEtype_names);
+  STYPE ("adress_reference_coords",    adress_refs,             NULL);
 
   /* User defined thingies */
   CCTYPE ("User defined thingies");
