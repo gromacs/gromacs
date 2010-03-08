@@ -199,10 +199,12 @@
 #endif
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #include <futil.h>
 #include <smalloc.h>
 #include <string2.h>
+#include <gmx_fatal.h>
 
 #include <poscalc.h>
 #include <selection.h>

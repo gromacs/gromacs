@@ -474,7 +474,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         /* Pulse the grid forward and backward */
         dim = dd->dim[d];
         bPBC = (dim < dd->npbcdim);
-        if (bPBC && dd->nc[dim] == 2)
+        if (dd->nc[dim] == 2)
         {
             /* Only 2 cells, so we only need to communicate once */
             ndir = 1;
@@ -485,8 +485,10 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         }
         for(dir=0; dir<ndir; dir++)
         {
-            if (!bPBC && ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) ||
-                          (dir == 1 && dd->ci[dim] == 0)))
+            if (!bPBC && 
+                dd->nc[dim] > 2 &&
+                ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) ||
+                 (dir == 1 && dd->ci[dim] == 0)))
             {
                 /* No pbc: the fist/last cell should not request atoms */
                 nsend_ptr = nsend_zero;

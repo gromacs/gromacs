@@ -520,6 +520,14 @@ void please_cite(FILE *fp,const char *key)
   fflush(fp);
 }
 
+#ifdef USE_VERSION_H
+/* Version information generated at compile time. */
+#include "version.h"
+#else
+/* Fall back to statically defined version. */
+static const char _gmx_ver_string[]="VERSION " VERSION;
+#endif
+
 /* This routine only returns a static (constant) string, so we use a 
  * mutex to initialize it. Since the string is only written to the
  * first time, there is no risk with multiple calls overwriting the
@@ -527,13 +535,15 @@ void please_cite(FILE *fp,const char *key)
  */
 const char *GromacsVersion()
 {
+  return _gmx_ver_string;
+}
+
+
+void gmx_print_version_info(FILE *fp)
+{
+    fprintf(fp, "%s\n", _gmx_ver_string);
 #ifdef USE_VERSION_H
-  /* Version generated at compile time. */
-  #include "version.h"
-#else
-  /* Fall back to statically defined version. */
-  static const char ver_string[]="VERSION " VERSION;
+    fprintf(fp, "GIT SHA1 hash: %s\n", _gmx_full_git_hash);
+    fprintf(fp, "Branched from: %s\n", _gmx_central_base_hash);
 #endif
-  
-  return ver_string;
 }

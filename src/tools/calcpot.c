@@ -52,6 +52,7 @@
 #include "mdatoms.h"
 #include "main.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 static void c_tabpot(real tabscale,   real VFtab[],
 		     int  nri,        int  iinr[],

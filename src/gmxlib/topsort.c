@@ -41,6 +41,7 @@
 #include "typedefs.h"
 #include "topsort.h"
 #include "smalloc.h"
+#include "gmx_fatal.h"
 
 static bool ip_pert(int ftype,const t_iparams *ip)
 {

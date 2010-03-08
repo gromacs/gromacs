@@ -88,6 +88,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "sighandler.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -100,10 +101,6 @@
 #include "corewrap.h"
 #endif
 
-
-
-/* The following two variables are set in runner.c */
-extern bool bGotTermSignal, bGotUsr1Signal;
 
 
 enum { eglsNABNSB, eglsCHKPT, eglsTERM, eglsRESETCOUNTERS, eglsNR };
@@ -818,7 +815,7 @@ static void check_ir_old_tpx_versions(t_commrec *cr,FILE *fplog,
     if (IR_TWINRANGE(*ir) && ir->nstlist > 1 &&
         ir->nstcalcenergy % ir->nstlist != 0)
     {
-        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifiying energy calculation and/or T/P-coupling frequencies");
+        md_print_warning(cr,fplog,"Old tpr file with twin-range settings: modifying energy calculation and/or T/P-coupling frequencies");
 
         if (gmx_mtop_ftype_count(mtop,F_CONSTR) +
             gmx_mtop_ftype_count(mtop,F_CONSTRNC) > 0 &&
@@ -1033,7 +1030,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	t_extmass   MassQ;
     int         **trotter_seq; 
     char        sbuf[STEPSTRSIZE],sbuf2[STEPSTRSIZE];
-    bool        bHandledSignal=FALSE;
+    int         handledSignal=-1; /* compare to last_signal_recvd */
     gmx_iterate_t iterate;
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -1819,35 +1816,44 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         
         /*  ############### START FIRST UPDATE HALF-STEP ############### */
         
-        if (!bStartingFromCpt && !bRerunMD) {
-            if (ir->eI==eiVV && bInitStep) {
-                /* if using velocity verlet with full time step Ekin, take the first half step only to compute the 
-                   virial for the first step. From there, revert back to the initial coordinates
-                   so that the input is actually the initial step */
-                copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
-            }
-            
-            /* this is for NHC in the Ekin(t+dt/2) version of vv */
-            if (!bInitStep || ir->eI!=eiVV)
+        if (!bStartingFromCpt && !bRerunMD)
+        {
+            if (ir->eI == eiVV)
             {
-                trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
-            }
-            
-            update_coords(fplog,step,ir,mdatoms,state,
-                          f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
-                          ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,cr,nrnb,constr,&top->idef);
-            
-            if (bIterations)
-            {
-                gmx_iterate_init(&iterate,bIterations && !bInitStep);
-            }
-            /* for iterations, we save these vectors, as we will be self-consistently iterating
-               the calculations */
-            /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
-            
-            /* save the state */
-            if (bIterations && iterate.bIterate) { 
-                copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
+                if (bInitStep)
+                {
+                    /* if using velocity verlet with full time step Ekin,
+                     * take the first half step only to compute the 
+                     * virial for the first step. From there,
+                     * revert back to the initial coordinates
+                     * so that the input is actually the initial step.
+                     */
+                    copy_rvecn(state->v,cbuf,0,state->natoms); /* should make this better for parallelizing? */
+                }
+                
+                /* this is for NHC in the Ekin(t+dt/2) version of vv */
+                if (!bInitStep)
+                {
+                    trotter_update(ir,ekind,enerd,state,total_vir,mdatoms,&MassQ,trotter_seq[1]);            
+                }
+                
+                update_coords(fplog,step,ir,mdatoms,state,
+                              f,fr->bTwinRange && bNStList,fr->f_twin,fcd,
+                              ekind,M,wcycle,upd,bInitStep,etrtVELOCITY,
+                              cr,nrnb,constr,&top->idef);
+                
+                if (bIterations)
+                {
+                    gmx_iterate_init(&iterate,bIterations && !bInitStep);
+                }
+                /* for iterations, we save these vectors, as we will be self-consistently iterating
+                   the calculations */
+                /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
+                
+                /* save the state */
+                if (bIterations && iterate.bIterate) { 
+                    copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
+                }
             }
             
             bFirstIterate = TRUE;
@@ -1875,7 +1881,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 
                 bOK = TRUE;
                 if ( !bRerunMD || rerun_fr.bV || bForceUpdate) {  /* Why is rerun_fr.bV here?  Unclear. */
-                    wallcycle_start(wcycle,ewcUPDATE);
                     dvdl = 0;
                     
                     update_constraints(fplog,step,&dvdl,ir,ekind,mdatoms,state,graph,f,
@@ -2110,9 +2115,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         run_time = gmx_gettime() - (double)runtime->real;
 
         /* Check whether everything is still allright */    
-        if ((bGotTermSignal || bGotUsr1Signal) && !bHandledSignal)
+        if ((bGotStopNextStepSignal || bGotStopNextNSStepSignal) && 
+            (handledSignal!=last_signal_number_recvd) &&
+            MASTERTHREAD(cr))
         {
-            if (bGotTermSignal || ir->nstlist == 0)
+            if (bGotStopNextStepSignal || ir->nstlist == 0)
             {
                 gs.sig[eglsTERM] = 1;
             }
@@ -2124,16 +2131,16 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             {
                 fprintf(fplog,
                         "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                        bGotTermSignal ? "TERM" : "USR1",
+                        signal_name[last_signal_number_recvd], 
                         gs.sig[eglsTERM]==-1 ? "NS " : "");
                 fflush(fplog);
             }
             fprintf(stderr,
                     "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
-                    bGotTermSignal ? "TERM" : "USR1",
+                    signal_name[last_signal_number_recvd], 
                     gs.sig[eglsTERM]==-1 ? "NS " : "");
             fflush(stderr);
-            bHandledSignal=TRUE;
+            handledSignal=last_signal_number_recvd;
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
                  (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&

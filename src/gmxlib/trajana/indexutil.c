@@ -39,6 +39,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <typedefs.h>
+#include <gmx_fatal.h>
 
 #include <indexutil.h>
 

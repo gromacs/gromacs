@@ -69,6 +69,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "sighandler.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -82,25 +83,6 @@
 #endif
 
 
-
-/* The following two variables and the signal_handler function
- * are used from md.c and pme.c as well 
- */
-extern bool bGotTermSignal, bGotUsr1Signal;
-
-static RETSIGTYPE signal_handler(int n)
-{
-    switch (n) {
-        case SIGTERM:
-            bGotTermSignal = TRUE;
-            break;
-#ifdef HAVE_SIGUSR1
-        case SIGUSR1:
-            bGotUsr1Signal = TRUE;
-            break;
-#endif
-    }
-}
 
 typedef struct { 
     gmx_integrator_t *func;
@@ -643,24 +625,7 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          * (A user signal from the PME nodes (if any)
          * is communicated to the PP nodes.
          */
-        if (getenv("GMX_NO_TERM") == NULL)
-        {
-            if (debug)
-            {
-                fprintf(debug,"Installing signal handler for SIGTERM\n");
-            }
-            signal(SIGTERM,signal_handler);
-        }
-#ifdef HAVE_SIGUSR1
-        if (getenv("GMX_NO_USR1") == NULL)
-        {
-            if (debug)
-            {
-                fprintf(debug,"Installing signal handler for SIGUSR1\n");
-            }
-            signal(SIGUSR1,signal_handler);
-        }
-#endif
+        signal_handler_install();
     }
 
     if (cr->duty & DUTY_PP)
@@ -742,11 +707,11 @@ int mdrunner(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         gmx_log_close(fplog);
     }	
 
-    if(bGotTermSignal)
+    if(bGotStopNextStepSignal)
     {
         rc = 1;
     }
-    else if(bGotUsr1Signal)
+    else if(bGotStopNextNSStepSignal)
     {
         rc = 2;
     }

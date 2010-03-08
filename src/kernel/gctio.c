@@ -46,6 +46,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "readinp.h"
+#include "readir.h"
 #include "filenm.h"
 #include "names.h"
 #include "gmxfio.h"
@@ -427,11 +428,15 @@ static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,bool bObsUsed[])
 
 void read_gct(const char *fn,t_coupl_rec *tcr)
 {
+  warninp_t wi;
   t_inpfile *inp;
   int       i,j,ninp,nQ,nLJ,nBU,nIP;
   bool      bWrong;
   
-  inp=read_inpfile(fn,&ninp,NULL);
+  wi = init_warning(FALSE,0);
+
+  inp=read_inpfile(fn,&ninp,NULL,wi);
+
   for(i=0; (i<eoObsNR); i++) {
     tcr->bObsUsed[i] = FALSE;
     RTYPE (eoNames[i],	tcr->ref_value[i],	0.0);
@@ -493,5 +498,7 @@ void read_gct(const char *fn,t_coupl_rec *tcr)
   tcr->nIP = nIP;
   
   sfree(inp);
+
+  done_warning(wi,FARGS);
 }
 

@@ -39,6 +39,7 @@
 
 
 #include <ctype.h>
+#include "copyrite.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
@@ -74,29 +75,6 @@
  *             T R A J E C T O R Y   S T U F F
  *
  ******************************************************************/
-
-/* read only time names */
-static const real timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
-static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
-static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
-                                        "ms", "s", NULL };
-static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns", 
-                                         "\\mus", "ms", "s" };
-
-
-
-struct output_env
-{
-    int time_unit; /*  the time unit as index for the above-defined arrays */
-    bool view;  /* view of file requested */
-    int xvg_format; /* xvg output format, enum defined in statutil.h */
-    int  verbosity; /* The level of verbosity for this program */
-    int debug_level; /* the debug level */
-
-    const char *program_name; /* the program name */
-    char *cmd_line; /* the re-assembled command line */
-};
-
 
 /* inherently globally shared names: */
 static const char *program_name=NULL;
@@ -268,154 +246,7 @@ int check_times(real t)
     return check_times2(t,t,t,t,FALSE);
 }
 
-/***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-static void output_env_init(output_env_t oenv,  int argc, char *argv[],
-                            const char *timenm[],
-                            bool view, const char *xvg_format[],
-                            int verbosity, int debug_level)
-{
-    int i;
-
-    oenv->time_unit  = nenum(timenm);
-    oenv->view=view;
-    oenv->xvg_format = nenum(xvg_format);
-    oenv->verbosity=verbosity;
-    oenv->debug_level=debug_level;
-
-    /* set program name */
-    {
-        char *argvzero=argv[0];
-        /* When you run a dynamically linked program before installing
-         * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-         * Until libtool is fixed to set argv[0] right, rip away the prefix:
-         */
-        if (oenv->program_name == NULL)
-        {
-            if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3))
-                oenv->program_name=strdup(argvzero+3);
-            else
-                oenv->program_name=strdup(argvzero);
-        }
-        if (oenv->program_name == NULL)
-            oenv->program_name="GROMACS";
-    }
-   
-    /* copy command line */ 
-    {
-        int cmdlength = strlen(argv[0]);
-        for (i=1; i<argc; i++) 
-        {
-            cmdlength += strlen(argv[i]);
-        }
-        
-        /* Fill the cmdline string */
-        snew(oenv->cmd_line,cmdlength+argc+1);
-        for (i=0; i<argc; i++) 
-        {
-            strcat(oenv->cmd_line,argv[i]);
-            strcat(oenv->cmd_line," ");
-        }
-    }
-}
-
-int output_env_get_verbosity(const output_env_t oenv)
-{
-    return oenv->verbosity;
-}
-
-int output_env_get_debug_level(const output_env_t oenv)
-{
-    return oenv->debug_level;
-}
-
-
-const char *output_env_get_time_unit(const output_env_t oenv)
-{
-    return time_units_str[oenv->time_unit];
-}
-
-const char *output_env_get_time_label(const output_env_t oenv)
-{
-    char *label;
-    snew(label, 20);
-    
-    sprintf(label,"Time (%s)",time_units_str[oenv->time_unit] ? 
-            time_units_str[oenv->time_unit]: "ps");
-    
-    return label;
-}
-
-const char *output_env_get_xvgr_tlabel(const output_env_t oenv)
-{
-    char *label;
-    snew(label, 20);
-    
-    sprintf(label,"Time (%s)", time_units_xvgr[oenv->time_unit] ?
-            time_units_xvgr[oenv->time_unit] : "ps");
-    
-    return label;
-}
-
-
-real output_env_get_time_factor(const output_env_t oenv)
-{
-    return timefactors[oenv->time_unit];
-}
-
-real output_env_get_time_invfactor(const output_env_t oenv)
-{
-    return timeinvfactors[oenv->time_unit];
-}
-
-real output_env_conv_time(const output_env_t oenv, real time)
-{
-    return time*timefactors[oenv->time_unit];
-}
-
-
-void output_env_conv_times(const output_env_t oenv, int n, real *time)
-{
-    int i;
-    double fact=timefactors[oenv->time_unit];
-    
-    if (fact!=1.)
-        for(i=0; i<n; i++)
-            time[i] *= fact;
-}
-
-bool output_env_get_view(const output_env_t oenv)
-{
-    return oenv->view;
-}
-
-int output_env_get_xvg_format(const output_env_t oenv)
-{
-    return oenv->xvg_format;
-}
-
-const char *output_env_get_program_name(const output_env_t oenv)
-{
-    return oenv->program_name;
-}
-
-const char *output_env_get_short_program_name(const output_env_t oenv)
-{
-    const char *pr,*ret;
-    pr=ret=oenv->program_name; 
-    if ((pr=strrchr(ret,'/')) != NULL)
-        ret=pr+1;
-    /*else
-        ret=ret;*/
-    return ret;
-}
-
-
-
-const char *output_env_get_cmd_line(const output_env_t oenv)
-{
-    return oenv->cmd_line;
-}
 
 
 static void set_default_time_unit(const char *time_list[], bool bCanTime)
@@ -695,8 +526,9 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE,bVersion=FALSE;
     const char *manstr[] = { NULL, "no", "html", "tex", "nroff", "ascii", 
                             "completion", "py", "xml", "wiki", NULL };
-    /* This array should match the order of the enum in statutil.h */
+    /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
+    /* This array should match the order of the enum in oenv.h */
     const char *time_units[] = { NULL, "fs", "ps", "ns", "us", "ms", "s", 
                                 NULL };
     int  nicelevel=0,mantp=0,npri=0,debug_level=0,verbose_level=0;
@@ -853,17 +685,12 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
     /* set program name, command line, and default values for output options */
-    output_env_init(*oenv, *argc, argv, time_units, bView, xvg_format,
-                    verbose_level, debug_level);
+    output_env_init(*oenv, *argc, argv, (time_unit_t)nenum(time_units), bView, 
+                    (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
  
     if (bVersion) {
-      printf("Program: %s\nVersion: %s\n",output_env_get_program_name(*oenv),
-#ifdef PACKAGE_VERSION
-	     PACKAGE_VERSION
-#else
-	     "Unknown"
-#endif
-	     );
+      printf("Program: %s\n",output_env_get_program_name(*oenv));
+      gmx_print_version_info(stdout);
       exit(0);
     }
     
@@ -932,8 +759,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #endif
    
     /* Update oenv for parsed command line options settings. */
-    (*oenv)->xvg_format = nenum(xvg_format);
-    (*oenv)->time_unit  = nenum(time_units);
+    (*oenv)->xvg_format = (xvg_format_t)nenum(xvg_format);
+    (*oenv)->time_unit  = (time_unit_t)nenum(time_units);
     
     if (!(FF(PCA_QUIET) || bQuiet )) {
         if (bHelp)

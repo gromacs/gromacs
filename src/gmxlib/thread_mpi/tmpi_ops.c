@@ -112,8 +112,8 @@ FN(TYPENM,lxor,XOR)
 #define OPARRAY(tp) OPARRAYr(tp)
 
 tMPI_Op_fn OPARRAY(TYPENM)[] = {
-    FNAME(TYPENM,min),
     FNAME(TYPENM,max),
+    FNAME(TYPENM,min),
     FNAME(TYPENM,sum),
     FNAME(TYPENM,prod),
 #if INTTYPE

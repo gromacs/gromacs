@@ -56,6 +56,11 @@ enum tmpi_functions
     TMPIFN_Wait,
     TMPIFN_Test,
     TMPIFN_Waitall,
+    TMPIFN_Testall,
+    TMPIFN_Waitany,
+    TMPIFN_Testany,
+    TMPIFN_Waitsome,
+    TMPIFN_Testsome,
 
     TMPIFN_Barrier, /* then the barrier */
 
@@ -77,7 +82,6 @@ enum tmpi_wait_functions
 {
     TMPIWAIT_P2p, /* p2p send wait */
     TMPIWAIT_P2p_signal, /* p2p signaling wait */
-    TMPIWAIT_Waitall, /* p2p waitall */
     TMPIWAIT_Coll_send, /* collective recv wait */
     TMPIWAIT_Coll_recv, /* collective recv wait */
     TMPIWAIT_Barrier, /* collective recv wait */

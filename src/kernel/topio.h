@@ -41,7 +41,7 @@
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
-extern double check_mol(gmx_mtop_t *mtop);
+extern double check_mol(gmx_mtop_t *mtop,warninp_t wi);
 /* Check mass and charge */
 
 extern char **do_top(bool         bVerbose,
@@ -60,7 +60,8 @@ extern char **do_top(bool         bVerbose,
 		     t_inputrec   *ir,
 		     int          *nmolblock,
 		     gmx_molblock_t **molblock,
-		     bool          bGB);
+		     bool         bGB,
+		     warninp_t    wi);
 
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */

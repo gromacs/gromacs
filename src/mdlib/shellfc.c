@@ -54,6 +54,7 @@
 #include "copyrite.h"
 #include "shellfc.h"
 #include "mtop_util.h"
+#include "chargegroup.h"
 
 
 typedef struct {

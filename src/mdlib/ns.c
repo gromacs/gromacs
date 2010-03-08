@@ -1834,7 +1834,8 @@ static void get_cutoff2(t_forcerec *fr,bool bDoLongRange,
         /* The VdW and elec. LR cut-off's could be different,
          * so we can not simply set them to rlistlong.
          */
-        if (EVDW_ZERO_AT_CUTOFF(fr->vdwtype) && fr->rvdw > fr->rlist)
+        if (EVDW_MIGHT_BE_ZERO_AT_CUTOFF(fr->vdwtype) &&
+            fr->rvdw > fr->rlist)
         {
             *rvdw2  = sqr(fr->rlistlong);
         }
@@ -1842,7 +1843,8 @@ static void get_cutoff2(t_forcerec *fr,bool bDoLongRange,
         {
             *rvdw2  = sqr(fr->rvdw);
         }
-        if (EEL_ZERO_AT_CUTOFF(fr->eeltype) && fr->rcoulomb > fr->rlist)
+        if (EEL_MIGHT_BE_ZERO_AT_CUTOFF(fr->eeltype) &&
+            fr->rcoulomb > fr->rlist)
         {
             *rcoul2 = sqr(fr->rlistlong);
         }

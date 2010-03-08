@@ -40,6 +40,7 @@
 #include "string2.h"
 #include "pgutil.h"
 #include "string.h"
+#include "gmx_fatal.h"
 
 static void atom_not_found(int fatal_errno,const char *file,int line,
 			   const char *atomname,int resind,

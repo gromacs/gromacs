@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 project(Gromacs)
-set(PROJECT_VERSION "4.0.99_development_20090605"
+set(PROJECT_VERSION "4.0.99-dev-20100305"
     CACHE STRING "Gromacs version string")
 
 # Cmake modules/macros are in a subdirectory to keep this file cleaner
@@ -219,7 +219,6 @@ gmx_test_large_files(GMX_LARGEFILES)
 
 include(gmxTestSignal)
 gmx_test_retsigtype(RETSIGTYPE)
-gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestInline)
 gmx_test_inline(INLINE_KEYWORD)
