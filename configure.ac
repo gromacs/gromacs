@@ -1007,10 +1007,16 @@ esac
 if test "$with_dlopen" = "yes"; then
       AC_MSG_CHECKING(if dlopen supported)
       CFLAGS_RET=$CFLAGS
+      #LDFLAGS="$lt_cv_dlopen_libs $LDFLAGS" #can't make the macro, which is getting lt_cv_dlopen_libs, to work
+      LDFLAGS_RET=$LDFLAGS
+      if test "$enable_all_static" = "yes"; then  #make sure we test also whether it works static
+      	 LDFLAGS="$LDFLAGS -static"
+      fi
       CFLAGS="-I$srcdir/include -DGMX_DLOPEN $CFLAGS"
       AC_TRY_LINK([#include "$srcdir/src/gmxlib/vmddlopen.c"],,[AC_MSG_RESULT([yes])\
 	AC_DEFINE(GMX_DLOPEN,,[Compile with dlopen])],AC_MSG_RESULT([no]))
       CFLAGS=$CFLAGS_RET
+      LDFLAGS=$LDFLAGS_RET
 fi
 
 
