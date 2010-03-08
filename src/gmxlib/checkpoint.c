@@ -1655,9 +1655,10 @@ void load_checkpoint(const char *fn,FILE **fplog,
 	ir->simulation_part += 1;
 }
 
-static void low_read_checkpoint_state(int fp,int *simulation_part,
-                                      gmx_large_int_t *step,double *t,t_state *state,
-                                      bool bReadRNG)
+static void read_checkpoint_data(int fp,int *simulation_part,
+                                 gmx_large_int_t *step,double *t,t_state *state,
+                                 bool bReadRNG,
+                                 int *nfiles,gmx_file_position_t **outputfiles)
 {
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
@@ -1665,9 +1666,9 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
     int  nppnodes,npme;
     ivec dd_nc;
     int  flags_eks,flags_enh;
+    int  nfiles_loc;
+    gmx_file_position_t *files_loc=NULL;
     int  ret;
-    gmx_file_position_t *outputfiles;
-	int  nfiles;
 	
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
@@ -1693,8 +1694,14 @@ static void low_read_checkpoint_state(int fp,int *simulation_part,
         cp_error();
     }
 
-	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL,file_version);
-	sfree(outputfiles);
+    ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,
+                       outputfiles != NULL ? outputfiles : &files_loc,
+                       outputfiles != NULL ? nfiles : &nfiles_loc,
+                       NULL,file_version);
+    if (files_loc != NULL)
+    {
+        sfree(files_loc);
+    }
 	
     if (ret)
     {
@@ -1721,7 +1728,7 @@ read_checkpoint_state(const char *fn,int *simulation_part,
     int  fp;
     
     fp = gmx_fio_open(fn,"r");
-    low_read_checkpoint_state(fp,simulation_part,step,t,state,TRUE);
+    read_checkpoint_data(fp,simulation_part,step,t,state,TRUE,NULL,NULL);
     if( gmx_fio_close(fp) != 0)
 	{
 		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
@@ -1737,7 +1744,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     
     init_state(&state,0,0,0,0);
     
-    low_read_checkpoint_state(fp,&simulation_part,&step,&t,&state,FALSE);
+    read_checkpoint_data(fp,&simulation_part,&step,&t,&state,FALSE,NULL,NULL);
     
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
@@ -1833,18 +1840,23 @@ void list_checkpoint(const char *fn,FILE *out)
 
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
-                                     gmx_large_int_t *cpt_step,t_commrec *cr)
+bool read_checkpoint_simulation_part(const char *filename, int *simulation_part,
+                                     gmx_large_int_t *cpt_step,t_commrec *cr,
+                                     bool bAppendReq,
+                                     const char *part_suffix,bool *bAddPart)
 {
     int  fp;
-	int  file_version;
-    char *version,*btime,*buser,*bmach,*fprog,*ftime;
-    int  eIntegrator_f,nppnodes_f,npmenodes_f;
-    ivec dd_nc_f;
     gmx_large_int_t step=0;
 	double t;
-    int  natoms,ngtc,nnhpres,nhchainlength,fflags,flags_eks,flags_enh;
-		
+    t_state state;
+    int  nfiles;
+    gmx_file_position_t *outputfiles;
+    int  nexist,f;
+    bool bAppend;
+    char *fn,suf_up[STRLEN];
+
+    bAppend = FALSE;
+
     if (SIMMASTER(cr)) {
         if(!gmx_fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
         {
@@ -1852,31 +1864,87 @@ void read_checkpoint_simulation_part(const char *filename, int *simulation_part,
         }
         else 
         {
-            do_cpt_header(gmx_fio_getxdr(fp),
-                          TRUE,&file_version,
-                          &version,&btime,&buser,&bmach,&fprog,&ftime,
-                          &eIntegrator_f,simulation_part,
-                          &step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
-                          &natoms,&ngtc,&nnhpres,&nhchainlength,
-                          &fflags,&flags_eks,&flags_enh,NULL);
+            init_state(&state,0,0,0,0);
+
+            read_checkpoint_data(fp,simulation_part,&step,&t,&state,FALSE,
+                                 &nfiles,&outputfiles);
             if( gmx_fio_close(fp) != 0)
             {
                 gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
             }
+            done_state(&state);
+
+            if (bAppendReq)
+            {
+                nexist = 0;
+                for(f=0; f<nfiles; f++)
+                {
+                    if (gmx_fexist(outputfiles[f].filename))
+                    {
+                        nexist++;
+                    }
+                }
+                if (nexist == nfiles)
+                {
+                    bAppend = bAppendReq;
+                }
+                else if (nexist > 0)
+                {
+                    fprintf(stderr,"Output files present:");
+                    for(f=0; f<nfiles; f++)
+                    {
+                        if (gmx_fexist(outputfiles[f].filename))
+                        {
+                            fprintf(stderr," %s",outputfiles[f].filename);
+                        }
+                    }
+                    fprintf(stderr,"\n");
+                    fprintf(stderr,"Output files not present:");
+                    for(f=0; f<nfiles; f++)
+                    {
+                        if (!gmx_fexist(outputfiles[f].filename))
+                        {
+                            fprintf(stderr," %s",outputfiles[f].filename);
+                        }
+                    }
+                    fprintf(stderr,"\n");
+                    
+                    gmx_fatal(FARGS,"File appending requested, but only %d of the %d output files are present",nexist,nfiles);
+                }
+            }
             
-            sfree(version);
-            sfree(btime);
-            sfree(buser);
-            sfree(bmach);
-            sfree(fprog);
-            sfree(ftime);
+            if (bAppend)
+            {
+                if (nfiles == 0)
+                {
+                    gmx_fatal(FARGS,"File appending requested, but no output file information is stored in the checkpoint file");
+                }
+                fn = outputfiles[0].filename;
+                if (strlen(fn) < 4 ||
+                    strcasecmp(fn+strlen(fn)-4,ftp2ext(efLOG)) == 0)
+                {
+                    gmx_fatal(FARGS,"File appending requested, but the log file is not the first file listed in the checkpoint file");
+                }
+                /* Set bAddPart to whether the suffix string '.part' is present
+                 * in the log file name.
+                 */
+                strcpy(suf_up,part_suffix);
+                upstring(suf_up);
+                *bAddPart = (strstr(fn,part_suffix) != NULL ||
+                             strstr(fn,suf_up) != NULL);
+            }
+
+            sfree(outputfiles);
         }
     }
     if (PAR(cr)) {
         gmx_bcast(sizeof(*simulation_part),simulation_part,cr);
+        gmx_bcast(sizeof(bAppend),&bAppend,cr);
     }
     if (NULL != cpt_step)
     {
         *cpt_step = step;
     }
+
+    return bAppend;
 }

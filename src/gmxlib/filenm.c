@@ -962,7 +962,7 @@ int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix)
                 strncpy(buf, fnm[i].fns[j], STRLEN - 1);
                 extpos = strrchr(buf, '.');
                 *extpos = '\0';
-                sprintf(newname, "%s.%s.%s", buf, suffix, extpos + 1);
+                sprintf(newname, "%s%s.%s", buf, suffix, extpos + 1);
                 free(fnm[i].fns[j]);
                 fnm[i].fns[j] = strdup(newname);
             }

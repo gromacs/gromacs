@@ -1,4 +1,5 @@
-/*
+/*  -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * 
  *                This source code is part of
  * 
@@ -224,15 +225,18 @@ int main(int argc,char *argv[])
     "The simulation part number is added to all output files,",
     "unless [TT]-append[tt] or [TT]-noaddpart[tt] are set.",
     "[PAR]",
-    "With checkpointing you can also use the option [TT]-append[tt] to",
-    "just continue writing to the previous output files. This is not",
-    "enabled by default since it is potentially dangerous if you move files,",
-    "but if you just leave all your files in place and restart mdrun with",
-    "exactly the same command (with options [TT]-cpi[tt] and [TT]-append[tt])",
-    "the result will be the same as from a single run. The contents will",
-    "be binary identical (unless you use dynamic load balancing),",
-    "but for technical reasons there might be some extra energy frames when",
-    "using checkpointing (necessary for restarts without appending).",
+    "With checkpointing the output is appended to previously written",
+    "output files, unless [TT]-noappend[tt] is used or none of the previous",
+    "output files are present (except for the checkpoint file).",
+    "The integrity of the files to be appended is verified using checksums",
+    "which are stored in the checkpoint file. This ensures that output can",
+    "not be mixed up or corrupted due to file appending. When only some",
+    "of the previous output files are present, a fatal error is generated",
+    "and no old output files are modified and no new output files are opened.",
+    "The result with appending will be the same as from a single run.",
+    "The contents will be binary identical, unless you use a different number",
+    "of nodes or dynamic load balancing or the FFT library uses optimizations",
+    "through timing."
     "[PAR]",
     "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
     "file is written at the first neighbor search step where the run time",
@@ -312,7 +316,7 @@ int main(int argc,char *argv[])
   real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   real cpt_period=15.0,max_hours=-1;
-  bool bAppendFiles=FALSE,bAddPart=TRUE;
+  bool bAppendFiles=TRUE,bAddPart=TRUE;
   bool bResetCountersHalfWay=FALSE;
   output_env_t oenv=NULL;
 	
@@ -390,7 +394,8 @@ int main(int argc,char *argv[])
   int      dd_node_order;
   bool     HaveCheckpoint;
   FILE     *fplog,*fptest;
-  int      sim_part;
+  int      sim_part,sim_part_fn;
+  const char *part_suffix=".part";
   char     suffix[STRLEN];
   int      rc;
 
@@ -431,41 +436,45 @@ int main(int argc,char *argv[])
 #endif
   }
 
-  /* Check if there is ANY checkpoint file available */	
-  sim_part = 1;
-  if(opt2bSet("-cpi",NFILE,fnm))
-  {
-      read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),&sim_part,NULL,cr);
-      sim_part++;
-      /* sim_part will now be 1 if no checkpoint file was found */
-      if (sim_part==1 && MASTER(cr))
-      {
-          fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
-      }
-  } 
+    /* Check if there is ANY checkpoint file available */	
+    sim_part    = 1;
+    sim_part_fn = sim_part;
+    if (opt2bSet("-cpi",NFILE,fnm))
+    {
+        bAppendFiles =
+            read_checkpoint_simulation_part(opt2fn_master("-cpi",NFILE,fnm,cr),
+                                            &sim_part_fn,NULL,cr,
+                                            bAppendFiles,
+                                            part_suffix,&bAddPart);
+        if (sim_part_fn==0 && MASTER(cr))
+        {
+            fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+        }
+        else
+        {
+            sim_part = sim_part_fn + 1;
+        }
+    } 
+    else
+    {
+        bAppendFiles = FALSE;
+    }
+    
+    if (!bAppendFiles)
+    {
+        sim_part_fn = sim_part;
+    }
 
-  if (sim_part<=1)
-  { 
-      bAppendFiles = FALSE;
-  }
+    if (bAddPart && sim_part_fn > 1)
+    {
+        /* This is a continuation run, rename trajectory output files 
+           (except checkpoint files) */
+        /* create new part name first (zero-filled) */
+        sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
 
-  if(!bAppendFiles && bAddPart && sim_part > 1)
-  {
-      /* This is a continuation run, rename trajectory output files 
-         (except checkpoint files) */
-      /* create new part name first (zero-filled) */
-      if(sim_part<10)
-          sprintf(suffix,"part000%d",sim_part);
-      else if(sim_part<100)
-          sprintf(suffix,"part00%d",sim_part);
-      else if(sim_part<1000)
-          sprintf(suffix,"part0%d",sim_part);
-      else
-          sprintf(suffix,"part%d",sim_part);
-
-      add_suffix_to_output_names(fnm,NFILE,suffix);
-      fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed %s.\n",sim_part-1,suffix);
-  }	
+        add_suffix_to_output_names(fnm,NFILE,suffix);
+        fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
+    }
 
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
